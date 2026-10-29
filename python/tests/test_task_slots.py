@@ -1581,22 +1581,16 @@ def test_a_machine_smaller_than_the_kept_places_still_starts_a_unit_when_empty(s
     assert not scene.admit(brief("b-two")).allowed
 
 
-def test_on_the_default_machine_a_third_game_unit_waits_for_the_networking_unit(scene: Scene) -> None:
-    # 4 places: the fix and the networking unit each keep one while they do not run, so two game units fit (before the
-    # networking track, three did). The committed rules are used whole, as on a machine that has not changed them.
+def test_on_the_default_machine_a_third_game_unit_never_fits(scene: Scene) -> None:
+    # 4 places: the fix and networking each keep one, so two game units fit (before the networking track, three did).
+    # A running networking unit takes its place, but the fix's stays kept, so the third never fits. The committed rules
+    # are used whole, as on a machine that has not changed them.
     committed_networking(scene)
     scene.unit("a-one")
     scene.unit("b-two")
     scene.task("c-three")
     verdict = scene.admit(brief("c-three"))
     assert not verdict.allowed and "1 kept for networking, which runs fewer than its minimum" in verdict.message
-    scene.task("n-ids", networking=True)
-    assert scene.admit(brief("n-ids")).allowed  # the kept place is networking's own
-
-
-def test_a_one_build_slot_machine_still_starts_a_unit_while_it_is_empty(scene: Scene) -> None:
-    # The kept places (3) outnumber the places (2): at most all but the starting unit's place are set aside.
-    committed_networking(scene)
-    scene.build_slots = 1
-    scene.task("a-one")
-    assert scene.admit(brief("a-one")).allowed
+    scene.unit("n-ids", networking=True)
+    verdict = scene.admit(brief("c-three"))
+    assert not verdict.allowed and "1 kept for fix, which runs fewer than its minimum" in verdict.message

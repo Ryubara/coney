@@ -5,15 +5,15 @@
 A unit works in one of four tracks (maintainer decisions 2026-10-28 and 2026-10-29, `tasks.start.slots.tracks`): `fix`
 for a `kind: fix` task, `networking` for a task whose issue carries `claims.networking_label`, `studio` for one whose
 issue carries `claims.studio_label` (Coney Studio), `reimplementation` for every other. A machine holds at most
-`build_slots` (coney.local.toml, the build slots `coney-tools build` keeps) times
-`tasks.start.slots.per_build_slot` units of all tracks together; a track may have its own `max`, and the `min` places
-of a track that runs fewer are kept from the others, so Studio never takes the last place a reimplementation unit or
-a fix needs. A unit holds its place from `task start` until a passing `reviewed` stamp (a fix: its own) or
-`finished`, or until its worktree is gone; a unit whose log cannot be trusted, or whose record cannot be read, keeps
-its place. The kind is in `<scratch>/<task>/TASK.md`, the unit in `unit.json`, the progress in the stamp log. Between
-the coordinator's Agent call and the engineer's `task start` the agent has no unit yet, so `admit --reserve` writes a
-short-lived `slot.json` beside the task file (`tasks.start.slots.reserve_minutes`); a unit record that was started
-after it replaces it.
+`build_slots` (coney.local.toml, the build slots `coney-tools build` keeps) times `tasks.start.slots.per_build_slot`
+units of all tracks together; a track may have its own `max`, and the `min` places of a track that runs fewer are kept
+from the others, so Studio never takes the last place a reimplementation unit or a fix needs (a machine too small to
+keep every place sets aside all but the starting unit's). A unit holds its place from `task start` until a passing
+`reviewed` stamp (a fix: its own) or `finished`, or until its worktree is gone; a unit whose log cannot be trusted, or
+whose record cannot be read, keeps its place. The kind is in `<scratch>/<task>/TASK.md`, the unit in `unit.json`, the
+progress in the stamp log. Between the coordinator's Agent call and the engineer's `task start` the agent has no unit
+yet, so `admit --reserve` writes a short-lived `slot.json` beside the task file (`tasks.start.slots.reserve_minutes`); a
+unit record that was started after it replaces it.
 
 Only a unit with a `unit.json` is counted: work that predates `task start` is invisible to the count (`task slots`
 lists its worktrees as "without a unit record"). A unit whose issue carries `claims.exempt_label` now (the units that

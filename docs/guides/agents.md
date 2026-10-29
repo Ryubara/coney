@@ -295,7 +295,7 @@ keeps the places full from the open issues, `P-critical` first.
 | Is | What | Its rule (each of the first four needs a held claim, a fix its parent's, and a place) |
 | --- | --- | --- |
 | **Reimplementation** | An `engineer` or `tooling` agent on a task whose issues are labelled neither `studio` nor `networking`: game issues and pull requests outside Coney Studio and networking | At least one game (`feature`) unit always (`min: 1`, `min_kinds`): while none runs, one place is kept for it, which Studio and tooling or docs units may not take. No cap but the machine's |
-| **Fix** | An agent on a `kind: fix` task, made by `task create --fix-of` after a CI check failed on the pull request of a task that passed Review | One at a time (`max: 1`), oldest failure first; one place is kept for it (`min: 1`), so a full machine still takes a fix |
+| **Fix** | An agent on a `kind: fix` task, made by `task create --fix-of` after a CI check failed on the pull request of a task that passed Review | One at a time (`max: 1`), oldest failure first; one place is kept for it (`min: 1`), so a full machine still takes a fix, except one with a single build slot |
 | **Studio** | A task whose issue carries the `studio` label (`claims.studio_label`): Coney Studio research and development, the sub-issues of #1054 and the Studio build issues | As many as the machine holds once the kept places are set aside, on one of the models of [Which model](#models) |
 | **Networking** | A task whose issue carries the `networking` label (`claims.networking_label`): the co-op plan in [multiplayer](multiplayer.md#plan), network ids, snapshots, interpolation, the level-load barrier | One at a time (`max: 1`) and always one (`min: 1`): while none runs, one place is kept for it, so a full machine still takes it. Any model, as the reimplementation track; its claim is outside the open-claims limit ([Claiming an issue](issues.md#claiming)) |
 | **Workflow unit** | A task whose issue carries the `workflow` label (`claims.exempt_label`) now: a unit that builds the new workflow | A held claim, no place, while `tasks.start.slots.exempt_workflow` is on; **the cutover turns it off** (a test fails if `claims.adopt` or `claims.release` is on while it is still on) and such units count like the rest |
@@ -317,9 +317,9 @@ passing Review, a `feature` unit held a build slot for 10% of its life (5 units,
 of the 52.7 hours any ran. Two units per build slot put the builds' expected demand at about a fifth of the slots; past
 that, the limit is the checks that take no build slot (with about 8 checks at once, the Python tests of `task check`
 took 80 minutes instead of 48). The tracks keep 3 places together, so on the default 2 build slots (4 places) only two
-game units fit while no networking unit runs. A machine with one build slot (2 places) cannot keep them all: it sets
-aside at most all but the starting unit's place, so an empty machine starts a unit of any track, Studio's too.
-`per_build_slot` changes only after measuring again the same way.
+game units fit beside the networking and fix places, and a third never does. A machine with one build slot (2 places)
+cannot keep them all: it sets aside at most all but the starting unit's place, so an empty machine starts a unit of any
+track, Studio's too. `per_build_slot` changes only after measuring again the same way.
 
 **The place belongs to the unit, not to the agent's life.** A unit takes its place at `task start` (an agent the
 coordinator has just started holds it from the Agent call, for at most `reserve_minutes`, so that several calls made

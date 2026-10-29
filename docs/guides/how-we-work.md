@@ -224,11 +224,12 @@ Engineer work runs in four tracks (maintainer decisions of 2026-10-28, which put
 
 A machine holds a fixed number of units of all tracks together for each of its build slots, the ones `coney-tools build`
 keeps ([Engineer tracks](agents.md#slots) has the number and the evidence for it). One place is kept for game work while
-no `feature` unit runs, one for a fix and one for networking while none runs, so Studio never takes any of them
-(`tasks.start.slots` in [.github/conventions.yml](repo:.github/conventions.yml)); `task start` refuses a start over the
-limit and the coordinator's Agent guard refuses the engineer before it starts ([Engineer tracks](agents.md#slots) has
-the rule in full). There are no standing teams: the coordinator assigns the next task from the triaged issues,
-`P-critical` first and then by priority, whenever a place frees.
+no `feature` unit runs, one for a fix and one for networking while none runs, so Studio never takes any of them (a
+machine with one build slot cannot keep all three) (`tasks.start.slots` in
+[.github/conventions.yml](repo:.github/conventions.yml)); `task start` refuses a start over the limit and the
+coordinator's Agent guard refuses the engineer before it starts ([Engineer tracks](agents.md#slots) has the rule in
+full). There are no standing teams: the coordinator assigns the next task from the triaged issues, `P-critical` first
+and then by priority, whenever a place frees.
 
 - **A place frees when its task passes Review.** The engineer's job ends there; its place takes the next task while
   the pull request runs CI.
