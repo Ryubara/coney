@@ -128,11 +128,35 @@ def test_the_files_are_the_committed_ones_with_deletions_as_the_pull_request_lis
     assert not check_pr.step_docs_rule(listed, body(), CONVENTIONS).ok
 
 
-def test_the_docs_rule_and_the_engine_step_read_the_pull_request_files(checkout: Path) -> None:
+def test_the_docs_rule_and_the_engine_step_read_the_pull_request_files(
+    checkout: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     commit(checkout, "src/core/x.cpp")
     (checkout / "docs" / "uncommitted.md").write_text("x" + chr(10), encoding="utf-8")
     steps = check_pr.pr_steps(checkout, "main", "core: Add x", body(), "dev", "alice")
+    # The uncommitted page does not count for the docs rule, so the committed engine file is refused for its docs.
     assert not steps["docs-rule"]().ok
+    # The committed engine file starts the engine step's build.
+    builds: list[list[str]] = []
+
+    def fake(command: list[str], cwd: Path) -> tuple[int, str]:
+        builds.append(command)
+        return 0, ""
+
+    monkeypatch.setattr(local_gate, "run_command", fake)
+    assert steps["engine"]().ok and len(builds) == 1
+
+
+def test_an_engine_file_that_is_not_committed_does_not_start_the_engine_step(
+    checkout: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    commit(checkout, "docs/page2.md")
+    (checkout / "src" / "core").mkdir(parents=True)
+    (checkout / "src" / "core" / "y.cpp").write_text("int y;" + chr(10), encoding="utf-8")
+    steps = check_pr.pr_steps(checkout, "main", "docs: Add page", body(), "dev", "alice")
+    monkeypatch.setattr(local_gate, "run_command", lambda *_: pytest.fail("a build ran"))
+    result = steps["engine"]()
+    assert result.ok and result.skipped
 
 
 # --- the engine step ---------------------------------------------------------------------------------------------

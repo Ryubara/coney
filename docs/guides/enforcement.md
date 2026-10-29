@@ -222,20 +222,23 @@ What each vendor's own page says, read on 2026-10-27:
   `artifactDirectoryPath`, `modelName`; no `cwd` (a command's folder is `run_command`'s `Cwd`). The answer needs a
   `decision`: `allow`, `auto_approve`, `deny`, `ask`, `force_ask` or `deny_unless_prior_grant`. Timeout in seconds,
   default 30. Exit codes, the environment and trust are not on the page.
-- **Cursor** ([Hooks](https://cursor.com/docs/agent/hooks),
-  [Third-party hooks](https://cursor.com/docs/reference/third-party-hooks)). Project `.cursor/hooks.json`, run from the
-  project root; user `~/.cursor/hooks.json`. `preToolUse` gets `tool_name` (`Shell`, `Read`, `Write`, `Grep`, `Delete`,
-  `Task`, `MCP:<tool>`), `tool_input` (`command` and `working_directory` for `Shell`), `cwd`, `workspace_roots` and
+- **Cursor** ([Hooks](https://cursor.com/docs/agent/hooks), [Third-party
+  hooks](https://cursor.com/docs/reference/third-party-hooks)). Project `.cursor/hooks.json`, run from the project root;
+  user `~/.cursor/hooks.json`. `preToolUse` gets `tool_name` (`Shell`, `Read`, `Write`, `Grep`, `Delete`, `Task`,
+  `MCP:<tool>`), `tool_input` (`command` and `working_directory` for `Shell`), `cwd`, `workspace_roots` and
   `cursor_version`; exit code 2 denies too; another failure passes unless `failClosed`, and for a permission hook an
   exit 0 with output that does not match the schema blocks. The matcher is "Regex that filters when the hook runs. An
-  empty string or `"*"` matches everything." The page's `preToolUse` output, quoted on 2026-10-27:
-  `{"permission": "allow" | "deny", "user_message": "<message shown in client when denied>", "agent_message":
-  "<message sent to agent when denied>", "updated_input": { "command": "npm ci" }}` (`ask` is accepted but not enforced
-  for `preToolUse`); `beforeShellExecution` answers the same three keys. `permission` is the one output key the page
-  does not mark optional, so the adapter's pass is `{"permission": "allow"}`, never `{}`. The adapter also judges the
-  PascalCase `PreToolUse`, which Cursor may send to the hook of `.claude/settings.json`. On Windows the app runs hooks
-  in PowerShell. Cursor also runs the hooks of `.claude/settings.json` (on by default: "Include Third-Party Plugins,
-  Skills, and Other Configs"), so in Cursor the dispatcher may run twice for one call: harmless, both judge the same.
+  empty string or `"*"` matches everything." The page's `preToolUse` output, quoted on 2026-10-27: `{"permission":
+  "allow" | "deny", "user_message": "<message shown in client when denied>", "agent_message": "<message sent to agent
+  when denied>", "updated_input": { "command": "npm ci" }}` (`ask` is accepted but not enforced for `preToolUse`);
+  `beforeShellExecution` answers the same three keys. `permission` is the one output key the page does not mark
+  optional, so the adapter's pass is `{"permission": "allow"}`, never `{}`. The page does not say whether that `allow`
+  also skips Cursor's own approval prompt for the call; if it does, a call the hook does not refuse is approved without
+  asking (not confirmed here: a person with Cursor should check it, and this line records the answer). The adapter also
+  judges the PascalCase `PreToolUse`, which Cursor may send to the hook of `.claude/settings.json`. On Windows the app
+  runs hooks in PowerShell. Cursor also runs the hooks of `.claude/settings.json` (on by default: "Include Third-Party
+  Plugins, Skills, and Other Configs"), so in Cursor the dispatcher may run twice for one call: harmless, both judge the
+  same.
 - **GitHub Copilot** ([Hooks reference](https://docs.github.com/en/copilot/reference/hooks-reference),
   [VS Code](https://code.visualstudio.com/docs/copilot/customization/hooks)). `.github/hooks/*.json` (the only place the
   cloud agent reads); the CLI also reads `.github/copilot/settings.json` and `.claude/settings.json`. `preToolUse`

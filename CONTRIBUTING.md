@@ -330,10 +330,11 @@ uvx pre-commit install                        # git hooks: file checks on commit
 ```
 
 Then trust the project's hooks in your tool: Codex `/hooks` (it skips a project hook until you have reviewed it, and
-again after it changes), Gemini CLI and Antigravity `/hooks`, Grok Build `/hooks-trust` (or `--trust`), Cursor and
-VS Code by trusting the workspace; the Copilot cloud agent runs `.github/hooks/` by itself. The hooks need `uv` on the
-path, like everything else here: without it they let every call through. When the hooks themselves break, a `harness:`
-line in `coney-hooks.log` in your system temp folder says why.
+again after it changes), Gemini CLI `/hooks`, Grok Build `/hooks-trust` (or `--trust`), Cursor and VS Code by trusting
+the workspace, Antigravity by listing the hooks under Customizations (its page names no trust step); the Copilot cloud
+agent runs `.github/hooks/` by itself. The hooks need `uv` on the path, like everything else here: without it they let
+every call through. When the hooks themselves break, a `harness:` line in `coney-hooks.log` in your system temp folder
+says why.
 
 Before you open or update a pull request, write the description to a file from
 [the template](.github/pull_request_template.md) (every section, the Checklist ticked, `Screenshots: none (<reason>)`
@@ -348,7 +349,8 @@ The command measures your change from `origin/main`. In a fork, `origin` is your
 so give it the project's: `--base upstream/main` after `git fetch upstream`. A picture cannot be in the file you check,
 because an uploaded picture has no address before the pull request exists: write `Screenshots: none (<reason>)` for
 the check (the command refuses a picture that is a local file), open the pull request, then edit its description on
-GitHub and drag the picture in where that line was. The command reads your commits, not what is uncommitted: commit first.
+GitHub and drag the picture in where that line was. Its docs rule and engine steps read your commits, not what is
+uncommitted: commit first.
 
 It checks the title and the description (the same rules as CI's `title` and `body` jobs, plus that `Model:` names every
 model a `Co-Authored-By` trailer on your commits names), that a change to code changes the docs or says `Docs: none`,
