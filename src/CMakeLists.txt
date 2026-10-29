@@ -522,6 +522,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/time_series.cpp
         debug/tunables.cpp
         debug/ui_scale.cpp
+        debug/world_edits.cpp
         debug/world_split.cpp
         gamemodes/sheet_viewer_mode.cpp
         gamemodes/text_viewer_mode.cpp

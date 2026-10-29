@@ -256,6 +256,10 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     /// drawn as the game draws it.
     /// @coney-only the debug tools' mesh views; the original has none
     void setMeshViews(std::shared_ptr<MeshViewHook> views) { m_meshViews = std::move(views); }
+    /// Changes the scenery through the debug tools' world edits (PlayScenery::setEditHook(): `--world-edit`); null:
+    /// none.
+    /// @coney-only the debug tools' world edits; the original has none
+    void setWorldEdits(const std::shared_ptr<WorldEditHook>& edits) { m_scenery->setEditHook(edits); }
 
     // Coney's own capabilities and views of the play: the debug menus' Player, Camera, Spawner and AI fighters pages
     // reach them through PlayLevelControls, and the disc tests call them.

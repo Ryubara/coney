@@ -20,8 +20,10 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 -
 
 - **What it records.** The frames Coney draws, read back from its own frame buffer after the game's 2D layers (HUD,
   menus, fades, line blend) and before the debug menus and the developer overlay are drawn, so neither appears; the
-  debug menus' lines in the 3D scene are switched off while it records. It never reads the screen or a window. The
-  sound is the mixer's own output, step by step.
+  debug menus' lines in the 3D scene are switched off while it records, unless `--record-debug-draw` asks to keep the
+  ones the run itself switched on (the [world edits'](running-viewers.md#world-edits) collision wireframe, for a clip
+  of collision being changed). It never reads the screen or a window. The sound is the mixer's own output, step by
+  step.
 - **When.** From the first frame, or with `--play-level` from the level's first frame of play (as `--frames` counts).
   Without `--frames` the run ends when the clip is done. `--record` puts Coney in test mode (one step and one render a
   frame, no clock), so the same command and `--input-script` give the same frames: the line it prints ends with a hash

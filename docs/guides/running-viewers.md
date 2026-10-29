@@ -241,6 +241,44 @@ With `--headless` the streaming, visibility and draw distance run exactly as in 
 is how a test drives it. Game time runs on the fixed 1/30 s step, so a script gives the same parts in the same frames
 every time.
 
+### World edits {#world-edits}
+
+`--world-edit FILE` takes a level's streamed world apart, with the world viewer or a level's `--play-level`: sectors
+drawn apart on a grid, a world hidden, a building cut out of the sector atomics and moved, collision added to a roof.
+It is Coney's own debug tool, an experiment for Coney Studio ([How the world splits into
+buildings](../research/world-split.md)); nothing faithful changes without it, and the release build has no such option.
+The file holds one statement a line, `#` to the end of a line a comment, positions in the game's axes (metres, z up):
+
+| Statement | Does |
+| --- | --- |
+| `hide s` or `hide d` | that world (`<level>s`, the solid scenery, or `<level>d`, the detail) is not drawn |
+| `spread [columns=N] [gap=G] [scale=S \| cell=C] [at=X,Y,Z]` | the world viewer reads every part before its first frame and draws every sector apart: each scaled by `S` (0.25) about its box's centre, or with `cell` each scaled on its own to fit a `C`-metre square (so a small sector is seen beside a large one), standing on a grid of `N` columns (10) from `at` along +x, the rows along -y; a cell is the largest sector's footprint times `S`, or `C`, plus `G` metres (2); the `s` world's sectors first, a row left empty, then the `d` world's; the level's sky, skyline and glows are left out |
+| `camera at=X,Y,Z [heading=DEG] [pitch=DEG]` | the world viewer's camera starts there; heading 0 looks along +y and grows towards +x, pitch is positive up |
+| `cut NAME box=X0,Y0,Z0,X1,Y1,Z1 [by=centroid\|corners\|pieces] [collision=yes\|no]` | once every sector under the box is loaded, the triangles the box takes are cut out of those sectors' atomics (both worlds) into pieces of their own: by centroid (the default), by all three corners, or whole connected pieces that lie in the box; with `collision=yes` (the default) the level's collision triangles wholly in the box are switched off and added back as extra triangles that move with the pieces |
+| `move NAME step=N offset=DX,DY,DZ` | a key of the cut's movement: at fixed step `N` (from the first step of play or of the viewer) it stands `offset` from where the disc has it, straight from key to key |
+| `roof box=X0,Y0,Z0,X1,Y1,Z1 [material=ID]` | the `s` world's up-facing faces whose centroid the box holds become collision triangles of that material (5, concrete), once the sectors under it are loaded |
+| `debugdraw collision [radius=M]` | the [Debug draw](debug-menu.md#debug-draw) page's collision wireframe on every frame, within `M` metres of the player (8) |
+
+```text
+# level99, checkpoint 2: the shop across the street lifted out and moved.
+cut shop box=50,11,-1,65,31,20
+move shop step=60 offset=0,0,0
+move shop step=150 offset=0,0,8
+move shop step=240 offset=-12,0,8
+```
+
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --view-world level99 --world-edit spread.txt
+build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 --checkpoint 2 --skip-movies --freeze-world --camera X,Y,Z,QX,QY,QZ,QW --world-edit shop.txt
+```
+
+The cut pieces and the roofs' collision are the editor's, drawn after their world's sectors and lit as they are; the
+added collision replaces the debug menus' Spawner's, so the two do not mix. A clip made with `--record` keeps the
+collision wireframe only with `--record-debug-draw` ([Recording a clip](running-options.md#record)). Coney prints one
+line per cut and roof made, and a summary when it stops (counts only). A part the streamer frees and reads again comes
+back as the disc has it, so the editor places its sectors on the spread again and cuts them again by every cut already
+made; the pieces it cut first stay, so a building never shows twice.
+
 ## The character viewer {#the-character-viewer}
 
 `--view-character [NAME]` loads a character by its model name, as the Character List names it, and plays one of its

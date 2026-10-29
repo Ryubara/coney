@@ -7,7 +7,6 @@
 #include <functional>
 #include <memory>
 #include <optional>
-#include <set>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -58,6 +57,9 @@ struct GameMesh {
 /// - `roof`: once the sectors under the box are loaded, the up-facing visible triangles whose centroid the box holds
 ///   become extra collision triangles.
 ///
+/// A part the streamer frees and reads again comes back as the disc has it: its sectors are placed on the spread again
+/// and cut again by every cut already made, whose pieces the editor keeps, so nothing shows twice.
+///
 /// The extra triangles replace any the mesh had (the debug menus' Spawner's), so the two do not mix.
 class WorldEditor final : public WorldEditHook {
   public:
@@ -89,8 +91,21 @@ class WorldEditor final : public WorldEditHook {
         world::Vec3 home; // the frame's translation as cut
     };
 
-    // Places every loaded sector of the spread that is not placed yet.
+    // One sector a cut has been made in: its atomic and triangle count after the cuts, which a reread part's differ
+    // from.
+    struct CutSector {
+        std::size_t world = 0;
+        std::uint32_t sector = 0;
+        const rw::Atomic* atomic = nullptr;
+        std::int32_t triangles = 0;
+    };
+
+    // Places every loaded sector of the spread that is not in its cell.
     void placeSpread(WorldSet& worlds);
+    // Cuts again every sector a cut was made in whose part has been read again since.
+    void recutReread(WorldSet& worlds);
+    // Remembers sector `sector` of world `world` as the cuts left it.
+    void rememberCut(std::size_t world, std::uint32_t sector, const rw::Atomic& atomic);
     // Cuts what cut `index` takes from the sectors under its box, once they are all loaded.
     void makeCut(std::size_t index, WorldSet& worlds, raycast::CollisionMesh* collision);
     // Builds roof `index`'s collision once the sectors under it are loaded; true when it did.
@@ -103,10 +118,12 @@ class WorldEditor final : public WorldEditHook {
     WorldSet* m_set = nullptr; // the worlds of the last afterStep(), whose spread sectors drawAfterWorld() draws
     std::vector<debug::SpreadPlacement> m_spread; // by world then sector, both worlds' sectors in one list
     std::vector<std::size_t> m_spreadFirst;       // the index in m_spread of each world's sector 0
-    std::set<const rw::Atomic*> m_placed;         // atomics the spread has placed
+    std::vector<std::vector<bool>> m_placed;      // by world then sector, whether the spread has ever placed it
     std::size_t m_spreadPlaced = 0;
     std::vector<Piece> m_pieces;
-    std::vector<bool> m_cutDone;                                      // per cut
+    std::vector<CutSector> m_cutSectors; // every sector a cut was made in
+    std::size_t m_recut = 0;             // sectors cut again after their part was read again
+    std::vector<bool> m_cutDone;         // per cut
     std::vector<std::vector<raycast::BuildTriangle>> m_cutCollision;  // per cut, as the disc has it
     std::vector<debug::Vec3> m_offsets;                               // per cut, the offset as of the last step
     std::vector<std::vector<raycast::BuildTriangle>> m_roofCollision; // per roof, empty until built

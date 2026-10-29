@@ -19,7 +19,9 @@
 // world apart into buildings, an experiment for Coney Studio (docs/research/world-split.md); the original has none.
 //
 // Everything here is plain data in the game's axes (z up, metres), so it is tested without a window or a disc: the
-// platform side (platform/world_edit.h) turns a sector atomic's geometry into these spans and back.
+// platform side (platform/world_edit.h) turns a sector atomic's geometry into these spans and back. One header, as
+// the tools and their tests use them together; the edit file's parser is in world_edits.cpp, the geometry in
+// world_split.cpp.
 
 namespace coney::debug {
 

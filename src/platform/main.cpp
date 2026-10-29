@@ -99,6 +99,7 @@
 #include "platform/texture_dictionary.h"
 #include "platform/texture_viewer_mode.h"
 #include "platform/window.h"
+#include "platform/world_edit.h"
 #include "platform/world_set.h"
 #include "platform/world_viewer_mode.h"
 #include "sandbox/sandbox_world.h"
@@ -468,6 +469,16 @@ int main(int argc, char** argv) {
     std::optional<coney::TextViewerMode> textViewer;
     // The world viewer's memory budget: the original's Sector Pool, at its retail size.
     coney::world::SectorBudget sectorBudget(coney::world::kSectorPoolSize);
+    // `--world-edit`: the debug tools' world edits for the world viewer or the command line's level.
+    std::shared_ptr<coney::platform::WorldEditor> worldEdits;
+    if (const std::optional<std::string>& editFile = options->worldEditFile; editFile) {
+        auto loaded = coney::platform::loadWorldEditor(*editFile, logText);
+        if (!loaded) {
+            logError(loaded.error().message);
+            return 2;
+        }
+        worldEdits = std::move(*loaded);
+    }
     std::unique_ptr<coney::platform::WorldViewerMode> worldViewer;
     std::unique_ptr<coney::platform::CharacterViewerMode> characterViewer;
     std::unique_ptr<coney::platform::PlayLevelMode> playLevel;
@@ -558,6 +569,12 @@ int main(int argc, char** argv) {
             return 1;
         }
         worldViewer = std::move(*viewerMode);
+        if (worldEdits) {
+            if (const std::optional<coney::world::DebugCamera> camera = worldEdits->viewerCamera(); camera) {
+                worldViewer->placeCamera(*camera);
+            }
+            worldViewer->setEditHook(worldEdits);
+        }
         modes.push(*worldViewer);
     } else if (const std::optional<std::string> viewCharacter = options->viewCharacter; viewCharacter) {
         if (!wad) {
@@ -782,7 +799,11 @@ int main(int argc, char** argv) {
         session->setHumansTrace(humansTrace);
         if (commandLineLevel) {
             session->setFirstLevelSetup(
-                [&options](coney::platform::PlayLevelMode& mode) -> std::expected<void, coney::Error> {
+                [&options, &worldEdits](coney::platform::PlayLevelMode& mode) -> std::expected<void, coney::Error> {
+                    // `--world-edit`: the level's worlds and collision through the debug tools' world edits.
+                    if (worldEdits) {
+                        mode.setWorldEdits(worldEdits);
+                    }
                     // `--start`: the player (and the camera) somewhere else from the first step, a trace scenario's
                     // start.
                     if (const std::optional<coney::StartPlace> place = options->start; place) {
@@ -1172,6 +1193,18 @@ int main(int argc, char** argv) {
             return inner();
         };
     }
+    // `--world-edit`'s `debugdraw collision`: the Debug draw page's collision wireframe on every frame, reaching as far
+    // as the file says; a clip keeps it only with `--record-debug-draw`.
+    if (const std::optional<float> wire = worldEdits ? worldEdits->collisionWire() : std::nullopt; wire) {
+        const bool shown = !options->recordPath.has_value() || options->recordDebugDraw;
+        hooks.beginFrame = [inner = std::move(hooks.beginFrame), &debugSession, radius = *wire, shown] {
+            if (shown) {
+                debugSession.debugDraw().collision = true;
+                debugSession.debugDraw().collisionRadius = radius;
+            }
+            return inner ? inner() : true;
+        };
+    }
     // Network play receives before each step and sends after it.
     coney::platform::addNetPlayHooks(hooks, netPlay, pacer.has_value());
     // `--bench-spawn-step` counts the steps of play.
@@ -1233,9 +1266,10 @@ int main(int argc, char** argv) {
         }
         const bool endsWithClip = !frameLimit && !playFrameLimit;
         hooks.beginFrame = [inner = std::move(hooks.beginFrame), &clip, &clipDone, &debugSession, &session,
-                            endsWithClip, armed = !commandLineLevel]() mutable {
-            // The debug menus' lines in the 3D scene stay off while recording: a clip shows the game only.
-            debugSession.debugDraw() = coney::debug::DebugDrawOptions{};
+                            endsWithClip, armed = !commandLineLevel, keepLines = options->recordDebugDraw]() mutable {
+            // The debug menus' lines in the 3D scene stay off while recording: a clip shows the game only, unless
+            // `--record-debug-draw` keeps the lines the run itself switched on (the world edits' wireframe).
+            debugSession.debugDraw() = coney::debug::recordedDebugDraw(debugSession.debugDraw(), keepLines);
             if (!armed && session && session->inPlay()) {
                 armed = true;
                 clip->start();
@@ -1281,6 +1315,9 @@ int main(int argc, char** argv) {
         printText(*line);
     }
 
+    if (worldEdits) {
+        logText(worldEdits->summary());
+    }
     if (worldViewer) {
         logText(worldViewer->summary());
     }

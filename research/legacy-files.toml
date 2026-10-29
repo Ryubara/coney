@@ -1196,9 +1196,6 @@ comment = 2
 ["src/platform/placed_objects.h"]
 comment = 1
 
-["src/platform/play_scenery.h"]
-comment = 1
-
 ["src/platform/reference_renderer.cpp"]
 comment = 1
 
@@ -1216,12 +1213,6 @@ comment = 1
 
 ["src/platform/texture_lookup.cpp"]
 comment = 1
-
-["src/platform/world_atomic.cpp"]
-comment = 2
-
-["src/platform/world_viewer_mode.h"]
-comment = 2
 
 ["src/raycast/collision_builder.cpp"]
 comment = 2
@@ -2562,9 +2553,6 @@ citation = 7
 
 ["tests/platform/window_activation_test.cpp"]
 citation = 1
-
-["tests/platform/world_atomic_test.cpp"]
-citation = 3
 
 ["tests/platform/world_renderer_test.cpp"]
 citation = 1

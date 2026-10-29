@@ -52,8 +52,12 @@ struct DebugDrawOptions {
 /// inspector selection, which names itself in the overlay's 2D corner text (docs/guides/testing.md#clips).
 /// @coney-only clips of Coney's own debug tooling for issues and pull requests; the original has none
 [[nodiscard]] inline DebugDrawOptions recordedDebugDraw(const DebugDrawOptions& run, bool keepLines) {
-    (void)keepLines; // stub: the tests come first
-    return run;
+    if (!keepLines) {
+        return DebugDrawOptions{};
+    }
+    DebugDrawOptions kept = run;
+    kept.inspected = 0;
+    return kept;
 }
 
 /// One object the Spawner page can put in front of the player: a sandbox primitive and the name the page shows. The

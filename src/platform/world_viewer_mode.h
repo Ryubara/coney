@@ -79,7 +79,7 @@ class WorldViewerMode final : public GameMode {
     /// drawn through; when it loads everything, enter() reads every part instead of the preload. Null: none. Set it
     /// before enter().
     /// @coney-only the debug tools' world edits; the original has none
-    void setEditHook(std::shared_ptr<WorldEditHook> hook);
+    void setEditHook(const std::shared_ptr<WorldEditHook>& hook);
     /// Puts the camera at `camera` with nothing to blend from (the world edits' `camera` statement). Before enter(), it
     /// is also where the preload reads round.
     /// @coney-only the debug tools' world edits; the original has none
