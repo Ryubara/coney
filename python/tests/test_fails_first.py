@@ -610,3 +610,33 @@ def test_a_test_case_inside_a_comment_is_not_declared() -> None:
     assert _declared_within('auto s = "// TEST_CASE(\\"x\\")"; TEST_CASE("Next") {}\n') == {"Next"}
     raw = 'auto r = R"x(// "TEST_CASE("Inside raw")" )x"; TEST_CASE("After raw") {}\n'
     assert _declared_within(raw) == {"After raw"}
+
+
+# --- live progress (issue 1135) ----------------------------------------------------------------------------------
+
+
+def test_each_run_says_when_it_starts_and_when_it_ends_as_it_happens(repo: Repo) -> None:
+    said: list[str] = []
+    seen_while_running: list[list[str]] = []
+    original = repo.runner
+
+    def runner(root: Path, preset: str, names: tuple[str, ...]) -> BuildOutcome:
+        seen_while_running.append(list(said))
+        return original(root, preset, names)
+
+    repo.run(runner=runner, say=said.append)
+    assert [("start the red run" in line) or ("end the red run" in line) for line in said[:2]] == [True, True]
+    assert "start the green run" in said[2] and "end the green run" in said[3]
+    # While the red run was running only its start had been said; while the green one ran, the red run's end too.
+    assert len(seen_while_running[0]) == 1 and len(seen_while_running[1]) == 3
+    assert said[0].startswith("[") and "tests failed" in said[1] and "tests passed" in said[3]
+
+
+def test_the_build_runners_lines_reach_the_caller_while_the_build_runs(tmp_path: Path) -> None:
+    import sys
+
+    lines: list[str] = []
+    code = "import sys, time\nprint('log: x', flush=True)\ntime.sleep(0.3)\nprint('result: ok', flush=True)\n"
+    exit_code, output = fails_first.stream_lines([sys.executable, "-c", code], tmp_path, lines.append)
+    assert exit_code == 0 and lines == ["log: x", "result: ok"] and output == "log: x\nresult: ok\n"
+    assert fails_first.stream_lines(["no-such-program-1135"], tmp_path, lines.append)[0] == 127

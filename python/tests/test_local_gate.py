@@ -12,7 +12,7 @@ import pytest
 import yaml
 from conventions_support import write_checkout
 
-from coney_tools import check_cli, local_gate
+from coney_tools import build_run, check_cli, local_gate
 from coney_tools.config import ConfigError
 from coney_tools.conventions import load_conventions
 
@@ -358,3 +358,50 @@ def test_the_gates_commands_run_below_normal_priority(tmp_path: Path, monkeypatc
         assert command == ["pytest", "a.py"] and options["creationflags"] == 0x00004000 | 0x08000000
     else:
         assert command[-2:] == ["pytest", "a.py"] and (len(command) == 2 or command[1:3] == ["-n", "5"])
+
+
+# --- check slots and live progress (issue 1135) ------------------------------------------------------------------
+
+
+def test_the_python_step_holds_a_check_slot_for_pytest_only_and_runs_every_command_live(tmp_path: Path) -> None:
+    from collections.abc import Iterator
+    from contextlib import contextmanager
+
+    ran: list[str] = []
+    held: list[str] = []
+
+    @contextmanager
+    def hold(root: Path) -> Iterator[None]:
+        held.append("enter")
+        yield
+        held.append("leave")
+
+    def run(command: list[str], root: Path) -> tuple[int, str]:
+        label = next(word for word in command if word in ("pytest", "mypy", "ruff"))
+        ran.append(label)
+        if label == "pytest":
+            assert held == ["enter"]  # pytest runs inside the slot
+        else:
+            assert held in ([], ["enter", "leave"])  # the others never hold one
+        return 0, ""
+
+    result = check_cli._step_python(REPO, ["python/src/coney_tools/x.py"], hold=hold, run=run)
+    assert result.ok and "pytest" in ran and held == ["enter", "leave"]
+
+
+def test_run_changed_says_each_step_start_and_exits_75_when_pytest_waited_too_long(
+    repo: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from coney_tools.build_claims import SlotTimeout
+
+    write(repo, "coney.local.example.toml", "# marks the checkout root\n")
+    write(repo, "docs/page.md", "# changed\n")
+    monkeypatch.chdir(repo)
+
+    def waiting(root: Path, changed: list[str]) -> local_gate.StepResult:
+        raise SlotTimeout("no check slot free after 180 minutes", 2, 4)
+
+    monkeypatch.setattr(check_cli, "_step_python", waiting)
+    assert check_cli.run_changed("main", ["python"], None) == build_run.EXIT_QUEUED
+    out = capsys.readouterr().out
+    assert "] start python" in out and "gave up waiting for a check slot (place 2 of 4)" in out

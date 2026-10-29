@@ -15,8 +15,15 @@ the branch's parser does not know; the stamp's `detail.rules` says `base`, or `b
 section yet. A base whose rules cannot be read stops the run (exit 2).
 
 Exit codes: 0 every check passed and the stamp is written; 1 a check failed (a `fail` stamp is written); 2 it cannot
-run or cannot stamp (nothing is written); 75 the build gave up waiting for a slot (nothing is written; run it again).
-Everything that touches the machine is in `Env`, so the order, the stamp and the refusals are tested with fakes.
+run or cannot stamp (nothing is written); 75 the build or the pytest run gave up waiting for a slot (nothing is
+written; run it again). Everything that touches the machine is in `Env`, so the order, the stamp and the refusals are
+tested with fakes.
+
+The run is live: each check prints a `start` line when it begins and its result when it ends, with the time of day, and
+every line is flushed at once (a run redirected to a file shows it grow). The full suites (pytest here, the engine's
+ctest run inside the build) wait for a check slot first (`check_slots`, check_slots.py), and a long check prints a
+progress line every minute with its output going to `check-logs/` in the task's scratch folder
+(live_progress.py; docs/guides/coney-tools-repo.md#task-check).
 """
 
 from __future__ import annotations
@@ -24,16 +31,28 @@ from __future__ import annotations
 import argparse
 import os
 from collections.abc import Callable, Mapping
+from contextlib import AbstractContextManager, nullcontext
 from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from coney_tools import build_cli, build_record, build_run, pr_diff, proof_profiles, stamps, unit
+from coney_tools import (
+    build_cli,
+    build_record,
+    build_run,
+    check_slots,
+    live_progress,
+    pr_diff,
+    proof_profiles,
+    stamps,
+    unit,
+)
+from coney_tools.build_claims import SlotTimeout
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import Conventions, load_conventions, load_proof_rules_at
 from coney_tools.local_gate import StepResult, run_command
-from coney_tools.task_check_steps import IMPLEMENTED, Runner, Step, StepContext
+from coney_tools.task_check_steps import FULL_SUITE_CHECKS, IMPLEMENTED, Runner, Step, StepContext
 
 #: Exit codes (see the module docstring).
 EXIT_FAILED = 1
@@ -72,6 +91,10 @@ class Env:
     say: Callable[[str], None]
     who: Callable[[], dict[str, Any]]
     run: Runner = run_command
+    #: A runner that streams and logs into the given folder (live_progress.streaming_runner), or None: `run` is used.
+    stream: Callable[[Path], Runner] | None = None
+    #: Holds a check slot (checkout, agent id, what runs) while a full suite runs; the default holds nothing.
+    hold: Callable[[Path, str, str], AbstractContextManager[None]] = lambda root, agent, what: nullcontext()
 
 
 def _no_disc_reason(root: Path) -> str | None:
@@ -85,9 +108,25 @@ def _no_disc_reason(root: Path) -> str | None:
     return None
 
 
+def _say(line: str) -> None:
+    """Print a line and flush it at once: a run redirected to a file must show each line as it happens."""
+    print(line, flush=True)
+
+
+def _real_hold(max_wait: float) -> Callable[[Path, str, str], AbstractContextManager[None]]:
+    """The check slot of this machine: the queue of `check_slots`, saying the place while it waits, giving up after
+    `max_wait` minutes with a SlotTimeout."""
+
+    def hold(root: Path, agent: str, what: str) -> AbstractContextManager[None]:
+        return check_slots.hold(check_slots.default_check_slots(root), agent, root.name, what, _say, max_wait=max_wait)
+
+    return hold
+
+
 def default_env(max_wait: float = build_cli.DETACHED_MAX_WAIT) -> Env:
     """The real machine: the checks of `task_check_steps`, the build through `coney-tools build`'s own code, the disc
-    the build would give the tests, and the identity the hook vouched for."""
+    the build would give the tests, and the identity the hook vouched for. Its checks stream their output into a log
+    and say a progress line every minute, and pytest waits for a check slot."""
     return Env(
         steps=IMPLEMENTED,
         build=lambda root, agent, preset, task: build_cli.build_and_test(
@@ -95,8 +134,10 @@ def default_env(max_wait: float = build_cli.DETACHED_MAX_WAIT) -> Env:
         ),
         disc=_no_disc_reason,
         clock=lambda: datetime.now(UTC),
-        say=print,
+        say=_say,
         who=lambda: stamps.who_from_env("coney-tools task check"),
+        stream=lambda logs: live_progress.streaming_runner(_say, logs),
+        hold=_real_hold(max_wait),
     )
 
 
@@ -160,9 +201,16 @@ def _run(request: Request, env: Env) -> int:
         if why_not:
             raise ConfigError(f"the full suite needs the disc: {why_not}")
     started = env.clock()
-    context = StepContext(root, base, change.paths, conventions, env.run)
-    # Only a build takes a slot, so only a profile that builds needs an id for one.
-    agent = agent_for(request.agent, who, _person) if builds else ""
+    # Only a build and a full suite take a slot, so only a profile that has one needs an id for it.
+    holds = bool(builds) or any(name in FULL_SUITE_CHECKS for name in checks)
+    agent = agent_for(request.agent, who, _person) if holds else ""
+    run = env.stream(unit.Unit.of(root, task).dir / "check-logs") if env.stream is not None else env.run
+
+    def hold(what: str) -> AbstractContextManager[None]:
+        """A check slot for this run's checkout and id."""
+        return env.hold(root, agent, what)
+
+    context = StepContext(root, base, change.paths, conventions, run, hold)
     outcome = _execute(request, env, context, checks, builds, task, agent, change)
     if isinstance(outcome, int):
         return outcome
@@ -217,6 +265,7 @@ def _execute(
         name = queue.pop(0)
         if name in builds:
             queue = [other for other in queue if other not in builds]
+            env.say(f"  [{_at()}] start {' and '.join(builds)} (one build run)")
             results = _build_results(env, context, task, agent, change, builds)
             if isinstance(results, int):
                 return results
@@ -226,12 +275,17 @@ def _execute(
             if step is None:
                 raise ConfigError(f"check {name!r} is in .github/conventions.yml but this tool does not know it")
             started = env.clock()
-            step_results = [_timed(step(context), env, started)]
+            env.say(f"  [{_at()}] start {name}")
+            try:
+                step_results = [_timed(step(context), env, started)]
+            except SlotTimeout as timeout:
+                env.say(f"task check: {check_slots.queued_message(timeout, name)}; run task check again")
+                return EXIT_QUEUED
         for result in step_results:
             ran.append(result.name)
             if result.ok and result.counts:
                 counted[result.name] = dict(result.counts)
-            env.say(f"  {'ok  ' if result.ok else 'FAIL'} {result.name}: {result.detail}")
+            env.say(f"  [{_at()}] {'ok  ' if result.ok else 'FAIL'} {result.name}: {result.detail}")
             for line in result.output:
                 env.say(f"       {line}")
             if not result.ok:
@@ -239,6 +293,11 @@ def _execute(
         if failed and not request.keep_going:
             break
     return ran, failed, record, tests, counted
+
+
+def _at() -> str:
+    """The time of day for a progress line (`14:03:09`): the wall clock, not `env.clock`, which stamps are made from."""
+    return live_progress.clock_text()
 
 
 def _timed(result: StepResult, env: Env, started: datetime) -> StepResult:

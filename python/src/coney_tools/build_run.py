@@ -33,12 +33,13 @@ import shutil
 import subprocess
 import sys
 from collections import deque
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, TextIO
 
-from coney_tools import process_lifetime
+from coney_tools import check_slots, live_progress, process_lifetime
 from coney_tools.build_claims import (
     FAST_LANE,
     FAST_MINUTES,
@@ -643,6 +644,13 @@ class Context:
     #: A filtered test run whose selected tests' recorded times add up to more seconds than this takes a main slot
     #: (0: the count alone decides).
     fast_test_seconds: float = 0.0
+    #: The check slots (build_claims.CHECK_LANE): a test run with no `-R` or `-L` filter, the whole ctest suite, holds
+    #: one for the run, so a machine runs only `check_slots` full suites at once. None: no limit (a targeted run takes
+    #: none).
+    check: Slots | None = None
+    #: Seconds between the "still running" lines of a long step (live_progress.py): a build or a test run says so at
+    #: least this often, however quiet the compiler or the tests are.
+    progress_every: float = live_progress.HEARTBEAT_SECONDS
     #: The parallel tests of a full or filtered test run when no `-j` is given (`test_jobs` of coney.local.toml); 0:
     #: half the cores, or the build's share of them when that is more (parallel_tests_for).
     test_jobs: int = 0
@@ -763,6 +771,8 @@ class _Phase:
         self.slots = context.fast if lane == FAST_LANE else context.slots
         #: Told the step each command starts, for the folder lock's owner file.
         self.note = note
+        #: What a "still running" line adds about a step (ninja's `[n/m]`, the tests done so far); set by the caller.
+        self.progress: Callable[[str], str] = lambda step: ""
         self.waited = 0.0
         self.queued: SlotTimeout | None = None
 
@@ -818,7 +828,16 @@ class _Phase:
                     self.note(step)
                     context.log.write(f"==== {step}: {' '.join(command)}\n")
                     began = self.slots.clock()
-                    code = context.toolchain.run(command, on_line)
+
+                    def beat(step: str = step, began: float = began) -> None:
+                        """A progress line: the step is still running (a quiet compile or one slow test)."""
+                        context.emit(
+                            f"{step}: still running, {live_progress.minutes_text(self.slots.clock() - began)}"
+                            f"{self.progress(step)}"
+                        )
+
+                    with live_progress.Heartbeat(context.progress_every, beat):
+                        code = context.toolchain.run(command, on_line)
                     context.log.flush()
                     took = self.slots.clock() - began
                     results.append((step, code, took))
@@ -924,6 +943,31 @@ def _choose_test_lane(options: Options, context: Context) -> tuple[str, int | No
     return (FAST_LANE if small else MAIN_LANE), tests
 
 
+@contextmanager
+def _check_slot(options: Options, context: Context) -> Iterator[None]:
+    """A check slot for a full test run (one with no `-R` or `-L` filter), taken before the test phase takes its build
+    slot: the wait for the check queue holds no build slot, and the suites hold only `check_slots` of them at once. A
+    filtered run, which is a few tests, takes none, and neither does a context with no check slots. Raises SlotTimeout
+    after `max_wait` minutes, like the build slot's wait."""
+    if options.filters or context.check is None:
+        yield
+        return
+    with check_slots.hold(
+        context.check,
+        options.agent,
+        options.checkout.name,
+        "ctest",
+        context.emit,
+        max_wait=options.max_wait,
+        priority=options.priority,
+        pid=context.pid,
+        poll=context.poll,
+        report_every=context.report_every,
+        abandon=_budget_check(options, context, context.check.clock, None, 0.0, ""),
+    ):
+        yield
+
+
 def execute(options: Options, context: Context) -> Result:
     """Run one build folder's configure, build and tests under the folder's lock: the lock is taken first and held to
     the end (a second run in the same folder waits for it, up to `max_wait` minutes, then gives up with exit code 75),
@@ -998,6 +1042,7 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
     if measured is not None:
         context.emit(f"measured: {measured} step{'s' if measured != 1 else ''} out of date, so the {lane} lane")
     phase = _Phase(options, context, "build", lane, note)
+    phase.progress = lambda step: f", ninja step {scan.progress[0]} of {scan.progress[1]}" if scan.progress else ""
     ran = phase.run(build_steps)
     result.ran = tuple(step for step, _, _ in ran)
     if phase.queued is not None:
@@ -1039,7 +1084,14 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
     test_jobs = str(parallel_tests_for(context.slots.slots, context.cpus, options.jobs, context.test_jobs))
     command = _ctest(options, "-j", test_jobs, *options.filters)
     phase = _Phase(options, context, "test", lane, note, "filtered" if options.filters else "full")
-    ran = phase.run([("test", command, test_line)])
+    phase.progress = lambda step: (
+        f", {tests.passed + tests.failed_count + tests.skipped} tests done, {tests.failed_count} failed"
+    )
+    try:
+        with _check_slot(options, context):
+            ran = phase.run([("test", command, test_line)])
+    except SlotTimeout as timeout:
+        return _gave_up(result, "test", timeout)
     if phase.queued is not None:
         return _gave_up(result, "test", phase.queued)
     result.ran = (*result.ran, "test")

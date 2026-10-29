@@ -16,6 +16,7 @@ import re
 import shutil
 import tempfile
 from collections.abc import Callable, Sequence
+from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -27,6 +28,11 @@ from coney_tools.local_gate import StepResult, run_command
 
 #: Runs a command in a folder and returns its exit code and its output (stdout and stderr together).
 Runner = Callable[[Sequence[str], Path], tuple[int, str]]
+#: Holds a check slot while a full suite (`what`: `pytest`) runs; the real one waits in the queue of
+#: build_claims.CHECK_LANE (check_slots.py), the default holds nothing.
+Hold = Callable[[str], AbstractContextManager[None]]
+#: The checks that run a whole suite and so hold a check slot for their run.
+FULL_SUITE_CHECKS: tuple[str, ...] = ("pytest",)
 #: How many lines of a failing command are kept for the summary.
 KEEP_LINES = 15
 #: The pytest run: every test of the Python package and the hooks, as CI's python job runs them (no `-x`: the stamp
@@ -47,13 +53,14 @@ class CheckUnavailable(ConfigError):
 @dataclass(frozen=True)
 class StepContext:
     """What a check is given: the worktree, the base branch the change is measured from, the changed paths, the
-    conventions and how to run a command."""
+    conventions, how to run a command and how to hold a check slot for a full suite."""
 
     root: Path
     base: str
     paths: tuple[str, ...]
     conventions: Conventions
     run: Runner = run_command
+    hold: Hold = lambda what: nullcontext()
 
 
 Step = Callable[[StepContext], StepResult]
@@ -158,9 +165,11 @@ def mypy_step(context: StepContext) -> StepResult:
 
 
 def pytest_step(context: StepContext) -> StepResult:
-    """The whole Python test suite."""
+    """The whole Python test suite, under a check slot (it runs the whole suite, which a machine can run only a few of
+    at once; a build_claims.SlotTimeout from the wait is the caller's to turn into "queued")."""
     _need("uv", "docs/guides/building.md#python-tools")
-    return _commands("pytest", [PYTEST_COMMAND], context, "pytest python/tests", PYTEST_COUNTS)
+    with context.hold("pytest"):
+        return _commands("pytest", [PYTEST_COMMAND], context, "pytest python/tests", PYTEST_COUNTS)
 
 
 def actionlint_step(context: StepContext) -> StepResult:

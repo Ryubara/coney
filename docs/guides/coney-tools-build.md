@@ -112,7 +112,7 @@ uv run --project python coney-tools build [--agent ID] [--preset dev|playtest|re
     [--lane auto|main] [--max-wait MIN] [--budget MIN] [--detach] [-j N] [--dir CHECKOUT]
 uv run --project python coney-tools build status [--json] [--dir CHECKOUT]
 uv run --project python coney-tools build result [--json] [--dir CHECKOUT]
-uv run --project python coney-tools build unclaim --agent ID [--force] [--slot N] [--lane main|fast]
+uv run --project python coney-tools build unclaim --agent ID [--force] [--slot N] [--lane main|fast|check]
     [--dir CHECKOUT]
 ```
 
@@ -346,12 +346,47 @@ instead of `build/<preset>`, with the preset's settings (`cmake --preset P -B FO
 `--env NAME=VALUE` (repeatable) sets an environment variable for the run, such as `CC=clang-19`; CMake reads `CC` and
 `CXX` at a folder's first configure and keeps them in the cache.
 
-`build status` prints every lane (main and fast): each slot's holder, worktree, preset, step and minutes, the queue in
-order (place, agent, priority, minutes waiting) and the stale entries; `--json` prints the same as one object. `build
-unclaim --agent ID [--lane main|fast]` is manual cleanup: it frees the slots a crashed or stuck run of that agent left,
-stops what a crashed run left running, and drops its tickets. A slot whose process still runs, or another agent's, needs
-`--force`, which frees the slot but does not stop the process. How agents use it, and what exit `75` asks of them:
-[Builds and tests](agents.md#builds).
+`build status` prints every lane (main, fast and check): each slot's holder, worktree, preset, step and minutes, the
+queue in order (place, agent, priority, minutes waiting) and the stale entries; `--json` prints the same as one object.
+`build unclaim --agent ID [--lane main|fast|check]` is manual cleanup: it frees the slots a crashed or stuck run of that
+agent left, stops what a crashed run left running, and drops its tickets. A slot whose process still runs, or another
+agent's, needs `--force`, which frees the slot but does not stop the process. How agents use it, and what exit `75`
+asks of them: [Builds and tests](agents.md#builds).
+
+### Check slots and live progress {#check-slots}
+
+A build slot limits compiles, not suites. A full suite (the whole pytest run, the engine's whole ctest run) takes 30
+to 40 minutes alone and several times that with its neighbours: a night with 8 to 16 of them at once on an 8-core
+machine turned half-hour suites into two- and three-hour ones, and agents gave up on them and started them again. So
+every command that runs a **full suite** holds a **check slot** for the run, from the same machinery as the build slots
+(the claims directory, the queue, the stale-claim rules, a lane of its own: `check-N.claim/` and `queue-check/`), and
+at most `check_slots` of them run at once, across all worktrees:
+
+| Holder | What holds the slot |
+| --- | --- |
+| `task check` | the `pytest` check (the whole suite), for the run of pytest |
+| `ci run` | the `python` step's pytest, for the run of pytest |
+| `build --test` (so also `task check`'s build) | the test phase when it has **no `-R` or `-L` filter**: the whole ctest run. The wait for the check slot comes before the wait for a build slot, so a run in the check queue holds no build slot |
+
+A **targeted** run takes none: `build --test -R ...` (so `orig fails-first`, which names its tests), or `pytest` on a
+few test files typed by hand. Run those freely; run the full suite once, in `task check`. A run that has to wait says
+so, and again every minute: `waiting for a check slot (pytest): place 2 of 3, about 40 min; held by alice (dev, 12
+min), bob (ctest, 3 min); 2 full suites may run at once (check_slots in coney.local.toml)`. It gives up after
+`--max-wait` minutes with exit 75 (nothing is written: run it again), like a build waiting for a slot. A holder that
+crashed leaves a stale claim: the next suite takes it over, says so and stops what the dead run left running. `build
+status` lists the check lane with the others; `build unclaim --lane check --agent ID` frees an agent's check slots by
+hand.
+
+`check_slots` is in [`coney.local.toml`](workspace.md#local-config); `0` (the default) means one slot for every four
+cores and at least one: 2 on an 8-core machine, 4 on 16. Set it lower when the machine does more than tests.
+
+A slow run must be told from a hung one, so `task check`, `ci run` and `orig fails-first` print a line when each stage
+starts and ends, with the time of day, and flush every line at once (a run redirected to a file shows it grow). A check
+that runs a long program (pytest, mypy, pre-commit) streams its output into `check-logs/<program>.log` in the task's
+scratch folder, line by line (a new run starts the file again), and prints `pytest: still running, 12 min, 45% done` at
+least every minute. `orig fails-first` shows the build's own lines as they come. The engine's build and test run print
+the same kind of line from inside `build`: `build: still running, 9 min, ninja step 410 of 1204` and `test: still
+running, 22 min, 1310 tests done, 2 failed`.
 
 <!-- command-reference:begin build -->
 ## Parameters of `build` {#build-parameters}
@@ -427,7 +462,7 @@ coney-tools build unclaim --agent RELEASE_AGENT [--force] [--slot SLOT] [--lane 
 | `--agent RELEASE_AGENT` | text | required | the agent whose entries to remove |
 | `--force` | flag | off | also another agent's, or a build that still runs |
 | `--slot SLOT` | integer | none | one slot by number (with --lane for the fast lane) |
-| `--lane LANE` | choice | none | one lane only (default: all). One of `main`, `fast`. |
+| `--lane LANE` | choice | none | one lane only (default: all). One of `main`, `fast`, `check`. |
 | `--dir DIR` | path | none | the checkout the command is about (default: the current one) |
 <!-- command-reference:end -->
 

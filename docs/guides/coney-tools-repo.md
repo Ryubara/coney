@@ -412,7 +412,6 @@ codebase nightly ([building](clang-tidy.md)).
 * A fault of the machine is not a verdict about the change: a program that is missing, no disc for a `full` run
   (including a `CONEY_DISC` that names nothing), a worktree that changed during the run, a build that got no slot.
   These write no stamp.
-* Only a profile with a build check needs `--agent` (or a hook identity or default id): the others take no build slot.
 * A `fail` stamp names the checks that failed in `detail.failed`; fix, commit and run again.
 * The stamp covers `diff_sha256`, `checks_sha256` (the checks that ran) and, for `full`, `build_record_sha256` (also
   when the build failed, if it left a record). Its `detail` holds the profile, the checks, the test counts, the preset
@@ -421,10 +420,17 @@ codebase nightly ([building](clang-tidy.md)).
   stamp keeps these as `detail.pytest` (passed, skipped), and the facts of `pr text` report them beside the checks
   that ran; `detail.tests` holds only the build's counts, so a profile without a build has none.
 * A `full` run can take an hour. Start it with `run_in_background`, write STATUS.md and stop; it has no budget cap and
-  waits for a slot up to `--max-wait`.
+  waits for a slot up to `--max-wait`. Start it with `PYTHONUNBUFFERED=1` and redirect its output to a file: every line
+  is flushed as it is printed, so `tail` of that file shows it grow.
+* **It is live.** Each check prints `[14:03:09] start <check>` when it begins and `[14:41:20] ok   <check>: ...` when it
+  ends; the build is one stage (`start msvc-ci-build and ctest-full-disc`) that prints its own waiting and `still
+  running` lines. A long check streams its output to `check-logs/<program>.log` in the task's scratch folder and says it
+  is still running every minute. `pytest`, and the engine's full ctest run inside the build, wait for a **check slot**
+  first ([Check slots](coney-tools-build.md#check-slots)), so a profile with `pytest` needs `--agent` too.
 
 Exit 0 every check passed and the stamp is written; 1 a check failed (a `fail` stamp is written); 2 it cannot run or
-cannot stamp (nothing is written); 75 the build gave up waiting for a slot (nothing is written; run it again).
+cannot stamp (nothing is written); 75 the build or the pytest run gave up waiting for a slot (nothing is written; run
+it again).
 
 <!-- command-reference:begin task -->
 ## Parameters of `task` {#task-parameters}

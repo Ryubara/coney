@@ -485,6 +485,15 @@ check with the `dev` preset and only the tests the change touches (`ctest --pres
 included when they are the ones affected). Builds share a few slots on one machine, and a full `ci` build with the whole
 suite holds one for 15 to 30 minutes, so running it for every step makes everyone else wait.
 
+**A full suite takes a check slot.** The whole pytest run and the whole ctest run each take 30 to 40 minutes on a
+machine to themselves, so `task check`, `ci run` (its pytest) and `build --test` with no `-R` or `-L` hold a **check
+slot** while they run: `check_slots` in `coney.local.toml` of them at once across all worktrees (default one per four
+cores), the others wait in a queue that says its place every minute
+([Check slots](coney-tools-build.md#check-slots)). A few test files typed by hand (`pytest python/tests/test_x.py`,
+`build --test -R <pattern>`) need no slot: run those while working, and the full suite once, in `task check`. The
+gate shows its progress as it runs: each check logs its start and end with the time, and a long one says it is still
+running every minute, so a quiet log is a hung run.
+
 ### Continuous integration {#ci}
 
 CI builds and tests on Windows, Linux (GCC and Clang) and macOS, with sanitizers and clang-tidy on the changed lines,

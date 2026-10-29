@@ -17,12 +17,15 @@ import sys
 import tempfile
 import time
 from collections.abc import Callable, Mapping
+from contextlib import AbstractContextManager
 from pathlib import Path
 
 from coney_tools import (
     build_cli,
+    check_slots,
     docs_check,
     docs_cli,
+    live_progress,
     local_gate,
     orig_check,
     orig_copy,
@@ -31,6 +34,7 @@ from coney_tools import (
 )
 from coney_tools.audit import Report, run_checks, specs_in
 from coney_tools.audit_files import FilesContext
+from coney_tools.build_claims import SlotTimeout
 from coney_tools.build_run import EXIT_QUEUED
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import Paths, load_conventions
@@ -238,11 +242,37 @@ def _mkdocs_build(root: Path) -> StepResult:
     return StepResult("docs", False, "mkdocs build --strict failed", output=tuple(lines or output.splitlines()))
 
 
-def _step_python(root: Path, changed: list[str]) -> StepResult:
+def _say(line: str) -> None:
+    """Print a line and flush it at once, so a gate redirected to a file shows each line as it happens."""
+    print(line, flush=True)
+
+
+def _real_hold(root: Path) -> AbstractContextManager[None]:
+    """A check slot for the whole pytest run of this worktree (check_slots.py): it waits in the queue, saying its
+    place, and raises SlotTimeout after the default wait."""
+    return check_slots.hold(
+        check_slots.default_check_slots(root), default_agent(root, os.environ), root.name, "pytest", _say
+    )
+
+
+def _run_streamed(command: list[str], root: Path) -> tuple[int, str]:
+    """Run a command of the python step live: its output into the worktree's `check-logs` folder in scratch, a
+    progress line every minute (live_progress.run_streamed)."""
+    logs = _scratch_folder(root) / "check-logs"
+    return live_progress.streaming_runner(_say, logs)(command, root)
+
+
+def _step_python(
+    root: Path,
+    changed: list[str],
+    hold: Callable[[Path], AbstractContextManager[None]] = _real_hold,
+    run: Callable[[list[str], Path], tuple[int, str]] = _run_streamed,
+) -> StepResult:
     """ruff, pytest and mypy, when anything under `python/` or `.claude/` changed (the tests also run the hooks).
 
-    ruff runs here over every folder in RUFF_PATHS, as CI does; pre-commit also runs it on the changed files.
-    """
+    ruff runs here over every folder in RUFF_PATHS, as CI does; pre-commit also runs it on the changed files. pytest
+    runs the whole suite, so it holds a check slot (`hold`) while it does; a SlotTimeout from the wait is
+    `run_changed`'s to turn into exit 75. `run` runs each command (the default streams it and logs it)."""
     if not _python_changed(changed):
         return _skipped("python", "no Python changed")
     if not shutil.which("uv"):
@@ -256,7 +286,11 @@ def _step_python(root: Path, changed: list[str]) -> StepResult:
         ("pytest", ["uv", "run", "--project", "python", "pytest", "python/tests", "-q", "-x", "--no-header"]),
         ("mypy", list(MYPY_COMMAND)),
     ):
-        code, output = local_gate.run_command(command, root)
+        if label == "pytest":
+            with hold(root):
+                code, output = run(command, root)
+        else:
+            code, output = run(command, root)
         if code != 0:
             problems.append(f"{label} failed:")
             problems.extend(f"  {line}" for line in output.splitlines()[-15:] if line.strip())
@@ -278,7 +312,7 @@ def run_changed(base: str, only: list[str] | None, skip: list[str] | None) -> in
     root = find_repo_root(Path.cwd())
     wanted = [step for step in STEPS if (not only or step in only) and step not in (skip or [])]
     changed = local_gate.changed_files(root, base)
-    print(f"changed since {base}: {len(changed)} files")
+    _say(f"changed since {base}: {len(changed)} files")
     steps: dict[str, Callable[[], StepResult]] = {
         "repo": lambda: _step_repo(root),
         "orig": lambda: _step_orig(root, base, changed),
@@ -288,17 +322,22 @@ def run_changed(base: str, only: list[str] | None, skip: list[str] | None) -> in
     }
     failed = False
     for name in wanted:
-        result = _timed(name, steps[name])
+        _say(f"[{live_progress.clock_text()}] start {name}")
+        try:
+            result = _timed(name, steps[name])
+        except SlotTimeout as timeout:
+            _say(f"coney-tools ci run: {check_slots.queued_message(timeout, name)}; run it again")
+            return EXIT_QUEUED
         mark = "skip" if result.skipped else "ok  " if result.ok else "FAIL"
         timing = "" if result.skipped else f" ({result.seconds:.0f}s)"
-        print(f"{mark} {name}: {result.detail}{timing}", flush=True)
+        _say(f"[{live_progress.clock_text()}] {mark} {name}: {result.detail}{timing}")
         for line in result.output:
-            print(f"     {line}")
+            _say(f"     {line}")
         failed = failed or not result.ok
     if failed:
-        print("coney-tools ci run: FAILED (CI would fail too)")
+        _say("coney-tools ci run: FAILED (CI would fail too)")
         return 1
-    print("coney-tools ci run: ok. CI only: GCC-only warnings, macOS, sanitizers, clang-tidy on changed lines.")
+    _say("coney-tools ci run: ok. CI only: GCC-only warnings, macOS, sanitizers, clang-tidy on changed lines.")
     return 0
 
 
