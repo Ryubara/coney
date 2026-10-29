@@ -1,11 +1,11 @@
 # Coney Studio: the Level view, gizmos and composing
 
 How a user moves round a level and builds it in Coney Studio's Level view: the fly camera, the keymap, Unity's transform
-gizmo, selection, undo, and composing a level from primitives, textures, colliders, spawn points and path points.
-**Status: design; nothing here is built.** It is the second half of the [editor experience
+gizmo, snapping and the grid, selection, undo, and composing a level from primitives, textures, colliders, spawn points
+and path points. **Status: design; nothing here is built.** It is the second half of the [editor experience
 design](editor-experience.md), which holds the panels, the project, Play mode, importing, the two rules every choice
 follows and the build issues both pages propose; the editors' documentation read for both is listed in its
-[Sources](editor-experience.md#sources).
+[Sources](editor-experience.md#sources), except the snapping survey's, which [Snapping](#snapping) lists itself.
 
 ## The Level view {#level-view}
 
@@ -52,9 +52,16 @@ to document and test.
 | Y | Transform tool: move, rotate and scale in one gizmo | Transform | (Q: move and rotate) | none | none |
 | Z | Gizmo at the pivot or at the centre of the selection | Pivot / Center | none | none | none |
 | X | Gizmo in world or local axes | Global / Local | T: local space | Ctrl+` | Ctrl+L |
-| Ctrl held while dragging | snap to the grid's step | snap increment | Ctrl: snap | grid snap on by default | the grid step |
-| V held | snap a vertex onto another model's vertex | vertex snapping | none | V | none |
-| End | drop the selection to the ground below | (Ctrl+Shift drag: surface snapping) | none | End: snap to floor | none |
+| `\` | Snap on or off ([Snapping](#snapping)) | Toggle snapping | Y: Use Snap | the toolbar's grid snap | the Model tab's step boxes |
+| Ctrl held while dragging | snapping the other way: steps while Snap is off, free while it is on | increment snapping (from 6.4 also free while on) | Ctrl: the same | not surveyed | not surveyed |
+| Shift held while snapping | a finer step: a tenth of a move step, a third of a turn, half a scale | none | Shift: the same | not surveyed | not surveyed |
+| Ctrl+[ / Ctrl+] | grid smaller / larger, along 0.1, 0.2, 0.5, 1, 2, 5 ... 100 m | the same keys, halving and doubling | none | not surveyed | not surveyed |
+| Ctrl+`\` | push the selection onto the grid, in x and y | Push to Grid, on all axes | none | not surveyed | not surveyed |
+| V held | snap a vertex onto another thing's vertex (Shift: the pivot; Ctrl+Shift: onto a surface) | vertex snapping | B held (4.7) | V | none |
+| Shift+V | keep vertex snapping on | the same | none | not surveyed | not surveyed |
+| Ctrl+Shift, dragging the move centre | the selection follows the surface under the cursor | surface snapping | Shift+G: reposition using collisions | not surveyed | not surveyed |
+| Ctrl+Shift, dragging the rotate ring | turn to face the point under the cursor | look-at rotation | none | not surveyed | not surveyed |
+| End | drop the selection to the ground below | none | Page Down: Snap Object to Floor | End: snap to floor | none |
 | Ctrl+Alt+F | move the selection to where the camera looks | Move to View | none | none | none |
 | Ctrl+Shift+F | move the selection to the camera itself | Align with View | none | none | none |
 | Ctrl+Z, Ctrl+Y (Ctrl+Shift+Z) | undo, redo | same | same | same | same |
@@ -69,7 +76,8 @@ to document and test.
 | Ctrl+Shift+R | Restart Play from the level's start | none | none | none | none |
 
 T is left free: Unity's Rect tool edits 2D and interface layouts, which Coney Studio does not make. On macOS, Ctrl reads
-Cmd, as in all four.
+Cmd, as in all four. "Not surveyed" marks a snapping key of Unreal or Roblox Studio that the [Snapping](#snapping)
+survey, Unity's and Godot's, did not read.
 
 ### Gizmos {#gizmos}
 
@@ -112,20 +120,8 @@ Q (the View tool) shows no gizmo: a drag pans.
 | Handle position | Z | **Pivot**: at the selection's own origin (an `at=`, a human's feet); **Center**: at the middle of the selection's bounds, which a multiple selection turns about | Unity's Pivot / Center |
 | Handle rotation | X | **Global**: the world's axes; **Local**: the selection's own axes, so W moves a turned ramp along its slope | Unity's Global / Local |
 
-Both toggles are on the toolbar beside the tools, as in Unity, and Studio remembers them per user.
-
-#### Snapping {#gizmo-snapping}
-
-| Snap | How | Step |
-| --- | --- | --- |
-| **Increment** | **Ctrl** held while dragging (Unity) | Move 0.1 m along each axis, Rotate 15°, Scale 0.1 of the size; each step set on the toolbar's snap menu, Move per axis or linked, as in Unity's snap increment menu |
-| **Grid** | The toolbar's grid snap toggle | Moves land on the Level view's grid (1 m, with 0.1 m lines up close) along the dragged axis, as Unity's grid snapping does |
-| **Vertex** | **V** held | Drag a vertex of the selection onto a vertex of another model (Unity's vertex snapping); Shift+V keeps it on |
-| **Surface** | **Ctrl+Shift** while dragging the move centre | The selection lands on the collision surface under the cursor (Unity's surface snapping); End drops it straight down ([the keymap](#keymap)) |
-
-The steps are Coney's: a tenth of a metre lands on most sizes of the sandbox's courses (a 10 cm ledge, a 0.6 m fence;
-[The shipped layouts](../sandbox.md#the-shipped-layouts)), the Inspector takes any exact value (a 1.65 m wall), and 15°
-is the rotation step all of Unity, Godot and Roblox Studio users meet.
+Both toggles are on the toolbar beside the tools, as in Unity, and Studio remembers them per user. Snapping, the
+toolbar's next group, has its own section: [Snapping](#snapping).
 
 #### How Godot and Roblox Studio differ {#gizmo-differences}
 
@@ -133,7 +129,7 @@ is the rotation step all of Unity, Godot and Roblox Studio users meet.
 | --- | --- | --- | --- |
 | Tools | W, E, R and the combined Y | W, E, R; Q is select, which also shows a move and rotate gizmo | Separate Move, Scale and Rotate draggers, chosen with Ctrl+2, Ctrl+3 and Ctrl+4 |
 | Handles | arrows and planes; rings, outer ring and free sphere; cubes and a centre cube | the same arrows, planes, rings and scale handles in one style | Move: arrows; Rotate: rings with a ball to drag; Scale: balls on the faces, and Shift or Ctrl to scale evenly or both sides |
-| Snapping | Ctrl held for increments; a grid toggle | Ctrl held for increments, or the snap toggle; steps in *Configure Snap* | Always snapped to the Model tab's Move and Rotate steps, until unticked |
+| Snapping | a grid snap toggle; Ctrl held for increments ([Snapping](#snapping)) | the *Use Snap* toggle (Y), which Ctrl held turns the other way; steps in *Configure Snap* | Always snapped to the Model tab's Move and Rotate steps, until unticked |
 | Local and global | X | T | Ctrl+L |
 | Pivot and centre | Z | none | the part's pivot, edited with the Pivot tool |
 
@@ -160,6 +156,192 @@ level file keeps all three ([The level file](project-formats.md#level-file)), so
 of the Unity gizmo works on every placed thing. A human keeps one ring for good: Coney's humans have a heading, not a
 free orientation. Coordinates and units are the game's: metres, degrees, z up ([The layout
 format](../sandbox.md#the-layout-format)).
+
+### Snapping {#snapping}
+
+How Unity 6 and Godot 4 snap in their scene views, and what Studio does. Each value says where it comes from:
+
+- **Unity**: its manual for Unity 6.0, 6.2, 6.4 and the current 6.6, and its scripting reference; the defaults were
+  **measured** in Unity 6000.2.10f1 in batch mode, reading the snap and grid settings of a new project through the
+  editor's own types (`EditorSnapSettings`, `GridSettings`, `SceneViewGrid`) without drawing a Scene view. How Unity
+  *draws* its grid as the camera zooms is in neither the manual nor that probe: an editor run that draws the Scene view
+  needs a Unity licence, which is the maintainer's question, so those cells say "not documented".
+- **Godot**: its manual for 4.7 ([Introduction to 3D][snap-godot-intro]) and its source at `4.7.2-stable`
+  ([node_3d_editor_plugin.cpp][snap-godot-plugin], [its header][snap-godot-plugin-h] and
+  [editor_settings.cpp][snap-godot-settings]), read, not copied; the grid was **measured** in the official Godot 4.7.2
+  editor, with the 3D view's camera placed at known heights and its picture saved and measured line by line.
+
+Unity changed its snapping in 6.4: before 6.4 one *grid snapping* toggle snaps Move, Rotate and Scale, and the grid size
+is also the Move increment ([Grid and Snap overlay, 6.0][snap-unity-overlay-60], [automatic snapping,
+6.2][snap-unity-gridsnap-62]); from 6.4 the overlay has a toggle each for absolute grid snapping, incremental grid
+snapping, angle snapping and scale snapping, and the increment is a setting of its own beside the grid size
+([overlay reference, 6.6][snap-unity-overlay-ref], [incremental snapping, 6.4][snap-unity-increments-64], [Unity's
+6.4 announcement][snap-unity-64]). The tables give both where they differ.
+
+Coney's axes are the game's: x and y across the ground, **z up**, in metres ([The layout
+format](../sandbox.md#the-layout-format)). Unity and Godot are y up, so their ground grid, the XZ plane, is Coney's
+**XY plane**, and their "Y" axis is Coney's z.
+
+#### The grid {#snap-grid}
+
+| | Unity 6 | Godot 4.7 |
+| --- | --- | --- |
+| Default cell | 1 unit on each axis, measured (`GridSettings.size`); the manual: "Grid size is 1 on all axes" can be set per axis ([Customize the grid][snap-unity-customize]) | 1 m, the manual ("set to 1x1 meter by default", [Introduction to 3D][snap-godot-intro]); the drawn cell is never smaller (source: `grid_division_level_min` 0) |
+| Changing it | The overlay's *Grid size* field; Ctrl+] and Ctrl+[ make it larger and smaller ([Grid and snap shortcuts][snap-unity-shortcuts]), measured as doubling and halving (0.125, 0.25, 0.5, 1, 2, 4, 8) | Not set by the user: the cell follows the camera, below |
+| As the camera zooms | Not documented | **Levels of 8.** The cell is 8 to the power of the level, level = log₈(camera height above the plane) − 0.2, clamped to 0 to 2: 1 m cells while the camera is below 12.1 m, 8 m cells to 97 m, 64 m above. Every 8th line is a major line. Within a level the minor lines fade out as the camera rises (alpha × (1 − the level's fraction)) and the major lines dim towards the minor colour, so at the change the major lines become the next level's minor lines without a jump. Lines also fade with distance from the camera along the plane and where the view grazes the plane (source: `_init_grid` and the grid shader; settings `primary_grid_steps` 8, `grid_division_level_bias` −0.2, `grid_size` 200 lines each side) |
+| Pixels per cell | Not documented; the default Scene camera has a 60° vertical field of view and a view size of 10, measured (`kDefaultPerspectiveFov`, `kDefaultViewSize`) | The grid is fixed in the world, so a cell's size on screen follows the camera: looking straight down from height *h*, a cell of *c* metres is *H · c / (2 · h · tan(fov / 2))* pixels for a view *H* pixels high (the editor's fov is 70°, vertical). Measured, below |
+| Planes | One plane, Y (the XZ plane) by default, measured (`defaultRenderAxis`); the *Grid Plane* setting picks X, Y, Z or all; an orthographic view along an axis shows the plane facing it ([Customize the grid][snap-unity-customize]); from 6.4 the grid can be moved and turned, and *Move to handle* puts it at the selection ([6.6 reference][snap-unity-overlay-ref]) | XZ only in perspective; all three planes in an orthographic view (source: `_init_grid`; settings `grid_xz_plane` on, `grid_xy_plane` and `grid_yz_plane` off). Always through the origin |
+| Look | Opacity 0.5 by default, measured; colour in *Preferences > Colors* | Major lines grey 0.56, minor 0.38, both at alpha 0.5 (`primary_grid_color`, `secondary_grid_color`) |
+
+Godot's grid, measured in the 4.7.2 editor, the camera looking straight down at a 1876-pixel-high view:
+
+| Camera height | Level | Cell drawn | Predicted (formula above) | Measured spacing | Minor lines' contrast |
+| --- | --- | --- | --- | --- | --- |
+| 2 m | 0.13 | 1 m | 669.8 px | 669.5 px | 29 |
+| 5 m | 0.57 | 1 m | 267.9 px | 268 px | 16 |
+| 10 m | 0.91 | 1 m | 134.0 px | 134 px | 4 (nearly faded; the 8 m lines 36) |
+| 20 m | 1.24 | 8 m | 535.8 px | 536 px | 26 |
+| 50 m | 1.68 | 8 m | 214.3 px | 214 px | 13 |
+| 150 m | 2.21 | 64 m | 571.6 px | 571.5 px | 32 |
+
+*Contrast is the line's brightness above the floor colour, in 8-bit steps: it falls as the level's fraction grows and
+jumps back at each new level, as the source says.*
+
+**Studio's grid:**
+
+- **Where:** on the ground plane, Coney's XY plane, at a height that starts at z = 0 (the sandbox's ground top,
+  [The layout format](../sandbox.md#the-layout-format)). *Grid to selection* puts the plane at the selection's pivot
+  height and *Grid to origin* puts it back (Unity's *Move to handle* and *Origin*), so the grid can lie on a floor that
+  is not at z = 0. An orthographic view along an axis (top, front, side) shows the plane facing it, as both editors do.
+- **Cell:** the grid size, **1 m** by default (both editors agree).
+- **Zooming:** Godot's scheme, the only one documented, in **tens** instead of eights: cells of the grid size times 10
+  to the power of the level, level = log₁₀(camera height above the grid ÷ grid size) − 0.2, clamped to −1 to 2, so 0.1
+  m cells below 1.6 m, 1 m to 15.8 m, 10 m to 158 m and 100 m above; a major line every 10 cells; the minor lines fading
+  with the level's fraction, and every line with distance and grazing angle, as Godot does. Tens because Coney measures
+  in decimal metres and steps in tenths of one ([Moving](#snap-move)); Godot's own source says it took 8 for the
+  powers of two of level design.
+- **On screen:** fixed in the world, so its spacing follows the camera by the formula above. With a 60° view 1080
+  pixels high, a camera 10 m up sees 1 m cells 94 pixels apart; within any level the drawn cell runs from about 590
+  pixels down to 59, where its lines have faded out and the next level's cells take over.
+- **Look:** Godot's two greys and Unity's opacity 0.5, each set per user in the preferences. The grid hides with the
+  view menu's *Grid* toggle.
+
+#### Moving with snap on {#snap-move}
+
+| | Unity 6 | Godot 4.7 |
+| --- | --- | --- |
+| Turning it on | Before 6.4, the overlay's *Toggle grid snapping* (key `\`), which snaps Move, Rotate and Scale ([6.2][snap-unity-gridsnap-62], [shortcuts][snap-unity-shortcuts]); from 6.4 a toggle each for absolute and incremental Move snapping, angle and scale ([6.6 reference][snap-unity-overlay-ref]). Off by default, measured (`snapEnabled` false) | The toolbar's *Use Snap* toggle, key Y, which snaps move, rotate and scale (source); off by default |
+| One step | Before 6.4 the grid size, 1 unit, measured (`EditorSnapSettings.move` (1, 1, 1)); from 6.4 the *Increment Snap*, its own setting per axis | *Translate Snap*, 1 m (source: the `snap_translate_value` default), set in *Transform > Configure Snap*, apart from the grid |
+| Absolute or relative | Both. **Absolute** grid snapping rounds the position to the grid along the handle's axis, only while the handle's rotation is Global (or, from 6.4, Grid); with a Local handle it falls back to incremental. **Incremental** moves in steps from where the drag began ([6.6 reference][snap-unity-overlay-ref], [6.4][snap-unity-gridsnap-64]) | **Relative**: the drag's distance is rounded to the step and added to where the node started, so a node at 0.3 m moves to 1.3, 2.3 (source: `_compute_transform`). A node dropped from the FileSystem dock or moved with Shift+G is the exception: its position itself is rounded (`snap_point`) |
+| Ctrl held | With snapping off, Ctrl held snaps in increments ([increments, 6.0][snap-unity-increments-60]); from 6.4, Ctrl held while snapping is on moves freely ([6.4][snap-unity-gridsnap-64]) | Turns snapping the other way while held: on when the toggle is off, off when it is on (source: `is_snap_enabled` is the toggle exclusive-or Ctrl); the manual: "press Ctrl while moving, scaling, or rotating" |
+| Shift held while snapping | Nothing documented | A finer step: a tenth of Translate Snap, a third of Rotate Snap, half of Scale Snap (source: `get_translate_snap` and the two beside it) |
+| Push onto the grid | Ctrl+`\` pushes the selection onto the grid on all axes; the menu's *Align Selected* does one axis ([Align to the grid][snap-unity-align]) | None |
+| Keyboard nudges | None: the arrow keys move the camera ([Scene view navigation][snap-unity-nav]) | None: no arrow key is bound in the 3D editor (source) |
+| Feedback | Not documented | The distance moved, rounded, as a message in the view ("Translating: …", source) |
+
+**Studio's moving:**
+
+- **One Snap toggle** on the toolbar, key `\` (Unity's), off by default. On, every drag snaps: Move absolutely to the
+  grid, Rotate and Scale in their steps. One toggle as in Unity before 6.4 and in Godot; Unity 6.4's four toggles are
+  four buttons for one habit.
+- **Move snaps absolutely** while the gizmo is Global: the dragged axes of the pivot land on multiples of the grid size
+  from the grid's origin, so a shape's `at=` (the middle of its footprint at its bottom, [Shapes](../sandbox.md#shapes))
+  or a human's feet sits on a line. With the gizmo Local it moves in steps from where it started, Unity's fallback,
+  since a turned axis crosses the grid lines at no fixed spacing.
+- **Ctrl turns snapping the other way while held** (Godot's rule, which is also Unity 6.4's both ways): with Snap off,
+  Ctrl steps the move **relatively**, from where the drag began, by the **move step**, 1 m by default (both editors);
+  with Snap on, Ctrl moves freely.
+- **Shift held while snapping takes a finer step** (Godot's): a tenth of the move step (0.1 m), a third of the rotate
+  step (5°) and half of the scale step (5%). A tenth of a metre fits most sizes of the sandbox's courses (a 10 cm ledge,
+  a 0.6 m fence, [The shipped layouts](../sandbox.md#the-shipped-layouts)) without a second setting. Shift pressed on
+  the move centre still chooses the camera-facing plane ([The four tools](#gizmo-tools)), and the two can meet.
+- **The move step is its own setting** beside the grid size (Unity 6.4 and Godot both keep them apart), each set per
+  axis or linked, as in Unity.
+- **Ctrl+[ and Ctrl+]** make the grid smaller and larger (Unity's keys) along a metric ladder, 0.1, 0.2, 0.5, 1, 2, 5,
+  10, 20, 50 and 100 m, where Unity halves and doubles: halving from 1 m gives 0.125 m, which no Coney size uses.
+- **Ctrl+`\`** pushes the selection onto the grid (Unity's *Push to grid*) in x and y only, keeping each height, so a
+  thing standing on a floor stays on it; Unity rounds all three axes.
+- **No keyboard nudges**, as in both: an exact value is typed in the Inspector.
+- **Feedback:** the distance moved shows beside the cursor ([How the handles look and pick](#gizmo-handles)), rounded
+  to the step.
+- **A new thing** from the Create menu or a drop lands on the ground where the camera looks ([Create](#create-menu));
+  with Snap on its x and y are rounded to the grid and it is dropped onto the ground there, Godot's drop rule kept on
+  the ground.
+
+#### Rotate and scale steps {#snap-rotate-scale}
+
+| | Unity 6 | Godot 4.7 |
+| --- | --- | --- |
+| Rotate step | 15°, measured (`EditorSnapSettings.rotate`, `SnapSettings.defaultRotation`); set in the Snapping menu's *Rotate* field, from 6.4 *Incremental angle snap size* | 15° (source: `snap_rotate_value` default), 0.1° steps up to 360° in *Configure Snap*; a third (5°) with Shift |
+| Scale step | 1, measured (`EditorSnapSettings.scale`, `SnapSettings.defaultScale`); the manual calls it the scale increment, from 6.4 the *Scale snap multiplier*, and does not say how a step applies | 10 %, a percentage of the starting scale: the factor moves 1.0, 1.1, 1.2 (source: `snap_scale_value` 10, divided by 100); 1 % steps up to 100 % in *Configure Snap*; half (5 %) with Shift |
+| Absolute or relative | The manual calls both increments; it does not say | Relative: the angle turned and the scale factor are rounded, from the start (source) |
+
+**Studio:** **15°** (both editors) and **10 % of the starting size** (Godot's, the only documented one), both relative
+to where the drag began, as in Godot; set in the toolbar's snap menu. A Coney thing turns about z only for a heading
+or yaw ([What a gizmo can change](#gizmo-limits)), so the vertical ring steps 15°; a size changes in tenths of what it
+was (a 3 m box by 0.3 m), and the Inspector takes any exact size.
+
+#### Snapping to geometry {#snap-geometry}
+
+| | Unity 6 | Godot 4.7 |
+| --- | --- | --- |
+| Vertex | **V** held with the Move tool: hover a vertex of the selection, then drag it onto a vertex of another mesh; with Shift+Ctrl also held, onto another mesh's surface; with Shift held, the pivot onto a vertex; **Shift+V** toggles it ([Positioning GameObjects][snap-unity-positioning]). The feedback drawn is not documented | **B** held, new in 4.7 (V is Godot's select tool): the vertex of the selection nearest the cursor, within 30 pixels, gets a **yellow dot**; dragging moves the selection in the plane facing the camera, and within 30 pixels of another node's vertex it jumps there and that vertex gets a **green dot**; dots behind geometry are drawn at 30 % alpha; Escape or a right click cancels. The Transform menu chooses *Snap Vertex to Vertex* or *Snap Origin to Vertex*, and mesh or collision vertices, which Shift held swaps (source; the 4.6 editor has no vertex snapping) |
+| Surface | **Shift+Ctrl** while dragging the Move handle: the object goes to where the cursor meets a Collider ([Positioning GameObjects][snap-unity-positioning]) | **Shift+G**, *Reposition Using Collisions*: one selected node follows the cursor over collision shapes, its bounds set against the surface along the surface's normal, the position rounded if snapping is on; the same placement as a scene dropped from the FileSystem dock (source: `_get_instance_position`) |
+| Floor | None | **Page Down**, *Snap Object to Floor* ([Introduction to 3D][snap-godot-intro] names it, the key from the source): a ray straight down from 1 m above the bottom centre of each selected node's collision bounds (else its visual bounds, else its origin), up to 500 m, skipping its own bodies; the node's bottom goes to the hit; one undo step, made only if something was hit (source: `_snap_selected_nodes_to_floor`) |
+| Look at | **Shift+Ctrl** while dragging the Rotate handle turns the object to face the point under the cursor on a collider ([Positioning GameObjects][snap-unity-positioning]) | None |
+| Edges, bounds | None | None (*Snap Origin to Vertex* is the pivot form) |
+
+**Studio's geometry snapping:**
+
+| Snap | Key | Does | From |
+| --- | --- | --- | --- |
+| Vertex | **V** held, **Shift+V** to keep it on | The selection's vertex nearest the cursor within 30 pixels (scaled with the [UI scale](../debug-menu.md#ui-scale)) is marked; dragging moves the selection in the plane facing the camera, and within 30 pixels of another thing's vertex the marked vertex lands on it. The source is drawn in the gizmo's **yellow**, the target **green**, both dimmed behind geometry; Escape or a right click puts the selection back | Unity's key and modifiers; Godot's threshold, dots and cancel, since Unity documents none of them |
+| Pivot to vertex | V and **Shift** held | The pivot, not a vertex, lands on the target vertex | Unity; Godot's *Snap Origin to Vertex* |
+| Vertex to surface | V and **Ctrl+Shift** held | The marked vertex lands on the collision surface under the cursor | Unity |
+| Surface | **Ctrl+Shift** while dragging the move centre | The pivot follows the collision surface under the cursor. A Coney pivot is at the bottom (a shape's `at=`, a human's feet), so this is also Godot's rule of the bounds resting on the surface. With Snap on, x and y are rounded to the grid and the height is found on the surface there | Unity's keys |
+| Drop to ground | **End** | Godot's *Snap Object to Floor*: a ray down from 1 m above the bottom of each selected thing, up to 500 m, skipping its own collision; it moves only if it hits; one undo step for the selection | Godot's rule; the key is Unreal's End ([the keymap](#keymap)), since Page Down has no Unity meaning to keep |
+| Face a point | **Ctrl+Shift** while dragging the rotate ring | The heading or yaw turns to face the point under the cursor on a surface: a spawn point or fighter faces a door | Unity's look-at rotation, about z only |
+
+The targets are what the Level view draws: the shapes' meshes and the level's world; in the *Collision* view mode, the
+collision triangles' vertices and faces instead (Godot's mesh or collision choice, made by the view mode Studio
+already has rather than a menu). Surface and ground snapping always use the collision triangles, which every Coney
+level has ([Collision](../../research/collision.md#triangles)). Neither editor snaps to edges or to another thing's
+bounds, and Studio does not either: vertex and surface snapping place everything a level is built from, boxes, ramps
+and stairs by their corners and floors.
+
+#### Settings and the toolbar {#snap-settings}
+
+| | Unity 6 | Godot 4.7 |
+| --- | --- | --- |
+| Snap steps and toggles | Per project and per user: `Library/EditorSnapSettings.asset` in the project, measured, a folder kept out of version control; the overlay's settings "apply globally to all Scene views" ([6.0][snap-unity-overlay-60]) | The steps per project, in the project's editor metadata under `.godot/` (source: `set_project_metadata`), and with the toggle per scene, in the scene's saved editor state (source: `snap_enabled`, `translate_snap` in the 3D editor's state) |
+| The grid | Size per project with the steps; visibility, plane and opacity per Scene view, measured (`SceneViewGrid` is saved with the view); colour in the per-user Preferences | Editor Settings, per user for every project: `editors/3d/grid_size`, `primary_grid_steps`, the division levels and bias, the planes and colours |
+| Keys | The Shortcuts Manager, per user | Editor Settings, per user |
+| Toolbar | The *Grid and Snap* overlay: grid visibility and size; before 6.4 the snap toggle and its Snapping menu (grid size, Snap to Grid, Rotate, Scale, Align Selected); from 6.4 the four toggles with their step fields and a *Grid and Snap Settings* window | The *Use Snap* button (a magnet) in the 3D toolbar; *Transform > Configure Snap* (Translate in metres, Rotate in degrees, Scale in percent), *Snap Object to Floor* and the vertex snap choices |
+
+**Studio:** the grid size, the move, rotate and scale steps, the grid's height and the Snap toggle are saved **per
+project, for this user**, in `.studio/`, which never travels with a shared project or a package ([Coney Studio's
+project](editor-experience.md#project-coney)): Unity's rule, so a project reopens as it was left and two users of one
+project keep their own. The grid's look and the keys are **per user** in the preferences, as in both. The toolbar's
+snap group holds the **Snap** toggle (a magnet) and beside it the **snap menu**: grid size, move step (per axis or
+linked), rotate step, scale step, *Push to grid*, *Grid to selection*, *Grid to origin*; the grid size shows on the
+toolbar, as in Unity's overlay ([Icons](icons.md) names the two buttons).
+
+[snap-unity-overlay-60]: https://docs.unity3d.com/6/Documentation/Manual/GridAndSnapOverlay.html
+[snap-unity-gridsnap-62]: https://docs.unity3d.com/6000.2/Documentation/Manual/GridSnap.html
+[snap-unity-gridsnap-64]: https://docs.unity3d.com/6000.4/Documentation/Manual/GridSnap.html
+[snap-unity-increments-60]: https://docs.unity3d.com/6/Documentation/Manual/SnapIncrements.html
+[snap-unity-increments-64]: https://docs.unity3d.com/6000.4/Documentation/Manual/SnapIncrements.html
+[snap-unity-overlay-ref]: https://docs.unity.com/en-us/engine/current/manual/working-with-scenes/scenes-manage-gameobjects/overlays/reference/overlay-grid-snap-reference
+[snap-unity-customize]: https://docs.unity3d.com/6000.2/Documentation/Manual/CustomizeGrid.html
+[snap-unity-shortcuts]: https://docs.unity3d.com/6000.2/Documentation/Manual/GridShortcuts.html
+[snap-unity-align]: https://docs.unity3d.com/6000.2/Documentation/Manual/GridAlign.html
+[snap-unity-positioning]: https://docs.unity.com/en-us/engine/current/manual/working-with-scenes/scenes-manage-gameobjects/positioning-game-objects
+[snap-unity-nav]: https://docs.unity.com/en-us/engine/current/manual/unity-editor/editor-windows-views-reference/using-the-scene-view/scene-view-navigation
+[snap-unity-64]: https://discussions.unity.com/t/feature-highlight-improved-grid-and-snap-workflows/1695070
+[snap-godot-intro]: https://docs.godotengine.org/en/4.7/tutorials/3d/introduction_to_3d.html
+[snap-godot-plugin]: https://github.com/godotengine/godot/blob/4.7.2-stable/editor/scene/3d/node_3d_editor_plugin.cpp
+[snap-godot-plugin-h]: https://github.com/godotengine/godot/blob/4.7.2-stable/editor/scene/3d/node_3d_editor_plugin.h
+[snap-godot-settings]: https://github.com/godotengine/godot/blob/4.7.2-stable/editor/settings/editor_settings.cpp
 
 ### Selection {#selection}
 
