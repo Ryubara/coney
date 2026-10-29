@@ -19,6 +19,7 @@ add_executable(coney_tests
     core/sha1_test.cpp
     core/sha256_test.cpp
     core/mesh_view_option_test.cpp
+    core/world_edit_option_test.cpp
     core/options_test.cpp
     core/perf_test.cpp
     core/perf_bench_options_test.cpp
@@ -484,11 +485,13 @@ if(CONEY_DEBUG_TOOLS)
         debug/net_page_test.cpp
         debug/native_caller_test.cpp
         debug/pad_menu_input_test.cpp
+        debug/record_debug_draw_test.cpp
         debug/play_pages_test.cpp
         debug/story_missions_test.cpp
         debug/time_scale_test.cpp
         debug/tunables_test.cpp
         debug/ui_scale_test.cpp
+        debug/world_split_test.cpp
         gamemodes/sheet_viewer_mode_test.cpp
         gamemodes/text_viewer_mode_test.cpp
         gui/debug_menu_view_test.cpp
@@ -527,6 +530,8 @@ if(CONEY_DEBUG_TOOLS)
         platform/imgui_model_view_test.cpp
         platform/imgui_ui_scale_test.cpp
         platform/mesh_views_test.cpp
+        platform/world_edit_test.cpp
+        platform/disc_world_split_test.cpp
         raycast/collision_extras_test.cpp
         sandbox/disc_sandbox_combat_test.cpp
         sandbox/disc_sandbox_player_test.cpp

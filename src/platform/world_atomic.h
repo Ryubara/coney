@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <optional>
 #include <span>
 #include <utility>
 
@@ -85,6 +86,15 @@ class WorldAtomic {
     /// then hands the atomic back to the platform's default pipeline, so that the GL3 renderer instances it like any
     /// other, and makes its dual layer (dualLayerOf()). Does nothing when the geometry is already plain.
     void unpack();
+
+    /// Moves the triangles `take` marks (one byte per triangle of the plain geometry, after unpack(); non-zero is
+    /// taken) out of this atomic into a new one on a frame of its own, placed where this one's is, and keeps the rest
+    /// here. Each keeps only the vertices its triangles use, with all they carry (prelighting, normals, both
+    /// texture-coordinate sets), shares the materials, and has its dual layer made again from what it keeps
+    /// (dualLayerOf()). Nothing, and no change, when nothing is taken, `take` has the wrong length or the geometry is
+    /// not plain. For the debug tools' world edits (platform/world_edit.h): a building cut out of the sectors.
+    /// @coney-only the debug tools' world edits; the original never changes a sector's geometry
+    [[nodiscard]] std::optional<WorldAtomic> cut(std::span<const std::uint8_t> take);
 
   private:
     WorldAtomic(rw::Atomic* atomic, world::AtomicSection info) : m_atomic(atomic), m_info(std::move(info)) {}

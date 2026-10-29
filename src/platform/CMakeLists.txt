@@ -88,7 +88,8 @@ if(CONEY_DEBUG_TOOLS)
         sandbox_play_scenery.cpp
         sandbox_renderer.cpp
         sandbox_viewer_mode.cpp
-        texture_viewer_mode.cpp)
+        texture_viewer_mode.cpp
+        world_edit.cpp)
     coney_target_defaults(coney_devtools)
     target_link_libraries(coney_devtools PUBLIC coney_platform coney_debug imgui)
 

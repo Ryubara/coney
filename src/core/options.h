@@ -232,6 +232,10 @@ struct Options {
     /// parse it (debug::parseMeshViewSpec(), docs/guides/debug-menu.md#mesh-views); a test aid and the way to take a
     /// screenshot of a view.
     std::optional<std::string> meshView;
+    /// `--world-edit FILE`: the debug tools' world edits (debug::parseWorldEdits(),
+    /// docs/guides/running-viewers.md#world-edits) applied to the world viewer's worlds or the command line's level.
+    /// Requires viewWorld, or a playLevel that is not a sandbox.
+    std::optional<std::string> worldEditFile;
     /// `--render-references`: the folder to write a reference image of every character, object, car, radar icon and
     /// traced particle effect into (in its `characters`, `objects`, `cars`, `radar` and `particles` folders), then
     /// exit. Requires discPath and a window (not headless); cannot be
@@ -276,6 +280,9 @@ struct Options {
     std::optional<std::uint32_t> aiSeed;
     /// `--record-seconds`: the clip's length, 1 to clips::kMaxClipSeconds; unset: the cap. Requires recordPath.
     std::optional<int> recordSeconds;
+    /// `--record-debug-draw`: the clip keeps the Debug draw page's lines in the 3D scene that the run switched on (the
+    /// world edits' collision wireframe); the menus and the developer overlay stay out of it. Requires recordPath.
+    bool recordDebugDraw = false;
     /// `--render-size WxH`: the frame's size (RenderSize) in place of the window's usual one. Needs a window (not
     /// headless, `--load` or `--render-references`).
     std::optional<RenderSize> renderSize;

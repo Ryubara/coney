@@ -208,3 +208,10 @@ void WorldViewerMode::render(const RenderTime& time) {
 }
 
 } // namespace coney::platform
+
+namespace coney::platform {
+
+// Stub: the tests of the world edits come first (docs/guides/stamps.md#fails-first).
+void WorldViewerMode::setEditHook(std::shared_ptr<WorldEditHook> hook) { (void)hook; }
+
+} // namespace coney::platform

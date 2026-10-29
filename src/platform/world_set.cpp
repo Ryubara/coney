@@ -248,3 +248,16 @@ void WorldSet::unloadPart(std::size_t world, std::uint32_t part) {
 }
 
 } // namespace coney::platform
+
+namespace coney::platform {
+
+// Stubs: the tests of the world edits' WorldSet calls come first (docs/guides/stamps.md#fails-first).
+WorldAtomic* WorldSet::worldAtomic(std::size_t /*world*/, std::uint32_t /*sector*/) { return nullptr; }
+
+// Stub, as above.
+rw::Atomic* WorldSet::loadedAtomic(std::size_t /*world*/, std::uint32_t /*sector*/) const { return nullptr; }
+
+// Stub, as above.
+void WorldSet::setDrawn(std::size_t /*world*/, bool /*drawn*/) {}
+
+} // namespace coney::platform

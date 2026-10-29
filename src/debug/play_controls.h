@@ -47,6 +47,15 @@ struct DebugDrawOptions {
     MeshViewOptions mesh;        ///< The mesh views: wireframes, flat views, normals and bone axes (mesh_views.h).
 };
 
+/// What a frame recorded by `--record` draws of the Debug draw page, given what the run switched on (`run`): nothing
+/// (the defaults) unless `keepLines` (`--record-debug-draw`), and then the lines in the 3D scene but no Entity
+/// inspector selection, which names itself in the overlay's 2D corner text (docs/guides/testing.md#clips).
+/// @coney-only clips of Coney's own debug tooling for issues and pull requests; the original has none
+[[nodiscard]] inline DebugDrawOptions recordedDebugDraw(const DebugDrawOptions& run, bool keepLines) {
+    (void)keepLines; // stub: the tests come first
+    return run;
+}
+
 /// One object the Spawner page can put in front of the player: a sandbox primitive and the name the page shows. The
 /// primitive's base is replaced by the spot in front of the player and its yaw by the player's heading.
 struct Spawnable {

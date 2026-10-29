@@ -724,3 +724,10 @@ void WorldAtomic::unpack() {
 }
 
 } // namespace coney::platform
+
+namespace coney::platform {
+
+// Stub: the tests of WorldAtomic::cut() come first (docs/guides/stamps.md#fails-first).
+std::optional<WorldAtomic> WorldAtomic::cut(std::span<const std::uint8_t> /*take*/) { return std::nullopt; }
+
+} // namespace coney::platform

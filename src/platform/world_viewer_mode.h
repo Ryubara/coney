@@ -15,6 +15,7 @@
 #include "gamemodes/game_mode.h"
 #include "graphics/render_device.h"
 #include "platform/render_engine.h"
+#include "platform/world_edit_hook.h"
 #include "platform/world_renderer.h"
 #include "platform/world_set.h"
 #include "world/debug_camera.h"
@@ -74,7 +75,19 @@ class WorldViewerMode final : public GameMode {
     /// Draws the worlds through the camera blended between the last two steps, and presents.
     void render(const RenderTime& time) override;
 
+    /// Views the worlds through the debug tools' world edits from now on (WorldEditHook): called after every step and
+    /// drawn through; when it loads everything, enter() reads every part instead of the preload. Null: none. Set it
+    /// before enter().
+    /// @coney-only the debug tools' world edits; the original has none
+    void setEditHook(std::shared_ptr<WorldEditHook> hook);
+    /// Puts the camera at `camera` with nothing to blend from (the world edits' `camera` statement). Before enter(), it
+    /// is also where the preload reads round.
+    /// @coney-only the debug tools' world edits; the original has none
+    void placeCamera(const world::DebugCamera& camera) { m_camera.reset(camera); }
+
+    /// What the viewer has done so far: frames, parts read and freed, atomics drawn.
     [[nodiscard]] const WorldViewerStats& stats() const { return m_stats; }
+    /// The streamed worlds it shows.
     [[nodiscard]] const WorldSet& worlds() const { return *m_set; }
     /// The level object, or null for a name without a level file.
     [[nodiscard]] const world::LevelObject* level() const { return m_level.get(); }
@@ -101,6 +114,7 @@ class WorldViewerMode final : public GameMode {
     Interpolated<float> m_drawDistance{camera::kPlayerCameraLens.farClip};
     float m_pendingDistance = world::kNoPendingDistance; // the nearest missing scenery as of the newest step
     WorldViewerStats m_stats;
+    std::shared_ptr<WorldEditHook> m_edits; // setEditHook(); null: none
 };
 
 /// A level's scenery as the world viewer and the play mode load it: its streamed worlds and, when it has one, its level
