@@ -411,13 +411,14 @@ it records the answer, and only it can:
 uv run --project python coney-tools orig fails-first --accept-change "<reason>" --test NAME --test-commit A --fix-commit B
 ```
 
-It runs nothing. It checks the commits and names as a run does, refuses when the test files did not change (comments and
+It runs nothing, and runs in the unit's worktree like the engineer's own run (from the main checkout it finds no unit
+and refuses). It checks the commits and names as a run does, refuses when the test files did not change (comments and
 layout aside: there is nothing to decide) and refuses any agent but the coordinator (a person at the machine, with no
 hook identity, may record it, as they may run `pr open`). It appends one `fails-first` stamp per name with result
 `none`, `covers` the two commits and `detail` `{"decision": "changed-test", "reason", "changed"}` (the test files that
-differ). The engineer then runs `orig fails-first` with the same names and commits: the run finds the decision and its
-stamps carry `detail.decision_seq`, the decision's `seq`. A decision is for exactly that pair of commits; a later edit
-of the test needs another.
+differ); it posts no `/progress`, as no test has run yet. The engineer then runs `orig fails-first` with the same names
+and commits: the run finds the decision and its stamps carry `detail.decision_seq`, the decision's `seq`. A decision is
+for exactly that pair of commits; a later edit of the test needs another.
 
 [`pr verify`](pr.md#verify), and so `pr open`, accept such a pass when the stamp its `decision_seq` names is a decision
 for the same test and commits (with `stamps.require_hook_source`, one the hook vouched the coordinator wrote); a

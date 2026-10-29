@@ -26,6 +26,7 @@ from pathlib import Path
 from coney_tools.audit_github import run_gh
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import Conventions, load_conventions
+from coney_tools.fails_first import DECISION
 from coney_tools.issue_claim_model import iso_time, parse_time
 from coney_tools.stamps import Stamp
 from coney_tools.unit_record import read_record
@@ -54,8 +55,14 @@ def _gh_post(conventions: Conventions) -> Post:
 
 
 def stage_reached(written: Sequence[Stamp]) -> str | None:
-    """The last stage among the stamps just written that posts `/progress`, or None."""
-    reached = [stamp.step for stamp in written if stamp.step in STAGE_STEPS and stamp.result in REACHED]
+    """The last stage among the stamps just written that posts `/progress`, or None. A coordinator's recorded decision
+    on a changed test (`orig fails-first --accept-change`) is a `fails-first` stamp of result `none` written before any
+    test has run, so it is no stage reached."""
+    reached = [
+        stamp.step
+        for stamp in written
+        if stamp.step in STAGE_STEPS and stamp.result in REACHED and stamp.detail.get("decision") != DECISION
+    ]
     return reached[-1] if reached else None
 
 

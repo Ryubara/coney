@@ -546,3 +546,27 @@ def test_a_pull_request_event_file_names_the_issues_it_closes() -> None:
     assert cli.issues_of_event("pull_request_target", event, OFF) == [41, 42]
     activity = cli._pull_request_activity("pull_request_target", event, lambda: START)
     assert activity is not None and activity.by == "carol"
+
+
+def test_a_recorded_test_decision_is_not_a_stage_reached(tmp_path: Path) -> None:
+    """`orig fails-first --accept-change` appends `fails-first` stamps of result `none` before any test has run; they
+    carry `detail.decision`, and the stage counts only once the engineer's own run is stamped."""
+    folder = unit_folder(tmp_path)
+    entry = {
+        "step": "fails-first",
+        "subject": "t",
+        "result": "none",
+        "commit": "a" * 40,
+        "covers": {"x_sha256": "b" * 64},
+        "detail": {"decision": "changed-test", "reason": "the first version asserted the bug"},
+        "who": {"kind": "tool", "tool": "test"},
+    }
+    written = stamps.append_many(folder, rules=OFF.stamps, task="41-trial", entries=[entry])
+    posted: list[int] = []
+
+    def post(number: int, body: str) -> int:
+        posted.append(number)
+        return 1
+
+    assert claim_progress.stage_reached(written) is None
+    assert claim_progress.post_progress(folder, written, OFF, post, START, print) == [] and posted == []
