@@ -972,8 +972,11 @@ def test_a_record_naming_a_worktree_that_is_gone_is_refused_with_the_way_out(
 def test_a_damaged_record_is_refused_not_ignored(rig: Rig, monkeypatch: pytest.MonkeyPatch) -> None:
     (rig.unit.dir / "unit.json").write_text("not json", encoding="utf-8")
     monkeypatch.chdir(rig.root)
-    with pytest.raises(ConfigError, match="not valid JSON"):
+    with pytest.raises(ConfigError, match="not valid JSON") as why:
         task_review.environment(arguments())
+    assert "--worktree DIR" in str(why.value) and "unit.json" in str(why.value)
+    # The way out works: the worktree option does not read the record.
+    assert task_review.environment(arguments(worktree=rig.root)).worktree == rig.root.resolve()
 
 
 def test_the_command_line_reviews_the_units_worktree_from_main(rig: Rig, monkeypatch: pytest.MonkeyPatch) -> None:

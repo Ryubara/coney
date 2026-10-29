@@ -62,7 +62,7 @@ from coney_tools import (
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import REVIEW_KINDS, Conventions, load_conventions_leniently
 from coney_tools.repo_checks import check_docs, check_title
-from coney_tools.unit_record import read_record
+from coney_tools.unit_record import UnitRecordError, read_record
 
 #: The agent definition handed to `claude --agents` for a run, written in the review's folder and removed after.
 AGENTS_FILE = ".reviewer-agents.json"
@@ -654,11 +654,14 @@ def _recorded_worktree(folder: unit.Unit, unit_file: str) -> Path | None:
     path = folder.dir / unit_file
     if not path.is_file():
         return None
-    worktree = read_record(path).worktree
+    way_out = "give --worktree DIR for the one to review"
+    try:
+        worktree = read_record(path).worktree
+    except UnitRecordError as error:
+        raise ConfigError(f"{error} ({way_out})") from error
     if not worktree.is_dir():
         raise ConfigError(
-            f"{folder.task}: the unit record names the worktree {worktree}, which does not exist "
-            "(give --worktree DIR for the one to review)"
+            f"{folder.task}: the unit record names the worktree {worktree}, which does not exist ({way_out})"
         )
     return worktree.resolve()
 
