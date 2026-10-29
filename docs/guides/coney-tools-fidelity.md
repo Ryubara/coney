@@ -703,8 +703,7 @@ name is not known). Beside them it writes:
   ends in `Handler` or `Callback`, `RegisterUpdate`, `ScheduleFunc*` and `TriggerSphereCfg`) with their constant
   arguments (`python/src/coney_tools/lua_index.py`). Start a level's research here.
 * `fingerprints.txt`: a hash of every distinctive line of every script, which the guard below reads.
-* `decompile-hashes.toml`: the SHA-256 of every script's decompile, which `--all` checks against the committed list
-  ([The frozen form](#lua-form)); a script whose text changed fails the command.
+* `decompile-hashes.toml`: the SHA-256 of every decompile, checked against the committed list ([below](#lua-form)).
 
 `NAME OUT_DIR` decompiles one chunk, by file name (`level99.lua`) or hash, into `OUT_DIR`. Both refuse an output
 folder inside a checkout. `--chunks DIR` reads the chunks from a folder (`wad extract` or `extract` output) instead of
@@ -766,8 +765,7 @@ output of the decompiler when the list below was made, and `lua decompile --all`
 **Changing the output on purpose** is a new form, never an edit of the hashes. A fix that changes the text of any disc
 script makes form 2: run `lua decompile --all --new-form` (it rewrites the list from the run as the next form, only
 for that disc's scripts, and says to set `FORM` in `lua_hashes.py`, which a test holds to the list's form), run
-`--update-hashes` on the other disc, and commit them with the change. A mod that names form 1 needs Coney to keep
-producing it, so once a patch is released the old output stays reachable behind the form number.
+`--update-hashes` on the other disc, and commit them with the change. Coney must keep producing a form a patch names.
 
 **Adding a disc's scripts** (`--update-hashes`) adds the scripts the list lacks and changes none that it holds; it
 refuses, naming the scripts, if a listed text differs or a chunk could not be loaded. The Xbox disc's 36 scripts of its
