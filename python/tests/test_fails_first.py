@@ -4,7 +4,7 @@
 import ast
 import subprocess
 import sys
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -214,11 +214,90 @@ def test_a_dirty_tree_is_refused_before_anything_is_checked_out(repo: Repo) -> N
     assert repo.seen == []
 
 
-def test_the_test_must_not_change_between_the_commits(repo: Repo) -> None:
+def weaken(repo: Repo) -> str:
+    """Commit a change to the test's code after the fix: a test that had to change to pass. Returns the commit."""
     (repo.root / "tests" / "widget_test.cpp").write_text(
-        'TEST_CASE("Widget ready frame") { /* weaker */ }\n', encoding="utf-8"
+        'TEST_CASE("Widget ready frame") { CHECK(true); }\n', encoding="utf-8"
     )
     git(repo.root, "commit", "-q", "-am", "weaken")
+    return git(repo.root, "rev-parse", "HEAD").strip()
+
+
+def test_the_test_must_not_change_between_the_commits(repo: Repo) -> None:
+    changed = weaken(repo)
+    with pytest.raises(FailsFirstError, match="changed") as refused:
+        repo.run(fix_commit=changed)
+    # The refusal names commands that exist: the question goes to the coordinator, whose answer is a command.
+    assert "unit ask" not in str(refused.value)
+    assert "QUESTION.md" in str(refused.value) and "orig fails-first --accept-change" in str(refused.value)
+    assert repo.seen == []
+
+
+def test_a_comment_only_edit_between_the_commits_is_not_a_change(repo: Repo) -> None:
+    (repo.root / "tests" / "widget_test.cpp").write_text(
+        '// Cites docs/research/widget.md.\nTEST_CASE("Widget ready frame")   {  /* the ready frame */ }\n',
+        encoding="utf-8",
+    )
+    git(repo.root, "commit", "-q", "-am", "cite")
+    [stamp] = repo.run(fix_commit=git(repo.root, "rev-parse", "HEAD").strip())
+    assert stamp.result == "pass" and "decision_seq" not in stamp.detail
+
+
+def coordinator(source: str = "hook") -> dict[str, object]:
+    """The `who` of a command the coordinator ran."""
+    return {**WHO, "agent": {"id": "main", "type": "coordinator", "model": "m"}, "source": source}
+
+
+def decide(
+    repo: Repo, fix: str, who: Mapping[str, object], reason: str = "the old test asserted the bug"
+) -> list[stamps.Stamp]:
+    """Record a decision that the one test may change between the test commit and `fix`."""
+    return fails_first.record_decision(
+        repo.unit,
+        repo.root,
+        reason,
+        tests=ONE,
+        test_commit=repo.test,
+        fix_commit=fix,
+        rules=rules(),
+        who=who,
+        clock=Clock(),
+    )
+
+
+def test_a_recorded_decision_lets_a_changed_test_be_run(repo: Repo) -> None:
+    changed = weaken(repo)
+    [decision] = decide(repo, changed, coordinator())
+    assert (decision.step, decision.subject, decision.result) == ("fails-first", "Widget ready frame", "none")
+    assert decision.detail == {
+        "decision": "changed-test",
+        "reason": "the old test asserted the bug",
+        "changed": ["tests/widget_test.cpp"],
+    }
+    [stamp] = repo.run(fix_commit=changed)
+    assert stamp.result == "pass" and stamp.detail["decision_seq"] == decision.seq
+
+
+def test_a_decision_is_the_coordinators_and_only_for_a_changed_test(repo: Repo) -> None:
+    changed = weaken(repo)
+    engineer = {**WHO, "agent": {"id": "e", "type": "engineer", "model": "m"}, "source": "hook"}
+    with pytest.raises(FailsFirstError, match="only the coordinator"):
+        decide(repo, changed, engineer)
+    with pytest.raises(FailsFirstError, match="did not change"):
+        decide(repo, repo.fix, coordinator())
+    with pytest.raises(FailsFirstError, match="reason"):
+        decide(repo, changed, coordinator(), reason="two\nlines")
+    assert not repo.unit.stamps.exists()
+    # A person at the machine (no hook identity) may record it too, as they may run pr open.
+    assert len(decide(repo, changed, coordinator("unverified"))) == 1
+
+
+def test_a_decision_for_other_commits_does_not_apply(repo: Repo) -> None:
+    decide(repo, weaken(repo), coordinator())
+    (repo.root / "tests" / "widget_test.cpp").write_text(
+        'TEST_CASE("Widget ready frame") { CHECK(1); }\n', encoding="utf-8"
+    )
+    git(repo.root, "commit", "-q", "-am", "again")
     with pytest.raises(FailsFirstError, match="changed"):
         repo.run(fix_commit=git(repo.root, "rev-parse", "HEAD").strip())
 

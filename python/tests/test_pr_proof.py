@@ -500,6 +500,58 @@ def test_a_test_added_without_a_fails_first_stamp_is_refused(tmp_path: Path) -> 
     assert any(t == f'fails-first: "{TEST_NAME}": its test file changed since ({TEST_FILE})' for t in refused), refused
 
 
+def decide(built: Built, who: dict[str, object] | None = None) -> stamps.Stamp:
+    """The coordinator's decision that the test may change between its commits, as `orig fails-first
+    --accept-change` writes it."""
+    return built.stamp(
+        "fails-first",
+        subject=TEST_NAME,
+        result="none",
+        covers={"test_commit": built.test_commit, "fix_commit": built.tip},
+        detail={"decision": "changed-test", "reason": "the old test asserted the bug", "changed": [TEST_FILE]},
+        who=who or agent("coordinator"),
+    )
+
+
+def test_a_changed_test_that_rests_on_the_coordinators_decision_verifies(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    decision = decide(built)
+    # The decision alone proves nothing: the engineer's run after it does.
+    assert texts(built.verify(), "fails-first") == [
+        f'fails-first: "{TEST_NAME}" was added and has no passing fails-first stamp'
+    ]
+    built.fails_first(decision_seq=decision.seq)
+    assert texts(built.verify(), "fails-first") == []
+    strict = with_rules(built, ("stamps.require_hook_source", True))
+    assert texts(built.verify(conventions=strict), "fails-first") == []
+
+
+def test_a_changed_test_whose_decision_is_not_the_coordinators_is_refused(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    claimed = built.verify().subject.report.latest("claimed")
+    assert claimed is not None
+    built.fails_first(decision_seq=claimed.seq)  # a stamp that is no decision
+    refused = texts(built.verify(), "fails-first")
+    assert refused == [
+        f'fails-first: "{TEST_NAME}" changed between its commits and rests on decision #{claimed.seq}, which is not '
+        "the coordinator's decision for them"
+    ]
+    # With the hook identity required, an engineer's decision is no decision.
+    engineer_made = decide(built, ENGINEER)
+    built.fails_first(decision_seq=engineer_made.seq)
+    assert texts(built.verify(), "fails-first") == []
+    strict = with_rules(built, ("stamps.require_hook_source", True))
+    assert any("rests on decision" in t for t in texts(built.verify(conventions=strict), "fails-first"))
+
+
+def test_a_decision_is_no_none_stamp_for_a_task_with_nothing_to_test(tmp_path: Path) -> None:
+    built = make(tmp_path, shape="tooling", skip=frozenset({"fails-first"}))
+    decide(built)
+    assert texts(built.verify(), "fails-first") == [
+        'fails-first: no fails-first stamp; a tooling task records `orig fails-first --none "<reason>"`'
+    ]
+
+
 def test_a_gameplay_change_with_no_test_and_only_a_none_stamp_is_refused(tmp_path: Path) -> None:
     built = make(tmp_path, shape="no-test")
     result = built.verify()

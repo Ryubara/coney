@@ -189,6 +189,7 @@ uv run --project python coney-tools orig verify ADDR [--task T] [--url URL]
 uv run --project python coney-tools orig compare ADDR [--task T] [--base REF] [--coney-function KEY] [--carry] [--show]
 uv run --project python coney-tools orig fails-first --test NAME [--test NAME ...] --test-commit SHA [--fix-commit SHA] [--preset P] --agent ID
 uv run --project python coney-tools orig fails-first --none REASON
+uv run --project python coney-tools orig fails-first --accept-change REASON --test NAME [--test NAME ...] --test-commit SHA [--fix-commit SHA]
 ```
 
 * `study` reads the function at ADDR from the running ghidra-mcp (reading endpoints only), saves the decompile, callers,
@@ -202,7 +203,8 @@ uv run --project python coney-tools orig fails-first --none REASON
   the Coney function, check the pairs, the committed Coney file and `orig check-copy`, and append `compared` when all of
   it holds. A refusal writes no stamp. [Details](stamps.md#compare)
 * `fails-first` runs the named tests through `build --test -R` on the test commit (they must fail) and the fix commit (they
-  must pass) and appends a `fails-first` stamp per test. [Details](stamps.md#fails-first)
+  must pass) and appends a `fails-first` stamp per test. With `--accept-change` the coordinator records its yes to a
+  test that had to change between the two commits, and nothing runs. [Details](stamps.md#fails-first)
 
 Every option:
 
@@ -223,6 +225,7 @@ Every option:
 | `fails-first` | `--preset P` | The CMake preset the tests are built with (default `dev`) |
 | `fails-first` | `--agent ID` | Your id for the build slots, as `build --agent` |
 | `fails-first` | `--none REASON` | Run nothing and stamp that the task has no such test (one line, at most 200 characters, not with `--test`) |
+| `fails-first` | `--accept-change REASON` | The coordinator only: run nothing and record that the named tests may change between `--test-commit` and `--fix-commit`, with the reason (one line, at most 200 characters); the engineer's next run of the same names and commits is then allowed ([A changed test](stamps.md#changed-test)) |
 
 <!-- command-reference:begin orig -->
 ## Parameters of `orig` {#orig-parameters}
@@ -392,7 +395,7 @@ Run named tests on the test commit and on the fix commit and stamp `fails-first`
 
 ```text
 coney-tools orig fails-first [--test TEST] [--test-commit TEST_COMMIT] [--fix-commit FIX_COMMIT] [--preset PRESET]
-    [--agent AGENT] [--none REASON] [--task TASK]
+    [--agent AGENT] [--none REASON] [--accept-change REASON] [--task TASK]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -403,6 +406,7 @@ coney-tools orig fails-first [--test TEST] [--test-commit TEST_COMMIT] [--fix-co
 | `--preset PRESET` | text | `dev` | the CMake preset (default: dev) |
 | `--agent AGENT` | text | none | your id for the build slots (as `build --agent`) |
 | `--none REASON` | text | none | stamp that there is no fails-first test, with the reason |
+| `--accept-change REASON` | text | none | the coordinator only: record that the named tests may change between --test-commit and --fix-commit |
 | `--task TASK` | text | none | the task (default: CONEY_TASK, else the branch) |
 <!-- command-reference:end -->
 

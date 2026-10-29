@@ -365,8 +365,11 @@ C++ tests run), does the same on the fix commit (default HEAD), then puts the br
 
 * The worktree must be clean. The test commit must be an ancestor of the fix commit, on the branch, and change at least
   one file under `tests/`.
-* **The test must not change** between the two commits: the same blobs under `tests/` in both. A test that had to
-  change to pass is a decision point for the coordinator.
+* **The test must not change** between the two commits: each test file the test commit changes reads the same in
+  both as the compiler reads it (`orig_review.code_text`, which [the body hash](coney-tools-fidelity.md#body-hash) uses:
+  comments and layout aside, every literal and raw string exactly as written), so a commit that adds a cite comment to
+  a test is not a change. A test that had to change to pass is a decision point for the coordinator: the run is
+  refused, and says to ask through `QUESTION.md` and which command records a yes ([A changed test](#changed-test)).
 * **Stubs.** A test for a function that is new cannot compile on a test-only commit, so the test commit may also
   hold the minimal stubs that let it compile. A stub must not implement the behaviour: it returns a default or an empty
   result. The stamp lists every non-test file the commit touches (`detail.stubs`) for the reviewer.
@@ -397,6 +400,27 @@ C++ tests run), does the same on the fix commit (default HEAD), then puts the br
   the test files and the hashes of both runs' logs (kept in scratch as `red-` and `green-<test commit>-<fix commit>.log`).
 * A docs or tooling task has nothing to run: `--none REASON` (one line, at most 200 characters, given alone) stamps
   `result: none` with the reason.
+
+### A changed test {#changed-test}
+
+When the coordinator agrees that a test had to change between its commits (the first version asserted the bug, say),
+it records the answer, and only it can:
+
+```sh
+uv run --project python coney-tools orig fails-first --accept-change "<reason>" --test NAME --test-commit A --fix-commit B
+```
+
+It runs nothing. It checks the commits and names as a run does, refuses when the test files did not change (comments and
+layout aside: there is nothing to decide) and refuses any agent but the coordinator (a person at the machine, with no
+hook identity, may record it, as they may run `pr open`). It appends one `fails-first` stamp per name with result
+`none`, `covers` the two commits and `detail` `{"decision": "changed-test", "reason", "changed"}` (the test files that
+differ). The engineer then runs `orig fails-first` with the same names and commits: the run finds the decision and its
+stamps carry `detail.decision_seq`, the decision's `seq`. A decision is for exactly that pair of commits; a later edit
+of the test needs another.
+
+[`pr verify`](pr.md#verify), and so `pr open`, accept such a pass when the stamp its `decision_seq` names is a decision
+for the same test and commits (with `stamps.require_hook_source`, one the hook vouched the coordinator wrote); a
+decision alone is no proof that the test failed first, and it is no `--none` stamp for a task with nothing to test.
 
 ## For the commands that write more stamps {#api}
 

@@ -10,8 +10,10 @@ The verdict is a pass when the build succeeded at both commits, the test failed 
 test that passes on the first (it detects nothing) or still fails on the second is a `fail` stamp. A build that does not
 compile, a queued build or a test that does not exist is an error with no stamp: the log records verdicts, not
 infrastructure faults. The test commit may carry the minimal stubs a new feature's test needs to compile, and the stamp
-lists them; a stub must not implement the behaviour (return a default or an empty result). The test files must be
-byte-identical in both commits: a test that had to change to pass is a question for the coordinator (`unit ask`).
+lists them; a stub must not implement the behaviour (return a default or an empty result). The test files must be the
+same in both commits as the compiler reads them (`orig_review.code_text`: comments and layout aside): a test that had
+to change to pass is a question for the coordinator, who records the answer with `record_decision` (`orig fails-first
+--accept-change`).
 """
 
 from __future__ import annotations
@@ -30,6 +32,7 @@ from coney_tools import live_progress, stamps
 from coney_tools.build_run import TestScan
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Stamps
+from coney_tools.orig_review import code_text
 from coney_tools.unit import Unit
 
 #: `build` exits with this when it gave up waiting for a slot (build_run.EXIT_QUEUED).
@@ -38,6 +41,8 @@ EXIT_QUEUED = 75
 MAX_REASON = 200
 #: Where a test file lives.
 TEST_DIR = "tests/"
+#: What a coordinator's decision stamp says in `detail.decision` (`record_decision`).
+DECISION = "changed-test"
 
 
 class FailsFirstError(ConfigError):
@@ -201,6 +206,14 @@ def _blob(root: Path, commit: str, path: str) -> str:
     return _git(root, "rev-parse", "--verify", "--quiet", f"{commit}:{path}", check=False).strip()
 
 
+def _show(root: Path, commit: str, path: str) -> str | None:
+    """The text of `path` at `commit`, None when the file is not there."""
+    done = subprocess.run(
+        ["git", "-C", str(root), "show", f"{commit}:{path}"], capture_output=True, encoding="utf-8", check=False
+    )
+    return done.stdout if done.returncode == 0 else None
+
+
 def tests_sha256(root: Path, commit: str, test_files: Sequence[str]) -> str:
     """The hash a `fails-first` stamp covers as `tests_sha256`: each test file's path and its blob at `commit`, so an
     edit to a test file changes it (`pr verify` recomputes it at the branch's tip)."""
@@ -211,14 +224,13 @@ def tests_sha256(root: Path, commit: str, test_files: Sequence[str]) -> str:
 
 def declared_in(root: Path, commit: str, path: str) -> set[str]:
     """The `TEST_CASE` names the test file `path` declares at `commit` (none when the file is not there)."""
-    done = subprocess.run(
-        ["git", "-C", str(root), "show", f"{commit}:{path}"], capture_output=True, encoding="utf-8", check=False
-    )
-    return declared_names(done.stdout) if done.returncode == 0 else set()
+    text = _show(root, commit, path)
+    return declared_names(text) if text is not None else set()
 
 
-def _plan(root: Path, test_commit: str, fix_commit: str | None) -> tuple[str, str, list[str], list[str]]:
-    """(test commit, fix commit, the test files, the other files) after the checks the run depends on."""
+def _plan(root: Path, test_commit: str, fix_commit: str | None) -> tuple[str, str, list[str], list[str], list[str]]:
+    """(test commit, fix commit, the test files, the other files, the test files whose code differs between the two
+    commits) after the checks the run depends on. A file that differs only in comments or layout is not changed."""
     head = _commit(root, "HEAD")
     test = _commit(root, test_commit)
     fix = _commit(root, fix_commit) if fix_commit else head
@@ -230,13 +242,40 @@ def _plan(root: Path, test_commit: str, fix_commit: str | None) -> tuple[str, st
     tests = [p for p in changed if p.startswith(TEST_DIR)]
     if not tests:
         raise FailsFirstError(f"the test commit {test[:12]} changes no file under {TEST_DIR}")
-    for path in tests:
-        if _blob(root, test, path) != _blob(root, fix, path):
-            raise FailsFirstError(
-                f"{path} changed between the test commit and the fix commit; a test that had to change to pass is a "
-                "decision point: ask the coordinator (unit ask)"
-            )
-    return test, fix, tests, [p for p in changed if not p.startswith(TEST_DIR)]
+    differing = [p for p in tests if _blob(root, test, p) != _blob(root, fix, p) and not _same_code(root, test, fix, p)]
+    return test, fix, tests, [p for p in changed if not p.startswith(TEST_DIR)], differing
+
+
+def _same_code(root: Path, first: str, second: str, path: str) -> bool:
+    """Whether `path` is the same at both commits as the compiler reads it (`code_text`: comments and layout aside)."""
+    one, two = _show(root, first, path), _show(root, second, path)
+    return one is not None and two is not None and code_text(one) == code_text(two)
+
+
+def _changed_refusal(path: str, test: str, fix: str) -> FailsFirstError:
+    """The refusal for a test file whose code changed between the commits, naming the way to a decision."""
+    return FailsFirstError(
+        f"{path} changed between the test commit {test[:12]} and the fix commit {fix[:12]} (not only in comments); a "
+        "test that had to change to pass is a decision point: write QUESTION.md for the coordinator, who records a yes "
+        f'with `orig fails-first --accept-change "<reason>" --test NAME --test-commit {test[:12]} --fix-commit '
+        f"{fix[:12]}`; then run this again"
+    )
+
+
+def _decisions(unit: Unit, rules: Stamps, names: Sequence[str], test: str, fix: str) -> dict[str, stamps.Stamp]:
+    """The coordinator's decision stamp for each name that has one for exactly this pair of commits."""
+    found: dict[str, stamps.Stamp] = {}
+    for stamp in reversed(stamps.verify(unit.stamps, rules).stamps):
+        if (
+            stamp.step == "fails-first"
+            and stamp.subject in names
+            and stamp.subject not in found
+            and stamp.detail.get("decision") == DECISION
+            and stamp.covers.get("test_commit") == test
+            and stamp.covers.get("fix_commit") == fix
+        ):
+            found[stamp.subject] = stamp
+    return found
 
 
 def _checkout(root: Path, ref: str, detach: bool = True) -> None:
@@ -385,8 +424,9 @@ def run(
     """Run `tests` on `test_commit` and `fix_commit` and append a `fails-first` stamp for each; returns the stamps.
 
     Raises FailsFirstError (nothing stamped, the branch restored) for a dirty tree, a worktree an earlier run left
-    detached, commits out of order, a test file that changed between the commits, names the test commit's files do not
-    hold, or a run that could not build or find the tests. The branch to come back to is written to scratch before the
+    detached, commits out of order, a test file whose code changed between the commits with no coordinator's decision
+    for these names and commits (`record_decision`), names the test commit's files do not hold, or a run that could not
+    build or find the tests. The branch to come back to is written to scratch before the
     first checkout; if putting it back fails, the error says so and how to do it by hand. `say` is told a line when each
     stage starts and ends, with the time of day (live_progress.clock_text), as it happens.
     """
@@ -409,8 +449,12 @@ def run(
                 f"(and delete {marker}), then run again"
             )
         marker.unlink()
-    test, fix, test_files, stubs = _plan(root, test_commit, fix_commit)
+    test, fix, test_files, stubs, differing = _plan(root, test_commit, fix_commit)
     _check_names(root, test, test_files, names)
+    # A test file whose code changed between the commits needs the coordinator's decision for every name run.
+    decisions = _decisions(unit, rules, names, test, fix) if differing else {}
+    if differing and any(name not in decisions for name in names):
+        raise _changed_refusal(differing[0], test, fix)
     marker.parent.mkdir(parents=True, exist_ok=True)
     note = {"ref": original[0], "branch": original[1], "head": _commit(root, "HEAD")}
     marker.write_text(json.dumps(note), encoding="utf-8")
@@ -445,6 +489,9 @@ def run(
     entries = []
     for name in names:
         red, green = runs["red"][1][name], runs["green"][1][name]
+        detail: dict[str, object] = {"red": red, "green": green, "test_files": test_files, "stubs": stubs}
+        if name in decisions:
+            detail["decision_seq"] = decisions[name].seq
         entries.append(
             {
                 "step": "fails-first",
@@ -458,7 +505,7 @@ def run(
                     "red_log_sha256": digests["red"],
                     "green_log_sha256": digests["green"],
                 },
-                "detail": {"red": red, "green": green, "test_files": test_files, "stubs": stubs},
+                "detail": detail,
                 "who": dict(who),
             }
         )
@@ -475,6 +522,67 @@ def _need_a_run(label: str, commit: str, outcome: BuildOutcome) -> None:
         raise FailsFirstError(f"no test matched the names at {commit[:12]}; check the spelling of --test")
 
 
+def _reason(reason: str, option: str) -> str:
+    """`reason` stripped; FailsFirstError unless it is one line of at most `MAX_REASON` characters."""
+    if not reason.strip() or len(reason.strip()) > MAX_REASON or len(reason.strip().splitlines()) > 1:
+        raise FailsFirstError(f"{option} needs a reason of one line and at most {MAX_REASON} characters")
+    return reason.strip()
+
+
+def record_decision(
+    unit: Unit,
+    root: Path,
+    reason: str,
+    *,
+    tests: Sequence[str],
+    test_commit: str,
+    fix_commit: str | None,
+    rules: Stamps,
+    who: Mapping[str, object],
+    clock: Callable[[], datetime] = lambda: datetime.now(UTC),
+) -> list[stamps.Stamp]:
+    """Record the coordinator's yes to a test that had to change between `test_commit` and `fix_commit`: one
+    `fails-first` stamp of result `none` per name, with `detail.decision` and the reason. Nothing is run; the engineer's
+    next `run` of the same names and commits finds it and stamps its verdict with `decision_seq`.
+
+    Raises FailsFirstError (nothing stamped) for an agent other than the coordinator (a person at the machine, with no
+    hook identity, may record it, as they may run `pr open`), a reason that is not one short line, commits out of
+    order, names the test commit does not declare, and test files that did not change (nothing to decide).
+    """
+    agent = who.get("agent")
+    kind = agent.get("type") if isinstance(agent, Mapping) else None
+    if who.get("source") == "hook" and kind != "coordinator":
+        raise FailsFirstError(
+            "only the coordinator records a decision on a changed test; write QUESTION.md in your scratch folder and "
+            "ask it"
+        )
+    why = _reason(reason, "--accept-change")
+    names = tuple(tests)
+    if not names:
+        raise FailsFirstError("name at least one test (--test NAME)")
+    test, fix, test_files, _stubs, differing = _plan(root, test_commit, fix_commit)
+    _check_names(root, test, test_files, names)
+    if not differing:
+        raise FailsFirstError(
+            f"the test files did not change between {test[:12]} and {fix[:12]} (comments and spacing aside): there is "
+            "nothing to decide; run orig fails-first"
+        )
+    head = _commit(root, "HEAD")
+    entries = [
+        {
+            "step": "fails-first",
+            "subject": name,
+            "result": "none",
+            "commit": head,
+            "covers": {"test_commit": test, "fix_commit": fix},
+            "detail": {"decision": DECISION, "reason": why, "changed": differing},
+            "who": dict(who),
+        }
+        for name in names
+    ]
+    return stamps.append_many(unit.stamps, rules=rules, task=unit.task, entries=entries, clock=clock)
+
+
 def record_none(
     unit: Unit,
     root: Path,
@@ -485,8 +593,7 @@ def record_none(
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> stamps.Stamp:
     """Stamp that a task has no fails-first test (docs, tooling), with the reason; nothing is run."""
-    if not reason.strip() or len(reason.strip()) > MAX_REASON or len(reason.strip().splitlines()) > 1:
-        raise FailsFirstError(f"--none needs a reason of one line and at most {MAX_REASON} characters")
+    why = _reason(reason, "--none")
     return stamps.append(
         unit.stamps,
         rules=rules,
@@ -496,7 +603,7 @@ def record_none(
         result="none",
         commit=_commit(root, "HEAD"),
         covers={},
-        detail={"reason": reason.strip()},
+        detail={"reason": why},
         who=dict(who),
         clock=clock,
     )
