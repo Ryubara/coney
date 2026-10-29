@@ -370,7 +370,9 @@ def test_the_dispatcher_runs_the_hook_for_both_shells() -> None:
 
 # --- the open_only switch (`pull_requests.open_only` of .github/conventions.yml) -------------------------------------
 
-OPEN_ONLY_MESSAGE = "Blocked: pull requests are opened only by coney-tools pr open <task> (docs/guides/pr.md#open)"
+OPEN_ONLY_MESSAGE = (
+    "Blocked: pull requests are opened only by coney-tools pr open <task> (docs/guides/pr.md#after-the-switch)"
+)
 THIS = "owner/repo"
 
 #: Says which repository a folder's `origin` is; the tests give it instead of running git.
@@ -1069,9 +1071,9 @@ def test_an_attached_value_after_equals_is_the_value(body: Path) -> None:
 @pytest.mark.parametrize(
     "command",
     [
-        "gh api -X=PATCH repos/o/r/pulls/5 -f body=x",
-        "gh api 'repos/o/r/pulls?x=1' -f title=t -f head=h -f base=main",
-        "gh api repos/o/r/pulls/5#x -X PATCH -f body=x",
+        "gh api -X=PATCH repos/owner/repo/pulls/5 -f body=x",
+        "gh api 'repos/owner/repo/pulls?x=1' -f title=t -f head=h -f base=main",
+        "gh api repos/owner/repo/pulls/5#x -X PATCH -f body=x",
     ],
 )
 def test_open_only_refuses_the_gh_api_spellings_of_the_second_review(command: str) -> None:

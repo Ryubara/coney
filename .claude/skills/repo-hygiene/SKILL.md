@@ -44,12 +44,14 @@ Each finding has `check`, `item`, `message`, `severity` and `fix`. Take them in 
 
 ### `skill`: you fix it with judgement
 
-Keep the author's words: change only what the finding names. Write the new text to a file in scratch and apply it to
-an issue with `coney-tools issue edit N --body FILE` (it checks the body first; the issue hook refuses
-`gh issue edit --body` and `--body-file`) and to a pull request with `gh pr edit N --body-file FILE`; never paste a
-body into a shell line. Never delete an issue, a pull request or a comment. When the right answer is not yours to
-give (a missing summary, a missing reproduction), ask the reporter with `gh issue comment` and set `S-needs-info`;
-do not invent it.
+Keep the author's words: change only what the finding names. Write the new text to a file in scratch and apply it to an
+issue with `coney-tools issue edit N --body FILE` (it checks the body first; the issue hook refuses `gh issue edit
+--body` and `--body-file`). A pull request's text is not edited by hand: the PR guard refuses `gh pr edit` with
+`--title`, `--body-file` or `--attach` ([After the switch](../../../docs/guides/pr.md#after-the-switch)), so the
+engineer fixes `PR.md` and the coordinator runs `pr open <task>` again, or you say it in a comment (`gh pr comment`).
+Never paste a body into a shell line. Never delete an issue, a pull request or a comment. When the right answer is not
+yours to give (a missing summary, a missing reproduction), ask the reporter with `gh issue comment` and set
+`S-needs-info`; do not invent it.
 
 | Check | What to do |
 | --- | --- |
@@ -68,14 +70,14 @@ do not invent it.
 | `issue.progress-idle` | Ask the engineer for its state; return the issue to `S-ready-to-start` when nobody works on it. |
 | `issue.claim-orphan` | The issue says it is being worked on but nobody is assigned: claim it with `task create` if someone is on it, else set it back to `S-ready-to-start`. |
 | `issue.review-without-pr` | Find the pull request (`gh pr list --search "#N"`) and link it, or set the status back to `S-in-progress`. |
-| `pr.title`, `pr.body` | The author fixes the text in the pull request's description file in their scratch folder; if you fix it yourself, `gh pr edit N --title ...` or `--body-file`, and rerun `pr check-body`. |
-| `pr.unfinished-items` | The author finishes each unticked item in the pull request, or takes it out: work the pull request does not finish lives in its own issue. Then they update the description file and rerun `pr check-body`. |
-| `pr.remaining-uncited` | File an issue for each unchecked Remaining item and write its number into the merged pull request's description. |
+| `pr.title`, `pr.body` | The author fixes the text in the pull request's description file in their scratch folder (`PR.md`), then the coordinator runs `pr open <task>` again, which regenerates and checks it. A pull request with no unit or from a fork: ask its author in a comment. |
+| `pr.unfinished-items` | The author finishes each unticked item in the pull request, or takes it out: work the pull request does not finish lives in its own issue. Then they update the description file and rerun `pr check-body`, and the coordinator runs `pr open <task>` so the pull request carries it. |
+| `pr.remaining-uncited` | File an issue for each unchecked Remaining item and name it in a comment on the merged pull request. Writing it into the description is refused by the PR guard, so list the pull request for the maintainer, who edits it on GitHub; the audit reports it until then. |
 | `pr.affected-unedited` | Edit each open issue the merged pull request lists under Issues affected, as [After a merge](../../../docs/guides/issues.md#after-a-merge) says: change what the pull request made out of date, tick what it finished, relabel or close the issue, with `coney-tools issue edit N --body FILE`. An issue the line no longer concerns: see step 2 there. |
 | `pr.idle` | Ask the author; close the pull request with a comment when the work is abandoned. |
-| `pr.stacked-depends` | Add the `Depends on #N` line to the description. |
+| `pr.stacked-depends` | `pr open` releases only a unit based on the default branch, so a stacked pull request cannot be updated: close it with a comment naming the pull request it waits for, and start the work again as a unit from `origin/main` once that one has merged ([No stacked work](../../../docs/guides/how-we-work.md#working-in-parallel)). |
 | `pr.stacked-automerge` | `gh pr merge N --disable-auto`; auto-merge waits until the base merges. |
-| `pr.base-merged` | The author rebases onto `main` (`git rebase --onto origin/main <old base> <branch>`); then `gh pr edit N --base main`. |
+| `pr.base-merged` | Take the branch into a unit with `task start <task> --adopt-branch <branch>` ([adopting](../../../docs/guides/issues.md#adopting)); the engineer rebases it in the worktree (`git rebase --onto origin/main <old base> <branch>`) and redoes the stages; the coordinator first retargets the pull request (`gh pr edit N --base main`: `pr open` turns on auto-merge, and a pull request still on the dead base could merge into it), then runs `pr open <task> --adopt <head>`. |
 | `pr.merged-into-base` | Close by hand the issues the pull request fixes, with a comment naming it, and move the work onto `main`. |
 | `ws.scratch` | Look at the paths the finding lists (a generic `.bin` can be a tool file), then delete the finished work's captures from its scratch folder (generated media may be deleted), or ask the engineer. |
 | `files.pointer`, `files.exist`, `files.address`, `files.forms`, `files.template`, `files.ci-scope`, `files.ci-places`, `files.large-file-limit`, `files.game-files`, `files.markdown-hook` | A change to the repository: make it on a branch in a worktree as one task, with the check's rule from the conventions, and take it through the pipeline ([the pipeline](../../../docs/guides/how-we-work.md#the-pipeline)). |

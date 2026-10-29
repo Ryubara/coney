@@ -188,7 +188,9 @@ def test_the_refusals_of_several_guards_come_together() -> None:
     assert code == 2 and "coney-tools build" in err and "bound" in err.lower()
 
 
-def test_push_guard_refuses_only_in_a_subagent() -> None:
+def test_push_guard_refuses_only_in_a_subagent(monkeypatch: pytest.MonkeyPatch) -> None:
+    # With the PR guard's switch on every session is refused a push of this repository; this is push_guard's own rule.
+    monkeypatch.setattr(load_hook_module("pr_guard_repo"), "read_open_only", lambda path=None: False)
     assert DISPATCH.dispatch(bash("git push origin main"), CONFIG)[0] == 0
     assert DISPATCH.dispatch(bash("git push origin main", agent_id="a1", agent_type="engineer"), CONFIG)[0] == 2
 
@@ -573,7 +575,8 @@ def checkout_with_switch(root: Path, value: str) -> Path:
 def test_open_only_in_the_conventions_makes_the_dispatcher_refuse_gh_pr_create(tmp_path: Path) -> None:
     folder = checkout_with_switch(tmp_path, "true")
     reason = denial(run_copy(folder, "gh pr create --title 'tools: Add x' --body-file PR.md"))
-    assert reason is not None and reason.startswith("Blocked: pull requests are opened only by coney-tools pr open")
+    assert reason is not None
+    assert reason.startswith("Blocked: pull requests are opened only by coney-tools pr open")
 
 
 def test_open_only_off_in_the_conventions_leaves_the_checks_of_a_hand_typed_command(tmp_path: Path) -> None:

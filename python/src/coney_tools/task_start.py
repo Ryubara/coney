@@ -12,7 +12,8 @@ task (`kind: fix`, made by `task create --fix-of`) makes no branch or worktree: 
 fixes, so it gets a record that points there, and its `claimed` stamp joins that task's log. `--adopt` makes a unit of a
 branch that already exists, with its worktree when it has one (a pull request's branch made before `task start`
 existed): the branch keeps its name, so the pull request is not renamed, and the record starts at the commit the branch
-left the base (docs/guides/issues.md#adopting).
+left the base. `--adopt-branch BRANCH` is the same for a branch that is not named like the task; either one moves an old
+stamp log of the task aside and starts a fresh one (`task_start_adopt`, docs/guides/issues.md#adopting).
 
 The engineer tracks (`task_slots`) are counted and reported here, and a start over the limit (its track's cap, or
 the machine's places with the places other tracks keep set aside) is refused while `tasks.start.slots.enforce` is on;
@@ -42,7 +43,6 @@ from coney_tools.issue_claim_rules import limit_for, open_task_keys
 from coney_tools.task_file import TaskFile, parse_task_file
 from coney_tools.unit import head_commit
 from coney_tools.unit_record import UnitRecord, read_record, write_record
-from coney_tools.workspace_clean import list_worktrees
 
 
 @dataclass(frozen=True)
@@ -56,9 +56,12 @@ class StartRequest:
     #: Fetch the base's branch from the remote first.
     fetch: bool = True
     dry_run: bool = False
-    #: Take over a branch (and its worktree) made before units existed instead of making one: the unit keeps the
-    #: branch's name, the base is where the branch left `base`, and the history is not touched.
+    #: Take over the branch named like the task (and its worktree), made before units existed, instead of making one:
+    #: the unit keeps the branch's name, the base is where the branch left `base`, and the history is not touched.
     adopt: bool = False
+    #: The same for a branch of another name (a pull request opened by hand whose task has the card's id); an old stamp
+    #: log of the task is moved aside. docs/guides/issues.md#adopting.
+    adopt_branch: str | None = None
 
 
 @dataclass
@@ -378,8 +381,8 @@ def start_task(request: StartRequest, env: StartEnv) -> int:
     if task.task != request.task:
         out(f"refused: {path} is the task file of '{task.task}', not '{request.task}'")
         return 1
-    if request.adopt and task.kind == "fix":
-        out("refused: --adopt makes a unit of an ordinary task's branch; a fix task works in the unit it fixes")
+    if (request.adopt or request.adopt_branch is not None) and task.kind == "fix":
+        out("refused: --adopt makes a unit of an ordinary task's branch; a fix task works in its parent's unit")
         return 1
     if task.kind == "fix" and not task.parent:
         out(
@@ -410,8 +413,11 @@ def start_task(request: StartRequest, env: StartEnv) -> int:
         return 1
     if task.parent:
         return _start_fix(request, env, task, user, record_path, slot_line)
-    if request.adopt:
-        return _adopt_unit(request, env, main, task, user, record_path, slot_line)
+    if request.adopt or request.adopt_branch is not None:
+        # Imported here because task_start_adopt builds on this module's helpers.
+        from coney_tools.task_start_adopt import start_adopted
+
+        return start_adopted(request, env, main, task, user, record_path, slot_line)
     return _start_unit(request, env, main, task, user, record_path, slot_line)
 
 
@@ -464,73 +470,6 @@ def _start_unit(
     _stamp_start(record, task, who, env, steps, base_commit, base_commit)
     _post_progress(record, record_path, env)
     _summary(record, steps, line, env.scratch, "started", env)
-    return 0
-
-
-def _adopt_unit(
-    request: StartRequest, env: StartEnv, main: Path, task: TaskFile, user: str, record_path: Path, line: str
-) -> int:
-    """Make a unit of a branch that exists already (a pull request's, made before `task start` did): the record, the
-    stamps and the progress, and the worktree when the branch has none. The branch is not renamed, moved or rebased."""
-    out = env.out
-    template = env.conventions.workspace.worktrees
-    if "<branch>" not in template:
-        raise ConfigError(f"workspace.worktrees ({template}) must contain <branch>")
-    branch = task.task
-    tip = _git(main, "rev-parse", "--verify", "--quiet", f"refs/heads/{branch}^{{commit}}")
-    if tip.returncode != 0:
-        out(
-            f"refused: no branch '{branch}' to adopt; the unit keeps the pull request's branch name, so make the task "
-            f"with that name (task create --name {branch})"
-        )
-        return 1
-    existing = next((tree.path for tree in list_worktrees(main) if tree.branch == branch), None)
-    if existing is not None and existing.resolve() == main.resolve():
-        out(f"refused: '{branch}' is checked out in the main checkout; switch it to another branch first")
-        return 1
-    tree = existing if existing is not None else (main / template.replace("<branch>", branch)).resolve()
-    if existing is None and tree.exists():
-        out(f"refused: {tree} exists already and is not the worktree of '{branch}'")
-        return 1
-    report, problem = _log_report(branch, env)
-    if problem is not None:
-        out(f"refused: {problem}")
-        return 1
-    base_ref, _ = _fetch_and_resolve(request, env, main)
-    # The unit starts where the branch left the base, not at the base now: the base moved on while the branch waited.
-    left = _git(main, "merge-base", base_ref, branch)
-    if left.returncode != 0:
-        out(f"refused: '{branch}' and {base_ref} have no common commit, so there is no base to start the unit from")
-        return 1
-    base_commit = left.stdout.strip()
-    record = UnitRecord(
-        task=branch,
-        kind=task.kind,
-        issues=task.issues,
-        claimant=user,
-        branch=branch,
-        worktree=tree,
-        base_ref=base_ref,
-        base_commit=base_commit,
-        started=env.now(),
-    )
-    if request.dry_run:
-        made = "its worktree" if existing is None else f"the worktree it has ({tree})"
-        out(f"dry run: would adopt the branch '{branch}' (left {base_ref} at {base_commit[:12]}) with {made}")
-        out(f"dry run: would write {record_path}, stamp assigned and claimed, and post /progress claimed on each issue")
-        out(f"dry run: {line}")
-        return 0
-    if existing is None:
-        done = _git(main, "worktree", "add", str(tree), branch)
-        if done.returncode != 0:
-            raise ConfigError(f"git worktree add {tree} failed: {done.stderr.strip() or 'no output'}")
-    write_record(record_path, record)
-    who = env.who()
-    steps = _missing_steps(record, report)
-    _warn_unverified(who, env)
-    _stamp_start(record, task, who, env, steps, tip.stdout.strip(), base_commit, adopted=True)
-    _post_progress(record, record_path, env)
-    _summary(record, steps, line, env.scratch, "adopted the branch", env)
     return 0
 
 

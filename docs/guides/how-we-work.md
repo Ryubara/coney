@@ -318,7 +318,7 @@ Everything that is not source code sits next to the repository, never inside it:
 PCSX2 copies, Ghidra and its project, worktrees and a scratch folder. The repository cannot leak game data through
 a stray `git add`, and every worktree shares the same tools. Details: [Local workspace](workspace.md).
 
-## Working in parallel
+## Working in parallel {#working-in-parallel}
 
 Several tasks run at once, each owning the scope its claim names:
 
@@ -352,11 +352,13 @@ coordinator then opens the pull request.
 - **`coney-tools pr open <task>` opens the pull request** ([pr open](pr.md#open)): it proves the unit, writes the
   text, pushes and turns on auto-merge, and does not wait for CI room. A refusal lists every stage to redo and goes back
   to the engineer; a change to a path in `merge.manual_paths` is merged by a maintainer.
-- **The PR guard holds the other routes.** A hook (`.claude/hooks/pr_guard.py`) checks a hand-typed `gh pr create`
-  or `gh pr edit` against CI's `title` and `body` checks. `pull_requests.open_only` in
-  [.github/conventions.yml](repo:.github/conventions.yml) is off until the cutover; with it on, `pr open` is the only
-  way a pull request opens and the hook refuses the hand-typed routes in every session, the coordinator's too
-  ([The PR guard](enforcement.md#pr-guard)).
+- **The PR guard keeps the release to `pr open`.** A Claude Code hook (`.claude/hooks/pr_guard.py`) refuses, in every
+  session, the coordinator's too, the hand-typed routes it recognises: opening a pull request, rewriting its text,
+  turning on auto-merge, moving its branch and pushing this repository. Its switch is `pull_requests.open_only` in
+  [.github/conventions.yml](repo:.github/conventions.yml), on since 2026-10-27 (the maintainer's decision);
+  `coney-tools pr open` runs its own `git` and `gh` as subprocesses, which no hook sees. What it refuses, allows and
+  does not cover: [The PR guard](enforcement.md#pr-guard); the command for each release need:
+  [After the switch](pr.md#after-the-switch).
 - **A failure CI finds** (another platform, a check that cannot run locally) becomes a fix task in the fix track
   ([Tracks](#slots), [When a pull request fails checks](agents.md#ci-failures)). Stale failures restart themselves:
   `coney-tools pr list-stuck --rerun --apply` reruns a required check that failed because the runner or GitHub did,
@@ -652,9 +654,11 @@ is the day the last switches that enforce it go on and the old ways are removed.
 <!-- CUTOVER-DATE: a maintainer writes the date on the next line; until then it reads "to be set by a maintainer". -->
 **Cutover date:** to be set by a maintainer.
 
-At the cutover, in one change of [.github/conventions.yml](repo:.github/conventions.yml) and the commits beside it:
+At the cutover, in one change of [.github/conventions.yml](repo:.github/conventions.yml) and the commits beside it
+(item 1 went on early, on 2026-10-27, by the maintainer's decision):
 
-1. `pull_requests.open_only` turns on: a pull request opens only through `pr open` ([The PR guard](enforcement.md#pr-guard)).
+1. `pull_requests.open_only` is on: a pull request opens only through `pr open`
+   ([The PR guard](enforcement.md#pr-guard)).
 2. `claims.adopt` and `claims.release` turn on: an issue assigned by hand gets a claim card, and an idle claim is warned
    at 48 hours and released at 72 ([Claiming an issue](issues.md#claiming)).
 3. `tasks.start.slots.exempt_workflow` turns off, in the same change as item 2: units of `workflow` issues then hold a

@@ -37,8 +37,8 @@ PROGRESS = "/progress pr-opened"
 class Request:
     """What was asked: the task (default `CONEY_TASK`, else the branch), the unit's worktree (default: the one `task
     start` recorded), the engineer's file (default `PR.md` in the task's folder), the remote, the repository (default:
-    what `gh` makes of the remote), whether to reopen a closed pull request, to leave auto-merge off, to only try, and
-    to print one JSON object."""
+    what `gh` makes of the remote), whether to reopen a closed pull request, to leave auto-merge off, to only try, to
+    print one JSON object, and the head of a pull request opened by hand that this run takes over (`adopt`)."""
 
     task: str | None = None
     worktree: Path | None = None
@@ -49,6 +49,10 @@ class Request:
     no_auto_merge: bool = False
     dry_run: bool = False
     json: bool = False
+    #: The full commit id the branch of a pull request no `pr open` pushed is at: the lease of this run's push.
+    adopt: str | None = None
+    #: Whether `adopt` may drop commits of the pull request's branch that the unit's branch lacks (the push rewrites).
+    adopt_rewrite: bool = False
 
 
 @dataclass

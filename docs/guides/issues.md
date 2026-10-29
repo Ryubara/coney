@@ -633,25 +633,36 @@ redone. A release posts `/progress pr-opened` on each issue once, which the clai
 
 ### Adopting a branch {#adopting}
 
-A pull request's branch made before `task start` existed has no unit: no `unit.json`, no stamp log, no place in a track,
-so neither the stage commands nor `pr open` find it, and the first hand-made fixes renamed the branch and cherry-picked
-its commits, which renames the pull request's branch and so closes it. `task start <task> --adopt` makes the unit of
-the branch as it is instead:
+A pull request opened by hand, or made before `task start` existed, has a branch but no unit: no `unit.json`, no place
+in a track, and a stamp log that does not start with `assigned` and `claimed` (a log cannot be prefixed, and no agent
+may delete one). Neither the stage commands nor `pr open` find it, the PR guard refuses every hand-typed push, and a
+hand-made fix that renames the branch closes the pull request. `task start --adopt` makes the unit of the branch as it
+is instead. The route:
 
-1. Make the task with the branch's name: `coney-tools task create <issue> --name <branch>` (a task id is lower case
-   letters, digits and hyphens; a branch with a `/` or capitals is renamed first, once, before the pull request is
-   opened). The claim check is the same as for any start.
-2. The engineer runs `coney-tools task start <branch> --adopt` from the main checkout. The branch must exist and
-   must not be checked out in the main checkout; if it has a worktree (anywhere) that worktree is the unit's, else the
-   one `workspace.worktrees` names is made for it. The branch is not renamed, moved, rebased or pushed.
-3. It writes the unit record with the branch's own name and the commit the branch left the default branch at (the
-   merge base, not the default branch now: the base moved on while the branch waited), the `assigned` and `claimed`
-   stamps (`claimed` says `adopted` in its detail and covers the branch's tip) and `/progress claimed` on each issue,
-   and counts the unit in its track like any started one. A fix task cannot be adopted: it works in the unit it fixes.
+1. The coordinator makes the task: `task create <issues> --name <task id>` (`--resume` when the issues are still held;
+   the id is the one on their claim cards, often the branch's name). A task id is lower case letters, digits and
+   hyphens; a branch with a `/` or capitals is renamed first, once, before the pull request is opened.
+2. The engineer runs, from the main checkout, `coney-tools task start <task id> --adopt` for a branch named like the
+   task, else `coney-tools task start <task id> --adopt-branch <branch>`. The checks above hold, except that the
+   branch must exist (here, or on the remote, where it is made here first), be no other unit's, not be the default
+   branch and not be checked out in the main checkout. The unit is made **on that branch**, which is not renamed, moved,
+   rebased or pushed: it takes the worktree the branch has (else a new one in the workspace layout), and its base
+   commit is where the branch left the default branch (the merge base, not the default branch now: the base moved on
+   while the branch waited). The unit counts in its track like any started one. A fix task adopts nothing: it works in
+   the unit it fixes.
+3. A stamp log the task already has is **moved aside**, never deleted, to `<scratch>/<task>/stamps.legacy-<time>/`, which
+   the stamp-log hook guards too. A log that starts with `assigned` (damaged or not) or cannot be read is refused: that
+   task is started, not adopted. The new log gets `assigned` and `claimed` (the claim says `adopted` and covers the
+   branch's tip) and `/progress claimed` is posted on each issue; the old stamps do not carry over, so the stages are
+   redone: study and compare each `@orig` function, `orig fails-first`, `task check`, `task review`.
+4. The engineer confirms the branch holds every commit of the pull request and says so in the report: a commit pushed
+   from elsewhere is not in the local branch (`git cherry -v <branch> origin/<branch>`: a `+` is a missing change).
+5. The coordinator takes the pull request over with the head read from GitHub: `pr open <task> --adopt <head>`
+   ([adopting a pull request](pr.md#adopt)), which refuses when the unit lacks a commit (`--adopt-rewrite` when
+   dropping it is intended). The branch keeps its pull request, title and number.
 
-The log starts empty of stages: the adopted unit redoes Check and Review on its change (`task check`, `task review`)
-and the coordinator then runs `pr open <branch>`, which updates the pull request in place. Conclave lists a conflicting
-branch with no unit with these two commands ([Conflicts](conclave.md#conflicts)).
+Running it again changes nothing (`already started`). `--dry-run` prints the unit and the old log it would move.
+Conclave lists a conflicting branch with no unit with these two commands ([Conflicts](conclave.md#conflicts)).
 
 ### Tracks {#slots}
 

@@ -259,11 +259,12 @@ pull_requests:
   # `<!-- name -->` and `<!-- /name -->`, so a later edit finds them again.
   images: {max_bytes: 10485760, max_count: 20, extensions: [png, jpg, jpeg, gif]}
   markers: {summary: "coney:summary", facts: "coney:facts"}
-  # Whether only `coney-tools pr open` may open a pull request. What the PR guard hook (.claude/hooks/pr_guard.py)
-  # then refuses is listed in docs/guides/enforcement.md#pr-guard. A maintainer turns it on after one pull request went
-  # through `pr open`. The hook runs without packages and reads this key with a small reader of its own, so keep it a
-  # plain `open_only: true|false` line, two spaces in, under `pull_requests:`.
-  open_only: false
+  # Whether only `coney-tools pr open` may open, update, auto-merge or push a pull request of this repository. What the
+  # PR guard hook (.claude/hooks/pr_guard.py) then refuses is listed in docs/guides/enforcement.md#pr-guard, and the
+  # command for each release need in docs/guides/pr.md#after-the-switch. On since 2026-10-27, a maintainer's decision.
+  # The hook runs without packages and reads this key with a small reader of its own, so keep it a plain
+  # `open_only: true|false` line, two spaces in, under `pull_requests:`.
+  open_only: true
 
 merge:
   # Mirrors the GitHub ruleset "Main" and the repository settings, which only a maintainer changes; the audit (a later

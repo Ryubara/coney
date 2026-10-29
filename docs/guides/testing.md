@@ -365,8 +365,9 @@ change (`pr text` takes it from any area).
   text (`PR.md`), paths relative to the scratch folder: `![Coney after](./shots/after.png)`. `coney-tools pr open`
   ([pr open](pr.md#open)) does the attaching when the coordinator releases the unit: it runs from that folder and passes
   one `--attach` per file (on an update only the pictures that are new), then reads the description back to check that
-  each reference became an upload address and no local path is left. Underneath it is this, which is also what to run
-  by hand outside the workflow:
+  each reference became an upload address and no local path is left. Underneath it is this, which is what a person
+  runs by hand from their own terminal or fork (in a Claude Code session in this repository the PR guard refuses it:
+  [After the switch](pr.md#after-the-switch)):
 
   ```sh
   cd scratch/<branch>

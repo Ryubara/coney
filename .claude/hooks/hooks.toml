@@ -29,8 +29,8 @@ powershell_modes = ["bypassPermissions"]
 # has no file in .claude/agents/ (test_agent_definitions.py knows).
 default_role = "contributor"
 
-# The PR guard's switch is not here: it is `pull_requests.open_only` in .github/conventions.yml (off until one pull request
-# has gone through `coney-tools pr open`), which pr_guard.py reads itself.
+# The PR guard's switch is not here: it is `pull_requests.open_only` in .github/conventions.yml (on since 2026-10-27),
+# which pr_guard.py reads itself.
 
 # What no session may touch (~/.coney, private keys, stamp logs) is built into protect.py: a settings file that
 # cannot be read must not take it away, and no setting may weaken it.

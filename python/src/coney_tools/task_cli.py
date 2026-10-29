@@ -74,8 +74,13 @@ def add_task_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser])
     start.add_argument(
         "--adopt",
         action="store_true",
-        help="make a unit of the branch named like the task that exists already (made before units existed), keeping "
-        "its name and its worktree",
+        help="make a unit of the branch named like the task that exists already (made before units existed or opened "
+        "by hand), keeping its name and its worktree; an old stamp log is moved aside",
+    )
+    start.add_argument(
+        "--adopt-branch",
+        metavar="BRANCH",
+        help="the same for an existing branch that is not named like the task",
     )
     slots = commands.add_parser(
         "slots",
@@ -262,7 +267,8 @@ def run_task(
             root, github, conventions, scratch_folder(root), now, lambda: who, build_slots=_build_slots(root)
         )
         return start_task(
-            StartRequest(name, args.base, args.remote, not args.no_fetch, args.dry_run, args.adopt), start_env
+            StartRequest(name, args.base, args.remote, not args.no_fetch, args.dry_run, args.adopt, args.adopt_branch),
+            start_env,
         )
     if args.command == "leads":
         text = ""

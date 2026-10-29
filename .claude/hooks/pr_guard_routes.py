@@ -150,23 +150,101 @@ _GH_API = re.compile(
 _METHOD = re.compile(r"(?:^|[ \t])(?:-X[ \t]*=?|--method(?:[ \t]+|=))[\"']?(?P<method>\w+)", re.IGNORECASE)
 #: A field or input of a `gh api` call, which makes gh send a POST unless a method is given.
 _FIELDS = re.compile(r"(?:^|[ \t])(?:-[fF]|--field|--raw-field|--input)")
-#: A REST endpoint, with its quotes dropped and perhaps a host: `repos/<owner>/<name>/pulls`, nothing after it, which
+#: A REST endpoint, with its quotes dropped and perhaps a host, always `repos/<owner>/<name>/...` (the owner and name
+#: are captured; `{owner}/{repo}` are placeholders gh fills in from the checkout): `.../pulls`, nothing after it, which
 #: opens a pull request; or `.../pulls/<number>`, which a PATCH rewrites (title, body, base, state).
-_PULLS = re.compile(r"(?:^|[ \t/])repos/[^/\s]+/[^/\s]+/pulls/?(?=[ \t?#]|$)")
-_PULL = re.compile(r"(?:^|[ \t/])repos/[^/\s]+/[^/\s]+/pulls/(?:\d+|\{[^}\s]+\})/?(?=[ \t?#]|$)")
+_REPO = r"(?:^|[ \t/])repos/(?P<owner>[^/\s]+)/(?P<name>[^/\s]+)"
+_PULLS = re.compile(_REPO + r"/pulls/?(?=[ \t?#]|$)")
+_PULL = re.compile(_REPO + r"/pulls/(?:\d+|\{[^}\s]+\})/?(?=[ \t?#]|$)")
+#: `.../pulls/<number>/update-branch`, which a PUT moves: GitHub merges the base branch into it.
+_UPDATE_BRANCH = re.compile(_REPO + r"/pulls/(?:\d+|\{[^}\s]+\})/update-branch/?(?=[ \t?#]|$)")
+#: The git data and repository endpoints that move a branch without `git push`: `.../git/refs` and `.../git/refs/<ref>`
+#: (POST makes a ref, PATCH moves it, DELETE removes it), `.../merges` (POST merges one branch into another) and
+#: `.../contents/<path>` (PUT or DELETE commits a file to a branch).
+_REFS = re.compile(_REPO + r"/git/refs(?:/[^\s?#]*)?/?(?=[ \t?#]|$)")
+_MERGES = re.compile(_REPO + r"/merges/?(?=[ \t?#]|$)")
+_CONTENTS = re.compile(_REPO + r"/contents/[^\s?#]+")
 #: A GraphQL query the hook cannot read: from a file (`query=@mut.graphql`), a variable (`query="$Q"`) or `--input`.
 _HIDDEN_QUERY = re.compile(r"(?:^|[ \t])(?:-[fF]|--field|--raw-field)(?:[ \t]+|=)?[\"']?query=[\"']?[@$]|--input")
-#: The GraphQL mutations that open a pull request, rewrite its text or turn on auto-merge.
+#: The endpoint of a GraphQL call; only a call to it can run a mutation.
+_GRAPHQL = re.compile(r"(?:^|[ \t])[\"']?graphql[\"']?(?=[ \t]|$)")
+#: The GraphQL mutations that open a pull request, rewrite its text or turn on auto-merge ...
 _PR_MUTATIONS = ("createPullRequest", "updatePullRequest", "enablePullRequestAutoMerge")
+#: ... and those that move a branch: `updatePullRequestBranch`, a commit made on a branch, a ref made, moved or deleted,
+#: a branch merged into another.
+_BRANCH_MUTATIONS = (
+    "updatePullRequestBranch",
+    "createCommitOnBranch",
+    "createRef",
+    "updateRef",
+    "deleteRef",
+    "mergeBranch",
+)
 
 
-def api_reasons(command: str, powershell: bool = False) -> list[str]:
-    """Why each `gh api` call of the command that opens or rewrites a pull request is refused (only with the switch
-    on): a POST to `pulls`, a PATCH of `pulls/<n>`, a GraphQL mutation of `_PR_MUTATIONS`, or a GraphQL query the hook
-    cannot read."""
+#: Where a GraphQL mutation starts: the word `mutation`, an optional name and variables, then the selection's `{`.
+_MUTATION_START = re.compile(r"\bmutation\b\s*(?:\w+\s*)?(?:\([^)]*\)\s*)?\{")
+#: A GraphQL string, as the shell passes it: bare inside a single-quoted argument, but with its quotes escaped (`\"` in
+#: bash, a backtick in PowerShell) inside a double-quoted one.
+_STRING_BARE = re.compile(r'"(?:[^"\\]|\\.)*"', re.DOTALL)
+_STRING_ESCAPED = re.compile(r'(?:\\|`)"(?:(?!(?:\\|`)").)*(?:\\|`)"', re.DOTALL)
+#: A GraphQL comment, to the end of its line.
+_COMMENT = re.compile(r"#[^\n]*")
+
+
+def _mutation(args: str, names: tuple[str, ...]) -> bool:
+    """Whether a GraphQL document in `args` is a mutation that calls one of `names`: the word `mutation`, then a field
+    of that name with an argument list. The name in a comment, a title, a string argument (an `addComment` body) or a
+    query is no mutation."""
+    call = re.compile(r"\b(?:" + "|".join(names) + r")\b\s*\(")
+    inside: list[tuple[int, int]] = []
+    for start in _MUTATION_START.finditer(args):
+        if any(lo <= start.start() < hi for lo, hi in inside):  # the word sits in a string of an earlier one: text
+            continue
+        before = args[: start.start()]
+        quote = before[max(before.rfind("'"), before.rfind('"')) :][:1]
+        strings = _STRING_ESCAPED if quote == '"' else _STRING_BARE
+        # strings and comments are blanked from the mutation's start on, so a name in them is no call
+        spans = [found.span() for found in strings.finditer(args, start.start())]
+        document = list(args)
+        for lo, hi in spans:
+            document[lo:hi] = " " * (hi - lo)
+        text = _COMMENT.sub(lambda found: " " * len(found.group(0)), "".join(document[start.start() :]))
+        if call.search(text):
+            return True
+        inside += spans
+    return False
+
+
+@dataclass
+class ApiRoute:
+    """One `gh api` call the switch refuses."""
+
+    #: Why it is refused.
+    reason: str
+    #: The `owner/name`, lower-cased, the endpoint names; None for a GraphQL call, which names none, and for the
+    #: placeholders `{owner}/{repo}`, which gh fills in from the folder the command runs in.
+    repository: str | None = None
+    #: Whether the endpoint names `{owner}/{repo}`: the repository is then the folder's.
+    placeholder: bool = False
+
+
+def _route(reason: str, found: re.Match[str]) -> ApiRoute:
+    """The refusal of a REST endpoint, with the repository it names."""
+    owner, name = found.group("owner"), found.group("name")
+    if owner.startswith("{") or name.startswith("{"):
+        return ApiRoute(reason, None, True)
+    return ApiRoute(reason, f"{owner}/{name}".lower())
+
+
+def api_routes(command: str, powershell: bool = False) -> list[ApiRoute]:
+    """Each `gh api` call of the command that the switch refuses, and the repository its endpoint names: a POST to
+    `pulls`, a PATCH of `pulls/<n>`, a PUT of `pulls/<n>/update-branch`, a POST, PATCH or DELETE of `git/refs`, a POST
+    of `merges`, a PUT or DELETE of `contents/<path>`, a GraphQL mutation of `_PR_MUTATIONS` or `_BRANCH_MUTATIONS`
+    (read as a mutation, not as any text), or a GraphQL query the hook cannot read."""
     text = _clean(command)
     bare = _mask(text, powershell)
-    reasons: list[str] = []
+    routes: list[ApiRoute] = []
     for match in _GH_API.finditer(bare):
         end = re.search(r"[;&|)\n]", bare[match.end() :])
         stop = match.end() + end.start() if end else len(text)
@@ -174,12 +252,35 @@ def api_reasons(command: str, powershell: bool = False) -> list[str]:
         endpoint = args.replace("'", " ").replace('"', " ")
         method = _METHOD.search(args)
         verb = method.group("method").upper() if method else ("POST" if _FIELDS.search(args) else "GET")
-        if verb == "POST" and _PULLS.search(endpoint):
-            reasons.append("`gh api` opens a pull request by hand.")
-        elif verb == "PATCH" and _PULL.search(endpoint):
-            reasons.append("`gh api` rewrites a pull request by hand.")
-        elif any(name in args for name in _PR_MUTATIONS):
-            reasons.append("`gh api graphql` opens, rewrites or sets auto-merge on a pull request by hand.")
-        elif re.search(r"(?:^|[ \t])[\"']?graphql[\"']?(?=[ \t]|$)", args) and _HIDDEN_QUERY.search(args):
-            reasons.append("`gh api graphql` reads its query from a file or variable, which the hook cannot read.")
-    return reasons
+        found: re.Match[str] | None
+        if verb == "POST" and (found := _PULLS.search(endpoint)):
+            routes.append(_route("`gh api` opens a pull request by hand.", found))
+        elif verb == "PATCH" and (found := _PULL.search(endpoint)):
+            routes.append(_route("`gh api` rewrites a pull request by hand.", found))
+        elif verb == "PUT" and (found := _UPDATE_BRANCH.search(endpoint)):
+            routes.append(_route("`gh api` moves a pull request's branch by hand.", found))
+        elif verb in ("POST", "PATCH", "DELETE") and (found := _REFS.search(endpoint)):
+            routes.append(
+                _route(
+                    "`gh api` makes, moves or deletes a git ref by hand, which moves a pull request's branch.", found
+                )
+            )
+        elif verb == "POST" and (found := _MERGES.search(endpoint)):
+            routes.append(
+                _route("`gh api` merges one branch into another by hand, which moves a pull request's branch.", found)
+            )
+        elif verb in ("PUT", "DELETE") and (found := _CONTENTS.search(endpoint)):
+            routes.append(
+                _route("`gh api` commits a file to a branch by hand, which moves a pull request's branch.", found)
+            )
+        elif _GRAPHQL.search(args) and _mutation(args, _BRANCH_MUTATIONS):
+            routes.append(
+                ApiRoute("`gh api graphql` moves a pull request's branch by hand (a commit, a ref or a merge).")
+            )
+        elif _GRAPHQL.search(args) and _mutation(args, _PR_MUTATIONS):
+            routes.append(ApiRoute("`gh api graphql` opens, rewrites or sets auto-merge on a pull request by hand."))
+        elif _GRAPHQL.search(args) and _HIDDEN_QUERY.search(args):
+            routes.append(
+                ApiRoute("`gh api graphql` reads its query from a file or variable, which the hook cannot read.")
+            )
+    return routes

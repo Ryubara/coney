@@ -298,7 +298,11 @@ def push(git: Git, worktree: Path, remote: str, branch: str, tip: str, expected:
         return PushResult(True, "pushed")
     now = remote_tip(git, worktree, remote, branch)
     if now and now != expected:
-        recorded = f"the last pr open left it at {expected[:12]}" if expected else "no earlier pr open pushed it"
+        recorded = (
+            f"the last pr open left it at {expected[:12]}"
+            if expected
+            else "no earlier pr open pushed it; a pull request opened by hand is taken over with --adopt <its head>"
+        )
         return PushResult(
             False,
             f"{remote}/{branch} moved to {now[:12]} ({recorded}); fetch it and have the engineer rebase",
