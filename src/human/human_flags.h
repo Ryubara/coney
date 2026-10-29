@@ -61,6 +61,13 @@ inline constexpr std::uint64_t kManualStun = 0x8000000;
 /// Its movement locked (`HuLockMovement`, `0x00234ef8`). **Coney stand-in**: what reads the bit is not on the page, so
 /// a locked human is moved neither by its stick nor by its brain, as an arrested one is; it still fights and acts.
 inline constexpr std::uint64_t kMovementLocked = 0x200000000;
+/// Hard to stun (`HuSetHardToStun`, the power class's byte `+0x3b`): a hit stuns only a human already stunned on his
+/// feet (`Human_PlayReaction`, `0x0026a6d0`).
+inline constexpr std::uint64_t kHardToStun = 0x1000000000;
+/// Set by `HuSetBlockFromReact` and the power class's byte `+0x3d`; its reader is not traced.
+inline constexpr std::uint64_t kBlockFromReact = 0x800000000;
+/// The pair of kIncreasedReact the power class's byte `+0x3e` sets at -1; its reader is not traced.
+inline constexpr std::uint64_t kIncreasedReactOff = 0x400000;
 /// Cannot be tackled (`HuBlockTackle`; inferred from the name: the tackle code that reads it is not on the page).
 inline constexpr std::uint64_t kBlockTackle = 0x100000000;
 /// A handcuffed human a player may free (`HuSetUnarrestable`); what else reads it is not on the page.

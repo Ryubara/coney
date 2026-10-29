@@ -158,6 +158,7 @@ add_executable(coney_tests
     platform/disc_pause_options_test.cpp
     platform/disc_pause_stats_test.cpp
     platform/disc_game_stats_test.cpp
+    platform/disc_level99_class_steps_test.cpp
     platform/disc_level99_player2_test.cpp
     platform/disc_hub_workout_test.cpp
     platform/disc_level95_crew_lock_test.cpp
@@ -283,6 +284,7 @@ target_sources(coney_tests PRIVATE
     animation/disc_anim_clips_test.cpp
     animation/skeleton_test.cpp
     characters/character_data_test.cpp
+    characters/cfg_init_fields_test.cpp
     characters/character_class_test.cpp
     characters/character_types_test.cpp
     characters/starting_money_test.cpp
@@ -312,6 +314,7 @@ target_sources(coney_tests PRIVATE
     camera/follow_script_test.cpp
     human/disc_player_placement_test.cpp
     human/disc_player_test.cpp
+    human/class_flags_test.cpp
     human/human_edit_test.cpp
     human/human_test.cpp
     human/knockout_test.cpp
@@ -384,6 +387,7 @@ target_sources(coney_tests PRIVATE
 # The AI humans' brains (docs/research/ai/index.md).
 target_sources(coney_tests PRIVATE
     ai/face_mood_test.cpp
+    ai/hu_create_init_test.cpp
     ai/attack_choice_test.cpp
     ai/attack_reach_test.cpp
     ai/fidget_action_test.cpp

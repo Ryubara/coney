@@ -342,14 +342,17 @@ void print(std::size_t fence, std::uint64_t delay, const Timeline& t) {
 TEST_CASE("the disc's level99: the wooden fence's break to the dealer's cut is the original's, and the fence goes at "
           "the hit",
           "[disc][story][fence]") {
+    // Expected: scripting.md#level99-p2-vermin-fence, confirmed (runtime)
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
     }
-    // The charge is delayed 0, 18 and 21 updates to meet the fence's 60-tick phase at a middling wait (the removal 20
+    // The charge is delayed 0, 17 and 20 updates to meet the fence's 60-tick phase at a middling wait (the removal 19
     // updates after the hit), a short one (2) and the longest (29); the second fence is charged once too: the
-    // original's window, 15-44 updates, from near both ends.
-    const std::vector<std::pair<std::size_t, std::uint64_t>> charges{{0, 0}, {0, 18}, {0, 21}, {1, 0}};
+    // original's window, 15-44 updates, from near both ends. The delays follow the lesson's timing, which moves the
+    // phase: they were 18 and 21 while the lesson's unsized humans, Vermin among them, were made at Coney's 0.97, not
+    // 1.0 (human-init.md#size).
+    const std::vector<std::pair<std::size_t, std::uint64_t>> charges{{0, 0}, {0, 17}, {0, 20}, {1, 0}};
     std::uint64_t gapLeast = kCutMost;
     std::uint64_t gapMost = 0;
     for (const auto& [fence, delay] : charges) {
@@ -391,6 +394,7 @@ TEST_CASE("the disc's level99: the wooden fence's break to the dealer's cut is t
 TEST_CASE("the disc's level99: a player who walks up to the wooden fence and then charges it sees no fade before it "
           "breaks",
           "[disc][story][fence]") {
+    // Expected: scripting.md#level99-p2-vermin-fence, confirmed (runtime)
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");

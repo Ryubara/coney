@@ -39,6 +39,10 @@ struct CharacterType {
     /// `+0x14b`, `CfgChar`'s 13th argument: 1 for the women's types, whose vocal animation sounds use the `_female`
     /// entries (docs/research/sound-events.md#players).
     std::optional<int> female;
+    /// `+0x18c`, `CfgChar`'s 17th argument (31 characters kept): the object type a human of the class holds from his
+    /// creation (`dyn_baton` for the police), `none` for most; empty when the call gave none
+    /// (docs/research/characters.md#classes).
+    std::string weapon;
 };
 
 /// The type `call` (a recorded `CfgChar` call's arguments) configures; nothing when its first argument is not a number.

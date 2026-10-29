@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstdint>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -35,6 +37,9 @@ struct StartingCarry {
     int money = 0;        ///< `+0x370`, 0-999.
     std::string object{}; ///< `+0x257`: `none` for nothing.
     int dropChance = 0;   ///< `+0x278`.
+    /// The brain's ped type (`+0x26c`) the category gives: 1 or 2 for categories 4 and 6, 3 for 5 and 7; nothing for
+    /// any other, whose brain keeps its own.
+    std::optional<std::uint16_t> pedType{};
 };
 
 /// The category whose ClassMoney a type of `config` reads (16 for category 4 with the alternate byte).

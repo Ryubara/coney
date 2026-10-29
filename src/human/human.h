@@ -568,6 +568,9 @@ class Human final : public Holdable {
     /// motion) is sized from the scale at each use, so the body follows at once.
     /// @orig 0x0023b0e0 Human_SetScale (unknown)
     void setScale(float scale) { m_scale = scale; }
+    /// Stub for the tests: the Entity editor's scale edit, setScale() until the made size is ported.
+    // @coney-only stub of the editor's edit for the tests-first commit
+    void editScale(float scale) { m_scale = scale; }
 
     // Coney's debug tooling: what the Entity editor changes on a human (docs/guides/debug-menu.md#entity-editor).
 

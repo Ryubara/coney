@@ -248,7 +248,7 @@ std::optional<PlayerTraits> CharacterTypes::playerTraitsOf(int type) const {
     if (const CharacterType* classRecord = find(traits.classType)) {
         traits.damage = classRecord->damage;
     }
-    traits.powerClassId = powerClassOf(type, own->category.value_or(0), own->powerClass.value_or(0), true);
+    traits.powerClassId = powerClassOf(type, own->category.value_or(0), own->powerClass.value_or(0));
     if (const combat::PowerClass* power = findSorted(m_powerClasses, traits.powerClassId)) {
         traits.powerClass = *power;
     }

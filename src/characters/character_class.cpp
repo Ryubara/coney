@@ -133,11 +133,13 @@ int warriorPowerClassOf(int type) {
     return warrior == kOtherWarriorClass ? kOtherWarriorPowerClass : kFirstWarriorPowerClass + warrior;
 }
 
-// Human_Init's power class byte +0x1b9: a type of the Warriors' category takes his Warrior's, any other the record's
-// (the `player` gate is a stand-in, as the header says).
+// Human_Init's power class byte +0x1b9: a type of the Warriors' category takes his Warrior's, any other the record's.
 // @orig 0x00218008 Human_Init (unknown)
-int powerClassOf(int type, int category, int ownClass, bool player) {
-    return player && category == kWarriorsCategory ? warriorPowerClassOf(type) : ownClass;
+int powerClassOf(int type, int category, int ownClass) {
+    return category == kWarriorsCategory ? warriorPowerClassOf(type) : ownClass;
 }
+
+// Stub until the port: no class has a size of its own.
+std::optional<float> typeScaleOf(int /*classType*/, bool /*coop*/) { return std::nullopt; }
 
 } // namespace coney::characters
