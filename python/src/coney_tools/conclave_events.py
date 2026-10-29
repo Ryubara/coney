@@ -30,44 +30,22 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from coney_tools.conclave_sources import Sources, iso_utc
+from coney_tools.conclave_conflicts import CAUSE as CONFLICT
+from coney_tools.conclave_conflicts import Found, conflict_events
+from coney_tools.conclave_sources import Sources, event_row, iso_utc
 from coney_tools.config import ConfigError
 from coney_tools.conventions import ConclaveWatch
-from coney_tools.pr_hold import Hold, HoldsRead, holds_folder, read_active
+from coney_tools.pr_hold import Hold, HoldsRead, covers_conflict, holds_folder, read_active
 from coney_tools.unit import Unit
 
 #: Every kind of event, in the order `unread` lists them.
-KINDS = ("check-failed", "pr-stuck", "merged", "unit-ready", "question")
+KINDS = ("check-failed", "pr-stuck", "conflict-fix", "merged", "unit-ready", "question")
 #: The kinds that read the open and merged pull requests, the release queue and the unit folders.
-PR_KINDS = ("check-failed", "pr-stuck", "merged")
+PR_KINDS = ("check-failed", "pr-stuck", "conflict-fix", "merged")
 #: How many digits of the change hash an event's id keeps.
 CHANGE_DIGITS = 12
 #: The longest first line of a question that is sent (an event is one line in a wake).
 QUESTION_CHARACTERS = 200
-
-
-def _event(
-    event_id: str,
-    kind: str,
-    text: str,
-    do: str,
-    since: str | None,
-    ref: dict[str, Any],
-    guard: bool = False,
-    handled_by: str | None = None,
-) -> dict[str, Any]:
-    """One event row; `handled_by` set makes it a handled one."""
-    return {
-        "id": event_id,
-        "kind": kind,
-        "state": "open" if handled_by is None else "handled",
-        "ref": ref,
-        "since": since,
-        "text": text,
-        "do": do,
-        "guard": guard,
-        "handled_by": handled_by,
-    }
 
 
 def _hold_text(hold: Hold) -> str:
@@ -75,13 +53,19 @@ def _hold_text(hold: Hold) -> str:
     return f"{hold.who} until {iso_utc(hold.until)}"
 
 
-def _pull_problems(prs: dict[str, Any], holds: HoldsRead, now: datetime) -> list[dict[str, Any]]:
-    """An event for each problem `pr list-stuck` found, handled when a running hold covers its cause."""
+def _pull_problems(
+    prs: dict[str, Any], holds: HoldsRead, now: datetime, rules: ConclaveWatch, conflicts_apart: bool
+) -> list[dict[str, Any]]:
+    """An event for each problem `pr list-stuck` found, handled when a running hold covers its cause.
+
+    With `conflicts_apart` the conflicts are left out: `conclave_conflicts` makes work of them."""
     heads = {int(row["number"]): row for row in prs.get("prs", [])}
     found: list[dict[str, Any]] = []
     for item in (prs.get("health") or {}).get("stuck", []):
         number = int(item["number"])
         cause = str(item["cause"])
+        if conflicts_apart and cause == CONFLICT:
+            continue
         row = heads.get(number, {})
         head = str(row.get("head") or "unknown")[:7]
         checks = sorted(str(name) for name in item.get("checks") or [])
@@ -91,9 +75,18 @@ def _pull_problems(prs: dict[str, Any], holds: HoldsRead, now: datetime) -> list
         branch = str(item.get("branch") or row.get("branch") or "")
         detail = str(item.get("detail") or "")
         text = f"#{number}{' ' + branch if branch else ''}: {cause}{' ' + detail if detail else ''}"
-        hold = next((held for held in holds.holds if held.pr == number and held.covers(cause, now, head)), None)
+        hold = next(
+            (
+                held
+                for held in holds.holds
+                if held.pr == number
+                and held.covers(cause, now, head)
+                and (cause != CONFLICT or covers_conflict(held, rules))
+            ),
+            None,
+        )
         found.append(
-            _event(
+            event_row(
                 event_id,
                 "check-failed" if cause == "checks-failed" else "pr-stuck",
                 text,
@@ -121,7 +114,7 @@ def _merges(prs: dict[str, Any], rules: ConclaveWatch, now: datetime) -> list[di
             continue
         number = int(pull["number"])
         found.append(
-            _event(
+            event_row(
                 f"merged:{number}",
                 "merged",
                 f"#{number} {pull.get('branch', '')} merged",
@@ -161,7 +154,7 @@ def _ready_units(src: Sources, release: dict[str, Any], unread: set[str]) -> lis
             continue
         extra = "" if name == "PR.md" else f" --text {unit['path']}"
         found.append(
-            _event(
+            event_row(
                 f"unit:{branch}:{name}:{ready.change[:CHANGE_DIGITS]}",
                 "unit-ready",
                 f"{branch}: {name} is ready for pr open",
@@ -204,7 +197,7 @@ def _questions(scratch: Path, tasks: list[str], rules: ConclaveWatch) -> list[di
                 continue
             since = iso_utc(datetime.fromtimestamp(asked, UTC))
             found.append(
-                _event(
+                event_row(
                     f"question:{task}:{path.name}:{since}",
                     "question",
                     f"{task} asks: {_first_line(path)}",
@@ -246,16 +239,29 @@ def collect_events(src: Sources, report: dict[str, Any], release: dict[str, Any]
     found: list[dict[str, Any]] = []
     holds = read_active(holds_folder(scratch, rules), now)
     prs = report.get("prs")
-    if not isinstance(prs, dict) or prs.get("error"):
-        unread.update(PR_KINDS)
-    else:
-        found += _pull_problems(prs, holds, now) + _merges(prs, rules, now)
-        if prs.get("merged_error"):
-            unread.add("merged")
+    prs_read = isinstance(prs, dict) and not prs.get("error")
+    ready: list[dict[str, Any]] = []
     if release is None or release.get("error"):
         unread.add("unit-ready")
     else:
-        found += _ready_units(src, release, unread)
+        ready = _ready_units(src, release, unread)
+    conflicts: Found | None = None
+    if prs_read:
+        # Conflicts are work, not news (conclave_conflicts): a trial rebase, then a unit-ready or a conflict-fix event.
+        try:
+            conflicts = conflict_events(src, report, release, holds, ready, unread)
+        except (ConfigError, OSError, ValueError, KeyError, TypeError):
+            unread.add("conflict-fix")
+    if not prs_read or not isinstance(prs, dict):
+        unread.update(PR_KINDS)
+    else:
+        found += _pull_problems(prs, holds, now, rules, conflicts is not None) + _merges(prs, rules, now)
+        if prs.get("merged_error"):
+            unread.add("merged")
+    if conflicts is not None:
+        found += conflicts.events
+        ready = conflicts.ready
+    found += ready
     folders = _question_folders(src, report, unread)
     found += _questions(scratch, folders, rules)
     found.sort(key=lambda event: (event["since"] or "", event["id"]))

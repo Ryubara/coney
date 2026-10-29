@@ -154,7 +154,10 @@ coney-tools coord status [--json] [--github] [--ids] [--kind KIND]
 
 `conclave snapshot` prints everything the [Conclave mod](conclave.md) draws, as one JSON object. The mod is written in
 TypeScript and cannot read the task file, the stamp log, the claim cards or the hook settings, so this command reads
-them and the mod only draws the result. It is read-only: it writes nothing, to GitHub or to disk.
+them and the mod only draws the result. It is read-only: it writes nothing, to GitHub or to the repository. The one
+exception is a read with `--github` that finds a conflicting pull request, which fetches `main`, makes a throwaway
+worktree for a trial rebase (removed again) and keeps a small ledger of the conflicts in the scratch folder
+([Conflicts](conclave.md#conflicts)).
 
 ```sh
 uv run --project python coney-tools conclave snapshot            # one line per section
@@ -165,10 +168,10 @@ uv run --project python coney-tools conclave snapshot --json --github --unit fix
 Without `--github` it reads only the machine, in about a second. `--github` adds the claim cards, the open and recently
 merged pull requests (with the [`pr list-stuck`](coney-tools-pr.md#pr-list-stuck) causes), the open issues the
 claims, the units and `P-critical` name and the [events](conclave.md#watchers) (a failed check, a merge, a unit ready
-for `pr open`, a question, each with an id and a state), through `gh`, in about 6.6 seconds. `--unit TASK` keeps one
-unit's row (exit 2 when there is none). The sections, each with an `error` that is `null` when it was read, and the rest
-of the shape are in [Conclave](conclave.md#snapshot); the exit code is 0 whatever a section says, and 2 when the command
-cannot run at all. The limits and intervals it sends are the `conclave` section of
+for `pr open`, a conflict to fix, a question, each with an id and a state), through `gh`, in about 6.6 seconds. `--unit
+TASK` keeps one unit's row (exit 2 when there is none). The sections, each with an `error` that is `null` when it was
+read, and the rest of the shape are in [Conclave](conclave.md#snapshot); the exit code is 0 whatever a section says, and
+2 when the command cannot run at all. The limits and intervals it sends are the `conclave` section of
 [.github/conventions.yml](repo:.github/conventions.yml).
 
 <!-- command-reference:begin conclave -->

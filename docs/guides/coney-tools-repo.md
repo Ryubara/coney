@@ -294,6 +294,7 @@ uv run --project python coney-tools task create ISSUE [ISSUE ...] [--terms TERM 
     [--name ID] [--resume] [--dry-run]
 uv run --project python coney-tools task create --fix-of ISSUE [--terms TERM ...] [--name ID] [--dry-run]
 uv run --project python coney-tools task start [TASK] [--base REF] [--remote NAME] [--no-fetch] [--dry-run]
+    [--adopt]
 uv run --project python coney-tools task slots [--json]
 uv run --project python coney-tools task slots --admit [--agent-type TYPE] [--task ID | --brief FILE|-] [--reserve]
     [--model M] [--effort E]
@@ -462,7 +463,7 @@ coney-tools task create [ISSUE ...] [--terms TERM [TERM ...]] [--scope SCOPE] [-
 Make the branch, worktree and unit record of a claimed task and stamp assigned and claimed.
 
 ```text
-coney-tools task start [TASK] [--base REF] [--remote REMOTE] [--no-fetch] [--dry-run]
+coney-tools task start [TASK] [--base REF] [--remote REMOTE] [--no-fetch] [--dry-run] [--adopt]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -472,6 +473,7 @@ coney-tools task start [TASK] [--base REF] [--remote REMOTE] [--no-fetch] [--dry
 | `--remote REMOTE` | text | `origin` | the git remote to fetch from (default: origin) |
 | `--no-fetch` | flag | off | start from the base as it is here, without fetching |
 | `--dry-run` | flag | off | check and print; make, stamp and post nothing |
+| `--adopt` | flag | off | make a unit of the branch named like the task that exists already (made before units existed), keeping its name and its worktree |
 
 ### `task slots` {#task-slots-usage}
 

@@ -294,6 +294,20 @@ def _front(path: Path) -> dict[str, Any] | None:
     return front if isinstance(front, dict) else None
 
 
+def issues_of(folder: Path, conventions: Conventions) -> frozenset[int]:
+    """The issues a task folder's task file names, or its unit record when it has none; empty when neither can be read.
+
+    Conclave uses it to tell which task in the fix line is the fix of a given issue."""
+    front = _front(folder / conventions.tasks.file)
+    try:
+        if front is not None:
+            return frozenset(int(item) for item in front.get("issues") or [])
+        unit_path = folder / conventions.tasks.start.unit_file
+        return frozenset(read_record(unit_path).issues) if unit_path.is_file() else frozenset()
+    except (UnitRecordError, ValueError, TypeError):
+        return frozenset()
+
+
 def scan(
     scratch: Path,
     conventions: Conventions,

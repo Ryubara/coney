@@ -54,8 +54,11 @@ class Out:
         rules: ConclaveWatch = RULES,
         now: datetime = NOW,
         head: Callable[[int], str] = lambda number: "a1b2c3d4e5f6" + "0" * 28,
+        conflicting: Callable[[int], bool] = lambda number: False,
     ) -> int:
-        return pr_hold.run_hold(args(*words), scratch, rules, now, self.out.append, self.err.append, head)
+        return pr_hold.run_hold(
+            args(*words), scratch, rules, now, self.out.append, self.err.append, head, conflicting=conflicting
+        )
 
 
 # --- the store ------------------------------------------------------------------------------------------------------
@@ -230,3 +233,55 @@ def test_the_command_needs_a_pull_request_unless_it_lists(tmp_path: Path) -> Non
 
 def test_the_holds_folder_is_in_the_scratch_directory_under_the_conventions_name(tmp_path: Path) -> None:
     assert pr_hold.holds_folder(tmp_path, RULES) == tmp_path / "pr-holds"
+
+
+# --- a waiver on a conflict -----------------------------------------------------------------------------------------
+
+DECISION = "waits for the maintainer's answer on #1130"
+
+
+def test_a_waiver_on_a_conflict_needs_a_note_that_names_a_maintainer_decision(tmp_path: Path) -> None:
+    out = Out()
+    assert out.run(tmp_path, "812", "--cause", "conflict", "--note", "will do it later") == 2
+    assert "maintainer decision" in out.err[0] and "--who" in out.err[0]
+    assert pr_hold.read_active(tmp_path, NOW).holds == []
+    assert out.run(tmp_path, "812", "--cause", "conflict", "--note", DECISION) == 0
+    [held] = pr_hold.read_active(tmp_path, NOW).holds
+    assert held.waived and held.cause == "conflict" and held.note == DECISION
+
+
+def test_a_hold_with_who_on_a_conflict_needs_no_decision(tmp_path: Path) -> None:
+    assert Out().run(tmp_path, "812", "--cause", "conflict", "--who", "engineer-2", "--note", "rebasing") == 0
+
+
+def test_a_waiver_for_every_cause_of_a_pull_request_in_conflict_needs_the_decision_too(tmp_path: Path) -> None:
+    out = Out()
+    assert out.run(tmp_path, "812", "--note", "runner pool down", conflicting=lambda number: number == 812) == 2
+    assert "812" in out.err[0] and "conflict" in out.err[0]
+    assert out.run(tmp_path, "812", "--note", DECISION, conflicting=lambda number: True) == 0
+
+
+def test_a_waiver_for_every_cause_of_a_pull_request_without_a_conflict_is_as_it_was(tmp_path: Path) -> None:
+    assert Out().run(tmp_path, "812", "--note", "the runner pool is down") == 0
+
+
+def test_a_waiver_for_a_cause_other_than_a_conflict_needs_no_decision(tmp_path: Path) -> None:
+    out = Out()
+    assert out.run(tmp_path, "812", "--cause", "ci-stuck", "--note", "pool down", conflicting=lambda n: True) == 0
+
+
+def test_a_waiver_for_every_cause_is_refused_when_the_conflict_cannot_be_read(tmp_path: Path) -> None:
+    def broken(number: int) -> bool:
+        raise OSError("gh is down")
+
+    out = Out()
+    assert out.run(tmp_path, "812", "--note", "runner pool down", conflicting=broken) == 2
+    assert "gh is down" in out.err[0] and pr_hold.read_active(tmp_path, NOW).holds == []
+
+
+def test_the_decision_rule_is_the_conventions_pattern() -> None:
+    assert pr_hold.names_decision("waits for the maintainer on #1130", RULES)
+    assert pr_hold.names_decision("#1130 asks the maintainer whether to drop it", RULES)
+    assert not pr_hold.names_decision("waits for the maintainer", RULES)
+    assert not pr_hold.names_decision("see #1130", RULES)
+    assert not pr_hold.names_decision("", RULES)

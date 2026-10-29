@@ -347,6 +347,11 @@ guarded:
 - `pr hold 812 --who engineer-2` says that engineer-2 is fixing #812. Start the agent, then record it.
 - `pr hold 812 --note "the runner pool is down"` (no `--who`) is a **waiver**: a known wait, with nobody working on
   it. A waiver needs the note.
+- **A conflict is never parked with a bare waiver.** A conflict is work for the fix track, so `pr hold` refuses a
+  waiver on the `conflict` cause (`--cause conflict`, or no `--cause` on a pull request GitHub says conflicts now, or
+  one whose state it cannot read) unless the note names a maintainer decision (`conclave.watch.conflict_waiver`);
+  anything else needs `--who`. What the snapshot does with a conflict, a waiver and the retelling:
+  [Conclave](conclave.md#conflicts).
 - `--cause checks-failed` (or `conflict`, `ci-stuck`, `auto-merge-off`) covers that cause only; without it the hold
   covers every cause of the pull request.
 - `--hours N` sets how long it lasts: `conclave.watch.hold_default_hours` (4) when left out, and no more than
@@ -360,7 +365,8 @@ A hold is one small JSON file per pull request in the scratch directory (`concla
 written whole and replaced by the next hold of the same pull request; `conclave snapshot` reads them and marks the
 event `handled`. A file that cannot be read is reported (`holds_problems`) and holds nothing. Only the coordinator
 holds: `hooks.toml` refuses the command to the other roles. Exit codes: 0 done, 1 nothing to release, 2 a refused
-request (no pull request, a waiver with no note, hours out of range, `--list` with another option).
+request (no pull request, a waiver with no note or, on a conflict, with no maintainer decision in it, hours out of
+range, `--list` with another option).
 
 ## What this does not do {#limits}
 

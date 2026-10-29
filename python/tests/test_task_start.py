@@ -1006,3 +1006,120 @@ def test_the_json_of_a_record_has_no_game_data_and_no_backslashes(world: World) 
     assert world.run() == 0
     text = (world.scratch / TASK / "unit.json").read_text(encoding="utf-8")
     assert "\\" not in text and parse_time(json.loads(text)["started"]) == world.clock.now()
+
+
+# --- adopting a branch made before units existed --------------------------------------------------------------------
+def made_by_hand(world: World, task: str = TASK, with_worktree: bool = True, commits: int = 2) -> Path:
+    """A branch `task` with `commits` commits and (by default) a worktree at the workspace's place, made with plain git,
+    as the branches of pull requests were before `task start`; returns the worktree's path."""
+    tree = world.worktree(task)
+    tree.parent.mkdir(parents=True, exist_ok=True)
+    git(world.main, "worktree", "add", "-q", "-b", task, str(tree), "main")
+    for number in range(commits):
+        (tree / f"work{number}.txt").write_text(f"{number}" + chr(10), encoding="utf-8")
+        git(tree, "add", "-A")
+        git(tree, "commit", "-q", "-m", f"work {number}")
+    if not with_worktree:
+        git(world.main, "worktree", "remove", "--force", str(tree))
+    return tree
+
+
+def test_a_start_without_adopt_refuses_a_branch_that_exists_and_says_how_to_take_it_over(world: World) -> None:
+    world.ready()
+    made_by_hand(world)
+    assert world.run() == 1
+    assert f"branch '{TASK}' exists already" in world.said() and "--adopt" in world.said()
+    assert not world.posted
+
+
+def test_adopt_makes_a_unit_of_the_branch_and_worktree_with_the_branch_name_kept(world: World) -> None:
+    world.ready()
+    tree = made_by_hand(world)
+    tip = git(tree, "rev-parse", "HEAD").strip()
+    assert world.run(adopt=True) == 0
+    record = world.record()
+    assert record.branch == TASK and record.worktree.resolve() == tree.resolve() and record.task == TASK
+    assert record.base_ref == "origin/main" and record.base_commit == git(world.main, "rev-parse", "main").strip()
+    assert (
+        git(tree, "rev-parse", "HEAD").strip() == tip and git(tree, "rev-parse", "--abbrev-ref", "HEAD").strip() == TASK
+    )
+    assert world.branches().count(TASK) == 1
+    assert [s.step for s in world.log().stamps] == ["assigned", "claimed"]
+    claimed = world.log().latest("claimed")
+    assert claimed is not None and claimed.detail["adopted"] is True and claimed.commit == tip
+    assert (10, "/progress claimed") in world.posted and "adopted" in world.said()
+
+
+def test_adopt_makes_the_worktree_of_a_branch_that_has_none(world: World) -> None:
+    world.ready()
+    made_by_hand(world, with_worktree=False)
+    assert not world.worktree().exists()
+    assert world.run(adopt=True) == 0
+    assert world.worktree().is_dir() and git(world.worktree(), "rev-parse", "--abbrev-ref", "HEAD").strip() == TASK
+    assert (world.worktree() / "work1.txt").is_file()
+
+
+def test_adopt_starts_from_where_the_branch_left_main_not_from_main_now(world: World) -> None:
+    world.ready()
+    made_by_hand(world)
+    left = git(world.main, "rev-parse", "main").strip()
+    world.push_to_origin()
+    assert world.run(adopt=True) == 0
+    assert world.record().base_commit == left
+
+
+def test_adopt_needs_the_branch(world: World) -> None:
+    world.ready()
+    assert world.run(adopt=True) == 1
+    assert f"no branch '{TASK}' to adopt" in world.said() and untouched(world)
+
+
+def test_adopt_is_not_for_a_fix_task(world: World) -> None:
+    world.ready(kind="fix", parent=TASK)
+    made_by_hand(world)
+    assert world.run(adopt=True) == 1 and "ordinary task" in world.said()
+
+
+def test_adopt_refuses_a_branch_checked_out_in_the_main_checkout(world: World) -> None:
+    world.ready()
+    made_by_hand(world, with_worktree=False)
+    git(world.main, "checkout", "-q", TASK)
+    assert world.run(adopt=True) == 1 and "checked out in the main checkout" in world.said()
+    git(world.main, "checkout", "-q", "main")
+
+
+def test_adopt_keeps_the_claim_checks(world: World) -> None:
+    world.ready()
+    made_by_hand(world)
+    world.github.items[10].view = replace(world.github.view(10), state="closed")
+    assert world.run(adopt=True) == 1 and "#10 is closed" in world.said()
+
+
+def test_an_adopted_unit_is_counted_in_its_track_like_any_started_unit(world: World) -> None:
+    world.ready()
+    made_by_hand(world)
+    assert world.run(adopt=True) == 0
+    assert [h.task for h in task_slots.scan(world.scratch, world.conventions, world.clock.now()).holders] == [TASK]
+
+
+def test_a_dry_run_of_an_adoption_changes_nothing(world: World) -> None:
+    world.ready()
+    made_by_hand(world)
+    before = git(world.main, "worktree", "list")
+    assert world.run(adopt=True, dry_run=True) == 0
+    assert "would adopt the branch" in world.said() and not world.posted
+    assert not (world.scratch / TASK / "unit.json").exists() and git(world.main, "worktree", "list") == before
+
+
+def test_a_rerun_of_an_adopted_start_changes_nothing(world: World) -> None:
+    world.ready()
+    made_by_hand(world)
+    assert world.run(adopt=True) == 0
+    world.output.clear()
+    assert world.run(adopt=True) == 0 and "already started" in world.said()
+    assert len(world.log().stamps) == 2
+
+
+def test_the_command_line_has_adopt() -> None:
+    assert parse("start", "10-fix").adopt is False
+    assert parse("start", "10-fix", "--adopt").adopt is True

@@ -10,6 +10,10 @@ and a hold covers the head commit it was made on: a new push is a new problem, s
 The store is one JSON file per pull request in the scratch directory (`conclave.watch.holds_dir`), written atomically,
 so two commands never write one file and the snapshot (`conclave snapshot`) reads them without a lock. Only the
 coordinator runs this command (`.claude/hooks/hooks.toml` refuses it to the other roles).
+
+A waiver may cover a conflict only when its note names a maintainer decision (`conclave.watch.conflict_waiver`): a
+conflict is work for the fix track (docs/guides/conclave.md#conflicts), and parking one with a bare waiver is how stale
+pull requests sat open for days. Anything else on a conflict needs `--who`, a live agent.
 """
 
 from __future__ import annotations
@@ -102,6 +106,17 @@ def _moment(value: object) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(UTC)
 
 
+def names_decision(note: str, rules: ConclaveWatch) -> bool:
+    """Whether a waiver's note names the maintainer decision that justifies waiting on a conflict
+    (`conclave.watch.conflict_waiver`: the maintainer and the issue that holds the question)."""
+    return rules.conflict_waiver.search(note) is not None
+
+
+def covers_conflict(held: Hold, rules: ConclaveWatch) -> bool:
+    """Whether `held` may cover the conflict cause at all: an agent's hold always may, a waiver only with a decision."""
+    return not held.waived or names_decision(held.note, rules)
+
+
 def holds_folder(scratch: Path, rules: ConclaveWatch) -> Path:
     """The folder of the store in the scratch directory."""
     return scratch / rules.holds_dir
@@ -192,7 +207,11 @@ def add_parser(commands: Any) -> None:
     sub.add_argument("--who", help="the agent or track fixing it; leave out for a waiver (--note then says why)")
     sub.add_argument("--hours", type=float, help="how long the hold lasts (default and most: conclave.watch)")
     sub.add_argument("--cause", choices=PR_HEALTH_CAUSES, help="hold only this cause (default: every cause)")
-    sub.add_argument("--note", default="", help="what is being done, or why waiting is right")
+    sub.add_argument(
+        "--note",
+        default="",
+        help="what is being done, or why waiting is right (a waiver on a conflict must name a maintainer decision)",
+    )
     sub.add_argument("--release", action="store_true", help="end the pull request's hold now")
     sub.add_argument("--list", action="store_true", help="print the holds that run")
     sub.add_argument("--json", action="store_true", help="print the result as JSON (with --list)")
@@ -206,6 +225,30 @@ def _line(held: Hold) -> str:
     return f"#{held.pr} {who} ({cause}){on} until {iso(held.until)}" + (f": {held.note}" if held.note else "")
 
 
+def _conflict_waiver_refusal(
+    args: argparse.Namespace, rules: ConclaveWatch, conflicting: Callable[[int], bool] | None
+) -> str:
+    """Why a waiver that would cover a conflict is refused, or an empty string when it is fine.
+
+    `--cause conflict` is a conflict by its own words; a waiver for every cause is one only when the pull request
+    conflicts now, which is read (and a pull request whose state cannot be read is refused, not let through)."""
+    if names_decision(args.note, rules):
+        return ""
+    if args.cause is None:
+        if conflicting is None:
+            return ""
+        try:
+            if not conflicting(args.pr):
+                return ""
+        except OSError as error:
+            return f"pr hold: cannot tell whether #{args.pr} conflicts ({error}); a waiver needs that, or --cause"
+    return (
+        f"pr hold: #{args.pr} conflicts with the default branch, and a waiver may cover a conflict only when its note "
+        'names a maintainer decision (the maintainer and the issue that asks: for example "waits for the '
+        "maintainer's answer on #1130\"); otherwise start the fix and hold with --who <agent>"
+    )
+
+
 def run_hold(
     args: argparse.Namespace,
     folder: Path,
@@ -214,10 +257,13 @@ def run_hold(
     out: Callable[[str], None],
     err: Callable[[str], None],
     head_of: Callable[[int], str],
+    conflicting: Callable[[int], bool] | None = None,
 ) -> int:
     """`pr hold` against the store in `folder` at `now`: 0 done, 1 nothing to release, 2 a refused request.
 
-    `head_of` gives a pull request's head commit (OSError when it cannot be read): a hold is made on that head."""
+    `head_of` gives a pull request's head commit (OSError when it cannot be read): a hold is made on that head.
+    `conflicting` says whether the pull request is in conflict now (OSError when it cannot be read); it is asked only
+    for a waiver that covers every cause, which would cover a conflict without naming it."""
     if args.list:
         if args.pr is not None or args.release or args.who is not None:
             err("pr hold: --list takes no pull request and no other option but --json")
@@ -248,6 +294,11 @@ def run_hold(
     if args.who is None and not args.note.strip():
         err("pr hold: a waiver (no --who) needs a --note that says why waiting is right")
         return 2
+    if args.who is None and args.cause in (None, "conflict"):
+        refusal = _conflict_waiver_refusal(args, rules, conflicting)
+        if refusal:
+            err(refusal)
+            return 2
     hours = float(rules.hold_default_hours) if args.hours is None else args.hours
     if not 0 < hours <= rules.hold_max_hours:
         err(f"pr hold: --hours must be more than 0 and at most {rules.hold_max_hours}")
@@ -284,6 +335,14 @@ def _head_of(number: int) -> str:
     return answer
 
 
+def _conflicting(number: int) -> bool:
+    """Whether GitHub says the pull request conflicts with its base now; OSError when it cannot be read."""
+    answer = run_gh(["pr", "view", str(number), "--json", "mergeable", "--jq", ".mergeable"]).strip()
+    if not answer:
+        raise OSError(f"gh pr view gave no mergeability for #{number}")
+    return answer.upper() == "CONFLICTING"
+
+
 def run(args: argparse.Namespace) -> int:
     """`pr hold` against the real store: the scratch directory of the checkout the command runs in."""
     try:
@@ -293,4 +352,4 @@ def run(args: argparse.Namespace) -> int:
     except ConfigError as error:
         _stderr(f"pr hold: {error}")
         return 2
-    return run_hold(args, folder, rules, datetime.now(UTC), print, _stderr, _head_of)
+    return run_hold(args, folder, rules, datetime.now(UTC), print, _stderr, _head_of, _conflicting)
