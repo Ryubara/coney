@@ -193,6 +193,14 @@ def test_push_guard_refuses_only_in_a_subagent() -> None:
     assert DISPATCH.dispatch(bash("git push origin main", agent_id="a1", agent_type="engineer"), CONFIG)[0] == 2
 
 
+def test_comment_guard_refuses_the_coordinator_and_a_subagent_alike() -> None:
+    close = "gh issue close 772 --comment 'Done.'"
+    for extra in ({}, {"agent_id": "a1", "agent_type": "engineer"}):
+        code, _, err = DISPATCH.dispatch(bash(close, **extra), CONFIG)
+        assert code == 2 and "posted as a comment" in err
+    assert DISPATCH.dispatch(bash("gh issue close 772"), CONFIG)[0] == 0
+
+
 def test_the_agent_guard_runs_for_the_agent_tool() -> None:
     code, _, err = DISPATCH.dispatch(pre("Agent", {"prompt": "x", "subagent_type": "general-purpose"}), CONFIG)
     assert code == 2 and "engineer" in err
