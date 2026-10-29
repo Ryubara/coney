@@ -274,8 +274,8 @@ the order they were registered, projects in load order. The events, at the point
 | `stop` | When the project stops: the session ends, Play stops, or a [project restart](#project-restart) replaces it | reason (`quit`, `stop`, `restart`) | Saving the project's own data |
 
 A project may also add console commands with `Coney.RegisterCommand(name, handler, spec)`, an SDK function whose handler
-is an entry point like these, run in the project's state at a step boundary (the console design planned on
-[#1064](issue:1064), `console.md` in this folder once it merges; [Script security](security.md#console)).
+is an entry point like these, run in the project's state at a step boundary ([The Coney console: Mod
+commands](console.md#mod-commands); [Script security](security.md#console)).
 
 Everything else a script reacts to comes through the game natives' own callbacks, as for the game's scripts: message
 handlers on objects (`SetMsgHandler`), trigger boxes, animation callbacks, pad handlers, scheduled calls. Network
@@ -456,9 +456,9 @@ have stopped, and the modder decides. The monitor only reads: it never stops, sl
   ([Conventions](../conventions.md#update-and-render)); no script reads it and no run changes with it. Memory is a
   plain count and is repeatable. In test mode the time column is off and the memory column stays, so a test can
   pin a project's memory.
-- **Where it shows.** Studio's Monitor panel ([Coney Studio's panels](editor-experience.md#panel-list)). The console
-  design plans runtime profilers for every loaded mod in its F8 menu bar ([#1064](issue:1064)); they read the same
-  numbers, which the SDK owns, so there is one count and two front ends.
+- **Where it shows.** Studio's Monitor panel ([Coney Studio's panels](editor-experience.md#panel-list)), and the Coney
+  console's Resources panel in its F8 bar ([Resources](console-bar.md#resources)); both read the same numbers, which the
+  SDK owns, so there is one count and two front ends.
 - **A frozen game.** With no watchdog, a script that never returns cannot be stopped from inside: in Studio the
   interface goes on drawing (Play has its own thread, [Play](technology.md#play-process)) and the monitor shows the
   step still running, but the user closes Studio, whose autosave before Play keeps the work. Outside Studio the player

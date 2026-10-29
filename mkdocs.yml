@@ -355,6 +355,8 @@ nav:
           - A Human's properties: guides/studio/human-properties.md
           - Script security and the sandbox: guides/studio/security.md
           - Mods, packages and loading: guides/studio/mods.md
+          - The Coney console: guides/studio/console.md
+          - "The Coney console's F8 bar": guides/studio/console-bar.md
       - Conventions: guides/conventions.md
       - Repository conventions: guides/repo-conventions.md
       - Enforcement map: guides/enforcement.md
