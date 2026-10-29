@@ -164,8 +164,8 @@ def test_a_ledger_that_cannot_be_read_or_written_never_fails_the_read(tmp_path: 
 def test_the_trial_is_reused_until_something_it_depends_on_moves(tmp_path: Path) -> None:
     built = make(tmp_path / "unit", shape="tooling")
     main_moves(built, "other.txt", "main moved\n")
-    ledger = Ledger(tmp_path / "pr-conflicts")
-    ledger.first_seen("812", built.tip, NOW)
+    folder = tmp_path / "pr-conflicts"
+    Ledger(folder).first_seen("812", built.tip, NOW)
     calls: list[int] = []
 
     def counting(root: Path, unit: object, text: Path, conventions: object, now: datetime) -> pr_ready.Readiness:
@@ -173,8 +173,17 @@ def test_the_trial_is_reused_until_something_it_depends_on_moves(tmp_path: Path)
         return real_ready(root, unit, text, conventions, now)
 
     def ask() -> Trial:
+        # one Ledger object is one read (it remembers that main was fetched), the files in `folder` outlive it
         return conflict_work.trial_of(
-            built.root, built.unit, built.unit.dir / "PR.md", built.conventions, NOW, counting, ledger, "812", built.tip
+            built.root,
+            built.unit,
+            built.unit.dir / "PR.md",
+            built.conventions,
+            NOW,
+            counting,
+            Ledger(folder),
+            "812",
+            built.tip,
         )
 
     assert ask().status == conflict_work.READY and ask().status == conflict_work.READY
