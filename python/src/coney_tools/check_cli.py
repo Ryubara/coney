@@ -272,8 +272,7 @@ def _step_python(
 
     ruff runs here over every folder in RUFF_PATHS, as CI does; pre-commit also runs it on the changed files. pytest
     runs the whole suite, so it holds a check slot (`hold`) while it does; a SlotTimeout from the wait is
-    `run_changed`'s
-    to turn into exit 75. `run` runs each command (the default streams it and logs it)."""
+    `run_changed`'s to turn into exit 75. `run` runs each command (the default streams it and logs it)."""
     if not _python_changed(changed):
         return _skipped("python", "no Python changed")
     if not shutil.which("uv"):

@@ -133,7 +133,7 @@ def stream_lines(command: Sequence[str], cwd: Path, on_line: Callable[[str], Non
             on_line(line.rstrip("\r\n"))
         return process.wait(), "".join(lines)
     except BaseException:
-        process.kill()
+        live_progress.stop_tree(process)
         raise
 
 

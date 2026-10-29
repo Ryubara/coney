@@ -843,7 +843,7 @@ def result_record(root: Path) -> dict[str, Any] | None:
 
 
 def run_status(directory: Path | None, as_json: bool) -> int:
-    """`build status`: the slots of every lane (main and fast) with their
+    """`build status`: the slots of every lane (main, fast and check) with their
     holders, the queues in order, and stale entries."""
     root = _root(directory)
     lanes = {lane: build_claims.default_slots(lane, root) for lane in LANES}

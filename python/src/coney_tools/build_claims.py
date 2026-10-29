@@ -14,15 +14,14 @@ one shared place every worktree sees:
 A third kind of claim, the **folder lock** (`folder_lock`), is the same machinery with one slot and a folder of its own
 per build folder: a run holds it from configure to its last test, so two runs never share one build folder.
 
-A third lane, the **check lane** (`check-N.claim/`, queue `queue-check/`, `check_slots` of them), limits the full
-suites:
-every command that runs the whole pytest suite or the engine's whole ctest run holds one for the run, so 8 to 16
-suites never share an 8-core machine (check_slots.py; docs/guides/coney-tools-build.md#check-slots). It is the same
-machinery again, so it queues, goes stale and is released like a build slot.
-
 A second, separate **fast lane** (`fast-1.claim/`, queue `queue-fast/`, one slot) is for small jobs: an incremental
 rebuild of a few steps, a test run that selects a few tests. It has its own claim and its own short queue, so these
 never wait behind a full build (the caller decides which lane a job belongs to; build_run.py).
+
+A third lane, the **check lane** (`check-N.claim/`, queue `queue-check/`, `check_slots` of them), limits the full
+suites: every command that runs the whole pytest suite or the engine's whole ctest run holds one for the run, so 8 to
+16 suites never share an 8-core machine (check_slots.py; docs/guides/coney-tools-build.md#check-slots). It is the same
+machinery again, so it queues, goes stale and is released like a build slot.
 
 Everything reported is rebuilt from those files and the live processes each time; no cached state file exists to go
 stale. A claim is stale, and may be taken over, when its holder's process is gone, or when it is older than the

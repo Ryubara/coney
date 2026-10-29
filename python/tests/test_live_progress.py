@@ -171,3 +171,17 @@ def test_minutes_read_as_seconds_minutes_or_hours() -> None:
     assert minutes_text(45) == "45 s"
     assert minutes_text(12 * 60 + 5) == "12 min"
     assert minutes_text(65 * 60) == "1 h 05 min"
+
+
+def test_a_rerun_starts_a_programs_log_again_and_its_later_commands_append(tmp_path: Path) -> None:
+    logs = tmp_path / "check-logs"
+    first = streaming_runner(lambda _: None, logs)
+    first(python("print('alpha')"), tmp_path)
+    assert "alpha" in (logs / "python.log").read_text(encoding="utf-8")
+    first(python("print('beta')"), tmp_path)  # the same program in the same runner: appended
+    text = (logs / "python.log").read_text(encoding="utf-8")
+    assert "alpha" in text and "beta" in text
+    rerun = streaming_runner(lambda _: None, logs)  # a new run of the whole check: the file starts again
+    rerun(python("print('gamma')"), tmp_path)
+    text = (logs / "python.log").read_text(encoding="utf-8")
+    assert "gamma" in text and "alpha" not in text and "beta" not in text

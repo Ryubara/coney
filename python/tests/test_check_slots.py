@@ -182,3 +182,12 @@ def test_build_status_lists_the_check_slots_and_a_worktree_with_one_is_live(
     assert main(["build", "status", "--json"]) == 0
     assert json.loads(capsys.readouterr().out)["check"]["slots"][0]["claim"]["agent"] == "alice"
     assert "wt-suite" in build_claims.live_worktrees(checks.claims_dir)  # `workspace clean` leaves its build alone
+
+
+def test_the_guide_has_the_section_every_page_links_to() -> None:
+    # mkdocs does not fail on a missing anchor, so the pages that link to #check-slots are held to it here.
+    repo = Path(__file__).resolve().parents[2]
+    page = (repo / "docs" / "guides" / "coney-tools-build.md").read_text(encoding="utf-8")
+    assert "{#check-slots}" in page
+    for name in ("agents.md", "testing.md", "workspace.md", "coney-tools-repo.md"):
+        assert "coney-tools-build.md#check-slots" in (repo / "docs" / "guides" / name).read_text(encoding="utf-8")

@@ -566,9 +566,8 @@ vendor, a commit it cannot find), and a person committing outside Claude Code ne
   run that takes longer. A build or test run is `coney-tools build ...` started with `run_in_background`
   ([Builds and tests](#builds)); it prints its log path first, and gives up waiting for a slot after 40 minutes,
   or sooner when the wait plus the build would pass its 45-minute budget; a longer wait runs `--detach`
-  ([Build waits](#build-waits)). A full suite (`task check`, `ci run`, `build --test` with no `-R`) waits for a
-  **check slot** and says its place every minute, and logs each stage's start and end, so a quiet log means a hung
-  run ([Check slots](coney-tools-build.md#check-slots)).
+  ([Build waits](#build-waits)). A full suite waits for a **check slot** and logs each stage, so a quiet log means a
+  hung run ([Check slots](coney-tools-build.md#check-slots)).
 - **Every wait has a bound** ([Bounded waits](#bounded-waits)): never `until ...; do sleep ...; done` or `while true`
   in a shell, which a hook refuses.
 - **Keep tool output small.** Print counts, the failing lines and the end of a log, never a whole log: every line an
