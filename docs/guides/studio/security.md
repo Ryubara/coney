@@ -301,15 +301,15 @@ instead:
 | --- | --- | --- |
 | **The monitor** | Each project's time per step and its memory, counted outside the script ([The monitor](lua-sdk.md#monitor)) | Nothing is stopped: the modder, the player or a server operator sees which project is slow or growing and removes it |
 | **Nesting** | Lua's own C-stack limit (`LUAI_MAXCCALLS`) for deep recursion of the parser and of C calls, and the Lua stack's own size limit | "stack overflow" or "too many C levels", as stock Lua |
-| **Things a project makes** | The game's own pools (60 humans at most, and the objects' and effects' pools), shared by the game and every project | The native returns its "none" value or an error, as when the game's pool is full; there is no share per project |
+| **Things a project makes** | Counters per project of the handles it holds: humans and objects share the game's pools, so a project may hold at most a share of each, and Coney's own kinds (spawned models, sounds playing, effects, HUD messages per step) have caps of their own | The native returns its "none" value or an error, as when the game's pool is full |
 | **Log output** | Lines and bytes per project per step | The rest of the step's lines are dropped with one line saying how many |
 | **The project's store** | `Coney.SaveData(key, value)` and `Coney.LoadData(key)` keep tables of plain values (no functions, no userdata, no cycles) as JSON in a folder of Coney's per project, with a quota | `SaveData` returns an error; nothing is written |
 
 **Deferred.** An instruction budget per call and per step (the count hook, `lua_sethook`, with library calls charged to
-it), a memory cap per project (the allocator, which already counts for the monitor), a watchdog for a call that never
-returns, and caps on what a project makes return only if downloaded mods or co-op need them; the sizes would then be
-measured on real projects. The log limit and the store's quota stay, because they guard the disk and the Console, not
-the simulation.
+it), a memory cap per project (the allocator, which already counts for the monitor) and a watchdog for a call that never
+returns come back only if downloaded mods or co-op need them; the sizes would then be measured on real projects. The
+caps on what a project makes, the log limit and the store's quota stay: they guard the game's pools, the disk and the
+Console, and their sizes are measured on real projects before the first release.
 
 **Saves.** A modded session saves apart from the faithful profile, so no mod can corrupt the story a player made
 without mods ([Modded saves and replays](mods.md#saves-replays)).
@@ -521,7 +521,7 @@ The same panel opens from the join prompt of a modded server and from Studio's P
 | **Bytecode, Lua 4.0** | A patched disc script runs in Coney's own 4.0 VM, which reads bytecode | A game script changes only by a project's `game-scripts` patch ([Mission mods](mission-mods.md#compiling)): text, never bytecode, applied only to the player's own disc script whose hash it pins, and the result compiled by Coney's [compiler](lua-sdk.md#compiler); no game script ships in a `.cmod`, not even as Lua 4.0 source; `overrides/` never holds a script, and its `files/` entries of script kinds are refused; the player's own disc chunks, checked against their SHA-1 at install, are the only bytecode the game state runs; the 4.0 chunk loader and VM are fuzzed all the same | A patch carrying bytecode, a patch against another hash and a script chunk in `overrides/files/` refused; the 4.0 chunk fuzzer |
 | **Lua's own bugs** | A crash or escape from plain source (CVE-2021-44964) | Lua 5.4.9 pinned, its bugs page watched, every script-reachable fix applied ([Keeping the runtime current](#runtime-updates)); fuzzing under sanitizers | The source fuzzer |
 | **The C API and errors** | Lua's errors unwind with `longjmp`, which skips C++ destructors (undefined behaviour, and a leak at best); a native holding C++ objects when an error is raised breaks the engine | Natives never call Lua's API. The bridge's C function reads the arguments into `script::Value`s, calls the native, and raises the native's error only after every C++ object of the call is gone; the API calls that may raise (allocations) happen before or after the C++ part, never in it | Bridge tests under ASan: a native that fails, an allocation failure during argument conversion and during results |
-| **The value bridge** | A metatable on a table argument runs script code inside a native (`__index`, `__len`); a cycle or a huge table; a string with zero bytes; NaN in an integer; a stale callback id | Raw access only (`lua_rawgeti`, `lua_rawlen`) when reading arguments, so no metamethod runs inside a native; sizes and depth limited; integers range-checked; a callback id carries its state and generation and is dropped on reload ([The value bridge](lua-sdk.md#bridge)) | The native fuzzer |
+| **The value bridge** | A metatable on a table argument runs script code inside a native (`__index`, `__len`); a cycle or a huge table; a string with zero bytes; NaN in an integer; a stale callback id | Raw access only (`lua_rawgeti`, `lua_rawlen`) when reading arguments, so no metamethod runs inside a native; sizes and depth limited; integers range-checked; a callback id carries its state and generation and is dropped on restart ([The value bridge](lua-sdk.md#bridge)) | The native fuzzer |
 | **Re-entry** | A native that fires a callback at once runs a project's code in the middle of a game action | Callbacks fire at the points the [loader](lua-sdk.md#entry-points) names, inside the call they run in; a native never calls into a state synchronously | Bridge tests |
 | **Natives with paths or handles** | A name that reaches the disk (`../`, `C:\`, `\\host\share`); a handle of another kind or another session | The [file layer](#paths) and the asset store; handles checked with kind and generation ([What natives may do](#natives)) | The file monitor ([Proof](#proof)); the native fuzzer |
 | **Manifests and packages** | A crafted `coney-project.toml` or `.cmod`: overlapping or duplicate zip entries, a central directory that disagrees with the local headers, a compression bomb | Parsed into types with limits, `std::expected` on every error; the strict zip reader of [The `.cmod` package](mods.md#cmod), sizes enforced while inflating, every file checked against the manifest's hash | Parser fuzzers |
@@ -644,9 +644,10 @@ Open:
 
 ## Open questions {#open-questions}
 
-- **The limits' sizes**: the store's quota, the log limits and the package limits, measured on real projects.
-  (Budgets, the memory cap, the watchdog and the caps on what a project makes are decided away for now,
-  [Maintainer decisions](lua-sdk.md#decisions).)
+- **The limits' sizes**: the caps on things a project makes, the store's quota, the log limits and the package limits,
+  measured on real projects.
+  (The budgets, the memory cap and the watchdog are decided away for now, [Maintainer
+  decisions](lua-sdk.md#decisions).)
 - **The pattern functions**: whether refusing long subjects is enough, or the matcher needs a step count of its own (a
   patch to `lstrlib.c`), decided by the fuzzer's findings.
 - **Hard links**: whether refusing files with more than one link troubles real projects (some tools make them).
@@ -674,10 +675,11 @@ when a native needs it.
    `string.dump`); the libFuzzer targets for Lua source, the
    native bridge and the file layer, a nightly Linux job, and the corpus replayed as Catch2 tests in every preset.
    Tests: the suite itself, and a planted extra global or a bytecode path makes it fail.
-3. **core: Add the log limits and the full-pool answers.** Log lines and bytes per project per step, and the none value
-   or error a native gives when the game's pool is full, as the game's scripts get it. No budget, memory cap, watchdog
-   or share per project ([Limits](#limits)); the monitor is the SDK's [issue 10](lua-sdk.md#build-issues). Tests: a
-   flooding `print` is cut with one notice line; a project that fills the human pool gets the none value.
+3. **core: Add the limits on what a project makes.** Per-project counters of the handles it holds and caps on its share
+   of the game's pools and on Coney's own kinds (models, sounds, effects, HUD messages per step); log lines and bytes
+   per step. No budget, memory cap or watchdog ([Limits](#limits)); the monitor is the SDK's [issue
+   10](lua-sdk.md#build-issues). Tests: a project that spawns past its cap gets the none value and the game's own
+   spawns still succeed; a flooding `print` is cut with one notice line.
 4. **core: Add the strict reading of `.cmod` packages.** The one reader of `.cmod` packages, built here; [Content and
    formats](content-and-formats.md#build-issues) build issue 13 adds the export that writes them: the strict zip reader,
    the package hash, the check of every file against the manifest's list with its result kept in `cache/mods/`, the file

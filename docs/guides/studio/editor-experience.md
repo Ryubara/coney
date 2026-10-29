@@ -499,13 +499,9 @@ second tree to tell apart from the first.
   to another project end the session the same way and discard everything. The level keeps the edits made
   to it while playing ([Live edits](#live-edits)); while playing, the editor is **tinted** (Unity's Play mode tint), so
   it is always plain which state the screen shows.
-- **Restart project and Restart level** are two more buttons on the Play bar. *Restart project* removes the project's
-  state, handlers, threads and timers and everything it made in the world, then runs its `start` again, while the
-  level, the game state and the game's player go on; *Restart level* is a new Play from the checkpoint, the *Restart*
-  of [Live edits](#live-edits) ([Project restart on save](lua-sdk.md#project-restart)). The Studio setting **On script
-  save** (*Edit > Preferences*) runs one of them when a script of the project is saved: *Do nothing* (the default,
-  because a restart while the user is watching something in the game would be annoying), *Restart project* or
-  *Restart level*. All of it is off in test mode.
+- **Restart project** is one more button on the Play bar, beside *Restart level*, which is the *Restart* of [Live
+  edits](#live-edits). What each does, and the Studio setting **On script save** (*Edit > Preferences*, *Do nothing* by
+  default), is [Project restart on save](lua-sdk.md#project-restart); all of it is off in test mode.
 - **While playing**, the Hierarchy has two tabs, as Godot's Scene dock has *Local* and *Remote*: **Level** (what is
   saved) and **Running** (the running game's entities, live, as the Entity inspector shows them). The Inspector edits
   whichever is selected; an edit of a running entity goes through the Entity editor's queue, between two steps and into
@@ -699,8 +695,8 @@ can load what it makes ([Importing](#import-coney)), PNG and `.layout` first.
    Inspector with tiling and tint; each primitive's collider in the Inspector's Collision group and the Collision view
    mode; delete; saving the level as a sandbox layout. Tests: a level composed by script saves a layout that Coney loads
    and plays; a saved level reopens unchanged, byte for byte.
-7. **tools: Add Play mode to Coney Studio.** Play, Play here, Pause, Step, Restart and Stop with Unity's keys (the
-   *Restart project* and *Restart level* buttons and the setting *On script save* come with [reload on
+7. **tools: Add Play mode to Coney Studio.** Play, Play here, Pause, Step, Restart and Stop with Unity's keys (this
+   is *Restart level*; the *Restart project* button and the setting *On script save* come with [reload on
    save](technology.md#build-issues), issue 9); the level plays in the Game view beside the Level view with the player
    at its spawn or the camera's spot, the editor tinted; the Hierarchy's Level and Running tabs, the running game edited
    through the Entity editor's queue; Eject flies the free camera; Stop throws the running game away. Tests: a scripted

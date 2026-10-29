@@ -286,12 +286,11 @@ tools.
 - **Watching.** Studio owns the project folder, so it watches it: a background thread compares the files' sizes and
   times once a second. That works on every platform with no dependency; if large projects make it slow, efsw (MIT) or
   dmon (BSD-2-Clause) replaces the poll behind the same interface.
-- **Scripts.** What a saved script does is Studio's setting *On script save*: *Do nothing* (the default), *Restart
-  project* or *Restart level*, with the same two actions as buttons on the Play bar. A project restart is a request to
-  the running session, applied at the next step boundary; a file that fails to compile leaves the running project
-  alone, as the Lua SDK design's [Project restart on save](lua-sdk.md#project-restart) says. Studio shows the compile
-  error in the Problems panel. The setting is off in test mode. (*Hot reload*, a swap of code that keeps the project's
-  state, is a later thing.)
+- **Scripts.** What a saved script does is Studio's setting *On script save*, *Do nothing* by default, and the same
+  actions are buttons on the Play bar; both are the Lua SDK design's ([Project restart on
+  save](lua-sdk.md#project-restart)). A restart is a request to the running session, applied at the next step
+  boundary, and a file that fails to compile leaves the running project alone; Studio shows the compile error in the
+  Problems panel. (*Hot reload*, a swap of code that keeps the project's state, is a later thing.)
 - **Assets.** The [asset layers](../asset-and-script-architecture.md#asset-layers) already split the kinds:
   presentation kinds (textures, sounds, models' looks) are swapped in the running session; simulation kinds
   (collision, levels, animation clips, character data) mark the session stale and the Play bar asks for Play again.
@@ -387,10 +386,10 @@ reload on save here (9), and its monitor (its 10) after Play (5 here).
 8. **`tools: Add the debugger to the Coney Studio script editor`.** The DAP client: gutter breakpoints, the current
    line, the Debug panel and the F5 to F11 keys; pausing keeps the UI running.
 9. **`tools: Add reload on save to Coney Studio`.** The one place the setting is built: the project poller, the setting
-   *On script save* (*Do nothing* by default) with the *Restart project* and *Restart level* buttons on the Play bar,
-   restart requests sent to the session (the engine side is the SDK's issue 6) for changed scripts, presentation assets
-   swapped live, and simulation assets marking Play stale. Tests: with *Do nothing* a
-   save changes nothing; with *Restart project* the next step runs the new script; the setting is off in test mode.
+   *On script save* (*Do nothing* by default) with the *Restart project* button on the Play bar beside *Restart level*
+   (the editor experience's issue 7), restart requests sent to the session (the engine side is the SDK's issue 6) for
+   changed scripts, presentation assets swapped live, and simulation assets marking Play stale. Tests: with *Do nothing*
+   a save changes nothing; with *Restart project* the next step runs the new script; the setting is off in test mode.
 10. **`tools: Add glTF, FBX, image and audio import to Coney Studio`.** cgltf, ufbx, stb_image, dr_libs and stb_vorbis
     pinned and built with Studio only, behind drag and drop into the File system panel and the Import button, writing
     the content design's formats. Tests import synthetic files made by the tests themselves.

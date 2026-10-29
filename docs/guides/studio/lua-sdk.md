@@ -435,9 +435,9 @@ the network page's [sandbox](../network-architecture.md#sandbox) and adds what k
   loop with no `Coney.Wait` freezes the game until it ends, and a script that allocates without end uses the machine's
   memory; Lua's own limits (the C stack, the string and table sizes) stay. A project that misbehaves is found with the
   [monitor](#monitor) below. The caps return only if downloaded mods or co-op need them: the count hook
-  (`lua_sethook`) and the allocator are where they would go, and the allocator already counts for the monitor. What a
-  project makes comes from the game's own pools (60 humans at most), and a full pool answers as it does for the game's
-  scripts; there is no share per project ([Limits](security.md#limits)).
+  (`lua_sethook`) and the allocator are where they would go, and the allocator already counts for the monitor. The
+  caps on what a project makes (its share of the game's pools, Coney's own kinds) and the log and store limits are
+  not budgets and stay ([Limits](security.md#limits)).
 - **No engine internals:** the state holds natives and SDK functions only. There is no `Coney.Engine`, no access to
   C++ objects, no pointer in any value.
 - **Errors** are Lua errors with the file and line; they stop the call that raised them, never the game. Studio shows
@@ -612,11 +612,11 @@ function HuCreate(name, type, pos, heading, unused, player, gang, flag) end
 Changing a script while the game runs, as FiveM's `restart <resource>`. It is **optional**: Studio's setting *On script
 save* has three choices, and the same actions are buttons on the Play bar.
 
-| Choice | What a save of a project script does | Note |
+| Choice | What a save does | Note |
 | --- | --- | --- |
 | **Do nothing** (the default) | Nothing; the next Play, or a button, uses the new script | A restart while the user is watching something in the game would be annoying |
-| **Restart project** | The project restarts, as below | The level, the game state and the game's player go on |
-| **Restart level** | A new Play from the checkpoint: the session ends as Stop ends it and a new one starts | What a patched game script needs ([Mission mods](mission-mods.md#studio-flow)) |
+| **Restart project** | The smallest restart the saved file needs: the project restarts, as below, for a project script; the level restarts for a game script, whose patch only a new level start reaches ([Mission mods](mission-mods.md#which-kind)) | The level, the game state and the game's player go on after a project restart |
+| **Restart level** | A new Play from the checkpoint: the session ends as Stop ends it and a new one starts, whatever was saved | The Play bar's *Restart* ([Live edits](editor-experience.md#live-edits)) |
 
 The two buttons, *Restart project* and *Restart level*, do the same on demand, whatever the setting. Stop, closing
 Studio and switching to another project are not restarts: they end the session and discard everything ([Play, step
@@ -624,8 +624,9 @@ Studio and switching to another project are not restarts: they end the session a
 
 **A project restart**, applied at the next step boundary:
 
-1. **Seen.** Studio (or, outside Studio, a file watcher Coney runs only with `--watch-mods`) sees a project file change
-   on disk and, with the setting on *Restart project*, queues a request. The watcher is outside the simulation.
+1. **Seen.** Studio (or, outside Studio, a file watcher Coney runs only with `--watch-mods`, which has no setting and
+   always restarts the project) sees a project file change on disk and, with the setting on *Restart project*,
+   queues a request. The watcher is outside the simulation.
 2. **Checked first.** A file that fails to compile stops the restart before step 3: the running project stays as it
    was and the error is shown, so a typo never kills a running project.
 3. **Stopped, and everything it made removed.** The `stop` handlers run with reason `restart`; then the project's state,
