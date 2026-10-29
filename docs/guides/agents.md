@@ -93,10 +93,10 @@ rules refuse the Agent call and, in the shell, `claude`, `coney-agent`, `task re
 
 Start it for a task with the model the change needs: Opus for research pages and `@orig` functions, which `task review
 --record` insists on, a smaller one for docs and tooling. Its brief names the task; it runs `coney-tools task review
-<task>` (the tool part and the packet), judges, writes `REVIEW.json` and `REVIEW.md` and records the verdict with `task
-review <task> --record` ([Task review](review/task.md)). A person runs `task review <task> --run`, which starts a
-headless reviewer. Any later commit, or an edit to the description, makes a recorded review stale. A fix to the code
-after an `@orig` review therefore comes before the review of the description, which is part of the same pass.
+<task>` from any checkout (the tool part and the packet, of the unit's own worktree), judges, writes `REVIEW.json` and
+`REVIEW.md` and records the verdict with `task review <task> --record` ([Task review](review/task.md)). A person runs
+`task review <task> --run`, which starts a headless reviewer. Any later commit, or an edit to the description, makes a
+recorded review stale. A fix to the code after an `@orig` review therefore comes before the review of the description.
 
 A branch started before the cutover, outside a task, is released with the [legacy release
 checks](how-we-work.md#pr-review), which run the same agent and are retired at the cutover:

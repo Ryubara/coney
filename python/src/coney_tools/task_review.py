@@ -22,6 +22,9 @@ A review has three steps, and the reviewer takes all of them:
 reviewer as a subagent instead, which runs steps 1 and 3 itself, so the stamp's `who` is the reviewer's own hook
 identity. `--text` reviews the description alone, for an edited paragraph or picture, while a full pass still holds.
 
+The branch under review is the worktree the task's unit record (`task start` writes it) names, whichever checkout the
+command runs from; `--worktree` overrides it, and a task with no record is reviewed where the command runs.
+
 Everything the command touches outside git is injected (`ReviewEnv`), so the tests use a real temporary repository and
 fakes for the agent, the diff hash and the page checks.
 """
@@ -50,6 +53,7 @@ from coney_tools import (
     orig_review,
     pr_diff,
     pr_review,
+    pr_text,
     pr_text_file,
     review_verdict,
     stamps,
@@ -58,6 +62,7 @@ from coney_tools import (
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import REVIEW_KINDS, Conventions, load_conventions_leniently
 from coney_tools.repo_checks import check_docs, check_title
+from coney_tools.unit_record import read_record
 
 #: The agent definition handed to `claude --agents` for a run, written in the review's folder and removed after.
 AGENTS_FILE = ".reviewer-agents.json"
@@ -258,6 +263,11 @@ def _full_pass_problem(report: stamps.Report, diff: str, pairs_set: str) -> list
     return ["text: no passing full review covers the code as it is now (run `task review`, without --text)"]
 
 
+def generated_body(env: ReviewEnv) -> Path:
+    """Where `pr text` writes the whole description: beside the engineer's file."""
+    return env.text_file.parent / pr_text.BODY_FILE
+
+
 def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
     """The packet for the branch as it is now, and the problems the tool part found (empty when it may be reviewed).
 
@@ -269,7 +279,11 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
     tip = _git(worktree, "rev-parse", "--verify", "HEAD").strip()
     base = _git(worktree, "merge-base", env.base_ref, tip).strip()
     if tip == base:
-        problems.append(f"nothing to review: the branch has no commit beyond {env.base_ref}")
+        branch = _git(worktree, "rev-parse", "--abbrev-ref", "HEAD").strip()
+        problems.append(
+            f"nothing to review: the branch '{branch}' in {worktree} has no commit beyond {env.base_ref} "
+            "(is this the unit's worktree? --worktree DIR names another)"
+        )
     dirty = [line[3:] for line in _git(worktree, "status", "--porcelain").splitlines() if line.strip()]
     if dirty:
         shown = ", ".join(dirty[:5]) + (" ..." if len(dirty) > 5 else "")
@@ -322,6 +336,12 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
             "paragraph_sha256": text.paragraph_sha256 if text.paragraph else "",
             "images": [{"path": image.path, "sha256": image.sha256} for image in text.images],
             "images_sha256": text.images_sha256,
+            # `file` is the engineer's file; `pr text` writes the sections below, and the whole description, into
+            # `generated_body`, so a missing Checklist, Testing facts, AI use or Fixes line in `file` is no finding.
+            "generated_sections": [
+                {"section": name, "what": what} for name, what in pr_text.generated_sections(env.conventions)
+            ],
+            "generated_body": {"path": str(generated_body(env)), "exists": generated_body(env).is_file()},
         },
         "rubric_version": env.conventions.pull_requests.orig_review.rubric_version,
     }
@@ -337,6 +357,19 @@ def _refuse(task: str, what: str, problems: list[str]) -> int:
     for problem in problems:
         print(f"  {problem}")
     return 1
+
+
+def _description_note(packet: Mapping[str, Any]) -> str:
+    """What the reviewer must know about the description before it judges it: which file the engineer wrote and where
+    the generated sections are (docs/guides/review/text.md)."""
+    text = packet["text"]
+    sections = ", ".join(item["section"] for item in text["generated_sections"])
+    body = text["generated_body"]
+    note = (
+        f"description: {text['file']} is the engineer's file; `pr text` writes {sections} (and the rest of the "
+        f"description) into {body['path']}: judge those there, and never fail {text['file']} for lacking them"
+    )
+    return note if body["exists"] else f"{note} (not written yet: run `pr text`)"
 
 
 def prepare(env: ReviewEnv, mode: str) -> int:
@@ -361,6 +394,7 @@ def prepare(env: ReviewEnv, mode: str) -> int:
     print(f"  @orig functions: {functions}")
     print(f"  research pages: {', '.join(p['path'] for p in packet['pages']) or 'none'}")
     print("  the tool part passed")
+    print(f"  {_description_note(packet)}")
     print(f"  packet: {packet_path}")
     print(
         f"  write {rules.verdict_file} and {rules.report_file} in {env.folder}, then run `task review {task} --record`"
@@ -512,6 +546,9 @@ def review_prompt(env: ReviewEnv, mode: str) -> str:
         f"Review task {task} ({mode} review). The branch is checked out in {env.worktree}.\n"
         f"- The tool part passed. The packet is {env.folder / rules.packet_file}: read it, then the checklists for its "
         "`kinds`, and judge the change as your instructions say.\n"
+        f"- The description file {env.text_file.name} is the engineer's; `pr text` generates the sections the packet's "
+        f"`text.generated_sections` lists into {generated_body(env)}. Judge those there and do not fail "
+        f"{env.text_file.name} for lacking them.\n"
         f"- Write {rules.verdict_file} and {rules.report_file} in {env.folder} and nothing else.\n"
         f"- Then run `uv run --project python coney-tools task review {task}{flag} --record` in {env.worktree} and "
         "report its result.\n"
@@ -583,7 +620,11 @@ def add_review_parser(commands: Any) -> None:
         ),
     )
     review.add_argument("task", nargs="?", help="the task (default: CONEY_TASK, else the branch)")
-    review.add_argument("--worktree", type=Path, help="the unit's worktree (default: the current checkout)")
+    review.add_argument(
+        "--worktree",
+        type=Path,
+        help="the unit's worktree (default: the one the unit record names, else the current checkout)",
+    )
     review.add_argument("--base", help="what the branch is compared with (default: origin/<default branch>)")
     review.add_argument("--pr-file", type=Path, help="the description file (default: <scratch>/<task>/PR.md)")
     review.add_argument(
@@ -606,13 +647,47 @@ def add_review_parser(commands: Any) -> None:
     )
 
 
+def _recorded_worktree(folder: unit.Unit, unit_file: str) -> Path | None:
+    """The worktree the task's unit record names, or None when the task has no record (it was not started with
+    `task start`). A record that cannot be read, or whose worktree is gone, is a ConfigError: reviewing some other
+    checkout in its place would review the wrong branch."""
+    path = folder.dir / unit_file
+    if not path.is_file():
+        return None
+    worktree = read_record(path).worktree
+    if not worktree.is_dir():
+        raise ConfigError(
+            f"{folder.task}: the unit record names the worktree {worktree}, which does not exist "
+            "(give --worktree DIR for the one to review)"
+        )
+    return worktree.resolve()
+
+
+def _say(line: str) -> None:
+    """A note for the person running the command (stderr, so the packet's output stays what the reviewer reads)."""
+    print(line, file=sys.stderr)
+
+
 def environment(args: argparse.Namespace) -> ReviewEnv:
-    """The environment of the real world for the parsed arguments."""
-    worktree = (args.worktree or find_repo_root(Path.cwd())).resolve()
-    conventions = load_conventions_leniently(worktree, lambda line: print(line, file=sys.stderr))
-    task = unit.task_name(worktree, args.task)
+    """The environment of the real world for the parsed arguments.
+
+    The worktree under review is `--worktree`, else the one the unit record names (so the command works from main's
+    checkout or any other), else the checkout it runs in.
+    """
+    if args.worktree is not None:
+        worktree = args.worktree.resolve()
+        task = unit.task_name(worktree, args.task)
+    else:
+        here = find_repo_root(Path.cwd()).resolve()
+        task = unit.task_name(here, args.task)
+        # The record's file name is a convention; any note about the conventions waits for the read in the worktree.
+        file_name = load_conventions_leniently(here, lambda line: None).tasks.start.unit_file
+        worktree = _recorded_worktree(unit.Unit.of(here, task), file_name) or here
+        if worktree != here:
+            _say(f"task review {task}: reviewing {worktree}, the worktree the unit record names (this is {here})")
+    conventions = load_conventions_leniently(worktree, _say)
     folder = unit.Unit.of(worktree, task)
-    text_file = args.pr_file or folder.dir / "PR.md"
+    text_file = args.pr_file or folder.dir / pr_text.TEXT_FILE
     base = args.base or f"origin/{conventions.repo.default_branch}"
     return ReviewEnv(
         root=worktree,

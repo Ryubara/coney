@@ -23,15 +23,10 @@ from coney_tools import pr_proof, pr_text
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import load_conventions_leniently
 from coney_tools.pr_proof import ProofResult, Refusal, Subject
+from coney_tools.pr_text import BODY_FILE, TEXT_FILE, TITLE_FILE
 from coney_tools.repo_checks import branch_trailer_models
 from coney_tools.task_file import TaskFile, TaskFileError, parse_task_file
 from coney_tools.unit import Unit, task_name
-
-#: What the generated text is written to, next to the engineer's file.
-TITLE_FILE = "PR-TITLE.txt"
-BODY_FILE = "PR-BODY.md"
-#: The engineer's file.
-TEXT_FILE = "PR.md"
 
 
 def add_pr_commands(commands: Any) -> None:

@@ -11,7 +11,7 @@ this page is the command, the file the reviewer writes and the stamp.
 1. **Prepare**, `task review <task>`: the [tool part](#tool-part) runs. Every problem it finds is listed, no reviewer
    is started and nothing is written. When it passes, it writes the [packet](#packet): the tip, the base, the hash of
    the change, which [checklists](#kinds) apply, the `@orig` functions, the research pages and the description's
-   hashes.
+   hashes and [generated sections](#generated). It reviews [the unit's worktree](#worktree), from any checkout.
 2. **Judge**: the reviewer reads the packet and applies the checklists, then writes the [verdict](#verdict)
    (`REVIEW.json`) and its report (`REVIEW.md`) in the review folder, copying the packet's hashes into the verdict.
 3. **Record**, `task review <task> --record`: the packet is built again from the repository as it is now, the verdict
@@ -39,8 +39,8 @@ uv run --project python coney-tools task review [TASK] [--worktree DIR] [--base 
 
 | Argument or option | Default | What it does |
 | --- | --- | --- |
-| `TASK` | `CONEY_TASK`, else the branch | The task: its scratch folder holds the stamp log, the description and the review folder |
-| `--worktree DIR` | the current checkout | The unit's worktree: the branch under review, which must be clean |
+| `TASK` | `CONEY_TASK`, else the branch of the current checkout | The task: its scratch folder holds the stamp log, the description and the review folder. Name it when running outside its worktree |
+| `--worktree DIR` | the worktree the unit record names, else the current checkout | The unit's worktree: the branch under review, which must be clean ([Which worktree](#worktree)) |
 | `--base REF` | `origin/<default branch>` | What the change is measured from (the merge base of `REF` and the tip) |
 | `--pr-file FILE` | `<scratch>/<task>/PR.md` | The engineer's description file: the title on line 1, a `## Summary`, the pictures |
 | `--text` | off | Review the description alone. Needs a passing full review of the same change and pairs; the packet's `kinds` is `text` |
@@ -50,6 +50,16 @@ uv run --project python coney-tools task review [TASK] [--worktree DIR] [--base 
 | `--model M` | the agent file's (`opus`) | The model, for `--run` |
 | `--effort E` | the agent's | `low`, `medium`, `high`, `xhigh` or `max`, for `--run` |
 | `--timeout-minutes N` | 60 | Stop a `--run` review after this long (it then records nothing) |
+
+### Which worktree {#worktree}
+
+`task review <task>` reviews the worktree that `<scratch>/<task>/unit.json` names (the record `task start` writes,
+[Starting a task](../issues.md#starting)), whichever checkout it runs from: the coordinator's `task review <task> --run`
+from main's checkout reviews the unit and not main. It says so on stderr when that is not the current checkout.
+`--worktree DIR` overrides the record. A task with no record (one not started by `task start`) is reviewed in the
+checkout the command runs in, as before. A record that cannot be read, or whose worktree is gone, is refused with
+`--worktree DIR` as the way out, because reviewing some other checkout instead would review the wrong branch. When the
+branch under review has nothing beyond the base, the refusal names the branch and the folder it looked at.
 
 The review folder is `<scratch>/<task>/review/` (`tasks.review` in [.github/conventions.yml](repo:.github/conventions.yml)
 names the folder, the three files and the agent). It holds `PACKET.json` (the tool's), `REVIEW.json` and `REVIEW.md` (the
@@ -72,7 +82,7 @@ problem is printed with its prefix and what to redo; all problems are listed, no
 
 | Prefix | What is checked | Redo |
 | --- | --- | --- |
-| `nothing to review`, `uncommitted changes` | The branch has a commit beyond the base; the worktree is clean | The engineer commits |
+| `nothing to review`, `uncommitted changes` | The branch has a commit beyond the base; the worktree is clean (the refusal names the branch and the worktree it looked at) | The engineer commits, or `--worktree DIR` names the right one |
 | `stamp log:` | The log is intact ([Verifying a log](../stamps.md#verify)) | Report to the coordinator: the unit is unusable |
 | `compared:` | Each changed `@orig` function has a pairs file and a current `compared` stamp for its body and for that file (two functions that cite one address each need their own: [Stamps](../stamps.md#shared-address)) | `orig compare <addr>` (`--coney-function KEY` when several cite it) |
 | `copy-check:` | [`orig check-copy`](../coney-tools-fidelity.md#orig) finds no fingerprint on the lines added | The engineer, then `orig compare` |
@@ -100,8 +110,23 @@ exist ([test citations](../testing.md#done), the standards of touched files).
 | `pairs_set_sha256` | The hash of the pairs files of those functions, which a `compared` stamp covers one by one |
 | `pages` | Each touched research page and the addresses it writes |
 | `tests` | Each added C++ test and the result of its `fails-first` stamp |
-| `text` | The description: `title`, `paragraph`, the pictures (`path`, `sha256`) and the three hashes of them |
+| `text` | The description: `file` (the engineer's file, `PR.md`), `title`, `paragraph`, the pictures (`path`, `sha256`) and the three hashes of them; and [what `pr text` generates](#generated): `generated_sections` (each `section` and `what` is written into it) and `generated_body` (the `path` of `PR-BODY.md` and whether it `exists`) |
 | `rubric_version` | The [orig rubric](orig.md)'s version |
+
+### The description's generated sections {#generated}
+
+The description has two files. `PR.md` is the engineer's: the title, the summary paragraph and the `Runtime:` line, the
+pictures and any section only a person can fill (Issues affected). `coney-tools pr text` writes the rest and the whole
+description into `PR-BODY.md` beside it ([What is generated](../pr.md#generated)): the `Fixes #N` lines of the Summary,
+the Checklist, the facts of Testing and AI use. `pr open` refuses those sections in `PR.md`
+([the engineer's file](../pr.md#file)), so a `PR.md` without them is right, and a finding against it for lacking them is
+wrong (it cost review rounds on #1057, #1058, #1062 and #1063). The packet's `text.generated_sections` lists them, read
+from the section names of `pull_requests` in [.github/conventions.yml](repo:.github/conventions.yml), and
+`text.generated_body` points at `PR-BODY.md`. `prepare` prints the same in one line and says `not written yet` when
+`pr text` has not run (the reviewer then reads `PR.md` for the engineer's parts and asks for `pr text` before
+judging the rest). The [description checklist](text.md) says what to judge in each file. The text hashes of the verdict
+and the stamp cover `PR.md`; `PR-BODY.md` is read, not hashed, because it is regenerated from the stamps, among them
+this review's own.
 
 ### Which checklists apply {#kinds}
 

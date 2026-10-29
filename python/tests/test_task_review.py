@@ -4,6 +4,7 @@ headless run. Git is real (a temporary repository); GitHub, the agent, the diff 
 Invented code, names and addresses only."""
 
 import argparse
+import dataclasses
 import hashlib
 import json
 import shutil
@@ -13,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from command_support import commands_in, unknown_commands
 from conventions_support import REMOVE, changed, write_checkout
 from git_support import git
 from review_support import make_verdict
@@ -22,6 +24,7 @@ from coney_tools.config import ConfigError
 from coney_tools.conventions import ConventionsError, load_conventions
 from coney_tools.review_verdict import problems as verdict_problems
 from coney_tools.unit import Unit
+from coney_tools.unit_record import UnitRecord, write_record
 
 BRAIN_H = """#pragma once
 namespace coney::ai {
@@ -445,7 +448,10 @@ def test_an_added_test_needs_a_passing_fails_first_stamp(rig: Rig) -> None:
 
 def test_nothing_to_review_is_refused(rig: Rig) -> None:
     git(rig.root, "checkout", "-q", "-b", "empty", "origin/main")
-    assert any("nothing to review" in p for p in rig.prepare()[1])
+    found = [p for p in rig.prepare()[1] if "nothing to review" in p]
+    # #1094: it says which branch of which checkout it looked at, since main's checkout has nothing beyond main.
+    assert len(found) == 1 and "'empty'" in found[0] and str(rig.root) in found[0] and "origin/main" in found[0], found
+    assert "--worktree" in found[0]
 
 
 def test_a_missing_description_is_refused(rig: Rig) -> None:
@@ -869,3 +875,172 @@ def test_the_default_change_hash_is_the_stamp_formats(rig: Rig) -> None:
     assert task_review.default_change_hash(rig.root, base, rig.tip()) == pr_diff.change_sha256(
         rig.root, base, rig.tip()
     )
+
+
+# --- the unit's worktree is the default (#1094) ----------------------------------------------------------------------
+
+
+def start_unit(rig: Rig, record_worktree: Path | None = None) -> Path:
+    """What `task start` leaves: a worktree of its own, one commit beyond the main checkout's branch, and the unit
+    record that names it (`record_worktree`: the folder the record names instead, which may not exist)."""
+    worktree = rig.root.parent.parent / "worktrees" / "coney" / "t1"
+    git(rig.root, "worktree", "add", "-q", "-b", "t1", str(worktree), "feature")
+    (worktree / "NOTES.md").write_text("notes\n", encoding="utf-8")
+    git(worktree, "add", "-A")
+    git(worktree, "commit", "-q", "-m", "work in the unit's worktree")
+    write_record(
+        rig.unit.dir / "unit.json",
+        UnitRecord(
+            task="t1",
+            kind="tooling",
+            issues=(1094,),
+            claimant="Someone",
+            branch="t1",
+            worktree=record_worktree or worktree,
+            base_ref="origin/main",
+            base_commit="a" * 40,
+            started=datetime(2026, 10, 28, 12, 0, 0, tzinfo=UTC),
+        ),
+    )
+    return worktree
+
+
+def arguments(**changes: Any) -> argparse.Namespace:
+    """What `task review t1` parsed to."""
+    values: dict[str, Any] = {"worktree": None, "task": "t1", "base": None, "pr_file": None}
+    values.update(changes)
+    return argparse.Namespace(**values)
+
+
+def test_review_takes_the_worktree_the_unit_record_names_from_any_checkout(
+    rig: Rig, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    unit_tree = start_unit(rig)
+    monkeypatch.chdir(rig.root)  # main's checkout, on another branch
+    env = task_review.environment(arguments())
+    assert env.worktree == unit_tree.resolve() and env.root == env.worktree
+    assert env.unit.task == "t1" and env.unit.dir == rig.unit.dir
+    assert env.text_file == rig.unit.dir / "PR.md"
+    # It reviews the unit's commits, not main's checkout's, and says where it looked.
+    packet, _ = task_review.build_packet(
+        dataclasses.replace(env, change_hash=lambda worktree, base, tip: rig.diff, docs_problems=lambda w, b: []),
+        "full",
+    )
+    assert packet["tip"] == git(unit_tree, "rev-parse", "HEAD").strip() != rig.tip()
+    assert "NOTES.md" in packet["files"]
+    err = capsys.readouterr().err
+    assert "the unit record" in err and str(unit_tree.resolve()) in err
+
+
+def test_review_inside_the_units_worktree_needs_no_note(
+    rig: Rig, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    unit_tree = start_unit(rig)
+    monkeypatch.chdir(unit_tree)
+    assert task_review.environment(arguments(task=None)).worktree == unit_tree.resolve()
+    assert capsys.readouterr().err == ""
+
+
+def test_the_worktree_option_wins_over_the_unit_record(rig: Rig, monkeypatch: pytest.MonkeyPatch) -> None:
+    start_unit(rig)
+    monkeypatch.chdir(rig.root)
+    assert task_review.environment(arguments(worktree=rig.root)).worktree == rig.root.resolve()
+
+
+def test_a_task_started_without_a_record_is_reviewed_where_the_command_runs(
+    rig: Rig, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(rig.root)
+    assert not (rig.unit.dir / "unit.json").exists()
+    assert task_review.environment(arguments()).worktree == rig.root.resolve()
+    assert capsys.readouterr().err == ""
+
+
+def test_a_record_naming_a_worktree_that_is_gone_is_refused_with_the_way_out(
+    rig: Rig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    gone = rig.root.parent.parent / "worktrees" / "coney" / "gone"
+    start_unit(rig, record_worktree=gone)
+    monkeypatch.chdir(rig.root)
+    with pytest.raises(
+        ConfigError, match=r"t1: the unit record names the worktree .*gone.*, which does not exist"
+    ) as why:
+        task_review.environment(arguments())
+    assert "--worktree" in str(why.value)
+
+
+def test_a_damaged_record_is_refused_not_ignored(rig: Rig, monkeypatch: pytest.MonkeyPatch) -> None:
+    (rig.unit.dir / "unit.json").write_text("not json", encoding="utf-8")
+    monkeypatch.chdir(rig.root)
+    with pytest.raises(ConfigError, match="not valid JSON"):
+        task_review.environment(arguments())
+
+
+def test_the_command_line_reviews_the_units_worktree_from_main(rig: Rig, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`task review t1`, run from main's checkout, prepares the unit's worktree and not main's."""
+    from coney_tools.cli import main
+
+    unit_tree = start_unit(rig)
+    monkeypatch.chdir(rig.root)
+    seen: list[Path] = []
+
+    def prepare(env: task_review.ReviewEnv, mode: str) -> int:
+        seen.append(env.worktree)
+        return 0
+
+    monkeypatch.setattr(task_review, "prepare", prepare)
+    assert main(["task", "review", "t1"]) == 0
+    assert seen == [unit_tree.resolve()]
+
+
+# --- the description's generated sections (#1094) --------------------------------------------------------------------
+
+
+def test_the_packet_names_the_sections_pr_text_writes_and_the_file_it_writes_them_to(rig: Rig) -> None:
+    packet = rig.prepare()[0]
+    rules = rig.conventions.pull_requests
+    generated = packet["text"]["generated_sections"]
+    named = {item["section"] for item in generated}
+    assert [item["section"] for item in generated] == [name for name in rules.sections if name in named]
+    assert named == {rules.closing.section, rules.checklist.section, rules.runtime.section, rules.ai_use.section}
+    assert all(item["what"] for item in generated)
+    assert packet["text"]["generated_body"] == {"path": str(rig.text.parent / "PR-BODY.md"), "exists": False}
+    (rig.text.parent / "PR-BODY.md").write_text("## Summary\n", encoding="utf-8")
+    assert rig.prepare()[0]["text"]["generated_body"]["exists"] is True
+
+
+def test_prepare_tells_the_reviewer_which_sections_are_generated(rig: Rig, capsys: pytest.CaptureFixture[str]) -> None:
+    assert task_review.prepare(rig.env(), "full") == 0
+    out = capsys.readouterr().out
+    assert "PR.md is the engineer's file" in out and "`pr text`" in out
+    assert "not written yet" in out and str(rig.text.parent / "PR-BODY.md") in out
+    for item in rig.prepare()[0]["text"]["generated_sections"]:
+        assert item["section"] in out
+    (rig.text.parent / "PR-BODY.md").write_text("## Summary\n", encoding="utf-8")
+    assert task_review.prepare(rig.env(), "full") == 0
+    assert "not written yet" not in capsys.readouterr().out
+
+
+def test_the_headless_reviewer_is_told_the_generated_sections_are_not_the_engineers(rig: Rig) -> None:
+    prompt = task_review.review_prompt(rig.env(), "full")
+    assert "PR-BODY.md" in prompt and "generated" in prompt
+
+
+# --- every refusal names a command that exists (#1094) ---------------------------------------------------------------
+
+
+def test_every_command_the_refusals_of_the_tool_part_name_exists(tmp_path: Path) -> None:
+    """The refusal texts are built from pieces (`run `{redo}``), so this reads them as printed."""
+    rig = Rig(tmp_path)
+    rig.stamp("assigned")
+    (rig.root / "tests").mkdir()
+    (rig.root / "tests/brain_test.cpp").write_text('TEST_CASE("Brain thinks higher") {}\n', encoding="utf-8")
+    git(rig.root, "add", "-A")
+    git(rig.root, "commit", "-q", "-m", "test")
+    cite_twice(rig)
+    problems = rig.prepare()[1]
+    text = "\n".join(problems)
+    mentioned = commands_in(text)
+    assert any(c.startswith("orig compare 0x00100010 --coney-function") for c in mentioned), problems
+    assert "orig fails-first" in mentioned, problems
+    assert unknown_commands(text) == []

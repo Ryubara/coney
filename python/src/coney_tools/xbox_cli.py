@@ -162,7 +162,7 @@ def run_index(disc_arg: str, out_file: Path) -> int:
 def run_texture_map(ps2_arg: str, disc_arg: str, out_file: Path, index_file: Path | None) -> int:
     """Match every PS2 texture against the Xbox disc and write the texture map to `out_file`.
 
-    It is `extract --only textures --xbox ... --xbox-texture-map` into a temporary folder that is deleted after.
+    It is `extract --only textures --xbox-disc ... --xbox-texture-map` into a temporary folder that is deleted after.
     """
     from coney_tools import extract  # loads NumPy
 
