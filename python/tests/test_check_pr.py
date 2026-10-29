@@ -204,6 +204,25 @@ def test_the_command_without_agent_gives_the_build_an_id_because_the_build_sees_
     assert seen[0][seen[0].index("--agent") + 1] == "alice"
 
 
+def test_a_build_that_gave_up_waiting_for_a_slot_ends_the_command_with_the_queued_code(
+    checkout: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(checkout)
+    write_body(checkout)
+    commit(checkout, "src/core/x.cpp")
+    real = local_gate.run_command
+
+    def queued(command: list[str], cwd: Path) -> tuple[int, str]:
+        # Only the build is told to wait; the git commands the step list needs run as they are.
+        return (EXIT_QUEUED, "waiting for a build slot") if "build" in command else real(command, cwd)
+
+    monkeypatch.setattr(local_gate, "run_command", queued)
+    argv = ["ci", "pr", "--base", "main", "--body", "body.md", "--title", "tools: Add it", "--only", "engine"]
+    assert main(argv) == EXIT_QUEUED
+    out = capsys.readouterr().out
+    assert "run it again" in out and "CI would refuse" not in out
+
+
 def test_the_engine_step_shows_the_end_of_a_failed_build(checkout: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     output = "".join(f"line {number}\n" for number in range(100))
     monkeypatch.setattr(local_gate, "run_command", lambda *_: (1, output))

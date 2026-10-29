@@ -150,9 +150,9 @@ hold a picture that is a local file (a picture has no address before the pull re
 (<reason>)` for the check and add the picture on GitHub after opening ([CONTRIBUTING.md](repo:CONTRIBUTING.md)). The
 exit codes are those of `ci run`: 0 all passed, 1 a step failed (CI would refuse the pull request too), 2 a setup
 problem (the description file cannot be read, a program is missing), 75 when the `python` step could not get a [check
-slot](coney-tools-build.md#check-slots) in time (the command says its place; run it again). What stays CI's: the other
-compilers, macOS, the sanitizers and clang-tidy on the changed lines, and the checks that need the pull request itself
-(the `Fixes #N` issues' state, `dependencies`).
+slot](coney-tools-build.md#check-slots) in time or the `engine` step's build gave up waiting for a slot (the command
+says so; run it again). What stays CI's: the other compilers, macOS, the sanitizers and clang-tidy on the changed lines,
+and the checks that need the pull request itself (the `Fixes #N` issues' state, `dependencies`).
 
 CI's `pr` workflow (`title`, `docs`, `body`) runs on a fork's pull request without a maintainer's approval
 ([Workflows](repo-conventions.md#pr-workflow)); its `build`, `python` and `docs` workflows run the contributor's code, so

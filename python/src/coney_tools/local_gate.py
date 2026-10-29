@@ -32,6 +32,9 @@ class StepResult:
     output: tuple[str, ...] = ()
     #: What the check counted, by kind, in the order it printed them (pytest's `(("passed", 412), ("skipped", 3))`).
     counts: tuple[tuple[str, int], ...] = ()
+    #: The check could not start because a slot it needs never came free in time (`build` exits 75): the run ends with
+    #: the queued code instead of a verdict, and is run again.
+    queued: bool = False
 
 
 def low_priority(command: Sequence[str]) -> tuple[list[str], dict[str, object]]:

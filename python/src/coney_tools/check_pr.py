@@ -94,6 +94,9 @@ def step_engine(root: Path, changed: list[str], conventions: Conventions, preset
     code, output = local_gate.run_command(build_command(preset, agent), root)
     if code == 0:
         return StepResult(ENGINE_STEP, True, f"{preset} build and tests")
+    if code == EXIT_QUEUED:
+        # `build` gave up waiting for a build slot, a check slot or its folder: no verdict about the change.
+        return StepResult(ENGINE_STEP, False, "the build waited for a slot in vain", queued=True)
     # A build's failure is at the end of its output, so the last lines are kept, not the first.
     lines = [line for line in output.splitlines() if line.strip()]
     return StepResult(

@@ -10,6 +10,7 @@ the background, as `build --detach` does, and `ci result` reads its outcome.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import os
 import re
 import shutil
@@ -75,7 +76,7 @@ def _timed(name: str, work: Callable[[], StepResult]) -> StepResult:
     """Run one step and stamp its duration on the result."""
     started = time.monotonic()
     result = work()
-    return StepResult(name, result.ok, result.detail, time.monotonic() - started, result.skipped, result.output)
+    return dataclasses.replace(result, name=name, seconds=time.monotonic() - started)
 
 
 def _skipped(name: str, why: str) -> StepResult:
@@ -328,6 +329,9 @@ def run_steps(wanted: list[str], steps: Mapping[str, Callable[[], StepResult]], 
             result = _timed(name, steps[name])
         except SlotTimeout as timeout:
             _say(f"coney-tools {command}: {check_slots.queued_message(timeout, name)}; run it again")
+            return EXIT_QUEUED
+        if result.queued:
+            _say(f"coney-tools {command}: {name} waited for a slot in vain; run it again")
             return EXIT_QUEUED
         mark = "skip" if result.skipped else "ok  " if result.ok else "FAIL"
         timing = "" if result.skipped else f" ({result.seconds:.0f}s)"
