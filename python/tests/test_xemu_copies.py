@@ -128,6 +128,21 @@ def test_an_install_in_a_copys_folder_is_refused_and_left_alone(tmp_path: Path) 
     assert not (root / "xemu-b").exists()  # nothing was made before the refusal
 
 
+def test_a_root_inside_the_install_is_refused(tmp_path: Path) -> None:
+    folder = make_install(tmp_path)
+    install = find_install(folder, None, {})
+    with pytest.raises(ConfigError, match="holds where xemu would go"):
+        setup_copies(install, plan_copies(folder, 1, 1234, 4444), lambda _: [], log=lambda _: None)
+    assert not (folder / "xemu").exists()
+
+
+def test_the_copies_are_told_to_start_windowed_with_the_xemu_key_for_it() -> None:
+    """The live run found the key is `fullscreen_on_startup` (not the draft's `fullscreen_on_boot`): spelled out
+    here, since a test that reads the same list as the code would pass with the wrong key."""
+    assert ("display.window", "fullscreen_on_startup", False) in COPY_SETTINGS
+    assert all(key != "fullscreen_on_boot" for _, key, _ in COPY_SETTINGS)
+
+
 def test_a_second_setup_keeps_the_copy_disk_unless_refreshed(tmp_path: Path) -> None:
     install, root, _ = _setup(tmp_path)
     disk = root / "xemu" / HDD_FILE

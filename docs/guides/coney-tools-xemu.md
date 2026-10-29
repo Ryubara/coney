@@ -219,12 +219,13 @@ their own: `xemu_save_snapshot NAME` writes one into the image, `xemu_load_snaps
 
 `record-run` writes `research/runs/<id>.toml` for an observation made on your claimed copy, as `pcsx2 record-run` does
 for PCSX2 ([Run records](research-evidence.md#run-records)): the method in words, the numbers read (`--value`), the
-addresses named (`--address`) and the snapshot the run started from (`--snapshot`, default `unknown`). The record has
-an `[xemu]` table, xemu's version (`v0.8.139`, from the copy's log: [the monitor](#monitor)) and the copy, in place
-of `[pcsx2]`. A claim cites it as `confirmed (runtime), run <id>`, and
-[`research claims`](coney-tools-fidelity.md#research) accepts it only for a claim about the Xbox: a block, grading
-line or page that names one of `runs.xbox_words` in [.github/conventions.yml](repo:.github/conventions.yml) (`Xbox`,
-`XBE`, `xemu`), or a page named `xbox-*.md`.
+addresses named (`--address`) and the snapshot the run started from (`--snapshot`, default `unknown`; the record keeps
+it as a slug, so `Level_1.start` is recorded as `level-1-start`: the record names the state, not a name to load). The
+record has an `[xemu]` table, xemu's version (`v0.8.139`, from the copy's log: [the monitor](#monitor)) and the copy,
+in place of `[pcsx2]`. A claim cites it as `confirmed (runtime), run <id>`, and [`research
+claims`](coney-tools-fidelity.md#research) accepts it only for a claim about the Xbox: a block, grading line or page
+that names one of `runs.xbox_words` in [.github/conventions.yml](repo:.github/conventions.yml) (`Xbox`, `XBE`,
+`xemu`), or a page named `xbox-*.md`.
 
 ### The first live run {#live-run}
 

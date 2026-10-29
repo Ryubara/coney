@@ -110,9 +110,9 @@ Cheap at the file and function level, not below it.
 
 xemu (QEMU-based) has a GDB stub and the QEMU monitor (memory dumps, registers, snapshots). GDB's remote protocol
 gives memory reads and writes, breakpoints and watchpoints, about what PCSX2's debugger and PINE give together:
-inferred from xemu's and QEMU's documentation. Of these, memory reads, pause, continue and register reads have been
-used on the real game; breakpoints and watchpoints have not been used on the real game yet, only against the tests'
-fake stub.
+inferred from xemu's and QEMU's documentation. Of these, memory reads have been used on the real game, as have the
+stub's own controls (pause, continue, register reads); breakpoints and watchpoints have not been used on the real game
+yet, only against the tests' fake stub.
 
 Coney's tooling for it is [the coney-tools xemu commands](../guides/coney-tools-xemu.md): copies of the user's own
 xemu install claimed one per agent, a launch with the stub and monitor on the copy's own ports, reads, an `xemu` MCP

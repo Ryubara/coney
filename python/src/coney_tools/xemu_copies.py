@@ -374,9 +374,10 @@ def setup_copies(
     xemu processes started from a folder)."""
     # Step 1: a copy folder that is the install itself would have its settings overwritten, so nothing is touched.
     for plan in plans:
-        if plan.path.resolve() == install.folder.resolve():
+        target, folder = plan.path.resolve(), install.folder.resolve()
+        if target == folder or folder in target.parents:
             raise ConfigError(
-                f"xemu_install is {install.folder}, which is where {plan.name} would go; move the install out of "
+                f"xemu_install is {install.folder}, which holds where {plan.name} would go; move the install out of "
                 "the copies' folder (the install is only read) or set xemu_root to another folder"
             )
     log(f"xemu install: {install.folder} (settings {install.settings_path})" + (" (dry run)" if dry_run else ""))

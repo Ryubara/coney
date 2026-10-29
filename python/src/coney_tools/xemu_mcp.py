@@ -126,6 +126,7 @@ def _status(server: Server, session: XemuSession, arguments: dict[str, Any]) -> 
     return session.status()
 
 
+# Memory as hex rows, or as typed values (`type`), up to MAX_READ bytes; a running guest is stopped for the read only.
 def _read_memory(server: Server, session: XemuSession, arguments: dict[str, Any]) -> object:
     address = parse_address(arguments.get("address"))
     kind = _text(arguments, "type", "hex")
@@ -141,6 +142,7 @@ def _read_memory(server: Server, session: XemuSession, arguments: dict[str, Any]
     return {"address": f"0x{address:08x}", "type": kind, "values": values}
 
 
+# Memory written from `hex` bytes, or from one `value` of a `type`; the size is checked before the stub is asked.
 def _write_memory(server: Server, session: XemuSession, arguments: dict[str, Any]) -> object:
     address = parse_address(arguments.get("address"))
     if "hex" in arguments:
@@ -166,6 +168,7 @@ def _read_registers(server: Server, session: XemuSession, arguments: dict[str, A
     return {name: f"0x{value:08x}" for name, value in session.registers().items()}
 
 
+# A register set to a value; the session refuses it while the guest runs.
 def _write_register(server: Server, session: XemuSession, arguments: dict[str, Any]) -> object:
     name = _text(arguments, "name")
     value = parse_address(arguments.get("value"))
@@ -173,6 +176,7 @@ def _write_register(server: Server, session: XemuSession, arguments: dict[str, A
     return f"{name} = 0x{value:08x}"
 
 
+# The kind, address and length of a breakpoint or watchpoint, checked before the stub is asked.
 def _point(arguments: dict[str, Any]) -> tuple[str, int, int]:
     kind = _text(arguments, "kind", "break")
     if kind not in POINT_KINDS:
@@ -180,12 +184,14 @@ def _point(arguments: dict[str, Any]) -> tuple[str, int, int]:
     return kind, parse_address(arguments.get("address")), _count(arguments, "length", 1, 1, 8)
 
 
+# A breakpoint or watchpoint set; the session keeps it so closing the session removes it.
 def _set_breakpoint(server: Server, session: XemuSession, arguments: dict[str, Any]) -> object:
     kind, address, length = _point(arguments)
     session.set_point(kind, address, length)
     return f"set a {kind} point at 0x{address:08x} ({length} byte(s)); xemu_continue with wait_seconds to catch it"
 
 
+# A point this session set, removed.
 def _remove_breakpoint(server: Server, session: XemuSession, arguments: dict[str, Any]) -> object:
     kind, address, length = _point(arguments)
     session.remove_point(kind, address, length)
@@ -196,6 +202,7 @@ def _pause(server: Server, session: XemuSession, arguments: dict[str, Any]) -> o
     return _stop(session.pause())
 
 
+# Let the guest run; `wait_seconds` waits that long for a stop (a breakpoint or watchpoint) before answering.
 def _continue(server: Server, session: XemuSession, arguments: dict[str, Any]) -> object:
     wait = arguments.get("wait_seconds", 0)
     if isinstance(wait, bool) or not isinstance(wait, int | float) or not 0 <= wait <= MAX_WAIT:
@@ -207,11 +214,13 @@ def _continue(server: Server, session: XemuSession, arguments: dict[str, Any]) -
     return f"{_stop(stop)}, eip 0x{eip:08x}"
 
 
+# Run `count` instructions, one stop reply each, and say where the guest is.
 def _step(server: Server, session: XemuSession, arguments: dict[str, Any]) -> object:
     stop = session.step(_count(arguments, "count", 1, 1, 1000))
     return f"{_stop(stop)}, eip 0x{session.registers()['eip']:08x}"
 
 
+# The guest picture written to a file in scratch (never inside the checkout: it is game data).
 def _screenshot(server: Server, session: XemuSession, arguments: dict[str, Any]) -> object:
     if arguments.get("out"):
         out = Path(_text(arguments, "out"))
@@ -230,12 +239,14 @@ def _list_snapshots(server: Server, session: XemuSession, arguments: dict[str, A
     return session.snapshots()
 
 
+# A snapshot saved into the copy's disk image; the name is checked against QEMU's rules by the session.
 def _save_snapshot(server: Server, session: XemuSession, arguments: dict[str, Any]) -> object:
     name = _text(arguments, "name")
     session.save_snapshot(name)
     return f"saved snapshot {name} in {session.copy.name}'s disk image"
 
 
+# Go back to a snapshot of the copy's disk image.
 def _load_snapshot(server: Server, session: XemuSession, arguments: dict[str, Any]) -> object:
     name = _text(arguments, "name")
     session.load_snapshot(name)
