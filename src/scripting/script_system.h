@@ -19,6 +19,8 @@
 #include "core/game_timer.h"
 #include "scripting/lua_value.h"
 #include "scripting/lua_vm.h"
+#include "scripting/natives.h"
+#include "scripting/script_scheduler.h"
 
 namespace coney::script {
 
@@ -73,6 +75,19 @@ class ScriptSystem {
     /// A script system that reads scripts through `source`, installs bindings with `install` and logs to `log` (either
     /// may be empty). No state exists until create().
     ScriptSystem(ScriptSource source, BindingInstaller install, Log log);
+    ~ScriptSystem() = default;
+    // The scheduler refers back to its script system, so a script system stays where it was made.
+    ScriptSystem(const ScriptSystem&) = delete;
+    ScriptSystem& operator=(const ScriptSystem&) = delete;
+    ScriptSystem(ScriptSystem&&) = delete;
+    ScriptSystem& operator=(ScriptSystem&&) = delete;
+
+    /// The scheduler every script run of this system goes through (ScriptScheduler::run()).
+    [[nodiscard]] ScriptScheduler& scheduler() { return m_scheduler; }
+    /// The natives the current state was given (installBindings()); empty with no state or none installed.
+    [[nodiscard]] std::span<const Native> natives() const { return m_natives; }
+    /// Keeps the natives installed in the current state, for the debug menus; destroy() drops them.
+    void setNatives(std::vector<Native> natives) { m_natives = std::move(natives); }
 
     /// Makes the Lua state: libraries, bindings, the silent error handlers; drops any scheduled calls and the update
     /// function. Replaces a state that exists. Must not be called from inside a script (CONEY_ASSERT).
@@ -226,6 +241,8 @@ class ScriptSystem {
     std::uint64_t m_skippedBefore = 0;    // skipped calls of the states destroyed so far
     std::set<std::string> m_skippedNames; // names already logged
     std::shared_ptr<Log> m_trace;         // traceCalls()'s sink, shared with the wrapped bindings; null: no trace
+    std::vector<Native> m_natives;        // the current state's natives (setNatives())
+    ScriptScheduler m_scheduler{*this};
 };
 
 } // namespace coney::script

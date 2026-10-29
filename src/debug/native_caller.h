@@ -33,6 +33,8 @@ enum class NativeStatus : std::uint8_t {
 
 /// The status of the binding `name`, from Coney's binding table (script::bindingTable()).
 [[nodiscard]] NativeStatus nativeStatus(std::string_view name);
+/// The status of the native `name` in a state's native list.
+[[nodiscard]] NativeStatus nativeStatus(std::span<const script::Native> natives, std::string_view name);
 /// The name of a status, for the menus (`implemented`, `missing`).
 [[nodiscard]] std::string_view nativeStatusName(NativeStatus status);
 

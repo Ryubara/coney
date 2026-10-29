@@ -1517,6 +1517,9 @@ std::size_t RecordedCalls::total() const {
     return total;
 }
 
+// @coney-only stub for the test commit
+std::vector<Native> buildNatives(ScriptSystem& /*scripts*/, const BindingContext& /*context*/) { return {}; }
+
 void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context) {
     CONEY_ASSERT(context.state != nullptr && context.strings != nullptr && context.host != nullptr);
     const Factory factory{&scripts, &context, std::make_shared<HandleCounter>()};

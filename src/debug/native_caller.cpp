@@ -56,6 +56,10 @@ NativeStatus nativeStatus(std::string_view name) {
     return NativeStatus::Missing;
 }
 
+NativeStatus nativeStatus(std::span<const script::Native> /*natives*/, std::string_view /*name*/) {
+    return NativeStatus::Missing;
+}
+
 std::string_view nativeStatusName(NativeStatus status) {
     static constexpr std::array<std::string_view, 4> kNames{"implemented", "partial", "stub", "missing"};
     return kNames.at(static_cast<std::size_t>(status));

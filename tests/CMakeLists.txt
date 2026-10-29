@@ -235,7 +235,9 @@ add_executable(coney_tests
     scripting/lua_vm_test.cpp
     scripting/scene_bindings_test.cpp
     scripting/object_bindings_test.cpp
+    scripting/natives_test.cpp
     scripting/script_bindings_test.cpp
+    scripting/script_scheduler_test.cpp
     scripting/rumble_match_bindings_test.cpp
     scripting/arena_bindings_test.cpp
     scripting/script_system_test.cpp
