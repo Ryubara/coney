@@ -360,19 +360,21 @@ uv run --project python coney-tools workspace check-space [--min-gb N]
 ```
 
 `clean` removes the worktrees whose pull request merged (with their local branches) when they have no uncommitted
-changes, and deletes the `build/` folders nobody has touched for `--build-hours` (default
-`workspace.build_idle_hours`, 24), skipping any worktree that holds or waits for a build slot and any worktree
-holding the busy file (`workspace.busy_marker`, `.coney-busy`; an empty one older than `--build-hours` is ignored, as
-its agent is gone, and one with an id in it always counts). The slots are read from the build queue's own claim and
-ticket files each time and again just before each deletion, with the queue's rules for a dead claim, never from an
-earlier listing. It never touches the main checkout. When the drive is still under `--min-gb` (default
-`workspace.disk_min_free_gb`, 30) after that, it deletes more `build/` folders, oldest last use first and never a
-worktree's sources, until `--margin-gb` (default `workspace.disk_margin_gb`, 10) above the floor is free, skipping
-worktrees that are busy or hold or wait for a build slot (disk pressure). It is a dry run without `--apply`, and
-reports each deletion, the bytes reclaimed and the free space before and after. It also lists, and with `--apply`
-stops, the **stale processes**: shells older than `--stale-wait-hours` (default 3) waiting in a sleep loop on files
-unchanged for `--log-idle-hours` (default 1), and orphaned `ctest` or `coney_tests` runs whose parent is gone.
-`check-space` prints the workspace drive's free space and exits 1 below `--min-gb` (default:
+changes, and deletes the `build/` folders nobody has touched for `--build-hours` (default `workspace.build_idle_hours`,
+24), with their folders in the [build root](workspace.md#build-root) when `build_root` is set, skipping any worktree
+that holds or waits for a build slot or runs a `task check` or `orig fails-first`, and any worktree holding the busy
+file (`workspace.busy_marker`, `.coney-busy`; an empty one older than `--build-hours` is ignored, as its agent is gone,
+and one with an id in it always counts). The slots are read from the build queue's own claim and ticket files each time
+and again just before each deletion, with the queue's rules for a dead claim, never from an earlier listing. It never
+touches the main checkout. When the drive is still under `--min-gb` (default `workspace.disk_min_free_gb`, 30) after
+that, it deletes more `build/` folders, oldest last use first and never a worktree's sources, until `--margin-gb`
+(default `workspace.disk_margin_gb`, 10) above the floor is free, skipping worktrees that are busy or hold or wait for a
+build slot (disk pressure). It is a dry run without `--apply`, and reports each deletion, the bytes reclaimed and the
+free space before and after; a build root on another drive is measured and relieved the same way, and its orphans and
+the folders it did not make are listed, never deleted. It also lists, and with `--apply` stops, the **stale processes**:
+shells older than `--stale-wait-hours` (default 3) waiting in a sleep loop on files unchanged for `--log-idle-hours`
+(default 1), and orphaned `ctest` or `coney_tests` runs whose parent is gone. `check-space` prints the workspace drive's
+free space (and the build root's, on another drive) and exits 1 when one is below `--min-gb` (default:
 `workspace.disk_min_free_gb` of [.github/conventions.yml](repo:.github/conventions.yml), 30). Rules and the busy file:
 [Cleanup](workspace.md#cleanup).
 

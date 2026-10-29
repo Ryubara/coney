@@ -196,6 +196,7 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `pcsx2_claims_dir` | `pcsx2-claims` in the main checkout's `../../scratch` (`<clone>-workspace/scratch` in a plain clone) | where those claims live; one place every worktree sees, whatever its `scratch_dir` |
 | `pcsx2_states_dir` | `state-library` in the main checkout's `../../emulators` (`<clone>-workspace/emulators` in a plain clone) | the shared [PCSX2 state library](pcsx2-states.md) (`coney-tools pcsx2 states`): save states are game memory, so it sits beside the repository; one place every worktree sees |
 | `build_claims_dir` | `build-claims` in the main checkout's `../../scratch` (`<clone>-workspace/scratch` in a plain clone) | where `coney-tools build` keeps its slots and queue; one place every worktree sees, whatever its `scratch_dir` |
+| `build_root` | none: builds stay in each checkout's `build/` | optional, for this machine only: a folder (on another drive) that holds every checkout's build tree as `<build_root>/<id>/` ([The build root](#build-root)) |
 | `build_slots` | `2` | a number: how many builds and test runs `coney-tools build` lets run at once |
 | `check_slots` | `0` | a number: how many full suites (the whole pytest run, the engine's whole ctest run) may run at once on this machine, across all worktrees ([check slots](coney-tools-build.md#check-slots)); `0` is one per four cores, at least one |
 | `build_worktree_cap` | `7` | a number: how many worktrees may hold a `build/` folder at once; `coney-tools build` refuses to configure a new build folder beyond it and lists the holders ([`build`](coney-tools-build.md#build), [The cap](agents.md#build-cap)); `0` turns the cap off |
@@ -218,6 +219,32 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 Each line is `key = "value"` (the number keys are written without quotes: `build_slots = 2`); a `#` starts a
 comment. A tool that needs a folder that does not exist stops with an
 error naming the key, the path it resolved and the config file it used, so a wrong entry is easy to find.
+
+### The build root {#build-root}
+
+A build of the engine is about 7 GB per preset, and on a machine with many worktrees they fill and wear the system
+drive. `build_root` moves them: with `build_root = "<another drive>/coney_builds"` in `coney.local.toml`, every
+checkout of this machine (worktrees and the main checkout) builds in `<another drive>/coney_builds/<id>/` (`<id>/dev`,
+`<id>/ci`, ...) instead of its own `build/`. It is optional and local: the file is untracked, a machine without the
+key builds exactly as before, and nobody else's checkout changes. It may be relative to the main checkout, and must
+not be inside a checkout.
+
+* **The id** names the checkout's folder in the root and never changes once written, whatever happens to the worktree
+  folder or its branch: it is the task id for a task's worktree (its unit record names it), else the folder's name and
+  a short random suffix. It is written once into the checkout's own git folder (`.git/worktrees/<name>/coney-build-id`;
+  `.git/coney-build-id` for the main checkout), outside the working tree, so `git status`, `task check` and
+  `orig fails-first` never see it, and `git worktree remove` takes it away.
+* **The marker.** `coney-tools build` writes `coney-build.json` into the folder, naming the worktree it serves.
+  [`workspace clean`](#cleanup) deletes a folder in the root only when it carries that marker; a folder without one
+  (made by hand, or a link) is listed and left alone, and so is an orphan, a folder whose marker names a worktree that
+  is gone (delete those by hand once you have looked).
+* **One resolver.** `coney-tools build` (every preset, and `--build-dir build/...`), `task check`, `orig fails-first`,
+  `ci run`, the [cap on build folders](agents.md#build-cap), `workspace clean`, `workspace check-space`, `doctor`,
+  `perf` and `trace` find the build tree through
+  [`build_root.py`](repo:python/src/coney_tools/build_root.py) ([The build root](coney-tools-build.md#build)). A raw
+  `cmake --preset` (an IDE, say) still uses `build/<preset>`.
+* **Builds from before** the setting stay in the worktree's `build/` until `workspace clean` deletes them as idle; a new
+  build goes to the root.
 
 ## Worktrees
 
@@ -274,25 +301,29 @@ free space before and after.
   from the branch whose head is the branch's tip or a later commit; squash merges leave the branch's
   commits out of `main`, so `git branch --merged` alone would keep them all. Without `gh` (or when it fails), only
   what `origin/main` contains counts, so run `git fetch` (or pass `--fetch`) first; the rest is kept, never guessed.
-* **Deletes `build/`** (generated, ignored by git) from every worktree that is not busy (no live busy file, no build
-  slot held or waited for) and has not been touched for
+* **Deletes `build/`** (generated, ignored by git), and the worktree's folder in the [build root](#build-root) when
+  `build_root` is set, from every worktree that is not busy (no live busy file, no build slot held or waited for, no
+  check running) and has not been touched for
   `--build-hours` (default `workspace.build_idle_hours`, 24; it is only a rebuild): the newest modification time of
   its tracked and untracked files, of git's `HEAD` for it and of the build folder and the entries one and two levels
   in (a running build writes there). Sources are never touched this way, so it also applies to a worktree with
   uncommitted or unmerged work.
 * **Disk pressure** (`--min-gb`, default `workspace.disk_min_free_gb`, 30; `--margin-gb`, default
   `workspace.disk_margin_gb`, 10). After the two steps above, if the drive still has less than the floor free, `clean`
-  deletes the `build/` folders of the remaining worktrees, **the one last used longest ago first**, until the free
-  space reaches the floor plus the margin (40 GB by default), re-reading the free space after each. This is what keeps
-  the drive above the floor when twenty-five open branches each hold a 6 GB build used within the last hours, which
-  the age rule alone never touches. Only `build/` folders go in this mode, never a worktree, a source file or a branch,
-  so uncommitted and unmerged work is safe. Skipped: a worktree with the busy file, the folder you run it from, a
-  `build/` that git does not ignore, and a worktree that holds a build slot or waits for one (see "Build slots"
-  below). Each deletion is printed with the free space before and after, and a line says so when the drive is still
-  under the floor with no build folder left to delete. A dry run lists the deletions it would make, adding up the sizes.
+  deletes the `build/` folders of the remaining worktrees, **the one last used longest ago first**, until the free space
+  reaches the floor plus the margin (40 GB by default), re-reading the free space after each. This is what keeps the
+  drive above the floor when twenty-five open branches each hold a 6 GB build used within the last hours, which the age
+  rule alone never touches. With a [build root](#build-root) on another drive, that drive is measured too and has the
+  same floor: under it, the build folders in the root are deleted the same way. Only build folders go in this mode,
+  never a worktree, a source file or a branch, so uncommitted and unmerged work is safe. Skipped: a worktree with the
+  busy file, the folder you run it from, a `build/` that git does not ignore, and a worktree that holds a build slot or
+  waits for one (see "Build slots" below). Each deletion is printed with the free space before and after, and a line
+  says so when the drive is still under the floor with no build folder left to delete. A dry run lists the deletions it
+  would make, adding up the sizes.
 * **Never touches** the main checkout, a worktree outside `worktrees/`, or folders git does not know as worktrees (it
   only names them; the loose files and logs in `worktrees/coney/` are for you to delete). A worktree whose folder is
-  gone has its record pruned.
+  gone has its record pruned. In the build root it lists the orphans (their worktree is gone) and the folders without
+  a marker, and deletes neither.
 * Read-only files (git's packs, some tools' output) are cleared before deleting, and long Windows paths work.
 * **Stops stale processes** (the tree under each, by process id, never by name;
   [`stale_processes.py`](repo:python/src/coney_tools/stale_processes.py)):
@@ -308,8 +339,11 @@ free space before and after.
   tree. On 2026-10-12 twenty such shells, hours old, and an orphaned `ctest` were found and killed by hand; the
   [bounded-waits hook](agents.md#bounded-waits) keeps new ones from being started.
 
-**Build slots.** A worktree that holds a build slot, a build folder's lock, or a place in the build queue (the main,
-fast lane) is never removed and never loses its `build/`, in any mode. `clean` reads that from the build
+**Build slots and running checks.** A worktree that holds a build slot, a build folder's lock, or a place in the build
+queue (the main, fast lane), or that runs a `task check` or an `orig fails-first`, is never removed and never loses its
+build, in any mode. Those two commands record themselves for their whole run (`active/` in the build queue's folder,
+with their process id), because between their builds they hold no slot: the idle test alone once let
+`clean --apply` delete the builds of three units whose checks were running. `clean` reads that from the build
 queue's own claim and ticket files (`build_claims_dir`, else `scratch/build-claims`; [`build`](coney-tools-build.md#build))
 with the queue's rules for a dead claim (its process is gone, or it is over four hours old), never from a listing
 made earlier, and reads it again just before each deletion: a stale listing once deleted the build folders of two
@@ -324,7 +358,8 @@ protects its worktree for good; delete it once you know the work is over. An **e
 `--build-hours` (24 by default) is taken for a dead agent's and ignored, so a marker made with a bare `touch` still
 protects for a day. The file's name is `workspace.busy_marker` of the conventions file.
 
-**`workspace check-space`** prints the free space of the workspace's drive and exits 1 below `--min-gb` (default: 30,
+**`workspace check-space`** prints the free space of the workspace's drive, and of the build root's when it is on
+another drive, and exits 1 when either is below `--min-gb` (default: 30,
 the `workspace.disk_min_free_gb` key of [.github/conventions.yml](repo:.github/conventions.yml)), for hooks and scripts
 (`coney-tools workspace check-space || coney-tools workspace clean --apply`); a hook that runs `clean --apply` every
 half hour keeps the drive above the floor on its own. The coordinator runs

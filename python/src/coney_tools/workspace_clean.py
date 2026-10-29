@@ -34,8 +34,16 @@ slot is skipped.
 
 Who holds a slot is read from the build queue's own claim and ticket files each time (`build_claims.live_worktrees`,
 with the queue's liveness rules), never from a listing kept earlier, and read again just before each deletion: a
-stale listing once deleted the build folders of two running builds. The same functions tell `coney-tools build` which
-worktrees hold a build folder (build_cap.py).
+stale listing once deleted the build folders of two running builds. A `task check` or `orig fails-first` that runs
+holds an activity there for its whole run (`build_claims.activity`), so the steps between its builds count as use
+too: the idle test alone once let `--apply` delete the builds of three units whose checks were running. The same
+functions tell `coney-tools build` which worktrees hold a build folder (build_cap.py).
+
+**A build root.** With `build_root` set in coney.local.toml a worktree's build tree is `<build_root>/<id>/`
+(build_root.py) rather than its `build/`; `clean` judges, deletes and measures both, and the drive the root is on
+has its own floor. It deletes a folder in the root only when that folder carries the marker `coney-tools build`
+wrote, never through a link, and only lists the orphans (a marker naming a worktree that is gone) and the folders it
+did not make.
 """
 
 from __future__ import annotations
@@ -48,12 +56,12 @@ import subprocess
 import sys
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
-from coney_tools import build_claims, stale_processes
+from coney_tools import build_claims, build_root, stale_processes
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Workspace, load_conventions
 from coney_tools.workspace import find_layout
@@ -119,7 +127,10 @@ class Entry:
     build_why: str = ""
     #: The build folder exists and git ignores it, so disk pressure may delete it even from a worktree that stays.
     build_deletable: bool = False
-    #: Bytes of that build folder and hours since the worktree was last used (set with `build_deletable`).
+    #: The build folders `clean` may delete (the worktree's `build/` and its folder in the build root), with their
+    #: bytes (0 when the sizes are not measured).
+    build_folders: dict[Path, int] = field(default_factory=dict)
+    #: Bytes of those build folders and hours since the worktree was last used (set with `build_deletable`).
     build_bytes: int = 0
     build_idle: float = 0.0
     #: Why the worktree is busy (the marker, or a build slot); empty when it is not. A busy worktree is judged no
@@ -199,10 +210,10 @@ def _mtime(path: str | Path) -> float:
         return 0.0
 
 
-def last_activity(worktree: Path) -> float:
+def last_activity(worktree: Path, builds: Sequence[Path] | None = None) -> float:
     """When the worktree was last touched: the newest modification time of its tracked and untracked files, of the
-    folder git keeps for it (`HEAD`, and the log that every commit and checkout appends to) and of its `build/`
-    folder with the entries one and two levels inside it (a running build writes there)."""
+    folder git keeps for it (`HEAD`, and the log that every commit and checkout appends to) and of its build folders
+    (`builds`, default its `build/`) with the entries one and two levels inside them (a running build writes there)."""
     newest = 0.0
     listed = _git(worktree, "ls-files", "-z", "--cached", "--others", "--exclude-standard")
     for name in listed.stdout.split("\0"):
@@ -211,18 +222,18 @@ def last_activity(worktree: Path) -> float:
     gitdir = _git(worktree, "rev-parse", "--absolute-git-dir").stdout.strip()
     if gitdir:
         newest = max(newest, _mtime(Path(gitdir) / "HEAD"), _mtime(Path(gitdir) / "logs" / "HEAD"))
-    build = worktree / "build"
-    newest = max(newest, _mtime(build))
-    try:
-        with os.scandir(_fs(build)) as children:
-            for child in children:
-                newest = max(newest, _mtime(child.path))
-                if child.is_dir(follow_symlinks=False):
-                    with os.scandir(child.path) as grandchildren:
-                        for grandchild in grandchildren:
-                            newest = max(newest, _mtime(grandchild.path))
-    except OSError:
-        pass
+    for build in [worktree / build_root.IN_CHECKOUT] if builds is None else builds:
+        newest = max(newest, _mtime(build))
+        try:
+            with os.scandir(_fs(build)) as children:
+                for child in children:
+                    newest = max(newest, _mtime(child.path))
+                    if child.is_dir(follow_symlinks=False):
+                        with os.scandir(child.path) as grandchildren:
+                            for grandchild in grandchildren:
+                                newest = max(newest, _mtime(grandchild.path))
+        except OSError:
+            pass
     return newest
 
 
@@ -347,9 +358,14 @@ class Settings:
     busy_file: str = BUSY_FILE
     #: Hours after which an empty busy file no longer protects its worktree (its agent died without deleting it).
     marker_hours: float = DEFAULT_BUILD_HOURS
-    #: The names of the worktrees that hold a build slot or wait for one, read from the build queue each time it is
-    #: called (never kept): see `build_claims.live_worktrees`.
+    #: The names of the worktrees that hold a build slot, wait for one or run a check, read from the build queue each
+    #: time it is called (never kept): see `build_claims.live_worktrees`.
     live: Callable[[], set[str]] = lambda: set()
+    #: The checks running in each worktree (`task check`, `orig fails-first`), read the same way, to say why a worktree
+    #: is busy: see `build_claims.activities`.
+    running: Callable[[], Mapping[str, list[str]]] = lambda: {}
+    #: The machine's `build_root` (build_root.py); None when the builds stay in the worktrees.
+    build_root: Path | None = None
     #: Whether to add up the sizes a removal frees (a walk over every build folder; the audit skips it).
     measure: bool = True
     #: Whether to judge `build/` folders too. That needs every worktree's last activity (a stat of every tracked
@@ -373,6 +389,9 @@ def busy_reason(path: Path, settings: Settings) -> str:
         forgotten = marker.st_size == 0 and (settings.now - marker.st_mtime) / 3600.0 > settings.marker_hours
         if not forgotten:
             return f"busy ({settings.busy_file})"
+    running = settings.running().get(path.name)
+    if running:
+        return f"{' and '.join(sorted(set(running)))} runs in it"
     if path.name in settings.live():
         return "holds or waits for a build slot"
     return ""
@@ -395,19 +414,33 @@ def assess(tree: GitWorktree, settings: Settings) -> Entry:
 
     def idle() -> float:
         if not activity:
-            activity.append((settings.now - last_activity(path)) / 3600.0)
+            # The default reads the worktree's own build/; the build root's folder is named only when there is one.
+            elsewhere = [folder for folder in found if folder != path / build_root.IN_CHECKOUT]
+            last = last_activity(path, found) if elsewhere else last_activity(path)
+            activity.append((settings.now - last) / 3600.0)
         return activity[0]
 
-    build = path / "build"
-    has_build = settings.builds and build.is_dir()
-    ignored = has_build and _git(path, "check-ignore", "-q", "build").returncode == 0
-    build_size = dir_size(build) if has_build and settings.measure else 0
-    if has_build and ignored:
+    # Its build folders: `build/` when git ignores it, and its folder in the build root when that carries the marker
+    # `coney-tools build` wrote (a folder made by hand, or a link, is never deleted).
+    found = build_root.folders(path, settings.build_root) if settings.builds else []
+    kept_why = ""
+    for folder in found:
+        if folder == path / build_root.IN_CHECKOUT:
+            if _git(path, "check-ignore", "-q", build_root.IN_CHECKOUT).returncode != 0:
+                kept_why = "build/ is not ignored by git: left alone"
+                continue
+        elif build_root.is_link(folder) or build_root.owner(folder) is None:
+            kept_why = f"{folder} has no marker of coney-tools build: left alone"
+            continue
+        entry.build_folders[folder] = dir_size(folder) if settings.measure else 0
+    has_build = bool(entry.build_folders)
+    build_size = sum(entry.build_folders.values())
+    if has_build:
         entry.build_deletable = True
         entry.build_bytes = build_size
         entry.build_idle = idle()
-    if has_build and not ignored:
-        entry.build_why = "build/ is not ignored by git: left alone"
+    if kept_why and not has_build:
+        entry.build_why = kept_why
     elif has_build and idle() < settings.build_hours:
         entry.build_why = f"build/ used {idle():.1f} h ago"
     elif has_build:
@@ -471,10 +504,11 @@ def plan(settings: Settings) -> tuple[list[Entry], list[GitWorktree]]:
 
 
 def _remove_worktree(entry: Entry, checkout: Path) -> str | None:
-    """Remove the worktree and its branch; None on success, else what went wrong."""
+    """Remove the worktree, its build folders and its branch; None on success, else what went wrong."""
     try:
-        if (entry.path / "build").is_dir():
-            remove_tree(entry.path / "build")
+        for folder in dict.fromkeys([entry.path / build_root.IN_CHECKOUT, *entry.build_folders]):
+            if folder.is_dir():
+                remove_tree(folder)
     except OSError as error:
         return f"cannot delete build/: {error}"
     # No --force: git itself refuses a worktree that turned out not to be clean.
@@ -488,10 +522,14 @@ def _remove_worktree(entry: Entry, checkout: Path) -> str | None:
     return None
 
 
-def _delete_build(entry: Entry) -> str | None:
-    """Delete the worktree's build folder; None on success, else what went wrong."""
+def _delete_build(entry: Entry, only: Callable[[Path], bool] = lambda folder: True) -> str | None:
+    """Delete the worktree's build folders (those `only` accepts); None on success, else what went wrong. A folder
+    deleted is dropped from `entry.build_folders`."""
     try:
-        remove_tree(entry.path / "build")
+        for folder in [folder for folder in entry.build_folders if only(folder)]:
+            if folder.is_dir():
+                remove_tree(folder)
+            entry.build_folders.pop(folder)
     except OSError as error:
         return f"cannot delete build/: {error}"
     return None
@@ -553,11 +591,24 @@ def run_clean(
     free_before = shutil.disk_usage(layout.workspace).free
     print(f"Workspace: {layout.workspace}" + ("" if apply else " (dry run: nothing is changed; --apply acts)"))
     print(f"Free space: {_gb(free_before)}")
+    # With a build root on another drive, that drive has its own free space, floor and pressure.
+    root = settings.build_root
+    separate = root is not None and not build_root.same_drive(layout.workspace, root)
+    root_before = free_space(root) if separate and root is not None else 0
+    if separate:
+        print(f"Free space on the build root ({root}): {_gb(root_before)}")
+
+    def on_root(folder: Path) -> bool:
+        return separate and root is not None and folder.resolve().is_relative_to(root.resolve())
+
     entries, stale = plan(settings)
 
     failures = 0
     reclaimed = removed = builds = 0
+    #: What the first pass frees on the build root's drive (a dry run adds it to that drive's free space).
+    reclaimed_root = 0
     for entry in entries:
+        on_root_bytes = sum(size for folder, size in entry.build_folders.items() if on_root(folder))
         if entry.remove:
             line = f"{entry.name}: {entry.why} ({_gb(entry.reclaim)}" + (", delete branch)" if entry.branch else ")")
             verb = "remove" if apply else "would remove"
@@ -571,6 +622,7 @@ def run_clean(
                 print(f"    FAILED: {problem}")
             else:
                 reclaimed += entry.reclaim
+                reclaimed_root += on_root_bytes
                 removed += 1
         elif entry.delete_build:
             verb = "delete build" if apply else "would delete"
@@ -584,6 +636,7 @@ def run_clean(
                 print(f"    FAILED: {problem}")
             else:
                 reclaimed += entry.reclaim
+                reclaimed_root += on_root_bytes
                 builds += 1
         else:
             note = f"; {entry.build_why}" if entry.build_why else ""
@@ -595,13 +648,37 @@ def run_clean(
 
     # Disk pressure: a dry run has no new free space to read, so it adds up what the lines above would free.
     def free_now() -> int:
-        return shutil.disk_usage(layout.workspace).free if apply else free_before + reclaimed
+        return shutil.disk_usage(layout.workspace).free if apply else free_before + reclaimed - reclaimed_root
 
-    pressure = _relieve_pressure(entries, settings, min_gb, margin_gb, free_now, apply)
+    pressure = _relieve_pressure(
+        entries, settings, (min_gb, margin_gb), free_now, apply, only=lambda folder: not on_root(folder)
+    )
+    if separate and root is not None:
+
+        def root_free_now() -> int:
+            return free_space(root) if apply else root_before + reclaimed_root
+
+        on_drive = _relieve_pressure(
+            entries,
+            settings,
+            (min_gb, margin_gb),
+            root_free_now,
+            apply,
+            only=on_root,
+            where=f" on the build root ({root})",
+        )
+        pressure = Pressure(
+            pressure.deleted + on_drive.deleted,
+            pressure.reclaimed + on_drive.reclaimed,
+            pressure.failures + on_drive.failures,
+        )
     failures += pressure.failures
     reclaimed += pressure.reclaimed
     builds += pressure.deleted
-    _report_loose(settings.root / checkout.name, {tree.path.resolve() for tree in list_worktrees(checkout)})
+    trees = list_worktrees(checkout)
+    _report_loose(settings.root / checkout.name, {tree.path.resolve() for tree in trees})
+    if root is not None:
+        _report_root(root, trees)
     failures += stale_processes.run(apply, shell_hours, idle_hours)
 
     verb = "Reclaimed" if apply else "Would reclaim"
@@ -609,7 +686,31 @@ def run_clean(
     if apply:
         free_after = shutil.disk_usage(layout.workspace).free
         print(f"Free space: {_gb(free_before)} -> {_gb(free_after)}")
+        if separate and root is not None:
+            print(f"Free space on the build root ({root}): {_gb(root_before)} -> {_gb(free_space(root))}")
     return 1 if failures else 0
+
+
+def free_space(folder: Path) -> int:
+    """The free bytes of the drive holding `folder`, or of its nearest existing parent (a build root not made yet)."""
+    folder = folder.resolve()
+    while not folder.exists() and folder.parent != folder:
+        folder = folder.parent
+    return shutil.disk_usage(folder).free
+
+
+def _report_root(root: Path, trees: list[GitWorktree]) -> None:
+    """Name the folders of the build root that no checkout of this repository holds (never touched): the orphans,
+    whose marker names a worktree that is gone, and the folders `coney-tools build` did not make."""
+    live = {ident for tree in trees if tree.path.is_dir() and (ident := build_root.read_id(tree.path)) is not None}
+    found = build_root.survey(root, live)
+    if found.orphans:
+        print(f"Orphaned build folders in {root}, left alone (their worktree is gone; delete them by hand):")
+        for item in found.orphans:
+            print(f"  {item.path.name}: {_gb(dir_size(item.path))}, was {item.worktree}")
+    if found.unmarked:
+        names = ", ".join(item.path.name for item in found.unmarked)
+        print(f"Not made by coney-tools build, left alone in {root}: {names}")
 
 
 @dataclass
@@ -622,23 +723,31 @@ class Pressure:
 
 
 def _started_building(entry: Entry, settings: Settings) -> bool:
-    """Whether a build took a slot or a place in the queue in this worktree since it was judged: the build queue is
-    read again just before each deletion, because a listing from the start of a long run can be out of date."""
+    """Whether a build took a slot or a place in the queue, or a check started, in this worktree since it was judged:
+    the build queue is read again just before each deletion, because a listing from the start of a long run can be out
+    of date."""
     return entry.name in settings.live()
 
 
+def _claims_dir(workspace: Path, checkout: Path) -> Path:
+    """The build queue's folder of `checkout` (its `build_claims_dir`, else `scratch/build-claims` of `workspace`)."""
+    try:
+        return build_claims.default_slots(build_claims.MAIN_LANE, checkout).claims_dir
+    except ConfigError:
+        return workspace / "scratch" / BUILD_CLAIMS_DIR
+
+
 def live_slots(workspace: Path, checkout: Path) -> Callable[[], set[str]]:
-    """A function that reads, each time it is called, the names of the worktrees holding or waiting for a build slot
-    from the build queue of `checkout` (its `build_claims_dir`, else `scratch/build-claims` of `workspace`)."""
+    """A function that reads, each time it is called, the names of the worktrees in use from the build queue of
+    `checkout`: holding or waiting for a build slot, a check slot or a build folder's lock, or running a `task check`
+    or `orig fails-first` (`build_claims.activity`), whose steps between builds hold no slot."""
+    return lambda: build_claims.live_worktrees(_claims_dir(workspace, checkout))
 
-    def live() -> set[str]:
-        try:
-            claims = build_claims.default_slots(build_claims.MAIN_LANE, checkout).claims_dir
-        except ConfigError:
-            claims = workspace / "scratch" / BUILD_CLAIMS_DIR
-        return build_claims.live_worktrees(claims)
 
-    return live
+def running_checks(workspace: Path, checkout: Path) -> Callable[[], dict[str, list[str]]]:
+    """A function that reads, each time it is called, the checks running in each worktree (`build_claims.activities`)
+    from the build queue of `checkout`."""
+    return lambda: build_claims.activities(_claims_dir(workspace, checkout))
 
 
 def default_settings(
@@ -660,6 +769,7 @@ def default_settings(
         build_hours = float(known.build_idle_hours) if known is not None else DEFAULT_BUILD_HOURS
 
     return Settings(
+        build_root=build_root.configured(checkout),
         root=workspace / "worktrees",
         checkout=checkout,
         cwd=cwd,
@@ -670,34 +780,47 @@ def default_settings(
         busy_file=known.busy_marker if known is not None else BUSY_FILE,
         marker_hours=build_hours,
         live=live_slots(workspace, checkout),
+        running=running_checks(workspace, checkout),
     )
 
 
 def _relieve_pressure(
     entries: list[Entry],
     settings: Settings,
-    floor_gb: float,
-    margin_gb: float,
+    limits_gb: tuple[float, float],
     free_now: Callable[[], int],
     apply: bool,
+    *,
+    only: Callable[[Path], bool] = lambda folder: True,
+    where: str = "",
 ) -> Pressure:
-    """When the free space is under `floor_gb`, delete `build/` folders, the one last used longest ago first, until it
-    reaches `floor_gb + margin_gb` or none is left. Only build folders of worktrees `assess` found idle-able (not busy,
-    not the one running this, ignored by git) that hold no build slot and wait for none; nothing else is touched."""
+    """When the free space of one drive (`free_now`) is under the floor (`limits_gb` is the floor and the margin),
+    delete the build folders on it (those `only` accepts), the worktree last used longest ago first, until it reaches
+    the floor plus the margin or none is left. Only build folders of worktrees `assess` found idle-able (not busy, not
+    the one running this, ignored by git or marked in the build root) that hold no build slot, wait for none and run
+    no check; nothing else is touched. `where` names the drive in the report when it is not the workspace's."""
+    floor_gb, margin_gb = limits_gb
     result = Pressure()
     free = free_now()
     if free >= floor_gb * _GIB:
         return result
     target = (floor_gb + margin_gb) * _GIB
     print(
-        f"Disk pressure: {_gb(free)} free is under the {floor_gb:g} GB floor; deleting idle build folders, "
+        f"Disk pressure{where}: {_gb(free)} free is under the {floor_gb:g} GB floor; deleting idle build folders, "
         f"oldest first, up to {_gb(target)}"
     )
+
+    def on_drive(entry: Entry) -> int:
+        return sum(size for folder, size in entry.build_folders.items() if only(folder) and folder.is_dir())
+
     candidates = sorted(
         (
             entry
             for entry in entries
-            if entry.build_deletable and not entry.delete_build and not entry.remove and (entry.path / "build").is_dir()
+            if entry.build_deletable
+            and not entry.delete_build
+            and not entry.remove
+            and any(only(folder) and folder.is_dir() for folder in entry.build_folders)
         ),
         key=lambda entry: -entry.build_idle,
     )
@@ -707,17 +830,18 @@ def _relieve_pressure(
         if apply and _started_building(entry, settings):
             print(f"  {entry.name}: skipped, a build started in it")
             continue
-        problem = _delete_build(entry) if apply else None
+        size = on_drive(entry)
+        problem = _delete_build(entry, only) if apply else None
         if problem:
             result.failures += 1
             print(f"  {entry.name}: FAILED: {problem}")
             continue
         result.deleted += 1
-        result.reclaimed += entry.build_bytes
-        after = free_now() if apply else free + entry.build_bytes
+        result.reclaimed += size
+        after = free_now() if apply else free + size
         verb = "pressure" if apply else "would delete"
         print(
-            f"  {verb:<13}{entry.name}: build/ last used {entry.build_idle:.1f} h ago, {_gb(entry.build_bytes)}; "
+            f"  {verb:<13}{entry.name}: build/ last used {entry.build_idle:.1f} h ago, {_gb(size)}; "
             f"free {_gb(free)} -> {_gb(after)}",
             flush=True,
         )
@@ -746,8 +870,19 @@ def _conventions_workspace(checkout: Path) -> Workspace | None:
         return None
 
 
+def drives(workspace: Path, checkout: Path) -> list[tuple[str, int]]:
+    """The drives the builds fill, each named and with its free bytes: the workspace's, and the build root's when
+    `build_root` is set on another drive (build_root.py)."""
+    found = [("the workspace drive", shutil.disk_usage(workspace).free)]
+    root = build_root.configured(checkout)
+    if root is not None and not build_root.same_drive(workspace, root):
+        found.append((f"the build root ({root})", free_space(root)))
+    return found
+
+
 def run_disk(cwd: Path, workspace: Path | None, min_gb: float | None = None) -> int:
-    """Run `workspace check-space`: print the free space of the workspace's drive; 1 when it is below `min_gb`.
+    """Run `workspace check-space`: print the free space of the workspace's drive, and of the build root's when it is
+    on another; 1 when any is below `min_gb`.
 
     Without `min_gb` the limit is `workspace.disk_min_free_gb` of the conventions file (30 GB when that is unreadable).
     """
@@ -755,8 +890,10 @@ def run_disk(cwd: Path, workspace: Path | None, min_gb: float | None = None) -> 
     if min_gb is None:
         known = _conventions_workspace(layout.checkout)
         min_gb = float(known.disk_min_free_gb) if known is not None else DEFAULT_MIN_GB
-    free = shutil.disk_usage(layout.workspace).free
-    low = free < min_gb * _GIB
-    advice = ": LOW, run workspace clean" if low else ""
-    print(f"Free space on the workspace drive: {_gb(free)} (minimum {min_gb:g} GB){advice}")
-    return 1 if low else 0
+    low_any = False
+    for name, free in drives(layout.workspace, layout.checkout):
+        low = free < min_gb * _GIB
+        low_any = low_any or low
+        advice = ": LOW, run workspace clean" if low else ""
+        print(f"Free space on {name}: {_gb(free)} (minimum {min_gb:g} GB){advice}")
+    return 1 if low_any else 0

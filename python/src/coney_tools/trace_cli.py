@@ -14,7 +14,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from coney_tools import fight_report
+from coney_tools import build_root, fight_report
 from coney_tools.config import ConfigError, disc_for_coney, find_repo_root, load_config
 from coney_tools.scenario import Scenario, ScenarioError, load_scenario
 from coney_tools.trace_diff import TraceError, compare, load_trace, report, to_start_frame
@@ -80,7 +80,7 @@ def _coney_executable(given: Path | None) -> Path:
         return given
     root = find_repo_root(Path.cwd())
     for name in ("coney.exe", "coney"):
-        candidate = root / "build" / "dev" / "src" / "platform" / name
+        candidate = build_root.preset_folder(root, "dev") / "src" / "platform" / name
         if candidate.is_file():
             return candidate
     raise ConfigError("no Coney build at build/dev/src/platform/; build it or pass --coney")

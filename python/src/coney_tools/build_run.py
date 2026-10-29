@@ -1196,6 +1196,34 @@ def check_preset(checkout: Path, preset: str) -> None:
             raise ConfigError(f"{file}: no {kind} entry named {preset!r}; known: {known}")
 
 
+def preset_test_environment(checkout: Path, preset: str) -> dict[str, str]:
+    """The environment the test preset `preset` of CMakePresets.json sets, with the presets it inherits (theirs first),
+    `${sourceDir}` and `${presetName}` filled in. `ctest --preset` applies it by itself; a run with `--test-dir` (a
+    folder outside the preset's, such as one in the build root) passes it on through this. Empty when the file or the
+    preset cannot be read; a value of null (which unsets in a preset) is left out."""
+    try:
+        data = json.loads((checkout / "CMakePresets.json").read_text(encoding="utf-8"))
+        presets = {entry["name"]: entry for entry in data.get("testPresets", []) if isinstance(entry, dict)}
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return {}
+
+    def collect(name: str, seen: frozenset[str]) -> dict[str, str]:
+        entry = presets.get(name)
+        if not isinstance(entry, dict) or name in seen:
+            return {}
+        parents = entry.get("inherits", [])
+        merged: dict[str, str] = {}
+        for parent in [parents] if isinstance(parents, str) else list(parents):
+            merged.update(collect(str(parent), seen | {name}))
+        environment = entry.get("environment", {})
+        for key, value in environment.items() if isinstance(environment, dict) else ():
+            if isinstance(value, str):
+                merged[str(key)] = value.replace("${sourceDir}", checkout.as_posix()).replace("${presetName}", preset)
+        return merged
+
+    return collect(preset, frozenset())
+
+
 def find_programs(env: Mapping[str, str]) -> None:
     """The precheck of the tools: cmake, ctest and ninja are on the environment's PATH. Raises ConfigError naming
     the ones missing."""

@@ -38,6 +38,7 @@ from pathlib import Path
 from typing import Any
 
 from coney_tools import (
+    build_claims,
     build_cli,
     build_record,
     build_run,
@@ -453,4 +454,13 @@ def run(args: argparse.Namespace) -> int:
         dry_run=args.dry_run,
         max_wait=args.max_wait,
     )
-    return run_check(request, default_env(args.max_wait))
+    if args.dry_run:
+        return run_check(request, default_env(args.max_wait))
+    # The whole run is recorded as running in the build queue, so `workspace clean` never takes the worktree's build for
+    # idle during the checks between its builds (build_claims.activity).
+    try:
+        root = find_repo_root(args.worktree or Path.cwd())
+    except ConfigError:
+        return run_check(request, default_env(args.max_wait))
+    with build_claims.unit_activity(root, args.agent or "task-check", "task check"):
+        return run_check(request, default_env(args.max_wait))

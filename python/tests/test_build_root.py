@@ -186,18 +186,17 @@ def test_a_read_without_create_writes_nothing(space: Space) -> None:
     assert not space.builds.exists()
 
 
-def test_a_unit_id_held_by_another_worktree_is_not_shared(space: Space) -> None:
+def test_a_task_id_whose_folder_serves_another_worktree_is_not_taken(space: Space) -> None:
     space.with_root()
-    one = space.worktree("1-a")
-    space.unit("1-a", one)
-    taken = build_root.tree(one, create=True)
-    other = space.worktree("other")
-    # A unit record that names the other worktree with the same task (a moved unit): it may not take the folder.
-    (space.root / "scratch" / "1-a" / "unit.json").unlink()
-    (space.root / "scratch" / "1-a").rmdir()
-    space.unit("1-a", other)
-    git(other, "branch", "-m", "1-a-again")
-    assert build_root.tree(other, create=True) != taken
+    one = space.worktree("one")
+    other = space.worktree("2-b")
+    space.unit("2-b", other)
+    # The folder the task id names already serves another worktree that still exists: it is not shared.
+    build_root.write_marker(space.builds / "2-b", one)
+    folder = build_root.tree(other, create=True)
+    assert folder != space.builds / "2-b"
+    assert folder.name.startswith("2-b-")
+    assert build_root.owner(space.builds / "2-b") == one.resolve()
 
 
 def test_a_custom_folder_under_build_moves_with_the_tree(space: Space) -> None:

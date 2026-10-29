@@ -26,6 +26,7 @@ from coney_tools import (
     build_cap,
     build_claims,
     build_record,
+    build_root,
     build_run,
     compiler_cache,
     pcsx2_proc,
@@ -117,8 +118,9 @@ def add_parser(groups: Any) -> None:
     group.add_argument(
         "--build-dir",
         type=Path,
-        help="build in this folder instead of build/<preset> (relative to the checkout), with the preset's settings; "
-        "for a second configuration, such as a Clang one next to the default compiler's",
+        help="build in this folder instead of build/<preset> (relative to the checkout; with a build root, build/... "
+        "moves into it), with the preset's settings; for a second configuration, such as a Clang one next to the "
+        "default compiler's",
     )
     group.add_argument(
         "--env",
@@ -368,6 +370,20 @@ def default_agent_id(interactive: Callable[[], bool] = _typed_in_a_terminal) -> 
     return cleaned if cleaned else "me"
 
 
+def build_folder(
+    root: Path, args: argparse.Namespace, *, create: bool = False, plan: bool = False
+) -> tuple[Path | None, Path]:
+    """The run's build folder, from the one resolver (build_root.py): `--build-dir` as given (a `build/...` path moves
+    into the build root when one is set), else the preset's folder. Returns (the folder to name on the command lines,
+    None when it is the preset's own `build/<preset>` and `--preset` finds it; the folder). `create` makes the folder
+    in the build root and its marker, `plan` only fixes the checkout's id."""
+    if args.build_dir:
+        folder = build_root.custom_folder(root, Path(args.build_dir), create=create, plan=plan)
+        return folder, folder
+    folder = build_root.preset_folder(root, args.preset, create=create, plan=plan)
+    return (None if folder == root / build_root.IN_CHECKOUT / args.preset else folder), folder
+
+
 def _precheck(args: argparse.Namespace) -> tuple[Path, dict[str, str]]:
     """Refuse a run that cannot work before anything waits: the agent id, the preset, the settings and the tools.
     Returns the checkout and the environment of the run."""
@@ -387,7 +403,7 @@ def _precheck(args: argparse.Namespace) -> tuple[Path, dict[str, str]]:
     root = _root(args.dir)
     build_run.check_preset(root, args.preset)
     # A new build folder is refused when too many worktrees already hold one (build_cap.py); an existing one builds.
-    new_folder = (root / args.build_dir).resolve() if args.build_dir else root / "build" / args.preset
+    _, new_folder = build_folder(root, args, plan=True)
     build_cap.check(root, new_folder, _numbers(root)["build_worktree_cap"])
     _environment({}, args.env)  # a malformed --env is refused now; it is applied after the Visual Studio environment
     env = _environment(build_run.load_msvc_environment(os.environ, build_run.run_text), args.env)
@@ -408,9 +424,11 @@ def _build(
     console; `limits_minutes` is (max wait, budget) and `lifetime` ties the toolchain's processes to this run (and the
     run to its caller, when it has one). A run that configured, built or tested leaves a build record
     (build_record.py) in the folder of `task`, default the checkout's task."""
-    build_dir = (root / args.build_dir).resolve() if args.build_dir else None
+    build_dir, folder = build_folder(root, args, create=True)
     numbers = _numbers(root)
-    folder = build_dir if build_dir is not None else root / "build" / args.preset
+    if build_dir is not None:
+        # ctest runs with --test-dir there, not --preset, so the test preset's environment is passed on by hand.
+        env = {**env, **build_run.preset_test_environment(root, args.preset)}
     slots = build_claims.default_slots(MAIN_LANE, root)
     cache = compiler_cache.find(root)
     compiler_cache.write_config(cache)

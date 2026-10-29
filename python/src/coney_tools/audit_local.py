@@ -26,6 +26,7 @@ from coney_tools.workspace_clean import (
     GitWorktree,
     MergedHeads,
     Settings,
+    drives,
     gh_merged_heads,
     list_worktrees,
     live_slots,
@@ -60,6 +61,9 @@ class LocalContext:
     conventions: Conventions
     workspace: Path
     free_bytes: int
+    #: The other drives the builds fill (the build root's, when `build_root` is set on another drive), each named and
+    #: with its free bytes (workspace_clean.drives).
+    other_drives: list[tuple[str, int]] = field(default_factory=list)
     #: What `workspace clean` found out about each worktree; None when git could not say (a notice explains).
     entries: list[Entry] | None = None
     #: Worktrees git lists whose folder is gone.
@@ -201,6 +205,10 @@ def build_context(
     if not (checkout / ".git").exists():
         raise ConfigError(f"{checkout} is not a checkout; run this from the workspace's repository")
     context = LocalContext(conventions, layout.workspace, shutil.disk_usage(layout.workspace).free)
+    try:
+        context.other_drives = drives(layout.workspace, checkout)[1:]
+    except ConfigError as error:
+        context.notices.append(f"the build root cannot be read: {error}")
     worktrees = layout.workspace / "worktrees"
     folder = worktrees / checkout.name
     trees = list_worktrees(checkout)
@@ -256,11 +264,12 @@ def build_context(
 def disk_space(context: LocalContext) -> Iterator[Problem]:
     """The workspace's drive has at least `workspace.disk_min_free_gb` free."""
     minimum = context.conventions.workspace.disk_min_free_gb
-    if context.free_bytes < minimum * _GIB:
-        yield Problem(
-            "workspace drive",
-            f"{context.free_bytes / _GIB:.1f} GB free, the minimum is {minimum} GB: run `coney-tools workspace clean`",
-        )
+    for name, free in [("workspace drive", context.free_bytes), *context.other_drives]:
+        if free < minimum * _GIB:
+            yield Problem(
+                name,
+                f"{free / _GIB:.1f} GB free, the minimum is {minimum} GB: run `coney-tools workspace clean`",
+            )
 
 
 @check("ws.worktrees")
