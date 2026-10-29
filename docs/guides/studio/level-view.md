@@ -54,7 +54,7 @@ to document and test.
 | X | Gizmo in world or local axes | Global / Local | T: local space | Ctrl+` | Ctrl+L |
 | `\` | Snap on or off ([Snapping](#snapping)) | Toggle snapping | Y: Use Snap | the toolbar's grid snap | the Model tab's step boxes |
 | Ctrl held while dragging | snapping the other way: steps while Snap is off, free while it is on | increment snapping (from 6.4 also free while on) | Ctrl: the same | not surveyed | not surveyed |
-| Shift held while snapping | a finer step: a tenth of a move step, a third of a turn, half a scale | none | Shift: the same | not surveyed | not surveyed |
+| Shift pressed during a snapped drag | a finer step: a tenth of a move step, a third of a turn, half a scale | none | Shift: the same | not surveyed | not surveyed |
 | Ctrl+[ / Ctrl+] | grid smaller / larger, along 0.1, 0.2, 0.5, 1, 2, 5 ... 100 m | the same keys, halving and doubling | none | not surveyed | not surveyed |
 | Ctrl+`\` | push the selection onto the grid, in x and y | Push to Grid, on all axes | none | not surveyed | not surveyed |
 | V held | snap a vertex onto another thing's vertex (Shift: the pivot; Ctrl+Shift: onto a surface) | vertex snapping | B held (4.7) | V | none |
@@ -253,8 +253,11 @@ jumps back at each new level, as the source says.*
   with Snap on, Ctrl moves freely.
 - **Shift held while snapping takes a finer step** (Godot's): a tenth of the move step (0.1 m), a third of the rotate
   step (5°) and half of the scale step (5%). A tenth of a metre fits most sizes of the sandbox's courses (a 10 cm ledge,
-  a 0.6 m fence, [The shipped layouts](../sandbox.md#the-shipped-layouts)) without a second setting. Shift pressed on
-  the move centre still chooses the camera-facing plane ([The four tools](#gizmo-tools)), and the two can meet.
+  a 0.6 m fence, [The shipped layouts](../sandbox.md#the-shipped-layouts)) without a second setting. Shift has a meaning
+  in two tools already ([The four tools](#gizmo-tools)): on the move centre it chooses the camera-facing plane, and with
+  the Transform tool it switches the gizmo to screen space. So Shift held **when the drag starts** keeps that meaning,
+  and Shift pressed **during the drag** takes the finer step (Godot reads it during the drag too); on any other handle
+  either way gives the finer step.
 - **The move step is its own setting** beside the grid size (Unity 6.4 and Godot both keep them apart), each set per
   axis or linked, as in Unity.
 - **Ctrl+[ and Ctrl+]** make the grid smaller and larger (Unity's keys) along a metric ladder, 0.1, 0.2, 0.5, 1, 2, 5,
@@ -323,8 +326,10 @@ project, for this user**, in `.studio/`, which never travels with a shared proje
 project](editor-experience.md#project-coney)): Unity's rule, so a project reopens as it was left and two users of one
 project keep their own. The grid's look and the keys are **per user** in the preferences, as in both. The toolbar's
 snap group holds the **Snap** toggle (a magnet) and beside it the **snap menu**: grid size, move step (per axis or
-linked), rotate step, scale step, *Push to grid*, *Grid to selection*, *Grid to origin*; the grid size shows on the
-toolbar, as in Unity's overlay ([Icons](icons.md) names the two buttons).
+linked), rotate step, scale step, *Push to grid*, *Grid to selection*, *Grid to origin*. The toolbar shows no words
+([Where Studio puts icons](icons.md#studio)), so the grid size is in the snap menu and the Snap button's tooltip rather
+than beside it, as Unity's overlay has it; the Snap toggle is the button [Icons](icons.md) calls *grid snap*, which
+snaps the move to the grid and the rotate and scale to their steps.
 
 [snap-unity-overlay-60]: https://docs.unity3d.com/6/Documentation/Manual/GridAndSnapOverlay.html
 [snap-unity-gridsnap-62]: https://docs.unity3d.com/6000.2/Documentation/Manual/GridSnap.html

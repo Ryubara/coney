@@ -224,7 +224,7 @@ is seen at once in the Game view ([Live edits](#live-edits)). The Console and Na
 ```text
 +-----------------------------------------------------------------------------------------------+
 | File  Edit  Create  View  Play  Window  Help                                                  |
-| [Q][W][E][R][Y]  Pivot | Global  Snap v 1 m     [ Play ][ Pause ][ Step ]     Layout: Default v |
+| [Q][W][E][R][Y]  Pivot | Global  Snap v         [ Play ][ Pause ][ Step ]     Layout: Default v |
 +----------------+------------------------------+------------------------------+----------------+
 | Hierarchy      | Level                        | Game                         | Inspector      |
 |  yard          |                              |                              |  Identity      |
@@ -245,7 +245,7 @@ shows its scene's camera. The Model, Animation and Texture viewers open as tabs 
 open where the user last docked them, or floating.*
 
 The toolbar holds the tools (Q to Y, [the keymap](level-view.md#keymap)), the gizmo's pivot and space toggles, the Snap
-toggle with its menu and the grid size ([Snapping](level-view.md#snap-settings)), the Play controls in the middle, as
+toggle and its menu ([Snapping](level-view.md#snap-settings)), the Play controls in the middle, as
 in Unity, and the layout menu on the right, as in Unity's toolbar.
 
 ## Layouts {#layouts}
@@ -737,13 +737,14 @@ can load what it makes ([Importing](#import-coney)), PNG and `.layout` first.
     at a known height has its lines the predicted number of pixels apart.
 14. **tools: Add grid and step snapping to the transform gizmo.** The Snap toggle (`\`) and the snap menu on the
     toolbar; Move snapped absolutely to the grid in Global and in steps in Local; Ctrl turning snapping the other way
-    and Shift taking the finer step; rotate 15° and scale 10 % steps from the drag's start; the move step apart from
-    the grid size, per axis or linked; Ctrl+[ and Ctrl+] along the metric ladder; Ctrl+`\` pushing the selection
-    onto the grid in x and y; a new thing's place rounded with Snap on; the values saved per project in `.studio/`
-    ([Moving with snap on](level-view.md#snap-move), [Rotate and scale steps](level-view.md#snap-rotate-scale),
-    [Settings and the toolbar](level-view.md#snap-settings)). Comes after issue 5. Tests: a scripted drag from 0.3 m
-    lands on 1 m with Snap on and on 1.3 m with Ctrl and Snap off, on 0.4 m with Shift as well; a Local drag steps
-    from its start; a turn snaps to 15° steps and a scale to 10 %; the settings survive a reopen.
+    and Shift taking the finer step; rotate 15° and scale 10 % steps from the drag's start; the move step apart from the
+    grid size, per axis or linked; Ctrl+[ and Ctrl+] along the metric ladder; Ctrl+`\` pushing the selection onto the
+    grid in x and y; a new thing's place rounded with Snap on; the values saved per project in `.studio/` ([Moving with
+    snap on](level-view.md#snap-move), [Rotate and scale steps](level-view.md#snap-rotate-scale), [Settings and the
+    toolbar](level-view.md#snap-settings)). Comes after issue 5. Tests: from 0.3 m, a scripted drag of 0.8 m lands on 1
+    m with Snap on (absolute); a drag of 1.24 m lands on 1.3 m with Ctrl and Snap off (1 m steps) and on 1.5 m with
+    Shift pressed during it as well (0.1 m steps); a Local drag steps from its start; a turn snaps to 15° steps and a
+    scale to 10 %; the settings survive a reopen.
 15. **tools: Add vertex, surface and ground snapping to the Level view.** V held and Shift+V for vertex snapping within
     30 pixels, with Shift for the pivot and Ctrl+Shift for a surface, the yellow source and green target marks and
     Escape to cancel; Ctrl+Shift on the move centre to follow the collision surface, and on the rotate ring to face a
