@@ -244,13 +244,14 @@ An entry whose key matches nothing on the player's disc is ignored and listed in
 list, as a texture pack's is.
 
 **What can be overridden.** Only presentation kinds, which change no gameplay
-([Layers](../asset-and-script-architecture.md#asset-layers)): textures, movies, sounds and music, and a character's
-look. Collision, animations, scripts, levels and object lists are simulation kinds; a pack never replaces them (a
-project level changes those, in a modded session). None of these loads from outside the disc on `main` today: the
-override source is designed, not built ([What Studio needs from Coney](content-and-formats.md#engine-needs)). Textures
-come first, as the roadmap's Graphics and performance milestone asks for a test pack that replaces a named texture
-([Graphics and performance](../../roadmap.md#graphics-and-performance)); then movies, by the same rule as the Xbox map;
-then sounds; then characters' looks.
+([Layers](../asset-and-script-architecture.md#asset-layers)): textures, movies, sound recordings and music, and a
+character's look (the sound tables are simulation data). Collision, animations, scripts, levels and object lists are
+simulation kinds; a pack never replaces them (a project level changes those, in a modded session). None of these loads
+from outside the disc on `main` today: the override source is designed, not built ([What Studio needs from
+Coney](content-and-formats.md#engine-needs)). Textures come first, as the roadmap's Graphics and performance milestone
+asks for a test pack that replaces a named texture ([Graphics and
+performance](../../roadmap.md#graphics-and-performance)); then movies, by the same rule as the Xbox map; then sounds;
+then characters' looks.
 
 **Format checks**, made by Studio when the pack is built and by Coney when it loads; an entry that fails is skipped and
 listed, never half applied:

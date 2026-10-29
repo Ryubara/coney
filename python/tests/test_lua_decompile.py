@@ -185,7 +185,7 @@ def test_decompile_all_and_one_from_the_xbox_disc(tmp_path: Path, capsys: pytest
 
 
 def test_decompile_all_from_the_xbox_disc_needs_its_own_folder(tmp_path: Path) -> None:
-    """`--all --xbox` without `--out` is refused before anything is read or written: the shared folder is the PS2
+    """`--all --xbox-disc` without `--out` is refused before anything is read or written: the shared folder is the PS2
     disc's, and every worktree reads its index and fingerprints."""
     root, disc = _workspace(tmp_path), _xbox_disc(tmp_path)
     with pytest.raises(ConfigError, match="--out"):

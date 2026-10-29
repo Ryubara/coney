@@ -250,7 +250,7 @@ contents](formats/wad-contents.md#lua)), and the 467 PS2 scripts are byte-identi
 are identical too ([The scripts](#scripts)).
 
 **Scene records.** Same layout; all 2,765 PS2 records identical. The 49 extra records are cutscenes of
-two levels.
+two levels. Inferred from the extra records' names.
 
 **Levels and the streamed world.** The Xbox has 95 level resources against 64: all 64 of the PS2's, plus 31 that
 the PS2 does not ship: 2 front-end or arena levels, 14 test levels (named `test...`) and 15 more `level<N>`. The
@@ -265,8 +265,9 @@ hold 23,523 waves, all Xbox ADPCM except 2 PCM, plus one sound bank (`SDBK`, als
 map to the PS2's sounds: [Sound, speech and music](#sound). Inferred from the header fields (per the XDK's XACT
 bank layout).
 
-**Movies.** The PS2's 16 movies exist on the Xbox in three versions each: [Movies](#movies). The XBE's `%s_hd`,
-`%s_w`, `%s_ls_%d_w` and `%s_w_pal` format strings show the same three-way choice for loading screens.
+**Movies.** The PS2's 16 movies exist on the Xbox in three versions each: [Movies](#movies). The XBE's `%s_hd`, `%s_w`,
+`%s_ls_%d_w` and `%s_w_pal` format strings show the same three-way choice for loading screens. Inferred from the
+strings; no code that reads them was traced.
 
 ### Quality of matched textures
 
@@ -450,7 +451,8 @@ record (28 bytes; the PS2's has the same, 32 bytes). Inferred from the counts an
 The waves are Xbox ADPCM (4 bits a sample, like the PS2's ADPCM), mono at the PS2's rates (22,050 and 22,500 Hz for
 most effects and speech). The **music** is 364 one-wave banks, stereo at 26,500 Hz (two at 30,000), named
 `vags/xboxmusic/music/<track>` in the music list (chunk `0x31`, the PS2's 345 records with that prefix), against the
-PS2's 30,000, 44,100 and 32,250 Hz. The same recordings at no higher quality: the sound stays PS2.
+PS2's 30,000, 44,100 and 32,250 Hz. The same recordings at no higher quality: the sound stays PS2. Inferred
+from the bank headers (per the XDK's XACT layout) and the music list's names.
 
 #### Movies {#movies}
 
@@ -498,7 +500,8 @@ own entry hash (the two discs hash a name under different folders, so the hashes
 
 **The 36 Xbox-only scripts are development and test levels.** 34 were named by matching entry hashes against the
 names a level list and the scripts themselves use (the decompiler's own naming finds 31, PS2 naming patterns such as
-`<level>_brawl_init.lua` the rest):
+`<level>_brawl_init.lua` the rest). Inferred from the decompiles, which show what each script sets up and calls, and
+from the hash matches that name them; none of them was run:
 
 - 15 level scripts and 3 helpers of levels the PS2 disc does not ship: `level70`-`level74` and `level90`, `level91`,
   `level94`, `level96`-`level98`, which set up a fixed camera, a few characters and a scene and play it (cutscene
@@ -626,8 +629,8 @@ there. Inferred from the byte comparison; the reads of the other types are open
 - **Converts exactly:** the collision (a 12-byte shift of the header) but for one `level11` vertex, the scene list (by
   name), the Character and Object Lists (the sizes are the Xbox resources' own).
 - **Different:** the animations (one clip's keys, the events above, one `level14` clip that the Xbox lacks and replaces
-  with another), and the sound tables (38 PS2 sounds the Xbox's list lacks, other class and stereo tables), which only
-  matter for what is heard.
+  with another), and the sound tables (38 PS2 sounds the Xbox's list lacks, other class and stereo tables), which
+  decide what plays and so count as gameplay data in the [decision](#disc-decision) below.
 - **Missing:** 23 PS2 texture dictionaries that nothing found names, and the PS2-only clip.
 
 So mission patches (`.cmod`) apply alike on both discs: a package names a script by its `game:/` path
@@ -697,7 +700,8 @@ play](#either-verdict): one clip's keys, 324 animation events, one `level14` cli
 in play and the Xbox's never replaces it. The reason is multiplayer: peers whose animation clips differ would not play
 the same game.
 
-So the Policy above stands, with one change: the Xbox's extra content is no longer ignored but read in Studio.
+So the Policy above stands as it is: the Xbox's extra content is read in Studio, and the PS2 supplies every
+gameplay value.
 
 **What the decision leaves**, one task each:
 
@@ -724,9 +728,9 @@ So the Policy above stands, with one change: the Xbox's extra content is no long
 
 ### Resource index {#resource-index}
 
-Finding an Xbox resource by its hash means parsing every pack and standalone resource of the archive (about 1 GB),
-so the result is kept in a file, `xbox-resources.bin` (`coney-tools xbox index`, or `extract --xbox-index`). It is
-Coney's own format, and the layout the engine's port reads. All values little-endian:
+Finding an Xbox resource by its hash means parsing every pack and standalone resource of the archive (about 1 GB), so
+the result is kept in a file, `xbox-resources.bin` (`coney-tools xbox write-resource-index`, or `extract --xbox-index`).
+It is Coney's own format, and the layout the engine's port reads. All values little-endian:
 
 ```c
 struct XboxResourceIndexHeader {   // 32 bytes
@@ -752,10 +756,10 @@ NTSC-U disc: 10,445 records (250,712 bytes) for 4,218 resource hashes; 2,312 of 
 
 ### Texture map {#texture-map}
 
-Which Xbox texture replaces which PS2 one is found by decoding and comparing both ([Textures](#textures)), far too
-slow for loading a level, so it is done once, at install, and kept in `xbox-textures.bin` (`coney-tools xbox
-texture-map`, or `extract --xbox-texture-map`). A reader looks a PS2 texture up by the dictionary it was loaded from
-and its name, and gets where the Xbox texture lies in the archive volumes. All values little-endian:
+Which Xbox texture replaces which PS2 one is found by decoding and comparing both ([Textures](#textures)), far too slow
+for loading a level, so it is done once, at install, and kept in `xbox-textures.bin` (`coney-tools xbox
+write-texture-map`, or `extract --xbox-texture-map`). A reader looks a PS2 texture up by the dictionary it was loaded
+from and its name, and gets where the Xbox texture lies in the archive volumes. All values little-endian:
 
 ```c
 struct XboxTextureMapHeader {      // 56 bytes
@@ -790,27 +794,34 @@ one per replaced texture, none left out. Code:
 ### DXT2/3 {#q-dxt23}
 
 Whether the `0x0E` textures are premultiplied (DXT2) or not (DXT3): none of the matched ones has partly transparent
-texels to tell (the `0x0F` ones are straight DXT5).
+texels to tell (the `0x0F` ones are straight DXT5). It matters only for how the renderer blends such a texture. Look
+for a `0x0E` texture with partly transparent texels, or read what the executable does with the format when it
+creates the texture.
 
 ### The index header's third word {#q-index-word}
 
 The header's third word (1,048,576, a power of two) and the volumes' trailing all-ones word are unused by the lookup;
-perhaps a volume size limit and a flag.
+perhaps a volume size limit and a flag. Nothing depends on it, since the lookup works without; read the executable's
+index loader (the code that opens `XBoxWad.idx`) for uses of the word.
 
 ### Unnamed Xbox entries {#q-unnamed}
 
-4,498 of 10,587 (models, textures, characters, 652 packs, 227 scripts, 18 text entries) once the 2,048 world files are
-named; `lua decompile --xbox-disc` now names 388 of the 503 scripts. The subfolder scheme (`paks\`, `anims\`,
-`sectors\`) suggests the rest also live in subfolders.
+4,498 of 10,587 (models, textures, characters, 652 packs, 18 text entries, and 227 scripts before the decompiler's
+naming) once the 2,048 world files are named; `lua decompile --xbox-disc` now names 388 of the 503 scripts, leaving
+115 unnamed. The subfolder scheme (`paks\`, `anims\`, `sectors\`) suggests the rest also live in subfolders. Naming
+them matters for reading the Xbox-only content in Studio; try the PS2 naming patterns under each subfolder.
 
 ### Sound index to wave {#q-sound-index}
 
 The table in `xbox000.xsb` that maps the sound list's index to a wave bank entry; needed to read any Xbox sound (in
-Studio, say), since play uses the PS2's sound ([Disc policy](#disc-decision)).
+Studio, say), since play uses the PS2's sound ([Disc policy](#disc-decision)). Decode the table's records against the
+wave bank's 23,523 entries and check one sound by ear, or read the executable's sound loader.
 
 ### Model fields {#q-model-fields}
 
-The kind-2 model's `+0x0a` (0 or 1) and the skinned vertex's second float pair.
+The kind-2 model's `+0x0a` (0 or 1) and the skinned vertex's second float pair. They matter when the engine draws
+Xbox models, which play does not do ([Disc policy](#disc-decision)). Compare the fields across a sample of models,
+or read the executable's model loader.
 
 ### The bounding radius {#q-model-radius}
 
@@ -819,7 +830,8 @@ The kind-2 model's `+0x10`, read as a bounding radius: compare it with the verti
 ### Unmatched PS2 textures {#q-unmatched}
 
 1,354 PS2 textures with Xbox candidates find no match: art the Xbox port changed, or candidates in another level's
-files.
+files. Each one found raises the count of textures the Xbox can stand in for. Match them against the other levels'
+files first, then compare the rest by eye with `xbox texture-info`.
 
 ### The animation events' reads {#q-xbox-events}
 
@@ -844,7 +856,7 @@ descriptor pointer.
 ## How this was checked
 
 The survey of the archive, names, kinds and asset formats was made on 2026-10-04 and the texture and movie rules on
-2026-10-07 (the day of the first decision), with the `coney-tools xbox` commands and `extract --xbox`. The
+2026-10-07 (the day of the first decision), with the `coney-tools xbox` commands and `extract --xbox-disc`. The
 comparison under [Either disc](#either-disc) was made on 2026-10-28 for #1077, with the PS2 disc mounted and the
 Xbox disc as its full image:
 
