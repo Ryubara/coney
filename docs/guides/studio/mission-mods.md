@@ -79,10 +79,12 @@ What is missing before a mod can patch a script:
   tool. Coney and Studio are C++ programs that run without Python, and every player's Coney must make the same base
   text the author's Studio made. So the decompiler needs a C++ port that gives byte-identical output, and its output
   must be frozen ([Forms](#forms)).
-- **Coney's own compiler.** The round trip uses a stock `luac`; Coney's VM has no compiler
-  ([The Lua 4.0 compiler](lua-sdk.md#compiler) plans one). A patched script must be compiled by Coney, so that
-  compiler has to exist, and this page asks one more thing of it: that it reproduce `luac`'s code for every decompile
-  ([Compiling](#compiling)).
+- **Coney's compiler on edited code.** Coney compiles with its own Lua 4.0 compiler
+  ([Coney's compiler](../../research/formats/lua-bytecode.md#compiler)), and on every unedited decompile it gives
+  `luac`'s code: the round trip with `coney_luac` matches all 467 chunks
+  ([Round-trip results](../../research/formats/lua-bytecode.md#round-trip)). Code a user writes is checked only as far
+  as the fixtures and tests reach, so a construct that neither a disc script nor a fixture uses may still compile
+  differently from `luac`; comparing such code against a stock `luac` is open.
 - **What stripping removed.** Every chunk is stripped: local names are made up (`p1`, `l1`), there are no comments,
   and only function statements keep their lines
   ([What cannot come back](../../research/formats/lua-bytecode.md#what-cannot-come-back)). A user edits that text as it
@@ -231,13 +233,14 @@ This replaces the mods page's earlier rule that two mods overriding one game scr
 
 ## Compiling and running a patched script {#compiling}
 
-- **Compiled by Coney's Lua 4.0 compiler**, planned by the [Lua SDK](lua-sdk.md#compiler). This page adds one gate to
-  it: **for every unedited decompile, Coney's compiler must produce the same functions as the disc's chunk**, compared
-  as `--roundtrip` compares them (instructions, constants, parameters, vararg flag, stack size, nested functions). Lua
-  4.0's code generator is a fixed set of patterns ([The code generator's
-  patterns](../../research/formats/lua-bytecode.md#patterns)), so a compiler written from them can match it. With that
-  gate, a patched script differs from the original in exactly the lines the patch changed, and nowhere else. Coney's
-  compiler keeps line information, so an error in a patched script names the line of the edited copy.
+- **Compiled by Coney's Lua 4.0 compiler** ([Coney's compiler](../../research/formats/lua-bytecode.md#compiler), the one
+  the [Lua SDK](lua-sdk.md#compiler) uses). This page adds one gate to it: **for every unedited decompile, Coney's
+  compiler must produce the same functions as the disc's chunk**, compared as `--roundtrip` compares them (instructions,
+  constants, parameters, vararg flag, stack size, nested functions). Lua 4.0's code generator is a fixed set of patterns
+  ([The code generator's patterns](../../research/formats/lua-bytecode.md#patterns)), so a compiler written from them
+  can match it. With that gate, a patched script differs from the original in exactly the lines the patch changed, and
+  nowhere else. Coney's compiler keeps line information, so an error in a patched script names the line of the edited
+  copy.
 - **Run in the script's place.** The game state asks the script catalog for every script by name
   ([Three parts](../asset-and-script-architecture.md#script-parts)): the level entry (`global.lua`, then the level's
   script), `doFile` and `preLoadFile`. A patched script is a catalog provider that returns the compiled program instead

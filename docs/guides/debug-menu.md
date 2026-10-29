@@ -734,17 +734,14 @@ from `research/bindings/*.yaml` ([coney-tools](coney-tools-references.md#binding
 ## The Lua console {#lua-console}
 
 *Run line* runs a line of Lua in the same script state the Natives page calls into, as the original's dormant scene-test
-hook would have run `SCENETEST=1` ([Debug features](../research/debug.md#debug-only-script-paths)). Coney's VM runs the
-game's compiled bytecode and has no Lua compiler, so the console understands the part of Lua a console needs, evaluated
-directly on the VM:
-
-- statements separated by `;`: an assignment (`SCENETEST = 1`, `t.x = 2`, `t[1] = 3`) or an expression list, whose
-  values are printed; `=expr` prints, as Lua's own console does;
-- numbers, strings, `nil`, table constructors, globals, fields, calls `f(...)`, method calls `obj:m(...)`, unary minus
-  and `not`, `+ - * / ..`, comparisons, `and`, `or` and parentheses.
-
-Not: `if`, loops, `local` or `function` definitions. *Run file* runs a text file of such lines, or a compiled Lua 4.0
-chunk, which can hold anything. The lines run are kept in a history (L1 and R1 recall them while typing).
+hook would have run `SCENETEST="l99_c1"` ([Debug features](../research/debug.md#debug-only-script-paths)). The line is Lua
+4.0, compiled by Coney's own compiler ([Coney's compiler](../research/formats/lua-bytecode.md#compiler)), so it holds
+whatever a script can: assignments, calls, `local`, `if`, loops, `function` definitions. An expression prints its
+values (`ToInt(7.9)` prints `= 7`), as does a line starting with `=` or ending in `return`. The language is 4.0's:
+`nil` is the only false value, a table constructor keeps its list and record parts apart (`{1, 2; name = "x"}`), and
+an enclosing function's local is reached as an upvalue, `%name`. Errors name the line (`console:1: '=' expected near
+'x'`); a runtime error leaves the statements before it run. *Run file* runs a Lua 4.0 source file or a compiled chunk
+as one chunk and prints what it returns. The lines run are kept in a history (L1 and R1 recall them while typing).
 
 ## Fonts {#fonts}
 

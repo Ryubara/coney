@@ -29,12 +29,12 @@ struct BaseLibraryHooks {
 /// Registers Lua 4.0's base library in `vm`: the 33 functions (`assert`, `call`, `foreach`, `getn`, `sort`,
 /// `tinsert`, `tostring`, `type`, ...), the 4.0 compatibility names `foreachvar`, `nextvar`, `rawgetglobal` and
 /// `rawsetglobal`, and `_VERSION` = "Lua 4.0.1". This is the public Lua 4.0 library written anew; the game opens it
-/// unchanged (docs/research/scripting.md#libraries).
+/// unchanged (docs/research/scripting.md#libraries). `dostring` runs a precompiled chunk or compiles Lua source with
+/// Coney's compiler (lua_compiler.h), telling them apart by the first byte as Lua 4.0 does.
 ///
 /// Coney's limits: there are no tag methods, so `newtag`, `settag`, `settagmethod`, `gettagmethod` and
-/// `copytagmethods` keep nothing (`tag` returns a value's type tag); `dostring` runs only precompiled chunks (Coney has
-/// no Lua compiler, and the game's scripts are all precompiled); `collectgarbage` and `gcinfo` do nothing (Coney's VM
-/// counts references). `_ERRORMESSAGE` and `_ALERT` are left to the owner: the game's script system replaces them.
+/// `copytagmethods` keep nothing (`tag` returns a value's type tag); `collectgarbage` and `gcinfo` do nothing (Coney's
+/// VM counts references). `_ERRORMESSAGE` and `_ALERT` are left to the owner: the game's script system replaces them.
 void openBaseLibrary(LuaVm& vm, BaseLibraryHooks hooks);
 
 /// Registers Lua 4.0's string library in `vm`: `strlen`, `strsub`, `strlower`, `strupper`, `strchar`, `strrep`,

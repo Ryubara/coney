@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// Lua 4.0.1 is middleware the game links, replaced, not reimplemented (docs/progress/totals.toml), so each function
+// here says with @coney-only which stock function it replaces and where it is in SLUS_212.15
+// (docs/research/formats/lua-bytecode.md#stock-library).
 #include "scripting/lua_vm.h"
 
 #include <cerrno>
@@ -15,76 +18,22 @@
 #include <utility>
 
 #include "core/assert.h"
+#include "scripting/lua_compiler.h"
+#include "scripting/lua_opcodes.h"
 
 namespace coney::script {
 
 namespace {
 
-// The Lua 4.0 instruction set, in its numbering (the order of Lua 4.0's opcode list).
-enum class Op : std::uint8_t {
-    End,
-    Return,
-    Call,
-    TailCall,
-    PushNil,
-    Pop,
-    PushInt,
-    PushString,
-    PushNum,
-    PushNegNum,
-    PushUpvalue,
-    GetLocal,
-    GetGlobal,
-    GetTable,
-    GetDotted,
-    GetIndexed,
-    PushSelf,
-    CreateTable,
-    SetLocal,
-    SetGlobal,
-    SetTable,
-    SetList,
-    SetMap,
-    Add,
-    AddI,
-    Sub,
-    Mult,
-    Div,
-    Pow,
-    Concat,
-    Minus,
-    Not,
-    JmpNe,
-    JmpEq,
-    JmpLt,
-    JmpLe,
-    JmpGt,
-    JmpGe,
-    JmpT,
-    JmpF,
-    JmpOnT,
-    JmpOnF,
-    Jmp,
-    PushNilJmp,
-    ForPrep,
-    ForLoop,
-    LForPrep,
-    LForLoop,
-    Closure,
-};
+using Op = LuaOpcode;
 
-// Lua 4.0's instruction layout: a 6-bit opcode in the low bits; above it either one 26-bit operand U (S when read
-// signed, with an excess of kMaxArgS), or a 9-bit B operand and a 17-bit A operand.
-constexpr std::uint32_t kOpBits = 6;
-constexpr std::uint32_t kBBits = 9;
-constexpr std::int64_t kMaxArgS = ((std::int64_t{1} << 26) - 1) >> 1;
 // The B operand of CALL that asks for every result.
-constexpr std::uint32_t kMultipleResults = 255;
+constexpr std::uint32_t kMultipleResults = kLuaMultipleResults;
 // How many list items one SETLIST stores at most; its A operand counts blocks of this size. The game flushes every 62
 // items (`luaV_execute`, 0x00334478, multiplies A by 0x3e; the largest B on the disc is 62), which is stock Lua 4.0.1:
 // its LFIELDS_PER_FLUSH of 64 is capped at a quarter of the 250-slot stack limit. Using 64 would put every list item
 // past the 62nd at the wrong index (docs/research/formats/lua-bytecode.md).
-constexpr std::uint32_t kFieldsPerFlush = 62;
+constexpr std::uint32_t kFieldsPerFlush = kLuaFieldsPerFlush;
 
 // The operands of one instruction.
 struct Instruction {
@@ -96,13 +45,13 @@ struct Instruction {
 };
 
 // Splits an instruction word into its opcode and operands.
+// @coney-only replaces Lua 4.0.1's GET_OPCODE and GETARG macros, inlined in luaV_execute (0x00334478)
 Instruction decode(std::uint32_t word) {
-    const std::uint32_t u = word >> kOpBits;
-    return Instruction{static_cast<Op>(word & ((1U << kOpBits) - 1)), u, static_cast<std::int64_t>(u) - kMaxArgS,
-                       word >> (kOpBits + kBBits), u & ((1U << kBBits) - 1)};
+    return Instruction{luaOpcodeOf(word), luaArgU(word), luaArgS(word), luaArgA(word), luaArgB(word)};
 }
 
 // A type's name for error messages.
+// @coney-only no counterpart in Lua 4.0.1: the error messages read luaO_typenames, a table
 std::string_view typeName(const Value& value) {
     switch (value.type()) {
     case Value::Type::Nil:
@@ -120,9 +69,11 @@ std::string_view typeName(const Value& value) {
 }
 
 // A number as Lua 4.0 writes it into a string ("%.16g").
+// @coney-only replaces the number case of Lua 4.0.1's luaV_tostring (lvm.c, 0x003336e0)
 std::string numberText(double number) { return std::format("{:.16g}", number); }
 
 // Lua's `<` for two numbers or two strings (strings by byte, where Lua 4.0 uses the C locale's collation).
+// @coney-only replaces Lua 4.0.1's luaV_lessthan (lvm.c, 0x00333fe8)
 std::optional<bool> lessThan(const Value& x, const Value& y) {
     // Each accessor returns a fresh optional, so bind them before testing and reading.
     const std::optional<double> xn = x.number();
@@ -140,6 +91,7 @@ std::optional<bool> lessThan(const Value& x, const Value& y) {
 
 // A value as an arithmetic operand: a number, or a string that reads as one (Lua 4.0 converts numeric strings in
 // arithmetic, as `tonumber` does).
+// @coney-only replaces Lua 4.0.1's luaV_tonumber (lvm.c, 0x00333688)
 std::optional<double> arithmeticOperand(const Value& value) {
     if (const std::optional<double> number = value.number()) {
         return number;
@@ -151,6 +103,7 @@ std::optional<double> arithmeticOperand(const Value& value) {
 }
 
 // Applies an arithmetic instruction to two numbers.
+// @coney-only replaces the arithmetic of Lua 4.0.1's luaV_execute and call_arith (lvm.c, 0x00334478, 0x00333ef8)
 double arithmetic(Op op, double x, double y) {
     switch (op) {
     case Op::Add:
@@ -168,6 +121,7 @@ double arithmetic(Op op, double x, double y) {
 
 // Sets a key that cannot fail (a string, or a number that is not NaN), which keeps the callers free of error paths
 // that cannot happen.
+// @coney-only no counterpart in Lua 4.0.1: a table store that cannot fail
 void setKnownKey(Table& table, const Value& key, Value value) {
     const bool stored = table.set(key, std::move(value)).has_value();
     CONEY_ASSERT(stored);
@@ -182,6 +136,7 @@ class Frame {
     std::vector<std::pair<std::size_t, const std::string*>> unsetGlobals;
 
     // The name of the unset global last pushed into stack slot `slot`; null when none was.
+    // @coney-only no counterpart in Lua 4.0.1: Coney's hint naming the unset global a script calls
     [[nodiscard]] const std::string* unsetGlobalAt(std::size_t slot) const {
         for (auto it = unsetGlobals.rbegin(); it != unsetGlobals.rend(); ++it) {
             if (it->first == slot) {
@@ -194,6 +149,7 @@ class Frame {
     // True when at least `n` values are on the stack.
     [[nodiscard]] bool has(std::size_t n) const { return stack.size() >= n; }
     // Removes and returns the top value; the caller has checked has(1).
+    // @coney-only no counterpart in Lua 4.0.1: luaV_execute moves a stack pointer
     Value pop() {
         Value top = std::move(stack.back());
         stack.pop_back();
@@ -209,16 +165,19 @@ class Frame {
 
 LuaVm::LuaVm(LuaVmOptions options) : m_options(options), m_globals(std::make_shared<Table>()) {}
 
+// @coney-only replaces Lua 4.0.1's lua_setglobal (lapi.c, 0x00323e60)
 void LuaVm::setGlobal(std::string_view name, Value value) {
     setKnownKey(*m_globals, Value(std::string(name)), std::move(value));
 }
 
+// @coney-only replaces Lua 4.0.1's lua_register: lua_pushcclosure, lua_setglobal (lapi.c, 0x003239f8, 0x00323e60)
 void LuaVm::registerFunction(std::string_view name, NativeFunction function) {
     auto wrapped = std::make_shared<Function>();
     wrapped->native = std::move(function);
     setGlobal(name, Value(std::shared_ptr<const Function>(std::move(wrapped))));
 }
 
+// @coney-only replaces the call half of Lua 4.0.1's lua_dobuffer (ldo.c, 0x003290d0)
 std::expected<std::vector<Value>, Error> LuaVm::run(std::shared_ptr<const LuaProto> chunk) {
     auto main = std::make_shared<Function>();
     main->proto = chunk.get();
@@ -226,6 +185,7 @@ std::expected<std::vector<Value>, Error> LuaVm::run(std::shared_ptr<const LuaPro
     return call(Value(std::shared_ptr<const Function>(std::move(main))), {});
 }
 
+// @coney-only replaces Lua 4.0.1's lua_call (ldo.c, 0x00328d40)
 std::expected<std::vector<Value>, Error> LuaVm::call(const Value& function, std::span<const Value> args) {
     // The instruction budget counts from the outermost call; a binding that runs another script shares it.
     if (m_depth == 0) {
@@ -234,6 +194,7 @@ std::expected<std::vector<Value>, Error> LuaVm::call(const Value& function, std:
     return callNested(function, args);
 }
 
+// @coney-only replaces Lua 4.0.1's luaD_call (ldo.c, 0x00328b40)
 std::expected<std::vector<Value>, Error> LuaVm::callNested(const Value& function, std::span<const Value> args) {
     if (function.isNil() && m_options.nilCallsAreNoOps) {
         ++m_nilCalls;
@@ -260,6 +221,7 @@ std::expected<std::vector<Value>, Error> LuaVm::callNested(const Value& function
 
 // One Lua function call: the bytecode interpreter. Each case follows the semantics of the Lua 4.0 instruction of the
 // same name; the comments give only what the instruction does to the stack.
+// @coney-only replaces Lua 4.0.1's luaV_execute (lvm.c, 0x00334478)
 // NOLINTNEXTLINE(readability-function-cognitive-complexity): one switch over the instruction set reads best whole
 std::expected<std::vector<Value>, Error> LuaVm::execute(const Function& closure, std::span<const Value> args) {
     const LuaProto& proto = *closure.proto;
@@ -283,12 +245,16 @@ std::expected<std::vector<Value>, Error> LuaVm::execute(const Function& closure,
     }
 
     std::size_t pc = 0;
-    // Errors carry the opcode and its position, so a failing script can be found, and the last binding call skipped,
-    // whose missing result is the usual nil behind a runtime error.
-    const auto error = [&pc, this](std::string_view what) {
+    // Errors carry the opcode's position, so a failing script can be found, and the last binding call skipped,
+    // whose missing result is the usual nil behind a runtime error. Code from Coney's compiler also has its source
+    // line, which comes first, as `chunk:line:`; the game's stripped chunks have none.
+    const auto error = [&pc, &proto, this](std::string_view what) {
         const std::string skipped =
             m_lastSkipped.empty() ? std::string() : std::format("; last skipped call `{}`", m_lastSkipped);
-        return fail(ErrorCode::Invalid, std::format("Lua: {} (instruction {}{})", what, pc - 1, skipped));
+        const std::string where = pc > 0 && pc - 1 < proto.lines.size()
+                                      ? std::format("{}:{}: ", luaChunkLabel(proto.source), proto.lines[pc - 1])
+                                      : std::string();
+        return fail(ErrorCode::Invalid, std::format("Lua: {}{} (instruction {}{})", where, what, pc - 1, skipped));
     };
     const auto underflow = [&error] { return error("stack underflow (malformed bytecode)"); };
     // Moves the program counter by a jump's signed operand, relative to the next instruction.
@@ -333,6 +299,13 @@ std::expected<std::vector<Value>, Error> LuaVm::execute(const Function& closure,
                 m_calleeName = *name;
             } else {
                 m_calleeName.clear();
+            }
+            // Calling what is not a function fails here, where the error can name the line.
+            if (!function.function() && !(function.isNil() && m_options.nilCallsAreNoOps)) {
+                const std::string hint = function.isNil() && !m_calleeName.empty()
+                                             ? std::format(" (global `{}`)", m_calleeName)
+                                             : std::string();
+                return error(std::format("attempt to call a {} value{}", typeName(function), hint));
             }
             const std::vector<Value> callArgs(frame.stack.begin() + in.a + 1, frame.stack.end());
             auto results = callNested(function, callArgs);
@@ -712,6 +685,7 @@ std::expected<std::vector<Value>, Error> LuaVm::execute(const Function& closure,
     }
 }
 
+// @coney-only replaces Lua 4.0.1's luaO_str2d (lobject.c, 0x0032c978)
 std::optional<double> parseLuaNumber(std::string_view text) {
     // Lua 4.0's rule: optional spaces, a decimal number as C's strtod reads it, optional spaces, nothing else.
     // std::from_chars reads neither a leading "+" nor spaces, so both are handled here.
@@ -753,6 +727,7 @@ std::optional<double> parseLuaNumber(std::string_view text) {
     return negative ? -number : number;
 }
 
+// @coney-only replaces the load half of Lua 4.0.1's lua_dobuffer: protectedparser (ldo.c, 0x00328df0)
 std::expected<std::shared_ptr<const LuaProto>, Error> loadLuaChunk(std::span<const std::byte> data) {
     auto proto = parseLuaChunk(data);
     if (!proto) {

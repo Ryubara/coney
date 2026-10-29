@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// Lua 4.0.1 is middleware the game links, replaced, not reimplemented (docs/progress/totals.toml), so each function
+// here says with @coney-only which stock function it replaces and where it is in SLUS_212.15
+// (docs/research/formats/lua-bytecode.md#stock-library).
 #include "scripting/lua_libraries.h"
 
 #include <algorithm>
@@ -14,6 +17,7 @@
 #include <utility>
 
 #include "core/assert.h"
+#include "scripting/lua_compiler.h"
 
 namespace coney::script {
 
@@ -23,14 +27,18 @@ namespace {
 using Results = std::expected<std::vector<Value>, Error>;
 
 // No results.
+// @coney-only no counterpart in Lua 4.0.1: the stock library pushes its results on the C stack
 Results none() { return std::vector<Value>{}; }
 // One result.
+// @coney-only no counterpart in Lua 4.0.1: the stock library pushes its results on the C stack
 Results one(Value value) { return std::vector<Value>{std::move(value)}; }
 
 // Argument `i` (0-based), nil when it was not passed.
+// @coney-only no counterpart in Lua 4.0.1: the stock library reads arguments by stack index
 Value argAt(std::span<const Value> args, std::size_t i) { return i < args.size() ? args[i] : Value(); }
 
 // A value as a number the way Lua's library reads one: a number, or a string that reads as one.
+// @coney-only replaces Lua 4.0.1's lua_tonumber (lapi.c, 0x00323688)
 std::optional<double> asNumber(const Value& value) {
     if (const std::optional<double> number = value.number()) {
         return number;
@@ -42,6 +50,7 @@ std::optional<double> asNumber(const Value& value) {
 }
 
 // A value as a string the way Lua's library reads one: a string, or a number in `%.16g`.
+// @coney-only replaces Lua 4.0.1's lua_tostring (lapi.c, 0x003236e0)
 std::optional<std::string> asString(const Value& value) {
     if (const std::optional<std::string_view> text = value.string()) {
         return std::string(*text);
@@ -53,12 +62,14 @@ std::optional<std::string> asString(const Value& value) {
 }
 
 // The error a library function reports for a bad argument, in Lua's words.
+// @coney-only replaces Lua 4.0.1's luaL_argerror (lauxlib.c, 0x00324438)
 std::unexpected<Error> badArgument(std::string_view function, std::size_t i, std::string_view expected) {
     return fail(ErrorCode::Invalid,
                 std::format("Lua: bad argument #{} to `{}' ({} expected)", i + 1, function, expected));
 }
 
 // Argument `i` as a number; a bad argument error otherwise.
+// @coney-only replaces Lua 4.0.1's luaL_check_number (lauxlib.c, 0x00324750)
 std::expected<double, Error> checkNumber(std::span<const Value> args, std::size_t i, std::string_view function) {
     const std::optional<double> number = asNumber(argAt(args, i));
     if (!number) {
@@ -68,12 +79,14 @@ std::expected<double, Error> checkNumber(std::span<const Value> args, std::size_
 }
 
 // Argument `i` as a number, or `fallback` when it is nil or absent.
+// @coney-only replaces Lua 4.0.1's luaL_opt_number (lauxlib.c, 0x003247c8)
 std::expected<double, Error> optNumber(std::span<const Value> args, std::size_t i, double fallback,
                                        std::string_view function) {
     return argAt(args, i).isNil() ? std::expected<double, Error>(fallback) : checkNumber(args, i, function);
 }
 
 // Argument `i` as a string; a bad argument error otherwise.
+// @coney-only replaces Lua 4.0.1's luaL_check_lstr (lauxlib.c, 0x00324648)
 std::expected<std::string, Error> checkString(std::span<const Value> args, std::size_t i, std::string_view function) {
     std::optional<std::string> text = asString(argAt(args, i));
     if (!text) {
@@ -83,6 +96,7 @@ std::expected<std::string, Error> checkString(std::span<const Value> args, std::
 }
 
 // Argument `i` as a table; a bad argument error otherwise.
+// @coney-only replaces Lua 4.0.1's luaL_checktype (lauxlib.c, 0x003245a8)
 std::expected<std::shared_ptr<Table>, Error> checkTable(std::span<const Value> args, std::size_t i,
                                                         std::string_view function) {
     // A copy: argAt returns the argument by value, so a reference into it would dangle.
@@ -94,6 +108,7 @@ std::expected<std::shared_ptr<Table>, Error> checkTable(std::span<const Value> a
 }
 
 // A double truncated to an integer as C's cast does, clamped so the conversion is defined.
+// @coney-only no counterpart in Lua 4.0.1: C's double-to-int cast, made defined for NaN and range
 std::int64_t toInteger(double number) {
     constexpr double kLimit = 9.0e18;
     if (std::isnan(number)) {
@@ -103,6 +118,7 @@ std::int64_t toInteger(double number) {
 }
 
 // Lua 4.0's `getn`: the field `n` when it is a number, else the largest positive numeric key with a value.
+// @coney-only replaces Lua 4.0.1's lua_getn (lapi.c, 0x003242e0)
 std::int64_t tableLength(const Table& table) {
     if (const std::optional<double> n = table.field("n").number()) {
         return toInteger(*n);
@@ -117,12 +133,14 @@ std::int64_t tableLength(const Table& table) {
 }
 
 // Sets t[i] for a whole-number i; never fails, since such a key is never nil or NaN.
+// @coney-only no counterpart in Lua 4.0.1: a table store the stock library does inline
 void setIndex(Table& table, std::int64_t i, Value value) {
     const bool stored = table.set(Value(static_cast<double>(i)), std::move(value)).has_value();
     CONEY_ASSERT(stored);
 }
 
 // Sets t.n.
+// @coney-only no counterpart in Lua 4.0.1: the stock tinsert and tremove set `n` inline
 void setLength(Table& table, std::int64_t n) {
     const bool stored = table.set(Value(std::string("n")), Value(static_cast<double>(n))).has_value();
     CONEY_ASSERT(stored);
@@ -140,6 +158,7 @@ constexpr double kTagFunction = 5;
 constexpr double kFirstUserTag = 7;
 
 // `type(v)`'s answer.
+// @coney-only replaces Lua 4.0.1's luaB_type (lbaselib.c, 0x003255b8)
 std::string_view typeName(const Value& value) {
     switch (value.type()) {
     case Value::Type::Nil:
@@ -157,6 +176,7 @@ std::string_view typeName(const Value& value) {
 }
 
 // `tag(v)`'s answer: the type tag, since no value carries a tag of its own in Coney.
+// @coney-only replaces Lua 4.0.1's luaB_tag (lbaselib.c, 0x00325130)
 double typeTag(const Value& value) {
     switch (value.type()) {
     case Value::Type::Nil:
@@ -174,6 +194,7 @@ double typeTag(const Value& value) {
 }
 
 // `tonumber(e [, base])`: the number e reads as, in base 10 (Lua's notation) or another base from 2 to 36; nil if none.
+// @coney-only replaces Lua 4.0.1's luaB_tonumber (lbaselib.c, 0x00324ef0)
 Results toNumber(std::span<const Value> args) {
     const Value& value = argAt(args, 0);
     auto base = optNumber(args, 1, 10.0, "tonumber");
@@ -223,6 +244,7 @@ Results toNumber(std::span<const Value> args) {
 
 // `sort(t [, comp])`: sorts t[1..getn(t)] with `<` or `comp(a, b)`. The first error a comparison raises is returned
 // once the sort is done; a stable merge sort stays safe when a script's comparison is inconsistent.
+// @coney-only replaces Lua 4.0.1's luaB_sort (lbaselib.c, 0x003263f0); a merge sort, not auxsort's quicksort
 Results sortTable(LuaVm& vm, std::span<const Value> args) {
     auto table = checkTable(args, 0, "sort");
     if (!table) {
@@ -277,6 +299,7 @@ Results sortTable(LuaVm& vm, std::span<const Value> args) {
 }
 
 // `tinsert(t, [pos,] v)`: inserts v at pos (the end by default), moving the items above up; sets t.n.
+// @coney-only replaces Lua 4.0.1's luaB_tinsert (lbaselib.c, 0x00325d80)
 Results tableInsert(std::span<const Value> args) {
     auto table = checkTable(args, 0, "tinsert");
     if (!table) {
@@ -300,6 +323,7 @@ Results tableInsert(std::span<const Value> args) {
 }
 
 // `tremove(t [, pos])`: removes and returns t[pos] (the last item by default), moving the items above down; sets t.n.
+// @coney-only replaces Lua 4.0.1's luaB_tremove (lbaselib.c, 0x00325ea8)
 Results tableRemove(std::span<const Value> args) {
     auto table = checkTable(args, 0, "tremove");
     if (!table) {
@@ -325,6 +349,7 @@ Results tableRemove(std::span<const Value> args) {
 
 // `foreach(t, f)` and `foreachi(t, f)`: calls f(k, v) for every entry (or every index 1..getn) until f returns
 // something other than nil, and returns that.
+// @coney-only replaces Lua 4.0.1's luaB_foreach and luaB_foreachi (lbaselib.c, 0x00325be8, 0x00325b00)
 Results forEach(LuaVm& vm, std::span<const Value> args, bool indexed) {
     const std::string_view name = indexed ? "foreachi" : "foreach";
     auto table = checkTable(args, 0, name);
@@ -367,6 +392,7 @@ Results forEach(LuaVm& vm, std::span<const Value> args, bool indexed) {
 }
 
 // `call(f, args [, mode])`: calls f with the items of the table args; with "x" in mode an error returns nil instead.
+// @coney-only replaces Lua 4.0.1's luaB_call (lbaselib.c, 0x00325800)
 Results callFunction(LuaVm& vm, std::span<const Value> args) {
     const Value function = argAt(args, 0);
     auto list = checkTable(args, 1, "call");
@@ -388,6 +414,7 @@ Results callFunction(LuaVm& vm, std::span<const Value> args) {
 }
 
 // `next(t [, k])`: the entry after k, as two results; nil at the end.
+// @coney-only replaces Lua 4.0.1's luaB_next (lbaselib.c, 0x00325608)
 Results nextEntry(std::span<const Value> args, std::string_view name) {
     auto table = checkTable(args, 0, name);
     if (!table) {
@@ -401,6 +428,7 @@ Results nextEntry(std::span<const Value> args, std::string_view name) {
 }
 
 // `rawget(t, k)`: t[k] without tag methods.
+// @coney-only replaces Lua 4.0.1's luaB_rawget (lbaselib.c, 0x003252f8)
 Results rawGet(std::span<const Value> args) {
     auto table = checkTable(args, 0, "rawget");
     if (!table) {
@@ -410,6 +438,7 @@ Results rawGet(std::span<const Value> args) {
 }
 
 // `rawset(t, k, v)`: t[k] = v without tag methods; returns t.
+// @coney-only replaces Lua 4.0.1's luaB_rawset (lbaselib.c, 0x00325340)
 Results rawSet(std::span<const Value> args) {
     auto table = checkTable(args, 0, "rawset");
     if (!table) {
@@ -422,11 +451,13 @@ Results rawSet(std::span<const Value> args) {
 }
 
 // Registers a library function under `name`.
+// @coney-only replaces the registration in Lua 4.0.1's luaL_openlib (lauxlib.c, 0x00324828)
 void add(LuaVm& vm, std::string_view name, NativeFunction function) { vm.registerFunction(name, std::move(function)); }
 
 // ---- The string library ----
 
 // Lua's relative string position: negative counts from the end (-1 the last character).
+// @coney-only replaces Lua 4.0.1's posrelat (lstrlib.c, 0x0032fe70)
 std::int64_t relativePosition(std::int64_t position, std::size_t length) {
     return position >= 0 ? position : static_cast<std::int64_t>(length) + position + 1;
 }
@@ -446,6 +477,7 @@ class PatternMatcher {
     PatternMatcher(std::string_view subject, std::string_view pattern) : m_src(subject), m_pat(pattern) {}
 
     // Tries the pattern from pattern position `p` against the subject from `s`: the end of the match, or nothing.
+    // @coney-only no counterpart in Lua 4.0.1: str_find and str_gsub set up the match state inline
     std::optional<std::size_t> match(std::size_t s, std::size_t p) {
         m_level = 0;
         return doMatch(s, p);
@@ -457,6 +489,7 @@ class PatternMatcher {
     [[nodiscard]] int level() const { return m_level; }
 
     // Capture `i` of the match [s, e): a string, a position, or the whole match for i = 0 with no captures.
+    // @coney-only replaces Lua 4.0.1's push_onecapture (lstrlib.c, inlined into push_captures 0x00330ed8)
     [[nodiscard]] Value capture(int i, std::size_t s, std::size_t e) {
         if (i >= m_level) {
             if (i == 0) {
@@ -473,6 +506,7 @@ class PatternMatcher {
     }
 
     // Every capture of the match [s, e), or the whole match when the pattern has none (and `wholeIfNone`).
+    // @coney-only replaces Lua 4.0.1's push_captures (lstrlib.c, 0x00330ed8)
     [[nodiscard]] std::vector<Value> captures(std::size_t s, std::size_t e, bool wholeIfNone) {
         std::vector<Value> values;
         const int count = (m_level == 0 && wholeIfNone) ? 1 : m_level;
@@ -485,6 +519,7 @@ class PatternMatcher {
 
   private:
     // Records the first error; matching then fails everywhere.
+    // @coney-only no counterpart in Lua 4.0.1: keeps the first error where lua_error (0x003291b8) unwinds
     void setError(std::string_view what) {
         if (!m_error) {
             m_error = Error{ErrorCode::Invalid, std::format("Lua: {}", what)};
@@ -495,6 +530,7 @@ class PatternMatcher {
     [[nodiscard]] char pat(std::size_t p) const { return p < m_pat.size() ? m_pat[p] : '\0'; }
 
     // Whether c is in the class named by the letter `cl` (%a, %d, ...; upper case for the complement), or equals cl.
+    // @coney-only replaces Lua 4.0.1's match_class (lstrlib.c, 0x00330508)
     static bool matchClass(unsigned char c, unsigned char cl) {
         bool result = false;
         switch (std::tolower(cl)) {
@@ -532,6 +568,7 @@ class PatternMatcher {
     }
 
     // The pattern position after the single-character class at p; records an error for a malformed one.
+    // @coney-only replaces Lua 4.0.1's luaI_classend (lstrlib.c, 0x00330428)
     std::size_t classEnd(std::size_t p) {
         const char c = pat(p++);
         if (c == '%') {
@@ -563,6 +600,7 @@ class PatternMatcher {
     }
 
     // Whether c is in the set [p, ec], with p at '[' and ec at the closing ']'.
+    // @coney-only replaces Lua 4.0.1's matchbracketclass (lstrlib.c, 0x00330640)
     bool matchSet(unsigned char c, std::size_t p, std::size_t ec) const {
         bool inside = true;
         if (pat(p + 1) == '^') {
@@ -588,6 +626,7 @@ class PatternMatcher {
     }
 
     // Whether the subject character at s matches the single-character class [p, ep).
+    // @coney-only replaces Lua 4.0.1's luaI_singlematch (lstrlib.c, 0x00330748)
     bool singleMatch(std::size_t s, std::size_t p, std::size_t ep) const {
         if (s >= m_src.size()) {
             return false;
@@ -606,6 +645,7 @@ class PatternMatcher {
     }
 
     // The matcher proper: the end of a match of the pattern from p against the subject from s.
+    // @coney-only replaces Lua 4.0.1's match (lstrlib.c, 0x00330bc0)
     // NOLINTNEXTLINE(misc-no-recursion): the pattern language is recursive; the depth is bounded by the pattern
     std::optional<std::size_t> doMatch(std::size_t s, std::size_t p) {
         while (!m_error) {
@@ -681,6 +721,7 @@ class PatternMatcher {
     }
 
     // `*` and `+`: as many repetitions as match, then fewer until the rest matches.
+    // @coney-only replaces Lua 4.0.1's max_expand (lstrlib.c, 0x00330888)
     // NOLINTNEXTLINE(misc-no-recursion): part of doMatch's recursion
     std::optional<std::size_t> maxExpand(std::size_t s, std::size_t p, std::size_t ep) {
         std::size_t count = 0;
@@ -699,6 +740,7 @@ class PatternMatcher {
     }
 
     // `-`: as few repetitions as let the rest match.
+    // @coney-only replaces Lua 4.0.1's min_expand (lstrlib.c, 0x00330958)
     // NOLINTNEXTLINE(misc-no-recursion): part of doMatch's recursion
     std::optional<std::size_t> minExpand(std::size_t s, std::size_t p, std::size_t ep) {
         while (true) {
@@ -713,6 +755,7 @@ class PatternMatcher {
     }
 
     // Opens capture `what` (open or position) at s and matches the rest from p.
+    // @coney-only replaces Lua 4.0.1's start_capture (lstrlib.c, 0x003309f0)
     // NOLINTNEXTLINE(misc-no-recursion): part of doMatch's recursion
     std::optional<std::size_t> startCapture(std::size_t s, std::size_t p, std::ptrdiff_t what) {
         if (m_level >= kMaxCaptures) {
@@ -729,6 +772,7 @@ class PatternMatcher {
     }
 
     // Closes the innermost open capture at s and matches the rest from p.
+    // @coney-only replaces Lua 4.0.1's end_capture (lstrlib.c, 0x00330aa8)
     // NOLINTNEXTLINE(misc-no-recursion): part of doMatch's recursion
     std::optional<std::size_t> endCapture(std::size_t s, std::size_t p) {
         int open = m_level - 1;
@@ -749,6 +793,7 @@ class PatternMatcher {
     }
 
     // `%bxy`: a balanced run from x to its matching y.
+    // @coney-only replaces Lua 4.0.1's matchbalance (lstrlib.c, 0x003307c8)
     std::optional<std::size_t> matchBalance(std::size_t s, std::size_t p) {
         if (p + 1 >= m_pat.size()) {
             setError("unbalanced pattern");
@@ -774,6 +819,7 @@ class PatternMatcher {
     }
 
     // `%1`-`%9`: the text of an earlier, closed capture again.
+    // @coney-only replaces Lua 4.0.1's match_capture (lstrlib.c, 0x00330b40)
     std::optional<std::size_t> matchBackReference(std::size_t s, char digit) {
         const int index = digit - '1';
         if (index < 0 || index >= m_level || m_captures.at(static_cast<std::size_t>(index)).second == kCaptureOpen) {
@@ -797,6 +843,7 @@ class PatternMatcher {
 
 // `strfind(s, pattern [, init [, plain]])`: the start and end (1-based) of the first match and its captures; nil if
 // none.
+// @coney-only replaces Lua 4.0.1's str_find (lstrlib.c, 0x00330f98)
 Results stringFind(std::span<const Value> args) {
     auto subject = checkString(args, 0, "strfind");
     auto pattern = checkString(args, 1, "strfind");
@@ -836,6 +883,7 @@ Results stringFind(std::span<const Value> args) {
 
 // `gsub(s, pattern, repl [, n])`: s with (at most n) matches replaced by repl, a string with %0-%9 references or a
 // function of the captures; and the number of replacements.
+// @coney-only replaces Lua 4.0.1's str_gsub (lstrlib.c, 0x00331350)
 Results stringReplace(LuaVm& vm, std::span<const Value> args) {
     auto subject = checkString(args, 0, "gsub");
     auto pattern = checkString(args, 1, "gsub");
@@ -910,6 +958,7 @@ Results stringReplace(LuaVm& vm, std::span<const Value> args) {
 }
 
 // `%q`: a string in double quotes that Lua reads back as the same string.
+// @coney-only replaces Lua 4.0.1's luaI_addquoted (lstrlib.c, 0x00331578)
 std::string quoted(std::string_view text) {
     std::string out = "\"";
     for (const char c : text) {
@@ -923,6 +972,7 @@ std::string quoted(std::string_view text) {
 }
 
 // A std::format replacement field `{:<parts>}`.
+// @coney-only no counterpart in Lua 4.0.1: str_format hands C's sprintf a format string instead
 std::string replacementField(std::string_view a, std::string_view b = {}, std::string_view c = {}) {
     std::string field = "{:";
     field.append(a).append(b).append(c).append("}");
@@ -931,6 +981,7 @@ std::string replacementField(std::string_view a, std::string_view b = {}, std::s
 
 // `format(fmt, ...)`: C's printf conversions (`%c %d %i %o %u %x %X %e %E %f %g %G %s %q %%` with flags, width and
 // precision), done through std::format so no C format string is ever built at run time.
+// @coney-only replaces Lua 4.0.1's str_format (lstrlib.c, 0x00331730)
 Results stringFormat(std::span<const Value> args) {
     auto format = checkString(args, 0, "format");
     if (!format) {
@@ -1059,6 +1110,7 @@ Results stringFormat(std::span<const Value> args) {
 }
 
 // `strsub(s, i [, j])`: characters i to j (1-based, negative from the end).
+// @coney-only replaces Lua 4.0.1's str_sub (lstrlib.c, 0x0032fe90)
 Results stringSub(std::span<const Value> args) {
     auto text = checkString(args, 0, "strsub");
     auto first = checkNumber(args, 1, "strsub");
@@ -1077,6 +1129,7 @@ Results stringSub(std::span<const Value> args) {
 }
 
 // `strbyte(s [, i])` (and `ascii`): the code of character i (1 by default).
+// @coney-only replaces Lua 4.0.1's str_byte (lstrlib.c, 0x003301b8)
 Results stringByte(std::span<const Value> args) {
     auto text = checkString(args, 0, "strbyte");
     auto position = optNumber(args, 1, 1.0, "strbyte");
@@ -1091,6 +1144,7 @@ Results stringByte(std::span<const Value> args) {
 }
 
 // `strlower(s)` and `strupper(s)`: the C locale's case mapping.
+// @coney-only replaces Lua 4.0.1's str_lower and str_upper (lstrlib.c, 0x0032ff70, 0x00330040)
 Results stringCase(std::span<const Value> args, bool upper) {
     auto text = checkString(args, 0, upper ? "strupper" : "strlower");
     if (!text) {
@@ -1110,6 +1164,7 @@ constexpr double kPi = 3.14159265358979323846;
 constexpr double kRadiansPerDegree = kPi / 180.0;
 
 // A math function of one number.
+// @coney-only replaces Lua 4.0.1's math_abs to math_rad (lmathlib.c, 0x0032bac0 to 0x0032c1e0)
 NativeFunction unary(std::string_view name, double (*function)(double)) {
     return [name = std::string(name), function](std::span<const Value> args) -> Results {
         auto x = checkNumber(args, 0, name);
@@ -1125,6 +1180,7 @@ struct RandomState {
     std::uint64_t state = 0x9e3779b97f4a7c15ULL;
 
     // The next value in [0, 1).
+    // @coney-only no counterpart in Lua 4.0.1: stands in for the C library's rand() behind math_random (0x0032c440)
     double next() {
         state ^= state << 13U;
         state ^= state >> 7U;
@@ -1136,6 +1192,7 @@ struct RandomState {
 
 } // namespace
 
+// @coney-only replaces Lua 4.0.1's luaB_tostring (lbaselib.c, 0x003259c0)
 std::string luaToString(const Value& value) {
     switch (value.type()) {
     case Value::Type::Nil:
@@ -1151,6 +1208,7 @@ std::string luaToString(const Value& value) {
     return {};
 }
 
+// @coney-only replaces Lua 4.0.1's lua_baselibopen (lbaselib.c, 0x00326548)
 void openBaseLibrary(LuaVm& vm, BaseLibraryHooks hooks) {
     auto shared = std::make_shared<BaseLibraryHooks>(std::move(hooks));
     auto nextTag = std::make_shared<double>(kFirstUserTag);
@@ -1178,9 +1236,11 @@ void openBaseLibrary(LuaVm& vm, BaseLibraryHooks hooks) {
         if (!text) {
             return std::unexpected(std::move(text.error()));
         }
-        // Only a precompiled chunk can run: Coney has no Lua compiler. dostring returns nil when it cannot run one.
+        // A precompiled chunk or Lua source, told apart by the first byte as Lua 4.0 does; the optional second
+        // argument names the chunk in errors. dostring returns nil when the text does not load.
         const auto* bytes = reinterpret_cast<const std::byte*>(text->data());
-        auto chunk = loadLuaChunk(std::span(bytes, text->size()));
+        const std::string name = asString(argAt(args, 1)).value_or(std::string(*text));
+        auto chunk = loadLuaBuffer(std::span(bytes, text->size()), name);
         if (!chunk) {
             return one(Value());
         }
@@ -1267,6 +1327,7 @@ void openBaseLibrary(LuaVm& vm, BaseLibraryHooks hooks) {
     vm.setGlobal("_VERSION", Value(std::string("Lua 4.0.1")));
 }
 
+// @coney-only replaces Lua 4.0.1's lua_strlibopen (lstrlib.c, 0x00331a58)
 void openStringLibrary(LuaVm& vm) {
     LuaVm* machine = &vm;
     add(vm, "strlen", [](std::span<const Value> args) -> Results {
@@ -1310,6 +1371,7 @@ void openStringLibrary(LuaVm& vm) {
     add(vm, "gsub", [machine](std::span<const Value> args) { return stringReplace(*machine, args); });
 }
 
+// @coney-only replaces Lua 4.0.1's lua_mathlibopen (lmathlib.c, 0x0032c628)
 void openMathLibrary(LuaVm& vm) {
     add(vm, "abs", unary("abs", [](double x) { return std::fabs(x); }));
     add(vm, "sin", unary("sin", [](double x) { return std::sin(x * kRadiansPerDegree); }));

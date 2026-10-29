@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Compile Lua 4.0 source with a stock `luac` (built from Lua 4.0.1's source), for the round trip.
+"""Compile Lua 4.0 source with a stock `luac` (built from Lua 4.0.1's source), or a program that takes its command
+line (Coney's `coney_luac`), for the round trip.
 
 The decompiler is checked by compiling its output and comparing the result with the original chunk
 (`compare.py`). `luac` writes its chunk to a file, so the source and the chunk go through a temporary folder.
@@ -12,7 +13,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-_LINE = re.compile(r"at line (\d+)")
+# `luac` says "at line 7"; Coney's `coney_luac` says "file.lua:7: ..." as later versions of Lua do.
+_LINE = re.compile(r"at line (\d+)|:(\d+): ")
 
 
 class LuacError(Exception):
@@ -22,7 +24,7 @@ class LuacError(Exception):
     def __init__(self, message: str) -> None:
         super().__init__(message)
         match = _LINE.search(message)
-        self.line = int(match.group(1)) if match else 0
+        self.line = int(match.group(1) or match.group(2)) if match else 0
 
 
 def compile_source(source: str | bytes, luac: Path, strip: bool = False, timeout: float = 60) -> bytes:

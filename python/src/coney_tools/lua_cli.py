@@ -39,7 +39,12 @@ def add_parser(groups: Any) -> None:
     decompile.add_argument(
         "--chunks", type=Path, metavar="DIR", help="read chunks from this folder (`wad extract` output), not a disc"
     )
-    decompile.add_argument("--luac", type=Path, metavar="PATH", help="the stock Lua 4.0 luac (default: luac_program)")
+    decompile.add_argument(
+        "--luac",
+        type=Path,
+        metavar="PATH",
+        help="the compiler for --roundtrip: a stock Lua 4.0 luac (default: luac_program) or Coney's coney_luac",
+    )
     decompile.add_argument(
         "--hashes",
         type=Path,
@@ -59,7 +64,8 @@ def add_parser(groups: Any) -> None:
     decompile.add_argument(
         "--roundtrip",
         action="store_true",
-        help="compile each output with luac and compare it with the chunk; prints counts only; exit 1 on a mismatch",
+        help="compile each output with luac and compare its code and the natives it calls with the chunk's; prints "
+        "counts and hashes only; exit 1 when the code differs",
     )
 
 
