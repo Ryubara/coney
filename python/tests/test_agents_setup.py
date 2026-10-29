@@ -33,3 +33,21 @@ def test_contributing_describes_the_same_three_commands() -> None:
         'coney-tools ci pr --title "area: Verb the rest" --body description.md',
     ):
         assert command in text, command
+
+
+#: The command-line tools the maintainer decided on 2026-10-29 Coney supports, with the hook file each reads.
+SUPPORTED_CLIS = {
+    "Codex": ".codex/hooks.json",
+    "Antigravity": ".agents/hooks.json",
+    "Grok": ".grok/hooks/coney.json",
+}
+
+
+def test_the_codex_antigravity_and_grok_clis_are_supported_not_open() -> None:
+    enforcement = (REPO / "docs/guides/enforcement.md").read_text(encoding="utf-8")
+    assert "2026-10-29" in enforcement and "**supports**" in enforcement
+    contributing = (REPO / "CONTRIBUTING.md").read_text(encoding="utf-8")
+    assert "supported tools, not a trial" in contributing
+    for tool, hook_file in SUPPORTED_CLIS.items():
+        assert (REPO / hook_file).is_file(), f"{tool}: {hook_file} is not committed"
+        assert tool in contributing, tool

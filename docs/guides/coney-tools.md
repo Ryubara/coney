@@ -82,8 +82,8 @@ so they go, with these ids, once those pages are touched and cite the disc page.
 
 ### [The CI commands](coney-tools-ci.md)
 
-* [`ci`](coney-tools-ci.md#ci): what CI would fail on, checked locally (`ci run`), and the commands the CI workflows
-  run.
+* [`ci`](coney-tools-ci.md#ci): what CI would fail on, checked locally (`ci run`, and `ci pr` for a pull
+  request's title, description and engine build), and the commands the CI workflows run.
 
 ### [The docs, build and benchmark commands](coney-tools-build.md)
 

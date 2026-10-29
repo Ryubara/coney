@@ -1,8 +1,8 @@
 # The coney-tools CI commands
 
-What CI checks: [`ci`](#ci), the local gate that runs CI's checks on the files a change touched
-([`ci run`](#ci-run)), and the commands the CI workflows run (the `dependencies` check and its reruns, the
-changed-lines clang-tidy, the issue for a failure on `main`). The repository's own rules are checked by
+What CI checks: [`ci`](#ci), the local gate that runs CI's checks on the files a change touched ([`ci run`](#ci-run))
+and on a whole pull request ([`ci pr`](#ci-pr)), and the commands the CI workflows run (the `dependencies` check and its
+reruns, the changed-lines clang-tidy, the issue for a failure on `main`). The repository's own rules are checked by
 [`repo`](coney-tools-repo.md#repo); the other groups are listed in [the command line overview](coney-tools.md#groups).
 
 ## ci {#ci}
@@ -257,4 +257,22 @@ coney-tools ci result
 ```
 
 Takes no parameters.
+
+### `ci pr` {#ci-pr-usage}
+
+What CI checks on a pull request, before you open it: title, description, the gate, the engine build.
+
+```text
+coney-tools ci pr --title TITLE --body BODY [--base BASE] [--only ONLY] [--skip SKIP] [--preset PRESET] [--agent AGENT]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--title TITLE` | text | required | the pull request's title, `area: Verb the rest` |
+| `--body BODY` | path | required | a file holding the description, from the template |
+| `--base BASE` | text | `origin/main` | the branch the change is measured from |
+| `--only ONLY` | choice | none | run only this step (repeatable). One of `title`, `body`, `docs-rule`, `repo`, `orig`, `pre-commit`, `docs`, `python`, `engine`. |
+| `--skip SKIP` | choice | none | leave this step out (repeatable). One of `title`, `body`, `docs-rule`, `repo`, `orig`, `pre-commit`, `docs`, `python`, `engine`. |
+| `--preset PRESET` | text | `dev` | the preset the engine step builds and tests |
+| `--agent AGENT` | text | none | your id for the engine step's build slot and log (default: as `build`) |
 <!-- command-reference:end -->

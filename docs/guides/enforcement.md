@@ -193,7 +193,11 @@ name that is no role leaves the session read-only, as `require_role` does in Cla
 | GitHub Copilot (CLI, cloud agent, VS Code) | `.github/hooks/coney.json` | `preToolUse` | every deny key, its own `{"permissionDecision": "deny", "permissionDecisionReason": ...}` among them | `bash`, `powershell`, `view`, `create`, `edit`, `glob`, `grep`, `task`, `web_fetch`, MCP | workspace admission in the CLI; VS Code needs a trusted workspace and `chat.useHooks` (Preview); the cloud agent runs `.github/hooks/*.json` itself |
 | xAI Grok Build | `.grok/hooks/coney.json` | `PreToolUse` | every deny key, its own `{"decision": "deny", "reason": ...}` among them | its built-in tools (matchers take Claude Code names: `Bash`, `Read`, `Edit`) and MCP | `/hooks-trust` or `--trust` once per repository, kept in `~/.grok/trusted_folders.toml` |
 
-The maintainer's decision of 2026-10-27 names these six tools, and every one of them reads hooks from the project.
+The maintainer's decision of 2026-10-27 names these six tools, and every one of them reads hooks from the project. On
+2026-10-29 the maintainer decided that Coney **supports** the Codex, Antigravity and Grok command-line tools as well
+(the question whether they were in scope is closed): each has its committed hook file, a row above, a test of its
+documented payload and its trust step in [CONTRIBUTING.md](repo:CONTRIBUTING.md#agents-other-than-claude-code), and a
+change of a vendor's hook format is a bug to fix here, not a reason to drop the tool.
 What each vendor's own page says, read on 2026-10-27:
 
 - **Codex** ([Hooks](https://learn.chatgpt.com/docs/hooks)). `hooks.json` or `[hooks]` in `config.toml`, at

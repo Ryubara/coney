@@ -19,7 +19,7 @@ sharing a machine and merging. Whoever starts agents follows `docs/guides/agents
 briefs, long commands and the prompt cache). Nobody waits for a person to play their work: the automated tests are the
 gate, so every piece of work proves itself as `docs/guides/testing.md` defines ("done" per kind of work, the player's
 path, gamepad input, playthrough tests, the checks before reporting). A person contributing starts at CONTRIBUTING.md,
-section Your first hour; the rest is for agents. Other tools: `uvx pre-commit install`, `coney-tools ci pr` before a PR.
+section Your first hour; the rest is for agents. Other tools: `uvx pre-commit install`, `ci pr --title` before a PR.
 
 ## Build and test
 
