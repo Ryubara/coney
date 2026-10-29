@@ -216,9 +216,10 @@ def test_a_fix_already_running_makes_every_conflict_wait_behind_it(layout: Layou
     assert "task create --fix-of 741" in event["do"]
 
 
-def test_the_fix_task_made_for_a_conflict_does_not_make_that_conflict_wait(layout: Layout) -> None:
+def test_the_fix_task_made_for_a_conflict_is_named_and_not_made_again(layout: Layout) -> None:
     # the coordinator ran the event's `task create --fix-of 741`: the fix is queued, and the conflict (whose hold may
-    # have run out) must still be told as the one that may go, not as waiting behind its own fix
+    # have run out) must neither wait behind its own fix nor invite a second one: the line names the fix that exists
+    # and asks only for the hold
     folder = layout.scratch / "741-fix-frame"
     folder.mkdir()
     (folder / "TASK.md").write_text(
@@ -226,7 +227,11 @@ def test_the_fix_task_made_for_a_conflict_does_not_make_that_conflict_wait(layou
         encoding="utf-8",
     )
     [event] = events(read(conflicting(layout)), "conflict-fix")
-    assert event["id"].endswith(":go") and "waits behind" not in event["do"] and event["guard"] is True
+    assert event["id"].endswith(":fixing") and event["guard"] is True
+    assert event["do"] == (
+        "the fix task 741-fix-frame exists, do not create another; "
+        "record it: coney-tools pr hold 812 --who <agent> --cause conflict"
+    )
 
 
 def test_a_place_that_frees_makes_the_waiting_conflict_a_new_event(layout: Layout) -> None:

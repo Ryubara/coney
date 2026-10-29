@@ -62,6 +62,8 @@ class Item:
     #: Set by `_queue`: whether the fix place is free for it, and what it waits behind otherwise.
     go: bool = True
     behind: str = ""
+    #: Set by `_queue`: the fix task already made for one of the item's issues (queued or running), if any.
+    own_fix: str = ""
 
 
 @dataclass
@@ -172,14 +174,24 @@ def _fix_event(item: Item, src: Sources, upstream: str) -> dict[str, Any]:
     do = f"{_command(item, src)}; {_brief(item, upstream)}"
     if not item.go:
         do = f"waits behind {item.behind}; when it frees: {do}"
+    if item.own_fix:
+        # the fix exists (made since the event was told, before a hold was recorded or after it ran out): making it
+        # again would be a second fix task that takes the track's one place, so the line only asks to record it
+        do = f"the fix task {item.own_fix} exists, do not create another"
+        do += (
+            f"; record it: coney-tools pr hold {item.pr} --who <agent> --cause {CAUSE}"
+            if item.pr is not None
+            else "; its engineer works the branch"
+        )
+    state = "fixing" if item.own_fix else "go" if item.go else "wait"
     return event_row(
-        f"conflict-fix:{item.key}:{item.head}:{'go' if item.go else 'wait'}",
+        f"conflict-fix:{item.key}:{item.head}:{state}",
         "conflict-fix",
         text,
         do,
         iso_utc(item.since),
         {"pr": item.pr, "task": item.task if item.route != ADOPT else None, "branch": item.branch},
-        guard=item.pr is not None and item.go,
+        guard=item.pr is not None and (item.go or bool(item.own_fix)),
     )
 
 
@@ -201,6 +213,7 @@ def _queue(items: list[Item], src: Sources, now: datetime) -> None:
         line = []
     maximum = conventions.tasks.start.slots.tracks.of("fix").max
     for item in items:
+        item.own_fix = next((name for name, issues in line if issues & set(item.issues)), "")
         ahead = [name for name, issues in line if not (issues & set(item.issues))]
         position = len(ahead)
         name = f"#{item.pr}'s fix" if item.pr is not None else f"{item.task}'s fix"
