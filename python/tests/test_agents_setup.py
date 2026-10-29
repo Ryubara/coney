@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""What an agent that is not Claude Code reads (docs/guides/agents.md#other-tools): Codex loads `AGENTS.md` and the
+"""What an agent that is not Claude Code reads (docs/guides/agents-other-tools.md): Codex loads `AGENTS.md` and the
 files of its folders up to a combined 32 KiB (`project_doc_max_bytes`), and opens nothing a file merely links to, so
 `AGENTS.md` stays small and itself names the commands that stand in for the Claude Code hooks."""
 

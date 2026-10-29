@@ -44,7 +44,7 @@ def test_the_jobs_are_the_required_checks_it_always_was() -> None:
 
 def test_the_checkout_is_the_base_branch_and_keeps_no_credentials() -> None:
     checkouts = [step for step in steps() if str(step.get("uses", "")).startswith("actions/checkout")]
-    assert len(checkouts) == 3
+    assert len(checkouts) == 4
     for step in checkouts:
         # No `ref` and no `repository`: on pull_request_target that is the base branch, never the pull request's code.
         assert set(step["with"]) == {"persist-credentials"} and step["with"]["persist-credentials"] is False
@@ -66,8 +66,12 @@ def test_the_token_reads_and_no_secret_is_used() -> None:
     assert "secrets." not in WORKFLOW.read_text(encoding="utf-8")
 
 
-def test_only_the_docs_job_may_read_pull_requests_and_no_job_widens_the_token_further() -> None:
-    allowed = {"docs": {"contents": "read", "pull-requests": "read"}}
+def test_only_the_docs_and_claim_jobs_read_more_and_no_job_widens_the_token_further() -> None:
+    # `docs` calls the pull request files API; `claim` reads the claim cards on the issues the description closes.
+    allowed = {
+        "docs": {"contents": "read", "pull-requests": "read"},
+        "claim": {"contents": "read", "issues": "read", "pull-requests": "read"},
+    }
     for name, job in workflow()["jobs"].items():
         # A job-level block replaces the workflow's, so one with a write scope (or any scope but these) is refused.
         assert job.get("permissions", workflow()["permissions"]) == allowed.get(name, workflow()["permissions"]), name

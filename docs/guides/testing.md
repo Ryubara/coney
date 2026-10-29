@@ -451,7 +451,7 @@ page](coney-tools-ci.md#ci-run) has the options.
 Build) runs the same hooks once the person trusts them ([Agent tools](enforcement.md#harnesses)), but its agent opens no
 pull request, so before the person opens one they run `coney-tools ci pr --title "<title>" --body <file>`: the same
 steps, preceded by the title, the description and the docs rule and followed by the engine's build and tests ([`ci pr`](coney-tools-ci.md#ci-pr),
-[Agent tools other than Claude Code](agents.md#other-tools)). A tool that cannot reach the disc, Ghidra or PCSX2 names
+[Agent tools other than Claude Code](agents-other-tools.md)). A tool that cannot reach the disc, Ghidra or PCSX2 names
 that in the Testing section instead of claiming a check it could not run.
 
 **clang-tidy is CI's alone.** It is not run locally (on Windows there are no local WSL builds or clang-tidy runs):

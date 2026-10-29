@@ -126,7 +126,7 @@ uv run --project python coney-tools ci pr --title TITLE --body FILE [--base orig
 Everything CI checks on a pull request, run before it is opened: [`ci run`](#ci-run) plus the pull request's
 text and the engine. It is what a person runs before `gh pr create`, whatever agent tool made the change: the hooks
 of every tool refuse a bad command before it runs ([Agent tools](enforcement.md#harnesses)), and this is the backstop
-that sees the whole change ([Agent tools other than Claude Code](agents.md#other-tools)).
+that sees the whole change ([Agent tools other than Claude Code](agents-other-tools.md)).
 `--title` is the title and `--body` a file holding the description written from the
 [template](repo:.github/pull_request_template.md). The steps run in this order and print one line each; the five
 between the text steps and `engine` are the steps of `ci run`, with the same rules:
@@ -142,7 +142,7 @@ between the text steps and `engine` are the steps of `ci run`, with the same rul
 `--only` and `--skip` take these step names. `--base` (default `origin/main`) is the branch the change is measured
 from, for the files and for the `Model:` rule's commits: in a fork `origin` is the fork, so pass `--base upstream/main`
 after fetching it, and a cloud checkout of one branch needs the base fetched first
-([agents.md](agents.md#other-tools)). `docs-rule` and `engine` read the files the way CI's `docs` job lists them for the
+([agents.md](agents-other-tools.md)). `docs-rule` and `engine` read the files the way CI's `docs` job lists them for the
 pull request: the committed changes since the base, deletions included, so commit first (the other steps also look at
 what is uncommitted, as `ci run` does). `--agent` is the id of the engine step's build; without it the step
 uses `build`'s own default for a person at a terminal, else the worktree's name (`CONEY_AGENT`, else the folder).

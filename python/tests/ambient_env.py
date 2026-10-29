@@ -15,6 +15,7 @@ CLEARED: dict[str, str] = {
     "CONEY_TASK": "the task a command is about (`unit.task_name`, `task start`), ahead of the branch",
     "CONEY_AGENT": "the id `ci run` names its builds with",
     "CONEY_AGENT_TOKEN": "the hook's token, which names the verified identity (`identity.load`)",
+    "CONEY_AGENT_ROLE": "the role of another agent tool's session, ahead of the default role (`harness.py`)",
     # Never read by a tool (the id, type and model come from the token only); cleared so the tests that prove it hold.
     "CONEY_AGENT_ID": "an agent's word about itself, which no tool trusts",
     "CONEY_AGENT_TYPE": "an agent's word about itself, which no tool trusts",

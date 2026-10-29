@@ -321,8 +321,9 @@ request's code. This one does not, by four rules a test holds (`python/tests/tes
    for the `docs` check from the API (`gh api repos/.../pulls/N/files`, at most 3000 files, refused beyond that), where
    it used to diff the merge commit.
 3. The title and description reach the checker only as an environment variable and a file made from it, as before.
-4. The token has `contents: read`, plus `pull-requests: read` in the `docs` job alone (the one that calls the API; a
-   test refuses any other job-level `permissions`), and the workflow uses no secret.
+4. The token has `contents: read`, plus `pull-requests: read` in the `docs` job (the one that calls the API) and
+   `issues: read` and `pull-requests: read` in the `claim` job (it reads the claim cards); a test refuses any other
+   job-level `permissions`, and the workflow uses no secret.
 
 What the change costs. The workflow that runs is the one on `main`, so a pull request that edits `pr.yml` is checked
 by the old version and its edit takes effect when it merges. A pull request that was open when the change merged keeps its

@@ -320,7 +320,7 @@ tools](docs/guides/enforcement.md#harnesses). The rules are the same ones as eve
 this file for the process. A tool reads `AGENTS.md` by itself but does not open what it links to, so tell it in its
 first message to follow "Your first hour", "Setting up", "Commits" and "Pull requests" in this file. What each tool
 reads, and how to set up Codex (its cloud environment's setup script, what it can reach, its sandbox): [Agent tools
-other than Claude Code](docs/guides/agents.md#other-tools).
+other than Claude Code](docs/guides/agents-other-tools.md).
 
 In each clone or environment, once:
 
