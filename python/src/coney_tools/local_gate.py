@@ -32,6 +32,9 @@ class StepResult:
     output: tuple[str, ...] = ()
     #: What the check counted, by kind, in the order it printed them (pytest's `(("passed", 412), ("skipped", 3))`).
     counts: tuple[tuple[str, int], ...] = ()
+    #: The check could not start because a slot it needs never came free in time (`build` exits 75): the run ends with
+    #: the queued code instead of a verdict, and is run again.
+    queued: bool = False
 
 
 def low_priority(command: Sequence[str]) -> tuple[list[str], dict[str, object]]:
@@ -97,6 +100,15 @@ def changed_files(root: Path, base: str) -> list[str]:
     untracked = _git(root, "ls-files", "-z", "--others", "--exclude-standard").split("\0")
     names = {name for name in (*tracked, *untracked) if name and (root / name).is_file()}
     return sorted(names)
+
+
+def pull_request_files(root: Path, base: str) -> list[str]:
+    """The files a pull request of the commits since HEAD left `base` would list, as CI's `docs` job reads them from the
+    API: committed changes only (uncommitted and untracked files are not in a pull request), deleted files included,
+    a renamed file under its new name. Paths are relative to `root` with forward slashes, sorted."""
+    since = merge_base(root, base)
+    names = _git(root, "diff", "-z", "--name-only", "--diff-filter=ACDMRT", since, "HEAD").split("\0")
+    return sorted({name for name in names if name})
 
 
 def renamed_files(root: Path, base: str, similarity: int | None = None) -> dict[str, str]:

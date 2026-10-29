@@ -154,6 +154,7 @@ def test_every_script_in_the_hooks_folder_is_the_dispatcher_a_guard_or_a_helper(
         "roles",
         "identity",
         "protect",
+        "harness",
         "pr_guard_shell",
         "pr_guard_repo",
         "pr_guard_routes",

@@ -1,0 +1,18 @@
+{
+  "description": "Coney's guards (docs/guides/enforcement.md#harnesses): the dispatcher of .claude/hooks, through its Codex adapter.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project --python \">=3.12\" python \"$(git rev-parse --show-toplevel)/.claude/hooks/dispatch.py\" --harness codex; exit 0",
+            "statusMessage": "Coney guards",
+            "timeout": 200
+          }
+        ]
+      }
+    ]
+  }
+}

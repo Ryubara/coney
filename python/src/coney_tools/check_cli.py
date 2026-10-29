@@ -10,6 +10,7 @@ the background, as `build --detach` does, and `ci result` reads its outcome.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import os
 import re
 import shutil
@@ -75,7 +76,7 @@ def _timed(name: str, work: Callable[[], StepResult]) -> StepResult:
     """Run one step and stamp its duration on the result."""
     started = time.monotonic()
     result = work()
-    return StepResult(name, result.ok, result.detail, time.monotonic() - started, result.skipped, result.output)
+    return dataclasses.replace(result, name=name, seconds=time.monotonic() - started)
 
 
 def _skipped(name: str, why: str) -> StepResult:
@@ -307,26 +308,30 @@ def default_agent(root: Path, env: Mapping[str, str]) -> str:
     return cleaned if AGENT_NAME.match(cleaned) else "gate"
 
 
-def run_changed(base: str, only: list[str] | None, skip: list[str] | None) -> int:
-    """Check what the change since `base` touched; print a line per step; 0 when all pass, 1 when any fails."""
-    root = find_repo_root(Path.cwd())
-    wanted = [step for step in STEPS if (not only or step in only) and step not in (skip or [])]
-    changed = local_gate.changed_files(root, base)
-    _say(f"changed since {base}: {len(changed)} files")
-    steps: dict[str, Callable[[], StepResult]] = {
+def changed_steps(root: Path, base: str, changed: list[str]) -> dict[str, Callable[[], StepResult]]:
+    """The gate's steps for the change since `base`, by name (`STEPS`); `ci pr` adds its own to these."""
+    return {
         "repo": lambda: _step_repo(root),
         "orig": lambda: _step_orig(root, base, changed),
         "pre-commit": lambda: _step_pre_commit(root, changed),
         "docs": lambda: _step_docs(root, base, changed),
         "python": lambda: _step_python(root, changed),
     }
+
+
+def run_steps(wanted: list[str], steps: Mapping[str, Callable[[], StepResult]], command: str = "ci run") -> int:
+    """Run the `wanted` steps in order, printing one line each (and a failing step's output) for `command`; 0 when
+    all pass, 1 when any failed, `EXIT_QUEUED` when a step could not get a check slot (run it again)."""
     failed = False
     for name in wanted:
         _say(f"[{live_progress.clock_text()}] start {name}")
         try:
             result = _timed(name, steps[name])
         except SlotTimeout as timeout:
-            _say(f"coney-tools ci run: {check_slots.queued_message(timeout, name)}; run it again")
+            _say(f"coney-tools {command}: {check_slots.queued_message(timeout, name)}; run it again")
+            return EXIT_QUEUED
+        if result.queued:
+            _say(f"coney-tools {command}: {name} waited for a slot in vain; run it again")
             return EXIT_QUEUED
         mark = "skip" if result.skipped else "ok  " if result.ok else "FAIL"
         timing = "" if result.skipped else f" ({result.seconds:.0f}s)"
@@ -334,7 +339,19 @@ def run_changed(base: str, only: list[str] | None, skip: list[str] | None) -> in
         for line in result.output:
             _say(f"     {line}")
         failed = failed or not result.ok
-    if failed:
+    return 1 if failed else 0
+
+
+def run_changed(base: str, only: list[str] | None, skip: list[str] | None) -> int:
+    """Check what the change since `base` touched; print a line per step; 0 when all pass, 1 when any fails."""
+    root = find_repo_root(Path.cwd())
+    wanted = [step for step in STEPS if (not only or step in only) and step not in (skip or [])]
+    changed = local_gate.changed_files(root, base)
+    _say(f"changed since {base}: {len(changed)} files")
+    code = run_steps(wanted, changed_steps(root, base, changed))
+    if code == EXIT_QUEUED:
+        return code
+    if code:
         _say("coney-tools ci run: FAILED (CI would fail too)")
         return 1
     _say("coney-tools ci run: ok. CI only: GCC-only warnings, macOS, sanitizers, clang-tidy on changed lines.")

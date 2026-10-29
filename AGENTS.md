@@ -14,12 +14,12 @@ emulators and tool installs live beside the repo, never in it.
 
 ## How we work
 
-Read `docs/guides/how-we-work.md` before starting: the pipeline from issue to merge, the tracks (reimplementation, fix,
-Studio), the coordinator, sharing one machine and merging. Whoever starts agents follows `docs/guides/agents.md` (fork
-or fresh, which model, briefs, long commands and the prompt cache). Nobody waits for a person to play their work: the
-automated tests are the gate, so every piece of work proves itself as `docs/guides/testing.md` defines ("done" per kind
-of work, the player's path, gamepad input, playthrough tests, the checks to run before reporting). A person contributing
-starts at CONTRIBUTING.md, section Your first hour; the rest of this file is for agents.
+Read `docs/guides/how-we-work.md` before starting: the pipeline from issue to merge, the tracks, the coordinator,
+sharing a machine and merging. Whoever starts agents follows `docs/guides/agents.md` (fork or fresh, which model,
+briefs, long commands and the prompt cache). Nobody waits for a person to play their work: the automated tests are the
+gate, so every piece of work proves itself as `docs/guides/testing.md` defines ("done" per kind of work, the player's
+path, gamepad input, playthrough tests, the checks before reporting). A person contributing starts at CONTRIBUTING.md,
+section Your first hour; the rest is for agents. Other tools: `uvx pre-commit install`, `ci pr --title` before a PR.
 
 ## Build and test
 

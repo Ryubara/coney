@@ -306,6 +306,39 @@ A third workflow job, `clang-tidy` in `build.yml`, has `security-events: write` 
 scanning (the annotations on a pull request). GitHub does not grant that permission to a pull request from a fork, so
 there the job prints workflow commands instead of uploading. It writes nothing else.
 
+### The pr workflow and a fork's pull request {#pr-workflow}
+
+`pr.yml` (the required `title`, `docs` and `body` checks) runs on `pull_request_target`, like `hygiene.yml` and
+`claim.yml`, and writes nothing. GitHub holds the `pull_request` workflows of a first-time contributor's fork until a
+maintainer approves them, so the five pull requests of one outside contributor (#943 to #947) got no title, description
+or docs verdict until a person read them. A `pull_request_target` workflow runs the workflow file and the code of the
+base branch with a token that may read, and needs no approval, which is also why it is dangerous when it runs the pull
+request's code. This one does not, by four rules a test holds (`python/tests/test_pr_workflow.py`):
+
+1. Its jobs check out the base branch and nothing else (no `ref`, no `repository`), so they run `coney-tools` as it is on
+   `main`, never as the pull request has it.
+2. Nothing from the pull request is run or built. The title and description come from the event, and the changed files
+   for the `docs` check from the API (`gh api repos/.../pulls/N/files`, at most 3000 files, refused beyond that), where
+   it used to diff the merge commit.
+3. The title and description reach the checker only as an environment variable and a file made from it, as before.
+4. The token has `contents: read`, plus `pull-requests: read` in the `docs` job (the one that calls the API) and
+   `issues: read` and `pull-requests: read` in the `claim` job (it reads the claim cards); a test refuses any other
+   job-level `permissions`, and the workflow uses no secret.
+
+What the change costs. The workflow that runs is the one on `main`, so a pull request that edits `pr.yml` is checked
+by the old version and its edit takes effect when it merges. The pull request that made the move is the one exception:
+`main`'s version listens to `pull_request` and the pull request's own copy listens to
+`pull_request_target` only, so no version of `pr.yml` runs on it and the required `title`, `docs` and `body` checks
+never report. The maintainer merges that one by hand, past the ruleset, with the local `ci pr` run (title,
+description and docs rule) as the evidence. A pull request that was open when the change merged keeps its
+earlier results until it is pushed to or edited. The same holds for the rules themselves: the checks run the base
+branch's `coney-tools` and `.github/conventions.yml`, so a pull request that adds a title area, changes the template's
+sections or fixes a checker is judged by the old rules, and its required checks may fail until a maintainer merges past
+them, while a local `ci pr` uses the new ones. The concurrency group names the pull request, because on
+`pull_request_target` `github.ref` is the base branch and would have made every pull request cancel the others. The
+`build`, `python` and `docs` workflows stay on `pull_request`: they build and run the contributor's code, which is what
+the maintainer's approval of a first-time contributor is for.
+
 ## The /repo-hygiene skill {#hygiene-skill}
 
 The coordinator tidies the repository with the `/repo-hygiene` skill

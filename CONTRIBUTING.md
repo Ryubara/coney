@@ -86,8 +86,9 @@ included, and prints how to fix each problem ([Check your setup](docs/guides/bui
     Commit with a title of the form `area: Verb the rest` ([Commits](#commits)), push the branch to your fork and
     open the pull request. Start its description from the [template](.github/pull_request_template.md), answer every
     section (a docs-only change says `Screenshots: none (no visible change)`), and check it with `coney-tools pr
-    check-body` ([Setting up](#setting-up)). A maintainer approves CI for a first pull request and reviews it; you
-    do not merge it yourself.
+    check-body` ([Setting up](#setting-up)); `coney-tools ci pr` runs that check and `ci run` together
+    ([Agents other than Claude Code](#agents-other-than-claude-code)). A maintainer approves the build and test CI for a
+    first pull request and reviews it; you do not merge it yourself.
 
 **Beyond the first hour: studying the original.** Reading the game's code and watching it run is optional and
 heavier. It needs a JDK 21, Ghidra 12.1.4 with the Emotion Engine extension and Maven to build ghidra-mcp
@@ -122,7 +123,9 @@ maintainer reviews.
 
 ## Setting up
 
-The checks below are what CI runs on every pull request; `coney-tools ci run` runs them for you.
+The checks below are what CI runs on every pull request; `coney-tools ci run` runs them for you on the files you
+changed, and `coney-tools ci pr` adds the title, the description and the engine build
+([Agents other than Claude Code](#agents-other-than-claude-code)).
 
 CI checks every pull request's title against the rules under [Commits](#commits), because the squash merge makes it the
 title of the one commit on `main`; the titles of the commits on the branch are not checked. To check a title yourself,
@@ -284,7 +287,8 @@ Without write access to the repository, work from a fork:
 2. Create a branch from `main` for each change, never work on your fork's `main`: `git switch -c <branch>`.
 3. Run the checks above, commit with titles in the `area: Verb the rest` form, and push the branch to your fork.
 4. Open a pull request from your branch into the project's `main`; GitHub offers it as a banner on the project's page.
-   A maintainer approves CI for a first-time contributor, then the pull request is reviewed and squash-merged.
+   The title, description and docs checks run at once; a maintainer approves the build and test checks for a
+   first-time contributor, then the pull request is reviewed and squash-merged.
 5. Push further commits to the same branch to update the pull request. Run `git fetch upstream` and rebase on
    `upstream/main` if it conflicts. Leave "Allow edits by maintainers" on, so a maintainer can fix a small thing
    in place.
@@ -300,3 +304,63 @@ The project's own agents work through the [pipeline](docs/guides/how-we-work.md#
 stamps of each stage, a review by the `reviewer` agent with `coney-tools task review` (it opens every screenshot and
 checks the text against the diff and the test logs, [Task review](docs/guides/review/task.md)) and `pr open`. If you
 work with an agent of your own, you need none of that: your pull request follows the rules above.
+
+### Agents other than Claude Code
+
+The project's own agents run in Claude Code, but no rule relies on an agent reading it: hooks refuse a raw `cmake
+--build`, a push or a hand-typed `gh pr create` before the command runs. The repository ships the same hooks for Codex
+(`.codex/hooks.json`), Gemini CLI (`.gemini/settings.json`), Antigravity (`.agents/hooks.json`), Cursor
+(`.cursor/hooks.json`), GitHub Copilot (`.github/hooks/`) and Grok Build (`.grok/hooks/`), all running the one
+dispatcher in `.claude/hooks/`; the Codex, Antigravity and Grok command-line tools are supported tools, not a trial.
+Each tool runs a project's hooks only once you trust them, so do that first (below). Your agent works as a
+`contributor`: it builds through `coney-tools build`, commits on your branch, and leaves the push and the pull request
+to you, after `coney-tools ci pr`; CI repeats the checks on the pull request. It may not edit the hook files with its
+file tools: change those yourself, and a maintainer merges them. Which tool has hooks and what they cover: [Agent
+tools](docs/guides/enforcement.md#harnesses). The rules are the same ones as everyone's: [AGENTS.md](AGENTS.md), and
+this file for the process. A tool reads `AGENTS.md` by itself but does not open what it links to, so tell it in its
+first message to follow "Your first hour", "Setting up", "Commits" and "Pull requests" in this file. What each tool
+reads, and how to set up Codex (its cloud environment's setup script, what it can reach, its sandbox): [Agent tools
+other than Claude Code](docs/guides/agents-other-tools.md).
+
+In each clone or environment, once:
+
+```sh
+uv run --project python coney-tools doctor    # checks the machine and says how to fix what is missing
+uvx pre-commit install                        # git hooks: file checks on commit, and the commit message rules
+```
+
+Then trust the project's hooks in your tool: Codex `/hooks` (it skips a project hook until you have reviewed it, and
+again after it changes), Gemini CLI `/hooks`, Grok Build `/hooks-trust` (or `--trust`), Cursor and VS Code by trusting
+the workspace, Antigravity by listing the hooks under Customizations (its page names no trust step); the Copilot cloud
+agent runs `.github/hooks/` by itself. The hooks need `uv` on the path, like everything else here: without it they let
+every call through. When the hooks themselves break, a `harness:` line in `coney-hooks.log` in your system temp folder
+says why.
+
+Before you open or update a pull request, write the description to a file from
+[the template](.github/pull_request_template.md) (every section, the Checklist ticked, `Screenshots: none (<reason>)`
+or a picture, and `Model:` naming the model that wrote the work) and run the one command that does everything CI would
+refuse the pull request for:
+
+```sh
+uv run --project python coney-tools ci pr --title "area: Verb the rest" --body description.md
+```
+
+The command measures your change from `origin/main`. In a fork, `origin` is your fork, whose `main` you never touch,
+so give it the project's: `--base upstream/main` after `git fetch upstream`. A picture cannot be in the file you check,
+because an uploaded picture has no address before the pull request exists: write `Screenshots: none (<reason>)` for
+the check (the command refuses a picture that is a local file), open the pull request, then edit its description on
+GitHub and drag the picture in where that line was. Its docs rule and engine steps read your commits, not what is
+uncommitted: commit first.
+
+It checks the title and the description (the same rules as CI's `title` and `body` jobs, plus that `Model:` names every
+model a `Co-Authored-By` trailer on your commits names), that a change to code changes the docs or says `Docs: none`,
+the files you changed (formatting, the documentation build and the page standards, `pytest`, ruff and mypy for Python),
+and, when you changed what the engine reads, builds it and runs its tests (`--skip engine` leaves that out for a first
+pass; a first build takes a long time). It lists each step and exits 1 when CI would refuse the pull request
+([`ci pr`](docs/guides/coney-tools-ci.md#ci-pr)). Fix what it prints, then open the pull request from your
+fork ([Working from a fork](#working-from-a-fork)). CI's `pr` job runs the title, description and docs checks on your
+pull request without waiting for a maintainer; its build and test jobs wait for approval on your first one.
+
+A tool without the disc, Ghidra or PCSX2 (a cloud agent has none) cannot run the tests that need the disc, compare a
+change with the original running or check `@orig` code against it. Say so in the Testing section instead of claiming it
+was checked, and leave such work (`gameplay`, `graphics`, `audio`, research claims) for someone who has them.

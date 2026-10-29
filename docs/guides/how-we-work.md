@@ -605,11 +605,12 @@ hook, `coney-tools issue check` and the `issue-check` workflow ([Issues](#issues
 - **Rebuild the play-test build after an engine merge.** When a merged change touches the engine, the coordinator
   builds the `playtest` preset ([Build and test](building.md#build-and-test)) from the updated `main`, so the
   maintainer can play the latest `main`. A merge that changes only docs or research needs no build.
-- **Make a new pull-request check required only once every open branch has it.** Editing a pull request's
-  description reruns the `pr` workflow from that pull request's own merge commit, so a branch made before a new job
-  was added to `.github/workflows/pr.yml` never runs it, and a required check that never reports blocks the pull
-  request for good. Add the job, wait until every open pull request's branch includes it (rebase or merge `main`
-  into the old ones), then add it to the required checks of the ruleset on `main`.
+- **Make a new pull-request check required only once every open branch has it.** Most workflows run from the pull
+  request's own merge commit, so a branch made before a new job was added to one of them never runs it, and a required
+  check that never reports blocks the pull request for good. Add the job, wait until every open pull request's branch
+  includes it (rebase or merge `main` into the old ones), then add it to the required checks of the ruleset on `main`.
+  The `pr` workflow is the exception: it runs on `pull_request_target`, from `main`, so a job added to it runs on every
+  open pull request at its next push or edit ([the pr workflow](repo-conventions.md#pr-workflow)).
 - **Later: a merge queue.** The ruleset on `main` has "require branches to be up to date" off to save CI time, so two
   pull requests that each pass can still break `main` together (a semantic conflict). Once there are regular outside
   contributors, turn on GitHub's merge queue for `main`: it tests each pull request on top of the ones queued ahead

@@ -53,8 +53,13 @@ def _hook_settings(src: Sources) -> dict[str, Any]:
         raise ValueError(f"{src.conventions.conclave.hooks_file}: not valid TOML ({error})") from error
     roles: list[str] = []
     table = data.get("roles")
+    # The role of other agent tools' sessions (`[harnesses] default_role`) is no Claude Code agent type.
+    harnesses = data.get("harnesses")
+    other = harnesses.get("default_role") if isinstance(harnesses, dict) else None
     if isinstance(table, dict):
         for name, role in table.items():
+            if name == other:
+                continue
             roles.append(str(name))
             roles.extend(strings(role.get("aliases")) if isinstance(role, dict) else [])
     return {

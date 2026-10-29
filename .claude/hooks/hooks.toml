@@ -22,6 +22,13 @@ ttl_seconds = 600
 # there it is injected only under these modes (docs/guides/agents.md#identity).
 powershell_modes = ["bypassPermissions"]
 
+[harnesses]
+# Agent tools other than Claude Code run the same dispatcher through an adapter (`dispatch.py --harness <name>`,
+# `harness.py`; docs/guides/enforcement.md#harnesses). Their sessions have no agent type: the role is
+# `CONEY_AGENT_ROLE` from the environment the tool was started with, else this one. It is no Claude Code agent, so it
+# has no file in .claude/agents/ (test_agent_definitions.py knows).
+default_role = "contributor"
+
 # The PR guard's switch is not here: it is `pull_requests.open_only` in .github/conventions.yml (off until one pull request
 # has gone through `coney-tools pr open`), which pr_guard.py reads itself.
 
@@ -33,8 +40,9 @@ powershell_modes = ["bypassPermissions"]
 # start with the Agent tool; an empty list: none), deny_write_dirs (folders of a checkout that Edit and Write may not
 # change), write_only (the only file names Edit and Write may change), write_outside_checkouts (true: those only
 # outside any checkout), deny_commit_under (a git commit whose directory lies under one of these is refused),
-# no_github_writes (push_guard's rules, also for a session with no agent id), hint (what to do instead). Commands and
-# tools that do not exist yet are listed ahead of their phase.
+# no_github_writes (push_guard's rules, also for a session with no agent id), push_hint (the text of those refusals
+# instead of push_guard's, which sends a subagent to the coordinator), hint (what to do instead). Commands and tools that
+# do not exist yet are listed ahead of their phase.
 
 [roles.coordinator]
 deny_tool_prefixes = ["mcp__ghidra-mcp__", "mcp__pcsx2__"]
@@ -109,3 +117,18 @@ deny_commands = [
 ]
 no_github_writes = true
 hint = "A reviewer reports: write your files only in your scratch folder, outside any checkout; git only reads."
+
+[roles.contributor]
+# A session of another agent tool (Codex, Gemini CLI, Antigravity, Cursor, Copilot, Grok Build) that names no role:
+# it works on its branch and commits; the person pushes and opens the pull request after `coney-tools ci pr`. It may
+# not edit the hook files that judge it (a shell command still can: docs/guides/enforcement.md#harnesses, Limits),
+# nor the settings files another tool reads hooks or `disableAllHooks` from (Cursor and Copilot read
+# `.claude/settings.local.json`; Copilot also `.github/copilot/settings*.json`).
+deny_coney_tools = ["pr open", "pr hold", "claim unclaim", "claim renew"]
+deny_write_dirs = [
+  ".claude/hooks", ".claude/settings.json", ".claude/settings.local.json", ".codex", ".gemini", ".agents", ".cursor",
+  ".github/hooks", ".github/copilot", ".grok",
+]
+no_github_writes = true
+push_hint = "Your person pushes and opens the pull request from their own terminal, after `coney-tools ci pr` (CONTRIBUTING.md, Agents other than Claude Code)."
+hint = "Ask your person: Coney's hook files and pull requests are theirs to change (CONTRIBUTING.md, Agents other than Claude Code)."

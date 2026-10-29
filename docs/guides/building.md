@@ -670,6 +670,12 @@ no second copy, and `coney-tools repo audit --files` fails a pull request when t
 - `bootstrap.sh`: that file
 - `coney.local.example.toml`: that file
 - `.mcp.json`: that file
+- `.codex/`: the folder and everything under it
+- `.gemini/`: the folder and everything under it
+- `.agents/`: the folder and everything under it
+- `.cursor/`: the folder and everything under it
+- `.grok/`: the folder and everything under it
+- `.github/hooks/`: the folder and everything under it
 - `.pre-commit-config.yaml`: that file
 - `.github/ISSUE_TEMPLATE/`: the folder and everything under it
 - `.github/workflows/python.yml`: that file

@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project --python \">=3.12\" python \"$(git rev-parse --show-toplevel)/.claude/hooks/dispatch.py\" --harness grok; exit 0",
+            "timeout": 200
+          }
+        ]
+      }
+    ]
+  }
+}

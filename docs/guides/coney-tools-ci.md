@@ -1,8 +1,8 @@
 # The coney-tools CI commands
 
-What CI checks: [`ci`](#ci), the local gate that runs CI's checks on the files a change touched
-([`ci run`](#ci-run)), and the commands the CI workflows run (the `dependencies` check and its reruns, the
-changed-lines clang-tidy, the issue for a failure on `main`). The repository's own rules are checked by
+What CI checks: [`ci`](#ci), the local gate that runs CI's checks on the files a change touched ([`ci run`](#ci-run))
+and on a whole pull request ([`ci pr`](#ci-pr)), and the commands the CI workflows run (the `dependencies` check and its
+reruns, the changed-lines clang-tidy, the issue for a failure on `main`). The repository's own rules are checked by
 [`repo`](coney-tools-repo.md#repo); the other groups are listed in [the command line overview](coney-tools.md#groups).
 
 ## ci {#ci}
@@ -116,6 +116,49 @@ a setup problem (a program the step needs is missing), 75 from `ci result` while
 prints at most 40 lines of a failing step; run the step's tool by hand for the rest. What stays CI's: warnings only GCC
 emits, macOS, the sanitizers and clang-tidy (see [the local gate](testing.md#local-gate)).
 
+### ci pr {#ci-pr}
+
+```sh
+uv run --project python coney-tools ci pr --title TITLE --body FILE [--base origin/main] [--only STEP ...]
+    [--skip STEP ...] [--preset dev] [--agent ID]
+```
+
+Everything CI checks on a pull request, run before it is opened: [`ci run`](#ci-run) plus the pull request's
+text and the engine. It is what a person runs before `gh pr create`, whatever agent tool made the change: the hooks
+of every tool refuse a bad command before it runs ([Agent tools](enforcement.md#harnesses)), and this is the backstop
+that sees the whole change ([Agent tools other than Claude Code](agents-other-tools.md)).
+`--title` is the title and `--body` a file holding the description written from the
+[template](repo:.github/pull_request_template.md). The steps run in this order and print one line each; the five
+between the text steps and `engine` are the steps of `ci run`, with the same rules:
+
+| Step | CI job it is | What it does |
+| --- | --- | --- |
+| `title` | `title` | [`pr check-title`](coney-tools-pr.md#pr-check-title-usage): `area: Verb the rest`, the length, the tense, no trailing period |
+| `body` | `body` | [`pr check-body`](coney-tools-pr.md#pr-check-body-usage) with the title, so the `Runtime:` line of a title a player sees is checked, and with the branch's commits, so the `Model:` line names every model a `Co-Authored-By` trailer names (CI sees only the description and cannot) |
+| `docs-rule` | `docs` | [`pr check-docs`](coney-tools-pr.md#pr-check-docs-usage): a change to `src/` or `python/src/` changes `docs/` or `research/`, or the description has `Docs: none` |
+| `repo`, `orig`, `pre-commit`, `docs`, `python` | `python`, `format`, `markdownlint`, `mkdocs` | the steps of `ci run` above |
+| `engine` | `build-ok` | `coney-tools build --preset dev --test` (`--preset` and `--agent` change it), when a changed file is in the `engine` class of `paths` in `.github/conventions.yml` or in no class (CI runs everything for it); skipped for a change to docs or tools alone. It takes as long as a build and the tests do, so `--skip engine` leaves it out for a first pass |
+
+`--only` and `--skip` take these step names. `--base` (default `origin/main`) is the branch the change is measured from,
+for the files and for the `Model:` rule's commits: in a fork `origin` is the fork, so pass `--base upstream/main` after
+fetching it, and a cloud checkout of one branch needs the base fetched first ([Agent tools other than Claude
+Code](agents-other-tools.md)). `docs-rule` and `engine` read the files the way CI's `docs` job lists them for the pull
+request: the committed changes since the base, deletions included, so commit first (the other steps also look at what is
+uncommitted, as `ci run` does). `--agent` is the id of the engine step's build; without it the step uses `build`'s own
+default for a person at a terminal, else the worktree's name (`CONEY_AGENT`, else the folder). The description must not
+hold a picture that is a local file (a picture has no address before the pull request exists): write `Screenshots: none
+(<reason>)` for the check and add the picture on GitHub after opening ([CONTRIBUTING.md](repo:CONTRIBUTING.md)). The
+exit codes are those of `ci run`: 0 all passed, 1 a step failed (CI would refuse the pull request too), 2 a setup
+problem (the description file cannot be read, a program is missing), 75 when the `python` step could not get a [check
+slot](coney-tools-build.md#check-slots) in time or the `engine` step's build gave up waiting for a slot (the command
+says so; run it again). What stays CI's: the other compilers, macOS, the sanitizers and clang-tidy on the changed lines,
+and the checks that need the pull request itself (the `Fixes #N` issues' state, `dependencies`).
+
+CI's `pr` workflow (`title`, `docs`, `body`) runs on a fork's pull request without a maintainer's approval
+([Workflows](repo-conventions.md#pr-workflow)); its `build`, `python` and `docs` workflows run the contributor's code, so
+GitHub holds them for a first-time contributor until a maintainer approves them. This command is how the contributor
+finds out first.
+
 <!-- command-reference:begin ci -->
 ## Parameters of `ci` {#ci-parameters}
 
@@ -215,4 +258,22 @@ coney-tools ci result
 ```
 
 Takes no parameters.
+
+### `ci pr` {#ci-pr-usage}
+
+What CI checks on a pull request, before you open it: title, description, the gate, the engine build.
+
+```text
+coney-tools ci pr --title TITLE --body BODY [--base BASE] [--only ONLY] [--skip SKIP] [--preset PRESET] [--agent AGENT]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--title TITLE` | text | required | the pull request's title, `area: Verb the rest` |
+| `--body BODY` | path | required | a file holding the description, from the template |
+| `--base BASE` | text | `origin/main` | the branch the change is measured from |
+| `--only ONLY` | choice | none | run only this step (repeatable). One of `title`, `body`, `docs-rule`, `repo`, `orig`, `pre-commit`, `docs`, `python`, `engine`. |
+| `--skip SKIP` | choice | none | leave this step out (repeatable). One of `title`, `body`, `docs-rule`, `repo`, `orig`, `pre-commit`, `docs`, `python`, `engine`. |
+| `--preset PRESET` | text | `dev` | the preset the engine step builds and tests |
+| `--agent AGENT` | text | none | your id for the engine step's build slot and log (default: as `build`) |
 <!-- command-reference:end -->
