@@ -700,9 +700,9 @@ can load what it makes ([Importing](#import-coney)), PNG and `.layout` first.
    mode; delete; saving the level as a sandbox layout. Tests: a level composed by script saves a layout that Coney loads
    and plays; a saved level reopens unchanged, byte for byte.
 7. **tools: Add Play mode to Coney Studio.** Play, Play here, Pause, Step, Restart and Stop with Unity's keys (the
-   *Restart project* button and the setting *On script save* come with the SDK's [project
-   restart](lua-sdk.md#build-issues)); the level plays in the Game view beside the Level view with the player at its
-   spawn or the camera's spot, the editor tinted; the Hierarchy's Level and Running tabs, the running game edited
+   *Restart project* and *Restart level* buttons and the setting *On script save* come with [reload on
+   save](technology.md#build-issues), issue 9); the level plays in the Game view beside the Level view with the player
+   at its spawn or the camera's spot, the editor tinted; the Hierarchy's Level and Running tabs, the running game edited
    through the Entity editor's queue; Eject flies the free camera; Stop throws the running game away. Tests: a scripted
    Play reaches the spawn point and a fight with a layout's fighter; the level after Stop is the level as edited.
 8. **tools: Add live level edits during Play.** A level edit made in the Level view while playing is kept in the level

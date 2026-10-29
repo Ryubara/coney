@@ -414,7 +414,7 @@ commands](mods.md#console). The security line both hold to:
   next step boundary, under the mod's print limits, with only the natives that state
   has. Its arguments arrive as strings checked against the declared types, never evaluated as Lua. It can do nothing
   the mod's scripts cannot do already, whoever types it: a console access level never widens what a mod's code may
-  reach. A mod cannot register a built-in's name, and its commands go when it stops or reloads.
+  reach. A mod cannot register a built-in's name, and its commands go when it stops or restarts.
 - **No script runs console text.** No native executes a console command (FiveM's `ExecuteCommand`): a mod cannot drive
   the built-in commands, another mod's commands or the console's access levels.
 - **Online**, a command marked `restricted` is the host's or the server operator's only; a server mod's command typed

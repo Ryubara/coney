@@ -488,7 +488,7 @@ The editor decides by the file's root, so there is no mode to choose:
 | Saved as | Itself, in the project | A patch, `patches/<name>.cpatch`, from the local copy in `.studio/` that editing makes |
 | Natives | The SDK's: available game natives and the `Coney` table ([How a native reaches the SDK](lua-sdk.md#availability)) | The game state's natives, as the original's scripts have them |
 | Runs | In the project's state ([The two states](lua-sdk.md#two-states)) | In the game state, in place of the original ([Compiling and running](#compiling)) |
-| *On script save* | *Restart project* | *Restart level* |
+| What *On script save* does, when it is not *Do nothing* (the default) | *Restart project* | *Restart level* |
 | In the editor | Nothing extra | A *Compare with original* view and a banner, "Game script, saved as a patch" |
 
 Patches are project files and go in the `.cmod` with the project's other files; what never does is the decompiled text

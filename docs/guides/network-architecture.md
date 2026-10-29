@@ -530,8 +530,8 @@ Every resource state opens only Coney's allowed libraries (no `io`, `os`, `debug
 is no instruction budget, memory cap or watchdog for now, as in FiveM (a loop without a wait freezes the game); a
 monitor shows each resource's time per step and its memory, and the caps return only if downloaded mods or co-op need
 them ([Script security](studio/security.md#limits), [The monitor](studio/lua-sdk.md#monitor)). A client script can never
-open a file, a socket or another resource's state. The game's Lua 4.0 state runs the disc's scripts; a mod changes one
-only by an approved text patch ([Script security](studio/security.md)).
+open a file, a socket or another resource's state. The game's Lua 4.0 state runs the disc's scripts under the VM's own
+instruction budget; a mod changes one only by an approved text patch ([Script security](studio/security.md)).
 
 ## Security {#security}
 

@@ -130,7 +130,7 @@ reasons:
 | The editor | lua-language-server's runtimes are Lua 5.1 to 5.4 and LuaJIT; it cannot parse 4.0 (`%` upvalues, `for k, v in t do`), so completions, errors and go-to-definition would need a language server of Coney's own | lua-language-server works as it is, with Coney's stubs |
 | What modders know | Lua 4.0 is from 2000: no booleans (`true = 1`, `false = nil`), no `#`, no metatables (tag methods), no `string.` table, no coroutines; no tutorial, book or library of the last twenty years runs on it | FiveM's scripts, Roblox's Luau and most game Lua today are 5.x; 5.4's manual, books and libraries apply |
 | Threads and waits | Lua 4.0 has no coroutines; a wait would need a VM that can suspend (an M item on the architecture page, deferred) | Coroutines are built in, so `Coney.Wait` is a small SDK function |
-| The sandbox | Coney's 4.0 VM has an instruction budget for the console; environments per script and library control would be Coney's to add | `_ENV` gives environments and library control, and `lua_sethook` and the allocator are there if budgets are ever needed ([The sandbox](#sandbox), [Network architecture: Sandboxing](../network-architecture.md#sandbox)) |
+| The sandbox | Coney's 4.0 VM has an instruction budget for every run of the game's scripts; environments per script and library control would be Coney's to add | `_ENV` gives environments and library control, and `lua_sethook` and the allocator are there if budgets are ever needed ([The sandbox](#sandbox), [Network architecture: Sandboxing](../network-architecture.md#sandbox)) |
 | A debugger | Coney's VM would need hooks, line information and frame inspection added | `lua_sethook` and `lua_getinfo`, `lua_getlocal` exist ([The script debugger](#debugger)) |
 | ConeyMP (P4) | The network page plans 5.4 for resources anyway, so 4.0 for projects would mean two languages for users | One language for users, offline and on servers |
 | Cost | No second runtime | A second runtime: stock Lua 5.4 as a pinned dependency (MIT licence), a value bridge, deterministic build settings ([below](#lua-build)) |
@@ -456,7 +456,8 @@ have stopped, and the modder decides. The monitor only reads: it never stops, sl
   plain count and is repeatable. In test mode the time column is off and the memory column stays, so a test can
   pin a project's memory.
 - **Where it shows.** Studio's Monitor panel ([Coney Studio's panels](editor-experience.md#panel-list)). The console
-  design may show the same numbers ([#1064](issue:1064)).
+  design plans runtime profilers for every loaded mod in its F8 menu bar ([#1064](issue:1064)); they read the same
+  numbers, which the SDK owns, so there is one count and two front ends.
 - **A frozen game.** With no watchdog, a script that never returns cannot be stopped from inside: in Studio the
   interface goes on drawing (Play has its own thread, [Play](technology.md#play-process)) and the monitor shows the
   step still running, but the user closes Studio, whose autosave before Play keeps the work. Outside Studio the player
@@ -772,13 +773,13 @@ In the order they should come. The script runtime for mods comes first of all St
 running a project's scripts. Issues 2 to 6 build on the [decision](#decisions) for Lua 5.4.
 
 1. **core: Add the native list and the script scheduler.** The two seams of the architecture page, built now:
-   `buildNatives` turns `kBindings` and the binding registrations into a list of `Native` records (name, origin,
-   status, the `mods` flag, the call), which the game state installs as today and the debug menus read; and
+   `buildNatives` turns `kBindings` and the binding registrations into a list of `Native` records (name, origin, status,
+   the `mods` flag, the call), which the game state installs as today and the debug menus read; and
    `ScriptScheduler::run(entry)` becomes the one way any script runs (level entry, update, schedule, messages, anim
-   callbacks, triggers), with its order. Handles move from one counter per Lua state to one per session.
-   No behaviour changes: the disc checks of the scripts give the same counts. Tests: every registered binding is in
-   the list with its status; the scheduler runs entries in the documented order; a handle made in one state resolves
-   in another of the same session.
+   callbacks, triggers), with its order and the game state's instruction budget (a project state has none, [The
+   sandbox](#sandbox)). Handles move from one counter per Lua state to one per session. No behaviour changes: the disc
+   checks of the scripts give the same counts. Tests: every registered binding is in the list with its status; the
+   scheduler runs entries in the documented order; a handle made in one state resolves in another of the same session.
 2. **core: Add the Lua 5.4 project runtime and its sandbox.** Stock Lua 5.4 pinned in `cmake/deps.cmake` with the
    deterministic build settings; a project state with its environment, the allowed libraries, `require` inside the
    project, the allocator's count of each state's memory (for the monitor, no cap) and the project's random stream (for
@@ -820,7 +821,8 @@ running a project's scripts. Issues 2 to 6 build on the [decision](#decisions) f
    callbacks removed together with the humans and objects it made (and player 1 when it made him), a new state, `start`
    and `levelStart` again, the level, the game state and the game's player left alone; a file that fails to compile
    leaves the running project alone; off in test mode; the run marked. *Restart level* is a Stop and a new Play from the
-   checkpoint. The setting *On script save* (*Do nothing* by default) is Studio's, built with the Play bar. Tests: a
+   checkpoint. The setting *On script save* and the two buttons are Studio's, built with its reload on save
+   ([Technology](technology.md#build-issues), issue 9). Tests: a
    script edited between two steps changes behaviour at the next restart; a syntax error keeps the old script running;
    no callback of the old state fires after the restart; what the project made is gone and what the game made is not;
    with *Do nothing* a save changes nothing.
