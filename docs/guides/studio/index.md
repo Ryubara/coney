@@ -44,7 +44,8 @@ merges its page adds its row here and its line to the `nav:` of `mkdocs.yml`, un
 | [UI and menus](ui.md) | How mods extend the menus at points built for it (the MODS entry and Mods screen, option rows, mission selectors), the UI natives, Studio's Screen view, and why a mod's UI can never pass for Coney's | [#1063](issue:1063) |
 | [Script security and the sandbox](security.md) | What a project's Lua keeps and loses and why, the threat model, the project file layer, permissions, signatures and trust, the attack surface, the escape suite and fuzzing; the build issues of both pages | [#1062](issue:1062) |
 | [Mods, packages and loading](mods.md) | The mods folder and `enabled.toml`, how Coney trusts and reads a `.cmod`, starting and stopping, dependencies and exports, load order and clashes, console commands, modded saves, offline and online loading | [#1062](issue:1062) |
-| [The Coney console](console.md) | The F8 console in the release game and in developer builds: the terminal, game commands and script commands, the release and developer sets, mod commands, who may run what in co-op, the F8 bar with the mods' resource monitor, the engine's timings and the log viewer, the code boundary, off in test mode | [#1064](issue:1064) |
+| [The Coney console](console.md) | The F8 console in the release game and in developer builds: the terminal, game commands and script commands, the release and developer sets, mod commands, who may run what in co-op, the code boundary, off in test mode | [#1064](issue:1064) |
+| [The Coney console's F8 bar](console-bar.md) | The console's menu bar and panels: the mods' resource monitor over the SDK's monitor, the engine's frame and step timings, the log viewer, the network figures, profiler captures | [#1064](issue:1064) |
 
 ## Terms {#terms}
 

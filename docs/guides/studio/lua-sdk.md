@@ -457,7 +457,7 @@ have stopped, and the modder decides. The monitor only reads: it never stops, sl
   plain count and is repeatable. In test mode the time column is off and the memory column stays, so a test can
   pin a project's memory.
 - **Where it shows.** Studio's Monitor panel ([Coney Studio's panels](editor-experience.md#panel-list)), and the Coney
-  console's Resources panel in its F8 bar ([Resources](console.md#resources)); both read the same numbers, which the
+  console's Resources panel in its F8 bar ([Resources](console-bar.md#resources)); both read the same numbers, which the
   SDK owns, so there is one count and two front ends.
 - **A frozen game.** With no watchdog, a script that never returns cannot be stopped from inside: in Studio the
   interface goes on drawing (Play has its own thread, [Play](technology.md#play-process)) and the monitor shows the

@@ -2,9 +2,9 @@
 
 The design of the **Coney console**: the terminal F8 opens in the game, the commands it knows, the access levels that
 keep the developer commands out of the build a player gets, the commands mods add, and the menu bar over it with the
-runtime profilers and the log viewer. It covers input and the gamepad, where the code lives, how the release checks
-prove the split, and the tests, and it ends with the build issues it proposes, in order. The parent issue is
-[#1054](issue:1054); this page is [#1064](issue:1064).
+runtime profilers and the log viewer, whose panels are [a page of their own](console-bar.md). It covers input and the
+gamepad, where the code lives, how the release checks prove the split, and the tests, and it ends with the build issues
+it proposes, in order. The parent issue is [#1054](issue:1054); this page is [#1064](issue:1064).
 
 **Status: design.** Nothing on this page is built. It is a design in the sense of
 [Page kinds](../writing-docs.md#page-kinds): what is built moves into a guide. It builds on the debug tools' split
@@ -42,8 +42,7 @@ decisions](#decisions)). Four rules shape every section:
 8. [Access levels and scope](#access).
 9. [Mod commands](#mod-commands): how a script registers its own.
 10. [Who may run what in co-op](#coop).
-11. [The F8 bar](#bar): [Resources](#resources), [Performance](#performance), [Log](#log), [Network](#network),
-    [profiler captures](#captures).
+11. [The F8 bar](console-bar.md), a page of its own: Resources, Performance, Log, Network and profiler captures.
 12. [Input and the gamepad](#input).
 13. [The code boundary](#boundary) and [how the release build keeps only the release set](#release).
 14. [Determinism, replays and the network](#determinism), and [off in test mode](#test-mode).
@@ -62,7 +61,7 @@ decisions](#decisions)). Four rules shape every section:
 | **Game command, script command** | What a command acts on, the maintainer's "game level" and "script level": the game itself (`quit`, a setting, a mission), or scripts (turning a project on and off, or a command a project registered) ([Game commands and script commands](#kinds)). Not to be read as a game *level*, a map |
 | **Access level** | Which builds hold a command or panel: **player** (every build, the release build included) or **developer** (only builds with the debug tools) ([Access levels](#access)) |
 | **Scope** | What a command touches: **local** (this machine's view: the log, a panel, quitting) or **session** (the game everyone in the session plays) |
-| **The bar** | The menu bar across the top of the screen while the console is open, with its panels ([The F8 bar](#bar)) |
+| **The bar** | The menu bar across the top of the screen while the console is open, with its panels ([The F8 bar](console-bar.md#bar)) |
 | **Panel** | A window of the bar: the terminal, Resources, Performance, Log, Network. A panel can be **pinned** to stay on screen with the console closed |
 | **Setting** | A player option the console can read and change for the session: `fps_cap`, `vsync`, `show_fps`. The console's convars, in FiveM's word; the developer's **tunables** are the debug menus' ([Tunables](../debug-menu.md#tunables)) |
 
@@ -142,8 +141,8 @@ typing.
 **Output.** Each command prints lines into the terminal: its result, or an error that says what was wrong and what to
 type instead (`unknown command "noclp"; did you mean "noclip"? help lists the commands`, or, in the release build,
 `unknown command "noclip"; help lists the commands`: a developer command is unknown there, never "not allowed"). Lines
-from a mod command carry the mod's name. The terminal keeps the last 2,000 lines; the [Log panel](#log) is where the
-whole run log is read.
+from a mod command carry the mod's name. The terminal keeps the last 2,000 lines; the [Log panel](console-bar.md#log) is
+where the whole run log is read.
 
 **History.** Up and Down walk the lines entered before, kept across runs in `console-history.txt` in the user's data
 folder (beside `coney.log`, [Where it goes](../run-log.md#outputs)), at most 200 lines. A test-mode run reads and writes
@@ -155,10 +154,10 @@ arguments, so a typo is answered while you type) and then queued, and the queue 
 the order the lines were entered, as the Entity editor's edits are ([Entity editor](../debug-menu.md#entity-editor)). A
 step therefore never sees the game change half-way, and a paused game takes the command at the next frame.
 
-**What the console writes.** Its history, a bug report into the run log ([`bugreport`](#commands)) and profiler
-captures into a `captures/` folder in the user's data folder ([Captures](#captures)). It never writes a file at a path
-the player types, never writes `mods/enabled.toml`, and never writes the player's options or profile: a setting changed
-at the console lasts for the session, as a command-line option does.
+**What the console writes.** Its history, a bug report into the run log ([`bugreport`](#commands)) and profiler captures
+into a `captures/` folder in the user's data folder ([Captures](console-bar.md#captures)). It never writes a file at a
+path the player types, never writes `mods/enabled.toml`, and never writes the player's options or profile: a setting
+changed at the console lasts for the session, as a command-line option does.
 
 ## The command catalog {#catalog}
 
@@ -190,10 +189,10 @@ args = [
   in both, so a developer build, which registers both sets into one registry, never has two built-ins of one name, and
   the registry refuses a second registration of a name at run time as well. A developer variant of a player command
   takes a name of its own (the developer set's `any-mission` beside the player set's `mission`).
-- **Generated, not hand-kept.** `coney-tools console cpp` turns each file into its table of command specifications
-  (names, groups, summaries, arguments, access levels, scopes, needs), as `coney-tools natives cpp` makes the natives'
-  signatures, and CI fails when a table is not current. Each handler is a C++ function bound by name; a test fails when
-  a catalog entry has no handler or a handler no entry.
+- **Generated, not hand-kept.** `coney-tools console render-cpp` turns each file into its table of command
+  specifications (names, groups, summaries, arguments, access levels, scopes, needs), as `coney-tools bindings
+  render-cpp` makes the natives' signatures, and CI fails when a table is not current. Each handler is a C++ function
+  bound by name; a test fails when a catalog entry has no handler or a handler no entry.
 - **One reference page.** `coney-tools console render` writes a generated guide, the console commands reference, one
   section per group, each command with its arguments, access level, scope, needs and the Coney feature it waits for,
   as the recipe pages are written from `research/pcsx2-recipes.toml`.
@@ -244,8 +243,8 @@ Every build has these. Each is a second way to something the player can already 
 | `bugreport` | local | Writes the last 30 s of the run log, every level, into the log file and says where, as the Time page's *Write bug report log* does in a developer build ([Bug reports](../run-log.md#bug-reports)) | The debug menus' Time page, which the release build lacks: today a player has no way to write one |
 | `missions` | local | The missions the active profile has completed, with their checkpoints | The original's mission select, which lists the completed missions per area with their checkpoints ([Front end: mission select](../../research/frontend.md#fn-missionselecthud)) |
 | `mission <n> [checkpoint]` | session | Starts a completed mission at a checkpoint, as the mission select starts it | The same screen; available once Coney's mission select is built |
-| `log [filter]`, `resmon`, `perf`, `net` | local | Open the [Log](#log), [Resources](#resources), [Performance](#performance) and [Network](#network) panels; `log` with a filter opens it filtered (`log error`, `log yard-brawl`) | none: readings |
-| `profiler record <frames>`, `profiler status`, `profiler save` | local | Records a [capture](#captures), says how far it got, writes it | none: a reading |
+| `log [filter]`, `resmon`, `perf`, `net` | local | Open the [Log](console-bar.md#log), [Resources](console-bar.md#resources), [Performance](console-bar.md#performance) and [Network](console-bar.md#network) panels; `log` with a filter opens it filtered (`log error`, `log yard-brawl`) | none: readings |
+| `profiler record <frames>`, `profiler status`, `profiler save` | local | Records a [capture](console-bar.md#captures), says how far it got, writes it | none: a reading |
 | `host [port]`, `connect <address>` | session | Hosts a network game, joins one ([Network multiplayer](../multiplayer.md)) | `--host`, `--join`, the player's command line |
 | `disconnect` | local | Leaves the network session: on a guest as the Player 2 quit, on the host by ending the session ([Who may run what in co-op](#coop)) | The pause menu's Player 2 quit, closing the window |
 
@@ -345,12 +344,12 @@ owns those rules and [Limits](security.md#limits) their limits):
   caps on what it makes. A command cannot do anything the mod's scripts could not already do in a handler. There is
   no instruction budget, memory cap or watchdog for now (a maintainer decision, [Lua SDK: Maintainer
   decisions](lua-sdk.md#decisions)): a handler that never returns freezes the game as any handler would, and the
-  [Resources](#resources) panel shows which mod it was.
+  [Resources](console-bar.md#resources) panel shows which mod it was.
 - **At a step boundary**, queued like every session command, in the order typed. The handler gets its arguments as
   strings in a table by name, each already checked against its declared type and never evaluated as Lua, as
   [Script security](security.md#console) has it; an argument that fails its type is refused before the handler runs,
   with the help line. The string it returns, and what it prints, go to the terminal under the mod's
-  name and to the run log in the `mods` category ([Log](#log)).
+  name and to the run log in the `mods` category ([Log](console-bar.md#log)).
 - **Names.** A mod command can never take a built-in's name: registering one fails with an error in the mod's log. Two
   mods' commands of the same name are both reached as `<mod>:<name>` (`yard-brawl:wave`), and the bare name is refused
   as ambiguous, with both listed. A name follows the catalog's spelling, at most 32 characters, and a mod registers at
@@ -408,110 +407,6 @@ the host what player 1 has.
 - **A guest's game is never changed by the guest's console.** Every row a guest may run either reads, changes the
   guest's own machine, or leaves; the shared game changes only on the host, as any change of the host's game reaches
   guests ([The authority model](../network-architecture.md#authority)).
-
-## The F8 bar {#bar}
-
-F8 opens the console: a bar across the top of the screen and the terminal under it, over the game. The bar's menus
-open its panels, each a window that can be moved, resized, docked to an edge and **pinned**: a pinned panel stays on
-screen when the console closes, drawn but taking no input, as FiveM shows a resource graph with its console closed.
-
-| Menu | Panels and actions | Level |
-| --- | --- | --- |
-| **Console** | The terminal; *Clear*; *Write bug report* (`bugreport`); *Quit* | player |
-| **Resources** | The [resource monitor](#resources): one row per running mod, and the game scripts | player |
-| **Performance** | The [engine's frame and step timings](#performance); *Record capture* | player |
-| **Log** | The [log viewer](#log) | player |
-| **Network** | The [network figures](#network), in a network session | player |
-| **Mods** | The installed mods as the `mods` command lists them, each with its commands' buttons (start, stop, restart, enable, disable) | player |
-| **Debug** | Every page of the debug menus as a window, as the developer overlay shows them ([The developer overlay](../debug-menu.md#the-developer-overlay)) | developer |
-
-The panels read the game; none changes it, except through the commands their buttons run, which go through the same
-registry and queue as a typed line. Where the panels were and which were pinned is kept for the next run in
-`coney-console.ini` in the user's data folder; a test-mode run keeps nothing.
-
-### Resources: the mods' monitor {#resources}
-
-The release-ready answer to "which mod makes my game slow", as FiveM's `resmon` is, and the F8 front end of the SDK's
-[monitor](lua-sdk.md#monitor): the SDK owns the numbers, Studio's Monitor panel and this panel show them, so there is
-one count and two front ends. One row per running mod, one per state when a mod runs a server and a client state, and
-a row for the game scripts (the game state) to measure against:
-
-| Column | What it shows | Where it comes from |
-| --- | --- | --- |
-| Mod | Name and version, `server` or `client` | The mods loader |
-| Time per step | The real time the mod's part of the step took (its `update` handlers, threads, scheduled calls and other entry points): the last step, the mean and the worst of the last 30, as the SDK's monitor counts it | The monitor's timing, with the real clock the frame pacer reads ([The monitor](lua-sdk.md#monitor)) |
-| Share | That time as a share of the whole step | The `step` zone |
-| Instructions | Lua instructions run per step, only while the panel is open or pinned or a capture records | The count hook (`lua_sethook`), set only then: with no budget for now, nothing else runs it ([Limits](security.md#limits)) |
-| Memory | Bytes the state holds now, and its peak | The state's allocator, which counts for the monitor; there is no cap for now |
-| Threads | Threads running and waiting | `Coney.CreateThread` ([Threads and waits](lua-sdk.md#threads)) |
-| Handlers | Event handlers and callbacks registered, and how many ran this step | `Coney.On`, the natives' callbacks |
-| Natives | Native calls per step; opening the row lists the ten most called, with counts | The value bridge, which every native call crosses ([The value bridge](lua-sdk.md#bridge)) |
-| Exports | Calls into other mods' exports, and from them | The exports bridge ([Mods: Dependencies and exports](mods.md#dependencies)) |
-| Errors | Errors raised since the mod started, the last one's file and line | The project state |
-
-- **The counts are exact and the times are not.** Instructions, memory, threads, handlers, native calls and errors are
-  counted by the runtime and are the same in every run of the same input; the times are real time on the player's
-  machine, shown and plotted, never read by a step ([Determinism](#determinism)). In test mode the time column is off
-  and the counts stay, as the SDK's monitor has it.
-- **Cheap while closed.** Memory, threads, handlers and errors are counted anyway, for the monitor; the times and the
-  instruction count are taken only while Resources is open or pinned, or a capture records, and otherwise cost one
-  branch per call, as a zone does with measuring off.
-- **It only reads.** As the SDK's monitor, the panel never stops, slows or changes a mod: the player sees which one is
-  slow or growing and stops it with `stop` or the Mods menu.
-- **Sorting and plots.** Any column sorts; a row's time per step plots over the last 300 steps.
-- **In Studio** the same model is a docked panel, for the project in Play ([The code boundary](#boundary)).
-
-The rows exist once the mods loader and the project runtime do (the SDK's build issues 2 and 3), and read the counts
-of the SDK's monitor (its build issue 10); until then the panel shows the game scripts' row alone.
-
-### Performance: the engine's timings {#performance}
-
-The [profiler](../performance.md#zones) is already part of the game: its zones and counters are in the game library,
-and the release build carries them. The Performance panel is their release front end, as the debug menus' Performance
-page is the developers' ([The in-game view](../performance.md#overlay)):
-
-- **The frame and the step.** Frames a second, the frame time and the step time, plotted over the last 300 frames, with
-  the mean, the 95th percentile and the worst of the last 60, and the steps run per second (30 at 1x).
-- **The zones** (`step`, `play.humans`, `humans.brains`, `render`, `present.swap` and the rest), each one's mean over
-  the last 60 frames, nested as they nest.
-- **The counters** the release build keeps: draws, triangles and the scene counters by kind
-  ([Counters](../performance.md#counters)).
-
-Measuring is on while the panel is open or pinned, or a capture records, and off otherwise, as the debug page's
-*Measure* is.
-
-### Log: the run log, filtered {#log}
-
-The [run log](../run-log.md), read in the game. The panel keeps its own copy of the lines since the console was first
-opened, up to the last 10,000, fed by a listener on the logger (the ring keeps only 30 s,
-[The ring](../run-log.md#ring)):
-
-- **Filters**, combined: by level (`error`, `warn`, `info`, and `detail` where the run keeps it), by category (`player`,
-  `ai`, `combat`, `script`, `world`, `engine` and a new `mods`, [Levels and categories](../run-log.md#categories)), by
-  mod (the lines a mod printed or raised), and by text. `log error` and `log yard-brawl` open the panel filtered.
-- **Follow.** The view follows new lines until scrolled up, and again once scrolled to the bottom.
-- **Copy.** Selected lines copy as the log file writes them. A line the run log keeps out of the file, the game's own
-  text that a level script prints ([What a log may hold](../run-log.md#rules)), shows in the panel, as it shows on the
-  console today, but copies as the file writes it, with its length only, so a pasted log never carries game text.
-- **Write bug report** writes the 30 s ring into the file and names it, as `bugreport` does.
-
-The new `mods` category holds what a mod's scripts print and the errors they raise, each line tagged with the mod's
-name (`mods: yard-brawl: wave 3 started`), within the print limits of the sandbox.
-
-### Network {#network}
-
-In a network session, the figures the debug menus' Network page shows, read-only: the ping (plotted), loss, bytes and
-packets a second, and the players ([Link quality](../multiplayer.md#link-quality)). Host, Join and Disconnect are the
-`host`, `connect` and `disconnect` commands; the simulated network stays the developers' ([The pages](../debug-menu.md#pages)).
-
-### Profiler captures {#captures}
-
-`profiler record <frames>` (at most 3,600) records every frame's zones, every mod's calls with the entry point, the
-file and the line of the handler, and each step's boundary, then `profiler save` writes them as a Chrome trace event
-file, the format Chrome's performance view and Perfetto open, as FiveM's `saveJSON` does. The file goes into
-`captures/` in the user's data folder, named by the level and step (`capture-level95-step4518.json`), and the terminal
-prints its path. A capture holds names, files, lines and times, never script source or game text, so it can be attached
-to a bug report.
 
 ## Input and the gamepad {#input}
 
@@ -611,7 +506,8 @@ tool ships, and newly proves the console does:
    `Coney console`) in the release executable, so the release build is proved to carry the console, as
    `coney.debug_tools_markers_found` proves the markers check finds something.
 5. **The release smoke tests.** An input script's new `console` line types a line into the terminal. On the release
-   executable: `help` prints exactly the player catalog's names; `noclip` and `lua print(1)` print "unknown command";
+   executable: `help` prints exactly the player catalog's available names (an entry whose `available` feature is not
+   built yet, such as `mission`, is left out); `noclip` and `lua print(1)` print "unknown command";
    `quit` ends the run with exit code 0. On the debug tools' `coney`, the same `noclip` is accepted.
 
 The rule that the release build holds no debug tools is written in one place,
@@ -654,13 +550,18 @@ console keeps to that, so a test-mode run is the same with or without it:
   log, and nothing is drawn. This is how every console test and the release smoke lines run.
 - **Nothing kept, nothing read.** No `console-history.txt`, no `coney-console.ini`, so no pinned panel from an earlier
   run appears; measuring stays off unless a test asks for a capture; the Resources panel's time column is off and its
-  counts stay ([Resources](#resources)).
+  counts stay ([Resources](console-bar.md#resources)).
 - **Writes only where the run says.** `bugreport` writes into the run's `--log-file` or, without one, to standard error,
   as the run log's dump does ([Bug reports](../run-log.md#bug-reports)); `profiler save` is refused unless the run
   names a folder with a new `--capture-dir DIR`; history and settings are never written.
 - **Drawn only on request.** `--console-open N` opens the front end for the first N frames and is the one way a
   test-mode run draws the console, for the [closed means untouched](#tests) check, as `--dev-overlay N` is for the
   developer overlay.
+- **Which builds take the options.** `--console-open N` and `--capture-dir DIR` are test-mode options of every build,
+  the release build included: its entry point takes them beside `--headless`, `--frames` and `--input-script`, since
+  the console ships there. The closed-means-untouched check compares screenshots, so it runs on the debug tools'
+  `coney`, which takes `--screenshot`, and on the release executable the release smoke lines prove the console works
+  ([How the release build keeps only the release set](#release)).
 
 ## Tests {#tests}
 
@@ -681,9 +582,9 @@ Every check runs without a person, as [Testing](../testing.md) asks:
   checkpoint the mission select would start.
 - **The front end** over a bare Dear ImGui context with no renderer, as the developer overlay's tests run: every panel
   draws every row of its model; a pinned panel draws with the console closed and takes no input.
-- **Closed means untouched**: the last frame of a windowed run that opens and closes the console in its first frames
-  (`--console-open N`) is byte-identical to the same run without it, as `--dev-overlay` is checked
-  ([The developer overlay](../debug-menu.md#the-developer-overlay)).
+- **Closed means untouched** (on the debug tools' `coney`, which takes `--screenshot`): the last frame of a windowed run
+  that opens and closes the console in its first frames (`--console-open N`) is byte-identical to the same run without
+  it, as `--dev-overlay` is checked ([The developer overlay](../debug-menu.md#the-developer-overlay)).
 - **The panels' numbers**: a synthetic mod with a known loop shows its exact instruction count, memory and native calls
   in its Resources row, the same in two runs; the times are only checked to be present and not negative.
 - **The log viewer**: the filters by level, category, mod and text; a line kept off the file copies with its length
@@ -719,7 +620,7 @@ When this design is accepted:
   typing and the UI scale rule moved where the console reaches them; the Performance page beside the console's
   release panel.
 - [The Lua SDK](lua-sdk.md): `Coney.RegisterCommand` among the SDK functions, with its spec, and the monitor's numbers
-  read by the [Resources](#resources) panel as well as Studio's.
+  read by the [Resources](console-bar.md#resources) panel as well as Studio's.
 - [Mods](mods.md), [Script security](security.md), [the Lua SDK](lua-sdk.md#events) and
   [the editor experience](editor-experience.md#play-coney) link this page where they named it as planned (done in the
   same change as this page).
@@ -781,18 +682,18 @@ page's issue 1.
 1. **core: Add the console core with its command catalog and access levels.** `src/console/` in `coney_core`: command
    specifications with levels, scopes, needs and `available`; the registry and its registration call; the tokenizer
    and the argument types with their checks and completions; the terminal model with output and history; the
-   step-boundary queue; the host interfaces. `src/console/commands.toml` and `coney-tools console cpp` and `console
-   render` with their CI checks, and the generated console commands reference. The input script's `console` action,
+   step-boundary queue; the host interfaces. `src/console/commands.toml` and `coney-tools console render-cpp` and
+   `console render` with their CI checks, and the generated console commands reference. The input script's `console` action,
    and test mode's rules ([Off in test mode](#test-mode)). The split test's include rules for `src/console/`. No front
    end yet: lines come from input scripts. Tests: the tokenizer, the types, the registry's rules, the queue's order
    between steps, a guest's session command refused, the generated table current, no history written in test mode.
 2. **core: Add the player commands to the console.** The release set's handlers over the game session's host: `help`,
    `clear`, `quit`, `version`, `where`, `settings`, `get`, `set`, `bugreport`, `host`, `connect`, `disconnect`, and
    `missions` and `mission` behind `available = "mission-select"` until Coney's mission select is built. The
-   `coney.release.has_player_console` check and the release smoke lines (`help` lists the player set, `noclip` unknown,
-   `quit` exits 0); the co-op rows of [Who may run what in co-op](#coop) over network play's host. Tests: each command
-   against fake hosts; a setting changed at the console writes no file; the release executable's `help` equals the
-   catalog; the co-op tests over a loopback session.
+   `coney.release.has_player_console` check and the release smoke lines (`help` lists the available player set, `noclip`
+   unknown, `quit` exits 0); the co-op rows of [Who may run what in co-op](#coop) over network play's host. Tests: each
+   command against fake hosts; a setting changed at the console writes no file; the release executable's `help` equals
+   the catalog's available entries; the co-op tests over a loopback session.
 3. **platform: Add the F8 console bar to the release build.** The `coney_console_ui` target with Dear ImGui (fetched
    in the release configure for it), the bar, the terminal's widgets with completion and the picker, pinned panels,
    `coney-console.ini`, F8 and the SELECT + R3 chord caught by the console's own gate in `src/console/` (the debug
