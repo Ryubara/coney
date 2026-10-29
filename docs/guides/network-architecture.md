@@ -526,10 +526,12 @@ flowchart LR
 
 Both sides run code they did not write: a server runs its operator's resources, a client runs what a server sends it.
 Every resource state opens only Coney's allowed libraries (no `io`, `os`, `debug`, `package`, no loading of bytecode, no
-`dofile` or `loadfile`, no `require` outside the resource), has its own environment over a read-only API table, an
-instruction budget per call (a count hook that aborts the call) and a memory cap (an allocator that refuses growth past
-it). A client script can never open a file, a socket or another resource's state. The game's Lua 4.0 state runs the
-disc's scripts under a budget; a mod changes one only by an approved text patch ([Script security](studio/security.md)).
+`dofile` or `loadfile`, no `require` outside the resource) and has its own environment over a read-only API table. There
+is no instruction budget, memory cap or watchdog for now, as in FiveM (a loop without a wait freezes the game); a
+monitor shows each resource's time per step and its memory, and the caps return only if downloaded mods or co-op need
+them ([Script security](studio/security.md#limits), [The monitor](studio/lua-sdk.md#monitor)). A client script can never
+open a file, a socket or another resource's state. The game's Lua 4.0 state runs the disc's scripts under the VM's own
+instruction budget; a mod changes one only by an approved text patch ([Script security](studio/security.md)).
 
 ## Security {#security}
 
@@ -936,4 +938,4 @@ could not be fetched when this page was written.
 | Choosing a model; snapshot compression; fixed steps; connect tokens | Glenn Fiedler, [What every programmer needs to know](https://gafferongames.com/post/what_every_programmer_needs_to_know_about_game_networking/), [Snapshot compression](https://gafferongames.com/post/snapshot_compression/), [Fix your timestep](https://gafferongames.com/post/fix_your_timestep/), [netcode standard](https://github.com/mas-bandwidth/netcode/blob/main/STANDARD.md) |
 | Rollback, and why it does not fit here | [GGPO](https://github.com/pond3r/ggpo) (MIT) |
 | Host-owned story with guests as visitors; the risks of a peer mesh | GTA Online, Dark Souls, Borderlands *(general knowledge, no single source)* |
-| Lua sandboxing: instruction hook, allocator cap | [Lua 5.4 manual](https://www.lua.org/manual/5.4/manual.html#lua_sethook), [lua-users: Sand boxes](http://lua-users.org/wiki/SandBoxes) |
+| Lua sandboxing: environments and library control; the instruction hook and allocator cap if budgets return | [Lua 5.4 manual](https://www.lua.org/manual/5.4/manual.html#lua_sethook), [lua-users: Sand boxes](http://lua-users.org/wiki/SandBoxes) |

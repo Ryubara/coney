@@ -559,7 +559,7 @@ pages ([Missions](../../missions/index.md)).
 in and its **checkpoints**: for each, the spawn point the player restarts at, the function of the project's scripts
 (loaded from the manifest like every project script) that sets it up and the objective text shown (`SetCheckPoint`,
 `HUDSetObjective`, both implemented). The mission's logic is Lua calling natives, written in the script editor; the
-runtime that loads a project's scripts, the entry points, hot reload and the sandbox are the [Lua SDK
+runtime that loads a project's scripts, the entry points, the project restart on save and the sandbox are the [Lua SDK
 design](lua-sdk.md)'s ([entry points](lua-sdk.md#entry-points), [Play](lua-sdk.md#play)). This page fixes only that a
 mission is a level plus checkpoints that name spawn points and functions of the project's scripts, and that its
 objective strings are the project's own (the game's text is never copied in).

@@ -643,10 +643,11 @@ The sandbox and the permissions are the [security design](security.md)'s; this s
 ### Limits
 
 Per project, enforced by the natives with an error the script can test: at most 16 screens and 512 widgets alive, 4 of
-them HUD screens shown at once, 2,048 characters in one text, 100 items in one list. The numbers are first guesses, to
-be measured on real projects with the instruction and memory budgets ([Open questions](lua-sdk.md#open-questions)). A
-handler that errors stops its call, as every handler does ([The sandbox](lua-sdk.md#sandbox)); a screen whose handlers
-error three times in a row is closed and the Console says why.
+them HUD screens shown at once, 2,048 characters in one text, 100 items in one list. These are the natives' own bounds
+([What natives may do](security.md#natives)), not budgets. The numbers are first guesses, to be measured on real
+projects with the [monitor](lua-sdk.md#monitor) ([The sandbox](lua-sdk.md#sandbox) has no instruction or memory
+budgets for now). A handler that errors stops its call, as every handler does ([The sandbox](lua-sdk.md#sandbox)); a
+screen whose handlers error three times in a row is closed and the Console says why.
 
 ## Tests {#tests}
 

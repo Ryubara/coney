@@ -117,6 +117,7 @@ has what it names.
 | **Inspector** | The selection's name and tags, its values, live, and the edits it takes; for a file, its details and import settings | The merged Entity inspector and Entity editor ([#1053](issue:1053)) | ready once [#1053](issue:1053) merges |
 | **File system** | The project folder as a tree, and the game's files read-only; drag-and-drop and the Import button land here | Coney's asset loading and the [install folder](../asset-and-script-architecture.md#install-folder) | ready |
 | **Console** | The run log's lines, filtered by level and system, and a Lua line to run | The [run log](../run-log.md) and the [Lua console](../debug-menu.md#lua-console) (expressions and assignments; full Lua waits on [the Lua 4.0 compiler](lua-sdk.md#compiler)) | ready |
+| **Monitor** | Each running project's time per step and its memory, one row each, like FiveM's `resmon`; it only reads ([The monitor](lua-sdk.md#monitor)) | The allocator's count and the timing of the project's frame in the SDK ([#1057](issue:1057)) | waits on the mods runtime |
 | **Natives** | Every native with its status, signature and an argument editor to call it | The debug menu's [Natives](../debug-menu.md#natives) page and the [masterlist](../../references/bindings/index.md) | ready |
 | **Model viewer** | One model on its own, to look at (never to edit): shaded, wireframe, by material, normals and bone axes, its counts | The [character viewer](../running-viewers.md#the-character-viewer), the [mesh views](../debug-menu.md#mesh-views) and the [Mesh group](../debug-menu.md#mesh-group) | ready |
 | **Animation viewer** | Any clip on a model: play, loop, speed, in place, by set and category | The [Animation player](../debug-menu.md#animation-player) | ready; a scrubbing timeline waits on a seek in the animation player |
@@ -494,9 +495,13 @@ second tree to tell apart from the first.
   fighters and climb what it holds. Nothing in Play is Studio's code.
 - **Pause** (Ctrl+Shift+P) and **Step** (Ctrl+Alt+P) are Unity's keys for the Time page's pause and one fixed step; the
   time scale is on the toolbar while playing.
-- **Stop** (Ctrl+P again, or the Stop button) ends Play and throws the running game away. The level keeps the edits made
+- **Stop** (Ctrl+P again, or the Stop button) ends Play and throws the running game away; closing Studio and switching
+  to another project end the session the same way and discard everything. The level keeps the edits made
   to it while playing ([Live edits](#live-edits)); while playing, the editor is **tinted** (Unity's Play mode tint), so
   it is always plain which state the screen shows.
+- **Restart project** is one more button on the Play bar, beside *Restart level*, which is the *Restart* of [Live
+  edits](#live-edits). What each does, and the Studio setting **On script save** (*Edit > Preferences*, *Do nothing* by
+  default), is [Project restart on save](lua-sdk.md#project-restart); all of it is off in test mode.
 - **While playing**, the Hierarchy has two tabs, as Godot's Scene dock has *Local* and *Remote*: **Level** (what is
   saved) and **Running** (the running game's entities, live, as the Entity inspector shows them). The Inspector edits
   whichever is selected; an edit of a running entity goes through the Entity editor's queue, between two steps and into
@@ -530,7 +535,7 @@ and accepts that it is rough at first. Studio follows **Godot's model**, the onl
 
   | Edit to the level | In the running game |
   | --- | --- |
-  | A primitive moved, turned, sized, added or deleted; its collision changed | Collision is a simulation asset, which a live edit may not replace ([Hot reload](technology.md#hot-reload)): the Game view marks the session stale and asks for Play again (*Restart*), and the change is in the level already |
+  | A primitive moved, turned, sized, added or deleted; its collision changed | Collision is a simulation asset, which a live edit may not replace ([Reload on save](technology.md#reload-on-save)): the Game view marks the session stale and asks for Play again (*Restart*), and the change is in the level already |
   | A texture, tiling or tint | Drawn with the new one at the next frame |
   | Sky, sun, ambient light, fog, occlusion, shadows | Applied at the next frame |
   | An AI fighter moved or turned | Teleported there through the Entity editor's *Teleport* and *Heading*, which an AI human takes |
@@ -580,7 +585,7 @@ the running game's are deliberately not.
 - **A name already taken** asks: replace the file, or keep both under a new name. A file of a kind Studio cannot use is
   refused with the list of the kinds it can; nothing is copied in "for later".
 - **Changes on disk are imported again**: a file of the project saved by another program is seen and reimported, as in
-  Unity and Godot; for a script that is where hot reload begins ([Hot reload](technology.md#hot-reload)).
+  Unity and Godot; for a script that is where *On script save* begins ([Reload on save](technology.md#reload-on-save)).
 
 What can be imported is what Coney can load (rule 2), so the list grows with Coney:
 
@@ -690,11 +695,12 @@ can load what it makes ([Importing](#import-coney)), PNG and `.layout` first.
    Inspector with tiling and tint; each primitive's collider in the Inspector's Collision group and the Collision view
    mode; delete; saving the level as a sandbox layout. Tests: a level composed by script saves a layout that Coney loads
    and plays; a saved level reopens unchanged, byte for byte.
-7. **tools: Add Play mode to Coney Studio.** Play, Play here, Pause, Step, Restart and Stop with Unity's keys; the level
-   plays in the Game view beside the Level view with the player at its spawn or the camera's spot, the editor tinted;
-   the Hierarchy's Level and Running tabs, the running game edited through the Entity editor's queue; Eject flies the
-   free camera; Stop throws the running game away. Tests: a scripted Play reaches the spawn point and a fight with a
-   layout's fighter; the level after Stop is the level as edited.
+7. **tools: Add Play mode to Coney Studio.** Play, Play here, Pause, Step, Restart and Stop with Unity's keys (this
+   is *Restart level*; the *Restart project* button and the setting *On script save* come with [reload on
+   save](technology.md#build-issues), issue 9); the level plays in the Game view beside the Level view with the player
+   at its spawn or the camera's spot, the editor tinted; the Hierarchy's Level and Running tabs, the running game edited
+   through the Entity editor's queue; Eject flies the free camera; Stop throws the running game away. Tests: a scripted
+   Play reaches the spawn point and a fight with a layout's fighter; the level after Stop is the level as edited.
 8. **tools: Add live level edits during Play.** A level edit made in the Level view while playing is kept in the level
    and applied to the running game between two steps: textures and lighting redrawn, AI fighters teleported, spawned or
    deleted; an edit that cannot apply live (a primitive's, whose collision only a new Play replaces, or a target's)
