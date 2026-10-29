@@ -1,7 +1,12 @@
+---
+kind: system
+system: input
+owns:
+  ranges: ["0x00144a08-0x00145790", "0x00145fa0-0x00148230", "0x00149520-0x00149f00"]
+---
 # Input: pads and player commands
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Static reading in Ghidra
-(2026-10-07); runtime claims are those of the pages linked.
+Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`).
 
 ## Purpose
 
@@ -54,6 +59,72 @@ back. The matchers of [the command tables](combat/index.md#commands) are the one
 | `0x00149ef0` | `Pads_UpdateHook` | empty; `Pads_Update` calls it | confirmed (code) |
 | `0x00149ef8` | `Pads_ResetStates` | the 8 records' state back to `0x001499e8` | confirmed (code) |
 
+### The libpad state machine {#libpad}
+
+Each of the 8 records at `0x005de3c0 + i × 0x140` holds the `libpad` DMA buffer, the state function at `+0x100`, port
+`+0x104`, slot `+0x108`, connected `+0x10c`, the stick bytes `+0x110`-`+0x113` (left x, y, right x, y), the button
+word `+0x114`, 12 pressure bytes `+0x116` and the actuator settings `+0x122`, `+0x128`. `Pad_Read` (`0x001498a8`)
+steps it and copies the result into the [pad record](frontend.md#pad-record). The `libpad` entry points are unnamed
+in Ghidra; their roles below are inferred from their arguments and the SDK's documented sequence.
+
+| Address | State | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00149770` | `PadPort_Step` | reads the port's state: disconnected → back to the first state and, if the pad belonged to a player (`+0x42` ≠ −1), calls the disconnect callback once; stable → connected; error → first state; then runs the state function | confirmed (code); the state numbers' meanings inferred |
+| `0x001499e8` | first | asks the current controller id: digital (4) → `0x00149ab0`, DualShock (7) → `0x00149bc0`, else `0x00149a88` | confirmed (code) |
+| `0x00149a88` | unsupported | neutral data, not connected | confirmed (code) |
+| `0x00149ab0` | digital | when the pad has other modes, → `0x00149b08`; else unsupported | confirmed (code) |
+| `0x00149b08` / `0x00149b58` | set analog / wait | asks for analog mode, locked; waits for the request, then starts over (the pad now reports 7) | confirmed (code) |
+| `0x00149bc0` / `0x00149c30` | DualShock / wait | with actuators, sets their alignment (`+0x128`), waits | confirmed (code) |
+| `0x00149c98` | pressure check | pressure mode available → `0x00149cf0`, else `0x00149e58` | confirmed (code) |
+| `0x00149cf0` / `0x00149d38` | enter pressure / wait | enters pressure mode, waits | confirmed (code) |
+| `0x00149da0` | read with pressure | buttons, sticks and the 12 pressure bytes; sends the motors | confirmed (code) |
+| `0x00149e58` | read | buttons and sticks; sends the motors | confirmed (code) |
+| `0x00149720` | `PadPort_ClearData` | sticks to 0x80 (centre), buttons and pressures 0, motors off | confirmed (code) |
+
+So a pad that has only a digital mode gives no input (inferred from the digital state `0x00149ab0`, which goes to
+the unsupported one when the pad has no other mode), and a DualShock 2 ends in pressure mode, which the sprint's
+`CfgPlayerRunButton` option and [`Pad_GetPressure`](#pad-queries) read.
+
+### Commands and the per-player record {#commands}
+
+The script bindings are on [character bindings](../references/bindings/character.md); the tables and the matching
+order on [Combat, Commands](combat/index.md#commands); the record (`0x00660f50 + i × 0x2c`) on
+[Characters](characters.md#buttons). The nine tables live at `0x005ddd10`-`0x005de130` with their counts at
+`0x0050b740`-`0x0050b760`. Confirmed (code) for the addresses.
+
+| Address | Name | Role | Evidence |
+| --- | --- | --- | --- |
+| `0x00145fa0` | `PlayerRecord_Init` | pad −1, not pad-controlled, both stick buffers 0, command cleared, input unlocked | confirmed (code) |
+| `0x00146000` | `PlayerRecord_ClearCommand` | clears the current stick buffer, `+0x1c`, `+0x1d` and the command `+0x20`; with a pad, also the pad record's `+0x40`, `+0x41` | confirmed (code) |
+| `0x00146058` | `PlayerRecord_ClearCommandThunk` | the same, from `Brain_InstallHandlers` | confirmed (code) |
+| `0x00146078` | `PlayerRecord_Update` | flips the buffer; with a connected pad and pad control: copies the buttons, stores the stick's angle and length (π/2 and 0 when input is locked), passes `+0x1c`, `+0x1d` to the pad record (`+0x41`, `+0x40`), then `Commands_Match`; without a pad or pad control it calls `PlayerRecord_ClearCommand` instead | confirmed (code) |
+| `0x001461e0` | `Commands_Reset` | `ResetCommands`: every entry of the nine tables to mask `0xff`, command 0 | confirmed (code) |
+| `0x001463e0` | `PlayerCommand_EnableAllForHuman(human, on)` | `EnableCommands`: sets or clears the human's pad bit in the mask of every bound entry | confirmed (code) |
+| `0x001467a8` | `PlayerCommand_EnableForHuman(human, id, on)` | `EnableCommand`: the same for the entries of one command | confirmed (code) |
+| `0x00146b90` | `PlayerCommand_Remove(id)` | `DelCommand`: in each table, removes the first entry with that command and moves the rest down (the scan ends after a removal, so a second entry of the same command in one table stays) | confirmed (code) |
+| `0x00147218` | `Commands_IsBound(id)` | whether a command id 1-57 is in any table (`AddCommand` checks it) | confirmed (code) |
+| `0x00147640` | `PlayerRecord_ForceCommand(record, id, ms)` | the pending command `+0x24` and its end time `+0x28` (game time + `ms`) | confirmed (code) |
+| `0x00147660` | `PlayerCommand_ForceForHuman` | `ForceCommand`: for a pad-controlled human and an id 1-57 | confirmed (code) |
+| `0x00147738` | `PlayerCommand_IsEnabled(record, id)` | the record's pad bit in the mask of the first entry with that command; `HUD_Update` asks for `0xa` ([Crimes](crimes.md)) | confirmed (code) |
+| `0x00147940` | `Commands_Match(record)` | the matcher ([Combat, Commands](combat/index.md#commands)) | confirmed (code) |
+| `0x00147ef8` | `PlayerRecord_GetCommand` | `+0x20` | confirmed (code) |
+| `0x00147f00` | `PlayerRecord_GetCommandOrPending` | `+0x20`, else `+0x24` (`PadSetHandlerEx`) | confirmed (code) |
+| `0x00147f18` | `PlayerRecord_GetPressure(record, i)` | pressure byte `i` (0-11) of the record's pad | confirmed (code) |
+| `0x00147f50` | `PlayerRecord_AnyButtonDown` | the pad's current button word is not 0 (`MessageBox_ClaimPad`) | confirmed (code) |
+| `0x00147f98` | `PlayerRec_IsPadHeld(record, mask)` | `Pad_IsHeld` on the record's pad; 0 without a pad | confirmed (code) |
+| `0x00147fd0` | `PlayerRecord_IsNewlyPressed(record, mask)` | `Pad_IsNewlyPressed` on the record's pad | confirmed (code) |
+| `0x00148008` | `PlayerRecord_GetPadHistory(record, n)` | `Pad_GetHistory` on the record's pad (the button-tap mini-game) | confirmed (code) |
+| `0x00148040` | `PlayerRecord_ClearButtons(record, mask)` | removes `mask` from the pad's current word, so a scene's start does not also act on the press | confirmed (code) |
+| `0x001480a0` / `0x00148210` | `PadHandlerEx_Set` / its thunk | `PadSetHandlerEx`: keeps the script reference in `0x0050b73c` | confirmed (code) |
+
+## Data
+
+The pad record (`0x005dd810 + i × 0x50`) is laid out on [Front end, Pad record](frontend.md#pad-record), the `libpad`
+records (`0x005de3c0 + i × 0x140`) under [The libpad state machine](#libpad) and the per-player record
+(`0x00660f50 + i × 0x2c`) on [Characters](characters.md#buttons). Confirmed (code).
+
+## Behaviour
+
 ### The camera-turned stick {#turned-stick}
 
 Step 2 of `Pad_Update` ([Input on the front end](frontend.md#input)) writes the pad record's `+0x00`/`+0x04`, the left
@@ -85,66 +156,11 @@ rows 0 and 1 of that quaternion's matrix have the x, y (0.50467, −0.86331) and
 (0.63856, −0.32171), of length 0.71502; scaled to the stick's length 0.72111 it is the value read, within 1e-6. So
 the rows are the standard rotation of the x and y axes by the quaternion (x, y, z, w), and the length is restored.
 
-### The libpad state machine {#libpad}
+### The tapped-table quirk {#quirk}
 
-Each of the 8 records at `0x005de3c0 + i × 0x140` holds the `libpad` DMA buffer, the state function at `+0x100`, port
-`+0x104`, slot `+0x108`, connected `+0x10c`, the stick bytes `+0x110`-`+0x113` (left x, y, right x, y), the button
-word `+0x114`, 12 pressure bytes `+0x116` and the actuator settings `+0x122`, `+0x128`. `Pad_Read` (`0x001498a8`)
-steps it and copies the result into the [pad record](frontend.md#pad-record). The `libpad` entry points are unnamed
-in Ghidra; their roles below are inferred from their arguments and the SDK's documented sequence.
-
-| Address | State | What it does | Evidence |
-| --- | --- | --- | --- |
-| `0x00149770` | `PadPort_Step` | reads the port's state: disconnected → back to the first state and, if the pad belonged to a player (`+0x42` ≠ −1), calls the disconnect callback once; stable → connected; error → first state; then runs the state function | confirmed (code); the state numbers' meanings inferred |
-| `0x001499e8` | first | asks the current controller id: digital (4) → `0x00149ab0`, DualShock (7) → `0x00149bc0`, else `0x00149a88` | confirmed (code) |
-| `0x00149a88` | unsupported | neutral data, not connected | confirmed (code) |
-| `0x00149ab0` | digital | when the pad has other modes, → `0x00149b08`; else unsupported | confirmed (code) |
-| `0x00149b08` / `0x00149b58` | set analog / wait | asks for analog mode, locked; waits for the request, then starts over (the pad now reports 7) | confirmed (code) |
-| `0x00149bc0` / `0x00149c30` | DualShock / wait | with actuators, sets their alignment (`+0x128`), waits | confirmed (code) |
-| `0x00149c98` | pressure check | pressure mode available → `0x00149cf0`, else `0x00149e58` | confirmed (code) |
-| `0x00149cf0` / `0x00149d38` | enter pressure / wait | enters pressure mode, waits | confirmed (code) |
-| `0x00149da0` | read with pressure | buttons, sticks and the 12 pressure bytes; sends the motors | confirmed (code) |
-| `0x00149e58` | read | buttons and sticks; sends the motors | confirmed (code) |
-| `0x00149720` | `PadPort_ClearData` | sticks to 0x80 (centre), buttons and pressures 0, motors off | confirmed (code) |
-
-So a pad that has only a digital mode gives no input (inferred), and a DualShock 2 ends in pressure mode, which the
-sprint's `CfgPlayerRunButton` option and [`Pad_GetPressure`](#pad-queries) read.
-
-### Commands and the per-player record {#commands}
-
-The script bindings are on [character bindings](../references/bindings/character.md); the tables and the matching
-order on [Combat, Commands](combat/index.md#commands); the record (`0x00660f50 + i × 0x2c`) on
-[Characters](characters.md#buttons). The nine tables live at `0x005ddd10`-`0x005de130` with their counts at
-`0x0050b740`-`0x0050b760`.
-
-| Address | Name | Role | Evidence |
-| --- | --- | --- | --- |
-| `0x00145fa0` | `PlayerRecord_Init` | pad −1, not pad-controlled, both stick buffers 0, command cleared, input unlocked | confirmed (code) |
-| `0x00146000` | `PlayerRecord_ClearCommand` | clears the current stick buffer, `+0x1c`, `+0x1d` and the command `+0x20`; with a pad, also the pad record's `+0x40`, `+0x41` | confirmed (code) |
-| `0x00146058` | `PlayerRecord_ClearCommandThunk` | the same, from `Brain_InstallHandlers` | confirmed (code) |
-| `0x00146078` | `PlayerRecord_Update` | flips the buffer; with a connected pad and pad control: copies the buttons, stores the stick's angle and length (π/2 and 0 when input is locked), passes `+0x1c`, `+0x1d` to the pad record (`+0x41`, `+0x40`), then `Commands_Match`; without a pad or pad control it calls `PlayerRecord_ClearCommand` instead | confirmed (code) |
-| `0x001461e0` | `Commands_Reset` | `ResetCommands`: every entry of the nine tables to mask `0xff`, command 0 | confirmed (code) |
-| `0x001463e0` | `PlayerCommand_EnableAllForHuman(human, on)` | `EnableCommands`: sets or clears the human's pad bit in the mask of every bound entry | confirmed (code) |
-| `0x001467a8` | `PlayerCommand_EnableForHuman(human, id, on)` | `EnableCommand`: the same for the entries of one command | confirmed (code) |
-| `0x00146b90` | `PlayerCommand_Remove(id)` | `DelCommand`: in each table, removes the first entry with that command and moves the rest down (the scan ends after a removal, so a second entry of the same command in one table stays) | confirmed (code) |
-| `0x00147218` | `Commands_IsBound(id)` | whether a command id 1-57 is in any table (`AddCommand` checks it) | confirmed (code) |
-| `0x00147640` | `PlayerRecord_ForceCommand(record, id, ms)` | the pending command `+0x24` and its end time `+0x28` (game time + `ms`) | confirmed (code) |
-| `0x00147660` | `PlayerCommand_ForceForHuman` | `ForceCommand`: for a pad-controlled human and an id 1-57 | confirmed (code) |
-| `0x00147738` | `PlayerCommand_IsEnabled(record, id)` | the record's pad bit in the mask of the first entry with that command; `HUD_Update` asks for `0xa` ([Crimes](crimes.md)) | confirmed (code) |
-| `0x00147940` | `Commands_Match(record)` | the matcher ([Combat, Commands](combat/index.md#commands)) | confirmed (code) |
-| `0x00147ef8` | `PlayerRecord_GetCommand` | `+0x20` | confirmed (code) |
-| `0x00147f00` | `PlayerRecord_GetCommandOrPending` | `+0x20`, else `+0x24` (`PadSetHandlerEx`) | confirmed (code) |
-| `0x00147f18` | `PlayerRecord_GetPressure(record, i)` | pressure byte `i` (0-11) of the record's pad | confirmed (code) |
-| `0x00147f50` | `PlayerRecord_AnyButtonDown` | the pad's current button word is not 0 (`MessageBox_ClaimPad`) | confirmed (code) |
-| `0x00147f98` | `PlayerRec_IsPadHeld(record, mask)` | `Pad_IsHeld` on the record's pad; 0 without a pad | confirmed (code) |
-| `0x00147fd0` | `PlayerRecord_IsNewlyPressed(record, mask)` | `Pad_IsNewlyPressed` on the record's pad | confirmed (code) |
-| `0x00148008` | `PlayerRecord_GetPadHistory(record, n)` | `Pad_GetHistory` on the record's pad (the button-tap mini-game) | confirmed (code) |
-| `0x00148040` | `PlayerRecord_ClearButtons(record, mask)` | removes `mask` from the pad's current word, so a scene's start does not also act on the press | confirmed (code) |
-| `0x001480a0` / `0x00148210` | `PadHandlerEx_Set` / its thunk | `PadSetHandlerEx`: keeps the script reference in `0x0050b73c` | confirmed (code) |
-
-**A quirk.** `PlayerCommand_IsEnabled` scans table 5 (tapped) with `≤` its count, one entry past its end, where the
+`PlayerCommand_IsEnabled` scans table 5 (tapped) with `≤` its count, one entry past its end, where the
 other tables use `<`. Confirmed (code) at `0x00147738`; the extra entry is the next table slot, unused (mask `0xff`,
-command 0) unless table 5 is full (inferred).
+command 0) unless table 5 is full (inferred from the tables lying end to end).
 
 ## Coney's implementation
 

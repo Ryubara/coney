@@ -39,6 +39,7 @@ std::uint16_t keepOneDirection(std::uint16_t word, const std::array<std::uint8_t
 
 } // namespace
 
+// The table at 0x0050b8d0 in closed form: the dead zone, then each side scaled to exactly [-1, 1].
 float pad::stickValue(std::uint8_t raw) {
     constexpr float kSpan = 95.0F;
     if (raw < kStickDeadLow) {

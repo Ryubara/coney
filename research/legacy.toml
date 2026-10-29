@@ -308,13 +308,6 @@ evidence = 51
 address-resolve = 1
 history = 4
 
-["docs/research/input.md"]
-front-matter = 1
-skeleton = 2
-verified = 1
-evidence = 1
-history = 1
-
 ["docs/research/level-loading.md"]
 front-matter = 1
 verified = 1
