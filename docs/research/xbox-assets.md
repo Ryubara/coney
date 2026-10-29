@@ -16,7 +16,7 @@ measured on [Xbox executable](xbox-executable.md).
 
 ## Purpose
 
-The decision (a maintainer's): **Coney installs from the player's discs, and the Xbox disc is the preferred
+The first decision (a maintainer's): **Coney installs from the player's discs, and the Xbox disc is the preferred
 source of assets, the PS2 disc filling the gaps.** At install `coney-tools extract` converts the assets to open
 formats outside the repository; given the Xbox disc as well, it takes each asset from whichever disc has the better
 version. The PS2 disc stays the only reference for behaviour and the only source of gameplay data ([Disc
@@ -705,7 +705,8 @@ So the Policy above stands, with one change: the Xbox's extra content is no long
    ([Asset and script architecture](../guides/asset-and-script-architecture.md#asset-layers)), and the Xbox source
    answers presentation kinds only, an Xbox texture standing in for a PS2 one through the [texture map](#texture-map).
    The sound tables (which sound plays, its class, its channels) are gameplay data and stay the PS2's, and so do the
-   recordings, as [Sound, speech and music](#sound) says. Whether a peer has the Xbox disc then changes nothing its
+   recordings, as [Sound, speech and music](#sound) says; the architecture page lists the tables as a simulation
+   kind and only the recordings and music as presentation. Whether a peer has the Xbox disc then changes nothing its
    simulation reads, and the store's simulation digest, which a session compares, stays the same.
 2. **The engine reads the Xbox archive**: XDVDFS, `XBoxWad.idx` and the `ee_files\` name hash with its subfolders
    ([The archive](#the-archive), [Name hash](#name-hash)), and the [resource images](#resource-images). Play needs it
@@ -834,20 +835,25 @@ Standalone texture dictionaries that no pack, Object List or Character List name
 
 ### The descriptors' last eight bytes {#q-descriptor-tail}
 
-A clip descriptor's `+0x48`-`+0x4f` hold other bytes on the PS2 and zeros on the Xbox; no reader is traced.
+A clip descriptor's `+0x48`-`+0x4f` hold other bytes on the PS2 and zeros on the Xbox; no reader is traced. Nothing
+in the install depends on it: the PS2's descriptors are the ones used, so the bytes matter only if a reader turns
+up. Answer it by setting a read watchpoint on a
+descriptor's `+0x48` in PCSX2 while a clip plays, and by searching the executable for loads at that offset from a
+descriptor pointer.
 
 ## How this was checked
 
 The survey of the archive, names, kinds and asset formats was made on 2026-10-04 and the texture and movie rules on
-2026-10-07, with the `coney-tools xbox` commands and `extract --xbox`. The comparison under [Either disc](#either-disc)
-was made on 2026-10-28 for #1077, with the PS2 disc mounted and the Xbox disc as its full image:
+2026-10-07 (the day of the first decision), with the `coney-tools xbox` commands and `extract --xbox`. The
+comparison under [Either disc](#either-disc) was made on 2026-10-28 for #1077, with the PS2 disc mounted and the
+Xbox disc as its full image:
 
-- `coney-tools lua decompile H:/ --all --out <A>` and `coney-tools lua decompile --all --xbox-disc <image> --out <B>`,
-  each into its own folder outside the repository, then `coney-tools lua compare <A> <B> --list`: the script counts
-  and the 36 Xbox-only scripts. Their names beyond the decompiler's own came from hashing PS2 naming patterns
-  (`level<N>_<suffix>.lua`) under `ee_files\`; what each does was read from its decompile and its natives in the
-  index.
-- `coney-tools xbox compare H:/ <image>`: every row of the table under [Everything else the simulation
+- `coney-tools lua decompile <ps2-disc> --all --out <A>` and
+  `coney-tools lua decompile --all --xbox-disc <image> --out <B>`, each into its own folder outside the
+  repository, then `coney-tools lua compare <A> <B> --list`: the script counts and the 36 Xbox-only scripts. Their
+  names beyond the decompiler's own came from hashing PS2 naming patterns (`level<N>_<suffix>.lua`) under
+  `ee_files\`; what each does was read from its decompile and its natives in the index.
+- `coney-tools xbox compare <ps2-disc> <image>`: every row of the table under [Everything else the simulation
   reads](#either-data). The fields that differ (collision headers and lists, the global lists, the scene list, the
   animation descriptors and events) were then compared field by field with short scripts kept in the task's scratch
   folder. They print counts and, for a look at a difference, the names and bytes involved; only the counts are on
