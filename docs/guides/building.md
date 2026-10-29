@@ -521,11 +521,10 @@ existed runs `uvx pre-commit install` again. The markdownlint hook runs the same
 (`.markdownlint.yaml`, with the files it skips in `.markdownlint-cli2.yaml`) through Node.js. pre-commit downloads its
 own copy on the first run, the release pinned by `default_language_version` in `.pre-commit-config.yaml` (an LTS, so the
 hook is the same on every machine; an unpinned one follows the newest entry of Node's index, and a pre-release there
-broke the Windows run in #1162). Move the pin to a newer LTS in the same way as any pinned dependency. `coney-tools
-ci run` runs it on the files you changed, and `repo audit` (`files.markdown-hook`) fails when the hook is removed from
-the configuration or its Node is not pinned. No hook checks a commit title: a pull request is squash-merged, so only its
-title reaches `main`,
-and CI checks that against the commit title rules (`commits.title` in
+broke the Windows run in #1162). Move the pin to a newer LTS in the same way as any pinned dependency.
+`coney-tools ci run` runs it on the files you changed, and `repo audit` (`files.markdown-hook`) fails when the hook is
+removed from the configuration or its Node is not pinned. No hook checks a commit title: a pull request is
+squash-merged, so only its title reaches `main`, and CI checks that against the commit title rules (`commits.title` in
 [.github/conventions.yml](repo:.github/conventions.yml); [CONTRIBUTING.md](repo:CONTRIBUTING.md#commits) lists them).
 
 ## Documentation
