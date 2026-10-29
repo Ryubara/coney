@@ -16,7 +16,7 @@ import pytest
 from git_support import git
 from pr_open_support import OPENER, make_open
 from pr_support import make
-from test_task_start import TASK, WHO, World, parse
+from test_task_start import TASK, WHO, World, made_by_hand, parse
 
 from coney_tools import pr_publish, stamps, task_adopt, task_cli
 from coney_tools.task_file import parse_task_file, render_task_file
@@ -335,3 +335,19 @@ def test_an_adopted_pull_request_is_released_again_by_pr_open(tmp_path: Path) ->
     assert opened.origin_tip() == git(tree, "rev-parse", "HEAD").strip()
     assert opened.gh.prs[900]["title"] != "docs: Add the widget"
     assert (built.unit.dir / pr_publish.PUBLISHED_FILE).is_file()
+
+
+def test_adopt_of_the_branch_named_like_the_task_moves_an_old_log_aside_too(world: World) -> None:
+    """`--adopt` (the branch is the task's name) is the same route as `--adopt-branch`: one implementation."""
+    world.ready()
+    made_by_hand(world)
+    legacy_log(world)
+    assert world.run(adopt=True) == 0, world.said()
+    assert len(archives(world)) == 1
+    assert [s.step for s in world.log().stamps] == ["assigned", "claimed"]
+    assert world.record().branch == TASK
+
+
+def test_the_command_line_takes_adopt_and_adopt_branch_apart(world: World) -> None:
+    assert parse("start", "t", "--adopt").adopt is True and parse("start", "t", "--adopt").adopt_branch is None
+    assert parse("start", "t").adopt is False

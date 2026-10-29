@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The git and folder work of `task start --adopt-branch` (docs/guides/issues.md#adopting).
+"""The git and folder work of `task start --adopt` and `--adopt-branch` (docs/guides/issues.md#adopting).
 
 A branch that was released before `pr open` existed has a pull request but no unit: no unit record and a stamp log that
 does not start with `assigned` and `claimed`, and a stamp log cannot be prefixed. Adopting it makes the task's unit on

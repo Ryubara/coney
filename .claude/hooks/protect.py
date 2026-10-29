@@ -44,7 +44,7 @@ KEY_ALLOWED_NAMES = ("config", "known_hosts", "known_hosts.old")
 KEY_ALLOWED_SUFFIXES = (".pub",)
 #: A folder with one of these names holds a stamp log or the build records a stamp covers.
 STAMP_FOLDERS = ("stamps", "build-runs")
-#: A folder named so is an old stamp log that `task start --adopt-branch` moved aside; it is kept as it was.
+#: A folder named so is an old stamp log that `task start --adopt` or `--adopt-branch` moved aside; kept as it was.
 STAMP_ARCHIVE_PREFIX = "stamps.legacy-"
 #: Shell commands that are not for agents: (pattern over the command, what to do instead).
 COMMANDS = (

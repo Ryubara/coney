@@ -294,7 +294,7 @@ uv run --project python coney-tools task create ISSUE [ISSUE ...] [--terms TERM 
     [--name ID] [--resume] [--dry-run]
 uv run --project python coney-tools task create --fix-of ISSUE [--terms TERM ...] [--name ID] [--dry-run]
 uv run --project python coney-tools task start [TASK] [--base REF] [--remote NAME] [--no-fetch] [--dry-run]
-    [--adopt]
+    [--adopt | --adopt-branch BRANCH]
 uv run --project python coney-tools task slots [--json]
 uv run --project python coney-tools task slots --admit [--agent-type TYPE] [--task ID | --brief FILE|-] [--reserve]
     [--model M] [--effort E]

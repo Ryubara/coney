@@ -360,7 +360,7 @@ cherry-pick`), and `--adopt-rewrite` (only with `--adopt`; alone it is exit 2) g
 intended. The title, description, pictures and auto-merge are then `pr open`'s own, and `pr-published.json` records
 the pull request, so later runs need no `--adopt`.
 It needs a unit like any release: a branch with no `unit.json` and no `assigned` and `claimed` stamps cannot be adopted
-until `task start --adopt-branch` has made the unit ([Adopting a branch](issues.md#adopting)).
+until `task start --adopt` (or `--adopt-branch`) has made the unit ([Adopting a branch](issues.md#adopting)).
 
 ## After the switch {#after-the-switch}
 
@@ -380,7 +380,7 @@ the coordinator) has the commit that turned it on. What each release need takes 
 | Merge a pull request whose checks passed, where the maintainer allows the coordinator to | `gh pr merge <N> --squash` (no `--auto`) | |
 | Clips | `clips publish --pr <N>` | |
 | Labels, comments, reviewers, holds, reruns | `gh pr edit <N> --add-label ...`, `gh pr comment`, `pr hold`, `gh run rerun`, `pr list-stuck --rerun --apply` | |
-| A pull request or branch with no unit (released before the task workflow: no `unit.json`, a stamp log that does not start with `assigned` and `claimed`) | `task create` (the coordinator), then `task start <task> --adopt-branch <branch>` (the engineer): the unit is made on that branch, the old log moved aside, the stages redone; then `pr open <task> --adopt <head>` ([Adopting a branch](issues.md#adopting)) | everything above |
+| A pull request or branch with no unit (released before the task workflow: no `unit.json`, a stamp log that does not start with `assigned` and `claimed`) | `task create` (the coordinator), then `task start <task> --adopt` or `--adopt-branch <branch>` (the engineer): the unit is made on that branch, the old log moved aside, the stages redone; then `pr open <task> --adopt <head>` ([Adopting a branch](issues.md#adopting)) | everything above |
 | A pull request stacked on another one | None: `pr open` releases a unit based on the default branch only. Start the work again from `origin/main` once the base has merged, or, for a branch whose base already merged, adopt it as above and rebase it with `git rebase --onto origin/main <old base> <branch>` in the unit's worktree | `git push`, `gh pr edit` of the text |
 | A pull request from a fork | Its author pushes and edits it from their own terminal or fork | |
 
