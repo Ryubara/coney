@@ -508,10 +508,3 @@ verified = 1
 evidence = 32
 address-resolve = 2
 history = 1
-
-["docs/research/xbox-assets.md"]
-front-matter = 1
-verified = 1
-evidence = 2
-address-resolve = 1
-history = 4

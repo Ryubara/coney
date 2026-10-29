@@ -336,8 +336,9 @@ and exit with code 2, as for `wad`.
 | `xbox extract DISC OUT_DIR [--names FILE] [--only HASH_OR_NAME ...]` | Writes entries as files: a named one under its path (`paks/global.pak`), the rest as `<hash>.bin` |
 | `xbox resource-info DISC [--ps2 PS2_DISC]` | The resource index: packs, resources, chunks, distinct `(resource hash, chunk type)` keys, and the graphics chunks by their first two words; with `--ps2`, how many of the PS2's texture, model, animation and character resource hashes the Xbox has |
 | `xbox write-resource-index DISC OUT_FILE` | Writes the resource index, `xbox-resources.bin` (where each resource's chunks lie in the volumes; [layout](../research/xbox-assets.md#resource-index)); prints its record count, size and SHA-256 |
-| `xbox write-texture-map PS2_DISC DISC OUT_FILE [--xbox-index FILE]` | Matches every PS2 texture as `extract --xbox` does (into a temporary folder, deleted after) and writes the texture map, `xbox-textures.bin`; prints its record count and SHA-256. About 25 minutes |
+| `xbox write-texture-map PS2_DISC DISC OUT_FILE [--xbox-index FILE]` | Matches every PS2 texture as `extract --xbox-disc` does (into a temporary folder, deleted after) and writes the texture map, `xbox-textures.bin`; prints its record count and SHA-256. About 25 minutes |
 | `xbox texture-info DISC [--ps2 PS2_DISC]` | Texture chunks by format (DXT1, DXT2/3, DXT4/5), mip count and size; with `--ps2`, the texture resources both discs share and how many hold the same number of textures |
+| `xbox compare PS2_DISC DISC` | Looks every chunk of the PS2 archive up on the Xbox by its resource hash and chunk type, and every other entry whole, by SHA-1: per chunk type, how many of the PS2's distinct chunks are the same, the same size with other bytes, another size, missing from the resource or with no such resource; per kind of entry, how many are the same; the resources on one disc only ([Either disc](../research/xbox-assets.md#either-disc)). Reads both archives whole, a few minutes |
 
 A names file has one name per line and the tools take the **last word** of each line, so the output of `wad
 recover-names`, `xbox match-names`, `wad list` and `xbox list` all work. A bare name (`global.pak`, as from the PS2) is
@@ -486,4 +487,17 @@ coney-tools xbox texture-info DISC [--ps2 PS2_DISC]
 | --- | --- | --- | --- |
 | `DISC` | text | required | the Xbox disc: a full image, an XISO or an extracted folder |
 | `--ps2 PS2_DISC` | text | none | also compare with the PS2 disc (a folder or .iso, as for the wad commands) |
+
+### `xbox compare` {#xbox-compare-usage}
+
+Look up every PS2 chunk and entry on the Xbox disc: same bytes, changed or missing (counts).
+
+```text
+coney-tools xbox compare PS2_DISC DISC
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `PS2_DISC` | text | required | the PS2 disc (a folder or .iso) |
+| `DISC` | text | required | the Xbox disc: a full image, an XISO or an extracted folder |
 <!-- command-reference:end -->

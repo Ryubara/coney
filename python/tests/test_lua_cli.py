@@ -12,7 +12,7 @@ from typing import Any
 
 import pytest
 
-from coney_tools import cli, lua_decompile
+from coney_tools import cli, lua_compare, lua_decompile
 
 FIXTURES = Path(__file__).parent / "lua4" / "fixtures"
 
@@ -61,6 +61,26 @@ def test_the_frozen_form_options(calls: list[tuple[str, tuple[Any, ...]]]) -> No
     assert second[2] == lua_decompile.Options(new_form=True)
 
 
+def test_the_xbox_disc_as_the_source(calls: list[tuple[str, tuple[Any, ...]]]) -> None:
+    assert cli.main(["lua", "decompile", "--all", "--xbox-disc", "x.iso", "--out", "o"]) == 0
+    assert cli.main(["lua", "decompile", "level1.lua", "out", "--xbox-disc", "x.iso"]) == 0
+    (kind, first), (_, second) = calls
+    assert kind == "all" and first[1] is None and first[2] == lua_decompile.Options(xbox=Path("x.iso"), out=Path("o"))
+    assert second[1:4] == (None, "level1.lua", Path("out")) and second[4] == lua_decompile.Options(xbox=Path("x.iso"))
+
+
+def test_compare_reaches_the_command(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list[tuple[Path, Path, bool]] = []
+
+    def record(first: Path, second: Path, listing: bool) -> int:
+        seen.append((first, second, listing))
+        return 0
+
+    monkeypatch.setattr(lua_compare, "run", record)
+    assert cli.main(["lua", "compare", "ps2", "xbox", "--list"]) == 0
+    assert seen == [(Path("ps2"), Path("xbox"), True)]
+
+
 @pytest.mark.parametrize(
     "argv",
     [
@@ -72,6 +92,9 @@ def test_the_frozen_form_options(calls: list[tuple[str, tuple[Any, ...]]]) -> No
         ["lua", "decompile", "name", "out", "--out", "o"],
         ["lua", "decompile", "name", "out", "--update-hashes"],
         ["lua", "decompile", "name", "out", "--hashes", "h.toml"],
+        ["lua", "decompile", "--all", "--xbox-disc", "x.iso", "H:/"],
+        ["lua", "decompile", "--xbox-disc", "x.iso", "H:/", "name", "out"],
+        ["lua", "decompile", "--all", "--xbox-disc", "x.iso", "--chunks", "c"],
     ],
 )
 def test_wrong_arguments_exit_2_with_one_line(

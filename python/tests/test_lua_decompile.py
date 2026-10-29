@@ -9,7 +9,9 @@ script. The round trip runs here with a stand-in compiler, so it is tested witho
 from __future__ import annotations
 
 import json
+import struct
 import sys
+import zlib
 from pathlib import Path
 
 import pytest
@@ -21,6 +23,7 @@ from coney_tools.config import ConfigError
 from coney_tools.lua4 import LuaError
 
 FIXTURES = Path(__file__).parent / "lua4" / "fixtures"
+XH_CLOSURES = zlib.crc32(b"ee_files\\closures.lua")
 EXE = "luac.exe" if sys.platform == "win32" else "luac"
 
 
@@ -127,6 +130,67 @@ def test_chunks_from_a_folder_skip_other_files(tmp_path: Path) -> None:
     """Only files that start with a Lua chunk's signature are chunks; they come in name order."""
     found = lua_decompile.chunks_from_folder(_chunks(tmp_path))
     assert [name for name, _ in found] == ["closures.lua", "control.lua"]
+
+
+def _xbox_disc(tmp_path: Path) -> Path:
+    """A made-up Xbox disc as a folder: `XBoxWad.idx` over one volume holding two stripped fixtures and an entry that
+    is not a chunk, and a `default.xbe` that names one of the two (`control.lua`); the other stays unnamed."""
+    blobs = [
+        ((FIXTURES / "control.s.luac").read_bytes(), zlib.crc32(b"ee_files\\control.lua")),
+        (b"not a chunk, 32 bytes of filler.", 0x0BADF00D),
+        ((FIXTURES / "closures.s.luac").read_bytes(), 0x00C0FFEE),
+    ]
+    volume, rows = b"", []
+    for data, hashed in blobs:
+        rows.append(struct.pack("<4I", len(volume) // 1024, len(data), 0, hashed))
+        volume += data + b"\0" * (-len(data) % 2048)
+    header = struct.pack("<5I", 1, len(rows), 0x00100000, 0x14, 0x14 + 36)
+    disc = tmp_path / "xbox"
+    disc.mkdir()
+    (disc / "XBoxWad.idx").write_bytes(header + b"Main.wad0".ljust(32, b"\0") + b"\xff" * 4 + b"".join(rows))
+    (disc / "Main.wad0").write_bytes(volume)
+    (disc / "default.xbe").write_bytes(b"XBEH\0D:\\ee_files\\control.lua\0")
+    return disc
+
+
+def test_chunks_from_the_xbox_disc_are_named_from_the_executable(tmp_path: Path) -> None:
+    """The Xbox archive's chunks are found by their signature; one the executable names takes that name, the other
+    its entry's hash in hex, and the entry that is no chunk is left out."""
+    found = lua_decompile.chunks_from_xbox(_workspace(tmp_path), _xbox_disc(tmp_path))
+    assert [name for name, _ in found] == ["00c0ffee", "control.lua"]
+    assert found[1][1] == (FIXTURES / "control.s.luac").read_bytes()
+
+
+def test_a_bare_identifier_names_an_xbox_script(tmp_path: Path) -> None:
+    """A level list names its levels without an extension: an identifier `closures` names `closures.lua`."""
+    found = lua_decompile._xbox_script_names(_workspace(tmp_path), {0x00C0FFEE, XH_CLOSURES}, [b"\0closures\0"])
+    assert found == {XH_CLOSURES: "closures.lua"}
+
+
+def test_decompile_all_and_one_from_the_xbox_disc(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """`--all --xbox-disc` writes every Xbox chunk; `NAME OUT_DIR --xbox-disc` finds one by name or by hash."""
+    root, disc = _workspace(tmp_path), _xbox_disc(tmp_path)
+    out = tmp_path / "xbox-out"
+    # A disc whose scripts the committed list lacks (the Xbox's own) is added to a list of its own with --update-hashes.
+    options = lua_decompile.Options(xbox=disc, out=out, hashes=tmp_path / "hashes.toml", update_hashes=True)
+    assert lua_decompile.run_all(root, None, options, frozenset()) == 0
+    assert sorted(path.name for path in out.glob("*.lua")) == ["00c0ffee.lua", "control.lua"]
+    assert "decompiled 2 of 2 chunks" in capsys.readouterr().out
+    one = tmp_path / "one"
+    assert lua_decompile.run_one(root, None, "CONTROL", one, lua_decompile.Options(xbox=disc)) == 0
+    assert lua_decompile.run_one(root, None, "0x00c0ffee", one, lua_decompile.Options(xbox=disc)) == 0
+    assert sorted(path.name for path in one.iterdir()) == ["0x00c0ffee.lua", "CONTROL.lua"]
+    with pytest.raises(ConfigError, match="on the Xbox disc"):
+        lua_decompile.run_one(root, None, "missing.lua", one, lua_decompile.Options(xbox=disc))
+
+
+def test_decompile_all_from_the_xbox_disc_needs_its_own_folder(tmp_path: Path) -> None:
+    """`--all --xbox-disc` without `--out` is refused before anything is read or written: the shared folder is the PS2
+    disc's, and every worktree reads its index and fingerprints."""
+    root, disc = _workspace(tmp_path), _xbox_disc(tmp_path)
+    with pytest.raises(ConfigError, match="--out"):
+        lua_decompile.run_all(root, None, lua_decompile.Options(xbox=disc), frozenset())
+    assert not lua_decompile.lua_dir(root).exists() or not any(lua_decompile.lua_dir(root).iterdir())
 
 
 def test_decompile_one_chunk_writes_it_outside_the_repository(

@@ -603,6 +603,11 @@ def _add_xbox_commands(groups: Any) -> None:
     textures = commands.add_parser("texture-info", help="texture chunk counts by format, mip count and size")
     textures.add_argument("disc", help=disc_help)
     textures.add_argument("--ps2", metavar="PS2_DISC", help=ps2_help)
+    compare = commands.add_parser(
+        "compare", help="look up every PS2 chunk and entry on the Xbox disc: same bytes, changed or missing (counts)"
+    )
+    compare.add_argument("ps2_disc", metavar="PS2_DISC", help="the PS2 disc (a folder or .iso)")
+    compare.add_argument("disc", help=disc_help)
 
 
 def _add_progress_commands(groups: Any) -> None:
@@ -1023,6 +1028,10 @@ def _run_xbox(args: argparse.Namespace) -> int:
         return xbox_cli.run_index(args.disc, args.out_file)
     if args.command == "write-texture-map":
         return xbox_cli.run_texture_map(args.ps2_disc, args.disc, args.out_file, args.xbox_index)
+    if args.command == "compare":
+        from coney_tools import xbox_compare  # reads both archives whole; loaded only here
+
+        return xbox_compare.run(args.ps2_disc, args.disc)
     return xbox_cli.run_textures(args.disc, args.ps2)
 
 

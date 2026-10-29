@@ -59,12 +59,12 @@ Rules that keep the layers apart:
   research page still applies. For a WAD entry the key is the name hash ([Name hash](../research/name-hash.md)), for
   a disc file its path, and for a resource inside a pack its resource hash and chunk type. The Xbox resolver needs that
   last one ([Xbox assets](../research/xbox-assets.md#coneys-implementation)).
-- **Each asset kind is a simulation kind or a presentation kind.** Presentation kinds (textures, movies, sounds,
-  music, later models' looks) can be replaced by a mod. Simulation kinds can only be replaced in a session marked as
-  modded: scripts, levels, object lists, collision, worlds' streaming data, animation clips (their timing drives
-  combat), scenes, character data and executable tables. This extends the Xbox policy (assets only, never
-  behaviour) to every source. The store reports a **simulation digest** over the simulation kinds it served, which
-  test mode and multiplayer compare.
+- **Each asset kind is a simulation kind or a presentation kind.** Presentation kinds (textures, movies, sound
+  recordings, music, later models' looks) can be replaced by a mod. Simulation kinds can only be replaced in a
+  session marked as modded: scripts, levels, object lists, collision, worlds' streaming data, animation clips (their
+  timing drives combat), scenes, character data, sound tables (which sound plays, its class and channels) and
+  executable tables. This extends the Xbox policy (assets only, never behaviour) to every source. The store
+  reports a **simulation digest** over the simulation kinds it served, which test mode and multiplayer compare.
 - **Test mode uses the PS2 data only.** `--headless`, `--input-script` and the disc tests build a store with the PS2
   source alone, so reference comparisons never see an override or an Xbox texture.
 - **librw stays a renderer detail.** Presentation loaders return CPU data (an image with its palette and mip
@@ -182,9 +182,9 @@ The `mods/`, `cache/`, `modded/` and `mod-data/` entries, and why scripts never 
 | --- | --- | --- |
 | Textures | overrides (packs by the original texture's hash; an entry matching no texture on the disc is ignored), Xbox (by resource hash, equal counts only), PS2 | F4; [Texture packs](enhancements.md#packs) |
 | Movies | overrides, Xbox `_hd`, PS2 | |
-| Sounds, music | overrides, PS2 | Xbox mapping is open ([Xbox assets](../research/xbox-assets.md#coneys-implementation)) |
+| Sounds, music | overrides, PS2 | the recordings and music; Xbox mapping is open ([Xbox assets](../research/xbox-assets.md#coneys-implementation)) |
 | Fonts, HUD and particle sheets | overrides, PS2 | presentation |
-| Scripts, levels, object lists, worlds, collision, animations, scenes, characters, executable tables, game text | PS2 (overrides only in a modded session) | simulation kinds; a script is never replaced from `overrides/`, only patched by a mod ([Mods](studio/mods.md#install-layout)) |
+| Scripts, levels, object lists, worlds, collision, animations, scenes, characters, sound tables, executable tables, game text | PS2 (overrides only in a modded session) | simulation kinds; a script is never replaced from `overrides/`, only patched by a mod ([Mods](studio/mods.md#install-layout)) |
 
 - **Command line.** `--data <install>` opens the install folder, and `--disc` stays for development and CI. With
   neither, Coney looks for `game/ps2/` next to its executable. All three build the same store. Built (N7): until
