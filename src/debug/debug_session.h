@@ -153,6 +153,11 @@ class DebugSession {
     /// The VM native calls and the console run in: the game's when it has a state, else the sandbox's (made on first
     /// use). Never null.
     [[nodiscard]] script::LuaVm& vm();
+    /// The script system vm() belongs to: its native list is what the Natives page shows.
+    [[nodiscard]] script::ScriptSystem& scripts();
+    /// Runs `body` in vm() as one entry of the state's scheduler (script::ScriptEntryKind::Console), so a line typed
+    /// in the console or a call from the Natives page is a script run like any other.
+    void runInState(const std::function<void(script::LuaVm&)>& body);
     /// Whether vm() is the game's state.
     [[nodiscard]] bool usingGameScripts() const;
     /// The recorded calls of the state vm() is in; null for none.

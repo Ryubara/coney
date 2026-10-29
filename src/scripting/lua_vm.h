@@ -18,6 +18,8 @@
 
 namespace coney::script {
 
+class NativeList;
+
 /// Limits and leniencies of a LuaVm.
 struct LuaVmOptions {
     /// Calling nil does nothing and returns no results instead of failing. The game's configuration scripts call
@@ -53,8 +55,13 @@ class LuaVm {
     [[nodiscard]] Value global(std::string_view name) const { return m_globals->field(name); }
     /// Sets the global `name`.
     void setGlobal(std::string_view name, Value value);
-    /// Makes `function` callable from scripts as the global `name`.
+    /// Makes `function` callable from scripts as the global `name`; while the VM collects into a list
+    /// (collectInto()), adds it to the list instead and leaves the globals alone.
     void registerFunction(std::string_view name, NativeFunction function);
+    /// From now on registerFunction() adds to `natives` rather than setting globals; null sets globals again. The
+    /// binding files register on a VM, so buildNatives() hands them one that collects: the registration moves to the
+    /// native list without the binding files changing. `natives` must outlive the collection.
+    void collectInto(NativeList* natives) { m_collector = natives; }
 
     /// Runs the main function of a parsed chunk with no arguments and returns what it returns. Fails with
     /// ErrorCode::Invalid when the bytecode is malformed (an unknown opcode, an operand out of range, the stack
@@ -91,6 +98,7 @@ class LuaVm {
     std::string m_calleeName;        // the unset global the CALL being made calls; empty otherwise
     std::string m_lastSkipped;       // the unset global the last skipped call of nil called
     std::map<std::string, std::uint64_t> m_nilCallsByName;
+    NativeList* m_collector = nullptr; // collectInto()'s list; null: registerFunction() sets globals
 };
 
 /// A string read as a number the way Lua 4.0 converts one (arithmetic operands, `tonumber`): optional spaces around a

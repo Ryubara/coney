@@ -2446,7 +2446,7 @@ name = "ScriptSystem_OnPreloadFileDone"
 page = "characters.md#level-starts"
 level = "confirmed-code"
 coney = "src/scripting/script_system.h:ScriptSystem::servicePreloads"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00358428

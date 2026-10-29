@@ -198,6 +198,7 @@ LevelScripts::LevelScripts(const script::ScriptSource& source, std::string_view 
           [this](script::ScriptSystem& system, script::LuaVm& vm) { script::installBindings(system, vm, m_context); },
           log) {
     m_host.setLog(log);
+    m_context.handles = &m_handles;
     // The HUD the scripts' HUD bindings act on and the sound the preloads configure, before the first Lua state.
     m_context.hud = &m_hud;
     m_context.sound = options.sound;

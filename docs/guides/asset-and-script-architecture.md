@@ -1,8 +1,9 @@
 # Asset and script architecture
 
 The design for moving Coney off the original's file formats and onto its own asset store and script runner. The
-rule stands: **the move happens after the game plays 1:1**. Of this page only the install is built (the PS2 copy and
-the `.cpak` format, [The install folder](#install-folder)). It draws the boundaries *now*, so that the faithful work
+rule stands: **the move happens after the game plays 1:1**. Of this page the install is built (the PS2 copy and
+the `.cpak` format, [The install folder](#install-folder)) and, of the script parts, the native list and the scheduler
+([below](#script-parts)); the rest is not built yet. It draws the boundaries *now*, so that the faithful work
 going on today does not add new ties to the PS2 formats, and so that each later step changes one layer.
 
 It covers four things: the asset layers and how they fit the installer, the split of the script system, what each
@@ -281,6 +282,15 @@ struct Native {
 }
 ```
 
+**Built** (#1118): `src/scripting/natives.h` holds `Native`, `NativeList` and `installNatives`, and `buildNatives(scripts,
+context)` in `script_bindings.h` makes the list; `installBindings` installs it in the order the registration made it
+(so the state's globals are the same as before) and the state keeps it (`ScriptSystem::natives()`), which the debug
+menus' Natives page reads. The binding files still call `registerFunction` on a VM: `buildNatives` hands them one that
+collects into the list (`LuaVm::collectInto`), so not one binding file changed. The `mods` flag is false for the SDK's
+first list ([How a native reaches the SDK](studio/lua-sdk.md#availability)), kept in `natives.cpp` until the masterlist
+has the key. The signature is `buildNatives(ScriptSystem&, const BindingContext&)`: the script-system bindings
+(`doFile`, `ScheduleFunc`) need the system.
+
 The binding bodies do not change. Only the registration moves from the VM to a list. A second runtime or a call
 tracer can then wrap every native in one place. Coney's own natives go in a `Coney` table, so they can never clash
 with one of the 956 original names.
@@ -291,6 +301,19 @@ callbacks, trigger events) goes through one `ScriptScheduler::run(entry)` that o
 instruction budget; projects have none, [The sandbox](studio/lua-sdk.md#sandbox)). Coroutines later become one more
 entry kind ("resume coroutine *n*"). Lua 4.0 has none, and the research shows the original's scripts waiting only
 through the schedule and callbacks, never inside a call.
+
+**Built** (#1118): `ScriptScheduler` (`src/scripting/script_scheduler.h`), owned by the `ScriptSystem` (`scheduler()`).
+`run(ScriptEntry)` takes an entry of a kind (files, file, level entry, preloads, frame, call, message, anim callback,
+console) and runs it; each of the script system's operations that runs a script (`runFile`, `runFiles`, `enterLevel`,
+`call`, `update`, `servicePreloads`) opens its entry there too, so a run is an entry whichever way it starts, nested
+inside the entry that caused it (a scheduled call inside the frame). The debug menus' console and Natives page run as
+console entries. Message handlers (trigger boxes and spheres among them) and animation callbacks still come in as call
+entries: `MessageHandlers` and `ScriptedBrains` move to the kinds made for them (message, anim callback) when those
+files are next brought up to the code standard. The order is unchanged: the game mode's step keeps it, and the frame
+runs the arrived preloads, the due scheduled calls and the update function as before. **No budget** (a maintainer
+decision, 2026-10-29): the scheduler has no instruction budget; it records each project's script time per step
+(`projectTime()`, a step ending with the outermost frame entry) for a later monitor, and nothing reads the clock but
+that record. The VM keeps its own runaway limit (`LuaVmOptions::maxInstructions`), as before.
 
 ### Coney native candidates {#coney-native-candidates}
 
@@ -437,7 +460,8 @@ says):
    [Running Coney](running.md#install); started early, as a maintainer asked), then the launcher, then the Xbox disc.
 2. **Overrides** for presentation kinds, with PNG and WAV loaders; test mode stays PS2-only.
 3. **Xbox source**: textures via the `ResourceResolver` (F4) and HD movies ([Xbox assets](../research/xbox-assets.md)).
-4. **Native list** (`buildNatives`), the `ScriptScheduler` as the one entry, and the call tracer.
+4. **Native list** (`buildNatives`) and the `ScriptScheduler` as the one entry: built (#1118); the call tracer over the
+   list is still to do.
 5. **Lua 4.0 source compiler**, then the console on it, then Coney's level scripts, one level at a time, each
    behind its parity test.
 6. **Simulation out of `src/platform/`** (`PlayLevelMode::update` into a core gameplay mode; platform keeps the

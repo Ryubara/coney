@@ -232,6 +232,7 @@ class StartUpFlow final : public script::BindingHost {
     FrontEndServices m_services;
     std::unique_ptr<ProfileStore> m_profiles;
     graphics::ScreenFade m_fade;
+    script::ScriptHandles m_handles; // the session's handles, shared by every state it makes
     script::BindingContext m_context;
     bool m_hasScripts;
     script::ScriptSystem m_scripts; // after everything its bindings refer to

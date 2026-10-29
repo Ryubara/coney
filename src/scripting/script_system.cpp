@@ -24,9 +24,11 @@ namespace {
 constexpr int kMaxCallDepth = 200;
 
 // A function that does nothing: the original's `_ERRORMESSAGE` and `_ALERT`.
+// @coney-only a native standing for the original's empty Lua handlers
 std::expected<std::vector<Value>, Error> silent(std::span<const Value> /*args*/) { return std::vector<Value>{}; }
 
 // One value as a trace line shows it: numbers in short form, strings quoted, tables and functions by kind.
+// @coney-only the script trace (`--script-trace`)
 std::string traced(const Value& value) {
     switch (value.type()) {
     case Value::Type::Nil:
@@ -60,6 +62,7 @@ std::string traced(const Value& value) {
 }
 
 // A call's arguments (or results), comma separated, as a trace line shows them.
+// @coney-only the script trace (`--script-trace`)
 std::string tracedArgs(std::span<const Value> args) {
     std::string text;
     for (const Value& arg : args) {
@@ -108,6 +111,7 @@ void ScriptSystem::create() {
     }
 }
 
+// @coney-only the script trace (`--script-trace`)
 void ScriptSystem::traceCalls(Log trace) {
     m_trace = trace ? std::make_shared<Log>(std::move(trace)) : nullptr;
     if (m_vm && m_trace) {
@@ -115,6 +119,7 @@ void ScriptSystem::traceCalls(Log trace) {
     }
 }
 
+// @coney-only the script trace and the event log
 void ScriptSystem::wrapBindingsForTrace() {
     // Collect first: setting globals while walking them would disturb the walk.
     std::vector<std::pair<std::string, std::shared_ptr<const Function>>> natives;
@@ -162,19 +167,22 @@ void ScriptSystem::preload(std::string name, std::string callback) {
 }
 
 void ScriptSystem::servicePreloads(bool all) {
+    const auto entry = m_scheduler.enter(ScriptEntry::preloads(all));
     // Only the files asked for before this call, unless `all`: a chunk that asks for another sees it arrive later.
     std::size_t budget = all ? std::numeric_limits<std::size_t>::max() : m_preloads.size();
     while (m_vm && budget > 0 && !m_preloads.empty()) {
         --budget;
         auto [name, callback] = std::move(m_preloads.front());
         m_preloads.erase(m_preloads.begin());
-        // The completion routine runs the chunk, then calls the callback by name when one was given.
+        // The completion routine runs the chunk, then calls the callback by name when one was given. Coney's choice:
+        // the chunk is named by its file name, without the original's path-to-'@' renaming (only errors read it).
         if (runFile(name) && !callback.empty()) {
             call(callback);
         }
     }
 }
 
+// @coney-only access for Coney's tools and tests
 LuaVm& ScriptSystem::vm() {
     CONEY_ASSERT(m_vm != nullptr);
     return *m_vm;
@@ -195,6 +203,7 @@ bool ScriptSystem::runFile(std::string_view name) {
     return runChunk(*bytes, name);
 }
 
+// @coney-only Coney's script source seam
 std::expected<std::vector<std::byte>, Error> ScriptSystem::readFile(std::string_view name) const {
     if (!m_source) {
         return fail(ErrorCode::NotFound, "no script source");
@@ -203,17 +212,25 @@ std::expected<std::vector<std::byte>, Error> ScriptSystem::readFile(std::string_
 }
 
 void ScriptSystem::runFiles(std::span<const std::string_view> names) {
+    const auto entry = m_scheduler.enter(ScriptEntry::fileList(names));
+    // Coney's choice: each name as given; the PC-style path prefix is a dead branch in this build.
     for (const std::string_view name : names) {
         runFile(name);
     }
 }
 
 void ScriptSystem::enterLevel(std::string_view level) {
+    const auto entry = m_scheduler.enter(ScriptEntry::levelEntry(level));
+    // Coney's choice: only the PS2's names; the PC-style paths are a dead branch in this build.
     runFile(kGlobalScript);
     runFile(std::format("{}.lua", level));
 }
 
+// RunFile's run of the loaded bytes as a chunk, a File entry of the scheduler.
+// @orig 0x00356af8 ScriptSystem_RunFile (ScriptLua.cpp)
 bool ScriptSystem::runChunk(std::span<const std::byte> bytes, std::string_view name) {
+    const auto entry = m_scheduler.enter(ScriptEntry::file(name));
+    // Coney's choice: the chunk is named by its file name, without the original's path-to-'@' renaming.
     auto chunk = loadLuaChunk(bytes);
     if (!chunk) {
         reportError(name, chunk.error());
@@ -228,6 +245,8 @@ bool ScriptSystem::runChunk(std::span<const std::byte> bytes, std::string_view n
     return true;
 }
 
+// FindFunction's walk of a dotted name.
+// @orig 0x00356e08 ScriptSystem_FindFunction (ScriptLua.cpp)
 std::pair<Value, Value> ScriptSystem::resolve(std::string_view name) const {
     // Walk the parts from the globals: every part but the last must be a table. A `:` before the last part makes its
     // table the `self` argument.
@@ -236,6 +255,7 @@ std::pair<Value, Value> ScriptSystem::resolve(std::string_view name) const {
     std::size_t start = 0;
     bool method = false;
     while (true) {
+        // Coney's choice: a part is not cut at 32 characters as the original's buffer cuts it.
         const std::size_t end = name.find_first_of(".:", start);
         const std::string_view part = name.substr(start, end == std::string_view::npos ? end : end - start);
         const std::shared_ptr<Table>& table = current.table();
@@ -252,6 +272,7 @@ std::pair<Value, Value> ScriptSystem::resolve(std::string_view name) const {
     }
 }
 
+// @coney-only a query for the engine's callers; the lookup is resolve()'s
 bool ScriptSystem::hasFunction(std::string_view name) const {
     return m_vm != nullptr && resolve(name).first.function() != nullptr;
 }
@@ -260,10 +281,21 @@ bool ScriptSystem::call(std::string_view name, std::span<const Value> args) {
     return callResults(name, args).has_value();
 }
 
+// @coney-only the door that gives the results; the port is callEntry()
 std::optional<std::vector<Value>> ScriptSystem::callResults(std::string_view name, std::span<const Value> args) {
+    return callEntry(ScriptEntry::call(name, args));
+}
+
+// The call itself, as an entry of the scheduler: find the function by name, push the arguments, call.
+// @orig 0x00356e08 ScriptSystem_FindFunction (ScriptLua.cpp)
+// @orig 0x00357188 ScriptSystem_Call (ScriptLua.cpp)
+std::optional<std::vector<Value>> ScriptSystem::callEntry(const ScriptEntry& entry) {
     if (!m_vm) {
         return std::nullopt;
     }
+    const auto scope = m_scheduler.enter(entry);
+    const std::string_view name = entry.name;
+    const std::span<const Value> args = entry.args;
     const auto [function, self] = resolve(name);
     if (!function.function()) {
         log(std::format("script: {} is not a function; not called", name));
@@ -304,6 +336,7 @@ void ScriptSystem::flushScheduled(std::string_view name) {
 }
 
 void ScriptSystem::update(std::uint64_t nowMs, double stepSeconds) {
+    const auto frame = m_scheduler.enter(ScriptEntry::frame(nowMs, stepSeconds));
     m_nowMs = nowMs;
     if (!m_vm) {
         return;
@@ -333,21 +366,26 @@ void ScriptSystem::update(std::uint64_t nowMs, double stepSeconds) {
         const std::array<Value, 1> step{Value(stepSeconds * 1000.0)};
         call(m_updateFunction, step);
     }
+    // Coney's choice: no forced garbage collection every 2 s after it; Coney's VM frees by reference counting.
 }
 
+// @coney-only Coney's count of skipped calls
 std::uint64_t ScriptSystem::skippedCalls() const { return m_skippedBefore + (m_vm ? m_vm->nilCalls() : 0); }
 
+// @coney-only Coney's log; the original's errors leave no trace
 void ScriptSystem::log(std::string_view line) const {
     if (m_log) {
         m_log(std::format("{}\n", line));
     }
 }
 
+// @coney-only Coney's log; the original's errors leave no trace
 void ScriptSystem::reportError(std::string_view where, const Error& error) {
     ++m_errors;
     log(std::format("script error: {}: {}", where, error.message));
 }
 
+// @coney-only Coney's log of the bindings it lacks
 void ScriptSystem::noteSkippedCalls() {
     if (!m_vm) {
         return;

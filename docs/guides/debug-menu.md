@@ -707,12 +707,12 @@ registered yet waits for it. The file is yours: it never goes in the repository.
 
 ## Natives {#natives}
 
-The Natives page lists every one of the game's 956 script bindings ([Script bindings](../references/bindings/index.md))
-under its category, each with its Coney status:
+The Natives page lists the game's 956 script bindings ([Script bindings](../references/bindings/index.md)) by category,
+each with its status in the native list of the state it calls into (the game's or the sandbox's, `natives()`):
 
 | Status | Meaning |
 | --- | --- |
-| implemented | real in Coney's binding table: it does its job |
+| implemented | real in Coney's native list: it does its job |
 | partial | routed to a stand-in (music, movies) that logs it |
 | stub | registered; returns its documented default and does nothing else |
 | missing | not registered: a script's call of it is skipped |

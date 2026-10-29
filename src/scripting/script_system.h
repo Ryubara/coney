@@ -51,6 +51,9 @@ inline constexpr std::string_view kGlobalScript = "global.lua";
 ///   table as `self`. Names are looked up when the call happens, so a script may replace the function behind a name.
 /// - **The schedule** holds calls of named functions with up to two number arguments, due a number of milliseconds of
 ///   game time later; update() runs those that are due, in order.
+/// - **Every run is a scheduler entry** (scheduler()): game code runs scripts with ScriptScheduler::run(), and each
+///   operation below that runs a script (runFile(), runFiles(), enterLevel(), call(), update(), servicePreloads())
+///   opens its entry there too, so whichever door a run takes it is watched and timed in one place.
 ///
 /// Coney's choices, where the research is silent or Coney differs (docs/research/scripting.md#coneys-implementation):
 /// - A call of an unset global (the game's state has all 956 bindings; Coney's has the ones it lists) is skipped as a
@@ -85,9 +88,17 @@ class ScriptSystem {
     /// The scheduler every script run of this system goes through (ScriptScheduler::run()).
     [[nodiscard]] ScriptScheduler& scheduler() { return m_scheduler; }
     /// The natives the current state was given (installBindings()); empty with no state or none installed.
-    [[nodiscard]] std::span<const Native> natives() const { return m_natives; }
-    /// Keeps the natives installed in the current state, for the debug menus; destroy() drops them.
-    void setNatives(std::vector<Native> natives) { m_natives = std::move(natives); }
+    /// @coney-only the native list, for the debug menus
+    [[nodiscard]] std::span<const Native> natives() const {
+        return exists() && m_nativesGeneration == m_generation ? std::span<const Native>(m_natives)
+                                                               : std::span<const Native>{};
+    }
+    /// Keeps the natives installed in the current state, for the debug menus; they stand for that state only.
+    /// @coney-only the native list, for the debug menus
+    void setNatives(std::vector<Native> natives) {
+        m_natives = std::move(natives);
+        m_nativesGeneration = m_generation;
+    }
 
     /// Makes the Lua state: libraries, bindings, the silent error handlers; drops any scheduled calls and the update
     /// function. Replaces a state that exists. Must not be called from inside a script (CONEY_ASSERT).
@@ -206,6 +217,8 @@ class ScriptSystem {
     [[nodiscard]] double nextObjectHandle() const { return m_objectHandles ? m_objectHandles() : 0.0; }
 
   private:
+    friend class ScriptScheduler;
+
     // One entry of the schedule (the original's is 0x18 bytes: due time, interned name, two flagged numbers).
     struct ScheduledCall {
         std::uint64_t dueMs = 0;
@@ -214,8 +227,10 @@ class ScriptSystem {
         std::vector<double> args;
     };
 
-    // Runs a parsed chunk, logging and counting a failure; `name` names it in the log.
+    // Runs a parsed chunk, logging and counting a failure; `name` names it in the log. The chunk's run is a File entry.
     bool runChunk(std::span<const std::byte> bytes, std::string_view name);
+    // callResults() for an entry of a call kind (Call, Message, AnimCallback), which the call's run is.
+    std::optional<std::vector<Value>> callEntry(const ScriptEntry& entry);
     // The function `name` resolves to, and the table to pass as `self` for a `:` name; nil function when none.
     [[nodiscard]] std::pair<Value, Value> resolve(std::string_view name) const;
     // Logs and counts a script error.
@@ -238,10 +253,11 @@ class ScriptSystem {
     std::uint64_t m_nowTicks = 0; // setTimeTicks()'s reading
     std::uint64_t m_generation = 0;
     std::uint64_t m_errors = 0;
-    std::uint64_t m_skippedBefore = 0;    // skipped calls of the states destroyed so far
-    std::set<std::string> m_skippedNames; // names already logged
-    std::shared_ptr<Log> m_trace;         // traceCalls()'s sink, shared with the wrapped bindings; null: no trace
-    std::vector<Native> m_natives;        // the current state's natives (setNatives())
+    std::uint64_t m_skippedBefore = 0;     // skipped calls of the states destroyed so far
+    std::set<std::string> m_skippedNames;  // names already logged
+    std::shared_ptr<Log> m_trace;          // traceCalls()'s sink, shared with the wrapped bindings; null: no trace
+    std::vector<Native> m_natives;         // the natives of the state setNatives() was called for
+    std::uint64_t m_nativesGeneration = 0; // generation() of that state
     ScriptScheduler m_scheduler{*this};
 };
 
