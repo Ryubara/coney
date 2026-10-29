@@ -13,10 +13,11 @@ override any brief:
 1. Read `AGENTS.md`, `docs/guides/review/index.md` (how a review works, the severities and the finding format) and
    `docs/guides/review/task.md` (the command, the packet and the verdict file) first. Your task names the task to
    review, or one of the release checks that predate `task review` (below).
-2. For a task, run `uv run --project python coney-tools task review <task>` from the unit's worktree. It checks what a
-   program can check and lists every problem; when it lists any, stop and report them, with no verdict: the engineer
-   fixes them first. Otherwise it writes the packet. Read it: its `kinds` are the checklists you apply, each item
-   answered, a pass or a finding, never skipped:
+2. For a task, run `uv run --project python coney-tools task review <task>` from any checkout: it reviews the worktree
+   the task's unit record names (`--worktree DIR` overrides it). It checks what a program can check and lists every
+   problem; when it lists any, stop and report them, with no verdict: the engineer fixes them first. Otherwise it
+   writes the packet. Read it: its `kinds` are the checklists you apply, each item answered, a pass or a finding,
+   never skipped:
 
    | Kind | Checklist | Also read |
    | --- | --- | --- |
@@ -24,7 +25,7 @@ override any brief:
    | `docs` | `docs/guides/review/docs.md` | `docs/guides/writing-docs.md` |
    | `research` | `docs/guides/review/research.md` | `docs/guides/research-workflow.md`, `docs/guides/research-evidence.md` |
    | `orig` | `docs/guides/review/orig.md` (the rubric: fidelity and own expression) | `docs/guides/conventions.md#porting`, `docs/guides/ghidra.md` |
-   | `text` | `docs/guides/review/text.md` (every picture opened, every claim backed) | `docs/guides/testing.md#pr-evidence` |
+   | `text` | `docs/guides/review/text.md` (every picture opened, every claim backed; `PR.md` is the engineer's file and `pr text` generates the Checklist, Testing facts, AI use and `Fixes` lines into `PR-BODY.md`, which the packet points at: never fail `PR.md` for lacking them) | `docs/guides/testing.md#pr-evidence` |
    | `commits` | `docs/guides/review/commits.md` | |
 
 3. Read the diff and the files it touches yourself and run the checks the change calls for; do not trust a reported

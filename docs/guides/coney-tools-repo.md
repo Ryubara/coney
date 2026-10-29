@@ -357,7 +357,8 @@ The coordinator's triage step ([Task files](issues.md#task-files)); the rules ar
   ranking are in [Task files](issues.md#task-files).
 * `check` ([below](#task-check)) runs everything a change must pass on this machine and writes the `checked` stamp.
 * `review` is the review stage of a task: the tool part and the packet, the reviewer's verdict recorded as a `reviewed`
-  stamp, or both with a headless reviewer. What it checks, the files, the verdict and the stamp are in [Task
+  stamp, or both with a headless reviewer. It reviews the worktree the task's unit record names, from any checkout
+  ([Which worktree](review/task.md#worktree)). What it checks, the files, the verdict and the stamp are in [Task
   review](review/task.md); every option is in [its command table](review/task.md#command). Exit 0 when the reviewer
   may start or a pass was recorded, 1 when it refused or recorded a fail, 2 when it cannot run.
 
@@ -546,7 +547,7 @@ coney-tools task review [TASK] [--worktree WORKTREE] [--base BASE] [--pr-file PR
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `[TASK]` | text | none | the task (default: CONEY_TASK, else the branch) |
-| `--worktree WORKTREE` | path | none | the unit's worktree (default: the current checkout) |
+| `--worktree WORKTREE` | path | none | the unit's worktree (default: the one the unit record names, else the current checkout) |
 | `--base BASE` | text | none | what the branch is compared with (default: origin/\<default branch\>) |
 | `--pr-file PR_FILE` | path | none | the description file (default: \<scratch\>/\<task\>/PR.md) |
 | `--text` | flag | off | review the description alone (a full pass must still hold) |

@@ -25,8 +25,8 @@ connection per process, another agent's `pcsx2_connect` to its own claim still m
 `mode: debug` leaves the previous PINE half.
 
 **What it is not.** The ids come from the text of shell commands, so the guard stops mistakes, not impersonation: a
-caller that runs `claim --agent <another agent's id>` (or only mentions it in a command) goes by that id, exactly as
-`claim` itself hands that agent's claim back to anyone who asks.
+caller that runs `pcsx2 claim --agent <another agent's id>` (or only mentions it in a command) goes by that id,
+exactly as `claim` itself hands that agent's claim back to anyone who asks.
 
 The guard fails open where it cannot work (no PCSX2 copies set up, no session id in the payload, anything
 unexpected), and writes one line to `guard.log` beside its state whenever it does so for a failure of its own (also an

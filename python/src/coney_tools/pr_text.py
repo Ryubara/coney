@@ -42,6 +42,10 @@ FACTS_LIMIT = 8000
 VIDEO_EXTENSIONS = ("mp4", "webm", "mkv", "mov", "avi", "m4v")
 #: The folder of the pictures, next to the engineer's file (`![alt](./shots/x.png)`).
 SHOTS = "shots"
+#: The engineer's file, and what `pr text` writes next to it: the title and the whole description.
+TEXT_FILE = "PR.md"
+TITLE_FILE = "PR-TITLE.txt"
+BODY_FILE = "PR-BODY.md"
 _HEADING = re.compile(r"^##[ \t]+(?P<name>\S.*?)[ \t]*$")
 _IMAGE_LINE = re.compile(r"^!\[(?P<alt>[^\]\n]*)\]\((?P<ref>[^)\s]+)\)\s*$")
 _ZERO_WIDTH = "​"
@@ -655,6 +659,25 @@ def _ai_section(ctx: _Context) -> str:
     else:
         written, model = "", ""
     return f"- **{rules.written_by.label}** {written}\n- **{rules.model.label}** {model}".rstrip()
+
+
+def generated_sections(conventions: Conventions) -> list[tuple[str, str]]:
+    """The sections of the description that `pr text` writes and the engineer's file lacks on purpose, each with what is
+    written into it, in the template's order. The names are the conventions' (`generate` builds the same ones); a
+    reviewer reads these in the generated file (`BODY_FILE`), never in `PR.md`, and does not fail `PR.md` for them."""
+    rules = conventions.pull_requests
+    written = {
+        rules.closing.section: (
+            f"the `{rules.closing.form}` lines, one per issue of the task, from TASK.md; the engineer writes only the "
+            f"summary paragraph and a `{rules.docs_none.line}` line"
+        ),
+        rules.checklist.section: "one ticked item per criterion of the Done section of TASK.md",
+        rules.runtime.section: (
+            f"the facts block from the stamp log; the engineer writes only the `{rules.runtime.line}` line"
+        ),
+        rules.ai_use.section: "the models of the commits' `Co-Authored-By` trailers, else of the engineers in the log",
+    }
+    return [(name, written[name]) for name in rules.sections if name in written]
 
 
 def models_of(subject: pr_proof.Subject, trailer_models: Sequence[str]) -> list[str]:

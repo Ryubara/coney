@@ -199,6 +199,10 @@ line and refused by the checks until it is.
 
 The marker names (`pull_requests.markers`) let a later pass find the two generated blocks again.
 
+`PR.md` therefore lacks the Checklist, the facts of Testing, AI use and the `Fixes` lines on purpose; they are in
+`PR-BODY.md`. A reviewer judges them there and never fails `PR.md` for lacking them: the review packet lists them
+([The description's generated sections](review/task.md#generated)).
+
 ### The facts block {#facts}
 
 The facts say which stages passed, with their hashes cut to 12 digits, from the local log alone: the log's task and

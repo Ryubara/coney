@@ -1,20 +1,31 @@
 # Description review checklist
 
-For a reviewer of one pull request description, the engineer's `PR.md` (the title on line 1, then the body), the way
-a careful maintainer would read it on GitHub. `coney-tools pr check-body` and the [tool part of `task
-review`](task.md#tool-part) have already checked its structure; the reviewer checks that it is **true**: every
-picture shows what the text says, and every claim is backed by the diff or a log. Report findings in the
-[format on the index page](index.md#finding-format) and never edit. The rules are in [What a pull request
-shows](../testing.md#pr-evidence), the [Runtime line](../testing.md#runtime-line) and the `pull_requests` section of
-[.github/conventions.yml](repo:.github/conventions.yml).
+For a reviewer of one pull request description, the way a careful maintainer would read it on GitHub. A description is
+two files ([the generated sections](task.md#generated)): the engineer's `PR.md` (the title on line 1, then the summary
+paragraph, the `Runtime:` line, Issues affected and the pictures), and `PR-BODY.md` beside it, which `coney-tools pr
+text` generates from `PR.md`, `TASK.md` and the stamps: the `Fixes` lines, the Checklist, the facts of Testing and AI
+use. The packet's `text.generated_sections` lists the generated ones and `text.generated_body` the file. `coney-tools pr
+check-body` and the [tool part of `task review`](task.md#tool-part) have already checked the structure; the reviewer
+checks that the description is **true**: every picture shows what the text says, and every claim is backed by the diff
+or a log. Report findings in the [format on the index page](index.md#finding-format) and never edit. The rules are in
+[What a pull request shows](../testing.md#pr-evidence), the [Runtime line](../testing.md#runtime-line) and the
+`pull_requests` section of [.github/conventions.yml](repo:.github/conventions.yml).
 
 The reviewer reads only: `git diff`, `git log`, `git show` and the logs in the scratch folder (their ends, or with
 grep); it changes no worktree, commits nothing and does not touch GitHub.
 
 ## Checklist
 
-- [ ] **Read the description and the change.** `PR.md` whole, then `git diff --stat <base>...HEAD`, `git log
-  <base>..HEAD` and the diff of every file a claim is about.
+- [ ] **Read the description and the change.** `PR.md` whole, then `PR-BODY.md` (the packet says where it is and
+  whether `pr text` has written it), then `git diff --stat <base>...HEAD`, `git log <base>..HEAD` and the diff of
+  every file a claim is about.
+- [ ] **Judge each part in the file that has it.** `pr open` refuses the generated sections in `PR.md`, so never fail
+  `PR.md` for lacking the Checklist, the Testing facts, AI use or the `Fixes` lines (that was wrong on #1057, #1058,
+  #1062 and #1063). Judge them in `PR-BODY.md` instead: each Checklist item is finished by the diff, the `Fixes` lines
+  name issues the change finishes, and AI use names the models of the commits' trailers. Its stage lines are the
+  stamps' as of the last `pr text` (`Review: not reviewed` before this review is no finding). When `PR-BODY.md` is not
+  there yet (`exists` is false), judge `PR.md` alone, say in the report that the generated sections were not read, and
+  ask for `pr text`.
 - [ ] **Open every picture.** Use the Read tool on each image the description shows (paths are relative to `PR.md`'s
   folder), every one, before judging it; for a video, open the stills, or say it could not be checked (a blocker when
   the video is the only evidence). For each, record what it shows and check that:
@@ -40,8 +51,8 @@ grep); it changes no worktree, commits nothing and does not touch GitHub.
       original cannot show it (a refactor whose trace diff is unchanged, a Coney-only debug feature) is fine;
     - the before and after pictures have a view of the original from the same spot, or a stated reason why not.
 - [ ] **The rules a program cannot check:**
-    - `Fixes #N` and `Refs #N` fit the change (`gh issue view N` is read only and allowed); a `Fixes` line for work the
-      change does not finish is Important;
+    - `Fixes #N` and `Refs #N` (in `PR-BODY.md`) fit the change (`gh issue view N` is read only and allowed); a `Fixes`
+      line for work the change does not finish is Important;
     - **Issues affected** is believable: for a change that is more than a one-line fix, a `None (<reason>)` whose
       reason is only "none" or "n/a" is a Minor finding, and when the diff plainly touches what an open issue cites
       (run `coney-tools issue impact --base origin/main --head HEAD`, read the top matches, `gh issue view N` read
@@ -49,7 +60,7 @@ grep); it changes no worktree, commits nothing and does not touch GitHub.
     - nothing is left for later: no "Left for later", "Remaining", "TODO", "follow-up" or "next step" in the body (a
       pull request merges only when every task in it is finished, [Issues](../how-we-work.md#issues));
     - `Docs: none` only when the change touches no behaviour, command or finding a doc describes;
-    - AI use is filled and names the model that wrote the commits (their `Co-Authored-By` trailers);
+    - AI use (in `PR-BODY.md`) is filled and names the model that wrote the commits (their `Co-Authored-By` trailers);
     - no game data, decompiler output or local path in the text, and "user", never "owner", for the person.
 
 ## Severity examples

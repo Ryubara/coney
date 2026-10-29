@@ -604,3 +604,40 @@ def test_the_title_the_paragraph_and_the_pictures_have_stable_hashes(tmp_path: P
     assert built.text_hashes().paragraph_sha256 != one.paragraph_sha256
     path.write_text(original.replace("Fix the", "Fix a"), encoding="utf-8")
     assert built.text_hashes().title_sha256 != one.title_sha256
+
+
+def test_the_sections_pr_text_writes_are_the_ones_the_conventions_name(tmp_path: Path) -> None:
+    """#1094: the review packet tells the reviewer which sections `PR.md` lacks on purpose; the list is read from the
+    conventions' section names, and holds exactly the sections the engineer's file does not write."""
+    built = make(tmp_path)
+    rules = built.conventions.pull_requests
+    found = pr_text.generated_sections(built.conventions)
+    names = [name for name, _ in found]
+    assert names == [name for name in rules.sections if name in names]  # in the template's order
+    assert set(names) == {rules.closing.section, rules.checklist.section, rules.runtime.section, rules.ai_use.section}
+    engineer = (built.unit.dir / "PR.md").read_text(encoding="utf-8")
+    body = generate(built).body
+    for name in rules.sections:
+        written_by_engineer = f"## {name}\n" in engineer
+        assert f"## {name}\n" in body
+        # The Summary and Testing are the engineer's too, in part; the other two are not in the file at all.
+        if name in (rules.checklist.section, rules.ai_use.section):
+            assert not written_by_engineer and name in names
+        if name in (rules.screenshots.section, rules.issues_affected.section):
+            assert name not in names
+    what = dict(found)
+    assert rules.closing.keyword in what[rules.closing.section]
+    assert rules.runtime.line in what[rules.runtime.section]
+
+
+def test_the_generated_sections_follow_a_renamed_section(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    sections = ["Authorship" if name == "AI use" else name for name in built.conventions.pull_requests.sections]
+    conventions = parse_conventions(
+        changed(("pull_requests.sections", sections), ("pull_requests.ai_use.section", "Authorship"))
+    )
+    assert [name for name, _ in pr_text.generated_sections(conventions)][-1] == "Authorship"
+
+
+def test_the_generated_files_are_named_once() -> None:
+    assert (pr_text.TEXT_FILE, pr_text.TITLE_FILE, pr_text.BODY_FILE) == ("PR.md", "PR-TITLE.txt", "PR-BODY.md")
