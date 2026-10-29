@@ -66,6 +66,12 @@ def add_task_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser])
     start.add_argument("--remote", default="origin", help="the git remote to fetch from (default: origin)")
     start.add_argument("--no-fetch", action="store_true", help="start from the base as it is here, without fetching")
     start.add_argument("--dry-run", action="store_true", help="check and print; make, stamp and post nothing")
+    start.add_argument(
+        "--adopt",
+        action="store_true",
+        help="make a unit of the branch named like the task that exists already (made before units existed), keeping "
+        "its name and its worktree",
+    )
     slots = commands.add_parser(
         "slots",
         help="show the engineer tracks (reimplementation, fix, Studio) and the machine's places, or check that an "
@@ -250,7 +256,9 @@ def run_task(
         start_env = StartEnv(
             root, github, conventions, scratch_folder(root), now, lambda: who, build_slots=_build_slots(root)
         )
-        return start_task(StartRequest(name, args.base, args.remote, not args.no_fetch, args.dry_run), start_env)
+        return start_task(
+            StartRequest(name, args.base, args.remote, not args.no_fetch, args.dry_run, args.adopt), start_env
+        )
     if args.command == "leads":
         text = ""
         if args.issue is not None:

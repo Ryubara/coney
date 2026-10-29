@@ -580,6 +580,7 @@ scratch folder and proof log) and makes everything the later stages look for, so
    log is refused here, before anything is made, rather than after the branch exists.
 6. The branch and the folder are free, and the base is a commit: `<remote>/<default branch>` after
    `git fetch`, or `--base`. A fetch that fails stops the command (`--no-fetch` starts from the ref as it is).
+   A branch that exists already is refused, unless the start is an [adoption](#adopting) (`--adopt`).
 
 **It makes**, in this order:
 
@@ -612,6 +613,28 @@ When the fix is done, `coney-tools pr open <issue>-fix` releases it onto the par
 open](pr.md#open)): the parent's log, text and branch, a push that updates the open pull request in place (a merged or
 missing one is refused), and the stamps the fix did not touch still match their hashes, so only the stale ones are
 redone. A release posts `/progress pr-opened` on each issue once, which the claim card shows as `PR #N open`.
+
+### Adopting a branch {#adopting}
+
+A pull request's branch made before `task start` existed has no unit: no `unit.json`, no stamp log, no place in a track,
+so neither the stage commands nor `pr open` find it, and the first hand-made fixes renamed the branch and cherry-picked
+its commits, which renames the pull request's branch and so closes it. `task start <task> --adopt` makes the unit of
+the branch as it is instead:
+
+1. Make the task with the branch's name: `coney-tools task create <issue> --name <branch>` (a task id is lower case
+   letters, digits and hyphens; a branch with a `/` or capitals is renamed first, once, before the pull request is
+   opened). The claim check is the same as for any start.
+2. The engineer runs `coney-tools task start <branch> --adopt` from the main checkout. The branch must exist and
+   must not be checked out in the main checkout; if it has a worktree (anywhere) that worktree is the unit's, else the
+   one `workspace.worktrees` names is made for it. The branch is not renamed, moved, rebased or pushed.
+3. It writes the unit record with the branch's own name and the commit the branch left the default branch at (the
+   merge base, not the default branch now: the base moved on while the branch waited), the `assigned` and `claimed`
+   stamps (`claimed` says `adopted` in its detail and covers the branch's tip) and `/progress claimed` on each issue,
+   and counts the unit in its track like any started one. A fix task cannot be adopted: it works in the unit it fixes.
+
+The log starts empty of stages: the adopted unit redoes Check and Review on its change (`task check`, `task review`)
+and the coordinator then runs `pr open <branch>`, which updates the pull request in place. Conclave lists a conflicting
+branch with no unit with these two commands ([Conflicts](conclave.md#conflicts)).
 
 ### Tracks {#slots}
 
