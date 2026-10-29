@@ -1190,9 +1190,6 @@ comment = 2
 ["src/platform/hud_layer.h"]
 comment = 1
 
-["src/platform/imgui_overlay.cpp"]
-comment = 1
-
 ["src/platform/imgui_ui_scale.cpp"]
 comment = 3
 

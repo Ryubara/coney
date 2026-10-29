@@ -96,12 +96,18 @@ Hovering an item shows its help; right-clicking it pins it to Favourites (or unp
 default. While a text box has the keyboard, or the mouse is over a window, those events stay with the overlay: the
 keyboard does not play on port 1 and Escape does not quit. The gamepads always go to the game and the pad menu.
 
+**Docking.** The windows dock: drag one by its title onto another to join it as a tab, or onto the edge of one to split
+beside it; a docked window can be dragged out again. The layout is kept in `coney-imgui.ini` with the places of the
+windows that are not docked. Multi-viewport (windows torn out of the game window) is off. Docking is
+`ImGuiConfigFlags_DockingEnable`, set in `ImGuiOverlay::configureIo`, and the reason Dear ImGui is pinned at its docking
+release.
+
 Hidden, the overlay draws nothing and takes no input. Shown, it draws last in the frame, through Dear ImGui's OpenGL 3
 backend, which saves the OpenGL state it changes and restores it afterwards, so librw's own idea of the state stays
 right. `--dev-overlay N` shows it for the first N frames and then hides it, to check that: the last frame of
 `--frames 150 --dev-overlay 100 --screenshot a.png` is byte-identical to the same run without `--dev-overlay`.
 
-Dear ImGui (MIT licence) is pinned in `cmake/deps.cmake` and used only in `src/platform/`
+Dear ImGui (MIT licence), its docking release, is pinned in `cmake/deps.cmake` and used only in `src/platform/`
 ([LEGAL.md](repo:LEGAL.md#licences)).
 
 ### Size at any resolution {#ui-scale}

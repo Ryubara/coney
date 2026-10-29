@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The developer overlay's generic renderer over a bare Dear ImGui context: no window, no OpenGL. Together with "every
 // item kind has a renderer in the pad menu" (tests/gui/debug_menu_view_test.cpp), it checks that both front ends
-// draw every item kind (docs/guides/debug-menu.md#adding-a-feature).
+// draw every item kind (docs/guides/debug-menu.md#adding-a-feature). The docking test also checks the context set-up
+// the overlay shares with these tests, ImGuiOverlay::configureIo, here rather than in a file of its own.
 #include "platform/imgui_model_view.h"
 
 #include <cstddef>
@@ -16,6 +17,7 @@
 
 #include "debug/debug_session.h"
 #include "debug/menu_model.h"
+#include "platform/imgui_overlay.h"
 
 using coney::debug::DebugServices;
 using coney::debug::DebugSession;
@@ -24,6 +26,7 @@ using coney::debug::MenuItem;
 using coney::debug::MenuPage;
 using coney::debug::TunableRegistry;
 using coney::platform::ImGuiModelView;
+using coney::platform::ImGuiOverlay;
 
 namespace {
 
@@ -186,4 +189,56 @@ TEST_CASE("a saved layout that names the old Entity editor window opens the one 
     const std::string rewritten = ImGui::SaveIniSettingsToMemory();
     CHECK(rewritten.find("Entity editor=") == std::string::npos);
     CHECK(rewritten.find("Entity inspector=1") != std::string::npos);
+}
+
+// Docking needs Dear ImGui's docking release: ImGui::DockBuilder* come from its internal header, which a release
+// without docking does not have the functions of, so this test is also the check on the pin (cmake/deps.cmake).
+TEST_CASE("the developer overlay's page windows dock into each other", "[debug][platform]") {
+    // Expected: docs/guides/debug-menu.md#the-developer-overlay
+    TunableRegistry tunables;
+    DebugSession session(tunables, DebugServices{}, nullptr);
+    ImGuiModelView view(session.model());
+    view.setPageOpen("Time", true);
+    view.setPageOpen("Favourites", true);
+
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.IniFilename = nullptr;
+    io.DisplaySize = ImVec2(1280.0F, 720.0F);
+    io.DeltaTime = 1.0F / 30.0F;
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
+    ImGuiOverlay::configureIo(io);
+    CHECK((io.ConfigFlags & ImGuiConfigFlags_DockingEnable) != 0);
+    CHECK((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) == 0);
+    CHECK((io.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard) != 0);
+
+    // Dear ImGui reads its settings at the first frame, and DockBuilder fills them, so one frame comes first.
+    ImGui::NewFrame();
+    view.draw("F1 hides");
+    ImGui::Render();
+
+    // Docks both windows into one node, as dragging one onto the other does, and lets a few frames settle.
+    const ImGuiID node = ImGui::DockBuilderAddNode(0, ImGuiDockNodeFlags_None);
+    ImGui::DockBuilderSetNodeSize(node, ImVec2(600.0F, 400.0F));
+    ImGui::DockBuilderDockWindow("Time", node);
+    ImGui::DockBuilderDockWindow("Favourites", node);
+    ImGui::DockBuilderFinish(node);
+    for (int frame = 0; frame < 4; ++frame) {
+        ImGui::NewFrame();
+        view.draw("F1 hides");
+        ImGui::Render();
+    }
+
+    const ImGuiWindow* time = ImGui::FindWindowByName("Time");
+    const ImGuiWindow* favourites = ImGui::FindWindowByName("Favourites");
+    REQUIRE(time != nullptr);
+    REQUIRE(favourites != nullptr);
+    CHECK(time->DockId != 0);
+    CHECK(time->DockId == favourites->DockId);
+    REQUIRE(time->DockNode != nullptr);
+    CHECK(time->DockNode == favourites->DockNode);
+    CHECK(time->DockNode->Windows.Size == 2);
+    // The saved layout keeps the dock node, so docked windows come back docked in the next run.
+    CHECK(std::string(ImGui::SaveIniSettingsToMemory()).find("[Docking][Data]") != std::string::npos);
+    ImGui::DestroyContext();
 }

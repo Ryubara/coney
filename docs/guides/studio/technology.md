@@ -30,7 +30,7 @@ content and formats design. This page links or names them and does not repeat th
 
 | Piece | Where | What it gives Studio |
 | --- | --- | --- |
-| Dear ImGui v1.92.9b, MIT | `cmake/deps.cmake`, built with the debug tools only | The developer overlay's windows over SDL3 and OpenGL 3 ([The developer overlay](../debug-menu.md#the-developer-overlay)); the pin is the plain release, without docking |
+| Dear ImGui v1.92.9b-docking, MIT | `cmake/deps.cmake`, built with the debug tools only | The developer overlay's windows over SDL3 and OpenGL 3, dockable ([The developer overlay](../debug-menu.md#the-developer-overlay)); the pin is the docking release, moved from the plain one ([build issue 1](#build-issues)) |
 | The launcher's design | [The launcher](../launcher.md#decided) | A second Coney program on SDL3 and Dear ImGui over SDL's GPU API: a precedent for a separate executable |
 | The renderer design | [#883](issue:883), in work | SDL3's GPU API behind a backend-neutral seam, Dear ImGui through its `sdlgpu3` backend, and the simulation and drawing on two threads |
 | Coney's Lua 4.0 VM and 956 original natives | `src/scripting/`, [Script bindings](../../references/bindings/index.md) | The runtime and the masterlist the editor's completions come from |
@@ -56,7 +56,7 @@ content and formats design. This page links or names them and does not repeat th
 
 ### Choice: Dear ImGui with docking {#gui-choice}
 
-Dear ImGui, on its docking release (`v1.92.9b-docking`, the same version Coney pins today, so the overlay keeps
+Dear ImGui, on its docking release (`v1.92.9b-docking`, the same version Coney used before it, so the overlay keeps
 working unchanged). The reasons, in the order they weigh:
 
 - **The engine's frame is one call away.** The Level view and the Game view are the engine drawing into a texture
