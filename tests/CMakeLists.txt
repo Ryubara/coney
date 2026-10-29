@@ -19,6 +19,10 @@ add_executable(coney_tests
     core/name_hash_test.cpp
     core/parse_number_test.cpp
     core/ps2_float_test.cpp
+    core/script_patch_apply_test.cpp
+    core/script_patch_merge_test.cpp
+    core/script_patch_test.cpp
+    core/sequence_diff_test.cpp
     core/sha1_test.cpp
     core/sha256_test.cpp
     core/mesh_view_option_test.cpp
@@ -125,6 +129,7 @@ add_executable(coney_tests
     hud/war_command_display_test.cpp
     platform/disc_install_test.cpp
     platform/install_command_test.cpp
+    platform/script_patch_command_test.cpp
     platform/install_folder_fs_test.cpp
     platform/disc_sprite_sheets_test.cpp
     platform/disc_rumble_gang_count_test.cpp

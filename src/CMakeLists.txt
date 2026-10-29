@@ -29,6 +29,10 @@ add_library(coney_core STATIC
     core/pad_handlers.cpp
     core/pads.cpp
     core/sha1.cpp
+    core/script_patch.cpp
+    core/script_patch_apply.cpp
+    core/script_patch_merge.cpp
+    core/sequence_diff.cpp
     core/sha256.cpp
     fileio/disc.cpp
     fileio/executable.cpp
