@@ -5,6 +5,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 
 namespace coney {
 
@@ -48,7 +49,8 @@ float pad::stickValue(std::uint8_t raw) {
     return 0.0F;
 }
 
-void Pad::update(const PadSample& sample) {
+void Pad::update(const PadSample& sample, const std::optional<StickTurn>& turn) {
+    (void)turn;
     // Step 1: a new ring slot for this sample.
     m_current = (m_current + 1) % kHistory;
     m_connected = sample.connected;

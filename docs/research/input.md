@@ -54,6 +54,37 @@ back. The matchers of [the command tables](combat/index.md#commands) are the one
 | `0x00149ef0` | `Pads_UpdateHook` | empty; `Pads_Update` calls it | confirmed (code) |
 | `0x00149ef8` | `Pads_ResetStates` | the 8 records' state back to `0x001499e8` | confirmed (code) |
 
+### The camera-turned stick {#turned-stick}
+
+Step 2 of `Pad_Update` ([Input on the front end](frontend.md#input)) writes the pad record's `+0x00`/`+0x04`, the left
+stick turned by the player's camera. `Pads_Update` (`0x001454a8`) hands `Pad_Update` a 4 × 4 matrix: `Quat_ToMatrix`
+(`0x00336500`, rows the rotated axes) of the player camera's orientation, or of the quaternion kept at
+`0x005ddc90 + player × 0x10` while the follow camera's `+0x473` is 0 ([Camera, in the street](camera.md#street)); the
+identity (`0x005117a0`) for a pad with no player. The step, at `0x001450a0`-`0x0014522c`, confirmed (code):
+
+1. **No matrix, no step:** with a null matrix `+0x00`/`+0x04` keep their last values.
+2. **The stick** is `(x, y)` = `+0x08`, `+0x0c` (the left stick, y up). When the pad belongs to a player (`+0x42` ≥
+   0) whose player camera (`Camera_GetPlayerCamera`, `0x0011f9b0`) is his follow camera (`Cam_GetFollow(player, 0)`,
+   `0x0011f9e0`, not null) and that camera looks behind (`+0x455`, [Looking behind](camera.md#reverse)), both are
+   negated. Confirmed (code).
+3. **Its length** `L = sqrt(x² + y²)` (VU0, `vmul.xy`, `vaddy.x`, `vsqrt`).
+4. **A stick off centre** (`L > 0`): `t = x × row 0 + y × row 1` (the `z` and `w` of the stick are 0, so rows 2 and
+   3 add nothing); the turned stick is `t`'s x and y scaled by `L / sqrt(t.x² + t.y²)`, so it keeps the stick's
+   length, or `t`'s x and y unscaled when that length is 0 (the camera's x and y axes both vertical). Written to
+   `+0x00`, `+0x04`.
+5. **A stick at rest** (`L` = 0): `(x, y)` is written unturned, and when the pad's player has a follow camera
+   (`Cam_GetFollow` returns null for `+0x42` = −1) that camera's `+0x473` is set to 1, so the next `Pads_Update`
+   takes the camera's orientation afresh. Confirmed (code).
+
+The reader is `PlayerRecord_Update` (`0x00146078`): the stick's angle `atan2(+0x04, +0x00)` and its length, at most
+one, go into the per-player record ([Commands](#commands)). Confirmed (code).
+
+**At runtime** (confirmed (runtime), run r-20261029-pad-turned-stick, level99's street): the left stick at (0.6, 0.4)
+with the kept quaternion (−0.10207, 0.05856, −0.49420, 0.86135) gave `+0x00`, `+0x04` = (0.6439977, −0.3244487):
+rows 0 and 1 of that quaternion's matrix have the x, y (0.50467, −0.86331) and (0.83940, 0.49069), so `t` =
+(0.63856, −0.32171), of length 0.71502; scaled to the stick's length 0.72111 it is the value read, within 1e-6. So
+the rows are the standard rotation of the x and y axes by the quaternion (x, y, z, w), and the length is restored.
+
 ### The libpad state machine {#libpad}
 
 Each of the 8 records at `0x005de3c0 + i × 0x140` holds the `libpad` DMA buffer, the state function at `+0x100`, port
@@ -120,6 +151,15 @@ command 0) unless table 5 is full (inferred).
 Coney's pads are `src/core/pad.h` (`Pad`, the pad record and its queries), `src/core/pads.h` and
 `src/core/pad_handlers.h`; the SDL layer replaces the `libpad` state machine and always reports an analog pad with
 pressures. The command tables are not written yet.
+
+The camera-turned stick ([above](#turned-stick)): `Pad::update` takes an optional `StickTurn`, the x and y of the
+matrix's rows 0 and 1 and three facts about the player's follow camera (he has one, it is his current camera, it looks
+behind), and keeps the turned stick (`turnedX`, `turnedY`). For a stick at rest it reports `followStickRest`, the
+original's write of 1 to the follow camera's `+0x473`, for the caller to carry out: a stand-in, as no Coney camera
+keeps that flag. Nothing supplies a turn yet: building it from the player camera (and the kept quaternion that
+`+0x473` chooses) is `Pads_Update`'s, which Coney's `Pads::update` does not do, and Coney's locomotion turns the stick
+by the camera itself ([Characters](characters.md)), so nothing reads the record's turned stick yet. A disconnected pad
+centres the turned stick as well as the others (a Coney choice; the original leaves the record as it was).
 
 ## Open questions
 
