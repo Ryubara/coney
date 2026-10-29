@@ -1568,3 +1568,14 @@ def test_a_lock_is_released_only_by_its_owner(scene: Scene) -> None:
     assert lock.exists()
     task_slots._release(lock, "someone else")
     assert not lock.exists()
+
+
+def test_a_machine_smaller_than_the_kept_places_still_starts_a_unit_when_empty(scene: Scene) -> None:
+    # One build slot holds 2 places, the tracks keep 3: kept places are capped at all but the starting unit's.
+    committed_networking(scene)
+    scene.build_slots = 1
+    scene.task("a-one")
+    assert scene.admit(brief("a-one")).allowed
+    scene.unit("a-one")
+    scene.task("b-two")
+    assert not scene.admit(brief("b-two")).allowed

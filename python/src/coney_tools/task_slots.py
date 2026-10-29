@@ -442,8 +442,10 @@ class Room:
 
     @property
     def machine_full(self) -> bool:
-        """The machine has no place left once the kept places are set aside."""
-        return self.total + 1 + sum(self.kept.values()) > self.machine
+        """The machine has no place left once the kept places are set aside. A machine smaller than the places the
+        tracks keep (one build slot holds 2, the tracks keep 3) sets aside at most all but the starting unit's place, so
+        it still starts a unit while it is empty rather than refusing every start."""
+        return self.total + 1 + min(sum(self.kept.values()), self.machine - 1) > self.machine
 
     @property
     def fits(self) -> bool:

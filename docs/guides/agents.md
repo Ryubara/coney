@@ -293,7 +293,7 @@ decisions of 2026-10-27 to 2026-10-29; the tracks replaced the 3 task and 1 fix 
 `tasks.start.slots` in [.github/conventions.yml](repo:.github/conventions.yml). There are no teams: the coordinator
 keeps the places full from the open issues, `P-critical` first.
 
-| Is | What | Its rule (each of the first three needs a held claim, a fix its parent's, and a place) |
+| Is | What | Its rule (each of the first four needs a held claim, a fix its parent's, and a place) |
 | --- | --- | --- |
 | **Reimplementation** | An `engineer` or `tooling` agent on a task whose issues are labelled neither `studio` nor `networking`: game issues and pull requests outside Coney Studio and networking | At least one game (`feature`) unit always (`min: 1`, `min_kinds`): while none runs, one place is kept for it, which Studio and tooling or docs units may not take. No cap but the machine's |
 | **Fix** | An agent on a `kind: fix` task, made by `task create --fix-of` after a CI check failed on the pull request of a task that passed Review | One at a time (`max: 1`), oldest failure first; one place is kept for it (`min: 1`), so a full machine still takes a fix |
@@ -318,8 +318,9 @@ build slot for 10% of its life (5 units, 52 hours, 5.3 of them building) and a `
 about 600 build runs from 2026-10-24 to 2026-10-28, five or more builds ran at once for 1.7 of the 52.7 hours any ran.
 Two units per build slot put the builds' expected demand at about a fifth of the slots, so a build rarely waits; past
 that, the limit is the checks that take no build slot (with about 8 checks at once, the Python tests of `task check`
-took 80 minutes instead of 48). A machine's limit changes with its `build_slots`; `per_build_slot` changes only after
-measuring again the same way.
+took 80 minutes instead of 48). The tracks keep 3 places together, so a machine with one build slot (2 places) cannot
+keep them all: it sets aside at most all but the starting unit's place, so an empty machine still starts a unit. A
+machine's limit changes with its `build_slots`; `per_build_slot` changes only after measuring again the same way.
 
 **The place belongs to the unit, not to the agent's life.** A unit takes its place at `task start` (an agent the
 coordinator has just started holds it from the Agent call, for at most `reserve_minutes`, so that several calls made
