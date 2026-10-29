@@ -84,8 +84,7 @@ def text_lines(grid: progress_grid.Grid) -> TextLines:
     counts = progress_grid.home_counts(grid)
     return TextLines(
         title=f"Coney: {bold}",
-        # "By function": the README's badges above it weigh each function by the size of its code and read lower or
-        # higher, so the picture says what its percentage counts.
+        # "By function": says what the percentage counts, as the README's badges beside it do.
         subtitle=f"{rest} (counted by function), in address order",
         legend=[(progress_grid.HOME_LABELS[s], f"{counts[s]:,}", s) for s in progress_grid.HOME_STATES],
     )

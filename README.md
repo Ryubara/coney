@@ -73,9 +73,9 @@ The rules we work under are in [LEGAL.md](LEGAL.md).
 
 ## Progress
 
-How much of the original game's own code Coney reimplements, how much of it research has placed, and where the
-[roadmap](docs/roadmap.md) stands. Middleware (RenderWare, the PS2 SDK, Bink, Lua) is replaced, not reimplemented,
-so it is not counted.
+How many of the original game's own functions Coney reimplements, how many research has placed, and where the
+[roadmap](docs/roadmap.md) stands. Every percentage counts functions, not bytes. Middleware (RenderWare, the PS2 SDK,
+Bink, Lua) is replaced, not reimplemented, so it is not counted.
 
 [![Reimplemented](https://img.shields.io/endpoint?url=https%3A%2F%2Fryubara.github.io%2Fconey%2Fprogress%2Fbadges%2Freimplemented.json)](https://ryubara.github.io/coney/progress/)
 [![Researched](https://img.shields.io/endpoint?url=https%3A%2F%2Fryubara.github.io%2Fconey%2Fprogress%2Fbadges%2Fresearched.json)](https://ryubara.github.io/coney/progress/)
@@ -99,9 +99,9 @@ understood (named and cited), the stronger grey not yet started. They are the sa
 colours, as on the [docs home page](https://ryubara.github.io/coney/) (there in rows of 240, here 170), where pointing
 at a square names its function.
 
-The percentages differ on purpose: the badges weigh each function by the size of its code, while the picture counts
-every function as one square, so its share is lower where the reimplemented functions are the larger ones; and
-"Understood" in its legend counts only the functions understood but not yet reimplemented.
+The badges and the picture count the same way, each function as one: the picture's green is the Reimplemented badge's
+share. Its "Understood" legend counts only the functions understood but not yet reimplemented, while the Understood
+badge counts every understood function.
 
 The figures and the picture are measured from `main` each time the [documentation](#documentation) is built, so they
 are never out of date. Per subsystem, the research coverage, the middleware and how it is all measured:

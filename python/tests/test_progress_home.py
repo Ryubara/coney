@@ -117,7 +117,7 @@ def test_the_home_picture_is_one_unlabelled_run_in_only_the_home_classes(tmp_pat
 
 
 def test_the_progress_pictures_keep_their_labels(tmp_path: Path) -> None:
-    svg = progress_grid.render_functions_svg(grid_of(make_grid_checkout(tmp_path)), False, uid="pf")
+    svg = progress_grid.render_functions_svg(grid_of(make_grid_checkout(tmp_path)), uid="pf")
     assert f'data-label="{progress_picture.LABEL_HEIGHT}"' in svg and "<text" in svg
 
 
@@ -193,7 +193,7 @@ def test_the_real_home_picture_stays_light() -> None:
     grid = progress_grid.build_grid(state, REPO)
     assert grid is not None
     html = progress_site.home_section(grid, None)
-    assert html.count(SQUARE) == grid.total()[0]
+    assert html.count(SQUARE) == grid.total()
     assert len(html.encode()) < 250_000, len(html)
 
 

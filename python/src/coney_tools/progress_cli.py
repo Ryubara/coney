@@ -72,27 +72,29 @@ def run_show(as_json: bool) -> int:
     if as_json:
         print(json.dumps(state.to_json(), indent=2))
         return 1 if state.problems else 0
-    totals = state.totals
-    game = totals.game_bytes
+    game = state.game_functions
     pct = progress_render.percent
-    print(f"reimplemented: {pct(state.reimplemented_bytes, game)} ({state.reimplemented_bytes:,} of {game:,} bytes,")
-    print(f"               {len(state.functions)} functions)")
-    print(f"researched:    {pct(totals.researched_bytes, game)} ({totals.researched_bytes:,} bytes)")
-    compared = state.compared_bytes
-    print(f"compared:      {pct(compared, state.reimplemented_bytes)} of the reimplemented bytes,")
-    print(f"               {state.compared_functions} of {len(state.functions)} functions")
+    done = state.reimplemented_functions
+    if game is None:
+        print(f"reimplemented: {done} functions recorded; no share without docs/progress/ghidra-functions.tsv")
+    else:
+        print(f"reimplemented: {pct(done, game)} ({done:,} of {game:,} functions)")
+        researched = state.researched_functions or 0
+        print(f"researched:    {pct(researched, game)} ({researched:,} of {game:,} functions)")
+    compared = state.compared_functions
+    print(f"compared:      {pct(compared, done)} ({compared:,} of {done:,} reimplemented)")
     u = state.understanding
     if u is not None:
-        print(f"understood:    {pct(u.understood_bytes, u.bytes)} ({u.understood_bytes:,} of {u.bytes:,} bytes,")
-        print(f"               {u.understood_functions:,} of {u.functions:,} functions)")
+        understood = u.understood_functions
+        print(f"understood:    {pct(understood, u.functions)} ({understood:,} of {u.functions:,})")
     finished = sum(1 for m in state.milestones if m.status == "done")
     print(f"milestones:    {finished} of {len(state.milestones)} done")
-    for name, total, done, count in state.subsystem_rows():
+    for name, total, count in state.subsystem_rows():
         if count:
-            print(f"  {name:<14} {pct(done, total):>6}  {count} functions")
-    missing = sum(1 for f in state.functions if f.size is None)
+            print(f"  {name:<14} {pct(count, total):>6}  {count} of {total} functions")
+    missing = state.uncounted_functions
     if missing:
-        print(f"{missing} functions have no size: {state.no_size_reason}")
+        print(f"{missing} functions are not counted: {state.uncounted_reason}")
     _report_problems(state.problems)
     return 1 if state.problems else 0
 

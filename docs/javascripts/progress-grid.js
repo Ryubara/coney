@@ -26,40 +26,17 @@
     return "0x" + "00000000".slice(text.length) + text;
   }
 
-  // Turns the table's per-block arrays into absolute addresses and, for the picture by size, each function's first square.
+  // Turns the table's per-block arrays into absolute addresses.
   function prepare(data) {
-    var unit = data.unit;
     data.blocks.forEach(function (block) {
       var address = 0;
-      var first = 0;
       block.addresses = [];
-      block.first = [];
       for (var i = 0; i < block.a.length; i++) {
         address += block.a[i];
         block.addresses.push(address);
-        block.first.push(first);
-        first += Math.max(1, Math.ceil(block.z[i] / unit));
       }
     });
     return data;
-  }
-
-  // The function at square `index` of `block`: the index itself, or by size the last function that starts at or before it.
-  function functionAt(block, index, bySize) {
-    if (!bySize) {
-      return index < block.a.length ? index : -1;
-    }
-    var low = 0;
-    var high = block.first.length - 1;
-    while (low < high) {
-      var middle = (low + high + 1) >> 1;
-      if (block.first[middle] <= index) {
-        low = middle;
-      } else {
-        high = middle - 1;
-      }
-    }
-    return low;
   }
 
   // Appends a div with `text` to `parent`.
@@ -187,8 +164,7 @@
     function fill(svg, hit) {
       tip.textContent = "";
       var info = data ? data.blocks[hit.block.index] : null;
-      var bySize = svg.getAttribute("data-view") === "size";
-      var i = info && hit.cell >= 0 ? functionAt(info, hit.cell, bySize) : -1;
+      var i = info && hit.cell >= 0 && hit.cell < info.a.length ? hit.cell : -1;
       if (!info || i < 0) {
         line(tip, "cg-tip-title", hit.block.title);
         return;

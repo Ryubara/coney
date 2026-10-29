@@ -211,4 +211,4 @@ def test_the_real_pictures_stay_light() -> None:
     for theme in progress_png.FILES:
         data = progress_png.render_home_png(grid, theme)
         assert len(data) < 60_000, (theme, len(data))
-        assert decode(data).height == progress_png.height_of(grid.total()[0])
+        assert decode(data).height == progress_png.height_of(grid.total())

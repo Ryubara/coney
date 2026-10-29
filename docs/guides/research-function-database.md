@@ -139,12 +139,12 @@ and every entry with `coney` a tag, in the file `coney` names; an address outsid
 `.text`) is refused. The tracker counts the entries with `coney` as the
 functions Coney reimplements ([the progress commands](coney-tools-references.md#progress)); an entry without it is a
 researched function. Nothing else is written for the tracker: the entry's subsystem is the one whose range in
-`docs/progress/totals.toml` holds the address, and its size is the function's size in the Ghidra listing, so the
-reimplemented bytes are measured in the same unit as the Understood measure. A function the listing has no function at
-yet (the port is tagged at an address in a gap between the functions the shared Ghidra project defines) counts with no
-size and is a warning of `research render --check`: define the function in Ghidra and refresh the listing. An address
-inside a listed function is an error, a wrong tag address. Without the listing file the sizes are missing for want of
-it, which `progress summary` says.
+`docs/progress/totals.toml` holds the address, and the function is counted when the Ghidra listing has a game function
+there, as every share counts functions ([why](../progress/index.md#by-function)). A function the listing has no
+function at yet (the port is tagged at an address in a gap between the functions the shared Ghidra project defines)
+is not counted and is a warning of `research render --check`: define the function in Ghidra and refresh the listing.
+An address inside a listed function is an error, a wrong tag address. Without the listing file nothing can be counted
+for want of it, which `progress summary` says.
 
 The name is Ghidra's. A tag that spells it differently fails `progress check` when the branch adds the tag, and is a
 warning with a count when it was already there when the branch left `origin/main` (the way `orig check-tags` holds only

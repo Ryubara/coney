@@ -71,21 +71,32 @@ def badge_url(label: str, part: int, whole: int) -> str:
     return f"https://img.shields.io/badge/{quote(label.replace('-', '--'), safe='')}-{text}-{color}"
 
 
+def _share_cell(part: int, whole: int | None, what: str) -> str:
+    """`22.7% of the game's own functions (2,629 of 11,582)`: the share cell of a summary row, from counts."""
+    if whole is None:
+        return f"n/a: {what} needs the Ghidra listing, which counts the functions ({part:,} recorded)"
+    return f"{percent(part, whole)} {what} ({part:,} of {whole:,})"
+
+
 def _summary_rows(progress: Progress, roadmap_link: str) -> list[str]:
-    """The summary table of the docs page; `roadmap_link` is the roadmap's address relative to it."""
-    totals = progress.totals
-    game = totals.game_bytes
-    done = progress.reimplemented_bytes
+    """The summary table of the docs page; `roadmap_link` is the roadmap's address relative to it.
+
+    Every share counts functions of the game's own code in the Ghidra listing (the maintainer's decision of
+    2026-10-29, docs/progress/index.md#by-function), so the rows agree with the picture's headline and the badges.
+    """
+    game = progress.game_functions or 0
     milestones = progress.milestones
     finished = sum(1 for m in milestones if m.status == "done")
-    count = len(progress.functions)
+    reimplemented = progress.reimplemented_functions
+    researched = progress.researched_functions or 0
+    own = "of the game's own functions"
     return [
         "| | Progress | Share |",
         "| --- | --- | --- |",
-        f"| **Reimplemented** | {bar(done, game)} | {percent(done, game)} of the game's own code "
-        f"({done:,} of {game:,} bytes, {count:,} function{'' if count == 1 else 's'}) |",
-        f"| **Researched** | {bar(totals.researched_bytes, game)} | {percent(totals.researched_bytes, game)} "
-        f"placed in a source file or directory ({totals.researched_bytes:,} bytes) |",
+        f"| **Reimplemented** | {bar(reimplemented, game)} "
+        f"| {_share_cell(reimplemented, progress.game_functions, own)} |",
+        f"| **Researched** | {bar(researched, game)} "
+        f"| {_share_cell(researched, progress.game_functions, 'placed in a source directory')} |",
         *_understood_row(progress),
         *_compared_row(progress),
         f"| **[Milestones]({roadmap_link})** | {bar(finished, len(milestones))} "
@@ -95,14 +106,13 @@ def _summary_rows(progress: Progress, roadmap_link: str) -> list[str]:
 
 def _compared_row(progress: Progress) -> list[str]:
     """The summary's "Compared" row: how much of the reimplemented code is checked side by side with the original."""
-    done = progress.reimplemented_bytes
-    if not progress.functions:
+    done = progress.reimplemented_functions
+    if not done:
         return []
-    count = len(progress.functions)
+    compared = progress.compared_functions
     return [
-        f"| **Compared** | {bar(progress.compared_bytes, done)} | {percent(progress.compared_bytes, done)} of the "
-        f"reimplemented code compared with the original ({progress.compared_bytes:,} of {done:,} bytes; "
-        f"{progress.compared_functions:,} of {count:,} functions) |"
+        f"| **Compared** | {bar(compared, done)} | {percent(compared, done)} of the reimplemented functions "
+        f"compared with the original ({compared:,} of {done:,}) |"
     ]
 
 
@@ -112,83 +122,80 @@ def _understood_row(progress: Progress) -> list[str]:
     if u is None:
         return []
     return [
-        f"| **Understood** | {bar(u.understood_bytes, u.bytes)} | {percent(u.understood_bytes, u.bytes)} named in "
-        f"Ghidra and cited with evidence ({u.understood_bytes:,} of {u.bytes:,} bytes; "
-        f"{u.understood_functions:,} of {u.functions:,} functions, {percent(u.understood_functions, u.functions)}) |"
+        f"| **Understood** | {bar(u.understood_functions, u.functions)} "
+        f"| {percent(u.understood_functions, u.functions)} named in Ghidra and cited with evidence "
+        f"({u.understood_functions:,} of {u.functions:,}) |"
     ]
 
 
 def _badges(progress: Progress) -> str:
-    """The shields.io badges: reimplemented, researched and, with a Ghidra listing, understood."""
-    game = progress.totals.game_bytes
-    reimplemented = badge_url("reimplemented", progress.reimplemented_bytes, game)
-    researched = badge_url("researched", progress.totals.researched_bytes, game)
+    """The shields.io badges: reimplemented, researched and, with a Ghidra listing, understood (all by function)."""
+    game = progress.game_functions or 0
+    done = progress.reimplemented_functions
+    researched = progress.researched_functions or 0
     badges = (
-        f"![Reimplemented: {percent(progress.reimplemented_bytes, game)}]({reimplemented}) "
-        f"![Researched: {percent(progress.totals.researched_bytes, game)}]({researched})"
+        f"![Reimplemented: {percent(done, game)}]({badge_url('reimplemented', done, game)}) "
+        f"![Researched: {percent(researched, game)}]({badge_url('researched', researched, game)})"
     )
     u = progress.understanding
     if u is not None:
         # On a line of its own (the same paragraph), so the line stays within the docs' 120 columns.
-        understood = badge_url("understood", u.understood_bytes, u.bytes)
-        badges += f"\n![Understood: {percent(u.understood_bytes, u.bytes)}]({understood})"
+        understood = badge_url("understood", u.understood_functions, u.functions)
+        badges += f"\n![Understood: {percent(u.understood_functions, u.functions)}]({understood})"
     return badges
 
 
 def _subsystem_table(progress: Progress) -> list[str]:
-    """One row per subsystem, then unattributed code; a subsystem with no placed bytes shows n/a."""
+    """One row per subsystem, then unattributed code; a subsystem with no functions in the listing shows n/a."""
     lines = [
-        "| Subsystem | Reimplemented | Share | Functions | Code (bytes) |",
+        "| Subsystem | Reimplemented | Share | Functions reimplemented | Functions |",
         "| --- | --- | --- | --- | --- |",
     ]
-    for name, total, done, count in progress.subsystem_rows():
+    for name, total, done in progress.subsystem_rows():
         label = "Unattributed" if name == UNATTRIBUTED else f"`{name}`"
         if total == 0:
-            lines.append(f"| {label} | {bar(0, 0)} | n/a | {count} | not placed yet |")
+            lines.append(f"| {label} | {bar(0, 0)} | n/a | {done} | none in the listing |")
         else:
-            lines.append(f"| {label} | {bar(done, total)} | {percent(done, total)} | {count} | {total:,} |")
+            lines.append(f"| {label} | {bar(done, total)} | {percent(done, total)} | {done:,} | {total:,} |")
     return lines
 
 
 def _understood_table(progress: Progress) -> list[str]:
-    """The "Understood" measure per subsystem: bytes, functions, and how many are named and cited."""
+    """The "Understood" measure per subsystem: functions understood, named and cited."""
     u = progress.understanding
     if u is None:
         return ["Not measured yet: the checkout has no docs/progress/ghidra-functions.tsv."]
     lines = [
-        "| Subsystem | Understood | Share | Functions understood | Named | Cited | Code (bytes) |",
-        "| --- | --- | --- | --- | --- | --- | --- |",
+        "| Subsystem | Understood | Share | Functions understood | Named | Cited |",
+        "| --- | --- | --- | --- | --- | --- |",
     ]
     for r in u.by_subsystem([s.name for s in progress.totals.subsystems]):
         label = "Unattributed" if r.name == UNATTRIBUTED else f"`{r.name}`"
         lines.append(
-            f"| {label} | {bar(r.understood_bytes, r.bytes)} | {percent(r.understood_bytes, r.bytes)} "
-            f"| {r.understood_functions:,} of {r.functions:,} | {r.named:,} | {r.cited:,} | {r.bytes:,} |"
+            f"| {label} | {bar(r.understood_functions, r.functions)} | {percent(r.understood_functions, r.functions)} "
+            f"| {r.understood_functions:,} of {r.functions:,} | {r.named:,} | {r.cited:,} |"
         )
     total_named = sum(1 for s in u.statuses if s.function.named)
     total_cited = sum(1 for s in u.statuses if s.cited)
     lines.append(
-        f"| **All** | {bar(u.understood_bytes, u.bytes)} | {percent(u.understood_bytes, u.bytes)} "
-        f"| {u.understood_functions:,} of {u.functions:,} | {total_named:,} | {total_cited:,} | {u.bytes:,} |"
+        f"| **All** | {bar(u.understood_functions, u.functions)} | {percent(u.understood_functions, u.functions)} "
+        f"| {u.understood_functions:,} of {u.functions:,} | {total_named:,} | {total_cited:,} |"
     )
     return lines
 
 
 def _coverage_table(progress: Progress) -> list[str]:
-    """The source map's coverage categories as shares of `.text`."""
-    text = progress.totals.text.size
-    lines = ["| Category | Share of `.text` | | Bytes |", "| --- | --- | --- | --- |"]
-    for c in progress.totals.coverage:
-        lines.append(f"| {c.label} | {bar(c.bytes, text)} | {percent(c.bytes, text)} | {c.bytes:,} |")
+    """The source map's coverage categories as sizes of `.text`: a size table, with no share."""
+    lines = ["| Category | Bytes |", "| --- | --- |"]
+    lines += [f"| {c.label} | {c.bytes:,} |" for c in progress.totals.coverage]
     return lines
 
 
 def _middleware_table(progress: Progress) -> list[str]:
-    """The middleware Coney replaces, with its share of `.text`."""
-    text = progress.totals.text.size
-    lines = ["| Library | Share of `.text` | Bytes | Replaced by |", "| --- | --- | --- | --- |"]
+    """The middleware Coney replaces, with its size."""
+    lines = ["| Library | Bytes | Replaced by |", "| --- | --- | --- |"]
     for m in progress.totals.middleware:
-        lines.append(f"| {m.name} | {percent(m.bytes, text)} | {m.bytes:,} | {m.replaced_by} |")
+        lines.append(f"| {m.name} | {m.bytes:,} | {m.replaced_by} |")
     return lines
 
 
@@ -210,12 +217,9 @@ def render_page(progress: Progress, grid_html: str = "", missions_html: str = ""
     the page has neither before the checkout has a Ghidra listing or a missions list.
     """
     lines = ["## Overall", "", _badges(progress), "", *_summary_rows(progress, "../roadmap.md"), ""]
-    missing = sum(1 for f in progress.functions if f.size is None)
+    missing = progress.uncounted_functions
     if missing:
-        lines += [
-            f"{missing} reimplemented function(s) have no size and add no bytes: {progress.no_size_reason}.",
-            "",
-        ]
+        lines += [f"{missing} reimplemented function(s) are not counted above: {progress.uncounted_reason}.", ""]
     if grid_html:
         lines += ["## Every function", "", grid_html, ""]
     lines += ["## Milestones", "", "| Milestone | Status |", "| --- | --- |"]
@@ -224,7 +228,8 @@ def render_page(progress: Progress, grid_html: str = "", missions_html: str = ""
         lines += ["", "## Missions", "", missions_html]
     lines += ["", "## By subsystem", "", *_subsystem_table(progress), ""]
     lines += ["## Understood by subsystem", "", *_understood_table(progress), ""]
-    lines += ["## Research coverage", "", *_coverage_table(progress), ""]
+    sizes = "Sizes of the executable's `.text`, not progress."
+    lines += ["## Research coverage", "", sizes, "", *_coverage_table(progress), ""]
     lines += ["## Middleware: replaced, not reimplemented", "", *_middleware_table(progress), ""]
     lines += ["## Reimplemented functions", "", *_function_table(progress)]
     return "\n".join(lines)
@@ -266,9 +271,9 @@ def badge_files(progress: Progress) -> dict[str, str]:
     The README points shields.io at these files on the published site, so its badges follow `main` without a
     pull request ever committing a number. The "understood" badge exists once the checkout has a Ghidra listing.
     """
-    game = progress.totals.game_bytes
-    done = progress.reimplemented_bytes
-    researched = progress.totals.researched_bytes
+    game = progress.game_functions or 0
+    done = progress.reimplemented_functions
+    researched = progress.researched_functions or 0
     files = {
         "reimplemented.json": _endpoint("reimplemented", percent(done, game), badge_color(done, game)),
         "researched.json": _endpoint("researched", percent(researched, game), badge_color(researched, game)),
@@ -276,8 +281,12 @@ def badge_files(progress: Progress) -> dict[str, str]:
     u = progress.understanding
     if u is not None:
         files["understood.json"] = _endpoint(
-            "understood", percent(u.understood_bytes, u.bytes), badge_color(u.understood_bytes, u.bytes)
+            "understood",
+            percent(u.understood_functions, u.functions),
+            badge_color(u.understood_functions, u.functions),
         )
+        compared = progress.compared_functions
+        files["compared.json"] = _endpoint("compared", percent(compared, done), badge_color(compared, done))
     finished = sum(1 for m in progress.milestones if m.status == "done")
     count = len(progress.milestones)
     files["milestones.json"] = _endpoint("milestones", f"{finished} of {count} done", badge_color(finished, count))

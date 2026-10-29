@@ -1,9 +1,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The progress history: one point per day of `main`, rebuilt from git, never committed.
 
-A point is the tracker's own headline numbers (reimplemented, researched and understood bytes with their
-denominators, and the function counts) for the last first-parent commit of a UTC day. The days come from git, so the
-history needs no state of its own: `reconstruct` extracts the few inputs the tracker reads (docs/progress, the
+A point is the tracker's own headline numbers (the functions reimplemented, researched and understood, and the
+functions of the game's own code in the Ghidra listing they are counted against) for the last first-parent commit of a
+UTC day. Shares count functions, not bytes (the maintainer's decision of 2026-10-29); a day before the listing existed
+has no total to count against, so it keeps its count of recorded ports and shows no share. The days come from git, so
+the history needs no state of its own: `reconstruct` extracts the few inputs the tracker reads (docs/progress, the
 research pages, the function database, the roadmap, the bindings and the `@orig` tags in `src/`) from each day's
 commit into a temporary folder and loads them with today's code, so every day is measured by the same definition. A
 day before the function database held the reimplemented functions has the retired list `docs/progress/functions.toml`
@@ -36,7 +38,7 @@ from coney_tools import progress, progress_import, progress_research, research_f
 from coney_tools.config import ConfigError
 from coney_tools.progress import Progress
 
-SCHEMA = 1
+SCHEMA = 2
 #: Where the file sits in the built site; the deploy fetches the published copy as a cache.
 HISTORY_FILE = "progress/history.json"
 #: The inputs the tracker reads, as git paths: everything `progress.load` needs and nothing else (no images, no code).
@@ -58,47 +60,37 @@ def definition() -> str:
 
 @dataclass(frozen=True)
 class Point:
-    """The tracker's headline numbers on one day."""
+    """The tracker's headline numbers on one day: function counts and the total they are counted against."""
 
     date: str  # UTC, `2026-10-21`
     commit: str  # abbreviated hash the numbers were taken at
-    game_bytes: int
-    reimplemented_bytes: int
     reimplemented_functions: int
-    researched_bytes: int
-    understood_bytes: int | None = None  # None before the Ghidra listing existed
+    researched_functions: int | None = None  # None before the Ghidra listing existed
     understood_functions: int | None = None
-    listing_functions: int | None = None
-    listing_bytes: int | None = None
+    listing_functions: int | None = None  # the game's own functions in the listing: the whole every share counts
 
     def share(self, measure: str) -> float | None:
-        """The measure as a percentage of its own denominator (the Progress page's bars), or None when unknown."""
-        if measure == "reimplemented":
-            part, whole = self.reimplemented_bytes, self.game_bytes
-        elif measure == "researched":
-            part, whole = self.researched_bytes, self.game_bytes
-        else:
-            if self.understood_bytes is None or not self.listing_bytes:
-                return None
-            part, whole = self.understood_bytes, self.listing_bytes
-        return 100.0 * part / whole if whole else None
+        """The measure as a percentage of the listing's game functions (the Progress page's bars), or None."""
+        part = {
+            "reimplemented": self.reimplemented_functions,
+            "researched": self.researched_functions,
+            "understood": self.understood_functions,
+        }[measure]
+        if part is None or not self.listing_functions:
+            return None
+        return 100.0 * part / self.listing_functions
 
 
 def point_of(state: Progress, date: str, commit: str) -> Point:
     """The point for the tracker's `state` as of `date` and `commit`."""
-    totals = state.totals
     u = state.understanding
     return Point(
         date,
         commit,
-        totals.game_bytes,
-        state.reimplemented_bytes,
-        len(state.functions),
-        totals.researched_bytes,
-        None if u is None else u.understood_bytes,
+        state.reimplemented_functions,
+        state.researched_functions,
         None if u is None else u.understood_functions,
-        None if u is None else u.functions,
-        None if u is None else u.bytes,
+        state.game_functions,
     )
 
 
@@ -288,7 +280,7 @@ def _x_positions(points: list[Point]) -> list[float]:
 def render_chart(points: list[Point], uid: str = "ph") -> str:
     """The line chart of the three measures over the days, as SVG with one titled marker per day and measure.
 
-    Percent of each measure's own denominator, as the Progress page's bars. Lines are 2 px, markers 3 px with a
+    Percent of the listing's game functions, as the Progress page's bars. Lines are 2 px, markers 3 px with a
     tooltip; the colours are the picture's state colours (progress-grid.css). The standalone styling is the page's.
     """
     xs = _x_positions(points)
@@ -343,8 +335,8 @@ def render_section(points: list[Point], skipped: list[str]) -> str:
         f'<ul class="cg-legend cg-legend-inline">{legend}</ul>',
         "</div>",
         "",
-        "| Date | Commit | Reimplemented | Functions | Understood | Researched |",
-        "| --- | --- | --- | --- | --- | --- |",
+        "| Date | Commit | Reimplemented | Functions reimplemented | Understood | Researched | Game functions |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
     ]
     for p in reversed(points):
         shares = {m: p.share(m) for m in MEASURES}
@@ -355,7 +347,8 @@ def render_section(points: list[Point], skipped: list[str]) -> str:
 
         lines.append(
             f"| {p.date} | `{p.commit}` | {cell('reimplemented')} | {p.reimplemented_functions:,} "
-            f"| {cell('understood')} | {cell('researched')} |"
+            f"| {cell('understood')} | {cell('researched')} "
+            f"| {'n/a' if p.listing_functions is None else f'{p.listing_functions:,}'} |"
         )
     if skipped:
         lines += [

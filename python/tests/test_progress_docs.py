@@ -61,6 +61,7 @@ def test_badge_files_are_shields_endpoints_in_the_site(tmp_path: Path) -> None:
     state = hooks.load_progress(make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG, ONE_LISTING))
     files = hooks.progress_badge_files(state)
     assert sorted(files) == [
+        "progress/badges/compared.json",
         "progress/badges/milestones.json",
         "progress/badges/reimplemented.json",
         "progress/badges/researched.json",
@@ -71,7 +72,7 @@ def test_badge_files_are_shields_endpoints_in_the_site(tmp_path: Path) -> None:
         assert data["schemaVersion"] == 1
         assert set(data) == {"schemaVersion", "label", "message", "color"}
     researched = json.loads(files["progress/badges/researched.json"])
-    assert (researched["label"], researched["message"]) == ("researched", "33.3%")
+    assert (researched["label"], researched["message"]) == ("researched", "100.0%")
 
 
 def test_disagreeing_inputs_fail_the_build(tmp_path: Path) -> None:
@@ -129,7 +130,7 @@ def test_a_published_history_is_the_cache_of_the_next_build(tmp_path: Path, monk
     from coney_tools import progress_history
 
     cache = tmp_path / "history.json"
-    old = progress_history.to_json([progress_history.Point("2020-01-01", "abc", 10, 1, 1, 5)], [])
+    old = progress_history.to_json([progress_history.Point("2020-01-01", "abc", 1, 1, 1, 10)], [])
     cache.write_text(json.dumps(old), encoding="utf-8")
     monkeypatch.setenv("CONEY_PROGRESS_HISTORY_CACHE", str(cache))
     site = hooks.build_progress_site(root, state)
@@ -137,3 +138,19 @@ def test_a_published_history_is_the_cache_of_the_next_build(tmp_path: Path, monk
     assert dates[0] == "2020-01-01" and len(dates) == 2
     monkeypatch.setenv("CONEY_PROGRESS_HISTORY_CACHE", str(tmp_path / "missing.json"))
     assert len(json.loads(hooks.build_progress_site(root, state).files["progress/history.json"])["points"]) == 1
+
+
+def test_no_page_shows_a_byte_share() -> None:
+    """Progress counts functions (maintainer, 2026-10-29): no line of a progress page gives a percentage of bytes."""
+    state = progress.load(REPO)
+    texts = {
+        "the generated page": progress_render.render_page(state),
+        "the history": (REPO / progress.HISTORY_PAGE_FILE).read_text(encoding="utf-8"),
+        "the README": (REPO / "README.md").read_text(encoding="utf-8"),
+    }
+    for name, text in texts.items():
+        for line in text.splitlines():
+            assert not (re.search(r"\d%", line) and re.search(r"bytes", line)), f"{name}: {line}"
+    # The hand-written page names the old 37.0% in bytes, in its decision paragraph.
+    page = (REPO / progress.PAGE_FILE).read_text(encoding="utf-8")
+    assert "One square per 512 bytes" not in page and "of the game's own code (" not in texts["the generated page"]

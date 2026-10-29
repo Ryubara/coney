@@ -185,13 +185,13 @@ def test_consistent_inputs_have_no_problems(tmp_path: Path) -> None:
     """Entries with `coney` are the reimplemented functions; the size is the listing's, the subsystem the range's."""
     state = progress.load(make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG, ONE_LISTING))
     assert state.problems == [] and state.warnings == []
-    assert state.reimplemented_bytes == 0x80
+    assert state.reimplemented_functions == 1 and state.game_functions == 1
     assert [(f.address, f.subsystem, f.size, f.system, f.coney) for f in state.functions] == [
         (0x1010, "Alpha", 0x80, "alpha", "src/core/thing.h:doThing")
     ]
-    rows = {name: (total, done, count) for name, total, done, count in state.subsystem_rows()}
-    assert rows["Alpha"] == (0x200, 0x80, 1)
-    assert rows[progress.UNATTRIBUTED] == (0x800, 0, 0)
+    rows = {name: (total, done) for name, total, done in state.subsystem_rows()}
+    assert rows["Alpha"] == (1, 1)
+    assert rows[progress.UNATTRIBUTED] == (0, 0)
 
 
 def test_the_compared_share_counts_the_functions_with_the_status_compared(tmp_path: Path) -> None:
@@ -200,11 +200,12 @@ def test_the_compared_share_counts_the_functions_with_the_status_compared(tmp_pa
     listing = ONE_LISTING + "0x00001030\t64\tPort\t0\n"
     tags = ONE_TAG + "/// @orig 0x00001030 Port (Thing.cpp)\nvoid port();\n"
     state = progress.load(make_checkout(tmp_path, ONE_FUNCTION + compared, tags, listing))
-    assert state.problems == [] and (state.compared_functions, state.compared_bytes) == (1, 0x40)
-    assert state.reimplemented_bytes == 0xC0
-    assert state.to_json()["compared"] == {"functions": 1, "bytes": 0x40, "total": 0xC0, "percent": 33.333}
+    assert state.problems == [] and state.compared_functions == 1
+    assert state.reimplemented_functions == 2
+    assert state.to_json()["compared"] == {"functions": 1, "total": 2, "percent": 50.0}
     page = progress_render.render_page(state, "", "")
-    assert "| **Compared** |" in page and "1 of 2 functions" in page
+    assert "| **Compared** |" in page
+    assert "50.0% of the reimplemented functions compared with the original (1 of 2)" in page
 
 
 def test_an_entry_without_coney_is_researched_not_reimplemented(tmp_path: Path) -> None:
@@ -214,12 +215,62 @@ def test_an_entry_without_coney_is_researched_not_reimplemented(tmp_path: Path) 
     assert state.problems == [] and [f.name for f in state.functions] == ["Thing::Do"]
 
 
-def test_a_function_the_listing_lacks_counts_with_no_size(tmp_path: Path) -> None:
-    """A port is tagged where the original has a function that Ghidra may not define yet: it counts, adds no bytes."""
+def test_a_function_the_listing_lacks_is_not_counted(tmp_path: Path) -> None:
+    """A port is tagged where the original has a function that Ghidra may not define yet: no share counts it."""
     state = progress.load(make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG, "0x00001100\t8\tOther\t0\n"))
     assert state.problems == []
-    assert [(f.size) for f in state.functions] == [None] and state.reimplemented_bytes == 0
-    assert progress.load(make_checkout(tmp_path / "bare", ONE_FUNCTION, ONE_TAG)).reimplemented_bytes == 0  # no listing
+    assert [(f.size) for f in state.functions] == [None]
+    assert (state.reimplemented_functions, state.unlisted_functions, state.game_functions) == (0, 1, 1)
+    # A day measured from the retired list keeps the row's size, yet only the listing decides what counts.
+    row = progress.Function(0x1100, "Row", "Alpha", 50)
+    old = progress.load(make_checkout(tmp_path / "old", listing=ONE_LISTING), [row])
+    assert (old.reimplemented_functions, old.unlisted_functions) == (0, 1)
+    assert sum(done for _, _, done in old.subsystem_rows()) == 0
+    # Without a listing there is no total to count against: the port is recorded, and no share exists.
+    bare = progress.load(make_checkout(tmp_path / "bare", ONE_FUNCTION, ONE_TAG))
+    assert (bare.reimplemented_functions, bare.game_functions) == (1, None)
+    assert bare.to_json()["reimplemented"] == {"functions": 1, "total": None, "percent": None}
+
+
+# Four game functions in the listing: two in Alpha, one in Beta, one in no range (unattributed). One is ported, one
+# more understood (a role, a level and a name), and three lie inside a subsystem's range.
+FOUR_LISTING = (
+    "0x00001010\t128\tThing::Do\t0\n0x00001020\t64\tKnown\t0\n0x00001210\t32\tBeta::Run\t0\n0x00001500\t16\tFar\t0\n"
+)
+FOUR_FUNCTIONS = ONE_FUNCTION + entry(0x1020, "Known", extra='role = "does a thing"\n')
+
+
+def test_every_share_counts_functions_and_they_agree(tmp_path: Path) -> None:
+    """The reimplemented, researched, understood and compared shares are function counts of the listing's game code.
+
+    The maintainer decided on 2026-10-29 that progress is functions done, not bytes: the bytes of the four functions
+    (240) never appear, and the page, the badges and `progress.json` say the same numbers.
+    """
+    state = progress.load(make_checkout(tmp_path, FOUR_FUNCTIONS, ONE_TAG, FOUR_LISTING))
+    assert state.problems == []
+    assert state.game_functions == 4
+    assert (state.reimplemented_functions, state.researched_functions) == (1, 3)
+    assert state.understanding is not None and state.understanding.understood_functions == 1
+    data = state.to_json()
+    assert data["reimplemented"] == {"functions": 1, "total": 4, "percent": 25.0}
+    assert data["researched"] == {"functions": 3, "total": 4, "percent": 75.0}
+    assert data["understood"]["percent"] == 25.0 and "bytes" not in data["understood"]
+    assert "bytes" not in data["reimplemented"] and "bytes" not in data["compared"]
+    page = progress_render.render_page(state, "", "")
+    assert "25.0% of the game's own functions (1 of 4)" in page
+    assert "75.0% placed in a source directory (3 of 4)" in page
+    assert "25.0% named in Ghidra and cited with evidence (1 of 4)" in page
+    assert "bytes" not in page.split("## Research coverage")[0]
+    badges = {name: json.loads(text) for name, text in progress_render.badge_files(state).items()}
+    assert badges["reimplemented.json"]["message"] == "25.0%"
+    assert badges["researched.json"]["message"] == "75.0%"
+    assert badges["understood.json"]["message"] == "25.0%"
+    assert badges["compared.json"]["message"] == "0.0%"
+    assert "![Reimplemented: 25.0%](" in page
+    # The subsystem table counts functions too, and its rows add up to the whole.
+    rows = {name: (total, done) for name, total, done in state.subsystem_rows()}
+    assert rows["Alpha"] == (2, 1) and rows["Beta"] == (1, 0) and rows[progress.UNATTRIBUTED] == (1, 0)
+    assert sum(total for total, _ in rows.values()) == state.game_functions
 
 
 def test_tags_and_entries_must_match(tmp_path: Path) -> None:
@@ -299,17 +350,17 @@ def test_render_writes_the_page_and_the_badges(tmp_path: Path, monkeypatch: pyte
     page = (out / "progress" / "index.md").read_text(encoding="utf-8")
     assert page.startswith("before") and page.endswith("after" + chr(10)) and progress_render.PAGE_MARKER not in page
     assert "| `0x00001010` | `Thing::Do` | `Alpha` | 128 |" in page
-    assert "| `Empty` |" in page and "not placed yet" in page
-    assert "4.2% of the game's own code (128 of 3,072 bytes, 1 function)" in page
+    assert "| `Empty` |" in page and "none in the listing" in page
+    assert "100.0% of the game's own functions (1 of 1)" in page
     assert "[End](../roadmap.md#end) | not started" in page
     badges = out / "progress" / "badges"
-    expected = ["milestones.json", "reimplemented.json", "researched.json", "understood.json"]
+    expected = ["compared.json", "milestones.json", "reimplemented.json", "researched.json", "understood.json"]
     assert sorted(p.name for p in badges.iterdir()) == expected
     assert json.loads((badges / "reimplemented.json").read_text(encoding="utf-8")) == {
         "schemaVersion": 1,
         "label": "reimplemented",
-        "message": "4.2%",
-        "color": "red",
+        "message": "100.0%",
+        "color": "green",
     }
     assert json.loads((badges / "milestones.json").read_text(encoding="utf-8"))["message"] == "1 of 3 done"
     assert (root / "docs" / "progress" / "index.md").read_text(encoding="utf-8") == BLOCK
@@ -349,8 +400,8 @@ def test_show_json(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pyte
     monkeypatch.chdir(make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG, ONE_LISTING))
     assert main(["progress", "summary", "--json"]) == 0
     data = json.loads(capsys.readouterr().out)
-    assert data["reimplemented"] == {"bytes": 128, "total": 3072, "percent": 4.167, "functions": 1}
-    assert data["researched"]["bytes"] == 1024
+    assert data["reimplemented"] == {"functions": 1, "total": 1, "percent": 100.0}
+    assert data["researched"] == {"functions": 1, "total": 1, "percent": 100.0}
     assert [m["status"] for m in data["milestones"]] == ["done", "in progress", "not started"]
     assert data["subsystems"][-1]["name"] == "unattributed"
 
@@ -614,8 +665,8 @@ def test_measure_by_subsystem_and_backlog(tmp_path: Path) -> None:
     root = make_research_checkout(tmp_path)
     u = progress.load(root).understanding
     assert u is not None
-    assert u.functions == 4 and u.bytes == 256 + 64 + 128 + 32  # the middleware function is left out
-    assert u.understood_functions == 1 and u.understood_bytes == 256
+    assert u.functions == 4  # the middleware function is left out
+    assert u.understood_functions == 1 and u.placed_functions == 3
     rows = {r.name: r for r in u.by_subsystem(["Alpha", "Beta", "Empty"])}
     assert list(rows) == ["Alpha", "Beta", progress.UNATTRIBUTED]
     assert (rows["Alpha"].understood_functions, rows["Alpha"].named, rows["Alpha"].cited) == (1, 2, 1)
@@ -636,7 +687,7 @@ def test_understood_is_rendered(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     assert main(["progress", "render", str(out)]) == 0
     page = (out / "progress" / "index.md").read_text(encoding="utf-8")
     assert "| **Understood** |" in page and "## Understood by subsystem" in page
-    assert "1 of 4 functions" in page and "badge/understood-" in page
+    assert "(1 of 4)" in page and "badge/understood-" in page
     understood = out / "progress" / "badges" / "understood.json"
     assert json.loads(understood.read_text(encoding="utf-8"))["label"] == "understood"
     before = understood.read_text(encoding="utf-8")
@@ -696,10 +747,11 @@ def test_no_size_says_why(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsy
     bare = make_checkout(tmp_path / "bare", ONE_FUNCTION, ONE_TAG)
     monkeypatch.chdir(bare)
     assert main(["progress", "summary"]) == 0
-    assert "1 functions have no size: there is no docs/progress/ghidra-functions.tsv" in capsys.readouterr().out
+    assert "1 functions are not counted: there is no docs/progress/ghidra-functions.tsv" in capsys.readouterr().out
     assert "no docs/progress/ghidra-functions.tsv" in progress_render.render_page(progress.load(bare))
     lacking = make_checkout(tmp_path / "lacking", ONE_FUNCTION, ONE_TAG, "0x00001100\t8\tOther\t0\n")
     monkeypatch.chdir(lacking)
     assert main(["progress", "summary"]) == 0
-    assert "1 functions have no size: the Ghidra listing has no function at their address" in capsys.readouterr().out
+    assert "1 functions are not counted: the Ghidra listing has no function at their address" in capsys.readouterr().out
     assert "the Ghidra listing has no function at their address." in progress_render.render_page(progress.load(lacking))
+    assert progress.load(bare).uncounted_functions == progress.load(lacking).uncounted_functions == 1
