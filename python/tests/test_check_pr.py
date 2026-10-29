@@ -12,6 +12,8 @@ from conventions_support import REPO, write_checkout
 from test_repo_checks import body
 
 from coney_tools import check_cli, check_pr, local_gate
+from coney_tools.build_claims import SlotTimeout
+from coney_tools.build_run import EXIT_QUEUED
 from coney_tools.cli import main
 from coney_tools.config import ConfigError
 from coney_tools.conventions import load_conventions
@@ -192,7 +194,7 @@ def test_the_command_without_agent_gives_the_build_an_id_because_the_build_sees_
         return 0, ""
 
     monkeypatch.setattr(local_gate, "run_command", fake)
-    argv = ["check", "pr", "--base", "main", "--body", "body.md", "--title", "core: Add x", "--only", "engine"]
+    argv = ["ci", "pr", "--base", "main", "--body", "body.md", "--title", "core: Add x", "--only", "engine"]
     assert main(argv) == 0
     build = seen[0]
     assert "--agent" in build and build[build.index("--agent") + 1]
@@ -228,7 +230,7 @@ def test_the_exit_code_is_1_when_a_step_fails_and_0_when_all_pass(
 ) -> None:
     monkeypatch.chdir(checkout)
     write_body(checkout)
-    argv = ["check", "pr", "--base", "main", "--body", "body.md", "--only", "title", "--only", "body"]
+    argv = ["ci", "pr", "--base", "main", "--body", "body.md", "--only", "title", "--only", "body"]
     assert main([*argv, "--title", "tools: Add it"]) == 0
     assert "ok   title" in capsys.readouterr().out
     assert main([*argv, "--title", "Codex/tools noclip 243"]) == 1
@@ -236,12 +238,28 @@ def test_the_exit_code_is_1_when_a_step_fails_and_0_when_all_pass(
     assert "FAIL title" in out and "CI would refuse this pull request too" in out
 
 
+def test_a_step_that_waits_in_vain_for_a_check_slot_ends_the_command_with_the_queued_code(
+    checkout: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(checkout)
+    write_body(checkout)
+
+    def queued() -> StepResult:
+        raise SlotTimeout("no slot", 2, 3)
+
+    monkeypatch.setattr(check_pr, "pr_steps", lambda *_: {"title": queued})
+    argv = ["ci", "pr", "--base", "main", "--body", "body.md", "--title", "tools: Add it", "--only", "title"]
+    assert main(argv) == EXIT_QUEUED
+    out = capsys.readouterr().out
+    assert "coney-tools ci pr:" in out and "run it again" in out
+
+
 def test_only_and_skip_choose_the_steps(
     checkout: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.chdir(checkout)
     write_body(checkout)
-    argv = ["check", "pr", "--base", "main", "--body", "body.md", "--title", "tools: Add it"]
+    argv = ["ci", "pr", "--base", "main", "--body", "body.md", "--title", "tools: Add it"]
     assert main([*argv, "--only", "title", "--only", "docs-rule"]) == 0
     printed = capsys.readouterr().out
     assert "title:" in printed and "docs-rule:" in printed and "body:" not in printed and "engine" not in printed
@@ -254,7 +272,7 @@ def test_an_unreadable_description_is_a_setup_problem(checkout: Path, monkeypatc
     monkeypatch.chdir(checkout)
     with pytest.raises(ConfigError, match="the description"):
         check_pr.run_pr("main", "tools: Add it", checkout / "missing.md", ["title"], None)
-    assert main(["check", "pr", "--body", "missing.md", "--title", "tools: Add it"]) == 2
+    assert main(["ci", "pr", "--body", "missing.md", "--title", "tools: Add it"]) == 2
 
 
 def test_the_engine_is_not_built_for_a_docs_only_pull_request(
@@ -271,7 +289,7 @@ def test_the_engine_is_not_built_for_a_docs_only_pull_request(
         return real_run(command, cwd)
 
     monkeypatch.setattr(local_gate, "run_command", fake_run)
-    argv = ["check", "pr", "--base", "main", "--body", "body.md", "--title", "docs: Add a page", "--only", "engine"]
+    argv = ["ci", "pr", "--base", "main", "--body", "body.md", "--title", "docs: Add a page", "--only", "engine"]
     assert main(argv) == 0
     assert "skip engine: no engine file changed" in capsys.readouterr().out
 
