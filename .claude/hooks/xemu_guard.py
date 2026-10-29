@@ -7,9 +7,10 @@ id the caller used in one of its claiming `coney-tools xemu ... --agent ID` shel
 shell tools, refusing nothing there). The dispatcher (`dispatch.py`) runs it for the xemu MCP tools and for the shell
 commands that name `coney-tools ... xemu`.
 
-The rules and their reasons are in `coney_tools/xemu_guard.py` and docs/guides/agents.md#xemu-guard. Exit code 2 blocks
-the call and shows stderr to the agent; every other outcome exits 0, so a broken guard never locks the emulator out,
-and leaves one line in `guard.log` beside the bindings (or the system temp folder when the package cannot load).
+The rules and their reasons are in `coney_tools/xemu_guard.py` and docs/guides/coney-tools-xemu.md#xemu-guard. Exit
+code 2 blocks the call and shows stderr to the agent; every other outcome exits 0, so a broken guard never locks the
+emulator out, and leaves one line in `guard.log` beside the bindings (or the system temp folder when the package
+cannot load).
 """
 
 from __future__ import annotations

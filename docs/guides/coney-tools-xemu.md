@@ -145,7 +145,7 @@ asked a second time first: the two sockets have no order between them). Two thin
 `.mcp.json` registers `xemu`, Coney's own server (`repo:python/src/coney_tools/xemu_mcp.py`), started through
 [`coney-tools mcp serve xemu`](coney-tools-setup.md#mcp). Every tool takes **`agent`**, the id you claimed a copy
 with, and the server connects that id only to the copy it holds now, read from the claims on every call: there are no
-ports to pass. Claim in a shell first, so [the hook](agents.md#xemu-guard) knows the id is yours.
+ports to pass. Claim in a shell first, so [the hook](#xemu-guard) knows the id is yours.
 
 | Tool | What it does | Reviewer |
 | --- | --- | --- |
@@ -175,6 +175,27 @@ at 640 x 480, the game's mode: a picture of the intro). The guest is stopped for
 not torn, and runs on after it. `width` and `height` (default 640 x 480) say the size: the tool does not read the
 mode, so another size is the caller's to name. A screenshot is a picture of the game: it stays in scratch and is
 never committed.
+
+### The xemu MCP guard {#xemu-guard}
+
+The `xemu` MCP server, Coney's own (`repo:python/src/coney_tools/xemu_mcp.py`), is also one process for a whole
+session, but it learned from the [PCSX2 guard](agents.md#pcsx2-guard): **every `xemu_*` tool takes `agent`**, and the
+server connects that id only to the copy it holds now, read from the claims on every call. There are no ports to pass,
+so no call reaches a copy its `agent` has not claimed, and a connection whose claim was released or taken over is
+closed. What is left is the id itself, which the hook (`.claude/hooks/xemu_guard.py`, the rules in
+`repo:python/src/coney_tools/xemu_guard.py`) checks:
+
+- **Claim in a shell first.** `uv run --project python coney-tools xemu claim --agent <your id>` (or `xemu launch`,
+  `read` or `record-run` with `--agent`) tells the hook who you are, exactly as the PCSX2 guard learns your id; each
+  subagent learns its own.
+- **Pass that id as `agent` on every call.** A call without `agent`, with an id you never claimed with, or with one
+  that holds no claim is refused, naming what to do (a stale claim the server refuses). Another agent's id would act
+  on its game.
+- **Release when you finish.** `xemu_disconnect` frees the stub (it takes one debugger at a time) and `coney-tools xemu
+  release --agent <your id>` closes your xemu. A connection unused for 30 minutes (`XEMU_IDLE_MINUTES`) is closed at
+  the next call.
+- Like the PCSX2 guard it does nothing on a machine with no xemu copies, fails open on its own errors (one line in
+  `guard.log` beside the bindings, in `xemu-claims/mcp/`), and stops mistakes, not impersonation.
 
 ### Snapshots and a state library {#snapshots}
 

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The decisions of the hook that keeps an agent off an xemu copy it has not claimed (`.claude/hooks/xemu_guard.py`,
-docs/guides/agents.md#xemu-guard).
+docs/guides/coney-tools-xemu.md#xemu-guard).
 
 The `xemu` MCP server already connects each caller only to the copy its `agent` id holds (coney_tools.xemu_mcp), so
 what is left to check is the id itself: every agent of a session shares the one server, and an `agent` naming another
