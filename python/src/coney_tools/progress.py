@@ -204,11 +204,11 @@ class Progress:
     mismatches: list[Mismatch] = field(default_factory=list)  # tags spelling a name differently; `new_mismatches`
 
     @property
-    def no_size_reason(self) -> str:
-        """Why a reimplemented function can have no size: the listing is missing, or it lacks a function there."""
+    def uncounted_reason(self) -> str:
+        """Why a port is not counted: the listing is missing, or it has no function at the port's address."""
         if self.understanding is None:
             return (
-                "there is no docs/progress/ghidra-functions.tsv, which gives the sizes "
+                "there is no docs/progress/ghidra-functions.tsv, which lists the functions "
                 "(`coney-tools ghidra export-names`)"
             )
         return "the Ghidra listing has no function at their address"

@@ -219,7 +219,7 @@ def render_page(progress: Progress, grid_html: str = "", missions_html: str = ""
     lines = ["## Overall", "", _badges(progress), "", *_summary_rows(progress, "../roadmap.md"), ""]
     missing = progress.uncounted_functions
     if missing:
-        lines += [f"{missing} reimplemented function(s) are not counted above: {progress.no_size_reason}.", ""]
+        lines += [f"{missing} reimplemented function(s) are not counted above: {progress.uncounted_reason}.", ""]
     if grid_html:
         lines += ["## Every function", "", grid_html, ""]
     lines += ["## Milestones", "", "| Milestone | Status |", "| --- | --- |"]
