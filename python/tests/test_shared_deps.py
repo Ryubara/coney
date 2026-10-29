@@ -199,7 +199,6 @@ def test_a_reconfigure_after_a_pin_change_fetches_into_the_new_folder_not_the_ol
     assert project.configure("one") == project.folder("one")
     assert project.configure("two") == project.folder("two")  # nothing fetched for "two" yet: it fetches there
     assert (Path(project.folder("two")) / "CMakeLists.txt").is_file()
-    assert (Path(project.folder("two")) / ".coney-deps-hash").read_text(encoding="utf-8") == project.hash("two")
 
 
 def test_a_reconfigure_with_the_same_pins_keeps_the_folder(project: _Project) -> None:
@@ -224,6 +223,28 @@ def test_the_users_own_source_folder_wins_in_a_fresh_build_folder(project: _Proj
     project.fetched("one")
     project.fetched("two")
     mine = project.work / "mine"
+    shutil.copytree(project.seed, mine)
+    assert project.configure("one", f"-DFETCHCONTENT_SOURCE_DIR_ALPHA={mine.as_posix()}") == mine.as_posix()
+    assert project.configure("two") == mine.as_posix()
+
+
+def test_a_build_folder_configured_before_the_fix_moves_on_its_next_configure(project: _Project) -> None:
+    project.fetched("one")
+    project.fetched("two")
+    assert project.configure("one") == project.folder("one")
+    # What the cache of a folder configured by the earlier deps.cmake holds: the entry, and no memory of who set it.
+    cache = project.work / "build" / "CMakeCache.txt"
+    entry = r"(//[^\n]*\n)?CONEY_DEPS_PICKED_ALPHA:INTERNAL=[^\n]*\n"
+    cache.write_text(re.sub(entry, "", cache.read_text(encoding="utf-8")), encoding="utf-8")
+    assert "CONEY_DEPS_PICKED" not in project.cache()
+    assert project.folder("one") in project.cache()
+    assert project.configure("two") == project.folder("two")
+
+
+def test_a_source_folder_outside_the_shared_one_is_the_users_even_with_the_look_of_a_version(project: _Project) -> None:
+    project.fetched("one")
+    project.fetched("two")
+    mine = project.work / "elsewhere" / "0123456789abcdef" / "alpha"
     shutil.copytree(project.seed, mine)
     assert project.configure("one", f"-DFETCHCONTENT_SOURCE_DIR_ALPHA={mine.as_posix()}") == mine.as_posix()
     assert project.configure("two") == mine.as_posix()

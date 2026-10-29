@@ -414,6 +414,16 @@ fetches and stamps each dependency; every later one, in any worktree, uses the s
   configured before a pin changed moves to the new version's folder at its next configure, and never fetches new pins
   into a folder other worktrees compile from. A Python test runs `deps.cmake`'s own lines to check that a pin change
   moves the folder and a comment does not.
+- **A pin change reaches an old build folder.** CMake's FetchContent writes the folder it used into the build folder's
+  cache as `FETCHCONTENT_SOURCE_DIR_<NAME>` (`..._SDL3`, `..._IMGUI`, ...), and a value there is how you point a
+  dependency at your own copy, so `deps.cmake` once kept it: a folder configured before a pin changed went on compiling
+  the old version's sources (Dear ImGui's docking release failed to build in every older folder this way). Now
+  `deps.cmake` remembers the folder it chose in the internal cache entry `CONEY_DEPS_PICKED_<NAME>`, and at the next
+  configure an entry that still holds it is dropped and chosen again from the current pins: the new version's folder
+  when it is complete, else a fetch into it. An entry from a folder configured before that memory existed is taken for
+  ours when it is `<CONEY_DEPS_SOURCES>/<version>/<name>`. Nothing is deleted by hand. Your own copy
+  (`-DFETCHCONTENT_SOURCE_DIR_<NAME>=...`, any other folder) is kept through a pin change: a Python test
+  (`test_shared_deps.py`) configures a tiny project under one pin and then another to check both.
 - **One fetch at a time.** While any dependency of the version lacks its stamp, `deps.cmake` holds a lock on the
   version's folder (`file(LOCK ... DIRECTORY)`), so two first configures fetch once, the second waiting for the first.
 - **Only for new folders.** CMake keeps the base in a build folder's cache from its first configure, so folders
