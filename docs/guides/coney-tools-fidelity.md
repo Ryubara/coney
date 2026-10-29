@@ -719,8 +719,8 @@ for the [`xbox`](coney-tools-disc.md#xbox) commands): every chunk, from `XBoxWad
 from the WAD names list and the file and level names the chunks and `default.xbe` mention, else by its entry's hash in
 hex (which is not the PS2 entry's hash, as the Xbox hashes names under `ee_files\`). It takes no `DISC` and goes with
 `--all` or `NAME OUT_DIR` alike. `--all --xbox-disc` needs its own `--out` folder and is refused without one: the
-shared folder is the PS2 disc's. It is for reading those scripts, as Coney Studio will: play takes every script from
-the PS2 disc ([Disc policy](../research/xbox-assets.md#disc-decision)).
+shared folder is the PS2 disc's. It is for reading those scripts, as Coney's Xbox importer will for Studio (Studio
+never reads a disc): play takes every script from the PS2 disc ([Disc policy](../research/xbox-assets.md#disc-decision)).
 
 `lua compare DIR_A DIR_B` compares two `--all` folders, made to check that the Xbox disc holds the PS2 disc's mission
 code ([Xbox assets: the scripts](../research/xbox-assets.md#scripts)). It reads the marker line at the end of each

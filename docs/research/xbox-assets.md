@@ -249,8 +249,9 @@ matched by resource hash and chunk type.
 contents](formats/wad-contents.md#lua)), and the 467 PS2 scripts are byte-identical on the Xbox; decompiled, they
 are identical too ([The scripts](#scripts)).
 
-**Scene records.** Same layout; all 2,765 PS2 records identical. The 49 extra records are cutscenes of
-two levels. Inferred from the extra records' names.
+**Scene records.** Same layout; all 2,765 PS2 records identical. The 49 extra records carry the name prefixes of
+two levels both discs ship, level 55 (`l55_`, 45 records) and level 5 (`l5_`, 4), not those of the Xbox-only levels.
+Inferred from the records' names; nothing that plays them was traced.
 
 **Levels and the streamed world.** The Xbox has 95 level resources against 64: all 64 of the PS2's, plus 31 that
 the PS2 does not ship: 2 front-end or arena levels, 14 test levels (named `test...`) and 15 more `level<N>`. The
@@ -265,9 +266,11 @@ hold 23,523 waves, all Xbox ADPCM except 2 PCM, plus one sound bank (`SDBK`, als
 map to the PS2's sounds: [Sound, speech and music](#sound). Inferred from the header fields (per the XDK's XACT
 bank layout).
 
-**Movies.** The PS2's 16 movies exist on the Xbox in three versions each: [Movies](#movies). The XBE's `%s_hd`, `%s_w`,
-`%s_ls_%d_w` and `%s_w_pal` format strings show the same three-way choice for loading screens. Inferred from the
-strings; no code that reads them was traced.
+**Movies.** The PS2's 16 movies exist on the Xbox in three versions each: [Movies](#movies). The movie player
+builds the name from `%s_hd`, `%s_w`, `%s_w_pal`, `%s_pal` or the plain name by the display's flags (confirmed
+(code) at XBE `0x0024a040`, [Xbox port](xbox-port.md)). The loading screens have no HD form: two functions choose
+between `%s_ls_%d_w` and `%s_ls_%d` by one test of the same display object (confirmed (code) at XBE `0x0007d1a0`
+and `0x0007d400`); that the test is for a 16:9 display is inferred from the `_w` suffix.
 
 ### Quality of matched textures
 
@@ -529,7 +532,7 @@ and object lists. Disc check, the PS2's distinct chunks or entries:
 | Data | PS2 | Same bytes on the Xbox | The difference | Verdict | Evidence |
 | --- | ---: | ---: | --- | --- | --- |
 | Scene records (`.scn`) | 2,765 | 2,765 | | same | inferred |
-| Scene list (`0x43`, `scene_list.cnk`) | 2,765 records | all 2,765 by position: name and size | the Xbox inserts 49 records (cutscenes of the extra levels) at position 1,358 and keeps the PS2's order around them; each record's stored id is its position, so the ids after it are 49 higher | converts exactly: the game finds a scene by name and keeps the id it gets ([below](#either-scene-list)) | inferred |
+| Scene list (`0x43`, `scene_list.cnk`) | 2,765 records | all 2,765 by position: name and size | the Xbox inserts 49 records (named for levels 55 and 5) at position 1,358 and keeps the PS2's order around them; each record's stored id is its position, so the ids after it are 49 higher | converts exactly: the game finds a scene by name and keeps the id it gets ([below](#either-scene-list)) | inferred |
 | Object lists (`_objs.txt`) | 39 | 39 | | same | inferred |
 | Path data (`0x40`) | 64 | 64 | | same | inferred |
 | Subtitles (`0x51`) | 64 | 64 | | same | inferred |
@@ -659,7 +662,8 @@ resources; and 4,038 names (3,957 from the PS2's names). The rest of this sectio
 **Policy.** The PS2 disc is required and stays the reference for behaviour. The Xbox disc is optional, supplied by
 the player like the PS2 one, and only ever replaces *assets*, at install: never scripts, scenes, levels, collision,
 animations or anything the simulation reads. Its extra content (31 levels, 49 scene records, 36 scripts; most of the
-levels are test levels) is never played; Coney Studio reads it ([Disc policy](#disc-decision)).
+levels are test levels) is never played; it reaches Coney Studio only through Coney's Xbox importer, never from the
+disc ([Disc policy](#disc-decision)).
 
 **Extraction (done).** `coney-tools extract [DISC] OUT_DIR --xbox-disc XBOX_DISC`
 ([guide](../guides/coney-tools.md#extract)) reads the Xbox disc straight from the image (XDVDFS, then `XBoxWad.idx`
@@ -694,14 +698,19 @@ the PS2 disc is required and is **the only source of gameplay data**: the script
 the sound tables, the collision and the characters. Every player, and every peer of a networked session, simulates the
 same bytes. The Xbox disc stays optional and is imported beside the PS2 disc, as Extraction above does: in play it
 gives the HD textures, the movies and other presentation only, and its extra content (the 36 development and test
-level scripts under [The scripts](#scripts), with their levels and scene records) is readable in Coney Studio.
+level scripts under [The scripts](#scripts), the 31 extra levels and the 49 extra scene records) can be brought into
+Coney Studio. The same day the maintainer refined it (recorded on #1098): **Studio never reads a disc.** It works on
+`.cpak` items and standard files (glTF, FBX, PNG, audio), and Xbox content, its extra levels included, reaches Studio
+only through Coney's Xbox importer, which reads the disc and writes those. Play supports the PS2 disc; the Xbox import
+adds the HD textures and movies, and perhaps the character models if they change nothing in gameplay (not checked
+yet).
 **There is no Xbox-only install.** Where the Xbox's gameplay data differs ([What an Xbox-only install would
 play](#either-verdict): one clip's keys, 324 animation events, one `level14` clip, the sound tables), the PS2's is used
 in play and the Xbox's never replaces it. The reason is multiplayer: peers whose animation clips differ would not play
 the same game.
 
-So the Policy above stands as it is: the Xbox's extra content is read in Studio, and the PS2 supplies every
-gameplay value.
+So the Policy above stands as it is: the Xbox's extra content reaches Studio through the importer, and the PS2
+supplies every gameplay value.
 
 **What the decision leaves**, one task each:
 
@@ -714,14 +723,15 @@ gameplay value.
    simulation reads, and the store's simulation digest, which a session compares, stays the same.
 2. **The engine reads the Xbox archive**: XDVDFS, `XBoxWad.idx` and the `ee_files\` name hash with its subfolders
    ([The archive](#the-archive), [Name hash](#name-hash)), and the [resource images](#resource-images). Play needs it
-   for the HD textures and Studio for the extra content; the Python readers are the reference.
-3. **Studio reads the Xbox-only levels**, from the Xbox disc and for reading: their scripts (by the names under
-   [The scripts](#scripts) and the level table of `config_preload3.lua`; `coney-tools lua decompile --all
-   --xbox-disc` reads them today), their scene records, and where a level has them its streamed world (the `.xlev`
-   and `.xsec` entries under [Levels and the streamed world](#worlds), whose sector records are not decoded yet) and
-   its collision (the PS2 layout with the header 12 bytes earlier, [Everything else the simulation
-   reads](#either-data)). Which of the Xbox-only levels have a world, collision or scene records of their own is not
-   counted yet. Playing one, which would put Xbox gameplay data in play, is outside this decision.
+   for the HD textures and the importer below for the extra content; the Python readers are the reference.
+3. **Coney's Xbox importer brings the Xbox-only levels to Studio**: it reads them from the Xbox disc and writes
+   `.cpak` items and standard files, which Studio opens as it opens any project's. It takes their scripts (by the
+   names under [The scripts](#scripts) and the level table of `config_preload3.lua`; `coney-tools lua decompile
+   --all --xbox-disc` reads them today), the extra scene records, and where a level has them its streamed world (the
+   `.xlev` and `.xsec` entries under [Levels and the streamed world](#worlds), whose sector records are not decoded
+   yet) and its collision (the PS2 layout with the header 12 bytes earlier, [Everything else the simulation
+   reads](#either-data)). Which of the Xbox-only levels have a world or collision of their own is not counted yet.
+   Playing one, which would put Xbox gameplay data in play, is outside this decision.
 4. **The Xbox's other differences stay research.** The animation events' reads ([q-xbox-events](#q-xbox-events)) and
    who loads the 23 dictionaries the Xbox lacks ([q-orphan-dictionaries](#q-orphan-dictionaries)) are questions about
    the port now, not conditions for an install.
@@ -809,19 +819,19 @@ index loader (the code that opens `XBoxWad.idx`) for uses of the word.
 4,498 of 10,587 (models, textures, characters, 652 packs, 18 text entries, and 227 scripts before the decompiler's
 naming) once the 2,048 world files are named; `lua decompile --xbox-disc` now names 388 of the 503 scripts, leaving
 115 unnamed. The subfolder scheme (`paks\`, `anims\`, `sectors\`) suggests the rest also live in subfolders. Naming
-them matters for reading the Xbox-only content in Studio; try the PS2 naming patterns under each subfolder.
+them matters for importing the Xbox-only content into Studio; try the PS2 naming patterns under each subfolder.
 
 ### Sound index to wave {#q-sound-index}
 
-The table in `xbox000.xsb` that maps the sound list's index to a wave bank entry; needed to read any Xbox sound (in
-Studio, say), since play uses the PS2's sound ([Disc policy](#disc-decision)). Decode the table's records against the
-wave bank's 23,523 entries and check one sound by ear, or read the executable's sound loader.
+The table in `xbox000.xsb` that maps the sound list's index to a wave bank entry; needed to read any Xbox sound (for
+the Xbox importer, say), since play uses the PS2's sound ([Disc policy](#disc-decision)). Decode the table's records
+against the wave bank's 23,523 entries and check one sound by ear, or read the executable's sound loader.
 
 ### Model fields {#q-model-fields}
 
-The kind-2 model's `+0x0a` (0 or 1) and the skinned vertex's second float pair. They matter when the engine draws
-Xbox models, which play does not do ([Disc policy](#disc-decision)). Compare the fields across a sample of models,
-or read the executable's model loader.
+The kind-2 model's `+0x0a` (0 or 1) and the skinned vertex's second float pair. They matter if the Xbox import takes
+the character models, which the decision leaves to be checked ([Disc policy](#disc-decision)). Compare the fields
+across a sample of models, or read the executable's model loader.
 
 ### The bounding radius {#q-model-radius}
 
