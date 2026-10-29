@@ -85,15 +85,16 @@ def test_each_day_is_measured_at_its_commit_and_unreadable_days_are_left_out(tmp
         ("2026-10-06", shas["d6"], 2),
         ("2026-10-07", "head", 2),
     ]
-    assert points[0].reimplemented_bytes == 0x80 and points[1].reimplemented_bytes == 0x80 + 64
-    assert points[0].understood_bytes == 0  # the listing has the function, no page cites it
-    assert points[0].share("reimplemented") == pytest.approx(100 * 0x80 / points[0].game_bytes)
-    assert points[0].share("understood") == 0.0
+    assert (points[0].listing_functions, points[1].listing_functions) == (1, 2)
+    assert points[0].understood_functions == 0  # the listing has the function, no page cites it
+    assert points[0].share("reimplemented") == pytest.approx(100.0)  # one of the listing's one function
+    assert points[0].share("understood") == 0.0 and points[0].share("researched") == pytest.approx(100.0)
 
 
 def test_a_day_before_the_move_is_measured_from_the_retired_list(tmp_path: Path) -> None:
-    """A day that has `docs/progress/functions.toml` and no database is read from it, with the row's size when the day
-    has no Ghidra listing (as then); the day after the move, from the database, counts the same function."""
+    """A day that has `docs/progress/functions.toml` and no database is read from it; with no Ghidra listing that day
+    there is no total to count against, so it keeps its count and shows no share; the day after the move, from the
+    database and the listing, counts the same function as a share."""
     repo = tmp_path / "repo"
     repo.mkdir()
     git(repo, "init", "-q", "-b", "main")
@@ -108,10 +109,11 @@ def test_a_day_before_the_move_is_measured_from_the_retired_list(tmp_path: Path)
     shas["new"] = commit(repo, "2026-10-06T09:00:00")
     points, skipped = progress_history.build(repo, current_point(repo))
     assert skipped == []
-    assert [(p.date, p.reimplemented_functions, p.reimplemented_bytes) for p in points[:2]] == [
-        ("2026-10-05", 1, 100),
-        ("2026-10-06", 1, 128),  # the listing's size, 28 bytes more than the row had
+    assert [(p.date, p.reimplemented_functions, p.listing_functions) for p in points[:2]] == [
+        ("2026-10-05", 1, None),
+        ("2026-10-06", 1, 1),
     ]
+    assert points[0].share("reimplemented") is None and points[1].share("reimplemented") == pytest.approx(100.0)
 
 
 def test_today_is_the_builds_own_point_and_later_days_are_not_measured(tmp_path: Path) -> None:
@@ -127,10 +129,10 @@ def test_a_cached_day_is_reused_only_for_the_commit_it_was_measured_at(tmp_path:
 
     def measure(root: Path, date: str, commit: str) -> Point | None:
         calls.append(date)
-        return Point(date, commit, 100, 1, 1, 1)
+        return Point(date, commit, 1, 1, 1, 100)
 
-    fresh = Point("2026-10-05", shas["d5b"], 100, 50, 7, 1)
-    rewritten = Point("2026-10-06", "0000000", 100, 50, 7, 1)
+    fresh = Point("2026-10-05", shas["d5b"], 7, 50, 3, 100)
+    rewritten = Point("2026-10-06", "0000000", 7, 50, 3, 100)
     points, _ = progress_history.build(repo, current_point(repo), [fresh, rewritten], measure)
     by_date = {p.date: p for p in points}
     assert by_date["2026-10-05"] is fresh and "2026-10-05" not in calls  # same commit: kept
@@ -160,9 +162,12 @@ def test_the_history_file_round_trips_and_a_foreign_schema_is_ignored(tmp_path: 
         json.dumps({**good, "points": [{"x": 1}]}),
         json.dumps({**good, "points": [{**point, "date": 5}]}),
         json.dumps({**good, "points": [{**point, "commit": ""}]}),
-        json.dumps({**good, "points": [{**point, "game_bytes": "100"}]}),
-        json.dumps({**good, "points": [{**point, "game_bytes": True}]}),
-        json.dumps({**good, "points": [{**point, "game_bytes": None}]}),  # only the listing fields may be unknown
+        json.dumps({**good, "points": [{**point, "reimplemented_functions": "100"}]}),
+        json.dumps({**good, "points": [{**point, "reimplemented_functions": True}]}),
+        json.dumps(
+            {**good, "points": [{**point, "reimplemented_functions": None}]}
+        ),  # only the listing fields may be unknown
+        json.dumps({**good, "points": [{**point, "game_bytes": 100}]}),  # a byte field of the old schema
         json.dumps({**good, "points": "x"}),
         json.dumps({**good, "skipped": ["2026-10-04"]}),
     ):
@@ -204,7 +209,7 @@ def test_a_left_out_day_is_not_tried_again_at_the_same_commit(tmp_path: Path) ->
 
     def measure(root: Path, date: str, commit: str) -> Point | None:
         calls.append(date)
-        return None if date == "2026-10-04" else Point(date, commit, 100, 1, 1, 1)
+        return None if date == "2026-10-04" else Point(date, commit, 1, 1, 1, 100)
 
     _, skipped = progress_history.build(repo, current_point(repo), [], measure, [("2026-10-04", shas["early"])])
     assert "2026-10-04" not in calls and skipped == [("2026-10-04", shas["early"])]
@@ -217,7 +222,7 @@ def test_an_empty_commit_matches_nothing() -> None:
     assert not progress_history.same_commit("", "abc1234") and not progress_history.same_commit("abc1234", "")
     assert progress_history.same_commit("abc1234", "abc1234def") and not progress_history.same_commit("abc", "abd")
     days = [("2026-10-05", "abc1234")]
-    cached = Point("2026-10-05", "", 100, 50, 7, 1)
+    cached = Point("2026-10-05", "", 7, 50, 3, 100)
     points, _ = progress_history.reconstruct(Path(), days, {cached.date: cached}, lambda r, d, c: None)
     assert points == []  # the cached point without a commit was not reused
 
@@ -236,15 +241,15 @@ def test_chart_has_a_titled_marker_per_day_and_measure(tmp_path: Path) -> None:
 
 
 def test_chart_and_table_handle_a_single_point() -> None:
-    point = Point("2026-10-21", "abc", 1000, 100, 3, 500, 900, 40, 50, 1000)
+    point = Point("2026-10-21", "abc", 5, 25, 45, 50)
     section = progress_history.render_section([point], [])
     ET.fromstring(section.split("\n\n")[0].replace('<div class="progress-grid">', "<div>").replace("</div>", "</div>"))
-    assert "| 2026-10-21 | `abc` | 10.0% | 3 | 90.0% | 50.0% |" in section
+    assert "| 2026-10-21 | `abc` | 10.0% | 5 | 90.0% | 50.0% | 50 |" in section
 
 
 def test_the_table_lists_the_newest_day_first_and_says_what_was_left_out() -> None:
-    older = Point("2026-10-20", "a", 1000, 100, 3, 500)
-    newer = Point("2026-10-21", "b", 1000, 200, 4, 500)
+    older = Point("2026-10-20", "a", 3)  # before the listing: a count of recorded ports, no share
+    newer = Point("2026-10-21", "b", 4)
     section = progress_history.render_section([older, newer], ["2026-10-04"])
     assert section.index("2026-10-21") < section.index("| 2026-10-20 |")
     assert "| n/a |" in section and "left out" in section and "1." in section

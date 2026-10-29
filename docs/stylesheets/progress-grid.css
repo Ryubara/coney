@@ -86,32 +86,6 @@
 
 .progress-grid .cg-headline { margin-bottom: 0.6em; }
 
-/* The toggle: two radio buttons and the panes they show, no script needed. */
-.progress-grid .cg-radio {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.progress-grid .cg-tab {
-  display: inline-block;
-  margin: 0 0.4em 0.7em 0;
-  padding: 0.2em 0.9em;
-  border: 1px solid var(--md-default-fg-color--lighter);
-  border-radius: 2em;
-  font-size: 0.8rem;
-  cursor: pointer;
-}
-
-.progress-grid .cg-radio:checked + .cg-tab {
-  border-color: var(--md-accent-fg-color);
-  color: var(--md-accent-fg-color);
-}
-
-.progress-grid .cg-radio:focus-visible + .cg-tab { outline: 2px solid var(--md-accent-fg-color); outline-offset: 2px; }
-.progress-grid #cg-view-f:checked ~ .cg-pane-s,
-.progress-grid #cg-view-s:checked ~ .cg-pane-f { display: none; }
-
 /* The legend: a swatch, the state, its count and what it means. */
 .md-typeset .progress-grid .cg-legend { margin: 0.8em 0 0; padding: 0; list-style: none; font-size: 0.8rem; }
 .md-typeset .progress-grid .cg-legend li { margin: 0.25em 0; }

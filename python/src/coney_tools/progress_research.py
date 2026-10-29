@@ -29,7 +29,7 @@ from typing import Any
 
 from coney_tools import research_functions
 from coney_tools.orig_scan import Ps2Pattern
-from coney_tools.progress import UNATTRIBUTED, ProgressError, Totals
+from coney_tools.progress import UNATTRIBUTED, UNPLACED, ProgressError, Totals
 
 LISTING_FILE = Path("docs/progress/ghidra-functions.tsv")
 RESEARCH_DIR = Path("docs/research")
@@ -112,8 +112,6 @@ class SubsystemUnderstanding:
     name: str
     functions: int
     understood_functions: int
-    bytes: int
-    understood_bytes: int
     named: int
     cited: int
 
@@ -130,19 +128,14 @@ class Understanding:
         return len(self.statuses)
 
     @property
-    def bytes(self) -> int:
-        """Bytes of the game functions in the listing."""
-        return sum(s.function.size for s in self.statuses)
-
-    @property
     def understood_functions(self) -> int:
         """Game functions that count as understood."""
         return sum(1 for s in self.statuses if s.understood)
 
     @property
-    def understood_bytes(self) -> int:
-        """Bytes of the game functions that count as understood."""
-        return sum(s.function.size for s in self.statuses if s.understood)
+    def placed_functions(self) -> int:
+        """Game functions inside a source directory's range of the source map (the "Researched" measure)."""
+        return sum(1 for s in self.statuses if s.subsystem not in UNPLACED)
 
     def by_subsystem(self, order: list[str]) -> list[SubsystemUnderstanding]:
         """One row per subsystem in `order` that has functions, then any others (unattributed last)."""
@@ -161,8 +154,6 @@ class Understanding:
                     name,
                     len(group),
                     len(done),
-                    sum(s.function.size for s in group),
-                    sum(s.function.size for s in done),
                     sum(1 for s in group if s.function.named),
                     sum(1 for s in group if s.cited),
                 )
@@ -364,12 +355,12 @@ def render_backlog(understanding: Understanding, row: SubsystemUnderstanding) ->
     """One subsystem's backlog as Markdown: every function not yet understood, largest first."""
     todo = understanding.backlog(row.name)
     rename_only = sum(1 for s in todo if s.missing() == ["name"])
-    share = f"{100.0 * row.understood_bytes / row.bytes:.1f}%" if row.bytes else "n/a"
+    share = f"{100.0 * row.understood_functions / row.functions:.1f}%" if row.functions else "n/a"
     lines = [
         f"# Research backlog: {row.name}",
         "",
-        f"{row.understood_functions} of {row.functions} functions understood ({row.understood_bytes:,} of "
-        f"{row.bytes:,} bytes, {share}). {len(todo)} to do, largest first; {rename_only} only need a Ghidra name "
+        f"{row.understood_functions} of {row.functions} functions understood ({share}). "
+        f"{len(todo)} to do, largest first; {rename_only} only need a Ghidra name "
         "(and a plate comment), because a page already documents them.",
         "",
         "Missing: `name` = still Ghidra's default name; `cite` = no research page cites it; `evidence` = cited, but "

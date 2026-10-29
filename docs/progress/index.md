@@ -1,22 +1,25 @@
 # Progress
 
-How far Coney has come, measured four ways:
+How far Coney has come, measured four ways. **Every share counts functions, not bytes:** Coney is a functional
+reimplementation, so progress is how many of the original's functions are done ([the decision](#by-function)). Each
+share is a number of functions of the game's own code over the number of such functions in the Ghidra listing, so the
+badges, the headline, the tables and the [history](history.md) all give the same figure.
 
-- **Reimplemented:** the share of the original game's own code that Coney's code reimplements, in bytes of the
-  executable's `.text`. This is the decompilation projects' progress bar, adapted to a functional reimplementation:
-  a function counts once Coney has code that does its job and cites it with an `@orig` tag
-  ([Conventions](../guides/conventions.md#comments-and-orig)), not when its machine code matches.
-- **Researched:** the share of the game's own code that the [source map](../research/source-map.md) places in at
-  least an original source file or directory. It says how much of the executable a contributor can already find their
-  way around in, not how much is understood.
-- **Understood:** the share of the game's own functions (by bytes, and by count) that are researched in full: the
+- **Reimplemented:** the share of the game's own functions that Coney's code reimplements. This is the decompilation
+  projects' progress bar, adapted to a functional reimplementation: a function counts once Coney has code that does
+  its job and cites it with an `@orig` tag ([Conventions](../guides/conventions.md#comments-and-orig)), not when its
+  machine code matches.
+- **Researched:** the share of the game's own functions that the [source map](../research/source-map.md) places in a
+  source directory (a function inside a top-level directory's address range). It says how much of the executable a
+  contributor can already find their way around in, not how much is understood.
+- **Understood:** the share of the game's own functions that are researched in full: the
   function has a meaningful name in the shared Ghidra project (not `FUN_<address>`), and a research page cites its
   address in a table row or paragraph that states an evidence level, or says `not needed: <reason>` (the source
   map's citations do not count: placing is not understanding); a script binding's wrapper counts when its
   `research/bindings` entry has an `evidence`. Names and sizes come from `docs/progress/ghidra-functions.tsv`
   (addresses, sizes and our names only), the citations from the pages themselves, so citing a function moves the
   bar in the same commit. How to refresh it: [Research workflow](../guides/research-workflow.md#understood).
-- **Compared:** the share of the reimplemented code (in bytes, and by count of functions) whose port has been checked
+- **Compared:** the share of the reimplemented functions whose port has been checked
   side by side with the original function in Ghidra, paired and reviewed: its `status` in the
   [function database](../guides/research-function-database.md#entry) is `compared` and not `legacy`. It starts at 0%
   because every function ported before the standards were set is `legacy`; it rises as a port is compared, which a
@@ -36,43 +39,61 @@ same figures from the published site. The rest of this page is written by hand.
 
 ## How it is measured
 
-All of it is about the NTSC-U executable `SLUS_212.15`, whose `.text` is 4,154,744 bytes.
+All of it is about the NTSC-U executable `SLUS_212.15`.
 
-**The game's own code** is every byte of `.text` that is not middleware, as the source map's
-[coverage table](../research/source-map.md#coverage) counts it: 3,342,408 bytes. It is the denominator of both
-bars. The middleware (Lua 4.0.1 and tolua, RenderWare Graphics, the SCE libraries, Bink, the C and C++ runtimes)
-is left out: Coney replaces it with librw, SDL3, the C++ standard library and its own Lua 4.0 interpreter, it does
-not reimplement it. The game's own glue around a library (`Movie/BinkMovie.cpp`,
+### Progress is counted by function {#by-function}
+
+**The maintainer decided on 2026-10-29 that progress is counted by function, not by bytes.** Until then the
+Reimplemented badge and the summary weighed each function by the size of its code (37.0% of the game's bytes) while
+the picture's headline counted functions (22.7%), so the page showed two different "reimplemented" figures, and one
+large function moved the bytes bar more than a hundred accessors. Coney is a functional reimplementation, so what it
+owes is a function done, whatever its size. Now every share on this page, the badges, the history and the README is a
+count of functions. Bytes are not a progress measure anywhere: a figure in bytes on the site is a size (the coverage
+and middleware tables, a function's size in its tooltip), never a percentage.
+
+**The game's own functions** are the functions of the Ghidra listing (`docs/progress/ghidra-functions.tsv`: the
+address, size and our name of every function the shared project knows) whose address lies in the game's own code, that
+is in `.text` and outside every middleware range of [`docs/progress/totals.toml`](repo:docs/progress/totals.toml).
+Their number is the denominator of every share. The middleware (Lua 4.0.1 and tolua, RenderWare Graphics, the SCE
+libraries, Bink, the C and C++ runtimes) is left out: Coney replaces it with librw, SDL3, the C++ standard library and
+its own Lua 4.0 interpreter, it does not reimplement it. The game's own glue around a library (`Movie/BinkMovie.cpp`,
 `Graphics/Devices/Renderware/DevRWGeneric.cpp`) is game code and counts.
 
-**Per subsystem**, the total is the size of the address range the source map gives the top-level directory, from
-its first to its last attributed function. That is **inferred** (the ranges are the map's inferred directory
-ranges), and it undercounts every directory: the game code the map has not placed, nearly half of it, is shown as
-*Unattributed*, and a directory with no attributed function yet (`Debug`, `Utils`) shows "not placed yet". As the
-source map improves, code moves from Unattributed into the directories, and the per-subsystem shares can go down
-while the overall share stays the same. *Link-once* is the game's template and inline code, which the linker
-placed after the libraries.
+**Per subsystem**, the total is the number of the listing's game functions inside the address range the source map
+gives the top-level directory, from its first to its last attributed function. That is **inferred** (the ranges are
+the map's inferred directory ranges), and it undercounts every directory: the game code the map has not placed, nearly
+half of it, is shown as *Unattributed*, and a directory with no attributed function yet (`Debug`, `Utils`) shows "none
+in the listing". As the source map improves, code moves from Unattributed into the directories, and the per-subsystem
+shares can go down while the overall share stays the same. *Link-once* is the game's template and inline code, which
+the linker placed after the libraries. The rows of the table add up to the whole.
 
-**Reimplemented bytes** are the sizes of the original functions that the [function
-database](../guides/research-function-database.md#ported) (`research/functions/<system>.toml`) records a port for, the
-entries with a `coney` field. The database lists the researched functions too; only the ported ones count here. The
-denominators are in [`docs/progress/totals.toml`](repo:docs/progress/totals.toml), copied from the source map by hand.
-A function counts in full once it is recorded; there is no partial credit.
+**Reimplemented functions** are the entries of the [function database](../guides/research-function-database.md#ported)
+(`research/functions/<system>.toml`) that have a `coney` field, a port, and that the listing has as a game function.
+The database lists the researched functions too; only the ported ones count here. A function counts as one once it is
+recorded: no partial credit, no weight for its size. A port tagged at an address where the listing has no function
+yet is recorded but not counted until Ghidra defines the function; the page says how many (`progress.json` gives the
+number, `unlisted_reimplemented`).
 
-The executable has no symbols, so a function's size comes from the shared Ghidra project: the committed listing
-`docs/progress/ghidra-functions.tsv` gives the size of the function at each address, the unit the Understood bar
-measures too. A port tagged at an address the listing has no function at yet counts as a function but adds no bytes
-until Ghidra defines it. Before the database held the list (October 2026) the sizes were kept by hand in
-`docs/progress/functions.toml`, estimated from the disc; the move changed the Reimplemented bar from 33.3% to 33.9%,
-mostly because the hand-kept sizes of a few large functions were too small and 19 had none. `coney-tools progress
-check-sizes` still checks the sizes against your own disc. How to use the commands: [The progress
-commands](../guides/coney-tools-references.md#progress).
+**Researched functions** are the listing's game functions inside a subsystem's range of the source map, as the picture
+draws them. The source map's coverage table in bytes (*Research coverage* below) is a table of sizes of the
+executable, not a share of progress.
+
+**The listing is the count.** The executable has no symbols, so the number of functions comes from the shared Ghidra
+project, like their sizes. A checkout without the listing has no total to count against: the page then shows no share
+and says so. `coney-tools progress check-sizes` still checks the listed sizes against your own disc. How to use the
+commands: [The progress commands](../guides/coney-tools-references.md#progress).
+
+**The history across the switch.** The history is rebuilt from git with today's definition on every build, so the days
+before 2026-10-29 are not the bytes figures they were published as: each is recomputed by function from that day's
+inputs ([the history](#history)). The listing was committed on 2026-10-07; a day before it has no total to count
+against, so it keeps its count of recorded ports and shows `n/a` for the shares. No day mixes the two definitions,
+because a published history made under another definition is discarded.
 
 ## How the picture is drawn {#the-picture}
 
 The picture of every function (under *Every function* above) draws one square for each function of the game's own code in
 `docs/progress/ghidra-functions.tsv` (the middleware ranges of `totals.toml` left out, as for the bars). It does not
-define anything new: each colour is a measure this page already has.
+define anything new: each colour is a measure this page already has, counted by function.
 
 | State | What puts a function in it | Measure it comes from |
 | --- | --- | --- |
@@ -83,7 +104,8 @@ define anything new: each colour is a measure this page already has.
 | Untouched | None of the above | |
 
 A function shows the furthest state it has reached, top to bottom. The headline above the picture counts squares by
-measure, each measure as the table defines it, so a square counts under every measure it meets: a reimplemented function
+measure, each measure as the table defines it (the same figures as the bars), so a square counts under every
+measure it meets: a reimplemented function
 that is also understood counts in both, while the legend counts squares by the colour they show. Researched is the
 source map's measure, not "researched or further": a function can be understood without the map placing it, so the
 Researched share can be below the Understood share. Blocks are the subsystems of `totals.toml`, the original's top-level
@@ -91,15 +113,13 @@ source directories, in address order, so the picture follows the executable; cod
 *Unattributed*, and the game's link-once template code is the `link-once` block. A block's label is its share of
 reimplemented functions, and its tooltip (the browser's own) gives `reimplemented/total (share)` and the squares of each
 state. A reimplemented function whose address is not the start of a function in the Ghidra listing (an entry inside
-another function, or a listing that split a function differently) is counted in the bars but has no square and is not in
-the headline's Reimplemented count, which is therefore a few below the bar's; `progress.json` gives the number
+another function, or a listing that split a function differently) has no square and is counted nowhere, so the bars,
+the headline and the legend agree; the page says how many, and `progress.json` gives the number
 (`unlisted_reimplemented`).
 
-The picture has two views, switched above it. **One square per function** is the one that reads at a glance. Most
-functions are tiny (half are under 125 bytes, the largest is 30 KB), so it gives a four-byte accessor the area of a
-physics solver; the bars are in bytes. **One square per 512 bytes** gives a function one square per started 512
-bytes (at least one), so the area is the code and a large reimplemented function shows as the bar it is. Both are
-drawn the same way and carry the same tooltips.
+There is one view, a square for each function whatever its size. The earlier second view, one square for each 512
+bytes of code, went with the byte shares (2026-10-29): it showed a large function as a bar, which is the weighting
+progress no longer has. A function's size is still in its tooltip.
 
 Hovering a square shows the function's name, address, size and state, the original source file the source map places
 it in, and, for a reimplemented function, the line of Coney's source that carries its `@orig` tag as a link; a click
@@ -114,11 +134,12 @@ is in [the progress commands](../guides/coney-tools-references.md#progress).
 ### The history {#history}
 
 [The history page](history.md) has one point per day of `main`: the Reimplemented, Understood and Researched shares
-as the bars measure them. Git has the days, so nothing is appended or committed: for each day's last commit the docs
-build extracts the tracker's inputs (`docs/progress/`, the research pages, the function database, the roadmap, the
-bindings and the `@orig` tags) into a temporary folder and measures them with the current code, so every day is on
-today's definition. A day before the tracker existed, or in a format it can no longer read, is left out. How a deploy
-reuses the published days and what a pull request's build shows: [the progress commands](../guides/coney-tools-references.md#progress).
+as the bars measure them (by function). Git has the days, so nothing is appended or committed: for each day's last
+commit the docs build extracts the tracker's inputs (`docs/progress/`, the research pages, the function database, the
+roadmap, the bindings and the `@orig` tags) into a temporary folder and measures them with the current code, so every
+day is on today's definition. A day before the tracker existed, or in a format it can no longer read, is left out.
+How a deploy reuses the published days and what a pull request's build shows: [the progress
+commands](../guides/coney-tools-references.md#progress).
 
 ## Keeping it current
 

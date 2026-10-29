@@ -50,6 +50,8 @@ SOURCE_DIR = Path("src")
 
 #: The subsystem of game code that lies in no subsystem range of totals.toml.
 UNATTRIBUTED = "unattributed"
+#: Subsystems whose code the source map has not tied to a file or directory: not "researched" however it is read.
+UNPLACED = frozenset({UNATTRIBUTED, "link-once"})
 COVERAGE_KINDS = ("researched", "game", "middleware")
 _SOURCE_SUFFIXES = {".h", ".hpp", ".cpp", ".cc", ".inl"}
 #: `@orig 0x<address> <OriginalName> (<File>.cpp)`; the file part is optional here, the conventions check it.
@@ -217,41 +219,71 @@ class Progress:
         return [m.text for m in self.mismatches]
 
     @property
-    def reimplemented_bytes(self) -> int:
-        """Bytes of the original's code that Coney reimplements (functions with a known size)."""
-        return sum(f.size or 0 for f in self.functions)
+    def game_functions(self) -> int | None:
+        """Functions of the game's own code in the Ghidra listing, the whole every share counts; None without one."""
+        return None if self.understanding is None else self.understanding.functions
+
+    @property
+    def reimplemented_functions(self) -> int:
+        """Functions of the game's own code that Coney reimplements.
+
+        Counted in the listing, so a port tagged at an address the listing has no function at is not one (it is
+        `unlisted_functions`): the number is then the one the picture counts. Without a listing it is every recorded
+        port, which no share can use yet.
+        """
+        return len(self.listed())
+
+    @property
+    def unlisted_functions(self) -> int:
+        """Ports recorded in the database at an address the Ghidra listing has no game function at."""
+        return len(self.functions) - self.reimplemented_functions
+
+    @property
+    def researched_functions(self) -> int | None:
+        """Game functions inside a source directory's range of the source map; None without a listing."""
+        return None if self.understanding is None else self.understanding.placed_functions
 
     @property
     def compared_functions(self) -> int:
         """How many reimplemented functions are compared side by side with the original (`status = "compared"`)."""
-        return sum(1 for f in self.functions if f.status == "compared")
+        return sum(1 for f in self.listed() if f.status == "compared")
 
-    @property
-    def compared_bytes(self) -> int:
-        """Bytes of the reimplemented functions that have been compared (functions with a known size)."""
-        return sum(f.size or 0 for f in self.functions if f.status == "compared")
+    def listed(self) -> list[Function]:
+        """The functions `reimplemented_functions` counts: all of them without a listing, else those it has."""
+        if self.understanding is None:
+            return list(self.functions)
+        known = {s.function.address for s in self.understanding.statuses}
+        return [f for f in self.functions if f.address in known]
 
-    def subsystem_rows(self) -> list[tuple[str, int, int, int]]:
-        """(name, total bytes, reimplemented bytes, reimplemented functions) per subsystem, then unattributed."""
-        rows = [(s.name, s.bytes) for s in self.totals.subsystems] + [(UNATTRIBUTED, self.totals.unattributed_bytes)]
-        result = []
-        for name, total in rows:
-            mine = [f for f in self.functions if f.subsystem == name]
-            result.append((name, total, sum(f.size or 0 for f in mine), len(mine)))
-        return result
+    def subsystem_rows(self) -> list[tuple[str, int, int]]:
+        """(name, game functions, reimplemented functions) per subsystem, then unattributed.
+
+        The total counts the listing's functions in the subsystem's range (0 for a subsystem with none, or without a
+        listing), so the rows add up to `game_functions`.
+        """
+        totals: dict[str, int] = {}
+        owner: dict[int, str] = {}
+        if self.understanding is not None:
+            for status in self.understanding.statuses:
+                totals[status.subsystem] = totals.get(status.subsystem, 0) + 1
+                owner[status.function.address] = status.subsystem
+        done: dict[str, int] = {}
+        for f in self.listed():
+            name = owner.get(f.address, f.subsystem)
+            done[name] = done.get(name, 0) + 1
+        names = [s.name for s in self.totals.subsystems] + [UNATTRIBUTED]
+        return [(name, totals.get(name, 0), done.get(name, 0)) for name in names]
 
     def to_json(self) -> dict[str, Any]:
-        """The summary as plain data, for `coney-tools progress summary --json`."""
-        game = self.totals.game_bytes
+        """The summary as plain data, for `coney-tools progress summary --json`: every share counts functions."""
+        game = self.game_functions
         return {
-            "reimplemented": _share(self.reimplemented_bytes, game) | {"functions": len(self.functions)},
-            "researched": _share(self.totals.researched_bytes, game),
-            "compared": _share(self.compared_bytes, self.reimplemented_bytes) | {"functions": self.compared_functions},
+            "reimplemented": _share(self.reimplemented_functions, game),
+            "researched": None if game is None else _share(self.researched_functions or 0, game),
+            "compared": _share(self.compared_functions, self.reimplemented_functions),
+            "unlisted_functions": self.unlisted_functions,
             "functions_without_size": sum(1 for f in self.functions if f.size is None),
-            "subsystems": [
-                {"name": name, "functions": count} | _share(done, total)
-                for name, total, done, count in self.subsystem_rows()
-            ],
+            "subsystems": [{"name": name} | _share(done, total) for name, total, done in self.subsystem_rows()],
             "coverage": [
                 {"key": c.key, "label": c.label, "kind": c.kind, "bytes": c.bytes} for c in self.totals.coverage
             ],
@@ -269,20 +301,18 @@ class Progress:
         if u is None:
             return None
         order = [s.name for s in self.totals.subsystems]
-        return _share(u.understood_bytes, u.bytes) | {
-            "functions": u.understood_functions,
-            "total_functions": u.functions,
+        return _share(u.understood_functions, u.functions) | {
             "subsystems": [
-                {"name": r.name, "functions": r.understood_functions, "total_functions": r.functions}
-                | _share(r.understood_bytes, r.bytes)
-                for r in u.by_subsystem(order)
+                {"name": r.name} | _share(r.understood_functions, r.functions) for r in u.by_subsystem(order)
             ],
         }
 
 
-def _share(part: int, whole: int) -> dict[str, Any]:
-    """`part` of `whole` as the bytes/total/percent fields of the JSON summary."""
-    return {"bytes": part, "total": whole, "percent": round(100.0 * part / whole, 3) if whole else 0.0}
+def _share(part: int, whole: int | None) -> dict[str, Any]:
+    """`part` of `whole` functions as the functions/total/percent fields of the JSON summary (`whole` None: unknown)."""
+    if whole is None:
+        return {"functions": part, "total": None, "percent": None}
+    return {"functions": part, "total": whole, "percent": round(100.0 * part / whole, 3) if whole else 0.0}
 
 
 # --- reading the inputs ---------------------------------------------------------------------------------------------

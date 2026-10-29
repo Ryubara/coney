@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import Any
 
 from coney_tools import progress, progress_picture, progress_render, source_files
-from coney_tools.progress import UNATTRIBUTED, Progress
+from coney_tools.progress import UNATTRIBUTED, UNPLACED, Progress
 from coney_tools.source_files import FileRange
 
 #: States from furthest to least; a function shows the first one that holds.
@@ -63,10 +63,6 @@ PALETTE = {
     "untouched": ("#6e7681", "#8b949e"),
 }
 CLASSES = {state: f"cg-s-{state}" for state in STATES}
-#: Subsystems whose code the source map has not tied to a file or directory: not "researched" however it is read.
-UNPLACED = frozenset({UNATTRIBUTED, "link-once"})
-#: Bytes one square stands for in the picture by size (a function gets at least one square).
-BYTES_PER_SQUARE = 512
 
 #: The home page's picture (docs/index.md, `render_home_svg`) folds the states into three, in the home page's own
 #: palette: what Coney has, what is understood and waits to be ported, and the rest. Its tooltips are the progress
@@ -147,19 +143,13 @@ class GridBlock:
         """Functions whose furthest state is `state`."""
         return sum(1 for f in self.functions if f.state == state)
 
-    def measure(self, kind: str) -> tuple[int, int]:
-        """(functions, bytes) that have reached `kind`: counting every state at or beyond it, as the tracker does.
+    def measure(self, kind: str) -> int:
+        """Functions that have reached `kind`: counting every state at or beyond it, as the tracker does.
 
         `reimplemented` includes the audited ones; `understood` includes the reimplemented ones that also meet the
         tracker's test; `researched` is the functions the source map placed.
         """
-        chosen = [f for f in self.functions if _reached(f, kind)]
-        return len(chosen), sum(f.size for f in chosen)
-
-    @property
-    def bytes(self) -> int:
-        """Bytes of the block's functions."""
-        return sum(f.size for f in self.functions)
+        return sum(1 for f in self.functions if _reached(f, kind))
 
 
 def _reached(f: GridFunction, kind: str) -> bool:
@@ -185,14 +175,13 @@ class Grid:
     audited_known: bool = False
     functions: list[GridFunction] = field(default_factory=list)
 
-    def total(self) -> tuple[int, int]:
-        """(functions, bytes) drawn."""
-        return len(self.functions), sum(f.size for f in self.functions)
+    def total(self) -> int:
+        """Functions drawn: the whole every share counts."""
+        return len(self.functions)
 
-    def measure(self, kind: str) -> tuple[int, int]:
-        """(functions, bytes) that have reached `kind` over all blocks."""
-        chosen = [f for f in self.functions if _reached(f, kind)]
-        return len(chosen), sum(f.size for f in chosen)
+    def measure(self, kind: str) -> int:
+        """Functions that have reached `kind` over all blocks."""
+        return sum(1 for f in self.functions if _reached(f, kind))
 
 
 def build_grid(
@@ -277,39 +266,32 @@ def _home_summary(block: GridBlock) -> str:
 
 
 def summary(grid: Grid) -> dict[str, Any]:
-    """The raw numbers of the picture as plain data (`progress.json`): the same measures the page's tables show."""
-    functions, size = grid.total()
+    """The raw numbers of the picture as plain data (`progress.json`): the same measures the page's tables show.
 
-    measures = {}
-    for kind in MEASURES:
-        n, b = grid.measure(kind)
-        measures[kind] = {
-            "functions": n,
-            "bytes": b,
-            "percent": round(100.0 * n / functions, 3) if functions else 0.0,
-            "percent_bytes": round(100.0 * b / size, 3) if size else 0.0,
-        }
+    Every share counts functions; the one byte figure is the size of the code drawn, for a tool that needs it.
+    """
+    functions = grid.total()
     return {
-        "schema": 1,
+        "schema": 2,
         "functions": functions,
-        "bytes": size,
+        "bytes": sum(f.size for f in grid.functions),
         "states": {s: sum(1 for f in grid.functions if f.state == s) for s in STATES},
-        "measures": measures,
+        "measures": {
+            kind: {"functions": n, "percent": round(100.0 * n / functions, 3) if functions else 0.0}
+            for kind in MEASURES
+            for n in [grid.measure(kind)]
+        },
         "audited_known": grid.audited_known,
         "unlisted_reimplemented": grid.unlisted_reimplemented,
         "blocks": [
             {
                 "name": b.name,
                 "functions": len(b.functions),
-                "bytes": b.bytes,
                 "states": {s: b.count(s) for s in STATES},
                 "measures": {
-                    kind: {
-                        "functions": b.measure(kind)[0],
-                        "bytes": b.measure(kind)[1],
-                        "percent": round(100.0 * b.measure(kind)[0] / len(b.functions), 3),
-                    }
+                    kind: {"functions": n, "percent": round(100.0 * n / len(b.functions), 3)}
                     for kind in MEASURES
+                    for n in [b.measure(kind)]
                 },
             }
             for b in grid.blocks
@@ -349,8 +331,7 @@ def functions_table(grid: Grid) -> dict[str, Any]:
             }
         )
     return {
-        "schema": 1,
-        "unit": BYTES_PER_SQUARE,
+        "schema": 2,
         "states": {code: STATE_LABELS[state] for state, code in STATE_CODES.items()},
         "files": list(files),
         "coney": list(coney),
@@ -361,45 +342,34 @@ def functions_table(grid: Grid) -> dict[str, Any]:
 # --- the drawings -----------------------------------------------------------------------------------------------------
 
 
-def square_count(size: int) -> int:
-    """Squares a function takes in the picture by size: one per started `BYTES_PER_SQUARE`, at least one."""
-    return max(1, math.ceil(size / BYTES_PER_SQUARE))
-
-
-def picture_blocks(grid: Grid, by_size: bool, *, home: bool = False) -> list[progress_picture.Block]:
-    """Blocks to draw: a square per function, or (`by_size`) one per `BYTES_PER_SQUARE` bytes (at least one).
+def picture_blocks(grid: Grid, *, home: bool = False) -> list[progress_picture.Block]:
+    """Blocks to draw: a square per function.
 
     `home` words each block's text in the home page's three states, as its legend does, not the five of the page.
     """
     blocks = []
     for b in grid.blocks:
-        done, _ = b.measure("reimplemented")
+        done = b.measure("reimplemented")
         n = len(b.functions)
         lines = [f"{b.label}: {done:,}/{n:,} reimplemented ({progress_render.percent(done, n)})"]
         lines.append(_home_summary(b) if home else _state_summary(b, STATES))
-        if by_size:
-            cells = [f.state for f in b.functions for _ in range(square_count(f.size))]
-            lines.append(f"{b.bytes:,} bytes; one square is up to {BYTES_PER_SQUARE} bytes")
-        else:
-            cells = [f.state for f in b.functions]
         blocks.append(
             progress_picture.Block(
-                f"{b.label} {short_percent(done, n)}", "\n".join(line for line in lines if line), cells
+                f"{b.label} {short_percent(done, n)}",
+                "\n".join(line for line in lines if line),
+                [f.state for f in b.functions],
             )
         )
     return blocks
 
 
-def render_functions_svg(grid: Grid, by_size: bool, *, uid: str, standalone: bool = False) -> str:
-    """The picture of every function, or of every `BYTES_PER_SQUARE` bytes (`by_size`), as SVG."""
-    count, size = grid.total()
-    if by_size:
-        what = f"one square per {BYTES_PER_SQUARE} bytes of the original's own code ({size:,} bytes)"
-    else:
-        what = f"one square per function of the original's own code ({count:,} functions)"
-    done, _ = grid.measure("reimplemented")
+def render_functions_svg(grid: Grid, *, uid: str, standalone: bool = False) -> str:
+    """The picture of every function, one square each, as SVG."""
+    count = grid.total()
+    what = f"one square per function of the original's own code ({count:,} functions)"
+    done = grid.measure("reimplemented")
     return progress_picture.render_svg(
-        picture_blocks(grid, by_size),
+        picture_blocks(grid),
         uid=uid,
         title="Coney's progress, " + what,
         description=f"{what}, grouped by source directory in address order and coloured by state. "
@@ -407,7 +377,7 @@ def render_functions_svg(grid: Grid, by_size: bool, *, uid: str, standalone: boo
         classes=CLASSES,
         palette=PALETTE,
         standalone=standalone,
-        data_view="size" if by_size else "functions",
+        data_view="functions",
     )
 
 
@@ -432,7 +402,7 @@ def home_blocks(grid: Grid) -> list[progress_picture.Block]:
     """The home picture's blocks: `picture_blocks` with each square folded into its home state."""
     return [
         progress_picture.Block(b.label, b.title, [HOME_STATE_OF[state] for state in b.cells])
-        for b in picture_blocks(grid, False, home=True)
+        for b in picture_blocks(grid, home=True)
     ]
 
 
@@ -446,8 +416,8 @@ def home_headline(grid: Grid) -> tuple[str, str]:
 
     The home section and the README's picture (progress_png.py) both print it, so they cannot say different things.
     """
-    total, _ = grid.total()
-    done, _ = grid.measure("reimplemented")
+    total = grid.total()
+    done = grid.measure("reimplemented")
     return (
         f"{progress_render.percent(done, total)} reimplemented",
         f"{done:,} of {total:,} functions of the original's own code, one square each",
@@ -461,8 +431,8 @@ def render_home_svg(grid: Grid, *, uid: str = "ph") -> str:
     block b and the progress page's script and table give its tooltip unchanged. They flow on from one another
     (`progress_picture.flow`), so the whole picture is the functions in address order, `HOME_COLS` to a row.
     """
-    count, _ = grid.total()
-    done, _ = grid.measure("reimplemented")
+    count = grid.total()
+    done = grid.measure("reimplemented")
     return progress_picture.render_svg(
         home_blocks(grid),
         uid=uid,

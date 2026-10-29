@@ -4,7 +4,7 @@
 `build_site` is the one call the MkDocs hook makes (mkdocs_hooks.py). It returns the text that fills the progress
 page's marker (the function picture, the mission picture), the history page's block, the home page's compact picture
 (the same squares in three states, `home_section`), and the files to add to the
-site: the standalone SVGs (`progress/progress.svg`, `progress-size.svg`, `missions.svg`, `history.svg`), the raw
+site: the standalone SVGs (`progress/progress.svg`, `missions.svg`, `history.svg`), the raw
 numbers (`progress/progress.json`), the per-function table the page's script reads for tooltips
 (`progress/functions.json`) and the history (`progress/history.json`). Nothing is committed.
 
@@ -133,22 +133,21 @@ def _legend(grid: progress_grid.Grid) -> str:
 
 def _headline(grid: progress_grid.Grid) -> str:
     """The measures as one line: reimplemented in bold, then understood and researched, with function counts."""
-    total, _ = grid.total()
+    total = grid.total()
     parts = []
     for kind in progress_grid.MEASURES:
         if kind == "audited" and not grid.audited_known:
             continue
-        n, _ = grid.measure(kind)
+        n = grid.measure(kind)
         text = f"{progress_grid.STATE_LABELS[kind]} {progress_render.percent(n, total)} ({n:,})"
         parts.append(f"<strong>{text}</strong>" if kind == "reimplemented" else text)
     return f'<p class="cg-headline">{" · ".join(parts)} of {total:,} functions</p>'
 
 
 def grid_section(grid: progress_grid.Grid, repo_url: str | None) -> str:
-    """The page's function block: headline, a toggle between the two pictures, the legend and both inline SVGs.
+    """The page's function block: headline, the picture of every function and its legend.
 
-    The toggle is two radio buttons and the stylesheet's sibling selectors, so it works without the script. The
-    script only adds the per-square tooltips (it reads `data-functions`, the per-function table).
+    The script only adds the per-square tooltips (it reads `data-functions`, the per-function table).
     """
     # The table sits beside the page's own file in the site, so its address is relative to the page.
     attrs = 'data-functions="functions.json"'
@@ -158,16 +157,7 @@ def grid_section(grid: progress_grid.Grid, repo_url: str | None) -> str:
         [
             f'<div class="progress-grid progress-functions" {attrs}>',
             _headline(grid),
-            '<input type="radio" name="cg-view" id="cg-view-f" class="cg-radio" checked>',
-            '<label for="cg-view-f" class="cg-tab">One square per function</label>',
-            '<input type="radio" name="cg-view" id="cg-view-s" class="cg-radio">',
-            f'<label for="cg-view-s" class="cg-tab">One square per {progress_grid.BYTES_PER_SQUARE} bytes</label>',
-            '<div class="cg-pane cg-pane-f">',
-            progress_grid.render_functions_svg(grid, False, uid="pf"),
-            "</div>",
-            '<div class="cg-pane cg-pane-s">',
-            progress_grid.render_functions_svg(grid, True, uid="ps"),
-            "</div>",
+            progress_grid.render_functions_svg(grid, uid="pf"),
             _legend(grid),
             '<div class="cg-tip" role="status" aria-live="polite" hidden></div>',
             "</div>",
@@ -242,12 +232,7 @@ def build_site(
     if grid is not None:
         site.grid_html = grid_section(grid, repo_url)
         site.home_html = home_section(grid, repo_url)
-        site.files[f"{SITE_DIR}/progress.svg"] = progress_grid.render_functions_svg(
-            grid, False, uid="pf", standalone=True
-        )
-        site.files[f"{SITE_DIR}/progress-size.svg"] = progress_grid.render_functions_svg(
-            grid, True, uid="ps", standalone=True
-        )
+        site.files[f"{SITE_DIR}/progress.svg"] = progress_grid.render_functions_svg(grid, uid="pf", standalone=True)
         # The README's pictures (light and dark): the README embeds them by the site's address.
         for theme, name in progress_png.FILES.items():
             site.files[f"{SITE_DIR}/{name}"] = progress_png.render_home_png(grid, theme)

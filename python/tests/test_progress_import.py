@@ -378,7 +378,7 @@ def test_a_day_before_the_move_is_measured_with_the_listings_sizes(tmp_path: Pat
     functions = progress_import.legacy_functions(root, listing)
     assert functions is not None and [(f.name, f.size) for f in functions] == [("A", 128), ("B", 40)]
     state = progress.load(root, functions)
-    assert state.problems == [] and state.reimplemented_bytes == 168
+    assert state.problems == [] and state.reimplemented_functions == 2
     (root / progress.LEGACY_FUNCTIONS_FILE).unlink()
     assert progress_import.legacy_functions(root, listing) is None
 
@@ -436,7 +436,7 @@ def test_the_command_moves_the_list_and_the_tracker_counts_the_same_function(
     assert 'coney = "src/core/thing.h:doThing"' in written and 'status = "legacy"' in written
     assert 'page = "thing.md#map"' in written and 'role = "does the thing"' in written
     state = progress.load(root)
-    assert state.problems == [] and state.reimplemented_bytes == 0x80 and len(state.functions) == 1
+    assert state.problems == [] and state.reimplemented_functions == 1 and len(state.functions) == 1
     assert main(["progress", "import-functions"]) == 0  # again: nothing to add
     assert "1 already recorded" in capsys.readouterr().out
 

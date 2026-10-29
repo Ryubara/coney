@@ -9,7 +9,6 @@ size.
 from __future__ import annotations
 
 import json
-import math
 import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -111,7 +110,7 @@ def test_the_audit_hook_adds_the_audited_state_and_nothing_else(tmp_path: Path) 
     audited = grid_of(root, (0x1000, 0x1180))
     assert audited.audited_known
     assert states_of(audited)[0x1000] == "audited" and states_of(audited)[0x1180] == "audited"
-    assert audited.measure("reimplemented")[0] == 2  # an audited function is also reimplemented
+    assert audited.measure("reimplemented") == 2  # an audited function is also reimplemented
 
 
 def test_measures_follow_the_trackers_definitions(tmp_path: Path) -> None:
@@ -120,13 +119,11 @@ def test_measures_follow_the_trackers_definitions(tmp_path: Path) -> None:
     state = progress.load(root)
     grid = grid_of(root)
     assert state.understanding is not None
-    assert grid.total() == (state.understanding.functions, state.understanding.bytes)
-    assert grid.measure("understood") == (
-        state.understanding.understood_functions,
-        state.understanding.understood_bytes,
-    )
-    assert grid.measure("reimplemented") == (1, 256)
-    assert grid.measure("researched")[0] == 4  # every function in a subsystem but the unattributed one
+    assert grid.total() == state.understanding.functions == state.game_functions
+    assert grid.measure("understood") == state.understanding.understood_functions
+    assert grid.measure("reimplemented") == state.reimplemented_functions == 1
+    # Every function in a subsystem but the unattributed one.
+    assert grid.measure("researched") == state.researched_functions == 4
 
 
 def test_blocks_are_subsystems_in_address_order_unattributed_last(tmp_path: Path) -> None:
@@ -194,7 +191,7 @@ def square_count(svg: str) -> int:
 
 def test_the_svg_has_one_square_per_function_and_a_title_per_block(tmp_path: Path) -> None:
     grid = grid_of(make_grid_checkout(tmp_path))
-    svg = progress_grid.render_functions_svg(grid, False, uid="t")
+    svg = progress_grid.render_functions_svg(grid, uid="t")
     assert square_count(svg) == 5
     root = ET.fromstring(svg.replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ', 1))
     titles = [t.text for t in root.iter("{http://www.w3.org/2000/svg}title")]
@@ -203,14 +200,13 @@ def test_the_svg_has_one_square_per_function_and_a_title_per_block(tmp_path: Pat
     assert 'class="cg-s-reimplemented"' in svg and "style" not in svg  # the page's stylesheet owns the colours
 
 
-def test_the_picture_by_size_has_a_square_per_512_bytes_and_at_least_one_per_function(tmp_path: Path) -> None:
+def test_there_is_no_picture_by_size(tmp_path: Path) -> None:
+    """Progress counts functions (2026-10-29): the one-square-per-512-bytes view and its toggle are gone."""
     grid = grid_of(make_grid_checkout(tmp_path))
-    expected = sum(max(1, math.ceil(f.size / progress_grid.BYTES_PER_SQUARE)) for f in grid.functions)
-    assert expected == 5  # every function here is under one square
-    big = progress_grid.GridFunction(0x2000, 2000, "Big", "Alpha", "understood", True, True)
-    assert progress_grid.square_count(big.size) == 4 and progress_grid.square_count(1) == 1
-    svg = progress_grid.render_functions_svg(grid, True, uid="s")
-    assert square_count(svg) == expected and 'data-view="size"' in svg
+    assert not hasattr(progress_grid, "BYTES_PER_SQUARE") and not hasattr(progress_grid, "square_count")
+    html = progress_site.grid_section(grid, None)
+    assert "512 bytes" not in html and "cg-radio" not in html and "cg-tab" not in html
+    assert "unit" not in progress_grid.functions_table(grid)
 
 
 def test_the_standalone_file_carries_both_themes() -> None:
@@ -256,10 +252,12 @@ def test_summary_carries_the_trackers_numbers(tmp_path: Path) -> None:
     root = make_grid_checkout(tmp_path)
     grid = grid_of(root)
     data = progress_grid.summary(grid)
-    assert data["functions"] == 5 and data["bytes"] == 256 + 64 + 100 + 128 + 32
+    assert data["functions"] == 5
     assert data["states"] == {"audited": 0, "reimplemented": 1, "understood": 1, "researched": 2, "untouched": 1}
     assert data["measures"]["reimplemented"]["functions"] == 1
     assert data["measures"]["understood"]["functions"] == 2  # Alpha_Init is understood as well
+    assert data["measures"]["reimplemented"] == {"functions": 1, "percent": 20.0}  # no byte share is published
+    assert "bytes" not in json.dumps(data["blocks"]) and "percent_bytes" not in json.dumps(data)
     alpha = data["blocks"][0]
     assert (
         alpha["name"] == "Alpha" and alpha["functions"] == 3 and alpha["measures"]["reimplemented"]["percent"] == 33.333
@@ -283,7 +281,6 @@ def test_the_function_table_is_compact_and_round_trips(tmp_path: Path) -> None:
     assert table["files"][block["f"][0]] == "Alpha/Alpha.cpp"
     assert block["f"][1] == block["f"][2] and table["files"][block["f"][2]] == "Device/ps2/fileio/Wad.cpp"
     assert table["blocks"][1]["f"] == [-1]  # Beta_Run lies in no file's range
-    assert table["unit"] == progress_grid.BYTES_PER_SQUARE
 
 
 # --- missions ---------------------------------------------------------------------------------------------------------
@@ -329,7 +326,6 @@ def test_the_site_holds_the_pictures_numbers_and_history(tmp_path: Path) -> None
         "progress/functions.json",
         "progress/history.json",
         "progress/history.svg",
-        "progress/progress-size.svg",
         "progress/progress.json",
         "progress/progress.svg",
         "progress/readme-dark.png",
@@ -339,7 +335,7 @@ def test_the_site_holds_the_pictures_numbers_and_history(tmp_path: Path) -> None
         'data-repo="https://example.invalid/r"' in site.grid_html
         and 'data-functions="functions.json"' in site.grid_html
     )
-    assert "One square per function" in site.grid_html and "audited" not in site.grid_html.lower()
+    assert "One square per" not in site.grid_html and "audited" not in site.grid_html.lower()
     assert json.loads(site.files["progress/progress.json"])["functions"] == 5
     history = json.loads(site.files["progress/history.json"])
     assert history["points"][-1]["date"] == "2026-10-21" and history["points"][-1]["commit"] == "abc1234"
@@ -379,12 +375,12 @@ def test_the_real_pictures_stay_lean() -> None:
     state = progress.load(REPO)
     grid = progress_grid.build_grid(state, REPO)
     assert grid is not None and state.understanding is not None
-    assert grid.total()[0] == state.understanding.functions
+    assert grid.total() == state.understanding.functions
     page = progress_site.grid_section(grid, None)
     table = json.dumps(progress_grid.functions_table(grid), separators=(",", ":"))
     assert len(page.encode()) < 600_000, len(page)
     assert len(table.encode()) < 900_000, len(table)
-    assert square_count(page) >= grid.total()[0]
+    assert square_count(page) >= grid.total()
 
 
 def test_the_stylesheet_uses_the_palettes_of_the_standalone_files() -> None:
