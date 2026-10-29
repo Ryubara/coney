@@ -9,6 +9,12 @@ exclude: ^(LICENSE|docs/LICENSE|assets/sandbox/License\.txt)$
 # stage (a hook with `stages: [commit-msg]` needs its own git hook).
 default_install_hook_types: [pre-commit, commit-msg]
 
+# The markdownlint hook's Node, pinned (an LTS release, "Krypton") because an unpinned one is whatever nodeenv finds
+# at the head of Node's index: a pre-release there (v27.0.0-alpha.0.0.0, 2026-10-29) crashed nodeenv's version parser
+# on Windows runners, which have no Node on pre-commit's path (#1162). `repo audit` (files.markdown-hook) holds the pin.
+default_language_version:
+  node: 24.22.2
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0

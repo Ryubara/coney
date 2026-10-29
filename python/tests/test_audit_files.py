@@ -498,6 +498,22 @@ def test_a_pre_commit_config_without_the_markdownlint_hook_is_found(root: Path) 
     assert problem.item == ".pre-commit-config.yaml" and "markdownlint-cli2" in problem.message
 
 
+def test_the_clean_copy_pins_the_node_version_of_the_markdownlint_hook(root: Path) -> None:
+    assert not found(af.markdown_hook_exists, context(root))
+
+
+@pytest.mark.parametrize("version", [None, "default", "system", "latest", "lts"])
+def test_a_markdownlint_hook_without_a_pinned_node_is_found(root: Path, version: str | None) -> None:
+    def change(data: dict[str, Any]) -> None:
+        data.pop("default_language_version", None)
+        if version is not None:
+            data["default_language_version"] = {"node": version}
+
+    edit_yaml(root, ".pre-commit-config.yaml", change)
+    (problem,) = found(af.markdown_hook_exists, context(root))
+    assert problem.item == ".pre-commit-config.yaml" and "default_language_version" in problem.message
+
+
 def test_a_missing_pre_commit_config_is_found_by_the_markdownlint_check(root: Path) -> None:
     (root / ".pre-commit-config.yaml").unlink()
     (problem,) = found(af.markdown_hook_exists, context(root))

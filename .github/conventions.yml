@@ -740,7 +740,7 @@ hygiene:
       severity: error
       fix: skill
       keys: [repo.tools]
-      summary: "pre-commit has no markdownlint-cli2 hook, so a long Markdown line is first caught by CI"
+      summary: "pre-commit has no markdownlint-cli2 hook, so a long Markdown line is first caught by CI, or its Node is not pinned (default_language_version)"
     issue.sections:
       scope: github
       severity: error
