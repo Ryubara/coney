@@ -244,6 +244,24 @@ def test_round_trip_counts_without_quoting_the_script(tmp_path: Path, capsys: py
     assert not {word for word in printed.replace(",", " ").split() if word in strings} - own
 
 
+def test_round_trip_compares_the_natives_each_function_calls(capsys: pytest.CaptureFixture[str]) -> None:
+    """Beside the code, the round trip compares the natives each function calls, and prints counts and hashes only.
+
+    A stand-in compiler gives back the original chunk for one fixture and another fixture's chunk for the other, so
+    one chunk calls the same natives and one does not; `f` and `g` stand for the bindings."""
+    control = (FIXTURES / "control.s.luac").read_bytes()
+    closures = (FIXTURES / "closures.s.luac").read_bytes()
+    items = [("control.lua", control, "control"), ("closures.lua", closures, "closures")]
+    result = lua_decompile.round_trip(items, lambda text: control, frozenset({"f", "g"}))
+    assert (result.natives_compared, result.natives_same) == (2, 1)
+    assert result.native_uses > 0
+    lua_decompile.print_round_trip(result)
+    printed = capsys.readouterr().out
+    assert "natives: 1 of 2 chunks call the same natives, function by function" in printed
+    assert "sha256" in printed
+    assert " f," not in printed and " g " not in printed  # no native's name, only the hashes
+
+
 def test_round_trip_counts_a_refusal_by_luac() -> None:
     """luac refusing the text is counted with the line it named, never its message (which may quote the source)."""
     data = (FIXTURES / "control.s.luac").read_bytes()

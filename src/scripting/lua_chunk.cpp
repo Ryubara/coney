@@ -252,3 +252,9 @@ std::expected<LuaProto, Error> parseLuaChunk(std::span<const std::byte> data) {
 }
 
 } // namespace coney::script
+
+namespace coney::script {
+
+std::vector<std::byte> writeLuaChunk(const LuaProto&) { return {}; }
+
+} // namespace coney::script

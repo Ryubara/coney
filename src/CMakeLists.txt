@@ -145,6 +145,7 @@ add_library(coney_core STATIC
     scripting/level_bindings.cpp
     scripting/lighting_bindings.cpp
     scripting/lua_chunk.cpp
+    scripting/lua_compiler.cpp
     scripting/lua_libraries.cpp
     scripting/lua_value.cpp
     scripting/lua_vm.cpp
