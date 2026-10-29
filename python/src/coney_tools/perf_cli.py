@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from coney_tools import build_root
 from coney_tools.config import ConfigError, find_repo_root, load_config
 
 DEFAULT_FIGHTERS = (0, 10, 25, 50, 100)
@@ -142,7 +143,7 @@ def _coney_executable(given: Path | None, preset: str) -> Path:
         return given
     root = find_repo_root(Path.cwd())
     for name in ("coney.exe", "coney"):
-        candidate = root / "build" / preset / "src" / "platform" / name
+        candidate = build_root.preset_folder(root, preset) / "src" / "platform" / name
         if candidate.is_file():
             return candidate
     raise ConfigError(f"no Coney build at build/{preset}/src/platform/; build the {preset} preset or pass --coney")

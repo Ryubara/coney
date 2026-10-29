@@ -21,7 +21,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from coney_tools import pcsx2_claims, workspace, workspace_fetch
+from coney_tools import build_root, pcsx2_claims, workspace, workspace_fetch
 from coney_tools.build_cli import scratch_root
 from coney_tools.config import (
     ConfigError,
@@ -223,6 +223,14 @@ def report(sections: Sequence[tuple[str, Sequence[Check]]]) -> int:
     return 1
 
 
+def _build_drive(root: Path) -> Path:
+    """Where the checkout's builds go: the build root when `build_root` is set (build_root.py), else the checkout."""
+    try:
+        return build_root.configured(root) or root
+    except ConfigError:
+        return root
+
+
 def free_space(folder: Path) -> int:
     """The free bytes on the drive holding `folder` (or its nearest existing parent)."""
     while not folder.exists() and folder.parent != folder:
@@ -283,6 +291,6 @@ def run(cwd: Path, disc_arg: str | None) -> int:
         ("Configuration", [config_check(root), Check("Scratch folder", True, str(scratch_root(root)), "", False)]),
         ("Disc", discs),
         ("Research tools (optional: docs/guides/ghidra.md, docs/guides/workspace.md#pcsx2-copies)", research),
-        ("Disk", [disk_check(free_space(root))]),
+        ("Disk", [disk_check(free_space(_build_drive(root)))]),
     ]
     return report(sections)

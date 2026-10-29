@@ -13,7 +13,7 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-from coney_tools import fails_first, orig_compare, orig_study, research_where, stamps, unit
+from coney_tools import build_claims, fails_first, orig_compare, orig_study, research_where, stamps, unit
 from coney_tools.config import find_repo_root
 from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.progress_research import DEFAULT_GHIDRA_URL, http_fetch
@@ -238,18 +238,21 @@ def _fails_first(
     if agent == "unknown":
         print("orig fails-first: give --agent ID (the build slots need one)")
         return 2
-    written = fails_first.run(
-        folder,
-        root,
-        tests=args.test,
-        test_commit=args.test_commit,
-        fix_commit=args.fix_commit,
-        preset=args.preset,
-        runner=fails_first.build_runner(agent),
-        rules=rules,
-        who=who,
-        say=lambda line: print(line, flush=True),
-    )
+    # Recorded as running for the whole run: between its two builds the worktree holds no build slot, and `workspace
+    # clean` must not take its build for idle (build_claims.activity).
+    with build_claims.unit_activity(root, agent, "orig fails-first"):
+        written = fails_first.run(
+            folder,
+            root,
+            tests=args.test,
+            test_commit=args.test_commit,
+            fix_commit=args.fix_commit,
+            preset=args.preset,
+            runner=fails_first.build_runner(agent),
+            rules=rules,
+            who=who,
+            say=lambda line: print(line, flush=True),
+        )
     for stamp in written:
         print(
             f"orig fails-first: {stamp.subject}: {stamp.result} "

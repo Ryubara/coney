@@ -16,7 +16,7 @@ from typing import Any, ClassVar
 
 import pytest
 
-from coney_tools import build_cli, build_record, build_run, compiler_cache, pcsx2_proc, process_lifetime
+from coney_tools import build_cli, build_record, build_root, build_run, compiler_cache, pcsx2_proc, process_lifetime
 from coney_tools.build_claims import FAST_LANE, MAIN_LANE, default_slots, folder_lock
 from coney_tools.cli import _build_parser, main
 from coney_tools.config import ConfigError
@@ -1184,3 +1184,61 @@ def test_pruning_after_a_build_keeps_the_record_a_stamp_covers(
     (stamps / "0001.jsonl").write_text(covers, encoding="utf-8")
     assert main(["build", "--agent", "alice", "--configure"]) == 0
     assert (folder / f"{0:064x}.json").exists() and not (folder / f"{1:064x}.json").exists()
+
+
+# --- build_root (coney.local.toml): the build trees on another drive ----------------------------------------------
+
+
+def set_build_root(checkout: Path, builds: Path) -> None:
+    """Add `build_root` to the checkout's local config."""
+    config = checkout / "coney.local.toml"
+    config.write_text(config.read_text(encoding="utf-8") + f"build_root = '{builds.as_posix()}'\n", encoding="utf-8")
+
+
+def test_without_a_build_root_the_preset_folder_is_the_presets_own(
+    checkout: Path, capsys: pytest.CaptureFixture[str], fake_toolchain: type[FakeToolchain]
+) -> None:
+    assert main(["build", "--agent", "alice", "--configure-only"]) == 0
+    assert fake_toolchain.commands == [["cmake", "--preset", "dev"]]
+    assert main(["build", "--agent", "alice", "--test"]) == 0
+    assert ["cmake", "--build", "--preset", "dev"] in [c[:4] for c in fake_toolchain.commands]
+    assert fake_toolchain.commands[-1][:3] == ["ctest", "--preset", "dev"]
+    assert not (checkout / ".coney-build-id").exists()
+
+
+def test_with_a_build_root_every_step_uses_the_folder_there(
+    checkout: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], fake_toolchain: type[FakeToolchain]
+) -> None:
+    builds = tmp_path / "builds"
+    set_build_root(checkout, builds)
+    assert main(["build", "--agent", "alice", "--test"]) == 0
+    ident = build_root.read_id(checkout)
+    assert ident is not None
+    folder = builds / ident / "dev"
+    assert fake_toolchain.commands[0] == ["cmake", "--preset", "dev", "-B", str(folder)]
+    assert ["cmake", "--build", str(folder)] in [c[:3] for c in fake_toolchain.commands]
+    ctest = [c for c in fake_toolchain.commands if c[0] == "ctest"]
+    assert ctest and all(c[:3] == ["ctest", "--test-dir", str(folder)] for c in ctest)
+    assert build_root.owner(builds / ident) == checkout.resolve()
+    assert not (checkout / "build").exists()
+
+
+def test_with_a_build_root_a_custom_folder_under_build_moves_too(
+    checkout: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], fake_toolchain: type[FakeToolchain]
+) -> None:
+    builds = tmp_path / "builds"
+    set_build_root(checkout, builds)
+    assert main(["build", "--agent", "alice", "--configure-only", "--build-dir", "build/tidy"]) == 0
+    ident = build_root.read_id(checkout)
+    assert fake_toolchain.commands == [["cmake", "--preset", "dev", "-B", str(builds / str(ident) / "tidy")]]
+
+
+def test_a_folder_outside_the_preset_gets_the_test_presets_environment(
+    checkout: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], fake_toolchain: type[FakeToolchain]
+) -> None:
+    presets = json.loads(json.dumps(PRESETS))
+    presets["testPresets"][0]["environment"] = {"LSAN_OPTIONS": "suppressions=${sourceDir}/tests/lsan.supp"}
+    (checkout / "CMakePresets.json").write_text(json.dumps(presets), encoding="utf-8")
+    set_build_root(checkout, tmp_path / "builds")
+    assert main(["build", "--agent", "alice", "--test"]) == 0
+    assert fake_toolchain.env["LSAN_OPTIONS"] == f"suppressions={checkout.as_posix()}/tests/lsan.supp"

@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from coney_tools import stale_processes, workspace_clean
+from coney_tools import build_root, stale_processes, workspace_clean
 from coney_tools.cli import main
 from coney_tools.config import ConfigError
 from coney_tools.workspace_clean import BUSY_FILE, Entry, Settings, plan, run_clean, run_disk
@@ -97,6 +97,8 @@ class Space:
             worktree_hours=kwargs.get("worktree_hours", 1.0),
             merged_heads=lambda branch: known.get(branch),
             live=workspace_clean.live_slots(self.root, self.checkout),
+            running=workspace_clean.running_checks(self.root, self.checkout),
+            build_root=build_root.configured(self.checkout),
         )
 
     def entries(self, **kwargs: object) -> dict[str, Entry]:

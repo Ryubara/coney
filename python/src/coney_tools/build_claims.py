@@ -11,6 +11,11 @@ one shared place every worktree sees:
 * `queue/<millis>-<pid>-<id>.json`: a ticket per waiting build. The order is priority tickets first, then by time;
   **only the head of the queue may claim**, so waiters cannot overtake one another.
 
+**Activities** (`activity`, `active/<worktree>-<pid>-<n>.json`) claim nothing and wait for nothing: a long command that
+needs its worktree's build between its builds (`task check`, `orig fails-first`) writes one for as long as it runs, so
+`workspace clean` (which reads `live_worktrees`) never takes the worktree or its build for idle while a check runs
+its other steps. One whose process is gone, or older than `ACTIVITY_MAX_AGE`, protects nothing.
+
 A third kind of claim, the **folder lock** (`folder_lock`), is the same machinery with one slot and a folder of its own
 per build folder: a run holds it from configure to its last test, so two runs never share one build folder.
 
@@ -41,7 +46,7 @@ import re
 import time
 import uuid
 from collections.abc import Callable, Iterator
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -64,6 +69,11 @@ DEFAULT_SLOTS = 2
 DEFAULT_MAX_AGE = 4 * 3600.0
 #: A ticket that old is dropped even when its pid lives (a reused pid after a crash).
 TICKET_MAX_AGE = 12 * 3600.0
+#: An activity whose process lives is still taken for a reused pid after this many seconds (a task check that waits
+#: for its build slot may run for hours).
+ACTIVITY_MAX_AGE = 24 * 3600.0
+#: The folder of the activities, beside the claims.
+ACTIVITY_FOLDER = "active"
 #: Seconds between looks at the queue while waiting.
 POLL_SECONDS = 2.0
 #: Seconds between "you are Nth in the queue" lines while waiting.
@@ -223,8 +233,66 @@ def live_worktrees(claims_dir: Path) -> set[str]:
         snapshot = queue.status()
         names.update(row.claim.worktree for row in snapshot.slots if row.claim and not row.stale)
         names.update(row.ticket.worktree for row in snapshot.queue if not row.stale)
+    names.update(active_worktrees(claims_dir))
     names.discard("")
     return names
+
+
+def activities(claims_dir: Path, now: float | None = None) -> dict[str, list[str]]:
+    """The live activities by worktree, each with what runs (`task check`): its process lives and it is younger than
+    `ACTIVITY_MAX_AGE`. Unreadable files name nobody."""
+    now = time.time() if now is None else now
+    found: dict[str, list[str]] = {}
+    try:
+        files = sorted((claims_dir / ACTIVITY_FOLDER).glob("*.json"))
+    except OSError:
+        return found
+    for file in files:
+        try:
+            data = json.loads(file.read_text(encoding="utf-8"))
+            worktree, pid, since = str(data["worktree"]), int(data["pid"]), float(data["time"])
+            what = str(data.get("what", "a command"))
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            continue
+        if worktree and now - since <= ACTIVITY_MAX_AGE and pcsx2_proc.pid_alive(pid):
+            found.setdefault(worktree, []).append(what)
+    return found
+
+
+def active_worktrees(claims_dir: Path, now: float | None = None) -> set[str]:
+    """The worktrees a live activity names (`activities`)."""
+    return set(activities(claims_dir, now))
+
+
+@contextmanager
+def activity(claims_dir: Path, worktree: str, agent: str, what: str, pid: int | None = None) -> Iterator[None]:
+    """Name `worktree` live for the `with` block: a file in the activities folder that `live_worktrees` reads, removed
+    however the block ends. `what` says which command it is (`task check`, `orig fails-first`)."""
+    pid = os.getpid() if pid is None else pid
+    folder = claims_dir / ACTIVITY_FOLDER
+    folder.mkdir(parents=True, exist_ok=True)
+    safe = re.sub(r"[^A-Za-z0-9._-]+", "_", worktree)
+    file = folder / f"{safe}-{pid}-{uuid.uuid4().hex[:8]}.json"
+    data = {"worktree": worktree, "agent": agent, "what": what, "pid": pid, "time": time.time()}
+    file.write_text(json.dumps(data), encoding="utf-8")
+    try:
+        yield
+    finally:
+        file.unlink(missing_ok=True)
+
+
+@contextmanager
+def unit_activity(root: Path, agent: str, what: str) -> Iterator[None]:
+    """`activity` for the checkout `root` in this machine's build queue (`default_slots`), named by its folder as the
+    build claims name it. A machine whose queue folder cannot be found or written still runs the command, and says
+    that `workspace clean` cannot see it."""
+    with ExitStack() as stack:
+        try:
+            claims = default_slots(MAIN_LANE, root).claims_dir
+            stack.enter_context(activity(claims, root.name, agent, what))
+        except (ConfigError, OSError) as error:
+            print(f"warning: {what} is not recorded as running ({error}); workspace clean may take its build for idle")
+        yield
 
 
 def reap_claim(claim: BuildClaim) -> list[object]:

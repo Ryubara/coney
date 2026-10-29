@@ -18,6 +18,7 @@ PATH_KEYS: tuple[str, ...] = (
     "pcsx2_claims_dir",
     "pcsx2_states_dir",
     "build_claims_dir",
+    "build_root",
     "ccache_dir",
     "ccache_program",
     "deps_dir",

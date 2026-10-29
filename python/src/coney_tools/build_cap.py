@@ -8,10 +8,11 @@ does not exist yet) when the worktrees already holding a build folder are at the
 names the command that makes room, `coney-tools workspace clean --apply` (workspace_clean.py), which uses the same
 judgement of "merged", "busy" and "idle" as the list does.
 
-What counts: the worktrees git lists under the workspace's `worktrees/` folder whose `build/` folder holds anything,
-in any preset. The main checkout's `build/` (the coordinator's play build) never counts, and a run in the main
-checkout is never refused. A second folder in a worktree that already holds one adds no worktree, so it is allowed;
-a folder that exists keeps building. Two agents configuring at the same moment may both pass, so the cap is
+What counts: the worktrees git lists under the workspace's `worktrees/` folder whose build tree holds anything, in
+any preset: its `build/` folder, or its folder in the build root when `build_root` is set (build_root.py). The main
+checkout's builds (the coordinator's play build) never count, and a run in the main checkout is never refused. A
+second folder in a worktree that already holds one adds no worktree, so it is allowed; a folder that exists keeps
+building. Two agents configuring at the same moment may both pass, so the cap is
 "about": it is a brake on a pile-up, not a lock.
 """
 
@@ -23,6 +24,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, replace
 from pathlib import Path
 
+from coney_tools import build_root
 from coney_tools.config import ConfigError, main_checkout, workspace_root
 from coney_tools.workspace_clean import (
     Entry,
@@ -60,21 +62,26 @@ class Holder:
     frees: bool
 
 
-def holds_build(worktree: Path) -> bool:
-    """Whether the worktree has a `build/` folder with anything in it (an empty one is no build)."""
-    try:
-        with os.scandir(worktree / "build") as entries:
-            return next(entries, None) is not None
-    except OSError:
-        return False
+def holds_build(worktree: Path, root: Path | None = None) -> bool:
+    """Whether the worktree has a build folder with anything in it (an empty one is no build): its `build/`, or its
+    folder in the build root `root`."""
+    for folder in build_root.folders(worktree, root):
+        try:
+            with os.scandir(folder) as entries:
+                if next(entries, None) is not None:
+                    return True
+        except OSError:
+            continue
+    return False
 
 
 def holding_worktrees(main: Path, workspace: Path) -> list[GitWorktree]:
     """The worktrees git lists under `workspace/worktrees/` (never the main checkout) that hold a build folder."""
     root = (workspace / "worktrees").resolve()
+    builds = build_root.configured(main)
     found = []
     for tree in list_worktrees(main)[1:]:
-        if tree.path.is_dir() and tree.path.resolve().is_relative_to(root) and holds_build(tree.path):
+        if tree.path.is_dir() and tree.path.resolve().is_relative_to(root) and holds_build(tree.path, builds):
             found.append(tree)
     return found
 
@@ -102,8 +109,9 @@ def describe(trees: list[GitWorktree], settings: Settings) -> list[Holder]:
     def one(tree: GitWorktree) -> Holder:
         entry = assess(tree, judging)
         state, frees = _state(entry)
-        idle = (settings.now - last_activity(tree.path)) / 3600.0
-        return Holder(tree.path.name, dir_size(tree.path / "build"), idle, state, frees)
+        folders = build_root.folders(tree.path, settings.build_root)
+        idle = (settings.now - last_activity(tree.path, folders or None)) / 3600.0
+        return Holder(tree.path.name, sum(dir_size(folder) for folder in folders), idle, state, frees)
 
     with ThreadPoolExecutor(max_workers=max(1, min(settings.workers, len(trees)))) as pool:
         holders = list(pool.map(one, trees))

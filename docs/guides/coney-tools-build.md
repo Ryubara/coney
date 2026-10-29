@@ -301,9 +301,10 @@ default, `--lane auto`, chooses as above.
 
 **The cap on build folders.** A build folder is about 7 GB and the drive must keep 30 GB free, so only so many
 worktrees can hold one. `build` refuses to configure a **new** build folder (one that is not on disk) while the
-worktrees that already hold a `build/` folder, in any preset, are at `build_worktree_cap` (default 7, in
+worktrees that already hold a build folder (`build/`, or theirs in the [build root](workspace.md#build-root)), in
+any preset, are at `build_worktree_cap` (default 7, in
 [`coney.local.toml`](workspace.md#local-config); `0` turns the cap off). It exits `2` before it waits for anything and
-prints the worktrees holding builds, longest idle first, each with the size of its `build/`, the hours since it was
+prints the worktrees holding builds, longest idle first, each with the size of its builds, the hours since it was
 last touched and its state (busy with the marker or a build slot; its branch merged, by `origin/main` or by a merged
 pull request; or unmerged work), saying which of them
 [`workspace clean --apply`](coney-tools-setup.md#workspace) would free now. Only the worktrees under the workspace's
@@ -342,7 +343,16 @@ selects, and the hook allows it.
 
 **Another build folder.** `--build-dir FOLDER` (relative to the checkout) configures, builds and tests in that folder
 instead of `build/<preset>`, with the preset's settings (`cmake --preset P -B FOLDER`, `cmake --build FOLDER`, `ctest
---test-dir FOLDER`), for a second configuration beside the first, such as a Clang build beside the default compiler's.
+--test-dir FOLDER` with the test preset's environment passed on), for a second configuration beside the first, such as
+a Clang build beside the default compiler's.
+
+**The build root.** A machine can keep every checkout's builds on another drive: with `build_root` set in its
+untracked [`coney.local.toml`](workspace.md#build-root), the build tree of a checkout is `<build_root>/<id>/` instead of
+its `build/`, so `build/<preset>` becomes `<build_root>/<id>/<preset>` and a `--build-dir build/clang` becomes
+`<build_root>/<id>/clang` (any other `--build-dir` stays as given). Each step then names that folder as `--build-dir`
+does. Unset, nothing changes and every command is the one above. `task check`, `orig fails-first` and `ci run` build
+through this command, and the cap, `workspace clean`, `perf` and `trace` find the folder through the same resolver
+([`build_root.py`](repo:python/src/coney_tools/build_root.py)).
 `--env NAME=VALUE` (repeatable) sets an environment variable for the run, such as `CC=clang-19`; CMake reads `CC` and
 `CXX` at a folder's first configure and keeps them in the cache.
 
@@ -414,7 +424,7 @@ coney-tools build [--agent AGENT] [--preset PRESET] [--dir DIR] [--configure] [-
 | `--target NAME` | text | none | build only this target and what it needs (repeatable), e.g. `coney` for a play build without the tests; not with --test |
 | `-R, --regex REGEX` | text | none | run only the tests whose names match (ctest -R, a CMake regular expression: escape . + ( ) with a backslash); a few tests are quick |
 | `-L, --label LABEL` | text | none | run only the tests with a label that matches (ctest -L); `disc` is every test that needs the game's disc |
-| `--build-dir BUILD_DIR` | path | none | build in this folder instead of build/\<preset\> (relative to the checkout), with the preset's settings; for a second configuration, such as a Clang one next to the default compiler's |
+| `--build-dir BUILD_DIR` | path | none | build in this folder instead of build/\<preset\> (relative to the checkout; with a build root, build/... moves into it), with the preset's settings; for a second configuration, such as a Clang one next to the default compiler's |
 | `--env NAME=VALUE` | text | none | set an environment variable for the run, e.g. CC=clang-19 (repeatable); CMake reads CC and CXX at the first configure of a folder |
 | `--priority` | flag | off | go ahead of the normal queue (a build someone awaits) |
 | `--lane RUN_LANE` | choice | `auto` | auto (default): a small build or test run takes the fast lane; main: always a main slot, for a run you know is long. One of `auto`, `main`. |
@@ -476,13 +486,13 @@ uv run --project python coney-tools perf table REPORT.json ...
 
 `perf bench` plays the level (the hub, `level95`, by default) once per fighter count with `coney --bench`
 ([Performance](performance.md#bench)): each run spawns that many AI fighters on the first frame of play, leaves
-`--warmup` frames unmeasured and measures `--frames` more, windowed with `--vsync off` (or `--headless`: the
-simulation alone), with `--skip-movies`; `--cpu-skinning` skins the humans on the CPU instead of the GPU
-([GPU skinning](performance.md#gpu-skinning)), and its reports' names end in `-cpu`. Each report and its log go to
-`--out` (a scratch folder), named for the level, the count and headless; the command prints one Markdown table of
-the frame times (mean, 95th and 99th percentile, frames a second), the main zones and the counters, and a line per
-build and renderer the rows came from. Coney is `build/PRESET/src/platform/coney` (`playtest` by default: an
-optimised build with the debug tools, which `--bench` needs), the disc `game_dir`. Exit 1 when a run fails.
+`--warmup` frames unmeasured and measures `--frames` more, windowed with `--vsync off` (or `--headless`: the simulation
+alone), with `--skip-movies`; `--cpu-skinning` skins the humans on the CPU instead of the GPU ([GPU
+skinning](performance.md#gpu-skinning)), and its reports' names end in `-cpu`. Each report and its log go to `--out` (a
+scratch folder), named for the level, the count and headless; the command prints one Markdown table of the frame times
+(mean, 95th and 99th percentile, frames a second), the main zones and the counters, and a line per build and renderer
+the rows came from. Coney is `build/PRESET/src/platform/coney`, in the build root when one is set (`playtest` by
+default: an optimised build with the debug tools, which `--bench` needs), the disc `game_dir`. Exit 1 when a run fails.
 `perf table` prints the same table from reports already written.
 
 <!-- command-reference:begin perf -->
