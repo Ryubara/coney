@@ -43,7 +43,7 @@ internals:** a script reaches the game only through natives, the same boundary t
 
 | Term | Meaning |
 | --- | --- |
-| **Native** | A function a script calls to make the game do something. Coney keeps the word: the Natives page and the masterlist already use it, as does the planned `Native` struct, and it is the word modders know from FiveM |
+| **Native** | A function a script calls to make the game do something. Coney keeps the word: the Natives page and the masterlist already use it, as does the `Native` struct, and it is the word modders know from FiveM |
 | **Game native** | One of the original's 956 script bindings, registered as a Lua global by the game and documented in the [masterlist](../../references/bindings/index.md). A script calls it by the game's own name, with the game's arguments, as the game's scripts do: `HuCreate(name, type, pos, heading, nil, 1, gang)` |
 | **Coney native** | A function Coney adds for scripts, reaching a capability of Coney's engine the original lacks (teleport, time scale, loading an imported model). It lives in the `Coney` table (`Coney.TeleportPlayer(...)`), never as a bare global, so it can never clash with a game native |
 | **SDK function** | A function of the `Coney` table that belongs to the script runtime, not to the engine: registering handlers, threads and waits, logging, the SDK level. It is always there, whatever Coney's progress |

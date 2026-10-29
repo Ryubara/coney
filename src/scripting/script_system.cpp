@@ -176,6 +176,8 @@ void ScriptSystem::servicePreloads(bool all) {
         m_preloads.erase(m_preloads.begin());
         // The completion routine runs the chunk, then calls the callback by name when one was given. Coney's choice:
         // the chunk is named by its file name, without the original's path-to-'@' renaming (only errors read it).
+        // Coney stand-in (#1130): the callback is skipped when the chunk fails; the original calls it whatever the
+        // run's outcome.
         if (runFile(name) && !callback.empty()) {
             call(callback);
         }
@@ -238,6 +240,7 @@ bool ScriptSystem::runChunk(std::span<const std::byte> bytes, std::string_view n
     }
     auto ran = m_vm->run(std::move(*chunk));
     noteSkippedCalls();
+    // Coney stand-in (#1130): false on a load or script error; the original returns success for any file it found.
     if (!ran) {
         reportError(name, ran.error());
         return false;
@@ -249,13 +252,15 @@ bool ScriptSystem::runChunk(std::span<const std::byte> bytes, std::string_view n
 // @orig 0x00356e08 ScriptSystem_FindFunction (ScriptLua.cpp)
 std::pair<Value, Value> ScriptSystem::resolve(std::string_view name) const {
     // Walk the parts from the globals: every part but the last must be a table. A `:` before the last part makes its
-    // table the `self` argument.
+    // table the `self` argument. Coney stand-in (#1130): for `a.b:c` the original passes the first part's global (`a`)
+    // as `self`, not the table that holds the last part.
     Value current(m_vm->globalsTable());
     Value self;
     std::size_t start = 0;
     bool method = false;
     while (true) {
-        // Coney's choice: a part is not cut at 32 characters as the original's buffer cuts it.
+        // Coney stand-in (#1130): the name is not cut; the original reads at most 32 characters of the whole name and
+        // drops an unfinished last part.
         const std::size_t end = name.find_first_of(".:", start);
         const std::string_view part = name.substr(start, end == std::string_view::npos ? end : end - start);
         const std::shared_ptr<Table>& table = current.table();
@@ -343,8 +348,9 @@ void ScriptSystem::update(std::uint64_t nowMs, double stepSeconds) {
     }
     // Files asked for with preload() arrive first: the original's file manager is serviced before the scripts' frame.
     servicePreloads(false);
-    // The calls that are due, oldest first. Only those scheduled before this update began run now; a call may
-    // schedule or flush others, so the list is searched afresh each time.
+    // The calls that are due, oldest first. A call may schedule or flush others, so the list is searched afresh each
+    // time. Coney stand-in (#1130): only those scheduled before this update began run now; the original also runs a
+    // call scheduled during the loop that is already due.
     const std::uint64_t firstNew = m_nextSequence;
     while (m_vm) {
         const auto due = std::ranges::find_if(m_schedule, [nowMs, firstNew](const ScheduledCall& entry) {
@@ -361,7 +367,8 @@ void ScriptSystem::update(std::uint64_t nowMs, double stepSeconds) {
             call(entry.function, args);
         }
     }
-    // Then the update function, with the step in milliseconds.
+    // Then the update function, with the step in milliseconds. Coney stand-in (#1130): the step keeps its fraction
+    // (33.33 at 1/30 s); the original cuts it to whole milliseconds (33).
     if (m_vm && !m_updateFunction.empty()) {
         const std::array<Value, 1> step{Value(stepSeconds * 1000.0)};
         call(m_updateFunction, step);

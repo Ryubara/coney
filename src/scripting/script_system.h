@@ -51,18 +51,21 @@ inline constexpr std::string_view kGlobalScript = "global.lua";
 ///   table as `self`. Names are looked up when the call happens, so a script may replace the function behind a name.
 /// - **The schedule** holds calls of named functions with up to two number arguments, due a number of milliseconds of
 ///   game time later; update() runs those that are due, in order.
-/// - **Every run is a scheduler entry** (scheduler()): game code runs scripts with ScriptScheduler::run(), and each
-///   operation below that runs a script (runFile(), runFiles(), enterLevel(), call(), update(), servicePreloads())
-///   opens its entry there too, so whichever door a run takes it is watched and timed in one place.
+/// - **Every run is a scheduler entry** (scheduler()): each operation below that runs a script (runFile(),
+///   runFiles(), enterLevel(), call(), update(), servicePreloads()) opens its entry there, and the debug console runs
+///   its entries with ScriptScheduler::run(), so whichever door a run takes it is watched and timed in one place.
 ///
 /// Coney's choices, where the research is silent or Coney differs (docs/research/scripting.md#coneys-implementation):
 /// - A call of an unset global (the game's state has all 956 bindings; Coney's has the ones it lists) is skipped as a
 ///   no-op returning nothing, and logged once per name, rather than stopping the script.
 /// - Calls due at the same time run in the order they were scheduled; a call scheduled while update() runs waits for
-///   the next update, even with a delay of 0.
+///   the next update, even with a delay of 0 (a stand-in, #1130: the original runs it in the same update).
+/// - Stand-ins until #1130: the update function gets the step with its fraction, not whole milliseconds; a preload's
+///   callback is skipped when its chunk fails; a `:` call passes the table holding the last part as `self`, not the
+///   first part's global.
 /// - No garbage collection: Coney's VM frees by reference counting, so the forced collection every 2 s and `gc()` do
 ///   nothing.
-/// - A dotted name's parts are not cut at 32 characters as the original's lookup buffer is.
+/// - A dotted name is not cut, where the original's lookup reads at most 32 characters of the whole name.
 ///
 /// Research: docs/research/scripting.md
 class ScriptSystem {
