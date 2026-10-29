@@ -591,11 +591,13 @@ the death chain's last clip** before its loop:
   `Human_PlayGangDeathReaction` itself never calls `Human_OnHealthOut` (confirmed (code)).
 - `Human_PlayDeathReaction` chains, in play order: the dying reaction (a paired task, its clip picked by state: 322
   cuffed, 264 in a pair, 204 wounded, the grab and tackle clips, 195 knocked down, 348 or 319, else
-  `Hit_PickDyingReaction`), then a fall 308 or 198 when the reaction's knockdown value asks for one, then 205 for a
+  `Hit_PickDyingReaction`), then a fall: 308 when `Anim_GetKnockdownValue` finds no knockdown value for the
+  reaction (none while state `0xe0000` is set), 198 when it finds one whose out-flag is 0, else none; then 205 for a
   human with flag `0x8` not yet wounded, then the loop: 200 after 205, 323 for a cuffed human, else 349. It passes
   `Human_OnHealthOut` (and the held flag) to the **first of these it builds from the loop backwards**, so the callback
   sits on 205 when there is one, else on the fall, else on the dying reaction: always the clip that hands over to the
-  loop (confirmed (code)).
+  loop (confirmed (code)). As it ends it sets the dying state `0x80000000` and writes **1 to the health** (record
+  `+0x144`), so a human knocked out this way keeps 1 health (confirmed (code)).
 - The cuffed branch of `Human_PlayLethalReaction` (a cuffed human with flag `0x4`) does the same by hand: fall 322
   with `Human_OnHealthOut` at its end (`AnimTaskChained_Construct` at `0x00268370`), then the loop 323 (confirmed
   (code)).
@@ -616,8 +618,10 @@ health 1.0 m ahead of the player, square tapped at update 10, stick centred; hoo
 | 14-57 | 292 plays: state `0x80000001`, **no `0x40000`** |
 | 58 | 349, state **`0x40000`** (`0x80000000` gone), held `0` |
 
-His health read 1 throughout, as the civilian's of [the lethal run](#lethal-runtime) did. The Rumble brawls below show
-the same order for 51 fighters: dying from the lethal hit, knocked out from the first update of 349.
+His health read 1 throughout: the scenario starts him at 1, so the run cannot show `Human_PlayDeathReaction`'s
+write of 1, which the civilian of [the lethal run](#lethal-runtime) and the Rumble brawls' fighters (below) show. The
+Rumble brawls show the same order for 51 fighters: dying from the lethal hit, knocked out from the first update of
+349.
 
 #### Who sets and clears the knocked-out bit {#knocked-out-bit}
 
@@ -1011,11 +1015,12 @@ the HUD frame through `feedHumanToHud()` (`repo:src/gamemodes/hud_feed.h`), whic
 Tests: `repo:tests/human/knockout_test.cpp` (not knocked out through the whole dying clip, knocked out the update it
 ends) and `repo:tests/hud/armies_hud_test.cpp` (the panel stays while the clip plays).
 
-**Stand-ins:** every human out of health is knocked out (the original's wounded humans with flag `0x8` and the dead of
-a kind-29 object's hit are not; [Open questions](#open-questions), when a player is dead). Still counted **from the
-hit**, where the original waits for the same clip end: the brain's knock-out and the player's slow motion going off
-(`ai::Brains::reportDowns`), `BLOCKHUMANS` lost (`Human::updateState`) and the mission-failing check's knocked-out
-players and helpers (`PlayLevelMode::stepGameOver`).
+**Stand-ins:** a knocked-out human's health reads 0 where the original's death chain leaves 1 (#592); every human out
+of health is knocked out (the original's wounded humans with flag `0x8` and the dead of a kind-29 object's hit are
+not; [Open questions](#open-questions), when a player is dead). Still counted **from the hit**, where the original
+waits for the same clip end: the brain's knock-out and the player's slow motion going off (`ai::Brains::reportDowns`),
+`BLOCKHUMANS` lost (`Human::updateState`) and the mission-failing check's knocked-out players and helpers
+(`PlayLevelMode::stepGameOver`).
 
 ### The revive {#revive-coney}
 
@@ -1079,8 +1084,10 @@ fade and the `dyn_cross` icon are not built.
   attack](#ground-escape)); the window's edges are known without it. Found from the clip's speed field or the task's
   rate in memory.
 - **The knock-out after a held-back lethal hit**{#q-lethal-knockout}: whether every victim of a lethal hit held
-  back by a paired clip ends knocked out with health 1, as the civilian of [the run](#lethal-runtime) did (inferred
-  through `HitReact_WhileOut` `0x002686e8`, which sets health 1), or only a human with his flags. Coney plays the
+  back by a paired clip ends knocked out with health 1, as the civilian of [the run](#lethal-runtime) did, or only a
+  human with his flags. The health 1 itself is `Human_PlayDeathReaction`'s write at the end of the death chain's set-up
+  (confirmed (code), [When the knock-out comes](#knockout-timing)); `HitReact_WhileOut` (`0x002686e8`) also sets it
+  (inferred). Coney plays the
   hit's own dying reaction until it is known. Found by the same run with a gang member as the victim.
 - **When a player is dead**{#q-player-dead}: whether a player in a story level is ever made dead (state
   `0x100000000`) rather than knocked out: by an object of kind 29's last hit (`Human_OnHealthOut`), or by
