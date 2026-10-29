@@ -34,7 +34,8 @@ and laying out spawn points and paths. What can be edited in Studio depends on t
 - [A new level](#new-level): the blank slate and the templates
 - [Play mode](#play-mode) and [live edits while playing](#live-edits)
 - [The Level view](level-view.md#level-view): the fly camera, [the keymap](level-view.md#keymap),
-  [gizmos](level-view.md#gizmos), [selection](level-view.md#selection) and [undo](level-view.md#undo)
+  [gizmos](level-view.md#gizmos), [snapping](level-view.md#snapping), [selection](level-view.md#selection) and
+  [undo](level-view.md#undo)
 - [Composing a level](level-view.md#composing): primitives, textures, colliders and path points
 - [Importing](#import)
 - [Previews](#previews) of models, animations and sounds
@@ -223,7 +224,7 @@ is seen at once in the Game view ([Live edits](#live-edits)). The Console and Na
 ```text
 +-----------------------------------------------------------------------------------------------+
 | File  Edit  Create  View  Play  Window  Help                                                  |
-| [Q][W][E][R][Y]  Pivot | Global  Snap           [ Play ][ Pause ][ Step ]     Layout: Default v |
+| [Q][W][E][R][Y]  Pivot | Global  Snap v         [ Play ][ Pause ][ Step ]     Layout: Default v |
 +----------------+------------------------------+------------------------------+----------------+
 | Hierarchy      | Level                        | Game                         | Inspector      |
 |  yard          |                              |                              |  Identity      |
@@ -243,8 +244,9 @@ is seen at once in the Game view ([Live edits](#live-edits)). The Console and Na
 shows its scene's camera. The Model, Animation and Texture viewers open as tabs over the Level view; the debug panels
 open where the user last docked them, or floating.*
 
-The toolbar holds the tools (Q to Y, [the keymap](level-view.md#keymap)), the gizmo's pivot and space toggles, snapping,
-the Play controls in the middle, as in Unity, and the layout menu on the right, as in Unity's toolbar.
+The toolbar holds the tools (Q to Y, [the keymap](level-view.md#keymap)), the gizmo's pivot and space toggles, the Snap
+toggle and its menu ([Snapping](level-view.md#snap-settings)), the Play controls in the middle, as
+in Unity, and the layout menu on the right, as in Unity's toolbar.
 
 ## Layouts {#layouts}
 
@@ -684,10 +686,9 @@ can load what it makes ([Importing](#import-coney)), PNG and `.layout` first.
    edits all; the filter shows only the kind asked for.
 5. **tools: Add Unity's transform gizmo and undo to the Level view.** The Move, Rotate, Scale and Transform tools (W, E,
    R, Y) with every handle of Unity's gizmo, its colours, yellow highlight, constant screen size and handle-first
-   picking; the Pivot / Center (Z) and Global / Local (X) toggles; increment, grid, vertex and surface snapping with the
-   toolbar's steps; drop to ground, move to view; axes the selection cannot take drawn grey; every drag one command on
-   an undo stack with its history. Tests: a scripted drag of each handle gives the expected value, snapped and not;
-   every edit undoes to the same state.
+   picking; the Pivot / Center (Z) and Global / Local (X) toggles; move to view; axes the selection cannot take drawn
+   grey; every drag one command on an undo stack with its history. Snapping is issues 13 to 15. Tests: a scripted drag
+   of each handle gives the expected value; every edit undoes to the same state.
 6. **tools: Add composing levels to Coney Studio.** *New Level* with the Empty, Basic and sandbox layout templates;
    opening a game level read-only; the Create menu's primitives, spawn points, targets, AI fighters,
    camera views and stealth zones,
@@ -727,6 +728,33 @@ can load what it makes ([Importing](#import-coney)), PNG and `.layout` first.
     package of a fixture project unpacks to the same files; a project that refers to a `game:/` asset exports with no
     game data in it. It is filed with the content page's issue 13, which packs the package and has Coney read it
     ([Proposed build issues](content-and-formats.md#build-issues)): this issue is the menu and its checks.
+13. **tools: Add the Level view's grid.** The ground grid on the XY plane at the grid's height, its cell the grid size
+    (1 m), drawn in levels of ten by the camera's height with major lines every 10 cells, the fine lines fading with the
+    level and every line with distance and grazing angle; the plane facing an axis-aligned orthographic view; *Grid to
+    selection*, *Grid to origin* and the view menu's *Grid* toggle; colours and opacity in the preferences ([The
+    grid](level-view.md#snap-grid)). Comes after issue 3. Tests: for a camera height and grid size, the level, the cell
+    and each line's alpha are the values the design's formula gives (a pure function, no window); a picture of the view
+    at a known height has its lines the predicted number of pixels apart.
+14. **tools: Add grid and step snapping to the transform gizmo.** The Snap toggle (`\`) and the snap menu on the
+    toolbar; Move snapped absolutely to the grid in Global and in steps in Local; Ctrl turning snapping the other way
+    and Shift taking the finer step; rotate 15° and scale 10 % steps from the drag's start; the move step apart from the
+    grid size, per axis or linked; Ctrl+[ and Ctrl+] along the metric ladder; Ctrl+`\` pushing the selection onto the
+    grid in x and y; a new thing's place rounded with Snap on; the values saved per project in `.studio/` ([Moving with
+    snap on](level-view.md#snap-move), [Rotate and scale steps](level-view.md#snap-rotate-scale), [Settings and the
+    toolbar](level-view.md#snap-settings)). Comes after issue 5. Tests: from 0.3 m, a scripted drag of 0.8 m lands on 1
+    m with Snap on (absolute); a drag of 1.24 m lands on 1.3 m with Ctrl and Snap off (1 m steps) and on 1.5 m with
+    Shift pressed during it as well (0.1 m steps); a Local drag steps from its start; a turn snaps to 15° steps and a
+    scale to 10 %; the settings survive a reopen.
+15. **tools: Add vertex, surface and ground snapping to the Level view.** V held and Shift+V for vertex snapping within
+    30 pixels, with Shift for the pivot and Ctrl+Shift for a surface, the yellow source and green target marks and
+    Escape to cancel; Ctrl+Shift on the move centre to follow the collision surface, and on the rotate ring to face a
+    point; End dropping the selection to the ground below (the ray from 1 m above its bottom, up to 500 m); mesh
+    vertices, or collision ones in the *Collision* view mode ([Snapping to geometry](level-view.md#snap-geometry)).
+    Comes after issue 14. Tests: on a synthetic layout, a box's corner dragged near another's lands on it exactly; a
+    surface drag leaves the pivot on the ramp under the cursor; End puts a box on the floor below it and not on the
+    one under that; Escape restores the start.
+
+Issues 13 to 15 split the snapping that issue 5 first held, and come after the issues named in each, not last.
 
 ## Sources {#sources}
 
