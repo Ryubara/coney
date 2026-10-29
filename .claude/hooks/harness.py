@@ -178,7 +178,7 @@ PROGRAM_KEYS = ("command", "program", "executable", "cmd")
 PATCH_START = "*** Begin Patch"
 #: Arguments that hold text, not a path: the text an edit replaces, and words for the person.
 _NOT_PATHS = ("old_string", "old_str", "old_text", "oldText", "description", "explanation", "instruction")
-#: A string that may name a file: one line, not too long, with a slash or a file extension.
+#: A string that may name a file: one line, at most 1024 characters (`_paths` then asks for a slash or an extension).
 _PATHISH = re.compile(r"^[^\n\r]{1,1024}$")
 #: The harnesses that get every deny key at once (see `answer`).
 UNION_HARNESSES = ("cursor", "copilot", "grok")

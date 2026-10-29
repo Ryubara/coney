@@ -139,19 +139,19 @@ between the text steps and `engine` are the steps of `ci run`, with the same rul
 | `repo`, `orig`, `pre-commit`, `docs`, `python` | `python`, `format`, `markdownlint`, `mkdocs` | the steps of `ci run` above |
 | `engine` | `build-ok` | `coney-tools build --preset dev --test` (`--preset` and `--agent` change it), when a changed file is in the `engine` class of `paths` in `.github/conventions.yml` or in no class (CI runs everything for it); skipped for a change to docs or tools alone. It takes as long as a build and the tests do, so `--skip engine` leaves it out for a first pass |
 
-`--only` and `--skip` take these step names. `--base` (default `origin/main`) is the branch the change is measured
-from, for the files and for the `Model:` rule's commits: in a fork `origin` is the fork, so pass `--base upstream/main`
-after fetching it, and a cloud checkout of one branch needs the base fetched first
-([agents.md](agents-other-tools.md)). `docs-rule` and `engine` read the files the way CI's `docs` job lists them for the
-pull request: the committed changes since the base, deletions included, so commit first (the other steps also look at
-what is uncommitted, as `ci run` does). `--agent` is the id of the engine step's build; without it the step
-uses `build`'s own default for a person at a terminal, else the worktree's name (`CONEY_AGENT`, else the folder).
-The description must not hold a picture that is a local file (a picture has no address before the pull request exists):
-write `Screenshots: none (<reason>)` for the check and add the picture on GitHub after opening
-([CONTRIBUTING.md](repo:CONTRIBUTING.md)). The exit codes are those of `ci run`: 0 all passed, 1 a step
-failed (CI would refuse the pull request too), 2 a setup problem (the description file cannot be read, a program is
-missing). What stays CI's: the other compilers, macOS, the sanitizers and clang-tidy on the changed lines, and the
-checks that need the pull request itself (the `Fixes #N` issues' state, `dependencies`).
+`--only` and `--skip` take these step names. `--base` (default `origin/main`) is the branch the change is measured from,
+for the files and for the `Model:` rule's commits: in a fork `origin` is the fork, so pass `--base upstream/main` after
+fetching it, and a cloud checkout of one branch needs the base fetched first ([Agent tools other than Claude
+Code](agents-other-tools.md)). `docs-rule` and `engine` read the files the way CI's `docs` job lists them for the pull
+request: the committed changes since the base, deletions included, so commit first (the other steps also look at what is
+uncommitted, as `ci run` does). `--agent` is the id of the engine step's build; without it the step uses `build`'s own
+default for a person at a terminal, else the worktree's name (`CONEY_AGENT`, else the folder). The description must not
+hold a picture that is a local file (a picture has no address before the pull request exists): write `Screenshots: none
+(<reason>)` for the check and add the picture on GitHub after opening ([CONTRIBUTING.md](repo:CONTRIBUTING.md)). The
+exit codes are those of `ci run`: 0 all passed, 1 a step failed (CI would refuse the pull request too), 2 a setup
+problem (the description file cannot be read, a program is missing). What stays CI's: the other compilers, macOS, the
+sanitizers and clang-tidy on the changed lines, and the checks that need the pull request itself (the `Fixes #N` issues'
+state, `dependencies`).
 
 CI's `pr` workflow (`title`, `docs`, `body`) runs on a fork's pull request without a maintainer's approval
 ([Workflows](repo-conventions.md#pr-workflow)); its `build`, `python` and `docs` workflows run the contributor's code, so

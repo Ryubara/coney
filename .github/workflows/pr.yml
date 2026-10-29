@@ -16,10 +16,12 @@
 #      the list of changed files from the API (`gh api .../pulls/N/files`), never from a checkout of the branch.
 #   3. The title and the description are attacker-controlled: they reach a script only through an environment variable
 #      (and, for the description, a file written from it), never expanded into the script's text.
-#   4. The token is read-only (`contents: read`, and `pull-requests: read` on the `docs` job alone, the one that calls
-#      the API) and no secret is used.
+#   4. The token is read-only (`contents: read`; `pull-requests: read` on the `docs` job, which calls the API for the
+#      file list, and `issues: read` with it on the `claim` job, which reads the claim cards) and no secret is used.
 # The workflow that runs is the one on the base branch, so a pull request that edits this file is checked by the
-# version already merged; the edit takes effect when it merges.
+# version already merged; the edit takes effect when it merges. A pull request that changes the trigger itself (the one
+# that moved this file from `pull_request` to `pull_request_target`) is run by neither version: see
+# docs/guides/repo-conventions.md#pr-workflow.
 name: pr
 
 on:
@@ -57,7 +59,7 @@ jobs:
   # never later (AGENTS.md, Documentation). Editing the description re-runs the check.
   docs:
     runs-on: ubuntu-24.04
-    # The one job that calls the API (the pull request's file list); the others read only the base branch.
+    # Calls the API for the pull request's file list; `claim` reads the claim cards, the others only the base branch.
     permissions:
       contents: read
       pull-requests: read
