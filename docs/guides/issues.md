@@ -616,7 +616,9 @@ someone deletes it, so the engineer writes it only for a stretch where files do 
 named by its `parent`: the parent must have a unit, its worktree must still exist and its log must hold a `pr-opened`
 stamp (there is a pull request to fix). The fix gets a record of its own that points at the parent's branch and
 worktree, and a second `claimed` stamp with `detail.fix` set to the fix's id is appended to the **parent's** log, which
-is the one log all the stage commands write (`UnitRecord.log_task` in `coney_tools/unit_record.py`). The claim check
+is the one log all the stage commands write (`UnitRecord.log_task` in `coney_tools/unit_record.py`). A stage command
+given the fix's own id (`task check 812-fix`, `task review 812-fix`, `orig fails-first --task 812-fix`) reads that
+record and works in the parent's folder: the parent's log, build records and `PR.md`, and it says so. The claim check
 uses the parent's task id, because the claim is the parent's.
 
 When the fix is done, `coney-tools pr open <issue>-fix` releases it onto the parent's pull request ([pr

@@ -17,6 +17,7 @@ from coney_tools import build_claims, fails_first, orig_compare, orig_study, res
 from coney_tools.config import find_repo_root
 from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.progress_research import DEFAULT_GHIDRA_URL, http_fetch
+from coney_tools.unit_record import log_task_of
 
 #: The commands this module registers in the `orig` group and runs.
 COMMANDS = ("study", "compare", "verify", "fails-first")
@@ -121,7 +122,8 @@ def run(args: argparse.Namespace) -> int:
     root = find_repo_root(Path.cwd())
     conventions = _conventions(root)
     task = unit.task_name(root, args.task)
-    folder = unit.Unit.of(root, task)
+    # A fix task works in its parent's unit, so its studies, pairs and stamps are the parent's.
+    folder = unit.Unit.of(root, log_task_of(unit.Unit.of(root, task).dir, conventions.tasks.start.unit_file) or task)
     who = stamps.who_from_env(f"coney-tools orig {args.command}")
     if args.command == "fails-first":
         return _fails_first(args, root, conventions, folder, who)

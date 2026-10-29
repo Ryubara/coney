@@ -62,7 +62,7 @@ from coney_tools import (
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import REVIEW_KINDS, Conventions, load_conventions_leniently
 from coney_tools.repo_checks import check_docs, check_title
-from coney_tools.unit_record import UnitRecordError, read_record
+from coney_tools.unit_record import UnitRecordError, log_task_of, read_record
 
 #: The agent definition handed to `claude --agents` for a run, written in the review's folder and removed after.
 AGENTS_FILE = ".reviewer-agents.json"
@@ -689,7 +689,11 @@ def environment(args: argparse.Namespace) -> ReviewEnv:
         if worktree != here:
             _say(f"task review {task}: reviewing {worktree}, the worktree the unit record names (this is {here})")
     conventions = load_conventions_leniently(worktree, _say)
-    folder = unit.Unit.of(worktree, task)
+    # A fix task works in its parent's unit: the parent's log is stamped and the parent's PR.md is the description.
+    owner = log_task_of(unit.Unit.of(worktree, task).dir, conventions.tasks.start.unit_file) or task
+    if owner != task:
+        _say(f"task review {task}: {task} is a fix of {owner}: reviewing in {owner}'s log, with its PR.md")
+    folder = unit.Unit.of(worktree, owner)
     text_file = args.pr_file or folder.dir / pr_text.TEXT_FILE
     base = args.base or f"origin/{conventions.repo.default_branch}"
     return ReviewEnv(

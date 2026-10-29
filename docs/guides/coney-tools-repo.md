@@ -428,6 +428,9 @@ codebase nightly ([building](clang-tidy.md)).
   running` lines. A long check streams its output to `check-logs/<program>.log` in the task's scratch folder and says it
   is still running every minute. `pytest`, and the engine's full ctest run inside the build, wait for a **check slot**
   first ([Check slots](coney-tools-build.md#check-slots)), so a profile with `pytest` needs `--agent` too.
+* A fix task's id (`task check 812-fix`) is checked in its parent's folder: the stamp, the build record and the check
+  logs go where `pr verify` and `pr open` read them, the parent's, as the fix's unit record says, and the first line
+  says so ([A fix task](issues.md#starting)).
 
 Exit 0 every check passed and the stamp is written; 1 a check failed (a `fail` stamp is written); 2 it cannot run or
 cannot stamp (nothing is written); 75 the build or the pytest run gave up waiting for a slot (nothing is written; run

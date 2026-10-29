@@ -24,7 +24,7 @@ from coney_tools.config import ConfigError
 from coney_tools.conventions import ConventionsError, load_conventions
 from coney_tools.review_verdict import problems as verdict_problems
 from coney_tools.unit import Unit
-from coney_tools.unit_record import UnitRecord, write_record
+from coney_tools.unit_record import UnitRecord, read_record, write_record
 
 BRAIN_H = """#pragma once
 namespace coney::ai {
@@ -939,6 +939,24 @@ def test_review_inside_the_units_worktree_needs_no_note(
     monkeypatch.chdir(unit_tree)
     assert task_review.environment(arguments(task=None)).worktree == unit_tree.resolve()
     assert capsys.readouterr().err == ""
+
+
+def test_a_fix_task_is_reviewed_in_its_parents_log_and_text(
+    rig: Rig, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    unit_tree = start_unit(rig)
+    # `task start` of a fix task: a record of its own that copies the parent's branch and worktree and names it.
+    write_record(
+        rig.unit.dir.parent / "t1-fix" / "unit.json",
+        dataclasses.replace(read_record(rig.unit.dir / "unit.json"), task="t1-fix", kind="fix", parent="t1"),
+    )
+    monkeypatch.chdir(rig.root)
+    env = task_review.environment(arguments(task="t1-fix"))
+    assert env.worktree == unit_tree.resolve()
+    # The parent's log is stamped and the parent's PR.md is the description (UnitRecord.log_task).
+    assert env.unit.task == "t1" and env.unit.dir == rig.unit.dir
+    assert env.text_file == rig.unit.dir / "PR.md"
+    assert "t1-fix is a fix of t1" in capsys.readouterr().err
 
 
 def test_the_worktree_option_wins_over_the_unit_record(rig: Rig, monkeypatch: pytest.MonkeyPatch) -> None:

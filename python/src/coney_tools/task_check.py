@@ -54,6 +54,7 @@ from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import Conventions, load_conventions, load_proof_rules_at
 from coney_tools.local_gate import StepResult, run_command
 from coney_tools.task_check_steps import FULL_SUITE_CHECKS, IMPLEMENTED, Runner, Step, StepContext
+from coney_tools.unit_record import log_task_of
 
 #: Exit codes (see the module docstring).
 EXIT_FAILED = 1
@@ -170,7 +171,7 @@ def _run(request: Request, env: Env) -> int:
     who = env.who()  # first: a hook's identity file lives only a few minutes
     root = find_repo_root(request.worktree or Path.cwd())
     conventions = load_conventions(root)
-    task = unit.task_name(root, request.task)
+    task = _log_task(root, unit.task_name(root, request.task), conventions, env.say)
     base = request.base or f"origin/{conventions.repo.default_branch}"
     conventions, rules_from = _rules(root, base, conventions, env.say)
     dirty = unit.status_lines(root)
@@ -220,6 +221,15 @@ def _run(request: Request, env: Env) -> int:
     return _stamp(
         env, root, conventions, task, change, who, profile, ran, failed, record, tests, counted, started, rules_from
     )
+
+
+def _log_task(root: Path, task: str, conventions: Conventions, say: Callable[[str], None]) -> str:
+    """The task whose log the stamp goes in: a fix task's parent (its unit record says so), else `task` itself, so a
+    fix task named by its own id is stamped where `pr verify` and `pr open` read."""
+    owner = log_task_of(unit.Unit.of(root, task).dir, conventions.tasks.start.unit_file) or task
+    if owner != task:
+        say(f"task check: {task} is a fix of {owner}: its stamps go in {owner}'s log")
+    return owner
 
 
 def _rules(root: Path, base: str, own: Conventions, say: Callable[[str], None]) -> tuple[Conventions, str]:

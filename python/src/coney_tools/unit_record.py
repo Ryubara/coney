@@ -83,6 +83,14 @@ def write_record(path: Path, record: UnitRecord) -> None:
     temporary.replace(path)
 
 
+def log_task_of(task_dir: Path, unit_file: str) -> str | None:
+    """The task whose stamp log and scratch folder the task in `task_dir` works in (`UnitRecord.log_task`: the parent
+    for a fix task), or None when the task has no record. A record that cannot be read is a UnitRecordError: stamping
+    a guessed log would put the proof where nothing reads it."""
+    path = task_dir / unit_file
+    return read_record(path).log_task if path.is_file() else None
+
+
 def read_record(path: Path) -> UnitRecord:
     """The record in `path`; UnitRecordError names the file and the first problem."""
 

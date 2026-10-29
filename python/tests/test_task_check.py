@@ -14,7 +14,17 @@ import pytest
 from conventions_support import write_checkout
 from git_support import git
 
-from coney_tools import build_record, build_run, local_gate, pr_diff, stamps, task_check, task_check_steps, unit
+from coney_tools import (
+    build_record,
+    build_run,
+    local_gate,
+    pr_diff,
+    stamps,
+    task_check,
+    task_check_steps,
+    unit,
+    unit_record,
+)
 from coney_tools.build_claims import SlotTimeout
 from coney_tools.cli import main
 from coney_tools.config import ConfigError
@@ -623,3 +633,36 @@ def test_the_real_environment_flushes_every_line_and_streams(monkeypatch: pytest
     env.say("  start docs-check")
     assert flushed == [True]  # a run redirected to a file shows the line at once
     assert env.stream is not None and callable(env.hold)
+
+
+# --- a fix task ------------------------------------------------------------------------------------------------------
+
+
+def start_fix(root: Path, fix: str, parent: str) -> None:
+    """The unit record `task start` writes for a fix task: the parent's branch and worktree, and the parent named."""
+    unit_record.write_record(
+        unit.Unit.of(root, fix).dir / load_conventions(root).tasks.start.unit_file,
+        unit_record.UnitRecord(
+            task=fix,
+            kind="fix",
+            issues=(757,),
+            claimant="alice",
+            branch="work",
+            worktree=root,
+            base_ref="main",
+            base_commit="0" * 40,
+            started=datetime(2026, 10, 23, 12, 0, tzinfo=UTC),
+            parent=parent,
+        ),
+    )
+
+
+def test_a_fix_task_named_by_its_own_id_is_stamped_in_its_parents_log(world: World) -> None:
+    world.edit("docs/guides/widget.md", "# Widget\n\nTwo.\n")
+    start_fix(world.root, "757-fix", TASK)
+    assert world.check(task="757-fix") == 0
+    # The parent's log holds the stamp (`UnitRecord.log_task`); the fix's own folder has none.
+    assert world.stamp.step == "checked" and world.stamp.task == TASK
+    assert not unit.Unit.of(world.root, "757-fix").stamps.exists()
+    assert world.streamed_into == [unit.Unit.of(world.root, TASK).dir / "check-logs"]
+    assert any("757-fix is a fix of 757-fix-widget" in line for line in world.said), world.said

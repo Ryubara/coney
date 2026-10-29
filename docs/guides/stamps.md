@@ -62,7 +62,8 @@ functions makes about 120 stamps, one segment.
 | `<scratch>/<task>/mapping/<addr>.toml` | The pairs of one function (scratch only, never committed) |
 | `<scratch>/<task>/compare/<addr>.txt` | The side-by-side view (holds decompile text: scratch only) |
 
-The task is `--task`, else `CONEY_TASK`, else the branch name.
+The task is `--task`, else `CONEY_TASK`, else the branch name. A fix task's unit record names its parent, and the stage
+commands given the fix's id write to the parent's folder (`UnitRecord.log_task`, [A fix task](issues.md#starting)).
 
 Only the stage commands append, under a lock, and `append` refuses when the log is not intact. There is deliberately
 no command that appends a stamp by hand. The hook dispatcher refuses every Edit or Write under a `stamps/` folder and a
