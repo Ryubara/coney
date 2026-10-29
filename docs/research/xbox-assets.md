@@ -249,9 +249,10 @@ matched by resource hash and chunk type.
 contents](formats/wad-contents.md#lua)), and the 467 PS2 scripts are byte-identical on the Xbox; decompiled, they
 are identical too ([The scripts](#scripts)).
 
-**Scene records.** Same layout; all 2,765 PS2 records identical. The 49 extra records carry the name prefixes of
-two levels both discs ship, level 55 (`l55_`, 45 records) and level 5 (`l5_`, 4), not those of the Xbox-only levels.
-Inferred from the records' names; nothing that plays them was traced.
+**Scene records.** Same layout; all 2,765 PS2 records identical. The 49 extra records are 40 cutscene records of
+the cut level 7, *Graveyard Shift* (`l7_*`; neither disc ships the level), five more segments of `l55_c5` and four
+`test_ls_bar_*` tests ([Cut content](cut-content.md#xbox-only)). Inferred from the records' names, counted from both
+scene lists; nothing that plays them was traced.
 
 **Levels and the streamed world.** The Xbox has 95 level resources against 64: all 64 of the PS2's, plus 31 that
 the PS2 does not ship: 2 front-end or arena levels, 14 test levels (named `test...`) and 15 more `level<N>`. The
@@ -501,7 +502,8 @@ same name holds other code. Inferred from the SHA-256 of every chunk and the ide
 chunks, 355 carry the same name on both discs; the other 110 have no known name on either, and so show as each disc's
 own entry hash (the two discs hash a name under different folders, so the hashes never agree).
 
-**The 36 Xbox-only scripts are development and test levels.** 34 were named by matching entry hashes against the
+**The 36 Xbox-only scripts are development and test levels** (what they hold, with the levels and scene records
+that go with them: [Cut content](cut-content.md#xbox-only)). 34 were named by matching entry hashes against the
 names a level list and the scripts themselves use (the decompiler's own naming finds 31, PS2 naming patterns such as
 `<level>_brawl_init.lua` the rest). Inferred from the decompiles, which show what each script sets up and calls, and
 from the hash matches that name them; none of them was run:
@@ -532,7 +534,7 @@ and object lists. Disc check, the PS2's distinct chunks or entries:
 | Data | PS2 | Same bytes on the Xbox | The difference | Verdict | Evidence |
 | --- | ---: | ---: | --- | --- | --- |
 | Scene records (`.scn`) | 2,765 | 2,765 | | same | inferred |
-| Scene list (`0x43`, `scene_list.cnk`) | 2,765 records | all 2,765 by position: name and size | the Xbox inserts 49 records (named for levels 55 and 5) at position 1,358 and keeps the PS2's order around them; each record's stored id is its position, so the ids after it are 49 higher | converts exactly: the game finds a scene by name and keeps the id it gets ([below](#either-scene-list)) | inferred |
+| Scene list (`0x43`, `scene_list.cnk`) | 2,765 records | all 2,765 by position: name and size | the Xbox inserts 49 records in three runs (the five `l55_c5` segments at position 1,358, the 40 `l7_*` at 1,676, the four `test_ls_bar_*` at 2,799) and keeps the PS2's order around them; each record's stored id is its position, so the ids after the runs are 5, 45 and 49 higher | converts exactly: the game finds a scene by name and keeps the id it gets ([below](#either-scene-list)) | inferred |
 | Object lists (`_objs.txt`) | 39 | 39 | | same | inferred |
 | Path data (`0x40`) | 64 | 64 | | same | inferred |
 | Subtitles (`0x51`) | 64 | 64 | | same | inferred |
@@ -661,9 +663,9 @@ resources; and 4,038 names (3,957 from the PS2's names). The rest of this sectio
 
 **Policy.** The PS2 disc is required and stays the reference for behaviour. The Xbox disc is optional, supplied by
 the player like the PS2 one, and only ever replaces *assets*, at install: never scripts, scenes, levels, collision,
-animations or anything the simulation reads. Its extra content (31 levels, 49 scene records, 36 scripts; most of the
-levels are test levels) is never played; it reaches Coney Studio only through Coney's Xbox importer, never from the
-disc ([Disc policy](#disc-decision)).
+animations or anything the simulation reads. Its extra content (31 levels, 49 scene records, 36 scripts: development
+and test levels, [Cut content](cut-content.md#xbox-only)) is never played; it reaches Coney Studio only through
+Coney's Xbox importer, never from the disc ([Disc policy](#disc-decision)).
 
 **Extraction (done).** `coney-tools extract [DISC] OUT_DIR --xbox-disc XBOX_DISC`
 ([guide](../guides/coney-tools.md#extract)) reads the Xbox disc straight from the image (XDVDFS, then `XBoxWad.idx`
