@@ -58,14 +58,18 @@ foreach(_dep IN LISTS _coney_deps)
         if(EXISTS "${_dir}/.coney-deps-hash")
             file(READ "${_dir}/.coney-deps-hash" _stamp)
         endif()
-        # FetchContent writes the folder it used into the cache as FETCHCONTENT_SOURCE_DIR_<NAME>, and an entry there
-        # counts as the user's own copy. So the folder this file chose is remembered in CONEY_DEPS_PICKED_<NAME>, and an
-        # entry that still holds it is ours from an earlier configure, possibly of other pins: it is dropped and chosen
-        # again below. A build folder from before that memory has none, and its entry is ours when it has the shape of
-        # one, <CONEY_DEPS_SOURCES>/<version>/<name>. An entry holding anything else is the user's (-D...), and wins.
-        if(DEFINED FETCHCONTENT_SOURCE_DIR_${_upper} AND NOT "${FETCHCONTENT_SOURCE_DIR_${_upper}}" STREQUAL "")
+        # FetchContent writes the folder it used into the cache as FETCHCONTENT_SOURCE_DIR_<NAME> (empty when it fetched
+        # into the folder given in the declaration), and an entry there counts as the user's own copy. So the folder
+        # this file chose is remembered in CONEY_DEPS_PICKED_<NAME>, and an empty entry, or one that still holds it, is
+        # ours from an earlier configure, possibly of other pins: it is dropped and chosen again below. A build folder
+        # from before that memory has none, and its entry is ours when it has the shape of one,
+        # <CONEY_DEPS_SOURCES>/<version>/<name>; the price is that a copy the user names inside the shared folder is
+        # replaced in such a folder. An entry holding anything else is the user's (-D...), and wins.
+        if(DEFINED FETCHCONTENT_SOURCE_DIR_${_upper})
             set(_ours FALSE)
-            if(DEFINED CACHE{CONEY_DEPS_PICKED_${_upper}})
+            if("${FETCHCONTENT_SOURCE_DIR_${_upper}}" STREQUAL "")
+                set(_ours TRUE)
+            elseif(DEFINED CACHE{CONEY_DEPS_PICKED_${_upper}})
                 if("${FETCHCONTENT_SOURCE_DIR_${_upper}}" STREQUAL "$CACHE{CONEY_DEPS_PICKED_${_upper}}")
                     set(_ours TRUE)
                 endif()

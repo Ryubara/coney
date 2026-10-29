@@ -149,6 +149,7 @@ class _Project:
 
     @staticmethod
     def hash(pin: str) -> str:
+        """The version hash of `pin`: deps.cmake's is a SHA-256 of its pin lines; here the pin stands for them."""
         return hashlib.sha256(pin.encode()).hexdigest()
 
     def folder(self, pin: str) -> str:
@@ -179,6 +180,7 @@ class _Project:
 
 @pytest.fixture
 def project(tmp_path: Path) -> _Project:
+    """A tiny project in a fresh folder, skipped when no cmake is found."""
     cmake = _cmake()
     if cmake is None:
         pytest.skip("no cmake")

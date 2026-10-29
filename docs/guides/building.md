@@ -421,8 +421,9 @@ fetches and stamps each dependency; every later one, in any worktree, uses the s
   `deps.cmake` remembers the folder it chose in the internal cache entry `CONEY_DEPS_PICKED_<NAME>`, and at the next
   configure an entry that still holds it is dropped and chosen again from the current pins: the new version's folder
   when it is complete, else a fetch into it. An entry from a folder configured before that memory existed is taken for
-  ours when it is `<CONEY_DEPS_SOURCES>/<version>/<name>`. Nothing is deleted by hand. Your own copy
-  (`-DFETCHCONTENT_SOURCE_DIR_<NAME>=...`, any other folder) is kept through a pin change: a Python test
+  ours when it is `<CONEY_DEPS_SOURCES>/<version>/<name>` (so a copy you name inside the shared folder is replaced in
+  such a folder), and so is an empty one, which FetchContent leaves after a fetch. Nothing is deleted by hand. Your own
+  copy (`-DFETCHCONTENT_SOURCE_DIR_<NAME>=...`, any other folder) is kept through a pin change: a Python test
   (`test_shared_deps.py`) configures a tiny project under one pin and then another to check both.
 - **One fetch at a time.** While any dependency of the version lacks its stamp, `deps.cmake` holds a lock on the
   version's folder (`file(LOCK ... DIRECTORY)`), so two first configures fetch once, the second waiting for the first.
