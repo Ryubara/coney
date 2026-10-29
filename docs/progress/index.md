@@ -2,8 +2,9 @@
 
 How far Coney has come, measured four ways. **Every share counts functions, not bytes:** Coney is a functional
 reimplementation, so progress is how many of the original's functions are done ([the decision](#by-function)). Each
-share is a number of functions of the game's own code over the number of such functions in the Ghidra listing, so the
-badges, the headline, the tables and the [history](history.md) all give the same figure.
+share is a number of functions of the game's own code over the number of such functions in the Ghidra listing (the
+Compared share is over the reimplemented ones), so the badges, the headline, the tables and the [history](history.md)
+all give the same figure.
 
 - **Reimplemented:** the share of the game's own functions that Coney's code reimplements. This is the decompilation
   projects' progress bar, adapted to a functional reimplementation: a function counts once Coney has code that does
@@ -59,13 +60,13 @@ libraries, Bink, the C and C++ runtimes) is left out: Coney replaces it with lib
 its own Lua 4.0 interpreter, it does not reimplement it. The game's own glue around a library (`Movie/BinkMovie.cpp`,
 `Graphics/Devices/Renderware/DevRWGeneric.cpp`) is game code and counts.
 
-**Per subsystem**, the total is the number of the listing's game functions inside the address range the source map
-gives the top-level directory, from its first to its last attributed function. That is **inferred** (the ranges are
-the map's inferred directory ranges), and it undercounts every directory: the game code the map has not placed (a small
-part of it now) is shown as *Unattributed*, and a directory with no attributed function yet (`Debug`, `Utils`) shows "none
-in the listing". As the source map improves, code moves from Unattributed into the directories, and the per-subsystem
-shares can go down while the overall share stays the same. *Link-once* is the game's template and inline code, which
-the linker placed after the libraries. The rows of the table add up to the whole.
+**Per subsystem**, the total is the number of the listing's game functions inside the address range the source map gives
+the top-level directory, from its first to its last attributed function. That is **inferred** (the ranges are the map's
+inferred directory ranges), and it undercounts every directory: the game code the map has not placed (a small part of it
+now) is shown as *Unattributed*, and a directory with no attributed function yet (`Debug`, `Utils`) shows "none in the
+listing". As the source map improves, code moves from Unattributed into the directories, and the per-subsystem shares
+can go down while the overall share stays the same. *Link-once* is the game's template and inline code, which the linker
+placed after the libraries. The rows of the table add up to the whole.
 
 **Reimplemented functions** are the entries of the [function database](../guides/research-function-database.md#ported)
 (`research/functions/<system>.toml`) that have a `coney` field, a port, and that the listing has as a game function.
