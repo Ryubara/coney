@@ -99,9 +99,9 @@ level change is part of the street level's own two worlds.
 levels are sectors of the level's `s` and `d` worlds and triangles of its collision mesh, streamed like the rest
 (inferred from the counts and the single world load). `level99` has 2 collision triangles below the street, and
 `level95`, the hub, 1,057 of its 5,943: the clubhouse below the hub's street
-([Collision](collision.md#hangout-railings)). A level that is wholly an interior is a level of its own, entered through
-a level change: `level110` (Club 45) has all 465 of its collision triangles below −100 (inferred from the disc check and
-the single world load above).
+([Collision](collision.md#hangout-railings)). A level that is wholly an interior is a level of its own: `level110`
+(Club 45), a Rumble arena reached from the Rumble menu, not from a street level ([Levels](../references/levels.md)),
+has all 465 of its collision triangles below −100 (inferred from the disc check and the single world load above).
 
 ### Collision and the visible mesh {#collision}
 
