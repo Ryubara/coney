@@ -31,7 +31,9 @@ add_library(coney_core STATIC
     core/sha1.cpp
     core/script_patch.cpp
     core/script_patch_apply.cpp
+    core/script_patch_make.cpp
     core/script_patch_merge.cpp
+    core/script_patch_reader.cpp
     core/sequence_diff.cpp
     core/sha256.cpp
     fileio/disc.cpp

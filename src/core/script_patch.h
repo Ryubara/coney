@@ -123,6 +123,11 @@ struct PatchFailure {
 /// so joining them with `\n` gives the text back exactly. An empty text is one empty line.
 [[nodiscard]] std::vector<std::string_view> splitLines(std::string_view text);
 
+/// splitLines() of a text held to the limits every text is: PatchFault::TooLarge, its message naming the text as
+/// `what` says (`the base text`), past kMaxTextBytes or kMaxTextLines.
+[[nodiscard]] std::expected<std::vector<std::string_view>, PatchFailure> textLines(std::string_view text,
+                                                                                   std::string_view what);
+
 /// The SHA-256 of a whole text, as `base` and `result` give it.
 [[nodiscard]] Sha256Digest textHash(std::string_view text);
 

@@ -74,8 +74,10 @@ std::vector<Hunk> hunksOf(const PatchSection& section, std::span<const std::stri
             hunk.lines.push_back(rebuildLine(op.pieces, base[op.lines.first - 1]).value_or(""));
             cursor = op.lines.first + 1;
             break;
-        case OpKind::Keep:
         case OpKind::Borrow:
+            hunk.lines.push_back(rebuildLine(op.pieces, base[op.lines.first - 1]).value_or(""));
+            break;
+        case OpKind::Keep:
             break;
         }
     }

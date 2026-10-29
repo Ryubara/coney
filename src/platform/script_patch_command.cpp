@@ -215,9 +215,12 @@ int make(const Request& request, std::FILE* out, std::FILE* err) {
         return failure(err, wrote.error());
     }
     const patch::PatchCounts counts = patch::countOperations(*section);
-    std::fprintf(out, "wrote %.*s: %zu operations (%zu dropped, %zu added, %zu copied, %zu rebuilt); result %s\n",
+    std::fprintf(out,
+                 "wrote %.*s: %zu operations (%zu dropped, %zu added, %zu copied, %zu rebuilt, %zu built from another "
+                 "line); result %s\n",
                  static_cast<int>(request.out->size()), request.out->data(), section->operations.size(), counts.dropped,
-                 counts.added, counts.copied, counts.rebuilt, patch::hashText(section->result).c_str());
+                 counts.added, counts.copied, counts.rebuilt, counts.borrowed,
+                 patch::hashText(section->result).c_str());
     return 0;
 }
 
