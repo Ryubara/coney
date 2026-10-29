@@ -246,7 +246,8 @@ Every build has these. Each is a second way to something the player can already 
 | `mission <n> [checkpoint]` | session | Starts a completed mission at a checkpoint, as the mission select starts it | The same screen; available once Coney's mission select is built |
 | `log [filter]`, `resmon`, `perf`, `net` | local | Open the [Log](#log), [Resources](#resources), [Performance](#performance) and [Network](#network) panels; `log` with a filter opens it filtered (`log error`, `log yard-brawl`) | none: readings |
 | `profiler record <frames>`, `profiler status`, `profiler save` | local | Records a [capture](#captures), says how far it got, writes it | none: a reading |
-| `host [port]`, `connect <address>`, `disconnect` | session | Hosts a network game, joins one, leaves it ([Network multiplayer](../multiplayer.md)) | `--host`, `--join`, the player's command line |
+| `host [port]`, `connect <address>` | session | Hosts a network game, joins one ([Network multiplayer](../multiplayer.md)) | `--host`, `--join`, the player's command line |
+| `disconnect` | local | Leaves the network session: on a guest as the Player 2 quit, on the host by ending the session ([Who may run what in co-op](#coop)) | The pause menu's Player 2 quit, closing the window |
 
 The mods' commands (`mods`, `mod`, `start`, `stop`, `restart`, `ensure`, `refresh`, `enable`, `disable`, `play`,
 `levels`) are in the release set as well; what each does to mods, always for the running session only and never
@@ -301,6 +302,9 @@ has no debug menus. A developer build shows both sets in `help`, the developer c
 | **local** | yes | yes | yes |
 | **session** | yes | yes | refused: "only the host can do this in a network game" |
 
+A command that only takes this machine out of the session, `quit` and `disconnect`, is **local**: a guest may always
+leave, as player 2 may on one PS2, and what leaving does to the others is in [Who may run what in co-op](#coop).
+
 A developer build is used online only between developers; there, the developer commands follow the network page's plan
 for the debug tools: they run on the host only and are refused on a guest, and the time controls (`timescale`, `pause`,
 `step`) are refused in a session, as time control stays local to an offline game ([Debug
@@ -317,7 +321,7 @@ A mod can add commands to the console, as a FiveM resource does with `RegisterCo
 
 ```lua
 Coney.RegisterCommand("wave", function(args, slot)   -- slot: the player slot that typed it
-  local n = args.count
+  local n = tonumber(args.count)   -- arguments arrive as strings, already checked as an int
   StartWave(n)
   return "wave " .. n .. " started"
 end, {
@@ -342,9 +346,10 @@ owns those rules and [Limits](security.md#limits) their limits):
   no instruction budget, memory cap or watchdog for now (a maintainer decision, [Lua SDK: Maintainer
   decisions](lua-sdk.md#decisions)): a handler that never returns freezes the game as any handler would, and the
   [Resources](#resources) panel shows which mod it was.
-- **At a step boundary**, queued like every session command, in the order typed. The handler gets its arguments
-  already checked against the declared types (a table of named values; an argument it cannot read is refused before the
-  handler runs, with the help line); the string it returns, and what it prints, go to the terminal under the mod's
+- **At a step boundary**, queued like every session command, in the order typed. The handler gets its arguments as
+  strings in a table by name, each already checked against its declared type and never evaluated as Lua, as
+  [Script security](security.md#console) has it; an argument that fails its type is refused before the handler runs,
+  with the help line. The string it returns, and what it prints, go to the terminal under the mod's
   name and to the run log in the `mods` category ([Log](#log)).
 - **Names.** A mod command can never take a built-in's name: registering one fails with an error in the mod's log. Two
   mods' commands of the same name are both reached as `<mod>:<name>` (`yard-brawl:wave`), and the bare name is refused
@@ -375,7 +380,7 @@ The network page decides who owns the game in each phase ([Goals and phases](../
 [The authority model](../network-architecture.md#authority)); the console follows it and decides nothing it leaves
 open. In P1 and P2 the host's game is the story and the guest is player 2 in it
 ([Story in co-op](../network-architecture.md#story)), so the console gives the guest what player 2 has on one PS2 and
-the host what the machine's owner has.
+the host what player 1 has.
 
 | Command | Offline | Host (P1, P2) | Guest (P1, P2) |
 | --- | --- | --- | --- |
@@ -767,10 +772,11 @@ guest's co-op record) this page does not decide ([Who may run what in co-op](#co
 ## Proposed build issues {#build-issues}
 
 In the order they should come. Issues 1 to 6 need nothing from the mods runtime; 7 and 8 follow the Lua SDK's issues 2
-and 3 ([Proposed build issues](lua-sdk.md#build-issues)) and the mods loader
-([Script security: Proposed build issues](security.md#build-issues), issue 5), 8 also the SDK's monitor (its issue 10);
-9 follows Studio's shell ([Build issues](technology.md#build-issues)). The toggles' handlers (`start`, `stop` and the
-rest) are not here: they are build issue 8 of the script security design, on this page's issue 1.
+(the project runtime) and 3 (the mods loader) ([Proposed build issues](lua-sdk.md#build-issues)) and Script
+security's issue 5, starting and stopping ([Script security: Proposed build issues](security.md#build-issues)), 8 also
+the SDK's monitor (its issue 10); 9 follows Studio's shell ([Build issues](technology.md#build-issues)). The toggles'
+handlers (`start`, `stop` and the rest) are not here: they are build issue 8 of the script security design, on this
+page's issue 1.
 
 1. **core: Add the console core with its command catalog and access levels.** `src/console/` in `coney_core`: command
    specifications with levels, scopes, needs and `available`; the registry and its registration call; the tokenizer
