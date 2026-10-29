@@ -571,7 +571,7 @@ game data), each named after the escape it closes:
 
 | Target | Input | Checks |
 | --- | --- | --- |
-| Lua source into a project state | Generated and mutated Lua text (a grammar-based generator, seeded with the project tests' scripts) | No crash, no sanitizer report; an input that hangs is a finding of the fuzzer's own time limit |
+| Lua source into a project state | Generated and mutated Lua text (a grammar-based generator, seeded with the project tests' scripts) | No crash, no sanitizer report; the fuzz target runs each input under a count hook of its own (a test-only limit, as projects have none), so a generated endless loop ends and is not a finding |
 | The native bridge | Random values (numbers at the edges, NaN, long strings, nested and cyclic tables, tables with metatables, functions) to every available native | Only clean errors or results; no open outside the allowed roots |
 | The project file layer | Random names and folder trees, links included | Only refusals or files inside the project |
 | Manifests and `.cmod` packages | Mutated TOML and zip files | Only `std::expected` errors; no write to disk; inflated sizes within the declared ones |

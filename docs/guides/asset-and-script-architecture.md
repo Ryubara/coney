@@ -276,11 +276,12 @@ The binding bodies do not change. Only the registration moves from the VM to a l
 tracer can then wrap every native in one place. Coney's own natives go in a `Coney` table, so they can never clash
 with one of the 956 original names.
 
-**Scheduler.** Scripts run only on the simulation thread, inside a game mode's `update()`, at the points the
-research fixes. Everything that starts a script (level entry, update function, due scheduled calls, message
-handlers, animation callbacks, trigger events) goes through one `ScriptScheduler::run(entry)` that owns the order
-and the instruction budget. Coroutines later become one more entry kind ("resume coroutine *n*"). Lua 4.0 has none,
-and the research shows the original's scripts waiting only through the schedule and callbacks, never inside a call.
+**Scheduler.** Scripts run only on the simulation thread, inside a game mode's `update()`, at the points the research
+fixes. Everything that starts a script (level entry, update function, due scheduled calls, message handlers, animation
+callbacks, trigger events) goes through one `ScriptScheduler::run(entry)` that owns the order (the 4.0 VM keeps its own
+instruction budget; projects have none, [The sandbox](studio/lua-sdk.md#sandbox)). Coroutines later become one more
+entry kind ("resume coroutine *n*"). Lua 4.0 has none, and the research shows the original's scripts waiting only
+through the schedule and callbacks, never inside a call.
 
 ### Coney native candidates {#coney-native-candidates}
 

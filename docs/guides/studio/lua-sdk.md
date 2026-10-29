@@ -618,7 +618,8 @@ save* has three choices, and the same actions are buttons on the Play bar.
 | **Restart project** | The smallest restart the saved file needs: the project restarts, as below, for a project script; the level restarts for a game script, whose patch only a new level start reaches ([Mission mods](mission-mods.md#which-kind)) | The level, the game state and the game's player go on after a project restart |
 | **Restart level** | A new Play from the checkpoint: the session ends as Stop ends it and a new one starts, whatever was saved | The Play bar's *Restart* ([Live edits](editor-experience.md#live-edits)) |
 
-The two buttons, *Restart project* and *Restart level*, do the same on demand, whatever the setting. Stop, closing
+The two buttons, *Restart project* and *Restart level*, restart the project and the level on demand, whatever the
+setting; only the setting's *Restart project* choice picks the level for a saved game script. Stop, closing
 Studio and switching to another project are not restarts: they end the session and discard everything ([Play, step
 8](#play)).
 
@@ -635,7 +636,9 @@ Studio and switching to another project are not restarts: they end the session a
    humans and objects it created, and player 1 when the project made him. This is what FiveM does with a resource's
    entities, and it leaves a clean world for the new run.
 4. **Started again.** A new project state is made, the files load in order and `start` runs; if a level is running,
-   `levelStart` runs too, with the current level and checkpoint, so the project makes its cast again.
+   `levelStart` runs too, with the current level and checkpoint, so the project makes its cast again. If no script
+   made player 1 after that and none stands (the project's own was removed), Coney makes the default one at the
+   spawn point, as Play does ([Play, step 6](#play)).
 
 **What goes on:** the level, the game state (its globals, schedule and what its scripts made) and the game's player,
 that is player 1 when the game or Coney's default made him ([Play, step 6](#play)). Only a player 1 the project made is
@@ -777,10 +780,12 @@ running a project's scripts. Issues 2 to 6 build on the [decision](#decisions) f
    `buildNatives` turns `kBindings` and the binding registrations into a list of `Native` records (name, origin, status,
    the `mods` flag, the call), which the game state installs as today and the debug menus read; and
    `ScriptScheduler::run(entry)` becomes the one way any script runs (level entry, update, schedule, messages, anim
-   callbacks, triggers), with its order and the game state's instruction budget (a project state has none, [The
-   sandbox](#sandbox)). Handles move from one counter per Lua state to one per session. No behaviour changes: the disc
-   checks of the scripts give the same counts. Tests: every registered binding is in the list with its status; the
-   scheduler runs entries in the documented order; a handle made in one state resolves in another of the same session.
+   callbacks, triggers), with its order. It has no instruction budget (a project state has none, [The
+   sandbox](#sandbox); the 4.0 VM keeps its own `LuaVmOptions::maxInstructions`), and it records each project's time per
+   step for the [monitor](#monitor). Handles move from one counter per Lua state to one per session. No behaviour
+   changes: the disc checks of the scripts give the same counts. Tests: every registered binding is in the list with its
+   status; the scheduler runs entries in the documented order; a handle made in one state resolves in another of the
+   same session.
 2. **core: Add the Lua 5.4 project runtime and its sandbox.** Stock Lua 5.4 pinned in `cmake/deps.cmake` with the
    deterministic build settings; a project state with its environment, the allowed libraries, `require` inside the
    project, the allocator's count of each state's memory (for the monitor, no cap) and the project's random stream (for
@@ -844,10 +849,10 @@ running a project's scripts. Issues 2 to 6 build on the [decision](#decisions) f
    as Coney does. Tests: a synthetic model fixture loads by path and spawns; a path outside the project is refused; a
    test-mode load completes in the same step.
 10. **tools: Add the project monitor to Coney Studio.** The allocator's count and the per-project timing of the
-    project's frame (the clock only the frame pacer reads, outside the simulation), shown in a Monitor panel with one
-    row per project: time per step (last, mean and worst of 30) and memory; the time off in test mode. Tests: a project
-    that allocates a known table shows its growth; two projects show separate rows; the time column is empty in test
-    mode and no run changes with the monitor open.
+    project's frame that the scheduler records (the clock only the frame pacer reads, outside the simulation), shown in
+    a Monitor panel with one row per project: time per step (last, mean and worst of 30) and memory; the time off in
+    test mode. Tests: a project that allocates a known table shows its growth; two projects show separate rows; the time
+    column is empty in test mode and no run changes with the monitor open.
 
 ## Sources {#sources}
 
