@@ -218,6 +218,6 @@ def test_only_the_coordinator_may_run_them() -> None:
     import tomllib
 
     roles = tomllib.loads(text)["roles"]
-    for role in ("engineer", "tooling", "reviewer"):
+    for role in ("engineer", "tooling", "reviewer", "contributor"):
         assert {"claim unclaim", "claim renew"} <= set(roles[role]["deny_coney_tools"])
     assert "claim unclaim" not in roles["coordinator"].get("deny_coney_tools", [])

@@ -173,15 +173,15 @@ what it read, and the way out is to word the argument differently or to ask the 
 **Roles in other tools.** A session of another tool has no agent type, so its role is `CONEY_AGENT_ROLE` from the
 environment the tool was started with (an agent's command cannot change the hook's environment, and `identity.py`
 refuses a command that sets `CONEY_AGENT_*` anyway), else `[harnesses] default_role` in `hooks.toml`: `contributor`.
-`[roles.contributor]` refuses `pr open`, `pr hold` and every GitHub write (`push_guard.py`'s list: `git push`,
-`gh pr create`, comments, `gh api` writes), with its own `push_hint` instead of `push_guard.py`'s text about a
-coordinator: the person pushes and opens the pull request from their own terminal after `coney-tools ci pr`. Its
-`deny_write_dirs` keep its edits out of the hook files that judge it (`.claude/hooks/`, `.claude/settings.json`,
-`.codex/`, `.gemini/`, `.agents/`, `.cursor/`, `.github/hooks/`, `.grok/`) and out of the settings other tools read
-hooks or `disableAllHooks` from: `.claude/settings.local.json` (Cursor's third-party hooks page and Copilot's hooks
-reference both list it, read 2026-10-27) and `.github/copilot/` (Copilot's `settings.json` and `settings.local.json`). A
-name that is no role leaves the session read-only, as `require_role` does in Claude Code, and the refusal names
-`CONEY_AGENT_ROLE` (not `coney-agent`).
+`[roles.contributor]` refuses `pr open`, `pr hold`, `claim unclaim`, `claim renew` and every GitHub write
+(`push_guard.py`'s list: `git push`, `gh pr create`, comments, `gh api` writes), with its own `push_hint` instead of
+`push_guard.py`'s text about a coordinator: the person pushes and opens the pull request from their own terminal after
+`coney-tools ci pr`. Its `deny_write_dirs` keep its edits out of the hook files that judge it (`.claude/hooks/`,
+`.claude/settings.json`, `.codex/`, `.gemini/`, `.agents/`, `.cursor/`, `.github/hooks/`, `.grok/`) and out of the
+settings other tools read hooks or `disableAllHooks` from: `.claude/settings.local.json` (Cursor's third-party hooks
+page and Copilot's hooks reference both list it, read 2026-10-27) and `.github/copilot/` (Copilot's `settings.json` and
+`settings.local.json`). A name that is no role leaves the session read-only, as `require_role` does in Claude Code, and
+the refusal names `CONEY_AGENT_ROLE` (not `coney-agent`).
 
 | Tool | Project hook file (committed) | Event we use | How it denies (what the adapter sends) | Tools the hook sees | Trust before a project hook runs |
 | --- | --- | --- | --- | --- | --- |
