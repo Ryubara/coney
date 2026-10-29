@@ -2448,6 +2448,11 @@ level = "confirmed-code"
 coney = "src/scripting/script_system.h:ScriptSystem::servicePreloads"
 status = "compared"
 
+[[function.gaps]]
+what = "the preload's callback is skipped when its chunk fails; the original calls it whatever the outcome"
+relation = "stand-in"
+issue = 1130
+
 [[function]]
 address = 0x00358428
 name = "lua_HuCreate"

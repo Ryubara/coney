@@ -4,8 +4,6 @@
 // (docs/research/formats/lua-bytecode.md#stock-library).
 #include "scripting/lua_vm.h"
 
-#include "scripting/natives.h"
-
 #include <cerrno>
 #include <charconv>
 #include <cmath>
@@ -22,6 +20,7 @@
 #include "core/assert.h"
 #include "scripting/lua_compiler.h"
 #include "scripting/lua_opcodes.h"
+#include "scripting/natives.h"
 
 namespace coney::script {
 

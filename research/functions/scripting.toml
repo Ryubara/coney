@@ -79,6 +79,16 @@ level = "confirmed-code"
 coney = "src/scripting/script_system.h:ScriptSystem::update"
 status = "compared"
 
+[[function.gaps]]
+what = "the update function gets the step with its fraction of a millisecond; the original cuts it to whole milliseconds"
+relation = "stand-in"
+issue = 1130
+
+[[function.gaps]]
+what = "calls scheduled during the update run in the next update; the original also runs a call scheduled inside the loop"
+relation = "stand-in"
+issue = 1130
+
 [[function]]
 address = 0x003569d8
 name = "ScriptSystem_RunLevelEntry"
@@ -92,8 +102,13 @@ address = 0x00356af8
 name = "ScriptSystem_RunFile"
 page = "scripting.md#vtable-slots"
 level = "confirmed-code"
-coney = "src/scripting/script_system.h:ScriptSystem::runFile"
+coney = "src/scripting/script_system.cpp:ScriptSystem::runChunk"
 status = "compared"
+
+[[function.gaps]]
+what = "a file that fails to load or run returns false; the original returns success for any file it found"
+relation = "stand-in"
+issue = 1130
 
 [[function]]
 address = 0x00356c58
@@ -108,15 +123,25 @@ address = 0x00356e08
 name = "ScriptSystem_FindFunction"
 page = "scripting.md#vtable-slots"
 level = "confirmed-code"
-coney = "src/scripting/script_system.h:ScriptSystem::call"
+coney = "src/scripting/script_system.cpp:ScriptSystem::resolve"
 status = "compared"
+
+[[function.gaps]]
+what = "a call through a `:` name passes the table that holds the function as self; the original passes the first part's global"
+relation = "stand-in"
+issue = 1130
+
+[[function.gaps]]
+what = "the name is not cut at 32 characters"
+relation = "stand-in"
+issue = 1130
 
 [[function]]
 address = 0x00357188
 name = "ScriptSystem_Call"
 page = "scripting.md#vtable-slots"
 level = "confirmed-code"
-coney = "src/scripting/script_system.h:ScriptSystem::call"
+coney = "src/scripting/script_system.cpp:ScriptSystem::callEntry"
 status = "compared"
 
 [[function]]

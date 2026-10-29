@@ -253,7 +253,8 @@ bool ScriptSystem::runChunk(std::span<const std::byte> bytes, std::string_view n
 std::pair<Value, Value> ScriptSystem::resolve(std::string_view name) const {
     // Walk the parts from the globals: every part but the last must be a table. A `:` before the last part makes its
     // table the `self` argument. Coney stand-in (#1130): for `a.b:c` the original passes the first part's global (`a`)
-    // as `self`, not the table that holds the last part.
+    // as `self`, not the table that holds the last part; and a `:` anywhere in the name (`a:b.c`) sets the original's
+    // self flag, which Coney reads only before the last part.
     Value current(m_vm->globalsTable());
     Value self;
     std::size_t start = 0;

@@ -306,14 +306,18 @@ through the schedule and callbacks, never inside a call.
 `run(ScriptEntry)` takes an entry of a kind (files, file, level entry, preloads, frame, call, message, anim callback,
 console) and runs it; each of the script system's operations that runs a script (`runFile`, `runFiles`, `enterLevel`,
 `call`, `update`, `servicePreloads`) opens its entry there too, so a run is an entry whichever way it starts, nested
-inside the entry that caused it (a scheduled call inside the frame). The debug menus' console and Natives page run as
+inside the entry that caused it (a scheduled call inside the frame). The one exception is `loadGlobalStrings`
+(`src/scripting/config_strings.cpp`), which runs the disc's enum and string scripts once at start-up, before any
+session, in a state of its own that it throws away; it is not an entry. The debug menus' console and Natives page run as
 console entries. Message handlers (trigger boxes and spheres among them) and animation callbacks still come in as call
-entries: `MessageHandlers` and `ScriptedBrains` move to the kinds made for them (message, anim callback) when those
-files are next brought up to the code standard. The order is unchanged: the game mode's step keeps it, and the frame
-runs the arrived preloads, the due scheduled calls and the update function as before. **No budget** (a maintainer
-decision, 2026-10-29): the scheduler has no instruction budget; it records each project's script time per step
-(`projectTime()`, a step ending with the outermost frame entry) for a later monitor, and nothing reads the clock but
-that record. The VM keeps its own runaway limit (`LuaVmOptions::maxInstructions`), as before.
+entries: moving `MessageHandlers` and `ScriptedBrains` to the kinds made for them (message, anim callback) is
+planned in #1131, when those files are next brought up to the code standard. The order is unchanged: the game mode's
+step keeps it, and the frame runs the arrived preloads, the due scheduled calls and the update function as before.
+**No budget** (a maintainer decision, 2026-10-29): the scheduler has no instruction budget; it records each project's
+script time per step (`projectTime()`, a step ending with the outermost frame entry) for a later monitor, and nothing
+reads the clock but that record. The record holds real elapsed time in every run of the executable, test mode
+included, so it must never reach test-mode output. The VM keeps its own runaway limit (`LuaVmOptions::maxInstructions`),
+as before.
 
 ### Coney native candidates {#coney-native-candidates}
 
@@ -461,7 +465,7 @@ says):
 2. **Overrides** for presentation kinds, with PNG and WAV loaders; test mode stays PS2-only.
 3. **Xbox source**: textures via the `ResourceResolver` (F4) and HD movies ([Xbox assets](../research/xbox-assets.md)).
 4. **Native list** (`buildNatives`) and the `ScriptScheduler` as the one entry: built (#1118); the call tracer over the
-   list is still to do.
+   list is still to do (#1157 names its issue).
 5. **Lua 4.0 source compiler**, then the console on it, then Coney's level scripts, one level at a time, each
    behind its parity test.
 6. **Simulation out of `src/platform/`** (`PlayLevelMode::update` into a core gameplay mode; platform keeps the

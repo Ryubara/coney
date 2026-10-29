@@ -81,23 +81,25 @@ struct ProjectTime {
     std::uint64_t steps = 0;             ///< Steps ended.
 };
 
-/// The one way any script runs. Game code starts a run with run(); the script system's own operations (runFile(),
-/// call(), update(), ...) open their entry here too, so a run started from anywhere is an entry: watched, timed, and
-/// nested inside the entry that caused it (a scheduled call inside the frame, a file inside a level entry).
+/// The one way any script runs. The debug menus start a run with run(); the game calls the script system's own
+/// operations (runFile(), call(), update(), ...), which open their entry here, so a run started from anywhere is an
+/// entry: watched, timed, and nested inside the entry that caused it (a scheduled call inside the frame, a file
+/// inside a level entry).
 ///
 /// **The order** is the frame's, which the game mode keeps (docs/guides/studio/lua-sdk.md#play, step 7): the gameplay
 /// step's messages and callbacks (trigger boxes and spheres, animation callbacks, pads), then the Frame entry, inside
-/// which the update runs in the original's order: the preloads that arrived, the due scheduled calls oldest first
-/// (due time, then the order scheduled), then the update function
-/// (docs/research/scripting.md#scheduled-calls).
+/// which the update runs in the original's order: the preloads that arrived, the due scheduled calls, then the update
+/// function (docs/research/scripting.md#scheduled-calls). Calls due at the same time run in the order scheduled:
+/// Coney's choice, as the original's heap gives equal due times no set order (#694).
 ///
 /// **No budget.** The maintainer decided on 2026-10-29 that scripts have no instruction or time budget for now: the
 /// scheduler only records each project's time per step (projectTime()), for a monitor to come. A step ends with the
 /// outermost Frame entry. Coney's own; the original's script system has no such object.
 class ScriptScheduler {
   public:
-    /// The time now, for the per-step record; by default the profiler's clock (perf::now(), which the platform
-    /// installs; none in tests and test mode, so nothing is timed there).
+    /// The time now, for the per-step record; by default the profiler's clock (perf::now()). The executable installs
+    /// that clock on every run, test mode included, so the record holds real elapsed time there and must never reach
+    /// test-mode output; only the unit tests, which install no clock, read 0.
     using Clock = std::function<std::chrono::nanoseconds()>;
     /// Told of every entry as it starts, with how deep it is nested (0 for one started from outside any run).
     using Watcher = std::function<void(const ScriptEntry& entry, int depth)>;
@@ -111,7 +113,9 @@ class ScriptScheduler {
 
     /// Whether an entry is running (a binding is asking from inside a script).
     [[nodiscard]] bool running() const { return m_depth > 0; }
-    /// The time `project`'s scripts ran; null before its first entry.
+    /// The time `project`'s scripts ran; null before its first entry. The pointer stays valid only until the next entry
+    /// of a project that has not run yet (the records live in a vector that grows); copy it to keep it (tracked in
+    /// #1157).
     [[nodiscard]] const ProjectTime* projectTime(std::string_view project = kGameProject) const;
     /// Every project's time, in the order each first ran.
     [[nodiscard]] std::span<const ProjectTime> projectTimes() const { return m_times; }
