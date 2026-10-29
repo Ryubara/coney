@@ -210,7 +210,7 @@ def test_a_changed_renderer_fails_the_check_and_names_the_scripts(
 ) -> None:
     listed = _listed(tmp_path, [_expected("control"), _expected("closures")])
     real = lua4.render
-    monkeypatch.setattr(lua_decompile.lua4, "render", lambda tree: real(tree) + "-- one more line\n")
+    monkeypatch.setattr(lua4, "render", lambda tree: real(tree) + "-- one more line\n")
     assert _run(tmp_path, listed, names=("control",)) == 1
     printed = capsys.readouterr()
     assert "text changed: control.lua" in printed.err
@@ -250,7 +250,7 @@ def test_update_refuses_to_change_a_listed_hash(
 ) -> None:
     listed = _listed(tmp_path, [_expected("control")])
     before = listed.read_text(encoding="utf-8")
-    monkeypatch.setattr(lua_decompile.lua4, "render", lambda tree: "x = 1\n")
+    monkeypatch.setattr(lua4, "render", lambda tree: "x = 1\n")
     assert _run(tmp_path, listed, names=("control",), update_hashes=True) == 1
     assert listed.read_text(encoding="utf-8") == before
     assert "--new-form" in capsys.readouterr().err
@@ -258,7 +258,7 @@ def test_update_refuses_to_change_a_listed_hash(
 
 def test_new_form_rewrites_the_list_with_the_next_form_number(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     listed = _listed(tmp_path, [_expected("control"), _expected("logic")])
-    monkeypatch.setattr(lua_decompile.lua4, "render", lambda tree: "x = 1\n")
+    monkeypatch.setattr(lua4, "render", lambda tree: "x = 1\n")
     assert _run(tmp_path, listed, names=("control",), new_form=True) == 0
     loaded = lua_hashes.load(listed)
     assert loaded.form == 2
