@@ -62,7 +62,7 @@ from coney_tools import (
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import REVIEW_KINDS, Conventions, load_conventions_leniently
 from coney_tools.repo_checks import check_docs, check_title
-from coney_tools.unit_record import UnitRecordError, read_record
+from coney_tools.unit_record import UnitRecordError, log_task_of, read_record
 
 #: The agent definition handed to `claude --agents` for a run, written in the review's folder and removed after.
 AGENTS_FILE = ".reviewer-agents.json"
@@ -518,7 +518,22 @@ def record(env: ReviewEnv, mode: str) -> int:
     )
     for finding in blockers:
         print(f"  {finding['severity']}: {finding['where']}: {finding['text']}")
+    if result != "pass":
+        print(next_review(task, mode))
     return 0 if result == "pass" else 1
+
+
+def next_review(task: str, mode: str) -> str:
+    """What follows a failed review. After a failed text review the full one still holds, so the text is reviewed
+    again; after a failed full review only a full one can pass, even when every finding is about the description,
+    because `--text` needs a passing full review of the same change (`_full_pass_problem`)."""
+    if mode == "text":
+        return f"next: the engineer fixes the description; then `task review {task} --text --run`"
+    return (
+        f"next: the engineer fixes the findings; then a full `task review {task} --run` (after `task check` when the "
+        "code changed): --text reviews a description edited after a passing full review, so it cannot follow a "
+        "failed one"
+    )
 
 
 def _carry_full_review(report: stamps.Report, detail: dict[str, Any]) -> None:
@@ -601,6 +616,8 @@ def run(
     print(
         f"task review {task}: reviewed: {stamp.result} (stamp #{stamp.seq}, {stamp.detail.get('blockers', 0)} blocking)"
     )
+    if stamp.result != "pass":
+        print(next_review(task, mode))
     return 0 if stamp.result == "pass" else 1
 
 
@@ -689,7 +706,16 @@ def environment(args: argparse.Namespace) -> ReviewEnv:
         if worktree != here:
             _say(f"task review {task}: reviewing {worktree}, the worktree the unit record names (this is {here})")
     conventions = load_conventions_leniently(worktree, _say)
-    folder = unit.Unit.of(worktree, task)
+    # A fix task works in its parent's unit: the parent's log is stamped and the parent's PR.md is the description.
+    # A record that cannot be read was refused above unless --worktree was given, which is the way out of it: then the
+    # task is taken as its own.
+    try:
+        owner = log_task_of(unit.Unit.of(worktree, task).dir, conventions.tasks.start.unit_file) or task
+    except UnitRecordError:
+        owner = task
+    if owner != task:
+        _say(f"task review {task}: {task} is a fix of {owner}: reviewing in {owner}'s log, with its PR.md")
+    folder = unit.Unit.of(worktree, owner)
     text_file = args.pr_file or folder.dir / pr_text.TEXT_FILE
     base = args.base or f"origin/{conventions.repo.default_branch}"
     return ReviewEnv(

@@ -692,6 +692,35 @@ def _added_tests(subject: Subject) -> dict[str, str]:
     return {name: path for name, path in after.items() if name not in before}
 
 
+def _decision_refusal(subject: Subject, stamp: stamps.Stamp) -> Refusal | None:
+    """A passing stamp of a test that changed between its commits rests on the coordinator's decision
+    (`fails_first.record_decision`, the stamp its `decision_seq` names): None when that decision is in the log for the
+    same test and commits (and, with `stamps.require_hook_source`, the hook vouched that the coordinator wrote it)."""
+    seq = stamp.detail.get("decision_seq")
+    if seq is None:
+        return None
+    decision = next((s for s in subject.report.stamps if s.seq == seq), None)
+    agent = decision.who.get("agent") if decision is not None else None
+    if (
+        decision is not None
+        and decision.step == "fails-first"
+        and decision.subject == stamp.subject
+        and decision.detail.get("decision") == fails_first.DECISION
+        and all(decision.covers.get(key) == stamp.covers.get(key) for key in ("test_commit", "fix_commit"))
+        and (
+            not subject.conventions.stamps.require_hook_source
+            or (decision.who.get("source") == "hook" and isinstance(agent, dict) and agent.get("type") == "coordinator")
+        )
+    ):
+        return None
+    return Refusal(
+        "fails-first",
+        f'fails-first: "{stamp.subject}" changed between its commits and rests on decision #{seq}, which is not the '
+        "coordinator's decision for them",
+        "orig fails-first --accept-change",
+    )
+
+
 def check_fails_first(subject: Subject) -> list[Refusal]:
     """The tests the branch adds each failed first (a passing stamp over the test files as they are now); a task that
     has nothing to test says so with a `none` stamp; a gameplay change with no test is refused."""
@@ -709,6 +738,10 @@ def check_fails_first(subject: Subject) -> list[Refusal]:
                 )
             )
             continue
+        refused = _decision_refusal(subject, stamp)
+        if refused is not None:
+            found.append(refused)
+            continue
         files = stamp.detail.get("test_files")
         listed = [str(f) for f in files] if isinstance(files, list) else []
         if stamp.covers.get("tests_sha256") != fails_first.tests_sha256(subject.root, subject.tip, listed):
@@ -721,7 +754,12 @@ def check_fails_first(subject: Subject) -> list[Refusal]:
             )
     if added:
         return found
-    proofs = [s for s in report.stamps if s.step == "fails-first" and s.result in ("pass", "none")]
+    # A coordinator's decision on a changed test proves nothing by itself: only the run after it does.
+    proofs = [
+        s
+        for s in report.stamps
+        if s.step == "fails-first" and s.result in ("pass", "none") and s.detail.get("decision") != fails_first.DECISION
+    ]
     if subject.kind in NO_TEST_KINDS:
         if not proofs:
             found.append(

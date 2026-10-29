@@ -24,7 +24,7 @@ from coney_tools.config import ConfigError
 from coney_tools.conventions import ConventionsError, load_conventions
 from coney_tools.review_verdict import problems as verdict_problems
 from coney_tools.unit import Unit
-from coney_tools.unit_record import UnitRecord, write_record
+from coney_tools.unit_record import UnitRecord, read_record, write_record
 
 BRAIN_H = """#pragma once
 namespace coney::ai {
@@ -531,6 +531,22 @@ def test_record_saves_a_fail_verdict_as_a_fail_stamp(rig: Rig) -> None:
     assert stamp.step == "reviewed" and stamp.result == "fail" and stamp.detail["blockers"] == 1
 
 
+def test_a_failed_full_review_says_the_next_review_is_a_full_one(rig: Rig, capsys: pytest.CaptureFixture[str]) -> None:
+    # Even when every blocker is about the description: `--text` needs a passing full review of the same change.
+    verdict = rig.write_verdict()
+    verdict["verdict"] = "fail"
+    verdict["findings"] = [{"severity": "important", "where": "PR.md:3", "text": "names no issue it affects"}]
+    rig.verdict_path().write_text(json.dumps(verdict), encoding="utf-8")
+    assert task_review.record(rig.env(), "full") == 1
+    out = capsys.readouterr().out
+    assert f"next: the engineer fixes the findings; then a full `task review {rig.unit.task} --run`" in out
+    assert "--text" in out and "passing full review" in out
+    # A passing review gives no such advice.
+    rig.write_verdict()
+    assert task_review.record(rig.env(), "full") == 0
+    assert "next:" not in capsys.readouterr().out
+
+
 def test_a_review_of_a_changed_branch_is_stale_and_writes_nothing(rig: Rig, capsys: pytest.CaptureFixture[str]) -> None:
     rig.write_verdict()
     (rig.root / "docs/research/ai/brain.md").write_text(PAGE + "\nMore.\n", encoding="utf-8")
@@ -939,6 +955,24 @@ def test_review_inside_the_units_worktree_needs_no_note(
     monkeypatch.chdir(unit_tree)
     assert task_review.environment(arguments(task=None)).worktree == unit_tree.resolve()
     assert capsys.readouterr().err == ""
+
+
+def test_a_fix_task_is_reviewed_in_its_parents_log_and_text(
+    rig: Rig, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    unit_tree = start_unit(rig)
+    # `task start` of a fix task: a record of its own that copies the parent's branch and worktree and names it.
+    write_record(
+        rig.unit.dir.parent / "t1-fix" / "unit.json",
+        dataclasses.replace(read_record(rig.unit.dir / "unit.json"), task="t1-fix", kind="fix", parent="t1"),
+    )
+    monkeypatch.chdir(rig.root)
+    env = task_review.environment(arguments(task="t1-fix"))
+    assert env.worktree == unit_tree.resolve()
+    # The parent's log is stamped and the parent's PR.md is the description (UnitRecord.log_task).
+    assert env.unit.task == "t1" and env.unit.dir == rig.unit.dir
+    assert env.text_file == rig.unit.dir / "PR.md"
+    assert "t1-fix is a fix of t1" in capsys.readouterr().err
 
 
 def test_the_worktree_option_wins_over_the_unit_record(rig: Rig, monkeypatch: pytest.MonkeyPatch) -> None:

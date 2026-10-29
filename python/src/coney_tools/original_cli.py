@@ -17,6 +17,7 @@ from coney_tools import build_claims, fails_first, orig_compare, orig_study, res
 from coney_tools.config import find_repo_root
 from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.progress_research import DEFAULT_GHIDRA_URL, http_fetch
+from coney_tools.unit_record import log_task_of
 
 #: The commands this module registers in the `orig` group and runs.
 COMMANDS = ("study", "compare", "verify", "fails-first")
@@ -83,7 +84,8 @@ def add_commands(commands: Any) -> None:
         description=(
             "Runs `coney-tools build --test -R` for the named tests on --test-commit (they must fail) and on "
             "--fix-commit (they must pass), restoring the branch afterwards. With --none REASON, stamps that the task "
-            "has no such test (docs, tooling) and runs nothing."
+            "has no such test (docs, tooling) and runs nothing. With --accept-change REASON, the coordinator records "
+            "its yes to a test that had to change between the two commits, and runs nothing."
         ),
     )
     first.add_argument(
@@ -97,6 +99,11 @@ def add_commands(commands: Any) -> None:
     first.add_argument("--preset", default="dev", help="the CMake preset (default: %(default)s)")
     first.add_argument("--agent", help="your id for the build slots (as `build --agent`)")
     first.add_argument("--none", metavar="REASON", help="stamp that there is no fails-first test, with the reason")
+    first.add_argument(
+        "--accept-change",
+        metavar="REASON",
+        help="the coordinator only: record that the named tests may change between --test-commit and --fix-commit",
+    )
     _task(first)
 
 
@@ -115,7 +122,8 @@ def run(args: argparse.Namespace) -> int:
     root = find_repo_root(Path.cwd())
     conventions = _conventions(root)
     task = unit.task_name(root, args.task)
-    folder = unit.Unit.of(root, task)
+    # A fix task works in its parent's unit, so its studies, pairs and stamps are the parent's.
+    folder = unit.Unit.of(root, log_task_of(unit.Unit.of(root, task).dir, conventions.tasks.start.unit_file) or task)
     who = stamps.who_from_env(f"coney-tools orig {args.command}")
     if args.command == "fails-first":
         return _fails_first(args, root, conventions, folder, who)
@@ -234,6 +242,21 @@ def _fails_first(
     if not args.test or not args.test_commit:
         print("orig fails-first: give --test NAME (once per test) and --test-commit SHA, or --none REASON")
         return 2
+    if args.accept_change is not None:
+        decided = fails_first.record_decision(
+            folder,
+            root,
+            args.accept_change,
+            tests=args.test,
+            test_commit=args.test_commit,
+            fix_commit=args.fix_commit,
+            rules=rules,
+            who=who,
+        )
+        for stamp in decided:
+            print(f"orig fails-first: {stamp.subject}: the changed test is accepted; stamp #{stamp.seq}")
+        print("next: the engineer runs orig fails-first with the same --test, --test-commit and --fix-commit")
+        return 0
     agent = args.agent or who["agent"]["id"]
     if agent == "unknown":
         print("orig fails-first: give --agent ID (the build slots need one)")

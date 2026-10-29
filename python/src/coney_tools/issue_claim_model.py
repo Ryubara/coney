@@ -523,6 +523,13 @@ def is_card(body: str, rules: Claims) -> bool:
     return body.startswith(f"<!-- {rules.card_marker} -->")
 
 
+#: A line of a "Blocked by" section that says what waits for this issue (`Blocks the release of #N`), not what it
+#: waits for: its references are no blockers.
+_BLOCKS_LINE = re.compile(r"^\W*blocks\b", re.IGNORECASE)
+
+
 def blocked_by_numbers(section: str) -> list[int]:
-    """The issue and pull request numbers (`#12`) in the text of a "Blocked by" section, in order, once each."""
-    return list(dict.fromkeys(int(number) for number in re.findall(r"(?<![\w&/])#(\d+)\b", section)))
+    """The issue and pull request numbers (`#12`) in the text of a "Blocked by" section, in order, once each; a line
+    that starts with "Blocks" names what this issue blocks, and is skipped."""
+    lines = [line for line in section.splitlines() if not _BLOCKS_LINE.match(line)]
+    return list(dict.fromkeys(int(number) for number in re.findall(r"(?<![\w&/])#(\d+)\b", "\n".join(lines))))

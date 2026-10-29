@@ -323,6 +323,35 @@ def test_a_fix_task_reuses_the_claim_and_posts_progress_fix(world: World) -> Non
     assert world.run(issues=(), fix_of=10) == 0 and world.task_path("10-fix-2").is_file()
 
 
+FIX_BODY = (
+    '### Summary\n\nThe fight goal test is red on Linux.\n\n### Area\n\nA-ai\n\n### What "done" means\n\n'
+    "The test passes on every runner.\n\n### Blocked by\n\nBlocks the release of #10\n\n### Screenshots\n\n"
+    "Screenshots: none (CI)\n"
+)
+
+
+def test_a_fix_task_for_another_issue_is_written_from_that_issue(world: World) -> None:
+    assert world.run() == 0
+    world.github.add_issue(30, body=FIX_BODY, title="ci: Fix the fight goal test on Linux")
+    world.output.clear()
+    assert world.run(issues=(30,), fix_of=10) == 0
+    text = world.task_path("30-fix").read_text(encoding="utf-8")
+    parsed = parse_task_file(text, CONVENTIONS.tasks)
+    # The goal and the done list are the fix's own issue's; the claim it works under is still #10's.
+    assert "red on Linux" in parsed.sections["Goal"] and "every runner" in parsed.sections["Done"]
+    assert "never re-targets" not in text
+    assert parsed.issues == (10,) and parsed.parent == "10-fix-the-fight-goal" and parsed.kind == "fix"
+    assert "- #30: ci: Fix the fight goal test on Linux" in parsed.sections["Issues"]
+    # "Blocks the release of #10" is not read as a blocker of the fix.
+    assert "refused" not in world.said()
+    assert world.actor_comments(10)[-1] == "/progress fix"
+
+
+def test_a_fix_task_for_an_issue_that_is_not_open_is_refused(world: World) -> None:
+    assert world.run() == 0
+    assert world.run(issues=(7,), fix_of=10) == 1 and "#7 is not an open issue" in world.said()
+
+
 def test_a_fix_of_a_claim_made_without_a_task_has_no_unit_to_fix(world: World) -> None:
     world.github.say(10, "Ryubara", "/claim", "OWNER")
     world.engine.reconcile(10)

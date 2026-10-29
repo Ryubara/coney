@@ -380,7 +380,8 @@ mentions the claimant (its title), and so does the 48-hour warning.
 4. While an open `P-critical` issue that can be claimed (ready, unassigned) has no claim, only a `P-critical` issue can
    be claimed; one that is blocked or already held does not stop anyone.
 5. Every issue in its "Blocked by" section is done: closed as completed by a merged pull request (a listed pull
-   request must be merged). Work is never stacked on an unmerged task.
+   request must be merged). Work is never stacked on an unmerged task. A line there that starts with "Blocks" (`Blocks
+   the release of #1102`) says what waits for this issue, so its references are not blockers.
 6. The claimant holds fewer open claims than the limit (3 for a maintainer, 2 for a contributor), and a `task:` id
    holds at most 3 issues. Issues that share a `task:` id count as one claim, so the id is no way round the limit; a
    fix task reuses its claim. A maintainer is whoever the repository gives write permission or more (asked of GitHub by
@@ -552,16 +553,20 @@ held:
 `--resume` skips posting when a held claim of yours is already there (after a timeout, the claim may still have landed);
 the task id is the one on the card, and a `--name` that differs is refused. A **fix task** is `--fix-of <issue>`: it
 reuses the claim you hold (no `/claim`, no limit) and posts `/progress fix`; its task file names the task of that claim
-as `parent`, because the fix works in that task's unit ([Starting a task](#starting)). The kinds are `feature`, `fix`, `docs`,
+as `parent`, because the fix works in that task's unit ([Starting a task](#starting)). Issues listed beside the option
+(`task create 1150 --fix-of 1140`) are the fix's own, such as the issue of a failed check: the Goal, Done and Issues
+sections are written from them and the id is `1150-fix`, while the front block's `issues` stays `[1140]`, the claim
+that `task start` and `pr open` check. The kinds are `feature`, `fix`, `docs`,
 `tooling` and `ci-fix` (`tasks.kinds`); `ci-fix` repairs main or a nightly run through its `P-critical` issue and is an
 ordinary claim.
 
 The task file starts with a small YAML block the tools read (`task`, `issues`, `kind`, `claimant`, `claimed_at`,
-`scope`, `terms`, and `parent` in a fix task) and has these sections, in this order: Issues, Goal, Done, Scope, Where
-to look, Searched, not related, Expected tests, Decision points, Related PRs and open questions. Goal and Done start as
-the issue's Summary and "What done means", quoted line by line (with a leading `>`) so that no line of issue text can
-start a section of the file; Expected tests says "no fails-first test" for `docs` and `tooling`; the coordinator prunes
-the rest.
+`scope`, `terms`, `parent` in a fix task, and `finishes: false` in a task that does not finish its issue, so the pull
+request has no `Fixes` line and the issue stays open) and has these sections, in this order: Issues, Goal, Done, Scope,
+Where to look, Searched, not related, Expected tests, Decision points, Related PRs and open questions. Goal and Done
+start as the issue's Summary and "What done means", quoted line by line (with a leading `>`) so that no line of issue
+text can start a section of the file; Expected tests says "no fails-first test" for `docs` and `tooling`; the
+coordinator prunes the rest.
 
 **Where to look** comes from a search of prepared indexes with the terms the coordinator chose (`--terms`): the
 headings and cited addresses of the research pages, the reimplemented functions of the function database, the
@@ -616,7 +621,9 @@ someone deletes it, so the engineer writes it only for a stretch where files do 
 named by its `parent`: the parent must have a unit, its worktree must still exist and its log must hold a `pr-opened`
 stamp (there is a pull request to fix). The fix gets a record of its own that points at the parent's branch and
 worktree, and a second `claimed` stamp with `detail.fix` set to the fix's id is appended to the **parent's** log, which
-is the one log all the stage commands write (`UnitRecord.log_task` in `coney_tools/unit_record.py`). The claim check
+is the one log all the stage commands write (`UnitRecord.log_task` in `coney_tools/unit_record.py`). A stage command
+given the fix's own id (`task check 812-fix`, `task review 812-fix`, `orig fails-first --task 812-fix`) reads that
+record and works in the parent's folder: the parent's log, build records and `PR.md`, and it says so. The claim check
 uses the parent's task id, because the claim is the parent's.
 
 When the fix is done, `coney-tools pr open <issue>-fix` releases it onto the parent's pull request ([pr
