@@ -42,6 +42,7 @@
 #include "platform/install_command.h"
 #include "platform/net_play.h"
 #include "platform/render_engine.h"
+#include "platform/script_patch_command.h"
 #include "platform/sdl_input.h"
 #include "platform/sprite_sheets.h"
 #include "platform/texture_dictionary.h"
@@ -63,6 +64,12 @@ int main(int argc, char** argv) {
     // A player's options; a developer's is refused with a message that names the debug tools. Exit 2 on a usage
     // error, as command-line tools do.
     const std::vector<std::string_view> args(argv + 1, argv + argc);
+    // `--script-patch make|apply`: a script patch on files, for a modder who edits in another editor
+    // (docs/guides/script-patches.md#command-line); it needs no disc, window or device, so it runs before anything
+    // else.
+    if (!args.empty() && args.front() == "--script-patch") {
+        return coney::platform::runScriptPatchCommand(std::span(args).subspan(1), stdout, stderr);
+    }
     // With neither --disc nor --data, the install this executable sits in (if any) is the game to play: how a player
     // starts the `coney` that `--install` copied (docs/guides/running.md#install).
     const std::optional<std::string> besideExecutable = coney::platform::installBesideExecutable();
