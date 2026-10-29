@@ -103,12 +103,17 @@ def test_record_run_writes_an_xemu_record(tmp_path: Path, monkeypatch: pytest.Mo
                 "--value",
                 "ramp_index=3",
                 "--snapshot",
-                "Level-1",
+                "Level_1.start",
             ]
         )
         assert xemu_cli.run(args) == 0
     record = run_records.load(root, "r-20261025-ramp-index")
-    assert (record.emulator, record.pcsx2_version, record.copy, record.state) == ("xemu", "v0.8.110", "xemu", "level-1")
+    assert (record.emulator, record.pcsx2_version, record.copy, record.state) == (
+        "xemu",
+        "v0.8.110",
+        "xemu",
+        "level-1-start",
+    )
     assert record.tool == "xemu record-run" and record.values == {"ramp_index": 3}
 
 

@@ -145,6 +145,14 @@ def test_pause_continue_and_a_breakpoint_hit(rig: tuple[Server, FakeGdbStub, Fak
     assert status["running"] is False and status["eip"] == "0x00011000"
 
 
+def test_closing_a_session_removes_its_breakpoints(rig: tuple[Server, FakeGdbStub, FakeMonitor, Registry]) -> None:
+    server, stub, *_ = rig
+    assert not call(server, "xemu_set_breakpoint", agent="alice", address="0x00011000")[1]
+    assert stub.breakpoints
+    server.close()
+    assert stub.breakpoints == set()  # the copy's next holder does not inherit an armed breakpoint
+
+
 def test_a_register_write_needs_a_pause(rig: tuple[Server, FakeGdbStub, FakeMonitor, Registry]) -> None:
     server, stub, *_ = rig
     stub.running = True

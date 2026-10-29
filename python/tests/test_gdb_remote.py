@@ -39,6 +39,28 @@ def test_connecting_stops_the_guest_and_reads_memory(ack: bool) -> None:
         assert stub.no_ack is ack
 
 
+def test_the_stop_qemu_sends_at_attach_is_not_taken_for_a_reply() -> None:
+    """Seen on xemu 0.8.139: a running guest stopped by the attach sends `T02` unasked, ahead of the first reply."""
+    stub = FakeGdbStub(attach_notice=True)
+    try:
+        stub.poke(0x00010010, bytes([9, 8, 7, 6]))
+        stub.running = True
+        with GdbClient(stub.port) as gdb:
+            assert gdb.read_memory(0x00010010, 4) == bytes([9, 8, 7, 6])
+            assert gdb.registers()["eip"] == 0x00011000  # no reply shifted by the notice
+    finally:
+        stub.close()
+
+
+def test_a_closed_stub_is_noticed_by_a_poll_of_a_running_guest() -> None:
+    with fake_xemu() as (stub, _), GdbClient(stub.port) as gdb:
+        gdb.cont()
+        stub.close()
+        with pytest.raises(GdbError, match="closed the connection"):
+            eventually(lambda: gdb.poll_stop() is not None)
+        assert not gdb.connected
+
+
 def test_a_long_read_is_split_into_packets() -> None:
     with fake_xemu() as (stub, _):
         stub.poke(0x00010000, bytes(range(256)) * 12)

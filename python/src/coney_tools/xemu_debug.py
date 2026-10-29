@@ -88,9 +88,24 @@ class XemuSession:
         """Whether a connection that was made has closed (the stub or monitor went away): the session is remade."""
         return any(client is not None and not client.connected for client in (self._gdb, self._monitor))
 
+    def _clear_points(self) -> None:
+        """Remove the points this session set, so the copy's next holder does not inherit armed breakpoints (best
+        effort: a stub that is gone has nothing to clear)."""
+        gdb = self._gdb
+        if gdb is None or not gdb.connected or not self.points:
+            return
+        try:
+            gdb.ensure_stopped()
+            for point in self.points:
+                gdb.remove_point(point.kind, point.address, point.length)
+        except GdbError:
+            pass
+        self.points = []
+
     def close(self) -> None:
         """Close both connections, leaving the guest running or paused as it was before the stub detached."""
         wanted = self.running() if self._gdb is not None and self._gdb.connected else None
+        self._clear_points()
         for client in (self._gdb, self._monitor):
             if client is not None:
                 client.close()

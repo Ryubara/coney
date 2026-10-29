@@ -256,7 +256,9 @@ def run_record_run(args: argparse.Namespace) -> int:
     _, copy = registry.require_claim(args.agent, args.copy)
     snapshot = args.snapshot or UNKNOWN
     if snapshot != UNKNOWN and not SNAPSHOT_NAME.match(snapshot):
-        raise ConfigError(f"--snapshot {snapshot!r}: a snapshot name of the copy, or unknown")
+        raise ConfigError(
+            f"--snapshot {snapshot!r}: a snapshot name of the copy (letters, digits, `.`, `_`, `-`), or unknown"
+        )
     pending = run_records_cli.draft(
         root,
         kind="method",
@@ -269,7 +271,7 @@ def run_record_run(args: argparse.Namespace) -> int:
         addresses=addresses,
         emulator="xemu",
     )
-    pending = replace(pending, state=snapshot.lower())
+    pending = replace(pending, state=re.sub(r"[^a-z0-9]+", "-", snapshot.lower()).strip("-")[:48] or UNKNOWN)
     run_records_cli.precheck(root, pending)
     session = XemuSession(copy)
     try:

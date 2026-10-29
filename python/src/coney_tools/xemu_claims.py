@@ -288,8 +288,9 @@ class Registry:
         assert row.claim is not None
         if row.stale:
             raise ClaimError(
-                f"{agent}'s claim on {row.copy.name} is stale (no process of it lives); claim it again with "
-                f"`coney-tools xemu claim --agent {agent}`"
+                f"{agent}'s claim on {row.copy.name} is stale (no process of it lives); start it with "
+                f"`coney-tools xemu launch --agent {agent}`, or release it with `coney-tools xemu release --agent "
+                f"{agent}` and claim again"
             )
         return row.claim, row.copy
 

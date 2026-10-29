@@ -145,8 +145,9 @@ def test_require_claim_refuses_another_agent_copy(registry: Registry, procs: Fak
 
 def test_a_stale_claim_of_your_own_must_be_made_again(registry: Registry) -> None:
     registry.claim("a", "xemu", holder_pid=99)
-    with pytest.raises(ClaimError, match="stale"):
+    with pytest.raises(ClaimError, match=r"stale.*xemu launch --agent a") as refusal:
         registry.require_claim("a")
+    assert "xemu release --agent a" in str(refusal.value)
 
 
 def test_ports_are_checked_against_the_claim(registry: Registry, procs: FakeProcesses) -> None:

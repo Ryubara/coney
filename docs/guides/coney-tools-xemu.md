@@ -39,7 +39,9 @@ three levels down) and prints each with its settings file; it only reads, and ex
 
 `setup-copies` makes or updates `xemu`, `xemu-b`, ... (`--count`, default `xemu_copies`, 2) under `xemu_root` from the
 install `xemu_install` names. The install's settings are its `xemu.toml`: `xemu_config` when set, else the one beside
-`xemu.exe` (a portable install), else `%APPDATA%/xemu/xemu/xemu.toml`. The install is only read. Each copy gets:
+`xemu.exe` (a portable install), else `%APPDATA%/xemu/xemu/xemu.toml`. The install is only read, so an install that
+sits where a copy would go (an `xemu_install` of `emulators/xemu`) is refused before anything is written. Each copy
+gets:
 
 | In the copy | What it is |
 | --- | --- |
@@ -226,9 +228,9 @@ line or page that names one of `runs.xbox_words` in [.github/conventions.yml](re
 
 ### The first live run {#live-run}
 
-Run on 2026-10-25 with the maintainer's portable xemu 0.8.139 (Windows 11, `xemu_install` and `xemu_dvd` in a
-worktree's `coney.local.toml`), his install untouched (every file's time unchanged), a copy made by `setup-copies`
-(about 1 GB each, the disk image dominating) and an XISO of his own disc. What it showed:
+Run on 2026-10-26 (the run record's date) with the maintainer's portable xemu 0.8.139 (Windows 11, `xemu_install` and
+`xemu_dvd` in a worktree's `coney.local.toml`), the install untouched (every file's time unchanged), a copy made by `setup-copies`
+(about 1 GB each, the disk image dominating) and an XISO of the maintainer's own disc. What it showed:
 
 | Check | Result |
 | --- | --- |
@@ -244,7 +246,9 @@ worktree's `coney.local.toml`), his install untouched (every file's time unchang
 | `release` | closed the copy's xemu and dropped the claim |
 
 Not exercised: a key sent to a copy's window (the virtual pad), a second copy running beside the first, `--paused`,
-breakpoints and watchpoints on the real game (they are tested against the fake stub only).
+breakpoints and watchpoints on the real game (they are tested against the fake stub only), and the guard hook and the
+`xemu` MCP server inside a Claude Code session (the live run drove the server by hand, so the id rule is tested but
+not seen working in a session).
 
 <!-- command-reference:begin xemu -->
 ## Parameters of `xemu` {#xemu-parameters}

@@ -308,13 +308,20 @@ class GdbClient:
             return self.last_stop
         try:
             if timeout <= 0:
-                self._sock().setblocking(False)
+                sock = self._sock()
+                sock.setblocking(False)
                 try:
-                    self._buffer += self._sock().recv(65536)
+                    chunk = sock.recv(65536)
                 except (BlockingIOError, InterruptedError):
-                    pass
-                finally:
-                    self._sock().setblocking(True)
+                    chunk = None
+                except OSError as error:
+                    self.close()
+                    raise GdbError(f"the GDB stub on port {self.port} closed the connection ({error})") from error
+                if chunk == b"":
+                    self.close()
+                    raise GdbError(f"the GDB stub on port {self.port} closed the connection")
+                sock.setblocking(True)
+                self._buffer += chunk or b""
                 if b"#" not in self._buffer:
                     return None
                 text = self._read_packet(self.timeout)
