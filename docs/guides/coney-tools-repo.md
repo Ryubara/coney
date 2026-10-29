@@ -317,7 +317,9 @@ The coordinator's triage step ([Task files](issues.md#task-files)); the rules ar
   assignee, no earlier `/claim` waits) and then writes the file and posts `/progress assigned`. Anything that goes wrong
   before the file is written leaves no file; a claim that landed late is continued with `--resume`, which posts nothing.
   The task id is `--name` or `<first issue>-<words of its title>`; `--kind` is one of `tasks.kinds` (default from the
-  labels). A fix task is `--fix-of ISSUE`: it reuses your claim, posts `/progress fix` and writes `<issue>-fix`.
+  labels). A fix task is `--fix-of ISSUE`: it reuses your claim, posts `/progress fix` and writes `<issue>-fix`; an
+  issue given beside it (`task create 1150 --fix-of 1140`, a CI failure's) is the fix's own: the file is written
+  from it and named after it, and its front block names the claimed issue.
   `--dry-run` posts and writes nothing and prints the file. Exit 1 when it stopped, 0 when the file was written.
 * `start` is the engineer's first step for a task `create` made ([Starting a task](issues.md#starting)). It checks that
   the claim is still yours for this task, that you are within your limit of open claims and that the branch and folder
@@ -372,7 +374,7 @@ Every argument and option:
 | `create` | `--scope TEXT` | none | The planned folders, files and original addresses, comma separated (`"src/ai/, 0x00322b78"`), at most `claims.scope_max_characters` characters; it goes into the `/claim` comment and the task file, and is compared with the other held claims |
 | `create` | `--kind K` | from the labels: `docs` for the `docs` label, `tooling` for `A-tools`, else `feature` | The task kind, one of `tasks.kinds`; `fix` is only for `--fix-of` |
 | `create` | `--name ID` | `<first issue>-<words of its title>` (a resumed claim: the task id on its card) | The task id and the name of the scratch folder; lower case letters, digits and hyphens, 60 at most. It is the `task:` of the claim, so issues of one task share it |
-| `create` | `--fix-of ISSUE` | none | Make a fix task for an issue whose claim you hold: no `/claim`, no limit; posts `/progress fix` and writes `<issue>-fix` (`-2`, `-3` for the next ones) |
+| `create` | `--fix-of ISSUE` | none | Make a fix task for an issue whose claim you hold: no `/claim`, no limit; posts `/progress fix` and writes `<issue>-fix` (`-2`, `-3` for the next ones). Issues given beside it are the fix's own: the file's Goal, Done and Issues come from them, the id from the first, and the front block's `issues` stays the claimed one |
 | `create` | `--resume` | off | Continue a claim of yours that landed after the wait ended: issues you hold are not claimed again, and the task id must match the one on their cards |
 | `create` | `--dry-run` | off | Check, search and print the claims it would post and the file it would write; post and write nothing |
 | `start` | `TASK` | `CONEY_TASK` | The task id, the name of its scratch folder; without it and without `CONEY_TASK` the command stops (it does not guess from the branch: it is run from the main checkout, which is on `main`) |
@@ -457,7 +459,7 @@ coney-tools task create [ISSUE ...] [--terms TERM [TERM ...]] [--scope SCOPE] [-
 | `--scope SCOPE` | text | none | the planned folders, files and addresses, comma separated |
 | `--kind KIND` | text | none | the task kind (default: from the labels) |
 | `--name NAME` | text | none | the task id (default: \<first issue\>-\<words of its title\>) |
-| `--fix-of ISSUE` | integer | none | a fix task: reuse your claim on this issue |
+| `--fix-of ISSUE` | integer | none | a fix task: reuse your claim on this issue (issues given beside it are the fix's own) |
 | `--resume` | flag | off | continue a claim of yours that landed late |
 | `--dry-run` | flag | off | check and print; post and write nothing |
 

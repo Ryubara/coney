@@ -9,13 +9,14 @@ injected clock and sleep, so the tests never wait.
 The flow: read the issues, run the claim checks locally (the Action's own function, the same words), warn about scope
 overlaps, search the leads, post `/claim scope: ... task: <id>` on each issue and wait for its card (a refusal reply or
 the time limit ends it with nothing written), settle, write `TASK.md`, post `/progress assigned`. A fix task
-(`fix_of`) reuses a claim already held and posts `/progress fix`.
+(`fix_of`) reuses a claim already held and posts `/progress fix`; its file is written from the issues given beside
+`--fix-of` (the fix's own, such as a CI failure's), else from the claimed issue.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -291,7 +292,9 @@ def create_task(request: CreateRequest, env: CreateEnv) -> int:
     engine = Engine(env.remote, env.conventions, env.now)
     maintainer = engine.is_maintainer(user)
     held = engine.held_cards()
-    wanted = (request.fix_of,) if request.fix_of is not None else request.issues
+    # A fix task works under the claim of `fix_of`; the issues given beside it are the fix's own, and its file is
+    # written from them.
+    wanted = (request.issues or (request.fix_of,)) if request.fix_of is not None else request.issues
     issues = [env.remote.issue(number) for number in wanted]
     for issue in issues:
         if issue.is_pr or issue.state != "open":
@@ -305,7 +308,8 @@ def create_task(request: CreateRequest, env: CreateEnv) -> int:
         out("refused: a fix task is --fix-of <issue>, and --fix-of makes a fix task")
         return 1
     if request.fix_of is not None:
-        return _fix_task(request, env, user, issues[0], held.get(request.fix_of))
+        under = next((i for i in issues if i.number == request.fix_of), None) or env.remote.issue(request.fix_of)
+        return _fix_task(request, env, user, under, held.get(request.fix_of), issues)
     if len(issues) > rules.limits.issues_per_task:
         out(f"refused: a task holds at most {rules.limits.issues_per_task} issues, not {len(issues)}: split it")
         return 1
@@ -406,8 +410,12 @@ def _unclaim_hint(env: CreateEnv, numbers: list[int]) -> None:
         env.out(f"claimed: {listed} (`coney-tools claim unclaim {back}` gives them back)")
 
 
-def _fix_task(request: CreateRequest, env: CreateEnv, user: str, issue: IssueView, card: Card | None) -> int:
-    """A fix task reuses the claim the claimant holds: no `/claim`, no limit, `/progress fix`."""
+def _fix_task(
+    request: CreateRequest, env: CreateEnv, user: str, issue: IssueView, card: Card | None, own: list[IssueView]
+) -> int:
+    """A fix task reuses the claim the claimant holds on `issue`: no `/claim`, no limit, `/progress fix`. Its file is
+    written from `own`, the issues it fixes (the claimed issue itself when none was given); its front block names the
+    claimed issue, whose claim `task start` and `pr open` check."""
     out = env.out
     if card is None or card.claimant != user:
         out(f"refused: a fix task needs your own held claim on #{issue.number}")
@@ -418,16 +426,21 @@ def _fix_task(request: CreateRequest, env: CreateEnv, user: str, issue: IssueVie
             "(a fix task works in the unit of the task that holds the claim)"
         )
         return 1
-    task_id = _unique_dir(env.scratch, request.name or f"{issue.number}-fix")
+    task_id = _unique_dir(env.scratch, request.name or f"{own[0].number}-fix")
     if not TASK_ID.match(task_id):
         out(f"refused: '{task_id}' is not a task id (lower case letters, digits and hyphens, 60 at most)")
         return 1
-    leads = env.leads(list(request.terms), f"{issue.title}\n{issue.body}")
+    leads = env.leads(list(request.terms), "\n".join(f"{item.title}\n{item.body}" for item in own))
     scope = request.scope or card.scope
     fix_request = CreateRequest((issue.number,), request.terms, scope, "fix", task_id, request.fix_of)
     task = build_task_file(
-        fix_request, task_id, "fix", user, card.claimed_at, [issue], leads, [], env.conventions, parent=card.task
+        fix_request, task_id, "fix", user, card.claimed_at, own, leads, [], env.conventions, parent=card.task
     )
+    if [item.number for item in own] != [issue.number]:
+        # The claim the fix works under, which `task start` and `pr open` check, is the claimed issue's.
+        claim_line = f"- #{issue.number}: the claim this fix works under (task `{card.task}`)"
+        sections = {**task.sections, "Issues": task.sections["Issues"] + "\n" + claim_line}
+        task = replace(task, issues=(issue.number,), sections=sections)
     if request.dry_run:
         out(f"dry run: would write {env.scratch / task_id / env.conventions.tasks.file}\n")
         out(render_task_file(task))

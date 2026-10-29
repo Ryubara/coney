@@ -380,7 +380,8 @@ mentions the claimant (its title), and so does the 48-hour warning.
 4. While an open `P-critical` issue that can be claimed (ready, unassigned) has no claim, only a `P-critical` issue can
    be claimed; one that is blocked or already held does not stop anyone.
 5. Every issue in its "Blocked by" section is done: closed as completed by a merged pull request (a listed pull
-   request must be merged). Work is never stacked on an unmerged task.
+   request must be merged). Work is never stacked on an unmerged task. A line there that starts with "Blocks" (`Blocks
+   the release of #1102`) says what waits for this issue, so its references are not blockers.
 6. The claimant holds fewer open claims than the limit (3 for a maintainer, 2 for a contributor), and a `task:` id
    holds at most 3 issues. Issues that share a `task:` id count as one claim, so the id is no way round the limit; a
    fix task reuses its claim. A maintainer is whoever the repository gives write permission or more (asked of GitHub by
@@ -552,7 +553,10 @@ held:
 `--resume` skips posting when a held claim of yours is already there (after a timeout, the claim may still have landed);
 the task id is the one on the card, and a `--name` that differs is refused. A **fix task** is `--fix-of <issue>`: it
 reuses the claim you hold (no `/claim`, no limit) and posts `/progress fix`; its task file names the task of that claim
-as `parent`, because the fix works in that task's unit ([Starting a task](#starting)). The kinds are `feature`, `fix`, `docs`,
+as `parent`, because the fix works in that task's unit ([Starting a task](#starting)). Issues listed beside the option
+(`task create 1150 --fix-of 1140`) are the fix's own, such as the issue of a failed check: the Goal, Done and Issues
+sections are written from them and the id is `1150-fix`, while the front block's `issues` stays `[1140]`, the claim
+that `task start` and `pr open` check. The kinds are `feature`, `fix`, `docs`,
 `tooling` and `ci-fix` (`tasks.kinds`); `ci-fix` repairs main or a nightly run through its `P-critical` issue and is an
 ordinary claim.
 

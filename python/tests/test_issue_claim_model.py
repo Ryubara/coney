@@ -222,3 +222,10 @@ def test_replies_are_found_by_their_first_line() -> None:
 def test_blocked_by_numbers_are_the_references_once_each() -> None:
     text = "#317 (a pull request, open) and the spec (#335); see also #317 and a/b#9 and &#39;"
     assert model.blocked_by_numbers(text) == [317, 335]
+
+
+def test_a_line_that_says_what_the_issue_blocks_names_no_blocker() -> None:
+    # "Blocks the release of #N" under Blocked by says what waits for this issue, not what this issue waits for.
+    text = "Blocks the release of #1102.\n- blocks #12 too\n#7 (the spec)"
+    assert model.blocked_by_numbers(text) == [7]
+    assert model.blocked_by_numbers("Blocks the release of #1102") == []

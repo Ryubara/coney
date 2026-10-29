@@ -531,6 +531,22 @@ def test_record_saves_a_fail_verdict_as_a_fail_stamp(rig: Rig) -> None:
     assert stamp.step == "reviewed" and stamp.result == "fail" and stamp.detail["blockers"] == 1
 
 
+def test_a_failed_full_review_says_the_next_review_is_a_full_one(rig: Rig, capsys: pytest.CaptureFixture[str]) -> None:
+    # Even when every blocker is about the description: `--text` needs a passing full review of the same change.
+    verdict = rig.write_verdict()
+    verdict["verdict"] = "fail"
+    verdict["findings"] = [{"severity": "important", "where": "PR.md:3", "text": "names no issue it affects"}]
+    rig.verdict_path().write_text(json.dumps(verdict), encoding="utf-8")
+    assert task_review.record(rig.env(), "full") == 1
+    out = capsys.readouterr().out
+    assert f"next: the engineer fixes the findings; then a full `task review {rig.unit.task} --run`" in out
+    assert "--text" in out and "passing full review" in out
+    # A passing review gives no such advice.
+    rig.write_verdict()
+    assert task_review.record(rig.env(), "full") == 0
+    assert "next:" not in capsys.readouterr().out
+
+
 def test_a_review_of_a_changed_branch_is_stale_and_writes_nothing(rig: Rig, capsys: pytest.CaptureFixture[str]) -> None:
     rig.write_verdict()
     (rig.root / "docs/research/ai/brain.md").write_text(PAGE + "\nMore.\n", encoding="utf-8")

@@ -54,7 +54,12 @@ def add_task_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser])
     create.add_argument("--scope", help="the planned folders, files and addresses, comma separated")
     create.add_argument("--kind", help="the task kind (default: from the labels)")
     create.add_argument("--name", help="the task id (default: <first issue>-<words of its title>)")
-    create.add_argument("--fix-of", type=int, metavar="ISSUE", help="a fix task: reuse your claim on this issue")
+    create.add_argument(
+        "--fix-of",
+        type=int,
+        metavar="ISSUE",
+        help="a fix task: reuse your claim on this issue (issues given beside it are the fix's own)",
+    )
     create.add_argument("--resume", action="store_true", help="continue a claim of yours that landed late")
     create.add_argument("--dry-run", action="store_true", help="check and print; post and write nothing")
     start = commands.add_parser(

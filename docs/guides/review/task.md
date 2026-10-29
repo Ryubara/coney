@@ -43,7 +43,7 @@ uv run --project python coney-tools task review [TASK] [--worktree DIR] [--base 
 | `--worktree DIR` | the worktree the unit record names, else the current checkout | The unit's worktree: the branch under review, which must be clean ([Which worktree](#worktree)) |
 | `--base REF` | `origin/<default branch>` | What the change is measured from (the merge base of `REF` and the tip) |
 | `--pr-file FILE` | `<scratch>/<task>/PR.md` | The engineer's description file: the title on line 1, a `## Summary`, the pictures |
-| `--text` | off | Review the description alone. Needs a passing full review of the same change and pairs; the packet's `kinds` is `text` |
+| `--text` | off | Review the description alone. Needs a passing full review of the same change and pairs; the packet's `kinds` is `text`. So it never follows a failed full review, even one that failed only on the description: `--record` of a failed review prints a `next:` line naming the full `task review` to run |
 | `--record` | off | Step 3: record the verdict in the review folder as a `reviewed` stamp |
 | `--run` | off | All three steps with a headless reviewer; not together with `--record` |
 | `--claude CMD` | `claude` | The Claude Code executable, for `--run` |

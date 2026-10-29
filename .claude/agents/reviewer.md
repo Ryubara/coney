@@ -58,6 +58,8 @@ what it shows, and every finding with a severity of the index page and a `file:l
 person: the verdict on the first line, the findings in the finding format ordered by severity, which checklists you
 applied and which items did not apply. Then run `uv run --project python coney-tools task review <task> --record` and
 make your final message its result and the blockers, in a few lines. A `--text` task reviews the description alone.
+After a `fail`, never advise a `--text` rerun, even when every finding is about the description: a text review needs
+a passing full review of the same change, so the next review is a full one (the `next:` line of `--record` says so).
 
 ## Release checks that predate `task review`
 
