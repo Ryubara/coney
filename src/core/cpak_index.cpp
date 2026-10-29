@@ -61,9 +61,9 @@ std::expected<Header, Error> readHeader(std::span<const std::byte> front) {
     if (!std::ranges::equal(front.first(4), kMagic)) {
         return fail(ErrorCode::Invalid, "cpak: not a Coney Pack (no CPAK magic)");
     }
-    io::Reader reader(front.first(kHeaderSize));
-    // The header holds 64 bytes, which the size check above guarantees, so none of these reads can fail.
-    static_cast<void>(reader.seek(4));
+    // Start after the 4 magic bytes. The header holds 64 bytes, which the size check above guarantees, so none of the
+    // reads below can fail.
+    io::Reader reader(front.subspan(4, kHeaderSize - 4));
     Header header;
     header.version = reader.readU16Le().value();
     header.flags = reader.readU16Le().value();
