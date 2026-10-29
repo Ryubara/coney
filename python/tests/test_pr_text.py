@@ -632,11 +632,11 @@ def test_the_sections_pr_text_writes_are_the_ones_the_conventions_name(tmp_path:
 
 def test_the_generated_sections_follow_a_renamed_section(tmp_path: Path) -> None:
     built = make(tmp_path)
-    sections = ["Overview" if name == "Summary" else name for name in built.conventions.pull_requests.sections]
+    sections = ["Authorship" if name == "AI use" else name for name in built.conventions.pull_requests.sections]
     conventions = parse_conventions(
-        changed(("pull_requests.sections", sections), ("pull_requests.closing.section", "Overview"))
+        changed(("pull_requests.sections", sections), ("pull_requests.ai_use.section", "Authorship"))
     )
-    assert next(name for name, _ in pr_text.generated_sections(conventions)) == "Overview"
+    assert [name for name, _ in pr_text.generated_sections(conventions)][-1] == "Authorship"
 
 
 def test_the_generated_files_are_named_once() -> None:
