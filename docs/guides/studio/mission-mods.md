@@ -8,7 +8,8 @@ compiler, the translator from Lua 4.0 to Lua 5.4 with an evidence-based verdict 
 Studio's flow and the order of the work. It ends with the build issues it proposes, in order. The parent issue is
 [#1054](issue:1054); this page is [#1074](issue:1074).
 
-**Status: design.** Nothing on this page is built. It is a design in the sense of [Page
+**Status: design.** Only the first [build issue](#build-issues), the frozen decompile form, is built; the rest of this
+page is not. It is a design in the sense of [Page
 kinds](../writing-docs.md#page-kinds): what is built moves into a guide. It builds on [Coney Studio: the Lua
 SDK](lua-sdk.md) (the two runtimes, the [compiler](lua-sdk.md#compiler)), on [Lua 4.0
 bytecode](../../research/formats/lua-bytecode.md) (the decompiler) and on the script security and mods design of
@@ -166,10 +167,12 @@ result = "sha256:7c03..."           # the text after the patch: checked after ap
 The base text must come out the same on the author's machine and on every player's, years apart. So the decompiler's
 output is frozen in numbered forms:
 
-- **Form 1 is today's output.** `coney-tools lua decompile --all` writes the SHA-256 of every script's decompile, and
-  the list of 467 hashes (36 more from an Xbox disc) is committed: hashes of game text are allowed, the text is not
-  ([LEGAL.md](repo:LEGAL.md#no-game-data)). The C++ decompiler must give the same hash for every script, checked by a
-  disc test, and the Python decompiler's tests fail when its output for the disc changes.
+- **Form 1 is today's output, and it is frozen** (built: [The frozen form](../coney-tools-fidelity.md#lua-form)).
+  `coney-tools lua decompile --all` writes the SHA-256 of every script's decompile, and the list of 467 hashes (36 more
+  from an Xbox disc, later) is committed in `research/lua-decompile-hashes.toml`: hashes of game text are allowed, the
+  text is not ([LEGAL.md](repo:LEGAL.md#no-game-data)). The C++ decompiler must give the same hash for every script,
+  checked by a disc test. The Python decompiler's check runs where the disc is (CI has none), so a change to its output
+  is caught by the author's `lua decompile --all`, which fails naming the scripts.
 - **A change to the output is a new form.** A decompiler fix that changes the text of any disc script makes form 2;
   Coney keeps producing every form a released patch names. With 0 unread functions and a full round trip today, there is
   little reason to change the output once patches ship.
@@ -558,11 +561,11 @@ When this design is accepted:
 In order. Issues 1 to 6 are 4.0 patching; issue 7 is the probe; issues 8 to 11 follow only if the maintainer chooses
 5.4.
 
-1. **tools: Add the frozen decompile form and its hash list.** `coney-tools lua decompile --all` writes the SHA-256 of
-   every script's decompile beside the fingerprints and checks it against a committed list (`research/`, hashes only:
-   467 from the PS2 disc, the 36 Xbox-only ones added from an Xbox disc); a mismatch fails with the names of the scripts
-   whose text changed. Tests: a fixture chunk's hash is checked; a changed renderer fails the check; the list holds no
-   text.
+1. **tools: Add the frozen decompile form and its hash list** ([#1115](issue:1115), built). `coney-tools lua decompile
+   --all` writes the SHA-256 of every script's decompile beside the fingerprints and checks it against a committed list
+   (`research/`, hashes only: 467 from the PS2 disc, the 36 Xbox-only ones added from an Xbox disc); a mismatch fails
+   with the names of the scripts whose text changed. Tests: a fixture chunk's hash is checked; a changed renderer fails
+   the check; the list holds no text.
 2. **core: Add the Lua 4.0 decompiler in C++.** A port of the `lua4` package's logic into the engine (no Python at run
    time), giving byte-identical output in form 1. Tests: the committed synthetic fixtures (`python/tests/lua4/fixtures/`)
    decompile to their expected files; a disc test decompiles every chunk and compares each hash with the list, printing

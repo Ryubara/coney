@@ -53,6 +53,14 @@ def test_all_chunks_with_the_options(calls: list[tuple[str, tuple[Any, ...]]]) -
     assert third[1] is None and third[2] == lua_decompile.Options(chunks=Path("c"))
 
 
+def test_the_frozen_form_options(calls: list[tuple[str, tuple[Any, ...]]]) -> None:
+    assert cli.main(["lua", "decompile", "--all", "--hashes", "h.toml", "--update-hashes"]) == 0
+    assert cli.main(["lua", "decompile", "--all", "--new-form"]) == 0
+    (_, first), (_, second) = calls
+    assert first[2] == lua_decompile.Options(hashes=Path("h.toml"), update_hashes=True)
+    assert second[2] == lua_decompile.Options(new_form=True)
+
+
 @pytest.mark.parametrize(
     "argv",
     [
@@ -62,6 +70,8 @@ def test_all_chunks_with_the_options(calls: list[tuple[str, tuple[Any, ...]]]) -
         ["lua", "decompile", "--all", "a", "b"],
         ["lua", "decompile", "--chunks", "c", "H:/", "name", "out"],
         ["lua", "decompile", "name", "out", "--out", "o"],
+        ["lua", "decompile", "name", "out", "--update-hashes"],
+        ["lua", "decompile", "name", "out", "--hashes", "h.toml"],
     ],
 )
 def test_wrong_arguments_exit_2_with_one_line(

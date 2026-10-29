@@ -1,0 +1,2340 @@
+# The SHA-256 of every Lua script's decompile in the frozen form below: hashes and names only, never text
+# (LEGAL.md#no-game-data). Written by `coney-tools lua decompile --all --update-hashes` and checked by
+# `coney-tools lua decompile --all`; how the form is frozen and changed: docs/guides/coney-tools-fidelity.md#lua-form.
+# chunk = the SHA-256 of the script's bytes in the WAD; text = the SHA-256 of its decompile, without the marker line.
+form = 1
+
+[[script]]
+name = "00f4b07a"
+chunk = "e743fbd7b747ac66666634578e2ad9bfe3d6b448457144d09c1af4022521150a"
+text = "213b0de4a191072d9e7a89e15c10ac5ef0c3c8469f0cb26bf95f8b74fe86c459"
+
+[[script]]
+name = "0348ecaf"
+chunk = "1bba307757fa0015c55a8c382025a1cecfe26f9806e15bd70637099bc731b464"
+text = "0a28a524914719949c74ba6d1599a5ca51b02273ba147bb6223525498181aa8b"
+
+[[script]]
+name = "038a6f2f"
+chunk = "e985f581a7068e16a67c0f1302f47ca3d8cb10701747d4d1988f1434c45a261b"
+text = "75a93cadf96ccb93e6eb78dfdb9a5ba2f1f094401496937b01d5fac35c071320"
+
+[[script]]
+name = "0422a46f"
+chunk = "d775470ba922f5f79642ab7539e164793a3760fff5e8f939b2343976e7947076"
+text = "31b58c77e7c9f1a13825488d45cb7422a0d22b55d450d695296b9f417aa98d54"
+
+[[script]]
+name = "06e8b041"
+chunk = "89a2f20c68d13624c7926321d21a510a27415df9f1791de0f2a1ed5f7e90ad05"
+text = "d15692890da55bbc8e822d654713b7763e524471579a8861b6b3a117a252ea0f"
+
+[[script]]
+name = "079ef8ba"
+chunk = "2b2eab22fb693c47c9e431eb190a6acfeebd633e9a58aa8c25ef1b639e6ee9f0"
+text = "7df6b024d78ae5f661ba40aa2012d650b3f42a52fced70cb3c5b49482371adc6"
+
+[[script]]
+name = "098bbd46"
+chunk = "10229e4d1eb8c6420fcab9eb2d0695a9118799ea5b14ab7614be20bcc6d5da28"
+text = "18bf971d95dafff32ef600bce4a9e8852d36fc320b21018d508b15f09bd4f4ab"
+
+[[script]]
+name = "0a8e9acb"
+chunk = "67d560fbd289db92bdfd59eb7193b784d588393dd19aa0101c9ffbe2a9c3c061"
+text = "b3c5cbebcf98cb2e25d01b2997b6ec54ad71f7dfc5362226bd5dc286509d31d1"
+
+[[script]]
+name = "0aef2756"
+chunk = "372024b686b9fe2e66a19332e5420878e681095439619e1eed9e0dbc509f3821"
+text = "052d69827864d65e84be9c7c575c111e824320ae2457fd1cb8846d3e2e921387"
+
+[[script]]
+name = "0df62361"
+chunk = "6efedfb6bec33ad97aa7ae997b930c12134fad219abf3b7619aeb42d3038eff9"
+text = "dbe5c9f22aaf602702c13cbe676695fea0e2992b0a869e7265742859b73f17ff"
+
+[[script]]
+name = "0e4a7fb4"
+chunk = "fd8d1219c19a4d19dcbc39cbde5dc1834d8f57484a66269c49a005a3701793cd"
+text = "3b5d731d515ac88141bab9db7c51bf9907465de9cf4c7d98d263905d4196313e"
+
+[[script]]
+name = "10f313d9"
+chunk = "124e84fe53740533bdd9364af44657da17f922bd31cdce3dcae6f687de875f3e"
+text = "9bb4ba6e573bc74cbc4540f7820c43e9139883815f5c425d8e1dd068dd119198"
+
+[[script]]
+name = "11acdb9d"
+chunk = "a37bd9b7d0e41335411b890c78fe7160fa4a26e296bcde7bf1f091d5f9f52ddf"
+text = "4cc89a362954b718383b1b68286d4cad533033087b393f156bb571f92462894a"
+
+[[script]]
+name = "134f4f0c"
+chunk = "16d41bcb182566d848ed06b867e4835ace7463a95520e2954a89b3beaa758a52"
+text = "0be8d084174c484f55c072cb088f90e401936953772cfe420902fb2d38842e06"
+
+[[script]]
+name = "2805c267"
+chunk = "50ce3b08599855d9b96fe5d15b71bad088c90437bece3aa3e5081d9c68c2352f"
+text = "20ce7710b6b09cace88da2e2cd1f19c9be65a8239936a35c70d3a1e07b241b9c"
+
+[[script]]
+name = "2d8392f9"
+chunk = "ac3c38118c7dd015c54bc676dcc11afbec8e60bf46a6a8f797a85eaabde3b903"
+text = "d882ef2fa978da2f441125b1e8e68eb5cc35b50591dd27185b5144784fcfc8cd"
+
+[[script]]
+name = "2d933a69"
+chunk = "ee04c3d0dade9d076384bea500fe76aab4432ee39375f38ea34afceaff551ef4"
+text = "64e880132970fb4ac38cabc5e68e2f19a1d1aef777ef26b3c4db2c32df792989"
+
+[[script]]
+name = "2e2f66bc"
+chunk = "43f4a369a2ca3f0e620f64cd87469150b816b3d7a39a1fce0399ca314bbd61d6"
+text = "010af84ed7c5b11a448dd452dd5c071aedafea5e4046733d351507d4e4b20c82"
+
+[[script]]
+name = "30960ad1"
+chunk = "0c43bd7754229f5ceaff4104e3cba06d90fee3e3aefe89c2e28795fa40b11040"
+text = "6b6e185288924165926aab0a5e4cc7f9a6e8132d595e12b122520ef7e201cfee"
+
+[[script]]
+name = "332a5604"
+chunk = "0a22f5c519e0f46a89ccd63ab05b01e9cda18aafcb3ea05f8b4dd61a0eb5085a"
+text = "2ebdacb04721faaeed415a24c3807532804bab49b7b9300eb861675b686e1136"
+
+[[script]]
+name = "36763710"
+chunk = "3e3cd24a27e2d9a1d2cc26798bc4460a5008f55ff1bf1bb70b4ec787022287fd"
+text = "3835980f98d3ba141e53be1190d68cda0dd91fc2e54d27d34856aca11cb5a754"
+
+[[script]]
+name = "37bfa135"
+chunk = "5732517726939f1947e2591294851261a57062d48d4ca8c2109754af0ad06bb7"
+text = "33a496dabff382ea43bfe1ba9be85cd0af9d7a4cbf565182d411141f8b3c738c"
+
+[[script]]
+name = "37eeb37b"
+chunk = "d2dddcbbab9f7d9c3b441d69202f5c092081632b34d7b85dfe31d3e85264f4e3"
+text = "499873e7698ee624e781ba68dce9900f4501bf5c583e7593302443474466210b"
+
+[[script]]
+name = "39428ddf"
+chunk = "e86ef0b124fca06422df6564ce783c6dc68d86122a8f16c2d01d3e4c148557a8"
+text = "9e8a47bbe2de6ae3813cba6d5e4ec28dc378a9788df26a31dd8bd69e6c43467e"
+
+[[script]]
+name = "3afed10a"
+chunk = "bb0628f6b90b67461a6521d3472a103093138db9aa9590bd98f753f8cec81c9d"
+text = "ff0336c8650776bf5aa35d43ccbb1faeb93a73d53cca76fd292a668054d495cf"
+
+[[script]]
+name = "3b2574df"
+chunk = "d66eb6f30d802cf889d23296b53050215ebbb04c65c87ed493351172463f5568"
+text = "9b128bd5210ba0cab55d5f231566debd4422c3b543f0b3ab66b73f1b3a7a1057"
+
+[[script]]
+name = "3b8899f1"
+chunk = "3498e49095cd763afde0724d0e4558f1e9ca3f3576177cce05f8c3b4e7f559c7"
+text = "6e4b650c6af782c46ceba836df01f6f29a48b755d3629dcea77e12c4a8723224"
+
+[[script]]
+name = "3d9499ca"
+chunk = "9bb281b14d041a868f969e43779e7d21e390ac09e0acbc080eda4660adc8abfe"
+text = "2b994f8d8938e36691a1e4291d0d85dbe01224607dc9882ad6d229ef11d3954e"
+
+[[script]]
+name = "3e28c51f"
+chunk = "78310c02f651e87a2520bb10e27d965ecb81432661f9f0652d21e893c41a8dbb"
+text = "2e2d59f99201e9ae2b3c9ba1c0e33b601b668fc1e96a5f63eb33064ebafe8a6f"
+
+[[script]]
+name = "3ecd5271"
+chunk = "d6a51aa44dfa4f6fca08e5de2ae2686a716c8b55dfa7b11871ebf730dffaf50a"
+text = "c975534e76e1df9850e572aa82526a6d84faab325aa67be883b4e20ada918d0b"
+
+[[script]]
+name = "403e826a"
+chunk = "71e09bb32b2140ffe6f236474420e22253a5ea16363a86f364ee3572c896af1e"
+text = "2481efae67a633d167737cfedf4fa2eb0d0321c517f55f372144e836356c75af"
+
+[[script]]
+name = "4148ca91"
+chunk = "b4965ccc86b282c6dd78868027d95b41dbbf1c11fb816e5f51188d191fabf08c"
+text = "4384707116d3c12388e863dc4ab4ab433297207a462ce11826756c7a5441258e"
+
+[[script]]
+name = "4382debf"
+chunk = "a4eeb87e5a3b8c0d3bc076be4375c3533c4e4270d0d38d71baa05898c6cc0a17"
+text = "8dfc6d0f8faeacc3516e7e94fad4f5b9b7f98442f6a8e8cd830b50be8825dc20"
+
+[[script]]
+name = "44e8967f"
+chunk = "dabd28a73872b955c313ad7fb97c19a4a5a037523acf9cf4d52ea8f6fcef7b83"
+text = "97c258d7fee23335b6377f011afb085d714775b9deadb6730dca746283bb32c5"
+
+[[script]]
+name = "47463bc0"
+chunk = "fd3070a459186864e0324e06384750f4440d3ef9a816c90051f995d470d61940"
+text = "1b6e4503a21b119f0e2605c6f634ef33b682f9d57d6cf37fcac0d523d95ae5ca"
+
+[[script]]
+name = "4754caaa"
+chunk = "d492f084cbd2e9ab155cfc6c54c33ae313850d48bc97ddde7ec281ca10fbd521"
+text = "d44613d532baf4c6ccbc926cb76689c7ab17af625f9aaf269b1b4fcd89e2e070"
+
+[[script]]
+name = "49ea0564"
+chunk = "217f4f1f31f579c6569441fc6a4e3a02bbb41d6cd46eb81447586e9ea0dc7cc3"
+text = "286c5e422f9c0fb3b5816be65375441953ecdb2f4de89c977a7b5500bbc01e2f"
+
+[[script]]
+name = "4a5659b1"
+chunk = "1adaf1cc6ed98382a7cda02c2a04d966fc6e6b33122cf3cbaf8664c64c95af2f"
+text = "938c67cbec2d3c5e29f8a89f5891d1eebe390c948d5a0ae6db2ff1f7e09584ba"
+
+[[script]]
+name = "54ef35dc"
+chunk = "53bec52792fec1a010a3ba0d7443dbb277efc2b7e37e1c05fb8afedab8926bb6"
+text = "4a9554b47e0329cd5dd50541eb99463d909a71322b6956b40fca9f39090e597e"
+
+[[script]]
+name = "57536909"
+chunk = "8c416039c56ef9b66e811cc70b49688993bb58b6255eadc499ffdb27c55fe9d6"
+text = "2d47e337c2300b77e50abe69d9d452e4ae9fc320dd09177c7f19a354e758cb43"
+
+[[script]]
+name = "5a430b78"
+chunk = "eb6aed908d20bdd6c87cd67f48427014ecb2f61d74b0d67e6bac6d223f869f8c"
+text = "ec0de4548fc2905cb97fe1b7c019abbf6918de560954140259cc28c0eb56ae32"
+
+[[script]]
+name = "5e7595f8"
+chunk = "81e64a754eeb045b2b51d8f8634a14c760a01c713d32ce830a5a2b52b1505d59"
+text = "6dc54a568236f17949852ced7006f50a123d7ee3cd7530742acd6d6c97aad098"
+
+[[script]]
+name = "5e87ee07"
+chunk = "aa478111b1c95abd788f6e06952dc440a08dbf638900dc3ee8e4be5aa4083c38"
+text = "3729c456094b600c426e85903393826f91c1ad74f50edc4758c259370062068e"
+
+[[script]]
+name = "63e7c7b7"
+chunk = "ca683deb376748a229ac045f855d93a3775013643885ac4c475130a7c3968ede"
+text = "6b368ab5f6823deef2a128657457f7c9e22c9ac61509c26c553e65f2fdaf4a06"
+
+[[script]]
+name = "670ba2b0"
+chunk = "02ee7271171d60c18c81bf4c741b44d111da91a69d33e9a5d8ed4965370f28e1"
+text = "60f8c4cd84f947617d5e741e4e3e6074637235dfc2f210f13f0bdbc9777c5b74"
+
+[[script]]
+name = "672322c8"
+chunk = "a6265963e6399a22746270fc6bc2cadf84f6a340b8557a78cfd061d126576492"
+text = "c48e1ccaecce0a5719e3c9879d24cc522fee5ff07d87e7062b044d63016fefd1"
+
+[[script]]
+name = "698f1c6c"
+chunk = "7783bfb9b1ac1befaea0821684a72bcc2d5c8c94edba89865dcb9d71af08c80f"
+text = "97154474b2ba617dd6462986fec794a13b95ab7aad485f11df75108669cf4128"
+
+[[script]]
+name = "6a3340b9"
+chunk = "71323c8f7704ddb0890246180b6a6d7cdcac3257a2fec16568dcaf2d1aa4959e"
+text = "9a65022453e2a0eb4d482efabc06714c26ac6ddc4801183e82eea20abc65e1d8"
+
+[[script]]
+name = "6ecd70b0"
+chunk = "1ffbeb7e887689bb29362803021fa23ac0cb14236b1fbe386c3a4b75073b845a"
+text = "14c7c0693387079db612d182e0414901d62f99cc60ba257e4e396d85d2e68a6f"
+
+[[script]]
+name = "748a2cd4"
+chunk = "999afd4784527577a81d3533a177755068e7bfa5eae9eb55c79c8442274b5a60"
+text = "d7b4d49e29f6611a3e8d8f66b8d71dda49c977cc9df775b3b7e694be5b6bbe23"
+
+[[script]]
+name = "77367001"
+chunk = "5fdc9cb036a5f96c7b02b3450ecacd4b7834110498d44176ccd97bddd7d1960b"
+text = "c013c5a90c9b35fda9d5c6c4d9ff2cdb0b13623a82985344fb0ab26aba0aa05d"
+
+[[script]]
+name = "7988bfcf"
+chunk = "a96e023c368944ae90f2bf77dde396d3303e7bc6f3fef021d61bfe6da6b754af"
+text = "f49538c5412c31578737afe481eacfb047ebd5608058749738831c50208d3849"
+
+[[script]]
+name = "7a261270"
+chunk = "1df70474a80f8b3281f0c526978ade67f5c0ca3b97415488ece0c7f5ddb998b3"
+text = "85aa3d13988dc74b223a63e395af200041cceaa4ea037b2374f12728d61f02a4"
+
+[[script]]
+name = "7a34e31a"
+chunk = "b8dfff220293addc3901d0208a30f4058061c759939f2e0cf26f009473eab920"
+text = "6adaaacfede2cf3469d5d20dfcbc49056cc23aaada858617376f20f1b39d0f11"
+
+[[script]]
+name = "7c28e321"
+chunk = "cc196ad84695fff93eb2ae68f55e840eb024f8f899f816d9515e1252fbb2e909"
+text = "4fcacea90da8f1e3f459a84e37786e0600306a7a0366cb5b136b884ab064a63d"
+
+[[script]]
+name = "7d5eabda"
+chunk = "dbc3c741d65e2fbb25ed0adf933e0d621b3d95c7a5e4b5198255274681e04f7a"
+text = "84df41c7c702d1785afb39ef21f7c2058ba9b5244b8c7a2cd20d2c579a13e463"
+
+[[script]]
+name = "7ee2f70f"
+chunk = "e743fbd7b747ac66666634578e2ad9bfe3d6b448457144d09c1af4022521150a"
+text = "213b0de4a191072d9e7a89e15c10ac5ef0c3c8469f0cb26bf95f8b74fe86c459"
+
+[[script]]
+name = "810a8a14"
+chunk = "095b3e169fd347bb51dd0aeaa31709d82897632c0ea4aea106791c93a5992d8a"
+text = "758b1b90e1849e1ce205b32efb185202b4b33783ca291f5717b17b0b477e5cdc"
+
+[[script]]
+name = "82b6d6c1"
+chunk = "ce27711d9f92a7a44655f2cb92c834e6e3040690ad5cf698f9f3f67329bd8471"
+text = "a061dc6779cbb959733eb5acfa0e1fbc606857197ad309117d5a77c6d27be061"
+
+[[script]]
+name = "84b82790"
+chunk = "68a9f40c3f45967f68d2eed7cfa08c03f4d36714f1956d313997b227e8b9b65d"
+text = "7652c628132e01670a5acaac6c821e9d4939fe04fc8e9a8b0a9764bff49b2993"
+
+[[script]]
+name = "85afd2f6"
+chunk = "9f7aa790d3337258e851e4c3805c648e9044c4a6e81911349c86cbc189e8b968"
+text = "896d28de8ad1132b659f87a07443b045576321b8b14b7f5f80aeb3580f4b6a6c"
+
+[[script]]
+name = "8617e7c0"
+chunk = "82b799a11c0d85debbc5bf58d6cbf945c1f0f9d326a7f60bf96a4dad9e9acfbd"
+text = "e0e8325c96f81523164090abf42975cbfe641adabf16aeea9bc4de0eb7eb3f69"
+
+[[script]]
+name = "88de0d1a"
+chunk = "6d4512c12a0b1ca4eb735fa493664f32ce47fd6e7a7309a9c30890a8e4b496d2"
+text = "b0665812eb42c1a1d210f9758f03cc5d38530648a4319cdde33b888a9b7336c6"
+
+[[script]]
+name = "89a845e1"
+chunk = "8410f02f51e47653646cececc7ba8e5c87faca480af0470fe4e5f41455ef694c"
+text = "aa69c19177b5304e547ed97ae3770102dfe9a1ab16d586633226a76bff2f080f"
+
+[[script]]
+name = "8b6251cf"
+chunk = "aa50cb4982e28719768fb8b9111d56a060c11b126a1d83f63d21e38db87be45c"
+text = "60403dce4936048fa482e377f2e8d7d612bdc3a0bcd8612cb4bedc43025db819"
+
+[[script]]
+name = "8c08190f"
+chunk = "763154f75bb457e2037834926eda7e7e32a619a86dc5ce58df3ddba658bcd123"
+text = "7d3c9919e77227128b2825a38642945900a02d0f96cd28bee99c23025a3567c7"
+
+[[script]]
+name = "8c1ae865"
+chunk = "0249493838a3052c09add73d6ef3ba514c83181e92a79bf77c6949b90de9fc92"
+text = "dae99fc7641fbf743787fdcc8accb2ac55dedd8a431f81f0bbc70f1da4a845ff"
+
+[[script]]
+name = "911fd8dd"
+chunk = "578e5d604c5d51021b3df21f6a100cc2491f71f915e0efeb112a2e685e12f2ab"
+text = "e04dd0a1b23076a5b201f793b21241c6a23ed27d563afa9a962c9cf59dec4bf6"
+
+[[script]]
+name = "972fed2e"
+chunk = "a52dae40efa741d93677795d0eb80af0f8b84b8306cebfc4326620189d38ef8f"
+text = "81db5f62a210b0c0471fc5f3bc1ef7cf16bcbff2010a4fb619cd1697f20ec0ff"
+
+[[script]]
+name = "9c0fbaac"
+chunk = "60c0e479a0fc90f9fc14dd89f1678bc5bdf7a16dcdf557c61a542d190b330cd8"
+text = "f523edc218f3287aa75392b9c75997b83996642804d5a190a6b931905b7295b7"
+
+[[script]]
+name = "9fb3e679"
+chunk = "5a116a256f15fb59ea2d96ea86ddb120817f5f4e1b3849ce818f5c25b721f2cf"
+text = "28abb2d0d9be30a266e8dea57fe7a527908ca249b5ec092687242ba417d1077c"
+
+[[script]]
+name = "a16f931c"
+chunk = "dbabd914ecede4280ca983ab98fb4c5aaef698b7c3256eb9d4fa1063f3cf52ef"
+text = "3220ea61a7b98aea967ed85007caaadd01f04638fe430356c9cf89a6b609f01b"
+
+[[script]]
+name = "a1ab63b7"
+chunk = "c63e93688f5c8170702efa9631eecfbcc4d484c6603d0056e80b6a7175b772ab"
+text = "9772567ca9acfc6277f2517b61e25e40669839bd9531d45e4479c8980a865a4c"
+
+[[script]]
+name = "a2d3cfc9"
+chunk = "3fdf37d17627941da521a9feb8b2ee63fa5293072a263e15dd58775fc93242d3"
+text = "767ee4b80097b6b5037f6610c97864f331b77f4504a61b239ce2f9604ddda1ff"
+
+[[script]]
+name = "a3405796"
+chunk = "5e05ab9fe52a895113b53412412f96d260ccd0ae9fcf72da4d8dff60b7edaa8a"
+text = "6d51d50d6893026f3f27f1a6e7502e975a399a689d0386a48508d13bf5b617d7"
+
+[[script]]
+name = "ac7ff16d"
+chunk = "c98c17283ad4931571c18ad5bf9579c6d3ababc6534062bce5723d47761f93dd"
+text = "d7f1d977829fde65995df73647120a7491044513724985b9a2a46291e7f09b97"
+
+[[script]]
+name = "b16830bf"
+chunk = "bb4e80744d7f07a7022a59fbee371ee8b8df2ab1716a78fdd38f044f13829843"
+text = "ed106d2ba76d30b8533b21775f50441020733561fe7310a026632646dca3878f"
+
+[[script]]
+name = "b17ac1d5"
+chunk = "bff975b70bbd549cb9dd62ebe44b9a171f54a9dce3a74472473109cab1011770"
+text = "bf6267753c86b3d16e4fc5b20ae2cc7c3236818ea2a2642d5e385459258b6fb6"
+
+[[script]]
+name = "b5be24aa"
+chunk = "1c68e80a44f12f5a3d36d0836c704ff9d04ce97922a54c5328a721501af6523c"
+text = "6a78d2defb9e2ca5027cf9435ac4782e35ffc54bc463587e7ad767964f9d5839"
+
+[[script]]
+name = "b602787f"
+chunk = "9d8f944d4333781da7291c678c81b1e590a7a34cacb22cd59270abff6a623902"
+text = "d04d753f1de7526709a51a5f8457a9643ebaa46971ec3794b2435d76cfb107a0"
+
+[[script]]
+name = "b8cffb46"
+chunk = "d4c6475f62f6d1ad3d1d591d14cb24c2d6ff0174e7f045b01b6f1e93607f7de3"
+text = "8bf8a9bda322f3ef2021dccf886646ef1fd4a9ff2ebf9b45915719efd8bfce01"
+
+[[script]]
+name = "b9d80e20"
+chunk = "bba29d1026a70e8c76aef5d938867dce145a97b60ad42a9d5cb77d7d83c1c760"
+text = "2e29ffec842f6bca0bb45dfdca2817bc10364e5a8ece6400956ed4c4359c8654"
+
+[[script]]
+name = "ba06b4cc"
+chunk = "b1b6bc4021f07daeea16f15a28717f552c342d3d81e1489e1277d4dd4a21d82c"
+text = "3176e26b96418b804e33f33a7f842fb1625c5d2fbeae961bd188996f4e15e608"
+
+[[script]]
+name = "bc6aa3a4"
+chunk = "496ab423da89c5a3ba92cd2de8feef9239864070b5247855b44ba22001b6df3a"
+text = "d000eb8f184dbbd0e843df7ea339921a7e82d599b4f1a383786362594d2d0ab3"
+
+[[script]]
+name = "bfabef45"
+chunk = "2f994b51ce7199258163b7e74d7fbaceb24ae35fb22f85c9f1c3fc57bffe955c"
+text = "e3d1a3e60525470859556f1a5c48ba6ec1a48c29452ae8a82d22b7aa8ea87790"
+
+[[script]]
+name = "bfd6ff71"
+chunk = "d08b6dd1457dc3911373a4ffd0e851873a2e5ed19bd7afc6b75482088c89b6e8"
+text = "0d3843eafa409487dfb5dd2ed8c5bd2d267fc076bd7f6249c6d4e4dcb097c1bf"
+
+[[script]]
+name = "brawl.lua"
+chunk = "e4a239a0204f8f9a6d9a14c347949713563192e27ca79d9d034f0c40843fc4b4"
+text = "0a7ed9d8803ea6b137af87a453b943e5933661d396c40f201310cd7f41419e88"
+
+[[script]]
+name = "c1d2496e"
+chunk = "5129d60ede67b7ed14e14c6a006fe24d93771b542f4b6009b56597b7fc211cc3"
+text = "4b504046d64512398092ec43cda262c5263ad6b1c2f256224c55852ea4a84544"
+
+[[script]]
+name = "c516ac11"
+chunk = "e7ba76a0d69c582b65aa964753d1698be77821f82d867f74cdcb914ee6bc41f8"
+text = "9de19822838994df97615d927192bc80b7a36bf6e69bcda8f09348a7cc8738c0"
+
+[[script]]
+name = "c6aaf0c4"
+chunk = "d039b508ab49ea44a2279a83308da0fac3dbf285187a251693d2429f9ba16f80"
+text = "fecfe1665ab3a817e7921e70de4d9c4c25086b59653c3c79b52feacf8c768ba8"
+
+[[script]]
+name = "c6b801ae"
+chunk = "0203b415ffe6bdd9e5efcf54993828e00ec85263569de841d74e8411e56c355e"
+text = "185581cd98dc5630efe3d23c188e81fccf344447ff3f0585abe09368e04482cc"
+
+[[script]]
+name = "caps.lua"
+chunk = "73f0b5410a7387f881ca1615d493bcb866898cedec7e0deace50f7e100d5d9bf"
+text = "257229d2e04b3faac808cd65d53832d15e9f4081765348c5c0bd7d2da78e83ee"
+
+[[script]]
+name = "car.lua"
+chunk = "035c3c1ee8acbc96079dd107f85790962f03536832b09d8579afaf7bd148514c"
+text = "b93eea2b52fafa9a6e8980d45aade37ded1de7d0f7d74e948b50c3cb82258cc9"
+
+[[script]]
+name = "cba863df"
+chunk = "e1e13246bc621d81cf7b0278b231e82c8a57a9e455adb08e464946a4f7d27ff0"
+text = "22ab5895af8c144070e86f7651ebeb6b68de82f2ecae5ed44e53537c853097ad"
+
+[[script]]
+name = "ccc22b1f"
+chunk = "375adb353b072b16462ad7bb2abfe75f9a6a638e485dfd2c9c8c63d89f9428f5"
+text = "eed19ca80e94f8ac9ad91b5e1cf44c0b1057b956df6929be6fa9ea6a5ecd3b0d"
+
+[[script]]
+name = "ce083f31"
+chunk = "b0b05742c8d0f4a8865b8bb83ccb9e19484c3556015fe285a1e8c8aebf79c6dd"
+text = "226a2838f020a9d557fbc245bb1f20ded7f62f9eb68e40c0b10235ea5234fb74"
+
+[[script]]
+name = "cf7e77ca"
+chunk = "2dbe96495f82727de801c4c0346b8a282ef349596500a3d7ebc7934924d09165"
+text = "3fcaa5e349e8c6c17a55ec4e8f1752739e6ffdbe504881f8ce13ccbec79a6c6c"
+
+[[script]]
+name = "charnames.lua"
+chunk = "e0e9d5042d13aed8673414df1fe2825f21db4999799de64c55fc7c6321428e6a"
+text = "2f4bead33b79a9cc7f70bce01eeed28d69225126e36aee3bc7f0248940bbfe22"
+
+[[script]]
+name = "config_easy.lua"
+chunk = "8f4e4ffe0fea95acc8b7cebe87450a3afd0b4b87e62019087c297c94041f2eb7"
+text = "c90a19d7e9d90e973e43f02ff2657c73fd6d67315e2eb1d8ca282e711cb91335"
+
+[[script]]
+name = "config_fury.lua"
+chunk = "0baf14d2dba25abbbb6138ebeb345739f98bf30c5120624efcb895b6a3a0f9bd"
+text = "01caaa92331acb52b009114dab97cdd7bc95eda8c953478e16b591581d7c8a31"
+
+[[script]]
+name = "config_hard.lua"
+chunk = "1d4d80c1c35d65327e24f6116f954f99753faee138865427ce20d0d5e4c4a43a"
+text = "0802e482a950503026e11a245c6ccd2be292fb29719ca5a15ade0175e8bf08f0"
+
+[[script]]
+name = "config_normal.lua"
+chunk = "268ccbaf86659dde0128ad54c033eaba6f78062e90aa186fe8fe3e9c62789fe4"
+text = "66f0d1aa13b026c238bd0483aa08f08ef01217b549f0ac93033a988bf142675d"
+
+[[script]]
+name = "config_preload.lua"
+chunk = "61d2b866774f268e790d0d8d512e2e36d29f7d7823100bc454c270f802e725e7"
+text = "a3e45b944ce5066cd3452001bc74187363dc5966946985ab9373f0e589995766"
+
+[[script]]
+name = "config_preload2.lua"
+chunk = "b6542ca3ee32a7bddd81d515460048c62c2049bc905343799655f894aa32e55a"
+text = "a8f95495e3ad2f88a71334a2adb383929942ae58ffd32401f35fad688d12250e"
+
+[[script]]
+name = "config_preload3.lua"
+chunk = "567356cf69b068e5d43fe5d3ab5a81374a245908d055ad00fbfcb610058d0029"
+text = "c452774ea5d097a00734d9faa1719023e45362dffbc46e3d3226a45b355f2ca5"
+
+[[script]]
+name = "config_rumble.lua"
+chunk = "0a1d41d03941ffc6d2c862a06ce0cd79e0054b00fd80c7dafbf85c8f313cee72"
+text = "1002d04b1808bf5eb15266b6870f4b0d9e0c112105c568f3a712d197352667b2"
+
+[[script]]
+name = "config_strings_de.lua"
+chunk = "ac272718f50e3fdc4a65604b854188419ac1d13eccd8a6df1c5366d4c105957a"
+text = "13247cd170c702908e14b60a9cb7667b222ea189ba7da19acbb80b80603ec042"
+
+[[script]]
+name = "config_strings_en.lua"
+chunk = "5f9914a4542072176220d1a9f15b5212fa3066c5b4b30c6b24b00f1f040132ae"
+text = "a3dd70e6f8f12ca4bd6da274f4ea6a6f8d1ef8c5e37484b45ecc18be542acc25"
+
+[[script]]
+name = "config_strings_es.lua"
+chunk = "79695636d74e2a137a997d81122176783c0964aeaca20ef019a91ae525756cee"
+text = "efa59e3777e6179d5ee8ce5b27c739a756d50daa8e53781e4082ca55849f7fe0"
+
+[[script]]
+name = "config_strings_fr.lua"
+chunk = "3f684c8e1737a601d3990607cf0aa51c20539452ad1ff536a1e6fb321ebbe8e9"
+text = "c08791d96bcae160396244a155d1fd6c01e289daeb07706d19e5a8bd3d4eb914"
+
+[[script]]
+name = "config_strings_it.lua"
+chunk = "4f26133c6a9348fdf3670a2d6d256a426232bbfea49532060a41f0c1a36d0891"
+text = "9699d585d6edf47f0bbc6bfdf657ba0713bb9d205ba43185985a6fc9c3f95bbe"
+
+[[script]]
+name = "credits.lua"
+chunk = "0dc254938442226c2c81dc70ee740c63e6b131ff5fac2af5de164eb65b3d3da3"
+text = "fdb032d1ea824955aeb07c1a702c2030bd7e8ab6fa6b50a84f11244572a5cc73"
+
+[[script]]
+name = "d26c7832"
+chunk = "35110b7d9839e205060b19487fbb49fcd96bf33f0731da4872750fb13d7b991d"
+text = "f68c402ac9001a70c8a1724d55ccef39903eb199160a3d1e84a1ede14989b14d"
+
+[[script]]
+name = "d8139ca9"
+chunk = "44d67dca34548cfb53e1212490ce6f8ad41eab66029fbec19c3ceadda649e3e1"
+text = "b3b1da0ecf304cdd11123b79bccbb7c5e6235b6d076aa4f04eb0b116d20a44d4"
+
+[[script]]
+name = "dbafc07c"
+chunk = "ad4ea4b0dfca5a5f53c60c2b9492bd3a32417273e17531240d2815a5436f2c81"
+text = "3643d477c6e55e57f9d4ca3a9cc91dd287a71583e07534cf9ce5c47bd25db4cb"
+
+[[script]]
+name = "dcd779d6"
+chunk = "6f9b567847b956921f0b9b9161639d0377afe318406792a0dcf6097eef9d6dc1"
+text = "3324d3e97a25068b0dd41a8edd5a050ea0fba883e91a90415ebc872d10726a63"
+
+[[script]]
+name = "dlgpopup.lua"
+chunk = "97c41a5e10efabaae637305ed1e490fe3b9d57b3f18e49431d718b4e4b724152"
+text = "4456356345987d3595f0885f9f8771886014ba44bc24a06b1a9b66bbd3f66475"
+
+[[script]]
+name = "e1b75066"
+chunk = "e29d082a3555af9a8f460f2e1a2200175cd0f5f0e493878892f7df02908c3a5c"
+text = "e8d5462c5ce2d4665a948b927b542d2b14c94775d3bec75353a7663674597d8e"
+
+[[script]]
+name = "e573b519"
+chunk = "03e20ea9b3e8875c3c8b33746b7d1869c65d9b3beebb31a441705f212c5dc8a6"
+text = "e5d7e624adfe7297e835982908d15973eab443ac4ebd62cf6c8586193b7ff0b1"
+
+[[script]]
+name = "e6cfe9cc"
+chunk = "c33d47fa30b6e6c3588c35ab2ca46a354bdb9afefe8bc8a59e945474b4bb3dec"
+text = "28cc107ebb013215d57677cde13b958a5f1ade26924f0ab56510f032c95f555c"
+
+[[script]]
+name = "ecd1192f"
+chunk = "b9d08d233552359940ec1a0d235cab0b38e5c1bfd212cb376d8599e6d51ca0ef"
+text = "c2e3971828a06c6a37b7ecf263002efdf74d2ce33825d0834801833a2a13d9ae"
+
+[[script]]
+name = "enum_preload.lua"
+chunk = "9c44fc737bbf40a4b92084601535fccc1b2ef0232b9b62d9df92b75e74610007"
+text = "590d92a5d2a5893c21cc967ed2f3e354006bc43c5b3fbe97f29aa3454fd65b99"
+
+[[script]]
+name = "f1a202af"
+chunk = "04e5b2b6c72e7fda72345c05e794b76d89a384158038f55c7429c57d97c9c6f2"
+text = "c18e5eac05ceefb108372873e4309ba648183b8e6c267e787967b22c2a132d6c"
+
+[[script]]
+name = "f21e5e7a"
+chunk = "2d63fc03a34057ed486fc5503eb8c2fa3f94fb14c4816c7a9ba731271ddfd9bd"
+text = "e1fc8a79f5ce327d2515f81a4e0fe70481fee7a667f316b0d801c09be3712122"
+
+[[script]]
+name = "f2ede7bf"
+chunk = "da7f00c2c3e72be7aab122a77e1269f16705dec4f7ffd17d9819c20abdd490b2"
+text = "7a5702f9885463eb5c2105f92d90f00ae4ea87fcaf85088869ac57e8122017a1"
+
+[[script]]
+name = "f3681681"
+chunk = "3bafd5e5cb6169a3e981ed22f0edc6c325b5670c9e073321ca0b7af848fd3afd"
+text = "cdc5ae6963f90a7fe15308f125b90c8daceaa94cd9428560ce8476b35c199ee4"
+
+[[script]]
+name = "f6c84a6f"
+chunk = "84382c604c55d8738d4f9ae83d5fa372967926f86fa574a556a1cd36e59557cc"
+text = "74bbd118d51dfd2d4fc7418844406344c47ed4d4d1e62b0eac4c937ea1ceb262"
+
+[[script]]
+name = "f87685a1"
+chunk = "f05ba5c922dcde66ec824e0b179c5b4a00835f79766a3620b72ddfbe8e8e97df"
+text = "ae550c25841e5b78ced56c9cd5ee6b6a4994f1da69bf4ba6d30c11174d96bca7"
+
+[[script]]
+name = "fbcad974"
+chunk = "f003b33aec2dc96ab953995e9fe5508b5b0c960d6c6b965f50c86310c6b78461"
+text = "f9b9c92cc94f1e20954af59d5868cd525141cb9ed5bc55b6769c4669efde2230"
+
+[[script]]
+name = "fbd8281e"
+chunk = "560168ca94c233667a3e139de7dd0b2617daeebb0980703d9d8fac724603e30c"
+text = "dc9620139577e8aa61a1b4f2fb59cb045cdba8c68fdac96b1a64d9f110d6ac81"
+
+[[script]]
+name = "fcb260de"
+chunk = "4dab185b62a65af6df3f021deec43b65f222d5926befb57abd742c7dd42bcb51"
+text = "3233e9e7031a3fb775c49f0f886ec69e4037917a7c80f47c465ad67aa618e7ab"
+
+[[script]]
+name = "global.lua"
+chunk = "73082e5fbf5ee80d253083159353280f529533311e1cbf92289ec1c603a82d73"
+text = "96f279b194f42b9721faadb3573af78ac64e6a5455fb4042c3422aecb581cdf5"
+
+[[script]]
+name = "hifi.lua"
+chunk = "f28be364520a8c118c3a279f6aa74ee482e92273836f0f52a5e4d9ff1cf0180b"
+text = "6c4b60d49010c83309a129042ba85787944517c14493e2168dbd88965bc68d79"
+
+[[script]]
+name = "kinghill.lua"
+chunk = "4f595476a94d8a78f471eb47765eb2da33e9ebf337ba8a65372b0ad2cc6c6965"
+text = "a73431559cb7e4d6370af8084d8d82e66880c6126884782ba8c88d237c7711d4"
+
+[[script]]
+name = "level1.lua"
+chunk = "226b0abd37c539f4a58d6ea6f549362290bb3fdd98642987329702136cd2cf43"
+text = "7dba6c7369d09a929916b4e7069351cd5378e5cf01d2a1e456e8e992d74f259c"
+
+[[script]]
+name = "level100.lua"
+chunk = "949921b6c1966dc1f7446ee959b72c37b30e911800643855d8b0c49e793cd936"
+text = "7f8cca105ccf07ea1b6a01abdc363be593259b01940ff29db6baf71603569b73"
+
+[[script]]
+name = "level100main.lua"
+chunk = "71aabc111df51681d6689b5c65025c98e8b8e6491480160fe26e61ba7716522b"
+text = "61ab71689cccb5c2bf9aad1bc725dfe790a85b69a1628d2ddc47aceb5ddad9f1"
+
+[[script]]
+name = "level101.lua"
+chunk = "9f5c246a764a3c9856577fc87cc38c7b32211809fd5677ddeedab8c8fa5ba100"
+text = "59b9e2fb7d523bf56f4948d9d5820846d0f85c057d30fadd87ce3dcf5a94e208"
+
+[[script]]
+name = "level101_kinghill_init.lua"
+chunk = "2d749c498618419493d1658bd686ec9c08aae13388a6e32f25cb6925c896a5b9"
+text = "e500d283ed818a07269153133f111eac528a141a75432d840ae731674ce1b640"
+
+[[script]]
+name = "level101_strings.lua"
+chunk = "e0ff7dcb843fcb602aac628ffbc0ba41e91fd6254437a63d84c1a78ffcf0af1b"
+text = "a888063aa772e0aedca3781308d91c18248aafde738fa40f24abb76f91226284"
+
+[[script]]
+name = "level102.lua"
+chunk = "94522485b46a185a8276ddf539f0c7df5c5a16b879e6422341d475cddf248539"
+text = "b95c7a63850f1204050876c0aeaec6f393618b36ada906440c93bc762a5bf636"
+
+[[script]]
+name = "level102_brawl_init.lua"
+chunk = "f3ea830d69661e1f7d5338336d05cbb6a9ca0cdd8aac5e57d126cbe129ce3f27"
+text = "0fd115afe066eb6a22d0ec91a258f31766262176e708a8cd42c6c73c7a8293d0"
+
+[[script]]
+name = "level102_strings.lua"
+chunk = "7f8532873d508a60de6eb667d55847512ca5adabf9b080a726b03c44feae4761"
+text = "c5322168fb568fd4556878c921460e62a0835f4df7663e8ebd67a9e5510ff647"
+
+[[script]]
+name = "level103.lua"
+chunk = "e1b79a625c8205b306b938dc1d1e3ba4ca1b5a9147b16b6362712cc2575ffca1"
+text = "7f3d54c50fc0f14c7886e076fcfc074ba677a486c514ca6b1d9549cff950f31d"
+
+[[script]]
+name = "level103_brawl_init.lua"
+chunk = "46ec9da98cde89a7868498d0252e8079f41db57711cd76d2b8a2b6926736a20f"
+text = "bb265b7e92b26beed902c4bd0ebe79aca1160ec4ab2e647d0f1444451a4c78c8"
+
+[[script]]
+name = "level103_mercy_init.lua"
+chunk = "46ec9da98cde89a7868498d0252e8079f41db57711cd76d2b8a2b6926736a20f"
+text = "bb265b7e92b26beed902c4bd0ebe79aca1160ec4ab2e647d0f1444451a4c78c8"
+
+[[script]]
+name = "level103_strings.lua"
+chunk = "a2299bf2a49ced62f4b70cc30a2000a5e07c3539ca2e30ca6eb69f01678fc8ed"
+text = "c472de3ef6c20e4ab40fec4d63144c9bd53fc6a137910ae526bc36b115c7a624"
+
+[[script]]
+name = "level103_wchair_init.lua"
+chunk = "7f1a23ff29f8fb500b5e64a484140b8414ba3c68edf1820666807aa9ca213015"
+text = "1222e28359e55213138d63ef1f8408332fced1aabca98eb73d4e3b599cb2131f"
+
+[[script]]
+name = "level104.lua"
+chunk = "9f97175dde34a846583d06697dc837122901a6d1109529c01687e41dbb720694"
+text = "a79ef51f7d27a571454149a9fb10b22781ee22a6c6b6751cad6817e931f02892"
+
+[[script]]
+name = "level104_brawl_init.lua"
+chunk = "563d9e5c8a80218a06ddf80b0e4bff3bc7808daaa42f1b13a177914c3569bdf8"
+text = "37ec7f1c6e372831ddbdda87c4b5da1c395ecb65717d72daae00219588ac0200"
+
+[[script]]
+name = "level104_mercy_init.lua"
+chunk = "2597a009a3aea841e19fa3bcddc7a0a853c6390a022b0c8d3edd726f1f643225"
+text = "1069e8ab836c5de01a84c1df9645e4e749c7978cf02a033410f03f3a36936752"
+
+[[script]]
+name = "level104_wchair_init.lua"
+chunk = "433b4d78ad2e37330ce2891ad3d164f24691cb21b587a37d5ff7b21ac11c9d08"
+text = "e6842ed1038d1b7a9cece4929b1ca2f1418057e02738e93fa3951fcf0c616689"
+
+[[script]]
+name = "level105.lua"
+chunk = "cd68def36e1f2ad1a5847b4dbdb7adfc12be24f3a7c291f1ebb1832cf4bb3d98"
+text = "e414326c783a5159792c52379150872f73ebd1f33ae80a4bedf485b733a2f027"
+
+[[script]]
+name = "level105_brawl_init.lua"
+chunk = "9218881ab29ff5b3727331fb1b484784101b20a717cc7dbfe02a1d687db49365"
+text = "598e6a7611011cf10dee2b3102ac0096121dca83d732458ed4ee163ec39332b9"
+
+[[script]]
+name = "level105_strings.lua"
+chunk = "3e2059b74fce2b3b7f9785167b0224857d2c93626127a0327856c215151bcb83"
+text = "218f13ced55f99e9a581b5b7bc1e427ff1f0760edbbb48bf36d5ea949b5727b2"
+
+[[script]]
+name = "level107.lua"
+chunk = "67cbb8a54a6371b5ed08ef41d1394d4bbca04986a898e8ea3043ce977360e5d6"
+text = "da071c6bc78b6657ac024851e6e77448f94424cf1c73865c031da14eb4fb12a9"
+
+[[script]]
+name = "level107_brawl_init.lua"
+chunk = "55cded6294139593694220e7c5bc8d7df1a5705a4b8e2426c88ac5aa76ae1952"
+text = "e4b9b575ebefb95180c6455724faea1675e5875b05af156dad9ab621c3e693b7"
+
+[[script]]
+name = "level107_caps_init.lua"
+chunk = "aadc973c85ad91ac4d0fb9df54292ad98edce3a8731e7f70e0f66b26e5955e5e"
+text = "0b13cbac7c2542a5aef3f99264c26b27230dac3da7886ebe648db45411cd8280"
+
+[[script]]
+name = "level107_strings.lua"
+chunk = "6f5926a3ffa91e969065f64155c09e5196d2fbfc19095664d58e41b0c7abd149"
+text = "595b9a742d29e17d80075e8ee3a094023ac4fcb5bb137c6805adde13efd20332"
+
+[[script]]
+name = "level107_tagbt_init.lua"
+chunk = "3f92f0d4afd1bc36081bc29c6ef00e44d8f5694cf16779c480a1203fbe8230e1"
+text = "56419e630615f4b432da61478febd03213f387311633133d546b13a4ab834279"
+
+[[script]]
+name = "level108.lua"
+chunk = "1080ef2a2ce6a383ffe79d1481ccb72a3464b7be78c740cc329ff5cb1b140ad5"
+text = "cfecd5eabf80a2d83cb5e6c67762e18012d22068a543a0f57914e8c4e535207a"
+
+[[script]]
+name = "level108_brawl_init.lua"
+chunk = "b9af55799a121e1bef35ff8af2dd095a3ad0d49c29bad0e17c902d8531d531bd"
+text = "4677da3ee3da64b00875294e6a8982f92d689791512011e9a06be0bce753896c"
+
+[[script]]
+name = "level108_mercy_init.lua"
+chunk = "887a8e4460bc686897b6fbd1f3d83d90bcbdf411d9aee574633bd3a7715f2872"
+text = "f59d7fc15ce355f8179a9f460e33b4e53317a1726f25fd08be7b42b229e65440"
+
+[[script]]
+name = "level108_strings.lua"
+chunk = "cb6db5b7b3c6bec9174abfab7aa147d943d19d11a690dfb36943076ca9afc4c7"
+text = "0d5eb4d6c839f886ddd7673d406fc405f33c0e39147315772d171c940e65a5f3"
+
+[[script]]
+name = "level108_wchair_init.lua"
+chunk = "3dd1154aa598d790d7fb0642b2f81d310b5d85c14899d8d9006ef4f12d0e6783"
+text = "aed3934c0c245bb62e3699e28037b3ffc335c24f3bc3e85586e522c67d21cfa3"
+
+[[script]]
+name = "level109.lua"
+chunk = "6ab203f0f00b54224bca20c2c1e00a40397dd58b392c5ffe50c0f3605b2a2070"
+text = "e9e3d669d570de3078b311f129dc776928f21a664f49d1b95c101b38ef75922a"
+
+[[script]]
+name = "level109_brawl_init.lua"
+chunk = "1385914eb5719e977cd33ccc2b65b41df9661c402bda281d0897cc8093809bc4"
+text = "c3c2ba478a8b515ca83fd7ba70b8a8f5c727cc52c8d854c5f20b31ee8b3cbf1c"
+
+[[script]]
+name = "level109_strings.lua"
+chunk = "28e160cc4e1c80512f08cb73563d2e41d6fc159f8a136849dc242baf7a4053a4"
+text = "2dde436cb6909d76a3c4a3c6d598c4b4d9971aaf6d8606ebaae0dbf29a592d9d"
+
+[[script]]
+name = "level11.lua"
+chunk = "1abc57b4d61e15458751ed34558ffeadba0e928a528e49bfac1cf041c1f07867"
+text = "43ae79555768786f36858b67d9038db7048207ebea70b3a5f0376224b0155e52"
+
+[[script]]
+name = "level110.lua"
+chunk = "c12586f97acb22240d99d70474c97685dec86ec9cb13454d4dd015e2732dc7f1"
+text = "3246c63da677f8b9d1e20f4fe8ceafd30caeef723b2b63a106d1f045b0f8fc27"
+
+[[script]]
+name = "level110_brawl_init.lua"
+chunk = "e0b61d004296dfdb4743f8d893b63d69ec4696080b6a32ff0ed0cb0648508a21"
+text = "5000614da3f3770634797233b20cda8ba054e15513d460fea4e12fad2c37379f"
+
+[[script]]
+name = "level110_strings.lua"
+chunk = "5783b3915592b5ba5732f969d423bdcf49888855d6d247b76bc2e9fa5d6856d2"
+text = "95a63b9641640d5a0b5a79b3579029220c3055a7d81b673e41e61ed28b4ee916"
+
+[[script]]
+name = "level111.lua"
+chunk = "79e9d847d08b532eee7995fb302d185bc692da8a2545daadaea74bdb46f4cd93"
+text = "224d269921ea78cbc69515db1662bddbeac1d0bb52bec0ba30cd5f3d6f6da261"
+
+[[script]]
+name = "level111_car_init.lua"
+chunk = "d670e017721c596bdfcaa764cdc89763bc5481605c25262cd102c9f99e97c96c"
+text = "d13da2c03b005bf29ab0b3690c2eca5d7605c97b2ad090208904c801c78ed5ea"
+
+[[script]]
+name = "level111_hifi_init.lua"
+chunk = "2f2eeee1cd78c8a357918bc1db5e233fc7cb3ffea753d82eb9ad4f6b9edb0aff"
+text = "11f9009df9fceeef02814159fb1e3d1c427a83854d8ee5f166b2a6fd7ca51eab"
+
+[[script]]
+name = "level111_mercy_init.lua"
+chunk = "f1d7e572cbc98a8a9c013c336d51abe50d177b38844bc8b04164c72b31ea9ab4"
+text = "12bcf174724e648be4713a2609fd140e204cb4d38faf494372df6882c71bc190"
+
+[[script]]
+name = "level112.lua"
+chunk = "117051ddf6b11c0414a066284c024dd3da2cfca5d4cbe4f40ec8bbc2a32cd34c"
+text = "519936bc700e1b85350395b1349625b05d6a1b96cfc84178a54d49e8e4702238"
+
+[[script]]
+name = "level112_mercy_init.lua"
+chunk = "60777f67f710aeb74eef69a49e43dc10994c5398069d15ad4c23fbe8a7b937ee"
+text = "6f8a312f4580ed4f3a7bee92af4004968d7e0bd03644f8ea6b756085ee98f50f"
+
+[[script]]
+name = "level112_wchair_init.lua"
+chunk = "6a259dd8febe926abb77de8b1e7046510fc1139a218049279b2d74175566f331"
+text = "c7b1269e96c1eec38b1ee8eef75676c64be3c1b4d47124a94766934e1c98241c"
+
+[[script]]
+name = "level113.lua"
+chunk = "6b81404b3af53c2abf4421101759844ad1f6e3aaa6de4bbcd48e7f587695dad6"
+text = "254f2d89cbfc03b97320b53d2aa687a114624ac48e59eb4d089753be48e568e5"
+
+[[script]]
+name = "level113_brawl_init.lua"
+chunk = "e25b0f86c5dc6691f0e956147731c43cfd7e6950b35aba3419bd2bcc006b4358"
+text = "ab859824ab2dc383089919dd5213e357c4a4282eca873907e944f596a26ccd6d"
+
+[[script]]
+name = "level113_strings.lua"
+chunk = "3044bce0242ed8b5b41e99e4017d3d5ab6ece6622c1f704df3d26778bb4b8912"
+text = "3e161093c3790b3c82f7d9ee5c6644e922b681015817b2ed18044e66061f811e"
+
+[[script]]
+name = "level114.lua"
+chunk = "0d540cc3aeb24fa140badc4f81e7e4471c1dfcf6e912862e0109d9bab58fb55b"
+text = "6df70fa81d1c8f40ddd19a7766258cfd18619beaa9cb7087ba6fc4aa431b76c4"
+
+[[script]]
+name = "level114_muggr_init.lua"
+chunk = "7c57f9a752c57fcda57127dcdefede7bef8bfde87a07bc273d84dff18c3e19bd"
+text = "3432c414be327b3fa3b3deeefaa7ca358c48e1e330a0780db2fb2df6173b02f0"
+
+[[script]]
+name = "level114_strings.lua"
+chunk = "d347a30a787d16ae89369ea57e34f8da46f0c3d47e802eebf56b46fed5623dbb"
+text = "02087d6e5cbc82adf362057ecda97d73d79db67b96459e1a33fe6e63b0f15439"
+
+[[script]]
+name = "level114_wchair_init.lua"
+chunk = "35a12762d13f5a9205bf40b8b05c903b9f46f87d5cf74c5b9aaae2c1ece4996f"
+text = "1df0349cf46c609616c0063e366bc6deef9a2aa7fc4043001301bd33423c0145"
+
+[[script]]
+name = "level115.lua"
+chunk = "7a6c615d6e4225c62f0483a022fba432aa2f2a4a0125d3feb1e25ee6d068f5d6"
+text = "57bb3d076028278493c0f6fc4bd02c26d5ffdcf2dd96bf3b831d64638458b8c6"
+
+[[script]]
+name = "level115_brawl_init.lua"
+chunk = "fe0e6e2aeb503206d65a7681601a04d02bf7d057f845f20ad9b5d1f6c7279088"
+text = "170ba76edce7e44128a396ac976024024ee6595d5fc5148255755721b5094caa"
+
+[[script]]
+name = "level116.lua"
+chunk = "142a29a393438365486d8c6e2e2bdabb64aa7b3bf7c953460e9bbb1aff17457d"
+text = "11c2e47be02eaece9cd7686efa1a1529a258cf3b6020575809d8ccc94a9766be"
+
+[[script]]
+name = "level116_brawl_init.lua"
+chunk = "5b1af4f8f3c3cc4eab8f930263d3bed8a4e45ce1181be4d5f3be1c9f01eb4fd6"
+text = "0e848c3e7bec2d8c2be367b282ec12e765b145a5d91a232c44bdd81167d86a62"
+
+[[script]]
+name = "level118.lua"
+chunk = "52fcbd6b9bf35750649d9b8e5fa0781c5d29773e61c6569b99940e77409ce3bb"
+text = "06b7bd58e4e4d4202dcb992cbf2fb79dba50088df7e0b3f87d2054473c15c435"
+
+[[script]]
+name = "level118_brawl_init.lua"
+chunk = "742c2fb40f2e5bd12261cfc80212c4f32973a5a5746b3451e7ee086b45c6734a"
+text = "b19114b75a274a21828aa1c996572ec67c4114feb56a244c6a8cf2affb87621a"
+
+[[script]]
+name = "level119.lua"
+chunk = "eb94bbf250899ea92d4080886b3f13c34acde87fa7f6763f05e614a822ccbd71"
+text = "96fa5b8842a4bf9602bb1b20436fa869ed98673924b801dcf22dbd77c14e31af"
+
+[[script]]
+name = "level119_brawl_init.lua"
+chunk = "88e45bd6ed3ddbb768e5cc584d38362d73c431af88a606f25abb705e4966ce79"
+text = "5cefd35382a4033902440bd349b35259850e37c24e551a8f3e0c353557a0fbfa"
+
+[[script]]
+name = "level11_chapter1.lua"
+chunk = "35087499a0aa9fd3603be69e9449dabef719f6e82823636557b18706814b5c95"
+text = "973c93e87d3ef9a9b07943bb12776862f12d744f4f510308f4933304d04e6b8e"
+
+[[script]]
+name = "level11_chapter2.lua"
+chunk = "7246110e244602cb34303fb7d5191cf47b726531d0a26ddaeafc8337161a1f51"
+text = "43c4f55116d11332300ce3dbc485bf8ac205109c66b6ac81c21b08ba35d5ae31"
+
+[[script]]
+name = "level11_chapter3.lua"
+chunk = "6052c344502b072e6c20a759226992713a6c7dff6383cdc11e323bef02c500f3"
+text = "80678daa1b8af92fc1adf876bf5afe990b2490f24dced57d25b2d9f5c79f5bab"
+
+[[script]]
+name = "level11_chapter4.lua"
+chunk = "a61ee0b7f1a1a70860c1c45acf6ca186a40a4ed6c4d34e97a8b116a5aab08cc1"
+text = "0db5ab8154cedeafefc1f346414c9c052913cfb22b8c5f79a7c183aaaebce333"
+
+[[script]]
+name = "level11_chapter5.lua"
+chunk = "81eebb154008a2f8fb23ab15a5fd3b0b7a1165bf6efc030b61ae307efc66ea8f"
+text = "14ab87ee50be76048d964929f57ff466380b61b1a5e7c7b7108ea6e0a595b2e0"
+
+[[script]]
+name = "level11_chapter6.lua"
+chunk = "1e8e33e92ecb643ee288f1f1d14908fe16d9b13f26af0d1f5950c2d74c959b7e"
+text = "bfa74617f5c9ef4d707e369ae3bffee090bd95e26c67ec84d550d90936f90505"
+
+[[script]]
+name = "level11_scenetest.lua"
+chunk = "4a1c6aa6dc83f029552023dcfdce3fb7a6a6f15f202168b3d6021b010b110d91"
+text = "3b5d29308372930f691fd26c03aa2f0c51ef10f5568df7b2c193f9a603784c65"
+
+[[script]]
+name = "level120.lua"
+chunk = "155a566770ce1a5618ab2346236a05cacaf3c4d8ef7cf00114c2e12c4a68f4c8"
+text = "673c026b047b44f2f29c6a53a3109f06aeddd557d06614a76a853d9599fbdb0e"
+
+[[script]]
+name = "level120_brawl_init.lua"
+chunk = "fa1f9bc6ae8e21ca6f214bb0f81f1da72244b2fdd5a69f56a8d2a4ddba339b3a"
+text = "d170077a1cfead4598f9f4cd96cdf6c04ae386925705bc783c4937adb82011c2"
+
+[[script]]
+name = "level120_mercy_init.lua"
+chunk = "d832b651417e5cf8d818eff1124c92ee2888c6d4b7e09f54573b718355b9b113"
+text = "53e1ef9e6e74e9299fc679dcd1bfdb6e4ec3178b257859257fe7c6249c4ce57f"
+
+[[script]]
+name = "level121.lua"
+chunk = "641c7336bca467e86d9546eeddb1c7c160bb7ef6d5934973a67f7c2c43d06607"
+text = "f86e142c3e1fcb8a1ad89c1cd7b733894de2c8e47cd9e715453b620e2f075391"
+
+[[script]]
+name = "level121_brawl_init.lua"
+chunk = "29edfefb662927d99ad95e070065054d368025873435c2f0bb01a08cb4bd3d4c"
+text = "1fc0a0a30160c437b630e7f9cfea393518b6273ef9ce54c5eafd6297435be943"
+
+[[script]]
+name = "level121_caps_init.lua"
+chunk = "4bcd63350fe43620998297624913dcf792fdd013851e11bf6be53d18aece73c3"
+text = "80210a6ac3326bc49d422a870ee2e14627ee7552d2bada927e7a6e0358a53416"
+
+[[script]]
+name = "level121_mercy_init.lua"
+chunk = "49e166c7ecfff6238dc22184e3d4d7cd6f78e210022da616123efe2c2f31fec4"
+text = "51382e89ffa25fa5661cfef3aa5b59cd502f9e6b6f7056f777dc0fab87e2de84"
+
+[[script]]
+name = "level122.lua"
+chunk = "cf3699f8bec43e8fec250391579b043dfdb2ebef88a6ba52b6b809944f552184"
+text = "b29a9f6d465db85c5782eef346ebbcdad945cef1038f5ac8767a12556510c95a"
+
+[[script]]
+name = "level122_brawl_init.lua"
+chunk = "f1197b5e844e326ed4369a70a7df8f1bb13a8c15b2a235529bc59ee97e7e9866"
+text = "a2fcbc55deac56e424f40ee5fefeef71179f044c83d0207057f70ec9036af347"
+
+[[script]]
+name = "level122_strings.lua"
+chunk = "41a6cbdcdd411183f696c63d0bb0fdf113ca524f0f68626d5ef90e16f4c27fd0"
+text = "e642444e4e1937b9ddfe555174be94feb958d3053e85e7a70a579756347e8b9b"
+
+[[script]]
+name = "level122_survival_init.lua"
+chunk = "595d81aca0b3d40f2418ca9880665a83a70b2845de7aa708e06e158f0d123edc"
+text = "baa7b7696a295a6a2c48ab8c1462e2fe1a1f79c602c976c0ef13557ca8bf4b30"
+
+[[script]]
+name = "level122_tagbt_init.lua"
+chunk = "995631dc8a105fd1ffcda45178acf60ac21f4338a38cb98c162e2fc145ed8160"
+text = "5f778be783843b475068393e2c3dd904fc7826364f122ad63ff0b2138869a3c2"
+
+[[script]]
+name = "level123.lua"
+chunk = "df6677d7131bec903d21bd807845cc0198835cb297869d3539730c3c19d4640a"
+text = "deffced9e1b6a8c62ddfb3657251b629b6721d3a7dd9ebb0df34ab4afcd0e299"
+
+[[script]]
+name = "level123_brawl_init.lua"
+chunk = "033009fea88fd8640129e6cc68139b78d4c730b5e0bec4ad36feb16791999bc5"
+text = "e53784247f592d937ebf682ff515c01ca8af484f5c49199665aa0117f0802478"
+
+[[script]]
+name = "level124.lua"
+chunk = "6638be605cbdb23bf019948ac0e8efe318f9697264de1915a87158c57ad1a6d9"
+text = "fcd78bf7acfe16ae81a84af544b40000d7c16861f4a679aa492c9df561904f3f"
+
+[[script]]
+name = "level124_brawl_init.lua"
+chunk = "a494bbaea61f0340f6d8b3f32dbd935f0f338163f36470f87678490488bad604"
+text = "ea94d26403cd0d83ba52763368207bfa675018e4798c0ad4eb83c18c3bc7c890"
+
+[[script]]
+name = "level126.lua"
+chunk = "e1d54f13f2c43e0e753d95499a073c0984b91c8df9eed443db151ad4943c2f93"
+text = "7bde2dd1685b2cd041e8d750b897ffade200e4bdd122d8fa1ceb4c326ea4dadc"
+
+[[script]]
+name = "level126_brawl_init.lua"
+chunk = "0d622984c3fc7b033ca7411013e79dfcba560da2fc47b017872837c4c57d0a2d"
+text = "ae12e01a79a70e39c42082bd158afdfcb21434c8e2401127aa0a672a137a149b"
+
+[[script]]
+name = "level127.lua"
+chunk = "b066f53ebc6e482ae48619e656d6b59a7da515a9e1a9ffa8776d25a1b51611d9"
+text = "cdfdbc89b99b009aeeb30ddc544e32502907efe8509a4b891e9e4f52a66cdb1d"
+
+[[script]]
+name = "level127_brawl_init.lua"
+chunk = "f05187a1a3ccdd03aeb002a5359b97ad6dd9808f4ee04792ff73c7b9f2dd34a3"
+text = "87661d411acbf390d123079dab3dfbd940512f41649c9ce46c6b2db1c8f373f3"
+
+[[script]]
+name = "level127_survival_init.lua"
+chunk = "16d49d2ff31871ed36036cca7184211883d36d07f0e58048cc7ae56af5ef2ce8"
+text = "d5978c520f80dc90024f8706872145bd287155e1840d6d741592dc5744129f54"
+
+[[script]]
+name = "level128.lua"
+chunk = "2f57664e6e69952a7ea9b8ab05768637319c67e0b1b75a00eef9571561633ea6"
+text = "6fa31bfdbbfccb888d74bf8b7aadaa7cb0d225b5009d29ee0d2d05907cced404"
+
+[[script]]
+name = "level128_brawl_init.lua"
+chunk = "91abe740efe2391613f68e3258556e260adec5697d26b1927a57d1023c997cc4"
+text = "5a74c3ad8192f597105352f040304fea660bbf00c17907e58890e0375ea0ee00"
+
+[[script]]
+name = "level128_survival_init.lua"
+chunk = "1a2a265438fc32eedb7e7caf364418c20de7fb8b6cea68a5489d336219848cd4"
+text = "7f475dc685b0d8457e014a1240adef6374a6d5dee1dd5a989a35fa04ac640246"
+
+[[script]]
+name = "level129.lua"
+chunk = "a174f883106ce87647edccadc8d72d8f400a809db4440db8aa37db9faca39f01"
+text = "97d0a499bb0f4284cc721cdbef020b4c7e19b504b8a9817eefc2125ef82c0ea6"
+
+[[script]]
+name = "level129_kinghill_init.lua"
+chunk = "5415f3dfcb82fbb0e74a3c21ccd6066e9c50b1df7635f61a59207047a2d92f6d"
+text = "f2fac1124919c17d1d975733c4bbfeafe9a0f3f8c5af28e971a36a9812189af9"
+
+[[script]]
+name = "level130.lua"
+chunk = "adc14f3b7bb2d9765afc2355aac356791c8bb0925b47a51cc78b93b7639aeab7"
+text = "9372cba789160b709f66a6f636e96bc6471c1f18076a3570adff3fe32dee9309"
+
+[[script]]
+name = "level130_brawl_init.lua"
+chunk = "17bd0b11e0e332b5262fdb07d0d85605eee204e53616635bbdc39f20a02e6655"
+text = "0e6ac3436761de53eda5e3e113cb26993c24a2e4380a6b83467a62327fd081c0"
+
+[[script]]
+name = "level130_kinghill_init.lua"
+chunk = "b5b0f5d47f5f6bb887a3c59de61d19bbdd952aa85ef3ae122d286b72029b06b0"
+text = "9a85efc2e90d54258f00d61a38f176e0a15a8202f1f4da0f6449e64e2a7200e9"
+
+[[script]]
+name = "level130_survival_init.lua"
+chunk = "d5650a8aa0db59e38d7783dfc63f74dfb7f27f04fe48e0697da5b4650cf61af8"
+text = "be19eb935d9d06b023cd1671274b1f7f9a50d7ccf0cf046b09f64dda4fa6a703"
+
+[[script]]
+name = "level131.lua"
+chunk = "280054edf06ac214035455b6c0155e9f8854d87033c4e7c790f749b62ab0e71e"
+text = "ebae59f0ed070051cb65feed49030551744c7979587461023c39d16ee529890c"
+
+[[script]]
+name = "level131_royal_init.lua"
+chunk = "2f7044f7b5e4b44b417ba33d20e6084211e0e811eaa526018e83898da4659ce0"
+text = "aa89ac91c67fef4bda23398eabdbf2232abfe10a3c05d0ddcc043dab8b39a68a"
+
+[[script]]
+name = "level131_strings.lua"
+chunk = "2b3bb13f31dc339def1c58cae3160dbcba95e6e8a581257e1189a03fd8dcf2b5"
+text = "6b4bfb223690ae8b2e5000ed84eb2d06f4b0a9bf153289d7bf255f8fcc83ad9b"
+
+[[script]]
+name = "level132.lua"
+chunk = "89e86d40e8379a1acc81fdc0e3c3b562a9885fd8305c384e7c5a47b39f1b3fa7"
+text = "4a950c341baed906f82f48247e6fb2345bca70a322dc16d10e66a9cedf241729"
+
+[[script]]
+name = "level132_royal_init.lua"
+chunk = "0acb3ea5be5dd9daf565e21f8f6e6c72670a35ab34d43bf8dabecb387020b07a"
+text = "85d6ab02869d6b98a167325f3b99c4e39768d6e4e97c7589b8711d701ffefa0c"
+
+[[script]]
+name = "level133.lua"
+chunk = "4d2a6798583647466f5f7085f0028a1e8b4e5516b952e9bf223523f696d065ab"
+text = "b26b69f74144ed6b80ad8735ef3ae46ac2f700f055a5494d9bac63cf00da467d"
+
+[[script]]
+name = "level133_royal_init.lua"
+chunk = "eb3c8cd50ca2e8cac088f1afc0dabbc20df4bdbd7b51796204a7ffedb6012d21"
+text = "c6751806d97f34e43fdc6545418aa8441ffbe1033c1c165676416990ac4e4572"
+
+[[script]]
+name = "level134.lua"
+chunk = "bb88421fcdb086a68104049f030edb75375689566a966f75abc77fc08998ee25"
+text = "9951e84eaa81ec00d68704e020965d1e068793bf63deeb25ca5b26d2fe9f82dd"
+
+[[script]]
+name = "level134_brawl_init.lua"
+chunk = "b4f4970303faefb298a047d162fc73033df340ec096a8971e0acb7ca939f6060"
+text = "8a122f78c146cb8b833f1212d7353c18344a432d8c9c848eeb58f4e6e5f93daf"
+
+[[script]]
+name = "level134_shoot_init.lua"
+chunk = "1dafba4b74fbd3e03084ace550d89fdb6ecd202064cf354b65211e52f81a9c17"
+text = "763676852957c61fdbfe556df0d349055d4fbe64581efda5bba9ee52d2f634f2"
+
+[[script]]
+name = "level134_strings.lua"
+chunk = "32b7cf82f8b61b9557ff7d3a2d0c6c0da3294af59ff48005ac8c32660250700f"
+text = "f92c3d4b062bed56e34e2a344f500d31023d9f1e357d005f6eff12235edaff53"
+
+[[script]]
+name = "level134_survival_init.lua"
+chunk = "5302c8b2e78b960e07340bd05cd1ef73a39b20014a5c59f084ae5167f4b3d05b"
+text = "d5cf481e932770ce6257661271734d7ef35b713d5ecd33fb0a941a367505cf7f"
+
+[[script]]
+name = "level136.lua"
+chunk = "3b1c6444b564d78c0930f52f2449074cbe5f2f0b456df6c51333b0ee0e565f9b"
+text = "e0f49b9dc690a0928adf6aaa79f20a658422be035a88ad60bc8abb6a9692f1f8"
+
+[[script]]
+name = "level136_run4life_init.lua"
+chunk = "b5341bd7bf71bd1bd72d0ac11f587f2d3786cc61ea5c0de9c591ac6a521304d4"
+text = "131640301166b510aa8571ebdf0f08ae2a4601f6e1a75c75d31c42af88e333eb"
+
+[[script]]
+name = "level136_strings.lua"
+chunk = "5dce89e39de8150f9e855e135b2cc39e2abb09cfb5ec473e6bea37d7703a7b62"
+text = "b69b57e6869722bf1ff7e5bc395c5305ce2b87c4e2fe1e1d0e02ee06f2d0c42e"
+
+[[script]]
+name = "level137.lua"
+chunk = "c8d525835f73fde88a7d1df2f25018e6ee0db0fa8f1d2ee650ab79df8493a392"
+text = "d8912c4133e5464fae5d8bc145be0c17608101c30942ead104cc38074a2d5a1e"
+
+[[script]]
+name = "level137_run4life_init.lua"
+chunk = "1bb21fb3b07d80f2a817d819f1600e83b767b07629dad461a6e2e5e7a704ae02"
+text = "211ccb1f5718c29c58540dd721c7fa0e2ec580d19a6af2ce6f7b73964a06f952"
+
+[[script]]
+name = "level14.lua"
+chunk = "3abb67fe1b8a99980afdca24f0427f5d17a4ef3c45986aa653661038e4296328"
+text = "e48fb0b9f7723c856ab8e0207e90f6334d8fa81c8b7434327ddc8212e3f8eb18"
+
+[[script]]
+name = "level14_dirtycop.lua"
+chunk = "69e225b6bc7f5a4a030ab610aba868c3276dc6d8db8d0fe13d491d0355bc2f8c"
+text = "c6bb9d2f93aed4f0831a52b21daf703110e10693694f060cc08bbe42564c9af7"
+
+[[script]]
+name = "level14_jsb.lua"
+chunk = "681a2fcc0f4942b619e4740f13595d239de07c715941a8dc9383b397b2c738cb"
+text = "3144fbbe3504721579905e4322c5e0a75c73fc0a87b98e2f5b6be7018fc3494f"
+
+[[script]]
+name = "level14_radiosandstores.lua"
+chunk = "0defe889079de7b4167ec66736baab8193bddff97812bff45188b817d1323f07"
+text = "780ba4b28186494f96336b23a0dffe11a0227780054b752dfd75bf3624417978"
+
+[[script]]
+name = "level2.lua"
+chunk = "16837dbcef10fe0559dd875af65e7764e6a42477d070ca93ed2dade6d656e210"
+text = "ad740974c5e6a614681f235fd1014bbb5f21d7a783489999b3718bf86f821c3a"
+
+[[script]]
+name = "level20.lua"
+chunk = "acf42ab766303551666ab22be6a4385439c421f79b0f1bc2a8e5940c71cc5ac8"
+text = "c805348a0103acfaeb7de40bfd265c9c66da514929ce038628d9b1e7fcb6ccf7"
+
+[[script]]
+name = "level20_backalley.lua"
+chunk = "fb6c71093e5d94608013b583c9d2c445a6c218532424170d6656b8ac44fe3925"
+text = "5e03c4e84098bc9b9421647abd40510bc2c8bc2e6c2de4812713d4e13f1f2177"
+
+[[script]]
+name = "level20_bossfight.lua"
+chunk = "eb4abda26108fd2b00c84138e56c5fbf27964af65ea2611275b03bdaea231782"
+text = "6a70ebaa57e96df1925592d1806528befeb97476c5fc13b04026f274f97f4a35"
+
+[[script]]
+name = "level20_endtrain.lua"
+chunk = "cd95fd4cbc5548ca68e58d36ac4dc3d5aa19978255b8d22e62723a7da51fa06b"
+text = "9dc93ba8bc7f780bf54a4abab5f5e7bde27d362f9d9b7dffdb0fb44d29db75c3"
+
+[[script]]
+name = "level20_mainstreet.lua"
+chunk = "d84ccbb1e51faf2ebff9e41cf3f99745942942031e36b6b09a418b4995ce4e41"
+text = "b79907ad6ffa4dcc85505e0556f9b15f64402cb6a4561c621a54b01b54555a96"
+
+[[script]]
+name = "level20_marketplace.lua"
+chunk = "6ed38fd57a4a07b29ffb58500286610528908008c435f3f7485a91d6eb91704a"
+text = "55d46fa398fdcc37eb31684ff623119ee6a6cc4089eccb8026423483a2c38d6b"
+
+[[script]]
+name = "level20_scenetest.lua"
+chunk = "50b4a543af92f488f0ecbce18016f45b645d7311e0d8944a353cd58f6fcff16b"
+text = "69265156c4ea47ee3dd091dea31894c795d17314baf0cc296f7fb718df8f4d4b"
+
+[[script]]
+name = "level20_temple.lua"
+chunk = "9e1b9c6e9c72f7aba9dc360349daa3cccc80571ab28a2fed427334d2e5308af5"
+text = "bcd99a25a0398c81c21e08743555eec7d612809f71af5619a0433197df20e17b"
+
+[[script]]
+name = "level2_clinic.lua"
+chunk = "82772cde4b264a19742cadfe707f4d520dbc05e5d1bc81fd6362ae763ebdc4f0"
+text = "c5faaf9ed670a9efd7d982410bff21cc754998d3f633fe022d28f51956711e37"
+
+[[script]]
+name = "level2_clubhouse.lua"
+chunk = "c157735d953c870343ae2372a513f2fae32eb6e8d5e78b9bd4a9c7e0b1f16d35"
+text = "bb571f6ee10c9aa12340753e1bdc0f3135c3e64c676272035e8d0e4722a6c119"
+
+[[script]]
+name = "level2_junkyard.lua"
+chunk = "5c1bcbf3ff2105ac3fde70f6c74c24e3e342ab1520540effca93f2fa41aec36d"
+text = "8a4efc9b4d95df11360d0f4fc25c7ddab50e5a7452cefeadd66a06e0c6517b9b"
+
+[[script]]
+name = "level2_scenetest.lua"
+chunk = "f8d791aada2cfb56349223f9b80ef5d583f6d983f33ff0606fc3e59cd1d413fd"
+text = "2f4fda31a673a093e47de865eed6e4857b42fa501200e09d796c0fe0a76fdcf7"
+
+[[script]]
+name = "level2_tenement.lua"
+chunk = "a806cdd1266439b5ab5f41b5628706048947c718b0bee160cf4dbc78b2ec1156"
+text = "972cfc4e6468bd69a5c9d32da5c9b744203e41d0aebd857bb1a63bd9a2b034c1"
+
+[[script]]
+name = "level3.lua"
+chunk = "a7487c28521cfb77bce7b1de43d01b6ea462eefa798aaf188ca282b1dc6fd0e3"
+text = "2a5aad1b00115dd7188e4a42cab80f8747ac47e92532a962c3f8e8723f9a626a"
+
+[[script]]
+name = "level31.lua"
+chunk = "8335e683d08d238afa1fe13c8fef1360fc2984b9a63b340ba1880752459c6e50"
+text = "98076181f2ef8da4ed08e2f3276e6c345cceafe33be06a0fc67898884aad3b11"
+
+[[script]]
+name = "level31_birdie.lua"
+chunk = "f50a86216b4dd257e93d8624c8481c5b0f3e6d67c3dff281b56ac71c94355483"
+text = "cdcc8afa1e31312989738c3936c9901dc53b2f0423717a96a4d87d85f54af77a"
+
+[[script]]
+name = "level31_gclub.lua"
+chunk = "634ac9777a60ea38cc5bfb4e3ce664003bfa401f3cb91cbdac0243ef8033b3a7"
+text = "6e01199e660b2a357c6019d08619658a224f75b4f1012b2c31789ff0a8bea6d3"
+
+[[script]]
+name = "level31_platform.lua"
+chunk = "adc15a18d80c17f9f9ca8a9e28df8be1436b8568a0511306f78f57af45057641"
+text = "56ec9da6190393b8379dc6027bf713f252b8388dce3ffcef882af2521f35ab09"
+
+[[script]]
+name = "level31_reddevil.lua"
+chunk = "2780908ffb07bbc43438385832ae1cc93d8f28de59defcee722b4002e61946f5"
+text = "f05571b686e832cf055769fc5fa9f5f7749d05673860d53fcbdf0bfdc076e56a"
+
+[[script]]
+name = "level31_scenetest.lua"
+chunk = "fb56cc3d237a33b6d0e045bdbc67a8f20f38b26187def34f6e7d6bd8cc4739bc"
+text = "aeded6d2ca56155a417c85e73a38e65a10aab171e5e410b175cb5498ef854c1f"
+
+[[script]]
+name = "level31_sewers.lua"
+chunk = "46c034570b348e264a116d3f45916bb47f4e59bcb4bc3224e31b46d6b4790516"
+text = "e87b6de5f8303eb492d8c51e397bcb66058893e37c92579000c8cd1689099c2b"
+
+[[script]]
+name = "level31_streets.lua"
+chunk = "3b018ceb2bc13c3f6c7c2ee903bbe19c92e6bd2acbc2f531bd139f7477e2b9dc"
+text = "d35c3f684ab066cb4417209448912a90b6375dfcb83e9fcbcb767d241f515f99"
+
+[[script]]
+name = "level34.lua"
+chunk = "e692002f53d5102a6fa3eb8847250c1369a1e11d41a9c7eb5301ca50af4e8d85"
+text = "2d80a9bee142f04af9c6f21d0c54e4b7ba21d0a32b712d175227aea361557d86"
+
+[[script]]
+name = "level34_gate.lua"
+chunk = "bac02685e315e0b6c59b85e712fd4ca9e66684d739f5e172dd3a1e2f9d88757e"
+text = "5724244f26c4221a14027bd963722073d016208bfa05fdce9b2a469ba8e71de6"
+
+[[script]]
+name = "level34_park.lua"
+chunk = "d41b4942f7dbb9a0e105b0cd3564ac266465224c8f2676461375e4693979f942"
+text = "1bf59d335a7effd535c8feaf99a07d97b5a78ff32ab06ba3ab1994ca6c8fc7c7"
+
+[[script]]
+name = "level34_riot.lua"
+chunk = "85ec9c7f08865a2e880b2f187554ea595913c4ee933b4e3fd23e70e083cbbd32"
+text = "62327e3bcf9f739fb874a456966d51d3e353ae002bafceec1126362f1a39cdee"
+
+[[script]]
+name = "level34_scenetest.lua"
+chunk = "7a1157eeae6a9ba224178af3cdd8fb7466d2948c75167312b63621c3b8d6675c"
+text = "6594f6e95132a3e35b9f02eca1a60d6eb470cccd56146e775fd8b5f4265639d6"
+
+[[script]]
+name = "level3_balcony.lua"
+chunk = "446d8e512a8e171d6e1b4a2873efe8c0e64de87774c439aa9a41f434e99ad6e0"
+text = "0704b6bc8d4384bd39e3168d9e4a0df4bd9c88a2eaf846240b373a55b5ae9632"
+
+[[script]]
+name = "level3_chase.lua"
+chunk = "40e06f306eda1b887f1fada300cd0d139adc2d898b9aae19149f6f96b7d46214"
+text = "b50b003b3ce9edbf43523daca0ccdf32d97cc6b48aa693527c30e542d183d144"
+
+[[script]]
+name = "level3_comp.lua"
+chunk = "8d5d8bc0de0a5fc161cb3f739fffcebb2c267c1b2444904f15e128a744f3eec5"
+text = "b4de00c9acd9f71f7079f392d894aa4c6c69352e6afa45514ea2142d36fb5ff8"
+
+[[script]]
+name = "level3_gallery.lua"
+chunk = "229022809753162d87e1c4577351aa87301e34f164e679aa1c294c2e24e15fbc"
+text = "07b04351ce4c15a22ed5c986ff9512c4a3f13f3a475007dd30b7a476bff07054"
+
+[[script]]
+name = "level3_street.lua"
+chunk = "746991a03d9c91fa95632b9f97e0259ba4ea144bbe1b8e20a374420f9441d26e"
+text = "7c66098290e6dc1030b09816063a799812d108551bc6446788af61b4d6f6b346"
+
+[[script]]
+name = "level3_strings_en.lua"
+chunk = "eca1b8de1c0343c91a4cbef040dc7d0762076de1da4cf2be2383d566793f9659"
+text = "599eca8b7821b9b6e851173a2dc2d3895330ee961d200d46b3e7cd0ea51ff9b3"
+
+[[script]]
+name = "level5.lua"
+chunk = "3b2fee0c3df96b047767a580b74bd1100944512cbb8acfa10a74c33cfdbcf9e7"
+text = "699f702e2e2d09ab9011b617c41b8d58c772d52fe0aab41ce6d597aa19f09ecf"
+
+[[script]]
+name = "level51.lua"
+chunk = "3b007b305afa190a66b87ee6640385a104809c11643ab2a876fbeedb3aa3d750"
+text = "2e0ca18be18f23f16969646ca6541657f77cbbf14981d76cf5d30ee5ed5cf6c3"
+
+[[script]]
+name = "level51_chapter1.lua"
+chunk = "d7a3ef31a2aabb005d77d824f0a7ce71f1f7f6363928a8b7fec1eed9345986b9"
+text = "982429d9b610410b044559dd4e9d90ee14dd697fc32d23876bb5a78527c6ba98"
+
+[[script]]
+name = "level51_chapter2.lua"
+chunk = "c9d95acbe274471d0841c578f5534a262d61257b717089e107dd0e04bbc0571c"
+text = "09977a220f8ab45128a63181787e75f00988bd406b93d187915d58764f6fd580"
+
+[[script]]
+name = "level51_chapter2a.lua"
+chunk = "fb3841c625ee2fef9ad4fa49f658a2b73a64bef07deffbe44b2804208c7d7c87"
+text = "bdf41a6b03da03c305266ce9227a61ba81095df08e5673bdb97578103527465e"
+
+[[script]]
+name = "level51_chapter3.lua"
+chunk = "7bd9550f584a522214b4b9d1157b26562e1f04e9808d9912cc32d81b5f3b4883"
+text = "82a42c9ea33ee67b102265c6864b8154ccb9e20684c0f11312e64781fce1e626"
+
+[[script]]
+name = "level51_chapter5.lua"
+chunk = "0eec88ba34789861eb0a67aedd2afb65f1858627befb55acba45a835619d1c56"
+text = "bf5ecf778c17af7521eb88f2ca2b483228e76bad6d733f435837fc5b74ade259"
+
+[[script]]
+name = "level51_chapter8.lua"
+chunk = "ef790d59b5b7224fa06144a02d6781294e2b8d0b6dede026a8e03a6e5b0bdc26"
+text = "e27c0ba703e870acaa1fe694c47911086d235020ff2e5fc7bde927c76244106c"
+
+[[script]]
+name = "level51_chapter9.lua"
+chunk = "c64b8abd73e2ac65822526b03d32fd260c00ed5c80fdcb2b78d27c1370d0a49c"
+text = "12d28a09cf0ed9b6b748c2a3416d06775f1b15be1f2f9a14f1b07a35f67a52a0"
+
+[[script]]
+name = "level51_scenetest.lua"
+chunk = "eb88cdc58d2bed453a6c85da730d13b76533bc272e1104e112e2a045843e84b0"
+text = "cdf58e53305c9fedc15b59d7a493b8a79a2baac980769fd6a4f1618b49f971e1"
+
+[[script]]
+name = "level52.lua"
+chunk = "81c79ed9ebf985bfd42695dffce9f5f6c0b5ab8fec6220961fa2b7b56080a866"
+text = "de6bd326ea864230f0eca32c0aac7d8822d8e46b49eac7af980bf8c326f04fe8"
+
+[[script]]
+name = "level52_chapter1.lua"
+chunk = "0f28bf0e90bb08dc869ed495262ac1013eb16ec944242664caefb0b79cddda6f"
+text = "1c49e3d7da14696ee3852efdbdeedeed9eea1bbec2f0b6e06a4ffd1da2712e35"
+
+[[script]]
+name = "level52_chapter2.lua"
+chunk = "d617a4ab1db657439c8411b251a5c910ece06920827bbd08a18493284319abd3"
+text = "c45d3890fdffe091382db42b42e4ef72f80f7515b04e1f3a5856a077f6ace0c3"
+
+[[script]]
+name = "level52_chapter3.lua"
+chunk = "3174b455e35ff2b9afd30a39a11fe63ab1b9a9913d2b3ea1c70704414f42d939"
+text = "729d3e27c15de171413ab52277d2b422b586149f05b170000706d4059eb5d88e"
+
+[[script]]
+name = "level52_chapter4.lua"
+chunk = "7ac24a28eed81f839ac6ad75dfd08d5890871aee7b2ed2781291f41409e59bf3"
+text = "55e7e70f937540725909b797f890040e6bd6cb1dc395efe5834f9b79654c3f19"
+
+[[script]]
+name = "level54.lua"
+chunk = "ac8c48128eebfc85be84b69cbfb3733e1adeb575bd9a3e12aa008e85f5c0fe9e"
+text = "309d8d0f4e0c493cb56f704a2f59d3769d2ed5dbdf5de715fd826a372dc55ef7"
+
+[[script]]
+name = "level54_alley.lua"
+chunk = "10329fcd60b60ef1ba3a5828d0441df44be6c6be3578142a350250ebb38f7005"
+text = "2a124c1348de9abbc96ce57db5a5279916799cb258f2825d9e26ee9c13ca3ef2"
+
+[[script]]
+name = "level54_boss.lua"
+chunk = "082fec23adf78b300893d1f228f3995ec9ed085792ba5c1d8a5cc4341225f5dd"
+text = "ed812899f2b8c6398c672dd154d8df2f69aba5891ce07f45324abbb01895952d"
+
+[[script]]
+name = "level54_park.lua"
+chunk = "a32e485e421b640b7900c1d5c8ce1db8772240e6040e203dd3d807b30c219069"
+text = "f1106aab5085d9a551182df3d827b306d6a996439f18420054f535c1df816317"
+
+[[script]]
+name = "level54_popsicle.lua"
+chunk = "68806e9aab394730ede0d77f64078e03563238aa2216956d4e07d5b3c0f5095a"
+text = "437fee6a7e271ece5efefc7f1a2e73bfc816b9ac74a5d3d83a753cd36d19fed8"
+
+[[script]]
+name = "level54_scenetest.lua"
+chunk = "ced82e2ec7f66ac906c856c4b0853f21afe415540079d9f17c3214b7062e8c99"
+text = "d5a9286aaac37a5880c0cf4446df595b6e9d6cdc7debf5bfe611d7cdf8f0fe59"
+
+[[script]]
+name = "level54_streets.lua"
+chunk = "73b991f226c756bcb499bd17283d26b6d07943f9f55d37b1011fa7e7b98c4630"
+text = "0818770a6e1248992ef4a2cb2c30153dbd7eb175a0a3c4472dc9af5903656f1b"
+
+[[script]]
+name = "level55.lua"
+chunk = "01746f8edfd2cf37c485c61181f409d5b3771bcb31f7cb4878f853431f73b863"
+text = "cc73f8c7f01a9454debb26b532da99a86a01519dc26472ca98efedd409961c38"
+
+[[script]]
+name = "level55_lastscene.lua"
+chunk = "0281cccd6f163b48c2c4412a4108099936a611fffc74b85f962a8ada3cbab1df"
+text = "8bf49063432c2dfaf133190293cb2fffd9c3b4bb3d3340405fc6a18975f5b4a0"
+
+[[script]]
+name = "level55_lizziesattack.lua"
+chunk = "9c0987cab2d0d42ea6061c8ab363ca7516786851afcabf6f634ea75c61ac9e6f"
+text = "f5773dff0ccaa435be0318a06b9b6b99191b09efec2eede174066142d426480b"
+
+[[script]]
+name = "level55_party.lua"
+chunk = "efeb364d88ba5838bc885864f3acaed150c2a676fd7e5db994804bf166fa56b8"
+text = "42541e28fb14aaf16c65cd9c81faee7f73d14ee771841fb6db61fbeb409a3b9e"
+
+[[script]]
+name = "level55_punkfight.lua"
+chunk = "46a74da48def74c71a15afd062481dbb5be2d66ad793e1ca906dedd5c29be546"
+text = "85bf374d15cb5a8e45ae00801d41811fb601cac51703c07cd47108240f3dc22a"
+
+[[script]]
+name = "level55_scene1.lua"
+chunk = "c5cb6049336c29230ffd82a0251987bb79f6673dee004b65744a9bba602a7b72"
+text = "d95dd2b0f7d92b5b0f366c73def3a30f00131f68bf854b4283f9014ed7fb0fdf"
+
+[[script]]
+name = "level55_subway.lua"
+chunk = "3156e2d538d2ed3b88f29de94ed93ee86fcbd7bf0641539fea6cb2f16e6e32d3"
+text = "e0dc785c9fa83cdc4231fa1aba583b6e5660fbd41e38c81009d1d0cea0d3b056"
+
+[[script]]
+name = "level5_chapter1.lua"
+chunk = "0169488684a0dac2d617cf5d971ada2e1925822af4031c60984d31aba9084cdb"
+text = "25595c03780ab48dcc361d9bcbac044335292c9f89a952319de8f8ae3574ffe5"
+
+[[script]]
+name = "level5_chapter1a.lua"
+chunk = "ee8dbbe51744b2e0ea0070c86444470576012827aa2bcf7a60e10bcf72b9b1ba"
+text = "2ef41ee5ac7226f5d1c90406d929405262db59574bedb34b1484b421d9b03993"
+
+[[script]]
+name = "level5_chapter2.lua"
+chunk = "df6392d04cdd483c9453c95124411456292e415616283c92e56c6627307ca597"
+text = "c0e4fead93bf02bb69fd7548c35b882f35d4748e5d020f76825bb0a561f5da08"
+
+[[script]]
+name = "level5_chapter3.lua"
+chunk = "6891a7a2c4eb6969e5b33fb02e92cc1431955e100aa6074a058f64cec100a6bd"
+text = "919aacdcd1d297d20c6082604be3e74681b6706d9f2b866a9ce58703ef699e16"
+
+[[script]]
+name = "level5_scenetest.lua"
+chunk = "c4bfc03d986c0c149a2e9e9879f20e0837fc7a7df0da6f900daf3f00a850fd4a"
+text = "2a38fe9cb1040f03d5962ad20a3caef97b16a878886134b807c648c6de8713e3"
+
+[[script]]
+name = "level60.lua"
+chunk = "bf5bf175ea96ebd0bc3fa1acad64dff6e8d8691c6caa98244d9f221c3c87c543"
+text = "b6f2f5c54ae2cf4d31bec79650493eeac32fb45743f061ff186ad1155d299c59"
+
+[[script]]
+name = "level60_destroyers.lua"
+chunk = "d09f06c288d6835152bb0c0bcc8348a4dffcb687d0749deb42698f6b5e3cc92c"
+text = "d86476f802f549873b1917761d099db2878e88342a4ca9005c68ea5e40795c04"
+
+[[script]]
+name = "level60_jsb.lua"
+chunk = "dcf1f077a82917c2f8256dd906bfcb75fb9ffdc488722bc53adc036e973de2a0"
+text = "ebef763f8fc35b5d81c5f982582ae3fc4bec8aa42e2b38c50f10195b0014ce3d"
+
+[[script]]
+name = "level60_mothers.lua"
+chunk = "4ee98a5e92fa270c74472bdeb3865551180ec3496e72ef38b69659cea47ced9d"
+text = "459b98a56786ddb87005ce1a9719a87945a00a4a165e4c60340cb69ace45a5b0"
+
+[[script]]
+name = "level60_strings.lua"
+chunk = "fe3153f8d0715363a0f72e26c5628cd15939f99051f9be0ee97266c50f887d40"
+text = "63104d010bdf5a783b81e50eafa69e73823adcd3935e6f6de55d01975c799f6c"
+
+[[script]]
+name = "level61.lua"
+chunk = "2c1a558f94ef0759846d66327dde15d8f29aa73c9038469cdef1c61dc8336574"
+text = "847ecaa378de06354c2a00ad198a5f060f6da8bc147377dbab61858ceacf9228"
+
+[[script]]
+name = "level61_hihats.lua"
+chunk = "baeee31c26804dea89664baef05d52e7b89521d37bebcd917cedf1bfbf37b1d6"
+text = "66d721b10b12eddc053536c8057d9c735a8ef0ba34f0394af77e7d70663556c1"
+
+[[script]]
+name = "level61_huns.lua"
+chunk = "6004a71e9c39def989ca346f5858129036e1347b8267e420cf6d2ee26b761bdd"
+text = "b8b88702583df4948d1a82b6ff3d10449677eb8d2174f27d04506947bf4b71bd"
+
+[[script]]
+name = "level61_punks.lua"
+chunk = "af49eab997326d82cbcf4e46072e50d1146f45c15064a81f559397786aad5049"
+text = "32e7a86fdecde5b9a338da9d9cfeb2956d00e5895cf2c8c03f7530828132da23"
+
+[[script]]
+name = "level61_strings.lua"
+chunk = "1e7a96b98783242a5cf2e0108693b76b41e9f3ae1348a8d2952e530ceaf84ef0"
+text = "6391c5812f22e2ad1d863a81245b901a6eaa2d7972cf0aefc1e24330833cce2c"
+
+[[script]]
+name = "level62.lua"
+chunk = "6129d0c4029119278d3482402ddbd7161e3f367ddcb8af41d2930ed22fdffaa3"
+text = "90f3f406957ea810ec2b30e7da3ad3c4421ac186be4a0b391b3bfb5cc830cec1"
+
+[[script]]
+name = "level62_boppers.lua"
+chunk = "68a746c93dee113d761e32f40150e58289b4beb17f4ac5c8c7479d83e254f578"
+text = "71eb038e27b203b18cfdc73133f0639c79edd6fa7fbd57d8e8b4eefdbf0569ee"
+
+[[script]]
+name = "level62_hurricanes.lua"
+chunk = "a253ef7a7bb03c69bf2341ed2477994378d9325165b88d70d6ebb6f97addfbe0"
+text = "574c7a30e4b5823f2e524e3fd10d9cfc700efe5114379567b373d453c3ceaffa"
+
+[[script]]
+name = "level62_lizzies.lua"
+chunk = "45453b972deb600b1eb11374e85a297bb35f22cd29dc8d696f0ece88d38e6a40"
+text = "f4dca7758380e56613a0a522a08adb36f04564edac6afcf8c87556ad11d656c1"
+
+[[script]]
+name = "level62_strings.lua"
+chunk = "7f11ac13ef869374ed23a7dc73107555046851e4518ca34bfcf634098d9de37e"
+text = "97c7aeb24d5ef71dfaa778145ba5614e9c4a5b8a2ac8e28a79352353758a3afa"
+
+[[script]]
+name = "level63.lua"
+chunk = "39f215cc6d10f0c849ffe76310aece8c8c52e50bd35b2815b0165da57d3b0766"
+text = "dfa1f9f726b47fceb23cffd01d28902c56c4ac018ce52fc97d1079535b376e10"
+
+[[script]]
+name = "level63_moonrunners.lua"
+chunk = "6e64ae8da578cf20af3d040e16ec1491993accf728470cb0fd606ac000aee888"
+text = "9ff88f6e8c11ff6fa3d8c010ae446b43f15d7caaa3d83cda4f88477a1cc41526"
+
+[[script]]
+name = "level63_orphans.lua"
+chunk = "299bdd6d131a6608e0fb8710c3773ee0f1eff8f8fcc5b2cc601cc6af7ea90f15"
+text = "2ada589245ffbaa2d39c2d3b7bcaebbd950d77661442a7c845e832630f42d07c"
+
+[[script]]
+name = "level63_strings.lua"
+chunk = "469af6d94decaf5c73e9d67eb6dff2b9844701dc42b7a6b43bb6ac7c2ae85f35"
+text = "a4f8b24171cff09e99ad2e130d22a803d8c87ec35dd5faa55119a4895bdce7ec"
+
+[[script]]
+name = "level64.lua"
+chunk = "9b9c259d0de0708bbb6e853bbf1b2536302ae60c675c2223a1210730201d6500"
+text = "66923f95598a02a4c0c2ba20f17da1470d77e5f06222042e57f8e68ae213002b"
+
+[[script]]
+name = "level64_cyrus.lua"
+chunk = "17b6df00766efa1997cebb635618cc792fc2f1ad4a4cc2a68bbdc127514f0799"
+text = "cd7260ded4bcf7912f1be7d6ba62626010461c90a395cb1d27e513a2c1debea2"
+
+[[script]]
+name = "level64_furies.lua"
+chunk = "e04aafe7e37b9a08cfc2b20c8053af9ba8a6683d7e5156691c00310fc91b23d4"
+text = "e8e397afa5c986febfccbb43e626173b07efc62b7c8f795ba08ba0663edd25e4"
+
+[[script]]
+name = "level64_riffs.lua"
+chunk = "3f6ded9cd5dd2ebbd84afdccb579d108e67163eee45c31c024d4b66e75ccccde"
+text = "17c677cf89f558220762429a3536c22bd00c8dfb2184d2a753bd0307ec86c964"
+
+[[script]]
+name = "level64_rogues.lua"
+chunk = "5426246d4a107c093e647182aff120f2ab210b54ee31b415f217d036779bdaa4"
+text = "6e5c93504267a034f2fc6c2330edfbae54c6fe3c8e87d66a6f84267042d701f8"
+
+[[script]]
+name = "level64_strings.lua"
+chunk = "cd407262417811fd77745ad9b10cf00952cec6cefb340befac2c4dc0e3ffa89e"
+text = "8beeceaca0f94f282beee65d1d9c72d28fc7993b8e8fbf3ba66eb9c2b46c1986"
+
+[[script]]
+name = "level80.lua"
+chunk = "36355e5e49d7ef7cc6ecaf0aa377f21c611f69bc750971751db57627b015d3a1"
+text = "f9ca2b6bdeb6db5e3966f0120b6561a64cffa3e62579a2419e8754065af8e3be"
+
+[[script]]
+name = "level80_chapter1.lua"
+chunk = "8669063f2c279be12ec2542d90bb3f28f0c7965e0dbbefdcb6072bd86d687f12"
+text = "ce0c1c25d9556d01b2a57a39472ecad5f22e588e2c4950f0ec3b97383a628a2a"
+
+[[script]]
+name = "level80_chapter2.lua"
+chunk = "561745fd04c05cbeae52b17b54eec7f8a96275a6a54f8fedcc24528db87ef3a4"
+text = "123baba748bc5ee325491c46aa6987f50ec36915950dc6d57eac9bf66678af60"
+
+[[script]]
+name = "level80_chapter3.lua"
+chunk = "9f88cba941fa1c3a59356e4d69ba7317ba2bb546366eaf9386fff52446c32498"
+text = "73e2af9ec4f0ded4ed068386fc30452cc64bd8b642c35cfa0fcc61260c4856db"
+
+[[script]]
+name = "level80_chapter4.lua"
+chunk = "2cba833d0c4ad339f1723a52296fd75f6fb76cfab3876cf049ddaf447e1167c9"
+text = "a0fc54f6dc294a1879a07e6524eb17491aff7abfc89786bfe92c53031144435d"
+
+[[script]]
+name = "level81.lua"
+chunk = "8e0ba5ddfd3d374b10adc01b4d5068430550e0d38d91171c14bc97e9ea080b55"
+text = "f84b94aa25c2210310a0f358486b0353259c66dd3f668f839242ac543706f0c0"
+
+[[script]]
+name = "level81_brawl.lua"
+chunk = "9466a4a705de89c420d1ed1cde806283fc551a031f8ec40bb5999eb17b73809f"
+text = "a73c6a21744d66bf0a928c1f8224e4ca49d63acabebc9e5ef9e6221a65609932"
+
+[[script]]
+name = "level81_chase.lua"
+chunk = "ad41ae09cf4ce566239d5a3a2d1c2413574b1536c495f00efe930abce9dd2028"
+text = "402bff2dc81fa31ea74dc21b2f0b9b9ee27e1b9013cbe21c08fbf13c115d6212"
+
+[[script]]
+name = "level81_chatterbox.lua"
+chunk = "0df42c283f065a68993486bc29ede0444573734f11c25273745aba238e4077aa"
+text = "ab38e1bcbfd974bfbbdda12e12c9b51484333e4b8d3cfc3a47fe3ce8559a69dd"
+
+[[script]]
+name = "level81_cracker.lua"
+chunk = "de455db11fbefd4fbd21d88f6e27629e4242a774ddf87bdb1cec8623a9bc9019"
+text = "2fa67cb7fbf0b046a11e72b62d8fb38c10efde269dd167b2255076d4e9757943"
+
+[[script]]
+name = "level81_horror_house.lua"
+chunk = "0b3ed496d66673e7c4ab31af32d63cc9931130bde0284a2dd7c7c94f8047db3b"
+text = "d6cbbfeb2692e2566b9ec7d352d78d1cea8052d1028c98e4521bc70bd80d3682"
+
+[[script]]
+name = "level81_main.lua"
+chunk = "5ef7dbc0c73a4dce18482aeda0b4a5381e5ea972a7b5675f861ce214f0c422ea"
+text = "02094fcdf58f7276a78c2fed9d27f83933b5b8ff4234a3a398e69b5ec323c349"
+
+[[script]]
+name = "level81_strings_en.lua"
+chunk = "838761c5f268e9635255790a22bb6f4ae05614da2b9ff3fd97b681aaa84cd94c"
+text = "69ad95f00790c25374fc5bd400fe6273ffc913f94ff4fe6506b94451da54b1bb"
+
+[[script]]
+name = "level82.lua"
+chunk = "37d50bca8cf061da1edd3104f892b08bfd08bab5ffc55aa4b787dcc46c94e294"
+text = "9b33badd6207bdba40ae7fe0e1f9b10d4ed38478f38fc5813d8fbe0a9ca7e92a"
+
+[[script]]
+name = "level82_chapter1.lua"
+chunk = "994916d922795b4c40ffec90ff2dce1979823a9049143d07bd49c9c0ff4574b4"
+text = "49ef35e3a57b2bcac1ad145a5a7367508d418d5c991817c8dcae170b616bb857"
+
+[[script]]
+name = "level82_chapter2.lua"
+chunk = "16d57f4a3d715139891cc45dadf6b7f7366bd8668e320cdc380d95b31bb86da0"
+text = "ccaed78aa7bf0e49efea7f36b76a60c13de3c845d4b945d9e9ddfa07b357794e"
+
+[[script]]
+name = "level82_chapter4.lua"
+chunk = "7ab85a2c836a41c74cf37ae37a278eb79ace7d511a728f998c8ff06e2bf0b7c5"
+text = "46376af1490f62d68f12a38d93191406b15ed8104ab64147deb28d424e19f284"
+
+[[script]]
+name = "level82_chapter5.lua"
+chunk = "f7ea0f6c8cac9da545a06cb64537d62e1d3d111617b1c4e26901975423e235eb"
+text = "76e065099264e4ddefb6c71fca7179d0b39cc51dad2d10d60d69e9329a2b5d2c"
+
+[[script]]
+name = "level83.lua"
+chunk = "d11026be5c054dc53a41a55be25d8dd9180f380c297b84d8a6899a5e6a594522"
+text = "323d58cb2b05c446e29c042fdd8846d272273f0cfddf4149cc34d64fb9b49109"
+
+[[script]]
+name = "level83_c1_fightpen.lua"
+chunk = "59d04aad65bf30020fc7f084a2ab3c6dc63af60345186001fc66c8685add8a3c"
+text = "640f8dea966bc50ed2ca3441fc2c5b45616db5a47cda89b18098e56c4b376aa0"
+
+[[script]]
+name = "level83_c2_alleys.lua"
+chunk = "aaf5076bf0027c8e400951935457a6d98329defcb5117625abce29a27d9a7f3f"
+text = "a0adc2d7f3621fb9d40bbb5cc273e68b377fae2ad9f0180d3f10bf7502d5d58a"
+
+[[script]]
+name = "level83_c3_diner.lua"
+chunk = "8b27aa3294939f6e7533f20cf54c352e6050a2b8561fdd878efd9ee2c7fe0066"
+text = "45bc4ea50965d762fbfee96ef95c589eed811383323eae325acb24626ea8f6fe"
+
+[[script]]
+name = "level83_c4_shanty.lua"
+chunk = "992c2f2f42a01ca25da7606605da2d2ed6d472e712e2ac05de4dfbd5b368ba79"
+text = "982d6eaebb8299607f8863d88f726808508bad2f394f38059334136928052c58"
+
+[[script]]
+name = "level83_c5_apartment.lua"
+chunk = "a845d34af083e2253f12573faf4c401b277771a4b04d65a28814ce9becc40d5a"
+text = "fac0d3b73779e02fa87076a99bd088769638b49d2655672d7139036d365714e6"
+
+[[script]]
+name = "level83_c6_chase.lua"
+chunk = "f4b722a4812d10004f6045cb754fc405a828589c0f1841faeeadf8b931980900"
+text = "a0818c92382ee01d21a8aba0a4df3cc4527eb61aa8ff2d5422459dca1a215268"
+
+[[script]]
+name = "level83_scenetest.lua"
+chunk = "ff5960327f140f730f8f39d8fac973a2aa160c7c0d50c69925709c153833d672"
+text = "ee4ab5ade1c6d25b470332996d5fb6f6191adb1676080b5f263dfecb03656baf"
+
+[[script]]
+name = "level84.lua"
+chunk = "baeab9d6b4e4f0fc45ef8a43296db1621403125489f152d9b2c19cae543abe01"
+text = "a61817371f4801fc1829bdcaeb893f222095ec989e7cba9bc5cd7ca8c1b46c0a"
+
+[[script]]
+name = "level84_chase.lua"
+chunk = "e598da81bfde9a057f4402bf664a75cb7052f72c34e39f92a4f8a43e108c34d9"
+text = "b6e1bd8bb5cdddd6bcebea9fbef5f982f8562c942087d3f1e234456abc474b80"
+
+[[script]]
+name = "level84_end.lua"
+chunk = "ad23af71bb44e76434abc180086a5a7be45f651415b02b5d885720e3c00db32c"
+text = "8d8fb457b7a5244ba7dc79d2da92a662194cdbf972583d6ff12693b0575761ab"
+
+[[script]]
+name = "level84_final.lua"
+chunk = "44cf9553ad5eb3fe0ca3934cbf8482de3aaea427fd1c1b4710924c5d4ba3a3f4"
+text = "a1629399ac94294fb2acc07fbb447cbcbf93f962e0ceb031b8cb68f9171a1bac"
+
+[[script]]
+name = "level84_intro.lua"
+chunk = "b1122aa5b3eefce199a2bff2f23e3da6af6d5fd1f2325853a4a7432c873dd5d7"
+text = "7386e637faafac5da89e063b255b2fdee4d6d91562c2f42e6cf2ee0511ddae2a"
+
+[[script]]
+name = "level84_scenetest.lua"
+chunk = "ef50534a9c15c56f518ff191257a785b6be1c34a5f83fe3a0caf63231e48f91c"
+text = "78cc48e67f89920302e5012529c0da760fe24e2d5a5e523593f91780999a9152"
+
+[[script]]
+name = "level86.lua"
+chunk = "f7f140b7bc71b9138b116e5616b9d9948d604ee8ef17f3d9e8f80972761260d3"
+text = "10f95b9ef7c80303f3e1332de0343c4e2134f44568f723447849b7bf3f6a30b8"
+
+[[script]]
+name = "level86_chapter1_reg.lua"
+chunk = "89ed6fc6070cacca6e9d1b42cdad9c16f4e01b40312e695e59064d25823d4c7d"
+text = "65d18a1c8a48f99d488008cbe4707bcf770cf7da0ae970b1a921a757c589cfb0"
+
+[[script]]
+name = "level86_chapter2_reg.lua"
+chunk = "86f27a01acafc12e3b789588c09411bffadcf4691a4171f8ec1378b6489f19d6"
+text = "132346de945d7867f87b3a34b7fd8ce26c32dc31d5cb37751d618ba64695e910"
+
+[[script]]
+name = "level86_chapter3_reg.lua"
+chunk = "f1450f080b54f364d0c7d4ce27a09714f58fcbfc9a6501aba525898d0e741d00"
+text = "d8f2aab4d59bd8d708e5e7eec8ca611023469a9f5960f0bbf9c7b7dc87ab3562"
+
+[[script]]
+name = "level86_chapter4.lua"
+chunk = "05526ebeb91a6e5b82d8d91e6ec0e34bb1ea6fbbd2ac3fc6a50d7f8f4fff4d42"
+text = "c1d0616755b2aa43022105bb30f22c81473450e575b909ed5cc986389b4b82fd"
+
+[[script]]
+name = "level86_scenetest.lua"
+chunk = "9b6f9149f7d16e03149fbe0860a5a6e957e4485f152e2df7b49acd85d65357ca"
+text = "356bcbc9c4030cacb39d4ffbae4af279381d1d997b2e7204d2bff1e41a4472d6"
+
+[[script]]
+name = "level86_strings_en.lua"
+chunk = "3bd09b15defc19cb5d2e6c0ee9817d5fcf1f1d15d298df5e538aa9e8b4f60c67"
+text = "66f6a2ecb739eccdbc6c969f9b30b3ea38b2e1f1cf86ab5691c2d9c46e0ebc6a"
+
+[[script]]
+name = "level87.lua"
+chunk = "3f5f3bdc819a578841d7628d39c2480d8cf5e03fdf635541ed9257c974b5647a"
+text = "256cbf866d706571f8a187401aaa523b6c9db6f65aaa95c976694f4694421afd"
+
+[[script]]
+name = "level87_chap1_tutorial.lua"
+chunk = "e788c872b07675079e59f7a4d765b1e44b5061fda0316fc6869820721df1f726"
+text = "371b9052f3cb5b7f8a191e0824f04f80a8a9be32432c554dfcb84c9a1d8926c2"
+
+[[script]]
+name = "level87_chap2_street1.lua"
+chunk = "c5f83a7e4e964e0fda3f1c8e03e5b0538db4eb0d359521f38d4ebd0b9d1f3f4f"
+text = "ec8db899ff822bfba63bb47d6a33e3a2ff16bfe6443ab8fe2fef26ce79acc644"
+
+[[script]]
+name = "level87_chap3_shanty.lua"
+chunk = "b031fcbde9ff7b610a98447d932e71f008704cee0dbc232f7b31264affc45631"
+text = "0cf2761ebd8ea6a3f8357ea92116717d27b2d8ca6b6150221553dec66a8db66a"
+
+[[script]]
+name = "level87_chap4_street2.lua"
+chunk = "44ad30a2718692825f46574f4a901faaa7a9a10d21861ec05443422bbe41fa71"
+text = "e0c103ec16efeb7ea27f7e980286d09b83647354630b481dbe2ff57ad07a98b8"
+
+[[script]]
+name = "level87_chap5_club.lua"
+chunk = "01e6f106d2649e279d5cb848581f77cdbfc4ec2570525fd33178902d5f71a524"
+text = "5d7ee297621d00e21ec2c839bc870f2cc9ef3caadcd985b5e64f62ae25548405"
+
+[[script]]
+name = "level87_scenetest.lua"
+chunk = "ef4f276a9421adb7cd5cc58449fac7b958f28ea5bae09706ecd7de3216af5f60"
+text = "388e9daba43c39b5f3736288bc92a5dfbf38ea554de26948347f2e3e4169f980"
+
+[[script]]
+name = "level9.lua"
+chunk = "fd7c4b3d2f65dbb5cca6b021a501062b7c10d22eec5cb625e4477c279bc660b8"
+text = "8a5ccb035bc301d553a0aa1bc220d020fb26831a6d39e256e910f39a18e126fa"
+
+[[script]]
+name = "level92.lua"
+chunk = "0b5032ce26a6ad9b85daf6de57f0d2faa560ab357d85e5ad2bbc70262e075449"
+text = "cfcc038f4ef906af735fd78c6407934b7d43064e9a9f667f64b9456457fc598b"
+
+[[script]]
+name = "level92_chapter1.lua"
+chunk = "d2add082389ccf712db6d5fcc3c11982e2e05908c587a8bb1e45a4757fa0d493"
+text = "c0e9eae8a22e6ba2e1fec2c796170f0b185011257b882c260c90385f85e5c42f"
+
+[[script]]
+name = "level92_chapter2.lua"
+chunk = "2e2df3932633e5f4cce6f50f93ea3e05a37203dabe52eb0a3079810439d9e9ee"
+text = "216534f2c9c6d32aea41fcd9615e577b9d258243bef30fbba8f16d23b31f135b"
+
+[[script]]
+name = "level92_chapter3.lua"
+chunk = "c032b2f218dd57654ec30b1fb384286f4dfb22ba71b7419b7289383b7bc900a1"
+text = "88f9e219aa41efa7fa8683129d54ba9ae34c30b58ca0de8637f7410a5e36d4ab"
+
+[[script]]
+name = "level93.lua"
+chunk = "505a822799a4c14a52f4a5e5c87b271258722bf82180bddc6f22f0fc3325b845"
+text = "f3677fbc592ae2b8328e8c803cff05be6c918b4589f6549bfe08a196b53e0226"
+
+[[script]]
+name = "level93_chapter1.lua"
+chunk = "5d965b52b17d8753b614ea356986240f15ea153e24a7bbf75913af46e1f8997d"
+text = "27940d7c8cfd7a92bd9a749035d94c95c0f18172727e8ecd07c2ba4e724bf538"
+
+[[script]]
+name = "level93_chapter2.lua"
+chunk = "6bb6cb99eb5d537f8d0af90ebcc2d484026b3961c156c4f21e628a07a79821c0"
+text = "8b43eee7c0e62911fc143ea0061ca7a1bb7412e16628a52bd3aaa56f0cb63717"
+
+[[script]]
+name = "level93_chapter3.lua"
+chunk = "820dc5f863c18c9d967ba4cd9d73241ae0bdd78bc90a4250285f0f21f298a204"
+text = "3d795db7ce7788e14e29cbcf40f4c47fb9b7a1a240c1028dca4450deecfcfd3e"
+
+[[script]]
+name = "level93_chapter4.lua"
+chunk = "783b8a7deabc760a701fb5e9989b9d196d442f47d797dc4bf7cfea4e318c350d"
+text = "fb107db089f47b623b735b5fe391efc7d668823c5bfb1d8c74cbc581b691a9d8"
+
+[[script]]
+name = "level93_chapter5.lua"
+chunk = "b559efa8467a913ad4a706bec0c1ec76aea4e17dfbd146e0450547c46a382b54"
+text = "1f8f2fce76bf1b87e2bd3e104dc3c33b225064b15a6dfeee3c9c01d034569f3a"
+
+[[script]]
+name = "level93_chapter6.lua"
+chunk = "461534b70599282e904b1c070bc6668098618dc81a511b2015cefe1a38b70df3"
+text = "47cda57c274667c7831079dffea038179307b224db41253980e02a9c69664349"
+
+[[script]]
+name = "level95.lua"
+chunk = "745cd4ab5f6725e7de90b4794f76e4ac591eb761a7778d3d6e5f65f2416c74e0"
+text = "538a0ddde4f1c5211e1c95cbe5c7bf37cecbf2e7dc682ba315fef5f1eb9b194e"
+
+[[script]]
+name = "level95_apephibian.lua"
+chunk = "b94882fabbc84fad50979920b2314c97562f104d0f51293d50c255705bc7161f"
+text = "a8799e1dc23afd9ef5e2acf8a4bea86ff5eb3dcc7ddc2415721e2f65c246286d"
+
+[[script]]
+name = "level95_busted.lua"
+chunk = "272084bf73953251b63daa6c7c2917357002c0d15b3850d7332a1b233c53aed8"
+text = "473eee51381e66475b1669c1eeb95e4aedb46b47d6ba555dc816a858b31a4c86"
+
+[[script]]
+name = "level95_chapter1.lua"
+chunk = "72e9866e75d3418884571f2586406180a6a76f76b4959ed329aa033f36cbba33"
+text = "5c18847f78f0ab9dbb26c225bec04245e239d927a0f4e5b760497b0c830ea46f"
+
+[[script]]
+name = "level95_chapter10.lua"
+chunk = "61b5e890aecb4afb8a1e63b5ce67fa9198aa20bcf423e4d2f9c01d6a1d5c8eb5"
+text = "17fa59281d64ddc3322eab402d4421844f4b424d3c72cfd0363cfe89ac9ea639"
+
+[[script]]
+name = "level95_chapter11.lua"
+chunk = "5f13f0c3470499a67dd0a4a2202ec5884cabc09b36700596ad2ec704881cb4a0"
+text = "c4afa4e1d2a35db94620a08dbabd3c83c4bd178c83d1d77e5071db9937c5c6a3"
+
+[[script]]
+name = "level95_chapter12.lua"
+chunk = "d6ed5334fbef94c12f0e5634f9c0ad8d98d41e7fc3109f3bf81455a85c5014ec"
+text = "fa2770d438cb1972ad14bb1004069e9574cd25606a3704d3f380399e14ab3510"
+
+[[script]]
+name = "level95_chapter2.lua"
+chunk = "5ee303fb83e250d22312ae4d8707446e6d22d03dba9b26564dbb89afffb98dde"
+text = "0129f7621413d0cba063703071966a743d087f2788cf2a886c3dd8a98588b5df"
+
+[[script]]
+name = "level95_chapter3.lua"
+chunk = "4a52d04c844ac95e7dddb8a3262dc4e4e3e909d06b15f59197368109cceedda3"
+text = "3c5d6b0fea27db474b37693dc0d2e54127936fecdfeacc5e3dc396c9dec2ce3c"
+
+[[script]]
+name = "level95_chapter4.lua"
+chunk = "ac3cb153fe8e9cb3e9639ef1ee031b39311731fe0b4bd98d2a65ec3fb361a1e7"
+text = "b4d204976aa0d82539698d644f053c2d9bfc72739fc27ec1442e96d0c74f95de"
+
+[[script]]
+name = "level95_chapter5.lua"
+chunk = "ef16eff5e29fa53ce93868e95f0e6104aac3505c7ebff71c5ae5056816368e2a"
+text = "32bcf3f3ac95af09675ed6f28c5020b85e1d0fffac2a09cf6f86ccb694f10583"
+
+[[script]]
+name = "level95_chapter6.lua"
+chunk = "aae42479367a8a82621c0399b4703f6ed499b62a31d8209b45672638526a546c"
+text = "2bfcc1e11e31c70a5843f9a4e6599df5bf3ba8f48047ba43fd3a6e16108b685e"
+
+[[script]]
+name = "level95_chapter7.lua"
+chunk = "0c41969412bcab27ac1f78ebfb390986521c97849717059c3f4c48b578a66c44"
+text = "5b15f7ed3dc6f227d2c8f976828e4be9aaddccbb1199d6d2184290bd3a23ddf4"
+
+[[script]]
+name = "level95_chapter8.lua"
+chunk = "c0f0676afaeb0acad0835628126e103d82523e9d7838ba61877549ef15c634e3"
+text = "a200a2b8b357364ae69a830c1defe23c656936a9fa7f9599a0587a3cea21af3a"
+
+[[script]]
+name = "level95_chapter9.lua"
+chunk = "3cca5a5c22c786e5a80b18847720d7ad6cdbabefbacf6a7624deea6d1ea2f4df"
+text = "3884dcb7fa8748ce30da8500fa611b718709fb621aea10acf9db9beb0ffa3470"
+
+[[script]]
+name = "level95_clubhouse.lua"
+chunk = "75b449216a16fd00366b587383726f541288a6e932ea1eab3069753334e6d9cf"
+text = "f417b743e51cb8c0d5c9123681db6638c5fa91f4ce20712d06774171ff175872"
+
+[[script]]
+name = "level95_coney.lua"
+chunk = "f2eb93bf09a866cb1d01b4a22e628dd35e60efcac7bcc1b3434871750c5ea661"
+text = "da0f21fc7f855121158c73bcac970e06f8514dff02ac5307b3f0e1d32bbdb81d"
+
+[[script]]
+name = "level95_coney_strings_de.lua"
+chunk = "b17f5877579b4f029e4371f11cdc788dd8f5159b6421e291601ae6f5d537088b"
+text = "06ab7d28381edb7cc95a5a3dc350daf7526fe0f056cac08fe6f5f5df5a7410de"
+
+[[script]]
+name = "level95_coney_strings_en.lua"
+chunk = "5b3964ac16bade6bbb90bd9c2107e1ffc36d1622c6c583aeddeb932e15dc6549"
+text = "9dcc0f488b5cc347d077340f471f92fb909805fac8db6c105f127feb97e388a0"
+
+[[script]]
+name = "level95_coney_strings_es.lua"
+chunk = "95cfd21d673435025168a578af31dc8d80aa4dfb66c372c199dc588514a1ddfb"
+text = "6ec856dbf7c030ed873339e012657948dd72e6e0b8d6c754b72ba0e3262f4075"
+
+[[script]]
+name = "level95_coney_strings_fr.lua"
+chunk = "ca9c923edf668976339f4cadc4e96cb8386cd19a02ef28f4e2803b8805d7fa1d"
+text = "da8f326c87b186845ab34f3e8998058fe6ea278cfbcd2d73305dfec7c080cf2e"
+
+[[script]]
+name = "level95_coney_strings_it.lua"
+chunk = "275476ff7e4d41a2a3bcbb33a123e1174302baa878e9af33879b65af6cb58ba8"
+text = "d2f10aa15ff1b6af06476c8bc8765f8fb535613878a7c36d43b0d680898f6665"
+
+[[script]]
+name = "level95_dealwithit.lua"
+chunk = "707c4f3a3580f77fa6b5838803534f096ba1366242668d74b9174bdf5323be8d"
+text = "620880ab0955a9d61c67e94a03fed0cd824c5f42a0072a7556216710007a7a9f"
+
+[[script]]
+name = "level95_flashhead.lua"
+chunk = "7f48edeea9384ae67fd17af9ae6bf1fcbe5211d224126810baf0cac0690d233f"
+text = "e472a33a8125012e3e9ba2bc2f4c5191b74238b19ce0aa13c38891faadcf929c"
+
+[[script]]
+name = "level95_flashrage.lua"
+chunk = "204ffa48b51ae9fc847f806320a04e78bc3580ccdb6efe01c2305b6cb4907df2"
+text = "ed4e9b4c17dbfbe02b3e6e9385b9fdf67f22a4dd14321c05797b57e8a8a23df5"
+
+[[script]]
+name = "level95_freedom.lua"
+chunk = "7961ab535872407023e33a5acc2ec75ea388aaf0e9e16178b5b6fea4849aa801"
+text = "2502fc15099d35e20c3a55007f5ca74ddac68fa7036ba02962929fd551ad9ceb"
+
+[[script]]
+name = "level95_homeless.lua"
+chunk = "210a7e04efcfd55e3fbf3ae58f3a40628e5758f82a640f190db49305fe98b7ff"
+text = "a0e7ce5f69aae83893ebf9ed06d185e4401700dea3eb068d8008c3a7a96a2a56"
+
+[[script]]
+name = "level95_invasion.lua"
+chunk = "ba7956bb041b4b56191f39269bcdcb12bcd0be06dfadfdafdda7a8cd9b4aad79"
+text = "1f6506664c0cbffd20e1a116432be1399cd2bdee3a3828d29d38b8f97bf2885a"
+
+[[script]]
+name = "level95_robinhood.lua"
+chunk = "553106839e9332cb864ffb1de7080030621031e64006a58cdeafc622c3cba218"
+text = "133372cd6cb998781c2f3c50529590ab3b8c943534f8e850666136586a484850"
+
+[[script]]
+name = "level95_strings_de.lua"
+chunk = "9ad11403f22c510a717a55b1f43d37dd9e3c2cfcd286fd4fae2c83023e613e6e"
+text = "147f1e78a8abe877001e6d96d5629fa84e42fb42a6754af2da3e3366026a175c"
+
+[[script]]
+name = "level95_strings_en.lua"
+chunk = "bf0562a37e9bf27d64f9726c5d426b16faabbafa3c93b99379dc01f321535e02"
+text = "7dc7e6dd8a51b11c405b125bfc695a304e994a77072c0d0eca405221eb6fe969"
+
+[[script]]
+name = "level95_strings_es.lua"
+chunk = "5750a7edb66290a09f8e8403feee078161278fd80e9ea2eb0639dd8171081c96"
+text = "33b5006362c0fc4b06fa54a6bbdbafeb79bf92bb03ced0aa4299adc008bcadbb"
+
+[[script]]
+name = "level95_strings_fr.lua"
+chunk = "c405b44ab01c29bea43cdbd9baa0520a5c80f8bf048ef5896ee9c2f67ba35577"
+text = "e14fbbb24bb5e265db5386ce144b53437857ddad628958f9ced0075328bdb485"
+
+[[script]]
+name = "level95_strings_it.lua"
+chunk = "368585887a575f56529fd316bdeb3c45fc150f75fa5223ec84815ced70ce748b"
+text = "37a4f0400a6581b2dddd637d05382e1520264b2bfc5f958286394941ed3a44fb"
+
+[[script]]
+name = "level95_vigilante.lua"
+chunk = "140c21661c278b7a1051a734f34f88a090f9d0885547294d947440a505f619be"
+text = "bf026122055b1cf2c276769ecd090451ba8286619e5287f8fad552005bedc754"
+
+[[script]]
+name = "level95_workout.lua"
+chunk = "e2d870caa408ed8b6243760a2f726f59a823012905148520fd9763957df19dd0"
+text = "3434b4b219b3632db6817ae8742ef7dd2c31fc9061d37656117c52a247f9e1f3"
+
+[[script]]
+name = "level99.lua"
+chunk = "99616701fe449cc123707976e27367ba68e2e7c75fdfa8c0622a66f4a2312ba6"
+text = "389805baad0ab8cca168b2277b9d61cf15c6e95997abfd76c6fad4c71c72bd67"
+
+[[script]]
+name = "level99_combat.lua"
+chunk = "977ae27513c9695e50fec06ab908ff09d35b7e0ca4604affb3d1db0b93438cd5"
+text = "953abcb40f620760b436ab60fbacb7654424f58f282d3f3a6e6b18dc649973c9"
+
+[[script]]
+name = "level99_lesson1.lua"
+chunk = "7893694fcee1f0488408ebdae38bae7a712ecd520a904efb170c573caa392dbe"
+text = "55d7b21ed58f35e95efc937a08929aa707e357e099d6db159fc7d42b852ba533"
+
+[[script]]
+name = "level99_lesson2.lua"
+chunk = "da05f866793c2d4b925f32bc49c3878ac3646664ba5c022d144f9208f6d7fee3"
+text = "8719bef84c58571ab96ea8f0ddfcb34957375e5f70afc158ec8dbc965c289b03"
+
+[[script]]
+name = "level99_scenetest.lua"
+chunk = "f2972e22a1a2063e1e669b4a8193d5c82271ea884351ab984bb830315141d88e"
+text = "e2c47a9f595c78839b86a712605cd4fdf0b63de644a0e4e9be953b56e744ebec"
+
+[[script]]
+name = "level9_chap1_radio.lua"
+chunk = "96218989716210fb5156af056f9d11670a07ae4cf07ba56fc5cd34c256d0ca65"
+text = "fe2208eae2365abc8f029434afa59cb725892e2cffa7c5cf46ffeeb6a65d05ea"
+
+[[script]]
+name = "level9_chap2_tags.lua"
+chunk = "02df6ba6e65427bb83ab1889f51b384fb1ebe5a9888fb8cc89d6886b6df3ee17"
+text = "5183627941432ef8ae1ccbdcd8d976de93e277d093970f3bca38920dfde6310e"
+
+[[script]]
+name = "level9_chap3_escape.lua"
+chunk = "781d872a95f72758b8bd8346c3cbcd8f73f656e1bd4b7dd7be9e56e0a1620128"
+text = "6b490f66157fc6ad87f3bb0313487269c6626ab170acfefb487bb7dabc8f306c"
+
+[[script]]
+name = "level9_scenetest.lua"
+chunk = "110c3d23cdb389ab1ebc2c9b0418356a4941c5dff6025f4f9fe1032ca5613483"
+text = "7b56b1d2646d35833121d6f0041ff17166bf31e3ec161fdc5546e99580d28b12"
+
+[[script]]
+name = "mercy.lua"
+chunk = "7d437e1b70b70ef5073b51087f4e3b4ec913f8ecf46bd98bb3d6a661b9eeee3b"
+text = "630e6fd0faac56b8112959285a8255f0d1a06a2a387e85341831e11acc097d3e"
+
+[[script]]
+name = "royal.lua"
+chunk = "3e47317e01baeb76882b8398ec9ad03fdb3f53be717bd0bf869bcde944fc03b0"
+text = "dbe17f248700ea6d45578500d28293c4a4e62a6d8984b55d610ae17b93d0b4a9"
+
+[[script]]
+name = "rumble_arena.lua"
+chunk = "36c00e2e77220dd7babe26b76466b37af3b6827f0100144eae4b297bafb066af"
+text = "9c1558d123134ce2c25377759d3a37c66d7e3c923af25312f881e5b46a75abd9"
+
+[[script]]
+name = "rumble_data.lua"
+chunk = "5172787480ebd29913ae4fe34d662ba5e09a81f236c2da80ef843ee9eff8cd37"
+text = "d06b9bb954cc7d26376b030ab73b1f3fa8160ff042a043e7f27ab6a1cbec06c7"
+
+[[script]]
+name = "rumble_gang.lua"
+chunk = "7343317ef47b39c0f0d8b859c5e9029d6b289bd3ef825d22ecabfa113000ac41"
+text = "59a01c48a6f4752b2fe40a4e8515584a9f28227eb85b93bdef5898d9c4aef50d"
+
+[[script]]
+name = "rumble_preload.lua"
+chunk = "acf9a2447b5d301b808a58257cfa4448b403ddf08bc151e48216fa46d13faa3b"
+text = "b6ca2fe78bce9d09cc63d1d3119f17f1ef4579bc35053ade2aed0f3fa7fd3380"
+
+[[script]]
+name = "run4life.lua"
+chunk = "1463b34c461493a0d298a3090fda566e5ea1912bc327adfe5b69c350ba66f55c"
+text = "10688366e0a9d2bdcfd2d81a3e8a5801046913f0324747bfadd3723f414cab38"
+
+[[script]]
+name = "shoot.lua"
+chunk = "b91a12c138777f0a68825945167e23280c9e0b892808e122f21695a50766bed3"
+text = "56878ecda39b369569fc498ab6fe2d998a3c5eef9b7e1b9adad951a03d7e4cdc"
+
+[[script]]
+name = "snuff.lua"
+chunk = "80284cc0656800637e0305a9a4a6348a7298bada5398c6156a43d5bd7c79a103"
+text = "4f633269920f3bae7a64f7f08a3d48c2967f82acd4b6ca3ededaa22fbdc68a15"
+
+[[script]]
+name = "survival.lua"
+chunk = "42948754d2adc331fbe2b40420944c08d10fb920997e9a622d4424e7d0579a8c"
+text = "1fbb021b54e54350462e2ee9937cd577179a79a0cd83f45170098d0e8c7f8d07"
+
+[[script]]
+name = "tag10.lua"
+chunk = "d000f001741cb19472d9a0a9920ae4f66adddb59b702f21bf2dd695341041535"
+text = "664e46ed7652227283b0b3fe2c83cfc5cb725cfac01d91936dc92badc3842314"
+
+[[script]]
+name = "tag11.lua"
+chunk = "4957dfd44ae3981fe5e9c2c8e34986b744d99461d4628c04d02eef0b36a1039a"
+text = "0389fad902bb1c9ccda98a14c4a2a42e5c37ddeac5c8b5884fa29a6a783e1d00"
+
+[[script]]
+name = "tag12.lua"
+chunk = "50d0f704da8f52caa38acab03c8f254e10ab58220907076141dc9d92b222790c"
+text = "735825bc9688d60643fda00ba4eeba645a898ec00c96d2fe173e0dfde635c726"
+
+[[script]]
+name = "tag13.lua"
+chunk = "3c60ba20fffab9e264bff3ea2b1762928e69f56ee31b2219efbd6236d3a7b435"
+text = "12b12ec4591a9ec43578842760c8ff83ee7fb469f515651df055868c2da1d7f3"
+
+[[script]]
+name = "tag14.lua"
+chunk = "4c4023143dc0976c89030d4cc88b3e5646a7ef8d2e92d3674d8540496a5aba5c"
+text = "c7d7c01bf067687fb3f92edd07fcc57941e3f4669177ffa87234fd94744dcf48"
+
+[[script]]
+name = "tag15.lua"
+chunk = "2089b26b0c98ad0e11b29836dc16c32d3e65df33b933982f32cf3186eaca1de5"
+text = "148889e1da0642f80b5cf31797dc8a0e4eb34f013c4ac6e01fa070235a04023c"
+
+[[script]]
+name = "tagbt.lua"
+chunk = "bc5076c3fa0c2d5d10ad3f3b9482ee2dabdc66efae369c1554f8ed3d8869fd78"
+text = "5e92d22980c814c35faebfe40bbb956dd02ad08d12a67db6a0d24b0ee0eda9e2"
+
+[[script]]
+name = "textdlgpopup.lua"
+chunk = "0cb5face63115ee2867a8b099974c799f352cf1e13070d73510c4e8c413e878d"
+text = "d3ff6a37bf73c4a5c8f01b16260821d6ab2a449a18791975ec8054ea6cbd95d2"
+
+[[script]]
+name = "wchair.lua"
+chunk = "14602feac359e744e09fe5ead2a4e7f5356bef1ad2ed85ff046b17c96b96f6c8"
+text = "9bf1d386b0a3b4b45320f0934d5c3f2448688a47a35c050af2fd13aa3a4f095a"
