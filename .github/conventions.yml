@@ -1125,6 +1125,12 @@ conclave:
     question_prefix: QUESTION                    # QUESTION.md or QUESTION-<n>.md in a unit's scratch folder is a question ...
     answer_prefix: ANSWER                        # ... until ANSWER.md (ANSWER-<n>.md) is newer than it
     unit_hold_file: HOLD.md                      # a file of this name in a unit's scratch folder holds its unit-ready wake back
+    # A conflict becomes work (docs/guides/conclave.md#conflicts): a trial rebase, then unit-ready or a conflict-fix wake.
+    conflicts_dir: pr-conflicts                  # one file per conflicting pull request in the scratch directory: first seen, last trial
+    conflict_retell_hours: 24                    # a waived conflict older than this is told again every this many hours
+    # A waiver (`pr hold` with no --who) covers a conflict only when its note matches: it names the maintainer and the
+    # issue that holds the open question, so no conflict is parked without a decision behind it.
+    conflict_waiver: '(?i)maintainer.*#\d+|#\d+.*maintainer'
 
 standards:
   # What a file is held to when a change touches it, and the files that do not meet it yet

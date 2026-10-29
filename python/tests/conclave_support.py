@@ -12,6 +12,7 @@ from conventions_support import REPO
 
 from coney_tools import stamps
 from coney_tools.conclave_snapshot import Sources
+from coney_tools.conflict_work import Trial
 from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.coord_cli import Sources as CoordSources
 from coney_tools.issue_claim_model import Card
@@ -110,6 +111,15 @@ def ready_now(root: Path, unit: Unit, text: Path, conventions: Conventions, now:
     """A made-up answer to "would pr open pass the proof": yes, for the change `CHANGE`. The tests that weigh the
     stamps themselves use real units (`test_conclave_ready`)."""
     return Readiness(True, "", CHANGE)
+
+
+#: The commit `sources` says every worktree is at.
+TIP = "d" * 40
+
+
+def untried(root: Path, unit: Unit, text: Path, key: str, head: str, now: datetime) -> Trial:
+    """A trial rebase that could not be made: tests not about conflicts leave a conflict as a `pr-stuck`."""
+    return Trial("unknown", "no trial in this test")
 
 
 def card(issue: int, claimant: str = "example-maintainer", hours_idle: float = 10, **changes: Any) -> Card:
@@ -295,6 +305,8 @@ def sources(made: Layout, gh: FakeGh | None = None, plain: tuple[str, ...] = (),
         "free_bytes": lambda: 61 * 1024**3,
         "claims": lambda: [card(741), card(770, "contrib-a", hours_idle=50, scope=("assets/",))],
         "ready": ready_now,
+        "trial": untried,
+        "tip_of": lambda root: TIP,
     }
     base.update(changes)
     return Sources(**base)

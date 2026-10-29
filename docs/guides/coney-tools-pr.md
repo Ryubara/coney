@@ -106,7 +106,9 @@ uv run --project python coney-tools pr hold --list [--json]
 The coordinator's record that somebody holds a pull request's problems (an agent fixing them, or a waiver with a note):
 the problem is neither told by [Conclave's watchers](conclave.md#watchers) nor guarded while the hold runs on the head
 commit it was made on, and is open again when it ends or the pull request gets a new push. It writes one file of the
-scratch directory and nothing on GitHub. What each form does, the limits and the exit codes: [pr hold](pr.md#hold).
+scratch directory and nothing on GitHub. A waiver (no `--who`) on a conflict is refused unless its note names a
+maintainer decision ([Conflicts](conclave.md#conflicts)). What each form does, the limits and the exit codes: [pr
+hold](pr.md#hold).
 
 ### pr check-commit {#pr-check-commit}
 
@@ -229,7 +231,7 @@ number, and changes nothing (except `--rerun --apply`, below):
 | Cause | When | Acts |
 | --- | --- | --- |
 | `checks-failed` | a **required** check failed (failure, timeout, cancelled). Its class is `lint` for the checks in `hygiene.pr_health.lint_checks` (title, body, docs, format, mkdocs, markdownlint, actionlint) and `code` for the others (`build-ok`, `python-ok`); a mix lists both | author |
-| `conflict` | GitHub says the pull request conflicts with its base | author |
+| `conflict` | GitHub says the pull request conflicts with its base | author (for the branches of units with a worktree here, [Conclave](conclave.md#conflicts) tries the rebase and raises `unit-ready` or a `conflict-fix` wake with the command to run) |
 | `ci-stuck` | a required check has been queued or running longer than `hygiene.thresholds.pr_pending_hours` (default 3; `--pending-hours H` overrides it for one run) | coordinator |
 | `auto-merge-off` | the pull request is not a draft, targets `main` and has auto-merge off | coordinator |
 
@@ -410,7 +412,7 @@ coney-tools pr hold [PR] [--who WHO] [--hours HOURS] [--cause CAUSE] [--note NOT
 | `--who WHO` | text | none | the agent or track fixing it; leave out for a waiver (--note then says why) |
 | `--hours HOURS` | number | none | how long the hold lasts (default and most: conclave.watch) |
 | `--cause CAUSE` | choice | none | hold only this cause (default: every cause). One of `checks-failed`, `conflict`, `ci-stuck`, `auto-merge-off`. |
-| `--note NOTE` | text | none | what is being done, or why waiting is right |
+| `--note NOTE` | text | none | what is being done, or why waiting is right (a waiver on a conflict must name a maintainer decision) |
 | `--release` | flag | off | end the pull request's hold now |
 | `--list` | flag | off | print the holds that run |
 | `--json` | flag | off | print the result as JSON (with --list) |

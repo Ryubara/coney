@@ -142,8 +142,11 @@ export type IssueRow = {
   assignees: string[]
 }
 
-/** `check-failed` and `pr-stuck` are pull request problems (`guard`: the stop guard holds the turn end for them). */
-export type EventKind = 'check-failed' | 'pr-stuck' | 'merged' | 'unit-ready' | 'question'
+/**
+ * `check-failed`, `pr-stuck` and `conflict-fix` are pull request problems (`guard`: the stop guard holds the turn end
+ * for them); `conflict-fix` carries the command that starts the fix.
+ */
+export type EventKind = 'check-failed' | 'pr-stuck' | 'conflict-fix' | 'merged' | 'unit-ready' | 'question'
 
 /** One event Coney raises for the coordinator. The id names the occurrence: the same thing read again has the same id. */
 export type EventRow = {

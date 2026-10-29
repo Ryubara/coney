@@ -830,9 +830,25 @@ def test_the_real_watch_settings_are_read() -> None:
     assert watch.unit_hold_file == "HOLD.md"
 
 
+def test_the_real_conflict_settings_are_read() -> None:
+    watch = load_conventions(REPO).conclave.watch
+    assert watch.conflicts_dir == "pr-conflicts" and watch.conflict_retell_hours == 24
+    # a waiver's note must match the pattern to cover a conflict: it names the maintainer and the issue that asks
+    assert watch.conflict_waiver.search("waits for the maintainer's answer on #1130")
+    assert not watch.conflict_waiver.search("the runner pool is down")
+    assert not watch.conflict_waiver.search("#932 is stale, will do later")
+
+
 def test_a_conventions_file_made_before_the_unit_hold_key_still_reads() -> None:
     watch = parse_conventions(changed(("conclave.watch.unit_hold_file", REMOVE))).conclave.watch
     assert watch.unit_hold_file == "HOLD.md"
+
+
+def test_a_conventions_file_made_before_the_conflict_keys_still_reads() -> None:
+    gone = [("conclave.watch." + key, REMOVE) for key in ("conflicts_dir", "conflict_retell_hours", "conflict_waiver")]
+    watch = parse_conventions(changed(*gone)).conclave.watch
+    assert watch.conflicts_dir == "pr-conflicts" and watch.conflict_retell_hours == 24
+    assert watch.conflict_waiver.search("waits for the maintainer on #7")
 
 
 @pytest.mark.parametrize(
@@ -851,6 +867,11 @@ def test_a_conventions_file_made_before_the_unit_hold_key_still_reads() -> None:
         ("conclave.watch.unit_hold_file", "../HOLD.md", "a file name"),
         ("conclave.watch.unit_hold_file", "a/HOLD.md", "a file name"),
         ("conclave.watch.unit_hold_file", "", "expected non-empty text"),
+        ("conclave.watch.conflicts_dir", "a/b", "a folder name"),
+        ("conclave.watch.conflicts_dir", "pr-holds", "must differ from holds_dir"),
+        ("conclave.watch.conflict_retell_hours", 0, "expected a whole number of 1 or more"),
+        ("conclave.watch.conflict_waiver", "(", "not a regular expression"),
+        ("conclave.watch.conflict_waiver", "", "expected non-empty text"),
         ("conclave.watch.unknown", 1, "unknown key 'unknown'"),
     ],
 )

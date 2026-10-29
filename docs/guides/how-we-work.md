@@ -231,6 +231,14 @@ and then by priority, whenever a place frees.
   oldest failure first. If the engineer that wrote the task is still running, the fix goes to it; otherwise a fresh
   engineer takes it, and may take the next queued fix while its context is warm. A fix redoes only the stamps it made
   stale and goes out with `pr open` on the same pull request ([Starting a task](issues.md#starting)).
+- **A conflict is a fix task too, and the work starts at once.** [Conclave](conclave.md#conflicts) tries the rebase of
+  every pull request in conflict (and of a ready unit `main` has moved past) in a throwaway worktree. A clean rebase
+  whose stamps still hold needs no engineer: the wake is `unit-ready` and the coordinator runs `pr open`. A real
+  conflict, or a rebase that leaves a stamp stale, is one `conflict-fix` wake carrying the command (`task create
+  --fix-of <issue>`, the unit's own task, or `task create <issue> --name <branch>` then `task start <branch> --adopt`
+  for a branch made before units) and a brief, so the coordinator starts the engineer in the fix track straight away,
+  oldest conflict first; while the fix place is taken the wake says which conflict waits behind which fix. Nothing
+  parks a conflict: a hold needs `--who` (a live agent), and a waiver only with a maintainer decision named in its note.
 - **Reviewers and helpers are outside the tracks**, and so is work in other repositories. Until the cutover so are
   units that build the workflow itself (their issue carries the `workflow` label, read from the claim card); from it
   they count like any other task ([Engineer tracks](agents.md#slots) holds the rule). Their claims are outside the

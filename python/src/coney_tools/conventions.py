@@ -1153,6 +1153,11 @@ PANE_MIN_COLUMNS_FLOOR = 15
 
 #: The file that holds a unit's `unit-ready` event back when `conclave.watch.unit_hold_file` is not written.
 DEFAULT_UNIT_HOLD_FILE = "HOLD.md"
+#: What the conflict keys of `conclave.watch` are when a conventions file made before they existed does not write them
+#: (a newer tool run on an older unit's conventions would otherwise refuse every unit in flight until it is rebased).
+DEFAULT_CONFLICTS_DIR = "pr-conflicts"
+DEFAULT_CONFLICT_RETELL_HOURS = 24
+DEFAULT_CONFLICT_WAIVER = r"(?i)maintainer.*#\d+|#\d+.*maintainer"
 
 
 @dataclass(frozen=True)
@@ -1189,6 +1194,14 @@ class ConclaveWatch:
     answer_prefix: str
     #: The file of a unit's scratch folder that holds its `unit-ready` event back for as long as it is there.
     unit_hold_file: str
+    #: The folder of the scratch directory that remembers each conflicting pull request: when its conflict was first
+    #: seen and what the last trial rebase found (docs/guides/conclave.md#conflicts).
+    conflicts_dir: str
+    #: A waived conflict is told again every this many hours once it is older than that.
+    conflict_retell_hours: int
+    #: What a waiver's note must match to cover a conflict: it names the maintainer decision that waits (the maintainer
+    #: and the issue that asks), so a conflict is never parked without a decision behind it.
+    conflict_waiver: re.Pattern[str]
 
 
 @dataclass(frozen=True)
@@ -2364,12 +2377,16 @@ def _read_conclave_watch(data: object, where: str) -> ConclaveWatch:
     )
     # `unit_hold_file` is optional so that a worktree made before the key existed still reads (a newer tool run on an
     # older unit's conventions would otherwise refuse every unit in flight until it is rebased).
-    table = _table(data, where, keys, ("unit_hold_file",))
+    optional = ("unit_hold_file", "conflicts_dir", "conflict_retell_hours", "conflict_waiver")
+    table = _table(data, where, keys, optional)
     numbers = {
         key: _count(table[key], _at(where, key))
         for key in keys
         if key.endswith(("_seconds", "_minutes", "_blocks", "_hours"))
     }
+    numbers["conflict_retell_hours"] = _count(
+        table.get("conflict_retell_hours", DEFAULT_CONFLICT_RETELL_HOURS), _at(where, "conflict_retell_hours")
+    )
     holds_dir = _text(table["holds_dir"], _at(where, "holds_dir"))
     if holds_dir in {".", ".."} or any(mark in holds_dir for mark in ("/", "\\", ":")):
         raise _fail(_at(where, "holds_dir"), "a folder name (one level, in the scratch directory)")
@@ -2382,6 +2399,16 @@ def _read_conclave_watch(data: object, where: str) -> ConclaveWatch:
     hold_file = _text(table.get("unit_hold_file", DEFAULT_UNIT_HOLD_FILE), _at(where, "unit_hold_file"))
     if hold_file in {".", ".."} or any(mark in hold_file for mark in ("/", "\\", ":")):
         raise _fail(_at(where, "unit_hold_file"), "a file name (one level, in the unit's scratch folder)")
+    conflicts_dir = _text(table.get("conflicts_dir", DEFAULT_CONFLICTS_DIR), _at(where, "conflicts_dir"))
+    if conflicts_dir in {".", ".."} or any(mark in conflicts_dir for mark in ("/", "\\", ":")):
+        raise _fail(_at(where, "conflicts_dir"), "a folder name (one level, in the scratch directory)")
+    if conflicts_dir == holds_dir:
+        raise _fail(_at(where, "conflicts_dir"), "must differ from holds_dir")
+    waiver = _text(table.get("conflict_waiver", DEFAULT_CONFLICT_WAIVER), _at(where, "conflict_waiver"))
+    try:
+        waiver_pattern = re.compile(waiver)
+    except re.error as error:
+        raise _fail(_at(where, "conflict_waiver"), f"not a regular expression ({error})") from error
     return ConclaveWatch(
         roles=_texts(table["roles"], _at(where, "roles")),
         preamble=_text(table["preamble"], _at(where, "preamble")),
@@ -2390,6 +2417,8 @@ def _read_conclave_watch(data: object, where: str) -> ConclaveWatch:
         question_prefix=question,
         answer_prefix=answer,
         unit_hold_file=hold_file,
+        conflicts_dir=conflicts_dir,
+        conflict_waiver=waiver_pattern,
         **numbers,
     )
 
