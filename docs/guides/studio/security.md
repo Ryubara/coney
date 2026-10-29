@@ -698,7 +698,7 @@ when a native needs it.
    library's state, values copied deep within limits without metatables, functions as callbacks to the state they came
    from, declared dependencies only, a depth limit, same side only. Tests: a library's function returns a copied table
    the caller cannot use to reach the library's state; a call to an undeclared mod and a mutual recursion past the depth
-   are errors; an export's result is a copy, never the library's table.
+   are errors.
 7. **docs: Update the release build's rule for the player console.** Shared with the console design (planned on
    [#1064](issue:1064)), whose release front end depends on it: the rule in [AGENTS.md](repo:AGENTS.md), the conventions
    and [The debug tools and the game](../building.md#debug-tools) that the release build holds no debug tools gains the

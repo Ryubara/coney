@@ -469,10 +469,8 @@ game scripts.
 4. **Play.** Play applies the project's patches to the install's chunks exactly as a player's Coney does, so what the
    author tests is what players get. Play with other mods enabled shows any merge conflict as the mods menu would. A
    saved game script **restarts the level, not the project**: the game state is made per level, so a patch reaches it
-   only when the level starts again. With *On script save* set to *Restart project* or *Restart level* ([Project restart
-   on save](lua-sdk.md#project-restart)) the save starts a new Play from the checkpoint, because the level is the
-   smallest restart a game script needs; the default *Do nothing* waits for the next Play or the *Restart level* button,
-   and the *Restart project* button does not reload a game script.
+   only when the level starts again ([the table below](#which-kind), [Project restart on
+   save](lua-sdk.md#project-restart)).
 5. **Convert to Lua 5.4.** For a level whose 5.4 form is offered: the patch is lifted ([Translation is
    deterministic](#deterministic)) and the edited copy reopens in 5.4.
 6. **Export.** The `.cmod` ([The `.cmod` package](project-formats.md#cmod)) holds the patches and the manifest, as

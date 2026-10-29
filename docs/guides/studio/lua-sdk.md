@@ -367,17 +367,18 @@ globals and threads are the session's, the game state's are the level's.
 
 ### The two states {#two-states}
 
-The game state and the project state never share globals. They share **the world**: a human, object, camera or gang
-made by either is the same thing to both, named by the same handle. That needs one rule the code does not keep today:
-**handles come from the session, not from a Lua state** (one counter per session, in the game mode's state), so a
-handle the level script made means the same human in the project's calls ([Network architecture: Scripts](../network-architecture.md#sub-scripts)
-counts handles per state today). The project reads the game state's world through natives (`HuFind`, `FindFlag`,
-`GetPosition`), as a level script reads what another script made; it cannot read or set the game state's globals or
-call its functions. It may **read** (never write) a global of the game state through one Coney native,
-`Coney.GetGameGlobal(name)`, to follow a level script's progress (a stage counter) ([Maintainer
-decisions](#decisions)). The native is documented as **unstable**: a rewrite of a level script may rename its
-globals, so a project that reads one depends on the script's internals, and its flaws are to be found in use. It returns
-nil for a name the game state does not hold.
+The game state and the project state never share globals. They share **the world**: a human, object, camera or gang made
+by either is the same thing to both, named by the same handle. That needs one rule the code does not keep today:
+**handles come from the session, not from a Lua state** (one counter per session, in the game mode's state), so a handle
+the level script made means the same human in the project's calls ([Network architecture:
+Scripts](../network-architecture.md#sub-scripts) counts handles per state today). The project reads the game state's
+world through natives (`HuFind`, `FindFlag`, `GetPosition`), as a level script reads what another script made; it cannot
+set the game state's globals or call its functions. It may **read** (never write) a global of the game state through one
+Coney native, `Coney.GetGameGlobal(name)`, to follow a level script's progress (a stage counter) ([Maintainer
+decisions](#decisions)). The native is documented as **unstable**: a rewrite of a level script may rename its globals,
+so a project that reads one depends on the script's internals, and its flaws are to be found in use. It returns a
+number, a string or a boolean as it is, and nil for a name the game state does not hold or one that holds a table or a
+function, since a project never reaches into the game state's tables or code.
 
 ## Assets by path {#assets}
 
