@@ -171,7 +171,9 @@ def test_decompile_all_and_one_from_the_xbox_disc(tmp_path: Path, capsys: pytest
     """`--all --xbox-disc` writes every Xbox chunk; `NAME OUT_DIR --xbox-disc` finds one by name or by hash."""
     root, disc = _workspace(tmp_path), _xbox_disc(tmp_path)
     out = tmp_path / "xbox-out"
-    assert lua_decompile.run_all(root, None, lua_decompile.Options(xbox=disc, out=out), frozenset()) == 0
+    # A disc whose scripts the committed list lacks (the Xbox's own) is added to a list of its own with --update-hashes.
+    options = lua_decompile.Options(xbox=disc, out=out, hashes=tmp_path / "hashes.toml", update_hashes=True)
+    assert lua_decompile.run_all(root, None, options, frozenset()) == 0
     assert sorted(path.name for path in out.glob("*.lua")) == ["00c0ffee.lua", "control.lua"]
     assert "decompiled 2 of 2 chunks" in capsys.readouterr().out
     one = tmp_path / "one"
