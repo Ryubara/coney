@@ -131,10 +131,19 @@ records (`0x005de3c0 + i × 0x140`) under [The libpad state machine](#libpad) an
 ### The camera-turned stick {#turned-stick}
 
 Step 2 of `Pad_Update` ([Input on the front end](frontend.md#input)) writes the pad record's `+0x00`/`+0x04`, the left
-stick turned by the player's camera. `Pads_Update` (`0x001454a8`) hands `Pad_Update` a 4 × 4 matrix: `Quat_ToMatrix`
-(`0x00336500`, rows the rotated axes) of the player camera's orientation, or of the quaternion kept at
-`0x005ddc90 + player × 0x10` while the follow camera's `+0x473` is 0 ([Camera, in the street](camera.md#street)); the
-identity (`0x005117a0`) for a pad with no player. The step, at `0x001450a0`-`0x0014522c`, confirmed (code):
+stick turned by the player's camera. `Pads_Update` (`0x001454a8`) hands `Pad_Update` a 4 × 4 matrix, `Quat_ToMatrix`
+(`0x00336500`, rows the rotated axes) of one of these, confirmed (code):
+
+- the quaternion kept at `0x005ddc90 + player × 0x10`, while the player's follow camera exists, is his base camera
+  (`Camera_GetPlayerBase`) and its `+0x473` is 0 ([Camera, in the street](camera.md#street)); confirmed (code);
+- otherwise the player camera's orientation (its vtable slot `+0x224`), which is first copied into that slot;
+  confirmed (code);
+- the identity (`0x005117a0`) for a pad with no player; confirmed (code).
+
+When `0x0050b198` differs from `0x0050b19c`, a pad that does not use its kept quaternion takes player 0's camera
+(never the identity), and the slot it copies into is the one that camera names (its vtable slot `+0x27c`).
+Confirmed (code). The step, at `0x001450a0`-`0x0014522c`,
+confirmed (code):
 
 1. **No matrix, no step:** with a null matrix `+0x00`/`+0x04` keep their last values.
 2. **The stick** is `(x, y)` = `+0x08`, `+0x0c` (the left stick, y up). When the pad belongs to a player (`+0x42` ≥
@@ -176,9 +185,10 @@ matrix's rows 0 and 1 and three facts about the player's follow camera (he has o
 behind), and keeps the turned stick (`turnedX`, `turnedY`). For a stick at rest it reports `followStickRest`, the
 original's write of 1 to the follow camera's `+0x473`, for the caller to carry out: a stand-in, as no Coney camera
 keeps that flag. Nothing supplies a turn yet: building it from the player camera (and the kept quaternion that
-`+0x473` chooses) is `Pads_Update`'s, which Coney's `Pads::update` does not do, and Coney's locomotion turns the stick
-by the camera itself ([Characters](characters.md)), so nothing reads the record's turned stick yet. A disconnected pad
-centres the turned stick as well as the others (a Coney choice; the original leaves the record as it was).
+`+0x473` chooses) is `Pads_Update`'s, which Coney's `Pads::update` does not do (#1136), and Coney's locomotion turns
+the stick by the camera itself ([Characters](characters.md)), so nothing reads the record's turned stick yet. A
+disconnected pad centres the turned stick as well as the others (a Coney choice; the original leaves the record as it
+was).
 
 ## Open questions
 

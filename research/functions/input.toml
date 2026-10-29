@@ -64,6 +64,11 @@ level = "confirmed-code"
 coney = "src/core/pads.h:Pads::update"
 status = "legacy"
 
+[[function.gaps]]
+what = "each pad's stick turn built from its player's camera and handed to the record's update"
+relation = "not-ported"
+issue = 1136
+
 [[function]]
 address = 0x00145698
 name = "Pad_SetLuaHandler"

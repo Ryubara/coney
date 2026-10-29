@@ -94,7 +94,8 @@ struct StickTurn {
 /// directions, the sticks in [-1, 1] with y up and the left stick turned by the player's camera. What it leaves out,
 /// for now: vibration and the player the pad belongs to (the caller says what the turn needs of him in StickTurn).
 ///
-/// Research: docs/research/frontend.md#pad-record, docs/research/frontend.md#pad-queries
+/// Research: docs/research/frontend.md#pad-record, docs/research/input.md#pad-queries,
+/// docs/research/input.md#turned-stick
 class Pad {
   public:
     /// How many button words the ring keeps.
