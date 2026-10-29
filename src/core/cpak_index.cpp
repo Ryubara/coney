@@ -63,7 +63,7 @@ std::expected<Header, Error> readHeader(std::span<const std::byte> front) {
     }
     io::Reader reader(front.first(kHeaderSize));
     // The header holds 64 bytes, which the size check above guarantees, so none of these reads can fail.
-    (void)reader.seek(4);
+    static_cast<void>(reader.seek(4));
     Header header;
     header.version = reader.readU16Le().value();
     header.flags = reader.readU16Le().value();
