@@ -36,6 +36,7 @@ def _chunks(tmp_path: Path, names: tuple[str, ...] = ("control", "closures")) ->
 
 
 def _sha(data: bytes) -> str:
+    """The SHA-256 of `data` in hex, worked out here with hashlib, not by the code under test."""
     return hashlib.sha256(data).hexdigest()
 
 
@@ -48,6 +49,7 @@ def _expected(name: str) -> lua_hashes.Entry:
 
 
 def _listed(tmp_path: Path, entries: list[lua_hashes.Entry], form: int = 1) -> Path:
+    """Write a list of `entries` in `tmp_path` and return its path."""
     path = tmp_path / "list.toml"
     path.write_text(lua_hashes.render(form, entries), encoding="utf-8")
     return path
@@ -56,6 +58,7 @@ def _listed(tmp_path: Path, entries: list[lua_hashes.Entry], form: int = 1) -> P
 def _options(
     tmp_path: Path, hashes: Path, names: tuple[str, ...], update_hashes: bool = False, new_form: bool = False
 ) -> lua_decompile.Options:
+    """The `--all` options for the fixture chunks `names`, checking against (or writing) the list `hashes`."""
     return lua_decompile.Options(
         chunks=_chunks(tmp_path, names),
         out=tmp_path / "shared",
@@ -72,6 +75,7 @@ def _run(
     update_hashes: bool = False,
     new_form: bool = False,
 ) -> int:
+    """Run `lua decompile --all` on the fixture chunks `names` against the list `hashes`; its exit code."""
     options = _options(tmp_path, hashes, names, update_hashes, new_form)
     return lua_decompile.run_all(REPO, None, options, known_natives=frozenset())
 
@@ -100,6 +104,7 @@ def test_a_name_with_odd_characters_survives(tmp_path: Path) -> None:
 
 
 def _script(name: str = "a.lua", chunk: str = A, text: str = B, extra: str = "") -> str:
+    """One `[[script]]` entry as the file would hold it, with `extra` lines for a damaged one."""
     return f"[[script]]\nname = '{name}'\nchunk = '{chunk}'\ntext = '{text}'\n{extra}"
 
 
@@ -265,6 +270,20 @@ def test_new_form_rewrites_the_list_with_the_next_form_number(tmp_path: Path, mo
     # Only what this run decompiled is in the new form; the rest is added by running on the disc it came from.
     assert [entry.name for entry in loaded.entries] == ["control.lua"]
     assert loaded.entries[0].text == _sha(b"x = 1\n")
+    # The copy beside the fingerprints is in the same form as the list.
+    assert lua_hashes.load(tmp_path / "shared" / lua_hashes.OUTPUT).form == 2
+
+
+def test_a_chunk_that_could_not_be_loaded_still_gets_the_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    listed = _listed(tmp_path, [_expected("control")])
+    options = _options(tmp_path, listed, ("control",))
+    assert options.chunks is not None
+    (options.chunks / "newer.lua").write_bytes(b"\x1bLuaQ\x00\x01\x04\x04\x04\x08\x00")
+    monkeypatch.setattr(lua4, "render", lambda tree: "x = 1\n")
+    assert lua_decompile.run_all(REPO, None, options, frozenset()) == 1
+    assert "text changed: control.lua" in capsys.readouterr().err
 
 
 def test_the_flags_exclude_each_other(tmp_path: Path) -> None:
@@ -272,7 +291,7 @@ def test_the_flags_exclude_each_other(tmp_path: Path) -> None:
         _run(tmp_path, tmp_path / "list.toml", update_hashes=True, new_form=True)
 
 
-def test_update_is_refused_when_a_chunk_could_not_be_loaded(tmp_path: Path) -> None:
+def test_update_is_refused_when_a_chunk_could_not_be_loaded(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     listed = _listed(tmp_path, [_expected("control")])
     before = listed.read_text(encoding="utf-8")
     options = _options(tmp_path, listed, ("control",), update_hashes=True)
@@ -280,3 +299,4 @@ def test_update_is_refused_when_a_chunk_could_not_be_loaded(tmp_path: Path) -> N
     (options.chunks / "newer.lua").write_bytes(b"\x1bLuaQ\x00\x01\x04\x04\x04\x08\x00")
     assert lua_decompile.run_all(REPO, None, options, frozenset()) == 1
     assert listed.read_text(encoding="utf-8") == before
+    assert "list of decompile hashes is not written" in capsys.readouterr().err

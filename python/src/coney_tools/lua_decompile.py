@@ -326,12 +326,15 @@ def run_all(root: Path, disc: str | None, options: Options, known_natives: froze
     """`lua decompile [DISC] --all`: every chunk into the shared folder (or `--out`), with the guard's fingerprints and
     the index; with `--roundtrip`, check every one. Prints counts only. A chunk the loader refuses is named on stderr
     with the reason, and the rest still go through, so the shared folder's fingerprints and index cover every script
-    that was written. 1 when a chunk could not be loaded or the round trip fails."""
+    that was written. Writes the decompile hashes beside them and checks them against the committed list (or writes
+    the list: `--update-hashes`, `--new-form`; lua_hashes.py). 1 when a chunk could not be loaded, a script's text
+    changed from the list, a list write was refused or the round trip fails."""
     out_dir = options.out or lua_dir(root)
     wad.refuse_inside_repo(out_dir)
     if options.update_hashes and options.new_form:
         raise ConfigError("--update-hashes adds scripts to the list; --new-form rewrites it: use one, not both")
     listed = None if options.new_form else _listed_hashes(root, options)
+    form = _form_of_run(root, options, listed)
     compile_text = _compiler(root, options) if options.roundtrip else None
     chunks = chunks_from_folder(options.chunks) if options.chunks is not None else chunks_from_disc(root, disc)
     if not chunks:
@@ -366,7 +369,7 @@ def run_all(root: Path, disc: str | None, options: Options, known_natives: froze
             print(f"coney-tools: decompiled {count} of {len(chunks)} chunks", file=sys.stderr)
     _write(out_dir / marks.FINGERPRINTS, "".join(f"{value}\n" for value in sorted(prints)))
     lua_index.write_index(out_dir, scripts, source=f"{len(written)} chunks")
-    lua_hashes.write(out_dir / lua_hashes.OUTPUT, listed.form if listed else lua_hashes.FORM, hashed)
+    lua_hashes.write(out_dir / lua_hashes.OUTPUT, form, hashed)
     unread = sum(reasons.values())
     print(f"decompiled {len(written)} of {len(chunks)} chunks, {functions} functions -> {out_dir}")
     if not_loaded:
@@ -375,7 +378,8 @@ def run_all(root: Path, disc: str | None, options: Options, known_natives: froze
     for reason, count in reasons.most_common():
         print(f"  {count:4d}  {reason}")
     print(f"fingerprints: {len(prints)} lines; index: {lua_index.INDEX_MD}, {lua_index.INDEX_JSON}")
-    status = int(bool(not_loaded)) or _check_hashes(root, options, listed, hashed, bool(not_loaded))
+    hash_status = _check_hashes(root, options, listed, hashed, form, bool(not_loaded))
+    status = int(bool(not_loaded)) or hash_status
     if compile_text is None:
         return status
     trip = round_trip(written, compile_text)
@@ -395,8 +399,21 @@ def _listed_hashes(root: Path, options: Options) -> lua_hashes.HashList | None:
     return lua_hashes.load(path)
 
 
+def _form_of_run(root: Path, options: Options, listed: lua_hashes.HashList | None) -> int:
+    """The form this run's hashes are in: the list's, the next one with `--new-form`, else form 1 for a new list."""
+    if options.new_form:
+        path = lua_hashes.list_path(root, options.hashes)
+        return (lua_hashes.load(path).form if path.is_file() else 0) + 1
+    return listed.form if listed is not None else lua_hashes.FORM
+
+
 def _check_hashes(
-    root: Path, options: Options, listed: lua_hashes.HashList | None, found: list[lua_hashes.Entry], partial: bool
+    root: Path,
+    options: Options,
+    listed: lua_hashes.HashList | None,
+    found: list[lua_hashes.Entry],
+    form: int,
+    partial: bool,
 ) -> int:
     """Check this run's decompile hashes against the list, or write the list (`--update-hashes`, `--new-form`).
     Prints counts and the names of the scripts whose text changed, never a line of text. 1 when a script's text
@@ -406,14 +423,13 @@ def _check_hashes(
     if writing and partial:
         print("coney-tools: a chunk could not be loaded; the list of decompile hashes is not written", file=sys.stderr)
         return 1
-    if options.new_form:
-        form = (lua_hashes.load(path).form if path.is_file() else 0) + 1
+    if options.new_form or listed is None:  # --new-form, or --update-hashes and no list yet: this run is the list
         lua_hashes.write(path, form, found)
         print(f"decompile hashes: wrote form {form} with {len(found)} scripts -> {path}")
-        return 0
-    if listed is None:  # --update-hashes and no list yet: this run's hashes are the list
-        lua_hashes.write(path, lua_hashes.FORM, found)
-        print(f"decompile hashes: wrote form {lua_hashes.FORM} with {len(found)} scripts -> {path}")
+        if form != lua_hashes.FORM:
+            print(
+                f"coney-tools: set FORM = {form} in python/src/coney_tools/lua_hashes.py (a test holds them together)"
+            )
         return 0
     result = lua_hashes.compare(listed, found)
     print(

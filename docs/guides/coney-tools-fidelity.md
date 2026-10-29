@@ -750,35 +750,29 @@ by `LUA4_LUAC`: on Windows, the same build as `--fetch lua` from the x86 tools (
 
 A mission mod's patch is pinned to the exact text a script decompiles to ([Forms](studio/mission-mods.md#forms)), so
 that text must not change silently when the decompiler does. The output is frozen in numbered **forms**; form 1 is the
-output of the decompiler as it was when the list below was made, and `lua decompile --all` checks it every time:
+output of the decompiler when the list below was made, and `lua decompile --all` checks it every time:
 
 * `research/lua-decompile-hashes.toml` is the committed list: the form number, then for each script its `name` (the
   WAD's file name, or the entry's hash in hex), the SHA-256 of its `chunk` (the bytes the WAD stores) and the SHA-256 of
   its decompile's `text`. Hashes and names only, never a line of a script ([LEGAL.md](repo:LEGAL.md#no-game-data)); a
   test holds the file to that. The text hashed is the decompile as written (one byte per character, LF line ends)
-  without the guard's marker line, which holds the name and is not part of the form. It holds the 467 scripts of the
-  NTSC-U disc; the 36 the Xbox disc has besides are added from that disc ([adding a disc](#lua-form)).
+  without the guard's marker line, which holds the name. It holds the 467 scripts of the NTSC-U disc.
 * `--all` writes the same format as `decompile-hashes.toml` beside the fingerprints, then checks it against the list and
-  prints how many scripts match, how many are not in the list and how many listed ones this disc does not have. An
-  entry is found by its chunk hash, so a script keeps it when its name is recovered later, and another region's script
-  with other bytes is counted as not in the list, never failed. A script whose **text changed** is named on stderr
-  (`text changed: level1.lua, ...`, names only) and the command exits 1: that is a decompiler change the author did not
-  mean, or did and has not made a new form of.
-* `--hashes FILE` checks another list. CI has no disc and runs no check; the unit tests cover the check on synthetic
-  chunks and a changed renderer, and the author of a decompiler change runs `lua decompile --all` on the disc (about two
-  minutes, with `--roundtrip` three) before reporting.
+  prints how many scripts match, are not in the list and are listed but not on this disc. An entry is found by its chunk
+  hash, so a recovered name changes nothing and another region's script with other bytes is counted, not failed. A
+  script whose **text changed** is named on stderr (names only) and the command exits 1. `--hashes FILE` checks another
+  list. CI has no disc, so the author of a decompiler change runs `lua decompile --all` on it before reporting.
 
 **Changing the output on purpose** is a new form, never an edit of the hashes. A fix that changes the text of any disc
-script makes form 2: run `lua decompile --all --new-form`, which rewrites the list from the run as form 2 (only the
-scripts of that disc: run it again with `--update-hashes` on the other disc), and commit it with the change. A mod that
-names form 1 needs Coney to keep producing form 1, so once a patch is released the old output stays reachable behind the
-form number; before then, a new form simply replaces the old.
+script makes form 2: run `lua decompile --all --new-form` (it rewrites the list from the run as the next form, only
+for that disc's scripts, and says to set `FORM` in `lua_hashes.py`, which a test holds to the list's form), run
+`--update-hashes` on the other disc, and commit them with the change. A mod that names form 1 needs Coney to keep
+producing it, so once a patch is released the old output stays reachable behind the form number.
 
-**Adding a disc's scripts** (`--update-hashes`) adds the scripts the list lacks and changes none that it holds: it
-refuses, naming the scripts, if any listed text differs, and it refuses if any chunk could not be loaded. The Xbox
-disc's 36 scripts of its own (the other 467 are byte-identical to the PS2's) are added this way from an Xbox disc, once
-someone with one runs it; the list is then 503 scripts. The C++ decompiler
-([#1116](issue:1116)) must give the same hash for every listed script, checked by a disc test.
+**Adding a disc's scripts** (`--update-hashes`) adds the scripts the list lacks and changes none that it holds; it
+refuses, naming the scripts, if a listed text differs or a chunk could not be loaded. The Xbox disc's 36 scripts of its
+own are added this way, once someone with that disc runs it. The C++ decompiler ([#1116](issue:1116)) must give the same
+hash for every listed script, checked by a disc test.
 
 <!-- command-reference:begin lua -->
 ## Parameters of `lua` {#lua-parameters}
