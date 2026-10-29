@@ -37,8 +37,9 @@ A default branch that has no `proof` section yet (it is older than the section) 
 branch, and the first line says `rules of branch`. A key the tool does not know in the default branch's sections is
 skipped, as it is in the branch's file ([How it is read](repo-conventions.md#how-it-is-read)); a missing key or a wrong
 value there stops the run (exit 2) and names `origin/<default branch>:.github/conventions.yml`, and the branch's own
-rules are never used instead. [`task check`](coney-tools-repo.md#task-check) reads `proof` and the scope lists from the
-same place.
+rules are never used instead. Their references between sections (the labels `claims` names) are checked against that
+file's own lists, never the branch's, so a branch cut before a label was added is released.
+[`task check`](coney-tools-repo.md#task-check) reads `proof` and the scope lists from the same place.
 
 ## The stages {#stages}
 

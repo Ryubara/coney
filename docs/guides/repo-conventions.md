@@ -185,6 +185,16 @@ tool's own in two ways, and each is handled and named in a `note:` line (on stde
   items have no stable place across branches), and a tool that is not run from a checkout has none, so there the key
   stays missing and an error.
 
+A rule that ties two sections together (a label a section names, a title area the runtime line names, a required
+check that is a job of a place) is checked against the lists of one file, so a mix of two files never fails it:
+
+- **The sections of `origin/<default branch>`** are checked against that file's own `labels`, not the branch's. A branch
+  cut before the `studio` label was added has no such label in its `labels.list`, while `main`'s `claims` names it.
+- **In the branch's file**, a section checked against another section is checked against that section's own lists, as
+  ever. Only where a key was filled from the tool's file, in either of the two sections, do both files' lists count: a
+  label, title area or job it names may be one that only the tool's file has yet. A name in neither file is a wrong
+  value and an error.
+
 A wrong value is an error in every case: a key the branch wrote itself is never replaced by a default. The file steers
 nothing that decides a release: for `pr open`, `pr verify` and `pr text`, `stamps`, `tasks.review` (who may review, on
 which model), `proof`, `paths`, `pull_requests`, `commits`, `repo`, `merge` and `claims` are always read from
