@@ -61,7 +61,7 @@ its adjust word at `+0x10`, the offset [Boot](boot.md#one-frame) once gave).
 | `+0x34` | `0x00356af8` | **run a file** by WAD name: load it through the file manager, run it as a buffer named after the file, collect garbage | confirmed (code) |
 | `+0x3c` | `0x00356ad0` | run a buffer | confirmed (code) |
 | `+0x44` | `0x00356c58` | run each file of a NULL-terminated list through `+0x34` | confirmed (code) |
-| `+0x4c` | `0x00356e08` | **find a function by name** and push it: the name is split at `.` and `:`, reading at most 32 characters of the whole name (an unfinished last part is dropped); a `:` also pushes the first part's global as `self` | confirmed (code) |
+| `+0x4c` | `0x00356e08` | **find a function by name** and push it: the name is split at `.` and `:` (at most 32 characters per part); a `:` also pushes the table as `self` | confirmed (code) |
 | `+0x54`-`+0x84` | `0x00356f70`, `0x00356fc8`, `0x00357028`, `0x00357060`, `0x00357098`, `0x003570f0`, `0x00357138` | push an argument: unsigned, object handle (as its index, `0x00390068`), short, int, unsigned, string, `VolumeBox` usertype | confirmed (code) |
 | `+0x8c` | `0x00357188` | **call** with n arguments (plus one for `self`) | confirmed (code) |
 | `+0x94` / `+0x9c` / `+0xa4` | `0x003571b8` / `0x003572e8` / `0x00357430` | **schedule** a call of a named function after a delay in ms, with 0, 1 or 2 number arguments | confirmed (code) |
@@ -2840,15 +2840,9 @@ Coney's choices, where the page is silent or Coney differs:
 
 - A call of an unset global (a binding Coney does not list; the original registers all 956) is skipped as a no-op
   returning nothing, and logged once by name, instead of stopping the script.
-- Scheduled calls due at the same time run in the order they were scheduled. There is no garbage collection to force
-  (Coney's VM counts references).
-- Stand-ins until [#1130](issue:1130), each a difference from the code above (confirmed (code)): a call scheduled
-  during `update` waits for the next update, even with a delay of 0, where `0x003566d8` runs one already due in the
-  same update; the update function gets the step with its fraction (33.33 at 1/30 s), where the original cuts it to
-  whole milliseconds; a dotted name is not cut, where `0x00356e08` reads at most 32 characters of the whole name, and a
-  `:` call passes the table holding the last part as `self`, where the original passes the first part's global; a file
-  that fails stops there, where `0x00356af8` returns success for any file it found and the preload completion
-  `0x00356d00` calls the callback whatever the run's outcome.
+- Scheduled calls due at the same time run in the order they were scheduled; a call scheduled during `update` waits for
+  the next update, even with a delay of 0. There is no garbage collection to force (Coney's VM counts references), and
+  the 32-character limit on the parts of a dotted name is not applied.
 - `CfgLevelName`'s argument order: the scripts pass 18 arguments, the index, four names, the level number, then twelve
   numbers. Coney maps the index, the level name (`+0x14`), the second name (`+0x24`), the world name (`+0x39`), the
   fourth name (`+0x49`) and the level number (`+0x04`) by the disc's data (record 0 is `level100` with number 100; the
