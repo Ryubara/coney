@@ -158,6 +158,53 @@ std::expected<void, Error> checkLayout(const std::vector<Entry>& entries, const 
     return {};
 }
 
+// True when `text` is well-formed UTF-8 (RFC 3629, as Python's strict decoder reads it): no stray continuation
+// byte, no sequence cut short, no overlong form, no surrogate and nothing past U+10FFFF. The page asks this of every
+// name so the Python tools, and any file system an archive is exported to, read a name the same way.
+bool isUtf8(std::string_view text) {
+    std::size_t i = 0;
+    while (i < text.size()) {
+        const auto lead = static_cast<unsigned char>(text[i]);
+        if (lead < 0x80) {
+            ++i;
+            continue;
+        }
+        // The sequence's length and the range its second byte must lie in, which rules out the overlong forms, the
+        // surrogates (ED A0..BF) and code points past U+10FFFF (F4 90..BF).
+        std::size_t length = 0;
+        unsigned char low = 0x80;
+        unsigned char high = 0xbf;
+        if (lead >= 0xc2 && lead <= 0xdf) {
+            length = 2;
+        } else if (lead >= 0xe0 && lead <= 0xef) {
+            length = 3;
+            low = lead == 0xe0 ? 0xa0 : 0x80;
+            high = lead == 0xed ? 0x9f : 0xbf;
+        } else if (lead >= 0xf0 && lead <= 0xf4) {
+            length = 4;
+            low = lead == 0xf0 ? 0x90 : 0x80;
+            high = lead == 0xf4 ? 0x8f : 0xbf;
+        } else {
+            return false;
+        }
+        if (text.size() - i < length) {
+            return false;
+        }
+        const auto second = static_cast<unsigned char>(text[i + 1]);
+        if (second < low || second > high) {
+            return false;
+        }
+        for (std::size_t k = 2; k < length; ++k) {
+            const auto next = static_cast<unsigned char>(text[i + k]);
+            if (next < 0x80 || next > 0xbf) {
+                return false;
+            }
+        }
+        i += length;
+    }
+    return true;
+}
+
 } // namespace
 
 std::string_view compressionName(Compression compression) {
@@ -181,6 +228,9 @@ std::expected<void, Error> checkName(std::string_view name) {
         if (byte < 0x20 || byte == 0x7f || c == '\\' || c == ':') {
             return fail(ErrorCode::Invalid, "cpak: a name holds a control character, a backslash or a colon");
         }
+    }
+    if (!isUtf8(name)) {
+        return fail(ErrorCode::Invalid, "cpak: a name is not well-formed UTF-8");
     }
     // Every segment between slashes is a real name: not empty (no leading, trailing or double slash), not . or ..
     std::size_t start = 0;

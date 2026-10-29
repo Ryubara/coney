@@ -120,6 +120,33 @@ def test_bad_names_are_refused(name: str) -> None:
         cpak.write([(name, b"")])
 
 
+def rehashed(data: bytearray) -> bytes:
+    """`data` with its index hash written again over its header's first 32 bytes and its index, as the page says."""
+    index_size = struct.unpack_from("<I", data, 0x10)[0]
+    data[0x20:0x40] = hashlib.sha256(bytes(data[0:32]) + bytes(data[64 : 64 + index_size])).digest()
+    return bytes(data)
+
+
+@pytest.mark.parametrize("count", [3, 0x0400_0000, 0xFFFF_FFFF])
+def test_an_entry_count_larger_than_the_index_holds_is_refused(count: int) -> None:
+    data = bytearray(hand_built([("a/one", 208, b"first"), ("b/two", 224, b"second!")]))
+    struct.pack_into("<I", data, 0x0C, count)
+    with pytest.raises(cpak.CpakError, match="smaller than its records"):
+        read(rehashed(data))
+
+
+def test_no_bytes_at_all_are_refused() -> None:
+    with pytest.raises(cpak.CpakError):
+        read(b"")
+
+
+def test_a_name_that_is_not_utf8_is_refused_even_when_the_hash_matches() -> None:
+    data = bytearray(hand_built([("a/one", 208, b"first")]))
+    data[64 + 64 + 2] = 0xFF  # "a/one" becomes "a/\xffne" in the name table
+    with pytest.raises(cpak.CpakError, match="UTF-8"):
+        read(rehashed(data))
+
+
 def test_names_differing_only_by_case_are_refused() -> None:
     with pytest.raises(cpak.CpakError, match="case"):
         cpak.write([("Textures/HUD", b""), ("textures/hud", b"")])

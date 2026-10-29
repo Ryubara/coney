@@ -71,10 +71,11 @@ def run_verify(paths: list[Path]) -> int:
                 for entry in entries:
                     try:
                         cpak.verify_entry(handle, entry)
-                    except cpak.CpakError as error:
+                    except (OSError, cpak.CpakError) as error:
                         print(f"{path}: FAILED {entry.name}: {error}")
                         bad += 1
         except (OSError, cpak.CpakError) as error:
+            # Opening the file or reading its index failed; an entry's read error is reported by its name above.
             print(f"{path}: FAILED index: {error}")
             failed += 1
             continue

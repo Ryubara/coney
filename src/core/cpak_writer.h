@@ -7,6 +7,7 @@
 #include <functional>
 #include <span>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "core/cpak_index.h"
@@ -62,6 +63,8 @@ class Writer {
 
     std::uint32_t m_alignment;
     std::vector<Pending> m_pending;
+    // Each pending name folded to ASCII lower case, mapped to the name as added: add()'s case check in one lookup.
+    std::unordered_map<std::string, std::string> m_folded;
 };
 
 } // namespace coney::cpak

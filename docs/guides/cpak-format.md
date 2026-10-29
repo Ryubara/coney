@@ -37,7 +37,8 @@ offset 0       header, 64 bytes
 offset 64      index: entry records (64 bytes each), then the names
                zero bytes up to the first entry's aligned offset
                entry bytes, each at a multiple of the alignment, zero bytes between
-end            the archive ends with the last entry's bytes (or with the index, when it holds no entry)
+end            the archive ends where the entry last in name order ends: after its bytes, or at its aligned offset
+               when it is empty (or with the index, when the archive holds no entry)
 ```
 
 ### The header {#header}
@@ -78,7 +79,8 @@ names' UTF-8 bytes compared as unsigned numbers), each name once, so a reader fi
 An entry's name is its asset's [`game:/` path](studio/content-and-formats.md#paths) without the `game:/`
 (`textures/hud/hud_main`), so the name Studio shows, the catalogue's and the archive's are one. A name:
 
-- is 1 to 1,024 bytes of UTF-8;
+- is 1 to 1,024 bytes of well-formed UTF-8 (no overlong form, no surrogate, nothing past U+10FFFF: what Python's
+  strict decoder accepts);
 - is segments separated by `/`, none of them empty, `.` or `..` (no leading, trailing or double slash);
 - holds no control character (bytes below 0x20 and 0x7f, NUL included), no `\` and no `:`.
 

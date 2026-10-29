@@ -3,6 +3,8 @@
 
 #include <format>
 
+#include "core/assert.h"
+
 namespace coney::cpak {
 
 std::expected<Archive, Error> Archive::open(std::span<const std::byte> bytes) {
@@ -18,7 +20,8 @@ std::expected<std::span<const std::byte>, Error> Archive::view(const Entry& entr
         return fail(ErrorCode::Invalid, std::format("cpak: {} is compressed ({}) and cannot be read in place",
                                                     entry.name, compressionName(entry.compression)));
     }
-    // open() checked every entry lies inside the archive, so this cannot run past the end.
+    // open() checked every entry of this archive lies inside it; an Entry from another archive is a caller's bug.
+    CONEY_ASSERT(entry.offset <= m_bytes.size() && entry.storedSize <= m_bytes.size() - entry.offset);
     return m_bytes.subspan(static_cast<std::size_t>(entry.offset), static_cast<std::size_t>(entry.storedSize));
 }
 

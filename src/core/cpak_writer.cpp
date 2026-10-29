@@ -26,13 +26,16 @@ void putDigest(std::vector<std::byte>& out, const Sha256Digest& digest) {
     }
 }
 
-// True when two names are the same ignoring ASCII case: they would be one file when exported to a folder on Windows
-// or macOS, so an archive never holds both.
-bool sameIgnoringCase(std::string_view a, std::string_view b) {
-    return std::ranges::equal(a, b, [](char x, char y) {
-        const auto lower = [](char c) { return c >= 'A' && c <= 'Z' ? static_cast<char>(c - 'A' + 'a') : c; };
-        return lower(x) == lower(y);
-    });
+// `name` with ASCII letters in lower case: two names that fold alike would be one file when exported to a folder on
+// Windows or macOS, so an archive never holds both.
+std::string folded(std::string_view name) {
+    std::string out(name);
+    for (char& c : out) {
+        if (c >= 'A' && c <= 'Z') {
+            c = static_cast<char>(c - 'A' + 'a');
+        }
+    }
+    return out;
 }
 
 // `value` rounded up to a multiple of `alignment`, a power of two.
@@ -65,12 +68,11 @@ std::expected<void, Error> Writer::add(std::string name, std::uint64_t size, con
     if (auto checked = checkName(name); !checked) {
         return checked;
     }
-    for (const Pending& pending : m_pending) {
-        if (sameIgnoringCase(pending.name, name)) {
-            return fail(ErrorCode::Invalid,
-                        std::format("cpak: {} is already in the archive as {} (names differ by more than case)", name,
-                                    pending.name));
-        }
+    const auto [at, added] = m_folded.try_emplace(folded(name), name);
+    if (!added) {
+        return fail(ErrorCode::Invalid, std::format("cpak: {} is already in the archive as {} (names must differ by "
+                                                    "more than case)",
+                                                    name, at->second));
     }
     m_pending.push_back(Pending{std::move(name), size, sha256, std::move(fetch)});
     return {};
