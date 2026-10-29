@@ -1052,12 +1052,68 @@ class TaskSlots:
 
 
 @dataclass(frozen=True)
+class FillGate:
+    """The start gate: which ready issues the coordinator may start work on. It was the maintainer's "workflow first"
+    rule of 2026-10-27, and is off since the engineer tracks of 2026-10-28 (a place is kept for game work and Coney
+    Studio takes the rest). `claims.critical_label` issues always pass. Off (`enabled` false), every ready issue
+    passes."""
+
+    enabled: bool
+    #: Labels that let a ready issue pass (`workflow`).
+    labels: tuple[str, ...]
+    #: Issue numbers that pass whatever their labels.
+    issues: tuple[int, ...]
+
+
+@dataclass(frozen=True)
+class WaiverCode:
+    """One reason code of `task slots --waive`: why a free slot may stay free, for how long at most."""
+
+    name: str
+    #: The longest a waiver with this code may run, in hours (at most `FillRules.waiver_max_hours`).
+    max_hours: int
+    #: Whether the waiver must name the blocked issues (`--issues`).
+    needs_issues: bool
+    #: What the code means, in a sentence for the listing and the refusal.
+    meaning: str
+
+
+@dataclass(frozen=True)
+class FillRules:
+    """Keeping the engineer slots full (docs/guides/slot-fill.md): the start gate, waivers and Stop hook cap."""
+
+    gate: FillGate
+    #: Priority labels, most urgent first: the order the eligible issues are listed and started in.
+    priority_order: tuple[str, ...]
+    #: How many eligible issues the report lists.
+    top: int
+    #: The longest one `gh` call of the check may take, and the longest all its GitHub reads may take together.
+    github_seconds: int
+    budget_seconds: int
+    #: How long the GitHub answers are reused (and no longer than until a task file changes).
+    cache_seconds: int
+    #: The Stop hook blocks at most this many turn ends in a row for one session, then counts again after
+    #: `block_reset_minutes` without a block: a check that cannot be satisfied never traps the coordinator.
+    block_max: int
+    block_reset_minutes: int
+    #: The longest any waiver runs, and the shortest note it takes.
+    waiver_max_hours: int
+    note_min_characters: int
+    waivers: tuple[WaiverCode, ...]
+
+    def waiver(self, name: str) -> WaiverCode | None:
+        """The reason code `name`, or None."""
+        return next((code for code in self.waivers if code.name == name), None)
+
+
+@dataclass(frozen=True)
 class TaskStart:
     """What `task start` writes and counts."""
 
     #: The unit record's file name inside the task's scratch folder.
     unit_file: str
     slots: TaskSlots
+    fill: FillRules
 
 
 @dataclass(frozen=True)
@@ -2289,6 +2345,68 @@ def _read_tracks(data: object, where: str, per_build_slot: int) -> Tracks:
     return tracks
 
 
+def _numbers(value: object, where: str) -> tuple[int, ...]:
+    """A list of issue numbers (whole numbers of 1 or more, without repeats); it may be empty."""
+    if not isinstance(value, list):
+        raise _fail(where, "expected a list")
+    items = tuple(_count(item, f"{where}[{index}]") for index, item in enumerate(value))
+    if len(set(items)) != len(items):
+        raise _fail(where, "a number is listed twice")
+    return items
+
+
+def _read_waiver_code(name: str, data: object, where: str) -> WaiverCode:
+    """One reason code of the waivers."""
+    table = _table(data, where, ("max_hours", "needs_issues", "meaning"))
+    return WaiverCode(
+        name=name,
+        max_hours=_count(table["max_hours"], _at(where, "max_hours")),
+        needs_issues=_flag(table["needs_issues"], _at(where, "needs_issues")),
+        meaning=_text(table["meaning"], _at(where, "meaning")),
+    )
+
+
+def _read_fill(data: object, where: str) -> FillRules:
+    """The `tasks.start.fill` section: the start gate, the order, the limits of the check, the waivers."""
+    keys = ("gate", "priority_order", "top", "github_seconds", "budget_seconds", "cache_seconds", "block", "waivers")
+    table = _table(data, where, keys)
+    gate_where = _at(where, "gate")
+    gate = _table(table["gate"], gate_where, ("enabled", "labels", "issues"))
+    block_where = _at(where, "block")
+    block = _table(table["block"], block_where, ("max_in_a_row", "reset_minutes"))
+    waivers_where = _at(where, "waivers")
+    waivers = _table(table["waivers"], waivers_where, ("max_hours", "note_min_characters", "codes"))
+    codes_where = _at(waivers_where, "codes")
+    codes = _mapping(waivers["codes"], codes_where)
+    if not codes:
+        raise _fail(codes_where, "expected at least one reason code")
+    read = tuple(_read_waiver_code(name, item, _at(codes_where, name)) for name, item in codes.items())
+    longest = _count(waivers["max_hours"], _at(waivers_where, "max_hours"), maximum=24)
+    for code in read:
+        if code.max_hours > longest:
+            raise _fail(_at(_at(codes_where, code.name), "max_hours"), "must not be more than waivers.max_hours")
+    seconds = {
+        key: _count(table[key], _at(where, key)) for key in ("github_seconds", "budget_seconds", "cache_seconds")
+    }
+    if seconds["github_seconds"] > seconds["budget_seconds"]:
+        raise _fail(_at(where, "github_seconds"), "must not be more than budget_seconds")
+    return FillRules(
+        gate=FillGate(
+            enabled=_flag(gate["enabled"], _at(gate_where, "enabled")),
+            labels=_texts(gate["labels"], _at(gate_where, "labels"), empty_ok=True),
+            issues=_numbers(gate["issues"], _at(gate_where, "issues")),
+        ),
+        priority_order=_texts(table["priority_order"], _at(where, "priority_order")),
+        top=_count(table["top"], _at(where, "top")),
+        block_max=_count(block["max_in_a_row"], _at(block_where, "max_in_a_row")),
+        block_reset_minutes=_count(block["reset_minutes"], _at(block_where, "reset_minutes")),
+        waiver_max_hours=longest,
+        note_min_characters=_count(waivers["note_min_characters"], _at(waivers_where, "note_min_characters")),
+        waivers=read,
+        **seconds,
+    )
+
+
 def _read_tasks(data: object, where: str) -> Tasks:
     """The `tasks` section: the task kinds, the task file's name, the leads limits, `task start` and the review."""
     table = _table(data, where, ("kinds", "file", "leads", "start", "review"))
@@ -2302,7 +2420,7 @@ def _read_tasks(data: object, where: str) -> Tasks:
     if "/" in file or "\\" in file:
         raise _fail(_at(where, "file"), "a file name, not a path")
     start_where = _at(where, "start")
-    start = _table(table["start"], start_where, ("unit_file", "slots"))
+    start = _table(table["start"], start_where, ("unit_file", "slots", "fill"))
     unit_file = _text(start["unit_file"], _at(start_where, "unit_file"))
     if "/" in unit_file or "\\" in unit_file or unit_file == file:
         raise _fail(_at(start_where, "unit_file"), "a file name, not a path, and not the task file's")
@@ -2336,6 +2454,7 @@ def _read_tasks(data: object, where: str) -> Tasks:
                 agent_types=_texts(slots["agent_types"], _at(slots_where, "agent_types")),
                 reserve_minutes=_count(slots["reserve_minutes"], _at(slots_where, "reserve_minutes")),
             ),
+            fill=_read_fill(start["fill"], _at(start_where, "fill")),
         ),
         review=_read_task_review(table["review"], _at(where, "review")),
     )

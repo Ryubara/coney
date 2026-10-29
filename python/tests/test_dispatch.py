@@ -63,9 +63,9 @@ LAUNCH = 'uv run --no-project --python ">=3.12" python "$CLAUDE_PROJECT_DIR/.cla
 
 def test_the_settings_run_only_the_dispatcher_for_every_event() -> None:
     hooks = settings()["hooks"]
-    assert set(hooks) == {"PreToolUse", "PostToolUse", "PostToolUseFailure", "PermissionDenied", "SessionStart"}
+    assert set(hooks) == {"PreToolUse", "PostToolUse", "PostToolUseFailure", "PermissionDenied", "SessionStart", "Stop"}
     commands = [hook["command"] for entries in hooks.values() for entry in entries for hook in entry["hooks"]]
-    assert len(commands) == 5
+    assert len(commands) == 6
     for command in commands:
         # The interpreter is pinned: an old default Python must not fail an import and so turn the guards off. The
         # command ends in `|| exit 0`: if uv or Python cannot start (exit code 2 would block every tool call), the
@@ -147,7 +147,7 @@ def test_the_pre_tool_use_timeout_covers_the_pr_guard_checks() -> None:
 
 def test_every_script_in_the_hooks_folder_is_the_dispatcher_a_guard_or_a_helper() -> None:
     scripts = {path.stem for path in HOOKS.glob("*.py")}
-    guards = {name for name, _ in DISPATCH.PRE_GUARDS + DISPATCH.POST_GUARDS}
+    guards = {name for name, _ in DISPATCH.PRE_GUARDS + DISPATCH.POST_GUARDS} | set(DISPATCH.STOP_GUARDS)
     helpers = {
         "dispatch",
         "hooklib",

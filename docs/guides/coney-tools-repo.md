@@ -296,6 +296,8 @@ uv run --project python coney-tools task create --fix-of ISSUE [--terms TERM ...
 uv run --project python coney-tools task start [TASK] [--base REF] [--remote NAME] [--no-fetch] [--dry-run]
     [--adopt | --adopt-branch BRANCH]
 uv run --project python coney-tools task slots [--json]
+uv run --project python coney-tools task slots --fill-check [--session ID]
+uv run --project python coney-tools task slots --waive N --reason CODE --hours H --note TEXT [--issues A,B]
 uv run --project python coney-tools task slots --admit [--agent-type TYPE] [--task ID | --brief FILE|-] [--reserve]
     [--model M] [--effort E]
 uv run --project python coney-tools task leads --terms TERM ... [--issue N] [--refresh]
@@ -352,7 +354,19 @@ The coordinator's triage step ([Task files](issues.md#task-files)); the rules ar
   when it could not judge. A GitHub that cannot be read leaves the claim and the labels unchecked: the place is counted
   as usual (no unit counts as a workflow or Studio unit then, and no model is checked), and a start let through prints
   a `warning:` line, which the guard logs. `--reserve` keeps the place for the agent for
-  `tasks.start.slots.reserve_minutes` or until its `task start`. Other types pass without a line.
+  `tasks.start.slots.reserve_minutes` or until its `task start`. Other types pass without a line. The listing also
+  shows the active waivers (below), and `--json` carries them as `waivers`.
+  `--fill-check` is the check the coordinator's `Stop` hook runs (`.claude/hooks/slot_fill_guard.py`): it exits **1
+  with a message that starts `Blocked:`** when a place is free, the tool finds work to start and nothing excuses it,
+  naming the free places (kept for game work, for a fix or for networking, open), the top eligible issues
+  (`P-critical` first), the claimed tasks without an agent and the failed pull requests with no fix unit; it exits 0
+  with an `ok:` line otherwise (every place full, no eligible issue under the start gate, the claim limit reached,
+  free disk under `workspace.disk_min_free_gb`, or active waivers), with `warning:` lines for what it could not read
+  (a GitHub that cannot be read passes the check). `--session ID` counts the blocks of one session and lets its turn
+  end after `tasks.start.fill.block.max_in_a_row` in a row. `--waive N` records that `N` free places may stay free for
+  `--hours` (at most the cap of the `--reason` code from `tasks.start.fill.waivers`; a code that blocks issues needs
+  `--issues`) with a `--note`; a refused waiver exits 2 and writes nothing, and only the coordinator may run it
+  (`.claude/hooks/hooks.toml`). The reasons, the waivers and the hook are in [Keeping the places full](slot-fill.md).
 * `leads` runs the leads search alone: one line per match with the source, the place and why it matched, then the terms
   that matched nothing. `--issue N` also matches the addresses, names, paths and references that issue writes.
 * `index` rebuilds the cached index (`<scratch>/leads/index.json`, also rebuilt when `HEAD` moved or after
@@ -483,17 +497,25 @@ coney-tools task start [TASK] [--base REF] [--remote REMOTE] [--no-fetch] [--dry
 
 ### `task slots` {#task-slots-usage}
 
-Show the engineer tracks (reimplementation, fix, Studio) and the machine's places, or check that an agent may start (the
-coordinator's Agent guard).
+Show the engineer tracks (reimplementation, fix, Studio, networking) and the machine's places, or check that an agent
+may start (the coordinator's Agent guard).
 
 ```text
-coney-tools task slots [--json] [--admit] [--agent-type AGENT_TYPE] [--task TASK] [--brief FILE] [--reserve]
-    [--model MODEL] [--effort EFFORT]
+coney-tools task slots [--json] [--fill-check] [--session ID] [--waive N] [--reason CODE] [--hours H] [--note TEXT]
+    [--issues N,M] [--admit] [--agent-type AGENT_TYPE] [--task TASK] [--brief FILE] [--reserve] [--model MODEL]
+    [--effort EFFORT]
 ```
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `--json` | flag | off | print the tracks as JSON |
+| `--fill-check` | flag | off | exit 1 with what to start when a place is free, work can be started and nothing excuses the gap (the coordinator's Stop hook; docs/guides/slot-fill.md) |
+| `--session ID` | text | none | with --fill-check: the session being checked; its blocks in a row are counted |
+| `--waive N` | integer | none | leave N free places free for --hours, for the --reason; logged, expiring, listed by `task slots` |
+| `--reason CODE` | text | none | with --waive: a code of tasks.start.fill.waivers.codes |
+| `--hours H` | number | none | with --waive: how long it runs (within the code's hours) |
+| `--note TEXT` | text | none | with --waive: why, in words |
+| `--issues N,M` | text | none | with --waive: the issues the work is blocked on (a code that blocks issues names them) |
 | `--admit` | flag | off | check a start instead of listing: exit 0 when it may, 3 with the reasons when it is refused (any other code: it could not judge) |
 | `--agent-type AGENT_TYPE` | text | `engineer` | with --admit: the subagent type (default: engineer) |
 | `--task TASK` | text | none | with --admit: the task id (default: the `Task id:` line of the brief) |

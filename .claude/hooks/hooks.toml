@@ -58,11 +58,16 @@ hint = "Give the work to an engineer (or the tooling agent), which commits in it
 [roles.engineer]
 # `claim unclaim` and `claim renew` are the coordinator's: they change a claim on GitHub.
 deny_coney_tools = ["pr open", "pr hold", "claim unclaim", "claim renew"]
+# `task slots --waive` says a free engineer place may stay free (docs/guides/slot-fill.md): the coordinator's. argparse
+# takes any prefix of an option, so `--w` and `--wai` count; the command is matched in any letter case, as `coney-tools`,
+# `coney-tools.exe` or the module (`python -m coney_tools.cli`), like the reviewer's patterns below.
+deny_commands = ['(?i)\bconey(?:-tools(?:\.exe)?|_tools[./\\]cli(?:\.py)?)\b[^;&|\n]*\btask[ \t]+slots\b[^;&|\n]*[ \t]--w[a-z]*']
 no_github_writes = true
 hint = "Push, pull requests and GitHub are the coordinator's. Ask it with a note in your report."
 
 [roles.tooling]
 deny_coney_tools = ["pr open", "pr hold", "claim unclaim", "claim renew"]
+deny_commands = ['(?i)\bconey(?:-tools(?:\.exe)?|_tools[./\\]cli(?:\.py)?)\b[^;&|\n]*\btask[ \t]+slots\b[^;&|\n]*[ \t]--w[a-z]*']
 no_github_writes = true
 hint = "Push, pull requests and GitHub are the coordinator's. Ask it with a note in your report."
 
@@ -114,6 +119,8 @@ deny_commands = [
   # `repo review-stamp` only writes a template).
   '(?i)\bconey(?:-tools(?:\.exe)?|_tools[./\\]cli(?:\.py)?)\s+(?:-\S+\s+)*task\s+review(?=\s)[^;&|\n]*\s--run?(?=\s|$|[;&|)>])',
   '(?i)\bconey(?:-tools(?:\.exe)?|_tools[./\\]cli(?:\.py)?)\s+(?:-\S+\s+)*(?:repo\s+review|legacy\s+pr-review)(?=\s|$|[;&|)>])',
+  # ...nor `task slots --waive`, which is the coordinator's.
+  '(?i)\bconey(?:-tools(?:\.exe)?|_tools[./\\]cli(?:\.py)?)\b[^;&|\n]*\btask[ \t]+slots\b[^;&|\n]*[ \t]--w[a-z]*',
 ]
 no_github_writes = true
 hint = "A reviewer reports: write your files only in your scratch folder, outside any checkout; git only reads."
@@ -125,6 +132,8 @@ hint = "A reviewer reports: write your files only in your scratch folder, outsid
 # nor the settings files another tool reads hooks or `disableAllHooks` from (Cursor and Copilot read
 # `.claude/settings.local.json`; Copilot also `.github/copilot/settings*.json`).
 deny_coney_tools = ["pr open", "pr hold", "claim unclaim", "claim renew"]
+# `task slots --waive` is the coordinator's too (docs/guides/slot-fill.md): a waiver silences its Stop hook.
+deny_commands = ['(?i)\bconey(?:-tools(?:\.exe)?|_tools[./\\]cli(?:\.py)?)\b[^;&|\n]*\btask[ \t]+slots\b[^;&|\n]*[ \t]--w[a-z]*']
 deny_write_dirs = [
   ".claude/hooks", ".claude/settings.json", ".claude/settings.local.json", ".codex", ".gemini", ".agents", ".cursor",
   ".github/hooks", ".github/copilot", ".grok",

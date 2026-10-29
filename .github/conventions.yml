@@ -494,6 +494,36 @@ tasks:
       exempt_workflow: true
       agent_types: [engineer, tooling]
       reserve_minutes: 45                         # an agent let start keeps its slot this long before its `task start`
+    # Keeping the places full (maintainer, 2026-10-27; docs/guides/slot-fill.md): `coney-tools task slots --fill-check`
+    # fails while a place is free, work can be started for it and nothing excuses the gap; the coordinator's Stop hook
+    # (.claude/hooks/slot_fill_guard.py) blocks the end of a turn on it. The places are the machine's (`slots` above):
+    # the ones a track keeps (`min`) while it runs fewer, and the rest. What excuses a gap, the tool works out itself:
+    # no eligible issue, the claim limit reached, or free disk under `workspace.disk_min_free_gb`. Anything else needs
+    # a logged, expiring waiver (`task slots --waive`).
+    fill:
+      # A start gate for the ready issues: with `enabled`, only issues with one of `labels`, the listed `issues` and
+      # `claims.critical_label` issues are eligible. It was "workflow first" (the workflow label and #1030, #1031) until
+      # the engineer tracks (2026-10-28) kept a place for game work and gave Coney Studio the rest, which that gate
+      # would hold back: off now, kept for the next time the maintainer wants a narrower start.
+      gate:
+        enabled: false
+        labels: [workflow]
+        issues: []
+      priority_order: [P-critical, P-high, P-medium, P-low]   # the order eligible issues are listed and started in
+      top: 5                                      # eligible issues the report lists
+      github_seconds: 12                          # the longest one `gh` call may take
+      budget_seconds: 30                          # the longest all the check's GitHub reads may take together
+      cache_seconds: 60                           # GitHub's answers are reused this long (and dropped when a task file changes)
+      # The Stop hook blocks the end of a turn at most `max_in_a_row` times for one session, then lets it end; the count
+      # starts again after `reset_minutes` without a block. A start or a waiver ends the blocks at once.
+      block: {max_in_a_row: 3, reset_minutes: 30}
+      waivers:
+        max_hours: 24                             # no waiver runs longer (a code below may cap it lower)
+        note_min_characters: 12                   # --note says why, in words
+        codes:
+          maintainer-pause: {max_hours: 24, needs_issues: false, meaning: "the maintainer asked for the work to pause"}
+          maintainer-decision: {max_hours: 24, needs_issues: true, meaning: "the work waits on a maintainer decision; --issues names the blocked issues"}
+          machine-load: {max_hours: 3, needs_issues: false, meaning: "the machine is too loaded to start more builds now"}
   leads:
     rare_max_entries: 12                          # a name part in at most this many index entries is rare: ranked first
     common_min_entries: 200                       # in at least this many it is common: not a match on its own

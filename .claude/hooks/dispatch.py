@@ -22,6 +22,9 @@ SessionStart), and the checks run inside it:
 * **PostToolUse**: `trailer_guard.py` after a `git commit`; the identity file of the command is removed, also when
   the command failed (PostToolUseFailure) or was denied (PermissionDenied).
 * **SessionStart**: a notice when the session has no role, or when `hooks.toml` could not be read.
+* **Stop**: `slot_fill_guard.py` blocks the end of a coordinator turn while an engineer slot is free with work to
+  start and no reason (docs/guides/slot-fill.md). It asks `coney-tools task slots --fill-check`; it passes the turn
+  (with a note) when the tool cannot run, and the tool lets a session's turn end after a few blocks in a row.
 
 **Fail-safe.** The guards are what keeps agents from breaking the shared machine, so nothing else may turn them off. The
 rules (`protect.py`, `roles.py`, `identity.py`, `hooklib.py`) are imported inside `try`, `protect.py` apart from the
@@ -192,6 +195,8 @@ PRE_GUARDS: list[tuple[str, Callable[[dict[str, Any]], bool]]] = [
 LAST_GUARDS = ("slot_guard",)
 #: The guards of PostToolUse.
 POST_GUARDS: list[tuple[str, Callable[[dict[str, Any]], bool]]] = [("trailer_guard", _commit)]
+#: The guards of Stop: the end of a turn of the main session. They judge through `judge(payload)`, not `main()`.
+STOP_GUARDS = ("slot_fill_guard",)
 
 
 def run_guard(name: str, raw: str, config: dict[str, Any]) -> str | None:
@@ -289,6 +294,28 @@ def post_tool_use(payload: dict[str, Any], raw: str, config: dict[str, Any]) -> 
     return (2, "", "".join(reasons)) if reasons else (0, "", "")
 
 
+def stop(payload: dict[str, Any]) -> tuple[int, str, str]:
+    """Judge the end of a turn: (exit code, stdout, stderr). A block is exit code 2 with the reason (`answer` turns it
+    into Claude Code's `decision: block`); a note for the user is a `systemMessage`. A guard that crashes passes."""
+    reasons: list[str] = []
+    notes: list[str] = []
+    for name in STOP_GUARDS:
+        try:
+            verdict = guard_module(name).judge(payload)
+        except Exception as error:  # a broken guard must not trap the coordinator
+            record(f"{name}: {type(error).__name__}: {error}")
+            continue
+        if verdict.block:
+            reasons.append(verdict.block.rstrip("\n") + "\n")
+        if verdict.note:
+            notes.append(verdict.note)
+    if reasons:
+        return 2, "", "".join(reasons)
+    if notes:
+        return 0, json.dumps({"systemMessage": " ".join(notes)}), ""
+    return 0, "", ""
+
+
 def session_start(payload: dict[str, Any], config: dict[str, Any], problem: str | None) -> tuple[int, str, str]:
     """The notices a session start shows: that the settings could not be read, and that the session has no role."""
     notices: list[str] = []
@@ -329,6 +356,8 @@ def dispatch(raw: str, config: dict[str, Any] | None = None) -> tuple[int, str, 
         return 0, "", ""
     if event == "SessionStart":
         return session_start(payload, config, problem)
+    if event == "Stop":
+        return stop(payload)
     return 0, "", ""
 
 
