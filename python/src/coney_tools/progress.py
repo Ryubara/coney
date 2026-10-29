@@ -239,6 +239,11 @@ class Progress:
         return len(self.functions) - self.reimplemented_functions
 
     @property
+    def uncounted_functions(self) -> int:
+        """Ports no share counts: every recorded port without a listing, else those the listing has no function for."""
+        return len(self.functions) if self.understanding is None else self.unlisted_functions
+
+    @property
     def researched_functions(self) -> int | None:
         """Game functions inside a source directory's range of the source map; None without a listing."""
         return None if self.understanding is None else self.understanding.placed_functions

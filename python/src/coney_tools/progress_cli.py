@@ -92,7 +92,7 @@ def run_show(as_json: bool) -> int:
     for name, total, count in state.subsystem_rows():
         if count:
             print(f"  {name:<14} {pct(count, total):>6}  {count} of {total} functions")
-    missing = sum(1 for f in state.functions if f.size is None)
+    missing = state.uncounted_functions
     if missing:
         print(f"{missing} functions are not counted: {state.no_size_reason}")
     _report_problems(state.problems)

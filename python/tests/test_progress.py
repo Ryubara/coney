@@ -754,3 +754,4 @@ def test_no_size_says_why(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsy
     assert main(["progress", "summary"]) == 0
     assert "1 functions are not counted: the Ghidra listing has no function at their address" in capsys.readouterr().out
     assert "the Ghidra listing has no function at their address." in progress_render.render_page(progress.load(lacking))
+    assert progress.load(bare).uncounted_functions == progress.load(lacking).uncounted_functions == 1

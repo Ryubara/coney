@@ -217,7 +217,7 @@ def render_page(progress: Progress, grid_html: str = "", missions_html: str = ""
     the page has neither before the checkout has a Ghidra listing or a missions list.
     """
     lines = ["## Overall", "", _badges(progress), "", *_summary_rows(progress, "../roadmap.md"), ""]
-    missing = sum(1 for f in progress.functions if f.size is None)
+    missing = progress.uncounted_functions
     if missing:
         lines += [f"{missing} reimplemented function(s) are not counted above: {progress.no_size_reason}.", ""]
     if grid_html:

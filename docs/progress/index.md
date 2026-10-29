@@ -61,8 +61,8 @@ its own Lua 4.0 interpreter, it does not reimplement it. The game's own glue aro
 
 **Per subsystem**, the total is the number of the listing's game functions inside the address range the source map
 gives the top-level directory, from its first to its last attributed function. That is **inferred** (the ranges are
-the map's inferred directory ranges), and it undercounts every directory: the game code the map has not placed, nearly
-half of it, is shown as *Unattributed*, and a directory with no attributed function yet (`Debug`, `Utils`) shows "none
+the map's inferred directory ranges), and it undercounts every directory: the game code the map has not placed (a small
+part of it now) is shown as *Unattributed*, and a directory with no attributed function yet (`Debug`, `Utils`) shows "none
 in the listing". As the source map improves, code moves from Unattributed into the directories, and the per-subsystem
 shares can go down while the overall share stays the same. *Link-once* is the game's template and inline code, which
 the linker placed after the libraries. The rows of the table add up to the whole.
@@ -75,8 +75,8 @@ yet is recorded but not counted until Ghidra defines the function; the page says
 number, `unlisted_reimplemented`).
 
 **Researched functions** are the listing's game functions inside a subsystem's range of the source map, as the picture
-draws them. The source map's coverage table in bytes (*Research coverage* below) is a table of sizes of the
-executable, not a share of progress.
+draws them; *Unattributed* and *link-once* code is not researched. The source map's coverage table in bytes
+(*Research coverage* below) is a table of sizes of the executable, not a share of progress.
 
 **The listing is the count.** The executable has no symbols, so the number of functions comes from the shared Ghidra
 project, like their sizes. A checkout without the listing has no total to count against: the page then shows no share

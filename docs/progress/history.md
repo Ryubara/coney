@@ -13,6 +13,6 @@ cannot be read at its last commit (before the tracker existed, or in a format si
 ([the decision](index.md#by-function)). Because every day is measured again with today's definition, the whole
 history is by function and no day keeps an older byte figure. A day before the Ghidra listing was committed
 (2026-10-07) has no total number of functions to count against: its row shows the number of ports recorded and `n/a`
-for the shares, and the chart starts at the first day with a listing.
+for the shares, and the chart draws no point for it.
 
 <!-- progress:history -->
