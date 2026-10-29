@@ -717,7 +717,7 @@ def _decision_refusal(subject: Subject, stamp: stamps.Stamp) -> Refusal | None:
         "fails-first",
         f'fails-first: "{stamp.subject}" changed between its commits and rests on decision #{seq}, which is not the '
         "coordinator's decision for them",
-        'the coordinator: orig fails-first --accept-change "<reason>"',
+        "orig fails-first --accept-change",
     )
 
 
