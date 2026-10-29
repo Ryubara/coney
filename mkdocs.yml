@@ -208,6 +208,7 @@ nav:
           - "Physics units: shapes, bodies and moves": research/physics-bodies.md
           - "Physics units: rays and the world": research/physics-world.md
           - The streamed world: research/world.md
+          - "The streamed world: how it splits into buildings": research/world-split.md
           - Memory: research/memory.md
           - Maths: research/maths.md
           - "Link-once code (templates, inlines)": research/link-once.md
@@ -349,6 +350,7 @@ nav:
           - Technology: guides/studio/technology.md
           - Icons: guides/studio/icons.md
           - Content and formats: guides/studio/content-and-formats.md
+          - "Buildings and collision of a disc level": guides/studio/disc-world.md
           - Project formats: guides/studio/project-formats.md
           - UI and menus: guides/studio/ui.md
           - Script editor: guides/studio/script-editor.md
