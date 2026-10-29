@@ -248,3 +248,15 @@ def test_a_source_folder_outside_the_shared_one_is_the_users_even_with_the_look_
     shutil.copytree(project.seed, mine)
     assert project.configure("one", f"-DFETCHCONTENT_SOURCE_DIR_ALPHA={mine.as_posix()}") == mine.as_posix()
     assert project.configure("two") == mine.as_posix()
+
+
+def test_a_folder_whose_configure_fetched_keeps_using_the_shared_folder_after_it(project: _Project) -> None:
+    # A fetching configure leaves an empty FETCHCONTENT_SOURCE_DIR_<NAME> in the cache; that is not anyone's copy.
+    assert project.configure("one") == project.folder("one")
+    assert (Path(project.folder("one")) / "CMakeLists.txt").is_file()
+    (Path(project.folder("one")) / ".coney-deps-hash").write_text(
+        project.hash("one"), encoding="utf-8"
+    )  # as deps.cmake
+    assert project.configure("one") == project.folder("one")
+    assert project.configure("two") == project.folder("two")
+    assert project.configure("two") == project.folder("two")
