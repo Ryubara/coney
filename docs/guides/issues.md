@@ -561,11 +561,12 @@ that `task start` and `pr open` check. The kinds are `feature`, `fix`, `docs`,
 ordinary claim.
 
 The task file starts with a small YAML block the tools read (`task`, `issues`, `kind`, `claimant`, `claimed_at`,
-`scope`, `terms`, and `parent` in a fix task) and has these sections, in this order: Issues, Goal, Done, Scope, Where
-to look, Searched, not related, Expected tests, Decision points, Related PRs and open questions. Goal and Done start as
-the issue's Summary and "What done means", quoted line by line (with a leading `>`) so that no line of issue text can
-start a section of the file; Expected tests says "no fails-first test" for `docs` and `tooling`; the coordinator prunes
-the rest.
+`scope`, `terms`, `parent` in a fix task, and `finishes: false` in a task that does not finish its issue, so the pull
+request has no `Fixes` line and the issue stays open) and has these sections, in this order: Issues, Goal, Done, Scope,
+Where to look, Searched, not related, Expected tests, Decision points, Related PRs and open questions. Goal and Done
+start as the issue's Summary and "What done means", quoted line by line (with a leading `>`) so that no line of issue
+text can start a section of the file; Expected tests says "no fails-first test" for `docs` and `tooling`; the
+coordinator prunes the rest.
 
 **Where to look** comes from a search of prepared indexes with the terms the coordinator chose (`--terms`): the
 headings and cited addresses of the research pages, the reimplemented functions of the function database, the
