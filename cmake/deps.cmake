@@ -63,8 +63,9 @@ foreach(_dep IN LISTS _coney_deps)
         # this file chose is remembered in CONEY_DEPS_PICKED_<NAME>, and an empty entry, or one that still holds it, is
         # ours from an earlier configure, possibly of other pins: it is dropped and chosen again below. A build folder
         # from before that memory has none, and its entry is ours when it has the shape of one,
-        # <CONEY_DEPS_SOURCES>/<version>/<name>; the price is that a copy the user names inside the shared folder is
-        # replaced in such a folder. An entry holding anything else is the user's (-D...), and wins.
+        # <CONEY_DEPS_SOURCES>/<version>/<name>; the price is that a copy the user names inside the shared folder (an
+        # old version's, say) is replaced at the next configure whatever the folder's age. An entry holding anything
+        # else is the user's (-D...), and wins.
         if(DEFINED FETCHCONTENT_SOURCE_DIR_${_upper})
             set(_ours FALSE)
             if("${FETCHCONTENT_SOURCE_DIR_${_upper}}" STREQUAL "")
