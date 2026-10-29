@@ -167,7 +167,8 @@ def _fix_event(item: Item, src: Sources, upstream: str) -> dict[str, Any]:
     if trial.status == conflict_work.CONFLICT:
         text = f"{who}: conflicts with {upstream} in {trial.paths_text()}"
     else:
-        text = f"{who}: rebases clean onto {upstream} but the stamps no longer cover it ({trial.reason})"
+        have = "it has no stamps that cover it" if item.route == ADOPT else "the stamps no longer cover it"
+        text = f"{who}: rebases clean onto {upstream} but {have} ({trial.reason})"
     do = f"{_command(item, src)}; {_brief(item, upstream)}"
     if not item.go:
         do = f"waits behind {item.behind}; when it frees: {do}"
@@ -187,21 +188,27 @@ def _queue(items: list[Item], src: Sources, now: datetime) -> None:
 
     The line is the fixes already running in the fix track, the fix tasks made and not started, then the conflicts in
     order; a place frees as the line ahead of it moves, so the item at position p waits behind the one at p minus the
-    track's `max`. A track with no `max` never makes anyone wait."""
+    track's `max`. A fix task for one of the item's own issues is not ahead of it: it is the fix the item asks for
+    (made since the event was told, before a hold was recorded or after it ran out), and waiting behind it would send
+    the coordinator to make that fix twice. A track with no `max` never makes anyone wait."""
     items.sort(key=lambda item: (item.since, item.pr if item.pr is not None else 10**9, item.branch))
+    conventions = src.conventions
     try:
-        current = task_slots.scan(src.coord.scratch, src.conventions, now)
-        line = [holder.task for holder in current.held("fix")] + list(current.queued_fixes)
+        current = task_slots.scan(src.coord.scratch, conventions, now)
+        names = [holder.task for holder in current.held("fix")] + list(current.queued_fixes)
+        line = [(name, task_slots.issues_of(src.coord.scratch / name, conventions)) for name in names]
     except (OSError, ConfigError):
         line = []
-    maximum = src.conventions.tasks.start.slots.tracks.of("fix").max
+    maximum = conventions.tasks.start.slots.tracks.of("fix").max
     for item in items:
-        position = len(line)
+        ahead = [name for name, issues in line if not (issues & set(item.issues))]
+        position = len(ahead)
         name = f"#{item.pr}'s fix" if item.pr is not None else f"{item.task}'s fix"
         if maximum is not None and position >= maximum:
             item.go = False
-            item.behind = line[position - maximum]
-        line.append(name)
+            item.behind = ahead[position - maximum]
+        # a later item is behind this one whatever its issues: only a real fix task is matched by issue
+        line.append((name, frozenset()))
 
 
 def _text_file(release: dict[str, Any] | None, folder: Path) -> Path:

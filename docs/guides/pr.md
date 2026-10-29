@@ -347,14 +347,11 @@ guarded:
 - `pr hold 812 --who engineer-2` says that engineer-2 is fixing #812. Start the agent, then record it.
 - `pr hold 812 --note "the runner pool is down"` (no `--who`) is a **waiver**: a known wait, with nobody working on
   it. A waiver needs the note.
-- **A conflict is never parked with a bare waiver.** A conflict is work for the fix track
-  ([Conclave](conclave.md#conflicts) raises a `conflict-fix` event with the command to start it), so `pr hold` refuses
-  a waiver on the `conflict` cause (`--cause conflict`, or no `--cause` on a pull request GitHub says conflicts now, or
-  one whose state it cannot read) unless the note names a maintainer decision: it must match
-  `conclave.watch.conflict_waiver`, the maintainer and the issue that holds the open question ("waits for the
-  maintainer's answer on #1130"). Anything else needs `--who`, a live agent. A waiver the snapshot finds that does not
-  match is ignored, and a waived conflict older than `conclave.watch.conflict_retell_hours` (24) is told again every
-  that many hours until the hold is released.
+- **A conflict is never parked with a bare waiver.** A conflict is work for the fix track, so `pr hold` refuses a
+  waiver on the `conflict` cause (`--cause conflict`, or no `--cause` on a pull request GitHub says conflicts now, or
+  one whose state it cannot read) unless the note names a maintainer decision (`conclave.watch.conflict_waiver`);
+  anything else needs `--who`. What the snapshot does with a conflict, a waiver and the retelling:
+  [Conclave](conclave.md#conflicts).
 - `--cause checks-failed` (or `conflict`, `ci-stuck`, `auto-merge-off`) covers that cause only; without it the hold
   covers every cause of the pull request.
 - `--hours N` sets how long it lasts: `conclave.watch.hold_default_hours` (4) when left out, and no more than

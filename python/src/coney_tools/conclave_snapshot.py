@@ -3,8 +3,8 @@
 
 The mod (`tools/claude-mod`) is written in TypeScript and cannot import what knows Coney's formats: the task file, the
 stamp log, the claim cards, the hook settings. So one command reads them and prints the result, and the mod only
-draws it. The snapshot is read-only: it writes nothing, to GitHub or to the repository (a conflict gets a throwaway
-worktree and a ledger in the scratch folder: `conflict_work`). It reuses `coord status` for the build
+draws it. The snapshot is read-only: it writes nothing, to GitHub or to the repository (a conflict fetches `main` and
+gets a throwaway worktree and a ledger in the scratch folder: `conflict_work`). It reuses `coord status` for the build
 slots, the detached builds and the pull requests, and `claim list` for the claim cards.
 
 Each section is an object with `error` (None when it was read); a section that could not be read holds only its

@@ -3,16 +3,15 @@
 Conclave is Coney's mod for Claude Code, a folder in the repository (`tools/claude-mod/`) that a session loads to get
 three things the shell cannot give it: a band above the prompt, a status line and a pane that stay on screen and update
 by themselves, and a shorter list of agent types for the model to choose from. It **draws and hides, and tells the
-coordinator what Coney itself raised; it never decides, and it writes nothing of the repository or of the
-tools' state.** What it does write is its own: the agent list this checkout saved and the events it has told, in the
-engine's store, and a wake, a toast or a stop-guard reason for the coordinator ([The watchers](#watchers)). The
-snapshot command it reads is read-only except for two things it needs to turn a conflict into work: a throwaway
+coordinator what Coney itself raised; it never decides, and it writes nothing of the repository or of the tools'
+state.** What it does write is its own: the agent list this checkout saved and the events it has told, in the engine's
+store, and a wake, a toast or a stop-guard reason for the coordinator ([The watchers](#watchers)). The snapshot command
+it reads is read-only except for three things it needs to turn a conflict into work: a fetch of `main`, a throwaway
 worktree for a trial rebase, removed again, and the ledger of the conflicts it has tried, in the scratch folder
-([Conflicts](#conflicts)). Every fact
-it shows comes from one command,
-`coney-tools conclave snapshot`, so the mod holds no second copy of the formats that command reads (the task file, the
-stamp log, the claim cards, the hook settings), and every rule it displays is still held by the hooks, `coney-tools` and
-CI without it. A session started without the mod loses the display and the shorter list, and nothing else.
+([Conflicts](#conflicts)). Every fact it shows comes from one command, `coney-tools conclave snapshot`, so the mod holds
+no second copy of the formats that command reads (the task file, the stamp log, the claim cards, the hook settings), and
+every rule it displays is still held by the hooks, `coney-tools` and CI without it. A session started without the mod
+loses the display and the shorter list, and nothing else.
 
 It has no tools for the model yet. In a coordinator's session it also watches Coney's own events
 ([The watchers](#watchers)): a toast and one wake for each event the first time it is seen, and a stop guard on pull
@@ -88,7 +87,7 @@ with nothing new is left alone, and the idle wake stays Tether's ([boundary](#bo
 | --- | --- | --- | --- | --- |
 | `check-failed` | An open pull request has a failed required check ([`pr list-stuck`](coney-tools-pr.md#pr-list-stuck), cause `checks-failed`) | `pr:812:checks-failed:<head>:<checks>`: the first seven characters of the head commit and a short hash of the failing checks, so a new push or another failing check is a new event | A running hold covers the cause on that head ([`pr hold`](pr.md#hold)); a hold that runs out, or a new push, opens it again | Fix it or start an agent, then `pr hold <n> --who <agent>` |
 | `pr-stuck` | Any other `pr list-stuck` cause: a CI run that never ends, auto-merge off; a conflict only where it cannot be made work of (no worktree here, or the trial could not be made), and the daily reminder of a waived conflict ([Conflicts](#conflicts)) | `pr:812:auto-merge-off:<head>`, `pr:812:conflict:<head>`, `pr:812:conflict:<head>:waived-<n>` | The same | The same |
-| `conflict-fix` | An open pull request in conflict with `main`, or a unit that is ready for `pr open` and `main` has moved past, whose trial rebase stops on a conflict or leaves a stamp stale ([Conflicts](#conflicts)) | `conflict-fix:812:<head>:go`, or `:wait` while the fix place is taken: the pull request's number (`unit-<branch>` for a unit not released yet) and the first seven characters of the head | A hold with `--who` covers the conflict on that head, or a waiver that names a maintainer decision; a hold that runs out, or a new push, opens it again | `coney-tools task create --fix-of <issue>` (or the unit's own task, or the way to adopt the branch) and a brief; behind which fix it waits, when it does |
+| `conflict-fix` | An open pull request in conflict with `main`, or a unit that is ready for `pr open` and `main` has moved past, whose trial rebase stops on a conflict or leaves a stamp stale ([Conflicts](#conflicts)) | `conflict-fix:812:<head>:go`, or `:wait` while the fix place is taken: the pull request's number (`unit-<branch>` for a unit not released yet) and the first seven characters of the head | A hold with `--who` covers the conflict on that head, or a waiver that names a maintainer decision: the conflict is then told as a handled `pr-stuck` event instead of this one; a hold that runs out, or a new push, opens it again | `coney-tools task create --fix-of <issue>` (or the unit's own task, or the way to adopt the branch) and a brief; behind which fix it waits, when it does |
 | `merged` | A pull request merged within `merged_minutes` (30) | `merged:<n>` | Never: it leaves the list when the window ends | Bring the issues it affected up to date ([After a merge](issues.md#after-a-merge)) |
 | `unit-ready` | A release-queue file (`PR.md`, `PR-<n>.md`) in the scratch folder of a unit with a worktree, its branch has no pull request since the file changed, no `HOLD.md` lies beside it and [`pr open` would pass its proof](#ready); or a pull request in conflict whose [trial rebase](#conflicts) is clean and whose stamps still cover the rebased change | `unit:<branch>:<file>:<change>`: the first twelve digits of the [change](stamps.md#change) the stamps cover, so editing the file or rebasing the branch is the same event and a new commit is a new one | The branch gets a pull request: it leaves the list. The proof stops holding, or a hold is made: it leaves the list too, and is told again if it holds again | `coney-tools pr open <task>` |
 | `question` | `QUESTION.md` or `QUESTION-<n>.md` in the scratch folder of a task unit or of any branch with a worktree ([Questions](#questions)) | `question:<task>:<file>:<time the file changed>` | An `ANSWER.md` (`ANSWER-<n>.md`) written at or after the question's last change | Read it and answer |
@@ -200,7 +199,9 @@ contributor's branch has none and stays a `pr-stuck` for the coordinator):
    **Oldest first.** The conflicts are ordered by when each was first seen on its head (the ledger below), and the fix
    track has one place (`tasks.start.slots.tracks.fix.max`). The first goes (`...:go`); each other says "waits behind
    <the fix ahead of it>" (`...:wait`), which is a fix already running, a fix task made and not started, or the
-   conflict before it, and becomes a new `...:go` event, told again, when the place frees. A unit that is ready and
+   conflict before it, and becomes a new `...:go` event, told again, when the place frees. A fix task for the issue of
+   the conflict itself is not ahead of it (it is the fix the event asked for), so running `task create --fix-of` never
+   makes the conflict wait behind its own fix. A unit that is ready and
    that `main` has moved past, whose rebase is not clean, is a `conflict-fix` for its own task, with no pull request
    to hold.
 3. **No silent parking.** A hold with `--who` handles a conflict, as for any cause. A waiver (no `--who`) handles it
