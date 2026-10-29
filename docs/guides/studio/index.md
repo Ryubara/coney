@@ -44,6 +44,7 @@ merges its page adds its row here and its line to the `nav:` of `mkdocs.yml`, un
 | [UI and menus](ui.md) | How mods extend the menus at points built for it (the MODS entry and Mods screen, option rows, mission selectors), the UI natives, Studio's Screen view, and why a mod's UI can never pass for Coney's | [#1063](issue:1063) |
 | [Script security and the sandbox](security.md) | What a project's Lua keeps and loses and why, the threat model, the project file layer, permissions, signatures and trust, the attack surface, the escape suite and fuzzing; the build issues of both pages | [#1062](issue:1062) |
 | [Mods, packages and loading](mods.md) | The mods folder and `enabled.toml`, how Coney trusts and reads a `.cmod`, starting and stopping, dependencies and exports, load order and clashes, console commands, modded saves, offline and online loading | [#1062](issue:1062) |
+| [The Coney console](console.md) | The F8 console in the release game and in developer builds: the terminal, game commands and script commands, the release and developer sets, mod commands, who may run what in co-op, the F8 bar with the mods' resource monitor, the engine's timings and the log viewer, the code boundary, off in test mode | [#1064](issue:1064) |
 
 ## Terms {#terms}
 
@@ -79,6 +80,9 @@ because *The Warriors* is made of levels and calls its in-engine cutscenes scene
   ([Stealth zones](entities.md#stealth-zone)). A sun's real shadows, once the lighting enhancement has them, are
   visual only.
 - **Level, not scene: decided.** Studio says *level* wherever other editors say *scene* ([Terms](#terms)).
+- **The Coney console in release: decided.** The FiveM-style Dear ImGui console that F8 opens ships in release builds,
+  not only in developer ones, kept apart from the debug tools; it is how players and modders turn scripts on and off
+  and give commands at the game level and the script level ([The Coney console](console.md#decisions)).
 
 ## Later {#later}
 

@@ -405,9 +405,8 @@ Opening a project someone else made is safe because nothing in it runs on open:
 
 ## The console and mods {#console}
 
-The Coney console is the console design planned on [#1064](issue:1064) (`console.md` in this folder once it merges,
-which owns the console and mod-registered commands); what its commands do to mods is [Console
-commands](mods.md#console). The security line both hold to:
+[The Coney console](console.md) owns the console and mod-registered commands; what its commands do to mods is
+[Console commands](mods.md#console). The security line both hold to:
 
 - **A mod's command runs in the mod's own sandbox.** `Coney.RegisterCommand(name, handler, spec)` (FiveM's
   `RegisterCommand`) makes the handler an entry point like an event handler: it runs in the mod's state, queued to the
@@ -422,9 +421,10 @@ commands](mods.md#console). The security line both hold to:
   ([Coney resources](../network-architecture.md#resources)); a client mod's command runs in that client's state with
   client natives only.
 - **What the release console may never reach**, at any access level: evaluating Lua or any expression, calling a
-  native, reading or writing an entity, a value or memory, opening a file by path, the network, starting a program,
-  approving a permission, or any of the debug tools (the Lua console, the Natives page, the debug menu), which stay out
-  of the release build. Its changes to mods are for the running session only.
+  native, reading or writing an entity, a value or memory, opening a file by path, the network (beyond hosting,
+  joining and leaving a session, as the player's command line does, [The release set](console.md#release-set)),
+  starting a program, approving a permission, or any of the debug tools (the Lua console, the Natives page, the debug
+  menu), which stay out of the release build. Its changes to mods are for the running session only.
 - **Proved by** the console's tests and the [escape suite](#escape-suite): the release console refuses `lua` and a
   native's name as unknown commands; a mod's command runs in the mod's own state and cannot reach more than its scripts
   can; a mod cannot register a built-in's name; no available native executes console text.
@@ -526,7 +526,7 @@ The same panel opens from the join prompt of a modded server and from Studio's P
 | **Natives with paths or handles** | A name that reaches the disk (`../`, `C:\`, `\\host\share`); a handle of another kind or another session | The [file layer](#paths) and the asset store; handles checked with kind and generation ([What natives may do](#natives)) | The file monitor ([Proof](#proof)); the native fuzzer |
 | **Manifests and packages** | A crafted `coney-project.toml` or `.cmod`: overlapping or duplicate zip entries, a central directory that disagrees with the local headers, a compression bomb | Parsed into types with limits, `std::expected` on every error; the strict zip reader of [The `.cmod` package](mods.md#cmod), sizes enforced while inflating, every file checked against the manifest's hash | Parser fuzzers |
 | **Levels, models, textures, sounds** | A crafted file breaks a parser (a classic route into a game) | Every parser reads through bounds-checked readers, checks counts before allocating, and is fuzzed; the same parsers serve the game's own files | Parser fuzzers |
-| **Mod commands** | Text the player types reaching a mod's handler; a release console that grows into a debug tool | The handler runs in the mod's sandbox at a step boundary; no script runs console text; the release set never reaches Lua, natives or paths ([The console and mods](#console); the console design's section Mod commands, planned on [#1064](issue:1064)) | The console's tests and the escape suite's console items |
+| **Mod commands** | Text the player types reaching a mod's handler; a release console that grows into a debug tool | The handler runs in the mod's sandbox at a step boundary; no script runs console text; the release set never reaches Lua, natives or paths ([The console and mods](#console); [Mod commands](console.md#mod-commands)) | The console's tests and the escape suite's console items |
 | **Studio's tools** | The language server's plugin, the debugger's port | [A shared Studio project](#studio-project) | A test project carrying `runtime.plugin` runs nothing; the debugger refuses a client without the token |
 | **The network** | Packets and packages from a server or client | The network page's strict decoding and fuzzing ([Testing](../network-architecture.md#testing)); packages as above | The network fuzzers |
 
@@ -625,7 +625,8 @@ When the work is built:
 ## Maintainer decisions {#decisions}
 
 Decided and built into these pages: scripts are on by default; console commands act on the running session only; the
-release build includes a player console, limited and kept apart from the debug tools ([#1064](issue:1064));
+release build includes a player console, limited and kept apart from the debug tools ([The Coney
+console](console.md#decisions));
 dependencies and exports as FiveM has them; scripts never run in parallel ([One thread, cooperative](#one-thread)).
 Open:
 
@@ -658,9 +659,9 @@ Open:
 
 The build issues of this page and of [Mods, packages and loading](mods.md), in order, interleaved with the SDK's [build
 issues](lua-sdk.md#build-issues): 1 and 2 come with its runtime (SDK issue 2), 3 to 11 with its loader (SDK issue 3; 7
-and 8 also with the console of [#1064](issue:1064)), 12 with its compiler (SDK issue 7) and Mission mods' issue 5, 13
-and 14 when Studio's Export and script editor are built, 15 and 16 with ConeyMP's resources ([#566](issue:566)), and 17
-when a native needs it.
+and 8 also with [the console](console.md#build-issues)), 12 with its compiler (SDK issue 7) and Mission mods' issue 5,
+13 and 14 when Studio's Export and script editor are built, 15 and 16 with ConeyMP's resources ([#566](issue:566)), and
+17 when a native needs it.
 
 1. **core: Add the project file layer.** The one way a name becomes a project file, over a folder root: relative names
    with `/`, every refusal of [Files and paths](#paths) (absolute, drive, network and device paths, `..`, alternate
@@ -699,18 +700,18 @@ when a native needs it.
    from, declared dependencies only, a depth limit, same side only. Tests: a library's function returns a copied table
    the caller cannot use to reach the library's state; a call to an undeclared mod and a mutual recursion past the depth
    are errors.
-7. **docs: Update the release build's rule for the player console.** Shared with the console design (planned on
-   [#1064](issue:1064)), whose release front end depends on it: the rule in [AGENTS.md](repo:AGENTS.md), the conventions
-   and [The debug tools and the game](../building.md#debug-tools) that the release build holds no debug tools gains the
-   player console as the one console it holds, kept apart by target and model ([The player
-   console](mods.md#player-console)); the release marker list loses `imgui.ini` and gains markers only the debug tools
-   carry. A maintainer decided the console; this issue changes the text that states the rule.
+7. **docs: Update the release build's rule for the player console.** Shared with [the console
+   design](console.md#build-issues), whose release front end depends on it: the rule in [AGENTS.md](repo:AGENTS.md),
+   the conventions and [The debug tools and the game](../building.md#debug-tools) that the release build holds no
+   debug tools gains the player console as the one console it holds, kept apart by target and model ([The player
+   console](mods.md#player-console)); the release marker list loses `imgui.ini` and gains markers only the debug
+   tools carry. A maintainer decided the console; this issue changes the text that states the rule.
 8. **core: Add the mods' console commands.** The `ModHost` side of the console: the commands of [Console
    commands](mods.md#console) (`mods`, `mod`, `levels`, `start`, `stop`, `restart`, `ensure`, `refresh`, `enable`,
    `disable`, `play`), for the running session only, at a step boundary, the host's or operator's online. Built on the
-   console design's console-core issue (planned on [#1064](issue:1064)). Tests against a fake console: start runs
-   dependencies first, stop stops dependants first, `disable` keeps a mod off for the session, nothing writes
-   `enabled.toml`, a guest gets the listing commands only.
+   console design's console-core issue ([The Coney console](console.md#build-issues), issue 1). Tests against a fake
+   console: start runs dependencies first, stop stops dependants first, `disable` keeps a mod off for the session,
+   nothing writes `enabled.toml`, a guest gets the listing commands only.
 9. **core: Add mod permissions, approvals and the mod details.** `[permissions]` in the manifest;
    `enabled.toml` recording each approval with the package hash and the signer; a mod whose permissions grew or whose
    signer changed held; the details of [What the player sees](#player-view) for the mods UI. Tests: a mod with

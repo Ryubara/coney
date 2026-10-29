@@ -11,18 +11,24 @@ prove the split, and the tests, and it ends with the build issues it proposes, i
 ([The debug tools and the game](../building.md#debug-tools)), the [debug menus](../debug-menu.md), the
 [run log](../run-log.md), the [profiler](../performance.md#zones) and the [Lua SDK](lua-sdk.md), and does not repeat
 them. What the mods' own commands do to mods (start, stop, enable, disable, all for the running session only) belongs
-to the mods design of [#1062](issue:1062); this page owns the console those commands run in.
+to [Mods: Console commands](mods.md#console), and what a mod's command may reach to
+[Script security: The console and mods](security.md#console); this page owns the console those commands run in.
 
-Three rules shape every section:
+The console is how players and modders turn scripts (projects, FiveM's resources) on and off and give commands at the
+game level and at the script level, quitting the game among them (a maintainer decision, [Maintainer
+decisions](#decisions)). Four rules shape every section:
 
 - **One console, two sets.** The release game and the debug-tools builds have the same console, the same terminal and
-  the same bar. A build with the debug tools adds the developer set to it; the release build never contains that code
-  at all (a maintainer decision: a limited console may ship in release, its code cleanly apart from the debug tools).
+  the same bar, FiveM's F8 console drawn with Dear ImGui. A build with the debug tools adds the developer set to it; the
+  release build never contains that code at all (a maintainer decision: the console ships in release, not only in
+  developer builds, its code cleanly apart from the debug tools).
 - **In release, a second way in, never a wider one.** Every release command is something the player can already do
   from the game's menus, the options or the player's command line, or a reading that changes nothing (a profiler, the
   log). Nothing in the release set teleports, spawns, changes a rule of play, runs Lua or calls a native.
 - **Closed, it is not there.** With the console closed and nothing pinned on screen, the game draws, steps and reads
   input exactly as it does without it.
+- **Off in test mode.** A test-mode run never opens it from a device and keeps nothing of it; a test reaches it only
+  through its input script ([Off in test mode](#test-mode)).
 
 ## Contents {#contents}
 
@@ -31,17 +37,19 @@ Three rules shape every section:
 3. [The parts](#parts).
 4. [The terminal](#terminal): a line, completion, history, output, when a command runs.
 5. [The command catalog](#catalog): commands as data, as the PCSX2 recipes are.
-6. [The built-in commands](#commands): the release set and the developer set.
-7. [Access levels and scope](#access).
-8. [Mod commands](#mod-commands).
-9. [The F8 bar](#bar): [Resources](#resources), [Performance](#performance), [Log](#log), [Network](#network),
-   [profiler captures](#captures).
-10. [Input and the gamepad](#input).
-11. [The code boundary](#boundary) and [how the release build keeps only the release set](#release).
-12. [Determinism, replays and the network](#determinism).
-13. [Tests](#tests).
-14. [What changes on other pages](#other-pages), [Maintainer decisions](#decisions), [Open questions](#open-questions).
-15. [Proposed build issues](#build-issues), [Sources](#sources).
+6. [Game commands and script commands](#kinds): which commands are the game's and which the scripts'.
+7. [The built-in commands](#commands): the release set and the developer set.
+8. [Access levels and scope](#access).
+9. [Mod commands](#mod-commands): how a script registers its own.
+10. [Who may run what in co-op](#coop).
+11. [The F8 bar](#bar): [Resources](#resources), [Performance](#performance), [Log](#log), [Network](#network),
+    [profiler captures](#captures).
+12. [Input and the gamepad](#input).
+13. [The code boundary](#boundary) and [how the release build keeps only the release set](#release).
+14. [Determinism, replays and the network](#determinism), and [off in test mode](#test-mode).
+15. [Tests](#tests).
+16. [What changes on other pages](#other-pages), [Maintainer decisions](#decisions), [Open questions](#open-questions).
+17. [Proposed build issues](#build-issues), [Sources](#sources).
 
 ## Terms {#terms}
 
@@ -51,6 +59,7 @@ Three rules shape every section:
 | **The terminal** | The console's text half: a line to type a command into and the output above it |
 | **Command** | A name and arguments the terminal runs: `mission 3 2`. Every command has an entry in the catalog |
 | **Built-in command** | A command that comes with Coney, from the [catalog](#catalog); as against a **mod command**, which a running mod registers ([Mod commands](#mod-commands)) |
+| **Game command, script command** | What a command acts on, the maintainer's "game level" and "script level": the game itself (`quit`, a setting, a mission), or scripts (turning a project on and off, or a command a project registered) ([Game commands and script commands](#kinds)). Not to be read as a game *level*, a map |
 | **Access level** | Which builds hold a command or panel: **player** (every build, the release build included) or **developer** (only builds with the debug tools) ([Access levels](#access)) |
 | **Scope** | What a command touches: **local** (this machine's view: the log, a panel, quitting) or **session** (the game everyone in the session plays) |
 | **The bar** | The menu bar across the top of the screen while the console is open, with its panels ([The F8 bar](#bar)) |
@@ -197,6 +206,26 @@ args = [
   (`where`, `teleport`, `load-checkpoint`), so an engineer who drives the original with recipes drives Coney with the
   same vocabulary.
 
+## Game commands and script commands {#kinds}
+
+The maintainer's words for what the console does are commands "at the game level and at the script level". On this
+page they are two kinds of command, told apart by what they act on; the [access level](#access) (which builds hold a
+command) and the [scope](#access) (whose game it changes) are separate properties of each.
+
+| Kind | Acts on | Who defines them | The commands |
+| --- | --- | --- | --- |
+| **Game commands** | The game itself: ending it, its settings, the missions, the network session, and the readings (help, the panels, the log, the profilers) | Coney, in the catalog | The [release set](#release-set) below, and in developer builds the [developer set](#developer-set) |
+| **Script commands: turning scripts on and off** | Which projects run in this session: list, start, stop, restart, enable, disable, rescan, play a project's level | Coney, in the catalog; what each does to mods is [Mods: Console commands](mods.md#console) | `mods`, `mod`, `levels`, `start`, `stop`, `restart`, `ensure`, `refresh`, `enable`, `disable`, `play` |
+| **Script commands: a project's own** | Whatever the project's handler does, inside its sandbox | The running project, with `Coney.RegisterCommand` | [Mod commands](#mod-commands) |
+
+- **Every game command and every toggle is built in**: a script can neither add a game command nor run one
+  ([No way to the console from a script](#mod-commands)). A project's own commands reach only what its scripts reach.
+- **The line between them is the boundary's**: game commands reach the game through the session's and network play's
+  host interfaces, the toggles through the mods loader's, and a project's commands through the project's state alone
+  ([The code boundary](#boundary)).
+- **Release holds all three kinds.** The release build has the release set of game commands, every toggle and every
+  running project's commands; only the developer set of game commands is missing there.
+
 ## The built-in commands {#commands}
 
 ### The release set {#release-set}
@@ -221,7 +250,7 @@ Every build has these. Each is a second way to something the player can already 
 
 The mods' commands (`mods`, `mod`, `start`, `stop`, `restart`, `ensure`, `refresh`, `enable`, `disable`, `play`,
 `levels`) are in the release set as well; what each does to mods, always for the running session only and never
-writing `mods/enabled.toml`, is the mods design's ([#1062](issue:1062)). They reach the mods loader only through its
+writing `mods/enabled.toml`, is [Mods: Console commands](mods.md#console). They reach the mods loader only through its
 host interface ([The code boundary](#boundary)).
 
 **Starting a level in release** is therefore of two kinds: a story mission the player has already reached, as the
@@ -272,11 +301,14 @@ has no debug menus. A developer build shows both sets in `help`, the developer c
 | **local** | yes | yes | yes |
 | **session** | yes | yes | refused: "only the host can do this in a network game" |
 
-A developer build is used online only between developers; there, the developer commands are session commands too,
-held to the host. A guest never sends a built-in command to the host: a guest's console runs its local built-in
-commands and nothing more, and there is no remote console in this design ([Open questions](#open-questions)). The one
-thing a guest's line can send is an unrestricted command of a mod's server script, as a request the mod checks
-([Mod commands](#mod-commands)).
+A developer build is used online only between developers; there, the developer commands follow the network page's plan
+for the debug tools: they run on the host only and are refused on a guest, and the time controls (`timescale`, `pause`,
+`step`) are refused in a session, as time control stays local to an offline game ([Debug
+tools](../network-architecture.md#sub-debug)). A guest never sends a built-in command to the host: a guest's console
+runs its local built-in commands and nothing more, and there is no remote console in this design ([Open
+questions](#open-questions)). The one thing a guest's line can send is an unrestricted command of a mod's server
+script, as a request the mod checks ([Mod commands](#mod-commands)). The whole of who may run what online is
+[Who may run what in co-op](#coop).
 
 ## Mod commands {#mod-commands}
 
@@ -295,12 +327,21 @@ end, {
 })
 ```
 
-A mod command is an **entry point** like an event handler ([Entry points](lua-sdk.md#events)), so everything the
-sandbox holds for a handler holds for it ([The sandbox](lua-sdk.md#sandbox); the script security design of
-[#1062](issue:1062) owns those rules and their limits):
+**How a script registers one.** `Coney.RegisterCommand(name, handler, spec)` is called from any of the project's
+scripts, usually in its `start` handler; `spec` gives the help line, the arguments with their types and defaults (the
+catalog's [argument types](#catalog)) and `restricted`. The call returns nothing and raises a Lua error, with the
+reason, when the name is taken or not allowed, as any refused SDK call does ([The sandbox](lua-sdk.md#sandbox)).
+Registering the same name again from the same project replaces its handler.
 
-- **It runs in the mod's own state**, with only the natives that state has, under the mod's instruction budget, memory
-  cap and print limits. A command cannot do anything the mod's scripts could not already do in a handler.
+A mod command is an **entry point** like an event handler ([Entry points](lua-sdk.md#events)), so everything the
+sandbox holds for a handler holds for it ([The sandbox](lua-sdk.md#sandbox); [Script security](security.md#console)
+owns those rules and [Limits](security.md#limits) their limits):
+
+- **It runs in the mod's own state**, with only the natives that state has, under the mod's log output limit and its
+  caps on what it makes. A command cannot do anything the mod's scripts could not already do in a handler. There is
+  no instruction budget, memory cap or watchdog for now (a maintainer decision, [Lua SDK: Maintainer
+  decisions](lua-sdk.md#decisions)): a handler that never returns freezes the game as any handler would, and the
+  [Resources](#resources) panel shows which mod it was.
 - **At a step boundary**, queued like every session command, in the order typed. The handler gets its arguments
   already checked against the declared types (a table of named values; an argument it cannot read is refused before the
   handler runs, with the help line); the string it returns, and what it prints, go to the terminal under the mod's
@@ -311,10 +352,10 @@ sandbox holds for a handler holds for it ([The sandbox](lua-sdk.md#sandbox); the
   most 64 commands.
 - **No way to the console from a script.** The SDK has no `ExecuteCommand`: a mod cannot run a built-in command
   (`quit`, `disable`, a developer command in a developer build) or another mod's command. Mods call each other through
-  exports ([#1062](issue:1062)).
+  exports ([Mods: Dependencies and exports](mods.md#dependencies)).
 - **Access and the network.** A mod command is at the player access level, in every build. Where it runs follows the
-  script that registered it, not the scopes of the built-in commands, and agrees with the script security design's
-  line ([#1062](issue:1062)):
+  script that registered it, not the scopes of the built-in commands, and agrees with
+  [Script security](security.md#console):
     - **A server script's command** runs in the server state, where the simulation runs. Offline that is the one
       machine. Online, the host's own line runs it; a `restricted` command is the host's (or a server operator's) only,
       and a guest typing it is refused on its own machine. An unrestricted one typed by a guest is sent as a request,
@@ -323,10 +364,45 @@ sandbox holds for a handler holds for it ([The sandbox](lua-sdk.md#sandbox); the
       comes back to the guest's terminal.
     - **A client script's command** (ConeyMP, P4) runs on the machine that typed it, in its client state, with client
       natives only ([Deterministic and network-safe calls](lua-sdk.md#determinism)); it sends nothing.
-- **It lives as long as the mod runs.** Stopping, disabling or reloading the mod removes its commands; a hot reload
-  registers them again from the new state ([Hot reload](lua-sdk.md#hot-reload)).
+- **It lives as long as the mod runs.** Stopping, disabling or restarting the mod removes its commands; a project
+  restart registers them again from the new state ([Project restart on save](lua-sdk.md#project-restart)).
 - **Shown as the mod's.** `help` lists mod commands under each mod's name; the completion and the gamepad picker use the
   declared argument types like any built-in's.
+
+## Who may run what in co-op {#coop}
+
+The network page decides who owns the game in each phase ([Goals and phases](../network-architecture.md#phases),
+[The authority model](../network-architecture.md#authority)); the console follows it and decides nothing it leaves
+open. In P1 and P2 the host's game is the story and the guest is player 2 in it
+([Story in co-op](../network-architecture.md#story)), so the console gives the guest what player 2 has on one PS2 and
+the host what the machine's owner has.
+
+| Command | Offline | Host (P1, P2) | Guest (P1, P2) |
+| --- | --- | --- | --- |
+| Readings: `help`, `version`, `where`, `settings`, the panels, `log`, `profiler`, `bugreport` | yes | yes, of the host's machine | yes, of the guest's own machine; the Network panel shows the link to the host |
+| `get`, `set` (settings for this session) | yes | yes, the host's own display and sound | yes, the guest's own display and sound; no setting changes the shared game |
+| `quit` | ends the game | ends the game, and with it the session for the guest, as the network page's session ends with the host ([Saves](../network-architecture.md#saves)) | leaves the host's game as the pause menu's Player 2 quit does, then ends the guest's program |
+| `host`, `connect`, `disconnect` | `host`, `connect` | `disconnect` ends the session; the guest is dropped as by the Player 2 quit | `disconnect` is the Player 2 quit |
+| `missions`, `mission` | yes | yes: the host's profile and the host's mission select ([Saves](../network-architecture.md#saves)) | `missions` lists the host's, read-only; `mission` refused |
+| Toggling scripts (`start`, `stop`, `enable`, ...) | yes | yes ([Mods: Console commands](mods.md#console)) | refused: a guest's console lists the session's mods and nothing more |
+| A project's commands | yes | yes | a server script's unrestricted command as a request with the guest's slot; a `restricted` one refused ([Mod commands](#mod-commands)) |
+| Developer set (developer builds only) | yes | yes, except the time controls in a session ([Debug tools](../network-architecture.md#sub-debug)) | refused |
+
+- **The refusal says why** on the guest's own machine, before anything is sent: "only the host can do this in a
+  network game".
+- **P3, a dedicated server**, has no player at the server's keyboard: its own terminal (the server program's standard
+  input) is the host's console, and every player who joins is a guest by the table above. Who else may act as an
+  operator, and how one proves it, is the server admin's own choice by the network page (passwords, allow lists,
+  [Other transport needs](../network-architecture.md#transport-needs)), and a remote console for it is an
+  [open question](#open-questions). Three and four players, and what the console offers them, wait for Coney's rule
+  set, which is a maintainer decision on the network page
+  ([Maintainer decisions](../network-architecture.md#decisions)).
+- **P4, ConeyMP's scripted servers**, add only mod commands: a resource's server-script command runs on the server
+  with the sender's slot, a client-script command on the client that typed it, as [Mod commands](#mod-commands) says.
+  The server's own resources decide what each player may run; the console adds no permission language (no ACE).
+- **A guest's game is never changed by the guest's console.** Every row a guest may run either reads, changes the
+  guest's own machine, or leaves; the shared game changes only on the host, as any change of the host's game reaches
+  guests ([The authority model](../network-architecture.md#authority)).
 
 ## The F8 bar {#bar}
 
@@ -350,33 +426,38 @@ registry and queue as a typed line. Where the panels were and which were pinned 
 
 ### Resources: the mods' monitor {#resources}
 
-The release-ready answer to "which mod makes my game slow", as FiveM's `resmon` is. One row per running mod, one per
-state when a mod runs a server and a client state, and a row for the game scripts (the game state) to measure against:
+The release-ready answer to "which mod makes my game slow", as FiveM's `resmon` is, and the F8 front end of the SDK's
+[monitor](lua-sdk.md#monitor): the SDK owns the numbers, Studio's Monitor panel and this panel show them, so there is
+one count and two front ends. One row per running mod, one per state when a mod runs a server and a client state, and
+a row for the game scripts (the game state) to measure against:
 
 | Column | What it shows | Where it comes from |
 | --- | --- | --- |
 | Mod | Name and version, `server` or `client` | The mods loader |
-| CPU per step | The real time the mod's calls took in a step: the mean of the last 60 steps and the worst | Each call into the state, timed with the profiler's clock ([Zones](../performance.md#zones)) |
+| Time per step | The real time the mod's part of the step took (its `update` handlers, threads, scheduled calls and other entry points): the last step, the mean and the worst of the last 30, as the SDK's monitor counts it | The monitor's timing, with the real clock the frame pacer reads ([The monitor](lua-sdk.md#monitor)) |
 | Share | That time as a share of the whole step | The `step` zone |
-| Instructions | Lua instructions run per step, and the share of the mod's budget the busiest call used | The instruction budget's count hook, which the sandbox runs anyway |
-| Memory | Bytes the state holds now, its peak, and its cap | The state's allocator, which keeps the cap |
+| Instructions | Lua instructions run per step, only while the panel is open or pinned or a capture records | The count hook (`lua_sethook`), set only then: with no budget for now, nothing else runs it ([Limits](security.md#limits)) |
+| Memory | Bytes the state holds now, and its peak | The state's allocator, which counts for the monitor; there is no cap for now |
 | Threads | Threads running and waiting | `Coney.CreateThread` ([Threads and waits](lua-sdk.md#threads)) |
 | Handlers | Event handlers and callbacks registered, and how many ran this step | `Coney.On`, the natives' callbacks |
 | Natives | Native calls per step; opening the row lists the ten most called, with counts | The value bridge, which every native call crosses ([The value bridge](lua-sdk.md#bridge)) |
-| Exports | Calls into other mods' exports, and from them | The exports bridge ([#1062](issue:1062)) |
+| Exports | Calls into other mods' exports, and from them | The exports bridge ([Mods: Dependencies and exports](mods.md#dependencies)) |
 | Errors | Errors raised since the mod started, the last one's file and line | The project state |
 
 - **The counts are exact and the times are not.** Instructions, memory, threads, handlers, native calls and errors are
   counted by the runtime and are the same in every run of the same input; the times are real time on the player's
-  machine, shown and plotted, never read by a step ([Determinism](#determinism)).
-- **Cheap while closed.** The counts are kept anyway, since the budget and the cap need them; the times are taken only
-  while Resources is open or pinned, or a capture records, and otherwise cost one branch per call, as a zone does with
-  measuring off.
-- **Sorting and plots.** Any column sorts; a row's CPU time plots over the last 300 steps.
+  machine, shown and plotted, never read by a step ([Determinism](#determinism)). In test mode the time column is off
+  and the counts stay, as the SDK's monitor has it.
+- **Cheap while closed.** Memory, threads, handlers and errors are counted anyway, for the monitor; the times and the
+  instruction count are taken only while Resources is open or pinned, or a capture records, and otherwise cost one
+  branch per call, as a zone does with measuring off.
+- **It only reads.** As the SDK's monitor, the panel never stops, slows or changes a mod: the player sees which one is
+  slow or growing and stops it with `stop` or the Mods menu.
+- **Sorting and plots.** Any column sorts; a row's time per step plots over the last 300 steps.
 - **In Studio** the same model is a docked panel, for the project in Play ([The code boundary](#boundary)).
 
-The rows exist once the mods loader and the project runtime do (the SDK's build issues 2 and 3); until then the panel
-shows the game scripts' row alone.
+The rows exist once the mods loader and the project runtime do (the SDK's build issues 2 and 3), and read the counts
+of the SDK's monitor (its build issue 10); until then the panel shows the game scripts' row alone.
 
 ### Performance: the engine's timings {#performance}
 
@@ -463,8 +544,9 @@ to a bug report.
 - **Size.** The bar is drawn at the same physical size at any resolution, by the rule the developer overlay uses
   ([Size at any resolution](../debug-menu.md#ui-scale)); that rule moves from the debug tools into a shared place the
   console reaches.
-- **In Studio**, F8 belongs to Studio's own keymap (the editor experience design of [#1055](issue:1055) gives it to
-  Eject during Play), and the console's terminal is Studio's Console panel; its other panels are Studio panels
+- **In Studio**, F8 belongs to Studio's own keymap (the editor experience design gives it to Eject during Play,
+  [Coney Studio's Play mode](editor-experience.md#play-coney)), and the console's terminal is Studio's Console panel;
+  its other panels are Studio panels
   ([The code boundary](#boundary)).
 
 ## The code boundary {#boundary}
@@ -494,8 +576,9 @@ to a bug report.
   program a player gets carries Dear ImGui today: the launcher's screens are planned, and `cmake/deps.cmake` fetches
   Dear ImGui only with the debug tools, so the console would be the first part of a player's download to use it. The
   split from the debug tools is by target and by model, not by library: `coney_console_ui` links Dear ImGui for the
-  console alone and includes nothing of the debug tools, and the developer overlay stays in `coney_devtools`. It is
-  listed under [Maintainer decisions](#decisions), since it changes what players download.
+  console alone and includes nothing of the debug tools, and the developer overlay stays in `coney_devtools`. A
+  maintainer decided it: the FiveM-style Dear ImGui console ships in release builds ([Maintainer
+  decisions](#decisions)).
 - **One registry in every program.** The game's debug-tools `coney` registers both sets into one registry, so the F8
   terminal of a developer build has every command. Studio links the same console core, registers both sets, and shows
   the terminal as its Console panel and Resources, Performance and Log as docked panels, for the project in Play.
@@ -530,8 +613,8 @@ The rule that the release build holds no debug tools is written in one place,
 [The debug tools and the game](../building.md#debug-tools), and checked by the split test above, which names
 `coney_devtools` as the one target that links `imgui`. The text gains the console as the one console the release
 build holds and Dear ImGui as the console's toolkit. That change of text is shared: it is build issue 7 of the script
-security design ([#1062](issue:1062)), made once for both designs, and this page's front-end issue depends on it
-([Proposed build issues](#build-issues)).
+security design ([Script security: Proposed build issues](security.md#build-issues)), made once for both designs, and
+this page's front-end issue depends on it ([Proposed build issues](#build-issues)).
 
 ## Determinism, replays and the network {#determinism}
 
@@ -551,6 +634,28 @@ The [networking checklist](../network-architecture.md#checklist) holds for the c
   unrestricted mod command reaches the server as a request ([Mod commands](#mod-commands)), and the effects of both
   reach the guests as any change of the host's game does: as state and events
   ([The authority model](../network-architecture.md#authority)).
+
+### Off in test mode {#test-mode}
+
+A test-mode run (`--headless`, `--frames`, `--input-script`, `--screenshot`) is lockstep, reads no device and touches
+no user folder ([Update and render](../conventions.md#update-and-render), [Where it goes](../run-log.md#outputs)). The
+console keeps to that, so a test-mode run is the same with or without it:
+
+- **Never opened from a device.** In test mode the console reads no key and no pad chord: F8, SELECT + R3 and Escape
+  are not caught, so a scripted pad that holds SELECT and R3 reaches the game as on a PS2, and the window, which never
+  takes the keyboard focus in test mode, has nothing to give the console.
+- **Lines only from the input script.** The input script's `console` action hands a line straight to the registry, on
+  the frame it names: it is checked and queued like a typed line, its output goes to the terminal model and to the run
+  log, and nothing is drawn. This is how every console test and the release smoke lines run.
+- **Nothing kept, nothing read.** No `console-history.txt`, no `coney-console.ini`, so no pinned panel from an earlier
+  run appears; measuring stays off unless a test asks for a capture; the Resources panel's time column is off and its
+  counts stay ([Resources](#resources)).
+- **Writes only where the run says.** `bugreport` writes into the run's `--log-file` or, without one, to standard error,
+  as the run log's dump does ([Bug reports](../run-log.md#bug-reports)); `profiler save` is refused unless the run
+  names a folder with a new `--capture-dir DIR`; history and settings are never written.
+- **Drawn only on request.** `--console-open N` opens the front end for the first N frames and is the one way a
+  test-mode run draws the console, for the [closed means untouched](#tests) check, as `--dev-overlay N` is for the
+  developer overlay.
 
 ## Tests {#tests}
 
@@ -580,10 +685,16 @@ Every check runs without a person, as [Testing](../testing.md) asks:
   only.
 - **Captures**: a recorded capture parses with Coney's JSON reader as a trace event file and holds every zone and mod
   call of its frames.
-- **Mod commands** (with the mods loader): a fixture mod's command runs in its state at a step boundary; a runaway
-  handler stops at the budget and the game goes on; a built-in's name is refused; a mod cannot reach `quit`; a reload
-  removes and registers its commands again; over a loopback session, a guest's restricted command is refused on the
-  guest and an unrestricted one runs on the host with the guest's slot.
+- **Mod commands** (with the mods loader): a fixture mod's command runs in its state at a step boundary; a handler
+  that raises an error stops that call only and the game goes on; a built-in's name is refused; a mod cannot reach
+  `quit`; a project restart removes and registers its commands again; over a loopback session, a guest's restricted
+  command is refused on the guest and an unrestricted one runs on the host with the guest's slot.
+- **Co-op** over a loopback session, one row of [Who may run what in co-op](#coop) per test: a guest's `mission`,
+  `stop` and developer command are refused on the guest with nothing sent; a guest's `quit` is the Player 2 quit and
+  the host plays on; the host's `quit` ends the guest's session; a guest's `set` changes only the guest's machine.
+- **Off in test mode**: a scripted pad holding SELECT and R3 reaches the game and opens nothing; a test-mode run
+  writes no history and no `coney-console.ini` and reads none left by an earlier run; `profiler save` without
+  `--capture-dir` is refused ([Off in test mode](#test-mode)).
 - **The release checks** of [the list above](#release): the split test, the catalog checks, the markers and their twin,
   the release smoke lines.
 
@@ -602,27 +713,42 @@ When this design is accepted:
 - [The debug menus](../debug-menu.md): the console as a third front end of the model (`menu <page/item>`); the pad
   typing and the UI scale rule moved where the console reaches them; the Performance page beside the console's
   release panel.
-- [The Lua SDK](lua-sdk.md): `Coney.RegisterCommand` among the SDK functions, and a mod command among the entry points
-  the budget covers.
-- The mods design of [#1062](issue:1062): its console section links this page for the console itself, and its line on
-  the console's screen follows [the choice above](#boundary).
+- [The Lua SDK](lua-sdk.md): `Coney.RegisterCommand` among the SDK functions, with its spec, and the monitor's numbers
+  read by the [Resources](#resources) panel as well as Studio's.
+- [Mods](mods.md), [Script security](security.md), [the Lua SDK](lua-sdk.md#events) and
+  [the editor experience](editor-experience.md#play-coney) link this page where they named it as planned (done in the
+  same change as this page).
+- [Running and input](../running-input.md): the command-line options `--console-open N` and `--capture-dir DIR`
+  ([Off in test mode](#test-mode)).
 - [Asset and script architecture: Debug console needs](../asset-and-script-architecture.md#console-needs): the console
   there is the debug menus' Lua console, reached here as the developer command `lua`.
 
 ## Maintainer decisions {#decisions}
 
-1. **Dear ImGui in the release build**, for the console alone, in its own target ([The code boundary](#boundary)). The
-   release build fetches and links no Dear ImGui today, by the debug tools' split, and no program a player gets carries
-   it yet (the launcher is decided on it, its screens are planned); the console needs it, and the split stays by target
-   and model. The coordinator approved it as fitting the decided clean
-   separation; it is listed here because it changes what players download and the release marker list
-   ([How the release build keeps only the release set](#release)).
-2. **The release set** ([The release set](#release-set)): `mission` limited to completed missions (as the mission
-   select), the session's settings, `host`, `connect` and `disconnect`, the profilers and the log. Each doubles a way
-   in the player already has or only reads; a maintainer confirms the list, and any command added to it later.
+Decided, and built into this page:
 
-Decided and built into this page: a limited console ships in release with its code apart from the debug tools; console
-changes to mods last for the running session only and never write `mods/enabled.toml`.
+1. **A limited console ships in release**, with its code cleanly apart from the developer debug tools, which stay out
+   of the release build (2026-10-28).
+2. **The FiveM-style Dear ImGui console ships in release builds, not only in developer builds** (2026-10-29). This
+   closes the question this page asked of Dear ImGui in the release build: it is linked for the console alone, in its
+   own target `coney_console_ui`, the split from the debug tools kept by target and model
+   ([The code boundary](#boundary)); it changes what players download and the release marker list
+   ([How the release build keeps only the release set](#release)).
+3. **The console is how players and modders turn scripts on and off and give commands at the game level and at the
+   script level** (projects, FiveM's resources; quitting the game is a game-level command), and more (2026-10-29). This
+   page's answer: [Game commands and script commands](#kinds), with the release set of game commands, every toggle
+   and each project's own commands in release, and [who may run what in co-op](#coop) following the network page.
+4. **Console changes to mods last for the running session only** and never write `mods/enabled.toml`
+   ([Mods: Console commands](mods.md#console)).
+5. **No budgets for now**, as FiveM: a mod command's handler has no instruction budget, memory cap or watchdog
+   ([Lua SDK: Maintainer decisions](lua-sdk.md#decisions)).
+
+Still the maintainer's: **the exact release set** ([The release set](#release-set)). The decisions above name
+quitting and toggling scripts; the rest of the list (`mission` limited to completed missions as the mission select,
+the session's settings, `host`, `connect` and `disconnect`, `bugreport`, the profilers and the log) is this page's
+proposal, each doubling a way in the player already has or only reading, and a maintainer confirms it and any command
+added to it later. What the network page leaves to a maintainer (Coney's rule set for three and four players, a
+guest's co-op record) this page does not decide ([Who may run what in co-op](#coop)).
 
 ## Open questions {#open-questions}
 
@@ -630,42 +756,44 @@ changes to mods last for the running session only and never write `mods/enabled.
   start. Wanted later, at the player level, and if so, which commands may a bind run?
 - **Mods binding keys** (FiveM's key mappings for resource commands): a mod's command on a key the player chooses in
   the options.
-- **A remote console** for ConeyMP's dedicated servers (P4): an operator's console over the network, as FiveM's server
-  console is reached; it belongs with the network page's operator design.
+- **A remote console** for dedicated servers (P3) and ConeyMP (P4): an operator's console over the network, as
+  FiveM's server console is reached, and who counts as an operator, which the network page leaves to each server's
+  admin ([Who may run what in co-op](#coop)); it belongs with the network page's operator design.
 - **Retail cheat codes** at the player level once Coney has the retail cheat checker: every player can enter them with
   the pad, so `cheat` would double a way in; or keep it the developers'.
 - **The developer overlay and the bar**: whether F1's overlay folds into the bar's Debug menu once the bar exists, so a
   developer build has one menu bar.
-- **The budget for mod commands**: whether a command's handler gets the per-call budget of a handler or a larger one,
-  measured on real mods with the SDK's other budgets.
 
 ## Proposed build issues {#build-issues}
 
 In the order they should come. Issues 1 to 6 need nothing from the mods runtime; 7 and 8 follow the Lua SDK's issues 2
-and 3 ([Proposed build issues](lua-sdk.md#build-issues)) and the mods loader of [#1062](issue:1062); 9 follows
-Studio's shell ([Build issues](technology.md#build-issues)).
+and 3 ([Proposed build issues](lua-sdk.md#build-issues)) and the mods loader
+([Script security: Proposed build issues](security.md#build-issues), issue 5), 8 also the SDK's monitor (its issue 10);
+9 follows Studio's shell ([Build issues](technology.md#build-issues)). The toggles' handlers (`start`, `stop` and the
+rest) are not here: they are build issue 8 of the script security design, on this page's issue 1.
 
 1. **core: Add the console core with its command catalog and access levels.** `src/console/` in `coney_core`: command
    specifications with levels, scopes, needs and `available`; the registry and its registration call; the tokenizer
    and the argument types with their checks and completions; the terminal model with output and history; the
    step-boundary queue; the host interfaces. `src/console/commands.toml` and `coney-tools console cpp` and `console
-   render` with their CI checks, and the generated console commands reference. The input script's `console` action.
-   The split test's include rules for `src/console/`. No front end yet: lines come from input scripts. Tests: the
-   tokenizer, the types, the registry's rules, the queue's order between steps, a guest's session command refused, the
-   generated table current.
+   render` with their CI checks, and the generated console commands reference. The input script's `console` action,
+   and test mode's rules ([Off in test mode](#test-mode)). The split test's include rules for `src/console/`. No front
+   end yet: lines come from input scripts. Tests: the tokenizer, the types, the registry's rules, the queue's order
+   between steps, a guest's session command refused, the generated table current, no history written in test mode.
 2. **core: Add the player commands to the console.** The release set's handlers over the game session's host: `help`,
    `clear`, `quit`, `version`, `where`, `settings`, `get`, `set`, `bugreport`, `host`, `connect`, `disconnect`, and
    `missions` and `mission` behind `available = "mission-select"` until Coney's mission select is built. The
    `coney.release.has_player_console` check and the release smoke lines (`help` lists the player set, `noclip` unknown,
-   `quit` exits 0). Tests: each command against fake hosts; a setting changed at the console writes no file; the
-   release executable's `help` equals the catalog.
+   `quit` exits 0); the co-op rows of [Who may run what in co-op](#coop) over network play's host. Tests: each command
+   against fake hosts; a setting changed at the console writes no file; the release executable's `help` equals the
+   catalog; the co-op tests over a loopback session.
 3. **platform: Add the F8 console bar to the release build.** The `coney_console_ui` target with Dear ImGui (fetched
    in the release configure for it), the bar, the terminal's widgets with completion and the picker, pinned panels,
    `coney-console.ini`, F8 and the SELECT + R3 chord caught by the console's own gate in `src/console/` (the debug
    tools' input gate's rule, not its code), Escape, the UI scale rule moved out of the debug tools, the pad typing
    moved into the console's model; the split test's rules for the new target and the `imgui` link; the release marker
    list changed (`imgui.ini` out, the developer commands' summaries in); `--console-open`. It depends on the shared
-   change of the rule's text, build issue 7 of the script security design ([#1062](issue:1062)). Tests: the front end
+   change of the rule's text, build issue 7 of the script security design. Tests: the front end
    over a bare context, the frame unchanged with the console opened and closed, the pad chord and the picker running
    `missions` from an input script.
 4. **core: Add the console's log viewer and the run log's mods category.** A listener list on the logger, the Log
@@ -683,16 +811,17 @@ Studio's shell ([Build issues](technology.md#build-issues)).
    developer commands' summaries generated into the markers. Tests: each command does what its page does, through an
    input script; `menu` reaches an item of every kind; the release smoke lines still refuse them.
 7. **core: Add mod commands through Coney.RegisterCommand.** The SDK function with its spec (help, typed arguments,
-   `restricted`), handlers run in the mod's state at a step boundary under its budget, names that never take a
-   built-in's, the `mod:name` form, removal on stop and reload, `help` and the picker listing them; online, a guest's
-   unrestricted server-script command sent as a request with its slot, and a restricted one refused on the guest.
-   Tests: a fixture mod's command runs and prints under its name; a runaway handler is stopped; a built-in's name is
-   refused; no SDK function runs a built-in command; a reload registers the commands again; the two network cases
-   over a loopback session.
-8. **core: Add the mods' resource monitor and their profiler captures.** The Resources panel's rows from the
-   scheduler, the count hook, the allocator, the threads, the handlers and the value bridge, with the game scripts'
-   row; mod calls with their file and line in captures. Tests: a synthetic mod's exact counts in two runs; times
-   taken only while the panel is open; a capture holds the mod's calls.
+   `restricted`), handlers run in the mod's state at a step boundary under its log limit, names that never take a
+   built-in's, the `mod:name` form, removal on stop and project restart, `help` and the picker listing them; online, a
+   guest's unrestricted server-script command sent as a request with its slot, and a restricted one refused on the
+   guest. Tests: a fixture mod's command runs and prints under its name; a handler's error stops that call only; a
+   built-in's name is refused; no SDK function runs a built-in command; a project restart registers the commands
+   again; the two network cases over a loopback session.
+8. **core: Add the mods' resource monitor and their profiler captures.** The Resources panel's rows over the SDK
+   monitor's counts (time per step, the allocator's memory) and the scheduler's threads, the handlers, the value
+   bridge and the count hook set while the panel is open, with the game scripts' row; mod calls with their file and
+   line in captures. Tests: a synthetic mod's exact counts in two runs; times and instructions taken only while the
+   panel is open; the time column off in test mode; a capture holds the mod's calls.
 9. **tools: Add the console to Coney Studio's panels.** Studio registers both sets into the console core and shows the
    terminal as its Console panel and Resources, Performance and Log as docked panels for the project in Play, with F8
    left to Studio's keymap. Tests: the Test Engine types a command into the Console panel and reads its output; the

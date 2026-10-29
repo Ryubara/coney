@@ -197,8 +197,8 @@ comes after the mods already running. That order is the order of main chunks, `s
 ## Console commands {#console}
 
 The Coney console itself (the F8 terminal, its command catalog, access levels, the menu bar, profilers and log viewer,
-the code boundary and mod-registered commands) is the console design planned on [#1064](issue:1064) (`console.md` in
-this folder once it merges), which links here for what its commands do to mods. They are FiveM's resource commands, plus
+the code boundary and mod-registered commands) is [The Coney console](console.md), which links here for what its
+commands do to mods. They are FiveM's resource commands, plus
 `enable`, `disable`, `play` and the listing commands. All of them act on the **running session only** (a maintainer
 decision): none writes `enabled.toml`, so the next start loads exactly what the file says, as FiveM's `start` and `stop`
 leave `server.cfg` alone.
@@ -228,9 +228,11 @@ leave `server.cfg` alone.
 ### The player console {#player-console}
 
 A maintainer decision: the release build **includes a player console**, limited in what it can reach, with its code kept
-cleanly apart from the developer debug tools, which stay out of the release build. The console design (its section
-Release, [#1064](issue:1064)) owns how, and the rule's new wording is build issue [7](security.md#build-issues), shared
-with it. What a mod's own commands and the release console may reach is [Script security](security.md#console).
+cleanly apart from the developer debug tools, which stay out of the release build; it is the FiveM-style Dear ImGui
+console, in release builds and not only in developer ones, and the way players and modders turn scripts on and off
+(a maintainer decision, 2026-10-29). [The Coney console](console.md#release) owns how, and the rule's new wording is
+build issue [7](security.md#build-issues), shared with it. What a mod's own commands and the release console may reach
+is [Script security](security.md#console).
 
 ## Modded saves and replays {#saves-replays}
 

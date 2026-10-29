@@ -512,7 +512,8 @@ second tree to tell apart from the first.
 - **Eject** (F8, Unreal) leaves the player where he stands and flies the Level view's camera through the running game,
   and F8 again takes the player back. It realizes the play mode's free camera (the Camera page's, which flies while the
   player stands still). Studio's own keys (the Play keys, F8) are caught by Studio before the game, even while the Game
-  view has the keyboard; the Coney console's F8 in the game ([#1064](issue:1064)) is that unit's to place in Studio.
+  view has the keyboard; the Coney console's F8 stays the game's outside Studio, and in Studio its terminal is the
+  Console panel ([The Coney console: Input](console.md#input)).
 - **The mouse and keyboard** go to the game while the Game view has focus, and Escape gives them back to the editor
   (Unity's rule), so Escape is never the game's pause in Studio; the gamepads always go to the game, as they do with the
   overlay open.
