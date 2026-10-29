@@ -135,7 +135,7 @@ class Maker {
     // in its middle or at one end still shares one with its base line. None for a line too short to be worth it.
     static std::vector<std::string_view> keysOf(std::string_view line) {
         constexpr std::size_t kKeyBytes = 6;
-        const std::size_t indent = line.find_first_not_of(" 	");
+        const std::size_t indent = line.find_first_not_of(" \t");
         if (indent == std::string_view::npos || line.size() - indent < 2 * kKeyBytes) {
             return {};
         }
@@ -239,13 +239,14 @@ class Maker {
         if (base.empty()) {
             return std::nullopt;
         }
-        std::vector<std::uint32_t> a(base.begin(), base.end());
-        std::vector<std::uint32_t> b(edited.begin(), edited.end());
-        for (auto& c : a) {
-            c &= 0xffU;
+        // Bytes as unsigned numbers for the diff, so a byte above 0x7f is not sign-extended.
+        std::vector<std::uint32_t> a;
+        std::vector<std::uint32_t> b;
+        for (const char c : base) {
+            a.push_back(static_cast<unsigned char>(c));
         }
-        for (auto& c : b) {
-            c &= 0xffU;
+        for (const char c : edited) {
+            b.push_back(static_cast<unsigned char>(c));
         }
         const auto steps = diffSequences(a, b, kMaxLineCost);
         std::vector<Piece> pieces;

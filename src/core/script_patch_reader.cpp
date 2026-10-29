@@ -242,7 +242,7 @@ class Reader {
         return {};
     }
 
-    // Closes the section being read, if any, and opens the next.
+    // Opens the next section, at its first header line (a key after the last section's operations starts it).
     std::expected<void, Error> startSection() {
         if (m_patch.sections.size() == kMaxSections) {
             return fail(ErrorCode::Invalid, std::format("the patch has more than {} sections", kMaxSections));
@@ -259,9 +259,6 @@ class Reader {
     // Reads one `key = value` line of a header.
     std::expected<void, Error> readKey(std::size_t number, Fields& fields) {
         const std::string_view key = fields.keyName();
-        if (!m_inHeader) {
-            return invalidAt(number, "a header line among the operations");
-        }
         const auto known = std::ranges::find(kKeys, key);
         if (known == kKeys.end()) {
             return invalidAt(number, std::format("unknown key {}", key));
