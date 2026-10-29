@@ -13,7 +13,16 @@ import pytest
 from test_workspace_clean import OLD, Space, git
 from test_workspace_clean_pressure import claim_slot, claims
 
-from coney_tools import build_claims, build_root, original_cli, pcsx2_proc, stale_processes, task_check, unit
+from coney_tools import (
+    build_claims,
+    build_root,
+    fails_first,
+    original_cli,
+    pcsx2_proc,
+    stale_processes,
+    task_check,
+    unit,
+)
 from coney_tools.conventions import load_conventions
 from coney_tools.workspace_clean import BUSY_FILE, run_clean, run_disk
 
@@ -236,7 +245,12 @@ def test_the_activity_of_a_dead_process_protects_nothing(space: Space) -> None:
 def test_task_check_holds_the_activity_while_it_runs(space: Space, monkeypatch: pytest.MonkeyPatch) -> None:
     tree = space.worktree("1-check", commits=1)
     seen: list[set[str]] = []
-    monkeypatch.setattr(task_check, "run_check", lambda request, env: seen.append(live(space)) or 0)
+
+    def run_check(request: object, env: object) -> int:
+        seen.append(live(space))
+        return 0
+
+    monkeypatch.setattr(task_check, "run_check", run_check)
     args = argparse.Namespace(
         name=None, worktree=tree, base=None, agent="a", profile=None, keep_going=False, dry_run=False, max_wait=1.0
     )
@@ -253,7 +267,7 @@ def test_fails_first_holds_the_activity_while_it_runs(space: Space, monkeypatch:
         seen.append(live(space))
         return []
 
-    monkeypatch.setattr(original_cli.fails_first, "run", run)
+    monkeypatch.setattr(fails_first, "run", run)
     args = argparse.Namespace(none=None, test=["t"], test_commit="abc", fix_commit=None, agent="a", preset="dev")
     conventions = load_conventions(REPO)
     folder = unit.Unit("1-fix", space.root / "scratch" / "1-fix")
