@@ -199,6 +199,8 @@ class StudioApp {
     void drawNewProjectDialog();
     // The Level view's input for this frame from Dear ImGui's mouse and keys, while the panel is hovered or flying.
     FlyInput readFlyInput(bool hovered);
+    // Starts or ends flying, asking the host to take the cursor into relative mode and give it back.
+    void setFlying(bool flying);
     // The camera blended `alpha` of the way between its last two steps.
     [[nodiscard]] ViewPose blendedPose(float alpha) const;
     // Rebuilds the Inspector's page for the selection, and its groups' pages.
@@ -224,6 +226,7 @@ class StudioApp {
     std::map<std::string, std::vector<ProjectEntry>> m_folders; // the File system's listings, by project path
     bool m_layoutPending = true;
     bool m_flying = false;
+    bool m_relativeMouse = false;              // the host took the cursor and reports the movement (setFlying)
     bool m_framePending = false;               // frameSelection() was asked; the Level view starts the glide
     float m_levelHalfWidth = kLevelHalfHeight; // the Level view's last view window width, for framing
     bool m_scrollToSelection = false;          // the Hierarchy brings the selection's row into view at its next draw

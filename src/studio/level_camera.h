@@ -8,9 +8,10 @@
 
 // The Level view's fly camera and the view math its picking and markers share with the drawing, in game axes (metres,
 // z up). The controls are the Level view design's (docs/guides/studio/level-view.md#fly-camera): right mouse held to
-// look, W A S D along the view, Q and E to sink and rise, Shift faster, Alt slower, the wheel while the right button is
-// held to change the base speed, which stays. The camera moves at a fixed step, never reading a clock, so a scripted
-// input flies the same path every time. Coney's own; the original has no editor.
+// look, W A S D along the view, Q and E to sink and rise (the speed grows the longer they are held), Shift faster, Alt
+// slower, the wheel while the right button is held to change the base speed, which stays. The camera moves at a fixed
+// step, never reading a clock, so a scripted input flies the same path every time. Coney's own; the original has no
+// editor.
 
 namespace coney::studio {
 
@@ -109,8 +110,8 @@ class FlyCamera {
     /// The factor now: accelerationAfter() of the time flown since the movement keys were last all up.
     [[nodiscard]] float acceleration() const { return accelerationAfter(m_movingSeconds); }
 
-    /// How long a glide to frame the selection lasts, seconds (Coney's choice: about Unity's *Frame Selected*).
-    static constexpr float kGlideSeconds = 0.5F;
+    /// How long a glide to frame the selection lasts, seconds (the maintainer's request: a quarter of a second).
+    static constexpr float kGlideSeconds = 0.25F;
 
     /// One step of `seconds` with `input`: flying moves the camera (and ends a glide); otherwise a glide in progress
     /// goes on. Nothing moves without either.

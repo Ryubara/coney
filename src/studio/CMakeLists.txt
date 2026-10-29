@@ -14,6 +14,8 @@ add_library(
     project_manifest.cpp
     run_in_coney.cpp
     studio_app.cpp
+    studio_level_view.cpp
+    studio_panels.cpp
     theme.cpp)
 coney_target_defaults(coney_studio)
 # coney_devtools for the debug menus' model and their Dear ImGui renderer (ImGuiModelView), the sandbox and Dear ImGui.

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "platform/studio_host.h"
 
+#include <algorithm>
 #include <format>
 #include <utility>
 
@@ -27,6 +28,8 @@ void SDLCALL folderChosen(void* userdata, const char* const* files, int /*filter
 } // namespace
 
 SdlStudioHost::~SdlStudioHost() {
+    // The cursor is given back if the program ends with the right button held.
+    static_cast<void>(setRelativeMouse(false));
     // Releasing a process handle leaves the process running: a Coney started from Studio outlives it.
     for (void* process : m_processes) {
         SDL_DestroyProcess(static_cast<SDL_Process*>(process));
@@ -60,12 +63,42 @@ std::uint64_t SdlStudioHost::drawLevel(const studio::LevelDocument& level, const
     return m_levels.draw(level, view);
 }
 
-// T stub: relative mouse mode is not built yet.
-bool SdlStudioHost::setRelativeMouse(bool /*on*/) { return false; }
+bool SdlStudioHost::setRelativeMouse(bool on) {
+    auto* window = static_cast<SDL_Window*>(m_window);
+    if (on == m_relative) {
+        return m_relative;
+    }
+    if (on) {
+        // The cursor goes where it was when it comes back: relative mode hides it and keeps it inside the window, and
+        // the movement comes as SDL_EVENT_MOUSE_MOTION's xrel and yrel (onEvent()).
+        SDL_GetMouseState(&m_restoreX, &m_restoreY);
+        if (!SDL_SetWindowRelativeMouseMode(window, true)) {
+            return false;
+        }
+        m_relative = true;
+        m_motion = {};
+        return true;
+    }
+    SDL_SetWindowRelativeMouseMode(window, false);
+    SDL_WarpMouseInWindow(window, m_restoreX, m_restoreY);
+    m_relative = false;
+    m_motion = {};
+    return false;
+}
 
-studio::MouseMotion SdlStudioHost::takeRelativeMotion() { return {}; }
+studio::MouseMotion SdlStudioHost::takeRelativeMotion() { return std::exchange(m_motion, {}); }
 
-void SdlStudioHost::onEvent(const void* /*sdlEvent*/) {}
+void SdlStudioHost::onEvent(const void* sdlEvent) {
+    const auto* event = static_cast<const SDL_Event*>(sdlEvent);
+    if (!m_relative || event->type != SDL_EVENT_MOUSE_MOTION) {
+        return;
+    }
+    // SDL reports the movement in window units; the display's pixel density turns them into physical pixels (1 on
+    // Windows, 2 on a Retina Mac), which Studio then counts in the display's scale-1 pixels.
+    const float density = std::max(1.0F, SDL_GetWindowPixelDensity(static_cast<SDL_Window*>(m_window)));
+    m_motion.x += event->motion.xrel * density;
+    m_motion.y += event->motion.yrel * density;
+}
 
 void SdlStudioHost::deliver() {
     if (!m_pending) {

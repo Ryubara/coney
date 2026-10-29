@@ -304,8 +304,9 @@ int main(int argc, char** argv) {
         }
         std::string title;
         for (int frame = 0; !testMode || frame < frames; ++frame) {
-            const bool running = events.has_value() && events->pumpEvents([](const void* event) {
+            const bool running = events.has_value() && events->pumpEvents([&host](const void* event) {
                 ImGui_ImplSDL3_ProcessEvent(static_cast<const SDL_Event*>(event));
+                host.onEvent(event);
                 return true; // Escape belongs to the editor, never quits it
             });
             if (!running || app.quitRequested()) {
