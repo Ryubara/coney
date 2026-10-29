@@ -248,6 +248,7 @@ def _fails_first(
         runner=fails_first.build_runner(agent),
         rules=rules,
         who=who,
+        say=lambda line: print(line, flush=True),
     )
     for stamp in written:
         print(

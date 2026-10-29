@@ -17,6 +17,7 @@ byte-identical in both commits: a test that had to change to pass is a question 
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -25,7 +26,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from coney_tools import stamps
+from coney_tools import live_progress, stamps
 from coney_tools.build_run import TestScan
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Stamps
@@ -106,6 +107,36 @@ def name_regex(names: Sequence[str]) -> str:
     return "^(" + "|".join(escaped) + ")$"
 
 
+def stream_lines(command: Sequence[str], cwd: Path, on_line: Callable[[str], None]) -> tuple[int, str]:
+    """Run a command and hand each line it prints to `on_line` as it is printed (the build's own lines: its log, its
+    waiting and "still running" lines), returning the exit code and the whole output. A run of several minutes shows
+    its progress as it goes instead of all at the end. A missing program is code 127."""
+    try:
+        process = subprocess.Popen(
+            list(command),
+            cwd=cwd,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env={**os.environ, "PYTHONUNBUFFERED": "1"},
+        )
+    except OSError as error:
+        return 127, f"{command[0]}: {error.strerror or error}\n"
+    lines: list[str] = []
+    assert process.stdout is not None
+    try:
+        for line in process.stdout:
+            lines.append(line)
+            on_line(line.rstrip("\r\n"))
+        return process.wait(), "".join(lines)
+    except BaseException:
+        process.kill()
+        raise
+
+
 def build_runner(agent: str) -> Runner:
     """A Runner that calls `coney-tools build --agent <agent> --preset <p> --test -R <names>` in the checkout."""
 
@@ -123,8 +154,8 @@ def build_runner(agent: str) -> Runner:
             "-R",
             name_regex(names),
         ]
-        done = subprocess.run(command, cwd=root, capture_output=True, encoding="utf-8", errors="replace", check=False)
-        return parse_build_output(done.stdout + done.stderr, done.returncode)
+        code, output = stream_lines(command, root, lambda line: print(line, flush=True))
+        return parse_build_output(output, code)
 
     return run
 
@@ -349,13 +380,15 @@ def run(
     rules: Stamps,
     who: Mapping[str, object],
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
+    say: Callable[[str], None] = lambda line: None,
 ) -> list[stamps.Stamp]:
     """Run `tests` on `test_commit` and `fix_commit` and append a `fails-first` stamp for each; returns the stamps.
 
     Raises FailsFirstError (nothing stamped, the branch restored) for a dirty tree, a worktree an earlier run left
     detached, commits out of order, a test file that changed between the commits, names the test commit's files do not
     hold, or a run that could not build or find the tests. The branch to come back to is written to scratch before the
-    first checkout; if putting it back fails, the error says so and how to do it by hand.
+    first checkout; if putting it back fails, the error says so and how to do it by hand. `say` is told a line when each
+    stage starts and ends, with the time of day (live_progress.clock_text), as it happens.
     """
     names = tuple(tests)
     if not names:
@@ -385,7 +418,12 @@ def run(
     try:
         for label, commit in (("red", test), ("green", fix)):
             _checkout(root, commit)
+            say(f"[{live_progress.clock_text()}] orig fails-first: start the {label} run at {commit[:12]}")
             first = runner(root, preset, names)
+            say(
+                f"[{live_progress.clock_text()}] orig fails-first: end the {label} run at {commit[:12]}: "
+                f"{'tests passed' if first.ok else 'tests failed' if first.tests_ran else 'no test run'}"
+            )
             _need_a_run(label, commit, first)
             logs = [first.output]
             runs[label] = (first, _states(root, preset, runner, names, first, commit, logs), logs)

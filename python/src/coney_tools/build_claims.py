@@ -14,6 +14,12 @@ one shared place every worktree sees:
 A third kind of claim, the **folder lock** (`folder_lock`), is the same machinery with one slot and a folder of its own
 per build folder: a run holds it from configure to its last test, so two runs never share one build folder.
 
+A third lane, the **check lane** (`check-N.claim/`, queue `queue-check/`, `check_slots` of them), limits the full
+suites:
+every command that runs the whole pytest suite or the engine's whole ctest run holds one for the run, so 8 to 16
+suites never share an 8-core machine (check_slots.py; docs/guides/coney-tools-build.md#check-slots). It is the same
+machinery again, so it queues, goes stale and is released like a build slot.
+
 A second, separate **fast lane** (`fast-1.claim/`, queue `queue-fast/`, one slot) is for small jobs: an incremental
 rebuild of a few steps, a test run that selects a few tests. It has its own claim and its own short queue, so these
 never wait behind a full build (the caller decides which lane a job belongs to; build_run.py).
@@ -63,14 +69,20 @@ TICKET_MAX_AGE = 12 * 3600.0
 POLL_SECONDS = 2.0
 #: Seconds between "you are Nth in the queue" lines while waiting.
 REPORT_SECONDS = 60.0
-#: The lanes: the main slots (full builds, full test runs) and the single fast-lane slot (small jobs).
+#: The lanes: the main slots (full builds, full test runs), the single fast-lane slot (small jobs) and the check slots
+#: (one per full suite running at once).
 MAIN_LANE = "main"
 FAST_LANE = "fast"
+CHECK_LANE = "check"
 #: Every lane, in the order `build status` lists them.
-LANES: tuple[str, ...] = (MAIN_LANE, FAST_LANE)
+LANES: tuple[str, ...] = (MAIN_LANE, FAST_LANE, CHECK_LANE)
 #: What each lane calls its claim folders and its queue folder.
-_PREFIX = {MAIN_LANE: "slot", FAST_LANE: "fast"}
-_QUEUE_DIR = {MAIN_LANE: "queue", FAST_LANE: "queue-fast"}
+_PREFIX = {MAIN_LANE: "slot", FAST_LANE: "fast", CHECK_LANE: "check"}
+_QUEUE_DIR = {MAIN_LANE: "queue", FAST_LANE: "queue-fast", CHECK_LANE: "queue-check"}
+#: A full suite takes about this many minutes on a machine to itself (the wait estimate's unit for the check lane).
+CHECK_MINUTES = 35.0
+#: One check slot per this many cores when `check_slots` is 0 (at least 1): an 8-core machine runs 2 suites at once.
+CORES_PER_CHECK_SLOT = 4
 #: Typical minutes of each step on a main slot, for the wait estimate (a rough guide, not a promise).
 TYPICAL_MINUTES = {"starting": 5.0, "configure": 5.0, "build": 15.0, "test": 10.0}
 #: A fast-lane job is short by definition.
@@ -166,8 +178,15 @@ def _iso(epoch: float) -> str:
     return datetime.fromtimestamp(epoch, UTC).isoformat(timespec="seconds")
 
 
+def check_slot_count(configured: int, cpus: int | None) -> int:
+    """How many full suites may run at once: `check_slots` when it is set (1 or more), else one per
+    `CORES_PER_CHECK_SLOT` cores and at least one (`cpus` None counts as one core)."""
+    return configured if configured > 0 else max(1, (cpus or 1) // CORES_PER_CHECK_SLOT)
+
+
 def default_slots(lane: str = MAIN_LANE, root: Path | None = None) -> Slots:
-    """The slots (or, with `lane="fast"`, the single fast-lane slot) of this machine: `build_slots` and
+    """The slots of this machine: `lane="fast"` gives the single fast-lane slot, `lane="check"` the check slots
+    (`check_slots`, else one per four cores: `check_slot_count`). `build_slots` and
     `build_claims_dir` from coney.local.toml (this checkout's, else the main checkout's), else two slots in
     `build-claims` in the shared scratch (`../../scratch` beside the main checkout, like `pcsx2-claims`). The default
     ignores `scratch_dir`: a worktree may point that at its own folder, and its claims would then be invisible to
@@ -180,6 +199,9 @@ def default_slots(lane: str = MAIN_LANE, root: Path | None = None) -> Slots:
     if lane == FAST_LANE:
         count = 1
     directory = claims or workspace_folder(main, "scratch") / "build-claims"
+    if lane == CHECK_LANE:
+        count = check_slot_count(config.numbers["check_slots"] if config else 0, os.cpu_count())
+        return Slots(directory, count, lane=lane, what="check slot", reap=reap_claim)
     return Slots(directory, count, lane=lane, what="build slot", reap=reap_claim)
 
 
@@ -213,6 +235,8 @@ def reap_claim(claim: BuildClaim) -> list[object]:
 
 def _typical(step: str, lane: str) -> float:
     """Typical minutes of a step in a lane."""
+    if lane == CHECK_LANE:
+        return CHECK_MINUTES
     return FAST_MINUTES if lane == FAST_LANE else TYPICAL_MINUTES.get(step, TYPICAL_MINUTES["build"])
 
 

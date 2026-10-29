@@ -34,8 +34,10 @@ PATH_KEYS: tuple[str, ...] = (
 #: once; `build_worktree_cap`: how many worktrees may hold a `build/` folder at once, 0 turning the cap off
 #: (build_cap.py); `build_fast_lane_steps` and `build_fast_lane_tests`: the sizes below which a job uses the fast lane;
 #: `build_fast_lane_test_seconds`: the recorded test time above which a filtered test run takes a main slot anyway, 0
-#: turning that off; `test_jobs`: the tests `coney-tools build --test` runs in parallel (`ctest -j`), 0 meaning half the
-#: cores or a build slot's share when that is more (build_run.py, `parallel_tests_for`);
+#: turning that off; `check_slots`: how many full suites (the whole pytest run, the engine's whole ctest run) may run at
+#: once, 0 meaning one per four cores (build_claims.py, `check_slot_count`); `test_jobs`: the tests `coney-tools build
+#: --test` runs in parallel (`ctest -j`), 0 meaning half the cores or a build slot's share when that is more
+#: (build_run.py, `parallel_tests_for`);
 #: `pcsx2_copies`: how many PCSX2 copies `pcsx2 setup-copies` makes; `pcsx2_pine_base` and `pcsx2_debug_base`: the
 #: PINE and debug server ports of the first copy, each next copy taking the next port; `ccache_size_gb`: the cap of the
 #: shared compiler cache, 0 turning it off, compiler_cache.py).
@@ -45,6 +47,7 @@ INT_KEYS: dict[str, int] = {
     "build_fast_lane_steps": 50,
     "build_fast_lane_tests": 20,
     "build_fast_lane_test_seconds": 300,
+    "check_slots": 0,
     "test_jobs": 0,
     "ccache_size_gb": 25,
     "pcsx2_copies": 5,

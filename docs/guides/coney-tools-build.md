@@ -427,7 +427,7 @@ coney-tools build unclaim --agent RELEASE_AGENT [--force] [--slot SLOT] [--lane 
 | `--agent RELEASE_AGENT` | text | required | the agent whose entries to remove |
 | `--force` | flag | off | also another agent's, or a build that still runs |
 | `--slot SLOT` | integer | none | one slot by number (with --lane for the fast lane) |
-| `--lane LANE` | choice | none | one lane only (default: all). One of `main`, `fast`. |
+| `--lane LANE` | choice | none | one lane only (default: all). One of `main`, `fast`, `check`. |
 | `--dir DIR` | path | none | the checkout the command is about (default: the current one) |
 <!-- command-reference:end -->
 

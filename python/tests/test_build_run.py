@@ -7,6 +7,7 @@ returns canned output."""
 
 import io
 import os
+import time
 from collections.abc import Callable, Sequence
 from pathlib import Path
 
@@ -423,10 +424,15 @@ def test_ctest_list_counts_the_selected_tests(output: str, tests: int | None) ->
 class FakeToolchain:
     """Canned output for each command, a record of what ran, and a look at the claims while a command runs."""
 
-    def __init__(self, slots: Slots, fast: Slots, lock: Slots) -> None:
+    def __init__(self, slots: Slots, fast: Slots, lock: Slots, check: Slots | None = None) -> None:
         self.slots = slots
         self.fast = fast
         self.lock = lock
+        self.check = check
+        #: How many check slots were held while each kind of command ran.
+        self.checks_during: dict[str, int] = {}
+        #: Real seconds each kind of command stays running (the heartbeat of a quiet step needs real time).
+        self.real_seconds: dict[str, float] = {}
         self.commands: list[list[str]] = []
         self.output: dict[str, tuple[int, str]] = {
             "refresh": (0, "ninja: no work to do.\n"),
@@ -468,12 +474,19 @@ class FakeToolchain:
             sum(1 for r in self.slots.status().slots if r.claim),
             sum(1 for r in self.fast.status().slots if r.claim),
         )
+        if self.check is not None:
+            self.checks_during[kind] = sum(1 for r in self.check.status().slots if r.claim)
         held = [r.claim for r in self.lock.status().slots if r.claim]
         self.lock_steps[kind] = held[0].step if held else "(no lock)"
         if kind in self.raises:
             raise self.raises[kind]
         self.advance(self.seconds.get(kind, 0.0))
         code, text = self.output[kind]
+        if kind in self.real_seconds:
+            for line in text.splitlines():
+                on_line(line)
+            time.sleep(self.real_seconds[kind])
+            return code
         for line in text.splitlines():
             on_line(line)
         return code
@@ -488,7 +501,10 @@ class Run:
         self.main = Slots(tmp_path / "claims", 2, clock=self.clock, alive=self.is_alive, sleep=self.sleep)
         self.fast = Slots(tmp_path / "claims", 1, clock=self.clock, alive=self.is_alive, sleep=self.sleep, lane="fast")
         self.lock = Slots(tmp_path / "folder-lock", 1, clock=self.clock, alive=self.is_alive, sleep=self.sleep)
-        self.toolchain = FakeToolchain(self.main, self.fast, self.lock)
+        self.check = Slots(
+            tmp_path / "claims", 1, clock=self.clock, alive=self.is_alive, sleep=self.sleep, lane="check"
+        )
+        self.toolchain = FakeToolchain(self.main, self.fast, self.lock, self.check)
         self.toolchain.advance = self.advance
         #: The duration history the run reads and writes; None: none.
         self.history: History | None = None
@@ -506,6 +522,8 @@ class Run:
         self.on_sleep: list[Callable[[], None]] = []
         #: The context's `test_jobs` (coney.local.toml): the parallel tests when no -j is given; 0: the build's share.
         self.test_jobs = 0
+        #: Seconds between the "still running" lines (real time: the heartbeat is a thread).
+        self.progress_every = 3600.0
 
     def clock(self) -> float:
         return self.now
@@ -540,6 +558,8 @@ class Run:
             test_costs=self.test_costs,
             fast_test_seconds=self.fast_test_seconds,
             test_jobs=self.test_jobs,
+            check=self.check,
+            progress_every=self.progress_every,
         )
         return execute(self.options, context)
 
@@ -1602,3 +1622,59 @@ def test_a_failed_disc_listing_fails_the_run_and_counts_every_skip_as_a_disc_ski
 def test_the_result_says_which_steps_ran(tmp_path: Path) -> None:
     assert Run(tmp_path / "a", test=True, configure=True).go().ran == ("configure", "build", "test")
     assert Run(tmp_path / "b").go().ran == ("build",)
+
+
+# -- check slots and the live progress of the engine's full test run (issue 1135) ----------------------------------
+
+
+def test_a_full_test_run_holds_a_check_slot_besides_its_main_slot_and_frees_both(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True)
+    assert run.go().ok
+    assert run.toolchain.checks_during["test"] == 1 and run.toolchain.during["test"] == (1, 0)
+    assert run.toolchain.checks_during.get("build", 0) == 0  # the build needs no check slot
+    assert all(row.claim is None for row in run.check.status().slots)  # released with the run
+
+
+def test_a_filtered_test_run_takes_no_check_slot(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True, regex="^a$")
+    assert run.go().ok
+    assert run.toolchain.checks_during["test"] == 0
+
+
+def test_a_full_test_run_waits_for_a_check_slot_and_says_its_place(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True)
+    occupy(run.check, run, "bob", 777)
+    run.on_sleep.append(lambda: run.alive.discard(777))  # bob's suite ends while this one waits
+    result = run.go()
+    assert result.ok
+    waiting = [line for line in run.lines if line.startswith("waiting for a check slot (ctest)")]
+    assert waiting and "place 1 of 1" in waiting[0] and "bob" in waiting[0]
+    assert run.toolchain.checks_during["test"] == 1
+
+
+def test_a_full_test_run_that_gives_up_waiting_for_a_check_slot_is_queued_not_failed(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True, max_wait=1.0)
+    occupy(run.check, run, "bob", 777)
+    result = run.go()
+    assert result.exit_code == 75 and not result.ok
+    assert "test" not in result.ran  # nothing ran
+    assert any("still queued" in line for line in result.summary)
+    assert all(row.claim is None or row.claim.agent == "bob" for row in run.check.status().slots)
+
+
+def test_a_quiet_step_says_it_is_still_running_with_the_tests_done_so_far(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True)
+    run.progress_every = 0.05
+    run.toolchain.real_seconds["test"] = 0.5
+    assert run.go().ok
+    beats = [line for line in run.lines if line.startswith("test: still running")]
+    assert beats, run.lines
+    assert "3 tests done, 0 failed" in beats[0]
+
+
+def test_a_long_build_says_how_far_ninja_got(tmp_path: Path) -> None:
+    run = Run(tmp_path, configure=True)
+    run.progress_every = 0.05
+    run.toolchain.real_seconds["build"] = 0.5
+    assert run.go().ok
+    assert any(line.startswith("build: still running") and "ninja step 2 of 2" in line for line in run.lines), run.lines

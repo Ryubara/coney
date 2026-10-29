@@ -566,19 +566,19 @@ vendor, a commit it cannot find), and a person committing outside Claude Code ne
   run that takes longer. A build or test run is `coney-tools build ...` started with `run_in_background`
   ([Builds and tests](#builds)); it prints its log path first, and gives up waiting for a slot after 40 minutes,
   or sooner when the wait plus the build would pass its 45-minute budget; a longer wait runs `--detach`
-  ([Build waits](#build-waits)).
+  ([Build waits](#build-waits)). A full suite (`task check`, `ci run`, `build --test` with no `-R`) waits for a
+  **check slot** and says its place every minute, and logs each stage's start and end, so a quiet log means a hung
+  run ([Check slots](coney-tools-build.md#check-slots)).
 - **Every wait has a bound** ([Bounded waits](#bounded-waits)): never `until ...; do sleep ...; done` or `while true`
   in a shell, which a hook refuses.
 - **Keep tool output small.** Print counts, the failing lines and the end of a log, never a whole log: every line an
   agent reads stays in its context for the rest of the task.
-- **Do not message a finished agent.** Start a new one from its report and the task's
-  [STATUS.md](how-we-work.md#status).
+- **Do not message a finished agent.** Start a new one from its report and the task's [STATUS.md](how-we-work.md#status).
 - **No agent waits on CI.** An engineer commits locally, runs Check, and is done when its task passes Review; it
   never pushes. The coordinator opens the pull request with `pr open` ([Opening the pull
   request](how-we-work.md#release-queue)), watches CI and sends a failure to the fix track
-  ([When a pull request fails checks](#ci-failures)). An agent that
-  sat idle past its cache lifetime would re-write its whole context, often hundreds of thousands of tokens, when it
-  resumed.
+  ([When a pull request fails checks](#ci-failures)). An agent that sat idle past its cache lifetime would re-write
+  its whole context, often hundreds of thousands of tokens, when it resumed.
 - **Keep the coordinator small.** The coordinator re-reads its whole conversation on every turn and is the context a
   fork would inherit. It saves the state, clears and continues from it at a natural boundary, and never forks once
   its context is large.

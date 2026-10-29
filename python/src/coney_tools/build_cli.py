@@ -33,7 +33,7 @@ from coney_tools import (
     shared_deps,
     unit,
 )
-from coney_tools.build_claims import FAST_LANE, LANES, MAIN_LANE, BuildClaimError, Slots
+from coney_tools.build_claims import CHECK_LANE, FAST_LANE, LANES, MAIN_LANE, BuildClaimError, Slots
 from coney_tools.build_history import FILE_NAME, History
 from coney_tools.config import (
     INT_KEYS,
@@ -446,6 +446,7 @@ def _build(
         context = build_run.Context(
             slots=slots,
             fast=build_claims.default_slots(FAST_LANE, root),
+            check=build_claims.default_slots(CHECK_LANE, root),
             toolchain=toolchain,
             emit=lambda line: print(line, flush=True),
             log=log,

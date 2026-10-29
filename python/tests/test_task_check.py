@@ -4,7 +4,8 @@ with the build record), and every way it refuses. The checks and the build are f
 the build records are real files in a temporary folder."""
 
 import hashlib
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -13,7 +14,8 @@ import pytest
 from conventions_support import write_checkout
 from git_support import git
 
-from coney_tools import build_record, build_run, pr_diff, stamps, task_check, task_check_steps, unit
+from coney_tools import build_record, build_run, local_gate, pr_diff, stamps, task_check, task_check_steps, unit
+from coney_tools.build_claims import SlotTimeout
 from coney_tools.cli import main
 from coney_tools.config import ConfigError
 from coney_tools.conventions import load_conventions
@@ -52,10 +54,19 @@ class World:
         self.counts: dict[str, dict[str, int]] = {}
         self.clock = Clock()
         self.said: list[str] = []
+        #: The (agent, what) of each check slot the run held, and the wait that gives up (None: every slot is free).
+        self.holds: list[tuple[str, str]] = []
+        self.hold_timeout: SlotTimeout | None = None
+        self.contexts: list[task_check_steps.StepContext] = []
+        self.streamed_into: list[Path] = []
 
     def step(self, name: str) -> Callable[[task_check_steps.StepContext], StepResult]:
         def run(context: task_check_steps.StepContext) -> StepResult:
             self.calls.append(name)
+            self.contexts.append(context)
+            if name == "pytest":
+                with context.hold("pytest"):
+                    pass  # the real step runs its command inside the hold
             if name in self.unavailable:
                 raise task_check_steps.CheckUnavailable(f"{name} is not installed")
             if name in self.on_step:
@@ -94,6 +105,17 @@ class World:
         result.record = build_record.write(unit.Unit.of(root, task).dir / build_record.FOLDER, record)
         return result
 
+    @contextmanager
+    def hold(self, root: Path, agent: str, what: str) -> Iterator[None]:
+        if self.hold_timeout is not None:
+            raise self.hold_timeout
+        self.holds.append((agent, what))
+        yield
+
+    def stream(self, logs: Path) -> Any:
+        self.streamed_into.append(logs)
+        return lambda command, cwd: (0, "")
+
     def env(self, *_: object) -> task_check.Env:
         names = {name for p in load_conventions(self.root).proof.profiles for name in p.checks}
         return task_check.Env(
@@ -103,6 +125,8 @@ class World:
             clock=self.clock,
             say=self.said.append,
             who=lambda: {"kind": "tool", "tool": "coney-tools task check", "agent": {"id": "lane-a"}, "source": "hook"},
+            stream=self.stream,
+            hold=self.hold,
         )
 
     def request(self, **more: Any) -> task_check.Request:
@@ -523,3 +547,79 @@ def test_a_disc_variable_that_names_nothing_is_a_machine_fault(tmp_path: Path, m
     here.mkdir()
     monkeypatch.setenv("CONEY_DISC", str(here))
     assert task_check._no_disc_reason(root) is None
+
+
+# --- check slots and live progress (issue 1135) --------------------------------------------------------------------
+
+DOC = "# Widget\n\nTwo.\n"
+PY = "x = 1\n"
+
+
+def test_the_pytest_check_holds_a_check_slot_for_the_agent_and_a_docs_change_holds_none(world: World) -> None:
+    world.edit("docs/guides/widget.md", DOC)
+    assert world.check() == 0 and world.holds == []
+    world.edit("python/src/coney_tools/widget.py", PY)
+    assert world.check() == 0
+    assert world.holds == [("lane-a", "pytest")]
+
+
+def test_a_pytest_run_that_gave_up_waiting_for_a_check_slot_stamps_nothing_and_exits_75(world: World) -> None:
+    world.edit("python/src/coney_tools/widget.py", PY)
+    world.hold_timeout = SlotTimeout("no check slot free after 180 minutes; held by bob (pytest)", 2, 3)
+    assert world.check() == 75
+    assert not world.log.stamps
+    assert any("gave up waiting for a check slot (place 2 of 3)" in line for line in world.said)
+    assert any("run task check again" in line for line in world.said)
+
+
+def test_a_profile_with_pytest_needs_an_agent_id_for_the_slot(world: World, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(task_check, "_person", lambda: None)
+    world.edit("python/src/coney_tools/widget.py", PY)
+    env = world.env()
+    env.who = lambda: {"kind": "tool", "tool": "coney-tools task check", "agent": {"id": "unknown"}, "source": "hook"}
+    assert task_check.run_check(world.request(agent=None), env) == 2
+    assert any("--agent" in line for line in world.said)
+
+
+def test_each_check_logs_its_start_and_its_end_as_it_happens(world: World) -> None:
+    # When mkdocs runs, the lines of docs-check (start and end) and mkdocs' own start were already said: the log grows
+    # a stage at a time, not all at the end.
+    seen: list[str] = []
+    world.on_step["mkdocs"] = lambda: seen.extend(world.said)
+    world.edit("docs/guides/widget.md", DOC)
+    assert world.check() == 0
+    stages = [line for line in seen if "docs-check" in line and line.startswith("  [")]
+    assert len(stages) == 2 and "start docs-check" in stages[0] and "ok   docs-check" in stages[1]
+    assert seen[-1].endswith("start mkdocs") and seen[-1].startswith("  [")  # a time of day leads each stage line
+    assert any(line.endswith("start pre-commit") for line in world.said)
+
+
+def test_a_build_stage_logs_its_start_before_it_runs(world: World) -> None:
+    seen: list[str] = []
+    original = world.build
+
+    def build(root: Path, agent: str, preset: str, task: str) -> build_run.Result:
+        seen.extend(world.said)
+        return original(root, agent, preset, task)
+
+    world.build = build  # type: ignore[method-assign]
+    world.edit("src/ai/brain.cpp", "int main() { return 0; }\n")
+    assert world.check() == 0
+    assert any("start msvc-ci-build and ctest-full-disc (one build run)" in line for line in seen)
+
+
+def test_the_checks_run_through_the_streaming_runner_with_logs_in_the_tasks_scratch_folder(world: World) -> None:
+    world.edit("python/src/coney_tools/widget.py", PY)
+    assert world.check() == 0
+    logs = unit.Unit.of(world.root, TASK).dir / "check-logs"
+    assert world.streamed_into == [logs]
+    assert world.contexts and world.contexts[0].run is not local_gate.run_command
+
+
+def test_the_real_environment_flushes_every_line_and_streams(monkeypatch: pytest.MonkeyPatch) -> None:
+    flushed: list[bool] = []
+    monkeypatch.setattr("builtins.print", lambda *args, **kwargs: flushed.append(bool(kwargs.get("flush"))))
+    env = task_check.default_env(30.0)
+    env.say("  start docs-check")
+    assert flushed == [True]  # a run redirected to a file shows the line at once
+    assert env.stream is not None and callable(env.hold)
