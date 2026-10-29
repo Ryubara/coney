@@ -56,9 +56,9 @@ A building-sized piece is one at least 3 m tall and 3 m wide. "Below the street"
 The world loader places each sector's atomic at its sector's origin ([Atomic plugin `0x3F0`](world.md#atomic-plugin),
 [Part file](world.md#part-file); `World_ReadPart`, `0x004110c0`, confirmed (code)), and the atomic holds the geometry
 that falls in its sector's box: every vertex of every atomic lies in its sector's box, and the vertices' own bounds
-are the box (the Atomic plugin section's disc test, confirmed (runtime) for the disc data). A sector holds whatever
-of the level's models falls in its box, not whole models: the geometry is cut at the box's faces, inferred from the
-disc check below, which finds the seams.
+are the box (inferred from the Atomic plugin section's disc test). A sector holds whatever of the level's models
+falls in its box, not whole models: the geometry is cut at the box's faces, inferred from the disc check below, which
+finds the seams.
 
 Disc check: 128 worlds, 4,152 sectors with an atomic, 2,549,564 triangles. Welded within 1 cm, the atomics hold
 173,118 connected pieces, of which 26,901 touch a face of their sector's box. Welded across a whole world, 1,659,414
