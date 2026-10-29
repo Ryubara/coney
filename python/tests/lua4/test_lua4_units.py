@@ -282,3 +282,16 @@ def test_compare_names_the_first_difference_without_constants() -> None:
     assert "pc 0: GETGLOBAL 0 vs PUSHSTRING 0" in text and "strings" in text
     assert "secret" not in text and "other" not in text
     assert lua4.compare(left, left) == []
+
+
+@pytest.mark.parametrize(
+    ("message", "line"),
+    [
+        ("luac: `end' expected;\n  last token read: `x' at line 7 in file `a.lua'", 7),
+        ("coney_luac: a.lua:12: 'end' expected (to close 'if' at line 3) near '<eof>'", 12),
+        ("luac exited with 1", 0),
+    ],
+)
+def test_luac_error_names_the_line(message: str, line: int) -> None:
+    """A refusal keeps only the line it names: luac's `at line N` or `coney_luac`'s `file:N:`."""
+    assert lua4.LuacError(message).line == line

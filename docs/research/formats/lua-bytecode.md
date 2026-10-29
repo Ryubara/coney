@@ -242,6 +242,40 @@ except that the comparison briefly pushes the `nil`, which only the function's m
 function's maximum is one more than anything else in it reaches, the reader writes the first test at that depth as a
 comparison with nil. One chunk on the disc needs this (disc check).
 
+### The merges {#merges}
+
+Inferred from Lua 4.0.1's code generator, `luaK_code` in `lcode.c` (its `switch` on the instruction being written
+holds every row), and the listings (`luac -l`) a stock `luac` gives of sources of our own, which Coney's compiler
+reproduces on the fixtures (corroborated by the round trip, [above](#round-trip)). The generator does not only append:
+before writing an instruction it may merge it into the one it wrote last, unless a jump lands between the two (a loop's
+head, an `if`'s end, the end of a condition used as a value). Each row is one merge; what is not listed is never merged
+(two `POP`s in a row stay two, `not not x` stays two `NOT`s, `- -1.5` stays `PUSHNEGNUM` and `MINUS`).
+
+| Written | After | Becomes | Source that makes it |
+| --- | --- | --- | --- |
+| `PUSHNIL m` | `PUSHNIL n` | `PUSHNIL n+m` | `local a; local b` |
+| `POP m` | `SETTABLE a b` | `SETTABLE a b+m` | every store to `t.k` (the store pops the value, then the table and key go) |
+| `GETTABLE` | `PUSHSTRING k` | `GETDOTTED k` | `t.k`, `t["k"]` |
+| `GETTABLE` | `GETLOCAL l` | `GETINDEXED l` | `t[l]` for a local `l` |
+| `ADD`, `SUB` | `PUSHINT k` | `ADDI k`, `ADDI -k` | `x + 1`, `x - 1` (and `1 + 2` gives `PUSHINT 1`, `ADDI 2`: nothing is folded) |
+| `CONCAT m` | `CONCAT n` | `CONCAT n+m-1` | `a .. b .. c`, which is right-associative |
+| `MINUS` | `PUSHINT k`, `PUSHNUM k` | `PUSHINT -k`, `PUSHNEGNUM k` | `-5`, `-1.5` |
+| `JMPNE` | `PUSHNIL 1` | `JMPT` | `x ~= nil` ([A test against nil](#nil-tests)) |
+| `JMPEQ` | `PUSHNIL 1` | `NOT`, a value and no jump | `x == nil`: `y = x == nil` is `NOT`; under `if`, the test written next merges as below (`NOT`, `JMPF` gives `JMPT`) |
+| `JMPT`, `JMPF` | `NOT` | `JMPF`, `JMPT` | `if not x` |
+| `JMPF` | `PUSHINT k` | nothing | `while 1 do`: a number is never nil, so the test goes |
+| `JMPF`, `JMPT` | `PUSHNIL 1` | `JMP`, nothing | `if nil then`, `nil or x` |
+| `RETURN n` | `CALL a 255` | `TAILCALL a n` | `return f(x)`, also `return a, f(x)`: any list that ends in a call |
+
+A merge that makes a `JMPT` or `JMPF` (`x ~= nil`, a test after `NOT`) makes a plain test, never the `JMPONT` or
+`JMPONF` that `and` and `or` write to keep a value: used as a value (`y = (x ~= nil) or b`), it jumps to the `PUSHINT 1`
+or `PUSHNILJMP` pushed for it, as `luaK_tostack` sends every jump that is not a `JMPONT` or `JMPONF`. Only these
+constants are tested away: `JMPF` after `PUSHSTRING` or `PUSHNUM` stays, and so does `JMPT` after
+`PUSHINT` (`1 or x`). Two more details follow from the same listings: a parenthesised call keeps all its results
+(`f((g()))` passes every result of `g`, unlike later Lua), and a `for` loop's preparing jump goes to the target of a `JMP`
+it would land on, as the exits of an `if` and a `break` do, so a `for` at the end of a `while` body skips straight to
+the `while`'s head.
+
 ### What cannot come back
 
 - **Comments and layout.** `luac` drops them; the decompile is indented from its nesting.
@@ -266,12 +300,64 @@ comparison with nil. One chunk on the disc needs this (disc check).
 - The synthetic fixtures (`python/tests/lua4/fixtures/`: expressions, control flow, closures with upvalues and varargs,
   logic, assignments; our own source) round-trip with and without debug information, and together use all 49
   opcodes, `PUSHUPVALUE` included.
+- **With Coney's compiler** in place of `luac` (`--luac` naming `coney_luac`, [Coney's compiler](#compiler)), the
+  same **467 of 467** chunks compile back to the same code, function by function, and all 467 call the same natives
+  in every function: 32,016 native uses, the SHA-256 of the two sides' lists equal.
 
 ## In Coney
 
 Coney runs the game's bytecode in its own virtual machine (`src/scripting/lua_vm.cpp`, `lua_chunk.cpp`); the decompiler
 plays no part in the game. It is a research tool: `coney-tools lua decompile` writes into a folder outside the
 repository, and a guard refuses its output in the repository ([coney-tools](../../guides/coney-tools-fidelity.md#lua)).
+
+### Coney's compiler {#compiler}
+
+Coney also compiles Lua 4.0 source into the same bytecode, with a compiler of its own (`src/scripting/lua_compiler.h`):
+a lexer (`lua_lexer.cpp`) and a recursive-descent parser (`lua_parser.cpp` for statements and functions,
+`lua_expressions.cpp` for expressions) written from the Lua 4.0 reference manual's grammar, which emit each function's
+code in one pass through `LuaCode` (`lua_code.cpp`), as Lua's own compiler does. The code follows the patterns and the
+merges above: the stack is counted as the generator counts it, conditions are lists of jumps until a value is needed,
+and jumps are threaded. Every instruction keeps its source line (`LuaProto::lines`), so the VM's runtime errors in
+compiled code name `chunk:line:`, and compile errors name the line and the token (`console:2: '=' expected near 'x'`).
+The language is 4.0's own, rules the manual states that later Lua dropped: `and` and `or` share one priority (`a or b
+and c` is `(a or b) and c`), a table constructor keeps its list and record parts apart (`{1, 2; x = 3}`), an enclosing
+function's local is reached only as an upvalue (`%x`), and `function` names take one `.` or `:` at most.
+Two limits are Coney's choice, since text from the console, `dostring` or a mod is untrusted and Lua 4.0.1's parser
+has neither: statements and subexpressions nest at most 200 deep ("chunk has too many syntax levels", the C-call limit
+of later Lua), so deep nesting is an error rather than a stack overflow, and functions nest at most 64 deep ("functions
+nested too deeply"), as deep as the chunk loader reads back.
+
+What runs on it: the debug menus' Lua console ([The Lua console](../../guides/debug-menu.md#lua-console)), and
+`dostring` with source text, told from a compiled chunk by its first byte as Lua 4.0 does; later Coney's level rewrites
+and the patched scripts of [Mission mods](../../guides/studio/mission-mods.md#compiling). `writeLuaChunk` writes a
+compiled function as a stripped chunk, and `coney_luac` (built with the tests, `tests/support/coney_luac.cpp`) puts the
+compiler behind `luac`'s command line, so the round trip can compile with it: `coney-tools lua decompile --all
+--roundtrip --luac <build>/tests/coney_luac.exe` ([coney-tools](../../guides/coney-tools-fidelity.md#lua)).
+
+How far it matches `luac`: the five synthetic fixtures compile to the same functions as their `luac -s` chunks (a unit
+test, `tests/scripting/lua_compiler_test.cpp`), and every decompile of the disc does too ([Round-trip
+results](#round-trip), disc check). So Coney's compiler reproduces Lua 4.0's code generation for every pattern the
+game's scripts use.
+
+### The stock library it replaces {#stock-library}
+
+Lua 4.0.1 is middleware to the project: replaced, not reimplemented, as RenderWare is by librw
+(`docs/progress/totals.toml`, [Source map](../source-map.md#middleware)). So the VM, the chunk reader
+and the libraries (`lua_vm.cpp`, `lua_chunk.cpp`, `lua_libraries.cpp`) carry no `@orig`, which `progress check` refuses
+at a middleware address; each function says with `@coney-only` which stock function it replaces and at what address,
+or that it has no counterpart (Coney's own result and argument plumbing, the error hint of an unset global, the random
+generator that stands in for the C library's `rand()`). How the addresses were found:
+
+- The library functions each script can call, confirmed (code): the name and function pairs of the libraries'
+  registration tables, `lbaselib.c`'s at `0x00574d78` (read by `lua_baselibopen`, `0x00326548`), `lmathlib.c`'s at
+  `0x005759e8` (`lua_mathlibopen`, `0x0032c628`) and `lstrlib.c`'s at `0x005762e8` (`lua_strlibopen`, `0x00331a58`).
+  `tostring` is `0x003259c0`, `tinsert` `0x00325d80`, `strfind` `0x00330f98`, `floor` `0x0032bf30`.
+- The static helpers and the core (`lauxlib.c`, `lundump.c`, `lvm.c`, `ldo.c`), inferred: the functions lie in the order
+  of Lua 4.0.1's source files, and the call shapes match: `luaL_check_number` (`0x00324750`) reads with
+  `lua_tonumber` and reports through `type_error`, `luaV_tostring` (`0x003336e0`) prints `%.16g`, `luaV_lessthan`
+  (`0x00333fe8`) compares two numbers, then two strings, then calls the `lt` tag method (event 11), `luaU_undump` (`0x00333588`)
+  tests the first byte for ESC before `Lua4_LoadChunk`, and the pattern matcher's `match` (`0x00330bc0`) calls the
+  eight helpers that lie between `str_char` and it, in `lstrlib.c`'s order.
 
 ## Open questions
 
@@ -287,21 +373,22 @@ find out: `wad recover-names` keeps only names it finds as strings
 
 ### Whether the game links Lua's parser {#q-parser}
 
-The parser is linked; whether the game ever uses it is open. Confirmed (code): the function at `0x0032e6d0` (unnamed
-in Ghidra) checks a limit with the message "variables in a multiple assignment" (`0x00575dd0`), on a `,` token reads
-the next target and checks it with "syntax error" (`0x00575df8`), calls itself, and otherwise expects `=` and reads
-the values; for an indexed target it emits opcode 20 (`SETTABLE`). Inferred from that shape and those messages: it
-is `restassign` of `lparser.c`. Its one caller besides itself, `0x0032f048`, is called by `0x0032f1e8`, which
-`0x0032f538` reaches; `0x0032d828` calls `0x0032f538` after setting up a lexer and then checks `<eof> expected`
-(`0x00575d08`), the shape of `luaY_parser`. The one caller of `0x0032d828`, `0x00328d98`, calls it when its input is
-text and `0x00333588` otherwise, as `ldo.c`'s `f_parser` chooses between the parser and the binary loader, and
-`0x00328d98` is passed as a function to `0x00328df0` (the calls confirmed (code); the `lparser.c` and `ldo.c` names
-inferred from the same shapes). So, inferred from `ldo.c`, the parser runs for any buffer the game hands to Lua that
-does not start with the chunk signature. What depends on it:
-whether Coney's VM must also compile source text (a script or console that passes Lua source) or only load compiled
-chunks, which is all the game is known to do. How to find out: in Ghidra, follow the callers of `0x00328df0` out of
-the Lua block (`lua_dostring`, `lua_dobuffer`, `lua_dofile`) and see whether any game code passes them text rather
-than a chunk from the WAD.
+The parser is linked; whether the game ever uses it is open. Confirmed (code): the function at `0x0032e6d0` (unnamed in
+Ghidra) checks a limit with the message "variables in a multiple assignment" (`0x00575dd0`), on a `,` token reads the
+next target and checks it with "syntax error" (`0x00575df8`), calls itself, and otherwise expects `=` and reads the
+values; for an indexed target it emits opcode 20 (`SETTABLE`). Inferred from that shape and those messages: it is
+`restassign` of `lparser.c`. Its one caller besides itself, `0x0032f048`, is called by `0x0032f1e8`, which `0x0032f538`
+reaches; `0x0032d828` calls `0x0032f538` after setting up a lexer and then checks `<eof> expected` (`0x00575d08`), the
+shape of `luaY_parser`. The one caller of `0x0032d828`, `0x00328d98`, calls it when the flag at `+4` of its second
+argument is clear and `0x00333588` otherwise, as `ldo.c`'s `f_parser` chooses between the parser and the binary loader
+on its `bin` flag, and `0x00328d98` is passed as a function to `0x00328df0` (the calls confirmed (code); the `lparser.c`
+and `ldo.c` names inferred from the same shapes). `ldo.c` sets that flag from the first byte alone (`lua_dobuffer`,
+`lua_dofile`: is it ESC, `0x1b`), not the whole signature, so, inferred from `ldo.c`, the parser runs for any buffer the
+game hands to Lua whose first byte is not ESC. What depends on it: whether a game path passes Lua source that Coney must
+run as the game does (Coney compiles source either way, [Coney's compiler](#compiler)), or only compiled chunks, which
+is all the game is known to load. How to find out: in Ghidra, follow the callers of `0x00328df0` out of the Lua block
+(`lua_dostring`, `lua_dobuffer`, `lua_dofile`) and see whether any game code passes them text rather than a chunk from
+the WAD.
 
 ## How this was checked
 

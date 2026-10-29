@@ -1292,7 +1292,7 @@ comment = 1
 tag = 11
 
 ["src/scripting/binding_args.h"]
-tag = 6
+tag = 5
 
 ["src/scripting/camera_bindings.cpp"]
 tag = 8
@@ -1331,21 +1331,12 @@ tag = 5
 ["src/scripting/lighting_bindings.cpp"]
 tag = 5
 
-["src/scripting/lua_chunk.cpp"]
-tag = 6
-
-["src/scripting/lua_libraries.cpp"]
-tag = 56
-
 ["src/scripting/lua_value.cpp"]
 comment = 1
 tag = 11
 
 ["src/scripting/lua_value.h"]
 comment = 1
-
-["src/scripting/lua_vm.cpp"]
-tag = 17
 
 ["src/scripting/message_handlers.cpp"]
 tag = 4
@@ -1947,9 +1938,6 @@ citation = 7
 
 ["tests/debug/movies_page_test.cpp"]
 citation = 3
-
-["tests/debug/native_caller_test.cpp"]
-citation = 8
 
 ["tests/debug/net_page_test.cpp"]
 citation = 3

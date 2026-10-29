@@ -12,8 +12,9 @@ the guard's marks on it, the per-script index (`lua_index.py`) and the round tri
 * **One shared folder.** `--all` writes into `lua_dir` (coney.local.toml; default `<workspace>/scratch/lua`), so every
   worktree and agent reads the same copy.
 * **The round trip** compiles each written file with `luac_program` (default: the one `workspace init --fetch lua`
-  builds from Lua 4.0.1's source) and compares the chunk with the original, function by function. It prints counts
-  and the kind of each first difference, never a constant or a line of the script.
+  builds from Lua 4.0.1's source; `--luac` may name Coney's own compiler, `coney_luac`) and compares the chunk with
+  the original, function by function, and the natives each function calls. It prints counts, the kind of each first
+  difference and hashes, never a constant or a line of the script.
 
 Guide: docs/guides/coney-tools-fidelity.md#lua. Research: docs/research/formats/lua-bytecode.md.
 """
@@ -21,6 +22,7 @@ Guide: docs/guides/coney-tools-fidelity.md#lua. Research: docs/research/formats/
 from __future__ import annotations
 
 import collections
+import hashlib
 import importlib.util
 import os
 import re
@@ -229,20 +231,53 @@ class RoundTrip:
     #: Each failure's kind ("code: pc N: JMP vs JMPF", "luac refused it (line 7)"), counted.
     kinds: collections.Counter[str] = field(default_factory=collections.Counter)
     failed: list[str] = field(default_factory=list)
+    #: Chunks whose compiled form calls the same natives as the original, function by function; of how many.
+    natives_same: int = 0
+    natives_compared: int = 0
+    #: Native uses in the originals (each native once per function that calls it).
+    native_uses: int = 0
+    #: What the originals and the compiled chunks call, a line per function (`chunk path native,...`), for the hashes.
+    natives_original: list[str] = field(default_factory=list)
+    natives_compiled: list[str] = field(default_factory=list)
 
 
-def round_trip(items: Iterable[tuple[str, bytes, str]], compile_text: Callable[[str], bytes]) -> RoundTrip:
-    """Compile each (name, original chunk, decompiled text) with `compile_text` and compare it with the original."""
+def _natives_called(name: str, data: bytes, known: frozenset[str]) -> tuple[list[str], int] | None:
+    """The natives each function of chunk `data` calls (the index's reading), one line per function, with the number
+    of native uses; None when the index cannot read the chunk."""
+    try:
+        script = lua_index.index_script(name, data, known)
+    except (LuaError, lua4.ChunkError):
+        return None
+    lines = [f"{name} {function.path} {','.join(function.natives)}" for function in script.functions]
+    return lines, sum(len(function.natives) for function in script.functions)
+
+
+def round_trip(
+    items: Iterable[tuple[str, bytes, str]],
+    compile_text: Callable[[str], bytes],
+    known: frozenset[str] = frozenset(),
+) -> RoundTrip:
+    """Compile each (name, original chunk, decompiled text) with `compile_text` and compare it with the original: the
+    code, function by function, and the natives (`known`, the binding names) each function calls."""
     result = RoundTrip()
     for name, data, text in items:
         result.total += 1
         try:
-            again = lua4.load(compile_text(text))
+            compiled = compile_text(text)
+            again = lua4.load(compiled)
         except lua4.LuacError as error:
             result.refused += 1
             result.failed.append(name)
             result.kinds[f"luac refused it (line {error.line})"] += 1  # luac's message may quote the source
             continue
+        original_natives = _natives_called(name, data, known)
+        compiled_natives = _natives_called(name, compiled, known)
+        if original_natives is not None and compiled_natives is not None:
+            result.natives_compared += 1
+            result.natives_same += int(original_natives[0] == compiled_natives[0])
+            result.native_uses += original_natives[1]
+            result.natives_original += original_natives[0]
+            result.natives_compiled += compiled_natives[0]
         differences = lua4.compare(lua4.load(data), again)
         if differences:
             result.differ += 1
@@ -262,6 +297,13 @@ def print_round_trip(result: RoundTrip) -> None:
         print(f"  {count:4d}  {kind}")
     if result.failed:
         print(f"  failed: {', '.join(result.failed)}")
+    if result.natives_compared:
+        original = hashlib.sha256("\n".join(result.natives_original).encode()).hexdigest()
+        compiled = hashlib.sha256("\n".join(result.natives_compiled).encode()).hexdigest()
+        print(
+            f"natives: {result.natives_same} of {result.natives_compared} chunks call the same natives, function by "
+            f"function ({result.native_uses} native uses; sha256 {original[:16]} original, {compiled[:16]} compiled)"
+        )
 
 
 # --- the commands ---------------------------------------------------------------------------------------------------
@@ -307,7 +349,7 @@ def run_one(root: Path, disc: str | None, name: str, out_dir: Path, options: Opt
     print(f"{name}: {result.functions} functions, {unread} could not be read -> {path}")
     status = 1 if unread else 0
     if compile_text is not None:
-        trip = round_trip([(name, data, result.text)], compile_text)
+        trip = round_trip([(name, data, result.text)], compile_text, _binding_names(root))
         print_round_trip(trip)
         status = status or int(trip.same != trip.total)
     return status
@@ -382,7 +424,7 @@ def run_all(root: Path, disc: str | None, options: Options, known_natives: froze
     status = int(bool(not_loaded)) or hash_status
     if compile_text is None:
         return status
-    trip = round_trip(written, compile_text)
+    trip = round_trip(written, compile_text, known)
     print_round_trip(trip)
     return status or int(trip.same != trip.total)
 

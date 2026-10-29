@@ -718,6 +718,16 @@ many chunks match, the kind of each first difference and the names of the chunks
 text, and exits 1 when any differs. On the NTSC-U disc all 467 match (about two minutes). The `luac` is `--luac`,
 else `luac_program` in `coney.local.toml`, else the one `coney-tools workspace init --fetch lua` builds from Lua's
 pinned source in `<workspace>/tools/lua-4.0.1/bin/` ([Fetching the research tools](workspace.md#fetch)).
+Beside the code it compares the natives each function calls (the index's reading, below), and prints how many chunks
+call the same ones with a SHA-256 of both sides, never a name.
+
+`--luac` may also name `coney_luac`, Coney's own compiler behind `luac`'s command line, built with the tests
+(`build/<preset>/tests/coney_luac.exe`; [Coney's compiler](../research/formats/lua-bytecode.md#compiler)). The round
+trip then measures how far Coney's compiler reproduces `luac`'s code on the game's scripts:
+
+```sh
+uv run --project python coney-tools lua decompile --all --roundtrip --luac build/dev/tests/coney_luac.exe
+```
 
 **The guard.** `.claude/hooks/lua_guard.py` refuses decompiled Lua in the repository: every file the command writes
 ends with a marker line (`-- lua4 decompile <hash> <name>`), and text holding that line is refused. So is text in
@@ -792,9 +802,9 @@ coney-tools lua decompile [[DISC] NAME OUT_DIR ...] [--all] [--out DIR] [--chunk
 | `--all` | flag | off | every chunk, into the shared folder (lua_dir) |
 | `--out DIR` | path | none | with --all: write here instead of lua_dir |
 | `--chunks DIR` | path | none | read chunks from this folder (`wad extract` output), not a disc |
-| `--luac PATH` | path | none | the stock Lua 4.0 luac (default: luac_program) |
+| `--luac PATH` | path | none | the compiler for --roundtrip: a stock Lua 4.0 luac (default: luac_program) or Coney's coney_luac |
 | `--hashes FILE` | path | none | with --all: the list of decompile hashes to check (default: research/lua-decompile-hashes.toml) |
 | `--update-hashes` | flag | off | with --all: add the scripts the list lacks (another disc's); refuses to change a listed hash |
 | `--new-form` | flag | off | with --all: on purpose, rewrite the list from this run as the next form (the output changed) |
-| `--roundtrip` | flag | off | compile each output with luac and compare it with the chunk; prints counts only; exit 1 on a mismatch |
+| `--roundtrip` | flag | off | compile each output with luac and compare its code and the natives it calls with the chunk's; prints counts and hashes only; exit 1 when the code differs |
 <!-- command-reference:end -->

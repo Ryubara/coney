@@ -16,32 +16,26 @@
 namespace coney::debug {
 
 /// The debug menus' Lua console: runs a typed line in the game's script state, as the original's dormant scene-test
-/// hook would have run `SCENETEST=1` (docs/research/debug.md#debug-only-script-paths).
+/// hook would have run `SCENETEST = "l99_c1"` (docs/research/debug.md#debug-only-script-paths).
 ///
-/// Coney's VM runs compiled Lua 4.0 bytecode and has no compiler, so the console understands the part of Lua's source
-/// a console needs, evaluated directly on the VM (globals, tables and calls go through LuaVm, so a binding called here
-/// behaves as when a script calls it):
-///
-/// - statements separated by `;` or new lines: an assignment `name = expr` (also `a.b.c = expr`, `t[k] = expr`) or
-///   an expression, whose values are printed (`= 3`); a line starting with `=` prints its expression, as Lua's own
-///   console does;
-/// - expressions: numbers, strings in `'...'` or `"..."` (with `\n`, `\t`, `\\` and the quote escaped), `nil`, table
-///   constructors `{1, 2, x = 3}`, globals, fields (`a.b`, `a[1]`), calls `f(...)` and method calls `obj:m(...)`,
-///   unary minus and `not`, `+ - * / ..`, comparisons `== ~= < > <= >=`, `and`, `or`, and parentheses;
-/// - not: `if`, loops, `local` and `function` definitions. For those, run a compiled chunk (runFile()).
+/// A line is Lua 4.0, compiled by Coney's compiler (scripting/lua_compiler.h) and run on the VM, so globals, tables
+/// and the bindings it calls behave as when a script does: statements, `local`, `if`, loops and `function`
+/// definitions. An expression, or a line starting with `=`, prints its values (`= 3`), as Lua's own console does;
+/// so does a line ending in `return`. Errors name the line as `console:<line>:`.
 class LuaConsole {
   public:
     /// A console with an empty history.
     LuaConsole();
 
-    /// Runs `line` in `vm` and returns what it printed: one `= value, ...` line per expression statement that has
-    /// values. The line goes into the history (unless it repeats the newest entry). Fails with ErrorCode::Invalid,
-    /// naming the column, on a syntax error, and as the VM fails on a runtime error; statements before the failing
-    /// one have run.
+    /// Runs `line` in `vm` and returns what it printed: one `= value, ...` line when it has values, nothing
+    /// otherwise. The line goes into the history (unless it repeats the newest entry). Fails with
+    /// ErrorCode::Invalid, naming the line, on a syntax error (nothing runs), and as the VM fails on a runtime error
+    /// (the statements before the failing one have run).
     [[nodiscard]] std::expected<std::vector<std::string>, Error> run(script::LuaVm& vm, std::string_view line);
 
-    /// Runs a file: a compiled Lua 4.0 chunk (starting with `ESC Lua`) through the VM, or text, line by line, as run()
-    /// does. Fails with ErrorCode::NotFound when the file cannot be read, and as the chunk or a line fails.
+    /// Runs a file: a compiled Lua 4.0 chunk (starting with `ESC Lua`) or Lua source, as one chunk, and prints what it
+    /// returns (or `<path>: ran` when it returns nothing). Fails with ErrorCode::NotFound when the file cannot be
+    /// read, and as the chunk fails to load or run.
     [[nodiscard]] std::expected<std::vector<std::string>, Error> runFile(script::LuaVm& vm, const std::string& path);
 
     /// The lines run, oldest first; shared with the menu item that recalls them.
@@ -57,8 +51,8 @@ class LuaConsole {
     std::shared_ptr<std::vector<std::string>> m_history;
 };
 
-/// Evaluates one Lua expression in `vm` (the console's expression syntax) and returns its values; a call can return
-/// several. Fails as LuaConsole::run() does.
+/// Evaluates one Lua 4.0 expression in `vm` and returns its values; a call can return several. Fails as
+/// LuaConsole::run() does.
 [[nodiscard]] std::expected<std::vector<script::Value>, Error> evaluateLua(script::LuaVm& vm, std::string_view text);
 
 } // namespace coney::debug

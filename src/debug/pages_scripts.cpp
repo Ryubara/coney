@@ -222,7 +222,7 @@ void addConsolePage(DebugSession& session) {
                 false);
             line.history = session.console().history();
             line.maxLength = 120;
-            line.help = "A Lua statement or expression: SCENETEST = 1, GetLevelId(2), =ToInt(3.7).";
+            line.help = "Lua 4.0: SCENETEST = \"l99_c1\", GetLevelId(2), for i = 1, 3 do print(i) end.";
             page.add(std::move(line));
             auto file = std::make_shared<std::string>();
             MenuItem runFile = textItem(
@@ -240,7 +240,7 @@ void addConsolePage(DebugSession& session) {
                 },
                 false);
             runFile.maxLength = 200;
-            runFile.help = "A text file of console lines, or a compiled Lua 4.0 chunk.";
+            runFile.help = "A Lua 4.0 source file, or a compiled Lua 4.0 chunk.";
             page.add(std::move(runFile));
             page.add(watchItem("Script state",
                                [&session] { return std::string(session.usingGameScripts() ? "game" : "sandbox"); }));

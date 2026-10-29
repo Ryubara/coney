@@ -218,6 +218,9 @@ add_executable(coney_tests
     scripting/lighting_bindings_test.cpp
     scripting/player_bindings_test.cpp
     scripting/lua_chunk_test.cpp
+    scripting/lua_chunk_writer_test.cpp
+    scripting/lua_compiler_test.cpp
+    scripting/lua_nil_compare_test.cpp
     scripting/lua_libraries_test.cpp
     scripting/lua_vm_test.cpp
     scripting/scene_bindings_test.cpp
@@ -442,14 +445,14 @@ target_sources(coney_tests PRIVATE support/error_dialogs_off.cpp)
 coney_target_defaults(coney_tests)
 # tests/ on the include path for the shared synthetic fixtures (support/fixtures.h).
 target_include_directories(coney_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-# The checkout's folders the tests read: the shipped sandbox layouts (Coney's own, assets/sandbox) and the input
-# scripts the disc tests play. Only support/test_paths.cpp gets them, never the whole target: they are absolute paths
+# The checkout's folders the tests read: the shipped sandbox layouts (Coney's own, assets/sandbox), the input
+# scripts the disc tests play and the Lua 4.0 fixtures the decompiler's and the compiler's tests share. Only support/test_paths.cpp gets them, never the whole target: they are absolute paths
 # of this checkout, and on every test file they made the command lines differ between worktrees, so the shared
 # compiler cache missed every test object (docs/guides/building.md#compiler-cache). A Python test refuses such a
 # definition on a target.
 target_sources(coney_tests PRIVATE support/test_paths.cpp)
 set_source_files_properties(support/test_paths.cpp PROPERTIES COMPILE_DEFINITIONS
-    "CONEY_ASSETS_DIR=\"${PROJECT_SOURCE_DIR}/assets\";CONEY_TEST_SUPPORT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/support\"")
+    "CONEY_ASSETS_DIR=\"${PROJECT_SOURCE_DIR}/assets\";CONEY_TEST_SUPPORT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/support\";CONEY_LUA4_FIXTURES_DIR=\"${PROJECT_SOURCE_DIR}/python/tests/lua4/fixtures\"")
 # coney_platform for librw, which the texture tests run on its NULL device (no window, no GPU); coney_launcher for the
 # launcher's library (docs/guides/launcher.md).
 target_link_libraries(coney_tests PRIVATE coney_platform coney_launcher Catch2::Catch2WithMain)
@@ -470,6 +473,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/fighter_spawn_test.cpp
         debug/human_shapes_test.cpp
         debug/input_gate_test.cpp
+        debug/lua_console_test.cpp
         debug/menu_navigator_test.cpp
         debug/mesh_views_test.cpp
         debug/movies_page_test.cpp
@@ -546,6 +550,12 @@ if(MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
                      "${CMAKE_CURRENT_SOURCE_DIR}/support/error_dialogs_check.cmake")
     set_tests_properties(coney.error_dialogs_off PROPERTIES TIMEOUT 60)
 endif()
+
+# Coney's Lua 4.0 compiler behind luac's command line, for the decompiler's round trip (support/coney_luac.cpp,
+# docs/guides/coney-tools-fidelity.md#lua). A developer tool, built with the tests; no test runs it.
+add_executable(coney_luac support/coney_luac.cpp)
+coney_target_defaults(coney_luac)
+target_link_libraries(coney_luac PRIVATE coney_core)
 
 # The passes that copy the frame and lay it back must not flip it (support/frame_copy_check.cpp). It needs a display and
 # OpenGL 3.3, so it reports itself skipped (77) on machines without them, such as CI's.

@@ -7,9 +7,9 @@ give the editor its completions, the project restart on save, the resource monit
 debugger. It ends with the build issues it proposes, in order. The parent issue is [#1054](issue:1054); this page is
 [#1057](issue:1057).
 
-**Status: design.** Nothing on this page is built. It is a design in the sense of
-[Page kinds](../writing-docs.md#page-kinds): what is built moves into a guide. It extends three pages and does not
-repeat them: the script split and the Native API of [Asset and script architecture](../asset-and-script-architecture.md#scripts),
+**Status: design.** Nothing on this page is built but the Lua 4.0 compiler ([below](#compiler)). It is a design in
+the sense of [Page kinds](../writing-docs.md#page-kinds): what is built moves into a guide. It extends three pages and
+does not repeat them: the script split and the Native API of [Asset and script architecture](../asset-and-script-architecture.md#scripts),
 the masterlist of [Script bindings](../../references/bindings/index.md), and the resources and sandbox of
 [Network architecture](../network-architecture.md#scripting). Where this page decides something those pages left open,
 it says so, and [What changes on other pages](#other-pages) lists it.
@@ -656,10 +656,11 @@ its state** (its globals, its threads' places). It is not designed here; the pro
 
 ## The Lua 4.0 compiler {#compiler}
 
-The game state runs compiled Lua 4.0 bytecode, and Coney's VM reads only that: it has no compiler, which is why the
-console understands only expressions and assignments ([The Lua console](../debug-menu.md#lua-console)). A compiler from
-Lua 4.0 source to the `LuaProto` Coney's VM runs is needed whichever runtime projects get, because the game state has
-four uses for source text:
+**Built:** build issue 7 below. Coney's compiler, what it covers and how far it matches `luac` are on the research
+page ([Coney's compiler](../../research/formats/lua-bytecode.md#compiler)); this section keeps the reasons for it.
+
+The game state runs compiled Lua 4.0 bytecode. A compiler from Lua 4.0 source to the `LuaProto` Coney's VM runs is
+needed whichever runtime projects get, because the game state has four uses for source text:
 
 - **The console** with full statements (`if`, loops, `local`, `function`), errors with line numbers, in the game state
   ([Debug console needs](../asset-and-script-architecture.md#console-needs)).
@@ -678,12 +679,13 @@ buffer's first byte, so that `dostring` and the run-a-string slot `+0x2c` compil
 public source; the shipped scripts are all bytecode. So a compiler gives Coney's game state what the original's had,
 and `dostring` in Coney's base library gains its text path with it.
 
-**How:** a lexer and a recursive-descent parser written anew from the Lua 4.0 reference manual's grammar, emitting the
-instructions Coney's VM already executes, with line information kept for Coney's chunks (the disc's chunks have none).
-It is the size the architecture page gives (M to L, [Risks](../asset-and-script-architecture.md#risks)). **Tested** with
-synthetic sources compiled and run against expected results, every instruction kind covered, and a disc check that
-runs the game's scripts as the original's bytecode and as Coney's recompilation of their decompiles (where the
-decompile compiles) and compares the natives each calls, printing counts and hashes only.
+**How it was built:** a lexer and a recursive-descent parser written anew from the Lua 4.0 reference manual's grammar,
+emitting the instructions Coney's VM already executes in the patterns of Lua 4.0's own generator, with line
+information kept for Coney's chunks (the disc's chunks have none). Tested with synthetic sources compiled and run
+against expected results, every instruction kind covered, the decompiler's fixtures compiled to `luac`'s own code, and
+a disc check that compiles the decompiles with Coney's compiler and compares the code and the natives each function
+calls with the disc's chunks, printing counts and hashes only. Patched disc scripts reach the game state through the
+script catalog in [Mission mods](mission-mods.md#build-issues)' issue 5.
 
 ## The script debugger {#debugger}
 
@@ -835,7 +837,8 @@ running a project's scripts. Issues 2 to 6 build on the [decision](#decisions) f
    with *Do nothing* a save changes nothing.
 7. **core: Add the Lua 4.0 source compiler and the full console.** A lexer and parser written from the Lua 4.0 manual,
    emitting Coney's `LuaProto` with line information; the console on it (statements, `local`, loops, functions, errors
-   with lines); `dostring` compiling text; patched disc scripts through the script catalog. Tests: synthetic programs
+   with lines); `dostring` compiling text (patched disc scripts through the script catalog moved to [Mission
+   mods](mission-mods.md#build-issues), issue 5). Tests: synthetic programs
    compile and give their expected results, every instruction kind covered; the console runs a loop; a disc check
    compares the natives called by the disc's bytecode and by the recompiled decompiles, counts and hashes only.
 8. **core: Add the script debugger over the Debug Adapter Protocol.** A DAP server in the engine over a loopback socket:
