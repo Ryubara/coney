@@ -118,7 +118,7 @@ class TriangleGrid {
     [[nodiscard]] std::optional<float> nearest(Vec3 p, float reach) const;
 
   private:
-    // The cube holding `p`, as three integers packed into one key.
+    // The key of the cube at cube coordinates (x, y, z): the three packed into one integer.
     [[nodiscard]] std::uint64_t keyOf(std::int64_t x, std::int64_t y, std::int64_t z) const;
     // The cube coordinate along one axis of the value `v`.
     [[nodiscard]] std::int64_t cellOf(float v) const;
@@ -133,7 +133,7 @@ class TriangleGrid {
 struct WorldEdits {
     /// `hide s` / `hide d`: the `s` or the `d` world not drawn.
     std::array<bool, 2> hidden{};
-    /// `spread`: every sector drawn apart on a grid (the world viewer only).
+    /// `spread`: every sector drawn apart on a grid; in play, the sectors play has loaded, without the background.
     struct Spread {
         std::uint32_t columns = 10;
         float gap = 2.0F;

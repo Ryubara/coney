@@ -55,9 +55,10 @@ A building-sized piece is one at least 3 m tall and 3 m wide. "Below the street"
 
 The world loader places each sector's atomic at its sector's origin ([Atomic plugin `0x3F0`](world.md#atomic-plugin),
 [Part file](world.md#part-file); `World_ReadPart`, `0x004110c0`, confirmed (code)), and the atomic holds the geometry
-that falls in its sector's box (inferred from the disc check below; whether a vertex ever lies outside the box is not
-checked). A sector holds whatever of the level's models falls in its box, not whole models: the geometry is cut at the
-box's faces, inferred from the disc check below, which finds the seams.
+that falls in its sector's box: every vertex of every atomic lies in its sector's box, and the vertices' own bounds
+are the box (the Atomic plugin section's disc test, confirmed (runtime) for the disc data). A sector holds whatever
+of the level's models falls in its box, not whole models: the geometry is cut at the box's faces, inferred from the
+disc check below, which finds the seams.
 
 Disc check: 128 worlds, 4,152 sectors with an atomic, 2,549,564 triangles. Welded within 1 cm, the atomics hold
 173,118 connected pieces, of which 26,901 touch a face of their sector's box. Welded across a whole world, 1,659,414
@@ -120,8 +121,8 @@ from them (inferred from the counts: it shares the visible mesh's surfaces, not 
 
 **A building's collision is found by region,** not by connected piece: the collision triangles that lie in a box drawn
 round the building are its collision, which is the rule the original's own box switch uses. Its triangles do not weld
-to the visible piece (inferred from the distances above and from the box switch: the collision shares no vertices
-with the visible mesh to follow).
+to the visible piece by any rule the disc check found (inferred from the distances above, 48 % of collision vertices
+within 2 cm of a visible triangle, and from the box switch; whether the vertices coincide was not tested).
 
 **Most roofs have no collision.** The `s` worlds' up-facing faces cover 3,460,389 m²; 643,539 m² of them have a
 collision triangle within 25 cm, and 2,780,476 m² (254,213 triangles) have none and lie 3 m or more above the next
@@ -204,8 +205,8 @@ attached to the pull request; what they showed:
   with the graffiti shutters, in the box x 50 to 65, y 11 to 32, comes out of 3 sectors as 3 pieces of 359
   triangles, with 52 collision triangles. Lifted 6 m, brought 6 m forward and set down at the kerb, it keeps its baked
   light. Where it stood, the lot and the back walls behind it show; the box also took the whole front of the
-  neighbouring hamburger stand, sign and shutter, which lifts and moves with the shop, since a box takes every
-  triangle inside it whatever building it belongs to.
+  neighbouring hamburger stand, sign and shutter, and a piece of the ice-cream shop's upper sign, which lift and
+  move with the shop, since a box takes every triangle inside it whatever building it belongs to.
 
 The clips were recorded with `coney --record` (`--record-debug-draw` for the roof, to keep the wireframe); the edit
 files are in [World edits](../guides/running-viewers.md#world-edits)' form.
