@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -50,36 +51,70 @@ float pad::stickValue(std::uint8_t raw) {
 }
 
 void Pad::update(const PadSample& sample, const std::optional<StickTurn>& turn) {
-    (void)turn;
+    // The rest mark belongs to this update alone.
+    m_followStickRest = false;
     // Step 1: a new ring slot for this sample.
     m_current = (m_current + 1) % kHistory;
     m_connected = sample.connected;
     if (!sample.connected) {
-        // The original stops here for a disconnected pad; Coney also empties the slot and the counters, so a pad
-        // pulled out mid-hold neither stays held nor keeps auto-repeating (a Coney choice).
+        // The original stops here for a disconnected pad; Coney also empties the slot and the counters and centres the
+        // sticks (the turned one too), so a pad pulled out mid-hold neither stays held nor keeps auto-repeating (a
+        // Coney choice).
         m_ring.at(m_current) = 0;
         m_holdCounts = {};
         m_rawSticks = {pad::kStickCentre, pad::kStickCentre, pad::kStickCentre, pad::kStickCentre};
         m_pressure = {};
         m_leftX = m_leftY = m_rightX = m_rightY = 0.0F;
+        m_turnedX = m_turnedY = 0.0F;
         return;
     }
     m_rawSticks = sample.sticks;
     m_pressure = sample.pressure;
 
-    // Step 2 of the original turns the left stick by the player's camera; nothing on the front end reads it.
+    // The sticks, with y negated so that up is positive (the original's read stores them before step 2 reads them).
+    m_rightX = pad::stickValue(m_rawSticks[0]);
+    m_rightY = -pad::stickValue(m_rawSticks[1]);
+    m_leftX = pad::stickValue(m_rawSticks[2]);
+    m_leftY = -pad::stickValue(m_rawSticks[3]);
+
+    // Step 2: the left stick turned by the player's camera, when the caller has one.
+    if (turn) {
+        // Reversed while the player's own follow camera looks behind him (it then faces the player).
+        float x = m_leftX;
+        float y = m_leftY;
+        if (turn->followIsPlayerCamera && turn->lookingBehind) {
+            x = -x;
+            y = -y;
+        }
+        const float length = std::sqrt((x * x) + (y * y));
+        if (length > 0.0F) {
+            // Along the camera's axes, then back to the stick's own length (a tilted camera's axes are shorter seen
+            // from above); a turn of length 0 is kept as it is.
+            float turnedX = (x * turn->xAxis[0]) + (y * turn->yAxis[0]);
+            float turnedY = (x * turn->xAxis[1]) + (y * turn->yAxis[1]);
+            const float turnedLength = std::sqrt((turnedX * turnedX) + (turnedY * turnedY));
+            if (turnedLength != 0.0F) {
+                const float scale = length / turnedLength;
+                turnedX *= scale;
+                turnedY *= scale;
+            }
+            m_turnedX = turnedX;
+            m_turnedY = turnedY;
+        } else {
+            // At rest: the stick as it is, and the player's follow camera marked to take its orientation afresh.
+            m_turnedX = x;
+            m_turnedY = y;
+            // A stand-in for the original's write of 1 to that camera's +0x473: the record reports it for the caller,
+            // as no Coney camera keeps the flag yet.
+            m_followStickRest = turn->hasFollow;
+        }
+    }
 
     // Step 3: the hold counters, from the word as read.
     countHolds(sample.buttons);
 
     // Step 4: the diagonal rule, on the word the queries see.
     m_ring.at(m_current) = keepOneDirection(sample.buttons, m_pressure);
-
-    // The sticks, with y negated so that up is positive.
-    m_rightX = pad::stickValue(m_rawSticks[0]);
-    m_rightY = -pad::stickValue(m_rawSticks[1]);
-    m_leftX = pad::stickValue(m_rawSticks[2]);
-    m_leftY = -pad::stickValue(m_rawSticks[3]);
 }
 
 void Pad::countHolds(std::uint16_t word) {

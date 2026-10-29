@@ -19,8 +19,8 @@ void runPlayerFrame(GameState& state, script::ScriptSystem& scripts, const Pads&
     PlayerState& player = state.player;
     const std::uint64_t nowMs = nowTicks / (GameTimer::kTicksPerSecond / 1000);
 
-    // Not ported: Pad_Update's turn of the left stick by the player's camera (#1019) and the pad's vibration from the
-    // record's two motor bytes (#179).
+    // Not ported: the pad's vibration from the record's two motor bytes (#179). The left stick's turn by the camera
+    // is Pad::update's.
     // The Lua pad handlers of both ports' newly pressed buttons, lowest bit first.
     for (const std::size_t port : {std::size_t{0}, std::size_t{1}}) {
         const std::size_t record = Pads::recordOfPort(port);

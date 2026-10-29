@@ -155,12 +155,12 @@ class Pad {
     /// Left stick y in [-1, 1], up positive.
     [[nodiscard]] float leftY() const { return m_leftY; }
     /// The left stick turned by the camera (`+0x00`): its world x, the stick's own length kept.
-    [[nodiscard]] float turnedX() const { return 0.0F; }
+    [[nodiscard]] float turnedX() const { return m_turnedX; }
     /// The left stick turned by the camera (`+0x04`): its world y.
-    [[nodiscard]] float turnedY() const { return 0.0F; }
+    [[nodiscard]] float turnedY() const { return m_turnedY; }
     /// Whether the last update found the left stick at rest under a turn whose player has a follow camera: the
     /// original then sets that camera's `+0x473`, so the next pads update takes the camera's orientation afresh.
-    [[nodiscard]] bool followStickRest() const { return false; }
+    [[nodiscard]] bool followStickRest() const { return m_followStickRest; }
     /// Right stick x in [-1, 1], right positive.
     [[nodiscard]] float rightX() const { return m_rightX; }
     /// Right stick y in [-1, 1], up positive.
@@ -185,6 +185,9 @@ class Pad {
     float m_leftY = 0.0F;
     float m_rightX = 0.0F;
     float m_rightY = 0.0F;
+    float m_turnedX = 0.0F; // +0x00
+    float m_turnedY = 0.0F; // +0x04
+    bool m_followStickRest = false;
     bool m_connected = false;
 };
 
