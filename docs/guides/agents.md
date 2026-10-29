@@ -288,37 +288,38 @@ issue stays the one place to read it.
 
 ## Engineer tracks {#slots}
 
-Engineer work runs in three **tracks**, and **no engineer or tooling agent starts without a held claim** (maintainer
-decisions of 2026-10-27 and 2026-10-28; the tracks replaced the 3 task and 1 fix slots to put Coney Studio first). The
-rules are `tasks.start.slots` in [.github/conventions.yml](repo:.github/conventions.yml). There are no teams: the
-coordinator keeps the places full from the open issues, `P-critical` first.
+Engineer work runs in four **tracks**, and **no engineer or tooling agent starts without a held claim**. The rules are
+`tasks.start.slots` in [.github/conventions.yml](repo:.github/conventions.yml); there are no teams, and the coordinator
+keeps the places full from the open issues, `P-critical` first.
 
-| Is | What | Its rule (each of the first three needs a held claim, a fix its parent's, and a place) |
+| Is | What | Its rule (each of the first four needs a held claim, a fix its parent's, and a place) |
 | --- | --- | --- |
-| **Reimplementation** | An `engineer` or `tooling` agent on a task whose issues are not labelled `studio`: game issues and pull requests outside Coney Studio | At least one game (`feature`) unit always (`min: 1`, `min_kinds`): while none runs, one place is kept for it, which Studio and tooling or docs units may not take. No cap but the machine's |
-| **Fix** | An agent on a `kind: fix` task, made by `task create --fix-of` after a CI check failed on the pull request of a task that passed Review | One at a time (`max: 1`), oldest failure first; one place is kept for it (`min: 1`), so a full machine still takes a fix |
+| **Reimplementation** | An `engineer` or `tooling` agent on a task whose issues are labelled neither `studio` nor `networking`: game issues and pull requests outside Coney Studio and networking | At least one game (`feature`) unit always (`min: 1`, `min_kinds`): while none runs, one place is kept for it, which Studio and tooling or docs units may not take. No cap but the machine's |
+| **Fix** | An agent on a `kind: fix` task, made by `task create --fix-of` after a CI check failed on the pull request of a task that passed Review | One at a time (`max: 1`), oldest failure first; one place is kept for it (`min: 1`), so a full machine still takes a fix, except one with a single build slot |
 | **Studio** | A task whose issue carries the `studio` label (`claims.studio_label`): Coney Studio research and development, the sub-issues of #1054 and the Studio build issues | As many as the machine holds once the kept places are set aside, on one of the models of [Which model](#models) |
+| **Networking** | A task whose issue carries the `networking` label (`claims.networking_label`): the co-op plan in [multiplayer](multiplayer.md#plan), network ids, snapshots, interpolation, the level-load barrier | One at a time (`max: 1`) and always one (`min: 1`): while none runs, one place is kept for it, so a full machine still takes it. Any model, as the reimplementation track; its claim is outside the open-claims limit ([Claiming an issue](issues.md#claiming)) |
 | **Workflow unit** | A task whose issue carries the `workflow` label (`claims.exempt_label`) now: a unit that builds the new workflow | A held claim, no place, while `tasks.start.slots.exempt_workflow` is on; **the cutover turns it off** (a test fails if `claims.adopt` or `claims.release` is on while it is still on) and such units count like the rest |
 | **Reviewer**, **helper** | A `reviewer` ([Task review](review/task.md)); an `Explore`, `Plan` or `claude-code-guide` agent, a `fork`, and any agent an engineer starts for its own task (no cap) | No claim, no place, no `Task id:` line |
 
-Both labels are read from the issue's held claim card (`workflow` and `studio`, which the claim Action recomputes on
-every pass), never from a file in the scratch folder, so a label added or removed after `task create` counts from the next
-pass; an issue with both is a workflow unit until the cutover, and the claims of both are outside the open-claims limit
+The labels are read from the issue's held claim card (`workflow`, `studio` and `networking`, which the claim Action
+recomputes on every pass), so a label changed after `task create` counts from the next pass; an issue with `workflow` and
+another label is a workflow unit until the cutover, and the claims of all three are outside the open-claims limit
 ([Claiming an issue](issues.md#claiming)). There is no `Slot: none`: an `engineer` or `tooling` agent has a unit, or it
 is not started. Work in other repositories (Tether, Conclave's own plugin repository) is not counted.
 
 **The machine limit.** All tracks together, a machine holds at most `build_slots` (its build slots in
 `coney.local.toml`, the ones [`coney-tools build`](#builds) keeps) times `per_build_slot` (2) units in work: 10 on a
 machine with 5 build slots, 4 on one with the default 2. Of those, the places a track keeps (`min`) while it runs fewer
-are set aside for it: with 10 places, no reimplementation unit and no fix in work, Studio may take 8; with three
-reimplementation units and no fix, Studio may take 6. The number 2 was measured on 2026-10-28 from the build records
-(`<scratch>/<task>/build-runs/`) and the unit records: from `task start` to a passing Review, a `feature` unit held a
-build slot for 10% of its life (5 units, 52 hours, 5.3 of them building) and a `tooling` unit for 2% (19 units); over
-about 600 build runs from 2026-10-24 to 2026-10-28, five or more builds ran at once for 1.7 of the 52.7 hours any ran. Two
-units per build slot put the builds' expected demand at about a fifth of the slots, so a build rarely waits; past
+are set aside for it: with 10 places and none of the other tracks running, Studio may take 7. The number 2 was measured
+on 2026-10-28 from the build records (`<scratch>/<task>/build-runs/`) and the unit records: from `task start` to a
+passing Review, a `feature` unit held a build slot for 10% of its life (5 units, 52 hours, 5.3 of them building) and a
+`tooling` unit for 2% (19 units); over about 600 build runs from 2026-10-24 on, five or more builds ran at once for 1.7
+of the 52.7 hours any ran. Two units per build slot put the builds' expected demand at about a fifth of the slots; past
 that, the limit is the checks that take no build slot (with about 8 checks at once, the Python tests of `task check`
-took 80 minutes instead of 48). A machine's limit changes with its `build_slots`; `per_build_slot` changes only after
-measuring again the same way.
+took 80 minutes instead of 48). The tracks keep 3 places together, so on the default 2 build slots (4 places) only two
+game units fit beside the networking and fix places, and a third never does. A machine with one build slot (2 places)
+cannot keep them all: it sets aside at most all but the starting unit's place, so an empty machine starts a unit of any
+track, Studio's too. `per_build_slot` changes only after measuring again the same way.
 
 **The place belongs to the unit, not to the agent's life.** A unit takes its place at `task start` (an agent the
 coordinator has just started holds it from the Agent call, for at most `reserve_minutes`, so that several calls made
@@ -363,12 +364,11 @@ start` makes the unit. Every GitHub read happens before the slot lock is taken, 
 **When GitHub cannot be read** (down, rate-limited, `gh` logged out, or hanging), only the claim and the labels go
 unchecked. A read is killed after 20 seconds (`GH_READ_SECONDS`), the first read that fails ends the reading (every
 other issue is then taken as unreadable at once), and no read starts once 20 seconds (`GH_BUDGET_SECONDS`) have passed
-since the first, so the reads take at most 40 seconds however many units are live; with the 40-second lock wait that
-is `ADMIT_MAX_SECONDS` in `task_slots.py`, and the hook waits 110 seconds (`TIMEOUT` in `slot_guard.py`, held above it
-by a test). A unit whose card was not read counts as before the Studio label existed (a fix as a fix, any other as
-reimplementation, none as a workflow unit) and no model is checked; the place is still counted under the lock and
-kept, so a full machine still refuses. Such a start leaves a line `let through with a check skipped` in
-`coney-hooks.log`.
+since the first, so the reads take at most 40 seconds however many units are live; with the 40-second lock wait that is
+`ADMIT_MAX_SECONDS` in `task_slots.py`, and the hook waits 110 seconds (`TIMEOUT` in `slot_guard.py`, held above it by a
+test). A unit whose card was not read counts as unlabelled (a fix as a fix, any other as reimplementation, none as a
+workflow unit) and no model is checked; the place is still counted under the lock and kept, so a full machine still
+refuses. Such a start leaves a line `let through with a check skipped` in `coney-hooks.log`.
 
 **What the guard cannot do.** It is a hook that judges what the coordinator writes, not a security boundary:
 

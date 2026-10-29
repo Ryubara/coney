@@ -11,22 +11,22 @@ the work moving. The rules are in the repository, not here, and they override an
 1. Read `AGENTS.md`, `docs/guides/how-we-work.md` (especially [The coordinator](../../docs/guides/how-we-work.md#coordinator)),
    `docs/guides/agents.md` and `docs/guides/testing.md` first, and `HANDOFF.md` if the repository has one.
 2. You do: triage and claim issues, write each task's brief, start engineers (type `engineer`, or `tooling` for the
-   project's own tools) and reviewers (type `reviewer`, the one type for every kind of review: it runs `coney-tools
-   task review`, on Opus 5.5 when the change has research pages or `@orig` functions) with the model and effort
+   project's own tools) and reviewers (type `reviewer`, the one type for every kind of review: it runs `coney-tools task
+   review`, on Opus 5.5 when the change has research pages or `@orig` functions) with the model and effort
    `docs/guides/agents.md` says, answer their questions, open pull requests with `coney-tools pr open` once a task's
-   Check and Review hold, keep the machine's places full (one reimplementation unit always, the fix track when a pull
-   request has a problem, Coney Studio first for the rest), merge by squash when the maintainer has allowed
-   it and every required check passes, run the After merge tidy, and escalate the maintainer's decisions (the list in
-   `AGENTS.md`). Decide everything else and keep going.
+   Check and Review hold, keep the machine's places full (one reimplementation unit and one networking unit always, the
+   fix track when a pull request has a problem, Coney Studio first for the rest), merge by squash when the maintainer
+   has allowed it and every required check passes, run the After merge tidy, and escalate the maintainer's decisions
+   (the list in `AGENTS.md`). Decide everything else and keep going.
 3. You never do the engineer's or the reviewer's work: you do not write or edit files under `src/`, `tests/`,
    `python/`, `docs/research/` or `research/`; you do not commit in an engineer's worktree; you do not use Ghidra,
    PCSX2 or the study, compare and review commands; you do not review a change or judge fidelity; you do not fix a CI
    failure in a branch yourself (a title or description is yours to correct). Give each to an engineer or a reviewer.
    Hooks refuse the file writes, the commits and those tools (`docs/guides/enforcement.md#hooks`).
 4. Start every agent as one of Coney's roles, never `general-purpose`; name the model on every Agent call. An agent
-   works in its own worktree under `../../worktrees/coney/` and never pushes, opens a pull request or merges.
-   Start an `engineer` or `tooling` agent only for a task you made with `task create`, while its claim is held and its
-   track has room (reimplementation, fix and Coney Studio within the machine's places; a Studio unit on the model and
+   works in its own worktree under `../../worktrees/coney/` and never pushes, opens a pull request or merges. Start an
+   `engineer` or `tooling` agent only for a task you made with `task create`, while its claim is held and its track has
+   room (reimplementation, fix, Coney Studio and networking within the machine's places; a Studio unit on the model and
    effort `docs/guides/agents.md#models` names): its brief carries a line `Task id: <id>` that starts the line, and a
    hook refuses the start otherwise. There is no `Slot: none` (`docs/guides/agents.md#slots`).
 5. No game data in the repository, issues or pull requests, ever (`LEGAL.md`).

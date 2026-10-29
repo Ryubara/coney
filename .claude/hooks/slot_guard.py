@@ -2,15 +2,15 @@
 """Claude Code PreToolUse hook: the coordinator may not start an engineer or tooling agent without a held claim and
 room in its track.
 
-The rule (docs/guides/agents.md#slots): engineer work runs in three tracks, reimplementation (at least one place kept),
-fix (one) and Coney Studio (as many as the machine holds), all of them within the machine's limit of units, which
-follows its build slots. A unit holds its place until it passes Review, and the agent of a unit that waits for CI holds
-none; a Studio unit starts on one of the allowed models and efforts. This guard asks `coney-tools task slots --admit`
-before each Agent call of the coordinator, with the call's `model` and `effort`; the tool reads the task records
-(`TASK.md` for the kind, `unit.json` and the stamp log for the liveness, a short reservation for an agent that has not
-run `task start` yet), the claim cards on GitHub (the claim, the workflow and Studio labels), the build slots and the
-rules in `.github/conventions.yml`, so none of that is copied here. The brief names the unit with a `Task id: <id>`
-line; an engineer or tooling agent without one is refused.
+The rule (docs/guides/agents.md#slots): engineer work runs in four tracks, reimplementation (at least one place kept),
+fix (one), networking (one) and Coney Studio (as many as the machine holds), all of them within the machine's limit of
+units, which follows its build slots. A unit holds its place until it passes Review, and the agent of a unit that waits
+for CI holds none; a Studio unit starts on one of the allowed models and efforts. This guard asks `coney-tools task
+slots --admit` before each Agent call of the coordinator, with the call's `model` and `effort`; the tool reads the task
+records (`TASK.md` for the kind, `unit.json` and the stamp log for the liveness, a short reservation for an agent that
+has not run `task start` yet), the claim cards on GitHub (the claim, the workflow, Studio and networking labels), the
+build slots and the rules in `.github/conventions.yml`, so none of that is copied here. The brief names the unit with a
+`Task id: <id>` line; an engineer or tooling agent without one is refused.
 
 Only the main session's coordinator is held to it: an engineer starting its own helpers (`agent_type` is its own) is
 not. The hook passes the call when `coney-tools` cannot run: a refusal is the tool's own exit code, `REFUSED`, with the

@@ -113,6 +113,7 @@ def test_the_real_labels_are_in_their_families() -> None:
         "wontfix",
         "workflow",
         "studio",
+        "networking",
         "claim-trial",
     )
     assert labels.names() == tuple(label.name for label in labels.list)
@@ -304,6 +305,11 @@ BAD: list[tuple[str, tuple[tuple[str, object], ...], str]] = [
         "a studio label that is not a label",
         (("claims.studio_label", "studo"),),
         r"claims: 'studo' is not in labels\.list",
+    ),
+    (
+        "a networking label that is not a label",
+        (("claims.networking_label", "netwrking"),),
+        r"claims: 'netwrking' is not in labels\.list",
     ),
     (
         "a hold label that does not pause the claim",
@@ -720,7 +726,13 @@ def test_the_workflow_exemption_from_the_slots_ends_at_the_cutover() -> None:
         (("tasks.start.slots.tracks.fix.min", 2), r"tracks\.fix\.min: must be at most max \(1\)"),
         (("tasks.start.slots.tracks.reimplementation.min_kinds", ["featur"]), r"min_kinds: featur is not one of"),
         (("tasks.start.slots.tracks.reimplementation.min_kinds", []), r"min_kinds: expected a non-empty list"),
-        (("tasks.start.slots.tracks.studio.min", 1), r"the tracks keep 3 places, more than one build slot holds"),
+        (
+            ("tasks.start.slots.tracks.studio.min", 2),
+            r"the tracks keep 5 places, more than a machine with the default 2 build slots holds \(4;",
+        ),
+        (("tasks.start.slots.tracks.networking", REMOVE), r"tasks\.start\.slots\.tracks: missing the key 'networking'"),
+        (("tasks.start.slots.tracks.networking.min", 2), r"tracks\.networking\.min: must be at most max \(1\)"),
+        (("tasks.start.slots.tracks.networking.min_kinds", ["featur"]), r"networking.*min_kinds: featur is not one of"),
         (("tasks.start.slots.tracks.studio.models", "opus"), r"tracks\.studio\.models: expected a list"),
         (
             ("tasks.start.slots.tracks.studio.models", [{"model": "gpt", "effort": "high", "use": "x"}]),
@@ -1226,6 +1238,19 @@ def test_a_wrong_label_in_main_s_claims_is_still_refused_against_main_s_labels(t
     ref = committed_base(tmp_path / "base", changed((key, "no-such-label")))
     with pytest.raises(ConventionsError, match=r"origin/main:.*claims.*: 'no-such-label' is not in labels\.list"):
         load_release_rules_at(tmp_path / "base", ref, own)
+
+
+def test_a_branch_cut_before_the_networking_track_is_read_with_main_s_track(tmp_path: Path) -> None:
+    """A branch whose file has no `networking` track, label or `claims.networking_label` still loads in the release
+    commands: the track is main's (noted), and the optional claims key reads as no networking work."""
+    old = without_labels(
+        changed(("tasks.start.slots.tracks.networking", REMOVE), ("claims.networking_label", REMOVE)), "networking"
+    )
+    lines: list[str] = []
+    got = load_conventions_leniently(write_checkout(tmp_path, old), lines.append)
+    assert got.tasks.start.slots.tracks.networking == load_conventions(REPO).tasks.start.slots.tracks.networking
+    assert got.claims.networking_label is None and "networking" not in got.labels.names()
+    assert any("networking" in line for line in lines)
 
 
 def test_the_labels_a_missing_key_is_filled_with_may_be_main_s_when_the_branch_lacks_them() -> None:

@@ -2,26 +2,28 @@
 """The engineer tracks: which units hold a place, and whether the coordinator may start another agent
 (docs/guides/agents.md#slots, docs/guides/issues.md#slots).
 
-A unit works in one of three tracks (maintainer decision 2026-10-28, `tasks.start.slots.tracks`): `fix` for a `kind:
-fix` task, `studio` for a task whose issue carries `claims.studio_label` (Coney Studio), `reimplementation` for every
-other. A machine holds at most `build_slots` (coney.local.toml, the build slots `coney-tools build` keeps) times
-`tasks.start.slots.per_build_slot` units of all tracks together; a track may have its own `max`, and the `min` places
-of a track that runs fewer are kept from the others, so Studio never takes the last place a reimplementation unit or
-a fix needs. A unit holds its place from `task start` until a passing `reviewed` stamp (a fix: its own) or
-`finished`, or until its worktree is gone; a unit whose log cannot be trusted, or whose record cannot be read, keeps
-its place. The kind is in `<scratch>/<task>/TASK.md`, the unit in `unit.json`, the progress in the stamp log. Between
-the coordinator's Agent call and the engineer's `task start` the agent has no unit yet, so `admit --reserve` writes a
-short-lived `slot.json` beside the task file (`tasks.start.slots.reserve_minutes`); a unit record that was started
-after it replaces it.
+A unit works in one of four tracks (maintainer decisions 2026-10-28 and 2026-10-29, `tasks.start.slots.tracks`): `fix`
+for a `kind: fix` task, `networking` for a task whose issue carries `claims.networking_label`, `studio` for one whose
+issue carries `claims.studio_label` (Coney Studio), `reimplementation` for every other. A machine holds at most
+`build_slots` (coney.local.toml, the build slots `coney-tools build` keeps) times `tasks.start.slots.per_build_slot`
+units of all tracks together; a track may have its own `max`, and the `min` places of a track that runs fewer are kept
+from the others, so Studio never takes the last place a reimplementation unit or a fix needs (a machine too small to
+keep every place sets aside all but the starting unit's). A unit holds its place from `task start` until a passing
+`reviewed` stamp (a fix: its own) or `finished`, or until its worktree is gone; a unit whose log cannot be trusted, or
+whose record cannot be read, keeps its place. The kind is in `<scratch>/<task>/TASK.md`, the unit in `unit.json`, the
+progress in the stamp log. Between the coordinator's Agent call and the engineer's `task start` the agent has no unit
+yet, so `admit --reserve` writes a short-lived `slot.json` beside the task file (`tasks.start.slots.reserve_minutes`); a
+unit record that was started after it replaces it.
 
 Only a unit with a `unit.json` is counted: work that predates `task start` is invisible to the count (`task slots`
 lists its worktrees as "without a unit record"). A unit whose issue carries `claims.exempt_label` now (the units that
 build the new workflow) holds no place while `tasks.start.slots.exempt_workflow` is on, even when the issue also
-carries the Studio label; the cutover turns it off. Both labels are read from the issue's held claim card on GitHub
-(its `workflow` and `studio`, which the claim Action recomputes from the labels on every pass), never from a file
-here, so nobody changes a track by editing the scratch folder. A unit whose cards cannot be read (and none that was
-read says workflow or Studio) is counted where it was before the Studio label existed: a fix as a fix, any other as
-reimplementation, so a GitHub that cannot be read costs no start; its Studio model is then not checked.
+carries the Studio or networking label; the cutover turns it off. The labels are read from the issue's held claim card
+on GitHub (its `workflow`, `studio` and `networking`, which the claim Action recomputes from the labels on every pass),
+never from a file here, so nobody changes a track by editing the scratch folder. A unit whose cards cannot be read (and
+none that was read says workflow, Studio or networking) is counted where it was before those labels existed: a fix as a
+fix, any other as reimplementation, so a GitHub that cannot be read costs no start; its Studio model is then not
+checked.
 
 The Agent guard (`.claude/hooks/slot_guard.py`) runs `coney-tools task slots --admit` for each Agent call of the
 coordinator. No `engineer` or `tooling` agent starts without a held claim: the brief carries a `Task id: <id>` line, the
@@ -140,7 +142,7 @@ def held_card(remote: Remote, number: int, conventions: Conventions) -> Card | N
 
 
 #: The tracks, in the order reports list them (`tasks.start.slots.tracks` has one entry for each).
-TRACKS = ("reimplementation", "fix", "studio")
+TRACKS = ("reimplementation", "fix", "studio", "networking")
 
 
 @dataclass(frozen=True)
@@ -201,13 +203,17 @@ class Labels:
     workflow: bool
     #: One of them carries `claims.studio_label`.
     studio: bool
+    #: One of them carries `claims.networking_label`.
+    networking: bool = False
 
 
-def track_of(kind: str, studio: bool) -> str:
-    """The track a task works in: `fix` for a fix task, else `studio` for an issue labelled Studio, else
-    `reimplementation`."""
+def track_of(kind: str, studio: bool, networking: bool = False) -> str:
+    """The track a task works in: `fix` for a fix task, else `networking` for an issue labelled for networking (before
+    Studio, for an issue with both), else `studio` for an issue labelled Studio, else `reimplementation`."""
     if kind == "fix":
         return "fix"
+    if networking:
+        return "networking"
     return "studio" if studio else "reimplementation"
 
 
@@ -217,11 +223,11 @@ def machine_limit(conventions: Conventions, build_slots: int) -> int:
 
 
 def unit_labels(issues: Iterable[int], cards: Cards, conventions: Conventions) -> Labels | None:
-    """The labels of a unit on these issues, from their held claim cards (`studio`, and `in_workflow` for the workflow
-    label; an issue with both is a workflow unit, which the callers check first). `workflow` is false while
-    `tasks.start.slots.exempt_workflow` is off, so the unit counts like any other. A workflow or Studio card that was
-    read decides even when another card cannot be; otherwise None when a card cannot be read: the caller counts the
-    unit, a fix as a fix and any other as reimplementation."""
+    """The labels of a unit on these issues, from their held claim cards (`studio`, `networking`, and `in_workflow` for
+    the workflow label; an issue with more is a workflow unit, which the callers check first). `workflow` is false while
+    `tasks.start.slots.exempt_workflow` is off, so the unit counts like any other. A workflow, Studio or networking card
+    that was read decides even when another card cannot be; otherwise None when a card cannot be read: the caller counts
+    the unit, a fix as a fix and any other as reimplementation."""
     found: list[Card] = []
     unreadable = False
     for number in issues:
@@ -233,10 +239,11 @@ def unit_labels(issues: Iterable[int], cards: Cards, conventions: Conventions) -
         if card is not None:
             found.append(card)
     studio = any(card.studio for card in found)
+    networking = any(card.networking for card in found)
     workflow = conventions.tasks.start.slots.exempt_workflow and any(card.in_workflow for card in found)
-    if unreadable and not workflow and not studio:
+    if unreadable and not workflow and not studio and not networking:
         return None
-    return Labels(workflow=workflow, studio=studio)
+    return Labels(workflow=workflow, studio=studio, networking=networking)
 
 
 #: The labels of a started unit, or None when they cannot be told (counted, as reimplementation unless a fix).
@@ -350,14 +357,16 @@ def scan(
                 report = stamps.verify(scratch / record.log_task / "stamps", conventions.stamps)
                 live = not (report.ok and unit_over(record, report))
         if record is not None and live:
-            told = labels(record) if labels is not None else Labels(workflow=False, studio=False)
+            told = labels(record) if labels is not None else Labels(workflow=False, studio=False, networking=False)
             if told is not None and told.workflow:
                 exempt.append(record.task)
                 continue
             if told is None:
                 unchecked.append(record.task)
             studio = told.studio if told is not None else False
-            holders.append(Holder(record.task, record.kind, track_of(record.kind, studio), "in work", record.started))
+            networking = told.networking if told is not None else False
+            track = track_of(record.kind, studio, networking)
+            holders.append(Holder(record.task, record.kind, track, "in work", record.started))
             continue
         reserved = _reservation(folder / RESERVATION_FILE, now, conventions)
         if reserved is not None and (record is None or reserved.since > record.started):
@@ -447,8 +456,10 @@ class Room:
 
     @property
     def machine_full(self) -> bool:
-        """The machine has no place left once the kept places are set aside."""
-        return self.total + 1 + sum(self.kept.values()) > self.machine
+        """The machine has no place left once the kept places are set aside. A machine smaller than the places the
+        tracks keep sets aside at most all but the starting unit's place, so it still starts a unit while it is empty
+        rather than refusing every start; on such a machine any track's unit, Studio's too, may take that place."""
+        return self.total + 1 + min(sum(self.kept.values()), self.machine - 1) > self.machine
 
     @property
     def fits(self) -> bool:
@@ -520,8 +531,8 @@ def _full(scan_: Scan, fit: Room, task: TaskFile, build_slots: int, conventions:
     lines += [f"  - {holder.line()}" + ("" if fit.track_full else f" [{holder.track}]") for holder in busy]
     if scan_.unchecked:
         lines.append(
-            f"Counted because GitHub could not say whether their issue has the workflow or the Studio label (taken "
-            f"as reimplementation unless a fix): "
+            f"Counted because GitHub could not say whether their issue has the workflow, Studio or networking label "
+            f"(taken as reimplementation unless a fix): "
             f"{', '.join(scan_.unchecked)}."
         )
     lines.append(
@@ -614,8 +625,10 @@ def admit(
         return Verdict(
             True, f"{named} is a workflow task (its issue has the workflow label): no place until the cutover", warning
         )
-    track = track_of(found.kind, told.studio if told is not None else False)
-    if told is not None and told.studio and found.kind != "fix":
+    track = track_of(
+        found.kind, told.studio if told is not None else False, told.networking if told is not None else False
+    )
+    if track == "studio":
         wrong = model_problem(model, effort, conventions)
         if wrong is not None and slots.enforce:
             return Verdict(False, f"Blocked: '{named}' is a Studio task, and {wrong}.\n", warning)
@@ -778,6 +791,8 @@ def report(current: Scan, conventions: Conventions, build_slots: int) -> list[st
         lines += [f"  {holder.line()}" for holder in held]
     if not filling_count(current.holders, "reimplementation", conventions):
         lines.append("no reimplementation unit is in work: the track keeps at least one going")
+    if not filling_count(current.holders, "networking", conventions):
+        lines.append("no networking unit is in work: the track keeps one going")
     if current.exempt:
         lines.append(f"no place (workflow units until the cutover): {', '.join(current.exempt)}")
     if current.unchecked:

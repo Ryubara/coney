@@ -262,11 +262,13 @@ def plant_claim(
     task: str | None = None,
     exempt: bool = False,
     studio: bool = False,
+    networking: bool = False,
 ) -> None:
     """A claim another run made: the assignee, the working label and a card, without going through the engine. With
     `exempt`, the issue carries `claims.exempt_label` and the card says `exempt` and `workflow`, as the claim Action's
     pass leaves it; with `studio`, it carries `claims.studio_label` and the card says `studio` and `exempt` (outside
-    the limit); with both, the card says all three."""
+    the limit); with `networking`, it carries `claims.networking_label` and the card says `networking` and `exempt`;
+    with several, the card says each."""
     from coney_tools.issue_claim_model import Card, render_card
 
     view = github.items[number].view
@@ -274,6 +276,8 @@ def plant_claim(
     extra: tuple[str, ...] = (RULES.exempt_label,) if exempt and RULES.exempt_label not in kept else ()
     if studio and RULES.studio_label is not None and RULES.studio_label not in kept:
         extra += (RULES.studio_label,)
+    if networking and RULES.networking_label is not None and RULES.networking_label not in kept:
+        extra += (RULES.networking_label,)
     github.items[number].view = replace(view, assignees=(login,), labels=(*kept, *extra, RULES.working_label))
     claimed_at = at or github.clock.now()
     card = Card(
@@ -281,8 +285,9 @@ def plant_claim(
         claimant=login,
         claimed_at=claimed_at,
         task=task,
-        exempt=exempt or studio,
+        exempt=exempt or studio or networking,
         studio=studio,
+        networking=networking,
         workflow=exempt,
     )
     github.create_comment(number, render_card(card, RULES))

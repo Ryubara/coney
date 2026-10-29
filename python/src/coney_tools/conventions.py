@@ -30,7 +30,7 @@ from typing import Any
 
 import yaml
 
-from coney_tools.config import ConfigError
+from coney_tools.config import INT_KEYS, ConfigError
 
 #: Where the conventions live, relative to the repository root.
 CONVENTIONS_FILE = ".github/conventions.yml"
@@ -872,6 +872,9 @@ class Claims:
     #: A claim of an issue with this label is outside the open-claims limit too, for good: Coney Studio work, which
     #: has its own track (docs/guides/agents.md#slots). None in a file from before the key (no issue is Studio work).
     studio_label: str | None
+    #: A claim of an issue with this label is outside the open-claims limit too: networking work, which has its own
+    #: track with an engineer always on it. None in a file from before the key (no issue is networking work).
+    networking_label: str | None
     #: The stages at which a claim stops counting toward the limit (its slot is free); an open pull request does too.
     limit_ends_at: tuple[str, ...]
     critical_label: str
@@ -915,8 +918,8 @@ class Claims:
 
     def outside_limit(self, labels: Iterable[str]) -> bool:
         """Whether a claim of an issue with these labels is outside the open-claims limit (`exempt_label` or
-        `studio_label`)."""
-        return self.is_workflow(labels) or self.is_studio(labels)
+        `studio_label` or `networking_label`)."""
+        return self.is_workflow(labels) or self.is_studio(labels) or self.is_networking(labels)
 
     def is_workflow(self, labels: Iterable[str]) -> bool:
         """Whether an issue with these labels is a unit that builds the new workflow (`exempt_label`)."""
@@ -925,6 +928,10 @@ class Claims:
     def is_studio(self, labels: Iterable[str]) -> bool:
         """Whether an issue with these labels is Coney Studio work (`studio_label`; never without one)."""
         return self.studio_label is not None and self.studio_label in set(labels)
+
+    def is_networking(self, labels: Iterable[str]) -> bool:
+        """Whether an issue with these labels is networking work (`networking_label`; never without one)."""
+        return self.networking_label is not None and self.networking_label in set(labels)
 
 
 @dataclass(frozen=True)
@@ -1010,15 +1017,16 @@ class Track:
 
 @dataclass(frozen=True)
 class Tracks:
-    """The three tracks: reimplementation (game work outside Studio), fix (a pull request's problems) and Coney
-    Studio (an issue labelled `claims.studio_label`)."""
+    """The four tracks: reimplementation (game work outside Studio and networking), fix (a pull request's problems),
+    Coney Studio (an issue labelled `claims.studio_label`) and networking (`claims.networking_label`)."""
 
     reimplementation: Track
     fix: Track
     studio: Track
+    networking: Track
 
     def of(self, name: str) -> Track:
-        """The track called `name` (`reimplementation`, `fix` or `studio`)."""
+        """The track called `name` (`reimplementation`, `fix`, `studio` or `networking`)."""
         found: Track = getattr(self, name)
         return found
 
@@ -2088,7 +2096,7 @@ def _read_claims(data: object, where: str, label_names: Callable[[], tuple[str, 
         ),
         # Optional: the file of a default branch from before the Studio track has none, and the release commands read
         # its claims (`load_release_rules_at`); without it no issue is Studio work, the stricter reading.
-        ("studio_label",),
+        ("studio_label", "networking_label"),
     )
     commands_where = _at(where, "commands")
     commands = _table(table["commands"], commands_where, tuple(_COMMAND_GROUPS))
@@ -2110,7 +2118,15 @@ def _read_claims(data: object, where: str, label_names: Callable[[], tuple[str, 
     limits = _table(table["limits"], limits_where, ("maintainer", "contributor", "issues_per_task"))
     names = {key: _text(table[key], _at(where, key)) for key in labels}
     studio = _text(table["studio_label"], _at(where, "studio_label")) if "studio_label" in table else None
-    _names_in([*names.values(), *([studio] if studio else [])], label_names(), where, "in labels.list")
+    networking = (
+        _text(table["networking_label"], _at(where, "networking_label")) if "networking_label" in table else None
+    )
+    _names_in(
+        [*names.values(), *([studio] if studio else []), *([networking] if networking else [])],
+        label_names(),
+        where,
+        "in labels.list",
+    )
     paused = _texts(table["paused_labels"], _at(where, "paused_labels"))
     _names_in(paused, label_names(), _at(where, "paused_labels"), "in labels.list")
     hold = _texts(table["hold_labels"], _at(where, "hold_labels"))
@@ -2158,6 +2174,7 @@ def _read_claims(data: object, where: str, label_names: Callable[[], tuple[str, 
         ),
         exempt_label=names["exempt_label"],
         studio_label=studio,
+        networking_label=networking,
         critical_label=names["critical_label"],
         claimable_status=names["claimable_status"],
         working_label=names["working_label"],
@@ -2251,17 +2268,24 @@ def _read_track(data: object, where: str) -> Track:
 
 
 def _read_tracks(data: object, where: str, per_build_slot: int) -> Tracks:
-    """The `tracks` of `tasks.start.slots`: reimplementation, fix and studio, each with its rule. The places the tracks
-    keep must fit on a machine of one build slot, or no machine could hold them."""
-    table = _table(data, where, ("reimplementation", "fix", "studio"))
+    """The `tracks` of `tasks.start.slots`: reimplementation, fix, studio and networking, each with its rule. The places
+    the tracks keep must fit on a machine with the default number of build slots (`config.INT_KEYS`), or no such machine
+    could hold them."""
+    table = _table(data, where, ("reimplementation", "fix", "studio", "networking"))
     tracks = Tracks(
         reimplementation=_read_track(table["reimplementation"], _at(where, "reimplementation")),
         fix=_read_track(table["fix"], _at(where, "fix")),
         studio=_read_track(table["studio"], _at(where, "studio")),
+        networking=_read_track(table["networking"], _at(where, "networking")),
     )
-    kept = tracks.reimplementation.min + tracks.fix.min + tracks.studio.min
-    if kept > per_build_slot:
-        raise _fail(where, f"the tracks keep {kept} places, more than one build slot holds (per_build_slot)")
+    kept = tracks.reimplementation.min + tracks.fix.min + tracks.studio.min + tracks.networking.min
+    held = INT_KEYS["build_slots"] * per_build_slot
+    if kept > held:
+        raise _fail(
+            where,
+            f"the tracks keep {kept} places, more than a machine with the default {INT_KEYS['build_slots']} build "
+            f"slots holds ({held}; per_build_slot)",
+        )
     return tracks
 
 
@@ -2291,7 +2315,7 @@ def _read_tasks(data: object, where: str) -> Tasks:
     per_build_slot = _count(slots["per_build_slot"], _at(slots_where, "per_build_slot"))
     tracks = _read_tracks(slots["tracks"], _at(slots_where, "tracks"), per_build_slot)
     kinds = _texts(table["kinds"], _at(where, "kinds"))
-    for name in ("reimplementation", "fix", "studio"):
+    for name in ("reimplementation", "fix", "studio", "networking"):
         unknown = [kind for kind in tracks.of(name).min_kinds if kind not in kinds]
         if unknown:
             raise _fail(
