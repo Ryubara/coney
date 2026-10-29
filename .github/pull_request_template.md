@@ -41,7 +41,8 @@ Done:
      an event diff, or named PCSX2 captures or reads compared with Coney's; docs/guides/testing.md#done), or
      `Runtime: none (<reason>)` when the original cannot say anything about this change. The reviewer opens the log,
      trace or capture behind it in the scratch folder and refuses a reason that is only convenience.
-     Any other title area deletes the line. -->
+     Any other title area does not need the line: delete it, or keep it when the original running says something
+     about the change. (`coney-tools pr text` writes the other Testing lines itself, from the stamps.) -->
 
 - ...
 - Runtime: ...

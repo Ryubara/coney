@@ -294,6 +294,52 @@ def test_the_checklist_reads_the_quoted_done_section_task_create_writes(tmp_path
     assert checklist(generate(built).body).startswith(expected)
 
 
+def test_a_done_bullet_that_wraps_onto_more_lines_is_one_whole_checklist_item(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    created_task(
+        built,
+        "- The widget waits for its ready frame,\n  then plays the full\n  animation.\n"
+        "- A test proves it,\nflush with the margin.\n"
+        "  - A nested bullet is its own item\n    that wraps too.",
+    )
+    generated = generate(built)
+    expected = (
+        "Done:\n\n- [x] The widget waits for its ready frame, then plays the full animation.\n"
+        "- [x] A test proves it, flush with the margin.\n"
+        "- [x] A nested bullet is its own item that wraps too."
+    )
+    assert checklist(generated.body).startswith(expected)
+    assert not any("Done section" in p for p in problems(generated))
+
+
+def test_a_blank_line_ends_a_done_bullet_and_prose_after_it_is_not_an_item(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    created_task(built, "- The widget waits\n  for its ready frame.\n\nSome closing prose.\n- A test proves it.")
+    expected = "Done:\n\n- [x] The widget waits for its ready frame.\n- [x] A test proves it."
+    assert checklist(generate(built).body).startswith(expected)
+
+
+def test_a_checked_bullet_that_wraps_keeps_its_whole_text(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    created_task(built, "- [x] The widget waits\n  for its ready frame.")
+    assert checklist(generate(built).body).startswith("Done:\n\n- [x] The widget waits for its ready frame.")
+
+
+def test_a_title_area_no_player_sees_may_leave_out_or_keep_the_runtime_line(tmp_path: Path) -> None:
+    """The pull request template says only gameplay, graphics and audio titles need the line: pr text agrees."""
+    built = make(tmp_path, shape="tooling")
+    text = (built.unit.dir / "PR.md").read_text(encoding="utf-8").split("\n", 1)[1]
+    runtime = "- Runtime: trace diff widget60, 600 updates, 0 outside tolerance"
+    assert "Runtime:" not in text
+    left_out = generate(built, "tools: Fix the widget\n" + text)
+    assert problems(left_out) == [] and "Runtime:" not in left_out.body
+    with_line = text.replace("## Screenshots", f"## Testing\n\n{runtime}\n\n## Screenshots")
+    kept = generate(built, "tools: Fix the widget\n" + with_line)
+    assert problems(kept) == [] and runtime in kept.body
+    template = (built.root / ".github" / "pull_request_template.md").read_text(encoding="utf-8")
+    assert "Any other title area does not need the line" in template
+
+
 def test_a_done_section_with_no_criterion_is_refused(tmp_path: Path) -> None:
     built = make(tmp_path)
     created_task(built, None)

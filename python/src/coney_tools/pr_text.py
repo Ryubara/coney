@@ -315,12 +315,24 @@ def done_criteria(task: TaskFile) -> list[str]:
     """The criteria of the task's Done section (D7), one Checklist item each.
 
     `task create` quotes the issue's text line by line (`> `), so the quote marks are read past first. Each bullet is
-    an item; a section of prose with no bullet gives one item per paragraph. The placeholder `task create` writes for
-    an issue with no Done section (`See issue #N.`) gives none, and `generate` refuses a Checklist with no item.
+    an item, whole: the lines that wrap it (up to a blank line or the next bullet) are part of it, so a criterion is
+    never ticked with half of it cut off. A section of prose with no bullet gives one item per paragraph. The
+    placeholder `task create` writes for an issue with no Done section (`See issue #N.`) gives none, and `generate`
+    refuses a Checklist with no item.
     """
     lines = [re.sub(r"^\s*>\s?", "", line) for line in task.sections.get("Done", "").splitlines()]
-    bullets = [re.match(r"^\s*[-*+]\s+(?:\[[ xX]\]\s+)?(?P<text>\S.*)$", line) for line in lines]
-    items = [_squash(match.group("text")) for match in bullets if match]
+    bullets: list[list[str]] = []
+    reading = False  # a bullet is open: the lines after it that are not a bullet or blank wrap it
+    for line in lines:
+        bullet = re.match(r"^\s*[-*+]\s+(?:\[[ xX]\]\s+)?(?P<text>\S.*)$", line)
+        if bullet:
+            bullets.append([bullet.group("text")])
+            reading = True
+        elif reading and line.strip():
+            bullets[-1].append(line.strip())
+        else:
+            reading = False
+    items = [_squash(" ".join(parts)) for parts in bullets]
     if not items:
         items = [_squash(paragraph) for paragraph in re.split(r"\n\s*\n", "\n".join(lines)) if paragraph.strip()]
     return [item for item in items if not _DONE_PLACEHOLDER.match(item)]
