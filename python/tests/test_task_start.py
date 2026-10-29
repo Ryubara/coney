@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 from audit_support import CONVENTIONS
 from claim_support import Clock, FakeGitHub, plant_claim
-from conventions_support import REPO
+from conventions_support import REPO, with_networking_place
 from git_support import git
 
 from coney_tools import stamps, task_cli, task_slots, task_start, unit
@@ -58,7 +58,9 @@ class World:
         self.clock = Clock()
         self.github = FakeGitHub(self.clock)
         self.github.add_issue(10, title="gameplay: Fix the fight goal")
-        self.conventions: Conventions = CONVENTIONS
+        #: The committed rules with no place kept for networking, so the numbers of a machine of 4 hold (see
+        #: `with_networking_place`); the networking tests set the committed minimum.
+        self.conventions: Conventions = with_networking_place(CONVENTIONS, 0)
         #: The machine's build slots: 4 places with two units per build slot.
         self.build_slots = 2
         self.output: list[str] = []
@@ -74,13 +76,19 @@ class World:
     # -- the scene
 
     def claim(
-        self, issue: int = 10, task: str = TASK, login: str = USER, exempt: bool = False, studio: bool = False
+        self,
+        issue: int = 10,
+        task: str = TASK,
+        login: str = USER,
+        exempt: bool = False,
+        studio: bool = False,
+        networking: bool = False,
     ) -> None:
         """A held claim, as `task create` leaves it; `exempt` when the issue carries the `workflow` label, `studio` the
-        Studio label."""
+        Studio label, `networking` the networking label."""
         if issue not in self.github.items:
             self.github.add_issue(issue)
-        plant_claim(self.github, issue, login, task=task, exempt=exempt, studio=studio)
+        plant_claim(self.github, issue, login, task=task, exempt=exempt, studio=studio, networking=networking)
 
     def task_file(self, task: str = TASK, **changes: object) -> Path:
         """Write the task file of `task` the way `task create` does; returns its path."""
@@ -105,11 +113,13 @@ class World:
         issues: tuple[int, ...] = (10,),
         workflow: bool = False,
         studio: bool = False,
+        networking: bool = False,
         **changes: object,
     ) -> None:
-        """A claimed task with its task file: what `task start` needs; `workflow` or `studio` labels its issues."""
+        """A claimed task with its task file: what `task start` needs; `workflow`, `studio` or `networking` labels
+        its issues."""
         for number in issues:
-            self.claim(number, task, exempt=workflow, studio=studio)
+            self.claim(number, task, exempt=workflow, studio=studio, networking=networking)
         self.task_file(task, issues=issues, **changes)
 
     def push_to_origin(self, name: str = "later.txt") -> str:
@@ -642,13 +652,15 @@ def plant_unit(
     tree: bool = True,
     workflow: bool = False,
     studio: bool = False,
+    networking: bool = False,
 ) -> None:
     """Another unit of this machine on the issue its name starts with: a record, a worktree folder and a log that ends
-    at `end` (reviewed, finished); with `workflow` (or `studio`), its issue carries that label (on its claim card)."""
+    at `end` (reviewed, finished); with `workflow`, `studio` or `networking`, its issue carries that label (on its
+    claim card)."""
     folder = world.scratch / task
     issue = int(task.split("-", 1)[0])
-    if workflow or studio:
-        world.claim(issue, task, exempt=workflow, studio=studio)
+    if workflow or studio or networking:
+        world.claim(issue, task, exempt=workflow, studio=studio, networking=networking)
     tree_path = world.worktree(task)
     if tree:
         tree_path.mkdir(parents=True)
@@ -777,6 +789,26 @@ def test_studio_may_not_take_the_place_kept_for_reimplementation(world: World) -
     said = world.said()
     assert "no place for a studio unit (2 of 4 in use, 1 kept for reimplementation, 1 kept for fix)" in said
     assert "30-s" in said and "[studio]" in said and untouched(world)
+
+
+def test_a_networking_start_is_admitted_past_three_reimplementation_units(world: World) -> None:
+    world.conventions = with_networking_place(world.conventions, CONVENTIONS.tasks.start.slots.tracks.networking.min)
+    world.build_slots = 5  # 10 places
+    for number in range(30, 33):
+        plant_unit(world, f"{number}-x")
+    world.ready(networking=True)
+    assert world.run() == 0
+    assert (
+        "slots: 4 of 10 places on this machine in use with 10-fix-the-fight-goal (networking track, 1 of 1)"
+        in world.said()
+    )
+
+
+def test_a_second_networking_unit_is_refused_by_task_start(world: World) -> None:
+    world.build_slots = 5
+    plant_unit(world, "40-net", networking=True)
+    world.ready(networking=True)
+    assert world.run() == 1 and "the networking track is full (1 of 1)" in world.said() and untouched(world)
 
 
 def test_a_second_fix_unit_is_refused_by_task_start(world: World) -> None:

@@ -190,11 +190,14 @@ class Card:
     open_claims: tuple[int, ...] = ()
     #: Why the idle clock waits (`S-blocked`, `PR #12 open`), or None while it runs; it starts again when this ends.
     waiting: str | None = None
-    #: The issue carries `claims.exempt_label` or `claims.studio_label`: the claim is outside the open-claims limit
-    #: (recomputed every pass).
+    #: The issue carries `claims.exempt_label`, `claims.studio_label` or `claims.networking_label`: the claim is
+    #: outside the open-claims limit (recomputed every pass).
     exempt: bool = False
     #: The issue carries `claims.studio_label`: Coney Studio work, in its own engineer track (recomputed every pass).
     studio: bool = False
+    #: The issue carries `claims.networking_label`: networking work, in its own engineer track (recomputed every pass).
+    #: A card written before this field existed reads False.
+    networking: bool = False
     #: The issue carries `claims.exempt_label`: a unit that builds the new workflow (recomputed every pass). A card
     #: written before this field existed reads `in_workflow` from `exempt` and `studio` instead.
     workflow: bool = False
@@ -234,9 +237,18 @@ class Card:
     @property
     def in_workflow(self) -> bool:
         """Whether the issue carries `claims.exempt_label`. A card written before `workflow` existed has only `exempt`,
-        which either label sets; such a card is a workflow one when it is exempt and not Studio (an issue with both
-        labels was not told apart then)."""
-        return self.workflow or (self.exempt and not self.studio)
+        which either label sets; such a card is a workflow one when it is exempt and neither Studio nor networking (an
+        issue with both labels was not told apart then)."""
+        return self.workflow or (self.exempt and not self.studio and not self.networking)
+
+    def limit_label(self, rules: Claims) -> str:
+        """The label that takes this card out of the open-claims limit, for the card's text and the log: the
+        networking one, else the Studio one, else `claims.exempt_label`."""
+        if self.networking and rules.networking_label:
+            return rules.networking_label
+        if self.studio and rules.studio_label:
+            return rules.studio_label
+        return rules.exempt_label
 
     @property
     def task_key(self) -> str:
@@ -343,6 +355,7 @@ def _data(card: Card) -> dict[str, Any]:
         "waiting": card.waiting,
         "exempt": card.exempt,
         "studio": card.studio,
+        "networking": card.networking,
         "workflow": card.workflow,
         "counted": card.counted,
         "freed": card.freed,
@@ -408,8 +421,7 @@ def render_card(card: Card, rules: Claims) -> str:
         lines.append(f"- **Ended:** {show_time(card.released_at)}")
     lines.append(f"- **Last activity:** {show_time(card.activity)} ({card.last_activity_why})")
     if card.active and card.exempt:
-        label = rules.studio_label if card.studio and rules.studio_label else rules.exempt_label
-        lines.append(f"- **Limit:** not counted toward the open-claims limit (`{label}`)")
+        lines.append(f"- **Limit:** not counted toward the open-claims limit (`{card.limit_label(rules)}`)")
     elif card.active and not card.counted:
         lines.append(
             "- **Limit:** no longer counted toward the open-claims limit (its review passed, or its pull request is "
@@ -477,6 +489,7 @@ def parse_card(body: str, rules: Claims) -> Card | None:
             waiting=str(data["waiting"]) if data.get("waiting") else None,
             exempt=bool(data.get("exempt", False)),
             studio=bool(data.get("studio", False)),
+            networking=bool(data.get("networking", False)),
             workflow=bool(data.get("workflow", False)),
             counted=bool(data.get("counted", True)),
             freed=bool(data.get("freed", False)),

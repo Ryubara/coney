@@ -2,6 +2,7 @@
 """Shared by the tests that need conventions: the real file's data, with changes, and a made-up checkout holding it."""
 
 import copy
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -43,6 +44,16 @@ def changed(*changes: tuple[str, object], data: dict[str, Any] | None = None) ->
 def conventions_with(*changes: tuple[str, object]) -> Conventions:
     """The real conventions with the changes applied (validated like the file is)."""
     return parse_conventions(changed(*changes))
+
+
+def with_networking_place(conventions: Conventions, minimum: int) -> Conventions:
+    """`conventions` with the networking track keeping `minimum` places. The tests of the other tracks count the places
+    of a machine of 4 (two build slots); they run with 0 so that the place the committed rule keeps for networking does
+    not change their numbers, and the tests of the networking track set the committed 1."""
+    tracks = conventions.tasks.start.slots.tracks
+    tracks = replace(tracks, networking=replace(tracks.networking, min=minimum))
+    slots = replace(conventions.tasks.start.slots, tracks=tracks)
+    return replace(conventions, tasks=replace(conventions.tasks, start=replace(conventions.tasks.start, slots=slots)))
 
 
 def write_checkout(root: Path, data: dict[str, Any] | None = None) -> Path:

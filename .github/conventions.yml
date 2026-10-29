@@ -383,6 +383,10 @@ claims:
   # decision 2026-10-28): Coney Studio work, which has its own track in `tasks.start.slots.tracks` with no cap but the
   # machine's. The coordinator sets it on Studio issues (#1054's sub-issues and Studio build issues).
   studio_label: studio
+  # The claim of an issue that carries this label is outside the open-claims limit as well (maintainer decision
+  # 2026-10-29): networking work (the co-op plan, docs/guides/multiplayer.md#plan), which has its own track in
+  # `tasks.start.slots.tracks` so that one engineer is always on it. The coordinator sets it on networking issues.
+  networking_label: networking
   # A claim stops counting toward the limit when a maintainer records one of these stages (the tools post them; a
   # contributor's comment frees nothing, being free to write), or while a pull request of its claimant that closes the
   # issue is open and not a draft (one such pull request frees one task's slot: the oldest it closes and the issues of
@@ -448,13 +452,14 @@ tasks:
     unit_file: unit.json                          # the unit record, in the task's scratch folder
     slots:
       # The tracks (maintainer decision 2026-10-28, replacing 3 task and 1 fix slots): a `kind: fix` task is in `fix`,
-      # a task whose issue carries `claims.studio_label` in `studio`, every other in `reimplementation`. A track's
+      # a task whose issue carries `claims.networking_label` in `networking`, one that carries `claims.studio_label` in
+      # `studio` (the networking label first when an issue has both), every other in `reimplementation`. A track's
       # `min` places are kept from the other tracks while it runs fewer; `min_kinds`, when given, names the task kinds
       # that fill the `min` (a tooling or docs unit shares the reimplementation track but is not the game work it keeps
       # going, and cannot take its place); `max`, when given, caps the track; `models` are the Agent call's model and
       # effort pairs a unit of the track must start on (any when absent).
       tracks:
-        reimplementation: {min: 1, min_kinds: [feature]}   # outside Studio: only game work (`feature`) fills the minimum
+        reimplementation: {min: 1, min_kinds: [feature]}   # outside Studio and networking: only game work fills the minimum
         fix: {min: 1, max: 1}                    # a pull request's problems (a failed check, a conflict), oldest first
         studio:
           min: 0                                 # Coney Studio research and development: as many as the machine holds
@@ -464,6 +469,9 @@ tasks:
             - {model: opus, effort: high, use: research}
             - {model: opus, effort: medium, use: development}
             - {model: sonnet, effort: high, use: simple development}
+        # Networking work (the co-op plan): one engineer always on it (maintainer decision 2026-10-29), on any model like
+        # the reimplementation track (no `models`), and beyond the open-claims limit (`claims.networking_label`).
+        networking: {min: 1, max: 1}
       # The machine limit, every track together: `build_slots` (coney.local.toml, the build slots `coney-tools build`
       # keeps) times this. Measured 2026-10-28 (docs/guides/agents.md#slots): a feature unit holds a build slot for
       # about a tenth of its life and a tooling unit for a fiftieth, so two units per build slot keep the builds' own
@@ -508,7 +516,7 @@ tasks:
 labels:
   description_max: 100                           # GitHub's limit
   # A label belongs to the family named by its prefix; `type` has no prefix and lists its names. The rest are GitHub's
-  # own labels (and `workflow` and `studio`, the claims exemptions), kept so the sync leaves them as we want them.
+  # own labels (and `workflow`, `studio` and `networking`, the claims exemptions), kept so the sync leaves them as we want them.
   families:
     type: {prefix: "", names: [bug, parity, task, docs, enhancement]}
     area: {prefix: "A-"}
@@ -551,6 +559,7 @@ labels:
     - {name: wontfix, color: ffffff, description: "This will not be worked on"}
     - {name: workflow, color: d4c5f9, description: "Builds the new workflow; its claim is outside the open-claims limit"}
     - {name: studio, color: 5319e7, description: "Coney Studio work: its own track, outside the open-claims limit"}
+    - {name: networking, color: 1d76db, description: "Networking work: its own track, outside the open-claims limit"}
     - {name: claim-trial, color: fef2c0, description: "A throwaway issue for testing the claim Action; never real work"}
 
 hygiene:

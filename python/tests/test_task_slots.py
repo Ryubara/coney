@@ -21,6 +21,7 @@ from pathlib import Path
 import pytest
 from audit_support import CONVENTIONS
 from claim_support import Clock, FakeGitHub, plant_claim
+from conventions_support import with_networking_place
 
 from coney_tools import stamps, task_cli, task_slots
 from coney_tools.config import ConfigError
@@ -44,7 +45,10 @@ class Scene:
         self.scratch.mkdir()
         self.trees = tmp_path / "worktrees"
         self.clock = Clock()
-        self.conventions: Conventions = CONVENTIONS
+        #: The committed rules, but with no place kept for the networking track (`with_networking_place`): the
+        #: tests of the other tracks count the places of a machine of 4, which the committed 1 would change;
+        #: the tests of the networking track use `committed_networking`.
+        self.conventions: Conventions = with_networking_place(CONVENTIONS, 0)
         #: The machine's build slots: with two units per build slot, 4 places, so three reimplementation units and the
         #: place kept for a fix fill it.
         self.build_slots = 2
@@ -74,10 +78,11 @@ class Scene:
         age_minutes: int = 0,
         workflow: bool = False,
         studio: bool = False,
+        networking: bool = False,
         **changes: object,
     ) -> Path:
         """A task file as `task create` writes it, claimed `age_minutes` ago, and its held claim cards (labelled
-        `workflow` or `studio` when asked)."""
+        `workflow`, `studio` or `networking` when asked)."""
         issues = changes.pop("issues", None)
         if issues is None:
             issues = (self._next_issue,)
@@ -102,6 +107,8 @@ class Scene:
             self.label(name, True)
         if studio:
             self.studio(name, True)
+        if networking:
+            self.networking(name, True)
         path = self.scratch / name / self.conventions.tasks.file
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(render_task_file(TaskFile(**values)), encoding="utf-8")  # type: ignore[arg-type]
@@ -112,14 +119,21 @@ class Scene:
         `workflow`, and `exempt` while either label is on."""
         for number in self.issues_of[name]:
             card = self.cards[number]
-            self.cards[number] = replace(card, workflow=on, exempt=on or card.studio)
+            self.cards[number] = replace(card, workflow=on, exempt=on or card.studio or card.networking)
 
     def studio(self, name: str, on: bool) -> None:
         """Add or remove the `studio` label of the task's issues: the claim Action's next pass sets the card's `studio`,
         and `exempt` (outside the claim limit) while either label is on."""
         for number in self.issues_of[name]:
             card = self.cards[number]
-            self.cards[number] = replace(card, studio=on, exempt=on or card.workflow)
+            self.cards[number] = replace(card, studio=on, exempt=on or card.workflow or card.networking)
+
+    def networking(self, name: str, on: bool) -> None:
+        """Add or remove the `networking` label of the task's issues: the claim Action's next pass sets the card's
+        `networking`, and `exempt` (outside the claim limit) while any of the three labels is on."""
+        for number in self.issues_of[name]:
+            card = self.cards[number]
+            self.cards[number] = replace(card, networking=on, exempt=on or card.workflow or card.studio)
 
     def release(self, name: str) -> None:
         """The claims of the task were released since `task create` (idle, `/unclaim`)."""
@@ -667,6 +681,144 @@ def test_the_report_says_when_no_reimplementation_unit_runs(scene: Scene) -> Non
     lines = task_slots.report(scene.scan(), scene.conventions, scene.build_slots)
     assert "no reimplementation unit is in work: the track keeps at least one going" in lines
     assert "studio: 1 in work (no minimum, no cap but the machine's)" in lines
+
+
+# --- the networking track (maintainer decision 2026-10-29) -----------------------------------------------------------
+
+
+def committed_networking(scene: Scene) -> None:
+    """The scene with the committed rule of the networking track: the place it keeps for one unit."""
+    scene.conventions = with_networking_place(scene.conventions, CONVENTIONS.tasks.start.slots.tracks.networking.min)
+
+
+def test_the_committed_networking_track_keeps_one_unit_and_allows_one_on_any_model() -> None:
+    networking = CONVENTIONS.tasks.start.slots.tracks.networking
+    assert (networking.min, networking.max) == (1, 1)
+    assert networking.models == CONVENTIONS.tasks.start.slots.tracks.reimplementation.models == ()
+
+
+def test_a_networking_unit_holds_a_networking_place(scene: Scene) -> None:
+    scene.unit("n-ids", networking=True)
+    assert scene.holders("networking") == ["n-ids"] and scene.holders("reimplementation") == []
+
+
+def test_a_networking_start_is_admitted_past_three_reimplementation_units(scene: Scene) -> None:
+    # The issue's test: the three places of game work are used, and a networking start still goes ahead.
+    committed_networking(scene)
+    scene.build_slots = 5
+    full(scene)
+    scene.task("n-ids", networking=True)
+    verdict = scene.admit(brief("n-ids"))
+    assert verdict.allowed
+    assert "4 of 10 places on this machine in use with n-ids (networking track, 1 of 1)" in verdict.message
+
+
+def test_a_second_networking_unit_is_refused_with_room_on_the_machine(scene: Scene) -> None:
+    committed_networking(scene)
+    scene.build_slots = 5
+    scene.unit("n-ids", networking=True)
+    scene.task("n-snap", networking=True)
+    verdict = scene.admit(brief("n-snap"))
+    assert not verdict.allowed and "the networking track is full (1 of 1 in use)" in verdict.message
+    assert "n-ids" in verdict.message
+
+
+def test_the_place_kept_for_networking_is_not_taken_by_studio(scene: Scene) -> None:
+    # 4 places: one kept for reimplementation, one for a fix, one for networking, so Studio may take only one.
+    committed_networking(scene)
+    scene.unit("s-one", kind="tooling", studio=True)
+    scene.task("s-two", kind="tooling", studio=True)
+    verdict = admit_studio(scene, "s-two")
+    assert not verdict.allowed and "1 kept for networking, which runs fewer than its minimum" in verdict.message
+    scene.task("n-ids", networking=True)
+    assert scene.admit(brief("n-ids")).allowed  # the kept place is networking's own
+
+
+def test_a_running_networking_unit_keeps_no_place_back(scene: Scene) -> None:
+    committed_networking(scene)
+    scene.unit("n-ids", networking=True)
+    room = task_slots.room(scene.scan(), "studio", "s-one", scene.conventions, scene.build_slots, "tooling")
+    assert set(room.kept) == {"reimplementation", "fix"}
+
+
+def test_a_networking_label_added_after_task_create_moves_the_unit_to_networking(scene: Scene) -> None:
+    scene.unit("a-ids")
+    assert scene.holders("reimplementation") == ["a-ids"]
+    scene.networking("a-ids", True)
+    assert scene.holders("networking") == ["a-ids"] and scene.holders("reimplementation") == []
+    scene.networking("a-ids", False)
+    assert scene.holders("reimplementation") == ["a-ids"]
+
+
+def test_a_networking_fix_is_a_fix(scene: Scene) -> None:
+    scene.unit("n-fix", kind="fix", networking=True)
+    assert scene.holders("fix") == ["n-fix"] and scene.holders("networking") == []
+
+
+def test_an_issue_labelled_networking_and_studio_is_a_networking_unit(scene: Scene) -> None:
+    scene.unit("n-both", kind="tooling", networking=True, studio=True)
+    assert scene.holders("networking") == ["n-both"] and scene.holders("studio") == []
+    assert task_slots.track_of("feature", True, True) == "networking"
+
+
+def test_the_studio_model_rule_does_not_bind_a_networking_unit(scene: Scene) -> None:
+    scene.task("n-ids", networking=True)
+    assert scene.admit(brief("n-ids"), model="haiku", effort="low").allowed
+    scene.task("n-both", networking=True, studio=True)
+    assert scene.admit(brief("n-both"), model="haiku", effort="low").allowed
+
+
+def test_an_issue_labelled_workflow_and_networking_is_a_workflow_unit_until_the_cutover(scene: Scene) -> None:
+    scene.unit("w-net", kind="tooling", workflow=True, networking=True)
+    assert scene.scan().exempt == ("w-net",) and scene.holders("networking") == []
+    set_slots(scene, exempt_workflow=False)
+    assert scene.holders("networking") == ["w-net"]  # after the cutover the networking label decides
+
+
+def test_a_networking_card_that_was_read_decides_when_another_cannot_be(scene: Scene) -> None:
+    scene.unit("n-two", issues=(920, 921))
+    scene.cards[920] = replace(scene.cards[920], networking=True, exempt=True)
+
+    def second_fails(number: int) -> None:
+        if number == 921:
+            raise ConfigError("gh timed out")
+
+    scene.on_read = second_fails
+    current = scene.scan()
+    assert [h.task for h in current.held("networking")] == ["n-two"] and current.unchecked == ()
+
+
+def test_a_unit_whose_labels_cannot_be_read_counts_as_reimplementation_not_networking(scene: Scene) -> None:
+    scene.unit("n-ids", networking=True)
+    scene.down = True
+    current = scene.scan()
+    assert [h.task for h in current.held("reimplementation")] == ["n-ids"] and current.unchecked == ("n-ids",)
+
+
+def test_a_reservation_records_the_networking_track(scene: Scene) -> None:
+    scene.task("n-ids", networking=True)
+    assert scene.admit(brief("n-ids"), reserve=True).allowed
+    data = json.loads((scene.scratch / "n-ids" / task_slots.RESERVATION_FILE).read_text(encoding="utf-8"))
+    assert data["track"] == "networking" and scene.holders("networking") == ["n-ids"]
+
+
+def test_the_report_names_the_networking_track_and_its_empty_minimum(scene: Scene) -> None:
+    committed_networking(scene)
+    lines = task_slots.report(scene.scan(), scene.conventions, scene.build_slots)
+    assert "networking: 0 in work (at least 1 kept, at most 1)" in lines
+    assert "no networking unit is in work: the track keeps one going" in lines
+    scene.unit("n-ids", networking=True)
+    lines = task_slots.report(scene.scan(), scene.conventions, scene.build_slots)
+    assert "networking: 1 in work (at least 1 kept, at most 1)" in lines
+    assert not any(line.startswith("no networking unit") for line in lines)
+
+
+def test_the_json_report_has_the_networking_track(scene: Scene) -> None:
+    committed_networking(scene)
+    scene.unit("n-ids", networking=True)
+    data = task_slots.as_json(scene.scan(), scene.conventions, scene.build_slots)
+    assert data["tracks"]["networking"]["min"] == 1 and data["tracks"]["networking"]["max"] == 1
+    assert [h["task"] for h in data["tracks"]["networking"]["holders"]] == ["n-ids"]
 
 
 # --- the Studio models ------------------------------------------------------------------------------------------------

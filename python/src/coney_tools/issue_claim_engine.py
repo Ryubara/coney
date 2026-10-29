@@ -234,6 +234,7 @@ class Engine(LimitEnforcement):
             handled=(comment.id,),
             exempt=self.rules.outside_limit(work.issue.labels),
             studio=self.rules.is_studio(work.issue.labels),
+            networking=self.rules.is_networking(work.issue.labels),
             workflow=self.rules.is_workflow(work.issue.labels),
         )
         fresh = Stored(None, card)
@@ -245,8 +246,7 @@ class Engine(LimitEnforcement):
         # Who counts as what, in the log: the live test reads it to see the permission GitHub gave the Action.
         role = "a maintainer" if maintainer else "a contributor"
         permission = self._permissions.get(comment.login) or f"unknown, association {comment.association}"
-        label = self.rules.studio_label if card.studio and self.rules.studio_label else self.rules.exempt_label
-        exempt = f", outside the limit (`{label}`)" if card.exempt else ""
+        exempt = f", outside the limit (`{card.limit_label(self.rules)}`)" if card.exempt else ""
         work.log.append(f"#{number}: {comment.login} claimed it{half} as {role} (permission {permission}){exempt}")
         self._audit_new_claim(work, comment, fresh, maintainer)
 
@@ -705,6 +705,7 @@ class Engine(LimitEnforcement):
             last_activity_why="assigned by hand",
             exempt=self.rules.outside_limit(work.issue.labels),
             studio=self.rules.is_studio(work.issue.labels),
+            networking=self.rules.is_networking(work.issue.labels),
             workflow=self.rules.is_workflow(work.issue.labels),
         )
         fresh = Stored(None, card)
@@ -732,9 +733,10 @@ class Engine(LimitEnforcement):
             "status": "pr-open" if open_pr else "claimed",
             "pr": open_pr.number if open_pr else None,
             # The labels can come and go: the claim is outside the limit while the issue carries one, and in the Studio
-            # track while it carries that one.
+            # (or networking) track while it carries that one.
             "exempt": self.rules.outside_limit(work.issue.labels),
             "studio": self.rules.is_studio(work.issue.labels),
+            "networking": self.rules.is_networking(work.issue.labels),
             "workflow": self.rules.is_workflow(work.issue.labels),
             "counted": counted,
             "regained": card.regained or (counted and not card.counted),
