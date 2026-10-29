@@ -688,6 +688,7 @@ in our own words ([The game's scripts](research-workflow.md#scripts)).
 
 ```sh
 uv run --project python coney-tools lua decompile [DISC] --all [--out DIR] [--roundtrip] [--chunks DIR] [--luac PATH]
+    [--hashes FILE] [--update-hashes | --new-form]
 uv run --project python coney-tools lua decompile [DISC] NAME OUT_DIR [--roundtrip] [--chunks DIR] [--luac PATH]
 ```
 
@@ -702,6 +703,7 @@ name is not known). Beside them it writes:
   ends in `Handler` or `Callback`, `RegisterUpdate`, `ScheduleFunc*` and `TriggerSphereCfg`) with their constant
   arguments (`python/src/coney_tools/lua_index.py`). Start a level's research here.
 * `fingerprints.txt`: a hash of every distinctive line of every script, which the guard below reads.
+* `decompile-hashes.toml`: the SHA-256 of every decompile, checked against the committed list ([below](#lua-form)).
 
 `NAME OUT_DIR` decompiles one chunk, by file name (`level99.lua`) or hash, into `OUT_DIR`. Both refuse an output
 folder inside a checkout. `--chunks DIR` reads the chunks from a folder (`wad extract` or `extract` output) instead of
@@ -743,6 +745,33 @@ trip, which compares functions, not headers), so the regenerate step refuses it.
 by `LUA4_LUAC`: on Windows, the same build as `--fetch lua` from the x86 tools (`vcvars32.bat`), with the core
 `src/*.c` in a library and `src/luac/*.c` linked against it.
 
+### The frozen form {#lua-form}
+
+A mission mod's patch is pinned to the exact text a script decompiles to ([Forms](studio/mission-mods.md#forms)), so
+that text must not change silently when the decompiler does. The output is frozen in numbered **forms**; form 1 is the
+output of the decompiler when the list below was made, and `lua decompile --all` checks it every time:
+
+* `research/lua-decompile-hashes.toml` is the committed list: the form number, then for each script its `name` (the
+  WAD's file name, or the entry's hash in hex), the SHA-256 of its `chunk` (the bytes the WAD stores) and the SHA-256 of
+  its decompile's `text`. Hashes and names only, never a line of a script ([LEGAL.md](repo:LEGAL.md#no-game-data)); a
+  test holds the file to that. The text hashed is the decompile as written (one byte per character, LF line ends)
+  without the guard's marker line, which holds the name. It holds the 467 scripts of the NTSC-U disc.
+* `--all` writes the same format as `decompile-hashes.toml` beside the fingerprints, then checks it against the list and
+  prints how many scripts match, are not in the list and are listed but not on this disc. An entry is found by its chunk
+  hash, so a recovered name changes nothing and another region's script with other bytes is counted, not failed. A
+  script whose **text changed** is named on stderr (names only) and the command exits 1. `--hashes FILE` checks another
+  list. CI has no disc, so the author of a decompiler change runs `lua decompile --all` on it before reporting.
+
+**Changing the output on purpose** is a new form, never an edit of the hashes. A fix that changes the text of any disc
+script makes form 2: run `lua decompile --all --new-form` (it rewrites the list from the run as the next form, only
+for that disc's scripts, and says to set `FORM` in `lua_hashes.py`, which a test holds to the list's form), run
+`--update-hashes` on the other disc, and commit them with the change. Coney must keep producing a form a patch names.
+
+**Adding a disc's scripts** (`--update-hashes`) adds the scripts the list lacks and changes none that it holds; it
+refuses, naming the scripts, if a listed text differs or a chunk could not be loaded. The Xbox disc's 36 scripts of its
+own are added this way, once someone with that disc runs it. The C++ decompiler ([#1116](issue:1116)) must give the same
+hash for every listed script, checked by a disc test.
+
 <!-- command-reference:begin lua -->
 ## Parameters of `lua` {#lua-parameters}
 
@@ -753,7 +782,8 @@ Written by `coney-tools docs render` from the command line's own definitions; ne
 Decompile one chunk (NAME OUT_DIR) or every chunk (--all) to readable Lua, outside the repository.
 
 ```text
-coney-tools lua decompile [[DISC] NAME OUT_DIR ...] [--all] [--out DIR] [--chunks DIR] [--luac PATH] [--roundtrip]
+coney-tools lua decompile [[DISC] NAME OUT_DIR ...] [--all] [--out DIR] [--chunks DIR] [--luac PATH] [--hashes FILE]
+    [--update-hashes] [--new-form] [--roundtrip]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -763,5 +793,8 @@ coney-tools lua decompile [[DISC] NAME OUT_DIR ...] [--all] [--out DIR] [--chunk
 | `--out DIR` | path | none | with --all: write here instead of lua_dir |
 | `--chunks DIR` | path | none | read chunks from this folder (`wad extract` output), not a disc |
 | `--luac PATH` | path | none | the stock Lua 4.0 luac (default: luac_program) |
+| `--hashes FILE` | path | none | with --all: the list of decompile hashes to check (default: research/lua-decompile-hashes.toml) |
+| `--update-hashes` | flag | off | with --all: add the scripts the list lacks (another disc's); refuses to change a listed hash |
+| `--new-form` | flag | off | with --all: on purpose, rewrite the list from this run as the next form (the output changed) |
 | `--roundtrip` | flag | off | compile each output with luac and compare it with the chunk; prints counts only; exit 1 on a mismatch |
 <!-- command-reference:end -->

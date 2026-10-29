@@ -5,7 +5,8 @@
 * `lua decompile [DISC] --all` writes every chunk, the guard's fingerprints and the index into the shared folder.
 
 Both take `--chunks DIR` (a folder of extracted chunks instead of the disc), `--luac PATH` and `--roundtrip`; `--all`
-also takes `--out DIR`. Guide: docs/guides/coney-tools-fidelity.md#lua.
+also takes `--out DIR` and the frozen form's `--hashes FILE`, `--update-hashes` and `--new-form` (`lua_hashes.py`):
+it checks every decompile's hash against the committed list. Guide: docs/guides/coney-tools-fidelity.md#lua.
 """
 
 from __future__ import annotations
@@ -40,6 +41,22 @@ def add_parser(groups: Any) -> None:
     )
     decompile.add_argument("--luac", type=Path, metavar="PATH", help="the stock Lua 4.0 luac (default: luac_program)")
     decompile.add_argument(
+        "--hashes",
+        type=Path,
+        metavar="FILE",
+        help="with --all: the list of decompile hashes to check (default: research/lua-decompile-hashes.toml)",
+    )
+    decompile.add_argument(
+        "--update-hashes",
+        action="store_true",
+        help="with --all: add the scripts the list lacks (another disc's); refuses to change a listed hash",
+    )
+    decompile.add_argument(
+        "--new-form",
+        action="store_true",
+        help="with --all: on purpose, rewrite the list from this run as the next form (the output changed)",
+    )
+    decompile.add_argument(
         "--roundtrip",
         action="store_true",
         help="compile each output with luac and compare it with the chunk; prints counts only; exit 1 on a mismatch",
@@ -53,10 +70,20 @@ def run(args: argparse.Namespace) -> int:
     if args.all:
         if len(paths) > (0 if args.chunks else 1):
             raise ConfigError("expected `lua decompile [DISC] --all` (no DISC with --chunks)")
-        options = lua_decompile.Options(chunks=args.chunks, out=args.out, luac=args.luac, roundtrip=args.roundtrip)
+        options = lua_decompile.Options(
+            chunks=args.chunks,
+            out=args.out,
+            luac=args.luac,
+            roundtrip=args.roundtrip,
+            hashes=args.hashes,
+            update_hashes=args.update_hashes,
+            new_form=args.new_form,
+        )
         return lua_decompile.run_all(root, paths[0] if paths else None, options)
     if args.out is not None:
         raise ConfigError("--out goes with --all; one chunk is written to the OUT_DIR given")
+    if args.hashes is not None or args.update_hashes or args.new_form:
+        raise ConfigError("--hashes, --update-hashes and --new-form go with --all")
     if len(paths) not in ((2,) if args.chunks else (2, 3)):
         raise ConfigError("expected `lua decompile [DISC] NAME OUT_DIR` (no DISC with --chunks), or --all")
     disc = paths[0] if len(paths) == 3 else None
