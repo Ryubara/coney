@@ -2,12 +2,12 @@
 
 This page is a **design**: nothing on it is built. It decides what Coney Studio is made with: the GUI library, whether
 Studio is a program of its own, how Play runs the engine and how edits reach it, the code editor and its language
-tooling, the script debugger, hot reload, the libraries that import assets and the harness that tests Studio. Each
+tooling, the script debugger, reload on save, the libraries that import assets and the harness that tests Studio. Each
 question lists the alternatives weighed and the choice, and the page ends with the [build issues](#build-issues) it
 proposes, in order. Three small proofs settled what reading could not ([Proofs](#proofs)).
 
-What Studio is, its panels, Play's controls and the keymap are the editor experience design; what a script can call,
-the runtime projects run on (Lua 5.4), how Play loads a project, the stubs, hot reload of a project and the debugger's
+What Studio is, its panels, Play's controls and the keymap are the editor experience design; what a script can call, the
+runtime projects run on (Lua 5.4), how Play loads a project, the stubs, the project restart on save and the debugger's
 server are the [Lua SDK and natives](lua-sdk.md) design; what Studio can read and write from the game's files is the
 content and formats design. This page links or names them and does not repeat them.
 
@@ -23,7 +23,7 @@ content and formats design. This page links or names them and does not repeat th
 | [Code editor](#code-editor) | goossens' ImGuiColorTextEdit, pinned, wrapped by Studio | Completions, squiggles, hover, multiple cursors, VS Code-like keys, inside the same ImGui frame |
 | [Language tooling](#language-tooling) | lua-language-server as a child process, reading the SDK's generated stubs | Completions, hover, type and argument checks for the projects' Lua 5.4 as it is; MIT; about 4.5 MB to download per platform |
 | [Script debugger](#debugger) | Studio is a Debug Adapter Protocol client of the engine's server | One protocol for Studio and for VS Code; pausing blocks the simulation thread, not the editor |
-| [Hot reload](#hot-reload) | Studio polls the project folder and asks the session to reload; presentation assets swap live, simulation assets ask for Play again | Follows the asset layers' split of presentation and simulation kinds |
+| [Reload on save](#reload-on-save) | Studio polls the project folder; a saved script restarts the project, the level or nothing, as the setting *On script save* says (nothing by default); presentation assets swap live, simulation assets ask for Play again | Follows the asset layers' split of presentation and simulation kinds; a restart while the user watches would be annoying |
 | [Importers](#importers) | cgltf (glTF), ufbx (FBX), stb_image (images), dr_libs and stb_vorbis (audio) | Small, permissive, single-file C libraries; no SDK and no new build system |
 
 ## What Studio starts from {#starting-point}
@@ -219,13 +219,13 @@ thing. A level edit made while playing is also kept in the edit document, and an
 lost on Stop ([Live edits while playing](editor-experience.md#live-edits)).
 
 Sharing one world in one process is what makes this cheap: the Level view reads the session between steps and draws it
-with the same renderer, and an edit is one queued command. With a child process, the same edit would be a message over
-a pipe, and the Level view would need the child's whole world streamed back to draw it, a snapshot protocol Coney does
-not need for anything else. Edit commands are plain, serializable data all the same, as
-[the network checklist](../network-architecture.md#checklist) asks of simulated effects, so they can later go to a child
-process (Run in Coney) or to a co-op peer without a second design. What an edit may not do live (replace collision, a
-level's streaming data) follows the asset kinds ([Hot reload](#hot-reload)): it asks for Play again. Early bugs here
-are accepted; the queue keeps each one inside a step.
+with the same renderer, and an edit is one queued command. With a child process, the same edit would be a message over a
+pipe, and the Level view would need the child's whole world streamed back to draw it, a snapshot protocol Coney does not
+need for anything else. Edit commands are plain, serializable data all the same, as [the network
+checklist](../network-architecture.md#checklist) asks of simulated effects, so they can later go to a child process (Run
+in Coney) or to a co-op peer without a second design. What an edit may not do live (replace collision, a level's
+streaming data) follows the asset kinds ([Reload on save](#reload-on-save)): it asks for Play again. Early bugs here are
+accepted; the queue keeps each one inside a step.
 
 ## The code editor {#code-editor}
 
@@ -281,14 +281,17 @@ tools.
   view shows the last frame and the panels stay live ([Play](#play-session)). This answers the SDK design's open
   question on the pause: with Play in Studio's process on its own thread, the Game view keeps drawing.
 
-## Hot reload {#hot-reload}
+## Reload on save {#reload-on-save}
 
 - **Watching.** Studio owns the project folder, so it watches it: a background thread compares the files' sizes and
   times once a second. That works on every platform with no dependency; if large projects make it slow, efsw (MIT) or
   dmon (BSD-2-Clause) replaces the poll behind the same interface.
-- **Scripts.** A changed script is a reload request to the running session; the project restarts at the next step
-  boundary, and a file that fails to compile leaves the running state alone, as the Lua SDK design's
-  [Hot reload](lua-sdk.md#hot-reload) says. Studio shows the compile error in the Problems panel.
+- **Scripts.** What a saved script does is Studio's setting *On script save*: *Do nothing* (the default), *Restart
+  project* or *Restart level*, with the same two actions as buttons on the Play bar. A project restart is a request to
+  the running session, applied at the next step boundary; a file that fails to compile leaves the running project
+  alone, as the Lua SDK design's [Project restart on save](lua-sdk.md#project-restart) says. Studio shows the compile
+  error in the Problems panel. The setting is off in test mode. (*Hot reload*, a swap of code that keeps the project's
+  state, is a later thing.)
 - **Assets.** The [asset layers](../asset-and-script-architecture.md#asset-layers) already split the kinds:
   presentation kinds (textures, sounds, models' looks) are swapped in the running session; simulation kinds
   (collision, levels, animation clips, character data) mark the session stale and the Play bar asks for Play again.
@@ -353,8 +356,8 @@ and one in Lua 5.x style, read once with `--check` and three times over LSP by a
 
 In the order they should come. Each assumes the ones above it. The [Lua SDK design's issues](lua-sdk.md#build-issues)
 interleave with them: its runtime and loader (its issues 1 to 3) come before Play (5 here), its stubs (its 5) before
-the script editor (7 here), its DAP server (its 8) before the debugger (8 here), and its hot reload (its 6) before hot
-reload here (9).
+the script editor (7 here), its DAP server (its 8) before the debugger (8 here), its project restart (its 6) before
+reload on save here (9), and its monitor (its 10) after Play (5 here).
 
 1. **`build: Update Dear ImGui to its docking release`.** Move the pin in `cmake/deps.cmake` from `v1.92.9b` to
    `v1.92.9b-docking` (the same version with docking), with docking turned on in the developer overlay so its windows
@@ -383,8 +386,10 @@ reload here (9).
    before the debugger.
 8. **`tools: Add the debugger to the Coney Studio script editor`.** The DAP client: gutter breakpoints, the current
    line, the Debug panel and the F5 to F11 keys; pausing keeps the UI running.
-9. **`tools: Add hot reload of scripts and assets to Coney Studio`.** The project poller, reload requests for changed
-   scripts sent to the session, presentation assets swapped live, and simulation assets marking Play stale.
+9. **`tools: Add reload on save to Coney Studio`.** The project poller, the setting *On script save* (*Do nothing* by
+   default) with the *Restart project* and *Restart level* buttons, restart requests sent to the session for changed
+   scripts, presentation assets swapped live, and simulation assets marking Play stale. Tests: with *Do nothing* a
+   save changes nothing; with *Restart project* the next step runs the new script; the setting is off in test mode.
 10. **`tools: Add glTF, FBX, image and audio import to Coney Studio`.** cgltf, ufbx, stb_image, dr_libs and stb_vorbis
     pinned and built with Studio only, behind drag and drop into the File system panel and the Import button, writing
     the content design's formats. Tests import synthetic files made by the tests themselves.

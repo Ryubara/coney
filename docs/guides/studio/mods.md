@@ -161,8 +161,9 @@ version = "0.3.0"                      # semantic version: major.minor.patch
   a mod that depends on it calls one with `Coney.CallExport("crate-pack", "SpawnCrate", pos)`, or keeps a caller from
   `Coney.GetExport("crate-pack", "SpawnCrate")` (FiveM's `exports.crate-pack:SpawnCrate(pos)` in Coney's flat
   `Coney` table, [Names and namespaces](lua-sdk.md#names)). Inside the sandbox:
-    - **The call runs in the library's own state**, with the library's natives and under the library's budget, and is
-      charged to the caller's step budget too, so a library cannot be used to run past either.
+    - **The call runs in the library's own state**, with the library's natives, and its time and memory show in the
+      library's row of the [monitor](lua-sdk.md#monitor); there is no budget to run past ([The
+      sandbox](lua-sdk.md#sandbox)).
     - **Values are copied, never shared**: nil, booleans, numbers, strings and tables of those, copied deep within size
       and depth limits, without metatables. A function passed either way becomes a callback that runs in the state it
       came from, as the natives' callbacks do ([The value bridge](lua-sdk.md#bridge)). No table, upvalue or global of
@@ -209,7 +210,7 @@ leave `server.cfg` alone.
 | `levels <mod>` | The levels a content mod offers |
 | `start <mod>` | Starts a stopped mod, its dependencies first |
 | `stop <mod>` | Stops a running mod, the mods that depend on it first |
-| `restart <mod>` | Stops and starts a running mod: a [hot reload](lua-sdk.md#hot-reload) from its package |
+| `restart <mod>` | Stops and starts a running mod: a [project restart](lua-sdk.md#project-restart) from its package |
 | `ensure <mod>` | Restarts the mod if it runs, starts it if not |
 | `refresh` | Rescans `mods/`: checks new and changed packages and their manifests, so a new mod can be started in this session (it joins `enabled.toml` at the next start, as any new package does) |
 | `disable <mod>` | Stops the mod and keeps it off for the rest of the session: no dependant, `ensure` or level start brings it back |
@@ -304,5 +305,5 @@ package.*
   them, and none of them appears in `mods/` or `enabled.toml`.
 - **Co-op with mods** (a P1 to P3 host who runs mods) uses the same package for the guest. Without mods, co-op sends
   nothing: the original's scripts run on the host only ([The original's scripts](../network-architecture.md#original-scripts)).
-- **Hot reload and the debugger online** stay the host's or server's, on its own server scripts
-  ([Hot reload](lua-sdk.md#hot-reload)); a client is sent the new client files as a new package version.
+- **Project restart and the debugger online** stay the host's or server's, on its own server scripts ([Project restart
+  on save](lua-sdk.md#project-restart)); a client is sent the new client files as a new package version.

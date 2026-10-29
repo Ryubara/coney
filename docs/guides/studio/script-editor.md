@@ -415,7 +415,7 @@ the Inspector are checked alike.
 | Diagnostics | The language server (syntax, types, argument counts, undefined globals, the sandbox's missing libraries); Studio's [string checks](#string-checks); the Lua 4.0 compiler for a 4.0 file ([Language tooling](technology.md#language-tooling)); errors raised while playing ([The sandbox](lua-sdk.md#sandbox)) | As you type; after each Play | Squiggles by severity, gutter marks, the Problems panel (Ctrl+Shift+M), F8 and Shift+F8 |
 | Go to definition | The language server; Studio redirects natives and strings | F12, Ctrl+Click | [Go to definition](#definition) |
 | References | The language server | Shift+F12 | The References panel, each use with its line |
-| Rename | The language server | F2 | One undo step in each open file; files not open are written and reloaded once by hot reload |
+| Rename | The language server | F2 | One undo step in each open file; files not open are written and saved once, so *On script save* acts once |
 | Formatting | The language server's formatter | Shift+Alt+F, Ctrl+K Ctrl+F | Off on save unless the user turns it on |
 | Quick fixes | The language server | Ctrl+. | A menu at the caret |
 | Symbols | The language server | Ctrl+Shift+O in the file, Ctrl+T in the project | A quick pick, as Ctrl+P is for files |
@@ -427,6 +427,10 @@ the Inspector are checked alike.
 - **Sync.** The widget's transaction callback reports every insert and delete; Studio sends them as incremental
   changes, converting the widget's glyph positions into the protocol's positions. Diagnostics follow each change as the
   server publishes them.
+- **Two kinds of script, one editor.** The file's root decides what a script is: a `project:/` script is the project's
+  own Lua 5.4 and is saved as itself; a `game:/scripts/...` script opens read-only, editing it makes a local copy and
+  saves a patch, and the editor shows a banner "Game script, saved as a patch" ([Which kind of script a file
+  is](mission-mods.md#which-kind)).
 - **Errors from playing.** A runtime error raised during Play ([The sandbox](lua-sdk.md#sandbox)) shows as a marker on
   its line, with the message as the tooltip, until the next Play.
 

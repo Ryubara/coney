@@ -39,10 +39,11 @@ architecture; [What changes on other pages](#other-pages) lists what it changes 
 2. **No native code, ever,** from a mod, a project or a server. Native code cannot be sandboxed; Minecraft's Java mods
    show what follows ([Minecraft](#minecraft)). A player who wants the engine changed builds Coney from its source.
 3. **Defence in depth.** No single layer is trusted alone: the Lua sandbox, natives that validate everything, files
-   reached only through one checked layer, data parsers that are fuzzed, budgets on time and memory, a pinned and
-   current Lua, and tests that try the known escapes on every build.
-4. **The protection lives where a script cannot reach.** The instruction hook, the allocator, the path layer, the
-   natives' checks and the budgets are C++ and C. Everything a script can see (its globals, the `Coney` table, the
+   reached only through one checked layer, data parsers that are fuzzed, a monitor that shows each project's time and
+   memory (no budgets for now, [Limits](#limits)), a pinned and current Lua, and tests that try the known escapes on
+   every build.
+4. **The protection lives where a script cannot reach.** The allocator, the path layer and the natives' checks are C++
+   and C. Everything a script can see (its globals, the `Coney` table, the
    string metatable) is a convenience: changing it can only break the script's own project.
 5. **The project is the unit of isolation.** Each project runs in a Lua state of its own. Inside it, a script may do as
    it likes with its own tables; across projects, and between a project and the game state, nothing is shared but the
@@ -186,6 +187,7 @@ and treat a server-sent script as hostile.
 
 | Lesson | Seen in | Coney's rule |
 | --- | --- | --- |
+| A runaway script | Roblox stops it with an interrupt; FiveM has no budget and shows it in `resmon` | No budget, memory cap or watchdog for now, as FiveM, and a monitor ([Limits](#limits)); caps return if downloaded mods or co-op need them |
 | Remote code arrives by network plus string-to-code, and spreads by writing script files | FiveM backdoors, Roblox free models | No network for project scripts; scripts write no files, only values in a store ([Limits](#limits)) |
 | Bytecode breaks the VM | Factorio 2020 and CVE-2024-39840, Luau's policy, Lua's manual | No bytecode in, none out: `load` is text only, `string.dump` is gone, a game-script patch is text that Coney compiles ([Attack surface](#surface)) |
 | The debug library breaks isolation | FiveM 2024, Luau | No `debug` library; the debugger is Coney's own, outside the state ([The script debugger](lua-sdk.md#debugger)) |
@@ -214,13 +216,13 @@ and treat a server-sent script as hostile.
 
 | Harm | Example | The defence | Where |
 | --- | --- | --- | --- |
-| The computer | Run a program; load a native library; break out of the VM | No process, no native code, no bytecode; budgets; fuzzed runtime and parsers | [Library](#library), [Surface](#surface) |
+| The computer | Run a program; load a native library; break out of the VM | No process, no native code, no bytecode; fuzzed runtime and parsers | [Library](#library), [Surface](#surface) |
 | The player's files | Read documents or keys, encrypt or delete them, plant a file that runs later | No file access but the project's own files, read-only; links refused; writes only to a store of values | [Paths](#paths), [Limits](#limits) |
 | The account and credentials | Steal browser logins, Discord or launcher tokens (fractureiser); leak the Windows login hash through a network path such as `\\host\share`; phish a password with a fake prompt | No file, network or network-path access; Coney has no account to steal; no native shows a text field that is not marked as the script's | [Paths](#paths), [Natives](#natives) |
 | Privacy | Read the user name, machine name, environment, clipboard or hardware ids; learn which servers the player visited | None of those is reachable; server caches are kept per server | [Library](#library), [Coney's model](mods.md#mp-model) |
 | Other players | Send something to another player's machine; make a guest run a script it did not agree to | Star topology; a client runs only presentation natives; joining a modded game is a choice shown before download | [Coney's model](mods.md#mp-model), [Network architecture](../network-architecture.md#resources) |
 | Save data | Overwrite or corrupt the story profile | A modded session saves apart from the faithful profile; a project's own data lives in its own store with a quota | [Limits](#limits) |
-| Denial of service | Endless loop, memory bomb, spawning thousands of things, flooding the log or the disk, a parser that never ends | Instruction and memory budgets, caps per project, quotas, a watchdog, fuzzed parsers | [Limits](#limits) |
+| Denial of service | Endless loop, memory bomb, spawning thousands of things, flooding the log or the disk, a parser that never ends | Accepted for now, as FiveM: a loop with no wait freezes the game and a memory bomb fills memory; the monitor shows which project; the log and the store have limits; fuzzed parsers | [Limits](#limits) |
 | The game state | Patch the faithful game's scripts or globals in ways nobody can debug | Separate states; game-script patches only by permission, as text Coney compiles | [Library](#library), [Declared permissions](#declared) |
 
 ### Out of scope {#out-of-scope}
@@ -239,12 +241,12 @@ A project state runs stock Lua 5.4 ([How Lua 5.4 is built](lua-sdk.md#lua-build)
 
 | Item | Kept? | Why | What replaces it |
 | --- | --- | --- | --- |
-| `string` (but `dump`), `table`, `utf8`, `coroutine` | yes | Pure computation; their cost is bounded by the memory cap and the work charge ([Limits](#limits)) | |
+| `string` (but `dump`), `table`, `utf8`, `coroutine` | yes | Pure computation; their cost shows in the monitor ([Limits](#limits)) | |
 | `string.dump` | no | It makes bytecode, which nothing may load; with no bytecode path it is useless | |
 | `math` | yes, `random` and `randomseed` replaced | The project's own `GameRandom` stream, for replays ([Determinism](lua-sdk.md#determinism)) | |
 | `assert`, `error`, `pcall`, `xpcall`, `select`, `type`, `tostring`, `tonumber`, `ipairs`, `pairs`, `next`, `rawequal`, `rawlen`, `rawget`, `rawset`, `getmetatable`, `warn` | yes | Ordinary Lua; `rawset` can only change the project's own tables ([Principles](#principles), 4 and 5) | |
-| `setmetatable` | yes, but it refuses a metatable with `__gc` | A finalizer runs at a time the script does not choose (inside another call's allocation, or while the state closes), which makes budgets and errors hard to attribute; Luau removes `__gc` for the same reasons | `Coney.On("stop", fn)` for cleanup; weak tables for caches |
-| `__close` (to-be-closed variables) | yes | Runs inside the call that owns it, under its budget | |
+| `setmetatable` | yes, but it refuses a metatable with `__gc` | A finalizer runs at a time the script does not choose (inside another call's allocation, or while the state closes), which makes errors and the monitor's numbers hard to attribute; Luau removes `__gc` for the same reasons | `Coney.On("stop", fn)` for cleanup; weak tables for caches |
+| `__close` (to-be-closed variables) | yes | Runs inside the call that owns it | |
 | `print` | yes | To the run log and Studio's Console, tagged with the project, at most a number of lines and bytes per step ([Limits](#limits)) | |
 | `load` | text only, in the project's environment by default | String-to-code adds nothing a script cannot already do (it runs in the same sandbox), and REPLs, templates and data-driven tools need it; FiveM and Factorio keep it. The mode is forced to `"t"` whatever the script passes, so bytecode is refused | |
 | `require` | inside the project only, text only | Modules are how a project grows; `package` itself stays hidden | |
@@ -289,23 +291,25 @@ Natives are the only door to the world, so every native, game or Coney, follows 
 
 ### Limits {#limits}
 
-A script that cannot escape can still take the machine's time, memory or disk. The limits, all set by Coney in C++:
+A script that cannot escape can still take the machine's time, memory or disk. **For now Coney sets no budget for it, as
+FiveM does (a maintainer decision): no instruction budget, no memory cap and no watchdog.** A loop with no
+`Coney.Wait` freezes the game until it ends, and a script that allocates without end fills memory; the player ends the
+program, and in Studio the autosave before Play keeps the work ([The monitor](lua-sdk.md#monitor)). What Coney has
+instead:
 
 | Limit | How | Past it |
 | --- | --- | --- |
-| **Instructions per call** into the state | The count hook ([Sandbox](lua-sdk.md#sandbox)), installed on the main thread and inherited by every coroutine, all counting into one budget per project | The call stops with an error. The budget is **sticky**: once spent, every later check in the same call raises again, so `pcall` or `coroutine.resume` cannot catch the error and go on looping |
-| **Instructions per step**, all calls of a project together | The same counter, reset each step | The project's remaining calls in that step are skipped and the run log says so, so a project with ten thousand handlers cannot add their budgets up |
-| **Memory per project** | Coney's allocator ([How Lua 5.4 is built](lua-sdk.md#lua-build)) | The allocation fails as Lua's memory error; nothing more can be allocated until the project frees memory |
-| **Work inside one library call** | The count hook does not run inside a C function. Library functions whose work grows with their input (`string.rep`, `table.concat`, `table.sort`, `string.format`, the pattern functions) are wrapped so that their input sizes are charged to the call's budget before they run, and the pattern functions refuse a subject longer than a limit | An error naming the function |
-| **A call that still does not return** | A watchdog outside the simulation notices a script call that has run past a wall-clock limit (seconds) | Studio and the game show "A script is not responding", with Stop; the watchdog never changes the simulation, is off in test mode, and stopping marks the run ([Determinism](lua-sdk.md#determinism)) |
-| **Nesting** | Lua's own C-stack limit (`LUAI_MAXCCALLS`) for deep recursion of the parser and of C calls; the Lua stack is bounded by the memory cap | "stack overflow" or "too many C levels", as stock Lua |
-| **Things a project makes** | Counters per project of the handles it holds: humans and objects share the game's pools, so a project may hold at most a share of each, and Coney's own kinds (spawned models, sounds playing, effects, HUD messages per step) have caps of their own | The native returns its "none" value or an error, as when the game's pool is full |
+| **The monitor** | Each project's time per step and its memory, counted outside the script ([The monitor](lua-sdk.md#monitor)) | Nothing is stopped: the modder, the player or a server operator sees which project is slow or growing and removes it |
+| **Nesting** | Lua's own C-stack limit (`LUAI_MAXCCALLS`) for deep recursion of the parser and of C calls, and the Lua stack's own size limit | "stack overflow" or "too many C levels", as stock Lua |
+| **Things a project makes** | The game's own pools (60 humans at most, and the objects' and effects' pools), shared by the game and every project | The native returns its "none" value or an error, as when the game's pool is full; there is no share per project |
 | **Log output** | Lines and bytes per project per step | The rest of the step's lines are dropped with one line saying how many |
 | **The project's store** | `Coney.SaveData(key, value)` and `Coney.LoadData(key)` keep tables of plain values (no functions, no userdata, no cycles) as JSON in a folder of Coney's per project, with a quota | `SaveData` returns an error; nothing is written |
 
-The sizes (budgets, cap, quota, shares) are measured on real projects before the first release, as the SDK page's
-[open question](lua-sdk.md#open-questions) says; a project may ask for more memory up to a ceiling in its manifest
-(`[limits]`), shown in its details, with no prompt: a bigger budget risks only the game's own speed.
+**Deferred.** An instruction budget per call and per step (the count hook, `lua_sethook`, with library calls charged to
+it), a memory cap per project (the allocator, which already counts for the monitor), a watchdog for a call that never
+returns, and caps on what a project makes return only if downloaded mods or co-op need them; the sizes would then be
+measured on real projects. The log limit and the store's quota stay, because they guard the disk and the Console, not
+the simulation.
 
 **Saves.** A modded session saves apart from the faithful profile, so no mod can corrupt the story a player made
 without mods ([Modded saves and replays](mods.md#saves-replays)).
@@ -322,7 +326,7 @@ are: cooperative, never preemptive, never on another core. The reasons:
   ([The authority model](../network-architecture.md#authority)); its script effects must happen in a fixed order.
 - **A Lua state is not thread-safe.** One state is used by one thread at a time; stock Lua's locking hooks are empty,
   and filling them would serialise the state anyway.
-- **The sandbox.** The budgets, the hook and the allocator are per state and per call; natives touch a world that
+- **The sandbox.** The environments and the allocator's count are per state; natives touch a world that
   is single-threaded. Running scripts or natives on several threads would add data races to the attack surface for
   no gain the step does not already give.
 
@@ -407,7 +411,7 @@ commands](mods.md#console). The security line both hold to:
 
 - **A mod's command runs in the mod's own sandbox.** `Coney.RegisterCommand(name, handler, spec)` (FiveM's
   `RegisterCommand`) makes the handler an entry point like an event handler: it runs in the mod's state, queued to the
-  next step boundary, under the mod's instruction budget, memory cap and print limits, with only the natives that state
+  next step boundary, under the mod's print limits, with only the natives that state
   has. Its arguments arrive as strings checked against the declared types, never evaluated as Lua. It can do nothing
   the mod's scripts cannot do already, whoever types it: a console access level never widens what a mod's code may
   reach. A mod cannot register a built-in's name, and its commands go when it stops or reloads.
@@ -422,8 +426,8 @@ commands](mods.md#console). The security line both hold to:
   approving a permission, or any of the debug tools (the Lua console, the Natives page, the debug menu), which stay out
   of the release build. Its changes to mods are for the running session only.
 - **Proved by** the console's tests and the [escape suite](#escape-suite): the release console refuses `lua` and a
-  native's name as unknown commands; a mod's command that loops stops on the mod's budget; a mod cannot register a
-  built-in's name; no available native executes console text.
+  native's name as unknown commands; a mod's command runs in the mod's own state and cannot reach more than its scripts
+  can; a mod cannot register a built-in's name; no available native executes console text.
 
 ## Permissions and trust {#permissions}
 
@@ -441,9 +445,6 @@ A project declares in its manifest what reaches beyond its own sandbox:
 ```toml
 [permissions]
 game-scripts = ["level3"]      # patches these game scripts (the differences only)
-
-[limits]
-memory = 128                   # MiB, up to Coney's ceiling; shown, never asked
 ```
 
 | Permission | What it allows | Who approves | Why it is a permission |
@@ -452,7 +453,7 @@ memory = 128                   # MiB, up to Coney's ceiling; shown, never asked
 | `http` (P4) | Web requests from a ConeyMP **server** script to the hosts listed | The server's operator, per project, in the server's configuration (Bedrock's `permissions.json`) | Network access is how remote code and stolen data travel ([FiveM](#fivem)); never on a client and never for a local mod |
 | `secrets` (P4) | Named values from the server's configuration, usable only as an `http` header's value, never readable as text | The operator, per project | A token a script can print can be leaked |
 
-`[limits]` and the project's asset replacements ([Override packs](project-formats.md#override-packs)) are disclosures,
+The project's asset replacements ([Override packs](project-formats.md#override-packs)) are a disclosure,
 shown in the details and never asked. The rules for approval, as Android and Chrome do it:
 
 - **Asked once, at the moment of use**: before the mod first starts, in its details; the mod waits, held, until then,
@@ -493,7 +494,6 @@ prints, before it first starts and at any time after:
 - the clashes with other enabled mods ([Load order](mods.md#load-order)) and which one wins;
 - **what it changes**: its levels, the assets it replaces, and, under `game-scripts`, the game scripts
   it patches;
-- **its limits** if it asks for more than the default;
 - its size and file count;
 - one fixed line: "This mod's scripts run in Coney's sandbox: they cannot read your files, use the network or run
   programs."
@@ -522,7 +522,7 @@ The same panel opens from the join prompt of a modded server and from Studio's P
 | **Lua's own bugs** | A crash or escape from plain source (CVE-2021-44964) | Lua 5.4.9 pinned, its bugs page watched, every script-reachable fix applied ([Keeping the runtime current](#runtime-updates)); fuzzing under sanitizers | The source fuzzer |
 | **The C API and errors** | Lua's errors unwind with `longjmp`, which skips C++ destructors (undefined behaviour, and a leak at best); a native holding C++ objects when an error is raised breaks the engine | Natives never call Lua's API. The bridge's C function reads the arguments into `script::Value`s, calls the native, and raises the native's error only after every C++ object of the call is gone; the API calls that may raise (allocations) happen before or after the C++ part, never in it | Bridge tests under ASan: a native that fails, an allocation failure during argument conversion and during results |
 | **The value bridge** | A metatable on a table argument runs script code inside a native (`__index`, `__len`); a cycle or a huge table; a string with zero bytes; NaN in an integer; a stale callback id | Raw access only (`lua_rawgeti`, `lua_rawlen`) when reading arguments, so no metamethod runs inside a native; sizes and depth limited; integers range-checked; a callback id carries its state and generation and is dropped on reload ([The value bridge](lua-sdk.md#bridge)) | The native fuzzer |
-| **Re-entry** | A native that fires a callback at once runs a project's code in the middle of a game action | Callbacks fire at the points the [loader](lua-sdk.md#entry-points) names, inside the budget of the call they run in; a native never calls into a state synchronously | Bridge tests |
+| **Re-entry** | A native that fires a callback at once runs a project's code in the middle of a game action | Callbacks fire at the points the [loader](lua-sdk.md#entry-points) names, inside the call they run in; a native never calls into a state synchronously | Bridge tests |
 | **Natives with paths or handles** | A name that reaches the disk (`../`, `C:\`, `\\host\share`); a handle of another kind or another session | The [file layer](#paths) and the asset store; handles checked with kind and generation ([What natives may do](#natives)) | The file monitor ([Proof](#proof)); the native fuzzer |
 | **Manifests and packages** | A crafted `coney-project.toml` or `.cmod`: overlapping or duplicate zip entries, a central directory that disagrees with the local headers, a compression bomb | Parsed into types with limits, `std::expected` on every error; the strict zip reader of [The `.cmod` package](mods.md#cmod), sizes enforced while inflating, every file checked against the manifest's hash | Parser fuzzers |
 | **Levels, models, textures, sounds** | A crafted file breaks a parser (a classic route into a game) | Every parser reads through bounds-checked readers, checks counts before allocating, and is fuzzed; the same parsers serve the game's own files | Parser fuzzers |
@@ -552,13 +552,9 @@ game data), each named after the escape it closes:
 - **No way out of the environment.** Setting a native's name fails, and `rawset` of one shadows it only in the project's
   own environment; `setmetatable(_ENV, nil)` fails; `getmetatable(_ENV)` reveals no table; nothing reachable from a
   project state names another project's state, the registry or the game state.
-- **Runaway code stops.** An endless loop, the same inside `pcall`, inside `coroutine.wrap`, inside a `__close`, in a
-  thread that never waits, and ten thousand handlers in one step: each stops with the budget error and the next step
-  runs.
-- **Memory bombs stop.** `string.rep` of a huge size, a table that grows forever, a deep recursion, a long `..` chain:
-  each fails within the cap and the game goes on.
-- **Library work is charged.** A pathological pattern on a long subject, `table.concat` and `table.sort` of large
-  tables: each errors or completes within its charge.
+- **Runaway code shows.** There is no budget to test ([Limits](#limits)). A test runs a project that does a known amount
+  of work and allocates a known table, and checks that the [monitor](lua-sdk.md#monitor) shows its row and its memory;
+  a deep recursion raises Lua's own stack overflow and the game goes on.
 - **`__gc` is refused** by `setmetatable`.
 - **The file monitor.** In test builds, the platform's file layer can record every file the process opens; a test runs
   a project that calls every available native with path-like strings (`../../x`, `C:\Windows\win.ini`, `\\host\x`,
@@ -575,7 +571,7 @@ game data), each named after the escape it closes:
 
 | Target | Input | Checks |
 | --- | --- | --- |
-| Lua source into a project state | Generated and mutated Lua text (a grammar-based generator, seeded with the project tests' scripts) | No crash, no sanitizer report, no hang past the budget |
+| Lua source into a project state | Generated and mutated Lua text (a grammar-based generator, seeded with the project tests' scripts) | No crash, no sanitizer report; an input that hangs is a finding of the fuzzer's own time limit |
 | The native bridge | Random values (numbers at the edges, NaN, long strings, nested and cyclic tables, tables with metatables, functions) to every available native | Only clean errors or results; no open outside the allowed roots |
 | The project file layer | Random names and folder trees, links included | Only refusals or files inside the project |
 | Manifests and `.cmod` packages | Mutated TOML and zip files | Only `std::expected` errors; no write to disk; inflated sizes within the declared ones |
@@ -608,9 +604,9 @@ Made in this change:
 
 - [Coney Studio: the Lua SDK](lua-sdk.md#sandbox): its Sandbox section becomes a summary of [Coney's line](#line) that
   links here; its base library gains `collectgarbage("count")` and `setmetatable`'s refusal of `__gc`, and loses
-  `string.dump`; its manifest gains `[load]`, `[permissions]`, `[limits]`, versioned `[dependencies]` and the packaged
-  `[files]`; its mods folder holds `.cmod` packages and records approvals; its runtime and loader build issues point
-  here.
+  `string.dump`; its manifest gains `[load]`, `[permissions]`, versioned `[dependencies]` and the packaged
+  `[files]`; it drops the budgets, the memory cap and the watchdog, and gains the monitor; its mods folder holds
+  `.cmod` packages and records approvals; its runtime and loader build issues point here.
 - [Coney Studio: mods, packages and loading](mods.md): the new companion page, split from this one.
 - [Network architecture: Sandboxing](../network-architecture.md#sandbox): points here for the rules.
 - [Asset and script architecture: The install folder](../asset-and-script-architecture.md#install-folder): `mods/`
@@ -648,9 +644,9 @@ Open:
 
 ## Open questions {#open-questions}
 
-- **The limits' sizes**: budgets per call and per step, the memory cap and ceiling, the store's quota, the caps on
-  things a project makes, the package limits and the watchdog's time, measured on real projects
-  ([The SDK's open questions](lua-sdk.md#open-questions)).
+- **The limits' sizes**: the store's quota, the log limits and the package limits, measured on real projects.
+  (Budgets, the memory cap, the watchdog and the caps on what a project makes are decided away for now,
+  [Maintainer decisions](lua-sdk.md#decisions).)
 - **The pattern functions**: whether refusing long subjects is enough, or the matcher needs a step count of its own (a
   patch to `lstrlib.c`), decided by the fuzzer's findings.
 - **Hard links**: whether refusing files with more than one link troubles real projects (some tools make them).
@@ -675,14 +671,13 @@ when a native needs it.
 2. **tests: Add the sandbox escape suite and the script fuzzers.** The `[sandbox]` tests of [The escape
    suite](#escape-suite) against the SDK's project runtime, with the library exactly as [The Lua library](#library)
    lists it (`load` forced to text, `require` text only, `collectgarbage("count")`, `setmetatable` refusing `__gc`, no
-   `string.dump`), the sticky and per-step budgets, the charged library calls; the libFuzzer targets for Lua source, the
+   `string.dump`); the libFuzzer targets for Lua source, the
    native bridge and the file layer, a nightly Linux job, and the corpus replayed as Catch2 tests in every preset.
    Tests: the suite itself, and a planted extra global or a bytecode path makes it fail.
-3. **core: Add the limits on what a project makes.** Per-project counters of the handles it holds and caps on its share
-   of the game's pools and on Coney's own kinds (models, sounds, effects, HUD messages per step); log lines and bytes
-   per step; the watchdog with its "not responding" notice and Stop, off in test mode. Tests: a project that spawns past
-   its cap gets the none value and the game's own spawns still succeed; a flooding `print` is cut with one notice line;
-   the watchdog never fires in test mode.
+3. **core: Add the log limits and the full-pool answers.** Log lines and bytes per project per step, and the none value
+   or error a native gives when the game's pool is full, as the game's scripts get it. No budget, memory cap, watchdog
+   or share per project ([Limits](#limits)); the monitor is the SDK's [issue 10](lua-sdk.md#build-issues). Tests: a
+   flooding `print` is cut with one notice line; a project that fills the human pool gets the none value.
 4. **core: Add the strict reading of `.cmod` packages.** The one reader of `.cmod` packages, built here; [Content and
    formats](content-and-formats.md#build-issues) build issue 13 adds the export that writes them: the strict zip reader,
    the package hash, the check of every file against the manifest's list with its result kept in `cache/mods/`, the file
@@ -698,10 +693,10 @@ when a native needs it.
    a cycle and a version outside the range are refused while the other mods start; a content mod runs only when its
    level is played (patches of one game script merge by Mission mods' issue 4).
 6. **core: Add exports between mods.** `Coney.Export`, `Coney.CallExport` and `Coney.GetExport`: the call in the
-   library's state and budget and charged to the caller's step, values copied deep within limits without metatables,
-   functions as callbacks to the state they came from, declared dependencies only, a depth limit, same side only. Tests:
-   a library's function returns a copied table the caller cannot use to reach the library's state; a call to an
-   undeclared mod and a mutual recursion past the depth are errors; a runaway export stops on the library's budget.
+   library's state, values copied deep within limits without metatables, functions as callbacks to the state they came
+   from, declared dependencies only, a depth limit, same side only. Tests: a library's function returns a copied table
+   the caller cannot use to reach the library's state; a call to an undeclared mod and a mutual recursion past the depth
+   are errors; an export's result is a copy, never the library's table.
 7. **docs: Update the release build's rule for the player console.** Shared with the console design (planned on
    [#1064](issue:1064)), whose release front end depends on it: the rule in [AGENTS.md](repo:AGENTS.md), the conventions
    and [The debug tools and the game](../building.md#debug-tools) that the release build holds no debug tools gains the
@@ -714,7 +709,7 @@ when a native needs it.
    console design's console-core issue (planned on [#1064](issue:1064)). Tests against a fake console: start runs
    dependencies first, stop stops dependants first, `disable` keeps a mod off for the session, nothing writes
    `enabled.toml`, a guest gets the listing commands only.
-9. **core: Add mod permissions, approvals and the mod details.** `[permissions]` and `[limits]` in the manifest;
+9. **core: Add mod permissions, approvals and the mod details.** `[permissions]` in the manifest;
    `enabled.toml` recording each approval with the package hash and the signer; a mod whose permissions grew or whose
    signer changed held; the details of [What the player sees](#player-view) for the mods UI. Tests: a mod with
    `game-scripts` starts only once approved; an update adding a permission is held; one dropping a permission starts
@@ -730,9 +725,9 @@ when a native needs it.
     save leaves `profiles/` byte-for-byte unchanged; a save without mods carries no mark; the warning names the missing
     mod; a replay with one package changed is refused.
 12. **core: Add the safety rules around game-script patches.** Beside [Mission mods](mission-mods.md#build-issues)'
-    issue 5, which runs patched scripts in the game state: `overrides/files/` script kinds refused; a memory cap on a
-    modded game state; fuzz targets for the 4.0 chunk loader and the `.cpatch` parser. Tests: a script chunk in
-    `overrides/files/` is refused; a patch carrying bytecode is refused; both fuzz corpora replay clean.
+    issue 5, which runs patched scripts in the game state: `overrides/files/` script kinds refused; fuzz targets for the
+    4.0 chunk loader and the `.cpatch` parser. Tests: a script chunk in `overrides/files/` is refused; a patch carrying
+    bytecode is refused; both fuzz corpora replay clean.
 13. **tools: Add signed `.cmod` packages.** `coney-tools mod sign` and `mod verify`, Studio's Export signing with the
     user's key: the Ed25519 `coney-project.sig` over the packaged manifest; Coney verifying it at the check, recording
     the fingerprint on first enable and holding an update by another key or unsigned after signed. Needs the libsodium

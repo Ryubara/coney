@@ -3,8 +3,9 @@
 The design of the Lua SDK that Coney Studio ships and that every mod uses: what its words mean, how scripts find and
 call natives, which Lua a project's scripts are written in, how Coney loads a project and runs it when Play is pressed,
 what keeps a script inside its project and its calls deterministic, how a native reaches the SDK, the typed stubs that
-give the editor its completions, hot reload, the Lua 4.0 compiler and the script debugger. It ends with the build
-issues it proposes, in order. The parent issue is [#1054](issue:1054); this page is [#1057](issue:1057).
+give the editor its completions, the project restart on save, the resource monitor, the Lua 4.0 compiler and the script
+debugger. It ends with the build issues it proposes, in order. The parent issue is [#1054](issue:1054); this page is
+[#1057](issue:1057).
 
 **Status: design.** Nothing on this page is built. It is a design in the sense of
 [Page kinds](../writing-docs.md#page-kinds): what is built moves into a guide. It extends three pages and does not
@@ -27,14 +28,15 @@ internals:** a script reaches the game only through natives, the same boundary t
 6. [The loader and its entry points](#entry-points): start-up, level start, each step, stop; threads and waits.
 7. [Play, step by step](#play): what loads in what order, the two states, the step, Stop.
 8. [Assets by path](#assets).
-9. [The sandbox](#sandbox).
+9. [The sandbox](#sandbox), with [the monitor](#monitor) that stands in for budgets.
 10. [Deterministic and network-safe calls](#determinism).
 11. [How a native reaches the SDK](#availability), and the SDK level.
 12. [Typed stubs for the language server](#stubs).
-13. [Hot reload](#hot-reload).
+13. [Project restart on save](#project-restart).
 14. [The Lua 4.0 compiler](#compiler).
 15. [The script debugger](#debugger).
-16. [What changes on other pages](#other-pages), [Maintainer decisions](#decisions), [Open questions](#open-questions).
+16. [What changes on other pages](#other-pages), [Maintainer decisions](#decisions), [Open questions](#open-questions)
+    (none left).
 17. [Proposed build issues](#build-issues), [Sources](#sources).
 
 ## Terms {#terms}
@@ -72,7 +74,8 @@ It is the model the maintainer named for the SDK. Only its public documentation 
 | **Lua** | CfxLua, a modified Lua 5.4 (Lua 5.3 was retired in 2025): vectors and quaternions as real types, compile-time hashes in backticks, `json`, `promise` and `msgpack` bundled | Lua 5.4 for projects, unmodified ([The runtime](#runtime)) |
 | **Threads and waits** | `Citizen.CreateThread(fn)` runs a function as a coroutine; `Wait(ms)` gives control back to the game for that long; without a wait, a loop freezes the game | `Coney.CreateThread` and `Coney.Wait`, counted in game time ([Threads and waits](#threads)) |
 | **Events** | Named events with handlers (`AddEventHandler`), between resources and between client and server; `onResourceStart`, `onResourceStop` | `Coney.On(event, fn)` for the loader's entry points ([The loader](#entry-points)); network events are the network page's (P4) |
-| **Restart** | `refresh` rereads the manifests, `restart <name>` reloads a resource without restarting the game | [Hot reload](#hot-reload) |
+| **Restart** | `refresh` rereads the manifests, `restart <name>` reloads a resource without restarting the game | [Project restart on save](#project-restart); the console's `restart` is [Console commands](mods.md#console) |
+| **Limits and the monitor** | No instruction budget and no memory cap: a loop without a `Wait` freezes the game. The `resmon` monitor shows each resource's time and memory | The same: no budget and no cap for now; a [monitor](#monitor) shows each project's time per step and its memory |
 | **Editor support** | Community packages give lua-language-server FiveM's natives and CfxLua's syntax, generated from the natives' documentation; JavaScript has official type packages | Coney generates the stubs itself from the masterlist and ships them ([Typed stubs](#stubs)) |
 
 What Coney does **not** copy: hashes (the original has none), CfxLua's language changes (they would break every stock
@@ -94,7 +97,8 @@ masterlist's categories group them on the reference pages and in the stubs, but 
 heading)`, `Coney.On("levelStart", fn)`. One flat table, no sub-tables: a modder types `Coney.` and the editor lists
 everything Coney adds. Their categories (Player, Camera, Time, Assets, Debug, Runtime) are for the reference only, as
 for the game's. The proposed names are the ones on the [candidates table](../asset-and-script-architecture.md#coney-native-candidates);
-they may change until the first release that makes one available, and never after.
+they may change until the first release that makes one available, and never after. The agents name the Coney natives,
+without a maintainer's approval ([Maintainer decisions](#decisions)).
 
 **A name is never reused or changed once released.** Game natives cannot change: they are the original's. A Coney
 native that needs a different signature becomes a new native, and the old one stays, marked deprecated in the stubs
@@ -126,7 +130,7 @@ reasons:
 | The editor | lua-language-server's runtimes are Lua 5.1 to 5.4 and LuaJIT; it cannot parse 4.0 (`%` upvalues, `for k, v in t do`), so completions, errors and go-to-definition would need a language server of Coney's own | lua-language-server works as it is, with Coney's stubs |
 | What modders know | Lua 4.0 is from 2000: no booleans (`true = 1`, `false = nil`), no `#`, no metatables (tag methods), no `string.` table, no coroutines; no tutorial, book or library of the last twenty years runs on it | FiveM's scripts, Roblox's Luau and most game Lua today are 5.x; 5.4's manual, books and libraries apply |
 | Threads and waits | Lua 4.0 has no coroutines; a wait would need a VM that can suspend (an M item on the architecture page, deferred) | Coroutines are built in, so `Coney.Wait` is a small SDK function |
-| The sandbox | Coney's 4.0 VM has an instruction budget; environments per script, a memory cap and library control would be Coney's to add | `_ENV`, `lua_sethook` and the allocator give all three ([Network architecture: Sandboxing](../network-architecture.md#sandbox)) |
+| The sandbox | Coney's 4.0 VM has an instruction budget for the console; environments per script and library control would be Coney's to add | `_ENV` gives environments and library control, and `lua_sethook` and the allocator are there if budgets are ever needed ([The sandbox](#sandbox), [Network architecture: Sandboxing](../network-architecture.md#sandbox)) |
 | A debugger | Coney's VM would need hooks, line information and frame inspection added | `lua_sethook` and `lua_getinfo`, `lua_getlocal` exist ([The script debugger](#debugger)) |
 | ConeyMP (P4) | The network page plans 5.4 for resources anyway, so 4.0 for projects would mean two languages for users | One language for users, offline and on servers |
 | Cost | No second runtime | A second runtime: stock Lua 5.4 as a pinned dependency (MIT licence), a value bridge, deterministic build settings ([below](#lua-build)) |
@@ -152,8 +156,9 @@ deterministic ([Deterministic and network-safe calls](#determinism) says why eac
 - **A fixed sort pivot** (`l_randomizePivot` defined as 0): stock `table.sort` mixes the clock into its pivot for large
   arrays, so elements a comparator calls equal could end in a different order.
 - **No `os`, `io`, `package` or `debug` library opened**, and `math.random` replaced ([The sandbox](#sandbox)).
-- **Coney's allocator** (`lua_newstate` with Coney's `lua_Alloc`): the memory cap, and an arena whose addresses repeat
-  from run to run, so a table keyed by tables is visited in the same order in a replay.
+- **Coney's allocator** (`lua_newstate` with Coney's `lua_Alloc`): it counts each state's bytes for the
+  [monitor](#monitor) (no cap), and gives an arena whose addresses repeat from run to run, so a table keyed by tables
+  is visited in the same order in a replay.
 - **Integer and float semantics as stock**, no `LUA_COMPAT` flags, compiled without fast-math so floating point is the
   same on every compiler Coney supports.
 
@@ -214,9 +219,6 @@ shared = ["scripts/util.lua"]                             # loaded first, on bot
 
 [permissions]                  # what reaches beyond the sandbox, approved by the player (Script security)
 game-scripts = []
-
-[limits]
-memory = 64                    # MiB, up to Coney's ceiling; shown, never asked
 ```
 
 - **Paths in the manifest** are relative to the project folder; inside scripts and levels they are written
@@ -225,7 +227,7 @@ memory = 64                    # MiB, up to Coney's ceiling; shown, never asked
   by path in byte order, so the order never depends on the file system.
 - **A project with no `[scripts]`** is a level and its assets; it plays with no script, the default player at the spawn
   point.
-- **`[load]`, dependencies, permissions and limits** are designed on [Mods, packages and loading](mods.md#starting)
+- **`[load]`, dependencies and permissions** are designed on [Mods, packages and loading](mods.md#starting)
   and [Script security](security.md#declared): when a mod starts, version ranges, exports, load order and clashes,
   and what the player approves.
 - **The packaged manifest.** Export writes the manifest into the `.cmod` with one more section, `[files]`: every file's
@@ -268,8 +270,8 @@ the order they were registered, projects in load order. The events, at the point
 | `start` | Once per session, after the game's preloads and before the first level, in load order | none | Configuration: `Cfg*` natives, data the project keeps for the session |
 | `levelStart` | Each time a level starts, after the game state has run `global.lua` and the level's script (when the level has one) and the world is loaded, before the first step | level name, checkpoint | Spawning the player and the cast, cameras, objectives |
 | `update` | Every simulation step (1/30 s), after the game state's script frame | step length in ms (33) | Per-step logic that is not a thread |
-| `levelEnd` | Before a level unloads (a level change, a restart, the end of Play) | level name, reason (`change`, `restart`, `stop`) | Cleaning up what the project made |
-| `stop` | When the project stops: the session ends, Play stops, or a hot reload replaces it | reason (`quit`, `stop`, `reload`) | Saving the project's own data |
+| `levelEnd` | Before a level unloads (a level change, a restart of the level, the end of Play) | level name, reason (`change`, `restart`, `stop`) | Cleaning up what the project made |
+| `stop` | When the project stops: the session ends, Play stops, or a [project restart](#project-restart) replaces it | reason (`quit`, `stop`, `restart`) | Saving the project's own data |
 
 A project may also add console commands with `Coney.RegisterCommand(name, handler, spec)`, an SDK function whose handler
 is an entry point like these, run in the project's state at a step boundary (the console design planned on
@@ -345,13 +347,18 @@ flowchart TB
    gameplay steps the humans, AI, physics and objects; the trigger boxes and spheres deliver their messages (to
    handlers in either state); the **game state's script frame** runs its due scheduled calls and its update function,
    as today ([Scheduled calls](../../research/scripting.md#scheduled-calls)); then the **project's frame** runs its due
-   scheduled calls, its `update` handlers and its threads. Every call into a project state has an instruction budget
-   ([The sandbox](#sandbox)). Rendering reads the result and calls no script.
+   scheduled calls, its `update` handlers and its threads. A call into a project state runs to its end, as FiveM's do
+   (a loop with no wait freezes the game, [The sandbox](#sandbox)); the [monitor](#monitor) times each project's frame.
+   Rendering reads the result and calls no script.
 8. **Stop.** At the next step boundary: the `levelEnd` handlers (reason `stop`), then `stop`; the project state is
-   closed; the game state is destroyed as a level unload destroys it; the session ends. Every handle either state
+   closed; the game state is destroyed as a level unload destroys it; the session ends. Closing Studio, switching to
+   another project and Stop all end the session the same way and **discard everything**: every handle either state
    held dies with the session, so nothing a project made outlives Play. Studio then shows the edited level with the
    level edits made while playing and nothing of the running game
    ([Live edits while playing](editor-experience.md#live-edits)).
+
+A save of a project's script during Play can restart the project or the level, as the Studio setting *On script save*
+says ([Project restart on save](#project-restart)); by default it does nothing.
 
 A level change during Play (a project calling `Coney.StartLevel`, or a `game:/` level's own `runNextMission`) runs
 `levelEnd` (reason `change`), unloads and remakes the game state as the game does (without the preloads, as the
@@ -366,8 +373,11 @@ made by either is the same thing to both, named by the same handle. That needs o
 handle the level script made means the same human in the project's calls ([Network architecture: Scripts](../network-architecture.md#sub-scripts)
 counts handles per state today). The project reads the game state's world through natives (`HuFind`, `FindFlag`,
 `GetPosition`), as a level script reads what another script made; it cannot read or set the game state's globals or
-call its functions. Whether it may read a game-state global through a Coney native is an
-[open question](#open-questions).
+call its functions. It may **read** (never write) a global of the game state through one Coney native,
+`Coney.GetGameGlobal(name)`, to follow a level script's progress (a stage counter) ([Maintainer
+decisions](#decisions)). The native is documented as **unstable**: a rewrite of a level script may rename its
+globals, so a project that reads one depends on the script's internals, and its flaws are to be found in use. It returns
+nil for a name the game state does not hold.
 
 ## Assets by path {#assets}
 
@@ -421,16 +431,36 @@ the network page's [sandbox](../network-architecture.md#sandbox) and adds what k
 - **One environment per project** over a read-only table of the natives: a script can set its own globals, never a
   native's name (`HuCreate = nil` raises an error; `rawset` can only shadow it in its own environment), and never
   another project's state.
-- **Budgets:** an instruction budget per call into the state (an entry, a handler, a callback, one resume of a thread)
-  and per step, by `lua_sethook`'s count hook inherited by every coroutine; once spent it raises at every check, so
-  `pcall` cannot catch it and loop on. Library calls whose work grows with their input are charged to it.
-- **A memory cap per project**, by the allocator; past it the allocation fails as an out-of-memory error in the call.
-- **Caps on what a project makes** (its share of the game's pools, Coney's own kinds) and a watchdog for a call that
-  never returns ([Limits](security.md#limits)).
+- **No budgets, for now (a maintainer decision), as FiveM:** no instruction budget, no memory cap and no watchdog. A
+  loop with no `Coney.Wait` freezes the game until it ends, and a script that allocates without end uses the machine's
+  memory; Lua's own limits (the C stack, the string and table sizes) stay. A project that misbehaves is found with the
+  [monitor](#monitor) below. The caps return only if downloaded mods or co-op need them: the count hook
+  (`lua_sethook`) and the allocator are where they would go, and the allocator already counts for the monitor. What a
+  project makes comes from the game's own pools (60 humans at most), and a full pool answers as it does for the game's
+  scripts; there is no share per project ([Limits](security.md#limits)).
 - **No engine internals:** the state holds natives and SDK functions only. There is no `Coney.Engine`, no access to
   C++ objects, no pointer in any value.
 - **Errors** are Lua errors with the file and line; they stop the call that raised them, never the game. Studio shows
   each in the Console and the editor's margin; the run log keeps them.
+
+### The monitor {#monitor}
+
+In place of budgets, Studio gets a monitor like FiveM's `resmon`: a panel with one row per running project, showing
+its **time per step** (how long its part of the step took: its `update` handlers, threads, scheduled calls and the
+other entry points that ran; the last step, the mean and the worst of the last 30) and its **memory** (the bytes its
+state holds, counted by the allocator). A project that is slow or leaking shows at once, which is what a budget would
+have stopped, and the modder decides. The monitor only reads: it never stops, slows or changes a project.
+
+- **The clock.** Time per step is measured outside the simulation with the real clock the frame pacer already reads
+  ([Conventions](../conventions.md#update-and-render)); no script reads it and no run changes with it. Memory is a
+  plain count and is repeatable. In test mode the time column is off and the memory column stays, so a test can
+  pin a project's memory.
+- **Where it shows.** Studio's Monitor panel ([Coney Studio's panels](editor-experience.md#panel-list)). The console
+  design may show the same numbers ([#1064](issue:1064)).
+- **A frozen game.** With no watchdog, a script that never returns cannot be stopped from inside: in Studio the
+  interface goes on drawing (Play has its own thread, [Play](technology.md#play-process)) and the monitor shows the
+  step still running, but the user closes Studio, whose autosave before Play keeps the work. Outside Studio the player
+  ends the program.
 
 ## Deterministic and network-safe calls {#determinism}
 
@@ -445,7 +475,9 @@ project's scripts:
   `os.time` and `os.clock` do not exist.
 - **Randomness from `GameRandom` streams.** A project's `math.random` draws from a stream of its own, seeded from the
   session's seed and the project's name, so a project's draws never shift the game's own draws, and a replay draws the
-  same. The game native `random` keeps the game's table, shared with the game's code, as in the original.
+  same. A project's call of the game native `random` draws from that same stream, with the native's arguments and
+  result range, and never from the game's table and index; so a project cannot shift the game's draws either. The game
+  state's own calls of `random` keep the game's table and index, shared with the game's code, as in the original.
 - **Stable order.** Handlers, projects, files and threads run in fixed orders (above); the Lua build fixes the string
   hash and the sort pivot ([How Lua 5.4 is built](#lua-build)), so `pairs` and `table.sort` give the same order in
   every run of the same build.
@@ -464,8 +496,8 @@ project's scripts:
 - **Server authority, not lockstep.** A project's server scripts run on the host only and their effects reach clients
   as state and events, so what must be repeatable is one machine's run (tests, replays), never two machines agreeing
   step by step. That is why the rules above ask for same-build repeatability and nothing stronger.
-- **Hot reload and the debugger mark a run.** A run in which a script was reloaded, or a breakpoint changed a value, is
-  no longer a replay of its inputs; the run log says so.
+- **A project restart and the debugger mark a run.** A run in which a project was restarted, or a breakpoint changed a
+  value, is no longer a replay of its inputs; the run log says so.
 
 ## How a native reaches the SDK {#availability}
 
@@ -574,27 +606,47 @@ function HuCreate(name, type, pos, heading, unused, player, gang, flag) end
 - **The same data serves VS Code users**: a modder who prefers VS Code with the Lua extension gets the same completions
   from the same files.
 
-## Hot reload {#hot-reload}
+## Project restart on save {#project-restart}
 
-Changing a script while the game runs, as FiveM's `restart`:
+Changing a script while the game runs, as FiveM's `restart <resource>`. It is **optional**: Studio's setting *On script
+save* has three choices, and the same actions are buttons on the Play bar.
 
-1. **Seen.** Studio (or, outside Studio, a file watcher Coney runs only with `--watch-mods`) sees a project file
-   change on disk. The watcher is outside the simulation and only queues a request.
-2. **At the next step boundary** the project is stopped. The level goes on, so `levelEnd` is not called; the `stop`
-   handlers run with reason `reload`; the project's handlers, threads, scheduled calls and callbacks are removed (every
-   callback id the state owned is dropped, so a game slot it held is left empty); its state is closed.
-3. **Started again.** A new project state is made, the files load in order and `start` runs; if a level is running,
-   `levelStart` runs too, with the current level and checkpoint, so the project can find the cast it made before
-   (handles of humans it made are still valid: the world was not touched) or make it again.
-4. **A file that fails to compile** stops the reload before step 2: the running state stays as it was and the error is
-   shown, so a typo never kills a running project.
+| Choice | What a save of a project script does | Note |
+| --- | --- | --- |
+| **Do nothing** (the default) | Nothing; the next Play, or a button, uses the new script | A restart while the user is watching something in the game would be annoying |
+| **Restart project** | The project restarts, as below | The level, the game state and the game's player go on |
+| **Restart level** | A new Play from the checkpoint: the session ends as Stop ends it and a new one starts | What a patched game script needs ([Mission mods](mission-mods.md#studio-flow)) |
 
-What a project made in the world (humans, objects) stays across a reload; a project that wants a clean world deletes
-its cast in `stop`. Hot reload is for Studio and a mod writer's machine: it is off in test mode, and in a networked
-session only the host reloads its own server scripts. A run with a reload is marked in the run log
-([Determinism](#determinism)). Reloading a script of the game state (a Coney rewrite, a patched disc script) is the
-console's *Reload* of the architecture page ([Debug console needs](../asset-and-script-architecture.md#console-needs)),
-not the SDK's.
+The two buttons, *Restart project* and *Restart level*, do the same on demand, whatever the setting. Stop, closing
+Studio and switching to another project are not restarts: they end the session and discard everything ([Play, step
+8](#play)).
+
+**A project restart**, applied at the next step boundary:
+
+1. **Seen.** Studio (or, outside Studio, a file watcher Coney runs only with `--watch-mods`) sees a project file change
+   on disk and, with the setting on *Restart project*, queues a request. The watcher is outside the simulation.
+2. **Checked first.** A file that fails to compile stops the restart before step 3: the running project stays as it
+   was and the error is shown, so a typo never kills a running project.
+3. **Stopped, and everything it made removed.** The `stop` handlers run with reason `restart`; then the project's state,
+   handlers, threads, scheduled calls and callbacks are removed (every callback id the state owned is dropped, so a game
+   slot it held is left empty), the state is closed, and everything the project made in the world is removed: the
+   humans and objects it created, and player 1 when the project made him. This is what FiveM does with a resource's
+   entities, and it leaves a clean world for the new run.
+4. **Started again.** A new project state is made, the files load in order and `start` runs; if a level is running,
+   `levelStart` runs too, with the current level and checkpoint, so the project makes its cast again.
+
+**What goes on:** the level, the game state (its globals, schedule and what its scripts made) and the game's player,
+that is player 1 when the game or Coney's default made him ([Play, step 6](#play)). Only a player 1 the project made is
+removed, with the rest, and the new `levelStart` makes him again.
+
+The restart is for Studio and a mod writer's machine: it is **off in test mode**, where a test restarts by ending the
+session and starting another, and in a networked session only the host restarts its own server scripts. A run with a
+restart is marked in the run log ([Determinism](#determinism)). Reloading a script of the game state (a Coney rewrite,
+a patched disc script) is not a project restart: it is the console's *Reload* of the architecture page ([Debug console
+needs](../asset-and-script-architecture.md#console-needs)), or, for a patch, *Restart level*.
+
+**Hot reload** is a different, later thing and keeps its name: swapping the code of a running project while **keeping
+its state** (its globals, its threads' places). It is not designed here; the project restart is what the SDK has.
 
 ## The Lua 4.0 compiler {#compiler}
 
@@ -643,7 +695,7 @@ lives in the engine, beside the runtimes; how Studio's process reaches it is the
 | Pause, continue, step in, step over, step out | The line and call/return hooks, with a target depth for over and out |
 | The call stack | `lua_getstack` and `lua_getinfo`: each frame's file, line and function; a native in the middle shows as a native frame |
 | Scopes and variables | Locals (`lua_getlocal`), upvalues, the project's globals; tables expand lazily |
-| Watches and the debug console | An expression compiled and run in the paused frame with a small budget, read-only: a watch may call only natives the masterlist marks `reads: true` (getters such as `GetPosition`, `HuGetHealthPercent`), and any other native is refused, so looking at a value never changes the game |
+| Watches and the debug console | An expression compiled and run in the paused frame with a small step limit of its own (a debugger aid, not a project budget), read-only: a watch may call only natives the masterlist marks `reads: true` (getters such as `GetPosition`, `HuGetHealthPercent`), and any other native is refused, so looking at a value never changes the game |
 | Exceptions | Break on any error, or only on errors no handler catches |
 | Threads | Each `Coney.CreateThread` coroutine is a DAP thread, so a modder sees which thread stopped |
 
@@ -679,6 +731,8 @@ When this design is accepted, these lines change on the pages that own them:
   scheduler, the compiler and the `Coney` table move ahead of the whole game, as Studio's first build work
   ([Proposed build issues](#build-issues)), in the order the parent issue gives ([#1054](issue:1054)).
 - [Roadmap: Script mods](../../roadmap.md#script-mods): the loader's points are this page's entry points.
+- [Network architecture: Sandboxing](../network-architecture.md#sandbox) and [Script security](security.md#limits): no
+  instruction budget, memory cap or watchdog for now, and the [monitor](#monitor) instead.
 
 ## Maintainer decisions {#decisions}
 
@@ -688,21 +742,29 @@ When this design is accepted, these lines change on the pages that own them:
 2. **Projects and faithful first: decided, no exception needed** ([Studio's decisions](index.md#decisions)). Running a
    project is still a modded session.
 3. **The SDK's names are a public promise** ([Names and namespaces](#names)): once a release makes a Coney native
-   available, its name and signature never change. Who approves a Coney native's name before its first release (a
-   maintainer, or the review alone) is to decide.
+   available, its name and signature never change. The agents name the Coney natives, without a maintainer's approval.
+4. **Game globals, read-only.** A project may read (never write) a global of the game state through
+   `Coney.GetGameGlobal(name)`, in the `Coney` namespace, documented as unstable: a rewrite of a level script may rename
+   its globals. Its flaws are found in use ([The two states](#two-states)).
+5. **`random` from the project's stream.** A project's call of the game native `random` draws from the project's own
+   `GameRandom` stream, never the game's table and index, so a project cannot shift the game's draws
+   ([Determinism](#determinism)).
+6. **Stop, and project restart on save.** Closing Studio, switching projects and Stop end the session and discard
+   everything. What was called hot reload is renamed *project restart on save*: the project's state, handlers, threads,
+   timers and everything it made in the world (humans, objects, and player 1 when the project made him) are removed and
+   its `start` runs again, while the level, the game state and the game's player go on. It is optional: the Studio
+   setting *On script save* is *Do nothing* (the default, because a restart while the user watches something in the
+   game would be annoying), *Restart project* or *Restart level* (a new Play from the checkpoint), and the same actions
+   are buttons. It is off in test mode. "Hot reload" is kept for a later code swap that keeps the state
+   ([Project restart on save](#project-restart)).
+7. **No budgets for now, as FiveM.** No instruction budget, no memory cap and no watchdog: a loop with no wait freezes
+   the game. Studio gets a monitor like FiveM's `resmon` instead, with each project's time per step and its memory
+   ([The monitor](#monitor)). Caps return only if downloaded mods or co-op need them.
 
 ## Open questions {#open-questions}
 
-- **Reading the game state's globals**: may a project read (never write) a global of the game state
-  through a Coney native, `Coney.GetGameGlobal(name)`, to follow a level script's progress (a stage counter)? It is
-  useful and read-only, but it ties a project to the game scripts' internals, which change with every rewrite.
-- **The game native `random`** shares the game's table and its index with the game's code: should a project's call of
-  it draw from the project's stream instead, so that a mod cannot shift the game's draws? Faithful for the game state
-  either way.
-- **What a reload leaves**: should Coney delete the humans and objects a project made when it stops, as FiveM deletes a
-  resource's server entities, or leave them to the project (this page's choice)?
-- **The budgets' sizes**: the instruction budget per call and the memory cap per project, measured on real projects
-  before the first release.
+None. The four questions this page asked (the game state's globals, the game native `random`, what a restart leaves, and
+the budgets' sizes) are answered under [Maintainer decisions](#decisions).
 
 ## Proposed build issues {#build-issues}
 
@@ -713,19 +775,20 @@ running a project's scripts. Issues 2 to 6 build on the [decision](#decisions) f
    `buildNatives` turns `kBindings` and the binding registrations into a list of `Native` records (name, origin,
    status, the `mods` flag, the call), which the game state installs as today and the debug menus read; and
    `ScriptScheduler::run(entry)` becomes the one way any script runs (level entry, update, schedule, messages, anim
-   callbacks, triggers), with its order and budget. Handles move from one counter per Lua state to one per session.
+   callbacks, triggers), with its order. Handles move from one counter per Lua state to one per session.
    No behaviour changes: the disc checks of the scripts give the same counts. Tests: every registered binding is in
    the list with its status; the scheduler runs entries in the documented order; a handle made in one state resolves
    in another of the same session.
 2. **core: Add the Lua 5.4 project runtime and its sandbox.** Stock Lua 5.4 pinned in `cmake/deps.cmake` with the
    deterministic build settings; a project state with its environment, the allowed libraries, `require` inside the
-   project, the instruction budget, the memory cap and the project's random stream, exactly as [Script
+   project, the allocator's count of each state's memory (for the monitor, no cap) and the project's random stream (for
+   `math.random` and for the game native `random`, which never touch the game's table and index), exactly as [Script
    security](security.md#line) draws the line (its build issues 1 and 2 come with this one); the value bridge to the
    native list (numbers, booleans, strings, tables written back, callbacks by name or function, as callback ids); only
    available natives installed, with the error that names a missing one. Tests: a script cannot open a file, load
-   bytecode, require outside its folder or set a native's name; a runaway loop and a memory bomb stop with an error;
-   `pairs` and `table.sort` give the same order in two runs; a native called from 5.4 and from 4.0 gets the same
-   arguments.
+   bytecode, require outside its folder or set a native's name; `pairs` and `table.sort` give the same order in two
+   runs; a native called from 5.4 and from 4.0 gets the same arguments; a project's calls of `random` leave the game's
+   table index where it was and give the same numbers in two runs.
 3. **core: Add the mods loader with projects and entry points.** `coney-project.toml` read and checked (name, SDK level,
    script lists, globs in byte order); the mods folder of `.cmod` packages and `mods/enabled.toml`, with [Script
    security](security.md#build-issues)'s limits, packages, starting and dependencies, exports, the mods' console
@@ -739,8 +802,10 @@ running a project's scripts. Issues 2 to 6 build on the [decision](#decisions) f
    `apiset`, `mods`, `handle`, `reads`, `since`; `bindings sync-coney` and `bindings render` reading it; the first
    natives from the candidates table that have a C++ entry point today (`Coney.TeleportPlayer`, `Coney.SetPlayerFrozen`,
    `Coney.ChangeCharacter`, `Coney.ResetCamera`, `Coney.SpawnFighter`, `Coney.SetTimeScale`, `Coney.Log`,
-   `Coney.StartLevel`), each calling the entry point the debug menus call, and the two this page adds,
-   `Coney.GetGameTime` and `Coney.GetPlayer`. Tests: each
+   `Coney.StartLevel`), each calling the entry point the debug menus call, and the three this page adds,
+   `Coney.GetGameTime`, `Coney.GetPlayer` and `Coney.GetGameGlobal` (read-only, unstable, documented as such in its
+   entry). Tests: `GetGameGlobal` reads a global a fixture level script set, returns nil for a name that is not there
+   and cannot write; each
    native through the bridge does what its debug-menu page does; CI fails when `coney.yaml` and the Coney native list
    disagree.
 5. **tools: Add the SDK stubs, the SDK level and the scripting reference.** `coney-tools bindings stubs` writes the
@@ -750,11 +815,15 @@ running a project's scripts. Issues 2 to 6 build on the [decision](#decisions) f
    available native and no other; lua-language-server reports no error on a sample project and an undefined-global
    error for a missing native (run where it is installed); a project asking for a higher level is refused with the
    message.
-6. **core: Add hot reload of a project's scripts.** The reload request (from Studio or `--watch-mods`), applied at a
-   step boundary: `stop` with `reload`, the state's callbacks dropped, a new state, `start` and `levelStart` again; a
-   file that fails to compile leaves the running state alone; off in test mode; the run marked. Tests: a script edited
-   between two steps changes behaviour at the next; a syntax error keeps the old script running; no callback of the
-   old state fires after the reload.
+6. **core: Add project restart on save.** The restart request (from Studio's buttons and setting, or `--watch-mods`),
+   applied at a step boundary: `stop` with `restart`, the project's state, handlers, threads, scheduled calls and
+   callbacks removed together with the humans and objects it made (and player 1 when it made him), a new state, `start`
+   and `levelStart` again, the level, the game state and the game's player left alone; a file that fails to compile
+   leaves the running project alone; off in test mode; the run marked. *Restart level* is a Stop and a new Play from the
+   checkpoint. The setting *On script save* (*Do nothing* by default) is Studio's, built with the Play bar. Tests: a
+   script edited between two steps changes behaviour at the next restart; a syntax error keeps the old script running;
+   no callback of the old state fires after the restart; what the project made is gone and what the game made is not;
+   with *Do nothing* a save changes nothing.
 7. **core: Add the Lua 4.0 source compiler and the full console.** A lexer and parser written from the Lua 4.0 manual,
    emitting Coney's `LuaProto` with line information; the console on it (statements, `local`, loops, functions, errors
    with lines); `dostring` compiling text; patched disc scripts through the script catalog. Tests: synthetic programs
@@ -771,6 +840,11 @@ running a project's scripts. Issues 2 to 6 build on the [decision](#decisions) f
    Coney can load its kind from a project ([Custom content](../../roadmap.md#custom-content)), so the SDK gains them
    as Coney does. Tests: a synthetic model fixture loads by path and spawns; a path outside the project is refused; a
    test-mode load completes in the same step.
+10. **tools: Add the project monitor to Coney Studio.** The allocator's count and the per-project timing of the
+    project's frame (the clock only the frame pacer reads, outside the simulation), shown in a Monitor panel with one
+    row per project: time per step (last, mean and worst of 30) and memory; the time off in test mode. Tests: a project
+    that allocates a known table shows its growth; two projects show separate rows; the time column is empty in test
+    mode and no run changes with the monitor open.
 
 ## Sources {#sources}
 
@@ -784,6 +858,7 @@ Ideas only; no code is taken from any of these.
 | The manifest: `fx_version` levels, `game`, client, server and shared scripts, files, dependencies; Lua 5.3 retired for 5.4 | FiveM, [Resource manifest](https://docs.fivem.net/docs/scripting-reference/resource-manifest/) |
 | CfxLua: Lua 5.4 with vectors and backtick hashes; bundled libraries; exports | FiveM, [Lua runtime](https://docs.fivem.net/docs/scripting-manual/runtimes/lua/) |
 | `restart` and `refresh`; `Wait` giving control back to the game | FiveM, [Creating your first script](https://docs.fivem.net/docs/scripting-manual/introduction/creating-your-first-script/) |
+| The `resmon` resource monitor: each resource's time and memory; no instruction budget or memory cap | FiveM's tools *(general knowledge, not re-checked)* |
 | The PascalCase Lua names of natives; calling a native by hash; `Citizen.CreateThread` | FiveM's Lua runtime *(general knowledge, not re-checked)* |
 | Community lua-language-server packages for FiveM's natives | [CfxLua VS Code extension](https://forum.cfx.re/t/cfxlua-vscode-extension/5196516), [Overextended: Lua types](https://overextended.dev/resources/guides/lua-types) |
 | LuaCATS annotations, `.luarc.json`, `runtime.version` and `runtime.builtin` | [lua-language-server](https://luals.github.io/wiki/annotations/) *(not re-checked)* |
