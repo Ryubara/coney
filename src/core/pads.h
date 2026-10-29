@@ -42,7 +42,9 @@ class Pads {
     /// The record a port's pad is read into: 0 for port 1, 4 for port 2 (CONEY_ASSERT for any other port).
     [[nodiscard]] static std::size_t recordOfPort(std::size_t port);
 
-    /// Updates the records of both ports from one sample each.
+    /// Updates the records of both ports from one sample each. Not ported: the original also builds each pad's
+    /// StickTurn from its player's camera and hands it to the record's update; Coney passes none, so the records'
+    /// turned sticks stay 0 in play (#1136, docs/research/input.md#turned-stick).
     /// @orig 0x001454a8 Pads_Update (unknown)
     void update(const PortSamples& samples);
 

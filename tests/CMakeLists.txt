@@ -24,6 +24,7 @@ add_executable(coney_tests
     core/perf_bench_options_test.cpp
     core/perf_frames_test.cpp
     core/pad_test.cpp
+    core/pad_turn_test.cpp
     core/player_options_test.cpp
     core/window_display_test.cpp
     effects/effect_culling_test.cpp

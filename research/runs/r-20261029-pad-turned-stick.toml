@@ -1,0 +1,39 @@
+version = 1
+id = "r-20261029-pad-turned-stick"
+date = "2026-10-29"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "1632f555415572b9ea407ab352538003e22799c63e506cb6c8699c113a3f2b8d"
+
+[who]
+agent = "unknown"
+type = "unknown"
+model = "unknown"
+source = "unverified"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = ""
+method = "level99 street end (street-end-run with the scripted-pad patch): left stick bytes 217, 57 (x 0.6, y 0.4 after the table) written to player 1's scripted pad, emulation paused a few frames later over the debug server; pad record 0 (+0x00 to +0x0c) and the stick quaternion of player 0 read"
+
+[values]
+stick_x = 0.6
+stick_y = 0.4
+turned_x = 0.6439977
+turned_y = -0.3244487
+quat_x = -0.10207037
+quat_y = 0.05856344
+quat_z = -0.49420187
+quat_w = 0.86134571
+
+[addresses]
+pad_record = 0x005dd810
+stick_quat = 0x005ddc90
+pad_update = 0x00144fb0

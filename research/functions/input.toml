@@ -51,11 +51,6 @@ coney = "src/core/pad.h:Pad::update"
 status = "compared"
 
 [[function.gaps]]
-what = "the left stick turned by the player's camera, with the follow camera's flags"
-relation = "not-ported"
-issue = 1019
-
-[[function.gaps]]
 what = "the pad's vibration"
 relation = "not-ported"
 issue = 179
@@ -68,6 +63,11 @@ role = "the per-frame update ([Input on the front end](frontend.md#input))"
 level = "confirmed-code"
 coney = "src/core/pads.h:Pads::update"
 status = "legacy"
+
+[[function.gaps]]
+what = "each pad's stick turn built from its player's camera and handed to the record's update"
+relation = "not-ported"
+issue = 1136
 
 [[function]]
 address = 0x00145698

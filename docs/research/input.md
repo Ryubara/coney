@@ -1,7 +1,15 @@
+---
+kind: system
+system: input
+owns:
+  functions: [
+    "0x00144a08", "0x00144a80", "0x00144b88", "0x00144ba8", "0x00144bf0", "0x00144fb0", "0x001454a8", "0x00145698",
+    "0x001463e0", "0x001467a8", "0x00148210",
+  ]
+---
 # Input: pads and player commands
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Static reading in Ghidra
-(2026-10-07); runtime claims are those of the pages linked.
+Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`).
 
 ## Purpose
 
@@ -76,15 +84,16 @@ in Ghidra; their roles below are inferred from their arguments and the SDK's doc
 | `0x00149e58` | read | buttons and sticks; sends the motors | confirmed (code) |
 | `0x00149720` | `PadPort_ClearData` | sticks to 0x80 (centre), buttons and pressures 0, motors off | confirmed (code) |
 
-So a pad that has only a digital mode gives no input (inferred), and a DualShock 2 ends in pressure mode, which the
-sprint's `CfgPlayerRunButton` option and [`Pad_GetPressure`](#pad-queries) read.
+So a pad that has only a digital mode gives no input (inferred from the digital state `0x00149ab0`, which goes to
+the unsupported one when the pad has no other mode), and a DualShock 2 ends in pressure mode, which the sprint's
+`CfgPlayerRunButton` option and [`Pad_GetPressure`](#pad-queries) read.
 
 ### Commands and the per-player record {#commands}
 
 The script bindings are on [character bindings](../references/bindings/character.md); the tables and the matching
 order on [Combat, Commands](combat/index.md#commands); the record (`0x00660f50 + i × 0x2c`) on
 [Characters](characters.md#buttons). The nine tables live at `0x005ddd10`-`0x005de130` with their counts at
-`0x0050b740`-`0x0050b760`.
+`0x0050b740`-`0x0050b760`. Confirmed (code) for the addresses.
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
@@ -111,15 +120,75 @@ order on [Combat, Commands](combat/index.md#commands); the record (`0x00660f50 +
 | `0x00148040` | `PlayerRecord_ClearButtons(record, mask)` | removes `mask` from the pad's current word, so a scene's start does not also act on the press | confirmed (code) |
 | `0x001480a0` / `0x00148210` | `PadHandlerEx_Set` / its thunk | `PadSetHandlerEx`: keeps the script reference in `0x0050b73c` | confirmed (code) |
 
-**A quirk.** `PlayerCommand_IsEnabled` scans table 5 (tapped) with `≤` its count, one entry past its end, where the
+## Data
+
+The pad record (`0x005dd810 + i × 0x50`) is laid out on [Front end, Pad record](frontend.md#pad-record), the `libpad`
+records (`0x005de3c0 + i × 0x140`) under [The libpad state machine](#libpad) and the per-player record
+(`0x00660f50 + i × 0x2c`) on [Characters](characters.md#buttons). Confirmed (code).
+
+## Behaviour
+
+### The camera-turned stick {#turned-stick}
+
+Step 2 of `Pad_Update` ([Input on the front end](frontend.md#input)) writes the pad record's `+0x00`/`+0x04`, the left
+stick turned by the player's camera. `Pads_Update` (`0x001454a8`) hands `Pad_Update` a 4 × 4 matrix, `Quat_ToMatrix`
+(`0x00336500`, rows the rotated axes) of one of these, confirmed (code):
+
+- the quaternion kept at `0x005ddc90 + player × 0x10`, while the player's follow camera exists, is his base camera
+  (`Camera_GetPlayerBase`) and its `+0x473` is 0 ([Camera, in the street](camera.md#street)); confirmed (code);
+- otherwise the player camera's orientation (its vtable slot `+0x224`), which is first copied into that slot;
+  confirmed (code);
+- the identity (`0x005117a0`) for a pad with no player; confirmed (code).
+
+When `0x0050b198` differs from `0x0050b19c`, a pad that does not use its kept quaternion takes player 0's camera
+(never the identity), and the slot it copies into is the one that camera names (its vtable slot `+0x27c`).
+Confirmed (code). The step, at `0x001450a0`-`0x0014522c`,
+confirmed (code):
+
+1. **No matrix, no step:** with a null matrix `+0x00`/`+0x04` keep their last values.
+2. **The stick** is `(x, y)` = `+0x08`, `+0x0c` (the left stick, y up). When the pad belongs to a player (`+0x42` ≥
+   0) whose player camera (`Camera_GetPlayerCamera`, `0x0011f9b0`) is his follow camera (`Cam_GetFollow(player, 0)`,
+   `0x0011f9e0`, not null) and that camera looks behind (`+0x455`, [Looking behind](camera.md#reverse)), both are
+   negated. Confirmed (code).
+3. **Its length** `L = sqrt(x² + y²)` (VU0, `vmul.xy`, `vaddy.x`, `vsqrt`).
+4. **A stick off centre** (`L > 0`): `t = x × row 0 + y × row 1` (the `z` and `w` of the stick are 0, so rows 2 and
+   3 add nothing); the turned stick is `t`'s x and y scaled by `L / sqrt(t.x² + t.y²)`, so it keeps the stick's
+   length, or `t`'s x and y unscaled when that length is 0 (the camera's x and y axes both vertical). Written to
+   `+0x00`, `+0x04`.
+5. **A stick at rest** (`L` = 0): `(x, y)` is written unturned, and when the pad's player has a follow camera
+   (`Cam_GetFollow` returns null for `+0x42` = −1) that camera's `+0x473` is set to 1, so the next `Pads_Update`
+   takes the camera's orientation afresh. Confirmed (code).
+
+The reader is `PlayerRecord_Update` (`0x00146078`): the stick's angle `atan2(+0x04, +0x00)` and its length, at most
+one, go into the per-player record ([Commands](#commands)). Confirmed (code).
+
+**At runtime** (confirmed (runtime), run r-20261029-pad-turned-stick, level99's street): the left stick at (0.6, 0.4)
+with the kept quaternion (−0.10207, 0.05856, −0.49420, 0.86135) gave `+0x00`, `+0x04` = (0.6439977, −0.3244487):
+rows 0 and 1 of that quaternion's matrix have the x, y (0.50467, −0.86331) and (0.83940, 0.49069), so `t` =
+(0.63856, −0.32171), of length 0.71502; scaled to the stick's length 0.72111 it is the value read, within 1e-6. So
+the rows are the standard rotation of the x and y axes by the quaternion (x, y, z, w), and the length is restored.
+
+### The tapped-table quirk {#quirk}
+
+`PlayerCommand_IsEnabled` scans table 5 (tapped) with `≤` its count, one entry past its end, where the
 other tables use `<`. Confirmed (code) at `0x00147738`; the extra entry is the next table slot, unused (mask `0xff`,
-command 0) unless table 5 is full (inferred).
+command 0) unless table 5 is full (inferred from the tables lying end to end).
 
 ## Coney's implementation
 
 Coney's pads are `src/core/pad.h` (`Pad`, the pad record and its queries), `src/core/pads.h` and
 `src/core/pad_handlers.h`; the SDL layer replaces the `libpad` state machine and always reports an analog pad with
 pressures. The command tables are not written yet.
+
+The camera-turned stick ([above](#turned-stick)): `Pad::update` takes an optional `StickTurn`, the x and y of the
+matrix's rows 0 and 1 and three facts about the player's follow camera (he has one, it is his current camera, it looks
+behind), and keeps the turned stick (`turnedX`, `turnedY`). For a stick at rest it reports `followStickRest`, the
+original's write of 1 to the follow camera's `+0x473`, for the caller to carry out: a stand-in, as no Coney camera
+keeps that flag. Nothing supplies a turn yet: building it from the player camera (and the kept quaternion that
+`+0x473` chooses) is `Pads_Update`'s, which Coney's `Pads::update` does not do (#1136), and Coney's locomotion turns
+the stick by the camera itself ([Characters](characters.md)), so nothing reads the record's turned stick yet. A
+disconnected pad centres the turned stick as well as the others (a Coney choice; the original leaves the record as it
+was).
 
 ## Open questions
 
