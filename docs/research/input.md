@@ -2,7 +2,10 @@
 kind: system
 system: input
 owns:
-  ranges: ["0x00144a08-0x00145790", "0x00145fa0-0x00148230", "0x00149520-0x00149f00"]
+  functions: [
+    "0x00144a08", "0x00144a80", "0x00144b88", "0x00144ba8", "0x00144bf0", "0x00144fb0", "0x001454a8", "0x00145698",
+    "0x001463e0", "0x001467a8", "0x00148210",
+  ]
 ---
 # Input: pads and player commands
 
