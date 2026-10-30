@@ -5,9 +5,9 @@ option of the [Graphics and performance](../roadmap.md#graphics-and-performance)
 [Enhancements plan](enhancements.md) (foundations F2, F3 and F5, the shadow, AO and ray-tracing rows) and does not
 repeat it. **Status: design only; nothing here is built yet.** It may be built now, as options beside the faithful
 look (AGENTS.md, "Faithful first", since 2026-10-25), and what the Xbox port does differently in its lighting and
-shadows ([Xbox lighting and shadows](../research/xbox-lighting.md)) is one of its sources. Every option
-ships **off** by default and is forced off in test mode, so tests and reference screenshots always show the faithful
-image.
+shadows ([Xbox lighting and shadows](../research/xbox-lighting.md)) is one of its sources. Every option is forced
+off in test mode, so tests and reference screenshots always show the faithful image; which preset a player gets by
+default is a maintainer question ([Renderer: Questions](../engine/renderer.md#questions)).
 
 ## What the original gives us
 
@@ -24,9 +24,9 @@ All of it from [Lighting](../research/lighting.md) unless another page is named.
 
 ## Goals and non-goals
 
-Goals: contact and cast shadows from the level's main directional light; per-pixel lighting of humans, objects and
+Goals: contact and cast shadows from the level's shadow light; per-pixel lighting of humans, objects and
 vehicles that keeps the original's light choice; believable reflections on the surfaces the game already marks as
-shiny, then on a short list of surfaces Coney tags itself; a quality ladder from *Faithful* to *High*.
+shiny, then on a short list of surfaces Coney tags itself; a quality ladder from *PS2* to *High*.
 
 Non-goals: global illumination or path tracing that "relights" the baked world; changing the gameplay-visible
 lighting (stealth, the lit/unlit AI rules); shipping any game data or Coney-made replacement of it; a physically
@@ -34,13 +34,10 @@ based material rework of the PS2 textures (that is the upscaling and texture-pac
 
 ## Architecture: a pipeline of our own
 
-Coney draws through librw on OpenGL 3.3 today. "Our own pipeline" is reached in two steps, each useful alone:
-
-1. **Coney shaders on librw (foundations F2, F3).** Render callbacks of Coney's own pipelines, as `world_atomic`
-   already registers one, draw into an offscreen colour + depth target at the internal resolution. This is all
-   shadows and per-pixel lighting need, and it keeps the faithful path untouched. Cost: M each for F2 and F3.
-2. **A Coney renderer over SDL3's GPU API (F5).** Vulkan, D3D12 and Metal, with librw kept only to read and decode
-   the game's streams. Needed for ray-traced shadows and HDR, and for macOS long term. Cost: XL, after the game.
+Coney draws through librw on OpenGL 3.3 today. The lighting is built on Coney's own renderer over SDL3's GPU API
+(Vulkan, D3D12 and Metal), with librw kept to read the game's data; why, and the steps that keep the game drawing
+on the way, are [Renderer: Backend](../engine/renderer.md#backend). The scene target and Coney's shaders (foundations
+F2 and F3) are parts of that renderer, and the *PS2* picture stays untouched.
 
 The seam is the rule from the plan's choices: no librw call outside the platform renderers. Game code only produces
 a **lighting frame** (below); a renderer consumes it. The faithful renderer ignores the parts it cannot use.
@@ -51,7 +48,9 @@ Per viewport, built by the game side from the `LightManager`'s existing selectio
 
 - the world's list and each atomic's chosen lights (type, colour with brightness and offset applied, position or
   direction, radius, flicker value of this frame);
-- the **sun**: the level's object directional light (`level99`: the moonlight), or none;
+- the level's **shadow light**: its direction (from the level's offset), its colour and whether the level turns
+  shadows on, the source of every shadow map ([Renderer: lighting](../engine/renderer.md#lighting));
+- the level's object directional light (`level99`: the moonlight), or none, for per-pixel lighting;
 - the fog and background colours, and the world ambient;
 - the camera, interpolated between simulation steps like everything drawn above 30 Hz.
 
@@ -72,21 +71,17 @@ Three layers, drawn in this order:
 
 **The baked light problem.** The world's baked colour already contains some occlusion and light direction, so a
 shadow can only darken it plausibly, not relight it. The design: a receiver's final colour is multiplied by
-`1 - s * (1 - visibility)`, where `visibility` comes from the shadow map and `s` is a per-level strength. `s` starts
-at the share of the final colour the sun contributes (the sun's colour over baked + ambient + sun at that surface)
-and is then tuned by eye per level, stored in a Coney-owned table that holds numbers only. This is the plan's
+`1 - s * (1 - visibility)`, where `visibility` comes from the shadow map and `s` is a per-level strength. `s` is
+`1 - c` for the level's shadow colour `c`, the Xbox port's own darkening, so a full shadow gives what the Xbox draws
+([Renderer: lighting](../engine/renderer.md#lighting)); a level may be tuned by eye from there, in a Coney-owned
+table that holds numbers only. This is the plan's
 "darkens baked light, a plausible fake", with a rule for how much.
 
 ## Shadows
 
 | Part | Design |
 | --- | --- |
-| Source | One shadow map from the sun. Levels with no object directional light get none (the blob stays) |
-| Casters | Humans, held objects, thrown objects, vehicles and world objects. Not the streamed world: its shadows are baked |
-| Receivers | The world, objects, vehicles and humans (self-shadowing on) |
-| Coverage | Two cascades around the camera, about 12 m and 50 m, fitted to the camera frustum and snapped to texel steps so they do not shimmer while the camera moves |
-| Filtering | PCF with a few taps; contact hardening is optional |
-| Blob | Off when real shadows are on, so a person does not get two |
+| Source, casters, receivers, map and blob | Per preset on [Renderer: Presets](../engine/renderer.md#presets): the level's shadow light (the Xbox port's) in every preset that draws a shadow map; never the streamed world as a caster, since its shadows are baked. The cascades, about 12 m and 50 m, are snapped to texel steps so they do not shimmer while the camera moves |
 | Lamps | Not in the first version (the data says lamps do not light the world). Later: the nearest one or two lamps that light objects, as small spot or cube maps, humans and vehicles only |
 | Stealth | Untouched. The brain's shadow flag keeps its own ground check; a test makes sure it does not read the renderer |
 
@@ -110,16 +105,12 @@ Three tiers, each usable on its own. The data limits them: only the environment-
 
 ## Quality ladder
 
-| Preset | Contents | Needs |
-| --- | --- | --- |
-| *Faithful* | Nothing added. The default, and what tests use. The Xbox port's shadow map, gamma ramp and per-pixel fog are toggles here, off by default ([Xbox lighting](../research/xbox-lighting.md#in-coney)) | none |
-| *Enhanced* | Sun shadow map, per-pixel lights, environment-map materials with cube maps | F2, F3 |
-| *High* | Adds GTAO ([plan](enhancements.md#lighting-and-post-processing)), probes, tagged reflections, lamp shadows for objects | F2, F3 |
-| *Ultra* | Adds ray-traced shadows and AO for dynamic objects over the baked light | F5 and a Vulkan ray-query path |
+The presets (*PS2*, *Xbox*, *Enhanced* and *High*) and what each draws of this design are defined once, on
+[Renderer: Presets](../engine/renderer.md#presets). Ray-traced shadows and AO (L7) are in none of them.
 
 ## Testing
 
-- Reference screenshots and the disc tests render *Faithful* only; they must not change when this work lands.
+- Reference screenshots and the disc tests render *PS2* only; they must not change when this work lands.
 - Enhanced paths are tested by invariants in headless mode: the lighting frame is identical with the options on and
   off; a synthetic mesh lit per pixel averages to the per-vertex result; the cascades keep a fixed texel size as the
   camera moves; the stealth flag is not read from the renderer.
@@ -129,14 +120,17 @@ Three tiers, each usable on its own. The data limits them: only the environment-
 
 | Step | What | Depends on | Cost |
 | --- | --- | --- | --- |
-| L0 | The lighting frame and its test; the sun and the shadow strength table | the faithful `LightManager` work | S |
-| L1 | Scene target and Coney shaders for world, human and object pipelines | F2, F3 | M |
-| L2 | Sun shadow map, two cascades, blob switch | L0, L1 | M |
+| L0 | The lighting frame and its test; the level's shadow light and the shadow strength table | the faithful `LightManager` work | S |
+| L1 | Scene target and Coney's shaders for the world, humans and objects on the GPU renderer | F2, F3 | M |
+| L2 | The shadow maps of the presets, blob switch | L0, L1 | M |
 | L3 | Per-pixel lights with the equivalence test | L0, L1 | M |
 | L4 | Environment-map materials with cube maps; the capture path | L1 | M |
 | L5 | Probes, then the tagged-surface table and screen-space reflections | L4 | L |
 | L6 | Lamp shadows for objects and humans | L2 | M |
-| L7 | Ray-traced shadows and AO | F5 | XL |
+| L7 | Ray-traced shadows and AO | F5 and a native ray-tracing path beside SDL3's GPU API, which has none | XL |
+
+[Renderer: Order](../engine/renderer.md#order) orders L0 to L3 and L6 as its items: L0 is item 20, L1 item 23, L2
+items 29 and 31, L3 item 30 and L6 item 32. L4 and L5 follow item 23.
 
 ## Risks
 
@@ -144,8 +138,8 @@ Three tiers, each usable on its own. The data limits them: only the environment-
   wrong until tuned. The strength table is data, so tuning does not need code.
 - **Streaming.** The world loads in sectors; shadow receivers, probes and the SSR depth must cope with sectors
   appearing and disappearing without a pop.
-- **macOS.** OpenGL stops at 4.1 there. Steps L1-L6 fit in 3.3 plus the features above; L7 and F5 need the new
-  backend.
+- **macOS.** OpenGL stops at 4.1 there; the new renderer draws through Metal
+  ([Renderer: Backend](../engine/renderer.md#backend)). L7 needs ray tracing, which SDL3's GPU API does not have.
 - **Performance on low-end machines.** The ladder exists for this; *Enhanced* has to hold 60 fps on integrated GPUs
   or become opt-in only.
 
@@ -160,4 +154,4 @@ For the graphics engineers, one line each. The first is done; the others are not
 - What the prelit colour holds: whether direction or occlusion can be told apart from the lamps' baked part, from a
   few sectors read at runtime.
 - Whether the levels have wet or rain states and how scripts mark them.
-- Which levels have no object directional light, and where the sun's direction changes within a level.
+- Which levels turn the shadow light on, and whether its direction changes within a level.

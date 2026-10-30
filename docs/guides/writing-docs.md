@@ -118,7 +118,7 @@ subject, updated in place, so a reader never has to work out which of two pages 
 | Game references: script bindings | `docs/references/bindings/` | Generated from `research/bindings/` by `coney-tools bindings render`; edit the YAML instead |
 | Engine | `docs/engine/` | Living; how Coney works: its own internals and port notes, never what the original does ([Engine pages](#engine-pages)) |
 | Guides | `docs/guides/` | Living; how to build, contribute, research and review |
-| Designs | `docs/guides/` | A plan for work that is not allowed or not started yet, with the questions only a maintainer can answer ([enhancements](enhancements.md), [realtime lighting](realtime-lighting.md), [asset and script architecture](asset-and-script-architecture.md)). Not a how-to: say at the top that it is a design, and move what is built into a guide or research page |
+| Designs | `docs/guides/` | A plan for work that is not allowed or not started yet, with the questions only a maintainer can answer ([enhancements](enhancements.md), [realtime lighting](realtime-lighting.md), [asset and script architecture](asset-and-script-architecture.md)). Not a how-to: say at the top that it is a design, and move what is built into a guide or research page. The design of an engine part's next steps may instead sit on that part's engine page ([Engine pages](#engine-pages)) |
 | Missions | `docs/missions/` | Generated from `research/missions.yaml` by `coney-tools missions render`; edit the YAML instead |
 
 ## Touch a page, fix the page {#touch-it}
@@ -473,6 +473,10 @@ code ports:
   change that removes it.
 
 There is no front matter and no fixed list of sections.
+
+A plan is an issue, with one exception: when the maintainers ask for the design of a part's next steps on the part's
+own page (as for [Renderer](../engine/renderer.md)), it is a section of that page, which says at its top that it is a
+design. Every other design is a page of the Designs kind in `docs/guides/` ([page kinds](#page-kinds)).
 
 ## Checking a page {#checking}
 
