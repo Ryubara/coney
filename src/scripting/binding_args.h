@@ -2,7 +2,9 @@
 #pragma once
 
 #include <array>
+#include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <format>
 #include <optional>
@@ -35,6 +37,39 @@ using Results = std::expected<std::vector<Value>, Error>;
         return parseLuaNumber(*text).value_or(0.0);
     }
     return 0.0;
+}
+
+/// Whether argument `i` is missing or nil. Stub (test commit): the readers below keep the old reading.
+[[nodiscard]] inline bool absent(std::span<const Value> args, std::size_t i) {
+    return i >= args.size() || args[i].isNil();
+}
+/// Stub: the default when absent.
+[[nodiscard]] inline double numberOr(std::span<const Value> args, std::size_t i, double fallback) {
+    return absent(args, i) ? fallback : number(args, i);
+}
+/// Stub: a wrapping conversion.
+[[nodiscard]] inline std::uint32_t toUnsigned(double value) {
+    return static_cast<std::uint32_t>(static_cast<std::int64_t>(std::trunc(value)));
+}
+/// Stub: a plain conversion.
+[[nodiscard]] inline std::int32_t toSigned(double value) {
+    return static_cast<std::int32_t>(static_cast<std::int64_t>(std::trunc(value)));
+}
+/// Stub.
+[[nodiscard]] inline std::uint32_t unsignedArg(std::span<const Value> args, std::size_t i, double fallback = 0.0) {
+    return toUnsigned(numberOr(args, i, fallback));
+}
+/// Stub.
+[[nodiscard]] inline std::int32_t signedArg(std::span<const Value> args, std::size_t i, double fallback = 0.0) {
+    return toSigned(numberOr(args, i, fallback));
+}
+/// Stub.
+[[nodiscard]] inline float floatArg(std::span<const Value> args, std::size_t i, double fallback = 0.0) {
+    return static_cast<float>(numberOr(args, i, fallback));
+}
+/// Stub.
+[[nodiscard]] inline bool booleanArg(std::span<const Value> args, std::size_t i, bool fallback = false) {
+    return absent(args, i) ? fallback : number(args, i) != 0.0;
 }
 
 /// Argument `i` as a string: a string, a number's text, or empty (tolua's NULL) for anything else.

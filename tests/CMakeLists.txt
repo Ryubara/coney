@@ -223,6 +223,7 @@ add_executable(coney_tests
     raycast/disc_collision_test.cpp
     scripting/ai_bindings_test.cpp
     scripting/anim_callbacks_test.cpp
+    scripting/binding_args_test.cpp
     scripting/config_strings_test.cpp
     scripting/disc_script_system_test.cpp
     scripting/hub_bindings_test.cpp
@@ -243,6 +244,7 @@ add_executable(coney_tests
     scripting/scene_bindings_test.cpp
     scripting/object_bindings_test.cpp
     scripting/natives_test.cpp
+    scripting/optional_args_test.cpp
     scripting/script_bindings_test.cpp
     scripting/script_scheduler_test.cpp
     scripting/rumble_match_bindings_test.cpp
