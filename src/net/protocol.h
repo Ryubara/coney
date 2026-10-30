@@ -129,6 +129,11 @@ inline constexpr std::uint32_t kSnapshotHistory = 32;
 /// The fields of a human (fieldTable(ReplicatedKind::Human)), in HumanField order.
 inline constexpr std::size_t kHumanFieldCount = static_cast<std::size_t>(HumanField::Count);
 
+/// Every human field's changed bit set (SnapshotEntry::changed): what an entry for a human the baseline does not hold
+/// carries.
+inline constexpr std::uint32_t kAllHumanFields = (1U << kHumanFieldCount) - 1U;
+static_assert(kHumanFieldCount < 32, "a SnapshotEntry's changed bits are one 32-bit word");
+
 /// A human's fields as they travel: each field's fieldWord(), in HumanField order.
 using HumanWords = std::array<std::uint32_t, kHumanFieldCount>;
 

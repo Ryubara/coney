@@ -13,6 +13,7 @@
 #include <string_view>
 #include <variant>
 
+#include "animation/anim_task.h"
 #include "core/assert.h"
 #include "core/error.h"
 #include "net/bit_stream.h"
@@ -37,13 +38,20 @@ std::uint64_t maxForBits(int bits) { return (std::uint64_t{1} << static_cast<uns
 // --- The tables. Every range here is Coney's choice for its own network play; the original sends nothing.
 
 // Positions, metres: a level fits in 2 km across, and 18 bits give a step under 8 mm (docs/guides/
-// network-architecture.md#snapshots). **Coney stand-in**: fixed bounds around the origin, until snapshots (#554) take
-// each level's own bounds.
+// network-architecture.md#snapshots). **Coney stand-in**: fixed bounds around the origin, until the client's world
+// (#555), which loads the level on the guest, takes each level's own bounds.
 constexpr float kPositionMin = -1024.0F;
 constexpr float kPositionMax = 1024.0F;
 constexpr int kPositionBits = 18;
 // A heading to 10 bits, about a third of a degree.
 constexpr int kHeadingBits = 10;
+
+// A human carries every layer its task stack can show at once: change() finishes the newest fade early when more than
+// kEarlyFinishTasks tasks (a fade counting as one) are held, so at most three layers stand under the new one
+// (docs/guides/snapshots.md#human-state). Each older layer is a clip, a playhead and a fade.
+static_assert(kHumanAnimLayers == (anim::AnimTaskStack::kEarlyFinishTasks / 2) + 1);
+static_assert(static_cast<std::size_t>(HumanField::Fade3) + 1 ==
+              static_cast<std::size_t>(HumanField::Playhead) + 1 + ((kHumanAnimLayers - 1) * 3));
 
 constexpr std::array<FieldSpec, static_cast<std::size_t>(HumanField::Count)> kHumanFields{{
     {.name = "positionX",
@@ -66,17 +74,23 @@ constexpr std::array<FieldSpec, static_cast<std::size_t>(HumanField::Count)> kHu
     // takes health below 0 (combat-reactions.md#damage: 3 to -20), so the whole s16 range, exact.
     {.name = "health", .encoding = FieldEncoding::Integer, .bits = 16, .min = -32768.0F, .max = 32767.0F},
     {.name = "healthMax", .encoding = FieldEncoding::Integer, .bits = 16, .min = -32768.0F, .max = 32767.0F},
-    // **Coney stand-in**: 12 bits hold every anim id Coney plays today (under 1000); snapshots (#554) may name a clip
-    // by the game's own hash instead.
+    // **Coney stand-in**: 12 bits hold every anim id Coney plays today (under 1000); the client's world (#555), which
+    // plays the clips on the guest, may name a clip by the game's own hash instead.
     {.name = "clip", .encoding = FieldEncoding::Integer, .bits = 12, .min = 0.0F, .max = 4095.0F},
     // A share of the clip rather than a frame, since the table cannot know a clip's frame count: 10 bits are a frame
     // in a clip of a thousand.
     {.name = "playhead", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
-    // The layer under the newest while the newest fades in over it (AnimTaskStack keeps up to 12, but only a fade
-    // shows two at once), and how far the fade has gone, to 10 bits as the playheads.
-    {.name = "fadeClip", .encoding = FieldEncoding::Integer, .bits = 12, .min = 0.0F, .max = 4095.0F},
-    {.name = "fadePlayhead", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
-    {.name = "fade", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
+    // The older layers, as many as AnimTaskStack shows at once through overlapping fades: each one's
+    // clip and playhead, and how far the layer above it has faded in over it, to 10 bits as the playheads.
+    {.name = "clip1", .encoding = FieldEncoding::Integer, .bits = 12, .min = 0.0F, .max = 4095.0F},
+    {.name = "playhead1", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
+    {.name = "fade1", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
+    {.name = "clip2", .encoding = FieldEncoding::Integer, .bits = 12, .min = 0.0F, .max = 4095.0F},
+    {.name = "playhead2", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
+    {.name = "fade2", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
+    {.name = "clip3", .encoding = FieldEncoding::Integer, .bits = 12, .min = 0.0F, .max = 4095.0F},
+    {.name = "playhead3", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
+    {.name = "fade3", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
     {.name = "grounded", .encoding = FieldEncoding::Bool, .bits = 1},
     {.name = "knockedOut", .encoding = FieldEncoding::Bool, .bits = 1},
 }};

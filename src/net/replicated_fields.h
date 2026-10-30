@@ -100,26 +100,33 @@ inline constexpr std::array<ReplicatedKind, 3> kReplicatedKinds{ReplicatedKind::
 /// @coney-only network play; the original has none
 [[nodiscard]] std::span<const FieldSpec> fieldTable(ReplicatedKind kind);
 
-/// The animation layers a human carries: the newest, and the older ones it and the layers between fade in over.
+/// The animation layers a human carries: the newest, and the older ones it and the layers between fade in over. As
+/// many as `anim::AnimTaskStack` shows at once (through overlapping fades), so a guest draws every blend the host does.
 /// @coney-only network play; the original has none
-inline constexpr std::size_t kHumanAnimLayers = 2;
+inline constexpr std::size_t kHumanAnimLayers = 4;
 
 /// A human's fields, indexes into fieldTable(ReplicatedKind::Human).
 /// @coney-only network play; the original has none
 enum class HumanField : std::uint8_t {
-    PositionX,    ///< The feet, metres.
-    PositionY,    ///< The feet, metres.
-    PositionZ,    ///< The feet, metres (up).
-    Heading,      ///< Radians, 0 facing +y.
-    Health,       ///< Health points (record `+0x144`, a 16-bit number; docs/research/characters.md).
-    HealthMax,    ///< Its maximum (record `+0x146`).
-    Clip,         ///< The anim id playing: the newest animation layer.
-    Playhead,     ///< How far through the clip, 0 to 1.
-    FadeClip,     ///< The anim id the newest layer fades in over: the layer under it (the clip before); 0 with no fade.
-    FadePlayhead, ///< How far through the fading clip, 0 to 1.
-    Fade,         ///< How far the newest layer has faded in, 0 to 1; 1 when no fade runs.
-    Grounded,     ///< On the ground (not jumping or falling).
-    KnockedOut,   ///< Knocked out or wounded.
+    PositionX,  ///< The feet, metres.
+    PositionY,  ///< The feet, metres.
+    PositionZ,  ///< The feet, metres (up).
+    Heading,    ///< Radians, 0 facing +y.
+    Health,     ///< Health points (record `+0x144`, a 16-bit number; docs/research/characters.md).
+    HealthMax,  ///< Its maximum (record `+0x146`).
+    Clip,       ///< The anim id playing: the newest animation layer.
+    Playhead,   ///< How far through the clip, 0 to 1.
+    Clip1,      ///< The anim id of the layer under the newest, which the newest fades in over; 0 with none.
+    Playhead1,  ///< How far through layer 1's clip, 0 to 1; 0 with no layer 1.
+    Fade1,      ///< How far the newest layer has faded in over layer 1 and the older ones, 0 to 1; 1 with no layer 1.
+    Clip2,      ///< The anim id of layer 2, under layer 1, which layer 1 fades in over; 0 with none.
+    Playhead2,  ///< How far through layer 2's clip, 0 to 1; 0 with no layer 2.
+    Fade2,      ///< How far layer 1 has faded in over layer 2 and the older ones, 0 to 1; 1 with no layer 2.
+    Clip3,      ///< The anim id of layer 3, the oldest, under layer 2; 0 with none.
+    Playhead3,  ///< How far through layer 3's clip, 0 to 1; 0 with no layer 3.
+    Fade3,      ///< How far layer 2 has faded in over layer 3, 0 to 1; 1 with no layer 3.
+    Grounded,   ///< On the ground (not jumping or falling).
+    KnockedOut, ///< Knocked out or wounded.
     Count,
 };
 

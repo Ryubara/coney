@@ -21,9 +21,6 @@ namespace coney::net {
 
 namespace {
 
-// Every human field's changed bit set: an entry for a human its baseline does not hold.
-constexpr std::uint32_t kAllHumanFields = (1U << kHumanFieldCount) - 1U;
-
 // The most bits a Snapshot's header takes: the id byte and four varints of 32 bits at most (5 bytes each).
 constexpr std::size_t kMostHeaderBits = 8 + (4 * 5 * 8);
 

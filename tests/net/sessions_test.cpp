@@ -579,9 +579,15 @@ std::vector<SnapshotHuman> walkers(std::size_t count, std::uint32_t step) {
         values.at(static_cast<std::size_t>(HumanField::HealthMax)) = std::int32_t{150};
         values.at(static_cast<std::size_t>(HumanField::Clip)) = std::int32_t{1};
         values.at(static_cast<std::size_t>(HumanField::Playhead)) = 0.0F;
-        values.at(static_cast<std::size_t>(HumanField::FadeClip)) = std::int32_t{0};
-        values.at(static_cast<std::size_t>(HumanField::FadePlayhead)) = 0.0F;
-        values.at(static_cast<std::size_t>(HumanField::Fade)) = 1.0F;
+        values.at(static_cast<std::size_t>(HumanField::Clip1)) = std::int32_t{0}; // no layer 1
+        values.at(static_cast<std::size_t>(HumanField::Playhead1)) = 0.0F;
+        values.at(static_cast<std::size_t>(HumanField::Fade1)) = 1.0F;
+        values.at(static_cast<std::size_t>(HumanField::Clip2)) = std::int32_t{0}; // no layer 2
+        values.at(static_cast<std::size_t>(HumanField::Playhead2)) = 0.0F;
+        values.at(static_cast<std::size_t>(HumanField::Fade2)) = 1.0F;
+        values.at(static_cast<std::size_t>(HumanField::Clip3)) = std::int32_t{0}; // no layer 3
+        values.at(static_cast<std::size_t>(HumanField::Playhead3)) = 0.0F;
+        values.at(static_cast<std::size_t>(HumanField::Fade3)) = 1.0F;
         values.at(static_cast<std::size_t>(HumanField::Grounded)) = true;
         values.at(static_cast<std::size_t>(HumanField::KnockedOut)) = false;
         humans.push_back(SnapshotHuman{.id = NetId{.slot = static_cast<std::uint16_t>(i), .generation = 1},

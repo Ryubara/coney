@@ -6,18 +6,16 @@ multiplayer](multiplayer.md); the design it follows is [Snapshots](network-archi
 architecture. The original has no network play, so none of this code carries an `@orig` tag.
 
 **Built:** `src/net/snapshot.h` (the server's `SnapshotSender` and the client's `SnapshotReceiver`), the Snapshot and
-SnapshotAck messages of [the protocol](multiplayer.md#protocol), and the sessions' side: `NetServer::sendSnapshots()`
+SnapshotAck messages of [the protocol](multiplayer.md#protocol) (the Snapshot's body in `src/net/snapshot_wire.cpp`,
+apart from `protocol.cpp`), and the sessions' side: `NetServer::sendSnapshots()`
 and `NetClient::snapshots()`. **Not yet:** the game's side (filling the humans from the host's game and drawing them on
 the guest), the jitter buffer and interpolation, interest (which humans a client needs, and how fast each one's
 priority grows), and releasing a removed human's id once its removal is acknowledged.
 
 ## The model {#model}
 
-Quake 3's: the server keeps, for each client, the last 32 snapshots it sent (`kSnapshotHistory`) and what each one
-leaves the client holding. Each new snapshot is a delta against the newest one that client has acknowledged, or full
-when it has acknowledged none that is still kept. The client keeps the last 32 it decoded, decodes each new one against
-its baseline, and acknowledges it. A lost snapshot costs nothing to repair: the next one is a delta against an older
-baseline, and holds every change since.
+The architecture's [Snapshots](network-architecture.md#snapshots) designs it (Quake 3's model, 32 kept a side:
+`kSnapshotHistory`); here, who does what:
 
 | Step | Server (`SnapshotSender`) | Client (`SnapshotReceiver`) |
 | --- | --- | --- |
@@ -32,16 +30,21 @@ acknowledged, changes nothing.
 
 ## A human's state {#human-state}
 
-A human travels as its [field table](multiplayer.md#field-tables)'s 13 fields, each as its **word**: the bits
+A human travels as its [field table](multiplayer.md#field-tables)'s 19 fields, each as its **word**: the bits
 `fieldWord()` writes for it, so a delta compares quantized values and a change too small to reach the next step costs
 nothing. The game hands the server a `SnapshotHuman` per human: its `NetId`, its words (`humanWords()` of its values)
 and its priority rate. What a snapshot leaves a client holding is a map from id to words, walked in id order on every
 machine.
 
-The fields: position (3 × 18 bits), heading (10), health and its maximum (16 each, the original's s16), and two
-animation layers: the clip playing and its playhead, the clip it fades in over and that one's playhead, and how far
-the fade has gone (10 bits; 1 with no fade). Of the up to 12 layers `AnimTaskStack` holds, only a fade shows two at
-once. Then grounded and knocked out, a bit each: 152 bits in all.
+The fields: position (3 × 18 bits), heading (10), health and its maximum (16 each, the original's s16), and four
+animation layers: the newest's clip (12) and playhead (10), then for each of three older layers its clip, its playhead
+and how far the layer above it has faded in over it (10 bits; 1 with no such layer, whose clip and playhead are then
+0). Then grounded and knocked out, a bit each: 216 bits in all.
+
+Four layers is the most `AnimTaskStack` shows at once. It holds up to 12 tasks (`kMaxTasks`), a fade
+counting as one, but `change()` finishes the newest fade early once more than six are held (`kEarlyFinishTasks`), so
+changes fading in over one another stack up to four layers and three fades, and never reach twelve. A static assert
+ties `kHumanAnimLayers` to that rule, and a test drives the stack to its most and checks the table carries every layer.
 
 ## The packet {#packet}
 
@@ -54,7 +57,7 @@ Message 10, Snapshot, server to client, UnreliableSequenced:
 | How many snapshots back the baseline is: 0 for none, else 1 to 32 and no further back than the first | varint |
 | The server's step it shows | varint, 32 bits at most |
 | The number of entries | varint |
-| Each entry, in rising id order: the `NetId`; a removed bit; when not removed, for each field a changed bit and, when set, the field's word | 22 + 1 + 13 + the words |
+| Each entry, in rising id order: the `NetId`; a removed bit; when not removed, for each field a changed bit and, when set, the field's word | 22 + 1 + 19 + the words |
 
 Message 11, SnapshotAck, client to server, Unreliable: the sequence (a varint).
 
@@ -92,21 +95,23 @@ walking.
 
 | Snapshot | Entries | Bytes |
 | --- | --- | --- |
-| The first (full): 50 humans of 188 bits fit, the other 10 wait | 50 | 1,180 |
-| The second: the 10 in full, and the 10 walkers among the 50 (x, heading and playhead: 74 bits each) | 20 | 333 |
-| Every one after: the 12 walkers | 12 | 116 |
+| The first (full): 37 humans of 258 bits fit, the other 23 wait | 37 | 1,199 |
+| The second: the 23 in full, and the 8 walkers among the 37 (x, heading and playhead: 80 bits each) | 31 | 827 |
+| Every one after: the 12 walkers | 12 | 125 |
 
-116 bytes at 30 snapshots a second is about 3.5 KB/s per client, under the [architecture's
-estimate](network-architecture.md#snapshots) of 340 bytes for a similar scene.
+125 bytes at 30 snapshots a second is about 3.75 KB/s per client, under the [architecture's
+estimate](network-architecture.md#snapshots) of 340 bytes for a similar scene. Carrying four layers rather than two
+costs a human in full 70 bits more and a walker's delta 6 (the older layers' changed bits). A fight where 20 humans
+each move, turn and change every animation field takes about 20 × 28 bytes, under half the budget.
 
 ## Testing {#testing}
 
 `tests/net/snapshot_test.cpp` covers the full first snapshot and empty deltas, a delta of the changed fields only, a
 removal and a slot's next generation, the baseline's choice (the newest acknowledged, full once it leaves the history),
-the client's Stale, NoBaseline and refusals, the packet's pinned bytes and the decoder's refusals, the budget and the
-priority accumulator (every packet within 1,200 bytes, nobody waiting more than four snapshots, a high-rate human in
-every one), the busy scene's bytes, and a round trip by hand through loss, held-back and repeated snapshots and late
-acknowledgements, where every snapshot decoded leaves the client holding exactly the server's record of it.
-`tests/net/sessions_test.cpp` runs snapshots between a `NetServer` and a `NetClient` on the loopback through a link
-conditioner with loss, jitter, duplicates and reordering both ways, and drops a client that acknowledges a snapshot
-never sent.
+the client's Stale, NoBaseline and refusals, the packet's pinned bytes and the decoder's refusals, a human in chained
+fades with its four layers, the budget and the priority accumulator (every packet within 1,200 bytes, nobody waiting
+more than four snapshots, a high-rate human in every one), the busy scene's bytes, and a round trip by hand through
+loss, held-back and repeated snapshots and late acknowledgements, where every snapshot decoded leaves the client holding
+exactly the server's record of it. `tests/net/sessions_test.cpp` runs snapshots between a `NetServer` and a `NetClient`
+on the loopback through a link conditioner with loss, jitter, duplicates and reordering both ways, and drops a client
+that acknowledges a snapshot never sent.

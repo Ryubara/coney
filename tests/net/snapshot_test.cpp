@@ -58,9 +58,15 @@ SnapshotHuman humanAt(std::size_t index, int moved = 0, std::uint32_t priority =
     values.at(at(HumanField::HealthMax)) = std::int32_t{100};
     values.at(at(HumanField::Clip)) = std::int32_t{5};
     values.at(at(HumanField::Playhead)) = static_cast<float>(moved % 30) / 30.0F;
-    values.at(at(HumanField::FadeClip)) = std::int32_t{0};
-    values.at(at(HumanField::FadePlayhead)) = 0.0F;
-    values.at(at(HumanField::Fade)) = 1.0F;
+    values.at(at(HumanField::Clip1)) = std::int32_t{0}; // no layer 1
+    values.at(at(HumanField::Playhead1)) = 0.0F;
+    values.at(at(HumanField::Fade1)) = 1.0F;
+    values.at(at(HumanField::Clip2)) = std::int32_t{0}; // no layer 2
+    values.at(at(HumanField::Playhead2)) = 0.0F;
+    values.at(at(HumanField::Fade2)) = 1.0F;
+    values.at(at(HumanField::Clip3)) = std::int32_t{0}; // no layer 3
+    values.at(at(HumanField::Playhead3)) = 0.0F;
+    values.at(at(HumanField::Fade3)) = 1.0F;
     values.at(at(HumanField::Grounded)) = true;
     values.at(at(HumanField::KnockedOut)) = false;
     return SnapshotHuman{.id = idOf(index), .words = humanWords(values), .priority = priority};
