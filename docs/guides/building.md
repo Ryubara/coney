@@ -732,7 +732,7 @@ GitHub ruleset and settings, and this block is generated from it (`coney-tools r
 - Merge method: squash only. The commit on `main` has the pull request's title; its message is the pull request's
   description.
 - Required checks: `title`, `docs`, `body`, `build-ok`, `python-ok`, `format`, `mkdocs`, `markdownlint`, `actionlint`,
-  `dependencies`, `clang-tidy`, `software-pictures`.
+  `dependencies`, `clang-tidy`.
 - Auto-merge is on, the branch is deleted after the merge, history is linear and a branch need not be up to date with
   `main`.
 - Who merges: maintainer and coordinator, never the agent that wrote the work.

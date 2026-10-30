@@ -20,8 +20,13 @@ ARG LLVM=1:20.1.2-0ubuntu1~24.04.3
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Read the packages from the snapshot of that day, not from the live archive.
-RUN printf 'Types: deb\nURIs: https://snapshot.ubuntu.com/ubuntu/%s\nSuites: noble noble-updates noble-security\nComponents: main universe\nSigned-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n' "$SNAPSHOT" \
+# Read the packages from the snapshot of that day, not from the live archive. The URI is http:// on purpose: the base
+# image has no ca-certificates yet (it is installed below, from this very source), so an https source could not be
+# verified on the first `apt-get update`. Nothing is lost: apt checks every index against the archive's signing key
+# (`Signed-By`, the keyring the base image ships) and every package against its index's hashes, and the snapshot serves
+# the archive's own signed files. Installing ca-certificates first from the live archive would have used a source that
+# moves and could not hold the exact versions, which is the pin's point.
+RUN printf 'Types: deb\nURIs: http://snapshot.ubuntu.com/ubuntu/%s\nSuites: noble noble-updates noble-security\nComponents: main universe\nSigned-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n' "$SNAPSHOT" \
       > /etc/apt/sources.list.d/ubuntu.sources \
     && rm -f /etc/apt/sources.list
 

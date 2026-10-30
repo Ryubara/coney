@@ -284,8 +284,10 @@ jobs:
   # (`coney-tools picture scenes`). The runner image's own Mesa moves with the image, which is why the driver is not
   # the runner's. The engine is built here, on the runner (the same gcc-13 `ci` build as the build job, so it reads
   # that job's cache); only the drawing runs in the container, on the same Ubuntu release. The drawn pictures are
-  # uploaded whatever the result, so a new reference (or a failure) can be looked at. A required check
-  # (`software-pictures`), skipped like the build for a change that touches no engine file.
+  # uploaded whatever the result, so a new reference (or a failure) can be looked at. Not a required check yet: it
+  # becomes one (`software-pictures` in merge.required_checks) in the task that adds the references, since a required
+  # job with no references to compare with has nothing to guard. Skipped like the build for a change that touches no
+  # engine file.
   software-pictures:
     needs: changes
     if: needs.changes.outputs.build == 'true'
@@ -300,7 +302,10 @@ jobs:
       - name: Install Ninja, gcc-13 and SDL3's build packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build gcc-13 g++-13 libx11-dev libxext-dev libxrandr-dev             libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev libwayland-dev libxkbcommon-dev             libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev libudev-dev             libasound2-dev libpulse-dev libpipewire-0.3-dev
+          sudo apt-get install -y ninja-build gcc-13 g++-13 libx11-dev libxext-dev \
+            libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev libwayland-dev \
+            libxkbcommon-dev libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev libudev-dev \
+            libasound2-dev libpulse-dev libpipewire-0.3-dev
       # The same compiler, preset and flags as build (linux-gcc-13), so it reads that job's cache and leaves saving it
       # to that job.
       - uses: ./.github/actions/ccache
@@ -336,12 +341,20 @@ jobs:
       # Each scene is drawn twice: the second draw is compared with the first, which shows whether the pinned Mesa
       # gives the same pixels on every run (docs/engine/renderer.md#comparing). The container runs as the runner's
       # user, and sees the checkout and the output folder at the same paths, so Coney's arguments mean the same in it.
+      # Until the first references are made from the pictures this job uploads, the folder holds none: the scenes are
+      # still drawn and uploaded (and each drawn twice), and the job passes with a warning on the run that says so,
+      # because a job that failed here would open a P-critical issue on every push to main. Once one reference is
+      # there, the allowance ends: a scene without its own reference fails.
       - name: Draw the scenes and compare them with the references
         run: |
           out="$RUNNER_TEMP/pictures"
+          if ! compgen -G "tests/pictures/reference/*.png" > /dev/null; then
+            echo "::warning title=No reference pictures yet::tests/pictures/reference/ holds no picture, so nothing was compared. The drawn pictures are in the software-pictures-drawn artifact; a follow-up task adds them as the references and makes this a required check."
+          fi
           launcher="docker run --rm --user $(id -u):$(id -g) --volume $PWD:$PWD --volume $RUNNER_TEMP:$RUNNER_TEMP"
           launcher="$launcher --workdir $PWD $IMAGE xvfb-run --auto-servernum --server-args='-screen 0 640x480x24'"
-          uv run --project python coney-tools picture scenes --coney build/ci/src/platform/coney             --launcher "$launcher" --out "$out" --repeat 2
+          uv run --project python coney-tools picture scenes --coney build/ci/src/platform/coney \
+            --launcher "$launcher" --out "$out" --repeat 2 --allow-no-references
       - name: Keep the drawn pictures
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

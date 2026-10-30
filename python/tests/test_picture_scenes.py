@@ -44,12 +44,14 @@ class FakeConey:
         fail_on: str | None = None,
     ) -> None:
         self.commands: list[list[str]] = []
+        self.cwds: list[object] = []
         self.colour_of = colour_of
         self.fail_on = fail_on
         self.runs: dict[str, int] = {}
 
-    def __call__(self, command: Sequence[str], **_: object) -> subprocess.CompletedProcess[str]:
+    def __call__(self, command: Sequence[str], **options: object) -> subprocess.CompletedProcess[str]:
         self.commands.append(list(command))
+        self.cwds.append(options.get("cwd"))
         shot = Path(command[command.index("--screenshot") + 1])
         name = shot.stem
         if self.fail_on == name:
@@ -288,4 +290,127 @@ def test_the_command_line_takes_the_executable_and_a_launcher(
         ]
     )
     assert code == 0
-    assert fake.commands[0][:3] == ["xvfb-run", "-a", "build/ci/src/platform/coney"]
+    root = find_repo_root(Path(__file__))
+    assert fake.commands[0][:3] == ["xvfb-run", "-a", str(root / "build/ci/src/platform/coney")]
+
+
+def test_coney_runs_in_the_repository_root_and_a_relative_executable_is_read_from_it(
+    tmp_path: Path, scenes_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The scene list's paths (a script, a layout) are relative to the repository root, whatever folder the command is
+    # started from, and so is the executable's relative path.
+    root = find_repo_root(Path(__file__))
+    monkeypatch.chdir(root / "docs")
+    fake = FakeConey()
+    monkeypatch.setattr(subprocess, "run", fake)
+    code = main(
+        [
+            "picture",
+            "scenes",
+            "--coney",
+            "build/ci/src/platform/coney",
+            "--scenes",
+            str(scenes_file),
+            "--references",
+            str(references(tmp_path / "ref")),
+            "--out",
+            str(tmp_path / "drawn"),
+        ]
+    )
+    assert code == 0
+    assert {Path(str(cwd)).resolve() for cwd in fake.cwds} == {root.resolve()}
+    assert Path(fake.commands[0][0]) == root / "build" / "ci" / "src" / "platform" / "coney"
+    # The picture goes where the caller asked, not under the root Coney runs in.
+    assert (tmp_path / "drawn" / "flat.png").is_file()
+
+
+def test_no_references_yet_passes_when_allowed_and_still_draws_and_keeps_the_pictures(
+    tmp_path: Path, scenes_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fake = FakeConey()
+    code = picture_scenes.run_scenes(
+        scenes_file,
+        coney=["coney"],
+        references=tmp_path / "no-such-folder",
+        out=tmp_path / "out",
+        runner=fake,
+        allow_no_references=True,
+    )
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "no references yet" in out
+    assert "nothing was compared" in out
+    assert (tmp_path / "out" / "flat.png").is_file() and (tmp_path / "out" / "second.png").is_file()
+
+
+def test_no_references_yet_fails_when_not_allowed(tmp_path: Path, scenes_file: Path) -> None:
+    code = picture_scenes.run_scenes(
+        scenes_file, coney=["coney"], references=tmp_path / "none", out=tmp_path / "out", runner=FakeConey()
+    )
+    assert code == 1
+
+
+def test_an_empty_reference_folder_counts_as_no_references_yet(tmp_path: Path, scenes_file: Path) -> None:
+    empty = tmp_path / "ref"
+    empty.mkdir()
+    (empty / "README.md").write_text("not a picture")
+    code = picture_scenes.run_scenes(
+        scenes_file,
+        coney=["coney"],
+        references=empty,
+        out=tmp_path / "out",
+        runner=FakeConey(),
+        allow_no_references=True,
+    )
+    assert code == 0
+
+
+def test_a_folder_missing_only_some_references_still_fails_when_no_references_are_allowed(
+    tmp_path: Path, scenes_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # The allowance is for the bootstrap only: once there is one reference, a scene without one is a mistake.
+    ref = references(tmp_path / "ref")
+    (ref / "second.png").unlink()
+    code = picture_scenes.run_scenes(
+        scenes_file, coney=["coney"], references=ref, out=tmp_path / "out", runner=FakeConey(), allow_no_references=True
+    )
+    assert code == 1
+    assert "second.png: no reference" in capsys.readouterr().out
+
+
+def test_no_references_yet_still_fails_a_scene_that_does_not_draw_the_same_twice(
+    tmp_path: Path, scenes_file: Path
+) -> None:
+    fake = FakeConey(colour_of=lambda name, run: (10 + 80 * run, 20, 30, 255))
+    code = picture_scenes.run_scenes(
+        scenes_file,
+        coney=["coney"],
+        references=tmp_path / "none",
+        out=tmp_path / "out",
+        runner=fake,
+        repeat=2,
+        allow_no_references=True,
+    )
+    assert code == 1
+
+
+def test_the_command_line_takes_allow_no_references(
+    tmp_path: Path, scenes_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(subprocess, "run", FakeConey())
+    code = main(
+        [
+            "picture",
+            "scenes",
+            "--coney",
+            "coney",
+            "--scenes",
+            str(scenes_file),
+            "--references",
+            str(tmp_path / "none"),
+            "--out",
+            str(tmp_path / "out"),
+            "--allow-no-references",
+        ]
+    )
+    assert code == 0
