@@ -96,8 +96,7 @@ confirmed (code) at Xbox `0x0009ae10`, where the cap is 8 records whatever the d
 
 ### The fire light {#fire-light}
 
-Confirmed (code) at the addresses named; the Xbox's four colours at Xbox `0x00460b70` also confirmed (runtime), run
-r-20261030-barrel-fire-colours.
+Confirmed (code) at the addresses named.
 
 A burning barrel is a `part_firebarrel` (or `part_firebarrel_ns`) that a breakable prop adds by model
 ([dyn_masks](script-types.md#dyn-masks-blaster)). On the PS2 its set-up, `FireParticle_SetUpByName` (`0x003c8b28`),
@@ -111,9 +110,12 @@ colour word is set to 64 + `rand(192)` each time; it is the colour's alpha, whic
 
 The Xbox's update, Xbox `0x002dda80`, does the same: the same 10 + 5 interval, the same 0.9-1.0 radius factor, the
 same alpha byte, and its own copy of the four colours at Xbox `0x00460b70`, byte for byte the PS2's. So the barrel's
-light, its colours, its radius and its rhythm are identical on both builds; what the reference videos show on the
-wall and the men is the light model below, the same on both. The fire casts no shadow on either build: the Xbox's only
+light, its colours, its radius and its rhythm are identical on both builds; what the reference videos show on the wall
+and the men is the light model below, the same on both. The fire casts no shadow on either build: the Xbox's only
 shadow comes from [the shadow light](#shadow-light).
+
+The running Xbox game holds the same four colour words at Xbox `0x00460b70` as the executable: confirmed (runtime), run
+r-20261030-barrel-fire-colours.
 
 ### Vertex lighting {#vertex-lighting}
 

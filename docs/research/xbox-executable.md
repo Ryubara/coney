@@ -119,10 +119,12 @@ xemu install claimed one per agent, a launch with the stub and monitor on the co
 server and run records with an `[xemu]` table.
 
 The first live run read the bytes `XBEH`, the XBE header magic, at the XBE image base `0x00010000` of the running
-Xbox game: confirmed (runtime), run r-20261026-xbe-header-magic, on xemu 0.8.139. A second run read an address a
-research page cites, the barrel fire's colours at Xbox `0x00460b70`, through the `xemu` MCP server, and found the words
-the XBE holds there in Ghidra ([The fire light](xbox-lighting.md#fire-light), run r-20261030-barrel-fire-colours). An
-observation in xemu is runtime evidence for the Xbox only, never for the PS2.
+Xbox game: confirmed (runtime), run r-20261026-xbe-header-magic, on xemu 0.8.139. An observation in xemu is runtime
+evidence for the Xbox only, never for the PS2.
+
+A second run read an address a research page cites, the barrel fire's colours at Xbox `0x00460b70`, through the `xemu`
+MCP server, and found the words the XBE holds there in Ghidra ([The fire light](xbox-lighting.md#fire-light)):
+confirmed (runtime), run r-20261030-barrel-fire-colours.
 
 ### Recommendation {#recommendation}
 
