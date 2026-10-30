@@ -100,6 +100,10 @@ inline constexpr std::array<ReplicatedKind, 3> kReplicatedKinds{ReplicatedKind::
 /// @coney-only network play; the original has none
 [[nodiscard]] std::span<const FieldSpec> fieldTable(ReplicatedKind kind);
 
+/// The animation layers a human carries: the newest, and the older ones it and the layers between fade in over.
+/// @coney-only network play; the original has none
+inline constexpr std::size_t kHumanAnimLayers = 2;
+
 /// A human's fields, indexes into fieldTable(ReplicatedKind::Human).
 /// @coney-only network play; the original has none
 enum class HumanField : std::uint8_t {

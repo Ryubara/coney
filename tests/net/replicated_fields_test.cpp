@@ -4,11 +4,13 @@
 // what the network could send wrong; and the tables' checks refuse a malformed table.
 #include "net/replicated_fields.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <numbers>
 #include <span>
 #include <string>
@@ -18,6 +20,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "animation/anim_clip.h"
+#include "animation/anim_task.h"
 #include "core/error.h"
 #include "net/bit_stream.h"
 
@@ -138,8 +142,9 @@ TEST_CASE("field tables: a whole thing's bits are the sum of its fields' bits", 
     }
     CHECK(out.bitCount() == expected);
     CHECK(coney::net::fieldsBits(fields) == expected);
-    // network-architecture.md#snapshots budgets a moving human's delta at 15 to 25 bytes; a full one is not far over.
-    CHECK(coney::net::fieldsBits(fields) <= std::size_t{25} * 8);
+    // network-architecture.md#snapshots budgets a moving human's delta at 15 to 25 bytes; a full one, with its four
+    // animation layers, is not far over.
+    CHECK(coney::net::fieldsBits(fields) <= std::size_t{28} * 8);
 }
 
 // Expected: combat-reactions.md#damage, confirmed (runtime)
@@ -226,12 +231,45 @@ TEST_CASE("field tables: an infinite angle goes to the first step, as NaN does",
     const FieldSpec heading{.name = "heading", .encoding = FieldEncoding::Angle, .bits = 10};
     for (const float radians : {std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(),
                                 std::numeric_limits<float>::quiet_NaN()}) {
-        CHECK(coney::net::fieldWord(heading, radians) == 0);
+        CHECK(coney::net::fieldWord(heading, radians) == coney::net::fieldWord(heading, -kPi));
         BitWriter out;
         coney::net::writeField(out, heading, radians);
         BitReader in(out.bytes());
         const auto read = coney::net::readField(in, heading);
         REQUIRE(read.has_value());
         CHECK(std::get<float>(*read) == -kPi);
+    }
+    // The first step is -pi's, word 0; no angle goes to it but -pi (or pi, the same angle) and these: none is half a
+    // turn on, which is word 512 of 1,024.
+    CHECK(coney::net::fieldWord(heading, -kPi) == 0);
+    CHECK(coney::net::fieldWord(heading, 0.0F) == 512);
+}
+
+// Expected: unverified, #554 (Coney's own field table; AnimTaskStack's limits are its port of the original's task
+// stack, docs/research/formats/animation.md#task-stack)
+TEST_CASE("field tables: a human carries every animation layer the task stack shows at once", "[net][fields]") {
+    // Changes that fade in over one another, none ending: the stack finishes the newest fade early once it holds more
+    // than six tasks (four layers with their three fades), so four layers is the most it ever shows.
+    coney::anim::AnimClip clip;
+    clip.duration = 1.0F;
+    coney::anim::AnimTaskStack stack;
+    std::size_t most = 0;
+    for (std::uint32_t id = 1; id <= coney::anim::AnimTaskStack::kMaxTasks; ++id) {
+        stack.change(std::make_unique<coney::anim::LoopTask>(clip, id, 1.0F, 0U), 0.5F);
+        most = std::max(most, stack.layerCount());
+    }
+    CHECK(most == 4);
+    REQUIRE(coney::net::kHumanAnimLayers == most);
+    // Over the newest layer's clip and playhead, each older layer's clip, its playhead and the fade over it.
+    const auto fields = coney::net::fieldTable(ReplicatedKind::Human);
+    const auto has = [&](const std::string& name) {
+        return std::ranges::any_of(fields, [&](const FieldSpec& field) { return field.name == name; });
+    };
+    CHECK(has("clip"));
+    CHECK(has("playhead"));
+    for (std::size_t layer = 1; layer < most; ++layer) {
+        CHECK(has("clip" + std::to_string(layer)));
+        CHECK(has("playhead" + std::to_string(layer)));
+        CHECK(has("fade" + std::to_string(layer)));
     }
 }
