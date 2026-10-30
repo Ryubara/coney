@@ -110,7 +110,8 @@ each move, turn and change every animation field takes about 20 × 28 bytes, und
 removal and a slot's next generation, the baseline's choice (the newest acknowledged, full once it leaves the history),
 the client's Stale, NoBaseline and refusals, the packet's pinned bytes and the decoder's refusals, a human in chained
 fades with its four layers, the budget and the priority accumulator (every packet within 1,200 bytes, nobody waiting
-more than four snapshots, a high-rate human in every one), the busy scene's bytes, and a round trip by hand through
+more than six snapshots, the longest wait being the first full send of 200 humans at 37 a snapshot, a high-rate human
+in every one), the busy scene's bytes, and a round trip by hand through
 loss, held-back and repeated snapshots and late acknowledgements, where every snapshot decoded leaves the client holding
 exactly the server's record of it. `tests/net/sessions_test.cpp` runs snapshots between a `NetServer` and a `NetClient`
 on the loopback through a link conditioner with loss, jitter, duplicates and reordering both ways, and drops a client
