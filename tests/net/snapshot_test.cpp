@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <array>
 #include <bit>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
@@ -45,11 +46,33 @@ std::size_t fieldNamed(std::string_view name) {
 // The id of the `slot`th human, generation 1.
 NetId idOf(std::size_t slot) { return NetId{.slot = static_cast<std::uint16_t>(slot), .generation = 1}; }
 
+// Every human field at its encoding's zero (false, 0 or 0.0), so a field a test leaves alone still has a value of the
+// right kind: a layer's gait value, say, is 0 for a layer that is not a walk or run blend.
+std::array<FieldValue, kHumanFieldCount> zeroValues() {
+    std::array<FieldValue, kHumanFieldCount> values{};
+    const auto fields = fieldTable(ReplicatedKind::Human);
+    for (std::size_t i = 0; i < kHumanFieldCount; ++i) {
+        switch (fields[i].encoding) {
+        case FieldEncoding::Bool:
+            values.at(i) = false;
+            break;
+        case FieldEncoding::Integer:
+            values.at(i) = std::int32_t{0};
+            break;
+        case FieldEncoding::Float:
+        case FieldEncoding::Angle:
+            values.at(i) = 0.0F;
+            break;
+        }
+    }
+    return values;
+}
+
 // A synthetic human standing in a row: number `index`, at x = 2 m a place, after `moved` steps of walking (each step
 // 0.1 m along x, a twentieth of a radian of turn and a thirtieth of the clip on).
 SnapshotHuman humanAt(std::size_t index, int moved = 0, std::uint32_t priority = 1) {
     const auto steps = static_cast<float>(moved);
-    std::array<FieldValue, kHumanFieldCount> values{};
+    std::array<FieldValue, kHumanFieldCount> values = zeroValues();
     values.at(at(HumanField::PositionX)) = (2.0F * static_cast<float>(index)) + (0.1F * steps);
     values.at(at(HumanField::PositionY)) = 10.0F;
     values.at(at(HumanField::PositionZ)) = 0.0F;
@@ -297,7 +320,7 @@ TEST_CASE("snapshots: the client ignores stale snapshots and those whose baselin
 // Expected: unverified, #554 (Coney's own snapshot packet; the original has no network play)
 TEST_CASE("snapshots: the packet is pinned, round-trips and refuses what breaks its rules", "[net][snapshot]") {
     // Id 10; sequence 3; baseline 1 back; step 7; one entry: slot 2 generation 1 (22 bits), not removed, then a
-    // changed bit per field with only grounded (field 17, after the four animation layers' fields) set and its word, 1.
+    // changed bit per field with only grounded (field 21, after the four animation layers' fields) set and its word, 1.
     const Snapshot small{.sequence = 3,
                          .baseline = 2,
                          .step = 7,
@@ -310,11 +333,11 @@ TEST_CASE("snapshots: the packet is pinned, round-trips and refuses what breaks 
                                                       return words;
                                                   }()}}};
     // From bit 0: slot 2 (16 bits) = 0x02 0x00; generation 1 (6 bits), removed 0, field 0's changed bit 0 = 0x01;
-    // fields 1 to 8 unchanged = 0x00; fields 9 to 16 unchanged = 0x00; field 17 changed and its word 1 (bits 0 and
-    // 1), field 18 unchanged = 0x03.
+    // fields 1 to 8 unchanged = 0x00; fields 9 to 16 unchanged = 0x00; fields 17 to 20 unchanged (bits 0 to 3), field
+    // 21 changed and its word 1 (bits 4 and 5), field 22 unchanged = 0x30.
     const std::vector<std::byte> expected{std::byte{0x0a}, std::byte{0x03}, std::byte{0x01}, std::byte{0x07},
                                           std::byte{0x01}, std::byte{0x02}, std::byte{0x00}, std::byte{0x01},
-                                          std::byte{0x00}, std::byte{0x00}, std::byte{0x03}};
+                                          std::byte{0x00}, std::byte{0x00}, std::byte{0x30}};
     CHECK(encode(small) == expected);
     CHECK(overTheWire(small) == small);
     CHECK(encode(SnapshotAck{.sequence = 300}) ==
@@ -337,7 +360,7 @@ TEST_CASE("snapshots: the packet is pinned, round-trips and refuses what breaks 
     refused({std::byte{0x0b}, std::byte{0x00}});
     // More entries than the packet could hold.
     refused({std::byte{0x0a}, std::byte{0x01}, std::byte{0x00}, std::byte{0x00}, std::byte{0x05}, std::byte{0x00}});
-    // An entry with nothing changed (slot 2, generation 1, not removed, no changed bits: 42 bits, 6 bytes).
+    // An entry with nothing changed (slot 2, generation 1, not removed, no changed bits: 46 bits, 6 bytes).
     refused({std::byte{0x0a}, std::byte{0x01}, std::byte{0x00}, std::byte{0x00}, std::byte{0x01}, std::byte{0x02},
              std::byte{0x00}, std::byte{0x01}, std::byte{0x00}, std::byte{0x00}, std::byte{0x00}});
     // The same entry twice, which breaks the rising order: count 2, then the small snapshot's entry written twice.
@@ -393,6 +416,46 @@ TEST_CASE("snapshots: a human in chained fades carries all four of its animation
     }
 }
 
+// Expected: unverified, #554 (Coney's own snapshots; a layer may be the locomotion's GaitBlendTask, whose 0 to 4 value
+// picks and blends two of its five clips: src/animation/anim_task.h)
+TEST_CASE("snapshots: a human's walk or run blend carries its gait value on every animation layer", "[net][snapshot]") {
+    SnapshotSender sender;
+    SnapshotReceiver receiver;
+    auto humans = scene(1, 0);
+    (void)exchange(sender, receiver, 0, humans);
+
+    // Each layer between two gaits, at a value no whole number is near: the newest is "gait", the older ones "gait1"
+    // to "gait3", beside each layer's clip and playhead.
+    const std::array<std::string, 4> names{"gait", "gait1", "gait2", "gait3"};
+    const std::array<float, 4> gaits{0.5F, 1.6F, 2.7F, 3.8F};
+    std::array<FieldValue, kHumanFieldCount> values = humanValues(humans[0].words);
+    for (std::size_t layer = 0; layer < names.size(); ++layer) {
+        INFO(names.at(layer));
+        const std::size_t gait = fieldNamed(names.at(layer));
+        REQUIRE(gait < kHumanFieldCount);
+        const FieldSpec& field = fieldTable(ReplicatedKind::Human)[gait];
+        // The blend's whole range, and a step fine enough that the sampler's thresholds (the lower clip alone below a
+        // fraction of 0.01, the upper above 0.995) fall on the same side on the guest as on the host.
+        REQUIRE(field.encoding == FieldEncoding::Float);
+        CHECK(field.min == 0.0F);
+        CHECK(field.max == 4.0F);
+        CHECK(fieldStep(field) / 2.0F < 0.005F);
+        values.at(gait) = gaits.at(layer);
+    }
+    humans[0].words = humanWords(values);
+    const Snapshot delta = exchange(sender, receiver, 1, humans);
+    REQUIRE(delta.humans.size() == 1);
+    CHECK(std::popcount(delta.humans[0].changed) == 4);
+    CHECK(receiver.humans() == holdingOf(humans));
+    const auto held = humanValues(receiver.humans().at(idOf(0)));
+    for (std::size_t layer = 0; layer < names.size(); ++layer) {
+        const std::size_t gait = fieldNamed(names.at(layer));
+        REQUIRE(gait < kHumanFieldCount);
+        const float step = fieldStep(fieldTable(ReplicatedKind::Human)[gait]);
+        CHECK(std::abs(std::get<float>(held.at(gait)) - gaits.at(layer)) <= step / 2.0F);
+    }
+}
+
 // Expected: unverified, #554 (Coney's own snapshots; the budget's arithmetic is in the comments)
 TEST_CASE("snapshots: a busy scene's bytes per snapshot are pinned", "[net][snapshot]") {
     // Sixty humans, every fifth walking (twelve), as network-architecture.md#snapshots budgets them.
@@ -405,21 +468,21 @@ TEST_CASE("snapshots: a busy scene's bytes per snapshot are pinned", "[net][snap
         bytes.push_back(encode(snapshot).size());
         entries.push_back(snapshot.humans.size());
     }
-    // A human in full: id 22 bits, removed 1, 19 changed bits and the fields' 216 bits = 258 bits. The header: the id
-    // byte and four one-byte varints = 40 bits. The first snapshot fits 37 of the 60: 40 + 37 x 258 = 9,586 bits, 1,199
-    // bytes; a 38th would take it past 9,600 bits (1,200 bytes).
-    CHECK(entries[0] == 37);
-    CHECK(bytes[0] == 1199);
-    // The second: the 23 left out, in full (their priority grew to 2), and the 8 walkers among the first 37 (x,
-    // heading and playhead changed: 23 + 19 + 18 + 10 + 10 = 80 bits): 40 + 23 x 258 + 8 x 80 = 6,614 bits, 827
+    // A human in full: id 22 bits, removed 1, 23 changed bits and the fields' 256 bits = 302 bits. The header: the id
+    // byte and four one-byte varints = 40 bits. The first snapshot fits 31 of the 60: 40 + 31 x 302 = 9,402 bits, 1,176
+    // bytes; a 32nd would take it past 9,600 bits (1,200 bytes).
+    CHECK(entries[0] == 31);
+    CHECK(bytes[0] == 1176);
+    // The second: the 29 left out, in full (their priority grew to 2), and the 7 walkers among the first 31 (x,
+    // heading and playhead changed: 23 + 23 + 18 + 10 + 10 = 84 bits): 40 + 29 x 302 + 7 x 84 = 9,386 bits, 1,174
     // bytes.
-    CHECK(entries[1] == 31);
-    CHECK(bytes[1] == 827);
-    // From then on, the 12 walkers alone: 40 + 12 x 80 = 1,000 bits, 125 bytes a snapshot, 3.75 KB/s at 30 Hz.
+    CHECK(entries[1] == 36);
+    CHECK(bytes[1] == 1174);
+    // From then on, the 12 walkers alone: 40 + 12 x 84 = 1,048 bits, 131 bytes a snapshot, about 3.9 KB/s at 30 Hz.
     CHECK(entries[2] == 12);
-    CHECK(bytes[2] == 125);
-    CHECK(bytes[3] == 125);
-    CHECK(bytes[4] == 125);
+    CHECK(bytes[2] == 131);
+    CHECK(bytes[3] == 131);
+    CHECK(bytes[4] == 131);
     CHECK(receiver.humans() == holdingOf(scene(60, 4, 5)));
 }
 
@@ -446,12 +509,12 @@ TEST_CASE("snapshots: the budget holds every packet to its bytes, and the priori
     CHECK(lastSent.size() == 200);         // everyone has been sent
     CHECK(longestWait.at(idOf(150)) == 1); // the high-priority human goes in every snapshot
     // Nobody waits long: their priority grows until they go. The longest wait is the first one: a human in full is
-    // 258 bits, so a snapshot holds 37 ((9,600 - 40) / 258), and the 200 first go out over six snapshots.
+    // 302 bits, so a snapshot holds 31 ((9,600 - 40) / 302), and the 200 first go out over seven snapshots.
     int longest = 0;
     for (const auto& [id, wait] : longestWait) {
         longest = std::max(longest, wait);
     }
-    CHECK(longest == 6);
+    CHECK(longest == 7);
     // A human whose change waits holds a grown priority; one just sent holds none.
     const auto humans = scene(200, 61, 1);
     const Snapshot next = sender.build(60, humans);
