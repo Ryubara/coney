@@ -60,7 +60,7 @@ own 14 humans and the hub with 50 AI fighters spawned in front of the player (64
 
 | Way, one minute | Hub (14 humans, 72 objects) | Crowd (64 humans, 71 objects) | Game-thread cost a step | Seek to any step |
 | --- | --- | --- | --- | --- |
-| Inputs only (one pad, before compression) | 0.014 MB | 0.014 MB | none | simulate from the start: 1.78 ms (hub) and 3.38 ms (crowd) a step, so 3.2 s and 6.1 s a minute of play, after a level load of about 1 s |
+| Inputs only (one pad, before compression) | 0.014 to 0.035 MB | 0.014 to 0.035 MB | none | simulate from the start: 1.78 ms (hub) and 3.38 ms (crowd) a step, so 3.2 s and 6.1 s a minute of play, after a level load of about 1 s |
 | Raw floats, every step (what the probe captured) | 19.1 MB | 72.4 MB | 0.009 / 0.017 ms (copy) | read one step |
 | Quantized full state every step | 5.5 MB | 19.6 MB | | decode one step |
 | Key frame every 1 s, bit-packed deltas | 1.01 MB | 6.0 MB | + 0.035 / 0.13 ms (encode) | at most 30 steps: 0.5 / 1.9 ms |
@@ -112,9 +112,9 @@ gait or a clip's timing (the faithful work changes these often) would change eve
 animation would have to be present. **Coney's choice**, open to [a question](#questions): the layers can be added
 later as a second, smaller encoding for a recording whose Coney and mods are those that play it.
 
-**The pads too.** The pad of each step is kept in the recording (0.014 MB a minute at most): not to play it back, but
-for the tests ([Tests](#tests)) and for the networking replays, which are input replays within one build
-([#558](issue:558)).
+**The pads too.** The pad of each step is kept in the recording (0.014 to 0.035 MB a minute before compression): not to
+play it back, but for the tests ([Tests](#tests)) and for the networking replays, which are input replays within one
+build ([#558](issue:558)).
 
 ### Quantization {#quantization}
 
@@ -385,7 +385,8 @@ encoded and compared, and wrote the raw records and the encoded bytes to files i
 zones. A script read the raw records and computed every other row of [the table](#ways) from them (its count of the
 probe's own format agreed with the probe's bytes: 1,041,858 of 1,041,858 on the hub, 6,219,578 of 6,219,581 for the
 crowd), compressing with Python's zstd (level 3) and zlib to time them. The pads were not recorded: the input row is
-the encoding's upper bound (61 bits a step, `writePad` in `src/net/protocol.cpp`).
+the encoding's range (`writePad` in `src/net/protocol.cpp`): 61 bits a step with no pressure-sensitive button held,
+157 bits with all twelve held, each held pressure adding a byte.
 
 | Per step (mean, ms) | Hub | Crowd (two runs) |
 | --- | --- | --- |
