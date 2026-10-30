@@ -430,6 +430,7 @@ def _stage_lines(subject: pr_proof.Subject, short: bool) -> list[str]:
             lines.append(f"- Compared {code(address)}{of}: {counts} (stamp `{_h(stamp)}`, pairs `{pairs_hash}`)")
     firsts = {s.subject: s for s in subject.report.stamps if s.step == "fails-first"}
     passed = [s for s in firsts.values() if s.result == "pass"]
+    kept = [s for s in firsts.values() if s.result == "keeps"]
     nones = [s for s in firsts.values() if s.result == "none"]
     if short and passed:
         lines.append(f"- Failed first: {len(passed)} tests")
@@ -437,6 +438,14 @@ def _stage_lines(subject: pr_proof.Subject, short: bool) -> list[str]:
         for stamp in passed:
             lines.append(
                 f"- Failed first: {code(stamp.subject)} failed before the fix, passes after (stamp `{_h(stamp)}`)"
+            )
+    if short and kept:
+        lines.append(f"- Kept behaviour: {len(kept)} tests (pass before the change and after it)")
+    elif not short:
+        for stamp in kept:
+            lines.append(
+                f"- Kept behaviour: {code(stamp.subject)} passes before the change and after it, not failed first "
+                f"(stamp `{_h(stamp)}`)"
             )
     for stamp in nones:
         lines.append(f"- No tests that failed first ({subject.kind}): {code(stamp.detail.get('reason', ''))}")

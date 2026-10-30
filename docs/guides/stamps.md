@@ -29,7 +29,7 @@ One stamp is one line of canonical JSON (UTF-8, sorted keys, no spaces, no float
 | --- | --- |
 | `step` | One of `stamps.steps` in [.github/conventions.yml](repo:.github/conventions.yml): `assigned`, `claimed`, `studied`, `fails-first`, `compared`, `checked`, `reviewed`, `pr-opened`, `finished` |
 | `subject` | What a repeating step is about: an address (`studied`, `compared`), a test name (`fails-first`), empty for the others |
-| `result` | `pass`, `fail` or `none` (`none`: no such step needed, with the reason in `detail`) |
+| `result` | `pass`, `fail`, `none` (no such step needed, with the reason in `detail`) or `keeps` (written only by `orig fails-first --keeps`, for a test that passes before the change too: [Keeps](#keeps)). The list is one vocabulary for every step (`stamps.results` in [.github/conventions.yml](repo:.github/conventions.yml)); the log's check does not tie a result to a step, the commands decide which they write |
 | `commit` | The unit worktree's HEAD when the step ended: a record, never compared, because a rebase rewrites it |
 | `covers` | Names mapped to hex hashes of what the step covered (a function's decompile, the cut, the pairs file, a Coney body, a test's own code and registration (`test_sha256`), logs, and for the steps that vouch for the whole change `diff_sha256`: [The change hash](#change)). Hashes only |
 | `detail` | Counts and names for the PR text and the mod, at most 2 KB |
@@ -365,15 +365,18 @@ command checks out the test commit in the unit's worktree and runs `coney-tools 
 C++ tests run), does the same on the fix commit (default HEAD), then puts the branch back.
 
 * The worktree must be clean. The test commit must be an ancestor of the fix commit, on the branch, and change at least
-  one file under `tests/`.
+  one file under `tests/`. The test commit and the fix commit are two commits: a test committed with the change has
+  no before, so a test commit that is the fix commit is refused.
 * **The test must not change** between the two commits: each test file the test commit changes reads the same in
   both as the compiler reads it (`orig_review.code_text`, which [the body hash](coney-tools-fidelity.md#body-hash) uses:
   comments and layout aside, every literal and raw string exactly as written), so a commit that adds a cite comment to
   a test is not a change. A test that had to change to pass is a decision point for the coordinator: the run is
   refused, and says to ask through `QUESTION.md` and which command records a yes ([A changed test](#changed-test)).
 * **Stubs.** A test for a function that is new cannot compile on a test-only commit, so the test commit may also
-  hold the minimal stubs that let it compile. A stub must not implement the behaviour: it returns a default or an empty
-  result. The stamp lists every non-test file the commit touches (`detail.stubs`) for the reviewer.
+  hold the minimal stubs that let it compile. A stub does what the code did before the change and never the new
+  behaviour: for a test that must fail first it returns a default or an empty result; for a `keeps` test it is the old
+  behaviour (the lookup's stub does the scan it replaces; [Keeps](#keeps)). The stamp lists every non-test file the
+  commit touches (`detail.stubs`) for the reviewer.
 * Each name must be a whole test name, written `TEST_CASE("NAME"` (then `)`, or `,` and tags), in a test file the test
   commit adds or changes; part of a longer name, a `SECTION` name or any other quoted string is refused. A name split
   into adjacent literals (`TEST_CASE("A " "B")`) is joined and matches as `A B`, whatever comment (`/* ... */` or
@@ -402,6 +405,7 @@ C++ tests run), does the same on the fix commit (default HEAD), then puts the br
   scratch as `red-` and `green-<test commit>-<fix commit>.log`).
 * **A test added later**, in a review round, gets its own `orig fails-first` run with its own test commit (and the
   stubs it needs); the stamps of the earlier tests stay valid, also when the new test is in the same file.
+* **`--keeps`** is the other mode, for a test that cannot fail first ([Keeps](#keeps)).
 * A docs or tooling task has nothing to run: `--none REASON` (one line, at most 200 characters, given alone) stamps
   `result: none` with the reason.
 
@@ -459,6 +463,35 @@ stamp proves the test failed and then passed as written; the build and the revie
 still read: such a stamp holds while the files are as they were, and also when the files at the stamp's own
 `fix_commit` still hash to `tests_sha256` (the stamp was not edited, and the commit still exists) and the test's
 `test_sha256` there equals the one now, which is what a file that only grew means. Nothing rewrites an old stamp.
+
+### Keeps: a test that guards a refactor {#keeps}
+
+A test that guards a pure refactor, a performance change, or behaviour Coney already has and the original matches
+passes before the change as well as after it, so it can never fail first. `coney-tools orig fails-first --keeps --test
+NAME [--test NAME ...] --test-commit SHA [--fix-commit SHA] --agent ID` records that instead:
+
+* It runs the same way (the same checks of the worktree, the commits, the names and the unchanged test files, with the
+  same [decision on a changed test](#changed-test); the same restore of the branch), but the test must **pass** on the
+  test commit, which holds the state before the change (the test, plus any stub it needs to compile: a test of a new
+  lookup compiles against a stub that does the old scan), and pass on the fix commit.
+* **Verdict.** `keeps`: built at both commits and the test passed on both. A test that fails on either is a `fail`
+  stamp (one that fails on the test commit is an ordinary fails-first test: run it without `--keeps`); the same errors
+  with no stamp as above. The stamp covers the same hashes and `detail` as a `pass`, with `red` `passed`, and above
+  all the same `test_sha256`: it goes stale by the same rule, [`fails_first.staleness`](#fails-first-binds), as any
+  other stamp.
+* **The test commit is not the fix commit**, in either mode: the before-run is the test commit, so a test committed
+  together with the change would be shown to pass before a change it already holds. `fails-first` refuses it, and
+  `task review` and `pr verify` refuse a `keeps` stamp whose `test_commit` equals its `fix_commit`.
+* `task review`'s tool part and `pr verify` accept `keeps` for an added test, with the same check that the test is
+  unchanged since; a test with no stamp is refused as before. A `keeps` stamp is no proof for a gameplay change that
+  adds no test: that still needs a stamp that failed first ([pr verify](pr.md#verify)). A gameplay change whose only
+  added test is `keeps` passes the tool part, and whether it really keeps that behaviour is the reviewer's alone: no
+  program can tell a refactor from a fix whose test happens to pass before it.
+* The stamp holds the test, not the helpers around it: a shared helper or fixture the change edits is not seen by the
+  hash, so for a `keeps` test the reviewer also reads what the change edits under `tests/`.
+* The review packet lists each test with its stamp result, `pr text` names each as `Kept behaviour` apart from the
+  tests that failed first, and the reviewer decides whether the change really keeps that behaviour and whether `PR.md`
+  says so ([Tests that keep behaviour](review/task.md#keeps)).
 
 ## For the commands that write more stamps {#api}
 

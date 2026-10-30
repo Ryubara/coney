@@ -461,6 +461,36 @@ def test_an_added_test_needs_a_passing_fails_first_stamp(rig: Rig) -> None:
     assert any("Brain thinks higher" in p for p in rig.prepare()[1])
 
 
+def test_a_keeps_stamp_is_accepted_for_an_added_test_and_listed_in_the_packet(rig: Rig) -> None:
+    (rig.root / "tests").mkdir()
+    (rig.root / "tests/brain_test.cpp").write_text('TEST_CASE("Brain thinks higher") {}\n', encoding="utf-8")
+    git(rig.root, "add", "-A")
+    git(rig.root, "commit", "-q", "-m", "test")
+    stamp_fails_first(rig, "Brain thinks higher", result="keeps")
+    packet, problems = rig.prepare()
+    assert problems == []
+    assert packet["tests"] == [{"name": "Brain thinks higher", "stamp": "keeps"}]
+
+
+def test_a_keeps_stamp_whose_test_commit_is_its_fix_commit_is_refused(rig: Rig) -> None:
+    (rig.root / "tests").mkdir()
+    (rig.root / "tests/brain_test.cpp").write_text('TEST_CASE("Brain thinks higher") {}\n', encoding="utf-8")
+    git(rig.root, "add", "-A")
+    git(rig.root, "commit", "-q", "-m", "test and change in one commit")
+    tip = rig.tip()
+    files = ["tests/brain_test.cpp"]
+    cover = fails_first.test_sha256(rig.root, "HEAD", "Brain thinks higher", files)
+    covers = {"test_commit": tip, "fix_commit": tip, fails_first.TEST_COVER: cover}
+    rig.stamp("fails-first", "Brain thinks higher", result="keeps", covers=covers, detail={"test_files": files})
+    assert rig.prepare()[1] == [
+        'fails-first: "Brain thinks higher": its test commit is its fix commit, so it never ran before the change '
+        "(run `orig fails-first --keeps` again)"
+    ]
+    covers = {**covers, "test_commit": "a" * 40}
+    rig.stamp("fails-first", "Brain thinks higher", result="keeps", covers=covers, detail={"test_files": files})
+    assert rig.prepare()[1] == []
+
+
 def test_a_fails_first_stamp_is_read_by_the_rule_pr_verify_uses(rig: Rig) -> None:
     path = rig.root / "tests/brain_test.cpp"
     (rig.root / "tests").mkdir()

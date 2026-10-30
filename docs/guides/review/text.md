@@ -39,6 +39,11 @@ grep); it changes no worktree, commits nothing and does not touch GitHub.
 - [ ] **Each claim in Summary and Testing is backed** by the diff or a log the description cites: test names exist in
   the diff or the tree, counts ("412 passed") appear in a log, a stated behaviour is in the code, a command named
   would run. A claim with nothing behind it is Important.
+- [ ] **Each test stamped `keeps` is accounted for.** The packet's `tests` list says which added tests pass before the
+  change as well as after it ([Tests that keep behaviour](task.md#keeps)). The Summary must say that the change keeps
+  that behaviour (a refactor, a performance change, or a pin of what already matches the original) and name the tests
+  that guard it; the Testing facts that `pr text` writes list each as kept behaviour. A `keeps` test the Summary does
+  not account for, or one whose Summary describes a fix or new behaviour, is Important.
 - [ ] **The `Runtime:` line is true** when the title's area is one a player sees (`gameplay`, `graphics`, `audio`:
   `pull_requests.runtime`); a program has only checked that the line exists and has numbers or a reason
   ([the runtime comparison](../testing.md#runtime-comparison)):

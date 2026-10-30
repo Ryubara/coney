@@ -1016,7 +1016,9 @@ stamps:
   # change are bound to a hash of it, not to a commit (stamps.md#change).
   segment_bytes: 262144                          # a log file is closed before it passes this (the file check is 512 KB)
   steps: [assigned, claimed, studied, fails-first, compared, checked, reviewed, pr-opened, finished]
-  results: [pass, fail, none]
+  # One vocabulary for every step; the commands decide which result they write. `keeps`: written only by `orig
+  # fails-first --keeps` for a test that passes before the change too (stamps.md#keeps).
+  results: [pass, fail, none, keeps]
   pairs:                                         # mapping/<addr>.toml (docs/guides/stamps.md#pairs)
     kinds: [branch, loop, call, field, constant, return]
     relations: [same, stand-in, not-ported]

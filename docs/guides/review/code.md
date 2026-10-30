@@ -22,7 +22,8 @@ the [format on the index page](index.md#finding-format).
 - [ ] **Tests exist and test behaviour.** Each new function or format has a test under `tests/` at the mirrored
   path. Read the assertions: they check results, not just that the call returns. A test name says what it checks.
 - [ ] **Written test-first where possible.** The history or the author's report shows the test failing before the code.
-  A test that cannot fail does not count.
+  A test that cannot fail does not count, unless it is stamped `keeps`
+  ([the task review](task.md#keeps)): then the change must be a refactor or a pin of behaviour that already matches.
 - [ ] **Disc data edge cases.** A parser has tests for empty input, input shorter than its header, input shorter
   than its own entry count, and a count large enough to overflow an allocation. A parser that accepts truncated
   data silently is Critical.

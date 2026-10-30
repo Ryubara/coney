@@ -86,7 +86,7 @@ problem is printed with its prefix and what to redo; all problems are listed, no
 | `stamp log:` | The log is intact ([Verifying a log](../stamps.md#verify)) | Report to the coordinator: the unit is unusable |
 | `compared:` | Each changed `@orig` function has a pairs file and a current `compared` stamp for its body and for that file (two functions that cite one address each need their own: [Stamps](../stamps.md#shared-address)) | `orig compare <addr>` (`--coney-function KEY` when several cite it) |
 | `copy-check:` | [`orig check-copy`](../coney-tools-fidelity.md#orig) finds no fingerprint on the lines added | The engineer, then `orig compare` |
-| `fails-first:` | Each added C++ `TEST_CASE` has a passing `fails-first` stamp that still covers the test as it is, by the rule `pr verify` uses ([what a stamp binds](../stamps.md#fails-first-binds); Python tests are not stamped) | `orig fails-first` |
+| `fails-first:` | Each added C++ `TEST_CASE` has a passing `fails-first` stamp that still covers the test as it is, by the rule `pr verify` uses: it failed first (`pass`) or passes before and after the change (`keeps`, [below](#keeps)); [what a stamp binds](../stamps.md#fails-first-binds); Python tests are not stamped | `orig fails-first` (`--keeps`) |
 | `docs check:` | `docs check` passes on the changed pages, research pages included | The engineer |
 | `title:`, `docs:`, a missing picture | The description's title follows the rules, the [docs rule](../coney-tools-repo.md#repo) holds (`Docs: none` is read from the description), every local picture exists | The engineer edits the description |
 | `text:` | For `--text`: a passing full review still covers the change and the pairs | `task review`, without `--text` |
@@ -109,9 +109,26 @@ exist ([test citations](../testing.md#done), the standards of touched files).
 | `functions` | Each changed `@orig` function: `key`, `where`, `coney`, `addresses`, `names`, `body_sha256` (`orig review-stamp --branch` lists the same) |
 | `pairs_set_sha256` | The hash of the pairs files of those functions, which a `compared` stamp covers one by one |
 | `pages` | Each touched research page and the addresses it writes |
-| `tests` | Each added C++ test and the result of its `fails-first` stamp |
+| `tests` | Each added C++ test and the result of its `fails-first` stamp (`pass`, `keeps`, `fail` or `missing`) |
 | `text` | The description: `file` (the engineer's file, `PR.md`), `title`, `paragraph`, the pictures (`path`, `sha256`) and the three hashes of them; and [what `pr text` generates](#generated): `generated_sections` (each `section` and `what` is written into it) and `generated_body` (the `path` of `PR-BODY.md` and whether it `exists`) |
 | `rubric_version` | The [orig rubric](orig.md)'s version |
+
+### Tests that keep behaviour {#keeps}
+
+A packet `tests` entry whose stamp is `keeps` is a test that passes before the change as well as after it
+([Keeps](../stamps.md#keeps)): the tool part only proved that it ran green on the test commit and on the fix, with the
+test as it was. Whether that is honest is the reviewer's, who for each such test:
+
+* confirms the change really keeps that behaviour: it is a refactor, a performance change, or the test pins behaviour
+  that already matches the original. A test for a bug fix or for new behaviour must fail first; a `keeps` stamp on one
+  is a blocking finding, as is a change that alters what the test pins;
+* opens the stamp's `stubs` as for any `fails-first` stamp: a stub that already does the new work makes the test pass
+  before the change for the wrong reason;
+* reads what the change edits under `tests/` besides the test: the stamp holds the test, not the helpers around it;
+* confirms `PR.md` says so: its Summary says that the change keeps that behaviour (a refactor, a performance change
+  or a pin of what already matches the original) and names the tests that guard it; the Testing facts that `pr text`
+  writes list each as kept behaviour. A `keeps` test the Summary does not account for is a finding against the
+  [description](text.md).
 
 ### The description's generated sections {#generated}
 

@@ -21,10 +21,18 @@ request says so in a `Runtime:` line that CI checks ([below](#runtime-line)).
 | A format, parser or other pure code | Unit tests on synthetic fixtures; a disc test that prints aggregates when the disc is involved |
 | Engine behaviour that a player sees | Unit tests where it can be isolated, and a disc test that starts through [the player's path](#test-through-the-players-path); a [runtime comparison](#runtime-comparison) with the original; before and after captures of Coney and the original from the same spot for anything visible ([What a pull request shows](#pr-evidence)) |
 | A mission checkpoint | Its [playthrough test](#playthrough-tests) passes; `research/missions.yaml` updated; an [event diff](#diff-against-the-original) against the original where a recording exists; a [runtime comparison](#runtime-comparison) of the checkpoint's moments with the original; before and after captures of Coney and the original from the same spot for anything visible |
-| A bug fix | A test that fails before the fix and passes after it; in a player-facing area (`gameplay`, `graphics`, `audio`), also a [runtime comparison](#runtime-comparison) with the original, and before and after captures of Coney and the original from the same spot for anything visible |
+| A bug fix | A test that fails before the fix and passes after it (a test that guards a refactor of behaviour that already matched is [stamped `keeps`](#keeps)); in a player-facing area (`gameplay`, `graphics`, `audio`), also a [runtime comparison](#runtime-comparison) with the original, and before and after captures of Coney and the original from the same spot for anything visible |
 | A research finding | An address and an [evidence level](research-evidence.md#evidence-levels) on every claim; runtime claims checked in the emulator and citing their [run record](research-evidence.md#run-records); `research claims` clean on the pages changed; a [trace diff](research-traces.md#comparing-with-coney) where a scenario exists |
 | Python tools and generators | pytest, ruff and mypy; every generator's `--check` |
 | Docs | `mkdocs build --strict`, markdownlint and [`docs check`](writing-docs.md#checking) on the pages touched |
+
+### A test that cannot fail first {#keeps}
+
+A test that guards a refactor, a performance change, or behaviour Coney already has and the original matches (a disc
+test that pins strike timing, a lookup that must find the same brain as the scan it replaces) passes before the change as
+well as after it, so it can never fail first: it is stamped `keeps` instead, with `orig fails-first --keeps`
+([Keeps](stamps.md#keeps) says how, and what the reviewer confirms). It is no way round a test that should fail: a test
+for a bug fix or new behaviour fails first, or the reviewer refuses the unit.
 
 ### The runtime comparison {#runtime-comparison}
 

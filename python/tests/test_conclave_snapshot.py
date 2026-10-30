@@ -95,6 +95,14 @@ def test_a_skipped_step_with_result_none_counts_as_done(layout: Layout) -> None:
     assert {s["step"]: s["state"] for s in row["steps"]}["studied"] == "none"
 
 
+def test_a_fails_first_that_keeps_counts_as_done(layout: Layout) -> None:
+    make_task(layout.scratch, "refactor", (9,))
+    stamp_steps(layout.scratch, "refactor", [("assigned", "pass"), ("fails-first", "keeps")])
+    row = unit(collect(sources(layout), github=False), "refactor")
+    assert row["stage"] == "compared"
+    assert {s["step"]: s["state"] for s in row["steps"]}["fails-first"] == "keeps"
+
+
 def test_a_finished_unit_stays_finished(layout: Layout) -> None:
     make_task(layout.scratch, "all-done", (9,))
     stamp_steps(layout.scratch, "all-done", [(step, "pass") for step in CONVENTIONS.stamps.steps])

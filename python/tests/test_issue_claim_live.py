@@ -570,3 +570,18 @@ def test_a_recorded_test_decision_is_not_a_stage_reached(tmp_path: Path) -> None
 
     assert claim_progress.stage_reached(written) is None
     assert claim_progress.post_progress(folder, written, OFF, post, START, print) == [] and posted == []
+
+
+def test_a_fails_first_that_keeps_the_behaviour_is_a_stage_reached(tmp_path: Path) -> None:
+    folder = unit_folder(tmp_path)
+    entry = {
+        "step": "fails-first",
+        "subject": "t",
+        "result": "keeps",
+        "commit": "a" * 40,
+        "covers": {"x_sha256": "b" * 64},
+        "detail": {},
+        "who": {"kind": "tool", "tool": "test"},
+    }
+    written = stamps.append_many(folder, rules=OFF.stamps, task="41-trial", entries=[entry])
+    assert claim_progress.stage_reached(written) == "fails-first"

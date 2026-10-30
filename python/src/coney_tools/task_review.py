@@ -309,10 +309,12 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
         for name in _added_tests(env, base, tip) if tip != base else []:
             latest = report.latest("fails-first", name)
             tests.append({"name": name, "stamp": latest.result if latest else "missing"})
-            if latest is None or latest.result != "pass":
+            if latest is None or latest.result not in fails_first.PROVEN:
                 problems.append(
                     f'fails-first: "{name}" was added and has no passing fails-first stamp (run `orig fails-first`)'
                 )
+            elif problem := fails_first.keeps_problem(latest):
+                problems.append(f'fails-first: "{name}": {problem} (run `orig fails-first --keeps` again)')
             elif stale := fails_first.staleness(worktree, tip, latest):  # the rule `pr verify` applies
                 problems.append(f'fails-first: "{name}": {stale} (run `orig fails-first`)')
     else:

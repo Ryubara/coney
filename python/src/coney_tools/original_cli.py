@@ -83,7 +83,8 @@ def add_commands(commands: Any) -> None:
         help="run named tests on the test commit and on the fix commit and stamp `fails-first`",
         description=(
             "Runs `coney-tools build --test -R` for the named tests on --test-commit (they must fail) and on "
-            "--fix-commit (they must pass), restoring the branch afterwards. With --none REASON, stamps that the task "
+            "--fix-commit (they must pass), restoring the branch afterwards. With --keeps, a test that guards a "
+            "refactor must pass on both and is stamped `keeps`. With --none REASON, stamps that the task "
             "has no such test (docs, tooling) and runs nothing. With --accept-change REASON, the coordinator records "
             "its yes to a test that had to change between the two commits, and runs nothing."
         ),
@@ -98,6 +99,11 @@ def add_commands(commands: Any) -> None:
     first.add_argument("--fix-commit", help="the commit that makes it pass (default: HEAD)")
     first.add_argument("--preset", default="dev", help="the CMake preset (default: %(default)s)")
     first.add_argument("--agent", help="your id for the build slots (as `build --agent`)")
+    first.add_argument(
+        "--keeps",
+        action="store_true",
+        help="the tests guard a refactor or behaviour Coney already has: they must pass on both commits, unchanged",
+    )
     first.add_argument("--none", metavar="REASON", help="stamp that there is no fails-first test, with the reason")
     first.add_argument(
         "--accept-change",
@@ -232,8 +238,8 @@ def _fails_first(
 ) -> int:
     """`orig fails-first`."""
     rules = conventions.stamps
-    if args.none is not None and (args.test or args.test_commit or args.fix_commit):
-        print("orig fails-first: --none runs nothing; give it alone, without --test or --test-commit")
+    if args.none is not None and (args.test or args.test_commit or args.fix_commit or args.keeps):
+        print("orig fails-first: --none runs nothing; give it alone, without --test, --test-commit or --keeps")
         return 2
     if args.none is not None:
         stamp = fails_first.record_none(folder, root, args.none, rules=rules, who=who)
@@ -241,6 +247,9 @@ def _fails_first(
         return 0
     if not args.test or not args.test_commit:
         print("orig fails-first: give --test NAME (once per test) and --test-commit SHA, or --none REASON")
+        return 2
+    if args.accept_change is not None and args.keeps:
+        print("orig fails-first: --accept-change runs nothing; give --keeps to the run that follows it")
         return 2
     if args.accept_change is not None:
         decided = fails_first.record_decision(
@@ -274,6 +283,7 @@ def _fails_first(
             runner=fails_first.build_runner(agent),
             rules=rules,
             who=who,
+            keeps=args.keeps,
             say=lambda line: print(line, flush=True),
         )
     for stamp in written:
@@ -281,4 +291,4 @@ def _fails_first(
             f"orig fails-first: {stamp.subject}: {stamp.result} "
             f"(test commit {stamp.detail['red']}, fix commit {stamp.detail['green']}); stamp #{stamp.seq}"
         )
-    return 0 if all(s.result == "pass" for s in written) else 1
+    return 0 if all(s.result in fails_first.PROVEN for s in written) else 1

@@ -315,7 +315,7 @@ def test_the_commits_must_be_in_order_and_on_the_branch(repo: Repo) -> None:
 
 def test_a_test_commit_without_a_test_file_is_refused(repo: Repo) -> None:
     with pytest.raises(FailsFirstError, match="tests/"):
-        repo.run(test_commit=repo.fix, fix_commit=repo.fix)
+        repo.run(test_commit=repo.base, fix_commit=repo.fix)
 
 
 def test_fix_commit_defaults_to_head(repo: Repo) -> None:
@@ -723,3 +723,81 @@ def test_the_build_runners_lines_reach_the_caller_while_the_build_runs(tmp_path:
     exit_code, output = fails_first.stream_lines([sys.executable, "-c", code], tmp_path, lines.append)
     assert exit_code == 0 and lines == ["log: x", "result: ok"] and output == "log: x\nresult: ok\n"
     assert fails_first.stream_lines(["no-such-program-1135"], tmp_path, lines.append)[0] == 127
+
+
+# --- keeps: a test that guards a refactor passes before the change and after it ---------------------------------------
+
+
+def test_keeps_stamps_a_test_that_passes_on_both_commits(repo: Repo) -> None:
+    repo.red = repo.out(ONE, ())
+    [stamp] = repo.run(keeps=True)
+    assert (stamp.step, stamp.subject, stamp.result) == ("fails-first", "Widget ready frame", "keeps")
+    assert stamp.detail["red"] == "passed" and stamp.detail["green"] == "passed"
+    assert stamp.covers["test_commit"] == repo.test and stamp.covers["fix_commit"] == repo.fix
+    assert [h for h, _ in repo.seen] == [repo.test, repo.fix]
+    assert git(repo.root, "rev-parse", "--abbrev-ref", "HEAD").strip() == "work"
+    assert stamps.verify(repo.unit.stamps, rules()).ok
+
+
+def test_a_keeps_stamp_holds_the_same_per_test_hash_and_goes_stale_by_the_same_rule(repo: Repo) -> None:
+    [first] = repo.run()
+    repo.red = repo.out(ONE, ())
+    [kept] = repo.run(keeps=True)
+    assert kept.covers[fails_first.TEST_COVER] == first.covers[fails_first.TEST_COVER]
+    assert "tests_sha256" not in kept.covers
+    assert fails_first.staleness(repo.root, repo.fix, kept) is None
+    # Another test in the file leaves it current; an edit of the test itself makes it stale.
+    path = repo.root / "tests" / "widget_test.cpp"
+    text = path.read_text(encoding="utf-8")
+    path.write_text(text + 'TEST_CASE("Widget other") {}' + chr(10), encoding="utf-8")
+    git(repo.root, "commit", "-q", "-am", "another test")
+    assert fails_first.staleness(repo.root, "HEAD", kept) is None
+    edited = path.read_text(encoding="utf-8").replace('frame") {}', 'frame") { CHECK(1); }')
+    path.write_text(edited, encoding="utf-8")
+    git(repo.root, "commit", "-q", "-am", "edit the test")
+    assert fails_first.staleness(repo.root, "HEAD", kept) is not None
+    assert fails_first.staleness(repo.root, "HEAD", kept) == fails_first.staleness(repo.root, "HEAD", first)
+
+
+def test_keeps_is_a_fail_stamp_for_a_test_that_fails_on_either_commit(repo: Repo) -> None:
+    [before] = repo.run(keeps=True)  # the default red: the test fails on the test commit, so it guards no refactor
+    assert before.result == "fail" and before.detail["red"] == "failed"
+    repo.red = repo.out(ONE, ())
+    repo.green = repo.out(ONE, ONE)
+    [after] = repo.run(keeps=True)
+    assert after.result == "fail" and after.detail["green"] == "failed"
+
+
+def test_without_keeps_a_test_that_passes_on_both_commits_is_still_a_fail_stamp(repo: Repo) -> None:
+    repo.red = repo.out(ONE, ())
+    [stamp] = repo.run()
+    assert stamp.result == "fail"
+
+
+def test_keeps_needs_the_decision_for_a_test_that_changed_between_the_commits_like_any_other(repo: Repo) -> None:
+    repo.red = repo.out(ONE, ())
+    changed = weaken(repo)
+    with pytest.raises(FailsFirstError, match="accept-change"):
+        repo.run(keeps=True, fix_commit=changed)
+    decide(repo, changed, coordinator())
+    [stamp] = repo.run(keeps=True, fix_commit=changed)
+    assert stamp.result == "keeps" and "decision_seq" in stamp.detail
+
+
+def test_a_test_commit_that_is_the_fix_commit_is_refused_with_or_without_keeps(repo: Repo) -> None:
+    repo.red = repo.out(ONE, ())
+    for keeps in (True, False):
+        with pytest.raises(FailsFirstError, match="is the fix commit"):
+            repo.run(keeps=keeps, test_commit=repo.fix)
+        with pytest.raises(FailsFirstError, match="is the fix commit"):  # the fix defaults to HEAD, which is it
+            repo.run(keeps=keeps, test_commit=repo.fix, fix_commit=None)
+    assert repo.seen == []  # nothing was built
+
+
+def test_a_keeps_stamp_of_one_commit_is_a_problem_and_another_is_not(repo: Repo) -> None:
+    repo.red = repo.out(ONE, ())
+    [stamp] = repo.run(keeps=True)
+    assert fails_first.keeps_problem(stamp) == ""
+    same = stamps.Stamp({**stamp.data, "covers": {**stamp.covers, "fix_commit": stamp.covers["test_commit"]}})
+    assert "test commit is its fix commit" in fails_first.keeps_problem(same)
+    assert fails_first.keeps_problem(stamps.Stamp({**same.data, "result": "pass"})) == ""

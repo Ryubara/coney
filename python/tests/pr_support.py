@@ -231,11 +231,13 @@ class Built:
             copy_check=lambda root, base: self.findings,
         )
 
-    def fails_first(self, name: str = TEST_NAME, **detail: Any) -> stamps.Stamp:
-        """Stamp that the test failed before the fix and passes after, as `orig fails-first` writes it."""
+    def fails_first(self, name: str = TEST_NAME, result: str = "pass", **detail: Any) -> stamps.Stamp:
+        """Stamp that the test failed before the fix and passes after, as `orig fails-first` writes it; `result`
+        `keeps` is the stamp of a test that passes before it too (a refactor guard)."""
         return self.stamp(
             "fails-first",
             subject=name,
+            result=result,
             covers={
                 "test_commit": self.test_commit,
                 "fix_commit": self.tip,
@@ -243,7 +245,13 @@ class Built:
                 "red_log_sha256": sha("red"),
                 "green_log_sha256": sha("green"),
             },
-            detail={"red": "failed", "green": "passed", "test_files": [TEST_FILE], "stubs": [], **detail},
+            detail={
+                "red": "passed" if result == "keeps" else "failed",
+                "green": "passed",
+                "test_files": [TEST_FILE],
+                "stubs": [],
+                **detail,
+            },
         )
 
     def record_fields(self, **more: Any) -> dict[str, Any]:
