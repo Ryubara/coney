@@ -50,6 +50,7 @@ std::vector<std::string> shaderFilesOnDisk() {
 // does not compile fails the build, so a table that holds all of them, with code for each format, is the proof that
 // each one compiled for each.
 TEST_CASE("every shader file of the folder is embedded, and nothing else", "[shaders]") {
+    // Expected: ../guides/shaders.md#build, Coney's own build (the folder's files are the table's)
     std::vector<std::string> embedded;
     for (const Shader& shader : allShaders()) {
         embedded.emplace_back(shader.name);
@@ -59,6 +60,7 @@ TEST_CASE("every shader file of the folder is embedded, and nothing else", "[sha
 }
 
 TEST_CASE("every shader has code for every format", "[shaders]") {
+    // Expected: ../guides/shaders.md#build, Coney's own build (SPIR-V, DXIL and MSL for each file)
     for (const Shader& shader : allShaders()) {
         for (const Format format : kFormats) {
             INFO(shader.name << " format " << static_cast<int>(format));
@@ -68,6 +70,7 @@ TEST_CASE("every shader has code for every format", "[shaders]") {
 }
 
 TEST_CASE("the SPIR-V is a module the Vulkan backend can load", "[shaders]") {
+    // Expected: ../guides/shaders.md#tests, the SPIR-V specification's magic number
     for (const Shader& shader : allShaders()) {
         INFO(shader.name);
         const auto code = shader.codeFor(Format::Spirv);
@@ -82,6 +85,7 @@ TEST_CASE("the SPIR-V is a module the Vulkan backend can load", "[shaders]") {
 // DXC signs the DXIL itself since 1.8.2505, so Direct3D 12 accepts it without dxil.dll
 // (docs/engine/renderer.md#licences). An unsigned container has an all-zero hash.
 TEST_CASE("the DXIL is a signed container Direct3D 12 accepts", "[shaders]") {
+    // Expected: ../guides/shaders.md#compiler, DXC 1.8.2505 and later sign DXIL itself
     for (const Shader& shader : allShaders()) {
         INFO(shader.name);
         const auto code = shader.codeFor(Format::Dxil);
@@ -96,6 +100,7 @@ TEST_CASE("the DXIL is a signed container Direct3D 12 accepts", "[shaders]") {
 }
 
 TEST_CASE("the MSL is source the Metal backend can compile", "[shaders]") {
+    // Expected: ../guides/shaders.md#tests, SPIRV-Cross names the entry point main0
     for (const Shader& shader : allShaders()) {
         INFO(shader.name);
         const std::string_view text = asText(shader.codeFor(Format::Msl));
@@ -111,6 +116,7 @@ TEST_CASE("the MSL is source the Metal backend can compile", "[shaders]") {
 }
 
 TEST_CASE("a shader's resource counts come from the compiler's reflection", "[shaders]") {
+    // Expected: ../guides/shaders.md#tests, blit.frag.hlsl binds one texture and sampler
     const Shader* vertex = findShader("fullscreen.vert");
     REQUIRE(vertex != nullptr);
     CHECK(vertex->stage == Stage::Vertex);
@@ -128,6 +134,7 @@ TEST_CASE("a shader's resource counts come from the compiler's reflection", "[sh
 }
 
 TEST_CASE("an unknown shader is not found", "[shaders]") {
+    // Expected: ../guides/shaders.md#build, Coney's own lookup
     CHECK(findShader("no_such.frag") == nullptr);
     CHECK(findShader("") == nullptr);
 }
