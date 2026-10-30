@@ -13,20 +13,24 @@ namespace coney::script {
 namespace {
 
 // Argument `i` truncated to a whole number, as tolua reads an integer.
+// @coney-only tolua's argument reading, which the original's generated wrappers do
 std::int64_t wholeArg(std::span<const Value> args, std::size_t i) {
     return static_cast<std::int64_t>(std::trunc(binding::number(args, i)));
 }
 
 // Argument `i` as an integer.
+// @coney-only tolua's argument reading, which the original's generated wrappers do
 int intArg(std::span<const Value> args, std::size_t i) { return static_cast<int>(wholeArg(args, i)); }
 
 // Argument `i` as a float.
+// @coney-only tolua's argument reading, which the original's generated wrappers do
 float floatArg(std::span<const Value> args, std::size_t i) { return static_cast<float>(binding::number(args, i)); }
 
 // Whether argument `i` is missing or nil (binding_args.h): only for arguments that read the same either way.
 using binding::absent;
 
 // Argument `i` as a boolean: nil and 0 are false.
+// @coney-only tolua's argument reading, which the original's generated wrappers do
 bool boolArg(std::span<const Value> args, std::size_t i) {
     if (absent(args, i)) {
         return false;
@@ -35,20 +39,24 @@ bool boolArg(std::span<const Value> args, std::size_t i) {
 }
 
 // Argument `i` as a boolean that is `fallback` when omitted; a nil passed (Lua 4's false) is false, as tolua reads it.
+// @coney-only tolua's argument reading, which the original's generated wrappers do
 bool boolArgOr(std::span<const Value> args, std::size_t i, bool fallback) {
     return i >= args.size() ? fallback : boolArg(args, i);
 }
 
 // A handle argument: truncated to an unsigned integer.
+// @coney-only tolua's argument reading, which the original's generated wrappers do
 double handleArg(std::span<const Value> args, std::size_t i) {
     return static_cast<double>(static_cast<std::uint32_t>(wholeArg(args, i)));
 }
 
 // A string argument that is empty for nil (a callback name), as tolua reads one.
+// @coney-only tolua's argument reading, which the original's generated wrappers do
 std::string nameArg(std::span<const Value> args, std::size_t i) { return binding::string(args, i); }
 
 // A binding that hands its arguments to the host when there is one and returns nothing. The host is read at each call,
 // not at registration: a level gives its brains to a Lua state made before it (gamemodes/gameplay_mode.h).
+// @coney-only binding glue: the call reaches its host only when the context has one
 template <typename Body> NativeFunction hostCall(const BindingContext& context, Body body) {
     return [context = &context, body](std::span<const Value> args) {
         if (AiBindingHost* host = context->ai; host != nullptr) {
@@ -89,7 +97,6 @@ NativeFunction makeActLookAt(const BindingContext& context) {
 // `ActTurnToDir(human, heading, turnSpeed, delayMs)`: the heading kept as 16 bits; the turn speed is stored and never
 // read, so it is not passed on; the delay is -1 when left out, 0 for an explicit nil.
 // @orig 0x00364708 ActTurnToDir (unknown)
-// @orig 0x002fdb90 Action_TurnToHeading (unknown)
 NativeFunction makeActTurnToDir(const BindingContext& context) {
     return hostCall(context, [](AiBindingHost& host, std::span<const Value> args) {
         host.actTurnToDir(binding::handleArg(args, 0),
@@ -242,6 +249,7 @@ NativeFunction makeTacticClear(const BindingContext& context) {
 
 } // namespace
 
+// @coney-only binding registration: each binding it registers carries its own @orig
 void addAiBindings(LuaVm& vm, const BindingContext& context) {
     vm.registerFunction("GoalMoveToFlag", makeGoalMoveToFlag(context));
     vm.registerFunction("ActLookAt", makeActLookAt(context));

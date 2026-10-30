@@ -27,6 +27,7 @@ namespace coney::script::binding {
 using Results = std::expected<std::vector<Value>, Error>;
 
 /// Argument `i` (0-based) as a number: 0 when absent or not convertible, as tolua reads a missing argument.
+/// @coney-only tolua's argument reading and result pushing, which the original's generated wrappers do
 [[nodiscard]] inline double number(std::span<const Value> args, std::size_t i) {
     if (i >= args.size()) {
         return 0.0;
@@ -41,6 +42,7 @@ using Results = std::expected<std::vector<Value>, Error>;
 }
 
 /// Argument `i` as a string: a string, a number's text, or empty (tolua's NULL) for anything else.
+/// @coney-only tolua's argument reading and result pushing, which the original's generated wrappers do
 [[nodiscard]] inline std::string string(std::span<const Value> args, std::size_t i) {
     if (i >= args.size()) {
         return {};
@@ -57,6 +59,7 @@ using Results = std::expected<std::vector<Value>, Error>;
 /// Whether argument `i` is missing or nil. Only for an argument that reads the same either way (a string or a
 /// callback, tolua's NULL) or that a binding tests for a type itself; a number or boolean with a default reads an
 /// explicit nil as 0, so it goes through numberOr() or booleanArg() (docs/research/scripting.md#optional-arguments).
+/// @coney-only tolua's argument reading and result pushing, which the original's generated wrappers do
 [[nodiscard]] inline bool absent(std::span<const Value> args, std::size_t i) {
     return i >= args.size() || args[i].isNil();
 }
@@ -109,21 +112,25 @@ using Results = std::expected<std::vector<Value>, Error>;
 }
 
 /// Argument `i` as tolua reads an unsigned integer with a default: numberOr(), then toUnsigned().
+/// @coney-only tolua's argument reading and result pushing, which the original's generated wrappers do
 [[nodiscard]] inline std::uint32_t unsignedArg(std::span<const Value> args, std::size_t i, double fallback = 0.0) {
     return toUnsigned(numberOr(args, i, fallback));
 }
 
 /// Argument `i` as a handle: unsignedArg() with no default, as the double the hosts take.
+/// @coney-only tolua's argument reading and result pushing, which the original's generated wrappers do
 [[nodiscard]] inline double handleArg(std::span<const Value> args, std::size_t i) {
     return static_cast<double>(unsignedArg(args, i));
 }
 
 /// Argument `i` as tolua reads a signed integer with a default: numberOr(), then toSigned().
+/// @coney-only tolua's argument reading and result pushing, which the original's generated wrappers do
 [[nodiscard]] inline std::int32_t signedArg(std::span<const Value> args, std::size_t i, double fallback = 0.0) {
     return toSigned(numberOr(args, i, fallback));
 }
 
 /// Argument `i` as tolua reads a float with a default: numberOr(), narrowed to a float.
+/// @coney-only tolua's argument reading and result pushing, which the original's generated wrappers do
 [[nodiscard]] inline float floatArg(std::span<const Value> args, std::size_t i, double fallback = 0.0) {
     return static_cast<float>(numberOr(args, i, fallback));
 }
@@ -145,6 +152,7 @@ using Results = std::expected<std::vector<Value>, Error>;
 }
 
 /// Argument `i` as a position: a table of three numbers at t[1]..t[3]; nothing for anything else.
+/// @coney-only tolua's argument reading and result pushing, which the original's generated wrappers do
 [[nodiscard]] inline std::optional<std::array<float, 3>> position(std::span<const Value> args, std::size_t i) {
     if (i >= args.size() || args[i].table() == nullptr) {
         return std::nullopt;
@@ -162,10 +170,13 @@ using Results = std::expected<std::vector<Value>, Error>;
 }
 
 /// No results.
+/// @coney-only tolua's argument reading and result pushing, which the original's generated wrappers do
 [[nodiscard]] inline Results none() { return std::vector<Value>{}; }
 /// One number.
+/// @coney-only tolua's argument reading and result pushing, which the original's generated wrappers do
 [[nodiscard]] inline Results number(double value) { return std::vector<Value>{Value(value)}; }
 /// A boolean as tolua pushes it: the number 1 for true, nil for false (Lua 4.0 has no booleans).
+/// @coney-only tolua's argument reading and result pushing, which the original's generated wrappers do
 [[nodiscard]] inline Results boolean(bool value) { return std::vector<Value>{value ? Value(1.0) : Value()}; }
 
 } // namespace coney::script::binding

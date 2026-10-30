@@ -2126,7 +2126,7 @@ address = 0x00414bc0
 name = "TriggerSphere_Configure"
 page = "scripting.md#triggers"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
-coney = "src/scripting/world_bindings.cpp:makeTriggerSphereCfg"
+coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::configure"
 status = "legacy"
 
 [[function]]
