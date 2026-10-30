@@ -25,6 +25,7 @@ add_library(coney_core STATIC
     core/window_display.cpp
     core/options.cpp
     core/perf.cpp
+    core/renderer_choice.cpp
     core/pad.cpp
     core/pad_handlers.cpp
     core/pads.cpp

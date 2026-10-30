@@ -8,6 +8,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -16,6 +17,7 @@
 #include "graphics/render_device.h"
 #include "graphics/screen.h"
 #include "graphics/texture_grid.h"
+#include "platform/present_mode.h"
 #include "platform/window.h"
 
 // librw's types, declared rather than included: <rw.h> brings in SDL and the OpenGL loader.
@@ -27,10 +29,16 @@ struct Texture;
 
 namespace coney::platform {
 
+class GpuPresenter;
+
 /// Which renderer a RenderEngine runs.
 enum class RenderBackend : std::uint8_t {
     OpenGl, ///< librw's GL3 device: a window with an OpenGL 3.3 core context (2.1 or GLES as fallbacks), drawn into.
     Null,   ///< librw's NULL device: no window, no GPU, nothing drawn; for CI, tests and console tools.
+    /// SDL3's GPU API (docs/engine/renderer.md#migration): a window Coney makes, SDL's GPU device and swapchain, and
+    /// librw on its NULL device for data only, as for Null. Frames are cleared and presented; nothing else is drawn
+    /// yet.
+    Gpu,
 };
 
 /// A frame read back from the screen by RenderEngine::requestCapture().
@@ -56,14 +64,20 @@ void setWindowActivation(bool activate);
 /// With the OpenGL backend, librw's GL3 device creates the window and the context itself and destroys them when the
 /// engine stops: the engine owns the window, and window() hands out a non-owning view for the event loop.
 ///
+/// The GPU backend (docs/engine/renderer.md#migration) opens librw exactly as the NULL backend does, for data only, and
+/// makes the window itself through SDL3, with SDL's GPU device and swapchain (GpuPresenter, gpu_presenter.h); from
+/// there on librw's GL3 device is used only by the OpenGL backend. Its frames are cleared to the frame's colour and
+/// presented, and nothing else is drawn in them yet.
+///
 /// librw keeps its engine in global state, so only one RenderEngine may run at a time; a second start() while one
 /// runs fails at librw's init step. A RenderEngine does not move (librw keeps pointers into it), hence the unique_ptr.
 class RenderEngine final : public graphics::RenderDevice {
   public:
     /// Brings librw up with `backend`; `desc` sizes and names the window (ignored by the NULL backend). Fails with
     /// ErrorCode::PlatformFailure naming the step that refused, with SDL's error text where there is one: SDL's video
-    /// cannot start or sees no display, librw refuses a step, or no OpenGL context can be created. Everything that
-    /// had started is stopped again before it returns.
+    /// cannot start or sees no display, librw refuses a step, no OpenGL context can be created, or (GPU) no GPU device
+    /// opens, the message then saying `no GPU device`. Everything that had started is stopped again before it returns,
+    /// SDL's video included, so a failed GPU start can be followed by an OpenGL one.
     [[nodiscard]] static std::expected<std::unique_ptr<RenderEngine>, Error> start(RenderBackend backend,
                                                                                    const WindowDesc& desc);
 
@@ -71,12 +85,29 @@ class RenderEngine final : public graphics::RenderDevice {
 
     /// The backend it runs.
     [[nodiscard]] RenderBackend backend() const { return m_backend; }
-    /// Whether frames reach a screen: true for OpenGL. Textures can be converted for drawing only then.
+    /// Whether the game's picture is drawn: true for OpenGL only. Textures can be converted for drawing only then; the
+    /// GPU backend shows frames but draws nothing in them yet.
     [[nodiscard]] bool drawsPixels() const { return m_backend == RenderBackend::OpenGl; }
-    /// The window, for the OpenGL backend; nothing for NULL.
+    /// Whether librw runs its NULL device, reading RenderWare data and drawing nothing: the NULL and GPU backends.
+    [[nodiscard]] bool librwDataOnly() const { return m_backend != RenderBackend::OpenGl; }
+    /// The GPU backend's SDL driver (`vulkan`, `direct3d12`, `metal`); empty for the others.
+    [[nodiscard]] std::string_view gpuDriver() const;
+    /// The present mode the GPU backend's swapchain shows frames with (setVsync(), setFpsCap(), applied at the next
+    /// present()); Vsync for the others.
+    [[nodiscard]] PresentMode presentMode() const;
+    /// The present modes the GPU backend's window offers besides Vsync; none for the others.
+    [[nodiscard]] PresentModes offeredPresentModes() const;
+    /// The frames present() has ended so far, on any backend.
+    [[nodiscard]] std::uint64_t framesPresented() const { return m_presented; }
+    /// Of framesPresented(), those shown on the screen: every one for OpenGL, those the GPU backend's swapchain took
+    /// (a hidden or minimised window may take none), none for NULL.
+    [[nodiscard]] std::uint64_t framesShown() const {
+        return m_backend == RenderBackend::OpenGl ? m_presented : m_shown;
+    }
+    /// The window, for the OpenGL and GPU backends; nothing for NULL.
     [[nodiscard]] std::optional<Window> window() const;
     /// The SDL_Window* and its OpenGL context (an SDL_GLContext), opaque here, for the developer overlay's backends;
-    /// nulls with the NULL backend.
+    /// nulls with the NULL backend, and the window with no context with the GPU backend (which has no overlay yet).
     [[nodiscard]] std::pair<void*, void*> sdlWindowAndContext() const;
     /// The size of the area frames are drawn into, in pixels: the window's client area, or the requested size for
     /// the NULL backend.
@@ -159,6 +190,9 @@ class RenderEngine final : public graphics::RenderDevice {
     void setVsync(bool on) { m_vsync = on; }
     /// Whether present() waits for the vertical blank.
     [[nodiscard]] bool vsync() const { return m_vsync; }
+    /// Tells the renderer the frame pacer's cap (`--fps-cap`, 0 for none), which with vsync chooses the GPU backend's
+    /// present mode (choosePresentMode()); OpenGL has only its swap interval and ignores it.
+    void setFpsCap(std::uint32_t cap) { m_fpsCap = cap; }
     /// Chooses whether present() softens the frame as the PS2's video output does (off by default): each line becomes
     /// the mean of itself and the line one of the original's 448 below it, after the modes' 2D layers and before the
     /// debug menus (docs/research/rendering.md#output). Off shows the frame as drawn, sharper than the original.
@@ -217,6 +251,8 @@ class RenderEngine final : public graphics::RenderDevice {
 
     /// Where the logical screen goes in a frame of `size` (WindowDesc::logicalFrame).
     [[nodiscard]] graphics::ScreenRect logicalScreenIn(graphics::Extent size) const;
+    /// Places the GPU backend's window on its display, shows it unless `desc` keeps it hidden, and takes its size.
+    void showGpuWindow(const WindowDesc& desc);
     /// Makes the camera and its frame and depth buffers at m_frameSize (OpenGL only).
     void createCamera();
     /// Destroys the camera and its buffers, if any.
@@ -238,6 +274,7 @@ class RenderEngine final : public graphics::RenderDevice {
     graphics::Extent m_frameSize;       // size of the camera's buffers, or the requested size for NULL
     graphics::Rgba m_clearColour;       // of the current frame, for the capture's statistics
     graphics::ScreenRect m_viewport;    // where the logical screen is in the window (graphics::fitLogicalScreen())
+    std::uint32_t m_fpsCap = 0;         // the frame pacer's cap, for the GPU backend's present mode
     bool m_inFrame = false;             // between beginFrame() and present()
     bool m_librwStarted = false;        // librw has reached Engine::start and must be stopped
     bool m_sdlStarted = false;          // this object holds a reference to SDL's video subsystem
@@ -250,7 +287,9 @@ class RenderEngine final : public graphics::RenderDevice {
     rw::Raster* m_blurRaster = nullptr; // blurScreen()'s copies: the screen, then its half-size image
     rw::Raster* m_halfRaster = nullptr;
 
-    std::uint64_t m_presented = 0; // frames presented so far
+    std::unique_ptr<GpuPresenter> m_gpu; // the GPU backend's device, window and swapchain
+    std::uint64_t m_presented = 0;       // frames presented so far
+    std::uint64_t m_shown = 0;           // of those, the GPU backend's that reached the swapchain
     std::optional<std::uint64_t> m_captureFrame;
     std::string m_capturePath;
     std::optional<std::expected<CapturedFrame, Error>> m_capture;

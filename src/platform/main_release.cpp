@@ -131,10 +131,11 @@ int main(int argc, char** argv) {
         frameLimit = static_cast<std::uint64_t>(*limit);
     }
 
-    // The renderer: OpenGL in a window, or the headless NULL renderer.
-    auto engine = coney::platform::RenderEngine::start(options->headless ? coney::platform::RenderBackend::Null
-                                                                         : coney::platform::RenderBackend::OpenGl,
-                                                       coney::platform::gameWindow(*options));
+    // The renderer: OpenGL in a window, the GPU renderer with `--renderer gpu` (docs/engine/renderer.md#migration;
+    // the release build keeps no overrides file), or the headless NULL renderer.
+    auto engine = coney::platform::startRenderer(
+        coney::chooseRenderer(options->renderer, coney::RendererKind::Gl3, coney::isTestMode(*options)),
+        options->headless, coney::platform::gameWindow(*options));
     if (!engine) {
         logError(engine.error().message);
         return 1;
@@ -193,6 +194,7 @@ int main(int argc, char** argv) {
     const bool testMode = coney::isTestMode(*options);
     constexpr std::uint32_t kStepsPerSecond = 30;
     const auto fpsCap = static_cast<std::uint32_t>(options->fpsCap.value_or(0));
+    renderer.setFpsCap(fpsCap);
     coney::FrameClock clock(testMode || fpsCap == kStepsPerSecond ? coney::FramePacing::Lockstep
                                                                   : coney::FramePacing::Interpolated);
     std::optional<coney::platform::FramePacer> pacer;
@@ -243,6 +245,7 @@ int main(int argc, char** argv) {
         logText(pacer->summary());
     }
     coney::platform::finishNetPlay(netPlay, *options);
+    coney::platform::printRendererSummary(renderer);
     if (session) {
         coney::platform::printGameSummary(*session, audio.get(), objectSounds, testMode);
     }

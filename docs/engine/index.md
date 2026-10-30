@@ -21,3 +21,4 @@ Add each page to this one; the rules for writing a page, and how they are checke
 | --- | --- |
 | [Combat](combat.md) | The player's attacks, grabs, blocks, meters and reactions (`src/combat/`, the fighter in `src/human/`) |
 | [Renderer](renderer.md) | How Coney draws, and the design for its frame rates, backend, lighting, anti-aliasing, presets and performance (`src/platform/`, `src/graphics/`) |
+| [GPU renderer](gpu-renderer.md) | The renderer on SDL3's GPU API: `--renderer gpu`, its device, window and present modes, and librw opened for data only (`src/platform/gpu_presenter.*`, `src/core/renderer_choice.*`) |

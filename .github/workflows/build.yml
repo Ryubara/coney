@@ -124,6 +124,21 @@ jobs:
       # -k 0: keep compiling after a failure, so one run lists every error.
       - run: cmake --build --preset ${{ env.PRESET }} -- -k 0
       - run: ctest --preset ${{ env.PRESET }}
+      # The GPU renderer's smoke run (docs/engine/renderer.md#migration-testing): `--renderer gpu` opens Coney's own
+      # window on SDL3's GPU API through lavapipe (Mesa's software Vulkan) on a virtual X display, runs a few frames and
+      # must have presented them; a start that fell back to GL3 fails the check. Windows and macOS build it above.
+      - name: Install lavapipe and a virtual display
+        if: matrix.name == 'linux-gcc-13'
+        run: sudo apt-get install -y mesa-vulkan-drivers libvulkan1 xvfb
+      - name: Start the GPU renderer under lavapipe
+        if: matrix.name == 'linux-gcc-13'
+        env:
+          SDL_GPU_DRIVER: vulkan
+        run: |
+          set -o pipefail # coney's own exit status counts, not only tee's
+          xvfb-run -a build/ci/src/platform/coney --renderer gpu --frames 10 --no-audio 2>&1 | tee gpu-smoke.log
+          grep -E 'renderer: gpu on vulkan' gpu-smoke.log
+          grep -E 'renderer: [1-9][0-9]* of 10 frames shown' gpu-smoke.log
       - if: ${{ !cancelled() }}
         uses: ./.github/actions/ccache-save
 

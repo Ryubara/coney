@@ -26,7 +26,7 @@ and their shadow source, the performance budget and the order.
 | Part | What it is | Where |
 | --- | --- | --- |
 | Window, input, audio | SDL3 (pinned in `cmake/deps.cmake`, zlib licence), linked statically | `src/platform/window.*`, `sdl_input.cpp` |
-| Graphics API | librw's GL3 platform: an OpenGL 3.3 core context that librw's device makes through SDL3. librw is built for exactly one platform; headless runs swap in librw's NULL device at run time | `src/platform/render_engine.*` |
+| Graphics API | librw's GL3 platform: an OpenGL 3.3 core context that librw's device makes through SDL3. librw is built for exactly one platform; headless runs swap in librw's NULL device at run time. `--renderer gpu` starts the GPU renderer's beginning instead ([The GPU renderer](gpu-renderer.md)): Coney's own window on SDL3's GPU API, frames cleared and presented, librw on its NULL device | `src/platform/render_engine.*`, `gpu_presenter.*` |
 | 3D | librw atomics drawn through librw's default GL3 pipelines and shaders, with Coney's own plugins and render callbacks round them (the world's dual layer and MatFX reader in `world_atomic.cpp`; per-atomic lights in `scene_lighting.cpp`); humans skinned on the GPU by Coney's own librw GL3 pipeline (`character_skin.cpp`: each character's vertices uploaded once, a bone palette set each frame), with CPU skinning kept as a fallback and behind `--cpu-skinning` ([Performance: GPU skinning](../guides/performance.md#gpu-skinning)) | `src/platform/` |
 | 2D | `graphics::RenderDevice` (`src/graphics/render_device.h`), Coney's own interface for quads and triangles in logical pixels; `RenderEngine` implements it with librw's Im2D | `src/graphics/`, `render_engine.cpp` |
 | Screen passes | the motion-blur stand-in (`motion_blur_pass.cpp`), the blur pulse and the optional line blend (`RenderEngine::blurScreen`, `setLineBlend`), all by copying the back buffer into a texture | `src/platform/` |
@@ -185,11 +185,11 @@ draw without librw's GL3 device as early as possible:
 
 1. **The proof** (items 1 and 2). The draw-stream hashes and the picture comparison, so every later step shows that
    the *PS2* picture did not move.
-2. **A start without librw's GL3 device** (item 3). `--renderer gl3|gpu` (and `Display/Renderer` in the overrides file,
-   applied at the next start): Coney makes the window through SDL3 itself, claims SDL's GPU device and swapchain with
-   the present modes, and opens librw with its NULL device, as headless runs already do, so streams and rasters load
-   and the game runs while the GPU renderer only clears and presents. From here on, librw's GL3 device is used only
-   by the GL3 renderer.
+2. **A start without librw's GL3 device** (item 3, built). `--renderer gl3|gpu` (and `Display/Renderer` in the
+   overrides file, applied at the next start): Coney makes the window through SDL3 itself, claims SDL's GPU device and
+   swapchain with the present modes, and opens librw with its NULL device, as headless runs already do, so streams and
+   rasters load and the game runs while the GPU renderer only clears and presents. From here on, librw's GL3 device is
+   used only by the GL3 renderer. [The GPU renderer](gpu-renderer.md) says how it is built.
 3. **The shader toolchain** (item 4). HLSL sources in `src/platform/shaders/`, compiled at build time by
    SDL_shadercross (zlib; it bundles DXC and SPIRV-Cross, see [Licences](#licences)) into SPIR-V, DXIL and MSL,
    embedded in the executable. A test compiles every shader for every target.
@@ -269,8 +269,9 @@ mode. On the Windows machine the agents share (an RTX 5080, a 240 Hz display):
 What it settles: the GPU API is already compiled into Coney's SDL3 (`direct3d12` and `vulkan` on Windows; Metal is
 SDL's driver on macOS), so option (b) adds no runtime dependency; both drivers open on this machine with every
 present mode and HDR10; an empty frame costs about a quarter of a millisecond, so the API itself leaves the whole
-budget to the game. Linux (Vulkan) and macOS (Metal) are proven by CI when the renderer lands
-([Order](#order), item 3), not by this spike.
+budget to the game. Linux (Vulkan) is proven by CI's smoke run of the renderer's start under lavapipe; macOS (Metal)
+by CI's build of it and its unit tests, whose GPU case runs where the runner offers a Metal device
+([The GPU renderer](gpu-renderer.md#proof)); not by this spike.
 
 ## Simulation and drawing threads {#threads}
 

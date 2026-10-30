@@ -33,6 +33,8 @@ add_executable(coney_tests
     core/perf_frames_test.cpp
     core/pad_test.cpp
     core/pad_turn_test.cpp
+    core/renderer_choice_test.cpp
+    core/renderer_option_test.cpp
     core/player_options_test.cpp
     core/window_display_test.cpp
     effects/effect_culling_test.cpp
@@ -191,6 +193,8 @@ add_executable(coney_tests
     platform/disc_world_streaming_test.cpp
     platform/clip_recorder_test.cpp
     platform/ffmpeg_info_test.cpp
+    platform/gpu_renderer_test.cpp
+    platform/present_mode_test.cpp
     platform/profile_folder_test.cpp
     platform/render_engine_restart_test.cpp
     platform/room_smoke_overlay_test.cpp

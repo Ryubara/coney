@@ -236,6 +236,7 @@ nav:
       - engine/index.md
       - Combat: engine/combat.md
       - Renderer: engine/renderer.md
+      - GPU renderer: engine/gpu-renderer.md
   - Game references:
       - references/index.md
       - Entities: references/entities.md

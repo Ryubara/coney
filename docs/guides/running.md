@@ -30,7 +30,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--trace-humans FILE]
       [--render-size WxH]
       [--sandbox [NAME]] [--assets DIR] [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]
-      [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps] [--tunables FILE]
+      [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps] [--renderer gl3|gpu] [--tunables FILE]
       [--no-audio | --audio-test]
       [--skip-movies] [--rumble TYPE [--arena N] [--gang-size N]]
       [--profiles DIR] [--dev-overlay N] [--mesh-view SPEC] [--no-activate] [--window-display DISPLAY] [--event-log FILE]
@@ -50,6 +50,7 @@ refuses any other with a message that names the debug tools; `coney --help` list
 coney --install DISC --data DIR [--verify]
 coney [--disc PATH | --data DIR] [--language CODE] [--profiles DIR]
       [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]
+      [--renderer gl3|gpu]
       [--no-activate] [--window-display DISPLAY] [--no-audio] [--skip-movies]
       [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]
       [--headless] [--frames N] [--input-script FILE] [--help]
@@ -149,8 +150,8 @@ command are in [Script patches](script-patches.md#command-line).
 
 * [`--record`](running-options.md#record): a short video clip of the run.
 * [`--window-display`](running-options.md#window-display): which display the window opens on.
-* [`--fps-cap`, `--vsync`, `--line-blend`, `--show-fps`, `--bench`](running-options.md#frame-rate): the frame rate
-  and the benchmark.
+* [`--fps-cap`, `--vsync`, `--line-blend`, `--show-fps`, `--renderer`, `--bench`](running-options.md#frame-rate): the
+  frame rate, the renderer and the benchmark.
   {#frame-rate}
 * [`--no-audio`, `--audio-test`](running-options.md#sound): the sound.
   {#sound}
