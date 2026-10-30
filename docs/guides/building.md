@@ -564,7 +564,7 @@ by the nightly one; the nightly and hand-started `build` runs are never cancelle
 | `pr` | the pull request title against the commit title rules, that code changes come with docs changes, and the description against the template (pull requests only; editing the title or description reruns it) |
 
 There is no Windows `ci` (dev) build in CI: MSVC with `/WX` and the C4062 warning runs locally, on the `ci` preset
-(`coney-tools build --preset ci --test`; the preset table in [Build and test](#build-and-test)), and the `ci-release`
+(`coney-tools build --preset ci --test --full`; the preset table in [Build and test](#build-and-test)), and the `ci-release`
 build on Windows still compiles every pull request with MSVC and `/WX`.
 
 ### Where each check runs {#where-checks-run}

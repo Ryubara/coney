@@ -80,7 +80,7 @@ _ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 #: Why an agent's `--test` run with no filter is refused, and the three ways on (docs/guides/testing.md#local-gate).
 UNFILTERED_REFUSAL = (
-    "--test with no -R or -L runs the whole suite (15 to 40 minutes of a main slot), and an agent runs it once, at the "
+    "--test with no -R or -L runs the whole suite, the longest job on the machine, and an agent runs it once, at the "
     "handover tip, not while it iterates. Run the tests you touched: --test -R <regex> or -L <label>; `task check` "
     "runs the whole suite itself when you are done; or add --full for this run of the whole suite "
     "(docs/guides/testing.md#local-gate)"

@@ -420,10 +420,10 @@ cannot be read ends the run with exit 2.
 | `full` | anything else, including a path in no class (`.github/scripts/`) | the above and `msvc-ci-build` and `ctest-full-disc` |
 
 `actionlint` runs only when a changed path is under `.github/workflows/` or `.github/actions/` (`proof.only_when`).
-The build checks run `coney-tools build --preset ci --test` once, with the whole suite and the disc, and read the build
-record it leaves ([The build record](stamps.md#build-record)): one answers whether it built (MSVC with /WX), the other
-whether the suite ran whole with no disc test skipped. The ruff and mypy commands are the ones of `ci run`; there
-is no clang-tidy here: clang-tidy is CI's alone, on the changed lines of every pull request and on the whole
+The build checks run `coney-tools build --preset ci --test --full` once, with the whole suite and the disc, and read
+the build record it leaves ([The build record](stamps.md#build-record)): one answers whether it built (MSVC with /WX),
+the other whether the suite ran whole with no disc test skipped. The ruff and mypy commands are the ones of `ci run`;
+there is no clang-tidy here: clang-tidy is CI's alone, on the changed lines of every pull request and on the whole
 codebase nightly ([building](clang-tidy.md)).
 
 * A fault of the machine is not a verdict about the change: a program that is missing, no disc for a `full` run
