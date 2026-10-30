@@ -9,6 +9,7 @@
 #include "graphics/human_lighting.h"
 #include "graphics/level_lighting.h"
 #include "graphics/light_manager.h"
+#include "graphics/lighting_frame.h"
 #include "graphics/particle_page.h"
 #include "hud/health_rings.h"
 #include "platform/mesh_view_hook.h"
@@ -49,7 +50,8 @@ class SceneLighting {
     SceneLighting& operator=(SceneLighting&&) = delete;
 
     /// The start of a frame through a camera at `pose` (RenderWare's axes) with clip distances `nearClip` and
-    /// `farClip`, at game time `nowMs`: the manager's viewport pass (the ambients, the cull, the coronas).
+    /// `farClip`, at game time `nowMs`: the manager's viewport pass (the ambients, the cull, the coronas), then the
+    /// lighting frame (lightingFrame()).
     void beginFrame(const world::CameraPose& pose, float nearClip, float farClip, std::uint64_t nowMs);
 
     /// Draws a streamed sector's atomic with the world's lights (list A and the world's point lights it overlaps).
@@ -96,6 +98,9 @@ class SceneLighting {
 
     /// This frame's camera (RenderWare's axes), as beginFrame() was given it.
     [[nodiscard]] const world::CameraPose& pose() const { return m_pose; }
+    /// This frame's lighting frame, built by beginFrame() after the cull: what the lighting lab and the GPU renderer's
+    /// shadow maps and per-pixel lights read (docs/engine/renderer.md#lighting). Nothing draws from it yet.
+    [[nodiscard]] const graphics::LightingFrame& lightingFrame() const { return m_frame; }
     /// The light manager, for the summary.
     [[nodiscard]] const graphics::LightManager& lights() const { return m_lighting.lights; }
     /// The level's fog, which the world pass clears to and fogs with.
@@ -119,6 +124,7 @@ class SceneLighting {
     std::vector<rw::Light*> m_mirrors;       // owned, with their frames; null where none is made yet
     std::vector<rw::Light*> m_inWorld;       // the mirrors now in m_world
     world::CameraPose m_pose;                // this frame's camera
+    graphics::LightingFrame m_frame;         // this frame's lighting frame (beginFrame())
     MeshViewHook* m_meshViews = nullptr;     // setMeshViews(); null: none
     const rw::Atomic* m_meshLayer = nullptr; // setMeshLayer()
     std::uint64_t m_atomicsDrawn = 0;        // atomicsDrawn()

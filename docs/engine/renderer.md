@@ -445,7 +445,8 @@ light and its rules, the gamma curves. All of it reaches the renderer through th
 **lighting frame** of the [Realtime lighting design](../guides/realtime-lighting.md#the-lighting-frame), built each
 frame from simulation state and never read back by it. The *Xbox* preset's gamma curves are read from the player's
 Xbox disc, not carried in Coney, and the values of the 33 records the research lists are checked against it (item
-24).
+24). The lighting frame is built (item 19, `repo:src/graphics/lighting_frame.h`); nothing draws from it yet, and its
+tests show the simulation steps the same with it built or not.
 
 **Kept in *Xbox*, widened in *Enhanced* and *High*:** who casts a shadow and who receives one. *Xbox* keeps the port's
 casters and receivers as the research gives them; *Enhanced* adds receivers and *High* adds range

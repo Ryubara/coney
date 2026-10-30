@@ -51,9 +51,8 @@ NativeFunction makeCfgSubtitles(const BindingContext& context) {
     };
 }
 
-// `DoorCRCCheck(a, b, c, d)` and `EnableShadow(object, enable)`: their callees return at once in this build.
+// `DoorCRCCheck(a, b, c, d)`: its callee returns at once in this build.
 // @orig 0x00397330 DoorCRCCheck (unknown)
-// @orig 0x0017f270 Shadow_Enable_Stub (unknown)
 NativeFunction makeNothing() {
     return [](std::span<const Value>) { return binding::none(); };
 }
@@ -252,7 +251,6 @@ NativeFunction makeCfgSetMaxThrowError(const BindingContext& context) {
 void addWorldBindings(LuaVm& vm, const BindingContext& context) {
     vm.registerFunction("CfgSubtitles", makeCfgSubtitles(context));
     vm.registerFunction("DoorCRCCheck", makeNothing());
-    vm.registerFunction("EnableShadow", makeNothing());
     vm.registerFunction("FlagNetAddLink", makeFlagNetAddLink(context));
     vm.registerFunction("FlagNetTraverse", makeFlagNetTraverse(context));
     vm.registerFunction("ObjDestroy", makeObjDestroy(context));
