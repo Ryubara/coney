@@ -358,7 +358,7 @@ The coordinator's triage step ([Task files](issues.md#task-files)); the rules ar
   shows the active waivers (below), and `--json` carries them as `waivers`.
   `--fill-check` is the check the coordinator's `Stop` hook runs (`.claude/hooks/slot_fill_guard.py`): it exits **1
   with a message that starts `Blocked:`** when a place is free, the tool finds work to start and nothing excuses it,
-  naming the free places (kept for game work, for a fix or for networking, open), the top eligible issues
+  naming the free places (kept for game work, for a fix, for networking or for the renderer, open), the top eligible issues
   (`P-critical` first), the claimed tasks without an agent and the failed pull requests with no fix unit; it exits 0
   with an `ok:` line otherwise (every place full, no eligible issue under the start gate, the claim limit reached,
   free disk under `workspace.disk_min_free_gb`, or active waivers), with `warning:` lines for what it could not read
@@ -497,8 +497,8 @@ coney-tools task start [TASK] [--base REF] [--remote REMOTE] [--no-fetch] [--dry
 
 ### `task slots` {#task-slots-usage}
 
-Show the engineer tracks (reimplementation, fix, Studio, networking) and the machine's places, or check that an agent
-may start (the coordinator's Agent guard).
+Show the engineer tracks (reimplementation, fix, Studio, networking, renderer) and the machine's places, or check that
+an agent may start (the coordinator's Agent guard).
 
 ```text
 coney-tools task slots [--json] [--fill-check] [--session ID] [--waive N] [--reason CODE] [--hours H] [--note TEXT]

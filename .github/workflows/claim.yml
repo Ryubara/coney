@@ -43,9 +43,10 @@ jobs:
   claim:
     # Skipped: a comment on a pull request (no claim), a comment that does not start with a slash (no command), a
     # label event for any label but a paused one (`claims.paused_labels`, which stop and start the idle clock), the
-    # exempt one (`claims.exempt_label`), the Studio one (`claims.studio_label`) or the networking one
-    # (`claims.networking_label`), which take a claim out of the limit, or the trial one (`claims.trial.label`, which
-    # switches the deadline on for a test issue; a test checks the two lists below against all five), and a
+    # exempt one (`claims.exempt_label`), the Studio one (`claims.studio_label`), the networking one
+    # (`claims.networking_label`) or the renderer one (`claims.renderer_label`), which take a claim out of the limit, or
+    # the trial one (`claims.trial.label`, which switches the deadline on for a test issue; a test checks the two lists
+    # below against all of them), and a
     # dispatch from a branch other than the default one (it would run that branch's code with this token).
     if: >-
       ${{ (github.event_name != 'workflow_dispatch'
@@ -54,7 +55,7 @@ jobs:
                 && (github.event.issue.pull_request || !startsWith(github.event.comment.body, '/')))
                || (github.event_name == 'issues'
                    && (github.event.action == 'labeled' || github.event.action == 'unlabeled')
-                   && !contains(fromJSON('["S-blocked","S-needs-info","S-on-hold","workflow","studio","networking","claim-trial"]'), github.event.label.name))) }}
+                   && !contains(fromJSON('["S-blocked","S-needs-info","S-on-hold","workflow","studio","networking","renderer","claim-trial"]'), github.event.label.name))) }}
     # One group for every claim job: one at a time, in order. An event that is skipped gets a group of its own, so it
     # can never take the pending place of a real one.
     concurrency:
@@ -65,7 +66,7 @@ jobs:
                  && (github.event.issue.pull_request || !startsWith(github.event.comment.body, '/')))
              || (github.event_name == 'issues'
                  && (github.event.action == 'labeled' || github.event.action == 'unlabeled')
-                 && !contains(fromJSON('["S-blocked","S-needs-info","S-on-hold","workflow","studio","networking","claim-trial"]'), github.event.label.name)))
+                 && !contains(fromJSON('["S-blocked","S-needs-info","S-on-hold","workflow","studio","networking","renderer","claim-trial"]'), github.event.label.name)))
             && format('claim-skip-{0}', github.run_id) || 'claim' }}
       cancel-in-progress: false
     runs-on: ubuntu-24.04

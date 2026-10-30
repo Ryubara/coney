@@ -225,6 +225,7 @@ issue keeps](#closed)).
 | | `workflow` | Builds the new workflow; its claim is outside the open-claims limit |
 | | `studio` | Coney Studio work: its own track, outside the open-claims limit |
 | | `networking` | Networking work: its own track, outside the open-claims limit |
+| | `renderer` | SDL3 GPU renderer work: its own track, outside the open-claims limit |
 | | `claim-trial` | A throwaway issue for testing the claim Action; never real work |
 <!-- conventions:end -->
 
@@ -316,9 +317,9 @@ hold back. `claims.trial` is no switch: it only lets one test issue try adoption
 - A maintainer (someone with `admin` or `write` permission on the repository) holds 3 open claims at most, a contributor
   2. Issues whose cards share a `task:` id count as one claim, and a task holds 3 issues at most.
 - The claim of an issue labelled `workflow` (a unit that builds the new workflow), `studio` (Coney Studio work, which
-  has its own engineer track) or `networking` (networking work, which has its own engineer track) neither counts toward
-  that limit nor is refused by it; the cap of a task still holds. Only someone who may label issues (triage access or
-  more) can set the labels.
+  has its own engineer track), `networking` (networking work, which has its own engineer track) or `renderer` (the SDL3
+  GPU renderer work, which has its own engineer track) neither counts toward that limit nor is refused by it; the cap of
+  a task still holds. Only someone who may label issues (triage access or more) can set the labels.
 - A claim stops counting toward the limit when the engineer's slot frees, as the unit passes review: once a maintainer
   records `reviewed`, `pr-opened`, `fix` or `finished` (their tools do, after the review), or, for anyone, while the
   claimant's own pull request that closes it is open and not a draft, which frees one task's slot (the oldest it
@@ -410,6 +411,13 @@ track of its own with one engineer always on it ([Engineer tracks](agents.md#slo
 toward the open-claims limit" with the label, and its hidden JSON carries `exempt` and `networking`, set again from
 the labels on every pass. A card written before the field reads as not networking. An issue with both the networking
 and the Studio label is in the networking track.
+
+**Renderer claims are outside the limit too, for good.** An issue labelled `renderer` (`claims.renderer_label`) is
+work on the SDL3 GPU migration (the renderer design, #883), which has a track of its own with one engineer always on it
+([Engineer tracks](agents.md#slots); a maintainer decision, 2026-10-29). Its claim is outside the open-claims limit the
+way a networking claim is, and its hidden JSON carries `exempt` and `renderer`; a card written before the field reads as
+not renderer. An issue with the networking label and the renderer one is in the networking track, one with the renderer
+label and the Studio one in the renderer track.
 
 A label event for `workflow` starts a claim run, so the card usually follows within a minute or two, and at the latest
 by the sweep: the jobs run one at a time and GitHub cancels a pending one when another arrives, so labelling several
@@ -511,11 +519,12 @@ answered within a minute or two, by its own job or the next one. One that no job
 by the next sweep that runs; a sweep waiting in the queue can be cancelled too, which delays that by an hour. Only
 commands are caught up: a cancelled issue or pull request event is read back by the next pass of that issue (its pull
 requests, assignees and labels), at the latest by the sweep. A comment that is no command, and a label event for any
-label but a paused one, `workflow`, `studio`, `networking` or `claim-trial`, starts no job. Something outside the queue
-can still write (a person editing a card, `claim run` or `claim sweep` started by hand), so the Action keeps a backstop:
-before its first change of each step and before every card write it reads the issue's cards again and starts the pass
-over when one changed, and two cards of one claimant are merged into the first (its handled commands, stage, scope and
-latest activity). `task create` adds a 60-second settle before it trusts a claim ([Task files](#task-files)).
+label but a paused one, `workflow`, `studio`, `networking`, `renderer` or `claim-trial`, starts no job. Something
+outside the queue can still write (a person editing a card, `claim run` or `claim sweep` started by hand), so the Action
+keeps a backstop: before its first change of each step and before every card write it reads the issue's cards again and
+starts the pass over when one changed, and two cards of one claimant are merged into the first (its handled commands,
+stage, scope and latest activity). `task create` adds a 60-second settle before it trusts a claim ([Task
+files](#task-files)).
 
 **If the Action cannot delete a comment** (its token may not), the card and the labels are still right and the command's
 id is on the card, so it is not acted on again; a maintainer deletes the comment by hand.
@@ -657,21 +666,21 @@ with these two commands ([Conflicts](conclave.md#conflicts)).
 
 ### Tracks {#slots}
 
-Engineer work runs in four tracks (`tasks.start.slots.tracks`): reimplementation, fix, Coney Studio and networking, all
-within the machine's places (its build slots times `tasks.start.slots.per_build_slot`). `task start` refuses a start over
-its track's cap or the machine's places, and names the busy units, while `tasks.start.slots.enforce` is on. The rule,
-who counts, what frees a place, the unit record it counts and the guard that checks the claim, the place and a Studio
-unit's model before an engineer is started are in [Engineer tracks](agents.md#slots); `coney-tools task slots` shows
-who holds what. A task whose issue has the `workflow` label holds no place until the cutover, and one whose issue has
-the `studio` label is in the Studio track, one whose issue has the `networking` label in the networking track; the
-labels are read from the issue's claim card each time, not copied into
-the task file. Work in other repositories (Tether, Conclave's own plugin repository) has no unit here and is not
-counted.
+Engineer work runs in five tracks (`tasks.start.slots.tracks`): reimplementation, fix, Coney Studio, networking and the
+renderer, all within the machine's places (its build slots times `tasks.start.slots.per_build_slot`). `task start`
+refuses a start over its track's cap or the machine's places, and names the busy units, while
+`tasks.start.slots.enforce` is on. The rule, who counts, what frees a place, the unit record it counts and the guard
+that checks the claim, the place and a Studio unit's model before an engineer is started are in [Engineer
+tracks](agents.md#slots); `coney-tools task slots` shows who holds what. A task whose issue has the `workflow` label
+holds no place until the cutover, and one whose issue has the `studio` label is in the Studio track, one whose issue has
+the `networking` label in the networking track, one with the `renderer` label in the renderer track; the labels are read
+from the issue's claim card each time, not copied into the task file. Work in other repositories (Tether, Conclave's own
+plugin repository) has no unit here and is not counted.
 
 The open-claims limit follows the units in work: the maintainer's limit of 3 stands for the reimplementation work the
-old 3 task slots held (Studio, networking and workflow claims are outside it), so a claim stops counting toward it when
-the unit's place frees. The Action sees only GitHub, where a comment costs nothing, so it trusts two signs of a freed
-place and no more:
+old 3 task slots held (Studio, networking, renderer and workflow claims are outside it), so a claim stops counting
+toward it when the unit's place frees. The Action sees only GitHub, where a comment costs nothing, so it trusts two
+signs of a freed place and no more:
 
 - **A maintainer's stage.** The passing `reviewed` stamp posts `/progress reviewed` as the signed-in account, and a
   maintainer's `/progress` with a stage of `claims.limit_ends_at` (`reviewed`, `pr-opened`, `fix`, `finished`) frees the

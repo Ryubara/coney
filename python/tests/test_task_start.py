@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 from audit_support import CONVENTIONS
 from claim_support import Clock, FakeGitHub, plant_claim
-from conventions_support import REPO, with_networking_place
+from conventions_support import REPO, with_networking_place, with_renderer_place
 from git_support import git
 
 from coney_tools import stamps, task_cli, task_slots, task_start, unit
@@ -59,8 +59,8 @@ class World:
         self.github = FakeGitHub(self.clock)
         self.github.add_issue(10, title="gameplay: Fix the fight goal")
         #: The committed rules with no place kept for networking, so the numbers of a machine of 4 hold (see
-        #: `with_networking_place`); the networking tests set the committed minimum.
-        self.conventions: Conventions = with_networking_place(CONVENTIONS, 0)
+        #: `with_networking_place`); the networking and renderer tests set the committed minimum.
+        self.conventions: Conventions = with_renderer_place(with_networking_place(CONVENTIONS, 0), 0)
         #: The machine's build slots: 4 places with two units per build slot.
         self.build_slots = 2
         self.output: list[str] = []
@@ -83,12 +83,15 @@ class World:
         exempt: bool = False,
         studio: bool = False,
         networking: bool = False,
+        renderer: bool = False,
     ) -> None:
         """A held claim, as `task create` leaves it; `exempt` when the issue carries the `workflow` label, `studio` the
-        Studio label, `networking` the networking label."""
+        Studio label, `networking` the networking label, `renderer` the renderer label."""
         if issue not in self.github.items:
             self.github.add_issue(issue)
-        plant_claim(self.github, issue, login, task=task, exempt=exempt, studio=studio, networking=networking)
+        plant_claim(
+            self.github, issue, login, task=task, exempt=exempt, studio=studio, networking=networking, renderer=renderer
+        )
 
     def task_file(self, task: str = TASK, **changes: object) -> Path:
         """Write the task file of `task` the way `task create` does; returns its path."""
@@ -114,12 +117,13 @@ class World:
         workflow: bool = False,
         studio: bool = False,
         networking: bool = False,
+        renderer: bool = False,
         **changes: object,
     ) -> None:
-        """A claimed task with its task file: what `task start` needs; `workflow`, `studio` or `networking` labels
-        its issues."""
+        """A claimed task with its task file: what `task start` needs; `workflow`, `studio`, `networking` or `renderer`
+        labels its issues."""
         for number in issues:
-            self.claim(number, task, exempt=workflow, studio=studio, networking=networking)
+            self.claim(number, task, exempt=workflow, studio=studio, networking=networking, renderer=renderer)
         self.task_file(task, issues=issues, **changes)
 
     def push_to_origin(self, name: str = "later.txt") -> str:
@@ -653,14 +657,15 @@ def plant_unit(
     workflow: bool = False,
     studio: bool = False,
     networking: bool = False,
+    renderer: bool = False,
 ) -> None:
     """Another unit of this machine on the issue its name starts with: a record, a worktree folder and a log that ends
-    at `end` (reviewed, finished); with `workflow`, `studio` or `networking`, its issue carries that label (on its
-    claim card)."""
+    at `end` (reviewed, finished); with `workflow`, `studio`, `networking` or `renderer`, its issue carries that label
+    (on its claim card)."""
     folder = world.scratch / task
     issue = int(task.split("-", 1)[0])
-    if workflow or studio or networking:
-        world.claim(issue, task, exempt=workflow, studio=studio, networking=networking)
+    if workflow or studio or networking or renderer:
+        world.claim(issue, task, exempt=workflow, studio=studio, networking=networking, renderer=renderer)
     tree_path = world.worktree(task)
     if tree:
         tree_path.mkdir(parents=True)
@@ -809,6 +814,26 @@ def test_a_second_networking_unit_is_refused_by_task_start(world: World) -> None
     plant_unit(world, "40-net", networking=True)
     world.ready(networking=True)
     assert world.run() == 1 and "the networking track is full (1 of 1)" in world.said() and untouched(world)
+
+
+def test_a_renderer_start_is_admitted_past_three_reimplementation_units(world: World) -> None:
+    world.conventions = with_renderer_place(world.conventions, CONVENTIONS.tasks.start.slots.tracks.renderer.min)
+    world.build_slots = 5  # 10 places
+    for number in range(30, 33):
+        plant_unit(world, f"{number}-x")
+    world.ready(renderer=True)
+    assert world.run() == 0
+    assert (
+        "slots: 4 of 10 places on this machine in use with 10-fix-the-fight-goal (renderer track, 1 of 1)"
+        in world.said()
+    )
+
+
+def test_a_second_renderer_unit_is_refused_by_task_start(world: World) -> None:
+    world.build_slots = 5
+    plant_unit(world, "40-gpu", renderer=True)
+    world.ready(renderer=True)
+    assert world.run() == 1 and "the renderer track is full (1 of 1)" in world.said() and untouched(world)
 
 
 def test_a_second_fix_unit_is_refused_by_task_start(world: World) -> None:

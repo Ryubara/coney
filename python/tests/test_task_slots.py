@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest
 from audit_support import CONVENTIONS
 from claim_support import Clock, FakeGitHub, plant_claim
-from conventions_support import with_networking_place
+from conventions_support import with_networking_place, with_renderer_place
 
 from coney_tools import stamps, task_cli, task_slots
 from coney_tools.config import ConfigError
@@ -47,8 +47,9 @@ class Scene:
         self.clock = Clock()
         #: The committed rules, but with no place kept for the networking track (`with_networking_place`): the
         #: tests of the other tracks count the places of a machine of 4, which the committed 1 would change;
-        #: the tests of the networking track use `committed_networking`.
-        self.conventions: Conventions = with_networking_place(CONVENTIONS, 0)
+        #: the tests of the networking track use `committed_networking`; the same holds for the renderer track
+        #: (`with_renderer_place`, `committed_renderer`).
+        self.conventions: Conventions = with_renderer_place(with_networking_place(CONVENTIONS, 0), 0)
         #: The machine's build slots: with two units per build slot, 4 places, so three reimplementation units and the
         #: place kept for a fix fill it.
         self.build_slots = 2
@@ -79,10 +80,11 @@ class Scene:
         workflow: bool = False,
         studio: bool = False,
         networking: bool = False,
+        renderer: bool = False,
         **changes: object,
     ) -> Path:
         """A task file as `task create` writes it, claimed `age_minutes` ago, and its held claim cards (labelled
-        `workflow`, `studio` or `networking` when asked)."""
+        `workflow`, `studio`, `networking` or `renderer` when asked)."""
         issues = changes.pop("issues", None)
         if issues is None:
             issues = (self._next_issue,)
@@ -109,6 +111,8 @@ class Scene:
             self.studio(name, True)
         if networking:
             self.networking(name, True)
+        if renderer:
+            self.renderer(name, True)
         path = self.scratch / name / self.conventions.tasks.file
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(render_task_file(TaskFile(**values)), encoding="utf-8")  # type: ignore[arg-type]
@@ -119,21 +123,36 @@ class Scene:
         `workflow`, and `exempt` while either label is on."""
         for number in self.issues_of[name]:
             card = self.cards[number]
-            self.cards[number] = replace(card, workflow=on, exempt=on or card.studio or card.networking)
+            self.cards[number] = replace(
+                card, workflow=on, exempt=on or card.studio or card.networking or card.renderer
+            )
 
     def studio(self, name: str, on: bool) -> None:
         """Add or remove the `studio` label of the task's issues: the claim Action's next pass sets the card's `studio`,
         and `exempt` (outside the claim limit) while either label is on."""
         for number in self.issues_of[name]:
             card = self.cards[number]
-            self.cards[number] = replace(card, studio=on, exempt=on or card.workflow or card.networking)
+            self.cards[number] = replace(
+                card, studio=on, exempt=on or card.workflow or card.networking or card.renderer
+            )
 
     def networking(self, name: str, on: bool) -> None:
         """Add or remove the `networking` label of the task's issues: the claim Action's next pass sets the card's
-        `networking`, and `exempt` (outside the claim limit) while any of the three labels is on."""
+        `networking`, and `exempt` (outside the claim limit) while any of the labels is on."""
         for number in self.issues_of[name]:
             card = self.cards[number]
-            self.cards[number] = replace(card, networking=on, exempt=on or card.workflow or card.studio)
+            self.cards[number] = replace(
+                card, networking=on, exempt=on or card.workflow or card.studio or card.renderer
+            )
+
+    def renderer(self, name: str, on: bool) -> None:
+        """Add or remove the `renderer` label of the task's issues: the claim Action's next pass sets the card's
+        `renderer`, and `exempt` (outside the claim limit) while any of the labels is on."""
+        for number in self.issues_of[name]:
+            card = self.cards[number]
+            self.cards[number] = replace(
+                card, renderer=on, exempt=on or card.workflow or card.studio or card.networking
+            )
 
     def release(self, name: str) -> None:
         """The claims of the task were released since `task create` (idle, `/unclaim`)."""
@@ -819,6 +838,168 @@ def test_the_json_report_has_the_networking_track(scene: Scene) -> None:
     data = task_slots.as_json(scene.scan(), scene.conventions, scene.build_slots)
     assert data["tracks"]["networking"]["min"] == 1 and data["tracks"]["networking"]["max"] == 1
     assert [h["task"] for h in data["tracks"]["networking"]["holders"]] == ["n-ids"]
+
+
+# --- the renderer track (the SDL3 GPU migration) ----------------------------------------------------------------------
+
+
+def committed_renderer(scene: Scene) -> None:
+    """The scene with the committed rule of the renderer track: the place it keeps for one unit."""
+    scene.conventions = with_renderer_place(scene.conventions, CONVENTIONS.tasks.start.slots.tracks.renderer.min)
+
+
+def test_the_committed_renderer_track_keeps_one_unit_and_allows_one_on_any_model() -> None:
+    renderer = CONVENTIONS.tasks.start.slots.tracks.renderer
+    assert (renderer.min, renderer.max) == (1, 1)
+    assert renderer.models == CONVENTIONS.tasks.start.slots.tracks.reimplementation.models == ()
+
+
+def test_a_renderer_unit_holds_a_renderer_place(scene: Scene) -> None:
+    scene.unit("r-gpu", renderer=True)
+    assert scene.holders("renderer") == ["r-gpu"] and scene.holders("reimplementation") == []
+
+
+def test_a_renderer_start_is_admitted_past_three_reimplementation_units(scene: Scene) -> None:
+    # The issue's test: the three places of game work are used, and a renderer start still goes ahead.
+    committed_renderer(scene)
+    scene.build_slots = 5
+    full(scene)
+    scene.task("r-gpu", renderer=True)
+    verdict = scene.admit(brief("r-gpu"))
+    assert verdict.allowed
+    assert "4 of 10 places on this machine in use with r-gpu (renderer track, 1 of 1)" in verdict.message
+
+
+def test_a_second_renderer_unit_is_refused_with_room_on_the_machine(scene: Scene) -> None:
+    committed_renderer(scene)
+    scene.build_slots = 5
+    scene.unit("r-gpu", renderer=True)
+    scene.task("r-shaders", renderer=True)
+    verdict = scene.admit(brief("r-shaders"))
+    assert not verdict.allowed and "the renderer track is full (1 of 1 in use)" in verdict.message
+    assert "r-gpu" in verdict.message
+
+
+def test_the_place_kept_for_the_renderer_is_not_taken_by_studio(scene: Scene) -> None:
+    # 4 places: one kept for reimplementation, one for a fix, one for the renderer, so Studio may take only one.
+    committed_renderer(scene)
+    scene.unit("s-one", kind="tooling", studio=True)
+    scene.task("s-two", kind="tooling", studio=True)
+    verdict = admit_studio(scene, "s-two")
+    assert not verdict.allowed and "1 kept for renderer, which runs fewer than its minimum" in verdict.message
+    scene.task("r-gpu", renderer=True)
+    assert scene.admit(brief("r-gpu")).allowed  # the kept place is the renderer's own
+
+
+def test_a_running_renderer_unit_keeps_no_place_back(scene: Scene) -> None:
+    committed_renderer(scene)
+    scene.unit("r-gpu", renderer=True)
+    room = task_slots.room(scene.scan(), "studio", "s-one", scene.conventions, scene.build_slots, "tooling")
+    assert set(room.kept) == {"reimplementation", "fix"}
+
+
+def test_a_renderer_label_added_after_task_create_moves_the_unit_to_the_renderer(scene: Scene) -> None:
+    scene.unit("a-gpu")
+    assert scene.holders("reimplementation") == ["a-gpu"]
+    scene.renderer("a-gpu", True)
+    assert scene.holders("renderer") == ["a-gpu"] and scene.holders("reimplementation") == []
+    scene.renderer("a-gpu", False)
+    assert scene.holders("reimplementation") == ["a-gpu"]
+
+
+def test_a_renderer_fix_is_a_fix(scene: Scene) -> None:
+    scene.unit("r-fix", kind="fix", renderer=True)
+    assert scene.holders("fix") == ["r-fix"] and scene.holders("renderer") == []
+
+
+def test_an_issue_labelled_renderer_and_studio_is_a_renderer_unit(scene: Scene) -> None:
+    scene.unit("r-both", kind="tooling", renderer=True, studio=True)
+    assert scene.holders("renderer") == ["r-both"] and scene.holders("studio") == []
+    assert task_slots.track_of("feature", True, renderer=True) == "renderer"
+
+
+def test_an_issue_labelled_renderer_and_networking_is_a_networking_unit(scene: Scene) -> None:
+    # An issue is in one track: the networking one is named first, as it was added first.
+    scene.unit("r-both", kind="tooling", renderer=True, networking=True)
+    assert scene.holders("networking") == ["r-both"] and scene.holders("renderer") == []
+    assert task_slots.track_of("feature", False, True, True) == "networking"
+
+
+def test_the_studio_model_rule_does_not_bind_a_renderer_unit(scene: Scene) -> None:
+    scene.task("r-gpu", renderer=True)
+    assert scene.admit(brief("r-gpu"), model="haiku", effort="low").allowed
+    scene.task("r-both", renderer=True, studio=True)
+    assert scene.admit(brief("r-both"), model="haiku", effort="low").allowed
+
+
+def test_an_issue_labelled_workflow_and_renderer_is_a_workflow_unit_until_the_cutover(scene: Scene) -> None:
+    scene.unit("w-gpu", kind="tooling", workflow=True, renderer=True)
+    assert scene.scan().exempt == ("w-gpu",) and scene.holders("renderer") == []
+    set_slots(scene, exempt_workflow=False)
+    assert scene.holders("renderer") == ["w-gpu"]  # after the cutover the renderer label decides
+
+
+def test_a_renderer_card_that_was_read_decides_when_another_cannot_be(scene: Scene) -> None:
+    scene.unit("r-two", issues=(920, 921))
+    scene.cards[920] = replace(scene.cards[920], renderer=True, exempt=True)
+
+    def second_fails(number: int) -> None:
+        if number == 921:
+            raise ConfigError("gh timed out")
+
+    scene.on_read = second_fails
+    current = scene.scan()
+    assert [h.task for h in current.held("renderer")] == ["r-two"] and current.unchecked == ()
+
+
+def test_a_unit_whose_labels_cannot_be_read_counts_as_reimplementation_not_renderer(scene: Scene) -> None:
+    scene.unit("r-gpu", renderer=True)
+    scene.down = True
+    current = scene.scan()
+    assert [h.task for h in current.held("reimplementation")] == ["r-gpu"] and current.unchecked == ("r-gpu",)
+
+
+def test_a_reservation_records_the_renderer_track(scene: Scene) -> None:
+    scene.task("r-gpu", renderer=True)
+    assert scene.admit(brief("r-gpu"), reserve=True).allowed
+    data = json.loads((scene.scratch / "r-gpu" / task_slots.RESERVATION_FILE).read_text(encoding="utf-8"))
+    assert data["track"] == "renderer" and scene.holders("renderer") == ["r-gpu"]
+
+
+def test_the_report_names_the_renderer_track_and_its_empty_minimum(scene: Scene) -> None:
+    committed_renderer(scene)
+    lines = task_slots.report(scene.scan(), scene.conventions, scene.build_slots)
+    assert "renderer: 0 in work (at least 1 kept, at most 1)" in lines
+    assert "no renderer unit is in work: the track keeps one going" in lines
+    scene.unit("r-gpu", renderer=True)
+    lines = task_slots.report(scene.scan(), scene.conventions, scene.build_slots)
+    assert "renderer: 1 in work (at least 1 kept, at most 1)" in lines
+    assert not any(line.startswith("no renderer unit") for line in lines)
+
+
+def test_the_json_report_has_the_renderer_track(scene: Scene) -> None:
+    committed_renderer(scene)
+    scene.unit("r-gpu", renderer=True)
+    data = task_slots.as_json(scene.scan(), scene.conventions, scene.build_slots)
+    assert data["tracks"]["renderer"]["min"] == 1 and data["tracks"]["renderer"]["max"] == 1
+    assert [h["task"] for h in data["tracks"]["renderer"]["holders"]] == ["r-gpu"]
+
+
+def test_on_the_default_machine_the_four_tracks_keep_every_place(scene: Scene) -> None:
+    # 4 places, and the committed rules keep one each for game work, a fix, networking and the renderer: a Studio unit
+    # never fits, and the second game unit does not either while another track runs below its minimum.
+    committed_networking(scene)
+    committed_renderer(scene)
+    scene.unit("a-one")
+    scene.task("s-ui", kind="tooling", studio=True)
+    verdict = admit_studio(scene, "s-ui")
+    assert not verdict.allowed and "kept for" in verdict.message
+    scene.task("b-two")
+    assert not scene.admit(brief("b-two")).allowed
+    scene.unit("n-ids", networking=True)
+    scene.unit("r-gpu", renderer=True)
+    scene.task("f-fix", kind="fix")
+    assert scene.admit(brief("f-fix")).allowed  # the fix's own kept place
 
 
 # --- the Studio models ------------------------------------------------------------------------------------------------

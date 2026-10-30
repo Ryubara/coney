@@ -25,7 +25,7 @@ hook holds each to its own commands and files ([Which role to start](agents.md#r
 | --- | --- | --- | --- | --- |
 | **Maintainer** | A person | What the coordinator escalates | The [maintainer decisions](repo:AGENTS.md) only; may merge | When one is due |
 | **`coordinator`** | The main session, started with `coney-agent` ([The coordinator](#coordinator)) | Issues, task files, unit records and stamps, GitHub | Triage, claims and task files (`task create`), briefs, answers, pull requests (`pr open`) and merges; the only role that writes to GitHub. No code, tests or research, no review, and none of the stage commands from Start to Review | Always; Conclave and Tether start its turns |
-| **`engineer`** | Agent, Opus (Sonnet without reverse engineering: [Which model](agents.md#models)), in one of the tracks: reimplementation, fix, Coney Studio or networking ([Tracks](#slots)) | Its task file and issue, the guides, the original, research pages | Code, tests, pages and docs on its task's branch, its stamps, `PR.md`. Never pushes or runs `pr open` | One task, from Start to a passing Review |
+| **`engineer`** | Agent, Opus (Sonnet without reverse engineering: [Which model](agents.md#models)), in one of the tracks: reimplementation, fix, Coney Studio, networking or renderer ([Tracks](#slots)) | Its task file and issue, the guides, the original, research pages | Code, tests, pages and docs on its task's branch, its stamps, `PR.md`. Never pushes or runs `pr open` | One task, from Start to a passing Review |
 | **`tooling`** | Agent, Sonnet; the engineer's rules for the project's own tools | The guides and the tool's code; no Ghidra or PCSX2 | Tools, workflows, hooks and their guides, on its task's branch. Never pushes | One task about the tools or the process |
 | **`reviewer`** | Agent, Opus for research and `@orig`, smaller for docs and tooling ([The reviewer](agents.md#reviewer)); outside the tracks | The diff, the packet, the [checklists](review/index.md), the original (read only) | Its verdict and report, nothing else; it never edits | Once per task tip, by someone other than its author ([Task review](review/task.md)) |
 | **Claim Action** | The `claim` workflow on GitHub ([Claiming an issue](issues.md#claiming)) | `/claim`, `/unclaim` and `/progress` comments, issue and pull request events | Assignees, `S-` labels and the claim card; it deletes the command comments | On each command, and an hourly sweep |
@@ -179,6 +179,7 @@ flowchart TB
     fix["Fix<br/>1"]
     studio["Coney Studio<br/>the rest"]
     net["Networking<br/>1"]
+    render["Renderer<br/>1"]
   end
   rev["Reviewers<br/>outside the tracks"]
   gh["GitHub<br/>CI and main"]
@@ -209,11 +210,12 @@ What each role is, reads and writes is in [Who is who](#who-is-who); what is lef
 
 ### Tracks {#slots}
 
-Engineer work runs in four tracks (maintainer decisions of 2026-10-28, which put Coney Studio first, and of
-2026-10-29, which gave networking an engineer of its own):
+Engineer work runs in five tracks (maintainer decisions of 2026-10-28, which put Coney Studio first, and of
+2026-10-29, which gave networking and the SDL3 GPU renderer an engineer of their own):
 
-- **Reimplementation:** game issues and pull requests outside Coney Studio and networking. At least one engineer always
-  works on game work (a `feature` task; a tooling or docs unit shares the track but does not count as that one).
+- **Reimplementation:** game issues and pull requests outside Coney Studio, networking and the renderer. At least one
+  engineer always works on game work (a `feature` task; a tooling or docs unit shares the track but does not count as
+  that one).
 - **Fix:** one engineer resolves pull request problems (a failed check, a conflict, a rebase) after a unit's pull
   request is opened.
 - **Coney Studio:** an issue labelled `studio`. As many engineers as the machine holds work on Studio research and
@@ -221,11 +223,14 @@ Engineer work runs in four tracks (maintainer decisions of 2026-10-28, which put
 - **Networking:** an issue labelled `networking` (the co-op plan in [multiplayer](multiplayer.md#plan): network ids,
   snapshots, interpolation, the level-load barrier). One engineer always works on it, and no more than one; its
   claim is outside the open-claims limit, so game work cannot crowd it out.
+- **Renderer:** an issue labelled `renderer` (the SDL3 GPU migration, design #883: Coney's own renderer on SDL3's GPU
+  API, librw kept only for reading data). Networking's rule: one engineer always works on it, and no more than one,
+  outside the open-claims limit. An issue with both labels is a networking unit.
 
 A machine holds a fixed number of units of all tracks together for each of its build slots, the ones `coney-tools build`
 keeps ([Engineer tracks](agents.md#slots) has the number and the evidence for it). One place is kept for game work while
-no `feature` unit runs, one for a fix and one for networking while none runs, so Studio never takes any of them (a
-machine with one build slot cannot keep all three) (`tasks.start.slots` in
+no `feature` unit runs, one for a fix, one for networking and one for the renderer while none runs, so Studio never
+takes any of them (a machine with one build slot cannot keep all four) (`tasks.start.slots` in
 [.github/conventions.yml](repo:.github/conventions.yml)); `task start` refuses a start over the limit and the
 coordinator's Agent guard refuses the engineer before it starts ([Engineer tracks](agents.md#slots) has the rule in
 full). There are no standing teams: the coordinator assigns the next task from the triaged issues, `P-critical` first
@@ -250,7 +255,7 @@ and then by priority, whenever a place frees.
 - **Reviewers and helpers are outside the tracks**, and so is work in other repositories. Until the cutover so are
   units that build the workflow itself (their issue carries the `workflow` label, read from the claim card); from it
   they count like any other task ([Engineer tracks](agents.md#slots) holds the rule). Their claims are outside the
-  open-claims limit too, by the same label, and so are the claims of Studio and networking issues, for good.
+  open-claims limit too, by the same label, and so are the claims of Studio, networking and renderer issues, for good.
 - **Two engineers never work in the same functions.** A claim carries its scope, and `task create` warns when another
   held claim's scope overlaps.
 
@@ -509,8 +514,8 @@ requests and tidies after merges. It works under these rules:
 - **Escalate only maintainer decisions**, the list in [AGENTS.md](repo:AGENTS.md) (`repo.maintainer_decisions` in
   [.github/conventions.yml](repo:.github/conventions.yml)); everything else the coordinator decides itself.
 - **Keep the places full, and never over them.** When a task passes Review its place takes the next triaged issue at
-  once, `P-critical` first, then by priority ([Tracks](#slots)); one reimplementation unit and one networking unit
-  always run, Coney Studio takes the rest of the machine, and a failed check on a pull request goes to the fix track.
+  once, `P-critical` first, then by priority ([Tracks](#slots)); one reimplementation, one networking and one renderer
+  unit always run, Coney Studio takes the rest of the machine, and a failed check on a pull request goes to the fix track.
   The priorities are on the [roadmap](../roadmap.md#priorities). **No engineer or tooling agent starts without a held
   claim:** its brief carries a line `Task id: <id>` from `task create`, and a hook refuses the start when the task file
   is missing, the claim is no longer held, its track or the machine is full, or a Studio unit names a model it may not

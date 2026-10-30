@@ -235,6 +235,7 @@ class Engine(LimitEnforcement):
             exempt=self.rules.outside_limit(work.issue.labels),
             studio=self.rules.is_studio(work.issue.labels),
             networking=self.rules.is_networking(work.issue.labels),
+            renderer=self.rules.is_renderer(work.issue.labels),
             workflow=self.rules.is_workflow(work.issue.labels),
         )
         fresh = Stored(None, card)
@@ -706,6 +707,7 @@ class Engine(LimitEnforcement):
             exempt=self.rules.outside_limit(work.issue.labels),
             studio=self.rules.is_studio(work.issue.labels),
             networking=self.rules.is_networking(work.issue.labels),
+            renderer=self.rules.is_renderer(work.issue.labels),
             workflow=self.rules.is_workflow(work.issue.labels),
         )
         fresh = Stored(None, card)
@@ -733,10 +735,11 @@ class Engine(LimitEnforcement):
             "status": "pr-open" if open_pr else "claimed",
             "pr": open_pr.number if open_pr else None,
             # The labels can come and go: the claim is outside the limit while the issue carries one, and in the Studio
-            # (or networking) track while it carries that one.
+            # (networking or renderer) track while it carries that one.
             "exempt": self.rules.outside_limit(work.issue.labels),
             "studio": self.rules.is_studio(work.issue.labels),
             "networking": self.rules.is_networking(work.issue.labels),
+            "renderer": self.rules.is_renderer(work.issue.labels),
             "workflow": self.rules.is_workflow(work.issue.labels),
             "counted": counted,
             "regained": card.regained or (counted and not card.counted),

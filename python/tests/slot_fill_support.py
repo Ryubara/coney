@@ -25,6 +25,7 @@ RULES = CONVENTIONS.claims
 FILL = CONVENTIONS.tasks.start.fill
 WORKFLOW = RULES.exempt_label
 NETWORKING = RULES.networking_label or "networking"
+RENDERER = RULES.renderer_label or "renderer"
 
 
 def issue(number: int, *labels: str, title: str = "", body: str = "", assignees: tuple[str, ...] = ()) -> IssueInfo:
@@ -40,24 +41,26 @@ def claimed(
     exempt: bool = False,
     studio: bool = False,
     networking: bool = False,
+    renderer: bool = False,
     freed: bool = False,
     paused: str | None = None,
     task: str | None = None,
 ) -> Card:
     """The held claim card of an issue the maintainer holds: `exempt` (the workflow label), `studio` (the Studio label,
-    which also makes it exempt), `networking` (the networking label, exempt too), `freed` (its unit's place is free: the
-    card no longer counts) or paused by a label such as `S-on-hold` (the card then waits while it); `task` is the task
-    id the card carries."""
+    which also makes it exempt), `networking` (the networking label, exempt too), `renderer` (the renderer label,
+    exempt too), `freed` (its unit's place is free: the card no longer counts) or paused by a label such as
+    `S-on-hold` (the card then waits while it); `task` is the task id the card carries."""
     return Card(
         issue=number,
         claimant=USER,
         claimed_at=START,
         task=task,
         waiting=paused,
-        exempt=exempt or studio or networking,
+        exempt=exempt or studio or networking or renderer,
         workflow=exempt,
         studio=studio,
         networking=networking,
+        renderer=renderer,
         counted=not freed,
         freed=freed,
     )
