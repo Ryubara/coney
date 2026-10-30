@@ -114,7 +114,7 @@ struct PickContext {
 };
 
 /// The weighted draw (`Brain_PickAttack`): a kind that passes `filter`, drawn by its adjusted weight, or none (45).
-/// One draw of `random` when there is a candidate with weight.
+/// One draw of `random` whenever the target can be chased, even with no candidate or no weight.
 /// @orig 0x0028e708 Brain_PickAttack (unknown)
 /// @orig 0x002911f8 Brain_GetAttackWeight (unknown)
 [[nodiscard]] std::optional<int> pickAttackKind(const AttackWeights& weights, const PickContext& context,

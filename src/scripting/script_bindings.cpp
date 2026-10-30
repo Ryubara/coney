@@ -296,8 +296,8 @@ NativeFunction makeCfgLevelName(const Factory& factory) {
     };
 }
 
-// `random(low, high)`: a whole number in [low, high] from the game's generator, the table walked by one index for the
-// whole session (GameRandom, in the game state, so every Lua state shares it).
+// `random(low, high)`: a whole number in [low, high] from the game's generator's gameplay stream (0x006eb880), which
+// lives in the game state's GameRandom, so every Lua state shares it (docs/research/maths.md#random).
 // @orig 0x00386488 random (unknown)
 NativeFunction makeRandom(const Factory& factory) {
     return [state = factory.context->state](std::span<const Value> args) {
