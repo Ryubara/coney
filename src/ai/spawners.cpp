@@ -107,14 +107,14 @@ std::optional<std::uint32_t> searchOutward(const RoutePlanner& planner, std::uin
 std::optional<std::uint32_t> searchPlacementGoals(anim::Vec3 origin, anim::Vec3 forward, float halfAngle, float value,
                                                   const PlacementRandom& random, const PlacementSearch& search) {
     const anim::Vec3 axis{forward.x, forward.y, 0.0F};
+    anim::Vec3 goal = anim::add(origin, anim::scale(forward, kFirstGoalAhead));
     for (int attempt = 0; attempt < kPlacementTries; ++attempt) {
-        // Stub: each turned goal from its own attempt's draw.
+        // The angle is drawn before the search but turns only the next try's goal, so the last draw is never used.
         const float theta = halfAngle + (random() * ((2.0F * std::numbers::pi_v<float>)-(2.0F * halfAngle)));
-        const anim::Vec3 goal = attempt == 0 ? anim::add(origin, anim::scale(forward, kFirstGoalAhead))
-                                             : anim::add(origin, anim::scale(turned(axis, theta), 2.0F * value));
         if (const std::optional<std::uint32_t> node = search(goal)) {
             return node;
         }
+        goal = anim::add(origin, anim::scale(turned(axis, theta), 2.0F * value));
     }
     return std::nullopt;
 }
@@ -127,7 +127,8 @@ std::optional<anim::Vec3> outOfSightNode(const RoutePlanner& planner, anim::Vec3
     }
     const anim::Vec3 origin{camera.eye.x, camera.eye.y, player.z};
     const anim::Vec3 axis{camera.forward.x, camera.forward.y, 0.0F};
-    const float half = std::min(camera.halfFovRadians + kConeMarginRadians, std::numbers::pi_v<float>);
+    // Not capped at pi: past it the cone's cosine climbs back above -1, as the original's does.
+    const float half = camera.halfFovRadians + kConeMarginRadians;
     const std::optional<std::uint32_t> node =
         searchPlacementGoals(origin, camera.forward, half, value, random, [&](anim::Vec3 goal) {
             return searchOutward(planner, *start, origin, goal, axis, half, value);

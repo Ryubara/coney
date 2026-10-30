@@ -88,7 +88,7 @@ static_assert(static_cast<std::size_t>(TargetCause::Order) + 1 == kTargetCauseCo
 /// The human flags a human of brain type `type` is made with (`Human_Init`, docs/research/combat/index.md#human-flags):
 /// the player 0x2000000, 0x2 and 0x4; a Warrior 0x2 and 0x4 (revivable, so any Warrior downed in a fight can be
 /// revived); a cop and a dealer 0x2000 and 0x40000; any other none of these. **Coney's stand-in**: the others' 0x8
-/// (woundable) on a 1-in-2 roll is not given, as no Coney code reads it and the roll would shift every seeded run.
+/// (woundable) on a 1-in-2 roll (stream `0x006eb898`, RandomStream::Grabs) is not given, as no Coney code reads it.
 /// @orig 0x00218008 Human_Init (unknown)
 [[nodiscard]] std::uint64_t startingFlags(BrainType type);
 

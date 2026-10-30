@@ -244,8 +244,10 @@ Confirmed (code):
    the **tagger's** far melee range (his brain `+0x140`, 5.0 m unless `BrSetMeleeRange` changed it;
    [AI](ai-fights.md#melee-range)) of the tagger, by the squared distance between their positions.
 3. **Pick**: not the nearest. The first counting slot is taken; every later counting slot replaces it when
-   `Random_Int(100)` (stream `0x006eb8a0`) is 50 or more. So the last counting slot wins at 50 %, the one before at 25
-   %, and the first at 1/2^(n−1) of n.
+   `Random_Int(100)` (0 to 100, stream `0x006eb8a0`) is **below 50**: at `0x00273bc4` the earlier pick is kept when
+   49 < the roll (`sltu` against `0x31`, then `movz`). The first counting slot draws nothing. So a later slot replaces
+   the pick at 50 in 101, the last counting slot wins at about 50 %, the one before at about 25 %, and the first at
+   about 1/2^(n−1) of n. (This page said "50 or more" until the `@orig` sweep of 2026-10-21 read the branch again.)
 4. **Speak**: only the picked member is then tested: `Ambient_MayGesture` ([above](#command-ids)) and **his own**
    `+0x19a` (`HuEnableTagDone`) must both pass, or nobody speaks (no second choice). He says the command through
    `Human_SayCommand(1.0, member, command, no callback, no interrupt, uncut 1, null target, duckable 1)`.

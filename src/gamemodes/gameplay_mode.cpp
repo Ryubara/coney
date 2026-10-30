@@ -87,7 +87,9 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
         if (!player || planner == nullptr) {
             return std::nullopt;
         }
-        // Coney choice: with no camera the player's own position is the eye, looking along +y.
+        // Coney's choice: player 1's camera always. With two players the original takes, for states 6 and 10, the
+        // camera nearer the dispatch entry and refuses a node the other camera sees; Coney has one player (co-op is
+        // not built). With no camera the player's own position is the eye, looking along +y.
         ai::PlacementCamera camera;
         camera.eye = *player;
         if (m_cameras != nullptr) {
@@ -97,7 +99,7 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
                                     .forward = anim::normalise(anim::subtract(view.lookAt, view.position)),
                                     .halfFovRadians = view.fieldOfView * 0.5F * std::numbers::pi_v<float> / 180.0F};
         }
-        // `Random_Float`: the game's next random number over 2^32.
+        // `Random_Float`: the next number of the tactics stream (0x006eb8a0) over 2^32.
         const ai::PlacementRandom random = [this] {
             constexpr double kRange = 4294967296.0;
             return std::min(static_cast<float>(static_cast<double>(m_random->next(RandomStream::Tactics)) / kRange),

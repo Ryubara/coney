@@ -274,9 +274,10 @@ Written from this page, [Scripts](scripting.md#errors-in-a-fresh-state) and
   returns a table with `x`, `y`, `z` and `w` (1); `TeleportToFlag(object, flag, heading)` puts a human on the flag,
   with the flag's heading for -1 or no heading and the whole degrees given otherwise; `CfgSetDatabaseSizes` sizes the
   pool. `GetPosition` answers for a human or a flag.
-- **The game's random numbers** (`src/core/game_random.h`, `GameRandom`, one per game state, shared by every Lua
-  state): the 1,024-entry table is read at run time from the player's own executable (`SLUS_212.15`, `0x005117e0`,
-  through its ELF program headers, `src/fileio/executable.h`); it is never stored in the repository.
+- **The game's random numbers** (`src/core/game_random.h`, `GameRandom`, one per game state, shared by every Lua state,
+  its ten streams the original's, [Maths](maths.md#random); the scripts' `random` draws on the gameplay stream
+  `0x006eb880`): the 1,024-entry table is read at run time from the player's own executable (`SLUS_212.15`,
+  `0x005117e0`, through its ELF program headers, `src/fileio/executable.h`); it is never stored in the repository.
 - **The starts**: `InitLevel`'s step 7 adds the `CrimeScene` and `GangCall` flags after the level script, and step 13
   calls the start callback the script set (`SetStartGameCallback`), once. Gameplay watches player 1's teleports and
   moves the player there; the play mode starts a teleported player on the flag without snapping him to the ground.

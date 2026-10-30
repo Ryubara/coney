@@ -147,8 +147,9 @@ struct LightSelection {
 ///
 /// **Coney's choices** (determinism, docs/guides/conventions.md#update-and-render): the flicker is stepped by the
 /// simulation (advance(), with the step's game time, for the lights its own cull finds visible), not by the render
-/// pass as in the original; and it draws from the manager's own GameRandom, so lighting never moves the game's random
-/// index. Positions are RenderWare's axes throughout, as the original stores them.
+/// pass as in the original; and it draws from the manager's own GameRandom, on the ambient stream the original's
+/// flicker draws from (`0x006eb8a8`), so lighting never moves the game's own streams. Positions are RenderWare's axes
+/// throughout, as the original stores them.
 ///
 /// Research: docs/research/lighting.md
 class LightManager {

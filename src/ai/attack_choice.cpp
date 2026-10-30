@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ai/attack_choice.h"
 
+#include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 namespace coney::ai {
@@ -198,11 +200,12 @@ std::optional<int> pickAttackKind(const AttackWeights& weights, const PickContex
         candidates.push_back(Candidate{.kind = kind, .weight = weight});
         total += weight;
     }
-    if (total <= 0) {
-        return std::nullopt;
-    }
+    // One draw of 0 to the total inclusive (`Random_Int(total)`), made even with no candidate or no weight; a draw of
+    // the total is past every running sum and picks nothing. **Coney's stand-in**: the brain's own generator, its high
+    // bits as rollRange() reads them, in place of the shared stream 0x006eb880.
+    const std::uint32_t span = static_cast<std::uint32_t>(std::max(total, 0)) + 1U;
+    const auto draw = static_cast<int>((random.next() >> 8U) % span);
     // The first candidate whose running sum exceeds the draw.
-    const int draw = rollRange(random, 0, total - 1);
     int sum = 0;
     for (const Candidate& candidate : candidates) {
         sum += candidate.weight;

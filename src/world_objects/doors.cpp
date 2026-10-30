@@ -128,8 +128,9 @@ constexpr std::string_view kStall = "dyn_door_stall";
 constexpr std::string_view kVargas = "dyn_door_vargas";
 constexpr std::string_view kWallA = "dyn_door_wall_a";
 constexpr std::array<std::string_view, 2> kBoardlessBarriers{"dyn_door_wall_a", "dyn_door_wall_b"};
-// The boards a broken barrier throws.
-constexpr std::array<std::string_view, 3> kBoards{"dyn_wooddmg_a", "dyn_wooddmg_b", "dyn_wooddmg_a"};
+// The boards a broken barrier throws: three, each one of these two by a draw.
+constexpr int kBoardCount = 3;
+constexpr std::array<std::string_view, 2> kBoardTypes{"dyn_wooddmg_a", "dyn_wooddmg_b"};
 
 // dyn_door_liz's model stages in the order they are taken: each below its share of the full hitpoints, the model it
 // takes and the material its sound pairs the door's own with (0: the door's own again).
@@ -974,11 +975,14 @@ void Doors::hitBarrier(Door& door, const ObjectHit& hit, ObjectWorld& world) {
         } else if (!listed(kBoardlessBarriers, door.type)) {
             // Each board is made and sent its messages, then goes at its first update (tick()): a board that stayed
             // would stand in the gap as the broken fence for as long as the barrier waits for its removal.
-            // Stand-in (#707): the original makes each board dyn_wooddmg_a or _b at random and throws it, unless
-            // bit 2 of game state word 3; Coney places dyn_wooddmg_a, _b, _a at the barrier's pose. Not ported
-            // (#707): the dust and bursts at the barrier first (unless bit 2 of game state word 0).
-            for (const std::string_view board : kBoards) {
-                const double handle = world.services->spawnObject(board, door.position, door.rotation);
+            // Each board draws its turn (0 to pi about z), then Random_Int(1) for its type, on the effects stream.
+            // Stand-in (#707): the turn is drawn but not applied and the board is placed at the barrier's pose,
+            // not thrown; the boards come whatever bit 2 of game state word 3 says. Not ported (#707): the dust and
+            // bursts at the barrier first (unless bit 2 of game state word 0).
+            for (int board = 0; board < kBoardCount; ++board) {
+                static_cast<void>(randomBelow(world.random, 2));
+                const std::string_view type = kBoardTypes.at(static_cast<std::size_t>(randomBelow(world.random, 2)));
+                const double handle = world.services->spawnObject(type, door.position, door.rotation);
                 if (handle != kNoObject) {
                     door.boards.push_back(handle);
                 }

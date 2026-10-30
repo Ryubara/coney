@@ -69,9 +69,8 @@ BrainType brainTypeOf(int behaviour) {
     return static_cast<BrainType>(behaviour);
 }
 
-BrainType createdBrainType(BrainType classType, bool /*gangFlag*/) {
-    // Stub: the class's type.
-    return classType;
+BrainType createdBrainType(BrainType classType, bool gangFlag) {
+    return gangFlag && classType != BrainType::Warrior ? BrainType::Gang : classType;
 }
 
 namespace {

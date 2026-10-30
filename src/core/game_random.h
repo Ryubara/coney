@@ -88,8 +88,7 @@ class GameRandom {
 
   private:
     // The stream's place in the arrays below.
-    // Stub: one index shared by every stream, as before the streams.
-    static constexpr std::size_t slot(RandomStream /*stream*/) { return 0; }
+    static constexpr std::size_t slot(RandomStream stream) { return static_cast<std::size_t>(stream); }
 
     static constexpr std::uint32_t kStandInStart = 0x12345678U; // the stand-in's power-on state
 

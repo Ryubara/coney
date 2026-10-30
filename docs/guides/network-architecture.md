@@ -59,7 +59,7 @@ behind a session rule ([Phases](#phases)).
 - **A loop built for this:** a fixed 1/30 s step at any frame rate, bit for bit the same at every rate, game time
   counted in steps, `render()` that only draws and blends the last two steps, pads read once per step, no clock
   outside the frame pacer, a headless lockstep test mode ([Update and render](conventions.md#update-and-render)).
-- **The game's own random numbers** in one place (`GameRandom`), as the original's one shared table walk.
+- **The game's own random numbers** in one place (`GameRandom`), as the original's table walked by ten streams.
 - **One player.** Coney does not yet build the original's two-player game; the pause menu leaves out the co-op quit
   and the scripts' `HuIsAPlayer(player2)` is answered for one player. That is the first blocker
   ([Readiness](#subsystems)).
@@ -277,7 +277,7 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
 | One fixed 1/30 s step, no clock outside the frame pacer, game time from the step count | **One player** is built into the level glue: `PlayLevelMode::m_player`, pad port 0, HUD panel 0, the radar, crew, hiding, tagging, revive, uncuff |
 | Pads sampled once per step through one `InputSource` and the pad record; the AI writes the same `PlayerRecord` | **Simulation inside `src/platform/`**: about 4,800 lines of `play_level_*.cpp` mix player-1 gameplay (pickups, throw aim, mugging, object attacks) with drawing |
 | Script handles from one deterministic counter, and ordered `std::map<double, ...>` almost everywhere | **No copy or restore** of simulation state; `Human`, `Brain` and `Player` are not copyable, and humans link to each other by raw pointer |
-| Per-human and per-brain `CombatRandom` streams; cosmetic effects on their own streams | **The shared `GameRandom` stream** is also drawn by presentation-adjacent code (system music, radios), in subsystem order |
+| Per-human and per-brain `CombatRandom` streams; cosmetic effects on their own streams | **`GameRandom`** is drawn by presentation-adjacent code too (system music, radios, effects), each on its own stream as the original's ([Maths](../research/maths.md#random)), so those draws no longer move the gameplay stream, but they still run in the simulation |
 | A headless mode that runs the whole simulation, and input scripts | **Sounds, particles and HUD changes** are direct calls from the simulation, with no event that could be sent |
 | `PlayerSnapshot` and `TargetSnapshot`, ready-made per-human presentation state | **Tuning singletons** the debug menus change live, and debug tools that change the game out of band |
 
@@ -368,9 +368,9 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
   keyed by the object's handle; a break or a pickup also as an event for its sound and particles.
 - **Today:** `SpawnRecords`, `LevelObjects`, `LooseObjects`, `Pickups`, `Cars` and the rest, keyed by `double`
   handles in ordered maps (the best replication keys in the code); doors and props tick at 60 Hz, two ticks a step.
-- **In the way:** doors, glass, props and radios draw from the shared `GameRandom` through `ObjectWorld::random`:
-  fine on the server, so a client must never run that logic itself. Player-specific object code (carrying, the
-  object attack) lives in `PlayLevelMode` for player 1.
+- **In the way:** doors, glass, props and radios draw from `GameRandom` (the effects and ambient streams) through
+  `ObjectWorld::random`: fine on the server, so a client must never run that logic itself. Player-specific object code
+  (carrying, the object attack) lives in `PlayLevelMode` for player 1.
 
 ### Effects (`effects/`) {#sub-effects}
 

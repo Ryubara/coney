@@ -98,15 +98,17 @@ ai::Brain* PlayLevelMode::castHuman(const HumanCreation& human) {
     // Its class: the type's CfgChar record and the power class it names (the fighters' when it names none).
     const characters::CharacterType* type = m_types.find(human.type);
     const int powerClass = type != nullptr && type->powerClass ? *type->powerClass : ai::kFighterPowerClass;
-    const ai::AiConfig config =
+    ai::AiConfig config =
         m_cast.recorded != nullptr ? ai::aiConfigFrom(*m_cast.recorded, human.type, powerClass) : ai::AiConfig{};
+    // HuCreate's flag makes him a gang member unless his class makes Warriors (docs/research/human-init.md#brain-type).
+    config.fighter.brain = ai::createdBrainType(config.fighter.brain, human.gangFlag);
     const CastLook look = castCharacter(human.model);
     // Snapped to the ground as HuCreate snaps (Human::spawn: a 2.5 m ray from 1 m above).
     const std::array<float, 3>& p = *human.position;
     ai::Brain& brain = m_ai->spawn(*look.character, config, &m_scenery->collision(), anim::Vec3{p[0], p[1], p[2]},
                                    human.headingDegrees);
-    // Human_Init's tag colour: a civilian woman's is ff ef ef ef, everyone else keeps the default. **Coney's
-    // reading**: the class's brain kind before the `+0x19d` remap (the remap is not on the page).
+    // Human_Init's tag colour: a civilian woman's is ff ef ef ef, everyone else keeps the default; the brain type is
+    // the one after the `+0x19d` remap (docs/research/human-init.md#brain-type).
     if (config.fighter.brain == ai::BrainType::Civilian && type != nullptr && type->female.value_or(0) == 1) {
         brain.human().script().tagColour = human::kFemaleCivilianTagColour;
     }

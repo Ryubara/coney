@@ -21,11 +21,31 @@ in the Ghidra project. Unless a row says otherwise its evidence is the code at t
 
 The generator is a fixed table of 1,024 32-bit numbers at `0x005117e0`. A **stream** is a 32-bit index: each draw
 adds 1, masks it to 10 bits and reads that entry (`Random_NextRaw`), so a fresh stream's first draw reads entry 1.
-There are ten indices, `0x006eb870`-`0x006eb8b8` (8 bytes apart), all zeroed at start-up and never seeded; every
-function below takes the stream in `a0` and passes it through. Most callers pass `0x006eb880` (the Lua `random`
-binding, items, brains, humans) or `0x006eb8b8` (particles, strikes, glass), directly or from a saved register;
-confirmed (code) for those two, the use of the other eight not traced. How `random(a, b)` depends on the draw count:
-[World flags](flags.md#player-starts).
+There are ten indices, `0x006eb870`-`0x006eb8b8` (8 bytes apart), all zeroed at start-up by `Random_StaticInit`
+(`0x00335608`) and never seeded; every function below takes the index's address in `a0` and passes it through, so each
+index is a **stream** of its own: a draw on one never moves another. Every caller names its stream as a constant
+address. The callers of each, read from the cross-references to the ten addresses (confirmed (code) at the cited
+callers; the names are ours and the roles inferred from them):
+
+| Index | Callers | Coney's stream | Evidence |
+| --- | --- | --- | --- |
+| `0x006eb870` | FaceTask_Update `0x0010b6e0`, AttackKind_ChainDelay, Human_BuildLandingClip | `Animation` | confirmed (code) |
+| `0x006eb878` | GangClips_Get (`0x0016408c`), GangClips_Set (`0x001641f4`) | `GangClips` | confirmed (code) |
+| `0x006eb880` | the Lua `random` binding, the brains and goals (FightGoal_Process `0x002b3ffc`, Brain_PickAttack `0x0028e708`), Human_Init's money, ped type and body size | `Gameplay` | confirmed (code) |
+| `0x006eb888` | Cam_UpdateShake `0x00121298`, the follow camera's collision, the mugging and mini-game shots | `Cameras` | confirmed (code) |
+| `0x006eb890` | CivilianBrain_OnEvent, PedReactionGoal_Process, Ped_PickGait, FlagNet_StartTraverse, Spawner_Spawn | `Civilians` | confirmed (code) |
+| `0x006eb898` | grabs and hit reactions (HitReact_OnFire, Grab_CanEscape, Tandem_Start), Human_TryIdleFidget, Human_Init's woundable roll (`0x00218d98`) | `Grabs` | confirmed (code) |
+| `0x006eb8a0` | the tactics (Crowd, Hold, WarriorFollow, Wander), banter pairs, Tag_SayNearbyLine (`0x00273bb0`), Spawner_PlaceOutOfView (`0x001676e8`) | `Tactics` | confirmed (code) |
+| `0x006eb8a8` | Light_UpdateFlickerAndCorona `0x0017caa8`, fog, smoke, embers and garbage, cars, Radio_Update `0x003ad440`, the rumble intro, ObjTypeList_PickFromGroup | `Ambient` | confirmed (code) |
+| `0x006eb8b0` | sound volumes and impact sounds, the ambient emitters, SystemMusic_Update `0x0010e888`, Human_Init's voice pick (`0x002184a8`) | `Sound` | confirmed (code) |
+| `0x006eb8b8` | particles and world objects (622 references: glass, glints `0x003e96a0`, rubble, thrown weapons, DoorFence_OnHit `0x003b2180`), Strike_Contact | `Effects` | confirmed (code) |
+
+At runtime the indices move apart: two reads a few seconds apart in level99's checkpoint 2 found `0x006eb870` 2 on,
+`0x006eb880` 4, `0x006eb8a8` 6 and `0x006eb8b8` 895 (mod 1,024), and the other six where they were;
+confirmed (runtime), run r-20261030-random-streams.
+
+Coney keeps the ten as `RandomStream` in [game_random.h](repo:src/core/game_random.h); a run's `--ai-seed` starts the
+gameplay stream only. How `random(a, b)` depends on the draw count: [World flags](flags.md#player-starts).
 
 Two integer forms differ at the top: `Random_Int(n)` returns 0 to n **inclusive** (raw mod (n + 1)), while
 `Random_IntBelow(n)` returns 0 to n − 1.
@@ -144,8 +164,9 @@ A box is `{min, max at +0x10}`.
 ## What a reimplementation must keep
 
 - **The random table and its streams** where a page depends on a draw order: the table comes from the player's
-  executable at run time (`GameRandom`, [World flags](flags.md#coneys-implementation)), and `Random_Int(n)` includes
-  n. Elsewhere any generator with the same ranges will do.
+  executable at run time (`GameRandom`, [World flags](flags.md#coneys-implementation)), each draw is made on its
+  caller's stream ([the table above](#random)), and `Random_Int(n)` includes n. Elsewhere any generator with the
+  same ranges will do.
 - **Headings clockwise from +y** (`Vec_Heading`, `Vec_FromHeading`, `Quat_Heading`): angles stored in scripts and
   flags use it; `Vec_PointOnCircle` and `Quat_AngleFromX` use the mathematical convention instead.
 - **Transforms as `{position, quaternion}`** composed as `Transform_Compose` does (the child in the parent's frame).
@@ -154,5 +175,4 @@ A box is `{min, max at +0x10}`.
 
 ## Open questions
 
-- Which callers use the other eight random streams (`0x006eb870`-`0x006eb8b0`, except `0x006eb880`).
 - Whether `Mat_SwapYZ` converts to RenderWare's frame or to the vector unit's (its callers are all render paths).

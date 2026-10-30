@@ -229,7 +229,8 @@ void setTrianglesEnabledInBox(ObjectWorld& world, std::array<float, 3> low, std:
 void markTriangles(ObjectWorld& world, std::span<const std::uint32_t> triangles, std::uint16_t flags,
                    int material = -1);
 
-/// A random whole number in [0, n - 1] from `random` (`0x003353b8`); 0 without one.
+/// A random whole number in [0, n - 1] from `random`'s effects stream (`0x006eb8b8`, the world objects' own); 0 without
+/// one.
 [[nodiscard]] int randomBelow(GameRandom* random, int n);
 
 /// `rotation` turned by `degrees` about the vertical axis (applied after it, in the object's own frame): the half-angle

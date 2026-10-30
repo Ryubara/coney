@@ -130,7 +130,7 @@ class Triglints {
     std::uint32_t draw(std::uint32_t n);
 
     std::map<double, Triglint> m_triglints;
-    GameRandom m_random; // the particles' stream
+    GameRandom m_random; // the particles' own: its effects stream (0x006eb8b8)
 };
 
 } // namespace coney::effects

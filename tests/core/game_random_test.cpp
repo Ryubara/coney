@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The game's random numbers (docs/research/flags.md#player-starts): a table walked by one index that wraps at 1,024,
-// and `low + v mod (high - low + 1)` with an unsigned modulo. The table here is a synthetic one; the game's is read
-// from the player's disc at run time.
+// The game's random numbers (docs/research/flags.md#player-starts, docs/research/maths.md#random): a table walked by
+// ten indices, the streams, each wrapping at 1,024, and `low + v mod (high - low + 1)` with an unsigned modulo. The
+// table here is a synthetic one; the game's is read from the player's disc at run time.
 #include "core/game_random.h"
 
 #include <cstdint>

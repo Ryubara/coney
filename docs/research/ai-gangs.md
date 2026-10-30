@@ -802,11 +802,14 @@ spawner's own position whatever the state, also for the states that place their 
     - **Cone**: the camera's forward (its orientation's y axis: vtable `+0xac`, then `0x003363b0`) with z then set to
       0 and **not** normalised again; half-angle *h* = (field of view × 0.5 + 10)° in radians.
     - **Try 1**: goal = origin + 100 × the forward taken *before* its z is cleared.
-    - **Tries 2-17**: θ = `Random_Float(h, 2π − h)` (`0x00335420`: a uniform draw, the raw random number / 2³² scaled
-      into the range); the flattened forward is turned by θ about the vertical (a quaternion about (0, 0, 1),
-      `0x00511740`), and goal = origin + 2 × value × that vector. Each try turns the **original** forward, not the
-      previous try's; a θ is drawn before every search, so 17 draws are made and the first is unused. The cone the
-      search tests keeps the original flattened forward on every try; only the goal moves.
+    - **Tries 2-17**: θ = `Random_Float(h, 2π − h)` (`0x00335420` on stream `0x006eb8a0`: a uniform draw, the raw
+      random number / 2³² scaled into the range); the flattened forward is turned by θ about the vertical (a
+      quaternion about (0, 0, 1), `0x00511740`), and goal = origin + 2 × value × that vector. Each try turns the
+      **original** forward, not the previous try's. A θ is drawn before every search (`0x001676e8`), but the goal it
+      turns is built only after that search fails, for the **next** try: the first draw shapes try 2, the 17th is
+      never used. (This page said the first draw was the unused one until the `@orig` sweep of 2026-10-21.) The cone
+      the search tests keeps the original flattened forward on every try; only the goal moves. *h* is not capped: a
+      field of view wide enough to take it past π leaves cos *h* above −1.
 3. **Second player**: with two players, a node that the other camera can see 1.6 m above it (`0x00122548`, its
    distance argument the larger of the value and its view distance capped at 70 m) is refused.
 4. **Turf**: the node must lie in one of the gang's turf boxes (`Gang_IsPointInTurf`, `0x001652e8`); a gang with no

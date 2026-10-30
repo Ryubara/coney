@@ -125,7 +125,7 @@ void markTriangles(ObjectWorld& world, std::span<const std::uint32_t> triangles,
     }
 }
 
-// @coney-only Coney's GameRandom for a 0 to n - 1 draw
+// @coney-only Coney's GameRandom for a 0 to n - 1 draw, on the effects stream the world objects draw from
 int randomBelow(GameRandom* random, int n) {
     if (random == nullptr || n <= 0) {
         return 0;

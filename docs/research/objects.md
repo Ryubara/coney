@@ -1585,7 +1585,9 @@ triangle sets off, the number's links opened (`0x00250c50`), then by class name:
   (`Obj_RemoveBody`, `0x003a5340`; confirmed (code));
 - `dyn_door_wall_b`: sounds only;
 - the others (`dyn_door_fence`, `dyn_door_vargas`): more dust (unless bit 2 of game state word 0, `0x0041cf30`), a
-  sound, and three `dyn_wooddmg_a`/`_b` boards (unless bit 2 of word 3), each sent messages `0x19` and `0x30`.
+  sound, and three `dyn_wooddmg_a`/`_b` boards (unless bit 2 of word 3), each sent messages `0x19` and `0x30`. Each
+  board draws on stream `0x006eb8b8` an angle in 0-π for its turn about z and then `Random_Int(1)`: 0 makes
+  `dyn_wooddmg_a`, 1 `dyn_wooddmg_b` (confirmed (code) at `0x003b2180`).
 
 Then the type's material pair sounds (unless bit 4 of word 3), and the barrier either marks itself broken (data
 `+0x00` = 1) and hides (flag 4), or, for `dyn_door_vargas`, which makes a second object at spawn (data `+0x08`),
