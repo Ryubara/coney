@@ -1,0 +1,174 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1280 720" width="1280" height="720" role="img" aria-labelledby="t">
+  <title id="t">Mock-up: Coney Director's editor, a project with its preview, marker panel and timeline (Coney's own drawing)</title>
+  <style>
+    text { font-family: Inter, "Segoe UI", Helvetica, Arial, sans-serif; fill: #e9edf2; }
+    .small { font-size: 12px; fill: #aab3bf; }
+    .label { font-size: 13px; }
+    .head { font-size: 15px; font-weight: 700; letter-spacing: 1px; }
+    .mono { font-family: "JetBrains Mono", Consolas, monospace; font-size: 13px; }
+    .panel { fill: #0b0d11; fill-opacity: 0.92; }
+    .chip { fill: #1c2129; }
+    .on { fill: #f2b33d; }
+    .dark { fill: #0b0d11; font-weight: 700; }
+    .rowName { font-size: 12px; fill: #8d97a3; font-weight: 600; letter-spacing: 1px; }
+  </style>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#182338"/>
+      <stop offset="0.62" stop-color="#3a3350"/>
+      <stop offset="1" stop-color="#b9673a"/>
+    </linearGradient>
+    <symbol id="scene" viewBox="0 0 160 90">
+      <rect width="160" height="90" fill="url(#sky)"/>
+      <path d="M0 52 h22 v-30 h18 v18 h14 v-26 h20 v38 h16 v-22 h22 v22 h48 v38 H0 Z" fill="#141821"/>
+      <path d="M0 64 L160 58 V90 H0 Z" fill="#23252b"/>
+      <path d="M58 90 L78 60 L86 60 L112 90 Z" fill="#2c2f36"/>
+      <g fill="#0b0c10">
+        <circle cx="64" cy="55" r="3"/><rect x="61" y="58" width="6" height="12" rx="2"/>
+        <circle cx="90" cy="53" r="3"/><rect x="87" y="56" width="6" height="12" rx="2"/>
+        <circle cx="104" cy="57" r="3.4"/><rect x="100.6" y="60.4" width="6.8" height="13" rx="2"/>
+      </g>
+      <circle cx="30" cy="30" r="1.4" fill="#ffd27a"/><circle cx="118" cy="44" r="1.2" fill="#ffd27a"/>
+    </symbol>
+    <pattern id="film" width="56" height="30" patternUnits="userSpaceOnUse" x="98" y="616">
+      <use href="#scene" xlink:href="#scene" x="1" y="0" width="53" height="30"/>
+    </pattern>
+  </defs>
+
+  <rect width="1280" height="720" fill="#07090c"/>
+
+  <!-- Top bar -->
+  <rect x="0" y="0" width="1280" height="48" class="panel"/>
+  <text x="18" y="30" class="label" style="fill:#aab3bf">◂ Projects</text>
+  <text x="104" y="30" class="head">RUMBLE AT THE YARD</text>
+  <circle cx="300" cy="25" r="4" class="on"/>
+  <rect x="520" y="10" width="86" height="28" rx="4" class="chip"/><text x="563" y="29" class="label" text-anchor="middle">↶ Undo</text>
+  <rect x="614" y="10" width="86" height="28" rx="4" class="chip"/><text x="657" y="29" class="label" text-anchor="middle">↷ Redo</text>
+  <text x="1150" y="29" class="small" text-anchor="end">Saved by itself 20 s ago</text>
+  <rect x="1164" y="10" width="100" height="28" rx="4" class="on"/><text x="1214" y="29" class="label dark" text-anchor="middle">Export</text>
+
+  <!-- Preview: Director's player draws the recording from the marker's camera -->
+  <use href="#scene" xlink:href="#scene" x="16" y="60" width="864" height="486"/>
+  <g stroke="#ffffff" stroke-opacity="0.55" stroke-width="2" fill="none">
+    <path d="M60 90 h28 M60 90 v20"/><path d="M836 90 h-28 M836 90 v20"/>
+    <path d="M60 516 h28 M60 516 v-20"/><path d="M836 516 h-28 M836 516 v-20"/>
+  </g>
+  <ellipse cx="578" cy="454" rx="40" ry="11" fill="none" stroke="#f2b33d" stroke-width="3"/>
+  <path d="M578 300 v18" stroke="#f2b33d" stroke-width="2"/>
+  <rect x="528" y="276" width="100" height="24" rx="4" fill="#000" fill-opacity="0.65"/>
+  <text x="578" y="293" class="label" text-anchor="middle" style="fill:#f2b33d">◎ Player 1</text>
+  <rect x="72" y="100" width="250" height="26" rx="4" fill="#000" fill-opacity="0.6"/>
+  <text x="84" y="118" class="label">Marker 3 · Look at · 0.25× · Smooth</text>
+  <rect x="694" y="512" width="174" height="24" rx="4" fill="#000" fill-opacity="0.6"/>
+  <text x="781" y="529" class="small" text-anchor="middle" style="fill:#e9edf2">Preview · export 1080p 60</text>
+
+  <!-- Marker panel -->
+  <rect x="896" y="60" width="368" height="486" rx="6" class="panel"/>
+  <text x="914" y="88" class="head">MARKER 3</text>
+  <text x="1246" y="88" class="small" text-anchor="end">0:12.40 · clip 1, step 300</text>
+  <text x="914" y="118" class="small">Camera</text>
+  <g>
+    <rect x="914" y="126" width="64" height="28" rx="4" class="chip"/><text x="946" y="145" class="label" text-anchor="middle">Game</text>
+    <rect x="982" y="126" width="64" height="28" rx="4" class="chip"/><text x="1014" y="145" class="label" text-anchor="middle">Free</text>
+    <rect x="1050" y="126" width="64" height="28" rx="4" class="on"/><text x="1082" y="145" class="label dark" text-anchor="middle">Look at</text>
+    <rect x="1118" y="126" width="64" height="28" rx="4" class="chip"/><text x="1150" y="145" class="label" text-anchor="middle">Ride</text>
+    <rect x="1186" y="126" width="60" height="28" rx="4" class="chip"/><text x="1216" y="145" class="label" text-anchor="middle">Orbit</text>
+  </g>
+  <text x="914" y="182" class="small">Target</text>
+  <rect x="1010" y="166" width="150" height="26" rx="4" class="chip"/><text x="1022" y="184" class="label">Player 1  ▾</text>
+  <rect x="1168" y="166" width="78" height="26" rx="4" class="chip"/><text x="1207" y="184" class="label" text-anchor="middle">◎ Pick</text>
+  <text x="914" y="214" class="small">Position</text>
+  <text x="1010" y="214" class="mono">x 12.40  y -3.10  z 1.80</text>
+  <text x="914" y="246" class="small">Field of view</text>
+  <rect x="1010" y="238" width="190" height="4" rx="2" fill="#39414d"/><rect x="1010" y="238" width="78" height="4" rx="2" class="on"/>
+  <circle cx="1088" cy="240" r="7" fill="#e9edf2"/><text x="1246" y="245" class="label" text-anchor="end">42°</text>
+  <text x="914" y="276" class="small">Framing</text>
+  <text x="1010" y="276" class="label">target at the centre, offset 0, 0.1</text>
+  <path d="M914 294 h332" stroke="#252b34"/>
+  <text x="914" y="320" class="small">Blend in</text>
+  <rect x="1010" y="304" width="76" height="26" rx="4" class="chip"/><text x="1048" y="322" class="label" text-anchor="middle">Cut</text>
+  <rect x="1090" y="304" width="76" height="26" rx="4" class="on"/><text x="1128" y="322" class="label dark" text-anchor="middle">Smooth</text>
+  <text x="914" y="354" class="small">Ease</text>
+  <rect x="1010" y="338" width="156" height="26" rx="4" class="chip"/><text x="1022" y="356" class="label">In and out  ▾</text>
+  <path d="M914 376 h332" stroke="#252b34"/>
+  <text x="914" y="402" class="small">Speed</text>
+  <rect x="1010" y="394" width="190" height="4" rx="2" fill="#39414d"/><rect x="1010" y="394" width="58" height="4" rx="2" fill="#a77be8"/>
+  <circle cx="1068" cy="396" r="7" fill="#e9edf2"/><text x="1246" y="401" class="label" text-anchor="end">0.25×</text>
+  <g>
+    <rect x="1010" y="410" width="36" height="22" rx="3" class="chip"/><text x="1028" y="425" class="small" text-anchor="middle">0.05</text>
+    <rect x="1050" y="410" width="30" height="22" rx="3" class="chip"/><text x="1065" y="425" class="small" text-anchor="middle">0.1</text>
+    <rect x="1084" y="410" width="36" height="22" rx="3" fill="#a77be8"/><text x="1102" y="425" class="small" text-anchor="middle" style="fill:#0b0d11;font-weight:700">0.25</text>
+    <rect x="1124" y="410" width="30" height="22" rx="3" class="chip"/><text x="1139" y="425" class="small" text-anchor="middle">0.5</text>
+    <rect x="1158" y="410" width="26" height="22" rx="3" class="chip"/><text x="1171" y="425" class="small" text-anchor="middle">1</text>
+    <rect x="1188" y="410" width="26" height="22" rx="3" class="chip"/><text x="1201" y="425" class="small" text-anchor="middle">2</text>
+    <rect x="1218" y="410" width="28" height="22" rx="3" class="chip"/><text x="1232" y="425" class="small" text-anchor="middle">4</text>
+  </g>
+  <text x="914" y="458" class="small">Ramp</text>
+  <rect x="1010" y="446" width="40" height="20" rx="10" fill="#a77be8"/><circle cx="1040" cy="456" r="7" fill="#0b0d11"/>
+  <text x="1060" y="461" class="label">eased from the last marker's speed</text>
+  <rect x="914" y="484" width="150" height="30" rx="4" class="on"/><text x="989" y="504" class="label dark" text-anchor="middle">△ Fly camera</text>
+  <rect x="1072" y="484" width="84" height="30" rx="4" class="chip"/><text x="1114" y="504" class="label" text-anchor="middle">Copy</text>
+  <rect x="1162" y="484" width="84" height="30" rx="4" class="chip"/><text x="1204" y="504" class="label" text-anchor="middle">Paste</text>
+  <text x="914" y="534" class="small">Depth of field, shake and looks follow the first version</text>
+
+  <!-- Transport -->
+  <rect x="0" y="554" width="1280" height="38" class="panel"/>
+  <text x="22" y="579" class="label" style="font-size:16px">⏮   ◁|   ▶   |▷   ⏭</text>
+  <text x="212" y="579" class="mono" style="font-size:15px">0:12.40</text>
+  <text x="280" y="579" class="mono" style="fill:#8d97a3">/ 1:48.00</text>
+  <text x="372" y="579" class="small">video time · clip 1 at 0:10.00, step 300 of 1,800</text>
+  <text x="900" y="579" class="small">Snap to markers ✓</text>
+  <text x="1028" y="579" class="small">Zoom</text>
+  <rect x="1066" y="571" width="150" height="4" rx="2" fill="#39414d"/><circle cx="1110" cy="573" r="6" fill="#e9edf2"/>
+  <text x="1252" y="579" class="small" text-anchor="end">fit</text>
+
+  <!-- Timeline -->
+  <rect x="0" y="592" width="1280" height="128" fill="#0d1015"/>
+  <g class="small">
+    <text x="96" y="607">0:00</text><text x="312" y="607">0:20</text><text x="528" y="607">0:40</text>
+    <text x="744" y="607">1:00</text><text x="960" y="607">1:20</text><text x="1176" y="607">1:40</text>
+  </g>
+  <g stroke="#2a313b">
+    <path d="M96 610 v4 M204 610 v4 M312 610 v4 M420 610 v4 M528 610 v4 M636 610 v4 M744 610 v4 M852 610 v4 M960 610 v4 M1068 610 v4 M1176 610 v4"/>
+  </g>
+  <text x="16" y="636" class="rowName">CLIPS</text>
+  <text x="16" y="665" class="rowName">MARKERS</text>
+  <text x="16" y="694" class="rowName">SPEED</text>
+
+  <!-- Clips row: one stretch over two clips of one recording, no seam, then a clip of another recording -->
+  <rect x="96" y="616" width="776" height="30" rx="4" fill="#3d8bd9"/>
+  <rect x="98" y="616" width="772" height="30" fill="url(#film)" opacity="0.55"/>
+  <text x="104" y="636" class="label" style="font-weight:700">Oct 29 · clips 1 and 2</text>
+  <path d="M540 616 v30" stroke="#ffffff" stroke-dasharray="3 3" stroke-opacity="0.8"/>
+  <text x="546" y="642" class="small" style="fill:#ffffff">no seam</text>
+  <rect x="876" y="616" width="388" height="30" rx="4" fill="#2f6fb0"/>
+  <text x="884" y="636" class="label" style="font-weight:700">Oct 28 · clip 1</text>
+  <rect x="872" y="612" width="6" height="38" rx="2" fill="#e9edf2"/>
+
+  <!-- Markers row: diamonds blend in smoothly, bars cut -->
+  <path d="M100 660 C130 656 140 664 161 660 S200 656 230 660 S290 664 312 660 S400 656 431 660 S600 664 658 660" stroke="#f2b33d" stroke-opacity="0.6" stroke-width="2" fill="none"/>
+  <path d="M662 660 C720 656 800 664 870 660" stroke="#f2b33d" stroke-opacity="0.6" stroke-width="2" fill="none"/>
+  <path d="M880 660 C960 656 1020 664 1069 660 S1200 656 1256 660" stroke="#f2b33d" stroke-opacity="0.6" stroke-width="2" fill="none"/>
+  <g fill="#f2b33d">
+    <path d="M96 652 l8 8 l-8 8 l-8 -8 Z"/>
+    <path d="M161 652 l8 8 l-8 8 l-8 -8 Z"/>
+    <path d="M312 652 l8 8 l-8 8 l-8 -8 Z"/>
+    <path d="M431 652 l8 8 l-8 8 l-8 -8 Z"/>
+    <rect x="655" y="651" width="6" height="18" rx="1"/>
+    <rect x="877" y="651" width="6" height="18" rx="1"/>
+    <path d="M1069 652 l8 8 l-8 8 l-8 -8 Z"/>
+    <path d="M1256 652 l8 8 l-8 8 l-8 -8 Z"/>
+  </g>
+  <path d="M230 650 l10 10 l-10 10 l-10 -10 Z" fill="#ffffff" stroke="#f2b33d" stroke-width="3"/>
+  <text x="664" y="676" class="small">cut</text>
+
+  <!-- Speed row: 1x, an eased ramp down to 0.25x, back to 1x, a ramp up to 2x and back -->
+  <path d="M96 690 H161 C195 690 196 707 230 707 H312 C370 707 372 690 431 690 H874 C960 690 980 678 1069 678 C1160 678 1180 690 1258 690" stroke="#a77be8" stroke-width="2.5" fill="none"/>
+  <text x="250" y="704" class="small" style="fill:#c9a8ff">0.25×</text>
+  <text x="1040" y="676" class="small" style="fill:#c9a8ff">2×</text>
+  <text x="600" y="687" class="small" style="fill:#c9a8ff">1×</text>
+
+  <!-- Playhead -->
+  <path d="M230 600 v116" stroke="#ffffff" stroke-width="2"/>
+  <path d="M222 596 h16 l-8 9 Z" fill="#ffffff"/>
+</svg>

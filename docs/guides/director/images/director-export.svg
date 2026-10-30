@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1280 720" width="1280" height="720" role="img" aria-labelledby="t">
+  <title id="t">Mock-up: Coney Director's export settings and an export in progress (Coney's own drawing)</title>
+  <style>
+    text { font-family: Inter, "Segoe UI", Helvetica, Arial, sans-serif; fill: #e9edf2; }
+    .small { font-size: 12px; fill: #aab3bf; }
+    .label { font-size: 14px; }
+    .head { font-size: 16px; font-weight: 700; letter-spacing: 1px; }
+    .mono { font-family: "JetBrains Mono", Consolas, monospace; font-size: 14px; }
+    .panel { fill: #0b0d11; fill-opacity: 0.93; }
+    .chip { fill: #1c2129; }
+    .on { fill: #f2b33d; }
+    .dark { fill: #0b0d11; font-weight: 700; }
+    .glyph { font-size: 12px; font-weight: 700; fill: #0b0d11; }
+  </style>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#182338"/>
+      <stop offset="0.62" stop-color="#3a3350"/>
+      <stop offset="1" stop-color="#b9673a"/>
+    </linearGradient>
+    <symbol id="scene" viewBox="0 0 160 90">
+      <rect width="160" height="90" fill="url(#sky)"/>
+      <path d="M0 52 h22 v-30 h18 v18 h14 v-26 h20 v38 h16 v-22 h22 v22 h48 v38 H0 Z" fill="#141821"/>
+      <path d="M0 64 L160 58 V90 H0 Z" fill="#23252b"/>
+      <path d="M58 90 L78 60 L86 60 L112 90 Z" fill="#2c2f36"/>
+      <g fill="#0b0c10">
+        <circle cx="64" cy="55" r="3"/><rect x="61" y="58" width="6" height="12" rx="2"/>
+        <circle cx="90" cy="53" r="3"/><rect x="87" y="56" width="6" height="12" rx="2"/>
+        <circle cx="104" cy="57" r="3.4"/><rect x="100.6" y="60.4" width="6.8" height="13" rx="2"/>
+      </g>
+      <circle cx="30" cy="30" r="1.4" fill="#ffd27a"/><circle cx="118" cy="44" r="1.2" fill="#ffd27a"/>
+    </symbol>
+  </defs>
+
+  <rect width="1280" height="720" fill="#07090c"/>
+  <use href="#scene" xlink:href="#scene" x="0" y="0" width="1280" height="720" opacity="0.25"/>
+
+  <!-- Left: the settings, as the Export button opens them -->
+  <rect x="24" y="24" width="600" height="672" rx="8" class="panel"/>
+  <text x="48" y="64" class="head">EXPORT VIDEO</text>
+  <text x="600" y="64" class="small" text-anchor="end">Rumble at the Yard · 1:48</text>
+
+  <text x="48" y="110" class="small">File</text>
+  <rect x="160" y="92" width="440" height="30" rx="4" class="chip"/>
+  <text x="172" y="112" class="mono">rumble-at-the-yard.mp4</text>
+
+  <text x="48" y="156" class="small">Resolution</text>
+  <g>
+    <rect x="160" y="138" width="100" height="30" rx="4" class="chip"/><text x="210" y="158" class="label" text-anchor="middle">720p</text>
+    <rect x="266" y="138" width="100" height="30" rx="4" class="on"/><text x="316" y="158" class="label dark" text-anchor="middle">1080p</text>
+    <rect x="372" y="138" width="100" height="30" rx="4" class="chip"/><text x="422" y="158" class="label" text-anchor="middle">1440p</text>
+    <rect x="478" y="138" width="122" height="30" rx="4" class="chip"/><text x="539" y="158" class="label" text-anchor="middle">2160p (4K)</text>
+  </g>
+  <text x="48" y="202" class="small">Shape</text>
+  <g>
+    <rect x="160" y="184" width="100" height="30" rx="4" class="on"/><text x="210" y="204" class="label dark" text-anchor="middle">16:9</text>
+    <rect x="266" y="184" width="100" height="30" rx="4" class="chip"/><text x="316" y="204" class="label" text-anchor="middle">4:3</text>
+  </g>
+  <text x="48" y="248" class="small">Frame rate</text>
+  <g>
+    <rect x="160" y="230" width="100" height="30" rx="4" class="chip"/><text x="210" y="250" class="label" text-anchor="middle">30</text>
+    <rect x="266" y="230" width="100" height="30" rx="4" class="on"/><text x="316" y="250" class="label dark" text-anchor="middle">60</text>
+  </g>
+  <text x="48" y="294" class="small">Quality</text>
+  <g>
+    <rect x="160" y="276" width="100" height="30" rx="4" class="chip"/><text x="210" y="296" class="label" text-anchor="middle">Standard</text>
+    <rect x="266" y="276" width="100" height="30" rx="4" class="on"/><text x="316" y="296" class="label dark" text-anchor="middle">High</text>
+    <rect x="372" y="276" width="100" height="30" rx="4" class="chip"/><text x="422" y="296" class="label" text-anchor="middle">Best</text>
+  </g>
+  <text x="48" y="340" class="small">Video codec</text>
+  <rect x="160" y="322" width="300" height="30" rx="4" class="chip"/>
+  <text x="172" y="342" class="label">Set by the encoder decision  ▾</text>
+  <text x="48" y="386" class="small">Sound</text>
+  <rect x="160" y="370" width="40" height="20" rx="10" class="on"/><circle cx="190" cy="380" r="7" fill="#0b0d11"/>
+  <text x="212" y="386" class="label">the game's sound, 48 kHz stereo</text>
+  <text x="48" y="426" class="small">Game's HUD</text>
+  <rect x="160" y="410" width="40" height="20" rx="10" fill="#39414d"/><circle cx="170" cy="420" r="7" fill="#e9edf2"/>
+  <text x="212" y="426" class="label">hidden</text>
+  <path d="M48 452 h552" stroke="#252b34"/>
+  <text x="48" y="482" class="label">About 165 MB · 6,480 frames · 1:48</text>
+  <text x="48" y="506" class="small">Saved to the Videos list, in the install's director/videos folder.</text>
+  <text x="48" y="526" class="small">The export renders every frame, faster or slower than real time:</text>
+  <text x="48" y="544" class="small">the video is the same on any machine.</text>
+  <rect x="48" y="600" width="250" height="44" rx="6" class="on"/>
+  <text x="173" y="628" class="label dark" text-anchor="middle" style="font-size:16px">Start export</text>
+  <rect x="314" y="600" width="140" height="44" rx="6" class="chip"/>
+  <text x="384" y="628" class="label" text-anchor="middle">Cancel</text>
+
+  <!-- Right: the same export running -->
+  <rect x="656" y="24" width="600" height="672" rx="8" class="panel"/>
+  <text x="680" y="64" class="head">EXPORTING</text>
+  <text x="1232" y="64" class="small" text-anchor="end">rumble-at-the-yard.mp4</text>
+  <use href="#scene" xlink:href="#scene" x="680" y="88" width="552" height="310.5"/>
+  <rect x="680" y="372" width="182" height="24" rx="4" fill="#000" fill-opacity="0.6"/>
+  <text x="692" y="389" class="small" style="fill:#e9edf2">frame 4,016, shown at a tenth</text>
+  <rect x="680" y="424" width="552" height="12" rx="6" fill="#252b34"/>
+  <rect x="680" y="424" width="342" height="12" rx="6" class="on"/>
+  <text x="680" y="466" class="mono">62 %</text>
+  <text x="1232" y="466" class="label" text-anchor="end">about 1 minute left</text>
+  <text x="680" y="500" class="label">Frame 4,016 of 6,480 · 1:06 of 1:48</text>
+  <text x="680" y="526" class="small">Rendering at 41 frames a second (0.7× real time) · 102 MB written</text>
+  <text x="680" y="548" class="small">Sound mixed ahead, at 48 kHz · encoder keeping up</text>
+  <rect x="680" y="600" width="210" height="44" rx="6" class="chip"/>
+  <circle cx="704" cy="622" r="11" fill="#e9edf2"/><text x="704" y="626" class="glyph" text-anchor="middle">O</text>
+  <text x="722" y="627" class="label">Cancel (Esc)</text>
+  <text x="680" y="672" class="small">Cancel asks first, then deletes the part-written file.</text>
+</svg>

@@ -349,7 +349,7 @@ closely; **later** what waits.
 | The Clips list: thumbnail, name by date and number, length, preview, delete | must | Rockstar's Clip Management |
 | Projects: new, open, save, save as; clips added, ordered and trimmed on a timeline | must | |
 | Play, pause, step a frame, and scrub with an immediate picture | must | Full states at regular steps |
-| Markers: add, move, delete, copy settings, jump between them; a new one takes the last one's settings | must | |
+| Markers: add, move, delete, copy settings, jump between them; a new one takes what is seen at the playhead: the last one's settings, or the shot inside a blend ([The editor](editor.md#markers)) | must | |
 | Cameras per marker: the game camera, the free camera (position, angle, field of view) | must | No range circle |
 | Target tracking: look at a target, and ride with a target at an offset | must | In the brief |
 | Blends: a cut, or a smooth curve that passes through every marker | must | Better than Rockstar's undershoot |
