@@ -32,3 +32,4 @@ and its line to the `nav:` of `mkdocs.yml`, under *Coney Director design*.
 | Page | What it decides | Issue |
 | --- | --- | --- |
 | [The Rockstar Editor survey](rockstar-editor.md) | What the Rockstar Editor records and how, its words and features, what players praise and dislike, other games' replays; the words Director uses, the feature list of its first version, the open questions | [#1185](issue:1185) |
+| [Recording](recording.md) | What a recording stores (the drawn state in key frames and deltas, measured on the hub and a crowd of 50) and holds, clips of 60 seconds with no gap, seeking and scrubbing, the file, versions and mods, the folder and a full disk, what it shares with networking, the tests, the build issues | [#1186](issue:1186) |
