@@ -30,6 +30,7 @@ These read **your own disc**; [naming the disc](coney-tools-disc.md#naming-the-d
   {#movies}
 * [`xbox`](coney-tools-disc.md#xbox): the Xbox disc.
   {#xbox}
+* [`cpak`](coney-tools-disc.md#cpak): Coney's own archives, built from the disc.
 
 <!-- The five ids above keep the links that name coney-tools.md#<group> working in the legacy research pages that cite
 them (audio, inventory, movies, scenes, xbox-assets). Touching a research page holds it to the whole research standard,

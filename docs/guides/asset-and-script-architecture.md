@@ -1,9 +1,9 @@
 # Asset and script architecture
 
 The design for moving Coney off the original's file formats and onto its own asset store and script runner. The
-rule stands: **the move happens after the game plays 1:1**. Nothing here is built yet. This page draws the
-boundaries *now*, so that the faithful work going on today does not add new ties to the PS2 formats, and so that each
-later step changes one layer.
+rule stands: **the move happens after the game plays 1:1**. Of this page only the install is built (the PS2 copy and
+the `.cpak` format, [The install folder](#install-folder)). It draws the boundaries *now*, so that the faithful work
+going on today does not add new ties to the PS2 formats, and so that each later step changes one layer.
 
 It covers four things: the asset layers and how they fit the installer, the split of the script system, what each
 modernisation really buys and what it needs first, and what to do now versus later. The texture resolver and the
@@ -139,8 +139,17 @@ installed folder as soon as the store exists, with no new parser.
 ### The install folder {#install-folder}
 
 Maintainer decision (2026-10-07): **portable**. Everything lives in the folder the player picks in the installer.
-Only save data goes to the per-user location (SDL's pref path). No disc or ISO is needed after install. The Xbox ISO
-is preferred for assets, and the PS2 disc fills the gaps and is always the behaviour reference.
+Only save data goes to the per-user location (SDL's pref path). No disc or ISO is needed after install. The PS2 disc is
+required: it is the behaviour reference and the only source of simulation data. An installed Xbox disc is preferred for
+presentation assets such as textures and movies ([Xbox entries](cpak-format.md#xbox)).
+
+**The `.cpak` layout** ([#798](issue:798)) replaces the tree below: the installer sorts the game's data by kind and
+area into Coney's own archives, `.cpak`, under `game/`, with a catalogue of every entry in `game/index/`; the Xbox
+disc's entries go in archives of their own under `game/xbox/`; there are no `game/ps2/`, `overrides/` or `open/`
+folders, and assets are looked up in enabled mods, then texture packs, then the game. The format, the folder layout,
+the catalogue and the lookup order are [The .cpak archive format](cpak-format.md); the format and its tools are
+built, and the installer, the loader and mods follow it (#798 steps 3 to 5). The tree below is the earlier design that
+the `.cpak` layout replaces; it stays here until the installer moves to the new one (#798 step 3).
 
 ```text
 <install>/                      picked by the player; movable as a whole

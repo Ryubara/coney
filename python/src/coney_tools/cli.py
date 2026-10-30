@@ -23,6 +23,7 @@ from coney_tools import (
     commit_message,
     conclave_cli,
     coord_cli,
+    cpak_cli,
     docs_cli,
     doctor,
     ghidra_cli,
@@ -401,6 +402,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_audio_commands(groups)
     _add_movies_commands(groups)
     _add_xbox_commands(groups)
+    _add_cpak_commands(groups)
     _add_progress_commands(groups)
     orig_cli.add_parser(groups)
     stamp_cli.add_parser(groups)
@@ -571,6 +573,20 @@ def _add_movies_commands(groups: Any) -> None:
     commands = group.add_subparsers(dest="command", required=True)
     listing = commands.add_parser("list", help="one line per movie: size, Bink revision, size, frames, rate, audio")
     listing.add_argument("disc", nargs="?", help="a folder (mounted disc) or .iso image; default: game_dir")
+
+
+def _add_cpak_commands(groups: Any) -> None:
+    """Register `coney-tools cpak ...`."""
+    archive_help = "a Coney Pack (.cpak) archive"
+    group = groups.add_parser("cpak", help="read Coney's own archives (.cpak): list, show and verify their entries")
+    commands = group.add_subparsers(dest="command", required=True)
+    listing = commands.add_parser("list", help="one line per entry: offset, sizes, compression, hash and name")
+    listing.add_argument("archive", type=Path, help=archive_help)
+    show = commands.add_parser("show", help="the header's values, or one entry's whole record")
+    show.add_argument("archive", type=Path, help=archive_help)
+    show.add_argument("name", nargs="?", help="an entry's name; without it, the header")
+    verify = commands.add_parser("verify", help="check each archive's index and every entry's SHA-256")
+    verify.add_argument("archives", type=Path, nargs="+", metavar="ARCHIVE", help="one or more archives")
 
 
 def _add_xbox_commands(groups: Any) -> None:
@@ -1149,6 +1165,12 @@ def _run(args: argparse.Namespace) -> int:
         )
     if args.group == "movies":
         return movies_cli.run_list(args.disc)
+    if args.group == "cpak":
+        if args.command == "list":
+            return cpak_cli.run_list(args.archive)
+        if args.command == "show":
+            return cpak_cli.run_show(args.archive, args.name)
+        return cpak_cli.run_verify(args.archives)
     if args.group == "progress":
         return _run_progress(args)
     if args.group == "orig":
