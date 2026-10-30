@@ -104,6 +104,21 @@ std::optional<std::uint32_t> searchOutward(const RoutePlanner& planner, std::uin
     return std::nullopt;
 }
 
+std::optional<std::uint32_t> searchPlacementGoals(anim::Vec3 origin, anim::Vec3 forward, float halfAngle, float value,
+                                                  const PlacementRandom& random, const PlacementSearch& search) {
+    const anim::Vec3 axis{forward.x, forward.y, 0.0F};
+    for (int attempt = 0; attempt < kPlacementTries; ++attempt) {
+        // Stub: each turned goal from its own attempt's draw.
+        const float theta = halfAngle + (random() * ((2.0F * std::numbers::pi_v<float>)-(2.0F * halfAngle)));
+        const anim::Vec3 goal = attempt == 0 ? anim::add(origin, anim::scale(forward, kFirstGoalAhead))
+                                             : anim::add(origin, anim::scale(turned(axis, theta), 2.0F * value));
+        if (const std::optional<std::uint32_t> node = search(goal)) {
+            return node;
+        }
+    }
+    return std::nullopt;
+}
+
 std::optional<anim::Vec3> outOfSightNode(const RoutePlanner& planner, anim::Vec3 player, const PlacementCamera& camera,
                                          float value, const PlacementRandom& random) {
     const std::optional<std::uint32_t> start = planner.startNode(player);
@@ -113,16 +128,14 @@ std::optional<anim::Vec3> outOfSightNode(const RoutePlanner& planner, anim::Vec3
     const anim::Vec3 origin{camera.eye.x, camera.eye.y, player.z};
     const anim::Vec3 axis{camera.forward.x, camera.forward.y, 0.0F};
     const float half = std::min(camera.halfFovRadians + kConeMarginRadians, std::numbers::pi_v<float>);
-    for (int attempt = 0; attempt < kPlacementTries; ++attempt) {
-        // A draw before every search; the first search's is unused.
-        const float theta = half + (random() * ((2.0F * std::numbers::pi_v<float>)-(2.0F * half)));
-        const anim::Vec3 goal = attempt == 0 ? anim::add(origin, anim::scale(camera.forward, kFirstGoalAhead))
-                                             : anim::add(origin, anim::scale(turned(axis, theta), 2.0F * value));
-        if (const std::optional<std::uint32_t> node = searchOutward(planner, *start, origin, goal, axis, half, value)) {
-            return planner.map().nodes()[*node].position;
-        }
+    const std::optional<std::uint32_t> node =
+        searchPlacementGoals(origin, camera.forward, half, value, random, [&](anim::Vec3 goal) {
+            return searchOutward(planner, *start, origin, goal, axis, half, value);
+        });
+    if (!node) {
+        return std::nullopt;
     }
-    return std::nullopt;
+    return planner.map().nodes()[*node].position;
 }
 
 void Spawners::add(const script::SpawnerCall& call) {

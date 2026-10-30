@@ -29,28 +29,28 @@ TEST_CASE("a draw advances the shared index and reads that entry, wrapping at 1,
     const std::vector<std::uint32_t> table = syntheticTable();
     random.setTable(table);
     CHECK(random.hasTable());
-    CHECK(random.next() == table[1]);
-    CHECK(random.next() == table[2]);
+    CHECK(random.next(coney::RandomStream::Gameplay) == table[1]);
+    CHECK(random.next(coney::RandomStream::Gameplay) == table[2]);
     for (int i = 0; i < 1021; ++i) {
-        (void)random.next();
+        (void)random.next(coney::RandomStream::Gameplay);
     }
-    CHECK(random.index() == 1023);
-    CHECK(random.next() == table[0]);
-    CHECK(random.index() == 0);
+    CHECK(random.index(coney::RandomStream::Gameplay) == 1023);
+    CHECK(random.next(coney::RandomStream::Gameplay) == table[0]);
+    CHECK(random.index(coney::RandomStream::Gameplay) == 0);
 }
 
 TEST_CASE("random(low, high) is low plus the draw modulo the range, inclusive", "[game_random]") {
     GameRandom random;
     random.setTable(syntheticTable());
     // Entries 1, 2, 3 are 10, 17, 24: 1 + 10 mod 5 = 1, 1 + 17 mod 5 = 3, 1 + 24 mod 5 = 5.
-    CHECK(random.range(1, 5) == 1);
-    CHECK(random.range(1, 5) == 3);
-    CHECK(random.range(1, 5) == 5);
+    CHECK(random.range(coney::RandomStream::Gameplay, 1, 5) == 1);
+    CHECK(random.range(coney::RandomStream::Gameplay, 1, 5) == 3);
+    CHECK(random.range(coney::RandomStream::Gameplay, 1, 5) == 5);
     // A range of one number, and a range of none (high one below low), which the original divides by: low.
-    CHECK(random.range(4, 4) == 4);
-    CHECK(random.range(4, 3) == 4);
+    CHECK(random.range(coney::RandomStream::Gameplay, 4, 4) == 4);
+    CHECK(random.range(coney::RandomStream::Gameplay, 4, 3) == 4);
     // Negative bounds go through the unsigned arithmetic and stay in range: entry 6 is 45, -2 + 45 mod 5 = -2.
-    CHECK(random.range(-2, 2) == -2);
+    CHECK(random.range(coney::RandomStream::Gameplay, -2, 2) == -2);
 }
 
 TEST_CASE("without the game's table the stand-in draws deterministically and in range", "[game_random]") {
@@ -58,8 +58,8 @@ TEST_CASE("without the game's table the stand-in draws deterministically and in 
     GameRandom second;
     CHECK(!first.hasTable());
     for (int i = 0; i < 200; ++i) {
-        const std::int32_t value = first.range(1, 5);
-        CHECK(value == second.range(1, 5));
+        const std::int32_t value = first.range(coney::RandomStream::Gameplay, 1, 5);
+        CHECK(value == second.range(coney::RandomStream::Gameplay, 1, 5));
         CHECK(value >= 1);
         CHECK(value <= 5);
     }
@@ -72,16 +72,16 @@ TEST_CASE("starting the stream at an offset moves every draw along by it, the sa
     const std::vector<std::uint32_t> table = syntheticTable();
     offset.setTable(table);
     offset.startAt(40);
-    CHECK(offset.index() == 40);
-    CHECK(offset.next() == table[41]);
+    CHECK(offset.index(coney::RandomStream::Gameplay) == 40);
+    CHECK(offset.next(coney::RandomStream::Gameplay) == table[41]);
     // Masked to the table's 10 bits.
     offset.startAt(1024 + 5);
-    CHECK(offset.index() == 5);
+    CHECK(offset.index(coney::RandomStream::Gameplay) == 5);
     // Offset 0 is the power-on stream.
     GameRandom zero;
     zero.setTable(table);
     zero.startAt(0);
-    CHECK(zero.next() == table[1]);
+    CHECK(zero.next(coney::RandomStream::Gameplay) == table[1]);
 
     // The stand-in varies with the offset too, and repeats for the same one.
     GameRandom a;
@@ -92,9 +92,56 @@ TEST_CASE("starting the stream at an offset moves every draw along by it, the sa
     c.startAt(8);
     bool differs = false;
     for (int i = 0; i < 20; ++i) {
-        const std::uint32_t drawn = a.next();
-        CHECK(drawn == b.next());
-        differs = differs || drawn != c.next();
+        const std::uint32_t drawn = a.next(coney::RandomStream::Gameplay);
+        CHECK(drawn == b.next(coney::RandomStream::Gameplay));
+        differs = differs || drawn != c.next(coney::RandomStream::Gameplay);
     }
     CHECK(differs);
+}
+
+TEST_CASE("each random stream walks its own index from 0, so two streams advance independently", "[game_random]") {
+    // Expected: maths.md#random, confirmed (code)
+    GameRandom random;
+    const std::vector<std::uint32_t> table = syntheticTable();
+    random.setTable(table);
+    CHECK(random.next(coney::RandomStream::Cameras) == table[1]);
+    CHECK(random.next(coney::RandomStream::Cameras) == table[2]);
+    // A stream nothing has drawn from still reads entry 1 first.
+    CHECK(random.next(coney::RandomStream::Sound) == table[1]);
+    CHECK(random.index(coney::RandomStream::Cameras) == 2);
+    CHECK(random.index(coney::RandomStream::Sound) == 1);
+    CHECK(random.index(coney::RandomStream::Gameplay) == 0);
+}
+
+TEST_CASE("a draw on the effects stream leaves the gameplay stream's sequence unchanged", "[game_random]") {
+    // Expected: maths.md#random, confirmed (code)
+    // With the game's table and with the stand-in alike.
+    for (const bool withTable : {true, false}) {
+        GameRandom plain;
+        GameRandom shattered;
+        if (withTable) {
+            plain.setTable(syntheticTable());
+            shattered.setTable(syntheticTable());
+        }
+        for (int i = 0; i < 50; ++i) {
+            // A pane of glass breaks between every two of the scripts' draws on one side only.
+            static_cast<void>(shattered.next(coney::RandomStream::Effects));
+            static_cast<void>(shattered.range(coney::RandomStream::Effects, 0, 7));
+            CHECK(plain.range(coney::RandomStream::Gameplay, 1, 100) ==
+                  shattered.range(coney::RandomStream::Gameplay, 1, 100));
+        }
+        CHECK(plain.index(coney::RandomStream::Gameplay) == shattered.index(coney::RandomStream::Gameplay));
+    }
+}
+
+TEST_CASE("starting at an offset moves the gameplay stream only", "[game_random]") {
+    // Expected: maths.md#random, confirmed (code)
+    GameRandom random;
+    const std::vector<std::uint32_t> table = syntheticTable();
+    random.setTable(table);
+    random.startAt(40);
+    CHECK(random.index(coney::RandomStream::Gameplay) == 40);
+    CHECK(random.index(coney::RandomStream::Effects) == 0);
+    CHECK(random.next(coney::RandomStream::Effects) == table[1]);
+    CHECK(random.next(coney::RandomStream::Gameplay) == table[41]);
 }

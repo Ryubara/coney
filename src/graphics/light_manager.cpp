@@ -189,7 +189,7 @@ std::uint32_t LightManager::rand(std::uint32_t n) {
     if (n == 0) {
         return 0;
     }
-    return m_random.next() % n;
+    return m_random.next(RandomStream::Ambient) % n;
 }
 
 bool LightManager::visible(const LightRecord& record, const LightView& view) {

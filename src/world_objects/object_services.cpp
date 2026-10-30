@@ -130,7 +130,7 @@ int randomBelow(GameRandom* random, int n) {
     if (random == nullptr || n <= 0) {
         return 0;
     }
-    return random->range(0, n - 1);
+    return random->range(RandomStream::Effects, 0, n - 1);
 }
 
 // @coney-only quaternion helper

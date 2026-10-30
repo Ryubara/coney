@@ -46,7 +46,9 @@ float distanceSquared(const std::array<float, 3>& a, const std::array<float, 3>&
 bool complete(const RadioWorld& world, int level) { return world.levelComplete && world.levelComplete(level); }
 
 // A draw of `Random % n` (`0x00335498`).
-int draw(GameRandom& random, int n) { return static_cast<int>(random.next() % static_cast<std::uint32_t>(n)); }
+int draw(GameRandom& random, int n) {
+    return static_cast<int>(random.next(RandomStream::Ambient) % static_cast<std::uint32_t>(n));
+}
 
 } // namespace
 
@@ -209,7 +211,7 @@ void Radios::updateOne(Radio& radio, const std::array<float, 3>& at, const Radio
                 radio.track = radio.next;
             } else {
                 // A DJ link: 0-6 kind 1, 7-8 kind 0 (its pool shrinking with the story), 9 kind 2.
-                const std::int32_t pick = random.range(0, 9);
+                const std::int32_t pick = random.range(RandomStream::Ambient, 0, 9);
                 if (pick <= 6) {
                     radio.clipKind = 1;
                     radio.track = draw(random, kKind1Links);

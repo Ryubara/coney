@@ -79,6 +79,12 @@ static_assert(static_cast<std::size_t>(TargetCause::Order) + 1 == kTargetCauseCo
 /// gives Gang (**Coney choice**).
 [[nodiscard]] BrainType brainTypeOf(int behaviour);
 
+/// The brain type Human_Init gives a new human of class brain type `classType`: Gang when `HuCreate`'s flag (its
+/// eighth argument, kept at human `+0x19d`) is set, unless the class's is Warrior; else the class's
+/// (docs/research/human-init.md#ped-type).
+/// @orig 0x00218008 Human_Init (unknown)
+[[nodiscard]] BrainType createdBrainType(BrainType classType, bool gangFlag);
+
 /// The human flags a human of brain type `type` is made with (`Human_Init`, docs/research/combat/index.md#human-flags):
 /// the player 0x2000000, 0x2 and 0x4; a Warrior 0x2 and 0x4 (revivable, so any Warrior downed in a fight can be
 /// revived); a cop and a dealer 0x2000 and 0x40000; any other none of these. **Coney's stand-in**: the others' 0x8

@@ -13,7 +13,9 @@ constexpr int kRumbleThreshold = 0x28;
 constexpr int kRumbleCap = 0x60;
 
 // A random share in [-1, 1] from `random`.
-float randomShare(GameRandom& random) { return static_cast<float>(random.range(-1000, 1000)) / 1000.0F; }
+float randomShare(GameRandom& random) {
+    return static_cast<float>(random.range(RandomStream::Cameras, -1000, 1000)) / 1000.0F;
+}
 
 } // namespace
 

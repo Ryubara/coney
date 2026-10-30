@@ -254,3 +254,44 @@ TEST_CASE("the tackle meter fills on a fleeing target and fires past the gang's 
     meter.think(false, 4);
     CHECK(meter.value() == coney::ai::TackleMeter::kCap - 2);
 }
+
+TEST_CASE("the attack pick draws once whenever the target can be chased, even with no weight", "[ai]") {
+    // Expected: ai-fights.md#pick-attack, confirmed (code)
+    // No candidate passes the filter, and then candidates whose weights are all 0: one draw either way.
+    for (const bool anyCandidate : {false, true}) {
+        coney::combat::CombatRandom random(7);
+        coney::combat::CombatRandom reference(7);
+        static_cast<void>(reference.next());
+        const std::optional<int> kind = coney::ai::pickAttackKind(
+            AttackWeights{}, PickContext{}, [anyCandidate](int /*kind*/) { return anyCandidate; }, random);
+        CHECK_FALSE(kind.has_value());
+        CHECK(random.next() == reference.next());
+    }
+    // A target that cannot be chased is answered before the draw.
+    coney::combat::CombatRandom unchased(7);
+    coney::combat::CombatRandom untouched(7);
+    PickContext context;
+    context.targetChasable = false;
+    static_cast<void>(coney::ai::pickAttackKind(weightsOf({1}), context, [](int /*kind*/) { return true; }, unchased));
+    CHECK(unchased.next() == untouched.next());
+}
+
+TEST_CASE("the attack pick's draw runs from 0 to the total inclusive, and a draw of the total picks nothing", "[ai]") {
+    // Expected: ai-fights.md#pick-attack, confirmed (code)
+    // Kind 1 alone with weight 1: a draw of 0 picks it, a draw of 1 (the total) is past every running sum.
+    const AttackWeights weights = weightsOf({1}, 1);
+    int nothing = 0;
+    int one = 0;
+    for (std::uint32_t seed = 1; seed <= 64; ++seed) {
+        coney::combat::CombatRandom probe(seed);
+        const bool drawsTotal = ((probe.next() >> 8U) % 2U) == 1U;
+        coney::combat::CombatRandom random(seed);
+        const std::optional<int> kind =
+            coney::ai::pickAttackKind(weights, PickContext{}, [](int /*kind*/) { return true; }, random);
+        CHECK(kind == (drawsTotal ? std::nullopt : std::optional<int>(1)));
+        (drawsTotal ? nothing : one) += 1;
+    }
+    // Both draws come up over the seeds.
+    CHECK(nothing > 0);
+    CHECK(one > 0);
+}

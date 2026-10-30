@@ -15,6 +15,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "animation/anim_math.h"
+#include "core/game_random.h"
 #include "core/name_hash.h"
 #include "raycast/collision_mesh.h"
 #include "support/object_fixtures.h"
@@ -497,6 +498,26 @@ TEST_CASE("a barrier: links charged through, boards, hidden, then removed with i
     CHECK_FALSE(fixture.enabled(0));
     tick(doors, fixture, coney::world_objects::kBarrierInterval);
     CHECK(doors.takeRemoved().empty());
+}
+
+TEST_CASE("a broken barrier's three boards are each dyn_wooddmg_a or _b by a draw on the effects stream",
+          "[world_objects][doors]") {
+    // Expected: objects.md#barriers, confirmed (code)
+    // Each board draws its angle and then Random_Int(1): 0 makes dyn_wooddmg_a, 1 dyn_wooddmg_b. The table's entries
+    // 1-6 give the boards the picks 1, 0, 1.
+    coney::test::ObjectWorldFixture fixture;
+    std::vector<std::uint32_t> table(coney::GameRandom::kTableSize, 0U);
+    table[2] = 1U;
+    table[6] = 1U;
+    fixture.random.setTable(table);
+    Doors doors;
+    const ObjectTypeInfo info{.className = "dyn_door_fence", .hitpoints = 3};
+    const double handle = doors.spawn(fixture.handle(), at("dyn_door_fence"), &info, {}, fixture.world).handle;
+    doors.hit(handle, hitBy(HitKind::Charge), fixture.world);
+    CHECK(fixture.services.spawned == std::vector<std::string>{"dyn_wooddmg_b", "dyn_wooddmg_a", "dyn_wooddmg_b"});
+    // Two draws a board, all on the effects stream.
+    CHECK(fixture.random.index(coney::RandomStream::Effects) == 6);
+    CHECK(fixture.random.index(coney::RandomStream::Gameplay) == 0);
 }
 
 TEST_CASE("walls throw no boards; message 10 stops a barrier being hit", "[world_objects][doors]") {

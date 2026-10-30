@@ -352,7 +352,7 @@ TEST_CASE("the disc's executable holds the game's random table", "[disc][story]"
     coney::GameRandom random;
     random.setTable(words);
     for (int i = 0; i < 100; ++i) {
-        const std::int32_t door = random.range(1, 5);
+        const std::int32_t door = random.range(coney::RandomStream::Gameplay, 1, 5);
         CHECK(door >= 1);
         CHECK(door <= 5);
     }

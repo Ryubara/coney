@@ -69,6 +69,11 @@ BrainType brainTypeOf(int behaviour) {
     return static_cast<BrainType>(behaviour);
 }
 
+BrainType createdBrainType(BrainType classType, bool /*gangFlag*/) {
+    // Stub: the class's type.
+    return classType;
+}
+
 namespace {
 
 // Human_Init's and Human_ReleasePlayer's bits (docs/research/combat/index.md#human-flags): a cop's and a dealer's two

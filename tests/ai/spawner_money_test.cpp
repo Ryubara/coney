@@ -217,6 +217,7 @@ TEST_CASE("a spawner's human rolls its money by the class's draws, in their orde
         const coney::characters::StartingCarry expected = coney::characters::rollStartingCarry(config, cls, reference);
         CHECK(money == expected.money);
         // The same draws, no more and no fewer.
-        CHECK(spawner.state.random.index() == reference.index());
+        CHECK(spawner.state.random.index(coney::RandomStream::Gameplay) ==
+              reference.index(coney::RandomStream::Gameplay));
     }
 }

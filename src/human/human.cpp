@@ -1601,7 +1601,9 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
     // The face's clips on the instance's queue advance with the body's (FaceTask_Update, FaceBlendOut_Update).
     FaceLayer::Draw draw;
     if (m_faceRules != nullptr) {
-        draw = [rules = m_faceRules](int low, int high) { return rules->random.range(low, high); };
+        draw = [rules = m_faceRules](int low, int high) {
+            return rules->random.range(RandomStream::Animation, low, high);
+        };
     }
     m_face.advance(m_stepSeconds * m_animRate, m_animator.anims(), draw);
     followClimb(mesh);

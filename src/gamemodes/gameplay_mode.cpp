@@ -100,7 +100,8 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
         // `Random_Float`: the game's next random number over 2^32.
         const ai::PlacementRandom random = [this] {
             constexpr double kRange = 4294967296.0;
-            return std::min(static_cast<float>(static_cast<double>(m_random->next()) / kRange), kBelowOne);
+            return std::min(static_cast<float>(static_cast<double>(m_random->next(RandomStream::Tactics)) / kRange),
+                            kBelowOne);
         };
         const std::optional<anim::Vec3> spot = ai::outOfSightNode(*planner, *player, camera, value, random);
         if (!spot || !inTurf(gang, *spot)) {

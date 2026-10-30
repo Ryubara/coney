@@ -37,7 +37,9 @@ void RumbleIntro::setupLine(TextWidget& text, float y, float scale, std::string_
     text.setText(value);
 }
 
-int RumbleIntro::draw(int low, int high) { return m_random != nullptr ? m_random->range(low, high) : low; }
+int RumbleIntro::draw(int low, int high) {
+    return m_random != nullptr ? m_random->range(RandomStream::Ambient, low, high) : low;
+}
 
 bool RumbleIntro::speak(std::string_view name, std::uint64_t nowMs) {
     std::uint64_t lengthMs = kStandInVoiceMs;

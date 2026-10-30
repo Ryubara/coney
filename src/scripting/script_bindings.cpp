@@ -299,7 +299,7 @@ NativeFunction makeRandom(const Factory& factory) {
     return [state = factory.context->state](std::span<const Value> args) {
         const auto low = static_cast<std::int32_t>(std::trunc(binding::number(args, 0)));
         const auto high = static_cast<std::int32_t>(std::trunc(binding::number(args, 1)));
-        return binding::number(static_cast<double>(state->random.range(low, high)));
+        return binding::number(static_cast<double>(state->random.range(RandomStream::Gameplay, low, high)));
     };
 }
 
