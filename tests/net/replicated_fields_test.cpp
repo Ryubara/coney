@@ -142,9 +142,10 @@ TEST_CASE("field tables: a whole thing's bits are the sum of its fields' bits", 
     }
     CHECK(out.bitCount() == expected);
     CHECK(coney::net::fieldsBits(fields) == expected);
-    // network-architecture.md#snapshots budgets a moving human's delta at 15 to 25 bytes; a full one, with its four
-    // animation layers, is not far over.
-    CHECK(coney::net::fieldsBits(fields) <= std::size_t{28} * 8);
+    // A human in full, pinned exactly: 96 bits for its position, heading and health, 22 for the newest animation
+    // layer, 32 for each of the three older ones (snapshots.md#human-state) and 2 flags, 27 bytes. The busy scene's and
+    // the packet's pinned bytes in snapshot_test.cpp follow from it.
+    CHECK(coney::net::fieldsBits(fields) == 216);
 }
 
 // Expected: combat-reactions.md#damage, confirmed (runtime)
