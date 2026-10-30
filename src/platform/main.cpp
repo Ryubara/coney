@@ -33,7 +33,6 @@
 #include <SDL3/SDL_main.h>
 
 #include "ai/ai_config.h"
-#include "ai/humans_trace.h"
 #include "audio/object_sounds.h"
 #include "characters/character_types.h"
 #include "core/chunk_system.h"
@@ -79,6 +78,7 @@
 #include "platform/game_run.h"
 #include "platform/game_session.h"
 #include "platform/game_session_debug.h"
+#include "platform/humans_trace.h"
 #include "platform/imgui_overlay.h"
 #include "platform/install_command.h"
 #include "platform/log_output.h"
@@ -501,9 +501,9 @@ int main(int argc, char** argv) {
     sessionSettings.rumble = options->rumble;
     sessionSettings.aiSeed = options->aiSeed.value_or(0);
     // `--trace-humans`: the file every human of the run is traced to, opened before the first level loads.
-    std::shared_ptr<coney::ai::HumansTrace> humansTrace;
+    std::shared_ptr<coney::platform::HumansTrace> humansTrace;
     if (const std::optional<std::string> humansTracePath = options->humansTraceFile; humansTracePath) {
-        auto opened = coney::ai::HumansTrace::open(*humansTracePath);
+        auto opened = coney::platform::HumansTrace::open(*humansTracePath);
         if (!opened) {
             logError(opened.error().message);
             return 1;

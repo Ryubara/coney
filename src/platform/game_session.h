@@ -12,7 +12,6 @@
 #include <utility>
 #include <vector>
 
-#include "ai/humans_trace.h"
 #include "core/assert.h"
 #include "core/chunk_system.h"
 #include "core/error.h"
@@ -96,7 +95,7 @@ class GameSession {
     void setFirstLevelSetup(LevelSetup setup) { m_firstLevelSetup = std::move(setup); }
     /// The all-humans trace (`--trace-humans`) every level loaded writes its rows to, one file for the whole run; null:
     /// none.
-    void setHumansTrace(std::shared_ptr<ai::HumansTrace> trace) { m_humansTrace = std::move(trace); }
+    void setHumansTrace(std::shared_ptr<HumansTrace> trace) { m_humansTrace = std::move(trace); }
 
     /// The game from boot: the start-up movies, the legal screen, the memory-card check and the menus.
     void startStory();
@@ -153,7 +152,7 @@ class GameSession {
     std::shared_ptr<MeshViewHook> m_meshViews; // setMeshViews()
     AudioOutput* m_audio = nullptr;
     LevelSetup m_firstLevelSetup;
-    std::shared_ptr<ai::HumansTrace> m_humansTrace;
+    std::shared_ptr<HumansTrace> m_humansTrace;
     std::optional<std::string> m_pendingLevel;
     int m_pendingCheckpoint = 1;
     std::optional<std::pair<std::string, bool>> m_pendingMovie; // playDebugMovie(): the name and the captions switch

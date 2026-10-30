@@ -547,9 +547,9 @@ if(CONEY_DEBUG_TOOLS)
         sandbox/disc_sandbox_player_test.cpp
         sandbox/disc_sandbox_traversal_test.cpp
         sandbox/disc_throw_direction_test.cpp
+        sandbox/sandbox_ground_test.cpp
         sandbox/sandbox_layout_test.cpp
         sandbox/sandbox_mesh_test.cpp
-        sandbox/sandbox_ground_test.cpp
         sandbox/sandbox_world_test.cpp)
     target_link_libraries(coney_tests PRIVATE coney_devtools)
     # Coney Studio's editor over bare Dear ImGui contexts and synthetic projects (docs/guides/studio/prototype.md).

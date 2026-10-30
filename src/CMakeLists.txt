@@ -357,7 +357,6 @@ target_sources(coney_core PRIVATE
     ai/fidget_action.cpp
     ai/fight_goal.cpp
     ai/fight_trace.cpp
-    ai/humans_trace.cpp
     ai/fight_reactions.cpp
     ai/formations.cpp
     ai/gangs.cpp

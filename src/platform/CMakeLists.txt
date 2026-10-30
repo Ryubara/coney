@@ -15,7 +15,7 @@ target_sources(coney_platform PRIVATE blood_textures.cpp play_lighting.cpp scene
 target_sources(coney_platform PRIVATE play_level_cast.cpp play_level_character.cpp play_level_hats.cpp play_level_mode.cpp play_level_objects.cpp play_level_props.cpp play_level_scene.cpp play_level_throw_aim.cpp
                                       play_level_world.cpp play_scenery.cpp scene_stage.cpp)
 # The in-game HUD on screen: its sheets, batches and 2D pass (docs/research/hud.md#coneys-implementation).
-target_sources(coney_platform PRIVATE hud_layer.cpp)
+target_sources(coney_platform PRIVATE hud_layer.cpp humans_trace.cpp)
 # The run log's outputs: the console, the log file and the crash handlers (docs/guides/run-log.md).
 target_sources(coney_platform PRIVATE log_output.cpp)
 # Pad input from SDL3 gamepads and the keyboard (docs/research/frontend.md#coneys-implementation).

@@ -49,18 +49,14 @@ collision mesh.
 ### The ground {#ground}
 
 What the play mode's simulation stands on in a sandbox is its **ground** (`sandbox::SandboxGround`,
-`repo:src/sandbox/sandbox_ground.h`), apart from its drawing (`platform::SandboxPlayScenery`), so a build with no
-renderer can still play a layout: the simulation reads a `world::LevelGround` (`repo:src/world/level_ground.h`), which a
-level's scenery implements too. The ground holds the layout's collision mesh and decides the start:
-
-- The player starts at the first spawn point, or at the one `--spawn NAME` names. A name the layout does not have is
-  refused with the names it does have, and so is a layout with nothing solid to stand on.
-- The start is dropped onto the ground from 2 m above the spawn point, so it lands on whatever is below it (a floor, a
-  block). Where nothing solid lies within 4 m below that, it stays where the layout puts it.
-- The debug menus' places are the spawn points where the layout puts them (not dropped), and the ground also gives the
-  layout's `target` and `fighter` lines to the play mode.
-- The Spawner rebuilds the sandbox with its objects added; the rebuilt ground keeps the start it had, and a rebuild
-  that would leave nothing solid is refused and changes nothing.
+`repo:src/sandbox/sandbox_ground.h`, platform-neutral like the rest of `src/sandbox/`), apart from its drawing
+(`platform::SandboxPlayScenery`): the simulation reads a `world::LevelGround` (`repo:src/world/level_ground.h`), which
+a level's scenery implements too, so the sandbox's ground needs neither librw nor SDL. The ground holds the layout's
+collision mesh and the start the play mode begins at (above): it drops the spawn point from 2 m above it, which leaves
+the feet 0.1 m above whatever it meets, and keeps the spawn where the layout puts it when nothing solid lies within
+4 m below that. An unknown spawn name is refused with the names the layout has, and so is a layout with nothing solid.
+The debug menus' places are the spawn points as the layout puts them (not dropped). A Spawner rebuild keeps the start,
+and one that would leave nothing solid is refused and changes nothing.
 
 ## The shipped layouts
 
