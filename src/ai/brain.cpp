@@ -455,6 +455,8 @@ void Brain::placed() {
 
 bool Brain::finishAction(Action& action) {
     // A started action is asked to stop even when it finished, so its Abort undoes what its Start did however it ends.
+    // Coney's choice: the original passes Abort whether this is a normal end (0) or a clear (1); each Coney action
+    // tells the two apart by its own state.
     return !action.m_started || action.abort(*this);
 }
 
@@ -580,7 +582,8 @@ ActionStatus Brain::stepAction(Action& action) {
     // The time since the last update and the delay left are 16-bit, as the action's delay field is.
     const auto elapsed = static_cast<std::int16_t>(m_nowMs - m_lastUpdateMs);
     if (!action.m_started) {
-        // The delay counts down; a random delay is drawn once. Started only once it has run out.
+        // The delay counts down; a random delay is drawn once. Started only once it has run out. Coney's stand-in: the
+        // roll is the brain's generator, not the original's shared stream 0x006eb880 (#689).
         if (action.m_delayMs == kRandomDelay) {
             action.m_delayMs = static_cast<std::int16_t>(rollRange(m_random, 0, kRandomDelayMaxMs));
         }
