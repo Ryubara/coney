@@ -183,6 +183,8 @@ void addMessageBindings(LuaVm& vm, const BindingContext& context) {
                                 hud.hints().clearShowing();
                                 return;
                             }
+                            // A stand-in reading of the priority: nil gives 1 and a negative number wraps, where the
+                            // original gives 0 and passes a byte (docs/research/script-arguments.md#q-nil-defaults).
                             hud.hints().queue(binding::string(args, 0), static_cast<int>(unsignedArg(args, 1, 1)));
                         }));
     // @orig 0x0036f430 HUDFlushTutorialText (unknown)
@@ -203,10 +205,12 @@ void addMessageBindings(LuaVm& vm, const BindingContext& context) {
     // @orig 0x001b5ff0 GameState_SetTutorialText (unknown)
     // @orig 0x0036eec8 HUDEnableGameTutorialText (unknown)
     vm.registerFunction("HUDEnableGameTutorialText", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
+                            // stand-in: a string that is not a number reads true, where the original reads false.
                             hud.setGameTutorialText(boolArg(args, 0));
                         }));
     // @orig 0x0036e858 HUDSetAnnounceMsg (unknown)
     vm.registerFunction("HUDSetAnnounceMsg", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
+                            // stand-in: a negative number wraps (the original gives 0), a non-number string is true.
                             hud.setAnnouncement(static_cast<int>(unsignedArg(args, 0)), binding::string(args, 1),
                                                 boolArg(args, 2));
                         }));
@@ -302,27 +306,31 @@ void addRadarBindings(LuaVm& vm, const BindingContext& context) {
                             hud.setNumIndicator(static_cast<int>(binding::unsignedArg(args, 0)),
                                                 binding::booleanArg(args, 1), binding::signedArg(args, 2, -1));
                         }));
-    // Blip types: 10 a mission objective, 1 a secondary one, and a human's by its class (Coney: 7, the class is not
-    // read yet).
+    // Blip types: 10 a mission objective, 1 a secondary one, and a human's by its class (Coney's stand-in: 7, the class
+    // is not read yet). Each handle below goes through this file's unsignedArg(): a stand-in where a negative handle
+    // wraps (the original gives 0); scripts pass only real handles.
     // @orig 0x001b3f98 HUD_RadarAddObjective (unknown)
     // @orig 0x00370760 HUDAddRadarMissionObjective (unknown)
     vm.registerFunction("HUDAddRadarMissionObjective", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
-                            // A new objective blinks for its first 100 updates.
+                            // A new objective blinks for its first 100 updates; the handle read is the stand-in above.
                             hud.radar().blips[handleArg(args, 0)] =
                                 hud::RadarBlip{.type = 10, .flashCountdown = hud::kRadarObjectiveFlash};
                         }));
     // @orig 0x00370798 HUDAddSecondaryRadarMissionObjective (unknown)
     vm.registerFunction("HUDAddSecondaryRadarMissionObjective",
                         hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
+                            // The handle read is the stand-in above.
                             hud.radar().blips[handleArg(args, 0)] = hud::RadarBlip{.type = 1};
                         }));
     // @orig 0x001b4168 HUD_RadarAddHuman (unknown)
     // @orig 0x00370a68 HUDAddRadarHuman (unknown)
     vm.registerFunction("HUDAddRadarHuman", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
+                            // stand-in: every human gets type 7 (the original picks by the human's class).
                             hud.radar().blips[handleArg(args, 0)] = hud::RadarBlip{
                                 .type = 7, .icon = kWarriorIcon, .scale = hud::kRadarDotSize * hud::kRadarIconFactor};
                         }));
     // @orig 0x001b4098 HUD_RadarRemove (unknown)
+    // The handle is read as a stand-in: a negative one wraps, where the original gives 0.
     const auto remove = [](hud::Hud& hud, std::span<const Value> args) { hud.radar().blips.erase(handleArg(args, 0)); };
     // @orig 0x00370980 HUDDeleteRadarMissionObjective (unknown)
     vm.registerFunction("HUDDeleteRadarMissionObjective", hudCall(context, remove));
@@ -331,10 +339,12 @@ void addRadarBindings(LuaVm& vm, const BindingContext& context) {
     // @orig 0x001b4038 HUD_RadarSetIcon (unknown)
     // @orig 0x003708c8 HUDSetRadarItemTexture (unknown)
     vm.registerFunction("HUDSetRadarItemTexture", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
+                            // The handle read is a stand-in: a negative one wraps (the original gives 0).
                             hud::RadarBlip& blip = blipOf(hud, handleArg(args, 0), 10);
                             // The icon and its size factor (compounding) unless the lock is already set, then the lock
                             // (`HUD_RadarSetIcon`, `0x001b2ca0`: icon 22 at 0.7, the dealers' icons 29-31 green).
                             if (!blip.iconLock) {
+                                // stand-in: a nil size factor reads 1 (the original 0), a negative icon wraps.
                                 blip.icon = static_cast<int>(unsignedArg(args, 1));
                                 blip.scale *=
                                     blip.icon == kSmallTargetIcon ? kSmallTargetFactor : floatArg(args, 2, 1.0F);
@@ -342,6 +352,7 @@ void addRadarBindings(LuaVm& vm, const BindingContext& context) {
                                     blip.colour = hud::kRadarDealerColour;
                                 }
                             }
+                            // stand-in: a string that is not a number locks, where the original reads false.
                             blip.iconLock = boolArg(args, 3);
                         }));
     // `HUDRadarSetRange(near, far)`.
@@ -357,8 +368,11 @@ void addRadarBindings(LuaVm& vm, const BindingContext& context) {
     // @orig 0x001b4298 HUD_RadarFlash (unknown)
     // @orig 0x00370690 HUDSetRadarObjectFlash (unknown)
     vm.registerFunction("HUDSetRadarObjectFlash", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
+                            // The handle read is a stand-in: a negative one wraps (the original gives 0).
                             const auto found = hud.radar().blips.find(handleArg(args, 0));
                             if (found != hud.radar().blips.end()) {
+                                // stand-in: the third argument, which the original passes to the blip's mode, is not
+                                // read, and a string that is not a number flashes.
                                 found->second.flashing = boolArg(args, 1);
                             }
                         }));
@@ -366,6 +380,7 @@ void addRadarBindings(LuaVm& vm, const BindingContext& context) {
     // @orig 0x001b4a88 ChaseHud_Destroy (unknown)
     vm.registerFunction(
         "HUDSetChaseHUDState_DESTROY",
+        // stand-in: the chase HUD is not built, so only its flag is cleared (the original sets state 6, 100, 10).
         hudCall(context, [](hud::Hud& hud, std::span<const Value> /*args*/) { hud.radar().chaseHud = false; }));
 }
 
