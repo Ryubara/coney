@@ -5,8 +5,9 @@ script on the user's machine, the user edits it like any script, and the mod car
 player's Coney applies to the script from their own disc, compiles and runs in the original's place. It covers how
 well the decompiler does today, the patch format and the hash it is pinned to, two mods patching one script, the
 compiler, the translator from Lua 4.0 to Lua 5.4 with an evidence-based verdict on it, the proof by trace equality,
-Studio's flow and the order of the work. It ends with the build issues it proposes, in order. The parent issue is
-[#1054](issue:1054); this page is [#1074](issue:1074).
+Studio's flow and the order of the work, and the story graph through which a mod adds missions to the main story
+without a patch. It ends with the build issues it proposes, in order. The parent issue is [#1054](issue:1054); this
+page is [#1074](issue:1074), and its story graph [#1178](issue:1178).
 
 **Status: design, two build issues built.** The first [build issue](#build-issues), the frozen decompile form, is
 built, and so is build issue 4: the `.cpatch` format, applying, making and merging patches and the
@@ -39,9 +40,11 @@ A maintainer decided the frame:
 6. [Lua 5.4: the translator](#translator): the syntax, the numbers and the other semantics, where a translated
    script runs, how it is proved, and [the verdict](#verdict).
 7. [Studio's flow](#studio-flow).
-8. [The order of the work](#order), [What changes on other pages](#other-pages),
+8. [The story graph](#story-graph): the graph, the `[story]` section, anchors, merging, the Mods screen's story view,
+   progress and saves, the test, and the questions for the user.
+9. [The order of the work](#order), [What changes on other pages](#other-pages),
    [Maintainer decisions](#decisions), [Open questions](#open-questions).
-9. [Proposed build issues](#build-issues), [How the numbers were found](#how-checked).
+10. [Proposed build issues](#build-issues), [How the numbers were found](#how-checked).
 
 ## Terms {#terms}
 
@@ -491,6 +494,204 @@ The editor decides by the file's root, so there is no mode to choose:
 Patches are project files and go in the `.cmod` with the project's other files; what never does is the decompiled text
 of a game script ([Export, step 6](#studio-flow)). Opening a `game:/` script and not editing it changes nothing.
 
+## The story graph {#story-graph}
+
+How a mod puts a mission into the main story without patching a game script: the story's order becomes Coney's own
+data, seeded with exactly the original's, and a mod places its missions in it from its manifest, as a Minecraft
+advancement names its parent and a Factorio technology its prerequisites. The user approved the frame
+([#1178](issue:1178)). Without mods the graph is the original's order and the story plays as the PS2's.
+
+**Why a patch is not enough.** The original keeps its order in two `global.lua` tables, `runNextMission`'s 20 rows and
+`findLastMission`'s 19 levels, in the hub's `fRunMission` (one mission per chapter) and in fixed comparisons with the
+hub's chapter number; progress is the profile's per-level completion bits, and the best records and the menus are
+sized for the original's missions ([Story progress](../../research/story-progress.md#readers) lists every reader). A
+mission added by patches would need a patch of `global.lua` and of the hub, a completion bit it does not have, and two
+story mods would meet as overlapping text in the same three tables.
+
+### The graph {#graph}
+
+The story is a **chain of steps**, each either a **mission** (a level entered at checkpoint 1) or a **hub chapter**
+(`level95` at a checkpoint). The original's chain, from [Story progress: the order](../../research/story-progress.md#order):
+
+`level99`, `level80`, `level87`, `hub:1`, `level34`, `hub:2`, `level2`, `hub:3`, `level3`, `hub:4`, `level5`, `hub:5`,
+`level81`, `hub:6`, `level86`, `level93`, `hub:7`, `level31`, `hub:8`, `level14`, `hub:9`, `level9`, `hub:10`,
+`level51`, `level52`, `level54`, `level55`, `level84`, `hub:11`, `level64`, `hub:12`.
+
+- **Ids.** An original mission's id is its level name (`level80`); a hub chapter's is `hub:<n>`; a mod's mission is
+  `<mod>.<id>` (`yard-brawl.alley`), so two mods never share an id.
+- **How a step is entered.** A mission after a mission is loaded by `runNextMission`; a mission after a hub chapter is
+  the chapter's offer (its last action loads it); a hub chapter after a mission is loaded by `runNextMission` at its
+  checkpoint. `level64` is a **side step**: it is reached through the Armies stages, never from `hub:11`, but it sits in
+  the chain so that it counts as later than `level84`, as `findLastMission` has it.
+- **What the chain gives.** The three tables the scripts read are views of it: `runNextMission`'s rows (each mission to
+  the step after it, plus 0 to the first), `findLastMission`'s list (the missions, last first) and `fRunMission` (each
+  chapter to the mission after it). The seed is a table of level numbers and chapter numbers in Coney's code, our own
+  data ([LEGAL.md](repo:LEGAL.md#no-game-data)).
+- **Who owns it.** The graph is session state of the story game mode, built once when the session's mods start and
+  fixed until they stop; every machine of a co-op session builds it from the same mods in the same order, and its hash
+  joins the mod list a session checks ([Coney's model](mods.md#mp-model)).
+
+### The natives that read it {#graph-natives}
+
+Two natives take the names of the two `global.lua` functions, and Coney sets them over the script's own after
+`global.lua`'s main chunk runs at each level load. Each is `@coney-only` and names the Lua function it replaces
+([Coney-only code](../conventions.md#coney-only)); the two Lua callers, `UnlockAndLoad` and
+`MissionCompleteUnlocks`, stay the game's and reach them by name, as do the front end, the Rumble arenas and the four
+native menus ([Who calls them](../../research/story-progress.md#callers)).
+
+- **`findLastMission()`** walks the chain's missions from the end and returns the first that is complete: an original
+  mission by its completion record, as the original asks, a mod's by its id ([Progress](#graph-progress)). It returns a
+  level number, as the original does, since `LastLevel` holds it.
+- **`runNextMission(arg)`** looks up the step after `LastLevel` (setting it from `findLastMission()` when it is 0 or nil)
+  and does what the original's row does: `SetCheckPoint`, stop the music, `MenuLoadLevel`, and the mission-complete
+  launch when `arg` is 1. With no step after it (the original's missing row) it loads nothing, as the original's call
+  of a name no binding has does.
+- **The hub's offer.** When the hub loads, Coney writes the chain's offer for the chapter into `fRunMission[checkpoint]`
+  after `level95.lua`'s main chunk, so `story.RunMissionAction` loads it unchanged; for the original chapters the row
+  written is the one already there.
+- **Mod levels get numbers.** The scripts pass levels as numbers (`Level`, `LastLevel`, `MenuLoadLevel("level" ..
+  n)`, `UM_IsLevelComplete(n)`), so each mod mission gets a level number for the session, from 1000 up in chain
+  order, and a level record under the name `level<n>` that loads the mod's level. The number is never saved: saves,
+  replays and messages use the id.
+
+### The manifest's `[story]` section {#story-manifest}
+
+```toml
+[[story.missions]]
+id     = "alley"                   # becomes "yard-brawl.alley"
+title  = "Alley Cats"              # what the menus show
+level  = "levels/alley.clevel"
+script = "missions/alley.mission"  # optional: a level may carry its own scripts
+after  = "level80"                 # the anchor: an original mission, a hub chapter or another mod's mission
+before = "level87"                 # optional guard: refused if the step after the anchor is not this one
+area   = "Coney"                   # optional: the mission menu's area; the anchor's area when left out
+label  = 2                         # optional: the number shown and sorted on; the anchor's when left out
+
+[[story.missions]]
+id      = "docks"
+level   = "levels/docks.clevel"
+after   = "hub:6"                  # chapter 6 offers it, and a new chapter follows it
+chapter = "hub/docks-return.lua"   # optional: the new chapter's own actions
+
+[[story.missions]]
+id      = "payin"
+level   = "levels/payin.clevel"
+replace = "level86"                # takes level86's place in the chain
+```
+
+A mission names exactly one of `after` and `replace`. A project with a `[story]` section is a story mod: while it is
+enabled every story game is a modded session ([Modded saves and replays](mods.md#saves-replays)), whatever its
+`autostart`, and its scripts run when its missions' levels do.
+
+### Anchors {#anchors}
+
+| Anchor | Where the mission goes | What follows it |
+| --- | --- | --- |
+| `after = "<mission>"` | Right after that mission: `runNextMission` loads it where it loaded the next step | The step that followed the anchor |
+| `after = "hub:<n>"` | Chapter *n*'s offer: the chapter's last action loads it | A **new hub chapter**, `hub:<n>.<mod>.<id>`, which offers what chapter *n* offered |
+| `replace = "<mission>"` | In that mission's place, entered the same way | The same step as before; the original mission no longer plays in the story |
+
+- **A new hub chapter** loads the hub at chapter *n*'s checkpoint, so the hub's own scripts see the story's time they
+  expect: the chapter number is also the clubhouse's state, the chatter, the streets' collectables, spawners and cops
+  ([The hub](../../research/story-progress.md#hub)), and a new chapter is a point in that time, not a thirteenth one.
+  It runs the mod's `chapter` script when the mod has one; without one, Coney's default chapter sets chapter *n*'s
+  crew and environment and puts a red circle at the next mission's giver, whose action loads it, with no cut-scene.
+- **Anchoring on a replaced mission** places the mission after its replacement, since the anchor names a place in the
+  story.
+- **Hub chapters 11 and 12** offer nothing in the original; a mission after either is a mission after the story's end.
+
+### Merging and refusals {#graph-merge}
+
+The graph is built when the mods start, before any script runs, from the seed and each story mod's missions, mods in
+load order ([Load order](mods.md#load-order)) and each mod's missions in manifest order:
+
+- **Two missions on one anchor** go in load order: the first placed nearest the anchor, the next after it. The Mods
+  screen can swap them, and the swap is kept in `enabled.toml` with both package hashes, as a script merge choice is
+  ([Two mods patching one script](#two-mods)).
+- **A missing anchor** (an id no step has, a hub chapter outside 1-12, a mission of a mod that is off or refused)
+  refuses that mission with a message naming the mod, the mission and the anchor ("yard-brawl.alley: no story step
+  'level70'"); the rest of the story plays. A mission anchored on a refused one is refused the same way.
+- **A `before` guard** refuses the mission when, at its turn in the merge, the step after its anchor is not the one
+  named: another mod has moved in, and the author asked to be told.
+- **A cycle** (`a` after `b`, `b` after `a`) refuses every mission in it, with one message naming the cycle, as a
+  dependency cycle does ([Dependencies](mods.md#dependencies)).
+- **Two replacements of one mission**: the first in load order takes the place and the other is refused, until the
+  player chooses on the Mods screen ([For the user](#graph-questions)).
+- **A mission whose level or script is missing** from the package is refused at the mod's check, before the merge.
+
+Without story mods the merge is the seed and nothing else: no question is asked and nothing is written.
+
+### The Mods screen's story view {#graph-mods-screen}
+
+The [Mods screen](ui.md#mods-screen) gains a **Story** list when any enabled mod has a `[story]` section: the merged
+chain in order, original steps in the game's colours and each mod's missions under its title, with three marks:
+
+- **Shared anchor**: two or more missions placed at one anchor, with *Swap* to change their order.
+- **Replaced**: an original mission another mission stands in for, and, for two replacements, the choice between them.
+- **Refused**: each refused mission with its message, so a player sees why a mission is missing without a log.
+
+### Progress, records and saves {#graph-progress}
+
+- **Original missions keep the original's records.** Their completion is the `(level, 0, 0)` record and their rank
+  records follow `MissionCompleteUnlocks`, as without mods; their best records keep their 30 slots.
+- **A mod mission's progress is keyed by its id.** `MissionCompleteUnlocks` runs for it as for any level; Coney maps
+  `UM_Unlock` and `UM_IsLevelComplete` on a mod level's number to the save's **story section** of the new save format
+  ([#1179](issue:1179)), which keeps, per id: complete or not, the rank records, and a best record with the original's
+  fields (score, total time, grade, percentage). Nothing of a mod mission goes into the 640 unlock bits or the 30 slots.
+- **What the original forgets stays forgotten.** No checkpoint within a mission is saved, so a mod mission that was
+  quit starts again at checkpoint 1 through the chain, as an original one does. A mod that wants to resume at a
+  checkpoint saves it itself with `Coney.SaveData` and reads it when its level starts.
+- **Where it is saved.** A story with mod missions is a modded session, so its saves go to `modded/` with the mod list
+  ([Modded saves and replays](mods.md#saves-replays)). A save loaded without one of its story mods keeps that mod's
+  section (#1179 keeps a section a session does not know), and `findLastMission` skips ids the chain lacks, so the story
+  goes on from the latest mission present; the warning names the missing mod.
+
+### The other readers {#graph-readers}
+
+Each reader in [Story progress: every reader](../../research/story-progress.md#readers) is met:
+
+| Reader | With the graph |
+| --- | --- |
+| `runNextMission`, `findLastMission` | The natives above |
+| `fRunMission`, read by the chapter's last action and the "new" camera | The offer written into the row at hub load; a mod mission's giver is the flag of the chapter's own offer |
+| The chapter number's fixed comparisons | A new chapter keeps chapter *n*'s number |
+| The mission menu: completed levels by area, sorted by label | A completed mod mission is listed in its `area`, sorted by its `label`; it needs the ported screen ([#1071](issue:1071)) |
+| The statistics list, by mission byte | Mod missions follow the original's, in chain order |
+| The 30 best records, by mission byte | Mod missions' records are the story section's |
+| `UM_IsLevelComplete(84)` (the menu music, the trophy zone) and the flashback requirement | Unchanged: they name original missions |
+
+### The test that the unmodded graph is the original's {#graph-test}
+
+Written first, before the natives:
+
+- **The views.** The seeded graph's `runNextMission` rows equal the 20 of `global.lua:f61`, its `findLastMission` list
+  the 19 of `global.lua:f62`, and its offers the 12 rows of `fRunMission`, each expected value cited from
+  [Story progress](../../research/story-progress.md#global-functions).
+- **The walk.** From an empty profile, the natives choose a level, the test marks it complete (a hub chapter "plays" by
+  loading its offer), and the 29 steps it loads up to `hub:11` equal the chain above; with `level64` then complete,
+  every later completion leads to `hub:12`.
+- **Against the disc.** A disc test runs the disc's own `global.lua` in a game state with a fake profile and, for every
+  prefix of the story complete (and nothing, and `level64` alone), compares the level and checkpoint the Lua
+  `runNextMission` asks for with the native's; it prints the count of equal cases only.
+- **Merging.** Synthetic manifests: an `after` on a mission and on a hub chapter, a replacement, two mods on one anchor
+  in both load orders, a missing anchor, a failed `before`, a cycle and two replacements of one mission each give the
+  chain and the messages expected; with no story mod the graph's hash equals the seed's.
+
+### For the user {#graph-questions}
+
+- **For the user: the natives without mods.** The design sets the two natives in every session, so there is one path,
+  proved equal to the original by the disc test. The other choice is to leave the game's own Lua functions in place
+  when no story mod is enabled, so an unmodded game runs the original's tables exactly, at the cost of two paths.
+  Which does the user want?
+- **For the user: two replacements of one mission.** The design lets the first in load order win and the Mods screen
+  offer the choice. Should both be refused instead until the player chooses?
+- **For the user: a new hub chapter without a script.** The design's default chapter is chapter *n*'s environment and a
+  red circle at the next giver, with no cut-scene. Is that enough, or should a mod that anchors on a hub chapter have to
+  bring its own chapter script?
+- **For the user: mod missions on the original's screens.** The design lists completed mod missions on the mission menu
+  (by `area` and `label`) and the statistics screen (after the original's). The other choice keeps those screens to the
+  original's missions and lists mod missions only at the Mods screen's `missions` point. Which does the user want?
+
 ## The order of the work {#order}
 
 1. **4.0 patching**: the frozen form and the C++ decompiler, the compiler with its round-trip gate, the patch format with
@@ -537,6 +738,10 @@ When this design is accepted:
 3. **Faithful first: decided, no exception needed** ([Studio's decisions](index.md#decisions)). Studio offers a script
    for editing, and a level's 5.4 form, only once Coney has what it needs (the round trip, the compiler, the proof), and
    a patched script makes a modded session; the story without mods plays as the original.
+4. **Decided: the story graph's frame** ([#1178](issue:1178)): the order as data seeded with the original's rows, read
+   by two `@coney-only` natives, progress by mission id, missions placed by anchor in the manifest, load order on a
+   shared anchor with a swap on the Mods screen, the original's forgetting kept, a story with mod missions a modded
+   session. Its open choices are [For the user](#graph-questions).
 
 ## Open questions {#open-questions}
 
@@ -608,6 +813,21 @@ In order. Issues 1 to 6 are 4.0 patching; issue 7 is the probe; issues 8 to 11 f
 11. **tools: Offer each proved level's Lua 5.4 form in Studio.** *Convert to Lua 5.4* for proved levels, shared scripts
     last, and 5.4 editing with the language server and debugger of projects. Tests with the Test Engine: an unproved
     level offers no conversion; a converted patch applies and plays.
+
+### The story graph's build issues {#graph-build-issues}
+
+Under [#1054](issue:1054), in order; the save format is [#1179](issue:1179)'s.
+
+1. **core: Add the story graph seeded with the original's order**: the chain, its views and the walk and disc tests.
+2. **core: Add native runNextMission and findLastMission over the graph**: the two natives, the hub's
+   offer written into `fRunMission`, level numbers for mod missions.
+3. **core: Add the manifest's story section and the story graph merge**: `[story]`, anchors, the merge and its
+   refusals.
+4. **core: Add hub chapters that mod missions open**: a new chapter at chapter *n*'s time, the mod's chapter script
+   or Coney's default chapter.
+5. **core: Add story progress by mission id to the save**: mod missions' completion, ranks and best records in the
+   story section, after #1179.
+6. **gameplay: Add the story view to the Mods screen**: shared anchors with *Swap*, replacements, refusals.
 
 ## How the numbers were found {#how-checked}
 
