@@ -154,8 +154,12 @@ the test executables end when the command ends or the shell that ran it goes awa
 stopped by the next build that takes its slot ([Process lifetimes](coney-tools-build.md#build)):
 
 ```sh
-uv run --project python coney-tools build --agent <your id> --preset dev --test
+uv run --project python coney-tools build --agent <your id> --preset dev --test -R <regex>
 ```
+
+`--test` with neither `-R` nor `-L` is the whole suite, which an agent runs once, at the handover tip: the command
+refuses it to an agent unless it carries `--full`, and `task check` runs it for you
+([When the whole suite runs](coney-tools-build.md#build)).
 
 A hook in `.claude/settings.json` refuses `cmake --build`, `cmake --preset`, `ctest` and `ninja` typed directly (it
 only applies inside Claude Code). A person may use either way. Typed in a terminal, `--agent` may be left out: the build
@@ -201,7 +205,8 @@ does not pick up by itself (`coney-tools build --configure` forces it). Each pre
 **The `ci` presets show CI's compiler errors locally.** They add `/WX` on MSVC, and every preset gives `cl.exe`
 `/w44062`, MSVC's warning C4062 for a `switch` that misses an enumerator, which CI's GCC and Clang refuse
 ([Warnings](conventions.md#warnings) says what it is and why clang-cl does not get it). Build a unit with `ci`
-(`coney-tools build --preset ci --test`) so these show before CI does.
+(`coney-tools build --preset ci --test -R <pattern>` for the tests you touched; an agent's whole suite is
+`task check`'s) so these show before CI does.
 
 On MSVC every preset keeps debug information in each object (`/Z7`): [Debug information](#debug-info).
 
@@ -454,8 +459,10 @@ The `asan` preset builds with AddressSanitizer and UndefinedBehaviorSanitizer an
 report fails the test that caused it.
 
 ```sh
-uv run --project python coney-tools build --agent <your id> --preset asan --test
+uv run --project python coney-tools build --agent <your id> --preset asan --test -R <regex>
 ```
+
+(An agent's `--test` with no `-R` or `-L` needs `--full`, as above; CI runs the whole suite under `asan`.)
 
 (Underneath: `cmake --preset asan`, `cmake --build --preset asan`, `ctest --preset asan`.)
 
@@ -557,7 +564,7 @@ by the nightly one; the nightly and hand-started `build` runs are never cancelle
 | `pr` | the pull request title against the commit title rules, that code changes come with docs changes, and the description against the template (pull requests only; editing the title or description reruns it) |
 
 There is no Windows `ci` (dev) build in CI: MSVC with `/WX` and the C4062 warning runs locally, on the `ci` preset
-(`coney-tools build --preset ci --test`; the preset table in [Build and test](#build-and-test)), and the `ci-release`
+(`coney-tools build --preset ci --test --full`; the preset table in [Build and test](#build-and-test)), and the `ci-release`
 build on Windows still compiles every pull request with MSVC and `/WX`.
 
 ### Where each check runs {#where-checks-run}

@@ -81,8 +81,9 @@ def engine_needed(changed: list[str], conventions: Conventions) -> bool:
 
 def build_command(preset: str, agent: str | None) -> list[str]:
     """The `coney-tools build` command that builds the engine and runs its tests, the way every guide says to run it
-    (never `cmake --build` or `ctest`: docs/guides/coney-tools-build.md#build)."""
-    command = [sys.executable, "-m", "coney_tools.cli", "build", "--preset", preset, "--test"]
+    (never `cmake --build` or `ctest`: docs/guides/coney-tools-build.md#build). `ci run` is the whole gate, so it
+    says `--full`: an agent's unfiltered `--test` run is refused without it."""
+    command = [sys.executable, "-m", "coney_tools.cli", "build", "--preset", preset, "--test", "--full"]
     return [*command, "--agent", agent] if agent else command
 
 

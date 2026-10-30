@@ -107,7 +107,7 @@ coney-tools docs legacy [--init | --prune | --check] [--base BASE]
 ## build {#build}
 
 ```sh
-uv run --project python coney-tools build [--agent ID] [--preset dev|playtest|release|ci|ci-release|asan] [--test] [-R REGEX] [-L LABEL]
+uv run --project python coney-tools build [--agent ID] [--preset dev|playtest|release|ci|ci-release|asan] [--test [--full]] [-R REGEX] [-L LABEL]
     [--target NAME ...] [--configure | --configure-only] [--build-dir FOLDER] [--env NAME=VALUE ...] [--priority]
     [--lane auto|main] [--max-wait MIN] [--budget MIN] [--detach] [-j N] [--dir CHECKOUT]
 uv run --project python coney-tools build status [--json] [--dir CHECKOUT]
@@ -325,6 +325,19 @@ exit `75` as for a slot. Runs in other folders, other worktrees or other presets
 covers the run from its measuring on, so the manifest refresh and the dry run never overlap a build either, and
 a run that waited looks at the folder again once the lock is its own (the run before it may have configured it).
 
+**When the whole suite runs.** `--test` with no `-R` or `-L` is the whole suite, the longest job on the machine (most
+of it the disc tests), which holds a main slot and a check slot for the whole run ([Check slots](#check-slots)). An
+agent runs it **once, at the handover tip**, and `task check` does it (it calls the same code and says so), so while
+iterating an agent runs the tests it touched with `-R` or `-L`. The command keeps that rule: **a run that names its
+`--agent` and has `--test` with neither filter is refused (exit 2) unless it carries `--full`**, the flag that says
+"this is the run of the whole suite for the tip". Not refused: a filtered run; a build with no `--test`; a person at a
+terminal who leaves `--agent` out (the id then comes from the user name); CI, which builds through the presets and not
+this command; `task check`, and `ci run`'s `engine` step, which pass `--full` themselves; and `orig fails-first`, which
+always names its tests. `--full` is refused with no `--test` and beside `-R` or `-L`, where it would claim something
+untrue, and it is kept in the build record's command line. The flag is a statement, not a check that the tip is the
+handover one: use it for that run only, since every other full suite holds the slots the other agents' builds wait for
+([Check slots](#check-slots)).
+
 **Choosing tests.** `-R REGEX` runs the tests whose names match and `-L LABEL` those with a label that
 matches (ctest's two filters; both together select the tests that satisfy both). The command lists the selection
 first (`ctest -N`), takes the fast lane for 20 tests or fewer and fails, naming the filter, when nothing matches. Every
@@ -376,7 +389,7 @@ at most `check_slots` of them run at once, across all worktrees:
 | --- | --- |
 | `task check` | the `pytest` check (the whole suite), for the run of pytest |
 | `ci run`, `ci pr` | the `python` step's pytest, for the run of pytest |
-| `build --test` (so also `task check`'s build) | the test phase when it has **no `-R` or `-L` filter**: the whole ctest run. The wait for the check slot comes before the wait for a build slot, so a run in the check queue holds no build slot |
+| `build --test` with no filter (so also `task check`'s build) | the test phase when it has **no `-R` or `-L` filter**: the whole ctest run; an agent may start it only with `--full` ([When the whole suite runs](#build)). The wait for the check slot comes before the wait for a build slot, so a run in the check queue holds no build slot |
 
 A **targeted** run takes none: `build --test -R ...` (so `orig fails-first`, which names its tests), or `pytest` on a
 few test files typed by hand. Run those freely; run the full suite once, in `task check`. A run that has to wait says
@@ -408,7 +421,7 @@ Written by `coney-tools docs render` from the command line's own definitions; ne
 Configure, build and test under the build slots (at most two at once); status, result, unclaim.
 
 ```text
-coney-tools build [--agent AGENT] [--preset PRESET] [--dir DIR] [--configure] [--configure-only] [--test]
+coney-tools build [--agent AGENT] [--preset PRESET] [--dir DIR] [--configure] [--configure-only] [--test] [--full]
     [--target NAME] [--regex REGEX] [--label LABEL] [--build-dir BUILD_DIR] [--env NAME=VALUE] [--priority]
     [--lane RUN_LANE] [--max-wait MIN] [--budget MIN] [--detach] [--jobs JOBS]
 ```
@@ -421,6 +434,7 @@ coney-tools build [--agent AGENT] [--preset PRESET] [--dir DIR] [--configure] [-
 | `--configure` | flag | off | configure even when the build folder has a cache |
 | `--configure-only` | flag | off | configure and stop (no build): the compile database for check |
 | `--test` | flag | off | run ctest after a successful build |
+| `--full` | flag | off | with --test: say that this run of the whole suite, without -R or -L, is the handover tip's; an agent's unfiltered --test run is refused without it (`task check` runs the whole suite itself) |
 | `--target NAME` | text | none | build only this target and what it needs (repeatable), e.g. `coney` for a play build without the tests; not with --test |
 | `-R, --regex REGEX` | text | none | run only the tests whose names match (ctest -R, a CMake regular expression: escape . + ( ) with a backslash); a few tests are quick |
 | `-L, --label LABEL` | text | none | run only the tests with a label that matches (ctest -L); `disc` is every test that needs the game's disc |

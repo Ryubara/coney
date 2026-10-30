@@ -78,6 +78,15 @@ CREATE_BREAKAWAY_FROM_JOB = 0x01000000
 _ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
+#: Why an agent's `--test` run with no filter is refused, and the three ways on (docs/guides/testing.md#local-gate).
+UNFILTERED_REFUSAL = (
+    "--test with no -R or -L runs the whole suite, the longest job on the machine, and an agent runs it once, at the "
+    "handover tip, not while it iterates. Run the tests you touched: --test -R <regex> or -L <label>; `task check` "
+    "runs the whole suite itself when you are done; or add --full for this run of the whole suite "
+    "(docs/guides/testing.md#local-gate)"
+)
+
+
 def add_parser(groups: Any) -> None:
     """Register `coney-tools build [flags]`, `build status` and `build unclaim`."""
     group = groups.add_parser(
@@ -95,6 +104,12 @@ def add_parser(groups: Any) -> None:
         "--configure-only", action="store_true", help="configure and stop (no build): the compile database for check"
     )
     group.add_argument("--test", action="store_true", help="run ctest after a successful build")
+    group.add_argument(
+        "--full",
+        action="store_true",
+        help="with --test: say that this run of the whole suite, without -R or -L, is the handover tip's; an agent's "
+        "unfiltered --test run is refused without it (`task check` runs the whole suite itself)",
+    )
     group.add_argument(
         "--target",
         action="append",
@@ -326,6 +341,7 @@ def build_and_test(
         configure=False,
         configure_only=False,
         test=True,
+        full=True,  # the handover tip's run: the whole suite is what `task check` is
         targets=[],
         regex=None,
         label=None,
@@ -370,6 +386,21 @@ def default_agent_id(interactive: Callable[[], bool] = _typed_in_a_terminal) -> 
     return cleaned if cleaned else "me"
 
 
+def _check_full(args: argparse.Namespace, named: bool) -> None:
+    """Keep the rule that an agent runs the tests it touched while it works and the whole suite once, at the handover
+    tip (docs/guides/testing.md#local-gate): `--test` with no `-R` or `-L` is refused for a run that named its
+    `--agent` unless it carries `--full`. A person's run (the id came from their user name) is not an agent's, and
+    `task check` and `ci run` pass `--full`. `--full` itself is refused with no `--test` or beside a filter, where it
+    would say something untrue."""
+    filtered = args.regex is not None or bool(args.label)
+    if args.full and not args.test:
+        raise ConfigError("--full needs --test: it says that the run of the whole suite is the handover tip's")
+    if args.full and filtered:
+        raise ConfigError("--full runs every test: drop -R and -L, or drop --full")
+    if named and args.test and not args.full and not filtered:
+        raise ConfigError(UNFILTERED_REFUSAL)
+
+
 def build_folder(
     root: Path, args: argparse.Namespace, *, create: bool = False, plan: bool = False
 ) -> tuple[Path | None, Path]:
@@ -387,8 +418,10 @@ def build_folder(
 def _precheck(args: argparse.Namespace) -> tuple[Path, dict[str, str]]:
     """Refuse a run that cannot work before anything waits: the agent id, the preset, the settings and the tools.
     Returns the checkout and the environment of the run."""
+    named = bool(args.agent)
     if not args.agent:
         args.agent = default_agent_id()
+        args.agent_defaulted = True  # a --detach child is started with this id, and must not be taken for an agent's
         if args.agent is None:
             raise ConfigError("pass --agent <your id> (see docs/guides/coney-tools-build.md, 'build')")
     if args.targets and args.test:
@@ -398,6 +431,7 @@ def _precheck(args: argparse.Namespace) -> tuple[Path, dict[str, str]]:
         )
     if args.targets and args.configure_only:
         raise ConfigError("--target with --configure-only: a configure builds no target")
+    _check_full(args, named)
     if not AGENT_NAME.match(args.agent):
         raise ConfigError(f"agent id {args.agent!r}: use letters, digits, '.', '_' and '-' (at most 64)")
     root = _root(args.dir)
@@ -557,7 +591,8 @@ def _tool_revision() -> str | None:
 def _command_line(args: argparse.Namespace) -> list[str]:
     """The run as a command line a person could type: `coney-tools build` and the flags that shaped it."""
     command = ["coney-tools", "build", "--agent", args.agent, "--preset", args.preset]
-    command += [flag for flag, on in (("--configure", args.configure), ("--test", args.test)) if on]
+    switches = (("--configure", args.configure), ("--test", args.test), ("--full", args.full))
+    command += [flag for flag, on in switches if on]
     command += ["--configure-only"] if args.configure_only else []
     for flag, value in (("-R", args.regex), ("-L", args.label), ("--build-dir", args.build_dir), ("-j", args.jobs)):
         command += [flag, str(value)] if value is not None else []
@@ -612,10 +647,14 @@ def _child_command(
     result go."""
     command = [sys.executable, "-m", "coney_tools.cli", "build", "--agent", args.agent, "--preset", args.preset]
     command += ["--dir", str(root), "--max-wait", str(limits_minutes[0]), "--budget", str(limits_minutes[1])]
+    # A person's run (no --agent) is not an agent's, but its child is always started with the id the parent got, so a
+    # whole-suite run says --full for it: the child's own precheck would otherwise refuse it.
+    persons_full_suite = getattr(args, "agent_defaulted", False) and args.test and args.regex is None and not args.label
     switches = (
         ("--configure", args.configure),
         ("--configure-only", args.configure_only),
         ("--test", args.test),
+        ("--full", args.full or persons_full_suite),
         ("--priority", args.priority),
     )
     if args.run_lane != "auto":
