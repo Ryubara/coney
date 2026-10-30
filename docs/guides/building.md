@@ -570,7 +570,11 @@ by the nightly one; the nightly and hand-started `build` runs are never cancelle
 
 | Workflow | Jobs |
 | --- | --- |
+<<<<<<< HEAD
 | `build` | `ci` preset build and tests on Linux (GCC 13 and Clang 19) and macOS (Apple Clang), and on Linux GCC 13 a smoke run of `coney --renderer gpu --frames 10` under lavapipe (Mesa's software Vulkan) on a virtual X display that must present ([Renderer](../engine/gpu-renderer.md)); the release build (`ci-release`) and its tests on Windows (MSVC) and Linux (GCC 13); `asan` preset on Linux Clang 19 and macOS; clang-tidy (the lines a pull request changes; every file nightly, by hand and for a build-setup change); pre-commit over every file; the `build-ok` gate |
+=======
+| `build` | `ci` preset build and tests on Linux (GCC 13 and Clang 19) and macOS (Apple Clang); the release build (`ci-release`) and its tests on Windows (MSVC) and Linux (GCC 13); `asan` preset on Linux Clang 19 and macOS; clang-tidy (the lines a pull request changes; every file nightly, by hand and for a build-setup change); the `software-pictures` job ([the software pictures](testing.md#software-pictures)); pre-commit over every file; the `build-ok` gate |
+>>>>>>> 5332a1b19 (tools: Add a picture comparison with a tolerance and the software-pictures job)
 | `python` | ruff, mypy, pytest and `ci run` (its `repo` and `pre-commit` steps) on Windows, Linux and macOS; the repository checks (`repo check-conventions`, `repo render --check`, `repo audit --files`, `progress check`, `orig check-tags` and `orig check-copy` with `--base HEAD^1`, the generators' `--check`) on Linux; the `python-ok` gate |
 | `dependencies` | a pull request whose description says `Depends on #N` waits until #N is merged (`ci dependencies`); when a pull request merges, the waiting ones are rerun (`ci rerun-dependencies`) |
 | `ci-failure` | a failed `build`, `python` or `docs` run on `main` (nightly, push or manual) opens a `P-critical` issue, or comments on the open one (`ci report-failure`) |
@@ -599,6 +603,7 @@ job no workflow has, or a required check is in none.
 | GCC 13, Clang 19 and AppleClang builds with the unit and smoke tests; MSVC and GCC release builds | CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/build` |
 | Linux and macOS sanitizers | CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/sanitizers` |
 | clang-tidy: the lines a change touches; the whole codebase nightly, in a manual run and for a build-setup change | CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/clang-tidy` |
+| Software pictures: Coney's synthetic scenes drawn through Mesa's llvmpipe in a pinned container, compared with the reference pictures | CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/software-pictures` |
 | Python: ruff, mypy, pytest, the repository, render and progress checks | local; CI: every pull request, a push to main, a push to a release branch | `python/python`, `python/python-ok` |
 | Docs: mkdocs strictly, markdownlint, actionlint, the page standards | local; CI: every pull request, a push to main, a push to a release branch | `docs/mkdocs`, `docs/markdownlint`, `docs/actionlint` |
 | The pull request's title, description, docs and claimed issues | CI: every pull request | `pr/title`, `pr/docs`, `pr/body`, `pr/claim` |
@@ -745,7 +750,7 @@ GitHub ruleset and settings, and this block is generated from it (`coney-tools r
 - Merge method: squash only. The commit on `main` has the pull request's title; its message is the pull request's
   description.
 - Required checks: `title`, `docs`, `body`, `build-ok`, `python-ok`, `format`, `mkdocs`, `markdownlint`, `actionlint`,
-  `dependencies`, `clang-tidy`.
+  `dependencies`, `clang-tidy`, `software-pictures`.
 - Auto-merge is on, the branch is deleted after the merge, history is linear and a branch need not be up to date with
   `main`.
 - Who merges: maintainer and coordinator, never the agent that wrote the work.

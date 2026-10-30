@@ -21,7 +21,9 @@ WIDTH = 100
 HEIGHT = 10  # 1000 pixels, so 0.1 % is exactly one pixel
 
 
-def make_picture(path: Path, colour: tuple[int, int, int, int] = (40, 80, 120, 255), size=(WIDTH, HEIGHT)) -> Path:
+def make_picture(
+    path: Path, colour: tuple[int, int, int, int] = (40, 80, 120, 255), size: tuple[int, int] = (WIDTH, HEIGHT)
+) -> Path:
     """Write a flat RGBA picture and return its path."""
     path.parent.mkdir(parents=True, exist_ok=True)
     Image.new("RGBA", size, colour).save(path)
@@ -157,11 +159,11 @@ def test_a_missing_path_ends_with_exit_code_2(tmp_path: Path, capsys: pytest.Cap
 
 def test_diff_out_writes_a_picture_that_marks_the_pixels_over(tmp_path: Path) -> None:
     a = make_picture(tmp_path / "a.png")
-    b = make_with_pixels(tmp_path / "b.png", {(4, 5): (255, 0, 0, 255)})
+    b = make_with_pixels(tmp_path / "b.png", {(4, 5): (255, 0, 0, 255), (6, 5): (255, 0, 0, 255)})
     out = tmp_path / "diff"
     assert main(["picture", "compare", str(a), str(b), "--diff-out", str(out)]) == 1
     written = sorted(path.name for path in out.iterdir())
-    assert written == ["b.diff.png"] or written == ["a.diff.png"]
+    assert written == ["a.diff.png"]
     diff = Image.open(next(out.iterdir())).convert("RGBA")
     assert diff.size == (WIDTH, HEIGHT)
     assert diff.getpixel((4, 5)) == (255, 0, 255, 255)
@@ -179,7 +181,7 @@ def test_diff_out_for_folders_keeps_the_relative_name(tmp_path: Path) -> None:
 def test_the_default_limits_are_the_renderer_designs_stand_ins() -> None:
     # Expected: engine/renderer.md#comparing, "at most 2 of 255 apart in any channel, over at most 0.1 %"
     assert picture_compare.DEFAULT_CHANNEL_TOLERANCE == 2
-    assert picture_compare.DEFAULT_MAX_SHARE_PERCENT == pytest.approx(0.1)
+    assert pytest.approx(0.1) == picture_compare.DEFAULT_MAX_SHARE_PERCENT
 
 
 def test_a_negative_tolerance_or_share_is_refused(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

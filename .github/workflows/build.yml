@@ -292,6 +292,84 @@ jobs:
         with:
           save: "false"
 
+  # The software pictures (docs/guides/testing.md#software-pictures): Coney's synthetic scenes, which need no game
+  # data, drawn through Mesa's llvmpipe under a virtual display in a container image pinned by its digest, with Mesa at
+  # a fixed package version (.github/software-pictures/Dockerfile), and compared with the reference pictures kept in
+  # tests/pictures/reference/ by a per-channel tolerance and a share of pixels allowed over it
+  # (`coney-tools picture scenes`). The runner image's own Mesa moves with the image, which is why the driver is not
+  # the runner's. The engine is built here, on the runner (the same gcc-13 `ci` build as the build job, so it reads
+  # that job's cache); only the drawing runs in the container, on the same Ubuntu release. The drawn pictures are
+  # uploaded whatever the result, so a new reference (or a failure) can be looked at. A required check
+  # (`software-pictures`), skipped like the build for a change that touches no engine file.
+  software-pictures:
+    needs: changes
+    if: needs.changes.outputs.build == 'true'
+    runs-on: ubuntu-24.04
+    env:
+      CC: gcc-13
+      CXX: g++-13
+      IMAGE: coney-software-pictures
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - name: Install Ninja, gcc-13 and SDL3's build packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build gcc-13 g++-13 libx11-dev libxext-dev libxrandr-dev             libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev libwayland-dev libxkbcommon-dev             libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev libudev-dev             libasound2-dev libpulse-dev libpipewire-0.3-dev
+      # The same compiler, preset and flags as build (linux-gcc-13), so it reads that job's cache and leaves saving it
+      # to that job.
+      - uses: ./.github/actions/ccache
+        with:
+          key: ci-linux-gcc-13
+      - uses: ./.github/actions/deps
+      - run: cmake --preset ci
+      - uses: ./.github/actions/deps-save
+      # Only the game: the scenes need no test, and the executable brings its assets folder beside it.
+      - run: cmake --build --preset ci --target coney
+      # The container image, cached on the runner's cache so a run does not download and install it again: the key is
+      # the Dockerfile's hash, so moving a pin builds a new image. Only main saves it, as for the compiler cache.
+      - name: Restore the pinned container image
+        id: image
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/software-pictures-image.tar
+          key: software-pictures-image-${{ hashFiles('.github/software-pictures/Dockerfile') }}
+      - name: Load the image from the cache
+        if: steps.image.outputs.cache-hit == 'true'
+        run: docker load --input "$RUNNER_TEMP/software-pictures-image.tar"
+      - name: Build the image
+        if: steps.image.outputs.cache-hit != 'true'
+        run: |
+          docker build --tag "$IMAGE" .github/software-pictures
+          docker save --output "$RUNNER_TEMP/software-pictures-image.tar" "$IMAGE"
+      - name: Save the image
+        if: steps.image.outputs.cache-hit != 'true' && github.event_name != 'pull_request'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/software-pictures-image.tar
+          key: software-pictures-image-${{ hashFiles('.github/software-pictures/Dockerfile') }}
+      # Each scene is drawn twice: the second draw is compared with the first, which shows whether the pinned Mesa
+      # gives the same pixels on every run (docs/engine/renderer.md#comparing). The container runs as the runner's
+      # user, and sees the checkout and the output folder at the same paths, so Coney's arguments mean the same in it.
+      - name: Draw the scenes and compare them with the references
+        run: |
+          out="$RUNNER_TEMP/pictures"
+          launcher="docker run --rm --user $(id -u):$(id -g) --volume $PWD:$PWD --volume $RUNNER_TEMP:$RUNNER_TEMP"
+          launcher="$launcher --workdir $PWD $IMAGE xvfb-run --auto-servernum --server-args='-screen 0 640x480x24'"
+          uv run --project python coney-tools picture scenes --coney build/ci/src/platform/coney             --launcher "$launcher" --out "$out" --repeat 2
+      - name: Keep the drawn pictures
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: software-pictures-drawn
+          path: ${{ runner.temp }}/pictures
+          retention-days: 14
+          if-no-files-found: ignore
+      - if: ${{ !cancelled() }}
+        uses: ./.github/actions/ccache-save
+        with:
+          save: "false"
+
   # Keeps one ccache entry per job and one dependency entry per OS on this ref: deletes the older ones once this run
   # has saved its own, so main's entries stay within the repository's 10 GB (docs/guides/building.md#ci-caches). A
   # key's family is the key without its last part (a run id, a commit SHA or a deps.cmake hash). Pull requests save

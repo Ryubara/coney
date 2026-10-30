@@ -21,6 +21,7 @@ request says so in a `Runtime:` line that CI checks ([below](#runtime-line)).
 | A format, parser or other pure code | Unit tests on synthetic fixtures; a disc test that prints aggregates when the disc is involved |
 | Engine behaviour that a player sees | Unit tests where it can be isolated, and a disc test that starts through [the player's path](#test-through-the-players-path); a [runtime comparison](#runtime-comparison) with the original; before and after captures of Coney and the original from the same spot for anything visible ([What a pull request shows](#pr-evidence)) |
 | A mission checkpoint | Its [playthrough test](#playthrough-tests) passes; `research/missions.yaml` updated; an [event diff](#diff-against-the-original) against the original where a recording exists; a [runtime comparison](#runtime-comparison) of the checkpoint's moments with the original; before and after captures of Coney and the original from the same spot for anything visible |
+| A change to drawing | The draw-stream hashes where they cover it, the local picture comparison's counts ([Picture counts](#picture-counts)), and CI's [software pictures](#software-pictures) passing |
 | A bug fix | A test that fails before the fix and passes after it (a test that guards a refactor of behaviour that already matched is [stamped `keeps`](#keeps)); in a player-facing area (`gameplay`, `graphics`, `audio`), also a [runtime comparison](#runtime-comparison) with the original, and before and after captures of Coney and the original from the same spot for anything visible |
 | A research finding | An address and an [evidence level](research-evidence.md#evidence-levels) on every claim; runtime claims checked in the emulator and citing their [run record](research-evidence.md#run-records); `research claims` clean on the pages changed; a [trace diff](research-traces.md#comparing-with-coney) where a scenario exists |
 | Python tools and generators | pytest, ruff and mypy; every generator's `--check` |
@@ -348,6 +349,25 @@ refuses one with nothing behind it in the scratch folder ([Task review](review/t
 other title area does not need the line: leave it out, or keep it when the original running says something about the
 change (`pr text` takes it from any area).
 
+### Picture counts {#picture-counts}
+
+A pull request that changes drawing (the renderer, a shader, a render state, what a layer draws) compares pictures
+and reports the counts in its Testing section. The comparison is the [renderer design's](../engine/renderer.md#comparing):
+named frames from the branch against the same frames from its base commit, on one machine, with a pinned camera at
+`--render-size 640x448` ([Capturing and attaching](#pr-media)), compared with
+[`coney-tools picture compare`](coney-tools-trace.md#picture), which prints the pixels over the tolerance and the
+largest difference and exits 1 past the limit. The Testing section holds one line with the numbers, as for the
+`Runtime:` line:
+
+```text
+- Pictures: 6 named frames, branch against base, 12 pixels over 2 of 255, largest difference 7, limit 0.1 % each: ok
+```
+
+The tool's output stays in the scratch folder while the pull request is open, because the reviewer opens it
+([Description](review/text.md)); the frames are game pictures, so they are never committed. A change that moves no
+pixel says `Pictures: none (<reason>)`, for example a refactor whose draw-stream hashes are unchanged. Nothing checks
+the line but the reviewer, who refuses a pull request that changes drawing without it.
+
 ### Capturing and attaching {#pr-media}
 
 !!! note "For the project's agents"
@@ -529,6 +549,33 @@ CI builds and tests on Windows, Linux (GCC and Clang) and macOS, with sanitizers
 and runs the Python and docs checks. It is the gate for the platforms you are not on: do not run virtual-machine or
 cross-platform builds locally to stand in for it, and fix a red CI forward rather than leaving `main` red. Code that
 MSVC accepts but the others reject is the usual cause: see [Portability traps](conventions.md#portability-traps).
+
+### The software pictures {#software-pictures}
+
+CI has no GPU, so the `software-pictures` job draws Coney's synthetic scenes (`tests/pictures/scenes.toml`: sandbox
+layouts and CC0 textures, no game data) through Mesa's software OpenGL driver, llvmpipe, under a virtual display
+(`xvfb-run`), and compares each picture with its reference in `tests/pictures/reference/` using the
+[tolerance](coney-tools-trace.md#picture) (`coney-tools picture scenes`). It is a required check, `software-pictures`
+in `merge.required_checks` of [.github/conventions.yml](repo:.github/conventions.yml), and runs on Linux in the build
+workflow with the engine jobs. Each scene is drawn twice, and the second draw is compared with the first: a pinned
+Mesa that gives the same pixels on every run shows 0 pixels over in the log, and the tolerance exists for the rest.
+
+The runner image's own Mesa moves with the image, so the drawing runs in a container image of its own
+(`.github/software-pictures/Dockerfile`): the base image is pinned by its **digest**, the package archive by a
+**snapshot date** (every pinned version stays installable), and Mesa and the LLVM that llvmpipe uses by **exact package
+version**, checked at the end of the build. The job caches the built image on the runner's cache, keyed by the
+Dockerfile's hash.
+
+- **Moving the pin is a pull request of its own.** Changing the digest, the snapshot, or a version in the Dockerfile
+  changes the pictures, so that pull request regenerates `tests/pictures/reference/` in the same pull request
+  (`coney-tools picture scenes --update`, in the container the job builds, or from the job's uploaded pictures) and
+  its description reports the **old and new counts**: the pixels over the tolerance and the largest difference of each
+  scene, old references against the new draw, which `--update` prints before it replaces them. It changes nothing else.
+- **A failing job leaves its pictures.** The job uploads what it drew (`software-pictures-drawn`, kept 14 days), so a
+  reference that is missing or wrong is fixed from the picture CI drew, after a look at it: the reference is Coney's
+  own synthetic scene, never a game picture.
+- **A new scene** is a `[[scene]]` in the list with its reference made the same way; a scene's reference never comes
+  from a real GPU, because a hardware GPU's picture would not match the software one.
 
 ## Play-testing {#play-testing}
 
