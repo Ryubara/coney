@@ -10,6 +10,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "human/player.h"
+
 using coney::characters::characterClassOf;
 using coney::characters::modelNameFor;
 using coney::characters::modelRecordType;
@@ -91,10 +93,43 @@ TEST_CASE("a Warriors type plays with his Warrior's class; anyone else with his 
     CHECK(warriorPowerClassOf(32) == 64);
     CHECK(warriorPowerClassOf(10) == 66);
     CHECK(warriorPowerClassOf(41) == 7);
-    // A player of category 14 takes it; another category keeps the type's own class. The AI human's 40 pins Coney's
-    // `player` gate, a stand-in: the original gives any human of category 14 the Warrior's class (unverified, #1020).
-    CHECK(powerClassOf(32, coney::characters::kWarriorsCategory, 40, true) == 64);
-    CHECK(powerClassOf(32, coney::characters::kWarriorsCategory, 40, false) == 40);
-    CHECK(powerClassOf(417, 3, 2, true) == 2);
-    CHECK(powerClassOf(41, coney::characters::kWarriorsCategory, 40, true) == 7);
+    // Any human of category 14, a player or not, takes it; another category keeps the type's own class.
+    CHECK(powerClassOf(32, coney::characters::kWarriorsCategory, 40) == 64);
+    CHECK(powerClassOf(417, 3, 2) == 2);
+    CHECK(powerClassOf(41, coney::characters::kWarriorsCategory, 40) == 7);
+}
+
+TEST_CASE("Human_ApplyTypeScale sizes the listed classes, more of them in co-op, and leaves the rest",
+          "[character_class]") {
+    // Expected: human-init.md#size, confirmed (code)
+    using coney::characters::typeScaleOf;
+    CHECK(typeScaleOf(5, false) == 1.02F);
+    CHECK(typeScaleOf(18, false) == 0.97F);
+    CHECK(typeScaleOf(30, false) == 0.97F);
+    CHECK(typeScaleOf(21, false) == 0.98F);
+    CHECK(typeScaleOf(23, false) == 0.98F);
+    CHECK(typeScaleOf(24, false) == 0.98F);
+    CHECK(typeScaleOf(33, false) == 1.03F);
+    CHECK(typeScaleOf(89, false) == 1.16F);
+    CHECK(typeScaleOf(119, false) == 1.2F);
+    CHECK(typeScaleOf(120, false) == 1.2F);
+    CHECK(typeScaleOf(135, false) == 1.2F);
+    CHECK(typeScaleOf(128, false) == 1.175F);
+    CHECK(typeScaleOf(161, false) == 1.11F);
+    // Co-op: the big five shrink to 1.1, 135 to 1.03; the rest as alone.
+    CHECK(typeScaleOf(89, true) == 1.1F);
+    CHECK(typeScaleOf(119, true) == 1.1F);
+    CHECK(typeScaleOf(120, true) == 1.1F);
+    CHECK(typeScaleOf(128, true) == 1.1F);
+    CHECK(typeScaleOf(161, true) == 1.1F);
+    CHECK(typeScaleOf(135, true) == 1.03F);
+    CHECK(typeScaleOf(30, true) == 0.97F);
+    // Between and around the listed ones: none.
+    for (const int other :
+         {0, 1, 4, 6, 17, 19, 20, 22, 25, 29, 31, 32, 34, 88, 90, 118, 121, 127, 129, 134, 136, 160, 162, 417}) {
+        CHECK_FALSE(typeScaleOf(other, false).has_value());
+        CHECK_FALSE(typeScaleOf(other, true).has_value());
+    }
+    // Rembrandt (type 32, class 30) is the 0.97 Coney's player is made at.
+    CHECK(typeScaleOf(characterClassOf(coney::human::kPlayerType).id, false) == coney::human::kPlayerBodyScale);
 }

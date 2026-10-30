@@ -61,9 +61,9 @@ coney = "src/characters/character_class.cpp:modelNameFor"
 status = "compared"
 
 [[function.gaps]]
-what = "the voice folder, the level's anim variant and the count of the type's idle lines"
-relation = "not-ported"
-issue = 1020
+what = "the voice (+0x3b0, type 259's own draw) and the level's anim variant (+0x3b4): Coney reads the voice from the type when a line plays; the idle line count has no reader"
+relation = "stand-in"
+question = "human-init.md#q-voice"
 
 [[function.gaps]]
 what = "HuCreate's flag (+0x19d) forcing brain type 2"
@@ -71,44 +71,33 @@ relation = "not-ported"
 issue = 689
 
 [[function.gaps]]
-what = "the brain's +0x26c by carry category"
-relation = "not-ported"
-issue = 1020
+what = "the task byte +0x6c, +0x19e = 5 and the radar blips by brain type"
+relation = "stand-in"
+question = "human-init.md#q-radar"
 
 [[function.gaps]]
-what = "the radar entries and the task bytes by brain type"
+what = "a player's class switches: Human_MakePlayer applies +0x1b9's after these"
 relation = "not-ported"
-issue = 1020
+issue = 1011
 
 [[function.gaps]]
-what = "the class's switches copied into the human flags (Human_ApplyClassFlags)"
-relation = "not-ported"
-issue = 1020
+what = "the +0x3bc byte from the character data's name hash: its one reader, Human_TryIdleFidget, is not built"
+relation = "stand-in"
+question = "human-init.md#q-name-byte"
 
 [[function.gaps]]
-what = "the class's weapon put in the hand"
-relation = "not-ported"
-issue = 1020
-
-[[function.gaps]]
-what = "the +0x3bc byte from the character data's name hash"
-relation = "not-ported"
-issue = 1020
-
-[[function.gaps]]
-what = "the random body size"
+what = "the random body size: a human the type scale does not list is made at 1.0"
 relation = "not-ported"
 issue = 689
 
-[[function.gaps]]
-what = "the type's own scale"
-relation = "not-ported"
-issue = 1020
-
-[[function.gaps]]
-what = "the Warrior's power class for any human of category 14: Coney's powerClassOf takes it for a player only"
-relation = "stand-in"
-issue = 1020
+[[function]]
+address = 0x00219638
+name = "Human_ApplyTypeScale"
+page = "human-init.md#size"
+role = "a class's own size, more of them in co-op"
+level = "confirmed-code"
+coney = "src/characters/character_class.cpp:typeScaleOf"
+status = "compared"
 
 [[function]]
 address = 0x00219d50
@@ -369,6 +358,15 @@ coney = "src/characters/character_class.h:warriorClassOf"
 status = "legacy"
 
 [[function]]
+address = 0x00222c98
+name = "Human_ApplyClassFlags"
+page = "human-init.md#class-switches"
+role = "the power class's switches +0x3a-+0x3f into the human flags"
+level = "confirmed-code"
+coney = "src/human/class_flags.cpp:classFlagChanges"
+status = "compared"
+
+[[function]]
 address = 0x00223068
 name = "Human_GetMaxPower"
 page = "characters.md#power-class-bytes"
@@ -619,7 +617,7 @@ page = "characters.md#original-structure"
 role = "heading quaternion, slot, init, name, player; returns the handle"
 level = "confirmed-code"
 coney = "src/scripting/script_bindings.cpp:makeHuCreate"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00233ef0
@@ -1702,8 +1700,8 @@ name = "Human_SetScale"
 page = "characters.md#code-script"
 role = "`HuSetScale`: the human's model scale."
 level = "confirmed-code"
-coney = "src/ai/scripted_hub.h:ScriptedHub::setScale"
-status = "legacy"
+coney = "src/human/human.h:Human::setScale"
+status = "compared"
 
 [[function]]
 address = 0x0023b128
@@ -2457,7 +2455,17 @@ page = "characters.md#original-structure"
 role = "reads the Lua arguments, calls `Human_Create`"
 level = "confirmed-code"
 coney = "src/scripting/script_bindings.cpp:makeHuCreate"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the flag (argument 8), Human_Init's +0x19d forcing brain type 2"
+relation = "not-ported"
+issue = 689
+
+[[function.gaps]]
+what = "the snapped position written back into the script's table: no collision is loaded while the script runs"
+relation = "stand-in"
+question = "human-init.md#q-written-back"
 
 [[function]]
 address = 0x00385bb8

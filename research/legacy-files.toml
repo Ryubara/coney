@@ -450,9 +450,6 @@ tag = 5
 ["src/characters/character_rig.cpp"]
 tag = 5
 
-["src/characters/character_types.cpp"]
-tag = 13
-
 ["src/characters/clump_reader.cpp"]
 tag = 15
 
@@ -467,9 +464,6 @@ comment = 4
 
 ["src/characters/reference_render.cpp"]
 tag = 8
-
-["src/characters/starting_money.cpp"]
-tag = 1
 
 ["src/combat/ai_counter.cpp"]
 tag = 1
@@ -1801,9 +1795,6 @@ citation = 3
 ["tests/characters/reference_render_test.cpp"]
 citation = 9
 
-["tests/characters/starting_money_test.cpp"]
-citation = 2
-
 ["tests/combat/ai_counter_test.cpp"]
 citation = 3
 
@@ -2397,9 +2388,6 @@ citation = 1
 
 ["tests/platform/disc_level99_course_test.cpp"]
 citation = 1
-
-["tests/platform/disc_level99_fence_dealer_test.cpp"]
-citation = 2
 
 ["tests/platform/disc_level99_fence_lesson_test.cpp"]
 citation = 1

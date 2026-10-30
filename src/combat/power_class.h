@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstdint>
+
 // A human's power class: the numbers that decide how it takes hits and how its power meter runs (the record at
 // `0x006619a0 + class × 0x44`, docs/research/characters.md#power-classes). Values read at runtime in the street.
 // Research: docs/research/combat/index.md#constants, docs/research/combat-rage.md#power-meter
@@ -33,6 +35,14 @@ struct PowerClass {
     /// Rembrandt's class 64, read at runtime; docs/research/hud-radar.md#the-health-rings), and the pause Stats
     /// screen's Health bar is byte / 100 (docs/research/pause.md#stats-screen).
     int ringByte = 35;
+    // The switches `Human_ApplyClassFlags` copies into the human flags (`CfgPowerClass` arguments 23-28, each the low
+    // byte of the number, unclamped; human::classFlagChanges(), docs/research/human-init.md#class-switches).
+    std::int8_t capsReaction = 0;   ///< Byte `+0x3a` (argument 23): 1 caps a hit's reaction on him at 1.
+    std::int8_t hardToStun = 0;     ///< Byte `+0x3b` (argument 24): 1 makes him hard to stun.
+    std::int8_t noEscape = 0;       ///< Byte `+0x3c` (argument 25): 1, he never escapes when his grabber's power ends.
+    std::int8_t blockFromReact = 0; ///< Byte `+0x3d` (argument 26): 1 sets the human flag `0x800000000`.
+    std::int8_t reactBoost = 0;     ///< Byte `+0x3e` (argument 28): 1, -1 or 0 for flag `0x200000`, `0x400000`, none.
+    std::int8_t comboReact = 0;     ///< Byte `+0x3f` (argument 27): 1, -1 or 0 for flag `0x400`, `0x200`, none.
 };
 
 /// The player's class (64, Rembrandt in the street).

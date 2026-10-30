@@ -295,6 +295,7 @@ target_sources(coney_core PRIVATE
     human/locomotion.cpp
     human/workout.cpp
     human/pair_placement.cpp
+    human/class_flags.cpp
     human/fighter.cpp
     human/fighter_counter.cpp
     human/fighter_grab.cpp

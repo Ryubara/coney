@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -30,6 +31,8 @@ constexpr std::size_t kHat = 10;        // the string at +0x14c
 constexpr std::size_t kMaxHatName = 31; // the most of it kept
 constexpr std::size_t kWarrior = 11;
 constexpr std::size_t kFemale = 12;
+constexpr std::size_t kWeapon = 16;        // the string at +0x18c
+constexpr std::size_t kMaxWeaponName = 31; // the most of it kept
 
 // `CfgPowerClass`'s arguments (docs/references/bindings/config.md#cfgpowerclass), 0-based, and the fields they fill.
 constexpr std::size_t kPowerMax = 1;         // +0x28
@@ -48,6 +51,14 @@ constexpr std::size_t kStruggle = 17;        // +0x36
 constexpr std::size_t kCounter = 19;         // +0x24, clamped 0-1
 constexpr std::size_t kThrowsAtWalls = 21;   // +0x39, clamped 0-1
 constexpr std::size_t kRingByte = 28;        // +0x40, clamped 0-100
+// The switches, each the number's low byte, unclamped; the last two are crossed in the record.
+constexpr std::size_t kCapsReaction = 22;   // +0x3a
+constexpr std::size_t kHardToStun = 23;     // +0x3b
+constexpr std::size_t kNoEscape = 24;       // +0x3c
+constexpr std::size_t kBlockFromReact = 25; // +0x3d
+constexpr std::size_t kComboReact = 26;     // +0x3f
+constexpr std::size_t kReactBoost = 27;     // +0x3e
+constexpr unsigned kLowByte = 0xffU;
 constexpr int kMaxRingByte = 100;
 
 // `CfgWarriorClass`'s arguments (docs/references/bindings/config.md#cfgwarriorclass), 0-based.
@@ -62,6 +73,7 @@ constexpr int kByteMax = 255;
 constexpr int kU16Max = 65535;
 
 // The entry for `key` in `entries` (kept sorted by key), replaced or inserted: a later call of a key wins.
+// @coney-only bookkeeping of Coney's sorted lists of the recorded configuration
 template <typename Value> void putSorted(std::vector<std::pair<int, Value>>& entries, int key, Value value) {
     auto at = std::ranges::lower_bound(entries, key, {}, &std::pair<int, Value>::first);
     if (at != entries.end() && at->first == key) {
@@ -72,17 +84,20 @@ template <typename Value> void putSorted(std::vector<std::pair<int, Value>>& ent
 }
 
 // The value for `key` in `entries` (sorted by key), or null.
+// @coney-only bookkeeping of Coney's sorted lists of the recorded configuration
 template <typename Value> const Value* findSorted(const std::vector<std::pair<int, Value>>& entries, int key) {
     const auto at = std::ranges::lower_bound(entries, key, {}, &std::pair<int, Value>::first);
     return at != entries.end() && at->first == key ? &at->second : nullptr;
 }
 
 // Argument `index` of `call` as a number, if it is one.
+// @coney-only a read of Coney's record of a stub call's arguments
 std::optional<double> numberAt(std::span<const script::Value> call, std::size_t index) {
     return index < call.size() ? call[index].number() : std::nullopt;
 }
 
 // Argument `index` truncated to an int (the binding reads it so), clamped to the int range first.
+// @coney-only a read of Coney's record of a stub call's arguments
 std::optional<int> wholeAt(std::span<const script::Value> call, std::size_t index) {
     const std::optional<double> number = numberAt(call, index);
     if (!number || std::isnan(*number)) {
@@ -92,6 +107,7 @@ std::optional<int> wholeAt(std::span<const script::Value> call, std::size_t inde
 }
 
 // The numbers of the list kept for argument `index` of `call` (script::RecordedCalls keeps a table as such a list).
+// @coney-only a read of Coney's record of a stub call's arguments
 std::vector<double> listAt(std::span<const script::Value> call, std::size_t index) {
     std::vector<double> numbers;
     if (index >= call.size() || call[index].table() == nullptr) {
@@ -108,6 +124,7 @@ std::vector<double> listAt(std::span<const script::Value> call, std::size_t inde
 
 // Argument `index` of `call` as a record field of 0 to `maximum` (**Coney's choice**: clamped, which gives what the
 // binding stores for every value the scripts pass), or nothing when it is not a number.
+// @coney-only a read of Coney's record of a stub call's arguments
 std::optional<int> fieldAt(std::span<const script::Value> call, std::size_t index, int maximum) {
     const std::optional<int> value = wholeAt(call, index);
     return value ? std::optional<int>(std::clamp(*value, 0, maximum)) : std::nullopt;
@@ -115,6 +132,7 @@ std::optional<int> fieldAt(std::span<const script::Value> call, std::size_t inde
 
 } // namespace
 
+// @coney-only reads Coney's record of the CfgWarriorClass stub calls; the original's binding fills its table
 WarriorClass parseCfgWarriorClass(std::span<const script::Value> call) {
     WarriorClass parsed;
     parsed.healthPercent = fieldAt(call, kWarriorHealthPercent, kByteMax);
@@ -131,6 +149,7 @@ WarriorClass parseCfgWarriorClass(std::span<const script::Value> call) {
     return parsed;
 }
 
+// @coney-only reads Coney's record of the CfgChar stub calls; the original's binding fills its table
 std::optional<CharacterType> parseCfgChar(std::span<const script::Value> call) {
     const std::optional<int> type = wholeAt(call, kType);
     if (!type) {
@@ -163,9 +182,15 @@ std::optional<CharacterType> parseCfgChar(std::span<const script::Value> call) {
             parsed.hat = std::string(hat->substr(0, kMaxHatName));
         }
     }
+    if (kWeapon < call.size()) {
+        if (const std::optional<std::string_view> weapon = call[kWeapon].string()) {
+            parsed.weapon = std::string(weapon->substr(0, kMaxWeaponName));
+        }
+    }
     return parsed;
 }
 
+// @coney-only reads Coney's record of the CfgPowerClass stub calls; the original's binding fills its table
 combat::PowerClass parseCfgPowerClass(std::span<const script::Value> call, const combat::PowerClass& base) {
     combat::PowerClass power = base;
     const auto whole = [&call](std::size_t index, int& field) {
@@ -200,9 +225,22 @@ combat::PowerClass parseCfgPowerClass(std::span<const script::Value> call, const
     power.throwsAtWalls = std::clamp(walls, 0, 1) == 1;
     whole(kRingByte, power.ringByte);
     power.ringByte = std::clamp(power.ringByte, 0, kMaxRingByte);
+    // The switches are stored as the binding's bytes: the low eight bits, read back signed.
+    const auto byte = [&call](std::size_t index, std::int8_t& field) {
+        if (const std::optional<int> value = wholeAt(call, index)) {
+            field = static_cast<std::int8_t>(static_cast<std::uint8_t>(static_cast<unsigned>(*value) & kLowByte));
+        }
+    };
+    byte(kCapsReaction, power.capsReaction);
+    byte(kHardToStun, power.hardToStun);
+    byte(kNoEscape, power.noEscape);
+    byte(kBlockFromReact, power.blockFromReact);
+    byte(kComboReact, power.comboReact);
+    byte(kReactBoost, power.reactBoost);
     return power;
 }
 
+// @coney-only Coney's table of the recorded configuration calls
 CharacterTypes CharacterTypes::fromRecorded(const script::RecordedCalls& recorded) {
     CharacterTypes types;
     // The power classes over the player's defaults, and the Warrior classes' damage scales; the last call wins.
@@ -232,11 +270,13 @@ CharacterTypes CharacterTypes::fromRecorded(const script::RecordedCalls& recorde
     return types;
 }
 
+// @coney-only a look-up in Coney's table of the recorded configuration calls
 const CharacterType* CharacterTypes::find(int type) const {
     const auto at = std::ranges::lower_bound(m_types, type, {}, &CharacterType::type);
     return at != m_types.end() && at->type == type ? &*at : nullptr;
 }
 
+// @coney-only gathers what Human_Init and Human_MakePlayer read into one record for Coney's player
 std::optional<PlayerTraits> CharacterTypes::playerTraitsOf(int type) const {
     const CharacterType* own = find(type);
     if (own == nullptr) {
@@ -248,7 +288,7 @@ std::optional<PlayerTraits> CharacterTypes::playerTraitsOf(int type) const {
     if (const CharacterType* classRecord = find(traits.classType)) {
         traits.damage = classRecord->damage;
     }
-    traits.powerClassId = powerClassOf(type, own->category.value_or(0), own->powerClass.value_or(0), true);
+    traits.powerClassId = powerClassOf(type, own->category.value_or(0), own->powerClass.value_or(0));
     if (const combat::PowerClass* power = findSorted(m_powerClasses, traits.powerClassId)) {
         traits.powerClass = *power;
     }
@@ -269,6 +309,7 @@ std::optional<PlayerTraits> CharacterTypes::playerTraitsOf(int type) const {
     return traits;
 }
 
+// @coney-only a look-up in Coney's table of the recorded configuration calls
 std::optional<std::string> CharacterTypes::modelFor(int type, int playerIndex, int levelNumber) const {
     return modelNameFor(type, playerIndex, levelNumber, [this](int recordType) -> std::optional<std::string> {
         const CharacterType* record = find(recordType);

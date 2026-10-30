@@ -207,7 +207,8 @@ TEST_CASE("scaling a human scales its collision with the mesh unless it is switc
 
     // By default a giant collides at its drawn size.
     const float configured = human.scale();
-    human.setScale(configured * 2.0F);
+    // The Entity editor's edit (editScale()): a setScale() before the first update would be the configured size.
+    human.editScale(configured * 2.0F);
     CHECK(human.collisionScale() == Approx(configured * 2.0F));
     CHECK(human.walkingSphereRadius() > sphere * 1.9F);
     CHECK(human.airSphereRadius() == Approx(air * 2.0F));
@@ -224,7 +225,7 @@ TEST_CASE("scaling a human scales its collision with the mesh unless it is switc
     CHECK(human.capsuleRadius() == Approx(capsule));
     CHECK(human.uprightCapsule().top == Approx(top));
     // Scaled again with the toggle still off: the collision still does not move.
-    human.setScale(configured * 3.0F);
+    human.editScale(configured * 3.0F);
     CHECK(human.walkingSphereRadius() == Approx(sphere));
 
     // Back on: the collision follows the mesh again.
@@ -243,7 +244,7 @@ TEST_CASE("an extreme scale, with the collision following or not, leaves the hum
             Human human = spawnHuman(character, mesh.get(), Vec3{200.0F, 10.0F, 0.0F});
             Human bystander = spawnHuman(character, mesh.get(), Vec3{300.0F, 10.0F, 0.0F});
             const Vec3 bystanderAt = bystander.position();
-            human.setScale(scale);
+            human.editScale(scale);
             human.setCollisionFollowsMesh(follows);
             for (int i = 0; i < 60; ++i) {
                 human.step(stick(0.0F, 1.0F), mesh.get());

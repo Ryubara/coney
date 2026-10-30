@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "characters/character_class.h"
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
+#include <optional>
 
 namespace coney::characters {
 
@@ -67,6 +69,30 @@ constexpr int kLastArmiesLevel = 69;
 // (docs/research/characters.md#type-to-model).
 constexpr int kLastArmiesModelLevel = 64;
 
+// One class's own size (docs/research/characters.md#body-scale): alone, and with game state `+0x158` set (co-op).
+struct TypeScale {
+    int classType;
+    float scale;
+    float coopScale;
+};
+
+// The classes Human_ApplyTypeScale sizes; any other keeps the size it has.
+constexpr std::array<TypeScale, 13> kTypeScales{{
+    {5, 1.02F, 1.02F},
+    {18, 0.97F, 0.97F},
+    {21, 0.98F, 0.98F},
+    {23, 0.98F, 0.98F},
+    {24, 0.98F, 0.98F},
+    {30, 0.97F, 0.97F},
+    {33, 1.03F, 1.03F},
+    {89, 1.16F, 1.1F},
+    {119, 1.2F, 1.1F},
+    {120, 1.2F, 1.1F},
+    {128, 1.175F, 1.1F},
+    {135, 1.2F, 1.03F},
+    {161, 1.11F, 1.1F},
+}};
+
 } // namespace
 
 CharacterClass characterClassOf(int type) {
@@ -98,10 +124,7 @@ int modelRecordType(int type, int playerIndex) {
 bool isArmiesLevel(int levelNumber) { return levelNumber >= kFirstArmiesLevel && levelNumber <= kLastArmiesLevel; }
 
 // Human_Init's model: the record's model name, its `_a` one in an Armies of the Night level (+0x112 or +0x114).
-// Not ported, from Human_Init (#1020): the voice folder and the level's anim variant, the idle lines counted, the
-// brain's +0x26c by category beyond category 4's roll, the task byte, +0x19e and the radar entries by brain type,
-// the class's switches copied into the human flags, the class's weapon in the hand, +0x3bc's name test and the
-// type's own scale; (#689) HuCreate's forced brain type 2 and the random body size.
+// Human_Init's other steps are HuCreate's binding's (humanInitSteps(), docs/research/human-init.md).
 // @orig 0x00218008 Human_Init (unknown)
 std::optional<std::string> modelNameFor(int type, int playerIndex, int levelNumber, const CfgCharModel& modelOf) {
     if (!modelOf) {
@@ -133,11 +156,20 @@ int warriorPowerClassOf(int type) {
     return warrior == kOtherWarriorClass ? kOtherWarriorPowerClass : kFirstWarriorPowerClass + warrior;
 }
 
-// Human_Init's power class byte +0x1b9: a type of the Warriors' category takes his Warrior's, any other the record's
-// (the `player` gate is a stand-in, as the header says).
+// Human_Init's power class byte +0x1b9: a type of the Warriors' category takes his Warrior's, any other the record's.
 // @orig 0x00218008 Human_Init (unknown)
-int powerClassOf(int type, int category, int ownClass, bool player) {
-    return player && category == kWarriorsCategory ? warriorPowerClassOf(type) : ownClass;
+int powerClassOf(int type, int category, int ownClass) {
+    return category == kWarriorsCategory ? warriorPowerClassOf(type) : ownClass;
+}
+
+// Human_ApplyTypeScale's sizes: the listed classes' own, and in co-op the big ones' smaller one.
+// @orig 0x00219638 Human_ApplyTypeScale (unknown)
+std::optional<float> typeScaleOf(int classType, bool coop) {
+    const auto found = std::ranges::find(kTypeScales, classType, &TypeScale::classType);
+    if (found == kTypeScales.end()) {
+        return std::nullopt;
+    }
+    return coop ? found->coopScale : found->scale;
 }
 
 } // namespace coney::characters
