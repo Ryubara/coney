@@ -14,4 +14,12 @@ std::uint8_t fogByte(float value) { return static_cast<std::uint8_t>(std::clamp(
 
 Rgba fogColourOf(float r, float g, float b) { return Rgba{fogByte(r), fogByte(g), fogByte(b), 255}; }
 
+void ShadowLight::setColour(float /*r*/, float /*g*/, float /*b*/) {}
+
+void ShadowLight::setOffset(float /*x*/, float /*y*/, float /*z*/) {}
+
+void ShadowCasters::setEnabled(std::uint32_t /*object*/, bool /*enable*/) {}
+
+bool ShadowCasters::enabled(std::uint32_t /*object*/) const { return true; }
+
 } // namespace coney::graphics

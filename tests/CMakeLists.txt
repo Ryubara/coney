@@ -88,6 +88,7 @@ add_executable(coney_tests
     graphics/human_blood_test.cpp
     graphics/human_lighting_test.cpp
     graphics/light_manager_test.cpp
+    graphics/lighting_frame_test.cpp
     graphics/overlay_camera_test.cpp
     graphics/particle_page_test.cpp
     graphics/ps2_world_mesh_test.cpp
@@ -239,6 +240,7 @@ add_executable(coney_tests
     scripting/camera_bindings_test.cpp
     scripting/level_bindings_test.cpp
     scripting/lighting_bindings_test.cpp
+    scripting/shadow_bindings_test.cpp
     scripting/player_bindings_test.cpp
     scripting/lua_chunk_test.cpp
     scripting/lua_chunk_writer_test.cpp
