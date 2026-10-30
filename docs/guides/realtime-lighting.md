@@ -129,8 +129,8 @@ The presets (*PS2*, *Xbox*, *Enhanced* and *High*) and what each draws of this d
 | L6 | Lamp shadows for objects and humans | L2 | M |
 | L7 | Ray-traced shadows and AO | F5 and a native ray-tracing path beside SDL3's GPU API, which has none | XL |
 
-[Renderer: Order](../engine/renderer.md#order) orders L0 to L3 and L6 as its items: L0 is item 20, L1 item 23, L2
-items 29 and 31, L3 item 30 and L6 item 32. L4 and L5 follow item 23.
+[Renderer: Order](../engine/renderer.md#order) orders L0 to L3 and L6 as its items: L0 is item 19, L1 item 22, L2
+items 28 and 30, L3 item 29 and L6 item 31. L4 and L5 follow item 22.
 
 ## Risks
 

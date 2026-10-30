@@ -41,7 +41,7 @@ These are shared by most options. Each one is worth building for the faithful lo
 | F2 | **Scene target and post chain**: draw 3D into an offscreen colour + depth texture at the internal resolution, then run post passes (each declared in units of time, not frames), then the 2D overlays at window resolution. The faithful 512 × 256 blur, heat distortion and distortion grid need it too | resolution scale, AA, AO, bloom, grading, DOF, CA, MSAA with blur | M |
 | F3 | **Coney's own shaders** for the world, object and character materials, in HLSL on the SDL3 GPU renderer ([Renderer: Migration](../engine/renderer.md#migration)): extra inputs (shadow map, velocity) and outputs (normals) | shadow maps, TAA velocity, alpha-to-coverage, tessellation | M |
 | F4 | **Texture resolver**: every texture load goes through one lookup, PS2 → Xbox → local pack, keyed by (dictionary resource hash, texture name, hash of the PS2 texels), falling back to the PS2 texture on any mismatch | Xbox textures, upscaled packs, player packs, mip generation | M |
-| F5 | **Backend switch** (decided, [below](#decided)): Coney's own renderer over SDL3's GPU API (Vulkan, D3D12, Metal; already in our SDL3, zlib licence), with librw kept only for reading RenderWare data and the PS2 and Xbox rasters. Its groundwork (the start without librw's GL3 device, the shader build, the frame description, Coney's own formats) is the first work of [Renderer: Order](../engine/renderer.md#order), items 1 to 14; the switch is item 22. Raw Vulkan / D3D12 / Metal only for ray tracing | every option past the *PS2* picture (they target the GPU renderer only), HDR output, ray tracing, macOS (Apple's OpenGL is deprecated and stops at 4.1) | XL, in steps that each land |
+| F5 | **Backend switch** (decided, [below](#decided)): Coney's own renderer over SDL3's GPU API (Vulkan, D3D12, Metal; already in our SDL3, zlib licence), with librw kept only for reading RenderWare data and the PS2 and Xbox rasters. Its groundwork (the start without librw's GL3 device, the shader build, the frame description, Coney's own formats) is the first work of [Renderer: Order](../engine/renderer.md#order), items 1 to 14; the switch is item 21. Raw Vulkan / D3D12 / Metal only for ray tracing | every option past the *PS2* picture (they target the GPU renderer only), HDR output, ray tracing, macOS (Apple's OpenGL is deprecated and stops at 4.1) | XL, in steps that each land |
 
 **Choices to make now, at no cost** (they keep every option above open):
 
@@ -102,12 +102,12 @@ player's Xbox disc ([Xbox assets](../research/xbox-assets.md)).
 
 | Option | What it means here | Feasible | Approach | Depends on | Cost |
 | --- | --- | --- | --- | --- | --- |
-| MSAA | Low-poly scenery, many long straight edges: MSAA suits it well | **yes** | On the SDL3 GPU renderer only, a multisampled F2 target ([Renderer: order](../engine/renderer.md#order), item 23); the GL3 path gets none. The motion blur's copy then becomes a resolve, since a multisampled buffer cannot be copied into a texture | F2 for the blur | S |
-| Alpha-to-coverage | Chain-link fences, foliage and railings are alpha cut-outs that MSAA does not smooth | **yes** | `GL_SAMPLE_ALPHA_TO_COVERAGE` on alpha-tested materials, with coverage-preserving mips (below) | F3, MSAA | S |
+| MSAA | Low-poly scenery, many long straight edges: MSAA suits it well | **yes** | On the SDL3 GPU renderer only, a multisampled F2 target ([Renderer: order](../engine/renderer.md#order), item 26); the GL3 path gets none. The motion blur's copy then becomes a resolve, since a multisampled buffer cannot be copied into a texture | F2 for the blur | S |
+| Alpha-to-coverage | Chain-link fences, foliage and railings are alpha cut-outs that MSAA does not smooth | **yes** | Alpha-to-coverage on alpha-tested materials in Coney's shaders on the GPU renderer, with coverage-preserving mips (below) | F3, MSAA | S |
 | FXAA / SMAA | Post-process AA; cheap, a little blur | **yes** | One post pass. SMAA's reference code is MIT; FXAA 3.11's NVIDIA licence is permissive (check at adoption) | F2 | S |
 | TAA | Removes shimmer on fences and thin wires; blurs the already soft 64 × 64 textures and ghosts. Needs jitter, velocity and history | **partly** | Per-object velocity from the two blended steps (we have them); jittered projection. FSR 3.1 (MIT) can be the TAA and upscaler, and stays the default the build ships; FSR 1 is the fallback, and DLSS, FSR 4 and XeSS are optional plug-ins beside the GPL code ([Decided](#decided)); the tiers are on [Renderer: Upscalers](../engine/renderer.md#upscalers) | F2, F3, F5 | M |
-| Anisotropic filtering | Streets and pavements at grazing angles | **yes**, but only with mips | `Texture::maxAnisotropy` per texture | mip generation | S |
-| Mip generation | 98% of textures have no mips, so they alias in the distance at any resolution | **yes** | Build mips at conversion (`AUTOMIPMAP`, or Coney's own box filter with alpha coverage kept at the alpha-test reference so fences do not vanish); LOD bias as a setting. Changes the look slightly (less shimmer than the PS2) | F4 (one load path) | S |
+| Anisotropic filtering | Streets and pavements at grazing angles | **yes**, but only with mips | The GPU renderer's sampler anisotropy per texture | mip generation | S |
+| Mip generation | 98% of textures have no mips, so they alias in the distance at any resolution | **yes** | Build mips when textures are converted into Coney's own formats ([Renderer: Order](../engine/renderer.md#order), item 6), by Coney's own box filter with alpha coverage kept at the alpha-test reference so fences do not vanish; LOD bias as a setting. Changes the look slightly (less shimmer than the PS2) | F4 (one load path) | S |
 
 ### Assets and distance
 
@@ -215,10 +215,11 @@ landed:
 
 | Group | After | Items |
 | --- | --- | --- |
-| 0 | Now | The five choices above; 16:9 mode; any aspect with HUD anchoring; FOV; mip generation and anisotropic filtering |
+| 0 | Now | The five choices above; 16:9 mode; any aspect with HUD anchoring; FOV |
 | 1 | F4 | Xbox textures and HD movies (**Xbox**); player texture packs ([roadmap](../roadmap.md#graphics-and-performance)); the upscaling tool |
-| 2 | the scene target ([Renderer](../engine/renderer.md#order), item 20) | Colour grading; bloom from glow sprites; velocity motion blur; cutscene depth of field; chromatic aberration; fog and render distance scales; the *PS2 640 × 448* mode's CRT and interlace output |
-| 3 | the GPU renderer as the default ([Renderer](../engine/renderer.md#order), item 22) | Ray-traced shadows and AO (they need a native path beside SDL3's GPU API, which has no ray tracing); character subdivision |
+| 2 | the GPU renderer's world ([Renderer](../engine/renderer.md#order), item 13) | Mip generation and anisotropic filtering |
+| 3 | the scene target ([Renderer](../engine/renderer.md#order), item 22) | Colour grading; bloom from glow sprites; velocity motion blur; cutscene depth of field; chromatic aberration; fog and render distance scales; the *PS2 640 × 448* mode's CRT and interlace output |
+| 4 | the GPU renderer as the default ([Renderer](../engine/renderer.md#order), item 21) | Ray-traced shadows and AO (they need a native path beside SDL3's GPU API, which has no ray tracing); character subdivision |
 
 ## Decided {#decided}
 

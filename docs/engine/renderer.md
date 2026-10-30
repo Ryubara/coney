@@ -27,7 +27,7 @@ and their shadow source, the performance budget and the order.
 | --- | --- | --- |
 | Window, input, audio | SDL3 (pinned in `cmake/deps.cmake`, zlib licence), linked statically | `src/platform/window.*`, `sdl_input.cpp` |
 | Graphics API | librw's GL3 platform: an OpenGL 3.3 core context that librw's device makes through SDL3. librw is built for exactly one platform; headless runs swap in librw's NULL device at run time | `src/platform/render_engine.*` |
-| 3D | librw atomics drawn through librw's default GL3 pipelines and shaders, with Coney's own plugins and render callbacks round them (the world's dual layer and MatFX reader in `world_atomic.cpp`; per-atomic lights in `scene_lighting.cpp`); humans skinned on the CPU and re-uploaded every frame (`character_mesh.cpp`) | `src/platform/` |
+| 3D | librw atomics drawn through librw's default GL3 pipelines and shaders, with Coney's own plugins and render callbacks round them (the world's dual layer and MatFX reader in `world_atomic.cpp`; per-atomic lights in `scene_lighting.cpp`); humans skinned on the GPU by Coney's own librw GL3 pipeline (`character_skin.cpp`: each character's vertices uploaded once, a bone palette set each frame), with CPU skinning kept as a fallback and behind `--cpu-skinning` ([Performance: GPU skinning](../guides/performance.md#gpu-skinning)) | `src/platform/` |
 | 2D | `graphics::RenderDevice` (`src/graphics/render_device.h`), Coney's own interface for quads and triangles in logical pixels; `RenderEngine` implements it with librw's Im2D | `src/graphics/`, `render_engine.cpp` |
 | Screen passes | the motion-blur stand-in (`motion_blur_pass.cpp`), the blur pulse and the optional line blend (`RenderEngine::blurScreen`, `setLineBlend`), all by copying the back buffer into a texture | `src/platform/` |
 | Debug overlay | Dear ImGui through its SDL3 and OpenGL 3 backends | `src/platform/imgui_*` |
@@ -39,18 +39,22 @@ backend estimates below rest on):
 
 | Kind of call | Files | Call sites |
 | --- | --- | --- |
-| `rw::SetRenderState` (librw's immediate render states) | 15 | 165 |
-| `rw::gl3::` (the GL3 backend's own types and functions: Im2D and Im3D vertices, native rasters, texture binds) | 9 | 87 |
+| `rw::SetRenderState` (librw's immediate render states) | 17 | 173 |
+| `rw::gl3::` (the GL3 backend's own types and functions: Im2D and Im3D vertices, native rasters, texture binds, the skinning pipeline's buffers and shaders) | 10 | 133 |
 | `rw::im2d::`, `rw::im3d::` (immediate-mode drawing) | 7 | 37 |
-| Raster creation and locking | 7 | 23 |
-| OpenGL called directly (`gl...(`: copies, read-backs, state the device does not cover) | 7 | 24 |
-| Camera begin, end and clear | 7 | 18 |
-| Pipeline hooks (`ObjPipeline`, instance callbacks, MatFX) | 5 | 17 |
-| Atomic and clump renders | 6 | 10 |
-| **Total** | **22 distinct files, about 7,900 lines** | **about 380** |
+| Raster creation and locking | 7 | about 27 |
+| OpenGL called directly (`gl...(`: copies, read-backs, state the device does not cover) | 9 | 35 |
+| Camera begin, end and clear | 7 | about 18 |
+| Pipeline hooks (`ObjPipeline`, instance callbacks, MatFX) | 6 | about 22 |
+| Atomic and clump renders | 6 | about 11 |
+| **Total** | **about 24 distinct files, about 8,600 lines** | **about 460** |
 
-Another 34 files use librw only for data: streams, geometry, frames, matrices, texture dictionaries. That side is not
-in question in any option below; librw stays Coney's reader of RenderWare data.
+The first, second, third and fifth rows are exact `git grep` counts; the others are approximate, since their calls
+take several forms. The GPU skinning pipeline (`character_skin.cpp`, 39 of the `rw::gl3::` sites) is the largest
+single file among them.
+
+About 40 other files use librw only for data: streams, geometry, frames, matrices, texture dictionaries. That side is
+not in question in any option below; librw stays Coney's reader of RenderWare data.
 
 ## Frame rate {#frame-rate}
 
@@ -82,7 +86,7 @@ What still moves at 30 Hz, or behaves differently with the frame rate, above 30 
 
 **Frame pacing.** The pacer's sleep-to-a-cap stays the one clock. Two additions, render-side only: a *VRR* mode (vsync
 off and a cap just under the display's refresh rate, for G-Sync and FreeSync displays, where the display follows the
-frame; [Order](#order) item 19) and, on the new backend, the present mode chosen by the setting (`VSYNC`, `MAILBOX` for
+frame; [Order](#order) item 18) and, on the new backend, the present mode chosen by the setting (`VSYNC`, `MAILBOX` for
 uncapped without tearing, `IMMEDIATE`), which SDL3's GPU API offers directly ([Backend](#backend)). Interpolation draws
 up to one step behind the newest state; that latency (at most 33 ms, and the original's own frame at 30 frames a second)
 is kept, because extrapolating past the newest step would draw states the simulation never had. With the simulation
@@ -120,7 +124,7 @@ nothing of several passes, depth pre-passes, shadow casters, previous-frame tran
 | Linux | Vulkan | Vulkan | Vulkan, GL | Vulkan |
 | macOS | only through MoltenVK (Apache-2.0), or a third librw platform for Metal | Metal, native | Metal (bgfx, The Forge, WebGPU); MoltenVK for Diligent | Metal, a third backend |
 | Machines with no Vulkan or D3D12 (old GPUs, some VMs) | the GL3 platform stays | the GL3 renderer stays as fallback while needed | bgfx and Diligent keep a GL backend | none |
-| Coney's code that changes | the 87 `rw::gl3::` sites and 24 direct GL calls get a per-platform twin; the rest keeps calling librw | the ~380 drawing sites in 22 files move behind Coney's own draw interface ([Migration](#migration)) | the same ~380 sites, against the library's API | the same ~380, three times below them |
+| Coney's code that changes | the 133 `rw::gl3::` sites and 35 direct GL calls get a per-platform twin; the rest keeps calling librw | the ~460 drawing sites in about 24 files move behind Coney's own draw interface ([Migration](#migration)) | the same ~460 sites, against the library's API | the same ~460, three times below them |
 | New code | a librw platform per API, larger than the GL3 one (memory, descriptors, synchronisation, pipeline cache): **XL per API** | Coney's renderer once, shaders once in HLSL compiled offline to SPIR-V, DXIL and MSL: **XL**, in steps that each land | the renderer once against the library, plus its build and shader tools: **XL** | three backends and their shaders: **XL × 3** |
 | Risk | Coney maintains a fork of a library whose upstream is a small project with occasional commits; PSO hitches from immediate render states; the fork only reaches what librw's single-pass pipelines can express | SDL's GPU API is young (SDL 3.2 and later); it exposes no native device or command-list handles, so a vendor upscaler cannot be plugged in without patching SDL ([Upscalers](#upscalers)); no geometry or tessellation stages, no ray tracing | a large dependency with its own build and shader compiler; Diligent needs MoltenVK on macOS; bgfx's API has its own conventions for views and state | highest effort and three sets of bugs; only worth it for ray tracing |
 | Per-pixel lighting, shadow maps | only inside librw's pipelines, one camera pass: shadow passes and light lists fight its model | yes, as Coney's passes | yes | yes |
@@ -141,7 +145,7 @@ data.**
   librw's single-pass, one-atomic-at-a-time model with immediate render states: every enhancement on this page (light
   lists, shadow passes, motion vectors, a post chain) would have to be forced through it, and Coney would maintain the
   fork alone. The enhancements need passes that Coney owns whatever the API.
-- **The work is the same size in (b), (c) and (d) on Coney's side** (the ~380 sites move behind one interface), and (b)
+- **The work is the same size in (b), (c) and (d) on Coney's side** (the ~460 sites move behind one interface), and (b)
   adds the least on top: no third-party renderer to learn, build and track, and one backend instead of three.
 - **What (b) gives up** is native handles (vendor upscalers) and ray tracing. Both are optional extras on this page;
   [Upscalers](#upscalers) says how they would be reached, and either can be added later behind the same seam with a
@@ -156,9 +160,9 @@ replaced.
 
 | Stays (unchanged) | Moves (to Coney's draw interface) |
 | --- | --- |
-| librw reading RenderWare data: clumps and atomics (DFF), texture dictionaries (TXD), the streamed world's sectors, frames, geometry, skin and animation data, MatFX and the game's plugins | the 22 files and about 380 call sites in the table [above](#today): render states, `rw::gl3::` types, Im2D and Im3D, camera begin and clear, raster creation, direct OpenGL |
+| librw reading RenderWare data: clumps and atomics (DFF), texture dictionaries (TXD), the streamed world's sectors, frames, geometry, skin and animation data, MatFX and the game's plugins | the files and about 460 call sites in the table [above](#today): render states, `rw::gl3::` types, Im2D and Im3D, camera begin and clear, raster creation, direct OpenGL |
 | PS2 and Xbox raster decoding (librw's PS2 code already runs under the NULL device) | librw's instancing into OpenGL buffers, replaced by Coney's own upload of the same geometry |
-| Collision, physics and the camera's ray tests: the game's own collision mesh, read and queried by Coney's code (`src/physics/`, [Collision](../research/collision.md)), which never touches librw | CPU skinning per frame, replaced by skinning on the GPU from the same bones and weights |
+| Collision, physics and the camera's ray tests: the game's own collision mesh, read and queried by Coney's code (`src/physics/`, [Collision](../research/collision.md)), which never touches librw | Coney's GL3 skinning pipeline (`character_skin.*`), ported as the GPU renderer's skinning shader from the same bones, weights and palette |
 | Every game mode, the simulation, scripts, sound, input, the 2D `RenderDevice` interface | Dear ImGui's OpenGL backend, swapped for its `sdlgpu3` backend |
 
 **Scaling, (a) against (b):**
@@ -200,24 +204,24 @@ draw without librw's GL3 device as early as possible:
 5. **Coney's mesh and texture formats** (item 6). Meshes are converted once from `rw::Geometry` into Coney's vertex
    format (position, normal, prelit colour, UVs, skin weights) and textures from the PS2 rasters into RGBA or BC
    formats, held by id. The GL3 renderer may keep using librw's instancing; the GPU renderer uses these.
-6. **The GPU renderer reaches parity** (items 11 to 14 and 21), each usable alone: the 2D layers (front end, legal
+6. **The GPU renderer reaches parity** (items 11 to 14 and 20), each usable alone: the 2D layers (front end, legal
    screens, movies, HUD); Dear ImGui (its `sdlgpu3` backend is in the pinned Dear ImGui); the world (prelit colour,
    dual layer, fog), objects and cars; humans, skinned on the GPU; particles, coronas and the screen passes. Then
    each scene of the [benchmark](#benchmark) and the named `--play-level` frames are drawn by both renderers on the
    same machine and compared as [How pictures are compared](#comparing) says, with the cross-renderer tolerance;
    differences are listed. librw's GL3 output stays the reference until the switch.
-7. **The switch** (item 22). When parity holds for every scene, `gpu` becomes the default and `gl3` the fallback for
+7. **The switch** (item 21). When parity holds for every scene, `gpu` becomes the default and `gl3` the fallback for
    machines with no Vulkan, D3D12 or Metal. When the GL3 renderer retires, and with it librw's GL3 platform (librw
    would then be built for its NULL platform, data only), is a maintainer question ([Questions](#questions)).
 
 Enhancements are written once, against the GPU renderer: a new option targets `gpu` only, and the GL3 renderer stays
 the *PS2* picture. The presets, the benchmark, the frame-rate gaps and the lighting frame do not depend on the
-backend, so they land beside the groundwork (items 15 to 20).
+backend, so they land beside the groundwork (items 15 to 19).
 
 ### Testing while it grows {#migration-testing}
 
 The GPU renderer grows on `main`, never on a long-lived branch: from item 3 on it is in every build, chosen at start by
-`--renderer gl3|gpu`, with GL3 the default until a maintainer gives the go-ahead for the switch (item 22). Each item
+`--renderer gl3|gpu`, with GL3 the default until a maintainer gives the go-ahead for the switch (item 21). Each item
 merges small, and a part the GPU renderer does not draw yet is simply missing from its picture, never a crash.
 
 - **Both renderers in CI.** The unit tests build the frame description headless and need neither renderer. The
@@ -236,15 +240,17 @@ merges small, and a part the GPU renderer does not draw yet is simply missing fr
 ### Expected gains {#migration-gains}
 
 Estimates from the [Baseline](#baseline), not results; each is measured by `perf bench --compare` against the
-baseline that item 17 records, on a quiet machine. Today's frame is bound by the CPU: with 50 fighters, CPU skinning
-takes 17.8 of 24.1 ms in the least disturbed run, the GPU is nearly idle (17 times the pixels cost no more), and a
-frame makes 470-700 draws.
+baseline that item 16 records, on a quiet machine. Humans are already skinned on the GPU through GL3 (which took the
+hub with 100 fighters from 37.4 to 7.8 ms a frame: [Performance: findings](../guides/performance.md#findings)), so
+today's frame is bound by the CPU in two places: the simulation's step (1.85 ms of the hub's 3.14, 3.69 of the crowd's
+7.02) and the drawing work around librw (the crowd's render is 3.18 ms, of which 1.76 ms is posing the humans' bones).
+The GPU is nearly idle: 17 times the pixels cost no more, and a frame makes 410-690 draws.
 
 | Step | What it gains (estimate) | Measured by |
 | --- | --- | --- |
-| The backend switch itself (items 11, 13, 21) | little speed on this machine: it can shrink only the drawing besides skinning (0.74 ms in the hub, 1.05 in the street) and the present (0.39-0.49 ms), perhaps by half with fewer state changes and instancing. Its gains are what GL3 cannot give: Metal on macOS, the present modes, HDR, the post chain | `perf bench --scene all --renderer gpu --compare` at each item, against GL3's baseline |
-| GPU skinning (item 14) | the largest: the CPU's 3.2 ms in the hub and 17.8 ms or more with 50 fighters leave the frame, for a GPU cost well under a millisecond; the hub frame from 6.1 ms to about 3, the crowd's from 24.1 to about 6-7 | `--scene hub,hub-crowd --renderer gpu --compare`, `render.skin` and `gpu.frame` side by side |
-| The simulation thread (items 38 to 43) | no shorter mean frame; the step's 2-4 ms leaves the frames that carry a step, so the p99 frame and the frames over the display's period fall ([What it gains](#threads-gain)), and an uncapped rate rises by about an eighth | item 43's real-time runs at a 240 cap, with and without the thread |
+| The backend switch itself (items 11, 13, 14, 20) | a little on this machine: the drawing besides posing (0.82 ms in the hub, 1.42 with 50 fighters, 1.19 in the street) and the present (0.19-0.38 ms) can shrink, perhaps by half, with fewer state changes, instancing and no per-draw librw dispatch: about 0.4-0.8 ms a frame. Its main gains are what GL3 cannot give: Metal on macOS, the present modes, HDR, the post chain | `perf bench --scene all --renderer gpu --compare` at each item, against GL3's baseline |
+| Skinned humans on the GPU renderer (item 14) | none beyond GL3's: the skinning is already on the GPU, and the posing (about 25-30 µs a human) stays on the CPU. The item keeps the gain; it does not add one | `--scene hub,hub-crowd --renderer gpu --compare`, `render.skin` and `gpu.frame` side by side |
+| The simulation thread (items 37 to 42) | the largest now: the step leaves the frames that carry one, so a frame is drawing only (1.4 ms in the hub, 3.6 with 50 fighters); the p99 frame and the frames over the display's period fall ([What it gains](#threads-gain)), and an uncapped rate rises by the steps' share of the second, about 6 % in the hub and 11 % in the crowd | item 42's real-time runs at a 240 cap, with and without the thread |
 
 The [Budget](#budget) turns these into the gates each item is held to.
 
@@ -277,30 +283,30 @@ changes is the thread that runs it and what drawing may read.
 
 ### What it gains {#threads-gain}
 
-The gain is an even frame time, not more frames a second. A step costs about 2 ms in the hub, about 3-4 ms with 50
-fighters ([Baseline](#baseline)) and about 4 ms with 100 in free roam (the frame-spike study in
-[Performance](../guides/performance.md)); drawing without CPU skinning costs about 1-2 ms (the Baseline's render less
-its skinning, plus present: 1.1 ms in the hub, 1.5 ms in the street).
+The gain is an even frame time, not more frames a second. A step costs about 1.9 ms in the hub, about 3-3.7 ms with
+50 fighters ([Baseline](#baseline)) and about 4 ms with 100 in free roam (the frame-spike study in
+[Performance](../guides/performance.md)); drawing costs about 1.4-3.6 ms (the Baseline's render plus present: 1.4 ms in
+the hub, 1.7 in the street, 3.6 with 50 fighters).
 
 | Frame | One thread (today) | Two threads |
 | --- | --- | --- |
-| A frame with no step | draw: 1-2 ms | draw: 1-2 ms |
-| A frame with a step (one in eight at 240 frames a second) | step and draw: 5-6 ms, over the 4.2 ms of a 240 Hz refresh, so 30 frames a second miss theirs | draw only; the step runs on another core |
+| A frame with no step | draw: 1.4-3.6 ms | draw: 1.4-3.6 ms |
+| A frame with a step (one in eight at 240 frames a second) | step and draw: 3.3 ms in the hub, under the 4.2 ms of a 240 Hz refresh; 7.3 ms with 50 fighters, over it, so 30 frames a second miss theirs | draw only; the step runs on another core |
 | A slow step (a first model load: 28-41 ms) | that frame is late by the whole step: 7 to 10 refreshes at 240 Hz | no frame is late; the motion waits only if the step outruns the drawing delay ([The drawing clock](#threads-clock)) |
-| Frames a second, uncapped | the steps take about 12 % of each second | about an eighth more |
+| Frames a second, uncapped | the steps take about 6 % of each second in the hub, 11 % with 50 fighters | that much more |
 
 At 60 frames a second, and at 144 with vsync, a 4 ms step fits inside the frame, so the split changes little there
-until a step runs long. At 240 Hz and on VRR displays it removes the judder that each step causes today, and at any
-rate it removes the hitch of a slow step. What it costs: a second core kept busy, a snapshot built each step, up to
-one step of extra lag, and a developer overlay that waits for the step in progress while it is open.
+until a step runs long. At 240 Hz with a crowd and on VRR displays it removes the judder that each step causes today,
+and at any rate it removes the hitch of a slow step. What it costs: a second core kept busy, a snapshot built each
+step, up to one step of extra lag, and a developer overlay that waits for the step in progress while it is open.
 
 ### The snapshot {#snapshot}
 
 **What it holds** is the step's half of the frame description ([Migration](#migration), step 4; items 5 and 7 to 10):
 for every drawn thing, its id, its mesh and material ids and its pose on this step (a transform; a human's bone
 matrices; a world object's `DrawnPoses` entry), with a mark when it jumped (a teleport, a new clip) so that it is drawn
-unblended; the cameras; the lighting frame (item 20); the particles, with their positions on this step and the one
-before (item 18); the screen effects' levels (the blur pulse, fades, washes, the tint); the 2D layers' lists (HUD,
+unblended; the cameras; the lighting frame (item 19); the particles, with their positions on this step and the one
+before (item 17); the screen effects' levels (the blur pulse, fades, washes, the tint); the 2D layers' lists (HUD,
 menus, the pad menu, text; a movie's frame by reference to a decoded-frame buffer); the debug draw's lines; and an
 **outbox** of requests for the platform (rumble, cursor capture, quit). It holds ids, never pointers into the simulation
 ([Network architecture: checklist](../guides/network-architecture.md#checklist)).
@@ -314,7 +320,7 @@ A frame reads two, the newest published step and the one before, and blends them
 drawing, the newest published, and the one being written), so the writer never waits for drawing, and publishing is
 one atomic store of the newest slot's index.
 
-**One thread first.** Item 38 makes every mode's `render()` read only its two snapshots while everything still runs on
+**One thread first.** Item 37 makes every mode's `render()` read only its two snapshots while everything still runs on
 one thread, so the change is proved by item 1's draw-stream hashes before a second thread exists. Test mode builds and
 reads snapshots the same way, so it runs the code the threaded game runs.
 
@@ -325,7 +331,7 @@ reads snapshots the same way, so it runs the code the threaded game runs.
 - **Every librw call.** librw is not thread-safe (its engine state, the current texture dictionary and the list of
   dirty frames are globals), and on its GL3 platform creating a raster and drawing need the OpenGL context, which is
   current on the main thread. Today the play modes create a human's librw mesh and textures inside the step that
-  spawns it (`CharacterMesh`, built in `src/platform/play_level_*.cpp`). Item 39 moves that to drawing: the step names
+  spawns it (`CharacterMesh`, built in `src/platform/play_level_*.cpp`). Item 38 moves that to drawing: the step names
   a model id in the snapshot, and drawing creates the librw objects before their first draw. The simulation's own
   data for the model (skeleton, animation, collision) stays in the step. The SDL3 GPU renderer keeps the rule: it
   acquires its swapchain on the window's thread.
@@ -363,12 +369,12 @@ frame blends the two snapshots either side of it.
 
 The first human of a model not yet loaded costs 28-41 ms inside its step today
 ([Performance](../guides/performance.md)). With the split, the step's share is hidden by the drawing delay, but the
-librw share moves to drawing (item 39), where it would make a frame late. Item 44 adds a loader thread that reads and
+librw share moves to drawing (item 38), where it would make a frame late. Item 43 adds a loader thread that reads and
 decodes model and texture files into Coney's own formats ([Migration](#migration), step 5) off both threads; drawing
 uploads what it decoded. A step that needs a model's simulation data waits for it inside the step, so what spawns and
 when stays the same and the wait is the step's own time; the step asks early where it knows (a spawner's models, a
 level's start). Test mode loads at once, on its one thread. How the original streams a spawned human's model is
-studied first, in the first-model-load issue drafted by the frame-spike study; item 44 follows its findings.
+studied first, in the first-model-load issue drafted by the frame-spike study; item 43 follows its findings.
 
 ### Debug tools {#threads-debug}
 
@@ -376,7 +382,7 @@ studied first, in the first-model-load issue drafted by the frame-spike study; i
   does; what it draws is in the snapshot's 2D lists, and so are the debug draw's lines.
 - **The developer overlay** (Dear ImGui, [Debug menu](../guides/debug-menu.md#one-model)) runs on the main thread, and
   its panels read and edit live state (the Entity inspector, the tunables, time control, the Lua console, the native
-  caller). Item 40 gives it a **step-boundary lock**: the simulation thread holds it while a step runs and releases it
+  caller). Item 39 gives it a **step-boundary lock**: the simulation thread holds it while a step runs and releases it
   between steps, and the overlay holds it while it calls the model's getters, setters and actions. The panels then
   read and change state as today, only between steps. While the overlay is open a frame may wait for the step in
   progress, so the even frame time is promised with the overlay closed.
@@ -409,7 +415,7 @@ offline on its one thread, unchanged.
 - **The same simulation.** `frame_rate_test.cpp` gains a threaded case: the same scripted input by step number, the
   simulation on its own thread fed made-up frame times, and each step's state hash matching lockstep bit for bit at
   30, 60, 144, 240 and uncapped, with irregular frames.
-- **The same drawing.** Item 38 leaves item 1's draw-stream hashes unchanged at alpha 1, and a unit test blends two
+- **The same drawing.** Item 37 leaves item 1's draw-stream hashes unchanged at alpha 1, and a unit test blends two
   synthetic snapshots and gets what each `Interpolated<T>` and `DrawnPoses` helper gives.
 - **No live state in drawing.** `render()` is handed its two snapshots and the renderer, and nothing that reaches the
   simulation, so a mode that reads live state does not compile.
@@ -417,9 +423,9 @@ offline on its one thread, unchanged.
   one run the threaded tests and a threaded headless run on librw's NULL device: a few thousand steps of scripted
   input with a test client taking the boundary lock. SDL3 and librw are built from source in Coney's build, so they
   are instrumented too. The job is a required check (a maintainer decision): its key in `merge.required_checks` of
-  `.github/conventions.yml` lands with it (item 42).
-- **The gain, measured.** Item 17's scenes run in real time at a 240 frames-a-second cap and report the frame time's
-  p99 and the frames a minute over the display's period, with and without the thread. Item 43 makes the thread the
+  `.github/conventions.yml` lands with it (item 41).
+- **The gain, measured.** Item 16's scenes run in real time at a 240 frames-a-second cap and report the frame time's
+  p99 and the frames a minute over the display's period, with and without the thread. Item 42 makes the thread the
   default only when those frames fall and the median frame does not rise.
 
 ## Lighting and shadows {#lighting}
@@ -430,23 +436,25 @@ shadows](../research/xbox-lighting.md). Its Rules table is what the *Xbox* prese
 lists the options; this section says what Coney keeps and how it draws it, and the [Presets](#presets) table says what
 each preset draws.
 
-**Kept in every preset that draws it:** which lights exist, where, their colours, radii and flicker, and the light
-choice; the level's shadow light (its direction, from the level's offset, and its colour); the rule that a surface
-facing away from the shadow light is never darkened; the gamma curves. All of it reaches the renderer through the
+**Kept in every preset that draws it:** what the research's In Coney section lists under "What to keep exactly"
+([Xbox lighting: In Coney](../research/xbox-lighting.md#in-coney)): the lights and their choice, the level's shadow
+light and its rules, the gamma curves. All of it reaches the renderer through the
 **lighting frame** of the [Realtime lighting design](../guides/realtime-lighting.md#the-lighting-frame), built each
 frame from simulation state and never read back by it. The *Xbox* preset's gamma curves are read from the player's
 Xbox disc, not carried in Coney, and the values of the 33 records the research lists are checked against it (item
-25).
+24).
 
 **Kept in *Xbox*, widened in *Enhanced* and *High*:** who casts a shadow and who receives one. *Xbox* keeps the port's
-casters and receivers exactly; *Enhanced* adds receivers and *High* adds range ([Presets](#presets)).
+casters and receivers as the research gives them; *Enhanced* adds receivers and *High* adds range
+([Presets](#presets)).
 
 **One shadow source.** Every preset that draws a shadow map draws it from the level's shadow light, not from a sun of
 Coney's choosing. That answers the question the Xbox research leaves to this design: *Enhanced* and *High* take the
-Xbox's per-level direction, colour and back-face rule as their inputs, so shadows fall the same way in *Xbox*,
-*Enhanced* and *High*, and a level whose script does not turn shadows on keeps the blob in every preset. The
-realtime lighting design's shadow map is this map, and its bounded multiply takes the level's shadow colour as its
-strength ([Realtime lighting: the lighting model](../guides/realtime-lighting.md#lighting-model)).
+Xbox's per-level shadow light and its rules ([Xbox lighting: the shadow
+light](../research/xbox-lighting.md#shadow-light)) as their inputs, so shadows fall the same way in *Xbox*, *Enhanced*
+and *High*, and a level whose script does not turn shadows on keeps the blob in every preset. The realtime lighting
+design's shadow map is this map, and its bounded multiply takes the level's shadow colour as its strength ([Realtime
+lighting: the lighting model](../guides/realtime-lighting.md#lighting-model)).
 
 Reflections stay as the [Realtime lighting design](../guides/realtime-lighting.md#reflections) gives them. Where the
 research leaves a question open for a running Xbox (the shadow buffer's filtering, the blob under the shadow map,
@@ -455,9 +463,9 @@ the ramp's exact arithmetic), the *Xbox* preset uses that page's marked stand-in
 **Never gameplay.** The stealth "in shadow" flag and every lit or unlit rule the AI reads keep the PS2's ground check;
 a test makes sure no renderer state reaches them.
 
-The work order is in [Order](#order): the lighting frame first (item 20: simulation-side data that needs no new
-renderer), then, once the new renderer has its scene target (item 23), the gamma ramp, the *Xbox* preset's light caps
-and fog, the shadow maps and per-pixel lights (items 25, 26 and 29 to 32).
+The work order is in [Order](#order): the lighting frame first (item 19: simulation-side data that needs no new
+renderer), then, once the new renderer has its scene target (item 22), the gamma ramp, the *Xbox* preset's light caps
+and fog, the shadow maps and per-pixel lights (items 24, 25 and 28 to 31).
 
 ## Anti-aliasing and scaling {#aa}
 
@@ -466,7 +474,7 @@ All of these draw into the scene target at the internal resolution and resolve o
 
 | Technique | Where it fits | Licence |
 | --- | --- | --- |
-| MSAA 2×, 4×, 8× | geometry edges, which this game's long straight scenery edges are full of; with alpha-to-coverage for fences and foliage. On the SDL3 GPU renderer only (item 27): the GL3 path draws none | none (API feature) |
+| MSAA 2×, 4×, 8× | geometry edges, which this game's long straight scenery edges are full of; with alpha-to-coverage for fences and foliage. On the SDL3 GPU renderer only (item 26): the GL3 path draws none | none (API feature) |
 | FXAA 3.11 | cheapest post AA, slight blur | NVIDIA's FXAA licence, permissive; check at adoption |
 | SMAA 1×, T2× | better edges than FXAA, cheap; the default post AA | MIT |
 | TAA (Coney's own) | shimmer on thin wires and fences; uses the blended steps' previous poses for motion vectors and a jittered projection | Coney's code |
@@ -481,15 +489,15 @@ as this design was written; the item checks them again.
 
 | Tier | Upscaler | Runs on | Licence (as its project states it; not confirmed, checked at adoption) | Reach from SDL3's GPU API | Item |
 | --- | --- | --- | --- | --- | --- |
-| Fallback | AMD FSR 1 (EASU and RCAS): spatial upscale and sharpen | any GPU; the one tier CI can test, on its software drivers | MIT | plain shaders of Coney's | 34 |
-| Main, portable | AMD FSR 3.1 (FidelityFX SDK): temporal, from TAA's motion vectors | any vendor | MIT | the SDK's upscaler shaders ported as Coney's compute passes; its own backends want native handles | 35 |
-| Vendor | NVIDIA DLSS 4 and DLAA (Streamline or NGX SDK) | NVIDIA RTX | NVIDIA's proprietary SDK licence; redistributable binaries | native handles and a vendor binary beside the executable; a separate opt-in plug-in, as the [Enhancements plan](../guides/enhancements.md#decided) records for proprietary SDKs | 36 |
-| Vendor | AMD FSR 4 ("Redstone"): machine-learned | AMD RX 9000 and 7000; 4.1 adds RX 6000 and some APUs; never NVIDIA. Shader Model 6.6, so Direct3D 12 only until AMD's announced Vulkan version ships | the FidelityFX SDK's terms for its prebuilt ML upscaler | as DLSS | 37 |
+| Fallback | AMD FSR 1 (EASU and RCAS): spatial upscale and sharpen | any GPU; the one tier CI can test, on its software drivers | MIT | plain shaders of Coney's | 33 |
+| Main, portable | AMD FSR 3.1 (FidelityFX SDK): temporal, from TAA's motion vectors | any vendor | MIT | the SDK's upscaler shaders ported as Coney's compute passes; its own backends want native handles | 34 |
+| Vendor | NVIDIA DLSS 4 and DLAA (Streamline or NGX SDK) | NVIDIA RTX | NVIDIA's proprietary SDK licence; redistributable binaries | native handles and a vendor binary beside the executable; a separate opt-in plug-in, as the [Enhancements plan](../guides/enhancements.md#decided) records for proprietary SDKs | 35 |
+| Vendor | AMD FSR 4 ("Redstone"): machine-learned | AMD RX 9000 and 7000; 4.1 adds RX 6000 and some APUs; never NVIDIA. Shader Model 6.6, so Direct3D 12 only until AMD's announced Vulkan version ships | the FidelityFX SDK's terms for its prebuilt ML upscaler | as DLSS | 36 |
 | Optional | Intel XeSS | Intel Arc best; other GPUs through its fallback | Intel's XeSS SDK licence; redistributable binaries | as DLSS | filed if a maintainer asks for it |
 
 The vendor tiers need the device and command buffer underneath SDL's GPU API: a small patch to Coney's pinned SDL (or
 an upstream extension) that exposes them, used only by the plug-in. Whether to carry that change to SDL is decided
-with item 36, the first that needs it; FSR 3.1 is ported so that it does not.
+with item 35, the first that needs it; FSR 3.1 is ported so that it does not.
 
 ## HDR output {#hdr}
 
@@ -499,7 +507,7 @@ swapchain (SDL3's GPU API has both) takes an inverse tone map of the SDR picture
 lighting work adds (coronas, glows, bloom). Paper white and peak brightness are display values; the HUD and the front
 end draw at paper white. It is a live toggle on the debug menu's Display page and a command-line flag, greyed out with
 the reason when the display or its driver has no HDR. The PS2 look stays the default and test mode forces SDR. Its
-pull request shows a picture check for each output mode (item 24).
+pull request shows a picture check for each output mode (item 23).
 
 ## Presets {#presets}
 
@@ -532,7 +540,7 @@ research's In Coney section places under *Faithful*. The frame-rate gaps are clo
 ([Gaps](#frame-rate-gaps)); at 30 frames a second and in test mode the drawn values are the newest step's, so the
 *PS2* tests do not see them. Ray-traced shadows and AO are in no preset: SDL3's GPU API has no ray tracing, so they
 need a native Vulkan or D3D12 path beside it (the same native handles as [Upscalers](#upscalers)), a later option
-after item 22.
+after item 21.
 
 *PS2* is what tests use and is forced in test mode. Which preset a player gets by default is open
 ([Questions](#questions)); until a maintainer decides, every option ships off, which is *PS2*.
@@ -608,69 +616,67 @@ uv run --project python coney-tools perf bench --scene all --compare ../../scrat
   a report shows whether a frame is bound by the CPU or the GPU.
 - **`--display-preset` and `--renderer`** are passed through to Coney, so every display preset and renderer is
   measured the same way (`--preset` stays the build's CMake preset).
-- **Its default build** becomes `playtest`, the optimised build with the debug tools ([Baseline](#baseline)).
 
 ### Baseline {#baseline}
 
 Measured with `coney --bench` (lockstep, 600 frames after 60 of warm-up, `--vsync off`, the window 960 × 720 unless
 a render size is named) from a `playtest` build (optimised, with the debug tools that `--play-level` needs) of `main`
-at `435156f87`, on the agents' Windows machine: an AMD Ryzen 7 9800X3D, an RTX 5080, OpenGL 3.3 through the NVIDIA
-driver. Each scene ran three times, one after the other, and every run is counted: a cell is the median of the three
-runs' means, with the slowest and fastest run in brackets. Times are milliseconds a frame. Draws and triangles are a
-frame's mean, the same in every run of a scene. Other agents' builds held the machine's CPU at 100 % during these
-runs, so the brackets are wide; the 50-fighter runs, which skin on the CPU, were hit hardest.
+at `b749a7dca`, with humans skinned on the GPU, on the agents' Windows machine: an AMD Ryzen 7 9800X3D, an RTX 5080,
+OpenGL 3.3 through the NVIDIA driver. Each scene ran three times, the scenes interleaved, and every run is counted: a
+cell is the median of the three runs' means, with the slowest and fastest run in brackets. Times are milliseconds a
+frame; Posing is `render.skin`, the bones posed on the CPU for the GPU's skinning. Draws and triangles are a frame's
+mean, the same in every run of a scene. Other agents' builds held the machine's CPU at 67-100 % during most runs, so
+some brackets are wide.
 
-| Scene | Fighters | Render size | Frame | p95 | Step | Render | of which CPU skinning | Present | Draws | Triangles |
+| Scene | Fighters | Render size | Frame | p95 | Step | Render | of which posing | Present | Draws | Triangles |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Hub (`level95`) | 0 | 960 × 720 | 6.06 (5.86-6.06) | 7.14 (6.92-7.34) | 1.95 (1.90-2.02) | 3.95 (3.87-4.00) | 3.21 (3.16-3.23) | 0.39 (0.39-0.46) | 467 | 78,331 |
-| Hub, crowd | 50 | 960 × 720 | 43.01 (24.12-44.14) | 53.74 (26.04-168.45) | 3.62 (3.56-5.54) | 37.12 (20.35-40.05) | 29.70 (17.83-35.62) | 1.87 (1.53-3.39) | 640 | 138,285 |
-| Street (`level99`, checkpoint 1) | 0 | 960 × 720 | 4.05 (3.79-6.32) | 4.94 (4.49-10.04) | 0.27 (0.26-0.32) | 3.65 (3.41-5.87) | 2.60 (2.58-3.77) | 0.49 (0.29-0.96) | 693 | 77,582 |
-| Hub | 0 | 640 × 448 | 5.91 (5.88-8.07) | 7.08 (6.98-13.61) | 1.91 (1.90-2.18) | 3.90 (3.88-5.79) | 3.19 (3.17-4.02) | 0.40 (0.39-0.89) | 467 | 78,331 |
-| Hub | 0 | 2560 × 1920 | 6.05 (5.98-9.41) | 7.25 (7.25-22.09) | 1.96 (1.91-2.32) | 3.99 (3.94-6.93) | 3.23 (3.17-4.45) | 0.44 (0.43-1.09) | 467 | 78,331 |
-| Hub, headless | 0 | none | 1.96 (1.92-2.05) | 2.83 (2.58-3.02) | 1.90 (1.86-2.00) | none | none | none | none | none |
-| Hub, crowd, headless | 50 | none | 2.84 (2.67-4.17) | 4.03 (3.58-4.42) | 2.78 (2.62-4.11) | none | none | none | none | none |
+| Hub (`level95`) | 0 | 960 × 720 | 3.14 (2.73-3.21) | 3.50 (3.26-4.04) | 1.85 (1.70-1.91) | 1.17 (0.97-1.23) | 0.35 (0.32-0.36) | 0.19 (0.15-0.21) | 411 | 72,756 |
+| Hub, crowd | 50 | 960 × 720 | 7.02 (6.66-8.95) | 9.48 (8.68-17.20) | 3.69 (3.49-4.70) | 3.18 (3.02-4.07) | 1.76 (1.75-2.08) | 0.38 (0.26-0.81) | 540 | 128,796 |
+| Street (`level99`, checkpoint 1) | 0 | 960 × 720 | 1.86 (1.82-4.34) | 2.34 (2.26-16.04) | 0.24 (0.24-0.57) | 1.52 (1.49-2.97) | 0.33 (0.32-0.47) | 0.22 (0.21-1.07) | 693 | 77,582 |
+| Hub | 0 | 640 × 448 | 3.36 (3.19-6.38) | 4.14 (3.74-20.17) | 1.99 (1.90-2.93) | 1.29 (1.21-3.25) | 0.36 (0.35-0.49) | 0.24 (0.21-1.51) | 411 | 72,756 |
+| Hub | 0 | 2560 × 1920 | 3.22 (2.98-4.87) | 3.78 (3.49-6.00) | 1.88 (1.79-2.36) | 1.21 (1.13-2.41) | 0.35 (0.34-0.39) | 0.20 (0.18-1.31) | 411 | 72,756 |
+| Hub, headless | 0 | none | 1.86 (1.80-2.02) | 2.18 (2.02-2.74) | 1.80 (1.74-1.96) | none | none | none | none | none |
+| Hub, crowd, headless | 50 | none | 3.15 (3.04-3.25) | 3.68 (3.48-3.85) | 3.04 (2.91-3.11) | none | none | none | none | none |
 
-The reports, one JSON and one log per run with the command line (render size included) at the log's top, and the
-script that made the table, are kept in the scratch folder of this design's branch.
+The reports, one JSON and one log per run with the command line (render size included) and the processor's load at
+the log's top, and the script that made the table, are kept in the scratch folder of this design's task.
 
 What it says:
 
-- **The frame is bound by the CPU, and mostly by skinning.** Humans are skinned on the CPU and re-uploaded every
-  frame: 3.2 ms of a 6.1 ms frame with the player's crew alone; with 50 fighters 17.8 ms of 24.1 ms in the least
-  disturbed run, and more in the others. Moving skinning to the GPU ([Order](#order), item 14) is the largest single
-  gain on the list.
-- **The simulation costs 2-3 ms** in the hub (the headless runs) and 0.27 ms in the street, and does not grow with the
-  frame rate, since steps are fixed.
+- **The frame is bound by the CPU, in the step and around librw.** With GPU skinning on GL3, the hub's frame is 3.1
+  ms, of which the step is 1.85 ms (nearly all the AI's brains,
+  [Performance: findings](../guides/performance.md#findings)) and the render 1.17 ms. With 50 fighters the step is
+  3.7 ms and the render 3.2 ms, of which 1.8 ms is posing the humans' bones.
+- **The simulation costs 1.8-3 ms** in the hub (the headless runs) and 0.24 ms in the street, and does not grow with
+  the frame rate, since steps are fixed. It is now the largest share of the frame, which the simulation thread
+  ([Simulation and drawing threads](#threads)) takes off the frames that draw.
 - **The GPU is barely used.** In the hub, 640 × 448 and 2560 × 1920 (17 times the pixels) have the same median frame,
-  5.91 and 6.05 ms, within the 960 × 720 run's own bracket; the slow runs at both sizes are the busy machine's, not the
-  pixels'. There is room for per-pixel lighting, shadow maps and AA.
-- **About 470-700 draw calls** a frame through librw's one-atomic-at-a-time pipelines; instancing and fewer state
-  changes on the new renderer bring that down, but at this count draws are not yet the limit.
+  3.36 and 3.22 ms, within each other's brackets. There is room for per-pixel lighting, shadow maps and AA.
+- **About 410-690 draw calls** a frame through librw's one-atomic-at-a-time pipelines; instancing and fewer state
+  changes on the new renderer bring that down, but at this count draws are not the limit.
 
-[Order](#order) item 17 records this again on the scene table with GPU time, on a quiet machine, and that record becomes
-the baseline `--compare` reads; the figures above are the starting point it replaces, the crowd's above all. Item 16
-first fixes `perf bench`'s default build: `--preset release` has no debug tools since the release build dropped them, so
-`--play-level` refuses and every run fails; the runs above called a `playtest` build's `coney` directly. The items that
-draw through GL3 (1 to 10 and 15 to 20) must keep these numbers (the *PS2* budget below); the GPU renderer's items are
+[Order](#order) item 16 records this again on the scene table with GPU time, on a quiet machine, and that record
+becomes the baseline `--compare` reads; the figures above are the starting point it replaces. The items that draw
+through GL3 (1 to 10 and 15 to 19) must keep these numbers (the *PS2* budget below); the GPU renderer's items are
 measured against them.
 
 ### Budget {#budget}
 
-Frame-time budgets on this machine, each scene's median of three runs, checked by `perf bench --compare` once item 17
+Frame-time budgets on this machine, each scene's median of three runs, checked by `perf bench --compare` once item 16
 lands. They are targets for the work in [Order](#order), not results:
 
 | Preset and renderer | Scene | Budget | Why |
 | --- | --- | --- | --- |
-| *PS2*, GL3 | every scene | no slower than the baseline's median by more than the larger of 5 % and the baseline's own spread (its slowest run over its fastest) | the reference must not get slower while the seam is built; the spread term keeps the gate wider than run-to-run noise (3 % in the hub above) |
-| *PS2*, SDL3 GPU | Hub, crowd (50) | 6.9 ms (144 frames a second) | the step's 2.8 ms (the headless runs, which the busy machine disturbed least; the windowed runs' 3.6 ms carries their load) leaves 4.1 ms to draw once GPU skinning removes the CPU's 17.8 ms or more |
-| *PS2*, SDL3 GPU | Hub | 4.2 ms (240 frames a second, this display's rate) | the step's 1.95 ms leaves 2.25 ms, against today's 0.74 ms of drawing besides skinning and 0.39 ms of present |
-| *PS2*, SDL3 GPU | Street | 2.1 ms (about 480 frames a second) | Street's step is 0.27 ms; today's drawing besides skinning is 1.05 ms and present 0.49 ms, so 1.8 ms to draw keeps a margin and does not let the draw grow into the hub's budget |
+| *PS2*, GL3 | every scene | no slower than the baseline's median by more than the larger of 5 % and the baseline's own spread (its slowest run over its fastest) | the reference must not get slower while the seam is built; the spread term keeps the gate wider than run-to-run noise |
+| *PS2*, SDL3 GPU | Hub, crowd (50) | 6.9 ms (144 frames a second) | the step's 3.0 ms (the headless runs, which the busy machine disturbed least) leaves 3.9 ms to draw, against today's 3.6 ms of render and present on GL3 |
+| *PS2*, SDL3 GPU | Hub | 4.2 ms (240 frames a second, this display's rate) | the step's 1.85 ms leaves 2.35 ms, against today's 1.17 ms of render and 0.19 ms of present |
+| *PS2*, SDL3 GPU | Street | 2.1 ms (about 480 frames a second) | Street's step is 0.24 ms; today's render is 1.52 ms and present 0.22 ms, so 1.85 ms to draw keeps a margin and does not let the draw grow into the hub's budget |
 | *Enhanced*, SDL3 GPU, 2560 × 1440 | Hub, crowd (50) | 6.9 ms | shadow maps, per-pixel lights and SMAA fit in the GPU time the baseline leaves idle |
 | *High*, SDL3 GPU, 3840 × 2160 | Hub, crowd (50) | 8.3 ms (120 frames a second) | the most expensive preset at the largest common size |
 
 **The gate's condition.** `--compare` fails a pull request only on a quiet machine: no other build holding a build
 slot while it runs, which the tool checks and prints. On a busy machine it reports the comparison and does not fail,
-because the runs above show a busy machine spreading one scene's runs by more than 80 %.
+because the runs above show a busy machine spreading one scene's runs by more than 130 %.
 
 A low-end target (an integrated GPU, such as this machine's own AMD Radeon graphics) is measured once the new renderer
 draws: *Enhanced* holds 60 frames a second there or becomes opt-in, as the
@@ -704,7 +710,7 @@ MSL compiled on every CI system and DXBC, which Windows' own `d3dcompiler_47` ma
 ## Questions for the maintainer {#questions}
 
 - Which preset a player gets by default: *PS2*, or *Enhanced* on a capable machine.
-- When the GL3 renderer retires after the GPU renderer becomes the default (item 22), and with it librw's GL3
+- When the GL3 renderer retires after the GPU renderer becomes the default (item 21), and with it librw's GL3
   platform.
 
 ## Order {#order}
@@ -718,7 +724,7 @@ switch ([Migration](#migration)).
 
 | # | Issue | Depends on | Size |
 | --- | --- | --- | --- |
-| 1 | `tests: Add draw-stream hashes for the PS2 picture` | none | L |
+| 1 | `graphics: Add draw-stream hashes for the PS2 picture` | none | L |
 | 2 | `tools: Add a picture comparison with a tolerance` | none | M |
 | 3 | `platform: Add the GPU renderer's start with librw opened for data only` | none | M |
 | 4 | `build: Add the HLSL shader build through SDL_shadercross` | none | S |
@@ -731,63 +737,62 @@ switch ([Migration](#migration)).
 | 11 | `graphics: Add the 2D layers to the SDL3 GPU renderer` | 2, 3, 4, 5 | M |
 | 12 | `graphics: Add Dear ImGui's SDL GPU backend to the GPU renderer` | 11 | S |
 | 13 | `graphics: Add the world and objects to the SDL3 GPU renderer` | 8, 11 | M |
-| 14 | `graphics: Add GPU skinning and humans to the SDL3 GPU renderer` | 9, 13 | M |
+| 14 | `graphics: Add skinned humans to the SDL3 GPU renderer` | 9, 13 | M |
 
 **Beside the groundwork:** these do not depend on the backend and may land at any point of items 1 to 14.
 
 | # | Issue | Depends on | Size |
 | --- | --- | --- | --- |
 | 15 | `graphics: Add display presets with PS2 forced in test mode` | none | S |
-| 16 | `tools: Fix perf bench's default build to one with debug tools` | none | S |
-| 17 | `tools: Add named scenes, GPU time and a compare to perf bench` | 16 | M |
-| 18 | `graphics: Fix particles and screen effects drawn between steps` | none | M |
-| 19 | `graphics: Add a VRR frame-pacing mode` | none | S |
-| 20 | `graphics: Add the lighting frame and the level's shadow light` | none | S |
+| 16 | `tools: Add named scenes, GPU time and a compare to perf bench` | none | M |
+| 17 | `graphics: Fix particles and screen effects drawn between steps` | none | M |
+| 18 | `graphics: Add a VRR frame-pacing mode` | none | S |
+| 19 | `graphics: Add the lighting frame and the level's shadow light` | none | S |
 
 **Parity, the switch, then the enhancements**, each on the GPU renderer only:
 
 | # | Issue | Depends on | Size |
 | --- | --- | --- | --- |
-| 21 | `graphics: Add effects and parity tests to the SDL3 GPU renderer` | 10, 14, 17 | M |
-| 22 | `graphics: Update the default renderer to the SDL3 GPU renderer` | 12, 15, 21, a maintainer's go-ahead | S |
-| 23 | `graphics: Add the scene target and render scale` | 21 | M |
-| 24 | `graphics: Add HDR output with a live toggle` | 23 | M |
-| 25 | `graphics: Add the Xbox gamma ramp and brightness default` | 23 | S |
-| 26 | `graphics: Add the Xbox preset's light caps and per-pixel fog` | 13, 20 | M |
-| 27 | `graphics: Add MSAA and alpha-to-coverage` | 23 | S |
-| 28 | `graphics: Add SMAA as the post anti-aliasing` | 23 | S |
-| 29 | `graphics: Add the Xbox preset's character shadow map` | 20, 23 | M |
-| 30 | `graphics: Add per-pixel lights and clustered light lists` | 20, 23 | M |
-| 31 | `graphics: Add the Enhanced and High shadow maps` | 29 | M |
-| 32 | `graphics: Add point-light shadows for fires and lamps` | 31 | M |
-| 33 | `graphics: Add TAA with motion vectors` | 23 | M |
-| 34 | `graphics: Add FSR 1 upscaling` | 23 | S |
-| 35 | `graphics: Add FSR 3.1 upscaling` | 33 | M |
-| 36 | `graphics: Add DLSS and DLAA as an opt-in plug-in` | 33, a maintainer's licence decision | M |
-| 37 | `graphics: Add FSR 4 as an opt-in plug-in` | 35, 36 | M |
+| 20 | `graphics: Add effects and parity tests to the SDL3 GPU renderer` | 10, 14, 16 | M |
+| 21 | `graphics: Update the default renderer to the SDL3 GPU renderer` | 12, 15, 20, a maintainer's go-ahead | S |
+| 22 | `graphics: Add the scene target and render scale` | 20 | M |
+| 23 | `graphics: Add HDR output with a live toggle` | 22 | M |
+| 24 | `graphics: Add the Xbox gamma ramp and brightness default` | 22 | S |
+| 25 | `graphics: Add the Xbox preset's light caps and per-pixel fog` | 13, 19 | M |
+| 26 | `graphics: Add MSAA and alpha-to-coverage` | 22 | S |
+| 27 | `graphics: Add SMAA as the post anti-aliasing` | 22 | S |
+| 28 | `graphics: Add the Xbox preset's character shadow map` | 19, 22 | M |
+| 29 | `graphics: Add per-pixel lights and clustered light lists` | 19, 22 | M |
+| 30 | `graphics: Add the Enhanced and High shadow maps` | 28 | M |
+| 31 | `graphics: Add point-light shadows for fires and lamps` | 30 | M |
+| 32 | `graphics: Add TAA with motion vectors` | 22 | M |
+| 33 | `graphics: Add FSR 1 upscaling` | 22 | S |
+| 34 | `graphics: Add FSR 3.1 upscaling` | 32 | M |
+| 35 | `graphics: Add DLSS and DLAA as an opt-in plug-in` | 32, a maintainer's licence decision | M |
+| 36 | `graphics: Add FSR 4 as an opt-in plug-in` | 34, 35 | M |
 
 **The simulation and drawing threads** ([Simulation and drawing threads](#threads)):
 
 | # | Issue | Depends on | Size |
 | --- | --- | --- | --- |
-| 38 | `graphics: Add the step snapshot that drawing reads` | 10, 18, 20 | L |
-| 39 | `graphics: Rework model creation onto the drawing side` | 38 | M |
-| 40 | `core: Add the step-boundary lock for the developer overlay` | 38 | S |
-| 41 | `core: Add the simulation thread and the drawing delay` | 39, 40 | M |
-| 42 | `build: Add a ThreadSanitizer preset and CI job` | 41 | S |
-| 43 | `core: Update the simulation thread to on by default` | 17, 41, 42 | S |
-| 44 | `core: Add a loader thread for models and textures` | 39, 41, the first-model-load study | M |
+| 37 | `graphics: Add the step snapshot that drawing reads` | 10, 17, 19 | L |
+| 38 | `graphics: Rework model creation onto the drawing side` | 37 | M |
+| 39 | `core: Add the step-boundary lock for the developer overlay` | 37 | S |
+| 40 | `core: Add the simulation thread and the drawing delay` | 38, 39 | M |
+| 41 | `build: Add a ThreadSanitizer preset and CI job` | 40 | S |
+| 42 | `core: Update the simulation thread to on by default` | 16, 40, 41 | S |
+| 43 | `core: Add a loader thread for models and textures` | 38, 40, the first-model-load study | M |
 
-Item 1 is one of the two L items: it routes about 270 of the 380 call sites, each change mechanical, so it stays one
+Item 1 is one of the two L items: it routes about 290 of the 460 call sites, each change mechanical, so it stays one
 pull request. Items 1, 2, 3, 4 and 6 depend on nothing and can run beside each other; item 3 is the first point at
-which the game runs with librw's GL3 device closed. Item 22 is the switch the groundwork leads to and waits for a
-maintainer's go-ahead; the enhancements after it need parity (item 21), not the switch, and never draw through GL3.
+which the game runs with librw's GL3 device closed. Item 21 is the switch the groundwork leads to and waits for a
+maintainer's go-ahead; the enhancements after it need parity (item 20), not the switch, and never draw through GL3.
 
-Of the realtime lighting design's steps, item 20 is L0, item 23 with the GPU renderer's shaders is L1, items 29 and
-31 are L2, item 30 is L3 and item 32 is L6; L4, L5 and GTAO follow item 23 and are filed from that design. XeSS, ray
-tracing and the [Enhancements plan](../guides/enhancements.md)'s other options follow item 22 and are filed from those
+Of the realtime lighting design's steps, item 19 is L0, item 22 with the GPU renderer's shaders is L1, items 28 and
+30 are L2, item 29 is L3 and item 31 is L6; L4, L5 and GTAO follow item 22 and are filed from that design. XeSS, ray
+tracing and the [Enhancements plan](../guides/enhancements.md)'s other options follow item 21 and are filed from those
 pages.
 
-Items 38 to 44 follow item 10, because the snapshot is the frame description's per-step half and building it before
-would build it twice, and they do not depend on the GPU renderer, so they can run beside items 11 to 37. Item 38 is L:
+Items 37 to 43 follow item 10, because the snapshot is the frame description's per-step half and building it before
+would build it twice, and they do not depend on the GPU renderer, so they can run beside items 11 to 36. Item 37 is L:
 every mode's `render()` moves onto snapshots, the front end, movies and menus as well as the game.
