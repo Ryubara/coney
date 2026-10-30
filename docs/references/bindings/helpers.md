@@ -182,8 +182,8 @@ Clears the current goals and actions (`BrFlush`) of one human, or of each living
 SetFollowForm(leader, followers, slots, distance)
 ```
 
-Gives `leader` its follow slots (a table of slot ids, or one id) and makes `followers` (a table, or one human) follow it
-with the follow-player goal; `distance`, passed on to the goal, defaults to 1.
+Gives `leader` follow slots at the given offsets (a table of `{x, y}` offsets, or one offset) in slot set 2, and makes
+`followers` (a table, or one human) follow it with the follow-player goal at `distance` metres (1 when not given).
 
 - **Evidence:** confirmed (code) at `global.lua:f10`
 - **Natives:** [`BrSetNumFollowSlots`](ai.md#brsetnumfollowslots), [`BrSetFollowSlot`](ai.md#brsetfollowslot),
@@ -209,10 +209,11 @@ Makes up to ten humans of a table (the leader left out) follow `leader` with the
 HuNotDead(human)
 ```
 
-True when the human is alive; false for nil. Its second test passes a constant instead of the human, so in practice it
-reads the same as `HuIsAlive`.
+True when the human is alive; false for nil. Its second test asks `HuIsDead` about `true` (the number 1) instead of the
+human; since `HuIsDead` is true for a handle that does not resolve, it reads the same as `HuIsAlive` unless handle 1 is
+a living human.
 
-- **Evidence:** confirmed (code) at `global.lua:f24`
+- **Evidence:** inferred at `global.lua:f24`
 - **Natives:** [`HuIsAlive`](character.md#huisalive), [`HuIsDead`](character.md#huisdead)
 - **Called by** 1 script (1 call)
 
@@ -287,11 +288,11 @@ Does nothing for nil.
 ### GangExit {#gangexit}
 
 ```lua
-GangExit(gang, target, how)
+GangExit(gang, exit, callback)
 ```
 
-Sends a gang out of the world (`GangExitWorld`, with the two arguments passed on) after clearing its tactic and its
-`Super` entry. Does nothing for nil.
+Sends a gang out of the world after clearing its tactic and its `Super` entry: `GangExitWorld` walks the members to the
+`exit` flag and calls `callback` once the last has gone. Does nothing for nil.
 
 - **Evidence:** confirmed (code) at `global.lua:f23`
 - **Natives:** [`TacticClear`](ai.md#tacticclear), [`GangExitWorld`](gang.md#gangexitworld)
@@ -431,7 +432,7 @@ Starts a `Super` gang's default tactic, sets its threat response to 2 and turns 
 SuperSetFollow(leader, slots)
 ```
 
-Gives a gang leader its follow slots (a table of slot ids, or one id), with slot type 3.
+Gives a gang leader follow slots at the given offsets (a table of `{x, y}` offsets, or one offset) in slot set 3.
 
 - **Evidence:** confirmed (code) at `global.lua:f69`
 - **Natives:** [`BrSetNumFollowSlots`](ai.md#brsetnumfollowslots), [`BrSetFollowSlot`](ai.md#brsetfollowslot)
@@ -550,8 +551,8 @@ camera and sound change when a player goes indoors, and keeps the table in `vInt
 EnterInteriorCam(trigger, human)
 ```
 
-The enter handler `SetupInteriorCams` registers: when a player walks in, shortens the follow camera, starts the indoor
-garbage effect, switches the world to indoor mode and halves the ambient track's volume.
+The enter handler `SetupInteriorCams` registers: when a player walks in, shortens the follow camera, starts the
+blowing-litter camera effect (`StartGarbage`), switches the world to indoor mode and halves the ambient track's volume.
 
 - **Evidence:** confirmed (code) at `global.lua:f36`
 - **Natives:** [`HuIsAPlayer`](character.md#huisaplayer), [`CfgFollowCamera`](config.md#cfgfollowcamera),
@@ -566,7 +567,7 @@ garbage effect, switches the world to indoor mode and halves the ambient track's
 ExitInteriorCam(trigger, human)
 ```
 
-The exit handler `SetupInteriorCams` registers: restores the follow camera, ends the garbage effect, switches back to
+The exit handler `SetupInteriorCams` registers: restores the follow camera, ends the litter effect, switches back to
 outdoor mode and the full ambient volume.
 
 - **Evidence:** confirmed (code) at `global.lua:f37`
