@@ -303,24 +303,23 @@ keeps the places full ([Keeping the places full](slot-fill.md)) from the open is
 | **Reviewer**, **helper** | A `reviewer` ([Task review](review/task.md)); an `Explore`, `Plan` or `claude-code-guide` agent, a `fork`, and any agent an engineer starts for its own task (no cap) | No claim, no place, no `Task id:` line |
 
 The labels are read from the issue's held claim card (`workflow`, `studio`, `networking` and `renderer`, recomputed by
-the claim Action every pass), so a label added later counts from the next pass; an issue with `workflow` and another
-label is a workflow unit until the cutover, and the claims of all four are outside the open-claims limit ([Claiming an
-issue](issues.md#claiming)). There is no `Slot: none`: an `engineer` or `tooling` agent has a unit, or it is not
-started. Other repositories' work is not counted.
+the claim Action every pass), an issue with `workflow` and another label is a workflow unit until the cutover, and the
+claims of all four are outside the open-claims limit ([Claiming an issue](issues.md#claiming)). There is no `Slot:
+none`: an `engineer` or `tooling` agent has a unit, or it is not started. Other repositories' work is not counted.
 
 **The machine limit.** All tracks together, a machine holds at most `build_slots` (its build slots in
 `coney.local.toml`, the ones [`coney-tools build`](#builds) keeps) times `per_build_slot` (2) units in work: 10 on a
 machine with 5 build slots, 4 on one with the default 2. Of those, the places a track keeps (`min`) while it runs fewer
 are set aside for it: with 10 places and none of the other tracks running, Studio may take 6. The number 2 was measured
-on 2026-10-28 from the build records (`<scratch>/<task>/build-runs/`) and the unit records: from `task start` to a
-passing Review, a `feature` unit held a build slot for 10% of its life (5 units, 52 hours, 5.3 of them building) and a
-`tooling` unit for 2% (19 units); over about 600 build runs from 2026-10-24 on, five or more builds ran at once for 1.7
-of the 52.7 hours any ran. Two units per build slot put the builds' demand at about a fifth of the slots; past that, the
-limit is the unslotted checks (with about 8 at once, the Python tests of `task check` took 80 minutes instead of 48).
-The tracks keep 4 places together, so on the default 2 build slots (4 places) they are all kept, and one game unit fits
-beside the fix, networking and renderer places. A machine with one build slot (2 places) sets aside at most all but the
-starting unit's place, so an empty one starts a unit of any track, Studio's too. `per_build_slot` changes only after
-measuring again the same way.
+on 2026-10-28 from the build records (`<scratch>/<task>/build-runs/`) and the unit records: from `task start` to Review,
+a `feature` unit held a build slot for 10% of its life (5 units, 52 hours, 5.3 of them building) and a `tooling` unit
+for 2% (19 units); over about 600 build runs since 2026-10-24, five or more builds ran at once for 1.7 of the 52.7 hours
+any ran. Two units per build slot put the builds' demand at about a fifth of the slots; past that, the limit is the
+unslotted checks (8 at once made the Python tests of `task check` take 80 minutes, not 48). The tracks keep 4 places
+together, so on the default 2 build slots (4 places) they are all kept, and one game unit fits beside the fix,
+networking and renderer places. A machine with one build slot (2 places) sets aside at most all but the starting unit's
+place, so an empty one starts a unit of any track, Studio's too. `per_build_slot` changes only after measuring again the
+same way.
 
 **The place belongs to the unit, not to the agent's life.** A unit takes its place at `task start` (an agent the
 coordinator has just started holds it from the Agent call, for at most `reserve_minutes`, so that several calls made
