@@ -324,7 +324,13 @@ shadow light casts a shadow, and the PS2's corona sprites, flicker and glow are 
 
 **Follows: the Xbox port (presentation).** The maintainer decided on 2026-10-25 that the Xbox port's lighting and
 shadows count as faithful and Coney will offer them as options; the PS2 stays the reference for behaviour and for
-the tests. Nothing below is built. The renderer that will host it is designed on [Renderer](../engine/renderer.md)
+the tests. Built so far is the data, nothing drawn: `SetShadowColor`, `SetShadowLightOffset` and `EnableShadow` keep
+their values as the Xbox's shadow object does (`ShadowLight` and `ShadowCasters` in
+`repo:src/graphics/level_lighting.h`, defaults as Xbox `0x000bda20`), and the lighting frame
+(`repo:src/graphics/lighting_frame.h`) carries the level's shadow light to a renderer each frame. Coney's reading: a
+level whose scripts set neither value has no shadow light, so a Coney level without one keeps the blob; every game
+level sets both through `global.lua`. `EnableShadow` is kept by script handle rather than on the human, since the
+caster list is a renderer's. The renderer that will host it is designed on [Renderer](../engine/renderer.md)
 (#883), with the lighting model on [Realtime lighting design](../guides/realtime-lighting.md); this section maps each
 Xbox technique onto it. Every option is forced off in test mode, so the faithful tests keep comparing with the PS2;
 which preset a player gets by default is a maintainer question there.

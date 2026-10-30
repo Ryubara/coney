@@ -464,6 +464,12 @@ unlit vertices (0) reach the GS as 59, 64 and 29 of 128 (street dump), `level100
   or an object with more would differ far from the camera. The cull's corona-only lights, which Coney leaves out of
   the point lists, are a finding of [#654](issue:654). The fix and the trace comparison that catches it are build
   issues of [Realtime lighting](../guides/realtime-lighting.md#build-issues).
+- `SetShadowColor`, `SetShadowLightOffset` and `EnableShadow`, empty here, keep their values as the Xbox port does
+  ([Xbox lighting: the shadow light](xbox-lighting.md#shadow-light)), render-side only: the stealth flag and the
+  dimming above read the ground check, never them. Each frame the play mode's rig builds the **lighting frame**
+  (`repo:src/graphics/lighting_frame.h`) after the cull: the lights the cull kept with this step's flicker colour,
+  the cull's lists, the world ambient, the fog, the shadow light and the objects whose shadow is off. Nothing draws
+  from it yet ([Renderer: lighting](../engine/renderer.md#lighting)).
 - A sandbox (no level scripts) gets a stand-in ambient and directional light; the front end's background has its own
   manager, which `global.lua`'s lights for level 100 fill, with black fog, and its objects are lit as world objects;
   the character viewer and the reference renders keep their fixed lights (`repo:src/platform/character_lights.h`).

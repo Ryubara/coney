@@ -709,9 +709,6 @@ tag = 1
 ["src/graphics/human_lighting.cpp"]
 tag = 4
 
-["src/graphics/level_lighting.cpp"]
-tag = 1
-
 ["src/graphics/light_manager.cpp"]
 tag = 18
 
