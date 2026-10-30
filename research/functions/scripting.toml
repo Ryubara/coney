@@ -2037,8 +2037,6 @@ page = "script-arguments.md#readers"
 kind = "helper"
 role = "reads a number argument; the default only past the top of the stack, so an explicit nil reads 0"
 level = "confirmed-code"
-coney = "src/scripting/binding_args.h:numberOr"
-status = "compared"
 
 [[function]]
 address = 0x00409318
@@ -2047,8 +2045,6 @@ page = "script-arguments.md#readers"
 kind = "helper"
 role = "reads a boolean argument; the default only past the top of the stack, nil false, else the number is not 0"
 level = "confirmed-code"
-coney = "src/scripting/binding_args.h:booleanArg"
-status = "compared"
 
 [[function]]
 address = 0x00412a18
@@ -2339,8 +2335,6 @@ page = "script-arguments.md#conversions"
 kind = "helper"
 role = "converts a double to a signed 32-bit integer, truncating toward 0 and saturating"
 level = "confirmed-code"
-coney = "src/scripting/binding_args.h:toSigned"
-status = "compared"
 
 [[function]]
 address = 0x0042c420
@@ -2349,5 +2343,3 @@ page = "script-arguments.md#conversions"
 kind = "helper"
 role = "converts a double to an unsigned 32-bit integer, 0 under 1 and saturating at 0xffffffff"
 level = "confirmed-code"
-coney = "src/scripting/binding_args.h:toUnsigned"
-status = "compared"
