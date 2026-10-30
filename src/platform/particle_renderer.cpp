@@ -11,6 +11,7 @@
 
 #include <rw.h>
 
+#include "platform/draw_calls.h"
 #include "platform/play_scenery.h"
 #include "platform/sprite_sheets.h"
 #include "platform/texture_dictionary.h"
@@ -90,13 +91,13 @@ struct Batch {
         if (vertices.empty()) {
             return;
         }
-        rw::SetRenderStatePtr(rw::TEXTURERASTER, raster);
-        rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-        rw::SetRenderState(rw::DESTBLEND, add ? rw::BLENDONE : rw::BLENDINVSRCALPHA);
-        rw::im3d::Transform(vertices.data(), static_cast<rw::int32>(vertices.size()), nullptr,
+        draw::setRenderStatePtr(rw::TEXTURERASTER, raster);
+        draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+        draw::setRenderState(rw::DESTBLEND, add ? rw::BLENDONE : rw::BLENDINVSRCALPHA);
+        draw::im3dTransform(vertices.data(), static_cast<rw::int32>(vertices.size()), nullptr,
                             rw::im3d::VERTEXXYZ | rw::im3d::VERTEXRGBA | rw::im3d::VERTEXUV);
-        rw::im3d::RenderIndexedPrimitive(rw::PRIMTYPETRILIST, indices.data(), static_cast<rw::int32>(indices.size()));
-        rw::im3d::End();
+        draw::im3dRenderIndexedPrimitive(rw::PRIMTYPETRILIST, indices.data(), static_cast<rw::int32>(indices.size()));
+        draw::im3dEnd();
         vertices.clear();
         indices.clear();
     }
@@ -110,24 +111,24 @@ constexpr std::size_t kBatchSprites = 16000;
 // the fog colour wherever it is (docs/research/rendering.md#sprites), which Coney rounds to none. Returns whether fog
 // was on, for endSprites().
 bool beginSprites() {
-    const bool fogged = rw::GetRenderState(rw::FOGENABLE) != 0;
-    rw::SetRenderState(rw::FOGENABLE, 0);
-    rw::SetRenderState(rw::ZTESTENABLE, 1);
-    rw::SetRenderState(rw::ZWRITEENABLE, 0);
-    rw::SetRenderState(rw::VERTEXALPHA, 1);
-    rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
-    rw::SetRenderState(rw::TEXTUREFILTER, rw::Texture::LINEAR);
-    rw::SetRenderState(rw::TEXTUREADDRESS, rw::Texture::CLAMP);
+    const bool fogged = draw::getRenderState(rw::FOGENABLE) != 0;
+    draw::setRenderState(rw::FOGENABLE, 0);
+    draw::setRenderState(rw::ZTESTENABLE, 1);
+    draw::setRenderState(rw::ZWRITEENABLE, 0);
+    draw::setRenderState(rw::VERTEXALPHA, 1);
+    draw::setRenderState(rw::CULLMODE, rw::CULLNONE);
+    draw::setRenderState(rw::TEXTUREFILTER, rw::Texture::LINEAR);
+    draw::setRenderState(rw::TEXTUREADDRESS, rw::Texture::CLAMP);
     return fogged;
 }
 
 // Puts back the states the solid draws expect, and the fog as it was.
 void endSprites(bool fogged) {
-    rw::SetRenderState(rw::FOGENABLE, fogged ? 1 : 0);
-    rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-    rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
-    rw::SetRenderState(rw::ZWRITEENABLE, 1);
-    rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
+    draw::setRenderState(rw::FOGENABLE, fogged ? 1 : 0);
+    draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+    draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+    draw::setRenderState(rw::ZWRITEENABLE, 1);
+    draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
 }
 
 } // namespace

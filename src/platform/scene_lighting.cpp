@@ -7,6 +7,7 @@
 
 #include <rw.h>
 
+#include "platform/draw_calls.h"
 #include "platform/perf_probes.h"
 #include "platform/sprite_sheets.h"
 #include "platform/texture_lod.h"
@@ -97,19 +98,19 @@ void drawQuads(std::vector<rw::gl3::Im3DVertex>& vertices, rw::Texture* texture)
     if (vertices.empty()) {
         return;
     }
-    rw::SetRenderState(rw::ZTESTENABLE, 1);
-    rw::SetRenderState(rw::ZWRITEENABLE, 0);
-    rw::SetRenderState(rw::FOGENABLE, 0);
-    rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
-    rw::SetRenderState(rw::VERTEXALPHA, 1);
-    rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-    rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
-    rw::SetRenderStatePtr(rw::TEXTURERASTER, texture != nullptr ? texture->raster : nullptr);
-    rw::im3d::Transform(vertices.data(), static_cast<rw::int32>(vertices.size()), nullptr,
+    draw::setRenderState(rw::ZTESTENABLE, 1);
+    draw::setRenderState(rw::ZWRITEENABLE, 0);
+    draw::setRenderState(rw::FOGENABLE, 0);
+    draw::setRenderState(rw::CULLMODE, rw::CULLNONE);
+    draw::setRenderState(rw::VERTEXALPHA, 1);
+    draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+    draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+    draw::setRenderStatePtr(rw::TEXTURERASTER, texture != nullptr ? texture->raster : nullptr);
+    draw::im3dTransform(vertices.data(), static_cast<rw::int32>(vertices.size()), nullptr,
                         rw::im3d::VERTEXXYZ | rw::im3d::VERTEXRGBA | rw::im3d::VERTEXUV);
-    rw::im3d::RenderPrimitive(rw::PRIMTYPETRILIST);
-    rw::im3d::End();
-    rw::SetRenderState(rw::ZWRITEENABLE, 1);
+    draw::im3dRenderPrimitive(rw::PRIMTYPETRILIST);
+    draw::im3dEnd();
+    draw::setRenderState(rw::ZWRITEENABLE, 1);
 }
 
 // The squared distance between two points.
@@ -219,14 +220,14 @@ void SceneLighting::renderLit(rw::Atomic* atomic) {
     // A first pass (GS context 1, docs/research/rendering.md#shared-state) tests alpha GEQUAL 0x40 of 0x80 with AFAIL
     // FB_ONLY: a fainter pixel is still blended but writes no Z, so what lies behind it (a wall behind a decal's
     // clear part) still draws. Passes that turn the test off (second layers, blood) are drawn as they ask.
-    const bool firstPass = rw::GetRenderState(rw::ALPHATESTFUNC) == rw::ALPHAGREATEREQUAL;
+    const bool firstPass = draw::getRenderState(rw::ALPHATESTFUNC) == rw::ALPHAGREATEREQUAL;
     if (firstPass) {
-        rw::SetRenderState(rw::GSALPHATEST, 1);
-        rw::SetRenderState(rw::GSALPHATESTREF, kFirstPassAlphaRef);
+        draw::setRenderState(rw::GSALPHATEST, 1);
+        draw::setRenderState(rw::GSALPHATESTREF, kFirstPassAlphaRef);
     }
     atomic->render();
     if (firstPass) {
-        rw::SetRenderState(rw::GSALPHATEST, 0);
+        draw::setRenderState(rw::GSALPHATEST, 0);
     }
     // A dual material's second layer right after it, on the same vertices (docs/research/rendering.md#dual): blended
     // by its texture's alpha with no alpha test, writing Z, at the base's fade.
@@ -237,12 +238,12 @@ void SceneLighting::renderLit(rw::Atomic* atomic) {
         for (rw::int32 i = 0; i < second->matList.numMaterials; ++i) {
             second->matList.materials[i]->color.alpha = fade;
         }
-        const rw::uint32 testFunc = rw::GetRenderState(rw::ALPHATESTFUNC);
-        rw::SetRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);
+        const rw::uint32 testFunc = draw::getRenderState(rw::ALPHATESTFUNC);
+        draw::setRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);
         layer->world = m_world;
         layer->render();
         layer->world = nullptr;
-        rw::SetRenderState(rw::ALPHATESTFUNC, testFunc);
+        draw::setRenderState(rw::ALPHATESTFUNC, testFunc);
     }
     atomic->world = home;
     rw::engine->currentWorld = current;
