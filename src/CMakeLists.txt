@@ -485,7 +485,7 @@ target_link_libraries(coney_movies PUBLIC coney_core coney_audio)
 # Network play's platform-neutral half: the bit stream, the transport interface, the loopback and link conditioner
 # test transports, the protocol and the sessions; no socket or ENet code here, that is platform/enet_transport.cpp
 # (docs/guides/multiplayer.md).
-add_library(coney_net STATIC net/bit_stream.cpp net/input_buffer.cpp net/link_conditioner.cpp net/link_quality.cpp
+add_library(coney_net STATIC net/bit_stream.cpp net/input_buffer.cpp net/link_conditioner.cpp net/link_quality.cpp net/net_id.cpp net/replicated_fields.cpp
                              net/loopback_transport.cpp net/net_client.cpp net/net_server.cpp net/protocol.cpp)
 coney_target_defaults(coney_net)
 target_link_libraries(coney_net PUBLIC coney_core)
