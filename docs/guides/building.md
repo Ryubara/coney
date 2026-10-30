@@ -12,7 +12,7 @@ before you have a disc image at all.
 
 | | Windows | Linux | macOS |
 | --- | --- | --- | --- |
-| Compiler | MSVC 19.38+ (Visual Studio 2022 17.8 or Build Tools 2022) | GCC 13+ or Clang 19+ | Xcode 16+ |
+| Compiler | MSVC 19.38+ (Visual Studio 2022 17.8 or Build Tools 2022) with its ATL ([Windows](#windows)) | GCC 13+ or Clang 19+ | Xcode 16+ |
 | CMake 3.28+ and Ninja | bundled with Visual Studio | distribution packages | Homebrew |
 | Git | yes | yes | yes |
 | [uv](https://docs.astral.sh/uv/) | for the Python tools and pre-commit | same | same |
@@ -29,8 +29,9 @@ uv run --project python coney-tools doctor [--disc DISC]
 ```
 
 One command checks everything above and the rest a contributor needs, and prints `ok`, `problem` or `note` per line,
-with the fix after `->`: the build tools (Git, the compiler, CMake and Ninja, uv, ccache, and on Linux
-an old default `g++` while a newer one is installed, which needs `CC` and `CXX`), `coney.local.toml` and the scratch
+with the fix after `->`: the build tools (Git, the compiler, CMake and Ninja, uv, ccache, on Windows MSVC's ATL
+headers (`atlbase.h` in the developer shell's toolset, else Visual Studio's default one), and on Linux an old default
+`g++` while a newer one is installed, which needs `CC` and `CXX`), `coney.local.toml` and the scratch
 folder, your disc (`--disc`, else `game_dir`: `SLUS_212.15` and `WARRIORS.DIR` by size and SHA-1, `WARRIORS.WAD` by
 size, against the NTSC-U release the research refers to), the research tools (JDK 21, Node.js, Ghidra, the compiled
 EE language, a project holding `SLUS_212.15`, whether port 8090 is free or held by ghidra-mcp, the PCSX2-MCP build
@@ -104,6 +105,11 @@ once per machine and set of pins: [The shader build](shaders.md) has what it doe
 
 Install Visual Studio 2022 or the Build Tools for Visual Studio 2022 with the **Desktop development with C++**
 workload. It brings MSVC, CMake and Ninja; you do not need to install them separately.
+
+Also add the component **C++ ATL for latest build tools** (`Microsoft.VisualStudio.Component.VC.ATL`; Visual Studio
+Installer, Modify, Individual components). The shader compiler's DXC is built from source and its Windows code includes
+ATL's `atlbase.h` ([The shader build](shaders.md#compiler)); without it the first configure stops in the compiler's
+build. Only building Coney from source needs it: a player's build never does. `coney-tools doctor` checks for it.
 
 The compiler and those tools are on `PATH` only inside a shell with the MSVC environment loaded. Either open the
 **x64 Native Tools Command Prompt for VS 2022** from the Start menu, or run `vcvars64.bat` in an existing

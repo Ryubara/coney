@@ -2,9 +2,9 @@
 """`coney-tools doctor`: check a contributor's machine and disc, and say how to fix what is missing.
 
 One command for a person setting up (docs/guides/building.md#doctor): the build tools the engine needs (Git, the
-compiler, CMake and Ninja, uv), the ones that make it faster or check it (ccache), the configuration
-file, the disc against the NTSC-U release the research refers to, the research tools (a JDK 21, Ghidra and its
-project, Node.js), the ghidra-mcp port and the free disk space. Every check only reads: it runs version options,
+compiler, CMake and Ninja, uv, and on Windows MSVC's ATL), the ones that make it faster or check it (ccache), the
+configuration file, the disc against the NTSC-U release the research refers to, the research tools (a JDK 21, Ghidra
+and its project, Node.js), the ghidra-mcp port and the free disk space. Every check only reads: it runs version options,
 hashes the disc's small files and never installs or changes anything. It prints counts, sizes and hashes only
 (LEGAL.md). `which`, `run` and the disc are passed in, so the tests stand in for the machine.
 """
@@ -118,6 +118,58 @@ def default_compiler_check(platform: str, which: Which, run: Run, env: Mapping[s
             hint = f"export CC=gcc-{major} CXX=g++-{major} before the first configure (or delete build/ and configure)"
             return Check("Default compiler", False, f"g++ is {'.'.join(map(str, version))}", hint, False)
     return None
+
+
+#: What to do when MSVC has no ATL: the Visual Studio component that installs it (docs/guides/building.md#windows).
+ATL_HINT = (
+    "add the Visual Studio component 'C++ ATL for latest build tools' (Microsoft.VisualStudio.Component.VC.ATL): "
+    "Visual Studio Installer, Modify, Individual components; the shader compiler (DXC) needs it"
+)
+
+
+def msvc_toolset(run: Run, env: Mapping[str, str]) -> Path | None:
+    """The MSVC toolset folder a build uses: the developer shell's (VCToolsInstallDir), else the default toolset of
+    the Visual Studio vswhere finds; None when there is no Visual Studio with the C++ tools."""
+    active = env.get("VCToolsInstallDir")
+    if active:
+        return Path(active)
+    root = env.get("ProgramFiles(x86)") or "C:/Program Files (x86)"
+    vswhere = Path(root) / "Microsoft Visual Studio" / "Installer" / "vswhere.exe"
+    command = [
+        str(vswhere),
+        "-latest",
+        "-products",
+        "*",
+        "-requires",
+        "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+    ]
+    output = run([*command, "-property", "installationPath"])
+    lines = output.strip().splitlines() if output else []
+    if not lines:
+        return None
+    install = Path(lines[0].strip())
+    try:
+        version = (install / "VC" / "Auxiliary" / "Build" / "Microsoft.VCToolsVersion.default.txt").read_text("utf-8")
+    except OSError:
+        return None
+    return install / "VC" / "Tools" / "MSVC" / version.strip()
+
+
+def atl_check(platform: str, run: Run, env: Mapping[str, str]) -> Check | None:
+    """On Windows, MSVC's ATL headers, which DXC's sources include (docs/guides/shaders.md#compiler).
+
+    Only to build from source: a player never needs them. None off Windows, and when there is no Visual Studio
+    (the compiler check says so).
+    """
+    if platform != "windows":
+        return None
+    toolset = msvc_toolset(run, env)
+    if toolset is None:
+        return None
+    header = toolset / "atlmfc" / "include" / "atlbase.h"
+    found = header.is_file()
+    detail = str(header) if found else f"no atlmfc/include/atlbase.h in {toolset}"
+    return Check("MSVC ATL", found, detail, ATL_HINT, True)
 
 
 def config_check(root: Path) -> Check:
@@ -269,6 +321,8 @@ def run(cwd: Path, disc_arg: str | None) -> int:
     build.append(uv_check(shutil.which))
     note = default_compiler_check(name, shutil.which, run_command, env)
     build += [note] if note is not None else []
+    atl = atl_check(name, run_command, env)
+    build += [atl] if atl is not None else []
     build += [workspace.ccache_check(root)]
 
     disc, problem = _open_disc(disc_arg, paths.get("game_dir"))

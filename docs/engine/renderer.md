@@ -701,13 +701,11 @@ proprietary SDK or binary is the maintainer's. The shader build checked the firs
 | DLSS, FSR 4, XeSS | proprietary SDKs or prebuilt binaries | optional plug-ins only |
 
 **DXIL signing, confirmed with the pinned versions.** Direct3D 12 loads only DXIL that carries the validator's hash.
-DXC's validator hash is open source since 1.8.2502 (`lib/DxilHash`, under the LLVM licence), and from 1.8.2505 the
-compiler always uses its internal validator; it loads an outside `dxil.dll` only when the environment variable
-`DXC_DXIL_DLL_PATH` names one (`lib/DxcSupport/dxcapi.extval.cpp` in the pinned fork). SDL_shadercross's README
-still lists `dxil.dll` as needed, which is out of date. So DXC built from source signs DXIL with nothing of
-Microsoft's: the Windows build from the pinned source makes every embedded DXIL container with a non-zero 16-byte hash
-(with validation off, `-Vd`, the hash is all zero). A test checks that every embedded DXIL container carries a hash,
-so a pin to a compiler that does not sign fails it, on every system CI builds.
+DXC's validator hash is open source since 1.8.2502 (`lib/DxilHash`), and from 1.8.2505 the compiler always uses its
+internal validator, loading an outside `dxil.dll` only when `DXC_DXIL_DLL_PATH` names one
+(`lib/DxcSupport/dxcapi.extval.cpp` in the pinned fork; SDL_shadercross's README, which lists `dxil.dll`, is out of
+date). So DXC built from source signs DXIL with nothing of Microsoft's. A test checks that every embedded DXIL
+container carries a non-zero hash (with validation off, `-Vd`, it is all zero), on every system CI builds.
 
 ## Questions for the maintainer {#questions}
 
