@@ -340,7 +340,9 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
   path map's edges change when doors open and panes break; the server owns them, and a client needs them only when
   it predicts (P2), from the replicated door and pane states. **Owner:** server.
 - **Today:** stateless sweep kernels; `CollisionMesh` and `PathMap` are mutated by object logic and scripts through
-  `mutableTriangles()` and `mutableEdges()`; `ObjectWorld` keeps the writes to re-apply them.
+  `mutableTriangles()` and `mutableEdges()`; `ObjectWorld` keeps the writes to re-apply them. The play mode reads its
+  collision mesh, start, places and path data through `world::LevelGround` (`world/level_ground.h`), which a level's
+  scenery and a sandbox's ground (`sandbox::SandboxGround`) implement, so the simulation needs no renderer for them.
 - **In the way:** for P2 prediction, the client must apply the same writes in the same order; derived from replicated
   door and pane states, not sent separately. `CollisionMesh::m_checked` is mutable scratch, so queries are not
   re-entrant (one simulation per thread).

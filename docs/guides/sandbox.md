@@ -46,6 +46,18 @@ page teleports to the spawn points, its Spawner adds objects in front of Rembran
 level's collision: [Spawner](debug-menu.md)) and its Debug draw page shows the
 collision mesh.
 
+### The ground {#ground}
+
+What the play mode's simulation stands on in a sandbox is its **ground** (`sandbox::SandboxGround`,
+`repo:src/sandbox/sandbox_ground.h`, platform-neutral like the rest of `src/sandbox/`), apart from its drawing
+(`platform::SandboxPlayScenery`): the simulation reads a `world::LevelGround` (`repo:src/world/level_ground.h`), which
+a level's scenery implements too, so the sandbox's ground needs neither librw nor SDL. The ground holds the layout's
+collision mesh and the start the play mode begins at (above): it drops the spawn point from 2 m above it, which leaves
+the feet 0.1 m above whatever it meets, and keeps the spawn where the layout puts it when nothing solid lies within
+4 m below that. An unknown spawn name is refused with the names the layout has, and so is a layout with nothing solid.
+The debug menus' places are the spawn points as the layout puts them (not dropped). A Spawner rebuild keeps the start,
+and one that would leave nothing solid is refused and changes nothing.
+
 ## The shipped layouts
 
 They live in `assets/sandbox/` with the textures; that folder's README lists them.

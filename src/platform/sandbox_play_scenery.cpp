@@ -4,7 +4,6 @@
 // (docs/guides/building.md#debug-tools).
 #include "platform/sandbox_play_scenery.h"
 
-#include <algorithm>
 #include <cstddef>
 #include <format>
 #include <utility>
@@ -15,82 +14,30 @@
 
 namespace coney::platform {
 
-namespace {
-
-// How far above a sandbox spawn point the player is dropped onto the ground from.
-constexpr float kSpawnDrop = 2.0F;
-
-} // namespace
-
 std::expected<std::unique_ptr<SandboxPlayScenery>, Error>
 SandboxPlayScenery::create(const RenderEngine& engine, sandbox::SandboxWorld world,
                            const std::optional<std::string>& spawn) {
-    if (world.collision() == nullptr) {
-        return fail(ErrorCode::NotFound, "the sandbox layout has nothing solid to stand on");
+    auto ground = sandbox::SandboxGround::create(std::move(world), spawn);
+    if (!ground) {
+        return std::unexpected(std::move(ground.error()));
     }
-    // The spawn point, dropped onto the ground below it as a level's start is.
-    const auto& spawns = world.layout().spawns;
-    const auto found =
-        spawn ? std::ranges::find_if(spawns, [&spawn](const auto& s) { return s.name == *spawn; }) : spawns.begin();
-    if (found == spawns.end()) {
-        std::string known;
-        for (const sandbox::SpawnPoint& s : spawns) {
-            known += (known.empty() ? "" : ", ") + s.name;
-        }
-        return fail(ErrorCode::NotFound, std::format("the sandbox layout has no spawn point \"{}\" (there are: {})",
-                                                     spawn.value_or(""), known));
-    }
-    raycast::Vec3 point{found->position.x, found->position.y, found->position.z + kSpawnDrop};
-    if (!raycast::dropToGround(*world.collision(), kSpawnDrop * 2.0F, point)) {
-        point.z = found->position.z;
-    }
-    const human::PlayerStart start{.position = anim::Vec3{point.x, point.y, point.z},
-                                   .headingDegrees = found->headingDegrees};
-    auto renderer = SandboxRenderer::create(engine, world);
+    auto renderer = SandboxRenderer::create(engine, (*ground)->world());
     if (!renderer) {
         return std::unexpected(std::move(renderer.error()));
     }
-    std::string name = found->name;
-    return std::unique_ptr<SandboxPlayScenery>(
-        new SandboxPlayScenery(std::move(world), std::move(*renderer), start, std::move(name)));
+    return std::unique_ptr<SandboxPlayScenery>(new SandboxPlayScenery(std::move(*ground), std::move(*renderer)));
 }
 
-SandboxPlayScenery::SandboxPlayScenery(sandbox::SandboxWorld world, std::unique_ptr<SandboxRenderer> renderer,
-                                       const human::PlayerStart& start, std::string spawn)
-    : m_world(std::move(world)), m_made(m_world.layout()), m_renderer(std::move(renderer)), m_start(start),
-      m_spawn(std::move(spawn)) {}
-
-std::vector<human::Place> SandboxPlayScenery::places() const {
-    std::vector<human::Place> places;
-    for (const sandbox::SpawnPoint& spawn : m_world.layout().spawns) {
-        places.push_back(human::Place{spawn.name, spawn.position, spawn.headingDegrees});
-    }
-    return places;
-}
-
-std::vector<SceneTarget> SandboxPlayScenery::targets() const {
-    std::vector<SceneTarget> targets;
-    for (const sandbox::TargetPoint& point : m_world.layout().targets) {
-        targets.push_back(
-            SceneTarget{.feet = point.position, .headingDegrees = point.headingDegrees, .health = point.health});
-    }
-    return targets;
-}
-
-std::vector<human::Place> SandboxPlayScenery::fighters() const {
-    std::vector<human::Place> fighters;
-    for (const sandbox::FighterPoint& point : m_world.layout().fighters) {
-        fighters.push_back(human::Place{point.name, point.position, point.headingDegrees});
-    }
-    return fighters;
-}
+SandboxPlayScenery::SandboxPlayScenery(std::unique_ptr<sandbox::SandboxGround> ground,
+                                       std::unique_ptr<SandboxRenderer> renderer)
+    : m_ground(std::move(ground)), m_made(m_ground->world().layout()), m_renderer(std::move(renderer)) {}
 
 std::expected<void, Error> SandboxPlayScenery::setExtras(const RenderEngine& engine, SceneExtras extras) {
     // Build the new world and its renderer first, so a failure leaves the scenery as it was.
     const std::vector<sandbox::Primitive> extra = sandboxPrimitivesOf(extras);
     sandbox::SandboxLayout layout = m_made;
     layout.primitives.insert(layout.primitives.end(), extra.begin(), extra.end());
-    auto world = sandbox::SandboxWorld::build(std::move(layout), m_world.folder());
+    auto world = sandbox::SandboxWorld::build(std::move(layout), m_ground->world().folder());
     if (!world) {
         return std::unexpected(std::move(world.error()));
     }
@@ -101,7 +48,9 @@ std::expected<void, Error> SandboxPlayScenery::setExtras(const RenderEngine& eng
     if (!renderer) {
         return std::unexpected(std::move(renderer.error()));
     }
-    m_world = std::move(*world);
+    if (auto rebuilt = m_ground->setWorld(std::move(*world)); !rebuilt) {
+        return std::unexpected(std::move(rebuilt.error()));
+    }
     m_renderer = std::move(*renderer);
     // The rebuilt world holds and draws them: only the count and the source are kept.
     m_extras = SceneExtras{.solid = {}, .draw = {}, .count = extras.count, .source = std::move(extras.source)};
@@ -126,8 +75,8 @@ void SandboxPlayScenery::draw(RenderEngine& engine, const WorldView& view, std::
 }
 
 std::string SandboxPlayScenery::summary() const {
-    return std::format("; sandbox \"{}\", {} collision triangles", m_world.layout().title,
-                       m_world.collision()->triangles().size());
+    return std::format("; sandbox \"{}\", {} collision triangles", world().layout().title,
+                       collision().triangles().size());
 }
 
 std::expected<std::unique_ptr<PlayLevelMode>, Error> createPlayInSandbox(RenderEngine& engine, const io::Wad& wad,

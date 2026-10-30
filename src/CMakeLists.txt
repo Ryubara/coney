@@ -540,6 +540,7 @@ if(CONEY_DEBUG_TOOLS)
         graphics/bitmap_font.cpp
         gui/debug_menu_view.cpp
         gui/debug_text_painter.cpp
+        sandbox/sandbox_ground.cpp
         sandbox/sandbox_layout.cpp
         sandbox/sandbox_lighting.cpp
         sandbox/sandbox_mesh.cpp
