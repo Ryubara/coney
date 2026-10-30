@@ -684,10 +684,9 @@ can load what it makes ([Importing](#import-coney)), PNG and `.layout` first.
    settings in the Inspector, a sandbox layout opened as one entity per statement, the search and the kind filter
    (`t:spawn`), one selection shared by every panel (click, Shift and Ctrl, box), the merged inspector of
    [#1053](issue:1053) with its Source rows ([Asset sources](entities.md#asset-source)), values shared by a multiple
-   selection, and the pre-selection highlight; parenting, groups and prefab instances with the rules of
-   [Prefabs](prefabs.md) once Coney loads the project's level file ([The level file](project-formats.md#level-file)).
-   Tests: a selection made in one panel shows in the others; a multiple selection edits all; the filter shows only the
-   kind asked for.
+   selection, and the pre-selection highlight; parenting, groups and prefab instances ([Prefabs](prefabs.md)) once
+   Coney loads the project's level file ([The level file](project-formats.md#level-file)). Tests: a selection made in
+   one panel shows in the others; a multiple selection edits all; the filter shows only the kind asked for.
 5. **tools: Add Unity's transform gizmo and undo to the Level view.** The Move, Rotate, Scale and Transform tools (W, E,
    R, Y) with every handle of Unity's gizmo, its colours, yellow highlight, constant screen size and handle-first
    picking; the Pivot / Center (Z) and Global / Local (X) toggles; move to view; axes the selection cannot take drawn
