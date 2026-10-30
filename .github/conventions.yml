@@ -1271,6 +1271,7 @@ ci:
     - {id: compilers, check: "GCC 13, Clang 19 and AppleClang builds with the unit and smoke tests; MSVC and GCC release builds", where: [ci, main, release, nightly, manual], jobs: ["build/build"]}
     - {id: sanitizers, check: "Linux and macOS sanitizers", where: [ci, main, release, nightly, manual], jobs: ["build/sanitizers"]}
     - {id: clang-tidy, check: "clang-tidy: the lines a change touches; the whole codebase nightly, in a manual run and for a build-setup change", where: [ci, main, release, nightly, manual], jobs: ["build/clang-tidy"]}
+    - {id: software-pictures, check: "Software pictures: Coney's synthetic scenes drawn through Mesa's llvmpipe in a pinned container, compared with the reference pictures", where: [ci, main, release, nightly, manual], jobs: ["build/software-pictures"]}
     - {id: python, check: "Python: ruff, mypy, pytest, the repository, render and progress checks", where: [local, ci, main, release], jobs: ["python/python", "python/python-ok"]}
     - {id: docs, check: "Docs: mkdocs strictly, markdownlint, actionlint, the page standards", where: [local, ci, main, release], jobs: ["docs/mkdocs", "docs/markdownlint", "docs/actionlint"]}
     - {id: pull-request, check: "The pull request's title, description, docs and claimed issues", where: [ci], jobs: ["pr/title", "pr/docs", "pr/body", "pr/claim"]}

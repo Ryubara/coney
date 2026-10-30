@@ -69,6 +69,11 @@ so they go, with these ids, once those pages are touched and cite the disc page.
 * [`trace`](coney-tools-trace.md#trace): traces and event logs of the original (`trace original`) and of Coney,
   compared.
 
+### [The picture commands](coney-tools-picture.md)
+
+* [`picture`](coney-tools-picture.md#picture): compares pictures with a tolerance, and Coney's synthetic scenes with
+  their references.
+
 ### [The repository commands](coney-tools-repo.md)
 
 * [`repo`](coney-tools-repo.md#repo): the conventions file, its generated blocks, the audit, labels and findings.
