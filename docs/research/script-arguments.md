@@ -48,8 +48,9 @@ number is false too. Confirmed (code) at `0x00409318`.
 
 Each binding's wrapper names the reader and the conversion of every argument. Twelve of them, the ones Coney
 reads through these rules, are listed under [In Coney](#in-coney). `TriggerSphereCfg` (`0x0036d0e0`) reads its mode
-with the number reader and the signed conversion, so a mode that is not a number is 0; the scripts pass 0, 1 (their
-`true`) or 2. Confirmed (code) at `0x0036d0e0`.
+with the number reader and the signed conversion, so a mode that is not a number is 0. Confirmed (code) at
+`0x0036d0e0`. The shipped scripts pass it 0, 1 or 2, their `true` being 1 (their shared globals define it so): inferred
+from the decompiled scripts.
 
 ### The conversions {#conversions}
 
@@ -80,6 +81,11 @@ and of `HUDTurnOffRadar` (`0x00370100`), `HUDSetNumIndicator`'s gang (`0x0037013
 scale, 0 when left out (`0x00370728`), and `TriggerSphereCfg`'s enable, false when left out, and its mode
 (`0x0036d0e0`). The tests are in [optional_args_test.cpp](repo:tests/scripting/optional_args_test.cpp) and
 [binding_args_test.cpp](repo:tests/scripting/binding_args_test.cpp).
+
+The world bindings' boolean arguments read through `binding::booleanArg` too, so `CfgSubtitles`,
+`FlagNetTraverse`'s two flags, `ObjDestroy`, `ObjEnableZone`, `TriggerSphereEnable`, `FlagEnable` and
+`ChangeCollision` read a string that is not a number as false. The wrappers of `TriggerSphereEnable` (`0x0036d008`)
+and `FlagNetTraverse` (`0x0037a968`) read their flags with `Lua_GetOptionalBoolArg`: confirmed (code) at both.
 
 The other bindings keep their own per-file readers, most of which still give an explicit `nil` the default
 ([Other bindings](#q-nil-defaults)).

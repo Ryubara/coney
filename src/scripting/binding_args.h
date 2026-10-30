@@ -19,7 +19,8 @@
 #include "scripting/lua_vm.h"
 
 // The tolua argument and result conventions the bindings share (docs/research/scripting.md#argument-and-result-
-// conventions): how a binding reads its arguments and pushes its results. Coney's own helpers; header-only.
+// conventions): how a binding reads its arguments and pushes its results. Optional arguments, left out versus nil, and
+// the integer conversions: docs/research/script-arguments.md. Coney's own helpers; header-only.
 
 namespace coney::script::binding {
 
@@ -66,7 +67,8 @@ using Results = std::expected<std::vector<Value>, Error>;
 
 /// Argument `i` as a number with a default: `fallback` only when the script left it out (past the top of the
 /// stack); anything else is converted as number() does, so an explicit nil reads 0.
-/// The tolua reader at 0x004091c8 (middleware the original links, so no @orig tag).
+/// The tolua reader at 0x004091c8 (middleware the original links, so no @orig tag;
+/// docs/research/script-arguments.md#readers).
 /// @coney-only tolua's argument reading
 [[nodiscard]] inline double numberOr(std::span<const Value> args, std::size_t i, double fallback) {
     // The top of the stack is the argument count: an index within it is converted whatever its type.
@@ -78,7 +80,8 @@ using Results = std::expected<std::vector<Value>, Error>;
 
 /// A number as the original converts it to an unsigned 32-bit integer: NaN, negative numbers and anything under 1
 /// give 0, 2^32 and above (and +infinity) 0xffffffff, the rest is truncated.
-/// The soft-float conversion at 0x0042c420 (middleware the original links, so no @orig tag).
+/// The soft-float conversion at 0x0042c420 (middleware the original links, so no @orig tag;
+/// docs/research/script-arguments.md#conversions).
 /// @coney-only the compiler runtime's conversion
 [[nodiscard]] inline std::uint32_t toUnsigned(double value) {
     // NaN, a zero and a negative number all read 0 (the original tests the class, then the sign).
@@ -96,7 +99,8 @@ using Results = std::expected<std::vector<Value>, Error>;
 
 /// A number as the original converts it to a signed 32-bit integer: NaN and anything within 1 of 0 give 0, the rest
 /// is truncated toward 0 and saturates at the int range (infinity too).
-/// The soft-float conversion at 0x0042c388 (middleware the original links, so no @orig tag).
+/// The soft-float conversion at 0x0042c388 (middleware the original links, so no @orig tag;
+/// docs/research/script-arguments.md#conversions).
 /// @coney-only the compiler runtime's conversion
 [[nodiscard]] inline std::int32_t toSigned(double value) {
     // NaN and a zero read 0.
@@ -137,7 +141,8 @@ using Results = std::expected<std::vector<Value>, Error>;
 
 /// Argument `i` as a boolean with a default: `fallback` only when the script left it out, false for an explicit nil
 /// (Lua 4's false), else whether the number (number()'s conversion) is not 0.
-/// The tolua reader at 0x00409318 (middleware the original links, so no @orig tag).
+/// The tolua reader at 0x00409318 (middleware the original links, so no @orig tag;
+/// docs/research/script-arguments.md#readers).
 /// @coney-only tolua's argument reading
 [[nodiscard]] inline bool booleanArg(std::span<const Value> args, std::size_t i, bool fallback = false) {
     // Past the top of the stack: the default.

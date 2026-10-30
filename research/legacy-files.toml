@@ -1246,6 +1246,9 @@ tag = 3
 ["src/scripting/anim_callbacks.h"]
 comment = 1
 
+["src/scripting/arena_bindings.cpp"]
+tag = 11
+
 ["src/scripting/camera_bindings.cpp"]
 tag = 8
 

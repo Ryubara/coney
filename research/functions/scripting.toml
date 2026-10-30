@@ -2026,6 +2026,26 @@ coney = "src/scripting/message_handlers.h:MessageHandlers::setPrompt"
 status = "legacy"
 
 [[function]]
+address = 0x004091c8
+name = "Lua_GetOptionalNumberArg"
+page = "script-arguments.md#readers"
+kind = "helper"
+role = "reads a number argument; the default only past the top of the stack, so an explicit nil reads 0"
+level = "confirmed-code"
+coney = "src/scripting/binding_args.h:numberOr"
+status = "compared"
+
+[[function]]
+address = 0x00409318
+name = "Lua_GetOptionalBoolArg"
+page = "script-arguments.md#readers"
+kind = "helper"
+role = "reads a boolean argument; the default only past the top of the stack, nil false, else the number is not 0"
+level = "confirmed-code"
+coney = "src/scripting/binding_args.h:booleanArg"
+status = "compared"
+
+[[function]]
 address = 0x00412a18
 name = "VolumeBox_ContainsPoint"
 page = "scripting.md#triggers"
@@ -2297,4 +2317,32 @@ page = "scripting.md#warriors-functions"
 role = "`W_ShowStopWatch(show, label, warn)`: shown sets the warning window `+0x40` to warn and the next beep `+0x48` to warn + 1000; hidden resets them to 0 and 1000; then `StopWatch_SetDisplay`"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addScoreBindings"
+status = "compared"
+
+[[function]]
+address = 0x0042b9b8
+name = "Float64_UnpackParts"
+page = "script-arguments.md#conversions"
+kind = "helper"
+role = "splits a double into class, sign, exponent and mantissa for the soft-float conversions"
+level = "confirmed-code"
+
+[[function]]
+address = 0x0042c388
+name = "Float64_ToInt32Saturating"
+page = "script-arguments.md#conversions"
+kind = "helper"
+role = "converts a double to a signed 32-bit integer, truncating toward 0 and saturating"
+level = "confirmed-code"
+coney = "src/scripting/binding_args.h:toSigned"
+status = "compared"
+
+[[function]]
+address = 0x0042c420
+name = "Float64_ToUInt32Saturating"
+page = "script-arguments.md#conversions"
+kind = "helper"
+role = "converts a double to an unsigned 32-bit integer, 0 under 1 and saturating at 0xffffffff"
+level = "confirmed-code"
+coney = "src/scripting/binding_args.h:toUnsigned"
 status = "compared"

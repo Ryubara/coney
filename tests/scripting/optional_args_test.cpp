@@ -54,14 +54,6 @@ struct FollowSlots {
     int allowed = 0;
 };
 
-// One domination tactic as the AI host got it.
-struct Domination {
-    int gang = 0;
-    double flag = 0;
-    float range = 0.0F;
-    std::string callback;
-};
-
 // An AI host that keeps the calls these tests look at.
 class KeepingAi final : public coney::script::AiBindingHost {
   public:
@@ -75,15 +67,11 @@ class KeepingAi final : public coney::script::AiBindingHost {
     void brSetNumFollowSlots(double leader, int count, int allowed) override {
         slots.push_back(FollowSlots{leader, count, allowed});
     }
-    void tacticDomination(int gang, double flag, float range, std::string_view callback) override {
-        dominations.push_back(Domination{gang, flag, range, std::string(callback)});
-    }
     std::vector<coney::script::LookAtCall> looks;
     std::vector<TurnToDir> turns;
     std::vector<coney::script::AddressPersonCall> addresses;
     std::vector<coney::script::DealerCall> dealers;
     std::vector<FollowSlots> slots;
-    std::vector<Domination> dominations;
 };
 
 // A script system with Coney's bindings over an AI host, a HUD and the trigger spheres.
