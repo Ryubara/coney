@@ -119,8 +119,10 @@ xemu install claimed one per agent, a launch with the stub and monitor on the co
 server and run records with an `[xemu]` table.
 
 The first live run read the bytes `XBEH`, the XBE header magic, at the XBE image base `0x00010000` of the running
-Xbox game: confirmed (runtime), run r-20261026-xbe-header-magic, on xemu 0.8.139. An observation in xemu is runtime
-evidence for the Xbox only, never for the PS2.
+Xbox game: confirmed (runtime), run r-20261026-xbe-header-magic, on xemu 0.8.139. A second run read an address a
+research page cites, the barrel fire's colours at Xbox `0x00460b70`, through the `xemu` MCP server, and found the words
+the XBE holds there in Ghidra ([The fire light](xbox-lighting.md#fire-light), run r-20261030-barrel-fire-colours). An
+observation in xemu is runtime evidence for the Xbox only, never for the PS2.
 
 ### Recommendation {#recommendation}
 
@@ -143,5 +145,6 @@ is checked in the running Xbox game through [the xemu tooling](#runtime).
 ## How this was checked
 
 The evaluation ran on 2026-10-05, from code only: the two executables in a separate Ghidra project, as Method says.
-One claim on the page is runtime: the XBE header magic in the running game ([Runtime access](#runtime)), read
-through the xemu tooling on 2026-10-26. The XBE's full SHA1 is `fe246a74501cd10d2ce89ca5dbda5080d2b2edcc`.
+Two claims on the page are runtime ([Runtime access](#runtime)): the XBE header magic in the running game, read
+through the xemu tooling on 2026-10-26, and the barrel fire's colours, read through its MCP server on 2026-10-30.
+The XBE's full SHA1 is `fe246a74501cd10d2ce89ca5dbda5080d2b2edcc`.

@@ -96,7 +96,8 @@ confirmed (code) at Xbox `0x0009ae10`, where the cap is 8 records whatever the d
 
 ### The fire light {#fire-light}
 
-Confirmed (code) at the addresses named.
+Confirmed (code) at the addresses named; the Xbox's four colours at Xbox `0x00460b70` also confirmed (runtime), run
+r-20261030-barrel-fire-colours.
 
 A burning barrel is a `part_firebarrel` (or `part_firebarrel_ns`) that a breakable prop adds by model
 ([dyn_masks](script-types.md#dyn-masks-blaster)). On the PS2 its set-up, `FireParticle_SetUpByName` (`0x003c8b28`),
@@ -401,7 +402,9 @@ xemu over its GDB stub with [the coney-tools xemu commands](../guides/coney-tool
 
 ## How this was checked
 
-Code only: no claim on this page is runtime (the xemu tooling came after this read). The Xbox executable is the
+Code, and one runtime check: the barrel fire's four colour words at Xbox `0x00460b70`, read in the running Xbox game
+through the xemu MCP server on xemu 0.8.139 on 2026-10-30 (run r-20261030-barrel-fire-colours), are the words Ghidra
+shows in `default.xbe` and at the PS2's `0x005144a8`. The Xbox executable is the
 NTSC-U `default.xbe` with SHA1 `fe246a74501cd10d2ce89ca5dbda5080d2b2edcc`. The Xbox executable was read in a private
 copy of the evaluation's Ghidra project ([Method](xbox-executable.md#method)), served by a second ghidra-mcp server on
 another port, never in the shared PS2 project; the PS2 side in the shared project. Read on 2026-10-25.

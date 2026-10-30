@@ -246,6 +246,13 @@ Run on 2026-10-26 (the run record's date) with the maintainer's portable xemu 0.
 | run record | `research/runs/r-20261026-xbe-header-magic.toml`, from `record-run` |
 | `release` | closed the copy's xemu and dropped the claim |
 
+A second run on 2026-10-30, after the branch was rebased, read an address a research page cites through the MCP
+server itself: `coney-tools mcp serve xemu` driven over stdio by a short script (the session's own `.mcp.json` came
+from a checkout without the server), with `xemu_status` and `xemu_read_memory` on a copy started by `launch` on the
+XISO. The four `u32` at Xbox `0x00460b70`, the barrel fire's colours ([The fire
+light](../research/xbox-lighting.md#fire-light)), came back as the words Ghidra shows at that address in `default.xbe`
+(`0xf45c1cff`, `0xf4ba1fff`, twice): run `r-20261030-barrel-fire-colours`. Nothing broke.
+
 Not exercised: a key sent to a copy's window (the virtual pad), a second copy running beside the first, `--paused`,
 breakpoints and watchpoints on the real game (they are tested against the fake stub only), and the guard hook and the
 `xemu` MCP server inside a Claude Code session (the live run drove the server by hand, so the id rule is tested but
