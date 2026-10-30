@@ -193,6 +193,21 @@ TEST_CASE("TriggerSphereCfg configures the object's sphere, a mode that is not a
     CHECK(h.spheres.all().size() == 1);
 }
 
+TEST_CASE("TriggerSphereEnable reads a string that is not a number as false, a numeric one as its number",
+          "[world_bindings]") {
+    // Expected: script-arguments.md#readers (the boolean reader the world bindings share), confirmed (code)
+    Harness h;
+    h.call("TriggerSphereEnable", {Value(41.0), Value(std::string("1"))});
+    REQUIRE(h.spheres.find(41.0) != nullptr);
+    CHECK(h.spheres.find(41.0)->armed);
+    h.call("TriggerSphereEnable", {Value(41.0), Value(std::string("yes"))});
+    CHECK_FALSE(h.spheres.find(41.0)->armed);
+    h.call("TriggerSphereEnable", {Value(41.0), Value(1.0)});
+    CHECK(h.spheres.find(41.0)->armed);
+    h.call("TriggerSphereEnable", {Value(41.0), Value()});
+    CHECK_FALSE(h.spheres.find(41.0)->armed);
+}
+
 TEST_CASE("FlagNetAddLink builds the network and FlagNetTraverse reaches the AI host", "[world_bindings]") {
     // Expected: ai/index.md#level99, confirmed (code)
     Harness h;

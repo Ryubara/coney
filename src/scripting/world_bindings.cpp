@@ -32,7 +32,18 @@ double handleArg(std::span<const Value> args, std::size_t i) { return std::trunc
 
 // Argument `i` as tolua reads a boolean with a default (binding_args.h): left out the default, nil false, else the
 // number is not 0.
-using binding::booleanArg;
+// Stub for the fails-first run: the old per-file reading, where a string that is not a number reads true; the fix
+// removes it.
+// @coney-only stub of the reading before the fix
+bool booleanArg(std::span<const Value> args, std::size_t i, bool fallback) {
+    if (i >= args.size()) {
+        return fallback;
+    }
+    if (const std::optional<double> value = args[i].number()) {
+        return *value != 0.0;
+    }
+    return !args[i].isNil();
+}
 
 // Argument `i` as an unsigned 32-bit number, as tolua reads one (a negative number wraps).
 // @coney-only tolua's argument reading, which the original's generated wrappers do
