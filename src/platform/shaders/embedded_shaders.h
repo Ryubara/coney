@@ -14,10 +14,10 @@
 namespace coney::shaders {
 
 /// Which pipeline stage a shader runs in. The file name says it: `.vert.hlsl`, `.frag.hlsl`, `.comp.hlsl`.
-enum class Stage { Vertex, Fragment, Compute };
+enum class Stage : std::uint8_t { Vertex, Fragment, Compute };
 
 /// A shader format, one per graphics API the GPU renderer reaches through SDL.
-enum class Format {
+enum class Format : std::uint8_t {
     Spirv, ///< Vulkan
     Dxil,  ///< Direct3D 12
     Msl,   ///< Metal; text
