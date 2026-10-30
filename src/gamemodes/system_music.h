@@ -22,9 +22,9 @@ namespace coney {
 /// on and the mood differs from the one playing (or a new pick is due), a random track of the mood loops on `sound`
 /// (null plays nothing), or the music stops when the mood has none. A mood the scripts hold
 /// (`SoundSetSystemMusicState`) takes the place of `mood`. The new track cross-fades on the playing track's bar: a
-/// cut into the fight, 4 bars back to calm from the fight or the hunt, else 2. **Coney choices**: the pick draws from
-/// the game's random index; the fades between tracks are the sound host's.
-/// @orig 0x0041a060 GameState_UpdateSystemMusic (unknown)
+/// cut into the fight, 4 bars back to calm from the fight or the hunt, else 2. The pick draws from the sound stream
+/// (`0x006eb8b0`). **Coney's choice**: the fades between tracks are the sound host's.
+/// @orig 0x0010e7d0 SystemMusic_Update (unknown)
 void stepSystemMusic(StoryState& story, script::SoundHost* sound, GameRandom& random, int mood);
 
 /// Turns the system music on or off: the scripts' hold on the mood ends either way; a change also asks for a new pick
