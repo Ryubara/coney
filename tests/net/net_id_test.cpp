@@ -42,6 +42,7 @@ NetId mustAllocate(NetIdAllocator& ids) {
 
 } // namespace
 
+// Expected: unverified, #553 (Coney's own network ids; the original has no network play)
 TEST_CASE("net ids: fresh slots come in order, each with generation 1, and the default id is none", "[net][net_id]") {
     CHECK_FALSE(NetId{}.valid());
     NetIdAllocator ids(4);
@@ -56,6 +57,7 @@ TEST_CASE("net ids: fresh slots come in order, each with generation 1, and the d
     CHECK(full.error().code == ErrorCode::Invalid);
 }
 
+// Expected: unverified, #553 (Coney's own network ids; the original has no network play)
 TEST_CASE("net ids: a slot is reused only after its release, and only with a new generation", "[net][net_id]") {
     NetIdAllocator ids(2);
     const NetId first = mustAllocate(ids);
@@ -76,6 +78,7 @@ TEST_CASE("net ids: a slot is reused only after its release, and only with a new
     CHECK(ids.live(second));
 }
 
+// Expected: unverified, #553 (Coney's own network ids; the original has no network play)
 TEST_CASE("net ids: the slots never used come before released ones, and released ones oldest first", "[net][net_id]") {
     NetIdAllocator ids(4);
     const NetId a = mustAllocate(ids);
@@ -90,6 +93,7 @@ TEST_CASE("net ids: the slots never used come before released ones, and released
     CHECK(mustAllocate(ids) == NetId{.slot = a.slot, .generation = 2});
 }
 
+// Expected: unverified, #553 (Coney's own network ids; the original has no network play)
 TEST_CASE("net ids: release refuses an id that is live or of another generation", "[net][net_id]") {
     NetIdAllocator ids(1);
     const NetId id = mustAllocate(ids);
@@ -100,6 +104,7 @@ TEST_CASE("net ids: release refuses an id that is live or of another generation"
     CHECK(ids.release(id));
 }
 
+// Expected: unverified, #553 (Coney's own network ids; the original has no network play)
 TEST_CASE("net ids: a slot's generations run 1 to the last, then wrap to 1, never 0", "[net][net_id]") {
     NetIdAllocator ids(1);
     std::set<std::uint8_t> seen;
@@ -117,6 +122,7 @@ TEST_CASE("net ids: a slot's generations run 1 to the last, then wrap to 1, neve
     CHECK(id.generation == 1);
 }
 
+// Expected: unverified, #553 (Coney's own network ids; the original has no network play)
 TEST_CASE("net ids: an allocator may use every slot the wire can name", "[net][net_id]") {
     NetIdAllocator ids(kNetIdMaxSlots);
     NetId last;
@@ -127,6 +133,7 @@ TEST_CASE("net ids: an allocator may use every slot the wire can name", "[net][n
     CHECK_FALSE(ids.allocate().has_value());
 }
 
+// Expected: unverified, #553 (Coney's own network ids; the original has no network play)
 TEST_CASE("net ids: an id's wire form round-trips none, the first and the last ids", "[net][net_id]") {
     const std::array<NetId, 4> sent{NetId{}, NetId{.slot = 0, .generation = 1}, NetId{.slot = 300, .generation = 9},
                                     NetId{.slot = 0xffff, .generation = kNetIdMaxGeneration}};
@@ -147,6 +154,7 @@ TEST_CASE("net ids: an id's wire form round-trips none, the first and the last i
     CHECK(past.error().code == ErrorCode::Truncated);
 }
 
+// Expected: unverified, #553 (Coney's own network ids; the original has no network play)
 TEST_CASE("net id table: binds an id to a pointer both ways, and a stale generation finds nothing", "[net][net_id]") {
     std::array<Thing, 2> things{};
     NetIdAllocator ids(1);
@@ -171,6 +179,7 @@ TEST_CASE("net id table: binds an id to a pointer both ways, and a stale generat
     CHECK(table.size() == 1);
 }
 
+// Expected: unverified, #553 (Coney's own network ids; the original has no network play)
 TEST_CASE("net id table: a client's binds refuse what the network could get wrong", "[net][net_id]") {
     // A client binds script handles (doubles) to the ids the server sends.
     NetIdTable<double> table;
@@ -193,6 +202,7 @@ TEST_CASE("net id table: a client's binds refuse what the network could get wron
     CHECK(table.bind(NetId{.slot = 5, .generation = 4}, 12.0).has_value());
 }
 
+// Expected: unverified, #553 (Coney's own network ids; the original has no network play)
 TEST_CASE("net id table: walks in id order, whatever the handles' values", "[net][net_id]") {
     NetIdTable<double> table;
     REQUIRE(table.bind(NetId{.slot = 9, .generation = 1}, 1.0).has_value());

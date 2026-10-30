@@ -78,6 +78,7 @@ bool carried(const FieldSpec& field, const FieldValue& sent, const FieldValue& r
 
 } // namespace
 
+// Expected: unverified, #553 (Coney's own field tables; the original has no network play)
 TEST_CASE("field tables: every kind has a well-formed table the size of its field enum", "[net][fields]") {
     using coney::net::fieldTable;
     for (const ReplicatedKind kind : coney::net::kReplicatedKinds) {
@@ -91,6 +92,7 @@ TEST_CASE("field tables: every kind has a well-formed table the size of its fiel
     CHECK(fieldTable(ReplicatedKind::Car).size() == static_cast<std::size_t>(coney::net::CarField::Count));
 }
 
+// Expected: unverified, #553 (Coney's own field tables; the original has no network play)
 TEST_CASE("field tables: every field round-trips its range's ends and middle", "[net][fields]") {
     for (const ReplicatedKind kind : coney::net::kReplicatedKinds) {
         const auto fields = coney::net::fieldTable(kind);
@@ -121,6 +123,7 @@ TEST_CASE("field tables: every field round-trips its range's ends and middle", "
     }
 }
 
+// Expected: unverified, #553 (Coney's own field tables; the original has no network play)
 TEST_CASE("field tables: a whole thing's bits are the sum of its fields' bits", "[net][fields]") {
     const auto fields = coney::net::fieldTable(ReplicatedKind::Human);
     REQUIRE_FALSE(fields.empty()); // an empty table would sum to 0 bits and prove nothing
@@ -136,6 +139,7 @@ TEST_CASE("field tables: a whole thing's bits are the sum of its fields' bits", 
     CHECK(coney::net::fieldsBits(fields) <= std::size_t{25} * 8);
 }
 
+// Expected: unverified, #553 (Coney's own field tables; the original has no network play)
 TEST_CASE("field tables: a Float out of its range is clamped, and quantized to within half a step", "[net][fields]") {
     const FieldSpec field{.name = "f", .encoding = FieldEncoding::Float, .bits = 8, .min = -1.0F, .max = 1.0F};
     BitWriter out;
@@ -147,6 +151,7 @@ TEST_CASE("field tables: a Float out of its range is clamped, and quantized to w
     CHECK(coney::net::fieldStep(field) == 2.0F / 255.0F);
 }
 
+// Expected: unverified, #553 (Coney's own field tables; the original has no network play)
 TEST_CASE("field tables: an Integer over its range, or a short read, is refused", "[net][fields]") {
     const FieldSpec field{.name = "n", .encoding = FieldEncoding::Integer, .bits = 4, .min = 10.0F, .max = 20.0F};
     BitWriter out;
@@ -162,6 +167,7 @@ TEST_CASE("field tables: an Integer over its range, or a short read, is refused"
     CHECK(shortRead.error().code == ErrorCode::Truncated);
 }
 
+// Expected: unverified, #553 (Coney's own field tables; the original has no network play)
 TEST_CASE("field tables: the checks refuse a malformed table", "[net][fields]") {
     using coney::net::validateFields;
     const auto refused = [](std::span<const FieldSpec> fields) {
