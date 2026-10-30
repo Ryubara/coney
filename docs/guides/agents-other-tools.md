@@ -14,9 +14,10 @@ a hand-typed `gh pr create` or a push before the command runs. Such a session wo
 events, deny formats and trust rules, and what stays Claude Code's only (the `Agent` tool's rules, the identity token,
 the trailer guard): [Agent tools and their hooks](enforcement.md#harnesses). Supported tools (maintainer decisions of
 2026-10-27 and 2026-10-29): Codex, Gemini CLI, Antigravity, Cursor, GitHub Copilot and Grok Build, the Codex,
-Antigravity and Grok command-line tools among them. Another tool reads the rules from `AGENTS.md`, can take the three MCP
-servers (`ghidra-mcp`, `pcsx2`, `xemu`) as its own entries (the same `uv run --isolated --frozen --project python coney-tools mcp serve <name>` command,
-run from the checkout), and runs the checks that come after the hooks through three commands that need no Claude Code,
+Antigravity and Grok command-line tools among them. Another tool reads the rules from `AGENTS.md`, can take the three
+MCP servers (`ghidra-mcp`, `pcsx2`, `xemu`) as its own entries (the same
+`uv run --isolated --frozen --project python coney-tools mcp serve <name>` command, run from the checkout), and runs
+the checks that come after the hooks through three commands that need no Claude Code,
 because every program that decides a rule is a `coney-tools` command or a git hook:
 
 | When | Command | What it does |
