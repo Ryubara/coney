@@ -588,30 +588,14 @@ whether the grid holds, and a coarser one replaces it if not.
 
 | Check | What it compares | Gate | Tolerance |
 | --- | --- | --- | --- |
-| Software pictures | the synthetic scenes drawn under a virtual display through Mesa's software drivers (llvmpipe for GL3, lavapipe for Vulkan once item 11 lands), against reference images of those scenes kept in the tests (Coney-made, small). The runner image's own Mesa moves with the image, so the job runs in a container image pinned by its digest, with Mesa at a fixed package version, cached on the runner. Moving the pin is a pull request of its own that regenerates the reference images in the same pull request and reports the old and new counts | CI on Linux (item 2, built: the `software-pictures` job, [the software pictures](../guides/testing.md#software-pictures)), a required check: its key in `merge.required_checks` of `.github/conventions.yml` landed with the job | the tolerance below; exact if the pinned Mesa proves to give the same pixels on every run |
-| Disc pictures, one renderer | `--screenshot` of named frames at `--render-size 640x448` with a pinned camera ([Matched views](../guides/running-play-level.md#matched-views)), from the branch against the same frames from its base commit, on one machine | local: every pull request from item 5 on that changes drawing reports the counts in its Testing section, from the tool's output kept in the scratch folder, and the reviewer refuses one without them, as for the Runtime line ([Capturing](../guides/testing.md#pr-media)) | at most 2 of 255 apart in any channel, over at most 0.1 % of the pixels: marked stand-ins until item 2 measures repeated captures of one build |
+| Software pictures | the synthetic scenes drawn under a virtual display through Mesa's software drivers (llvmpipe for GL3, lavapipe for Vulkan once item 11 lands), against reference images of those scenes kept in the tests (Coney-made, small). The runner image's own Mesa moves with the image, so the job runs in a container image pinned by its digest, with Mesa at a fixed package version, cached on the runner. Moving the pin is a pull request of its own that regenerates the reference images in the same pull request and reports the old and new counts | CI on Linux (item 2, built: the `software-pictures` job, [the software pictures](../guides/testing.md#software-pictures)), a required check: its key in `merge.required_checks` of `.github/conventions.yml` landed with the job | 2 of 255 and 0.1 % (stand-ins). Measured: 4 scenes drawn 10 times each, in separate runs of one build, on one machine's GPU driver: 0 pixels over, largest difference 0 (confirmed (runtime), `picture scenes --repeat 10`); under the pinned llvmpipe: open, the job prints its counts |
+| Disc pictures, one renderer | `--screenshot` of named frames at `--render-size 640x448` with a pinned camera ([Matched views](../guides/running-play-level.md#matched-views)), from the branch against the same frames from its base commit, on one machine | local: every pull request from item 5 on that changes drawing reports the counts in its Testing section, from the tool's output kept in the scratch folder, and the reviewer refuses one without them, as for the Runtime line ([Capturing](../guides/testing.md#pr-media)) | at most 2 of 255 apart in any channel, over at most 0.1 % of the pixels: stand-ins: item 2's repeats of one build were identical (the Software pictures row), so a value waits for counts across drivers |
 | Across renderers | the same frames drawn by GL3 and by SDL3 GPU, on one machine and in CI's software pictures | as above, from item 11 on | looser; item 11 sets it from its first 2D comparison and records it here |
 
-The counts reported are the pixels over the tolerance and the largest difference. Pictures of the game stay in the
-scratch folder and are never committed; only the synthetic scenes' references are in the repository.
-
-**The tool and what was measured.** `coney-tools picture compare` compares two PNGs or two folders of them and prints
-the pixels over the tolerance and the largest difference (exit 1 past the limit), and `coney-tools picture scenes` draws
-the synthetic scenes (`tests/pictures/scenes.toml`: four views of the sandbox's layouts at 320x224) and compares them
-with the references ([the tool](../guides/coney-tools-trace.md#picture)). A pixel is over when any of its four channels
-differs by more than the tolerance; a picture passes when the share of such pixels is at most the limit.
-
-| Measured | Where | Result | Evidence |
-| --- | --- | --- | --- |
-| Repeated captures of one build: each of 4 scenes drawn 10 times in separate runs of one `dev` build | one Windows machine, its GPU's OpenGL driver | 0 pixels over 2 of 255 in all 36 repeat comparisons, largest difference 0 (the pictures are byte-identical) | confirmed (runtime), 2026-10-30, `picture scenes --repeat 10` |
-| The same scenes under the pinned Mesa llvmpipe, drawn twice each | CI, `software-pictures` job | the job prints the counts of its second draw against its first and of both against the references | open: not yet measured; the first CI run sets it |
-
-The tolerance stays the stand-in (2 of 255, 0.1 %). Repeats of one build on one driver give no difference at all, so
-they cannot justify any other value: the tolerance exists for what changes between runs of different drivers and
-machines (a branch against its base on another GPU, the references against the software driver), and a number set from
-zero would refuse the next driver update. The value is set from the first counts of the software job (the pinned Mesa
-against its own references, and the first pull request that moves the pin) and replaces the stand-in here and in
-`tests/pictures/scenes.toml` together.
+The counts reported are the pixels over the tolerance and the largest difference
+([`picture compare`](../guides/coney-tools-trace.md#picture)). Pictures of the game stay in the scratch folder and are
+never committed; only the synthetic scenes' references are in the repository. The software job's first counts set the
+tolerance, here and in `tests/pictures/scenes.toml`.
 
 ## Performance {#performance}
 
