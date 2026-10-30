@@ -8,3 +8,10 @@ function Start()
     end
     BindSchedule("Later", 5)
 end
+
+function Roll(list)
+    for k, v in list do
+        BindShow(v)
+    end
+    WakeAll(list)
+end

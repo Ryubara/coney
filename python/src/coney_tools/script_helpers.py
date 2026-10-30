@@ -14,6 +14,8 @@ parameter, a group, our own description and its evidence level. Its `scan` lines
   helpers it calls (a callback name it passes counts as a call), how many of the disc's other scripts call it (by name,
   or by passing its name as a callback) and how many calls they make, whether `global.lua`'s main chunk runs it while
   loading or passes its name to a binding (a callback the engine calls), and which functions delete it (set it to nil).
+  The calls are the names the code reads (`natives_mission.references`, as the bindings' usage counts are), not the
+  calls `lua4.walk_chunk` traces, whose stack walk loses some (after a table loop, for one).
 * **A global** is a variable the main chunk, or a helper the main chunk runs, sets to something other than a function
   and that another script reads (`GETGLOBAL`). Its scan line gives how many scripts read it, the kind of value it ends
   with, and whether the main chunk clears it at the end.
@@ -319,7 +321,8 @@ def _in(path: str, root: str, named: set[str]) -> bool:
 
 
 def _helper_scans(facts: lua4.ChunkFacts, main: lua4.Proto, natives: frozenset[str]) -> dict[str, HelperScan]:
-    """Every helper of `global.lua` and what its own code calls, in chunk order (counts of other scripts left 0)."""
+    """Every helper of `global.lua` and the natives and helpers its own code reads, in chunk order (counts of other
+    scripts left 0)."""
     found = natives_mission.helper_functions(facts)
     helpers = {name: path for name, path in found.items() if path != "main"}
     named = set(helpers.values())
@@ -327,17 +330,13 @@ def _helper_scans(facts: lua4.ChunkFacts, main: lua4.Proto, natives: frozenset[s
     name_of = {path: name for name, path in helpers.items()}
     scans: dict[str, HelperScan] = {}
     for name, path in sorted(helpers.items(), key=lambda item: [int(p) for p in item[1].split("/")[1:]]):
-        own_natives: list[str] = []
-        own_helpers: list[str] = []
-        for call in facts.calls:
-            if not _in(call.path, path, named):
-                continue
-            referenced = [call.callee] + [arg for arg in call.args if isinstance(arg, str)]
-            for item in referenced:
-                if item in natives and item == call.callee and item not in own_natives:
-                    own_natives.append(item)
-                elif item in helpers and item != name and item not in own_helpers:
-                    own_helpers.append(item)
+        # The names its own code (and its unnamed nested functions) reads, in code order: a native is fetched by
+        # its global name, a helper by name or passed as a callback string.
+        own = [proto for item, proto in by_path.items() if _in(item, path, named)]
+        read = [ref for proto in own for ref in natives_mission.references(proto)]
+        pushed = [ref for proto in own for ref in natives_mission.references(proto, pushed=True)]
+        own_natives = [item for item in dict.fromkeys(read) if item in natives]
+        own_helpers = [item for item in dict.fromkeys(pushed) if item in helpers and item != name]
         main_refs = [c for c in facts.calls if c.path == "main"]
         deleted = [
             MAIN_NAME if a.path == "main" else name_of.get(a.path, a.path)
@@ -387,15 +386,15 @@ def survey(global_chunk: bytes, scripts: Iterable[tuple[str, bytes]], natives: f
     for script, data in scripts:
         if script == HELPERS_SCRIPT:
             continue
-        chunk = lua4.parse_chunk(data)
-        for call in lua4.walk_chunk(chunk).calls:
-            for item in [call.callee] + [arg for arg in call.args if isinstance(arg, str)]:
+        # Each read of a helper's name (or a callback string naming it) is a call, as the bindings' usage counts
+        # count references; each global read at least once counts the script as a reader.
+        read: set[str] = set()
+        for proto in natives_mission.functions_by_path(lua4.parse_chunk(data)).values():
+            read.update(natives_mission.references(proto))
+            for item in natives_mission.references(proto, pushed=True):
                 if item in calls:
                     calls[item] += 1
                     callers[item].add(script)
-        read: set[str] = set()
-        for proto in natives_mission.functions_by_path(chunk).values():
-            read |= natives_mission.names_in(proto, constants=False)
         for name in read & set(readers):
             readers[name] += 1
     helpers = {name: replace(scan, scripts=len(callers[name]), calls=calls[name]) for name, scan in scans.items()}

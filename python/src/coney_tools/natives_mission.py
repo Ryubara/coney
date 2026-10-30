@@ -24,7 +24,7 @@ Research: docs/research/scripting.md#level99 (the mission's flow), docs/research
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 
 from coney_tools import lua4
 
@@ -47,25 +47,41 @@ def _opcode(word: int) -> str:
     return lua4.OPCODES[code] if code < len(lua4.OPCODES) else "END"
 
 
-def names_in(proto: lua4.Proto, constants: bool = True) -> set[str]:
-    """The names one function mentions, without its nested functions: every global it reads, every `Global.field`
-    it reads (a `GETGLOBAL` followed by a `GETDOTTED`), and, with `constants`, every string constant (callbacks are
-    passed by name)."""
-    found = {text for text in proto.strings if text} if constants else set()
+def references(proto: lua4.Proto, pushed: bool = False) -> Iterator[str]:
+    """Each name one function reads, without its nested functions, in code order and once per read: a global (a
+    `GETGLOBAL`; a script fetches a binding or helper by name to call it), then a `Global.field` when a `GETDOTTED`
+    follows it, and, with `pushed`, each string the function pushes (`PUSHSTRING`: a callback passed by name), except
+    one a function follows (`CLOSURE`: the key of `function Table.name()` or `{name = function ...}`, a definition of
+    another table's field, not a use of the global of that name).
+
+    It reads the instructions alone, so unlike `lua4.walk_chunk`'s stack walk it misses no call, whatever the code
+    around it (a call after a table loop, for one).
+    """
     previous: str | None = None
-    for word in proto.code:
+    for index, word in enumerate(proto.code):
         op = _opcode(word)
         operand = word >> 6
+        text = proto.strings[operand] if operand < len(proto.strings) else None
         if op == "GETGLOBAL":
-            previous = proto.strings[operand] if operand < len(proto.strings) else None
+            previous = text
             if previous:
-                found.add(previous)
+                yield previous
             continue
-        if op == "GETDOTTED" and previous and operand < len(proto.strings) and proto.strings[operand]:
-            previous = f"{previous}.{proto.strings[operand]}"
-            found.add(previous)
+        if op == "GETDOTTED" and previous and text:
+            previous = f"{previous}.{text}"
+            yield previous
             continue
         previous = None
+        defines = index + 1 < len(proto.code) and _opcode(proto.code[index + 1]) == "CLOSURE"
+        if op == "PUSHSTRING" and pushed and text and not defines:
+            yield text
+
+
+def names_in(proto: lua4.Proto, constants: bool = True) -> set[str]:
+    """The names one function mentions, without its nested functions: every global it reads, every `Global.field`
+    it reads (`references`), and, with `constants`, every string constant (callbacks are passed by name)."""
+    found = {text for text in proto.strings if text} if constants else set()
+    found.update(references(proto))
     return found
 
 

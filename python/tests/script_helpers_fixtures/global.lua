@@ -35,5 +35,13 @@ function Menu.Open(page)
     Wake(page)
 end
 
+-- A native and a helper called after a table loop, where the stack walk of lua4 loses track of the calls.
+function WakeAll(list)
+    for k, v in list do
+        BindWake(v)
+    end
+    BindShow(Count(list))
+end
+
 BindRegister("Later")
 Hidden = nil

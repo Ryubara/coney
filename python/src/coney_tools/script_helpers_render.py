@@ -130,7 +130,10 @@ def page(data: HelperList, masterlist: Masterlist) -> str:
         " [The research data](../../guides/research-data.md#script-helpers)); `coney-tools bindings scan-helpers`"
         " fills its counts from your disc. Only names and counts are read from the disc, never the script's text."
         " The evidence of each entry cites the helper's function in the chunk as a script locator"
-        " (`global.lua:fN`: function prototype N)."
+        " (`global.lua:fN`: function prototype N). The calls are counted as the bindings'"
+        " [usage counts](index.md#usage) are: each read of a name (a native or helper fetched to be called, or a"
+        " helper's name passed as a callback) is one, so a call in a loop counts once and one in a branch that never"
+        " runs counts too."
     )
     out += ["", "## Groups", "", "| Group | Helpers | Called by other scripts |", "| --- | --- | --- |"]
     for group, (title, scope) in GROUPS.items():

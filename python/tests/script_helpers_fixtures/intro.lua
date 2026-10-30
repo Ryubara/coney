@@ -5,3 +5,9 @@ Scratch = 2
 if Hidden then
     BindShow(0)
 end
+
+-- A field of the script's own table that shares a helper's name: defining it is not a call of the helper.
+Panel = {}
+function Panel.Wake()
+    BindShow(1)
+end

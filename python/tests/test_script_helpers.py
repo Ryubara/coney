@@ -1,10 +1,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tests for the reference of `global.lua`'s helpers (coney_tools.script_helpers and its page).
 
-The chunks are our own made-up scripts (`script_helpers_fixtures/*.lua`), compiled with a stock Lua 4.0.1 `luac -s`
-and kept in the game's layout (4-byte sizes: a 64-bit `luac` writes 8, and its string lengths were narrowed to 4,
-docs/guides/coney-tools-fidelity.md#lua); the "natives" are a set the tests name (`Bind*`), not the game's bindings,
-and the YAML is invented too.
+The chunks are our own made-up scripts (`script_helpers_fixtures/*.lua`), each compiled to `<name>.s.luac` by a
+32-bit build of stock Lua 4.0.1's `luac -s -o <name>.s.luac <name>.lua`, which writes the game's 4-byte sizes (the
+64-bit `luac` of `workspace init --fetch lua` writes 8, which the survey's reader refuses; how to build the 32-bit one:
+docs/guides/coney-tools-fidelity.md#lua). A test holds each chunk to its source when a `luac` is found. The "natives"
+are a set the tests name (`Bind*`), not the game's bindings, and the YAML is invented too.
 """
 
 from __future__ import annotations
@@ -14,7 +15,8 @@ from pathlib import Path
 import pytest
 import yaml
 
-from coney_tools import natives, script_helpers, script_helpers_render
+import lua4
+from coney_tools import lua_decompile, natives, script_helpers, script_helpers_render
 from coney_tools.cli import main
 
 FIXTURES = Path(__file__).parent / "script_helpers_fixtures"
@@ -66,6 +68,11 @@ helpers:
     params: [page]
     description: Opens a page.
 
+  - name: WakeAll
+    group: squad
+    params: [list]
+    description: Wakes everyone on a list.
+
 globals:
   - name: "true"
     group: values
@@ -89,7 +96,7 @@ def test_survey_reads_each_helper_from_the_chunk() -> None:
     """Every function `global.lua` stores in a global or a global table's field is a helper, with its prototype
     number, its parameter count and the natives and other helpers it calls (callback names included)."""
     helpers = _survey().helpers
-    assert list(helpers) == ["Count", "Wake", "Boot", "Later", "Menu.Open"]
+    assert list(helpers) == ["Count", "Wake", "Boot", "Later", "Menu.Open", "WakeAll"]
     assert helpers["Count"] == script_helpers.HelperScan(function=0, params=1)
     wake = helpers["Wake"]
     assert (wake.function, wake.params, wake.natives, wake.helpers) == (1, 2, ("BindWake",), ("Count",))
@@ -98,8 +105,17 @@ def test_survey_reads_each_helper_from_the_chunk() -> None:
     assert helpers["Menu.Open"].helpers == ("Wake",)
 
 
+def test_survey_reads_calls_the_stack_walk_misses() -> None:
+    """Calls after a table loop (which `lua4.walk_chunk` loses track of) still count: the natives and helpers come
+    from the global names a function reads, in code order, and so do another script's calls."""
+    wake_all = _survey().helpers["WakeAll"]
+    assert (wake_all.natives, wake_all.helpers) == (("BindWake", "BindShow"), ("Count",))
+    assert (wake_all.scripts, wake_all.calls) == (1, 1)
+
+
 def test_survey_counts_the_other_scripts_that_call_a_helper() -> None:
-    """A script calls a helper by its name, or passes the name as a callback; `global.lua` itself is not counted."""
+    """A script calls a helper by its name, or passes the name as a callback; `global.lua` itself is not counted, nor
+    is a field of a script's own table that has a helper's name (intro's `Panel.Wake`)."""
     helpers = _survey().helpers
     assert (helpers["Wake"].scripts, helpers["Wake"].calls) == (2, 3)
     assert (helpers["Later"].scripts, helpers["Later"].calls) == (1, 1)
@@ -143,7 +159,7 @@ def test_apply_writes_scan_lines_and_parse_reads_them() -> None:
     loaded = script_helpers.parse(text)
     assert loaded.problems == []
     assert loaded.chunk_sha1 == _survey().chunk_sha1
-    assert [h.name for h in loaded.helpers] == ["Count", "Wake", "Boot", "Later", "Menu.Open"]
+    assert [h.name for h in loaded.helpers] == ["Count", "Wake", "Boot", "Later", "Menu.Open", "WakeAll"]
     assert loaded.helpers[1].scan == _survey().helpers["Wake"]
     assert loaded.helpers[1].evidence == "inferred" and loaded.helpers[0].evidence == "confirmed-code"
     assert loaded.globals[0].scan == _survey().globals["true"]
@@ -308,4 +324,15 @@ def test_scan_helpers_reads_the_chunks_and_rewrites_the_file(
     assert main(["bindings", "scan-helpers", "--chunks", str(chunks)]) == 0
     assert "scripts: 2, calls: 3" in data.read_text(encoding="utf-8")
     assert main(["bindings", "scan-helpers", "--chunks", str(chunks), "--check"]) == 0
-    assert "5 helpers, 4 globals" in capsys.readouterr().out
+    assert "6 helpers, 4 globals" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("name", ["global", "mission", "intro"])
+def test_the_fixtures_are_what_luac_makes_of_their_source(name: str) -> None:
+    """When a luac is found, each committed chunk is the one its source compiles to (instructions and constants; the
+    sizes in the header may differ)."""
+    luac = lua_decompile.luac_program(lua_decompile.REPO, required=False)
+    if luac is None:
+        pytest.skip("no Lua 4.0 luac (coney.local.toml's luac_program)")
+    again = lua4.compile_source((FIXTURES / f"{name}.lua").read_bytes(), luac, strip=True)
+    assert lua4.compare(lua4.load(_chunk(name)), lua4.load(again)) == []

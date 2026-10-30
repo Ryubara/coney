@@ -127,7 +127,9 @@ globals:
 - A helper's `scan` gives its function's number among the chunk's (`function`), its parameter count, the natives and
   other helpers it calls or names as a callback, how many of the disc's other scripts call it and their calls, and
   `at_load`, `registered` and `deleted_by` when `global.lua`'s main chunk runs it while loading, passes its name to a
-  binding, or a function sets it to nil. `params` must name as many parameters as `scan.params` counts.
+  binding, or a function sets it to nil. A call is a read of the name in the code (a `GETGLOBAL`, or a callback
+  string), as the bindings' usage counts are, not a call traced through the stack. `params` must name as many
+  parameters as `scan.params` counts.
 - A global's `scan` gives how many other scripts read it, the kind of value it ends with (`number`, `string`, `table`,
   `nil` or `computed`) and `cleared: true` when the main chunk ends by setting it to nil.
 - A parameter name YAML reads as something else (`on`, `yes`, `no`) cannot be used; a global named `true` or `false` is

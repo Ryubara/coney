@@ -18,17 +18,18 @@ helpers:
     params: [list]
     description: >-
       Counts every entry of a table, array part and named fields alike (Lua 4.0's `getn` counts only the array part).
-    scan: {function: 1, params: 1, scripts: 115, calls: 438}
+    scan: {function: 1, params: 1, scripts: 118, calls: 477}
 
   - name: CfgUnlockables
     group: setup
     params: []
     description: >-
       Run once by `global.lua` as it loads: resets the unlockables manager, registers each row of the `Unlockables`
-      table as an unlockable, unlocks the first two entries and, on a profile that has not finished the first mission,
-      clears the "new" marks of the five unlockable types. It then deletes itself and the table, so no script can call
-      it.
-    scan: {function: 2, params: 0, natives: [UM_Reset, UM_SetNumUnlockables, UM_SetUnlockable, UM_Unlock, UM_IsTypeDirty], helpers: [tsize], scripts: 0, calls: 0, at_load: true, deleted_by: [CfgUnlockables]}
+      table as an unlockable, and unlocks every record of levels 0 and 8 (`UM_Unlock` with group and item 0;
+      [Player state](../../research/player-state.md#unlockables)). When level 0 is not complete (level 0 comes before
+      the first mission, `level99`, in the story's chain), it also clears the "new" marks of unlockable types 0 to 4.
+      It then deletes itself and the table, so no script can call it.
+    scan: {function: 2, params: 0, natives: [UM_Reset, UM_SetNumUnlockables, UM_SetUnlockable, UM_IsLevelComplete, UM_Unlock, UM_IsTypeDirty], helpers: [tsize], scripts: 0, calls: 0, at_load: true, deleted_by: [CfgUnlockables]}
 
   - name: CfgGlobalMulti
     group: setup
@@ -39,7 +40,7 @@ helpers:
       platform), the action distances and the crew's default follow slots, clears room smoke, fog and rain, and loads
       the difficulty's config script (easy, normal, hard, fury, or the rumble one in the rumble levels; the Armies of
       the Night levels always use normal).
-    scan: {function: 3, params: 0, natives: [ResetCommands, CfgJumpIsAction, CfgPickupIsAction, CfgPickupIsGrab, CfgPlayerCombatWalkOnly, CfgDisableMusicForScenes, CfgTagStartCallback, CfgEnableTurfInvasion, SoundSetMusicVolume, SndSetListener, CfgStickDeflection, GetDifficulty, GetProfileDifficulty, GetCurrentLevelIndex, GetLevelId, doFile, CfgBaseChanceToBlock, CfgBurnTime, AddCommand, CfgActionDistance, HUDEnableClubActionText, EndRoomSmoke, End3DFog, EndFog, EndRain, CfgSetDefaultFollowSlotSet], scripts: 0, calls: 0, at_load: true}
+    scan: {function: 3, params: 0, natives: [ResetCommands, CfgJumpIsAction, CfgPickupIsAction, CfgPickupIsGrab, CfgPlayerCombatWalkOnly, CfgDisableMusicForScenes, CfgTagStartCallback, CfgEnableTurfInvasion, SoundSetMusicVolume, SndSetListener, CfgStickDeflection, GetDifficulty, GetProfileDifficulty, GetLevelId, GetCurrentLevelIndex, doFile, CfgBaseChanceToBlock, CfgBurnTime, AddCommand, CfgActionDistance, HUDEnableClubActionText, EndRoomSmoke, End3DFog, EndFog, EndRain, CfgSetDefaultFollowSlotSet], scripts: 0, calls: 0, at_load: true}
 
   - name: KiAi
     group: debug
@@ -54,7 +55,7 @@ helpers:
     description: >-
       Switches off the brains of `player`, of `player2` when that one is alive, and suspends the `GangWarriors` gang, so
       the player's crew stops acting (before a cutscene, say). Each global is skipped when it is not set.
-    scan: {function: 5, params: 0, natives: [BrDead, HuIsAlive, GangSuspend], scripts: 45, calls: 67}
+    scan: {function: 5, params: 0, natives: [BrDead, HuIsAlive, GangSuspend], scripts: 46, calls: 68}
 
   - name: ActivateWarriors
     group: squad
@@ -62,7 +63,7 @@ helpers:
     description: >-
       The reverse of `DeactivateWarriors`: switches the brains of `player` and a living `player2` back on and resumes
       the `GangWarriors` gang.
-    scan: {function: 6, params: 0, natives: [BrDead, HuIsAlive, GangSuspend], scripts: 41, calls: 65}
+    scan: {function: 6, params: 0, natives: [BrDead, HuIsAlive, GangSuspend], scripts: 41, calls: 66}
 
   - name: ActivateBrain
     group: squad
@@ -92,21 +93,21 @@ helpers:
       Gives `leader` follow slots at the given offsets (a table of `{x, y}` offsets, or one offset) in slot set 2, and
       makes `followers` (a table, or one human) follow it with the follow-player goal at `distance` metres (1 when not
       given).
-    scan: {function: 10, params: 4, natives: [BrSetNumFollowSlots, BrSetFollowSlot, GoalFollowPlayer], helpers: [SetFollow], scripts: 0, calls: 0}
+    scan: {function: 10, params: 4, natives: [BrSetNumFollowSlots, BrSetFollowSlot, HuGetGang, GoalFollowPlayer], helpers: [SetFollow], scripts: 0, calls: 0}
 
   - name: SetFollow
     group: squad
     params: [leader, humans, distance]
     description: >-
       Makes up to ten humans of a table (the leader left out) follow `leader` with the follow-player goal.
-    scan: {function: 11, params: 3, scripts: 0, calls: 0}
+    scan: {function: 11, params: 3, natives: [GoalFollowPlayer], scripts: 1, calls: 1}
 
   - name: ChangeCam
     group: cameras
     params: [camera, seconds]
     description: >-
       Makes a camera current, blending over `seconds`, and resets it.
-    scan: {function: 12, params: 2, natives: [CameraMakeActive, CameraReset], scripts: 30, calls: 70}
+    scan: {function: 12, params: 2, natives: [CameraMakeActive, CameraReset], scripts: 31, calls: 73}
 
   - name: CleanTable
     group: tables
@@ -179,7 +180,7 @@ helpers:
     description: >-
       Deletes a gang: clears its tactic and its `Super` entry when it has one, flushes its members' brains and deletes
       it. Does nothing for nil.
-    scan: {function: 22, params: 1, natives: [TacticClear, GangBrFlush, GangDelete], scripts: 159, calls: 1030}
+    scan: {function: 22, params: 1, natives: [TacticClear, GangBrFlush, GangDelete], scripts: 160, calls: 1057}
 
   - name: GangExit
     group: gangs
@@ -204,7 +205,7 @@ helpers:
     params: [gang, message, handler]
     description: >-
       Sets a gang's message handler when the gang is not nil.
-    scan: {function: 25, params: 3, natives: [GangSetMsgHandler], scripts: 11, calls: 41}
+    scan: {function: 25, params: 3, natives: [GangSetMsgHandler], scripts: 11, calls: 44}
 
   - name: DefaultGang
     group: gangs
@@ -219,7 +220,7 @@ helpers:
     params: [gang, boxes]
     description: >-
       Adds one turf box, or each of a table, to a gang.
-    scan: {function: 27, params: 2, natives: [GangAddTurfBox], scripts: 2, calls: 3}
+    scan: {function: 27, params: 2, natives: [GangAddTurfBox], scripts: 3, calls: 4}
 
   - name: GangSetupFriends
     group: gangs
@@ -278,7 +279,7 @@ helpers:
     description: >-
       Builds the path of a speech sound from its name (the folder is the part of the name before the first underscore);
       nil for nil.
-    scan: {function: 35, params: 1, helpers: [InString], scripts: 64, calls: 507}
+    scan: {function: 35, params: 1, helpers: [InString], scripts: 65, calls: 515}
 
   - name: EnterInteriorCam
     group: cameras
@@ -455,7 +456,7 @@ helpers:
     params: []
     description: >-
       Zeroes the level's script save data: the first eight numbers and the flags 101 to 115.
-    scan: {function: 58, params: 0, natives: [SetLUASaveDataFloat], scripts: 2, calls: 2}
+    scan: {function: 58, params: 0, natives: [SetLUASaveDataFloat, SetLUASaveDataBool], scripts: 2, calls: 2}
 
   - name: UnlockAndLoad
     group: missions
@@ -481,7 +482,8 @@ helpers:
       The story's chain: from the furthest finished mission (`LastLevel`, else `findLastMission`) picks the next level
       and checkpoint (most missions return to the hub, level 95, at the checkpoint for the next chapter), stops the
       music and loads it; with `showComplete` 1 it also launches the mission-complete screen. When the mission has no
-      successor it calls a misspelt binding name, so nothing happens. The engine calls it from the failure and pause
+      successor it calls a misspelt binding name: a script error the game does not report, which ends the function and
+      the script that called it. The engine calls it from the failure and pause
       menus; [Scripts](../../research/scripting.md#run-next-mission) has the table.
     scan: {function: 61, params: 1, natives: [SetCheckPoint, SoundStopMusicTrack, MenuLoadLevel, HUDLaunchMissionComplete], helpers: [findLastMission], scripts: 35, calls: 38}
 
@@ -500,7 +502,7 @@ helpers:
       Empties a player's pockets between missions: with `money`, the money; with `items`, the revives, spray-can
       charges, skeleton keys and item 5; with `stats`, the player's statistics. The player number comes from comparing
       the human with `player2`.
-    scan: {function: 63, params: 5, natives: [InvSetMoney, InvNumberRevives, InvGiveRevive, InvGetSpraycanCharges, InvSetSpraycanCharges, InvNumberSkeletonKeys, InvGiveSkeletonKey, InvNumberOf, InvGiveItem, StatResetPlayer], scripts: 3, calls: 10}
+    scan: {function: 63, params: 5, natives: [InvSetMoney, InvGiveRevive, InvNumberRevives, InvSetSpraycanCharges, InvGetSpraycanCharges, InvGiveSkeletonKey, InvNumberSkeletonKeys, InvGiveItem, InvNumberOf, StatResetPlayer], scripts: 3, calls: 10}
 
   - name: GetLevel
     group: setup
@@ -509,7 +511,7 @@ helpers:
       Run once by `global.lua` as it loads: sets `Level` to the current level's number (1 for the front end and levels
       numbered 300 or more) and clears the level's script save data on a fresh start (checkpoint 0 or 1, the Armies of
       the Night levels excepted). It then deletes itself.
-    scan: {function: 64, params: 0, natives: [GetCurrentLevelIndex, GetLevelId, GetCheckPoint], helpers: [ClearSaveData], scripts: 0, calls: 0, at_load: true, deleted_by: [GetLevel]}
+    scan: {function: 64, params: 0, natives: [GetLevelId, GetCurrentLevelIndex, GetCheckPoint], helpers: [ClearSaveData], scripts: 0, calls: 0, at_load: true, deleted_by: [GetLevel]}
 
   - name: GangSetup
     group: gangs
@@ -519,7 +521,7 @@ helpers:
       `Function` for the gang and its humans, applies the turf, friends, enemies, death handler, threat and investigate
       responses and world-flag use, picks the leader, starts the default tactic (hanging out unless given) and marks the
       gang wanted when asked. An optional `constructor` runs on the new gang. Returns the handle.
-    scan: {function: 65, params: 4, natives: [GangSetThreatResponse, GangSetInvestigateResponse, GangCanUseWorldFlags, GangSetLeader, GangGetLeader, GetPosition, CrimeIsHappening, GangEnableAttackStrategies], helpers: [DefaultGang, tsize], scripts: 82, calls: 265, deleted_by: [SuperClean]}
+    scan: {function: 65, params: 4, natives: [GangSetThreatResponse, GangSetInvestigateResponse, GangCanUseWorldFlags, GangSetLeader, GangGetLeader, GetPosition, CrimeIsHappening, GangEnableAttackStrategies], helpers: [DefaultGang, tsize], scripts: 82, calls: 277, deleted_by: [SuperClean]}
 
   - name: Strategy
     group: gangs
@@ -527,7 +529,7 @@ helpers:
     description: >-
       A gang's strategy update: while the gang has members, calls its idle callback and its strategy preset (or the
       hunter strategy); once it has none, clears its tactic and forgets it.
-    scan: {function: 66, params: 2, natives: [GangGetHeadCount, TacticClear], scripts: 27, calls: 466, deleted_by: [SuperClean]}
+    scan: {function: 66, params: 2, natives: [GangGetHeadCount, TacticClear], scripts: 27, calls: 476, deleted_by: [SuperClean]}
 
   - name: GangCallback
     group: gangs
@@ -543,7 +545,7 @@ helpers:
     params: [gang]
     description: >-
       Starts a `Super` gang's default tactic, sets its threat response to 2 and turns its banter on.
-    scan: {function: 68, params: 1, natives: [GangSetThreatResponse], scripts: 42, calls: 96, deleted_by: [SuperClean]}
+    scan: {function: 68, params: 1, natives: [GangSetThreatResponse], scripts: 44, calls: 102, deleted_by: [SuperClean]}
 
   - name: SuperSetFollow
     group: gangs
@@ -613,8 +615,10 @@ helpers:
     group: tags
     params: []
     description: >-
-      Meant to remove every tag spot's handlers and triggers and forget the tag tables; it indexes the tag list with a
-      variable that is never set, so in practice it stops with a script error after clearing the first spot's action.
+      Meant to remove every tag spot's handlers and triggers and forget the tag tables. For the first spot it clears
+      that spot's first handler, then two handlers of the spot the global `index` names (the last spot a tag helper
+      touched; a script error when no helper has set it), then indexes the tag list with `c`, a variable `global.lua`
+      never sets: a script error, so no trigger is disabled and the tables are kept.
     scan: {function: 77, params: 0, natives: [SetMsgHandler, TriggerSphereEnable], scripts: 0, calls: 0}
 
   - name: TagInfo.ShowTagComp
@@ -724,7 +728,7 @@ helpers:
     description: >-
       Copies the current level's tag flags into the profile's record of that level when this run tagged more than the
       record holds.
-    scan: {function: 92, params: 0, natives: [GetLUASaveDataBool, SetLUASaveDataBool], helpers: [GetTagsMax], scripts: 0, calls: 0}
+    scan: {function: 92, params: 0, natives: [GetLUASaveDataBool, SetLUASaveDataBool], helpers: [GetTagsMax, GetTagsComplete], scripts: 0, calls: 0}
 
   - name: NextTagPattern
     group: tags
@@ -746,7 +750,7 @@ helpers:
     description: >-
       Loads tag pattern script number `pattern`: preloaded in the background on a release build, which then calls
       `FinishTagPattern`, run at once otherwise.
-    scan: {function: 95, params: 1, natives: [preLoadFile, doFile], helpers: [FinishTagPattern], scripts: 2, calls: 3}
+    scan: {function: 95, params: 1, natives: [isRelease, preLoadFile, doFile], helpers: [FinishTagPattern], scripts: 2, calls: 3}
 
   - name: FinishTagPattern
     group: tags
@@ -891,21 +895,21 @@ helpers:
     params: []
     description: >-
       A storm step: a first bright flash with the level's lights off, then `LightningSmallOff` a moment later.
-    scan: {function: 115, params: 0, natives: [SetLight, random, ScheduleFunc], helpers: [LightningSmallOff], scripts: 0, calls: 0}
+    scan: {function: 115, params: 0, natives: [SetLight, ScheduleFunc, random], helpers: [LightningSmallOff], scripts: 0, calls: 0}
 
   - name: LightningSmallOff
     group: lighting
     params: []
     description: >-
       A storm step: ends the first flash, restores the lights and schedules the big flash.
-    scan: {function: 116, params: 0, natives: [SetLight, random, ScheduleFunc], helpers: [FlashLightningBig], scripts: 0, calls: 0}
+    scan: {function: 116, params: 0, natives: [SetLight, ScheduleFunc, random], helpers: [FlashLightningBig], scripts: 0, calls: 0}
 
   - name: FlashLightningBig
     group: lighting
     params: []
     description: >-
       A storm step: the second, brighter flash, then `LightningOff`.
-    scan: {function: 117, params: 0, natives: [SetLight, random, ScheduleFunc], helpers: [LightningOff], scripts: 0, calls: 0}
+    scan: {function: 117, params: 0, natives: [SetLight, ScheduleFunc, random], helpers: [LightningOff], scripts: 0, calls: 0}
 
   - name: LightningOff
     group: lighting
@@ -913,7 +917,7 @@ helpers:
     description: >-
       A storm step: restores the lights, schedules the next flash while the storm is on, and the thunder two to five
       seconds later.
-    scan: {function: 118, params: 0, natives: [SetLight, random, ScheduleFunc], helpers: [FlashLightningStart, ThunderSound], scripts: 0, calls: 0}
+    scan: {function: 118, params: 0, natives: [SetLight, ScheduleFunc, random], helpers: [FlashLightningStart, ThunderSound], scripts: 0, calls: 0}
 
   - name: ThunderSound
     group: lighting
@@ -951,7 +955,7 @@ helpers:
     description: >-
       The enter handler `SetBackOff` registers: gives a human who walks up, and is not in the scene, the back-off goal
       away from the scene's human for 15 seconds, once.
-    scan: {function: 123, params: 2, helpers: [tsize], scripts: 0, calls: 0}
+    scan: {function: 123, params: 2, natives: [GoalBackoff], helpers: [tsize], scripts: 0, calls: 0}
 
   - name: EndBackOff
     group: scenes
@@ -969,7 +973,7 @@ helpers:
       cinematic, hides the HUD, clears the police, fades out and revives or frees arrested crew members; with
       `StageLighting`, switches to stage lighting. It then preloads the scene (or plays it at once when `Preloaded`),
       keeping the table in `tblScene`, and returns the scene's id. The level scripts' usual way to run a scene.
-    scan: {function: 125, params: 1, natives: [HideHud, GangClearWanted, GangClearResponders, ScreenQueueEffect, EnterStore, HuGetGangType, HuIsArrested, HuSetArrested, StatAdd, HuIsAlive, HuRevive, ScenePreload], helpers: [EnableStageLighting, gPlayCutScene], scripts: 128, calls: 430, deleted_by: [NoScenes]}
+    scan: {function: 125, params: 1, natives: [HideHud, GangClearWanted, GangClearResponders, ScreenQueueEffect, EnterStore, HuGetGangType, HuIsArrested, HuSetArrested, StatAdd, HuIsAlive, HuRevive, ScenePreload], helpers: [EnableStageLighting, gPlayCutScene], scripts: 130, calls: 447, deleted_by: [NoScenes]}
 
   - name: gPlayCutScene
     group: scenes
@@ -1028,7 +1032,7 @@ helpers:
       Registers an objective table (`String`, `Flag` or `Volume`, `HUDType`, `NumNeeded`, `CallBack`, `GoodToGo`,
       `Bonus`, ...) under a new number in `Objective` and, unless `deferred`, shows it at once with `ObjectiveAdd`.
       Returns the number. The level scripts' main way to give the player a goal.
-    scan: {function: 132, params: 2, helpers: [ObjectiveAdd], scripts: 67, calls: 103, deleted_by: [ObjectiveKill]}
+    scan: {function: 132, params: 2, helpers: [ObjectiveAdd], scripts: 71, calls: 110, deleted_by: [ObjectiveKill]}
 
   - name: ObjectiveAdd
     group: objectives
@@ -1090,7 +1094,7 @@ helpers:
     description: >-
       Completes an objective: marks its text done (or removes it), takes away its counter, radar marker, marker object
       and trigger handlers, unlocks its `UnlockID` reward, keeps its text in `Objective.KeptString` and forgets it.
-    scan: {function: 140, params: 1, natives: [FlushScheduledFuncs, HUDFlushTutorialText, HUDSetObjective, HUDReleasePH, HUDDeleteRadarMissionObjective, ObjDestroy, SetMsgHandler, UM_Unlock], helpers: [ObjectiveGoodToGo, tsize], scripts: 20, calls: 28, deleted_by: [ObjectiveKill]}
+    scan: {function: 140, params: 1, natives: [FlushScheduledFuncs, HUDFlushTutorialText, HUDSetObjective, HUDReleasePH, HUDDeleteRadarMissionObjective, ObjDestroy, SetMsgHandler, UM_Unlock], helpers: [ObjectiveGoodToGo, tsize], scripts: 20, calls: 31, deleted_by: [ObjectiveKill]}
 
   - name: KillObjective
     group: objectives
@@ -1107,7 +1111,7 @@ helpers:
       The enter handler of an objective's place: when a player (or a crew member, with `CheckWarriors`) arrives, either
       starts the good-to-go check (`GoodToGo`), hides the marker until they leave (`bShowHide`), or calls the callback
       and completes the objective.
-    scan: {function: 142, params: 2, natives: [HuGetGangType, HuIsAPlayer, SetMsgHandler, ObjHide], helpers: [ObjectiveGetIndex, ObjectiveExit, ObjectiveGoodToGo, ObjectiveComplete], scripts: 3, calls: 18}
+    scan: {function: 142, params: 2, natives: [HuGetGangType, HuIsAPlayer, SetMsgHandler, ObjHide], helpers: [ObjectiveGetIndex, ObjectiveExit, ObjectiveGoodToGo, ObjectiveComplete], scripts: 4, calls: 19}
 
   - name: ObjectiveExit
     group: objectives
@@ -1132,7 +1136,7 @@ helpers:
       to the player (within the place, or within the good-to-go distance), and the police are not after them when the
       objective asks. Until then it shows a hint and checks again every half second; with `NoComplete`, it reports each
       change to the callback instead.
-    scan: {function: 145, params: 1, natives: [IsInsideBox, HuIsArrested, HuIsAlive, TestDistance, GetDistanceTweenHumans, ScheduleFuncArg1], helpers: [ObjectiveGetIndex], scripts: 3, calls: 21}
+    scan: {function: 145, params: 1, natives: [IsInsideBox, HuIsArrested, HuIsAlive, TestDistance, GetDistanceTweenHumans, GangIsWanted, HUDFlushTutorialText, ScheduleFuncArg1, HUDSetTutorialText], helpers: [ObjectiveGetIndex, ObjectiveComplete], scripts: 3, calls: 21}
 
   - name: ObjectiveGetIndex
     group: objectives
@@ -1218,105 +1222,120 @@ globals:
   - name: icon_info
     group: values
     description: >-
-      Icon number 1 for HUD messages; `icon_none` is 0.
+      Icon number 1 for HUD messages; `icon_none` is 0. Inferred from the two names alone: the one script that reads
+      it copies it into a global of its own.
     evidence: inferred
     scan: {scripts: 2, value: number}
 
   - name: BIG_FONT
     group: values
     description: >-
-      Font number 6, the big font; `SMALL_FONT` is 3.
+      Font number 6, the big font; `SMALL_FONT` is 3. Inferred from the two names alone: the one script that reads it
+      copies it into a variable of its own.
     evidence: inferred
     scan: {scripts: 1, value: number}
 
   - name: RM_Brawl1
     group: missions
     description: >-
-      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them.
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
     evidence: inferred
     scan: {scripts: 36, value: number}
 
   - name: RM_Brawl5
     group: missions
     description: >-
-      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them.
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
     evidence: inferred
     scan: {scripts: 36, value: number}
 
   - name: RM_Brawl
     group: missions
     description: >-
-      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them.
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
     evidence: inferred
     scan: {scripts: 36, value: number}
 
   - name: RM_Surv
     group: missions
     description: >-
-      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them.
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
     evidence: inferred
     scan: {scripts: 36, value: number}
 
   - name: RM_Mercy
     group: missions
     description: >-
-      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them.
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
     evidence: inferred
     scan: {scripts: 36, value: number}
 
   - name: RM_TagBt
     group: missions
     description: >-
-      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them.
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
     evidence: inferred
     scan: {scripts: 36, value: number}
 
   - name: RM_Royal
     group: missions
     description: >-
-      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them.
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
     evidence: inferred
     scan: {scripts: 36, value: number}
 
   - name: RM_Hifi
     group: missions
     description: >-
-      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them.
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
     evidence: inferred
     scan: {scripts: 33, value: number}
 
   - name: RM_Wchair
     group: missions
     description: >-
-      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them.
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
     evidence: inferred
     scan: {scripts: 36, value: number}
 
   - name: RM_Food
     group: missions
     description: >-
-      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them.
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
     evidence: inferred
     scan: {scripts: 33, value: number}
 
   - name: RM_Run
     group: missions
     description: >-
-      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them.
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
     evidence: inferred
     scan: {scripts: 33, value: number}
 
   - name: RM_Koth
     group: missions
     description: >-
-      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them.
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
     evidence: inferred
     scan: {scripts: 36, value: number}
 
   - name: RM_MaxGangs
     group: missions
     description: >-
-      The number of gangs the rumble modes choose from.
+      The number of gangs the rumble modes choose from. Inferred from the name and from the rumble scripts, which
+      compare a gang counter with it.
     evidence: inferred
     scan: {scripts: 33, value: number}
 
@@ -1424,14 +1443,16 @@ globals:
   - name: CharBeatCopSpawner
     group: gangs
     description: >-
-      The character ids of the police a beat cop spawner makes (four, the rest zero).
+      The character ids of the police a beat cop spawner makes (four, the rest zero). Inferred from the name and from
+      the levels, which pass it to `GangAddSpawner` for their beat cop gangs.
     evidence: inferred
     scan: {scripts: 7, value: table}
 
   - name: CharRespCopSpawner
     group: gangs
     description: >-
-      The character ids of the police a response spawner makes (four, the rest zero).
+      The character ids of the police a response spawner makes (four, the rest zero). Inferred from the name and from
+      the levels, which pass it to `GangAddSpawner` for their response cop gangs.
     evidence: inferred
     scan: {scripts: 11, value: table}
 
