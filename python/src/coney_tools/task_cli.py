@@ -327,7 +327,10 @@ def _run_slots(
             """A live unit's labels, from its claim cards."""
             return task_slots.unit_labels(record.issues, cards, conventions)
 
-        current = task_slots.scan(scratch, conventions, now(), _workspace_trees(root), labels)
+        # A fix task whose pull request merged or closed is not queued; GitHub is read for the fixes with no unit.
+        current = task_slots.scan(
+            scratch, conventions, now(), _workspace_trees(root), labels, task_slots.pulls_over(github)
+        )
         waivers = slot_waivers.read_waivers(scratch)
         if args.json:
             shown = task_slots.as_json(current, conventions, build_slots)

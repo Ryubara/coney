@@ -264,7 +264,9 @@ commit: what is pushed is exactly what Check and Review saw. Its options and exi
    not released); otherwise the message names the claimant.
 3. **The pull request (exit 1).** The branch's pull request is looked up (`gh pr list --head`). Merged: refused.
    Closed and not merged: refused unless `--reopen`. A fix task (`parent:` in its `TASK.md`) is released onto its
-   parent's pull request, log and text, and is refused when the parent has no open pull request. With
+   parent's pull request, log and text, and is refused when the parent has no open pull request; a fix with no `unit.json`
+   (made by hand, or before the records) goes out through the parent's unit record, which the task file names, and says
+   so. With
    [`--adopt <head>`](#adopt) the pull request must exist, no earlier run may have pushed it, and its branch must be at
    that head on the remote and the unit's branch must hold the changes of its commits (exit 2 otherwise, with nothing
    touched; [Taking over](#adopt)).

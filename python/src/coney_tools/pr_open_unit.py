@@ -20,7 +20,7 @@ from coney_tools.pr_proof import Refusal
 from coney_tools.pr_publish import GhError
 from coney_tools.task_file import TaskFile, TaskFileError, parse_task_file
 from coney_tools.unit import Unit, status_lines, task_name
-from coney_tools.unit_record import UnitRecordError, read_record
+from coney_tools.unit_record import UnitRecordError, front_parent, read_record
 
 
 @contextlib.contextmanager
@@ -94,8 +94,17 @@ def find_unit(run: Run) -> None:
     conventions0 = load_conventions_leniently(root0)
     run.task = task_name(root0, request.task)
     own_dir = Unit.of(root0, run.task).dir
+    record_path = own_dir / conventions0.tasks.start.unit_file
+    # A fix task made without `task start` (by hand, or before the records) has a task file naming its parent and no
+    # record: it is released through the parent's, as a fix with a record is. A record that is there and cannot be read
+    # is refused, never replaced by the parent's.
+    if not record_path.exists():
+        parent = front_parent(own_dir / conventions0.tasks.file)
+        if parent:
+            record_path = Unit.of(root0, parent).dir / conventions0.tasks.start.unit_file
+            run.say(f"pr open: {run.task} has no unit record; it is a fix of {parent} and goes out through its record")
     try:
-        run.record = read_record(own_dir / conventions0.tasks.start.unit_file)
+        run.record = read_record(record_path)
     except UnitRecordError as error:
         raise Stop(EXIT_UNABLE, f"{run.task}: no unit worktree (run task start): {error}") from error
     worktree = request.worktree if request.worktree is not None else run.record.worktree

@@ -360,8 +360,9 @@ def test_the_coordinator_and_a_person_at_the_machine_may_open(tmp_path: Path, wh
 # --- 31: a fix task --------------------------------------------------------------------------------------------------
 
 
-def start_fix(opened: Open) -> None:
-    """The fix task `work-fix` of the parent `work`: its task file and its unit record."""
+def start_fix(opened: Open, record: bool = True) -> None:
+    """The fix task `work-fix` of the parent `work`: its task file and, unless `record` is off (a fix made by hand, as
+    older ones were), its unit record."""
     built = opened.built
     folder = built.unit.dir.parent / "work-fix"
     folder.mkdir()
@@ -375,6 +376,8 @@ def start_fix(opened: Open) -> None:
         parent="work",
     )
     (folder / "TASK.md").write_text(render_task_file(task), encoding="utf-8")
+    if not record:
+        return
     unit_record.write_record(
         folder / built.conventions.tasks.start.unit_file,
         unit_record.UnitRecord(
@@ -408,6 +411,30 @@ def test_a_fix_task_is_released_onto_its_parents_pull_request_and_appends_to_the
     first, second = opened.opened_stamps()
     assert first.detail["fix"] == "" and second.detail["fix"] == "work-fix" and second.task == "work"
     assert second.covers["tip"] == built.tip and opened.origin_tip() == built.tip
+
+
+def test_a_fix_task_with_no_unit_record_is_released_through_its_parent_s_record(tmp_path: Path) -> None:
+    opened = docs_unit(tmp_path)
+    built = opened.built
+    assert opened.run() == 0
+    start_fix(opened, record=False)
+    built.edit("docs/guides/widget.md", "# The widget\n\nIt waits for the frame.\n", "docs: fix")
+    built.check("docs")
+    built.review(functions={})
+    opened.gh.calls.clear()
+    assert opened.run(task="work-fix") == 0, opened.text()
+    assert "pr create" not in opened.gh.names() and "pr edit" in opened.gh.names()
+    first, second = opened.opened_stamps()
+    assert first.detail["fix"] == "" and second.detail["fix"] == "work-fix" and second.task == "work"
+
+
+def test_a_fix_task_with_no_record_whose_parent_has_none_either_is_refused(tmp_path: Path) -> None:
+    opened = docs_unit(tmp_path)
+    assert opened.run() == 0
+    start_fix(opened, record=False)
+    (opened.built.unit.dir / opened.built.conventions.tasks.start.unit_file).unlink()
+    assert opened.run(task="work-fix") == 2
+    assert "work-fix: no unit worktree" in opened.text()
 
 
 def test_a_fix_whose_parent_pull_request_is_merged_or_missing_is_refused(tmp_path: Path) -> None:

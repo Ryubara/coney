@@ -13,7 +13,7 @@ import os
 import subprocess
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from dataclasses import replace
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -382,6 +382,178 @@ def test_a_fix_task_without_a_unit_is_queued_oldest_first(scene: Scene) -> None:
     scene.unit("started-fix", kind="fix")
     current = task_slots.scan(scene.scratch, scene.conventions, scene.now())
     assert current.queued_fixes == ("older-fix", "newer-fix")
+
+
+# --- a fix task with an agent and no unit record ---------------------------------------------------------------------
+
+
+def start_agent(scene: Scene, name: str, minutes_ago: float = 5) -> None:
+    """The reservation the guard left for `name`'s agent `minutes_ago` minutes ago (`slot.json`)."""
+    task = task_slots.read_task(scene.scratch, name, scene.conventions)
+    assert not isinstance(task, str)
+    at = scene.now() - timedelta(minutes=minutes_ago)
+    task_slots.write_reservation(scene.scratch / name, task, "fix", "engineer", at)
+
+
+def stamp(scene: Scene, log: str, step: str, minutes_ago: float = 0) -> None:
+    """A passing stamp of `step` in the log of task `log`, written `minutes_ago` minutes ago."""
+    stamps.append(
+        scene.scratch / log / "stamps",
+        rules=RULES,
+        task=log,
+        step=step,
+        subject="",
+        result="pass",
+        commit="b" * 40,
+        covers={},
+        detail={},
+        who=WHO,
+        clock=lambda: scene.now() - timedelta(minutes=minutes_ago),
+    )
+
+
+def reserve_minutes(scene: Scene) -> int:
+    """How long a reservation lasts (`tasks.start.slots.reserve_minutes`)."""
+    return scene.conventions.tasks.start.slots.reserve_minutes
+
+
+def test_a_fix_task_with_a_slot_and_no_unit_is_in_work_however_old_the_slot(scene: Scene) -> None:
+    scene.task("a-fix", kind="fix", age_minutes=900)
+    start_agent(scene, "a-fix", minutes_ago=reserve_minutes(scene) * 20)
+    current = scene.scan()
+    assert [(holder.task, holder.state) for holder in current.held("fix")] == [("a-fix", "in work")]
+    assert current.queued_fixes == ()
+
+
+def test_a_fix_task_with_no_slot_stays_queued(scene: Scene) -> None:
+    scene.task("a-fix", kind="fix")
+    assert scene.holders("fix") == [] and scene.scan().queued_fixes == ("a-fix",)
+
+
+def test_an_expired_slot_of_any_other_task_holds_nothing(scene: Scene) -> None:
+    scene.task("a-one")
+    task = task_slots.read_task(scene.scratch, "a-one", scene.conventions)
+    assert not isinstance(task, str)
+    at = scene.now() - timedelta(minutes=reserve_minutes(scene) + 1)
+    task_slots.write_reservation(scene.scratch / "a-one", task, "reimplementation", "engineer", at)
+    assert scene.holders() == []
+
+
+def test_a_fix_with_a_slot_and_a_unit_is_counted_once(scene: Scene) -> None:
+    scene.unit("a-fix", kind="fix")
+    start_agent(scene, "a-fix", minutes_ago=reserve_minutes(scene) * 20)
+    assert scene.holders("fix") == ["a-fix"]
+
+
+def test_a_fix_with_a_slot_ends_with_a_passing_review_after_the_slot(scene: Scene) -> None:
+    scene.task("a-fix", kind="fix")
+    start_agent(scene, "a-fix", minutes_ago=600)
+    stamp(scene, "parent", "reviewed", minutes_ago=700)
+    assert scene.holders("fix") == ["a-fix"], "a review before the slot is the parent's own"
+    stamp(scene, "parent", "reviewed", minutes_ago=1)
+    assert scene.holders("fix") == []
+
+
+def test_a_fix_with_a_slot_ends_with_a_review_in_its_own_log_too(scene: Scene) -> None:
+    scene.task("a-fix", kind="fix")
+    start_agent(scene, "a-fix", minutes_ago=600)
+    stamp(scene, "a-fix", "reviewed", minutes_ago=1)
+    assert scene.holders("fix") == []
+
+
+@pytest.mark.parametrize("log", ["a-fix", "parent"])
+def test_a_fix_with_a_slot_ends_when_its_log_or_its_parent_s_is_finished(scene: Scene, log: str) -> None:
+    scene.task("a-fix", kind="fix")
+    start_agent(scene, "a-fix", minutes_ago=600)
+    stamp(scene, log, "finished", minutes_ago=700)
+    assert scene.holders("fix") == []
+
+
+def test_a_fix_with_a_slot_and_a_log_that_cannot_be_trusted_keeps_its_place(scene: Scene) -> None:
+    scene.task("a-fix", kind="fix")
+    start_agent(scene, "a-fix", minutes_ago=600)
+    stamp(scene, "parent", "reviewed", minutes_ago=1)
+    segment = scene.scratch / "parent" / "stamps" / "0001.jsonl"
+    segment.write_text(segment.read_text(encoding="utf-8").replace('"seq":1', '"seq":9'), encoding="utf-8")
+    assert scene.holders("fix") == ["a-fix"]
+
+
+def test_a_fix_with_a_slot_is_a_fix_whatever_its_issue_is_labelled(scene: Scene) -> None:
+    scene.task("a-fix", kind="fix", renderer=True)
+    start_agent(scene, "a-fix")
+    assert scene.holders("fix") == ["a-fix"] and scene.holders("renderer") == []
+
+
+def over_when(*numbers: int) -> task_slots.ParentOver:
+    """A stand-in for GitHub that says the pull requests closing `numbers` are over."""
+    return lambda issues: any(number in numbers for number in issues)
+
+
+def test_a_fix_whose_parent_pull_request_is_over_leaves_the_queue(scene: Scene) -> None:
+    scene.task("old-fix", kind="fix", age_minutes=50, issues=(7,))
+    scene.task("live-fix", kind="fix", age_minutes=10, issues=(8,))
+    current = task_slots.scan(scene.scratch, scene.conventions, scene.now(), parent_over=over_when(7))
+    assert current.queued_fixes == ("live-fix",)
+
+
+def test_a_fix_with_a_slot_whose_parent_pull_request_is_over_holds_no_place(scene: Scene) -> None:
+    scene.task("old-fix", kind="fix", issues=(7,))
+    start_agent(scene, "old-fix")
+    current = task_slots.scan(scene.scratch, scene.conventions, scene.now(), parent_over=over_when(7))
+    assert current.holders == () and current.queued_fixes == ()
+
+
+def test_a_fix_unit_is_not_asked_about_its_pull_request(scene: Scene) -> None:
+    scene.unit("a-fix", kind="fix", issues=(7,))
+    current = task_slots.scan(scene.scratch, scene.conventions, scene.now(), parent_over=over_when(7))
+    assert [holder.task for holder in current.held("fix")] == ["a-fix"]
+
+
+def test_the_pull_requests_are_asked_about_only_for_a_fix_without_a_unit(scene: Scene) -> None:
+    asked: list[tuple[int, ...]] = []
+
+    def over(issues: Collection[int]) -> bool:
+        asked.append(tuple(issues))
+        return False
+
+    scene.task("a-one")
+    scene.unit("b-fix", kind="fix")
+    scene.task("c-fix", kind="fix", issues=(9,))
+    task_slots.scan(scene.scratch, scene.conventions, scene.now(), parent_over=over)
+    assert asked == [(9,)]
+
+
+def test_a_fix_with_no_pull_request_yet_is_not_over(scene: Scene) -> None:
+    scene.github.add_issue(7)
+    over = task_slots.pulls_over(scene.github)
+    assert over((7,)) is False
+
+
+@pytest.mark.parametrize("state", ["merged", "closed"])
+def test_a_fix_whose_pull_requests_merged_or_closed_is_over(scene: Scene, state: str) -> None:
+    scene.github.add_issue(7)
+    scene.github.link_pr(7, 900, state=state)
+    assert task_slots.pulls_over(scene.github)((7,)) is True
+
+
+def test_a_fix_whose_issue_has_a_pull_request_open_is_not_over(scene: Scene) -> None:
+    scene.github.add_issue(7)
+    scene.github.link_pr(7, 900, state="closed")
+    scene.github.link_pr(7, 901, state="open")
+    assert task_slots.pulls_over(scene.github)((7,)) is False
+
+
+def test_a_github_that_cannot_be_read_leaves_the_fix_where_it_is_and_is_asked_once(scene: Scene) -> None:
+    asked: list[int] = []
+
+    class Down:
+        def linked_prs(self, number: int) -> list[object]:
+            asked.append(number)
+            raise ConfigError("cannot read from GitHub with gh (offline)")
+
+    over = task_slots.pulls_over(Down())  # type: ignore[arg-type]
+    assert over((7,)) is False and over((8,)) is False
+    assert asked == [7]
 
 
 # --- the brief ------------------------------------------------------------------------------------------------------
@@ -1273,6 +1445,7 @@ def test_the_report_lists_both_slots(
     scene.unit("t-flow", kind="tooling")
     workflow_card(scene, "t-flow")
     scene.task("c-fix", kind="fix")
+    claimed(scene, "c-fix")
     code, out = run(scene, monkeypatch, capsys)
     assert code == 0
     assert "places: 2 of 4 in use (2 build slot(s) x 2, every track together)" in out
@@ -1775,3 +1948,29 @@ def test_on_the_default_machine_a_third_game_unit_never_fits(scene: Scene) -> No
     scene.unit("n-ids", networking=True)
     verdict = scene.admit(brief("c-three"))
     assert not verdict.allowed and "1 kept for fix, which runs fewer than its minimum" in verdict.message
+
+
+def test_the_report_shows_a_fix_with_an_agent_and_no_unit_in_work_and_drops_a_fix_whose_pull_request_merged(
+    scene: Scene, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    scene.task("live-fix", kind="fix", issues=(7,))
+    start_agent(scene, "live-fix", minutes_ago=reserve_minutes(scene) * 20)
+    scene.task("merged-fix", kind="fix", issues=(8,))
+    scene.task("waiting-fix", kind="fix", issues=(9,))
+    for number in (7, 8, 9):
+        scene.github.add_issue(number)
+    scene.github.link_pr(8, 900, state="merged")
+    code, out = run(scene, monkeypatch, capsys)
+    assert code == 0
+    assert "fix: 1 in work" in out and "live-fix (fix, in work since" in out
+    assert "fix tasks waiting, oldest first: waiting-fix" in out and "merged-fix" not in out
+
+
+def test_the_json_report_leaves_out_a_fix_whose_pull_request_merged(
+    scene: Scene, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    scene.task("merged-fix", kind="fix", issues=(8,))
+    scene.github.add_issue(8)
+    scene.github.link_pr(8, 900, state="closed")
+    code, out = run(scene, monkeypatch, capsys, "--json")
+    assert code == 0 and json.loads(out)["queued_fixes"] == []

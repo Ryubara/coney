@@ -6,6 +6,7 @@ Nothing here touches the network, git or the real scratch folder (docs/guides/sl
 
 from __future__ import annotations
 
+from collections.abc import Collection
 from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
@@ -74,6 +75,9 @@ class FakeSources:
         self.claims: list[Card] = []
         self.blocked_by: dict[int, list[int]] = {}
         self.pulls: list[FailedPull] = []
+        #: The issues whose fix task has nothing left to fix: their pull request merged or closed.
+        self.over: set[int] = set()
+        self.asked_over: list[tuple[int, ...]] = []
         #: The methods that raise ConfigError, as a GitHub that cannot be read does.
         self.down: set[str] = set()
         self.calls: list[str] = []
@@ -98,6 +102,10 @@ class FakeSources:
     def failed_pulls(self) -> list[FailedPull]:
         self._read("pulls")
         return list(self.pulls)
+
+    def pulls_over(self, issues: Collection[int]) -> bool:
+        self.asked_over.append(tuple(issues))
+        return any(number in self.over for number in issues)
 
 
 def full_places(scene: Scene) -> None:

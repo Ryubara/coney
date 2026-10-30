@@ -257,8 +257,8 @@ def _build_parser() -> argparse.ArgumentParser:
     init.add_argument("--dry-run", action="store_true", help="print the steps without doing any")
     clean = workspace_commands.add_parser(
         "clean",
-        help="remove merged worktrees and old build folders (all idle ones when the drive is low), stop stale waits "
-        "and orphaned test runs (a dry run unless --apply)",
+        help="remove merged worktrees and old build folders (all idle ones when the drive is low), archive the fix "
+        "tasks of merged pull requests, stop stale waits and orphaned test runs (a dry run unless --apply)",
     )
     clean.add_argument("--workspace", type=Path, help="the workspace folder (default: found from the checkout)")
     clean.add_argument("--apply", action="store_true", help="act; without it, only report what would be done")

@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from coney_tools.config import ConfigError
-from coney_tools.unit_record import UnitRecord, UnitRecordError, read_record, write_record
+from coney_tools.unit_record import UnitRecord, UnitRecordError, log_task_of, read_record, write_record
 
 T0 = datetime(2026, 10, 23, 9, 30, 0, tzinfo=UTC)
 
@@ -84,3 +84,41 @@ def test_a_wrong_value_is_refused(tmp_path: Path) -> None:
     path.write_text(json.dumps(data), encoding="utf-8")
     with pytest.raises(UnitRecordError, match="wrong value"):
         read_record(path)
+
+
+# --- the log a fix task stamps in --------------------------------------------------------------------------------
+
+
+def task_file(folder: Path, *front: str) -> None:
+    """A task file in `folder` with the given lines in its --- block."""
+    folder.mkdir(parents=True, exist_ok=True)
+    lines = [
+        "task: a-fix",
+        "issues: [10]",
+        "kind: fix",
+        "claimant: Ryubara",
+        "claimed_at: '2026-10-23T09:00:00Z'",
+        *front,
+    ]
+    (folder / "TASK.md").write_text("---\n" + "\n".join(lines) + "\n---\n# Task a-fix\n", encoding="utf-8")
+
+
+def test_a_fix_task_with_a_record_stamps_in_the_record_s_log(tmp_path: Path) -> None:
+    write_record(tmp_path / "unit.json", record(task="a-fix", kind="fix", parent="10-fix-the-fight-goal"))
+    assert log_task_of(tmp_path, "unit.json", "TASK.md") == "10-fix-the-fight-goal"
+
+
+def test_a_fix_task_with_no_record_stamps_in_the_log_of_the_parent_its_task_file_names(tmp_path: Path) -> None:
+    task_file(tmp_path, "parent: 10-fix-the-fight-goal")
+    assert log_task_of(tmp_path, "unit.json", "TASK.md") == "10-fix-the-fight-goal"
+
+
+def test_a_task_with_no_record_and_no_parent_has_no_other_log(tmp_path: Path) -> None:
+    assert log_task_of(tmp_path, "unit.json", "TASK.md") is None
+    task_file(tmp_path)
+    assert log_task_of(tmp_path, "unit.json", "TASK.md") is None
+
+
+def test_a_task_file_that_cannot_be_read_names_no_parent(tmp_path: Path) -> None:
+    (tmp_path / "TASK.md").write_text("---\n: [\n---\n", encoding="utf-8")
+    assert log_task_of(tmp_path, "unit.json", "TASK.md") is None

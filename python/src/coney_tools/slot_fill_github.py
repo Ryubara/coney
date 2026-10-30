@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import subprocess
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -91,6 +91,7 @@ class GhSources:
         self._stop = ""
         rules = conventions.claims
         self._remote: Remote = GhRemote(rules.bot_login, rules.card_marker, rules.reply_marker, self._gh)
+        self._over = task_slots.pulls_over(self._remote)
         self._blocked_heading = section_heading(conventions, "blocked-by")
 
     # -- the bounded call
@@ -230,6 +231,12 @@ class GhSources:
             for blocker in (self._remote.blocker(number) for number in blocked_by_numbers(text or ""))
             if not blocker.done
         ]
+
+    def pulls_over(self, issues: Collection[int]) -> bool:
+        """Whether the pull request that closes one of `issues` is merged or closed (`task_slots.pulls_over`); False
+        when GitHub cannot be read, so a fix task is kept. Not cached: it is asked of the few fix tasks that have no
+        unit record."""
+        return self._over(issues)
 
     def failed_pulls(self) -> list[FailedPull]:
         """This account's open, non-draft pull requests with a failed required check."""

@@ -44,7 +44,7 @@ import os
 import re
 import time
 import uuid
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import Callable, Collection, Iterable, Iterator
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -256,6 +256,35 @@ def unit_labels(issues: Iterable[int], cards: Cards, conventions: Conventions) -
 #: The labels of a started unit, or None when they cannot be told (counted, as reimplementation unless a fix).
 LabelsOf = Callable[[UnitRecord], Labels | None]
 
+#: Whether the pull request of a fix task's issues is over (merged or closed): asked of a fix with no unit record,
+#: which the scan cannot judge from a worktree. Say False when it cannot be told.
+ParentOver = Callable[[Collection[int]], bool]
+
+
+def pulls_over(remote: Remote) -> ParentOver:
+    """A `ParentOver` read from GitHub: the pull requests that close one of the issues exist and none is open.
+
+    A pull request that does not close its issue (`finishes: false`) is not seen, so its fix is never over. The first
+    read that fails ends the reading, and every later answer is False: a fix is kept when GitHub cannot say."""
+    failed = False
+
+    def over(issues: Collection[int]) -> bool:
+        """Whether the pull request that closes any of `issues` is merged or closed."""
+        nonlocal failed
+        for number in issues:
+            if failed:
+                return False
+            try:
+                linked = remote.linked_prs(number)
+            except ConfigError:
+                failed = True
+                return False
+            if linked and not any(pull.state == "open" for pull in linked):
+                return True
+        return False
+
+    return over
+
 
 def holds_a_slot(agent_type: str, conventions: Conventions) -> bool:
     """Whether an agent of this subagent type needs a claim and a slot (`tasks.start.slots.agent_types`, any case)."""
@@ -276,9 +305,10 @@ def unit_over(record: UnitRecord, report: stamps.Report) -> bool:
     return bool(claimed) and reviewed is not None and reviewed.seq > claimed[-1].seq
 
 
-def _reservation(path: Path, now: datetime, conventions: Conventions) -> Holder | None:
-    """The live reservation in `path`, or None when there is none, it expired or it cannot be read. A reservation
-    written before the tracks names a `slot` (`task` or `fix`) instead: `task` reads as reimplementation."""
+def _reservation(path: Path, now: datetime, conventions: Conventions, any_age: bool = False) -> Holder | None:
+    """The live reservation in `path`, or None when there is none, it expired (unless `any_age`) or it cannot be read.
+    A reservation written before the tracks names a `slot` (`task` or `fix`) instead: `task` reads as
+    reimplementation."""
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
         at = parse_time(str(data["at"]))
@@ -288,9 +318,23 @@ def _reservation(path: Path, now: datetime, conventions: Conventions) -> Holder 
         holder = Holder(str(data["task"]), str(data["kind"]), track, "reserved", at)
     except (OSError, ValueError, KeyError, TypeError):
         return None
-    if now - at > timedelta(minutes=conventions.tasks.start.slots.reserve_minutes):
+    if not any_age and now - at > timedelta(minutes=conventions.tasks.start.slots.reserve_minutes):
         return None
     return holder
+
+
+def _fix_agent_over(scratch: Path, conventions: Conventions, name: str, parent: str, since: datetime) -> bool:
+    """Whether the agent a fix task with no unit record was started for is done: the fix's log or its parent's holds
+    `finished`, or a passing `reviewed` written after the agent was started. A log that cannot be trusted says
+    nothing, so the fix keeps its place."""
+    for log in dict.fromkeys(item for item in (name, parent) if item):
+        report = stamps.verify(scratch / log / "stamps", conventions.stamps)
+        if not report.ok:
+            continue
+        reviewed = report.latest("reviewed", result="pass")
+        if report.latest("finished") is not None or (reviewed is not None and reviewed.moment > since):
+            return True
+    return False
 
 
 def _front(path: Path) -> dict[str, Any] | None:
@@ -328,6 +372,7 @@ def scan(
     now: datetime,
     trees: Iterable[Path] = (),
     labels: LabelsOf | None = None,
+    parent_over: ParentOver | None = None,
 ) -> Scan:
     """The units and reservations on this machine that hold a place, and the fix tasks waiting to start.
 
@@ -336,7 +381,11 @@ def scan(
     folder that is not a task is ignored. `labels` says which live units are workflow units (no place) and which are
     Studio units (from their claim cards); without it every unit counts, a fix as a fix and any other as
     reimplementation, and so does a unit whose labels cannot be told (listed in `unchecked`). `trees` are the
-    worktrees of the workspace: those no readable record names come back as `unknown_trees`."""
+    worktrees of the workspace: those no readable record names come back as `unknown_trees`.
+
+    A fix task with no unit record (made by hand, or before the records) is in work while its `slot.json` is there,
+    however old, until its log or its parent's shows a review after the slot or `finished`; without one it is queued.
+    `parent_over` says whether such a fix's pull request merged or closed, and then the fix is neither."""
     holders: list[Holder] = []
     exempt: list[str] = []
     unchecked: list[str] = []
@@ -380,15 +429,25 @@ def scan(
             track = track_of(record.kind, studio, networking, renderer)
             holders.append(Holder(record.task, record.kind, track, "in work", record.started))
             continue
+        if record is None and front is not None and front.get("kind") == "fix":
+            try:
+                claimed_at = parse_time(str(front["claimed_at"]))
+                issues = [int(item) for item in front.get("issues") or []]
+            except (KeyError, ValueError, TypeError):
+                continue
+            if parent_over is not None and issues and parent_over(issues):
+                continue
+            slot = _reservation(folder / RESERVATION_FILE, now, conventions, any_age=True)
+            if slot is None:
+                queued.append((claimed_at, str(front["task"])))
+            elif not _fix_agent_over(scratch, conventions, folder.name, str(front.get("parent") or ""), slot.since):
+                fresh = now - slot.since <= timedelta(minutes=conventions.tasks.start.slots.reserve_minutes)
+                holders.append(Holder(folder.name, "fix", "fix", "reserved" if fresh else "in work", slot.since))
+            continue
         reserved = _reservation(folder / RESERVATION_FILE, now, conventions)
         if reserved is not None and (record is None or reserved.since > record.started):
             holders.append(reserved)
             continue
-        if record is None and front is not None and front.get("kind") == "fix":
-            try:
-                queued.append((parse_time(str(front["claimed_at"])), str(front["task"])))
-            except (KeyError, ValueError, TypeError):
-                continue
     queued.sort()
     unknown = tuple(tree for tree in trees if tree.resolve() not in known)
     return Scan(tuple(holders), tuple(exempt), tuple(name for _, name in queued), unknown, tuple(unchecked))

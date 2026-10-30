@@ -317,3 +317,42 @@ def test_the_bounded_runner_kills_a_slow_call_and_reports_a_failure(monkeypatch:
     monkeypatch.setattr(subprocess, "run", failing)
     with pytest.raises(OSError, match="not logged in"):
         slot_fill_github.bounded_runner(7)(["issue", "list"])
+
+
+def linked(*states: str) -> dict[str, Any]:
+    """A `gh api graphql` answer for an issue that pull requests with the given states close."""
+    nodes = [
+        {
+            "number": 900 + index,
+            "state": "MERGED" if state == "merged" else state.upper(),
+            "merged": state == "merged",
+            "isDraft": False,
+            "author": {"login": "Ryubara"},
+            "baseRepository": {"nameWithOwner": "acme/widgets"},
+            "commits": {"nodes": []},
+        }
+        for index, state in enumerate(states)
+    ]
+    issue = {"closedByPullRequestsReferences": {"nodes": nodes}}
+    return {"data": {"repository": {"nameWithOwner": "acme/widgets", "issue": issue}}}
+
+
+def test_a_fix_is_over_when_the_pull_requests_closing_its_issue_are_merged_or_closed(
+    tmp_path: Path, gh: FakeGh, clock: Clock
+) -> None:
+    gh.answers["api graphql"] = linked("merged", "closed")
+    assert sources(tmp_path, gh, clock).pulls_over((7,)) is True
+
+
+def test_a_fix_is_not_over_while_a_pull_request_is_open_or_none_exists(
+    tmp_path: Path, gh: FakeGh, clock: Clock
+) -> None:
+    gh.answers["api graphql"] = linked("closed", "open")
+    assert sources(tmp_path, gh, clock).pulls_over((7,)) is False
+    gh.answers["api graphql"] = linked()
+    assert sources(tmp_path, gh, clock).pulls_over((7,)) is False
+
+
+def test_a_fix_is_not_over_when_github_cannot_be_read(tmp_path: Path, gh: FakeGh, clock: Clock) -> None:
+    gh.fail = "api graphql"
+    assert sources(tmp_path, gh, clock).pulls_over((7,)) is False

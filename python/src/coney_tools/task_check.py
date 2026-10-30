@@ -226,7 +226,7 @@ def _run(request: Request, env: Env) -> int:
 def _log_task(root: Path, task: str, conventions: Conventions, say: Callable[[str], None]) -> str:
     """The task whose log the stamp goes in: a fix task's parent (its unit record says so), else `task` itself, so a
     fix task named by its own id is stamped where `pr verify` and `pr open` read."""
-    owner = log_task_of(unit.Unit.of(root, task).dir, conventions.tasks.start.unit_file) or task
+    owner = log_task_of(unit.Unit.of(root, task).dir, conventions.tasks.start.unit_file, conventions.tasks.file) or task
     if owner != task:
         say(f"task check: {task} is a fix of {owner}: its stamps go in {owner}'s log")
     return owner
