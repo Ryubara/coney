@@ -1091,6 +1091,13 @@ int main(int argc, char** argv) {
     if (screenshotPath && frameLimit) {
         renderer.requestCapture(*frameLimit - 1, *screenshotPath);
     }
+    // `--draw-hash`: the same last frame's draw stream (docs/engine/renderer.md#comparing).
+    const bool drawHash = options->drawHash;
+    if (drawHash && frameLimit) {
+        renderer.requestDrawStream(*frameLimit - 1);
+    } else if (drawHash) {
+        renderer.prepareDrawStreams(); // the frame is chosen once the level plays
+    }
     // How long a `--play-level` run may wait for its level to play before it gives up: 10 minutes of frames, longer
     // than any loading screen and intro movie.
     constexpr std::uint64_t kPlayStartFrames = 18000;
@@ -1109,6 +1116,9 @@ int main(int argc, char** argv) {
             playOrigin = frame;
             if (screenshotPath) {
                 renderer.requestCapture(frame + *playFrameLimit - 1, *screenshotPath);
+            }
+            if (drawHash) {
+                renderer.requestDrawStream(frame + *playFrameLimit - 1);
             }
         }
         if (!playOrigin && frame >= playStartFrames) {
@@ -1375,6 +1385,19 @@ int main(int argc, char** argv) {
         logText(std::format("screenshot {} ({}x{}): {} of {} pixels differ from the background, hash {:#018x}\n",
                             frame.path, frame.size.width, frame.size.height, frame.stats.notBackground,
                             frame.stats.pixels, frame.stats.hash));
+    }
+    // `--draw-hash`: counts and the hash only, never what was drawn (LEGAL.md).
+    if (drawHash) {
+        const auto& stream = renderer.drawStream();
+        if (!stream) {
+            logError("--draw-hash: the last frame was never drawn");
+            return 1;
+        }
+        const coney::platform::DrawCounts& counts = stream->counts();
+        logText(std::format("draw stream: {} records: {} Im2D and {} Im3D draws of {} vertices, {} camera, {} raster "
+                            "and {} frame operations, hash {:#018x}\n",
+                            counts.records, counts.im2dDraws, counts.im3dDraws, counts.vertices, counts.cameraOps,
+                            counts.rasterOps, counts.frameOps, stream->hash()));
     }
     return clipFailed ? 1 : 0;
 }

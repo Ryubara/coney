@@ -11,6 +11,7 @@
 
 #include "core/name_hash.h"
 #include "graphics/throw_arc.h"
+#include "platform/draw_calls.h"
 
 namespace coney::platform {
 
@@ -67,23 +68,23 @@ void ThrowArcRenderer::draw(const std::vector<graphics::ThrowArcVertex>& strip) 
     }
     std::vector<std::uint16_t> indices = graphics::throwArcIndices(); // librw takes a mutable pointer
     rw::Raster* raster = m_dictionary ? m_dictionary->textures().front()->raster : nullptr;
-    rw::SetRenderState(rw::ZTESTENABLE, 1);
-    rw::SetRenderState(rw::ZWRITEENABLE, 0);
-    rw::SetRenderState(rw::FOGENABLE, 0);
-    rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
-    rw::SetRenderState(rw::VERTEXALPHA, 1);
-    rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-    rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+    draw::setRenderState(rw::ZTESTENABLE, 1);
+    draw::setRenderState(rw::ZWRITEENABLE, 0);
+    draw::setRenderState(rw::FOGENABLE, 0);
+    draw::setRenderState(rw::CULLMODE, rw::CULLNONE);
+    draw::setRenderState(rw::VERTEXALPHA, 1);
+    draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+    draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
     // The texture repeats once a segment along the ribbon (v runs from 15 to -2), and is filtered linearly.
-    rw::SetRenderState(rw::TEXTUREFILTER, rw::Texture::LINEAR);
-    rw::SetRenderState(rw::TEXTUREADDRESS, rw::Texture::WRAP);
-    rw::SetRenderStatePtr(rw::TEXTURERASTER, raster);
-    rw::im3d::Transform(vertices.data(), static_cast<rw::int32>(vertices.size()), nullptr,
+    draw::setRenderState(rw::TEXTUREFILTER, rw::Texture::LINEAR);
+    draw::setRenderState(rw::TEXTUREADDRESS, rw::Texture::WRAP);
+    draw::setRenderStatePtr(rw::TEXTURERASTER, raster);
+    draw::im3dTransform(vertices.data(), static_cast<rw::int32>(vertices.size()), nullptr,
                         rw::im3d::VERTEXXYZ | rw::im3d::VERTEXRGBA | rw::im3d::VERTEXUV);
-    rw::im3d::RenderIndexedPrimitive(rw::PRIMTYPETRILIST, indices.data(), static_cast<rw::int32>(indices.size()));
-    rw::im3d::End();
-    rw::SetRenderState(rw::ZWRITEENABLE, 1);
-    rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
+    draw::im3dRenderIndexedPrimitive(rw::PRIMTYPETRILIST, indices.data(), static_cast<rw::int32>(indices.size()));
+    draw::im3dEnd();
+    draw::setRenderState(rw::ZWRITEENABLE, 1);
+    draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
 }
 
 } // namespace coney::platform

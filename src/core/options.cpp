@@ -45,7 +45,7 @@ constexpr std::string_view kUsage =
     "Usage: coney --install DISC --data DIR [--verify]\n"
     "       coney --script-patch make|apply ...   (coney --script-patch for its usage)\n"
     "       coney [--disc PATH | --data DIR] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET]\n"
-    "             [--frames N] [--screenshot PATH] [--headless] [--help]\n"
+    "             [--frames N] [--screenshot PATH] [--draw-hash] [--headless] [--help]\n"
     "             [--input-script FILE] [--view-text FONT TEXT] [--language CODE] [--tunables FILE]\n"
     "             [--profiles DIR]\n"
     "             [--view-world NAME] [--view-character [NAME]] [--anim CLIP]\n"
@@ -202,6 +202,7 @@ constexpr std::string_view kUsage =
     "                     --frames, --headless, --input-script or --screenshot each frame is one\n"
     "                     step and one render, with no clock, so a run is the same every time\n"
     "  --screenshot PATH  save the last frame as a PNG; needs --frames and a window\n"
+    "  --draw-hash        print the counts and hash of what the last frame draws; needs --frames\n"
     "  --record FILE      record a video clip (H.264 MP4, 30 fps, 720 lines, with the game's sound) of\n"
     "                     Coney's own frames, without the debug menus, into FILE: a plain name in a\n"
     "                     scratch folder's clips/ folder, never in a git checkout; needs a window and\n"
@@ -599,6 +600,11 @@ std::expected<void, Error> checkCombinations(const Options& options) {
         (options.headless || !options.loads.empty() || options.renderReferences.has_value())) {
         return invalidArgument("--render-size sizes the window's frames, so it cannot be combined with --headless, "
                                "--load or --render-references");
+    }
+    if (options.drawHash &&
+        (!options.frameLimit.has_value() || !options.loads.empty() || options.renderReferences.has_value())) {
+        return invalidArgument("--draw-hash needs --frames N (the hash is of the last frame) and a run that draws "
+                               "frames, so not --load or --render-references");
     }
     if (options.screenshotPath.has_value()) {
         if (!options.frameLimit.has_value()) {
@@ -1365,6 +1371,11 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return std::unexpected(std::move(size.error()));
             }
             options.renderSize = *size;
+        } else if (arg == "--draw-hash") {
+            if (options.drawHash) {
+                return invalidArgument("--draw-hash given twice");
+            }
+            options.drawHash = true;
         } else if (arg == "--freeze-world") {
             if (options.freezeWorld) {
                 return invalidArgument("--freeze-world given twice");
