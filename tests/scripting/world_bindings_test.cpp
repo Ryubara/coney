@@ -100,6 +100,8 @@ struct Harness {
 } // namespace
 
 TEST_CASE("CfgSubtitles sets the game state's switch; DoorCRCCheck and EnableShadow do nothing", "[world_bindings]") {
+    // Expected: save.md#bindings, confirmed (code)
+    // Expected: lighting.md#code-index, confirmed (code)
     Harness h;
     h.call("CfgSubtitles", {Value(1.0)});
     CHECK(h.state.subtitles);
@@ -110,6 +112,7 @@ TEST_CASE("CfgSubtitles sets the game state's switch; DoorCRCCheck and EnableSha
 }
 
 TEST_CASE("ObjEnableZone switches a zone; ObjShow, ObjHide and ObjDestroy act on a spawn record", "[world_bindings]") {
+    // Expected: objects.md#warriors-functions, confirmed (code)
     Harness h;
     h.call("ObjEnableZone", {Value(26.0), Value(1.0)});
     CHECK(h.records.zoneEnabled(26));
@@ -135,6 +138,7 @@ TEST_CASE("ObjEnableZone switches a zone; ObjShow, ObjHide and ObjDestroy act on
 
 TEST_CASE("ObjShow and ObjHide leave the show message; ObjDestroy with its message makes a marker die",
           "[world_bindings]") {
+    // Expected: objects.md#objective-markers, confirmed (code)
     Harness h;
     static_cast<void>(h.types.add("dyn_w_mission", "dyn_objective", 0));
     static_cast<void>(h.types.add("dyn_bat_tuff", "melee_weapon", 50));
@@ -190,6 +194,7 @@ TEST_CASE("TriggerSphereCfg configures the object's sphere, a mode that is not a
 }
 
 TEST_CASE("FlagNetAddLink builds the network and FlagNetTraverse reaches the AI host", "[world_bindings]") {
+    // Expected: ai/index.md#level99, confirmed (code)
     Harness h;
     h.call("FlagNetAddLink", {Value(20.0), Value(21.0), Value(0.0), Value(22.0), Value(0.0)});
     CHECK(h.net.neighbours(20) == std::vector<double>{21, 22});
@@ -207,6 +212,7 @@ TEST_CASE("FlagNetAddLink builds the network and FlagNetTraverse reaches the AI 
 }
 
 TEST_CASE("TriggerSphereSetRadius sets a sphere's radius, making one unarmed when there is none", "[world_bindings]") {
+    // Expected: scripting.md#triggers, confirmed (code)
     Harness h;
     h.call("TriggerSphereSetRadius", {Value(40.0), Value(3.5)});
     const coney::world_objects::TriggerSphere* sphere = h.spheres.find(40.0);
@@ -221,6 +227,8 @@ TEST_CASE("TriggerSphereSetRadius sets a sphere's radius, making one unarmed whe
 }
 
 TEST_CASE("FlagEnable switches a flag; ChangeCollision switches the triangles inside a box", "[world_bindings]") {
+    // Expected: flags.md#record, confirmed (code)
+    // Expected: collision.md#enable, inferred
     Harness h;
     coney::world_objects::WorldFlags flags;
     flags.add(100.0, "fGuard", {1.0F, 2.0F, 0.0F}, 0.0F);
@@ -249,6 +257,7 @@ TEST_CASE("FlagEnable switches a flag; ChangeCollision switches the triangles in
 }
 
 TEST_CASE("CfgSetMaxThrowError keeps radians; KillHumans does nothing", "[world_bindings]") {
+    // Expected: characters.md#warriors-functions, confirmed (code)
     Harness h;
     h.call("CfgSetMaxThrowError", {Value(5.0), Value(10.0)});
     REQUIRE(h.state.characters.maxThrowError.has_value());

@@ -58,7 +58,7 @@ using Results = std::expected<std::vector<Value>, Error>;
 
 /// Whether argument `i` is missing or nil. Only for an argument that reads the same either way (a string or a
 /// callback, tolua's NULL) or that a binding tests for a type itself; a number or boolean with a default reads an
-/// explicit nil as 0, so it goes through numberOr() or booleanArg() (docs/research/scripting.md#optional-arguments).
+/// explicit nil as 0, so it goes through numberOr() or booleanArg() (docs/research/script-arguments.md).
 /// @coney-only tolua's argument reading and result pushing, which the original's generated wrappers do
 [[nodiscard]] inline bool absent(std::span<const Value> args, std::size_t i) {
     return i >= args.size() || args[i].isNil();

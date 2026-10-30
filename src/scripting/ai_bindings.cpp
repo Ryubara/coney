@@ -83,7 +83,7 @@ NativeFunction makeGoalMoveToFlag(const BindingContext& context) {
 }
 
 // `ActLookAt(human, target, turnSpeed, timeMs)`: the fourth argument is -1 when left out, 0 for an explicit nil
-// (docs/research/scripting.md#optional-arguments).
+// (docs/research/script-arguments.md).
 // @orig 0x003647d8 ActLookAt (unknown)
 NativeFunction makeActLookAt(const BindingContext& context) {
     return hostCall(context, [](AiBindingHost& host, std::span<const Value> args) {

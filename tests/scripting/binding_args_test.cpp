@@ -28,7 +28,7 @@ std::vector<Value> one(Value value) { return {std::move(value)}; }
 } // namespace
 
 TEST_CASE("numberOr gives the default only past the top of the stack, and nil reads 0", "[scripting][binding_args]") {
-    // Expected: scripting.md#optional-arguments, confirmed (code)
+    // Expected: script-arguments.md#readers, confirmed (code)
     CHECK(binding::numberOr(one(Value(1.0)), 1, 7.0) == 7.0);
     CHECK(binding::numberOr(one(Value()), 0, 7.0) == 0.0);
     CHECK(binding::numberOr(one(Value(0.0)), 0, 7.0) == 0.0);
@@ -41,7 +41,7 @@ TEST_CASE("numberOr gives the default only past the top of the stack, and nil re
 
 TEST_CASE("unsignedArg reads as 0x0042c420 converts: negative to 0, 2^32 and above to 0xffffffff",
           "[scripting][binding_args]") {
-    // Expected: scripting.md#optional-arguments, confirmed (code)
+    // Expected: script-arguments.md#conversions, confirmed (code)
     CHECK(binding::unsignedArg(one(Value(1.0)), 1, 7.0) == 7U);
     CHECK(binding::unsignedArg(one(Value()), 0, 7.0) == 0U);
     CHECK(binding::unsignedArg(one(Value(0.0)), 0, 7.0) == 0U);
@@ -58,7 +58,7 @@ TEST_CASE("unsignedArg reads as 0x0042c420 converts: negative to 0, 2^32 and abo
 
 TEST_CASE("signedArg reads as 0x0042c388 converts: truncation, saturating at the int range",
           "[scripting][binding_args]") {
-    // Expected: scripting.md#optional-arguments, confirmed (code)
+    // Expected: script-arguments.md#conversions, confirmed (code)
     constexpr std::int32_t kMax = std::numeric_limits<std::int32_t>::max();
     constexpr std::int32_t kMin = std::numeric_limits<std::int32_t>::min();
     CHECK(binding::signedArg(one(Value(1.0)), 1, -1.0) == -1);
@@ -78,7 +78,7 @@ TEST_CASE("signedArg reads as 0x0042c388 converts: truncation, saturating at the
 }
 
 TEST_CASE("floatArg gives the default only past the top, and nil reads 0", "[scripting][binding_args]") {
-    // Expected: scripting.md#optional-arguments, confirmed (code)
+    // Expected: script-arguments.md#readers, confirmed (code)
     CHECK(binding::floatArg(one(Value(1.0)), 1, 3.0) == 3.0F);
     CHECK(binding::floatArg(one(Value()), 0, 3.0) == 0.0F);
     CHECK(binding::floatArg(one(Value(0.0)), 0, 3.0) == 0.0F);
@@ -90,7 +90,7 @@ TEST_CASE("floatArg gives the default only past the top, and nil reads 0", "[scr
 
 TEST_CASE("booleanArg reads as 0x00409318: the default when missing, false for nil, else the number is not 0",
           "[scripting][binding_args]") {
-    // Expected: scripting.md#optional-arguments, confirmed (code)
+    // Expected: script-arguments.md#readers, confirmed (code)
     CHECK(binding::booleanArg(one(Value(0.0)), 1, true));
     CHECK_FALSE(binding::booleanArg(one(Value(0.0)), 1, false));
     CHECK_FALSE(binding::booleanArg(one(Value()), 0, true));

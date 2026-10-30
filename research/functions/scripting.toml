@@ -1024,11 +1024,6 @@ level = "confirmed-code"
 coney = "src/scripting/world_bindings.cpp:makeTriggerSphereCfg"
 status = "compared"
 
-[[function.gaps]]
-what = "a mode that is not a number reads as 1, where the signed reader gives 0"
-relation = "stand-in"
-question = "scripting.md#q-trigger-sphere-mode"
-
 [[function]]
 address = 0x0036d938
 name = "lua_ToInt"

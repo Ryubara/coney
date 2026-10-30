@@ -34,15 +34,6 @@ double handleArg(std::span<const Value> args, std::size_t i) { return std::trunc
 // number is not 0.
 using binding::booleanArg;
 
-// Argument `i` as a whole number where a script may pass a boolean (`TriggerSphereCfg`'s mode: true is 1).
-// @coney-only tolua's argument reading, which the original's generated wrappers do
-int numberOrBooleanArg(std::span<const Value> args, std::size_t i) {
-    if (i < args.size() && !args[i].number() && !args[i].isNil()) {
-        return 1;
-    }
-    return static_cast<int>(std::trunc(binding::number(args, i)));
-}
-
 // Argument `i` as an unsigned 32-bit number, as tolua reads one (a negative number wraps).
 // @coney-only tolua's argument reading, which the original's generated wrappers do
 std::uint32_t unsignedArg(std::span<const Value> args, std::size_t i) {
@@ -169,16 +160,15 @@ NativeFunction makeObjShowHide(const BindingContext& context, bool show) {
 }
 
 // `TriggerSphereCfg(object, enable, radius, mode, interval)`: the object's trigger sphere, made or reconfigured;
-// enable is false when left out.
+// enable is false when left out (docs/research/script-arguments.md).
 // @orig 0x0036d0e0 TriggerSphereCfg (unknown)
 NativeFunction makeTriggerSphereCfg(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
         if (context->spheres != nullptr) {
-            // The mode is a stand-in: a non-number reads as 1 (a test asserts it), where the original's signed reader
-            // gives 0; scripts pass only numbers there (docs/research/scripting.md#q-trigger-sphere-mode).
+            // The mode goes through the signed reader: a script's `true` is the number 1, anything not a number 0.
             static_cast<void>(context->spheres->configure(
                 binding::handleArg(args, 0), binding::booleanArg(args, 1, false), binding::floatArg(args, 2),
-                numberOrBooleanArg(args, 3), binding::unsignedArg(args, 4)));
+                binding::signedArg(args, 3), binding::unsignedArg(args, 4)));
         }
         return binding::none();
     };

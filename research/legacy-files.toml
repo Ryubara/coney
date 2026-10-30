@@ -1237,9 +1237,6 @@ tag = 20
 ["src/scenes/scene_record.h"]
 comment = 3
 
-["src/scripting/ai_bindings.cpp"]
-tag = 10
-
 ["src/scripting/ai_bindings.h"]
 comment = 2
 
@@ -1248,12 +1245,6 @@ tag = 3
 
 ["src/scripting/anim_callbacks.h"]
 comment = 1
-
-["src/scripting/arena_bindings.cpp"]
-tag = 11
-
-["src/scripting/binding_args.h"]
-tag = 5
 
 ["src/scripting/camera_bindings.cpp"]
 tag = 8
@@ -1332,9 +1323,6 @@ tag = 28
 ["src/scripting/story_bindings.h"]
 comment = 2
 tag = 1
-
-["src/scripting/world_bindings.cpp"]
-tag = 4
 
 ["src/warriors/character_rules.h"]
 comment = 1
@@ -2624,9 +2612,6 @@ citation = 11
 
 ["tests/scripting/spawn_bindings_test.cpp"]
 citation = 9
-
-["tests/scripting/world_bindings_test.cpp"]
-citation = 8
 
 ["tests/support/each_case_test.cpp"]
 citation = 1
