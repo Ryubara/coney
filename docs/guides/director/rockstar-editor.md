@@ -275,7 +275,10 @@ in memory, as Action Replay does [Engine: Unreal documentation].
 the game breaks old recordings (Halo, StarCraft, Overwatch); a state replay plays back without the game's rules and
 breaks only when the state's format changes. Coney changes often while it is built, so a recording of state, with a
 format version and a converter where the format changes, keeps the player's recordings working; this is the question
-of [#1186](issue:1186).
+of [#1186](issue:1186). The networking design's replays, which [#1184](issue:1184) asks Director to reuse, record
+input commands and session events and are checked by the state digest ([Testing](../network-architecture.md#testing)):
+they serve the tests, within one build, where an input replay is exact and small. Whether Director records inputs,
+state, or inputs with a full state at regular steps is the choice [#1186](issue:1186) makes.
 
 ## Sources {#sources}
 
