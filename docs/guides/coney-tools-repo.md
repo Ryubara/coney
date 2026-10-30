@@ -338,32 +338,32 @@ The coordinator's triage step ([Task files](issues.md#task-files)); the rules ar
   A fix task opens its parent's unit instead of making one. The coordinator's role may not run it
   (`.claude/hooks/hooks.toml`).
 * `slots` shows the [engineer tracks](agents.md#slots): the machine's places in use (its build slots times
-  `tasks.start.slots.per_build_slot`), then for each track (reimplementation, fix, studio) its rule and the units in it
-  (in work, with a record that cannot be read, or reserved for an agent that has not run `task start` yet), a line when
-  no reimplementation unit is in work, the workflow units that hold no place (the labels are read from their issues'
-  claim cards on GitHub; a unit whose cards cannot be read is counted, as reimplementation unless a fix, and named),
-  the fix tasks waiting (oldest first) and the worktrees no unit record names, which no place counts; `--json` prints
-  the same as data (`machine`, `tracks` with each one's `min`, `max` and holders). `--admit` is the check the
-  coordinator's Agent guard runs (`.claude/hooks/slot_guard.py`). For an `--agent-type` that holds a place
-  (`engineer`, `tooling`) it needs the task from `--task` or from the `Task id: <id>` line of the brief (`--brief
-  FILE`, or `-` for standard input), the task file, a claim that is held now (one read of the claim cards of each issue
-  from GitHub, 20 seconds each, none started after 20 seconds, none after the first that fails), for a Studio task a
-  `--model` and `--effort` that are one of `tasks.start.slots.tracks.studio.models`, and room in its track (its cap,
-  and the machine's places with the places other tracks keep set aside); it exits 0 when the agent may start, **3 with
-  the reasons when it is refused**, and any other code (a crash is 1, a bad option or a slot lock it cannot have 2)
-  when it could not judge. A GitHub that cannot be read leaves the claim and the labels unchecked: the place is counted
-  as usual (no unit counts as a workflow or Studio unit then, and no model is checked), and a start let through prints
-  a `warning:` line, which the guard logs. `--reserve` keeps the place for the agent for
-  `tasks.start.slots.reserve_minutes` or until its `task start`. Other types pass without a line. The listing also
-  shows the active waivers (below), and `--json` carries them as `waivers`.
-  `--fill-check` is the check the coordinator's `Stop` hook runs (`.claude/hooks/slot_fill_guard.py`): it exits **1
-  with a message that starts `Blocked:`** when a place is free, the tool finds work to start and nothing excuses it,
-  naming the free places (kept for game work, for a fix, for networking or for the renderer, open), the top eligible issues
+  `tasks.start.slots.per_build_slot`), then for each track (reimplementation, fix, studio, networking, renderer) its
+  rule and the units in it (in work, with a record that cannot be read, or reserved for an agent that has not run `task
+  start` yet), a line when no reimplementation, networking or renderer unit is in work (each track keeps one going), the
+  workflow units that hold no place (the labels are read from their issues' claim cards on GitHub; a unit whose cards
+  cannot be read is counted, as reimplementation unless a fix, and named), the fix tasks waiting (oldest first) and the
+  worktrees no unit record names, which no place counts; `--json` prints the same as data (`machine`, `tracks` with each
+  one's `min`, `max` and holders). `--admit` is the check the coordinator's Agent guard runs
+  (`.claude/hooks/slot_guard.py`). For an `--agent-type` that holds a place (`engineer`, `tooling`) it needs the task
+  from `--task` or from the `Task id: <id>` line of the brief (`--brief FILE`, or `-` for standard input), the task
+  file, a claim that is held now (one read of the claim cards of each issue from GitHub, 20 seconds each, none started
+  after 20 seconds, none after the first that fails), for a Studio task a `--model` and `--effort` that are one of
+  `tasks.start.slots.tracks.studio.models`, and room in its track (its cap, and the machine's places with the places
+  other tracks keep set aside); it exits 0 when the agent may start, **3 with the reasons when it is refused**, and any
+  other code (a crash is 1, a bad option or a slot lock it cannot have 2) when it could not judge. A GitHub that cannot
+  be read leaves the claim and the labels unchecked: the place is counted as usual (no unit counts as a workflow or
+  Studio unit then, and no model is checked), and a start let through prints a `warning:` line, which the guard logs.
+  `--reserve` keeps the place for the agent for `tasks.start.slots.reserve_minutes` or until its `task start`. Other
+  types pass without a line. The listing also shows the active waivers (below), and `--json` carries them as `waivers`.
+  `--fill-check` is the check the coordinator's `Stop` hook runs (`.claude/hooks/slot_fill_guard.py`): it exits **1 with
+  a message that starts `Blocked:`** when a place is free, the tool finds work to start and nothing excuses it, naming
+  the free places (kept for game work, for a fix, for networking or for the renderer, open), the top eligible issues
   (`P-critical` first), the claimed tasks without an agent and the failed pull requests with no fix unit; it exits 0
-  with an `ok:` line otherwise (every place full, no eligible issue under the start gate, the claim limit reached,
-  free disk under `workspace.disk_min_free_gb`, or active waivers), with `warning:` lines for what it could not read
-  (a GitHub that cannot be read passes the check). `--session ID` counts the blocks of one session and lets its turn
-  end after `tasks.start.fill.block.max_in_a_row` in a row. `--waive N` records that `N` free places may stay free for
+  with an `ok:` line otherwise (every place full, no eligible issue under the start gate, the claim limit reached, free
+  disk under `workspace.disk_min_free_gb`, or active waivers), with `warning:` lines for what it could not read (a
+  GitHub that cannot be read passes the check). `--session ID` counts the blocks of one session and lets its turn end
+  after `tasks.start.fill.block.max_in_a_row` in a row. `--waive N` records that `N` free places may stay free for
   `--hours` (at most the cap of the `--reason` code from `tasks.start.fill.waivers`; a code that blocks issues needs
   `--issues`) with a `--note`; a refused waiver exits 2 and writes nothing, and only the coordinator may run it
   (`.claude/hooks/hooks.toml`). The reasons, the waivers and the hook are in [Keeping the places full](slot-fill.md).
