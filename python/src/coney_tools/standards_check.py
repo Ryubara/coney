@@ -319,26 +319,31 @@ def _ported(root: Path, conventions: Conventions) -> dict[int, Entry]:
     }
 
 
-def _units(root: Path, name: str, scan: Scan, conventions: Conventions) -> list[range]:
-    """The parts of the file `name` that a finding belongs to, as line spans: each function and each type of a source
-    file, each test case of a test file (`case_spans`)."""
+def _units(root: Path, name: str, scan: Scan, conventions: Conventions) -> tuple[list[range], bool]:
+    """The parts of the file `name` that a finding belongs to, as line spans, and whether a finding belongs to the span
+    that contains its line (a test case: its span starts at the comment block above the macro, where the finding is)
+    or to the span that starts on its line (a function or a type of a source file)."""
     source = next((s for s in scan.sources if s.path == name), None)
     if source is not None:
         spans = [range(f.line, f.line + max(f.lines, 1)) for f in source.functions]
         spans += [range(line, source.class_ends.get(type_, line) + 1) for type_, line in source.class_lines.items()]
-        return spans
+        return spans, False
     path = root / name
     if not path.is_file():
-        return []
-    return case_spans(path.read_text(encoding="utf-8", errors="replace"), conventions.standards.tests)
+        return [], True
+    return case_spans(path.read_text(encoding="utf-8", errors="replace"), conventions.standards.tests), True
 
 
-def _held(finding: Finding, units: list[range], changed: frozenset[int] | None) -> bool:
+def _held(finding: Finding, units: tuple[list[range], bool], changed: frozenset[int] | None) -> bool:
     """Whether the change owes `finding`: the file is new (`changed` is None), or a line it changed is in the part the
-    finding is about (the function, type or test case that starts on its line; the line alone when none does)."""
+    finding is about (the function or type that starts on its line, the test case that contains it; the line alone
+    when none does)."""
     if changed is None:
         return True
-    own = [unit for unit in units if unit.start == finding.line] or [range(finding.line, finding.line + 1)]
+    spans, contained = units
+    own = [unit for unit in spans if (finding.line in unit if contained else unit.start == finding.line)] or [
+        range(finding.line, finding.line + 1)
+    ]
     return any(line in changed for unit in own for line in unit)
 
 
@@ -366,7 +371,7 @@ def touched(
         if diff is not None and diff.link_moves_only:
             continue  # a file whose only change is its comments' research links following a moved page
         changed = None if diff is None else diff.lines
-        units = _units(root, name, scan, conventions) if diff is not None else []
+        units = _units(root, name, scan, conventions) if diff is not None else ([], False)
         by_rule: dict[str, list[Finding]] = {}
         for item in findings.get(name, []):
             if _held(item, units, changed):

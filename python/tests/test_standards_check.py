@@ -538,6 +538,15 @@ def test_a_changed_test_case_is_held_and_the_one_beside_it_is_only_listed(tmp_pa
     assert held == {("citation", 1)} and listed == {("citation", 5)}
 
 
+def test_a_test_case_with_a_comment_above_its_macro_is_held_when_its_body_changes(tmp_path: Path) -> None:
+    # the case's span starts at the comment block, the finding is at the macro line below it
+    case = "// Not a citation.\n" + BAD_TEST
+    root = build(tmp_path, {"tests/ai/a_test.cpp": case})
+    branch(root, {"tests/ai/a_test.cpp": case.replace("CHECK(1 == 1);", "CHECK(2 == 2);")})
+    held, listed = held_and_listed(root)
+    assert held == {("citation", 2)} and listed == set()
+
+
 def test_the_check_command_lists_what_lies_outside_the_change_in_one_line_or_each_with_cleanup(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
