@@ -856,6 +856,8 @@ bool activatesWindow(const Options& options) {
     return !options.noActivate && !isTestMode(options) && !options.renderReferences.has_value();
 }
 
+bool takesSavedRenderer(const Options& /*options*/) { return true; } // stub for the test commit
+
 std::expected<Options, Error> parseOptions(std::span<const std::string_view> args, OptionSet set,
                                            std::optional<std::string_view> installBesideExecutable) {
     Options options;

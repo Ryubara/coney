@@ -408,6 +408,11 @@ inline constexpr int kDefaultBenchWarmup = 60;
 /// (docs/guides/research-tools.md#running-coney).
 [[nodiscard]] bool activatesWindow(const Options& options);
 
+/// Whether the run may start the renderer the overrides file saves (`Display/Renderer`, chooseRenderer()): only in a
+/// run a person plays, so not in test mode, and not for `--render-references`, whose offscreen drawing needs GL3
+/// (docs/engine/gpu-renderer.md#choice).
+[[nodiscard]] bool takesSavedRenderer(const Options& options);
+
 /// The character `--view-character` shows without a name: Rembrandt, the player of level99 (warr_re_cv).
 inline constexpr std::string_view kDefaultViewCharacter = "warr_re_cv";
 

@@ -76,3 +76,18 @@ TEST_CASE("the release build takes the renderer option", "[options][renderer]") 
     CHECK(options->renderer == std::optional<coney::RendererKind>(coney::RendererKind::Gpu));
     CHECK(coney::usageText(OptionSet::Player).find("--renderer gl3|gpu") != std::string::npos);
 }
+
+TEST_CASE("only a run a person plays takes the saved renderer", "[options][renderer]") {
+    // Expected: ../engine/gpu-renderer.md#choice, Coney's own option
+    auto plain = parseOptions({});
+    REQUIRE(plain.has_value());
+    CHECK(coney::takesSavedRenderer(*plain));
+    // Test mode draws the same whatever a player saved.
+    auto frames = parse(std::array<std::string_view, 2>{"--frames", "3"});
+    REQUIRE(frames.has_value());
+    CHECK_FALSE(coney::takesSavedRenderer(*frames));
+    // Reference renders draw offscreen through GL3, which `--renderer gpu` cannot be combined with either.
+    auto references = parse(std::array<std::string_view, 4>{"--disc", "x", "--render-references", "out"});
+    REQUIRE(references.has_value());
+    CHECK_FALSE(coney::takesSavedRenderer(*references));
+}
