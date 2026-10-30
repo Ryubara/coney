@@ -330,3 +330,39 @@ TEST_CASE("headless the draw layer records without reaching librw or OpenGL", "[
     CHECK(stream->counts().rasterOps == 2); // made, its levels set
     CHECK(stream->hash() == 0xe7a0be90f5dddce0ULL);
 }
+
+TEST_CASE("a PS2 raster is known by its texels and palette, not by where librw keeps them", "[platform][draw-stream]") {
+    // Expected: docs/engine/renderer.md#comparing: a raster's digest is of the pixels Coney uploads, so two runs of one
+    // frame hash the same. A new-style PS2 raster's data block starts with a pointer to its own texels (ps2raster.cpp,
+    // rasterCreate), which differs between two rasters and between runs; the digest must not see it.
+    auto engine = startHeadless();
+    draw::setTrackRasters(true);
+    draw::startRecording();
+    // Both alive at once, so librw keeps them at two addresses.
+    std::array<rw::Raster*, 2> rasters{};
+    for (rw::Raster*& raster : rasters) {
+        raster = rw::Raster::create(16, 16, 8,
+                                    static_cast<rw::int32>(rw::Raster::TEXTURE) | rw::Raster::C8888 | rw::Raster::PAL8,
+                                    rw::PLATFORM_PS2);
+        REQUIRE(raster != nullptr);
+        const rw::ps2::Ps2Raster* native = GETPS2RASTEREXT(raster);
+        REQUIRE((native->flags & rw::ps2::Ps2Raster::NEWSTYLE) != 0);
+        // The same Coney-made texels and palette in both, where librw reads a texture's from the disc.
+        auto* blocks = reinterpret_cast<rw::ps2::Ps2Raster::PixelPtr*>(native->data);
+        std::fill(blocks->pixels, blocks->pixels + native->pixelSize, rw::uint8{0x5A});
+        REQUIRE(raster->palette != nullptr);
+        std::fill(raster->palette - 0x50, raster->palette - 0x50 + native->paletteSize, rw::uint8{0x33});
+    }
+    for (rw::Raster* raster : rasters) {
+        CHECK(draw::convertRasterForDrawing(raster) == raster); // headless, nothing is converted
+    }
+    for (rw::Raster* raster : rasters) {
+        raster->destroy();
+    }
+    const std::optional<DrawStream> stream = draw::stopRecording();
+    REQUIRE(stream.has_value());
+    REQUIRE(stream->counts().rasterOps == 2); // one upload each
+    const std::vector<std::uint64_t> records = stream->recordHashes();
+    REQUIRE(records.size() == 2);
+    CHECK(records[0] == records[1]);
+}
