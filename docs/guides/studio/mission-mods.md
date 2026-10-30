@@ -486,6 +486,7 @@ The editor decides by the file's root, so there is no mode to choose:
 | What it is | The project's own Lua 5.4 file | A game script, Lua 4.0 (or its 5.4 form where offered), opened read-only |
 | Saved as | Itself, in the project | A patch, `patches/<name>.cpatch`, from the local copy in `.studio/` that editing makes |
 | Natives | The SDK's: available game natives and the `Coney` table ([How a native reaches the SDK](lua-sdk.md#availability)) | The game state's natives, as the original's scripts have them |
+| Helpers | None: the project's state has no `global.lua` | `global.lua`'s functions and globals, called as bare globals as the original's scripts call them ([global.lua helpers](../../references/bindings/helpers.md)) |
 | Runs | In the project's state ([The two states](lua-sdk.md#two-states)) | In the game state, in place of the original ([Compiling and running](#compiling)) |
 | A save, with *On script save* on *Restart project* | Restarts the project | Restarts the level, the smallest restart it needs |
 | A save, with *On script save* on *Restart level* | Restarts the level | Restarts the level |
