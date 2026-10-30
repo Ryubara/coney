@@ -313,6 +313,8 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
                 problems.append(
                     f'fails-first: "{name}" was added and has no passing fails-first stamp (run `orig fails-first`)'
                 )
+            elif stale := fails_first.staleness(worktree, tip, latest):  # the rule `pr verify` applies
+                problems.append(f'fails-first: "{name}": {stale} (run `orig fails-first`)')
     else:
         problems += _full_pass_problem(report, diff, pairs_set)
     packet: dict[str, Any] = {

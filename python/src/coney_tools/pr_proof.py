@@ -722,8 +722,9 @@ def _decision_refusal(subject: Subject, stamp: stamps.Stamp) -> Refusal | None:
 
 
 def check_fails_first(subject: Subject) -> list[Refusal]:
-    """The tests the branch adds each failed first (a passing stamp over the test files as they are now); a task that
-    has nothing to test says so with a `none` stamp; a gameplay change with no test is refused."""
+    """The tests the branch adds each failed first (a passing stamp that still covers the test, by
+    `fails_first.staleness`); a task that has nothing to test says so with a `none` stamp; a gameplay change with no
+    test is refused."""
     report = subject.report
     found: list[Refusal] = []
     added = _added_tests(subject)
@@ -742,16 +743,9 @@ def check_fails_first(subject: Subject) -> list[Refusal]:
         if refused is not None:
             found.append(refused)
             continue
-        files = stamp.detail.get("test_files")
-        listed = [str(f) for f in files] if isinstance(files, list) else []
-        if stamp.covers.get("tests_sha256") != fails_first.tests_sha256(subject.root, subject.tip, listed):
-            found.append(
-                Refusal(
-                    "fails-first",
-                    f'fails-first: "{name}": its test file changed since ({", ".join(listed)})',
-                    "orig fails-first",
-                )
-            )
+        stale = fails_first.staleness(subject.root, subject.tip, stamp)
+        if stale:
+            found.append(Refusal("fails-first", f'fails-first: "{name}": {stale}', "orig fails-first"))
     if added:
         return found
     # A coordinator's decision on a changed test proves nothing by itself: only the run after it does.

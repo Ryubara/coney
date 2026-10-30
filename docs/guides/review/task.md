@@ -86,7 +86,7 @@ problem is printed with its prefix and what to redo; all problems are listed, no
 | `stamp log:` | The log is intact ([Verifying a log](../stamps.md#verify)) | Report to the coordinator: the unit is unusable |
 | `compared:` | Each changed `@orig` function has a pairs file and a current `compared` stamp for its body and for that file (two functions that cite one address each need their own: [Stamps](../stamps.md#shared-address)) | `orig compare <addr>` (`--coney-function KEY` when several cite it) |
 | `copy-check:` | [`orig check-copy`](../coney-tools-fidelity.md#orig) finds no fingerprint on the lines added | The engineer, then `orig compare` |
-| `fails-first:` | Each added C++ `TEST_CASE` has a passing `fails-first` stamp (Python tests are not stamped) | `orig fails-first` |
+| `fails-first:` | Each added C++ `TEST_CASE` has a passing `fails-first` stamp that still covers the test as it is, by the rule `pr verify` uses ([what a stamp binds](../stamps.md#fails-first-binds); Python tests are not stamped) | `orig fails-first` |
 | `docs check:` | `docs check` passes on the changed pages, research pages included | The engineer |
 | `title:`, `docs:`, a missing picture | The description's title follows the rules, the [docs rule](../coney-tools-repo.md#repo) holds (`Docs: none` is read from the description), every local picture exists | The engineer edits the description |
 | `text:` | For `--text`: a passing full review still covers the change and the pairs | `task review`, without `--text` |

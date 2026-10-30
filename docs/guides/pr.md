@@ -101,7 +101,7 @@ What it refuses, exactly (`<...>` is filled in):
 | `compared` | `compared: 0x00501000: line 14 (piece 5, lines 14-16) is in no pair` (any pairs check: coverage, relations, the Coney locations) | `orig compare <addr>` |
 | `compared` | `compared: 0x00501000: Widget::update changed after it was compared (body a1b2 now c3d4)`; `... the pairs file changed after it was compared`; `... was never compared` | `orig compare <addr>` |
 | `compared` | `compared: src/ai/brain.cpp:88: <fingerprint> (copy-check)` (on the function's file or a file its pairs cite) | the engineer, then `orig compare` |
-| `fails-first` | `fails-first: "Widget ready frame" was added and has no passing fails-first stamp`; `... its test file changed since (tests/ai/widget_test.cpp)` | `orig fails-first` |
+| `fails-first` | `fails-first: "Widget ready frame" was added and has no passing fails-first stamp`; `... its test or its registration changed since (tests/ai/widget_test.cpp)` ([what a stamp binds](stamps.md#fails-first-binds); an old stamp says `its test file changed since`) | `orig fails-first` |
 | `fails-first` | `fails-first: "Widget ready frame" changed between its commits and rests on decision #12, which is not the coordinator's decision for them` (a pass whose `decision_seq` names no [decision on a changed test](stamps.md#changed-test) for it) | `orig fails-first --accept-change` (the coordinator), then the engineer's `orig fails-first` |
 | `fails-first` | `fails-first: a feature or fix under src/ai/ needs a test that failed first, or --none with a reason` | `orig fails-first` |
 | `fails-first` | `fails-first: no fails-first stamp; a docs task records orig fails-first --none "<reason>"` (kinds `docs`, `tooling`, `ci-fix` with no test added) | `orig fails-first` |

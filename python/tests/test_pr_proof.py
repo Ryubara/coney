@@ -33,7 +33,17 @@ from review_support import make_packet, make_verdict
 from test_orig_compare import SOURCE, TWO_FUNCTIONS
 from test_orig_study import ADDRESS
 
-from coney_tools import build_record, orig_copy, orig_pairs, orig_review, pr_diff, pr_proof, review_verdict, stamps
+from coney_tools import (
+    build_record,
+    fails_first,
+    orig_copy,
+    orig_pairs,
+    orig_review,
+    pr_diff,
+    pr_proof,
+    review_verdict,
+    stamps,
+)
 from coney_tools import conventions as conventions_module
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions, parse_conventions
@@ -496,8 +506,45 @@ def test_a_test_added_without_a_fails_first_stamp_is_refused(tmp_path: Path) -> 
     text = (built.root / TEST_FILE).read_text(encoding="utf-8")
     built.edit(TEST_FILE, text + 'TEST_CASE("Widget other") {}\n')
     refused = texts(built.verify(), "fails-first")
-    assert 'fails-first: "Widget other" was added and has no passing fails-first stamp' in refused
-    assert any(t == f'fails-first: "{TEST_NAME}": its test file changed since ({TEST_FILE})' for t in refused), refused
+    assert refused == ['fails-first: "Widget other" was added and has no passing fails-first stamp']
+
+
+def test_a_test_added_to_a_stamped_file_later_leaves_the_earlier_stamp_valid(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    text = (built.root / TEST_FILE).read_text(encoding="utf-8")
+    built.edit(TEST_FILE, text + 'TEST_CASE("Widget other") {}\n')
+    built.fails_first("Widget other")
+    assert texts(built.verify(), "fails-first") == []
+
+
+def test_a_stamped_tests_body_edited_later_makes_its_stamp_stale(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    built.edit(TEST_FILE, f'TEST_CASE("{TEST_NAME}") {{ REQUIRE(true); }}\n')
+    refused = texts(built.verify(), "fails-first")
+    assert refused == [f'fails-first: "{TEST_NAME}": its test or its registration changed since ({TEST_FILE})']
+
+
+def test_a_stamped_test_renamed_later_is_a_test_without_a_stamp(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    built.edit(TEST_FILE, f'TEST_CASE("{TEST_NAME} again") {{}}\n')
+    refused = texts(built.verify(), "fails-first")
+    assert refused == [f'fails-first: "{TEST_NAME} again" was added and has no passing fails-first stamp']
+
+
+def test_a_stamp_in_the_old_form_is_read_by_the_files_it_covered(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    old = {"tests_sha256": fails_first.tests_sha256(built.root, built.tip, [TEST_FILE])}
+    built.stamp(
+        "fails-first",
+        subject=TEST_NAME,
+        covers={"test_commit": built.test_commit, "fix_commit": built.tip, **old},
+        detail={"red": "failed", "green": "passed", "test_files": [TEST_FILE], "stubs": []},
+    )
+    assert texts(built.verify(), "fails-first") == []
+    built.edit(TEST_FILE, (built.root / TEST_FILE).read_text(encoding="utf-8") + 'TEST_CASE("Widget other") {}\n')
+    assert texts(built.verify(), "fails-first") == [
+        'fails-first: "Widget other" was added and has no passing fails-first stamp'
+    ]
 
 
 def decide(built: Built, who: dict[str, object] | None = None) -> stamps.Stamp:
