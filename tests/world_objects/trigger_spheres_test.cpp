@@ -102,6 +102,33 @@ TEST_CASE("a handler that disarms its sphere stops the sphere's check", "[trigge
     CHECK(sent == Sent{{7, VolumeBoxes::kEntered, 100}});
 }
 
+TEST_CASE("a handler that switches its sphere off with TriggerSphereCfg ends the found humans, not the occupants' pass",
+          "[trigger_spheres]") {
+    // Expected: trigger-updates.md#sphere, confirmed (code): in TriggerSphere_Update 0x004146e0 a sphere found disarmed
+    // (+0x180) after a message only leaves the found loop (0x004148ec); the occupants' pass still runs unless the
+    // sphere was freed. TriggerSphereCfg off (0x00414bc0) keeps the occupants, so one who left still gets 4.
+    TriggerSpheres spheres;
+    spheres.setLocate(locate);
+    REQUIRE(spheres.configure(7, true, 4.0F, 0, 500));
+    std::vector<BoxSubject> humans{{.handle = 101, .position = {5, 0, 0}, .alive = true, .player = false},
+                                   {.handle = 100, .position = {1, 0, 0}, .alive = true, .player = false}};
+    CHECK(checkAll(spheres, humans, 0) == Sent{{7, VolumeBoxes::kEntered, 100}});
+    // 100 walks out as 101 walks in; 101's message 3 makes the handler switch the sphere off.
+    humans[0].position = {1, 0, 0};
+    humans[1].position = {5, 0, 0};
+    Sent sent;
+    for (std::uint32_t i = 0; i < TriggerSpheres::kFramesPerCheck; ++i) {
+        spheres.update(humans, 100, [&](double object, int message, double human) {
+            sent.emplace_back(object, message, human);
+            if (message == VolumeBoxes::kEntered) {
+                REQUIRE(spheres.configure(object, false, 4.0F, 0, 500));
+            }
+        });
+    }
+    CHECK(sent == Sent{{7, VolumeBoxes::kEntered, 101}, {7, VolumeBoxes::kLeft, 100}});
+    CHECK(spheres.find(7)->occupants == std::vector<double>{101});
+}
+
 TEST_CASE("a sphere's occupant whose handle no longer resolves is kept without message 4", "[trigger_spheres]") {
     // Expected: trigger-updates.md#sphere, confirmed (code): TriggerSphere_Update 0x004146e0 skips an occupant whose
     // handle does not resolve (0x00390268), sending nothing and keeping its entry.
@@ -168,6 +195,22 @@ TEST_CASE("modes 1 and 2 also need a clear line, mode 2 from a raised centre", "
     REQUIRE(starts.size() >= 2);
     CHECK(starts[0][2] == 0.0F);
     CHECK(starts.back()[2] == TriggerSpheres::kLineRaise);
+}
+
+TEST_CASE("a sphere of a mode other than 1 and 2 accepts on the radius alone", "[trigger_spheres]") {
+    // Expected: trigger-updates.md#accepts, confirmed (code): TriggerSphere_Accepts 0x00414548 runs a line test only
+    // for modes 1 and 2; any other mode accepts once the radius test passes.
+    TriggerSpheres spheres;
+    spheres.setLocate(locate);
+    int lineTests = 0;
+    spheres.setClearLine([&](const std::array<float, 3>&, const std::array<float, 3>&) {
+        ++lineTests;
+        return false;
+    });
+    const std::vector<BoxSubject> humans{{.handle = 100, .position = {2, 0, 0}, .alive = true, .player = false}};
+    REQUIRE(spheres.configure(7, true, 4.0F, 3, 1));
+    CHECK(checkAll(spheres, humans, 0) == Sent{{7, VolumeBoxes::kEntered, 100}});
+    CHECK(lineTests == 0);
 }
 
 TEST_CASE("TriggerSphereEnable arms a sphere, making one of radius 0 and mode 1; off forgets who is inside",
