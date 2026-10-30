@@ -1423,12 +1423,12 @@ status = "compared"
 [[function.gaps]]
 what = "the arrested, on-fire and wounded reaction goals, and the on-fire term of the calm civilian test"
 relation = "not-ported"
-issue = 1307
+issue = 1308
 
 [[function.gaps]]
 what = "the Grabber (0x92) and BigBull (0x89) goals that hold reactions off"
 relation = "not-ported"
-issue = 1308
+issue = 1309
 
 [[function.gaps]]
 what = "brain +0x2d7 (leaving through an exit flag) reads clear"
