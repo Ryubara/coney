@@ -2,11 +2,12 @@
 
 The design for the [Graphics and performance](../roadmap.md#graphics-and-performance) milestone: what each graphics
 option means for *The Warriors*, whether it is possible, how Coney's renderer would do it, what it depends on, a rough
-cost and the order. Since 2026-10-25 these options may be built now, beside the faithful renderer
-([Faithful first](repo:AGENTS.md)): presentation and performance go beyond the PS2, gameplay does not. Every option
-ships **off** by default and is forced off in test mode, so tests and reference screenshots always show the faithful
-image, and the PS2 look stays selectable. Code for an option carries `@coney-only enhancement: <option>`, or
-`@orig xbox` where it follows the Xbox port ([Xbox tags](conventions.md#xbox-tags)).
+cost and the order. Since 2026-10-25 these options may be built now, beside the faithful renderer ([Faithful
+first](repo:AGENTS.md)): presentation and performance go beyond the PS2, gameplay does not. Every option is forced off
+in test mode, so tests and reference screenshots always show the faithful image, and the PS2 look stays selectable;
+which preset a player gets by default is a maintainer question ([Renderer: Questions](../engine/renderer.md#questions)).
+Code for an option carries `@coney-only enhancement: <option>`, or `@orig xbox` where it follows the Xbox port ([Xbox
+tags](conventions.md#xbox-tags)).
 
 ## What the game gives us
 
@@ -36,11 +37,11 @@ These are shared by most options. Each one is worth building for the faithful lo
 
 | Id | Foundation | Needed by | Cost |
 | --- | --- | --- | --- |
-| F1 | **Display settings** in the debug menus, never the game's own options screens ([below](#where-the-settings-live)): a settings store with presets *Faithful* (all off), *Enhanced* and *Custom*; test mode forces *Faithful* | every option | S |
+| F1 | **Display settings** in the debug menus, never the game's own options screens ([below](#where-the-settings-live)): a settings store with the presets of [Renderer](../engine/renderer.md#presets); test mode forces *PS2*; which preset a player gets by default is a [maintainer question](../engine/renderer.md#questions) | every option | S |
 | F2 | **Scene target and post chain**: draw 3D into an offscreen colour + depth texture at the internal resolution, then run post passes (each declared in units of time, not frames), then the 2D overlays at window resolution. The faithful 512 × 256 blur, heat distortion and distortion grid need it too | resolution scale, AA, AO, bloom, grading, DOF, CA, MSAA with blur | M |
-| F3 | **Coney's own shaders for librw materials** (render callbacks of Coney's pipelines, as `world_atomic` already registers one for uninstancing): extra inputs (shadow map, velocity) and outputs (normals) without patching librw | shadow maps, TAA velocity, alpha-to-coverage, tessellation | M |
+| F3 | **Coney's own shaders** for the world, object and character materials, in HLSL on the SDL3 GPU renderer ([Renderer: Migration](../engine/renderer.md#migration)): extra inputs (shadow map, velocity) and outputs (normals) | shadow maps, TAA velocity, alpha-to-coverage, tessellation | M |
 | F4 | **Texture resolver**: every texture load goes through one lookup, PS2 → Xbox → local pack, keyed by (dictionary resource hash, texture name, hash of the PS2 texels), falling back to the PS2 texture on any mismatch | Xbox textures, upscaled packs, player packs, mip generation | M |
-| F5 | **Backend switch**: a Coney renderer over SDL3's GPU API (Vulkan, D3D12, Metal; already in our SDL3, zlib licence), with librw kept only for reading and decoding streams. Raw Vulkan / D3D12 / Metal only for ray tracing | HDR output, ray tracing, long-term macOS (Apple's OpenGL is deprecated and stops at 4.1) | XL |
+| F5 | **Backend switch** (decided, [below](#decided)): Coney's own renderer over SDL3's GPU API (Vulkan, D3D12, Metal; already in our SDL3, zlib licence), with librw kept only for reading RenderWare data and the PS2 and Xbox rasters. Its groundwork (the start without librw's GL3 device, the shader build, the frame description, Coney's own formats) is the first work of [Renderer: Order](../engine/renderer.md#order), items 1 to 14; the switch is item 21. Raw Vulkan / D3D12 / Metal only for ray tracing | every option past the *PS2* picture (they target the GPU renderer only), HDR output, ray tracing, macOS (Apple's OpenGL is deprecated and stops at 4.1) | XL, in steps that each land |
 
 **Choices to make now, at no cost** (they keep every option above open):
 
@@ -72,7 +73,7 @@ the game's options screens.
   cutscenes as in the original; only the bars are not drawn. Set it on the Tunables page's *Display* category in
   the pad menus or the developer overlay, then *Save overrides*; or put `Display/Cutscene letterbox = 0` in the
   overrides file (`coney-tunables.ini` in your config folder, or the file `--tunables FILE` names).
-- **Command line.** Flags where they help scripted captures and benchmarks: `--preset faithful|enhanced`,
+- **Command line.** Flags where they help scripted captures and benchmarks: `--preset ps2|xbox|enhanced|high`,
   `--render-scale`, `--aspect`, `--fov-offset` and `--msaa`, beside the existing `--fps-cap` and `--vsync`. A
   general `--set Display/<name>=<value>` covers the rest.
 - **Coney natives.** The maintainers plan a FiveM-style script API of Coney's own on top of the game's bindings
@@ -90,7 +91,7 @@ player's Xbox disc ([Xbox assets](../research/xbox-assets.md)).
 
 | Option | What it means here | Feasible | Approach | Depends on | Cost |
 | --- | --- | --- | --- | --- | --- |
-| Internal resolution | The PS2 drew 640 × 448. Coney already draws at window resolution | **yes** | Render scale 0.5-2× on F2's target (above 1 is supersampling), plus a *Faithful 640 × 448* mode with nearest or CRT/interlace output (a shader of our own) | F2 | S after F2 |
+| Internal resolution | The PS2 drew 640 × 448. Coney already draws at window resolution | **yes** | Render scale 0.5-2× on F2's target (above 1 is supersampling), plus a *PS2 640 × 448* mode with nearest or CRT/interlace output (a shader of our own) | F2 | S after F2 |
 | 16:9 widescreen | The original's own 16:9 mode: 3D camera constants, overlay aspect 1.6667 at scale 1.1, HUD and menu layouts, `_w` screens | **yes** (faithful) | Implement the 16:9 mode from research. The logical screen becomes 16:9 instead of 4:3 | research: the 16:9 camera constants (`0x00122ca0`, `0x00122d38`), HUD and menu 16:9 tables | M |
 | 21:9, 32:9, any aspect | Coney's own extension | **partly** | Hor+ (keep the vertical FOV, widen the horizontal); overlay aspect from the window; HUD elements placed by their recorded anchor inside a chosen safe width; cinematics and movies pillarboxed at 16:9 or 4:3 | 16:9 mode, now-choice 4 | M |
 | HUD scaling | GUI space is about [0, 1]² with a built-in 5% safe margin | **yes** | Scale and inset factors applied in the overlay projection (`OverlayCamera`), not per widget. Fonts are 2D bitmaps: crisp only with upscaled or SDF font textures (see [AI upscaling](#ai-upscaling)) | 16:9 mode | S |
@@ -101,12 +102,12 @@ player's Xbox disc ([Xbox assets](../research/xbox-assets.md)).
 
 | Option | What it means here | Feasible | Approach | Depends on | Cost |
 | --- | --- | --- | --- | --- | --- |
-| MSAA | Low-poly scenery, many long straight edges: MSAA suits it well | **yes** | librw's multisample levels before the window is made, or a multisampled F2 target. The motion blur's copy must then become a resolve (`glBlitFramebuffer`), since a multisampled buffer cannot be copied into a texture | F2 for the blur | S |
-| Alpha-to-coverage | Chain-link fences, foliage and railings are alpha cut-outs that MSAA does not smooth | **yes** | `GL_SAMPLE_ALPHA_TO_COVERAGE` on alpha-tested materials, with coverage-preserving mips (below) | F3, MSAA | S |
+| MSAA | Low-poly scenery, many long straight edges: MSAA suits it well | **yes** | On the SDL3 GPU renderer only, a multisampled F2 target ([Renderer: order](../engine/renderer.md#order), item 26); the GL3 path gets none. The motion blur's copy then becomes a resolve, since a multisampled buffer cannot be copied into a texture | F2 for the blur | S |
+| Alpha-to-coverage | Chain-link fences, foliage and railings are alpha cut-outs that MSAA does not smooth | **yes** | Alpha-to-coverage on alpha-tested materials in Coney's shaders on the GPU renderer, with coverage-preserving mips (below) | F3, MSAA | S |
 | FXAA / SMAA | Post-process AA; cheap, a little blur | **yes** | One post pass. SMAA's reference code is MIT; FXAA 3.11's NVIDIA licence is permissive (check at adoption) | F2 | S |
-| TAA | Removes shimmer on fences and thin wires; blurs the already soft 64 × 64 textures and ghosts. Needs jitter, velocity and history | **partly** | Per-object velocity from the two blended steps (we have them); jittered projection. FSR 2/3 (MIT) can be the TAA and upscaler, and stays the default the build ships. DLSS and XeSS are allowed as optional plug-ins beside the GPL code ([Decided](#decided)) | F2, F3; better after F5 | M |
-| Anisotropic filtering | Streets and pavements at grazing angles | **yes**, but only with mips | `Texture::maxAnisotropy` per texture | mip generation | S |
-| Mip generation | 98% of textures have no mips, so they alias in the distance at any resolution | **yes** | Build mips at conversion (`AUTOMIPMAP`, or Coney's own box filter with alpha coverage kept at the alpha-test reference so fences do not vanish); LOD bias as a setting. Changes the look slightly (less shimmer than the PS2) | F4 (one load path) | S |
+| TAA | Removes shimmer on fences and thin wires; blurs the already soft 64 × 64 textures and ghosts. Needs jitter, velocity and history | **partly** | Per-object velocity from the two blended steps (we have them); jittered projection. FSR 3.1 (MIT) can be the TAA and upscaler, and stays the default the build ships; FSR 1 is the fallback, and DLSS, FSR 4 and XeSS are optional plug-ins beside the GPL code ([Decided](#decided)); the tiers are on [Renderer: Upscalers](../engine/renderer.md#upscalers) | F2, F3, F5 | M |
+| Anisotropic filtering | Streets and pavements at grazing angles | **yes**, but only with mips | The GPU renderer's sampler anisotropy per texture | mip generation | S |
+| Mip generation | 98% of textures have no mips, so they alias in the distance at any resolution | **yes** | Build mips when textures are converted into Coney's own formats ([Renderer: Order](../engine/renderer.md#order), item 6), by Coney's own box filter with alpha coverage kept at the alpha-test reference so fences do not vanish; LOD bias as a setting. Changes the look slightly (less shimmer than the PS2) | F4 (one load path) | S |
 
 ### Assets and distance
 
@@ -126,7 +127,7 @@ Realtime shadows, per-pixel lighting and reflections have their own design page:
 
 | Option | What it means here | Feasible | Approach | Depends on | Cost |
 | --- | --- | --- | --- | --- | --- |
-| Shadow quality | Faithful: a faint 1 m blob under each human. Upgrade: humans and objects casting onto the world | **partly** | Keep the blob as *Faithful*. *Enhanced*: one shadow map from the level's object directional light (`level99`: the moonlight), casters = humans and objects, receivers multiply their final colour (the world is prelit, so the shadow darkens baked light, a plausible fake). Lamp shadows are not worth it (lamps light only objects) | F3; check what `GraphicsShadowXBox` did (**Xbox** research, optional) | M |
+| Shadow quality | Faithful: a faint 1 m blob under each human. Upgrade: humans and objects casting onto the world | **partly** | Keep the blob as *PS2*. From *Xbox* up: a shadow map from the level's shadow light (the Xbox port's), receivers multiply their final colour by the level's shadow colour (the world is prelit, so the shadow darkens baked light, a plausible fake); casters, receivers and the map per preset on [Renderer: Presets](../engine/renderer.md#presets) | F3; the Xbox port's shadow map ([#881](issue:881), [Renderer: lighting](../engine/renderer.md#lighting)) | M |
 | SSAO / HBAO / GTAO | Prelit corners probably already hold baked occlusion (inferred). AO helps where nothing is baked: characters' feet, props, parked cars | **yes** | GTAO from F2's depth (normals rebuilt from depth), at half resolution, low strength, masked off the sky. A fragment-shader version runs on GL 3.3 and macOS | F2 | M |
 | Ray tracing | There is no physical light model to trace: the light is baked colour. What is honest: RT shadows and AO **for dynamic objects** over the baked light; reflections need roughness or wetness data the game does not have (only MatFX environment-map materials hint at shine) | **partly** (shadows, AO), **no** (GI or path tracing that keeps the look) | Vulkan ray queries over a TLAS of scenery and humans, added to the GTAO and shadow-map results. RTX Remix is not a route: it hooks fixed-function D3D9, and librw's D3D9 backend uses shaders (inferred) | F5 plus a raw Vulkan / DXR / Metal path; Windows and Linux first | XL |
 | Bloom | The original glows through coronas, `propglow` halos and the unresearched 512 × 256 glow raster. A threshold bloom would also bloom white walls and text | **yes** | Bloom only from what Coney knows glows (coronas, glow sprites, lamp sprites) drawn into a bloom buffer, plus an optional low threshold pass | F2; research on device slot `+0x108` | S |
@@ -134,7 +135,7 @@ Realtime shadows, per-pixel lighting and reflections have their own design page:
 | Chromatic aberration | Not in the original; purely cosmetic | **yes** | One post pass, off by default | F2 | S |
 | Colour grading | The game tints through looks (`SetLevelColour`, stores) and the brightness option; PCSX2 shows the picture about 70% bright, the game's own colours ([Graphics](../research/graphics.md#open-questions)) | **yes** | A 3D LUT after the game's own looks; presets *Faithful TV* (the measured brightness) and *Neutral* | F2; the display-brightness research | S |
 | Depth of field | No focus data. Cutscene cameras have targets, the follow camera has a look-at point 1.4 m above the player | **partly** | Cutscenes only: focus on the scene camera's target; gameplay off (it would blur the street) | F2 | S-M |
-| HDR | Content is LDR on the GS scale (0x80 = 1.0); lit colours clamp at 1.0, so there is no overbright range (measured in the graphics research) | **partly**, low value | HDR10 / scRGB output with a paper-white setting; only additive effects (glows, coronas, bloom) could go above it. Not on OpenGL portably; SDL3's GPU API has HDR swapchains | F5 | S after F5 |
+| HDR | Content is LDR on the GS scale (0x80 = 1.0); lit colours clamp at 1.0, so there is no overbright range (measured in the graphics research) | **partly**, low value | HDR10 / scRGB output with a paper-white setting; only additive effects (glows, coronas, bloom) could go above it. Not on OpenGL portably; SDL3's GPU API has HDR swapchains. Designed on [Renderer: HDR output](../engine/renderer.md#hdr) | F5 | M after F5 |
 
 ## AI upscaling {#ai-upscaling}
 
@@ -207,16 +208,18 @@ with a manifest. There are three kinds:
 
 ## Order
 
-Graphics and performance options may be built now ([Faithful first](repo:AGENTS.md)); the phases order them by what
-each depends on, not by when it may start. Coney's own mechanics still wait for the whole game.
+The renderer's own work (F1, F2, F3 and F5, the frame-rate audit, anti-aliasing, the upscalers, render scale, HDR
+output, the Xbox port's lighting and the realtime lighting options) is ordered on [Renderer:
+Order](../engine/renderer.md#order) and is not repeated here. The other options follow, each once what it depends on has
+landed:
 
-| Phase | When | Items |
+| Group | After | Items |
 | --- | --- | --- |
-| 0 | Now, during faithful work | The five choices above; F2 as part of the faithful blur and distortion work |
-| 1 | First, once the renderer has its base | F1; 16:9 mode; any aspect with HUD anchoring; FOV; frame-rate audit with the motion blur fixed; MSAA and alpha-to-coverage; mip generation and anisotropic filtering; render scale and *Faithful 640 × 448* |
-| 2 | Then | F4; Xbox textures and HD movies (**Xbox**); player texture packs ([roadmap](../roadmap.md#graphics-and-performance)); the upscaling tool; SMAA or FXAA; colour grading; bloom from glow sprites |
-| 3 | Then | F3; shadow maps for humans and objects; GTAO; velocity motion blur; cutscene depth of field; chromatic aberration; fog and render distance scales; TAA or FSR |
-| 4 | Last, the heaviest | F5 (SDL3 GPU backend); HDR output; ray-traced shadows and AO on Vulkan; character subdivision |
+| 0 | Now | The five choices above; 16:9 mode; any aspect with HUD anchoring; FOV |
+| 1 | F4 | Xbox textures and HD movies (**Xbox**); player texture packs ([roadmap](../roadmap.md#graphics-and-performance)); the upscaling tool |
+| 2 | the GPU renderer's world ([Renderer](../engine/renderer.md#order), item 13) | Mip generation and anisotropic filtering |
+| 3 | the scene target ([Renderer](../engine/renderer.md#order), item 22) | Colour grading; bloom from glow sprites; velocity motion blur; cutscene depth of field; chromatic aberration; fog and render distance scales; the *PS2 640 × 448* mode's CRT and interlace output |
+| 4 | the GPU renderer as the default ([Renderer](../engine/renderer.md#order), item 21) | Ray-traced shadows and AO (they need a native path beside SDL3's GPU API, which has no ray tracing); character subdivision |
 
 ## Decided {#decided}
 
@@ -224,6 +227,9 @@ Maintainer decisions (2026-10-07):
 
 - **Model weights**: `coney-tools` may download an upscaling model itself.
 - **Proprietary SDKs**: DLSS and XeSS are allowed as optional plug-ins next to the GPL-3.0-or-later code.
+- **Backend**: librw stays only as the reader of RenderWare data; Coney's own renderer draws through SDL3's GPU API,
+  and its groundwork comes first ([Renderer: Backend](../engine/renderer.md#backend)). The GPU renderer's MSAA
+  replaces any on the GL3 path.
 - **Sharing texture packs**: Coney helps players share packs, in the model under [Packs](#packs). It imports from
   `overrides/` by texture hash and exports with `coney-tools`; recipe packs are the default; pre-made upscales can
   be imported but are never hosted or linked by the project.
@@ -245,4 +251,4 @@ One line each; owned by the graphics and HUD engineers.
   ([Graphics: open questions](../research/graphics.md#open-questions), "Display brightness").
 - Human and object fade distances and geometry LOD: **done**, fades only, no geometry LOD
   ([Graphics: distance](../research/graphics.md#lod)).
-- What `GraphicsShadowXBox.cpp` draws (**Xbox**, optional).
+- What `GraphicsShadowXBox.cpp` draws: researched in [#881](issue:881).

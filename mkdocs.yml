@@ -233,6 +233,7 @@ nav:
   - "Engine: how Coney works":
       - engine/index.md
       - Combat: engine/combat.md
+      - Renderer: engine/renderer.md
   - Game references:
       - references/index.md
       - Entities: references/entities.md

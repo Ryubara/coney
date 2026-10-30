@@ -319,11 +319,11 @@ shadow light casts a shadow, and the PS2's corona sprites, flicker and glow are 
 ## In Coney {#in-coney}
 
 **Follows: the Xbox port (presentation).** The maintainer decided on 2026-10-25 that the Xbox port's lighting and
-shadows count as faithful and Coney will offer them as options, off by default; the PS2 stays the reference for
-behaviour and for the tests. Nothing below is built. The renderer that will host it is designed on
-[Realtime lighting design](../guides/realtime-lighting.md) and in issue #883; this section maps each Xbox technique
-onto it. Every option is off by default and forced off in test mode, so the faithful tests keep comparing with the
-PS2.
+shadows count as faithful and Coney will offer them as options; the PS2 stays the reference for behaviour and for
+the tests. Nothing below is built. The renderer that will host it is designed on [Renderer](../engine/renderer.md)
+(#883), with the lighting model on [Realtime lighting design](../guides/realtime-lighting.md); this section maps each
+Xbox technique onto it. Every option is forced off in test mode, so the faithful tests keep comparing with the PS2;
+which preset a player gets by default is a maintainer question there.
 
 **What to keep exactly** (it is data or behaviour, the same on both builds): which lights exist and where, their
 kinds, colours, radii and what they light; the fire light's four colours, its 5-15 tick interval and cross-fade; the
@@ -333,33 +333,31 @@ that a surface facing away from the shadow light is never darkened; the gamma cu
 
 **What is free to improve** (presentation only): per-pixel evaluation; more lights per surface; the shadow map's
 size, filtering and coverage; characters receiving shadows; shadows from point lights such as the fires, which the
-Xbox never had. These belong to the *Enhanced* and higher presets of the design page.
+Xbox never had. These belong to the *Enhanced* and *High* presets of the renderer design.
 
-**Where the options sit.** The design page's [Quality ladder](../guides/realtime-lighting.md#quality-ladder) has four
-presets, *Faithful*, *Enhanced*, *High* and *Ultra*, and no Xbox preset. Because the maintainer counts the Xbox look
-as faithful, its options (1, 2 with 5, and 4 below) are toggles under *Faithful*, each off by default, so *Faithful*
-still adds nothing unless the player turns one on. *Enhanced* and up keep the gamma ramp and the per-pixel fog as the
-same toggles, and replace the Xbox shadow map with the design's own sun shadow map (step L2); whether L2 takes the
-Xbox's per-level shadow colour, offset and back-face rule as its inputs is for the renderer design (#883) to decide.
-Per-pixel lights (3) are not an Xbox technique: they are *Enhanced*'s (step L3), listed here because the Xbox's light
-data and caps are what they evaluate.
+**Where the options sit.** The presets are defined once, on [Renderer: Presets](../engine/renderer.md#presets):
+*PS2*, *Xbox*, *Enhanced* and *High*. The *Xbox* preset draws options 1, 2 with 5, and 4 below, and each is also a
+toggle of its own, off in *PS2*. The renderer design settles the question this page left to it: every preset that
+draws a shadow map draws it from the level's shadow light, so *Enhanced* and *High* take the Xbox's per-level shadow
+colour, offset and back-face rule as their inputs and widen only the casters, receivers and map
+([Renderer: lighting](../engine/renderer.md#lighting)). Per-pixel lights (3) are not an Xbox technique: they are
+*Enhanced*'s (step L3), listed here because the Xbox's light data and caps are what they evaluate.
 
 The options, ordered by how much they change the picture for the effort:
 
 | # | Option | Preset | Xbox technique | Modern form | Keep | Effort | Tests |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Character shadows | *Faithful* toggle; replaced by L2 from *Enhanced* | one 1024 × 512 D16 map, fitted to the casters, hard compare, × shadow colour | the same fitted map, with the stand-in filter below; larger maps, PCF or PCSS softness belong to L2 | casters, receivers, 20 m, colour, offset, back-face rule | M (needs the design's scene target and Coney shaders, L1) | the light view and caster list from a synthetic scene (unit); a receiver facing away is never darkened; shadow colour × lit colour on a synthetic quad (headless render, pixel values); stealth flag not read from the renderer |
-| 2 | Gamma ramp | toggle in every preset | hardware gamma ramp per level, points from a table in the executable | a 1D LUT in the final pass, after the HUD as on the Xbox | the curve points per level index | S | the LUT built from synthetic points matches the piecewise-linear rule; identity with the toggle off |
+| 1 | Character shadows | *Xbox*, and a toggle in *PS2*; widened in *Enhanced* and *High* (L2) | one 1024 × 512 D16 map, fitted to the casters, hard compare, × shadow colour | the same fitted map, with the stand-in filter below; larger maps, PCF or PCSS softness belong to L2 | casters, receivers, 20 m, colour, offset, back-face rule | M (needs the design's scene target and Coney shaders, L1) | the light view and caster list from a synthetic scene (unit); a receiver facing away is never darkened; shadow colour × lit colour on a synthetic quad (headless render, pixel values); stealth flag not read from the renderer |
+| 2 | Gamma ramp | *Xbox* and up; a toggle in *PS2* | hardware gamma ramp per level, points from a table in the executable | a 1D LUT in the final pass, after the HUD as on the Xbox | the curve points per level index | S | the LUT built from synthetic points matches the piecewise-linear rule; identity with the toggle off |
 | 3 | Per-pixel lights | *Enhanced* and up (L3) | per vertex in vertex shaders | the same lights, terms and `1 − d / r` falloff evaluated per pixel; clustered lists if the caps are lifted | light data, order, clamp before the pixel's texture | M (L3 of the design) | the per-pixel result averages to the per-vertex one on a synthetic mesh (the design's test) |
-| 4 | Per-pixel fog | toggle in every preset | linear table fog | per-pixel linear fog in Coney's shaders | colour, start, end | S | fog factor at synthetic depths equals the linear formula |
+| 4 | Per-pixel fog | *Xbox* and up; a toggle in *PS2* | linear table fog | per-pixel linear fog in Coney's shaders | colour, start, end | S | fog factor at synthetic depths equals the linear formula |
 | 5 | Brightness default 48 | with option 2 | profile default | 48 when a profile is made with the gamma ramp on, else the PS2's 40 | the 0-255 scale | S | a fresh profile reads 48 with option 2 on and 40 with it off |
 | 6 | Character shader quirk | none | point lights from the bind pose | not reproduced: Coney lights the skinned position | none | none | none |
 
 The data each needs is on the PS2 disc already, except the gamma table and the pixel shaders, which live in the
 Xbox executable (see [How this was checked](#how-this-was-checked)): the shadow colour and offset are in `global.lua`
-on both discs, and the light data is the PS2's. The gamma table's 33 records are numbers Coney may hold as its own
-table of values (curated reference values, [LEGAL.md](repo:LEGAL.md)), or read from the player's Xbox disc at install
-when the maintainer prefers that.
+on both discs, and the light data is the PS2's. The gamma table's 33 records are read from the player's Xbox disc (a
+maintainer decision), not carried in Coney, and the values listed here are checked against it.
 
 **The stand-in until runtime confirmation.** The [open questions](#open-questions) that a running Xbox would settle
 (the shadow buffer's filtering, the blob sprite, the ramp's exact arithmetic) are marked stand-ins in the first

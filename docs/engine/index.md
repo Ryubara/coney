@@ -11,7 +11,8 @@ notes that say where a part stands against the original. It never says what the 
   kept apart from the platform.
 - Port notes: for a behaviour ported from the original, which function of Coney does it, which stand-ins remain and what
   each waits for.
-- Nothing about the original's own behaviour, and nothing that is only a plan: plans are issues.
+- Nothing about the original's own behaviour. A plan belongs in issues, except the design of a part's next steps
+  where the maintainers ask for it on the part's page ([the rule](../guides/writing-docs.md#engine-pages)).
 
 Add each page to this one; the rules for writing a page, and how they are checked, are in
 [Writing these docs](../guides/writing-docs.md#engine-pages).
@@ -19,3 +20,4 @@ Add each page to this one; the rules for writing a page, and how they are checke
 | Page | Subsystem |
 | --- | --- |
 | [Combat](combat.md) | The player's attacks, grabs, blocks, meters and reactions (`src/combat/`, the fighter in `src/human/`) |
+| [Renderer](renderer.md) | How Coney draws, and the design for its frame rates, backend, lighting, anti-aliasing, presets and performance (`src/platform/`, `src/graphics/`) |

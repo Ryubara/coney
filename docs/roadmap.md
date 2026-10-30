@@ -202,6 +202,8 @@ selectable and the fidelity tests against PCSX2 keep holding ([Faithful first](r
 feasibility, approach, dependencies, cost and order, and the local AI-upscaling tool, are on
 [Enhancements plan](guides/enhancements.md); shadows, per-pixel lighting and reflections on
 [Realtime lighting](guides/realtime-lighting.md).
+The renderer they are built on (frame rates, the move to SDL3's GPU API, lighting and shadows, anti-aliasing, the
+*PS2* preset, the performance budget and the order of the work) is designed on [Renderer](engine/renderer.md).
 
 ### Xbox lighting and shadows {#xbox-lighting-and-shadows}
 
