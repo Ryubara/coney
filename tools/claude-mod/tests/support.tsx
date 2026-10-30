@@ -66,6 +66,8 @@ export type World = {
   clock: ReturnType<typeof mock.clock>
   /** What the command prints next; change it to move the world on. */
   answer: Answer
+  /** Answers one run by its argv instead (undefined: `answer` does); for a command that fails only in one form. */
+  answerRun?: (argv: string[]) => Answer | undefined
   opened: string[]
   /** The store in memory: the list saved for the checkout under test is `own`, other checkouts' lists keep their keys. */
   stored: Record<string, unknown>
@@ -174,7 +176,8 @@ export function engine(
     world.timeouts.push(e.init?.timeoutMs)
     // A snapshot command that never answers (a hung `uv`): the session must start all the same.
     if (options.isHung) return new Promise<never>(() => undefined)
-    return { value: { ...world.answer, isStdoutTruncated: false, isStderrTruncated: false } }
+    const answer = world.answerRun?.(e.argv) ?? world.answer
+    return { value: { ...answer, isStdoutTruncated: false, isStderrTruncated: false } }
   })
   return world
 }

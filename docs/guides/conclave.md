@@ -123,7 +123,10 @@ nobody holds: it blocks with the `watch.stop_preamble` and a line for each probl
 again (about 7 seconds, only when the last read had such a problem), so a hold recorded a moment ago, or a problem that
 fixed itself, counts. It blocks at most `stop_max_blocks` (3) turn ends in a row for one reason, counts again from one
 after `stop_reset_minutes` (30) without a block, never blocks on a list it could not make current, and lets the turn
-end when it fails itself. Tether's own Stop guard for stopped agents is untouched: Conclave's block rides on the
+end when it fails itself. When that read fails but the last one is still recent, the guard blocks on the list it holds
+and ends the reason with `could not refresh: <first line of the error>`, so a list that cannot catch up with a hold is
+seen to be old and the cause is named; the count is kept by the problems, so an error that changes its words does not
+start it again. Tether's own Stop guard for stopped agents is untouched: Conclave's block rides on the
 answer beneath it, and a block already set there is kept whole, with Conclave neither reading GitHub nor counting a
 block for that turn end ([boundary](#boundary)).
 
@@ -306,7 +309,9 @@ tree and the types, so a renamed `$`, an alias, a spread or a cast cannot hide a
   type of `x` says: the mod maps a tone to a colour with a `switch`, not a table) and no `as unknown as` cast, which
   hides a value's type from the check.
 - **Other commands.** `$.process.run` takes only the snapshot command, an array that begins `uv run -q --project <dir>`
-  and ends `coney-tools conclave snapshot --json`, and that may grow by `--github` and nothing else. The `<dir>` is
+  (with `--no-sync` between `-q` and `--project`, written as itself or as the choice
+  `...(isSync ? [] : ['--no-sync'])`: no other option, and nothing else is spread) and ends
+  `coney-tools conclave snapshot --json`, and that may grow by `--github` and nothing else. The `<dir>` is
   exactly `${checkoutOf($.plugin.root)}/python` with the mod's own `checkoutOf` (so never a flag or another folder),
   and the options are an object with only `cwd`, which is that checkout, `timeoutMs`, and an `env` that holds only
   `UV_PROJECT_ENVIRONMENT`, which is the checkout's own `venvOf(...)`: no other folder, variable or Python, no
@@ -360,15 +365,24 @@ The flag loads the mod for that session, in every mode and trusted folder or not
 it when a file is saved. The session launcher `coney-agent` is planned to pass the flag itself when the checkout has the
 folder, so an agent never types it. A session started without the mod keeps every rule and gets no display.
 
-The mod runs `uv run -q --project <checkout>/python coney-tools conclave snapshot --json` from the checkout its own
-folder belongs to, so a worktree's session shows that worktree's units, and it needs `uv` on `PATH`. It sets
+The mod runs `uv run -q --no-sync --project <checkout>/python coney-tools conclave snapshot --json` from the checkout
+its own folder belongs to, so a worktree's session shows that worktree's units, and it needs `uv` on `PATH`. It sets
 `UV_PROJECT_ENVIRONMENT` to `<workspace>/scratch/<branch>/conclave-venv` for that call (`scratch/main/conclave-venv`
 for the main checkout), so `uv` never creates `python/.venv` inside a worktree ([Keep Python out of the
 tree](how-we-work.md#shared-machine)). The environment lives in the branch's own scratch folder, where the guide
 already puts a private environment, and goes when that folder does: `workspace clean` leaves `scratch/` alone, so prune
-it with the rest of the branch's scratch ([Scratch](workspace.md#scratch)). The first read in a checkout builds the
-environment, and a checkout outside the workspace layout (`repos/coney` or `worktrees/coney/<branch>`) is left to the
-caller's own variable.
+it with the rest of the branch's scratch ([Scratch](workspace.md#scratch)). A checkout outside the workspace layout
+(`repos/coney` or `worktrees/coney/<branch>`) is left to the caller's own variable.
+
+**The mod never syncs the environment on a poll.** `uv run` syncs the environment before it starts the command, and
+on Windows that fails ("failed to remove file ... `coney-agent.exe`: Access is denied") while a session started by
+the launcher runs, because the launcher's own `coney-agent.exe` in `python/.venv/Scripts` is locked. A read that synced
+would fail on every poll, the band would keep the last list, and the stop guard would block on problems that a `pr hold`
+has covered since. So every read passes `--no-sync`. The
+one exception is the first read of a session, before any read has worked: if it exits with an error, it is run once
+more with the sync, because the environment may not exist yet (a new worktree has a new scratch folder), and that run
+builds it; once a read has worked, a failure is reported as it is and never retried with a sync. A read that timed out is
+not run again. The hooks follow the same rule ([The Claude Code hooks](enforcement.md#hooks)).
 
 ## Starting a session {#start}
 

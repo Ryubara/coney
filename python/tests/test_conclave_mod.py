@@ -32,6 +32,17 @@ SNAPSHOT_ARGV = (
 )
 
 
+#: Pieces of the snapshot command that the crossings below put in the wrong place.
+NO_SYNC = "'--no-sync'"
+EVIL = "'--with=evil'"
+JSON_FLAG = "'--json'"
+
+
+def argv_with_head(head: str) -> str:
+    """The snapshot command with `head` between `-q` and `--project`, for a crossing or an allowed choice."""
+    return SNAPSHOT_ARGV.replace("'-q', ", f"'-q', {head}, ")
+
+
 def argv_with(project: str) -> str:
     """The snapshot command with another `--project` value, for a crossing."""
     return SNAPSHOT_ARGV.replace("`${checkoutOf($.plugin.root)}/python`", project)
@@ -132,6 +143,16 @@ CROSSINGS = [
     ("const argv = ['git', 'push']\nawait $.process.run(argv, {})", "snapshot"),
     (f"const argv = {SNAPSHOT_ARGV}\nargv.push('--force')\nawait $.process.run(argv, {{}})", "snapshot command array"),
     (f"const argv = {SNAPSHOT_ARGV}\nargv[0] = 'git'\nawait $.process.run(argv, {{}})", "snapshot command array"),
+    # The one option `uv` may be given besides: `--no-sync`, as a choice in the one place it goes.
+    (f"await $.process.run({argv_with_head(EVIL)}, {{}})", "snapshot"),
+    (f"await $.process.run({argv_with_head('...x')}, {{}})", "snapshot"),
+    (f"await $.process.run({argv_with_head(f'...(x ? [] : [{EVIL}])')}, {{}})", "snapshot"),
+    (f"await $.process.run({argv_with_head(f'...(x ? [] : [{NO_SYNC}, {EVIL}])')}, {{}})", "snapshot"),
+    (f"await $.process.run({argv_with_head(f'...(x ? [{NO_SYNC}] : [{NO_SYNC}])')}, {{}})", "snapshot"),
+    (f"await $.process.run({argv_with_head('...(x ? [] : [])')}, {{}})", "snapshot"),
+    (f"await $.process.run({argv_with_head(f'{NO_SYNC}, {NO_SYNC}')}, {{}})", "snapshot"),
+    # ... and not in another place.
+    (f"await $.process.run({SNAPSHOT_ARGV.replace(JSON_FLAG, f'...(x ? [] : [{NO_SYNC}])')}, {{}})", "snapshot"),
     # Run-time code, other modules, globals, type escapes.
     ("const m = await import('./other')", "run time"),
     ("import fs from 'node:fs'", "node:fs"),
@@ -744,9 +765,21 @@ const argv = {SNAPSHOT_ARGV}
 if (name === 'x') argv.push('--github')
 await $.process.run(argv, {{ cwd: checkoutOf($.plugin.root), timeoutMs: 1000 }})
 """,
+    "the snapshot command without the sync, fixed": f"""
+const argv = {argv_with_head("'--no-sync'")}
+await $.process.run(argv, {{ cwd: checkoutOf($.plugin.root), timeoutMs: 1000 }})
+""",
+    "the snapshot command, with the sync as a choice": f"""
+const argv = {argv_with_head("...(name === 'x' ? [] : ['--no-sync'])")}
+if (name === 'y') argv.push('--github')
+await $.process.run(argv, {{ cwd: checkoutOf($.plugin.root), timeoutMs: 1000 }})
+""",
     "the snapshot command, as the mod runs it": """
 const root = checkoutOf($.plugin.root)
-const argv = ['uv', 'run', '-q', '--project', `${root}/python`, 'coney-tools', 'conclave', 'snapshot', '--json']
+const argv = [
+  'uv', 'run', '-q', ...(name === 'x' ? [] : ['--no-sync']), '--project', `${root}/python`,
+  'coney-tools', 'conclave', 'snapshot', '--json',
+]
 const venv = venvOf(root)
 await $.process.run(argv, {
   cwd: root,
@@ -897,7 +930,8 @@ def test_what_the_mod_does_is_not_a_crossing(name: str, verdict: Verdict) -> Non
 
 def test_the_snapshot_is_the_command_the_mod_runs() -> None:
     text = (MOD / "src" / "snapshot.ts").read_text(encoding="utf-8")
-    assert "'coney-tools', 'conclave', 'snapshot', '--json'" in text
+    assert re.search(r"'coney-tools',\s+'conclave',\s+'snapshot',\s+'--json'", text)
+    assert "...(isSync ? [] : ['--no-sync'])" in text
 
 
 def test_the_manifest_names_the_module_and_the_contract() -> None:

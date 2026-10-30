@@ -131,9 +131,32 @@ module.exports = function syntax({ ts, checker, req, mod, norm, program, runtime
   const NOT_THE_FOLDER =
     'runs the snapshot command with a project folder other than exactly `${checkoutOf($.plugin.root)}/python`, the checkout the mod sits in'
 
-  /** What is wrong with a command array, or null when it is `uv run -q --project <dir> coney-tools conclave snapshot --json`. */
+  /** Whether `node` is `[]`, or `[<flag>]` for the one optional flag of the command (`want`: which of the two). */
+  function isFlagList(node, want) {
+    node = unwrap(node)
+    if (!ts.isArrayLiteralExpression(node)) return false
+    if (!want) return node.elements.length === 0
+    return node.elements.length === 1 && ts.isStringLiteralLike(node.elements[0]) && node.elements[0].text === req.run.optional.flag
+  }
+
+  /**
+   * Whether `item` is the optional flag in its place: the string itself, or a spread of a choice between the flag and
+   * nothing (`...(isSync ? [] : ['--no-sync'])`), whatever decides it: the choice adds nothing else.
+   */
+  function isOptionalFlag(item) {
+    if (ts.isStringLiteralLike(item)) return item.text === req.run.optional.flag
+    if (!ts.isSpreadElement(item)) return false
+    const choice = unwrap(item.expression)
+    if (!ts.isConditionalExpression(choice)) return false
+    const { whenTrue: yes, whenFalse: no } = choice
+    return (isFlagList(yes, false) && isFlagList(no, true)) || (isFlagList(yes, true) && isFlagList(no, false))
+  }
+
+  /** What is wrong with a command array, or null when it is `uv run -q [--no-sync] --project <dir> coney-tools conclave snapshot --json`. */
   function snapshotProblem(array) {
-    const items = array.elements
+    const items = [...array.elements]
+    const { at } = req.run.optional
+    if (items[at] !== undefined && isOptionalFlag(items[at])) items.splice(at, 1)
     if (items.length !== req.run.head.length + 1 + req.run.tail.length || items.some(ts.isSpreadElement)) return NOT_THE_COMMAND
     const same = (item, text) => ts.isStringLiteralLike(item) && item.text === text
     const isCommand =

@@ -23,6 +23,7 @@ import {
   wakeHeld,
   wakeText,
   watcherSession,
+  withRefresh,
 } from './events'
 import { merged, runSnapshot, SCHEMA } from './snapshot'
 import { changeHeld, getHeld, getRole, getStops, setStops } from './state'
@@ -97,6 +98,7 @@ export async function guardReason($: EngineInterface): Promise<string | null> {
     if (snapshot === null || !watcherSession(snapshot, await getRole($))) return null
     const { watch } = snapshot.config
     let events = guardEvents(snapshot)
+    let failure: string | null = null
     if (events.length > 0) {
       const result = await runSnapshot($, true)
       const at = await $.clock.now()
@@ -105,12 +107,16 @@ export async function guardReason($: EngineInterface): Promise<string | null> {
         events = result.snapshot.schema > SCHEMA ? [] : guardEvents(result.snapshot)
       } else if (!isFresh(state, at, watch)) {
         events = []
+      } else {
+        // The list stands (it is recent), and the reason says it could not be made newer: a problem a hold has covered
+        // since would otherwise look like a guard that repeats itself for nothing.
+        failure = result.error
       }
     }
     const reason = events.length === 0 ? null : stopReason(watch.stop_preamble, events)
     const verdict = stopVerdict(await getStops($), reason, await $.clock.now(), watch)
     await setStops($, verdict.next)
-    return verdict.block ? reason : null
+    return verdict.block && reason !== null ? withRefresh(reason, failure) : null
   } catch {
     return null
   }

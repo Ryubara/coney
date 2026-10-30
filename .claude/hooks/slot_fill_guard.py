@@ -30,6 +30,11 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
+HOOKS = Path(__file__).resolve().parent
+if str(HOOKS) not in sys.path:
+    sys.path.insert(0, str(HOOKS))
+from hooklib import coney_tools_command  # noqa: E402
+
 #: Seconds `coney-tools task slots --fill-check` may take: its GitHub reads take at most `budget_seconds` (30) and the
 #: call in flight `github_seconds` (12) more, then `uv run` starts Python. A test holds this above both numbers of the
 #: conventions plus 20 s, and the timeout in `.claude/settings.json` above this: a hook that timed out would be
@@ -70,7 +75,7 @@ def root_folder() -> Path:
 
 def tool_command(args: list[str]) -> list[str]:
     """The command line that runs `coney-tools <args>`."""
-    return ["uv", "run", "--quiet", "--project", str(root_folder() / "python"), "coney-tools", *args]
+    return coney_tools_command(root_folder(), args)
 
 
 def run_coney_tools(args: list[str]) -> tuple[int, str]:

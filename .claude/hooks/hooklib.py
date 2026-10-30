@@ -181,3 +181,24 @@ def relative_path(path: str) -> str | None:
         return None
     relative = Path(path).resolve().relative_to(root)
     return relative.as_posix().casefold()
+
+
+def project_environment(root: Path) -> Path:
+    """The environment `uv run --project <root>/python` uses: the one `UV_PROJECT_ENVIRONMENT` names (a relative name
+    is taken from the project folder, as `uv` does), else `python/.venv`."""
+    named = os.environ.get("UV_PROJECT_ENVIRONMENT")
+    return root / "python" / named if named else root / "python" / ".venv"
+
+
+def coney_tools_command(root: Path, args: list[str]) -> list[str]:
+    """The command line that runs `coney-tools <args>` from the project in `root`.
+
+    `uv run` syncs the environment before it starts the command, and on Windows that fails ("Access is denied")
+    while the session's own `coney-agent.exe` runs from `python/.venv/Scripts`, so a hook that syncs fails open on
+    every call for as long as the session lives. A built environment (one with a `pyvenv.cfg`) is therefore run with
+    `--no-sync`; a missing one is left to `uv` to build on the first run. Every hook that starts `coney-tools` goes
+    through here (a test holds that)."""
+    command = ["uv", "run", "--quiet"]
+    if (project_environment(root) / "pyvenv.cfg").is_file():
+        command.append("--no-sync")
+    return [*command, "--project", str(root / "python"), "coney-tools", *args]

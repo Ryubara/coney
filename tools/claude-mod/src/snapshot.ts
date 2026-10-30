@@ -56,10 +56,24 @@ export function firstLine(text: string): string {
   return line.length > 120 ? `${line.slice(0, 117)}...` : line
 }
 
-/** Runs the snapshot command and parses what it printed. */
-export async function runSnapshot($: EngineInterface, github: boolean): Promise<Run> {
+/** One run of the snapshot command (`isSync`: let `uv` sync the environment first) and its parsed answer. */
+async function attempt($: EngineInterface, github: boolean, isSync: boolean): Promise<Run & { isExit?: boolean }> {
   const root = checkoutOf($.plugin.root)
-  const argv = ['uv', 'run', '-q', '--project', `${root}/python`, 'coney-tools', 'conclave', 'snapshot', '--json']
+  // `--no-sync`: `uv run` syncs the environment before it starts, and on Windows that fails while the launcher's own
+  // `coney-agent.exe` runs (the file is locked), so a read that syncs would fail on every poll for as long as the session
+  // lives. The environment only needs its first sync, which `runSnapshot` allows when nothing has been read yet.
+  const argv = [
+    'uv',
+    'run',
+    '-q',
+    ...(isSync ? [] : ['--no-sync']),
+    '--project',
+    `${root}/python`,
+    'coney-tools',
+    'conclave',
+    'snapshot',
+    '--json',
+  ]
   if (github) argv.push('--github')
   const venv = venvOf(root)
   try {
@@ -68,13 +82,25 @@ export async function runSnapshot($: EngineInterface, github: boolean): Promise<
       timeoutMs: github ? GITHUB_TIMEOUT_MS : LOCAL_TIMEOUT_MS,
       ...(venv === null ? {} : { env: { UV_PROJECT_ENVIRONMENT: venv } }),
     })
-    if (done.exitCode !== 0) return { ok: false, error: firstLine(done.stderr || done.stdout) }
+    if (done.exitCode !== 0) return { ok: false, error: firstLine(done.stderr || done.stdout), isExit: true }
     const snapshot = JSON.parse(done.stdout) as Snapshot
     if (typeof snapshot.schema !== 'number') return { ok: false, error: 'not a snapshot' }
     return { ok: true, snapshot }
   } catch (error) {
     return { ok: false, error: firstLine(String(error)) }
   }
+}
+
+/**
+ * Runs the snapshot command and parses what it printed, without letting `uv` sync the environment. A command that
+ * exits with an error before any snapshot has been read is run once more with the sync, because the environment may not
+ * exist yet (the first read in a checkout builds it); once a read has worked the environment is there, and a failure is
+ * reported as it is. A run that never ended (a timeout) is not run again.
+ */
+export async function runSnapshot($: EngineInterface, github: boolean): Promise<Run> {
+  const first = await attempt($, github, false)
+  if (first.ok || first.isExit !== true || (await getHeld($)).snapshot !== null) return first
+  return attempt($, github, true)
 }
 
 /** A local read leaves the units' pull requests and claim overlaps to the last GitHub read: carry them over. */

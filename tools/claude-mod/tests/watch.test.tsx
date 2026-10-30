@@ -276,6 +276,39 @@ test('the stop guard never blocks on a list it could not make current', async ($
   expect((await $.classic.Stop({ stop_hook_active: false })).block).toBeUndefined()
 })
 
+test('the stop guard names a refresh that failed, and keeps the problems of the list it holds', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await startAs($, world, 'coordinator')
+  world.answer = fails
+  // the last GitHub read is still recent, so the list stands, with the reason it could not be made newer
+  const done = await $.classic.Stop({ stop_hook_active: false })
+  expect(done.block).toContain('#812')
+  expect(done.block).toContain('could not refresh: gh: not signed in')
+  expect(done.block).not.toContain('more')
+})
+
+test('a refresh that keeps failing does not keep the turn from ending: the count is by problem, not by error text', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await startAs($, world, 'coordinator')
+  const watch = snapshot().config.watch
+  world.answer = fails
+  let n = 0
+  world.answerRun = () => ({ ...fails, stderr: `error ${(n += 1)}
+` })
+
+  for (let blocks = 0; blocks < watch.stop_max_blocks; blocks += 1) {
+    expect((await $.classic.Stop({ stop_hook_active: blocks > 0 })).block).toContain('could not refresh: error')
+  }
+  expect((await $.classic.Stop({ stop_hook_active: true })).block).toBeUndefined()
+})
+
+test('a refresh that works says nothing of a failure', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await startAs($, world, 'coordinator')
+  const done = await $.classic.Stop({ stop_hook_active: false })
+  expect(done.block).not.toContain('could not refresh')
+})
+
 test('the answer beneath the stop guard is kept whole', async ($, on) => {
   const world = engine(on, prints(withEvents(events => events.filter(one => !one.guard))), {
     beneathStop: { additionalContext: ['from Tether'] },

@@ -141,6 +141,17 @@ export function stopReason(preamble: string, events: EventRow[]): string {
 }
 
 /**
+ * The reason with the failed refresh named (`error`: the first line of what the read printed), or the reason as it is
+ * when the refresh worked. The count of blocks is kept by the reason without it, so an error that changes its words
+ * does not start the count again.
+ */
+export function withRefresh(reason: string, error: string | null): string {
+  if (error === null) return reason
+  return `${reason}
+(could not refresh: ${error}; the list above is the last one read, so a hold recorded since may not show in it)`
+}
+
+/**
  * Whether the stop guard blocks this turn end, and its count after. It blocks at most `stop_max_blocks` times in a row
  * for one reason; a new reason, or `stop_reset_minutes` without a block, counts again from one; no reason clears it.
  */
