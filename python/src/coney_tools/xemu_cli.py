@@ -247,8 +247,8 @@ def run_read(agent: str, address: str, kind: str, count: int) -> int:
 
 
 def run_record_run(args: argparse.Namespace) -> int:
-    """`xemu record-run`: write a run record for an observation made on the claimed copy, with xemu's version as its
-    monitor reports it."""
+    """`xemu record-run`: write a run record for an observation made on the claimed copy, with xemu's release from
+    the copy's `xemu.log` (QEMU's version from the monitor when the log names none)."""
     values = run_records_cli.parse_values(args.value)
     addresses = run_records_cli.parse_addresses(args.address)
     root = find_repo_root(Path.cwd())

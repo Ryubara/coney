@@ -106,7 +106,8 @@ humans ([Fire lights](script-types.md#fire-lights), [How a light type lights](sc
 Every 5 to 15 ticks `SubFire2Light_Update` (`0x003c71a8`) sets the next of four colours from `0x005144a8`, which
 alternate between orange (244, 92, 28) and yellow (244, 186, 31), and 90 to 100 % of the radius; the light task
 cross-fades linearly to each new colour over the interval (`LightTask_Update`, `0x003906b8`). The low byte of the
-colour word is set to 64 + `rand(192)` each time; it is the colour's alpha, which no lighting path reads.
+light's own copy of the colour is set to 64 + `rand(192)` each time (the table is only read); it is the colour's
+alpha, which no lighting path reads.
 
 The Xbox's update, Xbox `0x002dda80`, does the same: the same 10 + 5 interval, the same 0.9-1.0 radius factor, the
 same alpha byte, and its own copy of the four colours at Xbox `0x00460b70`, byte for byte the PS2's. So the barrel's

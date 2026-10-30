@@ -104,7 +104,7 @@ rests on. A record holds:
 | --- | --- |
 | `id`, `date`, `kind`, `tool` | `r-<date>-<name>`; the day (UTC); `recipe`, `trace` or `method`; the command that wrote it |
 | `who` | The agent id, type and model, and whether the hook named them or they are `unverified` ([Who](stamps.md#who)) |
-| `pcsx2` or `xemu` | The version the emulator reported (PCSX2 over PINE, xemu through its monitor), and the copy; a record has one of the two tables |
+| `pcsx2` or `xemu` | The version the emulator reported (PCSX2 over PINE; xemu's release from the copy's `xemu.log`, else QEMU's version from its monitor), and the copy; a record has one of the two tables |
 | `start` | The state library id the run started from (`unknown` when the engineer did not say), and the patches it needed, with the state's from the library |
 | `run` | The recipe or scenario and its arguments, or the method in words |
 | `values`, `addresses`, `hashes` | What was read: numbers by name, the addresses of the original the run names, and the SHA-256 of a file the run made (a trace's CSV, which stays in scratch) |
