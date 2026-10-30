@@ -269,7 +269,14 @@ def test_fails_first_holds_the_activity_while_it_runs(space: Space, monkeypatch:
 
     monkeypatch.setattr(fails_first, "run", run)
     args = argparse.Namespace(
-        none=None, accept_change=None, test=["t"], test_commit="abc", fix_commit=None, agent="a", preset="dev"
+        none=None,
+        accept_change=None,
+        keeps=False,
+        test=["t"],
+        test_commit="abc",
+        fix_commit=None,
+        agent="a",
+        preset="dev",
     )
     conventions = load_conventions(REPO)
     folder = unit.Unit("1-fix", space.root / "scratch" / "1-fix")
