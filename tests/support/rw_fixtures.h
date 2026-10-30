@@ -2,9 +2,11 @@
 #pragma once
 
 // Synthetic RenderWare streams, built byte by byte in the tests. Nothing here comes from the game (LEGAL.md, "No game
-// data"). The layouts follow RenderWare's binary stream format as librw reads it (its texture.cpp and
-// ps2/ps2raster.cpp); src/graphics/rw_stream.h describes what Coney checks.
+// data"). The layouts follow RenderWare's binary stream format as librw reads it (its texture.cpp,
+// ps2/ps2raster.cpp and, for a clump, clump.cpp); src/graphics/rw_stream.h describes what Coney checks.
 
+#include <array>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <initializer_list>
@@ -114,6 +116,81 @@ inline Bytes texDictionary(std::initializer_list<Bytes> textures, std::uint16_t 
     }
     body.append(rwSection(graphics::kRwExtension, Bytes{}).span());
     return rwSection(graphics::kRwTexDictionary, body);
+}
+
+/// A float as RenderWare streams it: its four bytes, little-endian.
+inline Bytes& rwFloat(Bytes& bytes, float value) { return bytes.u32(std::bit_cast<std::uint32_t>(value)); }
+
+/// A plain clump section (0x10) as librw's Clump::streamRead takes one, nothing native in it: one frame at the origin,
+/// one geometry of a single triangle with positions only (0, 0, 0), (1, 0, 0), (0, 1, 0) and one untextured material
+/// of `colour` (RGBA), and one atomic on them. The layouts follow librw's clump.cpp, frame.cpp and geometry.cpp at
+/// the library version kRwLibraryStamp names (3.7, so the clump's struct counts lights and cameras and the geometry
+/// keeps no surface properties of its own).
+inline Bytes rwTriangleClump(std::array<std::uint8_t, 4> colour) {
+    constexpr std::uint32_t kClump = 0x10;
+    constexpr std::uint32_t kFrameList = 0x0E;
+    constexpr std::uint32_t kGeometryList = 0x1A;
+    constexpr std::uint32_t kGeometry = 0x0F;
+    constexpr std::uint32_t kMaterialList = 0x08;
+    constexpr std::uint32_t kMaterial = 0x07;
+    constexpr std::uint32_t kAtomic = 0x14;
+    const Bytes noExtension = rwSection(graphics::kRwExtension, Bytes{});
+
+    // The frame list: one identity frame with no parent (-1).
+    Bytes frameStruct;
+    frameStruct.u32(1);
+    for (const float value : {1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F}) {
+        rwFloat(frameStruct, value);
+    }
+    frameStruct.u32(0xFFFFFFFF).u32(0);
+    Bytes frameList = rwSection(graphics::kRwStruct, frameStruct);
+    frameList.append(noExtension.span());
+
+    // The geometry: flags POSITIONS (0x2), one triangle, three vertices, one morph target; the triangle as
+    // (v0 << 16 | v1, v2 << 16 | material); the morph target's bounding sphere, vertices and no normals.
+    Bytes geometryStruct;
+    geometryStruct.u32(0x2).u32(1).u32(3).u32(1);
+    geometryStruct.u32((0U << 16) | 1U).u32((2U << 16) | 0U);
+    for (const float value : {0.5F, 0.5F, 0.0F, 1.0F}) {
+        rwFloat(geometryStruct, value);
+    }
+    geometryStruct.u32(1).u32(0);
+    for (const float value : {0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F}) {
+        rwFloat(geometryStruct, value);
+    }
+    // One material, new (-1): flags, colour, unused, not textured, then its surface properties.
+    Bytes materialStruct;
+    materialStruct.u32(0).u8(colour[0]).u8(colour[1]).u8(colour[2]).u8(colour[3]).u32(0).u32(0);
+    for (const float value : {1.0F, 1.0F, 1.0F}) {
+        rwFloat(materialStruct, value);
+    }
+    Bytes material = rwSection(graphics::kRwStruct, materialStruct);
+    material.append(noExtension.span());
+    Bytes materialListStruct;
+    materialListStruct.u32(1).u32(0xFFFFFFFF);
+    Bytes materialList = rwSection(graphics::kRwStruct, materialListStruct);
+    materialList.append(rwSection(kMaterial, material).span());
+    Bytes geometry = rwSection(graphics::kRwStruct, geometryStruct);
+    geometry.append(rwSection(kMaterialList, materialList).span()).append(noExtension.span());
+    Bytes geometryListStruct;
+    geometryListStruct.u32(1);
+    Bytes geometryList = rwSection(graphics::kRwStruct, geometryListStruct);
+    geometryList.append(rwSection(kGeometry, geometry).span());
+
+    // The atomic: frame 0, geometry 0, flags collision test and render (0x5).
+    Bytes atomicStruct;
+    atomicStruct.u32(0).u32(0).u32(0x5).u32(0);
+    Bytes atomic = rwSection(graphics::kRwStruct, atomicStruct);
+    atomic.append(noExtension.span());
+
+    Bytes clumpStruct;
+    clumpStruct.u32(1).u32(0).u32(0);
+    Bytes clump = rwSection(graphics::kRwStruct, clumpStruct);
+    clump.append(rwSection(kFrameList, frameList).span());
+    clump.append(rwSection(kGeometryList, geometryList).span());
+    clump.append(rwSection(kAtomic, atomic).span());
+    clump.append(noExtension.span());
+    return rwSection(kClump, clump);
 }
 
 } // namespace coney::test

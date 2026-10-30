@@ -20,6 +20,7 @@ using coney::debug::TunableRegistry;
 using coney::debug::TunableType;
 
 TEST_CASE("a tunable registers in one line with its range, units and the variable's value as default", "[debug]") {
+    // Expected: ../guides/debug-menu.md#tunables, Coney's own tool (the registry's rules as that section states them)
     TunableRegistry registry;
     float runSpeed = 6.5F;
     registry.add("Movement", "Run speed", &runSpeed).range(0, 20, 0.5).units("m/s").describe("Top speed on foot.");
@@ -33,6 +34,7 @@ TEST_CASE("a tunable registers in one line with its range, units and the variabl
 }
 
 TEST_CASE("a set value waits for applyPending, which the game runs between steps", "[debug]") {
+    // Expected: ../guides/debug-menu.md#tunables, Coney's own tool (the registry's rules as that section states them)
     TunableRegistry registry;
     int deadZone = 10;
     bool god = false;
@@ -58,6 +60,7 @@ TEST_CASE("a set value waits for applyPending, which the game runs between steps
 }
 
 TEST_CASE("overrides save the changed values and load back, also before the tunable registers", "[debug]") {
+    // Expected: ../guides/debug-menu.md#tunables, Coney's own tool (the registry's rules as that section states them)
     TunableRegistry first;
     float gravity = 9.8F;
     int fov = 65;
@@ -88,6 +91,7 @@ TEST_CASE("overrides save the changed values and load back, also before the tuna
 }
 
 TEST_CASE("a bad overrides line is refused and nothing is queued", "[debug]") {
+    // Expected: ../guides/debug-menu.md#tunables, Coney's own tool (the registry's rules as that section states them)
     TunableRegistry registry;
     int value = 1;
     registry.add("A", "B", &value).range(0, 10, 1);
@@ -99,6 +103,7 @@ TEST_CASE("a bad overrides line is refused and nothing is queued", "[debug]") {
 }
 
 TEST_CASE("removing a tunable drops it and its queued change", "[debug]") {
+    // Expected: ../guides/debug-menu.md#tunables, Coney's own tool (the registry's rules as that section states them)
     TunableRegistry registry;
     int a = 0;
     int b = 0;
@@ -112,6 +117,9 @@ TEST_CASE("removing a tunable drops it and its queued change", "[debug]") {
 }
 
 TEST_CASE("the game's movement and camera tunables edit the values the game reads", "[debug]") {
+    // Expected: characters.md#movement-constants, characters.md#walls, characters.md#sprint, characters.md#jump and
+    // characters.md#climb, confirmed (code), for the defaults; the counts per category are Coney's own registry
+    // (../guides/debug-menu.md#tunables).
     TunableRegistry registry;
     coney::debug::registerGameTunables(registry);
     CHECK(registry.inCategory("Movement").size() == 17);
@@ -120,7 +128,8 @@ TEST_CASE("the game's movement and camera tunables edit the values the game read
     CHECK(registry.inCategory("Sprint").size() == 1);
     CHECK(registry.inCategory("Jump").size() == 4);
     CHECK(registry.inCategory("Climb").size() == 11);
-    CHECK(registry.inCategory("Display").size() == 1);
+    // The cutscene letterbox, and the renderer the next start draws with (docs/engine/gpu-renderer.md#choice).
+    CHECK(registry.inCategory("Display").size() == 2);
     REQUIRE(registry.find("Movement/Run threshold") != nullptr);
     // Each traversal tunable starts at the original's value.
     REQUIRE(registry.find("Body/Step height") != nullptr);
@@ -182,6 +191,7 @@ TEST_CASE("the player's gait speeds are tunable as a scale on each gait, beside 
 }
 
 TEST_CASE("the cutscene letterbox setting is on by default and the Display tunable turns the bars off", "[debug]") {
+    // Expected: ../guides/enhancements.md#where-the-settings-live, Coney's own setting (on is the original's look)
     TunableRegistry registry;
     coney::debug::registerGameTunables(registry);
     const coney::debug::Tunable* letterbox = registry.find("Display/Cutscene letterbox");
@@ -194,4 +204,45 @@ TEST_CASE("the cutscene letterbox setting is on by default and the Display tunab
     registry.resetAll();
     registry.applyPending();
     CHECK(coney::scenes::letterboxSettings().drawn);
+}
+
+TEST_CASE("the renderer setting is GL3 by default and is read from the overrides file before the start",
+          "[debug][renderer]") {
+    // Expected: ../engine/gpu-renderer.md#choice, Coney's own setting: `Display/Renderer` in the overrides file,
+    // 0 GL3 by default, applied at the next start.
+    TunableRegistry registry;
+    coney::debug::registerGameTunables(registry);
+    const coney::debug::Tunable* renderer = registry.find("Display/Renderer");
+    REQUIRE(renderer != nullptr);
+    CHECK(renderer->type() == TunableType::Int);
+    CHECK(renderer->defaultValue() == 0.0);
+    CHECK(renderer->max() == 1.0);
+
+    const std::filesystem::path folder = std::filesystem::temp_directory_path() / "coney_renderer_setting_test";
+    std::filesystem::create_directories(folder);
+    const std::string missing = (folder / "missing.ini").string();
+    CHECK(coney::debug::savedRenderer(missing) == coney::RendererKind::Gl3);
+    // Saved by the Display page: the next start takes it.
+    const std::string saved = (folder / "saved.ini").string();
+    {
+        TunableRegistry writer;
+        int value = 0;
+        writer.add("Display", "Renderer", &value).range(0, 1, 1);
+        writer.set("Display/Renderer", 1.0);
+        writer.applyPending();
+        REQUIRE(writer.save(saved).has_value());
+    }
+    CHECK(coney::debug::savedRenderer(saved) == coney::RendererKind::Gpu);
+    // Another tunable's line, or a line the full load would refuse, leaves GL3.
+    const std::string other = (folder / "other.ini").string();
+    {
+        TunableRegistry writer;
+        float runThreshold = 0.95F;
+        writer.add("Movement", "Run threshold", &runThreshold).range(0, 1, 0.01);
+        writer.set("Movement/Run threshold", 0.9);
+        writer.applyPending();
+        REQUIRE(writer.save(other).has_value());
+    }
+    CHECK(coney::debug::savedRenderer(other) == coney::RendererKind::Gl3);
+    std::filesystem::remove_all(folder);
 }

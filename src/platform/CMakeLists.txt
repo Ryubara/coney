@@ -28,6 +28,9 @@ target_sources(coney_platform PRIVATE motion_blur_pass.cpp parked_cars.cpp parti
                                       room_smoke_overlay.cpp throw_arc_renderer.cpp water_renderer.cpp)
 # Real-time frame pacing: the one place that reads the clock (docs/guides/conventions.md#update-and-render).
 target_sources(coney_platform PRIVATE frame_pacer.cpp)
+# The GPU renderer's start on SDL3's GPU API: its window, device, swapchain and present modes
+# (docs/engine/renderer.md#migration).
+target_sources(coney_platform PRIVATE present_mode.cpp)
 # The profiler's clock, OpenGL counters and allocation counter (docs/guides/performance.md); `--bench` drives the debug
 # tools' fighter spawner, so it is coney_devtools' below.
 target_sources(coney_platform PRIVATE perf_probes.cpp)

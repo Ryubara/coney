@@ -144,4 +144,7 @@ void registerGameTunables(TunableRegistry& registry) {
         .describe("Draw the black bars over cutscenes, as the original does; off plays them full screen");
 }
 
+// Stub for the test commit.
+RendererKind savedRenderer(const std::string& /*path*/) { return RendererKind::Gl3; }
+
 } // namespace coney::debug

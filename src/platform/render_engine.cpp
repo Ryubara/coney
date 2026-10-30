@@ -313,6 +313,9 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
     // The constructor is private, so make_unique cannot reach it.
     std::unique_ptr<RenderEngine> engine(new RenderEngine(backend, desc));
     const bool openGl = backend == RenderBackend::OpenGl;
+    if (backend == RenderBackend::Gpu) {
+        return startFailure("the GPU renderer", false); // stub for the test commit
+    }
 
     // OpenGL: start SDL's video first and check for a display. librw's GL3 device does start SDL's video itself, but
     // it ignores its own failures and goes on to use a display list it never made; holding our own reference also

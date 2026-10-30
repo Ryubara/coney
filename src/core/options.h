@@ -12,6 +12,7 @@
 #include "core/error.h"
 #include "core/language.h"
 #include "core/log_record.h"
+#include "core/renderer_choice.h"
 
 namespace coney {
 
@@ -367,6 +368,11 @@ struct Options {
     bool noActivate = false;
     /// `--kind`: the lists `--render-references` renders; unset renders all of them. Requires renderReferences.
     std::optional<ReferenceKind> referenceKind;
+    /// `--renderer gl3|gpu`: the renderer a windowed run draws with (docs/engine/renderer.md#migration); unset takes
+    /// the saved `Display/Renderer` setting outside test mode, else GL3 (chooseRenderer()). `gpu` needs a window and
+    /// reads no frame back, so it cannot be combined with `--headless`, `--load`, `--screenshot`, `--record` or
+    /// `--render-references`.
+    std::optional<RendererKind> renderer;
     /// `--no-audio`: no sound output at all: no mixer, no device (the debug menu's Audio page says so).
     bool noAudio = false;
     /// `--audio-test`: play a synthesised tone sweep, looping, from the start (audio::makeToneSweep()), and print what
