@@ -95,9 +95,9 @@ with. To update ENet, change the commit and the tag comment together.
 
 ### Shaders {#shaders}
 
-The GPU renderer's shaders are HLSL, compiled by the build to SPIR-V, DXIL and MSL and embedded in the executable. The
-build fetches and builds their compiler (SDL_shadercross, with DXC and SPIRV-Cross) while it configures, once per machine
-and set of pins: [The shader build](shaders.md) has what it does, how to add a shader, the tests and
+The GPU renderer's shaders are HLSL, compiled by the build to SPIR-V, DXIL and MSL and embedded in the `coney_shaders`
+library. The build fetches and builds their compiler (SDL_shadercross, with DXC and SPIRV-Cross) while it configures,
+once per machine and set of pins: [The shader build](shaders.md) has what it does, how to add a shader, the tests and
 `-DCONEY_SHADERS=OFF` for a system where the compiler cannot be built.
 
 ### Windows

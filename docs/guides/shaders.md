@@ -50,7 +50,8 @@ The licences are checked in [Renderer, Licences](../engine/renderer.md#licences)
 **When it is built.** `cmake/coney_shaders.cmake` builds the compiler while the project configures, as a project of its
 own (`cmake/shadertools/CMakeLists.txt`: always Release, with only SDL3's core, whatever the preset, so the project's
 sanitizers, warnings and Debug flags never reach it) and installs it in the shared dependency folder beside the sources
-([Shared dependency sources](building.md#shared-deps)), stamped with the pins and the project's hash. So it is built
+([Shared dependency sources](building.md#shared-deps)) as `shadertools-<hash of that project>`, stamped with the pins
+and the project's hash, so a worktree with another tool project never rebuilds a prefix another one is using. So it is built
 once per machine and set of pins, a second configure in any worktree finds the stamp and builds nothing, and CI keeps it
 in its dependency cache ([Caches](building.md#ci-caches), which also says what keys the entry). Without the shared folder
 it is built inside the build folder. A lock keeps two configures from building it at once.
@@ -60,9 +61,9 @@ compiled from source, which takes much longer the first time; the compiler cache
 
 **DXIL needs no extra binary.** Direct3D 12 loads only DXIL that carries the validator's hash. DXC signs it itself since
 release 1.8.2505, so the pinned compiler needs no `dxil.dll` (Microsoft's own binary, under its own licence), and Coney
-never installs or loads it; the Windows archive the build fetches for `dxcompiler.dll` still holds it, with Microsoft's
-licence terms ([the finding](../engine/renderer.md#licences)). The tests below fail if a pin ever moves
-to a compiler that does not sign.
+never installs or loads it; the archives the build fetches for the compiler library still hold it, with Microsoft's
+licence terms ([the finding](../engine/renderer.md#licences)). The tests below fail if a pin ever moves to a compiler
+that does not sign.
 
 **To update a pin**, change it in `cmake/deps.cmake` (the commit or the archive and its SHA-256), build, and run the
 `[shaders]` tests. The pin lines are the stamp's version, so every machine builds the compiler once more. On Windows and

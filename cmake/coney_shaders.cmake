@@ -11,15 +11,19 @@ include_guard(GLOBAL)
 # the pins and the tool project's own hash, so a changed pin or project builds it again; a lock keeps two configures
 # from building it at once.
 function(coney_provision_shader_compiler)
+    set(_project "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/shadertools")
+    file(SHA256 "${_project}/CMakeLists.txt" _project_hash)
+    string(SHA256 _hash "${_coney_deps_hash} ${_project_hash}")
+    # The shared folder is named by the pins (the version), so the prefix must also be named by the tool project:
+    # two worktrees with the same pins and different projects would else rebuild and reinstall one prefix in turn,
+    # under each other's running builds.
     if(CONEY_DEPS_SOURCES)
-        set(_prefix "${_coney_deps_dir}/shadertools")
+        string(SUBSTRING "${_project_hash}" 0 12 _project_version)
+        set(_prefix "${_coney_deps_dir}/shadertools-${_project_version}")
     else()
         set(_prefix "${CMAKE_BINARY_DIR}/_shadertools")
     endif()
     set(_tool "${_prefix}/bin/shadercross${CMAKE_EXECUTABLE_SUFFIX}")
-    set(_project "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/shadertools")
-    file(SHA256 "${_project}/CMakeLists.txt" _project_hash)
-    string(SHA256 _hash "${_coney_deps_hash} ${_project_hash}")
 
     file(MAKE_DIRECTORY "${_prefix}")
     file(LOCK "${_prefix}/.lock" TIMEOUT 7200 RESULT_VARIABLE _locked)
@@ -114,7 +118,7 @@ function(coney_add_shader_library target)
                 OUTPUT "${_file}"
                 COMMAND ${CMAKE_COMMAND} -DTOOL=${CONEY_SHADERCROSS} -DSOURCE=${_source} -DOUTPUT=${_file}
                         -DFORMAT=${_format} -DSTAGE=${_stage} -P "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/coney_shader_compile.cmake"
-                DEPENDS "${_source}" "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/coney_shader_compile.cmake"
+                DEPENDS "${_source}" "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/coney_shader_compile.cmake" "${CONEY_SHADERCROSS}"
                 COMMENT "Compiling ${_name} to ${_format}"
                 VERBATIM)
             list(APPEND _outputs "${_file}")
