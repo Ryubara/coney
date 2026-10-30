@@ -31,8 +31,9 @@ enum class NativeStatus : std::uint8_t {
     Missing,     ///< Not registered: a script's call of it is skipped.
 };
 
-/// The status of the binding `name`, from Coney's binding table (script::bindingTable()).
-[[nodiscard]] NativeStatus nativeStatus(std::string_view name);
+/// The status of the native `name` in a state's native list (script::ScriptSystem::natives()): Missing when the list
+/// has no such native.
+[[nodiscard]] NativeStatus nativeStatus(std::span<const script::Native> natives, std::string_view name);
 /// The name of a status, for the menus (`implemented`, `missing`).
 [[nodiscard]] std::string_view nativeStatusName(NativeStatus status);
 
@@ -133,6 +134,7 @@ class SandboxScripts final : public script::BindingHost {
     GameState m_state;
     gui::GlobalStrings m_strings;
     script::RecordedCalls m_recorded;
+    script::ScriptHandles m_handles; // the sandbox session's handles
     script::BindingContext m_context;
     script::ScriptSystem m_scripts; // after everything its bindings refer to
 };

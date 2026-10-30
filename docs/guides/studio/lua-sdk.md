@@ -43,7 +43,7 @@ internals:** a script reaches the game only through natives, the same boundary t
 
 | Term | Meaning |
 | --- | --- |
-| **Native** | A function a script calls to make the game do something. Coney keeps the word: the Natives page and the masterlist already use it, as does the planned `Native` struct, and it is the word modders know from FiveM |
+| **Native** | A function a script calls to make the game do something. Coney keeps the word: the Natives page and the masterlist already use it, as does the `Native` struct, and it is the word modders know from FiveM |
 | **Game native** | One of the original's 956 script bindings, registered as a Lua global by the game and documented in the [masterlist](../../references/bindings/index.md). A script calls it by the game's own name, with the game's arguments, as the game's scripts do: `HuCreate(name, type, pos, heading, nil, 1, gang)` |
 | **Coney native** | A function Coney adds for scripts, reaching a capability of Coney's engine the original lacks (teleport, time scale, loading an imported model). It lives in the `Coney` table (`Coney.TeleportPlayer(...)`), never as a bare global, so it can never clash with a game native |
 | **SDK function** | A function of the `Coney` table that belongs to the script runtime, not to the engine: registering handlers, threads and waits, logging, the SDK level. It is always there, whatever Coney's progress |
@@ -368,10 +368,10 @@ globals and threads are the session's, the game state's are the level's.
 ### The two states {#two-states}
 
 The game state and the project state never share globals. They share **the world**: a human, object, camera or gang made
-by either is the same thing to both, named by the same handle. That needs one rule the code does not keep today:
-**handles come from the session, not from a Lua state** (one counter per session, in the game mode's state), so a handle
-the level script made means the same human in the project's calls ([Network architecture:
-Scripts](../network-architecture.md#sub-scripts) counts handles per state today). The project reads the game state's
+by either is the same thing to both, named by the same handle. That needs one rule, which the code keeps since issue
+1118: **handles come from the session, not from a Lua state** (one counter per session, `script::ScriptHandles` in the
+game mode's state), so a handle the level script made means the same human in the project's calls ([Network
+architecture: Scripts](../network-architecture.md#sub-scripts)). The project reads the game state's
 world through natives (`HuFind`, `FindFlag`, `GetPosition`), as a level script reads what another script made; it cannot
 set the game state's globals or call its functions. It may **read** (never write) a global of the game state through one
 Coney native, `Coney.GetGameGlobal(name)`, to follow a level script's progress (a stage counter) ([Maintainer
@@ -788,7 +788,8 @@ running a project's scripts. Issues 2 to 6 build on the [decision](#decisions) f
    step for the [monitor](#monitor). Handles move from one counter per Lua state to one per session. No behaviour
    changes: the disc checks of the scripts give the same counts. Tests: every registered binding is in the list with its
    status; the scheduler runs entries in the documented order; a handle made in one state resolves in another of the
-   same session.
+   same session. **Built** (`scripting/natives.h`, `script_scheduler.h`, `script_handles.h`; [what was
+   built](../asset-and-script-architecture.md#script-parts)).
 2. **core: Add the Lua 5.4 project runtime and its sandbox.** Stock Lua 5.4 pinned in `cmake/deps.cmake` with the
    deterministic build settings; a project state with its environment, the allowed libraries, `require` inside the
    project, the allocator's count of each state's memory (for the monitor, no cap) and the project's random stream (for

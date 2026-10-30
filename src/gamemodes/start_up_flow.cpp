@@ -70,6 +70,8 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
       m_memoryCard(device, stack, m_levelFlow, loadSheet, strings, cardCheckingMs, log),
       m_legal(device, loadSheet, legal, log, &m_scripts) {
     m_state.language = legal.language;
+    // One handle counter for the session: every state the flow makes (a level unload makes a new one) takes from it.
+    m_context.handles = &m_handles;
     // The HUD the scripts' HUD bindings act on; the scripts start later (start()).
     m_context.hud = &m_hud;
     m_hud.setServices(script::hudServicesOf(m_context));

@@ -4,12 +4,14 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <expected>
 #include <format>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "core/error.h"
 #include "debug/debug_session.h"
 #include "debug/story_missions.h"
 #include "sandbox/sandbox_layout.h"
@@ -42,7 +44,8 @@ void callAndLog(DebugSession& session, NativeArguments& args) {
     std::vector<script::Value> values = args.toValues();
     const std::string_view name = args.signature().name;
     session.print(std::format("> {}  [{} state]", args.callText(), session.usingGameScripts() ? "game" : "sandbox"));
-    auto results = callNative(session.vm(), name, values);
+    std::expected<std::vector<script::Value>, Error> results = fail(ErrorCode::NotFound, "no script state");
+    session.runInState([&](script::LuaVm& vm) { results = callNative(vm, name, values); });
     if (!results) {
         session.print("! " + results.error().message);
         return;
@@ -117,7 +120,7 @@ MenuItem argumentItem(const std::shared_ptr<NativeArguments>& args, std::size_t 
 std::shared_ptr<MenuPage> bindingPage(DebugSession& session, const NativeSignature& signature) {
     auto page = std::make_shared<MenuPage>(std::string(signature.name));
     auto args = std::make_shared<NativeArguments>(signature);
-    const NativeStatus status = nativeStatus(signature.name);
+    const NativeStatus status = nativeStatus(session.scripts().natives(), signature.name);
     page->add(watchItem("Status", [status, &signature] {
         const std::string overloads =
             signature.overloads == 0 ? std::string{} : std::format(", {} older registration(s)", signature.overloads);
@@ -165,7 +168,7 @@ void fillCategory(MenuPage& page, DebugSession& session, std::string_view catego
         }
         MenuItem item = submenuItem(std::string(signature.name),
                                     [&session, &signature] { return bindingPage(session, signature); });
-        item.detail = std::string(nativeStatusName(nativeStatus(signature.name)));
+        item.detail = std::string(nativeStatusName(nativeStatus(session.scripts().natives(), signature.name)));
         page.add(std::move(item));
     }
 }
@@ -210,7 +213,8 @@ void addConsolePage(DebugSession& session) {
                 [&session, draft](const std::string& text) {
                     *draft = text;
                     session.print("> " + text);
-                    auto printed = session.console().run(session.vm(), text);
+                    std::expected<std::vector<std::string>, Error> printed = fail(ErrorCode::NotFound, "no state");
+                    session.runInState([&](script::LuaVm& vm) { printed = session.console().run(vm, text); });
                     if (!printed) {
                         session.print("! " + printed.error().message);
                         return;
@@ -229,7 +233,8 @@ void addConsolePage(DebugSession& session) {
                 "Run file", [file] { return *file; },
                 [&session, file](const std::string& path) {
                     *file = path;
-                    auto printed = session.console().runFile(session.vm(), path);
+                    std::expected<std::vector<std::string>, Error> printed = fail(ErrorCode::NotFound, "no state");
+                    session.runInState([&](script::LuaVm& vm) { printed = session.console().runFile(vm, path); });
                     if (!printed) {
                         session.print("! " + printed.error().message);
                         return;
@@ -267,7 +272,9 @@ void addCheatsPage(DebugSession& session) {
                     // What the checker does on a match: call the script's callback with the code's index.
                     const std::vector<script::Value> args{script::Value(static_cast<double>(code))};
                     session.print(std::format("> {}({})", kCheatCallback, code));
-                    auto results = callNative(session.vm(), kCheatCallback, args);
+                    std::expected<std::vector<script::Value>, Error> results =
+                        fail(ErrorCode::NotFound, "no script state");
+                    session.runInState([&](script::LuaVm& vm) { results = callNative(vm, kCheatCallback, args); });
                     session.print(results ? resultLine(*results) : "! " + results.error().message);
                 }));
             }

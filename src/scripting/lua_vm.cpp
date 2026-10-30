@@ -20,6 +20,7 @@
 #include "core/assert.h"
 #include "scripting/lua_compiler.h"
 #include "scripting/lua_opcodes.h"
+#include "scripting/natives.h"
 
 namespace coney::script {
 
@@ -171,7 +172,12 @@ void LuaVm::setGlobal(std::string_view name, Value value) {
 }
 
 // @coney-only replaces Lua 4.0.1's lua_register: lua_pushcclosure, lua_setglobal (lapi.c, 0x003239f8, 0x00323e60)
+// A registration goes to the list being collected instead when there is one (collectInto()).
 void LuaVm::registerFunction(std::string_view name, NativeFunction function) {
+    if (m_collector != nullptr) {
+        m_collector->add(name, std::move(function));
+        return;
+    }
     auto wrapped = std::make_shared<Function>();
     wrapped->native = std::move(function);
     setGlobal(name, Value(std::shared_ptr<const Function>(std::move(wrapped))));

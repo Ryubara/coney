@@ -62,10 +62,8 @@ namespace {
 // The value of the global `NilHandle` (Coney's choice, below): what a binding returns for no object.
 constexpr double kNilHandle = 0.0;
 
-// The handles stub bindings give out, counting from 1 for each state.
-struct HandleCounter {
-    double next = 1;
-};
+// The handles stub bindings give out: the session's counter (ScriptHandles), or one of the state's own.
+using HandleCounter = ScriptHandles;
 
 // A class's weapon when it has none (`CfgChar`'s `+0x18c`).
 constexpr std::string_view kNoWeapon = "none";
@@ -1517,15 +1515,35 @@ std::size_t RecordedCalls::total() const {
     return total;
 }
 
-void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context) {
-    CONEY_ASSERT(context.state != nullptr && context.strings != nullptr && context.host != nullptr);
-    const Factory factory{&scripts, &context, std::make_shared<HandleCounter>()};
-    // A fresh state spawns its level's objects anew; the last state's handles name nothing in it. The object types
-    // stay: the legal screen's preloads configure them once (`config_preload3.lua`), and no later state runs them
-    // again (scripting.md, "Life of the Lua state").
-    if (context.spawnRecords != nullptr) {
-        context.spawnRecords->clear();
+namespace {
+
+// The handle counter the bindings of a state of `context` share: the session's when the context has one (kept by the
+// game mode, which outlives the state), else a new one of the state's own, counting from 1.
+// @coney-only Coney's handle bookkeeping; the original's handles are its objects
+std::shared_ptr<HandleCounter> handlesOf(const BindingContext& context) {
+    if (context.handles != nullptr) {
+        // Not owned: the session keeps it.
+        return {std::shared_ptr<void>{}, context.handles};
     }
+    return std::make_shared<HandleCounter>();
+}
+
+// The next handle of `handles`, as the bindings that make world objects and the engine take one.
+// @coney-only Coney's handle bookkeeping; the original's handles are its objects
+std::function<double()> handleSource(const std::shared_ptr<HandleCounter>& handles) {
+    return [handles] {
+        const double handle = handles->next;
+        handles->next += 1;
+        return handle;
+    };
+}
+
+// Every binding of kBindings registered on `vm` (a VM collecting into a list: LuaVm::collectInto()), in the
+// registration's order, the stubs and the object bindings taking their handles from `handles`.
+// @coney-only the registration's order and content, which buildNatives() collects
+void registerAll(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context,
+                 const std::shared_ptr<HandleCounter>& handles) {
+    const Factory factory{&scripts, &context, handles};
     for (const BindingInfo& info : kBindings) {
         if (info.kind == BindingKind::Stub) {
             vm.registerFunction(info.name, makeStub(info, context, factory.handles));
@@ -1583,12 +1601,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
                      SceneStandIn{.preload = makeStandInScenePreload(factory), .play = makeStandInScenePlay(factory)});
     // The level, trigger, camera and object bindings make world objects, so they take their handles from the same
     // counter as the stubs.
-    const std::function<double()> nextHandle = [handles = factory.handles] {
-        const double handle = handles->next;
-        handles->next += 1;
-        return handle;
-    };
-    scripts.setObjectHandles(nextHandle);
+    const std::function<double()> nextHandle = handleSource(handles);
     addLevelBindings(vm, context, nextHandle);
     addTriggerBindings(vm, context, nextHandle);
     addCameraBindings(vm, context, nextHandle);
@@ -1606,6 +1619,57 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     addHubWorldBindings(scripts, vm, context);
     addMission4Bindings(scripts, vm, context);
     addMission7Bindings(scripts, vm, context, nextHandle);
+    // The analyzer reports the scene stand-ins' NativeFunctions as leaked here, but each std::function owns its
+    // functor and addSceneBindings() copies them into the list (the analyzer loses track inside libstdc++'s
+    // _M_manager).
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
+}
+
+// The natives registerAll() registers, each with its status from kBindings and the mods flag.
+// @coney-only the native list (docs/guides/asset-and-script-architecture.md#script-parts)
+std::vector<Native> collectNatives(ScriptSystem& scripts, const BindingContext& context,
+                                   const std::shared_ptr<HandleCounter>& handles) {
+    // The binding files register on a VM: give them one that collects into the list.
+    NativeList list;
+    LuaVm collector;
+    collector.collectInto(&list);
+    registerAll(scripts, collector, context, handles);
+    collector.collectInto(nullptr);
+    std::vector<Native> natives = list.take();
+    for (Native& native : natives) {
+        // Every native registered is in the binding table, which says how far Coney has it (CONEY_ASSERT).
+        const auto info = std::ranges::find(kBindings, std::string_view(native.name), &BindingInfo::name);
+        CONEY_ASSERT(info != kBindings.end());
+        native.status = info->kind;
+        native.origin = NativeOrigin::Original;
+        native.mods = allowedForMods(native.name);
+    }
+    return natives;
+}
+
+} // namespace
+
+// @coney-only the native list (docs/guides/asset-and-script-architecture.md#script-parts)
+std::vector<Native> buildNatives(ScriptSystem& scripts, const BindingContext& context) {
+    CONEY_ASSERT(context.state != nullptr && context.strings != nullptr && context.host != nullptr);
+    return collectNatives(scripts, context, handlesOf(context));
+}
+
+void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context) {
+    CONEY_ASSERT(context.state != nullptr && context.strings != nullptr && context.host != nullptr);
+    // A fresh state spawns its level's objects anew; the last state's handles name nothing in it. The object types
+    // stay: the legal screen's preloads configure them once (`config_preload3.lua`), and no later state runs them
+    // again (scripting.md, "Life of the Lua state").
+    if (context.spawnRecords != nullptr) {
+        context.spawnRecords->clear();
+    }
+    // The handles come from the session (one counter however many states it makes), and what the engine adds outside
+    // a binding takes its handle from the same counter.
+    const std::shared_ptr<HandleCounter> handles = handlesOf(context);
+    std::vector<Native> natives = collectNatives(scripts, context, handles);
+    scripts.setObjectHandles(handleSource(handles));
+    // The registration's natives in its order, which gives the state the globals it always had.
+    installNatives(vm, natives);
 
     // The tolua support the registration also makes: the table `tolua`, the classes `M_Vector4` and `M_Quat`, and the
     // variables `NilHandle` and `NilSoundHandle`. Coney's choices: the classes are empty tables (no usertypes yet) and
@@ -1613,11 +1677,11 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     vm.setGlobal("tolua", Value(std::make_shared<Table>()));
     vm.setGlobal("M_Vector4", Value(std::make_shared<Table>()));
     vm.setGlobal("M_Quat", Value(std::make_shared<Table>()));
+    // Coney's choice: both nil handles 0.
     vm.setGlobal("NilHandle", Value(kNilHandle));
     vm.setGlobal("NilSoundHandle", Value(0.0));
-    // The analyzer reports the scene stand-ins' NativeFunctions as leaked here, but each std::function owns its
-    // functor and addSceneBindings() copies them into the VM (the analyzer loses track inside libstdc++'s _M_manager).
-    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
+    // The state keeps its list for the debug menus.
+    scripts.setNatives(std::move(natives));
 }
 
 } // namespace coney::script

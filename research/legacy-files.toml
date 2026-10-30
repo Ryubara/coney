@@ -1344,9 +1344,6 @@ tag = 5
 ["src/scripting/scene_bindings.cpp"]
 tag = 8
 
-["src/scripting/script_system.cpp"]
-tag = 15
-
 ["src/scripting/sound_bindings.cpp"]
 tag = 19
 

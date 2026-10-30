@@ -384,7 +384,8 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
 - **Sync:** nothing of the Lua state; its effects. **Owner:** server only ([Scripting](#original-scripts)).
 - **Today:** one Lua 4.0 state per level; 632 of the original's 956 natives built; bindings hold about 28 pointers
   into the game through `BindingContext`; callbacks by name (message handlers, pad handlers, anim callbacks,
-  triggers, `ScheduleFunc`); handles from one counter per state.
+  triggers, `ScheduleFunc`), every run an entry of the `ScriptScheduler`; handles from one counter per session
+  (`script::ScriptHandles`), shared by every state the session makes.
 - **In the way:** the Lua state is game state no snapshot can copy, which is why scripts stay on the server. The
   original's two-player natives do nothing yet: `CheckMultiplayer` is a no-op (`scripting/hub_world_bindings.cpp`),
   and `SetMultiplayerCallback` and `CfgMultiplayerJoin` only store their callback name and flag

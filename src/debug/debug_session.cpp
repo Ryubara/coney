@@ -69,14 +69,20 @@ bool DebugSession::usingGameScripts() const {
     return game != nullptr && game->exists();
 }
 
-script::LuaVm& DebugSession::vm() {
+script::LuaVm& DebugSession::vm() { return scripts().vm(); }
+
+script::ScriptSystem& DebugSession::scripts() {
     if (usingGameScripts()) {
-        return m_services.scripts()->vm();
+        return *m_services.scripts();
     }
     if (!m_sandbox) {
         m_sandbox = std::make_unique<SandboxScripts>([this](std::string_view line) { print(std::string(line)); });
     }
-    return m_sandbox->scripts().vm();
+    return m_sandbox->scripts();
+}
+
+void DebugSession::runInState(const std::function<void(script::LuaVm&)>& body) {
+    scripts().scheduler().run(script::ScriptEntry::console(body));
 }
 
 const script::RecordedCalls* DebugSession::recorded() {

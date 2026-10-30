@@ -206,6 +206,7 @@ class LevelScripts {
     QuietBindingHost m_host;
     gui::RumbleData m_rumbleData;
     hud::Hud m_hud;
+    script::ScriptHandles m_handles; // the session's handles, shared by every state it makes
     script::BindingContext m_context;
     script::ScriptSystem m_scripts; // after everything its bindings refer to
 };

@@ -168,7 +168,9 @@ add_library(coney_core STATIC
     scripting/rumble_bindings.cpp
     scripting/rumble_match_bindings.cpp
     scripting/scene_bindings.cpp
+    scripting/natives.cpp
     scripting/script_bindings.cpp
+    scripting/script_scheduler.cpp
     scripting/script_system.cpp
     scripting/sound_bindings.cpp
     scripting/spawn_bindings.cpp

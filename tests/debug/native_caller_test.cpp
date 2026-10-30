@@ -41,12 +41,16 @@ TEST_CASE("the signature table lists all 956 bindings, once each, with their arg
     CHECK(coney::debug::findNativeSignature("NoSuchBinding") == nullptr);
 }
 
-TEST_CASE("the status comes from Coney's binding table", "[debug]") {
+TEST_CASE("the status comes from the state's native list", "[debug]") {
     // Expected: docs/guides/debug-menu.md#natives
-    CHECK(coney::debug::nativeStatus("GetPlatform") == NativeStatus::Implemented);
-    CHECK(coney::debug::nativeStatus("PlayMovie") == NativeStatus::Partial);
-    CHECK(coney::debug::nativeStatus("SetDifficulty") == NativeStatus::Stub);
-    CHECK(coney::debug::nativeStatus("GoalPathBlocker") == NativeStatus::Missing);
+    SandboxScripts sandbox([](std::string_view /*line*/) {});
+    const auto natives = sandbox.scripts().natives();
+    CHECK(coney::debug::nativeStatus(natives, "GetPlatform") == NativeStatus::Implemented);
+    CHECK(coney::debug::nativeStatus(natives, "PlayMovie") == NativeStatus::Partial);
+    CHECK(coney::debug::nativeStatus(natives, "SetDifficulty") == NativeStatus::Stub);
+    CHECK(coney::debug::nativeStatus(natives, "GoalPathBlocker") == NativeStatus::Missing);
+    // A list without a native says it is missing, whatever the binding table holds.
+    CHECK(coney::debug::nativeStatus({}, "GetPlatform") == NativeStatus::Missing);
 }
 
 TEST_CASE("arguments start at their defaults and become the values a script would pass", "[debug]") {

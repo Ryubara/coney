@@ -13,6 +13,8 @@
 #include "gui/rumble_mode_gui/rumble_data.h"
 #include "scripting/lua_value.h"
 #include "scripting/lua_vm.h"
+#include "scripting/natives.h"
+#include "scripting/script_handles.h"
 #include "scripting/script_system.h"
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
@@ -126,13 +128,6 @@ class BindingHost {
     virtual void startSaveSequence() {}
 };
 
-/// How far Coney implements a binding.
-enum class BindingKind : std::uint8_t {
-    Real,   ///< Does the binding's job.
-    Routed, ///< Hands the request to a Coney stand-in (music, movies, the Rumble mode menus), which logs it.
-    Stub,   ///< Does nothing but return its documented default: its subsystem does not exist in Coney yet.
-};
-
 /// What a stub returns, by the original's conventions (docs/research/scripting.md#argument-and-result-conventions).
 enum class StubResult : std::uint8_t {
     Nothing, ///< No result (nil to a script that reads one).
@@ -213,7 +208,14 @@ struct BindingContext {
     /// What a crime the scripts report reaches (`CrimeIsHappening`): the level's gangs, police and HUD; null reports
     /// none.
     CrimeServices* crimes = nullptr;
+    /// The session's handle counter, which every state of the session shares; null gives each state its own.
+    ScriptHandles* handles = nullptr;
 };
+
+/// The native list of a fresh state of `scripts`: every binding of bindingTable() as a Native with its status and
+/// the mods flag, its call working on `context` (the real ones) or returning its default (the stubs), in the order the
+/// registration makes them. The runtime installs it (installBindings()); the debug menus list it.
+[[nodiscard]] std::vector<Native> buildNatives(ScriptSystem& scripts, const BindingContext& context);
 
 /// Registers every binding of bindingTable() in `vm`, a fresh state of `scripts`: the real ones working on `context`,
 /// the stubs returning their defaults. Use it as (part of) the ScriptSystem's BindingInstaller.

@@ -39,13 +39,12 @@ std::string_view nativeArgTypeName(NativeArgType type) {
     return kNames.at(static_cast<std::size_t>(type));
 }
 
-NativeStatus nativeStatus(std::string_view name) {
-    const auto table = script::bindingTable();
-    const auto found = std::ranges::find(table, name, &script::BindingInfo::name);
-    if (found == table.end()) {
+NativeStatus nativeStatus(std::span<const script::Native> natives, std::string_view name) {
+    const script::Native* found = script::findNative(natives, name);
+    if (found == nullptr) {
         return NativeStatus::Missing;
     }
-    switch (found->kind) {
+    switch (found->status) {
     case script::BindingKind::Real:
         return NativeStatus::Implemented;
     case script::BindingKind::Routed:
@@ -247,6 +246,7 @@ SandboxScripts::SandboxScripts(std::function<void(std::string_view)> log)
     if (!m_log) {
         m_log = [](std::string_view) {};
     }
+    m_context.handles = &m_handles;
     m_scripts.create();
 }
 
