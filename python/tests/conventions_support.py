@@ -56,6 +56,16 @@ def with_networking_place(conventions: Conventions, minimum: int) -> Conventions
     return replace(conventions, tasks=replace(conventions.tasks, start=replace(conventions.tasks.start, slots=slots)))
 
 
+def with_renderer_place(conventions: Conventions, minimum: int) -> Conventions:
+    """`conventions` with the renderer track keeping `minimum` places, as `with_networking_place` does for networking:
+    the tests of the other tracks run with 0 so that the place the committed rule keeps for the renderer does not
+    change their numbers, and the tests of the renderer track set the committed 1."""
+    tracks = conventions.tasks.start.slots.tracks
+    tracks = replace(tracks, renderer=replace(tracks.renderer, min=minimum))
+    slots = replace(conventions.tasks.start.slots, tracks=tracks)
+    return replace(conventions, tasks=replace(conventions.tasks, start=replace(conventions.tasks.start, slots=slots)))
+
+
 def write_checkout(root: Path, data: dict[str, Any] | None = None) -> Path:
     """Make `root` a checkout holding `data` (default: the real data) as its conventions file; returns `root`."""
     (root / "coney.local.example.toml").write_text("", encoding="utf-8")

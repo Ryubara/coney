@@ -9,14 +9,14 @@ the text the Stop hook (`.claude/hooks/slot_fill_guard.py`) shows the coordinato
 
 A free place is one of four kinds. The places a track keeps (`tracks.<name>.min`) while it runs fewer are *kept*: the
 reimplementation track keeps one for game (`feature`) work, the fix track one for a failed pull request, the
-networking track one for a networking issue, and Studio may not take them. The rest of the machine's free places are
-*open*: Coney Studio takes them, or game work beyond the kept one; networking work never does, for its track holds
-at most `max` units. *Startable work* is a claimed task whose agent has not started, then the ready issues that pass
-the start gate (`tasks.start.fill.gate`, plus `P-critical`, which comes first as the claim Action demands) and are not
-blocked and fit the open-claims limit (a Studio, networking or `workflow` issue is outside it); for the fix track, a
-queued fix task, then each open pull request of this account with a failed required check that no fix unit and no
-hold covers. *Reasons* the tool finds itself: no issue passes the gate, the claim limit is reached, free disk is
-under the workspace floor.
+networking track one for a networking issue, the renderer track one for a renderer issue, and Studio may not take
+them. The rest of the machine's free places are *open*: Coney Studio takes them, or game work beyond the kept one;
+networking and renderer work never do, for their tracks hold at most `max` units. *Startable work* is a claimed task
+whose agent has not started, then the ready issues that pass the start gate (`tasks.start.fill.gate`, plus
+`P-critical`, which comes first as the claim Action demands) and are not blocked and fit the open-claims limit (a
+Studio, networking, renderer or `workflow` issue is outside it); for the fix track, a queued fix task, then each open
+pull request of this account with a failed required check that no fix unit and no hold covers. *Reasons* the tool
+finds itself: no issue passes the gate, the claim limit is reached, free disk is under the workspace floor.
 Anything else is a waiver (`slot_waivers.py`).
 
 GitHub is read through `Sources` (`slot_fill_github.py` is the real one), so the decision is pure and the tests never
@@ -188,18 +188,20 @@ def analyse_issues(
     want: int,
     want_game: int = 0,
     want_networking: int = 0,
+    want_renderer: int = 0,
 ) -> Analysis:
     """Which ready issues can start now, at least `want` of them when there are so many, most urgent first, and why
     the others cannot.
 
-    `want` counts the issues that are not networking work. The walk goes on past it until `want_game` of the eligible
-    issues are game work and `want_networking` are networking work, so an issue of another track that outranks them
-    cannot hide them from the place kept for game work or the one kept for networking.
+    `want` counts the issues that are neither networking nor renderer work. The walk goes on past it until `want_game`
+    of the eligible issues are game work, `want_networking` are networking work and `want_renderer` are renderer work,
+    so an issue of another track that outranks them cannot hide them from the place kept for game work or the ones
+    kept for networking and the renderer.
 
     The order is the claim Action's: while a `P-critical` issue is ready and unclaimed only it can be claimed, so
     the others are not startable; with none, the issues that pass the start gate, by priority then number. A blocked
-    issue and one past the open-claims limit are skipped (an issue with `claims.exempt_label`, `claims.studio_label`
-    or `claims.networking_label` is outside the limit)."""
+    issue and one past the open-claims limit are skipped (an issue with `claims.exempt_label`, `claims.studio_label`,
+    `claims.networking_label` or `claims.renderer_label` is outside the limit)."""
     fill = conventions.tasks.start.fill
     rules = conventions.claims
     reasons: list[str] = []
@@ -216,7 +218,9 @@ def analyse_issues(
         )
         return Analysis((), tuple(reasons))
     limit = limit_for(True, rules)
-    outside = " or ".join(filter(None, (rules.exempt_label, rules.studio_label, rules.networking_label)))
+    outside = " or ".join(
+        filter(None, (rules.exempt_label, rules.studio_label, rules.networking_label, rules.renderer_label))
+    )
     room = limit - len(counted)
     eligible: list[IssueInfo] = []
     blocked: list[str] = []
@@ -224,8 +228,14 @@ def analyse_issues(
     placeless: list[IssueInfo] = []
     game_found = 0
     networking_found = 0
+    renderer_found = 0
     for issue in sorted(pool, key=lambda item: _priority(item, fill.priority_order)):
-        if len(eligible) - networking_found >= want and game_found >= want_game and networking_found >= want_networking:
+        if (
+            len(eligible) - networking_found - renderer_found >= want
+            and game_found >= want_game
+            and networking_found >= want_networking
+            and renderer_found >= want_renderer
+        ):
             break
         if holds_no_place(issue.labels, conventions):
             placeless.append(issue)  # its unit would hold no place, so it would not fill the free one
@@ -247,6 +257,7 @@ def analyse_issues(
         track = issue_track(issue, kind, conventions)
         game_found += places.fills_game_place(kind, track, conventions)
         networking_found += track == "networking"
+        renderer_found += track == "renderer"
         if not exempt:
             room -= 1
     # The reasons are kept when some issue can start too: a place that cannot take it (the kept game place and a
@@ -313,12 +324,12 @@ def uncovered_pulls(
 
 def _unit_labels(cards: list[Card] | None, conventions: Conventions) -> task_slots.LabelsOf:
     """`task_slots.scan`'s view of a live unit's labels, from the held claim cards read for this check: its issues'
-    `workflow`, `studio` and `networking` flags. With no cards (GitHub was not read) every unit counts as
+    `workflow`, `studio`, `networking` and `renderer` flags. With no cards (GitHub was not read) every unit counts as
     reimplementation or fix."""
     by_issue = {card.issue: card for card in cards or []}
 
     def labels(record: UnitRecord) -> task_slots.Labels | None:
-        """A live unit's labels: workflow (no place, while `exempt_workflow` is on), Studio and networking."""
+        """A live unit's labels: workflow (no place, while `exempt_workflow` is on), Studio, networking and renderer."""
         if cards is None:
             return None
         found = [by_issue[number] for number in record.issues if number in by_issue]
@@ -327,6 +338,7 @@ def _unit_labels(cards: list[Card] | None, conventions: Conventions) -> task_slo
             workflow=workflow,
             studio=any(card.studio for card in found),
             networking=any(card.networking for card in found),
+            renderer=any(card.renderer for card in found),
         )
 
     return labels
@@ -340,12 +352,16 @@ def waiver_hint(conventions: Conventions) -> str:
 
 def issue_track(issue: IssueInfo, kind: str, conventions: Conventions) -> str:
     """The track a unit on this ready issue would work in, by the rule of `task_slots.track_of` (the networking label
-    first when an issue has both)."""
+    first, then the renderer one, when an issue has several)."""
     rules = conventions.claims
-    return task_slots.track_of(kind, rules.is_studio(issue.labels), rules.is_networking(issue.labels))
+    return task_slots.track_of(
+        kind, rules.is_studio(issue.labels), rules.is_networking(issue.labels), rules.is_renderer(issue.labels)
+    )
 
 
-def _game_work(task: TaskFile, studio_issues: set[int], networking_issues: set[int]) -> places.Work:
+def _game_work(
+    task: TaskFile, studio_issues: set[int], networking_issues: set[int], renderer_issues: set[int]
+) -> places.Work:
     """A claimed task with no agent as work to start."""
     return places.Work(
         f"claimed, not started: {task.task} ({task.kind}); start its agent with a line `Task id: {task.task}`",
@@ -353,6 +369,7 @@ def _game_work(task: TaskFile, studio_issues: set[int], networking_issues: set[i
             task.kind,
             any(number in studio_issues for number in task.issues),
             any(number in networking_issues for number in task.issues),
+            any(number in renderer_issues for number in task.issues),
         ),
         kind=task.kind,
     )
@@ -363,7 +380,9 @@ def _issue_work(issue: IssueInfo, conventions: Conventions) -> places.Work:
     fill = conventions.tasks.start.fill
     kind = kind_of_labels(issue.labels)
     track = issue_track(issue, kind, conventions)
-    kept = {"studio": "Studio track", "networking": "networking track"}.get(track, "game work")
+    kept = {"studio": "Studio track", "networking": "networking track", "renderer": "renderer track"}.get(
+        track, "game work"
+    )
     return places.Work(
         f"#{issue.number} [{_priority_label(issue, fill.priority_order)}] {_short(issue.title)} ({kept}); "
         f"`task create {issue.number}`, then start its agent",
@@ -411,15 +430,16 @@ def fill_check(
     claimed = {card.issue for card in mine if card.waiting not in conventions.claims.paused_labels}
     studio_issues = {card.issue for card in mine if card.studio}
     networking_issues = {card.issue for card in mine if card.networking}
+    renderer_issues = {card.issue for card in mine if card.renderer}
     reasons: list[str] = []
     # Work for the kept and open places: a claimed task with no agent first, then the ready issues by priority.
-    wants = free.game + free.open + free.networking
+    wants = free.game + free.open + free.networking + free.renderer
     waiting = waiting_tasks(scratch, conventions, current, claimed, now) if wants else []
     # A claimed workflow task would hold no place once it runs, so it is not work for a free one.
     exempt_workflow = conventions.tasks.start.slots.exempt_workflow
     placeless = {card.issue for card in mine if exempt_workflow and card.in_workflow}
     waiting = [task for task in waiting if not placeless.intersection(task.issues)]
-    work = [_game_work(task, studio_issues, networking_issues) for task in waiting]
+    work = [_game_work(task, studio_issues, networking_issues, renderer_issues) for task in waiting]
     if wants:
         try:
             analysis = analyse_issues(
@@ -427,12 +447,13 @@ def fill_check(
                 counted_claims(mine),
                 conventions,
                 sources,
-                max(free.game + free.open - sum(1 for item in work if item.track != "networking"), 0),
+                max(free.game + free.open - sum(1 for item in work if item.track not in ("networking", "renderer")), 0),
                 max(
                     free.game - sum(1 for item in work if places.fills_game_place(item.kind, item.track, conventions)),
                     0,
                 ),
                 max(free.networking - sum(1 for item in work if item.track == "networking"), 0),
+                max(free.renderer - sum(1 for item in work if item.track == "renderer"), 0),
             )
         except ConfigError as error:
             warnings.append(f"the ready issues could not be read ({error})")
@@ -459,27 +480,34 @@ def fill_check(
         if not work_fix:
             reasons.append("no open pull request has a failed required check without a fix unit")
     # The kept game place takes the first game work of a kind that fills it (`feature`), the one kept for networking
-    # the first networking work; every open place, the next work in order that is not networking (its track holds at
-    # most `max` units, so it never takes an open place).
+    # the first networking work, the one kept for the renderer the first renderer work; every open place, the next work
+    # in order that is neither (their tracks hold at most `max` units, so they never take an open place).
     game_work = [item for item in work if places.fills_game_place(item.kind, item.track, conventions)][: free.game]
     networking_work = [item for item in work if item.track == "networking"][: free.networking]
-    rest = [item for item in work if item not in game_work and item.track != "networking"][: free.open]
-    startable = len(game_work) + len(networking_work) + len(rest) + min(free.fix, len(work_fix))
-    networking_waits = [item for item in work if item.track == "networking" and item not in networking_work]
-    if networking_waits and len(current.held("networking")) >= (
-        conventions.tasks.start.slots.tracks.networking.max or 0
-    ):
-        reasons.append(places.networking_full(current, conventions, len(networking_waits)))
+    renderer_work = [item for item in work if item.track == "renderer"][: free.renderer]
+    rest = [item for item in work if item not in game_work and item.track not in ("networking", "renderer")][
+        : free.open
+    ]
+    startable = len(game_work) + len(networking_work) + len(renderer_work) + len(rest) + min(free.fix, len(work_fix))
+    for track, started in (("networking", networking_work), ("renderer", renderer_work)):
+        waits = [item for item in work if item.track == track and item not in started]
+        if waits and len(current.held(track)) >= (conventions.tasks.start.slots.tracks.of(track).max or 0):
+            reasons.append(places.track_full(current, conventions, track, len(waits)))
     if startable == 0:
         if free.game and work and not game_work:
             reasons.append(
-                f"the {free.game} place(s) kept for game work cannot take Coney Studio, networking, tooling or docs "
-                "work, and no game (`feature`) issue can start"
+                f"the {free.game} place(s) kept for game work cannot take Coney Studio, networking, renderer, tooling "
+                "or docs work, and no game (`feature`) issue can start"
             )
         if free.networking and work and not networking_work:
             reasons.append(
-                f"the {free.networking} place(s) kept for networking cannot take game, Coney Studio, tooling or docs "
-                "work, and no networking issue can start"
+                f"the {free.networking} place(s) kept for networking cannot take game, Coney Studio, renderer, tooling "
+                "or docs work, and no networking issue can start"
+            )
+        if free.renderer and work and not renderer_work:
+            reasons.append(
+                f"the {free.renderer} place(s) kept for the renderer cannot take game, Coney Studio, networking, "
+                "tooling or docs work, and no renderer issue can start"
             )
         text = "; ".join(reasons) or "there is no work to start"
         return Check(False, f"ok: {text} ({summary})", tuple(warnings))
@@ -489,10 +517,11 @@ def fill_check(
         named = "; ".join(waiver.line(now) for waiver in waivers)
         return Check(False, f"ok: waived ({named}); {startable} place(s) could start work ({summary})", tuple(warnings))
     kept_networking = f"{free.networking} kept for networking, " if free.networking else ""
+    kept_renderer = f"{free.renderer} kept for the renderer, " if free.renderer else ""
     lines = [
         f"{BLOCKED} {startable} engineer place(s) can be filled now (free: {free.game} kept for game work, "
-        f"{free.fix} kept for a fix, {kept_networking}{free.open} open). The places stay full unless there is a reason "
-        "(docs/guides/slot-fill.md).",
+        f"{free.fix} kept for a fix, {kept_networking}{kept_renderer}{free.open} open). The places stay full unless "
+        "there is a reason (docs/guides/slot-fill.md).",
         f"Now: {summary}.",
     ]
     if game_work:
@@ -503,6 +532,9 @@ def fill_check(
     if networking_work:
         lines.append(f"Start now, for the {free.networking} place(s) kept for networking (a networking issue):")
         lines += [f"  - {item.text}" for item in networking_work]
+    if renderer_work:
+        lines.append(f"Start now, for the {free.renderer} place(s) kept for the renderer (a renderer issue):")
+        lines += [f"  - {item.text}" for item in renderer_work]
     if rest:
         lines.append(
             f"Start now, for the {free.open} open place(s) (Coney Studio, or more game work), most urgent first:"

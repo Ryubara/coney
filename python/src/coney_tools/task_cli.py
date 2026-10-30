@@ -87,8 +87,8 @@ def add_task_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser])
     )
     slots = commands.add_parser(
         "slots",
-        help="show the engineer tracks (reimplementation, fix, Studio, networking) and the machine's places, or check "
-        "that an agent may start (the coordinator's Agent guard)",
+        help="show the engineer tracks (reimplementation, fix, Studio, networking, renderer) and the machine's "
+        "places, or check that an agent may start (the coordinator's Agent guard)",
     )
     slots.add_argument("--json", action="store_true", help="print the tracks as JSON")
     slots.add_argument(

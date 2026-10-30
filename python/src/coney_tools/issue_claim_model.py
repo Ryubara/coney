@@ -190,14 +190,17 @@ class Card:
     open_claims: tuple[int, ...] = ()
     #: Why the idle clock waits (`S-blocked`, `PR #12 open`), or None while it runs; it starts again when this ends.
     waiting: str | None = None
-    #: The issue carries `claims.exempt_label`, `claims.studio_label` or `claims.networking_label`: the claim is
-    #: outside the open-claims limit (recomputed every pass).
+    #: The issue carries `claims.exempt_label`, `claims.studio_label`, `claims.networking_label` or
+    #: `claims.renderer_label`: the claim is outside the open-claims limit (recomputed every pass).
     exempt: bool = False
     #: The issue carries `claims.studio_label`: Coney Studio work, in its own engineer track (recomputed every pass).
     studio: bool = False
     #: The issue carries `claims.networking_label`: networking work, in its own engineer track (recomputed every pass).
     #: A card written before this field existed reads False.
     networking: bool = False
+    #: The issue carries `claims.renderer_label`: SDL3 GPU renderer work, in its own engineer track (recomputed every
+    #: pass). A card written before this field existed reads False.
+    renderer: bool = False
     #: The issue carries `claims.exempt_label`: a unit that builds the new workflow (recomputed every pass). A card
     #: written before this field existed reads `in_workflow` from `exempt` and `studio` instead.
     workflow: bool = False
@@ -237,15 +240,17 @@ class Card:
     @property
     def in_workflow(self) -> bool:
         """Whether the issue carries `claims.exempt_label`. A card written before `workflow` existed has only `exempt`,
-        which either label sets; such a card is a workflow one when it is exempt and neither Studio nor networking (an
-        issue with both labels was not told apart then)."""
-        return self.workflow or (self.exempt and not self.studio and not self.networking)
+        which any of the labels sets; such a card is a workflow one when it is exempt and neither Studio, networking nor
+        renderer (an issue with several labels was not told apart then)."""
+        return self.workflow or (self.exempt and not self.studio and not self.networking and not self.renderer)
 
     def limit_label(self, rules: Claims) -> str:
         """The label that takes this card out of the open-claims limit, for the card's text and the log: the
-        networking one, else the Studio one, else `claims.exempt_label`."""
+        networking one, else the renderer one, else the Studio one, else `claims.exempt_label`."""
         if self.networking and rules.networking_label:
             return rules.networking_label
+        if self.renderer and rules.renderer_label:
+            return rules.renderer_label
         if self.studio and rules.studio_label:
             return rules.studio_label
         return rules.exempt_label
@@ -356,6 +361,7 @@ def _data(card: Card) -> dict[str, Any]:
         "exempt": card.exempt,
         "studio": card.studio,
         "networking": card.networking,
+        "renderer": card.renderer,
         "workflow": card.workflow,
         "counted": card.counted,
         "freed": card.freed,
@@ -490,6 +496,7 @@ def parse_card(body: str, rules: Claims) -> Card | None:
             exempt=bool(data.get("exempt", False)),
             studio=bool(data.get("studio", False)),
             networking=bool(data.get("networking", False)),
+            renderer=bool(data.get("renderer", False)),
             workflow=bool(data.get("workflow", False)),
             counted=bool(data.get("counted", True)),
             freed=bool(data.get("freed", False)),

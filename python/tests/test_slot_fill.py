@@ -11,10 +11,11 @@ from datetime import timedelta
 from pathlib import Path
 
 import pytest
-from conventions_support import with_networking_place
+from conventions_support import with_networking_place, with_renderer_place
 from slot_fill_support import (
     FILL,
     NETWORKING,
+    RENDERER,
     RULES,
     WORKFLOW,
     FakeSources,
@@ -144,7 +145,7 @@ def test_the_place_kept_for_game_work_does_not_take_studio_work(scene: Scene, so
     result = check(scene, sources)  # 3 of 4 places in use: the last is kept for game work
     assert (
         not result.blocked
-        and "kept for game work cannot take Coney Studio, networking, tooling or docs work" in result.message
+        and "kept for game work cannot take Coney Studio, networking, renderer, tooling or docs work" in result.message
     )
     sources.ready_issues.append(issue(8, "P-low"))
     result = check(scene, sources)
@@ -170,7 +171,7 @@ def test_the_claim_limit_is_named_when_only_studio_work_is_eligible(scene: Scene
     sources.ready_issues = [issue(7, "studio", "P-high"), issue(8, "P-low")]
     result = check(scene, sources)
     assert not result.blocked and "the open-claims limit is reached (" in result.message
-    assert "kept for game work cannot take Coney Studio, networking, tooling or docs work" in result.message
+    assert "kept for game work cannot take Coney Studio, networking, renderer, tooling or docs work" in result.message
 
 
 def test_a_tooling_issue_does_not_fill_the_place_kept_for_game_work(scene: Scene, sources: FakeSources) -> None:
@@ -179,7 +180,9 @@ def test_a_tooling_issue_does_not_fill_the_place_kept_for_game_work(scene: Scene
     scene.unit("c-fix", kind="fix")
     sources.ready_issues = [issue(7, "A-tools", "P-high")]
     result = check(scene, sources)  # `task_slots.room` refuses a tooling unit in the place kept for a feature unit
-    assert not result.blocked and "cannot take Coney Studio, networking, tooling or docs work" in result.message
+    assert (
+        not result.blocked and "cannot take Coney Studio, networking, renderer, tooling or docs work" in result.message
+    )
     sources.ready_issues.append(issue(8, "P-low"))
     result = check(scene, sources)
     assert result.blocked and "#8 [P-low]" in result.message and "#7 " not in result.message
@@ -310,6 +313,115 @@ def test_networking_units_in_work_are_counted_in_the_summary(scene: Scene, sourc
     hold_claims(scene, sources)
     result = check(scene, sources)
     assert "networking: a-net" in result.message
+
+
+# --- the renderer track ---------------------------------------------------------------------------------------------
+
+
+def with_renderer(scene: Scene) -> None:
+    """The scene with the committed rule of the renderer track: one place kept for it (the tests of the other tracks
+    run with none, so the numbers of a machine of 4 places stay the same)."""
+    scene.conventions = with_renderer_place(scene.conventions, 1)
+
+
+def test_a_place_kept_for_the_renderer_is_free_while_no_renderer_unit_runs(scene: Scene, sources: FakeSources) -> None:
+    with_renderer(scene)
+    scene.unit("a-game")
+    scene.unit("b-game")
+    scene.unit("c-fix", kind="fix")
+    sources.ready_issues = [issue(7, RENDERER, "P-low")]
+    result = check(scene, sources)  # 3 of 4 places: the last is the one the renderer track keeps
+    assert result.blocked and "1 kept for the renderer" in result.message
+    assert "kept for the renderer (a renderer issue):\n  - #7 " in result.message
+    assert "renderer track" in result.message
+
+
+def test_the_place_kept_for_the_renderer_does_not_take_game_or_studio_work(scene: Scene, sources: FakeSources) -> None:
+    with_renderer(scene)
+    scene.unit("a-game")
+    scene.unit("b-game")
+    scene.unit("c-fix", kind="fix")
+    sources.ready_issues = [issue(7, "P-high"), issue(8, "studio"), issue(9, NETWORKING)]
+    result = check(scene, sources)
+    assert not result.blocked and "kept for the renderer cannot take game, Coney Studio" in result.message
+
+
+def test_a_renderer_issue_does_not_take_the_place_kept_for_game_work(scene: Scene, sources: FakeSources) -> None:
+    with_renderer(scene)
+    scene.unit("a-gpu", renderer=True)
+    scene.unit("b-tool", kind="tooling")
+    scene.unit("c-fix", kind="fix")
+    hold_claims(scene, sources)
+    sources.ready_issues = [issue(7, RENDERER, "P-high")]
+    result = check(scene, sources)  # the last place is kept for game work, and the renderer track is at its cap
+    assert not result.blocked and "the renderer track is full" in result.message
+
+
+def test_a_renderer_issue_does_not_take_an_open_place_while_a_renderer_unit_runs(
+    scene: Scene, sources: FakeSources
+) -> None:
+    with_renderer(scene)
+    scene.unit("a-gpu", renderer=True)
+    scene.unit("b-game")
+    scene.unit("c-fix", kind="fix")
+    hold_claims(scene, sources)
+    sources.ready_issues = [issue(7, RENDERER)]
+    result = check(scene, sources)  # one place is open, but the track holds at most one unit
+    assert not result.blocked and "the renderer track is full" in result.message
+    sources.ready_issues.append(issue(8, "P-low"))
+    result = check(scene, sources)
+    assert result.blocked and "#8 [P-low]" in result.message and "#7 " not in result.message
+
+
+def test_a_claimed_renderer_task_fills_the_renderer_place(scene: Scene, sources: FakeSources) -> None:
+    with_renderer(scene)
+    scene.unit("a-game")
+    scene.unit("b-game")
+    scene.unit("c-fix", kind="fix")
+    scene.task("r-gpu", renderer=True)
+    hold_claims(scene, sources)
+    result = check(scene, sources)
+    assert (
+        result.blocked and "claimed, not started: r-gpu" in result.message and "kept for the renderer" in result.message
+    )
+
+
+def test_a_renderer_issue_is_outside_the_claim_limit(scene: Scene, sources: FakeSources) -> None:
+    with_renderer(scene)
+    scene.unit("a-game")
+    scene.unit("b-game")
+    scene.unit("c-fix", kind="fix")
+    hold_claims(scene, sources)
+    sources.claims += [claimed(n) for n in (21, 22, 23)]  # the open-claims limit is reached
+    sources.ready_issues = [issue(7, RENDERER)]
+    result = check(scene, sources)
+    assert result.blocked and "#7 " in result.message
+
+
+def test_renderer_units_in_work_are_counted_in_the_summary(scene: Scene, sources: FakeSources) -> None:
+    with_renderer(scene)
+    scene.unit("a-gpu", renderer=True)
+    hold_claims(scene, sources)
+    result = check(scene, sources)
+    assert "renderer: a-gpu" in result.message
+
+
+def test_networking_and_the_renderer_each_keep_their_own_place(scene: Scene, sources: FakeSources) -> None:
+    # 4 places, one kept each for game work, a fix, networking and the renderer: a networking issue takes only the
+    # networking place, a renderer issue only the renderer's.
+    with_networking(scene)
+    with_renderer(scene)
+    scene.unit("a-game")
+    scene.unit("c-fix", kind="fix")
+    sources.ready_issues = [issue(7, NETWORKING), issue(8, RENDERER)]
+    result = check(scene, sources)
+    assert result.blocked
+    assert "kept for networking (a networking issue):\n  - #7 " in result.message
+    assert "kept for the renderer (a renderer issue):\n  - #8 " in result.message
+    scene.unit("a-net", networking=True)
+    hold_claims(scene, sources)
+    result = check(scene, sources)
+    assert result.blocked and "#7 " not in result.message and "  - #8 " in result.message
 
 
 # --- the start gate and the order -----------------------------------------------------------------------------------

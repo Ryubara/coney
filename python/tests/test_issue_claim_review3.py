@@ -226,6 +226,7 @@ def test_only_a_paused_label_starts_a_run_and_the_list_is_the_conventions() -> N
             RULES.exempt_label,
             RULES.studio_label,
             RULES.networking_label,
+            RULES.renderer_label,
             RULES.trial.label,
         )
         assert "github.event.label.name" in text

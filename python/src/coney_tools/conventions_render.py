@@ -313,6 +313,8 @@ def _claim_rules(conventions: Conventions) -> list[str]:
         own_track.append(f"`{claims.studio_label}` (Coney Studio work, which has its own engineer track)")
     if claims.networking_label:
         own_track.append(f"`{claims.networking_label}` (networking work, which has its own engineer track)")
+    if claims.renderer_label:
+        own_track.append(f"`{claims.renderer_label}` (the SDL3 GPU renderer work, which has its own engineer track)")
     others = "".join(f"{', ' if index < len(own_track) - 1 else ' or '}{text}" for index, text in enumerate(own_track))
     lines += _bullet(
         f"The claim of an issue labelled `{claims.exempt_label}` (a unit that builds the new workflow){others} neither "

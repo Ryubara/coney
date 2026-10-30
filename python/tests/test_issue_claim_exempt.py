@@ -364,3 +364,85 @@ def test_a_file_without_the_networking_label_has_no_networking_work() -> None:
     assert claims.networking_label is None
     assert not claims.is_networking(("networking",)) and not claims.outside_limit(("networking",))
     assert claims.outside_limit(("studio",))
+
+
+# --- the renderer label (`claims.renderer_label`, the SDL3 GPU renderer track) ----------------------------------------
+
+assert RULES.renderer_label is not None
+RENDERER_LABEL: str = RULES.renderer_label
+RENDERER = (*READY, RENDERER_LABEL)
+
+
+def test_the_renderer_label_is_in_the_conventions_and_the_label_list() -> None:
+    from audit_support import CONVENTIONS
+
+    assert RULES.renderer_label == "renderer" and RULES.renderer_label in CONVENTIONS.labels.names()
+
+
+def test_a_renderer_claim_is_accepted_beside_three_counted_ones(engine: Engine, github: FakeGitHub) -> None:
+    # The issue's test: the maintainer's limit of 3 is used up, and a claim of a renderer issue still goes through.
+    for number in (1, 2, 3):
+        github.add_issue(number, labels=READY)
+    for number in (5, 6):
+        github.add_issue(number, labels=RENDERER)
+    for number in (1, 2, 3, 5, 6):
+        take(engine, github, number)
+    assert held_by(github, (1, 2, 3, 5, 6)) == [1, 2, 3, 5, 6]
+    card = card_of(github, 5)
+    assert card.exempt and card.renderer and not card.studio and not card.networking and not card.in_workflow
+    assert "not counted toward the open-claims limit (`renderer`)" in github.cards(5)[-1].body
+    counted = card_of(github, 1)
+    assert not counted.renderer and not counted.exempt
+
+
+def test_a_fourth_counted_claim_is_still_refused_beside_a_renderer_one(engine: Engine, github: FakeGitHub) -> None:
+    github.add_issue(5, labels=RENDERER)
+    for number in (1, 2, 3, 4):
+        github.add_issue(number, labels=READY)
+    for number in (5, 1, 2, 3, 4):
+        take(engine, github, number)
+    assert held_by(github, (1, 2, 3, 4, 5)) == [1, 2, 3, 5]
+
+
+def test_the_renderer_flag_follows_the_label(engine: Engine, github: FakeGitHub, clock: Clock) -> None:
+    github.add_issue(4, labels=READY)
+    take(engine, github, 4)
+    assert not card_of(github, 4).renderer
+    github.items[4].view = replace(github.view(4), labels=(*github.view(4).labels, RENDERER_LABEL))
+    clock.advance(minutes=5)
+    make_engine(github, clock).reconcile(4)
+    assert card_of(github, 4).renderer and card_of(github, 4).exempt
+    github.items[4].view = replace(github.view(4), labels=tuple(x for x in github.view(4).labels if x != "renderer"))
+    clock.advance(minutes=5)
+    make_engine(github, clock).reconcile(4)
+    assert not card_of(github, 4).renderer and not card_of(github, 4).exempt
+
+
+def test_a_card_that_is_exempt_for_the_renderer_alone_is_not_a_workflow_card() -> None:
+    card = model.Card(issue=2, claimant="a", claimed_at=START, exempt=True, renderer=True)
+    assert not card.in_workflow
+    assert card.limit_label(RULES) == "renderer"
+
+
+def test_an_old_card_without_the_renderer_field_reads_as_not_renderer() -> None:
+    text = model.render_card(model.Card(issue=1, claimant="a", claimed_at=START), RULES)
+    old = text.replace(',"renderer":false', "")
+    assert '"renderer"' not in old
+    parsed = model.parse_card(old, RULES)
+    assert parsed is not None and not parsed.renderer
+
+
+def test_the_rules_name_the_renderer_label_outside_the_limit() -> None:
+    assert RULES.outside_limit(("renderer",)) and RULES.is_renderer(("task", "renderer"))
+    assert not RULES.is_renderer(("studio", "workflow", "networking"))
+
+
+def test_a_file_without_the_renderer_label_has_no_renderer_work() -> None:
+    # A default branch from before the renderer track has no `claims.renderer_label` (the release commands read its
+    # claims): the key is optional and its absence means no issue is renderer work.
+    from conventions_support import REMOVE, conventions_with
+
+    claims = conventions_with(("claims.renderer_label", REMOVE)).claims
+    assert claims.renderer_label is None
+    assert not claims.is_renderer(("renderer",)) and not claims.outside_limit(("renderer",))
+    assert claims.outside_limit(("networking",))
