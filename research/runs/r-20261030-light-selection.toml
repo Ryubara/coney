@@ -3,7 +3,7 @@ id = "r-20261030-light-selection"
 date = "2026-10-30"
 kind = "method"
 tool = "pcsx2 record-run"
-digest = "30143a58bce1d38a0a3598c7832b9b70305f271e47ab7c4f5e344ce0adfce587"
+digest = "3da5e3bfb0352e5667ef262746d50fa48633b4eb22891db8501b8f4e24be3412"
 
 [who]
 agent = "a19ae2f802665c70e"
@@ -21,7 +21,7 @@ patches = []
 
 [run]
 name = ""
-method = "Breakpoints on LightManager_SelectLights' entry and its callers' return addresses; at the entry the arguments and the manager's lists (A, B, C, point-light vectors +0x20 and +0x30 with each light's position and radius) read, at the return the upload list and count; a script replayed the rule read in Ghidra on those inputs, full-list replacement included, and compared the lights in order. Run 1: 300 calls of every caller; run 2: 60 human calls (conditional entry breakpoint). Then the 96 light records read every 3 frames, 20 samples."
+method = "Breakpoints on LightManager_SelectLights' entry and its callers' return addresses; at the entry the arguments and the manager's lists (A, B, C, point-light vectors +0x20 and +0x30 with each light's position and radius) read, at the return the upload list and count; a script replayed the rule read in Ghidra on those inputs and compared the lights in order. Run 1: 300 calls of every caller; run 2: 60 human calls (conditional entry breakpoint). Then the 96 light records read every 3 frames, 20 samples. Observed on 2026-10-30; recorded again after review."
 
 [values]
 calls_all = 300
@@ -41,8 +41,6 @@ objects_3_of_cap_3 = 162
 objects_4_of_cap_5 = 22
 objects_4_of_cap_6 = 20
 objects_5_of_cap_5 = 6
-full_list_writes_before_list = 205
-calls_with_such_writes = 97
 visible_object_point_lights = 17
 visible_world_point_lights = 1
 light_records = 96
@@ -56,7 +54,6 @@ upload_list = 0x00715300
 list_a = 0x00715324
 list_b = 0x00715348
 list_c = 0x0071536c
-write_before_list = 0x007152fc
 human_return = 0x001746f8
 sector_return = 0x00411aa8
 object_return = 0x001803a4

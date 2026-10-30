@@ -49,7 +49,8 @@ The seam is the plan's rule: no renderer call outside the platform renderers. Ga
 
 ### The lighting frame
 
-Per viewport, built by the game side from the `LightManager`'s existing selection, with no new simulation state:
+Per viewport, built by the game side from the `LightManager`'s existing selection, with no new simulation state
+([#1211](issue:1211) builds it; this page adds each atomic's lights and the sun to what it holds):
 
 - every light record of the frame (kind, what it lights, colour with brightness and offset applied, position or
   direction, radius, corona, flicker value of this step) and the world's list;
@@ -293,7 +294,7 @@ In order: the lab and the faithful comparison tests first, then the sun. Each is
 | 5 | `graphics: Add the PS2 vertex-light reference and its colour tests` | none | M |
 | 6 | `tools: Add vertex colours from a PCSX2 GS dump to the comparison` | 2, 5 | M |
 | 7 | `tests: Add PS2-preset picture checks of lit scenes` | renderer items 1, 2 | S |
-| 8 | `graphics: Add the sun to the lighting frame and the sandbox layouts` | renderer item 19 | M |
+| 8 | `graphics: Add the sun to the lighting frame and the sandbox layouts` | renderer item 19 ([#1211](issue:1211)) | M |
 | 9 | `graphics: Add the shadow test scenes and their invariants` | 8, renderer items 22, 28 | M |
 | 10 | `graphics: Add the shadow and cascade views to the lighting lab` | 1, renderer items 28, 30 | S |
 | 11 | `tools: Add the sun to Coney Studio's level settings` | 8, Studio's Inspector ([#1054](issue:1054)) | M |

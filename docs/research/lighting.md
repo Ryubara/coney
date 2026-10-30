@@ -254,10 +254,8 @@ upload list (`0x00715300`, at most 8). Confirmed (code):
    it is appended; when full, it replaces the kept point light with the **smallest** score (the first of equal ones)
    if its own is smaller still. As written, a full list is therefore not the N nearest: it keeps the first ones found
    plus the deepest overlap (the comparison is against the minimum, read twice; confirmed (code)).
-4. **No point light kept.** When the copied list (and the glow) already fill the cap, no point light is kept, and the
-   index of the "smallest" stays -1: each overlapping light is then written one word before the list, at
-   `0x007152fc`, which nothing reads (the store at `0x0017e3d4`), so the selection is unchanged. Confirmed (code), and
-   in the run below (205 such writes in 300 calls, none visible in the list).
+4. **No point light kept.** When the copied list (and the glow) already fill the cap, the point lights are not looked
+   at: the count is compared with the cap before the loop and the function returns (`0x0017e294`). Confirmed (code).
 
 **At runtime the selection is this rule exactly.** Confirmed (runtime), run r-20261030-light-selection, `level99`
 checkpoint 2 (the `pedestrian-grab` state): breakpoints on the entry of `0x0017de10` and on its callers' return
