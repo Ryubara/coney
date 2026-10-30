@@ -1,5 +1,5 @@
 # Keep the dependencies' sources (SDL3, librw, Catch2, Dear ImGui, ENet, FFmpeg) and the shader compiler built from
-# its own sources (docs/guides/shaders.md; on macOS that is DXC, which takes a long time to compile) between runs: one
+# its own sources (docs/guides/shaders.md; DXC among them, which takes a long time to compile) between runs: one
 # cache entry per OS and version of cmake/deps.cmake and of the compiler's own project, shared by every job and preset
 # on that OS. CONEY_DEPS_SOURCES tells cmake/deps.cmake to fetch into build/_deps-sources/<version>/<name> and to use a
 # complete copy found there without downloading.

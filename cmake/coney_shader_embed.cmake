@@ -5,6 +5,9 @@
 # For each shader `name` (such as `fullscreen.vert`), FOLDER holds name.spv, name.dxil, name.msl and name.json (the
 # resource counts of SDL's GPU API, from the tool's reflection). The file defines `kShaders`, an array of
 # coney::shaders::Shader, and is included by src/platform/shaders/embedded_shaders.cpp.
+# The project's policies, so this script parses the same under every CMake version (without it CMake 3 reads it with
+# its oldest rules, and CMake 4 with its newest).
+cmake_minimum_required(VERSION 3.28)
 foreach(_var OUTPUT FOLDER SHADERS)
     if(NOT DEFINED ${_var})
         message(FATAL_ERROR "coney_shader_embed.cmake: ${_var} is not set")
@@ -36,9 +39,10 @@ foreach(_entry IN LISTS SHADERS)
         if(_hex_length EQUAL 0)
             message(FATAL_ERROR "${_name}.${_extension} is empty")
         endif()
-        # Two hex digits a byte, sixteen bytes to a line.
-        string(REGEX REPLACE "([0-9a-f][0-9a-f])" "0x\1," _bytes "${_hex}")
-        string(REGEX REPLACE "(0x[0-9a-f][0-9a-f],){16}" "\0\n    " _bytes "${_bytes}")
+        # Two hex digits a byte, sixteen bytes to a line. A back-reference is written \\1 in a quoted argument: a lone
+        # \1 is not a CMake escape, which CMake 4 refuses.
+        string(REGEX REPLACE "([0-9a-f][0-9a-f])" "0x\\1," _bytes "${_hex}")
+        string(REGEX REPLACE "(0x[0-9a-f][0-9a-f],){16}" "\\0\n    " _bytes "${_bytes}")
         string(APPEND _data "constexpr unsigned char k${_index}_${_extension}[] = {\n    ${_bytes}\n};\n")
         string(APPEND _spans "std::span<const unsigned char>{k${_index}_${_extension}}, ")
     endforeach()

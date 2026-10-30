@@ -760,9 +760,9 @@ repository has 10 GB of them; when that is full GitHub drops the least recently 
   entries, one per job and commit. A pull request restores the newest entry of its job from `main`.
 - **The dependency sources** (`deps`, then `deps-save` after the configure step): SDL3, librw, Catch2, Dear ImGui, ENet
   and FFmpeg as fetched, and the shader compiler built from its sources ([The shader build](shaders.md); it is built
-  during the configure, so it is in the entry too, and on macOS, where DXC is compiled, that is what keeps a pull
-  request from compiling it), one entry per OS and version of `cmake/deps.cmake` and `cmake/shadertools/CMakeLists.txt`,
-  shared by every job and preset on that OS.
+  during the configure, so it is in the entry too: DXC is compiled from source on every OS, and the entry keeps a pull
+  request from compiling it again unless it changes a pin or the tool project), one entry per OS and version of
+  `cmake/deps.cmake` and `cmake/shadertools/CMakeLists.txt`, shared by every job and preset on that OS.
   `CONEY_DEPS_SOURCES` makes `cmake/deps.cmake` fetch into `build/_deps-sources/<version>/<name>` and use a complete
   copy found there without downloading ([Shared dependency sources](#shared-deps)). The build trees under
   `build/<preset>/_deps/` are not kept: they belonged to one compiler and preset, a fresh job rebuilds them anyway

@@ -54,14 +54,13 @@ function(coney_provision_shader_compiler)
                 list(APPEND _arguments -DCMAKE_${_language}_COMPILER_LAUNCHER=${CMAKE_${_language}_COMPILER_LAUNCHER})
             endif()
         endforeach()
-        if(_coney_dxc_from_source)
-            list(APPEND _arguments
-                -DCONEY_SPIRV_CROSS_SOURCE=${shadercross_SOURCE_DIR}/external/SPIRV-Cross
-                -DCONEY_DXC_SOURCE=${shadercross_SOURCE_DIR}/external/DirectXShaderCompiler)
-        else()
-            list(APPEND _arguments
-                -DCONEY_SPIRV_CROSS_SOURCE=${spirv_cross_SOURCE_DIR}
-                -DCONEY_DXC_PREBUILT=${dxc_SOURCE_DIR})
+        list(APPEND _arguments
+            -DCONEY_SPIRV_CROSS_SOURCE=${spirv_cross_SOURCE_DIR}
+            -DCONEY_DXC_SOURCE=${dxc_SOURCE_DIR}
+            -DCONEY_SPIRV_HEADERS_SOURCE=${spirv_headers_SOURCE_DIR}
+            -DCONEY_SPIRV_TOOLS_SOURCE=${spirv_tools_SOURCE_DIR})
+        if(NOT WIN32)
+            list(APPEND _arguments -DCONEY_DIRECTX_HEADERS_SOURCE=${directx_headers_SOURCE_DIR})
         endif()
         foreach(_step IN ITEMS configure build install)
             if(_step STREQUAL "configure")

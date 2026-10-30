@@ -6,6 +6,9 @@
 # compile leaves an empty file newer than its source, and the next build would take that for a finished one. Here the
 # output is written under another name and moved into place only when the tool succeeded and wrote something, so a
 # failure leaves nothing (and says why, in the tool's own words).
+# The project's policies, so this script parses the same under every CMake version (without it CMake 3 reads it with
+# its oldest rules, and CMake 4 with its newest).
+cmake_minimum_required(VERSION 3.28)
 foreach(_var TOOL SOURCE OUTPUT FORMAT STAGE)
     if(NOT DEFINED ${_var})
         message(FATAL_ERROR "coney_shader_compile.cmake: ${_var} is not set")

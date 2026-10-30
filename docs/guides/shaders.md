@@ -42,8 +42,9 @@ embedded. What `cmake/deps.cmake` pins:
 | --- | --- | --- |
 | SDL_shadercross | its commit on the main branch (the project has no tags or releases) | everywhere |
 | SPIRV-Cross | the `vulkan-sdk-1.4.350.1` tag, the commit shadercross's own submodule names | everywhere |
-| DXC | Microsoft's v1.9.2602 release archive, checked against its SHA-256 | Windows, and Linux on x86-64 |
-| DXC, built from source | the libsdl-org fork of the same release, as shadercross's submodule names it | every other system, macOS among them |
+| DXC, built from source | the libsdl-org fork of Microsoft's v1.9.2602, at the commit shadercross's submodule names, as a GitHub source archive checked against its SHA-256 | everywhere |
+| SPIRV-Headers, SPIRV-Tools | DXC's submodules, at the commits the fork names, as source archives | everywhere |
+| DirectX-Headers | DXC's submodule, as a source archive (Windows has the SDK's headers) | Linux and macOS |
 
 The licences are checked in [Renderer, Licences](../engine/renderer.md#licences).
 
@@ -56,19 +57,24 @@ once per machine and set of pins, a second configure in any worktree finds the s
 in its dependency cache ([Caches](building.md#ci-caches), which also says what keys the entry). Without the shared folder
 it is built inside the build folder. A lock keeps two configures from building it at once.
 
-On Windows and Linux that takes a few minutes (SDL3's core and SPIRV-Cross; DXC comes as a binary). On macOS DXC is
-compiled from source, which takes much longer the first time; the compiler cache covers it as far as its size allows.
+DXC is compiled from source everywhere (no Microsoft binary: [the finding](../engine/renderer.md#licences)), which takes
+a while the first time for a set of pins: about 1,500 build steps, some 18 minutes on CI's macOS runner; after that
+every configure finds the stamp. The compiler cache covers it as far as its size allows. On Windows DXC's sources need
+MSVC's ATL headers (`atlbase.h`), the Visual Studio component *C++ ATL for latest build tools*; without it the
+compiler's build stops at its first file.
 
-**DXIL needs no extra binary.** Direct3D 12 loads only DXIL that carries the validator's hash. DXC signs it itself since
-release 1.8.2505, so the pinned compiler needs no `dxil.dll` (Microsoft's own binary, under its own licence), and Coney
-never installs or loads it; the archives the build fetches for the compiler library still hold it, with Microsoft's
-licence terms ([the finding](../engine/renderer.md#licences)). The tests below fail if a pin ever moves to a compiler
-that does not sign.
+**DXIL needs no extra binary.** Direct3D 12 loads only DXIL that carries the validator's hash. DXC built from source
+validates and signs it itself (its validator hash is open source since 1.8.2502, and since 1.8.2505 it always uses its
+internal validator), so Coney needs no `dxil.dll` (Microsoft's own binary, under its own licence) and never fetches,
+installs or loads it ([the finding](../engine/renderer.md#licences)). The tests below fail if a pin ever moves to a
+compiler that does not sign.
 
-**To update a pin**, change it in `cmake/deps.cmake` (the commit or the archive and its SHA-256), build, and run the
-`[shaders]` tests. The pin lines are the stamp's version, so every machine builds the compiler once more. On Windows and
-Linux SPIRV-Cross is fetched on its own with git's long paths on (`GIT_CONFIG core.longpaths=true`), because its test
-files' names are longer than Windows' 260 characters and a submodule update would not have them.
+**To update a pin**, change it in `cmake/deps.cmake` (the commit, or the archive's URL and its SHA-256), build, and run
+the `[shaders]` tests. A new DXC commit brings its own submodule commits (`git ls-tree <commit> external/` in the fork):
+pin those archives too. The pin lines are the stamp's version, so every machine builds the compiler once more.
+SPIRV-Cross is fetched with git and its long paths on (`GIT_CONFIG core.longpaths=true`), because its test files' names
+are longer than Windows' 260 characters; DXC and its submodules come as archives, which carry no git history to keep in
+the cache.
 
 **To build without it**, configure with `-DCONEY_SHADERS=OFF`: no compiler is fetched or built, no shader is compiled
 and the tests below are not built. That is for a system where the compiler cannot be built; nothing in the game uses the

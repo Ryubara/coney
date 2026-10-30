@@ -5,6 +5,9 @@
 # The compile step must exit non-zero for BROKEN and leave no output file, however the compiler handles its output
 # (shadercross creates the file before it compiles); and succeed with a non-empty file for GOOD, so that the refusal is
 # the shader's and not the harness's (a missing tool, a wrong argument).
+# The project's policies, so this script parses the same under every CMake version (without it CMake 3 reads it with
+# its oldest rules, and CMake 4 with its newest).
+cmake_minimum_required(VERSION 3.28)
 foreach(_var TOOL FORMAT COMPILE_SCRIPT BROKEN GOOD WORK_DIR)
     if(NOT DEFINED ${_var})
         message(FATAL_ERROR "shader_refusal_check.cmake: ${_var} is not set")
