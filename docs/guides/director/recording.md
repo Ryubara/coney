@@ -39,7 +39,7 @@ is the same, byte for byte, every run.
 | Clips | 60 seconds = 1,800 steps = 12 blocks; every block starts with a key frame, so a clip boundary is an ordinary block boundary and the next clip's first step is the next step | No step is dropped, nothing is waited for |
 | Seeking | Any step: decompress its block and decode from the key frame; at most 150 steps, about 13 ms for the crowd; blocks kept decoded while scrubbing | Forward and back at any speed, the picture at once |
 | Versions | A header with the format version, Coney's version, the level, the disc and the mods. A newer format is refused; an older one is converted on open; another Coney version or a missing mod is warned, never refused | State playback runs no script, so a missing mod draws less, it does not break |
-| Where | `<install>/director/clips/`, one folder per recording, `clip-001.cclip` and on; a cap on the folder; a full disk ends the recording at its last whole block | The fixed folder of [#1184](issue:1184); [a question](#questions) for an install that cannot be written |
+| Where | `<install>/director/clips/`, one folder per recording, `clip-001.crec` and on; a cap on the folder; a full disk ends the recording at its last whole block | The fixed folder of [#1184](issue:1184); [a question](#questions) for an install that cannot be written |
 | Networking | One id scheme (`NetId`, [#553](issue:553)), one set of field tables, one delta encoder with a baseline ([#554](issue:554)), one event set ([#556](issue:556)), one state digest ([#558](issue:558)), and Director's player is the client's world ([#555](issue:555)) fed from a file | The recording is a snapshot stream with no budget and no interest filter |
 
 ## What is stored {#stored}
@@ -67,7 +67,7 @@ own 14 humans and the hub with 50 AI fighters spawned in front of the player (64
 | The same, 1 s blocks with zstd | 0.68 MB | 4.9 MB | worker | |
 | The same deltas by column, 1 s blocks, zstd | 0.53 MB | 5.0 MB | worker | |
 | Key frame every 5 s, bit-packed deltas | 0.88 MB | 5.64 MB | | |
-| **Key frame every 5 s, deltas by column, zstd** | **0.30 MB** | **3.8 MB** | worker: 0.009 / 0.04 ms a step to compress | **at most 150 steps: 4 / 13 ms** |
+| **Key frame every 5 s, deltas by column, zstd** | **0.30 MB** | **3.8 MB** | worker: 0.004 to 0.009 / 0.03 to 0.04 ms a step to compress (runs differ) | **at most 150 steps: 4 / 13 ms** |
 | Key frame every 60 s, bit-packed deltas | 0.86 MB | 5.56 MB | | up to 1,800 steps |
 | Animation layers in place of poses, key frame every 5 s, bit-packed | 0.26 MB | 0.68 MB | | as the row above it |
 
@@ -184,8 +184,8 @@ config:
 flowchart LR
   step["Game step<br/>capture only"] --> ring["Ring of<br/>step records"]
   ring --> worker["Worker thread<br/>quantize, delta,<br/>zstd per block"]
-  worker --> part["clip-002.cclip.part<br/>blocks appended"]
-  part --> done["clip-002.cclip<br/>index written, renamed"]
+  worker --> part["clip-002.crec.part<br/>blocks appended"]
+  part --> done["clip-002.crec<br/>index written, renamed"]
 ```
 
 *Figure: the game's step only copies; the worker builds the blocks and the files.*
@@ -203,7 +203,7 @@ flowchart LR
    and 149 deltas) by column, compresses it with zstd and appends it to the clip's file. Its work is 0.05 to 0.2 ms a
    step on one core.
 3. **A clip is 12 blocks.** When a clip's 1,800th step is in, the worker ends it: it appends the index ([The
-   file](#file)), writes the file out and renames `clip-001.cclip.part` to `clip-001.cclip`. The next step is the
+   file](#file)), writes the file out and renames `clip-001.crec.part` to `clip-001.crec`. The next step is the
    first of a block, as every 150th step is, so it is the first of the next clip, with its own key frame. The game's
    step does nothing different on that step, which is the boundary's whole cost.
 4. **Nothing is dropped, nothing waits.** Steps are numbered from the recording's start; each clip holds the steps
@@ -251,11 +251,12 @@ as a teleport in play does.
 
 ## The file {#file}
 
-One clip is one file, `.cclip`, little-endian:
+One clip is one file, `.crec` (a Coney recording; `.cclip` is taken by the engine form of an imported animation clip,
+[Content and formats](../studio/content-and-formats.md)), little-endian:
 
 | Part | What it holds |
 | --- | --- |
-| Header | magic `CCLP`, format version (major, minor), the [session](#holds) (Coney's version, disc hash, presentation source, mods), the recording's id, the clip's number, its first step, the step rate (30), the number and digest of the last step of the clip before (none for the first), a checksum |
+| Header | magic `CREC`, format version (major, minor), the [session](#holds) (Coney's version, disc hash, presentation source, mods), the recording's id, the clip's number, its first step, the step rate (30), the number and digest of the last step of the clip before (none for the first), a checksum |
 | Blocks | each: magic, length, first step, step count, the zstd frame of the columns (a key frame, then the deltas of each field by column), the event track of its steps, the pads, a digest per step, a checksum |
 | Index | the offset, first step and game time of each block, the clip's length in steps, a thumbnail's step |
 | Footer | the index's offset and checksum, the magic again |
@@ -266,7 +267,7 @@ One clip is one file, `.cclip`, little-endian:
 - **Chunks by tag.** Header fields and block sections are tagged and sized, so a reader skips what a newer minor
   version added ([Versions](#versions)).
 - **zstd.** A new dependency (BSD licence), pinned in `cmake/deps.cmake` like the others; it compresses at hundreds
-  of megabytes a second, which is why a block costs 0.04 ms a step. The measurements used zstd at level 3.
+  of megabytes a second, which is why a block costs at most 0.04 ms a step. The measurements used zstd at level 3.
 
 ## Versions and mods {#versions}
 
@@ -296,9 +297,9 @@ folder](../asset-and-script-architecture.md#install-folder)):
 <install>/director/
   clips/
     2026-10-29_21-04-17/          one recording, named by when it started (local time)
-      clip-001.cclip              60 seconds
-      clip-002.cclip
-      clip-003.cclip.part         being written
+      clip-001.crec               60 seconds
+      clip-002.crec
+      clip-003.crec.part          being written
   projects/                       Director's projects (#1187)
   videos/                         exported MP4 files (#1187)
   cache/                          thumbnails, rebuilt when missing
