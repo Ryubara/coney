@@ -17,7 +17,7 @@ string(SHA256 _coney_deps_hash "${_coney_pins}")
 # Dear ImGui only with the debug tools (docs/guides/building.md#debug-tools): the release build fetches and builds none.
 set(_coney_deps SDL3 librw Catch2 enet ffmpeg)
 if(CONEY_DEBUG_TOOLS)
-    list(APPEND _coney_deps imgui)
+    list(APPEND _coney_deps imgui inter_font jetbrains_mono_font)
 endif()
 # The sources of this version live in <CONEY_DEPS_SOURCES>/<first 16 hex digits of the version>, worked out on every
 # configure, never kept in the cache: a folder configured before a pin changed moves to the new version's folder at
@@ -141,6 +141,23 @@ FetchContent_Declare(Catch2 GIT_REPOSITORY https://github.com/catchorg/Catch2.gi
 if(CONEY_DEBUG_TOOLS)
     FetchContent_Declare(imgui GIT_REPOSITORY https://github.com/ocornut/imgui.git
                                GIT_TAG b48d1afbe8ee8b238e2961dc363a949dd7304e23 ${_coney_imgui_where} SYSTEM)
+endif()
+
+# Coney Studio's two fonts (docs/guides/studio/editor-experience.md#theme-defaults), with the debug tools only, as
+# Studio is built only with them: Inter 4.1 for the interface and JetBrains Mono 2.304 for code, both under the SIL Open
+# Font License 1.1 (a maintainer's approval, 2026-10-28), the release archives checked against their SHA-256. Neither
+# has a CMake build: SOURCE_SUBDIR names a folder they do not have, so FetchContent only fetches, and src/platform/
+# copies the font files and their licences beside coney-studio (docs/guides/studio/prototype.md#fonts).
+if(CONEY_DEBUG_TOOLS)
+    FetchContent_Declare(inter_font URL https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip
+                                    URL_HASH SHA256=9883fdd4a49d4fb66bd8177ba6625ef9a64aa45899767dde3d36aa425756b11e
+                                    DOWNLOAD_EXTRACT_TIMESTAMP ON ${_coney_inter_font_where}
+                                    SOURCE_SUBDIR coney-no-cmake)
+    FetchContent_Declare(jetbrains_mono_font
+        URL https://github.com/JetBrains/JetBrainsMono/releases/download/v2.304/JetBrainsMono-2.304.zip
+        URL_HASH SHA256=6f6376c6ed2960ea8a963cd7387ec9d76e3f629125bc33d1fdcd7eb7012f7bbf
+        DOWNLOAD_EXTRACT_TIMESTAMP ON ${_coney_jetbrains_mono_font_where} SOURCE_SUBDIR coney-no-cmake)
+    FetchContent_MakeAvailable(inter_font jetbrains_mono_font)
 endif()
 
 # ENet v1.3.18 (a lightweight tag, so the commit is the tag's own), MIT licence: the UDP transport of network play

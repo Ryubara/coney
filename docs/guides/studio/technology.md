@@ -1,10 +1,12 @@
 # Coney Studio: technology
 
-This page is a **design**: nothing on it is built. It decides what Coney Studio is made with: the GUI library, whether
-Studio is a program of its own, how Play runs the engine and how edits reach it, the code editor and its language
-tooling, the script debugger, reload on save, the libraries that import assets and the harness that tests Studio. Each
-question lists the alternatives weighed and the choice, and the page ends with the [build issues](#build-issues) it
-proposes, in order. Three small proofs settled what reading could not ([Proofs](#proofs)).
+This page is a **design**. Its first program is built: build issues 2 and 11, cut down to the prototype that
+[Coney Studio: the prototype](prototype.md) describes; the rest is not built yet. It decides what Coney Studio is made
+with: the GUI library, whether Studio is a program of its own, how Play runs the engine and how edits reach it, the
+code editor and its language tooling, the script debugger, reload on save, the libraries that import assets and the
+harness that tests Studio. Each question lists the alternatives weighed and the choice, and the page ends with the
+[build issues](#build-issues) it proposes, in order. Three small proofs settled what reading could not
+([Proofs](#proofs)).
 
 What Studio is, its panels, Play's controls and the keymap are the editor experience design; what a script can call, the
 runtime projects run on (Lua 5.4), how Play loads a project, the stubs, the project restart on save and the debugger's

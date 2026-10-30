@@ -544,6 +544,10 @@ if(CONEY_DEBUG_TOOLS)
         sandbox/sandbox_mesh_test.cpp
         sandbox/sandbox_world_test.cpp)
     target_link_libraries(coney_tests PRIVATE coney_devtools)
+    # Coney Studio's editor over bare Dear ImGui contexts and synthetic projects (docs/guides/studio/prototype.md).
+    target_sources(coney_tests PRIVATE studio/inspector_test.cpp studio/level_camera_test.cpp
+                                       studio/level_document_test.cpp studio/project_test.cpp studio/studio_app_test.cpp)
+    target_link_libraries(coney_tests PRIVATE coney_studio)
 endif()
 include(Catch)
 # The disc check skips (Catch2's exit code 4) unless CONEY_DISC names the player's disc; ctest reports it as skipped.

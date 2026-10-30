@@ -109,6 +109,44 @@ else()
     set(_coney_release_exe coney)
 endif()
 
+if(CONEY_DEBUG_TOOLS)
+    # Coney Studio (docs/guides/studio/prototype.md), beside coney so Run in Coney finds it and its assets: the entry
+    # point and the host that gives the editor (src/studio/) a folder picker, child processes and the Level view drawn
+    # into a texture. WIN32: a window program, with no console window of its own on Windows.
+    add_executable(coney-studio WIN32 studio_main.cpp studio_host.cpp studio_level_renderer.cpp)
+    coney_target_defaults(coney-studio)
+    target_link_libraries(coney-studio PRIVATE coney_studio coney_platform)
+    # Studio's fonts and their licences beside it (Inter and JetBrains Mono, SIL Open Font License 1.1, cmake/deps.cmake).
+    add_custom_target(coney_studio_fonts ALL
+                      COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_FILE_DIR:coney-studio>/fonts"
+                      COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${inter_font_SOURCE_DIR}/extras/ttf/Inter-Regular.ttf"
+                              "${inter_font_SOURCE_DIR}/extras/ttf/Inter-Bold.ttf"
+                              "${jetbrains_mono_font_SOURCE_DIR}/fonts/ttf/JetBrainsMono-Regular.ttf"
+                              "$<TARGET_FILE_DIR:coney-studio>/fonts"
+                      COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${inter_font_SOURCE_DIR}/LICENSE.txt"
+                              "$<TARGET_FILE_DIR:coney-studio>/fonts/Inter-LICENSE.txt"
+                      COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${jetbrains_mono_font_SOURCE_DIR}/OFL.txt"
+                              "$<TARGET_FILE_DIR:coney-studio>/fonts/JetBrainsMono-OFL.txt"
+                      VERBATIM)
+    add_dependencies(coney-studio coney_studio_fonts coney coney_assets)
+    add_test(NAME coney_studio.help COMMAND coney-studio --help)
+    set_tests_properties(coney_studio.help PROPERTIES PASS_REGULAR_EXPRESSION "--new-project DIR" LABELS studio)
+    add_test(NAME coney_studio.rejects_bad_argument COMMAND coney-studio --frames 0)
+    set_tests_properties(coney_studio.rejects_bad_argument PROPERTIES WILL_FAIL TRUE LABELS studio)
+    # A new project from the combat course opened in the real window, the wall selected and framed (F), 20 frames, a
+    # screenshot. It
+    # needs a display and OpenGL 3.3, so it reports itself skipped (77) without them, as CI's runners are.
+    add_test(NAME coney_studio.smoke_folder_cleared COMMAND "${CMAKE_COMMAND}" -E rm -rf
+                                                              "${CMAKE_CURRENT_BINARY_DIR}/studio-smoke")
+    set_tests_properties(coney_studio.smoke_folder_cleared PROPERTIES FIXTURES_SETUP studio_smoke LABELS studio)
+    add_test(NAME coney_studio.opens_new_project
+             COMMAND coney-studio --new-project "${CMAKE_CURRENT_BINARY_DIR}/studio-smoke/yard" --template combat
+                     --select 6 --frame --frames 20 --no-activate --screenshot "${CMAKE_CURRENT_BINARY_DIR}/studio-smoke.png")
+    set_tests_properties(coney_studio.opens_new_project PROPERTIES TIMEOUT 60 SKIP_RETURN_CODE 77 LABELS studio
+                         FIXTURES_REQUIRED studio_smoke
+                         PASS_REGULAR_EXPRESSION "studio: 20 frames, project yard, level .*selection 6")
+endif()
+
 # The release build's smoke tests, on its entry point in every build: it starts and stops headless, prints a player's
 # options, refuses a developer's by name, plays a synthetic input script, and holds none of the debug tools (the
 # debug pages' titles and Dear ImGui's settings file are not in the executable).

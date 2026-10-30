@@ -552,4 +552,8 @@ target_compile_definitions(coney_install PRIVATE CONEY_VERSION="${PROJECT_VERSIO
 add_library(coney_launcher STATIC launcher/release_manifest.cpp launcher/update_plan.cpp)
 coney_target_defaults(coney_launcher)
 target_link_libraries(coney_launcher PUBLIC coney_core)
+if(CONEY_DEBUG_TOOLS)
+    # Coney Studio's editor, before platform/ which makes its executable (docs/guides/studio/prototype.md).
+    add_subdirectory(studio)
+endif()
 add_subdirectory(platform)

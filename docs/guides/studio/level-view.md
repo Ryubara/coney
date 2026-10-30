@@ -2,7 +2,9 @@
 
 How a user moves round a level and builds it in Coney Studio's Level view: the fly camera, the keymap, Unity's transform
 gizmo, snapping and the grid, selection, undo, and composing a level from primitives, textures, colliders, spawn points
-and path points. **Status: design; nothing here is built.** It is the second half of the [editor experience
+and path points. **Status: design; the first prototype builds the fly camera, click selection and framing the
+selection** ([Coney Studio: the prototype](prototype.md)), and nothing else here yet. It is the second half of the
+[editor experience
 design](editor-experience.md), which holds the panels, the project, Play mode, importing, the two rules every choice
 follows and the build issues both pages propose; the editors' documentation read for both is listed in its
 [Sources](editor-experience.md#sources), except the snapping survey's, which [Snapping](#snapping) lists itself.
@@ -16,14 +18,15 @@ S D** to move along the view and sideways, **Q and E** to sink and rise. They di
 flies **faster**, in Roblox Studio it moves the camera **slower** for close work, and in Godot Alt is slower. Unity,
 Godot and Unreal change the base speed with the mouse wheel while the right button is held.
 
-Coney Studio copies the shared controls and Unity's Shift (the maintainer's choice), and takes Godot's Alt for slower:
+Coney Studio copies the shared controls and Unity's Shift (the maintainer's choice; the speed [builds up gradually as
+Unity's does](#fly-acceleration)), and takes Godot's Alt for slower:
 
 | Input | Does | Source |
 | --- | --- | --- |
 | Right mouse held, move the mouse | look round | all four |
 | Right mouse held, W A S D | fly forward, left, back, right along the view | all four |
 | Right mouse held, Q / E | sink / rise | Unity, Godot, Roblox (Unreal: Q and E too) |
-| Right mouse held, Shift | fly faster while held | Unity, Godot |
+| Right mouse held, Shift | fly faster while held, on top of the [acceleration](#fly-acceleration) | Unity, Godot |
 | Right mouse held, Alt | fly slower while held | Godot |
 | Right mouse held, mouse wheel | change the base speed, which stays | Unity, Godot, Unreal |
 | Alt + left drag | orbit round the pivot | Unity |
@@ -35,6 +38,47 @@ Coney Studio copies the shared controls and Unity's Shift (the maintainer's choi
 
 Q to Y are tools only while the right button is up (Unity's rule), so Q and E fly while it is held. The fly camera moves
 at the fixed step like everything else, so a scripted input flies the same path every time, as the world viewer does.
+
+#### Acceleration and Shift {#fly-acceleration}
+
+Unity's Scene view camera speeds up the longer you keep moving: its [Scene Camera reference][unity-camera] says that with
+*Camera Acceleration* on, "the camera initially moves at a speed based on the speed value, and continuously increases
+speed until movement stops", and its [Scene view navigation][unity-nav] page says to "press and hold Shift" to move
+faster. Unity does not publish the curve, so the rule below is Coney's, built on that description (inferred, from the
+two pages; Unity's source was not read):
+
+- While any movement key (W A S D Q E) is held, a clock runs; the speed is the base speed times the **acceleration**,
+  which is 1 when the clock starts and grows by 1.8 times every second, up to a ceiling of 8 times. Letting go of every
+  movement key, or of the right button, stops the clock and starts it over.
+- **Shift** multiplies the speed by 4 and **Alt** by a quarter, on top of the acceleration. They do not restart it:
+  Shift pressed after two seconds of flying meets the speed already reached, 4 times 3.24 times the base speed.
+- The wheel changes the base speed (the acceleration is a factor on it) and stays, as before.
+
+So holding Shift and W A S D gets faster and faster up to 4 x 8 = 32 times the base speed, as in Unity, and a short tap
+is at the base speed. The factors, the rate and the ceiling are constants of `FlyCamera` (`kFastFactor`,
+`accelerationAfter()`), for the preferences to take later.
+
+[unity-camera]: https://docs.unity.com/en-us/engine/current/manual/unity-editor/editor-windows-views-reference/using-the-scene-view/scene-view-camera
+[unity-nav]: https://docs.unity.com/en-us/engine/current/manual/unity-editor/editor-windows-views-reference/using-the-scene-view/scene-view-navigation
+
+#### Looking round {#fly-look}
+
+While the right button is held the cursor is **kept inside the window and hidden**, so the mouse can turn the camera
+for ever and the wheel's speed change always reaches the Level view: Studio asks its host for the window's *relative
+mouse mode* (SDL 3's `SDL_SetWindowRelativeMouseMode`, behind `StudioHost::setRelativeMouse()`), which reports the
+movement itself instead of a cursor position, and on release it gives the cursor back at the place where the button went
+down. A host that cannot do it (the tests') leaves Dear ImGui's own mouse movement in use.
+
+**Sensitivity 1x is counted in the display's pixels at scale 1**: the host reports the movement in physical pixels,
+Studio divides them by the display's scale (the operating system's, 1, 1.5, 2: `StudioSettings::uiScale`), and each
+pixel turns the camera by 0.0025 radians (0.143 degrees; the first build's 0.004 was too fast, the maintainer's
+feedback). The same hand movement over the same stretch of the desktop turns the camera the same on a 100 % and a 200 %
+display. `StudioSettings::lookSensitivity` is the one setting, 1 by default, a factor on that; the preferences will
+hold it (not built yet).
+
+The turn is shown **smoothed**, which the maintainer likes: the camera moves at the fixed step of a thirtieth of a
+second and the picture blends its last two steps, so it follows the mouse with a lag of one step at most, the shortest
+this loop gives; Studio adds no filter of its own on top, so the look cannot feel more delayed than that.
 
 ### The keymap {#keymap}
 

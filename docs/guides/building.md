@@ -265,6 +265,7 @@ and `coney_platform`; the debug tools are two libraries of their own:
 | --- | --- | --- |
 | `coney_debug` | `src/` | the debug menus' model and pages (`src/debug/`), the pad menu's renderer and bitmap font, the sandbox's worlds, the sheet and text viewers |
 | `coney_devtools` | `src/platform/` | the menus' platform glue and their controls of the play mode, the sound output and network play, the developer overlay (the only target that links Dear ImGui), the sandbox as a scenery and its renderer, the texture, character and sandbox viewers, the reference images |
+| `coney_studio` | `src/studio/` | [Coney Studio](studio/prototype.md)'s editor over `coney_devtools`; its executable `coney-studio` is made in `src/platform/` beside `coney`, with Studio's fonts |
 
 `coney` and `coney_tests` link both. The game reaches the debug tools only through hooks it offers, never the other way
 round: the play mode has Coney's own capabilities as its own API (teleport, freeze, noclip, spawn, change character),
