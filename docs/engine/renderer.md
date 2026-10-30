@@ -244,7 +244,10 @@ its tests build it headless ([frame_description_test.cpp](repo:tests/graphics/fr
 kept until the next frame begins), with either backend, and `Gl3Renderer`
 ([gl3_renderer.h](repo:src/platform/gl3_renderer.h)) draws it through the draw layer with the calls the 2D side and the
 screen passes made before, so the draw-stream hashes did not move. It owns the screen passes' copies of the frame,
-including the motion blur's kept frame, which `MotionBlurPass` now only names. Because the world, objects, cars and
+including the motion blur's kept frame, which `MotionBlurPass` now only names; that frame is now a bare raster, with no
+librw texture around it (the draw binds the raster and sets the filter as render states, so the picture is the same).
+The named disc frames' hashes cover the line blend (`--line-blend on`) but not the blur pulse or the motion blur, which
+neither frame draws. Because the world, objects, cars and
 humans still draw through librw between the 2D layers, `Gl3Renderer` draws each part as it is added rather than the
 whole frame at `present()`; once items 7 to 10 move them onto the description too, a frame can be drawn whole, and by
 the SDL3 GPU renderer (item 11). Not in it yet: the texture viewer's `RenderEngine::drawTexture`, which draws a librw

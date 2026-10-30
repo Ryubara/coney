@@ -18,9 +18,10 @@ struct Raster;
 namespace coney::platform {
 
 /// Draws a frame description (graphics::FrameDescription, docs/engine/renderer.md#frame-description) through librw's
-/// GL3 device and the draw layer (platform/draw_calls.h), making the same librw and OpenGL calls the 2D side and the
-/// screen passes made before the description existed, so the draw-stream hashes do not move. It owns the screen
-/// passes' copies of the frame.
+/// GL3 device and the draw layer (platform/draw_calls.h), with the draws the 2D side and the screen passes made before
+/// the description existed, so the draw-stream hashes do not move. It owns the screen passes' copies of the frame. One
+/// difference: the motion blur keeps its frame as a bare raster, with no librw texture around it, and its draw binds
+/// the raster and sets the filter as render states; the picture is the same.
 ///
 /// While the 3D scene still goes to librw directly (until items 7 to 10 of docs/engine/renderer.md#order), the
 /// RenderEngine calls drawNew() after each part it adds, so the parts draw in their place among the 3D drawing.
