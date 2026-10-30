@@ -252,8 +252,11 @@ std::optional<std::vector<std::uint8_t>> ps2Texels(const rw::Raster& raster) {
         return std::vector<std::uint8_t>(begin + std::min(kPointerBytes, end - begin), end);
     }
     std::vector<std::uint8_t> bytes(pointers->pixels, pointers->pixels + native->pixelSize);
-    if (native->paletteSize != 0 && raster.palette != nullptr && inside(raster.palette - 0x50, native->paletteSize)) {
-        const rw::uint8* palette = raster.palette - 0x50;
+    // The palette block starts 0x50 bytes before `palette`; checked against the block before the subtraction is made.
+    constexpr std::ptrdiff_t kPaletteTags = 0x50;
+    if (native->paletteSize != 0 && raster.palette != nullptr && raster.palette >= begin &&
+        raster.palette - begin >= kPaletteTags && inside(raster.palette - kPaletteTags, native->paletteSize)) {
+        const rw::uint8* palette = raster.palette - kPaletteTags;
         bytes.insert(bytes.end(), palette, palette + native->paletteSize);
     }
     return bytes;

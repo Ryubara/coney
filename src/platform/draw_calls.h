@@ -24,7 +24,10 @@ struct RGBA;
 ///
 /// Routed here: the render states, Im2D, Im3D, the camera's clear, begin, end and show, raster creation, locks and
 /// uploads, and the named operations. Not yet: the atomic, clump and human renders, whose pipelines call OpenGL
-/// themselves (items 7 to 10 of docs/engine/renderer.md#order); the render states set around them are routed.
+/// themselves (items 7 to 10 of docs/engine/renderer.md#order). The render states set around them are routed, except
+/// in the four functions items 7 to 9 route with their renders (WorldRenderer::render, ParkedCars::draw,
+/// PlacedObjects::draw, PlayLighting::drawHumanPasses), which set them on librw directly: a live record's states can be
+/// stale after those (docs/engine/renderer.md#comparing).
 ///
 /// What a record holds:
 ///
@@ -106,8 +109,9 @@ void showCameraRaster(rw::Camera* camera, std::uint32_t flags);
 [[nodiscard]] std::uint8_t* lockRaster(rw::Raster* raster, std::int32_t level, std::int32_t lockMode);
 /// rw::Raster::unlock: the level's pixels uploaded, and digested while rasters are tracked.
 void unlockRaster(rw::Raster* raster, std::int32_t level);
-/// rw::Raster::setFromImage at the level `raster` is locked to (0 when it is not): the image's pixels uploaded and
-/// digested as unlockRaster() does.
+/// rw::Raster::setFromImage at the level `raster` is locked to (0 when it is not): the image's pixels uploaded, and
+/// digested as an upload of level 0 whatever the level (a level filled this way and then unlocked is digested twice,
+/// the same way every run).
 void setRasterFromImage(rw::Raster* raster, rw::Image* image);
 /// rw::Raster::convertTexToCurrentPlatform: `source` (destroyed when a new raster is made) as a raster for drawing;
 /// null when librw cannot convert it. A PS2 source's texels and palette are its digest.
