@@ -1,7 +1,8 @@
 # Running Coney
 
 Every option of the `coney` executable and what each mode does. This page says how to start Coney, shows the whole
-command line, says how to [install the game from your disc](#install), and lists the pages that document the options:
+command line, says how to [install the game from your disc](#install) and where [script patches](#script-patches)
+are made, and lists the pages that document the options:
 the window, sound and network, loading and viewing your disc, playing a level with its traces and logs, and the
 controls. It assumes you have built Coney ([Building and testing](building.md)); the viewers and the game need your own
 copy of the game (`--disc`, or an install with `--data`), while `--headless`, `--sandbox` and `--audio-test` do not
@@ -20,6 +21,7 @@ allows and centred; a window of another shape gets black bars at the sides or at
 
 ```text
 coney --install DISC --data DIR [--verify]
+coney --script-patch make|apply ...
 coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N] [--screenshot PATH]
       [--headless] [--help] [--input-script FILE] [--view-text FONT TEXT] [--language CODE]
       [--view-world NAME] [--view-character [NAME]] [--anim CLIP]
@@ -134,6 +136,12 @@ with the same code as a disc folder. It refuses a folder whose install has not f
 says how to finish it, and cannot be given with `--disc`. With neither `--disc` nor `--data`, Coney looks in its own
 folder: run from a finished install (the `coney` that `--install` copied there), it plays that install, so a player
 just starts `coney`. A `--disc` on the command line always wins.
+
+## Script patches {#script-patches}
+
+`--script-patch make|apply` makes a script patch from a decompiled game script and your edit of it, or applies one,
+on files, then exits; it needs no disc and opens no window. It must come first on the command line. The format and the
+command are in [Script patches](script-patches.md#command-line).
 
 ## The pages {#pages}
 

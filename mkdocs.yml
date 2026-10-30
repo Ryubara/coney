@@ -343,6 +343,7 @@ nav:
       - Realtime lighting design: guides/realtime-lighting.md
       - Asset and script architecture: guides/asset-and-script-architecture.md
       - The .cpak archive format: guides/cpak-format.md
+      - Script patches: guides/script-patches.md
       - Network multiplayer: guides/multiplayer.md
       - Network architecture design: guides/network-architecture.md
       - Coney Studio design:

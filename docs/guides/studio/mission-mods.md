@@ -8,10 +8,11 @@ compiler, the translator from Lua 4.0 to Lua 5.4 with an evidence-based verdict 
 Studio's flow and the order of the work. It ends with the build issues it proposes, in order. The parent issue is
 [#1054](issue:1054); this page is [#1074](issue:1074).
 
-**Status: design.** Only the first [build issue](#build-issues), the frozen decompile form, is built; the rest of this
-page is not. It is a design in the sense of [Page
-kinds](../writing-docs.md#page-kinds): what is built moves into a guide. It builds on [Coney Studio: the Lua
-SDK](lua-sdk.md) (the two runtimes, the [compiler](lua-sdk.md#compiler)), on [Lua 4.0
+**Status: design, two build issues built.** The first [build issue](#build-issues), the frozen decompile form, is
+built, and so is build issue 4: the `.cpatch` format, applying, making and merging patches and the
+`coney --script-patch` command line, described in [Script patches](../script-patches.md). The rest of this page is a
+design in the sense of [Page kinds](../writing-docs.md#page-kinds): what is built moves into a guide. It builds on
+[Coney Studio: the Lua SDK](lua-sdk.md) (the two runtimes, the [compiler](lua-sdk.md#compiler)), on [Lua 4.0
 bytecode](../../research/formats/lua-bytecode.md) (the decompiler) and on the script security and mods design of
 [#1062](issue:1062) ([Script security](security.md) and [Mods, packages and loading](mods.md)), whose `game-scripts`
 permission this page's patches run under.
@@ -132,34 +133,20 @@ author wrote. A Coney patch does the same for lines of text.
 
 ### The format {#format}
 
-A `.cpatch` is UTF-8 text: a header, then the operations in base-line order. A sketch, with made-up content:
+The format is built, with apply, make and merge: [Script patches](../script-patches.md) is its description and its
+command line. A `.cpatch` is UTF-8 text, a header naming the chunk, the form and the hashes of the base text and the
+result, then operations in base-line order that keep, drop, copy and rebuild base lines by number and add the author's
+own lines. It keeps to four rules:
 
-```text
-coney-script-patch 1
-entry  = 0x1c2d3e4f                 # the WAD entry the script lives in (its name's hash); name when known
-name   = "level99.lua"
-chunk  = "sha256:9f2c..."           # the chunk the base text was made from
-form   = "lua4 1"                   # decompile form 1; "lua54 1/lua4 1" for a 5.4 base
-base   = "sha256:41aa..."           # the base text
-result = "sha256:7c03..."           # the text after the patch: checked after applying
----
-= 1-212                             # keep base lines 1 to 212
-- 213-215 sha256:0b7e...            # drop base lines 213 to 215 (their hash, never their text)
-+ Coney.Log("the yard fight starts early")   # a line the author wrote
-< 340-352                           # copy base lines 340 to 352 here (a block moved or duplicated)
-~ 401 [0-27] "3" [29-]              # line 401 rebuilt: base columns 0-27, the author's "3", base column 29 to the end
-= 402-                              # keep the rest
-```
-
-- **Only the author's text** appears in `+` lines and in the quoted parts of `~` lines. Everything taken from the base is
-  a line range or a column range, so the patch reads as nothing without the player's own script.
+- **Only the author's text** appears in it. Everything taken from the base is a line range or a column range, so the
+  patch reads as nothing without the player's own script.
 - **Hashes, never text, for checking.** A dropped range carries its hash, so a patch checks every line it removes, and
   the whole result is checked against `result`.
-- **Studio writes the smallest patch that keeps to that rule.** A line diff first; then each added line that equals a
-  base line becomes a copy (`<`), and a changed line that keeps most of its base line becomes a rebuild (`~`), so moving
-  a function or changing one number carries none of the game's text. Before Export, Studio runs the guard's
-  fingerprint check ([`lua`: the guard](../coney-tools-fidelity.md#lua)) on every file of the package, the patches
-  included, and refuses to export one that holds three of five distinctive lines of a game script.
+- **Studio writes the smallest patch that keeps to that rule** ([Making a patch](../script-patches.md#make)): a line
+  diff, in which an added line equal to a base line becomes a copy and a changed line that keeps most of a base line is
+  rebuilt from it, so moving a function or changing one number carries none of the game's text. Before Export, Studio
+  runs the guard's fingerprint check ([`lua`: the guard](../coney-tools-fidelity.md#lua)) on every file of the package,
+  the patches included, and refuses to export one that holds three of five distinctive lines of a game script.
 - **Line numbers are exact, never fuzzy.** The base text is the same byte for byte on every machine ([Forms](#forms)),
   so no operation needs context to find its place, and a patch that does not fit is refused, never applied
   approximately.
@@ -223,10 +210,14 @@ overlap. All patches of one script share one base text (a 4.0 patch meeting a 5.
   mod's change for that place or disables one mod. The choice is recorded in `mods/enabled.toml` with both package
   hashes, so it is asked once, and again only when either mod changes.
 - **Three or more** merge one at a time, in load order.
+
 - **The merged script must compile.** Two changes that merge as text can still break each other (both define the same
   function); the result is compiled at once and, if it fails, the two mods cannot run together, and the message names
   both. Two changes that compile together but disagree in what they do cannot be detected, as for any two mods'
   scripts.
+
+The merge itself is built ([Merging patches](../script-patches.md#merge)): it reports each conflict and keeps the side
+a chooser picks. The Mods screen's question, the recorded choice and the compile of the merged script are build issue 5.
 
 This replaces the mods page's earlier rule that two mods overriding one game script cannot both be enabled
 ([What changes on other pages](#other-pages)).
@@ -577,12 +568,13 @@ In order. Issues 1 to 6 are 4.0 patching; issue 7 is the probe; issues 8 to 11 f
    reproduces `luac`'s code generation for the patterns the disc uses. Tests: the synthetic fixtures compile to the same
    functions as their `luac` chunks; a disc test compiles every decompile and compares it with the chunk as
    `--roundtrip` does, 467 of 467, counts only.
-4. **core: Add script patches: make, apply and merge.** The `.cpatch` reader and writer with its limits, apply with every
-   hash checked, the smallest patch that carries no base text (copies and rebuilds), the merge of several patches of one
-   base with conflicts reported, and the lift from 4.0 to 5.4 left for issue 8. A `coney --script-patch make|apply`
-   command line for modders who use another editor. Tests on synthetic text: apply gives the result hash; a wrong base,
-   a damaged range and a damaged result are refused with their messages; a made patch holds no line of the base; two
-   disjoint patches merge; two overlapping ones report one conflict; touching ranges merge.
+4. **core: Add script patches: make, apply and merge.** Built: [Script patches](../script-patches.md). The `.cpatch`
+   reader and writer with its limits, apply with every hash checked, the smallest patch that carries no base text
+   (copies and rebuilds), the merge of several patches of one base with conflicts reported, and the lift from 4.0 to 5.4
+   left for issue 8. A `coney --script-patch make|apply` command line for modders who use another editor. Tests on
+   synthetic text: apply gives the result hash; a wrong base, a damaged range and a damaged result are refused with
+   their messages; a made patch holds no line of the base; two disjoint patches merge; two overlapping ones report one
+   conflict; touching ranges merge.
 5. **core: Run patched game scripts in the game state.** Beside [Script security](security.md#build-issues)' issue 12:
    the catalog's patched provider, patches applied, merged and compiled when the mods start; the refusals of
    [Refusals](#refusals), the Xbox-only skip, the player's recorded merge choices, the `game-scripts` permission, the

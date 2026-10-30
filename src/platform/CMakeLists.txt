@@ -43,6 +43,9 @@ target_sources(coney_platform PRIVATE error_dialogs.cpp)
 target_sources(coney_platform PRIVATE game_session.cpp)
 # `coney --install`: the player's disc into a portable install folder (docs/guides/running.md#install).
 target_sources(coney_platform PRIVATE install_command.cpp install_folder_fs.cpp)
+# `coney --script-patch make|apply`: script patches on files, for modders who edit in another editor
+# (docs/guides/script-patches.md#command-line).
+target_sources(coney_platform PRIVATE script_patch_command.cpp)
 # Where the player profiles are kept: the per-user data folder (docs/research/save.md#coney).
 target_sources(coney_platform PRIVATE profile_folder.cpp)
 # What both entry points (main_release.cpp and main.cpp) set up the same way (docs/guides/building.md#debug-tools).
