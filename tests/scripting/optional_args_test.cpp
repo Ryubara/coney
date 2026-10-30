@@ -180,18 +180,6 @@ TEST_CASE("ActTurnToDir reads an explicit nil delay as 0, and -1 only when left 
     CHECK(h.ai.turns[1].delayMs == -1);
 }
 
-TEST_CASE("TacticDomination reads an explicit nil range as 0, and 3 only when left out", "[scripting][optional_args]") {
-    // Expected: script-arguments.md#readers, confirmed (code)
-    Harness h;
-    h.call("TacticDomination", {Value(2.0), Value(30.0), Value(), Value("Held")});
-    h.call("TacticDomination", {Value(2.0), Value(30.0)});
-    REQUIRE(h.ai.dominations.size() == 2);
-    CHECK(h.ai.dominations[0].range == 0.0F);
-    CHECK(h.ai.dominations[0].callback == "Held");
-    CHECK(h.ai.dominations[1].range == 3.0F);
-    CHECK(h.ai.dominations[1].callback.empty());
-}
-
 TEST_CASE("HUDSetObjective reads an explicit nil time as 0 ms, and 8000 only when left out",
           "[scripting][optional_args]") {
     // Expected: script-arguments.md#readers, confirmed (code)

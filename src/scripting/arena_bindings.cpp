@@ -36,32 +36,27 @@ constexpr std::uint32_t kVersusMode1 = 1;
 constexpr std::uint32_t kVersusMode2 = 2;
 
 // Argument `i` truncated to a whole number, as tolua reads an integer.
-// @coney-only tolua's argument reading, which the original's generated wrappers do
 std::int64_t wholeArg(std::span<const Value> args, std::size_t i) {
     return static_cast<std::int64_t>(std::trunc(binding::number(args, i)));
 }
 
-// Whether argument `i` is missing or nil (binding_args.h): only for arguments that read the same either way.
-using binding::absent;
+// Whether argument `i` is missing or nil, so a default applies.
+bool absent(std::span<const Value> args, std::size_t i) { return i >= args.size() || args[i].isNil(); }
 
 // Argument `i` as an integer, `fallback` when omitted.
-// @coney-only tolua's argument reading, which the original's generated wrappers do
 int intArg(std::span<const Value> args, std::size_t i, int fallback = 0) {
     return i >= args.size() ? fallback : static_cast<int>(wholeArg(args, i));
 }
 
 // Argument `i` as an unsigned integer (kept to 32 bits).
-// @coney-only tolua's argument reading, which the original's generated wrappers do
 std::uint32_t unsignedArg(std::span<const Value> args, std::size_t i) {
     return static_cast<std::uint32_t>(wholeArg(args, i));
 }
 
 // A handle argument: truncated to an unsigned integer.
-// @coney-only tolua's argument reading, which the original's generated wrappers do
 double handleArg(std::span<const Value> args, std::size_t i) { return static_cast<double>(unsignedArg(args, i)); }
 
 // Argument `i` as a boolean: nil and 0 are false; `fallback` when it is not passed at all.
-// @coney-only tolua's argument reading, which the original's generated wrappers do
 bool boolArg(std::span<const Value> args, std::size_t i, bool fallback = false) {
     if (i >= args.size()) {
         return fallback;
@@ -73,13 +68,11 @@ bool boolArg(std::span<const Value> args, std::size_t i, bool fallback = false) 
 }
 
 // The character host of the level, if there is a level with an AI host.
-// @coney-only binding glue: the humans a handle names, as the AI host keeps them
 HumanBindingHost* humansOf(const BindingContext& context) {
     return context.ai != nullptr ? context.ai->humans() : nullptr;
 }
 
 // A binding that hands its arguments to the AI host when there is one and returns nothing.
-// @coney-only binding glue: the call reaches its host only when the context has one
 template <typename Body> NativeFunction aiCall(const BindingContext& context, Body body) {
     return [context = &context, body](std::span<const Value> args) {
         if (AiBindingHost* host = context->ai; host != nullptr) {
@@ -91,7 +84,6 @@ template <typename Body> NativeFunction aiCall(const BindingContext& context, Bo
 
 // A binding that hands its arguments to the character host when there is one and returns nothing. The host is read
 // at each call: a level gives its brains to a Lua state made before it.
-// @coney-only binding glue: the call reaches its host only when the context has one
 template <typename Body> NativeFunction humanCall(const BindingContext& context, Body body) {
     return [context = &context, body](std::span<const Value> args) {
         if (HumanBindingHost* host = humansOf(*context); host != nullptr) {
@@ -102,7 +94,6 @@ template <typename Body> NativeFunction humanCall(const BindingContext& context,
 }
 
 // A binding that changes the game state with `body` and returns nothing.
-// @coney-only binding glue: the call reaches its host only when the context has one
 template <typename Body> NativeFunction stateCall(const BindingContext& context, Body body) {
     return [context = &context, body](std::span<const Value> args) {
         if (context->state != nullptr) {
@@ -402,13 +393,13 @@ void addCharacterBindings(LuaVm& vm, const BindingContext& context) {
         }
         return binding::none();
     });
-    // `TacticDomination(gang, flag, range, callback)`: range 3 m when left out, 0 for an explicit nil; a nil callback
-    // is none. Tactic_Domination (0x00316b30) is the host's.
-    // @orig 0x00376008 lua_TacticDomination (unknown)
+    // `TacticDomination(gang, flag, range, callback)`: range defaults to 3 m; a nil callback is none.
+    // @orig 0x00316b30 Tactic_Domination (unknown)
     vm.registerFunction("TacticDomination", [context = &context](std::span<const Value> args) {
         if (AiBindingHost* ai = context->ai; ai != nullptr) {
-            ai->tacticDomination(binding::signedArg(args, 0), binding::handleArg(args, 1),
-                                 binding::floatArg(args, 2, kDominationRange), binding::string(args, 3));
+            const float range = absent(args, 2) ? kDominationRange : static_cast<float>(binding::number(args, 2));
+            const std::string callback = absent(args, 3) ? std::string{} : binding::string(args, 3);
+            ai->tacticDomination(intArg(args, 0), handleArg(args, 1), range, callback);
         }
         return binding::none();
     });
@@ -416,7 +407,6 @@ void addCharacterBindings(LuaVm& vm, const BindingContext& context) {
 
 } // namespace
 
-// @coney-only binding registration: each binding it registers carries its own @orig
 void addArenaBindings(LuaVm& vm, const BindingContext& context) {
     addStateBindings(vm, context);
     addCharacterBindings(vm, context);

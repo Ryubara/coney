@@ -46,7 +46,7 @@ the top of the stack (`lua_gettop`, `0x00323318`): past the top it returns the d
 (`0x003234b8`): tag 1 (`nil`) is false, and anything else is `lua_tonumber` compared with 0, so a string that is not a
 number is false too. Confirmed (code) at `0x00409318`.
 
-Each binding's wrapper names the reader and the conversion of every argument. Thirteen of them, the ones Coney
+Each binding's wrapper names the reader and the conversion of every argument. Twelve of them, the ones Coney
 reads through these rules, are listed under [In Coney](#in-coney). `TriggerSphereCfg` (`0x0036d0e0`) reads its mode
 with the number reader and the signed conversion, so a mode that is not a number is 0; the scripts pass 0, 1 (their
 `true`) or 2. Confirmed (code) at `0x0036d0e0`.
@@ -71,10 +71,10 @@ The readers and conversions are in [binding_args.h](repo:src/scripting/binding_a
 and `handleArg`. `binding::absent` (left out or nil) stays for arguments that read the same either way, a string or a
 callback.
 
-The orig sweep of 2026-10-21 found thirteen bindings that gave an explicit `nil` the default; since #686 they read as
-the original does: `GoalAddressPerson`'s speech (`0x003603a8`), `GoalDealer`'s range and run chance (`0x00363018`),
+The orig sweep of 2026-10-21 found thirteen bindings that gave an explicit `nil` the default; since #686 twelve of them
+read as the original does: `GoalAddressPerson`'s speech (`0x003603a8`), `GoalDealer`'s range and run chance (`0x00363018`),
 `BrSetNumFollowSlots`'s second count (`0x0035fc80`), the delays of `ActLookAt` (`0x003647d8`) and `ActTurnToDir`
-(`0x00364708`), `TacticDomination`'s range (wrapper `0x00376008`), `HUDSetObjective`'s time (`0x0036f280`),
+(`0x00364708`), `HUDSetObjective`'s time (`0x0036f280`),
 `HUDFlushTutorialText`'s priority (`0x0036f430`, narrowed to a byte), the player of `HUDTurnOnRadar` (`0x003700c8`)
 and of `HUDTurnOffRadar` (`0x00370100`), `HUDSetNumIndicator`'s gang (`0x00370138`), `HUDSetRadarZoomScale`'s
 scale, 0 when left out (`0x00370728`), and `TriggerSphereCfg`'s enable, false when left out, and its mode
@@ -88,7 +88,9 @@ The other bindings keep their own per-file readers, most of which still give an 
 
 ### Other bindings {#q-nil-defaults}
 
-Only the thirteen bindings above were checked. The rest read through per-file helpers that treat `nil` as left out,
-which is right for a string or a callback and unchecked for a number or a boolean with a default. Each binding's
-wrapper, read in Ghidra, settles its arguments; the shipped scripts pass `nil` mostly in string and option positions,
-so few levels can show a difference.
+Only the twelve bindings above were fixed. The thirteenth the sweep found, `TacticDomination`'s range (wrapper
+`0x00376008`), still reads `nil` as left out (3 m): its binding sits in a registration function that ports twenty
+other functions, and its fix waits for those to be compared. The rest read through per-file helpers that treat `nil`
+as left out, which is right for a string or a callback and unchecked for a number or a boolean with a default. Each
+binding's wrapper, read in Ghidra, settles its arguments; the shipped scripts pass `nil` mostly in string and option
+positions, so few levels can show a difference.

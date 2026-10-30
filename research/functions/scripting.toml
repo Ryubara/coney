@@ -1625,14 +1625,6 @@ coney = "src/scripting/ai_bindings.cpp:makeTacticCrowd"
 status = "legacy"
 
 [[function]]
-address = 0x00376008
-name = "lua_TacticDomination"
-page = "../references/bindings/ai.md#tacticdomination"
-level = "confirmed-code"
-coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "compared"
-
-[[function]]
 address = 0x00377a10
 name = "lua_TacticTrigger"
 page = "../references/bindings/ai.md#tactictrigger"
