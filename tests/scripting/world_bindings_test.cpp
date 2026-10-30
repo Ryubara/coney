@@ -172,7 +172,8 @@ TEST_CASE("ObjShow and ObjHide leave the show message; ObjDestroy with its messa
     CHECK(h.records.find(7)->removed);
 }
 
-TEST_CASE("TriggerSphereCfg configures the object's sphere, a true mode being 1", "[world_bindings]") {
+TEST_CASE("TriggerSphereCfg configures the object's sphere, a mode that is not a number being 0", "[world_bindings]") {
+    // Expected: script-arguments.md#readers (the mode through the signed reader), confirmed (code)
     Harness h;
     h.call("TriggerSphereCfg", {Value(12.0), Value(1.0), Value(4.0), Value(2.0), Value(500.0)});
     const coney::world_objects::TriggerSphere* sphere = h.spheres.find(12);
@@ -184,7 +185,7 @@ TEST_CASE("TriggerSphereCfg configures the object's sphere, a true mode being 1"
     CHECK(sphere->stayPeriodMs == 1000);
     h.call("TriggerSphereCfg", {Value(12.0), Value(), Value(3.0), Value(std::string("yes")), Value(100.0)});
     CHECK_FALSE(sphere->armed);
-    CHECK(sphere->mode == 1);
+    CHECK(sphere->mode == 0);
     CHECK(h.spheres.all().size() == 1);
 }
 
