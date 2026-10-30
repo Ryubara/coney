@@ -1,4 +1,4 @@
-# The synthetic scenes of the picture comparison (docs/guides/coney-tools-trace.md#picture): each is a `coney` command
+# The synthetic scenes of the picture comparison (docs/guides/coney-tools-picture.md#picture): each is a `coney` command
 # line that draws a world of Coney's own (the sandbox layouts and their CC0 textures; no game data) and saves its
 # last frame. `coney-tools picture scenes` draws them and compares each with tests/pictures/reference/NAME.png;
 # CI's `software-pictures` job does so through Mesa's llvmpipe in a pinned container (docs/guides/testing.md#software-pictures).
