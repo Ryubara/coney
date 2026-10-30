@@ -204,6 +204,9 @@ TEST_CASE("each motion blur pass records its own kept copy", "[platform][frame-d
     // A strength of 0 is recorded too: it tells the renderer to forget the kept frame.
     CHECK(secondBlur.colour == Rgba{255, 255, 255, 0});
     CHECK(firstBlur.copy != secondBlur.copy);
+    // Held by value: the next beginFrame() empties this frame's pass list and reuses its storage, so firstBlur would
+    // then name the next frame's pass.
+    const auto firstCopy = firstBlur.copy;
 
     // The same pass keeps its copy from frame to frame.
     engine->beginFrame(Rgba{0, 0, 0, 255});
@@ -212,5 +215,5 @@ TEST_CASE("each motion blur pass records its own kept copy", "[platform][frame-d
     REQUIRE(engine->frame().passes().size() == 1);
     const ScreenPass& again = screenAt(engine->frame(), 0);
     REQUIRE(std::holds_alternative<MotionBlurOverlay>(again.effect));
-    CHECK(std::get<MotionBlurOverlay>(again.effect).copy == firstBlur.copy);
+    CHECK(std::get<MotionBlurOverlay>(again.effect).copy == firstCopy);
 }
