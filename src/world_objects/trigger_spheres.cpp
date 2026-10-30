@@ -92,6 +92,7 @@ bool TriggerSpheres::accepts(const TriggerSphere& sphere, const std::array<float
     if (!withinRadius(sphere, centre, point)) {
         return false;
     }
+    // Stand-in: modes 1 and 2 use Coney's clear-line test between points raised 1 m (the original's tests are open).
     if (sphere.mode == 0 || !m_clearLine) {
         return true;
     }
