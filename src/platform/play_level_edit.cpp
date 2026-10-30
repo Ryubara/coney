@@ -160,7 +160,7 @@ std::expected<void, Error> PlayLevelControls::applyEdit(const debug::EntityComma
         }
         // The body, its collision (unless kept) and the drawn mesh together; the mesh relative to the configured size,
         // so a human at its configured scale is drawn as it always was.
-        human->setScale(number);
+        human->editScale(number);
         human->setMeshScale(number / human->configuredScale());
         return {};
     case debug::EditOp::ScaleCollision:

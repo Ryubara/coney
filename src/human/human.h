@@ -529,7 +529,8 @@ class Human final : public Holdable {
     [[nodiscard]] float bodyScale() const override { return m_scale; }
     /// The scale the collision is sized by: scale(), or the configured one while collisionFollowsMesh() is off.
     [[nodiscard]] float collisionScale() const { return m_collisionFixed.value_or(m_scale); }
-    /// The scale the human was made with (a script's `HuSetScale` is an edit of it, not its configuration).
+    /// The scale the human was made with, or given by setScale() before its first update (`Human_Init`'s class size);
+    /// a script's later `HuSetScale` is an edit of it, not its configuration.
     /// @coney-only debug tooling: the Entity editor's reset and its *Scale collision with mesh*
     [[nodiscard]] float configuredScale() const { return m_configuredScale; }
     /// Whether the collision (the walking and air spheres, the upright capsule and the strike shapes) scales with the
@@ -565,14 +566,22 @@ class Human final : public Holdable {
     /// Updates spent in the air since the last landing.
     [[nodiscard]] std::uint32_t airborneUpdates() const { return m_airborneUpdates; }
     /// `HuSetScale`: the body's scale, not range-checked. Coney's body (its capsule, its walls' radius, its root
-    /// motion) is sized from the scale at each use, so the body follows at once.
+    /// motion) is sized from the scale at each use, so the body follows at once. Before the human's first update it
+    /// is also the size the human is made at, configuredScale(): `Human_Init`'s class size comes this way
+    /// (docs/research/human-init.md#size), and a later call is an edit of it, as the Entity editor reads it.
     /// @orig 0x0023b0e0 Human_SetScale (unknown)
-    void setScale(float scale) { m_scale = scale; }
-    /// Stub for the tests: the Entity editor's scale edit, setScale() until the made size is ported.
-    // @coney-only stub of the editor's edit for the tests-first commit
-    void editScale(float scale) { m_scale = scale; }
+    void setScale(float scale) {
+        m_scale = scale;
+        if (m_updates == 0) {
+            m_configuredScale = scale;
+        }
+    }
 
     // Coney's debug tooling: what the Entity editor changes on a human (docs/guides/debug-menu.md#entity-editor).
+
+    /// The body's scale as an edit: setScale() without ever moving configuredScale(), even before the first update.
+    /// @coney-only debug tooling: the Entity editor's scale
+    void editScale(float scale) { m_scale = scale; }
 
     /// How much bigger the mesh is drawn than configured, 1 as made: only the Entity editor's scale changes it. The
     /// drawn body only: the physics and the collision are scale() and collisionScale().
@@ -1211,7 +1220,7 @@ class Human final : public Holdable {
     bool m_speaking = false;          // a line of its is alive (setSpeaking()), as +0x170
     FaceRules* m_faceRules = nullptr; // setFaceRules(), not owned
     float m_scale = 1.0F;
-    float m_configuredScale = 1.0F;        // the scale the human was made with
+    float m_configuredScale = 1.0F;        // the scale the human was made with, or set to before its first update
     float m_meshScale = 1.0F;              // setMeshScale()
     std::optional<float> m_collisionFixed; // the scale the collision keeps while it does not follow the mesh
     float m_speedScale = 1.0F;             // setSpeedScale()

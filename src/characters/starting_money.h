@@ -46,7 +46,8 @@ struct StartingCarry {
 [[nodiscard]] int moneyCategory(const CarryConfig& config);
 
 /// Rolls a new human's carry from `config` and its category's `money`, drawing in the original's order from
-/// `random`: the object roll, the money, the bonus roll, then (category 4) the brain's `Random_Int(100)`.
+/// `random`: the object roll, the money, the bonus roll, then (category 4) the brain's `Random_Int(100)`; and the
+/// brain's ped type the category, the money and the women's byte give (docs/research/human-init.md#ped-type).
 /// **Coney's stand-in**: a `grp_` object group gives no object (the groups and their own generator are not built).
 /// @orig 0x00218008 Human_Init (unknown)
 [[nodiscard]] StartingCarry rollStartingCarry(const CarryConfig& config, const ClassMoney& money, GameRandom& random);

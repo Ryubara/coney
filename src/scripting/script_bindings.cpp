@@ -4,17 +4,24 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <format>
 #include <functional>
 #include <memory>
 #include <optional>
+#include <string>
+#include <string_view>
 #include <utility>
+#include <vector>
 
 #include "characters/character_class.h"
+#include "characters/character_types.h"
 #include "characters/starting_money.h"
+#include "combat/power_class.h"
 #include "core/assert.h"
 #include "core/log.h"
 #include "effects/level_effects.h"
+#include "human/class_flags.h"
 #include "scenes/scene_player.h"
 #include "scripting/ai_bindings.h"
 #include "scripting/anim_callbacks.h"
@@ -59,6 +66,9 @@ constexpr double kNilHandle = 0.0;
 struct HandleCounter {
     double next = 1;
 };
+
+// A class's weapon when it has none (`CfgChar`'s `+0x18c`).
+constexpr std::string_view kNoWeapon = "none";
 
 // What a real binding's factory gets: the script system, the context and the state's handle counter.
 struct Factory {
@@ -362,6 +372,78 @@ characters::ClassMoney recordedClassMoney(const RecordedCalls* recorded, int cat
     return money;
 }
 
+// Type `type`'s last recorded `CfgChar` call, read as characters::parseCfgChar() reads it; nothing when it has none.
+// @coney-only a lookup in Coney's record of the CfgChar stub calls; the original reads its character table
+std::optional<characters::CharacterType> recordedCfgChar(const RecordedCalls* recorded, int type) {
+    std::optional<characters::CharacterType> found;
+    if (recorded == nullptr) {
+        return found;
+    }
+    for (const std::vector<Value>& call : recorded->calls("CfgChar")) {
+        if (!call.empty() && call[0].number() == static_cast<double>(type)) {
+            found = characters::parseCfgChar(call);
+        }
+    }
+    return found;
+}
+
+// Power class `id`'s last recorded `CfgPowerClass` call over the player's defaults; nothing when it has none.
+// @coney-only a lookup in Coney's record of the CfgPowerClass stub calls; the original reads its power class table
+std::optional<combat::PowerClass> recordedPowerClass(const RecordedCalls* recorded, int id) {
+    std::optional<combat::PowerClass> found;
+    if (recorded == nullptr) {
+        return found;
+    }
+    for (const std::vector<Value>& call : recorded->calls("CfgPowerClass")) {
+        if (!call.empty() && call[0].number() == static_cast<double>(id)) {
+            found = characters::parseCfgPowerClass(call, combat::kPlayerPowerClass);
+        }
+    }
+    return found;
+}
+
+// The steps Human_Init takes after the money for the human `HuCreate` just made, in its order
+// (docs/research/human-init.md): the brain's ped type by category (`pedType`, nothing to leave it), the
+// type's own power class's switches in the flags, the class's weapon in the hand from the scripts' handles, and the
+// class's size. **Coney's stand-ins**: the voice is read from the type when a line plays, and the idle lines are not
+// counted (human-init.md#q-voice); no radar blip, task byte or `+0x19e` (human-init.md#q-radar); no `+0x3bc`
+// (human-init.md#q-name-byte). A player's switches wait for Human_MakePlayer's (#1011), and a class the type scale
+// does not list is made at 1, not at the random body size (#689). Co-op is not built, so the size is the one alone.
+// @orig 0x00218008 Human_Init (unknown)
+void humanInitSteps(const BindingContext& context, HandleCounter& handles, const HumanCreation& human,
+                    std::optional<std::uint16_t> pedType) {
+    AiBindingHost* ai = context.ai;
+    if (ai == nullptr) {
+        return;
+    }
+    if (StoryBindingHost* story = ai->story(); story != nullptr && pedType) {
+        story->setPedType(human.handle, *pedType);
+    }
+    const std::optional<characters::CharacterType> own = recordedCfgChar(context.recorded, human.type);
+    const int classType = characters::characterClassOf(human.type).id;
+    const std::optional<characters::CharacterType> classRecord = recordedCfgChar(context.recorded, classType);
+    HumanBindingHost* humans = ai->humans();
+    // The record is the type's own power class (`+0x1b8`): the player slot is not set yet.
+    if (humans != nullptr && human.playerIndex < 1 && own && own->powerClass) {
+        if (const std::optional<combat::PowerClass> power = recordedPowerClass(context.recorded, *own->powerClass)) {
+            const human::FlagChanges changes = human::classFlagChanges(*power);
+            humans->setFlags(human.handle, changes.cleared, false);
+            humans->setFlags(human.handle, changes.set, true);
+        }
+    }
+    if (humans != nullptr && classRecord && !classRecord->weapon.empty() && classRecord->weapon != kNoWeapon) {
+        static_cast<void>(humans->placeItemInHand(human.handle, classRecord->weapon, [&handles] {
+            const double handle = handles.next;
+            handles.next += 1;
+            return handle;
+        }));
+    }
+    // Given before the human's first update, so it is also the size it is made at (human::Human::setScale()).
+    if (HubBindingHost* hub = ai->hub(); hub != nullptr) {
+        hub->setScale(human.handle, characters::typeScaleOf(classType, false).value_or(1.0F));
+    }
+}
+
 // The current level's number (its record's `+0x04`); 0 when the table has no record for it.
 // @coney-only a lookup in Coney's level table
 int currentLevelNumber(const GameState& state) {
@@ -376,7 +458,8 @@ int currentLevelNumber(const GameState& state) {
 // into the table; the play mode snaps the player the same way when it places him
 // (docs/research/characters.md#creation). The gang is kept for the AI (nil is none); the unused string and the flag are
 // not. The model the type is drawn as is resolved here from the recorded `CfgChar` calls (characters::modelNameFor(),
-// docs/research/characters.md#type-to-model); the play mode loads it.
+// docs/research/characters.md#type-to-model); the play mode loads it. Human_Init's money and later steps follow
+// (humanInitSteps()).
 // @orig 0x00358428 HuCreate (unknown)
 // @orig 0x00233d60 Human_Create (unknown)
 NativeFunction makeHuCreate(const Factory& factory) {
@@ -402,15 +485,20 @@ NativeFunction makeHuCreate(const Factory& factory) {
         if (context->ai != nullptr) {
             context->ai->humanCreated(human);
         }
-        // Human_Init's starting money, drawn from the game's random numbers as every new human's is.
+        // Human_Init's starting money, drawn from the game's random numbers as every new human's is, and the ped type
+        // the same draws give. Both read the class's record (`+0xcc`, after the remap), not the given type's.
+        std::optional<std::uint16_t> pedType;
         if (context->state != nullptr) {
-            const characters::CarryConfig carry = recordedCarryConfig(context->recorded, human.type);
+            const characters::CarryConfig carry =
+                recordedCarryConfig(context->recorded, characters::characterClassOf(human.type).id);
             const characters::StartingCarry rolled = characters::rollStartingCarry(
                 carry, recordedClassMoney(context->recorded, characters::moneyCategory(carry)), context->state->random);
             if (HumanBindingHost* host = context->ai != nullptr ? context->ai->humans() : nullptr; host != nullptr) {
                 host->setMoney(human.handle, rolled.money);
             }
+            pedType = rolled.pedType;
         }
+        humanInitSteps(*context, *handles, human, pedType);
         return binding::number(human.handle);
     };
 }

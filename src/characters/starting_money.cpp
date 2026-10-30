@@ -2,6 +2,7 @@
 #include "characters/starting_money.h"
 
 #include <algorithm>
+#include <cstdint>
 
 namespace coney::characters {
 
@@ -14,9 +15,21 @@ constexpr int kAltCategory = 4;
 constexpr int kAltRecord = 16;
 constexpr int kMaxMoney = 999;
 constexpr int kPercent = 100;
+// The ped types: categories kAltCategory and kShopCategory a plain one, or a 2 on category 4's roll below kTwoRoll, for
+// a human with kRichMoney dollars or more and for a woman; kTougherCategoryA and B a 3.
+constexpr int kShopCategory = 6;
+constexpr int kTougherCategoryA = 5;
+constexpr int kTougherCategoryB = 7;
+constexpr int kTwoRoll = 10;
+constexpr int kRichMoney = 21;
+constexpr std::uint16_t kPlainPed = 1;
+constexpr std::uint16_t kRichPed = 2;
+constexpr std::uint16_t kToughPed = 3;
 
 } // namespace
 
+// Human_Init's record for the money: category 4 with the women's byte reads record 16.
+// @orig 0x00218008 Human_Init (unknown)
 int moneyCategory(const CarryConfig& config) {
     return config.category == kAltCategory && config.altRecord ? kAltRecord : config.category;
 }
@@ -51,9 +64,15 @@ StartingCarry rollStartingCarry(const CarryConfig& config, const ClassMoney& mon
         }
         carry.money = std::clamp(dollars, 0, kMaxMoney);
     }
-    // 5. Category 4's brain draw, kept for the order of the draws.
-    if (config.category == kAltCategory) {
-        static_cast<void>(random.range(0, kPercent));
+    // 5. The brain's ped type by category: category 4's own roll, then the money and the women's byte.
+    if (config.category == kAltCategory || config.category == kShopCategory) {
+        std::uint16_t ped = kPlainPed;
+        if (config.category == kAltCategory && random.range(0, kPercent) < kTwoRoll) {
+            ped = kRichPed;
+        }
+        carry.pedType = carry.money < kRichMoney && !config.altRecord ? ped : kRichPed;
+    } else if (config.category == kTougherCategoryA || config.category == kTougherCategoryB) {
+        carry.pedType = kToughPed;
     }
     return carry;
 }

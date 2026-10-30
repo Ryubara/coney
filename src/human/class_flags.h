@@ -7,7 +7,7 @@
 
 // The power class's switches in the human flags: `Human_ApplyClassFlags` copies bytes `+0x3a`-`+0x3f` of a human's
 // power class into its flag word when it is made, made a player or given back to the AI.
-// Research: docs/research/characters.md#power-class-bytes, docs/research/combat/index.md#human-flags
+// Research: docs/research/human-init.md#class-switches, docs/research/combat/index.md#human-flags
 
 namespace coney::human {
 
@@ -25,6 +25,7 @@ struct FlagChanges {
 [[nodiscard]] FlagChanges classFlagChanges(const combat::PowerClass& power);
 
 /// `flags` with `changes` made.
+/// @coney-only Coney's write of FlagChanges into a flag word; the original writes each switch's bits in place
 [[nodiscard]] constexpr std::uint64_t applied(std::uint64_t flags, FlagChanges changes) {
     return (flags & ~changes.cleared) | changes.set;
 }

@@ -36,7 +36,7 @@ struct PowerClass {
     /// screen's Health bar is byte / 100 (docs/research/pause.md#stats-screen).
     int ringByte = 35;
     // The switches `Human_ApplyClassFlags` copies into the human flags (`CfgPowerClass` arguments 23-28, each the low
-    // byte of the number, unclamped; human::classFlagChanges(), docs/research/characters.md#power-class-bytes).
+    // byte of the number, unclamped; human::classFlagChanges(), docs/research/human-init.md#class-switches).
     std::int8_t capsReaction = 0;   ///< Byte `+0x3a` (argument 23): 1 caps a hit's reaction on him at 1.
     std::int8_t hardToStun = 0;     ///< Byte `+0x3b` (argument 24): 1 makes him hard to stun.
     std::int8_t noEscape = 0;       ///< Byte `+0x3c` (argument 25): 1, he never escapes when his grabber's power ends.
