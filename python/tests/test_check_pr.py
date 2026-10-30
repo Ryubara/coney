@@ -196,7 +196,7 @@ def test_the_engine_step_runs_coney_tools_build_with_the_tests(checkout: Path, m
     assert result.ok and not result.skipped
     command = seen[0]
     assert command[1:4] == ["-m", "coney_tools.cli", "build"]
-    assert command[4:] == ["--preset", "asan", "--test", "--agent", "alice"]
+    assert command[4:] == ["--preset", "asan", "--test", "--full", "--agent", "alice"]
     assert "cmake" not in command and "ctest" not in command and "ninja" not in command
 
 

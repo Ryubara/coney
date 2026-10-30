@@ -107,6 +107,7 @@ def test_the_flags_of_a_build_are_parsed() -> None:
             "x",
             "--configure",
             "--test",
+            "--full",
             "-R",
             "core",
             "-L",
@@ -135,6 +136,7 @@ def test_the_flags_of_a_build_are_parsed() -> None:
         True,
     )
     assert (args.max_wait, args.jobs, args.build_command) == (5.0, 3, None)
+    assert (args.full, _build_parser().parse_args(["build", "--agent", "a"]).full) == (True, False)
     assert (args.label, args.build_dir, args.env) == ("disc", Path("build/tidy"), ["CC=clang-19", "CXX=clang++-19"])
     defaults = _build_parser().parse_args(["build", "--agent", "a"])
     assert (defaults.preset, defaults.max_wait, defaults.test, defaults.priority) == ("dev", None, False, False)
@@ -226,6 +228,75 @@ def test_an_unknown_preset_is_refused_before_any_slot_is_taken(
     assert fake_toolchain.commands == []
 
 
+def test_an_agents_unfiltered_test_run_is_refused_and_names_the_rule(
+    checkout: Path, capsys: pytest.CaptureFixture[str], fake_toolchain: type[FakeToolchain]
+) -> None:
+    # The full suite is 15 to 40 minutes of a main slot: an agent iterating runs the tests it touched, and the full
+    # suite is the handover tip's run (`--full`, or `task check`, which runs it itself).
+    assert main(["build", "--agent", "alice", "--test"]) == 2
+    err = capsys.readouterr().err
+    assert "-R" in err and "-L" in err and "--full" in err and "task check" in err
+    assert "docs/guides/testing.md" in err
+    assert fake_toolchain.commands == []
+    snapshot = default_slots(MAIN_LANE, checkout).status()
+    assert all(row.claim is None for row in snapshot.slots) and snapshot.queue == []
+
+
+@pytest.mark.parametrize("filters", [["-R", "Widget"], ["-L", "disc"], ["-R", "Widget", "-L", "disc"]])
+def test_a_filtered_test_run_by_an_agent_is_allowed(
+    checkout: Path, fake_toolchain: type[FakeToolchain], filters: list[str]
+) -> None:
+    assert main(["build", "--agent", "alice", "--test", *filters]) == 0
+    assert fake_toolchain.commands[-1][0] == "ctest"
+
+
+def test_full_lets_an_agent_run_the_whole_suite_and_the_record_says_so(
+    checkout: Path, tmp_path: Path, fake_toolchain: type[FakeToolchain]
+) -> None:
+    git_checkout(checkout)
+    fake_toolchain.outputs["test"] = (0, PASSING_TESTS)
+    assert main(["build", "--agent", "alice", "--test", "--full"]) == 0
+    ctest = fake_toolchain.commands[-1]
+    assert ctest[0] == "ctest" and "-R" not in ctest and "-L" not in ctest
+    [path] = records(tmp_path)
+    record = build_record.read(path.parent, path.stem)
+    assert "--full" in record["command_line"] and record["filters"] == []
+
+
+@pytest.mark.parametrize(
+    ("flags", "message"),
+    [(["--full"], "--full needs --test"), (["--test", "--full", "-R", "Widget"], "--full runs every test")],
+)
+def test_full_with_no_test_run_or_with_a_filter_is_refused(
+    checkout: Path,
+    capsys: pytest.CaptureFixture[str],
+    fake_toolchain: type[FakeToolchain],
+    flags: list[str],
+    message: str,
+) -> None:
+    assert main(["build", "--agent", "alice", *flags]) == 2
+    assert message in capsys.readouterr().err and fake_toolchain.commands == []
+
+
+def test_a_person_in_a_terminal_may_run_the_whole_suite_without_full(
+    checkout: Path, fake_toolchain: type[FakeToolchain], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # No --agent: the id comes from the user name only for a person at a terminal, and that run is not an agent's.
+    monkeypatch.setattr(build_cli, "default_agent_id", lambda: "jane")
+    assert main(["build", "--test"]) == 0
+    assert fake_toolchain.commands[-1][0] == "ctest"
+
+
+def test_a_detached_unfiltered_run_is_refused_before_it_starts_and_full_reaches_the_child(
+    checkout: Path, capsys: pytest.CaptureFixture[str], spawned: list[tuple[list[str], Path, Path]]
+) -> None:
+    assert main(["build", "--agent", "alice", "--test", "--detach"]) == 2
+    assert "--full" in capsys.readouterr().err and spawned == []
+    assert main(["build", "--agent", "alice", "--test", "--full", "--detach"]) == 0
+    ((command, _, _),) = spawned
+    assert "--test" in command and "--full" in command
+
+
 def test_a_successful_build_prints_the_log_first_then_a_short_summary(
     checkout: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], fake_toolchain: type[FakeToolchain]
 ) -> None:
@@ -234,7 +305,7 @@ def test_a_successful_build_prints_the_log_first_then_a_short_summary(
         0,
         "1/1 Test #1: a ... Passed 0.1 sec\n100% tests passed, 0 tests failed out of 1\n",
     )
-    assert main(["build", "--agent", "alice", "--configure", "--test"]) == 0
+    assert main(["build", "--agent", "alice", "--configure", "--test", "--full"]) == 0
     lines = capsys.readouterr().out.splitlines()
     log = Path(lines[0].removeprefix("log: "))
     assert lines[0].startswith("log: ")
@@ -919,7 +990,7 @@ def test_the_configured_disc_reaches_the_tests_as_coney_disc(
     game = tmp_path / "game"
     game.mkdir()
     set_game_dir(checkout, game)
-    assert main(["build", "--agent", "alice", "--configure", "--test"]) == 0
+    assert main(["build", "--agent", "alice", "--configure", "--test", "--full"]) == 0
     assert fake_toolchain.env["CONEY_DISC"] == str(game)
     line = disc_line(capsys.readouterr().out)
     assert "ran" in line and "game_dir" in line and "SKIPPED" not in line
@@ -932,7 +1003,7 @@ def test_the_one_iso_in_the_game_folder_is_the_disc(
     game.mkdir()
     (game / "warriors.iso").write_bytes(b"")
     set_game_dir(checkout, game)
-    assert main(["build", "--agent", "alice", "--configure", "--test"]) == 0
+    assert main(["build", "--agent", "alice", "--configure", "--test", "--full"]) == 0
     assert fake_toolchain.env["CONEY_DISC"] == str(game / "warriors.iso")
 
 
@@ -947,7 +1018,7 @@ def test_a_disc_in_the_environment_is_kept_over_game_dir(
     game.mkdir()
     set_game_dir(checkout, game)
     monkeypatch.setenv("CONEY_DISC", "somewhere/else.iso")
-    assert main(["build", "--agent", "alice", "--configure", "--test"]) == 0
+    assert main(["build", "--agent", "alice", "--configure", "--test", "--full"]) == 0
     assert fake_toolchain.env["CONEY_DISC"] == "somewhere/else.iso"
     line = disc_line(capsys.readouterr().out)
     assert "ran" in line and "environment" in line
@@ -959,7 +1030,7 @@ def test_an_env_setting_of_the_disc_is_kept_over_game_dir(
     game = tmp_path / "game"
     game.mkdir()
     set_game_dir(checkout, game)
-    assert main(["build", "--agent", "alice", "--configure", "--test", "--env", "CONEY_DISC=mine.iso"]) == 0
+    assert main(["build", "--agent", "alice", "--configure", "--test", "--full", "--env", "CONEY_DISC=mine.iso"]) == 0
     assert fake_toolchain.env["CONEY_DISC"] == "mine.iso"
     assert "environment" in disc_line(capsys.readouterr().out)
 
@@ -975,14 +1046,14 @@ def test_an_empty_disc_in_the_environment_counts_as_not_set(
     game.mkdir()
     set_game_dir(checkout, game)
     monkeypatch.setenv("CONEY_DISC", "")  # the tests read an empty value as not set
-    assert main(["build", "--agent", "alice", "--configure", "--test"]) == 0
+    assert main(["build", "--agent", "alice", "--configure", "--test", "--full"]) == 0
     assert fake_toolchain.env["CONEY_DISC"] == str(game)
 
 
 def test_without_a_disc_the_summary_says_the_disc_tests_were_skipped(
     checkout: Path, capsys: pytest.CaptureFixture[str], fake_toolchain: type[FakeToolchain]
 ) -> None:
-    assert main(["build", "--agent", "alice", "--configure", "--test"]) == 0
+    assert main(["build", "--agent", "alice", "--configure", "--test", "--full"]) == 0
     assert "CONEY_DISC" not in fake_toolchain.env
     line = disc_line(capsys.readouterr().out)
     assert "SKIPPED" in line and "game_dir" in line and "CONEY_DISC" in line
@@ -992,7 +1063,7 @@ def test_a_game_dir_that_does_not_exist_is_not_passed_on(
     checkout: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], fake_toolchain: type[FakeToolchain]
 ) -> None:
     set_game_dir(checkout, tmp_path / "no-such-folder")
-    assert main(["build", "--agent", "alice", "--configure", "--test"]) == 0
+    assert main(["build", "--agent", "alice", "--configure", "--test", "--full"]) == 0
     assert "CONEY_DISC" not in fake_toolchain.env
     line = disc_line(capsys.readouterr().out)
     assert "SKIPPED" in line and "does not exist" in line
@@ -1002,7 +1073,7 @@ def test_a_checkout_without_a_local_config_runs_with_the_disc_tests_skipped(
     checkout: Path, capsys: pytest.CaptureFixture[str], fake_toolchain: type[FakeToolchain]
 ) -> None:
     (checkout / "coney.local.toml").unlink()
-    assert main(["build", "--agent", "alice", "--configure", "--test"]) == 0
+    assert main(["build", "--agent", "alice", "--configure", "--test", "--full"]) == 0
     assert "SKIPPED" in disc_line(capsys.readouterr().out)
 
 
@@ -1046,7 +1117,7 @@ def test_a_run_that_built_and_tested_leaves_a_build_record(
 ) -> None:
     git_checkout(checkout)
     fake_toolchain.outputs["test"] = (0, PASSING_TESTS)
-    assert main(["build", "--agent", "alice", "--preset", "ci", "--configure", "--test"]) == 0
+    assert main(["build", "--agent", "alice", "--preset", "ci", "--configure", "--test", "--full"]) == 0
     log = Path(capsys.readouterr().out.splitlines()[0].removeprefix("log: "))
     [path] = records(tmp_path)
     record = build_record.read(path.parent, path.stem)
@@ -1200,7 +1271,7 @@ def test_without_a_build_root_the_preset_folder_is_the_presets_own(
 ) -> None:
     assert main(["build", "--agent", "alice", "--configure-only"]) == 0
     assert fake_toolchain.commands == [["cmake", "--preset", "dev"]]
-    assert main(["build", "--agent", "alice", "--test"]) == 0
+    assert main(["build", "--agent", "alice", "--test", "--full"]) == 0
     assert ["cmake", "--build", "--preset", "dev"] in [c[:4] for c in fake_toolchain.commands]
     assert fake_toolchain.commands[-1][:3] == ["ctest", "--preset", "dev"]
     assert not (checkout / ".coney-build-id").exists()
@@ -1211,7 +1282,7 @@ def test_with_a_build_root_every_step_uses_the_folder_there(
 ) -> None:
     builds = tmp_path / "builds"
     set_build_root(checkout, builds)
-    assert main(["build", "--agent", "alice", "--test"]) == 0
+    assert main(["build", "--agent", "alice", "--test", "--full"]) == 0
     ident = build_root.read_id(checkout)
     assert ident is not None
     folder = builds / ident / "dev"
@@ -1240,5 +1311,5 @@ def test_a_folder_outside_the_preset_gets_the_test_presets_environment(
     presets["testPresets"][0]["environment"] = {"LSAN_OPTIONS": "suppressions=${sourceDir}/tests/lsan.supp"}
     (checkout / "CMakePresets.json").write_text(json.dumps(presets), encoding="utf-8")
     set_build_root(checkout, tmp_path / "builds")
-    assert main(["build", "--agent", "alice", "--test"]) == 0
+    assert main(["build", "--agent", "alice", "--test", "--full"]) == 0
     assert fake_toolchain.env["LSAN_OPTIONS"] == f"suppressions={checkout.as_posix()}/tests/lsan.supp"
