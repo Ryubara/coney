@@ -518,11 +518,13 @@ for you. The hooks fix what they can; stage their changes and commit again. Inst
 worktrees of a clone share them. `pre-commit install` also sets up the `commit-msg` hook that checks the commit
 message's trailers ([Commit trailers](agents.md#trailer-guard)); a clone that installed the hooks before that hook
 existed runs `uvx pre-commit install` again. The markdownlint hook runs the same rules as CI's markdownlint job
-(`.markdownlint.yaml`, with the files it skips in `.markdownlint-cli2.yaml`) through Node.js, so Node.js 18 or newer
-must be on your `PATH` (pre-commit would otherwise download its own copy on the first run). `coney-tools ci
-run` runs it on the files you changed, and `repo audit` (`files.markdown-hook`) fails when the hook is removed from
-the configuration. No hook checks a commit title: a pull request is squash-merged, so only its title reaches `main`,
-and CI checks that against the commit title rules (`commits.title` in
+(`.markdownlint.yaml`, with the files it skips in `.markdownlint-cli2.yaml`) through Node.js. pre-commit downloads its
+own copy on the first run, the release pinned by `default_language_version` in `.pre-commit-config.yaml` (an LTS, so the
+hook is the same on every machine; an unpinned one follows the newest entry of Node's index, and a pre-release there
+broke the Windows run in #1162). Move the pin to a newer LTS in the same way as any pinned dependency.
+`coney-tools ci run` runs it on the files you changed, and `repo audit` (`files.markdown-hook`) fails when the hook is
+removed from the configuration or its Node is not pinned. No hook checks a commit title: a pull request is
+squash-merged, so only its title reaches `main`, and CI checks that against the commit title rules (`commits.title` in
 [.github/conventions.yml](repo:.github/conventions.yml); [CONTRIBUTING.md](repo:CONTRIBUTING.md#commits) lists them).
 
 ## Documentation

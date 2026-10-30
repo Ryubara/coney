@@ -472,12 +472,25 @@ def game_files_refused(context: FilesContext) -> Iterator[Problem]:
 
 @check("files.markdown-hook")
 def markdown_hook_exists(context: FilesContext) -> Iterator[Problem]:
-    """pre-commit runs markdownlint-cli2, so a long Markdown line is refused before the commit, as CI would."""
+    """pre-commit runs markdownlint-cli2 on a pinned Node, so a long Markdown line is refused before the commit."""
     text = _read(context.root, PRE_COMMIT_CONFIG)
     if text is None:
         yield Problem(PRE_COMMIT_CONFIG, "is missing or unreadable")
-    elif not re.search(r"^\s*-\s*id:\s*markdownlint-cli2\s*$", text, re.MULTILINE):
+        return
+    if not re.search(r"^\s*-\s*id:\s*markdownlint-cli2\s*$", text, re.MULTILINE):
         yield Problem(
             PRE_COMMIT_CONFIG,
             "has no markdownlint-cli2 hook, so only CI sees a long Markdown line",
+        )
+        return
+    # Without a pinned Node, pre-commit asks nodeenv for the newest release, and a pre-release at the head of Node's
+    # index (v27.0.0-alpha) broke it on Windows (#1162); a pin also keeps the hook the same on every machine.
+    data = _yaml(context.root, PRE_COMMIT_CONFIG)
+    versions = data.get("default_language_version") if isinstance(data, dict) else None
+    node = versions.get("node") if isinstance(versions, dict) else None
+    if not re.fullmatch(r"\d+\.\d+\.\d+", str(node)):
+        yield Problem(
+            PRE_COMMIT_CONFIG,
+            f"default_language_version.node is {node!r}, not a pinned Node release such as 24.22.2 "
+            "(an unpinned one follows Node's index, which can list a pre-release)",
         )

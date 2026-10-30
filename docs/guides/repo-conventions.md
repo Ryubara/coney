@@ -118,7 +118,7 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 | `files.ci-places` | files | error | skill | a job of the workflows is in no place of ci.places, or a place names a job no workflow has |
 | `files.large-file-limit` | files | error | skill | pre-commit's check-added-large-files limit differs from the conventions, or the hook or the config skips a file (no --enforce-all, an exclude, types, stages, a wider top-level exclude) |
 | `files.game-files` | files | error | skill | pre-commit's no-game-files hook is missing, not language fail, narrowed (an exclude, types, stages, a wider top-level exclude) or lets through a game capture type, the busy marker or a local record |
-| `files.markdown-hook` | files | error | skill | pre-commit has no markdownlint-cli2 hook, so a long Markdown line is first caught by CI |
+| `files.markdown-hook` | files | error | skill | pre-commit has no markdownlint-cli2 hook, so a long Markdown line is first caught by CI, or its Node is not pinned (default_language_version) |
 | `issue.sections` | github | error | skill | an open issue lacks a required section of its form (or was filed with other headings) |
 | `issue.form` | github | warn | skill | an open issue is not in its form's exact shape: ### headings, names, order, no extra sections, dropdown values (coney-tools issue check) |
 | `issue.placeholder` | github | error | skill | a section of an open issue is empty or holds only a placeholder such as x |
