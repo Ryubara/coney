@@ -9,6 +9,15 @@ Roblox: an editor for one game's content, not a general engine like Unity. The p
 kinds](../writing-docs.md#page-kinds): each one says what Studio should do and why, and names the questions only a
 maintainer can answer. The maintainer's decisions so far are [below](#decisions). What gets built moves into a guide.
 
+!!! warning "Nothing from the disc goes into a project or a `.cmod`"
+    A project refers to the game's assets only by `game:/` path, resolved on each player's machine against their own
+    disc ([Paths](content-and-formats.md#paths)); it never holds a copy of them. An edited export of a disc asset (a
+    repainted texture, a reshaped model) is a **derived file**: it works on the player's machine and is never packaged
+    ([Provenance](content-and-formats.md#import)). The `.cmod` export refuses any file marked derived or whose bytes
+    match a disc asset's hash, and names each one ([The `.cmod` package](project-formats.md#cmod)). Why:
+    [LEGAL.md](repo:LEGAL.md#no-game-data). Studio's user guide (its getting-started page, planned) opens with this
+    same callout.
+
 ## What Studio is {#principles}
 
 - **Its own program, and a reflection of Coney.** Studio does not copy the engine: it *realizes* the features Coney has
@@ -16,12 +25,12 @@ maintainer can answer. The maintainer's decisions so far are [below](#decisions)
   not in the Lua SDK does not exist in Studio. Studio is updated alongside Coney and grows with it.
 - **Every Coney feature that applies to Studio is brought into Studio.** Each design page here ties every Studio feature
   to the Coney feature it realizes, and names the Coney feature a Studio feature waits on. A long-term Studio roadmap,
-  written once these designs are done, keeps that list and the rule for deciding whether a new Coney feature belongs in
-  Studio.
+  planned for when these designs are done, keeps that list and the rule for deciding whether a new Coney feature
+  belongs in Studio, and plans Studio's user guide, whose first page opens with the disc-data callout above.
 - **Nothing in Studio changes how the story plays.** Studio and its projects run Coney's engine with Coney's game logic;
   the faithful game is the same with or without Studio ([Faithful first](repo:AGENTS.md)).
-- **No game data leaves the player's machine.** Studio reads the player's own disc and shows what it holds; a project
-  refers to the disc's assets by name and never carries them ([LEGAL.md](repo:LEGAL.md#no-game-data)).
+- **No game data leaves the player's machine.** Studio reads the player's own disc and shows what it holds, and a
+  project never carries it: the rule of the callout [above](#coney-studio).
 
 ## The design pages {#pages}
 
@@ -39,8 +48,9 @@ merges its page adds its row here and its line to the `nav:` of `mkdocs.yml`, un
 | [Content and formats](content-and-formats.md) | What Studio shows and edits from the disc's files, the import step, readers, content by kind, export | [#1058](issue:1058) |
 | [Buildings and collision of a disc level](disc-world.md) | Separating a building from a disc level's streamed world by a box, moving or removing it, and adding collision: volumes drawn independent of the render mesh, collision from selected faces, colliders on a separated building, the overlay | [#1123](issue:1123) |
 | [Project formats](project-formats.md) | The files a project saves: the level file with its entity tree, names, tags and prefabs, and the `.cmod` package | [#1058](issue:1058) |
+| [Prefabs and their overrides](prefabs.md) | What changing, reverting and applying an instance's value does, added and dropped entities, nested apply, unpacking, variants, why there is no *Editable Children* toggle, undo for each and the level file after it, from Unity's and Godot's behaviour | [#1175](issue:1175) |
 | [Mission mods](mission-mods.md) | Changing a game script: decompiling on the user's machine, patches of differences pinned to the script's hash, merging two mods' patches, compiling and running in the script's place, and the verdict on a Lua 4.0 to 5.4 translator with its proof by traces | [#1074](issue:1074) |
-| [Entities and the Inspector](entities.md) | The entity kinds, the property schema each kind has as data, the Inspector and its tools against bloat, each kind's events connected by function name, stealth zones, attributes, spawning prefabs from scripts | [#1072](issue:1072) |
+| [Entities and the Inspector](entities.md) | The entity kinds, the property schema each kind has as data, the Inspector, its Source rows and its tools against bloat, each kind's events connected by function name, stealth zones, attributes, spawning prefabs from scripts | [#1072](issue:1072) |
 | [A Human's properties](human-properties.md) | Every property of a Human, a Target and a Gang, grouped, with what Coney sets today and what waits | [#1072](issue:1072) |
 | [UI and menus](ui.md) | How mods extend the menus at points built for it (the MODS entry and Mods screen, option rows, mission selectors), the UI natives, Studio's Screen view, and why a mod's UI can never pass for Coney's | [#1063](issue:1063) |
 | [Script security and the sandbox](security.md) | What a project's Lua keeps and loses and why, the threat model, the project file layer, permissions, signatures and trust, the attack surface, the escape suite and fuzzing; the build issues of both pages | [#1062](issue:1062) |

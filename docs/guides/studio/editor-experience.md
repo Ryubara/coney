@@ -116,7 +116,7 @@ has what it names.
 | **Level view** | The level being edited, seen through the fly camera; selection, gizmos, and the debug views as view modes | The [world viewer](../running-viewers.md#the-world-viewer), the [sandbox](../sandbox.md)'s free camera, [Debug draw](../debug-menu.md#debug-draw) and the [mesh views](../debug-menu.md#mesh-views) | ready |
 | **Game view** | The game running in Play mode, with Play, Pause, Step and Stop | The play mode (`--play-level`, a sandbox with `sandbox:NAME`) and the debug menu's Time page (pause, step, time scale) ([pages](../debug-menu.md#pages)) | ready |
 | **Hierarchy** | The level's entities as a free tree in the user's order, with parenting, prefabs and a kind filter; choosing one selects it everywhere ([The Hierarchy's tree](#hierarchy-tree)) | The [Entity inspector](../debug-menu.md#entity-inspector)'s entity list (player, targets, AI humans, doors, panes, objects) and a sandbox layout's statements | ready as a flat list; parenting, groups and prefabs wait on Coney loading the project's level file ([The level file](project-formats.md#level-file)) |
-| **Inspector** | The selection's name and tags, its values, live, and the edits it takes; for a file, its details and import settings | The merged Entity inspector and Entity editor ([#1053](issue:1053)) | ready once [#1053](issue:1053) merges |
+| **Inspector** | The selection's name and tags, the read-only Source row of each asset it uses with a Disc, Project or Mod badge ([Asset sources](entities.md#asset-source)), its values, live, and the edits it takes; for a file, its details and import settings | The merged Entity inspector and Entity editor ([#1053](issue:1053)) | ready once [#1053](issue:1053) merges |
 | **File system** | The project folder as a tree, and the game's files read-only; drag-and-drop and the Import button land here | Coney's asset loading and the [install folder](../asset-and-script-architecture.md#install-folder) | ready |
 | **Console** | The run log's lines, filtered by level and system, and a Lua line to run | The [run log](../run-log.md) and the [Lua console](../debug-menu.md#lua-console) (expressions and assignments; full Lua waits on [the Lua 4.0 compiler](lua-sdk.md#compiler)) | ready |
 | **Monitor** | Each running project's time per step and its memory, one row each, like FiveM's `resmon`; it only reads ([The monitor](lua-sdk.md#monitor)) | The allocator's count and the timing of the project's frame in the SDK ([#1057](issue:1057)) | waits on the mods runtime |
@@ -177,9 +177,10 @@ mode](#play-coney)).*
   sandbox layout it is a top-level entity); from empty space, a top-level entity ([The Create
   menu](level-view.md#create-menu)). Ctrl+Shift+G puts the selection under a new group (Unity's *Create Empty Parent*),
   and *Ungroup* in the right-click menu moves a group's children up and deletes it.
-- **A prefab instance** is one row that opens to its entities, marked as a prefab; a value an instance changes is marked
-  in the Inspector as an override, with *Revert* and *Apply to prefab* (Unity's). Double-clicking the row's prefab icon
-  opens the prefab on its own to edit, and every instance follows.
+- **A prefab instance** is one row that opens to its entities, marked as a prefab, an added entity with a plus badge
+  and a dropped one struck through. A change is an override of that instance alone, with *Revert* and *Apply*; the
+  row's menu has *Revert All*, *Apply All*, *Unpack* and *Make variant*, and no *Editable Children* toggle
+  ([Prefabs](prefabs.md)). Double-clicking the row's prefab icon opens the prefab to edit; every instance follows.
 - **A game level** loaded as the base of a project level is a read-only branch at the bottom of the tree: to fly through
   in the Level view as the [world viewer](../running-viewers.md#the-world-viewer) does and to examine, never to change.
   Its rows are the parts the original's level is made of: the streamed **World** ([The streamed
@@ -682,10 +683,11 @@ can load what it makes ([Importing](#import-coney)), PNG and `.layout` first.
 4. **tools: Add the Hierarchy and Inspector with one selection.** The level as a free list of entities with the level's
    settings in the Inspector, a sandbox layout opened as one entity per statement, the search and the kind filter
    (`t:spawn`), one selection shared by every panel (click, Shift and Ctrl, box), the merged inspector of
-   [#1053](issue:1053), values shared by a multiple selection, and the pre-selection highlight; parenting, groups and
-   prefab instances with overrides once Coney loads the project's level file ([The level
-   file](project-formats.md#level-file)). Tests: a selection made in one panel shows in the others; a multiple selection
-   edits all; the filter shows only the kind asked for.
+   [#1053](issue:1053) with its Source rows ([Asset sources](entities.md#asset-source)), values shared by a multiple
+   selection, and the pre-selection highlight; parenting, groups and prefab instances with the rules of
+   [Prefabs](prefabs.md) once Coney loads the project's level file ([The level file](project-formats.md#level-file)).
+   Tests: a selection made in one panel shows in the others; a multiple selection edits all; the filter shows only the
+   kind asked for.
 5. **tools: Add Unity's transform gizmo and undo to the Level view.** The Move, Rotate, Scale and Transform tools (W, E,
    R, Y) with every handle of Unity's gizmo, its colours, yellow highlight, constant screen size and handle-first
    picking; the Pivot / Center (Z) and Global / Local (X) toggles; move to view; axes the selection cannot take drawn

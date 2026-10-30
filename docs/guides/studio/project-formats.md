@@ -172,7 +172,9 @@ ambush), with its own tree. A prefab holds no script: the project's scripts find
 - **Per-instance overrides** are `set INSTANCE/LOCAL key=value ...`, only the keys that differ from the prefab, and
   `drop INSTANCE/LOCAL` for an entity this instance leaves out; entities added to one instance are ordinary entities
   parented to one of its entities. Editing the prefab file changes every instance at once, except the keys an instance
-  overrides.
+  overrides. A key whose value equals the prefab's is not written, and a `drop` takes the dropped entity's `set` keys
+  with it. Which Studio action writes, removes or moves each of these lines (*Revert*, *Apply* to an inner or an outer
+  prefab, *Revert All*, *Apply All*) is [Prefab overrides](entities.md#prefab-overrides)'s table.
 - **Nesting.** A prefab may hold instances of other prefabs; an override path names each level (`p1/inner/h2`). Studio
   refuses a prefab that contains itself, directly or through another.
 - **A stale override**, one whose entity the prefab no longer has, is listed when the level opens and skipped at Play,
@@ -180,6 +182,24 @@ ambush), with its own tree. A prefab holds no script: the project's scripts find
 - **At Play** instances are expanded into plain entities, the overrides applied, then the tree is flattened as above.
   Names that must be unique in the game (a flag's name for `FindFlag`, a path's) get the instance id as a suffix unless
   the prefab marks them shared, and Studio warns where the 15 characters a flag keeps make two equal.
+
+#### Variants {#variants}
+
+A prefab based on another (Unity's prefab variant, Godot's inherited scene) is a prefab file whose first statement
+after `format prefab 1` is `variant prefab=PATH`: it holds the base's entities, its own `set` and `drop` lines over
+them by local id (`set h3 type=33`, with no instance part) and entities of its own. A change to the base reaches the
+variant and every instance of it, except the keys the variant or the instance overrides. Studio refuses a variant
+whose bases loop. *Make variant* on an instance writes the instance's overrides into a new variant file and points the
+`instance` line's `prefab=` at it, leaving the level with no `set` or `drop` for that instance.
+
+#### Unpacking {#unpack}
+
+Unpacking breaks an instance's link to its prefab. The `instance` line, its `set` and `drop` lines and its added
+entities become plain entity statements holding the current values, the instance's root a `group` with the instance's
+transform, name and tags. Each entity gets a new id and keeps its name and tags; Studio lists the scripts whose
+strings hold an old `p2/h3` id. Nested instances stay `instance` lines, their overrides written against the new ids
+(`set p7/h2 ...`); *Unpack Completely* unpacks them too. The prefab file is not touched, and undo gives back the
+`instance` line and its overrides.
 
 ## The other files {#other-files}
 
