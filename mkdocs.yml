@@ -312,6 +312,7 @@ nav:
       - Keeping the places full: guides/slot-fill.md
       - Issues: guides/issues.md
       - Building and testing: guides/building.md
+      - The shader build: guides/shaders.md
       - clang-tidy: guides/clang-tidy.md
       - Running Coney:
           - guides/running.md

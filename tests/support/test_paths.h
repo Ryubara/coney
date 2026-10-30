@@ -15,4 +15,7 @@ namespace coney::test {
 /// made of them, which the decompiler's tests and the compiler's share.
 [[nodiscard]] std::filesystem::path lua4FixturesDir();
 
+/// The checkout's `src/platform/shaders/` folder: the HLSL files the build compiles and embeds.
+[[nodiscard]] std::filesystem::path shadersDir();
+
 } // namespace coney::test
