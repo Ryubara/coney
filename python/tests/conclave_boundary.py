@@ -133,10 +133,14 @@ BANNED_GLOBALS = [
     "arguments",
 ]
 #: The one command the mod runs, through `$.process.run`:
-#: `uv run -q --project <dir> coney-tools conclave snapshot --json`,
+#: `uv run -q [--no-sync] --project <dir> coney-tools conclave snapshot --json`,
 #: which may grow by `--github`.
 RUN = {
     "head": ["uv", "run", "-q", "--project"],
+    #: The one option `uv` may be given besides, after `head[:at]`: written as the string, or as the choice between it
+    #: and nothing, `...(isSync ? [] : ['--no-sync'])`. It stops `uv run` syncing the environment before the command,
+    #: which fails on Windows while the launcher's own `coney-agent.exe` runs; the mod syncs only a first read.
+    "optional": {"at": 3, "flag": "--no-sync"},
     "tail": ["coney-tools", "conclave", "snapshot", "--json"],
     "flags": ["--github"],
     #: The project folder is `${checkoutOf($.plugin.root)}/python`, the function being the mod's own in this file.

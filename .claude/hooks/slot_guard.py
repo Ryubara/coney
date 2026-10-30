@@ -33,6 +33,11 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 
+HOOKS = Path(__file__).resolve().parent
+if str(HOOKS) not in sys.path:
+    sys.path.insert(0, str(HOOKS))
+from hooklib import coney_tools_command  # noqa: E402
+
 #: Seconds `coney-tools task slots --admit` may take: its own longest run (`task_slots.ADMIT_MAX_SECONDS`, 80: the
 #: GitHub reads within their budget, then the 40 s slot lock wait) and 30 s for the `uv run` start-up and the stamp
 #: logs. A test holds it at least 20 s above that number: a hook that times out passes the call uncounted.
@@ -64,7 +69,7 @@ def root_folder() -> Path:
 
 def tool_command(args: list[str]) -> list[str]:
     """The command line that runs `coney-tools <args>`."""
-    return ["uv", "run", "--quiet", "--project", str(root_folder() / "python"), "coney-tools", *args]
+    return coney_tools_command(root_folder(), args)
 
 
 def run_coney_tools(args: list[str], stdin: str) -> tuple[int, str]:

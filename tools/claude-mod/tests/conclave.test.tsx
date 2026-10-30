@@ -18,6 +18,46 @@ test('the first read runs the snapshot command from the checkout the mod folder 
   expect(argv).not.toContain('--github')
 })
 
+// `uv run` syncs the environment before it starts the command, and on Windows that fails while the launcher's own
+// `coney-agent.exe` is running (the file is locked): the read would then fail on every poll. Issue 1183.
+test('every read runs uv without syncing the environment, local and GitHub alike', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await start($, world)
+  await world.clock.advance(60_000)
+
+  expect(world.runs.length).toBeGreaterThan(1)
+  expect(world.runs.some(argv => argv.includes('--github'))).toBe(true)
+  for (const argv of world.runs) {
+    expect(argv.slice(0, 4)).toEqual(['uv', 'run', '-q', '--no-sync'])
+    expect(argv.indexOf('--no-sync')).toBeLessThan(argv.indexOf('--project'))
+  }
+})
+
+test('a first read with no environment yet fails without syncing, then syncs once so the band can draw', async ($, on) => {
+  const world = engine(on, fails)
+  world.answerRun = argv => (argv.includes('--no-sync') ? undefined : prints(snapshot()))
+  await $.session.start({ ...SESSION })
+  await world.clock.advance(1000)
+
+  expect(world.runs[0]).toContain('--no-sync')
+  expect(world.runs[1]).not.toContain('--no-sync')
+  expect(world.runs[1]?.slice(0, 3)).toEqual(['uv', 'run', '-q'])
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect((await ui.find({ key: 'units' }))?.text).toBe('2 units')
+  await ui.unmount()
+})
+
+test('once a read has worked, a failed read is never retried with a sync', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await start($, world)
+  world.answer = fails
+  const before = world.runs.length
+  await world.clock.advance(60_000)
+
+  expect(world.runs.length).toBeGreaterThan(before)
+  for (const argv of world.runs.slice(before)) expect(argv).toContain('--no-sync')
+})
+
 test('the band counts units, failures, pull requests, claims, builds and disk on every surface', async ($, on) => {
   const world = engine(on, prints(snapshot()))
   await start($, world)

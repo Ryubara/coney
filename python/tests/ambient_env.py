@@ -25,6 +25,7 @@ CLEARED: dict[str, str] = {
     "VIRTUAL_ENV": "the environment of the shell, which `uv run` and the slot guard look at",
     "CLAUDECODE": "set inside an agent tool: `build` then requires `--agent`",
     "CLAUDE_PROJECT_DIR": "the checkout the hooks and the MCP launcher start from",
+    "UV_PROJECT_ENVIRONMENT": "the environment `uv run` uses instead of `python/.venv` (the hooks' `--no-sync` check)",
     # The machine's own setup.
     "CONEY_DISC": "the game's disc: `build --test` passes it on, `task check` refuses one that is missing",
     "CONEY_FFMPEG": "where `ffmpeg` is (`clips`)",

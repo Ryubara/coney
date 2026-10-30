@@ -30,6 +30,7 @@ if str(HOOKS) not in sys.path:
     sys.path.insert(0, str(HOOKS))
 import pr_guard_repo as guard_repo  # noqa: E402
 import pr_guard_shell as guard_shell  # noqa: E402, F401
+from hooklib import coney_tools_command  # noqa: E402
 from pr_guard_repo import ROOT, is_other, push_target, read_open_only, repo_name  # noqa: E402, F401
 from pr_guard_routes import ApiRoute, api_routes, git_pushes  # noqa: E402
 from pr_guard_shell import PrCall, is_absolute, native, parse, pr_calls  # noqa: E402, F401
@@ -118,7 +119,7 @@ Runner = Callable[[list[str], str], tuple[int, str]]
 def run_coney_tools(args: list[str], stdin: str) -> tuple[int, str]:
     """Run `coney-tools <args>` from the main checkout; (2, why) when it cannot be started."""
     root = Path(os.environ.get("CLAUDE_PROJECT_DIR") or Path(__file__).resolve().parents[2])
-    command = ["uv", "run", "--quiet", "--project", str(root / "python"), "coney-tools", *args]
+    command = coney_tools_command(root, args)
     try:
         done = subprocess.run(
             command, cwd=root, input=stdin, capture_output=True, text=True, timeout=CHECK_TIMEOUT, check=False
