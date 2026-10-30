@@ -5,8 +5,8 @@
 is opened, where the files live, what recording shares with networking, and how it is tested. Nothing on this page is
 built; it is a design in the sense of [Page kinds](../writing-docs.md#page-kinds), and what gets built moves into a
 guide. The issue is [#1186](issue:1186), under Director's parent issue [#1184](issue:1184). What the Rockstar Editor
-records, the words Director uses (recording, clip, project, marker) and Director's feature list are the Rockstar
-Editor survey's ([#1185](issue:1185)); the editor and the video export are [#1187](issue:1187)'s. The page ends with
+records, the words Director uses (recording, clip, project, marker) and Director's feature list are [the Rockstar
+Editor survey](rockstar-editor.md)'s; the editor and the video export are [#1187](issue:1187)'s. The page ends with
 [the build issues in order](#build-issues) and [the questions for the user](#questions).
 
 A recording is **a replay the engine draws again, not video**: Director loads the level, takes the recorded state of
@@ -35,7 +35,7 @@ is the same, byte for byte, every run.
 | --- | --- | --- |
 | What is stored | **The drawn state**: every human's position, heading and pose, every object's pose, the cameras, the HUD and lights, and an event track (sounds, particles, messages), each step; a full state (a **key frame**) at the start of every **block** of 5 seconds, then each step as a delta, quantized, laid out by column and compressed with zstd. The pads are kept beside it, for the tests | Measured at 0.30 MB a minute on the hub and 3.8 MB a minute with 50 fighters; it plays back without the game's rules, seeks in a block, and survives changes to the simulation |
 | Not stored | No video, no input-only replay | An input replay needs a copy of the whole simulation at the start of every clip, which Coney cannot make (the Lua state), and a seek re-simulates (3 to 6 s a minute of play) |
-| Cost to the game | Capture only on the game's step: 0.009 ms (hub) to 0.017 ms (crowd) a step; quantizing, compressing and writing on a worker thread | A file write on the game's step stalled one step by 60 ms in the measurements |
+| Cost to the game | Capture only on the game's step, from the step snapshot drawing reads ([#1229](issue:1229)): 0.009 ms (hub) to 0.017 ms (crowd) a step; quantizing, compressing and writing on a worker thread | A file write on the game's step stalled one step by 60 ms in the measurements |
 | Clips | 60 seconds = 1,800 steps = 12 blocks; every block starts with a key frame, so a clip boundary is an ordinary block boundary and the next clip's first step is the next step | No step is dropped, nothing is waited for |
 | Seeking | Any step: decompress its block and decode from the key frame; at most 150 steps, about 13 ms for the crowd; blocks kept decoded while scrubbing | Forward and back at any speed, the picture at once |
 | Versions | A header with the format version, Coney's version, the level, the disc and the mods. A newer format is refused; an older one is converted on open; another Coney version or a missing mod is warned, never refused | State playback runs no script, so a missing mod draws less, it does not break |
@@ -77,8 +77,8 @@ zones ([Measurements](#measurements)). What the numbers say:
 - **Poses are most of a recording.** A pose is 34 bone rotations. In a fight about 14 of a human's 34 bones change in
   a step, and only 64 % by a small amount, against 93 % in the hub's calm. Everything else (positions, headings,
   objects, cameras) is a few hundred bytes a step.
-- **Key frames are cheap.** Going from one every 60 s to one every 5 s costs 2 to 3 % (the bit-packed rows), and a
-  key frame at every block is what makes each block, and each clip, readable on its own.
+- **Key frames are cheap.** Going from one every 60 s to one every 5 s costs 1.5 % (crowd) to 3.3 % (hub) (the
+  bit-packed rows), and a key frame at every block is what makes each block, and each clip, readable on its own.
 - **Longer blocks laid out by column compress best.** With 1-second blocks, zstd makes about as much of the deltas by
   column as of the bit-packed stream (5.0 and 4.9 MB a minute for the crowd; 0.53 and 0.68 on the hub). With
   5-second blocks the columns come to 3.8 MB: a column holds one bone's differences for 150 steps, and zstd finds the
@@ -98,9 +98,9 @@ Why not the others:
   [the subsystems' readiness](../network-architecture.md#subsystems): "No copy or restore of simulation state"). And
   every seek backwards re-simulates from that start: 3 to 6 s for one minute of play, measured.
 - **Inputs only break with every change to the game.** A replay of inputs is right only while every rule, constant and
-  random draw of the build that plays it is the build that recorded it; Coney changes such things often while it is
-  made faithful (the survey's other games show the same: Halo, StarCraft II, Overwatch). A recording of state
-  plays in any later Coney that can read its format.
+  random draw of the build that plays it is the build that recorded it; Coney changes such things often while it is made
+  faithful (the survey's [other games](rockstar-editor.md#other-games) show the same: Halo, StarCraft II, Overwatch). A
+  recording of state plays in any later Coney that can read its format.
 - **A full state every step** is 5 (crowd) to 18 (hub) times the size for no gain: the deltas decode at 0.02 to
   0.06 ms a step.
 
@@ -137,10 +137,14 @@ compared it with what it encoded: 0 differences in 1,861 steps of each scene.
 
 ## What a recording holds {#holds}
 
-What Director needs to draw a step from any camera, and how each part is kept. **State** is kept in the key frame
-and the deltas; an **event** happens on one step (as in [Three kinds of data](../network-architecture.md#data-kinds)),
-and what an event leaves running (a sound still playing, a scene in progress) is also in each key frame, so a block
-read alone plays it from the middle.
+What Director needs to draw a step from any camera, and how each part is kept. **State** is kept in the key frame and
+the deltas; an **event** happens on one step (as in [Three kinds of data](../network-architecture.md#data-kinds)), and
+what an event leaves running (a sound still playing, a scene in progress) is also in each key frame, so a block read
+alone plays it from the middle. Most of the state is what the renderer's [step
+snapshot](../../engine/renderer.md#snapshot) publishes for drawing each step, which the recorder reads
+([Clips](#clips)). One thing the snapshot should hold for it: each human's pose as its 34 rotations and the pelvis
+offset, the values its bone matrices are made from (a rotation quantizes to 4 bytes; turning a matrix back into one
+costs time and precision). Its mark of a jump goes into the recording too, so Director does not blend across it.
 
 | Part | What is kept | How |
 | --- | --- | --- |
@@ -152,7 +156,7 @@ read alone plays it from the middle.
 | Lights | each light task's value this step (flicker, the player's shadow dimming) | state: a few bytes a step |
 | HUD | the HUD's draw list of the step (panels, meters, messages, radar, counters, prompts) as ids and numbers, never text | state, deltas only when it changes; shown or not is Director's choice |
 | Sound | each sound started (its hash, emitter id or position, volume), stopped; music and ambient cues; what plays at a key frame and since when | events (2,639 sounds in the crowd's minute, 75 in the hub's) |
-| Movies and scenes | a scene's start and end; a pre-rendered movie as a marker (its name, start, end, skipped), not its pictures | events; how Director shows a movie is the survey's open question 7 |
+| Movies and scenes | a scene's start and end; a pre-rendered movie as a marker (its name, start, end, skipped), not its pictures | events; how Director shows a movie is the survey's [question 7](rockstar-editor.md#questions) |
 | The level | level and checkpoint, the game time at each step, the step number | header and state |
 | The session | Coney's version, the format version, the disc (the install's disc hash), the presentation source (PS2 or Xbox textures), every mod running (name, version, package hash, order), modded or faithful, the pads | header |
 
@@ -161,9 +165,9 @@ the player's own install, as playing does ([The install folder](../asset-and-scr
 
 **Objects the free camera may see.** The probe recorded what the game drew round its own camera (72 objects). A free
 camera that flies away from the player would find those the game never streamed in missing, as the Rockstar Editor's
-does (the survey's *Limits*). So the recorder keeps every object of the level that has changed since the load, not only
-the drawn ones; the rest come from the level's data, which Director streams round its own camera. The cost is small:
-an object at rest is one bit a step in a delta.
+does ([Limits](rockstar-editor.md#limits)). So the recorder keeps every object of the level that has changed since the
+load, not only the drawn ones; the rest come from the level's data, which Director streams round its own camera. The
+cost is small: an object at rest is one bit a step in a delta.
 
 ## Clips of 60 seconds with no gap {#clips}
 
@@ -186,9 +190,15 @@ flowchart LR
 
 *Figure: the game's step only copies; the worker builds the blocks and the files.*
 
-1. **The step copies.** At the end of each step the recorder copies what the [table](#holds) lists into the next
-   record of a ring held in memory: 0.009 ms on the hub, 0.017 ms with 64 humans (about 40 KB a step, 6 MB a
-   block). It does not quantize, compress, allocate or touch a file.
+1. **The step copies.** Each step ends by publishing the **step snapshot** that drawing reads ([The
+   snapshot](../../engine/renderer.md#snapshot), [#1229](issue:1229)): every drawn thing's id, model and pose, the
+   cameras, the lighting frame, the particles, the screen effects and the HUD's lists, in a ring of four slots. The
+   recorder is that snapshot's second reader: once a step is published it copies the parts the [table](#holds)
+   lists into the next record of its own ring (the snapshot's slots are reused two steps later, so it must copy):
+   0.009 ms on the hub, 0.017 ms with 64 humans in the probe (about 40 KB a step, 6 MB a block). It adds what the
+   snapshot does not hold: the objects the level changed that are not drawn, the pads and the step's events. It
+   does not quantize, compress, allocate or touch a file. There is one per-step copy of the drawn state, the
+   snapshot's, and the recorder does not build a second.
 2. **A worker builds the blocks.** It takes the records, quantizes them, writes each block (150 steps: a key frame
    and 149 deltas) by column, compresses it with zstd and appends it to the clip's file. Its work is 0.05 to 0.2 ms a
    step on one core.
@@ -209,9 +219,10 @@ the worker's work on the game's thread after each step, gives the same bytes as 
 
 ## Seeking and scrubbing {#seeking}
 
-Director draws a recording as a network client draws the server's game ([Interpolation](../network-architecture.md#interpolation)):
-the world is the decoded state of two neighbouring steps, blended by the frame's place between them through
-`Interpolated<T>` and `DrawnPoses`, with a jump (a teleport, a cut, a new human) drawn unblended.
+Director draws a recording as a network client draws the server's game
+([Interpolation](../network-architecture.md#interpolation)): the world is the decoded state of two neighbouring steps,
+blended by the frame's place between them through `Interpolated<T>` and `DrawnPoses`, with a jump (a teleport, a cut, a
+new human) drawn unblended.
 
 - **A seek** to step *s* opens the block that holds it (the index gives its offset), decompresses it and decodes from
   its key frame to *s*: at most 150 steps, 0.02 ms (hub) to 0.06 ms (crowd) each to decode (the probe's bit-packed
@@ -226,17 +237,17 @@ the world is the decoded state of two neighbouring steps, blended by the frame's
   The format needs only that each step can be reached from its block's key frame, which it is.
 - **Sound follows the playhead.** On a seek, the key frame's list of what is playing restarts each sound at its
   offset; while playing, the event track starts and stops them at their steps. Its pitch at other speeds is the
-  survey's open question 5.
+  survey's [question 5](rockstar-editor.md#questions).
 - **A clip with a damaged block** (a crash, a bad disk) plays up to the last whole block.
 
 ### The world round the camera {#seek-world}
 
 The Rockstar Editor loads the world round the recorded player, so a distant free camera shows low detail or holes
-(the survey's *Scrubbing and preview*). Director streams the level's scenery round **its own camera**: the scenery
-is the level's data, not the recording's, and the level's streaming already chooses parts by a view
-([The streamed world](../../research/world.md)). The objects come from the recording (those the level changed) or the
-level's data (the rest). A seek therefore waits for no simulation and only for the scenery parts near the new camera
-position, as a teleport in play does.
+([Scrubbing and preview](rockstar-editor.md#scrubbing)). Director streams the level's scenery round **its own camera**:
+the scenery is the level's data, not the recording's, and the level's streaming already chooses parts by a view ([The
+streamed world](../../research/world.md)). The objects come from the recording (those the level changed) or the level's
+data (the rest). A seek therefore waits for no simulation and only for the scenery parts near the new camera position,
+as a teleport in play does.
 
 ## The file {#file}
 
@@ -278,7 +289,8 @@ exception: re-simulating it needs the same Coney and mods, and the test that doe
 
 ## Where it lives {#where}
 
-The folder is fixed, inside the install folder ([#1184](issue:1184); [The install folder](../asset-and-script-architecture.md#install-folder)):
+The folder is fixed, inside the install folder ([#1184](issue:1184); [The install
+folder](../asset-and-script-architecture.md#install-folder)):
 
 ```text
 <install>/director/
@@ -292,11 +304,11 @@ The folder is fixed, inside the install folder ([#1184](issue:1184); [The instal
   cache/                          thumbnails, rebuilt when missing
 ```
 
-- **Names.** The recording's folder is its start's local date and time; the clips are numbered from 001. The Clips
-  list shows them as the survey proposes ("Oct 29 2026, clip 1"), and a recording can be renamed there (the folder
-  keeps its name; the new name goes in a small file beside the clips). Reading the date is a real-clock read outside
-  the frame pacer, so it goes in the platform layer with the clip recorder's allowance in the clock check
-  ([Update and render](../conventions.md#update-and-render)); a test-mode run names its recording from
+- **Names.** The recording's folder is its start's local date and time; the clips are numbered from 001. The Clips list
+  shows them as Rockstar's are shown ([the survey](rockstar-editor.md#words)): "Oct 29 2026, clip 1". A recording can be
+  renamed there (the folder keeps its name; the new name goes in a small file beside the clips). Reading the date is a
+  real-clock read outside the frame pacer, so it goes in the platform layer with the clip recorder's allowance in the
+  clock check ([Update and render](../conventions.md#update-and-render)); a test-mode run names its recording from
   `--record-name` instead, so its files are the same every run.
 - **Size.** About 0.3 MB (hub) to 3.8 MB (64 humans in a fight) a clip. A clip grows with the humans in play, and the
   crowd measured is already past the original's pool of about 60
@@ -384,6 +396,8 @@ the encoding's upper bound (61 bits a step, `writePad` in `src/net/protocol.cpp`
 | Frame, without and with the probe | 2.72, 2.66 | 5.00, 5.87 and 6.39 |
 | Headless step, for re-simulation (no probe) | 1.78 | 3.38 |
 
+- The probe read the live game (the step snapshot is planned); the recorder's copy from the snapshot moves the same
+  bytes, and the snapshot's own cost is [#1229](issue:1229)'s to measure.
 - The crowd runs had 64 humans (the hub's 14 and the 50 fighters) and 70 to 72 objects a step; the hub 14 and 72.
 - A headless start of the hub to its first step took about 1 s of real time.
 - The frames are noisy on a shared machine; the probe's own zones are the cost. One crowd run's file write took 60 ms
@@ -392,12 +406,13 @@ the encoding's upper bound (61 bits a step, `writePad` in `src/net/protocol.cpp`
 
 ## Build issues, in order {#build-issues}
 
-Each is about one pull request, a sub-issue of [#1184](issue:1184). The first waits for [#553](issue:553).
+Each is about one pull request, a sub-issue of [#1184](issue:1184). The first waits for [#553](issue:553), the
+second for the renderer's step snapshot ([#1229](issue:1229)).
 
 | # | Issue | Needs | Done when |
 | --- | --- | --- | --- |
 | 1 | **The recording codec**: the block format (key frame, deltas by column, zstd, checksums, the index and footer), the recording's field tables beside #553's (rotation encoding, pose, lean, pelvis, cameras), the per-step digest; zstd added to the dependencies | #553 | The codec, the crash and the version tests, on synthetic scenes |
-| 2 | **The recorder's capture**: the copy at the end of the step for humans, poses, objects the level changed, doors, cars, cameras, lights and the HUD's draw list into a ring; the worker that quantizes, compresses and writes; `--record-replay DIR`, `--record-name` and `--record-clip-steps` for the tests | 1 | The step-does-no-I/O, same-bytes and recording-changes-nothing tests |
+| 2 | **The recorder's capture**: the copy, after each step's snapshot is published, of what the recording holds (humans and their poses, objects, doors, cars, cameras, lights, the HUD's lists) into the recorder's ring, with the objects the level changed that the snapshot does not hold; the poses' rotations added to the snapshot; the worker that quantizes, compresses and writes; `--record-replay DIR`, `--record-name` and `--record-clip-steps` for the tests | 1, #1229 | The step-does-no-I/O, same-bytes and recording-changes-nothing tests |
 | 3 | **The event track**: sounds, particles, HUD messages, scenes and movies through one call each, recorded with what a key frame needs of them; shared with #556 | 2 | Event counts of a disc run match the event log's |
 | 4 | **Clips and the folder**: 60-second clips, `.part` and the rename, recovery at start, the folder layout and names, the cap and the free-space check, the fallback folder | 2 | The clip-boundary, full-disk and crash tests |
 | 5 | **Director's player**: the game mode that draws a recording, seeks and scrubs at any speed, with the block cache and the sound restarted at a seek; built on #555's client world, or its first user | 4, #555 | The replays-to-the-same-digest test |
@@ -413,12 +428,13 @@ Each is about one pull request, a sub-issue of [#1184](issue:1184). The first wa
    installer is a maintainer decision.
 2. **The cap and a full disk.** Is 20 GB the right default cap? When the folder or the disk is full, should the
    recording stop and keep everything (the proposal), or delete the oldest clips no project uses (the survey's
-   question 4)?
+   [question 4](rockstar-editor.md#questions))?
 3. **Poses or layers.** The proposal stores poses (3.8 MB a minute in a crowd, plays in any later Coney) over
    animation layers (0.68 MB, but replayed through the animation code of the day and the mods' clips). Is the larger,
    robust form right for the first version?
 4. **Old recordings.** Must every old clip open forever, each format change shipping its converter (the proposal), or
-   may a clip older than some versions say it is too old? This is the survey's question 8, made concrete.
+   may a clip older than some versions say it is too old? This is the survey's [question
+   8](rockstar-editor.md#questions), made concrete.
 5. **Sharing recordings.** A clip holds ids and numbers, no asset or text, and plays only on an install made from the
    player's own disc. May players share clip files with each other? This may be for the legal side
    ([LEGAL.md](repo:LEGAL.md)).
