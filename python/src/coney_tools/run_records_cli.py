@@ -208,8 +208,10 @@ def draft(
     hashes: Mapping[str, str] | None = None,
     patches: Sequence[str] = (),
     version: str = VERSION_STAND_IN,
+    emulator: str = "pcsx2",
 ) -> RunRecord:
-    """The record a run is to write, made before the run for `precheck`: `run_name` makes the id
+    """The record a run is to write, made before the run for `precheck` (`emulator` names the table its version and
+    copy go in: pcsx2, or xemu for the Xbox build): `run_name` makes the id
     (`r-<today>-<run_name>`), `name` is the recipe or scenario. The who comes from the environment
     (docs/guides/stamps.md#who), the patches are the ones given with the state's in the library. What the run measures
     is filled in afterwards (`dataclasses.replace`). Raises ConfigError when the library lacks the state."""
@@ -236,6 +238,7 @@ def draft(
         values=dict(values or {}),
         addresses=dict(addresses or {}),
         hashes=dict(hashes or {}),
+        emulator=emulator,
     )
 
 

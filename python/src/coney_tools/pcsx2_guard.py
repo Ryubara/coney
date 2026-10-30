@@ -94,19 +94,28 @@ _PCSX2_COMMAND = re.compile(
     + "|".join(r"\s+".join(command.split()) for command in CLAIMING_COMMANDS)
     + r")(?=\s|$)(?P<rest>[^\n;&|]*)"
 )
+
+
+def command_pattern(group: str, commands: Collection[str]) -> re.Pattern[str]:
+    """A `coney-tools <group> <one of commands>` invocation, up to the end of the line or the next shell separator."""
+    return re.compile(
+        rf"coney-tools(?:\.exe)?[\"']?\s+{group}\s+(?:" + "|".join(commands) + r")(?=\s|$)(?P<rest>[^\n;&|]*)"
+    )
+
+
 #: `--agent ID`, `--agent=ID`, with the id bare or in single or double quotes.
 _AGENT_FLAG = re.compile(rf"(?:^|\s)--agent(?:=|\s+)(?P<q>['\"]?)(?P<id>{_AGENT_ID})(?P=q)(?=\s|$)")
 #: A line continuation: a backslash (POSIX) or a backtick (PowerShell) at the end of a line.
 _CONTINUATION = re.compile(r"[\\`][ \t]*\r?\n")
 
 
-def agents_in(command: str) -> list[str]:
+def agents_in(command: str, pattern: re.Pattern[str] = _PCSX2_COMMAND) -> list[str]:
     """The agent ids a shell command passes to a claiming `coney-tools pcsx2 ...` command (`--agent ID`, `--agent=ID`,
     quoted or not, also over continued lines), in order. An id after another coney-tools command (`build --agent x`)
     or after a PCSX2 command that can name anyone (`release --agent x`) is not one: only a command that runs under
-    the caller's own claim says who the caller is."""
+    the caller's own claim says who the caller is. `pattern` (`command_pattern`) reads another group's commands."""
     found: list[str] = []
-    for call in _PCSX2_COMMAND.finditer(_CONTINUATION.sub(" ", command)):
+    for call in pattern.finditer(_CONTINUATION.sub(" ", command)):
         found.extend(flag.group("id") for flag in _AGENT_FLAG.finditer(call.group("rest")))
     return found
 
@@ -124,15 +133,13 @@ _PASS_YOUR_ID = (
 )
 
 
-class Guard:
-    """The guard's state (below `folder`) and decisions, over a registry of copies and claims."""
+class Bindings:
+    """Which claim ids each caller of a session goes by, kept as small files below `folder` (the xemu guard keeps its
+    own the same way, coney_tools.xemu_guard)."""
 
-    def __init__(self, registry: Registry, folder: Path) -> None:
+    def __init__(self, folder: Path) -> None:
         """`folder` holds the callers' bindings."""
-        self.registry = registry
         self.folder = folder
-
-    # -- who is calling
 
     def _binding(self, session: str, agent_id: str, name: str | None = None) -> Path:
         """The file that holds one claim id one caller of a session goes by (`name`), or, without it, the prefix
@@ -207,6 +214,15 @@ class Guard:
             if isinstance(name, str):
                 names.add(name)
         return names
+
+
+class Guard(Bindings):
+    """The guard's state (below `folder`) and decisions, over a registry of copies and claims."""
+
+    def __init__(self, registry: Registry, folder: Path) -> None:
+        """`folder` holds the callers' bindings."""
+        super().__init__(folder)
+        self.registry = registry
 
     # -- the decision
 

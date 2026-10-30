@@ -143,6 +143,12 @@ def is_pcsx2(pid: int) -> bool:
 
 def pcsx2_processes() -> dict[int, Path]:
     """Every running PCSX2 process and its executable (the copy it belongs to is the folder holding it)."""
+    return processes_named("pcsx2")
+
+
+def processes_named(fragment: str) -> dict[int, Path]:
+    """Every running process whose executable's name holds `fragment` (lower case), with its executable: the PCSX2
+    and the xemu copies are told apart by the folder the executable is in."""
     found: dict[int, Path] = {}
     if sys.platform == "win32":
         kernel = _kernel32()
@@ -156,7 +162,7 @@ def pcsx2_processes() -> dict[int, Path]:
         try:
             more = kernel.Process32FirstW(snapshot, ctypes.byref(entry))
             while more:
-                if "pcsx2" in entry.szExeFile.lower():
+                if fragment in entry.szExeFile.lower():
                     image = process_image(entry.th32ProcessID)
                     if image is not None:
                         found[entry.th32ProcessID] = image
@@ -167,7 +173,7 @@ def pcsx2_processes() -> dict[int, Path]:
     result = subprocess.run(["ps", "-axo", "pid=,comm="], capture_output=True, text=True, check=False)
     for line in result.stdout.splitlines():
         match = re.match(r"\s*(\d+)\s+(.*)", line)
-        if match and "pcsx2" in match.group(2).lower():
+        if match and fragment in match.group(2).lower():
             found[int(match.group(1))] = process_image(int(match.group(1))) or Path(match.group(2))
     return found
 

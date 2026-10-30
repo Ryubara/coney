@@ -814,6 +814,8 @@ class Runs:
     max_text: int
     #: How a run was made: a recipe, a recorded trace, or a method in words.
     kinds: tuple[str, ...]
+    #: The words that make a claim one about the Xbox build, the only kind an xemu run may back.
+    xbox_words: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -3191,7 +3193,7 @@ def _read_research(data: object, where: str) -> Research:
 def _read_runs(data: object, where: str, folder: str) -> Runs:
     """The `runs` section: how big and how many-valued a run record may be. `folder` is where the records live, which
     the `research` section names (`research.files.runs`, also read by `docs check`)."""
-    table = _table(data, where, ("id_pattern", "max_bytes", "max_values", "max_text", "kinds"))
+    table = _table(data, where, ("id_pattern", "max_bytes", "max_values", "max_text", "kinds", "xbox_words"))
     pattern = _text(table["id_pattern"], _at(where, "id_pattern"))
     try:
         re.compile(pattern)
@@ -3204,6 +3206,7 @@ def _read_runs(data: object, where: str, folder: str) -> Runs:
         max_values=_count(table["max_values"], _at(where, "max_values")),
         max_text=_count(table["max_text"], _at(where, "max_text"), minimum=40),
         kinds=_texts(table["kinds"], _at(where, "kinds")),
+        xbox_words=_texts(table["xbox_words"], _at(where, "xbox_words")),
     )
 
 

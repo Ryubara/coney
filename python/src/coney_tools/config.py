@@ -29,6 +29,11 @@ PATH_KEYS: tuple[str, ...] = (
     "ffmpeg_dir",
     "luac_program",
     "lua_dir",
+    "xemu_install",
+    "xemu_config",
+    "xemu_root",
+    "xemu_claims_dir",
+    "xemu_dvd",
 )
 
 #: Keys of `coney.local.toml` that hold whole numbers, with their defaults (`build_slots`: how many builds run at
@@ -41,7 +46,8 @@ PATH_KEYS: tuple[str, ...] = (
 #: (build_run.py, `parallel_tests_for`);
 #: `pcsx2_copies`: how many PCSX2 copies `pcsx2 setup-copies` makes; `pcsx2_pine_base` and `pcsx2_debug_base`: the
 #: PINE and debug server ports of the first copy, each next copy taking the next port; `ccache_size_gb`: the cap of the
-#: shared compiler cache, 0 turning it off, compiler_cache.py).
+#: shared compiler cache, 0 turning it off, compiler_cache.py; `xemu_copies`, `xemu_gdb_base` and `xemu_monitor_base`:
+#: the same for the xemu copies, their GDB stub and QEMU monitor ports, xemu_copies.py).
 INT_KEYS: dict[str, int] = {
     "build_slots": 2,
     "build_worktree_cap": 7,
@@ -54,6 +60,9 @@ INT_KEYS: dict[str, int] = {
     "pcsx2_copies": 5,
     "pcsx2_pine_base": 28011,
     "pcsx2_debug_base": 21512,
+    "xemu_copies": 2,
+    "xemu_gdb_base": 1234,
+    "xemu_monitor_base": 4444,
 }
 
 #: The smallest value a number key accepts (default 0): `build_slots` needs a slot, 0 turns a fast lane off, and a
@@ -63,6 +72,9 @@ INT_MINIMUM: dict[str, int] = {
     "pcsx2_copies": 1,
     "pcsx2_pine_base": 1024,
     "pcsx2_debug_base": 1024,
+    "xemu_copies": 1,
+    "xemu_gdb_base": 1024,
+    "xemu_monitor_base": 1024,
 }
 
 #: Keys that once meant something and are now ignored, so a `coney.local.toml` written before they went still loads

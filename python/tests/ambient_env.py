@@ -34,6 +34,7 @@ CLEARED: dict[str, str] = {
     "GHIDRA_MCP_URL": "the Ghidra server `mcp_serve` points the MCP client at",
     "PCSX2_DEBUG_PORT": "the PCSX2 copy's debug port (`mcp_serve`)",
     "PCSX2_PINE_PORT": "the PCSX2 copy's PINE port (`mcp_serve`)",
+    "XEMU_IDLE_MINUTES": "how long the xemu MCP connection may sit unused before it is closed (`xemu_mcp`)",
     # The compiler and the Java setup the build, doctor and Ghidra tools look at.
     "CMAKE_C_COMPILER_LAUNCHER": "ccache for the C compiler: the compiler cache checks it first (`compiler_cache`)",
     "CMAKE_CXX_COMPILER_LAUNCHER": "ccache for the C++ compiler: the build's compiler cache checks it first",
@@ -55,6 +56,10 @@ CLEARED: dict[str, str] = {
 KEPT: dict[str, str] = {
     "PATH": "where programs are found (`build_run`, `ghidra_headless`)",
     "ProgramFiles(x86)": "where Windows keeps the Visual Studio installer (`build_run`, `workspace_checks`)",
+    "APPDATA": "where Windows keeps xemu's settings when the install is not portable (`xemu_copies`)",
+    "XDG_DATA_HOME": "where Linux keeps xemu's settings when the install is not portable (`xemu_copies`)",
+    "HOME": "the home folder, which every program needs (`xemu_copies`, `xemu_cli`)",
+    "USERPROFILE": "the Windows home folder, which every program needs (`xemu_cli`)",
     "PYTEST_CURRENT_TEST": "pytest sets it for each test; `claim_progress` posts nothing to GitHub while it is there",
 }
 

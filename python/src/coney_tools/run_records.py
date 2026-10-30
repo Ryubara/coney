@@ -2,8 +2,9 @@
 """Run records: what a research page's `confirmed (runtime)` claim cites (docs/guides/research-evidence.md#run-records).
 
 A record is `research/runs/<id>.toml`, written by the tools that drive PCSX2 (`pcsx2 recipes run --record`,
-`trace original --run-record`, `pcsx2 record-run`) and by nothing else, so the method cannot be paraphrased away. It
-holds who ran it, the PCSX2 version and copy, the state and patches it started from, the recipe, the trace or the
+`trace original --run-record`, `pcsx2 record-run`) or xemu (`xemu record-run`) and by nothing else, so the method cannot
+be paraphrased away. It holds who ran it, the emulator's version and copy (a `[pcsx2]` table for the PS2 game, an
+`[xemu]` table in its place for the Xbox build), the state and patches it started from, the recipe, the trace or the
 method in words, and the values read: names, numbers and addresses only, never memory or game text (LEGAL.md). The
 rules (the id, the sizes, the kinds) are `runs` in `.github/conventions.yml`, and the folder is `research.files.runs`
 there. Those limits cap how much a record can hold; they do not tell game data from our own (English game text is
@@ -73,6 +74,8 @@ from coney_tools.conventions import Runs, load_conventions
 VERSION = 1
 #: Who ran it: the hook dispatcher's marker, or what the command's environment said (docs/guides/stamps.md#who).
 SOURCES = ("hook", "unverified")
+#: The emulators a record can name, each its own table: PCSX2 runs the PS2 game, xemu the Xbox build.
+EMULATORS = ("pcsx2", "xemu")
 #: A state of the library (`pcsx2 states`) or this word when the run did not say.
 UNKNOWN = "unknown"
 _STATE = re.compile(r"^[a-z0-9][a-z0-9-]{0,47}$")
@@ -106,6 +109,7 @@ class RunRecord:
     model: str
     #: `hook` or `unverified` (docs/guides/stamps.md#who).
     source: str
+    #: The emulator's version (PCSX2's, or xemu's when `emulator` is xemu).
     pcsx2_version: str
     copy: str
     #: The state library's id of the state the run started from, or `unknown`.
@@ -123,6 +127,9 @@ class RunRecord:
     addresses: Mapping[str, int]
     #: SHA-256 of a file the run made (a trace's CSV), by name; the file itself stays in scratch.
     hashes: Mapping[str, str] = field(default_factory=dict)
+    #: Which emulator ran it (EMULATORS): its table in the file. A PCSX2 record's fields, and so its digest, are
+    #: what they were before xemu records existed.
+    emulator: str = "pcsx2"
 
 
 def rules(root: Path) -> Runs:
@@ -194,8 +201,10 @@ def _check(record: RunRecord, rules_: Runs) -> None:
     _text(record.model, "who.model", 64)
     if record.source not in SOURCES:
         raise RunRecordError(f"who.source {record.source!r}: expected hook or unverified")
-    _text(record.pcsx2_version, "pcsx2 version", 40)
-    _text(record.copy, "pcsx2 copy", 40)
+    if record.emulator not in EMULATORS:
+        raise RunRecordError(f"emulator {record.emulator!r}: expected one of {', '.join(EMULATORS)}")
+    _text(record.pcsx2_version, f"{record.emulator} version", 40)
+    _text(record.copy, f"{record.emulator} copy", 40)
     if record.state != UNKNOWN and not _STATE.match(record.state):
         raise RunRecordError(f"start.state {record.state!r}: a state library id (a slug) or {UNKNOWN}")
     for patch in record.patches:
@@ -239,7 +248,7 @@ def _fields(record: RunRecord) -> dict[str, Any]:
         "kind": record.kind,
         "tool": record.tool,
         "who": {"agent": record.agent, "type": record.agent_type, "model": record.model, "source": record.source},
-        "pcsx2": {"version": record.pcsx2_version, "copy": record.copy},
+        record.emulator: {"version": record.pcsx2_version, "copy": record.copy},
         "start": {"state": record.state, "patches": list(record.patches)},
         "run": {"name": record.name, "method": record.method, "args": dict(record.args)},
         "values": dict(record.values),
@@ -313,7 +322,7 @@ def _render(record: RunRecord) -> str:
         f"model = {_scalar(record.model)}",
         f"source = {_scalar(record.source)}",
         "",
-        "[pcsx2]",
+        f"[{record.emulator}]",
         f"version = {_scalar(record.pcsx2_version)}",
         f"copy = {_scalar(record.copy)}",
         "",
@@ -382,7 +391,7 @@ def parse(text: str, rules_: Runs) -> RunRecord:
         "tool",
         "digest",
         "who",
-        "pcsx2",
+        *EMULATORS,
         "start",
         "run",
         "values",
@@ -395,7 +404,11 @@ def parse(text: str, rules_: Runs) -> RunRecord:
     if data.get("version") != VERSION or isinstance(data.get("version"), bool):
         raise RunRecordError(f"version {data.get('version')!r}: this tool reads version {VERSION}")
     who = _table(data, "who", ("agent", "type", "model", "source"), "")
-    pcsx2 = _table(data, "pcsx2", ("version", "copy"), "")
+    present = [name for name in EMULATORS if name in data]
+    if len(present) != 1:
+        raise RunRecordError(f"a record names one emulator, a table of {' or '.join(EMULATORS)}; it has {len(present)}")
+    emulator = present[0]
+    pcsx2 = _table(data, emulator, ("version", "copy"), "")
     start = _table(data, "start", ("state", "patches"), "")
     run = _table(data, "run", ("name", "method", "args"), "")
     patches = start.get("patches", [])
@@ -410,8 +423,8 @@ def parse(text: str, rules_: Runs) -> RunRecord:
         agent_type=_string(who, "type", "who."),
         model=_string(who, "model", "who."),
         source=_string(who, "source", "who."),
-        pcsx2_version=_string(pcsx2, "version", "pcsx2."),
-        copy=_string(pcsx2, "copy", "pcsx2."),
+        pcsx2_version=_string(pcsx2, "version", f"{emulator}."),
+        copy=_string(pcsx2, "copy", f"{emulator}."),
         state=_string(start, "state", "start."),
         patches=tuple(_string({"patch": p}, "patch", "start.patches ") for p in patches),
         name=_string(run, "name", "run."),
@@ -420,6 +433,7 @@ def parse(text: str, rules_: Runs) -> RunRecord:
         values=_free(data.get("values", {}), "values"),
         addresses=_free(data.get("addresses", {}), "addresses"),
         hashes=_free(data.get("hashes", {}), "hashes"),
+        emulator=emulator,
     )
     _check(record, rules_)
     if data.get("digest") != digest_of(record):

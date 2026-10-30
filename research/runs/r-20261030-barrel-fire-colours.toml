@@ -1,0 +1,33 @@
+version = 1
+id = "r-20261030-barrel-fire-colours"
+date = "2026-10-30"
+kind = "method"
+tool = "xemu record-run"
+digest = "34c70be0cc4a7160b7200d8fd6602b77b83f774c20f852f981433be1154c6c29"
+
+[who]
+agent = "a4084a6ccb96d7e05"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[xemu]
+version = "v0.8.139"
+copy = "xemu"
+
+[start]
+state = "unknown"
+patches = []
+
+[run]
+name = ""
+method = "read four u32 at Xbox 0x00460b70 (the barrel fire's four light colours, xbox-lighting.md) with xemu_read_memory of the xemu MCP server on a running copy while the game ran its intro; the same 16 bytes read from default.xbe in the Xbox Ghidra project give the same words"
+
+[values]
+colour0_u32 = 4099677439
+colour1_u32 = 4105838591
+colour2_u32 = 4099677439
+colour3_u32 = 4105838591
+
+[addresses]
+fire_colours = 0x00460b70

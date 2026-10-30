@@ -1140,13 +1140,17 @@ research:
 runs:
   # Run records (docs/guides/research-evidence.md#run-records): what a research page's `confirmed (runtime)` claim cites.
   # A record is written only by the tools that drive PCSX2 (`pcsx2 recipes run --record`, `trace original --run-record`,
-  # `pcsx2 record-run`) into research.files.runs and holds names, numbers and addresses, never memory or game text (LEGAL.md). The limits cap
+  # `pcsx2 record-run`) or xemu (`xemu record-run`) into research.files.runs and holds names, numbers and addresses, never memory or game text (LEGAL.md). The limits cap
   # how much a record holds; they cannot tell game text from ours, so the reviewer reads the method, args and names.
   id_pattern: '^r-[0-9]{8}-[a-z0-9][a-z0-9-]{0,47}$'   # r-<date>-<name>; the file is <id>.toml
   max_bytes: 8192                                # the writer checks it too; the repository's file check is 512 KB
   max_values: 64                                 # values, addresses and run args together
   max_text: 600                                  # characters of the method, and of any other text field
-  kinds: [recipe, trace, method]    # recipe: pcsx2 recipes run; trace: trace original; method: pcsx2 record-run
+  kinds: [recipe, trace, method]    # recipe: pcsx2 recipes run; trace: trace original; method: pcsx2 record-run, xemu record-run
+  # An xemu run observed the Xbox build, so it backs only a claim about the Xbox: one whose block, grading line or page
+  # name has one of these words (any case, whole words; a page named xbox-*.md counts). `research claims` refuses
+  # an xemu run on any other claim: what the Xbox does is no evidence for the PS2 (docs/guides/research-evidence.md#run-records).
+  xbox_words: [Xbox, XBE, xemu]
 
 conclave:
   # Conclave, the Claude Code mod in tools/claude-mod (docs/guides/conclave.md). The mod only draws what

@@ -106,13 +106,17 @@ humans ([Fire lights](script-types.md#fire-lights), [How a light type lights](sc
 Every 5 to 15 ticks `SubFire2Light_Update` (`0x003c71a8`) sets the next of four colours from `0x005144a8`, which
 alternate between orange (244, 92, 28) and yellow (244, 186, 31), and 90 to 100 % of the radius; the light task
 cross-fades linearly to each new colour over the interval (`LightTask_Update`, `0x003906b8`). The low byte of the
-colour word is set to 64 + `rand(192)` each time; it is the colour's alpha, which no lighting path reads.
+light's own copy of the colour is set to 64 + `rand(192)` each time (the table is only read); it is the colour's
+alpha, which no lighting path reads.
 
 The Xbox's update, Xbox `0x002dda80`, does the same: the same 10 + 5 interval, the same 0.9-1.0 radius factor, the
 same alpha byte, and its own copy of the four colours at Xbox `0x00460b70`, byte for byte the PS2's. So the barrel's
-light, its colours, its radius and its rhythm are identical on both builds; what the reference videos show on the
-wall and the men is the light model below, the same on both. The fire casts no shadow on either build: the Xbox's only
+light, its colours, its radius and its rhythm are identical on both builds; what the reference videos show on the wall
+and the men is the light model below, the same on both. The fire casts no shadow on either build: the Xbox's only
 shadow comes from [the shadow light](#shadow-light).
+
+The running Xbox game holds the same four colour words at Xbox `0x00460b70` as the executable: confirmed (runtime), run
+r-20261030-barrel-fire-colours.
 
 ### Vertex lighting {#vertex-lighting}
 
@@ -367,8 +371,8 @@ described.
 ## Open questions
 
 Each says how to answer it: a further read of the Xbox executable in Ghidra, or a look at the running Xbox game in
-xemu over its GDB stub ([Runtime access](xbox-executable.md#runtime)), which Coney has no set-up or tooling for
-yet, so a runtime answer waits for one. The last is a PCSX2 check.
+xemu over its GDB stub with [the coney-tools xemu commands](../guides/coney-tools-xemu.md) and their MCP server
+([Runtime access](xbox-executable.md#runtime)), recorded as an xemu run. The last is a PCSX2 check.
 
 - **The shadow buffer's filtering**{#q-shadow-filter}: whether the Xbox's shadow-buffer compare samples one texel or
   filters four (the NV2A can filter shadow buffers), which decides how soft the edges are. Find out: a frame in xemu,
@@ -401,7 +405,9 @@ yet, so a runtime answer waits for one. The last is a PCSX2 check.
 
 ## How this was checked
 
-Code only: no Xbox emulator is set up on this machine, so no claim on this page is runtime. The Xbox executable is the
+Code, and one runtime check: the barrel fire's four colour words at Xbox `0x00460b70`, read in the running Xbox game
+through the xemu MCP server on xemu 0.8.139 on 2026-10-30 (run r-20261030-barrel-fire-colours), are the words Ghidra
+shows in `default.xbe` and at the PS2's `0x005144a8`. The Xbox executable is the
 NTSC-U `default.xbe` with SHA1 `fe246a74501cd10d2ce89ca5dbda5080d2b2edcc`. The Xbox executable was read in a private
 copy of the evaluation's Ghidra project ([Method](xbox-executable.md#method)), served by a second ghidra-mcp server on
 another port, never in the shared PS2 project; the PS2 side in the shared project. Read on 2026-10-25.

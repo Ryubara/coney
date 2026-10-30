@@ -321,3 +321,35 @@ def test_no_runs_folder_is_no_records(tmp_path: Path) -> None:
 def test_every_record_in_the_repository_is_valid() -> None:
     records, problems = run_records.load_all(REPO)
     assert problems == [] and all(r.id == name for name, r in records.items())
+
+
+# --- xemu records -----------------------------------------------------------------------------------------------------
+
+
+def test_an_xemu_record_has_an_xemu_table_in_place_of_pcsx2() -> None:
+    xemu = record(emulator="xemu", pcsx2_version="v0.8.110", copy="xemu-b", tool="xemu record-run")
+    text = run_records.to_toml(xemu, RULES)
+    data = tomllib.loads(text)
+    assert data["xemu"] == {"version": "v0.8.110", "copy": "xemu-b"} and "pcsx2" not in data
+    assert run_records.parse(text, RULES) == xemu
+
+
+def test_a_pcsx2_record_keeps_the_digest_it_had_before_xemu() -> None:
+    # The fields, in the digest's canonical JSON, are what they were before records could name xemu, so every record
+    # already committed still reads.
+    body = run_records._fields(record())
+    assert "pcsx2" in body and "xemu" not in body and "emulator" not in body
+
+
+def test_a_record_names_exactly_one_emulator() -> None:
+    text = run_records.to_toml(record(), RULES)
+    both = text.replace("[start]", '[xemu]\nversion = "v0.8.110"\ncopy = "xemu"\n\n[start]')
+    with pytest.raises(RunRecordError, match="one emulator"):
+        run_records.parse(both, RULES)
+    with pytest.raises(RunRecordError, match="emulator"):
+        run_records.to_toml(record(emulator="dolphin"), RULES)
+
+
+def test_the_committed_records_still_read() -> None:
+    records, problems = run_records.load_all(REPO)
+    assert problems == [] and all(r.emulator in run_records.EMULATORS for r in records.values())

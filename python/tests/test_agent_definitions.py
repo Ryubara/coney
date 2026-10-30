@@ -148,3 +148,12 @@ def test_the_reviewer_sends_each_kind_of_review_to_its_checklist() -> None:
     # description, the research page spot checks, and the report format.
     for phrase in ("task review", "Ghidra", "picture", "finding format", "never edit", "--record"):
         assert phrase in text, phrase
+
+
+def test_the_reviewer_gets_exactly_the_read_only_xemu_tools() -> None:
+    # The xemu server's own list of the tools that change nothing in the game is the one source.
+    from coney_tools.xemu_mcp import READ_ONLY_TOOLS
+
+    data, _ = _reviewer()
+    tools = {tool.strip() for tool in str(data["tools"]).split(",")}
+    assert {t.removeprefix("mcp__xemu__") for t in tools if t.startswith("mcp__xemu__")} == set(READ_ONLY_TOOLS)

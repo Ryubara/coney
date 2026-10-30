@@ -45,7 +45,7 @@ default_role = "contributor"
 # do not exist yet are listed ahead of their phase.
 
 [roles.coordinator]
-deny_tool_prefixes = ["mcp__ghidra-mcp__", "mcp__pcsx2__"]
+deny_tool_prefixes = ["mcp__ghidra-mcp__", "mcp__pcsx2__", "mcp__xemu__"]
 # `original` is the old name of the `orig` stage commands (coney_tools/renames.py), refused until the cutover.
 deny_coney_tools = [
   "orig study", "orig compare", "orig fails-first", "task start", "task check", "task review",

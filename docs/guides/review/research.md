@@ -17,8 +17,9 @@ up in the [research workflow](../research-workflow.md); the page layout is in
   cites no address.
 - [ ] **The levels are used correctly.**
     - *confirmed (code)* cites an address where the claim can be read in the original code;
-    - *confirmed (runtime)* is used only for a PCSX2 observation, and the claim cites the run record that observed it
-      (an old claim on a legacy page states the PCSX2 version and the method instead). The record's values support
+    - *confirmed (runtime)* is used only for an observation in PCSX2, or in xemu for a claim about the Xbox build (a
+      run record with an `[xemu]` table backs no other claim), and the claim cites the run record that observed it
+      (an old claim on a legacy page states the emulator's version and the method instead). The record's values support
       the claim's number and scenario. A check against the game's files is corroboration written beside the claim,
       never this level;
     - *inferred* names the evidence it follows from, and the basis is real and points one way;

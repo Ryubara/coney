@@ -10,6 +10,10 @@ other tool keeps working. See docs/guides/agents.md#setup.
 `mcp serve pcsx2 --copy NAME` also hands the server that PCSX2 copy's ports (PCSX2_DEBUG_PORT, PCSX2_PINE_PORT),
 which the PCSX2-MCP fork's server takes as `pcsx2_connect`'s defaults, so an agent's connect reaches the copy it
 claimed and never the first copy's ports (docs/guides/research-tools.md#several-at-once).
+
+`mcp serve xemu` runs Coney's own server for the Xbox build in xemu (coney_tools.xemu_mcp) with this Python: it needs
+nothing installed beyond the package, and it finds each agent's copy from the claims itself
+(docs/guides/coney-tools-xemu.md#mcp).
 """
 
 from __future__ import annotations
@@ -25,7 +29,7 @@ from coney_tools import pcsx2_claims
 from coney_tools.config import ConfigError, find_repo_root, load_config
 
 #: The servers `.mcp.json` registers, by the name agents see them under.
-SERVERS: tuple[str, ...] = ("ghidra-mcp", "pcsx2")
+SERVERS: tuple[str, ...] = ("ghidra-mcp", "pcsx2", "xemu")
 
 #: Where `tools/start-ghidra-mcp.ps1` serves the shared Ghidra project.
 GHIDRA_MCP_URL = "http://127.0.0.1:8090"
@@ -112,6 +116,9 @@ def server_command(
         return _ghidra_command(paths, which, env), extra
     if name == "pcsx2":
         return _pcsx2_command(paths, which), {**PCSX2_ENV, **(copy_ports(copy) if copy is not None else {})}
+    if name == "xemu":
+        # The package's own server, run by the interpreter that runs coney-tools (the uv environment).
+        return [sys.executable, "-m", "coney_tools.xemu_mcp"], {}
     raise ConfigError(f"unknown server {name!r}; known: {', '.join(SERVERS)}")
 
 
