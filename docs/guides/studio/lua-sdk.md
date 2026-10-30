@@ -399,7 +399,7 @@ the disc:
 
 | Proposed native | Does | Waits on |
 | --- | --- | --- |
-| `Coney.LoadAsset(path)` | Starts loading an asset and returns its asset id at once; the load completes at a step boundary. The project now **holds** the asset. A prefab path loads the prefab's members' assets too ([Spawning a prefab](entities.md#spawn-prefab)) | Coney loading assets from a project ([Custom content](../../roadmap.md#custom-content)) |
+| `Coney.LoadAsset(path)` | Starts loading an asset and returns its asset id at once; the load completes at a step boundary. The project now **holds** the asset. A prefab path loads its assets ([Spawning a prefab](entities.md#spawn-prefab)) | Coney loading assets from a project ([Custom content](../../roadmap.md#custom-content)) |
 | `Coney.IsAssetLoaded(id)` | Whether the project holds the asset and it has arrived; a thread waits on it with `Coney.Wait` (FiveM's `HasModelLoaded`) | the same |
 | `Coney.GetAssetState(id)` | `"loading"`, `"loaded"`, `"failed"` (with the reason as a second value) or `"none"` (not held), so a wait can end on a load that failed | the same |
 | `Coney.ReleaseAsset(id)` | The project no longer needs it: drops one hold; the memory is freed once nothing holds or uses it (FiveM's `SetModelAsNoLongerNeeded`) | the same |
@@ -617,7 +617,11 @@ its state** (its globals, its threads' places). It is not designed here; the pro
 
 ## The stubs, the compiler and the debugger {#tools}
 
-These three have [their own page](lua-tools.md); the links other pages hold to the last two land here.
+These three have [their own page](lua-tools.md).
+
+### Typed stubs for the language server {#stubs}
+
+The declarations that give the editor its completions: [the stubs](lua-tools.md#stubs).
 
 ### The Lua 4.0 compiler {#compiler}
 
