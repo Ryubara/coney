@@ -23,42 +23,30 @@ namespace {
 // `W_ShowStopWatch`'s warning window when none is given, ms.
 constexpr int kStopWatchWarnMs = 10000;
 
-// Argument `i` truncated to a whole number, as tolua reads an integer.
-// @coney-only tolua's argument reading, which the original's generated wrappers do
-std::int64_t wholeArg(std::span<const Value> args, std::size_t i) {
-    return static_cast<std::int64_t>(std::trunc(binding::number(args, i)));
-}
+// Whether argument `i` is missing or nil (binding_args.h): only for arguments that read the same either way.
+using binding::absent;
 
-// Whether argument `i` is missing or nil, so a default applies.
-// @coney-only tolua's argument reading, which the original's generated wrappers do
-bool absent(std::span<const Value> args, std::size_t i) { return i >= args.size() || args[i].isNil(); }
-
-// Argument `i` as an integer, `fallback` when omitted.
+// Argument `i` as a signed integer, `fallback` only when left out (an explicit nil reads 0).
 // @coney-only tolua's argument reading, which the original's generated wrappers do
 int intArg(std::span<const Value> args, std::size_t i, int fallback = 0) {
-    return absent(args, i) ? fallback : static_cast<int>(wholeArg(args, i));
+    return binding::signedArg(args, i, fallback);
 }
 
-// Argument `i` as tolua reads an unsigned integer (kept to 32 bits), `fallback` when omitted.
+// Argument `i` as tolua reads an unsigned integer, `fallback` only when left out (an explicit nil reads 0).
 // @coney-only tolua's argument reading, which the original's generated wrappers do
 std::uint32_t unsignedArg(std::span<const Value> args, std::size_t i, std::uint32_t fallback = 0) {
-    return absent(args, i) ? fallback : static_cast<std::uint32_t>(wholeArg(args, i));
+    return binding::unsignedArg(args, i, fallback);
 }
 
-// Argument `i` as a float, `fallback` when omitted.
+// Argument `i` as a float, `fallback` only when left out (an explicit nil reads 0).
 // @coney-only tolua's argument reading, which the original's generated wrappers do
 float floatArg(std::span<const Value> args, std::size_t i, float fallback = 0.0F) {
-    return absent(args, i) ? fallback : static_cast<float>(binding::number(args, i));
+    return binding::floatArg(args, i, fallback);
 }
 
-// Argument `i` as a boolean: nil and 0 are false.
+// Argument `i` as tolua reads a boolean that is false when left out: nil and 0 are false.
 // @coney-only tolua's argument reading, which the original's generated wrappers do
-bool boolArg(std::span<const Value> args, std::size_t i) {
-    if (absent(args, i)) {
-        return false;
-    }
-    return binding::number(args, i) != 0.0 || args[i].type() != Value::Type::Number;
-}
+bool boolArg(std::span<const Value> args, std::size_t i) { return binding::booleanArg(args, i, false); }
 
 // A handle argument: truncated to an unsigned integer.
 // @coney-only tolua's argument reading, which the original's generated wrappers do
@@ -164,7 +152,7 @@ void addPanelBindings(LuaVm& vm, const BindingContext& context) {
 
 // The objectives, the hints and the announcement.
 void addMessageBindings(LuaVm& vm, const BindingContext& context) {
-    // `HUDSetObjective(slot, text, mode, silent, ms)`.
+    // `HUDSetObjective(slot, text, mode, silent, ms)`: ms 8000 when left out, 0 for an explicit nil.
     // @orig 0x0036f280 HUDSetObjective (unknown)
     vm.registerFunction("HUDSetObjective", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
                             hud.setObjective(intArg(args, 0), binding::string(args, 1), intArg(args, 2),
@@ -185,7 +173,8 @@ void addMessageBindings(LuaVm& vm, const BindingContext& context) {
                         }));
     // @orig 0x0036f430 HUDFlushTutorialText (unknown)
     vm.registerFunction("HUDFlushTutorialText", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
-                            hud.hints().flush(static_cast<int>(unsignedArg(args, 0, hud::kHintFlushAll)));
+                            // The priority is passed on as a byte, as the original's is.
+                            hud.hints().flush(static_cast<std::uint8_t>(unsignedArg(args, 0, hud::kHintFlushAll)));
                         }));
     // `HUDCheckTutorialText(text)`: 1 when showing or queued, else nil.
     // @orig 0x0036f3e8 HUDCheckTutorialText (unknown)
@@ -283,6 +272,7 @@ void addArmiesBindings(LuaVm& vm, const BindingContext& context) {
 
 // The radars.
 void addRadarBindings(LuaVm& vm, const BindingContext& context) {
+    // `HUDTurnOnRadar(player)` / `HUDTurnOffRadar(player)`: both radars (2) when left out, player 0's for nil.
     // @orig 0x003700c8 HUDTurnOnRadar (unknown)
     vm.registerFunction("HUDTurnOnRadar", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
                             hud.radarOn(intArg(args, 0, 2));
@@ -291,10 +281,11 @@ void addRadarBindings(LuaVm& vm, const BindingContext& context) {
     vm.registerFunction("HUDTurnOffRadar", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
                             hud.radarOff(intArg(args, 0, 2));
                         }));
-    // `HUDSetNumIndicator(player, on, gang)`: gang defaults to -1 (none).
+    // `HUDSetNumIndicator(player, on, gang)`: gang -1 (none) when left out, 0 for an explicit nil.
     // @orig 0x00370138 HUDSetNumIndicator (unknown)
     vm.registerFunction("HUDSetNumIndicator", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
-                            hud.setNumIndicator(intArg(args, 0), boolArg(args, 1), intArg(args, 2, -1));
+                            hud.setNumIndicator(static_cast<int>(unsignedArg(args, 0)), boolArg(args, 1),
+                                                intArg(args, 2, -1));
                         }));
     // Blip types: 10 a mission objective, 1 a secondary one, and a human's by its class (Coney: 7, the class is not
     // read yet).
@@ -343,10 +334,10 @@ void addRadarBindings(LuaVm& vm, const BindingContext& context) {
     vm.registerFunction("HUDRadarSetRange", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
                             hud.setRadarRange(floatArg(args, 0, 0.0F), floatArg(args, 1, 0.0F));
                         }));
-    // `HUDSetRadarZoomScale(scale)`.
+    // `HUDSetRadarZoomScale(scale)`: 0 when left out.
     // @orig 0x00370728 HUDSetRadarZoomScale (unknown)
     vm.registerFunction("HUDSetRadarZoomScale", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
-                            hud.setRadarZoomScale(floatArg(args, 0, 1.0F));
+                            hud.setRadarZoomScale(floatArg(args, 0));
                         }));
     // @orig 0x001b4298 HUD_RadarFlash (unknown)
     // @orig 0x00370690 HUDSetRadarObjectFlash (unknown)

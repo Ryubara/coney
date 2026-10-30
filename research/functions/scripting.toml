@@ -422,7 +422,7 @@ name = "lua_BrSetNumFollowSlots"
 page = "../references/bindings/ai.md#brsetnumfollowslots"
 level = "confirmed-code"
 coney = "src/scripting/ai_bindings.cpp:makeBrSetNumFollowSlots"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0035fd18
@@ -454,7 +454,7 @@ name = "lua_GoalAddressPerson"
 page = "../references/bindings/ai.md#goaladdressperson"
 level = "confirmed-code"
 coney = "src/scripting/ai_bindings.cpp:makeGoalAddressPerson"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00360690
@@ -534,7 +534,7 @@ name = "lua_GoalDealer"
 page = "../references/bindings/ai.md#goaldealer"
 level = "confirmed-code"
 coney = "src/scripting/ai_bindings.cpp:makeGoalDealer"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00363530
@@ -558,7 +558,7 @@ name = "lua_ActTurnToDir"
 page = "../references/bindings/ai.md#actturntodir"
 level = "confirmed-code"
 coney = "src/scripting/ai_bindings.cpp:makeActTurnToDir"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x003647d8
@@ -566,7 +566,7 @@ name = "lua_ActLookAt"
 page = "../references/bindings/ai.md#actlookat"
 level = "confirmed-code"
 coney = "src/scripting/ai_bindings.cpp:makeActLookAt"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x003648a0
@@ -1022,7 +1022,7 @@ name = "lua_TriggerSphereCfg"
 page = "../references/bindings/world.md#triggerspherecfg"
 level = "confirmed-code"
 coney = "src/scripting/world_bindings.cpp:makeTriggerSphereCfg"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0036d938
@@ -1190,7 +1190,7 @@ name = "lua_HUDSetObjective"
 page = "../references/bindings/hud.md#hudsetobjective"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addMessageBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0036f360
@@ -1222,7 +1222,7 @@ name = "lua_HUDFlushTutorialText"
 page = "../references/bindings/hud.md#hudflushtutorialtext"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addMessageBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0036fa28
@@ -1270,7 +1270,7 @@ name = "lua_HUDTurnOnRadar"
 page = "../references/bindings/hud.md#hudturnonradar"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00370100
@@ -1278,7 +1278,7 @@ name = "lua_HUDTurnOffRadar"
 page = "../references/bindings/hud.md#hudturnoffradar"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00370138
@@ -1286,7 +1286,7 @@ name = "lua_HUDSetNumIndicator"
 page = "../references/bindings/hud.md#hudsetnumindicator"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x003701c8
@@ -1326,7 +1326,7 @@ name = "lua_HUDSetRadarZoomScale"
 page = "../references/bindings/hud.md#hudsetradarzoomscale"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00370760
@@ -1623,6 +1623,14 @@ page = "../references/bindings/ai.md#tacticcrowd"
 level = "confirmed-code"
 coney = "src/scripting/ai_bindings.cpp:makeTacticCrowd"
 status = "legacy"
+
+[[function]]
+address = 0x00376008
+name = "lua_TacticDomination"
+page = "../references/bindings/ai.md#tacticdomination"
+level = "confirmed-code"
+coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
+status = "compared"
 
 [[function]]
 address = 0x00377a10

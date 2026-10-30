@@ -65,8 +65,8 @@ float floatArgOr(std::span<const Value> args, std::size_t i, float fallback) {
 // Argument `i` as a float.
 float floatArg(std::span<const Value> args, std::size_t i) { return static_cast<float>(binding::number(args, i)); }
 
-// Whether argument `i` is missing or nil.
-bool absent(std::span<const Value> args, std::size_t i) { return i >= args.size() || args[i].isNil(); }
+// Whether argument `i` is missing or nil (binding_args.h): only for arguments that read the same either way.
+using binding::absent;
 
 // Argument `i` as a boolean: nil and 0 are false.
 bool boolArg(std::span<const Value> args, std::size_t i) {

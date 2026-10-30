@@ -40,8 +40,8 @@ std::int64_t wholeArg(std::span<const Value> args, std::size_t i) {
     return static_cast<std::int64_t>(std::trunc(binding::number(args, i)));
 }
 
-// Whether argument `i` is missing or nil, so a default applies.
-bool absent(std::span<const Value> args, std::size_t i) { return i >= args.size() || args[i].isNil(); }
+// Whether argument `i` is missing or nil (binding_args.h): only for arguments that read the same either way.
+using binding::absent;
 
 // Argument `i` as an integer, `fallback` when omitted.
 int intArg(std::span<const Value> args, std::size_t i, int fallback = 0) {
@@ -393,13 +393,13 @@ void addCharacterBindings(LuaVm& vm, const BindingContext& context) {
         }
         return binding::none();
     });
-    // `TacticDomination(gang, flag, range, callback)`: range defaults to 3 m; a nil callback is none.
-    // @orig 0x00316b30 Tactic_Domination (unknown)
+    // `TacticDomination(gang, flag, range, callback)`: range 3 m when left out, 0 for an explicit nil; a nil callback
+    // is none. Tactic_Domination (0x00316b30) is the host's.
+    // @orig 0x00376008 lua_TacticDomination (unknown)
     vm.registerFunction("TacticDomination", [context = &context](std::span<const Value> args) {
         if (AiBindingHost* ai = context->ai; ai != nullptr) {
-            const float range = absent(args, 2) ? kDominationRange : static_cast<float>(binding::number(args, 2));
-            const std::string callback = absent(args, 3) ? std::string{} : binding::string(args, 3);
-            ai->tacticDomination(intArg(args, 0), handleArg(args, 1), range, callback);
+            ai->tacticDomination(binding::signedArg(args, 0), binding::handleArg(args, 1),
+                                 binding::floatArg(args, 2, kDominationRange), binding::string(args, 3));
         }
         return binding::none();
     });

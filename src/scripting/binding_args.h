@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <expected>
 #include <format>
+#include <limits>
 #include <optional>
 #include <span>
 #include <string>
@@ -39,39 +40,6 @@ using Results = std::expected<std::vector<Value>, Error>;
     return 0.0;
 }
 
-/// Whether argument `i` is missing or nil. Stub (test commit): the readers below keep the old reading.
-[[nodiscard]] inline bool absent(std::span<const Value> args, std::size_t i) {
-    return i >= args.size() || args[i].isNil();
-}
-/// Stub: the default when absent.
-[[nodiscard]] inline double numberOr(std::span<const Value> args, std::size_t i, double fallback) {
-    return absent(args, i) ? fallback : number(args, i);
-}
-/// Stub: a wrapping conversion.
-[[nodiscard]] inline std::uint32_t toUnsigned(double value) {
-    return static_cast<std::uint32_t>(static_cast<std::int64_t>(std::trunc(value)));
-}
-/// Stub: a plain conversion.
-[[nodiscard]] inline std::int32_t toSigned(double value) {
-    return static_cast<std::int32_t>(static_cast<std::int64_t>(std::trunc(value)));
-}
-/// Stub.
-[[nodiscard]] inline std::uint32_t unsignedArg(std::span<const Value> args, std::size_t i, double fallback = 0.0) {
-    return toUnsigned(numberOr(args, i, fallback));
-}
-/// Stub.
-[[nodiscard]] inline std::int32_t signedArg(std::span<const Value> args, std::size_t i, double fallback = 0.0) {
-    return toSigned(numberOr(args, i, fallback));
-}
-/// Stub.
-[[nodiscard]] inline float floatArg(std::span<const Value> args, std::size_t i, double fallback = 0.0) {
-    return static_cast<float>(numberOr(args, i, fallback));
-}
-/// Stub.
-[[nodiscard]] inline bool booleanArg(std::span<const Value> args, std::size_t i, bool fallback = false) {
-    return absent(args, i) ? fallback : number(args, i) != 0.0;
-}
-
 /// Argument `i` as a string: a string, a number's text, or empty (tolua's NULL) for anything else.
 [[nodiscard]] inline std::string string(std::span<const Value> args, std::size_t i) {
     if (i >= args.size()) {
@@ -84,6 +52,96 @@ using Results = std::expected<std::vector<Value>, Error>;
         return std::format("{:.16g}", *value);
     }
     return {};
+}
+
+/// Whether argument `i` is missing or nil. Only for an argument that reads the same either way (a string or a
+/// callback, tolua's NULL) or that a binding tests for a type itself; a number or boolean with a default reads an
+/// explicit nil as 0, so it goes through numberOr() or booleanArg() (docs/research/scripting.md#optional-arguments).
+[[nodiscard]] inline bool absent(std::span<const Value> args, std::size_t i) {
+    return i >= args.size() || args[i].isNil();
+}
+
+/// Argument `i` as a number with a default: `fallback` only when the script left it out (past the top of the
+/// stack); anything else is converted as number() does, so an explicit nil reads 0.
+/// The tolua reader at 0x004091c8 (middleware the original links, so no @orig tag).
+/// @coney-only tolua's argument reading
+[[nodiscard]] inline double numberOr(std::span<const Value> args, std::size_t i, double fallback) {
+    // The top of the stack is the argument count: an index within it is converted whatever its type.
+    if (i >= args.size()) {
+        return fallback;
+    }
+    return number(args, i);
+}
+
+/// A number as the original converts it to an unsigned 32-bit integer: NaN, negative numbers and anything under 1
+/// give 0, 2^32 and above (and +infinity) 0xffffffff, the rest is truncated.
+/// The soft-float conversion at 0x0042c420 (middleware the original links, so no @orig tag).
+/// @coney-only the compiler runtime's conversion
+[[nodiscard]] inline std::uint32_t toUnsigned(double value) {
+    // NaN, a zero and a negative number all read 0 (the original tests the class, then the sign).
+    if (std::isnan(value) || value <= 0.0 || std::signbit(value)) {
+        return 0;
+    }
+    // At or past 2^32 it saturates; +infinity is past it.
+    constexpr double kTwoTo32 = 4294967296.0;
+    if (value >= kTwoTo32) {
+        return std::numeric_limits<std::uint32_t>::max();
+    }
+    // Under 1 the exponent is negative and the result 0, which truncation gives too.
+    return static_cast<std::uint32_t>(std::trunc(value));
+}
+
+/// A number as the original converts it to a signed 32-bit integer: NaN and anything within 1 of 0 give 0, the rest
+/// is truncated toward 0 and saturates at the int range (infinity too).
+/// The soft-float conversion at 0x0042c388 (middleware the original links, so no @orig tag).
+/// @coney-only the compiler runtime's conversion
+[[nodiscard]] inline std::int32_t toSigned(double value) {
+    // NaN and a zero read 0.
+    if (std::isnan(value) || value == 0.0) {
+        return 0;
+    }
+    // A magnitude of 2^31 or more saturates by its sign, so -2^31 itself gives the minimum too.
+    constexpr double kTwoTo31 = 2147483648.0;
+    if (std::fabs(value) >= kTwoTo31) {
+        return value < 0.0 ? std::numeric_limits<std::int32_t>::min() : std::numeric_limits<std::int32_t>::max();
+    }
+    return static_cast<std::int32_t>(std::trunc(value));
+}
+
+/// Argument `i` as tolua reads an unsigned integer with a default: numberOr(), then toUnsigned().
+[[nodiscard]] inline std::uint32_t unsignedArg(std::span<const Value> args, std::size_t i, double fallback = 0.0) {
+    return toUnsigned(numberOr(args, i, fallback));
+}
+
+/// Argument `i` as a handle: unsignedArg() with no default, as the double the hosts take.
+[[nodiscard]] inline double handleArg(std::span<const Value> args, std::size_t i) {
+    return static_cast<double>(unsignedArg(args, i));
+}
+
+/// Argument `i` as tolua reads a signed integer with a default: numberOr(), then toSigned().
+[[nodiscard]] inline std::int32_t signedArg(std::span<const Value> args, std::size_t i, double fallback = 0.0) {
+    return toSigned(numberOr(args, i, fallback));
+}
+
+/// Argument `i` as tolua reads a float with a default: numberOr(), narrowed to a float.
+[[nodiscard]] inline float floatArg(std::span<const Value> args, std::size_t i, double fallback = 0.0) {
+    return static_cast<float>(numberOr(args, i, fallback));
+}
+
+/// Argument `i` as a boolean with a default: `fallback` only when the script left it out, false for an explicit nil
+/// (Lua 4's false), else whether the number (number()'s conversion) is not 0.
+/// The tolua reader at 0x00409318 (middleware the original links, so no @orig tag).
+/// @coney-only tolua's argument reading
+[[nodiscard]] inline bool booleanArg(std::span<const Value> args, std::size_t i, bool fallback = false) {
+    // Past the top of the stack: the default.
+    if (i >= args.size()) {
+        return fallback;
+    }
+    // A nil is false; anything else is converted and compared with 0.
+    if (args[i].isNil()) {
+        return false;
+    }
+    return number(args, i) != 0.0;
 }
 
 /// Argument `i` as a position: a table of three numbers at t[1]..t[3]; nothing for anything else.

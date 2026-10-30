@@ -1044,7 +1044,7 @@
   calls:
     - {addr: 0x001b40e0, name: HUD_SetRadarZoomScale}
   args:
-    - {name: scale, lua: number, ctype: float, desc: "Factor on the radius in metres the radar shows (1.0 by default); below 1 zooms in (scripts use 0.35 and 0.5), above 1 shows more of the map."}
+    - {name: scale, lua: number, ctype: float, default: 0, desc: "Factor on the radius in metres the radar shows (1.0 until a script sets it; 0 when the argument is left out); below 1 zooms in (scripts use 0.35 and 0.5), above 1 shows more of the map."}
   description: >-
     Sets the zoom scale of both radars (radar `+0x2920`, the two globals 0x00604730 and 0x00607070). The radar's shown
     radius eases toward (rest + (fast - rest) × min(speed, 12) / 12) × scale, so with the level99 values (50 m

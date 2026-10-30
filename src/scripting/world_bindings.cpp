@@ -29,16 +29,9 @@ namespace {
 // Argument `i` as a handle: truncated to a whole number, as tolua reads an unsigned integer.
 double handleArg(std::span<const Value> args, std::size_t i) { return std::trunc(binding::number(args, i)); }
 
-// Argument `i` as tolua reads a boolean with a default: absent is the default, nil or false (and 0) false.
-bool booleanArg(std::span<const Value> args, std::size_t i, bool fallback) {
-    if (i >= args.size()) {
-        return fallback;
-    }
-    if (const std::optional<double> value = args[i].number()) {
-        return *value != 0.0;
-    }
-    return !args[i].isNil();
-}
+// Argument `i` as tolua reads a boolean with a default (binding_args.h): left out the default, nil false, else the
+// number is not 0.
+using binding::booleanArg;
 
 // Argument `i` as a whole number where a script may pass a boolean (`TriggerSphereCfg`'s mode: true is 1).
 int numberOrBooleanArg(std::span<const Value> args, std::size_t i) {
@@ -172,15 +165,18 @@ NativeFunction makeObjShowHide(const BindingContext& context, bool show) {
     };
 }
 
-// `TriggerSphereCfg(object, enable, radius, mode, interval)`: the object's trigger sphere, made or reconfigured.
+// `TriggerSphereCfg(object, enable, radius, mode, interval)`: the object's trigger sphere, made or reconfigured;
+// enable is false when left out.
 // @orig 0x0036d0e0 TriggerSphereCfg (unknown)
 // @orig 0x00414bc0 TriggerSphere_Configure (unknown)
 NativeFunction makeTriggerSphereCfg(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
         if (context->spheres != nullptr) {
-            static_cast<void>(context->spheres->configure(handleArg(args, 0), booleanArg(args, 1, true),
-                                                          static_cast<float>(binding::number(args, 2)),
-                                                          numberOrBooleanArg(args, 3), unsignedArg(args, 4)));
+            // Stand-in: the mode keeps Coney's reading of a non-number as 1, where the original's signed reader gives 0
+            // (a test asserts it; reported on #686).
+            static_cast<void>(context->spheres->configure(
+                binding::handleArg(args, 0), binding::booleanArg(args, 1, false), binding::floatArg(args, 2),
+                numberOrBooleanArg(args, 3), binding::unsignedArg(args, 4)));
         }
         return binding::none();
     };

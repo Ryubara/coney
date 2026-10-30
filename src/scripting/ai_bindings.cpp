@@ -23,8 +23,8 @@ int intArg(std::span<const Value> args, std::size_t i) { return static_cast<int>
 // Argument `i` as a float.
 float floatArg(std::span<const Value> args, std::size_t i) { return static_cast<float>(binding::number(args, i)); }
 
-// Whether argument `i` is missing or nil, so a default applies.
-bool absent(std::span<const Value> args, std::size_t i) { return i >= args.size() || args[i].isNil(); }
+// Whether argument `i` is missing or nil (binding_args.h): only for arguments that read the same either way.
+using binding::absent;
 
 // Argument `i` as a boolean: nil and 0 are false.
 bool boolArg(std::span<const Value> args, std::size_t i) {
@@ -44,10 +44,8 @@ double handleArg(std::span<const Value> args, std::size_t i) {
     return static_cast<double>(static_cast<std::uint32_t>(wholeArg(args, i)));
 }
 
-// A string argument that is empty for nil (a callback name).
-std::string nameArg(std::span<const Value> args, std::size_t i) {
-    return absent(args, i) ? std::string{} : binding::string(args, i);
-}
+// A string argument that is empty for nil (a callback name), as tolua reads one.
+std::string nameArg(std::span<const Value> args, std::size_t i) { return binding::string(args, i); }
 
 // A binding that hands its arguments to the host when there is one and returns nothing. The host is read at each call,
 // not at registration: a level gives its brains to a Lua state made before it (gamemodes/gameplay_mode.h).
@@ -76,25 +74,27 @@ NativeFunction makeGoalMoveToFlag(const BindingContext& context) {
     });
 }
 
-// `ActLookAt(human, target, turnSpeed, timeMs)`: the fourth argument defaults to -1.
+// `ActLookAt(human, target, turnSpeed, timeMs)`: the fourth argument is -1 when left out, 0 for an explicit nil
+// (docs/research/scripting.md#optional-arguments).
 // @orig 0x003647d8 ActLookAt (unknown)
 NativeFunction makeActLookAt(const BindingContext& context) {
     return hostCall(context, [](AiBindingHost& host, std::span<const Value> args) {
-        host.actLookAt(LookAtCall{.human = handleArg(args, 0),
-                                  .target = handleArg(args, 1),
-                                  .turn = floatArg(args, 2),
-                                  .delayMs = static_cast<std::int16_t>(absent(args, 3) ? -1 : wholeArg(args, 3))});
+        host.actLookAt(LookAtCall{.human = binding::handleArg(args, 0),
+                                  .target = binding::handleArg(args, 1),
+                                  .turn = binding::floatArg(args, 2),
+                                  .delayMs = static_cast<std::int16_t>(binding::signedArg(args, 3, -1))});
     });
 }
 
 // `ActTurnToDir(human, heading, turnSpeed, delayMs)`: the heading kept as 16 bits; the turn speed is stored and never
-// read, so it is not passed on; the delay defaults to -1.
+// read, so it is not passed on; the delay is -1 when left out, 0 for an explicit nil.
 // @orig 0x00364708 ActTurnToDir (unknown)
 // @orig 0x002fdb90 Action_TurnToHeading (unknown)
 NativeFunction makeActTurnToDir(const BindingContext& context) {
     return hostCall(context, [](AiBindingHost& host, std::span<const Value> args) {
-        host.actTurnToDir(handleArg(args, 0), static_cast<float>(static_cast<std::int16_t>(wholeArg(args, 1))),
-                          static_cast<std::int16_t>(absent(args, 3) ? -1 : wholeArg(args, 3)));
+        host.actTurnToDir(binding::handleArg(args, 0),
+                          static_cast<float>(static_cast<std::int16_t>(binding::signedArg(args, 1))),
+                          static_cast<std::int16_t>(binding::signedArg(args, 3, -1)));
     });
 }
 
@@ -148,16 +148,16 @@ NativeFunction makeGoalPlayDynAnimation(const BindingContext& context) {
     });
 }
 
-// `GoalAddressPerson(human, target, approach, range, speech, callback)`: speech defaults to -1.
+// `GoalAddressPerson(human, target, approach, range, speech, callback)`: speech is -1 when left out, 0 for nil.
 // @orig 0x003603a8 GoalAddressPerson (unknown)
 NativeFunction makeGoalAddressPerson(const BindingContext& context) {
     return hostCall(context, [](AiBindingHost& host, std::span<const Value> args) {
-        host.goalAddressPerson(AddressPersonCall{.human = handleArg(args, 0),
-                                                 .target = handleArg(args, 1),
-                                                 .approach = floatArg(args, 2),
-                                                 .range = floatArg(args, 3),
-                                                 .speech = absent(args, 4) ? -1 : intArg(args, 4),
-                                                 .callback = nameArg(args, 5)});
+        host.goalAddressPerson(AddressPersonCall{.human = binding::handleArg(args, 0),
+                                                 .target = binding::handleArg(args, 1),
+                                                 .approach = binding::floatArg(args, 2),
+                                                 .range = binding::floatArg(args, 3),
+                                                 .speech = binding::signedArg(args, 4, -1),
+                                                 .callback = binding::string(args, 5)});
     });
 }
 
@@ -170,24 +170,26 @@ NativeFunction makeGoalTrackHuman(const BindingContext& context) {
 }
 
 // `GoalDealer(human, dealerType, range, runChance, dirtyChance, option)`: range 10, run chance 50 and option true
-// when omitted.
+// when left out; an explicit nil reads 0 (false).
 // @orig 0x00363018 GoalDealer (unknown)
 NativeFunction makeGoalDealer(const BindingContext& context) {
     return hostCall(context, [](AiBindingHost& host, std::span<const Value> args) {
-        host.goalDealer(DealerCall{.human = handleArg(args, 0),
-                                   .type = intArg(args, 1),
-                                   .range = absent(args, 2) ? 10.0F : floatArg(args, 2),
-                                   .runChance = absent(args, 3) ? 50 : intArg(args, 3),
-                                   .dirtyChance = intArg(args, 4),
-                                   .option = boolArgOr(args, 5, true)});
+        // The chances are read as unsigned and kept in an int, as the original's do.
+        host.goalDealer(DealerCall{.human = binding::handleArg(args, 0),
+                                   .type = binding::signedArg(args, 1),
+                                   .range = binding::floatArg(args, 2, 10.0),
+                                   .runChance = static_cast<int>(binding::unsignedArg(args, 3, 50.0)),
+                                   .dirtyChance = static_cast<int>(binding::unsignedArg(args, 4)),
+                                   .option = binding::booleanArg(args, 5, true)});
     });
 }
 
-// `BrSetNumFollowSlots(leader, count, count2)`: count2 defaults to -1.
+// `BrSetNumFollowSlots(leader, count, count2)`: count2 is -1 when left out, 0 for an explicit nil.
 // @orig 0x0035fc80 BrSetNumFollowSlots (unknown)
 NativeFunction makeBrSetNumFollowSlots(const BindingContext& context) {
     return hostCall(context, [](AiBindingHost& host, std::span<const Value> args) {
-        host.brSetNumFollowSlots(handleArg(args, 0), intArg(args, 1), absent(args, 2) ? -1 : intArg(args, 2));
+        host.brSetNumFollowSlots(binding::handleArg(args, 0), binding::signedArg(args, 1),
+                                 binding::signedArg(args, 2, -1));
     });
 }
 

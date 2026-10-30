@@ -188,8 +188,10 @@ default (0, `false` or `NULL`), a wrong type as whatever Lua's conversion gives.
 
 | Helper | Address | Reads / pushes | Evidence |
 | --- | --- | --- | --- |
-| number | `0x004091c8` | argument n as a number, default if n is past the top | confirmed (code) |
-| boolean | `0x00409318` | nil → false, else number ≠ 0 | confirmed (code) |
+| number | `0x004091c8` (`Lua_GetOptionalNumberArg`) | argument n as a number, default if n is past the top | confirmed (code) |
+| boolean | `0x00409318` (`Lua_GetOptionalBoolArg`) | default if past the top, nil → false, else number ≠ 0 | confirmed (code) |
+| to unsigned | `0x0042c420` | a number as an unsigned 32-bit integer (below) | confirmed (code) |
+| to signed | `0x0042c388` | a number as a signed 32-bit integer (below) | confirmed (code) |
 | string | `0x00409220` | argument n as a string | confirmed (code) |
 | table field | `0x004093a0` / `0x00409438` | `t[i]` as a number / string | confirmed (code) |
 | push number | `0x004094e8` | a number | confirmed (code) |
@@ -199,6 +201,40 @@ default (0, `false` or `NULL`), a wrong type as whatever Lua's conversion gives.
 | write back | `0x004095d8` / `0x00409648` | stores a number / string into a table argument (bindings that fill a table they were given) | confirmed (code) |
 
 The scripts follow the same convention: `global.lua` sets `true = 1` and `false = nil` before anything else.
+
+#### Optional arguments: left out versus nil {#optional-arguments}
+
+A binding's default applies only to an argument the script **left out**, never to one it passed as `nil`. The number
+reader `0x004091c8` compares the index with the top of the stack (`lua_gettop`, `0x00323318`) and returns the default
+only when the index is past it; otherwise it returns `lua_tonumber` (`0x00323688`), which gives 0 for a nil, a table or
+a string that is not a number, and converts a numeric string. So `HUDTurnOnRadar()` turns both radars on (default 2),
+while `HUDTurnOnRadar(nil)` turns on player 0's. Confirmed (code) at `0x004091c8` and `0x00323688`. The boolean reader
+`0x00409318` does the same test: left out it is the default, `nil` (type tag 1, read by `0x003234b8`) is false, and
+anything else is `lua_tonumber` compared with 0, so a non-numeric string is false. Confirmed (code) at `0x00409318`.
+
+The bindings then narrow the double with one of two soft-float conversions, both through the unpacker `0x0042b9b8`
+(class 0 or 1 NaN, 2 zero or denormal, 3 normal, 4 infinity; sign; unbiased exponent; mantissa). Confirmed (code):
+
+- **To unsigned** (`0x0042c420`): NaN, zero, any negative number (and -infinity) and anything under 1 give 0; a number
+  under 2^32 is truncated; 2^32 and above, and +infinity, give `0xffffffff`.
+- **To signed** (`0x0042c388`): NaN, zero and anything within 1 of 0 give 0; a magnitude under 2^31 is truncated toward
+  0; anything else (infinity too) saturates to `0x7fffffff` or `-0x80000000` by its sign.
+
+Which reader and conversion each argument takes is in the binding's wrapper; Coney's readers are
+`binding::numberOr`, `unsignedArg`, `signedArg`, `floatArg` and `booleanArg` in
+[binding_args.h](repo:src/scripting/binding_args.h). The orig sweep of 2026-10-21 found thirteen bindings that read an
+explicit nil as left out (#686); they now read it as the original does: `GoalAddressPerson`'s speech (`0x003603a8`),
+`GoalDealer`'s range and run chance (`0x00363018`), `BrSetNumFollowSlots`'s second count (`0x0035fc80`), the delays
+of `ActLookAt` (`0x003647d8`) and `ActTurnToDir` (`0x00364708`), `TacticDomination`'s range (wrapper `0x00376008`),
+`HUDSetObjective`'s time (`0x0036f280`), `HUDFlushTutorialText`'s priority (`0x0036f430`, narrowed to a byte), the
+player of `HUDTurnOnRadar` and `HUDTurnOffRadar` (`0x003700c8`, `0x00370100`), `HUDSetNumIndicator`'s gang
+(`0x00370138`), `HUDSetRadarZoomScale`'s scale, 0 when left out (`0x00370728`), and `TriggerSphereCfg`'s enable,
+false when left out (`0x0036d0e0`). Confirmed (code) at each wrapper.
+
+Open question: other bindings may still read an explicit nil as left out; the sweep did not list them, and Coney's
+`binding::absent` keeps that reading where it is still used (strings and callbacks read the same either way). One
+known difference is kept as a stand-in: `TriggerSphereCfg` reads a mode that is not a number (a string) as 1, where
+the signed reader gives 0 for it (scripts pass only numbers there, `true` being 1).
 
 #### How a binding is called {#binding-call}
 

@@ -40,8 +40,8 @@ double handleArg(std::span<const Value> args, std::size_t i) {
 // The bindings read the hosts at each call, not at registration: a level gives its brains to a Lua state made before
 // it (gamemodes/gameplay_mode.h).
 
-// Whether argument `i` is missing or nil, so its default applies.
-bool absent(std::span<const Value> args, std::size_t i) { return i >= args.size() || args[i].isNil(); }
+// Whether argument `i` is missing or nil (binding_args.h): only for arguments that read the same either way.
+using binding::absent;
 
 // Argument `i` as a float, or `fallback` when it is absent.
 float floatOr(std::span<const Value> args, std::size_t i, float fallback) {
