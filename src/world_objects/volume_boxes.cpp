@@ -96,6 +96,9 @@ bool VolumeBoxes::stayDue(VolumeBox& box, std::uint64_t nowMs) const {
 }
 
 void VolumeBoxes::addOccupant(VolumeBox& box, double human, std::size_t room) const {
+    // Coney's choice: the original fills the first fixed slot that does not resolve, a hole or a stale handle
+    // (inferred, as the sphere's 0x004f5cc8); Coney's list stays packed and appends, so the order of the list, and
+    // of several 4s in one occupants' pass, may differ.
     if (box.occupants.size() < room) {
         box.occupants.push_back(human);
         return;

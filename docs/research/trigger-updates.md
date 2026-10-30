@@ -24,8 +24,9 @@ message reaches Lua is on [Message handlers](scripting.md#message-handlers).
 - The timer is due only once the game time is strictly past it.
 - A box's period is its handler component's repeat period (1000 ms unless something set it); a sphere's is its own,
   1000 ms.
-- Each message goes out at once, in the order the humans are found. A handler that switches the trigger off stops
-  the rest of that update.
+- Each message goes out at once, in the order the humans are found. A handler that switches a box off stops the rest
+  of that update; one that switches a sphere off ends only the found humans, and the sphere's occupants are still
+  checked unless the sphere was freed.
 - An occupant whose handle no longer names anything is skipped: no message 4, and it stays listed.
 - `AddVolumeBox` makes nothing for kind 1; kinds 0, 2 and 3 each take a record from their pool.
 
@@ -79,12 +80,15 @@ nobody. Both pass mask 1. Confirmed (code) at `0x004146e0`, `0x00415378`.
    radius and the mode's line test) and he is new, he is added in the first slot that no longer resolves
    (`HandleArray60_AddInFreeSlot`, `0x004f5cc8`, nothing when all 60 resolve) and message 3 goes to the object
    whether or not he found a slot; accepted and listed, message 5 on a due check; not accepted and listed, he is
-   removed and message 4 goes. Each message is sent at once. After each human the check stops when the sphere was
-   disarmed, and skips to the end when the sphere was freed during the check (`TriggerSphere_Free`, `0x00414338`,
-   only marks the sphere being updated, `0x00514824`, in `0x00514828`). Confirmed (code).
-3. Then each of the 60 occupant slots: a handle that does not resolve (`0x00390268`) is skipped and kept; a human
-   flagged dead (`0x00227eb0`) or no longer accepted is removed and message 4 goes. The pass stops when the sphere
-   was freed. Confirmed (code).
+   removed and message 4 goes. Each message is sent at once. After each human the loop over the found humans ends
+   when the sphere was disarmed (the branch at `0x004148ec`), going on to step 3, and the check skips to the end when
+   the sphere was freed during it (`TriggerSphere_Free`, `0x00414338`, only marks the sphere being updated,
+   `0x00514824`, in `0x00514828`). Confirmed (code).
+3. Then, unless the sphere was freed, each of the 60 occupant slots, whether or not the sphere is still armed: a
+   handle that does not resolve (`0x00390268`) is skipped and kept; a human flagged dead (`0x00227eb0`) or no longer
+   accepted is removed and message 4 goes. The pass stops when the sphere was freed. Confirmed (code). So a handler
+   that disarms with `TriggerSphereCfg` (`0x00414bc0`, which keeps the occupants) still has 4 sent for each occupant
+   who left; `TriggerSphereEnable` off empties the list, so nothing follows.
 4. A sphere freed during the check is freed now.
 
 ### The accept test {#accepts}
@@ -135,13 +139,18 @@ decompiled scripts.
   original goes on with a null record; `makeAddVolumeBox()` then returns `NilHandle` and uses no handle. Coney's boxes
   come from no fixed pool, so a full pool never happens ([q-box-pools](#q-box-pools)). Coney sorts the corners, which
   for every box the game adds is the same as keeping them.
-- `TriggerSpheres::accepts()` is the accept test, its modes' tests a stand-in ([q-line-tests](#q-line-tests)).
+- `TriggerSpheres::accepts()` is the accept test, its modes' tests a stand-in ([q-line-tests](#q-line-tests)); any
+  mode other than 1 and 2 accepts on the radius alone.
 - Coney's choices in the found list ([q-found-mask](#q-found-mask)): the subjects are Coney's humans in its own order
   (by handle), a dead human is never found, a box finds the humans inside it rather than within its bounding sphere,
   and nobody beyond the first 60 found is tested by a sphere. A players' box takes the first two players among the
   subjects.
+- Coney's choice: a trigger's occupants are a packed list that appends, where the original fills the first of its
+  fixed slots that does not resolve (`0x004f5cc8`), so the order of the occupants, and of several 4s in one pass, may
+  differ.
 - Issue [#690](issue:690) made the stay timer re-arm on every due update with the strict test, the messages go out at
-  once and stop with the trigger, and an unresolved sphere occupant stay listed.
+  once and stop as the original's do when a handler switches the trigger off, and an unresolved sphere occupant stays
+  listed.
 
 ## Open questions
 

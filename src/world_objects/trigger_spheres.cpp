@@ -93,7 +93,7 @@ bool TriggerSpheres::accepts(const TriggerSphere& sphere, const std::array<float
         return false;
     }
     // Stand-in: modes 1 and 2 use Coney's clear-line test between points raised 1 m (the original's tests are open).
-    if (sphere.mode == 0 || !m_clearLine) {
+    if ((sphere.mode != 1 && sphere.mode != 2) || !m_clearLine) {
         return true;
     }
     const std::array<float, 3> from = sphere.mode == 2 ? raised(centre, kLineRaise) : centre;
@@ -164,12 +164,16 @@ void TriggerSpheres::check(std::size_t index, std::span<const BoxSubject> subjec
         } else {
             continue;
         }
-        // Each message goes at once; a handler that disarmed or freed the sphere ends the check.
+        // Each message goes at once. A handler that freed the sphere ends the check; one that only disarmed it ends
+        // the found humans, and the occupants' pass below still runs (TriggerSphereCfg off keeps the occupants).
         if (send) {
             send(object, message, subject.handle);
         }
-        if (!stillChecked(index, object) || !m_spheres[index].armed) {
+        if (!stillChecked(index, object)) {
             return;
+        }
+        if (!m_spheres[index].armed) {
+            break;
         }
     }
     // The occupants: one whose handle no longer resolves is skipped and kept; one dead or no longer accepted leaves.
@@ -193,6 +197,9 @@ void TriggerSpheres::check(std::size_t index, std::span<const BoxSubject> subjec
 }
 
 void TriggerSpheres::addOccupant(TriggerSphere& sphere, double human) const {
+    // Coney's choice: the original fills the first of its 60 fixed slots that does not resolve, a hole or a stale
+    // handle (0x004f5cc8); Coney's list stays packed and appends, so the order of the list, and of several 4s in
+    // one occupants' pass, may differ.
     if (sphere.occupants.size() < VolumeBoxes::kMaxOccupants) {
         sphere.occupants.push_back(human);
         return;

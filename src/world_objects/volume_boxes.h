@@ -144,7 +144,8 @@ class VolumeBoxes {
     // @orig 0x00415378 VolumeBox_Update (unknown)
     // @orig 0x004134f8 PlayerVolumeBox_Update (unknown)
     bool stayDue(VolumeBox& box, std::uint64_t nowMs) const;
-    // Lists `human` in `box`: a free place among `room`, else the first whose handle no longer resolves, else nowhere.
+    // Lists `human` in `box`: a free place among `room`, else the first whose handle no longer resolves, else nowhere;
+    // the list stays packed, unlike the original's fixed slots.
     // @orig 0x00415378 VolumeBox_Update (unknown)
     // @orig 0x004134f8 PlayerVolumeBox_Update (unknown)
     void addOccupant(VolumeBox& box, double human, std::size_t room) const;

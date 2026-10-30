@@ -112,15 +112,17 @@ class TriggerSpheres {
     // One check of the sphere at `index`, when armed: the stay timer re-armed whenever it is due; each human within
     // the radius (not the object's own, at most 60) that the sphere accepts enters (3) or, on a due check, stays (5),
     // and a listed one it no longer accepts leaves (4); then each occupant dead or no longer accepted leaves (4), one
-    // whose handle no longer resolves being skipped and kept. Each message goes at once, and the check ends when a
-    // handler disarms the sphere or clears the pool (docs/research/trigger-updates.md#sphere).
+    // whose handle no longer resolves being skipped and kept. Each message goes at once; a handler that disarms the
+    // sphere ends only the found humans, one that clears the pool ends the check
+    // (docs/research/trigger-updates.md#sphere).
     // @orig 0x004146e0 TriggerSphere_Update (unknown)
     void check(std::size_t index, std::span<const BoxSubject> subjects, std::uint64_t nowMs,
                const VolumeBoxes::Send& send);
     // Whether the sphere at `index` is still the one round `object`: false once a handler cleared the pool.
     // @orig 0x004146e0 TriggerSphere_Update (unknown)
     [[nodiscard]] bool stillChecked(std::size_t index, double object) const;
-    // Lists `human` in `sphere`: a free place, else the first whose handle no longer resolves, else nowhere.
+    // Lists `human` in `sphere`: a free place, else the first whose handle no longer resolves, else nowhere; the
+    // list stays packed, unlike the original's fixed slots.
     // @orig 0x004146e0 TriggerSphere_Update (unknown)
     void addOccupant(TriggerSphere& sphere, double human) const;
     // Whether `point` is within the sphere's radius of `centre`, in 3D.
