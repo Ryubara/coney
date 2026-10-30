@@ -97,10 +97,10 @@ class RenderEngine final : public graphics::RenderDevice {
     [[nodiscard]] PresentMode presentMode() const;
     /// The present modes the GPU backend's window offers besides Vsync; none for the others.
     [[nodiscard]] PresentModes offeredPresentModes() const;
-    /// Of framesPresented(), those shown on the screen: every one for OpenGL, those the GPU backend's swapchain took
-    /// (a hidden or minimised window may take none), none for NULL.
     /// The frames present() has ended so far, on any backend.
     [[nodiscard]] std::uint64_t framesPresented() const { return m_presented; }
+    /// Of framesPresented(), those shown on the screen: every one for OpenGL, those the GPU backend's swapchain took
+    /// (a hidden or minimised window may take none), none for NULL.
     [[nodiscard]] std::uint64_t framesShown() const {
         return m_backend == RenderBackend::OpenGl ? m_presented : m_shown;
     }
