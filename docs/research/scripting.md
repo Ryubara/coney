@@ -231,10 +231,14 @@ player of `HUDTurnOnRadar` and `HUDTurnOffRadar` (`0x003700c8`, `0x00370100`), `
 (`0x00370138`), `HUDSetRadarZoomScale`'s scale, 0 when left out (`0x00370728`), and `TriggerSphereCfg`'s enable,
 false when left out (`0x0036d0e0`). Confirmed (code) at each wrapper.
 
-Open question: other bindings may still read an explicit nil as left out; the sweep did not list them, and Coney's
-`binding::absent` keeps that reading where it is still used (strings and callbacks read the same either way). One
-known difference is kept as a stand-in: `TriggerSphereCfg` reads a mode that is not a number (a string) as 1, where
-the signed reader gives 0 for it (scripts pass only numbers there, `true` being 1).
+Open questions:
+
+- **Other bindings that read nil as left out**{#q-nil-defaults}: the sweep listed thirteen; others may still give an
+  explicit nil the default. Coney's `binding::absent` keeps that reading where it is still used, which is right for a
+  string or a callback (both read the same either way) and not checked for the rest.
+- **`TriggerSphereCfg`'s mode**{#q-trigger-sphere-mode}: Coney reads a mode that is not a number (a string) as 1, a
+  stand-in kept because a test asserts it; the signed reader gives 0 for it. Scripts pass only numbers there (`true`
+  being 1), so no level sees the difference.
 
 #### How a binding is called {#binding-call}
 

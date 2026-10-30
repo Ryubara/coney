@@ -173,7 +173,7 @@ NativeFunction makeTriggerSphereCfg(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
         if (context->spheres != nullptr) {
             // The mode is a stand-in: a non-number reads as 1 (a test asserts it), where the original's signed reader
-            // gives 0; scripts pass only numbers there (docs/research/scripting.md#optional-arguments).
+            // gives 0; scripts pass only numbers there (docs/research/scripting.md#q-trigger-sphere-mode).
             static_cast<void>(context->spheres->configure(
                 binding::handleArg(args, 0), binding::booleanArg(args, 1, false), binding::floatArg(args, 2),
                 numberOrBooleanArg(args, 3), binding::unsignedArg(args, 4)));
