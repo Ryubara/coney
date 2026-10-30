@@ -1,0 +1,60 @@
+version = 1
+id = "r-20261030-light-selection"
+date = "2026-10-30"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "3da5e3bfb0352e5667ef262746d50fa48633b4eb22891db8501b8f4e24be3412"
+
+[who]
+agent = "a19ae2f802665c70e"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = []
+
+[run]
+name = ""
+method = "Breakpoints on LightManager_SelectLights' entry and its callers' return addresses; at the entry the arguments and the manager's lists (A, B, C, point-light vectors +0x20 and +0x30 with each light's position and radius) read, at the return the upload list and count; a script replayed the rule read in Ghidra on those inputs and compared the lights in order. Run 1: 300 calls of every caller; run 2: 60 human calls (conditional entry breakpoint). Then the 96 light records read every 3 frames, 20 samples. Observed on 2026-10-30; recorded again after review."
+
+[values]
+calls_all = 300
+matched_all = 300
+object_calls = 210
+sector_calls = 78
+human_calls_run1 = 6
+background_calls = 6
+human_calls_run2 = 60
+matched_humans = 60
+human_lights = 4
+human_cap = 6
+human_distance_m = 6
+sector_lists_one_light = 45
+sector_lists_two_lights = 33
+objects_3_of_cap_3 = 162
+objects_4_of_cap_5 = 22
+objects_4_of_cap_6 = 20
+objects_5_of_cap_5 = 6
+visible_object_point_lights = 17
+visible_world_point_lights = 1
+light_records = 96
+records_flicker_mode_0 = 94
+records_flicker_mode_2 = 2
+records_flicker_mode_4 = 0
+
+[addresses]
+LightManager_SelectLights = 0x0017de10
+upload_list = 0x00715300
+list_a = 0x00715324
+list_b = 0x00715348
+list_c = 0x0071536c
+human_return = 0x001746f8
+sector_return = 0x00411aa8
+object_return = 0x001803a4
+manager_pointer = 0x0050cce4
