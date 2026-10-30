@@ -201,9 +201,11 @@ DrawStream drawMeshScene(const MeshScene& scene) {
 }
 
 // A WAD of one file that is not the arc's texture: the arc then draws untextured, as ThrowArcRenderer says.
+// The archive is held by pointer, not in an optional: clang-tidy's optional-access check does not see the REQUIRE
+// that ends the test when opening fails, so reading an optional here would need a NOLINT at each use.
 struct EmptyWad {
     coney::test::TempDir folder;
-    std::optional<coney::io::Wad> wad;
+    std::unique_ptr<coney::io::Wad> wad;
     EmptyWad() {
         coney::test::Bytes file;
         file.text("not a texture");
@@ -217,7 +219,7 @@ struct EmptyWad {
         REQUIRE(disc.has_value());
         auto opened = coney::io::Wad::open(std::move(*disc));
         REQUIRE(opened.has_value());
-        wad.emplace(std::move(*opened));
+        wad = std::make_unique<coney::io::Wad>(std::move(*opened));
     }
 };
 
