@@ -13,7 +13,8 @@ architecture](network-architecture.md).
 **Built:** the platform-neutral library `coney_net` (bit stream, transport interface, loopback and link conditioner,
 protocol, the server and client sessions with their handshake, keep-alive and timeouts), the ENet transport, and the
 game's side: hosting and joining from the debug menus' Network page or the command line ([In the game](#in-the-game)),
-and the guest's pad as the host's pad port 2 ([Player two](#player-two)). The guest does not see the host's game yet.
+and the guest's pad as the host's pad port 2 ([Player two](#player-two)); the network ids and the replicated-field
+tables that snapshots will use ([Network ids](#net-ids)). The guest does not see the host's game yet.
 **Next:** the layers under [The plan](#plan).
 
 ## The model {#model}
@@ -49,6 +50,8 @@ and the guest's pad as the host's pad port 2 ([Player two](#player-two)). The gu
 | Protocol | `src/net/protocol.h` | the messages, their ids and exact encoding, the protocol version |
 | Link quality | `src/net/link_quality.h` | round trip and loss from the sessions' own pings |
 | Sessions | `src/net/net_server.h`, `net_client.h` | the handshake, slots, keep-alive and timeouts of each side |
+| Network ids | `src/net/net_id.h`, `net_id_table.h` | the server's ids for replicated things, and each side's table from ids to its own handles |
+| Field tables | `src/net/replicated_fields.h` | each replicated kind's fields: their encodings, bits and ranges |
 | ENet | `src/platform/enet_transport.h` | the transport over UDP |
 
 `coney_net` is platform-neutral: no socket, no ENet and no operating-system code, the same rule as the rest of
@@ -307,6 +310,61 @@ it. This is Overwatch's way of keeping commands arriving just in time ([Network
 architecture](network-architecture.md#input)), with the clock's speed nudged. The Network page's Input timing line
 shows it on the guest.
 
+## Network ids {#net-ids}
+
+Nothing crosses the wire as a pointer, a pool index or a script handle ([Network
+architecture](network-architecture.md#net-ids)). Each replicated thing has a **`NetId`** (`src/net/net_id.h`): a
+16-bit slot and a 6-bit generation, 22 bits on the wire; generation 0 is "no id", for a field that names nothing.
+
+The server's **`NetIdAllocator`** gives the ids. One allocator serves every kind of thing in a session (65,536 slots
+at most), so a snapshot names a thing by its id alone. A slot is free, live or retired:
+
+- `allocate()` gives a new live id: the slots never used first, in order, then the released ones, oldest released
+  first, so a slot rests as long as it can before it comes back. Its generation is one more than last time (63 wraps
+  to 1, never 0).
+- `retire(id)` marks the thing gone. Its slot is not free yet: a client may still name it in a command or hold it in
+  an older snapshot.
+- `release(id)` frees the slot once every client has acknowledged the removal. A repeated or stale acknowledgement
+  is refused and changes nothing, since acknowledgements come from the network.
+
+So an id is reused only with a new generation, and a late packet's old id never names the slot's new thing. The
+allocator is plain data with no clock and no randomness: the same calls give the same ids.
+
+Each side keeps a **`NetIdTable<Handle>`** (`src/net/net_id_table.h`) from ids to its own handles and back, one per
+kind of handle: on the server the handles the game already has (a human's `Human*`, a brain's `Brain*`, a world
+object's script handle), on a client the things it made for the server's ids. The server's `assign()` gives a thing
+its id (allocating one the first time) and `retire()` takes it away. A client's `bind()` refuses what a packet could
+get wrong (no id, a slot bound in another generation that was not unbound first, a handle with an id already), and
+every lookup by an id of another generation answers nothing. A table is walked in id order, never by handle value,
+so every machine walks it the same way.
+
+### Field tables {#field-tables}
+
+Each kind of replicated thing (a human, a world object, a car) has a **field table** (`src/net/replicated_fields.h`):
+its fields' names, encodings, bits and ranges, declared once so the snapshot encoder, its decoder and the tests read
+one definition, as Quake 3's `netField_t` tables do. `writeField()` and `readField()` encode one field through the
+[bit stream](#bit-stream); a kind's fields are indexed by its enum (`HumanField`, `WorldObjectField`, `CarField`).
+
+| Encoding | On the wire | Round trip |
+| --- | --- | --- |
+| Bool | one bit | exact |
+| Integer | the distance from the range's start, in `bits` bits | exact; a read over the range is refused (Invalid) |
+| Float | quantized onto the range (`quantize()`), clamped | the ends exact, the rest within half a step |
+| Angle | radians wrapped onto one turn, quantized to `bits` bits | within half a step around the circle; -pi and pi are one angle |
+
+| Kind | Fields | Bits in full |
+| --- | --- | --- |
+| Human | position (3 x 18 bits, -1,024 to 1,024 m, under 8 mm a step), heading (10 bits), health and its maximum (15 bits each, the original's 16-bit numbers, [Characters](../research/characters.md)), clip (12 bits), playhead (10 bits, a share of the clip), grounded, knocked out | 118 |
+| World object | position, heading, door opening (10 bits), state (a byte), broken, hidden | 84 |
+| Car | position, heading, speed (12 bits, -64 to 64 m/s) | 76 |
+
+The ranges are Coney's choices. Three are stand-ins, marked in the code, for snapshots
+(#554) to settle: the positions' fixed bounds around the origin (in
+place of each level's own), the clip as an anim id under 4,096 (or the game's own hash), and the world object's state
+byte and the car's speed range. A snapshot sends a thing's changed fields only, so a moving human's delta stays under
+the 15 to 25 bytes [the budget](network-architecture.md#snapshots) allows for it. `validateFields()` checks a table
+(named fields, different names, bits 1 to 32, ranges that fit their bits), and the tests check every table with it.
+
 ## Testing {#testing}
 
 Everything above `EnetTransport` is tested on the loopback, frame by frame with no real time, in `tests/net/`: the
@@ -322,7 +380,11 @@ port, shutting down, refusals, the guest's pad on the host's port 2 and the host
 player at most); `tests/net/sessions_test.cpp` also covers the server's side of the pad (by slot, late, out of order
 and repeated commands each played once on their own step, a lost packet's steps arriving in the next, a pad before
 the handshake, letting go of a quiet pad, InputTiming and the client's clock following it);
-`tests/net/input_buffer_test.cpp` covers the buffer's rules one by one; `tests/net/protocol_test.cpp` pins
+`tests/net/input_buffer_test.cpp` covers the buffer's rules one by one; `tests/net/net_id_test.cpp` covers the
+ids (reused only with a new generation, the order slots come back in, the generations' wrap, the wire form) and the
+tables (a stale generation finds nothing, a client's refused binds, the walk in id order);
+`tests/net/replicated_fields_test.cpp` round-trips every table's fields at their range's ends and middle and checks
+the refusals; `tests/net/protocol_test.cpp` pins
 InputCommands' and InputTiming's bytes;
 `tests/gamemodes/game_mode_stack_test.cpp` checks that `beforeStep` comes before the pads are read;
 `tests/debug/net_page_test.cpp` drives the Network page over a fake
@@ -338,7 +400,8 @@ Each step is a pull request that builds and is tested on its own.
 4. **Input commands** (built): the client's pads tagged with the step, the last few repeated in every packet, the
    server's buffer that plays each on its step, and the timing that keeps them coming in time
    ([Input commands](#input-commands)).
-5. **Replicated players:** network ids, snapshots (quantized, delta-compressed against acknowledged baselines),
-   the client's jitter buffer and interpolation, and its own follow camera.
+5. **Replicated players:** network ids and the field tables (built: [Network ids](#net-ids)), snapshots (quantized,
+   delta-compressed against acknowledged baselines), the client's jitter buffer and interpolation, and its own follow
+   camera.
 6. **AI humans, events, mission state:** the rest of what a client must see and hear, events reliable.
 7. **Prediction:** the local player predicted and corrected from the server's snapshots.

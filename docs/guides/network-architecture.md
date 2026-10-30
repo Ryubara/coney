@@ -158,7 +158,7 @@ Nothing crosses the wire as a pointer, an index into a pool or a script handle. 
 **`NetId`** from the server: 16 bits of slot and a few bits of generation, so an id reused after a human dies is not
 mistaken for the old one. Each side keeps a table from `NetId` to its own handle. The server assigns ids when a
 thing becomes replicated (spawned, or a placed object first touched) and frees them when a client has acknowledged
-its removal.
+its removal. What is built, and its exact sizes: [Network ids](multiplayer.md#net-ids).
 
 | Kind | Identified by | Notes |
 | --- | --- | --- |
@@ -885,7 +885,7 @@ The work in order; each row is about one pull request. Each is an issue, a sub-i
 | 5 | The AI's two-player rules | P1 | 3 | #550 |
 | 6 | Players by slot everywhere: the single-player assumptions in gameplay, HUD and bindings | P1 | 3 | #551 |
 | 7 | Input commands: tagged, redundant, the server's buffer and timing feedback (built) | P1 | 2 | #552 |
-| 8 | Network ids and the replicated-field tables | P1 | | #553 |
+| 8 | Network ids and the replicated-field tables (built) | P1 | | #553 |
 | 9 | Snapshots: humans first, deltas against acknowledged baselines, the budget | P1 | 8 | #554 |
 | 10 | The client's world: jitter buffer, interpolation through `Interpolated<T>` and `DrawnPoses`, a client game mode with no simulation | P1 | 9 | #555 |
 | 11 | Events: sounds, particles, HUD messages, scenes, movies | P1 | 9 | #556 |
