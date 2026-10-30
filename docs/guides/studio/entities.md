@@ -554,7 +554,7 @@ the stored height.
 | Proposed native | Does |
 | --- | --- |
 | `Coney.SpawnPrefab(path, pos, heading)` | Makes the prefab at `pos` (`{x, y, z}`), turned by `heading` degrees about z: every member at its offset turned by the heading, then dropped to the ground where its *Drop to ground* is on; returns the instance's handle and a table of its members' handles by name, or `nil` and the reason when it cannot be made |
-| `Coney.GetPrefabAssets(path)` | The prefab's assets as a list of paths, each once, in file order (nested prefabs depth-first): the `asset` properties of its entities, and for a human of a project character type the character file and the model and clips it names. A game type given by number is not listed ([The game's own models](asset-lifetime.md#game-models)). Raises the error of a path that does not resolve |
+| `Coney.GetPrefabAssets(path)` | The prefab's assets as a list of paths, each once, in file order (nested prefabs depth-first; what an instance overrides and what a variant changes is [Prefabs](prefabs.md)): the `asset` properties of its entities, and for a human of a project character type the character file and the model and clips it names. A game type given by number is not listed ([The game's own models](asset-lifetime.md#game-models)). Raises the error of a path that does not resolve |
 | `Coney.DespawnPrefab(handle)` | Removes everything a spawned instance made, each the way the game removes its kind (`HuDelete` for a human, `ObjDestroy` for an object, `CarDestroy`, `GangDelete`), its handlers disconnected; returns how many it removed; a level's own instance is refused |
 
 - **What it makes** is what a level load makes from the same entities: each member through its natives in file order,
@@ -573,7 +573,8 @@ the stored height.
   the list's assets one by one (to show progress, or to load only some of them early). `Coney.SpawnPrefab` checks that
   **every asset in the list is loaded and held by the project**, whichever way it got them, and raises an error naming
   the first one that is not and its state, before it makes anything. The prefab file itself is read at the spawn; it is
-  text and holds no asset memory. A prefab with no assets (a gang and humans of game types) needs no load at all.
+  text and holds no asset memory, so loading the prefab's path loads its assets and nothing else ([Loading and releasing
+  assets](asset-lifetime.md#rules)). A prefab with no assets (a gang and humans of game types) needs no load at all.
 - **Releasing is safe.** The members hold their assets while they live, so `Coney.ReleaseAsset` while an instance
   stands frees nothing, and the memory goes at the step boundary after the last member is despawned or deleted.
 - **All or nothing.** Before making anything, Coney counts the members of each kind against the game's pools (60

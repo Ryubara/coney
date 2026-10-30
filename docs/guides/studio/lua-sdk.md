@@ -4,12 +4,12 @@ The design of the Lua SDK that Coney Studio ships and that every mod uses: what 
 call natives, which Lua a project's scripts are written in, how Coney loads a project and runs it when Play is pressed,
 what keeps a script inside its project and its calls deterministic, how a native reaches the SDK, the typed stubs that
 give the editor its completions, the project restart on save, the resource monitor, the Lua 4.0 compiler and the script
-debugger. It ends with the build issues it proposes, in order. The parent issue is [#1054](issue:1054); this page is
-[#1057](issue:1057).
+debugger. The stubs, the compiler and the debugger have their own page, [the SDK's tools](lua-tools.md). It ends with
+the build issues it proposes, in order. The parent issue is [#1054](issue:1054); this page is [#1057](issue:1057).
 
-**Status: design.** Nothing on this page is built but the Lua 4.0 compiler ([below](#compiler)). It is a design in
-the sense of [Page kinds](../writing-docs.md#page-kinds): what is built moves into a guide. It extends three pages and
-does not repeat them: the script split and the Native API of [Asset and script architecture](../asset-and-script-architecture.md#scripts),
+**Status: design.** Nothing on this page is built but the Lua 4.0 compiler ([built](lua-tools.md#compiler)). It is a
+design in the sense of [Page kinds](../writing-docs.md#page-kinds): what is built moves into a guide. It extends three
+pages and does not repeat them: the script split and the Native API of [Asset and script architecture](../asset-and-script-architecture.md#scripts),
 the masterlist of [Script bindings](../../references/bindings/index.md), and the resources and sandbox of
 [Network architecture](../network-architecture.md#scripting). Where this page decides something those pages left open,
 it says so, and [What changes on other pages](#other-pages) lists it.
@@ -31,13 +31,12 @@ internals:** a script reaches the game only through natives, the same boundary t
 9. [The sandbox](#sandbox), with [the monitor](#monitor) that stands in for budgets.
 10. [Deterministic and network-safe calls](#determinism).
 11. [How a native reaches the SDK](#availability), and the SDK level.
-12. [Typed stubs for the language server](#stubs).
-13. [Project restart on save](#project-restart).
-14. [The Lua 4.0 compiler](#compiler).
-15. [The script debugger](#debugger).
-16. [What changes on other pages](#other-pages), [Maintainer decisions](#decisions), [Open questions](#open-questions)
+12. [Project restart on save](#project-restart).
+13. The tools, on [their own page](lua-tools.md): [typed stubs for the language server](lua-tools.md#stubs), [the Lua
+    4.0 compiler](lua-tools.md#compiler) and [the script debugger](lua-tools.md#debugger).
+14. [What changes on other pages](#other-pages), [Maintainer decisions](#decisions), [Open questions](#open-questions)
     (the asset lifetime's are on its page).
-17. [Proposed build issues](#build-issues), [Sources](#sources).
+15. [Proposed build issues](#build-issues), [Sources](#sources).
 
 ## Terms {#terms}
 
@@ -77,7 +76,7 @@ It is the model the maintainer named for the SDK. Only its public documentation 
 | **Events** | Named events with handlers (`AddEventHandler`), between resources and between client and server; `onResourceStart`, `onResourceStop` | `Coney.On(event, fn)` for the loader's entry points ([The loader](#entry-points)); network events are the network page's (P4) |
 | **Restart** | `refresh` rereads the manifests, `restart <name>` reloads a resource without restarting the game | [Project restart on save](#project-restart); the console's `restart` is [Console commands](mods.md#console) |
 | **Limits and the monitor** | No instruction budget and no memory cap: a loop without a `Wait` freezes the game. The `resmon` monitor shows each resource's time and memory | The same: no budget and no cap for now; a [monitor](#monitor) shows each project's time per step and its memory |
-| **Editor support** | Community packages give lua-language-server FiveM's natives and CfxLua's syntax, generated from the natives' documentation; JavaScript has official type packages | Coney generates the stubs itself from the masterlist and ships them ([Typed stubs](#stubs)) |
+| **Editor support** | Community packages give lua-language-server FiveM's natives and CfxLua's syntax, generated from the natives' documentation; JavaScript has official type packages | Coney generates the stubs itself from the masterlist and ships them ([Typed stubs](lua-tools.md#stubs)) |
 
 What Coney does **not** copy: hashes (the original has none), CfxLua's language changes (they would break every stock
 Lua tool, which is the reason to choose 5.4 at all), a C# or JavaScript runtime (one language is enough, and it is the
@@ -108,7 +107,7 @@ native that needs a different signature becomes a new native, and the old one st
 **How a script finds a native:** it calls the global or the `Coney` field. A name that is not available is not there:
 calling it fails with an error that says why ("`HuSetOnFire` is a game native Coney does not implement in SDK level 4";
 "`Coney.Foo` is no Coney native"), raised by the project environment's lookup ([The sandbox](#sandbox)). The editor
-says the same before the script runs, because the stubs list only what is available ([Typed stubs](#stubs)).
+says the same before the script runs, because the stubs list only what is available ([Typed stubs](lua-tools.md#stubs)).
 
 ## The runtime {#runtime}
 
@@ -132,7 +131,7 @@ reasons:
 | What modders know | Lua 4.0 is from 2000: no booleans (`true = 1`, `false = nil`), no `#`, no metatables (tag methods), no `string.` table, no coroutines; no tutorial, book or library of the last twenty years runs on it | FiveM's scripts, Roblox's Luau and most game Lua today are 5.x; 5.4's manual, books and libraries apply |
 | Threads and waits | Lua 4.0 has no coroutines; a wait would need a VM that can suspend (an M item on the architecture page, deferred) | Coroutines are built in, so `Coney.Wait` is a small SDK function |
 | The sandbox | Coney's 4.0 VM has an instruction budget for every run of the game's scripts; environments per script and library control would be Coney's to add | `_ENV` gives environments and library control, and `lua_sethook` and the allocator are there if budgets are ever needed ([The sandbox](#sandbox), [Network architecture: Sandboxing](../network-architecture.md#sandbox)) |
-| A debugger | Coney's VM would need hooks, line information and frame inspection added | `lua_sethook` and `lua_getinfo`, `lua_getlocal` exist ([The script debugger](#debugger)) |
+| A debugger | Coney's VM would need hooks, line information and frame inspection added | `lua_sethook` and `lua_getinfo`, `lua_getlocal` exist ([The script debugger](lua-tools.md#debugger)) |
 | ConeyMP (P4) | The network page plans 5.4 for resources anyway, so 4.0 for projects would mean two languages for users | One language for users, offline and on servers |
 | Cost | No second runtime | A second runtime: stock Lua 5.4 as a pinned dependency (MIT licence), a value bridge, deterministic build settings ([below](#lua-build)) |
 | Sharing the game's state | A project could run in the game state, hook its functions and set its globals | A project state is separate; it shares the world, not the game state's globals ([The two states](#two-states)) |
@@ -140,8 +139,8 @@ reasons:
 The last row is the only one in 4.0's favour, and it is also a reason against: a script that patches the game state can
 break the faithful scripts in ways nobody can debug, and a separate state is what the sandbox and the network model need
 anyway. A user who wants to change a level script itself ships a patch (only the differences, applied to the player's
-own copy; [Mission mods](mission-mods.md)), which the [compiler](#compiler) builds and the script catalog runs in place
-of the disc's chunk ([Three parts](../asset-and-script-architecture.md#script-parts)).
+own copy; [Mission mods](mission-mods.md)), which the [compiler](lua-tools.md#compiler) builds and the script catalog
+runs in place of the disc's chunk ([Three parts](../asset-and-script-architecture.md#script-parts)).
 
 That decision is recorded under [Maintainer decisions](#decisions); the network page lists the same choice for
 resources.
@@ -570,54 +569,6 @@ for available natives, and a Coney natives page from `coney.yaml`, as FiveM's re
 Natives browser reads the same data; the debug menus' [Natives](../debug-menu.md#natives) page keeps showing every
 native with its status, as a tool for engineers.
 
-## Typed stubs for the language server {#stubs}
-
-Studio's script editor gets completions, signatures, hover text and errors from lua-language-server; the technology page
-decides how the editor hosts it ([Language tooling](technology.md#language-tooling)). The language server learns the SDK
-from **stubs**: Lua files of declarations with LuaCATS annotations, the format lua-language-server reads (`---@meta`,
-`---@param`, `---@return`, `---@class`, `---@alias`). `coney-tools bindings stubs` generates them from the masterlist,
-available natives only:
-
-```lua
----@meta
--- Generated by coney-tools bindings stubs from research/bindings/; SDK level 4. Do not edit.
-
----@alias HumanHandle integer A human's handle, as HuCreate or HuFind returns it.
----@alias GangHandle integer A gang's handle, as GangCreate returns it.
-
----Creates a human (character) in the world, snaps it to the ground and, for a player index of 1, makes it
----player 1's character.
----[Script bindings: HuCreate](character.md#hucreate) · Characters · server · since SDK level 1
----@param name string The human's name (15 characters kept); HuFind and scripts use it.
----@param type integer Character type id, the CfgChar record (32 Rembrandt, 40 Ash).
----@param pos number[] Position {x, y, z} in metres, z up; written back with the ground-snapped position.
----@param heading number Facing in degrees.
----@param unused? string Not read.
----@param player? integer 1 makes the human player 1 when no player 1 exists; 0 makes an AI human.
----@param gang? GangHandle The gang the human belongs to.
----@param flag? boolean Meaning not traced.
----@return HumanHandle human The new human, or NilHandle (0) when no slot is free (60 humans at most).
-function HuCreate(name, type, pos, heading, unused, player, gang, flag) end
-```
-
-- **One file per category** (`natives/character.lua`, ...), one `coney.lua` for the `Coney` table, and `runtime.lua`
-  for the SDK functions, with the level in each file's header.
-- **Types from the masterlist:** `lua` and `ctype` give `number`, `integer`, `boolean`, `string`, `number[]`; a handle
-  gets its alias from a new `handle` key on the argument (`handle: human`), which replaces the guess
-  `bindings render-cpp` makes today from the description's wording; an argument with a default, or one the game's
-  scripts leave off, is optional (`?`). Descriptions are the masterlist's own text, our words, never the game's
-  ([LEGAL.md](repo:LEGAL.md#no-game-data)).
-- **A project's `.luarc.json`**, written by Studio for a new project (and by `coney-tools sdk init` for anyone using
-  another editor), sets `runtime.version` to `Lua 5.4`, points `workspace.library` at the installed stubs, and turns
-  the sandbox into diagnostics: the missing libraries are disabled (`runtime.builtin`), so `io.open` is an undefined
-  global in the editor as in the game.
-- **Shipped, not committed.** The stubs are generated at build time into the build folder and packaged with Coney and
-  Studio, as the progress tables are generated by the docs build, so no pull request changes them by hand and they
-  can never fall behind the masterlist. A test checks that every available native has a stub and no other native
-  does.
-- **The same data serves VS Code users**: a modder who prefers VS Code with the Lua extension gets the same completions
-  from the same files.
-
 ## Project restart on save {#project-restart}
 
 Changing a script while the game runs, as FiveM's `restart <resource>`. It is **optional**: Studio's setting *On script
@@ -664,74 +615,17 @@ needs](../asset-and-script-architecture.md#console-needs)), or, for a patch, *Re
 **Hot reload** is a different, later thing and keeps its name: swapping the code of a running project while **keeping
 its state** (its globals, its threads' places). It is not designed here; the project restart is what the SDK has.
 
-## The Lua 4.0 compiler {#compiler}
+## The stubs, the compiler and the debugger {#tools}
 
-**Built:** build issue 7 below. Coney's compiler, what it covers and how far it matches `luac` are on the research
-page ([Coney's compiler](../../research/formats/lua-bytecode.md#compiler)); this section keeps the reasons for it.
+These three have [their own page](lua-tools.md); the links other pages hold to the last two land here.
 
-The game state runs compiled Lua 4.0 bytecode. A compiler from Lua 4.0 source to the `LuaProto` Coney's VM runs is
-needed whichever runtime projects get, because the game state has four uses for source text:
+### The Lua 4.0 compiler {#compiler}
 
-- **The console** with full statements (`if`, loops, `local`, `function`), errors with line numbers, in the game state
-  ([Debug console needs](../asset-and-script-architecture.md#console-needs)).
-- **Coney's level rewrites**, written as Lua 4.0 source and compared call for call with the disc's chunks
-  ([Three parts](../asset-and-script-architecture.md#script-parts)).
-- **Patched disc scripts**, a mod's differences applied to the player's own copy of a disc script ([Mission
-  mods](mission-mods.md)), which must run in the game state.
-- **The debugger's** watch expressions while paused in the game state ([The script debugger](#debugger)).
+Source text for the game state, built: [the compiler](lua-tools.md#compiler).
 
-The original carries the same ability: its Lua 4.0 library includes the source parser. The chunk loader
-`Lua4_ParseOrUndumpChunk` (`0x00328d98`) sends a chunk to the bytecode loader (`0x00333588`, which calls
-`Lua4_LoadChunk` `0x00333548`) or to the parser `Lua4_ParseSourceChunk` (`0x0032d828`) by a flag of the input
-(confirmed (code)); the parser's code raises Lua 4.0's own errors ("`<eof> expected`" at `0x00575d08`, "`'%.20s'
-expected (to close '%.20s' at line %d)`" from `0x0032cd60`; confirmed (code)). That the flag is Lua 4.0's test of a
-buffer's first byte, so that `dostring` and the run-a-string slot `+0x2c` compile text, is inferred from Lua 4.0's
-public source; the shipped scripts are all bytecode. So a compiler gives Coney's game state what the original's had,
-and `dostring` in Coney's base library gains its text path with it.
+### The script debugger {#debugger}
 
-**How it was built:** a lexer and a recursive-descent parser written anew from the Lua 4.0 reference manual's grammar,
-emitting the instructions Coney's VM already executes in the patterns of Lua 4.0's own generator, with line
-information kept for Coney's chunks (the disc's chunks have none). Tested with synthetic sources compiled and run
-against expected results, every instruction kind covered, the decompiler's fixtures compiled to `luac`'s own code, and
-a disc check that compiles the decompiles with Coney's compiler and compares the code and the natives each function
-calls with the disc's chunks, printing counts and hashes only. Patched disc scripts reach the game state through the
-script catalog in [Mission mods](mission-mods.md#build-issues)' issue 5.
-
-## The script debugger {#debugger}
-
-Breakpoints, stepping, watches and the call stack, for project scripts first and the game state second.
-
-**The protocol.** Coney implements a **Debug Adapter Protocol** (DAP) server, the protocol VS Code, Neovim and most
-editors speak: JSON messages over a local socket (a loopback port the run log names) or a pipe. Studio's script editor
-is a DAP client; because the protocol is standard, a modder can also attach VS Code to a running Coney. The server
-lives in the engine, beside the runtimes; how Studio's process reaches it is the technology page's
-([The script debugger](technology.md#debugger)).
-
-| DAP feature | How |
-| --- | --- |
-| Breakpoints by file and line, conditional breakpoints, hit counts, logpoints | 5.4's line hook (`lua_sethook` with `LUA_MASKLINE`) checks the breakpoint set for the running chunk; a condition is evaluated in the paused frame |
-| Pause, continue, step in, step over, step out | The line and call/return hooks, with a target depth for over and out |
-| The call stack | `lua_getstack` and `lua_getinfo`: each frame's file, line and function; a native in the middle shows as a native frame |
-| Scopes and variables | Locals (`lua_getlocal`), upvalues, the project's globals; tables expand lazily |
-| Watches and the debug console | An expression compiled and run in the paused frame with a small step limit of its own (a debugger aid, not a project budget), read-only: a watch may call only natives the masterlist marks `reads: true` (getters such as `GetPosition`, `HuGetHealthPercent`), and any other native is refused, so looking at a value never changes the game |
-| Exceptions | Break on any error, or only on errors no handler catches |
-| Threads | Each `Coney.CreateThread` coroutine is a DAP thread, so a modder sees which thread stopped |
-
-**Pausing the game.** A breakpoint stops the simulation inside the step that hit it: the step is suspended in the
-script call, no further step runs, and the window keeps showing the last frame and stays responsive (the debugger
-waits on the simulation thread; the presentation side keeps drawing). Continue finishes the step. Because time is
-steps, a pause changes nothing in the run: the next step is the one that would have come. Setting a variable from the
-debugger does change it, and marks the run ([Determinism](#determinism)). In Studio, Play runs in Studio's process
-on its own simulation thread, so the Game view and the panels keep drawing while a breakpoint holds
-([The script debugger](technology.md#debugger)).
-
-**The game state.** Coney's own Lua 4.0 VM gets the same hooks (a line hook for chunks with line information, an
-instruction hook for those without), so Coney's level rewrites and patched scripts debug by line, and a disc chunk by
-function prototype and instruction (the locator form of a mission page, `level99.lua:f31`), for engineers comparing a
-rewrite with the original. A watch in the game state needs the [compiler](#compiler).
-
-**Limits.** The debugger runs offline and in Studio's Play; in a networked session only the host may attach, to its own
-server scripts, and a paused host pauses the session for everyone.
+Breakpoints, stepping and watches over the Debug Adapter Protocol: [the debugger](lua-tools.md#debugger).
 
 ## What changes on other pages {#other-pages}
 
@@ -783,7 +677,7 @@ When this design is accepted, these lines change on the pages that own them:
 7. **No budgets for now, as FiveM.** No instruction budget, no memory cap and no watchdog: a loop with no wait freezes
    the game. Studio gets a monitor like FiveM's `resmon` instead, with each project's time per step and its memory
    ([The monitor](#monitor)). Caps return only if downloaded mods or co-op need them.
-8. **Scripts own asset memory, as in FiveM** (2026-10-29): load, wait, spawn, release; a spawn of an asset that is
+8. **Scripts own asset memory, as in FiveM**: load, wait, spawn, release; a spawn of an asset that is
    not loaded fails with an error naming it; what is never released is released at `levelEnd` and `stop`; the monitor
    lists what a project holds ([Loading and releasing assets](asset-lifetime.md)).
 
@@ -898,7 +792,4 @@ Ideas only; no code is taken from any of these.
 | `restart` and `refresh`; `Wait` giving control back to the game | FiveM, [Creating your first script](https://docs.fivem.net/docs/scripting-manual/introduction/creating-your-first-script/) |
 | The `resmon` resource monitor: each resource's time and memory; no instruction budget or memory cap | FiveM's tools *(general knowledge, not re-checked)* |
 | The PascalCase Lua names of natives; calling a native by hash; `Citizen.CreateThread` | FiveM's Lua runtime *(general knowledge, not re-checked)* |
-| Community lua-language-server packages for FiveM's natives | [CfxLua VS Code extension](https://forum.cfx.re/t/cfxlua-vscode-extension/5196516), [Overextended: Lua types](https://overextended.dev/resources/guides/lua-types) |
-| LuaCATS annotations, `.luarc.json`, `runtime.version` and `runtime.builtin` | [lua-language-server](https://luals.github.io/wiki/annotations/) *(not re-checked)* |
 | Hooks, `_ENV`, the allocator, coroutines | [Lua 5.4 reference manual](https://www.lua.org/manual/5.4/manual.html) |
-| The Debug Adapter Protocol | [Debug Adapter Protocol](https://microsoft.github.io/debug-adapter-protocol/) *(not re-checked)* |

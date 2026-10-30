@@ -52,6 +52,7 @@ a row for the game scripts (the game state) to measure against:
 | Share | That time as a share of the whole step | The `step` zone |
 | Instructions | Lua instructions run per step, only while the panel is open or pinned or a capture records | The count hook (`lua_sethook`), set only then: with no budget for now, nothing else runs it ([Limits](security.md#limits)) |
 | Memory | Bytes the state holds now, and its peak | The state's allocator, which counts for the monitor; there is no cap for now |
+| Assets | How many assets the mod holds and their bytes; opening the row lists them, with the path, the state, the holds, the uses and the scope | The asset store's count ([The monitor lists what a project holds](asset-lifetime.md#monitor)) |
 | Threads | Threads running and waiting | `Coney.CreateThread` ([Threads and waits](lua-sdk.md#threads)) |
 | Handlers | Event handlers and callbacks registered, and how many ran this step | `Coney.On`, the natives' callbacks |
 | Natives | Native calls per step; opening the row lists the ten most called, with counts | The value bridge, which every native call crosses ([The value bridge](lua-sdk.md#bridge)) |
