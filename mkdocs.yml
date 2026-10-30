@@ -157,6 +157,7 @@ nav:
           - "Script types: the code of every type": research/script-types.md
           - Level loading: research/level-loading.md
           - Scripts (Lua): research/scripting.md
+          - "Scripts: trigger boxes and spheres, the update": research/trigger-updates.md
           - World flags: research/flags.md
           - Characters: research/characters.md
           - "Characters: placing a human (teleports)": research/teleports.md

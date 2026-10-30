@@ -2026,10 +2026,10 @@ status = "legacy"
 [[function]]
 address = 0x004134f8
 name = "PlayerBox_Update"
-page = "scripting.md#triggers"
+page = "trigger-updates.md#player-box"
 level = "confirmed-code"
 coney = "src/world_objects/volume_boxes.h:VolumeBoxes::update"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x004142d0
@@ -2067,10 +2067,15 @@ status = "legacy"
 [[function]]
 address = 0x004146e0
 name = "TriggerSphere_Update"
-page = "scripting.md#triggers"
-note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+page = "trigger-updates.md#sphere"
+level = "confirmed-code"
 coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::update"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the found humans: Coney's subjects by handle, the dead never found"
+relation = "stand-in"
+question = "trigger-updates.md#q-found-mask"
 
 [[function]]
 address = 0x00414a28
@@ -2108,15 +2113,15 @@ status = "legacy"
 [[function]]
 address = 0x00415378
 name = "VolumeBox_Update"
-page = "scripting.md#triggers"
+page = "trigger-updates.md#box"
 level = "confirmed-code"
 coney = "src/world_objects/volume_boxes.h:VolumeBoxes::update"
 status = "compared"
 
 [[function.gaps]]
-what = "the stay timer re-arms only when someone stayed, and a box a handler disabled still sends the rest of its messages"
-relation = "not-ported"
-issue = 690
+what = "the found humans: Coney's subjects by handle, the dead never found, the inside test for the bounding sphere"
+relation = "stand-in"
+question = "trigger-updates.md#q-found-mask"
 
 [[function]]
 address = 0x0041abe8

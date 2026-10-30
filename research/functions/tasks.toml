@@ -590,7 +590,12 @@ status = "legacy"
 [[function]]
 address = 0x004125b8
 name = "VolumeBox_Add"
-page = "tasks.md#classes"
-note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+page = "trigger-updates.md#add"
+level = "confirmed-code"
 coney = "src/scripting/trigger_bindings.cpp:makeAddVolumeBox"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "a full pool or an unknown kind makes no box (the original goes on with a null record)"
+relation = "stand-in"
+question = "trigger-updates.md#q-box-pools"

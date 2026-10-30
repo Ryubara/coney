@@ -388,6 +388,12 @@ void GameplayMode::enter() {
         m_context.boxes->clear();
         // A human the scripts made still resolves after `HuDelete` (Coney keeps every one for the level).
         m_context.boxes->setResolves([this](double handle) { return m_humans.find(handle) != nullptr; });
+        // A box's message-5 period is its handler component's, which only `TriggerSphereCfg` sets; Coney keeps that
+        // value on the object's sphere record (docs/research/trigger-updates.md#stay-timer).
+        m_context.boxes->setStayPeriod([this](double box) -> std::uint64_t {
+            const world_objects::TriggerSphere* sphere = m_spheres.find(box);
+            return sphere != nullptr ? sphere->handlerPeriodMs : world_objects::VolumeBoxes::kStayPeriodMs;
+        });
     }
     m_context.ai = m_scripted.get();
     // What the hub's bindings read beyond the brains: the configuration's categories and flee percentages, the
