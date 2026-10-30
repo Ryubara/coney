@@ -318,7 +318,8 @@ TEST_CASE("headless the draw layer records without reaching librw or OpenGL", "[
     REQUIRE(raster != nullptr);
     CHECK(raster->width == 64);
     draw::copyFrameToRaster(raster, 0, 0, 64, 32, 448);
-    std::vector<std::uint8_t> rgba(8192); // 64 x 32 pixels of 4 bytes
+    // NOLINTNEXTLINE(bugprone-implicit-widening-of-multiplication-result): constants, 8192 bytes, which cannot overflow
+    std::vector<std::uint8_t> rgba(64 * 32 * 4);
     CHECK_FALSE(draw::readFrame(0, 0, 64, 32, rgba.data()));
     draw::setWireframe(true);
     draw::setWireframe(false);
@@ -328,13 +329,15 @@ TEST_CASE("headless the draw layer records without reaching librw or OpenGL", "[
     CHECK(draw::getRenderState(rw::ALPHATESTREF) == 77);
     draw::setRenderState(rw::TEXTUREADDRESS, rw::Texture::CLAMP);
     CHECK(draw::getRenderState(rw::TEXTUREADDRESSV) == rw::Texture::CLAMP);
-    const std::optional<DrawStream> recorded = draw::stopRecording();
+    const std::optional<DrawStream> stream = draw::stopRecording();
     raster->destroy();
-    REQUIRE(recorded.has_value());
-    const DrawStream stream = coney::test::got(recorded);
-    CHECK(stream.counts().frameOps == 5);  // the copy, the read-back, two wireframe switches, the window target
-    CHECK(stream.counts().rasterOps == 2); // made, its levels set
-    CHECK(stream.hash() == 0xe7a0be90f5dddce0ULL);
+    REQUIRE(stream.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty, which clang-tidy
+    // does not see (as tests/support/optional_value.h says)
+    CHECK(stream->counts().frameOps == 5);  // the copy, the read-back, two wireframe switches, the window target
+    CHECK(stream->counts().rasterOps == 2); // made, its levels set
+    CHECK(stream->hash() == 0xe7a0be90f5dddce0ULL);
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 TEST_CASE("a PS2 raster is known by its texels and palette, not by where librw keeps them", "[platform][draw-stream]") {
@@ -365,11 +368,13 @@ TEST_CASE("a PS2 raster is known by its texels and palette, not by where librw k
     for (rw::Raster* raster : rasters) {
         raster->destroy();
     }
-    const std::optional<DrawStream> recorded = draw::stopRecording();
-    REQUIRE(recorded.has_value());
-    const DrawStream stream = coney::test::got(recorded);
-    REQUIRE(stream.counts().rasterOps == 2); // one upload each
-    const std::vector<std::uint64_t> records = stream.recordHashes();
+    const std::optional<DrawStream> stream = draw::stopRecording();
+    REQUIRE(stream.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty, which clang-tidy
+    // does not see (as tests/support/optional_value.h says)
+    REQUIRE(stream->counts().rasterOps == 2); // one upload each
+    const std::vector<std::uint64_t> records = stream->recordHashes();
+    // NOLINTEND(bugprone-unchecked-optional-access)
     REQUIRE(records.size() == 2);
     CHECK(records[0] == records[1]);
 }
