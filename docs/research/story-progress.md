@@ -192,11 +192,12 @@ table:
   `MissionSelect_IsMissionListed` (`0x001bc100`) passes: levels 2-99 except 95 and 60-65, complete
   (`Unlocks_IsLevelComplete` `0x004241d8`). Each goes into its area, named by the text after `:` in the record's
   second name.
-- **In which order.** The areas are sorted by the vertical map position of their first mission (comparator
-  `0x004e58f8`, through `LevelRecord_GetMapPos` `0x0041f540`, which reads the mission byte `+0x0c`), and each area's
-  missions by their label, the text before `:`, read as a base-10 number (comparator `0x004e6410`, through
-  `LevelRecord_GetLabel` `0x0041f428` and `0x00433a68`). Ghidra's names for the two sorts are the other way round from
-  these roles: `MissionSort_*` sorts the areas, `AreaSort_*` the missions.
+- **In which order.** The areas are sorted by the vertical map position (the second float) of their first mission,
+  the larger value first (comparator `0x004e58f8`, through `LevelRecord_GetMapPos` `0x0041f540`, which reads the
+  mission byte `+0x0c`), and each area's missions by their label, the text before `:`, read as a base-10 number, the
+  smaller first (comparator `0x004e6410`, through `LevelRecord_GetLabel` `0x0041f428` and `0x00433a68`).
+  Ghidra's names for the two sorts are the other way round from these roles: `MissionSort_*` sorts the areas,
+  `AreaSort_*` the missions.
 - **What it starts.** `menu.BeginChosenLevel(level, checkpoint)` (`level95.lua:f62`) banks both live players' assets,
   clears the script save data (`ClearSaveData()`), sets the chosen checkpoint, starts a save and calls
   `MenuLoadLevel`. The replay's completion goes through `UnlockAndLoad` like any other.
@@ -219,8 +220,10 @@ of the hub's `checkpoint`) and from the callers of the level records' mission by
 | `UM_IsLevelComplete(84)` in `global.lua`'s main chunk and `flashback.SetupTrophies` (`level95.lua:f74`) | the last story mission's completion | the menu music; trophy zone 11 |
 | The mission byte `+0x0c` of the level records that `CfgLevels` (`config_preload3.lua`) sets through `CfgLevelName` | 1-26 | the statistics list's order (`GameStats_CollectLevels` `0x00215da0`, [Statistics](game-stats.md#list)); which of the 30 best records a level uses (`Stats_GetLevelBest` `0x00423050`, [Profiles](save.md#record)); a mission's map point (`LevelRecord_GetMapPos` `0x0041f540`) |
 | The label of the same records (`LevelRecord_GetLabel` `0x0041f428`) | the mission's number as text | the mission menu's order within an area; the circled number on the mission menu, the statistics list (`GameStats_BuildMissionList` `0x002155a8`) and the Rumble soldier screen (`RMBuySoldiers_Show` `0x001e9f70`) |
+| The range checks on the level's number: `GetLevel` (`global.lua:f64`, run by the main chunk), `UnlockAndLoad` (`global.lua:f59`), `SetupLevelInventory` (`global.lua:f150`), `DbgEnterCheat` and `DoCheat` (`global.lua:f46`, `f47`); natively `GameState_IsArmiesLevel` (`0x0041d110`), `MissionSelect_IsMissionListed` (`0x001bc100`) and `GameStats_IsLevelListed` (`0x00215ca0`) | the current level's number | `GetLevel` turns 0 and 300 or more into 1; below 100 the players' assets are banked at the end and the second player's inventory is set; the cheats act differently at 95, at 60-64 and at 100 or more; 60-69 is an Armies stage; 2-99 but 95 and 60-65 can be listed on the mission menu; 61-65 and 102-137 are left off the statistics |
 
-A mission added to the story therefore has to appear in each of these.
+A mission added to the story therefore has to appear in each of these, and a number given to it has to pass the range
+checks of the last row as a story mission's does.
 
 ## In Coney {#coney}
 

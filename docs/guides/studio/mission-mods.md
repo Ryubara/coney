@@ -549,10 +549,19 @@ native menus ([Who calls them](../../research/story-progress.md#callers)).
 - **The hub's offer.** When the hub loads, Coney writes the chain's offer for the chapter into `fRunMission[checkpoint]`
   after `level95.lua`'s main chunk, so `story.RunMissionAction` loads it unchanged; for the original chapters the row
   written is the one already there.
-- **Mod levels get numbers.** The scripts pass levels as numbers (`Level`, `LastLevel`, `MenuLoadLevel("level" ..
-  n)`, `UM_IsLevelComplete(n)`), so each mod mission gets a level number for the session, from 1000 up in chain
-  order, and a level record under the name `level<n>` that loads the mod's level. The number is never saved: saves,
-  replays and messages use the id.
+- **Mod levels get numbers the scripts accept.** The scripts pass levels as numbers (`Level`, `LastLevel`,
+  `MenuLoadLevel("level" .. n)`, `UM_IsLevelComplete(n)`), so each mod mission gets a level number for the session and
+  a level record under the name `level<n>` that loads the mod's level. The number has to pass the scripts' range checks
+  as a story mission's does ([Story progress: every reader](../../research/story-progress.md#readers)): `GetLevel`
+  (`global.lua:f64`) turns 0 and 300 or more into 1, so a mission numbered there would run, complete and be found as
+  level 1; `UnlockAndLoad` and `SetupLevelInventory` (`f59`, `f150`) bank the players' assets and set the second
+  player's inventory only below 100; 60-69 is an Armies stage to the engine; the mission menu lists only 2-99 but 95
+  and 60-65. So the numbers come from a **pool**: the numbers 2-59 that no level record uses, taken from the records
+  `CfgLevels` made, given in chain order. On the NTSC-U disc that is 45 numbers (4, 6-8, 10, 12, 13, 15-19, 21-30, 32,
+  33, 35-50, 53, 56-59). A story mission past the pool is refused with a message, as a missing anchor is. Coney
+  overrides no game script function for this, `GetLevel` included: the number is chosen to pass the checks as they
+  are. Every lookup keyed by a number (the unlock records, the inventory table `MS`, the tag offsets) has no row for a
+  free number and takes the game's own default. The number is never saved: saves, replays and messages use the id.
 
 ### The manifest's `[story]` section {#story-manifest}
 
@@ -673,6 +682,10 @@ Written first, before the natives:
 - **Against the disc.** A disc test runs the disc's own `global.lua` in a game state with a fake profile and, for every
   prefix of the story complete (and nothing, and `level64` alone), compares the level and checkpoint the Lua
   `runNextMission` asks for with the native's; it prints the count of equal cases only.
+- **Level numbers.** With synthetic level records, mod missions get the free numbers 2-59 in chain order, never one a
+  record uses, 0, 1, 60-69, 95 or 100 and above; one past the pool is refused with its message. A disc test runs the
+  disc's own `global.lua` main chunk with the current level set to each pool number and checks that `Level` keeps the
+  number, and that `UnlockAndLoad` banks the assets and calls `runNextMission(1)`; it prints counts only.
 - **Merging.** Synthetic manifests: an `after` on a mission and on a hub chapter, a replacement, two mods on one anchor
   in both load orders, a missing anchor, a failed `before`, a cycle and two replacements of one mission each give the
   chain and the messages expected; with no story mod the graph's hash equals the seed's.
@@ -818,16 +831,18 @@ In order. Issues 1 to 6 are 4.0 patching; issue 7 is the probe; issues 8 to 11 f
 
 Under [#1054](issue:1054), in order; the save format is [#1179](issue:1179)'s.
 
-1. **core: Add the story graph seeded with the original's order**: the chain, its views and the walk and disc tests.
-2. **core: Add native runNextMission and findLastMission over the graph**: the two natives, the hub's
-   offer written into `fRunMission`, level numbers for mod missions.
-3. **core: Add the manifest's story section and the story graph merge**: `[story]`, anchors, the merge and its
+1. **core: Add the story graph seeded with the original's order** ([#1299](issue:1299)): the chain, its views and the
+   walk and disc tests.
+2. **core: Add native runNextMission and findLastMission over the graph** ([#1300](issue:1300)): the two natives, the
+   hub's offer written into `fRunMission`, level numbers for mod missions from the pool of free numbers 2-59.
+3. **core: Add the manifest's story section and the story graph merge** ([#1301](issue:1301)): `[story]`, anchors, the
+   merge and its refusals.
+4. **core: Add hub chapters that mod missions open** ([#1302](issue:1302)): a new chapter at chapter *n*'s time, the
+   mod's chapter script or Coney's default chapter.
+5. **core: Add story progress by mission id to the save** ([#1303](issue:1303)): mod missions' completion, ranks and
+   best records in the story section, after #1179.
+6. **gameplay: Add the story view to the Mods screen** ([#1304](issue:1304)): shared anchors with *Swap*, replacements,
    refusals.
-4. **core: Add hub chapters that mod missions open**: a new chapter at chapter *n*'s time, the mod's chapter script
-   or Coney's default chapter.
-5. **core: Add story progress by mission id to the save**: mod missions' completion, ranks and best records in the
-   story section, after #1179.
-6. **gameplay: Add the story view to the Mods screen**: shared anchors with *Swap*, replacements, refusals.
 
 ## How the numbers were found {#how-checked}
 
