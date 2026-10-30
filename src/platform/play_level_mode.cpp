@@ -316,7 +316,7 @@ PlayLevelMode::~PlayLevelMode() {
 void PlayLevelMode::makeTargets(rw::Texture* texture) {
     const raycast::CollisionMesh& mesh = m_scenery->collision();
     std::uint32_t seed = 1;
-    for (const SceneTarget& point : m_scenery->targets()) {
+    for (const world::SceneTarget& point : m_scenery->targets()) {
         // Dropped onto the ground below its spot, as a teleport is.
         raycast::Vec3 feet{point.feet.x, point.feet.y, point.feet.z + kTeleportDrop};
         if (!raycast::dropToGround(mesh, kTeleportDrop * 2.0F, feet)) {

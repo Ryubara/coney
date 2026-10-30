@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#include "platform/humans_trace.h"
+#include "ai/humans_trace.h"
 
 #include <format>
 
-namespace coney::platform {
+namespace coney::ai {
 
 std::expected<std::shared_ptr<HumansTrace>, Error> HumansTrace::open(const std::string& path) {
     std::shared_ptr<HumansTrace> trace(new HumansTrace());
@@ -12,10 +12,10 @@ std::expected<std::shared_ptr<HumansTrace>, Error> HumansTrace::open(const std::
     if (!trace->m_file) {
         return fail(ErrorCode::Io, std::format("cannot write the trace {}", path));
     }
-    trace->m_file << ai::FightTracer::header();
+    trace->m_file << FightTracer::header();
     return trace;
 }
 
-void HumansTrace::write(const ai::Brains& brains) { m_file << m_tracer.rows(++m_steps, brains); }
+void HumansTrace::write(const Brains& brains) { m_file << m_tracer.rows(++m_steps, brains); }
 
-} // namespace coney::platform
+} // namespace coney::ai

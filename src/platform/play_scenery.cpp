@@ -207,11 +207,6 @@ std::string LevelPlayScenery::summary() const {
                                    : std::format(", spawned collision triangles {}", m_extras.solid.size()));
 }
 
-std::vector<human::Place> PlayScenery::places() const {
-    const human::PlayerStart s = start();
-    return {human::Place{startSource(), s.position, s.headingDegrees}};
-}
-
 // By value, as the overrides take the extras over; this one, for a scenery that has no room for them, drops them.
 // NOLINTNEXTLINE(performance-unnecessary-value-param)
 std::expected<void, Error> PlayScenery::setExtras(const RenderEngine& /*engine*/, SceneExtras /*extras*/) {

@@ -15,19 +15,19 @@
 // one file with one step count and one numbering of the humans. Research: docs/research/feel.md#method
 
 namespace coney::ai {
-class Brains;
-} // namespace coney::ai
 
-namespace coney::platform {
+class Brains;
 
 /// The open trace file, the tracer that numbers the humans and the steps traced.
 class HumansTrace {
   public:
     /// Opens `path` (replacing it) and writes the header. Fails with ErrorCode::Io when it cannot be written.
+    /// @coney-only the all-humans trace, a test and research aid; the original has none
     [[nodiscard]] static std::expected<std::shared_ptr<HumansTrace>, Error> open(const std::string& path);
 
     /// Writes one row per brain of `brains` for the next step.
-    void write(const ai::Brains& brains);
+    /// @coney-only the all-humans trace, a test and research aid; the original has none
+    void write(const Brains& brains);
     /// The steps written so far.
     [[nodiscard]] std::uint64_t steps() const { return m_steps; }
 
@@ -35,8 +35,8 @@ class HumansTrace {
     HumansTrace() = default;
 
     std::ofstream m_file;
-    ai::FightTracer m_tracer;
+    FightTracer m_tracer;
     std::uint64_t m_steps = 0;
 };
 
-} // namespace coney::platform
+} // namespace coney::ai

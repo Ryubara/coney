@@ -25,18 +25,11 @@
 #include "platform/world_viewer_mode.h"
 #include "raycast/collision_builder.h"
 #include "raycast/collision_mesh.h"
+#include "world/level_ground.h"
 #include "world/path_map.h"
 #include "world/sector_budget.h"
 
 namespace coney::platform {
-
-/// A passive human to fight placed by the scenery (human::TargetHuman, Coney's own test target): its feet, heading and
-/// health. Only a sandbox layout places them (docs/guides/sandbox.md).
-struct SceneTarget {
-    anim::Vec3 feet;
-    float headingDegrees = 0.0F; ///< 0 faces +y.
-    int health = 0;
-};
 
 /// Objects added to a scenery after it was made: Coney's own, the debug tools' Spawner (PlayLevelControls::spawn(),
 /// docs/guides/debug-menu.md#pages). Their solid triangles join the collision mesh after the scenery's own, `draw`
@@ -51,25 +44,14 @@ struct SceneExtras {
 
 /// Where the play mode's player stands and what is drawn round him: a level's streamed scenery or a sandbox. The play
 /// mode (PlayLevelMode) owns the player, the follow camera and the character; the scenery owns the ground they collide
-/// with and draws everything else, so the same player and camera code runs in a level and in a sandbox.
+/// with and draws everything else, so the same player and camera code runs in a level and in a sandbox. What the
+/// simulation reads of it (the collision, the start, the places, the path data) is its world::LevelGround side; this
+/// class adds the streaming round the camera and the drawing.
 ///
 /// The mode calls step() and findVisible() in its update() (one fixed step) and draw() in its render() (a blended
 /// frame); none of them reads a clock (docs/guides/conventions.md#update-and-render).
-class PlayScenery {
+class PlayScenery : public world::LevelGround {
   public:
-    virtual ~PlayScenery() = default;
-    PlayScenery() = default;
-    PlayScenery(const PlayScenery&) = delete;
-    PlayScenery& operator=(const PlayScenery&) = delete;
-    PlayScenery(PlayScenery&&) = delete;
-    PlayScenery& operator=(PlayScenery&&) = delete;
-
-    /// The collision mesh the player stands on and the camera tests against. Valid as long as the scenery.
-    [[nodiscard]] virtual const raycast::CollisionMesh& collision() const = 0;
-    /// Where the player starts.
-    [[nodiscard]] virtual human::PlayerStart start() const = 0;
-    /// Where start() comes from, for the player's line ("the level's start", "spawn point lane").
-    [[nodiscard]] virtual std::string startSource() const = 0;
     /// Before the first frame, with the camera at `camera` (RenderWare's axes).
     virtual void preload(world::Vec3 camera) = 0;
     /// The scenery's part of a simulation step, with the camera at `camera`: streaming, the draw distance.
@@ -95,23 +77,6 @@ class PlayScenery {
     virtual void setLighting(SceneLighting* /*lighting*/) {}
     /// The scenery's counts for the play summary, starting with "; ".
     [[nodiscard]] virtual std::string summary() const = 0;
-
-    /// What is played, for the debug menus: the level's name, or "sandbox " and the layout's title.
-    [[nodiscard]] virtual std::string name() const = 0;
-    /// The named places the debug menus' teleport offers: the start (a level), or the spawn points (a sandbox).
-    [[nodiscard]] virtual std::vector<human::Place> places() const;
-    /// The passive humans to fight (Coney's own sandbox targets): a sandbox layout's `target` lines; none in a level.
-    [[nodiscard]] virtual std::vector<SceneTarget> targets() const { return {}; }
-    /// Where the AI humans that fight the player start: a sandbox layout's `fighter` lines; none in a level.
-    [[nodiscard]] virtual std::vector<human::Place> fighters() const { return {}; }
-    /// The level's path data, decoded, for the AI's route planner; null where there is none (a sandbox, or a level
-    /// whose path data does not decode).
-    [[nodiscard]] virtual const world::PathMap* pathMap() const { return nullptr; }
-    /// The collision mesh and path data the level's glass panes and doors switch on and off and retag
-    /// (world_objects::ObjectWorld); null where the scenery has no such objects (a sandbox).
-    [[nodiscard]] virtual raycast::CollisionMesh* objectCollision() { return nullptr; }
-    /// The path data the level's doors retag (world_objects::ObjectWorld); null where the scenery has none (a sandbox).
-    [[nodiscard]] virtual world::PathMap* objectPaths() { return nullptr; }
     /// Whether objects can be added (setExtras(): a sandbox and a level can).
     [[nodiscard]] virtual bool canSpawn() const { return false; }
     /// Puts `extras` in the scenery in place of those added before (empty: as made). Fails with
