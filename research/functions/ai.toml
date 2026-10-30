@@ -5683,6 +5683,8 @@ page = "ai-code.md#t2-bindings"
 kind = "binding"
 role = "`TacticDomination`: `DominationTactic_Init`"
 level = "confirmed-code"
+coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
+status = "legacy"
 
 [[function]]
 address = 0x00316ca0
