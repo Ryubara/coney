@@ -480,7 +480,7 @@ finds a difference fixes it forward.
 The whole gate, which `task check` runs:
 
 - **Engine changes:** the `ci` preset build and its tests with the disc configured, in one command:
-  `uv run --project python coney-tools build --agent <id> --preset ci --test` (it waits for a free
+  `uv run --project python coney-tools build --agent <id> --preset ci --test --full` (it waits for a free
   [build slot](coney-tools-build.md#build), loads the MSVC environment itself and passes the configured disc to the tests;
   agents never run `cmake --build` or `ctest` directly). Read its `disc tests:` line: `SKIPPED` means no disc test
   ran, and the run is made again with a disc.
@@ -497,12 +497,17 @@ The whole gate, which `task check` runs:
 Commands and presets: [Building and testing](building.md).
 
 The whole gate runs once per tip, in `task check`, before Review. While working,
-check with the `dev` preset and only the tests the change touches (`ctest --preset dev -R <pattern>`, disc tests
-included when they are the ones affected). Builds share a few slots on one machine, and a full `ci` build with the whole
-suite holds one for 15 to 30 minutes, so running it for every step makes everyone else wait.
+check with the `dev` preset and only the tests the change touches
+(`coney-tools build --agent <id> --preset dev --test -R <pattern>`, or `-L disc` when the disc tests are the ones
+affected). Builds share a few slots on one machine, and a full `ci` build with the whole suite holds one for 15 to 30
+minutes, so running it for every step makes everyone else wait. The tool keeps this rule: **an agent's `build --test`
+with neither `-R` nor `-L` is refused** (exit 2, naming the rule) unless it carries `--full`, the flag for the whole
+suite at the handover tip. `task check` and `ci run` pass it themselves, so an agent needs it only when it runs the
+whole suite by hand outside them; a person at a terminal who leaves `--agent` out is not refused
+([When the whole suite runs](coney-tools-build.md#build)).
 
 **A full suite takes a check slot.** The whole pytest run and the whole ctest run each take 30 to 40 minutes on a
-machine to themselves, so `task check`, `ci run` (its pytest) and `build --test` with no `-R` or `-L` hold a **check
+machine to themselves, so `task check`, `ci run` (its pytest) and `build --test --full` (no `-R` or `-L`) hold a **check
 slot** while they run: `check_slots` in `coney.local.toml` of them at once across all worktrees (default one per four
 cores), the others wait in a queue that says its place every minute
 ([Check slots](coney-tools-build.md#check-slots)). A few test files typed by hand (`pytest python/tests/test_x.py`,

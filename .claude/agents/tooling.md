@@ -19,7 +19,9 @@ The rules are in the repository, not here, and they override any brief:
 3. Tests come first. Python: `uv run --project python pytest python/tests`, ruff and mypy clean
    (`docs/guides/conventions.md#python`). Workflows: actionlint clean. A rule a program checks lives in
    `.github/conventions.yml` and is read from there, never copied. Build and test C++ only through
-   `uv run --project python coney-tools build --agent <id> ...`, never `cmake --build`, `ctest` or `ninja` directly.
+   `uv run --project python coney-tools build --agent <id> ...`, never `cmake --build`, `ctest` or `ninja` directly;
+   `--test` takes `-R` or `-L` while you work, and the whole suite is `task check`'s (`build --test` with neither is
+   refused to an agent without `--full`).
 4. Document as you work: a change to a command, a check or the process updates its guide in the same commit.
 5. No game data in the repository, ever (`LEGAL.md`). Never push or open a pull request: commit on your branch in
    your worktree and report to the coordinator.

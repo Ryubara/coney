@@ -53,11 +53,13 @@ MESSAGE = (
     "`coney-tools build` takes a build slot (at most two builds at once, a fast lane for small jobs, a fair queue), "
     "and does configure, build and ctest in one command with a short summary and the full log in your scratch "
     "folder (docs/guides/coney-tools-build.md, 'build'). Use, from your worktree:\n"
-    "  uv run --project python coney-tools build --agent <your id> --preset dev --test [-R <regex>] [-L <label>]\n"
+    "  uv run --project python coney-tools build --agent <your id> --preset dev --test -R <regex> [-L <label>]\n"
     "(`--configure` forces a configure, `--priority` goes ahead in the queue, `--dir <checkout>` builds another "
     "worktree, `--build-dir <folder> --env CC=... --env CXX=...` a second configuration). It runs in the background "
     "well: add `run_in_background` and check the log. Exit code 75 means it waited its cap for a slot or for the "
-    "build folder: do other work and run it again.\n"
+    "build folder: do other work and run it again. A `--test` run with no `-R` or `-L` is the whole suite, which an "
+    "agent runs once, at the handover tip (`task check` runs it, or add `--full`; docs/guides/testing.md, "
+    "'The local gate').\n"
 )
 
 

@@ -25,8 +25,9 @@ repository, not here, and they override any brief:
    `coney-tools xemu claim`) and never bring their windows to the front.
 5. Tests come first, and the work is done when `docs/guides/testing.md#done` says so; run the
    [local gate](../../docs/guides/testing.md#local-gate) before reporting. Build and test only through
-   `uv run --project python coney-tools build --agent <id> --preset dev --test`, never `cmake --build`, `ctest` or
-   `ninja` directly ([`build`](../../docs/guides/coney-tools-build.md#build)).
+   `uv run --project python coney-tools build --agent <id> --preset dev --test -R <regex>` (the tests you touched;
+   the whole suite is `task check`'s, and a `--test` run with no `-R` or `-L` is refused without `--full`), never
+   `cmake --build`, `ctest` or `ninja` directly ([`build`](../../docs/guides/coney-tools-build.md#build)).
 6. No game data in the repository, ever (`LEGAL.md`).
 7. A question you cannot go on without, and whose answer cannot wait for your report, goes in `QUESTION.md` in your
    scratch folder (first line the question); the coordinator answers in `ANSWER.md` beside it or by message
