@@ -365,6 +365,9 @@ nav:
           - The Coney console: guides/studio/console.md
           - "The Coney console's F8 bar": guides/studio/console-bar.md
       - Coney Studio prototype: guides/studio/prototype.md
+      - Coney Director design:
+          - guides/director/index.md
+          - The Rockstar Editor survey: guides/director/rockstar-editor.md
       - Conventions: guides/conventions.md
       - Repository conventions: guides/repo-conventions.md
       - Enforcement map: guides/enforcement.md
