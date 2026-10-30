@@ -66,8 +66,8 @@ std::string callbackArg(std::span<const Value> args, std::size_t i) {
     return binding::string(args, i);
 }
 
-// Whether argument `i` is missing or nil (binding_args.h): only for arguments that read the same either way.
-using binding::absent;
+// Whether argument `i` is missing or nil.
+bool absent(std::span<const Value> args, std::size_t i) { return i >= args.size() || args[i].isNil(); }
 
 // A position argument, the origin when it is not a table of three numbers.
 std::array<float, 3> positionArg(std::span<const Value> args, std::size_t i) {

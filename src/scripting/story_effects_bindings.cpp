@@ -56,8 +56,9 @@ double handleArg(std::span<const Value> args, std::size_t i) {
     return static_cast<double>(static_cast<std::uint32_t>(wholeArg(args, i)));
 }
 
-// Whether argument `i` is missing or nil (binding_args.h): only for arguments that read the same either way.
-using binding::absent;
+// Whether argument `i` is missing or nil, so its default applies.
+// @coney-only argument glue: the original reads its arguments through tolua
+bool absent(std::span<const Value> args, std::size_t i) { return i >= args.size() || args[i].isNil(); }
 
 // Argument `i` as a boolean as tolua reads one: nil and false are false, a number is its value's truth.
 // @coney-only argument glue: the original reads its arguments through tolua
