@@ -15,6 +15,7 @@
 #include "platform/game_session.h"
 #include "platform/log_output.h"
 #include "platform/net_play.h"
+#include "platform/render_engine.h"
 #include "platform/window.h"
 
 namespace coney::platform {
@@ -51,6 +52,17 @@ void logWarning(std::string_view text);
 /// on the display `--window-display` (else CONEY_WINDOW_DISPLAY) names. It views `options`, which must outlive
 /// RenderEngine::start().
 [[nodiscard]] WindowDesc gameWindow(const Options& options);
+
+/// Starts the renderer a run draws with (docs/engine/renderer.md#migration): librw's NULL device when `headless`,
+/// else `renderer` (chooseRenderer()) in a window as `desc` asks. A GPU renderer that cannot start (no Vulkan,
+/// Direct3D 12 or Metal device opens) is a warning in the run log, saying why, and the run draws with GL3 instead; a
+/// started one says its driver. Fails as RenderEngine::start() does for the renderer it ends with.
+[[nodiscard]] std::expected<std::unique_ptr<RenderEngine>, Error> startRenderer(RendererKind renderer, bool headless,
+                                                                                const WindowDesc& desc);
+
+/// The end of a run on the GPU renderer: how many of the frames it presented reached the screen, and with which
+/// present mode, for CI's smoke run (docs/guides/building.md#what-ci-runs). Nothing for the other renderers.
+void printRendererSummary(const RenderEngine& renderer);
 
 /// The game session's settings from `options`: the language, `--skip-movies`, the profiles' folder (none in test
 /// mode) and the memory card check's message time.

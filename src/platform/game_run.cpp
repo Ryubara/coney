@@ -87,6 +87,31 @@ WindowDesc gameWindow(const Options& options) {
     return desc;
 }
 
+std::expected<std::unique_ptr<RenderEngine>, Error> startRenderer(RendererKind renderer, bool headless,
+                                                                  const WindowDesc& desc) {
+    if (headless) {
+        return RenderEngine::start(RenderBackend::Null, desc);
+    }
+    if (renderer == RendererKind::Gpu) {
+        auto gpu = RenderEngine::start(RenderBackend::Gpu, desc);
+        if (gpu) {
+            logText(std::format("renderer: gpu on {}\n", (*gpu)->gpuDriver()));
+            return gpu;
+        }
+        // GL3 stays the fallback for machines with no Vulkan, Direct3D 12 or Metal (renderer.md#migration, item 7).
+        logWarning(std::format("{}; drawing with GL3 instead", gpu.error().message));
+    }
+    return RenderEngine::start(RenderBackend::OpenGl, desc);
+}
+
+void printRendererSummary(const RenderEngine& renderer) {
+    if (renderer.backend() != RenderBackend::Gpu) {
+        return;
+    }
+    logText(std::format("renderer: {} of {} frames shown, present mode {}\n", renderer.framesShown(),
+                        renderer.framesPresented(), presentModeName(renderer.presentMode())));
+}
+
 GameSessionSettings gameSessionSettings(const Options& options) {
     GameSessionSettings settings;
     settings.language = options.language;

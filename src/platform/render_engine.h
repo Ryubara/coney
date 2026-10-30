@@ -89,15 +89,15 @@ class RenderEngine final : public graphics::RenderDevice {
     /// GPU backend shows frames but draws nothing in them yet.
     [[nodiscard]] bool drawsPixels() const { return m_backend == RenderBackend::OpenGl; }
     /// Whether librw runs its NULL device, reading RenderWare data and drawing nothing: the NULL and GPU backends.
-    [[nodiscard]] bool librwDataOnly() const { return false; } // stub for the test commit
+    [[nodiscard]] bool librwDataOnly() const { return m_backend != RenderBackend::OpenGl; }
     /// The GPU backend's SDL driver (`vulkan`, `direct3d12`, `metal`); empty for the others.
-    [[nodiscard]] std::string_view gpuDriver() const { return {}; }
+    [[nodiscard]] std::string_view gpuDriver() const;
     /// The present mode the GPU backend's swapchain shows frames with (setVsync(), setFpsCap(), applied at the next
     /// present()); Vsync for the others.
-    [[nodiscard]] PresentMode presentMode() const { return PresentMode::Vsync; }
+    [[nodiscard]] PresentMode presentMode() const;
     /// The present modes the GPU backend's window offers besides Vsync; none for the others.
-    [[nodiscard]] PresentModes offeredPresentModes() const { return {}; }
-    /// The frames present() has shown on the screen: every one for OpenGL, those the GPU backend's swapchain took
+    [[nodiscard]] PresentModes offeredPresentModes() const;
+    /// Of framesPresented(), those shown on the screen: every one for OpenGL, those the GPU backend's swapchain took
     /// (a hidden or minimised window may take none), none for NULL.
     /// The frames present() has ended so far, on any backend.
     [[nodiscard]] std::uint64_t framesPresented() const { return m_presented; }
@@ -251,6 +251,8 @@ class RenderEngine final : public graphics::RenderDevice {
 
     /// Where the logical screen goes in a frame of `size` (WindowDesc::logicalFrame).
     [[nodiscard]] graphics::ScreenRect logicalScreenIn(graphics::Extent size) const;
+    /// Places the GPU backend's window on its display, shows it unless `desc` keeps it hidden, and takes its size.
+    void showGpuWindow(const WindowDesc& desc);
     /// Makes the camera and its frame and depth buffers at m_frameSize (OpenGL only).
     void createCamera();
     /// Destroys the camera and its buffers, if any.
@@ -285,8 +287,9 @@ class RenderEngine final : public graphics::RenderDevice {
     rw::Raster* m_blurRaster = nullptr; // blurScreen()'s copies: the screen, then its half-size image
     rw::Raster* m_halfRaster = nullptr;
 
-    std::uint64_t m_presented = 0; // frames presented so far
-    std::uint64_t m_shown = 0;     // of those, the GPU backend's that reached the swapchain
+    std::unique_ptr<GpuPresenter> m_gpu; // the GPU backend's device, window and swapchain
+    std::uint64_t m_presented = 0;       // frames presented so far
+    std::uint64_t m_shown = 0;           // of those, the GPU backend's that reached the swapchain
     std::optional<std::uint64_t> m_captureFrame;
     std::string m_capturePath;
     std::optional<std::expected<CapturedFrame, Error>> m_capture;

@@ -22,6 +22,7 @@
 #include "core/perf.h"
 #include "core/window_display.h"
 #include "platform/character_skin.h"
+#include "platform/gpu_presenter.h"
 #include "platform/movie_screen.h"
 #include "platform/perf_probes.h"
 #include "platform/sprite_sheets.h"
@@ -313,14 +314,12 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
     // The constructor is private, so make_unique cannot reach it.
     std::unique_ptr<RenderEngine> engine(new RenderEngine(backend, desc));
     const bool openGl = backend == RenderBackend::OpenGl;
-    if (backend == RenderBackend::Gpu) {
-        return startFailure("the GPU renderer", false); // stub for the test commit
-    }
+    const bool gpu = backend == RenderBackend::Gpu;
 
-    // OpenGL: start SDL's video first and check for a display. librw's GL3 device does start SDL's video itself, but
-    // it ignores its own failures and goes on to use a display list it never made; holding our own reference also
-    // keeps SDL alive until librw has destroyed its window.
-    if (openGl) {
+    // A window (OpenGL, GPU): start SDL's video first and check for a display. librw's GL3 device does start SDL's
+    // video itself, but it ignores its own failures and goes on to use a display list it never made; holding our own
+    // reference also keeps SDL alive until librw has destroyed its window, and the GPU backend's window lives on it.
+    if (openGl || gpu) {
         // Before librw makes and shows the window, so a run nobody is playing never takes the keyboard focus. A run
         // placed on a display of its own (--window-display, CONEY_WINDOW_DISPLAY) is one an agent or tool started, so
         // it never takes it either, on this show or a later one.
@@ -336,11 +335,31 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
         if (displays <= 0) {
             return startFailure("finding a display (run with --headless where there is none)", true);
         }
+    }
+    if (openGl) {
         if (const std::optional<std::string> version = openGlTooOld()) {
             return std::unexpected(Error{ErrorCode::PlatformFailure,
                                          "could not start the renderer: it needs OpenGL 3.3, and the driver offers " +
                                              *version + " (run with --headless where there is none)"});
         }
+    }
+
+    // GPU: SDL's device and Coney's own window, claimed for it on this thread (gpu_presenter.h), before librw, so a
+    // machine with no Vulkan, Direct3D 12 or Metal fails before anything else starts; the window shows further down.
+    if (gpu) {
+        GpuPresenter::Desc gpuDesc;
+        gpuDesc.title = engine->m_title;
+        gpuDesc.width = desc.width;
+        gpuDesc.height = desc.height;
+        gpuDesc.vsync = engine->m_vsync;
+        gpuDesc.fpsCap = engine->m_fpsCap;
+        auto presenter = GpuPresenter::start(gpuDesc);
+        if (!presenter) {
+            return std::unexpected(
+                Error{ErrorCode::PlatformFailure, "could not start the GPU renderer: " + presenter.error().message});
+        }
+        engine->m_gpu = std::move(*presenter);
+        engine->m_sdlWindow = engine->m_gpu->window();
     }
 
     // librw's three start-up steps. The default memory functions (malloc and free) are fine until Coney has an
@@ -365,8 +384,8 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
     params.height = desc.height;
     params.windowtitle = engine->m_title.c_str();
     // Engine::open copies the device for this platform (always GL3 in Coney's build) into the engine and opens it.
-    // For the NULL backend, put librw's NULL device in that slot for the duration of the copy, then put GL3 back: the
-    // engine then runs on the NULL device until it closes, and SDL's video is never started.
+    // For the NULL and GPU backends, put librw's NULL device in that slot for the duration of the copy, then put GL3
+    // back: the engine then runs on the NULL device until it closes, for data only, and never touches SDL's video.
     bool opened = false;
     // `--window-display` / CONEY_WINDOW_DISPLAY, and a window that is to stay hidden: librw's GL3 device makes and
     // shows the window in Engine::start, so the watch covers open and start, and the window is hidden and goes to its
@@ -414,6 +433,10 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
         return startFailure("librw Engine::start", false);
     }
     engine->m_librwStarted = true;
+    if (gpu) {
+        engine->showGpuWindow(desc);
+        return engine;
+    }
     if (!openGl) {
         return engine;
     }
@@ -458,6 +481,32 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
     return engine;
 }
 
+void RenderEngine::showGpuWindow(const WindowDesc& desc) {
+    // The window is Coney's own, made hidden, so it goes to its display (`--window-display`) before it is ever seen,
+    // and a window that is to stay hidden is never shown at all.
+    auto* window = static_cast<SDL_Window*>(m_sdlWindow);
+    if (const std::optional<SDL_DisplayID> display = chosenDisplay(desc.display); display) {
+        placeOnDisplay(window, *display);
+    }
+    if (!desc.hidden) {
+        SDL_ShowWindow(window);
+    }
+    int width = 0;
+    int height = 0;
+    SDL_GetWindowSize(window, &width, &height);
+    if (width > 0 && height > 0) {
+        m_frameSize = graphics::Extent{width, height};
+    }
+}
+
+std::string_view RenderEngine::gpuDriver() const {
+    return m_gpu ? std::string_view(m_gpu->driver()) : std::string_view();
+}
+
+PresentMode RenderEngine::presentMode() const { return m_gpu ? m_gpu->mode() : PresentMode::Vsync; }
+
+PresentModes RenderEngine::offeredPresentModes() const { return m_gpu ? m_gpu->offered() : PresentModes{}; }
+
 std::optional<Window> RenderEngine::window() const {
     if (m_sdlWindow == nullptr) {
         return std::nullopt;
@@ -468,6 +517,9 @@ std::optional<Window> RenderEngine::window() const {
 std::pair<void*, void*> RenderEngine::sdlWindowAndContext() const {
     if (m_sdlWindow == nullptr) {
         return {nullptr, nullptr};
+    }
+    if (m_backend != RenderBackend::OpenGl) {
+        return {m_sdlWindow, nullptr}; // the GPU backend's window has no OpenGL context
     }
     // librw's GL3 device keeps its context current on this thread for the engine's whole life.
     return {m_sdlWindow, SDL_GL_GetCurrentContext()};
@@ -683,6 +735,17 @@ void RenderEngine::startFrame(graphics::Rgba clear) {
     m_inFrame = true;
     m_clearColour = clear;
     m_viewport = logicalScreenIn(m_frameSize);
+    if (m_gpu) {
+        // GPU: follow the window's size, as below; the clear itself happens in present().
+        int width = 0;
+        int height = 0;
+        SDL_GetWindowSize(static_cast<SDL_Window*>(m_sdlWindow), &width, &height);
+        if (width > 0 && height > 0) {
+            m_frameSize = graphics::Extent{width, height};
+            m_viewport = logicalScreenIn(m_frameSize);
+        }
+        return;
+    }
     if (m_camera == nullptr) {
         return; // NULL backend: nothing to clear
     }
@@ -782,6 +845,18 @@ void RenderEngine::present() {
         CONEY_PERF_ZONE("present.swap");
         m_camera->showRaster(m_vsync ? rw::Raster::FLIPWAITVSYNCH : 0);
 
+    } else if (m_gpu) {
+        if (captureThisFrame) {
+            m_capture = std::unexpected(Error{ErrorCode::PlatformFailure, "the GPU renderer reads no frames back yet"});
+        }
+        // Stand-in until the GPU renderer draws (docs/engine/renderer.md#order, item 11): the whole frame is cleared to
+        // the frame's colour (beginFrame()'s logical screen, beginWindowFrame()'s window), with no black border round
+        // the logical screen. A change of vsync or cap is taken here, between frames.
+        m_gpu->choosePresentMode(m_vsync, m_fpsCap);
+        CONEY_PERF_ZONE("present.swap");
+        if (m_gpu->clearAndPresent(m_clearColour)) {
+            ++m_shown;
+        }
     } else if (captureThisFrame) {
         m_capture = std::unexpected(Error{ErrorCode::PlatformFailure, "the headless renderer draws no frames"});
     }
@@ -1014,6 +1089,11 @@ void RenderEngine::shutDown() noexcept {
     if (m_glStubbed) {
         m_glStubbed = false;
         glad_glDeleteTextures = savedDeleteTextures;
+    }
+    // The GPU backend's swapchain, device and window, while SDL's video still runs.
+    if (m_gpu) {
+        m_gpu.reset();
+        m_sdlWindow = nullptr;
     }
     if (m_sdlStarted) {
         m_sdlStarted = false;

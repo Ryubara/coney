@@ -18,10 +18,6 @@ enum class RendererKind : std::uint8_t {
     Gpu, ///< SDL3's GPU API (Vulkan, Direct3D 12, Metal) with librw opened for data only; clears and presents so far.
 };
 
-/// The overrides file's key of the saved renderer (docs/guides/debug-menu.md#tunables): 0 for GL3, 1 for the GPU
-/// renderer; it applies at the next start.
-inline constexpr std::string_view kRendererSettingKey = "Display/Renderer";
-
 /// The renderer `name` names, as `--renderer` takes it: `gl3` or `gpu`; nothing for anything else.
 [[nodiscard]] std::optional<RendererKind> parseRendererName(std::string_view name);
 

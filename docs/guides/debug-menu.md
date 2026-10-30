@@ -350,11 +350,10 @@ take the new type too, so `HuGetCharType`, his voice and his sounds' character t
 is. A disc test (`tests/platform/disc_level99_change_character_test.cpp`) checks the result against a player made as the
 type. The new character loads from the disc, so that frame stalls briefly.
 
-Not taken from the configuration yet, because Coney does not model them for a player: the Warrior class's cuffing,
-theft and mugging stats, the gym upgrades, the body scale (Rembrandt's 0.97), the speed class (a fallback the
-original does not use in play, [Speed classes](../research/characters.md#speed-classes)), the attack table, attack
-delays and brain type (an AI's, not a pad's), the voice, hat and weapon, and the movement styles that change the anim
-slots.
+Not taken from the configuration yet, because Coney does not model them for a player: the Warrior class's cuffing, theft
+and mugging stats, the gym upgrades, the body scale (Rembrandt's 0.97), the speed class (a fallback the original does
+not use in play, [Speed classes](../research/characters.md#speed-classes)), the attack table, attack delays and brain
+type (an AI's, not a pad's), the voice, hat and weapon, and the movement styles that change the anim slots.
 
 **Display.** *FPS counter* shows, in the top-right corner under the frame stats, the frames a second, the average
 frame time and the steps a second over each half second, as the frame pacer measures them (`coney::FrameRateMeter`,
@@ -409,16 +408,15 @@ while off: the scene then draws every model exactly as without them (below).
 
 The wireframe and the flat views follow the animation because they are **draws of the model's own librw atomic**, the
 one the shaded pass just drew, through its own pipeline: whatever skinned the shaded pass (the vertices written on the
-CPU, or the vertex shader that skins a human on the GPU) skins these passes the same way. A flat pass swaps
-the atomic's material colours for the view's and its textures for none, lights it with one white ambient light and no
-fog, draws it and puts everything back; the wire pass does the same in OpenGL's line polygon mode, pulled a little
-towards the camera so the lines sit on the fill. A human's blood layer, and an object's second layer, are drawn only
-with the shaded draw. The normals and bone axes are Debug draw lines, from the selection's pose skinned on the CPU for
-it alone. *Everything* means every model drawn through the scene's lighting rig: a level's sectors and skyline, the
-humans, world objects, doors and cars. A sandbox's own blocks are drawn by its renderer and get no wireframe; there is
-no wire under OpenGL ES, which has no line mode. The *selection* choices (the wireframe's, the mesh view's) and the
-normals and bone axes are for a selected human: an object selected has no model to draw them for, though *everything*
-draws it like any other.
+CPU, or the vertex shader that skins a human on the GPU) skins these passes the same way. A flat pass swaps the atomic's
+material colours for the view's and its textures for none, lights it with one white ambient light and no fog, draws it
+and puts everything back; the wire pass does the same in OpenGL's line polygon mode, pulled a little towards the camera
+so the lines sit on the fill. A human's blood layer, and an object's second layer, are drawn only with the shaded draw.
+The normals and bone axes are Debug draw lines, from the selection's pose skinned on the CPU for it alone. *Everything*
+means every model drawn through the scene's lighting rig: a level's sectors and skyline, the humans, world objects,
+doors and cars. A sandbox's own blocks are drawn by its renderer and get no wireframe; there is no wire under OpenGL ES,
+which has no line mode. The *selection* choices (the wireframe's, the mesh view's) and the normals and bone axes are for
+a selected human: an object selected has no model to draw them for, though *everything* draws it like any other.
 
 The level of detail: the original draws every sector, human, car part and object as one model, whole or not at all
 ([Distance: fades and level of detail](../research/graphics.md#lod)), and so does Coney, so *by LOD* tells only the
@@ -582,14 +580,13 @@ and `disc_entity_editor_test.cpp` check it on every kind of human.
 
 #### Movement speeds {#entity-editor-speeds}
 
-The player's walk, jog, run and sprint speeds come from the clips' root
-motion ([Speed classes](../research/characters.md#speed-classes)), not from a table, so the tunables are a **scale on
-each gait** (Tunables page, Movement: *Sneak*, *Walk*, *Jog*, *Run*, *Sprint speed scale*, 1 as made). The combat
-walk's speed is already the Combat page's tunable. A scale lands between steps like any tunable, and the gait the
-human is judged to be in, the jump's launch and the animation's gait blend all follow the scaled speeds
-(`HumanAnimator::setSpeedFactors()`); a scale of 2 on the run makes the player cover twice the ground at the same
-animation, so the feet slide. Another human's speeds are the *Speed scale* above, per entity, on top of the player's
-own tunables when it is the player.
+The player's walk, jog, run and sprint speeds come from the clips' root motion ([Speed
+classes](../research/characters.md#speed-classes)), not from a table, so the tunables are a **scale on each gait**
+(Tunables page, Movement: *Sneak*, *Walk*, *Jog*, *Run*, *Sprint speed scale*, 1 as made). The combat walk's speed is
+already the Combat page's tunable. A scale lands between steps like any tunable, and the gait the human is judged to be
+in, the jump's launch and the animation's gait blend all follow the scaled speeds (`HumanAnimator::setSpeedFactors()`);
+a scale of 2 on the run makes the player cover twice the ground at the same animation, so the feet slide. Another
+human's speeds are the *Speed scale* above, per entity, on top of the player's own tunables when it is the player.
 
 **Not here yet** (still #723): knock down, giving and taking a weapon, team and gang, a target, cuffing, AI on and off,
 taking the pad, playing any clip, duplicate and respawn, objects (break, open, move, reset), and the rest of the stats
@@ -680,11 +677,11 @@ The first tunables are the player's and the camera's researched values (`src/deb
 | Climb | low and high probe (0.69 m, 1.7 m), reach and running reach (1.5 m, 4.5 m), probe behind (0.4 m), fence top limit (0.25 m), fence ceiling (2.5 m), wall window (1.7-2.91 m), short wall window (0.7-1.7 m) |
 | Follow camera | position lag (0.22), collision margin (0.2 m), closest after collision (0.5 m), auto-centre (on; off is the default rule), one player camera `0x0050b19c` (on), leash near and far (4.8 m, 5.3 m), pitch (13°), look-at height (1.4 m) |
 | Combat | history hold (7 samples), snaps need a target (`CfgSnap`, on), `S1`'s timing (hit 2, window 6 to 15, recovery 17, end 20 updates; the other attacks keep their measured timing), grab search scale (1.25), power endurance (0.25), grab strike cost (0.2, halved for the player), power drain (15/s), rage points cap (25) and factors (1.0, 0.1), rage hold (5000 ms) (the rage's drain and decay are the player's Warrior class's), the button mash, the mugging and the stereo theft ([Combat](../research/combat/index.md#coneys-implementation), `src/debug/combat_tunables.cpp`) |
-| Display | cutscene letterbox (on: the black bars over cutscenes, as the original draws them; off plays cutscenes full screen) |
+| Display | cutscene letterbox (on: the black bars over cutscenes, as the original draws them; off plays cutscenes full screen); renderer (0: GL3, the default; 1: the GPU renderer, [Renderer](../engine/gpu-renderer.md); applies at the next start, `--renderer` overrides it and test mode ignores it) |
 
 The leash, pitch and look-at height apply when the camera is next placed (a level start); the others at the next step.
-The game registers the Combat category at start-up beside the others. Display values are render-side and apply on
-the next frame ([Enhancements: Where the settings live](enhancements.md#where-the-settings-live)).
+The game registers the Combat category at start-up beside the others. Display values are render-side: they apply on
+the next frame, the renderer at the next start ([Where the settings live](enhancements.md#where-the-settings-live)).
 
 **Determinism.** A change never lands in the middle of a step: the registry queues it, and the input gate applies the
 queue between two steps (`TunableRegistry::applyPending()`). A run with the same overrides file and the same input is

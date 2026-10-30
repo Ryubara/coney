@@ -22,10 +22,11 @@ namespace coney {
 namespace {
 
 // The options of OptionSet::Player (playerOptions()).
-constexpr std::array<std::string_view, 21> kPlayerOptions{
-    "--install", "--data",       "--verify",   "--disc",     "--language",    "--profiles",    "--fps-cap",
-    "--vsync",   "--line-blend", "--show-fps", "--no-audio", "--skip-movies", "--no-activate", "--window-display",
-    "--host",    "--join",       "--net-name", "--help",     "--headless",    "--frames",      "--input-script"};
+constexpr std::array<std::string_view, 22> kPlayerOptions{
+    "--install",     "--data",           "--verify",       "--disc",     "--language", "--profiles",
+    "--fps-cap",     "--vsync",          "--line-blend",   "--show-fps", "--no-audio", "--skip-movies",
+    "--no-activate", "--window-display", "--host",         "--join",     "--net-name", "--help",
+    "--headless",    "--frames",         "--input-script", "--renderer"};
 
 // The synopsis of usageText(OptionSet::Player), before its options' lines.
 constexpr std::string_view kPlayerSynopsis =
@@ -33,6 +34,7 @@ constexpr std::string_view kPlayerSynopsis =
     "       coney --script-patch make|apply ...   (coney --script-patch for its usage)\n"
     "       coney [--disc PATH | --data DIR] [--language CODE] [--profiles DIR]\n"
     "             [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
+    "             [--renderer gl3|gpu]\n"
     "             [--no-activate] [--window-display DISPLAY] [--no-audio] [--skip-movies]\n"
     "             [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]\n"
     "             [--headless] [--frames N] [--input-script FILE] [--help]\n"
@@ -62,6 +64,7 @@ constexpr std::string_view kUsage =
     "             [--dev-overlay N] [--mesh-view SPEC] [--world-edit FILE]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
     "             [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
+    "             [--renderer gl3|gpu]\n"
     "             [--no-activate] [--window-display DISPLAY]\n"
     "             [--no-audio | --audio-test] [--skip-movies] [--cpu-skinning]\n"
     "             [--record FILE [--record-seconds N] [--record-debug-draw]]\n"
@@ -173,6 +176,9 @@ constexpr std::string_view kUsage =
     "                     does, each line the mean of two neighbouring lines; off (the default)\n"
     "                     shows the frame as drawn\n"
     "  --show-fps         print the frame and step rates once a second\n"
+    "  --renderer gl3|gpu draw with librw's OpenGL 3.3 (gl3, the default) or SDL3's GPU API (gpu:\n"
+    "                     Vulkan, Direct3D 12 or Metal; it only clears and presents so far); unset,\n"
+    "                     the saved Display/Renderer setting outside test mode\n"
     "  --no-activate      open the window without taking the keyboard focus from the one in use\n"
     "                     (always so in test mode and for --render-references)\n"
     "  --window-display DISPLAY\n"
@@ -420,6 +426,20 @@ std::expected<void, Error> checkReferenceRenderer(const Options& options) {
     return {};
 }
 
+// Refuses `--renderer gpu` where it cannot work: part of checkCombinations(). It opens a window of its own and draws
+// nothing yet, so there is no frame to read back.
+std::expected<void, Error> checkRenderer(const Options& options) {
+    if (options.renderer != RendererKind::Gpu) {
+        return {};
+    }
+    if (options.headless || !options.loads.empty() || options.screenshotPath.has_value() ||
+        options.recordPath.has_value() || options.renderReferences.has_value()) {
+        return invalidArgument("--renderer gpu opens a window and reads no frame back yet, so it cannot be combined "
+                               "with --headless, --load, --screenshot, --record or --render-references");
+    }
+    return {};
+}
+
 // Refuses the frame-pacing options where they cannot work: part of checkCombinations().
 std::expected<void, Error> checkPacing(const Options& options) {
     if ((options.fpsCap.has_value() || options.showFps) && isTestMode(options)) {
@@ -514,6 +534,9 @@ std::expected<void, Error> checkCombinations(const Options& options) {
     }
     if (auto edits = checkWorldEdit(options); !edits) {
         return edits;
+    }
+    if (auto renderer = checkRenderer(options); !renderer) {
+        return renderer;
     }
     if (auto record = checkRecord(options); !record) {
         return record;
@@ -842,6 +865,7 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
     std::optional<std::string> kindArg;          // as typed, likewise
     std::optional<std::string> vsyncArg;         // as typed, likewise
     std::optional<std::string> lineBlendArg;     // as typed, likewise
+    std::optional<std::string> rendererArg;      // as typed, likewise
     std::optional<std::string> checkpointArg;    // as typed, likewise
     std::optional<std::string> startArg;         // as typed, likewise
     std::optional<std::string> rumbleArg;        // as typed, likewise
@@ -1116,6 +1140,16 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return invalidArgument(std::format("--vsync needs on or off, got \"{}\"", setting));
             }
             options.vsync = setting == "on";
+        } else if (arg == "--renderer") {
+            if (auto value = takeValue(args, i, rendererArg, "--renderer", "gl3 or gpu"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+            const std::string name = rendererArg.value_or(std::string{});
+            const std::optional<RendererKind> renderer = parseRendererName(name);
+            if (!renderer) {
+                return invalidArgument(std::format("--renderer needs gl3 or gpu, got \"{}\"", name));
+            }
+            options.renderer = *renderer;
         } else if (arg == "--line-blend") {
             if (auto value = takeValue(args, i, lineBlendArg, "--line-blend", "on or off"); !value) {
                 return std::unexpected(std::move(value.error()));

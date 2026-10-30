@@ -3,19 +3,31 @@
 
 namespace coney {
 
-// Stub for the test commit: nothing is recognised yet.
-std::optional<RendererKind> parseRendererName(std::string_view /*name*/) { return std::nullopt; }
+std::optional<RendererKind> parseRendererName(std::string_view name) {
+    if (name == "gl3") {
+        return RendererKind::Gl3;
+    }
+    if (name == "gpu") {
+        return RendererKind::Gpu;
+    }
+    return std::nullopt;
+}
 
-std::string_view rendererName(RendererKind /*kind*/) { return {}; }
+std::string_view rendererName(RendererKind kind) { return kind == RendererKind::Gpu ? "gpu" : "gl3"; }
 
-RendererKind rendererOfSetting(int /*value*/) { return RendererKind::Gl3; }
+RendererKind rendererOfSetting(int value) { return value == 1 ? RendererKind::Gpu : RendererKind::Gl3; }
 
-RendererKind chooseRenderer(std::optional<RendererKind> /*option*/, RendererKind /*saved*/, bool /*testMode*/) {
-    return RendererKind::Gl3;
+RendererKind chooseRenderer(std::optional<RendererKind> option, RendererKind saved, bool testMode) {
+    // The option is asked for by name, so it wins even in test mode; the saved setting is a player's, which a test run
+    // must not depend on.
+    if (option) {
+        return *option;
+    }
+    return testMode ? RendererKind::Gl3 : saved;
 }
 
 int& rendererSetting() {
-    static int setting = 0;
+    static int setting = 0; // GL3 until a player saves otherwise
     return setting;
 }
 

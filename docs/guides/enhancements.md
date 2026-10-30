@@ -73,6 +73,8 @@ the game's options screens.
   cutscenes as in the original; only the bars are not drawn. Set it on the Tunables page's *Display* category in
   the pad menus or the developer overlay, then *Save overrides*; or put `Display/Cutscene letterbox = 0` in the
   overrides file (`coney-tunables.ini` in your config folder, or the file `--tunables FILE` names).
+  `Display/Renderer` (0, GL3, by default): 1 starts SDL3's GPU renderer at the next start, as `--renderer gpu` does
+  ([Renderer](../engine/gpu-renderer.md)); test mode ignores it.
 - **Command line.** Flags where they help scripted captures and benchmarks: `--preset ps2|xbox|enhanced|high`,
   `--render-scale`, `--aspect`, `--fov-offset` and `--msaa`, beside the existing `--fps-cap` and `--vsync`. A
   general `--set Display/<name>=<value>` covers the rest.

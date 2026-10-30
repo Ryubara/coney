@@ -392,8 +392,17 @@ int main(int argc, char** argv) {
 
     // The renderer: OpenGL in a window, or the headless NULL renderer for --headless and for --load, a console job.
     // librw runs either way, because the texture dictionary handlers read through it.
-    // --render-references draws offscreen with OpenGL, so its window stays hidden.
+    // --render-references draws offscreen with OpenGL, so its window stays hidden. `--renderer gpu`, or the overrides
+    // file's saved Display/Renderer outside test mode, starts the GPU renderer instead of OpenGL
+    // (docs/engine/renderer.md#migration); the file is the one loaded in full further down, read here for that one
+    // setting because the renderer starts first.
     const bool headless = options->headless || !options->loads.empty();
+    const std::string savedSettings =
+        options->tunablesFile.value_or(headless ? std::string{} : coney::platform::defaultTunablesPath());
+    const coney::RendererKind rendererKind = coney::chooseRenderer(
+        options->renderer,
+        savedSettings.empty() ? coney::RendererKind::Gl3 : coney::debug::savedRenderer(savedSettings),
+        coney::isTestMode(*options));
     coney::platform::WindowDesc windowDesc = coney::platform::gameWindow(*options);
     windowDesc.hidden = options->renderReferences.has_value();
     // `--render-size`: frames of that size holding exactly the logical screen, as the original's frame buffer does.
@@ -402,8 +411,7 @@ int main(int argc, char** argv) {
         windowDesc.height = size->height;
         windowDesc.logicalFrame = true;
     }
-    auto engine = coney::platform::RenderEngine::start(
-        headless ? coney::platform::RenderBackend::Null : coney::platform::RenderBackend::OpenGl, windowDesc);
+    auto engine = coney::platform::startRenderer(rendererKind, headless, windowDesc);
     if (!engine) {
         logError(engine.error().message);
         return 1;
@@ -765,6 +773,7 @@ int main(int argc, char** argv) {
     // `--bench-real-time` paces a bench as a player's run, though `--frames` makes it test mode otherwise.
     const bool lockstep = testMode && !options->benchRealTime;
     coney::FrameClock clock(lockstep ? coney::FramePacing::Lockstep : pacingFor(fpsCap));
+    renderer.setFpsCap(fpsCap);
     std::optional<coney::platform::FramePacer> pacer;
     if (!lockstep) {
         pacer.emplace(fpsCap, options->showFps ? std::function<void(std::string_view)>(logText)
@@ -778,8 +787,9 @@ int main(int argc, char** argv) {
         debugServices.frameMilliseconds = [&frameMilliseconds] { return frameMilliseconds; };
         debugServices.frameRate = [&pacer] { return pacer->meter().reading(); };
         debugServices.fpsCap = [&pacer] { return pacer->cap(); };
-        debugServices.setFpsCap = [&pacer, &clock, pacingFor](std::uint32_t cap) {
+        debugServices.setFpsCap = [&pacer, &clock, pacingFor, &renderer](std::uint32_t cap) {
             pacer->setCap(cap);
+            renderer.setFpsCap(cap); // the GPU renderer's present mode follows it
             clock.setPacing(pacingFor(cap));
         };
     }
@@ -1345,6 +1355,7 @@ int main(int argc, char** argv) {
     }
     // Leaving network play: the other games get this one's Bye before its connections close.
     coney::platform::finishNetPlay(netPlay, *options);
+    coney::platform::printRendererSummary(renderer);
     if (session) {
         coney::platform::printGameSummary(*session, audio.get(), objectSounds, testMode);
     }
