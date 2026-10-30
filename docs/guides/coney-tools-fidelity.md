@@ -187,7 +187,7 @@ step ends. Exit codes: 0 done, 1 refused (the output says what to fix), 2 it can
 uv run --project python coney-tools orig study ADDR [--task T] [--url URL] [--recut] [--print]
 uv run --project python coney-tools orig verify ADDR [--task T] [--url URL]
 uv run --project python coney-tools orig compare ADDR [--task T] [--base REF] [--coney-function KEY] [--carry] [--show]
-uv run --project python coney-tools orig fails-first --test NAME [--test NAME ...] --test-commit SHA [--fix-commit SHA] [--preset P] --agent ID
+uv run --project python coney-tools orig fails-first [--keeps] --test NAME [--test NAME ...] --test-commit SHA [--fix-commit SHA] [--preset P] --agent ID
 uv run --project python coney-tools orig fails-first --none REASON
 uv run --project python coney-tools orig fails-first --accept-change REASON --test NAME [--test NAME ...] --test-commit SHA [--fix-commit SHA]
 ```
@@ -203,8 +203,10 @@ uv run --project python coney-tools orig fails-first --accept-change REASON --te
   the Coney function, check the pairs, the committed Coney file and `orig check-copy`, and append `compared` when all of
   it holds. A refusal writes no stamp. [Details](stamps.md#compare)
 * `fails-first` runs the named tests through `build --test -R` on the test commit (they must fail) and the fix commit (they
-  must pass) and appends a `fails-first` stamp per test. With `--accept-change` the coordinator records its yes to a
-  test that had to change between the two commits, and nothing runs. [Details](stamps.md#fails-first)
+  must pass) and appends a `fails-first` stamp per test. With `--keeps` (a test that guards a refactor, a performance
+  change or behaviour that already matches) the test must pass on both and the stamp's result is `keeps`. With
+  `--accept-change` the coordinator records its yes to a test that had to change between the two commits, and nothing
+  runs. [Details](stamps.md#fails-first), [keeps](stamps.md#keeps)
 
 Every option:
 
@@ -224,6 +226,7 @@ Every option:
 | `fails-first` | `--fix-commit SHA` | The commit that makes it pass (default `HEAD`) |
 | `fails-first` | `--preset P` | The CMake preset the tests are built with (default `dev`) |
 | `fails-first` | `--agent ID` | Your id for the build slots, as `build --agent` |
+| `fails-first` | `--keeps` | The tests guard a refactor or behaviour Coney already has: each must pass on the test commit and on the fix, unchanged, and is stamped `keeps` (not with `--none` or `--accept-change`); the test commit is never the fix commit ([Keeps](stamps.md#keeps)) |
 | `fails-first` | `--none REASON` | Run nothing and stamp that the task has no such test (one line, at most 200 characters, not with `--test`) |
 | `fails-first` | `--accept-change REASON` | The coordinator only: run nothing and record that the named tests may change between `--test-commit` and `--fix-commit`, with the reason (one line, at most 200 characters); the engineer's next run of the same names and commits is then allowed ([A changed test](stamps.md#changed-test)) |
 
@@ -395,7 +398,7 @@ Run named tests on the test commit and on the fix commit and stamp `fails-first`
 
 ```text
 coney-tools orig fails-first [--test TEST] [--test-commit TEST_COMMIT] [--fix-commit FIX_COMMIT] [--preset PRESET]
-    [--agent AGENT] [--none REASON] [--accept-change REASON] [--task TASK]
+    [--agent AGENT] [--keeps] [--none REASON] [--accept-change REASON] [--task TASK]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -405,6 +408,7 @@ coney-tools orig fails-first [--test TEST] [--test-commit TEST_COMMIT] [--fix-co
 | `--fix-commit FIX_COMMIT` | text | none | the commit that makes it pass (default: HEAD) |
 | `--preset PRESET` | text | `dev` | the CMake preset (default: dev) |
 | `--agent AGENT` | text | none | your id for the build slots (as `build --agent`) |
+| `--keeps` | flag | off | the tests guard a refactor or behaviour Coney already has: they must pass on both commits, unchanged |
 | `--none REASON` | text | none | stamp that there is no fails-first test, with the reason |
 | `--accept-change REASON` | text | none | the coordinator only: record that the named tests may change between --test-commit and --fix-commit |
 | `--task TASK` | text | none | the task (default: CONEY_TASK, else the branch) |

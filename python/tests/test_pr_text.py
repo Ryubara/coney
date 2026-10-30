@@ -436,6 +436,26 @@ def test_a_test_name_with_a_mention_is_neutralised_in_the_facts(tmp_path: Path) 
     assert "@maintainers" not in facts and "@​maintainers 'now'" in facts
 
 
+def test_a_keeps_test_is_named_in_the_facts_apart_from_the_tests_that_failed_first(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    stamp = built.fails_first("Widget same lookup", result="keeps")
+    facts = pr_text.facts_block(built.subject())
+    assert (
+        "- Kept behaviour: `Widget same lookup` passes before the change and after it, not failed first "
+        f"(stamp `{stamp.hash[:12]}`)"
+    ) in facts
+    assert "- Failed first: `Widget ready frame` failed before the fix, passes after" in facts
+    assert "Failed first: `Widget same lookup`" not in facts
+
+
+def test_the_short_facts_count_the_keeps_tests(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    built = make(tmp_path)
+    built.fails_first("Widget same lookup", result="keeps")
+    built.fails_first("Widget same scan", result="keeps")
+    monkeypatch.setattr(pr_text, "FACTS_LIMIT", len(pr_text.facts_block(built.subject())) - 1)
+    assert "- Kept behaviour: 2 tests (pass before the change and after it)" in pr_text.facts_block(built.subject())
+
+
 def test_the_facts_become_counts_over_the_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     built = make(tmp_path)
     full = pr_text.facts_block(built.subject())

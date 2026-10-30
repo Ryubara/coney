@@ -547,6 +547,72 @@ def test_a_stamp_in_the_old_form_is_read_by_the_files_it_covered(tmp_path: Path)
     ]
 
 
+def test_a_keeps_stamp_satisfies_an_added_test_until_its_test_changes(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    built.fails_first(TEST_NAME, result="keeps")
+    assert texts(built.verify(), "fails-first") == []
+    built.edit(TEST_FILE, f'TEST_CASE("{TEST_NAME}") {{ REQUIRE(true); }}\n')
+    assert texts(built.verify(), "fails-first") == [
+        f'fails-first: "{TEST_NAME}": its test or its registration changed since ({TEST_FILE})'
+    ]
+
+
+def test_a_keeps_stamp_stays_current_when_another_test_joins_its_file(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    built.fails_first(TEST_NAME, result="keeps")
+    text = (built.root / TEST_FILE).read_text(encoding="utf-8")
+    built.edit(TEST_FILE, text + 'TEST_CASE("Widget other") {}\n')
+    built.fails_first("Widget other")
+    assert texts(built.verify(), "fails-first") == []
+
+
+def test_a_keeps_stamp_whose_test_commit_is_its_fix_commit_is_refused(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    built.stamp(
+        "fails-first",
+        subject=TEST_NAME,
+        result="keeps",
+        covers={
+            "test_commit": built.tip,
+            "fix_commit": built.tip,
+            fails_first.TEST_COVER: fails_first.test_sha256(built.root, built.tip, TEST_NAME, [TEST_FILE]),
+            "red_log_sha256": "0" * 64,
+            "green_log_sha256": "1" * 64,
+        },
+        detail={"red": "passed", "green": "passed", "test_files": [TEST_FILE], "stubs": []},
+    )
+    assert texts(built.verify(), "fails-first") == [
+        f'fails-first: "{TEST_NAME}": its test commit is its fix commit, so it never ran before the change'
+    ]
+
+
+def test_a_gameplay_change_whose_only_added_test_is_kept_passes_the_tool_and_rests_on_the_reviewer(
+    tmp_path: Path,
+) -> None:
+    # pr.md#verify: a branch whose one added test is `keeps` is accepted here; whether the change keeps the behaviour
+    # is the reviewer's to say.
+    built = make(tmp_path)
+    built.fails_first(TEST_NAME, result="keeps")
+    assert any(built.conventions.paths.gameplay_dir(p) for p in built.subject().paths)
+    assert texts(built.verify(), "fails-first") == []
+
+
+def test_a_failed_keeps_run_is_not_a_proof(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    built.fails_first(TEST_NAME, result="fail")
+    assert texts(built.verify(), "fails-first") == [
+        f'fails-first: "{TEST_NAME}" was added and has no passing fails-first stamp'
+    ]
+
+
+def test_a_keeps_stamp_does_not_prove_a_gameplay_change_that_adds_no_test(tmp_path: Path) -> None:
+    built = make(tmp_path, shape="no-test", skip=frozenset({"fails-first"}))
+    built.fails_first("Widget old test", result="keeps")
+    assert texts(built.verify(), "fails-first") == [
+        "fails-first: a feature or fix under src/ai/ needs a test that failed first, or --none with a reason"
+    ]
+
+
 def decide(built: Built, who: dict[str, object] | None = None) -> stamps.Stamp:
     """The coordinator's decision that the test may change between its commits, as `orig fails-first
     --accept-change` writes it."""

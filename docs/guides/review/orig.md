@@ -79,7 +79,9 @@ the shape, which no tool can. For a function with a pairs file, the reviewer's i
 piece of the original (by line numbers of the saved study, [Pairs](../stamps.md#pairs)), the Coney code that does it and
 whether they are the same, a stand-in or not ported; the tool has already checked that every line is in a pair. The
 reviewer also opens the `stubs` of each `fails-first` stamp ([Fails first](../stamps.md#fails-first)): a stub in a test
-commit that implements the behaviour, rather than returning a default or an empty result, is a finding.
+commit that implements the new behaviour is a finding: the stub returns a default or an empty result, except for a
+`keeps` test, whose stub does the old behaviour (a lookup's stub does the scan it replaces) and is a finding only when
+it does the new ([Keeps](../stamps.md#keeps)).
 
 A short function whose logic is its shape (a formula, a three-way test) is not a transcription just for having the
 same shape. The question is whether the code was written from understanding or copied from the listing. Signs of

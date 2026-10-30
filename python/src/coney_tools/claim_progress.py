@@ -33,8 +33,9 @@ from coney_tools.unit_record import read_record
 
 #: The stamp steps that post `/progress`; the others are posted by their own commands.
 STAGE_STEPS = ("studied", "fails-first", "compared", "checked", "reviewed")
-#: The results that count as the stage being reached (`none`: a fails-first that has no test, for docs and tooling).
-REACHED = ("pass", "none")
+#: The results that count as the stage being reached (`none`: a fails-first that has no test, for docs and tooling;
+#: `keeps`: a fails-first test that guards a refactor).
+REACHED = ("pass", "none", "keeps")
 #: Beside the unit record: the last stage posted and when.
 STATE_FILE = "claim-progress.json"
 

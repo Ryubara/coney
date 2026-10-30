@@ -47,7 +47,7 @@ file's own lists, never the branch's, so a branch cut before a label was added i
 | --- | --- | --- |
 | 1 | `log` | The stamp chain is intact, starts with `assigned` and `claimed`, and every stamp's time is not in the future and not before the author date of its commit |
 | 2 | `checked` | The newest `checked` stamp passed, covers this [change](stamps.md#change), ran a big enough profile with all its checks and (profile `full`) names a build record that was a whole, clean `ci` run |
-| 3 | `compared`, `fails-first` | Every `@orig` function the branch adds or changes was studied and compared at the body it has now, at every address it carries, and every test the branch adds has a `fails-first` stamp |
+| 3 | `compared`, `fails-first` | Every `@orig` function the branch adds or changes was studied and compared at the body it has now, at every address it carries, and every test the branch adds has a passing `fails-first` stamp (`pass`, or `keeps` for a refactor guard) |
 | 4 | `reviewed` | The newest `reviewed` stamp passed, covers this change, these pairs and this text, and judged every changed function `clean` or `diff-deliberate-ok` |
 | 5 | `text` | The generated title and description pass the checks CI runs (`pr text` only) |
 
@@ -98,10 +98,10 @@ What it refuses, exactly (`<...>` is filled in):
 | `checked` | every problem [`build_record.problems`](stamps.md#build-record) finds, the rule `task check` applies, at the commit the `checked` stamp names: `checked: the build record is a filtered run (-R ...); Check needs the full suite`; `... is preset dev, Check needs ci`; `... has version None, this tool reads 1`; `... has no test run`; `checked: no tests ran`; `checked: 1 test failed`; `checked: 41 disc tests skipped; Check needs the disc (CONEY_DISC)`; `... was made from a worktree with uncommitted changes`; `... is for another commit (<10 digits>, the tip is <10 digits>)`; `checked: the log <file> differs from the hash the build record kept (it was edited)`; and `checked: the build record's test counts differ from the Check stamp's` | `task check` |
 | `compared` | `compared: Widget::update (0x00501000) was changed and never studied` | `orig study <addr>` |
 | `compared` | `compared: 0x00501000: study/decompile.c differs from what the studied stamp covers`; `... the saved study is unusable (<why>)` | `orig study <addr>` |
-| `compared` | `compared: 0x00501000: line 14 (piece 5, lines 14-16) is in no pair` (any pairs check: coverage, relations, the Coney locations) | `orig compare <addr>` |
-| `compared` | `compared: 0x00501000: Widget::update changed after it was compared (body a1b2 now c3d4)`; `... the pairs file changed after it was compared`; `... was never compared` | `orig compare <addr>` |
+| `compared` | `compared: 0x00501000: line 14 (piece 5, lines 14-16) is in no pair` (any pairs check: coverage, relations, the Coney locations) | `orig compare <addr>` (`orig compare <addr> --coney-function KEY` for a function that shares its address, [Stamps](stamps.md#shared-address)) |
+| `compared` | `compared: 0x00501000: Widget::update changed after it was compared (body a1b2 now c3d4)`; `... the pairs file changed after it was compared`; `... was never compared` | `orig compare <addr>` (`orig compare <addr> --coney-function KEY` for a function that shares its address, [Stamps](stamps.md#shared-address)) |
 | `compared` | `compared: src/ai/brain.cpp:88: <fingerprint> (copy-check)` (on the function's file or a file its pairs cite) | the engineer, then `orig compare` |
-| `fails-first` | `fails-first: "Widget ready frame" was added and has no passing fails-first stamp`; `... its test or its registration changed since (tests/ai/widget_test.cpp)` ([what a stamp binds](stamps.md#fails-first-binds); an old stamp says `its test file changed since`) | `orig fails-first` |
+| `fails-first` | `fails-first: "Widget ready frame" was added and has no passing fails-first stamp` (a `pass`, or a `keeps` stamp for a test that guards a refactor, is passing); `... its test or its registration changed since (tests/ai/widget_test.cpp)` ([what a stamp binds](stamps.md#fails-first-binds); an old stamp says `its test file changed since`); `... its test commit is its fix commit, so it never ran before the change` (a `keeps` stamp made with the test and the change in one commit) | `orig fails-first` (`--keeps` for a refactor guard) |
 | `fails-first` | `fails-first: "Widget ready frame" changed between its commits and rests on decision #12, which is not the coordinator's decision for them` (a pass whose `decision_seq` names no [decision on a changed test](stamps.md#changed-test) for it) | `orig fails-first --accept-change` (the coordinator), then the engineer's `orig fails-first` |
 | `fails-first` | `fails-first: a feature or fix under src/ai/ needs a test that failed first, or --none with a reason` | `orig fails-first` |
 | `fails-first` | `fails-first: no fails-first stamp; a docs task records orig fails-first --none "<reason>"` (kinds `docs`, `tooling`, `ci-fix` with no test added) | `orig fails-first` |
@@ -120,9 +120,11 @@ branch) never matches and is refused as stale.
 
 Two notes about the rules behind it. A `none` fails-first stamp is accepted for a docs, tooling or `ci-fix` task and
 refused for a feature or fix that changes a gameplay folder (`paths.gameplay`): a gameplay change is proven by a test
-that failed first. Python tests are not stamped; a tooling task's tests-first rule rests on the reviewer and on pytest
-in its `checked` stamp. And a function that carries several `@orig` addresses needs every address compared against that
-one Coney body.
+that failed first. A `keeps` stamp counts only for a test the branch adds, and a gameplay change whose only added test
+is `keeps` passes this check: the tool cannot tell a refactor from a fix whose test happens to pass before it, so such a
+change rests on the reviewer ([Keeps](stamps.md#keeps)). Python tests are not stamped; a tooling task's tests-first
+rule rests on the reviewer and on pytest in its `checked` stamp. And a function that carries several `@orig`
+addresses needs every address compared against that one Coney body.
 
 A function the branch removes is printed as a note, not a refusal. A change that touches no C++ file under `src/`
 adds, changes and removes no `@orig` function, so the run does not read the source at all.
@@ -208,7 +210,8 @@ The marker names (`pull_requests.markers`) let a later pass find the two generat
 
 The facts say which stages passed, with their hashes cut to 12 digits, from the local log alone: the log's task and
 chain head, the change and the `<remote>/<default branch>` commit it is on, then one line each for the functions studied
-and compared (pairs counted by relation), the tests that failed first, Check (profile, preset, the build's counts,
+and compared (pairs counted by relation), the tests that failed first, the tests that keep behaviour (passing before
+the change and after it, named apart: [Keeps](stamps.md#keeps)), Check (profile, preset, the build's counts,
 pytest's counts, build record; a profile with no build says `no build`, or `no build or test run` for `docs`, which
 runs no pytest, and names the checks it ran) and Review (verdict, model, functions by class), and the stand-in and
 not-ported pieces of the pairs. A stage with no stamp

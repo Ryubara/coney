@@ -33,7 +33,17 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from coney_tools import identity, pr_open_publish, pr_open_unit, pr_proof, pr_publish, pr_ready, pr_text, stamps
+from coney_tools import (
+    fails_first,
+    identity,
+    pr_open_publish,
+    pr_open_unit,
+    pr_proof,
+    pr_publish,
+    pr_ready,
+    pr_text,
+    stamps,
+)
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import Claims, load_conventions_leniently
 from coney_tools.issue_claim_remote import GhRemote
@@ -169,8 +179,10 @@ def _record_release(run: Run, proof: Proof, rebased_from: str, opener: str) -> s
 
 
 def _counts(proof: Proof) -> tuple[int, int]:
-    """How many tests failed first and how many `@orig` functions the release carries."""
-    tests = {s.subject for s in proof.subject.report.stamps if s.step == "fails-first" and s.result == "pass"}
+    """How many tests have a fails-first proof (failed first, or kept the behaviour) and how many `@orig` functions
+    the release carries."""
+    stamped = proof.subject.report.stamps
+    tests = {s.subject for s in stamped if s.step == "fails-first" and s.result in fails_first.PROVEN}
     return len(tests), len(pr_proof.changed_addresses(proof.subject.changed))
 
 

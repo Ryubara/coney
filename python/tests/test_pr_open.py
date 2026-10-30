@@ -16,7 +16,7 @@ from git_support import git
 from pr_open_support import OPENER, PNG, REPO, Open, make_open, picture, show
 from pr_support import UNVERIFIED, make
 
-from coney_tools import conventions, identity, pr_open, pr_open_unit, pr_publish, unit_record
+from coney_tools import conventions, identity, pr_open, pr_open_unit, pr_proof, pr_publish, pr_ready, unit_record
 from coney_tools.cli import main
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
@@ -1008,3 +1008,15 @@ def test_a_reopened_pull_request_has_auto_merge_turned_off_before_the_push(tmp_p
     opened.gh = edit_fails  # type: ignore[assignment]
     assert opened.run(reopen=True, no_auto_merge=True) == 4
     assert fake.prs[812]["auto"] is False
+
+
+def test_the_counts_include_each_test_that_failed_first_or_keeps_the_behaviour_and_no_failed_one(
+    tmp_path: Path,
+) -> None:
+    built = make(tmp_path)
+    built.fails_first("Widget same lookup", result="keeps")
+    built.fails_first("Widget never red", result="fail")
+    proof = pr_ready.Proof(built.subject(), [], None, [], [], [])
+    tests, functions = pr_open._counts(proof)
+    assert tests == 2  # "Widget ready frame" failed first, "Widget same lookup" keeps, the failed run proves nothing
+    assert functions == len(pr_proof.changed_addresses(proof.subject.changed)) >= 1

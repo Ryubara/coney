@@ -35,8 +35,9 @@ __all__ = ["SCHEMA", "Sources", "collect", "default_sources", "format_text"]
 SCHEMA = 2
 #: The longest goal line sent for a unit (the pane shows one line).
 GOAL_CHARACTERS = 200
-#: A step result that counts as the step being done (`none`: the step was not needed, with a reason in the stamp).
-DONE_RESULTS = ("pass", "none")
+#: A step result that counts as the step being done (`none`: the step was not needed, with a reason in the stamp;
+#: `keeps`: a fails-first test that guards a refactor).
+DONE_RESULTS = ("pass", "none", "keeps")
 
 
 # --- config ---------------------------------------------------------------------------------------------------------

@@ -228,6 +228,18 @@ def test_none_is_not_combined_with_tests(checkout: Path, capsys: pytest.CaptureF
     assert main(["orig", "fails-first", "--none", "two\nlines"]) == 2
 
 
+def test_keeps_needs_a_test_and_is_not_given_with_none_or_a_decision(
+    checkout: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["orig", "fails-first", "--keeps"]) == 2
+    assert main(["orig", "fails-first", "--keeps", "--test", "x"]) == 2  # no --test-commit
+    assert main(["orig", "fails-first", "--keeps", "--none", "docs only"]) == 2
+    assert (
+        main(["orig", "fails-first", "--keeps", "--accept-change", "why", "--test", "x", "--test-commit", "HEAD"]) == 2
+    )
+    assert "--keeps" in capsys.readouterr().out
+
+
 def test_the_signing_options_are_gone(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
     for option in (["--signers", "x"], ["--signers-ref", "main"], ["--release"]):
         with pytest.raises(SystemExit) as stop:

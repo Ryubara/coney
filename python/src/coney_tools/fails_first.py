@@ -10,10 +10,18 @@ The verdict is a pass when the build succeeded at both commits, the test failed 
 test that passes on the first (it detects nothing) or still fails on the second is a `fail` stamp. A build that does not
 compile, a queued build or a test that does not exist is an error with no stamp: the log records verdicts, not
 infrastructure faults. The test commit may carry the minimal stubs a new feature's test needs to compile, and the stamp
-lists them; a stub must not implement the behaviour (return a default or an empty result). The test files must be the
+lists them; a stub must not implement the new behaviour: it returns a default or an empty result, or for a `keeps`
+test does what the code did before. The test commit is never the fix commit. The test files must be the
 same in both commits as the compiler reads them (`orig_review.code_text`: comments and layout aside): a test that had
 to change to pass is a question for the coordinator, who records the answer with `record_decision` (`orig fails-first
 --accept-change`).
+
+`--keeps` is the other mode, for a test that guards a refactor, a performance change or behaviour Coney already has: it
+can never fail first. The verdict is then `keeps` when the test passes on the test commit (the state before the change,
+with the test and any stub it needs) and on the fix commit, and a `fail` stamp when it fails on either. It is held to
+the same rules as any other stamp: the same per-test hash (`test_sha256`), the same staleness (`staleness`) and the
+same decision for a test that changed between the commits. The reviewer decides whether the change really keeps that
+behaviour (docs/guides/review/task.md).
 """
 
 from __future__ import annotations
@@ -39,6 +47,9 @@ from coney_tools.unit import Unit
 EXIT_QUEUED = 75
 #: The longest reason `--none` takes (it goes in a stamp).
 MAX_REASON = 200
+#: The results of a stamp that proves an added test: it failed first (`pass`), or it guards a change that keeps the
+#: behaviour and passed before it too (`keeps`).
+PROVEN = ("pass", "keeps")
 #: Where a test file lives.
 TEST_DIR = "tests/"
 #: What a coordinator's decision stamp says in `detail.decision` (`record_decision`).
@@ -240,12 +251,26 @@ def declared_in(root: Path, commit: str, path: str) -> set[str]:
     return declared_names(_file_text(root, commit, path))
 
 
+def keeps_problem(stamp: stamps.Stamp) -> str:
+    """Why a `keeps` stamp proves nothing, or "": its test commit is its fix commit, so the run that says the test
+    passes "before the change" ran the change itself."""
+    test, fix = stamp.covers.get("test_commit"), stamp.covers.get("fix_commit")
+    if stamp.result == "keeps" and test is not None and test == fix:
+        return "its test commit is its fix commit, so it never ran before the change"
+    return ""
+
+
 def _plan(root: Path, test_commit: str, fix_commit: str | None) -> tuple[str, str, list[str], list[str], list[str]]:
     """(test commit, fix commit, the test files, the other files, the test files whose code differs between the two
     commits) after the checks the run depends on. A file that differs only in comments or layout is not changed."""
     head = _commit(root, "HEAD")
     test = _commit(root, test_commit)
     fix = _commit(root, fix_commit) if fix_commit else head
+    if test == fix:
+        raise FailsFirstError(
+            f"the test commit {test[:12]} is the fix commit: the test is committed first, alone (with the stubs it "
+            "needs to compile), and the change after it; the before-run is the test commit"
+        )
     if not _is_ancestor(root, test, fix):
         raise FailsFirstError(f"the test commit {test[:12]} is not an ancestor of the fix commit {fix[:12]}")
     if not _is_ancestor(root, fix, head):
@@ -524,10 +549,12 @@ def run(
     runner: Runner,
     rules: Stamps,
     who: Mapping[str, object],
+    keeps: bool = False,
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
     say: Callable[[str], None] = lambda line: None,
 ) -> list[stamps.Stamp]:
     """Run `tests` on `test_commit` and `fix_commit` and append a `fails-first` stamp for each; returns the stamps.
+    With `keeps` a test must pass on both (`keeps`) instead of failing on the first (`pass`).
 
     Raises FailsFirstError (nothing stamped, the branch restored) for a dirty tree, a worktree an earlier run left
     detached, commits out of order, a test file whose code changed between the commits with no coordinator's decision
@@ -594,6 +621,8 @@ def run(
     entries = []
     for name in names:
         red, green = runs["red"][1][name], runs["green"][1][name]
+        # A refactor guard passes before the change and after it; any other test fails first and passes after.
+        good = (red, green) == (("passed" if keeps else "failed"), "passed")
         detail: dict[str, object] = {"red": red, "green": green, "test_files": test_files, "stubs": stubs}
         if name in decisions:
             detail["decision_seq"] = decisions[name].seq
@@ -601,7 +630,7 @@ def run(
             {
                 "step": "fails-first",
                 "subject": name,
-                "result": "pass" if red == "failed" and green == "passed" else "fail",
+                "result": ("keeps" if keeps else "pass") if good else "fail",
                 "commit": fix,
                 "covers": {
                     "test_commit": test,

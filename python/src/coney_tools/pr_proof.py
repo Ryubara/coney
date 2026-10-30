@@ -730,7 +730,7 @@ def check_fails_first(subject: Subject) -> list[Refusal]:
     added = _added_tests(subject)
     for name in sorted(added):
         stamp = report.latest("fails-first", name)
-        if stamp is None or stamp.result != "pass":
+        if stamp is None or stamp.result not in fails_first.PROVEN:
             found.append(
                 Refusal(
                     "fails-first",
@@ -738,6 +738,9 @@ def check_fails_first(subject: Subject) -> list[Refusal]:
                     "orig fails-first",
                 )
             )
+            continue
+        if problem := fails_first.keeps_problem(stamp):
+            found.append(Refusal("fails-first", f'fails-first: "{name}": {problem}', "orig fails-first --keeps"))
             continue
         refused = _decision_refusal(subject, stamp)
         if refused is not None:
@@ -752,7 +755,9 @@ def check_fails_first(subject: Subject) -> list[Refusal]:
     proofs = [
         s
         for s in report.stamps
-        if s.step == "fails-first" and s.result in ("pass", "none") and s.detail.get("decision") != fails_first.DECISION
+        if s.step == "fails-first"
+        and s.result in (*fails_first.PROVEN, "none")
+        and s.detail.get("decision") != fails_first.DECISION
     ]
     if subject.kind in NO_TEST_KINDS:
         if not proofs:

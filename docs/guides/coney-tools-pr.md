@@ -21,9 +21,9 @@ uv run --project python coney-tools pr verify [TASK] [--worktree DIR] [--remote 
 ```
 
 Steps 1 to 4 of a release, read only: the stamp log is intact, Check ran a big enough profile on this change, every
-`@orig` function the branch changes was studied and compared at its current body, every test it adds failed first, and
-Review passed for this change, these pairs and this text. Prints one block per refusal (the message, then what to
-redo), or `ok`. It changes no stamp, file or git state and does not fetch.
+`@orig` function the branch changes was studied and compared at its current body, every test it adds failed first or
+is stamped `keeps`, and Review passed for this change, these pairs and this text. Prints one block per refusal (the
+message, then what to redo), or `ok`. It changes no stamp, file or git state and does not fetch.
 
 | Argument or option | Default | What it does |
 | --- | --- | --- |
