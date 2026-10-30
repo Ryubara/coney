@@ -89,7 +89,7 @@ def test_the_real_orig_review_gate() -> None:
 def test_the_real_merge_settings_follow_the_owners_decisions() -> None:
     merge = load_conventions(REPO).merge
     assert merge.methods == ("squash",) and merge.squash_message == "PR_BODY" and merge.auto_merge
-    assert len(merge.required_checks) == 12 and "body" in merge.required_checks
+    assert len(merge.required_checks) == 11 and "body" in merge.required_checks
 
 
 def test_the_real_hygiene_thresholds_follow_the_owners_decisions() -> None:

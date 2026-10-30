@@ -9,7 +9,7 @@ Mesa's llvmpipe as the OpenGL driver under a virtual display (`--launcher` puts 
 same command compares against the references or, with `--update`, replaces them. `--repeat` draws each scene again
 and compares the repeats with the first, which is how the tolerance is measured from repeated captures of one build.
 
-The scene list's format and the whole check: docs/guides/coney-tools-trace.md#picture.
+The scene list's format and the whole check: docs/guides/coney-tools-picture.md#picture.
 
 Research: docs/engine/renderer.md#comparing
 """
@@ -114,7 +114,7 @@ def _scene(path: Path, index: int, entry: object, default_frames: object, defaul
     return Scene(name, tuple(args), frames, size)
 
 
-def _draw(scene: Scene, coney: Sequence[str], target: Path, runner: Runner) -> None:
+def _draw(scene: Scene, coney: Sequence[str], target: Path, runner: Runner, cwd: Path | None) -> None:
     """Run Coney on one scene so that it writes `target`; ConfigError when it fails or draws nothing."""
     target.parent.mkdir(parents=True, exist_ok=True)
     target.unlink(missing_ok=True)
@@ -129,7 +129,7 @@ def _draw(scene: Scene, coney: Sequence[str], target: Path, runner: Runner) -> N
         str(target),
     ]
     try:
-        done = runner(command, capture_output=True, text=True, timeout=RUN_TIMEOUT_SECONDS, check=False)
+        done = runner(command, capture_output=True, text=True, timeout=RUN_TIMEOUT_SECONDS, check=False, cwd=cwd)
     except (OSError, subprocess.TimeoutExpired) as error:
         raise ConfigError(f"scene {scene.name}: cannot run {coney[-1]}: {error}") from error
     if done.returncode != 0:
@@ -150,6 +150,8 @@ def run_scenes(
     runner: Runner | None = None,
     repeat: int = 1,
     update: bool = False,
+    allow_no_references: bool = False,
+    cwd: Path | None = None,
     channel_tolerance: int | None = None,
     max_share_percent: float | None = None,
 ) -> int:
@@ -158,7 +160,13 @@ def run_scenes(
     `coney` is the command that starts Coney, with any launcher before it. The drawn pictures are left in `out`.
     With `repeat` above 1 each scene is drawn that many times and every repeat is compared with the first draw. With
     `update` the references are replaced by what was drawn, after the counts against the old ones are printed (the
-    pull request that moves the Mesa pin reports them), and a missing reference is made."""
+    pull request that moves the Mesa pin reports them), and a missing reference is made.
+
+    `cwd` is the folder Coney runs in: the repository root, so the scene list's relative paths mean the same from
+    anywhere. With `allow_no_references` a references folder with no picture at all is the bootstrap, before the first
+    references are made from what CI drew: every scene is still drawn (and kept in `out`, and drawn again for
+    `repeat`), the run says loudly that nothing was compared, and it passes unless the repeats differ. A folder that
+    holds some references but not all of them is a mistake and fails as without the allowance."""
     scene_list = load_scenes(scenes_path)
     tolerance = scene_list.channel_tolerance if channel_tolerance is None else channel_tolerance
     share = scene_list.max_share_percent if max_share_percent is None else max_share_percent
@@ -166,12 +174,15 @@ def run_scenes(
     if repeat < 1:
         raise ConfigError("--repeat must be at least 1")
     run = runner if runner is not None else subprocess.run
+    # Coney runs in `cwd`, so the picture's path must not depend on it.
+    out = out.resolve()
+    bootstrap = allow_no_references and not update and not any(references.glob("*.png"))
     results: list[picture_compare.PictureResult] = []
     repeats: list[picture_compare.PictureResult] = []
     updated = 0
     for scene in scene_list.scenes:
         drawn = out / f"{scene.name}.png"
-        _draw(scene, coney, drawn, run)
+        _draw(scene, coney, drawn, run, cwd)
         reference = references / f"{scene.name}.png"
         if reference.is_file():
             result = picture_compare.compare_arrays(
@@ -181,12 +192,14 @@ def run_scenes(
             print(result.line(tolerance, share))
         elif update:
             print(f"{drawn.name}: new reference")
+        elif bootstrap:
+            print(f"{drawn.name}: drawn, no reference to compare with")
         else:
             results.append(picture_compare.PictureResult(drawn.name, problem="no reference"))
             print(results[-1].line(tolerance, share))
         for again in range(2, repeat + 1):
             repeated = out / "repeats" / str(again) / f"{scene.name}.png"
-            _draw(scene, coney, repeated, run)
+            _draw(scene, coney, repeated, run, cwd)
             same = picture_compare.compare_arrays(
                 f"repeat {again} of {drawn.name}",
                 picture_compare.load_picture(drawn),
@@ -200,7 +213,13 @@ def run_scenes(
             references.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(drawn, reference)
             updated += 1
-    print(picture_compare.summary_line(results, tolerance, share))
+    if bootstrap:
+        print(
+            f"no references yet: {len(scene_list.scenes)} pictures drawn in {out}, nothing was compared with a "
+            f"reference; make them from these ({DEFAULT_REFERENCES}, docs/guides/testing.md#software-pictures)"
+        )
+    if results:
+        print(picture_compare.summary_line(results, tolerance, share))
     if update:
         # The counts against the old references are a report, not a check; only the repeats of one build can fail.
         print(f"updated {updated} references in {references}")

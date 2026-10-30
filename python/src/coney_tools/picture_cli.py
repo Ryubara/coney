@@ -46,12 +46,19 @@ def run_scenes(
     out: Path,
     repeat: int,
     update: bool,
+    allow_no_references: bool,
     channel_tolerance: int | None,
     max_share_percent: float | None,
 ) -> int:
-    """`picture scenes`: draw the scenes with `launcher coney` and compare them with the references."""
+    """`picture scenes`: draw the scenes with `launcher coney` and compare them with the references.
+
+    Coney runs in the repository root, where the scene list's paths and a relative `coney` are read from, whatever
+    folder the command is started in."""
     root = find_repo_root(Path.cwd())
-    command = [*shlex.split(launcher), coney]
+    executable = coney
+    if not Path(coney).is_absolute() and ("/" in coney or "\\" in coney):
+        executable = str(root / coney)
+    command = [*shlex.split(launcher), executable]
     return picture_scenes.run_scenes(
         scenes or root / picture_scenes.DEFAULT_SCENES,
         command,
@@ -59,6 +66,8 @@ def run_scenes(
         out,
         repeat=repeat,
         update=update,
+        allow_no_references=allow_no_references,
+        cwd=root,
         channel_tolerance=channel_tolerance,
         max_share_percent=max_share_percent,
     )

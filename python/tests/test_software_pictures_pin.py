@@ -49,3 +49,21 @@ def test_every_action_the_job_uses_is_pinned_to_a_commit() -> None:
         match = re.search(r"uses: (?!\./)(\S+)", line)
         if match:
             assert re.search(r"@[0-9a-f]{40}$", match.group(1)), f"not pinned to a commit: {match.group(1)}"
+
+
+def test_the_snapshot_source_is_plain_http_because_the_base_image_has_no_ca_certificates() -> None:
+    # The base image ships without ca-certificates (the Dockerfile installs it from this source), so an https source
+    # fails certificate verification on the first update; Signed-By keeps the plain one authenticated.
+    source = re.search(r"URIs: (\S+?)/ubuntu/%s", DOCKERFILE)
+    assert source is not None and source.group(1).startswith("http://")
+    assert "Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg" in DOCKERFILE
+
+
+def test_the_job_passes_while_there_are_no_references_and_is_not_yet_a_required_check() -> None:
+    # Not required, and green on main with an empty reference folder (a red main opens a P-critical issue); the task
+    # that adds the references makes it required and drops the allowance.
+    job = WORKFLOW[WORKFLOW.index("  software-pictures:") :].split("\n  cache-prune:")[0]
+    assert "--allow-no-references" in job and "::warning" in job
+    conventions = (ROOT / ".github" / "conventions.yml").read_text(encoding="utf-8")
+    required = re.search(r"^\s+required_checks: \[(.*)\]", conventions, re.MULTILINE)
+    assert required is not None and "software-pictures" not in required.group(1)

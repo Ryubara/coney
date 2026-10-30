@@ -993,6 +993,11 @@ def _add_picture_commands(groups: Any) -> None:
         action="store_true",
         help="replace the references with the drawn pictures, after printing the counts",
     )
+    scenes.add_argument(
+        "--allow-no-references",
+        action="store_true",
+        help="pass, with a notice, when the references folder holds no picture yet; the scenes are still drawn",
+    )
     scenes.add_argument("--channel-tolerance", type=int, metavar="N", help="override the scene list's tolerance")
     scenes.add_argument("--max-share", type=float, metavar="PERCENT", help="override the scene list's share")
 
@@ -1011,6 +1016,7 @@ def _run_picture(args: argparse.Namespace) -> int:
         args.out,
         args.repeat,
         args.update,
+        args.allow_no_references,
         args.channel_tolerance,
         args.max_share,
     )

@@ -355,7 +355,7 @@ A pull request that changes drawing (the renderer, a shader, a render state, wha
 and reports the counts in its Testing section. The comparison is the [renderer design's](../engine/renderer.md#comparing):
 named frames from the branch against the same frames from its base commit, on one machine, with a pinned camera at
 `--render-size 640x448` ([Capturing and attaching](#pr-media)), compared with
-[`coney-tools picture compare`](coney-tools-trace.md#picture), which prints the pixels over the tolerance and the
+[`coney-tools picture compare`](coney-tools-picture.md#picture), which prints the pixels over the tolerance and the
 largest difference and exits 1 past the limit. The Testing section holds one line with the numbers, as for the
 `Runtime:` line:
 
@@ -555,10 +555,15 @@ MSVC accepts but the others reject is the usual cause: see [Portability traps](c
 CI has no GPU, so the `software-pictures` job draws Coney's synthetic scenes (`tests/pictures/scenes.toml`: sandbox
 layouts and CC0 textures, no game data) through Mesa's software OpenGL driver, llvmpipe, under a virtual display
 (`xvfb-run`), and compares each picture with its reference in `tests/pictures/reference/` using the
-[tolerance](coney-tools-trace.md#picture) (`coney-tools picture scenes`). It is a required check, `software-pictures`
-in `merge.required_checks` of [.github/conventions.yml](repo:.github/conventions.yml), and runs on Linux in the build
-workflow with the engine jobs. Each scene is drawn twice, and the second draw is compared with the first: a pinned
-Mesa that gives the same pixels on every run shows 0 pixels over in the log, and the tolerance exists for the rest.
+[tolerance](coney-tools-picture.md#picture) (`coney-tools picture scenes`). It runs on Linux in the build workflow with
+the engine jobs. It is **not a required check yet**: `tests/pictures/reference/` is empty until the references are made
+from the pictures the job's first run uploads, so until then the job draws the scenes, passes with a warning that
+nothing was compared (`--allow-no-references`, so that a red job never opens a P-critical issue on `main`) and keeps the
+pictures. The follow-up task that adds the references also adds `software-pictures` to `merge.required_checks` of
+[.github/conventions.yml](repo:.github/conventions.yml) (the maintainer adds the context to the ruleset) and drops the
+allowance, after which a scene without its reference fails the job. Each scene is drawn twice, and the second draw is
+compared with the first: a pinned Mesa that gives the same pixels on every run shows 0 pixels over in the log, and the
+tolerance exists for the rest.
 
 The runner image's own Mesa moves with the image, so the drawing runs in a container image of its own
 (`.github/software-pictures/Dockerfile`): the base image is pinned by its **digest**, the package archive by a
@@ -571,8 +576,8 @@ Dockerfile's hash.
   (`coney-tools picture scenes --update`, in the container the job builds, or from the job's uploaded pictures) and
   its description reports the **old and new counts**: the pixels over the tolerance and the largest difference of each
   scene, old references against the new draw, which `--update` prints before it replaces them. It changes nothing else.
-- **A failing job leaves its pictures.** The job uploads what it drew (`software-pictures-drawn`, kept 14 days), so a
-  reference that is missing or wrong is fixed from the picture CI drew, after a look at it: the reference is Coney's
+- **The job leaves its pictures.** The job uploads what it drew (`software-pictures-drawn`, kept 14 days), so a
+  reference that is missing or wrong is made from the picture CI drew, after a look at it: the reference is Coney's
   own synthetic scene, never a game picture.
 - **A new scene** is a `[[scene]]` in the list with its reference made the same way; a scene's reference never comes
   from a real GPU, because a hardware GPU's picture would not match the software one.
