@@ -409,7 +409,7 @@ def claim_problem(task: TaskFile, cards: Cards) -> str | None:
     return None
 
 
-def _read_task(scratch: Path, task: str, conventions: Conventions) -> TaskFile | str:
+def read_task(scratch: Path, task: str, conventions: Conventions) -> TaskFile | str:
     """The task record of `task`, or why it cannot be used."""
     if not TASK_ID.match(task):
         return f"'{task}' is not a task id"
@@ -604,7 +604,7 @@ def admit(
             f"Blocked: this {agent_type} agent names no unit, so it has no claim to work under and no slot to count. "
             f"{_howto()} (docs/guides/agents.md#slots).\n",
         )
-    found = _read_task(scratch, named, conventions)
+    found = read_task(scratch, named, conventions)
     if isinstance(found, str):
         return Verdict(False, f"Blocked: {found}. {_howto()} (docs/guides/agents.md#slots).\n")
     cards = Cards(read_card, clock)

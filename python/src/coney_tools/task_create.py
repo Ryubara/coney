@@ -15,7 +15,7 @@ the time limit ends it with nothing written), settle, write `TASK.md`, post `/pr
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -63,13 +63,20 @@ class CreateEnv:
     out: Callable[[str], None] = print
 
 
-def default_kind(issue: IssueView) -> str:
-    """The task kind an issue suggests: `docs` for the docs label, `tooling` for `A-tools`, else `feature`."""
-    if "docs" in issue.labels:
+def kind_of_labels(labels: Iterable[str]) -> str:
+    """The task kind an issue with these labels suggests: `docs` for the docs label, `tooling` for `A-tools`, else
+    `feature`."""
+    found = set(labels)
+    if "docs" in found:
         return "docs"
-    if "A-tools" in issue.labels:
+    if "A-tools" in found:
         return "tooling"
     return "feature"
+
+
+def default_kind(issue: IssueView) -> str:
+    """The task kind an issue suggests (`kind_of_labels` of its labels)."""
+    return kind_of_labels(issue.labels)
 
 
 def claim_comment(scope: tuple[str, ...], task: str) -> str:

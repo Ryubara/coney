@@ -304,6 +304,7 @@ nav:
       - From research to code: guides/research-to-code.md
       - Running agents: guides/agents.md
       - Agent tools other than Claude Code: guides/agents-other-tools.md
+      - Keeping the places full: guides/slot-fill.md
       - Issues: guides/issues.md
       - Building and testing: guides/building.md
       - clang-tidy: guides/clang-tidy.md

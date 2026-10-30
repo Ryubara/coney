@@ -759,6 +759,48 @@ def test_wrong_task_start_rules_are_refused(change: tuple[str, object], why: str
         conventions_with(change)
 
 
+def test_the_real_slot_fill_rules() -> None:
+    fill = load_conventions(REPO).tasks.start.fill
+    assert fill.priority_order[0] == load_conventions(REPO).claims.critical_label
+    assert fill.github_seconds <= fill.budget_seconds
+    assert all(code.max_hours <= fill.waiver_max_hours for code in fill.waivers)
+
+
+@pytest.mark.parametrize(
+    ("change", "why"),
+    [
+        (("tasks.start.fill.gate.issues", [1030, 1030]), r"tasks\.start\.fill\.gate\.issues: a number is listed twice"),
+        (("tasks.start.fill.gate.issues", [0]), r"tasks\.start\.fill\.gate\.issues\[0\]: expected a whole number"),
+        (("tasks.start.fill.gate.issues", "1030"), r"tasks\.start\.fill\.gate\.issues: expected a list"),
+        (
+            ("tasks.start.fill.waivers.codes", {}),
+            r"tasks\.start\.fill\.waivers\.codes: expected at least one reason code",
+        ),
+        (
+            ("tasks.start.fill.waivers.codes.machine-load.max_hours", 25),
+            r"waivers\.codes\.machine-load\.max_hours: must not be more than waivers\.max_hours",
+        ),
+        (
+            ("tasks.start.fill.waivers.max_hours", 48),
+            r"tasks\.start\.fill\.waivers\.max_hours: expected a whole number of 24 or less",
+        ),
+        (
+            ("tasks.start.fill.github_seconds", 31),
+            r"tasks\.start\.fill\.github_seconds: must not be more than budget_seconds",
+        ),
+        (
+            ("tasks.start.fill.block.max_in_a_row", 0),
+            r"tasks\.start\.fill\.block\.max_in_a_row: expected a whole number",
+        ),
+        (("tasks.start.fill.extra", 1), "unknown key 'extra'"),
+        (("tasks.start.fill", REMOVE), "missing the key 'fill'"),
+    ],
+)
+def test_wrong_slot_fill_rules_are_refused(change: tuple[str, object], why: str) -> None:
+    with pytest.raises(ConventionsError, match=why):
+        conventions_with(change)
+
+
 def test_the_real_task_review_rules() -> None:
     review = load_conventions(REPO).tasks.review
     assert review.agent == "reviewer" and (REPO / ".claude" / "agents" / f"{review.agent}.md").is_file()

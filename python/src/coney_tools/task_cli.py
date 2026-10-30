@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -23,13 +24,15 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
-from coney_tools import build_claims, stamps, task_check, task_slots
+from coney_tools import build_claims, slot_fill, slot_fill_blocks, slot_waivers, stamps, task_check, task_slots
 from coney_tools.audit_github import Runner, run_gh
 from coney_tools.build_claims import MAIN_LANE
 from coney_tools.config import ConfigError, find_repo_root, load_config, main_checkout, workspace_folder
 from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.issue_claim_model import Card, parse_scope
 from coney_tools.issue_claim_remote import GhRemote, Remote
+from coney_tools.pr_hold import holds_folder, read_active
+from coney_tools.slot_fill_github import GhSources, bounded_runner
 from coney_tools.task_create import CreateEnv, CreateRequest, create_task, match_lines
 from coney_tools.task_leads import LeadsResult, Searcher
 from coney_tools.task_leads_index import CachedIndex, prepare_index
@@ -84,10 +87,35 @@ def add_task_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser])
     )
     slots = commands.add_parser(
         "slots",
-        help="show the engineer tracks (reimplementation, fix, Studio) and the machine's places, or check that an "
-        "agent may start (the coordinator's Agent guard)",
+        help="show the engineer tracks (reimplementation, fix, Studio, networking) and the machine's places, or check "
+        "that an agent may start (the coordinator's Agent guard)",
     )
     slots.add_argument("--json", action="store_true", help="print the tracks as JSON")
+    slots.add_argument(
+        "--fill-check",
+        action="store_true",
+        help="exit 1 with what to start when a place is free, work can be started and nothing excuses the gap "
+        "(the coordinator's Stop hook; docs/guides/slot-fill.md)",
+    )
+    slots.add_argument(
+        "--session", metavar="ID", help="with --fill-check: the session being checked; its blocks in a row are counted"
+    )
+    slots.add_argument(
+        "--waive",
+        type=int,
+        metavar="N",
+        help="leave N free places free for --hours, for the --reason; logged, expiring, listed by `task slots`",
+    )
+    slots.add_argument("--reason", metavar="CODE", help="with --waive: a code of tasks.start.fill.waivers.codes")
+    slots.add_argument(
+        "--hours", type=float, metavar="H", help="with --waive: how long it runs (within the code's hours)"
+    )
+    slots.add_argument("--note", metavar="TEXT", help="with --waive: why, in words")
+    slots.add_argument(
+        "--issues",
+        metavar="N,M",
+        help="with --waive: the issues the work is blocked on (a code that blocks issues names them)",
+    )
     slots.add_argument(
         "--admit",
         action="store_true",
@@ -176,17 +204,113 @@ def _bounded_gh(arguments: list[str]) -> str:
     return done.stdout
 
 
+def _free_gb(folder: Path) -> float | None:
+    """The free space, in GB, of the drive `folder` (or its nearest existing parent) is on; None when unreadable."""
+    here = folder
+    while not here.exists() and here != here.parent:
+        here = here.parent
+    try:
+        return shutil.disk_usage(here).free / 1024**3
+    except OSError:
+        return None
+
+
+def _waiver_who() -> str:
+    """Who makes a waiver: the agent the hook vouched for (`type id`), else `unverified`."""
+    found = stamps.who_from_env("coney-tools task slots")
+    agent = found.get("agent") or {}
+    if found.get("source") != "hook":
+        return "unverified"
+    return f"{agent.get('type', 'unknown')} {agent.get('id', 'unknown')}"
+
+
+def _issue_numbers(text: str | None) -> tuple[int, ...]:
+    """The issue numbers of `--issues 12,13` (a `#` in front of one is fine); ConfigError for anything else."""
+    if not text:
+        return ()
+    try:
+        return tuple(int(part.strip().lstrip("#")) for part in text.split(",") if part.strip())
+    except ValueError:
+        raise ConfigError(f"--issues {text!r}: expected issue numbers such as 1030,1031") from None
+
+
+def _run_waive(args: argparse.Namespace, root: Path, conventions: Conventions, now: datetime) -> int:
+    """`task slots --waive N`: record the waiver (ConfigError when it is not allowed) and say what it covers."""
+    for name in ("reason", "hours", "note"):
+        if getattr(args, name) is None:
+            raise ConfigError(f"--waive needs --{name}")
+    waiver = slot_waivers.add_waiver(
+        scratch_folder(root),
+        conventions.tasks.start.fill,
+        task_slots.machine_limit(conventions, _build_slots(root)),
+        now,
+        args.waive,
+        args.reason,
+        args.hours,
+        args.note,
+        _issue_numbers(args.issues),
+        _waiver_who(),
+    )
+    print(f"waiver: {waiver.line(now)}")
+    return 0
+
+
+def _run_fill_check(
+    args: argparse.Namespace,
+    root: Path,
+    conventions: Conventions,
+    now: Callable[[], datetime],
+    sources: slot_fill.Sources | None,
+    free_gb: float | None,
+) -> int:
+    """`task slots --fill-check`: 1 with the work to start when a place is free for no reason, else 0.
+
+    With `--session` a failing check blocks at most `tasks.start.fill.block.max_in_a_row` times in a row (the Stop
+    hook's cap); the turn end after that passes with a `warning:` line. A GitHub that cannot be read passes with a
+    warning too."""
+    scratch = scratch_folder(root)
+    fill = conventions.tasks.start.fill
+    read = sources or GhSources(conventions, scratch, bounded_runner(fill.github_seconds), now)
+    holds = read_active(holds_folder(scratch, conventions.conclave.watch), now()).holds
+    space = free_gb if free_gb is not None else _free_gb(scratch)
+    check = slot_fill.fill_check(scratch, conventions, now(), read, _build_slots(root), space, holds)
+    warnings = list(check.warnings)
+    blocked = check.blocked
+    if blocked and args.session and not slot_fill_blocks.may_block(scratch, conventions, args.session, now()):
+        blocked = False
+        warnings.append(
+            f"the check still fails but it has blocked {fill.block_max} turn ends in a row, so this one ends "
+            f"(counts again after {fill.block_reset_minutes} minutes): {check.message.splitlines()[0]}"
+        )
+    elif not blocked and args.session:
+        slot_fill_blocks.clear_blocks(scratch, args.session)
+    print(check.message if blocked or not check.blocked else "ok: letting the turn end")
+    for warning in warnings:
+        print(f"warning: {warning}")
+    return 1 if blocked else 0
+
+
 def _run_slots(
     args: argparse.Namespace,
     root: Path,
     conventions: Conventions,
     now: Callable[[], datetime],
     remote: Remote | None,
+    sources: slot_fill.Sources | None = None,
+    free_gb: float | None = None,
 ) -> int:
     """`task slots`: the report, or with `--admit` the verdict on one start (0 may start, 3 refused). The claim cards
     (whether a claim is held, whether an issue has the workflow or the Studio label) are read from GitHub, each call
     bounded; a GitHub that cannot be read leaves the claim unchecked and counts every unit, with a `warning:` line. The
-    machine's limit comes from its build slots (`_build_slots`)."""
+    machine's limit comes from its build slots (`_build_slots`). `--fill-check` and `--waive` are the places-full
+    commands (docs/guides/slot-fill.md)."""
+    modes = [bool(args.admit), bool(args.fill_check), args.waive is not None]
+    if sum(modes) > 1:
+        raise ConfigError("task slots: --admit, --fill-check and --waive are separate commands")
+    if args.fill_check:
+        return _run_fill_check(args, root, conventions, now, sources, free_gb)
+    if args.waive is not None:
+        return _run_waive(args, root, conventions, now())
     scratch = scratch_folder(root)
     build_slots = _build_slots(root)
     rules = conventions.claims
@@ -204,10 +328,14 @@ def _run_slots(
             return task_slots.unit_labels(record.issues, cards, conventions)
 
         current = task_slots.scan(scratch, conventions, now(), _workspace_trees(root), labels)
+        waivers = slot_waivers.read_waivers(scratch)
         if args.json:
-            print(json.dumps(task_slots.as_json(current, conventions, build_slots), indent=2))
+            shown = task_slots.as_json(current, conventions, build_slots)
+            shown["waivers"] = [slot_waivers.as_json(waiver) for waiver in slot_waivers.active_waivers(waivers, now())]
+            print(json.dumps(shown, indent=2))
         else:
-            print("\n".join(task_slots.report(current, conventions, build_slots)))
+            lines = [*task_slots.report(current, conventions, build_slots), *slot_waivers.report(waivers, now())]
+            print("\n".join(lines))
         return 0
     brief = ""
     if args.brief == "-":
@@ -239,8 +367,11 @@ def run_task(
     now: Callable[[], datetime] = lambda: datetime.now(UTC),
     sleep: Callable[[float], None] = time.sleep,
     remote: Remote | None = None,
+    sources: slot_fill.Sources | None = None,
+    free_gb: float | None = None,
 ) -> int:
-    """Dispatch a `task` command; 0 on success, 1 when the claim or the task was refused."""
+    """Dispatch a `task` command; 0 on success, 1 when the claim or the task was refused. `sources` and `free_gb`
+    stand in for GitHub and the disk in the tests of `task slots --fill-check`."""
     if args.command == "check":
         return task_check.run(args)
     if args.command == "review":
@@ -249,7 +380,7 @@ def run_task(
     conventions = load_conventions(root)
     rules = conventions.claims
     if args.command == "slots":
-        return _run_slots(args, root, conventions, now, remote)
+        return _run_slots(args, root, conventions, now, remote, sources, free_gb)
     if args.command == "index":
         index = _index(root, conventions, None if args.no_gh else run, True, now())
         print(f"index: {len(index.entries)} entries at {index.head[:10]}")

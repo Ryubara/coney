@@ -290,7 +290,7 @@ issue stays the one place to read it.
 
 Engineer work runs in four **tracks**, and **no engineer or tooling agent starts without a held claim**. The rules are
 `tasks.start.slots` in [.github/conventions.yml](repo:.github/conventions.yml); there are no teams, and the coordinator
-keeps the places full from the open issues, `P-critical` first.
+keeps the places full ([Keeping the places full](slot-fill.md)) from the open issues, `P-critical` first.
 
 | Is | What | Its rule (each of the first four needs a held claim, a fix its parent's, and a place) |
 | --- | --- | --- |
@@ -426,10 +426,10 @@ roles ([Which role to start](#roles)).
 
 ## The hooks {#hooks}
 
-`.claude/settings.json` registers **one** hook script, `.claude/hooks/dispatch.py`, for five events: before every tool
+`.claude/settings.json` registers **one** hook script, `.claude/hooks/dispatch.py`, for six events: before every tool
 call (`PreToolUse`), after a shell command (`PostToolUse`), when a shell command fails (`PostToolUseFailure`) or is
-denied (`PermissionDenied`), and when a session starts (`SessionStart`). Claude Code starts a process per registered
-hook, and each cost a Python start-up on every shell command; now there is one, and the checks run inside it:
+denied (`PermissionDenied`), when a session starts (`SessionStart`) and when the coordinator ends a turn (`Stop`).
+A process per hook cost a Python start-up on every shell command; now there is one, and the checks run inside it:
 
 | Event | What runs |
 | --- | --- |
@@ -437,26 +437,27 @@ hook, and each cost a Python start-up on every shell command; now there is one, 
 | `PostToolUse` | `trailer_guard.py` after a `git commit`; the command's identity file is removed |
 | `PostToolUseFailure`, `PermissionDenied` | The command's identity file is removed (a failing build or a denied command would leave it for its ten minutes) |
 | `SessionStart` | The notice about a session with no role, or about settings that could not be read |
+| `Stop` | `slot_fill_guard.py`: a coordinator turn cannot end while an engineer place is free with work to start and no reason ([Keeping the places full](slot-fill.md)) |
 
-Of the eleven guard scripts, `comment_guard.py`, `slot_guard.py` and `lua_guard.py` were written for the dispatcher
-(`lua_guard.py`'s file mode is the pre-commit hook `no-decompiled-lua`; `slot_guard.py` asks `coney-tools`, so it
-copies nothing from the conventions), and five run exactly as they did as separate hooks (`build_guard.py`, `issue_guard.py`,
-`bounded_waits.py`, `push_guard.py`, `pcsx2_guard.py`); `trailer_guard.py` is unchanged but the dispatcher starts it
-only for a real `git commit`; `pr_guard.py` (once `release_guard.py`) and `agent_guard.py` run as before and have a rule
-more each (the `pull_requests.open_only` switch, the role check). The dispatcher gives a guard's `main()` the hook input
-and takes its exit code and stderr, so a guard stays a script of its own with its own tests. The refusals of all guards
-come back together, as Claude Code's JSON answer (`permissionDecision: deny` with the reasons before a tool runs,
-`decision: block` after it) with exit code 0, shown to the agent; never exit code 2, which Claude Code also gets from a
-launcher that fails ([Nothing turns the guards off](#hooks)). The settings are in `.claude/hooks/hooks.toml`
-(hand-written, standard-library TOML: the hooks run without packages, so they cannot load `.github/conventions.yml`).
-There are two switches, both on. `require_role` in `hooks.toml` ([Which role to start](#roles)). And
-`pull_requests.open_only` in `.github/conventions.yml` (on since 2026-10-27): the PR guard then refuses, in any session,
-the hand-typed ways it recognises of opening, updating, auto-merging or pushing a pull request, so `pr open` is the
-release route ([The PR guard](enforcement.md#pr-guard) lists them, [After the switch](pr.md#after-the-switch) gives the
-commands). The second is a conventions key, not a line of `hooks.toml`, so the rule has one source: `pr_guard.py` reads
-that one line itself (`read_open_only`; a file it cannot read leaves the switch off), and a test holds its reader to the
-conventions loader. The hooks run from the checkout the session was started in, so a change to them reaches a session
-when that checkout has it. Whatever the dispatcher runs is judged on spelling; none of it is a security boundary.
+Of the twelve guard scripts, `comment_guard.py`, `slot_guard.py`, `slot_fill_guard.py` and `lua_guard.py` were written
+for the dispatcher (`lua_guard.py`'s file mode is the pre-commit hook `no-decompiled-lua`; the slot guards ask
+`coney-tools`, so they copy nothing from the conventions), and five run exactly as they did as separate hooks
+(`build_guard.py`, `issue_guard.py`, `bounded_waits.py`, `push_guard.py`, `pcsx2_guard.py`); `trailer_guard.py` is
+unchanged but the dispatcher starts it only for a real `git commit`; `pr_guard.py` and `agent_guard.py` run as before
+and have a rule more each (the `pull_requests.open_only` switch, the role check). The dispatcher gives a guard's
+`main()` the hook input and takes its exit code and stderr (the `Stop` guard answers `judge(payload)` instead), so a
+guard stays a script of its own with its own tests. The refusals of all guards come back together, as Claude Code's JSON
+answer (`permissionDecision: deny` with the reasons before a tool runs, `decision: block` after it) with exit code 0,
+shown to the agent; never exit code 2, which Claude Code also gets from a launcher that fails ([Nothing turns the guards
+off](#hooks)). The settings are in `.claude/hooks/hooks.toml` (hand-written TOML that needs no packages, so it cannot
+load `.github/conventions.yml`). There are two switches, both on. `require_role` in `hooks.toml` ([Which role to
+start](#roles)). And `pull_requests.open_only` in `.github/conventions.yml` (on since 2026-10-27): the PR guard then
+refuses, in any session, the hand-typed ways it recognises of opening, updating, auto-merging or pushing a pull request,
+so `pr open` is the release route ([The PR guard](enforcement.md#pr-guard) lists them, [After the
+switch](pr.md#after-the-switch) gives the commands). The second is a conventions key, not a line of `hooks.toml`, so the
+rule has one source: `pr_guard.py` reads that one line itself (`read_open_only`; a file it cannot read leaves the switch
+off), and a test holds its reader to the conventions loader. The hooks run from the checkout the session was started in,
+so a change to them reaches a session when that checkout has it.
 
 **Nothing turns the guards off, and a guard that cannot start blocks nothing.** The guards are what
 keeps agents from breaking the shared machine, so only a guard's own failure may stop that guard. A settings file that

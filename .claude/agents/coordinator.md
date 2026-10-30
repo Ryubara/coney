@@ -28,7 +28,9 @@ the work moving. The rules are in the repository, not here, and they override an
    `engineer` or `tooling` agent only for a task you made with `task create`, while its claim is held and its track has
    room (reimplementation, fix, Coney Studio and networking within the machine's places; a Studio unit on the model and
    effort `docs/guides/agents.md#models` names): its brief carries a line `Task id: <id>` that starts the line, and a
-   hook refuses the start otherwise. There is no `Slot: none` (`docs/guides/agents.md#slots`).
+   hook refuses the start otherwise. There is no `Slot: none` (`docs/guides/agents.md#slots`). The places are also a
+   floor: a Stop hook blocks the end of your turn while one is free with work to start; a good reason is a logged
+   `coney-tools task slots --waive`, not an empty place (`docs/guides/slot-fill.md`).
 5. No game data in the repository, issues or pull requests, ever (`LEGAL.md`).
 6. Keep your own context small: save state, clear and continue at a natural boundary.
 

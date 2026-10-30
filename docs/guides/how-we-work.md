@@ -233,6 +233,8 @@ and then by priority, whenever a place frees.
 
 - **A place frees when its task passes Review.** The engineer's job ends there; its place takes the next task while
   the pull request runs CI.
+- **The places stay full.** A free place with startable work and no reason is a failure the coordinator cannot end
+  a turn on; the reasons, the waivers and the `Stop` hook are in [Keeping the places full](slot-fill.md).
 - **A CI failure on a pull request is a fix task** (`task create --fix-of <issue>`) in the fix track: one at a time,
   oldest failure first. If the engineer that wrote the task is still running, the fix goes to it; otherwise a fresh
   engineer takes it, and may take the next queued fix while its context is warm. A fix redoes only the stamps it made
@@ -512,7 +514,9 @@ requests and tidies after merges. It works under these rules:
   The priorities are on the [roadmap](../roadmap.md#priorities). **No engineer or tooling agent starts without a held
   claim:** its brief carries a line `Task id: <id>` from `task create`, and a hook refuses the start when the task file
   is missing, the claim is no longer held, its track or the machine is full, or a Studio unit names a model it may not
-  use ([Engineer tracks](agents.md#slots)).
+  use ([Engineer tracks](agents.md#slots)). **The places are also a floor:** a `Stop` hook refuses to end a coordinator
+  turn while a place is free, work can be started and nothing excuses it (no eligible issue, the claim limit, low
+  disk, or a logged, expiring `task slots --waive`): [Keeping the places full](slot-fill.md).
 - **Never do a stage of the engineer's or the reviewer's.** It writes no engine code, tests or research, runs none of
   the stage commands from Start to Review, judges no fidelity and fixes no CI failure in a branch's files; the role
   rules refuse them ([Which role to start](agents.md#roles)).
@@ -571,7 +575,7 @@ and where the rules are read from):
 
 | Guard | What it refuses | Where it is documented |
 | --- | --- | --- |
-| Claude Code hooks (`.claude/hooks/`) | A raw `cmake --build`, `ctest` or `ninja`; a raw `gh` command that writes an issue; a push or GitHub write from a subagent; a wait loop with no bound; an agent started with `isolation: "worktree"` or with no Coney role; a tool call the session's role does not allow; a write to a stamp log; a `Co-Authored-By` trailer that names the wrong model | [The hooks](agents.md#hooks), [Enforcement map](enforcement.md#hooks) |
+| Claude Code hooks (`.claude/hooks/`) | A raw `cmake --build`, `ctest` or `ninja`; a raw `gh` command that writes an issue; a push or GitHub write from a subagent; a wait loop with no bound; an agent started with `isolation: "worktree"` or with no Coney role; a tool call the session's role does not allow; a write to a stamp log; a `Co-Authored-By` trailer that names the wrong model; the end of a coordinator turn with an engineer place free, work to start and no reason | [The hooks](agents.md#hooks), [Enforcement map](enforcement.md#hooks) |
 | pre-commit (`.pre-commit-config.yaml`) | Unformatted C++ (clang-format) and Python (ruff); a Markdown line over 120 characters; trailing whitespace, broken YAML or TOML; any file over 512 KB, which is usually game data; a read of the real clock outside the frame pacer; a commit message with the wrong trailers | [Formatting and pre-commit](building.md#formatting-and-pre-commit) |
 | Claim Action and `task create` | A second claim on an issue; a claim on an issue that is not ready, is blocked by unfinished work, or over the claimant's limit (a `workflow` unit's claim is not counted); any other claim while a `P-critical` issue has none | [Claiming an issue](issues.md#claiming) |
 | Stage commands (`task start`, `orig compare`, `task check`, `task review`) | A start without a held claim (and over its track's or the machine's limit); a compare with no current study, a line in no pair or a copied line; a Check whose gate fails; a Review whose compared or fails-first stamps are missing or stale, or one recorded by the change's author | [Stamps](stamps.md), [task check](coney-tools-repo.md#task-check), [Task review](review/task.md) |
