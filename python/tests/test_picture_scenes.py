@@ -8,7 +8,7 @@ and no GPU. The scene list in the repository (tests/pictures/scenes.toml) is rea
 from __future__ import annotations
 
 import subprocess
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 import pytest
@@ -38,7 +38,11 @@ frames = 5
 class FakeConey:
     """Stands in for the coney executable: records its command lines and draws a flat picture at `--screenshot`."""
 
-    def __init__(self, colour_of=lambda name, run: (10, 20, 30, 255), fail_on: str | None = None) -> None:
+    def __init__(
+        self,
+        colour_of: Callable[[str, int], tuple[int, int, int, int]] = lambda name, run: (10, 20, 30, 255),
+        fail_on: str | None = None,
+    ) -> None:
         self.commands: list[list[str]] = []
         self.colour_of = colour_of
         self.fail_on = fail_on
@@ -171,9 +175,7 @@ def test_a_missing_reference_fails_and_keeps_the_drawn_picture(
     ref = references(tmp_path / "ref")
     (ref / "second.png").unlink()
     fake = FakeConey()
-    code = picture_scenes.run_scenes(
-        scenes_file, coney=["coney"], references=ref, out=tmp_path / "out", runner=fake
-    )
+    code = picture_scenes.run_scenes(scenes_file, coney=["coney"], references=ref, out=tmp_path / "out", runner=fake)
     assert code == 1
     assert "second.png: no reference" in capsys.readouterr().out
     assert (tmp_path / "out" / "second.png").is_file()
@@ -181,7 +183,7 @@ def test_a_missing_reference_fails_and_keeps_the_drawn_picture(
 
 def test_a_run_of_coney_that_fails_is_an_error_naming_the_scene(tmp_path: Path, scenes_file: Path) -> None:
     fake = FakeConey(fail_on="second")
-    with pytest.raises(ConfigError, match="second.*exit code 3"):
+    with pytest.raises(ConfigError, match=r"second.*exit code 3"):
         picture_scenes.run_scenes(
             scenes_file, coney=["coney"], references=references(tmp_path / "ref"), out=tmp_path / "out", runner=fake
         )
@@ -191,7 +193,7 @@ def test_a_run_that_draws_nothing_is_an_error(tmp_path: Path, scenes_file: Path)
     def draws_nothing(command: Sequence[str], **_: object) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(list(command), 0, "", "")
 
-    with pytest.raises(ConfigError, match="flat.*no picture"):
+    with pytest.raises(ConfigError, match=r"flat.*no picture"):
         picture_scenes.run_scenes(
             scenes_file,
             coney=["coney"],
@@ -268,7 +270,7 @@ def test_the_command_line_takes_the_executable_and_a_launcher(
     tmp_path: Path, scenes_file: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     fake = FakeConey()
-    monkeypatch.setattr(picture_scenes.subprocess, "run", fake)
+    monkeypatch.setattr(subprocess, "run", fake)
     code = main(
         [
             "picture",

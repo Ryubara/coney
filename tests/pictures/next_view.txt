@@ -1,0 +1,3 @@
+# The sandbox's free camera jumps to the layout's next viewpoint with the triangle button
+# (docs/guides/sandbox.md#running-it), so a scene can draw a second view of a layout. Synthetic input; no game data.
+1 tap triangle
