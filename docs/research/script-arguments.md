@@ -85,12 +85,14 @@ scale, 0 when left out (`0x00370728`), and `TriggerSphereCfg`'s enable, false wh
 The world bindings' boolean arguments read through `binding::booleanArg` too, so `CfgSubtitles`, `ObjDestroy`,
 `ObjEnableZone`, `TriggerSphereEnable`, `FlagEnable` and `ChangeCollision` read a string that is not a number as
 false. `TriggerSphereEnable`'s wrapper (`0x0036d008`) reads its flag with `Lua_GetOptionalBoolArg`: confirmed (code).
-`FlagNetTraverse`'s wrapper (`0x0037a968`) reads its two flags the same way, but only after it has type-checked
-arguments 4 and 5 as tolua booleans (each may be left out); when either check fails it runs the three-argument
-overload `0x0037a8d0` instead: confirmed (code). So a string there picks the other overload rather than reading
-false, while Coney's binding (unchanged here, besides the shared reader) reads it as false. The shipped scripts pass
-only `true` or `false` there, or leave the flags out (a counts-only scan of the decompiled scripts), so no level shows
-the difference.
+`FlagNetTraverse`'s wrapper (`0x0037a968`) reads its two flags the same way, but only after a chain of tolua type
+checks (`0x0040c478`, which takes the argument, a Lua 4.0 type tag and whether the argument may be left out):
+argument 1 must be a number (tag 2, `LUA_TNUMBER`), arguments 2 and 3 must be numbers or left out, arguments 4 and 5
+must be tolua booleans or left out, and a sixth argument is refused (`0x0040c538` passes only when there is none).
+When any check fails it runs the three-argument overload `0x0037a8d0` instead: confirmed (code). So a string there
+picks the other overload rather than reading false, while Coney's binding (unchanged here, besides the shared reader)
+reads it as false. The shipped scripts pass only `true` or `false` there, or leave the flags out (a counts-only scan
+of the decompiled scripts), so no level shows the difference: inferred.
 
 The other bindings keep their own per-file readers, most of which still give an explicit `nil` the default
 ([Other bindings](#q-nil-defaults)). `TacticDomination`'s range is #1281; the other per-file readers, the HUD file's
