@@ -37,7 +37,7 @@ end
 
 ## The rules {#rules}
 
-A maintainer's direction of 2026-10-29 ([Lua SDK: Maintainer decisions](lua-sdk.md#decisions)). The natives are `shared`
+A maintainer's direction ([Lua SDK: Maintainer decisions](lua-sdk.md#decisions)). The natives are `shared`
 ([Where a native runs](lua-sdk.md#determinism)).
 
 - **The id.** `Coney.LoadAsset(path)` returns the asset id at once, before the load completes. One path has one id for
@@ -64,9 +64,10 @@ A maintainer's direction of 2026-10-29 ([Lua SDK: Maintainer decisions](lua-sdk.
   the script's; a spawn that fails for a game reason (a full pool, [All or nothing](entities.md#spawn-prefab)) still
   returns `nil` and the reason. "Loaded" means held by the calling project: an asset only another project loaded does
   not count.
-- **Prefabs.** `Coney.LoadAsset` on a prefab's path loads the prefab and every asset its members need, as one asset
-  with one id; `Coney.GetPrefabAssets(path)` lists those assets for a script that wants some of them or a progress bar
-  ([Spawning a prefab](entities.md#spawn-prefab)).
+- **Prefabs.** `Coney.LoadAsset` on a prefab's path loads every asset its members need, as one asset with one id. The
+  prefab file itself holds no asset memory: it is text, read when the prefab is spawned. `Coney.GetPrefabAssets(path)`
+  lists those assets for a script that wants some of them or a progress bar ([Spawning a
+  prefab](entities.md#spawn-prefab)).
 - **Scopes and the safety net.** A hold taken in a project's main chunks or its `start` handlers lasts the session; any
   other hold lasts the level it was taken in. **What a project loaded and never released is released after its
   `levelEnd` handlers (the level's holds) and after its `stop` handlers (the session's)**, each named in the run log and
@@ -104,7 +105,8 @@ the F8 bar's Resources panel ([Resources](console-bar.md#resources)) read the sa
 A wave spawner, written with the pattern of FiveM's `RequestModel`, the wait on `HasModelLoaded`, the spawn and
 `SetModelAsNoLongerNeeded` ([Load, wait, spawn, release](#pattern)). The `ambush` prefab ([Spawning a
 prefab](entities.md#spawn-prefab)) holds a gang and five humans, one of them named `Boss`; the project spawns it three
-times, one wave after the last wave's boss is down.
+times, one wave after the last wave's boss is down. It logs to the run log's `script` category at `error` and `warn`
+([Levels and categories](../run-log.md#categories)).
 
 ```lua
 local AMBUSH = "project:/prefabs/ambush.prefab"
@@ -117,7 +119,7 @@ local function waitLoaded(id)
     local state, why = Coney.GetAssetState(id)
     if state == "loaded" then return true end
     if state ~= "loading" then
-      Coney.Log("waves", "error", "ambush assets: " .. (why or state))
+      Coney.Log("script", "error", "ambush assets: " .. (why or state))
       return false
     end
     Coney.Wait(0)
@@ -136,7 +138,7 @@ Coney.On("levelStart", function()
         while HuIsAlive(members.Boss) do Coney.Wait(1000) end
         Coney.DespawnPrefab(instance)
       else
-        Coney.Log("waves", "warning", "wave " .. wave .. ": " .. members)  -- the reason
+        Coney.Log("script", "warn", "wave " .. wave .. ": " .. members)  -- the reason
       end
       Coney.Wait(5000)
     end
@@ -214,10 +216,11 @@ By the [testing rules](../testing.md): headless, a fixture asset store with synt
   FiveM's `HAS_MODEL_LOADED` is true when anything loaded it, and its reference advises requesting anyway. The other
   choice is "loaded by anyone", which is fewer errors and more hidden dependence on load order between mods. Which does
   the user want?
-- **For the user: when a test-mode load completes.** The Lua SDK page said a load completes "at once in test mode, so
-  a test needs no waiting". The design completes it at the first step boundary after the request instead, never inside
-  the calling step, because "at once" would let a script that spawns without waiting pass every test and fail in play.
-  A test still needs no real waiting, only one step. Is that acceptable?
+- **For the user: when a test-mode load completes.** There are two choices. *At once*: the load is complete when the
+  call returns, so a test needs no waiting at all, but a script that spawns without waiting passes every test and
+  fails in play, where a load takes steps. *At the first step boundary after the request*, never inside the calling
+  step: a script that spawns without waiting fails in a test as it fails in play, and a test needs no real waiting,
+  only one step. The design takes the second. Which does the user want?
 - **Research, not for the user: which game assets the original has resident per level.** The Dependency List's groups
   other than `always`, when they are wanted, and the contents of each section pack. Until a research task answers it,
   the stand-in above stands ([The game's own models](#game-models)).

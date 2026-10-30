@@ -147,12 +147,21 @@ flowchart LR
   [Export](#export)) and writes `derived=game:/...` in the sidecar. A derived file is usable on the player's machine
   like any other; a package or share step leaves it out and says so, and the project's Problems list names it.
 
-**Scripts use the same paths.** A script loads, plays or spawns an asset by its path string, as game engines do:
-`Coney.PlaySound("project:/sounds/horn.wav", pos, volume)`, `Coney.SpawnModel("project:/models/bench.glb", pos,
-heading)`, `Coney.PlayClip(human, "project:/anims/dance.glb#Spin", loop, speed)`. The natives and their names are the
-Lua SDK design's ([Assets by path](lua-sdk.md#assets)), which uses this same scheme. What this page fixes is that
-the string is the asset's `project:/` or `game:/` path, resolved through the import table and the asset store, and that
-a path that does not resolve returns an error with the path in it that the script can test, never a silent nothing.
+**Scripts use the same paths.** A script loads, plays or spawns an asset by its path string, as game engines do, and it
+loads the asset first: the script owns what it loads, and a spawn or a play of an asset it has not loaded raises an
+error ([Loading and releasing assets](asset-lifetime.md#rules)).
+
+```lua
+local id = Coney.LoadAsset("project:/models/bench.glb")       -- then wait for it, in a thread
+local bench = Coney.SpawnModel("project:/models/bench.glb", pos, heading)
+Coney.ReleaseAsset(id)                                         -- when the script is done with it
+```
+
+The natives and their names are the Lua SDK design's ([Assets by path](lua-sdk.md#assets)), which uses this same
+scheme; the whole loop, with the wait, is [Load, wait, spawn, release](asset-lifetime.md#pattern). What this page fixes
+is that the string is the asset's `project:/` or `game:/` path, resolved through the import table and the asset store,
+and that a path that does not resolve returns an error with the path in it that the script can test, never a silent
+nothing.
 Coney's existing native candidates take ids today (a character type for `Coney.ChangeCharacter`, an anim set and id for
 `Coney.PlayAnim`, [Coney native candidates](../asset-and-script-architecture.md#coney-native-candidates)); a path form
 beside each is the change.
@@ -531,8 +540,9 @@ A glTF or FBX animation imports as a clip: sampled at the clip format's key rate
 same bone map and rest pose, the pelvis's motion split into the root velocity and the root translation as the format
 holds them. A clip is used in two ways:
 
-- **Played by a script** by its path (`Coney.PlayClip(human, "project:/anims/dance.glb#Spin", loop, speed)`), as the
-  Animation player plays any clip today. Gameplay is untouched.
+- **Played by a script** by its path, once the script has loaded it (`Coney.LoadAsset("project:/anims/dance.glb#Spin")`,
+  then `Coney.PlayClip(human, "project:/anims/dance.glb#Spin", loop, speed)`), as the Animation player plays any clip
+  today. Gameplay is untouched.
 - **Put in a slot** of a custom character's anim set (its walk, its idle, an attack). That changes how the character
   plays, which is the point of a project, and it is allowed only in a project's sessions. An attack clip's reach and
   ranges come from the Anim Range List record of the slot it replaces
@@ -550,9 +560,10 @@ materials; an anim set whose slots a project overrides; clip playback by path.
 through Coney's mixer with their rate, loop points and length ([Audio data](../../research/formats/audio.md)).
 **Import** takes WAV, FLAC, MP3 and Ogg Vorbis, each turned into the WAV engine form ([The import step](#import)); the
 sidecar sets the loop points and whether it streams. **Edit** is choosing where a project's sounds play: by script
-(`Coney.PlaySound` with a path, at a position or attached to an entity) and on clip events. Replacing a disc sound with
-a project's (`override game:/sounds/<name> project:/...`, [Override packs](project-formats.md#override-packs)) is the
-same override as a texture's, sounds being a presentation kind. **Export** writes a sound as WAV, as `extract` does.
+(`Coney.PlaySound` with a path the script has loaded, at a position or attached to an entity) and on clip events.
+Replacing a disc sound with a project's (`override game:/sounds/<name> project:/...`, [Override
+packs](project-formats.md#override-packs)) is the same override as a texture's, sounds being a presentation kind.
+**Export** writes a sound as WAV, as `extract` does.
 
 **Needs from Coney:** a WAV reader into `PcmSound`; playing a project sound by path and at a position through the
 sound engine; the sound override in the override source.

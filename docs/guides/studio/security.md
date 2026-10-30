@@ -299,7 +299,7 @@ instead:
 
 | Limit | How | Past it |
 | --- | --- | --- |
-| **The monitor** | Each project's time per step and its memory, counted outside the script ([The monitor](lua-sdk.md#monitor)) | Nothing is stopped: the modder, the player or a server operator sees which project is slow or growing and removes it |
+| **The monitor** | Each project's time per step, its memory and the assets it holds, counted outside the script ([The monitor](lua-sdk.md#monitor)) | Nothing is stopped: the modder, the player or a server operator sees which project is slow or growing and removes it |
 | **Nesting** | Lua's own C-stack limit (`LUAI_MAXCCALLS`) for deep recursion of the parser and of C calls, and the Lua stack's own size limit | "stack overflow" or "too many C levels", as stock Lua |
 | **Things a project makes** | Counters per project of the handles it holds: humans and objects share the game's pools, so a project may hold at most a share of each, and Coney's own kinds (spawned models, sounds playing, effects, HUD messages per step) have caps of their own | The native returns its "none" value or an error, as when the game's pool is full |
 | **Log output** | Lines and bytes per project per step | The rest of the step's lines are dropped with one line saying how many |
