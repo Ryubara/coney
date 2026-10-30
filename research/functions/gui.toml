@@ -87,7 +87,7 @@ page = "gui.md#original-structure"
 role = "the blip a human gets from its class"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001b8f98
