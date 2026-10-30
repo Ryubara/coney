@@ -225,6 +225,40 @@ void noteCreated(const rw::Raster* raster) {
                  static_cast<std::uint32_t>(raster->format)});
 }
 
+// A PS2 raster's texels then its palette: the bytes read from the disc and nothing else. A new-style raster's data
+// block is not only that: it starts with a pointer to its own texels (a heap address) and has alignment gaps librw
+// never fills, both of which differ from run to run, so the hash of two runs of one frame differed. Its texel and
+// palette blocks are taken from where librw reads them into it (ps2raster.cpp, readNativeTexture: the texel block at
+// that pointer, the palette block from 0x50 bytes before `palette`, each with its GIF tags first).
+std::optional<std::vector<std::uint8_t>> ps2Texels(const rw::Raster& raster) {
+    const rw::ps2::Ps2Raster* native = GETPS2RASTEREXT(&raster);
+    if (native->data == nullptr) {
+        return std::nullopt;
+    }
+    const rw::uint8* begin = native->data;
+    const rw::uint8* end = native->data + native->dataSize;
+    // Whether `size` bytes from `at` lie inside the data block.
+    const auto inside = [begin, end](const rw::uint8* at, std::size_t size) {
+        return at >= begin && at <= end && size <= static_cast<std::size_t>(end - at);
+    };
+    if ((native->flags & rw::ps2::Ps2Raster::NEWSTYLE) == 0) {
+        // An old-style raster's block is its texels and palette, whole.
+        return std::vector<std::uint8_t>(begin, end);
+    }
+    const auto* pointers = reinterpret_cast<const rw::ps2::Ps2Raster::PixelPtr*>(begin);
+    if (!inside(pointers->pixels, native->pixelSize)) {
+        // An old file's block was read whole over the pointer: all of it but the pointer's 16 bytes is from the disc.
+        constexpr std::ptrdiff_t kPointerBytes = sizeof(rw::ps2::Ps2Raster::PixelPtr);
+        return std::vector<std::uint8_t>(begin + std::min(kPointerBytes, end - begin), end);
+    }
+    std::vector<std::uint8_t> bytes(pointers->pixels, pointers->pixels + native->pixelSize);
+    if (native->paletteSize != 0 && raster.palette != nullptr && inside(raster.palette - 0x50, native->paletteSize)) {
+        const rw::uint8* palette = raster.palette - 0x50;
+        bytes.insert(bytes.end(), palette, palette + native->paletteSize);
+    }
+    return bytes;
+}
+
 } // namespace
 
 void reset(bool forwardCalls) {
@@ -457,10 +491,7 @@ rw::Raster* convertRasterForDrawing(rw::Raster* source) {
     // The source's texels, read before the conversion destroys it.
     std::optional<std::vector<std::uint8_t>> texels;
     if (layer().trackRasters && source != nullptr && source->platform == rw::PLATFORM_PS2) {
-        const rw::ps2::Ps2Raster* native = GETPS2RASTEREXT(source);
-        if (native->data != nullptr) {
-            texels.emplace(native->data, native->data + native->dataSize);
-        }
+        texels = ps2Texels(*source);
     }
     const rw::int32 width = source != nullptr ? source->width : 0;
     const rw::int32 height = source != nullptr ? source->height : 0;
