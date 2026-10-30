@@ -27,7 +27,7 @@ internals:** a script reaches the game only through natives, the same boundary t
 5. [Projects and the manifest](#manifest).
 6. [The loader and its entry points](#entry-points): start-up, level start, each step, stop; threads and waits.
 7. [Play, step by step](#play): what loads in what order, the two states, the step, Stop.
-8. [Assets by path](#assets).
+8. [Assets by path](#assets), loaded and released by the script ([Loading and releasing assets](asset-lifetime.md)).
 9. [The sandbox](#sandbox), with [the monitor](#monitor) that stands in for budgets.
 10. [Deterministic and network-safe calls](#determinism).
 11. [How a native reaches the SDK](#availability), and the SDK level.
@@ -36,7 +36,7 @@ internals:** a script reaches the game only through natives, the same boundary t
 14. [The Lua 4.0 compiler](#compiler).
 15. [The script debugger](#debugger).
 16. [What changes on other pages](#other-pages), [Maintainer decisions](#decisions), [Open questions](#open-questions)
-    (none left).
+    (the asset lifetime's are on its page).
 17. [Proposed build issues](#build-issues), [Sources](#sources).
 
 ## Terms {#terms}
@@ -73,6 +73,7 @@ It is the model the maintainer named for the SDK. Only its public documentation 
 | **Versioning** | `fx_version` names a cumulative feature level (`adamant`, `bodacious`, `cerulean`): each includes the earlier ones and changes defaults; a dependency can require a minimum server build or game build | The SDK level, a cumulative whole number ([The SDK level](#sdk-level)) |
 | **Lua** | CfxLua, a modified Lua 5.4 (Lua 5.3 was retired in 2025): vectors and quaternions as real types, compile-time hashes in backticks, `json`, `promise` and `msgpack` bundled | Lua 5.4 for projects, unmodified ([The runtime](#runtime)) |
 | **Threads and waits** | `Citizen.CreateThread(fn)` runs a function as a coroutine; `Wait(ms)` gives control back to the game for that long; without a wait, a loop freezes the game | `Coney.CreateThread` and `Coney.Wait`, counted in game time ([Threads and waits](#threads)) |
+| **Streaming a model** | `REQUEST_MODEL` asks for a model for the current script, `HAS_MODEL_LOADED` says whether it has arrived, a spawn such as `CREATE_PED` expects it loaded, and `SET_MODEL_AS_NO_LONGER_NEEDED` releases the script's ownership; the Lua pattern is `RequestModel`, `while not HasModelLoaded(m) do Wait(0) end`, the spawn, `SetModelAsNoLongerNeeded(m)` | `Coney.LoadAsset`, `Coney.IsAssetLoaded`, the spawn, `Coney.ReleaseAsset`: the script owns what it loads ([Loading and releasing assets](asset-lifetime.md)) |
 | **Events** | Named events with handlers (`AddEventHandler`), between resources and between client and server; `onResourceStart`, `onResourceStop` | `Coney.On(event, fn)` for the loader's entry points ([The loader](#entry-points)); network events are the network page's (P4) |
 | **Restart** | `refresh` rereads the manifests, `restart <name>` reloads a resource without restarting the game | [Project restart on save](#project-restart); the console's `restart` is [Console commands](mods.md#console) |
 | **Limits and the monitor** | No instruction budget and no memory cap: a loop without a `Wait` freezes the game. The `resmon` monitor shows each resource's time and memory | The same: no budget and no cap for now; a [monitor](#monitor) shows each project's time per step and its memory |
@@ -399,18 +400,25 @@ the disc:
 
 | Proposed native | Does | Waits on |
 | --- | --- | --- |
-| `Coney.LoadAsset(path)` | Starts loading an asset and returns its asset id at once; the load completes at a step boundary | Coney loading assets from a project ([Custom content](../../roadmap.md#custom-content)) |
-| `Coney.IsAssetLoaded(id)` | Whether it has arrived; a thread waits on it with `Coney.Wait` | the same |
-| `Coney.SpawnModel(path, pos, heading)` | Places an imported model as a world object and returns its handle; game natives (`GetPosition`, `ObjShow`, `ObjDestroy`) then work on it | glTF models in Coney |
-| `Coney.SetHumanModel(human, path)` | Changes a human's model in place, keeping everything else about him ([#1053](issue:1053) does this for disc models) | imported character models |
-| `Coney.PlayClip(human, path, loop, speed)` | Plays an imported or disc clip on a human, as the Animation player does | imported animations |
-| `Coney.PlaySound(path, pos, volume)` | Plays a sound at a place, as a sound event | sounds from outside the disc |
+| `Coney.LoadAsset(path)` | Starts loading an asset and returns its asset id at once; the load completes at a step boundary. The project now **holds** the asset. A prefab path loads the prefab's members' assets too ([Spawning a prefab](entities.md#spawn-prefab)) | Coney loading assets from a project ([Custom content](../../roadmap.md#custom-content)) |
+| `Coney.IsAssetLoaded(id)` | Whether the project holds the asset and it has arrived; a thread waits on it with `Coney.Wait` (FiveM's `HasModelLoaded`) | the same |
+| `Coney.GetAssetState(id)` | `"loading"`, `"loaded"`, `"failed"` (with the reason as a second value) or `"none"` (not held), so a wait can end on a load that failed | the same |
+| `Coney.ReleaseAsset(id)` | The project no longer needs it: drops one hold; the memory is freed once nothing holds or uses it (FiveM's `SetModelAsNoLongerNeeded`) | the same |
+| `Coney.GetPrefabAssets(path)` | The asset paths a prefab needs, so a script can load some of them or show progress ([Spawning a prefab](entities.md#spawn-prefab)) | prefabs in level files |
+| `Coney.SpawnModel(path, pos, heading)` | Places an imported model as a world object and returns its handle; game natives (`GetPosition`, `ObjShow`, `ObjDestroy`) then work on it. The model must be loaded | glTF models in Coney |
+| `Coney.SetHumanModel(human, path)` | Changes a human's model in place, keeping everything else about him ([#1053](issue:1053) does this for disc models). The model must be loaded | imported character models |
+| `Coney.PlayClip(human, path, loop, speed)` | Plays an imported or disc clip on a human, as the Animation player does. The clip must be loaded | imported animations |
+| `Coney.PlaySound(path, pos, volume)` | Plays a sound at a place, as a sound event. The sound must be loaded | sounds from outside the disc |
 
-Loading follows the [determinism rules](#determinism): a load is requested during a step and completes at a step
-boundary, in request order; in test mode it completes at once, so a test needs no waiting. A path that does not exist,
-leaves its root or names a kind Coney cannot load returns an error the script can test, never a crash. Assets are
-found through the asset store's sources, never by a native opening a file
-([Asset layers](../asset-and-script-architecture.md#asset-layers)).
+A **load is owned by the script that asks for it**, as in FiveM: `Coney.LoadAsset` takes a hold, `Coney.ReleaseAsset`
+drops one, and the memory is freed once nothing holds or uses the asset. A spawn of an asset that is not loaded raises
+an error naming it and loads nothing; what a project never releases is released when the level ends and the project
+stops. A load completes at a step boundary, in request order ([determinism](#determinism)). A path that does not
+exist, leaves its root or names a kind Coney cannot load returns an error the script can test, never a crash. Assets
+are found through the asset store's sources, never by a native opening a file ([Asset
+layers](../asset-and-script-architecture.md#asset-layers)). The rules, FiveM's natives, the game's own `game:/` models,
+the tests and a [worked example](asset-lifetime.md#wave-example) are [Loading and releasing
+assets](asset-lifetime.md); a prefab's assets are [Spawning a prefab](entities.md#spawn-prefab).
 
 ## The sandbox {#sandbox}
 
@@ -448,14 +456,16 @@ the network page's [sandbox](../network-architecture.md#sandbox) and adds what k
 
 In place of budgets, Studio gets a monitor like FiveM's `resmon`: a panel with one row per running project, showing
 its **time per step** (how long its part of the step took: its `update` handlers, threads, scheduled calls and the
-other entry points that ran; the last step, the mean and the worst of the last 30) and its **memory** (the bytes its
-state holds, counted by the allocator). A project that is slow or leaking shows at once, which is what a budget would
+other entry points that ran; the last step, the mean and the worst of the last 30), its **memory** (the bytes its
+state holds, counted by the allocator) and its **assets** (the assets it has loaded and not released, with their
+bytes, listed when the row is opened: [The monitor lists what a project
+holds](asset-lifetime.md#monitor)). A project that is slow or leaking shows at once, which is what a budget would
 have stopped, and the modder decides. The monitor only reads: it never stops, slows or changes a project.
 
 - **The clock.** Time per step is measured outside the simulation with the real clock the frame pacer already reads
   ([Conventions](../conventions.md#update-and-render)); no script reads it and no run changes with it. Memory is a
-  plain count and is repeatable. In test mode the time column is off and the memory column stays, so a test can
-  pin a project's memory.
+  plain count and is repeatable, as the assets column's bytes are. In test mode the time column is off and the memory
+  and assets columns stay, so a test can pin a project's memory and loaded assets.
 - **Where it shows.** Studio's Monitor panel ([Coney Studio's panels](editor-experience.md#panel-list)), and the Coney
   console's Resources panel in its F8 bar ([Resources](console-bar.md#resources)); both read the same numbers, which the
   SDK owns, so there is one count and two front ends.
@@ -739,6 +749,11 @@ When this design is accepted, these lines change on the pages that own them:
   scheduler, the compiler and the `Coney` table move ahead of the whole game, as Studio's first build work
   ([Proposed build issues](#build-issues)), in the order the parent issue gives ([#1054](issue:1054)).
 - [Roadmap: Script mods](../../roadmap.md#script-mods): the loader's points are this page's entry points.
+- [F8 bar: Resources](console-bar.md#resources), Studio's [Monitor panel](editor-experience.md#panel-list) and
+  [Script security: Limits](security.md#limits): the monitor also lists the assets a project holds
+  ([Loading and releasing assets](asset-lifetime.md#monitor)).
+- [Content and formats: Paths](content-and-formats.md#paths) and [Script editor: Dragging](script-editor.md#drag): a
+  script uses a path only after `Coney.LoadAsset` has loaded it.
 - [Network architecture: Sandboxing](../network-architecture.md#sandbox) and [Script security](security.md#limits): no
   instruction budget, memory cap or watchdog for now, and the [monitor](#monitor) instead.
 
@@ -768,11 +783,15 @@ When this design is accepted, these lines change on the pages that own them:
 7. **No budgets for now, as FiveM.** No instruction budget, no memory cap and no watchdog: a loop with no wait freezes
    the game. Studio gets a monitor like FiveM's `resmon` instead, with each project's time per step and its memory
    ([The monitor](#monitor)). Caps return only if downloaded mods or co-op need them.
+8. **Scripts own asset memory, as in FiveM** (2026-10-29): load, wait, spawn, release; a spawn of an asset that is
+   not loaded fails with an error naming it; what is never released is released at `levelEnd` and `stop`; the monitor
+   lists what a project holds ([Loading and releasing assets](asset-lifetime.md)).
 
 ## Open questions {#open-questions}
 
-None. The four questions this page asked (the game state's globals, the game native `random`, what a restart leaves, and
-the budgets' sizes) are answered under [Maintainer decisions](#decisions).
+The four questions this page asked (the game state's globals, the game native `random`, what a restart leaves, and the
+budgets' sizes) are answered under [Maintainer decisions](#decisions). The asset lifetime's three choices for the user
+and its research question are on [its page](asset-lifetime.md#open-questions).
 
 ## Proposed build issues {#build-issues}
 
@@ -847,16 +866,22 @@ running a project's scripts. Issues 2 to 6 build on the [decision](#decisions) f
    read-only watches, break on error, threads as DAP threads, for project states; then line and instruction hooks in
    Coney's 4.0 VM for the game state. Tests: a scripted DAP client sets a breakpoint, stops on the expected line, reads
    a local, steps over and continues, with the run's result unchanged; a watch that calls a server native is refused.
-9. **core: Add asset natives by project path.** `Coney.LoadAsset`, `Coney.IsAssetLoaded`, `Coney.SpawnModel`,
-   `Coney.SetHumanModel`, `Coney.PlayClip` and `Coney.PlaySound` over the asset store's `project:/` and `game:/`
-   sources, loads applied at step boundaries in request order and at once in test mode. Each native is filed when
-   Coney can load its kind from a project ([Custom content](../../roadmap.md#custom-content)), so the SDK gains them
-   as Coney does. Tests: a synthetic model fixture loads by path and spawns; a path outside the project is refused; a
-   test-mode load completes in the same step.
+9. **core: Add asset natives by project path.** `Coney.LoadAsset`, `Coney.IsAssetLoaded`, `Coney.GetAssetState`,
+   `Coney.ReleaseAsset`, `Coney.GetPrefabAssets`, `Coney.SpawnModel`, `Coney.SetHumanModel`, `Coney.PlayClip` and
+   `Coney.PlaySound` over the asset store's `project:/` and `game:/` sources: asset ids in request order, a hold per
+   `LoadAsset` and a use per living thing, memory freed when both are gone, loads applied at step boundaries in
+   request order (the replay recording the step each completed at), and a spawn of an asset that is not loaded raising
+   an error that names it; the safety net at `levelEnd` and `stop`. Each native is filed when Coney can load its kind
+   from a project ([Custom content](../../roadmap.md#custom-content)), so the SDK gains them as Coney does; the
+   prefab pair waits on [Spawning a prefab](entities.md#build-issues). Tests: the cases of [Loading and releasing
+   assets: Tests](asset-lifetime.md#tests); a path outside the project is refused; a synthetic model fixture loads by
+   path and spawns.
 10. **tools: Add the project monitor to Coney Studio.** The allocator's count and the per-project timing of the
     project's frame that the scheduler records (the clock only the frame pacer reads, outside the simulation), shown in
-    a Monitor panel with one row per project: time per step (last, mean and worst of 30) and memory; the time off in
-    test mode. Tests: a project that allocates a known table shows its growth; two projects show separate rows; the time
+    a Monitor panel with one row per project: time per step (last, mean and worst of 30), memory, and the assets it
+    holds with their bytes (the asset store's count, listed when the row is opened; needs issue 9); the time off in
+    test mode. Tests: a project that allocates a known table shows its growth; a project that loads an asset and never
+    releases it lists it, a shared asset is counted once in the total; two projects show separate rows; the time
     column is empty in test mode and no run changes with the monitor open.
 
 ## Sources {#sources}
