@@ -593,11 +593,12 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
   and five named OpenGL operations (the frame copied into a raster, the frame read back, the wireframe switch, drawing
   sent back to the window's frame buffer, a raster's mip levels): 223 call sites in 15 files of `src/platform/`, fewer
   than the estimate of about 290 because the `rw::gl3::` vertex types are not calls and the renders below wait. Routed
-  with items 7 to 9, whose renders they set up: `WorldRenderer::render` (the world, #1199), `ParkedCars::draw` and
-  `PlacedObjects::draw` (cars and objects, #1200) and `PlayLighting::drawHumanPasses` (humans, #1201); with items 7 to
-  10, the atomic, clump and human renders and what runs inside their pipelines (the one `VERTEXALPHA` state in each of
-  `texture_lod.cpp` and `character_skin.cpp`, the skinning buffers). Never: the device's set-up at start and the
-  profiler's OpenGL queries, which draw nothing.
+  with items 7 to 9, whose renders they set up: `WorldRenderer::render` (the world, [#1199](issue:1199)),
+  `ParkedCars::draw` and `PlacedObjects::draw` (cars and objects, [#1200](issue:1200)) and
+  `PlayLighting::drawHumanPasses` (humans, [#1201](issue:1201)); with items 7 to 10, the atomic, clump and human renders
+  and what runs inside their pipelines (the one `VERTEXALPHA` state in each of `texture_lod.cpp` and
+  `character_skin.cpp`, the skinning buffers). Never: the device's set-up at start and the profiler's OpenGL queries,
+  which draw nothing.
 - **What a record holds.** A draw holds its primitive, every render state set so far with its value as it stands at
   the draw (a raster as its place in the recording's order of first use, its size and format, and a digest of the
   pixels Coney uploaded to it), the vertices and the indices; Im3D also its normals, world matrix and flags. A camera's
