@@ -35,6 +35,7 @@
 #include "platform/character_lights.h"
 #include "platform/character_mesh.h"
 #include "platform/character_viewer_mode.h"
+#include "platform/draw_calls.h"
 #include "platform/level_file.h"
 #include "platform/object_models.h"
 #include "platform/sprite_sheets.h"
@@ -109,8 +110,8 @@ class OffscreenCamera {
         camera->m_camera = rw::Camera::create();
         camera->m_camera->setFrame(rw::Frame::create());
         camera->m_camera->frameBuffer =
-            rw::Raster::create(size, size, 32, static_cast<rw::int32>(rw::Raster::CAMERATEXTURE) | rw::Raster::C8888);
-        camera->m_camera->zBuffer = rw::Raster::create(size, size, 0, rw::Raster::ZBUFFER);
+            draw::createRaster(size, size, 32, static_cast<rw::int32>(rw::Raster::CAMERATEXTURE) | rw::Raster::C8888);
+        camera->m_camera->zBuffer = draw::createRaster(size, size, 0, rw::Raster::ZBUFFER);
         if (camera->m_camera->frameBuffer == nullptr || camera->m_camera->zBuffer == nullptr) {
             return fail(ErrorCode::PlatformFailure,
                         std::format("could not make a {0}x{0} offscreen frame buffer", size));
@@ -118,6 +119,7 @@ class OffscreenCamera {
         return camera;
     }
 
+    // Frees the camera with its frame buffer, depth buffer and frame.
     ~OffscreenCamera() {
         // Buffers and frame first: Camera::destroy leaves them alone.
         if (m_camera->frameBuffer != nullptr) {
@@ -181,19 +183,19 @@ class OffscreenCamera {
     // as a sign or a fence).
     void draw(std::span<rw::Atomic* const> atomics, const CharacterLights& lights, bool cullBack) {
         rw::RGBA clear = rw::makeRGBA(0, 0, 0, 0);
-        m_camera->clear(&clear, rw::Camera::CLEARIMAGE | rw::Camera::CLEARZ);
-        m_camera->beginUpdate();
+        draw::clearCamera(m_camera, &clear, rw::Camera::CLEARIMAGE | rw::Camera::CLEARZ);
+        draw::beginCameraUpdate(m_camera);
         lights.use();
-        rw::SetRenderState(rw::ZTESTENABLE, 1);
-        rw::SetRenderState(rw::ZWRITEENABLE, 1);
-        rw::SetRenderState(rw::CULLMODE, cullBack ? rw::CULLBACK : rw::CULLNONE);
-        rw::SetRenderState(rw::FOGENABLE, 0);
-        rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-        rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+        draw::setRenderState(rw::ZTESTENABLE, 1);
+        draw::setRenderState(rw::ZWRITEENABLE, 1);
+        draw::setRenderState(rw::CULLMODE, cullBack ? rw::CULLBACK : rw::CULLNONE);
+        draw::setRenderState(rw::FOGENABLE, 0);
+        draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+        draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
         for (rw::Atomic* atomic : atomics) {
             atomic->render();
         }
-        m_camera->endUpdate();
+        draw::endCameraUpdate(m_camera);
     }
 
     // Reads the drawn image back, rows top down. librw leaves the camera's frame buffer object bound after drawing.
@@ -206,9 +208,7 @@ class OffscreenCamera {
         const auto side = static_cast<std::size_t>(m_size);
         const std::size_t rowBytes = side * 4;
         std::vector<std::uint8_t> bottomUp(rowBytes * side);
-        glPixelStorei(GL_PACK_ALIGNMENT, 1);
-        glReadPixels(0, 0, m_size, m_size, GL_RGBA, GL_UNSIGNED_BYTE, bottomUp.data());
-        if (glGetError() != GL_NO_ERROR) {
+        if (!draw::readFrame(0, 0, m_size, m_size, bottomUp.data())) {
             return fail(ErrorCode::PlatformFailure, "glReadPixels could not read the offscreen frame");
         }
         // OpenGL's rows run bottom up; images run top down.
