@@ -287,6 +287,27 @@ def test_a_person_in_a_terminal_may_run_the_whole_suite_without_full(
     assert fake_toolchain.commands[-1][0] == "ctest"
 
 
+def test_a_persons_detached_unfiltered_run_starts_a_child_that_is_not_refused(
+    checkout: Path,
+    fake_toolchain: type[FakeToolchain],
+    spawned: list[tuple[list[str], Path, Path]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The child is always started with --agent <the id the parent got>, so it would look like an agent's run: the
+    # parent says --full for it, and the child's own precheck then lets it through.
+    monkeypatch.setattr(build_cli, "default_agent_id", lambda: "jane")
+    assert main(["build", "--test", "--detach"]) == 0
+    ((command, _, _),) = spawned
+    assert command[command.index("--agent") + 1] == "jane" and "--full" in command
+    # The child, run as the spawned command line says (a detached child is the same command with its log and result
+    # files), is not refused either.
+    monkeypatch.setattr(build_cli, "_detached_lifetime", lambda: None)
+    assert main(command[command.index("build") :]) == 0
+    assert fake_toolchain.commands[-1][0] == "ctest"
+    assert main(["build", "--test", "-R", "Widget", "--detach"]) == 0
+    assert "--full" not in spawned[-1][0]
+
+
 def test_a_detached_unfiltered_run_is_refused_before_it_starts_and_full_reaches_the_child(
     checkout: Path, capsys: pytest.CaptureFixture[str], spawned: list[tuple[list[str], Path, Path]]
 ) -> None:

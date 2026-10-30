@@ -593,18 +593,14 @@ PCSX2 copies do ([`build`](coney-tools-build.md#build)). An agent never runs `cm
 uv run --project python coney-tools build --agent <id> --preset dev --test -R <regex> [-L <label>]
 ```
 
-- **Filter while you iterate; the whole suite is `task check`'s.** An agent's `--test` with neither `-R` nor `-L` (15 to
-  40 minutes of a main slot) is refused unless it carries `--full`, the handover tip's flag. A brief says: run the
-  tests the change touches, leave the full suite to `task check` ([the local gate](testing.md#local-gate)).
-
 - **Run it in the background** (`run_in_background`, or output to a file) and read the log path it prints first, then
   the short summary when it ends. Do not sit in it: a wait for a slot can take many minutes.
 - **A small job is quick.** An incremental rebuild of a few steps (the tool counts what is out of date by itself, so
   one edited source is one step however much sits behind it), or a test run filtered with `-R` or `-L` to a few
   tests, takes the fast lane and does not queue behind full builds. Rerun a failed test with `-R <its name>`, not the
-  whole suite; the first build in a fresh worktree and a full test run are the big jobs. `-L disc` runs only the tests
-  that need the game's disc. `-R` is a CMake regular expression: escape `.` `+` `(` `)` with a backslash and quote it
-  with single quotes ([Choosing tests](coney-tools-build.md#build)).
+  whole suite: the full run (no `-R` or `-L`) is `task check`'s, and an agent's is refused without `--full`
+  ([the rule](coney-tools-build.md#build)). `-L disc` runs only the tests that need the game's disc. `-R` is a CMake
+  regular expression: escape `.` `+` `(` `)` with a backslash and quote it with single quotes ([Choosing tests](coney-tools-build.md#build)).
 - **A play build is `--target coney`.** It builds the executable and what it links, not the tests; it cannot be
   combined with `--test`. Every build goes through the shared [compiler cache](building.md#compiler-cache), so the
   first build of a fresh worktree takes most of its objects from builds other worktrees already ran, and its summary

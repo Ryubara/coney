@@ -389,7 +389,7 @@ at most `check_slots` of them run at once, across all worktrees:
 | --- | --- |
 | `task check` | the `pytest` check (the whole suite), for the run of pytest |
 | `ci run`, `ci pr` | the `python` step's pytest, for the run of pytest |
-| `build --test --full` (so also `task check`'s build) | the test phase when it has **no `-R` or `-L` filter**: the whole ctest run; an agent may start it only with `--full` ([When the whole suite runs](#build)). The wait for the check slot comes before the wait for a build slot, so a run in the check queue holds no build slot |
+| `build --test` with no filter (so also `task check`'s build) | the test phase when it has **no `-R` or `-L` filter**: the whole ctest run; an agent may start it only with `--full` ([When the whole suite runs](#build)). The wait for the check slot comes before the wait for a build slot, so a run in the check queue holds no build slot |
 
 A **targeted** run takes none: `build --test -R ...` (so `orig fails-first`, which names its tests), or `pytest` on a
 few test files typed by hand. Run those freely; run the full suite once, in `task check`. A run that has to wait says

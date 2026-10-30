@@ -421,6 +421,7 @@ def _precheck(args: argparse.Namespace) -> tuple[Path, dict[str, str]]:
     named = bool(args.agent)
     if not args.agent:
         args.agent = default_agent_id()
+        args.agent_defaulted = True  # a --detach child is started with this id, and must not be taken for an agent's
         if args.agent is None:
             raise ConfigError("pass --agent <your id> (see docs/guides/coney-tools-build.md, 'build')")
     if args.targets and args.test:
@@ -646,11 +647,14 @@ def _child_command(
     result go."""
     command = [sys.executable, "-m", "coney_tools.cli", "build", "--agent", args.agent, "--preset", args.preset]
     command += ["--dir", str(root), "--max-wait", str(limits_minutes[0]), "--budget", str(limits_minutes[1])]
+    # A person's run (no --agent) is not an agent's, but its child is always started with the id the parent got, so a
+    # whole-suite run says --full for it: the child's own precheck would otherwise refuse it.
+    persons_full_suite = getattr(args, "agent_defaulted", False) and args.test and args.regex is None and not args.label
     switches = (
         ("--configure", args.configure),
         ("--configure-only", args.configure_only),
         ("--test", args.test),
-        ("--full", args.full),
+        ("--full", args.full or persons_full_suite),
         ("--priority", args.priority),
     )
     if args.run_lane != "auto":
