@@ -555,7 +555,7 @@ address = 0x00193d80
 name = "RwDevice_BlurPass"
 page = "graphics.md#motion-blur"
 level = "confirmed-code"
-coney = "src/platform/render_engine.h:RenderEngine::blurScreen"
+coney = "src/platform/gl3_renderer.h:Gl3Renderer::drawBlurPulse"
 status = "compared"
 
 [[function]]

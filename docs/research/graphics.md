@@ -443,7 +443,7 @@ and strength linearly over the time given and lays the last frame over the new o
 the drawing [above](#motion-blur); the looks' own blur values are not applied yet. It keeps and lays over the whole
 3D view (`RenderEngine::viewRect`), as the original lays its whole last frame: in a window wider than 4:3 that is
 wider than the logical screen's 4:3 place, which, kept alone, drew a faint rectangle 12.5 % in from each side
-(fixed 2026-10-08). The blur pulse's `RenderEngine::blurScreen` and the screen tint's and fades' wash
+(fixed 2026-10-08). The blur pulse (`RenderEngine::blurScreen`) and the screen tint's and fades' wash
 (`RenderDevice::drawViewQuads`) cover the whole view the same way.
 
 **The screen tint** (`effects::ScreenTint`, `repo:src/effects/screen_tint.h`, drawn by `PlayLevelEffects::drawTint`)
@@ -458,7 +458,8 @@ timed by the fixed steps, not the original's real-time clock (they differ only w
 tints (rage, heat, the follower looks) are not modelled, so the tint is always the base look's or the last blend's
 ([The rage look](#rage-look) lists what rage needs).
 
-**The blur pulse** (`effects::BlurPulse`, `repo:src/effects/blur_pulse.h`, drawn by `RenderEngine::blurScreen`):
+**The blur pulse** (`effects::BlurPulse`, `repo:src/effects/blur_pulse.h`, recorded by `RenderEngine::blurScreen` and
+drawn by `Gl3Renderer::drawBlurPulse`):
 `start(seconds, delayMs)` and `end(seconds)` are `ScreenFx_StartBlurPulse` (`0x0018d058`, confirmed (code)) forward and
 reversed, `ScreenQueueEffect` 4 and 5 queue look 5's (in 1.25 s, out 4 s, a 360 ms hold, 28 passes, offsets 0.002 and
 0.003). Each step runs the original's draw-time update (`0x0018d1d0`): the delay, the rise or fall, the hold and the

@@ -24,9 +24,7 @@
 #include "platform/character_skin.h"
 #include "platform/draw_calls.h"
 #include "platform/gpu_presenter.h"
-#include "platform/movie_screen.h"
 #include "platform/perf_probes.h"
-#include "platform/sprite_sheets.h"
 #include "platform/texture_lod.h"
 #include "platform/world_atomic.h"
 
@@ -540,12 +538,7 @@ void RenderEngine::createCamera() {
 }
 
 void RenderEngine::destroyCamera() noexcept {
-    for (rw::Raster** raster : {&m_lineRaster, &m_blurRaster, &m_halfRaster}) {
-        if (*raster != nullptr) {
-            (*raster)->destroy();
-            *raster = nullptr;
-        }
-    }
+    m_gl3.releaseViewCopies(); // made at the view's size
     if (m_camera == nullptr) {
         return;
     }
@@ -569,9 +562,9 @@ void RenderEngine::destroyCamera() noexcept {
 void RenderEngine::beginFrame(graphics::Rgba clear) {
     // The border around the logical screen is black; the logical screen itself is filled with `clear` by a flat quad,
     // since librw's camera clear always covers the whole frame buffer.
-    startFrame(graphics::kBlack);
+    startFrame(graphics::kBlack, graphics::FrameStart{clear, false});
     m_clearColour = clear;
-    if (!drawing2d() || clear == graphics::kBlack) {
+    if (clear == graphics::kBlack) {
         return;
     }
     const graphics::LogicalQuad fill{0.0F, 0.0F, graphics::kLogicalWidth, graphics::kLogicalHeight, graphics::UvRect{},
@@ -579,7 +572,7 @@ void RenderEngine::beginFrame(graphics::Rgba clear) {
     drawQuads(nullptr, std::span(&fill, 1));
 }
 
-void RenderEngine::beginWindowFrame(graphics::Rgba clear) { startFrame(clear); }
+void RenderEngine::beginWindowFrame(graphics::Rgba clear) { startFrame(clear, graphics::FrameStart{clear, true}); }
 
 void RenderEngine::drawQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads) {
     drawTexturedQuads(texture, quads, false, m_viewport);
@@ -598,146 +591,32 @@ void RenderEngine::drawWrappedViewQuads(const graphics::Texture* texture,
     drawTexturedQuads(texture, quads, true, viewRect());
 }
 
-rw::Raster* RenderEngine::bindTexture(const graphics::Texture* texture, bool wrap) {
-    if (texture == nullptr) {
-        return nullptr;
-    }
-    // A sprite sheet's texture, or a movie's frame (platform/movie_screen.h).
-    rw::Texture* rwTexture = nullptr;
-    if (const auto* sheetTexture = dynamic_cast<const SheetTexture*>(texture); sheetTexture != nullptr) {
-        rwTexture = sheetTexture->rwTexture();
-    } else if (const auto* movieTexture = dynamic_cast<const MovieTexture*>(texture); movieTexture != nullptr) {
-        rwTexture = movieTexture->rwTexture();
-    }
-    CONEY_ASSERT(rwTexture != nullptr);
-    // The texture's own filtering (most of the game's textures ask for linear), clamped at the edges so a rectangle
-    // that reaches the texture's border does not pick up texels from the opposite side, unless the caller repeats the
-    // texture.
-    draw::setRenderState(rw::TEXTUREFILTER, rwTexture->getFilter());
-    draw::setRenderState(rw::TEXTUREADDRESS, wrap ? rw::Texture::WRAP : rw::Texture::CLAMP);
-    return rwTexture->raster;
-}
-
 void RenderEngine::drawTriangles(const graphics::Texture* texture, std::span<const graphics::LogicalVertex> vertices,
                                  const graphics::TriangleStates& states) {
     CONEY_ASSERT(m_inFrame);
-    const std::size_t count = vertices.size() / 3 * 3;
-    if (!drawing2d() || count == 0) {
-        return; // NULL backend, not recording: nothing to draw
-    }
-    rw::Raster* raster = bindTexture(texture, states.wrap);
-    set2dStates(raster);
-    // The alpha test, as the GS's: keep a fragment whose alpha is at least the reference.
-    const rw::uint32 testFunction = draw::getRenderState(rw::ALPHATESTFUNC);
-    const rw::uint32 testRef = draw::getRenderState(rw::ALPHATESTREF);
-    if (states.alphaRef > 0.0F) {
-        draw::setRenderState(rw::ALPHATESTFUNC, rw::ALPHAGREATEREQUAL);
-        draw::setRenderState(rw::ALPHATESTREF, static_cast<rw::uint32>(std::lround(states.alphaRef * 255.0F)));
-    } else {
-        draw::setRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS); // every fragment kept, however faint
-    }
-    // Logical pixels to window pixels: a point is a rectangle of no size.
-    const float nearZ = draw::im2dNearZ();
-    const float recipZ = 1.0F / nearPlane();
-    std::vector<rw::gl3::Im2DVertex> mapped(count);
-    for (std::size_t i = 0; i < count; ++i) {
-        const graphics::LogicalVertex& in = vertices[i];
-        const graphics::LogicalRect at =
-            graphics::logicalToWindow(graphics::LogicalRect{in.x, in.y, 0.0F, 0.0F}, m_viewport);
-        rw::gl3::Im2DVertex& vertex = mapped[i];
-        vertex.setScreenX(at.x);
-        vertex.setScreenY(at.y);
-        vertex.setScreenZ(nearZ);
-        vertex.setRecipCameraZ(recipZ);
-        vertex.setColor(in.colour.r, in.colour.g, in.colour.b, in.colour.a);
-        vertex.setU(in.u, recipZ);
-        vertex.setV(in.v, recipZ);
-    }
-    draw::im2dRenderPrimitive(rw::PRIMTYPETRILIST, mapped.data(), static_cast<rw::int32>(count));
-    draw::setRenderState(rw::ALPHATESTFUNC, testFunction);
-    draw::setRenderState(rw::ALPHATESTREF, testRef);
+    const graphics::Material2d material{m_frame.texture(texture),
+                                        states.wrap ? graphics::TextureAddress::Wrap : graphics::TextureAddress::Clamp,
+                                        states.alphaRef};
+    m_frame.addTriangles(material, vertices, m_viewport);
+    drawDescribed();
 }
 
 void RenderEngine::drawTexturedQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads,
                                      bool wrap, const graphics::ScreenRect& onto) {
     CONEY_ASSERT(m_inFrame);
-    if (!drawing2d() || quads.empty()) {
-        return; // NULL backend, not recording: nothing to draw
-    }
-    rw::Raster* raster = bindTexture(texture, wrap);
-    // Logical pixels to window pixels over `onto`, then the shared 2D drawing.
-    std::vector<graphics::LogicalQuad> mapped(quads.begin(), quads.end());
-    for (graphics::LogicalQuad& quad : mapped) {
-        const graphics::LogicalRect rect =
-            graphics::logicalToWindow(graphics::LogicalRect{quad.x, quad.y, quad.width, quad.height}, onto);
-        quad.x = rect.x;
-        quad.y = rect.y;
-        quad.width = rect.width;
-        quad.height = rect.height;
-    }
-    drawWindowQuads(raster, mapped);
+    const graphics::Material2d material{
+        m_frame.texture(texture), wrap ? graphics::TextureAddress::Wrap : graphics::TextureAddress::Clamp, {}};
+    m_frame.addQuads(material, quads, onto);
+    drawDescribed();
 }
 
-void RenderEngine::set2dStates(rw::Raster* raster, bool opaque) {
-    // The 2D pass's states (docs/research/graphics.md#2d-drawing): no depth test or write, no culling, no fog, blended
-    // by the vertex and texture alpha over what is already drawn.
-    draw::setRenderState(rw::ZTESTENABLE, 0);
-    draw::setRenderState(rw::ZWRITEENABLE, 0);
-    draw::setRenderState(rw::CULLMODE, rw::CULLNONE);
-    draw::setRenderState(rw::FOGENABLE, 0);
-    draw::setRenderState(rw::VERTEXALPHA, 1);
-    draw::setRenderState(rw::SRCBLEND, opaque ? rw::BLENDONE : rw::BLENDSRCALPHA);
-    draw::setRenderState(rw::DESTBLEND, opaque ? rw::BLENDZERO : rw::BLENDINVSRCALPHA);
-    draw::setRenderStatePtr(rw::TEXTURERASTER, raster);
-}
+void RenderEngine::drawDescribed() { m_gl3.drawNew(m_frame, Gl3Renderer::Target{m_camera, m_frameSize}); }
 
-void RenderEngine::drawWindowQuads(rw::Raster* raster, std::span<const graphics::LogicalQuad> quads, bool opaque) {
-    set2dStates(raster, opaque);
-
-    // Four corners and two triangles per quad, clockwise from the top left, as the device's screen quads.
-    const float nearZ = draw::im2dNearZ();
-    const float recipZ = 1.0F / nearPlane();
-    std::vector<rw::gl3::Im2DVertex> vertices(quads.size() * 4);
-    for (std::size_t q = 0; q < quads.size(); ++q) {
-        const graphics::LogicalQuad& quad = quads[q];
-        struct Corner {
-            float x, y, u, v;
-        };
-        const std::array<Corner, 4> corners{{{quad.x, quad.y, quad.uv.u0, quad.uv.v0},
-                                             {quad.x + quad.width, quad.y, quad.uv.u1, quad.uv.v0},
-                                             {quad.x + quad.width, quad.y + quad.height, quad.uv.u1, quad.uv.v1},
-                                             {quad.x, quad.y + quad.height, quad.uv.u0, quad.uv.v1}}};
-        for (std::size_t i = 0; i < corners.size(); ++i) {
-            rw::gl3::Im2DVertex& vertex = vertices[q * 4 + i];
-            vertex.setScreenX(corners[i].x);
-            vertex.setScreenY(corners[i].y);
-            vertex.setScreenZ(nearZ);
-            vertex.setRecipCameraZ(recipZ);
-            vertex.setColor(quad.colour.r, quad.colour.g, quad.colour.b, quad.colour.a);
-            vertex.setU(corners[i].u, recipZ);
-            vertex.setV(corners[i].v, recipZ);
-        }
-    }
-    // 16-bit indices: draw in runs of at most 16,384 quads, each run indexing its own vertices from 0.
-    constexpr std::size_t kMaxQuadsPerDraw = 0x10000 / 4;
-    std::vector<std::uint16_t> indices;
-    for (std::size_t first = 0; first < quads.size(); first += kMaxQuadsPerDraw) {
-        const std::size_t count = std::min(kMaxQuadsPerDraw, quads.size() - first);
-        indices.clear();
-        indices.reserve(count * 6);
-        for (std::size_t q = 0; q < count; ++q) {
-            for (const std::size_t corner : {0U, 1U, 2U, 0U, 2U, 3U}) {
-                indices.push_back(static_cast<std::uint16_t>(q * 4 + corner));
-            }
-        }
-        draw::im2dRenderIndexedPrimitive(rw::PRIMTYPETRILIST, &vertices[first * 4], static_cast<rw::int32>(count * 4),
-                                         indices.data(), static_cast<rw::int32>(indices.size()));
-    }
-}
-
-void RenderEngine::startFrame(graphics::Rgba clear) {
+void RenderEngine::startFrame(graphics::Rgba clear, const graphics::FrameStart& start) {
     CONEY_ASSERT(!m_inFrame);
     m_inFrame = true;
+    m_frame.begin(start);
+    m_gl3.beginFrame();
     // `--draw-hash`: this frame's drawing recorded, from its clear on.
     if (m_drawStreamFrame && *m_drawStreamFrame == m_presented) {
         draw::startRecording();
@@ -816,10 +695,8 @@ void RenderEngine::drawTexture(rw::Texture* texture, graphics::ScreenRect rect) 
 
 void RenderEngine::drawWindowRects(std::span<const graphics::LogicalQuad> quads) {
     CONEY_ASSERT(m_inFrame);
-    if (!drawing2d() || quads.empty()) {
-        return; // NULL backend, not recording: nothing to draw
-    }
-    drawWindowQuads(nullptr, quads);
+    m_frame.addWindowQuads(graphics::Material2d{}, quads);
+    drawDescribed();
 }
 
 void RenderEngine::present() {
@@ -831,8 +708,11 @@ void RenderEngine::present() {
         overlay(*this);
     }
     // The video output's softening covers everything the game draws, but not the debug menus.
-    if (m_lineBlend && m_camera != nullptr) {
-        blendLines();
+    if (m_lineBlend) {
+        const graphics::ScreenRect view = viewRect();
+        m_frame.addScreenPass(
+            graphics::ScreenPass{view, graphics::LineBlend{graphics::originalLineShare(m_viewport, view)}});
+        drawDescribed();
     }
     // A clip takes the frame as the game drew it, before the debug menus go over it.
     if (m_frameTap && m_camera != nullptr) {
@@ -875,125 +755,20 @@ void RenderEngine::present() {
     ++m_presented;
 }
 
-bool RenderEngine::copyToRaster(rw::Raster*& raster, int x, int y, int width, int height) {
-    if (raster != nullptr && (raster->width != width || raster->height != height)) {
-        raster->destroy();
-        raster = nullptr;
-    }
-    if (raster == nullptr) {
-        raster = draw::createRaster(width, height, 32, static_cast<rw::int32>(rw::Raster::TEXTURE) | rw::Raster::C8888);
-        if (raster == nullptr) {
-            return false;
-        }
-    }
-    // GL counts the frame buffer's rows from the bottom. librw's 2D drawing samples the copy with v = 0 at the
-    // rectangle's top (measured: drawn that way, the copy shows the screen the right way up).
-    draw::copyFrameToRaster(raster, x, y, width, height, m_frameSize.height);
-    return true;
-}
-
 void RenderEngine::blurScreen(int passes, float offsetU, float offsetV) {
     CONEY_ASSERT(m_inFrame);
     // The whole picture the 3D view fills, as the original blurs its whole screen (in a wide window, past the logical
     // screen's 4:3 place).
-    const graphics::ScreenRect viewport = viewRect();
-    if (m_camera == nullptr || viewport.width < 2 || viewport.height < 2) {
-        return;
-    }
-    draw::setRenderState(rw::TEXTUREFILTER, rw::Texture::LINEAR);
-    draw::setRenderState(rw::TEXTUREADDRESS, rw::Texture::CLAMP);
-    const auto left = static_cast<float>(viewport.x);
-    const auto top = static_cast<float>(viewport.y);
-    const int halfWidth = viewport.width / 2;
-    const int halfHeight = viewport.height / 2;
-    const graphics::Rgba white{255, 255, 255, 255};
-
-    // 1. The screen at half size, drawn into its own top-left quarter (scratch: the last step covers all of it).
-    // The original draws each step into its 512 x 256 raster through its effects camera; with one back buffer, Coney
-    // draws into the frame and copies the result back (copyToRaster) before the next step reads it. The UVs span each
-    // copy, without the original's half-texel offset (pixel + 0.5 over the size), which places a GS sample where a GL
-    // texel centre already is (inferred). Both are stand-ins.
-    if (!copyToRaster(m_blurRaster, viewport.x, viewport.y, viewport.width, viewport.height)) {
-        return;
-    }
-    const graphics::LogicalQuad half{
-        left, top, static_cast<float>(halfWidth), static_cast<float>(halfHeight), graphics::UvRect{}, white};
-    drawWindowQuads(m_blurRaster, std::span<const graphics::LogicalQuad>(&half, 1), true);
-
-    // 2. The passes: the half-size image onto itself with one edge moved in by half the offset, the low edges (u0, v0)
-    // for a positive offset and the high edges for a negative one, the sign flipping each pass, resampled linearly.
-    // The offsets are in UV units of the original's 512 x 256 texture, whose half-size image is 320 x 224 (inferred:
-    // a 640 x 448 screen at half size), so they are scaled to the same share of the image here.
-    const float stepU = offsetU / 2.0F * (512.0F / 320.0F);
-    const float stepV = offsetV / 2.0F * (256.0F / 224.0F);
-    bool lowEdge = true;
-    for (int pass = 0; pass < passes; ++pass) {
-        // Stand-in: a copy of the half-size image for the pass to read, as in step 1.
-        if (!copyToRaster(m_halfRaster, viewport.x, viewport.y, halfWidth, halfHeight)) {
-            return;
-        }
-        graphics::LogicalQuad quad = half;
-        if (lowEdge) {
-            quad.uv.u0 += stepU;
-            quad.uv.v0 += stepV;
-        } else {
-            quad.uv.u1 -= stepU;
-            quad.uv.v1 -= stepV;
-        }
-        // Stand-in: UVs over the copy, without the half-texel offset (step 1).
-        drawWindowQuads(m_halfRaster, std::span<const graphics::LogicalQuad>(&quad, 1), true);
-        lowEdge = !lowEdge;
-    }
-
-    // 3. Stretched back over the whole screen, its edges inset by one texel, opaque.
-    if (!copyToRaster(m_halfRaster, viewport.x, viewport.y, halfWidth, halfHeight)) {
-        return;
-    }
-    const float texelU = 1.0F / static_cast<float>(halfWidth);
-    const float texelV = 1.0F / static_cast<float>(halfHeight);
-    const graphics::LogicalQuad whole{left,
-                                      top,
-                                      static_cast<float>(viewport.width),
-                                      static_cast<float>(viewport.height),
-                                      graphics::UvRect{texelU, texelV, 1.0F - texelU, 1.0F - texelV},
-                                      white};
-    drawWindowQuads(m_halfRaster, std::span<const graphics::LogicalQuad>(&whole, 1), true);
-    // 4. What each of the original's steps puts back after its quad: Z test and write on, blending by alpha. The 2D
-    // states also turn culling off and clamp the texture, which the original leaves as they were (stand-in: Coney's
-    // shared 2D states; each pass after this sets its own culling and addressing).
-    draw::setRenderState(rw::ZTESTENABLE, 1);
-    draw::setRenderState(rw::ZWRITEENABLE, 1);
-    draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-    draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+    m_frame.addScreenPass(graphics::ScreenPass{viewRect(), graphics::BlurPulse{passes, offsetU, offsetV}});
+    drawDescribed();
 }
 
-void RenderEngine::blendLines() {
-    // The whole picture the 3D view fills: the video output softens everything it sends, so in a wide window the
-    // view's sides too, not only the logical screen's 4:3 place (which would leave a visible edge 12.5 % in).
-    const graphics::ScreenRect viewport = viewRect();
-    if (viewport.width <= 0 || viewport.height <= 0) {
-        return;
-    }
-    // 1. The frame as drawn, copied.
-    if (!copyToRaster(m_lineRaster, viewport.x, viewport.y, viewport.width, viewport.height)) {
-        return;
-    }
-
-    // 2. Laid over itself at half strength, shifted so that each window row shows the frame one original line (448 to
-    // the screen's height) below it: the PS2's second read circuit starts one line down (DISPFB2's DBY 1) and the
-    // two are mixed half and half (PMODE's ALP 0x80). Past the copy's bottom edge it is clamped, as the original's last
-    // line has no line below it. Filtered linearly, so a window that is not a whole
-    // number of lines per original line still blends exactly one original line.
-    const float shift = graphics::originalLineShare(m_viewport, viewport);
-    draw::setRenderState(rw::TEXTUREFILTER, rw::Texture::LINEAR);
-    draw::setRenderState(rw::TEXTUREADDRESS, rw::Texture::CLAMP);
-    const graphics::LogicalQuad quad{static_cast<float>(viewport.x),
-                                     static_cast<float>(viewport.y),
-                                     static_cast<float>(viewport.width),
-                                     static_cast<float>(viewport.height),
-                                     graphics::UvRect{0.0F, shift, 1.0F, 1.0F + shift},
-                                     graphics::Rgba{255, 255, 255, 128}};
-    drawWindowQuads(m_lineRaster, std::span<const graphics::LogicalQuad>(&quad, 1));
+void RenderEngine::addMotionBlur(graphics::ScreenCopyId copy, graphics::Rgba colour) {
+    CONEY_ASSERT(m_inFrame);
+    // The whole picture the 3D view fills, as the original lays its whole last frame over the new one: in a wide
+    // window more than the logical screen's 4:3 place, which would leave a visible edge 12.5 % in from each side.
+    m_frame.addScreenPass(graphics::ScreenPass{viewRect(), graphics::MotionBlurOverlay{copy, colour}});
+    drawDescribed();
 }
 
 void RenderEngine::tapFrame() {
@@ -1027,14 +802,6 @@ void RenderEngine::requestDrawStream(std::uint64_t frameIndex) {
 }
 
 void RenderEngine::prepareDrawStreams() { draw::setTrackRasters(true); }
-
-bool RenderEngine::drawing2d() const { return m_camera != nullptr || draw::recording(); }
-
-float RenderEngine::nearPlane() const {
-    // librw's Camera::create starts a camera's near plane at 0.05.
-    constexpr float kNewCameraNearPlane = 0.05F;
-    return m_camera != nullptr ? m_camera->nearPlane : kNewCameraNearPlane;
-}
 
 void RenderEngine::requestCapture(std::uint64_t frameIndex, std::string path) {
     m_captureFrame = frameIndex;
@@ -1080,6 +847,7 @@ std::expected<CapturedFrame, Error> RenderEngine::captureBackBuffer(const std::s
 void RenderEngine::shutDown() noexcept {
     removeGlCounters(); // a later start loads OpenGL's functions afresh
     destroyCamera();
+    m_gl3.releaseAll(); // the kept copies too: librw's raster count must be 0 at its stop
     stopCharacterSkin();
     if (m_textureLod) {
         m_textureLod = false;

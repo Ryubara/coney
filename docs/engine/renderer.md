@@ -28,8 +28,8 @@ and their shadow source, the performance budget and the order.
 | Window, input, audio | SDL3 (pinned in `cmake/deps.cmake`, zlib licence), linked statically | `src/platform/window.*`, `sdl_input.cpp` |
 | Graphics API | librw's GL3 platform: an OpenGL 3.3 core context that librw's device makes through SDL3. librw is built for exactly one platform; headless runs swap in librw's NULL device at run time. `--renderer gpu` starts the GPU renderer's beginning instead ([The GPU renderer](gpu-renderer.md)): Coney's own window on SDL3's GPU API, frames cleared and presented, librw on its NULL device | `src/platform/render_engine.*`, `gpu_presenter.*` |
 | 3D | librw atomics drawn through librw's default GL3 pipelines and shaders, with Coney's own plugins and render callbacks round them (the world's dual layer and MatFX reader in `world_atomic.cpp`; per-atomic lights in `scene_lighting.cpp`); humans skinned on the GPU by Coney's own librw GL3 pipeline (`character_skin.cpp`: each character's vertices uploaded once, a bone palette set each frame), with CPU skinning kept as a fallback and behind `--cpu-skinning` ([Performance: GPU skinning](../guides/performance.md#gpu-skinning)) | `src/platform/` |
-| 2D | `graphics::RenderDevice` (`src/graphics/render_device.h`), Coney's own interface for quads and triangles in logical pixels; `RenderEngine` implements it with librw's Im2D | `src/graphics/`, `render_engine.cpp` |
-| Screen passes | the motion-blur stand-in (`motion_blur_pass.cpp`), the blur pulse and the optional line blend (`RenderEngine::blurScreen`, `setLineBlend`), all by copying the back buffer into a texture | `src/platform/` |
+| 2D | `graphics::RenderDevice` (`src/graphics/render_device.h`), Coney's own interface for quads and triangles in logical pixels; `RenderEngine` implements it by recording each draw into the [frame description](#frame-description), which `Gl3Renderer` draws with librw's Im2D | `src/graphics/`, `render_engine.cpp`, `gl3_renderer.cpp` |
+| Screen passes | the motion-blur stand-in (`motion_blur_pass.cpp`), the blur pulse and the optional line blend (`RenderEngine::blurScreen`, `setLineBlend`), recorded into the [frame description](#frame-description) and drawn by `Gl3Renderer` by copying the back buffer into a texture | `src/platform/` |
 | Debug overlay | Dear ImGui through its SDL3 and OpenGL 3 backends | `src/platform/imgui_*` |
 | Timing | a fixed 1/30 s step; drawing apart from it and blended between the last two steps | [Update and render](../guides/conventions.md#update-and-render) |
 | Measuring | `--bench` and `coney-tools perf bench`, with zones and OpenGL counters | [Performance](../guides/performance.md) |
@@ -219,6 +219,36 @@ draw without librw's GL3 device as early as possible:
 Enhancements are written once, against the GPU renderer: a new option targets `gpu` only, and the GL3 renderer stays
 the *PS2* picture. The presets, the benchmark, the frame-rate gaps and the lighting frame do not depend on the
 backend, so they land beside the groundwork (items 15 to 19).
+
+### The frame description {#frame-description}
+
+**Built for the 2D side and the screen passes (item 5).** `graphics::FrameDescription`
+([frame_description.h](repo:src/graphics/frame_description.h)) is what a frame draws, with no graphics API in it, and
+its tests build it headless ([frame_description_test.cpp](repo:tests/graphics/frame_description_test.cpp),
+[frame_recording_test.cpp](repo:tests/platform/frame_recording_test.cpp)):
+
+- **The start:** the colour the frame is cleared to, and whether the whole window is cleared to it (Coney's tools) or
+  the window is cleared to black and the logical screen filled with it by the first draw.
+- **The passes, in order.** An *overlay pass* (`Overlay2dPass`) is a list of 2D draws; a *screen pass* is an effect
+  over the whole 3D view drawn so far (its rectangle in window pixels): the blur pulse (passes and offsets), the line
+  blend (the shift of one original line) or the motion blur (its colour and the number of the copy kept from frame to
+  frame). A screen pass ends the overlay pass before it, so the next 2D draw starts a new one.
+- **A 2D draw** is a shape (quads, or a list of triangles), a material and the range of its primitives in the frame's
+  arrays. The material is a texture id (an index into the frame's texture table, 0 for flat colour), the addressing
+  (clamped or wrapped) and, for triangles, the alpha test's reference; the 2D pass's fixed states (no depth, no
+  culling, no fog, blended by alpha: [2D drawing](../research/graphics.md#2d-drawing)) are the renderer's. Quads and
+  corners are kept in window pixels: `RenderEngine` maps the logical pixels onto the logical screen's place or the
+  whole view as it records them.
+
+`RenderEngine` records every `RenderDevice` call and the screen passes into its description (`RenderEngine::frame()`,
+kept until the next frame begins), with either backend, and `Gl3Renderer`
+([gl3_renderer.h](repo:src/platform/gl3_renderer.h)) draws it through the draw layer with the calls the 2D side and the
+screen passes made before, so the draw-stream hashes did not move. It owns the screen passes' copies of the frame,
+including the motion blur's kept frame, which `MotionBlurPass` now only names. Because the world, objects, cars and
+humans still draw through librw between the 2D layers, `Gl3Renderer` draws each part as it is added rather than the
+whole frame at `present()`; once items 7 to 10 move them onto the description too, a frame can be drawn whole, and by
+the SDL3 GPU renderer (item 11). Not in it yet: the texture viewer's `RenderEngine::drawTexture`, which draws a librw
+texture of a texture dictionary and waits for Coney's own texture ids (item 6), and Dear ImGui (item 12).
 
 ### Testing while it grows {#migration-testing}
 
