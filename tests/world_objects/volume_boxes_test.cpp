@@ -32,7 +32,7 @@ Sent step(VolumeBoxes& boxes, const std::vector<BoxSubject>& subjects, std::uint
 
 TEST_CASE("a box holds the points between its corners, turned about its centre by its matrix", "[volume_boxes]") {
     VolumeBoxes boxes;
-    const VolumeBox& box = boxes.add(7, "vLong", 0, {0, 0, 0}, {10, 2, 3}, true);
+    const VolumeBox& box = *boxes.add(7, "vLong", 0, {0, 0, 0}, {10, 2, 3}, true);
     CHECK(box.handle == 7);
     CHECK(VolumeBoxes::inside(box, {9, 1, 1}));
     CHECK_FALSE(VolumeBoxes::inside(box, {5, 4, 1}));
@@ -47,12 +47,14 @@ TEST_CASE("a box holds the points between its corners, turned about its centre b
     CHECK(VolumeBoxes::inside(turned, {5.5F, -3, 1}));
 
     // A negative size still makes a box; an unknown handle is not found.
-    const VolumeBox& back = boxes.add(8, "vBack", 0, {0, 0, 0}, {-2, -2, 2}, true);
+    const VolumeBox& back = *boxes.add(8, "vBack", 0, {0, 0, 0}, {-2, -2, 2}, true);
     CHECK(VolumeBoxes::inside(back, {-1, -1, 1}));
     CHECK(boxes.find(9) == nullptr);
 }
 
 TEST_CASE("a trigger box sends 3 on entry, 5 once a period while inside and 4 on leaving or dying", "[volume_boxes]") {
+    // Expected: trigger-updates.md#stay-timer, confirmed (code): VolumeBox_Update 0x00415378 sends 5 only once the time
+    // is strictly past the stay timer, which it re-arms to now + period on each due update.
     VolumeBoxes boxes;
     boxes.add(40, "vMark", 0, {0, 0, 0}, {2, 2, 3}, true);
     std::vector<BoxSubject> humans{{.handle = 100, .position = {5, 5, 0}, .alive = true, .player = false},
@@ -60,8 +62,9 @@ TEST_CASE("a trigger box sends 3 on entry, 5 once a period while inside and 4 on
 
     CHECK(step(boxes, humans, 0) == Sent{{40, VolumeBoxes::kEntered, 101}});
     CHECK(step(boxes, humans, 500) == Sent{{40, VolumeBoxes::kInside, 101}});
-    CHECK(step(boxes, humans, 900).empty()); // within the period
-    CHECK(step(boxes, humans, 1500) == Sent{{40, VolumeBoxes::kInside, 101}});
+    CHECK(step(boxes, humans, 900).empty());  // within the period
+    CHECK(step(boxes, humans, 1500).empty()); // due only once strictly past the timer
+    CHECK(step(boxes, humans, 1550) == Sent{{40, VolumeBoxes::kInside, 101}});
 
     humans[0].position = {1.5F, 1.5F, 0.5F};
     CHECK(step(boxes, humans, 1600) == Sent{{40, VolumeBoxes::kEntered, 100}});
@@ -78,6 +81,71 @@ TEST_CASE("a trigger box sends 3 on entry, 5 once a period while inside and 4 on
     humans[1].position = {1, 1, 1};
     CHECK(step(boxes, humans, 2000) == Sent{{40, VolumeBoxes::kEntered, 101}});
     CHECK(step(boxes, {}, 2100) == Sent{{40, VolumeBoxes::kLeft, 101}});
+}
+
+TEST_CASE("a box's stay timer re-arms when due with nobody inside, so a newcomer's 5 comes on the box's beat",
+          "[volume_boxes]") {
+    // Expected: trigger-updates.md#stay-timer, confirmed (code): VolumeBox_Update 0x00415378 re-arms +0x1e0 on every
+    // due update, whether or not anyone is inside.
+    VolumeBoxes boxes;
+    boxes.add(40, "vMark", 0, {0, 0, 0}, {2, 2, 3}, true);
+    const std::vector<BoxSubject> inside{{.handle = 101, .position = {1, 1, 1}, .alive = true, .player = false}};
+    CHECK(step(boxes, {}, 500).empty()); // due: the timer goes to 1500
+    CHECK(step(boxes, inside, 600) == Sent{{40, VolumeBoxes::kEntered, 101}});
+    CHECK(step(boxes, inside, 1200).empty());
+    CHECK(step(boxes, inside, 1501) == Sent{{40, VolumeBoxes::kInside, 101}});
+}
+
+TEST_CASE("a box's message-5 period is its handler component's", "[volume_boxes]") {
+    // Expected: trigger-updates.md#stay-timer, confirmed (code): VolumeBox_Update 0x00415378 reads the period through
+    // the handler component's getter (vtable 0x00544b98 slot +0x4c, +0x74), not a fixed 1000 ms.
+    VolumeBoxes boxes;
+    boxes.add(40, "vMark", 0, {0, 0, 0}, {2, 2, 3}, true);
+    boxes.setStayPeriod([](double box) -> std::uint64_t { return box == 40 ? 250 : 1000; });
+    const std::vector<BoxSubject> inside{{.handle = 101, .position = {1, 1, 1}, .alive = true, .player = false}};
+    CHECK(step(boxes, inside, 0) == Sent{{40, VolumeBoxes::kEntered, 101}});
+    CHECK(step(boxes, inside, 100) == Sent{{40, VolumeBoxes::kInside, 101}}); // the timer goes to 350
+    CHECK(step(boxes, inside, 300).empty());
+    CHECK(step(boxes, inside, 351) == Sent{{40, VolumeBoxes::kInside, 101}});
+}
+
+TEST_CASE("a handler that disables its box stops the box's update", "[volume_boxes]") {
+    // Expected: trigger-updates.md#box, confirmed (code): VolumeBox_Update 0x00415378 sends each message at once and
+    // tests the box's enable byte before the next human.
+    VolumeBoxes boxes;
+    boxes.add(40, "vMark", 0, {0, 0, 0}, {2, 2, 3}, true);
+    const std::vector<BoxSubject> inside{{.handle = 101, .position = {1, 1, 1}, .alive = true, .player = false},
+                                         {.handle = 102, .position = {1, 1, 2}, .alive = true, .player = false}};
+    Sent sent;
+    boxes.update(inside, 0, [&](double box, int message, double human) {
+        sent.emplace_back(box, message, human);
+        VolumeBox* disabled = boxes.find(box);
+        disabled->enabled = false;
+        disabled->occupants.clear();
+    });
+    CHECK(sent == Sent{{40, VolumeBoxes::kEntered, 101}});
+}
+
+TEST_CASE("a players' box re-arms its stay timer when due with nobody inside", "[volume_boxes]") {
+    // Expected: trigger-updates.md#player-box, confirmed (code): PlayerBox_Update 0x004134f8 re-arms +0xf8 on every due
+    // update, whether or not a player is inside.
+    VolumeBoxes boxes;
+    boxes.add(2, "vbStartRail", 2, {0, 0, 0}, {2, 2, 3}, true);
+    const std::vector<BoxSubject> player{{.handle = 1, .position = {1, 1, 1}, .alive = true, .player = true}};
+    CHECK(step(boxes, {}, 500).empty()); // due: the timer goes to 1500
+    CHECK(step(boxes, player, 600) == Sent{{2, VolumeBoxes::kEntered, 1}});
+    CHECK(step(boxes, player, 1200).empty());
+    CHECK(step(boxes, player, 1501) == Sent{{2, VolumeBoxes::kInside, 1}});
+}
+
+TEST_CASE("AddVolumeBox's kind 1 and a kind outside 0, 2 and 3 make no box", "[volume_boxes]") {
+    // Expected: trigger-updates.md#add, confirmed (code): VolumeBox_Add 0x004125b8 returns NilHandle for kind 1 and has
+    // no pool for a kind but 0, 2 and 3 (the original then uses a null box; Coney's choice is to make none).
+    VolumeBoxes boxes;
+    CHECK(boxes.add(5, "vNo", 1, {0, 0, 0}, {1, 1, 1}, true) == nullptr);
+    CHECK(boxes.add(6, "vOdd", 4, {0, 0, 0}, {1, 1, 1}, true) == nullptr);
+    CHECK(boxes.all().empty());
+    CHECK(boxes.add(7, "vTurf", 3, {0, 0, 0}, {1, 1, 1}, true) != nullptr);
 }
 
 TEST_CASE("a disabled box or a turf box sends nothing; a players' box only for a player", "[volume_boxes]") {

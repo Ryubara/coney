@@ -49,6 +49,8 @@ std::optional<std::array<float, 3>> locate(double object) {
 } // namespace
 
 TEST_CASE("a sphere sends its object 3 on entry, 5 once a period while inside and 4 on leaving", "[trigger_spheres]") {
+    // Expected: trigger-updates.md#stay-timer, confirmed (code): TriggerSphere_Update 0x004146e0 sends 5 only once the
+    // time is strictly past the stay timer (+0x178), which it re-arms to now + period on each due check.
     TriggerSpheres spheres;
     spheres.setLocate(locate);
     REQUIRE(spheres.configure(7, true, 4.0F, 0, 500));
@@ -59,7 +61,8 @@ TEST_CASE("a sphere sends its object 3 on entry, 5 once a period while inside an
     // Still inside: 5 at the next check, then once the sphere's own period (1000 ms) is due again.
     CHECK(checkAll(spheres, humans, 600) == Sent{{7, VolumeBoxes::kInside, 100}});
     CHECK(checkAll(spheres, humans, 1500).empty());
-    CHECK(checkAll(spheres, humans, 1600) == Sent{{7, VolumeBoxes::kInside, 100}});
+    CHECK(checkAll(spheres, humans, 1600).empty()); // due only once strictly past the timer
+    CHECK(checkAll(spheres, humans, 1700) == Sent{{7, VolumeBoxes::kInside, 100}});
     // Out of the radius: 4; dead inside counts as leaving too.
     humans[1].position = {5, 0, 0};
     CHECK(checkAll(spheres, humans, 2000) == Sent{{7, VolumeBoxes::kLeft, 100}});
@@ -67,6 +70,48 @@ TEST_CASE("a sphere sends its object 3 on entry, 5 once a period while inside an
     CHECK(checkAll(spheres, humans, 2100) == Sent{{7, VolumeBoxes::kEntered, 100}});
     humans[1].alive = false;
     CHECK(checkAll(spheres, humans, 2200) == Sent{{7, VolumeBoxes::kLeft, 100}});
+}
+
+TEST_CASE("a sphere's stay timer re-arms when due with nobody inside, so a newcomer's 5 comes on the shared beat",
+          "[trigger_spheres]") {
+    // Expected: trigger-updates.md#stay-timer, confirmed (code): TriggerSphere_Update 0x004146e0 re-arms +0x178 on
+    // every due check, whether or not anyone is inside.
+    TriggerSpheres spheres;
+    spheres.setLocate(locate);
+    REQUIRE(spheres.configure(7, true, 4.0F, 0, 500));
+    const std::vector<BoxSubject> inside{{.handle = 100, .position = {3, 0, 0}, .alive = true, .player = false}};
+    CHECK(checkAll(spheres, {}, 600).empty()); // due: the timer goes to 1600
+    CHECK(checkAll(spheres, inside, 700) == Sent{{7, VolumeBoxes::kEntered, 100}});
+    CHECK(checkAll(spheres, inside, 1500).empty());
+    CHECK(checkAll(spheres, inside, 1601) == Sent{{7, VolumeBoxes::kInside, 100}});
+}
+
+TEST_CASE("a handler that disarms its sphere stops the sphere's check", "[trigger_spheres]") {
+    // Expected: trigger-updates.md#sphere, confirmed (code): TriggerSphere_Update 0x004146e0 sends each message at once
+    // and stops the check once the sphere is disarmed (+0x180).
+    TriggerSpheres spheres;
+    spheres.setLocate(locate);
+    REQUIRE(spheres.configure(7, true, 4.0F, 0, 500));
+    const std::vector<BoxSubject> inside{{.handle = 100, .position = {1, 0, 0}, .alive = true, .player = false},
+                                         {.handle = 101, .position = {2, 0, 0}, .alive = true, .player = false}};
+    Sent sent;
+    spheres.update(inside, 0, [&](double object, int message, double human) {
+        sent.emplace_back(object, message, human);
+        spheres.arm(object, false);
+    });
+    CHECK(sent == Sent{{7, VolumeBoxes::kEntered, 100}});
+}
+
+TEST_CASE("a sphere's occupant whose handle no longer resolves is kept without message 4", "[trigger_spheres]") {
+    // Expected: trigger-updates.md#sphere, confirmed (code): TriggerSphere_Update 0x004146e0 skips an occupant whose
+    // handle does not resolve (0x00390268), sending nothing and keeping its entry.
+    TriggerSpheres spheres;
+    spheres.setLocate(locate);
+    REQUIRE(spheres.configure(7, true, 4.0F, 0, 500));
+    const std::vector<BoxSubject> inside{{.handle = 100, .position = {1, 0, 0}, .alive = true, .player = false}};
+    CHECK(checkAll(spheres, inside, 0) == Sent{{7, VolumeBoxes::kEntered, 100}});
+    CHECK(checkAll(spheres, {}, 100).empty());
+    CHECK(spheres.find(7)->occupants.size() == 1);
 }
 
 TEST_CASE("each sphere is checked on one frame in five", "[trigger_spheres]") {

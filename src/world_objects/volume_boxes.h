@@ -64,10 +64,14 @@ class VolumeBoxes {
 
     /// Sets the test update() asks of an occupant missing from its subjects.
     void setResolves(Resolves resolves) { m_resolves = std::move(resolves); }
+    /// A box's message-5 period, ms.
+    using Period = std::function<std::uint64_t(double box)>;
+    /// Sets where update() reads each box's message-5 period.
+    void setStayPeriod(Period period) { m_stayPeriod = std::move(period); }
 
     /// `AddVolumeBox(name, kind, corner, size, enable)`: a box with `handle` from `corner` to `corner + size`.
     /// @orig 0x004125b8 VolumeBox_Add (unknown)
-    const VolumeBox& add(double handle, std::string_view name, int kind, const std::array<float, 3>& corner,
+    const VolumeBox* add(double handle, std::string_view name, int kind, const std::array<float, 3>& corner,
                          const std::array<float, 3>& size, bool enabled);
     /// `RotateVolumeBox(box, m00, m01, m10, m11)`: turns the box about the vertical axis; an unknown box is ignored.
     /// @orig 0x00412c40 VolumeBox_SetRotation (unknown)
@@ -115,6 +119,7 @@ class VolumeBoxes {
   private:
     std::vector<VolumeBox> m_boxes;
     Resolves m_resolves;
+    Period m_stayPeriod;
 };
 
 } // namespace coney::world_objects

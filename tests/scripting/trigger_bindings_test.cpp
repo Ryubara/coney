@@ -154,6 +154,21 @@ TEST_CASE("a message reaches its handler with the arguments its number takes", "
     CHECK(h.recordedArgs.size() == calls);
 }
 
+TEST_CASE("AddVolumeBox makes no box and uses no handle for a kind outside 0, 2 and 3", "[trigger_bindings]") {
+    // Expected: trigger-updates.md#add, confirmed (code): VolumeBox_Add 0x004125b8 has no pool for such a kind (the
+    // original then uses a null box; Coney's choice is to make none and return NilHandle).
+    Harness h;
+    CHECK(h.first("AddVolumeBox", {str("vOdd"), Value(4.0), triple(0, 0, 0), triple(1, 1, 1)}).number() == 0.0);
+    CHECK(h.boxes.all().empty());
+    const double first =
+        h.first("AddVolumeBox", {str("vMark01"), Value(0.0), triple(0, 0, 0), triple(1, 1, 1)}).number().value_or(0.0);
+    CHECK(h.first("AddVolumeBox", {str("vOdd"), Value(5.0), triple(0, 0, 0), triple(1, 1, 1)}).number() == 0.0);
+    const double second =
+        h.first("AddVolumeBox", {str("vMark02"), Value(0.0), triple(0, 0, 0), triple(1, 1, 1)}).number().value_or(0.0);
+    CHECK(second == first + 1.0);
+    CHECK(h.boxes.all().size() == 2);
+}
+
 TEST_CASE("AddVolumeBox makes a box with a handle from the world objects' counter; kind 1 is refused",
           "[trigger_bindings]") {
     Harness h;

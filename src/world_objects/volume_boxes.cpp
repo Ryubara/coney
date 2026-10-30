@@ -17,7 +17,7 @@ struct Message {
 
 } // namespace
 
-const VolumeBox& VolumeBoxes::add(double handle, std::string_view name, int kind, const std::array<float, 3>& corner,
+const VolumeBox* VolumeBoxes::add(double handle, std::string_view name, int kind, const std::array<float, 3>& corner,
                                   const std::array<float, 3>& size, bool enabled) {
     VolumeBox box;
     box.handle = handle;
@@ -30,7 +30,7 @@ const VolumeBox& VolumeBoxes::add(double handle, std::string_view name, int kind
     }
     box.enabled = enabled;
     m_boxes.push_back(std::move(box));
-    return m_boxes.back();
+    return &m_boxes.back();
 }
 
 void VolumeBoxes::rotate(double handle, const std::array<float, 4>& turn) {
