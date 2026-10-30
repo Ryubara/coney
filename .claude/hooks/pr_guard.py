@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Claude Code PreToolUse hook (the PR guard, once `release_guard.py`): a pull request opens or changes only through a
-title and description that pass CI's checks and, once `pull_requests.open_only` is on, only through `coney-tools pr
-open`. What it refuses, what it lets through and what it does not cover: docs/guides/enforcement.md#pr-guard.
+title and description that pass CI's checks and, with `pull_requests.open_only` on (as committed since 2026-10-27),
+only through `coney-tools pr open`. What it refuses, what it lets through and what it does not cover:
+docs/guides/enforcement.md#pr-guard.
 
 The reading of a shell command is `pr_guard_shell.py` (and, for `git push` and `gh api`, `pr_guard_routes.py`); the
 switch and the repository a command belongs to are `pr_guard_repo.py`; this file decides. The switch is
@@ -30,7 +31,7 @@ if str(HOOKS) not in sys.path:
 import pr_guard_repo as guard_repo  # noqa: E402
 import pr_guard_shell as guard_shell  # noqa: E402, F401
 from pr_guard_repo import ROOT, is_other, push_target, read_open_only, repo_name  # noqa: E402, F401
-from pr_guard_routes import api_reasons, git_pushes  # noqa: E402
+from pr_guard_routes import ApiRoute, api_routes, git_pushes  # noqa: E402
 from pr_guard_shell import PrCall, is_absolute, native, parse, pr_calls  # noqa: E402, F401
 
 #: How long one check may take (a first `uv run` may sync the environment).
@@ -41,14 +42,18 @@ HOW = (
     "`legacy check-pr-review`), the checks CI's required `title` and `body` jobs run "
     "(docs/guides/how-we-work.md#release-queue)."
 )
-#: What a refusal says while the switch is on; the reasons follow. It points at the `pr open` section of the release
-#: guide.
-OPEN_ONLY_HEAD = "Blocked: pull requests are opened only by coney-tools pr open <task> (docs/guides/pr.md#open)"
+#: What a refusal says while the switch is on; the reasons follow. It points at the table of the release guide that
+#: gives the command for each need (a new pull request, an update, a branch to bring up to date, a pull request that
+#: has no unit), not only at the `pr open` reference.
+OPEN_ONLY_HEAD = (
+    "Blocked: pull requests are opened only by coney-tools pr open <task> (docs/guides/pr.md#after-the-switch)"
+)
 
 
 def open_only_refusal(call: PrCall) -> str | None:
-    """Why the switch refuses a `gh pr` command, or None: it opens a pull request, rewrites its text or turns on
-    auto-merge, all of which `coney-tools pr open` does."""
+    """Why the switch refuses a `gh pr` command, or None: it opens a pull request, rewrites its text, turns on
+    auto-merge or moves its branch, all of which `coney-tools pr open` does (it rebases where `update-branch` merges,
+    and a branch GitHub moved would fail the lease of its next push)."""
     if call.dry_run or call.help:
         return None
     if call.verb == "create":
@@ -57,6 +62,8 @@ def open_only_refusal(call: PrCall) -> str | None:
         return f"`gh pr edit {call.text_options[0]}` rewrites a pull request's text by hand."
     if call.verb == "merge" and call.auto:
         return "`gh pr merge --auto` turns on auto-merge by hand."
+    if call.verb == "update-branch":
+        return "`gh pr update-branch` moves a pull request's branch by hand; pr open rebases it."
     return None
 
 
@@ -76,6 +83,15 @@ def _pr_target(call: PrCall, open_only: bool, origin: guard_repo.Origin) -> str 
     if not open_only or call.cwd is None:
         return None
     return origin(call.cwd)
+
+
+def _api_target(route: ApiRoute, cwd: str, origin: guard_repo.Origin) -> str | None:
+    """The repository a `gh api` call is for: the `owner/name` of its endpoint, or, for the placeholders
+    `{owner}/{repo}`, the remote of the folder it runs in. None (counted as this repository) for a GraphQL call, which
+    names none, and when the folder cannot be told."""
+    if route.placeholder:
+        return origin(cwd) if cwd else None
+    return route.repository
 
 
 def refusal(call: PrCall) -> str | None:
@@ -166,12 +182,16 @@ def check(
     origin = repository or guard_repo.this_repository
     calls = pr_calls(command, powershell, cwd)
     pushes = git_pushes(command, powershell, cwd) if open_only else []
-    reasons: list[str] = api_reasons(command, powershell) if open_only else []
-    if not calls and not reasons and not pushes:
+    routes = api_routes(command, powershell) if open_only else []
+    if not calls and not routes and not pushes:
         return None
+    reasons: list[str] = []
     if not open_only and any(call.unreadable for call in calls):
         return None  # with the switch off the hook fails open on what it cannot read
     mine = origin(str(ROOT))
+    for route in routes:
+        if not is_other(_api_target(route, cwd, origin), mine):
+            reasons.append(route.reason)
     for call in calls:
         if is_other(_pr_target(call, open_only, origin), mine):
             continue
@@ -180,8 +200,8 @@ def check(
             if why is not None:
                 reasons.append(why)
             continue
-        if call.verb == "merge":
-            continue  # only the switch cares about merging
+        if call.verb in ("merge", "update-branch"):
+            continue  # only the switch cares about merging and moving the branch
         shape = refusal(call)
         if shape is not None:
             reasons.append(shape)

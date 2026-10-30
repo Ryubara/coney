@@ -226,6 +226,8 @@ def _dry_run(run: Run, upstream: str, first: Proof, existing: PullRequest | None
         run.say(f"dry run: would open the pull request with {len(second.pictures)} picture(s)")
     else:
         verb = "reopen and update" if existing.state == "CLOSED" else "update"
+        if run.request.adopt:
+            verb = f"take over #{existing.number} at {run.request.adopt[:12]} and {verb}"
         run.say(f"dry run: would {verb} #{existing.number} with {len(second.pictures)} picture(s)")
     if pr_open_publish.wants_auto_merge(run, second):
         run.say("dry run: would turn on auto-merge")
@@ -294,6 +296,8 @@ def _release_steps(run: Run, upstream: str, first: Proof, existing: PullRequest 
     tip = proof.subject.tip
     folder = pr_open_publish.task_folder(run)
     published = pr_publish.read_published(folder)
+    if run.request.adopt:
+        published.tip = run.request.adopt  # the head of a pull request opened by hand, checked by `check_adopt`
     pushed = pr_publish.push(env.git, run.root, run.request.remote, run.record.branch, tip, published.tip)
     if not pushed.ok:
         raise Stop(EXIT_FAILED, f"push: {pushed.message}")
@@ -360,6 +364,7 @@ def _run(run: Run) -> None:
         except GhError as error:
             raise Stop(EXIT_UNABLE, f"gh: {error}") from error
         pr_open_publish.check_existing(run, existing)
+        pr_open_publish.check_adopt(run, existing)
         first = _prove(run, run.root)
         if first.refusals:
             raise _refuse(run, first, first.subject.tip)
@@ -434,6 +439,17 @@ def add_parser(commands: Any) -> None:
         "--dry-run", action="store_true", help="try everything but the push and GitHub in a throwaway worktree"
     )
     sub.add_argument("--json", action="store_true", help="print the result as one JSON object")
+    sub.add_argument(
+        "--adopt",
+        metavar="HEAD",
+        help="take over a pull request no pr open pushed (opened by hand): its branch's full head commit, the lease",
+    )
+    sub.add_argument(
+        "--adopt-rewrite",
+        action="store_true",
+        help="with --adopt: go on although the pull request's branch has commits the unit's branch lacks "
+        "(the push drops them)",
+    )
 
 
 def run(args: argparse.Namespace) -> int:
@@ -448,6 +464,8 @@ def run(args: argparse.Namespace) -> int:
         no_auto_merge=args.no_auto_merge,
         dry_run=args.dry_run,
         json=args.json,
+        adopt=args.adopt,
+        adopt_rewrite=args.adopt_rewrite,
     )
     try:
         env = default_env()

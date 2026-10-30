@@ -232,7 +232,7 @@ at most `max_count`. Its output also holds the hashes a release records: the tit
 ## pr open {#open}
 
 ```sh
-uv run --project python coney-tools pr open [TASK] [--dry-run] [--reopen] [--no-auto-merge] [--json]
+uv run --project python coney-tools pr open [TASK] [--dry-run] [--reopen] [--no-auto-merge] [--adopt HEAD] [--adopt-rewrite] [--json]
 ```
 
 The coordinator's release command, and the only way the tools turn a unit into a pull request: it proves the unit,
@@ -248,7 +248,8 @@ commit: what is pushed is exactly what Check and Review saw. Its options and exi
    The default branch is the one `origin`'s `HEAD` names (as for `pr verify`), fetched, and the sections that steer
    a release ([Where the rules come from](#rules), and so the claims client's bot login and markers) are read from
    `origin/<default branch>` whatever `--remote` is, never from the branch under release. A unit
-   that `task start` cut from any other base (a stacked task) is refused: the rules never come from an unmerged branch.
+   that `task start` cut from any other base (a stacked task) is refused: the rules never come from an unmerged branch,
+   and no pull request is stacked ([No stacked work](how-we-work.md#working-in-parallel)).
    The branch's own `.github/conventions.yml` is read leniently by `pr open`, `pr verify` and `pr text` (and by `task
    review`): a key the tool does not know is skipped with a `note: ... ignoring <key>` line (a branch that adds a rule is
    read by the tool `main` already has), and a required key the branch lacks (it was cut before `main` added it) takes
@@ -260,7 +261,10 @@ commit: what is pushed is exactly what Check and Review saw. Its options and exi
    not released); otherwise the message names the claimant.
 3. **The pull request (exit 1).** The branch's pull request is looked up (`gh pr list --head`). Merged: refused.
    Closed and not merged: refused unless `--reopen`. A fix task (`parent:` in its `TASK.md`) is released onto its
-   parent's pull request, log and text, and is refused when the parent has no open pull request.
+   parent's pull request, log and text, and is refused when the parent has no open pull request. With
+   [`--adopt <head>`](#adopt) the pull request must exist, no earlier run may have pushed it, and its branch must be at
+   that head on the remote and the unit's branch must hold the changes of its commits (exit 2 otherwise, with nothing
+   touched; [Taking over](#adopt)).
 4. **The proof (exit 1).** [`pr verify`](#verify) and [`pr text`](#text) run on the unit as it is (`pr_ready.prove`,
    which Conclave's [`unit-ready` wake](conclave.md#ready) asks too), so a doomed run costs seconds and leaves the
    branch alone. Every problem is listed under the stage to redo; the unit goes back to its
@@ -277,7 +281,8 @@ commit: what is pushed is exactly what Check and Review saw. Its options and exi
    hashes, the engineer. When the newest stamp of the log is already a `pr-opened` that covers the same things, it is
    reused, so a rerun appends nothing.
 7. **Push.** `git push --force-with-lease=<branch>:<expected> <remote> <branch>`, where `<expected>` is the remote tip
-   the previous run recorded in `pr-published.json` (empty on the first push, which then fails if the branch exists). A
+   the previous run recorded in `pr-published.json` (empty on the first push, which then fails if the branch exists;
+   with `--adopt`, the head given). A
    bare `--force-with-lease` and `--force` are never used. A branch someone else moved is refused (exit 4). A remote
    already at the tip is not pushed to, and a branch that is gone from the remote (GitHub deleted it after the pull
    request was closed) is expected absent, so `--reopen` pushes it again.
@@ -323,7 +328,8 @@ What it refuses, besides the proof's refusals above (each message starts with "p
 | 2 | `<task>: no unit worktree (run task start)`; `a rebase or merge is in progress`; `the worktree is on 'x', the unit's branch is 'y'` | `task start`, or the engineer |
 | 2 | `the worktree has uncommitted changes: <first 5 paths>; the engineer commits or removes them` | the engineer |
 | 2 | `another pr open of <task> is running`; `cannot fetch <remote> <default>: ...` | wait; none |
-| 2 | `<task>: the unit was started from <ref>, not from <remote>/<default>; ...` (a stacked unit) | the engineer rebases the task onto the default branch, or the unit is started again |
+| 2 | `<task>: the unit was started from <ref>, not from <remote>/<default>; ...` (a stacked unit) | the work starts again as a unit from the default branch once the branch it builds on has merged |
+| 2 | `--adopt: the pull request's branch has N commit(s) whose change the unit's branch lacks (...)` | the engineer cherry-picks them into the unit, or the coordinator adds `--adopt-rewrite` when dropping them is intended |
 | 2 | `origin/HEAD is not set here, so the default branch is unknown; run git remote set-head origin --auto` | the coordinator runs the command named |
 | 1 | `refused: the claim is not yours to release in <task>`, with the claim's state under it | the coordinator re-claims |
 | 1 | `#N already merged this branch; new work is a new task`; `#N was closed; --reopen to continue it`; `<fix> has no open pull request to fix (...)` | a new task; `--reopen`; none |
@@ -331,6 +337,52 @@ What it refuses, besides the proof's refusals above (each message starts with "p
 | 3 | `rebase onto <remote>/<default> conflicts at <12 digits> in <paths>; the branch is as it was` | the engineer resolves; the stale stamps are redone |
 | 4 | `auto-merge on #N stays on and this release must not be merged by it; nothing was pushed` | turn it off on GitHub, rerun |
 | 4 | `push: ...` (the lease was refused: fetch the branch and have the engineer rebase onto it); `gh: ...; run pr open again`; `read-back: <url> is wrong: ...`; `git rebase <remote>/<default> stopped with no conflict: <git's message>; aborted, the branch is as it was`; a git error from the rebase on | rerun (after fixing what git names) |
+
+### Taking over a pull request opened by hand {#adopt}
+
+A pull request opened before `pr open` existed, or by hand on a unit's branch, has no `pr-published.json`, so the
+first push of `pr open` expects the branch to be absent and is refused (`no earlier pr open pushed it`). Read the head
+the branch has on GitHub and name it once:
+
+```sh
+gh pr view <N> --json headRefOid --jq .headRefOid
+uv run --project python coney-tools pr open <task> --adopt <that 40-digit commit>
+```
+
+The head becomes the lease of that one push, so a branch someone moves in between is still refused. Before anything is
+touched the run checks that the branch has a pull request, that no earlier `pr open` pushed it and that the remote
+branch is at that head (a short id, a ref name or another commit is exit 2). It also checks that the unit's branch holds
+everything the head holds: the head is fetched (this moves no local branch) and compared with `git cherry`, by the change
+each commit makes, not by ancestry, because a branch rebased or amended past its remote head still holds its changes. A
+commit of the head whose change the unit's branch lacks (pushed from elsewhere, or made on GitHub) is exit 2, naming it,
+because the push would drop it and the lease would not object: the engineer brings it into the unit first (`git
+cherry-pick`), and `--adopt-rewrite` (only with `--adopt`; alone it is exit 2) goes on only when dropping it is
+intended. The title, description, pictures and auto-merge are then `pr open`'s own, and `pr-published.json` records
+the pull request, so later runs need no `--adopt`.
+It needs a unit like any release: a branch with no `unit.json` and no `assigned` and `claimed` stamps cannot be adopted
+until `task start --adopt` (or `--adopt-branch`) has made the unit ([Adopting a branch](issues.md#adopting)).
+
+## After the switch {#after-the-switch}
+
+Since 2026-10-27 `pull_requests.open_only` is on and the [PR guard](enforcement.md#pr-guard) refuses the hand-typed
+routes in every session. The switch takes effect for a session when the checkout it runs from (the main checkout, for
+the coordinator) has the commit that turned it on. What each release need takes now:
+
+| Need | Command | Refused by hand |
+| --- | --- | --- |
+| Open a pull request for a unit (task record, `unit.json`, stamps) | `pr open <task>` | `gh pr create`, `git push` |
+| Update a pull request `pr open` opened: new commits, a new text or new pictures | `pr open <task>` again; a fix round on it: `pr open <issue>-fix` | `git push --force-with-lease`, `gh pr edit` with `--title`, `--body-file` or `--attach` |
+| Update a pull request opened by hand on a unit's branch | `pr open <task> --adopt <head>`, once ([above](#adopt)) | the same |
+| Pictures | `./shots/` references in `PR.md`; `pr open` attaches the new ones and reads the addresses back | `gh pr create` or `gh pr edit` with `--attach` |
+| Bring a branch up to date with `main` | `pr open` rebases it onto `origin/main` | `gh pr update-branch`, `gh api` calls that make, move or delete a ref or commit to the branch, which would move it and make the next lease fail |
+| A branch holding merge commits | The engineer merges `origin/main` into the branch as its last commit before Check and Review; a branch that already holds `origin/main` is pushed as it is, merges and all. If `main` moved since, `pr open` rebases linearly (`--no-rebase-merges`); a conflict is exit 3 and the engineer merges `main` again (the stamps bind to the change, so a clean merge leaves them valid) | |
+| Auto-merge | `pr open` turns it on, or leaves it off for `merge.manual_paths` and `--no-auto-merge` | `gh pr merge --auto` |
+| Merge a pull request whose checks passed, where the maintainer allows the coordinator to | `gh pr merge <N> --squash` (no `--auto`) | |
+| Clips | `clips publish --pr <N>` | |
+| Labels, comments, reviewers, holds, reruns | `gh pr edit <N> --add-label ...`, `gh pr comment`, `pr hold`, `gh run rerun`, `pr list-stuck --rerun --apply` | |
+| A pull request or branch with no unit (released before the task workflow: no `unit.json`, a stamp log that does not start with `assigned` and `claimed`) | `task create` (the coordinator), then `task start <task> --adopt` or `--adopt-branch <branch>` (the engineer): the unit is made on that branch, the old log moved aside, the stages redone; then `pr open <task> --adopt <head>` ([Adopting a branch](issues.md#adopting)) | everything above |
+| A pull request stacked on another one | None: `pr open` releases a unit based on the default branch only. Start the work again from `origin/main` once the base has merged, or, for a branch whose base already merged, adopt it as above and rebase it with `git rebase --onto origin/main <old base> <branch>` in the unit's worktree | `git push`, `gh pr edit` of the text |
+| A pull request from a fork | Its author pushes and edits it from their own terminal or fork | |
 
 ## pr hold {#hold}
 
@@ -372,10 +424,10 @@ range, `--list` with another option).
 ## What this does not do {#limits}
 
 These commands guard against mistakes and against agents, not against the person at the machine. `pr open` is the only
-release path the tools offer, but until the PR guard's switch (`pull_requests.open_only` in
-`.github/conventions.yml`, which refuses the hand-typed ways of opening, rewriting or auto-merging a pull request and of
-pushing this repository, [The PR guard](enforcement.md#pr-guard); off until one real pull request has gone through
-`pr open`) is on, nothing stops a coordinator from skipping it. They also do
+release path the tools offer, and the PR guard's switch (`pull_requests.open_only` in `.github/conventions.yml`, on)
+refuses the hand-typed ways it recognises of opening, rewriting, auto-merging or moving a pull request and of pushing
+this repository ([The PR guard](enforcement.md#pr-guard)); it is a spelling check, so a coordinator determined to skip
+`pr open` still can (its "Not covered" list). They also do
 not stop a person who can write the files: the stamp log is written only by the stage commands and the hooks keep
 agents from writing it, but a person who can write the files can rebuild a chain. An edit made on the GitHub website
 is not checked beyond the `title`, `docs` and `body` jobs. The description CI checks is the one that `pr text`

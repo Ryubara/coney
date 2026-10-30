@@ -399,3 +399,25 @@ def test_deleting_keys_from_the_persons_ssh_agent_is_refused_and_listing_them_is
 def test_signing_is_not_special_any_more(agent_type: str) -> None:
     # Stamps are not signed (docs/guides/stamps.md), so no command that signs is refused for them.
     assert protect.refusal(bash("ssh-keygen -Y sign -f k -n some-namespace f", agent_type)) is None
+
+
+@pytest.mark.parametrize("agent_type", EVERYONE)
+def test_no_one_changes_an_old_stamp_log_that_was_moved_aside(agent_type: str, tmp_path: Path) -> None:
+    # `task start --adopt-branch` keeps the old log as `stamps.legacy-<time>`; it is protected like the live one.
+    path = tmp_path / "scratch" / "task-1" / "stamps.legacy-20261027T203000Z" / "0001.jsonl"
+    for tool, field in (("Write", "file_path"), ("Edit", "file_path"), ("NotebookEdit", "notebook_path")):
+        reason = protect.refusal(call(tool, {field: str(path)}, agent_type))
+        assert reason is not None and "stage commands" in reason, tool
+    for command in (
+        "rm -r scratch/t/stamps.legacy-20261027T203000Z/0001.jsonl",
+        "mv scratch/t/stamps.legacy-20261027T203000Z/0001.jsonl /tmp/x",
+        "echo '{}' >> scratch/t/stamps.legacy-20261027T203000Z/0001.jsonl",
+        "Set-Content scratch\\t\\stamps.legacy-20261027T203000Z\\0001.jsonl 'x'",
+    ):
+        assert protect.refusal(bash(command, agent_type)), command
+
+
+def test_reading_an_old_stamp_log_is_allowed(tmp_path: Path) -> None:
+    log = str(tmp_path / "scratch" / "t" / "stamps.legacy-20261027T203000Z" / "0001.jsonl")
+    assert protect.refusal(call("Read", {"file_path": log}, "engineer")) is None
+    assert protect.refusal(bash("cat scratch/t/stamps.legacy-20261027T203000Z/0001.jsonl | head")) is None

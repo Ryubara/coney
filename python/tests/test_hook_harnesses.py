@@ -28,6 +28,9 @@ ROOT = str(REPO)
 BUILD = "cmake --build build/dev"
 OPEN_PR = "gh pr create --fill"
 PUSH = "git push origin HEAD"
+#: A GitHub write for another repository: a contributor may not make it, the coordinator's role may, and the PR guard
+#: (`pull_requests.open_only`) leaves it alone, since it holds this repository's pull requests only.
+ELSEWHERE = "gh api -X DELETE repos/other/thing/git/refs/heads/x"
 ORDINARY = ("git status", "git log --oneline -3", "ls docs")
 
 
@@ -159,12 +162,23 @@ def test_ordinary_commands_pass_with_the_harness_no_objection(name: str, command
 
 
 @pytest.mark.parametrize("name", list(SHAPES))
-def test_the_coordinator_role_from_the_environment_may_push(name: str, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_coordinator_role_from_the_environment_may_write_to_github(
+    name: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # The role comes from the environment the person started the tool with; no command of the agent reaches it.
     monkeypatch.setenv(harness.ROLE_VARIABLE, "coordinator")
     make, _, allowed = SHAPES[name]
-    assert run(name, make(PUSH)) == (0, allowed, "")
+    assert run(name, make(ELSEWHERE)) == (0, allowed, "")
     refused(name, make(BUILD))  # the guards still run for every role
+    refused(
+        name, make(PUSH)
+    )  # and so does the PR guard: only `pr open` pushes this repository, even for the coordinator
+
+
+@pytest.mark.parametrize("name", list(SHAPES))
+def test_a_github_write_from_a_contributor_is_refused_in_the_harness_format(name: str) -> None:
+    make, _, _ = SHAPES[name]
+    refused(name, make(ELSEWHERE))
 
 
 def test_an_unknown_role_from_the_environment_may_only_read(monkeypatch: pytest.MonkeyPatch) -> None:

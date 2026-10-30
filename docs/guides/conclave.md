@@ -163,12 +163,13 @@ hold is only a file, so a role that writes it by hand is not stopped by that rul
 convention, [Enforcement](enforcement.md)). This replaces Tether's `pr_owner` tool and owner record, and the
 `.coney-busy` marker that Tether's `prs` poller took as an owner: only a hold names an owner now.
 
-**Holding a unit.** A unit that is ready but must wait on purpose (a stale unit waiting for capacity, a stacked branch
-waiting for its base) is held by a file: `HOLD.md` (`conclave.watch.unit_hold_file`) in its scratch folder, with a line
-that says why. While the file is there the unit raises no `unit-ready` event, and when the coordinator deletes it the
-unit is ready again and is told once more. Unlike a hold on a pull request it has no time and no command: it is a
-decision of the coordinator's, to lift by hand, like an `ANSWER.md`, and the engineer sees why in its own folder. It
-holds back only the `unit-ready` event of that folder; a question the unit asks is still told.
+**Holding a unit.** A unit that is ready but must wait on purpose (a stale unit waiting for capacity, a unit whose
+work builds on a pull request that has not merged yet) is held by a file: `HOLD.md` (`conclave.watch.unit_hold_file`)
+in its scratch folder, with a line that says why. While the file is there the unit raises no `unit-ready` event, and
+when the coordinator deletes it the unit is ready again and is told once more. Unlike a hold on a pull request it has
+no time and no command: it is a decision of the coordinator's, to lift by hand, like an `ANSWER.md`, and the engineer
+sees why in its own folder. It holds back only the `unit-ready` event of that folder; a question the unit asks is still
+told.
 
 ### Conflicts {#conflicts}
 

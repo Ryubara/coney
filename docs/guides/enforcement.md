@@ -39,7 +39,7 @@ settings are `.claude/hooks/hooks.toml`:
 | Setting | Committed value | What it does | To change it |
 | --- | --- | --- | --- |
 | `require_role` | `true` | A session with no role (not started through [`coney-agent`](agents.md#session-launcher)) may only read | Leave it on: off, a session with no role gets no role rules |
-| `pull_requests.open_only` (in `.github/conventions.yml`, not here) | `false` | Only `coney-tools pr open` opens a pull request ([The PR guard](#pr-guard) lists what is refused) | One line to `true`, merged by a maintainer, after one pull request went through `pr open` |
+| `pull_requests.open_only` (in `.github/conventions.yml`, not here) | `true` (since 2026-10-27) | Only `coney-tools pr open` opens, updates, auto-merges or pushes a pull request ([The PR guard](#pr-guard) lists what is refused) | One line, merged by a maintainer: a maintainer decision |
 | `[identity] enabled`, `ttl_seconds` | `true`, `600` | Write the caller's identity file (named by a hash of the token) and put its token in front of `coney-tools` and `git commit` commands; how long the file lives | |
 | `[identity] powershell_modes` | `["bypassPermissions"]` | The permission modes in which a PowerShell command gets a token too | The tool refuses the assignment in the others |
 | (built into `protect.py`) | not a setting | What no session may touch: `~/.coney`, private keys, stamp logs and build records, other processes' command lines. A settings file that cannot be read does not take it away | Edit `protect.py` |
@@ -69,7 +69,8 @@ as a courtesy.
 `git push` and `gh api` calls, and `pr_guard_repo.py`, which reads the switch and tells repositories apart) holds every
 pull request to the rules below. It is the one place that lists what is refused; the other guides link here.
 
-**Switch off (today)**, the hook validates what a person or agent types:
+**Switch off** (as it was until 2026-10-27, and again if a maintainer turns it off), the hook validates what a person
+or agent types:
 
 - `gh pr create` (and its alias `gh pr new`) needs `--title` and `--body-file <file>`, never `--body`, `--fill`, `--web`
   or a body on stdin, and both must pass `pr check-title` and `pr check-body --title` (with `--local-images` when the
@@ -81,21 +82,32 @@ pull request to the rules below. It is the one place that lists what is refused;
   split its arguments: in practice bash's `$'...'` quoting or a quote with no end. A quoted argument over several
   lines is read, so a multi-line `--body` or `--body "$(cat <<'EOF' ...)"` is refused like any `--body`.
 
-**Switch on** (`pull_requests.open_only: true` in `.github/conventions.yml`; a maintainer's pull request turns it on after
-one pull request went through `coney-tools pr open`), in every session, the coordinator's included:
+**Switch on** (today: `pull_requests.open_only: true` in `.github/conventions.yml`, turned on by the maintainer on
+2026-10-27), in every session, the coordinator's included:
 
 - Refused: `gh pr create` and `gh pr new`; `gh pr edit` with `--title`, `--body`, `--body-file` or `--attach` (also as
-  `-t`, `-b`, `-F`, attached values and `=` forms); `gh pr merge --auto` (also `--auto=true`); `git push`; and `gh api`
-  calls that open a pull request (a POST to `repos/OWNER/REPO/pulls`), rewrite one (a PATCH of `pulls/N`), run a GraphQL
-  mutation `createPullRequest`, `updatePullRequest` or `enablePullRequestAutoMerge`, or read a GraphQL query from a
-  file, a variable or `--input`, which the hook cannot read.
+  `-t`, `-b`, `-F`, attached values and `=` forms); `gh pr merge --auto` (also `--auto=true`); `gh pr update-branch`,
+  which moves the branch on GitHub so the lease of the next `pr open` push fails (`pr open` rebases instead); `git
+  push`; and `gh api` calls that open a pull request (a POST to `repos/OWNER/REPO/pulls`), rewrite one (a PATCH of
+  `pulls/N`), move its branch (a PUT of `pulls/N/update-branch`; a POST, PATCH or DELETE of `git/refs` or
+  `git/refs/REF`; a POST of `merges`; a PUT or DELETE of `contents/PATH`, which commits to a branch), run a GraphQL
+  mutation `createPullRequest`, `updatePullRequest`, `enablePullRequestAutoMerge` or one that moves a branch
+  (`updatePullRequestBranch`, `createCommitOnBranch`, `createRef`, `updateRef`, `deleteRef`, `mergeBranch`), or read a
+  GraphQL query from a file, a variable or `--input`, which the hook cannot read. A mutation name counts only as a call
+  of the mutation (a name in a string argument such as an `addComment` body, or in a comment, is text). Reading is not
+  refused: a GET of `git/refs` or `contents`, and a POST that only makes objects (`git/blobs`, `git/trees`,
+  `git/commits`), pass.
 - Allowed: reading (`gh pr view`, `list`, `checks`, `diff`), comments, labels and reviewers, `gh pr edit` of those,
-  `gh pr merge` without `--auto`, `gh run rerun`, `coney-tools pr open` and `pr verify`, `--dry-run`, `-n` and `--help`.
+  `gh pr merge` without `--auto`, `gh run rerun`, `coney-tools pr open` (with `--adopt` too) and `pr verify`,
+  `--dry-run`, `-n` and `--help`. Which command does each release need after the switch:
+  [After the switch](pr.md#after-the-switch).
   These are read by their value as gh and git read them: `--dry-run=false` and `--help=false` are no dry run or help,
   the last of `-n`, `--dry-run` and `--no-dry-run` wins, `-on` is the push option `n`, and a unique prefix (`--dry`)
   counts as the option.
 - A command for another repository passes: `-R` or `--repo` that names it, a `gh pr` command run in a folder whose
-  remote is another repository, a `git push` whose remote (a name, an address) is another one; a remote on the command
+  remote is another repository, a `gh api` call whose endpoint names another `repos/OWNER/REPO` (`{owner}/{repo}` is
+  the folder's own remote; a GraphQL call names none and counts as this repository), a `git push` whose remote (a
+  name, an address) is another one; a remote on the command
   line beats `--repo`, as in git. What the hook cannot show to be another repository counts as this one, so the switch
   holds, and what it cannot tell is refused: a folder it cannot follow (`cd "$DIR"`, `git -C "$DIR"`,
   `Set-Location $env:X`, `popd` past the first folder, `cd -`, a PowerShell `Set-Location` in parentheses), `--git-dir`,
@@ -104,25 +116,30 @@ one pull request went through `coney-tools pr open`), in every session, the coor
   subshell (`( ... )`, `$( ... )`, `bash -c "..."`) moves only the commands inside it, and `popd` goes back.
 - `pr open` itself runs `gh` and `git` as subprocesses, which are no tool call, so the hook never sees them.
 
-The message names `coney-tools pr open <task>` and the [pr open section](pr.md#open) of the release guide. The
+The message names `coney-tools pr open <task>` and the table of commands for each release need, [After the
+switch](pr.md#after-the-switch), whichever route it refused. The
 hook reads the switch itself from the conventions (the hooks run without packages), a file it cannot read leaves it off,
 and `test_pr_guard.py` holds that reader to the conventions loader. A command counts only where a program starts, also
 inside `bash -c "..."` and a command substitution in double quotes or backticks; text that merely mentions a command
 passes.
 
-**Not covered** (spelling checks, not a security boundary): a program named by a quoted word (`"git" push`,
-`& 'gh' pr create`), by an alias or function, through `eval`, `iex`, `cmd /c`, `Start-Process`, `xargs` or a script
-file; `env -u NAME git push` (the option's value is not taken); `git send-pack`; `GH_REPO` in the environment; a `gh`
-alias of the user; `gh api` that PATCHes an issue number to rewrite a pull request's text, or builds its endpoint or
-mutation from a variable or splits a mutation's name with quotes (`createPull''Request`); `gh pr create --dry-run`,
-which the hook lets through although gh's help says it may still push git changes; a `git push` with no remote, which
-the hook judges by `origin` although git pushes to `branch.<name>.pushRemote`, `remote.pushDefault` or the branch's
-remote first; a `)` that is no shell syntax (in a comment, an escaped `\)`, a `case` pattern) between a `cd` and the
-command, which the hook reads as the end of the `cd`'s subshell; a quoted argument made only of `;`, `&`, `|`, `(` or
-`)` (`--body "("`), which the hook reads as shell punctuation; git configuration the command does not show (the
-environment a shell profile sets, `include.path` in the checkout's own config); a git alias (`git -c alias.p=push p`);
-a renamed owner or repository, which GitHub redirects but the hook calls another repository; a pull request opened or
-edited on the GitHub website; and a person at their own terminal, which runs no hook.
+**Not covered** (spelling checks, not a security boundary): another HTTP client given gh's token (`curl` or
+`Invoke-RestMethod` with `gh auth token`, a Python or Node script) calling the same REST or GraphQL endpoints; code run
+inline by an interpreter (`python -c`, `node -e`, `pwsh -Command` with a script block) or from a script file; a program
+named by a quoted word (`"git" push`, `& 'gh' pr create`), by an alias or function, through `eval`, `iex`, `cmd /c` or
+`cmd.exe /c "gh ..."`, `Start-Process`, `xargs` or a runner that starts it (`uv run gh ...`, `uvx`, `npx gh ...`); `env
+-u NAME git push` (the option's value is not taken); `git send-pack`; `GH_REPO` in the environment; a `gh` alias of the
+user; other calls that move a branch (renaming it with `POST branches/BRANCH/rename`, `gh repo sync`); `gh api` that
+PATCHes an issue number to rewrite a pull request's text, or builds its endpoint or mutation from a variable or splits a
+mutation's name with quotes (`createPull''Request`); `gh pr create --dry-run`, which the hook lets through although gh's
+help says it may still push git changes; a `git push` with no remote, which the hook judges by `origin` although git
+pushes to `branch.<name>.pushRemote`, `remote.pushDefault` or the branch's remote first; a `)` that is no shell syntax
+(in a comment, an escaped `\)`, a `case` pattern) between a `cd` and the command, which the hook reads as the end of the
+`cd`'s subshell; a quoted argument made only of `;`, `&`, `|`, `(` or `)` (`--body "("`), which the hook reads as shell
+punctuation; git configuration the command does not show (the environment a shell profile sets, `include.path` in the
+checkout's own config); a git alias (`git -c alias.p=push p`); a renamed owner or repository, which GitHub redirects but
+the hook calls another repository; a pull request opened or edited on the GitHub website; and a person at their own
+terminal, which runs no hook.
 
 ### The comment guard {#comment-guard}
 
@@ -403,7 +420,7 @@ run on every pull request, whatever made it.
 | A change to `src/` or `python/src/` changes `docs/` or `research/`, or says `Docs: none` | [AGENTS.md](repo:AGENTS.md) | CI `docs` (required, `pr check-docs`) | enforced at CI |
 | An outside contributor's pull request is checked for its title, description and docs rule without waiting for a maintainer | [The pr workflow](repo-conventions.md#pr-workflow) | `pr.yml` runs on `pull_request_target` from the base branch only; `test_pr_workflow.py` holds the four rules that make that safe | enforced at CI |
 | An agent tool other than Claude Code is held to the same guards, works as `contributor` (no push, no pull request) and runs `ci pr` before a pull request | [CONTRIBUTING.md](repo:CONTRIBUTING.md#agents-other-than-claude-code), [Agent tools](#harnesses) | The tool's hook file runs `dispatch.py --harness <name>` ([Agent tools](#harnesses)); `uvx pre-commit install` hooks on commit; `ci pr`; CI's `pr` workflow on the pull request | partly: the hooks run only once the person trusts them, the Claude Code-only guards pass there ([Agent tools](#harnesses)), and CI is the backstop |
-| A pull request opens only through `coney-tools pr open` | [How we work](how-we-work.md#release-queue) | [The PR guard](#pr-guard) refuses the hand-typed routes behind `pull_requests.open_only` in `.github/conventions.yml` | partly: `pr open` exists and gates the release; the switch is off until one real pull request has gone through it, so a hand-typed `gh pr create` is only checked |
+| A pull request opens only through `coney-tools pr open` | [How we work](how-we-work.md#release-queue) | [The PR guard](#pr-guard) refuses the hand-typed routes behind `pull_requests.open_only` in `.github/conventions.yml` | partly: the switch is on, so the hand-typed routes the hook recognises are refused in every session; what gets past it is under "Not covered" in [The PR guard](#pr-guard) |
 | A task's review is recorded only by a reviewer who did not work on it, with every checklist, `@orig` function, research page and picture answered, bound to the change | [Task review](review/task.md) | `task review --record` (`review_verdict.problems`; the identity rules of `tasks.review`) writes the `reviewed` stamp; nothing else does | enforced when the hooks vouch for the caller; `source: unverified` otherwise |
 | Every description is reviewed by the `reviewer` before it is pushed | [Task review](review/task.md) | `task review` judges the description with the change; `pr open` requires the `reviewed` stamp over this text; a branch outside a task uses the [legacy release checks](how-we-work.md#pr-review) (`legacy check-pr-review`, run by hand) | enforced through `pr open`; partly for legacy branches |
 | A unit is ready to become a pull request: its stamp log is intact, Check, the compared functions and Review hold for the change, and the generated title and description pass the checks CI runs | [Releasing a pull request](pr.md) | `pr verify` and `pr text`, run by hand; [`pr open`](pr.md#open) runs them before it pushes | enforced for a release that goes through `pr open` (see the switch above) |
@@ -412,7 +429,7 @@ run on every pull request, whatever made it.
 | No "Generated with" line in a pull request or issue | [AGENTS.md](repo:AGENTS.md) | None in the repository | written; best point `pr check-body` and `issue check` |
 | One feature per pull request; a diff holds only that change | [How we work](how-we-work.md#working-in-parallel) | `reviewer`, the coordinator | judgement |
 | Run the local gate before Review | [Testing](testing.md#local-gate) | `task check` writes the `checked` stamp; `pr open` refuses without a current one (`task review` does not need it) | enforced |
-| A stacked pull request says `Depends on #N`, has no auto-merge and is never merged into its base | [Audit checks](repo-conventions.md#audit-checks) | `repo audit` `pr.stacked-*`, `pr.merged-into-base` | partly (after the fact) |
+| No pull request is stacked: a dependent unit starts from the default branch after the one it builds on has merged | [How we work](how-we-work.md#working-in-parallel) | `pr open` refuses a unit based on any other branch; `repo audit` `pr.stacked-*` and `pr.merged-into-base` report a stacked pull request that exists (it says `Depends on #N`, has no auto-merge and is never merged into its base) | enforced at release; the audit reports the rest after the fact |
 | A pull request does not merge while a pull request it `Depends on` is unmerged | [Repository conventions](repo-conventions.md#workflows) | CI `dependencies` (required, `ci dependencies`); it reruns when a dependency merges (`ci rerun-dependencies`) | enforced at CI |
 | A failed run on `main` (nightly, push or manual) is an issue at once | [Repository conventions](repo-conventions.md#workflows) | CI `ci-failure`: `ci report-failure` opens a `P-critical` issue or comments on the open one | enforced at CI |
 | No pull request sits conflicting or failing | [How we work](how-we-work.md#merging) | `hygiene.yml` labels; Conclave's stop guard blocks the coordinator's turn end ([Conclave](conclave.md#watchers)) until a problem is held (`pr hold`) | enforced (Conclave) |
@@ -492,8 +509,8 @@ run on every pull request, whatever made it.
 Checks being built; their rows change when they merge:
 
 - **Networking checklist**: review items for network code.
-- **The cutover switches** ([The cutover](how-we-work.md#cutover)): `pull_requests.open_only`, `claims.adopt`,
-  `claims.release`, and `tasks.start.slots.exempt_workflow` turning off.
+- **The cutover switches** ([The cutover](how-we-work.md#cutover)): `claims.adopt`, `claims.release`, and
+  `tasks.start.slots.exempt_workflow` turning off (`pull_requests.open_only` went on early, 2026-10-27).
 
 ## What stays judgement {#judgement}
 

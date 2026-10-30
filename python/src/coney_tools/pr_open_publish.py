@@ -9,12 +9,22 @@ engineer's file, where the pictures' `./shots/x.png` paths are.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from coney_tools import pr_publish
 from coney_tools.config import ConfigError
 from coney_tools.conventions import PullRequests
-from coney_tools.pr_open_run import EXIT_FAILED, EXIT_REFUSED, MERGERS, PROGRESS, UPLOAD_BODY, Run, Stop
+from coney_tools.pr_open_run import (
+    EXIT_FAILED,
+    EXIT_REFUSED,
+    EXIT_UNABLE,
+    MERGERS,
+    PROGRESS,
+    UPLOAD_BODY,
+    Run,
+    Stop,
+)
 from coney_tools.pr_publish import PullRequest
 from coney_tools.pr_ready import Proof
 from coney_tools.pr_text import BODY_FILE, TITLE_FILE
@@ -73,6 +83,76 @@ def check_existing(run: Run, existing: PullRequest | None) -> None:
         raise Stop(EXIT_REFUSED, f"#{existing.number} already merged this branch; new work is a new task")
     if existing.state == "CLOSED" and not run.request.reopen:
         raise Stop(EXIT_REFUSED, f"#{existing.number} was closed; --reopen to continue it")
+
+
+#: A full commit id, as `gh pr view --json headRefOid` prints it.
+_COMMIT_ID = re.compile(r"[0-9a-f]{40}")
+
+
+def check_adopt(run: Run, existing: PullRequest | None) -> None:
+    """With `--adopt <head>`: Stop(2), before anything is touched, unless there is a pull request no `pr open` has
+    pushed (no tip in `pr-published.json`) and its branch is at that head on the remote. The head then becomes the
+    lease of the push, once; the push itself still refuses a branch that moves in between."""
+    head = run.request.adopt
+    if head is None:
+        if run.request.adopt_rewrite:
+            raise Stop(EXIT_UNABLE, "--adopt-rewrite goes with --adopt <head>; it changes nothing alone")
+        return
+    if not _COMMIT_ID.fullmatch(head):
+        raise Stop(
+            EXIT_UNABLE,
+            f"--adopt takes the full 40-digit head of the pull request (gh pr view N --json headRefOid), not {head!r}",
+        )
+    if existing is None:
+        raise Stop(EXIT_UNABLE, "--adopt: the branch has no pull request to take over; leave --adopt out")
+    recorded = pr_publish.read_published(task_folder(run)).tip
+    if recorded:
+        raise Stop(
+            EXIT_UNABLE,
+            f"--adopt: pr open already pushed #{existing.number} (pr-published.json records {recorded[:12]}); "
+            "leave --adopt out",
+        )
+    assert run.record is not None
+    remote, branch = run.request.remote, run.record.branch
+    there = pr_publish.remote_tip(run.env.git, run.root, remote, branch)
+    if there != head:
+        raise Stop(
+            EXIT_UNABLE,
+            f"--adopt {head[:12]}: {remote}/{branch} is at {there[:12] or 'nothing'}; read the head again "
+            f"(gh pr view {existing.number} --json headRefOid)",
+        )
+    lacking = _commits_the_unit_lacks(run, head)
+    if lacking and not run.request.adopt_rewrite:
+        shown = "; ".join(f"{sha[:12]} {subject}" for sha, subject in lacking[:5])
+        raise Stop(
+            EXIT_UNABLE,
+            f"--adopt: the pull request's branch has {len(lacking)} commit(s) whose change the unit's branch lacks "
+            f"({shown}); the push would drop them. Have the engineer bring them into the unit (cherry-pick), "
+            "or add --adopt-rewrite when dropping them is intended",
+        )
+    run.say(f"taking over #{existing.number} at {head[:12]}, which no pr open pushed")
+
+
+def _commits_the_unit_lacks(run: Run, head: str) -> list[tuple[str, str]]:
+    """The commits of the pull request's branch (at `head`) whose change the unit's branch does not hold, as (id,
+    subject). Compared by patch (`git cherry`), not by ancestry: a branch rebased or amended past its remote head
+    still holds the head's changes. Fetches the pull request's branch (that updates its remote-tracking ref, never a
+    local branch)."""
+    assert run.record is not None
+    git, remote, branch = run.env.git, run.request.remote, run.record.branch
+    fetched = git(run.root, ["fetch", "--quiet", "--no-tags", remote, f"refs/heads/{branch}"])
+    if fetched.returncode != 0:
+        raise Stop(EXIT_UNABLE, f"--adopt: cannot fetch {remote}/{branch}: {fetched.stderr.strip() or 'failed'}")
+    cherry = git(run.root, ["cherry", f"refs/heads/{branch}", head])
+    if cherry.returncode != 0:
+        raise Stop(EXIT_UNABLE, f"--adopt: git cherry failed: {cherry.stderr.strip() or 'no message'}")
+    lacking: list[tuple[str, str]] = []
+    for line in cherry.stdout.splitlines():
+        if line.startswith("+ "):
+            sha = line[2:].strip()
+            subject = git(run.root, ["log", "-1", "--format=%s", sha]).stdout.strip()
+            lacking.append((sha, subject))
+    return lacking
 
 
 def manual_paths(run: Run, proof: Proof) -> list[str]:

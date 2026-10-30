@@ -28,8 +28,8 @@ _START = r"(?:^|[;&|(){}`]|\$\(|\$[\w:]+[ \t]*=)[ \t]*" + _PREFIX
 _ARG = r"(?:\"[^\"\n]*\"|'[^'\n]*'|[^\s;&|()]+)"
 #: The `gh` program, also by a path (`/usr/bin/gh`, `C:\tools\gh.exe`).
 _GH = r"(?:[^\s;&|()'\"]*[/\\])?gh(?:\.exe)?"
-#: `gh pr create` (also its alias `new`), `edit` or `merge` where a command starts, with gh's own options
-#: (`-R owner/name`) before `pr`.
+#: `gh pr create` (also its alias `new`), `edit`, `merge` or `update-branch` where a command starts, with gh's own
+#: options (`-R owner/name`) before `pr`.
 _PR_COMMAND = re.compile(
     _START
     + _GH
@@ -37,7 +37,7 @@ _PR_COMMAND = re.compile(
     + _ARG
     + r"|--?[\w-]+(?:="
     + _ARG
-    + r")?))*)[ \t]+pr[ \t]+(?P<verb>create|new|edit|merge)\b",
+    + r")?))*)[ \t]+pr[ \t]+(?P<verb>create|new|edit|merge|update-branch)(?![\w-])",
     re.MULTILINE,
 )
 #: A change of directory where a command starts: `cd`, `pushd`, `chdir`, `Set-Location` or `Push-Location`.
@@ -86,7 +86,8 @@ _UNCHECKED = ("-f", "--fill", "--fill-first", "--fill-verbose", "-w", "--web")
 
 @dataclass
 class PrCall:
-    """What one `gh pr create`, `gh pr edit` or `gh pr merge` command asks for. `verb` is `create` also for `new`."""
+    """What one `gh pr create`, `edit`, `merge` or `update-branch` command asks for. `verb` is `create` also for
+    `new`."""
 
     verb: str
     title: str | None = None
@@ -384,8 +385,8 @@ def _directory(text: str, bare: str, end: int, cwd: str, powershell: bool = Fals
 
 
 def pr_calls(command: str, powershell: bool = False, cwd: str = "") -> list[PrCall]:
-    """Every `gh pr create`, `edit` and `merge` the command starts; one whose arguments cannot be split is marked
-    `unreadable`."""
+    """Every `gh pr create`, `edit`, `merge` and `update-branch` the command starts; one whose arguments cannot be
+    split is marked `unreadable`."""
     text = _clean(command)
     bare = _mask(text, powershell)
     calls: list[PrCall] = []

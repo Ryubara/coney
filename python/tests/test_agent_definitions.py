@@ -66,9 +66,9 @@ def test_every_role_the_hooks_name_has_an_agent_definition() -> None:
 def test_the_committed_hook_config_is_the_safe_rollout() -> None:
     config = tomllib.loads((REPO / ".claude" / "hooks" / "hooks.toml").read_text(encoding="utf-8"))
     assert config["require_role"] is True, "sessions start through `coney-agent`; one with no role may only read"
-    # The PR guard's switch is not in this file: it is `pull_requests.open_only` of the conventions, which a maintainer
-    # turns on after one pull request went through `coney-tools pr open`.
-    assert load_conventions(REPO).pull_requests.open_only is False
+    # The PR guard's switch is not in this file: it is `pull_requests.open_only` of the conventions, which the
+    # maintainer turned on on 2026-10-27 (issue #865).
+    assert load_conventions(REPO).pull_requests.open_only is True
     assert config["identity"]["powershell_modes"] == ["bypassPermissions"]
 
 
