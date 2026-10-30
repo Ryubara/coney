@@ -201,9 +201,9 @@ A project is exported to a video in the Video Gallery, which uploads to YouTube 
 the frame rate and the quality (PC Gamer advises 60 frames a second and a high bitrate), and the game raises its
 graphics settings while it renders [Press: PC Gamer, dor.gg]. On consoles the export is 1080p [Wiki: GTABase]. The
 video is rendered frame by frame, so it takes longer the longer and the higher in quality it is [Press: dor.gg]; no
-published figure gives how long. The PC export is at the
-game's own resolution; mods exist only to export above it, at other frame rates, with motion blur or in other formats,
-which shows what players missed [Mod: Extended Video Export, Rockstar Editor+].
+published figure gives how long. The PC export is at the game's own resolution; mods exist only to export above it, at
+other frame rates, with motion blur or in other formats, which shows what players missed [Mod: Extended Video Export,
+Rockstar Editor+].
 
 ## Limits and restrictions {#limits}
 
@@ -240,12 +240,12 @@ Rockstar Editor+].
 - **Fixed clips, no gap.** Director's clips are 60 seconds whatever happens, saved at once, with the next one starting
   on the very next step ([#1184](issue:1184)). That needs the recorder to write to disc as it goes, at a bounded rate,
   rather than fill a buffer whose seconds depend on the scene.
-- **Small, playable-anywhere data.** A recording is the state the engine already replicates for co-op
+- **Small, measured data.** A recording builds on the state the engine replicates for co-op
   ([Snapshots](../network-architecture.md#snapshots)), so its size can be measured and kept small; the format is
   [#1186](issue:1186).
 - **Fast, exact seeking.** Full states at regular steps, so a seek starts from the nearest one; Unreal's replays do the
-  same ([Other games](#other-games)). The Warriors' levels are small, so the whole level can be loaded and nothing
-  waits on streaming (inferred; to be measured in [#1186](issue:1186)).
+  same ([Other games](#other-games)). Where a level is loaded whole, a seek waits on no streaming; how much of a level
+  Director must load is for [#1186](issue:1186).
 - **No range circle and no locked places** in Director, unless a reason is found; the camera goes where the level is.
 - **Blends that pass through every marker**, with eased speed, and speed ramps without steps: what the mods add.
 - **Export by rendering each frame offline**, at the chosen resolution and frame rate, independent of the window and
@@ -259,8 +259,8 @@ Two ways to record a replay appear, and they decide what survives an update:
 
 | Game | What a replay stores | Notes |
 | --- | --- | --- |
-| Halo (Theater) | The players' and characters' inputs, played again through the game [Wiki: Halopedia] | Films are recorded for every match; a clip is a saved part of a film; free camera within the map, none in cutscenes; Halo 3 kept up to 100 films |
-| StarCraft II | Inputs | An old replay opens by loading the old version of the game [Players: Blizzard forums] |
+| Halo (Theater) | The players' and characters' inputs, played again through the game [Wiki: Halopedia] | Films are recorded for every match; a clip is a saved part of a film; free camera within the map, none in cutscenes; Halo 3 saved up to 100 films |
+| StarCraft II | The players' commands | An old replay opens by loading the old version of the game [Players: Blizzard forums] |
 | Fortnite | The game's network data (Unreal's replay system) | Gameplay, third-person, drone follow, drone attach and drone free cameras, speeds from a quarter up; replays play only in the version that recorded them [Press: Epic, via devtrackers; Players: finalboss] |
 | Overwatch | Match data | Replays are deleted at the next patch [Players: Blizzard forums] |
 | Rocket League | The game's network data (Unreal Engine 3) | The format changes between versions; replay viewers outside the game must be updated after patches [Players: devtrackers] |
