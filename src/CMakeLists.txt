@@ -76,6 +76,7 @@ add_library(coney_core STATIC
     gamemodes/game_stats_mode.cpp
     gamemodes/rumble_result_mode.cpp
     gamemodes/start_up_flow.cpp
+    graphics/asset_store.cpp
     graphics/font.cpp
     graphics/frame_stats.cpp
     graphics/car_draw.cpp
@@ -84,6 +85,7 @@ add_library(coney_core STATIC
     graphics/human_lighting.cpp
     graphics/level_lighting.cpp
     graphics/light_manager.cpp
+    graphics/mesh_data.cpp
     graphics/overlay_camera.cpp
     graphics/ps2_world_mesh.cpp
     graphics/particle_page.cpp
@@ -92,6 +94,7 @@ add_library(coney_core STATIC
     graphics/screen.cpp
     graphics/screen_fade.cpp
     graphics/sprite_batch.cpp
+    graphics/texture_data.cpp
     graphics/texture_grid.cpp
     graphics/texture_lod.cpp
     physics/overlaps.cpp

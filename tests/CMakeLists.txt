@@ -80,6 +80,7 @@ add_executable(coney_tests
     gamemodes/start_up_flow_test.cpp
     gamemodes/rumble_start_test.cpp
     gamemodes/story_start_test.cpp
+    graphics/asset_store_test.cpp
     graphics/font_test.cpp
     graphics/frame_stats_test.cpp
     graphics/car_draw_test.cpp
@@ -210,6 +211,8 @@ add_executable(coney_tests
     platform/window_activation_test.cpp
     platform/sprite_sheets_test.cpp
     platform/texture_dictionary_test.cpp
+    platform/asset_convert_test.cpp
+    platform/disc_asset_convert_test.cpp
     platform/world_atomic_test.cpp
     platform/disc_front_end_wheel_test.cpp
     platform/front_end_scene_test.cpp
