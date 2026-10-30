@@ -585,6 +585,48 @@ frames print theirs locally. A change to a hash fails CI until the pull request 
 value that lands on a rounding boundary is the grid's weak spot: item 1's first CI run on the three systems shows
 whether the grid holds, and a coarser one replaces it if not.
 
+**Built (item 1).** The layer is `coney::platform::draw` ([draw_calls.h](repo:src/platform/draw_calls.h)); the stream,
+its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_stream.h)).
+
+- **What goes through it.** Every `rw::SetRenderState`, `SetRenderStatePtr` and `GetRenderState`, Im2D and Im3D call,
+  camera clear, begin, end and show, the GL3 rasters Coney makes, locks, fills from an image and converts from the PS2,
+  and five named OpenGL operations (the frame copied into a raster, the frame read back, the wireframe switch, drawing
+  sent back to the window's frame buffer, a raster's mip levels): 256 call sites in 18 files of `src/platform/`, up from
+  the estimate of about 290 because the `rw::gl3::` vertex types are not calls. Left out until items 7 to 10: the atomic,
+  clump and human renders and what runs inside their pipelines (the one `VERTEXALPHA` state set in each of
+  `texture_lod.cpp` and `character_skin.cpp`, and the skinning pipeline's buffers); also the device's set-up at start
+  and the profiler's OpenGL queries, which draw nothing.
+- **What a record holds.** A draw holds its primitive, every render state set so far with its value as it stands at
+  the draw (a raster as its place in the recording's order of first use, its size and format, and a digest of the
+  pixels Coney uploaded to it), the vertices and the indices; Im3D also its normals, world matrix and flags. A camera's
+  begin holds its matrix, view window, offset, clip and fog planes, projection and frame size. So setting a state twice,
+  or to the value it already has, changes no hash. Bytes are written little endian in a fixed order, hashed with 64-bit
+  FNV-1a; each record also has a hash of its own, which says where two streams first differ.
+- **Live and headless.** Live, each call is forwarded and also recorded while a recording runs. Under `--headless` no
+  call reaches librw or OpenGL, the layer keeps the render states itself, a raster is made with librw's `DONTALLOCATE`
+  and a lock gets a buffer of the layer's; `RenderEngine`'s 2D drawing, which draws nothing headless, runs while a
+  recording does, with librw's default near plane in place of a camera's.
+- **Synthetic scenes** in [draw_calls_test.cpp](repo:tests/platform/draw_calls_test.cpp), drawn headless: a 2D scene
+  through `RenderEngine` (the fill, quads, alpha-tested triangles, a view wash, a window rectangle), a textured Im3D
+  mesh under a placed camera with a Coney-made checkerboard, the throw arc's ribbon drawn by `ThrowArcRenderer`, and
+  the named operations. Their expected hashes are in the test, beside checks that a repeated state keeps the hash and
+  a grid step, a texel or a state moves it; the grid and the encoding are checked against the definition in
+  [draw_stream_test.cpp](repo:tests/platform/draw_stream_test.cpp).
+- **Disc frames.** `--draw-hash` prints the last frame's counts and hash ([Running Coney](../guides/running.md)). The
+  named frames are run with a window, the world frozen and a fixed size, from the level's first frame of play:
+
+  | Name | Command |
+  | --- | --- |
+  | `level99-street` | `coney --play-level level99 --frames 90 --freeze-world --render-size 640x448 --draw-hash` |
+  | `level95-hub` | `coney --play-level level95 --frames 90 --freeze-world --render-size 640x448 --draw-hash` |
+
+  Each is run twice on the branch and on its base; a pull request that changes drawing reports the four hashes in its
+  Testing section, and two runs of one build must agree.
+- **The grid across systems** is the open question this item leaves to CI: the expected hashes were recorded on
+  Windows, and the first CI run on Linux and macOS shows whether they hold. If one differs, the fallback grid is 1/256
+  of a unit for positions and texture coordinates (`kDrawGridSteps`) with colours kept at 8 bits, and the expected
+  hashes are recorded again; this paragraph then says which grid holds.
+
 **The picture comparison, and its gates.**
 
 | Check | What it compares | Gate | Tolerance |

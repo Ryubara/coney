@@ -23,6 +23,7 @@ allows and centred; a window of another shape gets black bars at the sides or at
 coney --install DISC --data DIR [--verify]
 coney --script-patch make|apply ...
 coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N] [--screenshot PATH]
+      [--draw-hash]
       [--headless] [--help] [--input-script FILE] [--view-text FONT TEXT] [--language CODE]
       [--view-world NAME] [--view-character [NAME]] [--anim CLIP]
       [--play-level NAME [--spawn NAME | --checkpoint N] [--start X,Y,Z,H[,D,YAW]] [--give ITEM,COUNT]... [--trace FILE]
@@ -79,6 +80,13 @@ Without `--headless`, a machine with no display or no OpenGL fails at start-up w
 differ from the background and a hash of the frame, so a script can check that something was drawn without keeping
 the image. Keep screenshots of game data out of the repository (`../../scratch/` is the place); they go on a pull
 request as attachments, uploaded with `gh --attach` ([Capturing and attaching](testing.md#pr-media)).
+
+`--draw-hash` records what the last frame (the one `--frames N` stops at, counted from the first frame of play with
+`--play-level`) asks librw and OpenGL to draw and prints its counts and a hash of it, rounded to a fixed grid, in a
+line `draw stream: R records: ... hash 0x...`. Two builds that print the same hash for the same frame drew the same
+thing, which is how the renderer's work proves that the *PS2* picture did not move
+([How pictures are compared](../engine/renderer.md#comparing)). It runs with a window and headless; headless, only the
+2D drawing that reaches the draw layer is in it. It prints counts and the hash only, never what was drawn.
 
 The STORY profiles are saved as one file each (`profile-1.sav` to `profile-6.sav`) in `profiles` in your data folder
 (`%APPDATA%\Coney\Coney\` on Windows, `~/.local/share/Coney/Coney/` on Linux, `~/Library/Application

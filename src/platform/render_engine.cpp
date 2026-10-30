@@ -910,7 +910,9 @@ void RenderEngine::blurScreen(int passes, float offsetU, float offsetV) {
 
     // 1. The screen at half size, drawn into its own top-left quarter (scratch: the last step covers all of it).
     // Stand-in: the original draws each step into its 512 x 256 raster through its effects camera; with one back
-    // buffer, Coney draws into the frame and copies the result back (copyToRaster) before the next step reads it.
+    // buffer, Coney draws into the frame and copies the result back (copyToRaster) before the next step reads it. The
+    // UVs span each copy, without the original's half-texel offset (pixel + 0.5 over the size), which places a GS
+    // sample where a GL texel centre already is (inferred).
     if (!copyToRaster(m_blurRaster, viewport.x, viewport.y, viewport.width, viewport.height)) {
         return;
     }
@@ -926,6 +928,7 @@ void RenderEngine::blurScreen(int passes, float offsetU, float offsetV) {
     const float stepV = offsetV / 2.0F * (256.0F / 224.0F);
     bool lowEdge = true;
     for (int pass = 0; pass < passes; ++pass) {
+        // Stand-in: a copy of the half-size image for the pass to read, as in step 1.
         if (!copyToRaster(m_halfRaster, viewport.x, viewport.y, halfWidth, halfHeight)) {
             return;
         }
@@ -937,6 +940,7 @@ void RenderEngine::blurScreen(int passes, float offsetU, float offsetV) {
             quad.uv.u1 -= stepU;
             quad.uv.v1 -= stepV;
         }
+        // Stand-in: UVs over the copy, without the half-texel offset (step 1).
         drawWindowQuads(m_halfRaster, std::span<const graphics::LogicalQuad>(&quad, 1), true);
         lowEdge = !lowEdge;
     }

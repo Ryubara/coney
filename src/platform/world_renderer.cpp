@@ -80,9 +80,8 @@ world::FrameMatrix cloudFrame(const world::FrameMatrix& base, std::uint64_t nowM
 void WorldRenderer::renderBackground(rw::Camera* camera, const world::LevelObject& level, const WorldView& view,
                                      graphics::Rgba fogColour, float pendingDistance, std::uint64_t nowMs) const {
     // 1-2. The background is lit by the world's ambient and directional lights, no point lights.
-    // Stand-in: the original's two switches for the sky and the skyline are always 1 (level-loading.md#render-order),
-    // so their off branches, which only set the render states, are not ported; nor is telling the PS2 driver its far
-    // clip, which no PC renderer has.
+    // The original's two switches for the sky and the skyline are always 1 (level-loading.md#render-order), so their
+    // off branches, which only set the render states, are dead code and not ported.
     SceneLighting& lit = lighting();
     // 3. The sky box, then the turning cloud box, round the camera with its translation zeroed: near 0.05, far 5;
     // Z write and fog off, nothing culled.
@@ -99,6 +98,7 @@ void WorldRenderer::renderBackground(rw::Camera* camera, const world::LevelObjec
     }
     // 4. The skyline in place, from 39 (or the nearest missing scenery, if nearer) to 560, with Z write on and fog
     // off; then Z alone is cleared so the world, with its much shorter far clip, covers it where it has geometry.
+    // Stand-in: the original also tells the PS2 driver the camera's far clip here, which no PC renderer has.
     replaceCamera(camera, view, view.pose.position, std::min(kSkylineNearClip, pendingDistance), kSkylineFarClip);
     draw::setRenderState(rw::ZWRITEENABLE, 1);
     if (rw::Atomic* skyline = atomicOf(level.skyline.model.get()); skyline != nullptr) {
@@ -107,7 +107,7 @@ void WorldRenderer::renderBackground(rw::Camera* camera, const world::LevelObjec
     draw::setRenderState(rw::FOGENABLE, 1);
     rw::RGBA clearColour = rw::makeRGBA(fogColour.r, fogColour.g, fogColour.b, fogColour.a); // librw takes it non-const
     draw::clearCamera(camera, &clearColour, rw::Camera::CLEARZ);
-    // 5. The world pass's camera again.
+    // 5. The world pass's camera again (stand-in: there is no PS2 driver far clip to put back).
     replaceCamera(camera, view, view.pose.position, view.nearClip, view.drawDistance);
 }
 
