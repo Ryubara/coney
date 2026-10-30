@@ -531,7 +531,7 @@ bool Brain::updateReactionGoal() {
         grab != nullptr && !grab->holding()) {
         return false;
     }
-    // A bum keeps to his BumLogic goal unless he fights or flees.
+    // A bum keeps to his BumLogic goal unless he fights or flees (stand-in: leaving reads clear, see above).
     if (findGoal(GoalType::BumLogic) != nullptr && !fighting && !kLeaving && !fleeing) {
         return false;
     }
