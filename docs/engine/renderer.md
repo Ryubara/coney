@@ -191,8 +191,8 @@ draw without librw's GL3 device as early as possible:
    rasters load and the game runs while the GPU renderer only clears and presents. From here on, librw's GL3 device is
    used only by the GL3 renderer. [The GPU renderer](gpu-renderer.md) says how it is built.
 3. **The shader toolchain** (item 4). HLSL sources in `src/platform/shaders/`, compiled at build time by
-   SDL_shadercross (zlib; it bundles DXC and SPIRV-Cross, see [Licences](#licences)) into SPIR-V, DXIL and MSL,
-   embedded in the executable. A test compiles every shader for every target.
+   SDL_shadercross (zlib; with DXC and SPIRV-Cross, which the build fetches itself, see [Licences](#licences)) into
+   SPIR-V, DXIL and MSL, embedded in the executable. A test compiles every shader for every target.
 4. **The seam** (items 5 and 7 to 10). A backend-neutral description of a frame, in `src/graphics/` and testable
    headless: passes (scene, overlays, screen passes), and per pass a list of draws, each a mesh id, a material
    (texture ids, blend, alpha test, cull, depth, fog, dual layer, environment map), a transform, the chosen lights
@@ -692,26 +692,29 @@ proprietary SDK or binary is the maintainer's. The shader build checked the firs
 | --- | --- | --- |
 | SDL3 (GPU API) | zlib | already pinned |
 | SDL_shadercross | zlib | build-time shader compiler; none of its code is in the executable ([The shader build](../guides/shaders.md)) |
-| DXC (Microsoft's v1.9.2602 release on Windows and Linux, the libsdl-org fork of it built from source on macOS) | LLVM Release License (University of Illinois/NCSA), and Apache-2.0 with LLVM exception; the fork's submodules SPIRV-Tools, SPIRV-Headers and DirectX-Headers are Apache-2.0 and MIT | HLSL to SPIR-V and DXIL, build time |
+| DXC (Microsoft's v1.9.2602 release on Windows and Linux, the libsdl-org fork of it built from source on macOS) | LLVM Release License (University of Illinois/NCSA), and Apache-2.0 with LLVM exception; the fork's submodules SPIRV-Tools, SPIRV-Headers and DirectX-Headers are Apache-2.0 and MIT. **The Windows release archive also carries Microsoft's own terms** (`LICENSE-MS.txt`, "Microsoft DirectX Shader Compiler": use "solely on Windows", distribution only of the files its list names) and `d3d12shader.h` under MIT. The Linux archive's files were not read here | HLSL to SPIR-V and DXIL, build time; nothing of it is in the executable or distributed |
 | SPIRV-Cross | Apache-2.0 | SPIR-V to MSL, build time |
-| DXIL validator (`dxil.dll`, `libdxil.so`) | Microsoft's own licence, shipped as a binary in DXC's releases | **not used**: the pinned DXC signs DXIL itself (below) |
+| DXIL validator (`dxil.dll`, `libdxil.so`) | Microsoft's own licence, shipped as a binary in DXC's releases | **not used**: the pinned DXC signs DXIL itself (below). The Windows archive that is fetched still holds `dxil.dll` and is kept whole in the dependency folder and CI's cache; the build installs and loads `dxcompiler.dll` only |
 | SMAA | MIT | post AA |
 | FSR 1, FSR 3.1 | MIT | upscaling |
 | FXAA 3.11 | NVIDIA's FXAA licence | optional post AA |
 | DLSS, FSR 4, XeSS | proprietary SDKs or prebuilt binaries | optional plug-ins only |
 
-**DXIL signing, confirmed with the pinned versions.** Direct3D 12 loads only DXIL that carries the validator's hash.
-DXC's release notes say the hash was open-sourced in 1.8.2502 and that from 1.8.2505 the compiler always uses its
-internal validator instead of an external `dxil.dll`; SDL_shadercross's README still lists `dxil.dll` as needed. The
-pinned DXC, v1.9.2602, is the former: run on Windows from a folder holding `dxc.exe` and `dxcompiler.dll` only (no
-`dxil.dll` anywhere on the `PATH`), it made a pixel shader into a container with a non-zero 16-byte hash and no warning,
-and the same shader with validation off (`-Vd`) has an all-zero hash. So **the binary validator is not needed and is
-not downloaded or loaded**: no licence decision arises, and DXIL is compiled on every system. A test checks that every
-embedded DXIL container carries a hash, so a pin to a compiler that does not sign fails it, and CI's first run checks
-Linux and macOS the same way. DXBC is not built; nothing needs it.
+**DXIL signing, confirmed with the pinned versions.** Direct3D 12 loads only DXIL that carries the validator's hash. DXC's
+release notes say the hash was open-sourced in 1.8.2502 and that from 1.8.2505 the compiler always uses its internal
+validator instead of an external `dxil.dll`; SDL_shadercross's README still lists `dxil.dll` as needed. The pinned DXC,
+v1.9.2602, is the former: run on Windows from a folder holding `dxc.exe` and `dxcompiler.dll` only (no `dxil.dll` on the
+`PATH`), it made a pixel shader into a container with a non-zero 16-byte hash and no warning, and the same shader with
+validation off (`-Vd`) has an all-zero hash. So **the binary validator is not needed**: the build never installs or loads
+it, though the Windows archive it fetches for `dxcompiler.dll` holds it, under Microsoft's terms (see the table). DXIL
+is compiled on every system. A test checks that every embedded DXIL container carries a hash, so a pin to a compiler
+that does not sign fails it, and CI's first run checks Linux and macOS the same way. DXBC is not built; nothing needs it.
 
 ## Questions for the maintainer {#questions}
 
+- Whether the build may fetch Microsoft's DXC release archive under its own terms ([Licences](#licences); build time
+  only, nothing ships), or must build DXC from source everywhere (hours); and `LEGAL.md`'s list of build-time
+  dependencies then names SDL_shadercross, SPIRV-Cross and DXC.
 - Which preset a player gets by default: *PS2*, or *Enhanced* on a capable machine.
 - When the GL3 renderer retires after the GPU renderer becomes the default (item 21), and with it librw's GL3
   platform.

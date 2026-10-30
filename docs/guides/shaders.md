@@ -2,9 +2,9 @@
 
 The GPU renderer ([Renderer](../engine/renderer.md#backend)) draws through SDL3's GPU API, which takes SPIR-V on
 Vulkan, DXIL on Direct3D 12 and MSL on Metal. Its shaders are written once, in HLSL, and the build compiles them offline
-to all three and embeds the results in the executable, so a player needs no shader compiler and no shader is compiled
-while the game runs. This page is how that works, how to add a shader, what the build needs on each system and how it is
-tested. The building of the rest of the engine is [Building and testing](building.md).
+to all three and embeds the results in a library the renderer will link, so a player needs no shader compiler and no
+shader is compiled while the game runs. This page is how that works, how to add a shader, what the build needs on each
+system and how it is tested. The building of the rest of the engine is [Building and testing](building.md).
 
 ## The shaders {#shaders}
 
@@ -27,10 +27,10 @@ for any one format fails the build with the compiler's own message. A last step 
 
 Its interface is `repo:src/platform/shaders/embedded_shaders.h`: `coney::shaders::allShaders()` and `findShader()`, each
 shader's code per `Format`, its stage, its resource counts and `entryPoint(Format)`, which is `main` except in MSL, where
-SPIRV-Cross renames it `main0` because `main` is not a legal Metal function name. The renderer links `coney_shaders` and
-creates the shader from the format its device accepts. The top `CMakeLists.txt` adds the folder and links `coney_shaders`
-into the game's executables, so every build of the game compiles the shaders and the linker keeps the ones the renderer
-refers to; with `-DCONEY_SHADERS=OFF` (below) there is no `coney_shaders`.
+SPIRV-Cross renames it `main0` because `main` is not a legal Metal function name. Planned: the renderer creates
+the shader from the format its device accepts. The top `CMakeLists.txt` adds the folder and links `coney_shaders` into
+the game's executables, so every build of the game compiles the shaders; no renderer refers to them yet, so the linker
+keeps none until one does; with `-DCONEY_SHADERS=OFF` (below) there is no `coney_shaders`.
 
 ## The compiler {#compiler}
 
@@ -60,7 +60,8 @@ compiled from source, which takes much longer the first time; the compiler cache
 
 **DXIL needs no extra binary.** Direct3D 12 loads only DXIL that carries the validator's hash. DXC signs it itself since
 release 1.8.2505, so the pinned compiler needs no `dxil.dll` (Microsoft's own binary, under its own licence), and Coney
-neither downloads nor loads it ([the finding](../engine/renderer.md#licences)). The tests below fail if a pin ever moves
+never installs or loads it; the Windows archive the build fetches for `dxcompiler.dll` still holds it, with Microsoft's
+licence terms ([the finding](../engine/renderer.md#licences)). The tests below fail if a pin ever moves
 to a compiler that does not sign.
 
 **To update a pin**, change it in `cmake/deps.cmake` (the commit or the archive and its SHA-256), build, and run the

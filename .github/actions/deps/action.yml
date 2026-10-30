@@ -6,8 +6,8 @@
 #
 # Only the sources (and that one tool): build/<preset>/_deps also holds the dependencies' build trees, compiled by one
 # job's compiler and flags, which a fresh job rebuilds anyway (Ninja has no log of them), and that made eight ~400 MB
-# entries of one preset and compiler each. The sources are the same for every job on an OS (Windows checks them out with its own
-# line endings, so it keeps its own). The folder's name holds "_deps", which keeps it out of clang-tidy's file list.
+# entries of one preset and compiler each. The sources are the same for every job on an OS (Windows checks them out
+# with its own line endings, so it keeps its own). The folder's name holds "_deps", which keeps it out of clang-tidy's file list.
 # Call it before the configure step and ./.github/actions/deps-save right after it. Rules: building.md#ci-caches.
 name: deps
 description: Restore the fetched dependency sources of this OS and deps.cmake, and point cmake/deps.cmake at them.

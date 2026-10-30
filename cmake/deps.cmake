@@ -206,7 +206,7 @@ if(CONEY_SHADERS)
                                          ${_coney_spirv_cross_where} SOURCE_SUBDIR coney-no-cmake SYSTEM)
         # Microsoft's DXC v1.9.2602 (Feb 2026; LLVM Release License (NCSA) and Apache-2.0 with the LLVM exception),
         # the release archive checked against its SHA-256: the compiler library only, which signs DXIL itself. Its
-        # dxil.dll is not used.
+        # dxil.dll (in the archive, under Microsoft's terms) is neither installed nor used.
         if(WIN32)
             FetchContent_Declare(dxc URL https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.9.2602/dxc_2026_02_20.zip
                                      URL_HASH SHA256=a1e89031421cf3c1fca6627766ab3020ca4f962ac7e2caa7fab2b33a8436151e
