@@ -116,11 +116,15 @@ WorldView WorldViewerMode::view(const world::DebugCamera& camera, float drawDist
                      .drawDistance = drawDistance};
 }
 
+void WorldViewerMode::setEditHook(const std::shared_ptr<WorldEditHook>& hook) { m_edits = hook; }
+
 void WorldViewerMode::enter() {
-    // The preload before the first frame, at game time 0, with the camera's draw distance as its radius.
+    // The preload before the first frame, at game time 0, with the camera's draw distance as its radius; the debug
+    // tools' world edits may ask for every part instead (a radius nothing lies beyond).
     const std::array<world::Vec3, 1> cameras{m_camera.current().position()};
-    const world::PreloadResult preload =
-        world::preloadWorlds(m_set->worlds(), cameras, m_drawDistance.current(), m_budget, *m_set, 0);
+    const float radius =
+        m_edits && m_edits->loadsEverything() ? std::numeric_limits<float>::max() : m_drawDistance.current();
+    const world::PreloadResult preload = world::preloadWorlds(m_set->worlds(), cameras, radius, m_budget, *m_set, 0);
     m_stats.preloaded = preload.loaded;
     m_stats.unloads += preload.unloaded;
     m_stats.failures += preload.failed;
@@ -189,6 +193,10 @@ ModeResult WorldViewerMode::update(GameModeStack& stack, const FrameTime& frame)
     for (world::StreamedWorld* world : m_set->worlds()) {
         world->findVisibleSectors(frustum, true);
     }
+    // The debug tools' world edits, on what this step loaded.
+    if (m_edits) {
+        m_edits->afterStep(m_stats.frames, *m_set, m_level ? m_level->collision.get() : nullptr);
+    }
     ++m_stats.frames;
     return ModeResult::Stay;
 }
@@ -202,8 +210,18 @@ void WorldViewerMode::render(const RenderTime& time) {
                                            lerp(from.position().z, to.position().z, time.alpha)});
     blended.setOrientation(lerpAngle(from.yaw(), to.yaw(), time.alpha), lerp(from.pitch(), to.pitch(), time.alpha));
     const float drawDistance = lerp(m_drawDistance.previous(), m_drawDistance.current(), time.alpha);
-    m_renderer.render(m_engine, *m_set, m_level.get(), view(blended, drawDistance), m_pendingDistance,
-                      millisecondsOf(time.gameTicks));
+    if (!m_edits) {
+        m_renderer.render(m_engine, *m_set, m_level.get(), view(blended, drawDistance), m_pendingDistance,
+                          millisecondsOf(time.gameTicks));
+    } else {
+        // The debug tools' world edits: their pieces of each world first after it, the background left out when they
+        // ask (WorldEditHook).
+        const auto afterSolid = [this] { m_edits->drawAfterWorld(0, m_renderer.lighting()); };
+        const auto afterDetail = [this] { m_edits->drawAfterWorld(1, m_renderer.lighting()); };
+        const world::LevelObject* level = m_edits->drawsBackground() ? m_level.get() : nullptr;
+        m_renderer.render(m_engine, *m_set, level, view(blended, drawDistance), m_pendingDistance,
+                          millisecondsOf(time.gameTicks), afterSolid, {}, afterDetail);
+    }
     m_stats.maxDrawn = std::max(m_stats.maxDrawn, m_renderer.drawnAtomics());
 }
 

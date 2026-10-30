@@ -20,6 +20,7 @@
 #include "human/place.h"
 #include "human/player.h"
 #include "platform/render_engine.h"
+#include "platform/world_edit_hook.h"
 #include "platform/world_renderer.h"
 #include "platform/world_viewer_mode.h"
 #include "raycast/collision_builder.h"
@@ -109,6 +110,7 @@ class PlayScenery {
     /// The collision mesh and path data the level's glass panes and doors switch on and off and retag
     /// (world_objects::ObjectWorld); null where the scenery has no such objects (a sandbox).
     [[nodiscard]] virtual raycast::CollisionMesh* objectCollision() { return nullptr; }
+    /// The path data the level's doors retag (world_objects::ObjectWorld); null where the scenery has none (a sandbox).
     [[nodiscard]] virtual world::PathMap* objectPaths() { return nullptr; }
     /// Whether objects can be added (setExtras(): a sandbox and a level can).
     [[nodiscard]] virtual bool canSpawn() const { return false; }
@@ -117,6 +119,10 @@ class PlayScenery {
     virtual std::expected<void, Error> setExtras(const RenderEngine& engine, SceneExtras extras);
     /// The objects added now (setExtras()).
     [[nodiscard]] virtual const SceneExtras& extras() const;
+    /// Changes the scenery through the debug tools' world edits from now on (WorldEditHook), called after each step's
+    /// streaming and drawn through; null: none. A scenery without streamed worlds (a sandbox) ignores it.
+    /// @coney-only the debug tools' world edits; the original has none
+    virtual void setEditHook(const std::shared_ptr<WorldEditHook>& /*hook*/) {}
 };
 
 /// A level's scenery for the play mode: its streamed worlds and level file (loadLevelScenery()), streamed around the
@@ -158,6 +164,10 @@ class LevelPlayScenery final : public PlayScenery {
     /// then unchanged.
     std::expected<void, Error> setExtras(const RenderEngine& engine, SceneExtras extras) override;
     [[nodiscard]] const SceneExtras& extras() const override { return m_extras; }
+    /// The world edits run after each step's streaming, on the level's worlds and collision mesh, and the renderer
+    /// draws through them. They add their collision as the mesh's extra triangles, so they do not mix with the
+    /// Spawner's objects (setExtras()).
+    void setEditHook(const std::shared_ptr<WorldEditHook>& hook) override;
 
   private:
     LevelPlayScenery(LevelScenery scenery, world::SectorBudget& budget, const human::PlayerStart& start,
@@ -176,7 +186,9 @@ class LevelPlayScenery final : public PlayScenery {
     std::uint32_t m_loads = 0;
     std::uint32_t m_unloads = 0;
     std::uint32_t m_failures = 0;
-    SceneExtras m_extras; // the added objects (setExtras()), their triangles in the collision mesh
+    SceneExtras m_extras;                   // the added objects (setExtras()), their triangles in the collision mesh
+    std::shared_ptr<WorldEditHook> m_edits; // setEditHook(); null: none
+    std::uint64_t m_editSteps = 0;          // steps the world edits have seen
 };
 
 /// **Coney's choice** for a level whose player start is not researched: above the middle of the first world's part 1

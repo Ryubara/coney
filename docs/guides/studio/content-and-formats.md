@@ -291,6 +291,9 @@ step says. Such a level is a modded session in the store's terms (simulation kin
 | An entity the level script makes | `edit call:<function>:<n> move at= rot=`, `edit call:<function>:<n> remove` (the *n*-th entity native the function calls) | After the script's set-up, through the handle the call returned: `Teleport` to move, `ObjDestroy` or the kind's own removal to remove; a change that only the call itself could make (a door's type) is refused with the reason |
 | A collision triangle | `faces mesh=base faces=LIST ...` or `remove`, as for an imported mesh ([What stays editable](#editable)) | The disc mesh's triangles by index, changed before the level's first step; the disc file is untouched |
 | A walkable area of the path map | `edit nav:<area> remove`, or a new `navarea` | The path map rebuilt with the change at entry |
+| A building of the streamed world | `cut NAME box= [by=centroid\|pieces]`, then `edit cut:NAME move at= rot=` or `edit cut:NAME remove` ([Buildings](disc-world.md#buildings)) | At entry, after reading every part under the box: the triangles the box takes out of both worlds' sector atomics, and the collision triangles in it, become one object that is moved or removed; the disc file is untouched |
+| Collision added or erased | `collider` statements (a box, ramp, stairs or convex hull), and `collide box= remove` ([Collision on a disc level](disc-world.md#disc-collision)) | At entry, built into the level's mesh beside the disc's triangles; an erase box switches off the disc's triangles wholly inside it |
+| Collision on a world's visible faces | `collide box= [up=] material=`, or a face list | At entry, the `s` world's faces the rule selects (under the box and facing up by at least `up`) become collision triangles of that material, simplified |
 | A texture or a sound | `override GAME_PATH PROJECT_PATH` in the project's overrides ([Models and textures](#models)) | The override source |
 | Anything added | Ordinary statements: primitives, colliders, meshes, entities | After the disc level's own set-up |
 
@@ -333,6 +336,13 @@ folder ([Export](#export)). A project level exports its own geometry the same wa
 **Needs from Coney:** the asset store, so Studio reads a level through it; a game mode that plays a level from a level
 file of Coney's own (collision built, path map built, entities made through natives, scripts run); drawing an imported
 static mesh; the overlay of a project level on a disc level, with its overrides applied.
+
+#### Buildings and collision of a disc level {#world-buildings}
+
+Nothing on the disc is a building, and most of a disc level's roofs have no collision. How Studio separates a building
+from the streamed world by a box, moves or removes it, and how a user adds collision (volumes drawn independent of the
+render mesh, collision made from selected faces, colliders on a separated building) is its own page, with its build
+issues: [Buildings and collision of a disc level](disc-world.md). The overrides it adds are in the table above.
 
 ### Colliders and primitives {#collision}
 
@@ -608,6 +618,10 @@ One row per engine change, the Studio kinds that wait on it and its state today.
 | Door and pane triangles built with the level's collision | Doors, glass | The natives take a disc level's triangles |
 | Drawing an imported static mesh (`.cmesh`) | Maps, props | The sandbox draws its own mesh only |
 | A project level on a disc level | `base` levels | Not built |
+| World cuts at level entry: sector atomics cut by a box into objects drawn by their own bounds, with their textures held and the collision in the box moved with them | Buildings of a disc level's world | The debug tools' `--world-edit` cuts and moves them ([World edits](../running-viewers.md#world-edits)) |
+| Collision volumes and erase boxes over a disc level's mesh, and the collision overlay | Collision on a disc level | The collision builder and the Debug draw page's wireframe; the debug tools' cut switches triangles off by box |
+| Collision made at entry from a world's selected faces, simplified | Collision from faces | The debug tools' `roof` statement, without simplifying |
+| Colliders as children of a cut building | Colliders on a separated building | Not built |
 | The texture resolver with an override source, per project (F4) | Texture overrides | Designed ([Enhancements plan](../enhancements.md#foundations)) |
 | Override packs: the override source over every `.cmod` in load order, for textures, movies, sounds and character looks, with the format checks | Override packs | Designed ([Override packs](project-formats.md#override-packs)) |
 | A per-human texture | A character's own texture | Not built |
@@ -657,6 +671,8 @@ Decided for the Studio brief of [#1054](issue:1054), and applied here:
 
 In the order they should come, after the editor experience design's shell, File system panel and Level view
 ([#1055](issue:1055)); each states the engine change it needs first, from [What Studio needs from Coney](#engine-needs).
+The buildings and collision of a disc level have six of their own, after issues 2 and 8 below
+([Buildings and collision of a disc level](disc-world.md#build-issues)).
 
 1. **core: Add the asset store with the disc and project sources.** N1 and N3 of the asset architecture
    ([Now](../asset-and-script-architecture.md#now)), and a project source that resolves `project:/` paths through an

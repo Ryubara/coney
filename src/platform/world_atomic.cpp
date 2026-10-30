@@ -306,9 +306,11 @@ bool decodeDefaultMeshes(rw::Atomic* atomic, std::vector<PlainMesh>& meshes) {
     return true;
 }
 
+// Every component's bits of a plain vertex, in order: keyOf()'s key.
+using VertexKey = std::array<std::uint32_t, 12>;
+
 // Ordering key of a plain vertex, so that identical vertices of a geometry share one index (strips join through
 // repeated vertices, and librw finds degenerate triangles by equal indices): every component's bits, in order.
-using VertexKey = std::array<std::uint32_t, 12>;
 VertexKey keyOf(const PlainVertex& v) {
     const auto bits = [](float f) { return std::bit_cast<std::uint32_t>(f); };
     return {bits(v.position.x),
@@ -459,6 +461,65 @@ rw::Atomic* makeDualLayer(rw::Atomic* base) {
     geometry->destroy(); // the atomic holds its own reference
     layer->setFrame(base->getFrame());
     return layer;
+}
+
+// A plain geometry holding the triangles of `source` whose `take` byte is `wanted` (non-zero or zero), the vertices
+// they use renumbered in order with everything they carry, the same materials (shared) and triangle lists for meshes
+// (librw's buildMeshes()); null when no triangle is kept.
+rw::Geometry* subGeometry(const rw::Geometry* source, std::span<const std::uint8_t> take, bool wanted) {
+    std::vector<rw::int32> newIndex(static_cast<std::size_t>(source->numVertices), -1);
+    std::vector<const rw::Triangle*> kept;
+    rw::int32 vertices = 0;
+    for (rw::int32 i = 0; i < source->numTriangles; ++i) {
+        if ((take[static_cast<std::size_t>(i)] != 0) != wanted) {
+            continue;
+        }
+        const rw::Triangle& t = source->triangles[i];
+        kept.push_back(&t);
+        for (const rw::uint16 v : t.v) {
+            if (newIndex[v] < 0) {
+                newIndex[v] = vertices++;
+            }
+        }
+    }
+    if (kept.empty()) {
+        return nullptr;
+    }
+    // Plain triangle lists: no strips, nothing native; the texture-coordinate sets as the source has them.
+    const rw::uint32 flags = (source->flags & ~static_cast<rw::uint32>(rw::Geometry::NATIVE | rw::Geometry::TRISTRIP)) |
+                             (static_cast<rw::uint32>(source->numTexCoordSets) << 16U);
+    rw::Geometry* geometry = rw::Geometry::create(vertices, static_cast<rw::int32>(kept.size()), flags);
+    const rw::MorphTarget& from = source->morphTargets[0];
+    rw::MorphTarget& to = geometry->morphTargets[0];
+    for (rw::int32 v = 0; v < source->numVertices; ++v) {
+        const rw::int32 n = newIndex[static_cast<std::size_t>(v)];
+        if (n < 0) {
+            continue;
+        }
+        to.vertices[n] = from.vertices[v];
+        if (to.normals != nullptr && from.normals != nullptr) {
+            to.normals[n] = from.normals[v];
+        }
+        if (geometry->colors != nullptr && source->colors != nullptr) {
+            geometry->colors[n] = source->colors[v];
+        }
+        for (rw::int32 set = 0; set < geometry->numTexCoordSets; ++set) {
+            geometry->texCoords[set][n] = source->texCoords[set][v];
+        }
+    }
+    for (std::size_t i = 0; i < kept.size(); ++i) {
+        rw::Triangle& t = geometry->triangles[i];
+        for (std::size_t k = 0; k < 3; ++k) {
+            t.v[k] = static_cast<rw::uint16>(newIndex[kept[i]->v[k]]);
+        }
+        t.matId = kept[i]->matId;
+    }
+    for (rw::int32 m = 0; m < source->matList.numMaterials; ++m) {
+        geometry->matList.appendMaterial(source->matList.materials[m]);
+    }
+    geometry->buildMeshes();
+    geometry->calculateBoundingSphere();
+    return geometry;
 }
 
 // The uninstance step of the game pipelines' stand-in: the packed layout.
@@ -674,6 +735,7 @@ std::expected<WorldAtomic, Error> WorldAtomic::read(std::span<const std::byte> s
 WorldAtomic::WorldAtomic(WorldAtomic&& other) noexcept
     : m_atomic(std::exchange(other.m_atomic, nullptr)), m_info(std::move(other.m_info)) {}
 
+// Destroys the atomic held, then takes `other`'s, leaving it empty.
 WorldAtomic& WorldAtomic::operator=(WorldAtomic&& other) noexcept {
     if (this != &other) {
         destroy();
@@ -721,6 +783,41 @@ void WorldAtomic::unpack() {
     if (dualLayerOf(m_atomic) == nullptr) {
         setDualLayer(m_atomic, makeDualLayer(m_atomic));
     }
+}
+
+std::optional<WorldAtomic> WorldAtomic::cut(std::span<const std::uint8_t> take) {
+    rw::Geometry* source = m_atomic->geometry;
+    if ((source->flags & rw::Geometry::NATIVE) != 0 || source->triangles == nullptr ||
+        take.size() != static_cast<std::size_t>(source->numTriangles)) {
+        return std::nullopt;
+    }
+    rw::Geometry* piece = subGeometry(source, take, true);
+    if (piece == nullptr) {
+        return std::nullopt;
+    }
+    // The piece, on a frame of its own where this atomic's frame is.
+    rw::Atomic* atomic = rw::Atomic::create();
+    rw::Frame* frame = rw::Frame::create();
+    frame->transform(m_atomic->getFrame()->getLTM(), rw::COMBINEREPLACE);
+    atomic->setFrame(frame);
+    atomic->setGeometry(piece, 0);
+    piece->destroy(); // the atomic holds its own reference
+    setDualLayer(atomic, makeDualLayer(atomic));
+    // The rest stays here (a geometry with no triangle when everything went), with its dual layer made again.
+    rw::Geometry* rest = subGeometry(source, take, false);
+    if (rest == nullptr) {
+        rest = rw::Geometry::create(0, 0, source->flags & ~static_cast<rw::uint32>(rw::Geometry::NATIVE));
+        rest->buildMeshes();
+    }
+    m_atomic->setGeometry(rest, 0); // lets go of the old geometry
+    rest->destroy();
+    if (rw::Atomic* layer = dualLayerOf(m_atomic); layer != nullptr) {
+        setDualLayer(m_atomic, nullptr);
+        layer->setFrame(nullptr);
+        layer->destroy();
+    }
+    setDualLayer(m_atomic, makeDualLayer(m_atomic));
+    return WorldAtomic(atomic, m_info);
 }
 
 } // namespace coney::platform

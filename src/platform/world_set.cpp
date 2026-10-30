@@ -169,7 +169,34 @@ WorldSet::~WorldSet() {
 
 rw::Atomic* WorldSet::atomic(std::size_t world, std::uint32_t sector) const {
     CONEY_ASSERT(world < m_worlds.size() && sector < m_worlds[world]->bySector.size());
+    return m_worlds[world]->drawn ? m_worlds[world]->bySector[sector] : nullptr;
+}
+
+rw::Atomic* WorldSet::loadedAtomic(std::size_t world, std::uint32_t sector) const {
+    CONEY_ASSERT(world < m_worlds.size() && sector < m_worlds[world]->bySector.size());
     return m_worlds[world]->bySector[sector];
+}
+
+void WorldSet::setDrawn(std::size_t world, bool drawn) {
+    CONEY_ASSERT(world < m_worlds.size());
+    m_worlds[world]->drawn = drawn;
+}
+
+WorldAtomic* WorldSet::worldAtomic(std::size_t world, std::uint32_t sector) {
+    CONEY_ASSERT(world < m_worlds.size() && sector < m_worlds[world]->bySector.size());
+    const rw::Atomic* wanted = m_worlds[world]->bySector[sector];
+    if (wanted == nullptr) {
+        return nullptr;
+    }
+    // The sector's part holds it among its atomics.
+    for (Part& part : m_worlds[world]->parts) {
+        for (WorldAtomic& atomic : part.atomics) {
+            if (atomic.atomic() == wanted) {
+                return &atomic;
+            }
+        }
+    }
+    return nullptr;
 }
 
 std::size_t WorldSet::residentAtomics() const {

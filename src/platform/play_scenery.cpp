@@ -134,7 +134,13 @@ void LevelPlayScenery::step(world::Vec3 camera, const FrameTime& frame) {
                                                                          .frameRate = 30.0F,
                                                                          .viewports = 1,
                                                                          .lowRateMode = false});
+    // The debug tools' world edits, on what this step loaded.
+    if (m_edits) {
+        m_edits->afterStep(m_editSteps++, set, m_scenery.level->collision.get());
+    }
 }
+
+void LevelPlayScenery::setEditHook(const std::shared_ptr<WorldEditHook>& hook) { m_edits = hook; }
 
 void LevelPlayScenery::findVisible(const WorldView& newest) {
     const world::ViewFrustum frustum(newest.pose, newest.halfWidth, newest.halfHeight, newest.nearClip,
@@ -148,19 +154,33 @@ void LevelPlayScenery::draw(RenderEngine& engine, const WorldView& view, std::ui
                             const std::function<void()>& drawObjects, const std::function<void()>& afterWorlds) {
     // The world draws the sectors its own view sees (WorldRenderer::render), with the characters among the objects;
     // the debug menus' spawned objects go first among those, in the world's camera, states and fog.
-    if (!m_extras.draw) {
+    if (!m_extras.draw && !m_edits) {
         m_renderer.render(engine, *m_scenery.set, m_scenery.level.get(), view, m_pending, nowMs, drawObjects, {},
                           afterWorlds);
         return;
     }
+    // The debug tools' world edits draw their pieces of each world first after it (WorldEditHook::drawAfterWorld()).
     const auto withExtras = [this, &engine, &drawObjects] {
-        m_extras.draw(engine);
+        if (m_edits) {
+            m_edits->drawAfterWorld(0, m_renderer.lighting());
+        }
+        if (m_extras.draw) {
+            m_extras.draw(engine);
+        }
         if (drawObjects) {
             drawObjects();
         }
     };
-    m_renderer.render(engine, *m_scenery.set, m_scenery.level.get(), view, m_pending, nowMs, withExtras, {},
-                      afterWorlds);
+    const auto withEdits = [this, &afterWorlds] {
+        if (m_edits) {
+            m_edits->drawAfterWorld(1, m_renderer.lighting());
+        }
+        if (afterWorlds) {
+            afterWorlds();
+        }
+    };
+    const world::LevelObject* level = m_edits && !m_edits->drawsBackground() ? nullptr : m_scenery.level.get();
+    m_renderer.render(engine, *m_scenery.set, level, view, m_pending, nowMs, withExtras, {}, withEdits);
 }
 
 std::expected<void, Error> LevelPlayScenery::setExtras(const RenderEngine& /*engine*/, SceneExtras extras) {

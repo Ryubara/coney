@@ -57,12 +57,12 @@ constexpr std::string_view kUsage =
     "                           [--bench-spawn-step N] [--bench-measure N]\n"
     "                           [--bench-place X,Y,Z,H] [--bench-neutrals N] [--bench-fps]]\n"
     "             [--log-file FILE] [--log-verbose CATEGORIES]\n"
-    "             [--dev-overlay N] [--mesh-view SPEC]\n"
+    "             [--dev-overlay N] [--mesh-view SPEC] [--world-edit FILE]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
     "             [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
     "             [--no-activate] [--window-display DISPLAY]\n"
     "             [--no-audio | --audio-test] [--skip-movies] [--cpu-skinning]\n"
-    "             [--record FILE [--record-seconds N]]\n"
+    "             [--record FILE [--record-seconds N] [--record-debug-draw]]\n"
     "             [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]\n"
     "\n"
     "  --install DISC     install the PS2 disc (a mounted disc, a folder of its files or an ISO image)\n"
@@ -200,6 +200,9 @@ constexpr std::string_view kUsage =
     "                     FFmpeg (CONEY_FFMPEG or PATH). Test mode; with --play-level from the first\n"
     "                     frame of play\n"
     "  --record-seconds N the clip's length, 1 to 10 seconds (default and most: 10)\n"
+    "  --record-debug-draw\n"
+    "                     keep the Debug draw lines the run switched on (the world edits' collision\n"
+    "                     wireframe) in the clip; the menus and the overlay stay out\n"
     "  --render-size WxH  draw frames W x H pixels (such as 640x448, the original's), the logical\n"
     "                     screen filling them at its 4:3 shape; needs a window\n"
     "  --input-script FILE\n"
@@ -212,6 +215,8 @@ constexpr std::string_view kUsage =
     "  --mesh-view SPEC   the Debug draw page's mesh views from the first frame of play: items separated by\n"
     "                     commas, wire=selection|humans|all, view=wire|material|draw|lod,\n"
     "                     scope=selection|humans|all, normals, bones, select=nearest|player, frames=N\n"
+    "  --world-edit FILE  with --view-world or a level's --play-level: the world edits in FILE (sectors\n"
+    "                     spread on a grid, a world hidden, a building cut out and moved, roof collision)\n"
     "  --headless        run with no window and no GPU (nothing is drawn)\n"
     "  --help             show this text and exit\n";
 
@@ -433,6 +438,9 @@ std::expected<void, Error> checkRecord(const Options& options) {
     if (options.recordSeconds.has_value() && !options.recordPath.has_value()) {
         return invalidArgument("--record-seconds needs --record: it sets the clip's length");
     }
+    if (options.recordDebugDraw && !options.recordPath.has_value()) {
+        return invalidArgument("--record-debug-draw needs --record: it keeps the debug lines in the clip");
+    }
     if (!options.recordPath.has_value()) {
         return {};
     }
@@ -485,10 +493,25 @@ std::expected<void, Error> resolveDataFolder(Options& options, std::optional<std
     return {};
 }
 
+// Refuses `--world-edit` where there is no streamed world to edit: part of checkCombinations().
+std::expected<void, Error> checkWorldEdit(const Options& options) {
+    if (!options.worldEditFile.has_value()) {
+        return {};
+    }
+    const bool level = options.playLevel.has_value() && !sandboxOfPlayLevel(*options.playLevel).has_value();
+    if (!options.viewWorld.has_value() && !level) {
+        return invalidArgument("--world-edit needs --view-world or a level's --play-level: it edits a streamed world");
+    }
+    return {};
+}
+
 // Refuses options that cannot work together, once the whole command line is read.
 std::expected<void, Error> checkCombinations(const Options& options) {
     if (auto installing = checkInstall(options); !installing) {
         return installing;
+    }
+    if (auto edits = checkWorldEdit(options); !edits) {
+        return edits;
     }
     if (auto record = checkRecord(options); !record) {
         return record;
@@ -1033,6 +1056,16 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 !value) {
                 return std::unexpected(std::move(value.error()));
             }
+        } else if (arg == "--world-edit") {
+            if (auto value = takeValue(args, i, options.worldEditFile, "--world-edit", "the path of a world edit file");
+                !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--record-debug-draw") {
+            if (options.recordDebugDraw) {
+                return invalidArgument("--record-debug-draw given twice");
+            }
+            options.recordDebugDraw = true;
         } else if (arg == "--mesh-view") {
             if (auto value = takeValue(args, i, options.meshView, "--mesh-view", "a list of views"); !value) {
                 return std::unexpected(std::move(value.error()));

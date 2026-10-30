@@ -64,8 +64,23 @@ class WorldSet final : public world::PartStore {
     /// The worlds' streaming state, in load order (the `s` world first), for the streamer.
     [[nodiscard]] std::span<world::StreamedWorld* const> worlds() const { return m_states; }
 
-    /// The atomic of sector `sector` of world `world`, or null while its part is not loaded.
+    /// The atomic of sector `sector` of world `world`, or null while its part is not loaded or while setDrawn() keeps
+    /// the world from being drawn: what a render draws (WorldRenderer::render()).
     [[nodiscard]] rw::Atomic* atomic(std::size_t world, std::uint32_t sector) const;
+
+    /// The atomic of sector `sector` of world `world` whenever its part is loaded, drawn or not: for the debug tools'
+    /// world edits, which cut and place the atomics of a world they draw themselves or hide.
+    /// @coney-only the debug tools' world edits; the original has none
+    [[nodiscard]] rw::Atomic* loadedAtomic(std::size_t world, std::uint32_t sector) const;
+    /// Whether a render draws world `world`'s sectors (atomic()); true unless the debug tools' world edits hide the
+    /// world or draw its sectors themselves, away from their boxes.
+    /// @coney-only the debug tools' world edits; the original has none
+    void setDrawn(std::size_t world, bool drawn);
+
+    /// The WorldAtomic of sector `sector` of world `world`, or null while its part is not loaded: for the debug tools'
+    /// world edits (platform/world_edit.h), which cut and place the atomics they own.
+    /// @coney-only the debug tools' world edits; the original has none
+    [[nodiscard]] WorldAtomic* worldAtomic(std::size_t world, std::uint32_t sector);
 
     /// Atomics resident now, over every world.
     [[nodiscard]] std::size_t residentAtomics() const;
@@ -96,6 +111,7 @@ class WorldSet final : public world::PartStore {
         std::vector<Part> parts;           // part i at [i - 1]
         std::vector<rw::Atomic*> bySector; // by streamed index; null while not loaded
         std::uint64_t heap = 0;            // charged to the budget while the world is loaded
+        bool drawn = true;                 // setDrawn()
     };
 
     WorldSet(const io::Wad& wad, world::SectorBudget& budget) : m_wad(wad), m_budget(budget) {}
