@@ -372,7 +372,7 @@ void addRadarBindings(LuaVm& vm, const BindingContext& context) {
                             const auto found = hud.radar().blips.find(handleArg(args, 0));
                             if (found != hud.radar().blips.end()) {
                                 // stand-in: the third argument, which the original passes to the blip's mode, is not
-                                // read, and a string that is not a number flashes.
+                                // read (its port is #700's), and a string that is not a number flashes.
                                 found->second.flashing = boolArg(args, 1);
                             }
                         }));

@@ -82,13 +82,19 @@ scale, 0 when left out (`0x00370728`), and `TriggerSphereCfg`'s enable, false wh
 (`0x0036d0e0`). The tests are in [optional_args_test.cpp](repo:tests/scripting/optional_args_test.cpp) and
 [binding_args_test.cpp](repo:tests/scripting/binding_args_test.cpp).
 
-The world bindings' boolean arguments read through `binding::booleanArg` too, so `CfgSubtitles`,
-`FlagNetTraverse`'s two flags, `ObjDestroy`, `ObjEnableZone`, `TriggerSphereEnable`, `FlagEnable` and
-`ChangeCollision` read a string that is not a number as false. The wrappers of `TriggerSphereEnable` (`0x0036d008`)
-and `FlagNetTraverse` (`0x0037a968`) read their flags with `Lua_GetOptionalBoolArg`: confirmed (code) at both.
+The world bindings' boolean arguments read through `binding::booleanArg` too, so `CfgSubtitles`, `ObjDestroy`,
+`ObjEnableZone`, `TriggerSphereEnable`, `FlagEnable` and `ChangeCollision` read a string that is not a number as
+false. `TriggerSphereEnable`'s wrapper (`0x0036d008`) reads its flag with `Lua_GetOptionalBoolArg`: confirmed (code).
+`FlagNetTraverse`'s wrapper (`0x0037a968`) reads its two flags the same way, but only after it has type-checked
+arguments 4 and 5 as tolua booleans (each may be left out); when either check fails it runs the three-argument
+overload `0x0037a8d0` instead: confirmed (code). So a string there picks the other overload rather than reading
+false, while Coney's binding (unchanged here, besides the shared reader) reads it as false. The shipped scripts pass
+only `true` or `false` there, or leave the flags out (a counts-only scan of the decompiled scripts), so no level shows
+the difference.
 
 The other bindings keep their own per-file readers, most of which still give an explicit `nil` the default
-([Other bindings](#q-nil-defaults)).
+([Other bindings](#q-nil-defaults)). `TacticDomination`'s range is #1281; the other per-file readers, the HUD file's
+stand-ins and `FlagNetTraverse`'s flags are #1287.
 
 ## Open questions
 
@@ -97,6 +103,7 @@ The other bindings keep their own per-file readers, most of which still give an 
 Only the twelve bindings above were fixed. The thirteenth the sweep found, `TacticDomination`'s range (wrapper
 `0x00376008`), still reads `nil` as left out (3 m): its binding sits in a registration function that ports twenty
 other functions, and its fix waits for those to be compared. The rest read through per-file helpers that treat `nil`
-as left out, which is right for a string or a callback and unchecked for a number or a boolean with a default. Each
-binding's wrapper, read in Ghidra, settles its arguments; the shipped scripts pass `nil` mostly in string and option
-positions, so few levels can show a difference.
+as left out, which is right for a string or a callback and unchecked for a number or a boolean with a default.
+`FlagNetTraverse` differs too, for a flag that is not a boolean ([In Coney](#in-coney)). Each binding's wrapper, read
+in Ghidra, settles its arguments; the shipped scripts pass `nil` mostly in string and option positions, so few levels
+can show a difference.
