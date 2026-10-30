@@ -9,7 +9,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <numbers>
+#include <span>
 #include <string>
+#include <string_view>
 #include <variant>
 #include <vector>
 
@@ -137,6 +139,35 @@ TEST_CASE("field tables: a whole thing's bits are the sum of its fields' bits", 
     CHECK(coney::net::fieldsBits(fields) == expected);
     // network-architecture.md#snapshots budgets a moving human's delta at 15 to 25 bytes; a full one is not far over.
     CHECK(coney::net::fieldsBits(fields) <= std::size_t{25} * 8);
+}
+
+// Expected: combat-reactions.md#damage, confirmed (runtime)
+TEST_CASE("field tables: a human's health and maximum carry the original's s16, a lethal hit's -20 included",
+          "[net][fields]") {
+    // The original keeps both as s16 and a lethal hit took health from 3 to -20 (a dying human's health stays below
+    // 0 until the reaction ends), so the fields must carry it.
+    for (const char* name : {"health", "healthMax"}) {
+        INFO(name);
+        const FieldSpec* found = nullptr;
+        for (const FieldSpec& field : coney::net::fieldTable(ReplicatedKind::Human)) {
+            if (std::string_view(field.name) == name) {
+                found = &field;
+            }
+        }
+        REQUIRE(found != nullptr);
+        // Checked before any write, so a range too narrow fails here rather than in writeField's assert.
+        REQUIRE(found->encoding == FieldEncoding::Integer);
+        REQUIRE(found->min <= -32768.0F);
+        REQUIRE(found->max >= 32767.0F);
+        BitWriter out;
+        for (const std::int32_t health : {-20, -32768, 32767, 0}) {
+            coney::net::writeField(out, *found, health);
+        }
+        BitReader in(out.bytes());
+        for (const std::int32_t health : {-20, -32768, 32767, 0}) {
+            CHECK(std::get<std::int32_t>(*coney::net::readField(in, *found)) == health);
+        }
+    }
 }
 
 // Expected: unverified, #553 (Coney's own field tables; the original has no network play)
