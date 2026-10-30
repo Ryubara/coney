@@ -84,10 +84,11 @@ flowchart TB
   the editor, and `--director-export FILE --out VIDEO` exports a project and exits ([Export](#export)); debug tools'
   options, as `--record` is ([Recording a clip](../running-options.md#record)).
 - **The pause menu**, the user's player-facing entry, follows. The pause grid is fixed and full, and a maintainer
-  decided that MOD OPTIONS is the one place Coney adds to the game's screens
-  ([UI and menus: Maintainer decisions](../studio/ui.md#decisions)), so an entry there is a [question](#questions):
-  a DIRECTOR item after the grid, in the game's own widgets and cues, only while an option is on; or a chord on the
-  pause screen (R3) with no item, shown on the usage line. The main menu's EXTRAS stays alone by the same decisions.
+  decided that, besides MODS on the main menu of a modded install, MOD OPTIONS is the one new place in the game's
+  screens ([UI and menus: Maintainer decisions](../studio/ui.md#decisions)), so an entry there is a
+  [question](#questions): a DIRECTOR item after the grid, in the game's own widgets and cues, only while an option is
+  on; or a chord on the pause screen (R3) with no item, shown on the usage line. The main menu's EXTRAS stays alone
+  by the same decisions.
 - **Opening from play suspends play.** Director is a game mode of Coney's (an id from 0x100) pushed over the paused
   gameplay mode, as the pause menu is ([UI and menus: modes](../studio/ui.md#original-structure)); no step of the game
   runs while it is open, and a recording in progress ends at the step it opened on ([Clips of 60
@@ -206,14 +207,19 @@ test can read it:
 
 ```text
 format director-project 1
-project name="Rumble at the Yard" fps=60 size=1920x1080 hud=off
+project name="Rumble at the Yard" fps=60 size=1920x1080 preset=ps2 hud=off
 item recording=2026-10-29_21-04-17 from=clip1:0 to=clip2:900
 marker at=clip1:0 camera=game blend=cut speed=1
 marker at=clip1:180 camera=free pos=10.2,-4.0,1.7 yaw=35 pitch=-8 fov=50 blend=smooth ease=both speed=1
 marker at=clip1:300 camera=look target=human:12 pos=12.4,-3.1,1.8 fov=42 blend=smooth ease=both speed=0.25 ramp=on
+marker at=clip2:900 camera=look target=human:12 pos=14.0,-2.2,1.6 fov=42 blend=smooth ease=both speed=1 ramp=on
 item recording=2026-10-28_18-30-02 from=clip1:0 to=clip1:1080
 marker at=clip1:0 camera=game blend=cut speed=1
+marker at=clip1:1080 camera=game blend=cut speed=1
 ```
+
+`preset` names the [renderer's preset](../../engine/renderer.md#presets) the preview and the export draw with (*PS2*
+by default); each item's first and last markers are written out like any other.
 
 - **It names, never copies.** An item names a recording, a first and a last step (`clip1:180` is clip 1, step 180), so
   a project is a few kilobytes. A run of clips of one recording is one item ([Cuts](#transitions)).
@@ -258,15 +264,18 @@ A marker is Director's keyframe ([The words Director uses](rockstar-editor.md#te
 the blend into it, the speed and, later, the looks.
 
 - **Every item starts and ends with one**, as the Rockstar Editor's clips do; the first is the game's camera at 1×.
-- **Adding** a marker at the playhead copies **what is seen there**, not the last marker's settings: the evaluated
-  camera (with its blend in progress), the speed and the kind. So adding a marker never changes the shot, and a blend
-  can be split anywhere.
+- **Adding** a marker at the playhead copies **what is seen there**: the evaluated camera (with its blend in
+  progress), the speed and the kind. Where no blend is in progress that is the last marker's settings, as the
+  Rockstar Editor's new marker takes them; inside a blend or on a moving target it is the shot itself, so adding a
+  marker never changes the shot, and a blend can be split anywhere. The survey's
+  [first-version list](rockstar-editor.md#first-version) says the same.
 - **Moving** a marker drags it along its clip (snapping to frames); it cannot pass its neighbours. **Copy** and
   **paste** carry the settings, never the time. **Jump** goes to the previous or next marker.
 - **The panel** shows the marker's camera kind and its values, the blend in and its ease, the speed and the ramp
   (the mock-up's right side). Every value changes by mouse (drag, type), keyboard (Tab between fields, arrows) and pad
-  (up and down between rows, left and right to change, L2 and R2 held for finer and coarser steps, as the debug menu's
-  numbers, [Opening it and the controls](../debug-menu.md#controls)).
+  (up and down between rows, left and right to change, L2 and R2 held for finer and coarser steps while the focus is
+  on a value of the panel, as the debug menu's numbers, [Opening it and the controls](../debug-menu.md#controls); with
+  the focus on the timeline or the preview, L2 and R2 scrub instead, [The pad](#pad)).
 
 ### Cameras {#cameras}
 
@@ -380,7 +389,8 @@ rebound later, in Director's settings.
 | Lists | L1 / R1 | The previous / next tab (Clips, Projects, Videos) |
 | Clips | □ / △ | Add to a project / favourite |
 | Editor | Start | Play and pause |
-| Editor | L2 / R2, held | Scrub back / forward, faster the further pressed (to 8×) |
+| Editor, the focus on the timeline or the preview | L2 / R2, held | Scrub back / forward, faster the further pressed (to 8×) |
+| Editor, the focus on a value of the marker panel | L2 / R2, held | Finer / coarser steps while left and right change it |
 | Editor | d-pad left / right, on the timeline | One frame back / forward; held, it repeats and speeds up |
 | Editor | L1 / R1 | The previous / next marker |
 | Editor | ✕ on the timeline | Add a marker at the playhead, or open the one under it in the panel |
@@ -404,9 +414,9 @@ suspended, sees nothing.
 | Control | Does |
 | --- | --- |
 | Click, double-click | Select; open (a clip in the preview, a project in the editor, a marker in the panel) |
-| Arrows, Enter, Escape, Tab | Move the focus, choose, back, the next field |
+| Arrows, Enter, Escape, Tab | Move the focus, choose, back, the next field (on a panel's value, Left and Right change it) |
 | Space | Play and pause |
-| Left / Right, Shift+Left / Shift+Right | One frame / one recording step back or forward |
+| Left / Right, Shift+Left / Shift+Right, the focus on the timeline or the preview | One frame / one recording step back or forward |
 | Home / End | The project's start / end |
 | , / . (or Ctrl+Left / Ctrl+Right) | The previous / next marker |
 | M | Add a marker at the playhead |
@@ -419,7 +429,7 @@ suspended, sees nothing.
 | F | Full-screen preview |
 | Timeline: click, drag | Seek; scrub (the playhead), move (a marker), trim (an item's edge), reorder (an item) |
 | Timeline: wheel, Ctrl+wheel | Scroll; zoom round the pointer |
-| Preview, right button held | Fly the marker's camera: move the mouse to look, W A S D to move, Q and E down and up, Shift faster, Alt slower, the wheel for the flying speed (Studio's fly camera keys, [The keymap](../studio/level-view.md#keymap)) |
+| Preview, right button held | Fly the marker's camera: move the mouse to look, W A S D to move, Q and E down and up, Shift faster, Alt slower, the wheel for the flying speed (Studio's fly camera keys, [The fly camera](../studio/level-view.md#fly-camera)) |
 | Preview, wheel | Zoom (field of view) |
 | Preview, Alt and the left button dragged | Orbit round the target |
 | Camera mode: Tab, Enter, Escape | The next target, keep, cancel |
@@ -514,7 +524,7 @@ view, and the build issue that writes the encoder waits for the answer. Coney's 
 | Option | Codec in the MP4 | What Coney ships | Code licence | Patents and cost | Platforms | Quality and speed |
 | --- | --- | --- | --- | --- | --- | --- |
 | **1. The operating system's encoders**: Media Foundation (Windows), VideoToolbox (macOS), VA-API (Linux) | H.264 and AAC (HEVC also on Windows and macOS) | Calls to system libraries; no codec | The system's | Paid by the system's maker under its own licence, as for any program that calls them (inferred: Via LA's terms list a PC operating system's codecs apart from other products); a Windows *N* edition lacks the media parts until the Media Feature Pack is installed | Windows and macOS, always; Linux only where the GPU's driver offers H.264 encoding: Intel's media driver does, while Fedora's and openSUSE's Mesa builds leave H.264 out for patent reasons | Hardware encoders where present (fast), Microsoft's and Apple's software encoders otherwise |
-| **2. FFmpeg, an LGPL build** | H.264 only through wrappers of option 1 or 4 (FFmpeg has no H.264 encoder of its own under the LGPL); AAC through its native encoder | Coney's FFmpeg widened from Bink only (`cmake/ffmpeg/`) by the wrappers, the AAC encoder and the scaler | LGPL-2.1-or-later | As option 1 or 4 for the video; **Coney would ship an AAC encoder**, in the Via LA AAC pool's scope | All three, with the gaps of the options it wraps | As the options it wraps |
+| **2. FFmpeg, an LGPL build** | H.264 only through wrappers: of option 1, of option 4, or of the GPU makers' hardware encoders (NVIDIA's NVENC, Intel's Quick Sync, AMD's AMF, each through its maker's driver); FFmpeg has no H.264 encoder of its own under the LGPL. AAC through its native encoder | Coney's FFmpeg widened from Bink only (`cmake/ffmpeg/`) by the wrappers, the AAC encoder and the scaler | LGPL-2.1-or-later | As the option it wraps for the video (a hardware encoder's licence is its maker's, as with option 1); **Coney would ship an AAC encoder**, in the Via LA AAC pool's scope | All three, with the gaps of the options it wraps | As the options it wraps |
 | **3. FFmpeg with x264, a GPL build** | H.264 (x264) and AAC | x264 and FFmpeg's encoder, muxer and scaler | GPL-2.0-or-later, compatible with Coney's GPL-3.0-or-later | **Coney would ship an H.264 encoder**: Via LA's AVC fees are none for the first 100,000 units a year, then $0.20 a unit; whether free downloads count as units is for a maintainer to establish | All three, the same everywhere | The best software H.264 encoder; CPU only |
 | **4. OpenH264, Cisco's binary** | H.264 (Constrained Baseline only); sound from another option | Nothing bundled: Cisco's prebuilt library, downloaded when Coney is installed (the launcher, [The launcher](../launcher.md)) | BSD-2-Clause | **Paid by Cisco** for its own binary, which must be downloaded at install, not bundled; built from source, the fees are the builder's | Windows, macOS, Linux (x86-64 and ARM) | Lower than the others at a given bit rate (Baseline profile), so files are larger; CPU only |
 | **5. AV1 with SVT-AV1, and Opus** | AV1 and Opus (both standard in MP4) | SVT-AV1 and libopus, linked | BSD-3-Clause-Clear with the Alliance for Open Media Patent License 1.0; libopus BSD-3-Clause | **Royalty-free** by the AOM members' grant; Sisvel runs a pool that claims AV1 patents and licenses hardware devices, and has not ruled out software | All three, the same everywhere | Smaller files than H.264 at the same quality; slower to encode on a CPU (presets trade speed for size); some older systems play AV1 only after installing a decoder |
