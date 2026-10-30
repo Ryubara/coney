@@ -37,7 +37,7 @@ is the same, byte for byte, every run.
 | Not stored | No video, no input-only replay | An input replay needs a copy of the whole simulation at the start of every clip, which Coney cannot make (the Lua state), and a seek re-simulates (3 to 6 s a minute of play) |
 | Cost to the game | Capture only on the game's step, from the step snapshot drawing reads ([#1229](issue:1229)): 0.009 ms (hub) to 0.017 ms (crowd) a step; quantizing, compressing and writing on a worker thread | A file write on the game's step stalled one step by 60 ms in the measurements |
 | Clips | 60 seconds = 1,800 steps = 12 blocks; every block starts with a key frame, so a clip boundary is an ordinary block boundary and the next clip's first step is the next step | No step is dropped, nothing is waited for |
-| Seeking | Any step: decompress its block and decode from the key frame; at most 150 steps, about 13 ms for the crowd; blocks kept decoded while scrubbing | Forward and back at any speed, the picture at once |
+| Seeking | Any step: decompress its block and decode from the key frame; at most 150 steps, about 16 ms for the crowd; blocks kept decoded while scrubbing | Forward and back at any speed, the picture at once |
 | Versions | A header with the format version, Coney's version, the level, the disc and the mods. A newer format is refused; an older one is converted on open; another Coney version or a missing mod is warned, never refused | State playback runs no script, so a missing mod draws less, it does not break |
 | Where | `<install>/director/clips/`, one folder per recording, `clip-001.crec` and on; a cap on the folder; a full disk ends the recording at its last whole block | The fixed folder of [#1184](issue:1184); [a question](#questions) for an install that cannot be written |
 | Networking | One id scheme (`NetId`, [#553](issue:553)), one set of field tables, one delta encoder with a baseline ([#554](issue:554)), one event set ([#556](issue:556)), one state digest ([#558](issue:558)), and Director's player is the client's world ([#555](issue:555)) fed from a file | The recording is a snapshot stream with no budget and no interest filter |
@@ -67,7 +67,7 @@ own 14 humans and the hub with 50 AI fighters spawned in front of the player (64
 | The same, 1 s blocks with zstd | 0.68 MB | 4.9 MB | worker | |
 | The same deltas by column, 1 s blocks, zstd | 0.53 MB | 5.0 MB | worker | |
 | Key frame every 5 s, bit-packed deltas | 0.88 MB | 5.64 MB | | |
-| **Key frame every 5 s, deltas by column, zstd** | **0.30 MB** | **3.8 MB** | worker: 0.004 to 0.009 / 0.03 to 0.04 ms a step to compress (runs differ) | **at most 150 steps: 4 / 13 ms** |
+| **Key frame every 5 s, deltas by column, zstd** | **0.30 MB** | **3.8 MB** | worker: 0.004 to 0.009 / 0.03 to 0.06 ms a step to compress (runs differ) | **at most 150 steps: 4 / 16 ms** |
 | Key frame every 60 s, bit-packed deltas | 0.86 MB | 5.56 MB | | up to 1,800 steps |
 | Animation layers in place of poses, key frame every 5 s, bit-packed | 0.26 MB | 0.68 MB | | as the row above it |
 
@@ -200,7 +200,7 @@ flowchart LR
    does not quantize, compress, allocate or touch a file. There is one per-step copy of the drawn state, the
    snapshot's, and the recorder does not build a second.
 2. **A worker builds the blocks.** It takes the records, quantizes them, writes each block (150 steps: a key frame
-   and 149 deltas) by column, compresses it with zstd and appends it to the clip's file. Its work is 0.04 to 0.17 ms a
+   and 149 deltas) by column, compresses it with zstd and appends it to the clip's file. Its work is 0.04 to 0.19 ms a
    step on one core (the probe's encode and the script's compression).
 3. **A clip is 12 blocks.** When a clip's 1,800th step is in, the worker ends it: it appends the index ([The
    file](#file)), writes the file out and renames `clip-001.crec.part` to `clip-001.crec`. The next step is the
@@ -226,9 +226,9 @@ new human) drawn unblended.
 
 - **A seek** to step *s* opens the block that holds it (the index gives its offset), decompresses it and decodes from
   its key frame to *s*: at most 150 steps, 0.02 ms (hub) to 0.06 ms (crowd) each to decode (the probe's bit-packed
-  decoder, standing in for the columns') and 0.006 to 0.03 ms each to decompress, so about 4 ms and 13 ms at worst.
-  Then it takes the world near Director's camera from the level's streaming, which is already loaded for the clip
-  ([below](#seek-world)).
+  decoder, standing in for the columns') and 0.006 to 0.045 ms each to decompress (runs differ), so about 4 ms and 16 ms
+  at worst. Then it takes the world near Director's camera from the level's streaming, which is already loaded for the
+  clip ([below](#seek-world)).
 - **Scrubbing** (dragging the playhead, forward or back) keeps the last few decoded blocks in memory, about 6 MB each
   for the crowd at full precision, so moving within them costs nothing, and only crossing into another block decodes.
   A cache of eight blocks covers 40 seconds round the playhead.
@@ -267,7 +267,7 @@ One clip is one file, `.crec` (a Coney recording; `.cclip` is taken by the engin
 - **Chunks by tag.** Header fields and block sections are tagged and sized, so a reader skips what a newer minor
   version added ([Versions](#versions)).
 - **zstd.** A new dependency (BSD licence), pinned in `cmake/deps.cmake` like the others; it compresses at hundreds
-  of megabytes a second, which is why a block costs at most 0.04 ms a step. The measurements used zstd at level 3.
+  of megabytes a second, which is why a block costs about 0.03 to 0.06 ms a step. The measurements used zstd at level 3.
 
 ## Versions and mods {#versions}
 
@@ -310,7 +310,7 @@ folder](../asset-and-script-architecture.md#install-folder)):
   renamed there (the folder keeps its name; the new name goes in a small file beside the clips). Reading the date is a
   real-clock read outside the frame pacer, so it goes in the platform layer with the clip recorder's allowance in the
   clock check ([Update and render](../conventions.md#update-and-render)); a test-mode run names its recording from
-  `--record-name` instead, so its files are the same every run.
+  `--replay-name` instead, so its files are the same every run.
 - **Size.** About 0.3 MB (hub) to 3.8 MB (64 humans in a fight) a clip. A clip grows with the humans in play, and the
   crowd measured is already past the original's pool of about 60
   ([Network architecture](../network-architecture.md#authority)), so an hour of a level's busiest scene is about
@@ -415,7 +415,7 @@ second for the renderer's step snapshot ([#1229](issue:1229)).
 | # | Issue | Needs | Done when |
 | --- | --- | --- | --- |
 | 1 | **The recording codec**: the block format (key frame, deltas by column, zstd, checksums, the index and footer), the recording's field tables beside #553's (rotation encoding, pose, lean, pelvis, cameras), the per-step digest; zstd added to the dependencies | #553 | The codec, the crash and the version tests, on synthetic scenes |
-| 2 | **The recorder's capture**: the copy, after each step's snapshot is published, of what the recording holds (humans and their poses, objects, doors, cars, cameras, lights, the HUD's lists) into the recorder's ring, with the objects the level changed that the snapshot does not hold; the poses' rotations added to the snapshot; the worker that quantizes, compresses and writes; `--record-replay DIR`, `--record-name` and `--record-clip-steps` for the tests | 1, #1229 | The step-does-no-I/O, same-bytes and recording-changes-nothing tests |
+| 2 | **The recorder's capture**: the copy, after each step's snapshot is published, of what the recording holds (humans and their poses, objects, doors, cars, cameras, lights, the HUD's lists) into the recorder's ring, with the objects the level changed that the snapshot does not hold; the poses' rotations added to the snapshot; the worker that quantizes, compresses and writes; `--replay-out DIR`, `--replay-name` and `--replay-clip-steps` for the tests (their own prefix: the `--record-` options modify `--record`, the MP4 clip) | 1, #1229 | The step-does-no-I/O, same-bytes and recording-changes-nothing tests |
 | 3 | **The event track**: sounds, particles, HUD messages, scenes and movies through one call each, recorded with what a key frame needs of them; shared with #556 | 2 | Event counts of a disc run match the event log's |
 | 4 | **Clips and the folder**: 60-second clips, `.part` and the rename, recovery at start, the folder layout and names, the cap and the free-space check, the fallback folder | 2 | The clip-boundary, full-disk and crash tests |
 | 5 | **Director's player**: the game mode that draws a recording, seeks and scrubs at any speed, with the block cache and the sound restarted at a seek; built on #555's client world, or its first user | 4, #555 | The replays-to-the-same-digest test |
