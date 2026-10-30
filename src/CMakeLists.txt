@@ -84,6 +84,7 @@ add_library(coney_core STATIC
     graphics/throw_arc.cpp
     graphics/human_lighting.cpp
     graphics/level_lighting.cpp
+    graphics/lighting_frame.cpp
     graphics/light_manager.cpp
     graphics/mesh_data.cpp
     graphics/overlay_camera.cpp
