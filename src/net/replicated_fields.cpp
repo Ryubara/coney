@@ -62,10 +62,10 @@ constexpr std::array<FieldSpec, static_cast<std::size_t>(HumanField::Count)> kHu
      .min = kPositionMin,
      .max = kPositionMax},
     {.name = "heading", .encoding = FieldEncoding::Angle, .bits = kHeadingBits},
-    // Health and its maximum are 16-bit numbers in the original's per-player record (docs/research/characters.md),
-    // never below 0: the whole non-negative range, exact.
-    {.name = "health", .encoding = FieldEncoding::Integer, .bits = 15, .min = 0.0F, .max = 32767.0F},
-    {.name = "healthMax", .encoding = FieldEncoding::Integer, .bits = 15, .min = 0.0F, .max = 32767.0F},
+    // Health and its maximum are s16 in the original's per-player record (docs/research/characters.md) and a lethal hit
+    // takes health below 0 (combat-reactions.md#damage: 3 to -20), so the whole s16 range, exact.
+    {.name = "health", .encoding = FieldEncoding::Integer, .bits = 16, .min = -32768.0F, .max = 32767.0F},
+    {.name = "healthMax", .encoding = FieldEncoding::Integer, .bits = 16, .min = -32768.0F, .max = 32767.0F},
     // **Coney stand-in**: 12 bits hold every anim id Coney plays today (under 1000); snapshots (#554) may name a clip
     // by the game's own hash instead.
     {.name = "clip", .encoding = FieldEncoding::Integer, .bits = 12, .min = 0.0F, .max = 4095.0F},

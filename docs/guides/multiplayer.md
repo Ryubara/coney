@@ -354,7 +354,7 @@ one definition, as Quake 3's `netField_t` tables do. `writeField()` and `readFie
 
 | Kind | Fields | Bits in full |
 | --- | --- | --- |
-| Human | position (3 x 18 bits, -1,024 to 1,024 m, under 8 mm a step), heading (10 bits), health and its maximum (15 bits each, the original's 16-bit numbers, [Characters](../research/characters.md)), clip (12 bits), playhead (10 bits, a share of the clip), grounded, knocked out | 118 |
+| Human | position (3 x 18 bits, -1,024 to 1,024 m, under 8 mm a step), heading (10 bits), health and its maximum (16 bits each, -32,768 to 32,767: the original's s16 numbers, which a lethal hit takes below 0, [Characters](../research/characters.md)), clip (12 bits), playhead (10 bits, a share of the clip), grounded, knocked out | 120 |
 | World object | position, heading, door opening (10 bits), state (a byte), broken, hidden | 84 |
 | Car | position, heading, speed (12 bits, -64 to 64 m/s) | 76 |
 
