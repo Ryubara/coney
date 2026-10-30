@@ -248,6 +248,16 @@ fixtures or CI. This waits until the game plays faithfully; designs may be writt
 **Done when** a Blender-made map loads as a level the player can walk, and an imported character plays with an
 existing moveset.
 
+## Coney Director
+
+A recorder and video editor built into Coney, modelled on GTA V's Rockstar Editor: the player records play as replay
+data in clips of 60 seconds, then opens Director to show them from free and tracking cameras, with markers, slow and
+fast motion and smooth blends, and exports an MP4. It changes nothing in how the game plays. The design is
+[Coney Director](guides/director/index.md), starting from [the Rockstar Editor survey](guides/director/rockstar-editor.md).
+
+**Done when** clips of 60 seconds are recorded without a gap, open in Director, take a camera keyframed over a clip
+with a speed change, and export as an MP4.
+
 ## Xbox assets (optional)
 
 A player who also owns the Xbox version gives the installer that disc too: `coney-tools extract --xbox` takes its
