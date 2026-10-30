@@ -3,13 +3,14 @@ kind: topic
 system: ai
 owns:
   functions: [
-    "0x0016bb58", "0x00221cd8", "0x002225d8", "0x00222288", "0x002223e8", "0x002235f8", "0x00223628", "0x00223800",
-    "0x0024df40", "0x0028abc0", "0x0028b358", "0x0028cfe0", "0x0028d190", "0x0028d2e8", "0x0028d358", "0x0028d538",
-    "0x0028de48", "0x0028df30", "0x0028e708", "0x0028fa18", "0x00290138", "0x002904e0", "0x002906b8", "0x00290ea8",
-    "0x00291008", "0x002911f8", "0x0029ce98", "0x0029f098", "0x0029f230", "0x0029f3a8", "0x002add08", "0x002ade10",
-    "0x002aebf8", "0x002af5b0", "0x002afa48", "0x002b2b90", "0x002b2c20", "0x002b2cd8", "0x002b2d00", "0x002b2e28",
-    "0x002b2fc8", "0x002b3360", "0x002b3ab0", "0x002b4098", "0x002b4200", "0x002b4330", "0x002b54d8", "0x002b5520",
-    "0x002b5808", "0x002c0430", "0x002c0748", "0x002fa918", "0x002fa9a8", "0x002fad30", "0x002fad70",
+    "0x0016bb58", "0x00221cd8", "0x00222288", "0x002223e8", "0x002225d8", "0x002235f8", "0x00223628", "0x00223800",
+    "0x00224060", "0x0024df40", "0x0028abc0", "0x0028b358", "0x0028bf00", "0x0028cfe0", "0x0028d190", "0x0028d2e8",
+    "0x0028d358", "0x0028d538", "0x0028dc80", "0x0028de48", "0x0028df30", "0x0028e708", "0x0028fa18", "0x00290138",
+    "0x002904e0", "0x002906b8", "0x00290ea8", "0x00291008", "0x002911f8", "0x0029ce98", "0x0029f098", "0x0029f230",
+    "0x0029f3a8", "0x002add08", "0x002ade10", "0x002aebf8", "0x002af5b0", "0x002afa48", "0x002b2b90", "0x002b2c20",
+    "0x002b2cd8", "0x002b2d00", "0x002b2e28", "0x002b2fc8", "0x002b3360", "0x002b3ab0", "0x002b4098", "0x002b4200",
+    "0x002b4330", "0x002b54d8", "0x002b5520", "0x002b5808", "0x002c0430", "0x002c0748", "0x002fa918", "0x002fa9a8",
+    "0x002fad30", "0x002fad70",
   ]
 ---
 # AI fights: the fight goal, closing in and blocking
@@ -477,11 +478,11 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
   It then queues the attack (no angle), clears the meter, notes the place, and the goal waits.
 - **The tackle meter** is kept by the think handlers of cops (`0x00300908`), gang soldiers (`0x00304840`) and the
   Warriors (`0x0030543c`). These run once per 0.2 s.
-    - It rises by T's gait (`+0x1a8`, capped at 36) while T moves and either holds a weapon (`0x00224060`) or moves
+    - It rises by T's gait (`+0x1a8`, capped at 36) while T moves and either holds an object (`0x00224060`) or moves
       away (T's velocity, `0x003a1f00`, has a non-negative dot product with A's facing).
     - Otherwise it falls by 2 (not below 0).
 
-  So a target who keeps running off, or who swings a weapon, is tackled sooner, and a high `k` makes it faster.
+  So a target who keeps running off, or who carries an object, is tackled sooner, and a high `k` makes it faster.
 
 #### The grab and snap try {#try-grab}
 
@@ -704,10 +705,10 @@ is empty; and for a scorer whose `+0x14d` is set and whose gang has a turf (gang
 
 **`Brain_ScoreEnemy(scorer, enemy, flags)`** (`0x0029ce98`) returns −999 for none, an enemy near a train this update
 (`Brain_IsNearTrain` `0x0028ab30`: brain `+0x2e0` equals the game time) or one the scorer may not take
-(`Brain_CanTakeSlotOn` `0x0028dc80`: the enemy's attack slots are full, the scorer holds none, and no current
-attacker is farther from the enemy than the scorer). Otherwise the sum of these terms, `w` being the weights that
-`CfgSetTargetingPoints` / `CfgSetTargetingPointsEx` set (values from `config_preload2.lua`; the executable's
-defaults in brackets where they differ):
+(`Brain_CanTakeSlotOn` `0x0028dc80`: the enemy's live attack slots (`+0x1a4`) equal his maximum (`+0x1e4`), and
+either the scorer holds one of them or no holder is farther from the enemy than the scorer, by squared 3D distances).
+Otherwise the sum of these terms, `w` being the weights that `CfgSetTargetingPoints` / `CfgSetTargetingPointsEx` set
+(values from `config_preload2.lua`; the executable's defaults in brackets where they differ):
 
 | Term (flag) | When | Points |
 | --- | --- | --- |
@@ -724,7 +725,7 @@ defaults in brackets where they differ):
 | `0x400` running | gait 4 with record `+0x08` clear | + 3 (`0x00510b70`) |
 | `0x800` train | `Brain_IsNearTrain` × 6 (`0x00510b74`); always 0 here, since such an enemy already returned −999 | 0 |
 | `0x1000` tagging | `0x2000000` | + 3 (`0x00510b78`) |
-| `0x2000` targets me armed | as `0x200`, and he holds a weapon (`0x00224060`) | + 3 (`0x00510b7c`) |
+| `0x2000` targets me armed | as `0x200`, and he holds an object (`Human_IsHoldingObject` `0x00224060`: the held object's kind `+0x86`, `0x00231a38`, not 0, whatever its anim set) | + 3 (`0x00510b7c`) |
 | `0x4000` a player | the enemy has a pad (`+0x1b0` ≠ −1) | + 20 (`0x00510b80`) [3] |
 | `0x8000` arrested | `0x20000` | −10 (`0x00510b98`) |
 | `0x10000` police | the enemy's brain is type 1 | + 30 (`0x00510ba0`) |
@@ -789,7 +790,9 @@ is 1, 0 would force level 0). The AI uses it to do less far away: [steering](ai-
 
 **The scan** (`Brain_ScanEnemies(brain, filter)` `0x0028b358`). A human who is down or dead empties his list. Else, with
 `R` the sight range (`Brain_GetSightRange` `0x0028bf00`: `+0x130`, at least 30 m while his gang is fighting, gang
-`+0x32` 1) and `c` = cos(field of view / 2):
+`+0x32` 1, whatever the gang's kind; confirmed (runtime), run r-20261028-sight-range-alert: a range of 2 m gave 30 m
+with the alert at 1 in a gang of kind `0x17`, and a score of −999 with it at 0, for kind `0x17` and for
+kind 1) and `c` = cos(field of view / 2):
 
 1. For each of the 32 gangs that is active (gang `+0x18`) and an enemy of his (`Gang_IsEnemyOf` `0x00168fe0`: the
    enemy bit of the other's id in gang `+0x38`; never between kinds 1 and 23, nor during a global truce), each of its
@@ -1038,7 +1041,11 @@ chance, `+0x37` the pattern-reading threshold ([Power classes](characters.md#pow
   `CfgSetTargetingPoints` / `CfgSetTargetingPointsEx` (read from the scripts' calls), and `Brain_PickBestEnemy` with
   the goals' adjustment (the previous target's 3 points). **Stand-ins**: Coney has no trains, fires,
   muggings, interrogations, tagging or turf-only rule, so those tests pass and those terms give nothing; only the
-  level's static collision blocks a sight ray; a gang's chosen target (`+0x10`) is kept but nothing sets it yet.
+  level's static collision blocks a sight ray; a gang's chosen target (`+0x10`) is kept but nothing sets it yet; the
+  down term's `Human_IsKnockedDown` reads the Grounded target state, Coney having no state flag `0x80000`
+  ([q-score-down-flag](#q-score-down-flag)), and the armed term's `Human_IsHoldingObject` counts any world object in
+  hand, whatever its kind, and a weapon's anim set with no object ([q-score-held-object](#q-score-held-object)). The
+  sight range is at least 30 m while the gang is fighting, whatever its kind (`sightRangeOf`, #1043).
 - **The enemy scan** (`repo:src/ai/enemy_scan.h`, [The enemy scan](#enemy-scan)): `scanEnemies` lists the members of the
   enemy gangs in use that it sees (sight range, the shadow's 2 m rule, the spectate test's 1.9 m height limit, the
   Warriors' threat filter, the near radius of 1.5, 3 or 5.2 m all round and the view cone beyond it, then the line of
@@ -1092,6 +1099,21 @@ and a held AI's presses reach no handler (its holder drives it). A block ends wh
   close-in test, which reads the player's own target. The gesture slots are ruled out: Coney keeps them as the original
   does, per reaction kind and help level ([Gestures](sound-events.md#command-ids)), and the sparring Warriors (type 2)
   have two, as everyone had before.
+
+### Coney's knocked-down test {#q-score-down-flag}
+
+The score's down term (`0x20`) asks `Human_IsKnockedDown` (`0x00223b98`: state `0x80000`, with a record), and Coney has
+no such flag; its port reads the Grounded target state instead. Whether the two agree from the knockdown's first frame
+to the end of 199 (the flag is cleared by 199's end callback, [Getting up](combat-reactions.md#ground-escape)) is not
+checked: compare both through a knockdown in PCSX2 and Coney.
+
+### What an AI holds, for the armed term {#q-score-held-object}
+
+`Human_IsHoldingObject` (`0x00224060`) counts a held world object whose kind (`+0x86`) is not 0, whatever its anim
+set. Coney's score cannot reach the level's object types from a brain, so it counts any world object in hand, and also
+a human who has a weapon's anim set with no object (a spawner's item, which Coney does not put in the hand). Whether
+any object an AI can hold has kind 0 decides whether the first ever differs: list the kinds of the objects the scripts,
+the weapon piles and the spawners hand to AI humans.
 
 ## How this was checked
 

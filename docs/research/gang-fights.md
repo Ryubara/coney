@@ -63,11 +63,11 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
 2. **The choice is a score** ([Choosing among enemies](ai-fights.md#enemy-score)): Melee re-picks with `Brain_PickBestEnemy`
    (`0x0029f230`, flags `0xfffffffd`) every time a fight goal ends. The terms that make a gang **spread** are the
    distance (4 points a metre nearer), "he targets me" (+4), "he is armed and targets me" (+3) and above all **−999
-   when his attack slots are full** and the scorer is not nearer than a holder (`Brain_CanTakeSlotOn` `0x0028dc80`):
-   a fifth man cannot choose a target four already hold. The terms that make it **focus** are the player (+20), the
-   enemy leader (+6 for a scorer that is not a Warrior, flag `0x4`), the previous target (+3, the default adjustment
-   `0x0029f3a8`) and the gang's shared target (+400). Grabbed (+1), grabbed from the rear (+6), down (+1) and stunned
-   (+1) draw mates to a man who is already held or hurt.
+   when his attack slots are full** and the scorer holds one of them or is not nearer than a holder
+   (`Brain_CanTakeSlotOn` `0x0028dc80`): a fifth man cannot choose a target four already hold. The terms that make it
+   **focus** are the player (+20), the enemy leader (+6 for a scorer that is not a Warrior, flag `0x4`), the previous
+   target (+3, the default adjustment `0x0029f3a8`) and the gang's shared target (+400). Grabbed (+1), grabbed from
+   the rear (+6), down (+1) and stunned (+1) draw mates to a man who is already held or hurt.
 3. **The crew under the attack command** (Warriors, and Rumble's side 1, [below](#rumble)) runs
    FollowAndAttack, which scores with flags `0xfffffbf9` (no "near the leader", "enemy leads his gang" or "running"
    terms) and drops a winner more than **60 m from the chief** (`FollowAndAttackGoal_Process` `0x002bc198`: squared

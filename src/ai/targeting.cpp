@@ -2,7 +2,6 @@
 #include "ai/targeting.h"
 
 #include <algorithm>
-#include <cmath>
 #include <cstddef>
 #include <vector>
 
@@ -11,6 +10,7 @@
 #include "ai/goal.h"
 #include "ai/perception.h"
 #include "ai/route_planner.h"
+#include "animation/anim_math.h"
 #include "human/human.h"
 
 namespace coney::ai {
@@ -23,22 +23,34 @@ constexpr int kDogClass = 221;
 constexpr int kStreetGangKind = 0x17;
 // After every this many enemies the walk stops once it has a winner.
 constexpr std::size_t kPickBatch = 5;
+// The script's nil handle: nothing in hand.
+constexpr double kNoHeldObject = 0.0;
 
-// Whether `brain`'s human is knocked down (on the ground).
+// Whether `brain`'s human is knocked down (state `0x80000`, read only when the human has a record `+0xd4`).
+// **Coney stand-in**: Coney keeps no such flag; a human knocked down is the one whose target state is Grounded.
+// Open question: docs/research/ai-fights.md#q-score-down-flag
+// @orig 0x00223b98 Human_IsKnockedDown (unknown)
 bool down(const Brain& brain) { return brain.human().state() == human::TargetState::Grounded; }
 
-// Whether `brain`'s human holds a weapon (an anim set from what it holds).
-bool armed(const Brain& brain) { return brain.human().fighter().animSet() != 0; }
-
-// The plan distance between two brains' humans.
-float planDistance(const Brain& a, const Brain& b) { return a.distanceTo(b); }
+// Whether `brain`'s human holds an object (the held object's kind `+0x86` is not 0), whatever its anim set.
+// **Coney stand-in**: the kinds are the level's object types, which the score cannot reach from a brain, so any
+// world object in hand counts; and a human with a weapon's anim set but no object (a spawner's item, which Coney does
+// not put in the hand) counts too.
+// Open question: docs/research/ai-fights.md#q-score-held-object
+// @orig 0x00224060 Human_IsHoldingObject (unknown)
+bool armed(const Brain& brain) {
+    // Coney stand-in: any object in hand (not its kind), or a weapon's anim set.
+    return brain.human().script().heldObject != kNoHeldObject || brain.human().fighter().animSet() != 0;
+}
 
 } // namespace
 
 float sightRangeOf(const Brain& brain) {
+    // At least kFightingSightRange while the gang is fighting (alert state `+0x32` is 1, Gang::setAlertState()).
+    // **Coney's choice**: the original always has a gang; one with none counts as calm, as mayStartFight() reads it.
     const Gang* gang = brain.gang();
-    if (gang != nullptr && gang->kind() == kPoliceGangKind) {
-        return std::max(brain.sightRange(), kPoliceSightRange);
+    if (gang != nullptr && gang->alertState() == kGangFighting) {
+        return std::max(brain.sightRange(), kFightingSightRange);
     }
     return brain.sightRange();
 }
@@ -81,12 +93,23 @@ bool attackableBy(const Brain& target, const Brain* attacker) {
 }
 
 bool canTakeSlotOn(const Brain& scorer, const Brain& enemy) {
+    // Any count of holders but the maximum leaves room (the original subtracts and tests for 0).
     const std::vector<Brain*>& slots = enemy.attackSlots();
-    if (slots.size() < enemy.attackSlotCount() || std::ranges::find(slots, &scorer) != slots.end()) {
+    if (slots.size() != enemy.attackSlotCount()) {
         return true;
     }
-    const float mine = planDistance(scorer, enemy);
-    return std::ranges::any_of(slots, [&](const Brain* holder) { return planDistance(*holder, enemy) > mine; });
+    // Full: a scorer who already holds one may not take another.
+    if (std::ranges::find(slots, &scorer) != slots.end()) {
+        return false;
+    }
+    // Else only when a holder stands farther from the enemy than the scorer, by squared distances in 3D.
+    const anim::Vec3 at = enemy.human().position();
+    const auto squared = [&](const Brain& brain) {
+        const anim::Vec3 to = anim::subtract(at, brain.human().position());
+        return anim::dot(to, to);
+    };
+    const float mine = squared(scorer);
+    return std::ranges::any_of(slots, [&](const Brain* holder) { return mine < squared(*holder); });
 }
 
 float scoreEnemy(const Brain& scorer, const Brain& enemy, std::uint32_t flags) {

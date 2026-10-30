@@ -1,0 +1,37 @@
+version = 1
+id = "r-20261028-sight-range-alert"
+date = "2026-10-28"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "2a2a1a887e3c8f79ed3d2b654ecff5130a9361ee9c34fed643499dee3fd8d574"
+
+[who]
+agent = "a972ddc54dbc65b91"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-b"
+
+[start]
+state = "pedestrian-grab"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "PoizoCiv's brain range +0x130 written 2.0, his gang (kind 0x17) alert +0x32 and kind +0x2c written; Brain_ScoreEnemy(PoizoCiv, Rembrandt, flag 0x1) called through the call-brains block; Brain_GetSightRange's f0 read at 0x0028bf2c by a breakpoint, the alert written to 1 at its entry (the gang's update puts it back to 0 each update)"
+
+[values]
+own_range_score = -3
+calm_range2_score = -999
+fighting_range2_sight = 30
+fighting_range2_score = 57
+police_calm_range2_score = -999
+
+[addresses]
+brain = 0x006d56e0
+gang = 0x005e8450
+Brain_GetSightRange = 0x0028bf00
+Brain_ScoreEnemy = 0x0029ce98

@@ -260,9 +260,6 @@ tag = 5
 ["src/ai/tactic_scout.h"]
 comment = 1
 
-["src/ai/targeting.cpp"]
-tag = 3
-
 ["src/ai/taunt_action.h"]
 comment = 1
 
@@ -1668,9 +1665,6 @@ citation = 17
 
 ["tests/ai/tactics_test.cpp"]
 citation = 16
-
-["tests/ai/targeting_test.cpp"]
-citation = 6
 
 ["tests/ai/taunt_action_test.cpp"]
 citation = 4

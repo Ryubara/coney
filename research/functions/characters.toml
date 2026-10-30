@@ -420,6 +420,20 @@ coney = "src/human/face.h:FaceState::setMood"
 status = "compared"
 
 [[function]]
+address = 0x00223b98
+name = "Human_IsKnockedDown"
+page = "characters.md#code-core"
+role = "State flag 0x80000, read only when the human has a record (`+0xd4`)."
+level = "confirmed-code"
+coney = "src/ai/targeting.cpp:down"
+status = "compared"
+
+[[function.gaps]]
+what = "Coney keeps no state flag 0x80000: a human knocked down is one whose target state is Grounded"
+relation = "stand-in"
+question = "ai-fights.md#q-score-down-flag"
+
+[[function]]
 address = 0x00223c10
 name = "Human_HasHeld40"
 page = "characters.md#climb"
@@ -427,6 +441,20 @@ role = "Record `+0x08` bit `0x40`: set while a climb's middle clip plays (fences
 level = "confirmed-code"
 coney = "src/human/human.h:Human::climbingOver"
 status = "legacy"
+
+[[function]]
+address = 0x00224060
+name = "Human_IsHoldingObject"
+page = "ai-fights.md#enemy-score"
+role = "Whether the held object's kind (`+0x86`, `0x00231a38`) is not 0, whatever its anim set."
+level = "confirmed-code"
+coney = "src/ai/targeting.cpp:armed"
+status = "compared"
+
+[[function.gaps]]
+what = "the object kinds are the level's and out of the score's reach, so any world object in hand counts (kind 0 too), and so does a weapon's anim set with no object"
+relation = "stand-in"
+question = "ai-fights.md#q-score-held-object"
 
 [[function]]
 address = 0x002240e8
