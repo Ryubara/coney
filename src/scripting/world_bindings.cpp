@@ -172,8 +172,8 @@ NativeFunction makeObjShowHide(const BindingContext& context, bool show) {
 NativeFunction makeTriggerSphereCfg(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
         if (context->spheres != nullptr) {
-            // Stand-in: the mode keeps Coney's reading of a non-number as 1, where the original's signed reader gives 0
-            // (a test asserts it; reported on #686).
+            // The mode is a stand-in: a non-number reads as 1 (a test asserts it), where the original's signed reader
+            // gives 0; scripts pass only numbers there (docs/research/scripting.md#optional-arguments).
             static_cast<void>(context->spheres->configure(
                 binding::handleArg(args, 0), binding::booleanArg(args, 1, false), binding::floatArg(args, 2),
                 numberOrBooleanArg(args, 3), binding::unsignedArg(args, 4)));
