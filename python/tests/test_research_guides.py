@@ -51,5 +51,7 @@ def test_the_guide_scopes_an_old_runtime_claim_to_the_touched_section() -> None:
     text = guide("writing-docs.md")
     start = text.index("### Legacy pages")
     legacy = text[start : text.index("`coney-tools docs legacy` prints", start)]
-    # The old-form runtime claim is graded like a block with no level: in the sections the change touches.
-    assert re.search(r"grading of a block is held to the sections[^;]*old-form runtime claim", legacy)
+    # The old-form runtime claim is graded like a block with no level: owed in the sections the change touches,
+    # while outside them the entry goes on excusing it.
+    assert re.search(r"ends the excuse in the sections a change touches[^;]*old-form runtime claim", legacy)
+    assert "Outside the touched sections the entry goes on excusing what it lists" in legacy
