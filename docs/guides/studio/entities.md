@@ -41,7 +41,8 @@ absolutely everything about him, without bloat. The answer in five lines:
 - [A Human's properties](human-properties.md), with [a Target](human-properties.md#target) and
   [a Gang](human-properties.md#gang)
 - [Attributes](#attributes)
-- [Spawning a prefab from a script](#spawn-prefab): the pivot, the ground, `Coney.SpawnPrefab` and despawning
+- [Spawning a prefab from a script](#spawn-prefab): the pivot, the ground, `Coney.SpawnPrefab` and despawning, the
+  assets it needs and [a worked example](asset-lifetime.md#wave-example)
 - [What the level file stores](#level-file)
 - [Tests](#tests), [open questions](#open-questions), [proposed build issues](#build-issues), [sources](#sources)
 
@@ -553,6 +554,7 @@ the stored height.
 | Proposed native | Does |
 | --- | --- |
 | `Coney.SpawnPrefab(path, pos, heading)` | Makes the prefab at `pos` (`{x, y, z}`), turned by `heading` degrees about z: every member at its offset turned by the heading, then dropped to the ground where its *Drop to ground* is on; returns the instance's handle and a table of its members' handles by name, or `nil` and the reason when it cannot be made |
+| `Coney.GetPrefabAssets(path)` | The prefab's assets as a list of paths, each once, in file order (nested prefabs depth-first): the `asset` properties of its entities, and for a human of a project character type the character file and the model and clips it names. A game type given by number is not listed ([The game's own models](asset-lifetime.md#game-models)). Raises the error of a path that does not resolve |
 | `Coney.DespawnPrefab(handle)` | Removes everything a spawned instance made, each the way the game removes its kind (`HuDelete` for a human, `ObjDestroy` for an object, `CarDestroy`, `GangDelete`), its handlers disconnected; returns how many it removed; a level's own instance is refused |
 
 - **What it makes** is what a level load makes from the same entities: each member through its natives in file order,
@@ -563,12 +565,26 @@ the stored height.
   table maps each member's name to its handle (names repeated in the prefab: the first, with the rest reached through
   `Coney.GetEntityMembers`, and Studio warns of the repeat). A spawned instance's id is `#N`, the session's count, so
   its members are `#3/h2` to `Coney.FindEntity`, and never written to a file.
+- **Its assets are loaded first, by the script.** The prefab's members use models, clips and sounds, and a spawn loads
+  nothing behind the script's back ([Loading and releasing assets](asset-lifetime.md#rules)). The script calls
+  `Coney.LoadAsset(path)` with the **prefab's path**, which loads every asset in `Coney.GetPrefabAssets(path)` as one
+  group with one id: `Coney.IsAssetLoaded(id)` is true once all have arrived, `Coney.GetAssetState(id)` is `failed`
+  with the first reason if one failed, and `Coney.ReleaseAsset(id)` drops the group's holds. A script may instead load
+  the list's assets one by one (to show progress, or to load only some of them early). `Coney.SpawnPrefab` checks that
+  **every asset in the list is loaded and held by the project**, whichever way it got them, and raises an error naming
+  the first one that is not and its state, before it makes anything. The prefab file itself is read at the spawn; it is
+  text and holds no asset memory. A prefab with no assets (a gang and humans of game types) needs no load at all.
+- **Releasing is safe.** The members hold their assets while they live, so `Coney.ReleaseAsset` while an instance
+  stands frees nothing, and the memory goes at the step boundary after the last member is despawned or deleted.
 - **All or nothing.** Before making anything, Coney counts the members of each kind against the game's pools (60
   humans, 32 gangs, the object and flag limits, [Entities](../../references/entities.md)); a spawn that does not fit
   makes nothing and says which pool is full.
 - **Deterministic and networked.** Both are `server` natives, called inside a step; the members' handles are the
   session's, in file order, so a replay spawns the same handles, and clients learn of the members as of any entity.
 - **Only Coney's kinds.** A prefab can hold only what a level can, so a spawn never makes a kind Coney does not have.
+
+**A worked example**, a thread that loads a prefab, waits, spawns three waves, despawns each and releases, is in [Loading
+and releasing assets](asset-lifetime.md#wave-example).
 
 ## What the level file stores {#level-file}
 
@@ -638,6 +654,14 @@ every check runs headless where it can.
   separate; the members' table names every member; `Coney.FindEntities` finds both instances' members by tag; a
   spawn that would pass the 60 humans makes nothing; `Coney.DespawnPrefab` removes every member and a replay gives
   the same handles.
+- **A prefab's assets.** `Coney.GetPrefabAssets` of a fixture prefab with a model, a sound, a project character type,
+  a nested prefab that repeats the model and a human of a game type number lists each path once, in file order, and
+  not the number. `Coney.SpawnPrefab` before any load, with half the list loaded one by one, and with the group still
+  `loading` raises an error naming the first missing asset and its state and makes nothing; `Coney.LoadAsset` of the
+  prefab's path loads the whole list under one id and a spawn after it works; releasing the group while an instance
+  stands frees no bytes, and despawning it frees them at the next step boundary. The wave example ([A thread spawning
+  waves](asset-lifetime.md#wave-example)) runs to its end under a scripted run, three bosses downed, and ends with the
+  project holding nothing.
 - **Attributes from scripts.** A test project reads and writes each type, removes one with `nil`, is refused a wrong
   type and a bad name, gets `attributeChanged` events in order, and finds the level's values unchanged after Stop; a
   network client's `SetEntityAttribute` is refused.
@@ -711,7 +735,10 @@ issues](lua-sdk.md#build-issues)); 8 and 9 build on the editor experience design
    and turned by a heading about its pivot, each member dropped to the ground where its `ground` is on; its
    properties, events, tags and attributes as at a level load; a new gang per spawn; the pools checked first; the
    instance handle and the members by name returned; `#N` ids; despawning through each kind's removal native.
-   Needs prefabs in level files and the mods runtime. Tests: the *Spawning a prefab* cases of [Tests](#tests).
+   The prefab's asset list, `Coney.GetPrefabAssets`, the group load by a prefab path and the check that every asset
+   is loaded before a spawn (the error of [Loading and releasing assets](asset-lifetime.md#rules)), on the asset
+   natives of the [Lua SDK](lua-sdk.md#build-issues), issue 9. Needs prefabs in level files and the mods runtime.
+   Tests: the *Spawning a prefab* and *A prefab's assets* cases of [Tests](#tests).
 8. **tools: Add the schema-drawn Inspector to Coney Studio.** The Inspector of [The Inspector](#inspector): the header
    with name and tags, the Source rows with their badges, derived mark and *Copy path* ([Asset
    sources](#asset-source)), the generic widgets per type, groups with remembered state, Advanced parts, the Debug

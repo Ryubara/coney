@@ -352,6 +352,7 @@ nav:
           - Editor experience: guides/studio/editor-experience.md
           - "The Level view, gizmos and composing": guides/studio/level-view.md
           - Lua SDK and natives: guides/studio/lua-sdk.md
+          - Loading and releasing assets: guides/studio/asset-lifetime.md
           - Technology: guides/studio/technology.md
           - Icons: guides/studio/icons.md
           - Content and formats: guides/studio/content-and-formats.md
