@@ -181,7 +181,7 @@ draw without librw's GL3 device as early as possible:
 
 1. **The proof** (items 1 and 2). The draw-stream hashes and the picture comparison, so every later step shows that
    the *PS2* picture did not move.
-2. **A start without librw's GL3 device** (item 3). `--renderer gpu` (and `Display/Renderer` in the overrides file,
+2. **A start without librw's GL3 device** (item 3). `--renderer gl3|gpu` (and `Display/Renderer` in the overrides file,
    applied at the next start): Coney makes the window through SDL3 itself, claims SDL's GPU device and swapchain with
    the present modes, and opens librw with its NULL device, as headless runs already do, so streams and rasters load
    and the game runs while the GPU renderer only clears and presents. From here on, librw's GL3 device is used only
@@ -206,13 +206,47 @@ draw without librw's GL3 device as early as possible:
    each scene of the [benchmark](#benchmark) and the named `--play-level` frames are drawn by both renderers on the
    same machine and compared as [How pictures are compared](#comparing) says, with the cross-renderer tolerance;
    differences are listed. librw's GL3 output stays the reference until the switch.
-7. **The switch** (item 22). When parity holds for every scene, `gpu` becomes the default and `gl` the fallback for
+7. **The switch** (item 22). When parity holds for every scene, `gpu` becomes the default and `gl3` the fallback for
    machines with no Vulkan, D3D12 or Metal. When the GL3 renderer retires, and with it librw's GL3 platform (librw
    would then be built for its NULL platform, data only), is a maintainer question ([Questions](#questions)).
 
 Enhancements are written once, against the GPU renderer: a new option targets `gpu` only, and the GL3 renderer stays
 the *PS2* picture. The presets, the benchmark, the frame-rate gaps and the lighting frame do not depend on the
 backend, so they land beside the groundwork (items 15 to 20).
+
+### Testing while it grows {#migration-testing}
+
+The GPU renderer grows on `main`, never on a long-lived branch: from item 3 on it is in every build, chosen at start by
+`--renderer gl3|gpu`, with GL3 the default until a maintainer gives the go-ahead for the switch (item 22). Each item
+merges small, and a part the GPU renderer does not draw yet is simply missing from its picture, never a crash.
+
+- **Both renderers in CI.** The unit tests build the frame description headless and need neither renderer. The
+  software-picture job (item 2) draws each synthetic scene twice under Mesa, GL3 through llvmpipe and `gpu` through
+  lavapipe (Vulkan) from item 11 on, and the Windows and macOS jobs build the GPU renderer and compile every shader
+  for their targets (item 4). A smoke run starts `--renderer gpu` with `--frames` under lavapipe and checks that it
+  presents.
+- **GL3 is the reference.** Each frame-description item keeps the draw-stream hashes ([How pictures are
+  compared](#comparing)), so GL3's picture does not move while the seam is built.
+- **The GPU renderer against GL3.** Each item that adds a part to `gpu` (11 to 14, 21) draws the same synthetic scenes
+  and named `--play-level` frames on both renderers and compares them with the cross-renderer tolerance (the Across
+  renderers row of [the gates](#comparing)): in CI on the software drivers, locally on a real GPU with the counts in the
+  pull request. A difference the tolerance does not cover is listed on this page with its reason, or the item is not
+  done.
+
+### Expected gains {#migration-gains}
+
+Estimates from the [Baseline](#baseline), not results; each is measured by `perf bench --compare` against the
+baseline that item 17 records, on a quiet machine. Today's frame is bound by the CPU: with 50 fighters, CPU skinning
+takes 17.8 of 24.1 ms in the least disturbed run, the GPU is nearly idle (17 times the pixels cost no more), and a
+frame makes 470-700 draws.
+
+| Step | What it gains (estimate) | Measured by |
+| --- | --- | --- |
+| The backend switch itself (items 11, 13, 21) | little speed on this machine: it can shrink only the drawing besides skinning (0.74 ms in the hub, 1.05 in the street) and the present (0.39-0.49 ms), perhaps by half with fewer state changes and instancing. Its gains are what GL3 cannot give: Metal on macOS, the present modes, HDR, the post chain | `perf bench --scene all --renderer gpu --compare` at each item, against GL3's baseline |
+| GPU skinning (item 14) | the largest: the CPU's 3.2 ms in the hub and 17.8 ms or more with 50 fighters leave the frame, for a GPU cost well under a millisecond; the hub frame from 6.1 ms to about 3, the crowd's from 24.1 to about 6-7 | `--scene hub,hub-crowd --renderer gpu --compare`, `render.skin` and `gpu.frame` side by side |
+| The simulation thread (items 38 to 43) | no shorter mean frame; the step's 2-4 ms leaves the frames that carry a step, so the p99 frame and the frames over the display's period fall ([What it gains](#threads-gain)), and an uncapped rate rises by about an eighth | item 43's real-time runs at a 240 cap, with and without the thread |
+
+The [Budget](#budget) turns these into the gates each item is held to.
 
 ### Spike {#spike}
 
