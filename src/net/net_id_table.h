@@ -134,9 +134,30 @@ template <typename Handle> class NetIdTable {
 template <typename A, typename B>
 std::expected<NetId, Error> assignShared(NetIdAllocator& ids, NetIdTable<A>& first, std::type_identity_t<A> a,
                                          NetIdTable<B>& second, std::type_identity_t<B> b) {
-    (void)second; // stub until snapshots (#554): each table on its own
-    (void)b;
-    return first.assign(ids, a);
+    const auto inFirst = first.idOf(a);
+    const auto inSecond = second.idOf(b);
+    if (inFirst && inSecond) {
+        if (*inFirst != *inSecond) {
+            return fail(ErrorCode::Invalid,
+                        std::format("net id: one thing holds slots {} and {}", inFirst->slot, inSecond->slot));
+        }
+        return *inFirst;
+    }
+    if (inFirst || inSecond) {
+        const NetId id = inFirst ? *inFirst : *inSecond;
+        auto bound = inFirst ? second.bind(id, b) : first.bind(id, a);
+        if (!bound) {
+            return std::unexpected(std::move(bound.error()));
+        }
+        return id;
+    }
+    auto id = first.assign(ids, a);
+    if (!id) {
+        return id;
+    }
+    auto bound = second.bind(*id, b);
+    CONEY_ASSERT(bound.has_value()); // a fresh id's slot is bound nowhere, when only the allocator fills the tables
+    return id;
 }
 
 /// The server's side: the thing `a` and `b` name in two tables (assignShared()) has gone, whichever path finds it
@@ -146,9 +167,17 @@ std::expected<NetId, Error> assignShared(NetIdAllocator& ids, NetIdTable<A>& fir
 template <typename A, typename B>
 std::optional<NetId> retireShared(NetIdAllocator& ids, NetIdTable<A>& first, std::type_identity_t<A> a,
                                   NetIdTable<B>& second, std::type_identity_t<B> b) {
-    (void)second; // stub until snapshots (#554): each table on its own
-    (void)b;
-    return first.retire(ids, a);
+    const auto inFirst = first.idOf(a);
+    const auto inSecond = second.idOf(b);
+    CONEY_ASSERT(!inFirst || !inSecond || *inFirst == *inSecond); // assignShared() never gives them two
+    const auto id = inFirst ? inFirst : inSecond;
+    if (!id) {
+        return std::nullopt;
+    }
+    (void)first.unbind(*id);
+    (void)second.unbind(*id);
+    ids.retire(*id);
+    return id;
 }
 
 } // namespace coney::net

@@ -1127,12 +1127,6 @@ comment = 1
 ["src/net/link_quality.h"]
 comment = 2
 
-["src/net/net_client.h"]
-comment = 5
-
-["src/net/net_server.h"]
-comment = 2
-
 ["src/physics/body_sweep.cpp"]
 tag = 10
 
@@ -2240,12 +2234,6 @@ citation = 3
 
 ["tests/net/loopback_transport_test.cpp"]
 citation = 6
-
-["tests/net/protocol_test.cpp"]
-citation = 9
-
-["tests/net/sessions_test.cpp"]
-citation = 22
 
 ["tests/physics/body_sweep_test.cpp"]
 citation = 15

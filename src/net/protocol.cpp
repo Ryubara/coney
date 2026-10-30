@@ -17,6 +17,8 @@
 #include "core/error.h"
 #include "core/pad.h"
 #include "net/bit_stream.h"
+#include "net/net_id.h"
+#include "net/replicated_fields.h"
 #include "net/transport.h"
 
 namespace coney::net {
@@ -85,6 +87,105 @@ std::expected<PadSample, Error> readPad(BitReader& in) {
     return pad;
 }
 
+// Every human field's changed bit set: what an entry for a human the baseline does not hold carries.
+constexpr std::uint32_t kAllHumanFields = (1U << kHumanFieldCount) - 1U;
+static_assert(kHumanFieldCount < 32);
+
+// Bits writeVarUint() takes for `value`: 8 for each 7 bits it needs, 8 at least.
+std::size_t varUintBits(std::uint64_t value) {
+    std::size_t groups = 1;
+    while (value >= 0x80U) {
+        value >>= 7U;
+        ++groups;
+    }
+    return groups * 8;
+}
+
+// Whether a Snapshot keeps its rules (encode() asserts them, decode() refuses what breaks them): null when it does,
+// else the reason.
+const char* snapshotRuleBroken(const Snapshot& snapshot) {
+    if (snapshot.sequence == 0) {
+        return "network snapshot has sequence 0";
+    }
+    if (snapshot.baseline != 0 &&
+        (snapshot.baseline >= snapshot.sequence || snapshot.sequence - snapshot.baseline > kSnapshotHistory)) {
+        return "network snapshot's baseline is not among the snapshots before it";
+    }
+    for (std::size_t i = 0; i < snapshot.humans.size(); ++i) {
+        const SnapshotEntry& entry = snapshot.humans[i];
+        if (!entry.id.valid()) {
+            return "network snapshot names no id";
+        }
+        if (i > 0 && !(snapshot.humans[i - 1].id < entry.id)) {
+            return "network snapshot's ids are not in rising order";
+        }
+        if (entry.removed ? entry.changed != 0 : (entry.changed == 0 || (entry.changed & ~kAllHumanFields) != 0)) {
+            return "network snapshot entry changes nothing, or a removal changes something";
+        }
+        for (std::size_t field = 0; field < kHumanFieldCount; ++field) {
+            if ((entry.changed & (1U << field)) == 0 && entry.words.at(field) != 0) {
+                return "network snapshot entry has a word for a field it does not change";
+            }
+        }
+    }
+    return nullptr;
+}
+
+// Writes a Snapshot entry as Snapshot's comment lays it out.
+void writeSnapshotEntry(BitWriter& out, const SnapshotEntry& entry) {
+    const auto fields = fieldTable(ReplicatedKind::Human);
+    writeNetId(out, entry.id);
+    out.writeBool(entry.removed);
+    if (entry.removed) {
+        return;
+    }
+    for (std::size_t field = 0; field < kHumanFieldCount; ++field) {
+        const bool changed = (entry.changed & (1U << field)) != 0;
+        out.writeBool(changed);
+        if (changed) {
+            out.writeBits(entry.words.at(field), fields[field].bits);
+        }
+    }
+}
+
+// Reads a Snapshot entry written by writeSnapshotEntry(); a word over its field's range is Invalid.
+std::expected<SnapshotEntry, Error> readSnapshotEntry(BitReader& in) {
+    const auto fields = fieldTable(ReplicatedKind::Human);
+    SnapshotEntry entry;
+    auto id = readNetId(in);
+    if (!id) {
+        return std::unexpected(id.error());
+    }
+    entry.id = *id;
+    auto removed = in.readBool();
+    if (!removed) {
+        return std::unexpected(removed.error());
+    }
+    entry.removed = *removed;
+    if (entry.removed) {
+        return entry;
+    }
+    for (std::size_t field = 0; field < kHumanFieldCount; ++field) {
+        auto changed = in.readBool();
+        if (!changed) {
+            return std::unexpected(changed.error());
+        }
+        if (!*changed) {
+            continue;
+        }
+        auto word = in.readBits(fields[field].bits);
+        if (!word) {
+            return std::unexpected(word.error());
+        }
+        if (auto value = fieldValue(fields[field], *word); !value) {
+            return std::unexpected(value.error());
+        }
+        entry.changed |= 1U << field;
+        entry.words.at(field) = *word;
+    }
+    return entry;
+}
+
 // Writes one message's id and fields.
 void writeMessage(BitWriter& out, const Message& message) {
     std::visit(
@@ -114,9 +215,19 @@ void writeMessage(BitWriter& out, const Message& message) {
                 out.writeU8(static_cast<std::uint8_t>(MessageId::Pong));
                 out.writeVarUint(m.sequence);
             } else if constexpr (std::is_same_v<T, Snapshot>) {
-                out.writeU8(static_cast<std::uint8_t>(MessageId::Snapshot)); // stub until snapshots (#554)
+                CONEY_ASSERT(snapshotRuleBroken(m) == nullptr);
+                out.writeU8(static_cast<std::uint8_t>(MessageId::Snapshot));
+                out.writeVarUint(m.sequence);
+                out.writeVarUint(m.baseline == 0 ? 0 : m.sequence - m.baseline);
+                out.writeVarUint(m.step);
+                out.writeVarUint(m.humans.size());
+                for (const SnapshotEntry& entry : m.humans) {
+                    writeSnapshotEntry(out, entry);
+                }
             } else if constexpr (std::is_same_v<T, SnapshotAck>) {
-                out.writeU8(static_cast<std::uint8_t>(MessageId::SnapshotAck)); // stub until snapshots (#554)
+                CONEY_ASSERT(m.sequence != 0);
+                out.writeU8(static_cast<std::uint8_t>(MessageId::SnapshotAck));
+                out.writeVarUint(m.sequence);
             } else if constexpr (std::is_same_v<T, InputTiming>) {
                 out.writeU8(static_cast<std::uint8_t>(MessageId::InputTiming));
                 out.writeVarInt(m.lead);
@@ -276,6 +387,57 @@ std::expected<Message, Error> readFields(BitReader& in, std::uint8_t id) {
         }
         return commands;
     }
+    case MessageId::Snapshot: {
+        Snapshot snapshot;
+        auto sequence = readSequence(in);
+        if (!sequence) {
+            return std::unexpected(sequence.error());
+        }
+        snapshot.sequence = *sequence;
+        auto back = readSequence(in);
+        if (!back) {
+            return std::unexpected(back.error());
+        }
+        if (*back > kSnapshotHistory || (*back != 0 && *back >= snapshot.sequence)) {
+            return fail(ErrorCode::Invalid, "network snapshot's baseline is not among the snapshots before it");
+        }
+        snapshot.baseline = *back == 0 ? 0 : snapshot.sequence - *back;
+        auto step = readSequence(in);
+        if (!step) {
+            return std::unexpected(step.error());
+        }
+        snapshot.step = *step;
+        auto count = in.readVarUint();
+        if (!count) {
+            return std::unexpected(count.error());
+        }
+        // Each entry takes an id and a bit at least: a count the packet cannot hold is refused before allocating.
+        if (*count > in.remainingBits() / (kNetIdBits + 1)) {
+            return fail(ErrorCode::Invalid, "network snapshot counts more entries than its packet holds");
+        }
+        snapshot.humans.reserve(static_cast<std::size_t>(*count));
+        for (std::uint64_t i = 0; i < *count; ++i) {
+            auto entry = readSnapshotEntry(in);
+            if (!entry) {
+                return std::unexpected(entry.error());
+            }
+            snapshot.humans.push_back(*entry);
+        }
+        if (const char* broken = snapshotRuleBroken(snapshot)) {
+            return fail(ErrorCode::Invalid, broken);
+        }
+        return snapshot;
+    }
+    case MessageId::SnapshotAck: {
+        auto sequence = readSequence(in);
+        if (!sequence) {
+            return std::unexpected(sequence.error());
+        }
+        if (*sequence == 0) {
+            return fail(ErrorCode::Invalid, "network snapshot acknowledgement names sequence 0");
+        }
+        return SnapshotAck{.sequence = *sequence};
+    }
     case MessageId::InputTiming: {
         auto lead = in.readVarInt();
         if (!lead) {
@@ -326,17 +488,37 @@ Delivery deliveryOf(const Message& message) {
     // Input commands repeat the steps before them in every packet, and timing goes with every Ping, so a lost one is
     // replaced at once; a resend would only arrive stale.
     if (std::holds_alternative<Ping>(message) || std::holds_alternative<Pong>(message) ||
-        std::holds_alternative<InputCommands>(message) || std::holds_alternative<InputTiming>(message)) {
+        std::holds_alternative<InputCommands>(message) || std::holds_alternative<InputTiming>(message) ||
+        std::holds_alternative<SnapshotAck>(message)) {
         return Delivery::Unreliable;
+    }
+    // A snapshot older than one already delivered is of no use: the newer one holds everything it does.
+    if (std::holds_alternative<Snapshot>(message)) {
+        return Delivery::UnreliableSequenced;
     }
     return Delivery::ReliableOrdered;
 }
 
-// Stub until snapshots (#554).
-std::size_t snapshotEntryBits(const SnapshotEntry& /*entry*/) { return 0; }
+std::size_t snapshotEntryBits(const SnapshotEntry& entry) {
+    std::size_t bits = kNetIdBits + 1;
+    if (entry.removed) {
+        return bits;
+    }
+    const auto fields = fieldTable(ReplicatedKind::Human);
+    for (std::size_t field = 0; field < kHumanFieldCount; ++field) {
+        bits += 1;
+        if ((entry.changed & (1U << field)) != 0) {
+            bits += static_cast<std::size_t>(fields[field].bits);
+        }
+    }
+    return bits;
+}
 
-// Stub until snapshots (#554).
-std::size_t snapshotHeaderBits(const Snapshot& /*snapshot*/, std::size_t /*entries*/) { return 0; }
+std::size_t snapshotHeaderBits(const Snapshot& snapshot, std::size_t entries) {
+    return 8 + varUintBits(snapshot.sequence) +
+           varUintBits(snapshot.baseline == 0 ? 0 : snapshot.sequence - snapshot.baseline) +
+           varUintBits(snapshot.step) + varUintBits(entries);
+}
 
 bool samePadOnTheWire(const PadSample& a, const PadSample& b) {
     if (!a.connected || !b.connected) {

@@ -72,6 +72,8 @@ constexpr std::array<FieldSpec, static_cast<std::size_t>(HumanField::Count)> kHu
     // A share of the clip rather than a frame, since the table cannot know a clip's frame count: 10 bits are a frame
     // in a clip of a thousand.
     {.name = "playhead", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
+    // The layer under the newest while the newest fades in over it (AnimTaskStack keeps up to 12, but only a fade
+    // shows two at once), and how far the fade has gone, to 10 bits as the playheads.
     {.name = "fadeClip", .encoding = FieldEncoding::Integer, .bits = 12, .min = 0.0F, .max = 4095.0F},
     {.name = "fadePlayhead", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
     {.name = "fade", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
@@ -126,46 +128,61 @@ constexpr std::array<FieldSpec, static_cast<std::size_t>(CarField::Count)> kCarF
 
 } // namespace
 
-// Stub until snapshots (#554).
-std::uint32_t fieldWord(const FieldSpec& /*field*/, const FieldValue& /*value*/) { return 0; }
-
-// Stub until snapshots (#554).
-std::expected<FieldValue, Error> fieldValue(const FieldSpec& /*field*/, std::uint32_t /*word*/) {
-    return FieldValue{false};
-}
-
-void writeField(BitWriter& writer, const FieldSpec& field, const FieldValue& value) {
+std::uint32_t fieldWord(const FieldSpec& field, const FieldValue& value) {
     switch (field.encoding) {
     case FieldEncoding::Bool:
         CONEY_ASSERT(std::holds_alternative<bool>(value));
-        writer.writeBool(std::get<bool>(value));
-        return;
+        return std::get<bool>(value) ? 1U : 0U;
     case FieldEncoding::Integer: {
         CONEY_ASSERT(std::holds_alternative<std::int32_t>(value));
         const std::int64_t number = std::get<std::int32_t>(value);
         const auto low = static_cast<std::int64_t>(field.min);
         CONEY_ASSERT(number >= low && number <= static_cast<std::int64_t>(field.max));
-        writer.writeBits(static_cast<std::uint32_t>(number - low), field.bits);
-        return;
+        return static_cast<std::uint32_t>(number - low);
     }
     case FieldEncoding::Float:
         CONEY_ASSERT(std::holds_alternative<float>(value));
-        writer.writeQuantized(std::get<float>(value), field.min, field.max, field.bits);
-        return;
+        return quantize(std::get<float>(value), field.min, field.max, field.bits);
     case FieldEncoding::Angle: {
         CONEY_ASSERT(std::holds_alternative<float>(value));
         const float radians = std::get<float>(value);
         // The angle as a share of a turn from -pi, wrapped into [0, 1), rounded to a step; the last step rounds up to a
-        // whole turn, which is the first. NaN goes to the first step, as quantize() sends it to the bottom.
-        const double share = std::isnan(radians) ? 0.0 : (static_cast<double>(radians) + std::numbers::pi) / kTurn;
+        // whole turn, which is the first. NaN and an infinity, which have no place on the circle, go to the first
+        // step, as quantize() sends NaN to the bottom (an infinity would wrap to NaN, and NaN has no whole number).
+        const double share = std::isfinite(radians) ? (static_cast<double>(radians) + std::numbers::pi) / kTurn : 0.0;
         const double steps = angleSteps(field.bits);
         const double rounded = std::round((share - std::floor(share)) * steps);
-        const double q = rounded >= steps ? 0.0 : rounded;
-        writer.writeBits(static_cast<std::uint32_t>(q), field.bits);
-        return;
+        return static_cast<std::uint32_t>(rounded >= steps ? 0.0 : rounded);
     }
     }
     CONEY_ASSERT(false);
+    return 0;
+}
+
+std::expected<FieldValue, Error> fieldValue(const FieldSpec& field, std::uint32_t word) {
+    if (static_cast<std::uint64_t>(word) > maxForBits(field.bits)) {
+        return fail(ErrorCode::Invalid, std::format("field {}: {} is over its {} bits", field.name, word, field.bits));
+    }
+    switch (field.encoding) {
+    case FieldEncoding::Bool:
+        return FieldValue{word != 0};
+    case FieldEncoding::Integer:
+        // The bits may hold more than the range does: more is a corrupt or forged packet.
+        if (word > integerSpan(field)) {
+            return fail(ErrorCode::Invalid, std::format("field {}: {} is over its range", field.name, word));
+        }
+        return FieldValue{static_cast<std::int32_t>(static_cast<std::int64_t>(field.min) + word)};
+    case FieldEncoding::Float:
+        return FieldValue{dequantize(word, field.min, field.max, field.bits)};
+    case FieldEncoding::Angle:
+        return FieldValue{
+            static_cast<float>((static_cast<double>(word) / angleSteps(field.bits) * kTurn) - std::numbers::pi)};
+    }
+    return fail(ErrorCode::Invalid, std::format("field {}: unknown encoding", field.name));
+}
+
+void writeField(BitWriter& writer, const FieldSpec& field, const FieldValue& value) {
+    writer.writeBits(fieldWord(field, value), field.bits);
 }
 
 std::expected<FieldValue, Error> readField(BitReader& reader, const FieldSpec& field) {
@@ -173,22 +190,7 @@ std::expected<FieldValue, Error> readField(BitReader& reader, const FieldSpec& f
     if (!bits) {
         return std::unexpected(bits.error());
     }
-    switch (field.encoding) {
-    case FieldEncoding::Bool:
-        return FieldValue{*bits != 0};
-    case FieldEncoding::Integer:
-        // The bits may hold more than the range does: more is a corrupt or forged packet.
-        if (*bits > integerSpan(field)) {
-            return fail(ErrorCode::Invalid, std::format("field {}: {} is over its range", field.name, *bits));
-        }
-        return FieldValue{static_cast<std::int32_t>(static_cast<std::int64_t>(field.min) + *bits)};
-    case FieldEncoding::Float:
-        return FieldValue{dequantize(*bits, field.min, field.max, field.bits)};
-    case FieldEncoding::Angle:
-        return FieldValue{
-            static_cast<float>((static_cast<double>(*bits) / angleSteps(field.bits) * kTurn) - std::numbers::pi)};
-    }
-    return fail(ErrorCode::Invalid, std::format("field {}: unknown encoding", field.name));
+    return fieldValue(field, *bits);
 }
 
 float fieldStep(const FieldSpec& field) {

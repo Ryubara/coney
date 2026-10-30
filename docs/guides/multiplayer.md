@@ -14,7 +14,8 @@ architecture](network-architecture.md).
 protocol, the server and client sessions with their handshake, keep-alive and timeouts), the ENet transport, and the
 game's side: hosting and joining from the debug menus' Network page or the command line ([In the game](#in-the-game)),
 and the guest's pad as the host's pad port 2 ([Player two](#player-two)); the network ids and the replicated-field
-tables that snapshots will use ([Network ids](#net-ids)). The guest does not see the host's game yet.
+tables ([Network ids](#net-ids)); and [snapshots](snapshots.md) of humans, delta-compressed against acknowledged
+baselines within a 1,200-byte budget. The guest does not see the host's game yet: nothing fills the snapshots from it.
 **Next:** the layers under [The plan](#plan).
 
 ## The model {#model}
@@ -52,6 +53,7 @@ tables that snapshots will use ([Network ids](#net-ids)). The guest does not see
 | Sessions | `src/net/net_server.h`, `net_client.h` | the handshake, slots, keep-alive and timeouts of each side |
 | Network ids | `src/net/net_id.h`, `net_id_table.h` | the server's ids for replicated things, and each side's table from ids to its own handles |
 | Field tables | `src/net/replicated_fields.h` | each replicated kind's fields: their encodings, bits and ranges |
+| Snapshots | `src/net/snapshot.h` | each client's humans as deltas against what it acknowledged, within a budget ([Snapshots](snapshots.md)) |
 | ENet | `src/platform/enet_transport.h` | the transport over UDP |
 
 `coney_net` is platform-neutral: no socket, no ENet and no operating-system code, the same rule as the rest of
@@ -86,8 +88,8 @@ Received.
 | Delivery | Guarantee | Used for | ENet |
 | --- | --- | --- | --- |
 | ReliableOrdered | exactly once, in order among reliable packets | handshake, Bye; later game events, mission state | `ENET_PACKET_FLAG_RELIABLE`, channel 0 |
-| UnreliableSequenced | at most once; one older than a packet already delivered is dropped | later: snapshots | no flag, channel 1 |
-| Unreliable | at most once, any order | Ping, Pong, InputCommands (each repeats the steps before it), InputTiming | `ENET_PACKET_FLAG_UNSEQUENCED`, channel 1 |
+| UnreliableSequenced | at most once; one older than a packet already delivered is dropped | Snapshot | no flag, channel 1 |
+| Unreliable | at most once, any order | Ping, Pong, InputCommands (each repeats the steps before it), InputTiming, SnapshotAck | `ENET_PACKET_FLAG_UNSEQUENCED`, channel 1 |
 
 An unreliable packet too big for one datagram also gets `ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT`: without it ENet
 resends a big unreliable packet's fragments reliably, so a lost snapshot fragment would stall the channel instead of
@@ -113,7 +115,7 @@ the loopback; the Network page will put it in front of ENet.
 
 ## Protocol {#protocol}
 
-Each message is one packet: a message id byte, its fields, zero padding to a whole byte. `kProtocolVersion` (now 3)
+Each message is one packet: a message id byte, its fields, zero padding to a whole byte. `kProtocolVersion` (now 4)
 changes with any change to a layout or a meaning; a test pins the encoding byte for byte so a change cannot slip in
 unnoticed.
 
@@ -128,6 +130,8 @@ unnoticed.
 | 7 | PadInput | retired: one step's pad (version 2 only); the id is never reused | | |
 | 8 | InputCommands | client to server | the newest step (varint, 32 bits at most), the number of pads less one (3 bits), the newest step's pad, then each older step's "same pad" bit or pad (below); since version 3 | unreliable |
 | 9 | InputTiming | server to client | the client's lead (zigzag varint, 32 bits at most), the target lead (8); since version 3 | unreliable |
+| 10 | Snapshot | server to client | the humans as a delta against an acknowledged snapshot ([The packet](snapshots.md#packet)); since version 4 | unreliable, sequenced |
+| 11 | SnapshotAck | client to server | the newest snapshot decoded (varint); since version 4 | unreliable |
 
 **A pad** is connected (1 bit) and, only when connected, the button word (16 bits, the PS2 layout of `core/pad.h`),
 the four raw stick bytes (right x, right y, left x, left y) and, for each of the 12 pressure bytes, a bit saying
@@ -333,7 +337,9 @@ allocator is plain data with no clock and no randomness: the same calls give the
 Each side keeps a **`NetIdTable<Handle>`** (`src/net/net_id_table.h`) from ids to its own handles and back, one per
 kind of handle: on the server the handles the game already has (a human's `Human*`, a brain's `Brain*`, a world
 object's script handle), on a client the things it made for the server's ids. The server's `assign()` gives a thing
-its id (allocating one the first time) and `retire()` takes it away. A client's `bind()` refuses what a packet could
+its id (allocating one the first time) and `retire()` takes it away. A thing two tables name (a human by its `Human*`
+and its `Brain*`) gets one id through `assignShared()` and loses it through `retireShared()`, whichever table reaches
+it first. A client's `bind()` refuses what a packet could
 get wrong (no id, a slot bound in another generation that was not unbound first, a handle with an id already), and
 every lookup by an id of another generation answers nothing. A table is walked in id order, never by handle value,
 so every machine walks it the same way.
@@ -354,15 +360,16 @@ one definition, as Quake 3's `netField_t` tables do. `writeField()` and `readFie
 
 | Kind | Fields | Bits in full |
 | --- | --- | --- |
-| Human | position (3 x 18 bits, -1,024 to 1,024 m, under 8 mm a step), heading (10 bits), health and its maximum (16 bits each, -32,768 to 32,767: the original's s16 numbers, which a lethal hit takes below 0, [Characters](../research/characters.md)), clip (12 bits), playhead (10 bits, a share of the clip), grounded, knocked out | 120 |
+| Human | position (3 x 18 bits, -1,024 to 1,024 m, under 8 mm a step), heading (10 bits), health and its maximum (16 bits each, -32,768 to 32,767: the original's s16 numbers, which a lethal hit takes below 0, [Characters](../research/characters.md)), two animation layers: the clip (12 bits) and playhead (10 bits, a share of the clip), the clip it fades in over and its playhead, and the fade (10 bits), then grounded, knocked out | 152 |
 | World object | position, heading, door opening (10 bits), state (a byte), broken, hidden | 84 |
 | Car | position, heading, speed (12 bits, -64 to 64 m/s) | 76 |
 
-The ranges are Coney's choices. Three are stand-ins, marked in the code, for snapshots
-(#554) to settle: the positions' fixed bounds around the origin (in
-place of each level's own), the clip as an anim id under 4,096 (or the game's own hash), and the world object's state
-byte and the car's speed range. A snapshot sends a thing's changed fields only, so a moving human's delta stays under
-the 15 to 25 bytes [the budget](network-architecture.md#snapshots) allows for it. `validateFields()` checks a table
+The ranges are Coney's choices. Four are stand-ins, marked in the code, for the game's side of snapshots to settle:
+the positions' fixed bounds around the origin (in place of each level's own), the clip as an anim id under 4,096 (or
+the game's own hash), the world object's state byte and the car's speed range. A snapshot sends a thing's changed
+fields only, so a walking human's delta is about 9 bytes ([What a scene costs](snapshots.md#costs)), under the 15 to
+25 bytes [the budget](network-architecture.md#snapshots) allows for it. `fieldWord()` and `fieldValue()` give a
+field's bits as a number and back, which is what a snapshot compares and sends. `validateFields()` checks a table
 (named fields, different names, bits 1 to 32, ranges that fit their bits), and the tests check every table with it.
 
 ## Testing {#testing}
@@ -384,7 +391,8 @@ the handshake, letting go of a quiet pad, InputTiming and the client's clock fol
 ids (reused only with a new generation, the order slots come back in, the generations' wrap, the wire form) and the
 tables (a stale generation finds nothing, a client's refused binds, the walk in id order);
 `tests/net/replicated_fields_test.cpp` round-trips every table's fields at their range's ends and middle and checks
-the refusals; `tests/net/protocol_test.cpp` pins
+the refusals and an infinite angle; `tests/net/snapshot_test.cpp` covers snapshots ([Snapshots](snapshots.md#testing));
+`tests/net/protocol_test.cpp` pins
 InputCommands' and InputTiming's bytes;
 `tests/gamemodes/game_mode_stack_test.cpp` checks that `beforeStep` comes before the pads are read;
 `tests/debug/net_page_test.cpp` drives the Network page over a fake
@@ -400,8 +408,8 @@ Each step is a pull request that builds and is tested on its own.
 4. **Input commands** (built): the client's pads tagged with the step, the last few repeated in every packet, the
    server's buffer that plays each on its step, and the timing that keeps them coming in time
    ([Input commands](#input-commands)).
-5. **Replicated players:** network ids and the field tables (built: [Network ids](#net-ids)), snapshots (quantized,
-   delta-compressed against acknowledged baselines), the client's jitter buffer and interpolation, and its own follow
-   camera.
+5. **Replicated players:** network ids and the field tables (built: [Network ids](#net-ids)), snapshots (built:
+   quantized, delta-compressed against acknowledged baselines, [Snapshots](snapshots.md)), the game's humans in them,
+   the client's jitter buffer and interpolation, and its own follow camera.
 6. **AI humans, events, mission state:** the rest of what a client must see and hear, events reliable.
 7. **Prediction:** the local player predicted and corrected from the server's snapshots.
