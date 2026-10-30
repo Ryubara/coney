@@ -19,8 +19,12 @@ GOOD_SOURCE = (
     "int think() {\n    int a = 1;\n    a += 1;\n    return a;\n}\n"
 )
 BAD_SOURCE = GOOD_SOURCE + "\nint guess() {\n    int a = 1;\n    a += 1;\n    return a;\n}\n"
+#: `BAD_SOURCE` with a line of its second function, `guess` (no comment, no tag), changed: the touch-it rule holds it.
+GUESS_CHANGED = "a += 3;".join(BAD_SOURCE.rsplit("a += 1;", 1))
 GOOD_TEST = 'TEST_CASE("a") {\n    // Expected: unverified, #12\n    CHECK(1 == 1);\n}\n'
 BAD_TEST = 'TEST_CASE("a") {\n    CHECK(1 == 1);\n}\n'
+#: `BAD_TEST` with a line of its test case changed.
+CASE_CHANGED = BAD_TEST.replace("CHECK(1 == 1);", "CHECK(2 == 2);")
 
 ENTRY = """[[function]]
 address = 0x00123456
@@ -224,7 +228,7 @@ def test_nothing_fails_the_check_while_it_is_not_enforced(tmp_path: Path) -> Non
                 LegacyFiles({"src/ai/brain.cpp": {"comment": 1}, "src/ai/other.cpp": {"comment": 1}})
             ),
             "research/functions/ai.toml": f'# ai\n\n{ENTRY}status = "legacy"\n',
-            "src/ai/brain.cpp": BAD_SOURCE + "// x\n",
+            "src/ai/brain.cpp": GUESS_CHANGED,
         },
     )
     conv = conventions(**{"standards.cutover": "2026-11-01", "standards.enforce": False})
@@ -283,7 +287,7 @@ def test_a_function_marked_legacy_since_the_base_is_refused_only_while_a_cutover
 
 def test_a_touched_file_below_the_standard_is_a_warning_while_not_enforced(tmp_path: Path) -> None:
     root = build(tmp_path, {"src/ai/brain.cpp": BAD_SOURCE, "src/ai/other.cpp": BAD_SOURCE})
-    branch(root, {"src/ai/brain.cpp": BAD_SOURCE + "\n// More.\n"})
+    branch(root, {"src/ai/brain.cpp": GUESS_CHANGED})
     conv = conventions(**{"standards.enforce": False})
     found = sc.touched(root, conv, sc.scan_tree(root, conv), "main")
     files = {(r.path, r.rule, r.error) for r in found}
@@ -294,7 +298,7 @@ def test_a_touched_file_below_the_standard_is_a_warning_while_not_enforced(tmp_p
 
 def test_a_touched_file_below_the_standard_fails_once_the_check_is_enforced(tmp_path: Path) -> None:
     root = build(tmp_path, {"src/ai/brain.cpp": BAD_SOURCE, "tests/ai/a_test.cpp": BAD_TEST})
-    branch(root, {"tests/ai/a_test.cpp": BAD_TEST + "// x\n", "src/ai/brain.cpp": BAD_SOURCE + "// y\n"})
+    branch(root, {"tests/ai/a_test.cpp": CASE_CHANGED, "src/ai/brain.cpp": GUESS_CHANGED})
     conv = conventions(**{"standards.enforce": True})
     found = sc.touched(root, conv, sc.scan_tree(root, conv), "main")
     assert found and all(r.error for r in found)
@@ -475,6 +479,82 @@ def test_a_new_file_holds_all_its_ported_functions(tmp_path: Path) -> None:
     assert [r.rule for r in sc.touched(root, conv, result, "main")] == ["compared"]
 
 
+# --- the touch-it rule's reach: the functions, types and test cases a change touched --------------------------------
+
+#: Two functions below the standard (no comment, no tag) in one gameplay file.
+TWO_BAD = (
+    "int guess() {\n    int a = 1;\n    a += 1;\n    return a;\n}\n\n"
+    "int other() {\n    int b = 1;\n    b += 1;\n    return b;\n}\n"
+)
+
+
+def held_and_listed(root: Path) -> tuple[set[tuple[str, int]], set[tuple[str, int]]]:
+    """The (rule, line) the touch-it rule holds the branch to, and those it only lists (`info`)."""
+    conv = conventions(**{"standards.enforce": True})
+    found = sc.touched(root, conv, sc.scan_tree(root, conv), "main")
+    held = {(r.rule, r.line) for r in found if not r.info}
+    assert all(r.error for r in found if not r.info) and not any(r.error for r in found if r.info)
+    return held, {(r.rule, r.line) for r in found if r.info}
+
+
+def test_a_changed_function_of_an_old_file_is_held_and_the_one_beside_it_is_only_listed(tmp_path: Path) -> None:
+    root = build(tmp_path, {"src/ai/brain.cpp": TWO_BAD})
+    branch(root, {"src/ai/brain.cpp": TWO_BAD.replace("a += 1;", "a += 2;")})
+    held, listed = held_and_listed(root)
+    assert held == {("comment", 1), ("tag", 1)}
+    assert listed == {("comment", 7), ("tag", 7)}
+
+
+def test_a_change_that_brings_its_function_up_passes_whatever_the_rest_of_the_file_holds(tmp_path: Path) -> None:
+    root = build(tmp_path, {"src/ai/brain.cpp": TWO_BAD})
+    fixed = "// Guesses.\n// @coney-only a test helper\n" + TWO_BAD.replace("a += 1;", "a += 2;")
+    branch(root, {"src/ai/brain.cpp": fixed})
+    held, listed = held_and_listed(root)
+    assert held == set() and listed == {("comment", 9), ("tag", 9)}
+
+
+def test_a_new_file_is_held_whole(tmp_path: Path) -> None:
+    root = build(tmp_path, {})
+    branch(root, {"src/ai/brain.cpp": TWO_BAD})
+    held, listed = held_and_listed(root)
+    assert held == {("comment", 1), ("tag", 1)} and listed == set()
+    report = next(r for r in sc.touched(root, conventions(), scan(root)[0], "main") if r.rule == "comment")
+    assert "2 findings in a new file" in report.message
+
+
+def test_a_type_is_held_when_the_change_touches_its_body(tmp_path: Path) -> None:
+    header = "#pragma once\n\nstruct Plain {\n    int a = 0;\n};\n\nstruct Other {\n    int b = 0;\n};\n"
+    root = build(tmp_path, {"src/ai/brain.h": header})
+    branch(root, {"src/ai/brain.h": header.replace("int b = 0;", "int b = 1;")})
+    held, listed = held_and_listed(root)
+    assert held == {("type-doc", 7)} and listed == {("type-doc", 3)}
+
+
+def test_a_changed_test_case_is_held_and_the_one_beside_it_is_only_listed(tmp_path: Path) -> None:
+    two = BAD_TEST + "\n" + BAD_TEST.replace('"a"', '"b"')
+    root = build(tmp_path, {"tests/ai/a_test.cpp": two})
+    branch(root, {"tests/ai/a_test.cpp": two.replace("CHECK(1 == 1);\n}\n\nTEST", "CHECK(2 == 2);\n}\n\nTEST")})
+    held, listed = held_and_listed(root)
+    assert held == {("citation", 1)} and listed == {("citation", 5)}
+
+
+def test_the_check_command_lists_what_lies_outside_the_change_in_one_line_or_each_with_cleanup(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from coney_tools import standards_cli
+
+    root = build(tmp_path, {"src/ai/brain.cpp": TWO_BAD}, status='status = "compared"\n')
+    (root / "coney.local.example.toml").write_text("", encoding="utf-8")
+    fixed = "// Guesses.\n// @coney-only a test helper\n" + TWO_BAD.replace("a += 1;", "a += 2;")
+    branch(root, {"src/ai/brain.cpp": fixed})
+    assert standards_cli.run_check(root, conventions(), "main") == 0
+    shown = capsys.readouterr().out
+    assert "src/ai/brain.cpp:1: info: touch-it: 2 findings outside what the change touched (comment 1, tag 1)" in shown
+    assert standards_cli.run_check(root, conventions(), "main", cleanup=True) == 0
+    shown = capsys.readouterr().out
+    assert "src/ai/brain.cpp:9: info: comment:" in shown and "src/ai/brain.cpp:9: info: tag:" in shown
+
+
 def test_relevant_names_the_changes_that_can_move_the_marks() -> None:
     conv = conventions()
     assert sc.relevant(["src/ai/brain.cpp"], conv)
@@ -509,9 +589,7 @@ def test_on_the_real_rules_a_touched_legacy_file_left_below_the_standard_is_an_e
     git(root, "add", "-A")
     git(root, "commit", "-q", "-m", "list")
     # a line of the ported function changes, so it is owed its comparison too
-    branch(
-        root, {"src/ai/brain.cpp": BAD_SOURCE.replace("a += 1;", "a += 2;"), "tests/ai/a_test.cpp": BAD_TEST + "// y\n"}
-    )
+    branch(root, {"src/ai/brain.cpp": BAD_SOURCE.replace("a += 1;", "a += 2;"), "tests/ai/a_test.cpp": CASE_CHANGED})
     reports = sc.check(root, conventions(), "main")
     assert reports and all(r.error for r in reports)
     assert {(r.path, r.rule) for r in reports} == {

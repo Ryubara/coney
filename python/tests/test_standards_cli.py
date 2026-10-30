@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 import yaml
 from git_support import git
-from test_standards_check import BAD_SOURCE, BAD_TEST, GOOD_SOURCE, branch, build, write_legacy
+from test_standards_check import BAD_SOURCE, BAD_TEST, GOOD_SOURCE, GUESS_CHANGED, branch, build, write_legacy
 
 from coney_tools import docs_check
 from coney_tools.cli import main
@@ -93,7 +93,7 @@ def test_check_warns_about_a_touched_file_until_the_standard_is_enforced(
 ) -> None:
     root = checkout(tmp_path, monkeypatch, {"src/ai/brain.cpp": BAD_SOURCE})
     write_legacy(root, {"src/ai/brain.cpp": {"comment": 1, "tag": 1}})
-    branch(root, {"src/ai/brain.cpp": BAD_SOURCE + "// x\n"})
+    branch(root, {"src/ai/brain.cpp": GUESS_CHANGED})
     enforce(root, on=False)
     assert main(["standards", "check", "--base", "main"]) == 0
     assert "src/ai/brain.cpp:9: warning: comment:" in capsys.readouterr().out
@@ -128,7 +128,7 @@ def test_the_local_docs_step_runs_the_standards_for_a_source_only_change(
     write_legacy(root, {"src/ai/other.cpp": {"comment": 1, "tag": 1}})
     git(root, "add", "-A")
     git(root, "commit", "-q", "-m", "list")
-    branch(root, {"src/ai/other.cpp": BAD_SOURCE + "// x\n"})
+    branch(root, {"src/ai/other.cpp": GUESS_CHANGED})
     enforce(root, on=False)
     # nothing in the docs changed: the standards run (a warning here), the site build does not
     step = check_cli._step_docs(root, "main", ["src/ai/other.cpp"])
@@ -145,7 +145,7 @@ def test_on_the_real_conventions_check_fails_a_touched_file_and_passes_it_once_f
     write_legacy(root, {"src/ai/brain.cpp": {"comment": 1, "tag": 1}})
     git(root, "add", "-A")
     git(root, "commit", "-q", "-m", "list")
-    branch(root, {"src/ai/brain.cpp": BAD_SOURCE + "// x\n"})
+    branch(root, {"src/ai/brain.cpp": GUESS_CHANGED})
     assert main(["standards", "check", "--base", "main"]) == 1
     out = capsys.readouterr().out
     assert "src/ai/brain.cpp:9: comment:" in out and "standards check: 2 errors, 0 warnings" in out

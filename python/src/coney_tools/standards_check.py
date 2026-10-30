@@ -11,8 +11,9 @@ docs/guides/coney-tools-standards.md#standards:
 
 `problems` is what is wrong with the marks themselves, whatever the change: a file listed for a rule it now passes or
 gone, a ported function with no mark, a file or rule added to the legacy file since the branch left its base and, from
-the cutover, a function marked legacy since then. `touched` is the touch-it rule: a source or test file the change
-touches is held to the whole standard (listed or not), and so is a ported function the change touches. Every report of
+the cutover, a function marked legacy since then. `touched` is the touch-it rule: the functions, types and test cases
+a change touches are held to the standard (listed or not), a file it adds as a whole, and so is a ported function the
+change touches; the other findings of a touched file are listed as information. Every report of
 both is a warning while `standards.enforce` is false and an error once it is true, as it is from the cutover: with the
 switch off nothing in `check` fails a pull request. The two together are `check`, which `docs check` runs when a
 change can move them.
@@ -47,7 +48,7 @@ from coney_tools.standards_file import (
     parse_legacy_files,
     rules_of,
 )
-from coney_tools.standards_scan import Finding, counts, scan_code, scan_tests
+from coney_tools.standards_scan import Finding, case_spans, counts, scan_code, scan_tests
 
 #: The status a ported function has until it has been compared with the original.
 LEGACY = "legacy"
@@ -64,6 +65,8 @@ class Report:
     message: str
     #: Whether it fails the check: `standards.enforce` (an error when true, a warning when false).
     error: bool
+    #: A finding of a touched file outside what the change touched: listed for cleanup, never owed by the change.
+    info: bool = False
 
 
 @dataclass
@@ -316,12 +319,36 @@ def _ported(root: Path, conventions: Conventions) -> dict[int, Entry]:
     }
 
 
+def _units(root: Path, name: str, scan: Scan, conventions: Conventions) -> list[range]:
+    """The parts of the file `name` that a finding belongs to, as line spans: each function and each type of a source
+    file, each test case of a test file (`case_spans`)."""
+    source = next((s for s in scan.sources if s.path == name), None)
+    if source is not None:
+        spans = [range(f.line, f.line + max(f.lines, 1)) for f in source.functions]
+        spans += [range(line, source.class_ends.get(type_, line) + 1) for type_, line in source.class_lines.items()]
+        return spans
+    path = root / name
+    if not path.is_file():
+        return []
+    return case_spans(path.read_text(encoding="utf-8", errors="replace"), conventions.standards.tests)
+
+
+def _held(finding: Finding, units: list[range], changed: frozenset[int] | None) -> bool:
+    """Whether the change owes `finding`: the file is new (`changed` is None), or a line it changed is in the part the
+    finding is about (the function, type or test case that starts on its line; the line alone when none does)."""
+    if changed is None:
+        return True
+    own = [unit for unit in units if unit.start == finding.line] or [range(finding.line, finding.line + 1)]
+    return any(line in changed for unit in own for line in unit)
+
+
 def touched(
     root: Path, conventions: Conventions, scan: Scan, base: str, names: list[str] | None = None
 ) -> list[Report]:
-    """The touch-it rule for the files the change since `base` touches: each source or test file below the standard,
-    and each ported function whose lines the change touches that has not been compared. Warnings until
-    `standards.enforce`, errors after."""
+    """The touch-it rule for the files the change since `base` touches: in each source or test file, the findings in
+    the parts the change changed (a function, a type, a test case; all of a new file), and each ported function whose
+    lines the change touches that has not been compared. Warnings until `standards.enforce`, errors after. The other
+    findings of a touched file are reports of their own marked `info`, which fail nothing (writing-docs.md#touch-it)."""
     standards = conventions.standards
     error = standards.enforce
     names = names if names is not None else local_gate.changed_files(root, base)
@@ -338,9 +365,15 @@ def touched(
         diff = diffs[name]
         if diff is not None and diff.link_moves_only:
             continue  # a file whose only change is its comments' research links following a moved page
+        changed = None if diff is None else diff.lines
+        units = _units(root, name, scan, conventions) if diff is not None else []
         by_rule: dict[str, list[Finding]] = {}
         for item in findings.get(name, []):
-            by_rule.setdefault(item.rule, []).append(item)
+            if _held(item, units, changed):
+                by_rule.setdefault(item.rule, []).append(item)
+            else:
+                found.append(Report(name, item.line, item.rule, item.message, False, info=True))
+        what = "a new file, which meets the standard whole" if diff is None else "the parts the change touched"
         for rule, items in by_rule.items():
             first = items[0]
             found.append(
@@ -348,8 +381,7 @@ def touched(
                     name,
                     first.line,
                     rule,
-                    f"{len(items)} finding{'s' if len(items) != 1 else ''} in a touched file; the whole file meets the "
-                    f"standard when touched (first: {first.message})",
+                    f"{len(items)} finding{'s' if len(items) != 1 else ''} in {what} (first: {first.message})",
                     error,
                 )
             )

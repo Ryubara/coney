@@ -45,6 +45,11 @@ def add_parser(groups: Any) -> None:
         "check", help="the marks are consistent and the files and functions the change touches meet the standard"
     )
     check.add_argument("--base", default="origin/main", help="the branch the change is measured from")
+    check.add_argument(
+        "--cleanup",
+        action="store_true",
+        help="list each finding of a touched file outside what the change touched (for cleanup issues)",
+    )
 
 
 def _lines(findings: dict[str, list[Finding]]) -> list[str]:
@@ -80,17 +85,39 @@ def run_scan(root: Path, conventions: Conventions, files: bool) -> int:
     return 0
 
 
-def run_check(root: Path, conventions: Conventions, base: str) -> int:
-    """Print the problems and what the touched files owe; exit 1 when any is an error."""
+def info_summary(path: str, rules: list[str]) -> str:
+    """The one line that stands for the findings of a touched file outside what the change touched: how many, by rule,
+    and how to list them. They fail nothing (docs/guides/writing-docs.md#touch-it)."""
+    counted = ", ".join(f"{rule} {rules.count(rule)}" for rule in dict.fromkeys(rules))
+    plural = "s" if len(rules) != 1 else ""
+    return (
+        f"{path}:1: info: touch-it: {len(rules)} finding{plural} outside what the change touched ({counted}), owed by "
+        "no change: `--cleanup` lists them for a cleanup issue"
+    )
+
+
+def run_check(root: Path, conventions: Conventions, base: str, cleanup: bool = False) -> int:
+    """Print the problems and what the touched files owe; exit 1 when any is an error. The findings of a touched file
+    outside what the change touched are one line per file, or each its own line with `cleanup`."""
     reports = standards_check.check(root, conventions, base)
     errors = 0
+    outside: dict[str, list[str]] = {}
     for report in reports:
+        if report.info:
+            if cleanup:
+                print(f"{report.path}:{report.line}: info: {report.rule}: {report.message}")
+            outside.setdefault(report.path, []).append(report.rule)
+            continue
         label = "" if report.error else "warning: "
         print(f"{report.path}:{report.line}: {label}{report.rule}: {report.message}")
         errors += report.error
-    warnings = len(reports) - errors
+    if not cleanup:
+        for path, rules in outside.items():
+            print(info_summary(path, rules))
+    warnings = len(reports) - errors - sum(len(rules) for rules in outside.values())
     print(
         f"standards check: {errors} error{'s' if errors != 1 else ''}, {warnings} warning{'s' if warnings != 1 else ''}"
+        f", {len(outside)} touched file{'s' if len(outside) != 1 else ''} with findings outside the change"
     )
     return 1 if errors else 0
 
@@ -103,7 +130,7 @@ def run(args: argparse.Namespace) -> int:
     if args.command == "scan":
         return run_scan(root, conventions, args.files)
     if args.command == "check":
-        return run_check(root, conventions, args.base)
+        return run_check(root, conventions, args.base, args.cleanup)
     if args.command == "mark":
         functions = Path(conventions.research.files.functions)
         waiting = len(standards_check.function_counts(load_all(root, functions)).unmarked)

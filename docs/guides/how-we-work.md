@@ -267,9 +267,9 @@ original in ways nobody has noticed, while gameplay must match the original exac
 every file below its standard, is listed ([The standards](coney-tools-standards.md#standards)), and nothing new is
 marked legacy. There is no separate audit team; legacy code is brought up to standard in two ways:
 
-- **By touching it.** A task that changes a legacy function or file brings it up to its standard in the same pull
-  request: a changed `@orig` function is studied, compared and reviewed like a new one, so it leaves the list
-  ([Touch a page, fix the page](writing-docs.md#touch-it)).
+- **By touching it.** A task that changes a legacy function brings it up to its standard in the same pull request: a
+  changed `@orig` function is studied, compared and reviewed like a new one, so it leaves the list; the rest of a file
+  it touches is not owed, and is listed for cleanup issues ([Touch a page, fix the page](writing-docs.md#touch-it)).
 - **By its own issues.** The findings of the earlier orig sweep, and any difference found since, are filed as issues
   and prioritised by what a player would notice. Each is an ordinary task: claimed, studied, fixed with a test that
   fails before and passes after, compared and reviewed. A difference that is deliberate (a PC platform call in place

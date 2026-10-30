@@ -111,17 +111,36 @@ def test_grading_in_a_touched_section_stays_an_error() -> None:
     assert "1 finding excused" in kept[1].message
 
 
-def test_a_touched_page_is_held_to_every_mechanical_rule_page_wide() -> None:
-    # Maintainer decision Q5: "every touch fixes the mechanical rules page-wide and grades the touched section".
-    mechanical = ["front-matter", "owns", "skeleton", "verified", "address-form", "address-resolve"]
-    mechanical += ["decompile", "copied", "history", "stale-wording"]
-    found = [finding(rule, 40) for rule in mechanical]
+MECHANICAL = ["front-matter", "owns", "skeleton", "verified", "address-form", "address-resolve"]
+MECHANICAL += ["decompile", "copied", "history", "stale-wording"]
+
+
+def test_a_touched_page_owes_nothing_outside_the_sections_the_change_touched() -> None:
+    # Maintainer decision of 2026-10-30 (writing-docs.md#touch-it): the touch-it rule holds what a branch changed.
+    found = [finding(rule, 40) for rule in MECHANICAL]
     found += [finding("evidence", 40), finding("evidence", 41, by_section=True), finding("length", 1)]
-    excused = dict.fromkeys([*mechanical, "evidence", "length"], 1)
+    excused = dict.fromkeys([*MECHANICAL, "evidence", "length"], 1)
     kept = apply_legacy(found, excused, LEGACY_FILE, lambda _: False)
-    # A refused spelling is page-wide; an ungraded block outside the touched sections and the length are excused.
-    assert [item.rule for item in kept if item.severity == "error"] == [*mechanical, "evidence"]
-    assert sorted(item.rule for item in kept if item.severity == "warning") == ["evidence", "length"]
+    assert [item.rule for item in kept if item.severity == "error"] == []
+    assert sorted(item.rule for item in kept if item.severity == "warning") == sorted(
+        [*MECHANICAL, "evidence", "length"]
+    )
+
+
+def test_a_touched_section_owes_every_rule_but_the_length() -> None:
+    found = [finding(rule, 40) for rule in MECHANICAL]
+    found += [finding("evidence", 40), finding("evidence", 41, by_section=True), finding("length", 1)]
+    excused = dict.fromkeys([*MECHANICAL, "evidence", "length"], 1)
+    kept = apply_legacy(found, excused, LEGACY_FILE, lambda _: True)
+    assert [item.rule for item in kept if item.severity == "error"] == [*MECHANICAL, "evidence", "evidence"]
+    assert [item.rule for item in kept if item.severity == "warning"] == ["length"]
+
+
+def test_a_moved_page_keeps_the_page_wide_reading() -> None:
+    # A page git sees as moved is read as before the scoped rule: its entry excuses the grading alone.
+    found = [finding("history", 40), finding("evidence", 41, by_section=True)]
+    kept = apply_legacy(found, {"history": 1, "evidence": 1}, LEGACY_FILE, lambda _: False, scoped=False)
+    assert [(item.rule, item.severity) for item in kept] == [("history", "error"), ("evidence", "warning")]
 
 
 def test_an_untouched_page_is_excused_everything_it_lists() -> None:
@@ -178,11 +197,17 @@ def test_a_section_the_change_touches_is_graded_on_a_listed_page() -> None:
     assert rules_of(findings(RESEARCH_PATH, text, listed)) == []
     touched = findings(RESEARCH_PATH, text, listed, Touch(frozenset({data_line})))
     errored = [(item.rule, item.line) for item in touched if item.severity == "error"]
-    # The touched section is graded, and the front matter, a mechanical rule, is fixed page-wide.
-    assert errored == [("front-matter", 1), ("evidence", data_line)]
+    # The touched section is graded; the front matter, in the title's part the change left alone, stays excused.
+    assert errored == [("evidence", data_line)]
+    # Touching the title's part owes the front matter too.
+    on_top = findings(RESEARCH_PATH, text, listed, Touch(frozenset({1, data_line})))
+    assert [(item.rule, item.line) for item in on_top if item.severity == "error"] == [
+        ("front-matter", 1),
+        ("evidence", data_line),
+    ]
 
 
-def test_a_touched_page_loses_its_excuse_for_the_mechanical_rules_and_the_refused_spellings() -> None:
+def test_a_touched_page_keeps_its_excuse_outside_the_touched_section() -> None:
     spelled = f"The field is confirmed (disc) at {IN_FUNCTION}.\n"
     old = page(
         f"The widget spins at {IN_FUNCTION}.\n",
@@ -197,11 +222,10 @@ def test_a_touched_page_loses_its_excuse_for_the_mechanical_rules_and_the_refuse
     listed = env(legacy={RESEARCH_PATH: {"front-matter": 1, "verified": 1, "history": 1, "evidence": 3}})
     touched = findings(RESEARCH_PATH, old, listed, Touch(frozenset({summary_line})))
     errored = sorted((item.rule, item.line) for item in touched if item.severity == "error")
-    # Front matter, Verified line, the date and the refused spelling are errors although the change touched none of
-    # their lines; the ungraded Behaviour claim is not, because its section is not the touched one.
-    assert ("front-matter", 1) in errored and ("history", summary_line) in errored
-    assert any(rule == "verified" for rule, _ in errored) and ("evidence", spelling_line) in errored
-    assert ("evidence", behaviour_line) not in errored
+    # Only the date in the touched Summary section is owed; the front matter, the Verified line, the refused spelling in
+    # Data and the ungraded Behaviour claim lie in sections the change left alone, and stay excused.
+    assert errored == [("history", summary_line)]
+    assert ("evidence", spelling_line) not in errored and ("evidence", behaviour_line) not in errored
     assert rules_of(findings(RESEARCH_PATH, old, listed)) == []
 
 
@@ -344,7 +368,7 @@ def test_the_legacy_file_is_left_alone_when_the_change_has_nothing_to_do_with_re
 # --- a whole change ---------------------------------------------------------------------------------------------------
 
 
-def test_a_change_to_a_listed_page_fails_the_mechanical_rules_page_wide_and_grades_the_section(tmp_path: Path) -> None:
+def test_a_change_to_a_listed_page_owes_the_section_it_touched_and_nothing_else(tmp_path: Path) -> None:
     root = checkout(tmp_path)
     write(root, LEGACY_FILE, docs_legacy.initial_text(root, context(root)))
     git(root, "add", "-A")
@@ -353,9 +377,16 @@ def test_a_change_to_a_listed_page_fails_the_mechanical_rules_page_wide_and_grad
     git(root, "checkout", "-q", "-b", "work2")
     write(root, "docs/research/good.md", page(kind="survey", meta="---\nkind: survey\n---\n", extra="Added.\n\n"))
     assert docs_check.check_changed(root, "main", context(root)).failed == {}
-    # A line added to the Data section of the legacy page: its front matter, sections and Verified line are errors
-    # (page-wide), and so is the Data section's ungraded address.
+    # A line added to the Data section of the legacy page: the Data section's ungraded address is owed; the front
+    # matter, sections and Verified line of the title's part, which the change left alone, stay excused.
     write(root, "docs/research/old.md", "# Old\n\nNo sections.\n\n## Data\n\nSomething at 0x00123456.\n\nMore.\n")
+    result = docs_check.check_changed(root, "main", context(root))
+    errored = sorted(
+        (item.rule, item.line) for item in result.failed["docs/research/old.md"] if item.severity == "error"
+    )
+    assert errored == [("evidence", 7)]
+    # A change to the title's part owes them too.
+    write(root, "docs/research/old.md", "# Old\n\nNo sections here.\n\n## Data\n\nSomething at 0x00123456.\n\nMore.\n")
     result = docs_check.check_changed(root, "main", context(root))
     errored = sorted(
         (item.rule, item.line) for item in result.failed["docs/research/old.md"] if item.severity == "error"
@@ -452,18 +483,22 @@ def test_an_old_form_runtime_claim_is_graded_in_the_touched_section_only() -> No
     assert rules_of(findings(RESEARCH_PATH, old, listed)) == []
     touched = findings(RESEARCH_PATH, old, listed, Touch(frozenset({data_line})))
     errored = [(item.rule, item.line) for item in touched if item.severity == "error"]
-    # The front matter is fixed page-wide; the claim in the section the change touches is graded; the other waits.
-    assert errored == [("front-matter", 1), ("evidence", data_line)]
+    # The claim in the section the change touches is graded; the other and the front matter wait.
+    assert errored == [("evidence", data_line)]
     assert [item.line for item in touched if item.rule == "evidence" and item.severity == "warning"] == [behaviour_line]
 
 
-def test_a_refused_run_id_on_a_touched_legacy_page_stays_page_wide() -> None:
+def test_a_refused_run_id_on_a_touched_legacy_page_is_owed_in_its_section() -> None:
     claim = f"It spins at {IN_FUNCTION} (confirmed (runtime), run r-1).\n"
     old = page(claim, sections={"Data": "Nothing more to say.\n"}, meta="")
     listed = env(legacy={RESEARCH_PATH: {"front-matter": 1, "evidence": 1}}, runs=frozenset({"r-2"}))
     data_line = old.splitlines().index("Nothing more to say.") + 1
     touched = findings(RESEARCH_PATH, old, listed, Touch(frozenset({data_line})))
-    assert [item.rule for item in touched if item.severity == "error"] == ["front-matter", "evidence"]
+    # The refused run id is in Behaviour, a section the change left alone: it is no longer owed page-wide.
+    assert [item.rule for item in touched if item.severity == "error"] == []
+    claim_line = old.splitlines().index(claim.strip()) + 1
+    in_claim = findings(RESEARCH_PATH, old, listed, Touch(frozenset({claim_line})))
+    assert [item.rule for item in in_claim if item.severity == "error"] == ["evidence"]
 
 
 # --- an old-form runtime claim keeps the entry that excuses it --------------------------------------------------------

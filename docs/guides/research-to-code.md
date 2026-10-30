@@ -147,7 +147,7 @@ A checklist before calling a page ready:
 4. Is there a runtime number for every behaviour that has a duration, a distance or an order? Those are the tests.
 5. Are the unknowns listed as open questions, so the code's stand-ins have a page to point at?
 6. Are the fixes numbered, in order, each with how to tell it is done?
-7. Does `coney-tools docs check` pass on the page? A page you touched is brought wholly up to the standard
-   ([Touch a page, fix the page](writing-docs.md#touch-it)).
+7. Does `coney-tools docs check` pass on the page? Each section you touched, and a page you added, is brought up to
+   the standard ([Touch a page, fix the page](writing-docs.md#touch-it)).
 
 The page kinds and their sections are in [Writing these docs](writing-docs.md#research-pages).

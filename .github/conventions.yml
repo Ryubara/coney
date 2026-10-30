@@ -1225,6 +1225,16 @@ standards:
       marker: "Expected:"
       unverified: "unverified, #"
       reference: '[A-Za-z0-9_./-]+\.md#[A-Za-z0-9_-]+'
+  # How far the touch-it rule reaches (docs/guides/writing-docs.md#touch-it, a maintainer decision of 2026-10-30): a
+  # change owes the standard in what it changed and in the files it adds. The part of a page is a section, the text
+  # under a heading of `section_level` or above (the title's part above the first heading is one); the part of a source
+  # file is a function or a type, of a test file a test case. A finding elsewhere in a touched file fails nothing: it is
+  # listed as information (`docs check --cleanup` and `standards check --cleanup` list each one, for cleanup issues).
+  touch:
+    section_level: 3                 # `##` and `###`: a research page's `##` sections run to hundreds of lines
+    # The rules of a page owed wherever they point once the change touches it: the legacy file's consistency, and the
+    # length (a legacy page's entry still excuses its length).
+    page_rules: [legacy, length]
 
 ci:
   # What runs where, and the three CI jobs that read this section's settings (docs/guides/building.md#what-ci-runs).

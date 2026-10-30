@@ -41,20 +41,20 @@ A research page is read against the executable's data: `docs/progress/ghidra-fun
 and name), `research/elf-sections.toml` (the sections of `SLUS_212.15`) and, once the folder exists, the run records of
 `research/runs/`. The other research pages are read too, for the owner of an address and for copied paragraphs.
 
-`docs legacy` keeps `research/legacy.toml`, the research pages that do not meet the standard yet
-([Legacy pages](writing-docs.md#legacy-pages)). Without an option it scans every research page and prints how many fail
-each rule. `--init` writes the file from a scan and refuses when it exists; `--prune` takes out the pages and rules that
-now pass and lowers the counts, and adds nothing (but, against `--base`, the entry of a page git sees as moved follows
-it to its new path, keeping the grading rule `evidence` only); `--check` exits 1 when the file lists a page that is gone
-or a rule that now passes, or (when `--base` has the file) adds a page or a rule since the branch left `--base`.
-`docs check` runs the same check on the file whenever the change touches a research page, a data file the checks read
-(the function listing, the sections, the run records, the function database or the file itself), the conventions or the
-checks, so it fails a legacy rule that passes and a new page that is listed. On a listed page the change touches, it
-fails every mechanical rule page-wide and the grading of the sections the change touches (an address with no level, an
-old-form runtime claim); an entry may list any research rule or `stale-wording`. A page moved with git keeps its entry's
-grading exemption and nothing else, and a line that only rewrites link targets to follow the change is no touch: to a
-page it moved, to a section it moved between two pages, or to an id new on the same page while the old one stays (a
-split section; all under [Legacy pages](writing-docs.md#legacy-pages)).
+`docs legacy` keeps `research/legacy.toml`, the research pages that do not meet the standard yet ([Legacy
+pages](writing-docs.md#legacy-pages)). Without an option it scans every research page and prints how many fail each
+rule. `--init` writes the file from a scan and refuses when it exists; `--prune` takes out the pages and rules that now
+pass and lowers the counts, and adds nothing (but, against `--base`, the entry of a page git sees as moved follows it to
+its new path, keeping the grading rule `evidence` only); `--check` exits 1 when the file lists a page that is gone or a
+rule that now passes, or (when `--base` has the file) adds a page or a rule since the branch left `--base`. `docs check`
+runs the same check on the file whenever the change touches a research page, a data file the checks read (the function
+listing, the sections, the run records, the function database or the file itself), the conventions or the checks, so it
+fails a legacy rule that passes and a new page that is listed. On a listed page the change touches, it fails every rule
+in the sections the change touches and goes on excusing the rest ([Touch a page, fix the
+page](writing-docs.md#touch-it)); an entry may list any research rule or `stale-wording`. A page moved with git keeps
+its entry's grading exemption and nothing else, and a line that only rewrites link targets to follow the change is no
+touch: to a page it moved, to a section it moved between two pages, or to an id new on the same page while the old one
+stays (a split section; all under [Legacy pages](writing-docs.md#legacy-pages)).
 
 <!-- command-reference:begin docs -->
 ## Parameters of `docs` {#docs-parameters}
@@ -66,7 +66,7 @@ Written by `coney-tools docs render` from the command line's own definitions; ne
 Check pages against their kind's rules; without PATHS, the pages changed against the base.
 
 ```text
-coney-tools docs check [PATHS ...] [--base BASE] [--summary] [--quiet]
+coney-tools docs check [PATHS ...] [--base BASE] [--summary] [--quiet] [--cleanup]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -75,6 +75,7 @@ coney-tools docs check [PATHS ...] [--base BASE] [--summary] [--quiet]
 | `--base BASE` | text | `origin/main` | the branch the change is measured from |
 | `--summary` | flag | off | also count the pages that pass, per kind, and per rule |
 | `--quiet` | flag | off | print only the counts, not each finding |
+| `--cleanup` | flag | off | list each finding of a touched file outside what the change touched (for cleanup issues) |
 
 ### `docs render` {#docs-render-usage}
 

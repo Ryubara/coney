@@ -352,3 +352,10 @@ def test_a_ps2_pattern_never_matches_inside_an_xbox_run() -> None:
     assert [m.group(1) for m in pattern.finditer(text)] == ["00100010", "00100040"]
     found = pattern.search("Xbox 0x00100020 / 0x00100030")
     assert found is None
+
+
+def test_a_type_records_the_line_that_closes_its_body() -> None:
+    text = "namespace coney {\nstruct Outer {\n    struct Inner {\n        int a = 0;\n    };\n    int b = 0;\n};\n}\n"
+    source = read_source("src/ai/brain.h", text)
+    assert source.class_lines == {"Outer": 2, "Outer::Inner": 3}
+    assert source.class_ends == {"Outer": 7, "Outer::Inner": 5}

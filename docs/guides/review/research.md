@@ -45,10 +45,11 @@ up in the [research workflow](../research-workflow.md); the page layout is in
   page. Where the code alone would not tell the engineer a field offset, a unit, a byte order, a constant, the order
   of two steps or an edge case, the page says it. Each gap is a finding: Important when a behaviour names no
   function or a number the port needs is missing, Minor otherwise.
-- [ ] **The page meets the standard as a whole.** `coney-tools docs check` passes on it (a page the change touches
-  is held to all of [Writing these docs](../writing-docs.md#touch-it)), and where a lead line under a `###` heading
-  grades the blocks below it ([the evidence rule](../writing-docs.md#evidence-levels)), that grade is true of every
-  one of them. A page in the legacy file is excused only from what its entry lists, and no new page is listed.
+- [ ] **What the change touched meets the standard.** `coney-tools docs check` passes on it (each section the change
+  touches, and a new page whole, is held to all of [Writing these docs](../writing-docs.md#touch-it)), and where a
+  lead line under a `###` heading grades the blocks below it ([the evidence rule](../writing-docs.md#evidence-levels)),
+  that grade is true of every one of them. A page in the legacy file is excused only from what its entry lists outside
+  the touched sections, and no new page is listed. What the check lists as `info` is not a finding of this review.
 - [ ] **Open questions are real.** Each says what is unknown, what depends on it and how it could be found out.
 - [ ] **The research database matches the page** (planned; applies when it exists): each function, global and type
   the page names has a YAML entry with the same address, name and evidence level, and no entry contradicts the page.

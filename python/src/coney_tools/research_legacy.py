@@ -122,13 +122,16 @@ def apply_legacy(
     excused: Mapping[str, int],
     legacy_file: str,
     touched: Callable[[Finding], bool] | None,
+    scoped: bool = True,
 ) -> list[Finding]:
     """`findings` of a listed page with its excuses applied.
 
     `touched` is None when the change does not touch the page (it is checked by name): every finding of an excused rule
     becomes part of one warning per rule. When the change touches the page, `touched` says whether a finding lies in a
-    section the change touches, and only `length` and a grading finding (`Finding.by_section`) outside those sections
-    stay excused; every other finding of an excused rule is an error. A rule in `excused` without any finding is an
+    section the change touches. `scoped` (the touch-it rule, writing-docs.md#touch-it): every finding of an excused
+    rule outside those sections stays excused, and inside them all are errors but the length. Not `scoped` (a page git
+    sees as moved): only `length` and a grading finding (`Finding.by_section`) outside those sections stay excused;
+    every other finding of an excused rule is an error. A rule in `excused` without any finding is an
     error: take it out of the file. Findings of other rules, warnings included, pass through; a warning of an excused
     rule is dropped.
     """
@@ -142,7 +145,7 @@ def apply_legacy(
             if finding.held:
                 waived[finding.rule].append(finding)  # an old-form claim still owing a run record keeps the entry
             continue  # any other warning of an excused rule is part of what the legacy page is excused from
-        elif _stays_excused(finding, touched):
+        elif _stays_excused(finding, touched, scoped):
             waived[finding.rule].append(finding)
         else:
             kept.append(finding)
@@ -170,9 +173,12 @@ def apply_legacy(
     return sorted(kept, key=lambda item: item.line)
 
 
-def _stays_excused(finding: Finding, touched: Callable[[Finding], bool] | None) -> bool:
-    """Whether an error of an excused rule is still excused: always while the change leaves the page alone, and on a
-    touched page only the length and the grading of a section the change does not touch."""
+def _stays_excused(finding: Finding, touched: Callable[[Finding], bool] | None, scoped: bool) -> bool:
+    """Whether an error of an excused rule is still excused: always while the change leaves the page alone and for the
+    length; on a touched page, anything outside the sections the change touches when `scoped`, and otherwise (a moved
+    page) only the grading of such a section."""
     if touched is None or finding.rule == "length":
         return True
+    if scoped:
+        return not touched(finding)
     return finding.by_section and not touched(finding)
