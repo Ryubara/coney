@@ -53,11 +53,12 @@ std::unique_ptr<SandboxGround> groundOf(std::string_view text, const std::option
 } // namespace
 
 TEST_CASE("a sandbox ground starts the player at the first spawn, dropped onto the ground") {
-    // Expected: docs/guides/sandbox.md#ground (the first spawn, dropped from 2 m above it onto what is below)
+    // Expected: docs/guides/sandbox.md#ground (the first spawn, dropped from 2 m above it onto what is below, which
+    // leaves the feet 0.1 m above the floor's top at z = 0)
     const auto ground = groundOf(kYard);
     CHECK(ground->start().position.x == Approx(0.0F));
     CHECK(ground->start().position.y == Approx(0.0F));
-    CHECK(ground->start().position.z == Approx(0.0F).margin(1e-4));
+    CHECK(ground->start().position.z == Approx(0.1F).margin(1e-4));
     CHECK(ground->start().headingDegrees == Approx(90.0F));
     CHECK(ground->startSource() == "spawn point start");
     CHECK(ground->name() == "sandbox yard");
@@ -65,10 +66,10 @@ TEST_CASE("a sandbox ground starts the player at the first spawn, dropped onto t
 }
 
 TEST_CASE("a sandbox ground starts at the spawn named, on top of what is below it") {
-    // Expected: docs/guides/sandbox.md#ground (`--spawn NAME`; the block's top is 1 m up)
+    // Expected: docs/guides/sandbox.md#ground (`--spawn NAME`; the block's top is 1 m up, the feet 0.1 m above it)
     const auto ground = groundOf(kYard, std::string("block"));
     CHECK(ground->start().position.x == Approx(5.0F));
-    CHECK(ground->start().position.z == Approx(1.0F).margin(1e-4));
+    CHECK(ground->start().position.z == Approx(1.1F).margin(1e-4));
     CHECK(ground->startSource() == "spawn point block");
 }
 
@@ -116,11 +117,11 @@ TEST_CASE("a sandbox ground's places, targets and fighters are the layout's") {
 }
 
 TEST_CASE("a rebuilt sandbox ground keeps its start and refuses a world with nothing solid") {
-    // Expected: docs/guides/sandbox.md#ground (the Spawner's rebuild keeps the start)
+    // Expected: docs/guides/sandbox.md#ground (the Spawner's rebuild keeps the start, 0.1 m above the block)
     auto ground = groundOf(kYard, std::string("block"));
     REQUIRE(ground->setWorld(worldOf("title rebuilt\nbox at=0,0,-0.5 size=10,10,0.5\n")).has_value());
     CHECK(ground->name() == "sandbox rebuilt");
-    CHECK(ground->start().position.z == Approx(1.0F).margin(1e-4));
+    CHECK(ground->start().position.z == Approx(1.1F).margin(1e-4));
     CHECK(ground->startSource() == "spawn point block");
     auto refused = ground->setWorld(worldOf("spawn start at=0,0,0\n"));
     REQUIRE(!refused.has_value());
