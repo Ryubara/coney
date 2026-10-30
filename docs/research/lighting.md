@@ -22,12 +22,13 @@ In one paragraph: every light is a RenderWare light owned by the `LightManager`.
 **world ambient** (lights only the world), a **pulsing ambient** for some objects and a **glow** point light for
 characters. Level scripts add the rest with `SetLight`: `global.lua` a moonlight, a reflected light and an object
 ambient from the level's `LightData`, the level script its lamps (point lights, many with a **corona** sprite). Every
-ambient and directional light gets the **brightness** (the profile's light setting, 40/255 by default) and the
-script's colour offset added to its colour. Each frame and viewport the manager culls the point lights against the
-camera and sorts the rest into lists by what they light; each atomic then gets up to 8 (world) or 3-6 (objects,
-humans, by distance) lights, the nearest-overlapping point lights last, and RenderWare's PS2 pipeline adds the lit
-colour to the prelighting. In `level99` the world is lit only by the 0.227 grey world ambient and two flickering
-lamps; humans get a cold moonlight, a weak warm light from below, a 0.22 ambient and up to 3 lamps.
+ambient and directional light gets the **brightness** (the profile's light setting, 40/255 by default) and the script's
+colour offset added to its colour. Each frame and viewport the manager culls the point lights against the camera and
+sorts the rest into lists by what they light; each atomic then gets up to 8 (world) or 3-6 (objects, humans, cars, by
+distance) lights, the overlapping point lights last, and RenderWare's PS2 pipeline adds the lit colour to the
+prelighting. A running game's choice of lights matches that rule call for call ([Per atomic: the selection](#select)).
+In `level99` the world is lit only by the 0.227 grey world ambient and two flickering lamps; humans get a cold
+moonlight, a weak warm light from below, a 0.22 ambient and up to 3 lamps.
 
 ## Map {#original-structure}
 
@@ -219,11 +220,19 @@ per viewport, `0x0017d880` walks every record. Confirmed (code):
 1. **Ambient and directional lights** (RenderWare type 1 or 2): with flag 2 and on, into list A (`0x00715324`, the
    world's); with flag 1 and on, into list B (`0x00715348`) and list C (`0x0071536c`); the first light with flag 1 that
    is off (light B, the pulse) into list C alone.
-2. **Point and spot lights that are on**: the light's radius (or `+0x14` when it is 0) is `r`; skip it when
-   `|pos - camera|² ≥ (far × 0.75)² + r²`, `far` being the camera's draw distance (115 for the player camera), or when
-   the sphere lies wholly outside either of the camera's first two frustum planes.
-3. A visible light with radius 0 only updates its flicker and draws its corona (if it has one). A visible light with a
-   radius joins the viewport's list `+0x20` and, with flag 2, list `+0x30`; then its flicker and corona.
+2. **Point and spot lights that are on**: the RpLight's radius, or the record's corona size `+0x14` when the radius
+   is 0 or less, is `r`; skip it when `|pos - camera|² ≥ (far × 0.75)² + r²`, `far` being the camera's draw distance
+   (115 for the player camera), or when the sphere lies wholly outside either of the camera's first two frustum
+   planes.
+3. A visible light whose `r` is still 0 or less only updates its flicker and draws its corona (if it has one). Any
+   other visible light joins the viewport's list `+0x20` and, with flag 2, list `+0x30`; then its flicker and corona.
+   So a **corona-only light** (radius 0, corona size above 0) is in the point lists too, with its RpLight radius of 0:
+   the selection keeps it only when it lies inside an atomic's bounding sphere.
+
+Confirmed (runtime), run r-20261030-light-cull-radius-zero: in `level99` checkpoint 2, 6 of the 17 visible point lights
+of list `+0x20` have radius 0, each with a corona (sizes 2.2 and 4.0); in 300 selections none of the 99 point lights
+chosen had radius 0. What the VU1 light code does with a point light of radius 0 is open
+([Open questions](#open-questions): a point light of radius 0).
 
 #### Per atomic: the selection {#select}
 
@@ -233,16 +242,40 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
 upload list (`0x00715300`, at most 8). Confirmed (code):
 
 1. Nothing when the global `0x005e5374` is 0.
-2. **World** (`flags` bit 0 clear): copy list A; the cap is 8.
-   **Objects** (bit 0 set): copy list B (`pulse` = 0) or list C (`pulse` = 1); the cap is
-   `6 - min(int(distSq / 1600), 3)` (list B) or `6 - min(int(distSq / 1600), 2)` (list C). With `distSq` the squared
-   distance to the camera, that is 6 lights within 40 m, 5 to 56.6 m, 4 to 69.3 m, then 3 (list C keeps 4).
-3. If `pointLights`: the **glow** first, for a `human` whose byte `+0x647` is above 10 ([Glow](#glow)). Then every point
-   light of `+0x30` (world) or `+0x20` (objects) whose sphere meets the atomic's: score
-   `|light - centre|² - (sphereRadius + lightRadius)²`, kept when ≤ 0. While there is room it is appended; when full,
-   it replaces the kept point light with the **smallest** score if its own is smaller still. As written, a full list
-   is therefore not the N nearest: it keeps the first ones found plus the deepest overlap (the comparison is against
-   the minimum, read twice; confirmed (code)).
+2. **World** (`flags` bit 0 clear): copy list A; the cap is 8. **Objects** (bit 0 set): copy list B (`pulse` = 0) or
+   list C (`pulse` = 1); the cap is `6 - min(int(distSq / 1600), 3)` (list B) or `6 - min(int(distSq / 1600), 2)` (list
+   C). With `distSq` the squared distance to the camera, that is 6 lights within 40 m, 5 to 56.6 m, 4 to 69.3 m, then 3
+   (list C keeps 4). The list is copied **whole**, whatever the cap (each list is 8 words and a count): the cap only
+   limits the point lights that follow, so an object far away with more ambient and directional lights than its cap
+   keeps all of them.
+3. If `pointLights`: the **glow** first, for a `human` whose byte `+0x647` is above 10 ([Glow](#glow)), appended with no
+   check against the cap. Then every point light of `+0x30` (world) or `+0x20` (objects) whose sphere meets the
+   atomic's: score `|light - centre|² - (sphereRadius + lightRadius)²`, kept when ≤ 0. While the count is below the cap
+   it is appended; when full, it replaces the kept point light with the **smallest** score (the first of equal ones)
+   if its own is smaller still. As written, a full list is therefore not the N nearest: it keeps the first ones found
+   plus the deepest overlap (the comparison is against the minimum, read twice; confirmed (code)).
+4. **No point light kept.** When the copied list (and the glow) already fill the cap, no point light is kept, and the
+   index of the "smallest" stays -1: each overlapping light is then written one word before the list, at
+   `0x007152fc`, which nothing reads (the store at `0x0017e3d4`), so the selection is unchanged. Confirmed (code), and
+   in the run below (205 such writes in 300 calls, none visible in the list).
+
+**At runtime the selection is this rule exactly.** Confirmed (runtime), run r-20261030-light-selection, `level99`
+checkpoint 2 (the `pedestrian-grab` state): breakpoints on the entry of `0x0017de10` and on its callers' return
+addresses read each call's arguments, the manager's lists and the upload list it produced; a script applied the four
+steps above to the same arguments and lists, and the lights it chose were the game's, in the same order, in all 300
+calls of a row (210 objects, 78 sectors, 6 humans, 6 background) and in 60 further human calls. What the run saw:
+
+- **Humans**: the player at 6 m got 4 lights, the moonlight, the reflected light, the object ambient and one lamp
+  (cap 6).
+- **Sectors**: 1 or 2 lights each (45 and 33 calls): light A, and the one world lamp then in view.
+- **Objects**: 3 of a cap of 3 (162 calls, every one with the list already full), 4 of 5, 4 of 6, 5 of 5.
+
+The values a trace of the original records per call, to compare Coney with ([Realtime lighting:
+testing](../guides/realtime-lighting.md#testing)): the caller (from the return address: `0x001746f8` human, `0x00411aa8`
+sector, `0x001803a4` object, `0x00172ce8` car, `0x0040d1a8` background), the arguments (`distSq` in `f12`, the sphere at
+`a1`, `flags`, `pointLights`, `pulse`, `human`), and the upload list `0x00715300` with its count at `0x00715320` after
+the call; each chosen RpLight gives its type (byte `+0x01`), radius (`+0x14`), colour (`+0x18`) and its frame's position
+(`+0x40`). Confirmed (code) at `0x0017de10` and its callers.
 
 `LightManager_UploadSelected` (`0x0017e810`) then queues each chosen light with `RwPS2_QueueLightForVU1`
 (`0x00476cc8`): a block header with two scales of 1.0, then per light its colour (RpLight `+0x18`) and type, plus the
@@ -257,7 +290,7 @@ quadwords. Confirmed (code).
 | the background (`0x0040d0a8`, [Level loading](level-loading.md#render-order)) | 0 | 2 | no | no | |
 | a world object (`0x0017fd78`) | its squared distance | 1 | unless its radius < 0.25 (and not flag `0x10`) | object flag `0x80`, outside some states | |
 | a human (`0x00174320`) | squared distance `+0x334` | 1 | unless hidden ([Humans](#humans)) | no | yes |
-| `0x00172c70` (the resource manager's list `+0xc98`, [The streamed world](world.md#a-frame)) | 0 | 1 | yes | no | |
+| a car, `CarInstance_Render` (`0x00172c70`, [Drawing a car](graphics.md#car-draw)) | 0 | 1 | yes | no | |
 
 ### World lighting {#world}
 
@@ -427,6 +460,12 @@ unlit vertices (0) reach the GS as 59, 64 and 29 of 128 (street dump), `level100
   The [health rings](hud-radar.md#the-health-rings) are drawn over the shadows.
 - A light with radius 0 given `SetLightFlicker` keeps its corona and flickers (no `sub_flashing_light` particle);
   light bugs are not spawned. No object uses the pulse or the glow yet.
+- **Differences in the selection** (`LightManager::select`, against [step 2 and 3](#select)): Coney stops copying the
+  ambient and directional list at the cap and adds the glow only below the cap, where the original copies the list
+  whole and adds the glow uncapped. Nothing shows in `level99`, whose list B holds 3 lights, the smallest cap; a level
+  or an object with more would differ far from the camera. The cull's corona-only lights, which Coney leaves out of
+  the point lists, are a finding of [#654](issue:654). The fix and the trace comparison that catches it are build
+  issues of [Realtime lighting](../guides/realtime-lighting.md#build-issues).
 - A sandbox (no level scripts) gets a stand-in ambient and directional light; the front end's background has its own
   manager, which `global.lua`'s lights for level 100 fill, with black fog, and its objects are lit as world objects;
   the character viewer and the reference renders keep their fixed lights (`repo:src/platform/character_lights.h`).
@@ -440,8 +479,14 @@ unlit vertices (0) reach the GS as 59, 64 and 29 of 128 (street dump), `level100
   out: in Ghidra, the message `Human_HandleMessage` handles at its write; or in PCSX2, a write watchpoint on the byte.
 - **The pulse flag**{#q-pulse-flag}: what object flag `0x80` (the pulse, light B) marks. Find out: in Ghidra, the
   writers of the flag in the object set-up; or the objects that carry it, counted per level from the disc.
-- **Mode 4's flicker**{#q-flicker-mode4}: the RpLight's colour is not updated by it; whether another step applies the
-  base. Find out: in PCSX2, a lamp with mode 4, its record and its RpLight colour read over a few frames.
+- **Mode 4's flicker**{#q-flicker-mode4}: the RpLight's colour is not updated by it (`0x0017caa8` writes only the base,
+  and the corona reads the RpLight), so it may change nothing a player sees; whether another step applies the base.
+  `level99` checkpoint 2 has no light in mode 4 (0 of 96 records over 20 samples, run r-20261030-light-selection):
+  mode 4 comes from the chunk `0x4B` glows ([`0x0017e490`](#code-index)). Find out: in PCSX2, a level whose chunk
+  `0x4B` gives a light mode 4, its record and its RpLight colour read over a few frames.
+- **A point light of radius 0**{#q-zero-radius}: what the VU1 light code does with a corona-only light the selection
+  keeps (its falloff divides by the radius). Find out: in PCSX2, an object whose bounding sphere holds a corona-only
+  light, its GS dump against the same frame with the light switched off.
 - **The corona value**{#q-corona-value}: the value passed with rectangles 1-4 of the coronas (`distSq / 640`). Find
   out: in Ghidra, the sprite batch's use of the value it is given.
 - **The blob's size**{#q-blob-size}: the sprite's base size and what sets the human's `+0x580`-`+0x588` (Rembrandt
@@ -451,4 +496,9 @@ unlit vertices (0) reach the GS as 59, 64 and 29 of 128 (street dump), `level100
 
 Runtime values were read over PINE in PCSX2 2.9.94 on 2026-10-06 from the user's quick-save slot 1 (`level99`,
 checkpoint 3, loaded read-only from a copy), counts and values only; the GS dumps the page cites were taken in the
-same build. These runs predate run records, so the page's runtime claims name no run.
+same build. These runs predate run records, so the runtime claims from them name no run.
+
+On 2026-10-30 the selection and the cull were checked in PCSX2 v2.9.129 from the state library's `pedestrian-grab`
+(`level99`, checkpoint 2): runs r-20261030-light-selection and r-20261030-light-cull-radius-zero, whose records hold the
+method and the numbers. The script that replayed the rule stays in the task's scratch folder; the comparison it made
+is the one the [faithful comparison tests](../guides/realtime-lighting.md#testing) build into Coney's tools.

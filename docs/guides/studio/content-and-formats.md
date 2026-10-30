@@ -374,8 +374,8 @@ The flag bits whose meaning is not known (3, 5, 6, 8-10 and the value in bits 12
 of the human standing on it, whose effect is open) are not offered by name; an *Advanced* field takes the raw word, as
 the layout's `flags=` does today. **Sneak zones are collision.** The Studio brief asks that a sun's shadows decide where
 the player hides; in Coney today, as in the original, hiding is decided by the shadow-ground bit of the triangle under
-the human, so a project marks its sneak zones on its colliders. A sun that computes them waits on the enhancements'
-lighting ([Realtime lighting](../realtime-lighting.md)), and when it exists it writes the same bit.
+the human, so a project marks its sneak zones on its colliders. A sun computes them in the editor and writes the same
+bit ([The sun and sneak zones](../realtime-lighting.md#sun-sneak)); the renderer's shadows never decide them.
 
 **Needs from Coney:** primitives with a full rotation and a scale; colliders of every shape built into the same mesh;
 collision triangles from an imported mesh.

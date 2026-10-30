@@ -1,0 +1,40 @@
+version = 1
+id = "r-20261030-light-cull-radius-zero"
+date = "2026-10-30"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "dc6d8603916eef985242d169f87ac8c9fbedfe799989520bb8e1647fb475e03e"
+
+[who]
+agent = "a19ae2f802665c70e"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = []
+
+[run]
+name = ""
+method = "The light manager's per-viewport point-light vectors (+0x20 objects, +0x30 world) read with the game paused, each entry's RpLight radius (+0x14) and its record's corona size (+0x14) and corona (+0x2c); then 300 LightManager_SelectLights calls checked as in run r-20261030-light-selection, recording each chosen light's type and radius."
+
+[values]
+object_vector_lights = 17
+object_vector_radius_zero = 6
+radius_zero_with_corona = 6
+world_vector_lights = 1
+world_vector_radius_zero = 0
+calls = 300
+matched = 300
+selected_point_lights = 99
+selected_radius_zero = 0
+
+[addresses]
+LightManager_CullForViewport = 0x0017d880
+LightManager_SelectLights = 0x0017de10
+manager_pointer = 0x0050cce4
