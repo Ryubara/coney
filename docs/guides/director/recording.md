@@ -74,9 +74,9 @@ own 14 humans and the hub with 50 AI fighters spawned in front of the player (64
 The sizes come from the real states of the two runs, quantized as [below](#quantization); the costs are the probe's
 zones ([Measurements](#measurements)). What the numbers say:
 
-- **Poses are most of a recording.** A pose is 34 bone rotations. In a fight about 14 of a human's 34 bones change in
-  a step, and only 64 % by a small amount, against 93 % in the hub's calm. Everything else (positions, headings,
-  objects, cameras) is a few hundred bytes a step.
+- **Poses are most of a recording.** A pose is 34 bone rotations. In a fight about 14 of a human's 34 bones change in a
+  step, and only 64 % by a small amount, against 9.6 bones and 93 % in the hub's calm. Everything else (positions,
+  headings, objects, cameras) is a few hundred bytes a step.
 - **Key frames are cheap.** Going from one every 60 s to one every 5 s costs 1.5 % (crowd) to 3.3 % (hub) (the
   bit-packed rows), and a key frame at every block is what makes each block, and each clip, readable on its own.
 - **Longer blocks laid out by column compress best.** With 1-second blocks, zstd makes about as much of the deltas by
@@ -129,7 +129,7 @@ health the same bits:
 | Pelvis offset (the pose's root) | 12 bits an axis over ±2 m | 1 mm |
 | Bone and object rotations | smallest three: 2 bits for the component dropped, 3 × 10 bits | about 0.1° |
 | Camera direction | yaw 14 bits, pitch 12 bits | 0.02°, 0.05° |
-| Health, its maximum, the clip id | 15, 15 and 16 bits | exact |
+| Health, the layer count, the clip id | 15, 4 and 16 bits | exact |
 
 A delta stores a field's quantized value against the step before's quantized value, so decoding is exact against
 the key frame's quantization and errors never add up along a block. The probe decoded every step it encoded and
@@ -194,14 +194,14 @@ flowchart LR
    snapshot](../../engine/renderer.md#snapshot), [#1229](issue:1229)): every drawn thing's id, model and pose, the
    cameras, the lighting frame, the particles, the screen effects and the HUD's lists, in a ring of four slots. The
    recorder is that snapshot's second reader: once a step is published it copies the parts the [table](#holds)
-   lists into the next record of its own ring (the snapshot's slots are reused two steps later, so it must copy):
+   lists into the next record of its own ring (the snapshot's slots are reused a few steps later, so it must copy):
    0.009 ms on the hub, 0.017 ms with 64 humans in the probe (about 40 KB a step, 6 MB a block). It adds what the
    snapshot does not hold: the objects the level changed that are not drawn, the pads and the step's events. It
    does not quantize, compress, allocate or touch a file. There is one per-step copy of the drawn state, the
    snapshot's, and the recorder does not build a second.
 2. **A worker builds the blocks.** It takes the records, quantizes them, writes each block (150 steps: a key frame
-   and 149 deltas) by column, compresses it with zstd and appends it to the clip's file. Its work is 0.05 to 0.2 ms a
-   step on one core.
+   and 149 deltas) by column, compresses it with zstd and appends it to the clip's file. Its work is 0.04 to 0.17 ms a
+   step on one core (the probe's encode and the script's compression).
 3. **A clip is 12 blocks.** When a clip's 1,800th step is in, the worker ends it: it appends the index ([The
    file](#file)), writes the file out and renames `clip-001.crec.part` to `clip-001.crec`. The next step is the
    first of a block, as every 150th step is, so it is the first of the next clip, with its own key frame. The game's
@@ -368,7 +368,8 @@ digests only.
 
 Taken on 2026-10-29 on the agents' machine of [Performance: findings](../performance.md#findings) (a Ryzen 7 9800X3D,
 an RTX 5080), from a `playtest` build of `main` at `b6559b4cc` with a probe added for the study and not kept, windowed,
-vsync off, lockstep, with no build holding a slot (other agents' processes were running). Each run is the hub
+vsync off, lockstep. The windowed runs had no build holding a slot (other agents' processes were running); the
+headless runs overlapped this task's own build compiling its tests. Each run is the hub
 (`level95` checkpoint 1) from its first frame of play for 1,860 steps, the bench's 60 steps of warm-up unmeasured,
 with no fighters or with `--bench-fighters 50 --bench-god` ([Measuring a run](../performance.md#bench)):
 
