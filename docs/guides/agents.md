@@ -593,11 +593,9 @@ PCSX2 copies do ([`build`](coney-tools-build.md#build)). An agent never runs `cm
 uv run --project python coney-tools build --agent <id> --preset dev --test -R <regex> [-L <label>]
 ```
 
-- **Filter while you iterate; the whole suite is `task check`'s.** `--test` with neither `-R` nor `-L` is the whole
-  suite (15 to 40 minutes of a main slot, mostly the disc tests), so the command refuses an agent's such run unless it
-  carries `--full`, the flag for the handover tip. Brief an engineer to run the tests its change touches and to leave
-  the full suite to `task check` ([The local gate](testing.md#local-gate)); a brief never tells it to add `--full`
-  to an iteration run.
+- **Filter while you iterate; the whole suite is `task check`'s.** An agent's `--test` with neither `-R` nor `-L` (15 to
+  40 minutes of a main slot) is refused unless it carries `--full`, the handover tip's flag. A brief says: run the
+  tests the change touches, leave the full suite to `task check` ([the local gate](testing.md#local-gate)).
 
 - **Run it in the background** (`run_in_background`, or output to a file) and read the log path it prints first, then
   the short summary when it ends. Do not sit in it: a wait for a slot can take many minutes.
