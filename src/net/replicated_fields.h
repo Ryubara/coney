@@ -101,7 +101,8 @@ inline constexpr std::array<ReplicatedKind, 3> kReplicatedKinds{ReplicatedKind::
 [[nodiscard]] std::span<const FieldSpec> fieldTable(ReplicatedKind kind);
 
 /// The animation layers a human carries: the newest, and the older ones it and the layers between fade in over. As
-/// many as `anim::AnimTaskStack` shows at once (through overlapping fades), so a guest draws every blend the host does.
+/// many as `anim::AnimTaskStack` shows at once (through overlapping fades), each with its clip, its playhead and, for
+/// the locomotion's gait blend, its gait value: with them and the fades a guest can draw every blend the host does.
 /// @coney-only network play; the original has none
 inline constexpr std::size_t kHumanAnimLayers = 4;
 
@@ -116,14 +117,18 @@ enum class HumanField : std::uint8_t {
     HealthMax,  ///< Its maximum (record `+0x146`).
     Clip,       ///< The anim id playing: the newest animation layer.
     Playhead,   ///< How far through the clip, 0 to 1.
+    Gait,       ///< A gait blend's value, 0 to 4 (walk, jog, run, sprint); 0 for any other task.
     Clip1,      ///< The anim id of the layer under the newest, which the newest fades in over; 0 with none.
     Playhead1,  ///< How far through layer 1's clip, 0 to 1; 0 with no layer 1.
+    Gait1,      ///< Layer 1's gait value, as Gait; 0 with no layer 1.
     Fade1,      ///< How far the newest layer has faded in over layer 1 and the older ones, 0 to 1; 1 with no layer 1.
     Clip2,      ///< The anim id of layer 2, under layer 1, which layer 1 fades in over; 0 with none.
     Playhead2,  ///< How far through layer 2's clip, 0 to 1; 0 with no layer 2.
+    Gait2,      ///< Layer 2's gait value, as Gait; 0 with no layer 2.
     Fade2,      ///< How far layer 1 has faded in over layer 2 and the older ones, 0 to 1; 1 with no layer 2.
     Clip3,      ///< The anim id of layer 3, the oldest, under layer 2; 0 with none.
     Playhead3,  ///< How far through layer 3's clip, 0 to 1; 0 with no layer 3.
+    Gait3,      ///< Layer 3's gait value, as Gait; 0 with no layer 3.
     Fade3,      ///< How far layer 2 has faded in over layer 3, 0 to 1; 1 with no layer 3.
     Grounded,   ///< On the ground (not jumping or falling).
     KnockedOut, ///< Knocked out or wounded.

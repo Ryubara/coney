@@ -48,10 +48,15 @@ constexpr int kHeadingBits = 10;
 
 // A human carries every layer its task stack can show at once: change() finishes the newest fade early when more than
 // kEarlyFinishTasks tasks (a fade counting as one) are held, so at most three layers stand under the new one
-// (docs/guides/snapshots.md#human-state). Each older layer is a clip, a playhead and a fade.
+// (docs/guides/snapshots.md#human-state). The newest layer is a clip, a playhead and a gait value; each older one the
+// same and a fade.
 static_assert(kHumanAnimLayers == (anim::AnimTaskStack::kEarlyFinishTasks / 2) + 1);
 static_assert(static_cast<std::size_t>(HumanField::Fade3) + 1 ==
-              static_cast<std::size_t>(HumanField::Playhead) + 1 + ((kHumanAnimLayers - 1) * 3));
+              static_cast<std::size_t>(HumanField::Gait) + 1 + ((kHumanAnimLayers - 1) * 4));
+// A gait blend's value runs from 0 to 4 (walk, jog, run, sprint, sprint). To 10 bits a step is 0.004, so a value
+// arrives within 0.002: the sampler's thresholds on its fraction (0.01, 0.995) fall on the same side for the guest.
+constexpr float kGaitMax = anim::GaitBlendTask::kMaxValue;
+constexpr int kGaitBits = 10;
 
 constexpr std::array<FieldSpec, static_cast<std::size_t>(HumanField::Count)> kHumanFields{{
     {.name = "positionX",
@@ -80,16 +85,22 @@ constexpr std::array<FieldSpec, static_cast<std::size_t>(HumanField::Count)> kHu
     // A share of the clip rather than a frame, since the table cannot know a clip's frame count: 10 bits are a frame
     // in a clip of a thousand.
     {.name = "playhead", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
-    // The older layers, as many as AnimTaskStack shows at once through overlapping fades: each one's
-    // clip and playhead, and how far the layer above it has faded in over it, to 10 bits as the playheads.
+    // The clip id names a gait blend's leading clip only: the value says which two of its clips play and how they
+    // blend, so a guest rebuilds a walk or a run from the human's gait clips and it.
+    {.name = "gait", .encoding = FieldEncoding::Float, .bits = kGaitBits, .min = 0.0F, .max = kGaitMax},
+    // The older layers, as many as AnimTaskStack shows at once through overlapping fades: each one's clip, playhead
+    // and gait value, and how far the layer above it has faded in over it, to 10 bits as the playheads.
     {.name = "clip1", .encoding = FieldEncoding::Integer, .bits = 12, .min = 0.0F, .max = 4095.0F},
     {.name = "playhead1", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
+    {.name = "gait1", .encoding = FieldEncoding::Float, .bits = kGaitBits, .min = 0.0F, .max = kGaitMax},
     {.name = "fade1", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
     {.name = "clip2", .encoding = FieldEncoding::Integer, .bits = 12, .min = 0.0F, .max = 4095.0F},
     {.name = "playhead2", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
+    {.name = "gait2", .encoding = FieldEncoding::Float, .bits = kGaitBits, .min = 0.0F, .max = kGaitMax},
     {.name = "fade2", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
     {.name = "clip3", .encoding = FieldEncoding::Integer, .bits = 12, .min = 0.0F, .max = 4095.0F},
     {.name = "playhead3", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
+    {.name = "gait3", .encoding = FieldEncoding::Float, .bits = kGaitBits, .min = 0.0F, .max = kGaitMax},
     {.name = "fade3", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
     {.name = "grounded", .encoding = FieldEncoding::Bool, .bits = 1},
     {.name = "knockedOut", .encoding = FieldEncoding::Bool, .bits = 1},

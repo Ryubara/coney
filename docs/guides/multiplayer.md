@@ -360,17 +360,17 @@ one definition, as Quake 3's `netField_t` tables do. `writeField()` and `readFie
 
 | Kind | Fields | Bits in full |
 | --- | --- | --- |
-| Human | position (3 x 18 bits, -1,024 to 1,024 m, under 8 mm a step), heading (10 bits), health and its maximum (16 bits each, -32,768 to 32,767: the original's s16 numbers, which a lethal hit takes below 0, [Characters](../research/characters.md)), four animation layers, as many as `AnimTaskStack` shows at once ([A human's state](snapshots.md#human-state)): the newest's clip (12 bits) and playhead (10 bits, a share of the clip), then each older layer's clip and playhead and the fade over it (10 bits), then grounded, knocked out | 216 |
+| Human | position (3 x 18 bits, -1,024 to 1,024 m, under 8 mm a step), heading (10 bits), health and its maximum (16 bits each, -32,768 to 32,767: the original's s16 numbers, which a lethal hit takes below 0, [Characters](../research/characters.md)), four animation layers, as many as `AnimTaskStack` shows at once ([A human's state](snapshots.md#human-state)): each one's clip (12 bits), playhead (10 bits, a share of the clip) and gait value (10 bits, 0 to 4, for a walk or run blend), and each older layer's fade under the one above it (10 bits), then grounded, knocked out | 256 |
 | World object | position, heading, door opening (10 bits), state (a byte), broken, hidden | 84 |
 | Car | position, heading, speed (12 bits, -64 to 64 m/s) | 76 |
 
-The ranges are Coney's choices. Four are stand-ins, marked in the code, for the game's side of snapshots to settle:
-the positions' fixed bounds around the origin (in place of each level's own), the clip as an anim id under 4,096 (or
-the game's own hash), the world object's state byte and the car's speed range. A snapshot sends a thing's changed
-fields only, so a walking human's delta is 10 bytes ([What a scene costs](snapshots.md#costs)), under the 15 to
-25 bytes [the budget](network-architecture.md#snapshots) allows for it. `fieldWord()` and `fieldValue()` give a
-field's bits as a number and back, which is what a snapshot compares and sends. `validateFields()` checks a table
-(named fields, different names, bits 1 to 32, ranges that fit their bits), and the tests check every table with it.
+The ranges are Coney's choices. Four are stand-ins, marked in the code, for the game's side of snapshots to settle: the
+positions' fixed bounds around the origin (in place of each level's own), the clip as an anim id under 4,096 (or the
+game's own hash), the world object's state byte and the car's speed range. A snapshot sends a thing's changed fields
+only, so a walking human's delta is 84 bits, under 11 bytes ([What a scene costs](snapshots.md#costs)), under the 15 to
+25 bytes [the budget](network-architecture.md#snapshots) allows for it. `fieldWord()` and `fieldValue()` give a field's
+bits as a number and back, which is what a snapshot compares and sends. `validateFields()` checks a table (named fields,
+different names, bits 1 to 32, ranges that fit their bits), and the tests check every table with it.
 
 ## Testing {#testing}
 
