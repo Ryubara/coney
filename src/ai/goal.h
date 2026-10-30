@@ -14,6 +14,8 @@ class Brain;
 
 /// A fight's duration meaning none (`GoalFight` passes −1, docs/research/ai-fights.md#fight-durations).
 inline constexpr int kNoFightLimit = -1;
+/// A goal's time limit meaning none (the base's `+0x08` = −1).
+inline constexpr int kNoGoalTimeLimit = -1;
 /// The duration of every fight goal a Melee goal pushes, ms (its `+0x18`).
 inline constexpr int kMeleeFightMs = 4000;
 
@@ -90,8 +92,8 @@ enum class GoalStatus : std::uint8_t {
 /// A goal. Subclasses override what they do; every hook but process() does nothing by default.
 class Goal {
   public:
-    /// A goal of `type`, not started.
-    explicit Goal(GoalType type) : m_type(type) {}
+    /// A goal of `type`, not started, ended `timeLimitMs` after its start (kNoGoalTimeLimit: never).
+    explicit Goal(GoalType type, int timeLimitMs = kNoGoalTimeLimit) : m_type(type), m_timeLimitMs(timeLimitMs) {}
     Goal(const Goal&) = delete;
     Goal& operator=(const Goal&) = delete;
     Goal(Goal&&) = delete;
@@ -123,6 +125,7 @@ class Goal {
     friend class Brain;
 
     GoalType m_type;
+    int m_timeLimitMs;            // +0x08 before the start
     bool m_started = false;       // +0x04
     bool m_resumePending = false; // the goal above it was popped: resume() before the next process()
 };

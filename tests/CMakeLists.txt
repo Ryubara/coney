@@ -420,6 +420,7 @@ target_sources(coney_tests PRIVATE
     ai/boss_goals_test.cpp
     ai/brain_events_test.cpp
     ai/brain_test.cpp
+    ai/goal_lifecycle_test.cpp
     ai/crew_test.cpp
     ai/smash_goals_test.cpp
     ai/steal_goals_test.cpp
