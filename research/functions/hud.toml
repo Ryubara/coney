@@ -567,6 +567,11 @@ level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
 status = "compared"
 
+[[function.gaps]]
+what = "the flash mode it sets on the blip"
+relation = "not-ported"
+issue = 700
+
 [[function]]
 address = 0x001b4328
 name = "HUD_RadarOn"

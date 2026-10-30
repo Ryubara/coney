@@ -1340,6 +1340,11 @@ what = "this file's readers: an explicit nil, a negative number or a non-numeric
 relation = "stand-in"
 question = "script-arguments.md#q-nil-defaults"
 
+[[function.gaps]]
+what = "the third argument, the blip's flash mode, is not read"
+relation = "not-ported"
+issue = 700
+
 [[function]]
 address = 0x00370728
 name = "lua_HUDSetRadarZoomScale"
