@@ -21,6 +21,7 @@
 #include "ai/brain.h"
 #include "ai/scripted_brains.h"
 #include "ai/spawners.h"
+#include "characters/body_size.h"
 #include "characters/starting_money.h"
 #include "core/error.h"
 #include "core/game_random.h"
@@ -216,6 +217,13 @@ TEST_CASE("a spawner's human rolls its money by the class's draws, in their orde
         reference.startAt(seed);
         const coney::characters::StartingCarry expected = coney::characters::rollStartingCarry(config, cls, reference);
         CHECK(money == expected.money);
+        // Human_Init then draws the random body size from the same stream, after the money (confirmed (code) at
+        // 0x00218008, docs/research/characters.md#body-scale): this human (no brain, category 4, no hat, a man) is
+        // not one the size skips.
+        const auto size = coney::characters::randomBodySize(
+            {.classType = kType, .brainType = 0, .category = kCategory, .woman = false, .hat = false, .gangKind = {}},
+            reference);
+        CHECK(size.has_value());
         // The same draws, no more and no fewer.
         CHECK(spawner.state.random.index(coney::RandomStream::Gameplay) ==
               reference.index(coney::RandomStream::Gameplay));
