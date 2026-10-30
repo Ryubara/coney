@@ -17,13 +17,12 @@ namespace {
 
 // The value of `NilHandle` (script_bindings.cpp sets the global).
 constexpr double kNilHandle = 0.0;
-// The box kind `AddVolumeBox` refuses.
-constexpr int kRefusedKind = 1;
-
 // Argument `i` as a handle: truncated to a whole number, as tolua reads an unsigned integer.
+// @coney-only binding glue: how Coney's Lua reads a handle argument
 double handleArg(std::span<const Value> args, std::size_t i) { return std::trunc(binding::number(args, i)); }
 
 // Argument `i` as tolua reads a boolean with a default: absent is the default, nil or false (and 0) false.
+// @coney-only binding glue: how Coney's Lua reads a boolean argument
 bool booleanArg(std::span<const Value> args, std::size_t i, bool fallback) {
     if (i >= args.size()) {
         return fallback;
@@ -35,12 +34,14 @@ bool booleanArg(std::span<const Value> args, std::size_t i, bool fallback) {
 }
 
 // `AddVolumeBox(name, kind, corner, size, enable, flags)`: a box from `corner` to `corner + size` with a new handle;
-// NilHandle for kind 1. The flags byte is not kept (never passed, meaning not traced).
+// NilHandle, and no handle used, for kind 1 and, Coney's choice, any kind but 0, 2 and 3, where the original goes on
+// with a null record (docs/research/trigger-updates.md#add). The flags byte is not kept (never passed, meaning not
+// traced).
 // @orig 0x004125b8 VolumeBox_Add (unknown)
 NativeFunction makeAddVolumeBox(const BindingContext& context, std::function<double()> nextHandle) {
     return [boxes = context.boxes, nextHandle = std::move(nextHandle)](std::span<const Value> args) {
         const int kind = static_cast<int>(std::trunc(binding::number(args, 1)));
-        if (kind == kRefusedKind) {
+        if (!world_objects::VolumeBoxes::makesKind(kind)) {
             return binding::number(kNilHandle);
         }
         const double handle = nextHandle();
@@ -48,6 +49,7 @@ NativeFunction makeAddVolumeBox(const BindingContext& context, std::function<dou
             // tolua reads a missing corner or size as zeros.
             const std::array<float, 3> corner = binding::position(args, 2).value_or(std::array<float, 3>{});
             const std::array<float, 3> size = binding::position(args, 3).value_or(std::array<float, 3>{});
+            // Stand-in: the flags byte (+0x6a) is not kept; no script passes it.
             boxes->add(handle, binding::string(args, 0), kind, corner, size, booleanArg(args, 4, true));
         }
         return binding::number(handle);
@@ -101,6 +103,7 @@ NativeFunction makeSetMsgHandlerEx(const BindingContext& context) {
 
 } // namespace
 
+// @coney-only binding registration in Coney's Lua state
 void addTriggerBindings(LuaVm& vm, const BindingContext& context, std::function<double()> nextHandle) {
     vm.registerFunction("AddVolumeBox", makeAddVolumeBox(context, std::move(nextHandle)));
     vm.registerFunction("RotateVolumeBox", makeRotateVolumeBox(context));

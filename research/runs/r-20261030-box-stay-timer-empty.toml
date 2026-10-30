@@ -1,0 +1,39 @@
+version = 1
+id = "r-20261030-box-stay-timer-empty"
+date = "2026-10-30"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "4e289d290cc5f27cd1ff4455989eb161bdfcb3ef639b9909f2cd57baaeda9b7e"
+
+[who]
+agent = "a1a5d070c052c44b5"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = []
+
+[run]
+name = ""
+method = "Emulation paused in level99 checkpoint 2; read the game clock (0x0050b734 +0x48) and the stay timer (+0x1e0) of two enabled kind-0 boxes with no occupants (+0x70 all nil), advanced 120 frames, read again: each empty box's timer moved on with the clock, re-armed with nobody inside"
+
+[values]
+clock_before = 379536
+clock_after = 381538
+box1_timer_before = 379668
+box1_timer_after = 381670
+box2_timer_before = 380035
+box2_timer_after = 382037
+box_period = 1000
+frames = 120
+
+[addresses]
+update = 0x00415378
+clock = 0x0050b734
+box_pool = 0x0051483c

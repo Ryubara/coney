@@ -1351,9 +1351,6 @@ tag = 28
 comment = 2
 tag = 1
 
-["src/scripting/trigger_bindings.cpp"]
-tag = 3
-
 ["src/scripting/world_bindings.cpp"]
 tag = 4
 
@@ -1553,16 +1550,6 @@ tag = 10
 
 ["src/world_objects/tag_spots.h"]
 comment = 2
-
-["src/world_objects/trigger_spheres.cpp"]
-tag = 5
-
-["src/world_objects/trigger_spheres.h"]
-comment = 1
-tag = 1
-
-["src/world_objects/volume_boxes.cpp"]
-tag = 2
 
 ["tests/ai/attack_choice_test.cpp"]
 citation = 8
@@ -2665,9 +2652,6 @@ citation = 11
 ["tests/scripting/spawn_bindings_test.cpp"]
 citation = 9
 
-["tests/scripting/trigger_bindings_test.cpp"]
-citation = 3
-
 ["tests/scripting/world_bindings_test.cpp"]
 citation = 8
 
@@ -2781,9 +2765,3 @@ citation = 3
 
 ["tests/world_objects/tag_spots_test.cpp"]
 citation = 9
-
-["tests/world_objects/trigger_spheres_test.cpp"]
-citation = 5
-
-["tests/world_objects/volume_boxes_test.cpp"]
-citation = 6

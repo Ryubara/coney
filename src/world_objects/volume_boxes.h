@@ -40,13 +40,15 @@ struct BoxSubject {
 /// The level's volume boxes and their trigger update: a kind-0 box that is enabled sends itself message 3 when a human
 /// comes inside, 5 while one stays (at most once per repeat period) and 4 when one leaves or dies inside.
 ///
-/// Research: docs/research/scripting.md#triggers, docs/references/bindings/world.md#addvolumebox,
+/// Research: docs/research/scripting.md#triggers, docs/research/trigger-updates.md,
+/// docs/references/bindings/world.md#addvolumebox,
 /// docs/references/bindings/world.md#rotatevolumebox
 class VolumeBoxes {
   public:
     /// The most humans a box keeps inside it (`+0x70`, 60 handles).
     static constexpr std::size_t kMaxOccupants = 60;
-    /// The repeat period of message 5, ms: the handler component's default (`+0x74`, 1000, `0x00384a10`).
+    /// The repeat period of message 5, ms, when setStayPeriod() gave none: the handler component's default (`+0x74`,
+    /// 1000, `0x00384a10`).
     static constexpr std::uint64_t kStayPeriodMs = 1000;
     /// The messages a box sends itself.
     static constexpr int kEntered = 3;
@@ -62,18 +64,31 @@ class VolumeBoxes {
     /// Whether a handle still names an object (`0x00390268`); none set: every handle does.
     using Resolves = std::function<bool(double handle)>;
 
+    /// A box's message-5 period, ms: its handler component's repeat period.
+    using Period = std::function<std::uint64_t(double box)>;
+
     /// Sets the test update() asks of an occupant missing from its subjects.
     void setResolves(Resolves resolves) { m_resolves = std::move(resolves); }
+    /// Sets where update() reads each box's message-5 period; none set: kStayPeriodMs for every box.
+    void setStayPeriod(Period period) { m_stayPeriod = std::move(period); }
 
-    /// `AddVolumeBox(name, kind, corner, size, enable)`: a box with `handle` from `corner` to `corner + size`.
+    /// Whether `AddVolumeBox` makes a box of `kind`: 0, 2 and 3 have pools, 1 is refused and any other has none
+    /// (docs/research/trigger-updates.md#add).
+    [[nodiscard]] static constexpr bool makesKind(int kind) { return kind == 0 || kind == 2 || kind == 3; }
+
+    /// `AddVolumeBox(name, kind, corner, size, enable)`: a box with `handle` from `corner` to `corner + size`; null,
+    /// and no box, for a kind makesKind() refuses.
     /// @orig 0x004125b8 VolumeBox_Add (unknown)
-    const VolumeBox& add(double handle, std::string_view name, int kind, const std::array<float, 3>& corner,
+    const VolumeBox* add(double handle, std::string_view name, int kind, const std::array<float, 3>& corner,
                          const std::array<float, 3>& size, bool enabled);
     /// `RotateVolumeBox(box, m00, m01, m10, m11)`: turns the box about the vertical axis; an unknown box is ignored.
     /// @orig 0x00412c40 VolumeBox_SetRotation (unknown)
     void rotate(double handle, const std::array<float, 4>& turn);
     /// The box with `handle`; null when none has it.
+    /// @coney-only lookup over Coney's own list; the original resolves the handle (0x00390268)
     [[nodiscard]] VolumeBox* find(double handle);
+    /// The box with `handle`; null when none has it.
+    /// @coney-only lookup over Coney's own list; the original resolves the handle (0x00390268)
     [[nodiscard]] const VolumeBox* find(double handle) const;
     /// Every box, oldest first.
     [[nodiscard]] const std::vector<VolumeBox>& all() const { return m_boxes; }
@@ -88,12 +103,8 @@ class VolumeBoxes {
     /// A kind-2 box keeps at most this many occupants: the two players (`+0xf0`).
     static constexpr std::size_t kMaxPlayerOccupants = 2;
 
-    /// One trigger update of every enabled kind-0 and kind-2 box at game time `nowMs` over `subjects` (for a kind-2
-    /// box, the players' humans only, at most kMaxPlayerOccupants kept): a living human inside and
-    /// new is kept (while there is room) and gets 3; one inside and kept gets 5 when the period is due (the box's next
-    /// 5 then a period later); a kept one no longer inside, dead or gone gets 4 and is dropped, except one whose handle
-    /// no longer resolves (setResolves()), which is skipped with no message and kept. The messages go to `send` after
-    /// the box's update.
+    /// One trigger update of every enabled kind-0 box (updateBox()) and kind-2 box (updatePlayerBox()) at game time
+    /// `nowMs` over `subjects`, the messages going to `send` as they happen.
     /// @orig 0x00415378 VolumeBox_Update (unknown)
     /// @orig 0x004134f8 PlayerVolumeBox_Update (unknown)
     void update(std::span<const BoxSubject> subjects, std::uint64_t nowMs, const Send& send);
@@ -113,8 +124,35 @@ class VolumeBoxes {
     void sendTheft(const std::array<float, 3>& spot, const std::function<void(double box)>& send) const;
 
   private:
+    // One update of the kind-0 box at `index`: the stay timer (stayDue()); each living human inside enters (3) or, on
+    // a due update, stays (5), and a listed one no longer inside leaves (4); then each occupant dead or no longer
+    // inside leaves (4), one whose handle no longer resolves being skipped and kept. Each message goes at once, and the
+    // update ends when a handler disables the box (docs/research/trigger-updates.md#box).
+    // @orig 0x00415378 VolumeBox_Update (unknown)
+    void updateBox(std::size_t index, std::span<const BoxSubject> subjects, std::uint64_t nowMs, const Send& send);
+    // One update of the kind-2 box at `index` over the two players' humans, with the kind-0 box's messages and no pass
+    // over the occupants (docs/research/trigger-updates.md#player-box).
+    // @orig 0x004134f8 PlayerVolumeBox_Update (unknown)
+    void updatePlayerBox(std::size_t index, std::span<const BoxSubject> subjects, std::uint64_t nowMs,
+                         const Send& send);
+    // Whether the box at `index` is still the enabled one with `handle`.
+    // @orig 0x00415378 VolumeBox_Update (unknown)
+    // @orig 0x004134f8 PlayerVolumeBox_Update (unknown)
+    [[nodiscard]] bool stillEnabled(std::size_t index, double handle) const;
+    // Whether `box`'s stay timer is due at `nowMs` (strictly past it), re-arming it to now + the box's period when it
+    // is (docs/research/trigger-updates.md#stay-timer).
+    // @orig 0x00415378 VolumeBox_Update (unknown)
+    // @orig 0x004134f8 PlayerVolumeBox_Update (unknown)
+    bool stayDue(VolumeBox& box, std::uint64_t nowMs) const;
+    // Lists `human` in `box`: a free place among `room`, else the first whose handle no longer resolves, else nowhere;
+    // the list stays packed, unlike the original's fixed slots.
+    // @orig 0x00415378 VolumeBox_Update (unknown)
+    // @orig 0x004134f8 PlayerVolumeBox_Update (unknown)
+    void addOccupant(VolumeBox& box, double human, std::size_t room) const;
+
     std::vector<VolumeBox> m_boxes;
     Resolves m_resolves;
+    Period m_stayPeriod;
 };
 
 } // namespace coney::world_objects

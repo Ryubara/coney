@@ -7,30 +7,26 @@
 
 namespace coney::world_objects {
 
-namespace {
-
-// One message a box's update queues for after the update.
-struct Message {
-    int message = 0;
-    double human = 0;
-};
-
-} // namespace
-
-const VolumeBox& VolumeBoxes::add(double handle, std::string_view name, int kind, const std::array<float, 3>& corner,
+const VolumeBox* VolumeBoxes::add(double handle, std::string_view name, int kind, const std::array<float, 3>& corner,
                                   const std::array<float, 3>& size, bool enabled) {
+    // Kind 1 is refused. Any other kind but 0, 2 and 3 has no pool, and the original goes on with a null record:
+    // Coney's choice is to make none. Stand-in: Coney's boxes come from no fixed pool, so none is ever full.
+    if (!makesKind(kind)) {
+        return nullptr;
+    }
     VolumeBox box;
     box.handle = handle;
     box.name = std::string(name);
     box.kind = kind;
     for (std::size_t axis = 0; axis < 3; ++axis) {
-        // A negative size still gives a box: the corners are sorted (**Coney choice**: not traced).
+        // Stand-in: the corners are sorted where the original keeps them as given; no script adds a box with a
+        // negative size, so the two agree for every box the game makes.
         box.low[axis] = std::min(corner[axis], corner[axis] + size[axis]);
         box.high[axis] = std::max(corner[axis], corner[axis] + size[axis]);
     }
     box.enabled = enabled;
     m_boxes.push_back(std::move(box));
-    return m_boxes.back();
+    return &m_boxes.back();
 }
 
 void VolumeBoxes::rotate(double handle, const std::array<float, 4>& turn) {
@@ -39,11 +35,13 @@ void VolumeBoxes::rotate(double handle, const std::array<float, 4>& turn) {
     }
 }
 
+// @coney-only lookup over Coney's own list
 VolumeBox* VolumeBoxes::find(double handle) {
     const auto found = std::ranges::find(m_boxes, handle, &VolumeBox::handle);
     return found == m_boxes.end() ? nullptr : &*found;
 }
 
+// @coney-only lookup over Coney's own list
 const VolumeBox* VolumeBoxes::find(double handle) const {
     const auto found = std::ranges::find(m_boxes, handle, &VolumeBox::handle);
     return found == m_boxes.end() ? nullptr : &*found;
@@ -70,53 +68,158 @@ bool VolumeBoxes::inside(const VolumeBox& box, const std::array<float, 3>& point
 }
 
 void VolumeBoxes::update(std::span<const BoxSubject> subjects, std::uint64_t nowMs, const Send& send) {
-    for (VolumeBox& box : m_boxes) {
-        if (!box.enabled || (box.kind != 0 && box.kind != 2)) {
+    // By index, not by reference: a handler may add a box, which can move the others.
+    for (std::size_t i = 0; i < m_boxes.size(); ++i) {
+        if (!m_boxes[i].enabled) {
             continue;
         }
-        // A kind-2 box tests the two players' humans only.
-        const bool playersOnly = box.kind == 2;
-        const std::size_t room = playersOnly ? kMaxPlayerOccupants : kMaxOccupants;
-        std::vector<Message> messages;
-        // The living humans inside: new ones enter, kept ones stay.
-        const bool stayDue = nowMs >= box.nextStayMs;
-        bool stayed = false;
-        for (const BoxSubject& subject : subjects) {
-            if (!subject.alive || (playersOnly && !subject.player) || !inside(box, subject.position)) {
+        if (m_boxes[i].kind == 0) {
+            updateBox(i, subjects, nowMs, send);
+        } else if (m_boxes[i].kind == 2) {
+            updatePlayerBox(i, subjects, nowMs, send);
+        }
+    }
+}
+
+bool VolumeBoxes::stillEnabled(std::size_t index, double handle) const {
+    // A handler may disable the box or clear every box.
+    return index < m_boxes.size() && m_boxes[index].handle == handle && m_boxes[index].enabled;
+}
+
+bool VolumeBoxes::stayDue(VolumeBox& box, std::uint64_t nowMs) const {
+    // Due only once the time is strictly past the timer, which is then re-armed whether or not anyone is inside.
+    if (nowMs <= box.nextStayMs) {
+        return false;
+    }
+    box.nextStayMs = nowMs + (m_stayPeriod ? m_stayPeriod(box.handle) : kStayPeriodMs);
+    return true;
+}
+
+void VolumeBoxes::addOccupant(VolumeBox& box, double human, std::size_t room) const {
+    // Coney's choice: the original fills the first fixed slot that does not resolve, a hole or a stale handle
+    // (inferred, as the sphere's 0x004f5cc8); Coney's list stays packed and appends, so the order of the list, and
+    // of several 4s in one occupants' pass, may differ.
+    if (box.occupants.size() < room) {
+        box.occupants.push_back(human);
+        return;
+    }
+    // A full list takes the first place whose handle no longer resolves, and none when every one does.
+    if (m_resolves) {
+        const auto stale = std::ranges::find_if(box.occupants, [this](double kept) { return !m_resolves(kept); });
+        if (stale != box.occupants.end()) {
+            *stale = human;
+        }
+    }
+}
+
+void VolumeBoxes::updateBox(std::size_t index, std::span<const BoxSubject> subjects, std::uint64_t nowMs,
+                            const Send& send) {
+    const double handle = m_boxes[index].handle;
+    const bool due = stayDue(m_boxes[index], nowMs);
+    // The found humans, in Coney's subjects order. Stand-in: a box tests every subject with its inside test, where the
+    // original first takes at most 60 within its bounding sphere.
+    for (const BoxSubject& subject : subjects) {
+        if (!stillEnabled(index, handle)) {
+            return;
+        }
+        // A dead human is passed over here; the occupants' pass below sends him 4.
+        if (!subject.alive) {
+            continue;
+        }
+        VolumeBox& box = m_boxes[index];
+        const auto listed = std::ranges::find(box.occupants, subject.handle);
+        int message = 0;
+        if (inside(box, subject.position)) {
+            if (listed == box.occupants.end()) {
+                // Message 3 goes even when every place is taken.
+                addOccupant(box, subject.handle, kMaxOccupants);
+                message = kEntered;
+            } else if (due) {
+                message = kInside;
+            } else {
                 continue;
             }
-            if (std::ranges::find(box.occupants, subject.handle) == box.occupants.end()) {
-                if (box.occupants.size() < room) {
-                    box.occupants.push_back(subject.handle);
-                    messages.push_back({kEntered, subject.handle});
-                }
-            } else if (stayDue) {
-                messages.push_back({kInside, subject.handle});
-                stayed = true;
-            }
+        } else if (listed != box.occupants.end()) {
+            box.occupants.erase(listed);
+            message = kLeft;
+        } else {
+            continue;
         }
-        if (stayed) {
-            box.nextStayMs = nowMs + kStayPeriodMs;
+        // Each message goes at once.
+        if (send) {
+            send(handle, message, subject.handle);
         }
-        // Kept humans that left, died or are gone.
-        std::erase_if(box.occupants, [&](double kept) {
-            const auto found = std::ranges::find(subjects, kept, &BoxSubject::handle);
-            if (found != subjects.end() && found->alive && inside(box, found->position)) {
-                return false;
-            }
-            // A handle that no longer names anything is skipped: no message, and its entry stays.
-            if (found == subjects.end() && m_resolves && !m_resolves(kept)) {
-                return false;
-            }
-            messages.push_back({kLeft, kept});
-            return true;
-        });
-        // A handler may change the boxes, so the messages go once the box is done with.
-        const double handle = box.handle;
-        for (const Message& message : messages) {
+    }
+    // The occupants, while the box is enabled: one whose handle no longer resolves is skipped and kept; a dead one
+    // gets 4 and then loses his place; one no longer inside loses his place and then gets 4.
+    std::size_t place = 0;
+    while (stillEnabled(index, handle) && place < m_boxes[index].occupants.size()) {
+        VolumeBox& box = m_boxes[index];
+        const double kept = box.occupants[place];
+        const auto subject = std::ranges::find(subjects, kept, &BoxSubject::handle);
+        if (subject == subjects.end() && m_resolves && !m_resolves(kept)) {
+            ++place;
+            continue;
+        }
+        // Stand-in: a human that resolves but is no subject (no position Coney can test) is no longer inside.
+        if (subject != subjects.end() && !subject->alive) {
             if (send) {
-                send(handle, message.message, message.human);
+                send(handle, kLeft, kept);
             }
+            // The handler may have changed the list: the entry is dropped only where it still is.
+            if (stillEnabled(index, handle) && place < m_boxes[index].occupants.size() &&
+                m_boxes[index].occupants[place] == kept) {
+                m_boxes[index].occupants.erase(m_boxes[index].occupants.begin() + static_cast<std::ptrdiff_t>(place));
+            }
+            continue;
+        }
+        if (subject != subjects.end() && inside(box, subject->position)) {
+            ++place;
+            continue;
+        }
+        box.occupants.erase(box.occupants.begin() + static_cast<std::ptrdiff_t>(place));
+        if (send) {
+            send(handle, kLeft, kept);
+        }
+    }
+}
+
+void VolumeBoxes::updatePlayerBox(std::size_t index, std::span<const BoxSubject> subjects, std::uint64_t nowMs,
+                                  const Send& send) {
+    const double handle = m_boxes[index].handle;
+    const bool due = stayDue(m_boxes[index], nowMs);
+    // The two players' humans. Stand-in: the first two players among Coney's subjects, by handle, for the original's
+    // player slots in order; a player who is no subject does not resolve and is passed over.
+    std::size_t players = 0;
+    for (const BoxSubject& subject : subjects) {
+        if (!subject.player) {
+            continue;
+        }
+        if (players == kMaxPlayerOccupants || !stillEnabled(index, handle)) {
+            return;
+        }
+        ++players;
+        VolumeBox& box = m_boxes[index];
+        const auto listed = std::ranges::find(box.occupants, subject.handle);
+        int message = 0;
+        if (subject.alive && inside(box, subject.position)) {
+            if (listed == box.occupants.end()) {
+                addOccupant(box, subject.handle, kMaxPlayerOccupants);
+                message = kEntered;
+            } else if (due) {
+                message = kInside;
+            } else {
+                continue;
+            }
+        } else if (listed != box.occupants.end()) {
+            box.occupants.erase(listed);
+            message = kLeft;
+        } else {
+            continue;
+        }
+        // Each message goes at once.
+        if (send) {
+            send(handle, message, subject.handle);
         }
     }
 }

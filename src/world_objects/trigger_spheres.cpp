@@ -8,13 +8,8 @@ namespace coney::world_objects {
 
 namespace {
 
-// One message a sphere's check queues for after the check.
-struct Message {
-    int message = 0;
-    double human = 0;
-};
-
-// `p` raised by `height` metres.
+// `p` raised by `height` metres: the ends of Coney's clear-line test.
+// @orig 0x00414548 TriggerSphere_Accepts (unknown)
 std::array<float, 3> raised(const std::array<float, 3>& p, float height) { return {p[0], p[1], p[2] + height}; }
 
 } // namespace
@@ -80,11 +75,13 @@ bool TriggerSpheres::setRadius(double object, float radius) {
     return true;
 }
 
+// @coney-only lookup over Coney's own list
 TriggerSphere* TriggerSpheres::find(double object) {
     const auto found = std::ranges::find(m_spheres, object, &TriggerSphere::object);
     return found == m_spheres.end() ? nullptr : &*found;
 }
 
+// @coney-only lookup over Coney's own list
 const TriggerSphere* TriggerSpheres::find(double object) const {
     const auto found = std::ranges::find(m_spheres, object, &TriggerSphere::object);
     return found == m_spheres.end() ? nullptr : &*found;
@@ -92,13 +89,11 @@ const TriggerSphere* TriggerSpheres::find(double object) const {
 
 bool TriggerSpheres::accepts(const TriggerSphere& sphere, const std::array<float, 3>& centre,
                              const std::array<float, 3>& point) const {
-    const float dx = point[0] - centre[0];
-    const float dy = point[1] - centre[1];
-    const float dz = point[2] - centre[2];
-    if ((dx * dx) + (dy * dy) + (dz * dz) > sphere.radius * sphere.radius) {
+    if (!withinRadius(sphere, centre, point)) {
         return false;
     }
-    if (sphere.mode == 0 || !m_clearLine) {
+    // Stand-in: modes 1 and 2 use Coney's clear-line test between points raised 1 m (the original's tests are open).
+    if ((sphere.mode != 1 && sphere.mode != 2) || !m_clearLine) {
         return true;
     }
     const std::array<float, 3> from = sphere.mode == 2 ? raised(centre, kLineRaise) : centre;
@@ -108,57 +103,120 @@ bool TriggerSpheres::accepts(const TriggerSphere& sphere, const std::array<float
 void TriggerSpheres::update(std::span<const BoxSubject> subjects, std::uint64_t nowMs, const VolumeBoxes::Send& send) {
     const std::uint32_t turn = m_frame % kFramesPerCheck;
     ++m_frame;
+    // Coney's guard: with no way to find objects no sphere can be checked.
     if (!m_locate) {
         return;
     }
     // By index, not by reference: a handler may configure a new sphere, which can move the pool.
     for (std::size_t i = turn; i < m_spheres.size(); i += kFramesPerCheck) {
-        TriggerSphere& sphere = m_spheres[i];
-        if (!sphere.armed) {
+        check(i, subjects, nowMs, send);
+    }
+}
+
+bool TriggerSpheres::stillChecked(std::size_t index, double object) const {
+    // Stand-in: Coney never frees one sphere, but a handler may clear the pool; a sphere gone counts as freed.
+    return index < m_spheres.size() && m_spheres[index].object == object;
+}
+
+void TriggerSpheres::check(std::size_t index, std::span<const BoxSubject> subjects, std::uint64_t nowMs,
+                           const VolumeBoxes::Send& send) {
+    if (!m_spheres[index].armed) {
+        return;
+    }
+    const double object = m_spheres[index].object;
+    // The stay timer is re-armed whenever it falls due, whether or not anyone is inside, with a strict test.
+    const bool stayDue = m_spheres[index].nextStayMs < nowMs;
+    if (stayDue) {
+        m_spheres[index].nextStayMs = nowMs + m_spheres[index].stayPeriodMs;
+    }
+    // Stand-in: the original's object always has a position; Coney skips a sphere whose object is not found.
+    const std::optional<std::array<float, 3>> centre = m_locate(object);
+    if (!centre) {
+        return;
+    }
+    // The found humans: those within the radius, not the object's own human, at most 60, in Coney's subjects order.
+    // Stand-in: a dead human is never found (what the original's search mask 1 leaves out is not traced).
+    std::size_t found = 0;
+    for (const BoxSubject& subject : subjects) {
+        if (found >= VolumeBoxes::kMaxOccupants) {
+            break;
+        }
+        if (!subject.alive || subject.handle == object || !withinRadius(m_spheres[index], *centre, subject.position)) {
             continue;
         }
-        const std::optional<std::array<float, 3>> centre = m_locate(sphere.object);
-        if (!centre) {
-            continue;
-        }
-        std::vector<Message> messages;
-        const bool stayDue = nowMs >= sphere.nextStayMs;
-        bool stayed = false;
-        // The living humans inside: new ones enter, kept ones stay.
-        for (const BoxSubject& subject : subjects) {
-            if (!subject.alive || subject.handle == sphere.object || !accepts(sphere, *centre, subject.position)) {
+        ++found;
+        TriggerSphere& sphere = m_spheres[index];
+        const auto listed = std::ranges::find(sphere.occupants, subject.handle);
+        int message = 0;
+        if (accepts(sphere, *centre, subject.position)) {
+            if (listed == sphere.occupants.end()) {
+                // Message 3 goes even when every place is taken.
+                addOccupant(sphere, subject.handle);
+                message = VolumeBoxes::kEntered;
+            } else if (stayDue) {
+                message = VolumeBoxes::kInside;
+            } else {
                 continue;
             }
-            if (std::ranges::find(sphere.occupants, subject.handle) == sphere.occupants.end()) {
-                if (sphere.occupants.size() < VolumeBoxes::kMaxOccupants) {
-                    sphere.occupants.push_back(subject.handle);
-                    messages.push_back({VolumeBoxes::kEntered, subject.handle});
-                }
-            } else if (stayDue) {
-                messages.push_back({VolumeBoxes::kInside, subject.handle});
-                stayed = true;
-            }
+        } else if (listed != sphere.occupants.end()) {
+            sphere.occupants.erase(listed);
+            message = VolumeBoxes::kLeft;
+        } else {
+            continue;
         }
-        if (stayed) {
-            sphere.nextStayMs = nowMs + sphere.stayPeriodMs;
+        // Each message goes at once. A handler that freed the sphere ends the check; one that only disarmed it ends
+        // the found humans, and the occupants' pass below still runs (TriggerSphereCfg off keeps the occupants).
+        if (send) {
+            send(object, message, subject.handle);
         }
-        // Kept humans that left, died or are gone.
-        std::erase_if(sphere.occupants, [&](double kept) {
-            const auto found = std::ranges::find(subjects, kept, &BoxSubject::handle);
-            if (found != subjects.end() && found->alive && accepts(sphere, *centre, found->position)) {
-                return false;
-            }
-            messages.push_back({VolumeBoxes::kLeft, kept});
-            return true;
-        });
-        // A handler may change the spheres, so the messages go once the sphere is done with.
-        const double object = sphere.object;
-        for (const Message& message : messages) {
-            if (send) {
-                send(object, message.message, message.human);
-            }
+        if (!stillChecked(index, object)) {
+            return;
+        }
+        if (!m_spheres[index].armed) {
+            break;
         }
     }
+    // The occupants: one whose handle no longer resolves is skipped and kept; one dead or no longer accepted leaves.
+    std::size_t place = 0;
+    while (stillChecked(index, object) && place < m_spheres[index].occupants.size()) {
+        TriggerSphere& sphere = m_spheres[index];
+        const double kept = sphere.occupants[place];
+        const auto subject = std::ranges::find(subjects, kept, &BoxSubject::handle);
+        const std::optional<std::array<float, 3>> where =
+            subject != subjects.end() ? std::optional<std::array<float, 3>>(subject->position) : m_locate(kept);
+        const bool dead = subject != subjects.end() && !subject->alive;
+        if (!where || (!dead && accepts(sphere, *centre, *where))) {
+            ++place;
+            continue;
+        }
+        sphere.occupants.erase(sphere.occupants.begin() + static_cast<std::ptrdiff_t>(place));
+        if (send) {
+            send(object, VolumeBoxes::kLeft, kept);
+        }
+    }
+}
+
+void TriggerSpheres::addOccupant(TriggerSphere& sphere, double human) const {
+    // Coney's choice: the original fills the first of its 60 fixed slots that does not resolve, a hole or a stale
+    // handle (0x004f5cc8); Coney's list stays packed and appends, so the order of the list, and of several 4s in
+    // one occupants' pass, may differ.
+    if (sphere.occupants.size() < VolumeBoxes::kMaxOccupants) {
+        sphere.occupants.push_back(human);
+        return;
+    }
+    // A full list takes the first place whose handle no longer resolves, and none when every one does.
+    const auto stale = std::ranges::find_if(sphere.occupants, [this](double kept) { return !m_locate(kept); });
+    if (stale != sphere.occupants.end()) {
+        *stale = human;
+    }
+}
+
+bool TriggerSpheres::withinRadius(const TriggerSphere& sphere, const std::array<float, 3>& centre,
+                                  const std::array<float, 3>& point) {
+    const float dx = point[0] - centre[0];
+    const float dy = point[1] - centre[1];
+    const float dz = point[2] - centre[2];
+    return (dx * dx) + (dy * dy) + (dz * dz) <= sphere.radius * sphere.radius;
 }
 
 } // namespace coney::world_objects

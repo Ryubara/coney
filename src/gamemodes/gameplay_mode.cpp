@@ -1169,6 +1169,12 @@ void GameplayMode::updateBoxes(std::uint64_t nowMs) {
     if (m_context.boxes == nullptr || m_context.messages == nullptr || !m_scripted) {
         return;
     }
+    // A box's message-5 period is its handler component's, which only `TriggerSphereCfg` sets; Coney keeps that value
+    // on the object's sphere record (docs/research/trigger-updates.md#stay-timer).
+    m_context.boxes->setStayPeriod([this](double box) -> std::uint64_t {
+        const world_objects::TriggerSphere* sphere = m_spheres.find(box);
+        return sphere != nullptr ? sphere->handlerPeriodMs : world_objects::VolumeBoxes::kStayPeriodMs;
+    });
     const std::vector<world_objects::BoxSubject> subjects = m_scripted->boxSubjects();
     m_context.boxes->update(subjects, nowMs, [this](double box, int message, double human) {
         m_context.messages->deliver(m_scripts, box, message, human, 0.0, 0.0);
