@@ -53,8 +53,10 @@ class LevelGround {
         return {human::Place{startSource(), s.position, s.headingDegrees}};
     }
     /// The passive humans to fight (Coney's own sandbox targets): a sandbox layout's `target` lines; none in a level.
+    /// @coney-only the sandbox's test targets; the original has none
     [[nodiscard]] virtual std::vector<SceneTarget> targets() const { return {}; }
     /// Where the AI humans that fight the player start: a sandbox layout's `fighter` lines; none in a level.
+    /// @coney-only the sandbox's fighters; a level's humans come from its scripts
     [[nodiscard]] virtual std::vector<human::Place> fighters() const { return {}; }
     /// The level's path data, decoded, for the AI's route planner; null where there is none (a sandbox, or a level
     /// whose path data does not decode).

@@ -1199,9 +1199,6 @@ comment = 1
 ["src/platform/reference_renderer.cpp"]
 comment = 1
 
-["src/platform/sandbox_play_scenery.h"]
-comment = 1
-
 ["src/platform/sandbox_renderer.cpp"]
 comment = 1
 
