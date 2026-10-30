@@ -113,6 +113,10 @@ void writeMessage(BitWriter& out, const Message& message) {
             } else if constexpr (std::is_same_v<T, Pong>) {
                 out.writeU8(static_cast<std::uint8_t>(MessageId::Pong));
                 out.writeVarUint(m.sequence);
+            } else if constexpr (std::is_same_v<T, Snapshot>) {
+                out.writeU8(static_cast<std::uint8_t>(MessageId::Snapshot)); // stub until snapshots (#554)
+            } else if constexpr (std::is_same_v<T, SnapshotAck>) {
+                out.writeU8(static_cast<std::uint8_t>(MessageId::SnapshotAck)); // stub until snapshots (#554)
             } else if constexpr (std::is_same_v<T, InputTiming>) {
                 out.writeU8(static_cast<std::uint8_t>(MessageId::InputTiming));
                 out.writeVarInt(m.lead);
@@ -327,6 +331,12 @@ Delivery deliveryOf(const Message& message) {
     }
     return Delivery::ReliableOrdered;
 }
+
+// Stub until snapshots (#554).
+std::size_t snapshotEntryBits(const SnapshotEntry& /*entry*/) { return 0; }
+
+// Stub until snapshots (#554).
+std::size_t snapshotHeaderBits(const Snapshot& /*snapshot*/, std::size_t /*entries*/) { return 0; }
 
 bool samePadOnTheWire(const PadSample& a, const PadSample& b) {
     if (!a.connected || !b.connected) {

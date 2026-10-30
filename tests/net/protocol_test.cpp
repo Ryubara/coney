@@ -40,6 +40,7 @@ std::vector<std::byte> bytes(std::initializer_list<int> values) {
 
 } // namespace
 
+// Expected: unverified, #547 (Coney's own protocol; the original has no network play)
 TEST_CASE("every message round-trips", "[net][protocol]") {
     const auto hello = std::get<Hello>(roundTrip(Hello{.version = kProtocolVersion, .playerName = "Cleon"}));
     CHECK(hello.version == kProtocolVersion);
@@ -60,6 +61,7 @@ TEST_CASE("every message round-trips", "[net][protocol]") {
     CHECK(timing.target == 2);
 }
 
+// Expected: unverified, #547 (Coney's own protocol; the original has no network play)
 TEST_CASE("input commands round-trip every field of a connected pad", "[net][protocol]") {
     coney::PadSample pad;
     pad.connected = true;
@@ -76,6 +78,7 @@ TEST_CASE("input commands round-trip every field of a connected pad", "[net][pro
     CHECK(commands.pads[0].pressure == pad.pressure);
 }
 
+// Expected: unverified, #547 (Coney's own protocol; the original has no network play)
 TEST_CASE("input commands carry the steps before the newest, a repeated pad as one bit", "[net][protocol]") {
     coney::PadSample cross;
     cross.connected = true;
@@ -96,6 +99,7 @@ TEST_CASE("input commands carry the steps before the newest, a repeated pad as o
     CHECK(encode(sent).size() < encode(changed).size());
 }
 
+// Expected: unverified, #547 (Coney's own protocol; the original has no network play)
 TEST_CASE("a disconnected pad travels as one bit and comes back as a pad at rest", "[net][protocol]") {
     coney::PadSample pad;
     pad.connected = false;
@@ -111,6 +115,7 @@ TEST_CASE("a disconnected pad travels as one bit and comes back as a pad at rest
     CHECK(samePadOnTheWire(pad, coney::PadSample{}));
 }
 
+// Expected: unverified, #547 (Coney's own protocol; the original has no network play)
 TEST_CASE("the encoding is pinned: a change to it must bump kProtocolVersion", "[net][protocol]") {
     // Hello: id 1, the magic "CONY", version 1 (16 bits), the name as a count and its bytes.
     CHECK(encode(Hello{.version = 1, .playerName = "Ax"}) ==
@@ -128,9 +133,10 @@ TEST_CASE("the encoding is pinned: a change to it must bump kProtocolVersion", "
           bytes({0x08, 0x05, 0x09, 0x80, 0x00, 0x08, 0x08, 0x08, 0x08, 0x00, 0x01}));
     // InputTiming: id 9, the lead as a zigzag varint (2 is 4), the target (8 bits).
     CHECK(encode(InputTiming{.lead = 2, .target = 1}) == bytes({0x09, 0x04, 0x01}));
-    CHECK(kProtocolVersion == 3);
+    CHECK(kProtocolVersion == 4);
 }
 
+// Expected: unverified, #547 (Coney's own protocol; the original has no network play)
 TEST_CASE("handshake and Bye go reliably, Ping, Pong and input unreliably", "[net][protocol]") {
     CHECK(deliveryOf(Hello{}) == Delivery::ReliableOrdered);
     CHECK(deliveryOf(Welcome{}) == Delivery::ReliableOrdered);
@@ -142,6 +148,7 @@ TEST_CASE("handshake and Bye go reliably, Ping, Pong and input unreliably", "[ne
     CHECK(deliveryOf(InputTiming{}) == Delivery::Unreliable);
 }
 
+// Expected: unverified, #547 (Coney's own protocol; the original has no network play)
 TEST_CASE("a packet that is not exactly a message is refused", "[net][protocol]") {
     const auto refused = [](const std::vector<std::byte>& packet, ErrorCode code) {
         const auto decoded = decode(packet);
@@ -198,6 +205,7 @@ TEST_CASE("a packet that is not exactly a message is refused", "[net][protocol]"
     refused(repeated.take(), ErrorCode::Invalid);
 }
 
+// Expected: unverified, #547 (Coney's own protocol; the original has no network play)
 TEST_CASE("a Hello of another version decodes to its version, whatever follows", "[net][protocol]") {
     // A later version with a layout this version cannot know.
     const auto decoded = decode(bytes({0x01, 'C', 'O', 'N', 'Y', kProtocolVersion + 1, 0x00, 0xff, 0xff, 0xff}));
@@ -207,6 +215,7 @@ TEST_CASE("a Hello of another version decodes to its version, whatever follows",
     CHECK(hello.playerName.empty());
 }
 
+// Expected: unverified, #547 (Coney's own protocol; the original has no network play)
 TEST_CASE("player names are 1 to 32 printable ASCII characters, not all spaces", "[net][protocol]") {
     CHECK(validPlayerName("Swan"));
     CHECK(validPlayerName("Ash 2"));

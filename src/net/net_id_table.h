@@ -7,6 +7,7 @@
 #include <format>
 #include <map>
 #include <optional>
+#include <type_traits>
 #include <utility>
 
 #include "core/assert.h"
@@ -124,5 +125,30 @@ template <typename Handle> class NetIdTable {
     std::map<std::uint16_t, Entry> m_bySlot; // by slot: one generation bound per slot, walked in slot order
     std::map<Handle, NetId> m_byHandle;      // lookups only, never walked
 };
+
+/// The server's side, for one thing two tables name (a human by its `Human*` and by its `Brain*`): `a` in `first` and
+/// `b` in `second` get one id, whichever path reaches the thing first. The id either table already has is bound in
+/// the other; with none, one is allocated from `ids` and bound in both. Fails as NetIdAllocator::allocate() does when
+/// no slot is left, and with Invalid when the two tables already hold different ids for them.
+/// @coney-only network play; the original has none
+template <typename A, typename B>
+std::expected<NetId, Error> assignShared(NetIdAllocator& ids, NetIdTable<A>& first, std::type_identity_t<A> a,
+                                         NetIdTable<B>& second, std::type_identity_t<B> b) {
+    (void)second; // stub until snapshots (#554): each table on its own
+    (void)b;
+    return first.assign(ids, a);
+}
+
+/// The server's side: the thing `a` and `b` name in two tables (assignShared()) has gone, whichever path finds it
+/// first. Unbinds it from both and retires its one id in `ids` once, and returns that id; nothing when neither table
+/// holds it, as after the other path retired it.
+/// @coney-only network play; the original has none
+template <typename A, typename B>
+std::optional<NetId> retireShared(NetIdAllocator& ids, NetIdTable<A>& first, std::type_identity_t<A> a,
+                                  NetIdTable<B>& second, std::type_identity_t<B> b) {
+    (void)second; // stub until snapshots (#554): each table on its own
+    (void)b;
+    return first.retire(ids, a);
+}
 
 } // namespace coney::net

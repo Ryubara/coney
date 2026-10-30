@@ -49,6 +49,17 @@ using FieldValue = std::variant<bool, std::int32_t, float>;
 /// @coney-only network play; the original has none
 void writeField(BitWriter& writer, const FieldSpec& field, const FieldValue& value);
 
+/// The bits writeField() writes for `value`, as a number below 2^bits: what a snapshot compares to see whether a field
+/// changed (a change too small to reach the next step costs nothing) and what it sends. The same programmer errors
+/// as writeField().
+/// @coney-only network play; the original has none
+[[nodiscard]] std::uint32_t fieldWord(const FieldSpec& field, const FieldValue& value);
+
+/// The value a fieldWord() `word` stands for. Fails with Invalid when the word is over the field's bits, or an
+/// Integer's over its range, since the word comes from the network.
+/// @coney-only network play; the original has none
+[[nodiscard]] std::expected<FieldValue, Error> fieldValue(const FieldSpec& field, std::uint32_t word);
+
 /// Reads a writeField() value of `field`. Fails with Truncated past the end, and with Invalid when an Integer is over
 /// its range (the bits hold more than the range has), since the bytes come from the network.
 /// @coney-only network play; the original has none
@@ -92,16 +103,19 @@ inline constexpr std::array<ReplicatedKind, 3> kReplicatedKinds{ReplicatedKind::
 /// A human's fields, indexes into fieldTable(ReplicatedKind::Human).
 /// @coney-only network play; the original has none
 enum class HumanField : std::uint8_t {
-    PositionX,  ///< The feet, metres.
-    PositionY,  ///< The feet, metres.
-    PositionZ,  ///< The feet, metres (up).
-    Heading,    ///< Radians, 0 facing +y.
-    Health,     ///< Health points (record `+0x144`, a 16-bit number; docs/research/characters.md).
-    HealthMax,  ///< Its maximum (record `+0x146`).
-    Clip,       ///< The anim id playing.
-    Playhead,   ///< How far through the clip, 0 to 1.
-    Grounded,   ///< On the ground (not jumping or falling).
-    KnockedOut, ///< Knocked out or wounded.
+    PositionX,    ///< The feet, metres.
+    PositionY,    ///< The feet, metres.
+    PositionZ,    ///< The feet, metres (up).
+    Heading,      ///< Radians, 0 facing +y.
+    Health,       ///< Health points (record `+0x144`, a 16-bit number; docs/research/characters.md).
+    HealthMax,    ///< Its maximum (record `+0x146`).
+    Clip,         ///< The anim id playing: the newest animation layer.
+    Playhead,     ///< How far through the clip, 0 to 1.
+    FadeClip,     ///< The anim id the newest layer fades in over: the layer under it (the clip before); 0 with no fade.
+    FadePlayhead, ///< How far through the fading clip, 0 to 1.
+    Fade,         ///< How far the newest layer has faded in, 0 to 1; 1 when no fade runs.
+    Grounded,     ///< On the ground (not jumping or falling).
+    KnockedOut,   ///< Knocked out or wounded.
     Count,
 };
 

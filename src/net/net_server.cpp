@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <expected>
 #include <optional>
+#include <span>
 #include <string>
 #include <utility>
 #include <variant>
@@ -147,6 +148,9 @@ void NetServer::send() {
     ++m_steps;
     m_transport.flush();
 }
+
+// Stub until snapshots (#554).
+void NetServer::sendSnapshots(std::uint32_t /*step*/, std::span<const SnapshotHuman> /*humans*/) {}
 
 std::size_t NetServer::joinedCount() const {
     return static_cast<std::size_t>(std::ranges::count_if(m_clients, [](const ServerClient& c) { return c.joined; }));

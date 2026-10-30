@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <set>
+#include <string>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
@@ -211,4 +212,55 @@ TEST_CASE("net id table: walks in id order, whatever the handles' values", "[net
     std::vector<std::uint16_t> slots;
     table.forEach([&](NetId id, double /*handle*/) { slots.push_back(id.slot); });
     CHECK(slots == std::vector<std::uint16_t>{2, 4, 9});
+}
+
+// Expected: unverified, #554 (Coney's own network ids; a human with a brain is one thing on the wire)
+TEST_CASE("net id table: a human that is also a brain gets one id, whichever table reaches it first", "[net][net_id]") {
+    // Stands in for a Human and its Brain: two handles of two kinds for one replicated thing.
+    struct Body {
+        int value = 0;
+    };
+    struct Mind {
+        int value = 0;
+    };
+    Body body;
+    Mind mind;
+    for (const bool bodyFirst : {true, false}) {
+        INFO(std::string(bodyFirst ? "the human's table first" : "the brain's table first"));
+        NetIdAllocator ids(4);
+        NetIdTable<const Body*> bodies;
+        NetIdTable<const Mind*> minds;
+        const auto first = bodyFirst ? coney::net::assignShared(ids, bodies, &body, minds, &mind)
+                                     : coney::net::assignShared(ids, minds, &mind, bodies, &body);
+        REQUIRE(first.has_value());
+        const auto second = bodyFirst ? coney::net::assignShared(ids, minds, &mind, bodies, &body)
+                                      : coney::net::assignShared(ids, bodies, &body, minds, &mind);
+        REQUIRE(second.has_value());
+        CHECK(*second == *first);
+        CHECK(ids.liveCount() == 1);
+        CHECK(bodies.idOf(&body) == *first);
+        CHECK(minds.idOf(&mind) == *first);
+
+        // Gone: whichever path finds it first retires its one id; the other finds nothing left.
+        const auto retired = bodyFirst ? coney::net::retireShared(ids, bodies, &body, minds, &mind)
+                                       : coney::net::retireShared(ids, minds, &mind, bodies, &body);
+        CHECK(retired == *first);
+        const auto again = bodyFirst ? coney::net::retireShared(ids, minds, &mind, bodies, &body)
+                                     : coney::net::retireShared(ids, bodies, &body, minds, &mind);
+        CHECK_FALSE(again.has_value());
+        CHECK(ids.liveCount() == 0);
+        CHECK(bodies.size() == 0);
+        CHECK(minds.size() == 0);
+        CHECK(ids.release(*first));
+    }
+
+    // One table already holds an id (the human replicated before its brain was made): the other takes the same one.
+    NetIdAllocator ids(4);
+    NetIdTable<const Body*> bodies;
+    NetIdTable<const Mind*> minds;
+    const auto alone = bodies.assign(ids, &body);
+    REQUIRE(alone.has_value());
+    CHECK(coney::net::assignShared(ids, minds, &mind, bodies, &body) == *alone);
+    CHECK(ids.liveCount() == 1);
+    CHECK(minds.idOf(&mind) == *alone);
 }

@@ -72,6 +72,9 @@ constexpr std::array<FieldSpec, static_cast<std::size_t>(HumanField::Count)> kHu
     // A share of the clip rather than a frame, since the table cannot know a clip's frame count: 10 bits are a frame
     // in a clip of a thousand.
     {.name = "playhead", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
+    {.name = "fadeClip", .encoding = FieldEncoding::Integer, .bits = 12, .min = 0.0F, .max = 4095.0F},
+    {.name = "fadePlayhead", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
+    {.name = "fade", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
     {.name = "grounded", .encoding = FieldEncoding::Bool, .bits = 1},
     {.name = "knockedOut", .encoding = FieldEncoding::Bool, .bits = 1},
 }};
@@ -122,6 +125,14 @@ constexpr std::array<FieldSpec, static_cast<std::size_t>(CarField::Count)> kCarF
 }};
 
 } // namespace
+
+// Stub until snapshots (#554).
+std::uint32_t fieldWord(const FieldSpec& /*field*/, const FieldValue& /*value*/) { return 0; }
+
+// Stub until snapshots (#554).
+std::expected<FieldValue, Error> fieldValue(const FieldSpec& /*field*/, std::uint32_t /*word*/) {
+    return FieldValue{false};
+}
 
 void writeField(BitWriter& writer, const FieldSpec& field, const FieldValue& value) {
     switch (field.encoding) {

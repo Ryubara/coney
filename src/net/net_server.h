@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <expected>
 #include <optional>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -13,6 +14,7 @@
 #include "net/input_buffer.h"
 #include "net/link_quality.h"
 #include "net/protocol.h"
+#include "net/snapshot.h"
 #include "net/transport.h"
 
 namespace coney::net {
@@ -30,6 +32,8 @@ struct ServerConfig {
     /// How each player's input commands are played on the server's steps: the delay, its slack and when a quiet pad
     /// is let go.
     InputBufferConfig input;
+    /// The most bytes each player's Snapshot packet takes (SnapshotSender).
+    std::size_t snapshotBudgetBytes = kSnapshotBudgetBytes;
 };
 
 /// One remote player as the server sees it.
@@ -41,7 +45,8 @@ struct ServerClient {
     std::uint32_t stepsSinceHeard = 0;
     std::uint32_t stepsConnected = 0;
     LinkQuality quality;
-    InputBuffer input; ///< their input commands; current() is this step's pad
+    InputBuffer input;        ///< their input commands; current() is this step's pad
+    SnapshotSender snapshots; ///< the snapshots sent to them, and the newest they have acknowledged
 };
 
 /// Something the game should know happened, from takeEvents().
@@ -80,6 +85,7 @@ class NetServer {
     /// Says Bye to every connection and closes them. The transport keeps its socket until it is destroyed, so hosting
     /// again takes a new transport and server.
     void stop();
+    /// Whether it listens: between a start() that succeeded and stop().
     [[nodiscard]] bool running() const { return m_running; }
 
     /// Passes the frame's elapsed time to the transport and to the round-trip clock.
@@ -87,6 +93,10 @@ class NetServer {
     /// One step's receiving: every waiting transport event and message, the step's timeouts, then each joined
     /// player's pad for the step (InputBuffer::take()).
     void receive();
+    /// Sends each joined player a Snapshot of `humans` (the humans at the server's `step`) as a delta against the
+    /// newest they have acknowledged (SnapshotSender::build()). Called once a step, after the simulation step and
+    /// before send(), which flushes it.
+    void sendSnapshots(std::uint32_t step, std::span<const SnapshotHuman> humans);
     /// One step's sending: the Pings that are due, each joined player's InputTiming with theirs, then a flush.
     void send();
 
@@ -101,6 +111,7 @@ class NetServer {
     [[nodiscard]] std::vector<ServerEvent> takeEvents();
     /// The port the server listens on (the free one for port 0); 0 when not running.
     [[nodiscard]] std::uint16_t port() const { return m_running ? m_transport.boundPort() : 0; }
+    /// How it runs, as made.
     [[nodiscard]] const ServerConfig& config() const { return m_config; }
 
   private:

@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <numbers>
 #include <span>
 #include <string>
@@ -218,4 +219,19 @@ TEST_CASE("field tables: the checks refuse a malformed table", "[net][fields]") 
     CHECK(validateFields(std::array{FieldSpec{
                              .name = "n", .encoding = FieldEncoding::Integer, .bits = 3, .min = -3.0F, .max = 4.0F}})
               .has_value());
+}
+
+// Expected: unverified, #554 (Coney's own field tables; an infinity has no place on the circle, as NaN has none)
+TEST_CASE("field tables: an infinite angle goes to the first step, as NaN does", "[net][fields]") {
+    const FieldSpec heading{.name = "heading", .encoding = FieldEncoding::Angle, .bits = 10};
+    for (const float radians : {std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(),
+                                std::numeric_limits<float>::quiet_NaN()}) {
+        CHECK(coney::net::fieldWord(heading, radians) == 0);
+        BitWriter out;
+        coney::net::writeField(out, heading, radians);
+        BitReader in(out.bytes());
+        const auto read = coney::net::readField(in, heading);
+        REQUIRE(read.has_value());
+        CHECK(std::get<float>(*read) == -kPi);
+    }
 }
