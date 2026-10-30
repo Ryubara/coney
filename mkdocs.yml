@@ -357,6 +357,7 @@ nav:
           - Content and formats: guides/studio/content-and-formats.md
           - "Buildings and collision of a disc level": guides/studio/disc-world.md
           - Project formats: guides/studio/project-formats.md
+          - Prefabs and their overrides: guides/studio/prefabs.md
           - UI and menus: guides/studio/ui.md
           - Script editor: guides/studio/script-editor.md
           - Mission mods: guides/studio/mission-mods.md

@@ -35,7 +35,8 @@ absolutely everything about him, without bloat. The answer in five lines:
   [presets](#presets)
 - [The property schema](#schema): [what a property says](#property-fields), [where it lives](#schema-source),
   [one schema, every reader](#schema-readers), [one edit command](#edit-command)
-- [The Inspector](#inspector): [its layout](#inspector-layout), [no bloat](#no-bloat), [Level and Running](#running)
+- [The Inspector](#inspector): [its layout](#inspector-layout), [no bloat](#no-bloat), [asset sources](#asset-source),
+  [prefab overrides](#prefab-overrides), [Level and Running](#running)
 - [Events](#events): each kind's events, connected by function name
 - [A Human's properties](human-properties.md), with [a Target](human-properties.md#target) and
   [a Gang](human-properties.md#gang)
@@ -310,16 +311,18 @@ the native calls, so an Inspector edit and a script's call do the same thing.
 With one entity selected, top to bottom:
 
 1. **The header**: the kind's icon and name, the entity's *Name* and *Tags* (always shown, since scripts find entities
-   by them), its id greyed beside, and the prefab it comes from when it is in an instance.
-2. **The toolbar**: the search box, the *Modified* filter, *Advanced* (open every Advanced part), and the actions of
+   by them), its id greyed beside, and the prefab it comes from when it is in an instance, with its *Overrides* menu
+   ([Prefab overrides](#prefab-overrides)).
+2. **Sources**: one read-only *Source* row per asset the entity uses ([Asset sources](#asset-source)).
+3. **The toolbar**: the search box, the *Modified* filter, *Advanced* (open every Advanced part), and the actions of
    the kind (for a running Human: *Drop to ground*, *Move to camera*, *Teleport player to it*, *Kill*, *Delete*,
    *Reset*, *Log everything*).
-3. **Pinned**: the properties the user pinned, from any group, for this kind (the debug menu's Favourites, kept per
+4. **Pinned**: the properties the user pinned, from any group, for this kind (the debug menu's Favourites, kept per
    kind).
-4. **The groups**, in the schema's order, each a collapsible section with its common properties and an *Advanced*
+5. **The groups**, in the schema's order, each a collapsible section with its common properties and an *Advanced*
    part under them (Unreal's arrow).
-5. **Attributes**: the project's values ([Attributes](#attributes)), with *Add attribute*.
-6. **The preview** of a model, at the foot, as the editor experience design places it
+6. **Attributes**: the project's values ([Attributes](#attributes)), with *Add attribute*.
+7. **The preview** of a model, at the foot, as the editor experience design places it
    ([Previews](editor-experience.md#previews-coney)).
 
 The Inspector is a generic renderer: one widget per property type, as the debug front ends have one renderer per item
@@ -346,11 +349,47 @@ reach without a wall of fields:
   default, a `from-type` default included (Godot's revert arrow; the debug menu's reset to the configured value).
 - **Conditions.** A property whose `when` is false is not drawn: no wheelchair switch on a non-player, no AI group
   without a brain.
-- **Prefab overrides** are drawn in bold with a bar in the margin, with *Revert* and *Apply to prefab* (Unity's,
-  [The Hierarchy's tree](editor-experience.md#hierarchy-tree)).
+- **Prefab overrides** are drawn in bold with a bar in the margin, with *Revert* and *Apply to prefab* (Unity's);
+  what each does is [Prefab overrides](#prefab-overrides).
 - **Multiple selection.** With several entities of one kind, every `multi` property is shown and a value they differ
   in shows as a dash; setting it sets all, as one undo step. With several kinds, only the groups they share (Entity,
   Transform, Attributes they all have).
+
+### Asset sources {#asset-source}
+
+A user always sees where the assets of the selected entity come from: the disc, the project or another mod. Under the
+header the Inspector shows one **Source** row per asset the entity uses, read-only:
+
+- **What is listed**: the value of every `asset` property of the kind ([What a property says](#property-fields)): a
+  primitive's texture, a mesh's model, a spawn point's character file, an emitter's sound; the asset the kind implies,
+  for a character of a game type its model (`game:/characters/<type>`, [From a type to a
+  model](../../research/characters.md#type-to-model)); and for an instance, its prefab file. An entity with no asset
+  shows no Sources part.
+- **The full path**, as [Paths](content-and-formats.md#paths) writes it (`game:/textures/warr_re_cv/warr_re_cv`,
+  `project:/models/bench.glb`, `mod:/crate-pack/models/crate.glb`), never shortened, with the property it fills
+  (*Texture*, *Model*) as the row's label.
+- **A badge for its root**: *Disc* for `game:/`, *Project* for `project:/`, *Mod* for `mod:/` with the mod's name. A
+  path that does not resolve is drawn as broken, as the Paths rules have it, and names what is missing.
+- **A mark on a derived file**: a `project:/` file whose sidecar says `derived` (an edited export of a disc asset,
+  [Provenance](content-and-formats.md#import)) carries a *Derived* mark beside the Project badge, with the disc asset it
+  came from. Its tooltip says that the file works on this machine and is never packaged, and links the reason: the
+  callout on the [Studio index](index.md) and [LEGAL.md](repo:LEGAL.md#no-game-data).
+- **Copy, never edit.** The row's right-click menu has *Copy path* (for a script, which loads assets by the same
+  string) and *Show in File system*, which selects the file there (Unity's ping, Godot's *Show in FileSystem*). The
+  path cannot be typed into: an entity's asset changes by picking another in the property's own field in its group,
+  or by placing another entity, as one edit command ([One edit command](#edit-command)). Double-clicking a row opens
+  the asset's viewer, which only looks ([Previews](editor-experience.md#previews-coney)).
+
+Unity's and Godot's Inspectors show the source of a reference the same way: Unity's object field names the asset and
+pings it in the Project window when clicked, and a prefab instance's header names its prefab asset with *Select* and
+*Open*; Godot's Inspector names a resource and offers *Show in FileSystem* for a saved one ([Sources](#sources)).
+Neither marks where an asset comes from, since neither has a disc: the badge and the derived mark are Studio's own.
+
+### Prefab overrides {#prefab-overrides}
+
+An instance's changed value is drawn in bold with a bar in the margin, with *Revert* and *Apply to prefab*, and the
+header's *Overrides* menu lists them all. What each action does, how it is undone and what the level file holds after
+it are [Prefabs](prefabs.md).
 
 ### Level and Running {#running}
 
@@ -579,6 +618,10 @@ every check runs headless where it can.
   keys the level file writes; a group's open state comes back for the next entity of the kind and after a restart.
 - **Multiple selection.** Two humans with different health show a dash; typing a value sets both and one undo puts both
   back.
+- **Asset sources.** A fixture entity using a `game:/`, a `project:/`, a `mod:/` and a derived asset shows four Source
+  rows with their full paths, the Disc, Project and Mod badges and the Derived mark; *Copy path* puts the path on the
+  clipboard; typing into a row changes nothing; a path that does not resolve is drawn broken. No disc is needed: the
+  `game:/` path is resolved against a fixture asset store.
 - **Level and Running.** A `live` edit in the Level tab during a scripted Play reaches the running human at the next
   step and is in the saved level; a `next-play` edit marks the session stale; a Running-tab edit is gone after Stop.
 - **The file.** A level with every kind, property type and attribute type round-trips byte for byte; a default is not
@@ -670,13 +713,16 @@ issues](lua-sdk.md#build-issues)); 8 and 9 build on the editor experience design
    instance handle and the members by name returned; `#N` ids; despawning through each kind's removal native.
    Needs prefabs in level files and the mods runtime. Tests: the *Spawning a prefab* cases of [Tests](#tests).
 8. **tools: Add the schema-drawn Inspector to Coney Studio.** The Inspector of [The Inspector](#inspector): the header
-   with name and tags, the generic widgets per type, groups with remembered state, Advanced parts, the Debug groups for
-   running entities, search (`@`, `native:`), *Modified*, pins per kind, conditions, prefab overrides, multiple
+   with name and tags, the Source rows with their badges, derived mark and *Copy path* ([Asset
+   sources](#asset-source)), the generic widgets per type, groups with remembered state, Advanced parts, the Debug
+   groups for running entities, search (`@`, `native:`), *Modified*, pins per kind, conditions, prefab overrides with
+   the *Overrides* menu, *Apply* targets, *Unpack* and *Make variant* ([Prefabs](prefabs.md)), multiple
    selection with mixed values, the Level and Running rules of the `live` field, presets for the Create menu, and the
    Events group's fields, which open the script editor's Connect dialog
    ([The Connect dialog](script-editor.md#connect-dialog)). Tests: the fixture kind drawn with no kind code; search,
-   filters, remembered state, multiple selection and the Level and Running cases of [Tests](#tests) under the Test
-   Engine; an event field set through the dialog is saved as the function's name.
+   filters, remembered state, multiple selection, asset sources and the Level and Running cases of [Tests](#tests) and
+   the cases of [Prefabs: tests](prefabs.md#tests) under the Test Engine; an event field set through the dialog is
+   saved as the function's name.
 9. **tools: Add attributes to the Coney Studio Inspector.** The Attributes section: add, rename, change type, delete,
    edit by type, `@` search, *Modified*, shared attributes in a multiple selection, prefab overrides, and the Running
    tab's live values. Tests: an attribute added in the Inspector is in the saved file and read by a test project's
@@ -696,3 +742,6 @@ Ideas only; no code is taken from any of these.
 | A scene file keeping only properties that differ from their defaults; the revert arrow; node metadata | Godot's editor *(general knowledge, not re-checked)* |
 | Components and serialized fields, foldouts, `[Header]`, `[Range]`, `[HideInInspector]`, the Debug inspector, mixed values in a multiple selection | Unity's Inspector *(general knowledge, not re-checked)* |
 | State bags: values on an entity, owned by the server, replicated | FiveM's state bags *(general knowledge, not re-checked)* |
+| An object field naming its asset and pinging it in the Project window | Unity's Inspector *(general knowledge, not re-checked)* |
+| A prefab instance's header naming its prefab asset, with *Select* and *Open* | Unity, [Prefab instance Inspector reference](https://docs.unity.com/en-us/engine/6000.6/manual/working-with-gameobjects/prefabs/prefab-instance-inspector-reference) |
+| *Show in FileSystem* for a saved resource; copying a resource | Godot, [Inspector Dock](https://docs.godotengine.org/en/stable/tutorials/editor/inspector_dock.html) |
