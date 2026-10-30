@@ -1007,6 +1007,12 @@ void RenderEngine::requestCapture(std::uint64_t frameIndex, std::string path) {
     m_capture.reset();
 }
 
+// Stub: draw streams are not recorded yet (their tests come first).
+void RenderEngine::requestDrawStream(std::uint64_t /*frameIndex*/) {}
+
+// Stub: as requestDrawStream().
+void RenderEngine::prepareDrawStreams() {}
+
 std::expected<CapturedFrame, Error> RenderEngine::captureBackBuffer(const std::string& path) const {
     const auto width = static_cast<std::size_t>(m_frameSize.width);
     const auto height = static_cast<std::size_t>(m_frameSize.height);

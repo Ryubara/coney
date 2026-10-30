@@ -27,6 +27,7 @@ add_executable(coney_tests
     core/sha256_test.cpp
     core/mesh_view_option_test.cpp
     core/world_edit_option_test.cpp
+    core/draw_hash_option_test.cpp
     core/options_test.cpp
     core/perf_test.cpp
     core/perf_bench_options_test.cpp
@@ -192,6 +193,8 @@ add_executable(coney_tests
     platform/disc_play_frame_rate_test.cpp
     platform/disc_world_streaming_test.cpp
     platform/clip_recorder_test.cpp
+    platform/draw_calls_test.cpp
+    platform/draw_stream_test.cpp
     platform/ffmpeg_info_test.cpp
     platform/gpu_renderer_test.cpp
     platform/present_mode_test.cpp
