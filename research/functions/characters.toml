@@ -66,11 +66,6 @@ relation = "stand-in"
 question = "human-init.md#q-voice"
 
 [[function.gaps]]
-what = "HuCreate's flag (+0x19d) forcing brain type 2"
-relation = "not-ported"
-issue = 689
-
-[[function.gaps]]
 what = "the task byte +0x6c, +0x19e = 5 and the radar blips by brain type"
 relation = "stand-in"
 question = "human-init.md#q-radar"
@@ -84,11 +79,6 @@ issue = 1011
 what = "the +0x3bc byte from the character data's name hash: its one reader, Human_TryIdleFidget, is not built"
 relation = "stand-in"
 question = "human-init.md#q-name-byte"
-
-[[function.gaps]]
-what = "the random body size: a human the type scale does not list is made at 1.0"
-relation = "not-ported"
-issue = 689
 
 [[function]]
 address = 0x00219638
@@ -2489,11 +2479,6 @@ role = "reads the Lua arguments, calls `Human_Create`"
 level = "confirmed-code"
 coney = "src/scripting/script_bindings.cpp:makeHuCreate"
 status = "compared"
-
-[[function.gaps]]
-what = "the flag (argument 8), Human_Init's +0x19d forcing brain type 2"
-relation = "not-ported"
-issue = 689
 
 [[function.gaps]]
 what = "the snapped position written back into the script's table: no collision is loaded while the script runs"

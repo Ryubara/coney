@@ -1141,7 +1141,12 @@ role = "every 30th update, and from `GameState_SetSystemMusic` and `Gang_SetAler
 level = "confirmed-code"
 note = "confirmed (code); the reading of each test inferred"
 coney = "src/gamemodes/system_music.h:stepSystemMusic"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the mood judge itself: Coney's mood comes from its own rule; the port only applies the mood (the held mood, off, the set)"
+relation = "not-ported"
+issue = 697
 
 [[function]]
 address = 0x0041d920

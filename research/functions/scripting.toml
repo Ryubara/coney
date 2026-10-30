@@ -2020,7 +2020,7 @@ name = "Script_RandomRange"
 page = "scripting.md#libraries"
 level = "confirmed-code"
 coney = "src/scripting/script_bindings.cpp:makeRandom"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00391c98
