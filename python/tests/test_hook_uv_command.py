@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for how the hooks run `coney-tools` (`hooklib.coney_tools_command`, used by the slot guard and the PR guard).
+"""Tests for how the hooks run `coney-tools` (`hooklib.coney_tools_command`).
+
+The slot guard, the slot fill guard and the PR guard use it.
 
 `uv run` syncs the project's environment before it starts the command. On Windows that sync fails while the session's
 own `coney-agent.exe` runs from `python/.venv/Scripts` (the file is locked, "Access is denied"), so a hook that syncs
@@ -15,6 +17,7 @@ import pytest
 from conventions_support import REPO
 from hooks_support import load_hook_module
 from test_pr_guard import GUARD as PR_GUARD
+from test_slot_fill_guard import GUARD as SLOT_FILL_GUARD
 from test_slot_guard import GUARD as SLOT_GUARD
 
 hooklib = load_hook_module("hooklib")
@@ -69,6 +72,15 @@ def test_the_slot_guard_runs_the_tool_without_a_sync_once_the_environment_is_bui
     make_environment(tmp_path / "python" / ".venv")
     monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
     assert SLOT_GUARD.tool_command(["task", "slots", "--admit"])[:4] == ["uv", "run", "--quiet", "--no-sync"]
+
+
+def test_the_slot_fill_guard_runs_the_tool_without_a_sync_once_the_environment_is_built(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    make_environment(tmp_path / "python" / ".venv")
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
+    command = SLOT_FILL_GUARD.tool_command(["task", "slots", "--fill-check"])
+    assert command[:4] == ["uv", "run", "--quiet", "--no-sync"]
 
 
 def test_the_pr_guard_runs_its_checks_without_a_sync_once_the_environment_is_built(

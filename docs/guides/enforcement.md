@@ -64,14 +64,14 @@ one the hooks forbid every session to name (all of `~/.coney`, after folding `./
 token in the command line of a running shell, in a process listing. Refusing a command that sets `CONEY_AGENT_*` stays
 as a courtesy.
 
-**The hooks that start `coney-tools` do not sync its environment.** `slot_guard.py` and `pr_guard.py` run `uv run
---quiet [--no-sync] --project python coney-tools ...`, built by `coney_tools_command` in `hooklib.py`. `uv run` syncs the
-environment before it starts the command, and on Windows that fails ("Access is denied") while the session's own
-`coney-agent.exe` runs from `python/.venv/Scripts`, so a hook that synced would pass every call unchecked, silently, for
-as long as the session lives. The command gets `--no-sync` whenever the environment is built (a `pyvenv.cfg` in the
-folder `UV_PROJECT_ENVIRONMENT` names, else `python/.venv`); the first run in a checkout without one builds it. A test
-holds that no hook builds a `uv run` command of its own; the dispatcher's `uv run --no-project` has no environment to
-sync. The mod's reads follow the same rule ([Loading it](conclave.md#loading)).
+**The hooks that start `coney-tools` do not sync its environment.** `slot_guard.py`, `slot_fill_guard.py` and
+`pr_guard.py` run `uv run --quiet [--no-sync] --project python coney-tools ...`, built by `coney_tools_command` in
+`hooklib.py`. `uv run` syncs the environment before it starts the command, and on Windows that fails ("Access is
+denied") while the session's own `coney-agent.exe` runs from `python/.venv/Scripts`, so a hook that synced would pass
+every call unchecked, silently, for as long as the session lives. The command gets `--no-sync` whenever the environment
+is built (a `pyvenv.cfg` in the folder `UV_PROJECT_ENVIRONMENT` names, else `python/.venv`); the first run in a checkout
+without one builds it. A test holds that no hook builds a `uv run` command of its own; the dispatcher's `uv run
+--no-project` has no environment to sync. The mod's reads follow the same rule ([Loading it](conclave.md#loading)).
 
 ### The PR guard {#pr-guard}
 
