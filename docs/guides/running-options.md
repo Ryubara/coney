@@ -99,8 +99,7 @@ so motion is smooth above 30 frames a second and the game's speed never changes
 | `--renderer gl3\|gpu` | draw with librw's OpenGL 3.3 (`gl3`, the default) or start SDL3's GPU API (`gpu`: Vulkan, Direct3D 12 or Metal), which so far only clears and presents each frame while the game runs ([Renderer](../engine/gpu-renderer.md)); unset, a windowed run takes the saved `Display/Renderer` setting outside test mode. A `gpu` start that finds no GPU device says why in the run log and draws with GL3 |
 
 The default, no cap with vsync on, draws one frame per refresh of the display. On the GPU renderer the two choose its
-present mode: `VSYNC` with vsync on, `MAILBOX` (uncapped without tearing) with vsync off and no cap, `IMMEDIATE`
-with vsync off under a cap. With vsync off and no cap Coney draws
+[present mode](../engine/gpu-renderer.md#present-mode). With vsync off and no cap Coney draws
 as fast as it can, which keeps a processor core busy; give a cap to save power. Below 7.5 frames a second (or after a
 stall such as dragging the window) the game slows down rather than catching up in a rush, as the original slows down
 when a frame runs long. A blended frame shows the world up to one step (33 ms) behind the newest simulated state, and

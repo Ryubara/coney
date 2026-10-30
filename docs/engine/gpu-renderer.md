@@ -9,12 +9,13 @@ in the original, which drew through the PS2's GS. GL3 stays the default.
 ## The choice {#choice}
 
 `--renderer gpu` or `gl3` wins; without it a windowed run takes the overrides file's `Display/Renderer` (0 GL3, the
-default; 1 the GPU renderer), and test mode takes GL3 whatever is saved, so a test run never depends on a player's file
-(`chooseRenderer()`, `src/core/renderer_choice.h`). The setting is read from the file before the renderer starts, ahead
-of the full load of the overrides, and shows on the debug menus' Tunables page under *Display*; a change there applies
-at the next start. The release build takes `--renderer` but keeps no overrides file. `--renderer gpu` is refused with
-`--headless`, `--load`, `--screenshot`, `--record` and `--render-references`: it needs a window, and nothing reads its
-frames back yet.
+default; 1 the GPU renderer), and test mode and `--render-references` take GL3 whatever is saved
+(`takesSavedRenderer()`), so a test run never depends on a player's file (`chooseRenderer()`,
+`src/core/renderer_choice.h`). The setting is read from the file before the renderer starts, ahead of the full load of
+the overrides, and shows on the debug menus' Tunables page under *Display*; a change there applies at the next start.
+The release build takes `--renderer` but keeps no overrides file. `--renderer gpu` is refused with `--headless`,
+`--load`, `--screenshot`, `--record` and `--render-references`: it needs a window, and nothing reads its frames back
+yet.
 
 ## The device and the window {#device}
 

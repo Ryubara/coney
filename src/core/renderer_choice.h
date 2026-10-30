@@ -27,10 +27,10 @@ enum class RendererKind : std::uint8_t {
 /// The renderer the `Display/Renderer` setting's value names: 1 is the GPU renderer, anything else GL3.
 [[nodiscard]] RendererKind rendererOfSetting(int value);
 
-/// The renderer a run starts with: `option` (`--renderer`) when given; else, outside test mode, `saved` (the
-/// overrides file's `Display/Renderer`); else GL3. Test mode never takes the saved one, so a test run draws the same
-/// whatever a player saved.
-[[nodiscard]] RendererKind chooseRenderer(std::optional<RendererKind> option, RendererKind saved, bool testMode);
+/// The renderer a run starts with: `option` (`--renderer`) when given; else, unless `ignoreSaved`, `saved` (the
+/// overrides file's `Display/Renderer`); else GL3. Test mode and reference renders ignore the saved one
+/// (takesSavedRenderer() in core/options.h), so a test run draws the same whatever a player saved.
+[[nodiscard]] RendererKind chooseRenderer(std::optional<RendererKind> option, RendererKind saved, bool ignoreSaved);
 
 /// The live value of the `Display/Renderer` setting, which the debug menus' Display page edits and the overrides file
 /// saves (0 GL3, the default; 1 the GPU renderer). The running renderer never changes with it: it is read at start.

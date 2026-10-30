@@ -402,7 +402,7 @@ int main(int argc, char** argv) {
     const coney::RendererKind rendererKind = coney::chooseRenderer(
         options->renderer,
         savedSettings.empty() ? coney::RendererKind::Gl3 : coney::debug::savedRenderer(savedSettings),
-        coney::isTestMode(*options));
+        !coney::takesSavedRenderer(*options));
     coney::platform::WindowDesc windowDesc = coney::platform::gameWindow(*options);
     windowDesc.hidden = options->renderReferences.has_value();
     // `--render-size`: frames of that size holding exactly the logical screen, as the original's frame buffer does.
