@@ -28,10 +28,10 @@ namespace coney::patch {
 /// What a made patch names besides its operations: the section's header, without the two text hashes, which
 /// makePatch() computes.
 struct PatchHeader {
-    std::optional<std::uint32_t> entry; ///< The WAD entry the script lives in, when known.
-    std::optional<std::string> name;    ///< The script's name, when known.
-    Sha256Digest chunk{};               ///< The compiled chunk the base text was made from.
-    std::string form = "lua4 1";        ///< The base text's form.
+    std::optional<std::uint32_t> entry{}; ///< The WAD entry the script lives in, when known.
+    std::optional<std::string> name{};    ///< The script's name, when known.
+    Sha256Digest chunk{};                 ///< The compiled chunk the base text was made from.
+    std::string form = "lua4 1";          ///< The base text's form.
 };
 
 /// Makes the smallest patch from `base` to `edited` that holds no line of the base: a line diff, in which an added line

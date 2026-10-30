@@ -98,8 +98,8 @@ class Maker {
             // Drop what comes before the next rebuild's base line (or all of it when no rebuild follows).
             std::uint32_t nextRebuild = deletedTo;
             for (std::uint32_t later = k; later < insertedTo; ++later) {
-                if (pairs[later - insertedFrom]) {
-                    nextRebuild = pairs[later - insertedFrom]->line;
+                if (const auto& laterPair = pairs[later - insertedFrom]; laterPair) {
+                    nextRebuild = laterPair->line;
                     break;
                 }
             }
@@ -128,7 +128,7 @@ class Maker {
             m_ops.push_back(Operation{.kind = OpKind::Drop, .lines = LineRange{from + 1, to}});
         }
         Operation& op = m_ops.back();
-        op.hash = linesHash(m_base.subspan(op.lines.first - 1, *op.lines.last - op.lines.first + 1));
+        op.hash = linesHash(m_base.subspan(op.lines.first - 1, to - op.lines.first + 1));
     }
 
     // The keys a line is found by: the first and the last bytes of its text (without its indent), so a line changed
@@ -182,9 +182,10 @@ class Maker {
         }
         // The line after the last copy keeps one copy range growing; otherwise the base's first such line.
         if (!m_ops.empty() && m_ops.back().kind == OpKind::Copy) {
-            const std::uint32_t next = *m_ops.back().lines.last + 1;
+            Operation& previous = m_ops.back();
+            const std::uint32_t next = previous.lines.last.value_or(previous.lines.first) + 1;
             if (std::ranges::binary_search(*where, next)) {
-                m_ops.back().lines.last = next;
+                previous.lines.last = next;
                 return;
             }
         }

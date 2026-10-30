@@ -42,15 +42,16 @@ constexpr std::uintmax_t kMaxFileBytes = std::max(patch::kMaxPatchBytes, patch::
 
 // What the command line asks for, read before any file is opened.
 struct Request {
-    std::string_view verb;
-    std::string_view first;  // make: BASE; apply: PATCH
-    std::string_view second; // make: EDITED; apply: BASE
-    std::optional<std::string_view> out;
-    std::optional<std::string_view> chunk;
-    std::optional<std::string_view> chunkFile;
-    std::optional<std::string_view> form;
-    std::optional<std::string_view> name;
-    std::optional<std::string_view> entry;
+    std::string_view verb{};
+    std::string_view first{};              // make: BASE; apply: PATCH
+    std::string_view second{};             // make: EDITED; apply: BASE
+    std::optional<std::string_view> out{}; // read from --out; output holds it once the command line is checked
+    std::string_view output{};             // where the result goes
+    std::optional<std::string_view> chunk{};
+    std::optional<std::string_view> chunkFile{};
+    std::optional<std::string_view> form{};
+    std::optional<std::string_view> name{};
+    std::optional<std::string_view> entry{};
 };
 
 // A usage error: the message and the usage, exit code 2.
@@ -110,6 +111,7 @@ std::expected<Request, std::string> parse(std::span<const std::string_view> args
     if (!request.out) {
         return std::unexpected(make ? "make needs --out PATCH" : "apply needs --out RESULT");
     }
+    request.output = *request.out;
     if (make && request.chunk.has_value() == request.chunkFile.has_value()) {
         return std::unexpected("make needs one of --chunk HASH and --chunk-file FILE");
     }
@@ -211,15 +213,15 @@ int make(const Request& request, std::FILE* out, std::FILE* err) {
     }
     patch::ScriptPatch file;
     file.sections.push_back(*section);
-    if (auto wrote = writeFile(*request.out, patch::writeScriptPatch(file)); !wrote) {
+    if (auto wrote = writeFile(request.output, patch::writeScriptPatch(file)); !wrote) {
         return failure(err, wrote.error());
     }
     const patch::PatchCounts counts = patch::countOperations(*section);
     std::fprintf(out,
                  "wrote %.*s: %zu operations (%zu dropped, %zu added, %zu copied, %zu rebuilt, %zu built from another "
                  "line); result %s\n",
-                 static_cast<int>(request.out->size()), request.out->data(), section->operations.size(), counts.dropped,
-                 counts.added, counts.copied, counts.rebuilt, counts.borrowed,
+                 static_cast<int>(request.output.size()), request.output.data(), section->operations.size(),
+                 counts.dropped, counts.added, counts.copied, counts.rebuilt, counts.borrowed,
                  patch::hashText(section->result).c_str());
     return 0;
 }
@@ -249,10 +251,10 @@ int apply(const Request& request, std::FILE* out, std::FILE* err) {
     if (!result) {
         return failure(err, result.error().message);
     }
-    if (auto wrote = writeFile(*request.out, *result); !wrote) {
+    if (auto wrote = writeFile(request.output, *result); !wrote) {
         return failure(err, wrote.error());
     }
-    std::fprintf(out, "wrote %.*s: %s\n", static_cast<int>(request.out->size()), request.out->data(),
+    std::fprintf(out, "wrote %.*s: %s\n", static_cast<int>(request.output.size()), request.output.data(),
                  patch::hashText(section->result).c_str());
     return 0;
 }

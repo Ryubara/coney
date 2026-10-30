@@ -25,9 +25,9 @@ namespace {
 struct Hunk {
     std::uint32_t first = 1;
     std::uint32_t end = 1;
-    std::vector<Operation> ops;
-    std::vector<std::string> lines; ///< What it writes: two changes are the same when these and the range are.
-    std::size_t origin = 0;         ///< The index, in the patches merged, of the patch it comes from.
+    std::vector<Operation> ops{};
+    std::vector<std::string> lines{}; ///< What it writes: two changes are the same when these and the range are.
+    std::size_t origin = 0;           ///< The index, in the patches merged, of the patch it comes from.
 };
 
 // A refusal with its fault.

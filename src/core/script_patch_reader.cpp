@@ -278,9 +278,12 @@ class Reader {
             const std::string_view value = fields.word();
             std::uint32_t entry = 0;
             const bool hex = value.size() > 2 && value.size() <= 10 && value.starts_with("0x");
-            const auto parsed = hex ? std::from_chars(value.data() + 2, value.data() + value.size(), entry, 16)
-                                    : std::from_chars_result{value.data(), std::errc::invalid_argument};
-            if (parsed.ec != std::errc{} || parsed.ptr != value.data() + value.size()) {
+            if (!hex) {
+                return invalidAt(number, "entry is `0x` and up to eight hex digits");
+            }
+            const char* const end = value.data() + value.size();
+            const auto parsed = std::from_chars(value.data() + 2, end, entry, 16);
+            if (parsed.ec != std::errc{} || parsed.ptr != end) {
                 return invalidAt(number, "entry is `0x` and up to eight hex digits");
             }
             section.entry = entry;
@@ -324,7 +327,7 @@ class Reader {
         if (!first || *first == 0) {
             return std::unexpected("a base line number, from 1, was expected");
         }
-        LineRange range{*first, *first};
+        LineRange range{.first = *first, .last = first};
         if (fields.take('-')) {
             range.last = fields.number();
             if (!range.last) {

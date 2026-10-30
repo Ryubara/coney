@@ -26,10 +26,10 @@ inline constexpr std::string_view kMagic = "coney-script-patch";
 inline constexpr int kFormatVersion = 1;
 
 /// The largest `.cpatch` file read, in bytes.
-inline constexpr std::size_t kMaxPatchBytes = 4U * 1024U * 1024U;
+inline constexpr std::size_t kMaxPatchBytes = std::size_t{4} * 1024 * 1024;
 /// The largest text (a base text, an edited copy, a result) taken or made, in bytes: a game script's decompile is a
 /// few hundred kilobytes at most, and the limit keeps a patch of copies from growing a text without bound.
-inline constexpr std::size_t kMaxTextBytes = 4U * 1024U * 1024U;
+inline constexpr std::size_t kMaxTextBytes = std::size_t{4} * 1024 * 1024;
 /// The most lines a text may have.
 inline constexpr std::size_t kMaxTextLines = 200'000;
 /// The most sections (one per base) a `.cpatch` holds.
@@ -72,10 +72,10 @@ enum class OpKind : std::uint8_t {
 /// One line of a section's operations.
 struct Operation {
     OpKind kind = OpKind::Keep;
-    LineRange lines;           ///< Keep, Drop, Copy: the base lines; Rebuild, Borrow: the one line (`first == last`).
-    Sha256Digest hash{};       ///< Drop: linesHash() of the dropped lines.
-    std::string text;          ///< Add: the line, without its newline.
-    std::vector<Piece> pieces; ///< Rebuild, Borrow: the new line's pieces, in order.
+    LineRange lines{};           ///< Keep, Drop, Copy: the base lines; Rebuild, Borrow: the one line (`first == last`).
+    Sha256Digest hash{};         ///< Drop: linesHash() of the dropped lines.
+    std::string text{};          ///< Add: the line, without its newline.
+    std::vector<Piece> pieces{}; ///< Rebuild, Borrow: the new line's pieces, in order.
     bool operator==(const Operation&) const = default;
 };
 
