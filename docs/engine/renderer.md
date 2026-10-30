@@ -591,11 +591,13 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
 - **What goes through it.** Every `rw::SetRenderState`, `SetRenderStatePtr` and `GetRenderState`, Im2D and Im3D call,
   camera clear, begin, end and show, the GL3 rasters Coney makes, locks, fills from an image and converts from the PS2,
   and five named OpenGL operations (the frame copied into a raster, the frame read back, the wireframe switch, drawing
-  sent back to the window's frame buffer, a raster's mip levels): 256 call sites in 18 files of `src/platform/`, up from
-  the estimate of about 290 because the `rw::gl3::` vertex types are not calls. Left out until items 7 to 10: the atomic,
-  clump and human renders and what runs inside their pipelines (the one `VERTEXALPHA` state set in each of
-  `texture_lod.cpp` and `character_skin.cpp`, and the skinning pipeline's buffers); also the device's set-up at start
-  and the profiler's OpenGL queries, which draw nothing.
+  sent back to the window's frame buffer, a raster's mip levels): 223 call sites in 15 files of `src/platform/`, fewer
+  than the estimate of about 290 because the `rw::gl3::` vertex types are not calls and the renders below wait. Routed
+  with items 7 to 9, whose renders they set up: `WorldRenderer::render` (the world, #1199), `ParkedCars::draw` and
+  `PlacedObjects::draw` (cars and objects, #1200) and `PlayLighting::drawHumanPasses` (humans, #1201); with items 7 to
+  10, the atomic, clump and human renders and what runs inside their pipelines (the one `VERTEXALPHA` state in each of
+  `texture_lod.cpp` and `character_skin.cpp`, the skinning buffers). Never: the device's set-up at start and the
+  profiler's OpenGL queries, which draw nothing.
 - **What a record holds.** A draw holds its primitive, every render state set so far with its value as it stands at
   the draw (a raster as its place in the recording's order of first use, its size and format, and a digest of the
   pixels Coney uploaded to it), the vertices and the indices; Im3D also its normals, world matrix and flags. A camera's
@@ -621,7 +623,10 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
   | `level95-hub` | `coney --play-level level95 --frames 90 --freeze-world --render-size 640x448 --draw-hash` |
 
   Each is run twice on the branch and on its base; a pull request that changes drawing reports the four hashes in its
-  Testing section, and two runs of one build must agree.
+  Testing section, and two runs of one build must agree. They need the window: headless, play draws only its 2D layer.
+  Item 1's hashes, twice each on Windows: `level99-street` 23 records, `0xe923080c2453d3a4`; `level95-hub` 16 records,
+  `0x4ba9bf8c9bdc48ed`. A PS2 texture's digest is of its texel and palette blocks alone: librw's data block also holds a
+  heap pointer and gaps, which made two runs differ.
 - **The grid across systems** is the open question this item leaves to CI: the expected hashes were recorded on
   Windows, and the first CI run on Linux and macOS shows whether they hold. If one differs, the fallback grid is 1/256
   of a unit for positions and texture coordinates (`kDrawGridSteps`) with colours kept at 8 bits, and the expected
