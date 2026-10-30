@@ -369,6 +369,7 @@ nav:
       - Coney Director design:
           - guides/director/index.md
           - The Rockstar Editor survey: guides/director/rockstar-editor.md
+          - Recording: guides/director/recording.md
       - Conventions: guides/conventions.md
       - Repository conventions: guides/repo-conventions.md
       - Enforcement map: guides/enforcement.md
