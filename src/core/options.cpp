@@ -1153,7 +1153,7 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             if (!renderer) {
                 return invalidArgument(std::format("--renderer needs gl3 or gpu, got \"{}\"", name));
             }
-            options.renderer = *renderer;
+            options.renderer = renderer;
         } else if (arg == "--line-blend") {
             if (auto value = takeValue(args, i, lineBlendArg, "--line-blend", "on or off"); !value) {
                 return std::unexpected(std::move(value.error()));
