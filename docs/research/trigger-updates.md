@@ -1,6 +1,6 @@
 ---
 kind: feature
-owns: {functions: ["0x004125b8", "0x004134f8", "0x004146e0", "0x00415378"]}
+owns: {functions: ["0x004125b8", "0x004134f8", "0x00414548", "0x004146e0", "0x00415378"]}
 ---
 # Trigger boxes and spheres: the update
 
@@ -34,6 +34,7 @@ message reaches Lua is on [Message handlers](scripting.md#message-handlers).
 | Behaviour | Function | Section |
 | --- | --- | --- |
 | A sphere's check: timer, found humans, occupants | `0x004146e0` `TriggerSphere_Update` | [A sphere's check](#sphere) |
+| Whether a sphere accepts a point: radius, then the mode's test | `0x00414548` `TriggerSphere_Accepts` | [The accept test](#accepts) |
 | A kind-0 box's update | `0x00415378` `VolumeBox_Update` | [A box's update](#box) |
 | A kind-2 box's update, over the two players | `0x004134f8` `PlayerBox_Update` | [A players' box](#player-box) |
 | The humans within a radius of a point | `0x002274a8` `Humans_FindAhead` | [Who is found](#found) |
@@ -86,6 +87,14 @@ nobody. Both pass mask 1. Confirmed (code) at `0x004146e0`, `0x00415378`.
    was freed. Confirmed (code).
 4. A sphere freed during the check is freed now.
 
+### The accept test {#accepts}
+
+`TriggerSphere_Accepts` (`0x00414548`) takes the position of the sphere's object, refuses a point farther than the
+radius (`+0x174`, squared distance in 3D), and then by mode (`+0x17c`): mode 1 asks `Nav_IsConnected` (`0x0024dee8`)
+whether the two points are joined, mode 2 casts a clear-ray test (`Ray_IsClear`) between the two points each moved
+by 0.01 times a fixed vector (`0x00511740`), and any other mode accepts. `TriggerSphere_AcceptsObject` (`0x00414688`)
+is the same test on an object's position. Confirmed (code) at `0x00414548`, `0x00414688`.
+
 ### A box's update {#box}
 
 `VolumeBox_Update` (`0x00415378`), for an enabled box (`+0x68`), confirmed (code) at `0x00415378`:
@@ -119,13 +128,14 @@ decompiled scripts.
 ## In Coney
 
 - `world_objects::TriggerSpheres::update()` and `world_objects::VolumeBoxes::update()` (`src/world_objects/`) are the
-  three updates; `VolumeBoxes::setStayPeriod()` gives a box its handler's period, which `GameplayMode::enter()` reads
+  three updates; `VolumeBoxes::setStayPeriod()` gives a box its handler's period, which `GameplayMode::updateBoxes()` reads
   from the box's `TriggerSphereCfg` record (`TriggerSphere::handlerPeriodMs`), 1000 ms when it has none. Unit tests:
   `tests/world_objects/volume_boxes_test.cpp`, `tests/world_objects/trigger_spheres_test.cpp`.
 - `VolumeBoxes::add()` makes no box for kind 1 and, Coney's choice, none for a kind other than 0, 2 and 3, where the
   original goes on with a null record; `makeAddVolumeBox()` then returns `NilHandle` and uses no handle. Coney's boxes
   come from no fixed pool, so a full pool never happens ([q-box-pools](#q-box-pools)). Coney sorts the corners, which
   for every box the game adds is the same as keeping them.
+- `TriggerSpheres::accepts()` is the accept test, its modes' tests a stand-in ([q-line-tests](#q-line-tests)).
 - Coney's choices in the found list ([q-found-mask](#q-found-mask)): the subjects are Coney's humans in its own order
   (by handle), a dead human is never found, a box finds the humans inside it rather than within its bounding sphere,
   and nobody beyond the first 60 found is tested by a sphere. A players' box takes the first two players among the
@@ -134,6 +144,12 @@ decompiled scripts.
   once and stop with the trigger, and an unresolved sphere occupant stay listed.
 
 ## Open questions
+
+### The modes' tests {#q-line-tests}
+
+What `Nav_IsConnected` (`0x0024dee8`) tests between two points, and which vector `0x00511740` holds for mode 2's
+ray, are not traced; Coney's modes 1 and 2 use its clear-line callback from points raised 1 m instead. To settle it:
+read `0x00511740` and step `0x0024dee8` in PCSX2 with the dealer's sphere in `level99`.
 
 ### The found humans {#q-found-mask}
 

@@ -115,6 +115,8 @@ TEST_CASE("a sphere's occupant whose handle no longer resolves is kept without m
 }
 
 TEST_CASE("each sphere is checked on one frame in five", "[trigger_spheres]") {
+    // Expected: scripting.md#triggers, confirmed (code): the pool is checked round-robin, each sphere every fifth frame
+    // (0x00414398)
     TriggerSpheres spheres;
     spheres.setLocate(locate);
     REQUIRE(spheres.configure(7, true, 4.0F, 0, 1));
@@ -127,6 +129,7 @@ TEST_CASE("each sphere is checked on one frame in five", "[trigger_spheres]") {
 }
 
 TEST_CASE("an unarmed sphere, or one round a gone object, sends nothing; the pool holds 100", "[trigger_spheres]") {
+    // Expected: scripting.md#triggers, confirmed (code): a pool of 100 spheres, checked only while armed (+0x180)
     TriggerSpheres spheres;
     spheres.setLocate(locate);
     const std::vector<BoxSubject> humans{{.handle = 100, .position = {1, 0, 0}, .alive = true, .player = false}};
@@ -147,6 +150,8 @@ TEST_CASE("an unarmed sphere, or one round a gone object, sends nothing; the poo
 }
 
 TEST_CASE("modes 1 and 2 also need a clear line, mode 2 from a raised centre", "[trigger_spheres]") {
+    // Expected: scripting.md#triggers, inferred from the line tests 0x0024dee8 and 0x0024df40 (the raised ends are
+    // Coney's choice)
     TriggerSpheres spheres;
     spheres.setLocate(locate);
     std::vector<std::array<float, 3>> starts;
@@ -167,6 +172,7 @@ TEST_CASE("modes 1 and 2 also need a clear line, mode 2 from a raised centre", "
 
 TEST_CASE("TriggerSphereEnable arms a sphere, making one of radius 0 and mode 1; off forgets who is inside",
           "[trigger_spheres]") {
+    // Expected: scripting.md#triggers, confirmed (code): the defaults of 0x00414480 and the disarm of 0x004144d0
     TriggerSpheres spheres;
     spheres.setLocate(locate);
     // A new sphere of radius 0 accepts nobody.

@@ -107,6 +107,8 @@ Value triple(double x, double y, double z) {
 } // namespace
 
 TEST_CASE("SetMsgHandler keeps a callback per object and message, and nil removes it", "[trigger_bindings]") {
+    // Expected: scripting.md#message-handlers, confirmed (code): one callback name per message slot of the object's
+    // handler
     Harness h;
     h.first("SetMsgHandler", {Value(40.7), Value(3.0), str("P1.FirstGlow")});
     CHECK(h.messages.handler(40, 3) == "P1.FirstGlow");
@@ -120,6 +122,7 @@ TEST_CASE("SetMsgHandler keeps a callback per object and message, and nil remove
 }
 
 TEST_CASE("a message reaches its handler with the arguments its number takes", "[trigger_bindings]") {
+    // Expected: scripting.md#message-handlers, confirmed (code): the marshaller pushes the arguments by message number
     Harness h;
     for (const int message : {1, 3, 6, 8, 9, 0x12, 0x19, 0xb}) {
         h.messages.set(5, message, "Record");
@@ -171,6 +174,8 @@ TEST_CASE("AddVolumeBox makes no box and uses no handle for a kind outside 0, 2 
 
 TEST_CASE("AddVolumeBox makes a box with a handle from the world objects' counter; kind 1 is refused",
           "[trigger_bindings]") {
+    // Expected: trigger-updates.md#add, confirmed (code): kind 1 returns NilHandle; RotateVolumeBox's matrix is
+    // scripting.md#triggers
     Harness h;
     const double first =
         h.first("AddVolumeBox", {str("vMark01"), Value(0.0), triple(-284.1, 126.2, 0.2), triple(1.6, 1.6, 3)})

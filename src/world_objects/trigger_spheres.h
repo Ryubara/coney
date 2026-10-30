@@ -73,11 +73,15 @@ class TriggerSpheres {
     /// @orig 0x004142d0 TriggerSphere_Alloc (unknown)
     bool setRadius(double object, float radius);
     /// The sphere round `object`; null when it has none.
+    /// @coney-only lookup over Coney's own pool; the original reaches a sphere through its object's handler
     [[nodiscard]] TriggerSphere* find(double object);
+    /// The sphere round `object`; null when it has none.
+    /// @coney-only lookup over Coney's own pool; the original reaches a sphere through its object's handler
     [[nodiscard]] const TriggerSphere* find(double object) const;
     /// Every sphere, oldest first.
     [[nodiscard]] const std::vector<TriggerSphere>& all() const { return m_spheres; }
     /// Forgets every sphere: the level is unloaded.
+    /// @coney-only level unload of Coney's pool; the original frees each with its handler component
     void clear() {
         m_spheres.clear();
         m_frame = 0;
@@ -86,6 +90,7 @@ class TriggerSpheres {
     /// Sets how objects are found (null finds none, so no sphere sends anything) and the clear-line test (null: every
     /// line is clear).
     void setLocate(Locate locate) { m_locate = std::move(locate); }
+    /// Sets the clear-line test of modes 1 and 2 (null: every line is clear).
     void setClearLine(ClearLine clearLine) { m_clearLine = std::move(clearLine); }
 
     /// One frame of the pool at game time `nowMs` over `subjects`: the spheres whose turn it is (index modulo
@@ -96,11 +101,13 @@ class TriggerSpheres {
 
     /// Whether `point` counts as inside `sphere` centred on `centre`: within the radius (in 3D) and, in modes 1 and 2,
     /// with a clear line to it.
+    /// @orig 0x00414548 TriggerSphere_Accepts (unknown)
     [[nodiscard]] bool accepts(const TriggerSphere& sphere, const std::array<float, 3>& centre,
                                const std::array<float, 3>& point) const;
 
   private:
     // A sphere for `object` with the defaults of 0x00414480; null when the pool is full.
+    // @orig 0x00414480 TriggerSphere_Init (unknown)
     TriggerSphere* make(double object);
     // One check of the sphere at `index`, when armed: the stay timer re-armed whenever it is due; each human within
     // the radius (not the object's own, at most 60) that the sphere accepts enters (3) or, on a due check, stays (5),

@@ -31,6 +31,7 @@ Sent step(VolumeBoxes& boxes, const std::vector<BoxSubject>& subjects, std::uint
 } // namespace
 
 TEST_CASE("a box holds the points between its corners, turned about its centre by its matrix", "[volume_boxes]") {
+    // Expected: scripting.md#triggers, confirmed (code): the inside test 0x00412a18 and RotateVolumeBox's matrix
     VolumeBoxes boxes;
     const VolumeBox& box = *boxes.add(7, "vLong", 0, {0, 0, 0}, {10, 2, 3}, true);
     CHECK(box.handle == 7);
@@ -149,6 +150,8 @@ TEST_CASE("AddVolumeBox's kind 1 and a kind outside 0, 2 and 3 make no box", "[v
 }
 
 TEST_CASE("a disabled box or a turf box sends nothing; a players' box only for a player", "[volume_boxes]") {
+    // Expected: trigger-updates.md#player-box, confirmed (code): only enabled kind-0 and kind-2 boxes update, kind 2
+    // over the players
     VolumeBoxes boxes;
     boxes.add(1, "vOff", 0, {0, 0, 0}, {2, 2, 3}, false);
     boxes.add(2, "vbStartRail", 2, {0, 0, 0}, {2, 2, 3}, true);
@@ -163,6 +166,7 @@ TEST_CASE("a disabled box or a turf box sends nothing; a players' box only for a
 
 TEST_CASE("an occupant gone from the subjects leaves while its handle resolves, and is skipped and kept once not",
           "[volume_boxes]") {
+    // Expected: trigger-updates.md#box, confirmed (code): an occupant that no longer resolves is skipped and kept
     VolumeBoxes boxes;
     boxes.add(40, "vTopTier", 0, {0, 0, 0}, {2, 2, 3}, true);
     bool resolves = true;
@@ -182,6 +186,7 @@ TEST_CASE("an occupant gone from the subjects leaves while its handle resolves, 
 }
 
 TEST_CASE("damage done from inside reaches every enabled kind-0 box the human stands in", "[volume_boxes]") {
+    // Expected: scripting.md#triggers, confirmed (code): message 6 tests the human's position (0x00413018)
     // docs/research/scripting.md#triggers: VolumeBoxes_SendDamageMessage tests the human's position, not the object's.
     VolumeBoxes boxes;
     boxes.add(57, "vLevelVandal", 0, {-10, -10, -1}, {20, 20, 30}, true);
@@ -198,6 +203,8 @@ TEST_CASE("damage done from inside reaches every enabled kind-0 box the human st
 }
 
 TEST_CASE("a theft reaches every enabled kind-0 box round the object's spot", "[volume_boxes][steal]") {
+    // Expected: crimes.md#owned-items, inferred from Item_TakeOwned's inside test (which boxes are asked is Coney's
+    // reading)
     // docs/research/crimes.md#owned-items: Item_TakeOwned tells the boxes whose inside test holds for the spot.
     VolumeBoxes boxes;
     boxes.add(70, "vStealTrigger", 0, {-249.4F, 217.9F, 1.1F}, {12.4F, 10.2F, 3.5F}, true);

@@ -2044,17 +2044,17 @@ status = "legacy"
 address = 0x00414398
 name = "TriggerSpheres_UpdateAll"
 page = "scripting.md#triggers"
-note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::update"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00414480
 name = "TriggerSphere_Init"
 page = "scripting.md#triggers"
-note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
-coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::arm"
-status = "legacy"
+level = "confirmed-code"
+coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::make"
+status = "compared"
 
 [[function]]
 address = 0x004144d0
@@ -2063,6 +2063,20 @@ page = "scripting.md#triggers"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::arm"
 status = "legacy"
+
+[[function]]
+address = 0x00414548
+name = "TriggerSphere_Accepts"
+page = "trigger-updates.md#accepts"
+role = "a point within the radius of the sphere's object, then mode 1's connection test or mode 2's clear ray"
+level = "confirmed-code"
+coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::accepts"
+status = "compared"
+
+[[function.gaps]]
+what = "the modes' tests are Coney's clear-line callback from points raised 1 m"
+relation = "stand-in"
+question = "trigger-updates.md#q-line-tests"
 
 [[function]]
 address = 0x004146e0

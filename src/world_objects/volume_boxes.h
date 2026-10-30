@@ -85,7 +85,10 @@ class VolumeBoxes {
     /// @orig 0x00412c40 VolumeBox_SetRotation (unknown)
     void rotate(double handle, const std::array<float, 4>& turn);
     /// The box with `handle`; null when none has it.
+    /// @coney-only lookup over Coney's own list; the original resolves the handle (0x00390268)
     [[nodiscard]] VolumeBox* find(double handle);
+    /// The box with `handle`; null when none has it.
+    /// @coney-only lookup over Coney's own list; the original resolves the handle (0x00390268)
     [[nodiscard]] const VolumeBox* find(double handle) const;
     /// Every box, oldest first.
     [[nodiscard]] const std::vector<VolumeBox>& all() const { return m_boxes; }

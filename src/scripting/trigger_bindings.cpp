@@ -18,9 +18,11 @@ namespace {
 // The value of `NilHandle` (script_bindings.cpp sets the global).
 constexpr double kNilHandle = 0.0;
 // Argument `i` as a handle: truncated to a whole number, as tolua reads an unsigned integer.
+// @coney-only binding glue: how Coney's Lua reads a handle argument
 double handleArg(std::span<const Value> args, std::size_t i) { return std::trunc(binding::number(args, i)); }
 
 // Argument `i` as tolua reads a boolean with a default: absent is the default, nil or false (and 0) false.
+// @coney-only binding glue: how Coney's Lua reads a boolean argument
 bool booleanArg(std::span<const Value> args, std::size_t i, bool fallback) {
     if (i >= args.size()) {
         return fallback;
@@ -101,6 +103,7 @@ NativeFunction makeSetMsgHandlerEx(const BindingContext& context) {
 
 } // namespace
 
+// @coney-only binding registration in Coney's Lua state
 void addTriggerBindings(LuaVm& vm, const BindingContext& context, std::function<double()> nextHandle) {
     vm.registerFunction("AddVolumeBox", makeAddVolumeBox(context, std::move(nextHandle)));
     vm.registerFunction("RotateVolumeBox", makeRotateVolumeBox(context));

@@ -35,11 +35,13 @@ void VolumeBoxes::rotate(double handle, const std::array<float, 4>& turn) {
     }
 }
 
+// @coney-only lookup over Coney's own list
 VolumeBox* VolumeBoxes::find(double handle) {
     const auto found = std::ranges::find(m_boxes, handle, &VolumeBox::handle);
     return found == m_boxes.end() ? nullptr : &*found;
 }
 
+// @coney-only lookup over Coney's own list
 const VolumeBox* VolumeBoxes::find(double handle) const {
     const auto found = std::ranges::find(m_boxes, handle, &VolumeBox::handle);
     return found == m_boxes.end() ? nullptr : &*found;

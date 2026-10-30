@@ -8,7 +8,8 @@ namespace coney::world_objects {
 
 namespace {
 
-// `p` raised by `height` metres.
+// `p` raised by `height` metres: the ends of Coney's clear-line test.
+// @orig 0x00414548 TriggerSphere_Accepts (unknown)
 std::array<float, 3> raised(const std::array<float, 3>& p, float height) { return {p[0], p[1], p[2] + height}; }
 
 } // namespace
@@ -74,11 +75,13 @@ bool TriggerSpheres::setRadius(double object, float radius) {
     return true;
 }
 
+// @coney-only lookup over Coney's own list
 TriggerSphere* TriggerSpheres::find(double object) {
     const auto found = std::ranges::find(m_spheres, object, &TriggerSphere::object);
     return found == m_spheres.end() ? nullptr : &*found;
 }
 
+// @coney-only lookup over Coney's own list
 const TriggerSphere* TriggerSpheres::find(double object) const {
     const auto found = std::ranges::find(m_spheres, object, &TriggerSphere::object);
     return found == m_spheres.end() ? nullptr : &*found;
