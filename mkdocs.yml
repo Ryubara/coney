@@ -236,6 +236,7 @@ nav:
   - "Engine: how Coney works":
       - engine/index.md
       - Combat: engine/combat.md
+      - Mesh and texture formats: engine/asset-formats.md
       - Renderer: engine/renderer.md
       - GPU renderer: engine/gpu-renderer.md
   - Game references:

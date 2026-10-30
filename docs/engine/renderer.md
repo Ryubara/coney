@@ -201,9 +201,10 @@ draw without librw's GL3 device as early as possible:
    the world, objects and cars, humans, and effects, one pull request each. Each keeps the draw-stream hashes and
    passes the picture comparison; which draws the hash covers at each step is in
    [How pictures are compared](#comparing).
-5. **Coney's mesh and texture formats** (item 6). Meshes are converted once from `rw::Geometry` into Coney's vertex
-   format (position, normal, prelit colour, UVs, skin weights) and textures from the PS2 rasters into RGBA or BC
-   formats, held by id. The GL3 renderer may keep using librw's instancing; the GPU renderer uses these.
+5. **Coney's mesh and texture formats** (item 6, built: [Mesh and texture formats](asset-formats.md)). Meshes
+   are converted once from `rw::Geometry` into Coney's vertex format (position, normal, prelit colour, UVs, skin
+   weights) and textures from the PS2 rasters into RGBA (BC formats join with the Xbox rasters), held by id. The GL3
+   renderer may keep using librw's instancing; the GPU renderer uses these.
 6. **The GPU renderer reaches parity** (items 11 to 14 and 20), each usable alone: the 2D layers (front end, legal
    screens, movies, HUD); Dear ImGui (its `sdlgpu3` backend is in the pinned Dear ImGui); the world (prelit colour,
    dual layer, fog), objects and cars; humans, skinned on the GPU; particles, coronas and the screen passes. Then
