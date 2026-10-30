@@ -67,6 +67,8 @@ constexpr ScreenRect kPillarbox{160, 0, 960, 720};
 } // namespace
 
 TEST_CASE("a frame description starts empty with its clear colour", "[graphics][frame-description]") {
+    // Expected: FrameDescription::begin's contract (src/graphics/frame_description.h): a new frame holds its start and
+    // nothing else.
     FrameDescription frame;
     frame.begin(FrameStart{Rgba{10, 20, 30, 255}, false});
     CHECK(frame.start() == FrameStart{Rgba{10, 20, 30, 255}, false});
@@ -78,6 +80,8 @@ TEST_CASE("a frame description starts empty with its clear colour", "[graphics][
 
 TEST_CASE("a frame description maps logical quads onto the window and keeps their order",
           "[graphics][frame-description]") {
+    // Expected: graphics::logicalToWindow() (src/graphics/screen.cpp): x * 960 / 640 + 160 and y * 720 / 448 for the
+    // logical screen fitLogicalScreen() places in a 1280 x 720 window (tests/graphics/screen_test.cpp).
     FrameDescription frame;
     frame.begin(FrameStart{});
     const std::array<LogicalQuad, 2> quads{{
@@ -117,6 +121,8 @@ TEST_CASE("a frame description maps logical quads onto the window and keeps thei
 
 TEST_CASE("a frame description drops a partial triangle and adds nothing for no shape",
           "[graphics][frame-description]") {
+    // Expected: RenderDevice::drawTriangles' contract (src/graphics/render_device.h): three corners a triangle, a
+    // remainder ignored; the corners mapped by graphics::logicalToWindow() as in the quads' test.
     FrameDescription frame;
     frame.begin(FrameStart{});
     const std::array<LogicalVertex, 5> corners{{
@@ -148,6 +154,8 @@ TEST_CASE("a frame description drops a partial triangle and adds nothing for no 
 }
 
 TEST_CASE("a frame description gives each texture one id", "[graphics][frame-description]") {
+    // Expected: FrameDescription::texture's contract (src/graphics/frame_description.h): one id per texture per frame,
+    // kNoTexture for none, the table emptied by begin().
     FrameDescription frame;
     frame.begin(FrameStart{});
     const FakeTexture first;
@@ -172,6 +180,8 @@ TEST_CASE("a frame description gives each texture one id", "[graphics][frame-des
 }
 
 TEST_CASE("a screen pass splits a frame's overlay passes", "[graphics][frame-description]") {
+    // Expected: FrameDescription::addScreenPass's contract (src/graphics/frame_description.h): passes kept in order,
+    // the next 2D draw after a screen pass starting a new overlay pass.
     FrameDescription frame;
     frame.begin(FrameStart{});
     const LogicalQuad quad{0.0F, 0.0F, 10.0F, 10.0F, UvRect{}, Rgba{}};

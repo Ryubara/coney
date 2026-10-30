@@ -81,6 +81,9 @@ LogicalRect mapped(const LogicalRect& rect, const ScreenRect& onto) {
 } // namespace
 
 TEST_CASE("a headless frame records its 2D draws into the frame description", "[platform][frame-description]") {
+    // Expected: RenderEngine's 2D drawing as the draw-stream scene draws it (draw_calls_test.cpp): the fill quad of
+    // beginFrame(), the logical screen's and the view's mappings by graphics::logicalToWindow(), the alpha test of
+    // TriangleStates, and docs/engine/renderer.md#frame-description for what a draw holds.
     auto engine = startHeadless();
     const FakeTexture sheet;
     engine->beginFrame(Rgba{32, 48, 64, 255});
@@ -144,6 +147,9 @@ TEST_CASE("a headless frame records its 2D draws into the frame description", "[
 }
 
 TEST_CASE("the screen passes are recorded between a frame's overlay passes", "[platform][frame-description]") {
+    // Expected: RenderEngine::blurScreen and present()'s line blend (src/platform/render_engine.h) over viewRect(), the
+    // shift graphics::originalLineShare() (docs/research/rendering.md#output); the order of
+    // docs/engine/renderer.md#frame-description.
     auto engine = startHeadless();
     engine->setLineBlend(true);
     engine->beginFrame(Rgba{0, 0, 0, 255}); // black: no fill
@@ -172,6 +178,8 @@ TEST_CASE("the screen passes are recorded between a frame's overlay passes", "[p
 }
 
 TEST_CASE("each motion blur pass records its own kept copy", "[platform][frame-description]") {
+    // Expected: MotionBlurPass (src/platform/motion_blur_pass.h): its pass over the whole view (viewRect(), the 640 x
+    // 448 frame here), in the blur's colour, with a copy of its own kept from frame to frame.
     auto engine = startHeadless();
     const ScreenRect view{0, 0, 640, 448};
     coney::platform::MotionBlurPass first;
