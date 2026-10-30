@@ -230,7 +230,7 @@ per viewport, `0x0017d880` walks every record. Confirmed (code):
    the selection keeps it only when it lies inside an atomic's bounding sphere.
 
 Confirmed (runtime), run r-20261030-light-cull-radius-zero: in `level99` checkpoint 2, 6 of the 17 visible point lights
-of list `+0x20` have radius 0, each with a corona (sizes 2.2 and 4.0); in 300 selections none of the 99 point lights
+of list `+0x20` have radius 0, each with a corona; in 300 selections none of the 99 point lights
 chosen had radius 0. What the VU1 light code does with a point light of radius 0 is open
 ([Open questions](#open-questions): a point light of radius 0).
 

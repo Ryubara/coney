@@ -89,10 +89,8 @@ comes from the level's shadow colour, `1 - shadowColour` (0.23 in most levels, t
 | Part | Design |
 | --- | --- |
 | Source | The level's shadow light, one per level ([One shadow source](../engine/renderer.md#lighting)): `global.lua`'s offset and colour on a game level, the project's [sun](#sun) on a Coney level. A level that turns shadows off keeps the blob |
-| Casters | Per preset ([Presets](../engine/renderer.md#presets)): the Xbox's humans within 20 m and their held props, out to the outer cascade in *High*. Not the streamed world: its shadows are baked |
-| Receivers | The world and world objects (*Xbox*); humans added from *Enhanced* |
-| Coverage | One map fitted round the casters (*Xbox*, *Enhanced*); two cascades around the camera, about 12 m and 50 m, snapped to texel steps so they do not shimmer while the camera moves (*High*) |
-| Filtering | The Xbox's stand-in filter; PCF with normal-offset bias; contact hardening in *High* |
+| Casters, receivers, coverage, filtering | Per preset, as the renderer design's [Presets](../engine/renderer.md#presets) table gives them. Never the streamed world as a caster: its shadows are baked |
+| Coverage, in any preset | Maps fitted round the player's surroundings, not the whole view, and snapped to texel steps so they do not shimmer while the camera moves |
 | Facing away | A surface facing away from the light is never darkened (the Xbox's rule) |
 | Blob | Off when real shadows are on, so a person does not get two |
 | Lamps | Point-light shadows for fires and lamps in *High* only (renderer item 31): the data says lamps do not light the world |
