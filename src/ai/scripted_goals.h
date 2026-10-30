@@ -87,7 +87,7 @@ struct UseFlagOrder {
 };
 
 /// `GoalMoveToUseFlag`'s goal: goes to the flag as GoalMoveToFlag does (no offset, turning to the flag's heading) and
-/// then uses it. The flag is reserved for the human from the goal's making until its end (`0x004161b0`).
+/// then uses it. The flag is reserved for the human from the goal's making until it is freed (`0x004161b0`).
 /// **Coney stand-in** for the use (the flags' use clips are not researched): once there the human stands at the flag
 /// and the goal never ends.
 /// @orig 0x002db768 MoveToUseFlagGoal_Init (unknown)
@@ -101,8 +101,11 @@ class MoveToUseFlagGoal final : public Goal {
     void start(Brain& brain) override;
     /// The move's resume.
     void resume(Brain& brain) override;
-    /// Frees the flag.
+    /// Stops the move.
     void end(Brain& brain) override;
+    /// Frees the flag, also for a goal popped before it started.
+    /// @orig 0x002dbaa0 MoveToUseFlagGoal_Destroy (unknown)
+    void destroy(Brain& brain) override;
     /// The move until it arrives, then the use.
     [[nodiscard]] GoalStatus process(Brain& brain) override;
 

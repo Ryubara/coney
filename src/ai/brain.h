@@ -135,6 +135,8 @@ inline constexpr int kDefaultBaseBlockChance = 60;
 inline constexpr int kEventDamaged = 1;
 inline constexpr int kEventReset = 2;
 inline constexpr int kEventEnemyAdded = 0x0b;
+/// The goals ran out (`0xd`): sent by a pop that empties the stack, about the human himself (Brain::popGoal()).
+inline constexpr int kEventGoalsRanOut = 0x0d;
 inline constexpr int kEventAttackWarning = 0x10;
 inline constexpr int kEventViolence = 0x14;
 inline constexpr int kEventDown = 18;
@@ -313,12 +315,14 @@ class Brain {
     /// @orig 0x0028d758 Brain_PushGoal (unknown)
     /// @orig 0x0029eea0 Goal_Suspend (unknown)
     bool pushGoal(std::unique_ptr<Goal> goal);
-    /// Ends and frees the top goal; the new top is resumed before its next process. When the stack is then empty the
-    /// human's goals ran out (event `0xd`, counted).
+    /// Takes the top goal off the stack, ends it when it had started and frees it, then resumes the new top at once
+    /// (started, when it never was) if the action queue is empty, else before its next process. When the stack is
+    /// then empty the human's goals ran out: he is sent event kEventGoalsRanOut about himself (deliverEvent()), which
+    /// his script handlers and his gang's may answer, and it is counted (goalsRanOut()). Nothing on an empty stack
+    /// (**Coney's guard**: the original is never called on one).
     /// @orig 0x0028d7d8 Brain_PopGoal (unknown)
-    /// @orig 0x0029edd8 Goal_End (unknown)
     void popGoal();
-    /// Pops every goal.
+    /// Pops every goal, then clears the goal base (−1).
     /// @orig 0x0028d910 Brain_ClearGoals (unknown)
     void clearGoals();
     /// Marks the goal base (`Brain_MarkGoalBase`, `+0x2d`): the top's index becomes the base, so the goals now on the
@@ -380,8 +384,8 @@ class Brain {
     /// after the placement.
     /// @orig 0x0023d440 Human_SetTransform (unknown)
     void placed();
-    /// Asks the actions to stop from the front, freeing each that agrees; stops at one that refuses. Returns whether
-    /// the queue is empty.
+    /// Frees the actions from the front, asking each that has started to stop first; stops at one that refuses (one
+    /// never started is freed unasked). Returns whether the queue is empty.
     /// @orig 0x0028db20 Brain_ClearActions (unknown)
     bool clearActions();
     /// Brain `+0xcc` bit 1: a GiveWay action lives (asked to give way again, the brain answers yes at once).
@@ -613,23 +617,45 @@ class Brain {
   private:
     // The peer standing at an announced attack's position (the warning's attacker); null when none.
     [[nodiscard]] Brain* announcer(anim::Vec3 position) const;
-    // The goal stack's turn: the top is started or resumed once the queue is empty, then processed; done pops it and
-    // the new top is processed in the same update, again processes the top again (up to a bound).
-    // @orig 0x0029ed58 Goal_Start (unknown)
-    // @orig 0x0029ee30 Goal_Resume (unknown)
-    // @orig 0x0029eed8 Goal_Process (unknown)
+    // The goal stack's turn, Brain_UpdateGoals' loop: the top is run (runGoal()); done pops it and the new top runs in
+    // the same update, again runs the top again, stop ends the turn.
+    // @orig 0x0028fbb0 Brain_UpdateGoals (unknown)
     void processGoals();
-    // The reaction goal: made from the human's state when none is active (the actions are cleared), then processed;
-    // when done it ends and the stack's top is resumed. Returns whether one ran this update.
+    // Starts `goal` when the action queue is empty: its time limit made a deadline from now, its start(), then it is
+    // marked started. Returns whether it started.
+    // @orig 0x0029ed58 Goal_Start (unknown)
+    bool startGoal(Goal& goal);
+    // Takes `goal` up again: one never started is started (startGoal()); else it is marked to resume, and with the
+    // action queue empty its resume() runs and the mark is cleared. Returns whether it is under way now.
+    // @orig 0x0029ee30 Goal_Resume (unknown)
+    bool resumeGoal(Goal& goal);
+    // One update of `goal`: stop while it cannot start or resume yet (the action queue is busy), done once its deadline
+    // has passed (its process() not called), else what its process() returns.
+    // @orig 0x0029eed8 Goal_Process (unknown)
+    GoalStatus runGoal(Goal& goal);
+    // Ends the goal in `slot` when it had started (its end()), destroys it (its destroy()), then moves it to the goals
+    // freed after the update.
+    // @orig 0x0029edd8 Goal_End (unknown)
+    void retireGoal(std::unique_ptr<Goal>& slot);
+    // The reaction goal's turn, before the stack's: an active one is run (runGoal()) and, done, ended; then, unless the
+    // brain's type, its goals or its human's class hold reactions off, a new one is made from the human's state, the
+    // stack's top suspended and the actions cleared. Returns whether the stack is held off this update: a reaction
+    // goal still running or just made (it runs from the next update).
     // @orig 0x0028f2b0 Brain_UpdateReactionGoal (unknown)
-    // @orig 0x0028f240 Brain_EndReactionGoal (unknown)
     bool updateReactionGoal();
-    // The front action: its delay counted down against the last update's time, then started and updated in the same
-    // update, and popped when either says done.
-    // Frees the front action once it has finished: it is aborted first (its answer ignored), then freed
-    // (docs/research/ai-moving.md#giving-way).
+    // Ends and frees the reaction goal, then takes the stack's top up again (resumeGoal()); nothing without one.
+    // @orig 0x0028f240 Brain_EndReactionGoal (unknown)
+    void endReactionGoal();
+    // One update of `action` at the front: its delay counted down against the last update's time (a random one drawn
+    // first), then, not started, its start() (done: done at once, still not started), then its update().
+    // @orig 0x002f9e48 Action_Update (unknown)
+    ActionStatus stepAction(Action& action);
+    // Whether the finished or cleared `action` may be freed: one that has started is asked to stop (its abort()), and
+    // refuses with false; one never started is not asked (docs/research/ai/index.md#actions).
     // @orig 0x002f9de0 Action_AbortAndDestroy (unknown)
-    void finishAction(Action& action);
+    bool finishAction(Action& action);
+    // The actions' turn: the front action is stepped (stepAction()); done, it is freed and the next is stepped in the
+    // same update, until one is still running, the queue is empty or one refuses to stop.
     // @orig 0x0028fe28 Brain_RunActions (unknown)
     void runActions();
     // Claims a slot for `attacker` on this brain's human: a free one, else the farthest holder's when `attacker` is

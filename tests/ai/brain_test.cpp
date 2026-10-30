@@ -226,12 +226,15 @@ TEST_CASE("a goal pushed from a popped goal's End stays on the stack", "[ai]") {
     REQUIRE(brain.pushGoal(std::make_unique<LoggingGoal>("base", log)));
     REQUIRE(brain.pushGoal(std::make_unique<PushingGoal>(log)));
     REQUIRE(brain.goalCount() == 2);
+    // Started, so its End runs when it is popped (a goal never started is freed without it).
+    brain.update(stepMs(1));
     brain.popGoal();
-    // The pusher is gone and the goal its End pushed is on top of the base, not popped in the pusher's place.
+    // The pusher is gone and the goal its End pushed is on top of the base, not popped in the pusher's place; the pop
+    // started it, as the new top, so the next update processes it.
     CHECK(brain.goalCount() == 2);
     log.clear();
-    brain.update(stepMs(1));
-    CHECK(log == std::vector<std::string>{"next start", "next process"});
+    brain.update(stepMs(2));
+    CHECK(log == std::vector<std::string>{"next process"});
 }
 
 TEST_CASE("a done goal is popped and the new top is processed in the same update", "[ai]") {
@@ -262,15 +265,16 @@ TEST_CASE("the stack holds ten goals and the queue eight actions; a refused abor
     brain.flush();
     CHECK(brain.goalCount() == 0);
 
-    REQUIRE(brain.queueAction(std::make_unique<LoggingAction>("free", log)));
+    // The refusing action starts at the front (only a started action is asked to stop).
     REQUIRE(brain.queueAction(std::make_unique<LoggingAction>("busy", log, 0, 1000, true)));
-    for (std::size_t k = 2; k < coney::ai::kActionQueueSize; ++k) {
+    brain.update(stepMs(1));
+    for (std::size_t k = 1; k < coney::ai::kActionQueueSize; ++k) {
         REQUIRE(brain.queueAction(std::make_unique<LoggingAction>("more", log)));
     }
     CHECK_FALSE(brain.queueAction(std::make_unique<LoggingAction>("over", log)));
     // Clearing frees from the front and stops at the action that refuses (an attack under way is never cut).
-    brain.clearActions();
-    CHECK(brain.actionCount() == coney::ai::kActionQueueSize - 1);
+    CHECK_FALSE(brain.clearActions());
+    CHECK(brain.actionCount() == coney::ai::kActionQueueSize);
 }
 
 TEST_CASE("an action's delay counts down against the time of the brain's last update", "[ai]") {

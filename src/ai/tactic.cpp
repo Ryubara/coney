@@ -37,13 +37,15 @@ int Tactic::process(Gang& gang) {
 }
 
 void Tactic::finish(Gang& gang) {
-    end(gang);
+    // Not built: the strategy's end first (Tactic_EndStrategy), as Coney's tactics own no strategy yet (#337).
     // Every AI member back down to his goal base: the tactic's goals and any pushed since its start go.
     for (Brain* member : gang.members()) {
         if (member->type() != BrainType::Player) {
             member->popToGoalBase();
         }
     }
+    // Then the class's end, which sees the members' own goals back on top.
+    end(gang);
 }
 
 void Tactic::fireCallback(Gang& gang, int code) {

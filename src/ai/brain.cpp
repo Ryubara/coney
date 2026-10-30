@@ -11,6 +11,7 @@
 #include "ai/face_mood.h"
 #include "ai/fight_goal.h"
 #include "ai/gangs.h"
+#include "ai/hub_goals.h"
 #include "ai/melee_goal.h"
 #include "ai/move_action.h"
 #include "ai/perception.h"
@@ -218,12 +219,8 @@ void Brain::setDead(bool dead) {
 
 Brain* Brain::knockOut() {
     Brain* foe = m_target;
-    if (m_reaction != nullptr) {
-        m_reaction->end(*this);
-        m_reaction.reset();
-    }
+    endReactionGoal();
     clearGoals();
-    m_goalBase = -1;
     clearActions();
     {
         // Human_DropTarget from Brain_OnKnockedOut (docs/research/gang-fights.md#set-target-causes).
@@ -284,12 +281,15 @@ void Brain::popGoal() {
     // (level99's `P1.ReachCenter` pushes GoalAddressPerson), which must stay above, not be popped in its place.
     std::unique_ptr<Goal> ended = std::move(m_goals.back());
     m_goals.pop_back();
-    ended->end(*this);
-    m_retired.push_back(std::move(ended));
+    retireGoal(ended);
+    // The new top is taken up at once: started or resumed now when the queue is empty, else marked.
     if (Goal* top = topGoal(); top != nullptr) {
-        top->m_resumePending = top->m_started;
-    } else {
+        static_cast<void>(resumeGoal(*top));
+    }
+    // The goals ran out: the human hears of it, about himself (the record's +0x24).
+    if (m_goals.empty()) {
         ++m_goalsRanOut;
+        static_cast<void>(deliverEvent(*this, BrainEvent{.id = kEventGoalsRanOut, .victim = this}));
     }
 }
 
@@ -297,6 +297,59 @@ void Brain::clearGoals() {
     while (!m_goals.empty()) {
         popGoal();
     }
+    m_goalBase = -1;
+}
+
+bool Brain::startGoal(Goal& goal) {
+    if (m_actionCount > 0) {
+        return false;
+    }
+    // The time limit becomes a deadline from now; none stays none.
+    if (goal.m_timeLimitMs != kNoGoalTimeLimit) {
+        const auto deadline = static_cast<std::int64_t>(m_nowMs) + goal.m_timeLimitMs;
+        goal.m_deadlineMs = static_cast<std::uint64_t>(std::max<std::int64_t>(deadline, 0));
+    }
+    goal.start(*this);
+    goal.m_started = true;
+    return true;
+}
+
+bool Brain::resumeGoal(Goal& goal) {
+    if (!goal.m_started) {
+        return startGoal(goal);
+    }
+    goal.m_resumePending = true;
+    if (m_actionCount > 0) {
+        return false;
+    }
+    goal.resume(*this);
+    goal.m_resumePending = false;
+    return true;
+}
+
+GoalStatus Brain::runGoal(Goal& goal) {
+    // Started, or taken up again, only with the action queue empty.
+    if (!goal.m_started && !startGoal(goal)) {
+        return GoalStatus::Stop;
+    }
+    if (goal.m_resumePending && !resumeGoal(goal)) {
+        return GoalStatus::Stop;
+    }
+    if (m_nowMs > goal.m_deadlineMs) {
+        return GoalStatus::Done;
+    }
+    // Coney's stand-in: the original runs no process while the human has no character instance (human +0xd8); every
+    // Coney human with a brain has its body, so the process always runs (#635).
+    return goal.process(*this);
+}
+
+void Brain::retireGoal(std::unique_ptr<Goal>& slot) {
+    if (slot->m_started) {
+        slot->end(*this);
+    }
+    slot->destroy(*this);
+    // Freed once the update is over: its own process may be what popped it.
+    m_retired.push_back(std::move(slot));
 }
 
 // Brain_FindGoal's search down from the top, stopped at the goal base as its callers test the index against `+0x2d`
@@ -400,16 +453,14 @@ void Brain::placed() {
     }
 }
 
-void Brain::finishAction(Action& action) {
-    // A finished action is still aborted before it is freed, so its Abort undoes what its Start did however it ends;
-    // its answer is ignored.
-    static_cast<void>(action.abort(*this));
-    popAction();
+bool Brain::finishAction(Action& action) {
+    // A started action is asked to stop even when it finished, so its Abort undoes what its Start did however it ends.
+    return !action.m_started || action.abort(*this);
 }
 
 bool Brain::clearActions() {
     while (m_actionCount > 0) {
-        if (!m_actions[m_actionFront]->abort(*this)) {
+        if (!finishAction(*m_actions[m_actionFront])) {
             return false;
         }
         popAction();
@@ -428,30 +479,18 @@ void Brain::flush() {
     clearActions();
 }
 
-// Coney's choice: the passes are bounded (twice the stack's size) where the original loops until a goal stops
-// (#635).
 void Brain::processGoals() {
+    // Coney's choice: the passes are bounded (twice the stack's size) where the original loops until a goal stops
+    // (#635).
     for (int pass = 0; pass < kMaxGoalPasses; ++pass) {
         Goal* top = topGoal();
         if (top == nullptr) {
             return;
         }
-        // Started, or taken up again, only with the action queue empty.
-        if (!top->m_started || top->m_resumePending) {
-            if (m_actionCount > 0) {
-                return;
-            }
-            if (!top->m_started) {
-                top->m_started = true;
-                top->start(*this);
-            } else {
-                top->resume(*this);
-            }
-            top->m_resumePending = false;
-        }
-        switch (top->process(*this)) {
+        switch (runGoal(*top)) {
         case GoalStatus::Done:
-            // A goal that changed the stack under itself (a new fight pops the old one's goals) is not popped again.
+            // Coney's choice: a goal that changed the stack under itself (a new fight pops the old one's goals) is not
+            // popped again, where the original pops whatever is on top.
             if (topGoal() == top) {
                 popGoal();
             }
@@ -465,50 +504,113 @@ void Brain::processGoals() {
 }
 
 bool Brain::updateReactionGoal() {
-    if (m_reaction == nullptr) {
-        m_reaction = reactionGoalFor(*m_human);
-        if (m_reaction == nullptr) {
+    // 1. The active one runs; done, it ends (the stack's top taken up again) and the tests below run at once.
+    if (m_reaction != nullptr) {
+        if (runGoal(*m_reaction) != GoalStatus::Done) {
+            return true;
+        }
+        endReactionGoal();
+    }
+    // Coney's stand-ins: no Coney human burns (the on-fire state and goal are not built), and brain +0x2d7 (set while
+    // leaving through an exit flag, #647) is not kept, so both read clear.
+    constexpr bool kOnFire = false;
+    constexpr bool kLeaving = false;
+    const bool fighting = hasFightGoal();
+    const bool fleeing = findGoal(GoalType::PedestrianReaction) != nullptr ||
+                         findGoal(GoalType::DealerReaction) != nullptr || findGoal(GoalType::LeftTurf) != nullptr;
+    // 2. A calm civilian or dealer reacts to nothing.
+    if ((m_type == BrainType::Civilian || m_type == BrainType::Dealer) && !fighting && !kOnFire && !kLeaving &&
+        !fleeing && !m_human->downOrDead()) {
+        return false;
+    }
+    // 3. Goals that hold reactions off: a grab goal not yet holding its target. The Grabber (0x92) and BigBull (0x89)
+    // goals' tests are not built, as Coney has neither goal.
+    if (const auto* grab = dynamic_cast<const GrabTargetGoal*>(findGoal(GoalType::GrabTarget));
+        grab != nullptr && !grab->holding()) {
+        return false;
+    }
+    // A bum keeps to his BumLogic goal unless he fights or flees.
+    if (findGoal(GoalType::BumLogic) != nullptr && !fighting && !kLeaving && !fleeing) {
+        return false;
+    }
+    // 4. The character classes that never react, and those that do not while stunned. Coney's stand-in: game state
+    // +0x158 (co-op) is not read; the AI takes the player as alone, as reactionKind() does (#550).
+    switch (m_characterClass) {
+    case 0x77:
+    case 0x78:
+    case 0x4f:
+        return false;
+    case 0x80:
+    case 0xb2:
+    case 0x87:
+    case 0x62:
+        if (reactionHolds(GoalType::ReactStunned, *m_human)) {
             return false;
         }
-        // **Coney choice**: what the human was doing is over (its clip was cut), so its queued actions go.
-        clearActions();
-        stopMove();
-        m_reaction->m_started = true;
-        m_reaction->start(*this);
+        break;
+    default:
+        break;
     }
-    if (m_reaction->process(*this) == GoalStatus::Done) {
-        m_reaction->end(*this);
-        m_reaction.reset();
-        if (Goal* top = topGoal(); top != nullptr) {
-            top->m_resumePending = top->m_started;
-        }
+    // 5. The goal the human's state calls for. Not built: the arrested goal (tested first), the on-fire and the
+    // wounded goals.
+    m_reaction = reactionGoalFor(*m_human);
+    if (m_reaction == nullptr) {
+        return false;
     }
+    // The stack's top suspended (Goal_Suspend: only one that has started) and the actions cleared; the new goal runs
+    // from the next update.
+    if (Goal* top = topGoal(); top != nullptr && top->m_started) {
+        top->suspend(*this);
+    }
+    clearActions();
     return true;
 }
 
-void Brain::runActions() {
-    Action* action = frontAction();
-    if (action == nullptr) {
+void Brain::endReactionGoal() {
+    if (m_reaction == nullptr) {
         return;
     }
-    if (!action->m_started) {
-        // The delay counts down against the time of the last update; a random delay is drawn once.
-        if (action->m_delayMs == kRandomDelay) {
-            action->m_delayMs = static_cast<std::int16_t>(rollRange(m_random, 0, kRandomDelayMaxMs));
+    retireGoal(m_reaction);
+    if (Goal* top = topGoal(); top != nullptr) {
+        static_cast<void>(resumeGoal(*top));
+    }
+}
+
+ActionStatus Brain::stepAction(Action& action) {
+    // The time since the last update and the delay left are 16-bit, as the action's delay field is.
+    const auto elapsed = static_cast<std::int16_t>(m_nowMs - m_lastUpdateMs);
+    if (!action.m_started) {
+        // The delay counts down; a random delay is drawn once. Started only once it has run out.
+        if (action.m_delayMs == kRandomDelay) {
+            action.m_delayMs = static_cast<std::int16_t>(rollRange(m_random, 0, kRandomDelayMaxMs));
         }
-        const auto elapsed = static_cast<int>(std::min<std::uint64_t>(m_nowMs - m_lastUpdateMs, 0x7fff));
-        action->m_delayMs = static_cast<std::int16_t>(std::max(0, action->m_delayMs - elapsed));
-        if (action->m_delayMs > 0) {
-            return;
+        const auto left = static_cast<std::int16_t>(action.m_delayMs - elapsed);
+        if (left > 0) {
+            action.m_delayMs = left;
+            return ActionStatus::Running;
         }
-        action->m_started = true;
-        if (action->start(*this) == ActionStatus::Done) {
-            finishAction(*action);
-            return;
+        action.m_delayMs = 0;
+        // A start that says done leaves it unstarted: it is freed without being asked to stop.
+        if (action.start(*this) == ActionStatus::Done) {
+            return ActionStatus::Done;
+        }
+        action.m_started = true;
+    } else {
+        // A started action's delay counts down too (a restart may have set one); it updates once it is 0.
+        action.m_delayMs = std::max<std::int16_t>(0, static_cast<std::int16_t>(action.m_delayMs - elapsed));
+        if (action.m_delayMs > 0) {
+            return ActionStatus::Running;
         }
     }
-    if (action->update(*this) == ActionStatus::Done) {
-        finishAction(*action);
+    return action.update(*this);
+}
+
+void Brain::runActions() {
+    while (Action* action = frontAction()) {
+        if (stepAction(*action) != ActionStatus::Done || !finishAction(*action)) {
+            return;
+        }
+        popAction();
     }
 }
 

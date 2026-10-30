@@ -2,10 +2,12 @@
 #pragma once
 
 #include <cstdint>
+#include <limits>
 
 // A brain's goal: a long-lived intention (fight this human, block for a while, lie down until the knockdown is over)
 // that a brain keeps on its stack of ten, or as its reaction goal. The brain drives it (ai::Brain): it starts the goal,
-// or resumes it after the goal above it was popped, only when its action queue is empty, then processes it.
+// or resumes it after the goal above it was popped, only when its action queue is empty, then processes it, and ends it
+// once its time limit (if it has one) has passed.
 // Research: docs/research/ai/index.md#goals, docs/research/ai/index.md#update-goals
 
 namespace coney::ai {
@@ -69,6 +71,7 @@ enum class GoalType : std::uint8_t {
     CallGang = 0x6e,           ///< CallGangGoal: runs to a phone and calls the gang.
     Scout = 0x6f,              ///< ScoutGoal: a lookout at his post.
     Dealer = 0x80,             ///< DealerGoal.
+    DealerReaction = 0x81,     ///< DealerReactionGoal: not built; a flee goal to the reaction goal's exemptions.
     Shopkeeper = 0x82,         ///< ShopkeeperGoal.
     WarriorVandalSteal = 0x83, ///< WarriorVandalStealGoal: a Warrior under the steal / wreck command.
     BigBrawler = 0x84,        ///< BigBrawlerGoal: a boss who fights, tires after six hits and (Vargas) fetches objects.
@@ -111,8 +114,10 @@ class Goal {
     virtual void resume(Brain& /*brain*/) {}
     /// A goal is pushed above it (`Goal_Suspend`).
     virtual void suspend(Brain& /*brain*/) {}
-    /// It is popped or flushed (`+0x2c`).
+    /// It is popped or flushed (`+0x2c`), when it had started.
     virtual void end(Brain& /*brain*/) {}
+    /// It is freed (`+0x1c`, the destroy): after end(), and also for a goal popped before it started.
+    virtual void destroy(Brain& /*brain*/) {}
     /// One update's work (`+0x44`).
     [[nodiscard]] virtual GoalStatus process(Brain& brain) = 0;
     /// Its adjustment of `scorer`'s score for an enemy it may pick (vtable `+0x54`, ai::pickBestEnemy()): by default
@@ -125,9 +130,10 @@ class Goal {
     friend class Brain;
 
     GoalType m_type;
-    int m_timeLimitMs;            // +0x08 before the start
-    bool m_started = false;       // +0x04
-    bool m_resumePending = false; // the goal above it was popped: resume() before the next process()
+    int m_timeLimitMs;                                                      // +0x08 before the start
+    std::uint64_t m_deadlineMs = std::numeric_limits<std::uint64_t>::max(); // +0x08 from the start (none: never)
+    bool m_started = false;                                                 // +0x04
+    bool m_resumePending = false; // +0x05: the goal above it was popped; resume() before the next process()
 };
 
 } // namespace coney::ai
