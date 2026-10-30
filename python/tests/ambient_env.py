@@ -40,6 +40,7 @@ CLEARED: dict[str, str] = {
     "CMAKE_CXX_COMPILER_LAUNCHER": "ccache for the C++ compiler: the build's compiler cache checks it first",
     "CXX": "the C++ compiler `doctor` says CMake will use",
     "VSCMD_VER": "set in a Visual Studio prompt: `build` then does not load the Visual Studio environment",
+    "VCToolsInstallDir": "the MSVC toolset of a Visual Studio prompt, where `doctor` looks for ATL",
     "JAVA_HOME": "the JDK the Ghidra tools and `workspace` checks look for",
     "UV": "the `uv` that started coney-tools, which `mcp serve` reuses",
     # The docs build and CI.
