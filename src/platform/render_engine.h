@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "core/error.h"
+#include "graphics/frame_description.h"
 #include "graphics/frame_stats.h"
 #include "graphics/render_device.h"
 #include "graphics/screen.h"
@@ -241,6 +242,10 @@ class RenderEngine final : public graphics::RenderDevice {
     /// The stream of the requested frame, once it has been presented; nothing before.
     [[nodiscard]] const std::optional<DrawStream>& drawStream() const { return m_drawStream; }
 
+    /// What the current frame, or the last one presented until the next begins, has drawn of its 2D side and screen
+    /// passes (docs/engine/renderer.md#frame-description). Built with either backend, so headless tests read it.
+    [[nodiscard]] const graphics::FrameDescription& frame() const { return m_frame; }
+
   private:
     // Only start() makes one, which then fills it in as librw comes up.
     RenderEngine(RenderBackend backend, const WindowDesc& desc);
@@ -314,6 +319,7 @@ class RenderEngine final : public graphics::RenderDevice {
     std::optional<std::expected<CapturedFrame, Error>> m_capture;
     std::optional<std::uint64_t> m_drawStreamFrame; // requestDrawStream()
     std::optional<DrawStream> m_drawStream;
+    graphics::FrameDescription m_frame; // the frame's 2D side and screen passes (frame())
     std::function<void(std::span<const std::uint8_t>, graphics::Extent)> m_frameTap; // setFrameTap()
     std::vector<std::uint8_t> m_tapRows;                                             // the tap's read-back, bottom up
     std::vector<std::uint8_t> m_tapFrame;                                            // the same, top down

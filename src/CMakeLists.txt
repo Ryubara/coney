@@ -78,6 +78,7 @@ add_library(coney_core STATIC
     gamemodes/start_up_flow.cpp
     graphics/asset_store.cpp
     graphics/font.cpp
+    graphics/frame_description.cpp
     graphics/frame_stats.cpp
     graphics/car_draw.cpp
     graphics/human_blood.cpp

@@ -82,6 +82,7 @@ add_executable(coney_tests
     gamemodes/story_start_test.cpp
     graphics/asset_store_test.cpp
     graphics/font_test.cpp
+    graphics/frame_description_test.cpp
     graphics/frame_stats_test.cpp
     graphics/car_draw_test.cpp
     graphics/throw_arc_test.cpp
@@ -198,6 +199,7 @@ add_executable(coney_tests
     platform/clip_recorder_test.cpp
     platform/draw_calls_test.cpp
     platform/draw_stream_test.cpp
+    platform/frame_recording_test.cpp
     platform/ffmpeg_info_test.cpp
     platform/gpu_renderer_test.cpp
     platform/present_mode_test.cpp
