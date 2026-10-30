@@ -909,10 +909,10 @@ void RenderEngine::blurScreen(int passes, float offsetU, float offsetV) {
     const graphics::Rgba white{255, 255, 255, 255};
 
     // 1. The screen at half size, drawn into its own top-left quarter (scratch: the last step covers all of it).
-    // Stand-in: the original draws each step into its 512 x 256 raster through its effects camera; with one back
-    // buffer, Coney draws into the frame and copies the result back (copyToRaster) before the next step reads it. The
-    // UVs span each copy, without the original's half-texel offset (pixel + 0.5 over the size), which places a GS
-    // sample where a GL texel centre already is (inferred).
+    // The original draws each step into its 512 x 256 raster through its effects camera; with one back buffer, Coney
+    // draws into the frame and copies the result back (copyToRaster) before the next step reads it. The UVs span each
+    // copy, without the original's half-texel offset (pixel + 0.5 over the size), which places a GS sample where a GL
+    // texel centre already is (inferred). Both are stand-ins.
     if (!copyToRaster(m_blurRaster, viewport.x, viewport.y, viewport.width, viewport.height)) {
         return;
     }
