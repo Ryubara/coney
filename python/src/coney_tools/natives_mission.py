@@ -47,10 +47,11 @@ def _opcode(word: int) -> str:
     return lua4.OPCODES[code] if code < len(lua4.OPCODES) else "END"
 
 
-def names_in(proto: lua4.Proto) -> set[str]:
+def names_in(proto: lua4.Proto, constants: bool = True) -> set[str]:
     """The names one function mentions, without its nested functions: every global it reads, every `Global.field`
-    it reads (a `GETGLOBAL` followed by a `GETDOTTED`), and every string constant (callbacks are passed by name)."""
-    found = {text for text in proto.strings if text}
+    it reads (a `GETGLOBAL` followed by a `GETDOTTED`), and, with `constants`, every string constant (callbacks are
+    passed by name)."""
+    found = {text for text in proto.strings if text} if constants else set()
     previous: str | None = None
     for word in proto.code:
         op = _opcode(word)

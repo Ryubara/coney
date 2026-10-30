@@ -15,7 +15,7 @@ TOTAL_CHUNKS = 467  # compiled Lua chunks in the NTSC-U WAD (scripting.md, surve
 VERIFIED = "Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`)."
 
 
-def _wrap(text: str, indent: str = "") -> list[str]:
+def wrap(text: str, indent: str = "") -> list[str]:
     """`text` as lines of at most WIDTH characters; blank-line-separated paragraphs stay separate."""
     lines: list[str] = []
     for i, paragraph in enumerate(p for p in text.split("\n\n") if p.strip()):
@@ -32,13 +32,13 @@ def _wrap(text: str, indent: str = "") -> list[str]:
     return lines
 
 
-def _bullet(text: str) -> list[str]:
+def bullet(text: str) -> list[str]:
     """`text` as a wrapped list item: `- ` on the first line, continuation lines indented two spaces."""
-    lines = _wrap(text, "  ")
+    lines = wrap(text, "  ")
     return ["- " + lines[0][2:], *lines[1:]] if lines else []
 
 
-def _cell(text: str) -> str:
+def cell(text: str) -> str:
     """`text` made safe for one table cell: one line, pipes escaped."""
     return " ".join(text.split()).replace("|", "\\|")
 
@@ -108,7 +108,7 @@ def _variant_lines(name: str, variant: Variant) -> list[str]:
     if variant.args:
         out += ["| # | Argument | Read as | Meaning |", "| --- | --- | --- | --- |"]
         for i, arg in enumerate(variant.args, start=1):
-            out.append(f"| {i} | `{arg.name}` | {_cell(_read_as(arg))} | {_cell(arg.desc) or '-'} |")
+            out.append(f"| {i} | `{arg.name}` | {cell(_read_as(arg))} | {cell(arg.desc) or '-'} |")
         out.append("")
     else:
         out += ["No arguments.", ""]
@@ -117,11 +117,11 @@ def _variant_lines(name: str, variant: Variant) -> list[str]:
     elif len(variant.results) == 1:
         result = variant.results[0]
         text = f"**Returns** {_result_kind(result)}" + (f": {result.desc}" if result.desc else ".")
-        out += [*_wrap(text), ""]
+        out += [*wrap(text), ""]
     else:
         out += ["**Returns:**", ""]
         for i, result in enumerate(variant.results, start=1):
-            out.append(f"{i}. {_result_kind(result)}" + (f": {_cell(result.desc)}" if result.desc else ""))
+            out.append(f"{i}. {_result_kind(result)}" + (f": {cell(result.desc)}" if result.desc else ""))
         out.append("")
     return out
 
@@ -154,20 +154,20 @@ def binding_section(binding: Binding) -> list[str]:
     out = [f"## {binding.name} {{#{binding.anchor}}}", ""]
     out += _variant_lines(binding.name, binding.main)
     if binding.description:
-        out += [*_wrap(binding.description), ""]
+        out += [*wrap(binding.description), ""]
     else:
         out += ["*Not described yet: the signature above is read from the wrapper.*", ""]
     if binding.notes:
-        out += [*_wrap(f"**Notes.** {binding.notes}"), ""]
+        out += [*wrap(f"**Notes.** {binding.notes}"), ""]
     for i, over in enumerate(binding.overloads, start=1):
         label = "Overload" if len(binding.overloads) == 1 else f"Overload {i}"
         intro = (
             f"**{label}** (registered first; the wrapper above checks its argument types and calls this one when they"
             " do not match)" + (f": {over.note}" if over.note else ".")
         )
-        out += [*_wrap(intro), ""]
+        out += [*wrap(intro), ""]
         out += _variant_lines(binding.name, over)
-        out += [*_wrap(f"Wrapper {_hex(over.wrapper) if over.wrapper else '-'}; calls {_calls(over)}."), ""]
+        out += [*wrap(f"Wrapper {_hex(over.wrapper) if over.wrapper else '-'}; calls {_calls(over)}."), ""]
     facts = [f"- **Evidence:** {_evidence(binding)}"]
     if binding.origin == "game":
         registrar = "`RegisterBindings`" if binding.registered_by == "RegisterBindings" else "the script system"
@@ -192,7 +192,7 @@ def binding_section(binding: Binding) -> list[str]:
         else:
             facts.append("- **Used by** no script on the disc")
     facts.append(f"- **Coney:** {binding.coney}")
-    return out + [line for fact in facts for line in _bullet(fact[2:])] + [""]
+    return out + [line for fact in facts for line in bullet(fact[2:])] + [""]
 
 
 def category_page(masterlist: Masterlist, category: str) -> str:
@@ -200,7 +200,7 @@ def category_page(masterlist: Masterlist, category: str) -> str:
     title, scope = CATEGORIES[category]
     bindings = masterlist.by_category(category)
     out = [GENERATED, "", f"# Script bindings: {title}", "", VERIFIED, ""]
-    out += _wrap(
+    out += wrap(
         f"Bindings for {scope}: {len(bindings)} in all. Conventions, the other categories and how to read an entry are"
         " on the [masterlist](index.md)."
     )
@@ -239,7 +239,7 @@ def index_page(masterlist: Masterlist) -> str:
     boot = _count(game, lambda b: b.usage and b.usage.boot)
     mission = _count(game, lambda b: b.usage and b.usage.mission1)
     out = [GENERATED, "", "# Script bindings", "", VERIFIED, ""]
-    out += _wrap(
+    out += wrap(
         f"The game's scripts are Lua 4.0 chunks that drive the engine through **script bindings**: C++ functions the"
         f" game registers as Lua globals, playing the role FiveM calls *natives*. This is the masterlist of all"
         f" {len(game)} of them ({registrations} registrations, {overloaded} names registered twice as overloads),"
@@ -249,14 +249,20 @@ def index_page(masterlist: Masterlist) -> str:
         f" is on [Scripts (Lua)](../../research/scripting.md)."
     )
     out.append("")
-    out += _wrap(
+    out += wrap(
         "The list doubles as the **API reference for script mods**: the planned mod system loads Lua mods from a"
         " mods folder and lets them call these same bindings ([Roadmap: script mods](../../roadmap.md#script-mods))."
         " The descriptions are written for that reader: what an argument means in game terms (a handle and where it"
         " comes from, an id, a unit), not only its Lua type."
     )
     out.append("")
-    out += _wrap(
+    out += wrap(
+        "Beside the bindings, the level scripts build on the functions and globals `global.lua` defines"
+        " (`ActivateWarriors`, `ObjectiveSetup`, `runNextMission`, `true` and `false`): they are documented the same"
+        " way on [global.lua helpers](helpers.md), the API a mission mod's patched script calls beside these."
+    )
+    out.append("")
+    out += wrap(
         "Everything here is generated by `coney-tools bindings render` from the research database files"
         " `research/bindings/<category>.yaml` (schema:"
         " [The research data](../../guides/research-data.md#bindings)); edit the YAML, never these pages."
@@ -278,7 +284,7 @@ def index_page(masterlist: Masterlist) -> str:
         f" | **{_count(bindings, lambda b: b.depth == 'thorough')}** |"
     )
     out += ["", "## Conventions {#conventions}", ""]
-    out += _wrap(
+    out += wrap(
         "Each binding is a small wrapper made by tolua: it reads its arguments from the Lua stack with tolua's"
         " helpers, calls one function of the game and pushes the results. **No argument types are checked** (except"
         " in the overloads, below). An argument left off the end of the call reads as its default (0, false, no"
@@ -307,7 +313,7 @@ def index_page(masterlist: Masterlist) -> str:
         "| userdata | a C pointer passed through from another binding; only read when the caller passed it |",
         "",
     ]
-    out += _wrap(
+    out += wrap(
         "**Results.** A binding pushes at most one value. Lua 4.0 has no booleans, so a boolean result is the number"
         " **1 for true and nil for false** (`global.lua` sets `true = 1` and `false = nil` to match); test it with"
         " `if x then` (in Lua every value but nil is true, 0 included). A string result is nil when there is none, and"
@@ -315,19 +321,19 @@ def index_page(masterlist: Masterlist) -> str:
         " returning nothing pushes no value, so its call evaluates to nil."
     )
     out.append("")
-    out += _wrap(
+    out += wrap(
         "**Overloads.** Ten names are registered twice. Lua keeps the second registration; its wrapper checks the"
         " types of the arguments it was given and, when they do not match, calls the first registration instead. So"
         " both forms work, chosen by the argument types; each such entry shows both."
     )
     out.append("")
-    out += _wrap(
+    out += wrap(
         "**Callbacks.** Bindings that take a function name (`ScheduleFunc`, `SetMsgHandler`, `PadSetHandler`, ...)"
         " keep the name, not the function, and look it up when they fire; a dotted name such as `Menu.onStart`"
         " finds a field of a global table ([Scripts (Lua)](../../research/scripting.md#calling-lua-from-c))."
     )
     out += ["", "## How to read an entry {#how-to-read}", ""]
-    out += _wrap(
+    out += wrap(
         "Each section starts with the **signature**, like `GetLevelId(index) -> number`: the argument names are ours,"
         " in the order the wrapper reads them, and the arrow gives the Lua type of what it returns (nothing when"
         " there is no arrow). The table gives each argument's position, how the wrapper reads it (the rows of the"
@@ -348,9 +354,9 @@ def index_page(masterlist: Masterlist) -> str:
         " it, and whether a call was seen to use its result (below).",
         "**Coney:** whether Coney implements the binding yet (below).",
     ):
-        out += _bullet(item)
+        out += bullet(item)
     out += ["", "## Usage counts {#usage}", ""]
-    out += _wrap(
+    out += wrap(
         f"The counts come from a survey of the NTSC-U disc's {TOTAL_CHUNKS} compiled Lua chunks, reporting names and"
         " counts only. Every `GETGLOBAL` of a binding's name counts as a reference: the scripts fetch a binding by"
         " its global name to call it (often inside a loop, which is why references, not traced calls, are counted)."
@@ -367,7 +373,7 @@ def index_page(masterlist: Masterlist) -> str:
         " a mod calls it, but nothing in the game has exercised it, so its description is less certain."
     )
     out += ["", "## Coney status {#coney-status}", ""]
-    out += _wrap(
+    out += wrap(
         "Every entry has a **Coney** field: *not implemented*, *partial* or *implemented*, the default being *not"
         " implemented*. It is the `coney` key of the entry in `research/bindings/`, which"
         " `coney-tools bindings sync-coney` sets from Coney's own binding table (`src/scripting/script_bindings.cpp`),"
@@ -376,7 +382,7 @@ def index_page(masterlist: Masterlist) -> str:
         " is *not implemented*. CI fails when the field and the table disagree."
     )
     out.append("")
-    out += _wrap(
+    out += wrap(
         "Bindings that Coney adds for mods (with no counterpart in the game) will go in the same file with"
         " `origin: coney`; they have no wrapper address or usage counts. There are none yet."
     )
@@ -403,7 +409,7 @@ def mission_page(masterlist: Masterlist) -> str:
     done = _count(rows, lambda b: b.coney == "implemented")
     partial = _count(rows, lambda b: b.coney == "partial")
     out = [GENERATED, "", "# Script bindings: mission 1 coverage", "", VERIFIED, ""]
-    out += _wrap(
+    out += wrap(
         f'The {len(rows)} bindings the first mission can call, for the milestone "the first mission playable from the'
         ' title screen to its end": the scripts `level99.lua`, `level99_combat.lua`, `level99_lesson1.lua` and'
         " `level99_lesson2.lua`, the `global.lua` helpers they reach, and the helpers the engine calls when the"
@@ -412,7 +418,7 @@ def mission_page(masterlist: Masterlist) -> str:
         " [Scripts (Lua)](../../research/scripting.md#level99)."
     )
     out.append("")
-    out += _wrap(
+    out += wrap(
         f"**Researched:** {traced} of {len(rows)} are traced (the function behind the wrapper followed far enough to"
         f" describe every argument). **Coney:** {done} implemented, {partial} partial,"
         f" {len(rows) - done - partial} not yet ([Coney status](index.md#coney-status)). A traced binding can still"
@@ -446,7 +452,7 @@ def story_page(masterlist: Masterlist) -> str:
     game = [b for b in masterlist.bindings if b.usage]
     seen = {b.name for b in game if b.usage and b.usage.mission1}
     out = [GENERATED, "", "# Script bindings: story coverage", "", VERIFIED, ""]
-    out += _wrap(
+    out += wrap(
         "The bindings each level of the story after the first can call, in the order a player meets the levels:"
         " missions 2-18 with the hub (`level95`) between them, then the hub's five flashback missions and the Armies"
         " of the Night bonus game ([Scripts (Lua)](../../research/scripting.md#run-next-mission) has the order and"
@@ -474,7 +480,7 @@ def story_page(masterlist: Masterlist) -> str:
         done = _count(new, lambda b: b.coney == "implemented")
         out.append(f"| [`level{level}`](#level{level}) | {label} | {len(used)} | {len(new)} | {traced} | {done} |")
         sections += ["", f"## level{level}: {label} {{#level{level}}}", ""]
-        sections += _wrap(
+        sections += wrap(
             f"{len(used)} bindings, {len(new)} new: {traced} traced, {done} implemented in Coney"
             f" ({_count(used, lambda b: b.coney == 'implemented')} of all {len(used)})."
         )

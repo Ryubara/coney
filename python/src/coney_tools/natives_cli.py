@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The `coney-tools bindings ...` commands: render, sync-coney and render-cpp (all with --check), stats, and
-scan-usage (reads the disc)."""
+scan-usage and scan-helpers (read the disc)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import collections
 from collections.abc import Callable
 from pathlib import Path
 
-from coney_tools import lua4, natives, natives_cpp, natives_render
+from coney_tools import lua4, natives, natives_cpp, natives_render, script_helpers, script_helpers_render
 from coney_tools.config import ConfigError, find_repo_root
 
 
@@ -26,14 +26,23 @@ def _load_checked(root: Path) -> natives.Masterlist | None:
 def run_render(check_only: bool) -> int:
     """Check the YAML and write the pages; with `check_only`, write nothing and return 1 when a page is stale.
 
-    A page in docs/references/bindings/ that the renderer would not write (a category that no longer exists) also
-    counts as stale, and is deleted when not checking.
+    The page of `global.lua`'s helpers is written beside them from research/script-helpers.yaml when the checkout has
+    that file. A page in docs/references/bindings/ that the renderer would not write (a category that no longer exists)
+    also counts as stale, and is deleted when not checking.
     """
     root = find_repo_root(Path.cwd())
     masterlist = _load_checked(root)
     if masterlist is None:
         return 1
+    helpers = script_helpers.load(root)
+    if helpers is not None and helpers.problems:
+        for problem in helpers.problems:
+            print(f"problem: {problem}")
+        print(f"bindings: {len(helpers.problems)} problem(s) in {script_helpers.DATA_FILE.as_posix()}")
+        return 1
     pages = natives_render.render(masterlist)
+    if helpers is not None:
+        pages[script_helpers.PAGE] = script_helpers_render.page(helpers, masterlist)
     folder = root / natives.PAGES_DIR
     stale: list[str] = []
     for name, text in pages.items():
@@ -252,3 +261,57 @@ def run_missions(disc_arg: str | None, check_only: bool) -> int:
     state = f"updated {', '.join(stale)}; run `bindings render`" if stale else "levels up to date"
     print(f"bindings: {state}")
     return 0
+
+
+def run_helpers(disc_arg: str | None, chunks_dir: Path | None, check_only: bool) -> int:
+    """Survey `global.lua` and the other compiled scripts (from the player's disc, or a folder of chunks) and write
+    the counts into research/script-helpers.yaml; with `check_only`, write nothing and return 1 when it would change.
+
+    A helper or global the file lacks gets an entry to fill in, and one the disc lacks is reported; either makes the
+    command return 1, since `bindings render` refuses the file until it is put right.
+    """
+    from coney_tools import lua_decompile  # the chunk readers are only needed here
+
+    root = find_repo_root(Path.cwd())
+    masterlist = _load_checked(root)
+    if masterlist is None:
+        return 1
+    path = root / script_helpers.DATA_FILE
+    try:
+        text = path.read_bytes().decode("utf-8").replace("\r\n", "\n") if path.exists() else ""
+    except (OSError, UnicodeDecodeError) as error:
+        raise ConfigError(f"{path}: cannot be read ({error})") from error
+    chunks = (
+        lua_decompile.chunks_from_folder(chunks_dir)
+        if chunks_dir is not None
+        else lua_decompile.chunks_from_disc(root, disc_arg)
+    )
+    by_name = dict(chunks)
+    if script_helpers.HELPERS_SCRIPT not in by_name:
+        raise ConfigError(f"{script_helpers.HELPERS_SCRIPT} is not among the {len(chunks)} chunks")
+    names = frozenset(b.name for b in masterlist.bindings)
+    result = script_helpers.survey(by_name[script_helpers.HELPERS_SCRIPT], chunks, names)
+    updated, added, gone = script_helpers.apply_survey(text, result)
+    print(
+        f"{script_helpers.HELPERS_SCRIPT}: {len(result.helpers)} helpers, {len(result.globals)} globals read by other"
+        f" scripts, from {len(chunks)} chunks"
+    )
+    if added:
+        print(f"bindings: new in {script_helpers.HELPERS_SCRIPT}, to describe: {', '.join(added)}")
+    if gone:
+        print(f"bindings: no longer in {script_helpers.HELPERS_SCRIPT}, to remove: {', '.join(gone)}")
+    stale = updated != text
+    if check_only:
+        if stale:
+            print(
+                f"bindings: {script_helpers.DATA_FILE.as_posix()} is stale; run"
+                " `uv run --project python coney-tools bindings scan-helpers`"
+            )
+        return 1 if stale or gone else 0
+    if stale:
+        path.write_bytes(updated.encode("utf-8"))
+    print(
+        f"bindings: {'updated ' + script_helpers.DATA_FILE.as_posix() if stale else 'helpers up to date'}"
+        + ("; run `bindings render`" if stale else "")
+    )
+    return 1 if added or gone else 0

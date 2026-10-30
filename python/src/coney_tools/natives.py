@@ -162,7 +162,7 @@ class Masterlist:
         return sorted((b for b in self.bindings if b.category == category), key=lambda b: (b.name.lower(), b.name))
 
 
-class _Checker:
+class Checker:
     """Collects problems for one entry, each prefixed with where it was found."""
 
     def __init__(self, problems: list[str], where: str) -> None:
@@ -209,19 +209,19 @@ class _Checker:
         return value
 
 
-def _check_keys(check: _Checker, raw: dict[str, Any], allowed: set[str], what: str) -> None:
+def check_keys(check: Checker, raw: dict[str, Any], allowed: set[str], what: str) -> None:
     """Report keys `raw` has beyond `allowed` (a typo would otherwise be silently ignored)."""
     for key in sorted(set(raw) - allowed):
         check.fail(f"unknown {what} key `{key}`")
 
 
-def _load_arg(check: _Checker, raw: Any, position: int) -> Arg | None:
+def _load_arg(check: Checker, raw: Any, position: int) -> Arg | None:
     """One argument from its mapping."""
     if not isinstance(raw, dict):
         check.fail(f"argument {position} must be a mapping")
         return None
-    sub = _Checker(check.problems, f"{check.where}: argument {position}")
-    _check_keys(sub, raw, {"name", "lua", "ctype", "elem", "count", "default", "written_back", "desc"}, "argument")
+    sub = Checker(check.problems, f"{check.where}: argument {position}")
+    check_keys(sub, raw, {"name", "lua", "ctype", "elem", "count", "default", "written_back", "desc"}, "argument")
     name = sub.text(raw, "name")
     if name and not _IDENTIFIER.match(name):
         sub.fail(f"name {name!r} is not an identifier")
@@ -254,13 +254,13 @@ def _load_arg(check: _Checker, raw: Any, position: int) -> Arg | None:
     )
 
 
-def _load_result(check: _Checker, raw: Any, position: int) -> Result | None:
+def _load_result(check: Checker, raw: Any, position: int) -> Result | None:
     """One result from its mapping."""
     if not isinstance(raw, dict):
         check.fail(f"result {position} must be a mapping")
         return None
-    sub = _Checker(check.problems, f"{check.where}: result {position}")
-    _check_keys(sub, raw, {"lua", "type", "desc"}, "result")
+    sub = Checker(check.problems, f"{check.where}: result {position}")
+    check_keys(sub, raw, {"lua", "type", "desc"}, "result")
     return Result(
         lua=sub.choice(raw, "lua", RESULT_LUA_TYPES, None),
         desc=sub.text(raw, "desc", required=False),
@@ -268,15 +268,15 @@ def _load_result(check: _Checker, raw: Any, position: int) -> Result | None:
     )
 
 
-def _load_variant(check: _Checker, raw: dict[str, Any], *, game: bool) -> Variant:
+def _load_variant(check: Checker, raw: dict[str, Any], *, game: bool) -> Variant:
     """The registration fields of an entry or of one of its overloads."""
     calls: list[Call] = []
     for i, call in enumerate(raw.get("calls") or [], start=1):
         if not isinstance(call, dict):
             check.fail(f"call {i} must be a mapping")
             continue
-        sub = _Checker(check.problems, f"{check.where}: call {i}")
-        _check_keys(sub, call, {"addr", "name"}, "call")
+        sub = Checker(check.problems, f"{check.where}: call {i}")
+        check_keys(sub, call, {"addr", "name"}, "call")
         addr = sub.address(call, "addr", required=True)
         if addr is not None:
             calls.append(Call(addr, sub.text(call, "name", required=False) or None))
@@ -299,12 +299,12 @@ def _load_variant(check: _Checker, raw: dict[str, Any], *, game: bool) -> Varian
     )
 
 
-def _load_usage(check: _Checker, raw: Any) -> Usage | None:
+def _load_usage(check: Checker, raw: Any) -> Usage | None:
     """The usage counts of a game binding."""
     if not isinstance(raw, dict):
         check.fail("missing `usage` (chunks, calls, boot, mission1, result_used)")
         return None
-    _check_keys(check, raw, {*USAGE_KEYS, "levels"}, "usage")
+    check_keys(check, raw, {*USAGE_KEYS, "levels"}, "usage")
     values: dict[str, Any] = {}
     for key in USAGE_KEYS:
         value = raw.get(key)
@@ -340,8 +340,8 @@ def _load_entry(problems: list[str], raw: Any, index: int) -> Binding | None:
         problems.append(f"entry {index}: must be a mapping")
         return None
     name = raw.get("name")
-    check = _Checker(problems, f"entry {index} ({name})" if isinstance(name, str) else f"entry {index}")
-    _check_keys(check, raw, _ENTRY_KEYS, "entry")
+    check = Checker(problems, f"entry {index} ({name})" if isinstance(name, str) else f"entry {index}")
+    check_keys(check, raw, _ENTRY_KEYS, "entry")
     if not isinstance(name, str) or not _IDENTIFIER.match(name):
         check.fail("`name` must be a Lua identifier")
         return None
@@ -355,8 +355,8 @@ def _load_entry(problems: list[str], raw: Any, index: int) -> Binding | None:
         if not isinstance(over, dict):
             check.fail(f"overload {i} must be a mapping")
             continue
-        sub = _Checker(problems, f"{check.where}: overload {i}")
-        _check_keys(sub, over, {"wrapper", "calls", "virtual_calls", "args", "results", "note"}, "overload")
+        sub = Checker(problems, f"{check.where}: overload {i}")
+        check_keys(sub, over, {"wrapper", "calls", "virtual_calls", "args", "results", "note"}, "overload")
         overloads.append(_load_variant(sub, over, game=game))
     depth = check.choice(raw, "depth", DEPTHS, None)
     description = check.text(raw, "description", required=False)

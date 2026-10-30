@@ -1,8 +1,8 @@
 # The research data
 
-The research database and the lists built from it: the function database and the source files, the script bindings,
-the game reference lists and the mission list. Each is data in `research/` that a tool reads and that a generated page
-shows. The rest of the research workflow is listed in [its overview](research-workflow.md#pages).
+The research database and the lists built from it: the function database and the source files, the script bindings
+and the `global.lua` helpers, the game reference lists and the mission list. Each is data in `research/` that a tool
+reads and that a generated page shows. The rest of the research workflow is listed in [its overview](research-workflow.md#pages).
 
 ## The research database {#the-research-database}
 
@@ -92,6 +92,46 @@ them; the pages are never edited by hand, and CI runs `bindings render --check`
   ([coney-tools](coney-tools-references.md#bindings)).
 - `depth: mechanical` (signature only, no description) is accepted so a new entry can land before it is described;
   the masterlist has none.
+
+### The global.lua helpers {#script-helpers}
+
+`research/script-helpers.yaml` describes what the game's `global.lua` defines for the other scripts: every function it
+stores in a global or a global table's field (the **helpers**, such as `ActivateWarriors` and `TagInfo.SetupTags`) and
+every global it sets that another script reads (`true`, `Level`, `GSTRING`). It is the API a mission mod's patched
+script calls beside the bindings. `coney-tools bindings render` checks it and writes
+[global.lua helpers](../references/bindings/helpers.md) beside the binding pages, and refuses a file with a problem; CI
+runs it with `--check`. The `scan` lines and `chunk_sha1` come from the disc: `coney-tools bindings scan-helpers` writes
+them, adds an entry to fill in for a helper or global the file lacks, and reports one the disc no longer has
+([coney-tools](coney-tools-references.md#bindings)). Everything else is ours: names for the parameters, a group, a
+description in our own words and its [evidence level](research-evidence.md#evidence-levels), which cites the helper's
+function as the script locator `global.lua:fN`. Never the script's text ([LEGAL.md](repo:LEGAL.md)). The file:
+
+```yaml
+chunk_sha1: f0f2...                # written by scan-helpers: the SHA-1 of the disc's global.lua
+helpers:
+  - name: ActivateWarriors         # the global, or `Table.field`, that holds the function
+    group: squad                   # one of the groups in coney_tools/script_helpers.py, the page's sections
+    params: []                     # our names, one per parameter the function declares
+    description: >-
+      What it does, in our own words.
+    evidence: confirmed-code       # default; inferred or speculative when the description is not read in the code
+    notes: "Optional caveats."
+    scan: {function: 6, params: 0, natives: [BrDead], scripts: 41, calls: 65}
+globals:
+  - name: Level
+    group: missions
+    description: The current level's number.
+    scan: {scripts: 56, value: number}
+```
+
+- A helper's `scan` gives its function's number among the chunk's (`function`), its parameter count, the natives and
+  other helpers it calls or names as a callback, how many of the disc's other scripts call it and their calls, and
+  `at_load`, `registered` and `deleted_by` when `global.lua`'s main chunk runs it while loading, passes its name to a
+  binding, or a function sets it to nil. `params` must name as many parameters as `scan.params` counts.
+- A global's `scan` gives how many other scripts read it, the kind of value it ends with (`number`, `string`, `table`,
+  `nil` or `computed`) and `cleared: true` when the main chunk ends by setting it to nil.
+- A parameter name YAML reads as something else (`on`, `yes`, `no`) cannot be used; a global named `true` or `false` is
+  quoted.
 
 ## Reference lists {#reference-lists}
 

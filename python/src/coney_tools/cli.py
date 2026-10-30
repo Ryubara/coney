@@ -704,6 +704,17 @@ def _add_bindings_commands(groups: Any) -> None:
         "disc", nargs="?", help="a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml"
     )
     usage.add_argument("--check", action="store_true", help="change nothing; exit 1 when a field is stale")
+    helpers = commands.add_parser(
+        "scan-helpers",
+        help="set the counts of research/script-helpers.yaml from global.lua and the scripts on your disc",
+    )
+    helpers.add_argument(
+        "disc", nargs="?", help="a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml"
+    )
+    helpers.add_argument(
+        "--chunks", type=Path, help="a folder of compiled chunks (`wad extract` output) instead of the disc"
+    )
+    helpers.add_argument("--check", action="store_true", help="change nothing; exit 1 when a count is stale")
 
 
 def _add_refs_commands(groups: Any) -> None:
@@ -1190,6 +1201,8 @@ def _run(args: argparse.Namespace) -> int:
             return natives_cli.run_mission1(args.disc, args.check)
         if args.command == "scan-usage":
             return natives_cli.run_missions(args.disc, args.check)
+        if args.command == "scan-helpers":
+            return natives_cli.run_helpers(args.disc, args.chunks, args.check)
         return natives_cli.run_coney(args.check) if args.command == "sync-coney" else natives_cli.run_stats()
     if args.group == "refs":
         if args.command == "render":
