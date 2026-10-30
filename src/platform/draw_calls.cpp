@@ -53,7 +53,10 @@ Layer& layer() {
 }
 
 // The stream being recorded, or null.
-DrawStream* stream() { return layer().stream ? &*layer().stream : nullptr; }
+DrawStream* stream() {
+    std::optional<DrawStream>& recorded = layer().stream;
+    return recorded.has_value() ? &recorded.value() : nullptr;
+}
 
 // Whether `state` is one of librw's render states.
 bool knownState(rw::int32 state) { return state >= 0 && static_cast<std::size_t>(state) < kStateCount; }
@@ -193,13 +196,12 @@ void noteUpload(const rw::Raster* raster, rw::int32 level, std::span<const std::
     RasterFacts& facts = state.rasters[raster];
     // The raster's digest chains its uploads in order: the old digest, the level, the level's pixels.
     std::array<std::uint8_t, 20> chained{};
-    for (int i = 0; i < 8; ++i) {
-        chained[static_cast<std::size_t>(i)] = static_cast<std::uint8_t>(facts.digest >> (8 * i));
-        chained[static_cast<std::size_t>(12 + i)] = static_cast<std::uint8_t>(pixels >> (8 * i));
+    for (std::size_t i = 0; i < 8; ++i) {
+        chained[i] = static_cast<std::uint8_t>(facts.digest >> (8 * i));
+        chained[12 + i] = static_cast<std::uint8_t>(pixels >> (8 * i));
     }
-    for (int i = 0; i < 4; ++i) {
-        chained[static_cast<std::size_t>(8 + i)] =
-            static_cast<std::uint8_t>(static_cast<std::uint32_t>(level) >> (8 * i));
+    for (std::size_t i = 0; i < 4; ++i) {
+        chained[8 + i] = static_cast<std::uint8_t>(static_cast<std::uint32_t>(level) >> (8 * i));
     }
     facts.digest = pixelDigest(chained);
     facts.digested = true;
@@ -419,7 +421,7 @@ void beginCameraUpdate(rw::Camera* camera) {
             out->word(target != nullptr ? static_cast<std::uint32_t>(target->height) : 0);
         }
     }
-    if (forwarding()) {
+    if (forwarding() && camera != nullptr) {
         camera->beginUpdate();
     }
 }

@@ -32,6 +32,7 @@
 #include "platform/render_engine.h"
 #include "platform/throw_arc_renderer.h"
 #include "support/fixtures.h"
+#include "support/optional_value.h"
 
 namespace draw = coney::platform::draw;
 using coney::graphics::LogicalQuad;
@@ -80,13 +81,17 @@ DrawStream drawTwoDimensionalScene(RenderEngine& engine) {
     const LogicalQuad rect{4.0F, 4.0F, 12.0F, 12.0F, UvRect{}, Rgba{200, 200, 200, 255}};
     engine.drawWindowRects(std::span<const LogicalQuad>(&rect, 1));
     engine.present();
-    REQUIRE(engine.drawStream().has_value());
-    return *engine.drawStream();
+    const std::optional<DrawStream>& recorded = engine.drawStream();
+    REQUIRE(recorded.has_value());
+    return coney::test::got(recorded);
 }
 
+// The bytes of a 4 x 4 RGBA texture.
+constexpr std::size_t kCheckerBytes = 64;
+
 // A 4 x 4 RGBA checkerboard of two colours, Coney's own texture.
-std::array<std::uint8_t, 4 * 4 * 4> checkerboard(std::uint8_t dark, std::uint8_t light) {
-    std::array<std::uint8_t, 4 * 4 * 4> texels{};
+std::array<std::uint8_t, kCheckerBytes> checkerboard(std::uint8_t dark, std::uint8_t light) {
+    std::array<std::uint8_t, kCheckerBytes> texels{};
     for (std::size_t y = 0; y < 4; ++y) {
         for (std::size_t x = 0; x < 4; ++x) {
             const std::uint8_t value = ((x + y) % 2 == 0) ? dark : light;
@@ -192,7 +197,7 @@ DrawStream drawMeshScene(const MeshScene& scene) {
     camera->destroy();
     raster->destroy();
     REQUIRE(stream.has_value());
-    return *stream;
+    return coney::test::got(stream);
 }
 
 // A WAD of one file that is not the arc's texture: the arc then draws untextured, as ThrowArcRenderer says.
@@ -230,7 +235,7 @@ DrawStream drawThrowArcScene(const coney::io::Wad& wad) {
     renderer.draw(strip);
     std::optional<DrawStream> stream = draw::stopRecording();
     REQUIRE(stream.has_value());
-    return *stream;
+    return coney::test::got(stream);
 }
 
 } // namespace
@@ -313,7 +318,7 @@ TEST_CASE("headless the draw layer records without reaching librw or OpenGL", "[
     REQUIRE(raster != nullptr);
     CHECK(raster->width == 64);
     draw::copyFrameToRaster(raster, 0, 0, 64, 32, 448);
-    std::vector<std::uint8_t> rgba(64 * 32 * 4);
+    std::vector<std::uint8_t> rgba(8192); // 64 x 32 pixels of 4 bytes
     CHECK_FALSE(draw::readFrame(0, 0, 64, 32, rgba.data()));
     draw::setWireframe(true);
     draw::setWireframe(false);
@@ -323,12 +328,13 @@ TEST_CASE("headless the draw layer records without reaching librw or OpenGL", "[
     CHECK(draw::getRenderState(rw::ALPHATESTREF) == 77);
     draw::setRenderState(rw::TEXTUREADDRESS, rw::Texture::CLAMP);
     CHECK(draw::getRenderState(rw::TEXTUREADDRESSV) == rw::Texture::CLAMP);
-    const std::optional<DrawStream> stream = draw::stopRecording();
+    const std::optional<DrawStream> recorded = draw::stopRecording();
     raster->destroy();
-    REQUIRE(stream.has_value());
-    CHECK(stream->counts().frameOps == 5);  // the copy, the read-back, two wireframe switches, the window target
-    CHECK(stream->counts().rasterOps == 2); // made, its levels set
-    CHECK(stream->hash() == 0xe7a0be90f5dddce0ULL);
+    REQUIRE(recorded.has_value());
+    const DrawStream stream = coney::test::got(recorded);
+    CHECK(stream.counts().frameOps == 5);  // the copy, the read-back, two wireframe switches, the window target
+    CHECK(stream.counts().rasterOps == 2); // made, its levels set
+    CHECK(stream.hash() == 0xe7a0be90f5dddce0ULL);
 }
 
 TEST_CASE("a PS2 raster is known by its texels and palette, not by where librw keeps them", "[platform][draw-stream]") {
@@ -359,10 +365,11 @@ TEST_CASE("a PS2 raster is known by its texels and palette, not by where librw k
     for (rw::Raster* raster : rasters) {
         raster->destroy();
     }
-    const std::optional<DrawStream> stream = draw::stopRecording();
-    REQUIRE(stream.has_value());
-    REQUIRE(stream->counts().rasterOps == 2); // one upload each
-    const std::vector<std::uint64_t> records = stream->recordHashes();
+    const std::optional<DrawStream> recorded = draw::stopRecording();
+    REQUIRE(recorded.has_value());
+    const DrawStream stream = coney::test::got(recorded);
+    REQUIRE(stream.counts().rasterOps == 2); // one upload each
+    const std::vector<std::uint64_t> records = stream.recordHashes();
     REQUIRE(records.size() == 2);
     CHECK(records[0] == records[1]);
 }
