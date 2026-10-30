@@ -41,10 +41,6 @@ tag = 14
 ["src/ai/boss_goals.h"]
 comment = 4
 
-["src/ai/brain.h"]
-comment = 38
-tag = 1
-
 ["src/ai/brain_events.cpp"]
 tag = 6
 
@@ -178,9 +174,6 @@ tag = 4
 
 ["src/ai/scripted_goals.cpp"]
 tag = 11
-
-["src/ai/scripted_goals.h"]
-comment = 4
 
 ["src/ai/scripted_hub.cpp"]
 tag = 16

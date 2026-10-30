@@ -122,9 +122,8 @@ void MoveToUseFlagGoal::resume(Brain& brain) {
     }
 }
 
-void MoveToUseFlagGoal::end(Brain& brain) { brain.stopMove(); }
-
-void MoveToUseFlagGoal::destroy(Brain& /*brain*/) {
+void MoveToUseFlagGoal::end(Brain& brain) {
+    brain.stopMove();
     if (m_release) {
         m_release();
         m_release = nullptr;

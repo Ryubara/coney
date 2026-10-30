@@ -115,6 +115,7 @@ inline constexpr std::uint64_t kThinkPeriod = 5;
 inline constexpr int kDefaultAttackDelayMs = 200;
 /// `CfgAttackDelay` by kind as `config_preload2` sets it, ms: the values the disc's scripts give, for a run without
 /// them.
+/// @coney-only the configuration scripts' values as defaults for a run without them
 [[nodiscard]] constexpr std::array<int, kAttackKinds> referenceAttackDelays() {
     std::array<int, kAttackKinds> delays{};
     delays.fill(kDefaultAttackDelayMs);
@@ -207,6 +208,7 @@ class Brain {
     /// Its human, and its type.
     [[nodiscard]] human::Human& human() { return *m_human; }
     [[nodiscard]] const human::Human& human() const { return *m_human; }
+    /// Its type (`+0x04`).
     [[nodiscard]] BrainType type() const { return m_type; }
     /// `HuSwitchPlayer`: the brain becomes a player's (BrainType::Player) or, with another `type`, an AI brain of that
     /// type that has lost the pad (its pad hook dropped). **Coney's**: the
@@ -215,6 +217,7 @@ class Brain {
     void setType(BrainType type);
     /// Enabled (`+0x08`): Brains skips a brain that is not.
     [[nodiscard]] bool enabled() const { return m_enabled; }
+    /// Sets the enabled byte.
     void setEnabled(bool enabled) { m_enabled = enabled; }
 
     // --- The scripts' hold (docs/research/ai-scripting.md#scripted, docs/research/ai/index.md#handlers).
@@ -223,10 +226,12 @@ class Brain {
     /// Coney has no weapons lying about yet, so it is only kept. True until set (**Coney choice**: the scripts turn it
     /// off in their set-up).
     [[nodiscard]] bool wantsWeapon() const { return m_wantsWeapon; }
+    /// Sets whether a thug goes for weapons.
     void setWantsWeapon(bool wants) { m_wantsWeapon = wants; }
     /// The script handle of its human (human vtable `+0x2c`): what its goals' callbacks and its gang's handlers pass;
     /// 0 (Coney's `NilHandle`) until the scripts name it.
     [[nodiscard]] double handle() const { return m_handle; }
+    /// Sets the script handle.
     void setHandle(double handle) { m_handle = handle; }
     /// Its human's character class (`HuCreate`'s type, which `GoalDealer` reads); -1 when not known. Setting it gives
     /// it to the human too (human `+0xcc`, which a Warrior's damage reads).
@@ -250,18 +255,23 @@ class Brain {
     void wakeUp() { m_knockedOut = false; }
     /// Whether he is knocked out (the brain stopped).
     [[nodiscard]] bool knockedOut() const { return m_knockedOut; }
+    /// Dead to the AI (`+0x09`).
     [[nodiscard]] bool dead() const { return m_dead; }
     /// What a player's brain calls when it gives up the pad (false) or takes it back (true).
     using PadControl = std::function<void(bool padControlled)>;
+    /// Sets what a player's brain calls when it gives up or takes back the pad.
     void setPadControl(PadControl control) { m_padControl = std::move(control); }
     /// Suspended (`+0x0a`, `BrSuspend`): its update keeps only the time.
     [[nodiscard]] bool suspended() const { return m_suspended; }
+    /// Sets the suspended byte.
     void setSuspended(bool suspended) { m_suspended = suspended; }
     /// Its human's gang (`+0x20c`); null for none. ai::Gangs sets it.
     [[nodiscard]] Gang* gang() const { return m_gang; }
+    /// Sets its gang (null for none).
     void setGang(Gang* gang) { m_gang = gang; }
     /// The formation it follows in (`+0x212`); null for none. ai::Formation sets it.
     [[nodiscard]] Formation* following() const { return m_following; }
+    /// Sets the formation it follows in (null for none).
     void setFollowing(Formation* formation) { m_following = formation; }
     /// Its human's event once the gang has passed on it (handler C of `Brain_OnEvent`): nothing for a dead brain, else
     /// its type's handler and the shared one (answerEvent(), docs/research/ai-brain-types.md). Returns
@@ -270,19 +280,24 @@ class Brain {
     bool onEvent(const BrainEvent& event);
     /// Whether its human's health running out has been told (event 18).
     [[nodiscard]] bool downReported() const { return m_downReported; }
+    /// Sets whether the health running out has been told.
     void setDownReported(bool reported) { m_downReported = reported; }
     /// Whether its human's lying on the ground has been told (event kEventPutDown) since he last stood.
     [[nodiscard]] bool lyingReported() const { return m_lyingReported; }
+    /// Sets whether the lying on the ground has been told.
     void setLyingReported(bool reported) { m_lyingReported = reported; }
     /// Its human's health when the brains last looked (Brains::reportDamage()); -1 before the first look.
     [[nodiscard]] int seenHealth() const { return m_seenHealth; }
+    /// Sets the health seen at the last look.
     void setSeenHealth(int health) { m_seenHealth = health; }
     /// Health its human lost before this step's tactics ran, not yet reported as event 1 (Brains::noteDamage()).
     [[nodiscard]] int unreportedDamage() const { return m_unreportedDamage; }
+    /// Sets the health lost and not yet reported.
     void setUnreportedDamage(int damage) { m_unreportedDamage = damage; }
     /// What its human's own script handlers are reached through (deliverEvent()); null for none. The level's scripted
     /// brains set it when they bind the brain to a handle.
     [[nodiscard]] ScriptServices* services() const { return m_services; }
+    /// Sets what its human's script handlers are reached through.
     void setServices(ScriptServices* services) { m_services = services; }
 
     // --- The update (docs/research/ai/index.md#update-goals).
@@ -304,6 +319,7 @@ class Brain {
     void think(std::uint64_t nowMs);
     /// Updates and thinks so far (`+0x34`, `+0x38`).
     [[nodiscard]] std::uint64_t updates() const { return m_updates; }
+    /// Thinks so far (`+0x38`).
     [[nodiscard]] std::uint64_t thinks() const { return m_thinks; }
     /// The game time of the update under way (or the last), ms (`+0x30`).
     [[nodiscard]] std::uint64_t nowMs() const { return m_nowMs; }
@@ -350,6 +366,7 @@ class Brain {
     /// The top goal; null when the stack is empty.
     [[nodiscard]] Goal* topGoal() { return m_goals.empty() ? nullptr : m_goals.back().get(); }
     [[nodiscard]] const Goal* topGoal() const { return m_goals.empty() ? nullptr : m_goals.back().get(); }
+    /// How many goals are on the stack.
     [[nodiscard]] std::size_t goalCount() const { return m_goals.size(); }
     /// The goal `index` places above the bottom of the stack (0 is the bottom); null past the top.
     [[nodiscard]] const Goal* goalAt(std::size_t index) const {
@@ -390,9 +407,11 @@ class Brain {
     bool clearActions();
     /// Brain `+0xcc` bit 1: a GiveWay action lives (asked to give way again, the brain answers yes at once).
     [[nodiscard]] bool givingWay() const { return m_givingWay; }
+    /// Sets the GiveWay bit.
     void setGivingWay(bool on) { m_givingWay = on; }
     /// Brain `+0xcc` bit 4: inside a push-aside, which keeps its recursion from looping.
     [[nodiscard]] bool pushingAside() const { return m_pushingAside; }
+    /// Sets the push-aside bit.
     void setPushingAside(bool on) { m_pushingAside = on; }
     /// Actions queued.
     [[nodiscard]] std::size_t actionCount() const { return m_actionCount; }
@@ -429,7 +448,9 @@ class Brain {
     [[nodiscard]] const FightBook& fightBook() const { return m_fight; }
     /// The `CfgGang` fight values of this brain's gang's kind (all 0 without a gang).
     [[nodiscard]] GangFightValues gangFight() const;
+    /// Whether the Melee goal may send the human after its target (`+0x2d3`).
     [[nodiscard]] bool mayApproach() const { return m_mayApproach; }
+    /// Sets the approach byte.
     void setMayApproach(bool may) { m_mayApproach = may; }
     /// Adds `enemy` to the enemy list (`+0x164`, up to 16), and this brain to `enemy`'s unless both are players'; when
     /// its gang's tactic does not leave the members their own goals, the tactic hears of it (event `0xb`). Nothing when
@@ -469,34 +490,42 @@ class Brain {
     /// Attackable (`+0x11f`, `GangSetAttackable`; 1 when a brain is made): other AI may attack its human now
     /// (ai::attackableBy()).
     [[nodiscard]] bool attackable() const { return m_attackable; }
+    /// Sets the attackable byte.
     void setAttackable(bool attackable) { m_attackable = attackable; }
     /// Threat response (`+0x21c`, `GangSetThreatResponse`): 0 never fights. **Coney choice**: 2 until set, as
     /// `level99` sets its fighters.
     void setThreatResponse(int response) { m_threatResponse = response; }
+    /// The threat response (`+0x21c`).
     [[nodiscard]] int threatResponse() const { return m_threatResponse; }
     /// A Warrior hitting back at a player who hit him (`+0x2e5`): he and any pad player are threats to each other
     /// (ai::isThreat()). **Coney stand-in**: the hit-back (`WarriorBrain_OnHitByChief`) is not built, so only a test
     /// sets it.
     [[nodiscard]] bool hittingBack() const { return m_hittingBack; }
+    /// Sets the hit-back byte.
     void setHittingBack(bool on) { m_hittingBack = on; }
     /// The turf limit (`+0x14d`): set, a gang with a turf may take enemies only inside it; the gang's alert state
     /// (Gang::setAlertState()) clears it while fighting and sets it again when calm. **Coney stand-ins**: set when a
     /// brain is made (the original's starting value is not on the page), and nothing reads it yet, as Coney keeps no
     /// turf-only target test (docs/research/ai-fights.md#enemy-score).
     [[nodiscard]] bool keepsToTurf() const { return m_keepsToTurf; }
+    /// Sets the turf limit.
     void setKeepsToTurf(bool on) { m_keepsToTurf = on; }
     /// The melee ranges (`+0x13c`, `+0x140`, `BrSetMeleeRange`).
     void setMeleeRange(float nearRange, float farRange);
     /// The far and near melee ranges.
     [[nodiscard]] float meleeFar() const { return m_meleeFar; }
+    /// The near melee range (`+0x13c`).
     [[nodiscard]] float meleeNear() const { return m_meleeNear; }
 
     // --- Pacing, chances and rolls.
 
     /// The earliest time this brain may attack again (`+0x1e8`) and its human may be attacked again (`+0x1ec`), ms.
     [[nodiscard]] std::uint64_t nextAttackMs() const { return m_nextAttackMs; }
+    /// Sets the earliest time it may attack again.
     void setNextAttackMs(std::uint64_t ms) { m_nextAttackMs = ms; }
+    /// The earliest time its human may be attacked again (`+0x1ec`).
     [[nodiscard]] std::uint64_t attackableAtMs() const { return m_attackableAtMs; }
+    /// Sets the earliest time its human may be attacked again.
     void setAttackableAtMs(std::uint64_t ms) { m_attackableAtMs = ms; }
     /// How many attacks on the human were announced since the last update and seen (`+0x200`): the starts (event
     /// `0x10`) within the range and field of view, with a clear line of sight to the attacker.
@@ -507,6 +536,7 @@ class Brain {
     void setSight(float range, float fieldOfView);
     /// The sight range (`+0x130`, `HuSetLOSRange`) and field of view (`+0x12c`, `BrSetFOV`).
     [[nodiscard]] float sightRange() const { return m_sightRange; }
+    /// The field of view (`+0x12c`, a half-angle in radians).
     [[nodiscard]] float fieldOfView() const { return m_fieldOfView; }
     /// The senses and reactions the story scripts set.
     [[nodiscard]] BrainSenses& senses() { return m_senses; }
@@ -551,6 +581,7 @@ class Brain {
     /// below 0 (human::aiMaxTurn()); 0 when made. Goals raise it for a run-in and restore it at their end.
     /// @orig 0x0028cdf8 Brain_SetTurnBoost (unknown)
     void setTurnBoost(int boost);
+    /// The turn boost (`+0x0b`).
     [[nodiscard]] int turnBoost() const { return m_turnBoost; }
     /// Asks the human to climb this update toward `direction` (the route's climb leg).
     void requestClimb(anim::Vec3 direction);
@@ -562,9 +593,11 @@ class Brain {
 
     /// The route planner of the level's path data (null when there is none: a move then goes straight).
     [[nodiscard]] RoutePlanner* planner() const { return m_planner; }
+    /// Sets the route planner (null for none).
     void setPlanner(RoutePlanner* planner) { m_planner = planner; }
     /// The level's collision the brain's sight rays are cast through (null for none: every line of sight is clear).
     [[nodiscard]] const raycast::CollisionMesh* collision() const { return m_collision; }
+    /// Sets the level's collision (null for none).
     void setCollision(const raycast::CollisionMesh* collision) { m_collision = collision; }
     /// Whether this brain's human can see `other`'s (ai::canSeeHuman()) within `range`.
     [[nodiscard]] bool canSee(const Brain& other, float range) const;
@@ -572,9 +605,11 @@ class Brain {
     [[nodiscard]] bool hasLineOfSight(const Brain& other) const;
     /// Why the last move failed (`+0x284`).
     [[nodiscard]] MoveFailure moveFailure() const { return m_moveFailure; }
+    /// Sets why the last move failed.
     void setMoveFailure(MoveFailure failure) { m_moveFailure = failure; }
     /// The point a move aims at now and its radius (`+0x90`, `+0x118`): what another human's steering would read.
     [[nodiscard]] anim::Vec3 moveAim() const { return m_moveAim; }
+    /// The move aim's radius (`+0x118`).
     [[nodiscard]] float moveAimRadius() const { return m_moveAimRadius; }
     void setMoveAim(anim::Vec3 point, float radius);
     /// The scene's brains (every brain, this one included), which the sector record counts round this one; Brains
@@ -588,6 +623,7 @@ class Brain {
     /// The route node a move heads for now (`RouteState_CurrentNode` on the route state at `+0xe0`): the move action
     /// writes it each update, nothing when it goes straight or no move runs.
     [[nodiscard]] std::optional<std::uint32_t> routeNode() const { return m_routeNode; }
+    /// Sets the route node the move heads for (nothing for none).
     void setRouteNode(std::optional<std::uint32_t> node) { m_routeNode = node; }
     /// The neighbour sectors round this brain's human, rebuilt first when at least `maxAgeMs` old
     /// (docs/research/ai-moving.md#neighbour-sectors): callers pass kSectorAgeMs, or kSectorGiveWayAgeMs for giving
@@ -598,6 +634,7 @@ class Brain {
     [[nodiscard]] const Sectors& sectorRecord() const { return m_sectors; }
     /// The brain's slot among the scene's brains (its index, which staggers periodic work across brains).
     [[nodiscard]] std::size_t slot() const { return m_slot; }
+    /// Sets its slot among the scene's brains.
     void setSlot(std::size_t slot) { m_slot = slot; }
     /// Writes the stick as an attack action does (the snap's): `way` across the ground (world axes; its length is
     /// ignored) at `magnitude`, with the world's +y as the stick's up.
@@ -745,9 +782,11 @@ class Brain {
 /// before it back when it ends, so a nested cause (a hit back inside a pick) wins only for its own changes.
 class TargetCauseScope {
   public:
+    /// Names `cause` on `brain` until the scope ends.
     TargetCauseScope(Brain& brain, TargetCause cause) : m_brain(brain), m_before(brain.targetCause()) {
         brain.setTargetCause(cause);
     }
+    /// Puts the cause before it back.
     ~TargetCauseScope() { m_brain.setTargetCause(m_before); }
     TargetCauseScope(const TargetCauseScope&) = delete;
     TargetCauseScope& operator=(const TargetCauseScope&) = delete;

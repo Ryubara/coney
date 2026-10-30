@@ -1344,6 +1344,13 @@ Build in this order; each step is testable without the game.
 - What reads `RunCarrotGoal`'s hostile flag (goal `+0x25`, set by `RunCarrotGoal_Init` `0x002e1230`,
   [AI goals](../ai-goals.md#by-address)); Coney does not model it.
 
+### The abort's mode {#q-abort-mode}
+
+`Action_AbortAndDestroy` (`0x002f9de0`) passes its caller's second argument to the class's Abort: 0 from a normal end
+(`Brain_RunActions`), 1 from a clear (`Brain_ClearActions`). Which classes read it is not traced; Coney's Abort takes no
+mode, and each action tells the two apart by its own state (the taunt's ended flag). Confirmed (code) at `0x002f9de0`,
+`0x0028fe28` and `0x0028db20` for the passing; the readers are speculative until each class's Abort is read.
+
 ## How this was checked
 
 All five were run (2026-10-05, PCSX2 2.9.94) with the scenarios `civ_fight`, `civ_block`, `civ_block_fov`,

@@ -1145,6 +1145,11 @@ level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::knockOut"
 status = "compared"
 
+[[function.gaps]]
+what = "a human knocked out while wounded still hears event 0x12"
+relation = "not-ported"
+issue = 685
+
 [[function]]
 address = 0x0028c5d8
 name = "Brain_OnArrested"
@@ -1502,7 +1507,7 @@ relation = "not-ported"
 issue = 635
 
 [[function.gaps]]
-what = "an out-of-health human and a suspended brain in a scene skip the goals too, and the goal loop is bounded"
+what = "an out-of-health human and a suspended brain in a scene skip the goals too, the goal loop is bounded, and a goal that changed the stack under itself is not popped again"
 relation = "stand-in"
 issue = 635
 
@@ -4654,6 +4659,10 @@ level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::finishAction"
 status = "compared"
 
+[[function.gaps]]
+what = "Abort takes no mode (0 a normal end, 1 a clear); each action tells the two apart by its own state"
+relation = "stand-in"
+question = "ai/index.md#q-abort-mode"
 
 [[function]]
 address = 0x002f9e48
@@ -4664,6 +4673,12 @@ role = "counts the start delay down against the brain's last update, starts the 
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::stepAction"
 status = "compared"
+
+[[function.gaps]]
+what = "the random delay is drawn from the brain's generator, not the shared stream 0x006eb880"
+relation = "stand-in"
+issue = 689
+
 [[function]]
 address = 0x002f9f48
 name = "FidgetAction_Init"
