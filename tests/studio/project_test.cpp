@@ -11,6 +11,7 @@
 
 #include "core/error.h"
 #include "studio/project_manifest.h"
+#include "studio/projects_folder.h"
 #include "support/fixtures.h"
 
 using coney::ErrorCode;
@@ -180,4 +181,13 @@ TEST_CASE("the File system lists a project folder, folders first, and nothing ab
 
     CHECK(project->list("project:/..").error().code == ErrorCode::InvalidArgument);
     CHECK(project->list("project:/levels/main.layout").error().code == ErrorCode::NotFound);
+}
+
+TEST_CASE("a path goes to UTF-8 text and back, whatever letters it holds", "[studio]") {
+    // The text fields and SDL hold UTF-8; on Windows the narrow string of a path would lose the letter.
+    const std::filesystem::path path = std::filesystem::path(std::u8string(u8"projects/café über/yard"));
+    const std::string text = coney::studio::pathToUtf8(path);
+    CHECK(text.find("caf\xC3\xA9") != std::string::npos);
+    CHECK(coney::studio::pathFromUtf8(text) == path);
+    CHECK(coney::studio::pathFromUtf8("").empty());
 }
