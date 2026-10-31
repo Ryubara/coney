@@ -175,6 +175,8 @@ class SourceFile:
     #: "Outer::Inner" -> whether the type is public: every class around it is open (`public:`, or a `struct`'s start)
     #: where it is declared, and it is in no anonymous namespace.
     class_public: dict[str, bool] = field(default_factory=dict)
+    #: "Outer::Inner" -> the line of the `}` that closes the type's body, so a change inside it touches the type.
+    class_ends: dict[str, int] = field(default_factory=dict)
 
 
 def parse_tags(comment: str, first_line: int) -> list[Tag]:
@@ -296,6 +298,7 @@ class _Reader:
         self.class_comments: dict[str, str] = {}
         self.class_lines: dict[str, int] = {}
         self.class_public: dict[str, bool] = {}
+        self.class_ends: dict[str, int] = {}
         self.malformed: list[tuple[int, str]] = []
         self.paren = 0  # open parentheses: a brace or `;` inside them is code, not structure
         self.statement: list[str] = []
@@ -455,6 +458,8 @@ class _Reader:
             return
         if frame.function is not None:
             frame.function.lines = self.line - frame.function.line + 1
+        if frame.kind == "class":
+            self.class_ends["::".join([*self._class_scope(), frame.name])] = self.line
         if frame.kind in ("namespace", "anon", "class"):
             self._drop_lead("(end)")
         self._reset_statement()
@@ -589,6 +594,7 @@ class _Reader:
             self.malformed,
             self.class_lines,
             self.class_public,
+            self.class_ends,
         )
 
     def _skip_string(self, i: int) -> int:

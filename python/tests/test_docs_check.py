@@ -377,6 +377,86 @@ def test_the_gate_checks_the_legacy_file_when_a_research_page_changes(tmp_path: 
     assert any("good.md now passes 'history'" in line for line in problems)
 
 
+# --- the touch-it rule's reach: the sections a change touched ---------------------------------------------------------
+
+#: A guide of two sections, each with a phrase the stale-wording rule refuses.
+TWO_SECTIONS = "# Widget\n\n## One\n\nThe list does not exist yet.\n\n## Two\n\nThe table does not exist yet.\n"
+
+
+def guide_on_base(tmp_path: Path, text: str = TWO_SECTIONS) -> Path:
+    """A checkout whose branch `base` holds `GUIDE` with `text`, and a branch `edit` left from it."""
+    root = checkout_with_conventions(tmp_path)
+    write(root, GUIDE, text)
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "the guide")
+    git(root, "checkout", "-q", "-b", "base")
+    git(root, "checkout", "-q", "-b", "edit")
+    return root
+
+
+def test_a_changed_section_of_an_old_page_is_held_and_the_rest_is_only_listed(tmp_path: Path) -> None:
+    root = guide_on_base(tmp_path)
+    write(root, GUIDE, TWO_SECTIONS + "\nA line added to section Two.\n")
+    result = docs_check.check_changed(root, "base", docs_check.context_for(root))
+    found = [(item.line, item.rule, item.severity) for item in result.findings[GUIDE]]
+    # Section Two (changed) owes the standard; section One (unchanged) is listed as information, not a failure.
+    assert found == [(5, "stale-wording", "info"), (9, "stale-wording", "error")]
+    assert list(result.failed) == [GUIDE]
+
+
+def test_a_subsection_of_a_long_page_is_a_section_of_its_own(tmp_path: Path) -> None:
+    # A research page's `##` sections run to hundreds of lines: `standards.touch.section_level` makes `###` a section.
+    filler = "A line of text.\n\n" * 200
+    text = f"# Widget\n\n## Behaviour\n\n### Spin\n\nIt does not exist yet.\n\n{filler}### Stop\n\n{filler}"
+    root = guide_on_base(tmp_path, text)
+    write(root, GUIDE, text + "The stop does not exist yet.\n")
+    result = docs_check.check_changed(root, "base", docs_check.context_for(root))
+    errors = [item.line for item in result.findings[GUIDE] if item.severity == "error"]
+    assert errors == [len(text.splitlines()) + 1]
+    assert [item.line for item in result.findings[GUIDE] if item.severity == "info"] == [7]
+
+
+def test_a_change_that_fixes_its_own_section_passes_whatever_the_rest_of_the_page_holds(tmp_path: Path) -> None:
+    root = guide_on_base(tmp_path)
+    write(root, GUIDE, TWO_SECTIONS.replace("The table does not exist yet.", "The table is in `table.md`."))
+    result = docs_check.check_changed(root, "base", docs_check.context_for(root))
+    assert result.failed == {}
+    assert [(item.line, item.severity) for item in result.findings[GUIDE]] == [(5, "info")]
+
+
+def test_a_new_page_is_held_whole(tmp_path: Path) -> None:
+    root = guide_on_base(tmp_path)
+    write(root, "docs/guides/fresh.md", TWO_SECTIONS)
+    result = docs_check.check_changed(root, "base", docs_check.context_for(root))
+    assert [item.severity for item in result.failed["docs/guides/fresh.md"]] == ["error", "error"]
+
+
+def test_a_page_named_on_the_command_line_is_held_whole(tmp_path: Path) -> None:
+    root = guide_on_base(tmp_path)
+    result = docs_check.check_paths(root, [GUIDE], docs_check.context_for(root))
+    assert [item.severity for item in result.failed[GUIDE]] == ["error", "error"]
+
+
+def test_the_command_lists_what_lies_outside_the_change_in_one_line_or_each_with_cleanup(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = guide_on_base(tmp_path)
+    monkeypatch.chdir(root)
+    write(root, GUIDE, TWO_SECTIONS.replace("The table does not exist yet.", "The table is in `table.md`."))
+    assert docs_cli.run_check([], "base", False, False) == 0
+    shown = capsys.readouterr().out
+    assert f"{GUIDE}:1: info: touch-it: 1 finding outside what the change touched (stale-wording 1)" in shown
+    assert docs_cli.run_check([], "base", False, False, cleanup=True) == 0
+    assert f"{GUIDE}:5: info: stale-wording:" in capsys.readouterr().out
+
+
+def test_the_gate_reports_what_lies_outside_the_change_as_a_note(tmp_path: Path) -> None:
+    root = guide_on_base(tmp_path)
+    write(root, GUIDE, TWO_SECTIONS.replace("The table does not exist yet.", "The table is in `table.md`."))
+    _, problems, notes = check_cli._standards(root, "base")
+    assert problems == [] and any("info: touch-it" in line for line in notes)
+
+
 def test_a_long_page_that_otherwise_passes_is_only_a_note_in_the_gate(tmp_path: Path) -> None:
     root = checkout_with_conventions(tmp_path)
     write(root, "docs/guides/long.md", "# Long\n\n" + "A line.\n\n" * docs_check.LENGTH_WARNING["guide"])

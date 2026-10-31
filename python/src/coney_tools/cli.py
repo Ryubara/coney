@@ -441,6 +441,11 @@ def _add_docs_commands(groups: Any) -> None:
     check.add_argument("--base", default="origin/main", help="the branch the change is measured from")
     check.add_argument("--summary", action="store_true", help="also count the pages that pass, per kind, and per rule")
     check.add_argument("--quiet", action="store_true", help="print only the counts, not each finding")
+    check.add_argument(
+        "--cleanup",
+        action="store_true",
+        help="list each finding of a touched file outside what the change touched (for cleanup issues)",
+    )
     render = commands.add_parser(
         "render",
         help="write the parameter reference of every command into its guide page (generated blocks), from the parsers",
@@ -1150,7 +1155,7 @@ def _run(args: argparse.Namespace) -> int:
             return docs_cli.run_legacy(
                 "init" if args.init else "prune" if args.prune else "check" if args.check else "scan", args.base
             )
-        return docs_cli.run_check(args.paths, args.base, args.summary, args.quiet)
+        return docs_cli.run_check(args.paths, args.base, args.summary, args.quiet, args.cleanup)
     if args.group == "issue":
         return issue_cli.run_issue(args)
     if args.group == "claim":

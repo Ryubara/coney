@@ -6,9 +6,10 @@ sections of its kind, a level beside every address it cites, addresses that reso
 hand-written page keeps the Style rules that a program can see (no machine paths, no time-bound wording, `repo:` links,
 roles not people, no repository or site address). An engine page (`docs/engine/`, `docs_engine`) keeps those and,
 because it cites Coney's code against the original, the history, address and landing-page rules. The check runs on the
-pages a change touches and on those only, so the standard ratchets: whoever touches a page brings the whole page up to
-it, and a research page that cannot meet the standard yet is listed in the legacy file (`research_legacy`), which
-excuses it from the rules it fails and no more.
+pages a change touches and on those only, and on a page that was there before only in the sections the change touched
+(`standards.touch`): a finding elsewhere on the page is reported as `info` and fails nothing, a new page meets the
+standard whole. A research page that cannot meet the standard yet is listed in the legacy file (`research_legacy`),
+which excuses it from the rules it fails outside the sections a change touches.
 
 Everything here is a function of the page text, so the tests use made-up pages. The heuristics are deliberately
 forgiving (they flag what is surely a gap, not what might be one); each is described where it is implemented and in
@@ -18,6 +19,7 @@ docs/guides/coney-tools-build.md#docs.
 from __future__ import annotations
 
 import bisect
+import dataclasses
 import posixpath
 from collections import Counter
 from collections.abc import Callable, Iterable
@@ -27,7 +29,7 @@ from pathlib import Path
 from coney_tools import docs_legacy, local_gate, source_files, standards_check
 from coney_tools.audit_files import repository_address_terms
 from coney_tools.config import ConfigError
-from coney_tools.conventions import Research, load_conventions
+from coney_tools.conventions import Research, TouchScope, load_conventions
 from coney_tools.docs_engine import FOLDER as ENGINE_FOLDER
 from coney_tools.docs_engine import INDEX as ENGINE_INDEX
 from coney_tools.docs_engine import check_engine, index_finding
@@ -58,11 +60,13 @@ LENGTH_WARNING: dict[str, int] = {"guide": 800, "engine": 800}
 class Context:
     """What the rules take from the repository: the words that must not name a person (`repo.wording.avoid`), the
     lower-case strings that spell the repository's and the docs site's address and, for research pages, everything the
-    research standard checks against (`ResearchEnv`; without it a research page is held to the Style rules only)."""
+    research standard checks against (`ResearchEnv`; without it a research page is held to the Style rules only) and how
+    far the touch-it rule reaches (`standards.touch`; without it a touched page is held whole)."""
 
     avoid: tuple[str, ...] = ()
     address_terms: tuple[str, ...] = ()
     research: ResearchEnv | None = None
+    touch: TouchScope | None = None
 
 
 @dataclass
@@ -115,10 +119,10 @@ def _check_length(kind: str, text: str) -> Iterable[Finding]:
 # --- the research standard and the legacy file -----------------------------------------------------------------------
 
 
-def _touched(page: Page, lines: frozenset[int]) -> Callable[[Finding], bool]:
-    """A test for "this finding is in a section the change touched": the sections are the level-2 headings (and the
-    title's part above the first), and `lines` are the lines the change added or changed."""
-    starts = [heading.line for heading in page.headings if heading.level <= 2] or [1]
+def _touched(page: Page, lines: frozenset[int], level: int) -> Callable[[Finding], bool]:
+    """A test for "this finding is in a section the change touched": the sections start at the headings of `level` or
+    above (and the title's part above the first is one), and `lines` are the lines the change added or changed."""
+    starts = [heading.line for heading in page.headings if heading.level <= level] or [1]
     changed = {max(bisect.bisect_right(starts, number) - 1, 0) for number in lines}
     return lambda finding: max(bisect.bisect_right(starts, finding.line) - 1, 0) in changed
 
@@ -128,11 +132,14 @@ def _untouched(finding: Finding) -> bool:
     return False
 
 
-def _check_research(path: str, page: Page, env: ResearchEnv, touch: Touch, style: list[Finding]) -> list[Finding]:
+def _check_research(
+    path: str, page: Page, env: ResearchEnv, touch: Touch, style: list[Finding], level: int
+) -> list[Finding]:
     """The research standard for `path` and its `style` findings, with the legacy file's excuses applied. A change that
-    touches a listed page ends the excuse for every rule but the length and the grading of the sections it leaves
-    alone (`apply_legacy`). A page git sees as moved is read the same way, from the lines git's diff of the renamed pair
-    changes, but its entry excuses the grading alone: every other rule it lists is checked in full, the length too."""
+    touches a listed page ends the excuse in the sections (headings of `level` or above) it touches, the length aside
+    (`apply_legacy`). A page git sees as moved is read from the lines git's diff of the renamed pair changes, but its
+    entry excuses the grading alone, outside the sections the move changed: every other rule it lists is checked in
+    full, the length too."""
     moved = touch.moved_from is not None
     excused = env.legacy.rules(path)
     if moved:
@@ -150,11 +157,27 @@ def _check_research(path: str, page: Page, env: ResearchEnv, touch: Touch, style
             )
         )
         return findings
-    touched: Callable[[Finding], bool] | None = _touched(page, touch.lines) if touch.lines else None
+    touched: Callable[[Finding], bool] | None = _touched(page, touch.lines, level) if touch.lines else None
     if moved and touched is None:
         # A move that changed no line still ends the excuse of everything but the grading of its sections.
         touched = _untouched
-    return apply_legacy(findings, excused, env.research.files.legacy, touched)
+    return apply_legacy(findings, excused, env.research.files.legacy, touched, scoped=not moved)
+
+
+def _scope(found: list[Finding], page: Page, touch: Touch | None, scope: TouchScope | None) -> list[Finding]:
+    """The touch-it rule's reach on a page that was there before the change: an error outside the sections the change
+    touched becomes `info`, which fails nothing, unless its rule is one of `scope.page_rules`. A warning stays one (it
+    fails nothing either, and a legacy page's excuses read as warnings). A new page, a page git sees as moved
+    (`_check_research` reads it) and a page checked by name are held whole."""
+    if touch is None or touch.new or touch.moved_from is not None or touch.lines is None or scope is None:
+        return found
+    inside = _touched(page, touch.lines, scope.section_level)
+    return [
+        item
+        if item.severity != "error" or item.rule in scope.page_rules or inside(item)
+        else dataclasses.replace(item, severity="info")
+        for item in found
+    ]
 
 
 # --- checking ---------------------------------------------------------------------------------------------------------
@@ -171,12 +194,14 @@ def check_page(path: str, text: str, context: Context | None = None, touch: Touc
     page = read_page(text)
     found = list(check_style(path, page, kind, context.avoid, context.address_terms))
     if kind == "research" and context.research is not None:
-        found = _check_research(path, page, context.research, touch or Touch(), found)
+        # Without the touch-it scope a legacy page is read by level-2 sections, the scope's own default.
+        level = context.touch.section_level if context.touch is not None else 2
+        found = _check_research(path, page, context.research, touch or Touch(), found, level)
     if kind == "engine":
         found.extend(check_engine(path, page, context.research))
     if kind != "research":
         found.extend(_check_length(kind, text))
-    return sorted(found, key=lambda item: item.line)
+    return sorted(_scope(found, page, touch, context.touch), key=lambda item: item.line)
 
 
 def context_for(root: Path) -> Context:
@@ -200,7 +225,9 @@ def context_for(root: Path) -> Context:
         functions=entries_by_page(systems),
         source_files=ranges,
     )
-    return Context(conventions.repo.wording.avoid, tuple(repository_address_terms(root)), env)
+    return Context(
+        conventions.repo.wording.avoid, tuple(repository_address_terms(root)), env, conventions.standards.touch
+    )
 
 
 def check_files(root: Path, names: Iterable[str], context: Context, touches: dict[str, Touch] | None = None) -> Result:
@@ -222,7 +249,7 @@ def check_files(root: Path, names: Iterable[str], context: Context, touches: dic
 
 
 def change_touches(root: Path, base: str, names: Iterable[str], similarity: int | None = None) -> dict[str, Touch]:
-    """For each research page among `names`, what the change since HEAD left `base` did to it: whether it is new, the
+    """For each checked page among `names`, what the change since HEAD left `base` did to it: whether it is new, the
     page it was moved from when git sees a rename at or above `similarity` percent (the research conventions'
     `moved_similarity`; git's own 50 when None), and which lines it added or changed (committed or not).
 
@@ -234,7 +261,7 @@ def change_touches(root: Path, base: str, names: Iterable[str], similarity: int 
     held = link_resolver(root, since)
     touches: dict[str, Touch] = {}
     for name in names:
-        if kind_of(name) != "research":
+        if kind_of(name) not in CHECKED_KINDS or not (root / name).is_file():
             continue
         if name in moves:
             # A moved page is read line by line from git's diff of the renamed pair, so only what the move really
@@ -344,7 +371,7 @@ def _add_standards(result: Result, root: Path, base: str, names: list[str]) -> N
     for report in reports:
         if report.path not in result.findings:
             result.pages.append(report.path)
-        severity = "error" if report.error else "warning"
+        severity = "info" if report.info else "error" if report.error else "warning"
         result.findings.setdefault(report.path, []).append(Finding(report.rule, report.line, report.message, severity))
 
 

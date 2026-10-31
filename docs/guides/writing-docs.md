@@ -123,24 +123,31 @@ subject, updated in place, so a reader never has to work out which of two pages 
 
 ## Touch a page, fix the page {#touch-it}
 
-Whoever changes a page brings the **whole page** up to this standard in the same pull request: its kind's rules
-([Page kinds](#page-kinds)), the [Style](#style) rules and, for a research page, the [research page](#research-pages)
-rules and the [evidence levels](research-evidence.md#evidence-levels). There is no cleanup pass and no agent for
-one. A page nobody touches is left as it is until someone does, so the pages that matter, the ones people work in,
-reach the standard first. A program holds the line ([Checking a page](#checking)): it checks every page a change
-touches and fails on any rule the page breaks, however old the line that breaks it.
+Whoever changes a page brings **what it changed** up to this standard in the same pull request: every section of the
+page the change touches (a `##` or `###` heading and what is under it, up to the next such heading; the title's part
+above the first is one, with the front matter and the Verified line) meets its kind's rules ([Page kinds](#page-kinds)),
+the [Style](#style) rules and, for a research page, the [research page](#research-pages) rules and the [evidence
+levels](research-evidence.md#evidence-levels). A **new page** meets all of it. The rest of an old page does not fail the
+change, a maintainer decision of 2026-10-30: a fix of three lines does not owe a rewrite of the page around them. A
+program holds the line ([Checking a page](#checking)): it checks every page a change touches, fails on any rule a
+touched section breaks however old the line that breaks it, and lists what the rest of the page breaks as information.
 
-Fixing a page means the page, not the lines you wrote: add the missing sections (a section with nothing known says so
-in one line), grade the claims, reword what the Style rules refuse. A research page that cannot be brought up in one
-change is [legacy](#legacy-pages): it is excused only from what its entry lists, and only while no change touches
-it; every other page meets the standard in full.
-A page that has grown past its length limit is split along a sub-subject that has its own page, in the same pull
-request or in one that follows at once.
+Fixing a section means the section, not the lines you wrote: complete it, grade its claims, reword what the Style rules
+refuse; touching the title's part owes the front matter, the sections the kind needs (a section with nothing
+known says so in one line) and the Verified line. The page's length is owed whenever the page is touched: a page that
+has grown past its limit is split along a sub-subject that has its own page, in the same pull request or in one that
+follows at once. What the check lists outside the change is cleanup work of its own: the coordinator files it as
+issues from `coney-tools docs check --cleanup`, which prints each such finding, and nobody fixes it on the side of an
+unrelated change. A research page that is below the standard is [legacy](#legacy-pages): its entry excuses what it
+lists outside the sections a change touches.
 
-The same rule holds for the other things a change touches: a source file meets the comment and tag rules of
-[the conventions](conventions.md#comments-and-orig) as a whole, a test file cites the source of its expected values
-([testing](testing.md#citations)), and a ported function is compared with the original. What is below the standard
-today is listed, and `coney-tools standards` holds the touched ones to it ([the standards](coney-tools-standards.md#standards)).
+The same rule holds for the other things a change touches: each function and type of a source file the change touches
+meets the comment and tag rules of [the conventions](conventions.md#comments-and-orig), each test case it touches cites
+the source of its expected values ([testing](testing.md#citations)), a new file meets them throughout, and a ported
+function whose lines it touches is compared with the original. What is below the standard today is listed, and
+`coney-tools standards` holds the touched parts to it ([the standards](coney-tools-standards.md#standards)). How far
+the rule reaches, the section's heading level and the rules owed page-wide, is `standards.touch` in
+[.github/conventions.yml](repo:.github/conventions.yml).
 
 ## Adding a page
 
@@ -379,13 +386,12 @@ the rules it fails and with the number of findings at the last scan. `docs check
 
 - reports the findings of those rules as one warning each, while no change touches the page (it is checked by name),
   and fails on every other rule, as for any page;
-- ends the excuse when a change touches the page: **every touch fixes the mechanical rules page-wide and grades the
-  touched section**. The front matter, the sections, the Verified line, the address forms, the addresses that resolve,
-  Ghidra's names, copied paragraphs, dates, stale wording, and the spellings and run ids of the levels are errors on the
-  whole page. Only the grading of a block is held to the sections (a `##` heading and what is under it) that the change
-  touches: an address with no level, and an old-form runtime claim (`confirmed (runtime)` with no run id, on a page
-  that does not name PCSX2). Elsewhere they stay warnings. The page's length stays waived too, both until the page's
-  restructure;
+- ends the excuse in the sections a change touches ([Touch a page, fix the page](#touch-it)): there every rule is
+  owed, the grading of each block (an address with no level, an old-form runtime claim: `confirmed (runtime)` with no
+  run id, on a page that does not name PCSX2) as much as the address forms, Ghidra's names, copied paragraphs, dates,
+  stale wording and the spellings and run ids of the levels; touching the title's part owes the front matter, the
+  sections and the Verified line. Outside the touched sections the entry goes on excusing what it lists, as one warning
+  per rule. The page's length stays waived until the page's restructure;
 - fails a rule the page now passes until it is removed from the file, so the file only shrinks; and
 - refuses a new page in the file. A new page meets the standard in full.
 
@@ -484,13 +490,19 @@ design. Every other design is a page of the Designs kind in `docs/guides/` ([pag
 uv run --project python coney-tools docs check                      # the pages changed since origin/main
 uv run --project python coney-tools docs check docs/research/camera.md docs/guides   # named pages, or a folder's pages
 uv run --project python coney-tools docs check --summary docs       # the whole tree: pages that pass, per kind and rule
+uv run --project python coney-tools docs check --cleanup            # the changed pages, and each finding outside the change
 ```
 
 With no paths it checks the Markdown pages your branch changed against `--base` (default `origin/main`), committed or
-not. It prints `path:line: rule: message` for each finding and exits 1 when any page has an error; a warning never
-fails. [`coney-tools ci run`](coney-tools-ci.md#ci-run) runs it in its `docs` step, and the `mkdocs` job of the
-`docs` workflow runs it on the pages a pull request changes, so a pull request cannot merge a touched page that breaks
-a rule. It never looks at a page the change did not touch ([Touch a page, fix the page](#touch-it)). Generated pages
+not, and of a page that was there before, the sections the change touched ([Touch a page, fix the page](#touch-it)).
+It prints `path:line: rule: message` for each finding and exits 1 when any page has an error; a warning never fails.
+A finding of a touched page outside those sections is `info`: it fails nothing, and the page gets one line
+`path:1: info: touch-it: N findings outside what the change touched (rule count, ...)`; `--cleanup` prints each such
+finding instead, for the coordinator to file as cleanup issues. A page named on the command line, a new page and a page
+git sees as moved ([Legacy pages](#legacy-pages)) are checked whole. [`coney-tools ci run`](coney-tools-ci.md#ci-run)
+runs it in its `docs` step, and the `mkdocs` job of the `docs` workflow runs it on the pages a pull request changes,
+so a pull request cannot merge a touched section that breaks a rule. It never looks at a page the change did not
+touch. Generated pages
 (`docs/references/` except `entities.md`, `docs/missions/`, `docs/progress/`, `docs/research/find/` and each system's
 `functions.md`) and files outside `docs/` are not checked; their source is. The landing page `docs/research/index.md`
 is read as any other page. What each rule looks at, by the kind of page ([Page kinds](#page-kinds)):

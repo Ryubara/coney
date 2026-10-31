@@ -14,7 +14,7 @@ from conventions_support import REPO, real_data
 from git_support import git
 
 from coney_tools import docs_check
-from coney_tools.conventions import Research, parse_conventions
+from coney_tools.conventions import Research, TouchScope, parse_conventions
 from coney_tools.docs_check import Context, Finding, check_page
 from coney_tools.progress_research import ListedFunction
 from coney_tools.research_catalog import Catalog, Section
@@ -45,6 +45,12 @@ NOWHERE = "0x00123fff"
 def research() -> Research:
     """The research conventions of this checkout's `.github/conventions.yml`."""
     return parse_conventions(real_data()).research
+
+
+@functools.cache
+def touch_scope() -> TouchScope:
+    """How far the touch-it rule reaches, from this checkout's `.github/conventions.yml` (`standards.touch`)."""
+    return parse_conventions(real_data()).standards.touch
 
 
 def catalog(*, runs: frozenset[str] | None = None) -> Catalog:
@@ -111,7 +117,7 @@ def page(
 
 def findings(path: str, text: str, environment: ResearchEnv | None = None, touch: Touch | None = None) -> list[Finding]:
     """Every finding of the research page `text` at `path`."""
-    return check_page(path, text, Context(research=environment or env()), touch)
+    return check_page(path, text, Context(research=environment or env(), touch=touch_scope()), touch)
 
 
 def rules_of(found: list[Finding], severity: str = "error") -> list[str]:

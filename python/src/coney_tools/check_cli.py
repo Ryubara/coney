@@ -204,7 +204,9 @@ def _step_docs(root: Path, base: str, changed: list[str]) -> StepResult:
     ok = built.ok and not problems
     parts = [f"{pages} pages meet the standards" if not problems else "page standards failed"]
     if problems:
-        problems.append("bring each failing page wholly up to docs/guides/writing-docs.md; `coney-tools docs check`")
+        problems.append(
+            "bring what the change touched up to docs/guides/writing-docs.md#touch-it; `coney-tools docs check`"
+        )
     parts.append(built.detail)
     return StepResult("docs", ok, ", ".join(parts), output=_tail([*problems, *built.output, *notes]))
 

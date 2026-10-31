@@ -74,8 +74,8 @@ section Your first hour; the rest is for agents. Other tools: `uvx pre-commit in
 ## Documentation
 
 Document as you work: a change that alters behaviour, a command or what we know updates its living doc in the same
-commit, and a page you touch meets [the docs standard](docs/guides/writing-docs.md#touch-it) as a whole. One document
-per subject, updated in place: findings in `docs/research/`, how-tos in `docs/guides/`, the why in code comments.
+commit; its changed sections and functions and new files meet [the docs standard](docs/guides/writing-docs.md#touch-it).
+One document per subject, updated in place: findings in `docs/research/`, how-tos in `docs/guides/`, why in comments.
 Mission work updates `research/missions.yaml` (status, checkpoints) in the same commit and reruns `coney-tools missions
 render`. CI refuses a pull request that changes `src/` or `python/src/` without changing `docs/` or `research/`, unless
 its description has a line `Docs: none`. `HANDOFF.md` holds only the current state of the work (local, never committed).

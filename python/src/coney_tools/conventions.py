@@ -1427,6 +1427,17 @@ class TestsStandard:
 
 
 @dataclass(frozen=True)
+class TouchScope:
+    """How far the touch-it rule reaches into a file a change touches (docs/guides/writing-docs.md#touch-it): only the
+    parts the change changed owe the standard, and the rest is listed as information."""
+
+    #: A page's part is a section: the text under a heading of this level or above (the title's part above the first).
+    section_level: int
+    #: The rules of a page that are owed wherever they point once the change touches the page.
+    page_rules: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class Standards:
     """The standards a touched file is held to and where the files that do not meet them yet are listed
     (docs/guides/coney-tools-standards.md#standards)."""
@@ -1439,6 +1450,7 @@ class Standards:
     cutover: datetime | None
     code: CodeStandard
     tests: TestsStandard
+    touch: TouchScope
 
 
 @dataclass(frozen=True)
@@ -2610,7 +2622,7 @@ def _suffix_list(value: object, where: str) -> tuple[str, ...]:
 
 def _read_standards(data: object, where: str) -> Standards:
     """The `standards` section: the code and test standards and the legacy file of the files that fail them."""
-    table = _table(data, where, ("legacy_file", "enforce", "cutover", "code", "tests"))
+    table = _table(data, where, ("legacy_file", "enforce", "cutover", "code", "tests", "touch"))
     legacy_file = _text(table["legacy_file"], _at(where, "legacy_file"))
     if legacy_file.startswith(("/", "\\")) or ".." in legacy_file or ":" in legacy_file:
         raise _fail(_at(where, "legacy_file"), "a path inside the checkout")
@@ -2627,6 +2639,8 @@ def _read_standards(data: object, where: str) -> Standards:
         re.compile(reference)
     except re.error as error:
         raise _fail(_at(citation_where, "reference"), f"not a regular expression ({error})") from None
+    touch_where = _at(where, "touch")
+    touch = _table(table["touch"], touch_where, ("section_level", "page_rules"))
     return Standards(
         legacy_file=legacy_file,
         enforce=_flag(table["enforce"], _at(where, "enforce")),
@@ -2644,6 +2658,10 @@ def _read_standards(data: object, where: str) -> Standards:
                 unverified=_text(citation["unverified"], _at(citation_where, "unverified")),
                 reference=reference,
             ),
+        ),
+        touch=TouchScope(
+            section_level=_count(touch["section_level"], _at(touch_where, "section_level"), 1, 6),
+            page_rules=_texts(touch["page_rules"], _at(touch_where, "page_rules"), empty_ok=True),
         ),
     )
 

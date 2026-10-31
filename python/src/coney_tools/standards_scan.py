@@ -188,6 +188,24 @@ def _is_citation(text: str, standard: TestsStandard) -> bool:
     return bool(cited_sections(text, standard.citation))
 
 
+def case_spans(text: str, standard: TestsStandard) -> list[range]:
+    """The lines (1-based) each test case of a file spans: from the comment block right above its macro, which may hold
+    its citation, to the line before the next case's span, or the end of the file. The touch-it rule holds a case to
+    its citation when the change touches a line of its span."""
+    lines = text.splitlines()
+    pattern = _case_pattern(standard)
+    starts: list[int] = []
+    for number, line in enumerate(lines):
+        if not pattern.match(line):
+            continue
+        first = number
+        while first > 0 and lines[first - 1].lstrip().startswith("//"):
+            first -= 1
+        starts.append(first + 1)
+    ends = [start - 1 for start in starts[1:]] + [len(lines)]
+    return [range(start, end + 1) for start, end in zip(starts, ends, strict=True)]
+
+
 def scan_tests(path: str, text: str, standard: TestsStandard) -> list[Finding]:
     """The test cases of one file with no citation, one finding each at the line of its macro.
 

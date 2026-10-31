@@ -260,7 +260,7 @@ The form is `// Expected: <page>.md#<anchor>` with the page below `docs/research
 the claim's evidence level after a comma. A value no research claim backs yet is written `// Expected: unverified, #<issue>`
 with an issue that verifies it, never left bare. `coney-tools research claims` lists the claims a branch changed with the
 tests that cite their sections, and `coney-tools standards` finds the cases that cite nothing: the test files that do not
-yet are listed, and a test file a change touches is held to the rule as a whole
+yet are listed, and each test case a change touches, and every case of a test file it adds, is held to the rule
 ([the standards](coney-tools-standards.md#standards)). The marker, the macros and the form are `standards.tests` in
 [.github/conventions.yml](repo:.github/conventions.yml), and both commands read the form from there, so a citation
 with or without the leading `research/` counts for both.

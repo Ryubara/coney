@@ -181,9 +181,11 @@ for a reviewer reading a diff without the docs open. That sets these rules.
 8. **No commented-out code.** Git keeps the history; dead code in comments only makes the reader wonder whether it
    matters.
 
-A file you touch meets rules 1 and 2 and carries its tags as a whole, not only on the lines you changed. The files that
-do not yet are listed and `coney-tools standards check` holds the touched ones to them
-([the standards](coney-tools-standards.md#standards)).
+Each function and type you change meets rules 1 and 2 and carries its tags, as a whole, not only on the lines you
+changed; a file you add meets them throughout. The rest of a file you touch is not owed by your change
+([Touch a page, fix the page](writing-docs.md#touch-it)). The files below the rules are listed and
+`coney-tools standards check` holds the touched functions and types to them, and lists the rest of a touched file as
+information for cleanup issues ([the standards](coney-tools-standards.md#standards)).
 
 ### The @orig tag
 
@@ -379,7 +381,8 @@ that says neither, and a new folder in neither list. The functions written befor
 [legacy](how-we-work.md#fidelity-audit) (`orig index`); the older wording ("Coney's own", "(no @orig)") is still
 read as a marker on them until they are converted, never on a new function. [The
 standards](coney-tools-standards.md#standards) do not count it at
-all: a file a change touches is converted as a whole, each such function getting `@orig` or `@coney-only`.
+all: each function a change touches is converted, getting `@orig` or `@coney-only`, and so is every function of a
+file it adds.
 
 ### Coney-only capabilities {#coney-only-capabilities}
 

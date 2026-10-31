@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from coney_tools import command_reference, docs_check, docs_legacy
+from coney_tools import command_reference, docs_check, docs_legacy, standards_cli
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import load_conventions
 from coney_tools.research_legacy import format_legacy
@@ -15,18 +15,26 @@ from coney_tools.research_legacy import format_legacy
 NEWLINE = chr(10)
 
 
-def page_lines(result: docs_check.Result, page: str) -> list[str]:
-    """One `path:line: rule: message` line per finding of `page`, errors and warnings alike."""
+def page_lines(result: docs_check.Result, page: str, cleanup: bool = False) -> list[str]:
+    """One `path:line: rule: message` line per finding of `page`, errors and warnings alike. The findings outside what
+    the change touched (`info`) are one line for the page (`standards_cli.info_summary`), or each its own with
+    `cleanup`."""
     lines: list[str] = []
+    outside: list[str] = []
     for finding in result.findings.get(page, []):
-        label = "warning: " if finding.severity == "warning" else ""
+        if finding.severity == "info" and not cleanup:
+            outside.append(finding.rule)
+            continue
+        label = f"{finding.severity}: " if finding.severity != "error" else ""
         lines.append(f"{page}:{finding.line}: {label}{finding.rule}: {finding.message}")
+    if outside:
+        lines.append(standards_cli.info_summary(page, outside))
     return lines
 
 
-def report_lines(result: docs_check.Result) -> list[str]:
+def report_lines(result: docs_check.Result, cleanup: bool = False) -> list[str]:
     """The lines of every page, in the order the pages were checked."""
-    return [line for page in result.pages for line in page_lines(result, page)]
+    return [line for page in result.pages for line in page_lines(result, page, cleanup)]
 
 
 def summary_lines(result: docs_check.Result) -> list[str]:
@@ -39,9 +47,10 @@ def summary_lines(result: docs_check.Result) -> list[str]:
     return lines
 
 
-def run_check(paths: list[str], base: str, summary: bool, quiet: bool) -> int:
+def run_check(paths: list[str], base: str, summary: bool, quiet: bool, cleanup: bool = False) -> int:
     """Check the named pages (a folder means its pages), or with none the pages changed since `base`; print the
-    findings and, with `summary`, the counts. Exit 1 when any page has an error, 2 when the arguments are wrong."""
+    findings and, with `summary`, the counts; with `cleanup`, each finding outside what the change touched. Exit 1
+    when any page has an error, 2 when the arguments are wrong."""
     try:
         root = find_repo_root(Path.cwd())
         context = docs_check.context_for(root)
@@ -55,7 +64,7 @@ def run_check(paths: list[str], base: str, summary: bool, quiet: bool) -> int:
         print(f"coney-tools docs check: {error}")
         return 2
     if not quiet:
-        for line in report_lines(result):
+        for line in report_lines(result, cleanup):
             print(line)
     if summary:
         for line in summary_lines(result):
@@ -63,7 +72,10 @@ def run_check(paths: list[str], base: str, summary: bool, quiet: bool) -> int:
     failed = result.failed
     print(f"docs check: {len(result.pages)} pages {scope}, {len(failed)} fail")
     if failed and not quiet:
-        print("Bring each failing page wholly up to docs/guides/writing-docs.md (a touched page is held to all of it).")
+        print(
+            "Bring what the change touched up to docs/guides/writing-docs.md: each section of a page and each "
+            "function, type or test case it changed, and a new file whole (writing-docs.md#touch-it)."
+        )
     return 1 if failed else 0
 
 
