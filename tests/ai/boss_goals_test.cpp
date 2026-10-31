@@ -6,7 +6,6 @@
 #include "ai/boss_goals.h"
 
 #include <algorithm>
-#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -18,7 +17,6 @@
 #include "ai/goal.h"
 #include "ai/story_tactics.h"
 #include "ai/tactic_boss.h"
-#include "combat/reactions.h"
 #include "human/fighter.h"
 #include "human/human.h"
 #include "scripting/story_bindings.h"
@@ -55,23 +53,6 @@ TEST_CASE("a tired boss stands stunned until his fatigue runs out, then gets up 
     CHECK_FALSE(boss.human().fighter().victim().stunned());
     CHECK(std::ranges::find(scene.services.clips, coney::ai::boss_anim::kRage) != scene.services.clips.end());
     CHECK((boss.topGoal() == nullptr || boss.topGoal()->type() != GoalType::Tired));
-}
-
-TEST_CASE("the tired goal's end of the stun takes effect on the update it is called", "[ai][boss]") {
-    // Expected: combat-reactions.md#stun-end, confirmed (code): Human_EndStun (0x0022f8d8) clears the stun at once, and
-    // Coney's step that update plays 357 (the stun's loop 356 holds nothing).
-    AiScene scene;
-    Brain& boss = scene.add(Vec3{44.0F, 40.0F, 0.0F}, 0.0F);
-    REQUIRE(boss.pushGoal(std::make_unique<coney::ai::TiredGoal>(1000, 30, &scene.services)));
-    // The goal starts on the first update: its deadline is 1000 ms on, where the brain ends the stun.
-    scene.run(1);
-    const std::uint64_t deadline = boss.nowMs() + 1000;
-    REQUIRE(boss.human().fighter().victim().stunned());
-    while (boss.nowMs() < deadline) {
-        scene.run(1);
-    }
-    CHECK_FALSE(boss.human().fighter().victim().stunned());
-    CHECK(boss.human().animator().animId() == static_cast<std::uint32_t>(coney::combat::kStunEnd));
 }
 
 TEST_CASE("six hits in the fight tire a BigBrawler for his stage's fatigue", "[ai][boss]") {

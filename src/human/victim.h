@@ -111,6 +111,9 @@ class Victim {
     }
     /// Forgets the stun only.
     void endStun() { m_stunUntilMs = 0; }
+    /// Stub for the test commit.
+    /// @coney-only stub
+    void expireStun() {}
 
     /// One update's timers at `nowMs`. Standing stunned with no clip driving the human (a reaction, the rise or 355 is
     /// not cut short, the stun's loop 356 is): once its time has passed the stun ends, its state clearing as 357

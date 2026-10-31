@@ -211,6 +211,27 @@ TEST_CASE("the stun ends and the victim rises only once their time is past, not 
     CHECK_FALSE(victim.grounded());
 }
 
+TEST_CASE("a stun ended from outside ends on the next step, whatever its time", "[human][combat]") {
+    // Expected: combat-reactions.md#stun-end, confirmed (code): Human_EndStun (0x0022f8d8) clears the stun at once
+    // when another system ends it (the boss tired goal, its break); standing, Coney's step that update plays 357, and
+    // knocked down the stun is gone at once.
+    const FightCharacter character;
+    coney::human::HumanAnimator animator(character.anims, coney::human::AnimSlots::player());
+    coney::human::Victim victim(combat::kCivilianPowerClass);
+    // Standing in the loop, its time ending on this very update: the strict test alone would keep it.
+    victim.stunUntil(1000);
+    victim.expireStun();
+    victim.step(animator, coney::human::kAnimFightIdle, 1000, true);
+    CHECK_FALSE(victim.stunned());
+    CHECK(animator.animId() == static_cast<std::uint32_t>(combat::kStunEnd));
+    // Knocked down with a stun after the rise: ended, it is forgotten before the rise.
+    victim.knockDown(2000, true);
+    REQUIRE(victim.stunned());
+    victim.expireStun();
+    CHECK_FALSE(victim.stunned());
+    CHECK(victim.grounded());
+}
+
 TEST_CASE("presses during the knockdown's reaction do nothing; lying down each one cuts the time", "[human][combat]") {
     // Expected: combat-reactions.md#being-hit-runtime, confirmed (runtime)
     const FightCharacter character;
