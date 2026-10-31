@@ -1,0 +1,37 @@
+version = 1
+id = "r-20261031-l80-uncuff-cowboy-exact"
+date = "2026-10-31"
+kind = "recipe"
+tool = "pcsx2 recipes run"
+digest = "533130f3f82c623d3b5479c97ef87a9d2050b9f9ee59060a23ff865b6648237b"
+
+[who]
+agent = "aa2c729bc8f12bb36"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = ["call-brains"]
+
+[run]
+name = "uncuff"
+method = ""
+
+[run.args]
+cuffed = "Cowboy"
+
+[values]
+freer_x = -197.1837158203125
+freer_y = 234.2617950439453
+freer_heading_deg = 30.323583737849617
+cuffed_x = -197.5
+cuffed_y = 234.8000030517578
+cuffed_heading_deg = 42.99999085696038
+steered_distance = 0.6832783942339564
+steered_heading_deg = 111.30657131864155
