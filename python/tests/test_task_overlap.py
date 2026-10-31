@@ -13,6 +13,7 @@ from pathlib import Path
 
 import pytest
 from audit_support import CONVENTIONS
+from git_support import git
 
 from coney_tools import stamps, task_cli, task_overlap
 from coney_tools.config import ConfigError
@@ -459,3 +460,54 @@ def test_the_overlap_command_prints_the_list_and_writes_only_when_asked(
 
 def test_the_committed_rules_hold_sensible_limits() -> None:
     assert RULES.open_prs >= RULES.diff_prs >= 1 and RULES.max_listed >= 1 and RULES.max_paths >= 1
+
+
+def test_what_a_unit_changes_is_read_from_its_diff_and_its_uncommitted_files(tmp_path: Path) -> None:
+    repo = tmp_path / "wt"
+    repo.mkdir()
+    git(repo, "init", "-q", "-b", "main")
+    (repo / "src").mkdir()
+    (repo / "docs").mkdir()
+    (repo / "src/old.cpp").write_text("int a;\n", encoding="utf-8")
+    (repo / "docs/page.md").write_text("# Page\n", encoding="utf-8")
+    (repo / "tests").mkdir()
+    (repo / "tests/t.cpp").write_text("int t;\n", encoding="utf-8")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "base")
+    base = git(repo, "rev-parse", "HEAD").strip()
+    git(repo, "mv", "src/old.cpp", "src/new.cpp")
+    (repo / "src/new.cpp").write_text("int a;\n// @orig 0x001490B8 Brain_Think (Brain.cpp)\n", encoding="utf-8")
+    (repo / "tests/t.cpp").write_text("int t;\n// invented 0x00222222\n", encoding="utf-8")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "work")
+    (repo / "docs/page.md").write_text("# Page\n\nMore.\n", encoding="utf-8")
+    (repo / "docs/fresh.md").write_text("# Fresh\n", encoding="utf-8")
+    record = UnitRecord("t", "feature", (1,), USER, "main", repo, "origin/main", base, NOW)
+    change = task_overlap.unit_change(record)
+    assert change.paths == {"src/old.cpp", "src/new.cpp", "tests/t.cpp", "docs/page.md", "docs/fresh.md"}
+    assert change.addresses == {"0x001490b8"}
+
+
+def test_a_branch_whose_changes_main_has_changes_nothing_that_is_pending(tmp_path: Path) -> None:
+    repo = tmp_path / "wt"
+    repo.mkdir()
+    git(repo, "init", "-q", "-b", "main")
+    (repo / "a.md").write_text("one\n", encoding="utf-8")
+    (repo / "b.md").write_text("one\n", encoding="utf-8")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "base")
+    base = git(repo, "rev-parse", "HEAD").strip()
+    git(repo, "checkout", "-q", "-b", "work")
+    (repo / "a.md").write_text("two\n// @orig 0x001490b8 Brain_Think (Brain.cpp)\n", encoding="utf-8")
+    (repo / "b.md").write_text("two\n", encoding="utf-8")
+    git(repo, "commit", "-q", "-am", "work")
+    record = UnitRecord("t", "feature", (1,), USER, "work", repo, "main", base, NOW)
+    # Main moves on: it takes a.md exactly as the branch has it (a squash merge) and not b.md.
+    git(repo, "checkout", "-q", "main")
+    (repo / "a.md").write_text("two\n// @orig 0x001490b8 Brain_Think (Brain.cpp)\n", encoding="utf-8")
+    (repo / "c.md").write_text("later\n", encoding="utf-8")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "squash of the branch's a.md, and c.md")
+    git(repo, "checkout", "-q", "work")
+    change = task_overlap.unit_change(record)
+    assert change.paths == {"b.md"} and change.addresses == frozenset()

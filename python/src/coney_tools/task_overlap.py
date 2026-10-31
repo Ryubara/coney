@@ -9,8 +9,8 @@ engineer to read, to note in STATUS.md and to tell the coordinator, who orders t
 
 * **What the unit names or changes** (`Wanted`): the paths and addresses of the task file (`scope`, and what the issue
   writes in the sections Issues, Goal, Done and Scope, read with the leads search's `identifiers_in`), plus, once the
-  unit has a branch, what `issue_impact.gather` finds it changes (its paths and `@orig` addresses) and the files
-  git shows as changed but not committed.
+  unit has a branch, the paths and the addresses of the changed lines of its diff (`issue_impact.parse_diff` and
+  `diff_addresses`) and the files git shows as changed but not committed.
 * **What is pending** (`Pending`): each open pull request (paths from `gh pr list`, `@orig` addresses from the diff of
   at most `tasks.overlap.diff_prs` of them, read with `issue_impact.diff_addresses`) and each other unit that has a
   worktree, is not a fix task, is not finished and has not opened its pull request (one that has is listed by its pull
@@ -185,11 +185,28 @@ def _status_paths(lines: Iterable[str]) -> set[str]:
 
 
 def unit_change(record: UnitRecord) -> Change:
-    """What a unit's worktree changes since its base: the branch's diff (`issue_impact.gather`: paths and the `@orig`
-    addresses of changed functions and lines) and the files git shows as changed but not committed."""
-    touched = issue_impact.gather(record.worktree, record.base_commit, "HEAD")
-    paths = set(touched.paths) | _status_paths(unit.status_lines(record.worktree))
-    return Change(frozenset(paths), frozenset(touched.addresses))
+    """What a unit's worktree changes that `main` does not have: the files of the branch's diff since it left its base
+    ref (three dots, so what the branch merged from `main` is not its own) whose content still differs from the base ref
+    now (a branch already squash-merged changes nothing), their paths and the addresses of their changed lines
+    (`issue_impact.parse_diff` and `diff_addresses`), and the files git shows as changed but not committed. Not
+    `issue_impact.gather`: it also reads the `@orig` functions whose body changed, which takes 10 to 20 seconds a unit,
+    and a start, a check and a review read every unit in progress."""
+    tree = record.worktree
+    ref = record.base_ref
+    try:
+        issue_impact.git_output(tree, "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}")
+        span = f"{ref}...HEAD"
+    except ConfigError:
+        ref, span = record.base_commit, f"{record.base_commit}..HEAD"
+    patch = issue_impact.git_output(tree, "diff", "-M", "-U0", "--no-color", "--no-ext-diff", span)
+    differing = set(issue_impact.git_output(tree, "diff", "--name-only", ref, "HEAD").splitlines())
+    paths = _status_paths(unit.status_lines(tree))
+    kept: set[str] = set()
+    for diff in issue_impact.parse_diff(patch):
+        if diff.new in differing or diff.old in differing:
+            paths.update((diff.old, diff.new))
+            kept.add(diff.new)
+    return Change(frozenset(paths), frozenset(issue_impact.diff_addresses(patch, kept)))
 
 
 # --- what is pending --------------------------------------------------------------------------------------------

@@ -21,12 +21,15 @@ scope fits) or an `@orig` address it wants.
 * The unit wants the `scope` of its task file and the paths and addresses the issue writes in the task file's Issues,
   Goal, Done and Scope sections, read as the leads search reads them (`identifiers_in`, [Task
   files](issues.md#task-files)). A section anchor in a path (`docs/guides/agents.md#slots`) matches the whole page.
-* Once the unit has a branch it also wants what the branch changes and what is changed but not committed: the paths and
-  the `@orig` addresses that [`issue impact`](coney-tools-issues.md#issue-impact) reads from a diff
-  (`issue_impact.gather`).
-* A pull request's paths come from `gh pr list`; its addresses from its diff, read only when the unit wants an address
-  and for at most `tasks.overlap.diff_prs` pull requests. A test file's invented values do not count, as in `issue
-  impact`.
+* Once the unit has a branch it also wants what the branch changes and what is changed but not committed: the paths
+  and the addresses in the changed lines of its diff since it left its base. What it merged from `main` is not its
+  own, and a file `main` now holds exactly as the branch has it (a squash merge) is no longer pending. The lines are
+  read as [`issue impact`](coney-tools-issues.md#issue-impact) reads them: a test file's invented values and generated
+  files do not count. An `@orig` function whose body changed without its tag line changing is met by its file's path,
+  not by its address: `issue impact` also reads those functions, but that takes 10 to 20 seconds a unit, and every
+  start, check and review reads every unit in progress.
+* A pull request's paths come from `gh pr list`; its addresses from its diff, read the same way, only when the unit
+  wants an address and for at most `tasks.overlap.diff_prs` pull requests.
 
 The most shared addresses and paths come first, then pull requests before units. How much is read and listed is
 `tasks.overlap` in [.github/conventions.yml](repo:.github/conventions.yml).
