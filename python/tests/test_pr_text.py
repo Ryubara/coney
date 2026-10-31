@@ -409,11 +409,21 @@ def test_a_tooling_check_gives_the_pytest_counts_it_ran(tmp_path: Path) -> None:
     )
 
 
-def test_a_docs_check_says_no_build_or_test_ran(tmp_path: Path) -> None:
+def test_a_check_without_pytest_says_no_build_or_test_ran(tmp_path: Path) -> None:
     built = make(tmp_path, shape="tooling", skip=frozenset({"checked"}))
-    built.check("docs", preset=None, tests=None)
+    built.check("docs", preset=None, tests=None, checks=["docs-check", "mkdocs", "pre-commit"])
     facts = pr_text.facts_block(built.subject())
     assert "- Check: profile `docs`, no build or test run; checks `docs-check`, `mkdocs`" in facts
+
+
+@pytest.mark.parametrize(
+    ("scope", "said"),
+    [(["docs_only"], "pytest of the tests reading docs_only 212 passed"), ("whole", "pytest of the whole suite 212")],
+)
+def test_a_check_names_which_python_tests_it_ran(tmp_path: Path, scope: object, said: str) -> None:
+    built = make(tmp_path, shape="tooling", skip=frozenset({"checked"}))
+    built.check("docs", preset=None, tests=None, pytest={"passed": 212}, pytest_scope=scope)
+    assert f"- Check: profile `docs`, no build; {said}" in pr_text.facts_block(built.subject())
 
 
 def test_a_stage_that_has_not_run_is_said_so_in_the_facts(tmp_path: Path) -> None:
