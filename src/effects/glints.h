@@ -126,9 +126,9 @@ class Triglints {
     void clear() { m_triglints.clear(); }
 
   private:
-    // `Random_Int(n)`: a draw of 0 to n from the effects stream.
-    // @orig 0x003353b8 Random_Int (unknown)
-    std::uint32_t draw(std::uint32_t n);
+    // `Random_Int(n)` (`0x003353b8`): a draw of 0 to n from the effects stream, the next raw number mod (n + 1),
+    // unsigned.
+    std::uint32_t draw(std::uint32_t n) { return m_random.next(RandomStream::Effects) % (n + 1U); }
 
     std::map<double, Triglint> m_triglints;
     GameRandom m_random; // the particles' own: its effects stream (0x006eb8b8)
