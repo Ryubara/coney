@@ -100,6 +100,7 @@ bool TriggerSpheres::accepts(const TriggerSphere& sphere, const std::array<float
     if (sphere.mode != 2 || !m_clearLine) {
         return true;
     }
+    // Stand-in for the ray's ends: the original moves both by 0.01 times the vector at 0x00511740, not read.
     return m_clearLine(raised(centre, kLineRaise), raised(point, kLineRaise));
 }
 
