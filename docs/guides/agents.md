@@ -328,16 +328,16 @@ own), `finished`, or its worktree gone. **An engineer's job ends when its unit p
 coordinator starts the next task in the place while CI runs; the engineer is not kept for CI. A unit whose stamp log
 or `unit.json` cannot be read keeps its place. A unit that was abandoned (its engineer died before Review) holds its
 place until its worktree is removed (`git worktree remove`, after anything worth keeping is committed or saved) or a
-`finished` stamp is written for it; `task slots` shows who holds what. A reservation of an agent whose call was
-denied or never started lapses after `reserve_minutes`; to start sooner, delete its `slot.json` (the refusal names the
-path).
+`finished` stamp is written for it; `task slots` shows who holds what. A reservation of an agent whose call was denied
+or never started lapses after `reserve_minutes`, except that of a fix task with no `unit.json`: it holds its place until
+its `slot.json` is deleted or its pull request is over ([why](slot-fill.md#fix-tasks)). To start sooner, delete the
+`slot.json` (the refusal and `task slots` name it).
 
-**A CI failure is a fix task.** When a required check fails on a pull request, the coordinator makes a `kind: fix`
-task for it (`task create --fix-of <issue>`) and starts an agent on it when the fix track is free: one at a time,
-**the oldest failure first**. That order is the coordinator's rule: `task slots` and a refused fix start list the
-waiting fix tasks oldest first, but the guard does not refuse a younger one. If the engineer of the original task is
-still running, the fix goes to it directly. The fix is held to the failing check; only the stamps it made stale are
-redone ([When a pull request fails checks](#ci-failures)). A fix of a Studio task is in the fix track.
+**A CI failure is a fix task.** For a required check that fails on a pull request the coordinator makes a `kind: fix`
+task (`task create --fix-of <issue>`) and starts an agent on it when the fix track is free: one at a time, **the oldest
+failure first** (`task slots` lists them so; the guard refuses no younger one). If the engineer of the original task
+still runs, the fix goes to it. The fix is held to the failing check; only the stamps it made stale are redone ([When a
+pull request fails checks](#ci-failures)). A fix of a Studio task is in the fix track.
 
 **What the guard checks.** `.claude/hooks/slot_guard.py` runs for every Agent call of the coordinator (last, only when
 no other guard refused it) and asks `coney-tools task slots --admit`, with the brief on standard input and the call's
@@ -386,10 +386,10 @@ refuses. Such a start leaves a line `let through with a check skipped` in `coney
   and checks the claim, is the real backstop; the guard moves the refusal to where the coordinator sees it. Whether a
   Studio unit is research or development is the coordinator's call too: the guard checks only that its model and
   effort are one of the allowed pairs.
-- **Only units with a `unit.json` are counted.** `unit.json` is written by `task start` of the new workflow, so the
-  count binds nothing that predates it: the worktrees of the old workflow hold no place, and the coordinator counts
-  them by hand until they end. `task slots` lists the worktrees no unit record names ("without a unit record") so the
-  gap is visible.
+- **Only units with a `unit.json` are counted** (and fixes with a slot). `unit.json` is written by `task start` of the
+  new workflow, so the count binds nothing that predates it: the worktrees of the old workflow hold no place, and the
+  coordinator counts them by hand until they end. `task slots` lists the worktrees no unit record names ("without a unit
+  record") so the gap is visible.
 - **The agent type is the caller's choice**, read from `subagent_type` (any case, blanks stripped; `agent_guard.py`
   refuses an unknown or missing type, so a spelling variant of `engineer` does not get past either). A call that picks
   a type that needs no claim for work that writes (`Explore` and `Plan` have Bash; a `fork` is the coordinator's own

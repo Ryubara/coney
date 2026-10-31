@@ -26,7 +26,7 @@ nothing.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -93,6 +93,11 @@ class Sources(Protocol):
 
     def failed_pulls(self) -> list[FailedPull]:
         """This account's open, non-draft pull requests with a failed required check."""
+        ...
+
+    def pulls_over(self, issues: Collection[int]) -> bool:
+        """Whether the pull request that closes one of `issues` is merged or closed (False when GitHub cannot say):
+        a fix task for it has nothing left to fix."""
         ...
 
 
@@ -412,7 +417,14 @@ def fill_check(
     except ConfigError as error:
         mine = None
         warnings.append(f"GitHub could not be read ({error}), so the places were not checked against the work")
-    current = task_slots.scan(scratch, conventions, now, labels=_unit_labels(mine, conventions))
+    # A fix task whose pull request merged or closed leaves the queue, but only when GitHub was read.
+    current = task_slots.scan(
+        scratch,
+        conventions,
+        now,
+        labels=_unit_labels(mine, conventions),
+        parent_over=sources.pulls_over if mine is not None else None,
+    )
     free = places.free_places(current, conventions, build_slots)
     summary = places.summary(current, conventions, build_slots)
     if free.total == 0:

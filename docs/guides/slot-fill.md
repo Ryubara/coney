@@ -18,7 +18,7 @@ state. It asks `coney-tools task slots --fill-check`, which decides; run it by h
 | Free place | What fills it |
 | --- | --- |
 | **Kept for game work** (the reimplementation track runs no `feature` unit: its `min` is kept, and a tooling or docs unit does not count) | A claimed task of a kind in `min_kinds` (`feature`) with no agent, or a ready issue outside Coney Studio whose default task kind is one (`task create` suggests `tooling` for `A-tools` and `docs` for `docs`, so those wait for an open place) |
-| **Kept for a fix** (the fix track runs no unit: its `min` is kept) | A queued `kind: fix` task, then each open, non-draft pull request of the account with a failed required check that no fix task (by the issues the pull request closes) and no running [`pr hold`](pr.md#hold) covers |
+| **Kept for a fix** (the fix track runs no unit: its `min` is kept) | A queued `kind: fix` task ([which fixes are queued](#fix-tasks)), then each open, non-draft pull request of the account with a failed required check that no fix task (by the issues the pull request closes) and no running [`pr hold`](pr.md#hold) covers |
 | **Kept for networking** (the networking track runs no unit: its `min` is kept) | A claimed networking task with no agent, then a ready issue labelled `networking` (`claims.networking_label`). The track holds at most one unit (`max`), so networking work never takes an open place; while a unit runs, the check says the track is full |
 | **Kept for the renderer** (the renderer track runs no unit: its `min` is kept) | A claimed renderer task with no agent, then a ready issue labelled `renderer` (`claims.renderer_label`). The track holds at most one unit (`max`), so renderer work never takes an open place, and the check says the track is full while a unit runs |
 | **Open** (the rest of the machine's free places) | Coney Studio work, or game work beyond the kept one: a claimed task with no agent (a task file with no unit record and no live reservation, whose claim card is still held and not paused), then the ready issues, most urgent first |
@@ -96,3 +96,31 @@ is not covered; units of the old workflow with no unit record are invisible to t
 the claim Action passes over the issue (a sweep behind leaves a card stale for up to an hour); the kind of a ready
 issue's task is the default of its labels (`task create` lets the coordinator choose another, which the tool cannot
 know); only the account's own pull requests count for the fix place, and "oldest first" is by pull request number.
+
+## Fix tasks without a unit record {#fix-tasks}
+
+A fix task made by `task create --fix-of` and started by `task start` has a `unit.json`, so it is counted like any unit
+([Engineer tracks](agents.md#slots)). A fix folder made by hand, or before the records, has a task file (`kind: fix`, a
+`parent`) and perhaps a `slot.json`, and `task slots` and this check read it so (`task_slots.scan`):
+
+- **A fix with a `slot.json` is in work in the fix track,** however old the slot is: any other task's reservation lapses
+  after `reserve_minutes`, but a fix with no record made nothing else to show its agent. It ends when the fix's log or
+  its parent's holds `finished`, or a passing `reviewed` written after the slot; a log that cannot be trusted keeps the
+  place. Its issues cover the pull request it fixes, so the check does not ask for another fix unit. The `task slots`
+  line of such a fix names the `slot.json` to delete to free the place of an agent that never started. It is always a
+  fix-track holder: the `workflow` exemption of a unit comes from its claim cards, and a fix with no record gets none.
+- **A fix with no `slot.json` is queued,** oldest first, work for the place kept for a fix.
+- **A fix whose pull requests are over is neither:** the issues of the fix have pull requests that close them, and every
+  one of those is merged or closed. A fix of several issues stays while the pull request of any of them is open. Both
+  commands read this from GitHub (`task_slots.pulls_over`, within the check's budget) and keep the fix when GitHub
+  cannot be read or no pull request closes its issues (`finishes: false`). A fix whose pull request was closed unmerged
+  is hidden too, though `pr open --reopen` could still release it: start such a fix by hand. The agent guard, `task
+  start` and Conclave read no GitHub for this, so they still count a slot-held fix of a merged pull request, and
+  Conclave still lists it as queued, until `workspace clean` runs. [`workspace clean --apply`](workspace.md#cleanup)
+  moves the folder of a fix whose parent's pull request merged to `scratch/archive/<task>`, which nothing reads, unless
+  the fix may still be worked: a `slot.json` younger than `reserve_minutes`, a unit record whose worktree exists, or a
+  parent worktree with commits the merged pull request lacks.
+
+The stage commands (`task check`, `task review`, `orig`) stamp such a fix in its parent's log, and `pr open <fix>` goes
+out through the parent's unit record, both by the `parent` of its task file (as [A fix task](issues.md#starting) does by
+its record), so one log holds the proof `pr open` reads.

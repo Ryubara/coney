@@ -342,9 +342,11 @@ The coordinator's triage step ([Task files](issues.md#task-files)); the rules ar
   rule and the units in it (in work, with a record that cannot be read, or reserved for an agent that has not run `task
   start` yet), a line when no reimplementation, networking or renderer unit is in work (each track keeps one going), the
   workflow units that hold no place (the labels are read from their issues' claim cards on GitHub; a unit whose cards
-  cannot be read is counted, as reimplementation unless a fix, and named), the fix tasks waiting (oldest first) and the
-  worktrees no unit record names, which no place counts; `--json` prints the same as data (`machine`, `tracks` with each
-  one's `min`, `max` and holders). `--admit` is the check the coordinator's Agent guard runs
+  cannot be read is counted, as reimplementation unless a fix, and named), the fix tasks waiting (oldest first; a fix
+  whose parent's pull request merged or closed is not listed, and one with an agent and no unit record is in work in the
+  fix track, [Engineer tracks](agents.md#slots)) and the worktrees no unit record names, which no place counts; `--json`
+  prints the same as data (`machine`, `tracks` with each one's `min`, `max` and holders). `--admit` is the check the
+  coordinator's Agent guard runs
   (`.claude/hooks/slot_guard.py`). For an `--agent-type` that holds a place (`engineer`, `tooling`) it needs the task
   from `--task` or from the `Task id: <id>` line of the brief (`--brief FILE`, or `-` for standard input), the task
   file, a claim that is held now (one read of the claim cards of each issue from GitHub, 20 seconds each, none started
@@ -446,7 +448,9 @@ codebase nightly ([building](clang-tidy.md)).
   first ([Check slots](coney-tools-build.md#check-slots)), so a profile with `pytest` needs `--agent` too.
 * A fix task's id (`task check 812-fix`) is checked in its parent's folder: the stamp, the build record and the check
   logs go where `pr verify` and `pr open` read them, the parent's, as the fix's unit record says, and the first line
-  says so ([A fix task](issues.md#starting)).
+  says so ([A fix task](issues.md#starting)). A fix task with no unit record (made by hand, or before the records) is
+  checked in the parent its task file names, the same way, so `check`, `review`, `orig` and `pr open` all use the
+  parent's log.
 
 Exit 0 every check passed and the stamp is written; 1 a check failed (a `fail` stamp is written); 2 it cannot run or
 cannot stamp (nothing is written); 75 the build or the pytest run gave up waiting for a slot (nothing is written; run

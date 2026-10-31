@@ -129,7 +129,10 @@ def run(args: argparse.Namespace) -> int:
     conventions = _conventions(root)
     task = unit.task_name(root, args.task)
     # A fix task works in its parent's unit, so its studies, pairs and stamps are the parent's.
-    folder = unit.Unit.of(root, log_task_of(unit.Unit.of(root, task).dir, conventions.tasks.start.unit_file) or task)
+    folder = unit.Unit.of(
+        root,
+        log_task_of(unit.Unit.of(root, task).dir, conventions.tasks.start.unit_file, conventions.tasks.file) or task,
+    )
     who = stamps.who_from_env(f"coney-tools orig {args.command}")
     if args.command == "fails-first":
         return _fails_first(args, root, conventions, folder, who)

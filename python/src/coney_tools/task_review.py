@@ -714,7 +714,10 @@ def environment(args: argparse.Namespace) -> ReviewEnv:
     # A record that cannot be read was refused above unless --worktree was given, which is the way out of it: then the
     # task is taken as its own.
     try:
-        owner = log_task_of(unit.Unit.of(worktree, task).dir, conventions.tasks.start.unit_file) or task
+        owner = (
+            log_task_of(unit.Unit.of(worktree, task).dir, conventions.tasks.start.unit_file, conventions.tasks.file)
+            or task
+        )
     except UnitRecordError:
         owner = task
     if owner != task:

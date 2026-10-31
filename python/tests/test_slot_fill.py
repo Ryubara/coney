@@ -26,7 +26,7 @@ from slot_fill_support import (
     issue,
     with_fill,
 )
-from test_task_slots import USER, Scene, set_slots
+from test_task_slots import USER, Scene, reserve_minutes, set_slots, start_agent
 
 from coney_tools import slot_fill, slot_fill_blocks, slot_waivers
 from coney_tools.config import ConfigError
@@ -698,6 +698,38 @@ def test_a_queued_fix_task_is_work_for_the_fix_slot(scene: Scene, sources: FakeS
     hold_claims(scene, sources)
     result = check(scene, sources)
     assert result.blocked and "fix task queued-fix is queued" in result.message
+
+
+def test_a_fix_task_with_an_agent_and_no_unit_holds_the_fix_place_and_covers_its_pull_request(
+    scene: Scene, sources: FakeSources
+) -> None:
+    three_units(scene)
+    scene.task("slot-fix", kind="fix", parent="a-one", issues=(11,))
+    start_agent(scene, "slot-fix", minutes_ago=reserve_minutes(scene) * 20)
+    sources.pulls = [pull(60, 11)]
+    hold_claims(scene, sources)
+    result = check(scene, sources)
+    assert not result.blocked and result.message.startswith("ok: every place is full")
+    assert "fix: slot-fix" in result.message and "is queued" not in result.message
+
+
+def test_a_queued_fix_task_whose_pull_request_is_over_is_not_work(scene: Scene, sources: FakeSources) -> None:
+    three_units(scene)
+    scene.task("queued-fix", kind="fix", parent="a-one", issues=(11,))
+    hold_claims(scene, sources)
+    assert check(scene, sources).blocked
+    sources.over = {11}
+    result = check(scene, sources)
+    assert not result.blocked and "queued-fix" not in result.message
+
+
+def test_a_github_that_cannot_be_read_does_not_drop_a_queued_fix(scene: Scene, sources: FakeSources) -> None:
+    three_units(scene)
+    scene.task("queued-fix", kind="fix", parent="a-one", issues=(11,))
+    hold_claims(scene, sources)
+    sources.over = {11}
+    sources.down = {"claimed"}
+    assert not check(scene, sources).blocked and sources.asked_over == []
 
 
 def test_a_fix_task_covers_the_pull_request_that_closes_its_issue(scene: Scene, sources: FakeSources) -> None:

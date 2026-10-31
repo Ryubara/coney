@@ -380,7 +380,9 @@ the folders it did not make are listed, never deleted. It also lists, and with `
 shells older than `--stale-wait-hours` (default 3) waiting in a sleep loop on files unchanged for `--log-idle-hours`
 (default 1), and orphaned `ctest` or `coney_tests` runs whose parent is gone. `check-space` prints the workspace drive's
 free space (and the build root's, on another drive) and exits 1 when one is below `--min-gb` (default:
-`workspace.disk_min_free_gb` of [.github/conventions.yml](repo:.github/conventions.yml), 30). Rules and the busy file:
+`workspace.disk_min_free_gb` of [.github/conventions.yml](repo:.github/conventions.yml), 30). It also **archives the
+fix tasks whose parent's pull request merged**: their scratch folders move to `archive/<task>` in the scratch folder,
+which `task slots` and the slot-fill check never read ([Cleanup](workspace.md#cleanup)). Rules and the busy file:
 [Cleanup](workspace.md#cleanup).
 
 <!-- command-reference:begin workspace -->
@@ -405,8 +407,8 @@ coney-tools workspace init [--workspace WORKSPACE] [--repo-url REPO_URL] [--fetc
 
 ### `workspace clean` {#workspace-clean-usage}
 
-Remove merged worktrees and old build folders (all idle ones when the drive is low), stop stale waits and orphaned test
-runs (a dry run unless --apply).
+Remove merged worktrees and old build folders (all idle ones when the drive is low), archive the fix tasks of merged
+pull requests, stop stale waits and orphaned test runs (a dry run unless --apply).
 
 ```text
 coney-tools workspace clean [--workspace WORKSPACE] [--apply] [--build-hours BUILD_HOURS] [--min-gb MIN_GB]

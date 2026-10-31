@@ -59,11 +59,13 @@ import time
 from collections.abc import Callable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 
-from coney_tools import build_claims, build_root, stale_processes
+from coney_tools import build_claims, build_root, stale_processes, workspace_clean_fixes
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Workspace, load_conventions
+from coney_tools.unit import scratch_folder
 from coney_tools.workspace import find_layout
 
 #: The file an agent creates in its worktree while it works and deletes when it is done.
@@ -646,6 +648,9 @@ def run_clean(
     if apply and stale:
         _git(checkout, "worktree", "prune")
 
+    archived, archive_failures = _archive_dead_fixes(checkout, settings, apply)
+    failures += archive_failures
+
     # Disk pressure: a dry run has no new free space to read, so it adds up what the lines above would free.
     def free_now() -> int:
         return shutil.disk_usage(layout.workspace).free if apply else free_before + reclaimed - reclaimed_root
@@ -682,7 +687,10 @@ def run_clean(
     failures += stale_processes.run(apply, shell_hours, idle_hours)
 
     verb = "Reclaimed" if apply else "Would reclaim"
-    print(f"{verb} {_gb(reclaimed)}: {removed} worktree(s) removed, {builds} build folder(s) deleted.")
+    print(
+        f"{verb} {_gb(reclaimed)}: {removed} worktree(s) removed, {builds} build folder(s) deleted"
+        + (f", {archived} fix task(s) archived." if archived else ".")
+    )
     if apply:
         free_after = shutil.disk_usage(layout.workspace).free
         print(f"Free space: {_gb(free_before)} -> {_gb(free_after)}")
@@ -859,6 +867,29 @@ def _report_loose(folder: Path, known: set[Path]) -> None:
         return
     if loose:
         print(f"Not worktrees, left alone: {', '.join(loose)}")
+
+
+def _archive_dead_fixes(checkout: Path, settings: Settings, apply: bool) -> tuple[int, int]:
+    """List the fix tasks whose parent's pull request merged and, with `apply`, move their scratch folders to the
+    archive (workspace_clean_fixes.py); (how many, how many failed). A dry run counts what it would move."""
+    try:
+        conventions = load_conventions(checkout)
+    except ConfigError:
+        return 0, 0
+    scratch = scratch_folder(checkout)
+    archived = failed = 0
+    for fix in workspace_clean_fixes.dead_fixes(
+        scratch, settings.merged_heads, conventions, datetime.fromtimestamp(settings.now, UTC), _covered_by_merged_pr
+    ):
+        verb = "archive" if apply else "would archive"
+        print(f"  {verb:<13}{fix.task}: its parent {fix.parent} (branch {fix.branch}) is merged")
+        problem = workspace_clean_fixes.archive(fix, scratch) if apply else None
+        if problem:
+            failed += 1
+            print(f"    FAILED: {problem}")
+        else:
+            archived += 1
+    return archived, failed
 
 
 def _conventions_workspace(checkout: Path) -> Workspace | None:

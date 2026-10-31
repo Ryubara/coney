@@ -39,7 +39,7 @@ uv run --project python coney-tools task review [TASK] [--worktree DIR] [--base 
 
 | Argument or option | Default | What it does |
 | --- | --- | --- |
-| `TASK` | `CONEY_TASK`, else the branch of the current checkout | The task: its scratch folder holds the stamp log, the description and the review folder. Name it when running outside its worktree. A fix task's id reviews in its parent's folder (the parent's log and `PR.md`), as its unit record says ([A fix task](../issues.md#starting)) |
+| `TASK` | `CONEY_TASK`, else the branch of the current checkout | The task: its scratch folder holds the stamp log, the description and the review folder. Name it when running outside its worktree. A fix task's id reviews in its parent's folder (the parent's log and `PR.md`), as its unit record says, or its task file when it has none ([A fix task](../issues.md#starting), [without a record](../slot-fill.md#fix-tasks)) |
 | `--worktree DIR` | the worktree the unit record names, else the current checkout | The unit's worktree: the branch under review, which must be clean ([Which worktree](#worktree)) |
 | `--base REF` | `origin/<default branch>` | What the change is measured from (the merge base of `REF` and the tip) |
 | `--pr-file FILE` | `<scratch>/<task>/PR.md` | The engineer's description file: the title on line 1, a `## Summary`, the pictures |

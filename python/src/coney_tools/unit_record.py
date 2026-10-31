@@ -18,6 +18,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 from coney_tools.config import ConfigError
 from coney_tools.issue_claim_model import iso_time, parse_time
 
@@ -83,12 +85,41 @@ def write_record(path: Path, record: UnitRecord) -> None:
     temporary.replace(path)
 
 
-def log_task_of(task_dir: Path, unit_file: str) -> str | None:
+def front_of(path: Path) -> dict[str, Any] | None:
+    """The --- block of the task file at `path` as a mapping, or None when the file is missing, is not a task file or
+    holds invalid YAML. The one parse of that block that the tools which read a task folder without its record share."""
+    try:
+        text = path.read_text(encoding="utf-8").replace("\r\n", "\n")
+    except (OSError, UnicodeDecodeError):
+        return None
+    if not text.startswith("---\n") or "\n---\n" not in text:
+        return None
+    try:
+        front = yaml.safe_load(text[4:].split("\n---\n", 1)[0])
+    except yaml.YAMLError:
+        return None
+    return front if isinstance(front, dict) else None
+
+
+def front_parent(path: Path) -> str:
+    """The `parent` in the --- block of the task file at `path`, "" when there is none or the file cannot be read.
+
+    A fix task made without `task start` (a hand-made folder, an older fix) has a task file but no record; the parent is
+    all that file says about where its work and its proof are."""
+    front = front_of(path)
+    return str(front.get("parent") or "") if front is not None else ""
+
+
+def log_task_of(task_dir: Path, unit_file: str, task_file: str = "") -> str | None:
     """The task whose stamp log and scratch folder the task in `task_dir` works in (`UnitRecord.log_task`: the parent
-    for a fix task), or None when the task has no record. A record that cannot be read is a UnitRecordError: stamping
-    a guessed log would put the proof where nothing reads it."""
+    for a fix task), or None when the task has no record and, given `task_file`, no parent either. A task with no
+    record but a task file that names a parent is a fix made without `task start`: it stamps in the parent's log, the
+    one `pr open` reads. A record that cannot be read is a UnitRecordError: stamping a guessed log would put the proof
+    where nothing reads it."""
     path = task_dir / unit_file
-    return read_record(path).log_task if path.is_file() else None
+    if path.is_file():
+        return read_record(path).log_task
+    return (front_parent(task_dir / task_file) or None) if task_file else None
 
 
 def read_record(path: Path) -> UnitRecord:

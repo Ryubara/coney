@@ -368,14 +368,19 @@ protects its worktree for good; delete it once you know the work is over. An **e
 protects for a day. The file's name is `workspace.busy_marker` of the conventions file.
 
 **`workspace check-space`** prints the free space of the workspace's drive, and of the build root's when it is on
-another drive, and exits 1 when either is below `--min-gb` (default: 30,
-the `workspace.disk_min_free_gb` key of [.github/conventions.yml](repo:.github/conventions.yml)), for hooks and scripts
-(`coney-tools workspace check-space || coney-tools workspace clean --apply`); a hook that runs `clean --apply` every
-half hour keeps the drive above the floor on its own. The coordinator runs
-`clean --apply` after every merge round (`coney-tools repo audit --local` lists what it would remove and the scratch
-folders of finished work that still hold files taken from the original), and agents delete their own `build/` when they
-finish a unit ([Briefing](agents.md#briefs)). `scratch/` is not cleaned automatically: prune built docs sites, logs and
-captures there yourself (below).
+another drive, and exits 1 when either is below `--min-gb` (default: 30, the `workspace.disk_min_free_gb` key of
+[.github/conventions.yml](repo:.github/conventions.yml)), for hooks and scripts (`coney-tools workspace check-space ||
+coney-tools workspace clean --apply`); a hook that runs `clean --apply` every half hour keeps the drive above the floor
+on its own. The coordinator runs `clean --apply` after every merge round (`coney-tools repo audit --local` lists what it
+would remove and the scratch folders of finished work that still hold files taken from the original), and agents delete
+their own `build/` when they finish a unit ([Briefing](agents.md#briefs)). `scratch/` is not cleaned automatically:
+prune built docs sites, logs and captures there yourself (below). The one exception is a **fix task whose parent's pull
+request merged**: it can never be released, so `clean --apply` moves its folder to `scratch/archive/<task>` (`-2`, `-3`
+when the name is taken), stamps and notes kept, and a dry run lists it. A fix that may still be worked is left: a
+`slot.json` younger than `tasks.start.slots.reserve_minutes`, a unit record whose worktree exists, or a parent worktree
+with commits the merged pull request does not cover. The parent's branch is the `branch` of the parent's unit record,
+else the parent's id; only a merged pull request counts, since a closed one may be reopened (`task slots` hides those
+fixes by itself, [Engineer tracks](agents.md#slots)).
 
 **How long the audit takes.** `coney-tools repo audit --local` is meant to be run as a habit, so it is quick: GitHub is
 asked once for the merged pull requests of every branch (not once per worktree), the worktrees are judged and the
