@@ -17,6 +17,7 @@
 #include "graphics/render_device.h"
 #include "graphics/screen.h"
 #include "graphics/texture_grid.h"
+#include "platform/draw_stream.h"
 #include "platform/present_mode.h"
 #include "platform/window.h"
 
@@ -228,6 +229,18 @@ class RenderEngine final : public graphics::RenderDevice {
     /// not be read (the NULL backend draws nothing) or the PNG could not be written.
     [[nodiscard]] const std::optional<std::expected<CapturedFrame, Error>>& capture() const { return m_capture; }
 
+    /// Asks for what the `frameIndex`-th frame (counting presents from 0) draws to be recorded through the draw layer
+    /// (platform/draw_calls.h), from its beginFrame() to its present(), for `--draw-hash`
+    /// (docs/engine/renderer.md#comparing). With the NULL backend the frame's 2D drawing is recorded too, though
+    /// nothing is drawn. Turns on the raster digests (prepareDrawStreams()).
+    void requestDrawStream(std::uint64_t frameIndex);
+    /// Turns on the draw layer's raster digests, so the textures a recorded frame draws with are known by their
+    /// pixels: call it before they load when the frame is chosen later (`--play-level` counts from its first frame of
+    /// play).
+    void prepareDrawStreams();
+    /// The stream of the requested frame, once it has been presented; nothing before.
+    [[nodiscard]] const std::optional<DrawStream>& drawStream() const { return m_drawStream; }
+
   private:
     // Only start() makes one, which then fills it in as librw comes up.
     RenderEngine(RenderBackend backend, const WindowDesc& desc);
@@ -249,6 +262,12 @@ class RenderEngine final : public graphics::RenderDevice {
     void drawTexturedQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads, bool wrap,
                            const graphics::ScreenRect& onto);
 
+    /// Whether the 2D drawing runs: with a camera to draw through, or while the draw layer records (the NULL backend
+    /// records what it would draw).
+    [[nodiscard]] bool drawing2d() const;
+    /// The near plane 2D vertices take their depth from: the camera's, or librw's default for a new camera while the
+    /// NULL backend records.
+    [[nodiscard]] float nearPlane() const;
     /// Where the logical screen goes in a frame of `size` (WindowDesc::logicalFrame).
     [[nodiscard]] graphics::ScreenRect logicalScreenIn(graphics::Extent size) const;
     /// Places the GPU backend's window on its display, shows it unless `desc` keeps it hidden, and takes its size.
@@ -293,6 +312,8 @@ class RenderEngine final : public graphics::RenderDevice {
     std::optional<std::uint64_t> m_captureFrame;
     std::string m_capturePath;
     std::optional<std::expected<CapturedFrame, Error>> m_capture;
+    std::optional<std::uint64_t> m_drawStreamFrame; // requestDrawStream()
+    std::optional<DrawStream> m_drawStream;
     std::function<void(std::span<const std::uint8_t>, graphics::Extent)> m_frameTap; // setFrameTap()
     std::vector<std::uint8_t> m_tapRows;                                             // the tap's read-back, bottom up
     std::vector<std::uint8_t> m_tapFrame;                                            // the same, top down

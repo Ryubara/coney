@@ -32,6 +32,7 @@
 #include "graphics/human_blood.h"
 #include "human/human_animator.h"
 #include "human/player_trace.h"
+#include "platform/draw_calls.h"
 #include "platform/perf_probes.h"
 #include "platform/play_level_effects.h"
 #include "raycast/collision_mesh.h"
@@ -71,15 +72,15 @@ class LineList {
         if (m_vertices.empty()) {
             return;
         }
-        rw::SetRenderState(rw::ZTESTENABLE, 1);
-        rw::SetRenderState(rw::ZWRITEENABLE, 0);
-        rw::SetRenderState(rw::VERTEXALPHA, 0);
-        rw::SetRenderStatePtr(rw::TEXTURERASTER, nullptr);
-        rw::im3d::Transform(m_vertices.data(), static_cast<rw::int32>(m_vertices.size()), nullptr,
+        draw::setRenderState(rw::ZTESTENABLE, 1);
+        draw::setRenderState(rw::ZWRITEENABLE, 0);
+        draw::setRenderState(rw::VERTEXALPHA, 0);
+        draw::setRenderStatePtr(rw::TEXTURERASTER, nullptr);
+        draw::im3dTransform(m_vertices.data(), static_cast<rw::int32>(m_vertices.size()), nullptr,
                             rw::im3d::VERTEXXYZ | rw::im3d::VERTEXRGBA);
-        rw::im3d::RenderPrimitive(rw::PRIMTYPELINELIST);
-        rw::im3d::End();
-        rw::SetRenderState(rw::ZWRITEENABLE, 1);
+        draw::im3dRenderPrimitive(rw::PRIMTYPELINELIST);
+        draw::im3dEnd();
+        draw::setRenderState(rw::ZWRITEENABLE, 1);
     }
 
   private:
@@ -533,9 +534,9 @@ void PlayLevelMode::skin(const human::PlayerCharacter& character, const anim::Po
 void PlayLevelMode::drawCharacter() const {
     CONEY_PERF_ZONE("render.humans");
     const DrawKindScope kind(DrawKind::Humans);
-    rw::SetRenderState(rw::ZTESTENABLE, 1);
-    rw::SetRenderState(rw::ZWRITEENABLE, 1);
-    rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
+    draw::setRenderState(rw::ZTESTENABLE, 1);
+    draw::setRenderState(rw::ZWRITEENABLE, 1);
+    draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
     drawHumanPasses(*m_mesh, true, bloodTextureFor(m_player->human().health()));
     for (const Target& target : m_targets) {
         drawHumanPasses(*target.mesh, false, bloodTextureFor(target.human->health()));

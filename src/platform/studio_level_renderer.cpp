@@ -7,6 +7,7 @@
 
 #include <rw.h>
 
+#include "platform/draw_calls.h"
 #include "platform/world_renderer.h"
 
 namespace coney::platform {
@@ -56,18 +57,18 @@ std::uint64_t StudioLevelRenderer::draw(const studio::LevelDocument& level, cons
     // 3. Cleared to the sky and drawn with the world pass's states and the sky-coloured fog, as `coney --sandbox`.
     const graphics::Rgba sky = skyColour(lighting);
     rw::RGBA clear = rw::makeRGBA(sky.r, sky.g, sky.b, 255);
-    m_camera->clear(&clear, rw::Camera::CLEARIMAGE | rw::Camera::CLEARZ);
-    m_camera->beginUpdate();
-    rw::SetRenderState(rw::FOGENABLE, 1);
-    rw::SetRenderState(rw::FOGCOLOR, static_cast<rw::uint32>(sky.r) | static_cast<rw::uint32>(sky.g) << 8U |
-                                         static_cast<rw::uint32>(sky.b) << 16U | 0xFF000000U);
-    rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-    rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+    draw::clearCamera(m_camera, &clear, rw::Camera::CLEARIMAGE | rw::Camera::CLEARZ);
+    draw::beginCameraUpdate(m_camera);
+    draw::setRenderState(rw::FOGENABLE, 1);
+    draw::setRenderState(rw::FOGCOLOR, static_cast<rw::uint32>(sky.r) | static_cast<rw::uint32>(sky.g) << 8U |
+                                           static_cast<rw::uint32>(sky.b) << 16U | 0xFF000000U);
+    draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+    draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
     m_renderer->drawGeometry(m_engine);
-    rw::SetRenderState(rw::FOGENABLE, 0);
-    m_camera->endUpdate();
+    draw::setRenderState(rw::FOGENABLE, 0);
+    draw::endCameraUpdate(m_camera);
     // librw leaves the texture's frame buffer bound; Dear ImGui draws into the window's.
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    draw::bindWindowTarget();
     const auto* native = PLUGINOFFSET(rw::gl3::Gl3Raster, m_camera->frameBuffer, rw::gl3::nativeRasterOffset);
     return native->texid;
 }
@@ -97,8 +98,8 @@ bool StudioLevelRenderer::resize(int width, int height) {
     m_camera = rw::Camera::create();
     m_camera->setFrame(rw::Frame::create());
     m_camera->frameBuffer =
-        rw::Raster::create(width, height, 32, static_cast<rw::int32>(rw::Raster::CAMERATEXTURE) | rw::Raster::C8888);
-    m_camera->zBuffer = rw::Raster::create(width, height, 0, rw::Raster::ZBUFFER);
+        draw::createRaster(width, height, 32, static_cast<rw::int32>(rw::Raster::CAMERATEXTURE) | rw::Raster::C8888);
+    m_camera->zBuffer = draw::createRaster(width, height, 0, rw::Raster::ZBUFFER);
     if (m_camera->frameBuffer == nullptr || m_camera->zBuffer == nullptr) {
         m_error = std::format("could not make a {}x{} frame buffer for the Level view", width, height);
         destroyCamera();

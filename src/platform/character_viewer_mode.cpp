@@ -14,6 +14,7 @@
 #include "characters/character_rig.h"
 #include "core/chunk_system.h"
 #include "gamemodes/game_mode_stack.h"
+#include "platform/draw_calls.h"
 
 namespace coney::platform {
 
@@ -130,6 +131,7 @@ CharacterViewerMode::create(RenderEngine& engine, const io::Wad& wad, std::strin
         new CharacterViewerMode(engine, std::move(*assets), std::move(*dictionaries), clipIndex, std::move(print)));
 }
 
+// Takes the loaded character and its dictionaries; open() has already checked them.
 CharacterViewerMode::CharacterViewerMode(RenderEngine& engine, characters::CharacterAssets assets,
                                          std::vector<TextureDictionary> dictionaries, std::size_t clipIndex,
                                          std::function<void(std::string_view)> print)
@@ -188,14 +190,14 @@ void CharacterViewerMode::draw(const characters::OrbitCamera& orbit) {
     const graphics::Extent size = m_engine.frameSize();
     const float aspect = size.height > 0 ? static_cast<float>(size.width) / static_cast<float>(size.height) : 1.0F;
     placeCamera(camera, orbit.pose(), aspect);
-    camera->beginUpdate();
+    draw::beginCameraUpdate(camera);
     m_lights->use();
-    rw::SetRenderState(rw::ZTESTENABLE, 1);
-    rw::SetRenderState(rw::ZWRITEENABLE, 1);
-    rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
-    rw::SetRenderState(rw::FOGENABLE, 0);
-    rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-    rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+    draw::setRenderState(rw::ZTESTENABLE, 1);
+    draw::setRenderState(rw::ZWRITEENABLE, 1);
+    draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
+    draw::setRenderState(rw::FOGENABLE, 0);
+    draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+    draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
     m_mesh->atomic()->render();
     m_engine.present();
 }

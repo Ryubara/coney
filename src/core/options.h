@@ -206,6 +206,9 @@ struct Options {
     /// `--screenshot`: save the last frame as a PNG at this path. Requires frameLimit and a window (not headless or
     /// `--load`).
     std::optional<std::string> screenshotPath;
+    /// `--draw-hash`: record what the last frame draws through the draw layer and print its counts and hash
+    /// (docs/engine/renderer.md#comparing). Requires frameLimit; works with a window and headless.
+    bool drawHash = false;
     /// `--record`: write a video clip of Coney's own frames (and its sound) to this MP4 file, for issues and pull
     /// requests (src/core/clip_recording.h, docs/guides/testing.md#clips). Coney's own debug tooling. Puts Coney in
     /// test mode; needs a window (not headless, `--load` or `--render-references`); the path must pass

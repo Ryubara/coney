@@ -13,6 +13,8 @@
 
 #include <rw.h>
 
+#include "platform/draw_calls.h"
+
 namespace coney::platform {
 
 namespace {
@@ -86,7 +88,7 @@ std::expected<rw::Texture*, Error> loadTexture(const std::filesystem::path& path
     image->destroy();
 
     // 2. A raster with room for every level, each written in turn.
-    rw::Raster* raster = rw::Raster::create(level.width, level.height, 32, kRasterFormat);
+    rw::Raster* raster = draw::createRaster(level.width, level.height, 32, kRasterFormat);
     if (raster == nullptr) {
         return fail(ErrorCode::Invalid, std::format("the sandbox texture {} could not be uploaded", path.string()));
     }
@@ -94,12 +96,12 @@ std::expected<rw::Texture*, Error> loadTexture(const std::filesystem::path& path
         if (index > 0) {
             level = halve(level);
         }
-        rw::uint8* pixels = raster->lock(index, rw::Raster::LOCKWRITE | rw::Raster::LOCKNOFETCH);
+        rw::uint8* pixels = draw::lockRaster(raster, index, rw::Raster::LOCKWRITE | rw::Raster::LOCKNOFETCH);
         for (int y = 0; y < level.height; ++y) {
             std::copy_n(level.pixels.begin() + static_cast<std::ptrdiff_t>(y) * level.width * 4, level.width * 4,
                         pixels + static_cast<std::ptrdiff_t>(y) * raster->stride);
         }
-        raster->unlock(index);
+        draw::unlockRaster(raster, index);
     }
 
     // 3. The texture: trilinear, repeating, anisotropic.
@@ -138,6 +140,7 @@ std::expected<std::unique_ptr<SandboxRenderer>, Error> SandboxRenderer::create(c
     return renderer;
 }
 
+// Frees the atomics built for the sandbox and their frames.
 SandboxRenderer::~SandboxRenderer() {
     for (rw::Atomic* atomic : m_atomics) {
         rw::Frame* frame = atomic->getFrame();
@@ -255,24 +258,24 @@ void SandboxRenderer::render(RenderEngine& engine, const WorldView& view, const 
     }
     placeWorldCamera(camera, view);
     camera->fogPlane = std::min(m_fogStart, view.drawDistance * 0.99F);
-    camera->beginUpdate();
+    draw::beginCameraUpdate(camera);
 
     // The states of a world pass: Z test and write, back faces culled, fog in the sky colour (red in the low byte).
-    rw::SetRenderState(rw::ZTESTENABLE, 1);
-    rw::SetRenderState(rw::ZWRITEENABLE, 1);
-    rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
-    rw::SetRenderState(rw::FOGENABLE, 1);
-    rw::SetRenderState(rw::FOGCOLOR, static_cast<rw::uint32>(m_sky.r) | static_cast<rw::uint32>(m_sky.g) << 8U |
-                                         static_cast<rw::uint32>(m_sky.b) << 16U | 0xFF000000U);
-    rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-    rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+    draw::setRenderState(rw::ZTESTENABLE, 1);
+    draw::setRenderState(rw::ZWRITEENABLE, 1);
+    draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
+    draw::setRenderState(rw::FOGENABLE, 1);
+    draw::setRenderState(rw::FOGCOLOR, static_cast<rw::uint32>(m_sky.r) | static_cast<rw::uint32>(m_sky.g) << 8U |
+                                           static_cast<rw::uint32>(m_sky.b) << 16U | 0xFF000000U);
+    draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+    draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
     for (rw::Atomic* atomic : m_atomics) {
         atomic->render();
     }
     if (drawObjects) {
         drawObjects();
     }
-    rw::SetRenderState(rw::FOGENABLE, 0);
+    draw::setRenderState(rw::FOGENABLE, 0);
     engine.present();
 }
 
@@ -280,9 +283,9 @@ void SandboxRenderer::drawGeometry(const RenderEngine& engine) const {
     if (engine.camera() == nullptr) {
         return; // NULL backend: nothing to draw
     }
-    rw::SetRenderState(rw::ZTESTENABLE, 1);
-    rw::SetRenderState(rw::ZWRITEENABLE, 1);
-    rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
+    draw::setRenderState(rw::ZTESTENABLE, 1);
+    draw::setRenderState(rw::ZWRITEENABLE, 1);
+    draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
     for (rw::Atomic* atomic : m_atomics) {
         atomic->render();
     }

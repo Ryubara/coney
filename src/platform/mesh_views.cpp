@@ -10,6 +10,7 @@
 
 #include <rw.h>
 
+#include "platform/draw_calls.h"
 #include "platform/play_level_controls.h"
 
 namespace coney::platform {
@@ -43,14 +44,14 @@ struct SavedMaterial {
 class SavedStates {
   public:
     SavedStates()
-        : m_fog(rw::GetRenderState(rw::FOGENABLE)), m_alphaTest(rw::GetRenderState(rw::ALPHATESTFUNC)),
-          m_zWrite(rw::GetRenderState(rw::ZWRITEENABLE)), m_vertexAlpha(rw::GetRenderState(rw::VERTEXALPHA)) {}
+        : m_fog(draw::getRenderState(rw::FOGENABLE)), m_alphaTest(draw::getRenderState(rw::ALPHATESTFUNC)),
+          m_zWrite(draw::getRenderState(rw::ZWRITEENABLE)), m_vertexAlpha(draw::getRenderState(rw::VERTEXALPHA)) {}
     // Puts the saved states back, however the pass ends.
     ~SavedStates() {
-        rw::SetRenderState(rw::FOGENABLE, m_fog);
-        rw::SetRenderState(rw::ALPHATESTFUNC, m_alphaTest);
-        rw::SetRenderState(rw::ZWRITEENABLE, m_zWrite);
-        rw::SetRenderState(rw::VERTEXALPHA, m_vertexAlpha);
+        draw::setRenderState(rw::FOGENABLE, m_fog);
+        draw::setRenderState(rw::ALPHATESTFUNC, m_alphaTest);
+        draw::setRenderState(rw::ZWRITEENABLE, m_zWrite);
+        draw::setRenderState(rw::VERTEXALPHA, m_vertexAlpha);
     }
     SavedStates(const SavedStates&) = delete;
     SavedStates& operator=(const SavedStates&) = delete;
@@ -160,13 +161,11 @@ void MeshViews::flatPass(rw::Atomic* atomic, const debug::MeshDrawPlan& plan, bo
         material->surfaceProps.ambient = 1.0F;
     }
     const SavedStates states;
-    rw::SetRenderState(rw::FOGENABLE, 0);
-    rw::SetRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);
+    draw::setRenderState(rw::FOGENABLE, 0);
+    draw::setRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);
     if (lines) {
-        rw::SetRenderState(rw::ZWRITEENABLE, 0);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        glEnable(GL_POLYGON_OFFSET_LINE);
-        glPolygonOffset(-1.0F, -1.0F);
+        draw::setRenderState(rw::ZWRITEENABLE, 0);
+        draw::setWireframe(true);
     }
     // Drawn in the flat world, so librw lights it with the white ambient alone; not at all without OpenGL (librw's NULL
     // device, as the tests run it).
@@ -180,8 +179,7 @@ void MeshViews::flatPass(rw::Atomic* atomic, const debug::MeshDrawPlan& plan, bo
         rw::engine->currentWorld = current;
     }
     if (lines) {
-        glDisable(GL_POLYGON_OFFSET_LINE);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        draw::setWireframe(false);
     }
     for (rw::int32 i = 0; i < geometry->matList.numMaterials; ++i) {
         rw::Material* material = geometry->matList.materials[i];

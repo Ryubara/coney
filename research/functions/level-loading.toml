@@ -249,7 +249,7 @@ name = "LevelObject_RenderBackground"
 page = "level-loading.md#original-structure"
 level = "confirmed-code"
 coney = "src/platform/world_renderer.h:WorldRenderer::renderBackground"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0040e2d8

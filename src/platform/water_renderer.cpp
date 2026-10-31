@@ -9,6 +9,7 @@
 #include <rw.h>
 
 #include "core/name_hash.h"
+#include "platform/draw_calls.h"
 #include "platform/play_scenery.h"
 
 namespace coney::platform {
@@ -69,18 +70,18 @@ void WaterRenderer::draw(const effects::Water& water) {
 
     // Culling off and the texture repeating; Z test, Z write and fog stay as the world pass left them.
     rw::Raster* raster = m_dictionary ? m_dictionary->textures().front()->raster : nullptr;
-    rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
-    rw::SetRenderState(rw::VERTEXALPHA, 1);
-    rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-    rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
-    rw::SetRenderState(rw::TEXTUREFILTER, rw::Texture::LINEAR);
-    rw::SetRenderState(rw::TEXTUREADDRESS, rw::Texture::WRAP);
-    rw::SetRenderStatePtr(rw::TEXTURERASTER, raster);
-    rw::im3d::Transform(vertices.data(), static_cast<rw::int32>(vertices.size()), nullptr,
+    draw::setRenderState(rw::CULLMODE, rw::CULLNONE);
+    draw::setRenderState(rw::VERTEXALPHA, 1);
+    draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+    draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+    draw::setRenderState(rw::TEXTUREFILTER, rw::Texture::LINEAR);
+    draw::setRenderState(rw::TEXTUREADDRESS, rw::Texture::WRAP);
+    draw::setRenderStatePtr(rw::TEXTURERASTER, raster);
+    draw::im3dTransform(vertices.data(), static_cast<rw::int32>(vertices.size()), nullptr,
                         rw::im3d::VERTEXXYZ | rw::im3d::VERTEXRGBA | rw::im3d::VERTEXUV);
-    rw::im3d::RenderIndexedPrimitive(rw::PRIMTYPETRILIST, indices.data(), static_cast<rw::int32>(indices.size()));
-    rw::im3d::End();
-    rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
+    draw::im3dRenderIndexedPrimitive(rw::PRIMTYPETRILIST, indices.data(), static_cast<rw::int32>(indices.size()));
+    draw::im3dEnd();
+    draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
 }
 
 } // namespace coney::platform

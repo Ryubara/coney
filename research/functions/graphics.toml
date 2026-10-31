@@ -556,7 +556,7 @@ name = "RwDevice_BlurPass"
 page = "graphics.md#motion-blur"
 level = "confirmed-code"
 coney = "src/platform/render_engine.h:RenderEngine::blurScreen"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00195238

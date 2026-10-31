@@ -12,6 +12,7 @@
 #include "core/assert.h"
 #include "core/chunk_types.h"
 #include "gamemodes/load_entry_mode.h"
+#include "platform/draw_calls.h"
 #include "platform/texture_lod.h"
 
 namespace coney::platform {
@@ -44,12 +45,12 @@ rw::Raster* convertPs2ByLevels(rw::Raster* source) {
     rw::int32 format = 0;
     rw::Raster::imageFindRasterFormat(image, rw::Raster::TEXTURE, &width, &height, &depth, &format);
     format |= source->format & (rw::Raster::MIPMAP | rw::Raster::AUTOMIPMAP);
-    rw::Raster* converted = rw::Raster::create(width, height, depth, format);
+    rw::Raster* converted = draw::createRaster(width, height, depth, format);
     if (converted == nullptr) {
         image->destroy();
         return nullptr;
     }
-    converted->setFromImage(image);
+    draw::setRasterFromImage(converted, image);
     image->destroy();
     const rw::int32 levels = source->getNumLevels();
     for (rw::int32 level = 1; level < levels; ++level) {
@@ -58,9 +59,9 @@ rw::Raster* convertPs2ByLevels(rw::Raster* source) {
         rw::Image* levelImage = source->toImage(); // locks "level 0" of the positioned raster: one unswizzle
         if (levelImage != nullptr) {
             levelImage->unpalettize();
-            converted->lock(level, rw::Raster::LOCKWRITE | rw::Raster::LOCKNOFETCH);
-            converted->setFromImage(levelImage);
-            converted->unlock(level);
+            static_cast<void>(draw::lockRaster(converted, level, rw::Raster::LOCKWRITE | rw::Raster::LOCKNOFETCH));
+            draw::setRasterFromImage(converted, levelImage);
+            draw::unlockRaster(converted, level);
             levelImage->destroy();
         }
         source->unlock(level);
@@ -117,10 +118,8 @@ void keepLevels(rw::Raster* raster, rw::int32 levels) {
         return;
     }
     native->numLevels = static_cast<rw::int8>(levels);
-    const rw::uint32 bound = rw::gl3::bindTexture(native->texid);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, levels - 1);
-    rw::gl3::bindTexture(bound); // librw's state cache still holds the texture bound before
-    native->filterMode = 0xFF;   // the device sets the filter again, without mipmaps for a single level
+    draw::setRasterLevels(raster, levels);
+    native->filterMode = 0xFF; // the device sets the filter again, without mipmaps for a single level
 }
 
 // Whether librw's PS2 texture reader can take `texture` without writing past the buffers it allocates. librw sizes
@@ -233,6 +232,7 @@ TextureDictionary::TextureDictionary(TextureDictionary&& other) noexcept
     : m_dictionary(std::exchange(other.m_dictionary, nullptr)), m_info(std::move(other.m_info)),
       m_skipped(other.m_skipped) {}
 
+// Frees this dictionary, then takes the other's, which is left empty.
 TextureDictionary& TextureDictionary::operator=(TextureDictionary&& other) noexcept {
     if (this != &other) {
         destroy();
@@ -300,7 +300,7 @@ std::expected<void, Error> TextureDictionary::convertForDrawing() {
                                                        : std::nullopt;
         rw::Raster* converted = texture->raster->platform == rw::PLATFORM_PS2 && levels > 1
                                     ? convertPs2ByLevels(texture->raster)
-                                    : rw::Raster::convertTexToCurrentPlatform(texture->raster);
+                                    : draw::convertRasterForDrawing(texture->raster);
         if (converted == nullptr) {
             return conversionFailure(texture, "for drawing");
         }

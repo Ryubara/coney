@@ -6,6 +6,8 @@
 
 #include <rw.h>
 
+#include "platform/draw_calls.h"
+
 namespace coney::platform {
 
 namespace {
@@ -33,7 +35,7 @@ bool MovieTexture::write(std::span<const std::uint8_t> rgba, int width, int heig
     }
     if (m_texture == nullptr || width != m_width || height != m_height) {
         release();
-        rw::Raster* raster = rw::Raster::create(width, height, 32, kRasterFormat);
+        rw::Raster* raster = draw::createRaster(width, height, 32, kRasterFormat);
         if (raster == nullptr) {
             return false;
         }
@@ -43,7 +45,7 @@ bool MovieTexture::write(std::span<const std::uint8_t> rgba, int width, int heig
         m_height = height;
     }
     rw::Raster* raster = m_texture->raster;
-    rw::uint8* pixels = raster->lock(0, rw::Raster::LOCKWRITE | rw::Raster::LOCKNOFETCH);
+    rw::uint8* pixels = draw::lockRaster(raster, 0, rw::Raster::LOCKWRITE | rw::Raster::LOCKNOFETCH);
     if (pixels == nullptr) {
         return false;
     }
@@ -54,7 +56,7 @@ bool MovieTexture::write(std::span<const std::uint8_t> rgba, int width, int heig
         std::copy_n(rgba.begin() + (y * row), row,
                     pixels + (static_cast<std::ptrdiff_t>(height - 1 - y) * raster->stride));
     }
-    raster->unlock(0);
+    draw::unlockRaster(raster, 0);
     return true;
 }
 

@@ -1151,9 +1151,6 @@ tag = 8
 ["src/platform/character_lights.cpp"]
 comment = 1
 
-["src/platform/character_viewer_mode.cpp"]
-comment = 1
-
 ["src/platform/character_viewer_mode.h"]
 comment = 3
 
@@ -1187,17 +1184,8 @@ comment = 2
 ["src/platform/placed_objects.h"]
 comment = 1
 
-["src/platform/reference_renderer.cpp"]
-comment = 1
-
-["src/platform/sandbox_renderer.cpp"]
-comment = 1
-
 ["src/platform/sandbox_viewer_mode.h"]
 comment = 2
-
-["src/platform/texture_dictionary.cpp"]
-comment = 1
 
 ["src/platform/texture_lookup.cpp"]
 comment = 1

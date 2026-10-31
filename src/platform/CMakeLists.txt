@@ -2,7 +2,7 @@
 # Two libraries live here (docs/guides/building.md#debug-tools): coney_platform, the game's side of SDL3 and librw,
 # as a library so the tests can use it too (with the headless renderer); and coney_devtools, the debug tools'
 # platform half, at the end of this file.
-add_library(coney_platform STATIC render_engine.cpp sprite_sheets.cpp texture_dictionary.cpp texture_lod.cpp
+add_library(coney_platform STATIC draw_calls.cpp draw_stream.cpp render_engine.cpp sprite_sheets.cpp texture_dictionary.cpp texture_lod.cpp
                                   window.cpp world_atomic.cpp)
 # The streamed-world viewer (docs/research/world.md#coneys-implementation).
 target_sources(coney_platform PRIVATE level_file.cpp texture_lookup.cpp world_renderer.cpp world_set.cpp world_viewer_mode.cpp front_end_scene.cpp)
