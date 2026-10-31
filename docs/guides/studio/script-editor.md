@@ -431,6 +431,11 @@ the Inspector are checked alike.
   own Lua 5.4 and is saved as itself; a `game:/scripts/...` script opens read-only, editing it makes a local copy and
   saves a patch, and the editor shows a banner "Game script, saved as a patch" ([Which kind of script a file
   is](mission-mods.md#which-kind)).
+- **`global.lua`'s helpers in game scripts.** In a game-state (Lua 4.0) file, the completions also offer the functions
+  and globals `global.lua` defines (`ActivateWarriors`, `ObjectiveSetup`, `runNextMission`, `true`), as bare globals,
+  with each entry's text from [global.lua helpers](../../references/bindings/helpers.md) on hover. That generated
+  reference is their source, as the bindings reference is the natives'. A project's own Lua 5.4 script never gets
+  them: it runs in the project's state, which has no `global.lua`.
 - **Errors from playing.** A runtime error raised during Play ([The sandbox](lua-sdk.md#sandbox)) shows as a marker on
   its line, with the message as the tooltip, until the next Play.
 

@@ -244,7 +244,9 @@ uv run --project python coney-tools bindings render [--check]
 
 Checks the YAML and writes `docs/references/bindings/`: `index.md`, one page per category, each binding under an anchor
 of its name in lower case (`hud.md#hudsetobjective`), `mission1.md` (the first mission's coverage) and `story.md`
-(the later levels' coverage). A page left over from a removed category is deleted. Run it after editing the YAML and
+(the later levels' coverage), and `helpers.md`, the reference of `global.lua`'s helpers, from
+`research/script-helpers.yaml` ([The research data](research-data.md#script-helpers)). A page left over from a removed
+category is deleted. Run it after editing the YAML and
 commit the pages with the change. With `--check` it writes nothing and exits with 1 when a page is stale; CI runs it
 that way. Either way it refuses to go on while the YAML has problems, and lists them: an unknown key, a file that is
 not a category, a missing description on a described entry, a thorough entry with an argument left unexplained, an
@@ -297,6 +299,19 @@ the scene tests) with the same reach rule, and sets every entry's `usage.levels`
 call it (no key when none). It prints each level's bindings and how many are new (called by no earlier level, the
 first mission included) and traced; `bindings render` publishes them as
 [Story coverage](../references/bindings/story.md). Run `bindings render` after it; `--check` as for `--first-mission`.
+
+```sh
+uv run --project python coney-tools bindings scan-helpers [DISC] [--chunks DIR] [--check]
+```
+
+Reads `global.lua` and every other compiled script from your disc (or from a folder of chunks `wad extract` wrote, with
+`--chunks`) and writes what `bindings render` needs into `research/script-helpers.yaml`: the chunk's SHA-1 and each
+entry's `scan` line, which holds names and counts only (each helper's function number, parameter count, the natives and
+helpers it calls or names as a callback, how many other scripts call it, whether `global.lua` runs it while loading,
+registers it or deletes it; each global's readers and kind of value). A helper or global the file lacks gets an entry
+to fill in, and one the disc no longer has is reported; either makes it exit with 1, and `bindings render` refuses the
+file until the entries are put right. Run `bindings render` after it. With `--check` it writes nothing and exits with 1
+when a line is stale; it needs the disc, so CI does not run it.
 
 ```sh
 uv run --project python coney-tools bindings stats
@@ -372,6 +387,20 @@ coney-tools bindings scan-usage [DISC] (--first-mission | --story) [--check]
 | `--first-mission` | flag | off | set usage.mission1 from the first mission's scripts. Not with `--story`. |
 | `--story` | flag | off | set usage.levels from the story's later levels' scripts. Not with `--first-mission`. |
 | `--check` | flag | off | change nothing; exit 1 when a field is stale |
+
+### `bindings scan-helpers` {#bindings-scan-helpers-usage}
+
+Set the counts of research/script-helpers.yaml from global.lua and the scripts on your disc.
+
+```text
+coney-tools bindings scan-helpers [DISC] [--chunks CHUNKS] [--check]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[DISC]` | text | none | a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml |
+| `--chunks CHUNKS` | path | none | a folder of compiled chunks (`wad extract` output) instead of the disc |
+| `--check` | flag | off | change nothing; exit 1 when a count is stale |
 <!-- command-reference:end -->
 
 ## refs {#refs}

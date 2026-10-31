@@ -1,0 +1,1581 @@
+# The helpers and globals of the game's global.lua, the API the level scripts build on: one entry each, with our own
+# parameter names, group and description (LEGAL.md: names, counts and our own words; never the script's text).
+# Schema: docs/guides/research-data.md#script-helpers. The `scan` lines and `chunk_sha1` are written by
+# `coney-tools bindings scan-helpers` from your disc; docs/references/bindings/helpers.md is generated from this file
+# by `coney-tools bindings render`. Edit the rest here, then render.
+chunk_sha1: f0f20374f5d6f8ac1dd48ee44a5dfb5ebf5f7b87
+helpers:
+  - name: tpos
+    group: tables
+    params: [list, value]
+    description: >-
+      Returns the zero-based position of `value` in the table `list`, counting entries in traversal order, or -1 when no
+      entry equals it.
+    scan: {function: 0, params: 2, scripts: 0, calls: 0}
+
+  - name: tsize
+    group: tables
+    params: [list]
+    description: >-
+      Counts every entry of a table, array part and named fields alike (Lua 4.0's `getn` counts only the array part).
+    scan: {function: 1, params: 1, scripts: 118, calls: 477}
+
+  - name: CfgUnlockables
+    group: setup
+    params: []
+    description: >-
+      Run once by `global.lua` as it loads: resets the unlockables manager, registers each row of the `Unlockables`
+      table as an unlockable, and unlocks every record of levels 0 and 8 (`UM_Unlock` with group and item 0;
+      [Player state](../../research/player-state.md#unlockables)). When level 0 is not complete (level 0 comes before
+      the first mission, `level99`, in the story's chain), it also clears the "new" marks of unlockable types 0 to 4.
+      It then deletes itself and the table, so no script can call it.
+    scan: {function: 2, params: 0, natives: [UM_Reset, UM_SetNumUnlockables, UM_SetUnlockable, UM_IsLevelComplete, UM_Unlock, UM_IsTypeDirty], helpers: [tsize], scripts: 0, calls: 0, at_load: true, deleted_by: [CfgUnlockables]}
+
+  - name: CfgGlobalMulti
+    group: setup
+    params: []
+    description: >-
+      Run once by `global.lua` as it loads: resets the pad commands and binds the default ones, sets the action button's
+      jump and pickup behaviour, the analogue stick's creep and run thresholds (the run threshold depends on the
+      platform), the action distances and the crew's default follow slots, clears room smoke, fog and rain, and loads
+      the difficulty's config script (easy, normal, hard, fury, or the rumble one in the rumble levels; the Armies of
+      the Night levels always use normal).
+    scan: {function: 3, params: 0, natives: [ResetCommands, CfgJumpIsAction, CfgPickupIsAction, CfgPickupIsGrab, CfgPlayerCombatWalkOnly, CfgDisableMusicForScenes, CfgTagStartCallback, CfgEnableTurfInvasion, SoundSetMusicVolume, SndSetListener, CfgStickDeflection, GetDifficulty, GetProfileDifficulty, GetLevelId, GetCurrentLevelIndex, doFile, CfgBaseChanceToBlock, CfgBurnTime, AddCommand, CfgActionDistance, HUDEnableClubActionText, EndRoomSmoke, End3DFog, EndFog, EndRain, CfgSetDefaultFollowSlotSet], scripts: 0, calls: 0, at_load: true}
+
+  - name: KiAi
+    group: debug
+    params: []
+    description: >-
+      Kills humans through `KillHumans` with the argument 5; a developer shortcut.
+    scan: {function: 4, params: 0, natives: [KillHumans], scripts: 0, calls: 0}
+
+  - name: DeactivateWarriors
+    group: squad
+    params: []
+    description: >-
+      Switches off the brains of `player`, of `player2` when that one is alive, and suspends the `GangWarriors` gang, so
+      the player's crew stops acting (before a cutscene, say). Each global is skipped when it is not set.
+    scan: {function: 5, params: 0, natives: [BrDead, HuIsAlive, GangSuspend], scripts: 46, calls: 68}
+
+  - name: ActivateWarriors
+    group: squad
+    params: []
+    description: >-
+      The reverse of `DeactivateWarriors`: switches the brains of `player` and a living `player2` back on and resumes
+      the `GangWarriors` gang.
+    scan: {function: 6, params: 0, natives: [BrDead, HuIsAlive, GangSuspend], scripts: 41, calls: 66}
+
+  - name: ActivateBrain
+    group: squad
+    params: [humans]
+    description: >-
+      Switches the brain back on for one human, or for each human of a table; dead humans are skipped.
+    scan: {function: 7, params: 1, natives: [HuIsAlive, BrDead], scripts: 7, calls: 8}
+
+  - name: DeactivateBrain
+    group: squad
+    params: [humans]
+    description: >-
+      Switches the brain off for one human, or for each human of a table, so it stands idle; dead humans are skipped.
+    scan: {function: 8, params: 1, natives: [HuIsAlive, BrDead], scripts: 12, calls: 20}
+
+  - name: FlushGang
+    group: squad
+    params: [humans]
+    description: >-
+      Clears the current goals and actions (`BrFlush`) of one human, or of each living human in a table.
+    scan: {function: 9, params: 1, natives: [HuIsAlive, BrFlush], scripts: 0, calls: 0}
+
+  - name: SetFollowForm
+    group: squad
+    params: [leader, followers, slots, distance]
+    description: >-
+      Gives `leader` follow slots at the given offsets (a table of `{x, y}` offsets, or one offset) in slot set 2, and
+      makes `followers` (a table, or one human) follow it with the follow-player goal at `distance` metres (1 when not
+      given).
+    scan: {function: 10, params: 4, natives: [BrSetNumFollowSlots, BrSetFollowSlot, HuGetGang, GoalFollowPlayer], helpers: [SetFollow], scripts: 0, calls: 0}
+
+  - name: SetFollow
+    group: squad
+    params: [leader, humans, distance]
+    description: >-
+      Makes up to ten humans of a table (the leader left out) follow `leader` with the follow-player goal.
+    scan: {function: 11, params: 3, natives: [GoalFollowPlayer], scripts: 1, calls: 1}
+
+  - name: ChangeCam
+    group: cameras
+    params: [camera, seconds]
+    description: >-
+      Makes a camera current, blending over `seconds`, and resets it.
+    scan: {function: 12, params: 2, natives: [CameraMakeActive, CameraReset], scripts: 31, calls: 73}
+
+  - name: CleanTable
+    group: tables
+    params: [humans]
+    description: >-
+      Returns a copy of a table of humans with only the living ones, under the same keys.
+    scan: {function: 13, params: 1, natives: [HuIsAlive], scripts: 2, calls: 2}
+
+  - name: GetIndex
+    group: tables
+    params: [value, list]
+    description: >-
+      Returns the key under which `value` is stored in `list`, or nil.
+    scan: {function: 14, params: 2, scripts: 19, calls: 44}
+
+  - name: CameraCreateFollow
+    group: cameras
+    params: [human, player]
+    description: >-
+      Creates the follow camera for a human (`CamSetupFollow`), configures it from the `FOLLOWCAM_` globals and returns
+      its handle; the level scripts call it to make the player's camera.
+    scan: {function: 15, params: 2, natives: [CamSetupFollow, CfgFollowCamera], scripts: 121, calls: 154}
+
+  - name: CameraNormal
+    group: cameras
+    params: []
+    description: >-
+      Puts the follow camera back to the `FOLLOWCAM_` settings and resets `MainCam`.
+    scan: {function: 16, params: 0, natives: [CfgFollowCamera, CameraReset], scripts: 0, calls: 0}
+
+  - name: CameraRage
+    group: cameras
+    params: []
+    description: >-
+      Pulls the follow camera in close with the wider `RAGECAM_` field of view, for rage mode, and resets `MainCam`.
+    scan: {function: 17, params: 0, natives: [CfgFollowCamera, CameraReset], scripts: 0, calls: 0}
+
+  - name: CopResponse
+    group: gangs
+    params: [human, event, other]
+    description: >-
+      An empty callback: a police-response hook that does nothing.
+    scan: {function: 18, params: 3, scripts: 7, calls: 7}
+
+  - name: CivFlagNet
+    group: gangs
+    params: [human, flag, other]
+    description: >-
+      A world-flag callback for civilians: sends the human on through the flag network (`FlagNetTraverse`).
+    scan: {function: 19, params: 3, natives: [FlagNetTraverse], scripts: 14, calls: 28}
+
+  - name: CopFlagNet
+    group: gangs
+    params: [human, flag, other]
+    description: >-
+      The same as `CivFlagNet`, for police: the human walks on through the flag network.
+    scan: {function: 20, params: 3, natives: [FlagNetTraverse], scripts: 9, calls: 12}
+
+  - name: HookerFlagNet
+    group: gangs
+    params: [human, flag, other]
+    description: >-
+      A world-flag callback for street walkers: makes the human ignore weapons, investigations and violence, then walk
+      the flag network with type 7.
+    scan: {function: 21, params: 3, natives: [BrSetThugWantsWeapon, BrSetInvestigateResponse, BrSetReactToViolence, FlagNetTraverse], scripts: 2, calls: 2}
+
+  - name: RemoveGang
+    group: gangs
+    params: [gang]
+    description: >-
+      Deletes a gang: clears its tactic and its `Super` entry when it has one, flushes its members' brains and deletes
+      it. Does nothing for nil.
+    scan: {function: 22, params: 1, natives: [TacticClear, GangBrFlush, GangDelete], scripts: 160, calls: 1057}
+
+  - name: GangExit
+    group: gangs
+    params: [gang, exit, callback]
+    description: >-
+      Sends a gang out of the world after clearing its tactic and its `Super` entry: `GangExitWorld` walks the members
+      to the `exit` flag and calls `callback` once the last has gone. Does nothing for nil.
+    scan: {function: 23, params: 3, natives: [TacticClear, GangExitWorld], scripts: 1, calls: 2}
+
+  - name: HuNotDead
+    group: squad
+    params: [human]
+    description: >-
+      True when the human is alive; false for nil. Its second test asks `HuIsDead` about `true` (the number 1) instead
+      of the human; since `HuIsDead` is true for a handle that does not resolve, it reads the same as `HuIsAlive` unless
+      handle 1 is a living human.
+    evidence: inferred
+    scan: {function: 24, params: 1, natives: [HuIsAlive, HuIsDead], scripts: 1, calls: 1}
+
+  - name: GangSetMsg
+    group: gangs
+    params: [gang, message, handler]
+    description: >-
+      Sets a gang's message handler when the gang is not nil.
+    scan: {function: 25, params: 3, natives: [GangSetMsgHandler], scripts: 11, calls: 44}
+
+  - name: DefaultGang
+    group: gangs
+    params: [gang, turf, friends, enemies, handler]
+    description: >-
+      Sets up a gang in one call: its enemies, its turf boxes and its friends (each a table or a single value, nil
+      skipped) and, when given, the function that handles its message 2.
+    scan: {function: 26, params: 5, natives: [GangSetMsgHandler], helpers: [GangSetupEnemies, GangSetupTurf, GangSetupFriends], scripts: 10, calls: 24}
+
+  - name: GangSetupTurf
+    group: gangs
+    params: [gang, boxes]
+    description: >-
+      Adds one turf box, or each of a table, to a gang.
+    scan: {function: 27, params: 2, natives: [GangAddTurfBox], scripts: 3, calls: 4}
+
+  - name: GangSetupFriends
+    group: gangs
+    params: [gang, friends]
+    description: >-
+      Makes a gang friends with one gang, or with each gang of a table other than itself.
+    scan: {function: 28, params: 2, natives: [GangMakeFriends], scripts: 5, calls: 14}
+
+  - name: GangSetupEnemies
+    group: gangs
+    params: [gang, enemies]
+    description: >-
+      Makes a gang enemies with one gang, or with each gang of a table other than itself.
+    scan: {function: 29, params: 2, natives: [GangMakeEnemies], scripts: 10, calls: 16}
+
+  - name: InString
+    group: strings
+    params: [text, pattern, after]
+    description: >-
+      Splits `text` at the first match of `pattern`: returns the part from the match on when `after` is true, else the
+      part before it.
+    scan: {function: 30, params: 3, scripts: 1, calls: 1}
+
+  - name: SetNormalEffects
+    group: sound
+    params: []
+    description: >-
+      Puts the sound effect back to the normal reverb preset.
+    scan: {function: 31, params: 0, natives: [SoundSetEffect], scripts: 17, calls: 21}
+
+  - name: SetTunnelEffects
+    group: sound
+    params: []
+    description: >-
+      Switches the sound effect to the tunnel reverb preset.
+    scan: {function: 32, params: 0, natives: [SoundSetEffect], scripts: 4, calls: 5}
+
+  - name: SetupInteriorCams
+    group: cameras
+    params: [triggers]
+    description: >-
+      Registers `EnterInteriorCam` and `ExitInteriorCam` as the enter and exit handlers of each trigger in a table, so
+      the camera and sound change when a player goes indoors, and keeps the table in `vInteriorCam`.
+    scan: {function: 33, params: 1, natives: [SetMsgHandler], helpers: [EnterInteriorCam, ExitInteriorCam], scripts: 2, calls: 2}
+
+  - name: FlagPos
+    group: tables
+    params: [flag]
+    description: >-
+      Returns a world flag's position as a plain `{x, y, z}` table.
+    scan: {function: 34, params: 1, natives: [GetFlagPos], scripts: 41, calls: 278}
+
+  - name: SetVag
+    group: sound
+    params: [name]
+    description: >-
+      Builds the path of a speech sound from its name (the folder is the part of the name before the first underscore);
+      nil for nil.
+    scan: {function: 35, params: 1, helpers: [InString], scripts: 65, calls: 515}
+
+  - name: EnterInteriorCam
+    group: cameras
+    params: [trigger, human]
+    description: >-
+      The enter handler `SetupInteriorCams` registers: when a player walks in, shortens the follow camera, starts the
+      blowing-litter camera effect (`StartGarbage`), switches the world to indoor mode and halves the ambient track's
+      volume.
+    scan: {function: 36, params: 2, natives: [HuIsAPlayer, CfgFollowCamera, StartGarbage, CfgSetOutdoorMode, SetAmbientTrackVolume], scripts: 3, calls: 3}
+
+  - name: ExitInteriorCam
+    group: cameras
+    params: [trigger, human]
+    description: >-
+      The exit handler `SetupInteriorCams` registers: restores the follow camera, ends the litter effect, switches back
+      to outdoor mode and the full ambient volume.
+    scan: {function: 37, params: 2, natives: [HuIsAPlayer, CfgFollowCamera, EndGarbage, CfgSetOutdoorMode, SetAmbientTrackVolume], scripts: 3, calls: 3}
+
+  - name: xor
+    group: tables
+    params: [list]
+    description: >-
+      True when the table holds exactly one entry; despite its name it counts, it does no bitwise operation.
+    scan: {function: 38, params: 1, helpers: [tsize], scripts: 0, calls: 0}
+
+  - name: SetRageMode
+    group: rage
+    params: [human, unused]
+    description: >-
+      The rage-start handler `global.lua` registers with `CfgRageHandlers`: makes the human invulnerable, unstunnable,
+      ungrabbable and unknockable and keeps their weapon; under the rage cheat it unlocks the rage meter.
+    scan: {function: 39, params: 2, natives: [HuSetGodMode, HuSetUnstunnable, HuSetReducedReact, HuSetIncreasedReact, HuSetUngrabbable, HuSetUngroundable, HuSetKeepWeapon, HuSetLockedRage], scripts: 1, calls: 1, registered: true}
+
+  - name: ClrRageMode
+    group: rage
+    params: [human, unused]
+    description: >-
+      The rage-end handler: clears what `SetRageMode` set and, under the rage cheat, schedules `TurnOnRageCheat` to
+      refill the meter a moment later.
+    scan: {function: 40, params: 2, natives: [HuSetGodMode, HuSetUnstunnable, HuSetReducedReact, HuSetIncreasedReact, HuSetUngrabbable, HuSetUngroundable, HuSetKeepWeapon, ScheduleFuncArg1], helpers: [TurnOnRageCheat], scripts: 1, calls: 1, registered: true}
+
+  - name: TurnOnRageCheat
+    group: rage
+    params: [human]
+    description: >-
+      Fills a human's rage meter and locks it full (the rage cheat).
+    scan: {function: 41, params: 1, natives: [HuSetFullRage, HuSetLockedRage], scripts: 0, calls: 0}
+
+  - name: RageFull
+    group: rage
+    params: [human, full]
+    description: >-
+      The rage-meter handler: a strong motion blur while the meter is full, the normal light blur otherwise.
+    scan: {function: 42, params: 2, natives: [QueueMotionBlurEffect], scripts: 1, calls: 1, registered: true}
+
+  - name: SetCloseMode
+    group: lighting
+    params: []
+    description: >-
+      Clears the motion blur and turns on the close-up light, for close camera moments.
+    scan: {function: 43, params: 0, natives: [QueueMotionBlurEffect], helpers: [TurnOnCloselight], scripts: 0, calls: 0}
+
+  - name: ClearCloseMode
+    group: lighting
+    params: []
+    description: >-
+      Restores the normal motion blur and turns the close-up light off.
+    scan: {function: 44, params: 0, natives: [QueueMotionBlurEffect], helpers: [TurnOffCloselight], scripts: 0, calls: 0}
+
+  - name: debuglua
+    group: debug
+    params: []
+    description: >-
+      Developer leftover: runs the `debug` script and dumps the Lua tables.
+    scan: {function: 45, params: 0, natives: [doFile], scripts: 0, calls: 0}
+
+  - name: DbgEnterCheat
+    group: cheats
+    params: [cheat]
+    description: >-
+      The cheat callback `global.lua` registers with `SetCheatCallback`: applies cheat number `cheat` (0 to 26, never in
+      level 100) to each living player through `DoCheat`, and for player 1 plays the cheat's voice line and shows the
+      cheat message.
+    scan: {function: 46, params: 1, natives: [HuIsAPlayer, HuIsAlive, SoundPlay2D, HUDSetAnnounceMsg], helpers: [DoCheat], scripts: 0, calls: 0, registered: true}
+
+  - name: DoCheat
+    group: cheats
+    params: [cheat, human, player]
+    description: >-
+      Applies one cheat to a player and returns true when it took: full inventory and money, god mode, endless stamina,
+      clearing the police, locked rage, a weapon in hand (refused in boss fights), skipping or unlocking every mission
+      (through `CheatLoadLevel` or `CheatArmiesLoadLevel`), unlocking extras, and credits in the Armies of the Night
+      levels.
+    scan: {function: 47, params: 3, natives: [InvGiveRevive, InvSetSpraycanCharges, InvSetMoney, UM_IsDataUnlocked, InvGiveSkeletonKey, InvGiveItem, HuSetGodMode, HuSetTireless, GangClearWanted, HuSetFullRage, HuSetLockedRage, HuDropWeapon, HuPlaceItemInHand, ScheduleFunc, UM_Unlock, HuAttachGear, HUDANSetCredit], helpers: [CheatLoadLevel, CheatArmiesLoadLevel], scripts: 0, calls: 0}
+
+  - name: CheatLoadLevel
+    group: cheats
+    params: []
+    description: >-
+      Fades the screen out and, two seconds later, finishes the mission through `DoCheatLoadLevel` (the mission-skip
+      cheat).
+    scan: {function: 48, params: 0, natives: [ScreenQueueEffect, ScheduleFunc], helpers: [DoCheatLoadLevel], scripts: 0, calls: 0}
+
+  - name: DoCheatLoadLevel
+    group: cheats
+    params: []
+    description: >-
+      Launches the mission-complete screen, which goes on to the next mission.
+    scan: {function: 49, params: 0, natives: [HUDLaunchMissionComplete], scripts: 0, calls: 0}
+
+  - name: CheatArmiesLoadLevel
+    group: cheats
+    params: []
+    description: >-
+      The mission-skip cheat in an Armies of the Night level: fades out and runs `DoCheatArmiesLoadLevel` two seconds
+      later.
+    scan: {function: 50, params: 0, natives: [ScreenQueueEffect, ScheduleFunc], helpers: [DoCheatArmiesLoadLevel], scripts: 0, calls: 0}
+
+  - name: DoCheatArmiesLoadLevel
+    group: cheats
+    params: []
+    description: >-
+      Records whether the player is alive in the level's script save data, sets checkpoint 1, marks the level complete
+      and loads the next level by number.
+    scan: {function: 51, params: 0, natives: [HuIsAlive, SetLUASaveDataFloat, SetCheckPoint, UM_Unlock, MenuLoadLevel], scripts: 0, calls: 0}
+
+  - name: SaveTempString
+    group: strings
+    params: [text]
+    description: >-
+      Stores a string in the shared `StringHolder` and returns its number, reusing the number when the string is already
+      stored; scripts pass the number where only a number fits (a scheduled call's argument).
+    scan: {function: 52, params: 1, helpers: [GetIndex], scripts: 15, calls: 46}
+
+  - name: GetTempString
+    group: strings
+    params: [number]
+    description: >-
+      Returns the string `SaveTempString` stored under a number.
+    scan: {function: 53, params: 1, scripts: 15, calls: 57}
+
+  - name: CleanString
+    group: strings
+    params: [number]
+    description: >-
+      Forgets one string stored by `SaveTempString`.
+    scan: {function: 54, params: 1, scripts: 2, calls: 5}
+
+  - name: CleanTempStrings
+    group: strings
+    params: []
+    description: >-
+      Empties the `StringHolder` and resets its count.
+    scan: {function: 55, params: 0, scripts: 0, calls: 0}
+
+  - name: RegisterPOIZOCallback
+    group: cameras
+    params: [callback]
+    description: >-
+      Lets the player skip a scripted (POIZO) camera move: with a function, binds two pad buttons on both pads to
+      `DoPOIZOCallback`, which calls it; with nil, unbinds them.
+    scan: {function: 56, params: 1, natives: [PadSetHandler], helpers: [DoPOIZOCallback], scripts: 15, calls: 57}
+
+  - name: DoPOIZOCallback
+    group: cameras
+    params: []
+    description: >-
+      The pad handler `RegisterPOIZOCallback` binds: unbinds the buttons, cuts the screen effect and calls the stored
+      callback once.
+    scan: {function: 57, params: 0, natives: [ScreenQueueEffect], helpers: [RegisterPOIZOCallback], scripts: 0, calls: 0}
+
+  - name: ClearSaveData
+    group: missions
+    params: []
+    description: >-
+      Zeroes the level's script save data: the first eight numbers and the flags 101 to 115.
+    scan: {function: 58, params: 0, natives: [SetLUASaveDataFloat, SetLUASaveDataBool], scripts: 2, calls: 2}
+
+  - name: UnlockAndLoad
+    group: missions
+    params: []
+    description: >-
+      The engine's mission-complete callback: unlocks what the mission earned (`MissionCompleteUnlocks`), takes the
+      money and consumables off each living player outside the rumble levels (`LiquidizeAssets`), then goes on with
+      `runNextMission(1)`.
+    scan: {function: 59, params: 0, natives: [HuIsAlive, HuIsAPlayer], helpers: [MissionCompleteUnlocks, LiquidizeAssets, runNextMission], scripts: 0, calls: 0}
+
+  - name: MissionCompleteUnlocks
+    group: missions
+    params: []
+    description: >-
+      Marks the current level complete and unlocks one rank reward per `PointsPerRank` points of the two players' summed
+      score, then stores the furthest finished mission in `LastLevel`.
+    scan: {function: 60, params: 0, natives: [UM_Unlock, HuIsAPlayer, HuIsAlive, StatGetScore, ToInt], helpers: [findLastMission], scripts: 0, calls: 0}
+
+  - name: runNextMission
+    group: missions
+    params: [showComplete]
+    description: >-
+      The story's chain: from the furthest finished mission (`LastLevel`, else `findLastMission`) picks the next level
+      and checkpoint (most missions return to the hub, level 95, at the checkpoint for the next chapter), stops the
+      music and loads it; with `showComplete` 1 it also launches the mission-complete screen. When the mission has no
+      successor it calls a misspelt binding name: a script error the game does not report, which ends the function and
+      the script that called it. The engine calls it from the failure and pause
+      menus; [Scripts](../../research/scripting.md#run-next-mission) has the table.
+    scan: {function: 61, params: 1, natives: [SetCheckPoint, SoundStopMusicTrack, MenuLoadLevel, HUDLaunchMissionComplete], helpers: [findLastMission], scripts: 35, calls: 38}
+
+  - name: findLastMission
+    group: missions
+    params: []
+    description: >-
+      Returns the furthest story mission the profile has finished, testing the missions from the last to the first; 0
+      when none is.
+    scan: {function: 62, params: 0, natives: [UM_IsLevelComplete], scripts: 0, calls: 0}
+
+  - name: LiquidizeAssets
+    group: missions
+    params: [human, unused, money, items, stats]
+    description: >-
+      Empties a player's pockets between missions: with `money`, the money; with `items`, the revives, spray-can
+      charges, skeleton keys and item 5; with `stats`, the player's statistics. The player number comes from comparing
+      the human with `player2`.
+    scan: {function: 63, params: 5, natives: [InvSetMoney, InvGiveRevive, InvNumberRevives, InvSetSpraycanCharges, InvGetSpraycanCharges, InvGiveSkeletonKey, InvNumberSkeletonKeys, InvGiveItem, InvNumberOf, StatResetPlayer], scripts: 3, calls: 10}
+
+  - name: GetLevel
+    group: setup
+    params: []
+    description: >-
+      Run once by `global.lua` as it loads: sets `Level` to the current level's number (1 for the front end and levels
+      numbered 300 or more) and clears the level's script save data on a fresh start (checkpoint 0 or 1, the Armies of
+      the Night levels excepted). It then deletes itself.
+    scan: {function: 64, params: 0, natives: [GetLevelId, GetCurrentLevelIndex, GetCheckPoint], helpers: [ClearSaveData], scripts: 0, calls: 0, at_load: true, deleted_by: [GetLevel]}
+
+  - name: GangSetup
+    group: gangs
+    params: [config, constructor, unused1, unused2]
+    description: >-
+      Creates a gang from a configuration table and records it in `Super` under the gang's handle: calls the table's
+      `Function` for the gang and its humans, applies the turf, friends, enemies, death handler, threat and investigate
+      responses and world-flag use, picks the leader, starts the default tactic (hanging out unless given) and marks the
+      gang wanted when asked. An optional `constructor` runs on the new gang. Returns the handle.
+    scan: {function: 65, params: 4, natives: [GangSetThreatResponse, GangSetInvestigateResponse, GangCanUseWorldFlags, GangSetLeader, GangGetLeader, GetPosition, CrimeIsHappening, GangEnableAttackStrategies], helpers: [DefaultGang, tsize], scripts: 82, calls: 277, deleted_by: [SuperClean]}
+
+  - name: Strategy
+    group: gangs
+    params: [gang, state]
+    description: >-
+      A gang's strategy update: while the gang has members, calls its idle callback and its strategy preset (or the
+      hunter strategy); once it has none, clears its tactic and forgets it.
+    scan: {function: 66, params: 2, natives: [GangGetHeadCount, TacticClear], scripts: 27, calls: 476, deleted_by: [SuperClean]}
+
+  - name: GangCallback
+    group: gangs
+    params: [human, gang, spawner]
+    description: >-
+      The spawn callback of a `Super` gang: adds the new human to the gang's list; the first one becomes the leader,
+      reports a crime when the gang is wanted and starts the default tactic. It also lets the human use world flags and
+      calls the gang's `OnSpawn`.
+    scan: {function: 67, params: 3, natives: [GetPosition, CrimeIsHappening, BrCanUseWorldFlags], helpers: [tsize], scripts: 10, calls: 15, deleted_by: [SuperClean]}
+
+  - name: GangStartTactic
+    group: gangs
+    params: [gang]
+    description: >-
+      Starts a `Super` gang's default tactic, sets its threat response to 2 and turns its banter on.
+    scan: {function: 68, params: 1, natives: [GangSetThreatResponse], scripts: 44, calls: 102, deleted_by: [SuperClean]}
+
+  - name: SuperSetFollow
+    group: gangs
+    params: [leader, slots]
+    description: >-
+      Gives a gang leader follow slots at the given offsets (a table of `{x, y}` offsets, or one offset) in slot set 3.
+    scan: {function: 69, params: 2, natives: [BrSetNumFollowSlots, BrSetFollowSlot], helpers: [tsize], scripts: 0, calls: 0, deleted_by: [SuperClean]}
+
+  - name: CheckSlotSet
+    group: gangs
+    params: [gang]
+    description: >-
+      Applies a `Super` gang's follow slots to its leader (the recorded one while alive, else the gang's current leader)
+      and returns 3, or -1 when the gang has no slots.
+    scan: {function: 70, params: 1, natives: [HuIsAlive, GangGetLeader], helpers: [SuperSetFollow], scripts: 22, calls: 118, deleted_by: [SuperClean]}
+
+  - name: CLEAR
+    group: gangs
+    params: [gang]
+    description: >-
+      Clears a gang's tactic.
+    scan: {function: 71, params: 1, natives: [TacticClear], scripts: 6, calls: 9, deleted_by: [SuperClean]}
+
+  - name: SuperClean
+    group: gangs
+    params: []
+    description: >-
+      Deletes the `Super` gang helpers (`GangSetup`, `Strategy`, `GangCallback` and the rest), the `Super` table and
+      itself, for levels that do not use them.
+    scan: {function: 72, params: 0, scripts: 0, calls: 0, deleted_by: [SuperClean]}
+
+  - name: TagInfo.SetupTags
+    group: tags
+    params: [prefix, count, replay]
+    description: >-
+      Sets up a level's tag spots for the tagging side objective: finds the level's offset in the tag save flags, picks
+      a tag pattern, and for each of `count` tags pairs the world flag `Tag[i]` with the object named from `prefix` and
+      the number. Untagged spots get trigger spheres and the tag action; tagged ones are drawn finished. `replay` 1 lets
+      a finished level be tagged again. Shows the progress objective once some but not all are done.
+    scan: {function: 73, params: 3, natives: [GetLUASaveDataBool, TriggerSphereCfg, SetMsgHandler, UM_IsLevelComplete, SetMsgHandlerEx, ProcessTag, HUDSetObjective], helpers: [FindLevelTagOffset, NextTagPattern, TagInfo.ShowTagComp, TagInfo.HideTagComp, TagInfo.DoTag, TagInfo.BuildObjective], scripts: 14, calls: 14}
+
+  - name: TagInfo.DoTag
+    group: tags
+    params: [flag, human]
+    description: >-
+      The action handler of a tag spot: when a player uses it and nobody is tagging, starts the tagging move and waits
+      for its end (`TagInfo.TagComplete`).
+    scan: {function: 74, params: 2, natives: [HuIsAPlayer, SetMsgHandler, HuSetPushable, HuTag], helpers: [TagInfo.GetTFIndex, TagInfo.TagComplete], scripts: 0, calls: 0}
+
+  - name: TagInfo.TagComplete
+    group: tags
+    params: [human, part, done]
+    description: >-
+      The end of a tagging move: when it finished, marks the tag done, updates the counter and the objective, plays the
+      menu sound and, with the last tag, unlocks the level's tag reward; when it was broken off, offers the spot again.
+      Calls the registered tag-back callback either way.
+    scan: {function: 75, params: 3, natives: [SetMsgHandler, HuSetPushable, HuIsAPlayer, HUDSetPHValue, SoundPlay2D, HUDSetObjective, UM_Unlock, SetMsgHandlerEx], helpers: [TagInfo.GetTPIndex, NextTagPattern, TagInfo.BuildObjective, TagInfo.DoTag], scripts: 0, calls: 0}
+
+  - name: TagInfo.SaveTags
+    group: tags
+    params: []
+    description: >-
+      Writes each tag's state to the level's save flags (101 onwards).
+    scan: {function: 76, params: 0, natives: [SetLUASaveDataBool], scripts: 21, calls: 24}
+
+  - name: TagInfo.ReleaseTags
+    group: tags
+    params: []
+    description: >-
+      Meant to remove every tag spot's handlers and triggers and forget the tag tables. For the first spot it clears
+      that spot's first handler, then two handlers of the spot the global `index` names (the last spot a tag helper
+      touched; a script error when no helper has set it), then indexes the tag list with `c`, a variable `global.lua`
+      never sets: a script error, so no trigger is disabled and the tables are kept.
+    scan: {function: 77, params: 0, natives: [SetMsgHandler, TriggerSphereEnable], scripts: 0, calls: 0}
+
+  - name: TagInfo.ShowTagComp
+    group: tags
+    params: [flag, human]
+    description: >-
+      The enter handler of a tag spot's trigger: shows the player's HUD and the tag counter, and the first time swaps
+      the objective text for the tag progress.
+    scan: {function: 78, params: 2, natives: [HuIsAPlayer, ForceShowPlayerHud, HUDGetNewPH, HUDSetPHValue, HUDSetObjective], scripts: 0, calls: 0}
+
+  - name: TagInfo.HideTagComp
+    group: tags
+    params: [flag, human]
+    description: >-
+      The exit handler of a tag spot's trigger: hides the player's HUD and, once no spot is in range, the tag counter.
+    scan: {function: 79, params: 2, natives: [HuIsAPlayer, ForceShowPlayerHud, HUDReleasePH], scripts: 0, calls: 0}
+
+  - name: TagInfo.GetTFIndex
+    group: tags
+    params: [flag, tags]
+    description: >-
+      Returns the number of the tag whose world flag is `flag`, also leaving it in the global `index`.
+    scan: {function: 80, params: 2, scripts: 0, calls: 0}
+
+  - name: TagInfo.GetTPIndex
+    group: tags
+    params: [part, tags]
+    description: >-
+      Returns the number of the tag whose object is `part`, also leaving it in the global `index`.
+    scan: {function: 81, params: 2, scripts: 0, calls: 0}
+
+  - name: TagInfo.RegisterTagback
+    group: tags
+    params: [callback]
+    description: >-
+      Sets a function the tag code calls after every tagging move, with the spot, the human and whether it finished.
+    scan: {function: 82, params: 1, scripts: 4, calls: 4}
+
+  - name: TagInfo.ClearTagback
+    group: tags
+    params: [unused]
+    description: >-
+      Removes the tag-back callback.
+    scan: {function: 83, params: 1, scripts: 2, calls: 2}
+
+  - name: TagInfo.NoTagLite
+    group: tags
+    params: []
+    description: >-
+      Releases the tags (`TagInfo.ReleaseTags`) and drops `TagInfo`, for a level without tagging.
+    scan: {function: 84, params: 0, helpers: [TagInfo.ReleaseTags], scripts: 3, calls: 3}
+
+  - name: TagInfo.NoTag
+    group: tags
+    params: []
+    description: >-
+      As `TagInfo.NoTagLite`, and also drops the tag pattern table.
+    scan: {function: 85, params: 0, helpers: [TagInfo.ReleaseTags], scripts: 7, calls: 7}
+
+  - name: TagInfo.ShowObjective
+    group: tags
+    params: [flag, human]
+    description: >-
+      Shows the tag progress objective to a player and switches off every spot's trigger.
+    scan: {function: 86, params: 2, natives: [HuIsAPlayer, HUDSetObjective, SetMsgHandler, TriggerSphereEnable], helpers: [TagInfo.BuildObjective], scripts: 0, calls: 0}
+
+  - name: TagInfo.BuildObjective
+    group: tags
+    params: []
+    description: >-
+      Returns the tag objective's text: the level's tag objective followed by the count done and the count in all.
+    scan: {function: 87, params: 0, scripts: 0, calls: 0}
+
+  - name: CfgTagInfo
+    group: setup
+    params: []
+    description: >-
+      Run once by `global.lua` as it loads: fills `TagLevels`, each tagging level's number of tags and its first flag in
+      the tag save data, then deletes itself.
+    scan: {function: 88, params: 0, scripts: 0, calls: 0, at_load: true, deleted_by: [CfgTagInfo]}
+
+  - name: FindLevelTagOffset
+    group: tags
+    params: []
+    description: >-
+      Returns the current level's first tag save flag and its tag objective text (from the level's string table); above
+      level 100 it hides the tag HUD instead.
+    scan: {function: 89, params: 0, scripts: 0, calls: 0}
+
+  - name: GetTagsComplete
+    group: tags
+    params: [level]
+    description: >-
+      Counts the tags of a level the profile's save data marks done; 0 for a level without tags.
+    scan: {function: 90, params: 1, natives: [GetLUASaveDataBool], scripts: 0, calls: 0}
+
+  - name: GetTagsMax
+    group: tags
+    params: [level]
+    description: >-
+      Returns how many tags a level has; 0 for a level without tags.
+    scan: {function: 91, params: 1, scripts: 0, calls: 0}
+
+  - name: SaveTagsFull
+    group: tags
+    params: []
+    description: >-
+      Copies the current level's tag flags into the profile's record of that level when this run tagged more than the
+      record holds.
+    scan: {function: 92, params: 0, natives: [GetLUASaveDataBool, SetLUASaveDataBool], helpers: [GetTagsMax, GetTagsComplete], scripts: 0, calls: 0}
+
+  - name: NextTagPattern
+    group: tags
+    params: []
+    description: >-
+      Picks a random tag pattern, different from the previous one, from every difficulty but the seventh, and loads it.
+    scan: {function: 93, params: 0, natives: [random], helpers: [LoadTagPattern], scripts: 6, calls: 7}
+
+  - name: IsTagSpecial
+    group: tags
+    params: [pattern]
+    description: >-
+      Whether a tag pattern number is in a list of special patterns; false when there is no list.
+    scan: {function: 94, params: 1, scripts: 0, calls: 0}
+
+  - name: LoadTagPattern
+    group: tags
+    params: [pattern]
+    description: >-
+      Loads tag pattern script number `pattern`: preloaded in the background on a release build, which then calls
+      `FinishTagPattern`, run at once otherwise.
+    scan: {function: 95, params: 1, natives: [isRelease, preLoadFile, doFile], helpers: [FinishTagPattern], scripts: 2, calls: 3}
+
+  - name: FinishTagPattern
+    group: tags
+    params: []
+    description: >-
+      Hands the loaded tag pattern to the engine (`HuTagPattern`) and drops it.
+    scan: {function: 96, params: 0, natives: [HuTagPattern], scripts: 0, calls: 0}
+
+  - name: SetupLightingMatrix
+    group: lighting
+    params: []
+    description: >-
+      Fills `LM`, the per-level character lighting: the moonlight, reflected light and ambient colours and directions,
+      the gamma offset, the colour overlay, the world ambient and the shadow colour and direction.
+    scan: {function: 97, params: 0, scripts: 0, calls: 0, deleted_by: [SetupLightingMatrix]}
+
+  - name: SetupCharacterLights
+    group: setup
+    params: []
+    description: >-
+      Run once by `global.lua` as it loads: applies the level's entry of `LM` (or the art-level entry 200 lower, or the
+      default) through the gamma, world ambient, colour overlay and shadow bindings, creates the moonlight, reflected
+      and ambient lights and keeps their handles and colours in `LightData`. It then deletes `LM` and itself.
+    scan: {function: 98, params: 0, natives: [SetGammaOffset, SetWorldAmbient, SetLevelColour, SetLight, SetShadowColor, SetShadowLightOffset], helpers: [SetupLightingMatrix], scripts: 0, calls: 0, at_load: true, deleted_by: [SetupCharacterLights]}
+
+  - name: TurnOffMoon
+    group: lighting
+    params: []
+    description: >-
+      Switches the moonlight off.
+    scan: {function: 99, params: 0, natives: [SetLight], scripts: 2, calls: 2}
+
+  - name: TurnOnMoon
+    group: lighting
+    params: []
+    description: >-
+      Switches the moonlight back on with the level's colour.
+    scan: {function: 100, params: 0, natives: [SetLight], scripts: 2, calls: 2}
+
+  - name: SetDynamicMoonLight
+    group: lighting
+    params: [colour]
+    description: >-
+      Sets the moonlight's colour (`{r, g, b, a}`).
+    scan: {function: 101, params: 1, natives: [SetLight], scripts: 0, calls: 0}
+
+  - name: SetDynamicReflectedLight
+    group: lighting
+    params: [colour]
+    description: >-
+      Sets the reflected light's colour; it is given the moonlight's direction.
+    scan: {function: 102, params: 1, natives: [SetLight], scripts: 0, calls: 0}
+
+  - name: SetDynamicAmbientLight
+    group: lighting
+    params: [colour]
+    description: >-
+      Sets the ambient light's colour.
+    scan: {function: 103, params: 1, natives: [SetLight], scripts: 0, calls: 0}
+
+  - name: TurnOffLights
+    group: lighting
+    params: []
+    description: >-
+      Switches the moonlight and the reflected light off.
+    scan: {function: 104, params: 0, natives: [SetLight], scripts: 1, calls: 1}
+
+  - name: TurnOnLights
+    group: lighting
+    params: []
+    description: >-
+      Switches the moonlight and the reflected light back on with the level's colours.
+    scan: {function: 105, params: 0, natives: [SetLight], scripts: 1, calls: 1}
+
+  - name: TurnOnRagelight
+    group: lighting
+    params: []
+    description: >-
+      Tints the moonlight and reflected light orange, for rage.
+    scan: {function: 106, params: 0, natives: [SetLight], scripts: 0, calls: 0}
+
+  - name: TurnOffRagelight
+    group: lighting
+    params: []
+    description: >-
+      Puts the moonlight and reflected light back to the level's colours.
+    scan: {function: 107, params: 0, natives: [SetLight], scripts: 0, calls: 0}
+
+  - name: TurnOnFlashlight
+    group: lighting
+    params: []
+    description: >-
+      Tints the moonlight yellow and the reflected light green.
+    scan: {function: 108, params: 0, natives: [SetLight], scripts: 0, calls: 0}
+
+  - name: TurnOffFlashlight
+    group: lighting
+    params: []
+    description: >-
+      Puts the moonlight and reflected light back to the level's colours.
+    scan: {function: 109, params: 0, natives: [SetLight], scripts: 0, calls: 0}
+
+  - name: TurnOnCloselight
+    group: lighting
+    params: []
+    description: >-
+      Turns the reflected light full white, for close-ups.
+    scan: {function: 110, params: 0, natives: [SetLight], scripts: 0, calls: 0}
+
+  - name: TurnOffCloselight
+    group: lighting
+    params: []
+    description: >-
+      Puts the reflected light back to the level's colour.
+    scan: {function: 111, params: 0, natives: [SetLight], scripts: 0, calls: 0}
+
+  - name: EnableStageLighting
+    group: lighting
+    params: [enable]
+    description: >-
+      With `enable`, switches the ambient, moonlight and reflected lights off so only the level's own lights show (a
+      stage); without, restores them.
+    scan: {function: 112, params: 1, natives: [SetLight], scripts: 0, calls: 0}
+
+  - name: EnableLightning
+    group: lighting
+    params: []
+    description: >-
+      Starts a thunderstorm: creates the flash light and schedules the first flash 20 seconds later; flashes then repeat
+      every 25 to 35 seconds through `FlashLightningStart` and the three handlers after it, each followed by thunder.
+    scan: {function: 113, params: 0, natives: [ScheduleFunc, SetLight], helpers: [FlashLightningStart], scripts: 5, calls: 5}
+
+  - name: DisableLightning
+    group: lighting
+    params: []
+    description: >-
+      Stops the thunderstorm after the current flash.
+    scan: {function: 114, params: 0, scripts: 2, calls: 2}
+
+  - name: FlashLightningStart
+    group: lighting
+    params: []
+    description: >-
+      A storm step: a first bright flash with the level's lights off, then `LightningSmallOff` a moment later.
+    scan: {function: 115, params: 0, natives: [SetLight, ScheduleFunc, random], helpers: [LightningSmallOff], scripts: 0, calls: 0}
+
+  - name: LightningSmallOff
+    group: lighting
+    params: []
+    description: >-
+      A storm step: ends the first flash, restores the lights and schedules the big flash.
+    scan: {function: 116, params: 0, natives: [SetLight, ScheduleFunc, random], helpers: [FlashLightningBig], scripts: 0, calls: 0}
+
+  - name: FlashLightningBig
+    group: lighting
+    params: []
+    description: >-
+      A storm step: the second, brighter flash, then `LightningOff`.
+    scan: {function: 117, params: 0, natives: [SetLight, ScheduleFunc, random], helpers: [LightningOff], scripts: 0, calls: 0}
+
+  - name: LightningOff
+    group: lighting
+    params: []
+    description: >-
+      A storm step: restores the lights, schedules the next flash while the storm is on, and the thunder two to five
+      seconds later.
+    scan: {function: 118, params: 0, natives: [SetLight, ScheduleFunc, random], helpers: [FlashLightningStart, ThunderSound], scripts: 0, calls: 0}
+
+  - name: ThunderSound
+    group: lighting
+    params: []
+    description: >-
+      Plays the thunderclap.
+    scan: {function: 119, params: 0, natives: [SoundPlay2D], scripts: 0, calls: 0}
+
+  - name: SetupPeds
+    group: setup
+    params: []
+    description: >-
+      Run once by `global.lua` as it loads: picks the level's civilian and bum spawner tables (in the hub, by
+      checkpoint) into `CharCivSpawner` and `CharBumSpawner`, then deletes its tables and itself.
+    scan: {function: 120, params: 0, natives: [GetCheckPoint], scripts: 0, calls: 0, at_load: true, deleted_by: [SetupPeds]}
+
+  - name: BNESetup
+    group: setup
+    params: []
+    description: >-
+      Enables object zones 21 to 32 of the level (each that exists), then deletes itself.
+    scan: {function: 121, params: 0, natives: [ObjEnableZone], scripts: 62, calls: 62, deleted_by: [BNESetup]}
+
+  - name: SetBackOff
+    group: scenes
+    params: [humans]
+    description: >-
+      Puts a trigger sphere round each human of a scene and makes `SceneBackOff` their enter handler, so bystanders keep
+      their distance while the scene plays.
+    scan: {function: 122, params: 1, natives: [TriggerSphereCfg, SetMsgHandler], helpers: [SceneBackOff], scripts: 0, calls: 0}
+
+  - name: SceneBackOff
+    group: scenes
+    params: [trigger, human]
+    description: >-
+      The enter handler `SetBackOff` registers: gives a human who walks up, and is not in the scene, the back-off goal
+      away from the scene's human for 15 seconds, once.
+    scan: {function: 123, params: 2, natives: [GoalBackoff], helpers: [tsize], scripts: 0, calls: 0}
+
+  - name: EndBackOff
+    group: scenes
+    params: [humans]
+    description: >-
+      Undoes `SetBackOff`: removes the scene humans' trigger spheres and handlers and clears the back-off of everyone
+      who got it.
+    scan: {function: 124, params: 1, natives: [HuIsAlive, TriggerSphereCfg, SetMsgHandler, BrClearBackoff], scripts: 0, calls: 0}
+
+  - name: SuperRunScene
+    group: scenes
+    params: [scene]
+    description: >-
+      Plays a cutscene from a description table (`SceneId`, `Humans`, `Objects`, `Animation`, `ReturnFunc`, ...): for a
+      cinematic, hides the HUD, clears the police, fades out and revives or frees arrested crew members; with
+      `StageLighting`, switches to stage lighting. It then preloads the scene (or plays it at once when `Preloaded`),
+      keeping the table in `tblScene`, and returns the scene's id. The level scripts' usual way to run a scene.
+    scan: {function: 125, params: 1, natives: [HideHud, GangClearWanted, GangClearResponders, ScreenQueueEffect, EnterStore, HuGetGangType, HuIsArrested, HuSetArrested, StatAdd, HuIsAlive, HuRevive, ScenePreload], helpers: [EnableStageLighting, gPlayCutScene], scripts: 130, calls: 447, deleted_by: [NoScenes]}
+
+  - name: gPlayCutScene
+    group: scenes
+    params: [sceneId]
+    description: >-
+      The preload callback `SuperRunScene` passes: switches off spotting, joins each human of the scene to it (as an
+      animation, a fixed scene or a cinematic), adds its objects and starts it, with `PreCashTheWorld` or
+      `AnimReturnFunc` as the end callback.
+    scan: {function: 126, params: 1, natives: [CfgSetWarriorSpotting, CfgSetEnemySpotting, GoalJoinAnimation, GoalJoinFixedScene, GoalJoinCinematic, SceneAddObject, CfgSubtitles, ScenePlayAnimation, ScenePlayFixedScene, ScenePlayCinematic], helpers: [SetBackOff, tsize, AnimReturnFunc, PreCashTheWorld], scripts: 1, calls: 2}
+
+  - name: PreCashTheWorld
+    group: scenes
+    params: [sceneId]
+    description: >-
+      The end callback of a cinematic: undoes the back-off, shows the scene's summary text, calls its `ReturnFunc`,
+      turns spotting and the level lighting back on and fades in; for a scene marked `Final`, launches the
+      mission-complete screen instead. A scene with `NumCallBacks` gets its return function called once per callback
+      first.
+    scan: {function: 127, params: 1, natives: [HUDShowMissionSummaryText, CfgSetWarriorSpotting, CfgSetEnemySpotting, ExitStore, ScreenQueueEffect, ScheduleFunc, HUDLaunchMissionComplete], helpers: [EndBackOff, EnableStageLighting, DelayedFadeIn], scripts: 1, calls: 1, deleted_by: [NoScenes]}
+
+  - name: AnimReturnFunc
+    group: scenes
+    params: [sceneId]
+    description: >-
+      The end callback of an animation or fixed scene: calls the scene's `ReturnFunc` (once per callback while
+      `NumCallBacks` remain) and forgets the scene.
+    scan: {function: 128, params: 1, scripts: 1, calls: 2, deleted_by: [NoScenes]}
+
+  - name: DelayedFadeIn
+    group: scenes
+    params: []
+    description: >-
+      Fades the screen in over half a second; scheduled by `PreCashTheWorld` for a scene with `DelayFadeIn`.
+    scan: {function: 129, params: 0, natives: [ScreenQueueEffect], scripts: 1, calls: 1, deleted_by: [NoScenes]}
+
+  - name: NoScenes
+    group: scenes
+    params: []
+    description: >-
+      Deletes the scene helpers and `tblScene` for a level without scenes, and itself; it misspells `gPlayCutScene`, so
+      that one stays.
+    scan: {function: 130, params: 0, scripts: 1, calls: 1, deleted_by: [NoScenes]}
+
+  - name: SetupMissionPoints
+    group: setup
+    params: []
+    description: >-
+      Run once by `global.lua` as it loads: sets the level's maximum combat, crime, harmony and style points and its
+      mission and bonus values from the points table (or the default row), then deletes the table and itself.
+    scan: {function: 131, params: 0, natives: [CfgSetStatTypeMax], scripts: 0, calls: 0, at_load: true, deleted_by: [SetupMissionPoints]}
+
+  - name: ObjectiveSetup
+    group: objectives
+    params: [objective, deferred]
+    description: >-
+      Registers an objective table (`String`, `Flag` or `Volume`, `HUDType`, `NumNeeded`, `CallBack`, `GoodToGo`,
+      `Bonus`, ...) under a new number in `Objective` and, unless `deferred`, shows it at once with `ObjectiveAdd`.
+      Returns the number. The level scripts' main way to give the player a goal.
+    scan: {function: 132, params: 2, helpers: [ObjectiveAdd], scripts: 71, calls: 110, deleted_by: [ObjectiveKill]}
+
+  - name: ObjectiveAdd
+    group: objectives
+    params: [index]
+    description: >-
+      Shows a registered objective: its text, and for a place, a trigger with `ObjectiveEnter` as its handler, a radar
+      marker and the go-to or mission marker object; for a counter, the HUD counter with its label. Fills the defaults
+      (removal time, radius 2, the good-to-go distance 15).
+    scan: {function: 133, params: 1, natives: [TriggerSphereCfg, SetMsgHandler, GetPosition, HUDAddRadarMissionObjective, HUDSetRadarItemTexture, ObjSpawn, ObjShow, HUDGetNewPH, HUDSetPHValue], helpers: [ObjectiveShowString, ObjectiveEnter], scripts: 3, calls: 3, deleted_by: [ObjectiveKill]}
+
+  - name: ObjectiveShowString
+    group: objectives
+    params: [index]
+    description: >-
+      Writes an objective's text to the objective list (main or bonus line), replacing its previous text.
+    scan: {function: 134, params: 1, natives: [HUDSetObjective], helpers: [ObjectiveString], scripts: 3, calls: 9}
+
+  - name: ObjectiveString
+    group: objectives
+    params: [index]
+    description: >-
+      Returns an objective's text with its progress appended in its `PSType` form (money, count out of needed, or
+      percent) and keeps it as the current text.
+    scan: {function: 135, params: 1, scripts: 3, calls: 3, deleted_by: [ObjectiveKill]}
+
+  - name: ObjectiveUpdate
+    group: objectives
+    params: [index, count]
+    description: >-
+      Sets an objective's progress count, updating its HUD counter and text; when the count reaches what is needed,
+      schedules its removal (completing it), or calls its callback when it is marked not to complete.
+    scan: {function: 136, params: 2, natives: [HUDGetNewPH, HUDSetPHValue, ScheduleFuncArg1], helpers: [ObjectiveShowString, ObjectiveRemove], scripts: 15, calls: 27, deleted_by: [ObjectiveKill]}
+
+  - name: ObjectiveRemove
+    group: objectives
+    params: [index]
+    description: >-
+      Stops the good-to-go checks, clears the tutorial text and removes the objective's counter, completing it when its
+      count is reached.
+    scan: {function: 137, params: 1, natives: [FlushScheduledFuncs, HUDFlushTutorialText], helpers: [ObjectiveGoodToGo, ObjectiveRemoveHUD], scripts: 3, calls: 3, deleted_by: [ObjectiveKill]}
+
+  - name: ObjectiveUpdateHUD
+    group: objectives
+    params: [index]
+    description: >-
+      Shows an objective's count on its counter one last time, then removes the counter as `ObjectiveRemoveHUD` does.
+    scan: {function: 138, params: 1, natives: [HUDSetPHValue], helpers: [ObjectiveRemoveHUD], scripts: 0, calls: 0}
+
+  - name: ObjectiveRemoveHUD
+    group: objectives
+    params: [index]
+    description: >-
+      Releases an objective's HUD counter and, when its count is reached, calls its callback and completes it.
+    scan: {function: 139, params: 1, natives: [HUDReleasePH], helpers: [ObjectiveComplete], scripts: 3, calls: 6}
+
+  - name: ObjectiveComplete
+    group: objectives
+    params: [index]
+    description: >-
+      Completes an objective: marks its text done (or removes it), takes away its counter, radar marker, marker object
+      and trigger handlers, unlocks its `UnlockID` reward, keeps its text in `Objective.KeptString` and forgets it.
+    scan: {function: 140, params: 1, natives: [FlushScheduledFuncs, HUDFlushTutorialText, HUDSetObjective, HUDReleasePH, HUDDeleteRadarMissionObjective, ObjDestroy, SetMsgHandler, UM_Unlock], helpers: [ObjectiveGoodToGo, tsize], scripts: 20, calls: 31, deleted_by: [ObjectiveKill]}
+
+  - name: KillObjective
+    group: objectives
+    params: [index]
+    description: >-
+      Removes an objective without completing it: strikes its text and takes away its counter, radar marker, handler and
+      marker object.
+    scan: {function: 141, params: 1, natives: [FlushScheduledFuncs, HUDFlushTutorialText, HUDSetObjective, HUDReleasePH, HUDDeleteRadarMissionObjective, SetMsgHandler, ObjDestroy], helpers: [ObjectiveGoodToGo], scripts: 15, calls: 18}
+
+  - name: ObjectiveEnter
+    group: objectives
+    params: [trigger, human]
+    description: >-
+      The enter handler of an objective's place: when a player (or a crew member, with `CheckWarriors`) arrives, either
+      starts the good-to-go check (`GoodToGo`), hides the marker until they leave (`bShowHide`), or calls the callback
+      and completes the objective.
+    scan: {function: 142, params: 2, natives: [HuGetGangType, HuIsAPlayer, SetMsgHandler, ObjHide], helpers: [ObjectiveGetIndex, ObjectiveExit, ObjectiveGoodToGo, ObjectiveComplete], scripts: 4, calls: 19}
+
+  - name: ObjectiveExit
+    group: objectives
+    params: [trigger, human]
+    description: >-
+      The exit handler of an objective's place: when the players have left, stops the good-to-go check, shows the marker
+      again, clears the hint and waits for the next arrival.
+    scan: {function: 143, params: 2, natives: [HuIsAPlayer, IsInsideBox, SetMsgHandler, FlushScheduledFuncs, ObjShow, HUDFlushTutorialText], helpers: [ObjectiveGetIndex, ObjectiveGoodToGo, ObjectiveEnter], scripts: 3, calls: 6}
+
+  - name: ObjectiveClearText
+    group: objectives
+    params: []
+    description: >-
+      Clears the tutorial text.
+    scan: {function: 144, params: 0, natives: [HUDFlushTutorialText], scripts: 0, calls: 0}
+
+  - name: ObjectiveGoodToGo
+    group: objectives
+    params: [trigger]
+    description: >-
+      The good-to-go check: the objective completes only when every crew member in `Warriors` is alive, free and close
+      to the player (within the place, or within the good-to-go distance), and the police are not after them when the
+      objective asks. Until then it shows a hint and checks again every half second; with `NoComplete`, it reports each
+      change to the callback instead.
+    scan: {function: 145, params: 1, natives: [IsInsideBox, HuIsArrested, HuIsAlive, TestDistance, GetDistanceTweenHumans, GangIsWanted, HUDFlushTutorialText, ScheduleFuncArg1, HUDSetTutorialText], helpers: [ObjectiveGetIndex, ObjectiveComplete], scripts: 3, calls: 21}
+
+  - name: ObjectiveGetIndex
+    group: objectives
+    params: [trigger]
+    description: >-
+      Returns the number of the objective whose volume, or else whose flag, is `trigger`.
+    scan: {function: 146, params: 1, scripts: 3, calls: 9}
+
+  - name: ObjectiveKill
+    group: objectives
+    params: []
+    description: >-
+      Deletes the objective helpers and tables, for a level that uses none.
+    scan: {function: 147, params: 0, scripts: 2, calls: 2, deleted_by: [ObjectiveKill]}
+
+  - name: CfgAmbient
+    group: setup
+    params: []
+    description: >-
+      Run once by `global.lua` as it loads: registers the seven crowd fighting sounds as ambient sounds.
+    scan: {function: 148, params: 0, natives: [AddAmbientSound], scripts: 0, calls: 0, at_load: true, deleted_by: [CfgAmbient]}
+
+  - name: InventorySetup
+    group: inventory
+    params: []
+    description: >-
+      Fills `MS`, each level's starting inventory (revives, spray paint, money, handcuffs and their keys), then deletes
+      itself.
+    scan: {function: 149, params: 0, scripts: 0, calls: 0, deleted_by: [InventorySetup]}
+
+  - name: SetupLevelInventory
+    group: inventory
+    params: []
+    description: >-
+      Run once by `global.lua` as it loads: below level 100, gives player 1 the level's starting inventory on a fresh
+      start (checkpoint 0 or 1), keeps it for player 2 and registers `InventoryPlayer2` for when a second player joins.
+      It then deletes its table and itself.
+    scan: {function: 150, params: 0, natives: [GetCheckPoint, InvGiveRevive, InvSetSpraycanCharges, InvSetMoney, InvGiveSkeletonKey, InvGiveItem, SetMultiplayerCallback], helpers: [InventorySetup, InventoryPlayer2], scripts: 0, calls: 0, at_load: true, deleted_by: [SetupLevelInventory]}
+
+  - name: SetPlayer2Callback
+    group: inventory
+    params: [callback]
+    description: >-
+      Sets a function to call when a second player joins or leaves (after `InventoryPlayer2` has handled it).
+    scan: {function: 151, params: 1, scripts: 22, calls: 28, deleted_by: [SetupLevelInventory]}
+
+  - name: InventoryPlayer2
+    group: inventory
+    params: [human, joined]
+    description: >-
+      The multiplayer callback: when player 2 joins on a fresh start, gives them the level's starting inventory once;
+      then calls the level's own callback and registers itself again.
+    scan: {function: 152, params: 2, natives: [GetCheckPoint, SetMultiplayerCallback], helpers: [SetPlayer2Inventory], scripts: 0, calls: 0, deleted_by: [SetupLevelInventory]}
+
+  - name: SetPlayer2Inventory
+    group: inventory
+    params: []
+    description: >-
+      Gives player 2 the level's starting inventory, then deletes itself so it happens once.
+    scan: {function: 153, params: 0, natives: [InvGiveRevive, InvSetSpraycanCharges, InvSetMoney, InvGiveSkeletonKey, InvGiveItem], scripts: 0, calls: 0, deleted_by: [SetPlayer2Inventory]}
+
+globals:
+  - name: SCENETEST
+    group: scenes
+    description: >-
+      The scene-test switch: nil on the retail disc. The developers' scene test scripts check it, and while it is set
+      `global.lua` switches the language and `gPlayCutScene` turns subtitles on for each scene.
+    scan: {scripts: 38, value: nil}
+
+  - name: "true"
+    group: values
+    description: >-
+      The number 1. Lua 4.0 has no booleans, so `global.lua` defines `true` as 1 to match what the bindings return for
+      true.
+    scan: {scripts: 244, value: number}
+
+  - name: "false"
+    group: values
+    description: >-
+      Nil, so that `false` tests as false; the bindings return nil for false.
+    scan: {scripts: 226, value: nil}
+
+  - name: icon_info
+    group: values
+    description: >-
+      Icon number 1 for HUD messages; `icon_none` is 0. Inferred from the two names alone: the one script that reads
+      it copies it into a global of its own.
+    evidence: inferred
+    scan: {scripts: 2, value: number}
+
+  - name: BIG_FONT
+    group: values
+    description: >-
+      Font number 6, the big font; `SMALL_FONT` is 3. Inferred from the two names alone: the one script that reads it
+      copies it into a variable of its own.
+    evidence: inferred
+    scan: {scripts: 1, value: number}
+
+  - name: RM_Brawl1
+    group: missions
+    description: >-
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
+    evidence: inferred
+    scan: {scripts: 36, value: number}
+
+  - name: RM_Brawl5
+    group: missions
+    description: >-
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
+    evidence: inferred
+    scan: {scripts: 36, value: number}
+
+  - name: RM_Brawl
+    group: missions
+    description: >-
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
+    evidence: inferred
+    scan: {scripts: 36, value: number}
+
+  - name: RM_Surv
+    group: missions
+    description: >-
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
+    evidence: inferred
+    scan: {scripts: 36, value: number}
+
+  - name: RM_Mercy
+    group: missions
+    description: >-
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
+    evidence: inferred
+    scan: {scripts: 36, value: number}
+
+  - name: RM_TagBt
+    group: missions
+    description: >-
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
+    evidence: inferred
+    scan: {scripts: 36, value: number}
+
+  - name: RM_Royal
+    group: missions
+    description: >-
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
+    evidence: inferred
+    scan: {scripts: 36, value: number}
+
+  - name: RM_Hifi
+    group: missions
+    description: >-
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
+    evidence: inferred
+    scan: {scripts: 33, value: number}
+
+  - name: RM_Wchair
+    group: missions
+    description: >-
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
+    evidence: inferred
+    scan: {scripts: 36, value: number}
+
+  - name: RM_Food
+    group: missions
+    description: >-
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
+    evidence: inferred
+    scan: {scripts: 33, value: number}
+
+  - name: RM_Run
+    group: missions
+    description: >-
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
+    evidence: inferred
+    scan: {scripts: 33, value: number}
+
+  - name: RM_Koth
+    group: missions
+    description: >-
+      The id of a rumble mode; the `RM_` globals number the rumble modes, and the rumble scripts read them. Inferred
+      from the names and from the arena set-up, which lists them as the modes an arena allows (`CfgRumbleArena`).
+    evidence: inferred
+    scan: {scripts: 36, value: number}
+
+  - name: RM_MaxGangs
+    group: missions
+    description: >-
+      The number of gangs the rumble modes choose from. Inferred from the name and from the rumble scripts, which
+      compare a gang counter with it.
+    evidence: inferred
+    scan: {scripts: 33, value: number}
+
+  - name: Platform
+    group: values
+    description: >-
+      The platform, from `GetPlatform`, read once as `global.lua` loads; the stick thresholds and a pad command differ
+      by platform.
+    scan: {scripts: 58, value: computed}
+
+  - name: CL
+    group: strings
+    description: >-
+      The text colours: a table of colour tags for HUD text (white, button, cash, the Warriors' red, bonus and the rest)
+      and of RGBA colours for menus.
+    scan: {scripts: 113, value: table}
+
+  - name: strings
+    group: strings
+    description: >-
+      Cleared at the end of `global.lua` once it has picked the language's tables; the language files set their own
+      `strings`.
+    scan: {scripts: 96, value: nil, cleared: true}
+
+  - name: GSTRING
+    group: strings
+    description: >-
+      The shared text table of the current language: action prompts, the good-to-go hints, the cheat message and HUD
+      icons.
+    scan: {scripts: 77, value: computed}
+
+  - name: LABEL
+    group: strings
+    description: >-
+      The current language's HUD counter labels (hats, tags, loot and the stores).
+    scan: {scripts: 12, value: computed}
+
+  - name: MenuTrack
+    group: sound
+    description: >-
+      The music track of the front-end menus; a later one once the profile has finished mission 18.
+    scan: {scripts: 36, value: string}
+
+  - name: FOLLOWCAM_MINDIST
+    group: cameras
+    description: >-
+      The follow camera's minimum distance, 3 metres; the `FOLLOWCAM_` globals are the settings `CameraCreateFollow` and
+      `CameraNormal` give it.
+    scan: {scripts: 6, value: number}
+
+  - name: FOLLOWCAM_MAXDIST
+    group: cameras
+    description: >-
+      The follow camera's maximum distance, 6.6 metres.
+    scan: {scripts: 6, value: number}
+
+  - name: FOLLOWCAM_DEFAULTDIST
+    group: cameras
+    description: >-
+      The follow camera's default distance, 4.8 metres.
+    scan: {scripts: 6, value: number}
+
+  - name: FOLLOWCAM_DEFAULTANGLE
+    group: cameras
+    description: >-
+      The follow camera's default pitch, 13 degrees.
+    scan: {scripts: 9, value: number}
+
+  - name: FOLLOWCAM_FOV
+    group: cameras
+    description: >-
+      The follow camera's field of view, 65 degrees.
+    scan: {scripts: 5, value: number}
+
+  - name: FOLLOWCAM_NEARPLANE
+    group: cameras
+    description: >-
+      The follow camera's near clip distance, 0.1 metres.
+    scan: {scripts: 12, value: number}
+
+  - name: FOLLOWCAM_OFFSET_X
+    group: cameras
+    description: >-
+      The follow camera's target offset across, 0.
+    scan: {scripts: 12, value: number}
+
+  - name: FOLLOWCAM_OFFSET_Y
+    group: cameras
+    description: >-
+      The follow camera's target offset forward, 0.
+    scan: {scripts: 12, value: number}
+
+  - name: FOLLOWCAM_OFFSET_Z
+    group: cameras
+    description: >-
+      The follow camera's target offset up, 1.4 metres.
+    scan: {scripts: 10, value: number}
+
+  - name: FOLLOWCAM_SLOWMO_PERCENT
+    group: cameras
+    description: >-
+      The follow camera's slow-motion setting, 0.2.
+    scan: {scripts: 11, value: number}
+
+  - name: CharBeatCopSpawner
+    group: gangs
+    description: >-
+      The character ids of the police a beat cop spawner makes (four, the rest zero). Inferred from the name and from
+      the levels, which pass it to `GangAddSpawner` for their beat cop gangs.
+    evidence: inferred
+    scan: {scripts: 7, value: table}
+
+  - name: CharRespCopSpawner
+    group: gangs
+    description: >-
+      The character ids of the police a response spawner makes (four, the rest zero). Inferred from the name and from
+      the levels, which pass it to `GangAddSpawner` for their response cop gangs.
+    evidence: inferred
+    scan: {scripts: 11, value: table}
+
+  - name: Level
+    group: missions
+    description: >-
+      The current level's number, set by `GetLevel` as `global.lua` loads (1 for the front end); the helpers and the
+      level scripts branch on it.
+    scan: {scripts: 56, value: number}
+
+  - name: SA
+    group: values
+    description: >-
+      Cleared as `global.lua` loads; the config scripts set their own.
+    scan: {scripts: 4, value: nil}
+
+  - name: MATERIAL
+    group: values
+    description: >-
+      Cleared as `global.lua` loads; the config scripts set their own.
+    scan: {scripts: 6, value: nil}
+
+  - name: Super
+    group: gangs
+    description: >-
+      The `Super` gang manager's table: each gang `GangSetup` made, by handle, with its configuration, members, leader
+      and tactic.
+    scan: {scripts: 36, value: table}
+
+  - name: MAX_TAGPOINTS
+    group: tags
+    description: >-
+      The size of a tag pattern, 256 points.
+    scan: {scripts: 3, value: number}
+
+  - name: TagInfo
+    group: tags
+    description: >-
+      The tag state of the level (counts, the HUD counter, the objective text, the tag-back callback) and the tag
+      helpers as its fields.
+    scan: {scripts: 41, value: table}
+
+  - name: LightData
+    group: lighting
+    description: >-
+      The handles and colours of the moonlight, reflected and ambient lights `SetupCharacterLights` makes, which the
+      light helpers change.
+    scan: {scripts: 2, value: table}
+
+  - name: PM
+    group: setup
+    description: >-
+      The civilian spawner table `SetupPeds` chooses from, deleted once it has; a script that reads `PM` sets its own.
+    scan: {scripts: 1, value: table}
+
+  - name: Objective
+    group: objectives
+    description: >-
+      The registered objectives by number (`ObjectiveSetup`), and `KeptString`, the texts of the completed ones.
+    scan: {scripts: 6, value: table}
+
+  - name: O_MONEY
+    group: objectives
+    description: >-
+      An objective's `PSType` for a money amount.
+    scan: {scripts: 5, value: string}
+
+  - name: O_SLASH
+    group: objectives
+    description: >-
+      An objective's `PSType` for a count out of the number needed.
+    scan: {scripts: 20, value: string}
+
+  - name: O_PERCENT
+    group: objectives
+    description: >-
+      An objective's `PSType` for a percentage.
+    scan: {scripts: 4, value: string}
+
+  - name: HUDREMOVETIME
+    group: objectives
+    description: >-
+      How long an objective's HUD counter stays after a change, 4000 milliseconds.
+    scan: {scripts: 5, value: number}
+
+  - name: HUDUPDATETIME
+    group: objectives
+    description: >-
+      The delay before a finished objective is removed, 500 milliseconds.
+    scan: {scripts: 3, value: number}
+
+  - name: INDEX_CTR
+    group: objectives
+    description: >-
+      The last number `ObjectiveSetup` gave out.
+    scan: {scripts: 3, value: number}
+
+  - name: firstTime
+    group: setup
+    description: >-
+      A flag `CfgUnlockables` uses while it runs and then clears.
+    scan: {scripts: 1, value: nil, cleared: true}
+
+  - name: DefRunDeflection
+    group: setup
+    description: >-
+      The stick deflection at which the player runs (0.75, 0.85 or 0.95 by platform), set by `CfgGlobalMulti`.
+    scan: {scripts: 3, value: number}
+
+  - name: DefCreepDeflection
+    group: setup
+    description: >-
+      The stick deflection at which the player creeps, 0.4, set by `CfgGlobalMulti`.
+    scan: {scripts: 1, value: number}
+
+  - name: CharCivSpawner
+    group: setup
+    description: >-
+      The civilian characters of the level's spawners, chosen by `SetupPeds` (in the hub, by checkpoint).
+    scan: {scripts: 21, value: computed}
+
+  - name: CharBumSpawner
+    group: setup
+    description: >-
+      The bum characters of the level's spawners, chosen by `SetupPeds`.
+    scan: {scripts: 15, value: computed}
