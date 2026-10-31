@@ -16,7 +16,8 @@
 
 namespace coney::graphics {
 
-/// A texture a frame's draws sample, by its place in the frame's texture table (FrameDescription::textureOf()).
+/// A texture a frame's draws sample, by its place in the frame's texture table (FrameDescription::textureOf()). Not
+/// an AssetStore's TextureId: the table holds the 2D side's own textures (sprite sheets, movie frames) for one frame.
 using FrameTextureId = std::uint32_t;
 /// No texture: the draw is flat colour.
 inline constexpr FrameTextureId kNoFrameTexture = 0;
@@ -30,6 +31,8 @@ using ScreenCopyId = std::uint32_t;
 /// own filter.
 struct Material2d {
     FrameTextureId texture = kNoFrameTexture;
+    /// Past the 0-1 range: Clamp, so a rectangle reaching the texture's border picks up nothing from the other side,
+    /// or Wrap, which repeats it (the room smoke's overlay, docs/research/graphics.md#room-smoke).
     TextureAddress address = TextureAddress::Clamp;
     /// The GS alpha test: fragments with alpha below it (0 to 1) are dropped, 0 keeps every one. None: the draw
     /// leaves the frame's alpha test as it stands, as the 2D quads always have (the GL3 renderer draws them with

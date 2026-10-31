@@ -235,8 +235,9 @@ its tests build it headless ([frame_description_test.cpp](repo:tests/graphics/fr
   blend (the shift of one original line) or the motion blur (its colour and the number of the copy kept from frame to
   frame). A screen pass ends the overlay pass before it, so the next 2D draw starts a new one.
 - **A 2D draw** is a shape (quads, or a list of triangles), a material and the range of its primitives in the frame's
-  arrays. The material is a texture id (an index into the frame's texture table, 0 for flat colour), the addressing
-  (clamped or wrapped) and, for triangles, the alpha test's reference; the 2D pass's fixed states (no depth, no
+  arrays. The material is a texture id (`FrameTextureId`, an index into the frame's texture table, 0 for flat colour; not
+  the [asset store's](asset-formats.md) `TextureId`), the addressing (`TextureAddress` of the texture formats, clamped
+  or wrapped) and, for triangles, the alpha test's reference; the 2D pass's fixed states (no depth, no
   culling, no fog, blended by alpha: [2D drawing](../research/graphics.md#2d-drawing)) are the renderer's. Quads and
   corners are kept in window pixels: `RenderEngine` maps the logical pixels onto the logical screen's place or the
   whole view as it records them.

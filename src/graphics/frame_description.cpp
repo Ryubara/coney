@@ -18,21 +18,21 @@ void FrameDescription::begin(const FrameStart& start) {
     m_vertices.clear();
 }
 
-TextureId FrameDescription::texture(const Texture* texture) {
+FrameTextureId FrameDescription::texture(const Texture* texture) {
     if (texture == nullptr) {
-        return kNoTexture;
+        return kNoFrameTexture;
     }
     // A frame uses a handful of textures, so a scan is cheaper than a map.
     const auto found = std::find(m_textures.begin(), m_textures.end(), texture);
     if (found != m_textures.end()) {
-        return static_cast<TextureId>(found - m_textures.begin()) + 1;
+        return static_cast<FrameTextureId>(found - m_textures.begin()) + 1;
     }
     m_textures.push_back(texture);
-    return static_cast<TextureId>(m_textures.size());
+    return static_cast<FrameTextureId>(m_textures.size());
 }
 
-const Texture* FrameDescription::textureOf(TextureId id) const {
-    if (id == kNoTexture || id > m_textures.size()) {
+const Texture* FrameDescription::textureOf(FrameTextureId id) const {
+    if (id == kNoFrameTexture || id > m_textures.size()) {
         return nullptr;
     }
     return m_textures[id - 1];

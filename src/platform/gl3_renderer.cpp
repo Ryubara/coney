@@ -37,6 +37,21 @@ void destroyRaster(rw::Raster*& raster) {
     }
 }
 
+// librw's addressing for `address` (the 2D side records only Clamp and Wrap; the rest map one to one).
+rw::Texture::Addressing rwAddress(graphics::TextureAddress address) {
+    switch (address) {
+    case graphics::TextureAddress::Wrap:
+        return rw::Texture::WRAP;
+    case graphics::TextureAddress::Mirror:
+        return rw::Texture::MIRROR;
+    case graphics::TextureAddress::Clamp:
+        return rw::Texture::CLAMP;
+    case graphics::TextureAddress::Border:
+        return rw::Texture::BORDER;
+    }
+    return rw::Texture::CLAMP;
+}
+
 } // namespace
 
 Gl3Renderer::~Gl3Renderer() { releaseAll(); }
@@ -116,8 +131,7 @@ rw::Raster* Gl3Renderer::bindTexture(const graphics::Texture* texture, graphics:
     // that reaches the texture's border does not pick up texels from the opposite side, unless the draw repeats the
     // texture.
     draw::setRenderState(rw::TEXTUREFILTER, rwTexture->getFilter());
-    draw::setRenderState(rw::TEXTUREADDRESS,
-                         address == graphics::TextureAddress::Wrap ? rw::Texture::WRAP : rw::Texture::CLAMP);
+    draw::setRenderState(rw::TEXTUREADDRESS, rwAddress(address));
     return rwTexture->raster;
 }
 

@@ -157,7 +157,7 @@ TEST_CASE("a frame description drops a partial triangle and adds nothing for no 
 
 TEST_CASE("a frame description gives each texture one id", "[graphics][frame-description]") {
     // Expected: docs/engine/renderer.md#frame-description; FrameDescription::texture's contract
-    // (src/graphics/frame_description.h): one id per texture per frame, kNoTexture for none, the table emptied by
+    // (src/graphics/frame_description.h): one id per texture per frame, kNoFrameTexture for none, the table emptied by
     // begin().
     FrameDescription frame;
     frame.begin(FrameStart{});
