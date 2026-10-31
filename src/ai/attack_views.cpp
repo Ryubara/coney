@@ -33,6 +33,7 @@ constexpr int kGrabPowerShare = 5;
 // Whether `human` is free: its state word holds none of `0x7bf9e9f7ff0` (`Human_CanUseAttackKind` `0x002240e8`): on
 // its feet, in no pair, not lying, stunned or out of health. A clip it plays is no bar: the original's test reads the
 // state alone, so a fighter is free in the stun's end clip 357 (docs/research/combat-reactions.md#stun-end).
+// @coney-only the free view read from Coney's fighter, which has no state word; canUseAttackKind tests it
 bool freeHuman(const human::Human& human) {
     const human::Fighter& fighter = human.fighter();
     return human.state() == human::TargetState::Standing && !fighter.inPair() && !fighter.victim().grounded() &&

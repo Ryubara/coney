@@ -86,13 +86,21 @@ class Victim {
     void die(const IncomingHit& hit, const VictimFrame& frame, HumanAnimator& animator);
 
     /// The ground starts (a knockdown, a throw's landing) at `nowMs`; with `stunned` the stun lasts until the rise +
-    /// the stun time.
+    /// the stun time. The doublings by the attack's clip flags `0x100` / `0x200`, a class-13 attacker's 2 s and flag
+    /// `0x80`'s ground of no time are not ported (#685).
+    /// Research: docs/research/characters.md#code-core
+    /// @orig 0x0022f4f8 Human_SetDownTimers (unknown)
     void knockDown(std::uint64_t nowMs, bool stunned);
-    /// Stuns it from `nowMs` for the class's stun time.
+    /// Stuns it from `nowMs` for the class's stun time. The doubling by the attack's clip flag `0x200` is not ported
+    /// (#685); flag `0x100`'s refusal is react()'s.
+    /// Research: docs/research/characters.md#code-core
+    /// @orig 0x0022f9e0 Human_SetStunTimer (unknown)
     void stun(std::uint64_t nowMs);
     /// Forgets the stun and the ground (a hold takes it, it got up another way).
+    /// @coney-only Coney's reset of its own timers; the original clears each state where it ends
     void clear();
     /// Stunned until `untilMs`, the class's stun time aside (a boss's tired window), already in the stun's loop.
+    /// @coney-only Coney's boss tired window sets its own time (Fighter::stunFor carries `Human_Stun`)
     void stunUntil(std::uint64_t untilMs) {
         m_stunUntilMs = untilMs;
         m_stunEntered = true;

@@ -368,8 +368,8 @@ other level is given.
 - **A game flag also slows the human.** When the word at `0x0051021c` is non-zero and the human has no state
   `0x80000`, `Human_EndStun` sets the speed multiplier `+0x3a4` ([Humans](characters.md)) to 0.65 (`0x3f266666`).
   Confirmed (code); the word is 0 in the executable and its one reference is this read (no writer found), so what
-  sets it is unknown (speculative: a debug or option setting). Knocked down, dead or out, it only removes style `0xe`
-  and clears `0x100000`.
+  sets it is unknown (speculative: a debug or option setting; [Open questions](#open-questions)). Knocked down,
+  dead or out, it only removes style `0xe` and clears `0x100000`.
 - **A clip that ends while still stunned returns to 355.** `Human_BuildIdleTasks` plays 355 `STUNNED_ENTER`
   (`0x163`) whenever state `0x100000` is set, and 356 `STUNNED_IDLE` follows it; `Human_PlayStanceIdleState`
   (`0x0025fa48`) does the same for the fight stance's idle.
@@ -1236,6 +1236,9 @@ fade and the `dyn_cross` icon are not built.
   rather than when they start ([The stun's end](#stun-end)); `Human_Stun` (`0x0022f658`) on a stunned human restarts
   the time through `Human_SetStunTimer`. Coney's counter of the player's grab starts it at the counter. A watch on
   record `+0x100` during the counter would name the writer.
+- **The stun end's slow flag**{#q-endstun-speed}: what writes the word at `0x0051021c` that makes `Human_EndStun` set
+  the speed multiplier to 0.65 ([The stun's end](#stun-end)); Ghidra shows only the read. Coney keeps the speed (a
+  stand-in). A PCSX2 write watchpoint on the word through a level, or a search for pointers to it, would tell.
 - **A knocked-out tackled victim**{#q-tackle-knockout}: whether a tackled victim is ever knocked out when
   `Tackle_OnVictimRiseEnd` fires ([Who sets and clears the knocked-out bit](#knocked-out-bit)). A breakpoint on the
   hook with the state word read would tell.

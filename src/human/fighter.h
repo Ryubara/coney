@@ -567,6 +567,7 @@ class Fighter {
     /// Hurt: below the power class's hurt fraction of its health.
     [[nodiscard]] bool hurt() const { return m_health.fraction() < m_victim.powerClass().hurtFraction; }
     /// Reacting to a hit, stunned, down or getting up: the player cannot act.
+    /// @coney-only Coney's summary of the states and clips that keep a fighter from acting
     [[nodiscard]] bool helpless(const HumanAnimator& animator) const;
     /// Hits that reached the player, blocked, ducked under, or taken under the hit armour (no reaction).
     [[nodiscard]] int hitsTaken() const { return m_hitsTaken; }
@@ -912,7 +913,8 @@ class Fighter {
     // The reaction's frame of the player now.
     [[nodiscard]] VictimFrame frame(const FighterInput& input) const;
     // The timers of a reaction (the stun's end, the rise) and the mash while down; returns whether the player is
-    // still helpless.
+    // still helpless. Reads the command for the mash (the head of `Human_UpdateDown`, whose rest is Victim::step).
+    // @orig 0x00256a60 Human_UpdateDown (unknown)
     bool stepVictim(const FighterInput& input, HumanAnimator& animator);
     // A grab caught the player this update: a counter, or the held player's clips.
     void startGrabbed(const FighterInput& input, HumanAnimator& animator);

@@ -324,6 +324,20 @@ coney = "src/human/victim.h:Victim::react"
 status = "legacy"
 
 [[function]]
+address = 0x0022f4f8
+name = "Human_SetDownTimers"
+page = "characters.md#code-core"
+role = "the down and stun end times of a knockdown"
+level = "confirmed-code"
+coney = "src/human/victim.h:Victim::knockDown"
+status = "compared"
+
+[[function.gaps]]
+what = "the attack's clip flags 0x100 / 0x200 double the down and stun times, a class-13 attacker adds 2 s, flag 0x80 gives no down time"
+relation = "not-ported"
+issue = 685
+
+[[function]]
 address = 0x0022f658
 name = "Human_Stun"
 page = "combat-reactions.md#reactions"
@@ -340,8 +354,27 @@ page = "combat-reactions.md#reactions"
 role = "the stun timer"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
-coney = "src/human/fighter.h:Fighter::endStun"
-status = "legacy"
+coney = "src/human/victim.h:Victim::step"
+status = "compared"
+
+[[function.gaps]]
+what = "the speed multiplier 0.65 when the word at 0x0051021c is set"
+relation = "stand-in"
+question = "combat-reactions.md#q-endstun-speed"
+
+[[function]]
+address = 0x0022f9e0
+name = "Human_SetStunTimer"
+page = "characters.md#code-core"
+role = "the stun end time from the class's stun time"
+level = "confirmed-code"
+coney = "src/human/victim.h:Victim::stun"
+status = "compared"
+
+[[function.gaps]]
+what = "the attack's clip flag 0x200 doubles the stun time"
+relation = "not-ported"
+issue = 685
 
 [[function]]
 address = 0x00230328
