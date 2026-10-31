@@ -161,6 +161,7 @@ TEST_CASE("a waiting attacker taunts every 1-2 s, the one his man is fighting ne
 
 TEST_CASE("without a gesture slot a waiting attacker does not taunt", "[ai]") {
     AiScene scene;
+    // Expected: ai-fights.md#fight-reposition, confirmed (code)
     scene.services.gesturesAllowed = false;
     Brain& player = scene.player();
     // Unarmed, as in the test above, so the back one always waits whatever the brains' draws are: with attack
