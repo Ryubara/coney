@@ -13,9 +13,6 @@ tag = 7
 ["src/ai/ai_humans.h"]
 comment = 5
 
-["src/ai/attack_action.cpp"]
-tag = 3
-
 ["src/ai/attack_choice.cpp"]
 tag = 3
 
@@ -2389,9 +2386,6 @@ citation = 2
 
 ["tests/platform/disc_rumble_gang_count_test.cpp"]
 citation = 1
-
-["tests/platform/disc_rumble_test.cpp"]
-citation = 9
 
 ["tests/platform/disc_scene_option_test.cpp"]
 citation = 2
