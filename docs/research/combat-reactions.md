@@ -1057,7 +1057,7 @@ from the stun's start: 357 and the state's end 27 updates after it, the reaction
 28 after. **Coney's choices**: a boss's tired stun (`Victim::stunUntil`) starts in 356 without 355, and Coney's
 counter of the player's grab starts the player's stun time at the counter ([Open questions](#open-questions)).
 **Stand-in**: the stun's end keeps the speed multiplier as it is; the original's 0.65 under the flag at `0x0051021c`
-is not ported.
+is not ported ([#1346](issue:1346)).
 
 ### Damage {#damage-coney}
 

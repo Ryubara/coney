@@ -84,7 +84,7 @@ class Victim {
                        std::uint64_t nowMs);
     /// Plays the dying reaction for `hit` (the `DIE` set half the time, else 292) and the ground for good. Only the
     /// chain's first clip: the special cases' clips (cuffed, burning, held, tackling, wounded), the fall, 205, the
-    /// loop, health 1 and state `0x80000000` are not ported ("gameplay: Add the death chain after the dying reaction").
+    /// loop, health 1 and state `0x80000000` are not ported (#1345).
     /// Research: docs/research/combat-reactions.md#knockout-timing
     /// @orig 0x00267a00 Human_PlayDeathReaction (unknown)
     void die(const IncomingHit& hit, const VictimFrame& frame, HumanAnimator& animator);

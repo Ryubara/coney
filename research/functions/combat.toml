@@ -360,6 +360,7 @@ status = "compared"
 [[function.gaps]]
 what = "the speed multiplier 0.65 when the word at 0x0051021c is set"
 relation = "stand-in"
+issue = 1346
 question = "combat-reactions.md#q-endstun-speed"
 
 [[function]]
@@ -889,6 +890,13 @@ name = "Human_PlayDeathReaction"
 page = "combat-reactions.md#knockout-timing"
 role = "The death chain: the dying reaction, a fall, 205, then the loop (349, 200 or 323); the last clip before the loop ends in Human_OnHealthOut, the knock-out."
 level = "confirmed-code"
+coney = "src/human/victim.h:Victim::die"
+status = "compared"
+
+[[function.gaps]]
+what = "the special cases' dying clips, the fall, 205, the loop, the held flag, push weight, blends, health 1 and the record resets"
+relation = "not-ported"
+issue = 1345
 
 [[function]]
 address = 0x00268430

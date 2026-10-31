@@ -115,7 +115,7 @@ bool Victim::step(HumanAnimator& animator, std::uint32_t idle, std::uint64_t now
             animator.playCombat(one(static_cast<std::uint32_t>(combat::kStunEnd)), idle, AnimState::Attack);
             // **Stand-in**: with the global flag 0x0051021c set (no writer found), `Human_EndStun` also sets the
             // human's speed multiplier (+0x3a4) to 0.65 unless it holds state 0x80000; Coney keeps the speed as it
-            // is ("gameplay: Add the speed a stun's end sets when its game flag is on").
+            // is (#1346).
         } else if (!m_stunEntered) {
             m_stunEntered = true;
             animator.playCombat(one(static_cast<std::uint32_t>(combat::kStunEnter)),
