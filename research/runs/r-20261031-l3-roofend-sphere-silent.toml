@@ -3,7 +3,7 @@ id = "r-20261031-l3-roofend-sphere-silent"
 date = "2026-10-31"
 kind = "method"
 tool = "pcsx2 record-run"
-digest = "ca1044783767165cccfa2269fa35755b75366ff041d23b30c07aee913131467b"
+digest = "dc02367d08e80f4bacd6bdb92e9bf0579f7f261b0470a998a4e5f281f4f2f223"
 
 [who]
 agent = "aa2c729bc8f12bb36"
@@ -21,18 +21,17 @@ patches = ["event-call", "event-callback"]
 
 [run]
 name = ""
-method = "level3 checkpoint 4 chase played by trace events (scenario level3_cp4) from a hand-made checkpoint-4 loading state, nine times: frame counters 0x00514804 and 0x0051482c as saved (4), both set to 0..3, and only the sphere's set to 0..3. Each event log was read for ObjectiveEnter, ch4.EnterGallery and SetCheckPoint 5, each route for the updates the player's feet spent within 2 m of the mode-1 sphere on flag fRoofEnd (202.9, 367.9, 16.3): 6 in a row in eight runs, 2 in one, so the sphere, checked every fifth update, saw him inside; no run sent ObjectiveEnter."
+method = "level3 checkpoint 4 chase played by trace events (scenario level3_cp4) from a hand-made checkpoint-4 loading state, nine times: frame counters 0x00514804 and 0x0051482c as saved (4), both set to 0..3, and only the sphere's set to 0..3. Each event log read for ObjectiveEnter and ch4.EnterGallery; each route for the updates before ch4.EnterGallery's that the player's feet spent within 2 m of flag fRoofEnd (202.9, 367.9, 16.3): 3 in eight runs, 1 in one. No run sent ObjectiveEnter; all nine reached SetCheckPoint 5."
 
 [values]
 runs = 9
 runs_reaching_checkpoint5 = 9
 runs_with_objective_enter = 0
 runs_with_enter_gallery = 9
-updates_inside_radius_most_runs = 6
-updates_inside_radius_fewest = 2
-nearest_distance_m = 1.6
+updates_inside_before_gallery_most_runs = 3
+updates_inside_before_gallery_fewest = 1
+nearest_in_window_distance_m = 1.76
 
 [addresses]
 box_counter = 0x00514804
 sphere_counter = 0x0051482c
-nav_is_connected = 0x0024dee8

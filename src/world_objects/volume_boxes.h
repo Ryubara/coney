@@ -93,8 +93,9 @@ class VolumeBoxes {
     /// Every box, oldest first.
     [[nodiscard]] const std::vector<VolumeBox>& all() const { return m_boxes; }
     /// Forgets every box: the level is unloaded.
-    /// @coney-only the frame counter starts again at 0, where the original's (`0x00514804`) runs on across levels
-    /// (docs/research/trigger-updates.md#schedule)
+    /// @coney-only the frame counter starts again at 0, where the original's (`0x00514804`) runs on across levels: so a
+    /// level's box turns do not hang on how many frames ran since boot, and a test or a networked session that loads
+    /// the level gets the same turns every time (docs/research/trigger-updates.md#schedule)
     void clear() {
         m_boxes.clear();
         m_frame = 0;

@@ -134,17 +134,28 @@ nobody. Both pass mask 1. Confirmed (code) at `0x004146e0`, `0x00415378`.
 `TriggerSphere_Accepts` (`0x00414548`) takes the position of the sphere's object, refuses a point farther than the
 radius (`+0x174`, squared distance in 3D), and then by mode (`+0x17c`): mode 1 asks `Nav_IsConnected` (`0x0024dee8`)
 whether the two points are joined, mode 2 casts a clear-ray test (`Ray_IsClear`) between the two points each moved
-by 0.01 times a fixed vector (`0x00511740`), and any other mode accepts. `TriggerSphere_AcceptsObject` (`0x00414688`)
+by 0.01 times the up vector (0, 0, 1, 1) at `0x00511740` (a constant nothing writes), so both ends rise 0.01 m, and
+any other mode accepts. `TriggerSphere_AcceptsObject` (`0x00414688`)
 is the same test on an object's position. Confirmed (code) at `0x00414548`, `0x00414688`.
 
 `Nav_IsConnected(a, b, area)` (`0x0024dee8`) finds `a`'s navigation area (`Nav_FindArea`, `0x00250708`) when it is
 given none (the sphere passes none), then returns whether `Nav_IsWalkableLine` (`0x0024fbf8`) passes from that area,
 `a` to `b`, with no polygon flags masked: a walkable straight line on the navigation mesh
 ([Path planning](ai-moving.md#path-planning)), not a line of sight. Confirmed (code) at `0x0024dee8`. So a mode-1
-sphere whose object stands off the mesh, or across a hole from the human, accepts nobody: in `level3` the objective
-flag `fRoofEnd`, a mode-1 sphere of radius 2, sent no `ObjectiveEnter` in nine runs of the rooftop chase while Snow's
-feet stayed within its radius for up to 6 updates (so through at least one of its checks), and the chase went on
-through `ch4.EnterGallery` instead. Confirmed (runtime), run r-20261031-l3-roofend-sphere-silent.
+sphere whose object stands off the mesh, or across a hole from the human, accepts nobody.
+
+In `level3`'s rooftop chase the objective flag `fRoofEnd`, a mode-1 sphere of radius 2, sent no `ObjectiveEnter` in
+nine runs, with the box and sphere frame counters (`0x00514804`, `0x0051482c`) started at each of their five values,
+and every run went on through the gallery box's `ch4.EnterGallery` to checkpoint 5. Snow's feet were within the radius
+for 3 updates before `ch4.EnterGallery` in eight runs and 1 in the ninth; that callback re-sets the flag's handlers,
+so only a check in those updates could have sent `ObjectiveEnter`. Confirmed (runtime), run
+r-20261031-l3-roofend-sphere-silent.
+
+That some run checked the sphere in those updates is inferred: the sphere's slot *i* is checked when *i* modulo 5
+equals the sphere counter, which steps once an update, and the boxes run first in a frame
+([The schedule](#schedule)). Over the nine runs the counter's values in the windows cover all five residues, each one
+at least 0.15 m inside the radius, so whatever the flag's slot, some run checked it with Snow inside. That the refusal
+is `Nav_IsConnected`'s is inferred from the code above; the call was not watched.
 
 ### A box's update {#box}
 
@@ -193,8 +204,9 @@ decompiled scripts.
   for every box the game adds is the same as keeping them.
 - `TriggerSpheres::accepts()` is the accept test. Mode 1 asks `world::PathMap::connected()` (`Nav_IsConnected`)
   through the test gameplay sets, from the sphere's object to the human's feet, both areas found under the points
-  by the level's ground probe; with no path data or no collision every line passes. Mode 2's ray is a stand-in
-  ([q-line-tests](#q-line-tests)). Any other mode accepts on the radius alone.
+  by the level's ground probe; with no path data or no collision every line passes. Mode 2 casts the
+  clear-line test gameplay sets between the two points raised `kRayRaise` (0.01 m). Any other mode accepts on the
+  radius alone.
 - Coney's choices in the found list ([q-found-mask](#q-found-mask)): the subjects are Coney's humans in its own order
   (by handle), a dead human is never found, a box finds the humans inside it rather than within its bounding sphere,
   and nobody beyond the first 60 found is tested by a sphere. A players' box takes the first two players among the
@@ -207,12 +219,6 @@ decompiled scripts.
   listed.
 
 ## Open questions
-
-### Mode 2's ray {#q-line-tests}
-
-Which vector `0x00511740` holds for mode 2's ray is not read, so Coney's mode 2 casts its clear-line test from the
-sphere's centre and the human's feet, both raised 1 m. To settle it: read `0x00511740` in PCSX2 in any level and
-check the ray's ends at `0x00414548` with a mode-2 sphere.
 
 ### The found humans {#q-found-mask}
 

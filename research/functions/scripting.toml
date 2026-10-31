@@ -2158,11 +2158,6 @@ level = "confirmed-code"
 coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::accepts"
 status = "compared"
 
-[[function.gaps]]
-what = "mode 2's ray is Coney's clear-line callback from points raised 1 m"
-relation = "stand-in"
-question = "trigger-updates.md#q-line-tests"
-
 [[function]]
 address = 0x004146e0
 name = "TriggerSphere_Update"

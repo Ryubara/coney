@@ -17,11 +17,11 @@ namespace coney::world_objects {
 /// message 3 when a human comes inside, 5 while one stays and 4 when one leaves or dies. Coney keeps the behaviour of
 /// the original's 0x184-byte record, not its layout (docs/research/scripting.md#triggers).
 struct TriggerSphere {
-    double object = 0;                 ///< `+0x170`: the object the sphere is round and whose handler hears it.
-    float radius = 0.0F;               ///< `+0x174`, metres.
-    int mode = 0;                      ///< `+0x17c`: 0 distance only, 1 and 2 also a clear line (see TriggerSpheres).
-    bool armed = false;                ///< `+0x180`.
-    std::uint64_t stayPeriodMs = 1000; ///< `+0x164`: the period of message 5 (TriggerSpheres::kDefaultStayPeriodMs).
+    double object = 0;   ///< `+0x170`: the object the sphere is round and whose handler hears it.
+    float radius = 0.0F; ///< `+0x174`, metres.
+    int mode = 0;        ///< `+0x17c`: 0 distance only, 1 a walkable line, 2 a clear ray (see TriggerSpheres).
+    bool armed = false;  ///< `+0x180`.
+    std::uint64_t stayPeriodMs = 1000;    ///< `+0x164`: the period of message 5 (TriggerSpheres::kDefaultStayPeriodMs).
     std::uint32_t handlerPeriodMs = 1000; ///< `TriggerSphereCfg`'s last argument, the handler component's `+0x74`.
     std::vector<double> occupants;        ///< The humans inside, at most VolumeBoxes::kMaxOccupants.
     std::uint64_t nextStayMs = 0;         ///< When message 5 may be sent again.
@@ -31,9 +31,9 @@ struct TriggerSphere {
 /// fifth frame, with the volume boxes' enter / stay / leave rules (VolumeBoxes::update).
 ///
 /// Mode 1's test is the original's `Nav_IsConnected` (`0x0024dee8`): a walkable line on the navigation mesh from the
-/// sphere's centre to the human's feet (setConnected). **Coney's choice** where the page is silent: mode 2's ray test
-/// (`0x0024df40`, its vector `0x00511740` not read) is Coney's clear line from the centre raised 1 m to a point 1 m
-/// above the feet; with no test given, a mode's line passes.
+/// sphere's centre to the human's feet (setConnected). Mode 2's is `Ray_IsClear` (`0x0024df40`) between the centre and
+/// the feet, both raised kRayRaise along the up vector at `0x00511740` (setClearLine). With no test given, a mode's
+/// line passes.
 ///
 /// Research: docs/research/scripting.md#triggers, docs/research/trigger-updates.md#sphere,
 /// docs/references/bindings/world.md#triggerspherecfg
@@ -45,8 +45,9 @@ class TriggerSpheres {
     static constexpr std::uint64_t kDefaultStayPeriodMs = 1000;
     /// Frames between two checks of one sphere.
     static constexpr std::uint32_t kFramesPerCheck = 5;
-    /// The height above the feet (and, in mode 2, above the centre) of the clear-line tests' ends: Coney's choice.
-    static constexpr float kLineRaise = 1.0F;
+    /// How far mode 2's ray ends rise above the centre and the feet: 0.01 times the up vector (0, 0, 1, 1) at
+    /// `0x00511740`, a constant nothing writes (`0x00414548`).
+    static constexpr float kRayRaise = 0.01F;
 
     /// Where an object is: its position, or nothing when the handle names no live object.
     using Locate = std::function<std::optional<std::array<float, 3>>(double object)>;
@@ -88,10 +89,9 @@ class TriggerSpheres {
         m_frame = 0;
     }
 
-    /// Sets how objects are found (null finds none, so no sphere sends anything) and the clear-line test (null: every
-    /// line is clear).
+    /// Sets how objects are found (null finds none, so no sphere sends anything).
     void setLocate(Locate locate) { m_locate = std::move(locate); }
-    /// Sets the clear-line test of modes 1 and 2 (null: every line is clear).
+    /// Sets mode 2's test, whether the ray between two points is clear of the level's walls (null: every ray is clear).
     void setClearLine(ClearLine clearLine) { m_clearLine = std::move(clearLine); }
     /// Sets mode 1's test, whether a walkable line joins the sphere's centre to a point (world::PathMap::connected;
     /// null: every line passes).
@@ -103,8 +103,8 @@ class TriggerSpheres {
     /// @orig 0x00414398 TriggerSpheres_Update (unknown)
     void update(std::span<const BoxSubject> subjects, std::uint64_t nowMs, const VolumeBoxes::Send& send);
 
-    /// Whether `point` counts as inside `sphere` centred on `centre`: within the radius (in 3D) and, in modes 1 and 2,
-    /// with a clear line to it.
+    /// Whether `point` counts as inside `sphere` centred on `centre`: within the radius (in 3D) and, in mode 1, joined
+    /// to it by a walkable line, in mode 2 by a clear ray between the two raised kRayRaise.
     /// @orig 0x00414548 TriggerSphere_Accepts (unknown)
     [[nodiscard]] bool accepts(const TriggerSphere& sphere, const std::array<float, 3>& centre,
                                const std::array<float, 3>& point) const;
