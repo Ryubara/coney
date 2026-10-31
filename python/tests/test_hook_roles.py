@@ -190,6 +190,41 @@ def test_the_coordinator_may_run_fails_first_with_accept_change(launcher: str, s
     assert roles.check(CONFIG, bash(command, agent_type="coordinator")) is None, command
 
 
+#: Spellings of the options that make the CLI stamp something (`--none` is handled before `--accept-change`), with the
+#: prefixes argparse takes.
+STAMPING = ["--none r", "--none=r", "--NONE r", "--non r", "--no r", "--n r", "--keeps", "--KEEPS", "--keep", "--k"]
+
+
+@pytest.mark.parametrize("launcher", LAUNCHERS)
+@pytest.mark.parametrize("stage", ["orig fails-first", "original fails-first"])
+@pytest.mark.parametrize("stamping", STAMPING)
+@pytest.mark.parametrize("accept", ["--accept-change r", "--ac=r"])
+def test_the_coordinator_may_only_record_the_decision(launcher: str, stage: str, stamping: str, accept: str) -> None:
+    # the CLI takes `--none` first, so `--none r --accept-change r` would stamp: the decision must come alone, in
+    # either order
+    for options in (f"{accept} {stamping}", f"{stamping} {accept}"):
+        command = f"{launcher} {stage} --task t1 {options}"
+        assert roles.check(CONFIG, bash(command, agent_type="coordinator")), command
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "cd x && uv run --project python coney-tools orig fails-first --test t --test-commit a --accept-change r",
+        "cd x; coney-tools orig fails-first --accept-change r --test t --test-commit a",
+        "coney-tools orig fails-first --accept-change 'one; two' --test t --test-commit a",
+        "coney-tools orig fails-first --accept-change 'one | two && three' --test t --test-commit a",
+        'coney-tools orig fails-first --accept-change "a | b; c" --test "T | U" --test-commit a',
+        "coney-tools orig fails-first --accept-change r --test t --test-commit a 2>&1 | tail -5",
+        "cd x && coney-tools orig fails-first --accept-change 'r; s' --test t --test-commit a 2>&1 | tail -n 3",
+        f"coney-tools orig fails-first --test t {BACKSLASH}\n  --test-commit a {BACKSLASH}\n  --accept-change r",
+        "coney-tools orig fails-first --accept-change 'say --none or --keeps' --test t --test-commit a",
+    ],
+)
+def test_a_real_accept_change_run_passes(command: str) -> None:
+    assert roles.check(CONFIG, bash(command, agent_type="coordinator")) is None, command
+
+
 @pytest.mark.parametrize("launcher", LAUNCHERS)
 @pytest.mark.parametrize("stage", STAGES)
 @pytest.mark.parametrize(
