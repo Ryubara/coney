@@ -110,7 +110,8 @@ bool Victim::step(HumanAnimator& animator, std::uint32_t idle, std::uint64_t now
     // 357 starts (`Human_EndStun`, then `Human_BuildIdleTasks`): at once when the clip that held it ends late enough.
     // Its time not passed, the clip that ended returns to 355, then the loop 356 (`Human_BuildIdleTasks`).
     if (stunned() && !m_grounded && !animator.drivingClipPlaying()) {
-        if (nowMs >= m_stunUntilMs) {
+        // Past, not on it: the original tests the time minus now below zero.
+        if (nowMs > m_stunUntilMs) {
             m_stunUntilMs = 0;
             animator.playCombat(one(static_cast<std::uint32_t>(combat::kStunEnd)), idle, AnimState::Attack);
             // **Stand-in**: with the global flag 0x0051021c set (no writer found), `Human_EndStun` also sets the
@@ -122,8 +123,9 @@ bool Victim::step(HumanAnimator& animator, std::uint32_t idle, std::uint64_t now
                                 static_cast<std::uint32_t>(combat::kStunLoop), AnimState::Hold);
         }
     }
-    // 2. Down long enough, it gets up: into the stun's loop while stunned (355 first, from step 1), else the idle.
-    if (m_grounded && canRise && nowMs >= m_riseAtMs) {
+    // 2. Down long enough (past its time, as the stun), it gets up: into the stun's loop while stunned (355 first, from
+    // step 1), else the idle.
+    if (m_grounded && canRise && nowMs > m_riseAtMs) {
         m_grounded = false;
         if (stunned()) {
             m_stunEntered = false;
