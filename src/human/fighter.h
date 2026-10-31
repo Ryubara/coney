@@ -892,7 +892,7 @@ class Fighter {
     void takePending(const FighterInput& input, HumanAnimator& animator);
     // Acts on an attacker's warning: a blocking player ducks or plays its block reaction early.
     // @orig 0x00245920 Human_HandleMessage (unknown)
-    // @orig 0x00254e78 Human_UpdateBlockState (unknown)
+    // @orig 0x00254e78 Human_UpdateActions (unknown)
     void takeNotice(const FighterInput& input, HumanAnimator& animator);
     // The duck's counter: square or cross while the duck's own events 0x25 fire asks for it (record +0x14 = 0xe);
     // on the next update 617-620 plays by the side the attacker stands on. Returns whether this update's command
@@ -905,7 +905,7 @@ class Fighter {
     // stays free to react. Run while he is still reacting, before the ground's update skips the dispatcher. Returns
     // whether the counter played. An AI's Grounded goal says no through the whole rise, so only a player counters.
     // Research: docs/research/combat-reactions.md#ground-escape
-    // @orig 0x00254e78 Human_UpdateBlockState (unknown)
+    // @orig 0x00254e78 Human_UpdateActions (unknown)
     bool riseCounter(const FighterInput& input, HumanAnimator& animator);
     // Plays the counter 617-620 at `target` (by its side) and starts it as the dispatcher's attack.
     // @orig 0x002617f8 Block_DuckCounter (unknown)

@@ -60,7 +60,9 @@ ReactionKind Victim::react(const IncomingHit& hit, const VictimFrame& frame, Hum
     const auto clip = static_cast<std::uint32_t>(reaction.animId);
     m_lastReaction = reaction.animId;
     ++m_reactions;
-    // A victim with flag 0x100 is never stunned.
+    // A victim with flag 0x100 is never stunned. **Gap**: one already stunned keeps its stun through a knockdown in the
+    // original (`Human_SetDownTimers` `0x0022f4f8` keeps state 0x100000, the end at the rise - 1 ms); here it loses it
+    // (issue draft from #1330's review).
     const bool stuns = !frame.unstunnable && ((hit.flags & combat::kRangeFlagStun) != 0 || stunned());
     // A reaction with a knockdown event lays it down; a stunned one stays stunned until after the rise.
     if (knocksDown(animator, reaction.animId)) {

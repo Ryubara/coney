@@ -360,6 +360,9 @@ other level is given.
   states `0x1c18003ff0`; then, once now passes `+0x100` and the human has no endless stun (`+0xe0` `0x8000000`), it
   calls `Human_EndStun` (`0x0022f8d8`). So a reaction (held `0x400`), a paired reaction (`0x400000`) or the stun's
   enter clip keep the stun's state past its time; the stun's loop holds nothing, so the stun ends in it at its time.
+  "Passes" is strict: both this test and the rise's (`+0x104`) are the time minus now below zero, so an update that
+  lands on the time (a civilian's 2000 ms ground or the player's 200 ms stun is a whole number of 33/33/34 ms clock
+  steps) keeps the stun or the ground one update more.
 - **`Human_EndStun` clears the state as 357 starts.** It pops move style `0xe`, sets state `0x20000000`, enters the
   fight stance (state `0x1`), clears `0x100000` and sets record `+0x18` = `0xb`. The idle builder that runs next
   (`Human_BuildIdleTasks`, `0x0025f770`) plays 357 `STUNNED_EXIT` from 356, and with `+0x18` = `0xb` it plays the
@@ -1051,13 +1054,15 @@ hand](combat-throws.md#bat-knockdown-coney).
 ### The stun's end {#stun-end-coney}
 
 `Victim::step()` (`repo:src/human/victim.cpp`) keeps the stun's state until no clip drives the human, then plays 357
-and clears it, or 355 and the loop 356 while its time still runs; the AI's free test (`freeHuman`,
+and clears it, or 355 and the loop 356 while its time still runs, both the stun and the rise waiting until their time is
+past, not on it; the AI's free test (`freeHuman`,
 `repo:src/ai/attack_views.cpp`) reads the state alone. On `civ_stun` Coney's fighter matches the original's offsets
 from the stun's start: 357 and the state's end 27 updates after it, the reaction goal's end and the fight's next move
 28 after. **Coney's choices**: a boss's tired stun (`Victim::stunUntil`) starts in 356 without 355, and Coney's
 counter of the player's grab starts the player's stun time at the counter ([Open questions](#open-questions)).
 **Stand-in**: the stun's end keeps the speed multiplier as it is; the original's 0.65 under the flag at `0x0051021c`
-is not ported ([#1346](issue:1346)).
+is not ported ([#1346](issue:1346)). **Gap**: a victim with flag `0x100` (never stunned) that is already stunned
+loses its stun at a knockdown; the original keeps it until after the rise (`Human_SetDownTimers`, `0x0022f4f8`).
 
 ### Damage {#damage-coney}
 
