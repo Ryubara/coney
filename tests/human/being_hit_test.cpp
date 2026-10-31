@@ -16,6 +16,8 @@
 #include "combat/combat_tuning.h"
 #include "combat/grabbed.h"
 #include "combat/player_combat.h"
+#include "combat/power_class.h"
+#include "combat/reactions.h"
 #include "human/fighter.h"
 #include "human/human.h"
 #include "human/human_animator.h"
@@ -185,6 +187,28 @@ TEST_CASE("653's stun outlasts the rise: 199, then 357", "[human][combat]") {
     const auto rise = std::ranges::find(log.clips(), 199U);
     REQUIRE(rise != log.clips().end());
     CHECK(std::find(rise, log.clips().end(), 357U) != log.clips().end());
+}
+
+TEST_CASE("the stun ends and the victim rises only once their time is past, not on it", "[human][combat]") {
+    // Expected: combat-reactions.md#stun-end, confirmed (code): Human_UpdateDown (0x00256a60) tests the stun's and the
+    // ground's time minus now below zero, so an update that lands on the time keeps the stun and the ground.
+    const FightCharacter character;
+    coney::human::HumanAnimator animator(character.anims, coney::human::AnimSlots::player());
+    coney::human::Victim victim(combat::kCivilianPowerClass);
+    // Standing stunned, in the loop (no clip drives the human): ends after 1000, not at it.
+    victim.stunUntil(1000);
+    victim.step(animator, coney::human::kAnimFightIdle, 1000, true);
+    CHECK(victim.stunned());
+    victim.step(animator, coney::human::kAnimFightIdle, 1001, true);
+    CHECK_FALSE(victim.stunned());
+    CHECK(animator.animId() == static_cast<std::uint32_t>(combat::kStunEnd));
+    // The civilian's 2000 ms on the ground, a whole number of 1/30 s clock steps (33, 33, 34 ms): it rises after it.
+    victim.knockDown(3000, false);
+    REQUIRE(victim.riseAtMs() == 5000);
+    CHECK_FALSE(victim.step(animator, coney::human::kAnimFightIdle, 5000, true));
+    CHECK(victim.grounded());
+    CHECK(victim.step(animator, coney::human::kAnimFightIdle, 5001, true));
+    CHECK_FALSE(victim.grounded());
 }
 
 TEST_CASE("presses during the knockdown's reaction do nothing; lying down each one cuts the time", "[human][combat]") {
