@@ -305,6 +305,15 @@ def test_a_touched_file_below_the_standard_fails_once_the_check_is_enforced(tmp_
     assert {r.rule for r in found} >= {"citation", "comment", "tag"}
 
 
+def test_a_touched_test_file_with_no_test_case_is_read_without_error(tmp_path: Path) -> None:
+    # A fixtures header under tests/ holds no TEST_CASE: it has no case spans, and touching it reports nothing.
+    before = "#pragma once\n// The clips.\ninline int clips() { return 1; }\n"
+    root = build(tmp_path, {"tests/support/fixtures.h": before})
+    branch(root, {"tests/support/fixtures.h": before.replace("1;", "2;")})
+    result, conv = scan(root)
+    assert sc.touched(root, conv, result, "main") == []
+
+
 def test_a_touched_file_that_meets_the_standard_has_no_report(tmp_path: Path) -> None:
     root = build(tmp_path, {"src/ai/brain.cpp": GOOD_SOURCE, "tests/ai/a_test.cpp": GOOD_TEST})
     branch(
