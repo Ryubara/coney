@@ -365,6 +365,11 @@ other level is given.
   (`Human_BuildIdleTasks`, `0x0025f770`) plays 357 `STUNNED_EXIT` from 356, and with `+0x18` = `0xb` it plays the
   action clip after record `+0x28` (inferred to be 357 too: at runtime 357 followed a reaction directly, below). The
   clip holds `0x80000`, or `0x40000000` when the player record's `+0x1b` is set.
+- **A game flag also slows the human.** When the word at `0x0051021c` is non-zero and the human has no state
+  `0x80000`, `Human_EndStun` sets the speed multiplier `+0x3a4` ([Humans](characters.md)) to 0.65 (`0x3f266666`).
+  Confirmed (code); the word is 0 in the executable and its one reference is this read (no writer found), so what
+  sets it is unknown (speculative: a debug or option setting). Knocked down, dead or out, it only removes style `0xe`
+  and clears `0x100000`.
 - **A clip that ends while still stunned returns to 355.** `Human_BuildIdleTasks` plays 355 `STUNNED_ENTER`
   (`0x163`) whenever state `0x100000` is set, and 356 `STUNNED_IDLE` follows it; `Human_PlayStanceIdleState`
   (`0x0025fa48`) does the same for the fight stance's idle.
@@ -1051,6 +1056,8 @@ and clears it, or 355 and the loop 356 while its time still runs; the AI's free 
 from the stun's start: 357 and the state's end 27 updates after it, the reaction goal's end and the fight's next move
 28 after. **Coney's choices**: a boss's tired stun (`Victim::stunUntil`) starts in 356 without 355, and Coney's
 counter of the player's grab starts the player's stun time at the counter ([Open questions](#open-questions)).
+**Stand-in**: the stun's end keeps the speed multiplier as it is; the original's 0.65 under the flag at `0x0051021c`
+is not ported.
 
 ### Damage {#damage-coney}
 
