@@ -27,13 +27,17 @@ const Vec4 kJunk{7.0F, 7.0F, 7.0F, 7.0F};
 
 // A contact filled with a marker, so the tests see which fields a test writes.
 Contact marked() {
+    // These addresses are identity markers only; overlap kernels must never dereference or replace them.
+    static std::array<int, 2> owners{};
     Contact contact;
-    contact.halves = {ContactHalf{nullptr, false, kJunk, kJunk, 7, 7}, ContactHalf{nullptr, false, kJunk, kJunk, 7, 7}};
+    contact.halves = {ContactHalf{reinterpret_cast<BodyOwner*>(&owners[0]), true, kJunk, kJunk, 7, 7},
+                      ContactHalf{reinterpret_cast<BodyOwner*>(&owners[1]), true, kJunk, kJunk, 7, 7}};
     contact.fraction = 7.0F;
     contact.depth = 7.0F;
     contact.point = kJunk;
     contact.slide = kJunk;
     contact.flags = 7;
+    contact.triangle = 7;
     return contact;
 }
 
@@ -65,6 +69,7 @@ Box cube(Vec3 centre) { return Box{.half = {1.0F, 1.0F, 1.0F}, .axes = kUnturned
 } // namespace
 
 TEST_CASE("Segment kernels clamp to the ends and keep the original's quirks", "[physics][overlap]") {
+    // Expected: physics-kernels.md#u4-the-kernels, confirmed (code)
     CHECK(segmentClosestParam({}, {2.0F, 0.0F, 0.0F}, {1.0F, 5.0F, 0.0F}) == Approx(0.5F));
     CHECK(segmentClosestParam({}, {2.0F, 0.0F, 0.0F}, {-1.0F, 0.0F, 0.0F}) == 0.0F);
     CHECK(segmentClosestParam({}, {2.0F, 0.0F, 0.0F}, {3.0F, 0.0F, 0.0F}) == 1.0F);
@@ -90,11 +95,13 @@ TEST_CASE("Segment kernels clamp to the ends and keep the original's quirks", "[
 }
 
 TEST_CASE("Two spheres touching overlap and write nothing", "[physics][overlap]") {
+    // Expected: physics-kernels.md#u4-physicsoverlap-spheresphere-00345d58, confirmed (code)
     CHECK(overlaps(Sphere{{}, 0.5F}, Sphere{{1.0F, 0.0F, 0.0F}, 0.5F}));
     CHECK_FALSE(overlaps(Sphere{{}, 0.5F}, Sphere{{1.001F, 0.0F, 0.0F}, 0.5F}));
 }
 
 TEST_CASE("Capsules overlap as flat cylinders, strictly side by side", "[physics][overlap]") {
+    // Expected: physics-kernels.md#u4-physicsoverlap-capsulecapsule-00346388, confirmed (code)
     Contact c = marked();
     REQUIRE(overlapShapes(c, human({}), human({0.5F, 0.0F, 1.0F})));
     checkVec(c.halves[0].normal, 1.0F, 0.0F, 0.0F, 1.0F);
@@ -120,6 +127,7 @@ TEST_CASE("Capsules overlap as flat cylinders, strictly side by side", "[physics
 
 TEST_CASE("Segments overlap within the sum of the radii, a point segment measured from the start",
           "[physics][overlap]") {
+    // Expected: physics-kernels.md#u4-physicsoverlap-segmentsegment-00346500, confirmed (code)
     const Segment own{{}, {1.0F, 0.0F, 0.0F}, 0.1F};
     CHECK(overlaps(own, Segment{{0.5F, -1.0F, 0.15F}, {0.5F, 1.0F, 0.15F}, 0.1F}));
     CHECK(overlaps(own, Segment{{0.5F, -1.0F, 0.2F}, {0.5F, 1.0F, 0.2F}, 0.1F}));
@@ -131,6 +139,7 @@ TEST_CASE("Segments overlap within the sum of the radii, a point segment measure
 }
 
 TEST_CASE("A box and a sphere overlap as a true 3D box, in either order", "[physics][overlap]") {
+    // Expected: physics-kernels.md#u4-physicsoverlap-boxsphere-00346680, confirmed (code)
     const Box box = cube({});
     for (const bool boxFirst : {true, false}) {
         CAPTURE(boxFirst);
@@ -150,6 +159,7 @@ TEST_CASE("A box and a sphere overlap as a true 3D box, in either order", "[phys
 }
 
 TEST_CASE("A capsule against a box is a circle against its footprint", "[physics][overlap]") {
+    // Expected: physics-kernels.md#u4-physicsoverlap-capsulebox-00346808, confirmed (code)
     struct Case {
         Vec3 base;
         Vec3 normal;
@@ -193,6 +203,7 @@ TEST_CASE("A capsule against a box is a circle against its footprint", "[physics
 }
 
 TEST_CASE("A box querying a capsule swaps the halves", "[physics][overlap]") {
+    // Expected: physics-kernels.md#u4-physicsoverlap-boxcapsule-00346d18, confirmed (code)
     Contact c = marked();
     REQUIRE(overlapShapes(c, carBox(), human({0.0F, -1.2F, 0.0F})));
     checkVec(c.halves[0].normal, 0.0F, -1.0F, 0.0F, 1.0F);
@@ -203,6 +214,7 @@ TEST_CASE("A box querying a capsule swaps the halves", "[physics][overlap]") {
 }
 
 TEST_CASE("A segment and a sphere overlap within the sum of the radii", "[physics][overlap]") {
+    // Expected: physics-kernels.md#u4-physicsoverlap-segmentsphere-00346de0, confirmed (code)
     const Segment segment{{}, {0.4F, 0.0F, 0.0F}, 0.1F};
     CHECK(overlaps(segment, Sphere{{0.5F, 0.0F, 0.0F}, 0.15F}));
     CHECK_FALSE(overlaps(segment, Sphere{{0.2F, 0.3F, 0.0F}, 0.15F}));
@@ -212,6 +224,8 @@ TEST_CASE("A segment and a sphere overlap within the sum of the radii", "[physic
 }
 
 TEST_CASE("A capsule has rounded ends against a sphere and a segment", "[physics][overlap]") {
+    // Expected: physics-kernels.md#u4-physicsoverlap-capsulesphere-00346ed8, confirmed (code)
+    // Expected: physics-kernels.md#u4-physicsoverlap-segmentcapsule-00346fb8, confirmed (code)
     const Capsule capsule = human({});
     CHECK(overlaps(capsule, Sphere{{0.0F, 0.0F, 2.3F}, 0.1F}));
     CHECK(overlaps(capsule, Sphere{{0.0F, 0.0F, -0.3F}, 0.1F}));
@@ -228,6 +242,7 @@ TEST_CASE("A capsule has rounded ends against a sphere and a segment", "[physics
 }
 
 TEST_CASE("Box-box overlap keeps the original's matrix", "[physics][overlap]") {
+    // Expected: physics-kernels.md#u4-physicsoverlap-boxbox-00345dd8, confirmed (code)
     CHECK(overlaps(cube({}), cube({1.9F, 0.0F, 0.0F})));
     CHECK(overlaps(cube({}), cube({2.0F, 0.0F, 0.0F})));
     CHECK_FALSE(overlaps(cube({}), cube({2.1F, 0.0F, 0.0F})));
@@ -236,6 +251,7 @@ TEST_CASE("Box-box overlap keeps the original's matrix", "[physics][overlap]") {
 }
 
 TEST_CASE("A segment never overlaps a box", "[physics][overlap]") {
+    // Expected: physics-kernels.md#u4-summary-for-the-implementer, confirmed (code)
     const Segment through{{-3.0F, 0.0F, 0.5F}, {3.0F, 0.0F, 0.5F}, 0.1F};
     CHECK_FALSE(overlaps(through, carBox()));
     CHECK_FALSE(overlaps(carBox(), through));

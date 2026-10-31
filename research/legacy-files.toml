@@ -2207,9 +2207,6 @@ citation = 15
 ["tests/physics/mesh_sweep_test.cpp"]
 citation = 14
 
-["tests/physics/overlaps_test.cpp"]
-citation = 11
-
 ["tests/physics/sphere_box_sweep_test.cpp"]
 citation = 16
 
@@ -2485,9 +2482,6 @@ citation = 5
 
 ["tests/raycast/collision_builder_test.cpp"]
 citation = 6
-
-["tests/raycast/collision_extras_test.cpp"]
-citation = 4
 
 ["tests/raycast/collision_mesh_test.cpp"]
 citation = 12
