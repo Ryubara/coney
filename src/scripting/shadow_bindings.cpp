@@ -19,7 +19,7 @@ float floatArg(std::span<const Value> args, std::size_t i) { return static_cast<
 
 // Argument `i` as an object handle: truncated and kept to 0 .. 2^32 - 1, as `EnableShadow`'s wrapper (0x0037c748)
 // converts it.
-// @coney-only tolua's argument reading, which the original's generated wrappers do
+// @orig 0x0042c420 Float64_ToUInt32Saturating (unknown)
 std::uint32_t handleArg(std::span<const Value> args, std::size_t i) {
     const double value = std::trunc(binding::number(args, i));
     if (!(value > 0.0)) {
@@ -31,7 +31,7 @@ std::uint32_t handleArg(std::span<const Value> args, std::size_t i) {
 
 // Argument `i` as the wrappers' optional boolean (0x00409318): false when missing or nil, else whether its number is
 // not 0.
-// @coney-only tolua's argument reading, which the original's generated wrappers do
+// @orig 0x00409318 Lua_GetOptionalBoolArg (unknown)
 bool optionalBooleanArg(std::span<const Value> args, std::size_t i) {
     return i < args.size() && !args[i].isNil() && binding::number(args, i) != 0.0;
 }
