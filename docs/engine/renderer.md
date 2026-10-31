@@ -185,11 +185,12 @@ draw without librw's GL3 device as early as possible:
 
 1. **The proof** (items 1 and 2). The draw-stream hashes and the picture comparison, so every later step shows that
    the *PS2* picture did not move.
-2. **A start without librw's GL3 device** (item 3, built). `--renderer gl3|gpu` (and `Display/Renderer` in the
-   overrides file, applied at the next start): Coney makes the window through SDL3 itself, claims SDL's GPU device and
-   swapchain with the present modes, and opens librw with its NULL device, as headless runs already do, so streams and
-   rasters load and the game runs while the GPU renderer only clears and presents. From here on, librw's GL3 device is
-   used only by the GL3 renderer. [The GPU renderer](gpu-renderer.md) says how it is built.
+2. **A start without librw's GL3 device** (item 3, built). `--renderer gl3|gpu` (and `Display/Renderer` in the overrides
+   file, applied at the next start once it draws its own menus; until then a saved 1 starts GL3, see [The way back to
+   GL3](gpu-renderer.md#way-back)): Coney makes the window through SDL3 itself, claims SDL's GPU device and swapchain
+   with the present modes, and opens librw with its NULL device, as headless runs already do, so streams and rasters
+   load and the game runs while the GPU renderer only clears and presents. From here on, librw's GL3 device is used only
+   by the GL3 renderer. [The GPU renderer](gpu-renderer.md) says how it is built.
 3. **The shader toolchain** (item 4). HLSL sources in `src/platform/shaders/`, compiled at build time by
    SDL_shadercross (zlib; with DXC and SPIRV-Cross, which the build fetches itself, see [Licences](#licences)) into
    SPIR-V, DXIL and MSL, embedded in the executable. A test compiles every shader for every target.
