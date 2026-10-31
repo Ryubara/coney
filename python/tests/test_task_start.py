@@ -199,7 +199,10 @@ def test_a_start_reports_the_pending_work_and_hands_the_new_unit_to_the_reader(w
     env = world.env()
     env.overlap = overlap
     assert start_task(StartRequest(task=TASK), env) == 0
-    assert asked == [(TASK, world.record(), True)]
+    [(name, record, write)] = asked
+    # The new unit's record (before `/progress` was posted, so not the final file) is what the reader gets.
+    assert (name, write) == (TASK, True) and record is not None
+    assert replace(record, progress_posted=True) == world.record()
     text = world.said()
     assert "pending work that overlaps: 1" in text and "PR #7" in text
     # The overlap lines come before the pointer to the next step.
