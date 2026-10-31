@@ -180,6 +180,24 @@ TEST_CASE("in a grab, R1 spins the hold, circle spins a rear hold to the front, 
     CHECK(letGo.animId == anim_id::kGrabLetGo);
 }
 
+TEST_CASE("in a grab, circle's tap and hold act as its press: an AI grabber throws and mounts on 0xd", "[combat]") {
+    // Expected: combat-grabs.md#grabbing, confirmed (code) (`PlayerCmd_IsCircleAny` takes 0x1e, 0xd and 0xe); an AI
+    // grabber's throws and its circle are command 0xd (ai/index.md#fight-reactions, confirmed (runtime))
+    CombatRandom random(5);
+    for (const CommandId command : {command::kCircleTapped, command::kCircleHeld}) {
+        PowerMeter power;
+        const GrabOutcome thrown = grabWith(command, {0.0F, 0.6F}, power, random);
+        CHECK(thrown.action == GrabAction::Throw);
+        CHECK(thrown.animId == anim_id::kThrow1Front);
+        CHECK(thrown.powerSpent == 100);
+        CHECK(grabWith(command, {}, power, random).action == GrabAction::Mount);
+        GrabInput rear;
+        rear.command = command;
+        rear.fromRear = true;
+        CHECK(updateGrab(rear, power, CombatTuning{}, random).action == GrabAction::Spin);
+    }
+}
+
 TEST_CASE("a strike, power strike or throw is refused while the victim is out of its place", "[combat]") {
     PowerMeter power;
     CombatRandom random(1);
