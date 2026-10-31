@@ -582,6 +582,8 @@ white from start-up (`GraphicsDevice_Open`) and black after `UnloadLevel`; a lev
 (code):
 
 - `SetFogColor(r, g, b)` (`0x0036e558` → `Level_SetFogColour`, `0x0040c868`): floats in 0 to 1, times 255, alpha 255
+  (confirmed (code)). Each product goes through `Float_ToUInt` (`0x0042c718`: 0 for a negative number, all ones past
+  the 32-bit range) and only its low byte is kept, so a component above 1 wraps (1.2 gives 50) rather than saturating
   (confirmed (code)).
 - `SetFogDistance(d)` (`0x0036e5f8` → `Level_SetFogDistance`, `0x0040c908`; confirmed (code)): the device's fog start
   `+0x444` (0.5 by default), the fraction of the far clip where fog begins.
