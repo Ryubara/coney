@@ -5,6 +5,7 @@
 #include "graphics/lighting_frame.h"
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <vector>
@@ -13,6 +14,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "ai/hiding.h"
+#include "core/game_random.h"
 #include "graphics/level_lighting.h"
 #include "graphics/light_manager.h"
 #include "raycast/collision_mesh.h"
@@ -253,8 +255,14 @@ TEST_CASE("Building the lighting frame changes nothing the simulation steps", "[
     }
     REQUIRE(framedLights > 0);
 
-    // The flicker's state, every record's, and the manager's random numbers are the same.
-    CHECK(stepped.lights.random().index() == drawn.lights.random().index());
+    // The flicker's state, every record's, and the manager's random numbers are the same. The flicker draws from the
+    // ambient stream (Light_UpdateFlickerAndCorona 0x0017caa8 on 0x006eb8a8, maths.md#random); every stream is
+    // compared, so a frame build that drew from any stream would show.
+    CHECK(stepped.lights.random().index(coney::RandomStream::Ambient) > 0);
+    for (std::size_t s = 0; s < coney::kRandomStreams; ++s) {
+        const auto stream = static_cast<coney::RandomStream>(s);
+        CHECK(stepped.lights.random().index(stream) == drawn.lights.random().index(stream));
+    }
     CHECK(stepped.lights.count() == drawn.lights.count());
     for (std::uint16_t i = 0; i < 16; ++i) {
         const coney::graphics::LightRecord& a = stepped.lights.record(i);
