@@ -18,8 +18,9 @@ namespace {
 float floatArg(std::span<const Value> args, std::size_t i) { return static_cast<float>(binding::number(args, i)); }
 
 // Argument `i` as an object handle: truncated and kept to 0 .. 2^32 - 1, as `EnableShadow`'s wrapper (0x0037c748)
-// converts it.
-// @orig 0x0042c420 Float64_ToUInt32Saturating (unknown)
+// converts it with the soft-float library's Float64_ToUInt32Saturating (0x0042c420, middleware, so no @orig;
+// docs/research/scripting.md#argument-and-result-conventions).
+// @coney-only tolua's argument reading, which the original's generated wrappers do
 std::uint32_t handleArg(std::span<const Value> args, std::size_t i) {
     const double value = std::trunc(binding::number(args, i));
     if (!(value > 0.0)) {
@@ -29,9 +30,10 @@ std::uint32_t handleArg(std::span<const Value> args, std::size_t i) {
     return value >= kLargest ? 0xffffffffU : static_cast<std::uint32_t>(value);
 }
 
-// Argument `i` as the wrappers' optional boolean (0x00409318): false when missing or nil, else whether its number is
-// not 0.
-// @orig 0x00409318 Lua_GetOptionalBoolArg (unknown)
+// Argument `i` as the wrappers' optional boolean: false when missing or nil, else whether its number is not 0, as
+// tolua's Lua_GetOptionalBoolArg (0x00409318, middleware, so no @orig;
+// docs/research/scripting.md#argument-and-result-conventions) reads it.
+// @coney-only tolua's argument reading, which the original's generated wrappers do
 bool optionalBooleanArg(std::span<const Value> args, std::size_t i) {
     return i < args.size() && !args[i].isNil() && binding::number(args, i) != 0.0;
 }
