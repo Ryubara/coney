@@ -2,6 +2,47 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
+address = 0x003353b8
+name = "Random_Int"
+page = "maths.md#random"
+role = "A random whole number from 0 to n inclusive from the stream it is given: the next raw number mod (n + 1), unsigned."
+level = "confirmed-code"
+coney = "src/graphics/light_manager.h:LightManager::rand"
+status = "compared"
+
+[[function.gaps]]
+what = "the lights' draw takes 0 to n - 1, and makes no draw for n = 0, where the original draws 0 to n every time"
+relation = "stand-in"
+issue = 654
+
+[[function]]
+address = 0x003353f0
+name = "Random_IntRange"
+page = "maths.md#random"
+role = "A random whole number from low to high inclusive: low + Random_Int(high - low)."
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_intro.h:RumbleIntro::draw"
+status = "compared"
+
+[[function]]
+address = 0x00335498
+name = "Random_IntBelow"
+page = "maths.md#random"
+role = "A random whole number from 0 to n - 1: the next raw number mod n, signed; 0 when n is 0."
+level = "confirmed-code"
+coney = "src/world_objects/radios.cpp:draw"
+status = "compared"
+
+[[function]]
+address = 0x003354e0
+name = "Random_Unit"
+page = "maths.md#random"
+role = "A random float in [0, 1): the next raw number, unsigned, times 2^-32."
+level = "confirmed-code"
+coney = "src/camera/camera_shake.cpp:randomShare"
+status = "compared"
+
+[[function]]
 address = 0x00336a00
 name = "Quat_Slerp"
 page = "maths.md#rotations"
