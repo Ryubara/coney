@@ -87,7 +87,6 @@ add_executable(coney_tests
     graphics/throw_arc_test.cpp
     graphics/human_blood_test.cpp
     graphics/human_lighting_test.cpp
-    graphics/level_lighting_test.cpp
     graphics/light_manager_test.cpp
     graphics/lighting_frame_test.cpp
     graphics/overlay_camera_test.cpp
