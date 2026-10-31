@@ -141,7 +141,7 @@ What Director needs to draw a step from any camera, and how each part is kept. *
 the deltas; an **event** happens on one step (as in [Three kinds of data](../network-architecture.md#data-kinds)), and
 what an event leaves running (a sound still playing, a scene in progress) is also in each key frame, so a block read
 alone plays it from the middle. Most of the state is what the renderer's [step
-snapshot](../../engine/renderer.md#snapshot) publishes for drawing each step, which the recorder reads
+snapshot](../../engine/render-threads.md#snapshot) publishes for drawing each step, which the recorder reads
 ([Clips](#clips)). One thing the snapshot should hold for it: each human's pose as its 34 rotations and the pelvis
 offset, the values its bone matrices are made from (a rotation quantizes to 4 bytes; turning a matrix back into one
 costs time and precision). Its mark of a jump goes into the recording too, so Director does not blend across it.
@@ -191,7 +191,7 @@ flowchart LR
 *Figure: the game's step only copies; the worker builds the blocks and the files.*
 
 1. **The step copies.** Each step ends by publishing the **step snapshot** that drawing reads ([The
-   snapshot](../../engine/renderer.md#snapshot), [#1229](issue:1229)): every drawn thing's id, model and pose, the
+   snapshot](../../engine/render-threads.md#snapshot), [#1229](issue:1229)): every drawn thing's id, model and pose, the
    cameras, the lighting frame, the particles, the screen effects and the HUD's lists, in a ring of four slots. The
    recorder is that snapshot's second reader: once a step is published it copies the parts the [table](#holds)
    lists into the next record of its own ring (the snapshot's slots are reused a few steps later, so it must copy):
