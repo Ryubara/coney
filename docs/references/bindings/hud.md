@@ -1447,7 +1447,7 @@ HUDSetRadarZoomScale(scale)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `scale` | number (single precision) | Factor on the radius in metres the radar shows (1.0 by default); below 1 zooms in (scripts use 0.35 and 0.5), above 1 shows more of the map. |
+| 1 | `scale` | number (single precision); default 0 | Factor on the radius in metres the radar shows (1.0 until a script sets it; 0 when the argument is left out); below 1 zooms in (scripts use 0.35 and 0.5), above 1 shows more of the map. |
 
 **Returns** nothing.
 

@@ -422,7 +422,7 @@ name = "lua_BrSetNumFollowSlots"
 page = "../references/bindings/ai.md#brsetnumfollowslots"
 level = "confirmed-code"
 coney = "src/scripting/ai_bindings.cpp:makeBrSetNumFollowSlots"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0035fd18
@@ -454,7 +454,7 @@ name = "lua_GoalAddressPerson"
 page = "../references/bindings/ai.md#goaladdressperson"
 level = "confirmed-code"
 coney = "src/scripting/ai_bindings.cpp:makeGoalAddressPerson"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00360690
@@ -534,7 +534,7 @@ name = "lua_GoalDealer"
 page = "../references/bindings/ai.md#goaldealer"
 level = "confirmed-code"
 coney = "src/scripting/ai_bindings.cpp:makeGoalDealer"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00363530
@@ -558,7 +558,7 @@ name = "lua_ActTurnToDir"
 page = "../references/bindings/ai.md#actturntodir"
 level = "confirmed-code"
 coney = "src/scripting/ai_bindings.cpp:makeActTurnToDir"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x003647d8
@@ -566,7 +566,7 @@ name = "lua_ActLookAt"
 page = "../references/bindings/ai.md#actlookat"
 level = "confirmed-code"
 coney = "src/scripting/ai_bindings.cpp:makeActLookAt"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x003648a0
@@ -1022,7 +1022,7 @@ name = "lua_TriggerSphereCfg"
 page = "../references/bindings/world.md#triggerspherecfg"
 level = "confirmed-code"
 coney = "src/scripting/world_bindings.cpp:makeTriggerSphereCfg"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0036d938
@@ -1070,7 +1070,12 @@ name = "lua_HUDSetAnnounceMsg"
 page = "../references/bindings/hud.md#hudsetannouncemsg"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addMessageBindings"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "this file's readers: an explicit nil, a negative number or a non-numeric string read differently from tolua"
+relation = "stand-in"
+question = "script-arguments.md#q-nil-defaults"
 
 [[function]]
 address = 0x0036e998
@@ -1126,7 +1131,12 @@ name = "lua_HUDEnableGameTutorialText"
 page = "../references/bindings/hud.md#hudenablegametutorialtext"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addMessageBindings"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "this file's readers: an explicit nil, a negative number or a non-numeric string read differently from tolua"
+relation = "stand-in"
+question = "script-arguments.md#q-nil-defaults"
 
 [[function]]
 address = 0x0036eef8
@@ -1142,7 +1152,7 @@ name = "lua_HUDShowMissionSummaryText"
 page = "../references/bindings/hud.md#hudshowmissionsummarytext"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addMessageBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0036f130
@@ -1190,7 +1200,7 @@ name = "lua_HUDSetObjective"
 page = "../references/bindings/hud.md#hudsetobjective"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addMessageBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0036f360
@@ -1198,7 +1208,7 @@ name = "lua_HUDRemoveAllGoalText"
 page = "../references/bindings/hud.md#hudremoveallgoaltext"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addMessageBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0036f380
@@ -1206,7 +1216,12 @@ name = "lua_HUDSetTutorialText"
 page = "../references/bindings/hud.md#hudsettutorialtext"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addMessageBindings"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "this file's readers: an explicit nil, a negative number or a non-numeric string read differently from tolua"
+relation = "stand-in"
+question = "script-arguments.md#q-nil-defaults"
 
 [[function]]
 address = 0x0036f3e8
@@ -1214,7 +1229,7 @@ name = "lua_HUDCheckTutorialText"
 page = "../references/bindings/hud.md#hudchecktutorialtext"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addMessageBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0036f430
@@ -1222,7 +1237,7 @@ name = "lua_HUDFlushTutorialText"
 page = "../references/bindings/hud.md#hudflushtutorialtext"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addMessageBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0036fa28
@@ -1262,7 +1277,7 @@ name = "lua_HUDSetTutorialCallback"
 page = "../references/bindings/hud.md#hudsettutorialcallback"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addMessageBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x003700c8
@@ -1270,7 +1285,7 @@ name = "lua_HUDTurnOnRadar"
 page = "../references/bindings/hud.md#hudturnonradar"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00370100
@@ -1278,7 +1293,7 @@ name = "lua_HUDTurnOffRadar"
 page = "../references/bindings/hud.md#hudturnoffradar"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00370138
@@ -1286,7 +1301,7 @@ name = "lua_HUDSetNumIndicator"
 page = "../references/bindings/hud.md#hudsetnumindicator"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x003701c8
@@ -1318,7 +1333,17 @@ name = "lua_HUDSetRadarObjectFlash"
 page = "../references/bindings/hud.md#hudsetradarobjectflash"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "this file's readers: an explicit nil, a negative number or a non-numeric string read differently from tolua"
+relation = "stand-in"
+question = "script-arguments.md#q-nil-defaults"
+
+[[function.gaps]]
+what = "the third argument, the blip's flash mode, is not read"
+relation = "not-ported"
+issue = 700
 
 [[function]]
 address = 0x00370728
@@ -1326,7 +1351,7 @@ name = "lua_HUDSetRadarZoomScale"
 page = "../references/bindings/hud.md#hudsetradarzoomscale"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00370760
@@ -1334,7 +1359,12 @@ name = "lua_HUDAddRadarMissionObjective"
 page = "../references/bindings/hud.md#hudaddradarmissionobjective"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "this file's readers: an explicit nil, a negative number or a non-numeric string read differently from tolua"
+relation = "stand-in"
+question = "script-arguments.md#q-nil-defaults"
 
 [[function]]
 address = 0x00370798
@@ -1342,7 +1372,12 @@ name = "lua_HUDAddSecondaryRadarMissionObjective"
 page = "../references/bindings/hud.md#hudaddsecondaryradarmissionobjective"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "this file's readers: an explicit nil, a negative number or a non-numeric string read differently from tolua"
+relation = "stand-in"
+question = "script-arguments.md#q-nil-defaults"
 
 [[function]]
 address = 0x003708c8
@@ -1350,7 +1385,12 @@ name = "lua_HUDSetRadarItemTexture"
 page = "../references/bindings/hud.md#hudsetradaritemtexture"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "this file's readers: an explicit nil, a negative number or a non-numeric string read differently from tolua"
+relation = "stand-in"
+question = "script-arguments.md#q-nil-defaults"
 
 [[function]]
 address = 0x00370980
@@ -1358,7 +1398,12 @@ name = "lua_HUDDeleteRadarMissionObjective"
 page = "../references/bindings/hud.md#huddeleteradarmissionobjective"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "this file's readers: an explicit nil, a negative number or a non-numeric string read differently from tolua"
+relation = "stand-in"
+question = "script-arguments.md#q-nil-defaults"
 
 [[function]]
 address = 0x003709b8
@@ -1366,7 +1411,7 @@ name = "lua_HUDRadarSetRange"
 page = "../references/bindings/hud.md#hudradarsetrange"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00370a30
@@ -1374,7 +1419,12 @@ name = "lua_HUDDeleteRadarObject"
 page = "../references/bindings/hud.md#huddeleteradarobject"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "this file's readers: an explicit nil, a negative number or a non-numeric string read differently from tolua"
+relation = "stand-in"
+question = "script-arguments.md#q-nil-defaults"
 
 [[function]]
 address = 0x00370a68
@@ -1382,7 +1432,12 @@ name = "lua_HUDAddRadarHuman"
 page = "../references/bindings/hud.md#hudaddradarhuman"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "this file's readers: an explicit nil, a negative number or a non-numeric string read differently from tolua"
+relation = "stand-in"
+question = "script-arguments.md#q-nil-defaults"
 
 [[function]]
 address = 0x00370c00
@@ -1976,6 +2031,22 @@ coney = "src/scripting/message_handlers.h:MessageHandlers::setPrompt"
 status = "legacy"
 
 [[function]]
+address = 0x004091c8
+name = "Lua_GetOptionalNumberArg"
+page = "script-arguments.md#readers"
+kind = "helper"
+role = "reads a number argument; the default only past the top of the stack, so an explicit nil reads 0"
+level = "confirmed-code"
+
+[[function]]
+address = 0x00409318
+name = "Lua_GetOptionalBoolArg"
+page = "script-arguments.md#readers"
+kind = "helper"
+role = "reads a boolean argument; the default only past the top of the stack, nil false, else the number is not 0"
+level = "confirmed-code"
+
+[[function]]
 address = 0x00412a18
 name = "VolumeBox_ContainsPoint"
 page = "scripting.md#triggers"
@@ -2113,7 +2184,7 @@ address = 0x00414bc0
 name = "TriggerSphere_Configure"
 page = "scripting.md#triggers"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
-coney = "src/scripting/world_bindings.cpp:makeTriggerSphereCfg"
+coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::configure"
 status = "legacy"
 
 [[function]]
@@ -2248,3 +2319,27 @@ role = "`W_ShowStopWatch(show, label, warn)`: shown sets the warning window `+0x
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addScoreBindings"
 status = "compared"
+
+[[function]]
+address = 0x0042b9b8
+name = "Float64_UnpackParts"
+page = "script-arguments.md#conversions"
+kind = "helper"
+role = "splits a double into class, sign, exponent and mantissa for the soft-float conversions"
+level = "confirmed-code"
+
+[[function]]
+address = 0x0042c388
+name = "Float64_ToInt32Saturating"
+page = "script-arguments.md#conversions"
+kind = "helper"
+role = "converts a double to a signed 32-bit integer, truncating toward 0 and saturating"
+level = "confirmed-code"
+
+[[function]]
+address = 0x0042c420
+name = "Float64_ToUInt32Saturating"
+page = "script-arguments.md#conversions"
+kind = "helper"
+role = "converts a double to an unsigned 32-bit integer, 0 under 1 and saturating at 0xffffffff"
+level = "confirmed-code"

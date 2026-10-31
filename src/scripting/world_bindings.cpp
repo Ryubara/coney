@@ -27,28 +27,15 @@ namespace coney::script {
 namespace {
 
 // Argument `i` as a handle: truncated to a whole number, as tolua reads an unsigned integer.
+// @coney-only tolua's argument reading, which the original's generated wrappers do
 double handleArg(std::span<const Value> args, std::size_t i) { return std::trunc(binding::number(args, i)); }
 
-// Argument `i` as tolua reads a boolean with a default: absent is the default, nil or false (and 0) false.
-bool booleanArg(std::span<const Value> args, std::size_t i, bool fallback) {
-    if (i >= args.size()) {
-        return fallback;
-    }
-    if (const std::optional<double> value = args[i].number()) {
-        return *value != 0.0;
-    }
-    return !args[i].isNil();
-}
-
-// Argument `i` as a whole number where a script may pass a boolean (`TriggerSphereCfg`'s mode: true is 1).
-int numberOrBooleanArg(std::span<const Value> args, std::size_t i) {
-    if (i < args.size() && !args[i].number() && !args[i].isNil()) {
-        return 1;
-    }
-    return static_cast<int>(std::trunc(binding::number(args, i)));
-}
+// Argument `i` as tolua reads a boolean with a default (binding_args.h): left out the default, nil false, else the
+// number is not 0.
+using binding::booleanArg;
 
 // Argument `i` as an unsigned 32-bit number, as tolua reads one (a negative number wraps).
+// @coney-only tolua's argument reading, which the original's generated wrappers do
 std::uint32_t unsignedArg(std::span<const Value> args, std::size_t i) {
     return static_cast<std::uint32_t>(static_cast<std::int64_t>(std::trunc(binding::number(args, i))));
 }
@@ -172,15 +159,16 @@ NativeFunction makeObjShowHide(const BindingContext& context, bool show) {
     };
 }
 
-// `TriggerSphereCfg(object, enable, radius, mode, interval)`: the object's trigger sphere, made or reconfigured.
+// `TriggerSphereCfg(object, enable, radius, mode, interval)`: the object's trigger sphere, made or reconfigured;
+// enable is false when left out (docs/research/script-arguments.md).
 // @orig 0x0036d0e0 TriggerSphereCfg (unknown)
-// @orig 0x00414bc0 TriggerSphere_Configure (unknown)
 NativeFunction makeTriggerSphereCfg(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
         if (context->spheres != nullptr) {
-            static_cast<void>(context->spheres->configure(handleArg(args, 0), booleanArg(args, 1, true),
-                                                          static_cast<float>(binding::number(args, 2)),
-                                                          numberOrBooleanArg(args, 3), unsignedArg(args, 4)));
+            // The mode goes through the signed reader: a script's `true` is the number 1, anything not a number 0.
+            static_cast<void>(context->spheres->configure(
+                binding::handleArg(args, 0), binding::booleanArg(args, 1, false), binding::floatArg(args, 2),
+                binding::signedArg(args, 3), binding::unsignedArg(args, 4)));
         }
         return binding::none();
     };

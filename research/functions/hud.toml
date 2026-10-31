@@ -529,7 +529,7 @@ page = "hud-functions-lua.md#fn-hudlua-start"
 role = "type 10, type 1, recolour with `{r, g, b}` packed as `0xRRGGBBff`"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001b4038
@@ -538,7 +538,7 @@ page = "hud-functions-lua.md#fn-hudlua-start"
 role = "icon then colour; remove a handle"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001b4098
@@ -547,7 +547,7 @@ page = "hud-functions-lua.md#fn-hudlua-start"
 role = "icon then colour; remove a handle"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001b40e0
@@ -565,7 +565,12 @@ page = "hud-functions-lua.md#fn-hudlua-start"
 role = "flash; remove an item; remove a handle"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the flash mode it sets on the blip"
+relation = "not-ported"
+issue = 700
 
 [[function]]
 address = 0x001b4328
@@ -691,7 +696,7 @@ page = "hud-functions-lua.md#fn-hudlua"
 role = "`ChaseHud_SetState(value, 0x00609e80, state, time)`: state 1 (100, 10), state 3 (`value`, negated when the sign argument is 0; then the label, `0x001a4310`), state 6 (100, 10)"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001b4ba0
@@ -862,7 +867,7 @@ page = "hud-functions-lua.md#fn-hudlua"
 role = "byte `W_GameState + 0x56e2`"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addMessageBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001b6358
