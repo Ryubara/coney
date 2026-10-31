@@ -59,16 +59,22 @@ class FakeGh:
         key = " ".join(arguments[:2])
         if self.fail is not None and key.startswith(self.fail):
             raise OSError("gh failed: offline")
-        if arguments[:2] == ["api", "graphql"]:
-            return self._graphql(arguments)
+        query = self._query(arguments)
+        if arguments[:2] == ["api", "graphql"] and ("search(" in query or "issueOrPullRequest" in query):
+            return self._graphql(query)
         for start, answer in self.answers.items():
             if " ".join(arguments).startswith(start):
                 return answer if isinstance(answer, str) else json.dumps(answer)
         raise OSError(f"no answer for {arguments}")
 
-    def _graphql(self, arguments: list[str]) -> str:
-        """The answer to a GraphQL query: the claim cards, or the states of the blockers it names."""
-        query = next(item for item in arguments if item.startswith("query="))
+    @staticmethod
+    def _query(arguments: list[str]) -> str:
+        """The text of a GraphQL query among the arguments of a call."""
+        return next((item for item in arguments if item.startswith("query=")), "")
+
+    def _graphql(self, query: str) -> str:
+        """The answer to a GraphQL query: the claim cards, or the states of the blockers it names. The question of
+        whether a fix is over (the pull requests that close one issue) is not asked here: it falls to `answers`."""
         if "search(" in query:
             nodes = [
                 {
