@@ -373,6 +373,11 @@ other level is given.
   Confirmed (code); the word is 0 in the executable and its one reference is this read (no writer found), so what
   sets it is unknown ([Open questions](#open-questions)). Knocked down, dead or out, it only removes style `0xe` and
   clears `0x100000`.
+- **A stun after a knockdown starts again as the rise ends.** `Human_GetUp` (`0x0022f3c8`), which the rise 199's end
+  callback `Human_EndDownState` (`0x0025e250`) calls, puts a stunned human in move style `0xe` and calls
+  `Human_SetStunTimer` (`0x0022f9e0`) with no attacker: the stun's end becomes now + the class's stun time, or now - 1
+  ms for a human with flag `0x100`, replacing `Human_SetDownTimers`' rise + stun time. At runtime 653's stun on the
+  player stood 7 updates in 356 after 199, then 357 ([Being hit at runtime](#being-hit-runtime)).
 - **A clip that ends while still stunned returns to 355.** `Human_BuildIdleTasks` plays 355 `STUNNED_ENTER`
   (`0x163`) whenever state `0x100000` is set, and 356 `STUNNED_IDLE` follows it; `Human_PlayStanceIdleState`
   (`0x0025fa48`) does the same for the fight stance's idle.
@@ -1055,7 +1060,8 @@ hand](combat-throws.md#bat-knockdown-coney).
 
 `Victim::step()` (`repo:src/human/victim.cpp`) keeps the stun's state until no clip drives the human, then plays 357
 and clears it, or 355 and the loop 356 while its time still runs, both the stun and the rise waiting until their time is
-past, not on it; the AI's free test (`freeHuman`,
+past, not on it; a stun after a knockdown starts again as 199 ends (`Human_GetUp`), and a press on the update
+that lands on the rise's time still cuts the ground; the AI's free test (`freeHuman`,
 `repo:src/ai/attack_views.cpp`) reads the state alone. On `civ_stun` Coney's fighter matches the original's offsets
 from the stun's start: 357 and the state's end 27 updates after it, the reaction goal's end and the fight's next move
 28 after. **Coney's choices**: a boss's tired stun (`Victim::stunUntil`) starts in 356 without 355, and Coney's

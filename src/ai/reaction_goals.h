@@ -14,8 +14,12 @@
 
 namespace coney::ai {
 
-/// A reaction goal that only holds the stack off: the stunned goal (`0x18`), whose presses are not traced. The fight
-/// reactions (grabbing, mounting, grabbed, mounted, grounded) are in ai/fight_reactions.h.
+/// A reaction goal that only holds the stack off: the stunned goal (`0x18`, `StunnedGoal_Process`), which presses
+/// nothing and is done once the human is no longer stunned standing. **Gap** (#685): the original's also drops the
+/// brain's target on every update while stunned; Coney keeps it, since its fight goal resumes on brain.target()
+/// (FightGoal::resume) and how the original's finds its target again on the update the stun ends (the `civ_stun`
+/// trace's move queued at once) is not traced. The fight reactions (grabbing, mounting, grabbed, mounted, grounded)
+/// are in ai/fight_reactions.h.
 class ReactionGoal final : public Goal {
   public:
     /// A reaction goal of `type`.
