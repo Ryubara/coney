@@ -156,6 +156,94 @@ def test_the_coordinator_may_write_about_those_commands_and_run_its_own() -> Non
         assert roles.check(CONFIG, bash(command, agent_type="coordinator")) is None, command
 
 
+#: The command words in front of `orig fails-first`: every spelling of `coney-tools` the hook reads.
+LAUNCHERS = [
+    "coney-tools",
+    "uv run --project python coney-tools",
+    "uv run --no-sync --project python coney-tools --quiet",
+    "Coney-Tools.exe",
+    "C:/Repositories/Coney/repos/coney/python/.venv/Scripts/coney-tools.exe",
+    "python -m coney_tools.cli",
+    "python python/src/coney_tools/cli.py",
+]
+#: The words of the stage command: its group and its old name.
+STAGES = ["orig fails-first", "original fails-first", "ORIG FAILS-FIRST"]
+#: Every spelling argparse takes for `--accept-change` (`--a` is ambiguous with `--agent`), in any letter case.
+ACCEPT_SPELLINGS = [
+    "--accept-change 'moved to the mirrored file'",
+    "--accept-change=reason",
+    "--ACCEPT-CHANGE reason",
+    "--Accept-Change=reason",
+    "--accept reason",
+    "--accep reason",
+    "--ac reason",
+    "--Ac=reason",
+]
+
+
+@pytest.mark.parametrize("launcher", LAUNCHERS)
+@pytest.mark.parametrize("stage", STAGES)
+@pytest.mark.parametrize("option", ACCEPT_SPELLINGS)
+def test_the_coordinator_may_run_fails_first_with_accept_change(launcher: str, stage: str, option: str) -> None:
+    # `orig fails-first --accept-change` is the coordinator's alone (stamps.md#changed-test)
+    command = f"{launcher} {stage} --task t1 --test 'Widget ready frame' --test-commit abc --fix-commit def {option}"
+    assert roles.check(CONFIG, bash(command, agent_type="coordinator")) is None, command
+
+
+@pytest.mark.parametrize("launcher", LAUNCHERS)
+@pytest.mark.parametrize("stage", STAGES)
+@pytest.mark.parametrize(
+    "options",
+    [
+        "",
+        "--test t --test-commit abc --fix-commit def",
+        "--test t --test-commit abc --keeps",
+        "--none 'no test here'",
+        "--none 'say --accept-change in words'",
+        "--test t --test-commit abc --a reason",
+        "--agent coordinator --test t",
+        "--accept-changes reason",
+        "--accept-change-x reason",
+        "--acceptchange reason",
+        "--a",
+        "-accept-change reason",
+        "--test t --test-commit abc --fix-commit def --task accept-change",
+    ],
+)
+def test_the_coordinator_may_not_run_any_other_fails_first(launcher: str, stage: str, options: str) -> None:
+    command = f"{launcher} {stage} {options}".strip()
+    assert roles.check(CONFIG, bash(command, agent_type="coordinator")), command
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        # the option belongs to another command in the line
+        "coney-tools orig fails-first --test t; coney-tools pr hold 1 --accept-change r",
+        "coney-tools orig fails-first --test t && echo --accept-change",
+        "echo --accept-change | coney-tools orig fails-first --test t",
+        "coney-tools orig fails-first --test t\nconey-tools build status --accept-change",
+        # an allowed run beside a refused one
+        "coney-tools orig fails-first --test t; coney-tools orig fails-first --accept-change r",
+        "coney-tools orig fails-first --accept-change r && coney-tools orig fails-first --test t",
+        "cd x && coney-tools orig fails-first --accept-change r; coney-tools original fails-first --keeps",
+    ],
+)
+def test_the_option_must_be_in_the_fails_first_command_itself(command: str) -> None:
+    assert roles.check(CONFIG, bash(command, agent_type="coordinator")), command
+
+
+def test_the_coordinator_may_write_about_fails_first_and_the_others_still_run_it() -> None:
+    for command in (
+        "echo 'coney-tools orig fails-first --test t'",
+        'git commit -m "document coney-tools orig fails-first"',
+    ):
+        assert roles.check(CONFIG, bash(command, agent_type="coordinator")) is None, command
+    plain = "coney-tools orig fails-first --test t --test-commit abc"
+    for role in ("engineer", "tooling"):
+        assert roles.check(CONFIG, bash(plain, agent_type=role)) is None, role
+
+
 def test_the_coordinator_may_not_commit_in_a_unit_worktree_but_may_in_the_main_checkout() -> None:
     unit = "C:/Repositories/Coney/worktrees/coney/some-branch"
     main = "C:/Repositories/Coney/repos/coney"
