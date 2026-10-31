@@ -117,7 +117,7 @@ you own or have found a disc.
 
 | | Windows | Linux | macOS |
 | --- | --- | --- | --- |
-| Compiler | MSVC 19.38+ (Visual Studio 2022 17.8 or Build Tools 2022, **Desktop development with C++**) | GCC 13+ or Clang 19+ | Xcode 16+ |
+| Compiler | MSVC 19.38+ (Visual Studio 2022 17.8 or Build Tools 2022, **Desktop development with C++** and the component **C++ ATL for latest build tools**) | GCC 13+ or Clang 19+ | Xcode 16+ |
 | CMake 3.28+ and Ninja | bundled with Visual Studio | distribution packages | `brew install cmake ninja` |
 | Git | yes | yes | yes |
 

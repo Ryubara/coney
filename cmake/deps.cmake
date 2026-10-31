@@ -19,6 +19,15 @@ set(_coney_deps SDL3 librw Catch2 enet ffmpeg)
 if(CONEY_DEBUG_TOOLS)
     list(APPEND _coney_deps imgui inter_font jetbrains_mono_font)
 endif()
+# The shader compiler's sources (docs/guides/shaders.md), unless the shader build is off: the same on every system,
+# DXC included, which is built from its source (no Microsoft binary, docs/engine/renderer.md#licences). DXC reads the
+# DirectX headers from the Windows SDK on Windows and from DirectX-Headers elsewhere.
+if(CONEY_SHADERS)
+    list(APPEND _coney_deps shadercross spirv_cross dxc spirv_headers spirv_tools)
+    if(NOT WIN32)
+        list(APPEND _coney_deps directx_headers)
+    endif()
+endif()
 # The sources of this version live in <CONEY_DEPS_SOURCES>/<first 16 hex digits of the version>, worked out on every
 # configure, never kept in the cache: a folder configured before a pin changed moves to the new version's folder at
 # its next configure instead of fetching the new pins into the old one under other worktrees' builds. Old versions'
@@ -168,7 +177,53 @@ FetchContent_Declare(enet GIT_REPOSITORY https://github.com/lsalzman/enet.git
                           GIT_TAG 2662c0de09e36f2a2030ccc2c528a3e4c9e8138a ${_coney_enet_where}
                           SOURCE_SUBDIR coney-no-cmake SYSTEM)
 
+# The shader compiler, with the shader build on (docs/guides/shaders.md): the tool is built from these at
+# configure time by cmake/coney_shaders.cmake and never linked into Coney. None of them has a CMake build used here
+# (SOURCE_SUBDIR names a folder they do not have), and none of the code is in the executable; only the shaders it
+# compiles are.
+if(CONEY_SHADERS)
+    # SDL_shadercross, zlib licence: the command line and the library that compile HLSL through DXC and translate
+    # SPIR-V through SPIRV-Cross. It has no tag or release; this is the commit of 2026-09-03 on its main branch. Its
+    # submodules are not fetched: the pins below are the commits they name, fetched one by one.
+    FetchContent_Declare(shadercross GIT_REPOSITORY https://github.com/libsdl-org/SDL_shadercross.git
+                                     GIT_TAG 1ff05bec573988a98ef9e0260b4da44f512b8367 GIT_SUBMODULES ""
+                                     ${_coney_shadercross_where} SOURCE_SUBDIR coney-no-cmake SYSTEM)
+    # SPIRV-Cross vulkan-sdk-1.4.350.1 (Apache-2.0), the commit SDL_shadercross's own submodule points at. Fetched
+    # on its own because its tests hold paths past Windows' 260 characters: GIT_CONFIG turns on git's long paths
+    # for the checkout, which a submodule update would not.
+    FetchContent_Declare(spirv_cross GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Cross.git
+                                     GIT_TAG 1a6169566c73d3da552748fc372fe2bbb856e46e GIT_CONFIG core.longpaths=true
+                                     ${_coney_spirv_cross_where} SOURCE_SUBDIR coney-no-cmake SYSTEM)
+    # DXC, the HLSL compiler, built from source: libsdl-org's fork at the commit SDL_shadercross's submodule names
+    # (branch v1.9.2602-SDL: Microsoft's v1.9.2602 with two build fixes for newer MSVC and libc++). LLVM Release
+    # License (NCSA), Apache-2.0 with the LLVM exception, and miniz's MIT-style licence. It validates and signs DXIL
+    # itself, so Microsoft's dxil.dll is never needed. GitHub's source archives, checked by SHA-256: no git history
+    # to fetch and keep in the cache.
+    FetchContent_Declare(dxc URL https://github.com/libsdl-org/DirectXShaderCompiler/archive/2c84a1c5ab7091608c97df6ba5ccf46e71c322eb.tar.gz
+                             URL_HASH SHA256=aaabe9adc8bd15aab887b122537d79bd9544b64934ca6f44c83e15c4b1d81549
+                             DOWNLOAD_EXTRACT_TIMESTAMP ON ${_coney_dxc_where} SOURCE_SUBDIR coney-no-cmake)
+    # DXC's own submodules at the commits that fork commit names: SPIRV-Headers (Khronos, MIT-style) and SPIRV-Tools
+    # (Apache-2.0) for its SPIR-V output, DirectX-Headers (MIT) for its reflection off Windows.
+    FetchContent_Declare(spirv_headers URL https://github.com/KhronosGroup/SPIRV-Headers/archive/04f10f650d514df88b76d25e83db360142c7b174.tar.gz
+                                       URL_HASH SHA256=1b220e3eec1714f0451b0e3652979bd280edf10893f617837b88e6359a804ded
+                                       DOWNLOAD_EXTRACT_TIMESTAMP ON ${_coney_spirv_headers_where} SOURCE_SUBDIR coney-no-cmake)
+    FetchContent_Declare(spirv_tools URL https://github.com/KhronosGroup/SPIRV-Tools/archive/fbe4f3ad913c44fe8700545f8ffe35d1382b7093.tar.gz
+                                     URL_HASH SHA256=cabb35f4eef0da3ef72ad9edd596af4191d7507a8f35c05df526d2d5ff889f59
+                                     DOWNLOAD_EXTRACT_TIMESTAMP ON ${_coney_spirv_tools_where} SOURCE_SUBDIR coney-no-cmake)
+    if(NOT WIN32)
+        FetchContent_Declare(directx_headers URL https://github.com/microsoft/DirectX-Headers/archive/980971e835876dc0cde415e8f9bc646e64667bf7.tar.gz
+                                             URL_HASH SHA256=b5a4b6d8806ff7f29f19879f83d015dbe8740676d4ca0b48647a789cc7773c4e
+                                             DOWNLOAD_EXTRACT_TIMESTAMP ON ${_coney_directx_headers_where} SOURCE_SUBDIR coney-no-cmake)
+    endif()
+endif()
+
 FetchContent_MakeAvailable(SDL3 librw Catch2 enet)
+if(CONEY_SHADERS)
+    FetchContent_MakeAvailable(shadercross spirv_cross dxc spirv_headers spirv_tools)
+    if(NOT WIN32)
+        FetchContent_MakeAvailable(directx_headers)
+    endif()
+endif()
 
 # Dear ImGui as a static library, with the debug tools only. Its OpenGL 3 backend loads the GL functions itself (its
 # bundled loader), so it needs no GL import library; on Linux and macOS the loader opens the GL library with dlopen.

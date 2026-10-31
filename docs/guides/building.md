@@ -12,7 +12,7 @@ before you have a disc image at all.
 
 | | Windows | Linux | macOS |
 | --- | --- | --- | --- |
-| Compiler | MSVC 19.38+ (Visual Studio 2022 17.8 or Build Tools 2022) | GCC 13+ or Clang 19+ | Xcode 16+ |
+| Compiler | MSVC 19.38+ (Visual Studio 2022 17.8 or Build Tools 2022) with its ATL ([Windows](#windows)) | GCC 13+ or Clang 19+ | Xcode 16+ |
 | CMake 3.28+ and Ninja | bundled with Visual Studio | distribution packages | Homebrew |
 | Git | yes | yes | yes |
 | [uv](https://docs.astral.sh/uv/) | for the Python tools and pre-commit | same | same |
@@ -29,8 +29,9 @@ uv run --project python coney-tools doctor [--disc DISC]
 ```
 
 One command checks everything above and the rest a contributor needs, and prints `ok`, `problem` or `note` per line,
-with the fix after `->`: the build tools (Git, the compiler, CMake and Ninja, uv, ccache, and on Linux
-an old default `g++` while a newer one is installed, which needs `CC` and `CXX`), `coney.local.toml` and the scratch
+with the fix after `->`: the build tools (Git, the compiler, CMake and Ninja, uv, ccache, on Windows MSVC's ATL
+headers (`atlbase.h` in the developer shell's toolset, else Visual Studio's default one), and on Linux an old default
+`g++` while a newer one is installed, which needs `CC` and `CXX`), `coney.local.toml` and the scratch
 folder, your disc (`--disc`, else `game_dir`: `SLUS_212.15` and `WARRIORS.DIR` by size and SHA-1, `WARRIORS.WAD` by
 size, against the NTSC-U release the research refers to), the research tools (JDK 21, Node.js, Ghidra, the compiled
 EE language, a project holding `SLUS_212.15`, whether port 8090 is free or held by ghidra-mcp, the PCSX2-MCP build
@@ -41,9 +42,10 @@ needs no `--agent` and no configuration, changes nothing and prints sizes and ha
 engine's build or the disc needs, and makes the exit code 1; a note is optional (another release of the game, a
 missing research tool). On an idle machine it takes a few seconds; hashing the disc's two small files is most of it.
 
-The C++ dependencies (SDL3, librw, Dear ImGui, ENet, Catch2, FFmpeg) are not installed by hand: CMake downloads them
-on the first configure, at the exact commits pinned in `cmake/deps.cmake`. That first configure needs network access
-and takes a few minutes; later builds reuse the copies under `build/<preset>/_deps/`.
+The C++ dependencies (SDL3, librw, Dear ImGui, ENet, Catch2, FFmpeg and the shader compiler's sources,
+[Shaders](#shaders)) are not installed by hand: CMake downloads them on the first configure, at the exact commits
+pinned in `cmake/deps.cmake`. That first configure needs network access and takes a few minutes; later builds reuse
+the copies under `build/<preset>/_deps/`.
 
 librw is built for its OpenGL 3 platform with SDL3 creating the window and the context, so the build also needs the
 OpenGL headers and libraries: part of the system on Windows and macOS, `libgl1-mesa-dev` on Linux (in the package
@@ -92,10 +94,22 @@ socket functions every supported system has, so the definitions are set in `cmak
 uses `unix.c`'s own defaults, and Windows links Winsock (`ws2_32`) and `winmm`, whose timer ENet times its resends
 with. To update ENet, change the commit and the tag comment together.
 
+### Shaders {#shaders}
+
+The GPU renderer's shaders are HLSL, compiled by the build to SPIR-V, DXIL and MSL and embedded in the `coney_shaders`
+library. The build fetches and builds their compiler (SDL_shadercross, with DXC and SPIRV-Cross) while it configures,
+once per machine and set of pins: [The shader build](shaders.md) has what it does, how to add a shader, the tests and
+`-DCONEY_SHADERS=OFF` for a system where the compiler cannot be built.
+
 ### Windows
 
 Install Visual Studio 2022 or the Build Tools for Visual Studio 2022 with the **Desktop development with C++**
 workload. It brings MSVC, CMake and Ninja; you do not need to install them separately.
+
+Also add the component **C++ ATL for latest build tools** (`Microsoft.VisualStudio.Component.VC.ATL`; Visual Studio
+Installer, Modify, Individual components). The shader compiler's DXC is built from source and its Windows code includes
+ATL's `atlbase.h` ([The shader build](shaders.md#compiler)); without it the first configure stops in the compiler's
+build. Only building Coney from source needs it: a player's build never does. `coney-tools doctor` checks for it.
 
 The compiler and those tools are on `PATH` only inside a shell with the MSVC environment loaded. Either open the
 **x64 Native Tools Command Prompt for VS 2022** from the Start menu, or run `vcvars64.bat` in an existing
@@ -751,7 +765,10 @@ repository has 10 GB of them; when that is full GitHub drops the least recently 
   read, so it could only push `main`'s useful entries out: on 2026-10-13 the cache held 9.6 of its 10 GB in 28
   entries, one per job and commit. A pull request restores the newest entry of its job from `main`.
 - **The dependency sources** (`deps`, then `deps-save` after the configure step): SDL3, librw, Catch2, Dear ImGui, ENet
-  and FFmpeg as fetched, one entry per OS and version of `cmake/deps.cmake`, shared by every job and preset on that OS.
+  and FFmpeg as fetched, and the shader compiler built from its sources ([The shader build](shaders.md); it is built
+  during the configure, so it is in the entry too: DXC is compiled from source on every OS, and the entry keeps a pull
+  request from compiling it again unless it changes a pin or the tool project), one entry per OS and version of
+  `cmake/deps.cmake` and `cmake/shadertools/CMakeLists.txt`, shared by every job and preset on that OS.
   `CONEY_DEPS_SOURCES` makes `cmake/deps.cmake` fetch into `build/_deps-sources/<version>/<name>` and use a complete
   copy found there without downloading ([Shared dependency sources](#shared-deps)). The build trees under
   `build/<preset>/_deps/` are not kept: they belonged to one compiler and preset, a fresh job rebuilds them anyway

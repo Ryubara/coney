@@ -14,4 +14,6 @@ std::filesystem::path testSupportDir() { return CONEY_TEST_SUPPORT_DIR; }
 
 std::filesystem::path lua4FixturesDir() { return CONEY_LUA4_FIXTURES_DIR; }
 
+std::filesystem::path shadersDir() { return CONEY_SHADERS_DIR; }
+
 } // namespace coney::test

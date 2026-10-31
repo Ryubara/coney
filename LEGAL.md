@@ -57,6 +57,10 @@ a listing long enough to carry the game's code or data into the repository.
   never copied into the repository: SDL3 (zlib), librw (MIT), Dear ImGui (MIT, the debug menus' developer overlay),
   ENet (MIT, the UDP transport of network play; approved by the maintainer on 2026-10-20) and Catch2 (Boost Software
   Licence 1.0, tests only), and FFmpeg (below). A build that is passed on carries their licence notices.
+- The shader build's compiler, built from source at build time and never part of the executable: SDL_shadercross (zlib),
+  SPIRV-Cross (Apache-2.0), and DXC (LLVM Release License (NCSA) and Apache-2.0 with the LLVM exception, built from
+  source; Microsoft's binary releases and their dxil.dll are not used) with its submodules SPIRV-Headers (MIT-style),
+  SPIRV-Tools (Apache-2.0) and DirectX-Headers (MIT).
 - Coney Studio's fonts, Inter (interface) and JetBrains Mono (code), are under the **SIL Open Font License 1.1**
   (approved by the maintainer on 2026-10-28). Like the dependencies they are fetched at build time from their pinned
   release archives (`cmake/deps.cmake`), never copied into the repository, and the build puts each font's licence

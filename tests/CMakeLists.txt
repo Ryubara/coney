@@ -474,7 +474,7 @@ target_include_directories(coney_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 # definition on a target.
 target_sources(coney_tests PRIVATE support/test_paths.cpp)
 set_source_files_properties(support/test_paths.cpp PROPERTIES COMPILE_DEFINITIONS
-    "CONEY_ASSETS_DIR=\"${PROJECT_SOURCE_DIR}/assets\";CONEY_TEST_SUPPORT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/support\";CONEY_LUA4_FIXTURES_DIR=\"${PROJECT_SOURCE_DIR}/python/tests/lua4/fixtures\"")
+    "CONEY_ASSETS_DIR=\"${PROJECT_SOURCE_DIR}/assets\";CONEY_TEST_SUPPORT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/support\";CONEY_LUA4_FIXTURES_DIR=\"${PROJECT_SOURCE_DIR}/python/tests/lua4/fixtures\";CONEY_SHADERS_DIR=\"${PROJECT_SOURCE_DIR}/src/platform/shaders\"")
 # coney_platform for librw, which the texture tests run on its NULL device (no window, no GPU); coney_launcher for the
 # launcher's library (docs/guides/launcher.md).
 target_link_libraries(coney_tests PRIVATE coney_platform coney_launcher Catch2::Catch2WithMain)
@@ -569,6 +569,27 @@ include(Catch)
 # A Catch2 tag is also a ctest label: a test case tagged [disc] is the label `disc`, so `ctest -L disc` runs (or lists)
 # the tests that need the disc and `-LE disc` leaves them out. Every test that opens the disc carries the tag.
 catch_discover_tests(coney_tests ADD_TAGS_AS_LABELS)
+
+# The HLSL shaders the build compiles and embeds (docs/guides/shaders.md): that each one has its SPIR-V, DXIL and MSL, and
+# that the compiler refuses a shader that does not compile instead of leaving an empty file behind. A small executable of
+# its own, so it builds and runs without the engine's thousand test files.
+if(CONEY_SHADERS)
+    add_executable(coney_shader_tests platform/embedded_shaders_test.cpp support/test_paths.cpp)
+    coney_target_defaults(coney_shader_tests)
+    target_include_directories(coney_shader_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+    target_link_libraries(coney_shader_tests PRIVATE coney_shaders Catch2::Catch2WithMain)
+    catch_discover_tests(coney_shader_tests ADD_TAGS_AS_LABELS)
+    foreach(_format SPIRV DXIL MSL)
+        add_test(NAME coney.shaders.refuse_a_broken_shader_${_format}
+                 COMMAND ${CMAKE_COMMAND} -DTOOL=${CONEY_SHADERCROSS} -DFORMAT=${_format}
+                         -DCOMPILE_SCRIPT=${PROJECT_SOURCE_DIR}/cmake/coney_shader_compile.cmake
+                         -DBROKEN=${CMAKE_CURRENT_SOURCE_DIR}/support/shaders/broken.frag.hlsl
+                         -DGOOD=${PROJECT_SOURCE_DIR}/src/platform/shaders/blit.frag.hlsl
+                         -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/shader_refusal_${_format}
+                         -P ${CMAKE_CURRENT_SOURCE_DIR}/support/shader_refusal_check.cmake)
+        set_tests_properties(coney.shaders.refuse_a_broken_shader_${_format} PROPERTIES TIMEOUT 120)
+    endforeach()
+endif()
 
 # The debug C runtime's checks must fail a run on stderr, not open a dialog nobody will click (platform/error_dialogs.h).
 # Only MSVC's debug runtime has those dialogs and those checks.

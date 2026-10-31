@@ -1,12 +1,14 @@
-# Keep the dependencies' sources (SDL3, librw, Catch2, Dear ImGui, ENet, FFmpeg) between runs: one cache entry per OS
-# and version of cmake/deps.cmake, shared by every job and preset on that OS. CONEY_DEPS_SOURCES tells
-# cmake/deps.cmake to fetch into build/_deps-sources/<version>/<name> and to use a complete copy found there without
-# downloading.
+# Keep the dependencies' sources (SDL3, librw, Catch2, Dear ImGui, ENet, FFmpeg) and the shader compiler built from
+# its own sources (docs/guides/shaders.md; DXC among them, which takes a long time to compile) between runs: one
+# cache entry per OS and version of cmake/deps.cmake and of the compiler's own project, shared by every job and preset
+# on that OS. CONEY_DEPS_SOURCES tells cmake/deps.cmake to fetch into build/_deps-sources/<version>/<name> and to use a
+# complete copy found there without downloading.
 #
-# Only the sources: build/<preset>/_deps also holds the dependencies' build trees, compiled by one job's compiler and
-# flags, which a fresh job rebuilds anyway (Ninja has no log of them), and that made eight ~400 MB entries of one
-# preset and compiler each. The sources are the same for every job on an OS (Windows checks them out with its own
-# line endings, so it keeps its own). The folder's name holds "_deps", which keeps it out of clang-tidy's file list.
+# Only the sources (and that one tool): build/<preset>/_deps also holds the dependencies' build trees, compiled by one
+# job's compiler and flags, which a fresh job rebuilds anyway (Ninja has no log of them), and that made eight ~400 MB
+# entries of one preset and compiler each. The sources are the same for every job on an OS (Windows checks them out
+# with its own line endings, so it keeps its own). The folder's name holds "_deps", which keeps it out of clang-tidy's
+# file list.
 # Call it before the configure step and ./.github/actions/deps-save right after it. Rules: building.md#ci-caches.
 name: deps
 description: Restore the fetched dependency sources of this OS and deps.cmake, and point cmake/deps.cmake at them.
@@ -16,7 +18,7 @@ runs:
   steps:
     - shell: bash
       env:
-        DEPS_HASH: ${{ hashFiles('cmake/deps.cmake') }}
+        DEPS_HASH: ${{ hashFiles('cmake/deps.cmake', 'cmake/shadertools/CMakeLists.txt') }}
       run: |
         {
           echo "CONEY_DEPS_SOURCES=$GITHUB_WORKSPACE/build/_deps-sources"

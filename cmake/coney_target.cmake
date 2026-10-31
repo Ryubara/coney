@@ -5,6 +5,10 @@ option(CONEY_SANITIZERS "Build Coney's own targets with ASan and UBSan (GCC and 
 # viewers, the sandbox and the developer's command-line options. Off is the release build a player gets: the game alone,
 # which does not even fetch Dear ImGui.
 option(CONEY_DEBUG_TOOLS "Build the debug tools (off: the release build, the game alone)" ON)
+# The HLSL shader build (docs/guides/shaders.md): fetches and builds the shader compiler (SDL_shadercross, DXC)
+# while configuring and compiles src/platform/shaders/ to SPIR-V, DXIL and MSL. Off skips all of it, for a system where
+# the compiler cannot be built; the game does not use the shaders yet.
+option(CONEY_SHADERS "Compile the HLSL shaders for Vulkan, Direct3D 12 and Metal (off: no shader compiler, no shaders)" ON)
 
 # Settings every Coney target gets. Applied per target, never globally, so dependencies keep their own flags.
 function(coney_target_defaults target)

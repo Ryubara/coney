@@ -198,3 +198,47 @@ def test_bios_check_never_offers_a_download(tmp_path: Path) -> None:
     (copy / "bios" / "dump.bin").write_bytes(b"")
     assert doctor.bios_check(copy).ok
     assert "dump.bin" not in doctor.bios_check(copy).detail
+
+
+def make_visual_studio(tmp_path: Path, toolset: str, atl: bool) -> Path:
+    """A made-up Visual Studio install whose default MSVC toolset is `toolset`; with `atl`, its ATL headers."""
+    install = tmp_path / "BuildTools"
+    build = install / "VC" / "Auxiliary" / "Build"
+    build.mkdir(parents=True)
+    (build / "Microsoft.VCToolsVersion.default.txt").write_text(f"{toolset}\n", encoding="utf-8")
+    include = install / "VC" / "Tools" / "MSVC" / toolset / "atlmfc" / "include"
+    include.mkdir(parents=True)
+    if atl:
+        (include / "atlbase.h").write_text("", encoding="utf-8")
+    return install
+
+
+def test_atl_is_found_under_the_default_msvc_toolset(tmp_path: Path) -> None:
+    install = make_visual_studio(tmp_path, "14.44.35207", atl=True)
+    check = doctor.atl_check("windows", fake_run({"vswhere.exe": f"{install}\n"}), {})
+    assert check is not None and check.ok and check.required
+    assert "14.44.35207" in check.detail
+
+
+def test_missing_atl_is_a_problem_that_names_the_component(tmp_path: Path) -> None:
+    install = make_visual_studio(tmp_path, "14.44.35207", atl=False)
+    check = doctor.atl_check("windows", fake_run({"vswhere.exe": f"{install}\n"}), {})
+    assert check is not None and not check.ok and check.required
+    assert "Microsoft.VisualStudio.Component.VC.ATL" in check.hint
+
+
+def test_atl_is_looked_for_in_the_active_toolset_first(tmp_path: Path) -> None:
+    # A developer shell names its toolset in VCToolsInstallDir; that one wins over vswhere's default.
+    install = make_visual_studio(tmp_path, "14.44.35207", atl=True)
+    active = tmp_path / "other" / "14.38.33130"
+    (active / "atlmfc" / "include").mkdir(parents=True)
+    run = fake_run({"vswhere.exe": f"{install}\n"})
+    check = doctor.atl_check("windows", run, {"VCToolsInstallDir": f"{active}\\"})
+    assert check is not None and not check.ok
+    assert "14.38.33130" in check.detail
+
+
+def test_atl_is_only_checked_on_windows_with_visual_studio() -> None:
+    assert doctor.atl_check("linux", fake_run({}), {}) is None
+    # No Visual Studio: the compiler check already says so.
+    assert doctor.atl_check("windows", fake_run({}), {}) is None

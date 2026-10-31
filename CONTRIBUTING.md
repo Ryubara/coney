@@ -19,8 +19,9 @@ From nothing to a first pull request, as a person on Windows, Linux or macOS. It
 emulator and no BIOS, and no disc until step 4. Each step links to the page that holds the detail.
 
 **What you need.** A C++23 toolchain (Windows: Visual Studio 2022 17.8 or the Build Tools with *Desktop development
-with C++*; Linux: GCC 13+ or Clang 19+ and the SDL packages; macOS: Xcode 16+), CMake 3.28+ and Ninja, Git, and
-[uv](https://docs.astral.sh/uv/) for the `coney-tools` command line. The exact versions and the Linux package list
+with C++* and the component *C++ ATL for latest build tools*; Linux: GCC 13+ or Clang 19+ and the SDL packages;
+macOS: Xcode 16+), CMake 3.28+ and Ninja, Git, and [uv](https://docs.astral.sh/uv/) for the `coney-tools` command
+line. The exact versions and the Linux package list
 are in the [README](README.md#requirements) and [Building and testing](docs/guides/building.md#what-you-need).
 pre-commit downloads its own pinned Node.js, so you install none. clang-tidy needs no install: CI runs it on the lines
 of every pull request. For step 4, your own copy of the North American (NTSC-U) game: the research is checked against
