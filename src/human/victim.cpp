@@ -60,9 +60,7 @@ ReactionKind Victim::react(const IncomingHit& hit, const VictimFrame& frame, Hum
     const auto clip = static_cast<std::uint32_t>(reaction.animId);
     m_lastReaction = reaction.animId;
     ++m_reactions;
-    // A victim with flag 0x100 is never stunned. **Gap**: one already stunned keeps its stun through a knockdown in the
-    // original (`Human_SetDownTimers` `0x0022f4f8` keeps state 0x100000, the end at the rise - 1 ms); here it loses it
-    // (issue draft from #1330's review).
+    // A victim with flag 0x100 is never stunned.
     const bool stuns = !frame.unstunnable && ((hit.flags & combat::kRangeFlagStun) != 0 || stunned());
     // A reaction with a knockdown event lays it down; a stunned one stays stunned until after the rise.
     if (knocksDown(animator, reaction.animId)) {
@@ -90,6 +88,8 @@ void Victim::die(const IncomingHit& hit, const VictimFrame& frame, HumanAnimator
 }
 
 void Victim::knockDown(std::uint64_t nowMs, bool stunned) {
+    // **Gap**: a victim with flag 0x100 that is already stunned keeps the stun here in the original (state 0x100000
+    // kept, its end at the rise - 1 ms); Coney's react() passes no stun for it, so the stun is lost (#1330's review).
     m_grounded = true;
     m_riseAtMs = nowMs + static_cast<std::uint64_t>(m_class.groundMs);
     m_stunUntilMs = stunned ? m_riseAtMs + static_cast<std::uint64_t>(m_class.stunMs) : 0;

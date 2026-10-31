@@ -18,7 +18,8 @@ class Brain;
 /// A's view (`Human_CanUseAttackKind`'s attacker) against `target` (null for none). The snap's human is the nearest in
 /// sector 2-6 of A's sector record (refreshed when older than kSectorAgeMs) who holds an attack slot on A.
 /// **Coney stand-ins**: "free" reads the state alone, as the original does (on its feet, in no pair, not lying,
-/// stunned or out of health; a clip playing is no bar); no world objects, spray paint or cuffs are held.
+/// stunned or out of health; a clip playing is no bar); the hold moves' state tests (none of `0x7bf9e9f7f00`, the
+/// mount's `0x7bf9e9f73f0`) are read from the held flags; no world objects, spray paint or cuffs are held.
 [[nodiscard]] AttackerView attackerViewOf(Brain& attacker, const Brain* target);
 
 /// T's view against `attacker`. **Coney stand-ins**: `Human_IsHighOrBusy`, state `0x2000` and held flags `0x400000` /

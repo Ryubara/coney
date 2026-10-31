@@ -453,7 +453,12 @@ page = "characters.md#code-core"
 role = "Whether the human can start attack kind n on a target now: per-kind checks of its own and the target's state flags, held objects, spray paint, cuffs, and the brain's targets for kind 10."
 level = "confirmed-code"
 coney = "src/ai/attack_choice.h:canUseAttackKind"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "kinds 12 and 13 on the human himself: allowed by the original, refused by Coney's use test (both kinds are left out of every pick)"
+relation = "not-ported"
+issue = 674
 
 [[function]]
 address = 0x00225390
