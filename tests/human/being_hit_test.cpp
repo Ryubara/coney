@@ -113,19 +113,32 @@ TEST_CASE("the player's 200 ms stun goes straight to 357 when the reaction ends,
     ClipLog log;
     // SX2 (0x1a, stun) from in front: 280.
     fight.human().takeHit(hitOf(15, 37, 0x1a, 0xc00));
-    std::uint64_t stunOver = 0;
-    fight.run("", 40, [&](std::uint64_t frame) {
-        log.note(fight.human().animator().animId());
-        if (stunOver == 0 && !fight.human().fighter().victim().stunned()) {
-            stunOver = frame;
+    // The stun's time (record +0x100) as the stun starts, and the update its state clears.
+    std::uint64_t stunTimeMs = 0;
+    bool stunTimeRead = false;
+    bool exitAtClear = false;
+    bool cleared = false;
+    fight.run("", 40, [&](std::uint64_t) {
+        const coney::human::Victim& victim = fight.human().fighter().victim();
+        const std::uint32_t clip = fight.human().animator().animId();
+        log.note(clip);
+        if (!stunTimeRead && victim.stunned()) {
+            stunTimeRead = true;
+            stunTimeMs = victim.stunUntilMs() - fight.human().nowMs();
+        }
+        if (stunTimeRead && !cleared && !victim.stunned()) {
+            cleared = true;
+            exitAtClear = clip == 357U;
         }
     });
     CHECK(log.has(280));
     CHECK(log.has(357));
     CHECK_FALSE(log.has(356));
-    // 200 ms is 6 updates.
-    CHECK(stunOver >= 5);
-    CHECK(stunOver <= 7);
+    // The stun's time is 200 ms from the hit; its state lasts through the reaction (Human_UpdateDown, 0x00256a60,
+    // ends a standing stun only with no held flag) and clears as 357 starts (combat-reactions.md#stun-end).
+    CHECK(stunTimeMs == 200);
+    CHECK(cleared);
+    CHECK(exitAtClear);
     // Free again after 357.
     CHECK_FALSE(fight.human().fighter().helpless(fight.human().animator()));
 }
