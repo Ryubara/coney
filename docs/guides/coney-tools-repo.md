@@ -302,6 +302,7 @@ uv run --project python coney-tools task slots --admit [--agent-type TYPE] [--ta
     [--model M] [--effort E]
 uv run --project python coney-tools task leads --terms TERM ... [--issue N] [--refresh]
 uv run --project python coney-tools task index [--no-gh]
+uv run --project python coney-tools task overlap [TASK] [--write]
 uv run --project python coney-tools task check [TASK] [--worktree DIR] [--base REF] [--agent ID] [--profile P]
     [--keep-going] [--dry-run] [--max-wait MIN]
 uv run --project python coney-tools task review [TASK] [--text] [--record | --run] [--worktree DIR] [--base REF]
@@ -334,7 +335,9 @@ The coordinator's triage step ([Task files](issues.md#task-files)); the rules ar
   a task whose issue carries the `workflow` label now (read from its held claim card) holds no place while
   `tasks.start.slots.exempt_workflow` is on, and one with the `studio` label is in the Studio track. Nothing is made
   when a check fails (exit 1); a git or fetch failure stops it with exit 2; running it again for a started task
-  finishes what is missing and changes nothing else.
+  finishes what is missing and changes nothing else. It lists the [pending work that
+  overlaps](pending-work.md) in its report and in the task file's "Pending work that overlaps" section (a dry
+  run only prints it; a read that fails is a note).
   A fix task opens its parent's unit instead of making one. The coordinator's role may not run it
   (`.claude/hooks/hooks.toml`).
 * `slots` shows the [engineer tracks](agents.md#slots): the machine's places in use (its build slots times
@@ -369,6 +372,11 @@ The coordinator's triage step ([Task files](issues.md#task-files)); the rules ar
   `--hours` (at most the cap of the `--reason` code from `tasks.start.fill.waivers`; a code that blocks issues needs
   `--issues`) with a `--note`; a refused waiver exits 2 and writes nothing, and only the coordinator may run it
   (`.claude/hooks/hooks.toml`). The reasons, the waivers and the hook are in [Keeping the places full](slot-fill.md).
+* `overlap` lists, for a task, the open pull requests and the other units in progress that touch the paths and `@orig`
+  addresses it names or changes, each with its title, state and the shared paths ([Pending work that
+  overlaps](pending-work.md)). It works before `task start` too. `--write` replaces the task file's "Pending
+  work that overlaps" section; `task check` and `task review` print the list again, and record it, when it changed.
+  The limits are `tasks.overlap` of `.github/conventions.yml`.
 * `leads` runs the leads search alone: one line per match with the source, the place and why it matched, then the terms
   that matched nothing. `--issue N` also matches the addresses, names, paths and references that issue writes.
 * `index` rebuilds the cached index (`<scratch>/leads/index.json`, also rebuilt when `HEAD` moved or after
@@ -668,6 +676,20 @@ coney-tools task leads --terms TERM [TERM ...] [--issue N] [--refresh]
 | `--terms TERM [TERM ...]` | text | required | names to search for |
 | `--issue N` | integer | none | also match the identifiers this issue writes |
 | `--refresh` | flag | off | rebuild the index first |
+
+### `task overlap` {#task-overlap-usage}
+
+List the open pull requests and the other units in progress that touch the paths and @orig addresses of a task
+(docs/guides/pending-work.md).
+
+```text
+coney-tools task overlap [TASK] [--write]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[TASK]` | text | none | the task id (default: CONEY_TASK, else the branch) |
+| `--write` | flag | off | also replace the task file's 'Pending work that overlaps' section |
 
 ### `task index` {#task-index-usage}
 

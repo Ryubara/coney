@@ -272,6 +272,22 @@ def gather(
     return touched
 
 
+def diff_addresses(patch: str) -> dict[str, str]:
+    """The addresses a `git diff` patch holds in changed lines, each with the first file that holds it.
+
+    The files and lines `gather` counts and no others: a test file's invented fixture values and generated or binary
+    files say nothing about the original's addresses. Used for a pull request's diff, which is not a checkout.
+    """
+    found: dict[str, str] = {}
+    for diff in parse_diff(patch):
+        if _SKIP_CONTENT.search(diff.new) or _TEST_FILE.search(diff.new):
+            continue
+        for text in diff.text:
+            for address in _ADDRESS.findall(text):
+                found.setdefault(address.lower(), diff.new)
+    return found
+
+
 def _add_file(root: Path, touched: Touched, diff: _FileDiff, base: str, head: str) -> None:
     """Record one changed file: its paths, the addresses and names in its changed lines, its changed sections."""
     if diff.status == "renamed":

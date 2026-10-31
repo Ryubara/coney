@@ -513,6 +513,16 @@ def test_dry_run_prints_the_plan_and_changes_nothing(world: World) -> None:
     assert world.calls == [] and world.builds == [] and not world.log.stamps
 
 
+def test_the_pending_work_is_shown_before_the_checks_run_and_not_recorded_by_a_dry_run(world: World) -> None:
+    world.edit("docs/guides/widget.md", "# Widget\n\nTwo.\n")
+    seen: list[tuple[str, bool]] = []
+    env = world.env()
+    env.overlap = lambda root, task, conventions, say, write: seen.append((task, write))
+    assert task_check.run_check(world.request(dry_run=True), env) == 0
+    assert task_check.run_check(world.request(), env) == 0
+    assert seen == [(TASK, False), (TASK, True)]
+
+
 # --- the stamp is bound to the change ------------------------------------------------------------------------------
 
 

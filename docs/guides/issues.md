@@ -614,6 +614,7 @@ scratch folder and proof log) and makes everything the later stages look for, so
 | The **unit record**: task, kind, issues, claimant, branch, worktree, the base ref and commit, the time, and whether `/progress claimed` was posted | `<scratch>/<task>/unit.json` (`tasks.start.unit_file`); `task check`, `task review`, `pr open` and the mod read it |
 | The stamps `assigned` and `claimed` ([Stamps](stamps.md#log)): `assigned` covers the task file's YAML block (`task_sha256`) and lists the issues, kind, claimant and claim time; `claimed` covers the base commit and names the branch, base ref and kind. Both carry the agent the hook vouched for, so the log says which engineer took the task | `<scratch>/<task>/stamps/` |
 | `/progress claimed` on each issue, which restarts the claim's idle clock | the issue's claim card |
+| The **pending work that overlaps** the unit: the open pull requests and the other units in progress that touch the paths and `@orig` addresses the task names ([Pending work that overlaps](pending-work.md)), as a section of the task file and a few lines of the report | `<scratch>/<task>/TASK.md`, section "Pending work that overlaps" |
 
 Running it again is safe. A task with a unit record is not made twice: the command finishes what a stopped start left
 (a missing stamp, a `/progress` that failed) and says `already started`; if the worktree has been removed meanwhile it

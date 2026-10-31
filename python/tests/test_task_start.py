@@ -19,7 +19,7 @@ from claim_support import Clock, FakeGitHub, plant_claim
 from conventions_support import REPO, with_networking_place, with_renderer_place
 from git_support import git
 
-from coney_tools import stamps, task_cli, task_slots, task_start, unit
+from coney_tools import stamps, task_cli, task_overlap, task_slots, task_start, unit
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
 from coney_tools.issue_claim_model import Card, parse_time, render_card
@@ -183,6 +183,88 @@ def world(tmp_path: Path) -> World:
 
 
 # --- the unit: branch, worktree, scratch ----------------------------------------------------------------------------
+
+
+# --- the pending work that overlaps the unit -------------------------------------------------------------------------
+
+
+def test_a_start_reports_the_pending_work_and_hands_the_new_unit_to_the_reader(world: World) -> None:
+    world.ready()
+    asked: list[tuple[str, UnitRecord | None, bool]] = []
+
+    def overlap(task: TaskFile, record: UnitRecord | None, write: bool) -> list[str]:
+        asked.append((task.task, record, write))
+        return ["pending work that overlaps: 1", "    - PR #7 (open pull request) `t`: shares src/ai/x.cpp"]
+
+    env = world.env()
+    env.overlap = overlap
+    assert start_task(StartRequest(task=TASK), env) == 0
+    assert asked == [(TASK, world.record(), True)]
+    text = world.said()
+    assert "pending work that overlaps: 1" in text and "PR #7" in text
+    # The overlap lines come before the pointer to the next step.
+    assert text.index("PR #7") < text.index("next: work in the worktree")
+
+
+def test_a_dry_run_reads_the_pending_work_but_records_nothing(world: World) -> None:
+    world.ready()
+    asked: list[tuple[UnitRecord | None, bool]] = []
+
+    def overlap(task: TaskFile, record: UnitRecord | None, write: bool) -> list[str]:
+        asked.append((record, write))
+        return ["pending work that overlaps: none"]
+
+    env = world.env()
+    env.overlap = overlap
+    assert start_task(StartRequest(task=TASK, dry_run=True), env) == 0
+    assert asked == [(None, False)] and "dry run: pending work that overlaps: none" in world.said()
+
+
+def test_a_pending_work_read_that_fails_is_a_note_and_the_start_still_succeeds(world: World) -> None:
+    world.ready()
+
+    def broken(task: TaskFile, record: UnitRecord | None, write: bool) -> list[str]:
+        raise ConfigError("cannot reach GitHub")
+
+    env = world.env()
+    env.overlap = broken
+    assert start_task(StartRequest(task=TASK), env) == 0
+    assert "pending work that overlaps: not read (cannot reach GitHub)" in world.said()
+    assert world.record().task == TASK
+
+
+def test_a_start_writes_the_pending_work_into_the_task_file(world: World) -> None:
+    world.ready(scope=("docs/guides/",))
+    other = world.scratch / "other-unit"
+    other.mkdir()
+    reads = task_overlap.OverlapEnv(
+        scratch=world.scratch,
+        conventions=world.conventions,
+        gh=lambda arguments: json.dumps(
+            [
+                {
+                    "number": 5,
+                    "title": "docs: Add a page",
+                    "headRefName": "b5",
+                    "isDraft": False,
+                    "files": [{"path": "docs/guides/a.md"}],
+                }
+            ]
+        ),
+        now=world.clock.now,
+        change_of=lambda record: task_overlap.Change(),
+    )
+    env = world.env()
+    env.overlap = lambda task, record, write: task_overlap.start_lines(
+        reads, task, record, write, world.scratch / task.task / "TASK.md"
+    )
+    assert start_task(StartRequest(task=TASK), env) == 0
+    section = task_overlap.get_section((world.scratch / TASK / "TASK.md").read_text(encoding="utf-8"))
+    assert section is not None and "PR #5 (open pull request) `docs: Add a page`: shares docs/guides/a.md" in section
+    assert "pending work that overlaps: 1 (written to TASK.md)" in world.said()
+    parse_task_file((world.scratch / TASK / "TASK.md").read_text(encoding="utf-8"), world.conventions.tasks)
+
+
 def test_a_started_task_has_its_branch_and_worktree_in_the_workspace_layout(world: World) -> None:
     world.ready()
     assert world.run() == 0

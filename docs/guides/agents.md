@@ -247,8 +247,8 @@ instead of repeating it:
 - for an `engineer` or `tooling` agent, the unit, as a line of its own that starts with the words, `Task id: <id>`
   (the id `task create` printed once its claim held; the engineer runs `task start <id>`): the coordinator's start
   of the agent is refused without one, or when the claim is no longer held ([Engineer tracks](#slots));
-- the task and the scope it owns, the files it must not touch, and what "done" means for it
-  ([Testing](testing.md#done)), and that it reports it in the pull request's Testing and Screenshots sections, with
+- the task, its scope, the files not to touch, the [pending work that overlaps it](pending-work.md) and what
+  "done" means ([Testing](testing.md#done)), and that it reports it in the Testing and Screenshots sections, with
   its captures saved in `scratch/<branch>/shots/` and referenced in `PR.md` as `![alt](./shots/file.png)`
   ([Capturing and attaching](testing.md#pr-media)); video clips are recorded only with `coney --record` or
   `coney-tools clips record` into `scratch/<branch>/clips/` and uploaded only with `coney-tools clips publish`, which

@@ -115,7 +115,8 @@ decision points the coordinator already sees ([Task files](issues.md#task-files)
 Study, Port and Compare in detail, for every feature:
 
 1. **Read the code.** Before starting, an engineer reads the task file's leads, `docs/research/` and the open pull
-   requests for existing or in-flight coverage and extends it ([Before you research](research-workflow.md#upstream)).
+   requests for existing or in-flight coverage and extends it ([Before you research](research-workflow.md#upstream)),
+   and the task file's list of [pending work that overlaps](pending-work.md).
    Then the engineer studies the original executable `SLUS_212.15` in Ghidra with `orig study`: names the
    functions, writes plate comments and works out what each one does.
 2. **Watch it run.** For behaviour a player sees, always, not only when the code is unclear: the engineer makes the
@@ -333,6 +334,14 @@ Several tasks run at once, each owning the scope its claim names:
   main checkout.
 - **No stacked work.** A claim is refused while an issue in its "Blocked by" section is not done, so every task starts
   from `main` and `pr open` refuses a unit cut from any other base ([Claiming an issue](issues.md#claiming)).
+- **Pending work is read, not built on.** Work that is finished but not merged (an open pull request,
+  another unit in progress) is invisible to a unit that starts from `main`. `task start` lists the pending work that
+  touches the same files, `@orig` addresses or research pages in the task file's "Pending work that overlaps" section,
+  and `task check` and `task review` print it again when it changed
+  ([Pending work that overlaps](pending-work.md)). The engineer reads those changes before researching or
+  changing the area, so it does not repeat research or contradict a page about to change; it never builds on them
+  unless the unit is stacked on the other branch with a `Depends on #N` line, because `main` is the truth. When an
+  overlap matters it notes it in `STATUS.md` and tells the coordinator, who orders the two units.
 - **Small shared files are regenerated, not hand-merged**: binding pages and similar files come from generators
   that the merge reruns. Files every pull request would change are not committed at all: the progress tables and the
   README's badges and picture are produced by the docs build ([Measuring progress](#measuring-progress)), so a merge
@@ -524,6 +533,10 @@ requests and tidies after merges. It works under these rules:
   use ([Engineer tracks](agents.md#slots)). **The places are also a floor:** a `Stop` hook refuses to end a coordinator
   turn while a place is free, work can be started and nothing excuses it (no eligible issue, the claim limit, low
   disk, or a logged, expiring `task slots --waive`): [Keeping the places full](slot-fill.md).
+- **Name the overlaps in the brief.** Before it briefs an engineer the coordinator runs `coney-tools task overlap
+  <task>` and names the pending work that meets the unit, and when an engineer reports an overlap it orders the two
+  units (the one that lands first, or a `Depends on #N` stack)
+  ([Pending work that overlaps](pending-work.md)).
 - **Never do a stage of the engineer's or the reviewer's.** It writes no engine code, tests or research, runs none of
   the stage commands from Start to Review, judges no fidelity and fixes no CI failure in a branch's files; the role
   rules refuse them ([Which role to start](agents.md#roles)).
