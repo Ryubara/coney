@@ -21,9 +21,9 @@ class Brain;
 /// stunned or out of health; a clip playing is no bar); no world objects, spray paint or cuffs are held.
 [[nodiscard]] AttackerView attackerViewOf(Brain& attacker, const Brain* target);
 
-/// T's view against `attacker`. **Coney stand-ins**: `Human_IsHighOrBusy` and held flags `0x400000` / `0x40` are
-/// false; the specials' and the grab's refusing states are "not on its feet or in a pair", the grab's leaving out a
-/// rear hold.
+/// T's view against `attacker`. **Coney stand-ins**: `Human_IsHighOrBusy`, state `0x2000` and held flags `0x400000` /
+/// `0x40` are false; the specials' and the grab's refusing states are "not on its feet or in a pair", the grab's
+/// leaving out a rear hold.
 [[nodiscard]] TargetView targetViewOf(const Brain& target, const Brain& attacker);
 
 /// The draw's context for A against T: the conditions Brain_PickAttack reads before it weighs the kinds.

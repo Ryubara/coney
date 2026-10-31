@@ -66,6 +66,8 @@ AttackerView attackerViewOf(Brain& attacker, const Brain* target) {
     view.knockedDown = fighter.victim().grounded();
     const Goal* reaction = attacker.reactionGoal();
     view.groundedGoal = reaction != nullptr && reaction->type() == GoalType::ReactKnockedDown;
+    // **Coney stand-in**: the hold moves' state test (none of `0x7bf9e9f7f00`, the mount's `0x7bf9e9f73f0`) is read
+    // from the held flags, as Coney has no state word.
     view.holdMovesFree = (a.animator().flags() & kAttackWaitFlags) == 0;
     view.characterClass = attacker.characterClass();
     if (target != nullptr) {
