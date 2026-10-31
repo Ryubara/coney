@@ -645,7 +645,7 @@ page = "ai-code.md#gang-functions"
 role = "`KillHumans`: does nothing"
 level = "confirmed-code"
 coney = "src/scripting/world_bindings.cpp:addWorldBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0016d810

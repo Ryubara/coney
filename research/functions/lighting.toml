@@ -174,10 +174,28 @@ coney = "src/graphics/light_manager.h:LightManager::setWorldAmbient"
 status = "legacy"
 
 [[function]]
+address = 0x0017f260
+name = "Shadow_SetColour_Stub"
+page = "lighting.md#code-index"
+role = "empty: `SetShadowColor` does nothing; Coney keeps the colour as the Xbox port does"
+level = "confirmed-code"
+coney = "src/graphics/level_lighting.h:ShadowLight::setColour"
+status = "compared"
+
+[[function]]
+address = 0x0017f268
+name = "Shadow_SetLightOffset_Stub"
+page = "lighting.md#code-index"
+role = "empty: `SetShadowLightOffset` does nothing; Coney keeps the offset as the Xbox port does"
+level = "confirmed-code"
+coney = "src/graphics/level_lighting.h:ShadowLight::setOffset"
+status = "compared"
+
+[[function]]
 address = 0x0017f270
 name = "Shadow_Enable_Stub"
 page = "lighting.md#code-index"
-role = "empty: `SetShadowColor`, `SetShadowLightOffset` and `EnableShadow` do nothing"
+role = "empty: `EnableShadow` does nothing; Coney keeps the caster flag as the Xbox port does"
 level = "confirmed-code"
-coney = "src/scripting/world_bindings.cpp:makeNothing"
-status = "legacy"
+coney = "src/graphics/level_lighting.h:ShadowCasters::setEnabled"
+status = "compared"
