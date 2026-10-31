@@ -484,11 +484,16 @@ void StudioApp::drawStartScreen() {
         if (ImGui::SmallButton("Remove")) {
             removeRecent(entry.root);
         }
+        // The folder under the name, wrapped inside the row so a long path is read whole.
+        ImGui::PushTextWrapPos(startX + rowWidth);
         if (entry.missing) {
             ImGui::TextColored(ImVec4(1.0F, 0.8F, 0.4F, 1.0F), "Missing: %s", path.c_str());
         } else {
-            ImGui::TextDisabled("%s", path.c_str());
+            ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled]);
+            ImGui::TextWrapped("%s", path.c_str());
+            ImGui::PopStyleColor();
         }
+        ImGui::PopTextWrapPos();
         ImGui::Spacing();
         ImGui::PopID();
     }
@@ -496,9 +501,12 @@ void StudioApp::drawStartScreen() {
     ImGui::Separator();
     ImGui::Spacing();
     const auto folder = projectsFolder();
-    ImGui::TextDisabled("Projects folder: %s",
-                        folder ? pathToUtf8(*folder).c_str() : "none (no documents or home folder)");
-    ImGui::SameLine();
+    ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + rowWidth);
+    ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled]);
+    ImGui::TextWrapped("Projects folder: %s",
+                       folder ? pathToUtf8(*folder).c_str() : "none (no documents or home folder)");
+    ImGui::PopStyleColor();
+    ImGui::PopTextWrapPos();
     if (ImGui::SmallButton("Change...")) {
         m_preferencesOpen = true;
     }
