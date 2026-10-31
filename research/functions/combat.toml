@@ -1412,6 +1412,13 @@ name = "Mount_GetOff"
 page = "combat/index.md#code-reactions"
 role = "Gets the mounter off the victim and ends the tackle ([The mount](combat-grabs.md#mount))."
 level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::playMountAction"
+status = "compared"
+
+[[function.gaps]]
+what = "the get-off's refusals (held flag 0x2000 on either), a live victim's Grab_BreakOnHit with 245, move style 0xc, the knocked-out victim's 0x20000000, the 0.1 s blend-outs, push spheres and held flags are not ported"
+relation = "not-ported"
+issue = 684
 
 [[function]]
 address = 0x00271470
@@ -1433,6 +1440,13 @@ name = "Mount_ReturnToFrontGrab"
 page = "combat/index.md#code-reactions"
 role = "From the mount back to a front grab (Grab_Link) ([The mount](combat-grabs.md#mount))."
 level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::playMountAction"
+status = "compared"
+
+[[function.gaps]]
+what = "Tackle_End's pop of move style 0xc, the 0.1 s blend-outs before 248 / 249, the push spheres switched off and held flag 0x2000 on both are not ported"
+relation = "not-ported"
+issue = 684
 
 [[function]]
 address = 0x00271b30
