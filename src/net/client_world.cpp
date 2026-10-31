@@ -19,6 +19,7 @@
 #include "core/interpolation.h"
 #include "net/jitter_buffer.h"
 #include "net/net_id.h"
+#include "net/protocol.h"
 #include "net/replicated_fields.h"
 #include "net/snapshot.h"
 #include "world_objects/drawn_poses.h"
@@ -43,6 +44,32 @@ constexpr std::size_t clipField(std::size_t layer) {
 // The farthest a human is blended across between two snapshots or two steps; farther is a jump. DrawnPoses' rule, so
 // a human's state and its pose jump together.
 constexpr float kMostBlendedMetres = world_objects::DrawnPoses<NetId>::kMostBlendedMetres;
+
+// Whether two layers are one gait blend at both ends with its leading clip changed: only a gait blend carries a gait
+// value above 0, and its clip is GaitBlendTask::animId(), which moves to the other clip of its pair, or to the next
+// pair's, while the value and phase run on.
+bool gaitLeaderChanged(const HumanAnimLayer& before, const HumanAnimLayer& after) {
+    return before.clip != after.clip && before.gait > 0.0F && after.gait > 0.0F;
+}
+
+// Whether a layer at the older end is the same task as one at the newer: the same clip, or one gait blend.
+bool sameLayer(const HumanAnimLayer& before, const HumanAnimLayer& after) {
+    return before.clip == after.clip || gaitLeaderChanged(before, after);
+}
+
+// The clip a gait blend crossing between two ends names at blend value `value`: the end's whose pair `value` is in
+// (layerPose() rebuilds the blend from either clip of the pair), the newer's first; nothing when the value crossed
+// past both ends' pairs in one interval, which is then drawn as a cut.
+std::optional<std::int32_t> gaitClipAt(const HumanAnimLayer& before, const HumanAnimLayer& after, float value) {
+    const std::size_t pair = anim::GaitBlendTask::lowerIndexOf(value);
+    if (anim::GaitBlendTask::lowerIndexOf(after.gait) == pair) {
+        return after.clip;
+    }
+    if (anim::GaitBlendTask::lowerIndexOf(before.gait) == pair) {
+        return before.clip;
+    }
+    return std::nullopt;
+}
 
 // The pose of one layer at its playhead: a gait blend rebuilt when the layer's clip is one of the pair its gait value
 // plays (the lower clip, or the upper one while the value is between whole numbers), else the clip alone. Nothing
@@ -140,12 +167,16 @@ HumanState blendHumans(const HumanState& from, const HumanState& to, float alpha
                    lerp(from.position.z, to.position.z, alpha)};
     blended.heading = lerpAngle(from.heading, to.heading, alpha);
 
-    // The layers `to` added on top push `from`'s down: find where `from`'s newest layer went, then blend each layer
-    // from there down with the one it was, while it plays the same clip.
+    // The layers `to` added on top push `from`'s down: find where `from`'s newest layer went (by its clip; failing
+    // that, a gait blend still the newest whose leading clip changed), then blend each layer from there down with the
+    // one it was, while it is the same task.
     const std::size_t playing = playingLayers(to);
     std::size_t shift = 0;
     while (shift < playing && to.layers.at(shift).clip != from.layers.at(0).clip) {
         ++shift;
+    }
+    if (shift == playing && gaitLeaderChanged(from.layers.at(0), to.layers.at(0))) {
+        shift = 0;
     }
     if (shift == playing) {
         return blended; // nothing of `from`'s newest layer is left: a cut, drawn as `to`
@@ -153,12 +184,22 @@ HumanState blendHumans(const HumanState& from, const HumanState& to, float alpha
     for (std::size_t layer = shift; layer < kHumanAnimLayers; ++layer) {
         const HumanAnimLayer& before = from.layers.at(layer - shift);
         const HumanAnimLayer& after = to.layers.at(layer);
-        if (before.clip != after.clip) {
+        if (!sameLayer(before, after)) {
             continue;
         }
+        const float gait = lerp(before.gait, after.gait, alpha);
+        std::int32_t clip = after.clip;
+        if (before.clip != after.clip) {
+            const auto named = gaitClipAt(before, after, gait);
+            if (!named.has_value()) {
+                continue; // past both ends' pairs: drawn as `to`
+            }
+            clip = *named;
+        }
         HumanAnimLayer& drawn = blended.layers.at(layer);
+        drawn.clip = clip;
         drawn.playhead = lerpLooping(before.playhead, after.playhead, alpha, 1.0F);
-        drawn.gait = lerp(before.gait, after.gait, alpha);
+        drawn.gait = gait;
         // The fade over the layer `from`'s newest became is a new layer's fading in: `to`'s.
         if (layer > shift) {
             drawn.fade = lerp(before.fade, after.fade, alpha);
@@ -201,11 +242,19 @@ anim::Pose humanPose(const HumanState& human, const ClipSource& clips,
 ClientWorld::ClientWorld(JitterConfig config) : m_buffer(config) {}
 
 void ClientWorld::receive(const SnapshotReceiver& snapshots) {
-    if (snapshots.newest() == 0 || snapshots.newest() == m_taken) {
-        return;
+    // Every snapshot decoded since the last look, oldest first: NetClient::receive() decodes all that arrived in a
+    // step, and two arriving together is the jitter the buffer is there to absorb. Those the receiver no longer keeps
+    // (more than kSnapshotHistory in one step) or never decoded (stale, lost) have no place to take.
+    const std::uint32_t newest = snapshots.newest();
+    const std::uint32_t oldestKept = newest > kSnapshotHistory ? newest - kSnapshotHistory + 1 : 1;
+    for (std::uint32_t sequence = std::max(m_taken + 1, oldestKept); sequence <= newest; ++sequence) {
+        const SnapshotHumans* humans = snapshots.holding(sequence);
+        const std::optional<std::uint32_t> step = snapshots.heldStep(sequence);
+        if (humans != nullptr && step.has_value()) {
+            (void)m_buffer.push(*step, *humans);
+        }
     }
-    m_taken = snapshots.newest();
-    (void)m_buffer.push(snapshots.newestStep(), snapshots.humans());
+    m_taken = std::max(m_taken, newest);
 }
 
 void ClientWorld::step() {

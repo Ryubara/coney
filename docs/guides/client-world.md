@@ -20,14 +20,20 @@ Each client step, in the order the main loop calls them:
 | Step | What | Where |
 | --- | --- | --- |
 | Receive | `NetClient::receive()` decodes the snapshots that arrived | [Snapshots](snapshots.md#model) |
-| Take | `ClientWorld::receive()` pushes the newest decoded snapshot into the buffer, by its server step | `JitterBuffer::push()` |
+| Take | `ClientWorld::receive()` pushes every snapshot decoded since its last call into the buffer, oldest first, by its server step (`SnapshotReceiver::heldStep()`) | `JitterBuffer::push()` |
 | Step | `ClientWorld::step()` moves the buffer's clock on by one server step (or a little more or less) and samples it: the humans of the two snapshots either side of the playback time, blended | `JitterBuffer::advance()`, `sample()`, `blendHumans()` |
 | Render | `ClientWorld::drawn(alpha)` blends the last two client steps with the frame's alpha | `Interpolated<T>`, `DrawnPoses<NetId>` |
 
 So a client blends twice: between two snapshots, which may be steps apart (15 Hz snapshots, a lost one), and between
-its own last two steps, which is the same blend an offline mode does for a display faster than 30 Hz ([Update and
-render](conventions.md#update-and-render)). Both ends come from the jitter buffer instead of a simulation. All of it
+its own last two steps, where an offline mode blends its last two steps for a display faster than 30 Hz ([Update and
+render](conventions.md#update-and-render)). Both ends come from the jitter buffer instead of a simulation, and both
+blends are `blendHumans()`, which differs from an offline mode's blend as [Blending two humans](#blend) says. All of it
 is presentation: a client changes nothing the server reads.
+
+Every decoded snapshot goes in, not only the newest: `NetClient::receive()` decodes all that arrived since the last
+step, and two arriving in one step is the jitter the buffer is there to absorb. Taking only the newest would blend
+across a step whose snapshot the client had, and draw that step's health, clips and flags as the next one's. A
+snapshot the receiver no longer keeps (more than 32, `kSnapshotHistory`, in one step) is not taken.
 
 ## The jitter buffer {#jitter-buffer}
 
@@ -65,12 +71,30 @@ All of `JitterConfig`'s numbers are Coney's choices.
 | --- | --- |
 | Position | lerped; a move longer than `DrawnPoses::kMostBlendedMetres` (10 m) is a jump, and the whole human is drawn as `to` |
 | Heading | the short way round (`lerpAngle()`) |
-| A layer's playhead | forward round the clip (`lerpLooping()`, a period of 1), when the layer plays the same clip at both ends |
+| A layer's playhead | forward round the clip (`lerpLooping()`, a period of 1), when the layer is the same task at both ends |
 | A layer's gait value and fade | lerped, under the same condition |
-| Health, its maximum, the clips, grounded, knocked out | `to`'s |
+| A gait blend's clip | the clip of the pair the blended value plays: `to`'s if in `to`'s pair, else `from`'s |
+| Health, its maximum, the other clips, grounded, knocked out | `to`'s |
 
-That is the rule offline rendering keeps: what moves continuously is blended, the newest step's discrete state is drawn
-as it is, and a jump is drawn where it lands.
+The same task is the same clip, or one gait blend. What moves continuously is blended, the newer end's discrete state is
+drawn as it is, and a jump is drawn where it lands.
+
+**A gait blend's clip.** The clip a gait blend replicates is `GaitBlendTask::animId()`, its leading clip, which changes
+while the value and phase run on: to the upper clip of its pair late in the pair, to the next pair's lower clip as the
+value crosses a whole number. Only a gait blend carries a gait value above 0, so two layers with values above 0 are
+taken as one blend, and the value and phase blend across the change. The clip named is one of the pair the blended value
+plays, which is all [`humanPose()`](#pose) needs to rebuild the blend. These are drawn as a cut: a value that crossed
+past both ends' pairs in one interval (more than a whole gait in two steps), a clip change with a value of exactly 0 at
+one end (which carries 0, like any other task), and a gait blend whose clip changed while a new layer came on top of it
+in the same interval.
+
+**How it differs from offline rendering.** An offline mode keeps the two poses its last two steps sampled and draws
+`blendPoses()` of them (`Player`, `TargetHuman`), so a new clip cross-fades with the old over one step. A client blends
+the layers' parameters instead and draws a new clip unblended, as the architecture's
+[Interpolation](network-architecture.md#interpolation) asks: between two snapshots there is no sampled pose to blend
+(`ClientWorld` holds no clips; a renderer evaluates `humanPose()` of the drawn state), and the two ends may be steps
+apart (15 Hz snapshots, a lost one), where a pose cross-fade would blend clips the server never blended. The
+difference shows only at a cut, for one interval.
 
 **Layers pushed down.** A clip that fades in becomes the newest layer and pushes the others down one. The blend finds
 where `from`'s newest layer went among `to`'s playing layers, and blends each layer from there down with the one it was.
@@ -110,12 +134,16 @@ and coming back onto the delay and onto whole steps, holding when starved and ju
 clip, the exact ends), jumps, cuts and a layer pushed down by a new one, the words' round trip, a client's steps through
 the buffer with a new human and the blend between two steps through `DrawnPoses`, and a pose evaluated from layers
 against `AnimTaskStack::sample()` itself: two layers in a fade, a gait blend between two clips, a gait clip played as a
-plain loop, and a clip that is not loaded.
+plain loop, and a clip that is not loaded. It also covers a gait blend crossing from the walk's pair into the jog's
+and back, and two snapshots decoded in one step both reaching the buffer.
 
 Its last case is the architecture's **What a client sees** test ([Testing](network-architecture.md#testing)): a
 `NetServer` and a `NetClient` on the loopback, each behind a link conditioner with 20 ms latency, 15 ms jitter, 5 %
 loss, 5 % duplicates and 10 % reordering, the server sending seven humans whose every field moves (walking, turning,
 losing health, changing clips, a gait blend, a fading layer, landing, a human leaving and another coming). After three
 seconds to settle, for 310 steps, whenever the client draws a step a snapshot shows, the humans it draws are the very
-humans the server had at that step, every field's word equal (equal within quantization); the buffer is settled at
-least 90 % of the steps, never jumps, and draws 1 to 5 steps behind the newest.
+humans the server had at that step, every field's word equal (equal within quantization). Every snapshot the client
+decoded must reach the buffer: each such step is blended to or from, and drawn from its own snapshot when the clock is
+on it. Every step drawn is compared but those whose snapshot the client never decoded (lost, or stale after
+reordering): 287 of the 310 on its seeded link, measured. The buffer is settled at least 90 % of the steps, never
+jumps, and at every step draws 1 to 5 steps behind the newest (1 to 3, measured).
