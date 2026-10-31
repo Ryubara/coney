@@ -103,8 +103,12 @@ std::uint64_t releasedFlags(std::uint64_t flags, BrainType leftAs) {
     return flags;
 }
 
-Brain::Brain(human::Human& human, BrainType type, const FightSettings& settings, std::uint32_t seed)
-    : m_human(&human), m_settings(settings), m_random(seed), m_type(type) {
+Brain::Brain(human::Human& human, BrainType type, const FightSettings& settings, std::uint32_t seed,
+             std::uint64_t nowMs)
+    : m_human(&human), m_nowMs(nowMs), m_lastUpdateMs(nowMs), m_settings(settings), m_random(seed), m_type(type) {
+    // The last update time starts at the clock (Brain_Init 0x0028a570 sets +0x30), so the first update's 16-bit
+    // elapsed time, which an action's delay counts down by, is one step and not the whole match
+    // (docs/research/ai/index.md#actions).
     // The human's damage reads whether its brain is a Warrior's (`Human_AddPendingDamage` 0x00264bd8).
     human.fighter().setWarriorBrain(type == BrainType::Warrior);
 }

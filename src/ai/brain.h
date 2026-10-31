@@ -196,9 +196,11 @@ struct FightSettings {
 class Brain {
   public:
     /// The brain of `human` (not owned; it must outlive the brain) of `type`, fighting by `settings`, its rolls drawn
-    /// from a generator seeded with `seed`. Enabled, with no goals, no actions and no target.
+    /// from a generator seeded with `seed`, made at game time `nowMs` (its last update until it has one). Enabled, with
+    /// no goals, no actions and no target.
     /// @coney-only object set-up; it hands the human its brain's type, which the original reads in place
-    Brain(human::Human& human, BrainType type, const FightSettings& settings, std::uint32_t seed);
+    Brain(human::Human& human, BrainType type, const FightSettings& settings, std::uint32_t seed,
+          std::uint64_t nowMs = 0);
     Brain(const Brain&) = delete;
     Brain& operator=(const Brain&) = delete;
     Brain(Brain&&) = delete;

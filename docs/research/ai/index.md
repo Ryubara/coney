@@ -142,7 +142,7 @@ field is used.
 | `+0x14` / `+0x1c` / `+0x24` | PMF | handlers A (update), B (think), C (event), each `{s16 delta, s16 vindex, fn}` |
 | `+0x2c` | s8 | the goal stack's top index (-1 empty) |
 | `+0x2e` / `+0x2f` | s8 | the action count / the front action's slot |
-| `+0x30` | u32 | the time of the last update (ms) |
+| `+0x30` | u32 | the time of the last update (ms); `Brain_Init` (`0x0028a570`) sets it to the clock |
 | `+0x34` | int | update counter (every 90 updates `0x0028bec8`) |
 | `+0x38` | int | think counter |
 | `+0x3c` | ptr | the **reaction goal** ([below](#reaction-goals)); 0 when none |
@@ -267,7 +267,9 @@ at `0x0028db20` and `0x002f9de0`).
 started counts its delay down by it (drawing 0-500 ms first when it is −1); while some is left it returns 0, else it
 calls Start, returns 2 at once when Start says so (`+0x06` stays clear), and otherwise sets `+0x06` and goes on to
 Update in the same call. A started action counts the delay down too (never below 0) and calls Update only once it is
-0. Confirmed (code) at `0x002f9e48`.
+0. Confirmed (code) at `0x002f9e48`. `Brain_Init` (`0x0028a570`) sets `+0x30` to the game clock, so a brain made
+late in a match counts one update's time on its first update, not the whole match cut to 16 bits; Coney's brain
+takes the clock as it is made. Confirmed (code) at `0x0028a570`.
 
 **A normal end runs Abort too.** When the front action's Update returns 2, `Brain_RunActions` (`0x0028fe28`) pops it
 with `Brain_PopAction(brain, 0)` (`0x0028da60`). That goes through `Action_AbortAndDestroy` (`0x002f9de0`), which
