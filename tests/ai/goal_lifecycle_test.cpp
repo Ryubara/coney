@@ -216,6 +216,19 @@ TEST_CASE("actions done at once run one after another in the same update", "[ai]
     CHECK(brain.actionCount() == 1);
 }
 
+TEST_CASE("a brain made late in a match starts its first action on its first update", "[ai][lifecycle]") {
+    // Expected: ai/index.md#actions, confirmed (code): Brain_Init sets the last update time to the clock, so the first
+    // update's 16-bit elapsed time is one step, not the whole match.
+    AiScene scene;
+    // 1100 steps: 36,666 ms, past what 16 bits hold signed.
+    scene.run(1100);
+    Brain& brain = scene.add({45.0F, 40.0F, 0.0F}, 0.0F);
+    std::vector<std::string> log;
+    REQUIRE(brain.queueAction(std::make_unique<LogAction>("first", log)));
+    scene.run(1);
+    CHECK(log == std::vector<std::string>{"first start", "first update"});
+}
+
 TEST_CASE("a goal past its time limit is done without its process, and popped", "[ai][lifecycle]") {
     // Expected: ai/index.md#goals, confirmed (code)
     AiScene scene;
