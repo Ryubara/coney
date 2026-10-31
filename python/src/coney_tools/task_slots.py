@@ -50,8 +50,6 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from coney_tools import stamps
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
@@ -59,7 +57,7 @@ from coney_tools.issue_claim_model import Card, iso_time, parse_time
 from coney_tools.issue_claim_pass import latest_held, stored_cards
 from coney_tools.issue_claim_remote import Remote
 from coney_tools.task_file import TASK_ID, TaskFile, TaskFileError, parse_task_file
-from coney_tools.unit_record import UnitRecord, UnitRecordError, read_record
+from coney_tools.unit_record import UnitRecord, UnitRecordError, front_of, read_record
 
 #: The exit code of `task slots --admit` for a start that is refused. Any other failure (0 is a start that may go
 #: ahead) is a tool that could not judge, and the guard lets the call through: a crash exits 1, a bad option or a slot
@@ -158,10 +156,12 @@ class Holder:
     #: `reserved` (the Agent call was let through, `task start` has not run yet).
     state: str
     since: datetime
+    #: Words for the report after the unit's line, e.g. the file to delete to free its place.
+    note: str = ""
 
     def line(self) -> str:
         """The unit as one line of a report."""
-        return f"{self.task} ({self.kind}, {self.state} since {iso_time(self.since)})"
+        return f"{self.task} ({self.kind}, {self.state} since {iso_time(self.since)}){self.note}"
 
 
 @dataclass(frozen=True)
@@ -262,15 +262,17 @@ ParentOver = Callable[[Collection[int]], bool]
 
 
 def pulls_over(remote: Remote) -> ParentOver:
-    """A `ParentOver` read from GitHub: the pull requests that close one of the issues exist and none is open.
+    """A `ParentOver` read from GitHub: some issue has pull requests that close it, and none of them is open.
 
-    A pull request that does not close its issue (`finishes: false`) is not seen, so its fix is never over. The first
-    read that fails ends the reading, and every later answer is False: a fix is kept when GitHub cannot say."""
+    Every issue that has such a pull request must be over: a fix of two issues whose live pull request closes only one
+    of them is not. A pull request that does not close its issue (`finishes: false`) is not seen. The first read that
+    fails ends the reading, and every later answer is False: a fix is kept when GitHub cannot say."""
     failed = False
 
     def over(issues: Collection[int]) -> bool:
-        """Whether the pull request that closes any of `issues` is merged or closed."""
+        """Whether the pull requests that close `issues` exist and are all merged or closed."""
         nonlocal failed
+        found = False
         for number in issues:
             if failed:
                 return False
@@ -279,9 +281,10 @@ def pulls_over(remote: Remote) -> ParentOver:
             except ConfigError:
                 failed = True
                 return False
-            if linked and not any(pull.state == "open" for pull in linked):
-                return True
-        return False
+            if any(pull.state == "open" for pull in linked):
+                return False
+            found = found or bool(linked)
+        return found
 
     return over
 
@@ -323,6 +326,12 @@ def _reservation(path: Path, now: datetime, conventions: Conventions, any_age: b
     return holder
 
 
+def fresh_slot(folder: Path, now: datetime, conventions: Conventions) -> bool:
+    """Whether `folder` holds a `slot.json` that has not lapsed (younger than `tasks.start.slots.reserve_minutes`): an
+    agent was just let start for the task there."""
+    return _reservation(folder / RESERVATION_FILE, now, conventions) is not None
+
+
 def _fix_agent_over(scratch: Path, conventions: Conventions, name: str, parent: str, since: datetime) -> bool:
     """Whether the agent a fix task with no unit record was started for is done: the fix's log or its parent's holds
     `finished`, or a passing `reviewed` written after the agent was started. A log that cannot be trusted says
@@ -337,26 +346,11 @@ def _fix_agent_over(scratch: Path, conventions: Conventions, name: str, parent: 
     return False
 
 
-def _front(path: Path) -> dict[str, Any] | None:
-    """The YAML block of a task file as a mapping, or None when the file is not a task file."""
-    try:
-        text = path.read_text(encoding="utf-8").replace("\r\n", "\n")
-    except (OSError, UnicodeDecodeError):
-        return None
-    if not text.startswith("---\n") or "\n---\n" not in text:
-        return None
-    try:
-        front = yaml.safe_load(text[4:].split("\n---\n", 1)[0])
-    except yaml.YAMLError:
-        return None
-    return front if isinstance(front, dict) else None
-
-
 def issues_of(folder: Path, conventions: Conventions) -> frozenset[int]:
     """The issues a task folder's task file names, or its unit record when it has none; empty when neither can be read.
 
     Conclave uses it to tell which task in the fix line is the fix of a given issue."""
-    front = _front(folder / conventions.tasks.file)
+    front = front_of(folder / conventions.tasks.file)
     try:
         if front is not None:
             return frozenset(int(item) for item in front.get("issues") or [])
@@ -396,7 +390,7 @@ def scan(
     for folder in sorted(scratch.iterdir()):
         if not folder.is_dir():
             continue
-        front = _front(folder / conventions.tasks.file)
+        front = front_of(folder / conventions.tasks.file)
         record: UnitRecord | None = None
         unit_path = folder / conventions.tasks.start.unit_file
         if unit_path.is_file():
@@ -430,19 +424,23 @@ def scan(
             holders.append(Holder(record.task, record.kind, track, "in work", record.started))
             continue
         if record is None and front is not None and front.get("kind") == "fix":
+            # An unreadable `issues` or `claimed_at` must not hide a running agent: the slot is counted first, and the
+            # fix is held back from the queue only when its issues can be read and their pull requests are over.
             try:
-                claimed_at = parse_time(str(front["claimed_at"]))
                 issues = [int(item) for item in front.get("issues") or []]
-            except (KeyError, ValueError, TypeError):
-                continue
+            except (ValueError, TypeError):
+                issues = []
             if parent_over is not None and issues and parent_over(issues):
                 continue
             slot = _reservation(folder / RESERVATION_FILE, now, conventions, any_age=True)
-            if slot is None:
-                queued.append((claimed_at, str(front["task"])))
-            elif not _fix_agent_over(scratch, conventions, folder.name, str(front.get("parent") or ""), slot.since):
-                fresh = now - slot.since <= timedelta(minutes=conventions.tasks.start.slots.reserve_minutes)
-                holders.append(Holder(folder.name, "fix", "fix", "reserved" if fresh else "in work", slot.since))
+            if slot is not None:
+                if not _fix_agent_over(scratch, conventions, folder.name, str(front.get("parent") or ""), slot.since):
+                    state = "reserved" if fresh_slot(folder, now, conventions) else "in work"
+                    note = f"; no unit record: delete {folder / RESERVATION_FILE} to free the place"
+                    holders.append(Holder(folder.name, "fix", "fix", state, slot.since, note))
+                continue
+            with contextlib.suppress(KeyError, ValueError, TypeError):
+                queued.append((parse_time(str(front["claimed_at"])), str(front["task"])))
             continue
         reserved = _reservation(folder / RESERVATION_FILE, now, conventions)
         if reserved is not None and (record is None or reserved.since > record.started):

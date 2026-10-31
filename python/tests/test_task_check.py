@@ -666,3 +666,17 @@ def test_a_fix_task_named_by_its_own_id_is_stamped_in_its_parents_log(world: Wor
     assert not unit.Unit.of(world.root, "757-fix").stamps.exists()
     assert world.streamed_into == [unit.Unit.of(world.root, TASK).dir / "check-logs"]
     assert any("757-fix is a fix of 757-fix-widget" in line for line in world.said), world.said
+
+
+def test_a_fix_task_with_no_unit_record_is_stamped_in_the_log_of_the_parent_its_task_file_names(world: World) -> None:
+    world.edit("docs/guides/widget.md", "# Widget\n\nTwo.\n")
+    folder = unit.Unit.of(world.root, "757-fix").dir
+    folder.mkdir(parents=True)
+    lines = ["task: 757-fix", "issues: [757]", "kind: fix", "claimant: alice", "claimed_at: '2026-10-23T09:00:00Z'"]
+    (folder / load_conventions(world.root).tasks.file).write_text(
+        "---\n" + "\n".join([*lines, f"parent: {TASK}"]) + "\n---\n# Task 757-fix\n", encoding="utf-8"
+    )
+    assert world.check(task="757-fix") == 0
+    assert world.stamp.step == "checked" and world.stamp.task == TASK
+    assert not unit.Unit.of(world.root, "757-fix").stamps.exists()
+    assert any("757-fix is a fix of 757-fix-widget" in line for line in world.said), world.said

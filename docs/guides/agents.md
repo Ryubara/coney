@@ -328,16 +328,16 @@ own), `finished`, or its worktree gone. **An engineer's job ends when its unit p
 coordinator starts the next task in the place while CI runs; the engineer is not kept for CI. A unit whose stamp log
 or `unit.json` cannot be read keeps its place. A unit that was abandoned (its engineer died before Review) holds its
 place until its worktree is removed (`git worktree remove`, after anything worth keeping is committed or saved) or a
-`finished` stamp is written for it; `task slots` shows who holds what. A reservation of an agent whose call was
-denied or never started lapses after `reserve_minutes`; to start sooner, delete its `slot.json` (the refusal names it).
+`finished` stamp is written for it; `task slots` shows who holds what. A reservation of an agent whose call was denied
+or never started lapses after `reserve_minutes`, except that of a fix task with no `unit.json`: it holds its place until
+its `slot.json` is deleted or its pull request is over ([why](slot-fill.md#fix-tasks)). To start sooner, delete the
+`slot.json` (the refusal and `task slots` name it).
 
 **A CI failure is a fix task.** For a required check that fails on a pull request the coordinator makes a `kind: fix`
 task (`task create --fix-of <issue>`) and starts an agent on it when the fix track is free: one at a time, **the oldest
-failure first** (the coordinator's rule: `task slots` lists them so, the guard refuses no younger one). If the engineer
-of the original task still runs, the fix goes to it. The fix is held to the failing check; only the stamps it made stale
-are redone ([When a pull request fails checks](#ci-failures)). A fix of a Studio task is in the fix track. A fix with no
-`unit.json` counts from its `slot.json`, and one whose pull request is over leaves the queue
-([how](slot-fill.md#fix-tasks)).
+failure first** (`task slots` lists them so; the guard refuses no younger one). If the engineer of the original task
+still runs, the fix goes to it. The fix is held to the failing check; only the stamps it made stale are redone ([When a
+pull request fails checks](#ci-failures)). A fix of a Studio task is in the fix track.
 
 **What the guard checks.** `.claude/hooks/slot_guard.py` runs for every Agent call of the coordinator (last, only when
 no other guard refused it) and asks `coney-tools task slots --admit`, with the brief on standard input and the call's

@@ -85,17 +85,29 @@ def write_record(path: Path, record: UnitRecord) -> None:
     temporary.replace(path)
 
 
+def front_of(path: Path) -> dict[str, Any] | None:
+    """The --- block of the task file at `path` as a mapping, or None when the file is missing, is not a task file or
+    holds invalid YAML. The one parse of that block that the tools which read a task folder without its record share."""
+    try:
+        text = path.read_text(encoding="utf-8").replace("\r\n", "\n")
+    except (OSError, UnicodeDecodeError):
+        return None
+    if not text.startswith("---\n") or "\n---\n" not in text:
+        return None
+    try:
+        front = yaml.safe_load(text[4:].split("\n---\n", 1)[0])
+    except yaml.YAMLError:
+        return None
+    return front if isinstance(front, dict) else None
+
+
 def front_parent(path: Path) -> str:
     """The `parent` in the --- block of the task file at `path`, "" when there is none or the file cannot be read.
 
     A fix task made without `task start` (a hand-made folder, an older fix) has a task file but no record; the parent is
     all that file says about where its work and its proof are."""
-    try:
-        text = path.read_text(encoding="utf-8").replace("\r\n", "\n")
-        front = yaml.safe_load(text[4:].split("\n---\n", 1)[0]) if text.startswith("---\n") else None
-    except (OSError, UnicodeDecodeError, yaml.YAMLError):
-        return ""
-    return str(front.get("parent") or "") if isinstance(front, dict) else ""
+    front = front_of(path)
+    return str(front.get("parent") or "") if front is not None else ""
 
 
 def log_task_of(task_dir: Path, unit_file: str, task_file: str = "") -> str | None:

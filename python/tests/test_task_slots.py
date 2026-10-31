@@ -543,6 +543,43 @@ def test_a_fix_whose_issue_has_a_pull_request_open_is_not_over(scene: Scene) -> 
     assert task_slots.pulls_over(scene.github)((7,)) is False
 
 
+def test_a_fix_of_two_issues_is_over_only_when_every_issue_with_pull_requests_is_over(scene: Scene) -> None:
+    for number in (7, 8, 9):
+        scene.github.add_issue(number)
+    scene.github.link_pr(7, 900, state="merged")
+    scene.github.link_pr(8, 901, state="open")
+    over = task_slots.pulls_over(scene.github)
+    assert over((7, 8)) is False and over((8, 7)) is False
+    assert over((7, 9)) is True, "an issue no pull request closes does not keep the fix"
+    scene.github.link_pr(8, 901, state="closed")
+    assert task_slots.pulls_over(scene.github)((7, 8)) is True
+
+
+def test_a_fix_with_a_slot_is_counted_though_its_claimed_at_cannot_be_read(scene: Scene) -> None:
+    path = scene.task("a-fix", kind="fix")
+    start_agent(scene, "a-fix", minutes_ago=1)
+    path.write_text(
+        path.read_text(encoding="utf-8").replace("claimed_at:", "claimed_at: not-a-time #", 1), encoding="utf-8"
+    )
+    assert scene.holders("fix") == ["a-fix"]
+
+
+def test_a_fix_with_a_slot_is_counted_though_its_issues_cannot_be_read(scene: Scene) -> None:
+    path = scene.task("a-fix", kind="fix", issues=(7,))
+    start_agent(scene, "a-fix", minutes_ago=1)
+    path.write_text(path.read_text(encoding="utf-8").replace("issues:", "issues: [x] #", 1), encoding="utf-8")
+    current = task_slots.scan(scene.scratch, scene.conventions, scene.now(), parent_over=over_when(7))
+    assert [holder.task for holder in current.held("fix")] == ["a-fix"]
+
+
+def test_the_report_names_the_slot_file_to_delete_for_a_fix_with_no_unit_record(scene: Scene) -> None:
+    scene.task("a-fix", kind="fix")
+    start_agent(scene, "a-fix", minutes_ago=reserve_minutes(scene) * 20)
+    lines = task_slots.report(scene.scan(), scene.conventions, scene.build_slots)
+    line = next(line for line in lines if "a-fix (fix, in work" in line)
+    assert f"delete {scene.scratch / 'a-fix' / task_slots.RESERVATION_FILE}" in line and "no unit record" in line
+
+
 def test_a_github_that_cannot_be_read_leaves_the_fix_where_it_is_and_is_asked_once(scene: Scene) -> None:
     asked: list[int] = []
 

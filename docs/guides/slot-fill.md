@@ -103,17 +103,23 @@ A fix task made by `task create --fix-of` and started by `task start` has a `uni
 ([Engineer tracks](agents.md#slots)). A fix folder made by hand, or before the records, has a task file (`kind: fix`, a
 `parent`) and perhaps a `slot.json`, and `task slots` and this check read it so (`task_slots.scan`):
 
-- **A fix with a `slot.json` is in work in the fix track,** however old the slot is (a reservation of another kind of
-  task lapses after `reserve_minutes`; an agent that works for hours on a fix made no record to show it). It ends when
-  the fix's log or its parent's holds `finished`, or a passing `reviewed` written after the slot; a log that cannot be
-  trusted keeps the place. Its issues cover the pull request it fixes, so the check does not ask for another fix unit.
-  To free the place of an agent that never started, delete its `slot.json`.
+- **A fix with a `slot.json` is in work in the fix track,** however old the slot is: any other task's reservation lapses
+  after `reserve_minutes`, but a fix with no record made nothing else to show its agent. It ends when the fix's log or
+  its parent's holds `finished`, or a passing `reviewed` written after the slot; a log that cannot be trusted keeps the
+  place. Its issues cover the pull request it fixes, so the check does not ask for another fix unit. The `task slots`
+  line of such a fix names the `slot.json` to delete to free the place of an agent that never started. It is always a
+  fix-track holder: the `workflow` exemption of a unit comes from its claim cards, and a fix with no record gets none.
 - **A fix with no `slot.json` is queued,** oldest first, work for the place kept for a fix.
-- **A fix whose parent's pull request merged or closed is neither:** every pull request that closes one of its issues
-  is merged or closed. Both commands read it from GitHub (`task_slots.pulls_over`, within the check's budget) and keep
-  the fix when GitHub cannot be read or no pull request closes the issue (`finishes: false`). The agent guard and
-  `task start` read no GitHub for this. [`workspace clean --apply`](workspace.md#cleanup) moves the folder of a fix whose
-  parent's pull request merged to `scratch/archive/<task>`, which nothing reads.
+- **A fix whose pull requests are over is neither:** the issues of the fix have pull requests that close them, and every
+  one of those is merged or closed. A fix of several issues stays while the pull request of any of them is open. Both
+  commands read this from GitHub (`task_slots.pulls_over`, within the check's budget) and keep the fix when GitHub
+  cannot be read or no pull request closes its issues (`finishes: false`). A fix whose pull request was closed unmerged
+  is hidden too, though `pr open --reopen` could still release it: start such a fix by hand. The agent guard, `task
+  start` and Conclave read no GitHub for this, so they still count a slot-held fix of a merged pull request, and
+  Conclave still lists it as queued, until `workspace clean` runs. [`workspace clean --apply`](workspace.md#cleanup)
+  moves the folder of a fix whose parent's pull request merged to `scratch/archive/<task>`, which nothing reads, unless
+  the fix may still be worked: a `slot.json` younger than `reserve_minutes`, a unit record whose worktree exists, or a
+  parent worktree with commits the merged pull request lacks.
 
 The stage commands (`task check`, `task review`, `orig`) stamp such a fix in its parent's log, and `pr open <fix>` goes
 out through the parent's unit record, both by the `parent` of its task file (as [A fix task](issues.md#starting) does by

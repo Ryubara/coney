@@ -59,6 +59,7 @@ import time
 from collections.abc import Callable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 
 from coney_tools import build_claims, build_root, stale_processes, workspace_clean_fixes
@@ -872,13 +873,14 @@ def _archive_dead_fixes(checkout: Path, settings: Settings, apply: bool) -> tupl
     """List the fix tasks whose parent's pull request merged and, with `apply`, move their scratch folders to the
     archive (workspace_clean_fixes.py); (how many, how many failed). A dry run counts what it would move."""
     try:
-        tasks = load_conventions(checkout).tasks
-        names = (tasks.file, tasks.start.unit_file)
+        conventions = load_conventions(checkout)
     except ConfigError:
-        names = (workspace_clean_fixes.TASK_FILE, workspace_clean_fixes.UNIT_FILE)
+        return 0, 0
     scratch = scratch_folder(checkout)
     archived = failed = 0
-    for fix in workspace_clean_fixes.dead_fixes(scratch, settings.merged_heads, *names):
+    for fix in workspace_clean_fixes.dead_fixes(
+        scratch, settings.merged_heads, conventions, datetime.fromtimestamp(settings.now, UTC), _covered_by_merged_pr
+    ):
         verb = "archive" if apply else "would archive"
         print(f"  {verb:<13}{fix.task}: its parent {fix.parent} (branch {fix.branch}) is merged")
         problem = workspace_clean_fixes.archive(fix, scratch) if apply else None
