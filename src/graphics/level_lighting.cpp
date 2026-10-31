@@ -8,7 +8,6 @@ namespace coney::graphics {
 namespace {
 
 // One fog component as a byte: × 255, truncated, kept to 0-255.
-// @orig 0x0040c868 Level_SetFogColour (unknown)
 std::uint8_t fogByte(float value) { return static_cast<std::uint8_t>(std::clamp(value * 255.0F, 0.0F, 255.0F)); }
 
 } // namespace

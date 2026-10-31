@@ -11,7 +11,7 @@ namespace coney::script {
 
 /// The world bindings the first mission still needed: the dynamic objects' show, hide, destroy and zones, the trigger
 /// spheres, the flag network, the subtitle switch, and one that does nothing in this build (`DoorCRCCheck`).
-/// `EnableShadow` is a lighting binding (scripting/lighting_bindings.h).
+/// `EnableShadow` is a shadow binding (scripting/shadow_bindings.h).
 inline constexpr std::array<std::string_view, 15> kWorldBindings{"CfgSetMaxThrowError",
                                                                  "CfgSubtitles",
                                                                  "ChangeCollision",
