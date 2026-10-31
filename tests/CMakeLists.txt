@@ -36,6 +36,8 @@ add_executable(coney_tests
     core/pad_test.cpp
     core/pad_turn_test.cpp
     core/renderer_choice_test.cpp
+    core/display_preset_test.cpp
+    core/display_preset_option_test.cpp
     core/renderer_option_test.cpp
     core/player_options_test.cpp
     core/window_display_test.cpp
@@ -524,6 +526,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/play_pages_test.cpp
         debug/story_missions_test.cpp
         debug/time_scale_test.cpp
+        debug/display_tunables_test.cpp
         debug/tunables_test.cpp
         debug/ui_scale_test.cpp
         debug/world_split_test.cpp
