@@ -202,6 +202,9 @@ def case_spans(text: str, standard: TestsStandard) -> list[range]:
         while first > 0 and lines[first - 1].lstrip().startswith("//"):
             first -= 1
         starts.append(first + 1)
+    # A file with no case (a test fixtures header) has no spans.
+    if not starts:
+        return []
     ends = [start - 1 for start in starts[1:]] + [len(lines)]
     return [range(start, end + 1) for start, end in zip(starts, ends, strict=True)]
 

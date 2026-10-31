@@ -7,7 +7,7 @@ from conventions_support import REPO
 
 from coney_tools.conventions import load_conventions
 from coney_tools.orig_scan import read_source
-from coney_tools.standards_scan import Finding, cited_sections, counts, scan_code, scan_tests
+from coney_tools.standards_scan import Finding, case_spans, cited_sections, counts, scan_code, scan_tests
 
 STANDARDS = load_conventions(REPO).standards
 GAMEPLAY = ("src/ai/",)
@@ -296,3 +296,14 @@ def test_the_other_case_macros_count() -> None:
 
 def test_a_file_with_no_case_has_no_finding() -> None:
     assert scan_text("// helpers only\nint helper() { return 1; }\n") == []
+
+
+def test_a_file_with_no_case_has_no_case_span() -> None:
+    # a helper header under tests/ holds no macro, so it holds no span (it once zipped zero starts with one end)
+    assert case_spans("// helpers only\nint helper() { return 1; }\n", STANDARDS.tests) == []
+    assert case_spans("", STANDARDS.tests) == []
+
+
+def test_the_spans_of_a_file_with_cases_run_from_each_comment_block_to_the_next() -> None:
+    text = 'TEST_CASE("a") {\n}\n// Note.\nTEST_CASE("b") {\n}\n'
+    assert case_spans(text, STANDARDS.tests) == [range(1, 3), range(3, 6)]
