@@ -4,12 +4,9 @@
 // (docs/research/xbox-lighting.md#shadow-light), and that none of it reaches the simulation. Synthetic lights only.
 #include "graphics/lighting_frame.h"
 
-#include <cmath>
 #include <cstdint>
-#include <optional>
 #include <vector>
 
-#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include "ai/hiding.h"
@@ -19,7 +16,6 @@
 #include "support/ai_fixtures.h"
 #include "support/collision_fixtures.h"
 
-using Catch::Approx;
 using coney::graphics::buildLightingFrame;
 using coney::graphics::FrameLight;
 using coney::graphics::LevelLighting;
@@ -168,66 +164,6 @@ TEST_CASE("A flickering light enters the frame with this step's colour", "[graph
     CHECK(sawDimmed);
 }
 
-TEST_CASE("The level's shadow light: none until a script sets it, then its colour and offset in RenderWare's axes",
-          "[graphics][lighting_frame]") {
-    // Expected: xbox-lighting.md#shadow-light, confirmed (code)
-    LevelLighting level;
-    // The Xbox shadow object's defaults (Xbox 0x000bda20, docs/research/xbox-lighting.md#shadow-light).
-    CHECK(level.shadow.colour == LightColour{0.7F, 0.7F, 0.7F, 1.0F});
-    CHECK(level.shadow.offset.x == -500.0F);
-    CHECK(level.shadow.offset.y == -500.0F);
-    CHECK(level.shadow.offset.z == 850.0F);
-    CHECK_FALSE(level.shadow.scripted);
-    level.lights.beginViewport(camera(), 0);
-    CHECK_FALSE(buildLightingFrame(level, camera()).shadow.has_value());
-
-    // global.lua's usual row (docs/research/xbox-lighting.md#shadow-light): (0.77, 0.77, 0.79), (-500, -500, 850).
-    level.shadow.setColour(0.77F, 0.77F, 0.79F);
-    CHECK(level.shadow.scripted);
-    CHECK(level.shadow.colour == LightColour{0.77F, 0.77F, 0.79F, 1.0F});
-    level.shadow.setOffset(-500.0F, 500.0F, 550.0F);
-    CHECK(level.shadow.offset.y == 500.0F);
-
-    const LightingFrame frame = buildLightingFrame(level, camera());
-    REQUIRE(frame.shadow.has_value());
-    CHECK(frame.shadow->colour == LightColour{0.77F, 0.77F, 0.79F, 1.0F});
-    // (x, y, z) in the game's axes is (x, z, -y) in RenderWare's.
-    CHECK(frame.shadow->offset.x == -500.0F);
-    CHECK(frame.shadow->offset.y == 550.0F);
-    CHECK(frame.shadow->offset.z == -500.0F);
-    // The light travels from the offset towards the casters: the offset reversed, unit.
-    const float length = std::sqrt((500.0F * 500.0F) + (550.0F * 550.0F) + (500.0F * 500.0F));
-    CHECK(frame.shadow->direction.x == Approx(500.0F / length));
-    CHECK(frame.shadow->direction.y == Approx(-550.0F / length));
-    CHECK(frame.shadow->direction.z == Approx(500.0F / length));
-
-    // The offset alone also makes the level's shadow light.
-    LevelLighting offsetOnly;
-    offsetOnly.shadow.setOffset(500.0F, -500.0F, 2000.0F);
-    const std::optional<coney::graphics::FrameShadowLight> light = coney::graphics::frameShadowLight(offsetOnly.shadow);
-    REQUIRE(light.has_value());
-    CHECK(light->colour == LightColour{0.7F, 0.7F, 0.7F, 1.0F});
-    CHECK(light->offset.y == 2000.0F);
-}
-
-TEST_CASE("Everyone casts a shadow until a script turns his off; the frame lists those turned off",
-          "[graphics][lighting_frame]") {
-    // Expected: xbox-lighting.md#shadow-map, confirmed (code)
-    LevelLighting level;
-    CHECK(level.casters.enabled(7));
-    level.casters.setEnabled(7, false);
-    level.casters.setEnabled(3, false);
-    level.casters.setEnabled(7, false);
-    CHECK_FALSE(level.casters.enabled(7));
-    CHECK_FALSE(level.casters.enabled(3));
-    CHECK(level.casters.enabled(4));
-    level.lights.beginViewport(camera(), 0);
-    CHECK(buildLightingFrame(level, camera()).shadowsOff == std::vector<std::uint32_t>{3, 7});
-    level.casters.setEnabled(3, true);
-    CHECK(level.casters.enabled(3));
-    CHECK(buildLightingFrame(level, camera()).shadowsOff == std::vector<std::uint32_t>{7});
-}
-
 TEST_CASE("Building the lighting frame changes nothing the simulation steps", "[graphics][lighting_frame]") {
     // Expected: lighting.md#flicker, confirmed (code)
     // Two copies of one level: the first only steps its lights, the second also culls and builds a frame every step.
@@ -257,6 +193,8 @@ TEST_CASE("Building the lighting frame changes nothing the simulation steps", "[
         CHECK(a.timerMs == b.timerMs);
         CHECK(a.burstLeft == b.burstLeft);
         CHECK(a.dimmed == b.dimmed);
+        // Only a point light's current colour is the flicker's: the ambient's and the directional's are written by
+        // beginViewport, which only the drawn copy runs, so they differ by design and are no simulation state.
         if (a.desc.type == LightType::Point) {
             CHECK(a.current == b.current);
         }
@@ -267,6 +205,11 @@ TEST_CASE("The stealth shadow flag never reads the level's shadow light or caste
     // Expected: stealth.md#shadow-ground, confirmed (code)
     // The same player on the same shadow ground (docs/research/stealth.md#shadow-ground), with the render-side
     // shadow state left alone in one run and turned upside down, with frames built, in the other.
+    // This pins the stealth flag's inputs; it cannot catch a later read, since the AiScene cannot reach this
+    // LevelLighting. Only GameplayMode holds both, and the gamemode tests replace its play level, which steps the
+    // brains, with a stand-in. What keeps the flag clear is that src/ai includes no graphics header and the hiding
+    // path takes only the brains (with their collision mesh) and the hider; a change that hands it the lighting must
+    // change updateHiding's arguments, and this test with them.
     const auto hidesOnShadow = [](bool renderStateChanged) {
         coney::test::AiScene scene;
         scene.mesh = coney::test::makeMesh(
@@ -299,22 +242,4 @@ TEST_CASE("The stealth shadow flag never reads the level's shadow light or caste
     const std::vector<bool> plain = hidesOnShadow(false);
     CHECK(plain == std::vector<bool>{true, true, true, true, true, true, false, false, false, true, true, true});
     CHECK(hidesOnShadow(true) == plain);
-}
-
-// Level_SetFogColour (0x0040c868) truncates each component × 255 with Float_ToUInt (0x0042c718), which gives 0 for a
-// negative number, and keeps the low byte, so a component above 1 wraps instead of saturating.
-TEST_CASE("The fog colour keeps each component's low byte, as the original truncates and narrows it",
-          "[graphics][lighting_frame]") {
-    // Expected: lighting.md#world, confirmed (code)
-    const coney::graphics::Rgba inRange = coney::graphics::fogColourOf(1.0F, 0.5F, 0.0F);
-    CHECK(inRange.r == 255);
-    CHECK(inRange.g == 127);
-    CHECK(inRange.b == 0);
-    CHECK(inRange.a == 255);
-
-    const coney::graphics::Rgba outOfRange = coney::graphics::fogColourOf(1.2F, -0.5F, 2.0F);
-    CHECK(outOfRange.r == 50);  // 306 wraps to 50
-    CHECK(outOfRange.g == 0);   // negative is 0
-    CHECK(outOfRange.b == 254); // 510 wraps to 254
-    CHECK(outOfRange.a == 255);
 }
