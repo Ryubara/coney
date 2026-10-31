@@ -42,11 +42,12 @@ struct TextureId {
 /// taken, so a renderer can upload whatever it finds here without checking it again. Not thread-safe.
 class AssetStore {
   public:
-    /// Takes `mesh` and returns its new id; ErrorCode::Invalid (and nothing stored) when validateMesh() refuses it.
+    /// Takes `mesh` and returns its new id; ErrorCode::Invalid (and nothing stored) when validateMesh() refuses it. A
+    /// store hands out at most 2^32 - 1 mesh ids in its life; one more is a broken invariant (CONEY_ASSERT).
     [[nodiscard]] std::expected<MeshId, Error> addMesh(MeshData mesh);
 
     /// Takes `texture` and returns its new id; ErrorCode::Invalid (and nothing stored) when validateTexture() refuses
-    /// it.
+    /// it. At most 2^32 - 1 texture ids, as for meshes.
     [[nodiscard]] std::expected<TextureId, Error> addTexture(TextureData texture);
 
     /// The mesh `id` names, or null when it names none (0, removed, or never handed out). Valid until it is removed.

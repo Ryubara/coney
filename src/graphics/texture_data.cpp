@@ -2,6 +2,7 @@
 #include "graphics/texture_data.h"
 
 #include <algorithm>
+#include <bit>
 #include <format>
 
 #include "graphics/asset_hash.h"
@@ -23,6 +24,17 @@ std::expected<void, Error> validateTexture(const TextureData& texture) {
     const TextureLevel& top = texture.levels[0];
     if (top.width == 0 || top.height == 0) {
         return fail(ErrorCode::Invalid, std::format("texture \"{}\" is {} x {}", texture.name, top.width, top.height));
+    }
+    // Bounded sides keep each level's byte count in range; bounded levels keep the shifts below a side's 32 bits.
+    if (top.width > kMaxTextureSide || top.height > kMaxTextureSide) {
+        return fail(ErrorCode::Invalid, std::format("texture \"{}\" is {} x {}, above the {} limit", texture.name,
+                                                    top.width, top.height, kMaxTextureSide));
+    }
+    const auto maxLevels = static_cast<std::size_t>(std::bit_width(std::max(top.width, top.height)));
+    if (texture.levels.size() > maxLevels) {
+        return fail(ErrorCode::Invalid,
+                    std::format("texture \"{}\" has {} levels; {} x {} has at most {}", texture.name,
+                                texture.levels.size(), top.width, top.height, maxLevels));
     }
     // Each level half the one before, never below 1, its texels exactly its size.
     for (std::size_t i = 0; i < texture.levels.size(); ++i) {

@@ -70,12 +70,17 @@ struct TextureData {
     std::optional<TextureLod> lod; ///< The GS's level of detail, for a texture from a PS2 raster.
 };
 
+/// The largest width or height a texture's level 0 may have: what current GPUs take, far above any PS2 or Xbox raster
+/// (1024 at most), and small enough that a level's byte count never overflows.
+inline constexpr std::uint32_t kMaxTextureSide = 16384;
+
 /// The bytes one texel takes in `format`.
 [[nodiscard]] std::size_t bytesPerTexel(TextureFormat format);
 
-/// Checks that `texture` holds together: at least one level, a non-zero level 0, each later level half the one before
-/// (rounded down, never below 1) and each level's texels exactly its size in the format. ErrorCode::Invalid naming the
-/// first fault.
+/// Checks that `texture` holds together: at least one level, a level 0 neither empty nor wider or taller than
+/// kMaxTextureSide, no more levels than halving it down to 1 x 1 gives, each later level half the one before (rounded
+/// down, never below 1) and each level's texels exactly its size in the format. ErrorCode::Invalid naming the first
+/// fault.
 [[nodiscard]] std::expected<void, Error> validateTexture(const TextureData& texture);
 
 /// A 64-bit FNV-1a hash of everything `texture` holds (its name, format, sampler, level of detail and every level's

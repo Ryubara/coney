@@ -3,7 +3,7 @@
 Coney's own mesh and texture data: what both renderers draw from, converted once from what librw reads and held by
 id. It is item 6 of [the renderer's migration](renderer.md#order). Nothing draws from it yet: the GL3 renderer keeps
 librw's instancing, and the frame description (items 7 to 10) and the GPU renderer (items 13 and 14) are its first
-users. All of it is Coney's own; the original sends PS2 DMA chains and GS rasters, which have no counterpart here.
+users. All of it is Coney's own.
 
 ## The parts {#parts}
 
@@ -38,7 +38,12 @@ raster through librw alone, before or after, is not protected; the GL3 path read
 
 Unit tests on hand-built geometry and rasters (`tests/platform/asset_convert_test.cpp`: vertex counts, every
 attribute, strips and lists, skin weights, a 32-bit raster against `TextureDictionary::toImages()`, an 8-bit palette
-raster against its palette, a mipmapped raster level by level) and on the store (`tests/graphics/asset_store_test.cpp`).
+raster against its palette, a mipmapped 32-bit raster level by level, and both workarounds above without the disc: an
+8-wide 8-bit raster converted twice and then read by librw, and a mipmapped 8-bit raster whose last level is narrower
+than the transfer, each level against librw's first read of a lone raster of its size). The store's tests
+(`tests/graphics/asset_store_test.cpp`) include the textures it refuses, among them a 2^31 x 2^31 level whose byte
+count would wrap and 33 levels of a 1 x 1 texture: `validateTexture` takes no level 0 wider or taller than
+`kMaxTextureSide` (16384) and no more levels than halving level 0 down to 1 x 1 gives.
 
 With the disc, `tests/platform/disc_asset_convert_test.cpp` converts every part atomic and every texture of `level99`'s
 worlds into one store and checks each against librw: vertex and index counts mesh by mesh, and level 0's texels against
