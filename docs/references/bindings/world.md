@@ -2065,7 +2065,7 @@ TriggerSphereCfg(object, enable, radius, mode, interval)
 | 1 | `object` | number, truncated to an unsigned integer | Handle of the object that gets the sphere (a flag, human or prop). |
 | 2 | `enable` | boolean (nil or 0 is false); default false | True to arm the sphere at once, false (or left out) to configure it disarmed. |
 | 3 | `radius` | number (single precision) | Radius in metres around the object. |
-| 4 | `mode` | number, truncated to an integer | How a human inside the radius is accepted (+0x17c): 0 on distance alone, 1 also needs a clear test from the sphere's centre to the human, 2 the same test from raised points (the test is inferred to be line of sight); the scripts pass 0, 1 (true) or 2. |
+| 4 | `mode` | number, truncated to an integer | How a human inside the radius is accepted (+0x17c): 0 on distance alone, 1 also needs a walkable line on the navigation mesh from the sphere's centre to the human (Nav_IsConnected), 2 a clear ray between the two points (Ray_IsClear); the scripts pass 0, 1 (true) or 2. |
 | 5 | `interval` | number, truncated to an unsigned integer | Stored as the repeat period (ms) of the object's message-handler component (+0x74), the period of message 5 (still inside); the scripts pass 1, 100, 250, 500 or 1000. |
 
 **Returns** nothing.

@@ -8,7 +8,7 @@ namespace coney::world_objects {
 
 namespace {
 
-// `p` raised by `height` metres: the ends of Coney's clear-line test.
+// `p` raised by `height` metres along the up vector: the ends of mode 2's ray.
 // @orig 0x00414548 TriggerSphere_Accepts (unknown)
 std::array<float, 3> raised(const std::array<float, 3>& p, float height) { return {p[0], p[1], p[2] + height}; }
 
@@ -92,12 +92,15 @@ bool TriggerSpheres::accepts(const TriggerSphere& sphere, const std::array<float
     if (!withinRadius(sphere, centre, point)) {
         return false;
     }
-    // Stand-in: modes 1 and 2 use Coney's clear-line test between points raised 1 m (the original's tests are open).
-    if ((sphere.mode != 1 && sphere.mode != 2) || !m_clearLine) {
+    // Mode 1: a walkable line from the centre to the point (Nav_IsConnected, its area found from the centre).
+    if (sphere.mode == 1) {
+        return !m_connected || m_connected(centre, point);
+    }
+    // Mode 2: a clear ray between the two points, both raised (Ray_IsClear); any other mode accepts.
+    if (sphere.mode != 2 || !m_clearLine) {
         return true;
     }
-    const std::array<float, 3> from = sphere.mode == 2 ? raised(centre, kLineRaise) : centre;
-    return m_clearLine(from, raised(point, kLineRaise));
+    return m_clearLine(raised(centre, kRayRaise), raised(point, kRayRaise));
 }
 
 void TriggerSpheres::update(std::span<const BoxSubject> subjects, std::uint64_t nowMs, const VolumeBoxes::Send& send) {

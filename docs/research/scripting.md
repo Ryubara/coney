@@ -347,11 +347,11 @@ Most of the first mission's progress is driven by message 3 on volume boxes. Con
 
 - **A volume box** (`AddVolumeBox`, kind 0: vtable `0x00545df8`, pools on [Tasks](tasks.md#classes)) keeps the
   handles of up to 60 occupants (`+0x70`, cleared to `NilHandle` by `0x004151c0`) and its own handler component at
-  `+0x160`. Every box's update runs **once every fifth frame**, round-robin by handle (`VolumeBoxes_UpdateAll`,
-  `0x00412ca0`, from mode 1's step 6; the same pass marks in `+0x69` whether player 1's camera is inside a box that
-  asks for it, `+0x6a`). The update (`0x00415378`), while enabled (byte `+0x68`), collects the humans within its
-  bounding sphere (centre `+0x30`, radius `+0x40`; `0x002274a8`, at most 60), skips the dead (`0x00227eb0`), and
-  tests each:
+  `+0x160`. Every box's update runs **once every fifth frame**, round-robin by handle
+  ([The schedule](trigger-updates.md#schedule); `VolumeBoxes_UpdateAll`, `0x00412ca0`, from mode 1's step 6; the
+  same pass marks in `+0x69` whether player 1's camera is inside a box that asks for it, `+0x6a`). The update
+  (`0x00415378`), while enabled (byte `+0x68`), collects the humans within its bounding sphere (centre `+0x30`,
+  radius `+0x40`; `0x002274a8`, at most 60), skips the dead (`0x00227eb0`), and tests each:
     - inside and new: added to the occupants, message **3** (entered);
     - inside and already an occupant: message **5**, at most once per repeat period (next time at `+0x1e0`);
     - an occupant no longer inside, or dead: removed, message **4** (left).
@@ -2808,15 +2808,16 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   `HuGetGang` still gives its gang. A human's events reach its own handlers through its brain, a flag arrival is
   message 8 ([AI](ai/index.md#in-coney)). **Message 6** (`VolumeBoxes::sendDamage()`): a pane, door or car hit that the
   object took sends `(human, box, object)` to every enabled kind-0 box the attacker (a thrown object's thrower)
-  stands in. Coney does not send it for props, has no 30 m alert after it, and updates the boxes every frame
-  instead of the original's every-fifth-frame round-robin. **`--script-trace`** (`ScriptSystem::traceCalls()`,
+  stands in. Coney does not send it for props and has no 30 m alert after it. The boxes update on one frame in five,
+  each in its turn ([The schedule](trigger-updates.md#schedule)). **`--script-trace`** (`ScriptSystem::traceCalls()`,
   [Running Coney](../guides/running.md#tracing)) logs every binding call and every call into the scripts by name,
   Coney's own tool.
 - **Trigger spheres** (`src/world_objects/trigger_spheres.h`, `TriggerSphereCfg` in `src/scripting/world_bindings.h`):
   a pool of 100, one per object, each checked every fifth frame (index modulo 5) with the boxes' rules, 3, 5 once per
   the sphere's 1000 ms and 4 going to the object's handler; gameplay finds the object among the scripts' humans, the
-  flags and the spawn records. **Coney's choices:** the sphere's own object is never its occupant; the clear-line test
-  of modes 1 and 2 is a collision-mesh ray from the centre (mode 2: raised 1 m) to 1 m above the human's feet;
+  flags and the spawn records. Mode 1 asks for a walkable line on the navigation mesh (`Nav_IsConnected`), mode 2
+  for a clear collision-mesh ray between the centre and the human's feet, both raised 0.01 m
+  ([The accept test](trigger-updates.md#accepts)). **Coney's choices:** the sphere's own object is never its occupant;
   `TriggerSphereCfg`'s interval is kept as the handler's period but not used. `TriggerSphereEnable` arms a sphere
   (making one with radius 0, mode 1 and a 1000 ms period when the object has none) or disarms it, forgetting who is
   inside without message 4; Coney has no handler components, so it acts on any object.
@@ -2891,9 +2892,9 @@ handler component, as for `TriggerSphereEnable`).
 
 - **The first mission:** what a restart (failure or pause menu) restores from `SetCheckPoint`'s copies, and who
   reads the object manager's 35-word list; whether `TriggerSphereCfg`'s interval reaches the sphere's period
-  (`+0x164`); whether a sphere's own object can be its occupant, and what the clear-line tests `0x0024dee8` and
-  `0x0024df40` test between; who writes the stopwatch's rate (`+0x10`); what commands 37, 38 and 40 (d-pad down,
-  up, right), which the tutorial switches with `EnableCommand`, do ([Commands](../references/commands.md)).
+  (`+0x164`); whether a sphere's own object can be its occupant; who writes the stopwatch's rate (`+0x10`); what
+  commands 37, 38 and 40 (d-pad down, up, right), which the tutorial switches with `EnableCommand`, do
+  ([Commands](../references/commands.md)).
 - What a level loaded after an unload (a fresh state without the preloads) does when it needs `PHYS`, `MATERIAL` or
   `GSTRING`: does the level flow run the preloads again, or do the level scripts not need them? (For the front end,
   `global.lua` and `level100.lua` run without errors in Coney's fresh state, and so do `level99.lua` with

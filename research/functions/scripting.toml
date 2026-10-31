@@ -2073,6 +2073,20 @@ coney = "src/scripting/trigger_bindings.cpp:makeRotateVolumeBox"
 status = "legacy"
 
 [[function]]
+address = 0x00412ca0
+name = "VolumeBoxes_UpdateAll"
+page = "trigger-updates.md#schedule"
+role = "each box's update on one frame in five, by handle index; the camera-inside mark"
+level = "confirmed-code"
+coney = "src/world_objects/volume_boxes.h:VolumeBoxes::update"
+status = "compared"
+
+[[function.gaps]]
+what = "the camera-inside mark (+0x69) for boxes with the flags byte +0x6a"
+relation = "not-ported"
+issue = 1320
+
+[[function]]
 address = 0x00413018
 name = "VolumeBoxes_SendDamageMessage"
 page = "scripting.md#triggers"
@@ -2099,7 +2113,7 @@ address = 0x004134f8
 name = "PlayerBox_Update"
 page = "trigger-updates.md#player-box"
 level = "confirmed-code"
-coney = "src/world_objects/volume_boxes.h:VolumeBoxes::update"
+coney = "src/world_objects/volume_boxes.h:VolumeBoxes::updatePlayerBox"
 status = "compared"
 
 [[function]]
@@ -2143,11 +2157,6 @@ role = "a point within the radius of the sphere's object, then mode 1's connecti
 level = "confirmed-code"
 coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::accepts"
 status = "compared"
-
-[[function.gaps]]
-what = "the modes' tests are Coney's clear-line callback from points raised 1 m"
-relation = "stand-in"
-question = "trigger-updates.md#q-line-tests"
 
 [[function]]
 address = 0x004146e0
@@ -2200,7 +2209,7 @@ address = 0x00415378
 name = "VolumeBox_Update"
 page = "trigger-updates.md#box"
 level = "confirmed-code"
-coney = "src/world_objects/volume_boxes.h:VolumeBoxes::update"
+coney = "src/world_objects/volume_boxes.h:VolumeBoxes::updateBox"
 status = "compared"
 
 [[function.gaps]]

@@ -1,0 +1,37 @@
+version = 1
+id = "r-20261031-l80-uncuff-snow-exact"
+date = "2026-10-31"
+kind = "recipe"
+tool = "pcsx2 recipes run"
+digest = "963271ba53eecad4e7d21655a6ed93d1caf5ee01bfcacc08c09cc6896abfdaf9"
+
+[who]
+agent = "aa2c729bc8f12bb36"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = ["call-brains"]
+
+[run]
+name = "uncuff"
+method = ""
+
+[run.args]
+cuffed = "Snow"
+
+[values]
+freer_x = -195.57933044433594
+freer_y = 231.69680786132812
+freer_heading_deg = -83.34023043243035
+cuffed_x = -194.89999389648438
+cuffed_y = 231.8000030517578
+cuffed_heading_deg = 105.00000261370218
+steered_distance = 0.7474227399675009
+steered_heading_deg = -2.357283494557578

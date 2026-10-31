@@ -430,6 +430,17 @@ void GameplayMode::enter() {
                                .length = length};
         return !mesh->rayCast(ray, {}, 0).has_value();
     });
+    // Mode 1's test: the walkable line of the level's path data, its start's area found under the sphere's centre
+    // (docs/research/trigger-updates.md#accepts). With no path data or no collision, every line passes.
+    m_spheres.setConnected([this](const std::array<float, 3>& from, const std::array<float, 3>& to) {
+        const raycast::CollisionMesh* mesh = m_objects.world.collision;
+        const ai::RoutePlanner* planner = m_brains ? m_brains->planner() : nullptr;
+        if (mesh == nullptr || planner == nullptr) {
+            return true;
+        }
+        const world::GroundProbe probe = ai::groundProbe(*mesh);
+        return planner->map().connected({from[0], from[1], from[2]}, {to[0], to[1], to[2]}, &probe);
+    });
     m_context.spheres = &m_spheres;
     m_radios.clear();
     m_context.radios = &m_radios;

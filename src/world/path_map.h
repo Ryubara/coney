@@ -156,6 +156,12 @@ class PathMap {
     /// @orig 0x0024fbf8 PathMap_LineWalkable (unknown)
     [[nodiscard]] bool walkable(anim::Vec3 from, anim::Vec3 to, std::uint32_t mask = 0,
                                 const GroundProbe* probe = nullptr) const;
+    /// Whether a walkable line joins `a` to `b`: walkable() from `a`'s own area with no flags masked, refused when `a`
+    /// has none (docs/research/trigger-updates.md#accepts). A mode-1 trigger sphere's test.
+    /// @orig 0x0024dee8 Nav_IsConnected (unknown)
+    [[nodiscard]] bool connected(anim::Vec3 a, anim::Vec3 b, const GroundProbe* probe) const {
+        return walkable(a, b, 0, probe);
+    }
 
   private:
     // Checks the records against each other (counts, indices) and builds the map.

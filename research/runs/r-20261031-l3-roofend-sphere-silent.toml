@@ -1,0 +1,37 @@
+version = 1
+id = "r-20261031-l3-roofend-sphere-silent"
+date = "2026-10-31"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "dc02367d08e80f4bacd6bdb92e9bf0579f7f261b0470a998a4e5f281f4f2f223"
+
+[who]
+agent = "aa2c729bc8f12bb36"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["event-call", "event-callback"]
+
+[run]
+name = ""
+method = "level3 checkpoint 4 chase played by trace events (scenario level3_cp4) from a hand-made checkpoint-4 loading state, nine times: frame counters 0x00514804 and 0x0051482c as saved (4), both set to 0..3, and only the sphere's set to 0..3. Each event log read for ObjectiveEnter and ch4.EnterGallery; each route for the updates before ch4.EnterGallery's that the player's feet spent within 2 m of flag fRoofEnd (202.9, 367.9, 16.3): 3 in eight runs, 1 in one. No run sent ObjectiveEnter; all nine reached SetCheckPoint 5."
+
+[values]
+runs = 9
+runs_reaching_checkpoint5 = 9
+runs_with_objective_enter = 0
+runs_with_enter_gallery = 9
+updates_inside_before_gallery_most_runs = 3
+updates_inside_before_gallery_fewest = 1
+nearest_in_window_distance_m = 1.76
+
+[addresses]
+box_counter = 0x00514804
+sphere_counter = 0x0051482c

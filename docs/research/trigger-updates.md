@@ -1,6 +1,6 @@
 ---
 kind: feature
-owns: {functions: ["0x004125b8", "0x004134f8", "0x00414548", "0x004146e0", "0x00415378"]}
+owns: {functions: ["0x0024dee8", "0x00412ca0", "0x004125b8", "0x004134f8", "0x00414548", "0x004146e0", "0x00415378"]}
 ---
 # Trigger boxes and spheres: the update
 
@@ -11,13 +11,17 @@ Verified against: `SLUS_212.15` (NTSC-U); runtime claims cite run records.
 A mission script hears a human come into a place, stay there and leave it through three messages to a trigger: 3
 (entered), 5 (still inside) and 4 (left). The triggers are the volume boxes a script adds with `AddVolumeBox` (kind 0
 for anyone, kind 2 for the players only) and the trigger sphere round an object (`TriggerSphereCfg`). This page is
-how one update of a trigger decides what to send and when: the stay timer behind message 5, the order the messages
-go out in and what stops an update part-way. What the triggers are, their records and pools, the inside test and the
-other messages (6, damage; 7, theft) are on [Scripting: trigger boxes and spheres](scripting.md#triggers); how a
-message reaches Lua is on [Message handlers](scripting.md#message-handlers).
+which frames a trigger is updated on, and how one update decides what to send and when: the stay timer behind
+message 5, the order the messages go out in and what stops an update part-way. What the triggers are, their records
+and pools, the inside test and the other messages (6, damage; 7, theft) are on
+[Scripting: trigger boxes and spheres](scripting.md#triggers); how a message reaches Lua is on
+[Message handlers](scripting.md#message-handlers).
 
 ## Rules
 
+- Each box is updated on one frame in five, its turn fixed by the order it was added; so is each sphere, by its slot.
+  A message can come up to four frames after the human crossed the edge.
+- Only the first 128 boxes a level adds are ever updated.
 - Message 5 comes on the trigger's own beat, not a period after each human came in: the stay timer is re-armed
   whenever it falls due, whether or not anyone is inside, so a human who entered just before a beat gets his first 5
   on that beat.
@@ -34,6 +38,8 @@ message reaches Lua is on [Message handlers](scripting.md#message-handlers).
 
 | Behaviour | Function | Section |
 | --- | --- | --- |
+| Which boxes update this frame; the camera-inside mark | `0x00412ca0` `VolumeBoxes_UpdateAll` | [The schedule](#schedule) |
+| Which spheres check this frame | `0x00414398` `TriggerSpheres_UpdateAll` | [The schedule](#schedule) |
 | A sphere's check: timer, found humans, occupants | `0x004146e0` `TriggerSphere_Update` | [A sphere's check](#sphere) |
 | Whether a sphere accepts a point: radius, then the mode's test | `0x00414548` `TriggerSphere_Accepts` | [The accept test](#accepts) |
 | A kind-0 box's update | `0x00415378` `VolumeBox_Update` | [A box's update](#box) |
@@ -43,6 +49,38 @@ message reaches Lua is on [Message handlers](scripting.md#message-handlers).
 | `AddVolumeBox`: the pool by kind, the corners | `0x004125b8` `VolumeBox_Add` | [Adding a box](#add) |
 
 ## Behaviour
+
+### The schedule {#schedule}
+
+Every frame of play, mode 1's step 6 runs `GameMode_UpdateTriggers` (`0x001562a0`), which calls
+`VolumeBoxes_UpdateAll` (`0x00412ca0`) and then `TriggerSpheres_UpdateAll` (`0x00414398`)
+([A frame of play](level-loading.md#a-frame-of-play)). Confirmed (code) at `0x001562a0`.
+
+`VolumeBoxes_UpdateAll` walks the handle-table indices `0x26c` to `0x2eb` (620 to 747, 128 entries) in order. For
+each index that holds a box, it first does the camera mark below, then calls the box's update (its vtable `+0x54`:
+`VolumeBox_Update` for kind 0, `PlayerBox_Update` for kind 2) when the index modulo 5 equals a frame counter
+(`0x00514804`). After the walk the counter goes up by one and back to 0 past 4. The counter starts at 0 (`.bss`
+reads 0) and nothing else writes it: it is not reset when a level loads. So each box is updated on one frame in five,
+and the box's own enable test comes inside its update. Confirmed (code) at `0x00412ca0` and the counter's
+cross-references.
+
+A box's index is fixed when it is made: the box base's constructor (`Box_Construct`, `0x004127c0`) takes the first
+free handle-table index from 620 (`Handle_FindFreeBox`, `0x0038ff18`, through `Handle_FindFree`, `0x0038fe28`), for
+kinds 0, 2 and 3 alike (kind 1 makes no box). Confirmed (code). A box's handle is freed only by its destructor
+(`Box_Destruct`, `0x00412888`, from the three kinds' destructors, which nothing calls directly: inferred, through the
+pools being destroyed with the level), and no script function removes one box, so within a level the boxes hold
+indices 620, 621, ... in the order they were added: the *n*-th box added (from 0) is updated when *n* modulo 5
+equals the counter, since 620 is a multiple of 5. Inferred from the code above. A box at index 748 or beyond, the
+129th and later, is never updated; another kind filling indices from 620 first (the world flags search from 108) is
+possible only with over 500 flags. Inferred.
+
+The camera mark, for each box whose flags byte `+0x6a` (`AddVolumeBox`'s last argument) is set, on every frame: when
+player 0's camera position is outside the box (`VolumeBox_ContainsPoint`) the box's `+0x69` becomes 0; when inside
+and `+0x69` is not already 2, it becomes 2 when the game state's `+0x268` (`0x0051489c`) is below 1, else 1.
+Confirmed (code) at `0x00412ca0`. Who reads `+0x69` is not traced.
+
+`TriggerSpheres_UpdateAll` does the same for the 100 sphere slots (`0x006fd6e0`): slot *i*, when filled, is checked
+when *i* modulo 5 equals its own counter (`0x0051482c`), stepped the same way. Confirmed (code) at `0x00414398`.
 
 ### The stay timer {#stay-timer}
 
@@ -87,8 +125,8 @@ nobody. Both pass mask 1. Confirmed (code) at `0x004146e0`, `0x00415378`.
 3. Then, unless the sphere was freed, each of the 60 occupant slots, whether or not the sphere is still armed: a
    handle that does not resolve (`0x00390268`) is skipped and kept; a human flagged dead (`0x00227eb0`) or no longer
    accepted is removed and message 4 goes. The pass stops when the sphere was freed. Confirmed (code). So a handler
-   that disarms with `TriggerSphereCfg` (`0x00414bc0`, which keeps the occupants) still has 4 sent for each occupant
-   who left; `TriggerSphereEnable` off empties the list, so nothing follows.
+   that disarms with `TriggerSphereCfg` (`TriggerSphere_Configure`, `0x00414bc0`, which keeps the occupants) still
+   has 4 sent for each occupant who left; `TriggerSphereEnable` off empties the list, so nothing follows.
 4. A sphere freed during the check is freed now.
 
 ### The accept test {#accepts}
@@ -96,8 +134,28 @@ nobody. Both pass mask 1. Confirmed (code) at `0x004146e0`, `0x00415378`.
 `TriggerSphere_Accepts` (`0x00414548`) takes the position of the sphere's object, refuses a point farther than the
 radius (`+0x174`, squared distance in 3D), and then by mode (`+0x17c`): mode 1 asks `Nav_IsConnected` (`0x0024dee8`)
 whether the two points are joined, mode 2 casts a clear-ray test (`Ray_IsClear`) between the two points each moved
-by 0.01 times a fixed vector (`0x00511740`), and any other mode accepts. `TriggerSphere_AcceptsObject` (`0x00414688`)
+by 0.01 times the up vector (0, 0, 1, 1) at `0x00511740` (a constant nothing writes), so both ends rise 0.01 m, and
+any other mode accepts. `TriggerSphere_AcceptsObject` (`0x00414688`)
 is the same test on an object's position. Confirmed (code) at `0x00414548`, `0x00414688`.
+
+`Nav_IsConnected(a, b, area)` (`0x0024dee8`) finds `a`'s navigation area (`Nav_FindArea`, `0x00250708`) when it is
+given none (the sphere passes none), then returns whether `Nav_IsWalkableLine` (`0x0024fbf8`) passes from that area,
+`a` to `b`, with no polygon flags masked: a walkable straight line on the navigation mesh
+([Path planning](ai-moving.md#path-planning)), not a line of sight. Confirmed (code) at `0x0024dee8`. So a mode-1
+sphere whose object stands off the mesh, or across a hole from the human, accepts nobody.
+
+In `level3`'s rooftop chase the objective flag `fRoofEnd`, a mode-1 sphere of radius 2, sent no `ObjectiveEnter` in
+nine runs, with the box and sphere frame counters (`0x00514804`, `0x0051482c`) started at each of their five values,
+and every run went on through the gallery box's `ch4.EnterGallery` to checkpoint 5. Snow's feet were within the radius
+for 3 updates before `ch4.EnterGallery` in eight runs and 1 in the ninth; that callback re-sets the flag's handlers,
+so only a check in those updates could have sent `ObjectiveEnter`. Confirmed (runtime), run
+r-20261031-l3-roofend-sphere-silent.
+
+That some run checked the sphere in those updates is inferred: the sphere's slot *i* is checked when *i* modulo 5
+equals the sphere counter, which steps once an update, and the boxes run first in a frame
+([The schedule](#schedule)). Over the nine runs the counter's values in the windows cover all five residues, each one
+at least 0.15 m inside the radius, so whatever the flag's slot, some run checked it with Snow inside. That the refusal
+is `Nav_IsConnected`'s is inferred from the code above; the call was not watched.
 
 ### A box's update {#box}
 
@@ -131,6 +189,11 @@ decompiled scripts.
 
 ## In Coney
 
+- `VolumeBoxes::update()` is one frame of the schedule: the box at position *n* of Coney's list (the order added,
+  turf boxes included) is updated when *n* modulo `kFramesPerUpdate` (5) equals the box list's frame counter, and
+  boxes past the 128th never are. Coney's choice: the counter starts at 0 with each box list and `clear()` resets it,
+  where the original's runs on from boot across levels. The camera mark is not ported (Coney does not keep the flags
+  byte). `TriggerSpheres::update()` keeps the spheres' schedule the same way.
 - `world_objects::TriggerSpheres::update()` and `world_objects::VolumeBoxes::update()` (`src/world_objects/`) are the
   three updates; `VolumeBoxes::setStayPeriod()` gives a box its handler's period, which `GameplayMode::updateBoxes()` reads
   from the box's `TriggerSphereCfg` record (`TriggerSphere::handlerPeriodMs`), 1000 ms when it has none. Unit tests:
@@ -139,8 +202,11 @@ decompiled scripts.
   original goes on with a null record; `makeAddVolumeBox()` then returns `NilHandle` and uses no handle. Coney's boxes
   come from no fixed pool, so a full pool never happens ([q-box-pools](#q-box-pools)). Coney sorts the corners, which
   for every box the game adds is the same as keeping them.
-- `TriggerSpheres::accepts()` is the accept test, its modes' tests a stand-in ([q-line-tests](#q-line-tests)); any
-  mode other than 1 and 2 accepts on the radius alone.
+- `TriggerSpheres::accepts()` is the accept test. Mode 1 asks `world::PathMap::connected()` (`Nav_IsConnected`)
+  through the test gameplay sets, from the sphere's object to the human's feet, both areas found under the points
+  by the level's ground probe; with no path data or no collision every line passes. Mode 2 casts the
+  clear-line test gameplay sets between the two points raised `kRayRaise` (0.01 m). Any other mode accepts on the
+  radius alone.
 - Coney's choices in the found list ([q-found-mask](#q-found-mask)): the subjects are Coney's humans in its own order
   (by handle), a dead human is never found, a box finds the humans inside it rather than within its bounding sphere,
   and nobody beyond the first 60 found is tested by a sphere. A players' box takes the first two players among the
@@ -153,12 +219,6 @@ decompiled scripts.
   listed.
 
 ## Open questions
-
-### The modes' tests {#q-line-tests}
-
-What `Nav_IsConnected` (`0x0024dee8`) tests between two points, and which vector `0x00511740` holds for mode 2's
-ray, are not traced; Coney's modes 1 and 2 use its clear-line callback from points raised 1 m instead. To settle it:
-read `0x00511740` and step `0x0024dee8` in PCSX2 with the dealer's sphere in `level99`.
 
 ### The found humans {#q-found-mask}
 
