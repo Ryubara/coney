@@ -15,7 +15,7 @@ name = "Level_SetFogColour"
 page = "world.md#fog"
 level = "confirmed-code"
 coney = "src/graphics/level_lighting.h:fogColourOf"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0040c908
