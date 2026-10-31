@@ -40,7 +40,7 @@ from coney_tools import issue_impact, stamps, unit
 from coney_tools.audit_github import Runner
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions, OverlapRules
-from coney_tools.slot_fill_github import bounded_runner
+from coney_tools.slot_fill_github import GhFailed, bounded_runner
 from coney_tools.task_file import TaskFile, parse_task_file
 from coney_tools.task_leads import identifiers_in
 from coney_tools.unit_record import UnitRecord, UnitRecordError, read_record
@@ -54,8 +54,7 @@ _ABOUT = ("Issues", "Goal", "Done", "Scope")
 _ADDRESS = re.compile(r"^0x[0-9a-fA-F]{8}$")
 _ANCHOR = re.compile(r"#[\w{}-]*$")
 _HEADING = re.compile(r"^## (?P<name>.+?)\s*$", re.MULTILINE)
-#: The most open pull requests whose diffs one run reads is `tasks.overlap.diff_prs`; this many characters of a
-#: failure's message are shown.
+#: How many characters of a failure's message a note shows.
 _WHY = 120
 
 
@@ -314,9 +313,15 @@ def pending_prs(env: OverlapEnv, wanted: Wanted, skip_branches: set[str], result
         diffed += 1
         try:
             patch = env.gh(["pr", "diff", pending.key.lstrip("#")])
-        except OSError as error:
+        except GhFailed as error:
+            # gh answered with an error for this pull request (a diff too large): the next may still be read.
             result.notices.append(f"PR {pending.key}: its diff was not read ({str(error)[:_WHY]})")
             continue
+        except OSError as error:
+            # gh did not run or timed out: each further diff could cost `gh_seconds` again, so the rest are not read.
+            result.notices.append(f"PR {pending.key}: its diff was not read ({str(error)[:_WHY]})")
+            result.notices.append(f"no more diffs were read ({len(prs) - index - 1} left)")
+            break
         prs[index] = _add_addresses(pending, issue_impact.diff_addresses(patch))
     return prs
 
@@ -478,8 +483,9 @@ def start_lines(env: OverlapEnv, task: TaskFile, record: UnitRecord | None, writ
 def stage_report(env: OverlapEnv, task_id: str, say: Callable[[str], None], write: bool = True) -> None:
     """For `task check` and `task review`: print the list again when it differs from the task file's section (new
     work appeared, some left, or the unit's own changes now meet more), then record the list in the section. Silent
-    when nothing changed, when the task has no task file or when pull requests could not be read. A fault is a note,
-    never a failure of the stage."""
+    when nothing changed. When the pull requests could not be read it prints `not checked` and records nothing; when
+    the task file or the work could not be read it prints `not read`. A fault is a note, never a failure of the
+    stage."""
     try:
         path, task, record = _read_task(env, task_id)
         result = compute(env, task, record)

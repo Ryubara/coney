@@ -18,6 +18,7 @@ from git_support import git
 from coney_tools import stamps, task_cli, task_overlap
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
+from coney_tools.slot_fill_github import GhFailed
 from coney_tools.task_file import TaskFile, parse_task_file, render_task_file
 from coney_tools.task_overlap import Change, OverlapEnv, Pending, Wanted
 from coney_tools.unit_record import UnitRecord, read_record, write_record
@@ -60,6 +61,7 @@ class Scene:
         self.prs: list[dict[str, object]] = []
         self.patches: dict[int, str] = {}
         self.gh_down = False
+        self.diff_errors: dict[int, OSError] = {}
         self.calls: list[list[str]] = []
         self.changes: dict[str, Change] = {}
         self.fail_change: set[str] = set()
@@ -73,6 +75,8 @@ class Scene:
         if arguments[:2] == ["pr", "list"]:
             return json.dumps(self.prs)
         if arguments[:2] == ["pr", "diff"]:
+            if int(arguments[2]) in self.diff_errors:
+                raise self.diff_errors[int(arguments[2])]
             return self.patches.get(int(arguments[2]), "")
         raise AssertionError(arguments)
 
@@ -242,6 +246,29 @@ def test_only_the_configured_number_of_diffs_is_read(scene: Scene) -> None:
     result = scene.compute()
     assert [call for call in scene.calls if call[:2] == ["pr", "diff"]] == [["pr", "diff", "1"]]
     assert any("only the first 1 open pull requests" in notice for notice in result.notices)
+
+
+def test_the_diffs_stop_after_the_first_one_that_could_not_run(scene: Scene) -> None:
+    # A timed out `gh` costs `gh_seconds` each: a GitHub that hangs on diffs must not hold a start for 30 of them.
+    scene.prs = [pr(n, "t", f"b{n}", "docs/x.md") for n in (1, 2, 3)]
+    scene.patches = {2: PATCH, 3: PATCH}
+    scene.diff_errors = {1: OSError("gh could not run: Command timed out after 30 seconds")}
+    scene.task(scope=("0x001490b8",))
+    result = scene.compute()
+    assert [call for call in scene.calls if call[:2] == ["pr", "diff"]] == [["pr", "diff", "1"]]
+    assert any("PR #1: its diff was not read" in notice for notice in result.notices)
+    assert any("no more diffs were read" in notice and "2 left" in notice for notice in result.notices)
+    assert result.read_prs == 3 and not result.prs_failed
+
+
+def test_a_diff_gh_refuses_is_skipped_and_the_next_is_read(scene: Scene) -> None:
+    scene.prs = [pr(n, "t", f"b{n}", "src/ai/x.cpp") for n in (1, 2)]
+    scene.patches = {2: PATCH}
+    scene.diff_errors = {1: GhFailed("gh pr diff failed: the diff is too large")}
+    scene.task(scope=("0x001490b8",))
+    result = scene.compute()
+    assert [call for call in scene.calls if call[:2] == ["pr", "diff"]] == [["pr", "diff", "1"], ["pr", "diff", "2"]]
+    assert [o.pending.key for o in result.overlaps] == ["#2"]
 
 
 def test_a_failed_read_of_the_pull_requests_is_a_note_and_the_units_are_still_listed(scene: Scene) -> None:

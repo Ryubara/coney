@@ -29,7 +29,9 @@ scope fits) or an `@orig` address it wants.
   not by its address: `issue impact` also reads those functions, but that takes 10 to 20 seconds a unit, and every
   start, check and review reads every unit in progress.
 * A pull request's paths come from `gh pr list`; its addresses from its diff, read the same way, only when the unit
-  wants an address and for at most `tasks.overlap.diff_prs` pull requests.
+  wants an address and for at most `tasks.overlap.diff_prs` pull requests. A diff `gh` refuses (too large) is a note
+  and the next is read; when `gh` does not run or times out (`tasks.overlap.gh_seconds`) the remaining diffs are not
+  read, so a GitHub that hangs costs one timeout, not thirty.
 
 The most shared addresses and paths come first, then pull requests before units. How much is read and listed is
 `tasks.overlap` in [.github/conventions.yml](repo:.github/conventions.yml).
