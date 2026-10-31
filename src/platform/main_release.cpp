@@ -23,6 +23,7 @@
 
 #include "audio/object_sounds.h"
 #include "core/chunk_system.h"
+#include "core/display_preset.h"
 #include "core/error.h"
 #include "core/frame_clock.h"
 #include "core/game_timer.h"
@@ -143,6 +144,13 @@ int main(int argc, char** argv) {
     coney::platform::RenderEngine& renderer = **engine;
     renderer.setVsync(options->vsync);
     renderer.setLineBlend(options->lineBlend);
+    // The display preset (docs/engine/renderer.md#presets-built): the release build keeps no overrides file, so a run
+    // draws PS2 unless `--preset` names another, chosen at once outside test mode and pinned in it.
+    coney::DisplaySettings& display = coney::displaySettings();
+    display.pin(coney::pinnedDisplayPreset(*options));
+    if (options->displayPreset && !display.pinned()) {
+        display.choose(*options->displayPreset);
+    }
 
     // The game over the disc (platform/game_session.h), from boot; without a disc only the idle screen. Declared
     // after the renderer, so they are destroyed before it: their textures are librw's.

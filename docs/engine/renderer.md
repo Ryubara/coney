@@ -441,6 +441,39 @@ their frames are comparable with the original's captures
 ([The runtime comparison](../guides/testing.md#runtime-comparison)), and every step of the
 [Migration](#migration) is checked in it as below.
 
+### Built {#presets-built}
+
+The presets are `coney::DisplaySettings` ([display_preset.h](repo:src/core/display_preset.h)), and the table above
+is its `presetValues()`, tested column by column in
+[display_preset_test.cpp](repo:tests/core/display_preset_test.cpp).
+
+- **The settings.** `Display/Preset` (0 *PS2*, the default; 1 *Xbox*, 2 *Enhanced*, 3 *High*; 4 *Custom*) and one
+  value for each row of the table that differs between presets: `Display/Renderer` (the one that was there before),
+  `Lights`, `Shadows`, `Blob shadow`, `Per-pixel fog`, `Gamma ramp`, `Reflections` and `Anti-aliasing`. A level counts
+  up the table's columns: 0 is *PS2*'s, 3 *High*'s. The render scale, 1 in every preset, waits for its item (22). They
+  are tunables of the Tunables page's *Display* category and saved in the overrides file; the Graphics page that
+  shows them by name, with the rows nothing draws greyed out, is [#1239](issue:1239).
+- **Choosing and Custom.** The store writes its changes between two frames and the settings then settle: a new
+  preset writes its values, except those changed in the same batch, and the preset then shows the one the values
+  match. So a value changed after choosing a preset shows *Custom*, changing it back shows the preset again, and an
+  overrides file that saves *Xbox* and one value of its own reads back as that set.
+- **Nothing draws them yet.** Each value but the renderer waits for the item that draws it, and its help line on the
+  Tunables page says which: the light caps and the per-pixel fog [#1217](issue:1217), the per-pixel and clustered
+  lights [#1221](issue:1221), the Xbox shadow map and the blob [#1220](issue:1220), the *Enhanced* and *High* shadow
+  maps [#1222](issue:1222), the gamma ramp [#1216](issue:1216), SMAA [#1219](issue:1219), MSAA
+  [#1218](issue:1218) and TAA [#1224](issue:1224); the reflections are filed from the [Realtime lighting
+  design](../guides/realtime-lighting.md#reflections). Choosing a preset other than *PS2* sets `Display/Renderer` to
+  1, which the next start refuses with a warning while the GPU renderer draws no menus
+  ([The way back to GL3](gpu-renderer.md#way-back)).
+- **Test mode.** `--headless`, `--load`, `--frames`, `--input-script`, `--screenshot`, `--record`,
+  `--render-references` and the disc tests (`coney::test::DiscSession`) pin what drawing reads to *PS2*'s values,
+  whatever a player saved (`pinnedDisplayPreset()` in [options.h](repo:src/core/options.h), `DisplaySettings::pin()`).
+  `--preset ps2|xbox|enhanced|high` names another, which a capture or a benchmark of that preset needs; outside test
+  mode it is chosen at the start, over the overrides file, and the player may change it after.
+- **Render-side only.** `DisplaySettings::drawn()` is what drawing is to read, the pinned preset's values in test
+  mode; nothing calls it yet, since each value's item reads it when it draws that value. No simulation code includes
+  the header, so a run plays the same in every preset.
+
 ### How pictures are compared {#comparing}
 
 A GPU's output differs between GPUs and drivers, and CI has no GPU, so no test hashes a hardware GPU's pixels. The

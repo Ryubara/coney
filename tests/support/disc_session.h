@@ -27,6 +27,7 @@
 #include "core/assert.h"
 #include "core/chunk_system.h"
 #include "core/deferred_input.h"
+#include "core/display_preset.h"
 #include "core/game_timer.h"
 #include "core/input_script.h"
 #include "fileio/wad.h"
@@ -145,6 +146,9 @@ class DiscSession {
           m_script(std::move(script)) {
         platform::addTextureDictionaryHandlers(m_handlers);
         platform::addSpriteSheetHandlers(m_handlers);
+        // Test mode draws the PS2 picture whatever an earlier test in this process chose
+        // (docs/engine/renderer.md#ps2-preset).
+        displaySettings().pin(DisplayPreset::Ps2);
         auto engine = window != nullptr ? platform::RenderEngine::start(platform::RenderBackend::OpenGl, *window)
                                         : platform::RenderEngine::start(platform::RenderBackend::Null, {});
         REQUIRE(engine.has_value());

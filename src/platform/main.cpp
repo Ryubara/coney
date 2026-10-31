@@ -38,6 +38,7 @@
 #include "core/chunk_system.h"
 #include "core/clip_recording.h"
 #include "core/deferred_input.h"
+#include "core/display_preset.h"
 #include "core/error.h"
 #include "core/event_log.h"
 #include "core/frame_clock.h"
@@ -935,6 +936,15 @@ int main(int argc, char** argv) {
         }
     }
     coney::debug::DebugSession debugSession(tunables, debugServices, input.get(), logText);
+    // The display preset (docs/engine/renderer.md#presets-built): test mode draws PS2, or the preset `--preset` names,
+    // whatever the file saved; outside test mode `--preset` is chosen over the file once its values land. The settings
+    // settle after each batch of tunable changes, so a preset chosen in the menus writes its values for the next frame.
+    coney::DisplaySettings& display = coney::displaySettings();
+    display.pin(coney::pinnedDisplayPreset(*options));
+    if (options->displayPreset && !display.pinned()) {
+        display.chooseAtNextSettle(*options->displayPreset);
+    }
+    debugSession.gate().addBetweenSteps([&display] { display.settle(); });
     // The game reads its pads through network play, after the gate: a guest sends what their game reads, and a host's
     // pad port 2 is the guest's pad (docs/guides/multiplayer.md#player-two).
     coney::platform::NetInput netInput(&debugSession.gate(), netPlay);

@@ -22,11 +22,11 @@ namespace coney {
 namespace {
 
 // The options of OptionSet::Player (playerOptions()).
-constexpr std::array<std::string_view, 22> kPlayerOptions{
+constexpr std::array<std::string_view, 23> kPlayerOptions{
     "--install",     "--data",           "--verify",       "--disc",     "--language", "--profiles",
     "--fps-cap",     "--vsync",          "--line-blend",   "--show-fps", "--no-audio", "--skip-movies",
     "--no-activate", "--window-display", "--host",         "--join",     "--net-name", "--help",
-    "--headless",    "--frames",         "--input-script", "--renderer"};
+    "--headless",    "--frames",         "--input-script", "--renderer", "--preset"};
 
 // The synopsis of usageText(OptionSet::Player), before its options' lines.
 constexpr std::string_view kPlayerSynopsis =
@@ -34,7 +34,7 @@ constexpr std::string_view kPlayerSynopsis =
     "       coney --script-patch make|apply ...   (coney --script-patch for its usage)\n"
     "       coney [--disc PATH | --data DIR] [--language CODE] [--profiles DIR]\n"
     "             [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
-    "             [--renderer gl3|gpu]\n"
+    "             [--renderer gl3|gpu] [--preset ps2|xbox|enhanced|high]\n"
     "             [--no-activate] [--window-display DISPLAY] [--no-audio] [--skip-movies]\n"
     "             [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]\n"
     "             [--headless] [--frames N] [--input-script FILE] [--help]\n"
@@ -64,7 +64,7 @@ constexpr std::string_view kUsage =
     "             [--dev-overlay N] [--mesh-view SPEC] [--world-edit FILE]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
     "             [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
-    "             [--renderer gl3|gpu]\n"
+    "             [--renderer gl3|gpu] [--preset ps2|xbox|enhanced|high]\n"
     "             [--no-activate] [--window-display DISPLAY]\n"
     "             [--no-audio | --audio-test] [--skip-movies] [--cpu-skinning]\n"
     "             [--record FILE [--record-seconds N] [--record-debug-draw]]\n"
@@ -180,6 +180,9 @@ constexpr std::string_view kUsage =
     "                     Vulkan, Direct3D 12 or Metal; it only clears and presents so far); unset,\n"
     "                     the saved Display/Renderer setting outside test mode, but a saved 1 starts\n"
     "                     gl3, with a warning, while the GPU renderer draws no menus\n"
+    "  --preset ps2|xbox|enhanced|high\n"
+    "                     the display preset: chosen at the start over the saved Display/Preset;\n"
+    "                     in test mode, which otherwise draws ps2 whatever is saved, the one drawn\n"
     "  --no-activate      open the window without taking the keyboard focus from the one in use\n"
     "                     (always so in test mode and for --render-references)\n"
     "  --window-display DISPLAY\n"
@@ -867,7 +870,13 @@ bool takesSavedRenderer(const Options& options) {
     return !isTestMode(options) && !options.renderReferences.has_value();
 }
 
-std::optional<DisplayPreset> pinnedDisplayPreset(const Options& /*options*/) { return std::nullopt; } // stub
+std::optional<DisplayPreset> pinnedDisplayPreset(const Options& options) {
+    // The option is asked for by name, so it is what a test run draws; else PS2, whatever a player saved.
+    if (takesSavedRenderer(options)) {
+        return std::nullopt;
+    }
+    return options.displayPreset.value_or(DisplayPreset::Ps2);
+}
 
 std::expected<Options, Error> parseOptions(std::span<const std::string_view> args, OptionSet set,
                                            std::optional<std::string_view> installBesideExecutable) {
@@ -879,6 +888,7 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
     std::optional<std::string> vsyncArg;         // as typed, likewise
     std::optional<std::string> lineBlendArg;     // as typed, likewise
     std::optional<std::string> rendererArg;      // as typed, likewise
+    std::optional<std::string> presetArg;        // as typed, likewise
     std::optional<std::string> checkpointArg;    // as typed, likewise
     std::optional<std::string> startArg;         // as typed, likewise
     std::optional<std::string> rumbleArg;        // as typed, likewise
@@ -1163,6 +1173,16 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return invalidArgument(std::format("--renderer needs gl3 or gpu, got \"{}\"", name));
             }
             options.renderer = renderer;
+        } else if (arg == "--preset") {
+            if (auto value = takeValue(args, i, presetArg, "--preset", "ps2, xbox, enhanced or high"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+            const std::string name = presetArg.value_or(std::string{});
+            const std::optional<DisplayPreset> preset = parseDisplayPresetName(name);
+            if (!preset) {
+                return invalidArgument(std::format("--preset needs ps2, xbox, enhanced or high, got \"{}\"", name));
+            }
+            options.displayPreset = preset;
         } else if (arg == "--line-blend") {
             if (auto value = takeValue(args, i, lineBlendArg, "--line-blend", "on or off"); !value) {
                 return std::unexpected(std::move(value.error()));
