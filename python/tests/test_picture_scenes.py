@@ -116,6 +116,7 @@ def test_a_bad_scene_list_is_refused_with_the_reason(tmp_path: Path, text: str, 
         picture_scenes.load_scenes(path)
 
 
+@pytest.mark.reads("engine")
 def test_the_shipped_scene_list_is_valid_and_has_a_reference_for_each_scene() -> None:
     root = find_repo_root(Path(__file__))
     scene_list = picture_scenes.load_scenes(root / picture_scenes.DEFAULT_SCENES)
@@ -294,6 +295,7 @@ def test_the_command_line_takes_the_executable_and_a_launcher(
     assert fake.commands[0][:3] == ["xvfb-run", "-a", str(root / "build/ci/src/platform/coney")]
 
 
+@pytest.mark.reads("docs_only")
 def test_coney_runs_in_the_repository_root_and_a_relative_executable_is_read_from_it(
     tmp_path: Path, scenes_file: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
