@@ -102,6 +102,8 @@ class VolumeBoxes {
 
     /// A kind-2 box keeps at most this many occupants: the two players (`+0xf0`).
     static constexpr std::size_t kMaxPlayerOccupants = 2;
+    /// Frames between two updates of one box (docs/research/trigger-updates.md#schedule).
+    static constexpr std::uint32_t kFramesPerUpdate = 5;
 
     /// One trigger update of every enabled kind-0 box (updateBox()) and kind-2 box (updatePlayerBox()) at game time
     /// `nowMs` over `subjects`, the messages going to `send` as they happen.

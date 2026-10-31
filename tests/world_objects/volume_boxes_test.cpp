@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The volume boxes (docs/research/scripting.md#triggers): the inside test with and without a turn, and the trigger
-// update's messages 3 (entered), 5 (still inside, once a period) and 4 (left or died), and an occupant whose handle
-// no longer resolves skipped. Synthetic boxes and humans.
+// The volume boxes (docs/research/scripting.md#triggers): the inside test with and without a turn, each box updated on
+// one frame in five, and the trigger update's messages 3 (entered), 5 (still inside, once a period) and 4 (left or
+// died), and an occupant whose handle no longer resolves skipped. Synthetic boxes and humans.
 #include "world_objects/volume_boxes.h"
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <tuple>
@@ -20,12 +21,22 @@ namespace {
 // The messages a box update sent: (box, message, human).
 using Sent = std::vector<std::tuple<double, int, double>>;
 
-// One update of `boxes` over `subjects` at `nowMs`; returns what it sent.
-Sent step(VolumeBoxes& boxes, const std::vector<BoxSubject>& subjects, std::uint64_t nowMs) {
+// One frame of `boxes` over `subjects` at `nowMs`; returns what it sent.
+Sent frame(VolumeBoxes& boxes, const std::vector<BoxSubject>& subjects, std::uint64_t nowMs) {
     Sent sent;
     boxes.update(subjects, nowMs,
                  [&](double box, int message, double human) { sent.emplace_back(box, message, human); });
     return sent;
+}
+
+// Five frames at `nowMs`, in which every box's turn comes once (one update of each box); returns everything sent.
+Sent step(VolumeBoxes& boxes, const std::vector<BoxSubject>& subjects, std::uint64_t nowMs) {
+    Sent all;
+    for (std::uint32_t i = 0; i < VolumeBoxes::kFramesPerUpdate; ++i) {
+        const Sent sent = frame(boxes, subjects, nowMs);
+        all.insert(all.end(), sent.begin(), sent.end());
+    }
+    return all;
 }
 
 } // namespace
@@ -51,6 +62,48 @@ TEST_CASE("a box holds the points between its corners, turned about its centre b
     const VolumeBox& back = *boxes.add(8, "vBack", 0, {0, 0, 0}, {-2, -2, 2}, true);
     CHECK(VolumeBoxes::inside(back, {-1, -1, 1}));
     CHECK(boxes.find(9) == nullptr);
+}
+
+TEST_CASE("each box updates on one frame in five, its turn set by the order it was added", "[volume_boxes]") {
+    // Expected: trigger-updates.md#schedule, confirmed (code): VolumeBoxes_UpdateAll 0x00412ca0 updates the box at
+    // handle index i (the first free from 0x26c, so the order added) when i % 5 equals the frame counter 0x00514804,
+    // which starts at 0 and steps 0-4 once a frame.
+    VolumeBoxes boxes;
+    boxes.add(40, "vFirst", 0, {0, 0, 0}, {2, 2, 3}, true);
+    boxes.add(41, "vSecond", 0, {0, 0, 0}, {2, 2, 3}, true);
+    boxes.add(42, "vThird", 0, {0, 0, 0}, {2, 2, 3}, true);
+    std::vector<BoxSubject> humans{{.handle = 100, .position = {1, 1, 1}, .alive = true, .player = false},
+                                   {.handle = 101, .position = {5, 5, 0}, .alive = true, .player = false}};
+
+    CHECK(frame(boxes, humans, 0) == Sent{{40, VolumeBoxes::kEntered, 100}});
+    CHECK(frame(boxes, humans, 0) == Sent{{41, VolumeBoxes::kEntered, 100}});
+    CHECK(frame(boxes, humans, 0) == Sent{{42, VolumeBoxes::kEntered, 100}});
+    CHECK(frame(boxes, humans, 0).empty());
+    CHECK(frame(boxes, humans, 0).empty());
+
+    // A human who comes into the first box just after its turn is heard on its next turn, five frames on.
+    humans[1].position = {1.5F, 1.5F, 0.5F};
+    CHECK(frame(boxes, humans, 0) == Sent{{40, VolumeBoxes::kEntered, 101}}); // frame 6: the first box's turn again
+    humans.push_back({.handle = 102, .position = {1, 1, 2}, .alive = true, .player = false});
+    for (int i = 0; i < 4; ++i) {
+        const Sent sent = frame(boxes, humans, 0); // frames 7-10: the other two boxes hear 101 and 102
+        CHECK(std::ranges::none_of(sent, [](const auto& message) { return std::get<0>(message) == 40; }));
+    }
+    CHECK(frame(boxes, humans, 0) == Sent{{40, VolumeBoxes::kEntered, 102}}); // frame 11
+}
+
+TEST_CASE("a box past the 128th is never updated", "[volume_boxes]") {
+    // Expected: trigger-updates.md#schedule, confirmed (code): VolumeBoxes_UpdateAll 0x00412ca0 walks handle indices
+    // 0x26c-0x2eb only, so the 129th box (index 0x2ec) is never updated.
+    VolumeBoxes boxes;
+    for (int i = 0; i < 129; ++i) {
+        boxes.add(1000 + i, "vMany", 0, {0, 0, 0}, {2, 2, 3}, true);
+    }
+    const std::vector<BoxSubject> inside{{.handle = 100, .position = {1, 1, 1}, .alive = true, .player = false}};
+    const Sent sent = step(boxes, inside, 0);
+    CHECK(sent.size() == 128);
+    CHECK(std::ranges::find(sent, std::tuple<double, int, double>{1127, VolumeBoxes::kEntered, 100}) != sent.end());
+    CHECK(std::ranges::find(sent, std::tuple<double, int, double>{1128, VolumeBoxes::kEntered, 100}) == sent.end());
 }
 
 TEST_CASE("a trigger box sends 3 on entry, 5 once a period while inside and 4 on leaving or dying", "[volume_boxes]") {
