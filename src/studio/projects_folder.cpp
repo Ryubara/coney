@@ -9,12 +9,15 @@ namespace coney::studio {
 
 std::optional<std::filesystem::path> defaultProjectsFolder(const UserFolders& folders) {
     // The documents folder, else home; an empty path is no folder (it would put the projects in the working folder).
-    const auto usable = [](const std::optional<std::filesystem::path>& folder) { return folder && !folder->empty(); };
-    const auto& base = usable(folders.documents) ? folders.documents : folders.home;
-    if (!usable(base)) {
-        return std::nullopt;
+    // Each check sits right before its read, which clang-tidy's optional-access check can follow (it cannot through a
+    // helper).
+    if (folders.documents && !folders.documents->empty()) {
+        return *folders.documents / kStudioFolderName / kProjectsFolderName;
     }
-    return *base / kStudioFolderName / kProjectsFolderName;
+    if (folders.home && !folders.home->empty()) {
+        return *folders.home / kStudioFolderName / kProjectsFolderName;
+    }
+    return std::nullopt;
 }
 
 std::expected<void, Error> ensureFolderExists(const std::filesystem::path& folder) {

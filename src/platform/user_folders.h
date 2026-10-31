@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
 #include <optional>
 
 namespace coney::platform {
 
 /// The user's folders Coney asks the operating system for.
-enum class UserFolder {
+enum class UserFolder : std::uint8_t {
     Home,      ///< The home folder.
     Documents, ///< `Documents` on Windows and macOS, the XDG documents directory on Linux.
 };

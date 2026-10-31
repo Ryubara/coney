@@ -12,6 +12,7 @@
 
 #include "core/error.h"
 #include "support/fixtures.h"
+#include "support/optional_value.h"
 
 using coney::studio::addRecentProject;
 using coney::studio::formatPreferences;
@@ -34,6 +35,7 @@ RecentProject recent(const fs::path& root) { return RecentProject{.root = root, 
 // The roots of `preferences.recent`, in order, as text.
 std::vector<std::string> roots(const StudioPreferences& preferences) {
     std::vector<std::string> out;
+    out.reserve(preferences.recent.size());
     for (const RecentProject& project : preferences.recent) {
         out.push_back(project.root.generic_string());
     }
@@ -195,7 +197,8 @@ TEST_CASE("preferences are saved to a file in a folder made for it and loaded ba
     const auto loaded = loadPreferences(file);
     REQUIRE(loaded.has_value());
     REQUIRE(loaded->projectsFolder.has_value());
-    CHECK(loaded->projectsFolder->generic_string() == preferences.projectsFolder->generic_string());
+    CHECK(coney::test::got(loaded->projectsFolder).generic_string() ==
+          coney::test::got(preferences.projectsFolder).generic_string());
     CHECK(roots(*loaded) == roots(preferences));
     // Saving again replaces the file, and no half-written copy is left beside it.
     preferences.projectsFolder.reset();

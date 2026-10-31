@@ -10,6 +10,7 @@
 
 #include "core/error.h"
 #include "support/fixtures.h"
+#include "support/optional_value.h"
 
 using coney::studio::defaultProjectsFolder;
 using coney::studio::ensureFolderExists;
@@ -30,7 +31,7 @@ TEST_CASE("the default projects folder is Coney Studio/Projects in the documents
         INFO(documents.string());
         const auto folder = defaultProjectsFolder(UserFolders{.documents = documents, .home = documents.parent_path()});
         REQUIRE(folder.has_value());
-        CHECK(*folder == documents / "Coney Studio" / "Projects");
+        CHECK(coney::test::got(folder) == documents / "Coney Studio" / "Projects");
     }
 }
 
@@ -41,7 +42,7 @@ TEST_CASE("without a documents folder the default projects folder is in the home
     const fs::path home = fake.path() / "home" / "dee";
     const auto folder = defaultProjectsFolder(UserFolders{.documents = std::nullopt, .home = home});
     REQUIRE(folder.has_value());
-    CHECK(*folder == home / "Coney Studio" / "Projects");
+    CHECK(coney::test::got(folder) == home / "Coney Studio" / "Projects");
 }
 
 TEST_CASE("the documents folder wins over home, and with neither there is no default", "[studio]") {
@@ -64,8 +65,8 @@ TEST_CASE("a trailing separator on the folder the platform reports changes nothi
     const fs::path withSeparator = documents / "";
     const auto folder = defaultProjectsFolder(UserFolders{.documents = withSeparator, .home = std::nullopt});
     REQUIRE(folder.has_value());
-    CHECK(*folder == documents / "Coney Studio" / "Projects");
-    CHECK(folder->filename() == "Projects");
+    CHECK(coney::test::got(folder) == documents / "Coney Studio" / "Projects");
+    CHECK(coney::test::got(folder).filename() == "Projects");
 }
 
 TEST_CASE("the projects folder is made with the folders above it on first use, and only then", "[studio]") {
