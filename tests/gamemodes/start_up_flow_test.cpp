@@ -101,6 +101,7 @@ struct Run {
 } // namespace
 
 TEST_CASE("start-up: movies skipped, then modes 8, 6 and 5 pushed with the boot check asked", "[start_up]") {
+    // Expected: boot.md#main, confirmed (code)
     Run run("");
     CHECK(run.flow->services().movies() == std::vector<std::string>{"LOGO", "PLOGO", "L1_IN"});
     CHECK(run.stack.size() == 3);
@@ -116,6 +117,7 @@ TEST_CASE("start-up: the story session holds the original's story graph", "[star
 }
 
 TEST_CASE("start-up: legal screen, memory card, level flow, then the profile manager at PM_Greet", "[start_up]") {
+    // Expected: frontend.md#mode-flow, confirmed (code)
     Run run("");
     // The legal screen holds 150 frames (frames 0-149).
     run.frames(150);
@@ -153,6 +155,7 @@ TEST_CASE("start-up: legal screen, memory card, level flow, then the profile man
 }
 
 TEST_CASE("start-up: with a loading screen the front end loads behind the memory-card screen", "[start_up]") {
+    // Expected: frontend.md#mode-flow, confirmed (code)
     Run run("");
     coney::LoadingScreen screen(
         run.device,
@@ -185,6 +188,7 @@ TEST_CASE("start-up: with a loading screen the front end loads behind the memory
 }
 
 TEST_CASE("start-up: START on PM_Greet reaches the main menu, PM_Mode", "[start_up]") {
+    // Expected: frontend.md#pm-screens, confirmed (code)
     Run run("200 tap start\n");
     run.frames(201);
     CHECK(run.flow->profileManager().controller().currentName() == "PM_Mode");
@@ -196,6 +200,7 @@ TEST_CASE("start-up: START on PM_Greet reaches the main menu, PM_Mode", "[start_
 }
 
 TEST_CASE("profile manager: show() pushes the mode only when it is not on top", "[start_up]") {
+    // Expected: frontend.md#profile-manager, confirmed (code)
     Run run("");
     run.frames(152);
     REQUIRE(run.stack.topId() == ProfileManagerMode::kId);
@@ -301,6 +306,7 @@ struct ScriptedRun {
 } // namespace
 
 TEST_CASE("start-up with scripts: preloads at the legal screen, Menu.onStart shows the menus", "[start_up]") {
+    // Expected: frontend.md#mode-flow, confirmed (code)
     ScriptedRun run("");
     CHECK(run.flow->scripts().generation() == 1);
     // Frame 0: the legal screen's entry ran the preloads in the one state.
@@ -333,6 +339,7 @@ class StandInMode final : public coney::GameMode {
 
 TEST_CASE("start-up with scripts: the debug menus' jump starts a level at its checkpoint from the menus or a level",
           "[start_up][debug]") {
+    // Expected: ../guides/debug-menu.md#pages, Coney's own debug menu (the original has none)
     ScriptedRun run("");
     run.frames(152);
     REQUIRE(run.stack.topId() == ProfileManagerMode::kId);
@@ -367,6 +374,7 @@ TEST_CASE("start-up with scripts: the debug menus' jump starts a level at its ch
 
 TEST_CASE("start-up with scripts: story reaches Menu.startGame, the level request, and back to the menus",
           "[start_up]") {
+    // Expected: frontend.md#story-start, confirmed (code)
     // STORY with a new profile (tests/support/story_new_profile.txt): the menus are done on frame 419, then fade out.
     ScriptedRun run(coney::loadInputScript(coney::test::testSupportDir().string() + "/story_new_profile.txt").value());
     run.frames(420);
@@ -386,6 +394,7 @@ TEST_CASE("start-up with scripts: story reaches Menu.startGame, the level reques
 }
 
 TEST_CASE("start-up with scripts: a new story profile is saved to the profile folder and read back", "[start_up]") {
+    // Expected: save.md#coneys-implementation, Coney's own profile store (no memory card)
     const coney::test::TempDir folder;
     {
         ScriptedRun run(
@@ -430,6 +439,7 @@ struct CountingScene final : coney::FrontEndScene {
 
 TEST_CASE("start-up: the front end loads level100's scene, the menus step and draw it, and it goes with the level",
           "[frontend]") {
+    // Expected: frontend.md#background, confirmed (code)
     // Declared before the run: the flow still owns a scene when the run is torn down, and the scene's destructor
     // counts into these.
     int updates = 0;
@@ -476,6 +486,7 @@ struct TintScene final : coney::FrontEndScene {
 } // namespace
 
 TEST_CASE("start-up: the front end's tint reaches the bindings and is drawn over the menus' text", "[frontend]") {
+    // Expected: frontend.md#background, confirmed (code)
     Run run("");
     TintScene* scene = nullptr;
     int loads = 0;
@@ -519,6 +530,7 @@ TEST_CASE("start-up: the front end's tint reaches the bindings and is drawn over
 }
 
 TEST_CASE("start-up: a scene that fails to load leaves a black background and the menus", "[frontend]") {
+    // Expected: frontend.md#background, confirmed (code); the black background is Coney's stand-in
     Run run("");
     run.flow->levelFlow().setSceneLoader(
         [](std::string_view /*level*/) -> std::expected<std::unique_ptr<coney::FrontEndScene>, coney::Error> {
@@ -532,6 +544,7 @@ TEST_CASE("start-up: a scene that fails to load leaves a black background and th
 }
 
 TEST_CASE("start-up: the memory-card check shows its message for the original's 3 s in the game", "[start_up]") {
+    // Expected: save.md#mode-6, confirmed (code)
     Run run("", MemoryCardMode::kCheckingMessageMs);
     // Frame 150 (5,000 ms): the check shows "checking memory card", centred, until 8,000 ms.
     run.frames(151);
@@ -553,6 +566,7 @@ TEST_CASE("start-up: the memory-card check shows its message for the original's 
 
 TEST_CASE("start-up: an input script goes PM_Greet, PM_Mode, EXTRAS and back, with the original's cues",
           "[start_up][frontend]") {
+    // Expected: frontend.md#input, confirmed (code)
     // START once the 1.5 s fade in is over; right to EXTRAS; cross opens PM_Extras; triangle backs out to PM_Mode.
     Run run("200 tap start\n210 tap right\n220 tap cross\n235 tap triangle\n");
     run.frames(205);
@@ -577,6 +591,7 @@ TEST_CASE("start-up: an input script goes PM_Greet, PM_Mode, EXTRAS and back, wi
 
 TEST_CASE("start-up with scripts: the boot's memory-card mode loads the profiles, RELOAD PROFILES again",
           "[start_up]") {
+    // Expected: save.md#mode-6, confirmed (code)
     const coney::test::TempDir folder;
     // START on PM_Greet, cross on STORY (PM_Profile: CREATE NEW PROFILE, RELOAD PROFILES), down, then cross on RELOAD.
     auto script = coney::parseInputScript("200 tap start\n215 tap cross\n240 tap down\n250 tap cross\n");
@@ -609,6 +624,7 @@ TEST_CASE("start-up with scripts: the boot's memory-card mode loads the profiles
 }
 
 TEST_CASE("start-up with scripts: deleting a profile removes its file and the menus fade back in", "[start_up]") {
+    // Expected: save.md#mode-6, confirmed (code)
     const coney::test::TempDir folder;
     {
         coney::GameState other;
@@ -713,6 +729,7 @@ coney::test::SceneSpec wheelSceneSpec() {
 
 TEST_CASE("start-up with scripts: level100's scene plays looping on the front end's scenes, its object live",
           "[frontend][scenes]") {
+    // Expected: frontend.md#background, confirmed (code)
     HostingScene* hosting = nullptr;
     const coney::scenes::SceneList list{
         std::vector<coney::scenes::SceneListEntry>{{0, 0, "tst_other"}, {1, 0, "tst_wheel"}}};

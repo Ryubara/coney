@@ -151,8 +151,8 @@ TEST_CASE("story graph: a walk from an empty profile loads the 29 steps up to hu
 }
 
 TEST_CASE("story graph: the hash is fixed for the original's chain and changes with any step", "[story_graph]") {
-    // Expected: unverified, #1299 (Coney's own form: the design asks only that every machine get the same hash,
-    // docs/guides/studio/mission-mods.md#graph)
+    // Expected: ../guides/studio/mission-mods.md#graph, Coney's own form (the design asks only that every machine of a
+    // session get the same hash)
     const StoryGraph graph = StoryGraph::original();
     CHECK(coney::toHex(graph.hash()) == "edd929267edd3e95646e69e0aa4ddba286df22ea862ad76f1b9c6e75b0267bf4");
     CHECK(StoryGraph::original().hash() == graph.hash());
