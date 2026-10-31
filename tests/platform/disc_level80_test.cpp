@@ -754,9 +754,14 @@ TEST_CASE("the disc's level80: the uncuff steers the freer onto 325's reach from
         const UncuffPose& pose = kUncuffPoses.at(i);
         const UncuffMeasured& got = measured.at(i);
         CHECK(std::fabs(got.steeredDistance - pose.steeredDistance) < 0.03F);
-        // Within 5 degrees: Coney's 325 turns the root during the steer's three updates as well (about 1.3 degrees an
+        // Within 7 degrees: Coney's 325 turns the root during the steer's three updates as well (about 1.3 degrees an
         // update), where the original's steer alone turns him (docs/research/crimes.md#uncuff-pose, open question).
-        CHECK(std::fabs(degreesBetween(pose.steeredHeading, got.steeredHeading)) < 5.0F);
+        // And the cuffed human's own pose comes from the arrest, which the scene's box starts on its turn of the
+        // one-in-five schedule (docs/research/trigger-updates.md#schedule), and the original's numbers were read at
+        // a turn of its counter not known. Measured for flag 20 on 2026-10-31: with every box updated each frame the
+        // cuffed human stood at heading 97.43 and the steer ended at -5.77 (3.4 from the original's); on the schedule
+        // he stands at 101.49 and the steer ends at -7.86 (5.5 from it).
+        CHECK(std::fabs(degreesBetween(pose.steeredHeading, got.steeredHeading)) < 7.0F);
         CHECK(got.cuffedStill);
     }
 }
