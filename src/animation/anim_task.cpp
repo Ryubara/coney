@@ -157,9 +157,9 @@ GaitBlendTask::GaitBlendTask(const std::array<GaitClip, 5>& clips, float value, 
     }
 }
 
-std::size_t GaitBlendTask::lowerIndex() const {
+std::size_t GaitBlendTask::lowerIndexOf(float value) {
     std::size_t index = 0;
-    while (index < kPairSteps.size() && m_value >= kPairSteps[index]) {
+    while (index < kPairSteps.size() && value >= kPairSteps[index]) {
         ++index;
     }
     return index;

@@ -217,7 +217,9 @@ class GaitBlendTask final : public AnimTask {
     /// The shared normalised time of the two clips, 0 to 1.
     [[nodiscard]] float phase() const { return m_phase; }
     /// The lower clip of the pair: floor(value) with 0.995, 1.995, 2.995 as the steps (0 to 3).
-    [[nodiscard]] std::size_t lowerIndex() const;
+    [[nodiscard]] std::size_t lowerIndex() const { return lowerIndexOf(m_value); }
+    /// The lower clip of the pair that blend value `value` plays, as lowerIndex() finds it (0 to 3).
+    [[nodiscard]] static std::size_t lowerIndexOf(float value);
     /// Whether the upper clip leads: while the value falls toward the target or its fraction is above 0.875.
     [[nodiscard]] bool upperLeads() const;
     /// How many times the leading clip has wrapped since the task began: where the original calls the blend's wrap

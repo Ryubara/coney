@@ -83,7 +83,9 @@ class JitterBuffer {
     [[nodiscard]] std::uint64_t delay() const;
     /// Whether the clock is on its target, within the snapshots' interval: the world is drawn as far behind as asked.
     [[nodiscard]] bool settled() const;
-    /// The speed the last advance() played at, percent: 100, or 100 plus or minus JitterConfig::nudgePercent.
+    /// The speed the last advance() played at, percent, before holding at the newest snapshot: 100 on target; 100 plus
+    /// or minus JitterConfig::nudgePercent while easing; between 100 and that while stepping back onto whole steps;
+    /// the jump's size, which may be far from 100, when it jumped; 100 at the start.
     [[nodiscard]] std::uint32_t speedPercent() const { return m_speedPercent; }
     /// The advances that found nothing newer to play to and held at the newest snapshot.
     [[nodiscard]] std::uint64_t starvedSteps() const { return m_starvedSteps; }

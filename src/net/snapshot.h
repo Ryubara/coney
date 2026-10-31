@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <expected>
 #include <map>
+#include <optional>
 #include <span>
 
 #include "core/error.h"
@@ -123,11 +124,15 @@ class SnapshotReceiver {
     [[nodiscard]] const SnapshotHumans& humans() const;
     /// The humans decoded snapshot `sequence` holds, while it is kept; null when it is not.
     [[nodiscard]] const SnapshotHumans* holding(std::uint32_t sequence) const;
+    /// The server's step decoded snapshot `sequence` shows, while it is kept; nothing when it is not. With holding(),
+    /// what a client's jitter buffer takes of each snapshot decoded since it last looked, not only the newest.
+    [[nodiscard]] std::optional<std::uint32_t> heldStep(std::uint32_t sequence) const;
 
   private:
-    // One snapshot decoded: its sequence (0 for an empty place) and the humans it holds.
+    // One snapshot decoded: its sequence (0 for an empty place), the server's step it shows and the humans it holds.
     struct Received {
         std::uint32_t sequence = 0;
+        std::uint32_t step = 0;
         SnapshotHumans holding;
     };
 

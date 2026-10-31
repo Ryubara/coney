@@ -8,6 +8,7 @@
 #include <optional>
 #include <span>
 
+#include "animation/anim_clip.h"
 #include "animation/anim_math.h"
 #include "animation/anim_pose.h"
 #include "animation/anim_task.h"
@@ -16,7 +17,9 @@
 #include "net/net_id.h"
 #include "net/protocol.h"
 #include "net/replicated_fields.h"
+#include "net/snapshot.h"
 #include "world_objects/drawn_poses.h"
+#include "world_objects/object_tasks.h"
 
 // The client's world: the humans a client draws, from the snapshots in its jitter buffer, blended between two of them
 // and again between the client's last two steps, and their poses evaluated from the replicated animation layers. A
@@ -70,10 +73,12 @@ struct HumanState {
 
 /// `from` (alpha 0) blended towards `to` (alpha 1), as a client draws a human between two snapshots or two steps: the
 /// position lerped and the heading the short way round; each layer of `to` that was already playing in `from` (the same
-/// clip, found below the layers `to` added on top) has its playhead blended forward round the clip, its gait value and
-/// its fade lerped. The rest is `to`'s, as offline rendering draws the newest step's discrete state: health, the
-/// flags, a new clip, a new layer's fade. A move longer than DrawnPoses' kMostBlendedMetres is a jump, drawn as `to`.
-/// Returns `to` itself at alpha >= 1 and `from` at alpha <= 0.
+/// clip, found below the layers `to` added on top, or one gait blend whose leading clip changed) has its playhead
+/// blended forward round the clip, its gait value and its fade lerped, and a gait blend names the clip of the pair its
+/// blended value plays. The rest is `to`'s: health, the flags, a new clip, a new layer's fade. Offline rendering
+/// instead blends two sampled poses, so a new clip there cross-fades over one step; a client draws it unblended
+/// (docs/guides/client-world.md#blend says why). A move longer than DrawnPoses' kMostBlendedMetres is a jump, drawn
+/// as `to`. Returns `to` itself at alpha >= 1 and `from` at alpha <= 0.
 /// @coney-only network play; the original has none
 [[nodiscard]] HumanState blendHumans(const HumanState& from, const HumanState& to, float alpha);
 
@@ -129,8 +134,8 @@ class ClientWorld {
     /// A world whose buffer plays as `config` says.
     explicit ClientWorld(JitterConfig config = {});
 
-    /// Takes the newest snapshot `snapshots` has decoded into the buffer, when it is one not taken before. Call after
-    /// each NetClient::receive().
+    /// Takes every snapshot `snapshots` has decoded since the last call into the buffer, oldest first, by its server
+    /// step: two may arrive in one step. Call after each NetClient::receive().
     void receive(const SnapshotReceiver& snapshots);
     /// One client step: the buffer's clock advances, and the humans it shows become this step's.
     void step();
@@ -149,7 +154,7 @@ class ClientWorld {
 
   private:
     JitterBuffer m_buffer;
-    std::uint32_t m_taken = 0; // the newest sequence received
+    std::uint32_t m_taken = 0; // the newest sequence taken into the buffer
     Interpolated<Humans> m_humans{Humans{}};
     world_objects::DrawnPoses<NetId> m_poses;
     std::optional<std::uint64_t> m_shownTime;

@@ -28,6 +28,10 @@ A snapshot older than the newest decoded is ignored (Stale), and so is one whose
 acknowledgement is unreliable: a lost one is replaced by the next step's. A late one, older than the newest
 acknowledged, changes nothing.
 
+The receiver keeps each of the last `kSnapshotHistory` snapshots it decoded with the server's step it shows
+(`holding(sequence)`, `heldStep(sequence)`), so a client's jitter buffer takes every one decoded since it last looked,
+not only the newest ([The client's world](client-world.md#model)).
+
 ## A human's state {#human-state}
 
 A human travels as its [field table](multiplayer.md#field-tables)'s 23 fields, each as its **word**: the bits
