@@ -27,7 +27,7 @@ class ReactionGoal final : public Goal {
 
 /// Whether `human`'s state calls for a reaction goal of `type`: grabbing (Coney's grab or mugging mode), tackling,
 /// grabbed (in a player's grab, or held by a grabber), tackled (mounted by a tackler), knocked down (on the ground, or
-/// out of health), stunned and not down (its stun or the stun's exit).
+/// out of health), stunned and not down (until the stun's end clip 357 starts).
 [[nodiscard]] bool reactionHolds(GoalType type, const human::Human& human);
 
 /// Whether `human` is busy (`Human_IsBusy`, docs/research/characters.md): a busy bit of his record's

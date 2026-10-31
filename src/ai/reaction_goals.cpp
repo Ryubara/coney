@@ -31,7 +31,7 @@ bool reactionHolds(GoalType type, const human::Human& human) {
     case GoalType::ReactKnockedDown:
         return victim.grounded() || fighter.health().depleted();
     case GoalType::ReactStunned:
-        return (victim.stunned() || victim.stunExitPending()) && !victim.grounded();
+        return victim.stunned() && !victim.grounded();
     default:
         return false;
     }

@@ -52,7 +52,7 @@ struct VictimFrame {
 /// What a reaction on its feet turned out to be.
 enum class ReactionKind : std::uint8_t {
     Plain,     ///< The reaction, then the idle.
-    Stun,      ///< The reaction, then the stun's loop until its time passes, then 357 and the idle.
+    Stun,      ///< The reaction, then 355 and the stun's loop until its time passes, then 357 and the idle.
     Knockdown, ///< The reaction, then the ground (196) until it gets up with 199.
 };
 
@@ -92,21 +92,21 @@ class Victim {
     void stun(std::uint64_t nowMs);
     /// Forgets the stun and the ground (a hold takes it, it got up another way).
     void clear();
-    /// Stunned until `untilMs`, the class's stun time aside (a boss's tired window).
+    /// Stunned until `untilMs`, the class's stun time aside (a boss's tired window), already in the stun's loop.
     void stunUntil(std::uint64_t untilMs) {
         m_stunUntilMs = untilMs;
-        m_stunExitPending = false;
+        m_stunEntered = true;
     }
     /// Forgets the stun only.
-    void endStun() {
-        m_stunUntilMs = 0;
-        m_stunExitPending = false;
-    }
+    void endStun() { m_stunUntilMs = 0; }
 
-    /// One update's timers at `nowMs`: a stun whose time has passed ends with 357 (then `idle`) once the clip playing
-    /// is over (a reaction or the rise is not cut short); a grounded victim with `canRise` gets up with 199 once its
-    /// ground time has passed (then the stun's loop while stunned, else `idle`). Returns true on the update it rises.
-    /// @orig 0x00256a60 Human_RefillMeters (unknown)
+    /// One update's timers at `nowMs`. Standing stunned with no clip driving the human (a reaction, the rise or 355 is
+    /// not cut short, the stun's loop 356 is): once its time has passed the stun ends, its state clearing as 357
+    /// starts (then `idle`); before, the clip that ended returns to 355, then 356. A grounded victim with `canRise`
+    /// gets up with 199 once its ground time has passed (then the stun's clips while stunned, else `idle`). Returns
+    /// true on the update it rises.
+    /// Research: docs/research/combat-reactions.md#stun-end
+    /// @orig 0x00256a60 Human_UpdateDown (unknown)
     /// @orig 0x0022f8d8 Human_EndStun (unknown)
     bool step(HumanAnimator& animator, std::uint32_t idle, std::uint64_t nowMs, bool canRise);
     /// A command made while lying down: once the knockdown's reaction is over (lying in 196) it cuts the ground time
@@ -117,10 +117,11 @@ class Victim {
     [[nodiscard]] const combat::PowerClass& powerClass() const { return m_class; }
     /// On the ground (from a knockdown or a throw) until it rises.
     [[nodiscard]] bool grounded() const { return m_grounded; }
-    /// Stunned: its stun's time has not passed.
+    /// Stunned (state `0x100000`): from the stun until it ends, which is after its time has passed, once no clip
+    /// drives the human (step()).
     [[nodiscard]] bool stunned() const { return m_stunUntilMs != 0; }
-    /// The stun has passed but its 357 waits for the clip playing to end.
-    [[nodiscard]] bool stunExitPending() const { return m_stunExitPending; }
+    /// When the stun's time passes, ms of game time (0 when not stunned).
+    [[nodiscard]] std::uint64_t stunUntilMs() const { return m_stunUntilMs; }
     /// When a grounded victim gets up, ms of game time.
     [[nodiscard]] std::uint64_t riseAtMs() const { return m_riseAtMs; }
     /// Reactions played, stuns and knockdowns so far, and the last reaction's clip (-1 before any).
@@ -138,8 +139,8 @@ class Victim {
     IncomingHit m_pending;
     bool m_hasPending = false;
     bool m_grounded = false;
-    bool m_stunExitPending = false;
-    std::uint64_t m_stunUntilMs = 0; // 0 when not stunned
+    std::uint64_t m_stunUntilMs = 0; // 0 when not stunned; kept past its time until the stun ends
+    bool m_stunEntered = false;      // 355 has played since the clip the stun began in
     std::uint64_t m_riseAtMs = 0;
     int m_reactions = 0;
     int m_stuns = 0;

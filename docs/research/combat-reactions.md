@@ -350,6 +350,43 @@ mashing is measured in [Being hit](#being-hit-runtime).
 
 The victim can act again when its reaction clip ends (standing), its stun ends, or its rise ends.
 
+#### The stun's end and the way back into the fight {#stun-end}
+
+When a stunned human stands again, and when a stunned AI fighter acts again. Read in Ghidra: confirmed (code) where no
+other level is given.
+
+- **The stun ends only with no clip holding the human.** `Human_UpdateDown` (`0x00256a60`) tests a standing stun
+  (`Human_IsStunnedStanding`: `0x100000` and not `0x80000`) only when the human has no held flag at all and none of the
+  states `0x1c18003ff0`; then, once now passes `+0x100` and the human has no endless stun (`+0xe0` `0x8000000`), it
+  calls `Human_EndStun` (`0x0022f8d8`). So a reaction (held `0x400`), a paired reaction (`0x400000`) or the stun's
+  enter clip keep the stun's state past its time; the stun's loop holds nothing, so the stun ends in it at its time.
+- **`Human_EndStun` clears the state as 357 starts.** It pops move style `0xe`, sets state `0x20000000`, enters the
+  fight stance (state `0x1`), clears `0x100000` and sets record `+0x18` = `0xb`. The idle builder that runs next
+  (`Human_BuildIdleTasks`, `0x0025f770`) plays 357 `STUNNED_EXIT` from 356, and with `+0x18` = `0xb` it plays the
+  action clip after record `+0x28` (inferred to be 357 too: at runtime 357 followed a reaction directly, below). The
+  clip holds `0x80000`, or `0x40000000` when the player record's `+0x1b` is set.
+- **A clip that ends while still stunned returns to 355.** `Human_BuildIdleTasks` plays 355 `STUNNED_ENTER`
+  (`0x163`) whenever state `0x100000` is set, and 356 `STUNNED_IDLE` follows it; `Human_PlayStanceIdleState`
+  (`0x0025fa48`) does the same for the fight stance's idle.
+- **The stunned reaction goal ends the update after.** `StunnedGoal_Process` (`0x002b4bb8`) is done once the human is
+  no longer stunned standing, so the brain's next update ends it and the stack's top, the fight goal, runs in that
+  update ([AI goals](ai-goals.md#goal-reactions)).
+- **The fighter is free in 357.** `Human_CanUseAttackKind` (`0x002240e8`) counts a human free when his state has
+  none of `0x7bf9e9f7ff0`; held flags and the clip playing are not read. With the stun's state gone the fight goal
+  picks a kind and queues its next action in that same update, while 357 still plays.
+
+At runtime (confirmed (runtime), run r-20261031-civ-stun; `repo:research/traces/scenarios/civ_stun.toml`, the
+`civ_knockdown` fighter, updates of 1/30 s): the player's `SSS3` hit the fighter at update 54, which played 276 (held
+`0x400`) and was stunned (state `0x100003`) with `+0x100` = the hit + 750 ms. The time passed at update 77, but 276
+held the stun until its end: at update 81 357 started, held `0x80000`, and the state was `0x3`; at 82 the reaction goal
+was gone and the fight goal had queued a move to the player, 357 still playing until 104. With the stun's time still
+to run when the clip ends, the clips go on to 355 and 356: in the `civ_knockdown` run of task 691 (the fighter's grab
+countered with 76, the fighter playing 77 from update 21) 77 ended at 67, 355 played at 68 (held `0x80000`), 356 from
+69 (held nothing), and the stun ended as 357 started at 80, the reaction goal at 81, with a move queued at 81
+(confirmed (runtime), its trace in that task's scratch, recorded before this page cited runs; the run is not on file).
+That stun's time ran 750 ms from update 57, as 76 and 77 ended, not from 21 (inferred from the 750 ms and the update
+357 began; [Open questions](#open-questions)).
+
 #### Scripted knockdowns, stuns and hits {#scripted-knockdowns}
 
 Read in Ghidra: confirmed (code) where no other level is given; each runtime block says confirmed (runtime).
@@ -1179,6 +1216,10 @@ fade and the `dyn_cross` icon are not built.
   `+0x18`, which `Mount_OnStrikeEnd` compares with 0.25 to choose a reversal over a break ([Down and under
   attack](#ground-escape)), is the left stick's magnitude, as Coney reads it. A watch on it with the stick pushed and at
   rest would tell.
+- **The grab counter's stun time**{#q-pair-stun}: which call starts the countered grabber's 750 ms when 76 and 77 end
+  rather than when they start ([The stun's end](#stun-end)); `Human_Stun` (`0x0022f658`) on a stunned human restarts
+  the time through `Human_SetStunTimer`. Coney's counter of the player's grab starts it at the counter. A watch on
+  record `+0x100` during the counter would name the writer.
 - **A knocked-out tackled victim**{#q-tackle-knockout}: whether a tackled victim is ever knocked out when
   `Tackle_OnVictimRiseEnd` fires ([Who sets and clears the knocked-out bit](#knocked-out-bit)). A breakpoint on the
   hook with the state word read would tell.

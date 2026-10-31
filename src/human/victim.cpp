@@ -85,41 +85,45 @@ void Victim::die(const IncomingHit& hit, const VictimFrame& frame, HumanAnimator
     m_lastReaction = dying;
     m_grounded = true;
     m_stunUntilMs = 0;
-    m_stunExitPending = false;
 }
 
 void Victim::knockDown(std::uint64_t nowMs, bool stunned) {
     m_grounded = true;
     m_riseAtMs = nowMs + static_cast<std::uint64_t>(m_class.groundMs);
-    m_stunExitPending = false;
     m_stunUntilMs = stunned ? m_riseAtMs + static_cast<std::uint64_t>(m_class.stunMs) : 0;
+    m_stunEntered = false;
 }
 
 void Victim::stun(std::uint64_t nowMs) {
     m_stunUntilMs = nowMs + static_cast<std::uint64_t>(m_class.stunMs);
-    m_stunExitPending = false;
+    m_stunEntered = false;
 }
 
 void Victim::clear() {
     m_grounded = false;
     m_stunUntilMs = 0;
-    m_stunExitPending = false;
 }
 
 bool Victim::step(HumanAnimator& animator, std::uint32_t idle, std::uint64_t nowMs, bool canRise) {
-    // 1. The stun's time passes; its exit waits for the clip playing (a reaction, the rise) to end.
-    if (m_stunUntilMs != 0 && nowMs >= m_stunUntilMs) {
-        m_stunUntilMs = 0;
-        m_stunExitPending = true;
+    // 1. Standing stunned with no clip driving the human (`Human_UpdateDown` tests the stun only with no held flag: a
+    // reaction, the rise and 355 hold one, the loop 356 none). Its time passed, the stun ends and its state clears as
+    // 357 starts (`Human_EndStun`, then `Human_BuildIdleTasks`): at once when the clip that held it ends late enough.
+    // Its time not passed, the clip that ended returns to 355, then the loop 356 (`Human_BuildIdleTasks`).
+    if (stunned() && !m_grounded && !animator.drivingClipPlaying()) {
+        if (nowMs >= m_stunUntilMs) {
+            m_stunUntilMs = 0;
+            animator.playCombat(one(static_cast<std::uint32_t>(combat::kStunEnd)), idle, AnimState::Attack);
+        } else if (!m_stunEntered) {
+            m_stunEntered = true;
+            animator.playCombat(one(static_cast<std::uint32_t>(combat::kStunEnter)),
+                                static_cast<std::uint32_t>(combat::kStunLoop), AnimState::Hold);
+        }
     }
-    if (m_stunExitPending && !m_grounded && !animator.drivingClipPlaying()) {
-        m_stunExitPending = false;
-        animator.playCombat(one(static_cast<std::uint32_t>(combat::kStunEnd)), idle, AnimState::Attack);
-    }
-    // 2. Down long enough, it gets up: into the stun's loop while stunned, else the idle.
+    // 2. Down long enough, it gets up: into the stun's loop while stunned (355 first, from step 1), else the idle.
     if (m_grounded && canRise && nowMs >= m_riseAtMs) {
         m_grounded = false;
         if (stunned()) {
+            m_stunEntered = false;
             animator.playCombat(one(kGroundedRise), static_cast<std::uint32_t>(combat::kStunLoop), AnimState::Hold,
                                 kCombatFade, kRiseHolds);
         } else {

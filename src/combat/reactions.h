@@ -18,8 +18,10 @@ namespace coney::combat {
 inline constexpr std::uint16_t kRangeFlagStun = 0x400;
 /// The reaction a missing table entry falls back to (and the light high front one).
 inline constexpr int kFallbackReaction = 272;
-/// The stun's loop after the reaction (356, seen at runtime; the code names 355 as a stunned reaction's return, not
-/// seen) and the clip that ends a stun before the idle returns.
+/// The stun's clips: the enter (355) that a clip ending while stunned returns to (`Human_BuildIdleTasks` `0x0025f770`),
+/// the loop after it (356), and the clip that ends a stun before the idle returns (357), all seen at runtime
+/// (docs/research/combat-reactions.md#stun-end).
+inline constexpr int kStunEnter = 355;
 inline constexpr int kStunLoop = 356;
 inline constexpr int kStunEnd = 357;
 /// The dying fallback outside the `DIE` set.
