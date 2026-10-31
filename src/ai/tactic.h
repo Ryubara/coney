@@ -57,11 +57,11 @@ class Tactic {
 
     /// Its start (vtable `+0x0c`), after the members' goal bases were marked.
     virtual void start(Gang& /*gang*/) {}
-    /// The end (`Tactic_End`): end(), then every AI member popped to his goal base. The gangs call it when the tactic
-    /// is cleared or replaced.
+    /// The end (`Tactic_End`): every AI member popped to his goal base, then end(). The gangs call it when the tactic
+    /// is cleared or replaced. Not built: the strategy's end, which comes first in the original (#337).
     /// @orig 0x00306850 Tactic_End (unknown)
     void finish(Gang& gang);
-    /// Its end (vtable `+0x14`), when it is cleared or replaced.
+    /// Its end (vtable `+0x14`), when it is cleared or replaced, after the members were popped to their goal bases.
     virtual void end(Gang& /*gang*/) {}
     /// One update's work (vtable `+0x24`); non-zero fires the callback.
     [[nodiscard]] virtual int update(Gang& /*gang*/) { return 0; }

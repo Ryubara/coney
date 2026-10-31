@@ -513,6 +513,8 @@ std::string_view goalTypeName(ai::GoalType type) {
         return "Scout";
     case Dealer:
         return "Dealer";
+    case DealerReaction:
+        return "DealerReaction";
     case Shopkeeper:
         return "Shopkeeper";
     case WarriorVandalSteal:

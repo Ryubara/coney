@@ -38,7 +38,9 @@ class AttackAction final : public Action {
     /// along the action's heading when it has one (the snap, kind 10, toward the target when none is given).
     /// @orig 0x002fa9a8 AttackAction_Start (unknown)
     [[nodiscard]] ActionStatus start(Brain& brain) override;
-    /// Done once the record's `+0x08` has none of kAttackWaitFlags. The command is not written again.
+    /// Running on its first update (the one Brain::stepAction() makes right after the start, so the press is taken
+    /// before the next action can write its own); after that, done once the record's `+0x08` has none of
+    /// kAttackWaitFlags. The command is not written again.
     /// @orig 0x002fad70 AttackAction_Update (unknown)
     [[nodiscard]] ActionStatus update(Brain& brain) override;
     /// Refused while the record's `+0x08` has any of kAttackWaitFlags.
@@ -56,6 +58,7 @@ class AttackAction final : public Action {
     std::optional<float> m_stickHeading; // +0x1c, the stick's heading
     bool m_stick = false;                // it wrote a stick, let go when it is done
     bool m_self = false;                 // pressed on himself, with no target
+    bool m_firstUpdate = true;           // +0x20, set by AttackAction_Init: the first update only clears it
 };
 
 } // namespace coney::ai

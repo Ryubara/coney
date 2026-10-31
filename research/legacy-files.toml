@@ -13,9 +13,6 @@ tag = 7
 ["src/ai/ai_humans.h"]
 comment = 5
 
-["src/ai/attack_action.cpp"]
-tag = 3
-
 ["src/ai/attack_choice.cpp"]
 tag = 3
 
@@ -40,10 +37,6 @@ tag = 14
 
 ["src/ai/boss_goals.h"]
 comment = 4
-
-["src/ai/brain.h"]
-comment = 38
-tag = 1
 
 ["src/ai/brain_events.cpp"]
 tag = 6
@@ -178,9 +171,6 @@ tag = 4
 
 ["src/ai/scripted_goals.cpp"]
 tag = 11
-
-["src/ai/scripted_goals.h"]
-comment = 4
 
 ["src/ai/scripted_hub.cpp"]
 tag = 16
@@ -2396,9 +2386,6 @@ citation = 2
 
 ["tests/platform/disc_rumble_gang_count_test.cpp"]
 citation = 1
-
-["tests/platform/disc_rumble_test.cpp"]
-citation = 9
 
 ["tests/platform/disc_scene_option_test.cpp"]
 citation = 2

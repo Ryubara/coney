@@ -226,12 +226,15 @@ TEST_CASE("a goal pushed from a popped goal's End stays on the stack", "[ai]") {
     REQUIRE(brain.pushGoal(std::make_unique<LoggingGoal>("base", log)));
     REQUIRE(brain.pushGoal(std::make_unique<PushingGoal>(log)));
     REQUIRE(brain.goalCount() == 2);
+    // Started, so its End runs when it is popped (a goal never started is freed without it).
+    brain.update(stepMs(1));
     brain.popGoal();
-    // The pusher is gone and the goal its End pushed is on top of the base, not popped in the pusher's place.
+    // The pusher is gone and the goal its End pushed is on top of the base, not popped in the pusher's place; the pop
+    // started it, as the new top, so the next update processes it.
     CHECK(brain.goalCount() == 2);
     log.clear();
-    brain.update(stepMs(1));
-    CHECK(log == std::vector<std::string>{"next start", "next process"});
+    brain.update(stepMs(2));
+    CHECK(log == std::vector<std::string>{"next process"});
 }
 
 TEST_CASE("a done goal is popped and the new top is processed in the same update", "[ai]") {
@@ -262,15 +265,16 @@ TEST_CASE("the stack holds ten goals and the queue eight actions; a refused abor
     brain.flush();
     CHECK(brain.goalCount() == 0);
 
-    REQUIRE(brain.queueAction(std::make_unique<LoggingAction>("free", log)));
+    // The refusing action starts at the front (only a started action is asked to stop).
     REQUIRE(brain.queueAction(std::make_unique<LoggingAction>("busy", log, 0, 1000, true)));
-    for (std::size_t k = 2; k < coney::ai::kActionQueueSize; ++k) {
+    brain.update(stepMs(1));
+    for (std::size_t k = 1; k < coney::ai::kActionQueueSize; ++k) {
         REQUIRE(brain.queueAction(std::make_unique<LoggingAction>("more", log)));
     }
     CHECK_FALSE(brain.queueAction(std::make_unique<LoggingAction>("over", log)));
     // Clearing frees from the front and stops at the action that refuses (an attack under way is never cut).
-    brain.clearActions();
-    CHECK(brain.actionCount() == coney::ai::kActionQueueSize - 1);
+    CHECK_FALSE(brain.clearActions());
+    CHECK(brain.actionCount() == coney::ai::kActionQueueSize);
 }
 
 TEST_CASE("an action's delay counts down against the time of the brain's last update", "[ai]") {
@@ -388,6 +392,25 @@ TEST_CASE("the attack action writes its command once, as it starts, and waits on
     }
     // The square started S1 through the dispatcher.
     CHECK(playedS1);
+}
+
+TEST_CASE("an attack action runs through the update that pressed it, so the next press waits an update", "[ai]") {
+    // Expected: ai-fights.md#attack-action, confirmed (code): AttackAction_Init (0x002fa918) sets +0x20 to 1, and
+    // AttackAction_Update (0x002fad70) clears it and says running, before it looks at the held flags.
+    Scene scene;
+    Brain& gang = scene.add({40.0F, 41.0F, 0.0F}, 180.0F, BrainType::Gang);
+    gang.setTarget(&scene.playerBrain());
+    REQUIRE(gang.queueAction(std::make_unique<coney::ai::AttackAction>(1, 0)));
+    REQUIRE(gang.queueAction(std::make_unique<coney::ai::AttackAction>(2, 0)));
+    // Only the brain runs: no human takes the press and no clip sets a held flag.
+    gang.update(stepMs(30));
+    CHECK(gang.actionCount() == 2);
+    CHECK(gang.human().record().command == command::kSquarePressed);
+    // The next update ends the first (its flags are clear) and starts the second in the same update.
+    gang.human().record().command = command::kNone;
+    gang.update(stepMs(31));
+    CHECK(gang.actionCount() == 1);
+    CHECK(gang.human().record().command == command::kCrossPressed);
 }
 
 TEST_CASE("a brain counts the attack starts its range and field of view take in", "[ai]") {

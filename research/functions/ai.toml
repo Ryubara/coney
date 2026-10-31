@@ -1143,7 +1143,12 @@ kind = "helper"
 role = "on a knock-out: ends the reaction goal, clears goals and actions, drops the target"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::knockOut"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "a human knocked out while wounded still hears event 0x12"
+relation = "not-ported"
+issue = 685
 
 [[function]]
 address = 0x0028c5d8
@@ -1259,7 +1264,7 @@ page = "ai/index.md#update-goals"
 role = "the goal stack"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::popGoal"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0028d8a0
@@ -1288,7 +1293,7 @@ page = "ai/index.md#update-goals"
 role = "the goal stack"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::clearGoals"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0028d960
@@ -1324,7 +1329,7 @@ page = "ai/index.md#actions"
 role = "the action queue"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::clearActions"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0028db88
@@ -1404,8 +1409,8 @@ address = 0x0028f240
 name = "Brain_EndReactionGoal"
 page = "ai/index.md#reaction-goals"
 level = "confirmed-code"
-coney = "src/ai/brain.h:Brain::updateReactionGoal"
-status = "legacy"
+coney = "src/ai/brain.h:Brain::endReactionGoal"
+status = "compared"
 
 [[function]]
 address = 0x0028f2b0
@@ -1413,7 +1418,27 @@ name = "Brain_UpdateReactionGoal"
 page = "ai/index.md#reaction-goals"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::updateReactionGoal"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the arrested, on-fire and wounded reaction goals, and the on-fire term of the calm civilian test"
+relation = "not-ported"
+issue = 1308
+
+[[function.gaps]]
+what = "the Grabber (0x92) and BigBull (0x89) goals that hold reactions off"
+relation = "not-ported"
+issue = 1309
+
+[[function.gaps]]
+what = "brain +0x2d7 (leaving through an exit flag) reads clear"
+relation = "not-ported"
+issue = 647
+
+[[function.gaps]]
+what = "game state +0x158 (co-op) is not read: the class exemptions always apply"
+relation = "stand-in"
+issue = 550
 
 [[function]]
 address = 0x0028f6c0
@@ -1482,7 +1507,7 @@ relation = "not-ported"
 issue = 635
 
 [[function.gaps]]
-what = "an out-of-health human and a suspended brain in a scene skip the goals too, and the goal loop is bounded"
+what = "an out-of-health human and a suspended brain in a scene skip the goals too, the goal loop is bounded, and a goal that changed the stack under itself is not popped again"
 relation = "stand-in"
 issue = 635
 
@@ -1493,7 +1518,7 @@ page = "ai/index.md#actions"
 role = "the action queue"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::runActions"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0028fe90
@@ -2350,24 +2375,24 @@ address = 0x0029ed58
 name = "Goal_Start"
 page = "ai/index.md#goals"
 level = "confirmed-code"
-coney = "src/ai/brain.h:Brain::processGoals"
-status = "legacy"
+coney = "src/ai/brain.h:Brain::startGoal"
+status = "compared"
 
 [[function]]
 address = 0x0029edd8
 name = "Goal_End"
 page = "ai/index.md#goals"
 level = "confirmed-code"
-coney = "src/ai/brain.h:Brain::popGoal"
-status = "legacy"
+coney = "src/ai/brain.h:Brain::retireGoal"
+status = "compared"
 
 [[function]]
 address = 0x0029ee30
 name = "Goal_Resume"
 page = "ai/index.md#goals"
 level = "confirmed-code"
-coney = "src/ai/brain.h:Brain::processGoals"
-status = "legacy"
+coney = "src/ai/brain.h:Brain::resumeGoal"
+status = "compared"
 
 [[function]]
 address = 0x0029eea0
@@ -2382,8 +2407,13 @@ address = 0x0029eed8
 name = "Goal_Process"
 page = "ai/index.md#goals"
 level = "confirmed-code"
-coney = "src/ai/brain.h:Brain::processGoals"
-status = "legacy"
+coney = "src/ai/brain.h:Brain::runGoal"
+status = "compared"
+
+[[function.gaps]]
+what = "the character instance gate (human +0xd8): every Coney human with a brain has its body"
+relation = "stand-in"
+issue = 635
 
 [[function]]
 address = 0x0029f098
@@ -3898,6 +3928,16 @@ coney = "src/ai/scripted_goals.h:MoveToUseFlagGoal"
 status = "legacy"
 
 [[function]]
+address = 0x002dbaa0
+name = "MoveToUseFlagGoal_Destroy"
+page = "ai-goals.md#goal-move-to"
+kind = "destroy"
+role = "releases the flag (`Flag_ReleaseUser`), whether or not the goal started"
+level = "confirmed-code"
+coney = "src/ai/scripted_goals.h:MoveToUseFlagGoal::destroy"
+status = "compared"
+
+[[function]]
 address = 0x002dc458
 name = "Goal_MoveToHuman"
 page = "ai-goals.md#goal-move-to"
@@ -4617,7 +4657,27 @@ kind = "helper"
 role = "a started action is aborted first (vtable `+0x1c`, 0 when it refuses); then destroyed (`+0x24`); 1 when gone (from `Brain_PopAction`)"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::finishAction"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "Abort takes no mode (0 a normal end, 1 a clear); each action tells the two apart by its own state"
+relation = "stand-in"
+question = "ai/index.md#q-abort-mode"
+
+[[function]]
+address = 0x002f9e48
+name = "Action_Update"
+page = "ai/index.md#actions"
+kind = "base"
+role = "counts the start delay down against the brain's last update, starts the action once (a Start that says done leaves it unstarted), then its Update"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::stepAction"
+status = "compared"
+
+[[function.gaps]]
+what = "the random delay is drawn from the brain's generator, not the shared stream 0x006eb880"
+relation = "stand-in"
+issue = 689
 
 [[function]]
 address = 0x002f9f48
@@ -4722,9 +4782,15 @@ status = "legacy"
 address = 0x002fad70
 name = "AttackAction_Update"
 page = "ai-fights.md#attack-action"
+role = "running on its first call (+0x20, set by AttackAction_Init), then done once the attack's held flags clear"
 level = "confirmed-code"
 coney = "src/ai/attack_action.h:AttackAction::update"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "done when the target's handle is gone (unless the held flags are set), a charge kind's gait 4 each update, and the done-after-press flag +0x14"
+relation = "not-ported"
+issue = 674
 
 [[function]]
 address = 0x002faeb0
@@ -5186,7 +5252,12 @@ kind = "base"
 role = "ends the strategy (`0x00306bd0`), pops every non-player member (`+0x1b0` = −1) down to his goal base, then calls the class's End (slot `+0x14`); from `Gang_StopTactic`, `Gang_Destroy` and the old boss tactic"
 level = "confirmed-code"
 coney = "src/ai/tactic.h:Tactic::finish"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the strategy is not ended first (Tactic_EndStrategy): no tactic owns one yet"
+relation = "not-ported"
+issue = 337
 
 [[function]]
 address = 0x003068f8

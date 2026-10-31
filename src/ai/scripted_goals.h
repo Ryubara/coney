@@ -41,7 +41,9 @@ class BackoffGoal final : public Goal {
     /// Walks away while too near; done when the time is up or the other is gone.
     [[nodiscard]] GoalStatus process(Brain& brain) override;
 
+    /// The human it backs off from (a handle).
     [[nodiscard]] double from() const { return m_from; }
+    /// How far it backs off, m.
     [[nodiscard]] float distance() const { return m_distance; }
     /// The flag (forced true for player-side humans by the binding's caller; its meaning is inferred).
     [[nodiscard]] bool option() const { return m_option; }
@@ -73,6 +75,7 @@ class BumLogicGoal final : public Goal {
     explicit BumLogicGoal(BumOrder order) : Goal(GoalType::BumLogic), m_order(std::move(order)) {}
     /// Stands still.
     [[nodiscard]] GoalStatus process(Brain& brain) override;
+    /// The order it was made with.
     [[nodiscard]] const BumOrder& order() const { return m_order; }
 
   private:
@@ -87,27 +90,37 @@ struct UseFlagOrder {
 };
 
 /// `GoalMoveToUseFlag`'s goal: goes to the flag as GoalMoveToFlag does (no offset, turning to the flag's heading) and
-/// then uses it. The flag is reserved for the human from the goal's making until its end (`0x004161b0`).
+/// then uses it. The flag is reserved for the human from the goal's making until it is freed (`0x004161b0`).
 /// **Coney stand-in** for the use (the flags' use clips are not researched): once there the human stands at the flag
 /// and the goal never ends.
 /// @orig 0x002db768 MoveToUseFlagGoal_Init (unknown)
 class MoveToUseFlagGoal final : public Goal {
   public:
     /// Going as `move` says (through `services`, which must outlive it), then using the flag as `use` says; `release`
-    /// (may be empty) is called at its end to free the flag's reservation.
+    /// (may be empty) is called once, at its end or when it is freed, to free the flag's reservation.
     MoveToUseFlagGoal(const MoveToFlagOrder& move, FlagServices& services, const UseFlagOrder& use,
                       std::function<void()> release);
     /// The move's start.
     void start(Brain& brain) override;
     /// The move's resume.
     void resume(Brain& brain) override;
-    /// Frees the flag.
+    /// Stops the move and frees the flag (**Coney's choice**: the original's End leaves the flag to the destroy that
+    /// follows it at once).
     void end(Brain& brain) override;
+    /// Frees the flag, also for a goal popped before it started (end() has freed it already for one that started).
+    /// @orig 0x002dbaa0 MoveToUseFlagGoal_Destroy (unknown)
+    void destroy(Brain& /*brain*/) override {
+        if (m_release) {
+            m_release();
+            m_release = nullptr;
+        }
+    }
     /// The move until it arrives, then the use.
     [[nodiscard]] GoalStatus process(Brain& brain) override;
 
     /// Whether it reached the flag.
     [[nodiscard]] bool inUse() const { return m_arrived; }
+    /// What it was told to do at the flag.
     [[nodiscard]] const UseFlagOrder& use() const { return m_use; }
 
   private:

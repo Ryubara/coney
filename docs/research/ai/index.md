@@ -6,10 +6,10 @@ owns:
     "0x00147ef0", "0x00231090", "0x00231198", "0x0028a360", "0x0028c1a8", "0x0028c3b0", "0x0028d758", "0x0028d7d8",
     "0x0028d910", "0x0028d960", "0x0028d9f0", "0x0028da60", "0x0028db20", "0x0028e248", "0x0028f240", "0x0028f2b0",
     "0x0028f6c0", "0x0028f8b8", "0x0028f928", "0x0028fbb0", "0x0028fe28", "0x00293950", "0x002939b0", "0x00293b28",
-    "0x0029ed58", "0x0029edd8", "0x0029ee30", "0x0029eea0", "0x0029eed8", "0x00419ee0", "0x0041b4f0", "0x0041b5e0",
-    "0x0041c2b0", "0x0041c2d0", "0x0041c338", "0x0041c4c8", "0x0041d080", "0x0041d088", "0x0041d738", "0x0041d748",
-    "0x0041d758", "0x0041d770", "0x0041d978", "0x0041da50", "0x0041da60", "0x0041da70", "0x0041db08", "0x0041dbe8",
-    "0x0041dc80", "0x0041dcf0", "0x0041dd40", "0x0041dd68", "0x004edd40", "0x004edd48",
+    "0x0029ed58", "0x0029edd8", "0x0029ee30", "0x0029eea0", "0x0029eed8", "0x002f9e48", "0x00419ee0", "0x0041b4f0",
+    "0x0041b5e0", "0x0041c2b0", "0x0041c2d0", "0x0041c338", "0x0041c4c8", "0x0041d080", "0x0041d088", "0x0041d738",
+    "0x0041d748", "0x0041d758", "0x0041d770", "0x0041d978", "0x0041da50", "0x0041da60", "0x0041da70", "0x0041db08",
+    "0x0041dbe8", "0x0041dc80", "0x0041dcf0", "0x0041dd40", "0x0041dd68", "0x004edd40", "0x004edd48",
   ]
 ---
 # AI humans: brains, goals and actions
@@ -142,7 +142,7 @@ field is used.
 | `+0x14` / `+0x1c` / `+0x24` | PMF | handlers A (update), B (think), C (event), each `{s16 delta, s16 vindex, fn}` |
 | `+0x2c` | s8 | the goal stack's top index (-1 empty) |
 | `+0x2e` / `+0x2f` | s8 | the action count / the front action's slot |
-| `+0x30` | u32 | the time of the last update (ms) |
+| `+0x30` | u32 | the time of the last update (ms); `Brain_Init` (`0x0028a570`) sets it to the clock |
 | `+0x34` | int | update counter (every 90 updates `0x0028bec8`) |
 | `+0x38` | int | think counter |
 | `+0x3c` | ptr | the **reaction goal** ([below](#reaction-goals)); 0 when none |
@@ -214,8 +214,14 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
 Goals come from a pool of 170 of 0x90 bytes at `0x006e0430` (bitmap `0x006ceac0`). Base fields: `+0x00` the brain,
 `+0x04` started, `+0x05` resumed, `+0x08` the **time limit** (−1 none), `+0x0c` vtable. The constructor stores a
 duration in `+0x08`; `Goal_Start` (`0x0029ed58`) adds the time it starts, and `Goal_Process` (`0x0029eed8`) ends the
-goal (returns 2, its Process not called) once the game time has passed it; −1 never passes. Confirmed (code) at both
-addresses; this corrects the earlier reading "wait-until time". Vtable function words: `+0x0c`
+goal (returns 2, its Process not called) once the game time has passed it (the time is above the limit, compared
+unsigned); −1 never passes. Confirmed (code) at both addresses; this corrects the earlier reading "wait-until time".
+`Goal_Process` also returns 0 without calling Process while the human has no character instance (human `+0xd8`), and
+starts or resumes the goal first: `Goal_Start` runs only on an empty action queue (else 0) and sets `+0x04` after the
+class's Start, and `Goal_Resume` (`0x0029ee30`) starts a goal never started, else marks it resumed (`+0x05`) and runs
+its Resume and clears the mark only on an empty queue. `Goal_End` (`0x0029edd8`) calls the class's End only when
+`+0x04` is 1, then its destroy: a goal popped before it started is freed without its End. Confirmed (code) at the four
+addresses. Vtable function words: `+0x0c`
 the type id, `+0x14` the class's name (a string, such as `MoveToFlag`), `+0x1c` destroy, `+0x24` Start, `+0x2c` End,
 `+0x34` Resume, `+0x44` **Process**, `+0x4c` event (default `0x0029ef80`). There are 149 goal classes, types 0-158
 with ten unused, all on [AI goal types](../../references/goal-types.md) with the bindings that make them; confirmed
@@ -253,7 +259,17 @@ A pool of 100 actions of 0x50 bytes at `0x006e63d0` (bitmap `0x006cead8`). Base 
 s16 delay in ms before it starts (-1 = a random 0-500), `+0x06` started, `+0x08` vtable. Vtable function words:
 `+0x14` Start (2 = already done), `+0x1c` Abort (0 = refuses), `+0x24` destroy, `+0x2c` Update (2 = done). The base
 update `0x002f9e48` counts the delay down against the brain's `+0x30`. `Brain_ClearActions` stops at an action that
-refuses to abort, so an attack in progress is never cut by a new goal.
+refuses to abort, so an attack in progress is never cut by a new goal; an action that never started is not asked, so
+it is freed even when its Abort would refuse (`Brain_PopAction(brain, 1)` → `Action_AbortAndDestroy`, confirmed (code)
+at `0x0028db20` and `0x002f9de0`).
+
+`Action_Update` (`0x002f9e48`) takes the time since the brain's last update (`+0x30`, cut to 16 bits). An action not
+started counts its delay down by it (drawing 0-500 ms first when it is −1); while some is left it returns 0, else it
+calls Start, returns 2 at once when Start says so (`+0x06` stays clear), and otherwise sets `+0x06` and goes on to
+Update in the same call. A started action counts the delay down too (never below 0) and calls Update only once it is
+0. Confirmed (code) at `0x002f9e48`. `Brain_Init` (`0x0028a570`) sets `+0x30` to the game clock, so a brain made
+late in a match counts one update's time on its first update, not the whole match cut to 16 bits; Coney's brain
+takes the clock as it is made. Confirmed (code) at `0x0028a570`.
 
 **A normal end runs Abort too.** When the front action's Update returns 2, `Brain_RunActions` (`0x0028fe28`) pops it
 with `Brain_PopAction(brain, 0)` (`0x0028da60`). That goes through `Action_AbortAndDestroy` (`0x002f9de0`), which
@@ -374,13 +390,17 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
    **the goal stack**: `Goal_Process` on the top goal; 2 = done (pop it and process the new top in the same update),
    0 = stop for this update, 1 = run again.
 5. **The actions** (`Brain_RunActions`, `0x0028fe28`): start the front action when its delay is over, update it, and
-   pop it when it returns 2.
+   pop it when it returns 2; then the next action in the same update, and so on until one is still running, the queue
+   is empty or a pop is refused, so a chain of actions that are done at once all run in one update.
 6. The join-the-player's-gang flag.
 
 A goal is **started** (or resumed after the goal above it was popped) only when the action queue is empty
 (`Goal_Start` `0x0029ed58`, `Goal_Resume` `0x0029ee30`). `Brain_PushGoal` (`0x0028d758`) suspends the old top
-(`0x0029eea0`), clears the actions and pushes; `Brain_PopGoal` (`0x0028d7d8`) ends and frees the top and, when the
-stack is then empty, sends the human event `0xd`. `BrFlush` clears both.
+(`0x0029eea0`), clears the actions and pushes; `Brain_PopGoal` (`0x0028d7d8`) takes the top off the stack, ends it
+(`Goal_End`) and frees it, then calls `Goal_Resume` on the new top at once (so it starts or resumes in the pop when the
+queue is empty), and when the stack is then empty sends the human (vtable `+0x44`) event `0xd` with the human himself
+at `+0x24`, which his script handlers and his gang's can answer. `Brain_ClearGoals` (`0x0028d910`) pops until the stack
+is empty, then sets the goal base `+0x2d` to −1. `BrFlush` clears both. Confirmed (code) at the cited addresses.
 
 ### Reaction goals {#reaction-goals}
 
@@ -402,9 +422,28 @@ The brain's `+0x3c` holds a **reaction goal** that has priority over the stack. 
 | `0x19` | `0x4000` | `0x002b4c00` |
 | `0x1a` | `0x10000` | `0x002b5110` |
 
-The stack's goals `0x1f`, `0x92`, `0x89` and `0x4f`, and the character classes `0x77`, `0x78`, `0x4f`, `0x80`,
-`0xb2`, `0x87` and `0x62`, can hold it off. This corrects [Combat](../combat/index.md#block): `+0x3c` is the reaction goal,
-not a tactic, and type `0x17` is the knocked-down goal, which is why a downed AI never counters.
+The states are tested in the table's order, so a cuffed human (`0x16`, the arrested goal) is tested first, the
+stunned one (`0x18`) after the knocked-down, then on fire (`0x19`, `Human_IsOnFire`) and wounded (`0x1a`). Confirmed
+(code) at `0x0028f2b0`. Nothing is made, the stack running instead:
+
+- for a civilian or a dealer (types 4, 5) with no fight goal (`Brain_HasFightGoal`), not on fire, brain `+0x2d7`
+  clear, no flee goal (`Brain_HasFleeGoal`: `0x6b`, `0x81` or `0x3f` on the stack) and not down or dead
+  (`Human_IsDownOrDead`);
+- while a grab goal (`0x1f`) is on the stack and not yet holding its target, a Grabber goal (`0x92`) does not allow it,
+  or a BigBull goal (`0x89`) is on the stack;
+- while a BumLogic goal (`0x4f`) is on the stack, unless there is a fight goal or a flee goal or `+0x2d7` is set;
+- with game state `+0x158` clear (one player), for the character classes `0x77`, `0x78` and `0x4f`, and, while stunned
+  and standing, for `0x80`, `0xb2`, `0x87` and `0x62`.
+
+Confirmed (code) at `0x0028f2b0`. When it does make one, it suspends the stack's top and clears the actions
+(`Brain_SuspendTop`) and returns 0, so neither the stack nor the new goal runs that update: the goal is processed from
+the next update by `Goal_Process`, which starts it once the action queue is empty. An active reaction goal is
+processed each update; when it returns 2 it is ended (`Brain_EndReactionGoal`: `Goal_End`, freed, `Goal_Resume` on
+the top) and the same tests run at once, so a new reaction goal can follow in that update, and with none the function
+returns 2 and the stack runs in the same update. Confirmed (code) at `0x0028f2b0` and `0x0028f240`.
+
+This corrects [Combat](../combat/index.md#block): `+0x3c` is the reaction goal, not a tactic, and type `0x17` is the
+knocked-down goal, which is why a downed AI never counters.
 
 The reaction goal lags the state by one update, because the brains run before the human's state update
 ([Tasks](../tasks.md#humans-update)): inferred from that order, and a run shows it
@@ -825,9 +864,17 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
   an update every step at the brains' place in the characters' step (`Humans::setBrains`), so before every
   dispatcher. The player has a type-0 brain that only keeps his enemies, which feed `Player::setNearestEnemy`.
 - **Goals and actions**: a stack of 10 (Start, Process, End, Resume; Stop, Again, Done) and a circular queue of 8
-  (a delay, Start, Update, an Abort that can refuse); goals start or resume only on an empty queue. A goal leaves the
-  stack before its End runs: an End can reach Lua (a flag's message), whose handler may push the next goal (level99's
-  `P1.ReachCenter` pushes `GoalAddressPerson`), which must stay on the stack.
+  (a delay, Start, Update, an Abort that can refuse); goals start or resume only on an empty queue, the generic
+  time limit ends a goal in `Brain::runGoal`, a pop starts or resumes the new top at once and sends event `0xd` when
+  the stack is empty, only a started goal is ended and only a started action is aborted, and the actions chain in one
+  update. A goal leaves the stack before its End runs: an End can reach Lua (a flag's message), whose handler may push
+  the next goal (level99's `P1.ReachCenter` pushes `GoalAddressPerson`), which must stay on the stack. **Stand-ins**:
+  Coney's goal loop is bounded at 20 passes (issue #635); the character
+  instance gate (human `+0xd8`) always passes, as every human with a brain has its body; the Melee goal still keeps the
+  time limit itself (its own Process does not read `+0x08`) until its port moves it to the base. The reaction goal is
+  made, held off and handed back as the original does, with its exemptions; the arrested, on-fire and wounded goals,
+  the Grabber and BigBull goals' tests and the `+0x2d7` test are not built (the function database lists each with its
+  issue).
 - **Hiding** (`repo:src/ai/hiding.h`, `repo:src/human/human_hiding.cpp`, [Stealth](../stealth.md#shadow-ground)):
   the ground snap keeps its triangle's flags (`Human::onShadowGround`, bit `0x10`); after the level's step
   `ai::updateHiding` runs the ground rule for player 1: on shadow ground with nobody hunting him (no other fightable
@@ -1298,6 +1345,13 @@ Build in this order; each step is testable without the game.
   `*(0x0051489c) + 0x56e3` that lets every AI counter is.
 - What reads `RunCarrotGoal`'s hostile flag (goal `+0x25`, set by `RunCarrotGoal_Init` `0x002e1230`,
   [AI goals](../ai-goals.md#by-address)); Coney does not model it.
+
+### The abort's mode {#q-abort-mode}
+
+`Action_AbortAndDestroy` (`0x002f9de0`) passes its caller's second argument to the class's Abort: 0 from a normal end
+(`Brain_RunActions`), 1 from a clear (`Brain_ClearActions`). Which classes read it is not traced; Coney's Abort takes no
+mode, and each action tells the two apart by its own state (the taunt's ended flag). Confirmed (code) at `0x002f9de0`,
+`0x0028fe28` and `0x0028db20` for the passing; the readers are speculative until each class's Abort is read.
 
 ## How this was checked
 
