@@ -30,7 +30,7 @@ enum class RendererKind : std::uint8_t {
 /// Whether the GPU renderer draws its own menus: the 2D layers (#1203) and the developer overlay (#1204). Until it
 /// does, a saved `Display/Renderer` of 1 is refused (chooseRenderer()), so a windowed start never comes up blank with
 /// the menus that set it back unseen (docs/engine/gpu-renderer.md#way-back). Turn it true when both land, and remove
-/// the guard with it: tests/core/renderer_choice_test.cpp fails until then.
+/// the guard with it: tests/core/renderer_choice_test.cpp then stops compiling (a STATIC_REQUIRE_FALSE on it).
 /// @coney-only a guard for Coney's unfinished renderer; the original has one renderer
 inline constexpr bool kGpuRendererDrawsMenus = false;
 

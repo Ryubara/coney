@@ -32,8 +32,8 @@ To go back to GL3 for good, set *Display / Renderer* to 0 on the Tunables page a
 `--tunables FILE` names); `--renderer gl3` takes GL3 for one run whatever is saved.
 
 When both issues land, `kGpuRendererDrawsMenus` turns true, the test case `renderer: a saved GPU renderer starts GL3
-with a warning while it draws no menus` (`tests/core/renderer_choice_test.cpp`) fails, and it is removed with the
-guard and this section's first paragraph.
+with a warning while it draws no menus` (`tests/core/renderer_choice_test.cpp`) stops compiling, since it checks the
+constant with `STATIC_REQUIRE_FALSE`, and it is removed with the guard and this section's first paragraph.
 
 ## The device and the window {#device}
 
