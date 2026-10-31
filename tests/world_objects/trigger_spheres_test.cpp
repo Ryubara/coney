@@ -176,25 +176,53 @@ TEST_CASE("an unarmed sphere, or one round a gone object, sends nothing; the poo
     CHECK(checkAll(full, humans, 0).empty()); // none of their objects is found
 }
 
-TEST_CASE("modes 1 and 2 also need a clear line, mode 2 from a raised centre", "[trigger_spheres]") {
-    // Expected: scripting.md#triggers, inferred from the line tests 0x0024dee8 and 0x0024df40 (the raised ends are
-    // Coney's choice)
+TEST_CASE("mode 1 needs a walkable line from the centre to the feet, not a clear one", "[trigger_spheres]") {
+    // Expected: trigger-updates.md#accepts, confirmed (code): mode 1 calls Nav_IsConnected (0x0024dee8) from the
+    // sphere's object to the point, unraised; the original's sphere at level3's fRoofEnd stayed silent with Snow
+    // inside its radius (confirmed (runtime), run r-20261031-l3-roofend-sphere-silent).
     TriggerSpheres spheres;
     spheres.setLocate(locate);
-    std::vector<std::array<float, 3>> starts;
-    // A wall the line through x = 1 crosses below 0.5 m.
-    spheres.setClearLine([&](const std::array<float, 3>& from, const std::array<float, 3>& to) {
-        starts.push_back(from);
-        return !(from[0] < 1 && to[0] > 1 && from[2] < 0.5F);
+    int clearLines = 0;
+    spheres.setClearLine([&](const std::array<float, 3>&, const std::array<float, 3>&) {
+        ++clearLines;
+        return true;
+    });
+    std::vector<std::pair<std::array<float, 3>, std::array<float, 3>>> asked;
+    bool walkable = false;
+    spheres.setConnected([&](const std::array<float, 3>& from, const std::array<float, 3>& to) {
+        asked.emplace_back(from, to);
+        return walkable;
     });
     const std::vector<BoxSubject> humans{{.handle = 100, .position = {2, 0, 0}, .alive = true, .player = false}};
     REQUIRE(spheres.configure(7, true, 4.0F, 1, 1));
     CHECK(checkAll(spheres, humans, 0).empty());
-    REQUIRE(spheres.configure(7, true, 4.0F, 2, 1));
+    walkable = true;
     CHECK(checkAll(spheres, humans, 0) == Sent{{7, VolumeBoxes::kEntered, 100}});
-    REQUIRE(starts.size() >= 2);
-    CHECK(starts[0][2] == 0.0F);
-    CHECK(starts.back()[2] == TriggerSpheres::kLineRaise);
+    CHECK(clearLines == 0);
+    REQUIRE_FALSE(asked.empty());
+    CHECK(asked.front().first == locate(7).value());
+    CHECK(asked.front().second == humans[0].position);
+}
+
+TEST_CASE("mode 2 needs a clear line between the centre and the feet, both raised", "[trigger_spheres]") {
+    // Expected: trigger-updates.md#accepts, confirmed (code) that mode 2 casts a ray between the two points; the
+    // 1 m raise of both ends is Coney's stand-in (q-line-tests)
+    TriggerSpheres spheres;
+    spheres.setLocate(locate);
+    std::vector<std::pair<std::array<float, 3>, std::array<float, 3>>> lines;
+    bool clear = false;
+    spheres.setClearLine([&](const std::array<float, 3>& from, const std::array<float, 3>& to) {
+        lines.emplace_back(from, to);
+        return clear;
+    });
+    const std::vector<BoxSubject> humans{{.handle = 100, .position = {2, 0, 0}, .alive = true, .player = false}};
+    REQUIRE(spheres.configure(7, true, 4.0F, 2, 1));
+    CHECK(checkAll(spheres, humans, 0).empty());
+    clear = true;
+    CHECK(checkAll(spheres, humans, 0) == Sent{{7, VolumeBoxes::kEntered, 100}});
+    REQUIRE_FALSE(lines.empty());
+    CHECK(lines.front().first[2] == locate(7).value()[2] + TriggerSpheres::kLineRaise);
+    CHECK(lines.front().second[2] == TriggerSpheres::kLineRaise);
 }
 
 TEST_CASE("a sphere of a mode other than 1 and 2 accepts on the radius alone", "[trigger_spheres]") {

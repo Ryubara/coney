@@ -92,6 +92,9 @@ class TriggerSpheres {
     void setLocate(Locate locate) { m_locate = std::move(locate); }
     /// Sets the clear-line test of modes 1 and 2 (null: every line is clear).
     void setClearLine(ClearLine clearLine) { m_clearLine = std::move(clearLine); }
+    /// Sets mode 1's test, whether a walkable line joins the sphere's centre to a point (null: every line passes).
+    /// @orig 0x0024dee8 Nav_IsConnected (unknown)
+    void setConnected(ClearLine connected) { m_connected = std::move(connected); }
 
     /// One frame of the pool at game time `nowMs` over `subjects`: the spheres whose turn it is (index modulo
     /// kFramesPerCheck against the frame count) are checked (check()), their messages going to `send` (object,
@@ -133,6 +136,7 @@ class TriggerSpheres {
     std::vector<TriggerSphere> m_spheres;
     Locate m_locate;
     ClearLine m_clearLine;
+    ClearLine m_connected; ///< Mode 1's test (`0x0024dee8`).
     std::uint32_t m_frame = 0;
 };
 
