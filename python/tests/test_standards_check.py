@@ -547,6 +547,15 @@ def test_a_test_case_with_a_comment_above_its_macro_is_held_when_its_body_change
     assert held == {("citation", 2)} and listed == set()
 
 
+def test_a_touched_test_helper_with_no_test_case_has_nothing_to_hold(tmp_path: Path) -> None:
+    # a helper header under tests/ holds no test case; touching it once crashed the touch-it check
+    helper = "#pragma once\n\ninline int helper() { return 1; }\n"
+    root = build(tmp_path, {"tests/support/helper.h": helper})
+    branch(root, {"tests/support/helper.h": helper.replace("return 1", "return 2")})
+    held, listed = held_and_listed(root)
+    assert not [item for item in held | listed if item[0] == "citation"]
+
+
 def test_the_check_command_lists_what_lies_outside_the_change_in_one_line_or_each_with_cleanup(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
