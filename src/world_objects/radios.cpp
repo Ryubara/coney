@@ -5,6 +5,7 @@
 #include <string_view>
 #include <utility>
 
+#include "core/assert.h"
 #include "core/name_hash.h"
 
 namespace coney::world_objects {
@@ -45,10 +46,12 @@ float distanceSquared(const std::array<float, 3>& a, const std::array<float, 3>&
 // Whether `level` is complete in `world`.
 bool complete(const RadioWorld& world, int level) { return world.levelComplete && world.levelComplete(level); }
 
-// A draw of `Random % n` from the ambient stream.
-// Stand-in: no 0 for n = 0 and no trap, as the radios' callers never pass 0.
+// A draw of `Random % n` (unsigned) from the ambient stream.
+// Stand-in: n = 0 is a broken invariant here, where the original returns 0 with no draw, as the radios' callers
+// never pass 0.
 // @orig 0x00335498 Random_IntBelow (unknown)
 int draw(GameRandom& random, int n) {
+    CONEY_ASSERT(n > 0); // stand-in for the original's 0 with no draw (above)
     return static_cast<int>(random.next(RandomStream::Ambient) % static_cast<std::uint32_t>(n));
 }
 

@@ -14,8 +14,8 @@ struct BodySizeInput {
     int classType = 0;  ///< The class (`+0xcc`): characterClassOf() of the type HuCreate was given.
     int brainType = 0;  ///< The brain type Human_Init stores (ai::createdBrainType()): 1 cop, 2 gang, 3 Warrior.
     int category = 0;   ///< The class record's category (`+0x11b`).
-    bool woman = false; ///< The class record's `+0x14b` is 1 (copied to the human's `+0x3b8`).
-    bool hat = false;   ///< The class record's hat (`+0x14c`) is not `none`.
+    bool woman = false; ///< The class record's `+0x14b` is not 0 (copied to the human's `+0x3b8`, tested as a byte).
+    bool hat = false;   ///< The class record's hat (`+0x14c`) is not `none`: an empty name counts as a hat.
     /// The kind (`+0x2c`) of the gang the human joined (brain `+0x20c`); nothing for no gang.
     std::optional<int> gangKind;
 };

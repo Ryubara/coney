@@ -444,13 +444,15 @@ void humanInitSteps(const BindingContext& context, HandleCounter& handles, const
     // The random size, drawn whether or not the class's own size replaces it, then the class's own; 1.0 for neither.
     std::optional<float> size;
     if (context.state != nullptr && classRecord) {
+        // The woman byte counts when it is not 0; the hat is any name but `none` (a string compare at 0x0021900c), so
+        // an empty name, as the zeroed record holds when the call gave none, is a hat.
         const ai::BrainType brain =
             ai::createdBrainType(ai::brainTypeOf(classRecord->behaviour.value_or(0)), human.gangFlag);
         const characters::BodySizeInput input{.classType = classType,
                                               .brainType = static_cast<int>(brain),
                                               .category = classRecord->category.value_or(0),
-                                              .woman = classRecord->female.value_or(0) == 1,
-                                              .hat = !classRecord->hat.empty() && classRecord->hat != kNoHat,
+                                              .woman = classRecord->female.value_or(0) != 0,
+                                              .hat = classRecord->hat != kNoHat,
                                               .gangKind = human.gang >= 0 ? ai->gangKind(human.gang) : std::nullopt};
         size = characters::randomBodySize(input, context.state->random);
     }

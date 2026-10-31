@@ -127,9 +127,10 @@ using PlacementSearch = std::function<std::optional<std::uint32_t>(anim::Vec3 go
 /// Distances are from the origin, the camera's eye at `player`'s height, in 3D. The search starts at the node `player`
 /// would leave a route from (RoutePlanner::startNode(); none: nothing). The cone's axis is the camera's forward with
 /// its z cleared, not normalised again, and its half-angle half the field of view + kConeMarginRadians. Each of
-/// kPlacementTries draws an angle in [h, 2 pi - h] from `random` and searches (searchOutward()): the first toward the
-/// origin + kFirstGoalAhead x the forward (its draw unused), each later toward the origin + 2 x `value` x the
-/// flattened forward turned by the angle about the vertical. Nothing when no try finds a node.
+/// kPlacementTries draws an angle in [h, 2 pi - h] from `random` before it searches (searchPlacementGoals(),
+/// searchOutward()): the first toward the origin + kFirstGoalAhead x the forward, each later toward the origin + 2 x
+/// `value` x the flattened forward turned about the vertical by the angle drawn on the try before, so the last try's
+/// draw is the one never used. Nothing when no try finds a node.
 /// @orig 0x001673b8 Gang_PlaceOutOfSight (unknown)
 [[nodiscard]] std::optional<anim::Vec3> outOfSightNode(const RoutePlanner& planner, anim::Vec3 player,
                                                        const PlacementCamera& camera, float value,

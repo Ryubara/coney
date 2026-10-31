@@ -20,9 +20,12 @@ enum class RandomStream : std::uint8_t {
     Civilians,     ///< `0x006eb890`: civilian reactions and gaits, the flag net's traversal.
     Grabs,         ///< `0x006eb898`: grabs, hit reactions, idle fidgets, a new human's woundable roll.
     Tactics,       ///< `0x006eb8a0`: the gangs' tactics, crew tag lines, wander, banter, spawner placement.
-    Ambient,       ///< `0x006eb8a8`: light flicker, fog and smoke, cars, radios, the rumble intro, object groups.
-    Sound,         ///< `0x006eb8b0`: sound volumes, impact sounds, ambient emitters, music, a voice pick.
-    Effects,       ///< `0x006eb8b8`: particles and world objects (glass, debris, boards, money amounts), strikes.
+    /// `0x006eb8a8`: light flicker, fog and smoke, cars, radios, the rumble intro, object groups; and some gameplay: a
+    /// gang's and a human's look-around (Gang_LookAt, Human_LookAround), Ai_FindOpenPoint, two boss and weapon-pile
+    /// goals, Human_HandleMessage.
+    Ambient,
+    Sound,   ///< `0x006eb8b0`: sound volumes, impact sounds, ambient emitters, music, a voice pick.
+    Effects, ///< `0x006eb8b8`: particles and world objects (glass, debris, boards, money amounts), strikes.
 };
 
 /// How many streams there are.
