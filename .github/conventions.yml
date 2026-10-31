@@ -512,7 +512,7 @@ tasks:
     # fails while a place is free, work can be started for it and nothing excuses the gap; the coordinator's Stop hook
     # (.claude/hooks/slot_fill_guard.py) blocks the end of a turn on it. The places are the machine's (`slots` above):
     # the ones a track keeps (`min`) while it runs fewer, and the rest. What excuses a gap, the tool works out itself:
-    # no eligible issue, the claim limit reached, or free disk under `workspace.disk_min_free_gb`. Anything else needs
+    # no eligible issue, the claim limit reached, or a watched drive under `workspace.disk_min_free_gb`. Anything else needs
     # a logged, expiring waiver (`task slots --waive`).
     fill:
       # A start gate for the ready issues: with `enabled`, only issues with one of `labels`, the listed `issues` and
@@ -978,7 +978,7 @@ hygiene:
       severity: error
       fix: auto
       keys: [workspace.disk_min_free_gb]
-      summary: "the workspace drive has less free space than the minimum (coney-tools workspace clean)"
+      summary: "a watched drive (the workspace, the build root, a watch_paths folder) has less free space than its minimum (coney-tools workspace clean)"
     ws.worktrees:
       scope: local
       severity: warn
@@ -996,7 +996,7 @@ hygiene:
 workspace:
   worktrees: "../../worktrees/coney/<branch>/"
   scratch: "../../scratch/<branch>/"
-  disk_min_free_gb: 30                           # under it, `workspace clean` deletes idle build/ folders
+  disk_min_free_gb: 30                           # under it on a watched drive (docs/guides/workspace.md#watched-drives), `workspace clean` deletes idle build/ folders
   disk_margin_gb: 10                             # ... until free space reaches disk_min_free_gb + this
   build_idle_hours: 24                           # a build/ folder unused this long is deleted (cheap to rebuild)
   busy_marker: ".coney-busy"                     # a worktree holding it is never cleaned; an empty one older than build_idle_hours does not count

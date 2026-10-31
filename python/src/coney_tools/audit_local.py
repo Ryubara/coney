@@ -17,16 +17,17 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
 
+from coney_tools import watched_drives
 from coney_tools.audit import Problem, check
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
+from coney_tools.watched_drives import Drive
 from coney_tools.workspace import find_layout
 from coney_tools.workspace_clean import (
     Entry,
     GitWorktree,
     MergedHeads,
     Settings,
-    drives,
     gh_merged_heads,
     list_worktrees,
     live_slots,
@@ -60,10 +61,9 @@ class LocalContext:
 
     conventions: Conventions
     workspace: Path
-    free_bytes: int
-    #: The other drives the builds fill (the build root's, when `build_root` is set on another drive), each named and
-    #: with its free bytes (workspace_clean.drives).
-    other_drives: list[tuple[str, int]] = field(default_factory=list)
+    #: The watched drives (watched_drives.py): the workspace's, the build root's and the `watch_paths` of the local
+    #: file, each with its free bytes and limits.
+    drives: list[Drive] = field(default_factory=list)
     #: What `workspace clean` found out about each worktree; None when git could not say (a notice explains).
     entries: list[Entry] | None = None
     #: Worktrees git lists whose folder is gone.
@@ -204,11 +204,19 @@ def build_context(
     checkout = layout.checkout
     if not (checkout / ".git").exists():
         raise ConfigError(f"{checkout} is not a checkout; run this from the workspace's repository")
-    context = LocalContext(conventions, layout.workspace, shutil.disk_usage(layout.workspace).free)
+    context = LocalContext(conventions, layout.workspace)
     try:
-        context.other_drives = drives(layout.workspace, checkout)[1:]
+        watch = watched_drives.read(checkout, conventions.workspace, workspace_folder=layout.workspace)
+        context.drives = watch.drives
+        context.notices.extend(watch.problems)
     except ConfigError as error:
-        context.notices.append(f"the build root cannot be read: {error}")
+        # Only the workspace's drive is certain then: the build root or a `watch_paths` item is what cannot be read.
+        context.notices.append(f"the watched drives cannot be read ({error}); only the workspace drive was measured")
+        limits = conventions.workspace
+        free = shutil.disk_usage(layout.workspace).free
+        context.drives = [
+            Drive("the workspace drive", ("the workspace drive",), free, limits.disk_min_free_gb, limits.disk_margin_gb)
+        ]
     worktrees = layout.workspace / "worktrees"
     folder = worktrees / checkout.name
     trees = list_worktrees(checkout)
@@ -262,13 +270,13 @@ def build_context(
 
 @check("ws.disk")
 def disk_space(context: LocalContext) -> Iterator[Problem]:
-    """The workspace's drive has at least `workspace.disk_min_free_gb` free."""
-    minimum = context.conventions.workspace.disk_min_free_gb
-    for name, free in [("workspace drive", context.free_bytes), *context.other_drives]:
-        if free < minimum * _GIB:
+    """Every watched drive has at least its floor free: `workspace.disk_min_free_gb`, or the `watch_paths` limit."""
+    for drive in context.drives:
+        if drive.low:
             yield Problem(
-                name,
-                f"{free / _GIB:.1f} GB free, the minimum is {minimum} GB: run `coney-tools workspace clean`",
+                f"{drive.name} ({drive.phrase()})",
+                f"{drive.free_gb:.1f} GB free, the minimum is {drive.min_free_gb:g} GB: "
+                "run `coney-tools workspace clean`",
             )
 
 

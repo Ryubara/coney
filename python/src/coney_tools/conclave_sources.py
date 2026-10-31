@@ -7,16 +7,15 @@ instead of a crash, so a failure is never taken for "nothing there".
 
 from __future__ import annotations
 
-import shutil
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from coney_tools import conflict_work, coord_cli, pr_ready
+from coney_tools import conflict_work, coord_cli, pr_ready, watched_drives
 from coney_tools.audit_github import run_gh
-from coney_tools.config import ConfigError, find_repo_root, workspace_root
+from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conflict_work import Ledger, Trial
 from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.issue_claim_cli import held_cards
@@ -34,8 +33,9 @@ class Sources:
     checkout: Path
     #: What `coord status` reads: the scratch folder, the worktrees, the build slots, `gh` and the clock.
     coord: coord_cli.Sources
-    #: Free bytes on the workspace's drive.
-    free_bytes: Callable[[], int]
+    #: The watched drives with their free space now (watched_drives.read): OSError or ConfigError when they cannot be
+    #: read.
+    drives: Callable[[], watched_drives.Watch]
     #: The held claim cards (OSError or ConfigError when GitHub cannot be read).
     claims: Callable[[], list[Card]]
     #: Whether `pr open` would pass the proof for a unit: (its worktree, its scratch folder's unit, the description
@@ -72,7 +72,7 @@ def default_sources(cwd: Path) -> Sources:
         conventions=conventions,
         checkout=root,
         coord=coord_cli.default_sources(cwd),
-        free_bytes=lambda: shutil.disk_usage(workspace_root(root)).free,
+        drives=lambda: watched_drives.read(root, conventions.workspace),
         claims=claims,
     )
 

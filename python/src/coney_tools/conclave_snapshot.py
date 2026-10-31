@@ -24,7 +24,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from coney_tools import coord_cli, stamps
+from coney_tools import coord_cli, stamps, watched_drives
 from coney_tools.build_claims import CHECK_LANE
 from coney_tools.conclave_github import add_github
 from coney_tools.conclave_sources import Sources, default_sources, iso_utc, section, strings
@@ -289,13 +289,17 @@ def _units(src: Sources, lanes: dict[str, Any], now: datetime) -> dict[str, Any]
 
 
 def _machine(src: Sources) -> dict[str, Any]:
-    """Free disk space with the two limits the band colours it by."""
-    workspace = src.conventions.workspace
-    free = src.free_bytes()
+    """The watched drives (watched_drives.py): the one with the least room above its floor, with its limits and name,
+    which the band shows, and every drive for the pane."""
+    found = src.drives()
+    worst = watched_drives.worst(found.drives)
     return {
-        "free_gb": round(free / 1024**3, 1),
-        "min_free_gb": workspace.disk_min_free_gb,
-        "warn_free_gb": workspace.disk_min_free_gb + workspace.disk_margin_gb,
+        "drive": worst.name,
+        "free_gb": round(worst.free_gb, 1),
+        "min_free_gb": worst.min_free_gb,
+        "warn_free_gb": worst.warn_free_gb,
+        "drives": [drive.row() for drive in found.drives],
+        "problems": found.problems,
     }
 
 
@@ -339,7 +343,7 @@ def format_text(report: dict[str, Any]) -> list[str]:
     line("config", lambda s: f"{len(s['roles'])} roles, {len(s['helpers'])} helpers")
     line("units", lambda s: f"{len(s['units'])} units")
     line("builds", lambda s: f"{len(s['lanes'])} lanes")
-    line("machine", lambda s: f"{s['free_gb']} GB free")
+    line("machine", lambda s: f"{s['free_gb']} GB free on {s['drive']}")
     line("claims", lambda s: f"{len(s['claims'])} held, signed in as {s['account'] or 'unknown'}")
     line("prs", lambda s: f"{len(s['prs'])} open, {len(s.get('merged', []))} merged recently")
     line("issues", lambda s: f"{len(s['issues'])} listed")

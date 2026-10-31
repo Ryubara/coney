@@ -150,7 +150,7 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 | `pr.merged-into-base` | github | error | skill | a pull request was merged into a branch other than main, so the issues it fixes stay open |
 | `gh.labels` | github | error | auto | the labels on GitHub differ from the conventions (coney-tools repo sync-labels --apply) |
 | `gh.ruleset` | github | error | maintainer | the GitHub ruleset or repository settings differ from the merge section |
-| `ws.disk` | local | error | auto | the workspace drive has less free space than the minimum (coney-tools workspace clean) |
+| `ws.disk` | local | error | auto | a watched drive (the workspace, the build root, a watch_paths folder) has less free space than its minimum (coney-tools workspace clean) |
 | `ws.worktrees` | local | warn | auto | a worktree of merged work is still there, or a stray file sits among the worktrees |
 | `ws.scratch` | local | warn | skill | a scratch folder of merged or abandoned work still holds files taken from the original (traces, dumps, save states) |
 <!-- conventions:end -->

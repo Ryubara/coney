@@ -21,6 +21,7 @@ from coney_tools.conventions import Conventions
 from coney_tools.issue_claim_model import Card
 from coney_tools.pr_hold import Hold
 from coney_tools.slot_fill import Check, FailedPull, IssueInfo
+from coney_tools.watched_drives import Drive
 
 RULES = CONVENTIONS.claims
 FILL = CONVENTIONS.tasks.start.fill
@@ -121,10 +122,14 @@ def check(
     free_gb: float | None = 500.0,
     holds: list[Hold] | None = None,
     now: datetime | None = None,
+    drives: list[Drive] | None = None,
 ) -> Check:
-    """The fill check on the scene."""
+    """The fill check on the scene. The disk is `drives`, else the workspace's one drive with `free_gb` free (None: the
+    free space is not known)."""
+    if drives is None and free_gb is not None:
+        drives = [Drive("C:", ("the workspace drive",), int(free_gb * 1024**3), 30, 10)]
     return slot_fill.fill_check(
-        scene.scratch, scene.conventions, now or scene.now(), sources, scene.build_slots, free_gb, holds
+        scene.scratch, scene.conventions, now or scene.now(), sources, scene.build_slots, drives, holds
     )
 
 

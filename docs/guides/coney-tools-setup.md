@@ -377,19 +377,22 @@ that holds or waits for a build slot or runs a `task check` or `orig fails-first
 file (`workspace.busy_marker`, `.coney-busy`; an empty one older than `--build-hours` is ignored, as its agent is gone,
 and one with an id in it always counts). The slots are read from the build queue's own claim and ticket files each time
 and again just before each deletion, with the queue's rules for a dead claim, never from an earlier listing. It never
-touches the main checkout. When the drive is still under `--min-gb` (default `workspace.disk_min_free_gb`, 30) after
+touches the main checkout. When the drive is still under `--min-gb` (default `workspace.disk_min_free_gb`, 30, or the limit
+[`watch_paths`](workspace.md#watched-drives) gives it) after
 that, it deletes more `build/` folders, oldest last use first and never a worktree's sources, until `--margin-gb`
 (default `workspace.disk_margin_gb`, 10) above the floor is free, skipping worktrees that are busy or hold or wait for a
 build slot (disk pressure). It is a dry run without `--apply`, and reports each deletion, the bytes reclaimed and the
 free space before and after; a build root on another drive is measured and relieved the same way, and its orphans and
-the folders it did not make are listed, never deleted. It also lists, and with `--apply` stops, the **stale processes**:
-shells older than `--stale-wait-hours` (default 3) waiting in a sleep loop on files unchanged for `--log-idle-hours`
-(default 1), and orphaned `ctest` or `coney_tests` runs whose parent is gone. `check-space` prints the workspace drive's
-free space (and the build root's, on another drive) and exits 1 when one is below `--min-gb` (default:
-`workspace.disk_min_free_gb` of [.github/conventions.yml](repo:.github/conventions.yml), 30). It also **archives the
-fix tasks whose parent's pull request merged**: their scratch folders move to `archive/<task>` in the scratch folder,
-which `task slots` and the slot-fill check never read ([Cleanup](workspace.md#cleanup)). Rules and the busy file:
-[Cleanup](workspace.md#cleanup).
+the folders it did not make are listed, never deleted. Any other [watched drive](workspace.md#watched-drives) is only
+printed, and told as one to free by hand when it is under its floor. It also lists, and with `--apply` stops, the
+**stale processes**: shells older than `--stale-wait-hours` (default 3) waiting in a sleep loop on files unchanged for `--log-idle-hours`
+(default 1), and orphaned `ctest` or `coney_tests` runs whose parent is gone. `check-space` prints the free space of
+every [watched drive](workspace.md#watched-drives) (the workspace's, the build root's and the `watch_paths`) and exits 1
+when one is below `--min-gb` (default: its own floor, `workspace.disk_min_free_gb` of
+[.github/conventions.yml](repo:.github/conventions.yml), 30, unless `watch_paths` gives that drive another). It also
+**archives the fix tasks whose parent's pull request merged**: their scratch folders move to `archive/<task>` in the
+scratch folder, which `task slots` and the slot-fill check never read ([Cleanup](workspace.md#cleanup)). Rules and the
+busy file: [Cleanup](workspace.md#cleanup).
 
 <!-- command-reference:begin workspace -->
 ## Parameters of `workspace` {#workspace-parameters}

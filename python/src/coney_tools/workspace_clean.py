@@ -62,7 +62,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
-from coney_tools import build_claims, build_root, stale_processes, workspace_clean_fixes
+from coney_tools import build_claims, build_root, stale_processes, watched_drives, workspace_clean_fixes
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Workspace, load_conventions
 from coney_tools.unit import scratch_folder
@@ -74,17 +74,11 @@ BUSY_FILE = ".coney-busy"
 #: Default idle hours before a `build/` folder is deleted (it is only a rebuild; `workspace.build_idle_hours`).
 DEFAULT_BUILD_HOURS = 24.0
 
-#: Default GB above the floor that disk-pressure mode frees (`workspace.disk_margin_gb`).
-DEFAULT_MARGIN_GB = 10.0
-
 #: The build queue's folder under the workspace's `scratch/` when `coney.local.toml` does not name one.
 BUILD_CLAIMS_DIR = "build-claims"
 
 #: Default idle hours before a merged worktree is removed (so one just created from `main` is not taken for merged).
 DEFAULT_WORKTREE_HOURS = 1.0
-
-#: Default minimum free space in GB for `workspace check-space`.
-DEFAULT_MIN_GB = 30.0
 
 #: Branches that are never deleted, whatever the state of their worktree.
 PROTECTED_BRANCHES = frozenset({"main", "master"})
@@ -577,10 +571,10 @@ def run_clean(
     if _git(checkout, "rev-parse", "--verify", "--quiet", "origin/main").returncode != 0:
         raise ConfigError("origin/main does not exist here, so nothing can be judged merged (git fetch origin)")
 
-    if min_gb is None:
-        min_gb = float(known.disk_min_free_gb) if known is not None else DEFAULT_MIN_GB
-    if margin_gb is None:
-        margin_gb = float(known.disk_margin_gb) if known is not None else DEFAULT_MARGIN_GB
+    # Every watched drive has its own floor and margin (watched_drives.py); `--min-gb` and `--margin-gb` replace all.
+    watch = watched_drives.with_limits(
+        watched_drives.read(checkout, known, workspace_folder=layout.workspace), min_gb, margin_gb
+    )
     settings = default_settings(
         layout.workspace,
         checkout,
@@ -590,15 +584,28 @@ def run_clean(
         now=now,
         merged_heads=merged_heads,
     )
-    free_before = shutil.disk_usage(layout.workspace).free
+    home = watch.drives[0]
+    free_before = home.free_bytes
     print(f"Workspace: {layout.workspace}" + ("" if apply else " (dry run: nothing is changed; --apply acts)"))
     print(f"Free space: {_gb(free_before)}")
     # With a build root on another drive, that drive has its own free space, floor and pressure.
     root = settings.build_root
-    separate = root is not None and not build_root.same_drive(layout.workspace, root)
+    away = next((drive for drive in watch.drives[1:] if root is not None and root in drive.folders), None)
+    separate = away is not None
     root_before = free_space(root) if separate and root is not None else 0
     if separate:
         print(f"Free space on the build root ({root}): {_gb(root_before)}")
+    # Any other watched drive (a scratch or emulator folder): no build folder of ours is on it, so it is only told.
+    others = [drive for drive in watch.drives[1:] if drive is not away]
+    for drive in others:
+        print(f"Free space on {drive.phrase()}: {_gb(drive.free_bytes)}")
+        if drive.low:
+            print(
+                f"  {drive.name} is under its {drive.min_free_gb:g} GB floor and holds no build folders, so "
+                "`workspace clean` cannot free it: free it by hand"
+            )
+    for unread in watch.problems:
+        print(f"warning: {unread}")
 
     def on_root(folder: Path) -> bool:
         return separate and root is not None and folder.resolve().is_relative_to(root.resolve())
@@ -656,9 +663,14 @@ def run_clean(
         return shutil.disk_usage(layout.workspace).free if apply else free_before + reclaimed - reclaimed_root
 
     pressure = _relieve_pressure(
-        entries, settings, (min_gb, margin_gb), free_now, apply, only=lambda folder: not on_root(folder)
+        entries,
+        settings,
+        (home.min_free_gb, home.margin_gb),
+        free_now,
+        apply,
+        only=lambda folder: not on_root(folder),
     )
-    if separate and root is not None:
+    if away is not None and root is not None:
 
         def root_free_now() -> int:
             return free_space(root) if apply else root_before + reclaimed_root
@@ -666,7 +678,7 @@ def run_clean(
         on_drive = _relieve_pressure(
             entries,
             settings,
-            (min_gb, margin_gb),
+            (away.min_free_gb, away.margin_gb),
             root_free_now,
             apply,
             only=on_root,
@@ -901,30 +913,27 @@ def _conventions_workspace(checkout: Path) -> Workspace | None:
         return None
 
 
-def drives(workspace: Path, checkout: Path) -> list[tuple[str, int]]:
-    """The drives the builds fill, each named and with its free bytes: the workspace's, and the build root's when
-    `build_root` is set on another drive (build_root.py)."""
-    found = [("the workspace drive", shutil.disk_usage(workspace).free)]
-    root = build_root.configured(checkout)
-    if root is not None and not build_root.same_drive(workspace, root):
-        found.append((f"the build root ({root})", free_space(root)))
-    return found
-
-
 def run_disk(cwd: Path, workspace: Path | None, min_gb: float | None = None) -> int:
-    """Run `workspace check-space`: print the free space of the workspace's drive, and of the build root's when it is
-    on another; 1 when any is below `min_gb`.
+    """Run `workspace check-space`: print the free space of every watched drive (watched_drives.py: the workspace's,
+    the build root's and the folders of `watch_paths`); 1 when any is below its floor.
 
-    Without `min_gb` the limit is `workspace.disk_min_free_gb` of the conventions file (30 GB when that is unreadable).
+    Each drive's floor is `workspace.disk_min_free_gb` of the conventions file (30 GB when that is unreadable) or the
+    one `watch_paths` gives it; `min_gb` replaces them all.
     """
     layout = find_layout(cwd, workspace)
-    if min_gb is None:
-        known = _conventions_workspace(layout.checkout)
-        min_gb = float(known.disk_min_free_gb) if known is not None else DEFAULT_MIN_GB
-    low_any = False
-    for name, free in drives(layout.workspace, layout.checkout):
-        low = free < min_gb * _GIB
-        low_any = low_any or low
-        advice = ": LOW, run workspace clean" if low else ""
-        print(f"Free space on {name}: {_gb(free)} (minimum {min_gb:g} GB){advice}")
-    return 1 if low_any else 0
+    watch = watched_drives.with_limits(
+        watched_drives.read(
+            layout.checkout, _conventions_workspace(layout.checkout), workspace_folder=layout.workspace
+        ),
+        min_gb,
+        None,
+    )
+    for unread in watch.problems:
+        print(f"warning: {unread}")
+    for drive in watch.drives:
+        advice = ": LOW, run workspace clean" if drive.low else ""
+        print(
+            f"Free space on {drive.phrase()}: {_gb(drive.free_bytes)} "
+            f"({drive.name}, minimum {drive.min_free_gb:g} GB){advice}"
+        )
+    return 1 if any(drive.low for drive in watch.drives) else 0

@@ -32,6 +32,7 @@ from coney_tools import slot_fill, slot_fill_blocks, slot_waivers
 from coney_tools.config import ConfigError
 from coney_tools.pr_hold import Hold
 from coney_tools.slot_fill import FailedPull
+from coney_tools.watched_drives import Drive
 
 
 @pytest.fixture
@@ -782,7 +783,8 @@ def test_full_places_read_no_pull_requests(scene: Scene, sources: FakeSources) -
 def test_low_disk_is_a_reason(scene: Scene, sources: FakeSources) -> None:
     sources.ready_issues = [issue(5)]
     result = check(scene, sources, free_gb=12.0)
-    assert not result.blocked and "free disk is 12 GB, under the 30 GB floor" in result.message
+    assert not result.blocked
+    assert "free disk is 12 GB on C: (the workspace drive), under its 30 GB floor" in result.message
 
 
 def test_the_floor_itself_is_not_low(scene: Scene, sources: FakeSources) -> None:
@@ -790,6 +792,48 @@ def test_the_floor_itself_is_not_low(scene: Scene, sources: FakeSources) -> None
     floor = float(scene.conventions.workspace.disk_min_free_gb)
     assert check(scene, sources, free_gb=floor).blocked
     assert not check(scene, sources, free_gb=floor - 0.1).blocked
+
+
+def gb(name: str, free: float, holds: str, floor: int = 30) -> Drive:
+    """A watched drive with this much free space and floor."""
+    return Drive(name, (holds,), int(free * 1024**3), floor, 10)
+
+
+def test_a_low_build_root_drive_is_a_reason_though_the_workspace_drive_has_room(
+    scene: Scene, sources: FakeSources
+) -> None:
+    sources.ready_issues = [issue(5)]
+    drives = [gb("C:", 61, "the workspace drive"), gb("E:", 3.7, "the build root (E:/coney_builds)")]
+    result = check(scene, sources, drives=drives)
+    assert not result.blocked
+    assert "free disk is 3.7 GB on E: (the build root (E:/coney_builds)), under its 30 GB floor" in result.message
+    assert "C:" not in result.message
+
+
+def test_drives_with_room_are_no_reason(scene: Scene, sources: FakeSources) -> None:
+    sources.ready_issues = [issue(5)]
+    drives = [gb("C:", 61, "the workspace drive"), gb("E:", 90, "the build root (E:/b)"), gb("F:", 31, "x")]
+    assert check(scene, sources, drives=drives).blocked
+
+
+def test_an_extra_watched_drive_under_its_floor_is_a_reason(scene: Scene, sources: FakeSources) -> None:
+    sources.ready_issues = [issue(5)]
+    drives = [gb("C:", 61, "the workspace drive"), gb("F:", 8, "the watched folder (F:/scratch)")]
+    result = check(scene, sources, drives=drives)
+    assert not result.blocked and "8 GB on F: (the watched folder (F:/scratch))" in result.message
+
+
+def test_a_drive_is_low_by_its_own_floor(scene: Scene, sources: FakeSources) -> None:
+    sources.ready_issues = [issue(5)]
+    assert check(scene, sources, drives=[gb("F:", 12, "the watched folder (F:/x)", floor=10)]).blocked
+    result = check(scene, sources, drives=[gb("F:", 12, "the watched folder (F:/x)", floor=15)])
+    assert not result.blocked and "under its 15 GB floor" in result.message
+
+
+def test_every_low_drive_is_named(scene: Scene, sources: FakeSources) -> None:
+    sources.ready_issues = [issue(5)]
+    result = check(scene, sources, drives=[gb("C:", 20, "the workspace drive"), gb("E:", 3, "the build root (E:/b)")])
+    assert "20 GB on C:" in result.message and "3 GB on E:" in result.message
 
 
 def test_an_unknown_free_space_is_no_reason(scene: Scene, sources: FakeSources) -> None:

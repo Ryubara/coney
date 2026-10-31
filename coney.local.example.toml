@@ -22,6 +22,7 @@ xemu_gdb_base    = 1234                                 # GDB stub port of copy 
 xemu_monitor_base = 4444                                # QEMU monitor port of copy xemu; copy i uses this + i
 build_claims_dir = ""                                   # where `build` keeps its slots and queue; default: build-claims in the main checkout's ../../scratch (not scratch_dir)
 build_root       = ""                                   # optional, this machine only: keep every checkout's builds in <build_root>/<id>/ (another drive) instead of its build/; "" keeps them in build/
+watch_paths      = []                                   # optional, this machine only: more folders whose drives Conclave, the slot-fill check and `workspace clean|check-space` watch for free space (the workspace and build_root drives always are); each a path or { path = "...", min_free_gb = N, margin_gb = N } to give its drive its own limits
 build_slots      = 2                                    # how many `coney-tools build` runs may compile and test at once on this machine
 check_slots      = 0                                    # how many full suites (all of pytest, all of ctest) may run at once; 0: one per four cores, at least 1; targeted runs need no slot
 build_worktree_cap = 7                                 # at most this many worktrees may hold a build/ folder; `build` refuses to configure a new folder beyond it (`workspace clean --apply` makes room); 0 turns the cap off

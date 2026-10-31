@@ -170,9 +170,16 @@ export type IssueRow = {
 
 /**
  * `check-failed`, `pr-stuck` and `conflict-fix` are pull request problems (`guard`: the stop guard holds the turn end
- * for them); `conflict-fix` carries the command that starts the fix.
+ * for them); `conflict-fix` carries the command that starts the fix; `disk-low` is a watched drive under its floor.
  */
-export type EventKind = 'check-failed' | 'pr-stuck' | 'conflict-fix' | 'merged' | 'unit-ready' | 'question'
+export type EventKind =
+  | 'check-failed'
+  | 'pr-stuck'
+  | 'conflict-fix'
+  | 'merged'
+  | 'unit-ready'
+  | 'question'
+  | 'disk-low'
 
 /** One event Coney raises for the coordinator. The id names the occurrence: the same thing read again has the same id. */
 export type EventRow = {
@@ -191,6 +198,9 @@ export type EventRow = {
   handled_by: string | null
 }
 
+/** One watched drive: what Coney keeps on it, its free space and the limits it is judged by. */
+export type DriveRow = { name: string; holds: string[]; free_gb: number; min_free_gb: number; warn_free_gb: number }
+
 export type Snapshot = {
   schema: number
   time: string
@@ -199,7 +209,18 @@ export type Snapshot = {
   config: Config
   units: Read<{ units: Unit[] }>
   builds: Read<{ lanes: Record<string, Lane> }>
-  machine: Read<{ free_gb: number; min_free_gb: number; warn_free_gb: number }>
+  /**
+   * The watched drives: `drive`, `free_gb` and the two limits are those of the one with the least room above its own
+   * floor, which the band shows; `drives` lists every one, `problems` the drives that could not be read.
+   */
+  machine: Read<{
+    drive: string
+    free_gb: number
+    min_free_gb: number
+    warn_free_gb: number
+    drives: DriveRow[]
+    problems: string[]
+  }>
   claims: Read<{
     account: string | null
     rules: { warn_hours: number; deadline_hours: number; enforced: boolean }

@@ -100,15 +100,14 @@ def test_disk_space_below_the_minimum_is_reported(space: Space, monkeypatch: pyt
     monkeypatch.setattr(shutil, "disk_usage", lambda path: Usage(100 * 1024**3, 0, 29 * 1024**3))
     (problem,) = found(al.disk_space, context(space))
     assert "29.0 GB free, the minimum is 30 GB" in problem.message and "workspace clean" in problem.message
+    assert "the workspace drive" in problem.item
     monkeypatch.setattr(shutil, "disk_usage", lambda path: Usage(100 * 1024**3, 0, 31 * 1024**3))
     assert found(al.disk_space, context(space)) == []
 
 
 def test_the_minimum_is_the_one_in_the_conventions(space: Space, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(shutil, "disk_usage", lambda path: Usage(100 * 1024**3, 0, 31 * 1024**3))
-    assert items(found(al.disk_space, context(space, conventions_with(("workspace.disk_min_free_gb", 40))))) == [
-        "workspace drive"
-    ]
+    assert len(found(al.disk_space, context(space, conventions_with(("workspace.disk_min_free_gb", 40))))) == 1
 
 
 def scratch_file(space: Space, folder: str, name: str, size: int = 1024) -> None:

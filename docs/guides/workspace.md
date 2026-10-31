@@ -198,6 +198,7 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `pcsx2_states_dir` | `state-library` in the main checkout's `../../emulators` (`<clone>-workspace/emulators` in a plain clone) | the shared [PCSX2 state library](pcsx2-states.md) (`coney-tools pcsx2 states`): save states are game memory, so it sits beside the repository; one place every worktree sees |
 | `build_claims_dir` | `build-claims` in the main checkout's `../../scratch` (`<clone>-workspace/scratch` in a plain clone) | where `coney-tools build` keeps its slots and queue; one place every worktree sees, whatever its `scratch_dir` |
 | `build_root` | none: builds stay in each checkout's `build/` | optional, for this machine only: a folder (on another drive) that holds every checkout's build tree as `<build_root>/<id>/` ([The build root](#build-root)) |
+| `watch_paths` | none: only the workspace and the build root are watched | optional, for this machine only: a list of folders whose drives are watched for free space besides those two, each a path or a table `{ path = "...", min_free_gb = N, margin_gb = N }` that gives its drive its own limits ([The watched drives](#watched-drives)) |
 | `build_slots` | `2` | a number: how many builds and test runs `coney-tools build` lets run at once |
 | `check_slots` | `0` | a number: how many full suites (the whole pytest run, the engine's whole ctest run) may run at once on this machine, across all worktrees ([check slots](coney-tools-build.md#check-slots)); `0` is one per four cores, at least one |
 | `build_worktree_cap` | `7` | a number: how many worktrees may hold a `build/` folder at once; `coney-tools build` refuses to configure a new build folder beyond it and lists the holders ([`build`](coney-tools-build.md#build), [The cap](agents.md#build-cap)); `0` turns the cap off |
@@ -254,6 +255,37 @@ not be inside a checkout.
   `cmake --preset` (an IDE, say) still uses `build/<preset>`.
 * **Builds from before** the setting stay in the worktree's `build/` until `workspace clean` deletes them as idle; a new
   build goes to the root.
+
+### The watched drives {#watched-drives}
+
+A drive that fills stops the work, and it is not always the one that holds the workspace: with a
+[build root](#build-root) the builds fill another (on 2026-10-31 the build drive fell to 3.7 GB free, twelve build
+folders of 8 to 22 GB each, while the workspace drive had 61 GB), and a scratch or emulator folder may sit on a third.
+So every tool that watches free space reads one list, [`watched_drives.py`](repo:python/src/coney_tools/watched_drives.py):
+
+* **The defaults need no setting:** the drive of the workspace, and the drive of `build_root` when it is set. Folders on
+  one drive count once, so a build root beside the workspace adds nothing.
+* **Extra folders** go in `watch_paths` of `coney.local.toml`, relative to the file or absolute (a folder that is not
+  made yet counts by its drive; a drive that cannot be read, such as an unplugged disk, is told as a warning and the
+  others still show):
+
+  ```toml
+  watch_paths = [
+    "F:/coney_scratch",                                          # a third drive, with the default limits
+    { path = "G:/emulators", min_free_gb = 10, margin_gb = 5 },  # ... with its own
+  ]
+  ```
+
+* **The limits** are `workspace.disk_min_free_gb` (the floor, 30) and `workspace.disk_margin_gb` (10) of
+  [.github/conventions.yml](repo:.github/conventions.yml) for every drive; a `watch_paths` table that gives
+  `min_free_gb` or `margin_gb` replaces them for the drive its path is on, which may be the workspace's or the build
+  root's (name any folder on it). Two tables must not give one drive limits. A drive is **amber** under its floor plus
+  its margin and **red** (low) under its floor.
+* **Who reads the list:** the [Conclave band](conclave.md#shows) shows the drive with the least room above its floor,
+  named (`disk E: 4 GB`), and raises a `disk-low` [event](conclave.md#watchers) for each red drive;
+  [`task slots --fill-check`](slot-fill.md) holds back new units while any drive is red; `workspace clean` and
+  `workspace check-space` print every drive and judge it by its own floor ([Cleanup](#cleanup)); and `repo audit
+  --local` reports a red drive as `ws.disk`.
 
 ## Worktrees
 
@@ -318,12 +350,15 @@ free space before and after.
   in (a running build writes there). Sources are never touched this way, so it also applies to a worktree with
   uncommitted or unmerged work.
 * **Disk pressure** (`--min-gb`, default `workspace.disk_min_free_gb`, 30; `--margin-gb`, default
-  `workspace.disk_margin_gb`, 10). After the two steps above, if the drive still has less than the floor free, `clean`
+  `workspace.disk_margin_gb`, 10; each [watched drive](#watched-drives) may have limits of its own, and the options
+  replace them all). After the two steps above, if the drive still has less than the floor free, `clean`
   deletes the `build/` folders of the remaining worktrees, **the one last used longest ago first**, until the free space
   reaches the floor plus the margin (40 GB by default), re-reading the free space after each. This is what keeps the
   drive above the floor when twenty-five open branches each hold a 6 GB build used within the last hours, which the age
-  rule alone never touches. With a [build root](#build-root) on another drive, that drive is measured too and has the
-  same floor: under it, the build folders in the root are deleted the same way. Only build folders go in this mode,
+  rule alone never touches. With a [build root](#build-root) on another drive, that drive is measured too and has its
+  own floor: under it, the build folders in the root are deleted the same way. Any other watched drive (a folder of
+  `watch_paths` on a third drive) is printed with its free space; if it is under its floor the output says that `clean`
+  holds no build folders there and it must be freed by hand. Only build folders go in this mode,
   never a worktree, a source file or a branch, so uncommitted and unmerged work is safe. Skipped: a worktree with the
   busy file, the folder you run it from, a `build/` that git does not ignore, and a worktree that holds a build slot or
   waits for one (see "Build slots" below). Each deletion is printed with the free space before and after, and a line
@@ -367,11 +402,13 @@ protects its worktree for good; delete it once you know the work is over. An **e
 `--build-hours` (24 by default) is taken for a dead agent's and ignored, so a marker made with a bare `touch` still
 protects for a day. The file's name is `workspace.busy_marker` of the conventions file.
 
-**`workspace check-space`** prints the free space of the workspace's drive, and of the build root's when it is on
-another drive, and exits 1 when either is below `--min-gb` (default: 30, the `workspace.disk_min_free_gb` key of
-[.github/conventions.yml](repo:.github/conventions.yml)), for hooks and scripts (`coney-tools workspace check-space ||
-coney-tools workspace clean --apply`); a hook that runs `clean --apply` every half hour keeps the drive above the floor
-on its own. The coordinator runs `clean --apply` after every merge round (`coney-tools repo audit --local` lists what it
+**`workspace check-space`** prints the free space of every [watched drive](#watched-drives) (the workspace's, the
+build root's when it is on another drive, and the folders of `watch_paths`), and exits 1 when any is below its floor
+(default: 30, the `workspace.disk_min_free_gb` key of [.github/conventions.yml](repo:.github/conventions.yml), or the
+`min_free_gb` a `watch_paths` table gives that drive; `--min-gb` replaces them all), for hooks and scripts
+(`coney-tools workspace check-space || coney-tools workspace clean --apply`); a hook that runs `clean --apply` every
+half hour keeps the drive above the floor on its own. The coordinator runs `clean --apply` after every merge round
+(`coney-tools repo audit --local` lists what it
 would remove and the scratch folders of finished work that still hold files taken from the original), and agents delete
 their own `build/` when they finish a unit ([Briefing](agents.md#briefs)). `scratch/` is not cleaned automatically:
 prune built docs sites, logs and captures there yourself (below). The one exception is a **fix task whose parent's pull

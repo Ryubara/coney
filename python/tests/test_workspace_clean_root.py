@@ -199,6 +199,93 @@ def test_check_space_without_a_build_root_measures_one_drive(
     assert "build root" not in capsys.readouterr().out
 
 
+# --- the watched drives: `watch_paths` and per-drive limits ---------------------------------------------------------
+
+
+def extra(space: Space) -> Path:
+    """A folder on a third drive of the made-up machine, which the tests tell apart by its name."""
+    folder = space.root / "third-drive" / "scratch"
+    folder.mkdir(parents=True, exist_ok=True)
+    return folder
+
+
+def usage_by_folder(monkeypatch: pytest.MonkeyPatch, free: dict[str, int]) -> None:
+    """A folder whose path holds a name of `free` is on that name's own drive with that many GB free; every other
+    folder is on one drive with 500 GB, so one drive can be short while the others have room."""
+
+    def drive_of(path: str | Path) -> str:
+        text = Path(path).resolve().as_posix()
+        return next((name for name in free if name in text), "main")
+
+    def usage(path: str | Path) -> Usage:
+        return Usage(1000 * GIB, 0, free.get(drive_of(path), 500) * GIB)
+
+    monkeypatch.setattr(shutil, "disk_usage", usage)
+    monkeypatch.setattr(build_root, "same_drive", lambda one, two: drive_of(one) == drive_of(two))
+
+
+def watch(space: Space, text: str) -> None:
+    """Add `text` to the main checkout's coney.local.toml."""
+    (space.checkout / "coney.local.toml").write_text(text, encoding="utf-8")
+
+
+def test_check_space_measures_an_extra_watched_folder_too(
+    space: Space, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    watch(space, f"watch_paths = ['{extra(space).as_posix()}']\n")
+    usage_by_folder(monkeypatch, {"third-drive": 10})
+    assert run_disk(space.checkout, space.root, 30) == 1
+    out = capsys.readouterr().out
+    assert "workspace drive: 500.0 GB" in out
+    assert f"the watched folder ({extra(space).resolve()}): 10.0 GB" in out and "LOW" in out
+
+
+def test_check_space_judges_a_drive_by_its_own_limits(space: Space, monkeypatch: pytest.MonkeyPatch) -> None:
+    watch(space, f"watch_paths = [{{ path = '{extra(space).as_posix()}', min_free_gb = 5 }}]\n")
+    usage_by_folder(monkeypatch, {"third-drive": 10})
+    assert run_disk(space.checkout, space.root) == 0
+    watch(space, f"watch_paths = [{{ path = '{extra(space).as_posix()}', min_free_gb = 15 }}]\n")
+    assert run_disk(space.checkout, space.root) == 1
+
+
+def test_an_explicit_minimum_wins_over_every_drives_own(space: Space, monkeypatch: pytest.MonkeyPatch) -> None:
+    watch(space, f"watch_paths = [{{ path = '{extra(space).as_posix()}', min_free_gb = 5 }}]\n")
+    usage_by_folder(monkeypatch, {"third-drive": 10})
+    assert run_disk(space.checkout, space.root, 11) == 1
+    assert run_disk(space.checkout, space.root, 9) == 0
+
+
+def test_clean_reports_every_watched_drive_and_says_it_cannot_relieve_an_extra_one(
+    space: Space, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    watch(space, f"watch_paths = ['{extra(space).as_posix()}']\n")
+    usage_by_folder(monkeypatch, {"third-drive": 10})
+    assert clean(space, True, build_hours=500.0) == 0
+    out = capsys.readouterr().out
+    assert f"Free space on the watched folder ({extra(space).resolve()}): 10.0 GB" in out
+    assert "holds no build folders" in out and "free it by hand" in out
+
+
+def with_root_floor(space: Space, floor: int) -> None:
+    """Set `build_root` and give its drive a floor of its own."""
+    root = builds(space).as_posix()
+    watch(space, f"build_root = '{root}'\nwatch_paths = [{{ path = '{root}', min_free_gb = {floor} }}]\n")
+
+
+def test_pressure_on_the_build_roots_drive_uses_that_drives_own_floor(
+    space: Space, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # 25 GB free on the build root's drive: under the conventions' 30 GB floor, over the 20 GB the file gives it.
+    with_root_floor(space, 20)
+    folder = root_build(space, space.worktree("w", commits=1), age=30)
+    usage_by_folder(monkeypatch, {"other-drive": 25})
+    assert clean(space, True, build_hours=500.0) == 0
+    assert folder.is_dir() and "Disk pressure" not in capsys.readouterr().out
+    with_root_floor(space, 28)
+    assert clean(space, True, build_hours=500.0) == 0
+    assert not folder.exists() and "Disk pressure on the build root" in capsys.readouterr().out
+
+
 # --- the idle test: a running check, fails-first or build protects its build ---------------------------------------
 
 

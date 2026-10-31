@@ -7,6 +7,7 @@ import subprocess
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 #: Keys of `coney.local.toml` that hold folders. Each may be relative to the repository root, absolute or "".
 PATH_KEYS: tuple[str, ...] = (
@@ -77,6 +78,14 @@ INT_MINIMUM: dict[str, int] = {
     "xemu_monitor_base": 1024,
 }
 
+#: The key of `coney.local.toml` that lists extra folders whose drives Conclave, the slot-fill check and `workspace
+#: clean|check-space` watch for free space, besides the workspace's and the build root's (watched_drives.py). Each item
+#: is a path (relative to the file, or absolute) or a table `{ path = "...", min_free_gb = N, margin_gb = N }` that
+#: gives the path's drive its own limits.
+WATCH_KEY = "watch_paths"
+#: The keys a table of `watch_paths` may hold.
+WATCH_TABLE_KEYS: tuple[str, ...] = ("path", "min_free_gb", "margin_gb")
+
 #: Keys that once meant something and are now ignored, so a `coney.local.toml` written before they went still loads
 #: (the local clang-tidy gate and its slots, cache and process count went when CI began tidying every pull request).
 RETIRED_KEYS: tuple[str, ...] = ("tidy_slots", "tidy_jobs", "tidy_cache_dir")
@@ -93,6 +102,16 @@ class ConfigError(Exception):
 
 
 @dataclass(frozen=True)
+class WatchPath:
+    """One item of `watch_paths`: a folder whose drive is watched, and the limits it gives that drive (None: the
+    conventions' `workspace.disk_min_free_gb` and `disk_margin_gb`)."""
+
+    path: Path
+    min_free_gb: int | None = None
+    margin_gb: int | None = None
+
+
+@dataclass(frozen=True)
 class Config:
     """The parsed local configuration."""
 
@@ -100,6 +119,8 @@ class Config:
     paths: dict[str, Path | None]
     #: Every entry of INT_KEYS, the default where the file does not set it.
     numbers: dict[str, int] = field(default_factory=lambda: dict(INT_KEYS))
+    #: The items of `watch_paths`, in the order the file gives them.
+    watch: tuple[WatchPath, ...] = ()
 
 
 def find_repo_root(start: Path) -> Path:
@@ -172,9 +193,9 @@ def load_config(root: Path) -> Config:
     except (tomllib.TOMLDecodeError, UnicodeDecodeError, OSError) as error:
         raise ConfigError(f"{path}: {error}") from error
 
-    unknown = sorted(set(data) - set(PATH_KEYS) - set(INT_KEYS) - set(RETIRED_KEYS))
+    unknown = sorted(set(data) - set(PATH_KEYS) - set(INT_KEYS) - {WATCH_KEY} - set(RETIRED_KEYS))
     if unknown:
-        known = ", ".join((*PATH_KEYS, *INT_KEYS))
+        known = ", ".join((*PATH_KEYS, *INT_KEYS, WATCH_KEY))
         raise ConfigError(f"{path}: unknown key(s) {', '.join(unknown)}; known keys are {known}")
 
     paths: dict[str, Path | None] = {}
@@ -190,7 +211,44 @@ def load_config(root: Path) -> Config:
         if isinstance(value, bool) or not isinstance(value, int) or value < least:
             raise ConfigError(f"{path}: {key} must be a whole number of at least {least}, got {value!r}")
         numbers[key] = value
-    return Config(paths=paths, numbers=numbers)
+    return Config(paths=paths, numbers=numbers, watch=_watch_paths(path, root, data.get(WATCH_KEY, [])))
+
+
+def _limit(file: Path, where: str, key: str, table: dict[str, Any]) -> int | None:
+    """A limit of a `watch_paths` table: a whole number of GB (0 or more), or None when the table gives none."""
+    if key not in table:
+        return None
+    found = table[key]
+    if isinstance(found, bool) or not isinstance(found, int) or found < 0:
+        raise ConfigError(f"{file}: {where} {key} must be a whole number of GB, 0 or more, got {found!r}")
+    return found
+
+
+def _watch_paths(file: Path, root: Path, value: object) -> tuple[WatchPath, ...]:
+    """The items of `watch_paths` (relative paths against `root`, the folder of the file); ConfigError for anything
+    that is not a list of paths and tables with a `path` and, optionally, the two limits."""
+    if not isinstance(value, list):
+        raise ConfigError(f"{file}: {WATCH_KEY} must be a list of paths, got {type(value).__name__}")
+    found: list[WatchPath] = []
+    for number, item in enumerate(value, 1):
+        where = f"{WATCH_KEY} item {number}"
+        table = item if isinstance(item, dict) else {"path": item}
+        unknown = sorted(set(table) - set(WATCH_TABLE_KEYS))
+        if unknown:
+            raise ConfigError(
+                f"{file}: {where} has unknown key(s) {', '.join(unknown)}; known keys are {', '.join(WATCH_TABLE_KEYS)}"
+            )
+        text = table.get("path")
+        if not isinstance(text, str) or not text:
+            raise ConfigError(f"{file}: {where} needs a path, a non-empty string")
+        found.append(
+            WatchPath(
+                (root / text).resolve(),
+                _limit(file, where, "min_free_gb", table),
+                _limit(file, where, "margin_gb", table),
+            )
+        )
+    return tuple(found)
 
 
 def workspace_root(root: Path) -> Path:

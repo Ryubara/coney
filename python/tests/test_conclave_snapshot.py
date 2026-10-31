@@ -17,6 +17,7 @@ from conclave_support import (
     Layout,
     ago,
     card,
+    drive,
     github_answers,
     iso,
     make_layout,
@@ -24,6 +25,7 @@ from conclave_support import (
     sources,
     stamp_steps,
     unit,
+    watching,
     write_check,
 )
 
@@ -34,6 +36,7 @@ from coney_tools.config import ConfigError
 from coney_tools.issue_claim_cli import held_cards
 from coney_tools.issue_claim_model import Card
 from coney_tools.issue_claim_remote import GhRemote
+from coney_tools.watched_drives import Watch
 
 
 @pytest.fixture
@@ -238,9 +241,34 @@ def test_the_snapshot_reads_builds_and_the_machine(layout: Layout) -> None:
     report = collect(sources(layout), github=False)
     assert report["builds"]["lanes"]["main"]["slots"][0]["slot"] == 1
     machine = report["machine"]
-    assert machine["error"] is None and machine["free_gb"] == 61.0
+    assert machine["error"] is None and machine["free_gb"] == 61.0 and machine["drive"] == "C:"
     assert machine["min_free_gb"] == CONVENTIONS.workspace.disk_min_free_gb
     assert machine["warn_free_gb"] == CONVENTIONS.workspace.disk_min_free_gb + CONVENTIONS.workspace.disk_margin_gb
+    assert [row["name"] for row in machine["drives"]] == ["C:"] and machine["problems"] == []
+
+
+def test_the_machine_shows_the_drive_with_the_least_room_and_lists_them_all(layout: Layout) -> None:
+    machine = collect(sources(layout, drives=lambda: watching(200, 3.7, 20)), github=False)["machine"]
+    assert (machine["drive"], machine["free_gb"]) == ("E:", 3.7)
+    assert [(row["name"], row["free_gb"]) for row in machine["drives"]] == [("C:", 200.0), ("E:", 3.7), ("F:", 20.0)]
+    assert machine["drives"][1]["holds"] == ["the build root (E:/coney_builds)"]
+    assert machine["drives"][1]["min_free_gb"] == CONVENTIONS.workspace.disk_min_free_gb
+
+
+def test_a_drive_with_its_own_limits_is_judged_by_them(layout: Layout) -> None:
+    def watch() -> Watch:
+        return Watch([drive("C:", 61), drive("F:", 12, ("the watched folder (F:/x)",), floor=10)])
+
+    machine = collect(sources(layout, drives=watch), github=False)["machine"]
+    assert (machine["drive"], machine["min_free_gb"], machine["warn_free_gb"]) == ("F:", 10, 10 + 10)
+    assert machine["drives"][1]["warn_free_gb"] == 20
+
+
+def test_a_drive_that_could_not_be_read_is_a_problem_beside_the_others(layout: Layout) -> None:
+    machine = collect(sources(layout, drives=lambda: watching(61, problems=["F: could not be read"])), github=False)[
+        "machine"
+    ]
+    assert machine["problems"] == ["F: could not be read"] and machine["free_gb"] == 61.0
 
 
 # --- the config ----------------------------------------------------------------------------------------------------
@@ -358,11 +386,19 @@ def test_a_failed_pull_request_read_leaves_the_units_without_pr(layout: Layout) 
 
 
 def test_a_machine_that_cannot_say_its_disk_reports_the_error(layout: Layout) -> None:
-    def broken() -> int:
+    def broken() -> Watch:
         raise OSError("no such drive")
 
-    machine = collect(sources(layout, free_bytes=broken), github=False)["machine"]
+    machine = collect(sources(layout, drives=broken), github=False)["machine"]
     assert machine == {"error": "no such drive"}
+
+
+def test_a_local_file_that_cannot_be_read_reports_the_error_too(layout: Layout) -> None:
+    def broken() -> Watch:
+        raise ConfigError("coney.local.toml: watch_paths must be a list")
+
+    machine = collect(sources(layout, drives=broken), github=False)["machine"]
+    assert machine == {"error": "coney.local.toml: watch_paths must be a list"}
 
 
 # --- the command ---------------------------------------------------------------------------------------------------
@@ -386,7 +422,7 @@ def test_text_prints_one_line_per_section(layout: Layout) -> None:
     lines: list[str] = []
     assert conclave_cli.run(args(), sources(layout), lines.append) == 0
     assert lines[0].startswith("conclave snapshot ") and any(line.startswith("units: 2 units") for line in lines)
-    assert any(line.startswith("machine: 61.0 GB free") for line in lines)
+    assert any(line.startswith("machine: 61.0 GB free on C:") for line in lines)
 
 
 def test_an_unknown_unit_is_a_usage_error(layout: Layout) -> None:

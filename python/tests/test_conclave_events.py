@@ -15,16 +15,19 @@ from conclave_support import (
     FakeGh,
     Layout,
     ago,
+    drive,
     github_answers,
     iso,
     make_layout,
     sources,
+    watching,
 )
 
 from coney_tools import pr_hold
 from coney_tools.conclave_snapshot import collect
 from coney_tools.pr_hold import Hold
 from coney_tools.pr_ready import Readiness
+from coney_tools.watched_drives import Watch
 
 RULES = CONVENTIONS.conclave.watch
 
@@ -361,3 +364,53 @@ def test_reading_the_snapshot_writes_nothing(layout: Layout) -> None:
     assert (
         sorted((p.relative_to(layout.root).as_posix(), p.stat().st_mtime_ns) for p in layout.root.rglob("*")) == before
     )
+
+
+# --- a low drive ----------------------------------------------------------------------------------------------------
+
+
+def low_drives(*free_gb: float) -> dict[str, Any]:
+    """The `drives` source of a machine whose drives have this much free space."""
+    return {"drives": lambda: watching(*free_gb)}
+
+
+def test_a_drive_with_room_raises_no_disk_event(layout: Layout) -> None:
+    assert events(read(layout, **low_drives(200, 61)), "disk-low") == []
+
+
+def test_a_drive_under_its_floor_is_an_event_naming_it_and_the_cleanup(layout: Layout) -> None:
+    [event] = events(read(layout, **low_drives(200, 3.7)), "disk-low")
+    assert event["id"] == "disk-low:E:" and event["state"] == "open" and not event["guard"]
+    assert "E:" in event["text"] and "3.7 GB" in event["text"] and "30 GB" in event["text"]
+    assert "the build root (E:/coney_builds)" in event["text"]
+    assert "workspace clean --apply" in event["do"]
+    assert event["since"] == iso(NOW) and event["handled_by"] is None
+
+
+def test_an_amber_drive_is_not_yet_an_event(layout: Layout) -> None:
+    assert events(read(layout, **low_drives(35)), "disk-low") == []
+
+
+def test_each_low_drive_is_its_own_event(layout: Layout) -> None:
+    found = events(read(layout, **low_drives(10, 3.7, 80)), "disk-low")
+    assert [event["id"] for event in found] == ["disk-low:C:", "disk-low:E:"]
+
+
+def test_a_drive_is_low_by_its_own_floor(layout: Layout) -> None:
+    def watch() -> Watch:
+        return Watch([drive("C:", 61), drive("F:", 8, ("the watched folder (F:/x)",), floor=10)])
+
+    assert [event["id"] for event in events(read(layout, drives=watch), "disk-low")] == ["disk-low:F:"]
+
+
+def test_the_same_low_drive_keeps_its_id_as_the_free_space_changes(layout: Layout) -> None:
+    first = events(read(layout, **low_drives(200, 3.7)), "disk-low")[0]["id"]
+    assert events(read(layout, **low_drives(200, 2.1)), "disk-low")[0]["id"] == first
+
+
+def test_a_disk_that_cannot_be_read_names_the_kind_unread(layout: Layout) -> None:
+    def broken() -> Watch:
+        raise OSError("no such drive")
+
+    report = read(layout, drives=broken)
+    assert "disk-low" in report["events"]["unread"] and events(report, "disk-low") == []
