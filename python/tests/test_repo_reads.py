@@ -4,6 +4,7 @@ told. The recorder is driven by hand with audit events, so no real file of the c
 
 import contextlib
 import os
+import shutil
 import subprocess
 import sys
 from collections.abc import Callable
@@ -185,6 +186,61 @@ def test_a_stat_call_is_not_noted_while_nothing_is_watched(tmp_path: Path) -> No
         assert watch.current is None
     finally:
         repo_reads.unwrap_stat_calls(replaced)
+
+
+def test_a_name_relative_to_a_directory_descriptor_is_not_a_read_of_the_current_folder(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`shutil.rmtree` on Linux and macOS stats and opens each entry of a tree by its bare name and a dir_fd; read
+    against the current folder (a checkout's root) `docs` was the checkout's docs, and CI failed 7 tests for it."""
+    monkeypatch.chdir(tmp_path)
+    opened: list[object] = []
+
+    def fake_open(path: object, flags: int = 0, *, dir_fd: int | None = None) -> int:
+        opened.append(path)
+        watch.hook("open", (path, None, flags))  # the audit event the real os.open raises inside the call
+        return 3
+
+    watch = repo_reads.Recorder(SCOPE, root=os.path.normcase(str(tmp_path)))
+    watch.start()
+    muted = repo_reads._muting(watch, fake_open)
+    noting = repo_reads._noting(watch, lambda path, **_: None)
+    muted("docs", os.O_RDONLY, dir_fd=5)
+    noting("research", dir_fd=5, follow_symlinks=False)
+    assert watch.relative_to_fd == 0
+    assert watch.current == {}
+    # the same names without a dir_fd are read against the current folder, which is the checkout here
+    muted("src", os.O_RDONLY)
+    noting("research")
+    assert watch.stop() == {"engine": {"src"}, "docs_only": {"research"}}
+    assert opened == ["docs", "src"]
+
+
+def test_a_muted_call_that_fails_still_ends_its_muting() -> None:
+    watch = recorder()
+
+    def failing(path: object, flags: int = 0, *, dir_fd: int | None = None) -> int:
+        raise FileNotFoundError(path)
+
+    muted = repo_reads._muting(watch, failing)
+    with pytest.raises(FileNotFoundError):
+        muted("docs", dir_fd=5)
+    assert watch.relative_to_fd == 0
+
+
+def test_removing_a_tree_with_the_checkouts_folder_names_reads_nothing_of_the_checkout(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Run with the checkout as the current folder, as CI does. On Linux and macOS `rmtree` walks the tree with
+    # dir_fd and bare names (`docs`, `research`, `src`), which the guard of this very run would fail at teardown if it
+    # read them against the checkout; Windows removes by full path, so only there is this check empty.
+    monkeypatch.chdir(repo_reads.REPO)
+    tree = tmp_path / "copy"
+    for folder in ("docs/progress", "research/functions", "src/core"):
+        (tree / folder).mkdir(parents=True)
+        (tree / folder / "a.txt").write_text("x", encoding="utf-8")
+    shutil.rmtree(tree)
+    assert not tree.exists()
 
 
 def test_the_conftest_fails_an_unmarked_test_at_teardown_and_selects_by_marker(tmp_path: Path) -> None:

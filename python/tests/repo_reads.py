@@ -15,6 +15,10 @@ The audit events cover opening and listing only: CPython raises none for `stat`,
 `install` also wraps the `os.stat`/`os.lstat`/`os.access` functions and the `os.path` existence, kind, size and time
 checks (`STAT_CALLS`), which `pathlib` calls through, and a test that only checks a file exists is seen too.
 
+A name relative to an open directory (`os.stat(name, dir_fd=fd)`, `os.open(name, dir_fd=fd)`, which `shutil.rmtree`
+uses on Linux and macOS for each entry of the tree it removes) is not read against the current folder, so those calls
+are not noted (`DIR_FD_CALLS`); Windows has no such calls, which is why only CI's other systems showed it.
+
 What it cannot see, and a test that has one of these is marked by hand:
 - a child process's reads: a test that starts a program inside the checkout (git, bash, coney-tools) with no folder of
   its own reads whatever that program does;
@@ -68,6 +72,10 @@ STAT_CALLS: tuple[tuple[object, tuple[str, ...]], ...] = (
         ),
     ),
 )
+#: The calls that take a `dir_fd`: with one, their path is relative to that directory, not to the current folder, so
+#: a bare `docs` is the entry of a folder being walked (an `rmtree` of a temporary tree), not the checkout's `docs`.
+#: `stat`, `lstat` and `access` are in `STAT_CALLS` and skip it there; `open` raises its audit event inside the call.
+DIR_FD_CALLS: tuple[tuple[object, tuple[str, ...]], ...] = ((os, ("open",)),)
 #: The audit event of a child process, and the key its folder and program are noted under (in the log only).
 SPAWN = "subprocess.Popen"
 SPAWNED = "spawned"
@@ -112,13 +120,15 @@ class Recorder:
     scope: Scope
     root: str = field(default_factory=lambda: os.path.normcase(str(REPO)))
     current: dict[str, set[str]] | None = None
+    #: How many calls relative to a directory descriptor are running: what they open is not the current folder's.
+    relative_to_fd: int = 0
     by_module: dict[str, dict[str, set[str]]] = field(default_factory=dict)
     #: The class of each path seen, remembered: the hook sees the same paths again and again.
     classes: dict[str, str | None] = field(default_factory=dict)
 
     def hook(self, event: str, args: tuple[object, ...]) -> None:
         """The audit hook: note a scoped read while a test or a module import is being watched. It must never raise."""
-        if self.current is None or not args:
+        if self.current is None or not args or self.relative_to_fd:
             return
         if event == SPAWN:
             self._spawned(args)
@@ -223,13 +233,14 @@ def wrap_stat_calls(recorder: Recorder) -> list[tuple[object, str, Callable[...,
     arguments and result. Returns what was replaced, for `unwrap_stat_calls`. A function that fails to be wrapped (the
     platform lacks it) is skipped."""
     replaced: list[tuple[object, str, Callable[..., Any]]] = []
-    for module, names in STAT_CALLS:
-        for name in names:
-            original = getattr(module, name, None)
-            if original is None:
-                continue
-            setattr(module, name, _noting(recorder, original))
-            replaced.append((module, name, original))
+    for calls, wrap in ((STAT_CALLS, _noting), (DIR_FD_CALLS, _muting)):
+        for module, names in calls:
+            for name in names:
+                original = getattr(module, name, None)
+                if original is None:
+                    continue
+                setattr(module, name, wrap(recorder, original))
+                replaced.append((module, name, original))
     return replaced
 
 
@@ -244,9 +255,27 @@ def _noting(recorder: Recorder, original: Callable[..., Any]) -> Callable[..., A
 
     @functools.wraps(original)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
-        if recorder.current is not None:
+        # With a dir_fd the path is relative to that directory, not to the current folder (`DIR_FD_CALLS`).
+        if recorder.current is not None and kwargs.get("dir_fd") is None:
             recorder.note(args[0] if args else kwargs.get("path"))
         return original(*args, **kwargs)
+
+    return wrapper
+
+
+def _muting(recorder: Recorder, original: Callable[..., Any]) -> Callable[..., Any]:
+    """`original` wrapped so that, when it is given a `dir_fd`, the audit events it raises are not noted: its path is
+    relative to that directory (`shutil.rmtree` opens each entry of the tree that way on Linux and macOS)."""
+
+    @functools.wraps(original)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        if kwargs.get("dir_fd") is None:
+            return original(*args, **kwargs)
+        recorder.relative_to_fd += 1
+        try:
+            return original(*args, **kwargs)
+        finally:
+            recorder.relative_to_fd -= 1
 
     return wrapper
 

@@ -497,6 +497,10 @@ see, and a test that has one of these is marked by hand:
 * **A read that only some systems make**: the markers were gathered on Windows, so a test skipped there (no luac, no
   uv, a POSIX-only test) or one whose reads depend on the operating system is checked only where it runs, which CI's
   Linux job does for the whole suite.
+  The watch ignores a call made with a `dir_fd` (`os.stat(name, dir_fd=fd)`, `os.open(name, dir_fd=fd)`): its path is
+  relative to that directory, not to the current folder. Linux and macOS `shutil.rmtree` (so the clean-up of a
+  temporary tree) removes each entry that way, and read against the checkout, which CI runs from, a bare `docs`,
+  `research` or `src` would be the checkout's own folder; Windows removes by full path and never showed it.
 
 `CONEY_TEST_READS_LOG=<folder>` writes what each test read, one JSON line per test, to review the markers.
 
