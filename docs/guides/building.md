@@ -511,11 +511,6 @@ uv run --project python ruff format --check python .claude/hooks
 uv run --project python mypy --config-file python/pyproject.toml python/src python/tests
 ```
 
-The whole suite is about 9,700 tests. `-n 4` runs it on four pytest-xdist workers, as `task check` does, and `--reads
-docs_only` (or `engine`) runs only the tests marked as reading the checkout's docs or engine files ([Which Python tests
-run](coney-tools-repo.md#task-check-pytest)). A test that reads one of those files without its
-`@pytest.mark.reads(...)` marker fails, and says which marker to add.
-
 `coney-tools config show` prints the paths your `coney.local.toml` sets (start from `coney.local.example.toml`;
 [Local workspace](workspace.md) explains each one). `coney-tools pr check-title` checks a commit or pull request
 title against the commit rules in [CONTRIBUTING.md](repo:CONTRIBUTING.md#commits) (their values are in
