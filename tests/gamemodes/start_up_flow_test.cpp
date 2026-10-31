@@ -486,7 +486,10 @@ struct TintScene final : coney::FrontEndScene {
 } // namespace
 
 TEST_CASE("start-up: the front end's tint reaches the bindings and is drawn over the menus' text", "[frontend]") {
-    // Expected: frontend.md#background, confirmed (code)
+    // Expected: rendering.md#front-end, confirmed (runtime): the title frame draws the tint (7, 20, 30) at 21 / 128
+    // last, after the menu text. The script value behind it is level 100's level colour (0.03, 0.08, 0.12, 0.17) in
+    // frontend.md#background, inferred (disassembly). That the tint leaves with the scene is Coney's choice
+    // (frontend.md#coneys-implementation).
     Run run("");
     TintScene* scene = nullptr;
     int loads = 0;
@@ -591,7 +594,10 @@ TEST_CASE("start-up: an input script goes PM_Greet, PM_Mode, EXTRAS and back, wi
 
 TEST_CASE("start-up with scripts: the boot's memory-card mode loads the profiles, RELOAD PROFILES again",
           "[start_up]") {
-    // Expected: save.md#mode-6, confirmed (code)
+    // Expected: save.md#coneys-implementation, Coney's own profile store: RELOAD PROFILES reads the folder again and
+    // the menus re-open PM_Profile over it (Coney's choice). Mode 6's load kind, pushed by SSMC_StartLoadSequence, is
+    // save.md#mode-6, confirmed (code); the 1.0 s fade out and the load 700 ms later are frontend.md#fades, inferred
+    // (script).
     const coney::test::TempDir folder;
     // START on PM_Greet, cross on STORY (PM_Profile: CREATE NEW PROFILE, RELOAD PROFILES), down, then cross on RELOAD.
     auto script = coney::parseInputScript("200 tap start\n215 tap cross\n240 tap down\n250 tap cross\n");
@@ -624,7 +630,9 @@ TEST_CASE("start-up with scripts: the boot's memory-card mode loads the profiles
 }
 
 TEST_CASE("start-up with scripts: deleting a profile removes its file and the menus fade back in", "[start_up]") {
-    // Expected: save.md#mode-6, confirmed (code)
+    // Expected: save.md#coneys-implementation, Coney's own profile store: the file is removed and the menus fade back
+    // in over PM_Profile (Coney's choice). That SSMC_StartDeleteSequence pushes mode 6 (its save kind there) is
+    // save.md#mode-6, confirmed (code); the instant black before it is frontend.md#fades, inferred (script).
     const coney::test::TempDir folder;
     {
         coney::GameState other;

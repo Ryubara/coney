@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "core/sha256.h"
 #include "core/story_graph.h"
 
 #include <algorithm>
