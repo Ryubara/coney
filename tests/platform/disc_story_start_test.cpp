@@ -334,6 +334,7 @@ TEST_CASE("the disc's hub runs its chat events without a script error", "[disc][
 }
 
 TEST_CASE("the disc's executable holds the game's random table", "[disc][story]") {
+    // Expected: maths.md#random, confirmed (code)
     std::optional<coney::io::Wad> wad = openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");

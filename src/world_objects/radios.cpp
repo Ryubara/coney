@@ -45,7 +45,9 @@ float distanceSquared(const std::array<float, 3>& a, const std::array<float, 3>&
 // Whether `level` is complete in `world`.
 bool complete(const RadioWorld& world, int level) { return world.levelComplete && world.levelComplete(level); }
 
-// A draw of `Random % n` (`0x00335498`).
+// A draw of `Random % n` from the ambient stream; the radios' callers never pass 0, so the original's 0 for n = 0 is
+// not needed.
+// @orig 0x00335498 Random_IntBelow (unknown)
 int draw(GameRandom& random, int n) {
     return static_cast<int>(random.next(RandomStream::Ambient) % static_cast<std::uint32_t>(n));
 }

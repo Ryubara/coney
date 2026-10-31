@@ -134,7 +134,8 @@ class RumbleIntro : public Widget {
     [[nodiscard]] std::string countdownWord(std::uint64_t nowMs) const;
 
   private:
-    // A whole number in [low, high] from the game's random numbers (low without them).
+    // A whole number in [low, high] from the ambient stream (low without the random numbers, Coney's choice).
+    // @orig 0x003353f0 Random_IntRange (unknown)
     [[nodiscard]] int draw(int low, int high);
     // Plays the announcer line `name` and notes when it ends; false when it cannot play.
     bool speak(std::string_view name, std::uint64_t nowMs);

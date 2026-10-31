@@ -123,7 +123,8 @@ class Radios {
     void clear() { m_radios.clear(); }
 
   private:
-    // One radio's update.
+    // One radio's update: its announcement, its play states (track, then a DJ link or clip) and its sound.
+    // @orig 0x003ad440 Radio_Update (unknown)
     void updateOne(Radio& radio, const std::array<float, 3>& at, const RadioWorld& world, RadioSound& sound,
                    GameRandom& random, const std::function<void(const std::string& function)>& call);
 

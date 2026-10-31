@@ -25,6 +25,7 @@ std::vector<std::uint32_t> syntheticTable() {
 } // namespace
 
 TEST_CASE("a draw advances the shared index and reads that entry, wrapping at 1,024", "[game_random]") {
+    // Expected: maths.md#random, confirmed (code)
     GameRandom random;
     const std::vector<std::uint32_t> table = syntheticTable();
     random.setTable(table);
@@ -40,6 +41,7 @@ TEST_CASE("a draw advances the shared index and reads that entry, wrapping at 1,
 }
 
 TEST_CASE("random(low, high) is low plus the draw modulo the range, inclusive", "[game_random]") {
+    // Expected: maths.md#random, confirmed (code)
     GameRandom random;
     random.setTable(syntheticTable());
     // Entries 1, 2, 3 are 10, 17, 24: 1 + 10 mod 5 = 1, 1 + 17 mod 5 = 3, 1 + 24 mod 5 = 5.
@@ -54,6 +56,7 @@ TEST_CASE("random(low, high) is low plus the draw modulo the range, inclusive", 
 }
 
 TEST_CASE("without the game's table the stand-in draws deterministically and in range", "[game_random]") {
+    // Expected: maths.md#random, confirmed (code) (the range; the stand-in generator is Coney's)
     GameRandom first;
     GameRandom second;
     CHECK(!first.hasTable());
@@ -66,6 +69,7 @@ TEST_CASE("without the game's table the stand-in draws deterministically and in 
 }
 
 TEST_CASE("starting the stream at an offset moves every draw along by it, the same on every run", "[game_random]") {
+    // Expected: flags.md#player-starts, confirmed (code)
     // The table's index at an offset (the original's 0x006eb880 at a recording's start): the first draw reads the
     // entry after it.
     GameRandom offset;

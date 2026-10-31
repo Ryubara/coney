@@ -199,6 +199,8 @@ TEST_CASE("a spawner's human of a $5-$20 class with no object holds $5-$20", "[a
 
 TEST_CASE("a spawner's human rolls its money by the class's draws, in their order, from the game's stream",
           "[ai][spawners]") {
+    // Expected: crimes.md#starting-money, confirmed (code)
+    // Expected: characters.md#body-scale, confirmed (code)
     // The street civilian's class: a bonus roll of 1 in 100 that multiplies by 5. The reference rolls the same carry
     // from the same stream, the roll HuCreate makes for a scripted human.
     const coney::characters::CarryConfig config{

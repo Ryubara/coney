@@ -126,7 +126,8 @@ class Triglints {
     void clear() { m_triglints.clear(); }
 
   private:
-    // `Random_Int(n)`: a draw of 0 to n from the stream.
+    // `Random_Int(n)`: a draw of 0 to n from the effects stream.
+    // @orig 0x003353b8 Random_Int (unknown)
     std::uint32_t draw(std::uint32_t n);
 
     std::map<double, Triglint> m_triglints;

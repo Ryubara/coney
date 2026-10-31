@@ -243,6 +243,7 @@ TEST_CASE("may A attack now, and the ring he waits in", "[ai]") {
 }
 
 TEST_CASE("the tackle meter fills on a fleeing target and fires past the gang's threshold", "[ai]") {
+    // Expected: ai-fights.md#try-tackle, confirmed (code)
     coney::ai::TackleMeter meter;
     for (int i = 0; i < 10; ++i) {
         meter.think(true, 4);

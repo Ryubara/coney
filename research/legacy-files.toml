@@ -26,7 +26,7 @@ tag = 7
 tag = 8
 
 ["src/ai/attack_views.cpp"]
-tag = 20
+tag = 19
 
 ["src/ai/block_goal.cpp"]
 tag = 9
@@ -376,9 +376,6 @@ tag = 1
 ["src/camera/camera_lens.cpp"]
 tag = 1
 
-["src/camera/camera_shake.cpp"]
-tag = 1
-
 ["src/camera/camera_view.cpp"]
 tag = 5
 
@@ -554,7 +551,7 @@ tag = 5
 comment = 1
 
 ["src/effects/glints.cpp"]
-tag = 6
+tag = 5
 
 ["src/effects/ground_fog.cpp"]
 tag = 8
@@ -710,7 +707,7 @@ tag = 1
 tag = 4
 
 ["src/graphics/light_manager.cpp"]
-tag = 18
+tag = 17
 
 ["src/graphics/light_manager.h"]
 comment = 7
@@ -834,7 +831,7 @@ tag = 2
 tag = 7
 
 ["src/gui/rumble_mode_gui/rumble_intro.cpp"]
-tag = 10
+tag = 9
 
 ["src/gui/rumble_mode_gui/rumble_intro.h"]
 comment = 4
@@ -1494,7 +1491,7 @@ tag = 13
 tag = 1
 
 ["src/world_objects/radios.cpp"]
-tag = 8
+tag = 6
 
 ["src/world_objects/spawn_records.cpp"]
 tag = 3
@@ -1512,7 +1509,7 @@ tag = 10
 comment = 2
 
 ["tests/ai/attack_choice_test.cpp"]
-citation = 8
+citation = 7
 
 ["tests/ai/attack_reach_test.cpp"]
 citation = 4
@@ -1593,10 +1590,10 @@ citation = 15
 citation = 5
 
 ["tests/ai/spawner_money_test.cpp"]
-citation = 2
+citation = 1
 
 ["tests/ai/spawners_test.cpp"]
-citation = 17
+citation = 16
 
 ["tests/ai/steal_goals_test.cpp"]
 citation = 6
@@ -1789,9 +1786,6 @@ citation = 12
 
 ["tests/core/frame_rate_meter_test.cpp"]
 citation = 3
-
-["tests/core/game_random_test.cpp"]
-citation = 4
 
 ["tests/core/game_timer_test.cpp"]
 citation = 3
@@ -2403,7 +2397,7 @@ citation = 1
 citation = 7
 
 ["tests/platform/disc_story_start_test.cpp"]
-citation = 7
+citation = 6
 
 ["tests/platform/disc_tagging_test.cpp"]
 citation = 1

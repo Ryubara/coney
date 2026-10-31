@@ -257,7 +257,10 @@ class LightManager {
     [[nodiscard]] static bool visible(const LightRecord& record, const LightView& view);
     // One flicker step of `record` whose timer ran out.
     void flickerStep(LightRecord& record);
-    // A random whole number from 0 to n - 1 (0 when n is 0): the game's rand(n).
+    // A random whole number from 0 to n - 1 (0 when n is 0) from the ambient stream: the game's rand(n).
+    // @orig 0x003353b8 Random_Int (unknown)
+    // Stand-in: the original's Random_Int(n) draws 0 to n inclusive (mod (n + 1)); this keeps 0 to n - 1 until the
+    // flicker's ranges are ported with it.
     [[nodiscard]] std::uint32_t rand(std::uint32_t n);
     // Adds `record`'s corona to this viewport's when it is bright enough.
     void addCorona(const LightRecord& record, const LightView& view);

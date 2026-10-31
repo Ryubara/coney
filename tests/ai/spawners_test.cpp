@@ -429,6 +429,7 @@ TEST_CASE("a police gang's spawner in another state adds to the spawned count on
 }
 
 TEST_CASE("the caps are 16 by default, and a spawner that made its total still frees its places", "[ai][spawners]") {
+    // Expected: ai-gangs.md#spawners, confirmed (code)
     coney::ai::Spawners spawners;
     coney::script::SpawnerCall call = roomyCall(3, "A", 1);
     call.maxConcurrent = 30;
