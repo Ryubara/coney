@@ -515,6 +515,16 @@ def test_a_blocker_that_cannot_be_read_does_not_block_the_issue_and_warns(scene:
     )
 
 
+def test_blockers_that_cannot_be_read_for_one_reason_make_one_warning(scene: Scene, sources: FakeSources) -> None:
+    """A dozen issues that failed the same way (the budget spent) are one line, not a dozen."""
+    sources.ready_issues = [issue(number) for number in range(5, 17)]
+    sources.down = {"blockers"}
+    result = check(scene, sources)
+    unread = [w for w in result.warnings if "not read" in w]
+    assert len(unread) == 1 and "#5, #6" in unread[0] and unread[0].count("blockers is down") == 1
+    assert "are blocked" not in result.message  # reading them failed, so none is said to be blocked
+
+
 # --- the claim limit ------------------------------------------------------------------------------------------------
 
 

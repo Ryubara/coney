@@ -122,7 +122,10 @@ class Cards:
         if self._started is None:
             self._started = self._clock()
         elif not self._stop and self._clock() - self._started >= GH_BUDGET_SECONDS:
-            self._stop = f"GitHub took more than {GH_BUDGET_SECONDS:.0f} s for the claim cards"
+            self._stop = (
+                f"the {len(self._known)} claim card read(s) together took longer than the {GH_BUDGET_SECONDS:.0f} s "
+                "allowed for all of them"
+            )
         if self._stop:
             raise ConfigError(f"the claim card of #{number} was not read: {self._stop}")
         try:
