@@ -17,14 +17,17 @@ std::string_view rendererName(RendererKind kind) { return kind == RendererKind::
 
 RendererKind rendererOfSetting(int value) { return value == 1 ? RendererKind::Gpu : RendererKind::Gl3; }
 
-RendererKind chooseRenderer(std::optional<RendererKind> option, RendererKind saved, bool ignoreSaved) {
+RendererChoice chooseRenderer(std::optional<RendererKind> option, RendererKind saved, bool ignoreSaved,
+                              bool /*gpuDrawsMenus*/) {
     // The option is asked for by name, so it wins even in test mode; the saved setting is a player's, which a test run
     // must not depend on.
     if (option) {
-        return *option;
+        return {.kind = *option};
     }
-    return ignoreSaved ? RendererKind::Gl3 : saved;
+    return {.kind = ignoreSaved ? RendererKind::Gl3 : saved};
 }
+
+std::string_view savedGpuRefusedWarning() { return {}; }
 
 int& rendererSetting() {
     static int setting = 0; // GL3 until a player saves otherwise
