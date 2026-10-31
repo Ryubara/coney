@@ -7,6 +7,7 @@
 #include <format>
 #include <map>
 #include <optional>
+#include <type_traits>
 #include <utility>
 
 #include "core/assert.h"
@@ -124,5 +125,59 @@ template <typename Handle> class NetIdTable {
     std::map<std::uint16_t, Entry> m_bySlot; // by slot: one generation bound per slot, walked in slot order
     std::map<Handle, NetId> m_byHandle;      // lookups only, never walked
 };
+
+/// The server's side, for one thing two tables name (a human by its `Human*` and by its `Brain*`): `a` in `first` and
+/// `b` in `second` get one id, whichever path reaches the thing first. The id either table already has is bound in
+/// the other; with none, one is allocated from `ids` and bound in both. Fails as NetIdAllocator::allocate() does when
+/// no slot is left, and with Invalid when the two tables already hold different ids for them.
+/// @coney-only network play; the original has none
+template <typename A, typename B>
+std::expected<NetId, Error> assignShared(NetIdAllocator& ids, NetIdTable<A>& first, std::type_identity_t<A> a,
+                                         NetIdTable<B>& second, std::type_identity_t<B> b) {
+    const auto inFirst = first.idOf(a);
+    const auto inSecond = second.idOf(b);
+    if (inFirst && inSecond) {
+        if (*inFirst != *inSecond) {
+            return fail(ErrorCode::Invalid,
+                        std::format("net id: one thing holds slots {} and {}", inFirst->slot, inSecond->slot));
+        }
+        return *inFirst;
+    }
+    if (inFirst || inSecond) {
+        const NetId id = inFirst ? *inFirst : *inSecond;
+        auto bound = inFirst ? second.bind(id, b) : first.bind(id, a);
+        if (!bound) {
+            return std::unexpected(std::move(bound.error()));
+        }
+        return id;
+    }
+    auto id = first.assign(ids, a);
+    if (!id) {
+        return id;
+    }
+    auto bound = second.bind(*id, b);
+    CONEY_ASSERT(bound.has_value()); // a fresh id's slot is bound nowhere, when only the allocator fills the tables
+    return id;
+}
+
+/// The server's side: the thing `a` and `b` name in two tables (assignShared()) has gone, whichever path finds it
+/// first. Unbinds it from both and retires its one id in `ids` once, and returns that id; nothing when neither table
+/// holds it, as after the other path retired it.
+/// @coney-only network play; the original has none
+template <typename A, typename B>
+std::optional<NetId> retireShared(NetIdAllocator& ids, NetIdTable<A>& first, std::type_identity_t<A> a,
+                                  NetIdTable<B>& second, std::type_identity_t<B> b) {
+    const auto inFirst = first.idOf(a);
+    const auto inSecond = second.idOf(b);
+    CONEY_ASSERT(!inFirst || !inSecond || *inFirst == *inSecond); // assignShared() never gives them two
+    const auto id = inFirst ? inFirst : inSecond;
+    if (!id) {
+        return std::nullopt;
+    }
+    (void)first.unbind(*id);
+    (void)second.unbind(*id);
+    ids.retire(*id);
+    return id;
+}
 
 } // namespace coney::net

@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <expected>
 #include <optional>
+#include <span>
 #include <string>
 #include <utility>
 #include <variant>
@@ -14,6 +15,7 @@
 #include "core/error.h"
 #include "core/pad.h"
 #include "net/protocol.h"
+#include "net/snapshot.h"
 #include "net/transport.h"
 
 namespace coney::net {
@@ -69,6 +71,7 @@ void NetServer::receive() {
             ServerClient client;
             client.peer = event->peer;
             client.input = InputBuffer(m_config.input);
+            client.snapshots = SnapshotSender(m_config.snapshotBudgetBytes);
             m_clients.push_back(std::move(client));
             break;
         }
@@ -148,6 +151,17 @@ void NetServer::send() {
     m_transport.flush();
 }
 
+void NetServer::sendSnapshots(std::uint32_t step, std::span<const SnapshotHuman> humans) {
+    if (!m_running) {
+        return;
+    }
+    for (ServerClient& client : m_clients) {
+        if (client.joined) {
+            sendTo(client, client.snapshots.build(step, humans));
+        }
+    }
+}
+
 std::size_t NetServer::joinedCount() const {
     return static_cast<std::size_t>(std::ranges::count_if(m_clients, [](const ServerClient& c) { return c.joined; }));
 }
@@ -191,12 +205,20 @@ bool NetServer::handle(ServerClient& client, const Message& message) {
         }
         return true;
     }
+    if (const auto* ack = std::get_if<SnapshotAck>(&message)) {
+        // A snapshot goes only to a joined player, and one never sent cannot be acknowledged.
+        if (!client.joined || !client.snapshots.acknowledge(ack->sequence).has_value()) {
+            close(index, ByeReason::ProtocolError, true);
+            return false;
+        }
+        return true;
+    }
     if (std::holds_alternative<Bye>(message)) {
         // The player is leaving: report it, and close without a Bye of our own.
         close(index, std::get<Bye>(message).reason, false);
         return false;
     }
-    // Welcome, Reject and InputTiming only ever go from a server to a client.
+    // Welcome, Reject, InputTiming and Snapshot only ever go from a server to a client.
     close(index, ByeReason::ProtocolError, true);
     return false;
 }

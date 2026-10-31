@@ -17,6 +17,7 @@
 #include "core/error.h"
 #include "core/pad.h"
 #include "net/bit_stream.h"
+#include "net/protocol_wire.h"
 #include "net/transport.h"
 
 namespace coney::net {
@@ -113,6 +114,13 @@ void writeMessage(BitWriter& out, const Message& message) {
             } else if constexpr (std::is_same_v<T, Pong>) {
                 out.writeU8(static_cast<std::uint8_t>(MessageId::Pong));
                 out.writeVarUint(m.sequence);
+            } else if constexpr (std::is_same_v<T, Snapshot>) {
+                out.writeU8(static_cast<std::uint8_t>(MessageId::Snapshot));
+                writeSnapshotBody(out, m);
+            } else if constexpr (std::is_same_v<T, SnapshotAck>) {
+                CONEY_ASSERT(m.sequence != 0);
+                out.writeU8(static_cast<std::uint8_t>(MessageId::SnapshotAck));
+                out.writeVarUint(m.sequence);
             } else if constexpr (std::is_same_v<T, InputTiming>) {
                 out.writeU8(static_cast<std::uint8_t>(MessageId::InputTiming));
                 out.writeVarInt(m.lead);
@@ -138,7 +146,8 @@ void writeMessage(BitWriter& out, const Message& message) {
         message);
 }
 
-// Reads a 32-bit sequence number written with writeVarUint; larger is Invalid.
+} // namespace
+
 std::expected<std::uint32_t, Error> readSequence(BitReader& in) {
     auto value = in.readVarUint();
     if (!value) {
@@ -149,6 +158,8 @@ std::expected<std::uint32_t, Error> readSequence(BitReader& in) {
     }
     return static_cast<std::uint32_t>(*value);
 }
+
+namespace {
 
 // Reads the fields of the message `id` names; the caller checks for trailing bytes.
 std::expected<Message, Error> readFields(BitReader& in, std::uint8_t id) {
@@ -272,6 +283,23 @@ std::expected<Message, Error> readFields(BitReader& in, std::uint8_t id) {
         }
         return commands;
     }
+    case MessageId::Snapshot: {
+        auto snapshot = readSnapshotBody(in);
+        if (!snapshot) {
+            return std::unexpected(snapshot.error());
+        }
+        return *snapshot;
+    }
+    case MessageId::SnapshotAck: {
+        auto sequence = readSequence(in);
+        if (!sequence) {
+            return std::unexpected(sequence.error());
+        }
+        if (*sequence == 0) {
+            return fail(ErrorCode::Invalid, "network snapshot acknowledgement names sequence 0");
+        }
+        return SnapshotAck{.sequence = *sequence};
+    }
     case MessageId::InputTiming: {
         auto lead = in.readVarInt();
         if (!lead) {
@@ -322,8 +350,13 @@ Delivery deliveryOf(const Message& message) {
     // Input commands repeat the steps before them in every packet, and timing goes with every Ping, so a lost one is
     // replaced at once; a resend would only arrive stale.
     if (std::holds_alternative<Ping>(message) || std::holds_alternative<Pong>(message) ||
-        std::holds_alternative<InputCommands>(message) || std::holds_alternative<InputTiming>(message)) {
+        std::holds_alternative<InputCommands>(message) || std::holds_alternative<InputTiming>(message) ||
+        std::holds_alternative<SnapshotAck>(message)) {
         return Delivery::Unreliable;
+    }
+    // A snapshot older than one already delivered is of no use: the newer one holds everything it does.
+    if (std::holds_alternative<Snapshot>(message)) {
+        return Delivery::UnreliableSequenced;
     }
     return Delivery::ReliableOrdered;
 }

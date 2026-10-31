@@ -21,8 +21,9 @@ namespace coney::net {
 inline constexpr int kNetIdGenerationBits = 6;
 /// The last generation a slot takes before it wraps back to 1 (0 is never given: it marks "no id").
 inline constexpr std::uint8_t kNetIdMaxGeneration = (1U << kNetIdGenerationBits) - 1U;
-/// Bits of a NetId's slot on the wire, and so the most slots a session can have.
+/// Bits of a NetId's slot on the wire.
 inline constexpr int kNetIdSlotBits = 16;
+/// The most slots a session can have: every slot kNetIdSlotBits can name.
 inline constexpr std::size_t kNetIdMaxSlots = std::size_t{1} << kNetIdSlotBits;
 /// Bits a NetId takes on the wire (writeNetId()).
 inline constexpr int kNetIdBits = kNetIdSlotBits + kNetIdGenerationBits;

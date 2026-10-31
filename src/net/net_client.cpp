@@ -13,6 +13,7 @@
 #include "core/error.h"
 #include "core/pad.h"
 #include "net/protocol.h"
+#include "net/snapshot.h"
 #include "net/transport.h"
 
 namespace coney::net {
@@ -45,6 +46,8 @@ std::expected<void, Error> NetClient::connect(std::string_view address, std::uin
     m_stepsInState = 0;
     m_stepsSinceHeard = 0;
     m_steps = 0;
+    m_snapshots = SnapshotReceiver{};
+    m_ackDue = 0;
     return {};
 }
 
@@ -115,6 +118,11 @@ void NetClient::send() {
             commands.pads.push_back(m_sent.at((m_steps - i) % kMaxInputCommands));
         }
         sendToServer(commands);
+        // The newest snapshot decoded, so the server's next ones are deltas against it; one lost is replaced by the
+        // next step's.
+        if (m_ackDue != 0) {
+            sendToServer(SnapshotAck{.sequence = std::exchange(m_ackDue, 0)});
+        }
         if (m_config.pingIntervalSteps > 0 && m_steps % m_config.pingIntervalSteps == 0) {
             sendToServer(Ping{.sequence = m_quality.pingSent(m_nowNs)});
         }
@@ -149,8 +157,21 @@ void NetClient::handle(const Message& message) {
         if (m_state == ClientState::Connected) {
             m_timing = *timing;
         }
+    } else if (const auto* snapshot = std::get_if<Snapshot>(&message); snapshot != nullptr) {
+        // Unreliable and on another channel than Welcome, so it may overtake it: decoded only once joined.
+        if (m_state != ClientState::Connected) {
+            return;
+        }
+        const auto applied = m_snapshots.apply(*snapshot);
+        if (!applied) {
+            finish(ClientEnd::ProtocolError, true, ByeReason::ProtocolError);
+            return;
+        }
+        if (*applied == SnapshotApplied::Applied) {
+            m_ackDue = m_snapshots.newest();
+        }
     } else {
-        // A Hello or an InputCommands only ever goes from a client to a server.
+        // A Hello, an InputCommands or a SnapshotAck only ever goes from a client to a server.
         finish(ClientEnd::ProtocolError, true, ByeReason::ProtocolError);
     }
 }

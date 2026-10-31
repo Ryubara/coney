@@ -5,7 +5,10 @@
 #include "net/net_client.h"
 #include "net/net_server.h"
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 #include <utility>
@@ -18,6 +21,7 @@
 #include "net/link_conditioner.h"
 #include "net/loopback_transport.h"
 #include "net/protocol.h"
+#include "net/snapshot.h"
 #include "net/transport.h"
 #include "support/net_fixtures.h"
 
@@ -73,8 +77,9 @@ struct Match {
         return guests.back()->client;
     }
 
-    // Runs `steps` fixed steps of `stepNs` each on every machine, as the main loop does.
-    void run(int steps, std::uint64_t stepNs = kStepNs) {
+    // Runs `steps` fixed steps of `stepNs` each on every machine, as the main loop does; `afterReceive`, when given,
+    // runs between the receiving and the sending of each step, where the game's step and its snapshots go.
+    void run(int steps, std::uint64_t stepNs = kStepNs, const std::function<void()>& afterReceive = {}) {
         for (int i = 0; i < steps; ++i) {
             server.advance(stepNs);
             for (auto& guest : guests) {
@@ -83,6 +88,9 @@ struct Match {
             server.receive();
             for (auto& guest : guests) {
                 guest->client.receive();
+            }
+            if (afterReceive) {
+                afterReceive();
             }
             server.send();
             for (auto& guest : guests) {
@@ -116,6 +124,7 @@ PeerId rawJoin(Match& match, LoopbackTransport& raw) {
 
 } // namespace
 
+// Expected: unverified, #547 (Coney's own sessions; the original has no network play)
 TEST_CASE("a client joins through Hello and Welcome and gets the first slot", "[net][sessions]") {
     Match match;
     NetClient& client = match.join("Swan");
@@ -136,6 +145,7 @@ TEST_CASE("a client joins through Hello and Welcome and gets the first slot", "[
     CHECK(match.server.takeEvents().empty());
 }
 
+// Expected: unverified, #547 (Coney's own sessions; the original has no network play)
 TEST_CASE("slots fill in order and a client over the limit is told the server is full", "[net][sessions]") {
     Match match;
     NetClient& a = match.join("A");
@@ -166,6 +176,7 @@ TEST_CASE("slots fill in order and a client over the limit is told the server is
     CHECK(e.playerSlot() == 2);
 }
 
+// Expected: unverified, #547 (Coney's own sessions; the original has no network play)
 TEST_CASE("a bad player name is refused", "[net][sessions]") {
     Match match;
     NetClient& client = match.join("   ");
@@ -176,6 +187,7 @@ TEST_CASE("a bad player name is refused", "[net][sessions]") {
     CHECK(match.server.takeEvents().empty());
 }
 
+// Expected: unverified, #547 (Coney's own sessions; the original has no network play)
 TEST_CASE("a Hello of another protocol version is refused with the server's version", "[net][sessions]") {
     Match match;
     LoopbackTransport raw(match.network, "old");
@@ -193,6 +205,7 @@ TEST_CASE("a Hello of another protocol version is refused with the server's vers
     CHECK(events[1].kind == TransportEventKind::Disconnected);
 }
 
+// Expected: unverified, #547 (Coney's own sessions; the original has no network play)
 TEST_CASE("stopping the server tells every client", "[net][sessions]") {
     Match match;
     NetClient& client = match.join("Vermin");
@@ -205,6 +218,7 @@ TEST_CASE("stopping the server tells every client", "[net][sessions]") {
     CHECK_FALSE(match.server.running());
 }
 
+// Expected: unverified, #547 (Coney's own sessions; the original has no network play)
 TEST_CASE("a client that hears nothing from the server times out after its steps", "[net][sessions]") {
     Match match;
     NetClient& client = match.join("Snow");
@@ -219,6 +233,7 @@ TEST_CASE("a client that hears nothing from the server times out after its steps
     CHECK(client.describe() == "timed out");
 }
 
+// Expected: unverified, #547 (Coney's own sessions; the original has no network play)
 TEST_CASE("the server drops a client it hears nothing from, after its steps", "[net][sessions]") {
     Match match;
     NetClient& client = match.join("Rembrandt");
@@ -235,6 +250,7 @@ TEST_CASE("the server drops a client it hears nothing from, after its steps", "[
     CHECK(client.byeReason() == ByeReason::TimedOut);
 }
 
+// Expected: unverified, #547 (Coney's own sessions; the original has no network play)
 TEST_CASE("a connection that never says Hello is closed after the handshake timeout", "[net][sessions]") {
     Match match;
     LoopbackTransport raw(match.network, "silent");
@@ -246,6 +262,7 @@ TEST_CASE("a connection that never says Hello is closed after the handshake time
     CHECK(match.server.takeEvents().empty()); // it never joined
 }
 
+// Expected: unverified, #547 (Coney's own sessions; the original has no network play)
 TEST_CASE("a client gives up on a server that never answers its Hello", "[net][sessions]") {
     LoopbackNetwork network;
     LoopbackTransport mute(network, "host");
@@ -263,6 +280,7 @@ TEST_CASE("a client gives up on a server that never answers its Hello", "[net][s
     CHECK(client.end() == ClientEnd::TimedOut);
 }
 
+// Expected: unverified, #547 (Coney's own sessions; the original has no network play)
 TEST_CASE("connecting where no server listens ends as unreachable", "[net][sessions]") {
     LoopbackNetwork network;
     LoopbackTransport wire(network, "guest");
@@ -275,6 +293,7 @@ TEST_CASE("connecting where no server listens ends as unreachable", "[net][sessi
     CHECK(client.connect("nobody", kDefaultPort).has_value());
 }
 
+// Expected: unverified, #547 (Coney's own sessions; the original has no network play)
 TEST_CASE("a packet that does not decode closes the connection with a protocol-error Bye", "[net][sessions]") {
     Match match;
     LoopbackTransport raw(match.network, "noise");
@@ -289,6 +308,7 @@ TEST_CASE("a packet that does not decode closes the connection with a protocol-e
     CHECK(events[1].kind == TransportEventKind::Disconnected);
 }
 
+// Expected: unverified, #547 (Coney's own sessions; the original has no network play)
 TEST_CASE("the round trip through added latency is measured on both ends", "[net][sessions]") {
     Match match;
     NetClient& client = match.join("Cochise");
@@ -305,6 +325,7 @@ TEST_CASE("the round trip through added latency is measured on both ends", "[net
     CHECK(seen.roundTripNs() <= 100 * kMs);
 }
 
+// Expected: unverified, #547 (Coney's own sessions; the original has no network play)
 TEST_CASE("the handshake survives a lossy link, and the loss shows in the figures", "[net][sessions]") {
     Match match;
     NetClient& client = match.join("Ajax");
@@ -317,6 +338,7 @@ TEST_CASE("the handshake survives a lossy link, and the loss shows in the figure
     CHECK(client.quality().pingsSent() > 50);
 }
 
+// Expected: unverified, #547 (Coney's own sessions; the original has no network play)
 TEST_CASE("a joined client's pad reaches the server every step, in the slot it holds", "[net][sessions][pad]") {
     Match match;
     CHECK_FALSE(match.server.remotePad(1).has_value()); // nobody in the slot
@@ -348,6 +370,7 @@ TEST_CASE("a joined client's pad reaches the server every step, in the slot it h
     CHECK_FALSE(match.server.remotePad(1).has_value());
 }
 
+// Expected: unverified, #547 (Coney's own sessions; the original has no network play)
 TEST_CASE("a joined player's pad reads unplugged until their first pad input arrives", "[net][sessions][pad]") {
     Match match;
     LoopbackTransport raw(match.network, "raw");
@@ -357,6 +380,7 @@ TEST_CASE("a joined player's pad reads unplugged until their first pad input arr
     CHECK_FALSE(pad.value_or(coney::PadSample{}).connected);
 }
 
+// Expected: unverified, #547 (Coney's own sessions; the original has no network play)
 TEST_CASE("input commands that come late, out of order or twice each play once on their own step",
           "[net][sessions][pad]") {
     Match match;
@@ -390,6 +414,7 @@ TEST_CASE("input commands that come late, out of order or twice each play once o
     CHECK(stats.missed == 0);
 }
 
+// Expected: unverified, #547 (Coney's own sessions; the original has no network play)
 TEST_CASE("a lost packet's steps come in the next one and play late, none missed", "[net][sessions][pad]") {
     Match match;
     NetClient& client = match.join("Rembrandt");
@@ -413,6 +438,7 @@ TEST_CASE("a lost packet's steps come in the next one and play late, none missed
     CHECK(match.server.remotePad(1).value_or(coney::PadSample{}).buttons == coney::pad::kR2);
 }
 
+// Expected: unverified, #547 (Coney's own sessions; the original has no network play)
 TEST_CASE("at 5% loss with jitter every input command plays, in order, none lost", "[net][sessions][pad]") {
     Match match;
     NetClient& client = match.join("Cochise");
@@ -452,6 +478,7 @@ TEST_CASE("at 5% loss with jitter every input command plays, in order, none lost
     CHECK(stats.skipped == 0);
 }
 
+// Expected: unverified, #547 (Coney's own sessions; the original has no network play)
 TEST_CASE("the server tells a client how early its input comes, and the client's clock follows",
           "[net][sessions][pad]") {
     ServerConfig config = Match::serverConfig();
@@ -482,6 +509,7 @@ TEST_CASE("the server tells a client how early its input comes, and the client's
     CHECK(client.clockSpeedPercent() == 98);
 }
 
+// Expected: unverified, #547 (Coney's own sessions; the original has no network play)
 TEST_CASE("a client sends 1 to 8 steps of input commands", "[net][sessions][pad]") {
     Match match;
     for (const std::uint32_t steps : {0U, 9U}) {
@@ -493,6 +521,7 @@ TEST_CASE("a client sends 1 to 8 steps of input commands", "[net][sessions][pad]
     }
 }
 
+// Expected: unverified, #547 (Coney's own sessions; the original has no network play)
 TEST_CASE("a pad input before the handshake is a protocol error", "[net][sessions][pad]") {
     Match match;
     LoopbackTransport raw(match.network, "eager");
@@ -507,6 +536,7 @@ TEST_CASE("a pad input before the handshake is a protocol error", "[net][session
     CHECK(match.server.clients().empty());
 }
 
+// Expected: unverified, #547 (Coney's own sessions; the original has no network play)
 TEST_CASE("a pad that goes quiet is let go: held buttons released, sticks centred", "[net][sessions][pad]") {
     ServerConfig config = Match::serverConfig();
     config.input.holdSteps = 5;
@@ -531,4 +561,129 @@ TEST_CASE("a pad that goes quiet is let go: held buttons released, sticks centre
     CHECK(quiet.value_or(coney::PadSample{}).buttons == 0);
     CHECK(quiet.value_or(coney::PadSample{}).sticks == coney::PadSample{}.sticks);
     CHECK(quiet.value_or(coney::PadSample{}).pressure == coney::PadSample{}.pressure);
+}
+
+namespace {
+
+// `count` synthetic humans standing in a row, ids 0 up, generation 1; every third walks 0.1 m along x a step.
+std::vector<SnapshotHuman> walkers(std::size_t count, std::uint32_t step) {
+    std::vector<SnapshotHuman> humans;
+    for (std::size_t i = 0; i < count; ++i) {
+        std::array<FieldValue, kHumanFieldCount> values{};
+        const float walked = i % 3 == 0 ? 0.1F * static_cast<float>(step) : 0.0F;
+        values.at(static_cast<std::size_t>(HumanField::PositionX)) = (2.0F * static_cast<float>(i)) + walked;
+        values.at(static_cast<std::size_t>(HumanField::PositionY)) = 0.0F;
+        values.at(static_cast<std::size_t>(HumanField::PositionZ)) = 0.0F;
+        values.at(static_cast<std::size_t>(HumanField::Heading)) = 0.0F;
+        values.at(static_cast<std::size_t>(HumanField::Health)) = std::int32_t{150};
+        values.at(static_cast<std::size_t>(HumanField::HealthMax)) = std::int32_t{150};
+        values.at(static_cast<std::size_t>(HumanField::Clip)) = std::int32_t{1};
+        values.at(static_cast<std::size_t>(HumanField::Playhead)) = 0.0F;
+        values.at(static_cast<std::size_t>(HumanField::Gait)) = 0.0F;             // not a gait blend
+        values.at(static_cast<std::size_t>(HumanField::Clip1)) = std::int32_t{0}; // no layer 1
+        values.at(static_cast<std::size_t>(HumanField::Playhead1)) = 0.0F;
+        values.at(static_cast<std::size_t>(HumanField::Gait1)) = 0.0F;
+        values.at(static_cast<std::size_t>(HumanField::Fade1)) = 1.0F;
+        values.at(static_cast<std::size_t>(HumanField::Clip2)) = std::int32_t{0}; // no layer 2
+        values.at(static_cast<std::size_t>(HumanField::Playhead2)) = 0.0F;
+        values.at(static_cast<std::size_t>(HumanField::Gait2)) = 0.0F;
+        values.at(static_cast<std::size_t>(HumanField::Fade2)) = 1.0F;
+        values.at(static_cast<std::size_t>(HumanField::Clip3)) = std::int32_t{0}; // no layer 3
+        values.at(static_cast<std::size_t>(HumanField::Playhead3)) = 0.0F;
+        values.at(static_cast<std::size_t>(HumanField::Gait3)) = 0.0F;
+        values.at(static_cast<std::size_t>(HumanField::Fade3)) = 1.0F;
+        values.at(static_cast<std::size_t>(HumanField::Grounded)) = true;
+        values.at(static_cast<std::size_t>(HumanField::KnockedOut)) = false;
+        humans.push_back(SnapshotHuman{.id = NetId{.slot = static_cast<std::uint16_t>(i), .generation = 1},
+                                       .words = humanWords(values),
+                                       .priority = 1});
+    }
+    return humans;
+}
+
+} // namespace
+
+// Expected: unverified, #554 (Coney's own snapshots; the original has no network play)
+TEST_CASE("snapshots reach a joined client over a lossy, reordering link, and it acknowledges them",
+          "[net][sessions][snapshot]") {
+    Match match;
+    NetClient& client = match.join("Vermin");
+    match.run(3);
+    REQUIRE(client.state() == ClientState::Connected);
+    const LinkConditions bad{.latencyMs = 20,
+                             .jitterMs = 30,
+                             .lossFraction = 0.2F,
+                             .duplicateFraction = 0.1F,
+                             .reorderFraction = 0.2F,
+                             .reorderDelayMs = 50};
+    match.serverLink.setConditions(bad);
+    match.guests[0]->link.setConditions(bad);
+
+    std::uint32_t step = 0;
+    std::uint32_t seen = 0;
+    std::size_t decoded = 0;
+    std::size_t deltas = 0;
+    const auto stepGame = [&] {
+        // What the client holds for the newest snapshot it decoded is exactly the server's record of that snapshot.
+        const SnapshotReceiver& received = client.snapshots();
+        if (received.newest() != seen) {
+            seen = received.newest();
+            ++decoded;
+            const SnapshotHumans* record = match.server.clients().at(0).snapshots.holding(seen);
+            REQUIRE(record != nullptr);
+            CHECK(received.humans() == *record);
+        }
+        match.server.sendSnapshots(step, walkers(20, step));
+        deltas += match.server.clients().at(0).snapshots.acknowledged() != 0 ? 1 : 0;
+        ++step;
+    };
+    match.run(300, kStepNs, stepGame);
+    REQUIRE(client.state() == ClientState::Connected);
+    CHECK(decoded > 100);
+    CHECK(deltas > 250); // acknowledgements came back through the loss, so most snapshots were deltas
+
+    // Healed: within a few steps the client holds the humans as the server's step before last had them (the last
+    // step's snapshot is sent at the end of that step and decoded at the start of the next).
+    match.serverLink.setConditions(LinkConditions{});
+    match.guests[0]->link.setConditions(LinkConditions{});
+    match.run(10, kStepNs, stepGame);
+    CHECK(client.snapshots().humans().size() == 20);
+    CHECK(client.snapshots().newestStep() == step - 2);
+    const auto last = walkers(20, step - 2);
+    for (const SnapshotHuman& human : last) {
+        CHECK(client.snapshots().humans().at(human.id) == human.words);
+    }
+    CHECK(match.server.clients().at(0).snapshots.acknowledged() + 1 >= client.snapshots().newest());
+}
+
+// Expected: unverified, #554 (Coney's own snapshots; acknowledgements come from the network)
+TEST_CASE("a client that acknowledges a snapshot never sent is dropped for a protocol error",
+          "[net][sessions][snapshot]") {
+    Match match;
+    LoopbackTransport raw(match.network, "raw");
+    const PeerId peer = rawJoin(match, raw);
+    (void)match.server.takeEvents();
+
+    // The server sends snapshot 1; acknowledging it is what a client does.
+    match.run(1, kStepNs, [&] { match.server.sendSnapshots(0, walkers(2, 0)); });
+    bool gotSnapshot = false;
+    for (const TransportEvent& event : drain(raw)) {
+        const auto message = decode(event.data);
+        REQUIRE(message.has_value());
+        gotSnapshot = gotSnapshot || std::holds_alternative<Snapshot>(*message);
+    }
+    REQUIRE(gotSnapshot);
+    REQUIRE(raw.send(peer, Delivery::Unreliable, encode(SnapshotAck{.sequence = 1})).has_value());
+    match.run(1);
+    CHECK(match.server.takeEvents().empty());
+    CHECK(match.server.clients().at(0).snapshots.acknowledged() == 1);
+
+    // Snapshot 5 was never sent: a client naming it is broken or lying.
+    REQUIRE(raw.send(peer, Delivery::Unreliable, encode(SnapshotAck{.sequence = 5})).has_value());
+    match.run(1);
+    const auto events = match.server.takeEvents();
+    REQUIRE(events.size() == 1);
+    CHECK(events[0].kind == ServerEvent::Kind::Left);
+    CHECK(events[0].reason == ByeReason::ProtocolError);
+    CHECK(match.server.joinedCount() == 0);
 }

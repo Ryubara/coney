@@ -12,6 +12,7 @@
 #include "core/pad.h"
 #include "net/link_quality.h"
 #include "net/protocol.h"
+#include "net/snapshot.h"
 #include "net/transport.h"
 
 namespace coney::net {
@@ -78,13 +79,15 @@ class NetClient {
     void advance(std::uint64_t elapsedNs);
     /// One step's receiving: every waiting transport event and message, then the step's timeouts.
     void receive();
-    /// One step's sending: once joined, the input commands of this step and the few before it (InputCommands) and a
-    /// Ping when due; then a flush.
+    /// One step's sending: once joined, the input commands of this step and the few before it (InputCommands), a
+    /// SnapshotAck when receive() decoded a newer snapshot, and a Ping when due; then a flush.
     void send();
     /// The pad the next send() sends: this game's player 1 pad, which plays the host's pad port 2.
     void setPad(const PadSample& pad) { m_pad = pad; }
 
+    /// Where the session is.
     [[nodiscard]] ClientState state() const { return m_state; }
+    /// Why the session ended; ClientEnd::None while it has not.
     [[nodiscard]] ClientEnd end() const { return m_end; }
     /// The server's reason, for ClientEnd::Rejected.
     [[nodiscard]] std::optional<RejectReason> rejectReason() const { return m_rejectReason; }
@@ -92,7 +95,9 @@ class NetClient {
     [[nodiscard]] std::optional<ByeReason> byeReason() const { return m_byeReason; }
     /// What Welcome said, once Connected (and after, until the next connect()).
     [[nodiscard]] std::uint8_t playerSlot() const { return m_welcome.playerSlot; }
+    /// The server's fixed simulation steps a second, from Welcome.
     [[nodiscard]] std::uint16_t stepRateHz() const { return m_welcome.stepRateHz; }
+    /// The server's name, from Welcome.
     [[nodiscard]] const std::string& serverName() const { return m_welcome.serverName; }
     /// What the server last said of this client's input commands (InputTiming), once Connected; nothing before the
     /// first.
@@ -102,10 +107,14 @@ class NetClient {
     /// they are sent sooner), or minus it while the lead is over the target by more than one (they wait longer than
     /// they need to). Always 100 when not Connected.
     [[nodiscard]] std::uint32_t clockSpeedPercent() const;
+    /// The snapshots decoded from the server this session: the newest's humans, and the history the next ones are
+    /// decoded against. Empty until the first.
+    [[nodiscard]] const SnapshotReceiver& snapshots() const { return m_snapshots; }
     /// The round trip and loss to the server.
     [[nodiscard]] const LinkQuality& quality() const { return m_quality; }
     /// One line for the Network page and the log: the state, and for an ended session why.
     [[nodiscard]] std::string describe() const;
+    /// How it runs, as made.
     [[nodiscard]] const ClientConfig& config() const { return m_config; }
 
   private:
@@ -133,6 +142,8 @@ class NetClient {
     std::optional<InputTiming> m_timing; // the server's latest, while Connected
     // The pads of the latest steps sent, by step % kMaxInputCommands, for the next InputCommands to repeat.
     std::array<PadSample, kMaxInputCommands> m_sent{};
+    SnapshotReceiver m_snapshots;
+    std::uint32_t m_ackDue = 0; // the newest snapshot decoded since the last send(), to acknowledge; 0 for none
 };
 
 } // namespace coney::net

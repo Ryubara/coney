@@ -49,6 +49,17 @@ using FieldValue = std::variant<bool, std::int32_t, float>;
 /// @coney-only network play; the original has none
 void writeField(BitWriter& writer, const FieldSpec& field, const FieldValue& value);
 
+/// The bits writeField() writes for `value`, as a number below 2^bits: what a snapshot compares to see whether a field
+/// changed (a change too small to reach the next step costs nothing) and what it sends. The same programmer errors
+/// as writeField().
+/// @coney-only network play; the original has none
+[[nodiscard]] std::uint32_t fieldWord(const FieldSpec& field, const FieldValue& value);
+
+/// The value a fieldWord() `word` stands for. Fails with Invalid when the word is over the field's bits, or an
+/// Integer's over its range, since the word comes from the network.
+/// @coney-only network play; the original has none
+[[nodiscard]] std::expected<FieldValue, Error> fieldValue(const FieldSpec& field, std::uint32_t word);
+
 /// Reads a writeField() value of `field`. Fails with Truncated past the end, and with Invalid when an Integer is over
 /// its range (the bits hold more than the range has), since the bytes come from the network.
 /// @coney-only network play; the original has none
@@ -89,6 +100,12 @@ inline constexpr std::array<ReplicatedKind, 3> kReplicatedKinds{ReplicatedKind::
 /// @coney-only network play; the original has none
 [[nodiscard]] std::span<const FieldSpec> fieldTable(ReplicatedKind kind);
 
+/// The animation layers a human carries: the newest, and the older ones it and the layers between fade in over. As
+/// many as `anim::AnimTaskStack` shows at once (through overlapping fades), each with its clip, its playhead and, for
+/// the locomotion's gait blend, its gait value: with them and the fades a guest can draw every blend the host does.
+/// @coney-only network play; the original has none
+inline constexpr std::size_t kHumanAnimLayers = 4;
+
 /// A human's fields, indexes into fieldTable(ReplicatedKind::Human).
 /// @coney-only network play; the original has none
 enum class HumanField : std::uint8_t {
@@ -98,8 +115,21 @@ enum class HumanField : std::uint8_t {
     Heading,    ///< Radians, 0 facing +y.
     Health,     ///< Health points (record `+0x144`, a 16-bit number; docs/research/characters.md).
     HealthMax,  ///< Its maximum (record `+0x146`).
-    Clip,       ///< The anim id playing.
+    Clip,       ///< The anim id playing: the newest animation layer.
     Playhead,   ///< How far through the clip, 0 to 1.
+    Gait,       ///< A gait blend's value, 0 to 4 (walk, jog, run, sprint); 0 for any other task.
+    Clip1,      ///< The anim id of the layer under the newest, which the newest fades in over; 0 with none.
+    Playhead1,  ///< How far through layer 1's clip, 0 to 1; 0 with no layer 1.
+    Gait1,      ///< Layer 1's gait value, as Gait; 0 with no layer 1.
+    Fade1,      ///< How far the newest layer has faded in over layer 1 and the older ones, 0 to 1; 1 with no layer 1.
+    Clip2,      ///< The anim id of layer 2, under layer 1, which layer 1 fades in over; 0 with none.
+    Playhead2,  ///< How far through layer 2's clip, 0 to 1; 0 with no layer 2.
+    Gait2,      ///< Layer 2's gait value, as Gait; 0 with no layer 2.
+    Fade2,      ///< How far layer 1 has faded in over layer 2 and the older ones, 0 to 1; 1 with no layer 2.
+    Clip3,      ///< The anim id of layer 3, the oldest, under layer 2; 0 with none.
+    Playhead3,  ///< How far through layer 3's clip, 0 to 1; 0 with no layer 3.
+    Gait3,      ///< Layer 3's gait value, as Gait; 0 with no layer 3.
+    Fade3,      ///< How far layer 2 has faded in over layer 3, 0 to 1; 1 with no layer 3.
     Grounded,   ///< On the ground (not jumping or falling).
     KnockedOut, ///< Knocked out or wounded.
     Count,
