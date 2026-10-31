@@ -383,7 +383,7 @@ was gone and the fight goal had queued a move to the player, 357 still playing u
 to run when the clip ends, the clips go on to 355 and 356: in the `civ_knockdown` run of task 691 (the fighter's grab
 countered with 76, the fighter playing 77 from update 21) 77 ended at 67, 355 played at 68 (held `0x80000`), 356 from
 69 (held nothing), and the stun ended as 357 started at 80, the reaction goal at 81, with a move queued at 81
-(confirmed (runtime), its trace in that task's scratch, recorded before this page cited runs; the run is not on file).
+(seen in that task's trace, which has no run record; a rerun of `civ_knockdown` with `--run-record` would give one).
 That stun's time ran 750 ms from update 57, as 76 and 77 ended, not from 21 (inferred from the 750 ms and the update
 357 began; [Open questions](#open-questions)).
 
@@ -1043,6 +1043,15 @@ implementation](combat/index.md#coneys-implementation) says what each file does,
 differs](combat-diffs.md) lists every difference in the fight. A bat's hit in Coney is on [Combat: throws, weapons in
 hand](combat-throws.md#bat-knockdown-coney).
 
+### The stun's end {#stun-end-coney}
+
+`Victim::step()` (`repo:src/human/victim.cpp`) keeps the stun's state until no clip drives the human, then plays 357
+and clears it, or 355 and the loop 356 while its time still runs; the AI's free test (`freeHuman`,
+`repo:src/ai/attack_views.cpp`) reads the state alone. On `civ_stun` Coney's fighter matches the original's offsets
+from the stun's start: 357 and the state's end 27 updates after it, the reaction goal's end and the fight's next move
+28 after. **Coney's choices**: a boss's tired stun (`Victim::stunUntil`) starts in 356 without 355, and Coney's
+counter of the player's grab starts the player's stun time at the counter ([Open questions](#open-questions)).
+
 ### Damage {#damage-coney}
 
 Coney quarters a fighter's strikes and grab strikes on class `0x80` when its brain is a Warrior's
@@ -1243,6 +1252,8 @@ records existed, so none of them has one, except the knock-out's timing (2.9.129
   `repo:research/traces/scenarios/revive_crew.toml`; the setup is beside the runs ([at runtime](#revive-runtime)).
 - **Knocked out in a Rumble brawl**: the hook recordings of [Rumble](rumble.md#gang-battle-results).
 - **Hit blood**: scenario `blood_knife_grab`, the knife grab kill with call hooks on the functions named.
+- **The stun's end**: 2026-10-31, PCSX2 v2.9.129, scenario `repo:research/traces/scenarios/civ_stun.toml` (the
+  field set `stun` reads record `+0x100`), with its run record `r-20261031-civ-stun`.
 - **When the knock-out comes**: 2026-10-28, PCSX2 v2.9.129, scenario
   `repo:research/traces/scenarios/knockout_timing.toml`, with its run record `r-20261028-knockout-timing`.
 

@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261031-civ-stun"
+date = "2026-10-31"
+kind = "trace"
+tool = "trace original"
+digest = "a67c86cb3aec0ef67e4304dc48b0aa88040ba01e7cef2cfb2cd948bcccd450bd"
+
+[who]
+agent = "a75bb7d33b512ec0c"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = ["call-brains", "right-stick", "scripted-pad", "set-command"]
+
+[run]
+name = "civ_stun"
+method = ""
+
+[values]
+updates = 121
+missed_updates = 0
+columns = 41
+
+[hashes]
+trace_csv = "b8609116489021bd45312cf74d4234402c39b3a6c6e63ea964d6381f86f3ef87"
