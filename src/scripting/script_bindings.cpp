@@ -46,6 +46,7 @@
 #include "scripting/rumble_bindings.h"
 #include "scripting/rumble_match_bindings.h"
 #include "scripting/scene_bindings.h"
+#include "scripting/shadow_bindings.h"
 #include "scripting/sound_bindings.h"
 #include "scripting/spawn_bindings.h"
 #include "scripting/story_bindings.h"
@@ -1422,8 +1423,8 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     stub("EndFog"),
     stub("EndRain"),
     real("SetLevelColour"),
-    stub("SetShadowColor"),
-    stub("SetShadowLightOffset"),
+    real("SetShadowColor"),
+    real("SetShadowLightOffset"),
     // The HUD.
     // Scenes, objects and particles: the ones that make something return a handle.
     real("ObjSpawn"),
@@ -1570,6 +1571,7 @@ void registerAll(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context
                      std::ranges::find(kSpawnBindings, info.name) != kSpawnBindings.end() ||
                      std::ranges::find(kObjectBindings, info.name) != kObjectBindings.end() ||
                      std::ranges::find(kLightingBindings, info.name) != kLightingBindings.end() ||
+                     std::ranges::find(kShadowBindings, info.name) != kShadowBindings.end() ||
                      std::ranges::find(kPlayerBindings, info.name) != kPlayerBindings.end() ||
                      std::ranges::find(kHumanBindings, info.name) != kHumanBindings.end() ||
                      std::ranges::find(kEffectsBindings, info.name) != kEffectsBindings.end() ||
@@ -1591,6 +1593,7 @@ void registerAll(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context
     addGangBindings(vm, context);
     addAnimCallbackBindings(vm, context);
     addLightingBindings(vm, context);
+    addShadowBindings(vm, context);
     addPlayerBindings(scripts, vm, context);
     addSoundBindings(scripts, vm, context);
     addHudBindings(scripts, vm, context);

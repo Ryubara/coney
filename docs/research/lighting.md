@@ -339,6 +339,9 @@ prelighting plus 0.227 grey, plus two lamps that light both (flags 3, radius 3 a
 **Fog and background.** One colour: the device's `+0x440` ([Fog](world.md#fog)); fog starts at the device's `+0x444`
 × the draw distance. `level99`: `SetFogColor(0.05, 0.05, 0.02)` gives (12, 12, 5, 255); fog start 0.5. Confirmed
 (runtime).
+`Level_SetFogColour` (`0x0040c868`) turns each component × 255 into a whole number with `Float_ToUInt` (`0x0042c718`:
+0 for a negative number, all ones past the 32-bit range) and keeps only the low byte, so a component above 1 wraps
+(1.2 gives 50) rather than saturating. Confirmed (code).
 
 **Time of day.** None: each level's lights are set once by its scripts (`LightData` in `global.lua`, then the level's
 lamps); nothing in the manager changes them over time except flicker and light B. Inferred (no timer-driven caller of
@@ -464,6 +467,12 @@ unlit vertices (0) reach the GS as 59, 64 and 29 of 128 (street dump), `level100
   or an object with more would differ far from the camera. The cull's corona-only lights, which Coney leaves out of
   the point lists, are a finding of [#654](issue:654). The fix and the trace comparison that catches it are build
   issues of [Realtime lighting](../guides/realtime-lighting.md#build-issues).
+- `SetShadowColor`, `SetShadowLightOffset` and `EnableShadow`, empty here, keep their values as the Xbox port does
+  ([Xbox lighting: the shadow light](xbox-lighting.md#shadow-light)), render-side only: the stealth flag and the
+  dimming above read the ground check, never them. Each frame the play mode's rig builds the **lighting frame**
+  (`repo:src/graphics/lighting_frame.h`) after the cull: the lights the cull kept with this step's flicker colour,
+  the cull's lists, the world ambient, the fog, the shadow light and the objects whose shadow is off. Nothing draws
+  from it yet ([Renderer: lighting](../engine/renderer.md#lighting)).
 - A sandbox (no level scripts) gets a stand-in ambient and directional light; the front end's background has its own
   manager, which `global.lua`'s lights for level 100 fill, with black fog, and its objects are lit as world objects;
   the character viewer and the reference renders keep their fixed lights (`repo:src/platform/character_lights.h`).

@@ -155,10 +155,11 @@ SceneLighting::~SceneLighting() {
 
 void SceneLighting::beginFrame(const world::CameraPose& pose, float nearClip, float farClip, std::uint64_t nowMs) {
     m_pose = pose;
-    m_lighting.lights.beginViewport(
-        graphics::LightView{
-            .position = pose.position, .forward = pose.forward, .nearClip = nearClip, .farClip = farClip},
-        nowMs);
+    const graphics::LightView view{
+        .position = pose.position, .forward = pose.forward, .nearClip = nearClip, .farClip = farClip};
+    m_lighting.lights.beginViewport(view, nowMs);
+    // The render-side description of the frame's lights, read by drawing only, never by the simulation.
+    m_frame = graphics::buildLightingFrame(m_lighting, view);
 }
 
 rw::Light* SceneLighting::mirror(std::uint16_t index) {

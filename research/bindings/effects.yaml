@@ -774,6 +774,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: SetShadowLightOffset
   wrapper: 0x0037c6a8
@@ -788,6 +789,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: EnableShadow
   wrapper: 0x0037c748

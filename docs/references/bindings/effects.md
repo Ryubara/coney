@@ -758,7 +758,7 @@ Does nothing in this build: its callee (0x0017f260) is empty, although `global.l
 - **Evidence:** confirmed (code) at `0x0017f260`; detail: traced
 - **Wrapper** `0x0037c608` (registered by `RegisterBindings`); **calls** `0x0017f260` `Shadow_SetColour_Stub`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetShadowLightOffset {#setshadowlightoffset}
 
@@ -779,7 +779,7 @@ Does nothing in this build: its callee (0x0017f268) is empty, although `global.l
 - **Evidence:** confirmed (code) at `0x0017f268`; detail: traced
 - **Wrapper** `0x0037c6a8` (registered by `RegisterBindings`); **calls** `0x0017f268` `Shadow_SetLightOffset_Stub`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetWorldAmbient {#setworldambient}
 
