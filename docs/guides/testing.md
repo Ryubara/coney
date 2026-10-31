@@ -492,11 +492,10 @@ The whole gate, which `task check` runs:
   agents never run `cmake --build` or `ctest` directly). Read its `disc tests:` line: `SKIPPED` means no disc test
   ran, and the run is made again with a disc.
 - **Python:** `ruff check` and `ruff format --check` on `python/` and `.claude/hooks/`, `mypy` and `pytest` on
-  `python/`. pytest runs the whole suite, in parallel, when the change touches `python/`, `.claude/`, `.github/` or a
-  tools or unmapped file, and otherwise (a docs or engine change, which also runs it) only the tests marked as reading
-  the docs or engine files it touches; the output and the stamp say which ([Which Python tests
-  run](coney-tools-repo.md#task-check-pytest)). A test that reads the checkout's docs, research or engine files carries
-  `@pytest.mark.reads("docs_only")` or `reads("engine")`, and fails without it. A Python test is not stamped
+  `python/`. pytest runs the whole suite or only the tests a change can break, by a rule in
+  [.github/conventions.yml](repo:.github/conventions.yml); the output and the stamp say which ([Which Python tests
+  run](coney-tools-repo.md#task-check-pytest)). A test that reads the checkout's docs, research or engine files
+  carries `@pytest.mark.reads("docs_only")` or `reads("engine")`, and fails without it. A Python test is not stamped
   `fails-first` (that stamp is for the `TEST_CASE`s of an `@orig` change): a tooling task's tests-first rule rests on
   the reviewer and on pytest in its `checked` stamp ([pr verify](pr.md#verify)); `coney-tools repo check-conventions`;
   `coney-tools progress check` (the progress inputs; its tables are built into the docs, not committed); and every

@@ -80,6 +80,7 @@ def test_with_the_key_true_every_role_is_refused_the_hand_typed_routes(
 
 @pytest.mark.parametrize(("agent_type", "agent_id"), ROLES)
 @pytest.mark.parametrize("command", OPENS + OTHERS)
+@pytest.mark.reads("docs_only")
 def test_with_the_key_false_the_switch_refuses_nothing(
     switch: Path, agent_type: str, agent_id: str | None, command: str
 ) -> None:

@@ -267,6 +267,7 @@ def test_launch_leaves_a_running_xemu_alone(
     assert "already runs (pid 77)" in capsys.readouterr().out and launched.commands == []
 
 
+@pytest.mark.reads("docs_only")
 def test_launch_needs_a_disc_and_refuses_one_inside_a_checkout(
     launched: Launched, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

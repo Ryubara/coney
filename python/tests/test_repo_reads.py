@@ -2,7 +2,9 @@
 """Tests for the reads watch (repo_reads.py): which reads of the checkout count, and what a test without its marker is
 told. The recorder is driven by hand with audit events, so no real file of the checkout is read here."""
 
+import contextlib
 import os
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -98,3 +100,86 @@ def test_the_log_line_names_the_test_and_its_reads() -> None:
 def test_the_marker_is_registered_with_the_scoped_classes(pytestconfig: pytest.Config) -> None:
     [line] = [line for line in pytestconfig.getini("markers") if line.startswith("reads(")]
     assert "docs_only, engine" in line
+
+
+def test_a_top_folder_listing_is_classed_like_the_folder_with_its_slash() -> None:
+    for folder in ("docs", "src", "tests", "research", "assets", "cmake"):
+        assert SCOPE.class_of(folder) == SCOPE.class_of(folder + "/") is not None
+        watch = recorder()
+        watch.start()
+        watch.hook("os.listdir", (inside(folder),))
+        assert watch.stop() == {SCOPE.class_of(folder): {folder}}
+    assert SCOPE.class_of("docs/guides") == "docs_only"
+    assert SCOPE.class_of("python") is None
+
+
+class Wrapped:
+    """The stat calls wrapped for one test, with a recorder that hears them for a checkout in `root` (a temporary
+    folder, so no real file of this checkout is looked at)."""
+
+    def __init__(self, root: Path) -> None:
+        self.watch = repo_reads.Recorder(SCOPE, root=os.path.normcase(str(root)))
+        self.replaced = repo_reads.wrap_stat_calls(self.watch)
+
+    def __enter__(self) -> repo_reads.Recorder:
+        self.watch.start()
+        return self.watch
+
+    def __exit__(self, *_: object) -> None:
+        repo_reads.unwrap_stat_calls(self.replaced)
+
+
+def test_a_stat_call_on_a_scoped_file_is_a_read_of_it(tmp_path: Path) -> None:
+    # every way a test can check a file without opening it, which CPython raises no audit event for
+    present = tmp_path / "a.txt"
+    present.write_text("x", encoding="utf-8")
+    page = tmp_path / "docs" / "guides" / "testing.md"
+    source = tmp_path / "src" / "core" / "a.cpp"
+    calls: dict[str, Callable[[Path], object]] = {
+        "Path.exists": lambda target: target.exists(),
+        "Path.is_file": lambda target: target.is_file(),
+        "Path.is_dir": lambda target: target.is_dir(),
+        "Path.stat": lambda target: target.stat(),
+        "os.stat": lambda target: os.stat(target),  # noqa: PTH116
+        "os.lstat": lambda target: os.lstat(target),
+        "os.access": lambda target: os.access(target, os.R_OK),
+        "os.path.exists": lambda target: os.path.exists(target),  # noqa: PTH110
+        "os.path.isfile": lambda target: os.path.isfile(target),  # noqa: PTH113
+        "os.path.isdir": lambda target: os.path.isdir(target),  # noqa: PTH112
+        "os.path.getsize": lambda target: os.path.getsize(target),  # noqa: PTH202
+        "os.path.getmtime": lambda target: os.path.getmtime(target),  # noqa: PTH204
+    }
+    for name, call in calls.items():
+        for target, kind in ((page, "docs_only"), (source, "engine")):
+            with Wrapped(tmp_path) as watch:
+                with contextlib.suppress(OSError):  # the file need not exist: the look is what counts
+                    call(target)
+                assert watch.stop() == {kind: {target.relative_to(tmp_path).as_posix()}}, name
+        with Wrapped(tmp_path) as watch:
+            call(present)
+            assert watch.stop() == {}, name
+
+
+def test_wrapped_stat_calls_give_the_same_result_and_error_and_are_put_back(tmp_path: Path) -> None:
+    before = (os.stat, os.path.exists, os.path.isfile)
+    present = tmp_path / "a.txt"
+    present.write_text("abc", encoding="utf-8")
+    with Wrapped(tmp_path) as watch:
+        assert os.stat(present).st_size == 3  # noqa: PTH116
+        assert os.path.getsize(present) == 3  # noqa: PTH202
+        assert not os.path.exists(tmp_path / "missing")  # noqa: PTH110
+        assert os.path.isfile(path=present)  # noqa: PTH113
+        with pytest.raises(FileNotFoundError):
+            os.stat(tmp_path / "missing")  # noqa: PTH116
+        watch.stop()
+    assert (os.stat, os.path.exists, os.path.isfile) == before
+
+
+def test_a_stat_call_is_not_noted_while_nothing_is_watched(tmp_path: Path) -> None:
+    watch = repo_reads.Recorder(SCOPE, root=os.path.normcase(str(tmp_path)))
+    replaced = repo_reads.wrap_stat_calls(watch)
+    try:
+        (tmp_path / "docs").exists()
+        assert watch.current is None
+    finally:
+        repo_reads.unwrap_stat_calls(replaced)

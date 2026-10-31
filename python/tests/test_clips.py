@@ -135,6 +135,7 @@ def test_a_clip_inside_a_git_checkout_is_refused(tmp_path: Path) -> None:
         clips.check_clip_path(scratch / "task" / "clips" / "a.mp4", scratch, RULES)
 
 
+@pytest.mark.reads("docs_only")
 def test_the_real_repository_refuses_clips(tmp_path: Path) -> None:
     assert clips.git_checkout_around(REPO / "docs" / "clips" / "a.mp4") is not None
     with pytest.raises(clips.ClipError, match="inside the git checkout"):

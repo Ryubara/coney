@@ -479,14 +479,26 @@ The output says which (`pytest: only the tests marked as reading docs_only`, or 
 list of classes. `pr verify` recomputes the scope from the change's paths and refuses a Check whose recorded scope does
 not hold it; a stamp from before the scope was recorded counts as the whole suite.
 
-**The markers are checked, not trusted.** `python/tests/repo_reads.py` watches every test through an audit hook
-(`sys.addaudithook`): each file it opens and each folder it lists, from its setup to its teardown, and what its module
-reads while it is imported. A test that reads a file of a scoped class its `reads` marker does not name fails at
-teardown, with the paths and the marker to add. CI runs the whole suite on every ready pull request, so a test that a
-scoped local run would have skipped cannot go unmarked past CI, and nothing a scoped run skips goes unchecked before
-the merge. A test that starts a program inside the checkout reads what that program reads, which the hook cannot see:
-such a test is marked by hand. `CONEY_TEST_READS_LOG=<folder>` writes what each test read, one JSON line per test, to
-review the markers.
+**The markers are checked, not trusted.** `python/tests/repo_reads.py` watches every test from its setup to its
+teardown, and what its module reads while it is imported: each file it opens (an audit hook, `sys.addaudithook`), each
+folder it lists, and each file it only looks at, with `exists`, `is_file`, `is_dir`, `stat`, `getsize` and the rest of
+the stat family (CPython raises no audit event for those, so the conftest wraps `os.stat`, `os.lstat`, `os.access` and
+the `os.path` checks, which `pathlib` calls through). A test that reads a file or folder of a scoped class its `reads`
+marker does not name fails at teardown, with the paths and the marker to add. CI runs the whole suite on every ready
+pull request, so a test that a scoped local run would have skipped cannot go unmarked past CI. What the watch cannot
+see, and a test that has one of these is marked by hand:
+
+* **A program started in the checkout** (git, bash, coney-tools) reads what it reads; the hook sees only the process
+  it runs in.
+* **A stat made through a reference taken before the wrap** (`from os.path import exists` in a module imported before
+  the conftest), through the `DirEntry` of a listing (the listing itself is seen) or by a C extension.
+* **A shared cache or helper**: its reads count for the first test that triggers them (in a parallel run, for the
+  worker that happened to), not for the others that rely on it.
+* **A read that only some systems make**: the markers were gathered on Windows, so a test skipped there (no luac, no
+  uv, a POSIX-only test) or one whose reads depend on the operating system is checked only where it runs, which CI's
+  Linux job does for the whole suite.
+
+`CONEY_TEST_READS_LOG=<folder>` writes what each test read, one JSON line per test, to review the markers.
 
 <!-- command-reference:begin task -->
 ## Parameters of `task` {#task-parameters}

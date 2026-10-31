@@ -11,8 +11,18 @@ the checkout's own files whose class is scoped, by a test whose marker does not 
 teardown with the paths and the marker to add, so CI, which runs the whole suite on every ready pull request, refuses
 a test that a scoped local run would have skipped (docs/guides/coney-tools-repo.md#task-check).
 
-What it cannot see: a child process's reads. A test that starts a program inside the checkout (git, bash, coney-tools)
-with no folder of its own reads whatever that program does; those are named by hand.
+The audit events cover opening and listing only: CPython raises none for `stat`, `exists`, `is_file` or `getsize`, so
+`install` also wraps the `os.stat`/`os.lstat`/`os.access` functions and the `os.path` existence, kind, size and time
+checks (`STAT_CALLS`), which `pathlib` calls through, and a test that only checks a file exists is seen too.
+
+What it cannot see, and a test that has one of these is marked by hand:
+- a child process's reads: a test that starts a program inside the checkout (git, bash, coney-tools) with no folder of
+  its own reads whatever that program does;
+- a stat made through a reference taken before `install` ran (`from os.path import exists` in a module imported by the
+  conftest or by pytest itself), through `DirEntry.stat()`/`is_file()` of a listing (the listing is seen), or by a C
+  extension;
+- the reads of a cache or a shared helper, which count for the first test that triggers them (and, in a parallel run,
+  for whichever test a worker happens to give it to), not for the others that rely on it.
 
 `CONEY_TEST_READS_LOG=<folder>` also writes one JSON line per test (its id, the classes it read and a few paths) into a
 file per process there, to review the markers against what the tests do.
@@ -20,12 +30,14 @@ file per process there, to review the markers against what the tests do.
 
 from __future__ import annotations
 
+import functools
 import json
 import os
 import sys
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from coney_tools.conventions import Conventions, load_conventions
 
@@ -35,9 +47,32 @@ REPO = Path(__file__).resolve().parents[2]
 MARKER = "reads"
 #: The audit events that read a file or list a folder; their first argument is the path.
 EVENTS = frozenset({"open", "os.listdir", "os.scandir", "glob.glob"})
+#: The calls that look at a file without opening it, which CPython raises no audit event for: (module, function names).
+#: `pathlib` reaches them as `os.stat(...)` and `os.path.exists(...)`, looked up at call time, so wrapping them there
+#: sees `Path.exists`, `is_file`, `is_dir`, `stat` and the rest too.
+STAT_CALLS: tuple[tuple[object, tuple[str, ...]], ...] = (
+    (os, ("stat", "lstat", "access")),
+    (
+        os.path,
+        (
+            "exists",
+            "lexists",
+            "isfile",
+            "isdir",
+            "islink",
+            "isjunction",
+            "getsize",
+            "getmtime",
+            "getatime",
+            "getctime",
+        ),
+    ),
+)
 #: The audit event of a child process, and the key its folder and program are noted under (in the log only).
 SPAWN = "subprocess.Popen"
 SPAWNED = "spawned"
+#: The class `paths.ci_class` gives a path no class names.
+UNKNOWN = "unknown"
 #: The most paths a failure or a log line names per class.
 SHOWN = 3
 
@@ -57,6 +92,9 @@ class Scope:
         if not relative or relative.startswith(self.whole_when):
             return None
         found = self.conventions.paths.ci_class(relative)
+        if found == UNKNOWN:
+            # A top folder (`docs`, `src`): the class patterns end in a slash, which a listing of the folder lacks.
+            found = self.conventions.paths.ci_class(relative.rstrip("/") + "/")
         return found if found in self.scoped else None
 
 
@@ -85,10 +123,15 @@ class Recorder:
         if event == SPAWN:
             self._spawned(args)
             return
-        if event not in EVENTS:
+        if event in EVENTS:
+            self.note(args[0])
+
+    def note(self, target: object) -> None:
+        """Note a path being read (opened, listed or looked at) when it is a scoped file of the checkout. It must never
+        raise: it runs inside the call it watches."""
+        if self.current is None:
             return
         try:
-            target = args[0]
             if isinstance(target, int) or target is None:
                 return
             text = os.fsdecode(os.fspath(target))  # type: ignore[call-overload]
@@ -100,7 +143,7 @@ class Recorder:
             found = self.classes[relative]
             if found is not None:
                 self.current.setdefault(found, set()).add(relative)
-        except Exception:  # an audit hook that raises breaks the call it watches
+        except Exception:  # a hook that raises breaks the call it watches
             return
 
     def _spawned(self, args: tuple[object, ...]) -> None:
@@ -175,6 +218,41 @@ def log_line(test: str, reads: dict[str, set[str]]) -> str:
     return json.dumps({"test": test, "reads": {kind: sorted(paths)[:20] for kind, paths in sorted(reads.items())}})
 
 
+def wrap_stat_calls(recorder: Recorder) -> list[tuple[object, str, Callable[..., Any]]]:
+    """Replace each of `STAT_CALLS` with a function that notes its path, then calls the original with the same
+    arguments and result. Returns what was replaced, for `unwrap_stat_calls`. A function that fails to be wrapped (the
+    platform lacks it) is skipped."""
+    replaced: list[tuple[object, str, Callable[..., Any]]] = []
+    for module, names in STAT_CALLS:
+        for name in names:
+            original = getattr(module, name, None)
+            if original is None:
+                continue
+            setattr(module, name, _noting(recorder, original))
+            replaced.append((module, name, original))
+    return replaced
+
+
+def unwrap_stat_calls(replaced: list[tuple[object, str, Callable[..., Any]]]) -> None:
+    """Put back what `wrap_stat_calls` replaced."""
+    for module, name, original in reversed(replaced):
+        setattr(module, name, original)
+
+
+def _noting(recorder: Recorder, original: Callable[..., Any]) -> Callable[..., Any]:
+    """`original` wrapped to note its first argument (the path) in `recorder` before it runs."""
+
+    @functools.wraps(original)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        if recorder.current is not None:
+            recorder.note(args[0] if args else kwargs.get("path"))
+        return original(*args, **kwargs)
+
+    return wrapper
+
+
 def install(recorder: Recorder) -> None:
-    """Add the audit hook (it stays for the life of the process; audit hooks cannot be removed)."""
+    """Add the audit hook and wrap the stat calls (both stay for the life of the process; audit hooks cannot be
+    removed)."""
     sys.addaudithook(recorder.hook)
+    wrap_stat_calls(recorder)

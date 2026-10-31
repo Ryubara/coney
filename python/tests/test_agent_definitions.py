@@ -140,6 +140,7 @@ def test_the_reviewer_runs_on_opus_for_the_reverse_engineering_it_covers() -> No
     assert data["model"] == "opus"
 
 
+@pytest.mark.reads("docs_only")
 def test_the_reviewer_sends_each_kind_of_review_to_its_checklist() -> None:
     _, text = _reviewer()
     for page in ("index", "task", "code", "docs", "research", "orig", "text", "commits"):
