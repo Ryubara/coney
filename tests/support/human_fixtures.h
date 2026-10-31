@@ -111,10 +111,10 @@ inline std::vector<LocomotionClip> locomotionClips() {
 /// grab (69, 71-75, 0.3 s; the holds 82-85, 1 s), the grab strikes and their reactions (51-56, 57-58, 0.5 s), the spins
 /// (78-81, 0.4 s), the let-go (94, 95, 0.4 s), the throw and its reaction (147, 148, 0.6 s), the tackle (2, 4-6, 0.4
 /// s), the ground (193, 195, 196, 199, 207, 210, 212), the mount (118, 119, 219-226, 244, 245, 248, 249; 0.4 s), the
-/// reactions 268-303 (0.4 s; 288-303, the heavy and crushing ones, knock down), the stun (356 loop, 357 end), the fight
-/// idle (358), the miss's 389, the block (606, 607, looping), the stereo theft (683, 0.5 s; 684 looping) and the
-/// spray (334, 1 s; 335 looping; 337, 0.5 s; its end 336, 0.5 s), circle + triangle's spray (664, 1 s), and the
-/// transition into the fight idle (359, 0.3 s).
+/// reactions 268-303 (0.4 s; 288-303, the heavy and crushing ones, knock down), the stun (355 enter, 0.1 s; 356 loop;
+/// 357 end), the fight idle (358), the miss's 389, the block (606, 607, looping), the stereo theft (683, 0.5 s; 684
+/// looping) and the spray (334, 1 s; 335 looping; 337, 0.5 s; its end 336, 0.5 s), circle + triangle's spray (664, 1
+/// s), and the transition into the fight idle (359, 0.3 s).
 inline std::vector<LocomotionClip> combatClips() {
     std::vector<LocomotionClip> clips;
     // A still clip of `id` lasting `duration`, looping at rate 1 with `loop`.
@@ -163,6 +163,8 @@ inline std::vector<LocomotionClip> combatClips() {
                      .rangeFlags = 0,
                      .reach = 0.0F,
                      .knockdown = false});
+    // The stun's enter clip, which a clip ending while stunned returns to before the stun's loop.
+    still(355, 0.1F);
     for (const std::uint32_t id : {82U, 83U, 84U, 85U, 196U, 207U, 356U, 358U, 606U, 607U}) {
         still(id, 1.0F, true);
     }
