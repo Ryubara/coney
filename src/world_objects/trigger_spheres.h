@@ -30,9 +30,10 @@ struct TriggerSphere {
 /// The level's trigger spheres: a pool of 100, one per object, updated round-robin so each sphere is checked every
 /// fifth frame, with the volume boxes' enter / stay / leave rules (VolumeBoxes::update).
 ///
-/// **Coney's choices** where the page is silent: the clear-line tests are Coney's (the original's `0x0024dee8` and
-/// `0x0024df40` are not traced): mode 1 a line from the sphere's centre to a point 1 m above the human's feet, mode 2
-/// the same line with its start also raised 1 m; with no line test given every line is clear.
+/// Mode 1's test is the original's `Nav_IsConnected` (`0x0024dee8`): a walkable line on the navigation mesh from the
+/// sphere's centre to the human's feet (setConnected). **Coney's choice** where the page is silent: mode 2's ray test
+/// (`0x0024df40`, its vector `0x00511740` not read) is Coney's clear line from the centre raised 1 m to a point 1 m
+/// above the feet; with no test given, a mode's line passes.
 ///
 /// Research: docs/research/scripting.md#triggers, docs/research/trigger-updates.md#sphere,
 /// docs/references/bindings/world.md#triggerspherecfg
@@ -49,7 +50,7 @@ class TriggerSpheres {
 
     /// Where an object is: its position, or nothing when the handle names no live object.
     using Locate = std::function<std::optional<std::array<float, 3>>(double object)>;
-    /// Whether the line between two points is clear of the level's walls.
+    /// Whether the line between two points passes a mode's test (clear of the walls, or walkable).
     using ClearLine = std::function<bool(const std::array<float, 3>& from, const std::array<float, 3>& to)>;
 
     /// `TriggerSphereCfg(object, enable, radius, mode, interval)`: the object's sphere, made when it has none (refused,
@@ -92,8 +93,8 @@ class TriggerSpheres {
     void setLocate(Locate locate) { m_locate = std::move(locate); }
     /// Sets the clear-line test of modes 1 and 2 (null: every line is clear).
     void setClearLine(ClearLine clearLine) { m_clearLine = std::move(clearLine); }
-    /// Sets mode 1's test, whether a walkable line joins the sphere's centre to a point (null: every line passes).
-    /// @orig 0x0024dee8 Nav_IsConnected (unknown)
+    /// Sets mode 1's test, whether a walkable line joins the sphere's centre to a point (world::PathMap::connected;
+    /// null: every line passes).
     void setConnected(ClearLine connected) { m_connected = std::move(connected); }
 
     /// One frame of the pool at game time `nowMs` over `subjects`: the spheres whose turn it is (index modulo
@@ -136,7 +137,7 @@ class TriggerSpheres {
     std::vector<TriggerSphere> m_spheres;
     Locate m_locate;
     ClearLine m_clearLine;
-    ClearLine m_connected; ///< Mode 1's test (`0x0024dee8`).
+    ClearLine m_connected; ///< Mode 1's test (`Nav_IsConnected`, `0x0024dee8`).
     std::uint32_t m_frame = 0;
 };
 

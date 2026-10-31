@@ -805,6 +805,15 @@ coney = "src/human/human.h:Human::aiCombatWalk"
 status = "legacy"
 
 [[function]]
+address = 0x0024dee8
+name = "Nav_IsConnected"
+page = "trigger-updates.md#accepts"
+role = "the walkable line from the first point's area (found when none is given) to the second, no flags masked"
+level = "confirmed-code"
+coney = "src/world/path_map.h:PathMap::connected"
+status = "compared"
+
+[[function]]
 address = 0x0024df40
 name = "Ray_IsClear"
 page = "ai-fights.md#sight"

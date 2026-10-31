@@ -92,12 +92,15 @@ bool TriggerSpheres::accepts(const TriggerSphere& sphere, const std::array<float
     if (!withinRadius(sphere, centre, point)) {
         return false;
     }
-    // Stand-in: modes 1 and 2 use Coney's clear-line test between points raised 1 m (the original's tests are open).
-    if ((sphere.mode != 1 && sphere.mode != 2) || !m_clearLine) {
+    // Mode 1: a walkable line from the centre to the point (Nav_IsConnected, its area found from the centre).
+    if (sphere.mode == 1) {
+        return !m_connected || m_connected(centre, point);
+    }
+    // Stand-in: mode 2 uses Coney's clear-line test between points raised 1 m (the original's ray is open).
+    if (sphere.mode != 2 || !m_clearLine) {
         return true;
     }
-    const std::array<float, 3> from = sphere.mode == 2 ? raised(centre, kLineRaise) : centre;
-    return m_clearLine(from, raised(point, kLineRaise));
+    return m_clearLine(raised(centre, kLineRaise), raised(point, kLineRaise));
 }
 
 void TriggerSpheres::update(std::span<const BoxSubject> subjects, std::uint64_t nowMs, const VolumeBoxes::Send& send) {

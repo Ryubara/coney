@@ -2815,8 +2815,9 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
 - **Trigger spheres** (`src/world_objects/trigger_spheres.h`, `TriggerSphereCfg` in `src/scripting/world_bindings.h`):
   a pool of 100, one per object, each checked every fifth frame (index modulo 5) with the boxes' rules, 3, 5 once per
   the sphere's 1000 ms and 4 going to the object's handler; gameplay finds the object among the scripts' humans, the
-  flags and the spawn records. **Coney's choices:** the sphere's own object is never its occupant; the clear-line test
-  of modes 1 and 2 is a collision-mesh ray from the centre (mode 2: raised 1 m) to 1 m above the human's feet;
+  flags and the spawn records. **Coney's choices:** the sphere's own object is never its occupant; mode 1 asks for a
+  walkable line on the navigation mesh (`Nav_IsConnected`, [The accept test](trigger-updates.md#accepts)), and mode
+  2's ray is a collision-mesh ray from the centre raised 1 m to 1 m above the human's feet;
   `TriggerSphereCfg`'s interval is kept as the handler's period but not used. `TriggerSphereEnable` arms a sphere
   (making one with radius 0, mode 1 and a 1000 ms period when the object has none) or disarms it, forgetting who is
   inside without message 4; Coney has no handler components, so it acts on any object.
@@ -2891,8 +2892,8 @@ handler component, as for `TriggerSphereEnable`).
 
 - **The first mission:** what a restart (failure or pause menu) restores from `SetCheckPoint`'s copies, and who
   reads the object manager's 35-word list; whether `TriggerSphereCfg`'s interval reaches the sphere's period
-  (`+0x164`); whether a sphere's own object can be its occupant, and what the clear-line tests `0x0024dee8` and
-  `0x0024df40` test between; who writes the stopwatch's rate (`+0x10`); what commands 37, 38 and 40 (d-pad down,
+  (`+0x164`); whether a sphere's own object can be its occupant, and between which points mode 2's ray
+  (`0x0024df40`) runs; who writes the stopwatch's rate (`+0x10`); what commands 37, 38 and 40 (d-pad down,
   up, right), which the tutorial switches with `EnableCommand`, do ([Commands](../references/commands.md)).
 - What a level loaded after an unload (a fresh state without the preloads) does when it needs `PHYS`, `MATERIAL` or
   `GSTRING`: does the level flow run the preloads again, or do the level scripts not need them? (For the front end,

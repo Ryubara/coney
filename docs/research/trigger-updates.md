@@ -137,6 +137,15 @@ whether the two points are joined, mode 2 casts a clear-ray test (`Ray_IsClear`)
 by 0.01 times a fixed vector (`0x00511740`), and any other mode accepts. `TriggerSphere_AcceptsObject` (`0x00414688`)
 is the same test on an object's position. Confirmed (code) at `0x00414548`, `0x00414688`.
 
+`Nav_IsConnected(a, b, area)` (`0x0024dee8`) finds `a`'s navigation area (`Nav_FindArea`, `0x00250708`) when it is
+given none (the sphere passes none), then returns whether `Nav_IsWalkableLine` (`0x0024fbf8`) passes from that area,
+`a` to `b`, with no polygon flags masked: a walkable straight line on the navigation mesh
+([Path planning](ai-moving.md#path-planning)), not a line of sight. Confirmed (code) at `0x0024dee8`. So a mode-1
+sphere whose object stands off the mesh, or across a hole from the human, accepts nobody: in `level3` the objective
+flag `fRoofEnd`, a mode-1 sphere of radius 2, sent no `ObjectiveEnter` in nine runs of the rooftop chase while Snow's
+feet stayed within its radius for up to 6 updates (so through at least one of its checks), and the chase went on
+through `ch4.EnterGallery` instead. Confirmed (runtime), run r-20261031-l3-roofend-sphere-silent.
+
 ### A box's update {#box}
 
 `VolumeBox_Update` (`0x00415378`), for an enabled box (`+0x68`), confirmed (code) at `0x00415378`:
@@ -182,8 +191,10 @@ decompiled scripts.
   original goes on with a null record; `makeAddVolumeBox()` then returns `NilHandle` and uses no handle. Coney's boxes
   come from no fixed pool, so a full pool never happens ([q-box-pools](#q-box-pools)). Coney sorts the corners, which
   for every box the game adds is the same as keeping them.
-- `TriggerSpheres::accepts()` is the accept test, its modes' tests a stand-in ([q-line-tests](#q-line-tests)); any
-  mode other than 1 and 2 accepts on the radius alone.
+- `TriggerSpheres::accepts()` is the accept test. Mode 1 asks `world::PathMap::connected()` (`Nav_IsConnected`)
+  through the test gameplay sets, from the sphere's object to the human's feet, both areas found under the points
+  by the level's ground probe; with no path data or no collision every line passes. Mode 2's ray is a stand-in
+  ([q-line-tests](#q-line-tests)). Any other mode accepts on the radius alone.
 - Coney's choices in the found list ([q-found-mask](#q-found-mask)): the subjects are Coney's humans in its own order
   (by handle), a dead human is never found, a box finds the humans inside it rather than within its bounding sphere,
   and nobody beyond the first 60 found is tested by a sphere. A players' box takes the first two players among the
@@ -197,11 +208,11 @@ decompiled scripts.
 
 ## Open questions
 
-### The modes' tests {#q-line-tests}
+### Mode 2's ray {#q-line-tests}
 
-What `Nav_IsConnected` (`0x0024dee8`) tests between two points, and which vector `0x00511740` holds for mode 2's
-ray, are not traced; Coney's modes 1 and 2 use its clear-line callback from points raised 1 m instead. To settle it:
-read `0x00511740` and step `0x0024dee8` in PCSX2 with the dealer's sphere in `level99`.
+Which vector `0x00511740` holds for mode 2's ray is not read, so Coney's mode 2 casts its clear-line test from the
+sphere's centre and the human's feet, both raised 1 m. To settle it: read `0x00511740` in PCSX2 in any level and
+check the ray's ends at `0x00414548` with a mode-2 sphere.
 
 ### The found humans {#q-found-mask}
 

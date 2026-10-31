@@ -2159,7 +2159,7 @@ coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::accepts"
 status = "compared"
 
 [[function.gaps]]
-what = "the modes' tests are Coney's clear-line callback from points raised 1 m"
+what = "mode 2's ray is Coney's clear-line callback from points raised 1 m"
 relation = "stand-in"
 question = "trigger-updates.md#q-line-tests"
 
