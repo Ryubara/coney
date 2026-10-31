@@ -174,7 +174,7 @@ ambush), with its own tree. A prefab holds no script: the project's scripts find
   parented to one of its entities. Editing the prefab file changes every instance at once, except the keys an instance
   overrides. A key whose value equals the prefab's is not written, and a `drop` takes the dropped entity's `set` keys
   with it. Which Studio action writes, removes or moves each of these lines (*Revert*, *Apply* to an inner or an outer
-  prefab, *Revert All*, *Apply All*) is [Prefab overrides](entities.md#prefab-overrides)'s table.
+  prefab, *Revert All*, *Apply All*) is [Overrides](prefabs.md#overrides)'s table on the Prefabs page.
 - **Nesting.** A prefab may hold instances of other prefabs; an override path names each level (`p1/inner/h2`). Studio
   refuses a prefab that contains itself, directly or through another.
 - **A stale override**, one whose entity the prefab no longer has, is listed when the level opens and skipped at Play,

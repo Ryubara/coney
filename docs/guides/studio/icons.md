@@ -133,7 +133,7 @@ something Coney does not have yet. One concept each; the glyph is chosen from th
 | Entity kinds, ready | Level, Primitive (and its shapes: box, ramp, stairs, cylinder, capsule, sphere), Spawn point, Human, Target, Camera view | |
 | Entity kinds, waiting | | Group, Prefab instance, Mesh, Collider, Gang, Flag, Path, Flag link, Walkable area, Nav link, Volume box, Stealth zone, Object, Emitter, Door, Glass pane, Car, Light, Spawner, once Coney makes them from a level file |
 | File types | Folder, generic file, level, texture, sound, model, animation clip, movie, Lua script, text or JSON, the manifest | prefab, mission, character, `.cmod` package, import sidecar, an override pack |
-| Row and field actions | Visible and hidden (eye), locked and unlocked, add, remove, delete, duplicate, rename, search, filter, clear, revert to default, more (three dots), drag handle, fold arrows (right and down), check, link, tag, pin or favourite, copy, paste, refresh, back and forward, close, settings | an Apply to prefab mark, a modified dot |
+| Row and field actions | Visible and hidden (eye), locked and unlocked, add, remove, delete, duplicate, rename, search, filter, clear, revert to default, more (three dots), drag handle, fold arrows (right and down), check, link, tag, pin or favourite, copy, paste, refresh, back and forward, close, settings | an Apply mark, a modified dot |
 | Console levels | Information, warning, error, detail; clear, copy, collapse | success, a profiler mark |
 | Status | Unsaved, running, busy (a spinner), read-only (the base level), a missing file | a connected peer, a failed script |
 | Theme | Light and dark | the system accent |

@@ -350,7 +350,7 @@ reach without a wall of fields:
   default, a `from-type` default included (Godot's revert arrow; the debug menu's reset to the configured value).
 - **Conditions.** A property whose `when` is false is not drawn: no wheelchair switch on a non-player, no AI group
   without a brain.
-- **Prefab overrides** are drawn in bold with a bar in the margin, with *Revert* and *Apply to prefab* (Unity's);
+- **Prefab overrides** are drawn in bold with a bar in the margin, with *Revert* and *Apply* (Unity's);
   what each does is [Prefab overrides](#prefab-overrides).
 - **Multiple selection.** With several entities of one kind, every `multi` property is shown and a value they differ
   in shows as a dash; setting it sets all, as one undo step. With several kinds, only the groups they share (Entity,
@@ -374,7 +374,8 @@ header the Inspector shows one **Source** row per asset the entity uses, read-on
 - **A mark on a derived file**: a `project:/` file whose sidecar says `derived` (an edited export of a disc asset,
   [Provenance](content-and-formats.md#import)) carries a *Derived* mark beside the Project badge, with the disc asset it
   came from. Its tooltip says that the file works on this machine and is never packaged, and links the reason: the
-  callout on the [Studio index](index.md) and [LEGAL.md](repo:LEGAL.md#no-game-data).
+  callout on the [Studio index](index.md), which also links the open legal question
+  ([Maintainer decisions](content-and-formats.md#decisions), item 1).
 - **Copy, never edit.** The row's right-click menu has *Copy path* (for a script, which loads assets by the same
   string) and *Show in File system*, which selects the file there (Unity's ping, Godot's *Show in FileSystem*). The
   path cannot be typed into: an entity's asset changes by picking another in the property's own field in its group,
@@ -388,7 +389,7 @@ Neither marks where an asset comes from, since neither has a disc: the badge and
 
 ### Prefab overrides {#prefab-overrides}
 
-An instance's changed value is drawn in bold with a bar in the margin, with *Revert* and *Apply to prefab*, and the
+An instance's changed value is drawn in bold with a bar in the margin, with *Revert* and *Apply*, and the
 header's *Overrides* menu lists them all. What each action does, how it is undone and what the level file holds after
 it are [Prefabs](prefabs.md).
 
