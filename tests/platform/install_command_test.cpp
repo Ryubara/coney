@@ -123,9 +123,9 @@ TEST_CASE("a game played from an install reads its overrides/files in place of t
     coney::test::Bytes wadData;
     wadData.text("hello").padTo(2048).u32(1).u32(2).u32(3);
     dir.write("Coney/game/ps2/WARRIORS.WAD", wadData.span());
-    coney::test::Bytes edited;
-    edited.text("edited script");
-    dir.write("Coney/overrides/files/global.lua", edited.span());
+    coney::test::Bytes edited; // a data entry's replacement, longer than the entry; never a script
+    edited.u32(4).u32(5).u32(6).u32(7);
+    dir.write("Coney/overrides/files/level1.lev", edited.span());
     coney::Options options;
     options.dataPath = (dir.path() / "Coney").string();
     options.discPath = coney::installGameFolder(*options.dataPath);
@@ -134,11 +134,11 @@ TEST_CASE("a game played from an install reads its overrides/files in place of t
     REQUIRE(wad.has_value());
     REQUIRE(wad->has_value());
     CHECK((*wad)->modded());
-    auto global = (*wad)->lookup("global.lua");
-    REQUIRE(global.has_value());
-    auto stream = (*wad)->openEntry(**global);
+    auto level1 = (*wad)->lookup("level1.lev");
+    REQUIRE(level1.has_value());
+    auto stream = (*wad)->openEntry(**level1);
     REQUIRE(stream.has_value());
-    CHECK(stream->size() == 13);
+    CHECK(stream->size() == 16);
 
     // The same files given as a disc (`--disc`) are the unmodded game: overrides belong to an install.
     coney::Options disc;

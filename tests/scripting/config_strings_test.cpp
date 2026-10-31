@@ -144,10 +144,10 @@ TEST_CASE("the string bindings refuse a bad id or a non-string text", "[config_s
     CHECK(strings.get(0).empty()); // the crime table is not the HUD table
 }
 
-TEST_CASE("wadScriptSource reads a replaced script at the replacement's own size", "[scripting][wad]") {
+TEST_CASE("wadScriptSource reads a replaced entry at the replacement's own size", "[scripting][wad]") {
     // Expected: docs/guides/asset-and-script-architecture.md#file-overrides, Coney's own behaviour
-    // A recompiled script is rarely the size of the one on the disc: the source must read the file, not the entry's
-    // size in WARRIORS.DIR (docs/guides/asset-and-script-architecture.md#file-overrides).
+    // The source sizes its read from the stream, not WARRIORS.DIR: a replaced data entry is rarely the entry's size.
+    // A script is never replaced (the overrides refuse one), so the replaced entry here is level1.lev's data.
     coney::test::TempDir disc;
     disc.write("WARRIORS.DIR", coney::test::twoEntryDir().span());
     coney::test::Bytes wadData;
@@ -155,16 +155,16 @@ TEST_CASE("wadScriptSource reads a replaced script at the replacement's own size
     disc.write("WARRIORS.WAD", wadData.span());
     coney::test::TempDir overrides;
     coney::test::Bytes edited;
-    edited.text("edited script");
-    overrides.write("global.lua", edited.span());
+    edited.u32(4).u32(5).u32(6).u32(7);
+    overrides.write("level1.lev", edited.span());
     auto opened = coney::io::Disc::open(disc.path());
     REQUIRE(opened.has_value());
     auto wad = coney::io::Wad::open(std::move(*opened));
     REQUIRE(wad.has_value());
     REQUIRE(wad->useOverrides(overrides.path()).has_value());
 
-    auto bytes = coney::script::wadScriptSource(*wad)("global.lua");
+    auto bytes = coney::script::wadScriptSource(*wad)("level1.lev");
     REQUIRE(bytes.has_value());
-    CHECK(bytes->size() == 13);
-    CHECK(static_cast<char>(bytes->back()) == 't');
+    CHECK(bytes->size() == 16);
+    CHECK(bytes->back() == std::byte{0}); // the last byte of the little-endian 7
 }

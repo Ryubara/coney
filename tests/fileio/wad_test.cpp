@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "fileio/wad.h"
 
+#include <format>
 #include <string>
 #include <utility>
 #include <vector>
@@ -76,11 +77,12 @@ TEST_CASE("Wad reads an entry from an overrides folder in place of the archive's
     TempDir disc;
     writeTwoEntryDisc(disc);
     TempDir overrides;
-    // A longer file than the entry it replaces, named in another letter case, and one that matches no entry.
+    // A data entry's replacement, longer than the entry, named in another letter case, and a file that matches no
+    // entry. A script is never replaced (the test of the refusal below).
     Bytes edited;
-    edited.text("edited script");
-    overrides.write("GLOBAL.LUA", edited.span());
-    overrides.write("nope.lua", edited.span());
+    edited.u32(4).u32(5).u32(6).u32(7);
+    overrides.write("LEVEL1.LEV", edited.span());
+    overrides.write("nope.lev", edited.span());
     auto opened = Disc::open(disc.path());
     REQUIRE(opened.has_value());
     auto wad = Wad::open(std::move(*opened));
@@ -90,22 +92,22 @@ TEST_CASE("Wad reads an entry from an overrides folder in place of the archive's
     auto report = wad->useOverrides(overrides.path());
     REQUIRE(report.has_value());
     CHECK(report->replaced == 1);
-    CHECK(report->unmatched == std::vector<std::string>{"nope.lua"});
+    CHECK(report->unmatched == std::vector<std::string>{"nope.lev"});
     CHECK(report->duplicates.empty());
     CHECK(wad->modded());
 
     // The replaced entry reads the file whole, at its own size; the other entry still reads the archive.
-    auto global = wad->lookup("global.lua");
-    REQUIRE(global.has_value());
-    auto stream = wad->openEntry(**global);
-    REQUIRE(stream.has_value());
-    CHECK(stream->size() == 13);
     auto level1 = wad->lookup("level1.lev");
     REQUIRE(level1.has_value());
-    auto untouched = wad->openEntry(**level1);
+    auto stream = wad->openEntry(**level1);
+    REQUIRE(stream.has_value());
+    CHECK(stream->size() == 16);
+    CHECK(stream->readU32Le() == 4U);
+    auto global = wad->lookup("global.lua");
+    REQUIRE(global.has_value());
+    auto untouched = wad->openEntry(**global);
     REQUIRE(untouched.has_value());
-    CHECK(untouched->size() == 12);
-    CHECK(untouched->readU32Le() == 1U);
+    CHECK(untouched->size() == 5);
 }
 
 TEST_CASE("Wad treats a missing overrides folder as no overrides", "[wad]") {
@@ -125,18 +127,18 @@ TEST_CASE("Wad treats a missing overrides folder as no overrides", "[wad]") {
     // A missing folder is no reset either: the entries an earlier folder replaced stay replaced.
     TempDir overrides;
     Bytes edited;
-    edited.text("edited script");
-    overrides.write("global.lua", edited.span());
+    edited.u32(4).u32(5).u32(6).u32(7);
+    overrides.write("level1.lev", edited.span());
     REQUIRE(wad->useOverrides(overrides.path()).has_value());
     auto again = wad->useOverrides(disc.path() / "overrides" / "files");
     REQUIRE(again.has_value());
     CHECK(again->replaced == 0);
     CHECK(wad->modded());
-    auto global = wad->lookup("global.lua");
-    REQUIRE(global.has_value());
-    auto stream = wad->openEntry(**global);
+    auto level1 = wad->lookup("level1.lev");
+    REQUIRE(level1.has_value());
+    auto stream = wad->openEntry(**level1);
     REQUIRE(stream.has_value());
-    CHECK(stream->size() == 13);
+    CHECK(stream->size() == 16);
 }
 
 TEST_CASE("Wad takes the first name in order when two override files name one entry", "[wad]") {
@@ -144,13 +146,13 @@ TEST_CASE("Wad takes the first name in order when two override files name one en
     TempDir disc;
     writeTwoEntryDisc(disc);
     TempDir overrides;
-    // global.lua by its name hash and by its name: "0x..." sorts first, so it is used and the name is the duplicate.
+    // level1.lev by its name hash and by its name: "0x..." sorts first, so it is used and the name is the duplicate.
     Bytes byHash;
     byHash.u32(7);
-    overrides.write("0x7e23a6f2", byHash.span());
+    overrides.write(std::format("0x{:08x}", coney::nameHash("./ee_files/level1.lev")), byHash.span());
     Bytes byName;
-    byName.text("edited script");
-    overrides.write("global.lua", byName.span());
+    byName.u32(4).u32(5).u32(6).u32(7);
+    overrides.write("level1.lev", byName.span());
     auto opened = Disc::open(disc.path());
     REQUIRE(opened.has_value());
     auto wad = Wad::open(std::move(*opened));
@@ -159,10 +161,10 @@ TEST_CASE("Wad takes the first name in order when two override files name one en
     auto report = wad->useOverrides(overrides.path());
     REQUIRE(report.has_value());
     CHECK(report->replaced == 1);
-    CHECK(report->duplicates == std::vector<std::string>{"global.lua"});
-    auto global = wad->lookup("global.lua");
-    REQUIRE(global.has_value());
-    auto stream = wad->openEntry(**global);
+    CHECK(report->duplicates == std::vector<std::string>{"level1.lev"});
+    auto level1 = wad->lookup("level1.lev");
+    REQUIRE(level1.has_value());
+    auto stream = wad->openEntry(**level1);
     REQUIRE(stream.has_value());
     CHECK(stream->size() == 4);
     CHECK(stream->readU32Le() == 7U);

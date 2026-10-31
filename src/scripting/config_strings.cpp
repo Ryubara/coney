@@ -123,7 +123,8 @@ ScriptSource wadScriptSource(const io::Wad& wad) {
         if (!stream) {
             return std::unexpected(std::move(stream.error()));
         }
-        // The stream's size, not the index's: an install's override may be longer or shorter than the entry.
+        // The stream's size, not the index's: the stream is what is read. An install's overrides never replace a
+        // script, but a data entry this reads may be replaced at another size.
         std::vector<std::byte> bytes(static_cast<std::size_t>(stream->size()));
         if (auto read = stream->read(bytes); !read) {
             return std::unexpected(std::move(read.error()));
