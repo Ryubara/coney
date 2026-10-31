@@ -466,6 +466,7 @@ target_sources(coney_tests PRIVATE audio/adpcm_test.cpp audio/disc_sound_test.cp
 # (docs/guides/multiplayer.md).
 target_sources(coney_tests PRIVATE net/bit_stream_test.cpp net/input_buffer_test.cpp net/link_conditioner_test.cpp
                                    net/link_quality_test.cpp net/loopback_transport_test.cpp net/net_id_test.cpp net/protocol_test.cpp net/replicated_fields_test.cpp net/snapshot_test.cpp
+                                   net/jitter_buffer_test.cpp net/client_world_test.cpp
                                    net/sessions_test.cpp platform/enet_transport_test.cpp platform/net_play_test.cpp)
 # The helper that registers one test case per item, so that ctest runs a long disc test's items in parallel
 # (docs/guides/testing.md#one-test-per-item).

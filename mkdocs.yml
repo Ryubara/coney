@@ -354,6 +354,7 @@ nav:
       - Script patches: guides/script-patches.md
       - Network multiplayer: guides/multiplayer.md
       - Network snapshots: guides/snapshots.md
+      - The client's world: guides/client-world.md
       - Network architecture design: guides/network-architecture.md
       - Coney Studio design:
           - guides/studio/index.md

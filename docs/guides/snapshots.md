@@ -7,10 +7,10 @@ architecture. The original has no network play, so none of this code carries an 
 
 **Built:** `src/net/snapshot.h` (the server's `SnapshotSender` and the client's `SnapshotReceiver`), the Snapshot and
 SnapshotAck messages of [the protocol](multiplayer.md#protocol) (the Snapshot's body in `src/net/snapshot_wire.cpp`,
-apart from `protocol.cpp`), and the sessions' side: `NetServer::sendSnapshots()`
-and `NetClient::snapshots()`. **Not yet:** the game's side (filling the humans from the host's game and drawing them on
-the guest), the jitter buffer and interpolation, interest (which humans a client needs, and how fast each one's
-priority grows), and releasing a removed human's id once its removal is acknowledged.
+apart from `protocol.cpp`), and the sessions' side: `NetServer::sendSnapshots()` and `NetClient::snapshots()`. A
+client plays what it decodes through [the client's world](client-world.md). **Planned:** the game's side (filling the
+humans from the host's game and drawing them on the guest), interest (which humans a client needs, and how fast each
+one's priority grows), and releasing a removed human's id once its removal is acknowledged.
 
 ## The model {#model}
 
@@ -27,6 +27,10 @@ A snapshot older than the newest decoded is ignored (Stale), and so is one whose
 (NoBaseline); the delivery is UnreliableSequenced, so a transport drops most stale ones before they arrive. The
 acknowledgement is unreliable: a lost one is replaced by the next step's. A late one, older than the newest
 acknowledged, changes nothing.
+
+The receiver keeps each of the last `kSnapshotHistory` snapshots it decoded with the server's step it shows
+(`holding(sequence)`, `heldStep(sequence)`), so a client's jitter buffer takes every one decoded since it last looked,
+not only the newest ([The client's world](client-world.md#model)).
 
 ## A human's state {#human-state}
 
