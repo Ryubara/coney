@@ -84,9 +84,11 @@ TEST_CASE("the disc's WAR PARTY hands the pad to a team-mate when the player goe
     // stick at 40 % right and 70 % forward for two seconds.
     std::string script(coney::test::kQuickRumbleScript);
     script.insert(script.find("280 tap cross"), "275 stick left 0 -70\n277 stick left 0 0\n");
-    script += "1100 stick left 40 70\n1160 stick left 0 0\n";
+    script += "1000 stick left 40 70\n1060 stick left 0 0\n";
     coney::test::DiscGame game(*wad, script);
-    game.run(1000);
+    // The pad passes at frame 900, before the fight reaches the team-mate who takes it: from about frame 950 an
+    // Orphan has him in a grab, and a human the pad reaches while an AI holds him cannot walk once let go (#1322).
+    game.run(900);
     REQUIRE(game.stack().topId() == coney::GameplayMode::kId);
     CHECK(game.flow().state().rumble.values[coney::RumbleSetup::kGangSize] == 5);
     const coney::platform::PlayLevelMode* play = game.play();
@@ -95,6 +97,16 @@ TEST_CASE("the disc's WAR PARTY hands the pad to a team-mate when the player goe
     const auto p11 = std::ranges::find(humans, std::string_view("P11"), &coney::HumanCreation::name);
     REQUIRE(p11 != humans.end());
 
+    // The other gangs' brains are suspended (BrSuspend) before the pad passes, so that none grabs the team-mate while
+    // it passes or while the stick is pushed: the AI grabs and tackles (docs/research/ai/index.md#in-coney), and this
+    // checks only the pad.
+    for (const coney::HumanCreation& human : humans) {
+        if (human.gang != p11->gang) {
+            const std::array<coney::script::Value, 2> suspend{coney::script::Value(human.handle),
+                                                              coney::script::Value(true)};
+            CHECK(game.flow().scripts().call("BrSuspend", suspend));
+        }
+    }
     // P11 knocked out: CheckPlayerDead with four standing hands the pad on (HuSwitchPlayer).
     const std::array<coney::script::Value, 1> args{coney::script::Value(p11->handle)};
     REQUIRE(game.flow().scripts().call("HuKill", args));
@@ -105,15 +117,7 @@ TEST_CASE("the disc's WAR PARTY hands the pad to a team-mate when the player goe
     CHECK(&play->player().human() != &play->player().body());
     CHECK(play->player().human().alive());
 
-    // The pad drives the team-mate now. The other gangs' brains are suspended (BrSuspend) so that none grabs him while
-    // the stick is pushed: the AI grabs and tackles (docs/research/ai/index.md#in-coney), and this checks only the pad.
-    for (const coney::HumanCreation& human : humans) {
-        if (human.gang != p11->gang) {
-            const std::array<coney::script::Value, 2> suspend{coney::script::Value(human.handle),
-                                                              coney::script::Value(true)};
-            CHECK(game.flow().scripts().call("BrSuspend", suspend));
-        }
-    }
+    // The pad drives the team-mate now.
     const coney::anim::Vec3 before = play->player().human().position();
     game.run(150);
     const coney::anim::Vec3 after = play->player().human().position();
