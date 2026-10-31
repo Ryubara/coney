@@ -36,6 +36,7 @@ add_library(coney_core STATIC
     core/script_patch_merge.cpp
     core/script_patch_reader.cpp
     core/sequence_diff.cpp
+    core/story_graph.cpp
     core/sha256.cpp
     fileio/disc.cpp
     fileio/executable.cpp

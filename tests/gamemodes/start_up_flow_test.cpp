@@ -23,6 +23,7 @@
 #include "core/error.h"
 #include "core/game_timer.h"
 #include "core/input_script.h"
+#include "core/story_graph.h"
 #include "effects/screen_tint.h"
 #include "gamemodes/front_end_scene.h"
 #include "gamemodes/game_mode_stack.h"
@@ -105,6 +106,13 @@ TEST_CASE("start-up: movies skipped, then modes 8, 6 and 5 pushed with the boot 
     CHECK(run.stack.size() == 3);
     CHECK(run.stack.topId() == coney::LegalScreenMode::kId);
     CHECK(run.flow->memoryCard().bootCheck() == MemoryCardMode::BootCheck::Pending);
+}
+
+TEST_CASE("start-up: the story session holds the original's story graph", "[start_up][story_graph]") {
+    // Expected: story-progress.md#order, confirmed (code)
+    Run run("");
+    CHECK(run.flow->story().steps().size() == 31);
+    CHECK(run.flow->story().hash() == coney::story::StoryGraph::original().hash());
 }
 
 TEST_CASE("start-up: legal screen, memory card, level flow, then the profile manager at PM_Greet", "[start_up]") {
