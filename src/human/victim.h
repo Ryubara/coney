@@ -82,7 +82,11 @@ class Victim {
     /// @orig 0x0022f100 Human_KnockDown (unknown)
     ReactionKind react(const IncomingHit& hit, const VictimFrame& frame, HumanAnimator& animator, std::uint32_t idle,
                        std::uint64_t nowMs);
-    /// Plays the dying reaction for `hit` (the `DIE` set half the time, else 292) and the ground for good.
+    /// Plays the dying reaction for `hit` (the `DIE` set half the time, else 292) and the ground for good. Only the
+    /// chain's first clip: the special cases' clips (cuffed, burning, held, tackling, wounded), the fall, 205, the
+    /// loop, health 1 and state `0x80000000` are not ported ("gameplay: Add the death chain after the dying reaction").
+    /// Research: docs/research/combat-reactions.md#knockout-timing
+    /// @orig 0x00267a00 Human_PlayDeathReaction (unknown)
     void die(const IncomingHit& hit, const VictimFrame& frame, HumanAnimator& animator);
 
     /// The ground starts (a knockdown, a throw's landing) at `nowMs`; with `stunned` the stun lasts until the rise +
