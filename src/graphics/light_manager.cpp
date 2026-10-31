@@ -186,10 +186,12 @@ bool LightManager::setFlicker(LightHandle handle, const FlickerTiming& timing) {
 }
 
 std::uint32_t LightManager::rand(std::uint32_t n) {
+    // Stand-in: 0 to n - 1, and 0 with no draw for n = 0, where the original's Random_Int(n) always draws, 0 to n
+    // (mod (n + 1)), and traps only when n + 1 is 0.
     if (n == 0) {
         return 0;
     }
-    return m_random.next() % n;
+    return m_random.next(RandomStream::Ambient) % n;
 }
 
 bool LightManager::visible(const LightRecord& record, const LightView& view) {

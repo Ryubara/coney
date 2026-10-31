@@ -286,8 +286,10 @@ Confirmed (code) at `0x0028e708` unless marked.
 
     Each scaled weight is truncated to an integer. The kind and its weight are appended, and `w` is added to the
     total.
-5. **The draw.** `r` = `Random_Int(total)`. The answer is the first candidate whose running sum of weights exceeds
-   `r`. With no candidates, or a total of 0, the answer is 45.
+5. **The draw.** `r` = `Random_Int(total)` on stream `0x006eb880`, 0 to the total **inclusive**, made whenever step
+   2 let the pick through, even with no candidates or a total of 0 (`0x0028ede8`). The answer is the first candidate
+   whose running sum of weights exceeds `r`, so a draw of the total itself picks nothing (45). With no candidates,
+   or a total of 0, the answer is 45. Coney's brains draw from their own seeded generator, not the shared stream.
 
 So a crowded AI favours the snap and the throw and gives up tackles. Several attackers on one target make grabs
 likelier. A weapon in hand makes the plain strikes likelier by a flat 100. A rear-grabbed target, held by a gang

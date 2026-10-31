@@ -1401,7 +1401,7 @@ name = "Brain_PickAttack"
 page = "ai-fights.md#pick-attack"
 level = "confirmed-code"
 coney = "src/ai/attack_choice.h:pickAttackKind"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0028f000
@@ -1653,7 +1653,12 @@ name = "Brain_GetAttackWeight"
 page = "ai-fights.md#pick-attack"
 level = "confirmed-code"
 coney = "src/ai/attack_choice.h:pickAttackKind"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the override table a tactic sets at +0x208 (guard, ring, stand ground): Coney always reads the class table"
+relation = "not-ported"
+issue = 339
 
 [[function]]
 address = 0x002912b0

@@ -98,8 +98,12 @@ PickContext pickContextOf(const Brain& attacker, const Brain& target) {
     context.targetSlotsTaken = static_cast<int>(target.attackSlots().size());
     context.ownSlotsTaken = static_cast<int>(attacker.attackSlots().size());
     context.running = a.gait() >= human::Gait::Run && a.animator().flags() == 0;
+    // Stand-in: armed is a held weapon set, not the held object's kind (Human_GetHeldObjectKind); the armed bonus is
+    // 100 for every class, not 0 for categories 9, 10 and 13; the player's pattern (T's pattern bytes against A's
+    // block threshold) is not read, so it never raises the enders.
     context.armed = a.fighter().animSet() != 0;
     context.targetChasable = canBeChased(target) && attacker.mayApproach();
+    // Stand-in: no world object is swung at a target that cannot be chased (X1), as Coney's AI holds none.
     context.swingsObject = false;
     context.hurtAndAttackable = a.fighter().hurt() && attackableBy(attacker, nullptr);
     context.targetRearGrabbed = grabbedFromRear(target);

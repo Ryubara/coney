@@ -243,6 +243,8 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     /// answers (docs/research/rumble.md, King of the hill after `GameOver`). **Coney stand-in**: when a deleted
     /// human's handle stops resolving is not traced, so its gang is kept for the rest of the level.
     [[nodiscard]] std::optional<int> gangOf(double human) const override;
+    /// Gang `gang`'s kind, read by a new human's random size (characters::randomBodySize()).
+    [[nodiscard]] std::optional<int> gangKind(int gang) const override;
     /// The player's team-mate (switchTarget()) takes the pad through the switcher and becomes player 1 (setPlayer());
     /// its handle, or NilHandle when `human` is not the player's or no one can take over.
     /// @orig 0x0041a8c0 Human_SwitchPlayer (unknown)

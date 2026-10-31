@@ -161,10 +161,16 @@ TEST_CASE("a waiting attacker taunts every 1-2 s, the one his man is fighting ne
 
 TEST_CASE("without a gesture slot a waiting attacker does not taunt", "[ai]") {
     AiScene scene;
+    // Expected: ai-fights.md#fight-reposition, confirmed (code)
     scene.services.gesturesAllowed = false;
     Brain& player = scene.player();
-    Brain& front = scene.add({40.0F, 40.9F, 0.0F}, 180.0F);
-    Brain& back = scene.add({40.0F, 35.6F, 0.0F}, 0.0F);
+    // Unarmed, as in the test above, so the back one always waits whatever the brains' draws are: with attack
+    // weights, whether he waits in the ring when his taunt timer runs depends on the kinds Brain_PickAttack
+    // (0x0028e708) draws, one Random_Int(total) per pick, and so on one random sequence.
+    coney::ai::FightSettings unarmed;
+    unarmed.attackWeights = coney::ai::AttackWeights{};
+    Brain& front = scene.add({40.0F, 40.9F, 0.0F}, 180.0F, BrainType::Gang, unarmed);
+    Brain& back = scene.add({40.0F, 35.6F, 0.0F}, 0.0F, BrainType::Gang, unarmed);
     for (Brain* brain : {&front, &back}) {
         brain->setServices(&scene.services);
         brain->setTarget(&player);

@@ -283,7 +283,7 @@ levels 60-64), the speed class byte at `+0x11c`, and four strings (32 bytes each
   `0x0055a548`, `l<level>_c<checkpoint>_idle_<nn>`); type 259 instead takes a random 120-125. `Human_Init` counts the
   type's idle lines 1-3 there (`+0x197`, `+0x196` set when any exists). `+0x3b4` is the level's variant
   (`Anim_LevelVariant`) or the voice. So the binding page's "Warrior index" was a misreading: Rembrandt's 7 is his
-  voice folder.
+  voice folder. Confirmed (code) in `Human_Init` (`0x00218008`), the format string read at `0x0055a548`.
 - **The weapon** (string `+0x18c`): when it is not `none`, `Human_Init` puts that object type in the new human's hand
   (`Human_PlaceItemInHand(h, name, 1, 1)` `0x0024c280`, confirmed (code): made by name, recorded as a pinned object,
   refused when the hand is already busy with held flag `0x4000`). The police types carry `dyn_baton`. A cop who later
@@ -297,9 +297,10 @@ levels 60-64), the speed class byte at `+0x11c`, and four strings (32 bytes each
 
 1. **A random size**, only for a human whose brain type is not 3 (a Warrior), whose class category (`+0x11b`) is not
    12 or 13, and whose type (`+0xcc`) is none of 122, 221, 222, 303-305, 307, 351, 414-416, 425, 458, 459. With `r` =
-   `Random_Int(99)` (0-99, stream `0x006eb880`) and "hat" = the type's hat (`+0x14c`) is not `none`:
-   - a **woman** (`flag_14b`, human `+0x3b8`, set): 1 − 0.01 × (`r` / 25), so 1.0, 0.99, 0.98 or 0.97, a quarter
-     each; with a hat at least 0.99;
+   `Random_Int(99)` (0-99, stream `0x006eb880`, confirmed (code) at `0x002190d4`) and "hat" = the type's hat (`+0x14c`)
+   is not `none` (a string compare at `0x0021900c`, so an empty name counts as a hat):
+   - a **woman** (`flag_14b`, human `+0x3b8`, any value but 0: a byte load and a branch on not zero at `0x002190e0`,
+     confirmed (code)): 1 − 0.01 × (`r` / 25), so 1.0, 0.99, 0.98 or 0.97, a quarter each; with a hat at least 0.99;
    - anyone else: `r` 0-30 → 1.0; 31-54 without a hat → 1.02 for a cop (brain type 1) or a gang member (brain type
      2) whose brain `+0x20c` record's `+0x2c` is below 23, else 0.98; otherwise (31-54 with a hat, or 55-89) → 1.01
      when `r` < 90, else 1.0.

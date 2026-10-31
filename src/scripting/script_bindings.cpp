@@ -14,6 +14,8 @@
 #include <utility>
 #include <vector>
 
+#include "ai/brain.h"
+#include "characters/body_size.h"
 #include "characters/character_class.h"
 #include "characters/character_types.h"
 #include "characters/starting_money.h"
@@ -68,6 +70,8 @@ using HandleCounter = ScriptHandles;
 
 // A class's weapon when it has none (`CfgChar`'s `+0x18c`).
 constexpr std::string_view kNoWeapon = "none";
+// A class's hat when it has none (`+0x14c`, compared with the string at `0x0055a540`).
+constexpr std::string_view kNoHat = "none";
 
 // What a real binding's factory gets: the script system, the context and the state's handle counter.
 struct Factory {
@@ -292,14 +296,14 @@ NativeFunction makeCfgLevelName(const Factory& factory) {
     };
 }
 
-// `random(low, high)`: a whole number in [low, high] from the game's generator, the table walked by one index for the
-// whole session (GameRandom, in the game state, so every Lua state shares it).
+// `random(low, high)`: a whole number in [low, high] from the game's generator's gameplay stream (0x006eb880), which
+// lives in the game state's GameRandom, so every Lua state shares it (docs/research/maths.md#random).
 // @orig 0x00386488 random (unknown)
 NativeFunction makeRandom(const Factory& factory) {
     return [state = factory.context->state](std::span<const Value> args) {
         const auto low = static_cast<std::int32_t>(std::trunc(binding::number(args, 0)));
         const auto high = static_cast<std::int32_t>(std::trunc(binding::number(args, 1)));
-        return binding::number(static_cast<double>(state->random.range(low, high)));
+        return binding::number(static_cast<double>(state->random.range(RandomStream::Gameplay, low, high)));
     };
 }
 
@@ -403,11 +407,11 @@ std::optional<combat::PowerClass> recordedPowerClass(const RecordedCalls* record
 
 // The steps Human_Init takes after the money for the human `HuCreate` just made, in its order
 // (docs/research/human-init.md): the brain's ped type by category (`pedType`, nothing to leave it), the
-// type's own power class's switches in the flags, the class's weapon in the hand from the scripts' handles, and the
-// class's size. **Coney's stand-ins**: the voice is read from the type when a line plays, and the idle lines are not
-// counted (human-init.md#q-voice); no radar blip, task byte or `+0x19e` (human-init.md#q-radar); no `+0x3bc`
-// (human-init.md#q-name-byte). A player's switches wait for Human_MakePlayer's (#1011), and a class the type scale
-// does not list is made at 1, not at the random body size (#689). Co-op is not built, so the size is the one alone.
+// type's own power class's switches in the flags, the class's weapon in the hand from the scripts' handles, the random
+// body size (one draw on the gameplay stream) and the class's own size over it. **Coney's stand-ins**: the voice is
+// read from the type when a line plays, and the idle lines are not counted (human-init.md#q-voice); no radar blip, task
+// byte or `+0x19e` (human-init.md#q-radar); no `+0x3bc` (human-init.md#q-name-byte). A player's switches wait for
+// Human_MakePlayer's (#1011). Co-op is not built, so the size is the one alone.
 // @orig 0x00218008 Human_Init (unknown)
 void humanInitSteps(const BindingContext& context, HandleCounter& handles, const HumanCreation& human,
                     std::optional<std::uint16_t> pedType) {
@@ -437,9 +441,27 @@ void humanInitSteps(const BindingContext& context, HandleCounter& handles, const
             return handle;
         }));
     }
+    // The random size, drawn whether or not the class's own size replaces it, then the class's own; 1.0 for neither.
+    std::optional<float> size;
+    if (context.state != nullptr && classRecord) {
+        // The woman byte counts when it is not 0; the hat is any name but `none` (a string compare at 0x0021900c), so
+        // an empty name, as the zeroed record holds when the call gave none, is a hat.
+        const ai::BrainType brain =
+            ai::createdBrainType(ai::brainTypeOf(classRecord->behaviour.value_or(0)), human.gangFlag);
+        const characters::BodySizeInput input{.classType = classType,
+                                              .brainType = static_cast<int>(brain),
+                                              .category = classRecord->category.value_or(0),
+                                              .woman = classRecord->female.value_or(0) != 0,
+                                              .hat = classRecord->hat != kNoHat,
+                                              .gangKind = human.gang >= 0 ? ai->gangKind(human.gang) : std::nullopt};
+        size = characters::randomBodySize(input, context.state->random);
+    }
+    if (const std::optional<float> classScale = characters::typeScaleOf(classType, false)) {
+        size = classScale;
+    }
     // Given before the human's first update, so it is also the size it is made at (human::Human::setScale()).
     if (HubBindingHost* hub = ai->hub(); hub != nullptr) {
-        hub->setScale(human.handle, characters::typeScaleOf(classType, false).value_or(1.0F));
+        hub->setScale(human.handle, size.value_or(1.0F));
     }
 }
 
@@ -455,10 +477,10 @@ int currentLevelNumber(const GameState& state) {
 // which (in play) makes it a character with a brain once the level has loaded (ai::ScriptedBrains). Coney's choices:
 // the position is not snapped to the ground here (no collision is loaded while the script runs) and so not written back
 // into the table; the play mode snaps the player the same way when it places him
-// (docs/research/characters.md#creation). The gang is kept for the AI (nil is none); the unused string and the flag are
-// not. The model the type is drawn as is resolved here from the recorded `CfgChar` calls (characters::modelNameFor(),
-// docs/research/characters.md#type-to-model); the play mode loads it. Human_Init's money and later steps follow
-// (humanInitSteps()).
+// (docs/research/characters.md#creation). The gang is kept for the AI (nil is none), and so is the flag
+// (docs/research/human-init.md#brain-type); the unused string is not. The model the type is drawn as is resolved here
+// from the recorded `CfgChar` calls (characters::modelNameFor(), docs/research/characters.md#type-to-model); the play
+// mode loads it. Human_Init's money and later steps follow (humanInitSteps()).
 // @orig 0x00358428 HuCreate (unknown)
 // @orig 0x00233d60 Human_Create (unknown)
 NativeFunction makeHuCreate(const Factory& factory) {
@@ -470,6 +492,8 @@ NativeFunction makeHuCreate(const Factory& factory) {
         human.headingDegrees = static_cast<float>(binding::number(args, 3));
         human.playerIndex = static_cast<int>(std::trunc(binding::number(args, 5)));
         human.gang = args.size() > 6 && !args[6].isNil() ? static_cast<int>(std::trunc(binding::number(args, 6))) : -1;
+        // The flag (`Lua_GetOptionalBoolArg`): nil, or the 0 a script may pass, is false.
+        human.gangFlag = args.size() > 7 && !args[7].isNil() && binding::number(args, 7) != 0.0;
         human.model =
             characters::modelNameFor(human.type, human.playerIndex, currentLevelNumber(*context->state),
                                      [context](int type) { return recordedCfgCharModel(context->recorded, type); })

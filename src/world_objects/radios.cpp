@@ -5,6 +5,7 @@
 #include <string_view>
 #include <utility>
 
+#include "core/assert.h"
 #include "core/name_hash.h"
 
 namespace coney::world_objects {
@@ -45,8 +46,14 @@ float distanceSquared(const std::array<float, 3>& a, const std::array<float, 3>&
 // Whether `level` is complete in `world`.
 bool complete(const RadioWorld& world, int level) { return world.levelComplete && world.levelComplete(level); }
 
-// A draw of `Random % n` (`0x00335498`).
-int draw(GameRandom& random, int n) { return static_cast<int>(random.next() % static_cast<std::uint32_t>(n)); }
+// A draw of `Random % n` (unsigned) from the ambient stream.
+// Stand-in: n = 0 is a broken invariant here, where the original returns 0 with no draw, as the radios' callers
+// never pass 0.
+// @orig 0x00335498 Random_IntBelow (unknown)
+int draw(GameRandom& random, int n) {
+    CONEY_ASSERT(n > 0); // stand-in for the original's 0 with no draw (above)
+    return static_cast<int>(random.next(RandomStream::Ambient) % static_cast<std::uint32_t>(n));
+}
 
 } // namespace
 
@@ -209,7 +216,7 @@ void Radios::updateOne(Radio& radio, const std::array<float, 3>& at, const Radio
                 radio.track = radio.next;
             } else {
                 // A DJ link: 0-6 kind 1, 7-8 kind 0 (its pool shrinking with the story), 9 kind 2.
-                const std::int32_t pick = random.range(0, 9);
+                const std::int32_t pick = random.range(RandomStream::Ambient, 0, 9);
                 if (pick <= 6) {
                     radio.clipKind = 1;
                     radio.track = draw(random, kKind1Links);

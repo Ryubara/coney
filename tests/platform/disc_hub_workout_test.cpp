@@ -61,10 +61,12 @@ constexpr std::array<Station, 4> kStations{{
     {"sit-ups", {-177.2F, 109.5F, -197.4F}, {-177.2F, 108.7F, -197.4F}, 51, 36, 43},
 }};
 
-// Frames the walk onto fWorkout[k] may take (worksetup.TimeOut quits after 5 s), the engine's start after it (the
-// workout file's load and StartTimeOut's 1.5 s), the prompt's return (DelayQuit's 1.5 s and more), and the updates
-// from the loop's start to the end with no presses (63 at runtime, docs/research/workouts.md#repetitions).
-constexpr int kArrivalFrames = 60;
+// Frames the walk onto fWorkout[k] may take: up to worksetup.TimeOut's 5 s (150 updates), since a crew mate the
+// scripts put on the station (flags.AssignToClubhouseFlags, from the gameplay stream) is first sent off it; the
+// engine's start after it (the workout file's load and StartTimeOut's 1.5 s), the prompt's return (DelayQuit's 1.5 s
+// and more), and the updates from the loop's start to the end with no presses (63 at runtime,
+// docs/research/workouts.md#repetitions).
+constexpr int kArrivalFrames = 150;
 constexpr int kStartFrames = 60;
 constexpr int kPromptFrames = 150;
 constexpr int kRunDownMin = 58;
@@ -293,9 +295,10 @@ TEST_CASE("the disc's level95: triangle at the heavy bag walks the player to it 
     REQUIRE(gym.goToStation(bag, 3000));
     const std::size_t from = gym.trace().size();
     gym.frame(0, 0, "triangle");
-    // worksetup.StartWorkout; the walk and turn to fWorkout[1] arrive (message 8: worksetup.DoWorkout) well inside
-    // worksetup.TimeOut's 5 s; the bag's game starts with its 26 s clock.
-    REQUIRE(gym.idleUntil([&] { return gym.traced(from, "> worksetup.DoWorkout(") == 1; }, 60));
+    // Expected: workouts.md#start, confirmed (code), and workouts.md#heavy-bag, confirmed (runtime)
+    // worksetup.StartWorkout; the walk and turn to fWorkout[1] arrive (message 8: worksetup.DoWorkout) inside
+    // worksetup.TimeOut's 5 s, also when a crew mate held the bag; the bag's game starts with its 26 s clock.
+    REQUIRE(gym.idleUntil([&] { return gym.traced(from, "> worksetup.DoWorkout(") == 1; }, kArrivalFrames));
     CHECK(gym.traced(from, "> worksetup.StartWorkout(") == 1);
     REQUIRE(gym.idleUntil([&] { return gym.traced(from, "W_SetStopWatch(26000, 0, \"workout.WorkoutTimeOut\")") > 0; },
                           60));

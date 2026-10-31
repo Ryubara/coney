@@ -12,8 +12,13 @@ namespace {
 constexpr int kRumbleThreshold = 0x28;
 constexpr int kRumbleCap = 0x60;
 
-// A random share in [-1, 1] from `random`.
-float randomShare(GameRandom& random) { return static_cast<float>(random.range(-1000, 1000)) / 1000.0F; }
+// A random share in [-1, 1] from the cameras' stream.
+// @orig 0x003354e0 Random_Unit (unknown)
+// Stand-in: Cam_UpdateShake (0x00121298) draws Random_Unit, [0, 1) to 2^-32, three times and offsets by the draw less
+// 0.5; this draws thousandths, -1 to 1 inclusive.
+float randomShare(GameRandom& random) {
+    return static_cast<float>(random.range(RandomStream::Cameras, -1000, 1000)) / 1000.0F;
+}
 
 } // namespace
 

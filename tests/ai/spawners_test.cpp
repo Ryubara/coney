@@ -4,6 +4,7 @@
 // alive at once and its total decide whether it makes one; each made human is named after it and goes to its callback.
 
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <numbers>
@@ -14,6 +15,7 @@
 #include <utility>
 #include <vector>
 
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include "ai/route_planner.h"
@@ -427,6 +429,7 @@ TEST_CASE("a police gang's spawner in another state adds to the spawned count on
 }
 
 TEST_CASE("the caps are 16 by default, and a spawner that made its total still frees its places", "[ai][spawners]") {
+    // Expected: ai-gangs.md#spawners, confirmed (code)
     coney::ai::Spawners spawners;
     coney::script::SpawnerCall call = roomyCall(3, "A", 1);
     call.maxConcurrent = 30;
@@ -450,4 +453,46 @@ TEST_CASE("the caps are 16 by default, and a spawner that made its total still f
     spawners.update(2200, world);
     REQUIRE(world.made.size() == 17);
     CHECK(world.made[16].gang == 4);
+}
+
+TEST_CASE("a failed out-of-sight try turns the next goal by the angle drawn before it, so the last draw is unused",
+          "[ai][spawners]") {
+    // Expected: ai-gangs.md#spawner-placement, confirmed (code)
+    const float half = (std::numbers::pi_v<float> / 4.0F) + coney::ai::kConeMarginRadians;
+    // The draws: 0 (angle h), then 1/2 (angle pi), then 1/4, 1/4, ...
+    int draws = 0;
+    const coney::ai::PlacementRandom random = [&draws] {
+        const int drawn = draws++;
+        return drawn == 0 ? 0.0F : (drawn == 1 ? 0.5F : 0.25F);
+    };
+    std::vector<coney::anim::Vec3> goals;
+    const coney::ai::PlacementSearch search = [&goals](coney::anim::Vec3 goal) {
+        goals.push_back(goal);
+        return std::optional<std::uint32_t>{};
+    };
+    const coney::anim::Vec3 origin{1.0F, 2.0F, 0.0F};
+    CHECK_FALSE(coney::ai::searchPlacementGoals(origin, kCamera.forward, half, 15.0F, random, search).has_value());
+    REQUIRE(goals.size() == static_cast<std::size_t>(coney::ai::kPlacementTries));
+    CHECK(draws == coney::ai::kPlacementTries);
+    // The first goal 100 m ahead; the second from the first draw (+y turned by h about z, at 2 x 15 m); the third from
+    // the second draw (turned by pi: straight behind).
+    CHECK(goals[0].x == Catch::Approx(1.0F));
+    CHECK(goals[0].y == Catch::Approx(102.0F));
+    CHECK(goals[1].x == Catch::Approx(1.0F - (30.0F * std::sin(half))));
+    CHECK(goals[1].y == Catch::Approx(2.0F + (30.0F * std::cos(half))));
+    CHECK(goals[2].x == Catch::Approx(1.0F).margin(1e-4));
+    CHECK(goals[2].y == Catch::Approx(-28.0F));
+}
+
+TEST_CASE("the out-of-sight cone's half-angle is not capped at pi", "[ai][spawners]") {
+    // Expected: ai-gangs.md#spawner-placement, confirmed (code)
+    // A field of view so wide that half of it and 10 degrees pass pi: cos h is above -1, so a node straight behind,
+    // 30 m off and beyond the value of 15, lies outside the cone and is taken.
+    const coney::world::PathMap map = lineOfNodes(true);
+    const coney::ai::RoutePlanner planner(map);
+    const coney::ai::PlacementRandom random = [] { return 0.5F; };
+    coney::ai::PlacementCamera wide = kCamera;
+    wide.halfFovRadians = 3.4F;
+    CHECK(coney::ai::outOfSightNode(planner, {0.0F, 5.0F, 0.0F}, wide, 15.0F, random) ==
+          coney::anim::Vec3{0.0F, -30.0F, 0.0F});
 }

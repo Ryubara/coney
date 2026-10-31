@@ -793,24 +793,28 @@ spawner's own position whatever the state, also for the states that place their 
    than the spawner's **value** in metres from it and outside a cone around the camera's forward of half its field
    of view + 10° (`+0x2ac`). The first goal is 100 m straight ahead of the camera; up to 16 more tries each turn the
    forward by a random angle outside that cone and put the goal at 2 × value. No node in 17 tries: no spawn this
-   update. In detail ([the search](#spawner-search)):
+   update; confirmed (code). In detail ([the search](#spawner-search)):
     - **Origin**: the camera's position (vtable `+0x21c`) with its z replaced by the player human's z (position
-      table `0x00714b00`); every distance below is from this point, in 3D.
+      table `0x00714b00`); every distance below is from this point, in 3D; confirmed (code).
     - **Start node**: the player human's area (`0x00250708`), then its node nearest the human's position that he
       reaches in a straight line, up to 30 tried by distance (`0x00251150` → `0x00250e98`, as for a route's ends in
-      [Path planning](ai-moving.md#path-planning)). No area or no node: no spawn this update, and no try is made.
+      [Path planning](ai-moving.md#path-planning)). No area or no node: no spawn this update, and no try is made;
+      confirmed (code).
     - **Cone**: the camera's forward (its orientation's y axis: vtable `+0xac`, then `0x003363b0`) with z then set to
-      0 and **not** normalised again; half-angle *h* = (field of view × 0.5 + 10)° in radians.
+      0 and **not** normalised again; half-angle *h* = (field of view × 0.5 + 10)° in radians; confirmed (code).
     - **Try 1**: goal = origin + 100 × the forward taken *before* its z is cleared.
-    - **Tries 2-17**: θ = `Random_Float(h, 2π − h)` (`0x00335420`: a uniform draw, the raw random number / 2³² scaled
-      into the range); the flattened forward is turned by θ about the vertical (a quaternion about (0, 0, 1),
-      `0x00511740`), and goal = origin + 2 × value × that vector. Each try turns the **original** forward, not the
-      previous try's; a θ is drawn before every search, so 17 draws are made and the first is unused. The cone the
-      search tests keeps the original flattened forward on every try; only the goal moves.
+    - **Tries 2-17**: θ = `Random_Float(h, 2π − h)` (`0x00335420` on stream `0x006eb8a0`: a uniform draw, the raw
+      random number / 2³² scaled into the range); the flattened forward is turned by θ about the vertical (a
+      quaternion about (0, 0, 1), `0x00511740`), and goal = origin + 2 × value × that vector. Each try turns the
+      **original** forward, not the previous try's. A θ is drawn before every search (`0x001676e8`), but the goal it
+      turns is built only after that search fails, for the **next** try: the first draw shapes try 2, the 17th is
+      never used. The cone
+      the search tests keeps the original flattened forward on every try; only the goal moves. *h* is not capped: a
+      field of view wide enough to take it past π leaves cos *h* above −1. Confirmed (code).
 3. **Second player**: with two players, a node that the other camera can see 1.6 m above it (`0x00122548`, its
-   distance argument the larger of the value and its view distance capped at 70 m) is refused.
+   distance argument the larger of the value and its view distance capped at 70 m) is refused; confirmed (code).
 4. **Turf**: the node must lie in one of the gang's turf boxes (`Gang_IsPointInTurf`, `0x001652e8`); a gang with no
-   turf takes any. Otherwise no spawn this update.
+   turf takes any. Otherwise no spawn this update. Confirmed (code).
 
 The human stands on the node found. The function's other branch (a flag near the point, checked for being unseen) is
 not reached from its one caller.
@@ -824,14 +828,14 @@ not reached from its one caller.
   goal (`0x00251820`); an edge costs as in [Path planning](ai-moving.md#path-planning) (`0x00251890` with mask `0xff`,
   so the `ClimbFilter` extras apply when it is on). Unlike the route search there is **no mask test** and no 65000 cap:
   every edge is taken except one whose D word has **bit 31** set (a hazard-avoided link), which is skipped. A node
-  already open is updated only when the new g is lower.
+  already open is updated only when the new g is lower. Confirmed (code).
 - **Popping** the node with the lowest f (ties: the heap's order) marks it closed (`+0x18` = `0xabcd`) and tests it,
   the start node included: found when its distance from the origin exceeds 70 m, or exceeds the value and the unit
   vector origin → node has a dot product with the cone axis below cos *h*. Found: the goal point is overwritten with
   the node's position and the search returns 1.
 - **Limits**: the open list is a heap of at most **1,000** entries (`0x002531c0`), the closed list at most **3,000**
   nodes (`0x002534d0`). An empty open list, a full open list on a push or a full closed list ends the search with
-  nothing (0); on leaving, the closed marks are cleared.
+  nothing (0); on leaving, the closed marks are cleared. Confirmed (code).
 
 ## Crimes and the police {#crimes}
 

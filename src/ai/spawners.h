@@ -110,13 +110,27 @@ inline constexpr std::size_t kSearchClosedMax = 3000;
 /// A uniform number in [0, 1) for the turned tries' angles (the original's `Random_Float`, `0x00335420`).
 using PlacementRandom = std::function<float()>;
 
+/// One outward search toward `goal`: the node it finds, or nothing.
+using PlacementSearch = std::function<std::optional<std::uint32_t>(anim::Vec3 goal)>;
+
+/// The placement's kPlacementTries searches in turn (docs/research/ai-gangs.md#spawner-placement): an angle drawn from
+/// `random` in [h, 2 pi - h] before each, the first toward `origin` + kFirstGoalAhead x `forward`; a try that finds
+/// nothing turns the flattened forward by the angle drawn before it about the vertical and puts the next goal at
+/// `origin` + 2 x `value` x that, so the first draw shapes the second search and the last is never used. The node the
+/// first search to find one finds, or nothing after kPlacementTries.
+/// @orig 0x001673b8 Gang_PlaceOutOfSight (unknown)
+[[nodiscard]] std::optional<std::uint32_t> searchPlacementGoals(anim::Vec3 origin, anim::Vec3 forward, float halfAngle,
+                                                                float value, const PlacementRandom& random,
+                                                                const PlacementSearch& search);
+
 /// The route node a human placed out of `camera`'s sight stands on (docs/research/ai-gangs.md#spawner-placement).
 /// Distances are from the origin, the camera's eye at `player`'s height, in 3D. The search starts at the node `player`
 /// would leave a route from (RoutePlanner::startNode(); none: nothing). The cone's axis is the camera's forward with
 /// its z cleared, not normalised again, and its half-angle half the field of view + kConeMarginRadians. Each of
-/// kPlacementTries draws an angle in [h, 2 pi - h] from `random` and searches (searchOutward()): the first toward the
-/// origin + kFirstGoalAhead x the forward (its draw unused), each later toward the origin + 2 x `value` x the
-/// flattened forward turned by the angle about the vertical. Nothing when no try finds a node.
+/// kPlacementTries draws an angle in [h, 2 pi - h] from `random` before it searches (searchPlacementGoals(),
+/// searchOutward()): the first toward the origin + kFirstGoalAhead x the forward, each later toward the origin + 2 x
+/// `value` x the flattened forward turned about the vertical by the angle drawn on the try before, so the last try's
+/// draw is the one never used. Nothing when no try finds a node.
 /// @orig 0x001673b8 Gang_PlaceOutOfSight (unknown)
 [[nodiscard]] std::optional<anim::Vec3> outOfSightNode(const RoutePlanner& planner, anim::Vec3 player,
                                                        const PlacementCamera& camera, float value,

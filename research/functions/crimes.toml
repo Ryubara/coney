@@ -231,7 +231,7 @@ page = "crimes.md#code-crimes"
 role = "Has a random nearby gang member say a line while a player tags."
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::sayTagLine"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00273c60

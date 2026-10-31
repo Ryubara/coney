@@ -65,6 +65,7 @@ add_executable(coney_tests
     gamemodes/gameplay_objects_test.cpp
     gamemodes/gameplay_sound_call_test.cpp
     gamemodes/gameplay_tag_test.cpp
+    gamemodes/tag_lines_test.cpp
     gamemodes/game_mode_stack_test.cpp
     gamemodes/idle_mode_test.cpp
     gamemodes/legal_screen_mode_test.cpp
@@ -316,6 +317,7 @@ target_sources(coney_tests PRIVATE
     characters/cfg_init_fields_test.cpp
     characters/character_class_test.cpp
     characters/character_types_test.cpp
+    characters/body_size_test.cpp
     characters/starting_money_test.cpp
     characters/character_list_test.cpp
     characters/character_model_test.cpp

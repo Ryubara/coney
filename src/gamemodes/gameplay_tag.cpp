@@ -3,6 +3,7 @@
 // stick game on pad 1, and its end.
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <format>
 #include <optional>
@@ -11,13 +12,13 @@
 #include <utility>
 #include <vector>
 
-#include "ai/attack_kinds.h"
 #include "ai/brain.h"
 #include "ai/gangs.h"
 #include "ai/scripted_story.h"
 #include "animation/anim_math.h"
 #include "characters/character_class.h"
 #include "gamemodes/gameplay_mode.h"
+#include "gamemodes/tag_lines.h"
 #include "hud/hud.h"
 #include "human/tag_colour.h"
 #include "scripting/object_bindings.h"
@@ -35,8 +36,6 @@ constexpr std::uint32_t kTagCheerCommand = 80;
 constexpr std::uint32_t kTagDoneCommand = 83;
 // The Warrior command a crew mate's tag lines need: defend.
 constexpr int kDefendCommand = 2;
-// A later candidate replaces the pick when a roll of 0-99 is at least this.
-constexpr int kReplaceRoll = 50;
 // The event the tagger gets at the end: the tag's handle and whether it was finished (`GangTagComplete`).
 constexpr int kTagEndEvent = 0xe;
 // The tag spots update every second 60 Hz tick.
@@ -197,7 +196,7 @@ void GameplayMode::updateTagging(const Pads& pads, double seconds) {
 }
 
 void GameplayMode::sayTagLine(double tagger, std::uint32_t command) {
-    // Only a war chief (Coney's reading: player 1) whose player last ordered defend.
+    // Only a war chief whose player last ordered defend. Coney's choice: player 1 is the war chief (one player).
     const HumanCreation* player = m_humans.player(1);
     if (!m_scripted || m_context.sound == nullptr || player == nullptr || player->handle != tagger ||
         m_state.characters.lastWarriorCommand.at(0) != kDefendCommand) {
@@ -209,13 +208,13 @@ void GameplayMode::sayTagLine(double tagger, std::uint32_t command) {
         return;
     }
     // The candidates in slot order: not the leader, not a player, free to act, no actions queued, and within the
-    // tagger's far melee range; the first is picked and each later one replaces it on a roll of 50 or more.
-    // **Coney's reading**: the busy test (`Human_IsBusy`'s state flags, not kept) is the actions-blocked test's.
+    // tagger's far melee range; one of them is picked on the tactics stream (pickTagSpeaker()).
+    // **Coney's stand-in**: the busy test (`Human_IsBusy`'s state flags, not kept) is the actions-blocked test's.
     const script::StoryBindingHost* story = m_scripted->story();
     const ai::Brain* leader = gang->leader();
     const anim::Vec3 at = chief->human().position();
     const float range = chief->meleeFar();
-    const ai::Brain* picked = nullptr;
+    std::vector<const ai::Brain*> candidates;
     for (const ai::Brain* member : gang->members()) {
         if (member == nullptr || member == leader || member->type() == ai::BrainType::Player ||
             member->actionCount() > 0 || (story != nullptr && story->actionsBlocked(member->handle()))) {
@@ -225,13 +224,13 @@ void GameplayMode::sayTagLine(double tagger, std::uint32_t command) {
         if (std::hypot(there.x - at.x, there.y - at.y, there.z - at.z) > range) {
             continue;
         }
-        if (picked == nullptr || ai::rollRange(gang->owner().random(), 0, 99) >= kReplaceRoll) {
-            picked = member;
-        }
+        candidates.push_back(member);
     }
-    if (picked == nullptr) {
+    const std::optional<std::size_t> pick = pickTagSpeaker(candidates.size(), m_state.random);
+    if (!pick) {
         return;
     }
+    const ai::Brain* picked = candidates.at(*pick);
     // Only the pick is asked whether he may comment; nobody else is tried. **Coney's stand-in**: the gesture slots
     // (`Ambient_MayGesture`) are not kept, so any pick may gesture.
     const HumanCreation* made = m_humans.find(picked->handle());

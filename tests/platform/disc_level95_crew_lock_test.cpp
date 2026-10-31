@@ -49,6 +49,8 @@ constexpr float kDegreesPerRadian = 57.29578F;
 // How near the driver walks to each crew mate, and how many of them it visits.
 constexpr float kBeside = 1.0F;
 constexpr std::size_t kVisits = 3;
+// The most a crew mate's height may differ from the player's for one floor (m): the gym is 3.2 m under the main room.
+constexpr float kSameFloor = 1.0F;
 // Frames each walk up to one may take, and the frames it walks on past him.
 constexpr int kWalkFrames = 900;
 constexpr int kPastFrames = 45;
@@ -177,10 +179,13 @@ TEST_CASE("the disc's level95: walking up to the crew and past them never takes 
     }
     Hideout hideout(*wad);
     REQUIRE(hideout.start());
+    // Only the crew on the player's floor: where the scripts place them comes from the gameplay stream
+    // (flags.AssignToClubhouseFlags), and the walk, planned in plan, cannot reach the gym's floor under the main room.
+    const Vec3 from = hideout.player().position();
     std::vector<const coney::human::Human*> crew = hideout.crew();
+    std::erase_if(crew, [&](const coney::human::Human* h) { return std::abs(h->position().z - from.z) > kSameFloor; });
     REQUIRE(crew.size() >= kVisits);
     // The nearest first.
-    const Vec3 from = hideout.player().position();
     std::ranges::sort(crew, {}, [&](const coney::human::Human* h) { return planDistance(from, h->position()); });
     std::size_t reached = 0;
     std::uint64_t near = 0;

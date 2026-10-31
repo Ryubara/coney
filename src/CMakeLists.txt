@@ -49,6 +49,7 @@ add_library(coney_core STATIC
     gamemodes/game_mode_stack.cpp
     gamemodes/gameplay_mode.cpp
     gamemodes/gameplay_tag.cpp
+    gamemodes/tag_lines.cpp
     gamemodes/gameplay_revive.cpp
     gamemodes/gameplay_uncuff.cpp
     gamemodes/gameplay_war_commands.cpp
@@ -266,6 +267,7 @@ target_sources(coney_core PRIVATE
     characters/character_assets.cpp
     characters/character_class.cpp
     characters/character_types.cpp
+    characters/body_size.cpp
     characters/starting_money.cpp
     characters/dynamic_clips.cpp
     characters/character_data.cpp

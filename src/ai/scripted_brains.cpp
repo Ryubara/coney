@@ -511,6 +511,12 @@ std::optional<int> ScriptedBrains::gangOf(double human) const {
     return brain->gang()->id();
 }
 
+// @coney-only a lookup in Coney's gangs for the HuCreate binding
+std::optional<int> ScriptedBrains::gangKind(int gang) const {
+    const Gang* found = m_owner->gangs().find(gang);
+    return found != nullptr ? std::optional<int>(found->kind()) : std::nullopt;
+}
+
 void ScriptedBrains::tacticConfront(const script::ConfrontCall& call) {
     // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
     if (held([this, call] { tacticConfront(call); })) {

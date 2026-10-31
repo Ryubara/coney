@@ -10,14 +10,16 @@ Verified against: `SLUS_212.15` (NTSC-U), read in the shared Ghidra project.
 ## Summary
 
 `Human_Init` (`0x00218008`) makes every human, the player included: it remaps the type to its class, picks the model,
-snaps the human to the ground and rolls its money ([Characters: Creation](characters.md#creation),
-[Starting money](crimes.md#starting-money)). This page is the rest of what it gives a new human, in its order: the
-voice and the idle lines, the brain's ped type, the task byte and the radar blip, the power class's switches in the
+snaps the human to the ground and rolls its money ([Characters: Creation](characters.md#creation), [Starting
+money](crimes.md#starting-money)). This page is the rest of what it gives a new human, in its order: the voice and the
+idle lines, the brain type, the brain's ped type, the task byte and the radar blip, the power class's switches in the
 human flags, the class's weapon in the hand, a byte from the character data's name, and the size. "The class" is the
 record after the [remap](characters.md#type-to-model), "the type" the one `HuCreate` was given.
 
 ## Rules
 
+- A human made with `HuCreate`'s eighth argument set is a gang member (brain type 2) unless his class makes Warriors
+  (3). Confirmed (code) at `0x00218008`.
 - A human of category 4 or 6 is a ped type 1, or 2 when he is rich (21 dollars or more), a woman, or (category 4
   only) on a roll below 10 of 0-100; one of category 5 or 7 is a ped type 3. Confirmed (code) at `0x00218008`.
 - The switches of the human's power class set or clear eight bits of his flags; a player's are those of his own power
@@ -33,12 +35,13 @@ record after the [remap](characters.md#type-to-model), "the type" the one `HuCre
 | Behaviour | Function | Section |
 | --- | --- | --- |
 | The voice and the idle lines | `0x00218008` `Human_Init`, `0x00229110` `Anim_LevelVariant` | [The voice](#voice) |
+| The brain type | `0x00218008` `Human_Init`, `0x00233d60` `Human_Create` | [The brain type](#brain-type) |
 | The brain's ped type | `0x00218008` `Human_Init` | [The ped type](#ped-type) |
 | The task byte and the radar blip | `0x00218008` `Human_Init`, `0x001b2ee8` `HUD_RadarAddPlainHuman` | [The radar blip](#radar) |
 | The power class's switches | `0x00222c98` `Human_ApplyClassFlags` | [The class's switches](#class-switches) |
 | The weapon in the hand | `0x00218008` `Human_Init`, `0x0024c280` `Human_PlaceItemInHand` | [The weapon](#weapon) |
 | The character data's name byte | `0x00218008` `Human_Init`, `0x0025aeb8` `Human_TryIdleFidget` | [The name byte](#name-byte) |
-| The class's own size | `0x00219638` `Human_ApplyTypeScale` | [The size](#size) |
+| The random size and the class's own | `0x00218008` `Human_Init`, `0x00219638` `Human_ApplyTypeScale` | [The size](#size) |
 
 ## Behaviour
 
@@ -49,6 +52,14 @@ random stream `0x006eb8b0`. `+0x3b4` is `Anim_LevelVariant(class)` (`0x00229110`
 Then for n = 1 to 3 the name `l<level>_c<checkpoint>_idle_<nn>` in the voice's folder (the format at `0x0055a548`) is
 looked up in the sound bank (`Sound_FindByName`): each one found adds 1 to the count `+0x197` and sets `+0x196`. The
 class's women's byte `+0x14b` goes to `+0x3b8`. Confirmed (code) at `0x00218008`.
+
+### The brain type {#brain-type}
+
+The brain type is the class's `+0x11a`, except that a human whose `+0x19d` is set gets 2 (a gang member) unless the
+class's is 3 (a Warrior); `Brain_StoreType` keeps it and `Brain_Init` follows. `Human_Create` (`0x00233d60`) passes
+`HuCreate`'s eighth argument (the flag the Rumble scripts set) to `Human_Init` as its last argument, which stores it at
+`+0x19d` before this test. Every later step that reads the brain type (the tag colour, the radar blip, the flags, the
+size) reads this one. Confirmed (code) at `0x00218008`.
 
 ### The ped type {#ped-type}
 
@@ -103,13 +114,14 @@ fidget 601 as an overlay on a 30 % roll. Confirmed (code) at both addresses.
 
 ### The size {#size}
 
-Last, the random body size ([Characters: Body scale](characters.md#body-scale)), then `Human_ApplyTypeScale`
-(`0x00219638`) for the class (`+0xcc`): 5 → 1.02; 18, 30 → 0.97; 21, 23, 24 → 0.98; 33 → 1.03; 89 → 1.16; 119, 120, 135
-→ 1.2; 128 → 1.175; 161 → 1.11. With game state `+0x158` set (co-op) 89, 119, 120, 128 and 161 take 1.1 and 135 takes
-1.03. Any other class keeps the size before it: the random one, or 1.0 (`+0x65c`, set at the start of `Human_Init`) for
-the humans the random size skips, every Warrior among them. Confirmed (code) at `0x00219638` and `0x00218008`. Rembrandt
-(class 30) is the 0.97 read at runtime ([Characters: Walls](characters.md#walls)), and Vermin (class 26) the 1.0,
-confirmed (runtime), run r-20261029-class-size-vermin.
+Last, the random body size ([Characters: Body scale](characters.md#body-scale): one `Random_Int(99)` on stream
+`0x006eb880`, the gameplay stream, after the money's draws, for the humans it does not skip), then
+`Human_ApplyTypeScale` (`0x00219638`) for the class (`+0xcc`): 5 → 1.02; 18, 30 → 0.97; 21, 23, 24 → 0.98; 33 → 1.03; 89
+→ 1.16; 119, 120, 135 → 1.2; 128 → 1.175; 161 → 1.11. With game state `+0x158` set (co-op) 89, 119, 120, 128 and 161
+take 1.1 and 135 takes 1.03. Any other class keeps the size before it: the random one, or 1.0 (`+0x65c`, set at the
+start of `Human_Init`) for the humans the random size skips, every Warrior among them. Confirmed (code) at `0x00219638`
+and `0x00218008`. Rembrandt (class 30) is the 0.97 read at runtime ([Characters: Walls](characters.md#walls)), and
+Vermin (class 26) the 1.0, confirmed (runtime), run r-20261029-class-size-vermin.
 
 ## In Coney
 
@@ -118,12 +130,16 @@ so every human the scripts or the spawners make gets them:
 
 - the ped type, rolled with the money in the same draws and from the same record, the class's
   (`characters::rollStartingCarry`);
+- the brain type, Gang for a human made with `HuCreate`'s flag unless his class's is Warrior (`ai::createdBrainType`,
+  read where the play mode makes the human's brain);
+- the random size (`characters::randomBodySize`), drawn from the gameplay stream right after the money, which the
+  class's own size then replaces;
 - the switches of the type's own power class (`human::classFlagChanges`), for a human who is not a player;
 - the class's weapon in the hand, the next of the scripts' handles;
-- the class's size (`characters::typeScaleOf`), co-op being off, given through `HuSetScale`'s path: the original
-  stores it and a script's `HuSetScale` alike (`Human_StoreScale`, `0x00219608`, confirmed (code)). Given before the
-  human's first update, it is also the size the human is made at, which Coney's Entity editor scales from and resets
-  to; a script's later `HuSetScale` is an edit of it.
+- the class's size (`characters::typeScaleOf`), co-op being off, else the random size, else 1.0, given through
+  `HuSetScale`'s path: the original stores it and a script's `HuSetScale` alike (`Human_StoreScale`, `0x00219608`,
+  confirmed (code)). Given before the human's first update, it is also the size the human is made at, which Coney's
+  Entity editor scales from and resets to; a script's later `HuSetScale` is an edit of it.
 
 Making the humans of an unlisted class at 1.0 rather than Coney's former 0.97 (Vermin among them: class 26 is not listed
 and a Warrior skips the random size, confirmed (code) at `0x00218008`; his 1.0 and Rembrandt's 0.97 read in level99's
@@ -137,8 +153,9 @@ is in that case is open ([q-early-removal](#q-early-removal)).
 Stand-ins: the voice is read from the type when a line plays, so type 259's draw and `+0x3b4` are not kept, and the idle
 lines are not counted ([q-voice](#q-voice)); no radar blip, task byte or `+0x19e` ([q-radar](#q-radar); types 6 and 8
 also wait for the scanner's marks, [#1018](issue:1018)); no `+0x3bc` ([q-name-byte](#q-name-byte)). A player's switches
-wait for `Human_MakePlayer`'s port ([#1011](issue:1011)), and a class the type scale does not list is made at 1.0 where
-the original rolls the random size ([#689](issue:689)).
+wait for `Human_MakePlayer`'s port ([#1011](issue:1011)). Each of the original's draws is made on its own stream
+([Maths: random numbers](maths.md#random)), so the draws Coney leaves out here (the voice on `0x006eb8b0`, the
+woundable roll on `0x006eb898`) do not move the gameplay stream's.
 
 [Characters: Coney's implementation](characters.md#stats-coney) still lists the weapon as not traced and every human at
 the player's 0.97; this page is what Coney does until that legacy page's restructure ([#1164](issue:1164)) brings its
@@ -148,9 +165,9 @@ table up to date.
 
 ### The voice and the idle lines {#q-voice}
 
-Whether the stream `0x006eb8b0` is apart from `0x006eb880` (Coney keeps one), so that type 259 can draw its voice
-without moving the other draws; and what reads `+0x3b4` and the idle line count once the idle dialogue
-(`HuSetIdleDialogMaxIter`) is built. Reading the stream objects at both addresses in Ghidra answers the first.
+What reads `+0x3b4` and the idle line count once the idle dialogue (`HuSetIdleDialogMaxIter`) is built. (The stream
+`0x006eb8b0` is apart from `0x006eb880`, so type 259's voice draw moves no other draw: confirmed (code),
+[Maths: random numbers](maths.md#random).)
 
 ### The radar blips {#q-radar}
 

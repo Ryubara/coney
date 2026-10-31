@@ -26,7 +26,8 @@ class Brain;
 /// rear hold.
 [[nodiscard]] TargetView targetViewOf(const Brain& target, const Brain& attacker);
 
-/// The draw's context for A against T.
+/// The draw's context for A against T: the conditions Brain_PickAttack reads before it weighs the kinds.
+/// @orig 0x0028e708 Brain_PickAttack (unknown)
 [[nodiscard]] PickContext pickContextOf(const Brain& attacker, const Brain& target);
 
 /// The distance the reaches compare: from A's feet to T's, in 3D (`Vec_DistSq` of the two transforms).

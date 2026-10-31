@@ -147,8 +147,9 @@ struct LightSelection {
 ///
 /// **Coney's choices** (determinism, docs/guides/conventions.md#update-and-render): the flicker is stepped by the
 /// simulation (advance(), with the step's game time, for the lights its own cull finds visible), not by the render
-/// pass as in the original; and it draws from the manager's own GameRandom, so lighting never moves the game's random
-/// index. Positions are RenderWare's axes throughout, as the original stores them.
+/// pass as in the original; and it draws from the manager's own GameRandom, on the ambient stream the original's
+/// flicker draws from (`0x006eb8a8`), so lighting never moves the game's own streams. Positions are RenderWare's axes
+/// throughout, as the original stores them.
 ///
 /// Research: docs/research/lighting.md
 class LightManager {
@@ -256,7 +257,10 @@ class LightManager {
     [[nodiscard]] static bool visible(const LightRecord& record, const LightView& view);
     // One flicker step of `record` whose timer ran out.
     void flickerStep(LightRecord& record);
-    // A random whole number from 0 to n - 1 (0 when n is 0): the game's rand(n).
+    // A random whole number from 0 to n - 1 (0 when n is 0) from the ambient stream: the game's rand(n).
+    // @orig 0x003353b8 Random_Int (unknown)
+    // Stand-in: the original's Random_Int(n) draws 0 to n inclusive (mod (n + 1)); this keeps 0 to n - 1 until the
+    // flicker's ranges are ported with it.
     [[nodiscard]] std::uint32_t rand(std::uint32_t n);
     // Adds `record`'s corona to this viewport's when it is bright enough.
     void addCorona(const LightRecord& record, const LightView& view);

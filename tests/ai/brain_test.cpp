@@ -848,3 +848,14 @@ TEST_CASE("each human's brain is found after brains are added and removed", "[ai
                    &scene.character.ranges);
     CHECK(scene.brains.find(stranger) == nullptr);
 }
+
+TEST_CASE("HuCreate's flag makes a new human a gang member, unless his class makes Warriors", "[ai]") {
+    // Expected: human-init.md#brain-type, confirmed (code)
+    using coney::ai::BrainType;
+    using coney::ai::createdBrainType;
+    CHECK(createdBrainType(BrainType::Civilian, true) == BrainType::Gang);
+    CHECK(createdBrainType(BrainType::Cop, true) == BrainType::Gang);
+    CHECK(createdBrainType(BrainType::Player, true) == BrainType::Gang);
+    CHECK(createdBrainType(BrainType::Warrior, true) == BrainType::Warrior);
+    CHECK(createdBrainType(BrainType::Civilian, false) == BrainType::Civilian);
+}

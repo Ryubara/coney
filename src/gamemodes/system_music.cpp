@@ -39,7 +39,8 @@ void stepSystemMusic(StoryState& story, script::SoundHost* sound, GameRandom& ra
         sound->stopMusic();
         return;
     }
-    const auto pick = static_cast<std::size_t>(random.range(0, static_cast<std::int32_t>(tracks.size()) - 1));
+    const auto pick =
+        static_cast<std::size_t>(random.range(RandomStream::Sound, 0, static_cast<std::int32_t>(tracks.size()) - 1));
     // The fade (SystemMusic_Update): a cut at the bar into the fight, 4 bars back to calm from the fight or the hunt,
     // else 2.
     int fadeBars = kFadeOther;

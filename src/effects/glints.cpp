@@ -113,9 +113,4 @@ const Triglint* Triglints::find(double object) const {
     return found != m_triglints.end() ? &found->second : nullptr;
 }
 
-std::uint32_t Triglints::draw(std::uint32_t n) {
-    // The next raw number, mod (n + 1), unsigned.
-    return m_random.next() % (n + 1U);
-}
-
 } // namespace coney::effects

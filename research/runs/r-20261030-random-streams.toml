@@ -1,0 +1,51 @@
+version = 1
+id = "r-20261030-random-streams"
+date = "2026-10-30"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "22fb365e5f7e43cc59e10e4292a8acca63f44532ccfd67962f0c34362759896e"
+
+[who]
+agent = "a040e47da8c7952a8"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "glass-shelf-loot"
+patches = []
+
+[run]
+name = ""
+method = "Two reads of the ten 32-bit random stream indices at 0x006eb870-0x006eb8b8 (8 bytes apart) through the pcsx2 MCP server a few seconds apart while level99 checkpoint 2 ran from this state: each index moved by its own count (0x006eb870 +2, 0x006eb880 +4, 0x006eb8a8 +6, 0x006eb8b8 +895 mod 1024) while 0x006eb878, 0x006eb888, 0x006eb890, 0x006eb898, 0x006eb8a0 and 0x006eb8b0 stayed"
+
+[values]
+s870_a = 1009
+s878_a = 33
+s880_a = 582
+s888_a = 698
+s890_a = 0
+s898_a = 76
+s8a0_a = 557
+s8a8_a = 654
+s8b0_a = 956
+s8b8_a = 932
+s870_b = 1011
+s878_b = 33
+s880_b = 586
+s888_b = 698
+s890_b = 0
+s898_b = 76
+s8a0_b = 557
+s8a8_b = 660
+s8b0_b = 956
+s8b8_b = 803
+
+[addresses]
+stream0 = 0x006eb870
+gameplay = 0x006eb880
+effects = 0x006eb8b8

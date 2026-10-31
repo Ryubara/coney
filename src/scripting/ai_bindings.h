@@ -196,6 +196,8 @@ class AiBindingHost {
     virtual void humanDelete(double /*human*/) {}
     /// `HuGetGang(human)`: its gang's id; nothing for no human or no gang.
     [[nodiscard]] virtual std::optional<int> gangOf(double /*human*/) const { return std::nullopt; }
+    /// The kind (`GangCreate`'s first argument, gang `+0x2c`) of gang `gang`; nothing for no such gang.
+    [[nodiscard]] virtual std::optional<int> gangKind(int /*gang*/) const { return std::nullopt; }
     /// `HuSwitchPlayer(human)`: when `human` is a player, the pad goes to a team-mate (with `storyMode`, the game mode
     /// 0, a human of a kind-0 gang when no team-mate can); the new player's handle, or NilHandle (0) when there is
     /// none.

@@ -38,7 +38,7 @@ StartingCarry rollStartingCarry(const CarryConfig& config, const ClassMoney& mon
     StartingCarry carry;
     carry.object = std::string(kNone);
     // 1-2. The object: none at or below the no-object chance; else the type's object at or below its drop chance.
-    const int roll = random.range(0, kPercent);
+    const int roll = random.range(RandomStream::Gameplay, 0, kPercent);
     if (roll > money.noObject) {
         carry.dropChance = config.dropChance;
         const bool group = config.object.find(kGroupPrefix) != std::string::npos;
@@ -51,15 +51,16 @@ StartingCarry rollStartingCarry(const CarryConfig& config, const ClassMoney& mon
     int dollars = 0;
     bool rolled = true;
     if (config.dropChance == -1 || hasObject) {
-        dollars = random.range(money.min, money.max);
+        dollars = random.range(RandomStream::Gameplay, money.min, money.max);
     } else if (roll <= money.noObject) {
-        dollars = money.min < config.dropChance ? random.range(money.min, config.dropChance) : config.dropChance;
+        dollars = money.min < config.dropChance ? random.range(RandomStream::Gameplay, money.min, config.dropChance)
+                                                : config.dropChance;
     } else {
         rolled = false;
     }
     // 4. The bonus.
     if (rolled) {
-        if (random.range(0, kPercent) <= money.bonusChance) {
+        if (random.range(RandomStream::Gameplay, 0, kPercent) <= money.bonusChance) {
             dollars = static_cast<int>(static_cast<float>(dollars) * money.bonus);
         }
         carry.money = std::clamp(dollars, 0, kMaxMoney);
@@ -67,7 +68,7 @@ StartingCarry rollStartingCarry(const CarryConfig& config, const ClassMoney& mon
     // 5. The brain's ped type by category: category 4's own roll, then the money and the women's byte.
     if (config.category == kAltCategory || config.category == kShopCategory) {
         std::uint16_t ped = kPlainPed;
-        if (config.category == kAltCategory && random.range(0, kPercent) < kTwoRoll) {
+        if (config.category == kAltCategory && random.range(RandomStream::Gameplay, 0, kPercent) < kTwoRoll) {
             ped = kRichPed;
         }
         carry.pedType = carry.money < kRichMoney && !config.altRecord ? ped : kRichPed;

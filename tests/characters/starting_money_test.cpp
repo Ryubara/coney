@@ -19,14 +19,14 @@ TEST_CASE("the street civilian always starts with $5-$20, or five times that, an
     const ClassMoney street{.min = 5, .max = 20, .noObject = 100, .bonusChance = 1, .bonus = 5.0F};
     GameRandom random;
     for (int human = 0; human < 200; ++human) {
-        const std::uint32_t before = random.index();
+        const std::uint32_t before = random.index(coney::RandomStream::Gameplay);
         const auto carry = rollStartingCarry(civilian, street, random);
         CHECK(carry.object == "none");
         const bool plain = carry.money >= 5 && carry.money <= 20;
         const bool bonus = carry.money >= 25 && carry.money <= 100 && carry.money % 5 == 0;
         CHECK((plain || bonus));
         // Four draws: the object roll, the money, the bonus roll and the brain's.
-        CHECK((random.index() - before) % GameRandom::kTableSize == 4);
+        CHECK((random.index(coney::RandomStream::Gameplay) - before) % GameRandom::kTableSize == 4);
     }
 }
 
@@ -83,10 +83,10 @@ TEST_CASE("a poor man of category 4 is a ped type 2 when the brain's roll is bel
         // The reference draws: the object roll, the money, the bonus roll, then the brain's roll.
         GameRandom reference;
         reference.startAt(seed);
-        static_cast<void>(reference.range(0, 100));
-        static_cast<void>(reference.range(5, 5));
-        static_cast<void>(reference.range(0, 100));
-        const std::uint16_t expected = reference.range(0, 100) < 10 ? 2 : 1;
+        static_cast<void>(reference.range(coney::RandomStream::Gameplay, 0, 100));
+        static_cast<void>(reference.range(coney::RandomStream::Gameplay, 5, 5));
+        static_cast<void>(reference.range(coney::RandomStream::Gameplay, 0, 100));
+        const std::uint16_t expected = reference.range(coney::RandomStream::Gameplay, 0, 100) < 10 ? 2 : 1;
         const auto carry = rollStartingCarry(man, poor, random);
         CHECK(carry.pedType == std::optional<std::uint16_t>(expected));
         (expected == 2 ? twos : ones) += 1;
