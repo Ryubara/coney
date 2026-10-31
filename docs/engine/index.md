@@ -20,5 +20,6 @@ Add each page to this one; the rules for writing a page, and how they are checke
 | Page | Subsystem |
 | --- | --- |
 | [Combat](combat.md) | The player's attacks, grabs, blocks, meters and reactions (`src/combat/`, the fighter in `src/human/`) |
+| [Mesh and texture formats](asset-formats.md) | Coney's own mesh and texture data, the store that holds them by id, and their conversion from librw (`src/graphics/`, `src/platform/asset_convert.h`) |
 | [Renderer](renderer.md) | How Coney draws, and the design for its frame rates, backend, lighting, anti-aliasing, presets and performance (`src/platform/`, `src/graphics/`) |
 | [GPU renderer](gpu-renderer.md) | The renderer on SDL3's GPU API: `--renderer gpu`, its device, window and present modes, and librw opened for data only (`src/platform/gpu_presenter.*`, `src/core/renderer_choice.*`) |
