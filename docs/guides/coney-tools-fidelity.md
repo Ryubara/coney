@@ -228,7 +228,7 @@ Every option:
 | `fails-first` | `--agent ID` | Your id for the build slots, as `build --agent` |
 | `fails-first` | `--keeps` | The tests guard a refactor or behaviour Coney already has: each must pass on the test commit and on the fix, unchanged, and is stamped `keeps` (not with `--none` or `--accept-change`); the test commit is never the fix commit ([Keeps](stamps.md#keeps)) |
 | `fails-first` | `--none REASON` | Run nothing and stamp that the task has no such test (one line, at most 200 characters, not with `--test`) |
-| `fails-first` | `--accept-change REASON` | The coordinator only: run nothing and record that the named tests may change between `--test-commit` and `--fix-commit`, with the reason (one line, at most 200 characters); the engineer's next run of the same names and commits is then allowed ([A changed test](stamps.md#changed-test)) |
+| `fails-first` | `--accept-change REASON` | The coordinator only: run nothing and record that the named tests may change between `--test-commit` and `--fix-commit`, with the reason (one line, at most 200 characters); the engineer's next run of the same names and commits is then allowed ([A changed test](stamps.md#changed-test)). The hook lets the coordinator run `orig fails-first` only in this form, alone: not with `--none` or `--keeps` (any prefix of them), which would stamp, and every other `orig fails-first` stays refused to it ([roles](agents.md#roles)) |
 
 <!-- command-reference:begin orig -->
 ## Parameters of `orig` {#orig-parameters}
