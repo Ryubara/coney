@@ -39,6 +39,8 @@
 
 TEST_CASE("the disc's QUICK RUMBLE Brawl the player loses ends on the result screen with the Orphans' win",
           "[disc][rumble]") {
+    // Expected: rumble.md#match-end, inferred
+    // Expected: rumble.md#result-screen, confirmed (code)
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -76,6 +78,8 @@ TEST_CASE("the disc's QUICK RUMBLE Brawl the player loses ends on the result scr
 }
 
 TEST_CASE("the disc's WAR PARTY hands the pad to a team-mate when the player goes down", "[disc][rumble]") {
+    // Expected: rumble.md#player-down, inferred
+    // Expected: rumble.md#switch-player, confirmed (code)
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -130,6 +134,7 @@ TEST_CASE("the disc's WAR PARTY hands the pad to a team-mate when the player goe
 
 TEST_CASE("the disc's King of the hill scores a point a tick for the gang whose player holds the top",
           "[disc][rumble]") {
+    // Expected: rumble.md#game-types, inferred
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -192,6 +197,7 @@ TEST_CASE("the disc's King of the hill scores a point a tick for the gang whose 
 
 TEST_CASE("the disc's Battle royal kills the fighters rung out and gives the win to the side left in the ring",
           "[disc][rumble]") {
+    // Expected: rumble.md#game-types, inferred
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -239,6 +245,7 @@ TEST_CASE("the disc's Battle royal kills the fighters rung out and gives the win
 
 TEST_CASE("the disc's Survival sends spawned enemies at the player until he falls, the time his result",
           "[disc][rumble]") {
+    // Expected: rumble.md#game-types, inferred
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -320,6 +327,7 @@ TEST_CASE("the disc's Survival sends spawned enemies at the player until he fall
 
 TEST_CASE("the disc's Wheelchair race is won by the CPU racer that drives the course while the player waits",
           "[disc][rumble]") {
+    // Expected: rumble.md#game-types, inferred
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -357,6 +365,7 @@ TEST_CASE("the disc's Wheelchair race is won by the CPU racer that drives the co
 
 TEST_CASE("the disc's `--rumble kinghill` starts King of the hill in arena 101 from the Rumble menu's QUICK RUMBLE",
           "[disc][rumble]") {
+    // Expected: rumble.md#game-types, inferred
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -385,6 +394,7 @@ TEST_CASE("the disc's `--rumble kinghill` starts King of the hill in arena 101 f
 
 TEST_CASE("the disc's 9-a-side Fight Pen Brawl with `--ai-player` hands player 1 to the AI and plays to a winner",
           "[disc][rumble]") {
+    // Expected: unverified, #273 (Coney's own test aid for the Rumble traces)
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -442,6 +452,7 @@ TEST_CASE("the disc's 9-a-side Fight Pen Brawl with `--ai-player` hands player 1
 
 TEST_CASE("the disc's AI-driven Brawl plays the same for the same `--ai-seed` and otherwise for another",
           "[disc][rumble]") {
+    // Expected: unverified, #273 (Coney's own test aid for the Rumble traces)
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");

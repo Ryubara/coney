@@ -19,15 +19,20 @@ namespace {
 constexpr int kSnapKind = 10;
 
 // Whether `brain`'s human is busy (`Human_IsBusy`: his record bits and his state).
+// @coney-only a short form of humanBusy() for a brain; AttackAction_Start asks of each human in place
 bool busy(Brain& brain) { return humanBusy(brain.human()); }
 
 // Whether `target`'s human has `brain`'s human as its own target (its brain's, or its fighter's for a player).
+// @coney-only a helper; AttackAction_Start reads the target brain's +0x124 in place
 bool targetsBack(Brain& target, Brain& brain) {
     return target.target() == &brain || target.human().fighter().target() == &brain.human();
 }
 
 } // namespace
 
+// An attack action whose target is the brain's own human, made without one.
+// @coney-only Coney's action reads its target from the brain at the start, so a press with no target (on the human
+// himself) says so with a flag
 std::unique_ptr<AttackAction> AttackAction::onSelf(int kind, std::int16_t delayMs) {
     auto action = std::make_unique<AttackAction>(kind, delayMs);
     action->m_self = true;
