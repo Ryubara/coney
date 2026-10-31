@@ -628,7 +628,7 @@ constexpr std::array<NativeArg, 9> kArgs_SpawnBreakableGlass{{{"glassType", A::I
 constexpr std::array<NativeResultType, 1> kResults_SpawnBreakableGlass{R::Number};
 constexpr std::array<NativeArg, 5> kArgs_SpawnDoor{{{"typeName", A::String, "", 0}, {"pos", A::NumberTable, "", 3}, {"rot", A::NumberTable, "", 4}, {"triangles", A::NumberTable, "", 2}, {"number", A::Integer, "", 0}}};
 constexpr std::array<NativeResultType, 1> kResults_SpawnDoor{R::Number};
-constexpr std::array<NativeArg, 5> kArgs_TriggerSphereCfg{{{"object", A::Handle, "", 0}, {"enable", A::Boolean, "", 0}, {"radius", A::Number, "", 0}, {"mode", A::Integer, "", 0}, {"interval", A::Integer, "", 0}}};
+constexpr std::array<NativeArg, 5> kArgs_TriggerSphereCfg{{{"object", A::Handle, "", 0}, {"enable", A::Boolean, "false", 0}, {"radius", A::Number, "", 0}, {"mode", A::Integer, "", 0}, {"interval", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_TriggerSphereEnable{{{"object", A::Handle, "", 0}, {"enable", A::Boolean, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_TriggerSphereSetRadius{{{"object", A::Handle, "", 0}, {"radius", A::Number, "", 0}}};
 constexpr std::array<NativeArg, 3> kArgs_AddOneOffEmitter{{{"pos", A::NumberTable, "", 3}, {"sound", A::Integer, "", 0}, {"volume", A::Number, "", 0}}};
@@ -726,7 +726,7 @@ constexpr std::array<NativeArg, 2> kArgs_HUDSetPHLabelFlashing{{{"panel", A::Int
 constexpr std::array<NativeArg, 6> kArgs_HUDSetPHValue{{{"panel", A::Integer, "", 0}, {"field", A::Integer, "", 0}, {"value", A::Number, "", 0}, {"show", A::Boolean, "", 0}, {"ms", A::Integer, "3000", 0}, {"sound", A::Boolean, "", 0}}};
 constexpr std::array<NativeArg, 4> kArgs_HUDSetRadarItemTexture{{{"object", A::Handle, "", 0}, {"icon", A::Integer, "", 0}, {"scale", A::Number, "1", 0}, {"flag", A::Boolean, "", 0}}};
 constexpr std::array<NativeArg, 3> kArgs_HUDSetRadarObjectFlash{{{"object", A::Handle, "", 0}, {"on", A::Boolean, "", 0}, {"n", A::Integer, "", 0}}};
-constexpr std::array<NativeArg, 1> kArgs_HUDSetRadarZoomScale{{{"scale", A::Number, "", 0}}};
+constexpr std::array<NativeArg, 1> kArgs_HUDSetRadarZoomScale{{{"scale", A::Number, "0", 0}}};
 constexpr std::array<NativeArg, 4> kArgs_HUDSetTextProgress{{{"label", A::String, "", 0}, {"value", A::Integer, "", 0}, {"colour", A::NumberTable, "", 3}, {"slot", A::Integer, "1", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_HUDSetTutorialCallback{{{"name", A::String, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_HUDSetTutorialText{{{"text", A::String, "", 0}, {"priority", A::Integer, "1", 0}}};
