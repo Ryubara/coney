@@ -4782,9 +4782,15 @@ status = "legacy"
 address = 0x002fad70
 name = "AttackAction_Update"
 page = "ai-fights.md#attack-action"
+role = "running on its first call (+0x20, set by AttackAction_Init), then done once the attack's held flags clear"
 level = "confirmed-code"
 coney = "src/ai/attack_action.h:AttackAction::update"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "done when the target's handle is gone (unless the held flags are set), a charge kind's gait 4 each update, and the done-after-press flag +0x14"
+relation = "not-ported"
+issue = 674
 
 [[function]]
 address = 0x002faeb0
