@@ -20,6 +20,7 @@ from typing import Any
 import pytest
 from conventions_support import REPO
 from hooks_support import DISPATCH, load_hook_module
+from shell_support import git_bash, no_bash_reason
 
 harness = load_hook_module("harness")
 hooklib = load_hook_module("hooklib")
@@ -349,9 +350,11 @@ def test_every_harness_with_an_adapter_has_a_config() -> None:
 def test_the_codex_command_finds_the_dispatcher_from_any_folder() -> None:
     # The command runs in the session's folder; `git rev-parse --show-toplevel` finds the checkout, with no
     # $CLAUDE_PROJECT_DIR.
-    bash = shutil.which("bash")
-    if bash is None or shutil.which("uv") is None or shutil.which("git") is None:
-        pytest.skip("needs bash, uv and git")
+    bash = git_bash()
+    if bash is None:
+        pytest.skip(no_bash_reason())
+    if shutil.which("uv") is None or shutil.which("git") is None:
+        pytest.skip("needs uv and git")
     data = json.loads((REPO / CONFIGS["codex"]).read_text(encoding="utf-8"))
     ((command, _),) = _commands(data)
     environment = {

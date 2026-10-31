@@ -115,6 +115,13 @@ tool that does that adds the name to `ambient_env.py` by hand. It also runs one 
 `CONEY_TASK` in a shell with `CONEY_TASK`, `VIRTUAL_ENV` and `CLAUDECODE` set. A tool that starts reading a new variable
 adds it to `ambient_env.py` in the same commit.
 
+A test that runs a shell script gets its `bash` from `python/tests/shell_support.py`, never from
+`shutil.which("bash")`. On a Windows machine with the Windows Subsystem for Linux that call can find System32's
+`bash.exe`, a Linux that sees the checkout as `/mnt/c/...` and has no `uv`, so a script fails or, behind a hook
+command's trailing `exit 0`, prints nothing and the test reads empty output. `git_bash()` returns the bash beside
+`git` (Git for Windows') on Windows, the one on `PATH` elsewhere, and None when there is none, and `needs_bash` skips a
+test with `no_bash_reason()` for that case. `test_shell_support.py` covers the choice with a made-up `PATH`.
+
 ### Test through the player's path {#test-through-the-players-path}
 
 The game is set up one way. The story from the main menu, `coney --play-level LEVEL --checkpoint N` and the debug

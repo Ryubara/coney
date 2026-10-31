@@ -17,6 +17,7 @@ import pytest
 import yaml
 from audit_support import CONVENTIONS, found, items
 from conventions_support import CI_CLASSES, REPO
+from shell_support import git_bash, needs_bash
 
 from coney_tools import audit_files as af
 from coney_tools.audit import registered
@@ -523,21 +524,6 @@ def test_a_missing_pre_commit_config_is_found_by_the_markdownlint_check(root: Pa
 # --- the scope script itself --------------------------------------------------------------------------------------
 
 
-def find_bash() -> str | None:
-    """A bash that runs the script: Git's on Windows (not the Windows Subsystem for Linux one), else the one on PATH."""
-    if os.name == "nt":
-        git = shutil.which("git")
-        for parent in Path(git).parents if git else []:
-            for candidate in (parent / "bin" / "bash.exe", parent / "usr" / "bin" / "bash.exe"):
-                if candidate.is_file():
-                    return str(candidate)
-        return None
-    return shutil.which("bash")
-
-
-needs_bash = pytest.mark.skipif(find_bash() is None, reason="no bash")
-
-
 def commit_all(root: Path, message: str) -> None:
     """Stage everything in the made-up repository and commit it."""
     subprocess.run(["git", "add", "-A"], cwd=root, check=True, env=GIT_ENV)
@@ -549,7 +535,7 @@ def run_scope_on(root: Path, event: str = "pull_request", draft: str = "false") 
     output = root / "out.txt"
     output.unlink(missing_ok=True)
     env = {**GIT_ENV, "EVENT": event, "DRAFT": draft, "GITHUB_OUTPUT": str(output)}
-    bash = find_bash()
+    bash = git_bash()
     assert bash is not None
     done = subprocess.run(
         [bash, ".github/scripts/ci-scope.sh"], cwd=root, env=env, capture_output=True, text=True, check=False
@@ -748,7 +734,7 @@ def test_the_script_falls_back_to_its_own_lists_when_the_base_has_none(root: Pat
 def test_a_conventions_file_without_a_list_stops_the_script(root: Path, key: str) -> None:
     text = (root / CONVENTIONS_FILE).read_text(encoding="utf-8").replace(f"  {key}:", f"  {key}_renamed:")
     (root / CONVENTIONS_FILE).write_text(text, encoding="utf-8", newline="\n")
-    bash = find_bash()
+    bash = git_bash()
     assert bash is not None
     done = subprocess.run(
         [bash, ".github/scripts/ci-scope.sh"],
