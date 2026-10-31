@@ -147,7 +147,7 @@ TEST_CASE("the string bindings refuse a bad id or a non-string text", "[config_s
 TEST_CASE("wadScriptSource reads a replaced entry at the replacement's own size", "[scripting][wad]") {
     // Expected: docs/guides/asset-and-script-architecture.md#file-overrides, Coney's own behaviour
     // The source sizes its read from the stream, not WARRIORS.DIR: a replaced data entry is rarely the entry's size.
-    // A script is never replaced (the overrides refuse one), so the replaced entry here is level1.lev's data.
+    // A script is never replaced (the overrides refuse one), so the entry replaced here is level1.lev's data.
     coney::test::TempDir disc;
     disc.write("WARRIORS.DIR", coney::test::twoEntryDir().span());
     coney::test::Bytes wadData;
