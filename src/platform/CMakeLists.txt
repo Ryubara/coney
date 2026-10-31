@@ -41,7 +41,7 @@ target_sources(coney_platform PRIVATE audio_output.cpp sdl_audio_device.cpp)
 # The trimmed FFmpeg that decodes the Bink movies (docs/guides/building.md#ffmpeg); only src/platform/ sees it.
 target_sources(coney_platform PRIVATE ffmpeg_info.cpp ffmpeg_movie_decoder.cpp movie_screen.cpp)
 # Failures end the process on stderr, never in a dialog waiting for a click (test runs, CI, agents).
-target_sources(coney_platform PRIVATE error_dialogs.cpp)
+target_sources(coney_platform PRIVATE error_dialogs.cpp user_folders.cpp)
 # The one game set-up over a disc that every way into a level shares (docs/guides/testing.md#test-through-the-players-path).
 target_sources(coney_platform PRIVATE game_session.cpp)
 # `coney --install`: the player's disc into a portable install folder (docs/guides/running.md#install).

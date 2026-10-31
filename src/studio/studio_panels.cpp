@@ -50,7 +50,7 @@ void StudioApp::drawMenuBar() {
     }
     if (ImGui::BeginMenu("File")) {
         if (ImGui::MenuItem("New project...")) {
-            m_newProjectOpen = true;
+            askNewProject();
         }
         if (ImGui::MenuItem("Open project...")) {
             askOpenProject();
@@ -288,7 +288,7 @@ void StudioApp::drawFileSystem() {
     if (!m_project) {
         ImGui::TextDisabled("No project open");
         if (ImGui::Button("New project...")) {
-            m_newProjectOpen = true;
+            askNewProject();
         }
         ImGui::SameLine();
         if (ImGui::Button("Open project...")) {
@@ -368,16 +368,6 @@ void StudioApp::drawConsole() {
     ImGui::End();
 }
 
-void StudioApp::askOpenProject() {
-    m_host.pickFolder("Open a Coney Studio project", [this](std::optional<std::filesystem::path> folder) {
-        if (folder) {
-            if (auto opened = openProject(*folder); !opened) {
-                report("open the project", opened.error());
-            }
-        }
-    });
-}
-
 void StudioApp::drawNewProjectDialog() {
     if (m_newProjectOpen) {
         ImGui::OpenPopup("New project");
@@ -392,11 +382,12 @@ void StudioApp::drawNewProjectDialog() {
     ImGui::InputText("In folder", &m_newFolder);
     ImGui::SameLine();
     if (ImGui::Button("Browse...")) {
-        m_host.pickFolder("Where to make the project", [this](std::optional<std::filesystem::path> folder) {
-            if (folder) {
-                m_newFolder = folder->string();
-            }
-        });
+        m_host.pickFolder("Where to make the project", std::nullopt,
+                          [this](std::optional<std::filesystem::path> folder) {
+                              if (folder) {
+                                  m_newFolder = folder->string();
+                              }
+                          });
     }
     const auto templates = levelTemplates();
     const std::string chosen(templates[static_cast<std::size_t>(m_newTemplate)]);

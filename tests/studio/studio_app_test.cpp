@@ -5,6 +5,7 @@
 #include "studio/studio_app.h"
 
 #include <filesystem>
+#include <fstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -31,9 +32,12 @@ namespace {
 // a chosen folder.
 class FakeHost final : public coney::studio::StudioHost {
   public:
-    void pickFolder(std::string_view, std::function<void(std::optional<std::filesystem::path>)> done) override {
+    void pickFolder(std::string_view, const std::optional<std::filesystem::path>& startIn,
+                    std::function<void(std::optional<std::filesystem::path>)> done) override {
+        pickStarts.push_back(startIn);
         done(folder);
     }
+    coney::studio::UserFolders userFolders() override { return folders; }
     std::expected<void, coney::Error> startProcess(const std::vector<std::string>& command) override {
         started.push_back(command);
         return {};
@@ -50,6 +54,8 @@ class FakeHost final : public coney::studio::StudioHost {
     coney::studio::MouseMotion takeRelativeMotion() override { return std::exchange(motion, {}); }
 
     std::optional<std::filesystem::path> folder;
+    coney::studio::UserFolders folders;                           // what userFolders() reports
+    std::vector<std::optional<std::filesystem::path>> pickStarts; // where each folder picker was asked to start
     std::vector<std::vector<std::string>> started;
     float lastWidth = 0.0F;
     int draws = 0;
@@ -388,4 +394,216 @@ TEST_CASE("the look follows the host's relative motion, scaled by the display an
     CHECK(yawAfter(1.0F, 2.0F, true, 100.0F) == Approx(2.0F * yawAfter(1.0F, 1.0F, true, 100.0F)));
     // A host without relative mode: Dear ImGui's mouse movement turns the camera the same way.
     CHECK(yawAfter(1.0F, 1.0F, false, 100.0F) == Approx(yawAfter(1.0F, 1.0F, true, 100.0F)));
+}
+
+namespace {
+
+// Writes the manifest of a project called `name` into the folder `root`, enough for it to open (no level).
+void makeProject(const std::filesystem::path& root, const std::string& name) {
+    std::filesystem::create_directories(root);
+    std::ofstream(root / "coney-project.toml") << "[project]\nname = \"" << name << "\"\n";
+}
+
+// A fake user whose documents folder is `<dir>/Users/ana/Documents` (home `<dir>/Users/ana`).
+coney::studio::UserFolders fakeUser(const std::filesystem::path& dir) {
+    return coney::studio::UserFolders{.documents = dir / "Users" / "ana" / "Documents", .home = dir / "Users" / "ana"};
+}
+
+// The folder `fakeUser()` has Studio keep projects in.
+std::filesystem::path fakeProjects(const std::filesystem::path& dir) {
+    return dir / "Users" / "ana" / "Documents" / "Coney Studio" / "Projects";
+}
+
+} // namespace
+
+TEST_CASE("New project suggests the projects folder and makes it on first use", "[studio]") {
+    // Expected: the issue's rule: `Coney Studio/Projects` in the documents folder, created on first use, suggested by
+    // New project.
+    const BareContext context;
+    const coney::test::TempDir dir;
+    FakeHost host;
+    host.folders = fakeUser(dir.path());
+    StudioApp app(host, testSettings());
+    CHECK(app.projectsFolder() == fakeProjects(dir.path()));
+    CHECK(app.defaultProjectsFolder() == fakeProjects(dir.path()));
+    CHECK_FALSE(std::filesystem::exists(fakeProjects(dir.path()))); // asking where it is makes nothing
+    app.askNewProject();
+    CHECK(std::filesystem::is_directory(fakeProjects(dir.path())));
+    CHECK(std::filesystem::path(app.newProjectFolder()) == fakeProjects(dir.path()));
+    // The dialog's Create then makes the project inside it.
+    BareContext::run(app, 2);
+    REQUIRE(app.newProject(fakeProjects(dir.path()) / "yard", "yard", "basic").has_value());
+    CHECK(std::filesystem::is_regular_file(fakeProjects(dir.path()) / "yard" / "coney-project.toml"));
+}
+
+TEST_CASE("Open project starts the folder picker in the projects folder", "[studio]") {
+    const BareContext context;
+    const coney::test::TempDir dir;
+    FakeHost host;
+    host.folders = fakeUser(dir.path());
+    StudioApp app(host, testSettings());
+    app.askOpenProject();
+    REQUIRE(host.pickStarts.size() == 1);
+    CHECK(host.pickStarts.front() == fakeProjects(dir.path()));
+    CHECK(std::filesystem::is_directory(fakeProjects(dir.path()))); // made so the picker has somewhere to start
+    // A user with no documents or home folder gets the system's choice, and New project has nothing to suggest.
+    FakeHost bare;
+    StudioApp lost(bare, testSettings());
+    CHECK_FALSE(lost.projectsFolder().has_value());
+    lost.askOpenProject();
+    REQUIRE(bare.pickStarts.size() == 1);
+    CHECK_FALSE(bare.pickStarts.front().has_value());
+    lost.askNewProject();
+    CHECK(lost.newProjectFolder().empty());
+}
+
+TEST_CASE("the home folder holds the projects folder when there are no documents", "[studio]") {
+    const BareContext context;
+    const coney::test::TempDir dir;
+    FakeHost host;
+    host.folders = coney::studio::UserFolders{.documents = std::nullopt, .home = dir.path() / "home" / "bo"};
+    StudioApp app(host, testSettings());
+    CHECK(app.projectsFolder() == dir.path() / "home" / "bo" / "Coney Studio" / "Projects");
+}
+
+TEST_CASE("the projects folder setting replaces the default, is saved with Studio's preferences and is read again",
+          "[studio]") {
+    const BareContext context;
+    const coney::test::TempDir dir;
+    FakeHost host;
+    host.folders = fakeUser(dir.path());
+    StudioSettings settings = testSettings();
+    settings.preferencesFile = dir.path() / "data" / "coney-studio-preferences.toml";
+    {
+        StudioApp app(host, settings);
+        CHECK(app.projectsFolder() == fakeProjects(dir.path()));
+        REQUIRE(app.setProjectsFolder(dir.path() / "my work").has_value());
+        CHECK(app.projectsFolder() == dir.path() / "my work");
+        CHECK(std::filesystem::is_regular_file(settings.preferencesFile)); // saved at once, not at quit
+    }
+    {
+        StudioApp next(host, settings);
+        CHECK(next.projectsFolder() == dir.path() / "my work");
+        next.askNewProject();
+        CHECK(std::filesystem::path(next.newProjectFolder()) == dir.path() / "my work");
+        CHECK(std::filesystem::is_directory(dir.path() / "my work"));
+        // Putting the default back is a setting too.
+        REQUIRE(next.setProjectsFolder(std::nullopt).has_value());
+        CHECK(next.projectsFolder() == fakeProjects(dir.path()));
+    }
+    StudioApp last(host, settings);
+    CHECK(last.projectsFolder() == fakeProjects(dir.path()));
+    CHECK_FALSE(last.preferences().projectsFolder.has_value());
+}
+
+TEST_CASE("opened and made projects fill the recent list, most recent first, and it is kept for the next run",
+          "[studio]") {
+    const BareContext context;
+    const coney::test::TempDir dir;
+    FakeHost host;
+    StudioSettings settings = testSettings();
+    settings.preferencesFile = dir.path() / "prefs.toml";
+    makeProject(dir.path() / "a", "a");
+    makeProject(dir.path() / "b", "b");
+    {
+        StudioApp app(host, settings);
+        REQUIRE(app.recentProjects().empty());
+        REQUIRE(app.openProject(dir.path() / "a").has_value());
+        REQUIRE(app.openProject(dir.path() / "b").has_value());
+        REQUIRE(app.newProject(dir.path() / "c", "c", "basic").has_value());
+        REQUIRE(app.recentProjects().size() == 3);
+        CHECK(app.recentProjects()[0].name == "c");
+        CHECK(app.recentProjects()[1].name == "b");
+        CHECK(app.recentProjects()[2].name == "a");
+        // Opening a again moves it up, and a failed open adds nothing.
+        REQUIRE(app.openProject(dir.path() / "a").has_value());
+        CHECK_FALSE(app.openProject(dir.path() / "nothing").has_value());
+        REQUIRE(app.recentProjects().size() == 3);
+        CHECK(app.recentProjects().front().name == "a");
+        CHECK_FALSE(app.recentProjects().front().missing);
+    }
+    StudioApp next(host, settings);
+    REQUIRE(next.recentProjects().size() == 3);
+    CHECK(next.recentProjects()[0].name == "a");
+    CHECK(next.recentProjects()[1].name == "c");
+    CHECK(next.recentProjects()[2].name == "b");
+}
+
+TEST_CASE("the recent list keeps ten projects", "[studio]") {
+    const BareContext context;
+    const coney::test::TempDir dir;
+    FakeHost host;
+    StudioApp app(host, testSettings());
+    for (int i = 0; i < 13; ++i) {
+        const std::string name = "p" + std::to_string(i);
+        makeProject(dir.path() / name, name);
+        REQUIRE(app.openProject(dir.path() / name).has_value());
+    }
+    REQUIRE(app.recentProjects().size() == coney::studio::kMaxRecentProjects);
+    CHECK(app.recentProjects().front().name == "p12");
+    CHECK(app.recentProjects().back().name == "p3");
+}
+
+TEST_CASE("a recent project that is gone is marked missing, refuses to open and can be removed", "[studio]") {
+    const BareContext context;
+    const coney::test::TempDir dir;
+    FakeHost host;
+    StudioSettings settings = testSettings();
+    settings.preferencesFile = dir.path() / "prefs.toml";
+    makeProject(dir.path() / "kept", "kept");
+    makeProject(dir.path() / "gone", "gone");
+    StudioApp app(host, settings);
+    REQUIRE(app.openProject(dir.path() / "gone").has_value());
+    REQUIRE(app.openProject(dir.path() / "kept").has_value());
+    std::filesystem::remove_all(dir.path() / "gone");
+    app.refreshRecent();
+    REQUIRE(app.recentProjects().size() == 2);
+    CHECK_FALSE(app.recentProjects()[0].missing); // kept
+    CHECK(app.recentProjects()[1].missing);       // gone, still listed so the user sees it went
+    CHECK(app.recentProjects()[1].name == "gone");
+    // Opening it says which folder is missing, and leaves the list and the open project as they were.
+    const auto refused = app.openRecent(dir.path() / "gone");
+    REQUIRE_FALSE(refused.has_value());
+    CHECK(refused.error().code == coney::ErrorCode::NotFound);
+    CHECK(refused.error().message.find("gone") != std::string::npos);
+    CHECK(app.recentProjects().size() == 2);
+    REQUIRE(app.project().has_value());
+    CHECK(app.project()->manifest().name == "kept");
+    // Remove takes it off the list, and the file, so it does not come back.
+    CHECK(app.removeRecent(dir.path() / "gone"));
+    CHECK_FALSE(app.removeRecent(dir.path() / "gone"));
+    REQUIRE(app.recentProjects().size() == 1);
+    CHECK(app.recentProjects().front().name == "kept");
+    StudioApp next(host, settings);
+    CHECK(next.recentProjects().size() == 1);
+    // A recent project that is there opens by its entry.
+    REQUIRE(next.openRecent(dir.path() / "kept").has_value());
+    REQUIRE(next.project().has_value());
+    CHECK(next.project()->manifest().name == "kept");
+}
+
+TEST_CASE("the start screen draws with recent projects, missing ones too, until a project opens", "[studio]") {
+    // The panels read the list every frame: a frame with a present entry, a missing entry and no project must draw
+    // without trouble, and the Level view then shows the level once a project opens.
+    const BareContext context;
+    const coney::test::TempDir dir;
+    FakeHost host;
+    StudioSettings settings = testSettings();
+    settings.preferencesFile = dir.path() / "prefs.toml";
+    makeProject(dir.path() / "here", "here");
+    makeProject(dir.path() / "gone", "gone");
+    {
+        StudioApp earlier(host, settings);
+        REQUIRE(earlier.openProject(dir.path() / "gone").has_value());
+        REQUIRE(earlier.openProject(dir.path() / "here").has_value());
+    }
+    std::filesystem::remove_all(dir.path() / "gone");
+    StudioApp app(host, settings);
+    REQUIRE(app.recentProjects().size() == 2);
+    CHECK(app.recentProjects()[1].missing);
+    BareContext::run(app, 3);
+    CHECK(host.draws == 0); // no level: nothing is drawn into the Level view
+    REQUIRE(app.newProject(dir.path() / "made", "made", "basic").has_value());
+    BareContext::run(app, 2);
+    CHECK(host.draws == 2);
 }

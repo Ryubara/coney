@@ -203,6 +203,19 @@ void StudioApp::log(ConsoleLine::Level level, std::string text) {
     }
 }
 
+// Stand-ins for the projects folder and the recent projects, which the commit after this one makes.
+std::expected<void, Error> StudioApp::openRecent(const std::filesystem::path&) { return {}; }
+void StudioApp::askNewProject() { m_newProjectOpen = true; }
+void StudioApp::askOpenProject() {}
+std::optional<std::filesystem::path> StudioApp::projectsFolder() const { return std::nullopt; }
+std::optional<std::filesystem::path> StudioApp::defaultProjectsFolder() const { return std::nullopt; }
+std::expected<void, Error> StudioApp::setProjectsFolder(std::optional<std::filesystem::path>) { return {}; }
+std::expected<std::filesystem::path, Error> StudioApp::ensureProjectsFolder() {
+    return fail(ErrorCode::NotFound, "no projects folder");
+}
+void StudioApp::refreshRecent() {}
+bool StudioApp::removeRecent(const std::filesystem::path&) { return false; }
+
 std::string StudioApp::windowTitle() const {
     std::string title = "Coney Studio";
     if (m_project) {

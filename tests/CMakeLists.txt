@@ -210,6 +210,7 @@ add_executable(coney_tests
     platform/room_smoke_overlay_test.cpp
     platform/scene_stage_test.cpp
     platform/sdl_devices_test.cpp
+    platform/user_folders_test.cpp
     platform/pad_pipe_test.cpp
     platform/sdl_input_test.cpp
     platform/window_activation_test.cpp
@@ -576,7 +577,8 @@ if(CONEY_DEBUG_TOOLS)
     target_link_libraries(coney_tests PRIVATE coney_devtools)
     # Coney Studio's editor over bare Dear ImGui contexts and synthetic projects (docs/guides/studio/prototype.md).
     target_sources(coney_tests PRIVATE studio/inspector_test.cpp studio/level_camera_test.cpp
-                                       studio/level_document_test.cpp studio/project_test.cpp studio/studio_app_test.cpp)
+                                       studio/level_document_test.cpp studio/project_test.cpp studio/projects_folder_test.cpp
+                                       studio/studio_app_test.cpp studio/studio_preferences_test.cpp)
     target_link_libraries(coney_tests PRIVATE coney_studio)
 endif()
 include(Catch)
