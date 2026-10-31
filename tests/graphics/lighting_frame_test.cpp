@@ -300,3 +300,20 @@ TEST_CASE("The stealth shadow flag never reads the level's shadow light or caste
     CHECK(plain == std::vector<bool>{true, true, true, true, true, true, false, false, false, true, true, true});
     CHECK(hidesOnShadow(true) == plain);
 }
+
+// Level_SetFogColour (0x0040c868) truncates each component × 255 with Float_ToUInt (0x0042c718), which gives 0 for a
+// negative number, and keeps the low byte, so a component above 1 wraps instead of saturating.
+TEST_CASE("The fog colour keeps each component's low byte, as the original truncates and narrows it",
+          "[graphics][lighting_frame]") {
+    const coney::graphics::Rgba inRange = coney::graphics::fogColourOf(1.0F, 0.5F, 0.0F);
+    CHECK(inRange.r == 255);
+    CHECK(inRange.g == 127);
+    CHECK(inRange.b == 0);
+    CHECK(inRange.a == 255);
+
+    const coney::graphics::Rgba outOfRange = coney::graphics::fogColourOf(1.2F, -0.5F, 2.0F);
+    CHECK(outOfRange.r == 50);  // 306 wraps to 50
+    CHECK(outOfRange.g == 0);   // negative is 0
+    CHECK(outOfRange.b == 254); // 510 wraps to 254
+    CHECK(outOfRange.a == 255);
+}
