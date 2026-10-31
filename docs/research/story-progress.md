@@ -235,6 +235,16 @@ Rumble result and Armies game-over menus call `runNextMission(0)` (`repo:src/gam
 opens nothing yet ([#1071](issue:1071)). Coney's own story graph, which replaces the two Lua tables for mods, is
 designed in [Coney Studio: mission mods](../guides/studio/mission-mods.md#story-graph).
 
+The graph's data is built: `story::StoryGraph` (`repo:src/core/story_graph.h`) holds the 31 steps of
+[The order](#order) as level and chapter numbers, and gives `runNextMission`'s 20 rows, `findLastMission`'s 19 levels
+and the 12 offers of `fRunMission` as views of that chain. The story session (`StartUpFlow`) holds the original's
+chain; its hash, for a co-op session to compare, is the SHA-256 of a fixed text form (a version line, then each step's
+id, level, checkpoint and side-step mark). Nothing reads it yet: the scripts still run their own tables until the
+natives over the graph ([#1300](issue:1300)) replace them. `repo:tests/core/story_graph_test.cpp` checks each view
+against the rows above and walks the story from an empty profile; `repo:tests/platform/disc_story_graph_test.cpp` runs
+the disc's own `runNextMission` and `findLastMission` against the graph for each prefix of the story complete, and for
+`level64` alone, and prints only how many of the 21 cases agree.
+
 ## Open questions {#open-questions}
 
 - **What unlocks a flashback's trophy.** `flashback.Setup` needs a record of type 7 or 9 for the trophy's level; which

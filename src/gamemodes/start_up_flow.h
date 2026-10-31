@@ -10,6 +10,7 @@
 #include <string>
 #include <string_view>
 
+#include "core/story_graph.h"
 #include "gamemodes/armies_game_over_mode.h"
 #include "gamemodes/front_end_services.h"
 #include "gamemodes/game_mode_stack.h"
@@ -96,6 +97,8 @@ class StartUpFlow final : public script::BindingHost {
     [[nodiscard]] script::BindingContext& context() { return m_context; }
     /// The game state (language, level table).
     [[nodiscard]] GameState& state() { return m_state; }
+    /// The story's order for this session (story::StoryGraph): built when the flow is made and fixed while it runs.
+    [[nodiscard]] const story::StoryGraph& story() const { return m_story; }
     /// The configuration the stub bindings recorded.
     [[nodiscard]] const script::RecordedCalls& recorded() const { return m_recorded; }
     /// The save system: the profiles on disk, or for the run only.
@@ -219,6 +222,7 @@ class StartUpFlow final : public script::BindingHost {
     GameModeStack& m_stack;
     std::function<void(std::string_view)> m_log;
     GameState m_state;
+    story::StoryGraph m_story = story::StoryGraph::original(); // the session's story order, fixed while it runs
     script::RecordedCalls m_recorded;
     CreatedHumans m_humans;
     world_objects::WorldFlags m_flags;

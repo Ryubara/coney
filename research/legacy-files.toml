@@ -1974,9 +1974,6 @@ citation = 3
 ["tests/gamemodes/sheet_viewer_mode_test.cpp"]
 citation = 1
 
-["tests/gamemodes/start_up_flow_test.cpp"]
-citation = 17
-
 ["tests/gamemodes/story_start_test.cpp"]
 citation = 11
 
