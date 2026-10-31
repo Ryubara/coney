@@ -437,6 +437,16 @@ def write_section(path: Path, body: str) -> None:
     path.write_text(set_section(path.read_text(encoding="utf-8"), body), encoding="utf-8")
 
 
+def record_section(env: OverlapEnv, path: Path, result: Result) -> bool:
+    """Record `result` in the task file's section; False (nothing written) when the open pull requests could not be
+    read and the section holds a list already, which a read that missed them would only make shorter."""
+    if result.prs_failed and get_section(path.read_text(encoding="utf-8")) is not None:
+        return False
+    rules = env.conventions.tasks.overlap
+    write_section(path, section_body(result, rules, env.now(), env.conventions.repo.default_branch))
+    return True
+
+
 # --- the commands -----------------------------------------------------------------------------------------------
 
 
@@ -445,11 +455,12 @@ def show(env: OverlapEnv, task_id: str, write: bool) -> list[str]:
     path, task, record = _read_task(env, task_id)
     result = compute(env, task, record)
     rules = env.conventions.tasks.overlap
-    if write:
-        write_section(path, section_body(result, rules, env.now(), env.conventions.repo.default_branch))
+    kept = write and not record_section(env, path, result)
     lines = [f"task overlap {task_id}: {len(result.overlaps)} pending change(s) overlap this unit"]
     lines += [f"  {line}" for line in entry_lines(result, rules)]
     lines += [f"  note: {notice}" for notice in result.notices]
+    if kept:
+        lines.append("  note: the task file's section was kept as it is (the pull requests were not read)")
     return lines
 
 
@@ -457,9 +468,10 @@ def start_lines(env: OverlapEnv, task: TaskFile, record: UnitRecord | None, writ
     """What `task start` prints about the pending work, and (with `write`) writes into the task file at `path`."""
     result = compute(env, task, record)
     rules = env.conventions.tasks.overlap
-    if write:
-        write_section(path, section_body(result, rules, env.now(), env.conventions.repo.default_branch))
-    head = f"pending work that overlaps: {len(result.overlaps) or 'none'}" + (" (written to TASK.md)" if write else "")
+    written = write and record_section(env, path, result)
+    head = f"pending work that overlaps: {len(result.overlaps) or 'none'}" + (
+        " (written to TASK.md)" if written else ""
+    )
     return [head, *(f"    {line}" for line in entry_lines(result, rules)), *(f"    note: {n}" for n in result.notices)]
 
 
@@ -496,7 +508,7 @@ def stage_report(env: OverlapEnv, task_id: str, say: Callable[[str], None], writ
             "STATUS.md and tell the coordinator (docs/guides/pending-work.md)"
         )
         if write:
-            write_section(path, section_body(result, rules, env.now(), env.conventions.repo.default_branch))
+            record_section(env, path, result)
     except (ConfigError, OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
         say(f"pending work that overlaps: not read ({str(error)[:_WHY]})")
 

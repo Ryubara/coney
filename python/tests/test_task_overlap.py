@@ -511,3 +511,20 @@ def test_a_branch_whose_changes_main_has_changes_nothing_that_is_pending(tmp_pat
     git(repo, "checkout", "-q", "work")
     change = task_overlap.unit_change(record)
     assert change.paths == {"b.md"} and change.addresses == frozenset()
+
+
+def test_a_read_that_missed_the_pull_requests_never_replaces_a_recorded_list(scene: Scene) -> None:
+    path = scene.task(scope=("docs/",))
+    scene.prs = [pr(1, "t", "b1", "docs/a.md")]
+    task_overlap.show(scene.env(), TASK, True)
+    recorded = path.read_text(encoding="utf-8")
+    assert "- PR #1" in recorded
+    scene.gh_down = True
+    lines = task_overlap.show(scene.env(), TASK, True)
+    assert path.read_text(encoding="utf-8") == recorded
+    assert any("kept as it is" in line for line in lines)
+    # With no list recorded yet, the note is what is written.
+    fresh = scene.task("other", scope=("docs/",))
+    task = parse_task_file(fresh.read_text(encoding="utf-8"), CONVENTIONS.tasks)
+    assert task_overlap.start_lines(scene.env(), task, None, True, fresh)[0].endswith("(written to TASK.md)")
+    assert "Not read:" in fresh.read_text(encoding="utf-8")
