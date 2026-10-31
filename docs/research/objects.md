@@ -2273,3 +2273,10 @@ the drawer and lifts the register with clip 504 (disc checks, 2026-10-08).
   (Answered on [Combat](combat/index.md#moving-strikes): the strike shapes' sizes and events, record `+0x08` bit `0x800`,
   and a knock-back flight, which is not airborne. Human vtable `+0x10c`, `0x00227180`: any non-human body may be
   struck, a human unless its state word has `0x100000000`.)
+
+## How this was checked
+
+Ghidra on `SLUS_212.15` for the code claims; PCSX2 2.9.94 over PINE in `level99` for the runtime ones: the objective
+markers, held objects and trash props, and the breakable fence (save slot 10 and the scenarios
+[`charge_fence`](repo:research/traces/scenarios/charge_fence.toml) and
+[`fence_dealer`](repo:research/traces/scenarios/fence_dealer.toml)).

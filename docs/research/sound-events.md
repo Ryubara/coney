@@ -247,7 +247,7 @@ Confirmed (code):
    `Random_Int(100)` (0 to 100, stream `0x006eb8a0`) is **below 50**: at `0x00273bc4` the earlier pick is kept when
    49 < the roll (`sltu` against `0x31`, then `movz`). The first counting slot draws nothing. So a later slot replaces
    the pick at 50 in 101, the last counting slot wins at about 50 %, the one before at about 25 %, and the first at
-   about 1/2^(n−1) of n. (This page said "50 or more" until the `@orig` sweep of 2026-10-21 read the branch again.)
+   about 1/2^(n−1) of n.
 4. **Speak**: only the picked member is then tested: `Ambient_MayGesture` ([above](#command-ids)) and **his own**
    `+0x19a` (`HuEnableTagDone`) must both pass, or nobody speaks (no second choice). He says the command through
    `Human_SayCommand(1.0, member, command, no callback, no interrupt, uncut 1, null target, duckable 1)`.

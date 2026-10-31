@@ -8,7 +8,7 @@ The small maths unit every other directory calls: the game's random numbers, a f
 transforms and matrices, distances, ground-plane tests, ray-triangle tests and bounding boxes. Pages elsewhere cite
 these by address; this page says what each one computes, so a reimplementation can use ordinary maths code with the
 same conventions and edge cases. What a reimplementation must keep is listed under
-[What a reimplementation must keep](#what-a-reimplementation-must-keep).
+[What a reimplementation must keep](#must-keep).
 
 ## Original structure
 
@@ -161,7 +161,9 @@ A box is `{min, max at +0x10}`.
 | `0x00338300` | `Maths_StaticInit` | Static initialiser: copies the identity quaternion (`0x005116c0`), `0x00511780` and the identity matrix rows (`0x005117a0`-`0x005117d0`) into `0x006eb8c0`-`0x006eb94c` and stores tan(π/6) (`0x006eb904`) and tan(π/12) (`0x006eb908`) for Math_AtanApprox. | confirmed (code) |
 | `0x003383e0` | `Maths_StaticInitStub` | Static-init entry: Maths_StaticInit(1, 0xffff). | confirmed (code) |
 
-## What a reimplementation must keep
+## In Coney
+
+### What a reimplementation must keep {#must-keep}
 
 - **The random table and its streams** where a page depends on a draw order: the table comes from the player's
   executable at run time (`GameRandom`, [World flags](flags.md#coneys-implementation)), each draw is made on its
