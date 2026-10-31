@@ -146,7 +146,7 @@ tag = 1
 comment = 1
 
 ["src/ai/reaction_goals.cpp"]
-tag = 4
+tag = 3
 
 ["src/ai/riot_goals.cpp"]
 tag = 15
@@ -995,7 +995,7 @@ tag = 20
 tag = 5
 
 ["src/human/fighter_victim.cpp"]
-tag = 12
+tag = 10
 
 ["src/human/holdable.h"]
 comment = 1
@@ -1072,11 +1072,10 @@ tag = 3
 comment = 3
 
 ["src/human/victim.cpp"]
-tag = 10
+tag = 7
 
 ["src/human/victim.h"]
 comment = 4
-tag = 2
 
 ["src/human/way_clear.cpp"]
 tag = 1
@@ -1527,7 +1526,7 @@ citation = 3
 citation = 5
 
 ["tests/ai/fight_goal_test.cpp"]
-citation = 11
+citation = 10
 
 ["tests/ai/fight_reactions_test.cpp"]
 citation = 7

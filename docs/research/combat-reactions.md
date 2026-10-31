@@ -368,8 +368,8 @@ other level is given.
 - **A game flag also slows the human.** When the word at `0x0051021c` is non-zero and the human has no state
   `0x80000`, `Human_EndStun` sets the speed multiplier `+0x3a4` ([Humans](characters.md)) to 0.65 (`0x3f266666`).
   Confirmed (code); the word is 0 in the executable and its one reference is this read (no writer found), so what
-  sets it is unknown (speculative: a debug or option setting; [Open questions](#open-questions)). Knocked down,
-  dead or out, it only removes style `0xe` and clears `0x100000`.
+  sets it is unknown ([Open questions](#open-questions)). Knocked down, dead or out, it only removes style `0xe` and
+  clears `0x100000`.
 - **A clip that ends while still stunned returns to 355.** `Human_BuildIdleTasks` plays 355 `STUNNED_ENTER`
   (`0x163`) whenever state `0x100000` is set, and 356 `STUNNED_IDLE` follows it; `Human_PlayStanceIdleState`
   (`0x0025fa48`) does the same for the fight stance's idle.
