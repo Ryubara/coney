@@ -2073,6 +2073,20 @@ coney = "src/scripting/trigger_bindings.cpp:makeRotateVolumeBox"
 status = "legacy"
 
 [[function]]
+address = 0x00412ca0
+name = "VolumeBoxes_UpdateAll"
+page = "trigger-updates.md#schedule"
+role = "each box's update on one frame in five, by handle index; the camera-inside mark"
+level = "confirmed-code"
+coney = "src/world_objects/volume_boxes.h:VolumeBoxes::update"
+status = "compared"
+
+[[function.gaps]]
+what = "the camera-inside mark (+0x69) for boxes with the flags byte +0x6a"
+relation = "not-ported"
+issue = 1320
+
+[[function]]
 address = 0x00413018
 name = "VolumeBoxes_SendDamageMessage"
 page = "scripting.md#triggers"
