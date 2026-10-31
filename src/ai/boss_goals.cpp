@@ -213,7 +213,7 @@ GoalStatus TiredGoal::process(Brain& brain) {
         if (now >= m_deadlineMs || lost > m_damageLimit) {
             human.setFlag(human::flag::kGod, m_savedGod);
             human.fighter().setHitReactionsOff(true);
-            human.endStun(now);
+            human.endStun();
             m_phase = Phase::Recovering;
         }
         return GoalStatus::Stop;
@@ -239,12 +239,12 @@ void TiredGoal::end(Brain& brain) {
     human.setFlag(human::flag::kGod, m_savedGod);
     human.setFlag(human::flag::kUnstunnable, m_savedUnstunnable);
     human.fighter().setHitReactionsOff(m_savedNoReact);
-    human.endStun(brain.nowMs());
+    human.endStun();
 }
 
 void TiredGoal::startBreak(Brain& brain, float healthPercent) {
     human::Human& human = brain.human();
-    human.endStun(brain.nowMs());
+    human.endStun();
     human.fighter().setHitReactionsOff(true);
     human.setFlag(human::flag::kGod, true);
     brain.clearActions();

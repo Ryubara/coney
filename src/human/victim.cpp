@@ -85,6 +85,7 @@ void Victim::die(const IncomingHit& hit, const VictimFrame& frame, HumanAnimator
     m_lastReaction = dying;
     m_grounded = true;
     m_stunUntilMs = 0;
+    m_stunTimeOver = false;
 }
 
 void Victim::knockDown(std::uint64_t nowMs, bool stunned) {
@@ -94,16 +95,19 @@ void Victim::knockDown(std::uint64_t nowMs, bool stunned) {
     m_riseAtMs = nowMs + static_cast<std::uint64_t>(m_class.groundMs);
     m_stunUntilMs = stunned ? m_riseAtMs + static_cast<std::uint64_t>(m_class.stunMs) : 0;
     m_stunEntered = false;
+    m_stunTimeOver = false;
 }
 
 void Victim::stun(std::uint64_t nowMs) {
     m_stunUntilMs = nowMs + static_cast<std::uint64_t>(m_class.stunMs);
     m_stunEntered = false;
+    m_stunTimeOver = false;
 }
 
 void Victim::clear() {
     m_grounded = false;
     m_stunUntilMs = 0;
+    m_stunTimeOver = false;
 }
 
 bool Victim::step(HumanAnimator& animator, std::uint32_t idle, std::uint64_t nowMs, bool canRise) {
@@ -112,9 +116,10 @@ bool Victim::step(HumanAnimator& animator, std::uint32_t idle, std::uint64_t now
     // 357 starts (`Human_EndStun`, then `Human_BuildIdleTasks`): at once when the clip that held it ends late enough.
     // Its time not passed, the clip that ended returns to 355, then the loop 356 (`Human_BuildIdleTasks`).
     if (stunned() && !m_grounded && !animator.drivingClipPlaying()) {
-        // Past, not on it: the original tests the time minus now below zero.
-        if (nowMs > m_stunUntilMs) {
+        // Past, not on it: the original tests the time minus now below zero. A stun ended from outside is over now.
+        if (m_stunTimeOver || nowMs > m_stunUntilMs) {
             m_stunUntilMs = 0;
+            m_stunTimeOver = false;
             animator.playCombat(one(static_cast<std::uint32_t>(combat::kStunEnd)), idle, AnimState::Attack);
             // **Stand-in**: with the global flag 0x0051021c set (no writer found), `Human_EndStun` also sets the
             // human's speed multiplier (+0x3a4) to 0.65 unless it holds state 0x80000; Coney keeps the speed as it

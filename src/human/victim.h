@@ -108,12 +108,24 @@ class Victim {
     void stunUntil(std::uint64_t untilMs) {
         m_stunUntilMs = untilMs;
         m_stunEntered = true;
+        m_stunTimeOver = false;
     }
     /// Forgets the stun only.
-    void endStun() { m_stunUntilMs = 0; }
-    /// Stub for the test commit.
-    /// @coney-only stub
-    void expireStun() {}
+    void endStun() {
+        m_stunUntilMs = 0;
+        m_stunTimeOver = false;
+    }
+    /// The stun's time is over now, whatever it was set to: standing, this update's step() ends the stun once no clip
+    /// drives the human, as a time already past would; lying down, the stun is forgotten at once (`Human_EndStun`
+    /// from outside the down update clears it when knocked down).
+    /// @coney-only Coney's victim ends a standing stun in step(), so a stun ended from outside marks its time over
+    void expireStun() {
+        if (m_grounded) {
+            endStun();
+        } else {
+            m_stunTimeOver = m_stunUntilMs != 0;
+        }
+    }
 
     /// One update's timers at `nowMs`. Standing stunned with no clip driving the human (a reaction, the rise or 355 is
     /// not cut short, the stun's loop 356 is): once its time has passed the stun ends, its state clearing as 357
@@ -156,6 +168,7 @@ class Victim {
     bool m_grounded = false;
     std::uint64_t m_stunUntilMs = 0; // 0 when not stunned; kept past its time until the stun ends
     bool m_stunEntered = false;      // 355 has played since the clip the stun began in
+    bool m_stunTimeOver = false;     // the stun's time was ended from outside (expireStun())
     std::uint64_t m_riseAtMs = 0;
     int m_reactions = 0;
     int m_stuns = 0;
