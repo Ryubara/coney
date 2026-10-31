@@ -245,6 +245,31 @@ TEST_CASE("a press on the update that lands on the rise time gets the victim up 
     CHECK_FALSE(victim.grounded());
 }
 
+TEST_CASE("653's stun restarts as 199 ends: 356 for the stun's 200 ms, then 357", "[human][combat]") {
+    // Expected: combat-reactions.md#being-hit-runtime, confirmed (runtime): after 199 he stood in 356 for 7 updates,
+    // then 357; Human_GetUp (0x0022f3c8), 199's end callback, restarts the stun time (Human_SetStunTimer), confirmed
+    // (code).
+    const FightCharacter character;
+    Fight fight(character, 30.0F);
+    fight.human().takeHit(hitOf(653, 50, 0x39, 0x400));
+    bool rose = false;
+    bool ended = false;
+    int loopAfterRise = 0;
+    fight.run("", 140, [&](std::uint64_t) {
+        const std::uint32_t clip = fight.human().animator().animId();
+        rose = rose || clip == 199U;
+        ended = ended || (rose && clip == 357U);
+        if (rose && !ended && clip == 356U) {
+            ++loopAfterRise;
+        }
+    });
+    REQUIRE(rose);
+    CHECK(ended);
+    // 200 ms is 6 updates; the one 199 ends on and the one 357 starts on put it at 6-7.
+    CHECK(loopAfterRise >= 6);
+    CHECK(loopAfterRise <= 7);
+}
+
 TEST_CASE("presses during the knockdown's reaction do nothing; lying down each one cuts the time", "[human][combat]") {
     // Expected: combat-reactions.md#being-hit-runtime, confirmed (runtime)
     const FightCharacter character;
