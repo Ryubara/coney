@@ -595,7 +595,9 @@ texturing and before alpha blending. Fog is off for the sky, clouds and skyline 
 loading](level-loading.md#render-order)) and for the HUD.
 
 **Disc check (corroboration):** `SetFogColor` appears in 66 compiled Lua files, covering 62 of the 64 levels that have
-a `.lev`; `SetFogDistance` in 14 levels. The colour values themselves are inside Lua bytecode and were not decoded.
+a `.lev`; `SetFogDistance` in 14 levels. Decompiling every chunk (`coney-tools lua decompile --all`, 467 chunks,
+2026-10-30) gives 67 `SetFogColor` calls in those 66 files, each passing three literal numbers, every component from
+0 to 0.195, so no level reaches the wrap of a component above 1 in `Level_SetFogColour` ([Lighting](lighting.md#world)).
 
 ## Coney's implementation
 
