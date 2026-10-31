@@ -27,6 +27,7 @@ struct WadOverrideReport {
     std::size_t replaced = 0;            ///< Entries now read from a file of the folder.
     std::vector<std::string> unmatched;  ///< File names that name no entry, ignored.
     std::vector<std::string> duplicates; ///< File names of an entry an earlier name (in sorted order) already replaced.
+    std::vector<std::string> scripts;    ///< File names refused: a script in place of the disc's, never run.
 };
 
 /// The game's archive on the player's disc: WARRIORS.DIR parsed into an index, and WARRIORS.WAD read entry by entry.

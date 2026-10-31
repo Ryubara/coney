@@ -167,3 +167,58 @@ TEST_CASE("Wad takes the first name in order when two override files name one en
     CHECK(stream->size() == 4);
     CHECK(stream->readU32Le() == 7U);
 }
+
+namespace {
+
+// A disc folder whose archive holds a script: level99.lua, an 8-byte Lua 4.0 chunk (ESC "Lua", version 0x40) at 0,
+// and level1.lev's 12 bytes at 2048.
+void writeScriptDisc(const TempDir& folder) {
+    Bytes dir;
+    dir.header(2, 0, 0, 0);
+    dir.u32(0).u32(8).u32(coney::nameHash("./ee_files/level99.lua"));
+    dir.u32(2048).u32(12).u32(coney::nameHash("./ee_files/level1.lev"));
+    folder.write("WARRIORS.DIR", dir.span());
+    Bytes wadData;
+    wadData.u8(0x1b).text("Lua").u8(0x40).u8(1).u8(2).u8(3).padTo(2048).u32(1).u32(2).u32(3);
+    folder.write("WARRIORS.WAD", wadData.span());
+}
+
+} // namespace
+
+TEST_CASE("Wad refuses overrides that would put a script in place of the disc's", "[wad]") {
+    // Expected: docs/guides/studio/security.md#surface (Bytecode, Lua 4.0), Coney's own rule
+    TempDir disc;
+    writeScriptDisc(disc);
+    TempDir overrides;
+    // Lua source in place of the disc's chunk, and a compiled chunk in place of a data entry.
+    Bytes source;
+    source.text("HuCreate(\"Cleon\", 2)");
+    overrides.write("level99.lua", source.span());
+    Bytes chunk;
+    chunk.u8(0x1b).text("Lua").u8(0x40).u32(0);
+    overrides.write("level1.lev", chunk.span());
+    auto opened = Disc::open(disc.path());
+    REQUIRE(opened.has_value());
+    auto wad = Wad::open(std::move(*opened));
+    REQUIRE(wad.has_value());
+
+    auto report = wad->useOverrides(overrides.path());
+    REQUIRE(report.has_value());
+    CHECK(report->replaced == 0);
+    CHECK(report->scripts == std::vector<std::string>{"level1.lev", "level99.lua"});
+    CHECK_FALSE(wad->modded());
+
+    // Both entries still read the disc: the player's own chunk, and the level's bytes.
+    auto script = wad->lookup("level99.lua");
+    REQUIRE(script.has_value());
+    auto stream = wad->openEntry(**script);
+    REQUIRE(stream.has_value());
+    CHECK(stream->size() == 8);
+    CHECK(stream->readU32Le() == 0x61754c1bU); // ESC "Lua"
+    auto level1 = wad->lookup("level1.lev");
+    REQUIRE(level1.has_value());
+    auto untouched = wad->openEntry(**level1);
+    REQUIRE(untouched.has_value());
+    CHECK(untouched->size() == 12);
+    CHECK(untouched->readU32Le() == 1U);
+}

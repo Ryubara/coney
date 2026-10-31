@@ -412,6 +412,7 @@ target_sources(coney_tests PRIVATE
 # Scenes: the records, the slots and the player (docs/research/scenes.md).
 target_sources(coney_tests PRIVATE
     scenes/disc_scenes_test.cpp
+    scenes/scene_disc_test.cpp
     scenes/scene_player_test.cpp
     scenes/scene_record_test.cpp)
 # The collision writer the sandbox and the Spawner use (the sandbox's own tests are the debug tools', below).
