@@ -2,6 +2,7 @@
 #include "platform/asset_convert.h"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -112,6 +113,62 @@ std::vector<std::uint8_t> librwLevel0(rw::Raster* raster) {
         texels.insert(texels.end(), row, row + static_cast<std::ptrdiff_t>(image->width) * 4);
     }
     image->destroy();
+    return texels;
+}
+
+// The bytes one level `width` x `height` of an 8-bit PS2 raster takes in its data block: librw pads it to the swizzled
+// 8-bit transfer's minimum of 16 x 4 (formats/renderware.md#gs-packets).
+std::size_t pal8LevelBytes(rw::int32 width, rw::int32 height) {
+    return static_cast<std::size_t>(std::max(width, 16)) * static_cast<std::size_t>(std::max(height, 4));
+}
+
+// Where level `level` of an 8-bit PS2 raster starts in its data block: after each level before it and the 0x50-byte
+// GS packet header in front of every level, as librw's lock steps through them.
+rw::uint8* pal8Level(rw::Raster* raster, rw::int32 level) {
+    rw::uint8* at = raster->pixels;
+    for (rw::int32 i = 0; i < level; ++i) {
+        const std::size_t bytes = pal8LevelBytes(raster->width >> i, raster->height >> i);
+        at += ((bytes + 15) & ~std::size_t{15}) + 0x50;
+    }
+    return at;
+}
+
+// An 8-bit palette PS2 raster `width` x `height` (with every mip level when `mipmap`), its palette a fixed ramp and
+// each level's bytes written straight into the data block, as a raster read from a file holds them: librw's own write
+// (an unlock) swizzles a level narrower than 16 with the wrong row width. The caller destroys it.
+rw::Raster* pal8Raster(rw::int32 width, rw::int32 height, bool mipmap) {
+    const rw::int32 format = rw::Raster::PAL8 | rw::Raster::C8888 | (mipmap ? rw::Raster::MIPMAP : 0);
+    rw::Raster* raster = rw::Raster::create(width, height, 8, format | rw::Raster::TEXTURE, rw::PLATFORM_PS2);
+    REQUIRE(raster != nullptr);
+    REQUIRE((GETPS2RASTEREXT(raster)->flags & rw::ps2::Ps2Raster::NEWSTYLE) != 0);
+    for (int i = 0; i < 256; ++i) {
+        raster->palette[i * 4 + 0] = static_cast<rw::uint8>(i);
+        raster->palette[i * 4 + 1] = static_cast<rw::uint8>(255 - i);
+        raster->palette[i * 4 + 2] = static_cast<rw::uint8>(i * 7);
+        raster->palette[i * 4 + 3] = (i & 1) != 0 ? 0x80 : 0x20;
+    }
+    const rw::int32 levels = mipmap ? raster->getNumLevels() : 1;
+    for (rw::int32 level = 0; level < levels; ++level) {
+        rw::uint8* bytes = pal8Level(raster, level);
+        const std::size_t count = pal8LevelBytes(width >> level, height >> level);
+        for (std::size_t i = 0; i < count; ++i) {
+            bytes[i] = static_cast<rw::uint8>((i * 37 + (i >> 4) * 11 + static_cast<std::size_t>(level) * 101) & 0xFF);
+        }
+    }
+    return raster;
+}
+
+// What librw's first read of a lone 8-bit raster `width` x `height` holding `bytes` and `palette` gives: the read of
+// level 0, which unswizzles once and is right, unlike the reads after it.
+std::vector<std::uint8_t> librwFirstRead(rw::int32 width, rw::int32 height, const rw::uint8* bytes,
+                                         const rw::uint8* palette) {
+    rw::Raster* lone = rw::Raster::create(width, height, 8, rw::Raster::PAL8 | rw::Raster::C8888 | rw::Raster::TEXTURE,
+                                          rw::PLATFORM_PS2);
+    REQUIRE(lone != nullptr);
+    std::memcpy(lone->pixels, bytes, pal8LevelBytes(width, height));
+    std::memcpy(lone->palette, palette, 256 * 4);
+    std::vector<std::uint8_t> texels = librwLevel0(lone);
+    lone->destroy();
     return texels;
 }
 
@@ -329,6 +386,60 @@ TEST_CASE("the texture format reads every mip level of a PS2 raster once", "[ass
         }
         CHECK(got.texels == expected);
     }
+    texture->destroy();
+}
+
+TEST_CASE("the texture format reads an 8-wide PS2 8-bit palette raster the same every time", "[asset_convert]") {
+    // Expected: asset-formats.md#scrambling-read: an 8-bit raster narrower than the 16-wide swizzled transfer is
+    // scrambled by each librw read, so only the first is right; the conversion leaves it as loaded
+    auto engine = startHeadless();
+    constexpr rw::int32 kSide = 8;
+    rw::Raster* raster = pal8Raster(kSide, kSide, false);
+    const std::vector<std::uint8_t> expected = librwFirstRead(kSide, kSide, raster->pixels, raster->palette);
+    rw::Texture* texture = rw::Texture::create(raster);
+    setName(*texture, "narrow");
+
+    auto converted = textureFromRw(*texture);
+    REQUIRE(converted.has_value());
+    REQUIRE(converted->levels.size() == 1);
+    CHECK(converted->levels[0].width == kSide);
+    CHECK(converted->levels[0].height == kSide);
+    CHECK(converted->levels[0].texels == expected);
+    auto again = textureFromRw(*texture);
+    REQUIRE(again.has_value());
+    CHECK(again->levels == converted->levels);
+    // librw's own read after both conversions still finds the raster as it was made.
+    CHECK(librwLevel0(raster) == expected);
+    texture->destroy();
+}
+
+TEST_CASE("the texture format reads each level of a mipmapped PS2 8-bit palette raster once", "[asset_convert]") {
+    // Expected: asset-formats.md#mip-levels and #scrambling-read: each level unswizzled once, those narrower than 16
+    // included, every level as librw's first read of a lone raster of its size gives it
+    auto engine = startHeadless();
+    constexpr rw::int32 kSide = 32;
+    rw::Raster* raster = pal8Raster(kSide, kSide, true);
+    const rw::int32 levels = raster->getNumLevels();
+    REQUIRE(levels >= 3); // 32, 16 and 8 wide: the last below the transfer's width
+    std::vector<std::vector<std::uint8_t>> expected;
+    for (rw::int32 level = 0; level < levels; ++level) {
+        expected.push_back(librwFirstRead(kSide >> level, kSide >> level, pal8Level(raster, level), raster->palette));
+    }
+    rw::Texture* texture = rw::Texture::create(raster);
+
+    auto converted = textureFromRw(*texture);
+    REQUIRE(converted.has_value());
+    CHECK(coney::graphics::validateTexture(*converted).has_value());
+    REQUIRE(converted->levels.size() == static_cast<std::size_t>(levels));
+    for (std::size_t level = 0; level < converted->levels.size(); ++level) {
+        const coney::graphics::TextureLevel& got = converted->levels[level];
+        CHECK(got.width == static_cast<std::uint32_t>(kSide) >> level);
+        CHECK(got.height == static_cast<std::uint32_t>(kSide) >> level);
+        CHECK(got.texels == expected[level]);
+    }
+    auto again = textureFromRw(*texture);
+    REQUIRE(again.has_value());
+    CHECK(again->levels == converted->levels);
     texture->destroy();
 }
 

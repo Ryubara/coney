@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <utility>
+#include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -118,7 +119,14 @@ TEST_CASE("the asset store refuses a mesh or texture that does not hold together
     TextureData empty = twoLevels();
     empty.levels.resize(1);
     empty.levels[0] = {0, 2, {}};
-    for (const TextureData& texture : {noLevels, shortTexels, wrongHalf, empty}) {
+    // 2^31 x 2^31 texels: four bytes each wrap a 64-bit byte count to 0, which no texels would match.
+    TextureData huge = twoLevels();
+    huge.levels.resize(1);
+    huge.levels[0] = {0x80000000U, 0x80000000U, {}};
+    // A 1 x 1 texture has one level; 33 would also shift a 32-bit side by 32.
+    TextureData pastOneTexel = twoLevels();
+    pastOneTexel.levels.assign(33, {1, 1, std::vector<std::uint8_t>(4, 0)});
+    for (const TextureData& texture : {noLevels, shortTexels, wrongHalf, empty, huge, pastOneTexel}) {
         auto added = store.addTexture(texture);
         REQUIRE_FALSE(added.has_value());
         CHECK(added.error().code == coney::ErrorCode::Invalid);

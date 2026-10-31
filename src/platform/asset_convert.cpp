@@ -79,46 +79,14 @@ graphics::TextureLevel levelOf(rw::Image* image, std::uint32_t width, std::uint3
     return level;
 }
 
-// Reads mip level `level` (above 0) of a PS2 raster. librw's own route (lock the level, then make an image) unswizzles
-// the level twice (platform/texture_dictionary.cpp, convertPs2ByLevels), so here the level is only positioned (locked
-// without fetching) and the image's own lock of the positioned raster unswizzles it once. That lock's unlock swizzles
-// the texels back and puts the raster's size and texel pointer back at level 0, which is the whole of an unlock: the
-// positioning lock is not unlocked again, as a second unlock would swizzle level 0's texels once more. Null when librw
-// makes no image.
+// Reads mip level `level` (above 0) of a PS2 raster through librw's own route: lock the level, make an image, unlock.
+// Null when librw makes no image. (Reverted workaround, for the tests to fail first.)
 rw::Image* ps2LevelImage(rw::Raster& raster, rw::int32 level) {
-    raster.lock(level, rw::Raster::LOCKREAD | rw::Raster::LOCKNOFETCH);
-    return raster.toImage();
+    raster.lock(level, rw::Raster::LOCKREAD);
+    rw::Image* image = raster.toImage();
+    raster.unlock(level);
+    return image;
 }
-
-// Keeps a PS2 raster's data block (texels, palette and GS packets) as it was when made, and puts it back when it goes.
-// librw's read of a palette raster is not undone by its unlock when the raster is narrower than the GS transfer's
-// minimum width (an 8-wide 8-bit or a 16-wide 4-bit raster): unswizzleRaster takes the row width from the padded
-// width, swizzleRaster from the raster's own, so each read leaves the texels scrambled and the next read is wrong
-// (docs/engine/asset-formats.md#scrambling-read). Putting the bytes back makes every read see what was loaded.
-class Ps2RasterBytes {
-  public:
-    // Copies `raster`'s data block (a PS2 raster) as it is now.
-    explicit Ps2RasterBytes(rw::Raster& raster) : m_raster(GETPS2RASTEREXT(&raster)) {
-        if (m_raster->data != nullptr) {
-            m_bytes.assign(m_raster->data, m_raster->data + m_raster->dataSize);
-        }
-    }
-
-    // Writes the copy back over the data block, undoing whatever the reads in between left in it.
-    ~Ps2RasterBytes() {
-        if (!m_bytes.empty()) {
-            std::memcpy(m_raster->data, m_bytes.data(), m_bytes.size());
-        }
-    }
-    Ps2RasterBytes(const Ps2RasterBytes&) = delete;
-    Ps2RasterBytes& operator=(const Ps2RasterBytes&) = delete;
-    Ps2RasterBytes(Ps2RasterBytes&&) = delete;
-    Ps2RasterBytes& operator=(Ps2RasterBytes&&) = delete;
-
-  private:
-    rw::ps2::Ps2Raster* m_raster;
-    std::vector<rw::uint8> m_bytes;
-};
 
 } // namespace
 
@@ -215,12 +183,7 @@ std::expected<graphics::TextureData, Error> textureFromRw(rw::Texture& texture) 
         converted.lod = graphics::unpackTextureLod(GETPS2RASTEREXT(&raster)->kl);
     }
 
-    // Level 0 as librw reads it, then (a PS2 raster only) each further level, positioned and read once; a PS2 raster's
-    // bytes are put back afterwards, whichever way this returns.
-    std::optional<Ps2RasterBytes> keep;
-    if (ps2) {
-        keep.emplace(raster);
-    }
+    // Level 0 as librw reads it, then (a PS2 raster only) each further level.
     const auto width = static_cast<std::uint32_t>(raster.width);
     const auto height = static_cast<std::uint32_t>(raster.height);
     const rw::int32 levels = ps2 ? std::max<rw::int32>(raster.getNumLevels(), 1) : 1;
