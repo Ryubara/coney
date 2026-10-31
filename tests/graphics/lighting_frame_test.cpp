@@ -190,6 +190,10 @@ TEST_CASE("The level's shadow light: none until a script sets it, then its colou
 
     const LightingFrame frame = buildLightingFrame(level, camera());
     REQUIRE(frame.shadow.has_value());
+    // REQUIRE ends the test when empty; this guard shows clang-tidy the same.
+    if (!frame.shadow) {
+        return;
+    }
     CHECK(frame.shadow->colour == LightColour{0.77F, 0.77F, 0.79F, 1.0F});
     // (x, y, z) in the game's axes is (x, z, -y) in RenderWare's.
     CHECK(frame.shadow->offset.x == -500.0F);
@@ -206,6 +210,9 @@ TEST_CASE("The level's shadow light: none until a script sets it, then its colou
     offsetOnly.shadow.setOffset(500.0F, -500.0F, 2000.0F);
     const std::optional<coney::graphics::FrameShadowLight> light = coney::graphics::frameShadowLight(offsetOnly.shadow);
     REQUIRE(light.has_value());
+    if (!light) {
+        return;
+    }
     CHECK(light->colour == LightColour{0.7F, 0.7F, 0.7F, 1.0F});
     CHECK(light->offset.y == 2000.0F);
 }
