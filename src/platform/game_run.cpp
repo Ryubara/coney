@@ -90,6 +90,10 @@ std::expected<std::optional<io::Wad>, Error> openGameDisc(const Options& options
                                    "mod's game-scripts patch, docs/guides/studio/security.md#surface)",
                                    install::kFileOverridesFolder, name));
         }
+        for (const std::string& name : overrides->unreadable) {
+            logWarning(std::format("{}: {} could not be checked against the disc's entry; refused",
+                                   install::kFileOverridesFolder, name));
+        }
         for (const std::string& name : overrides->duplicates) {
             logWarning(std::format("{}: {} names an entry another file already replaces; ignored",
                                    install::kFileOverridesFolder, name));

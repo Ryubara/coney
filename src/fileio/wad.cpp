@@ -5,6 +5,7 @@
 #include <array>
 #include <charconv>
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <format>
 #include <string>
@@ -16,17 +17,28 @@ namespace coney::io {
 
 namespace {
 
-// Whether a stream starts with the signature of a precompiled Lua chunk (ESC "Lua"), as every script on the disc
-// does. A stream too short to hold it, or one that cannot be read, is no chunk.
-[[maybe_unused]] bool isLuaChunk(std::expected<FileStream, Error> stream) { // stub: unused until the fix
-    if (!stream || stream->size() < 4) {
-        return false;
+// What a stream holds, as the script check sees it.
+enum class StreamKind : std::uint8_t {
+    Data,       // anything but a chunk, a stream shorter than the signature included
+    Chunk,      // a precompiled Lua chunk (ESC "Lua"), as every script on the disc is
+    Unreadable, // the stream could not be opened or read
+};
+
+// Tells a chunk by its signature. A stream that cannot be opened or read is Unreadable, never Data, so the check
+// fails closed: a later loader that ran other bytes could not be reached through a read error.
+StreamKind streamKind(std::expected<FileStream, Error> stream) {
+    if (!stream) {
+        return StreamKind::Unreadable;
+    }
+    if (stream->size() < 4) {
+        return StreamKind::Data;
     }
     std::array<std::byte, 4> head{};
     if (!stream->read(head)) {
-        return false;
+        return StreamKind::Unreadable;
     }
-    return head == std::array{std::byte{0x1b}, std::byte{'L'}, std::byte{'u'}, std::byte{'a'}};
+    return head == std::array{std::byte{0x1b}, std::byte{'L'}, std::byte{'u'}, std::byte{'a'}} ? StreamKind::Chunk
+                                                                                               : StreamKind::Data;
 }
 
 } // namespace
@@ -112,6 +124,19 @@ std::expected<WadOverrideReport, Error> Wad::useOverrides(const std::filesystem:
         auto entry = lookup(name);
         if (!entry) {
             report.unmatched.push_back(name);
+            continue;
+        }
+        // Never a script: the player's own disc chunks are the only bytecode the game state runs
+        // (docs/guides/studio/security.md#surface). The WAD names no kinds, so a script is told by its bytes, the
+        // disc entry's and the file's; either one unreadable refuses the file too.
+        std::error_code sizeError;
+        const std::uintmax_t fileSize = std::filesystem::file_size(path, sizeError);
+        const StreamKind onDisc = streamKind(m_disc.openFileRange(kWadFile, (*entry)->wadOffset, (*entry)->size));
+        const StreamKind inFile = sizeError ? StreamKind::Unreadable : streamKind(FileStream::open(path, 0, fileSize));
+        if (onDisc == StreamKind::Chunk || inFile == StreamKind::Chunk) {
+            report.scripts.push_back(name);
+        } else if (onDisc == StreamKind::Unreadable || inFile == StreamKind::Unreadable) {
+            report.unreadable.push_back(name);
         } else if (!m_overrides.try_emplace((*entry)->nameHash, std::move(path)).second) {
             report.duplicates.push_back(name);
         } else {

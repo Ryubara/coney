@@ -216,7 +216,8 @@ place of the entry's range of `WARRIORS.WAD`:
   file is a compiled Lua chunk itself, and the disc's entry is read: the player's own disc chunks are the only bytecode
   the game state runs ([Attack surface](studio/security.md#surface)), and an edited game script is a `game-scripts`
   patch ([Mission mods](studio/mission-mods.md#compiling)). `WARRIORS.DIR` records no kinds, so a script is told by
-  its bytes: every script on the disc is a precompiled chunk (`ESC Lua`).
+  its bytes: every script on the disc is a precompiled chunk (`ESC Lua`). A file is refused too when it, or the entry
+  it names, cannot be read to tell: the check fails closed.
 - A replaced entry is read whole at the file's own size, not the size in `WARRIORS.DIR`, and every other entry still
   reads the archive. The readers of replaceable kinds, scenes among them, size their buffer from the stream, not the
   index, because a replacement is rarely the entry's size.
