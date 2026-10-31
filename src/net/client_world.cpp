@@ -57,15 +57,25 @@ bool sameLayer(const HumanAnimLayer& before, const HumanAnimLayer& after) {
     return before.clip == after.clip || gaitLeaderChanged(before, after);
 }
 
+// The pair of a gait blend at value `value`, as GaitBlendTask::lowerIndex() finds it: asked of a blend over stand-in
+// clips, since the pair depends on the value alone and its steps are the task's to keep.
+std::size_t gaitPair(float value) {
+    static const anim::AnimClip kStandIn{};
+    static const std::array<anim::GaitClip, 5> kClips{
+        anim::GaitClip{.clip = &kStandIn}, anim::GaitClip{.clip = &kStandIn}, anim::GaitClip{.clip = &kStandIn},
+        anim::GaitClip{.clip = &kStandIn}, anim::GaitClip{.clip = &kStandIn}};
+    return anim::GaitBlendTask(kClips, value, 0.0F, 1.0F, anim::kGaitBlendFlags).lowerIndex();
+}
+
 // The clip a gait blend crossing between two ends names at blend value `value`: the end's whose pair `value` is in
 // (layerPose() rebuilds the blend from either clip of the pair), the newer's first; nothing when the value crossed
 // past both ends' pairs in one interval, which is then drawn as a cut.
 std::optional<std::int32_t> gaitClipAt(const HumanAnimLayer& before, const HumanAnimLayer& after, float value) {
-    const std::size_t pair = anim::GaitBlendTask::lowerIndexOf(value);
-    if (anim::GaitBlendTask::lowerIndexOf(after.gait) == pair) {
+    const std::size_t pair = gaitPair(value);
+    if (gaitPair(after.gait) == pair) {
         return after.clip;
     }
-    if (anim::GaitBlendTask::lowerIndexOf(before.gait) == pair) {
+    if (gaitPair(before.gait) == pair) {
         return before.clip;
     }
     return std::nullopt;
