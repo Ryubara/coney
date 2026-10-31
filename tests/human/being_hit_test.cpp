@@ -232,6 +232,19 @@ TEST_CASE("a stun ended from outside ends on the next step, whatever its time", 
     CHECK(victim.grounded());
 }
 
+TEST_CASE("a press on the update that lands on the rise time gets the victim up that update", "[human][combat]") {
+    // Expected: combat-reactions.md#ground-escape, confirmed (code): Human_UpdateDown (0x00256a60) cuts the ground time
+    // on any command while knocked down, then tests the rise (time minus now below zero) in the same update.
+    const FightCharacter character;
+    coney::human::HumanAnimator animator(character.anims, coney::human::AnimSlots::player());
+    coney::human::Victim victim(combat::kCivilianPowerClass);
+    victim.knockDown(3000, false);
+    REQUIRE(victim.riseAtMs() == 5000);
+    CHECK(victim.mash(animator, 5000));
+    CHECK(victim.step(animator, coney::human::kAnimFightIdle, 5000, true));
+    CHECK_FALSE(victim.grounded());
+}
+
 TEST_CASE("presses during the knockdown's reaction do nothing; lying down each one cuts the time", "[human][combat]") {
     // Expected: combat-reactions.md#being-hit-runtime, confirmed (runtime)
     const FightCharacter character;
