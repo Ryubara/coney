@@ -95,7 +95,7 @@ class JitterBuffer {
     [[nodiscard]] const JitterConfig& config() const { return m_config; }
 
   private:
-    // The clock's target now: the newest step less the delay, never before the oldest snapshot held.
+    // The clock's target now: the newest step less the delay.
     [[nodiscard]] std::uint64_t target() const;
     // Drops the snapshots older than the one the playback time blends from.
     void prune();
