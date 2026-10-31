@@ -832,8 +832,8 @@ In order. Issues 1 to 6 are 4.0 patching; issue 7 is the probe; issues 8 to 11 f
 
 Under [#1054](issue:1054), in order; the save format is [#1179](issue:1179)'s.
 
-1. **core: Add the story graph seeded with the original's order** ([#1299](issue:1299)): the chain, its views and the
-   walk and disc tests.
+1. **core: Add the story graph seeded with the original's order** ([#1299](issue:1299), built:
+   [In Coney](../../research/story-progress.md#coney)): the chain, its views and the walk and disc tests.
 2. **core: Add native runNextMission and findLastMission over the graph** ([#1300](issue:1300)): the two natives, the
    hub's offer written into `fRunMission`, level numbers for mod missions from the pool of free numbers 2-59.
 3. **core: Add the manifest's story section and the story graph merge** ([#1301](issue:1301)): `[story]`, anchors, the

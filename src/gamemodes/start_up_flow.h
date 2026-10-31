@@ -222,7 +222,7 @@ class StartUpFlow final : public script::BindingHost {
     GameModeStack& m_stack;
     std::function<void(std::string_view)> m_log;
     GameState m_state;
-    story::StoryGraph m_story; // the session's story order, fixed while it runs
+    story::StoryGraph m_story = story::StoryGraph::original(); // the session's story order, fixed while it runs
     script::RecordedCalls m_recorded;
     CreatedHumans m_humans;
     world_objects::WorldFlags m_flags;
