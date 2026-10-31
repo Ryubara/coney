@@ -5,7 +5,8 @@ The mod (`tools/claude-mod`) is written in TypeScript and cannot import what kno
 stamp log, the claim cards, the hook settings. So one command reads them and prints the result, and the mod only
 draws it. The snapshot is read-only: it writes nothing, to GitHub or to the repository (a conflict fetches `main` and
 gets a throwaway worktree and a ledger in the scratch folder: `conflict_work`). It reuses `coord status` for the build
-slots, the detached builds and the pull requests, and `claim list` for the claim cards.
+slots, the detached builds, the checks (each unit's `task check` progress: which check, how far, queued, stalled) and
+the pull requests, and `claim list` for the claim cards.
 
 Each section is an object with `error` (None when it was read); a section that could not be read holds only its
 `error` and the others stand, so a failure is never taken for "nothing there". The GitHub sections (`claims`, `prs`,
@@ -23,7 +24,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from coney_tools import stamps
+from coney_tools import coord_cli, stamps
+from coney_tools.build_claims import CHECK_LANE
 from coney_tools.conclave_github import add_github
 from coney_tools.conclave_sources import Sources, default_sources, iso_utc, section, strings
 from coney_tools.issue_claim_model import iso_time, scopes_overlap
@@ -32,7 +34,7 @@ from coney_tools.task_file import TaskFile, TaskFileError, parse_task_file
 __all__ = ["SCHEMA", "Sources", "collect", "default_sources", "format_text"]
 
 #: The version of the snapshot's shape; the mod refuses a snapshot of a newer one.
-SCHEMA = 2
+SCHEMA = 3
 #: The longest goal line sent for a unit (the pane shows one line).
 GOAL_CHARACTERS = 200
 #: A step result that counts as the step being done (`none`: the step was not needed, with a reason in the stamp;
@@ -145,7 +147,9 @@ def _agent_of(report: stamps.Report) -> dict[str, str] | None:
 
 
 def _build_of(lanes: dict[str, Any], tree: str) -> dict[str, Any] | None:
-    """The build a worktree runs or waits for: in a slot first, else in a queue."""
+    """The build a worktree runs or waits for: in a slot first, else in a queue. The check slots are no build: a suite
+    that holds or waits for one is the unit's `check` (its progress file), not its build."""
+    lanes = {lane: data for lane, data in lanes.items() if lane != CHECK_LANE}
     for lane, data in lanes.items():
         for slot in data.get("slots", []):
             claim = slot.get("claim")
@@ -196,6 +200,7 @@ def _unit(
     folder: Path,
     tree: tuple[Path, str | None] | None,
     lanes: dict[str, Any],
+    checks: dict[str, dict[str, Any]],
     now: datetime,
 ) -> dict[str, Any] | None:
     """One unit's row, or None when it is too old to show (no worktree and unchanged for `unit_days`)."""
@@ -228,6 +233,7 @@ def _unit(
         "stamp_problems": sum(1 for problem in report.problems if problem.severity == "error"),
         "build": _build_of(lanes, path.name) if path else None,
         "last_build": _last_build(src, path) if path else None,
+        "check": checks.get(folder.name),
         "overlaps": [],
         "pr": None,
     }
@@ -255,16 +261,19 @@ def _unit(
 
 
 def _units(src: Sources, lanes: dict[str, Any], now: datetime) -> dict[str, Any]:
-    """Every folder of the scratch directory that holds a task file, with its worktree, stage, build and overlaps."""
+    """Every folder of the scratch directory that holds a task file, with its worktree, stage, build, check and
+    overlaps."""
     scratch = src.coord.scratch
     if not scratch.is_dir():
         raise OSError(f"no scratch directory at {scratch}")
     trees = {(branch or "").replace("/", "-"): (path, branch) for path, branch in src.coord.worktrees() if branch}
+    # The checks are read the way `coord status` reads them: the one reader of the progress files.
+    checks = {row["task"]: row for row in coord_cli.checks(src.coord, now)["checks"]}
     rows: list[dict[str, Any]] = []
     for folder in sorted((p for p in scratch.iterdir() if p.is_dir()), key=lambda p: p.name):
         if not (folder / src.conventions.tasks.file).is_file():
             continue
-        row = _unit(src, folder, trees.get(folder.name), lanes, now)
+        row = _unit(src, folder, trees.get(folder.name), lanes, checks, now)
         if row is not None:
             rows.append(row)
     for row in rows:

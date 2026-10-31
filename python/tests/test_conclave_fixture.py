@@ -7,9 +7,20 @@ import os
 from pathlib import Path
 from typing import Any
 
-from conclave_support import FakeGh, Layout, ago, github_answers, make_layout, make_task, sources, stamp_steps
+from conclave_support import (
+    FakeGh,
+    Layout,
+    ago,
+    github_answers,
+    make_layout,
+    make_task,
+    sources,
+    stamp_steps,
+    write_check,
+)
 from conventions_support import REPO
 
+from coney_tools.check_progress import Fraction
 from coney_tools.conclave_snapshot import collect
 from coney_tools.conventions import load_conventions
 
@@ -48,6 +59,9 @@ def fixture_layout(root: Path) -> Layout:
     ):
         (made.scratch / "fix-new" / name).write_text(text, encoding="utf-8")
         os.utime(made.scratch / "fix-new" / name, (ago(hours=hours).timestamp(),) * 2)
+    # `fix-frame-812` runs pytest, 64% done and stuck there for 40 minutes; `fix-new` waits for a check slot.
+    write_check(made.scratch, "fix-frame-812", ran=50, moved=40, fraction=Fraction(64, 100, "%"))
+    write_check(made.scratch, "fix-new", ran=4, waiting=True)
     make_task(made.scratch, "add-task-start", (799,), ("python/src/coney_tools/task_cli.py",))
     steps = load_conventions(REPO).stamps.steps
     stamp_steps(made.scratch, "add-task-start", [(step, "pass") for step in steps], hours_ago=1)

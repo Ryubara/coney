@@ -2,12 +2,15 @@
 // What the mod says, as plain functions of the held snapshot and the clock: no `$`, so the tests can read them directly.
 // The mod draws and never decides: every number it compares against (the warning hours, the disk limits, the
 // intervals, the widths, the stale factor) arrives in the snapshot, from .github/conventions.yml.
-import type { ClaimRow, Config, Held, Snapshot, Unit } from '../types'
+import type { ClaimRow, Config, Held, Lane, Snapshot, Unit } from '../types'
 
 /** The id of the Conclave pane: the band opens it, the poll looks for it and the hooks draw it. */
 export const PANE = 'conclave'
 
 export type Tone = 'normal' | 'ok' | 'warn' | 'bad' | 'dim'
+
+/** The name `coney-tools` gives the lane of the check slots in `builds.lanes` (build_claims.CHECK_LANE). */
+export const CHECK_LANE = 'check'
 
 /** The engine's colour name for a tone (`undefined`: the default colour). */
 export function color(tone: Tone): string | undefined {
@@ -256,16 +259,32 @@ export function bandItems(held: Held, nowMs: number): BandItem[] {
     items.push({ key: 'claims', text: `claims ${claims.length}`, tone })
   }
   if (snapshot.builds.error === null) {
-    const lanes = Object.values(snapshot.builds.lanes)
-    const running = lanes.reduce((n, lane) => n + lane.slots.filter(slot => slot.claim !== null).length, 0)
-    const queued = lanes.reduce((n, lane) => n + lane.queue.length, 0)
-    if (running + queued > 0) {
+    // The check slots (full suites: `task check`'s pytest and ctest) are a lane of their own, counted beside the builds.
+    const entries = Object.entries(snapshot.builds.lanes)
+    const count = (lanes: Lane[]): { running: number; queued: number } => ({
+      running: lanes.reduce((n, lane) => n + lane.slots.filter(slot => slot.claim !== null).length, 0),
+      queued: lanes.reduce((n, lane) => n + lane.queue.length, 0),
+    })
+    const builds = count(entries.filter(([name]) => name !== CHECK_LANE).map(([, lane]) => lane))
+    const checks = count(entries.filter(([name]) => name === CHECK_LANE).map(([, lane]) => lane))
+    if (builds.running + builds.queued > 0) {
       items.push({
         key: 'builds',
-        text: `builds ${running}${queued > 0 ? ` (+${queued} queued)` : ''}`,
+        text: `builds ${builds.running}${builds.queued > 0 ? ` (+${builds.queued} queued)` : ''}`,
         tone: 'normal',
       })
     }
+    if (checks.running + checks.queued > 0) {
+      items.push({
+        key: 'checks',
+        text: `checks ${checks.running}${checks.queued > 0 ? ` (+${checks.queued} queued)` : ''}`,
+        tone: 'normal',
+      })
+    }
+    // A check whose fraction has not moved for `conclave.check_stall_minutes` is an item of its own, in amber.
+    const stalled =
+      snapshot.units.error === null ? snapshot.units.units.filter(unit => unit.check?.stalled === true).length : 0
+    if (stalled > 0) items.push({ key: 'stalled', text: `⚠${stalled} stalled`, tone: 'warn' })
   }
   if (snapshot.issues !== null && snapshot.issues.error === null) {
     const critical = snapshot.issues.issues.filter(issue => issue.priority === 'P-critical')
@@ -301,6 +320,23 @@ export function buildText(unit: Unit, nowMs: number): string {
     return `build: slot ${unit.build.slot ?? '?'} ${unit.build.since ? elapsed(unit.build.since, nowMs) : ''}`.trimEnd()
   }
   return `build: queue ${unit.build.position ?? '?'}`
+}
+
+/**
+ * What a unit's `task check` says on its row: `pytest 64% 50m`, `queued 5/6 ~36m`, `pytest 64% 50m stalled`,
+ * `pytest abandoned`. The words are the snapshot's (`coord status` builds them from the progress file); a check that
+ * ended and passed or failed is the stage's to say, so it says nothing here.
+ */
+export function checkText(unit: Unit): string {
+  const check = unit.check
+  if (check === null || check.state === 'passed' || check.state === 'failed') return ''
+  return check.short
+}
+
+/** The tone of a unit's check: amber while it is stalled or abandoned, plain otherwise. */
+export function checkTone(unit: Unit): Tone {
+  const check = unit.check
+  return check !== null && (check.stalled || check.state === 'abandoned') ? 'warn' : 'normal'
 }
 
 /** A unit's pull request in a few words: `PR #812`, `merged 4m ago`, or nothing. */

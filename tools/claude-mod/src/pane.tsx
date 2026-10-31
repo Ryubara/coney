@@ -12,6 +12,8 @@ import type { ClaimRow, Held, Snapshot, StepState, Unit } from '../types'
 import {
   bandItems,
   buildText,
+  checkText,
+  checkTone,
   claimExpiry,
   claimExpiryTiny,
   claimLineText,
@@ -80,11 +82,13 @@ function worstTone(items: readonly BandItem[]): Tone {
   return tones.includes('bad') ? 'bad' : tones.includes('warn') ? 'warn' : 'normal'
 }
 
-/** What a collapsed unit row says after its title in the wide layout: who, the stage, the build, the pull request, the age. */
+/** What a collapsed unit row says after its title in the wide layout: who, the stage, the build, the check, the pull request, the age. */
 function unitSummary(unit: Unit, nowMs: number): string {
   const who = unit.agent?.id ?? unit.claimant ?? '?'
   const age = unit.claimed_at === null ? '' : elapsed(unit.claimed_at, nowMs)
-  return [who, stageText(unit), buildText(unit, nowMs), prText(unit, nowMs), age].filter(Boolean).join('  ')
+  return [who, stageText(unit), buildText(unit, nowMs), checkText(unit), prText(unit, nowMs), age]
+    .filter(Boolean)
+    .join('  ')
 }
 
 /** The pane's tree: units and issues with rows that open, then every held claim with its countdown. */
@@ -160,6 +164,7 @@ export async function drawPane($: EngineInterface, e: PaneInput) {
         {detail('status', [
           `${stageText(unit)}${unit.stage_since ? `, ${elapsed(unit.stage_since, nowMs)} in stage` : ''}${unit.busy ? ', busy' : ''}`,
         ])}
+        {unit.check !== null && detail('check', [unit.check.text], ' ', checkTone(unit))}
         {claim !== undefined && detail('expiry', [expiry], ' ', claimTone(claim, rules, redHours, nowMs))}
         {detail('scope', [`${unit.scope.join(', ') || 'not stated'}${overlaps}`], ' ', overlaps ? 'warn' : 'normal')}
         {detail('stamps', unit.steps.map(step => `${stepMark(step.state)} ${step.step}`), '  ')}
@@ -182,16 +187,16 @@ export async function drawPane($: EngineInterface, e: PaneInput) {
     const caret = `${isOpen ? '▾' : '▸'} ${mark(kind, surface)} `
     const open = isOpen && unitDetails(unit, claimOf(snapshot, unit))
     if (isCompact) {
-      // Compact: line 1 the mark, the issue, the stage and the pull request; line 2, dim, the title, who, the build.
-      // Narrow: line 1 only the issue (the task when it names none) and the stage; line 2 the pull request, who, the
-      // build and last the title, the first thing a clip cuts.
+      // Compact: line 1 the mark, the issue, the stage and the pull request; line 2, dim, the check (when it has one, so
+      // that a clip keeps it), the title, who, the build. Narrow: line 1 only the issue (the task when it names none)
+      // and the stage; line 2 the pull request, the check, who, the build and last the title, the first thing a clip cuts.
       const who = unit.agent?.id ?? unit.claimant ?? '?'
       const head = isNarrow
         ? `${issueIds(unit) || unit.task} ${stageText(unit)}`
         : [`${issueIds(unit)} ${stageText(unit)}`, prText(unit, nowMs)].filter(Boolean).join('  ')
       const rest = isNarrow
-        ? [prText(unit, nowMs), who, buildText(unit, nowMs), unitTitle(snapshot, unit)]
-        : [unitTitle(snapshot, unit), who, buildText(unit, nowMs)]
+        ? [prText(unit, nowMs), checkText(unit), who, buildText(unit, nowMs), unitTitle(snapshot, unit)]
+        : [checkText(unit), unitTitle(snapshot, unit), who, buildText(unit, nowMs)]
       return (
         <Box key={key} flexDirection="column">
           <Button key={key} onPress={() => toggle(key)}>

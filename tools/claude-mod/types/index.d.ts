@@ -64,6 +64,30 @@ export type UnitBuild = {
   position?: number | null
 }
 
+/**
+ * A unit's `task check` as `coney-tools coord status` reads its progress file (python/src/coney_tools/check_progress.py):
+ * the words are Python's, so the mod draws `short` on a row and `text` in its detail and compares nothing.
+ */
+export type UnitCheck = {
+  /** `abandoned` is also what a reading says of a run whose process is gone. */
+  state: 'waiting' | 'running' | 'passed' | 'failed' | 'abandoned'
+  /** The check (or checks) that run and the kind of work: `pytest`, `build`, `ctest`. */
+  check: string
+  kind: string
+  /** The check's place in the run's list (`index` of `total`). */
+  index: number
+  total: number
+  elapsed: number
+  /** A running check whose fraction has not moved for `conclave.check_stall_minutes`. */
+  stalled: boolean
+  /** The place in a slot queue while it waits. */
+  queue: { lane: string; place: number; total: number; minutes: number; held_by: string[] } | null
+  /** `pytest 64% 50m`, `queued 5/6 ~36m`: the unit row's form. */
+  short: string
+  /** `check 6 of 8, pytest: running 50 min, 64% done`: the full form, for the row's detail. */
+  text: string
+}
+
 export type UnitPr = {
   number: number
   state: 'open' | 'merged'
@@ -95,6 +119,8 @@ export type Unit = {
   stamp_problems: number
   build: UnitBuild | null
   last_build: { state: string | null; exit_code: number | null; ended: string | null } | null
+  /** The unit's `task check` while it goes on, and for an hour after it ended; null when there is none. */
+  check: UnitCheck | null
   overlaps: Overlap[]
   pr: UnitPr | null
 }

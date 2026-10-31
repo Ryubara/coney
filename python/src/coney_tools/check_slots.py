@@ -22,6 +22,7 @@ from pathlib import Path
 
 from coney_tools import build_claims
 from coney_tools.build_claims import CHECK_LANE, Slots, SlotTimeout, Waiting
+from coney_tools.check_progress import Progress
 
 #: Minutes a suite waits for a slot before giving up (exit 75, "run it again"); the suites themselves are 30 to 40.
 DEFAULT_MAX_WAIT = 180.0
@@ -59,16 +60,21 @@ def hold(
     poll: float = build_claims.POLL_SECONDS,
     report_every: float = build_claims.REPORT_SECONDS,
     abandon: Callable[[float, float], str | None] | None = None,
+    progress: Progress | None = None,
 ) -> Iterator[None]:
     """Hold a check slot for a `with` block that runs the full suite `what` (`pytest`, `ctest`) as process `pid`
     (default: this one). Waits in the queue, saying the place with `say` when it starts to wait and every
     `report_every` seconds; raises `SlotTimeout` after `max_wait` minutes (or when `abandon` answers). Says so when it
     took over a stale claim (a suite whose process died) and when it waited. The slot is released however the block
-    ends."""
+    ends. With a `progress` (check_progress.py) each report of the wait also gives it the place and the estimate, the
+    same values the line says, and it runs once the slot is held."""
     started = slots.clock()
 
     def report(waiting: Waiting) -> None:
         say(waiting_line(waiting, slots, what, slots.clock()))
+        if progress is not None:
+            holders = [holder.agent for holder in waiting.holders]
+            progress.waiting(CHECK_LANE, waiting.place, waiting.total, waiting.minutes, holders)
 
     with slots.hold(
         agent,
@@ -91,6 +97,8 @@ def hold(
         if waited >= 1:
             say(f"got check slot {claim.slot} after {waited / 60:.0f} min; running {what}")
         slots.set_step(claim, what)
+        if progress is not None:
+            progress.running()
         yield
 
 

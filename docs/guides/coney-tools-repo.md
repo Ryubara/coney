@@ -448,6 +448,9 @@ codebase nightly ([building](clang-tidy.md)).
   is still running every minute. The whole pytest suite, and the engine's full ctest run inside the build, wait for a
   **check slot** first ([Check slots](coney-tools-build.md#check-slots)), so a run of either needs `--agent` too; a
   scoped pytest run takes none.
+* **It writes where it is.** While it runs, a progress file in the task's scratch folder says which check of the list
+  is going on, how long, how far and, while it waits, its place in the queue ([The progress file](#check-progress)), so
+  nobody has to read the logs to see how far a run is.
 * A fix task's id (`task check 812-fix`) is checked in its parent's folder: the stamp, the build record and the check
   logs go where `pr verify` and `pr open` read them, the parent's, as the fix's unit record says, and the first line
   says so ([A fix task](issues.md#starting)). A fix task with no unit record (made by hand, or before the records) is
@@ -457,6 +460,33 @@ codebase nightly ([building](clang-tidy.md)).
 Exit 0 every check passed and the stamp is written; 1 a check failed (a `fail` stamp is written); 2 it cannot run or
 cannot stamp (nothing is written); 75 the build or the pytest run gave up waiting for a slot (nothing is written; run
 it again).
+
+#### The progress file {#check-progress}
+
+`task check` writes `check-progress.json` in the task's scratch folder (the parent's, for a fix task, like its check
+logs) from the moment the checks begin. It is replaced whole on every change of state and every minute (the interval of
+the `still running` lines, from the same numbers), so a reader never sees half of it. The writer and the one reader of
+the format are `python/src/coney_tools/check_progress.py`; nothing else parses the file. `coord status` shows it
+([coord](coney-tools-setup.md#coord)) and Conclave takes it from there ([the pane](conclave.md#unit-check)).
+
+| Field | Holds |
+| --- | --- |
+| `state` | `waiting` (for a check slot or a build slot), `running`, then `passed` or `failed`, or `abandoned` when the run ended with no verdict (an error, an interrupt, a wait that gave up with exit 75) |
+| `check`, `kind`, `index`, `total` | The check running (`pytest`; the build run is one entry, `msvc-ci-build and ctest-full-disc`, at the place of its first check), the kind of work (`pytest`, `build` and then `ctest` inside the build run, else the check's name), and its place in the list: `6` of `8` |
+| `since`, `elapsed` | When the current phase began (waiting and running each start it) and its seconds at the last write |
+| `done` | How far, when known: `{done, of, unit, failed}` with `unit` `%` (pytest's percent), `steps` (ninja's `[n/m]`) or `tests` (ctest's `n/m`, and the tests that failed); null for ruff, mypy and the like |
+| `moved` | When `done` last changed |
+| `queue` | While waiting: the lane (`check`, or a build lane), the `place` of `total`, the estimate in `minutes` and who holds the slots |
+| `pid`, `started`, `updated` | The process, when the run began and the last write |
+
+A reader (`read_view`) adds what it judges at the time it reads. A `waiting` or `running` file whose process is gone, or
+that has not been written for five minutes (a killed run cannot mark itself, and a process id can be reused), is
+`abandoned`. A running check with a fraction that has not moved for `conclave.check_stall_minutes` (30, in
+[.github/conventions.yml](repo:.github/conventions.yml)) is `stalled`; a check with no fraction is never stalled, because
+nothing says it should move. It also writes the two forms every reader shows, so no reader words them again: `short`
+(`pytest 64% 50m`, `queued 5/6 ~36m`, `pytest 64% 50m stalled`, `pytest abandoned`) and `text` (`check 6 of 8, pytest:
+running 50 min, 64% done; stalled: no progress for 40 min`). A write that fails is ignored: the file never fails the run.
+A dry run, a refusal before the checks and a run of `ci run` write none.
 
 #### Which Python tests run {#task-check-pytest}
 

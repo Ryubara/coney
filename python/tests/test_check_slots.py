@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 from test_build_claims import NOW, World, take, ticket
 
-from coney_tools import build_claims, check_slots
+from coney_tools import build_claims, check_progress, check_slots
 from coney_tools.build_claims import CHECK_LANE, Slots, SlotTimeout, Waiting
 from coney_tools.cli import main
 from coney_tools.config import ConfigError, load_config
@@ -80,6 +80,45 @@ def test_a_suite_that_waits_says_its_place_and_who_holds_the_slots(tmp_path: Pat
     assert "place 1 of 1" in waiting[0] and "held by alice (" in waiting[0]
     assert "1 full suite may run at once (check_slots in coney.local.toml)" in waiting[0]
     assert any(line.startswith("got check slot 1 after") for line in said)
+
+
+def test_a_waiting_suite_gives_its_place_to_the_progress_file_and_runs_when_it_has_the_slot(
+    tmp_path: Path, world: World
+) -> None:
+    checks = check_lane(tmp_path, world, 1)
+    held = take(checks, world, "alice", 20_001)
+    assert held is not None
+    file = tmp_path / "unit" / check_progress.FILE_NAME
+    progress = check_progress.Progress()
+    progress.attach(file)
+    progress.start("pytest", "pytest", 6)
+    seen: list[dict[str, object]] = []
+
+    def free_after(sleeps: int) -> None:
+        if sleeps == 3:
+            seen.append(json.loads(file.read_text(encoding="utf-8")))  # while it waits
+            checks.release_claim(held)
+
+    world.on_sleep.append(free_after)
+    with check_slots.hold(
+        checks,
+        "bob",
+        "wt-b",
+        "pytest",
+        lambda line: None,
+        pid=30_000,
+        max_wait=60,
+        poll=2,
+        report_every=2,
+        progress=progress,
+    ):
+        inside = json.loads(file.read_text(encoding="utf-8"))
+    waiting = seen[0]
+    queue = waiting["queue"]
+    assert waiting["state"] == "waiting"
+    assert isinstance(queue, dict)
+    assert (queue["lane"], queue["place"], queue["total"], queue["held_by"]) == ("check", 1, 1, ["alice"])
+    assert inside["state"] == "running" and inside["queue"] is None
 
 
 def test_a_crashed_holders_slot_frees_and_the_next_suite_takes_it_over(tmp_path: Path, world: World) -> None:

@@ -36,6 +36,7 @@ from coney_tools import (
 )
 from coney_tools.build_claims import CHECK_LANE, FAST_LANE, LANES, MAIN_LANE, BuildClaimError, Slots
 from coney_tools.build_history import FILE_NAME, History
+from coney_tools.check_progress import Progress
 from coney_tools.config import (
     INT_KEYS,
     ConfigError,
@@ -328,12 +329,19 @@ def run_build(args: argparse.Namespace) -> int:
 
 
 def build_and_test(
-    root: Path, agent: str, preset: str, *, task: str | None = None, max_wait: float = DETACHED_MAX_WAIT
+    root: Path,
+    agent: str,
+    preset: str,
+    *,
+    task: str | None = None,
+    max_wait: float = DETACHED_MAX_WAIT,
+    progress: Progress | None = None,
 ) -> build_run.Result:
     """The whole suite of `preset` for `coney-tools task check`: configure if needed, build and run every test under
     the slots, as `build --test` does, but waiting up to `max_wait` minutes for a slot with no budget (the caller
     outlasts a prompt cache on purpose and says so). The run leaves its build record in the folder of `task`; the
-    result's `record` is its path. Raises ConfigError for a precheck that fails, as the command does."""
+    result's `record` is its path. With a `progress` (check_progress.py) the run's waits for a slot, its build and its
+    tests go to it as they happen. Raises ConfigError for a precheck that fails, as the command does."""
     args = argparse.Namespace(
         agent=agent,
         preset=preset,
@@ -359,7 +367,7 @@ def build_and_test(
     )
     checkout, env = _precheck(args)
     log_path = _new_log(checkout, preset, None, agent)
-    return _build(args, checkout, env, log_path, (max_wait, 0.0), _tie_to_caller, task)
+    return _build(args, checkout, env, log_path, (max_wait, 0.0), _tie_to_caller, task, progress)
 
 
 def _typed_in_a_terminal() -> bool:
@@ -453,6 +461,7 @@ def _build(
     limits_minutes: tuple[float, float],
     lifetime: Callable[[build_run.ProcessToolchain], None],
     task: str | None = None,
+    progress: Progress | None = None,
 ) -> build_run.Result:
     """Configure, build and test under the slots, writing the full output to `log_path` and the summary to the
     console; `limits_minutes` is (max wait, budget) and `lifetime` ties the toolchain's processes to this run (and the
@@ -515,6 +524,7 @@ def _build(
             test_jobs=numbers["test_jobs"],
             cached=cache.on,
             cache_report=lambda: cache_line(cache, folder, stats_log, toolchain),
+            progress=progress or Progress(),
         )
         result = build_run.execute(options, context)
     _leave_record(args, root, result, log_path, started, disc, snapshot)

@@ -2,7 +2,7 @@
 // Written by python/tests/test_conclave_fixture.py from the Python tests' synthetic units: do not edit.
 // Run that test with CONEY_UPDATE_FIXTURES=1 to write it again after a change to the snapshot.
 export default {
- "schema": 2,
+ "schema": 3,
  "time": "2026-10-23T14:00:00Z",
  "checkout": "/work/repos/coney",
  "github": true,
@@ -77,6 +77,42 @@ export default {
       "worktree": "fix-new",
       "preset": "dev",
       "pid": 5,
+      "priority": false,
+      "time": 0.0
+     }
+    ]
+   },
+   "check": {
+    "slots": [
+     {
+      "slot": 1,
+      "stale": false,
+      "claim": {
+       "slot": 1,
+       "agent": "engineer-2",
+       "worktree": "/work/worktrees/fix-frame-812",
+       "preset": "pytest",
+       "step": "pytest",
+       "pid": 4,
+       "started": "2026-10-23T13:10:00Z",
+       "lane": "check"
+      }
+     },
+     {
+      "slot": 2,
+      "stale": false,
+      "claim": null
+     }
+    ],
+    "queue": [
+     {
+      "position": 1,
+      "stale": false,
+      "name": "t2",
+      "agent": "x",
+      "worktree": "fix-new",
+      "preset": "pytest",
+      "pid": 6,
       "priority": false,
       "time": 0.0
      }
@@ -160,6 +196,7 @@ export default {
     "stamp_problems": 0,
     "build": null,
     "last_build": null,
+    "check": null,
     "overlaps": [],
     "pr": {
      "number": 799,
@@ -250,6 +287,34 @@ export default {
      "since": "2026-10-23T13:57:00Z"
     },
     "last_build": null,
+    "check": {
+     "task": "fix-frame-812",
+     "pid": 100,
+     "started": "2026-10-23T13:10:00Z",
+     "check": "pytest",
+     "kind": "pytest",
+     "index": 6,
+     "total": 8,
+     "since": "2026-10-23T13:10:00Z",
+     "updated": "2026-10-23T14:00:00Z",
+     "state": "running",
+     "stored": "running",
+     "elapsed": 3000,
+     "age": 0,
+     "done": {
+      "done": 64,
+      "of": 100,
+      "unit": "%",
+      "failed": null
+     },
+     "fraction": 0.64,
+     "moved": "2026-10-23T13:20:00Z",
+     "idle": 2400,
+     "stalled": true,
+     "queue": null,
+     "short": "pytest 64% 50m stalled",
+     "text": "check 6 of 8, pytest: running 50 min, 64% done; stalled: no progress for 40 min"
+    },
     "overlaps": [
      {
       "with": "fix-new",
@@ -344,6 +409,37 @@ export default {
      "lane": "main"
     },
     "last_build": null,
+    "check": {
+     "task": "fix-new",
+     "pid": 100,
+     "started": "2026-10-23T13:56:00Z",
+     "check": "pytest",
+     "kind": "pytest",
+     "index": 6,
+     "total": 8,
+     "since": "2026-10-23T14:00:00Z",
+     "updated": "2026-10-23T14:00:00Z",
+     "state": "waiting",
+     "stored": "waiting",
+     "elapsed": 0,
+     "age": 0,
+     "done": null,
+     "fraction": null,
+     "moved": "2026-10-23T13:56:00Z",
+     "idle": null,
+     "stalled": false,
+     "queue": {
+      "lane": "check",
+      "place": 5,
+      "total": 6,
+      "minutes": 36.0,
+      "held_by": [
+       "bob"
+      ]
+     },
+     "short": "queued 5/6 ~36m",
+     "text": "check 6 of 8, pytest: waiting for a check slot, place 5 of 6, about 36 min; held by bob"
+    },
     "overlaps": [
      {
       "with": "fix-frame-812",

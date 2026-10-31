@@ -5,9 +5,10 @@ Anyone at a prompt reads the whole report; the coordinator's Tether watch runs `
 wake the session when new ids appear (docs/guides/coney-tools-setup.md#coord-wakes). The local parts are fast and never
 touch the network: the PCSX2 copies (the rows of `pcsx2 status --json`), the build slots and queues
 (`build status --json`), each worktree's last detached build (`build result`), the release queue (the `PR*.md` files in
-the scratch folders) and the tracks (each scratch folder's `STATUS.md`). `--github` adds the open issues (ids and
-labels, no titles), the open pull requests with the `pr list-stuck` report, the CI queue's counts and, for the
-release queue, which units already have a pull request.
+the scratch folders), the tracks (each scratch folder's `STATUS.md`) and the checks (the progress file of each unit's
+`task check`: which check, how far, its place in the slot queue, stalled or abandoned; check_progress.py). `--github`
+adds the open issues (ids and labels, no titles), the open pull requests with the `pr list-stuck` report, the CI
+queue's counts and, for the release queue, which units already have a pull request.
 
 `action` lists what waits for the coordinator as stable ids: a new id is new work, and an id that leaves the list was
 dealt with. The GitHub kinds (`GITHUB_KINDS`) appear only in a `--github` read. Each section is an object with `error`
@@ -28,7 +29,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from coney_tools import build_cli, pcsx2_claims_cli, pr_health
+from coney_tools import build_cli, check_progress, pcsx2_claims_cli, pcsx2_proc, pr_health
 from coney_tools.audit_github import Runner, run_gh
 from coney_tools.config import ConfigError, find_repo_root, main_checkout
 from coney_tools.conventions import load_conventions
@@ -46,7 +47,8 @@ KIND_SECTIONS = {
 }
 #: The issue status label that waits for the coordinator (triage is its job).
 TRIAGE_LABEL = "S-needs-triage"
-#: A finished detached build is news for this long after it ended.
+#: A finished detached build is news for this long after it ended, and so is a `task check` that ended (passed, failed
+#: or was abandoned).
 RECENT_BUILD_SECONDS = 60 * 60
 #: A scratch folder's STATUS.md counts as a track while its worktree exists, or for this long after its last change.
 TRACK_DAYS = 3
@@ -116,6 +118,10 @@ class Sources:
     build_result: Callable[[Path], dict[str, Any] | None] = build_cli.result_record
     #: The judge of `pr list-stuck`: (open pull requests, required checks, now) to its JSON report.
     health: Callable[[list[dict[str, Any]], tuple[str, ...], datetime], dict[str, Any]] | None = None
+    #: Minutes a running check's fraction may stay put before it counts as stalled (`conclave.check_stall_minutes`).
+    check_stall_minutes: float = 30.0
+    #: Whether a process id lives, for telling an abandoned check from a running one.
+    check_alive: Callable[[int], bool] = pcsx2_proc.pid_alive
 
 
 def default_sources(cwd: Path) -> Sources:
@@ -142,6 +148,7 @@ def default_sources(cwd: Path) -> Sources:
         remote_branches=remote_branches,
         builds=lambda: build_cli.status_json(root),
         health=health,
+        check_stall_minutes=conventions.conclave.check_stall_minutes,
     )
 
 
@@ -246,6 +253,39 @@ def _results(src: Sources, worktrees: list[tuple[Path, str | None]], now: dateti
             }
         )
     return {"results": results}
+
+
+def checks(src: Sources, now: datetime) -> dict[str, Any]:
+    """Each unit's `task check` as its progress file says it (check_progress.read_view, the one reader of that file):
+    the checks going on (waiting or running, stalled ones marked), and those that ended (passed, failed, abandoned)
+    within RECENT_BUILD_SECONDS. One row per unit, by task name."""
+    rows: list[dict[str, Any]] = []
+    views = check_progress.views(src.scratch, now, src.check_stall_minutes, src.check_alive)
+    for task, view in views.items():
+        if view["state"] in check_progress.LIVE_STATES or view["age"] <= RECENT_BUILD_SECONDS:
+            rows.append({"task": task, **view})
+    return {"checks": rows}
+
+
+def _checks_lines(rows: list[dict[str, Any]]) -> list[str]:
+    """The text form of the checks section: a count by state, then each unit's full line."""
+    counts = {
+        state: sum(1 for row in rows if row["state"] == state)
+        for state in (
+            check_progress.RUNNING,
+            check_progress.WAITING,
+            check_progress.ABANDONED,
+            check_progress.PASSED,
+            check_progress.FAILED,
+        )
+    }
+    stalled = sum(1 for row in rows if row["stalled"])
+    parts = [
+        f"{n} {state}" + (f" ({stalled} stalled)" if state == check_progress.RUNNING and stalled else "")
+        for state, n in counts.items()
+        if n
+    ]
+    return [f"checks: {', '.join(parts)}", *(f"  {row['task']}: {row['text']}" for row in rows)]
 
 
 # --- the GitHub sections ---------------------------------------------------------------------------------------
@@ -405,6 +445,7 @@ def collect(src: Sources, github: bool, kinds: list[str] | None = None) -> dict[
     report["builds"] = _section(lambda: {"lanes": src.builds()}) if read("builds") else None
     report["results"] = _section(lambda: _results(src, listed, now)) if read("results") else None
     report["tracks"] = _section(lambda: _tracks(src, trees, now)) if read("tracks") else None
+    report["checks"] = _section(lambda: checks(src, now)) if read("checks") else None
 
     def release() -> dict[str, Any]:
         try:
@@ -427,12 +468,16 @@ def collect(src: Sources, github: bool, kinds: list[str] | None = None) -> dict[
 def format_text(report: dict[str, Any]) -> list[str]:
     """A short text form: one line per section, then the actions."""
     lines = [f"coord status {report['time']}{' (with GitHub)' if report['github'] else ''}"]
-    for name in ("worktrees", "pcsx2", "builds", "results", "tracks", "release", "issues", "prs", "ci"):
+    for name in ("worktrees", "pcsx2", "builds", "results", "checks", "tracks", "release", "issues", "prs", "ci"):
         section = report.get(name)
         if section is None:
             continue
         if section.get("error"):
             lines.append(f"{name}: not read ({section['error']})")
+            continue
+        if name == "checks":
+            if section["checks"]:
+                lines.extend(_checks_lines(section["checks"]))
             continue
         sizes = {key: len(value) for key, value in section.items() if isinstance(value, list) and key != "notices"}
         counts = {key: value for key, value in section.items() if isinstance(value, int)}

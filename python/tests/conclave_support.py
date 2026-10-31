@@ -11,6 +11,7 @@ from typing import Any
 from conventions_support import REPO
 
 from coney_tools import stamps
+from coney_tools.check_progress import FILE_NAME, Fraction, Progress
 from coney_tools.conclave_snapshot import Sources
 from coney_tools.conflict_work import Trial
 from coney_tools.conventions import Conventions, load_conventions
@@ -217,6 +218,33 @@ class Layout:
         return self.trees / name
 
 
+def write_check(
+    scratch: Path,
+    task: str,
+    *,
+    ran: float = 0.0,
+    moved: float | None = None,
+    waiting: bool = False,
+    fraction: Fraction | None = None,
+    pid: int = 100,
+) -> None:
+    """The progress file of a unit's `task check` as it stands at NOW: pytest, 6 of 8, running for `ran` minutes (or
+    waiting for a check slot at place 5 of 6), its fraction last moved `moved` minutes ago."""
+    clock = [ago(minutes=ran)]
+    progress = Progress(clock=lambda: clock[0], pid=pid)
+    progress.attach(scratch / task / FILE_NAME)
+    progress.plan(8)
+    progress.start("pytest", "pytest", 6)
+    if fraction is not None:
+        clock[0] = ago(minutes=ran if moved is None else moved)
+        progress.fraction(fraction)
+    clock[0] = ago()
+    if waiting:
+        progress.waiting("check", 5, 6, 36.0, ["bob"])
+    else:
+        progress.beat()
+
+
 def make_layout(root: Path) -> Layout:
     """Two units: `fix-frame-812` (failed compare, building) and `fix-new` (no stamps), each with a worktree."""
     made = Layout(root)
@@ -266,7 +294,41 @@ def sources(made: Layout, gh: FakeGh | None = None, plain: tuple[str, ...] = (),
                     "time": 0.0,
                 }
             ],
-        }
+        },
+        # The check slots: `fix-frame-812` runs pytest in one of two, `fix-new` waits behind it (its progress file says
+        # so too; the slot is no build of the unit's).
+        "check": {
+            "slots": [
+                {
+                    "slot": 1,
+                    "stale": False,
+                    "claim": {
+                        "slot": 1,
+                        "agent": "engineer-2",
+                        "worktree": str(trees / "fix-frame-812"),
+                        "preset": "pytest",
+                        "step": "pytest",
+                        "pid": 4,
+                        "started": iso(ago(minutes=50)),
+                        "lane": "check",
+                    },
+                },
+                {"slot": 2, "stale": False, "claim": None},
+            ],
+            "queue": [
+                {
+                    "position": 1,
+                    "stale": False,
+                    "name": "t2",
+                    "agent": "x",
+                    "worktree": "fix-new",
+                    "preset": "pytest",
+                    "pid": 6,
+                    "priority": False,
+                    "time": 0.0,
+                }
+            ],
+        },
     }
     coord: dict[str, Any] = {
         "main": made.checkout,
@@ -282,6 +344,7 @@ def sources(made: Layout, gh: FakeGh | None = None, plain: tuple[str, ...] = (),
         "pcsx2": lambda: [{"copy": "pcsx2", "state": "free", "claim": None, "running": False}],
         "builds": lambda: lanes,
         "build_result": lambda path: None,
+        "check_alive": lambda pid: True,
         "health": lambda pulls, required, now: {
             "stuck": [
                 {
