@@ -20,7 +20,7 @@ struct WorldFog {
     float start = 0.5F;
 };
 
-/// `SetFogColor(r, g, b)`'s colour: each component × 255, truncated and clamped, alpha 255.
+/// `SetFogColor(r, g, b)`'s colour: each component × 255, truncated (a negative one is 0) to its low byte, alpha 255.
 /// @orig 0x0040c868 Level_SetFogColour (unknown)
 [[nodiscard]] Rgba fogColourOf(float r, float g, float b);
 
