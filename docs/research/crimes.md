@@ -1276,8 +1276,8 @@ the witnesses' message 7 and alert, the crime score 4-8 and the lines 128 / 143.
   1.3 degrees an update on top of the steer, so the steer ends some 3 to 4 degrees further round. Whether the
   original's 325 holds no turn in its first keys or the steer's turn replaces the root's while it lasts
   (`Human_ApplyTurnAndSlide`, `0x0023f5e0`) is not read. Then 325's root turn itself comes out a third larger in
-  Coney (108.8 degrees against 81.0), because Coney does not scale a clip's root turn by the task's rate (issue #263,
-  [Root motion](formats/animation.md#root-motion)); the freer ends about 30 degrees past facing the cuffed human until
+  Coney (108.8 degrees against 81.0), because Coney does not scale a clip's root turn by the task's rate
+  ([Root motion](formats/animation.md#root-motion)); the freer ends about 30 degrees past facing the cuffed human until
   that is fixed (the `[!mayfail]` disc case of `repo:tests/platform/disc_level80_test.cpp`).
 - **The cuffed human's heading after level80's arrest** ([the freer's place](#uncuff-pose)): the original's state had
   Snow cuffed at heading 105 and Cowboy at 43; Coney's arrest at checkpoint 2 leaves Cowboy at 43.00 and Snow at

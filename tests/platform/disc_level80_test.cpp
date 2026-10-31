@@ -310,6 +310,8 @@ TEST_CASE("the disc's level80: R2 and the right stick up give the follow order t
 
 TEST_CASE("the disc's level80: the cuffed Warriors offer the uncuff prompt and the mash frees both",
           "[disc][story][uncuff]") {
+    // Expected: crimes.md#uncuffing, confirmed (code) at ContextAction_Use's triangle and Uncuff_Start (0x00260ca8):
+    // a cuffed human's record offers the uncuff, and the mash frees him
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
