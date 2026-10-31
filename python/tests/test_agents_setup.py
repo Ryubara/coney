@@ -5,7 +5,11 @@ files of its folders up to a combined 32 KiB (`project_doc_max_bytes`), and open
 
 from __future__ import annotations
 
+import pytest
 from conventions_support import REPO
+
+# Reads the checkout's own files of these classes (python/tests/repo_reads.py).
+pytestmark = pytest.mark.reads("docs_only")
 
 #: Codex's default `project_doc_max_bytes` (OpenAI's AGENTS.md page): all instruction files of a run together.
 CODEX_LIMIT = 32 * 1024

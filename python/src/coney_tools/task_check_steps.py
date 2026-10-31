@@ -20,7 +20,7 @@ from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
 from pathlib import Path
 
-from coney_tools import docs_check, docs_cli
+from coney_tools import docs_check, docs_cli, proof_profiles
 from coney_tools.check_cli import MYPY_COMMAND, RUFF_COMMANDS
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
@@ -35,8 +35,8 @@ Hold = Callable[[str], AbstractContextManager[None]]
 FULL_SUITE_CHECKS: tuple[str, ...] = ("pytest",)
 #: How many lines of a failing command are kept for the summary.
 KEEP_LINES = 15
-#: The pytest run: every test of the Python package and the hooks, as CI's python job runs them (no `-x`: the stamp
-#: should say everything that is wrong).
+#: The pytest run: the tests of the Python package and the hooks, as CI's python job runs them (no `-x`: the stamp
+#: should say everything that is wrong). `pytest_step` adds the scope (`--reads <class>`, conftest.py) and the workers.
 PYTEST_COMMAND: tuple[str, ...] = ("uv", "run", "--project", "python", "pytest", "python/tests", "-q", "--no-header")
 
 
@@ -61,6 +61,13 @@ class StepContext:
     conventions: Conventions
     run: Runner = run_command
     hold: Hold = lambda what: nullcontext()
+    #: The pytest workers (pytest-xdist) a run may use: a check slot's share of the cores (`pytest_workers`).
+    workers: int = 1
+
+    @property
+    def pytest_scope(self) -> proof_profiles.PytestScope:
+        """Which Python tests the change needs (`proof.pytest`)."""
+        return proof_profiles.pytest_scope(self.conventions, self.paths)
 
 
 Step = Callable[[StepContext], StepResult]
@@ -164,12 +171,28 @@ def mypy_step(context: StepContext) -> StepResult:
     return _commands("mypy", [MYPY_COMMAND], context, "mypy --strict")
 
 
+def pytest_workers(cores: int | None, slots: int) -> int:
+    """The pytest workers of one check slot: its share of the cores (16 cores and 4 slots give 4), at least one."""
+    return max(1, (cores or 1) // max(1, slots))
+
+
+def pytest_arguments(workers: int) -> list[str]:
+    """pytest-xdist's arguments for `workers` (none for one: the tests then run in pytest's own process)."""
+    return ["-n", str(workers)] if workers > 1 else []
+
+
 def pytest_step(context: StepContext) -> StepResult:
-    """The whole Python test suite, under a check slot (it runs the whole suite, which a machine can run only a few of
-    at once; a build_claims.SlotTimeout from the wait is the caller's to turn into "queued")."""
+    """The Python tests the change needs (`StepContext.pytest_scope`), on the workers of a check slot. The whole suite
+    holds a check slot, which a machine can run only a few of at once (a build_claims.SlotTimeout from the wait is the
+    caller's to turn into "queued"); a scoped run, only the tests marked as reading the docs or engine classes the
+    change touches, is a few hundred tests and holds none."""
     _need("uv", "docs/guides/building.md#python-tools")
-    with context.hold("pytest"):
-        return _commands("pytest", [PYTEST_COMMAND], context, "pytest python/tests", PYTEST_COUNTS)
+    scope = context.pytest_scope
+    selection = [word for name in scope.classes for word in ("--reads", name)]
+    command = [*PYTEST_COMMAND, *selection, *pytest_arguments(context.workers)]
+    ok = "pytest python/tests, " + (scope.text if not scope.whole else "the whole suite")
+    with context.hold("pytest") if scope.whole else nullcontext():
+        return _commands("pytest", [command], context, ok, PYTEST_COUNTS)
 
 
 def actionlint_step(context: StepContext) -> StepResult:

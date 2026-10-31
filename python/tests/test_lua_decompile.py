@@ -223,6 +223,7 @@ def test_an_unknown_chunk_name_is_an_error(tmp_path: Path) -> None:
 # --- every chunk --------------------------------------------------------------------------------------------------
 
 
+@pytest.mark.reads("docs_only")
 def test_decompile_all_writes_the_scripts_fingerprints_and_index(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -252,6 +253,7 @@ BAD_CHUNKS = {
 }
 
 
+@pytest.mark.reads("docs_only")
 def test_decompile_all_reports_a_bad_chunk_and_goes_on(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """A chunk the loader refuses is named with the reason, and every other chunk is still written, fingerprinted and
     indexed; the command then exits 1."""
@@ -351,6 +353,7 @@ def test_round_trip_with_the_real_luac() -> None:
     assert result.same == result.total == len(items) > 0
 
 
+@pytest.mark.reads("docs_only")
 def test_a_chunk_the_index_cannot_read_is_left_out_of_it(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

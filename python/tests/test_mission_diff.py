@@ -304,6 +304,7 @@ def test_timing_lists_milestones_whose_spacing_differs_beyond_the_window() -> No
     assert result.ok
 
 
+@pytest.mark.reads("docs_only")
 def test_the_repository_rules_load() -> None:
     rules = load_rules(REPO / "research/traces/events.toml")
     assert rules.calls["SetCheckPoint"].kind == "checkpoint"
@@ -502,6 +503,7 @@ def test_a_playthrough_keeps_the_route_of_each_update_in_play() -> None:
     assert lines[1].startswith("0,")
 
 
+@pytest.mark.reads("docs_only")
 def test_the_repository_mission_scenarios_load() -> None:
     scenario = load_mission(REPO / "research/traces/missions/level99_cp1.toml")
     assert scenario.course == "level99-tutorial"

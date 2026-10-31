@@ -4,7 +4,12 @@
 import re
 from pathlib import Path
 
+import pytest
+
 from coney_tools import missions
+
+# Reads the checkout's own files of these classes (python/tests/repo_reads.py).
+pytestmark = pytest.mark.reads("docs_only", "engine")
 
 ROOT = Path(__file__).resolve().parents[2]
 

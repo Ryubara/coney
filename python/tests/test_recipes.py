@@ -172,6 +172,7 @@ def _run(port: int, recipe: recipes.Recipe, args: dict[str, str] | None = None) 
 # --- the schema ------------------------------------------------------------------------------------------------------
 
 
+@pytest.mark.reads("docs_only")
 def test_the_recipe_file_loads_and_every_recipe_is_justified_and_confirmed() -> None:
     book = recipes.load(ROOT)
     assert len(book.recipes) >= 20
@@ -182,6 +183,7 @@ def test_the_recipe_file_loads_and_every_recipe_is_justified_and_confirmed() -> 
         assert recipe.group in book.groups
 
 
+@pytest.mark.reads("docs_only")
 def test_the_brief_s_recipes_are_all_there() -> None:
     names = set(recipes.load(ROOT).recipes)
     wanted = {"find-player", "find-human", "position", "teleport", "spawn-human", "set-health", "brain", "inventory",
@@ -243,10 +245,12 @@ def read_pages_in(root: Path) -> dict[str, str]:
     }
 
 
+@pytest.mark.reads("docs_only")
 def test_the_pages_are_up_to_date() -> None:
     assert read_pages() == recipes_render.render(recipes.load(ROOT)), "run `coney-tools pcsx2 recipes render`"
 
 
+@pytest.mark.reads("docs_only")
 def test_every_page_keeps_to_the_line_length_outside_tables_and_code() -> None:
     for name, text in recipes_render.render(recipes.load(ROOT)).items():
         fenced = False
@@ -257,6 +261,7 @@ def test_every_page_keeps_to_the_line_length_outside_tables_and_code() -> None:
                 assert len(line) <= recipes_render.WIDTH, f"{name}: {line}"
 
 
+@pytest.mark.reads("docs_only")
 def test_every_page_is_under_the_guide_length_warning() -> None:
     limit = docs_check.LENGTH_WARNING["guide"]
     for name, text in recipes_render.render(recipes.load(ROOT)).items():
@@ -342,6 +347,7 @@ def test_two_groups_with_the_same_page_name_are_refused() -> None:
         recipes_render.render(book_of(("a", "The crew"), ("b", "The  crew!")))
 
 
+@pytest.mark.reads("docs_only")
 def test_every_recipe_is_an_anchor_of_the_index_and_of_its_group_page() -> None:
     book = recipes.load(ROOT)
     pages = recipes_render.render(book)
@@ -351,6 +357,7 @@ def test_every_recipe_is_an_anchor_of_the_index_and_of_its_group_page() -> None:
         assert f"## {recipe.name} {{#{recipe.name}}}" in pages[group_page], recipe.name
 
 
+@pytest.mark.reads("docs_only", "engine")
 def test_every_citation_of_a_recipe_anchor_resolves() -> None:
     """A link to the index with a recipe's name as the anchor, or to a group page's anchor, names one that page has."""
     pages = recipes_render.render(recipes.load(ROOT))
@@ -374,6 +381,7 @@ def test_every_citation_of_a_recipe_anchor_resolves() -> None:
     assert cited >= 8  # the guides and research pages that cite a recipe
 
 
+@pytest.mark.reads("docs_only")
 def test_every_recipe_page_is_in_the_navigation() -> None:
     nav = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
     for name in recipes_render.render(recipes.load(ROOT)):
@@ -397,6 +405,7 @@ def recipe_checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return tmp_path
 
 
+@pytest.mark.reads("docs_only")
 def test_render_writes_the_pages_and_removes_one_that_no_group_makes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -415,6 +424,7 @@ def test_render_writes_the_pages_and_removes_one_that_no_group_makes(
     assert capsys.readouterr().out == "0 page(s) stale; 10 in all\n"
 
 
+@pytest.mark.reads("docs_only")
 def test_render_never_deletes_a_page_it_did_not_write(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -491,6 +501,7 @@ def test_find_the_player_and_a_human_by_name(fake_pine: tuple[FakeGame, int]) ->
     assert shown == {"index": 4, "name": "Ped"}
 
 
+@pytest.mark.reads("docs_only")
 def test_a_teleport_writes_the_transform(fake_pine: tuple[FakeGame, int]) -> None:
     game, port = fake_pine
     book = recipes.load(ROOT)
@@ -656,6 +667,7 @@ def test_lua_globals_walk_the_globals_table(fake_pine: tuple[FakeGame, int]) -> 
         assert recipes_run.lua_globals(pine) == [("bDone", "number", "1"), ("sName", "string", "'value'")]
 
 
+@pytest.mark.reads("docs_only")
 def test_patches_are_checked_in_the_running_game(fake_pine: tuple[FakeGame, int]) -> None:
     game, port = fake_pine
     patch = Patch("p", "d", "r", (Edit(0x00146030, bytes(4), (0xAC800020).to_bytes(4, "little")),))
@@ -715,6 +727,7 @@ def _registry(tmp_path: Path, port: int) -> claims.Registry:
     return claims.Registry(tmp_path / "root", tmp_path / "claims")
 
 
+@pytest.mark.reads("docs_only")
 def test_run_refuses_a_copy_the_agent_does_not_hold(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(claims, "default_registry", lambda: _registry(tmp_path, 28999))
     book = recipes.load(ROOT)
@@ -722,6 +735,7 @@ def test_run_refuses_a_copy_the_agent_does_not_hold(tmp_path: Path, monkeypatch:
         recipes_cli.run_recipe(book, "humans", "pcsx2-z", "me", [], False)
 
 
+@pytest.mark.reads("docs_only")
 def test_run_makes_the_steps_on_the_claimed_copy(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fake_pine: tuple[FakeGame, int], capsys: pytest.CaptureFixture[str]
 ) -> None:

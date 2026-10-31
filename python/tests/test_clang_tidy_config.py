@@ -8,8 +8,12 @@ prints them, so a new check is one added line (`docs/guides/clang-tidy.md`).
 
 import re
 
+import pytest
 import yaml
 from conventions_support import REPO
+
+# Reads the checkout's own files of these classes (python/tests/repo_reads.py).
+pytestmark = pytest.mark.reads("engine")
 
 CONFIG = REPO / ".clang-tidy"
 

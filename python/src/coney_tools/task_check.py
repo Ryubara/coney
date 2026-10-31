@@ -53,7 +53,7 @@ from coney_tools.build_claims import SlotTimeout
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import Conventions, load_conventions, load_proof_rules_at
 from coney_tools.local_gate import StepResult, run_command
-from coney_tools.task_check_steps import FULL_SUITE_CHECKS, IMPLEMENTED, Runner, Step, StepContext
+from coney_tools.task_check_steps import IMPLEMENTED, Runner, Step, StepContext, pytest_workers
 from coney_tools.unit_record import log_task_of
 
 #: Exit codes (see the module docstring).
@@ -97,6 +97,8 @@ class Env:
     stream: Callable[[Path], Runner] | None = None
     #: Holds a check slot (checkout, agent id, what runs) while a full suite runs; the default holds nothing.
     hold: Callable[[Path, str, str], AbstractContextManager[None]] = lambda root, agent, what: nullcontext()
+    #: The pytest workers of the checkout's machine (a check slot's share of the cores); the default runs one.
+    workers: Callable[[Path], int] = lambda root: 1
 
 
 def _no_disc_reason(root: Path) -> str | None:
@@ -140,7 +142,14 @@ def default_env(max_wait: float = build_cli.DETACHED_MAX_WAIT) -> Env:
         who=lambda: stamps.who_from_env("coney-tools task check"),
         stream=lambda logs: live_progress.streaming_runner(_say, logs),
         hold=_real_hold(max_wait),
+        workers=_workers,
     )
+
+
+def _workers(root: Path) -> int:
+    """This machine's pytest workers: its cores shared out over its check slots, so the full suites that may run at
+    once together use about every core."""
+    return pytest_workers(os.cpu_count(), check_slots.default_check_slots(root).slots)
 
 
 def agent_for(explicit: str | None, who: Mapping[str, Any], person: Callable[[], str | None]) -> str:
@@ -195,6 +204,9 @@ def _run(request: Request, env: Env) -> int:
         f"{change.base[:10]} ({len(change.paths)} files: {_first(change.paths)})"
     )
     env.say("  checks: " + ", ".join(checks))
+    scope = proof_profiles.pytest_scope(conventions, change.paths) if "pytest" in checks else None
+    if scope is not None:
+        env.say(f"  pytest: {scope.text}")
     if request.dry_run:
         env.say("  dry run: nothing was run and no stamp was written")
         return 0
@@ -203,8 +215,8 @@ def _run(request: Request, env: Env) -> int:
         if why_not:
             raise ConfigError(f"the full suite needs the disc: {why_not}")
     started = env.clock()
-    # Only a build and a full suite take a slot, so only a profile that has one needs an id for it.
-    holds = bool(builds) or any(name in FULL_SUITE_CHECKS for name in checks)
+    # Only a build and a full suite take a slot, so only a run that has one needs an id for it.
+    holds = bool(builds) or (scope is not None and scope.whole)
     agent = agent_for(request.agent, who, _person) if holds else ""
     run = env.stream(unit.Unit.of(root, task).dir / "check-logs") if env.stream is not None else env.run
 
@@ -212,14 +224,31 @@ def _run(request: Request, env: Env) -> int:
         """A check slot for this run's checkout and id."""
         return env.hold(root, agent, what)
 
-    context = StepContext(root, base, change.paths, conventions, run, hold)
+    context = StepContext(root, base, change.paths, conventions, run, hold, env.workers(root) if scope else 1)
     outcome = _execute(request, env, context, checks, builds, task, agent, change)
     if isinstance(outcome, int):
         return outcome
     ran, failed, record, tests, counted = outcome
+    detail_more: dict[str, Any] = {}
     _unchanged(root, base, change)
+    if scope is not None and "pytest" in ran:
+        detail_more["pytest_scope"] = proof_profiles.scope_record(scope)
     return _stamp(
-        env, root, conventions, task, change, who, profile, ran, failed, record, tests, counted, started, rules_from
+        env,
+        root,
+        conventions,
+        task,
+        change,
+        who,
+        profile,
+        ran,
+        failed,
+        record,
+        tests,
+        counted,
+        started,
+        rules_from,
+        detail_more,
     )
 
 
@@ -382,9 +411,11 @@ def _stamp(
     counted: dict[str, dict[str, int]],
     started: datetime,
     rules_from: str,
+    detail_more: Mapping[str, Any],
 ) -> int:
     """Append the `checked` stamp and say so; 0 for a pass, 1 for a fail. The build's counts go in `tests`, which
-    `pr verify` matches against the build record; a check's own counts (pytest's) go under its name, for the facts."""
+    `pr verify` matches against the build record; a check's own counts (pytest's) go under its name, for the facts;
+    `detail_more` is added as it is."""
     passed = not failed
     covers = {
         stamps.CHANGE: change.sha256,
@@ -405,6 +436,7 @@ def _stamp(
         detail["tests"] = dict(tests)
     for name, counts in counted.items():
         detail[name] = counts
+    detail.update(detail_more)  # which Python tests ran (`pytest_scope`), which `pr verify` holds to the paths
     stamp = stamps.append(
         unit.Unit.of(root, task).stamps,
         rules=conventions.stamps,

@@ -492,12 +492,16 @@ The whole gate, which `task check` runs:
   agents never run `cmake --build` or `ctest` directly). Read its `disc tests:` line: `SKIPPED` means no disc test
   ran, and the run is made again with a disc.
 - **Python:** `ruff check` and `ruff format --check` on `python/` and `.claude/hooks/`, `mypy` and `pytest` on
-  `python/`; a Python test is not stamped `fails-first` (that stamp is for the `TEST_CASE`s of an `@orig` change): a
-  tooling task's tests-first rule rests on the reviewer and on pytest in its `checked` stamp ([pr
-  verify](pr.md#verify)); `coney-tools repo check-conventions`; `coney-tools progress check` (the progress inputs; its
-  tables are built into the docs, not committed); and every generator's `--check` (`bindings render`, `bindings
-  sync-coney`, `bindings render-cpp`, `refs render`, `missions render`, `research render`, `pcsx2 recipes render`).
-  Rerun a generator without `--check` when you change what it reads.
+  `python/`. pytest runs the whole suite or only the tests a change can break, by a rule in
+  [.github/conventions.yml](repo:.github/conventions.yml); the output and the stamp say which ([Which Python tests
+  run](coney-tools-repo.md#task-check-pytest)). A test that reads the checkout's docs, research or engine files
+  carries `@pytest.mark.reads("docs_only")` or `reads("engine")`, and fails without it. A Python test is not stamped
+  `fails-first` (that stamp is for the `TEST_CASE`s of an `@orig` change): a tooling task's tests-first rule rests on
+  the reviewer and on pytest in its `checked` stamp ([pr verify](pr.md#verify)); `coney-tools repo check-conventions`;
+  `coney-tools progress check` (the progress inputs; its tables are built into the docs, not committed); and every
+  generator's `--check` (`bindings render`, `bindings sync-coney`, `bindings render-cpp`, `refs render`, `missions
+  render`, `research render`, `pcsx2 recipes render`). Rerun a generator without `--check` when you change what it
+  reads.
 - **Everything:** `uvx pre-commit run --all-files` leaves the tree unchanged, markdownlint passes,
   `mkdocs build --strict` passes, and `coney-tools docs check` passes on the pages you touched.
 
@@ -511,9 +515,9 @@ minutes, so running it for every step makes everyone else wait. The tool keeps t
 with no `-R` or `-L` is refused unless it carries `--full` ([When the whole suite runs](coney-tools-build.md#build)).
 
 **A full suite takes a check slot.** The whole pytest run and the whole ctest run each take 30 to 40 minutes on a
-machine to themselves, so `task check`, `ci run` (its pytest) and `build --test` with no `-R` or `-L` hold a **check
-slot** while they run: `check_slots` in `coney.local.toml` of them at once across all worktrees (default one per four
-cores), the others wait in a queue that says its place every minute
+machine to themselves, so `task check` (its whole pytest suite), `ci run` (its pytest) and `build --test` with no `-R`
+or `-L` hold a **check slot** while they run: `check_slots` in `coney.local.toml` of them at once across all worktrees
+(default one per four cores), the others wait in a queue that says its place every minute
 ([Check slots](coney-tools-build.md#check-slots)). A few test files typed by hand (`pytest python/tests/test_x.py`,
 `build --test -R <pattern>`) need no slot: run those while working, and the full suite once, in `task check`. The
 gate shows its progress as it runs: each check logs its start and end with the time, and a long one says it is still

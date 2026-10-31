@@ -201,6 +201,7 @@ def test_render_still_reports_a_group_with_no_block_and_exits_1(
     assert "beta: no block" in capsys.readouterr().err
 
 
+@pytest.mark.reads("docs_only")
 def test_docs_render_is_a_command_of_the_command_line(capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["docs", "render", "--check"]) == 0, capsys.readouterr().err
 
@@ -296,10 +297,12 @@ def test_docs_render_reads_paths_docs_of_the_checkouts_conventions(
 # --- the real guides --------------------------------------------------------------------------------------------------
 
 
+@pytest.mark.reads("docs_only")
 def test_the_real_guides_hold_a_current_block_for_every_group() -> None:
     assert check_blocks(REPO, command_groups(), CONVENTIONS_DOCS) == []
 
 
+@pytest.mark.reads("docs_only")
 def test_every_group_is_listed_on_the_overview_page() -> None:
     overview = (REPO / "docs/guides/coney-tools.md").read_text(encoding="utf-8")
     missing = [name for name in command_groups() if f"`{name}" not in overview]

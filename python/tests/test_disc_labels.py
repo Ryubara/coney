@@ -11,6 +11,11 @@ import re
 from itertools import pairwise
 from pathlib import Path
 
+import pytest
+
+# Reads the checkout's own files of these classes (python/tests/repo_reads.py).
+pytestmark = pytest.mark.reads("engine")
+
 REPO = Path(__file__).resolve().parents[2]
 #: The start of a test case; its header (name and tags) runs to the opening brace of its body.
 _CASE = re.compile(r"^(?:TEST_CASE|TEST_CASE_METHOD|SCENARIO|TEMPLATE_TEST_CASE)\s*\(", re.MULTILINE)

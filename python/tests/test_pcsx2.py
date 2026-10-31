@@ -329,6 +329,7 @@ def test_an_empty_patch_folder_is_refused(tmp_path: Path) -> None:
         pcsx2_state.load_patches(tmp_path)
 
 
+@pytest.mark.reads("docs_only")
 def test_the_repository_patches_load_and_check_their_words() -> None:
     patches = pcsx2_state.load_patches(REPO / "research/traces/patches")
     assert {"scripted-pad", "right-stick", "puppet"} <= set(patches)
@@ -623,6 +624,7 @@ def test_rows_per_human_follow_pointers_and_handles(tmp_path: Path, fake_pine: t
     assert player[4:] == [str(CIVILIAN_INDEX), "2", "15", "8", "1"]
 
 
+@pytest.mark.reads("docs_only")
 def test_the_repository_scenarios_load() -> None:
     folder = REPO / "research/traces/scenarios"
     scenarios = sorted(folder.glob("*.toml"))

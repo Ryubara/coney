@@ -92,6 +92,7 @@ def test_the_merged_review_types_are_gone() -> None:
     assert {path.stem for path in _definitions()} == {"coordinator", "engineer", "reviewer", "tooling"}
 
 
+@pytest.mark.reads("docs_only")
 def test_no_guide_hook_tool_test_or_definition_names_a_merged_type() -> None:
     # The files git knows (tracked or not yet added, never ignored: node_modules and caches), in every folder that can
     # name a role: the guides, the hooks, the tools, the tests and the mod with its fixtures.
@@ -139,6 +140,7 @@ def test_the_reviewer_runs_on_opus_for_the_reverse_engineering_it_covers() -> No
     assert data["model"] == "opus"
 
 
+@pytest.mark.reads("docs_only")
 def test_the_reviewer_sends_each_kind_of_review_to_its_checklist() -> None:
     _, text = _reviewer()
     for page in ("index", "task", "code", "docs", "research", "orig", "text", "commits"):

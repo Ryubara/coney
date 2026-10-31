@@ -277,6 +277,7 @@ def test_without_gh_or_when_gh_fails_the_rest_of_the_index_still_works(tmp_path:
         assert any(e.source == "functions" for e in built.entries) and not any(e.source == "pr" for e in built.entries)
 
 
+@pytest.mark.reads("docs_only", "engine")
 def test_the_real_repository_indexes_and_a_known_name_is_found() -> None:
     entries = tuple(index.build_entries(REPO, CONVENTIONS, None))
     sources = {e.source for e in entries}

@@ -169,6 +169,7 @@ def test_mypy_command_reads_the_projects_strict_config() -> None:
     assert config["tool"]["mypy"]["strict"] is True
 
 
+@pytest.mark.reads("docs_only")
 def test_ci_and_docs_run_the_same_mypy_command_as_the_gate() -> None:
     """CI's python job and the guides that name the command agree with `ci run`, so no place checks less."""
     wanted = " ".join(check_cli.MYPY_COMMAND)
@@ -196,6 +197,7 @@ def test_ruff_covers_the_hook_scripts() -> None:
     ).resolve()
 
 
+@pytest.mark.reads("docs_only")
 def test_ci_and_the_gate_run_ruff_over_the_same_paths() -> None:
     """CI's python job runs the commands of `ci run` word for word, so the two cannot lint different folders."""
     workflow = (REPO / ".github" / "workflows" / "python.yml").read_text(encoding="utf-8").replace("\r\n", "\n")
@@ -255,6 +257,7 @@ def test_repo_step_reports_missing_pointer_files(tmp_path: Path) -> None:
     assert not result.ok and result.output
 
 
+@pytest.mark.reads("docs_only", "engine")
 def test_repo_step_passes_for_this_checkout() -> None:
     assert check_cli._step_repo(REPO).ok
 

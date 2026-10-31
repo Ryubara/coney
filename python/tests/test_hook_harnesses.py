@@ -231,6 +231,7 @@ def test_a_codex_patch_is_one_write_per_file() -> None:
     assert calls[2]["tool_input"]["content"] == ""
 
 
+@pytest.mark.reads("docs_only", "engine")
 def test_a_codex_patch_is_refused_when_one_file_is(monkeypatch: pytest.MonkeyPatch) -> None:
     # The coordinator writes no engine code: one file under src/ refuses the whole patch.
     monkeypatch.setenv(harness.ROLE_VARIABLE, "coordinator")
@@ -251,6 +252,7 @@ def test_a_codex_patch_is_refused_when_one_file_is(monkeypatch: pytest.MonkeyPat
         ("grok", {**grok(""), "toolName": "Edit", "toolInput": {"file_path": f"{ROOT}/src/a.cpp", "new_string": "x"}}),
     ],
 )  # fmt: skip
+@pytest.mark.reads("engine")
 def test_a_file_write_is_judged_by_the_role_rules(
     name: str, payload: dict[str, Any], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -398,6 +400,7 @@ def test_an_unlisted_shell_tool_is_judged_by_its_arguments(name: str) -> None:
     assert run(name, make("git status")) == (0, allowed, "")
 
 
+@pytest.mark.reads("engine")
 def test_an_unlisted_file_tool_is_judged_as_a_write(monkeypatch: pytest.MonkeyPatch) -> None:
     # VS Code's edit tool: a path and the code to write; a deletion: a path and a name that says it changes the file.
     monkeypatch.setenv(harness.ROLE_VARIABLE, "coordinator")
@@ -411,6 +414,7 @@ def test_an_unlisted_file_tool_is_judged_as_a_write(monkeypatch: pytest.MonkeyPa
     assert "src/" in refused("grok", remove)
 
 
+@pytest.mark.reads("engine")
 def test_an_unlisted_editor_with_a_command_word_is_judged_both_ways(monkeypatch: pytest.MonkeyPatch) -> None:
     # An editor tool whose `command` names the edit (`str_replace`) is read as a shell call and as a write.
     monkeypatch.setenv(harness.ROLE_VARIABLE, "coordinator")
@@ -430,6 +434,7 @@ def test_an_unlisted_tool_with_no_command_or_write_keeps_its_name() -> None:
     assert run("copilot", search) == (0, "", "")
 
 
+@pytest.mark.reads("engine")
 def test_a_cursor_delete_and_a_copilot_edit_are_writes(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(harness.ROLE_VARIABLE, "coordinator")
     delete = {**cursor(""), "tool_name": "Delete", "tool_input": {"path": f"{ROOT}/src/a.cpp"}}
@@ -571,6 +576,7 @@ def test_an_unlisted_tool_s_command_under_another_key_is_judged(key: str) -> Non
     assert "git push" in refused("copilot", payload)
 
 
+@pytest.mark.reads("docs_only", "engine")
 def test_a_patch_under_any_argument_is_judged(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(harness.ROLE_VARIABLE, "coordinator")
     listed = {**codex_patch(""), "tool_input": {"input": PATCH}}
@@ -605,6 +611,7 @@ def test_more_names_say_a_tool_changes_a_file(name: str) -> None:
     assert "Ask your person" in refused("grok", payload)
 
 
+@pytest.mark.reads("docs_only")
 def test_a_move_is_judged_at_both_ends() -> None:
     payload = {**copilot(""), "toolName": "move_file",
                "toolArgs": {"source": f"{ROOT}/docs/x.md", "destination": f"{ROOT}/.claude/hooks/x.py"}}  # fmt: skip
@@ -659,6 +666,7 @@ def test_arguments_that_are_no_object_are_judged(name: str, payload: dict[str, A
 
 
 @pytest.mark.parametrize("key", ["files", "entries"])
+@pytest.mark.reads("docs_only")
 def test_a_write_tool_s_list_of_files_is_judged(key: str) -> None:
     files = [
         {"path": f"{ROOT}/docs/a.md", "content": "x"},

@@ -448,6 +448,7 @@ def test_create_runs_through_the_command(monkeypatch: pytest.MonkeyPatch, world:
     assert status == 0 and world.task_path("10-fix-the-fight-goal").is_file()
 
 
+@pytest.mark.reads("docs_only", "engine")
 def test_leads_and_index_commands(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

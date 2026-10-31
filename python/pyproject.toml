@@ -14,7 +14,9 @@ coney-tools = "coney_tools.cli:main"
 coney-agent = "coney_tools.session_launcher:main"
 
 [dependency-groups]
-dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.11", "types-pyyaml>=6"]
+# pytest-xdist runs the whole suite in parallel (`-n`, docs/guides/coney-tools-repo.md#task-check); pinned exactly,
+# because how it spreads tests over workers is part of what makes a run here and in CI agree.
+dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.11", "types-pyyaml>=6", "pytest-xdist==3.8.0"]
 
 [build-system]
 requires = ["hatchling"]

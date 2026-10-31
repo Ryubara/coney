@@ -184,6 +184,7 @@ def test_build_status_lists_the_check_slots_and_a_worktree_with_one_is_live(
     assert "wt-suite" in build_claims.live_worktrees(checks.claims_dir)  # `workspace clean` leaves its build alone
 
 
+@pytest.mark.reads("docs_only")
 def test_the_guide_has_the_section_every_page_links_to() -> None:
     # mkdocs does not fail on a missing anchor, so the pages that link to #check-slots are held to it here.
     repo = Path(__file__).resolve().parents[2]

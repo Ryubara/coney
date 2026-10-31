@@ -135,6 +135,7 @@ def test_a_clip_inside_a_git_checkout_is_refused(tmp_path: Path) -> None:
         clips.check_clip_path(scratch / "task" / "clips" / "a.mp4", scratch, RULES)
 
 
+@pytest.mark.reads("docs_only")
 def test_the_real_repository_refuses_clips(tmp_path: Path) -> None:
     assert clips.git_checkout_around(REPO / "docs" / "clips" / "a.mp4") is not None
     with pytest.raises(clips.ClipError, match="inside the git checkout"):
@@ -149,6 +150,7 @@ def test_clip_folder_makes_the_tasks_folder_and_refuses_odd_names(scratch: Path)
         clips.clip_folder("../escape", scratch, RULES)
 
 
+@pytest.mark.reads("engine")
 def test_the_cap_is_the_same_in_coney_and_the_conventions() -> None:
     """Coney's --record-seconds cap (C++) and workspace.clips.max_seconds are one rule."""
     header = (REPO / "src" / "core" / "clip_recording.h").read_text(encoding="utf-8")

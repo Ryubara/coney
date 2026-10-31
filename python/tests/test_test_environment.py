@@ -110,6 +110,7 @@ def _names_in(path: Path) -> set[str]:
     return names
 
 
+@pytest.mark.reads("docs_only")
 def test_every_variable_the_code_reads_is_cleared_or_explained() -> None:
     """A tool that starts reading a new variable adds it to `ambient_env.py`, or this fails and says which."""
     sources = [path for folder in ("python/src", ".claude") for path in (REPO / folder).rglob("*.py")]
