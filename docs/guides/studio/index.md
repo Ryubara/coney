@@ -15,7 +15,9 @@ maintainer can answer. The maintainer's decisions so far are [below](#decisions)
     of a disc asset (a repainted texture, a reshaped model) is a **derived file**: it may sit in a project on the
     player's own machine, where it works, and is never packaged ([Provenance](content-and-formats.md#import)). The `.cmod`
     export refuses any file marked derived or whose bytes match a disc asset's hash, and names each one ([The `.cmod`
-    package](project-formats.md#cmod)). Why: [LEGAL.md](repo:LEGAL.md#no-game-data). Studio's user guide (its
+    package](project-formats.md#cmod)). Why: the no-disc-data rule is [LEGAL.md](repo:LEGAL.md#no-game-data); letting
+    a project hold a derived file is a design choice whose refusal alternative is a legal question still open for a
+    maintainer ([Maintainer decisions](content-and-formats.md#decisions), item 1). Studio's user guide (its
     getting-started page, planned) opens with this same callout.
 
 ## What Studio is {#principles}
@@ -30,7 +32,7 @@ maintainer can answer. The maintainer's decisions so far are [below](#decisions)
 - **Nothing in Studio changes how the story plays.** Studio and its projects run Coney's engine with Coney's game logic;
   the faithful game is the same with or without Studio ([Faithful first](repo:AGENTS.md)).
 - **No game data leaves the player's machine.** Studio reads the player's own disc and shows what it holds, and a
-  project never carries it: the rule of the callout [above](#coney-studio).
+  project carries none of it but a derived file, the one exception of the callout [above](#coney-studio).
 
 ## The design pages {#pages}
 

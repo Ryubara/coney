@@ -374,7 +374,8 @@ header the Inspector shows one **Source** row per asset the entity uses, read-on
 - **A mark on a derived file**: a `project:/` file whose sidecar says `derived` (an edited export of a disc asset,
   [Provenance](content-and-formats.md#import)) carries a *Derived* mark beside the Project badge, with the disc asset it
   came from. Its tooltip says that the file works on this machine and is never packaged, and links the reason: the
-  callout on the [Studio index](index.md) and [LEGAL.md](repo:LEGAL.md#no-game-data).
+  callout on the [Studio index](index.md), which also links the open legal question
+  ([Maintainer decisions](content-and-formats.md#decisions), item 1).
 - **Copy, never edit.** The row's right-click menu has *Copy path* (for a script, which loads assets by the same
   string) and *Show in File system*, which selects the file there (Unity's ping, Godot's *Show in FileSystem*). The
   path cannot be typed into: an entity's asset changes by picking another in the property's own field in its group,
