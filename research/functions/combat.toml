@@ -337,6 +337,11 @@ what = "the attack's clip flags 0x100 / 0x200 double the down and stun times, a 
 relation = "not-ported"
 issue = 685
 
+[[function.gaps]]
+what = "an already stunned victim with flag 0x100 keeps its stun through the knockdown (its end at the rise - 1 ms); Coney's loses it"
+relation = "not-ported"
+issue = 1351
+
 [[function]]
 address = 0x0022f658
 name = "Human_Stun"

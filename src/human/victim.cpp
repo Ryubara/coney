@@ -89,7 +89,7 @@ void Victim::die(const IncomingHit& hit, const VictimFrame& frame, HumanAnimator
 
 void Victim::knockDown(std::uint64_t nowMs, bool stunned) {
     // **Gap**: a victim with flag 0x100 that is already stunned keeps the stun here in the original (state 0x100000
-    // kept, its end at the rise - 1 ms); Coney's react() passes no stun for it, so the stun is lost (#1330's review).
+    // kept, its end at the rise - 1 ms); Coney's react() passes no stun for it, so the stun is lost (#1351).
     m_grounded = true;
     m_riseAtMs = nowMs + static_cast<std::uint64_t>(m_class.groundMs);
     m_stunUntilMs = stunned ? m_riseAtMs + static_cast<std::uint64_t>(m_class.stunMs) : 0;

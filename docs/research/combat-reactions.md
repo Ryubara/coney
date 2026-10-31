@@ -1062,7 +1062,8 @@ from the stun's start: 357 and the state's end 27 updates after it, the reaction
 counter of the player's grab starts the player's stun time at the counter ([Open questions](#open-questions)).
 **Stand-in**: the stun's end keeps the speed multiplier as it is; the original's 0.65 under the flag at `0x0051021c`
 is not ported ([#1346](issue:1346)). **Gap**: a victim with flag `0x100` (never stunned) that is already stunned
-loses its stun at a knockdown; the original keeps it until after the rise (`Human_SetDownTimers`, `0x0022f4f8`).
+loses its stun at a knockdown; the original keeps it until after the rise (`Human_SetDownTimers`, `0x0022f4f8`;
+[#1351](issue:1351)).
 
 ### Damage {#damage-coney}
 
