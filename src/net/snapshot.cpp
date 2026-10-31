@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <expected>
 #include <map>
+#include <optional>
 #include <span>
 #include <utility>
 #include <vector>
@@ -207,7 +208,7 @@ std::expected<SnapshotApplied, Error> SnapshotReceiver::apply(const Snapshot& sn
         }
     }
     m_received.at(snapshot.sequence % kSnapshotHistory) =
-        Received{.sequence = snapshot.sequence, .holding = std::move(humans)};
+        Received{.sequence = snapshot.sequence, .step = snapshot.step, .holding = std::move(humans)};
     m_newest = snapshot.sequence;
     m_newestStep = snapshot.step;
     return SnapshotApplied::Applied;
@@ -221,6 +222,14 @@ const SnapshotHumans& SnapshotReceiver::humans() const {
 const SnapshotHumans* SnapshotReceiver::holding(std::uint32_t sequence) const {
     const Received& received = m_received.at(sequence % kSnapshotHistory);
     return sequence != 0 && received.sequence == sequence ? &received.holding : nullptr;
+}
+
+std::optional<std::uint32_t> SnapshotReceiver::heldStep(std::uint32_t sequence) const {
+    const Received& received = m_received.at(sequence % kSnapshotHistory);
+    if (sequence == 0 || received.sequence != sequence) {
+        return std::nullopt;
+    }
+    return received.step;
 }
 
 } // namespace coney::net

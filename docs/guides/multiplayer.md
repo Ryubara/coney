@@ -15,7 +15,9 @@ protocol, the server and client sessions with their handshake, keep-alive and ti
 game's side: hosting and joining from the debug menus' Network page or the command line ([In the game](#in-the-game)),
 and the guest's pad as the host's pad port 2 ([Player two](#player-two)); the network ids and the replicated-field
 tables ([Network ids](#net-ids)); and [snapshots](snapshots.md) of humans, delta-compressed against acknowledged
-baselines within a 1,200-byte budget. The guest does not see the host's game yet: nothing fills the snapshots from it.
+baselines within a 1,200-byte budget; and [the client's world](client-world.md), the jitter buffer and the blends that
+draw a client's humans from them. The guest does not see the host's game: nothing fills the snapshots from it, and no
+client game mode draws them.
 **Next:** the layers under [The plan](#plan).
 
 ## The model {#model}
@@ -54,6 +56,7 @@ baselines within a 1,200-byte budget. The guest does not see the host's game yet
 | Network ids | `src/net/net_id.h`, `net_id_table.h` | the server's ids for replicated things, and each side's table from ids to its own handles |
 | Field tables | `src/net/replicated_fields.h` | each replicated kind's fields: their encodings, bits and ranges |
 | Snapshots | `src/net/snapshot.h` | each client's humans as deltas against what it acknowledged, within a budget ([Snapshots](snapshots.md)) |
+| The client's world | `src/net/jitter_buffer.h`, `client_world.h` | the decoded snapshots played a delay behind the newest, blended, and each human's pose from its layers ([The client's world](client-world.md)) |
 | ENet | `src/platform/enet_transport.h` | the transport over UDP |
 
 `coney_net` is platform-neutral: no socket, no ENet and no operating-system code, the same rule as the rest of
@@ -392,6 +395,8 @@ ids (reused only with a new generation, the order slots come back in, the genera
 tables (a stale generation finds nothing, a client's refused binds, the walk in id order);
 `tests/net/replicated_fields_test.cpp` round-trips every table's fields at their range's ends and middle and checks
 the refusals and an infinite angle; `tests/net/snapshot_test.cpp` covers snapshots ([Snapshots](snapshots.md#testing));
+`tests/net/jitter_buffer_test.cpp` and `tests/net/client_world_test.cpp` cover the client's world, and what a client
+draws against what the server had over a bad link ([The client's world](client-world.md#testing));
 `tests/net/protocol_test.cpp` pins
 InputCommands' and InputTiming's bytes;
 `tests/gamemodes/game_mode_stack_test.cpp` checks that `beforeStep` comes before the pads are read;
@@ -409,7 +414,8 @@ Each step is a pull request that builds and is tested on its own.
    server's buffer that plays each on its step, and the timing that keeps them coming in time
    ([Input commands](#input-commands)).
 5. **Replicated players:** network ids and the field tables (built: [Network ids](#net-ids)), snapshots (built:
-   quantized, delta-compressed against acknowledged baselines, [Snapshots](snapshots.md)), the game's humans in them,
-   the client's jitter buffer and interpolation, and its own follow camera.
+   quantized, delta-compressed against acknowledged baselines, [Snapshots](snapshots.md)), the client's jitter buffer
+   and interpolation (built: [The client's world](client-world.md)), the game's humans in them, a client game mode that
+   draws them, and its own follow camera.
 6. **AI humans, events, mission state:** the rest of what a client must see and hear, events reliable.
 7. **Prediction:** the local player predicted and corrected from the server's snapshots.
