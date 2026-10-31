@@ -248,6 +248,8 @@ TEST_CASE("the EngageEnemy run-in raises the turn boost by one until it ends", "
 // FightGoal_Process (0x002b3ab0): past its deadline a fight goal ends once its fighter holds none of the man's active
 // places (a place is given up after each press), and a class-13 fighter ends whatever he holds.
 TEST_CASE("past its deadline the fight goal ends for a fighter out of the man's places, and for a boss", "[ai]") {
+    // Expected: ai-fights.md#fight (steps 8 and 9), #fight-durations and #attack-places, confirmed (code) at
+    // 0x002b3ab0 and 0x00291008
     Scene scene;
     const FightSettings square = onlyKind(1);
     Brain& front = scene.add({40.0F, 40.9F, 0.0F}, 180.0F, BrainType::Gang, square);
