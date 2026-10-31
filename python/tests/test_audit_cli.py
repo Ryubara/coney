@@ -44,11 +44,13 @@ def no_tree(monkeypatch: pytest.MonkeyPatch) -> None:
 # --- --files --------------------------------------------------------------------------------------------------------
 
 
+@pytest.mark.reads("docs_only", "engine")
 def test_files_is_the_default_scope_and_this_checkout_is_clean(capsys: pytest.CaptureFixture[str]) -> None:
     code, out, _ = run(capsys)
     assert code == 0 and out.strip() == "audit files: 12 checks, 0 errors, 0 warnings"
 
 
+@pytest.mark.reads("docs_only", "engine")
 def test_files_json_lists_the_checks_that_ran(capsys: pytest.CaptureFixture[str]) -> None:
     code, out, _ = run(capsys, "--files", "--json")
     data = json.loads(out)
@@ -58,6 +60,7 @@ def test_files_json_lists_the_checks_that_ran(capsys: pytest.CaptureFixture[str]
     assert all(count == 0 for count in data["checks"].values()) and len(data["checks"]) == 12
 
 
+@pytest.mark.reads("docs_only")
 def test_a_finding_in_the_checkout_fails_the_run(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -68,6 +71,7 @@ def test_a_finding_in_the_checkout_fails_the_run(
     assert code == 1 and "files.pointer (error, fix: skill): 1" in out and "GEMINI.md" in out
 
 
+@pytest.mark.reads("docs_only", "engine")
 def test_only_limits_the_run_to_a_check_or_a_group(capsys: pytest.CaptureFixture[str]) -> None:
     _, out, _ = run(capsys, "--only", "files.address", "--json")
     assert list(json.loads(out)["checks"]) == ["files.address"]
@@ -204,6 +208,7 @@ def test_local_reports_the_workspace(
     assert "audit local: 3 checks, 0 errors, 1 warnings" in out
 
 
+@pytest.mark.reads("docs_only", "engine")
 def test_scopes_run_together_in_order(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

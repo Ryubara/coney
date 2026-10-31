@@ -800,6 +800,7 @@ def test_an_override_replaces_the_home_and_level_the_rules_chose() -> None:
     assert result.report.sources["override"] == 1
 
 
+@pytest.mark.reads("docs_only")
 def test_every_override_still_matches_its_page() -> None:
     """An override is a hand reading of a page: the page, the section and the quoted words must still be there, and the
     block that holds them must cite the address and state the level."""

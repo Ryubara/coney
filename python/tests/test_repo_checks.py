@@ -57,6 +57,7 @@ def test_oversized_pointer_file_is_reported(tmp_path: Path) -> None:
     assert len(problems) == 1 and "CLAUDE.md" in problems[0]
 
 
+@pytest.mark.reads("docs_only")
 def test_the_real_repository_is_clean() -> None:
     assert check_pointer_files(REPO, POINTERS) == []
 

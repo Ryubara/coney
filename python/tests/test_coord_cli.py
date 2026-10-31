@@ -342,6 +342,7 @@ def test_the_cli_takes_ids_and_kinds() -> None:
         cli._build_parser().parse_args(["coord", "status", "--ids", "--kind", "nope"])
 
 
+@pytest.mark.reads("docs_only")
 def test_the_documented_tether_pollers_run_commands_that_parse() -> None:
     # docs/guides/coney-tools-setup.md#coord-wakes is the one source of the coordinator's wake settings: its commands
     # must still be valid `coney-tools` command lines, and its issues poller must watch the triage label

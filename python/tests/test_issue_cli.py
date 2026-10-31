@@ -111,6 +111,7 @@ def test_check_reads_stdin_with_a_dash(monkeypatch: MonkeyPatch, capsys: Capture
     assert cli.main(["issue", "check", "--title", TITLE, "--body", "-"]) == 0
 
 
+@pytest.mark.reads("docs_only")
 def test_check_of_a_missing_body_file_is_a_usage_error(capsys: CaptureFixture[str]) -> None:
     assert cli.main(["issue", "check", "--title", TITLE, "--body", "nowhere.md"]) == 2
     assert "cannot be read" in capsys.readouterr().err

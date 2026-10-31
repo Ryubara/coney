@@ -406,6 +406,7 @@ def _with_comments(conventions: Any, comments: Any) -> Any:
     return dataclasses.replace(conventions, hygiene=dataclasses.replace(conventions.hygiene, comments=comments))
 
 
+@pytest.mark.reads("docs_only", "engine")
 def test_the_sweep_creates_the_report_issue_and_its_comment_but_no_item_comments(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -418,6 +419,7 @@ def test_the_sweep_creates_the_report_issue_and_its_comment_but_no_item_comments
     assert report.startswith(report_marker(COMMENTS)) and "2026-10-12 06:00 UTC" in report and "`#7`" in report
 
 
+@pytest.mark.reads("docs_only", "engine")
 def test_the_sweep_edits_the_report_in_place(tmp_path: Path) -> None:
     remote = FakeRemote(report_issue=3)
     path = snapshot_file(tmp_path, issues=[broken_issue(7)])
@@ -428,6 +430,7 @@ def test_the_sweep_edits_the_report_in_place(tmp_path: Path) -> None:
     assert remote.writes[-1][0] == "edit" and len(remote.comments[3]) == 1
 
 
+@pytest.mark.reads("docs_only", "engine")
 def test_a_sweep_dry_run_with_no_report_issue_only_says_what_it_would_do(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -436,6 +439,7 @@ def test_a_sweep_dry_run_with_no_report_issue_only_says_what_it_would_do(
     assert remote.writes == [] and "would create the report issue" in capsys.readouterr().out
 
 
+@pytest.mark.reads("docs_only", "engine")
 def test_with_on_sweep_the_sweep_comments_on_items_up_to_the_limit(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

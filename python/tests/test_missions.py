@@ -148,6 +148,7 @@ def test_pages_show_status_checkpoints_and_links() -> None:
     )
 
 
+@pytest.mark.reads("docs_only")
 def test_render_command_writes_then_checks(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
     (tmp_path / "research" / "bindings").mkdir(parents=True)
@@ -166,6 +167,7 @@ def test_render_command_writes_then_checks(tmp_path: Path, monkeypatch: pytest.M
     assert not (tmp_path / "docs" / "missions" / "level1234.md").exists()
 
 
+@pytest.mark.reads("docs_only")
 def test_the_repository_list_is_valid_and_its_pages_current() -> None:
     repo = Path(__file__).resolve().parents[2]
     listing = missions.load(repo)

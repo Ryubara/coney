@@ -149,6 +149,7 @@ def test_clip_folder_makes_the_tasks_folder_and_refuses_odd_names(scratch: Path)
         clips.clip_folder("../escape", scratch, RULES)
 
 
+@pytest.mark.reads("engine")
 def test_the_cap_is_the_same_in_coney_and_the_conventions() -> None:
     """Coney's --record-seconds cap (C++) and workspace.clips.max_seconds are one rule."""
     header = (REPO / "src" / "core" / "clip_recording.h").read_text(encoding="utf-8")

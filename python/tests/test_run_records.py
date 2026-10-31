@@ -318,6 +318,7 @@ def test_no_runs_folder_is_no_records(tmp_path: Path) -> None:
     assert run_records.load_all(make_root(tmp_path)) == ({}, [])
 
 
+@pytest.mark.reads("docs_only")
 def test_every_record_in_the_repository_is_valid() -> None:
     records, problems = run_records.load_all(REPO)
     assert problems == [] and all(r.id == name for name, r in records.items())
@@ -350,6 +351,7 @@ def test_a_record_names_exactly_one_emulator() -> None:
         run_records.to_toml(record(emulator="dolphin"), RULES)
 
 
+@pytest.mark.reads("docs_only")
 def test_the_committed_records_still_read() -> None:
     records, problems = run_records.load_all(REPO)
     assert problems == [] and all(r.emulator in run_records.EMULATORS for r in records.values())

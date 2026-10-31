@@ -13,6 +13,9 @@ import pytest
 
 from coney_tools import shared_deps
 
+# Reads the checkout's own files of these classes (python/tests/repo_reads.py).
+pytestmark = pytest.mark.reads("engine")
+
 ROOT = Path(__file__).resolve().parents[2]
 DEPS = ROOT / "cmake" / "deps.cmake"
 

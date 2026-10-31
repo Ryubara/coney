@@ -366,6 +366,7 @@ def test_history_page_needs_exactly_one_marker() -> None:
 # --- the real checkout ------------------------------------------------------------------------------------------------
 
 
+@pytest.mark.reads("docs_only", "engine")
 def test_the_real_pictures_stay_lean() -> None:
     """Every function of the original's own code is drawn, and the page's weight stays small.
 
@@ -383,6 +384,7 @@ def test_the_real_pictures_stay_lean() -> None:
     assert square_count(page) >= grid.total()
 
 
+@pytest.mark.reads("docs_only")
 def test_the_stylesheet_uses_the_palettes_of_the_standalone_files() -> None:
     """The page's colours (progress-grid.css) and the published SVGs' (the Python palettes) are the same, per theme."""
     css = (REPO / "docs" / "stylesheets" / "progress-grid.css").read_text(encoding="utf-8")

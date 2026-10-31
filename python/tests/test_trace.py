@@ -87,6 +87,7 @@ def test_a_skipped_frame_still_applies_its_lines() -> None:
     assert pad.ports[0].sticks[0] == 255
 
 
+@pytest.mark.reads("engine")
 def test_coneys_own_test_scripts_parse() -> None:
     # The scripts Coney's tests play: the reader must take every line Coney takes.
     for path in sorted((REPO / "tests/support").glob("*.txt")):
@@ -187,6 +188,7 @@ def test_the_command_exits_1_outside_tolerance(tmp_path: Path, capsys: pytest.Ca
     assert cli.main(["trace", "diff", str(a), str(tmp_path / "missing.csv")]) == 2
 
 
+@pytest.mark.reads("docs_only")
 def test_a_scenario_gives_coneys_command_line() -> None:
     scenario = load_scenario(REPO / "research/traces/scenarios/walk60.toml", REPO)
     command = trace_cli.coney_command(scenario, Path("coney"), "H:/", Path("out.csv"))
@@ -196,6 +198,7 @@ def test_a_scenario_gives_coneys_command_line() -> None:
     assert scenario.first_input_step() == scenario.events[0].frame + 1
 
 
+@pytest.mark.reads("docs_only")
 def test_a_settled_scenario_shifts_its_script_and_drops_the_settle_from_the_trace() -> None:
     script = "# note\n\n40 stick left 0 100\n70 tap cross\n"
     assert trace_cli.shifted_script(script, 300) == "# note\n\n340 stick left 0 100\n370 tap cross\n"

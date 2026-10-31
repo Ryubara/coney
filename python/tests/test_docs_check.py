@@ -501,6 +501,7 @@ def test_a_named_path_that_is_missing_or_not_a_page_is_an_error(tmp_path: Path) 
             docs_check.check_paths(root, [path], Context())
 
 
+@pytest.mark.reads("docs_only")
 def test_the_real_page_standards_page_passes_its_own_check() -> None:
     name = "docs/guides/writing-docs.md"
     assert errors(name, (REPO / name).read_text(encoding="utf-8"), docs_check.context_for(REPO)) == []

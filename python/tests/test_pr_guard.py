@@ -895,6 +895,7 @@ def test_help_passes_while_the_switch_is_off_too() -> None:
         assert GUARD.check(command, "", runner=FakeRunner(), open_only=False, repository=here) is None
 
 
+@pytest.mark.reads("docs_only")
 def test_the_message_points_at_a_page_that_exists() -> None:
     page = GUARD.OPEN_ONLY_HEAD.split("(")[-1].rstrip(")")
     path, anchor = page.split("#")
@@ -906,6 +907,7 @@ def test_each_file_of_the_guard_is_within_the_size_guide(name: str) -> None:
     assert len((REPO / ".claude" / "hooks" / name).read_text(encoding="utf-8").splitlines()) <= 500
 
 
+@pytest.mark.reads("docs_only")
 def test_the_refused_list_has_one_home() -> None:
     """The guides link to the PR guard's section instead of writing the list out again."""
     home = (REPO / "docs" / "guides" / "enforcement.md").read_text(encoding="utf-8")
