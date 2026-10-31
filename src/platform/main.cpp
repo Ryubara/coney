@@ -395,14 +395,19 @@ int main(int argc, char** argv) {
     // --render-references draws offscreen with OpenGL, so its window stays hidden. `--renderer gpu`, or the overrides
     // file's saved Display/Renderer outside test mode, starts the GPU renderer instead of OpenGL
     // (docs/engine/renderer.md#migration); the file is the one loaded in full further down, read here for that one
-    // setting because the renderer starts first.
+    // setting because the renderer starts first. A saved GPU renderer starts GL3 while it draws no menus, with a
+    // warning (docs/engine/gpu-renderer.md#way-back).
     const bool headless = options->headless || !options->loads.empty();
     const std::string savedSettings =
         options->tunablesFile.value_or(headless ? std::string{} : coney::platform::defaultTunablesPath());
-    const coney::RendererKind rendererKind = coney::chooseRenderer(
+    const coney::RendererChoice rendererChoice = coney::chooseRenderer(
         options->renderer,
         savedSettings.empty() ? coney::RendererKind::Gl3 : coney::debug::savedRenderer(savedSettings),
         !coney::takesSavedRenderer(*options));
+    if (rendererChoice.savedGpuRefused) {
+        logWarning(coney::savedGpuRefusedWarning());
+    }
+    const coney::RendererKind rendererKind = rendererChoice.kind;
     coney::platform::WindowDesc windowDesc = coney::platform::gameWindow(*options);
     windowDesc.hidden = options->renderReferences.has_value();
     // `--render-size`: frames of that size holding exactly the logical screen, as the original's frame buffer does.

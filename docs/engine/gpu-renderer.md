@@ -11,11 +11,29 @@ in the original, which drew through the PS2's GS. GL3 stays the default.
 `--renderer gpu` or `gl3` wins; without it a windowed run takes the overrides file's `Display/Renderer` (0 GL3, the
 default; 1 the GPU renderer), and test mode and `--render-references` take GL3 whatever is saved
 (`takesSavedRenderer()`), so a test run never depends on a player's file (`chooseRenderer()`,
-`src/core/renderer_choice.h`). The setting is read from the file before the renderer starts, ahead of the full load of
-the overrides, and shows on the debug menus' Tunables page under *Display*; a change there applies at the next start.
-The release build takes `--renderer` but keeps no overrides file. `--renderer gpu` is refused with `--headless`,
-`--load`, `--screenshot`, `--record` and `--render-references`: it needs a window, and nothing reads its frames back
-yet.
+`src/core/renderer_choice.h`). While the GPU renderer draws no menus, a saved 1 is refused: the run draws with GL3 and
+warns ([The way back to GL3](#way-back)). The setting is read from the file before the renderer starts, ahead of the
+full load of the overrides, and shows on the debug menus' Tunables page under *Display*; a change there applies at the
+next start. The release build takes `--renderer` but keeps no overrides file. `--renderer gpu` is refused with
+`--headless`, `--load`, `--screenshot`, `--record` and `--render-references`: it needs a window, and nothing reads its
+frames back yet.
+
+## The way back to GL3 {#way-back}
+
+Until the GPU renderer draws the 2D layers ([#1203](issue:1203)) and the developer overlay ([#1204](issue:1204)), it
+only clears and presents, so a window it draws is blank and the menus that set `Display/Renderer` cannot be seen. A
+saved `Display/Renderer = 1` therefore never starts it: the run draws with GL3 and the run log says `the overrides file
+saves Display/Renderer = 1, but the GPU renderer draws no menus yet, so this run draws with GL3; ...`
+(`kGpuRendererDrawsMenus` and `chooseRenderer()`, `src/core/renderer_choice.h`). Only `--renderer gpu`, asked for by
+name, starts it, and closing that window ends the run.
+
+To go back to GL3 for good, set *Display / Renderer* to 0 on the Tunables page and *Save overrides*, or delete the
+`Display/Renderer = 1` line from the overrides file (`coney-tunables.ini` in your config folder, or the file
+`--tunables FILE` names); `--renderer gl3` takes GL3 for one run whatever is saved.
+
+When both issues land, `kGpuRendererDrawsMenus` turns true, the test case `renderer: a saved GPU renderer starts GL3
+with a warning while it draws no menus` (`tests/core/renderer_choice_test.cpp`) stops compiling, since it checks the
+constant with `STATIC_REQUIRE_FALSE`, and it is removed with the guard and this section's first paragraph.
 
 ## The device and the window {#device}
 

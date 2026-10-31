@@ -27,10 +27,30 @@ enum class RendererKind : std::uint8_t {
 /// The renderer the `Display/Renderer` setting's value names: 1 is the GPU renderer, anything else GL3.
 [[nodiscard]] RendererKind rendererOfSetting(int value);
 
+/// Whether the GPU renderer draws its own menus: the 2D layers (#1203) and the developer overlay (#1204). Until it
+/// does, a saved `Display/Renderer` of 1 is refused (chooseRenderer()), so a windowed start never comes up blank with
+/// the menus that set it back unseen (docs/engine/gpu-renderer.md#way-back). Turn it true when both land, and remove
+/// the guard with it: tests/core/renderer_choice_test.cpp then stops compiling (a STATIC_REQUIRE_FALSE on it).
+/// @coney-only a guard for Coney's unfinished renderer; the original has one renderer
+inline constexpr bool kGpuRendererDrawsMenus = false;
+
+/// The renderer a run starts with, and whether a saved GPU renderer was refused for it.
+struct RendererChoice {
+    RendererKind kind = RendererKind::Gl3;
+    bool savedGpuRefused = false; ///< the saved setting named the GPU renderer, refused: the run log says so
+};
+
 /// The renderer a run starts with: `option` (`--renderer`) when given; else, unless `ignoreSaved`, `saved` (the
 /// overrides file's `Display/Renderer`); else GL3. Test mode and reference renders ignore the saved one
-/// (takesSavedRenderer() in core/options.h), so a test run draws the same whatever a player saved.
-[[nodiscard]] RendererKind chooseRenderer(std::optional<RendererKind> option, RendererKind saved, bool ignoreSaved);
+/// (takesSavedRenderer() in core/options.h), so a test run draws the same whatever a player saved. A saved GPU
+/// renderer is refused for GL3 while `gpuDrawsMenus` is false (kGpuRendererDrawsMenus); `--renderer gpu` never is.
+/// @coney-only Coney's renderer choice; the original has one renderer
+[[nodiscard]] RendererChoice chooseRenderer(std::optional<RendererKind> option, RendererKind saved, bool ignoreSaved,
+                                            bool gpuDrawsMenus = kGpuRendererDrawsMenus);
+
+/// The run log's warning when a saved GPU renderer is refused (RendererChoice::savedGpuRefused): what happened and
+/// how a developer still starts it.
+[[nodiscard]] std::string_view savedGpuRefusedWarning();
 
 /// The live value of the `Display/Renderer` setting, which the debug menus' Display page edits and the overrides file
 /// saves (0 GL3, the default; 1 the GPU renderer). The running renderer never changes with it: it is read at start.

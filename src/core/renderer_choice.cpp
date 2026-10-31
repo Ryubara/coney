@@ -17,13 +17,28 @@ std::string_view rendererName(RendererKind kind) { return kind == RendererKind::
 
 RendererKind rendererOfSetting(int value) { return value == 1 ? RendererKind::Gpu : RendererKind::Gl3; }
 
-RendererKind chooseRenderer(std::optional<RendererKind> option, RendererKind saved, bool ignoreSaved) {
+RendererChoice chooseRenderer(std::optional<RendererKind> option, RendererKind saved, bool ignoreSaved,
+                              bool gpuDrawsMenus) {
     // The option is asked for by name, so it wins even in test mode; the saved setting is a player's, which a test run
     // must not depend on.
     if (option) {
-        return *option;
+        return {.kind = *option};
     }
-    return ignoreSaved ? RendererKind::Gl3 : saved;
+    if (ignoreSaved) {
+        return {.kind = RendererKind::Gl3};
+    }
+    // A saved GPU renderer that cannot draw the menus would come up blank with no way back from inside the game
+    // (issue #1267), so it starts GL3 instead and the run log says why.
+    if (saved == RendererKind::Gpu && !gpuDrawsMenus) {
+        return {.kind = RendererKind::Gl3, .savedGpuRefused = true};
+    }
+    return {.kind = saved};
+}
+
+std::string_view savedGpuRefusedWarning() {
+    return "the overrides file saves Display/Renderer = 1, but the GPU renderer draws no menus yet, so this run draws "
+           "with GL3; start it with --renderer gpu, or set Display/Renderer back to 0 "
+           "(docs/engine/gpu-renderer.md#way-back)";
 }
 
 int& rendererSetting() {

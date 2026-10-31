@@ -145,8 +145,9 @@ void registerGameTunables(TunableRegistry& registry) {
     // Read before the renderer starts (savedRenderer()), so a change here applies at the next start.
     registry.add("Display", "Renderer", &rendererSetting())
         .range(0, 1, 1)
-        .describe("0: librw's OpenGL 3.3 (the default); 1: SDL3's GPU API, which only clears and presents so far. "
-                  "Applies at the next start; --renderer overrides it, and test mode ignores it");
+        .describe("0: librw's OpenGL 3.3 (the default); 1: SDL3's GPU API, which only clears and presents so far, "
+                  "so a saved 1 starts OpenGL with a warning until it draws the menus. Applies at the next start; "
+                  "--renderer overrides it, and test mode ignores it");
 }
 
 RendererKind savedRenderer(const std::string& path) {
