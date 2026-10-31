@@ -454,8 +454,8 @@ void humanInitSteps(const BindingContext& context, HandleCounter& handles, const
                                               .gangKind = human.gang >= 0 ? ai->gangKind(human.gang) : std::nullopt};
         size = characters::randomBodySize(input, context.state->random);
     }
-    if (const std::optional<float> own = characters::typeScaleOf(classType, false)) {
-        size = own;
+    if (const std::optional<float> classScale = characters::typeScaleOf(classType, false)) {
+        size = classScale;
     }
     // Given before the human's first update, so it is also the size it is made at (human::Human::setScale()).
     if (HubBindingHost* hub = ai->hub(); hub != nullptr) {
