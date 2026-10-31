@@ -455,6 +455,7 @@ def test_the_command_reports_an_unusable_checkout(
 # --- this repository --------------------------------------------------------------------------------------------------
 
 
+@pytest.mark.reads("docs_only")
 def test_every_research_page_of_this_repository_meets_the_standard_or_is_excused() -> None:
     context_ = docs_check.context_for(REPO)
     result = docs_check.check_paths(REPO, ["docs/research"], context_)
@@ -466,6 +467,7 @@ def test_every_research_page_of_this_repository_meets_the_standard_or_is_excused
     assert {page_: rules_ for page_, rules_ in failing.items() if rules_} == {}
 
 
+@pytest.mark.reads("docs_only")
 def test_the_legacy_file_of_this_repository_lists_nothing_that_passes() -> None:
     assert docs_legacy.problems(REPO, docs_check.context_for(REPO)) == []
 

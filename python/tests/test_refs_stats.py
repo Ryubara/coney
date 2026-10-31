@@ -6,6 +6,8 @@ Everything is synthetic: made-up types, power classes and Warrior classes with t
 
 from pathlib import Path
 
+import pytest
+
 from coney_tools import refs, refs_cli, refs_render, refs_stats
 from coney_tools.refs import RefList
 from coney_tools.refs_play import POWER_CLASSES, WARRIOR_CLASSES
@@ -144,6 +146,7 @@ def test_the_page_places_the_extra_columns_after_their_fields() -> None:
     assert len(row.split("|")) == len(header.split("|"))  # every row has a cell under every heading
 
 
+@pytest.mark.reads("docs_only")
 def test_the_real_characters_page_has_the_stats_and_stays_small() -> None:
     lists = {reflist.topic.key: reflist for reflist in refs_cli.load_all(REPO)}
     pages = refs_cli.pages(REPO, list(lists.values()))

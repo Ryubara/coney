@@ -140,7 +140,8 @@ def test_the_age_of_a_real_file_and_a_missing_one(tmp_path: Path) -> None:
 def test_the_real_process_list_holds_this_process_with_its_command() -> None:
     processes = {p.pid: p for p in stale_processes.list_processes()}
     me = processes[os.getpid()]
-    assert me.ppid == os.getppid() and me.name.startswith("python") and "pytest" in me.command.lower()
+    # The command is this process's own (pytest's, or a pytest-xdist worker's `python -c ...`): its last word is in it.
+    assert me.ppid == os.getppid() and me.name.startswith("python") and sys.orig_argv[-1] in me.command
 
 
 def test_a_path_held_in_a_variable_the_loop_reads_is_judged() -> None:

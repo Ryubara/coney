@@ -14,6 +14,11 @@ import json
 import re
 from pathlib import Path
 
+import pytest
+
+# Reads the checkout's own files of these classes (python/tests/repo_reads.py).
+pytestmark = pytest.mark.reads("engine")
+
 ROOT = Path(__file__).resolve().parents[2]
 
 #: A target-wide definition (`target_compile_definitions` or `add_compile_definitions`) with a checkout path in it.

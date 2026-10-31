@@ -15,6 +15,9 @@ from conventions_support import REPO
 from coney_tools import lua_compare, lua_decompile
 from coney_tools.config import ConfigError
 
+# Reads the checkout's own files of these classes (python/tests/repo_reads.py).
+pytestmark = pytest.mark.reads("docs_only")
+
 FIXTURES = Path(__file__).parent / "lua4" / "fixtures"
 
 

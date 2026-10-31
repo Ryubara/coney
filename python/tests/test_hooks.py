@@ -130,6 +130,7 @@ def test_a_hook_two_files_declare_is_refused_naming_both(tmp_path: Path) -> None
         load_hooks(tmp_path)
 
 
+@pytest.mark.reads("docs_only")
 def test_the_repository_hooks_build() -> None:
     known = load_hooks(REPO / "research/traces/patches")
     assert {"tick-game", "humans-update", "state-code", "call-brains"} <= set(known)

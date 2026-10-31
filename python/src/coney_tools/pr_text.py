@@ -28,7 +28,7 @@ from typing import Any
 
 import yaml
 
-from coney_tools import orig_pairs, pr_proof, pr_text_file, stamps
+from coney_tools import orig_pairs, pr_proof, pr_text_file, proof_profiles, stamps
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
 from coney_tools.pr_proof import Refusal, TextHashes
@@ -459,7 +459,7 @@ def _stage_lines(subject: pr_proof.Subject, short: bool) -> list[str]:
         extra = f", build record `{record[:12]}`" if record else ""
         names = [str(name) for name in d.get("checks", ())] if isinstance(d.get("checks"), list) else []
         pytest = d.get("pytest") if isinstance(d.get("pytest"), dict) else None
-        ran_pytest = f"; pytest {_counted(pytest)}" if pytest else ""
+        ran_pytest = f"; pytest {_pytest_scope_words(d.get('pytest_scope'))}{_counted(pytest)}" if pytest else ""
         if tests is None:
             # A profile with no build (`tooling`, `docs`) has no build counts: say which checks ran and pytest's own
             # counts, as "0 passed, 0 failed" would read as an empty run and "no test run" is false once pytest ran.
@@ -506,6 +506,16 @@ def _stale(subject: pr_proof.Subject, stamp: stamps.Stamp) -> str:
     else empty, so the facts never show a Check or a Review of an older change as if it held."""
     made_for = str(stamp.covers.get(stamps.CHANGE, ""))
     return "" if made_for == subject.diff_sha256 else f"stale (made for change `{made_for[:12]}`), "
+
+
+def _pytest_scope_words(scope: object) -> str:
+    """Which Python tests a Check ran, as the facts say it before the counts (`detail.pytest_scope`; a stamp from
+    before the scope was recorded says nothing)."""
+    if scope == proof_profiles.WHOLE:
+        return "of the whole suite "
+    if isinstance(scope, list) and scope:
+        return f"of the tests reading {', '.join(str(name) for name in scope)} "
+    return ""
 
 
 def facts_block(subject: pr_proof.Subject) -> str:

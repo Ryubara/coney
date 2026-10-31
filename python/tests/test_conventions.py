@@ -74,6 +74,7 @@ def test_the_real_review_gate() -> None:
     assert (REPO / ".claude" / "agents" / f"{review.agent}.md").is_file()
 
 
+@pytest.mark.reads("docs_only")
 def test_the_real_orig_review_gate() -> None:
     orig = load_conventions(REPO).pull_requests.orig_review
     assert (orig.agent, orig.verdict_file, orig.report_file) == ("reviewer", "ORIG-REVIEW.json", "ORIG-REVIEW.md")

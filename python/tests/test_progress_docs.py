@@ -15,6 +15,9 @@ from test_progress import BLOCK, ONE_FUNCTION, ONE_LISTING, ONE_TAG, make_checko
 
 from coney_tools import progress, progress_render
 
+# Reads the checkout's own files of these classes (python/tests/repo_reads.py).
+pytestmark = pytest.mark.reads("docs_only", "engine")
+
 REPO = Path(__file__).resolve().parents[2]
 HOOKS_PATH = REPO / "mkdocs_hooks.py"
 

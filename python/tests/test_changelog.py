@@ -11,6 +11,9 @@ from types import ModuleType
 
 import pytest
 
+# Reads the checkout's own files of these classes (python/tests/repo_reads.py).
+pytestmark = pytest.mark.reads("docs_only")
+
 HOOKS_PATH = Path(__file__).resolve().parents[2] / "mkdocs_hooks.py"
 
 

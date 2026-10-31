@@ -1046,7 +1046,7 @@ proof:
   profiles:
     - name: docs
       classes: [docs_only]
-      checks: [docs-check, mkdocs, pre-commit, actionlint]
+      checks: [docs-check, mkdocs, pre-commit, pytest, actionlint]
     - name: tooling
       classes: [docs_only, tools_only]
       checks: [docs-check, mkdocs, pre-commit, ruff, mypy, pytest, actionlint]
@@ -1057,6 +1057,14 @@ proof:
   # in a profile that names it).
   only_when:
     actionlint: [".github/workflows/", ".github/actions/"]
+  # Which Python tests the `pytest` check runs (docs/guides/coney-tools-repo.md#task-check). A change whose every path
+  # is of a `scoped` CI scope class (above, `paths`) and under none of `whole_when` runs only the tests marked
+  # `@pytest.mark.reads(<class>)` for the classes it touches; any other change runs the whole suite, in parallel. A test
+  # that reads a file of a scoped class without that marker fails (python/tests/repo_reads.py), and CI runs the whole
+  # suite on every ready pull request, so a test a scoped run skips is still run before the merge.
+  pytest:
+    scoped: [docs_only, engine]
+    whole_when: ["python/", ".claude/", ".github/"]   # the package, its hooks and the rules, workflows and scripts
   # The CMake preset of the build and the test run behind the two checks of `checks` (MSVC with /WX), the first
   # answering whether it built and the second whether the suite ran whole with the disc, from the build record a
   # run of `coney-tools build` leaves (docs/guides/stamps.md#build-record).

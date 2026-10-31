@@ -10,7 +10,11 @@ from __future__ import annotations
 
 import re
 
+import pytest
 from conventions_support import REPO
+
+# Reads the checkout's own files of these classes (python/tests/repo_reads.py).
+pytestmark = pytest.mark.reads("docs_only")
 
 GUIDES = REPO / "docs/guides"
 

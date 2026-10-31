@@ -788,6 +788,18 @@ class ProofBuild:
 
 
 @dataclass(frozen=True)
+class ProofPytest:
+    """Which Python tests `task check` runs (`proof.pytest`): only those marked as reading the changed classes when
+    every changed path is of a `scoped` class, else the whole suite (docs/guides/coney-tools-repo.md#task-check).
+    Without the key (a base older than it) nothing is scoped, so every change runs the whole suite."""
+
+    #: CI scope classes whose changes run only the tests marked `@pytest.mark.reads(<class>)`.
+    scoped: tuple[str, ...] = ()
+    #: Path prefixes whose changes always run the whole suite, whatever their class.
+    whole_when: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class Proof:
     """What a change must pass before it is opened as a pull request (docs/guides/coney-tools-repo.md#task-check)."""
 
@@ -796,6 +808,7 @@ class Proof:
     #: Checks that apply only when a changed path starts with one of these prefixes.
     only_when: Mapping[str, tuple[str, ...]]
     build: ProofBuild
+    pytest: ProofPytest = ProofPytest()
 
 
 @dataclass(frozen=True)
@@ -3080,7 +3093,7 @@ CI_CLASSES = ("docs_only", "tools_only", "engine", "unknown")
 
 def _read_proof(data: object, where: str) -> Proof:
     """The `proof` section: the profiles of checks, the conditional checks and the build behind them."""
-    table = _table(data, where, ("profiles", "only_when", "build"))
+    table = _table(data, where, ("profiles", "only_when", "build"), ("pytest",))
     profiles_where = _at(where, "profiles")
 
     def read_profile(value: object, here: str) -> ProofProfile:
@@ -3117,7 +3130,20 @@ def _read_proof(data: object, where: str) -> Proof:
             preset=_text(build["preset"], _at(build_where, "preset")),
             checks=build_checks,
         ),
+        pytest=_read_proof_pytest(table.get("pytest"), _at(where, "pytest")),
     )
+
+
+def _read_proof_pytest(data: object, where: str) -> ProofPytest:
+    """`proof.pytest`: the scoped classes (CI scope classes other than `unknown`, which always runs everything) and the
+    prefixes that run the whole suite. Absent: nothing is scoped."""
+    if data is None:
+        return ProofPytest()
+    table = _table(data, where, ("scoped", "whole_when"))
+    scoped = _texts(table["scoped"], _at(where, "scoped"), empty_ok=True)
+    known = [name for name in CI_CLASSES if name != "unknown"]
+    _names_in(scoped, known, _at(where, "scoped"), "a CI scope class other than unknown (" + ", ".join(known) + ")")
+    return ProofPytest(scoped=scoped, whole_when=_texts(table["whole_when"], _at(where, "whole_when"), empty_ok=True))
 
 
 def _read_research(data: object, where: str) -> Research:
@@ -3377,7 +3403,7 @@ def load_proof_rules_at(root: Path, ref: str, own: Conventions) -> tuple[Convent
     if "proof" not in data:
         return own, "branch"
     try:
-        proof = _read_proof(_keep(data["proof"], ("profiles", "only_when", "build")), "proof")
+        proof = _read_proof(_keep(data["proof"], ("profiles", "only_when", "build", "pytest")), "proof")
         scopes = _keep(data.get("paths"), ("docs_only", "tools_only", "engine"))
         table = _table(scopes, "paths", ("docs_only", "tools_only", "engine"))
         paths = replace(
@@ -3439,6 +3465,8 @@ def _keep(value: object, keys: Iterable[str]) -> object:
         kept["profiles"] = [_keep(item, ("name", "classes", "checks")) for item in kept["profiles"]]
     if "build" in kept:
         kept["build"] = _keep(kept["build"], ("preset", "checks"))
+    if "pytest" in kept:
+        kept["pytest"] = _keep(kept["pytest"], ("scoped", "whole_when"))
     return kept
 
 

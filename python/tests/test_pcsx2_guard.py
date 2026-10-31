@@ -726,6 +726,7 @@ def test_the_dispatcher_lets_through_every_spelling_the_parser_reads(command: st
         assert "pcsx2_guard" in guards_run(tool, command), f"the dispatcher skips {command!r} for {tool}"
 
 
+@pytest.mark.reads("docs_only")
 def test_the_guides_tell_an_engineer_to_pass_agent_on_every_call() -> None:
     wanted = re.compile(r"agent: \"<(?:your|their) id>\"")
     setup = (REPO / "docs" / "guides" / "agents.md").read_text(encoding="utf-8")

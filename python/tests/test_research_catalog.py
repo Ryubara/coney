@@ -106,6 +106,7 @@ def test_a_listing_that_is_damaged_is_an_error(tmp_path: Path) -> None:
         load_catalog(tmp_path, rules)
 
 
+@pytest.mark.reads("docs_only")
 def test_this_repositorys_data_covers_the_executable() -> None:
     found = load_catalog(REPO, research())
     assert found.can_resolve and found.image is not None and found.image[0] == 0x00100000

@@ -134,6 +134,7 @@ def test_a_missing_list_is_an_error(tmp_path: Path) -> None:
         lua_hashes.load(tmp_path / "nope.toml")
 
 
+@pytest.mark.reads("docs_only")
 def test_the_committed_list_holds_hashes_and_names_only() -> None:
     """Every entry is a name and two hashes; no line of any script's text, nor the guard's marker, can be in it."""
     raw = COMMITTED.read_text(encoding="utf-8")
@@ -151,6 +152,7 @@ def test_the_committed_list_holds_hashes_and_names_only() -> None:
         )
 
 
+@pytest.mark.reads("docs_only")
 def test_the_committed_list_loads_and_is_sorted_without_duplicates() -> None:
     loaded = lua_hashes.load(COMMITTED)
     assert loaded.form == lua_hashes.FORM

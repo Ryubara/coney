@@ -9,9 +9,13 @@ import collections
 import re
 from pathlib import Path
 
+import pytest
 import yaml
 
 from coney_tools.config import find_repo_root
+
+# Reads the checkout's own files of these classes (python/tests/repo_reads.py).
+pytestmark = pytest.mark.reads("docs_only")
 
 ROOT = find_repo_root(Path(__file__).parent)
 WAD_CONTENTS = ROOT / "docs" / "research" / "formats" / "wad-contents.md"

@@ -175,6 +175,7 @@ def test_progress_render_writes_a_binary_file_as_bytes_and_a_text_file_as_text(t
 # --- the README and the build -----------------------------------------------------------------------------------------
 
 
+@pytest.mark.reads("docs_only")
 def test_the_readme_shows_the_sites_pngs_for_each_theme_and_links_the_home_page() -> None:
     """The README is the one file that holds the site's address; it embeds the files the build publishes."""
     readme = (REPO / "README.md").read_text(encoding="utf-8")
@@ -194,6 +195,7 @@ def test_the_readme_shows_the_sites_pngs_for_each_theme_and_links_the_home_page(
     assert "alt=" in picture
 
 
+@pytest.mark.reads("docs_only")
 def test_the_docs_build_installs_the_pillow_the_tools_are_locked_to() -> None:
     """The docs job installs only requirements-docs.txt: it pins Pillow to the version uv.lock has, so no drift."""
     pin = re.search(r"^pillow==([\d.]+)$", (REPO / "requirements-docs.txt").read_text(encoding="utf-8"), re.MULTILINE)
@@ -203,6 +205,7 @@ def test_the_docs_build_installs_the_pillow_the_tools_are_locked_to() -> None:
     assert versions == {pin.group(1)}
 
 
+@pytest.mark.reads("docs_only", "engine")
 def test_the_real_pictures_stay_light() -> None:
     """Every function is drawn and each PNG is well under what a README should load (60 KB)."""
     state = progress.load(REPO)

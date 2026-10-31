@@ -13,6 +13,9 @@ from test_research_functions_check import ENTRY, make_root, with_conventions
 
 from coney_tools import research_find
 
+# Reads the checkout's own files of these classes (python/tests/repo_reads.py).
+pytestmark = pytest.mark.reads("docs_only")
+
 
 def test_the_build_gets_one_page_per_system_and_the_address_page(tmp_path: Path) -> None:
     """The pages are keyed by their path below docs/, ready to be added to the site as generated files."""

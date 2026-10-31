@@ -47,6 +47,7 @@ def test_the_three_fix_classes_each_have_a_section() -> None:
         assert heading in body
 
 
+@pytest.mark.reads("docs_only")
 def test_every_relative_link_reaches_a_page_and_its_anchor() -> None:
     problems = []
     for target, anchor in LINK.findall(text()):

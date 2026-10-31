@@ -15,6 +15,9 @@ from pathlib import Path
 import pytest
 from conventions_support import REPO
 
+# Reads the checkout's own files of these classes (python/tests/repo_reads.py).
+pytestmark = pytest.mark.reads("engine")
+
 TARGET = REPO / "cmake" / "coney_target.cmake"
 PRESETS = REPO / "CMakePresets.json"
 FLAG = "/w44062"

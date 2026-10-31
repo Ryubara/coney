@@ -261,6 +261,7 @@ def test_a_subsystem_with_no_files_is_placed_by_position_and_may_hold_none() -> 
     assert source_files.check_totals(parse(), with_subsystems(alpha, beta, maths)) == []
 
 
+@pytest.mark.reads("docs_only")
 def test_the_committed_data_passes_its_own_checks() -> None:
     """The file in the repository parses, matches totals.toml and keeps the figures the source map states."""
     root = REPO

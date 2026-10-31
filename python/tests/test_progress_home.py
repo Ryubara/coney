@@ -182,11 +182,13 @@ def test_the_home_page_needs_exactly_one_marker() -> None:
         progress_render.fill_home_page("no marker", "GRID", "index.md")
 
 
+@pytest.mark.reads("docs_only")
 def test_the_real_home_page_has_its_marker() -> None:
     text = (REPO / progress.HOME_PAGE_FILE).read_text(encoding="utf-8")
     assert text.count(progress_render.HOME_MARKER) == 1
 
 
+@pytest.mark.reads("docs_only", "engine")
 def test_the_real_home_picture_stays_light() -> None:
     """Every function is drawn and the home page gains well under the progress page's weight (its limit is 600 KB)."""
     state = progress.load(REPO)
@@ -214,6 +216,7 @@ def test_the_tooltip_labels_are_the_legends_for_every_progress_state() -> None:
     assert set(labels.values()) == set(progress_grid.HOME_LABELS.values())
 
 
+@pytest.mark.reads("docs_only")
 def test_the_home_section_hands_the_tooltip_script_the_legends_names(tmp_path: Path) -> None:
     """data-labels is HOME_LABELS by state code, and the shared script prefers it to its own progress page names."""
     html = progress_site.home_section(grid_of(make_grid_checkout(tmp_path)), None)
@@ -298,6 +301,7 @@ def test_the_three_states_are_distinct_and_readable_in_both_themes(theme: int) -
             assert abs(_lightness(colours[a]) - _lightness(colours[b])) >= 8, (a, b)
 
 
+@pytest.mark.reads("docs_only")
 def test_the_stylesheet_holds_the_swapped_greys() -> None:
     css = (REPO / "docs" / "stylesheets" / "progress-grid.css").read_text(encoding="utf-8")
     light = css[css.index(".progress-home {") :].split("}", 1)[0]
@@ -308,6 +312,7 @@ def test_the_stylesheet_holds_the_swapped_greys() -> None:
 # --- the stylesheet ---------------------------------------------------------------------------------------------------
 
 
+@pytest.mark.reads("docs_only")
 def test_the_stylesheet_holds_the_home_palette_in_both_themes() -> None:
     """progress-grid.css defines each home colour, light and dark, as HOME_PALETTE has it, and fills each class."""
     css = (REPO / "docs" / "stylesheets" / "progress-grid.css").read_text(encoding="utf-8")
@@ -321,6 +326,7 @@ def test_the_stylesheet_holds_the_home_palette_in_both_themes() -> None:
         assert f".progress-home .cg-key.{cls}" in css, cls
 
 
+@pytest.mark.reads("docs_only")
 def test_the_tooltip_swatch_on_the_home_page_has_the_squares_colour() -> None:
     """The shared tooltip's swatch shows the square's home colour on the home page (its name is the legend's)."""
     css = (REPO / "docs" / "stylesheets" / "progress-grid.css").read_text(encoding="utf-8")

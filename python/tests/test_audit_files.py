@@ -23,6 +23,9 @@ from coney_tools import audit_files as af
 from coney_tools.audit import registered
 from coney_tools.conventions import CONVENTIONS_FILE, load_conventions
 
+# Reads the checkout's own files of these classes (python/tests/repo_reads.py).
+pytestmark = pytest.mark.reads("docs_only", "engine")
+
 FILES_CHECKS = [spec.id for spec in CONVENTIONS.hygiene.checks.values() if spec.scope == "files"]
 GIT_ENV = {
     **os.environ,

@@ -38,6 +38,9 @@ from coney_tools.game_memory import GAME_STATE_POINTER, HUMAN_TABLE, TRANSFORM_T
 from coney_tools.pcsx2_states import Entry, Library, LibraryError, StateMemory, read_scene
 from coney_tools.pine import PineError, Read, Write
 
+# Reads the checkout's own files of these classes (python/tests/repo_reads.py).
+pytestmark = pytest.mark.reads("docs_only")
+
 ROOT = find_repo_root(Path(__file__))
 GAME_STATE = 0x00800000
 LEVEL_RECORDS = 0x14D4

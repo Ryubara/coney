@@ -355,19 +355,23 @@ def used_blocks() -> dict[str, list[str]]:
     return found
 
 
+@pytest.mark.reads("docs_only")
 def test_the_committed_blocks_of_this_repository_are_current(capsys: pytest.CaptureFixture[str]) -> None:
     assert run_render(REPO, check=True) == 0, capsys.readouterr().err
 
 
+@pytest.mark.reads("docs_only")
 def test_every_block_is_used_somewhere_in_this_repository() -> None:
     assert set(BLOCKS) <= set(used_blocks())
 
 
+@pytest.mark.reads("docs_only")
 def test_the_agents_file_keeps_its_rules_in_blocks_and_stays_short() -> None:
     assert "commit-rules" in used_blocks() and "AGENTS.md" in used_blocks()["commit-rules"]
     assert len((REPO / "AGENTS.md").read_text(encoding="utf-8").splitlines()) <= 110
 
 
+@pytest.mark.reads("docs_only")
 def test_the_files_that_used_to_type_the_lists_by_hand_hold_the_blocks() -> None:
     used = used_blocks()
     assert "CONTRIBUTING.md" in used["commit-areas"] and "CONTRIBUTING.md" in used["pr-rules"]
@@ -425,6 +429,7 @@ def test_maintainer_decisions_follow_a_changed_list() -> None:
     assert "rename the project" in text and "make the repository public" not in text
 
 
+@pytest.mark.reads("docs_only")
 def test_the_agents_file_shows_the_maintainer_decisions_and_the_coordinator_section_links_them() -> None:
     assert used_blocks()["maintainer-decisions"] == ["AGENTS.md"]
     section = (REPO / "docs/guides/how-we-work.md").read_text(encoding="utf-8")
@@ -441,6 +446,7 @@ def prose_files() -> list[Path]:
     return block_files(REPO)
 
 
+@pytest.mark.reads("docs_only")
 @pytest.mark.parametrize("pattern", [r"\b72 (characters|columns)", r"\bat most 72\b"])
 def test_the_commit_limits_are_written_only_in_the_generated_blocks(pattern: str) -> None:
     """The title and body limits are `commits` in the conventions file; a guide links to them, so they cannot differ."""
@@ -452,6 +458,7 @@ def test_the_commit_limits_are_written_only_in_the_generated_blocks(pattern: str
     assert restated == []
 
 
+@pytest.mark.reads("docs_only")
 @pytest.mark.parametrize(
     "stale",
     [

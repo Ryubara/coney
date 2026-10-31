@@ -333,6 +333,7 @@ def write(tmp_path: Path, name: str, text: str) -> Path:
     return path
 
 
+@pytest.mark.reads("docs_only")
 def test_the_command_reports_a_trace(tmp_path: Path, capsys: pytest.CaptureFixture[str], fight: str) -> None:
     trace = write(tmp_path, "a.csv", fight)
     assert cli.main(["trace", "fight-report", str(trace), "--humans"]) == 0
@@ -342,6 +343,7 @@ def test_the_command_reports_a_trace(tmp_path: Path, capsys: pytest.CaptureFixtu
     assert cli.main(["trace", "fight-report", str(trace), "--hz", "60"]) == 0
 
 
+@pytest.mark.reads("docs_only")
 def test_the_command_compares_runs_and_exits_1_outside_the_spread(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], fight: str
 ) -> None:
@@ -357,6 +359,7 @@ def test_the_command_compares_runs_and_exits_1_outside_the_spread(
     assert "g0.block.held_per_min" in capsys.readouterr().out
 
 
+@pytest.mark.reads("docs_only")
 def test_the_command_pairs_gangs_in_the_order_given(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], fight: str
 ) -> None:
@@ -372,6 +375,7 @@ def test_the_command_pairs_gangs_in_the_order_given(
     assert "match.winner" in capsys.readouterr().out
 
 
+@pytest.mark.reads("docs_only")
 def test_the_command_refuses_unfinished_requests(tmp_path: Path, fight: str) -> None:
     trace = write(tmp_path, "a.csv", fight)
     assert cli.main(["trace", "fight-report"]) == 2
@@ -440,6 +444,7 @@ def test_goal_names_come_from_the_reference_list_in_snake_case(tmp_path: Path) -
         load_goal_names(tmp_path / "missing.yaml")
 
 
+@pytest.mark.reads("docs_only")
 def test_the_repository_reference_list_names_the_fight_goal() -> None:
     before = dict(GOAL_NAMES)
     try:
@@ -686,6 +691,7 @@ def test_the_original_help_calls_come_from_the_hook_logs_beside_the_trace(tmp_pa
     assert "g0.help.calls_per_min" in flat and flat["g0.help.calls_per_min"] == 0
 
 
+@pytest.mark.reads("docs_only")
 def test_the_command_compares_each_orientation_against_its_own_spread(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], fight: str
 ) -> None:
@@ -701,6 +707,7 @@ def test_the_command_compares_each_orientation_against_its_own_spread(
     assert cli.main([*args, "--coney", str(one)]) == 2  # one Coney group for two orientations
 
 
+@pytest.mark.reads("docs_only")
 def test_the_command_can_start_after_an_intro(tmp_path: Path, capsys: pytest.CaptureFixture[str], fight: str) -> None:
     trace = write(tmp_path, "a.csv", fight)
     assert cli.main(["trace", "fight-report", str(trace), "--from", "31"]) == 0

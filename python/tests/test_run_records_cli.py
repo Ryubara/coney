@@ -27,6 +27,9 @@ from coney_tools.pcsx2_states import Entry
 from coney_tools.pine import PineClient
 from coney_tools.recorder import Recording
 
+# Reads the checkout's own files of these classes (python/tests/repo_reads.py).
+pytestmark = pytest.mark.reads("docs_only")
+
 DAY = date(2026, 10, 23)
 ID = "r-20261023-grab-reach"
 
