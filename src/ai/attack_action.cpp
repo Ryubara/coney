@@ -71,6 +71,12 @@ ActionStatus AttackAction::start(Brain& brain) {
 }
 
 ActionStatus AttackAction::update(Brain& brain) {
+    // The update in the step that pressed only clears the flag: the queue's next action, which the same step would
+    // run, waits for the human to take this press instead of writing over it.
+    if (m_firstUpdate) {
+        m_firstUpdate = false;
+        return ActionStatus::Running;
+    }
     if ((brain.human().animator().flags() & kAttackWaitFlags) != 0) {
         return ActionStatus::Running;
     }

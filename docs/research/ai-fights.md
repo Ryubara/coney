@@ -885,7 +885,11 @@ The attack action (vtable `0x00542ce0`, `AttackAction_Init` `0x002fa918`):
   Then it writes the command
   (`AttackKind_ToCommand`) into the per-player record `+0x20` (`PlayerRecord_SetCommand`, `0x00147ef0`) and, when
   the action has an angle (`+0x1c` ≥ 0), a stick of magnitude 1.0 at that angle.
-- **Update** (`0x002fad70`): re-writes the command only while now < the action's `+0x18`, which Start set to now, so
+- **Update** (`0x002fad70`): its first call only clears the action's `+0x20` (which `AttackAction_Init` sets to 1)
+  and says running. That first call is the one `Action_Update` makes right after Start, in the same update
+  ([Actions](ai/index.md#actions)), so an attack never ends in the update that pressed it, and the next action in the
+  queue, which the same update would run, cannot write its command over this one before the human takes it.
+  After that, it re-writes the command only while now < the action's `+0x18`, which Start set to now, so
   **never**: the command is written **once** (a run saw it too, [How this was checked](#runtime-attack-action)). It is
   done at once when the action's
   `+0x14` is 1, otherwise once the record's `+0x08` has none of **`0x5c0221f`**: the attack's held flags
