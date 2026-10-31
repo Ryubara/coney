@@ -4,6 +4,8 @@ told. The recorder is driven by hand with audit events, so no real file of the c
 
 import contextlib
 import os
+import subprocess
+import sys
 from collections.abc import Callable
 from pathlib import Path
 
@@ -183,3 +185,44 @@ def test_a_stat_call_is_not_noted_while_nothing_is_watched(tmp_path: Path) -> No
         assert watch.current is None
     finally:
         repo_reads.unwrap_stat_calls(replaced)
+
+
+def test_the_conftest_fails_an_unmarked_test_at_teardown_and_selects_by_marker(tmp_path: Path) -> None:
+    # The conftest's hooks, run for real in a child pytest over a throwaway test file: the glue between the recorder and
+    # pytest is what keeps a scoped run from skipping an unmarked test, and the helpers above do not cover it.
+    here = Path(__file__).resolve().parent
+    (tmp_path / "conftest.py").write_text((here / "conftest.py").read_text(encoding="utf-8"), encoding="utf-8")
+    (tmp_path / "pytest.ini").write_text("[pytest]\n", encoding="utf-8")
+    (tmp_path / "test_reader.py").write_text(
+        "import pytest\n"
+        "from pathlib import Path\n"
+        f"DOC = Path({str(repo_reads.REPO / 'docs' / 'guides' / 'testing.md')!r})\n"
+        "def test_unmarked():\n"
+        "    DOC.read_bytes()\n"
+        '@pytest.mark.reads("docs_only")\n'
+        "def test_marked():\n"
+        "    DOC.read_bytes()\n"
+        "def test_unrelated():\n"
+        "    pass\n",
+        encoding="utf-8",
+    )
+    env = {**os.environ, "PYTHONPATH": os.pathsep.join([str(here), os.environ.get("PYTHONPATH", "")])}
+    env.pop("CONEY_TEST_READS_LOG", None)
+
+    def run(*args: str) -> tuple[int, str]:
+        done = subprocess.run(
+            [sys.executable, "-m", "pytest", "-p", "no:cacheprovider", "-q", *args],
+            cwd=tmp_path,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return done.returncode, done.stdout + done.stderr
+
+    code, out = run()
+    assert code != 0
+    assert "test_unmarked" in out and "reads the checkout's docs_only" in out
+    assert "3 passed, 1 error" in out  # the unmarked reader is an error of its teardown
+    code, out = run("--reads", "docs_only")
+    assert code == 0 and "1 passed, 2 deselected" in out  # only test_marked is kept

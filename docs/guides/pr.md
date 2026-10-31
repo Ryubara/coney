@@ -93,6 +93,7 @@ What it refuses, exactly (`<...>` is filled in):
 | `checked` | `checked: no passing Check; run task check`; `checked: the newest Check failed; fix what it found and run task check` | `task check` |
 | `checked` | `checked: stale: the branch changed since Check (diff a1b2c3d4 now c3d4e5f6)` | `task check` |
 | `checked` | `checked: Check ran profile docs, this change needs full (touches src/ai/brain.cpp)` | `task check` |
+| `checked` | `checked: Check ran only the tests marked as reading docs_only; this change needs only the tests marked as reading engine` (the tests the Check ran do not hold those the change's paths need: [pytest scope](coney-tools-repo.md#task-check-pytest)); `checked: pytest_scope is 7, not 'whole' or a list of classes` (the stamp's `detail.pytest_scope` is edited) | `task check` |
 | `checked` | `checked: Check did not run: ctest-full-disc` (one line per missing check of the profile) | `task check` |
 | `checked` | `checked: the build record <12 digits> cannot be read: <why>` (missing, edited, not JSON) | `task check` |
 | `checked` | every problem [`build_record.problems`](stamps.md#build-record) finds, the rule `task check` applies, at the commit the `checked` stamp names: `checked: the build record is a filtered run (-R ...); Check needs the full suite`; `... is preset dev, Check needs ci`; `... has version None, this tool reads 1`; `... has no test run`; `checked: no tests ran`; `checked: 1 test failed`; `checked: 41 disc tests skipped; Check needs the disc (CONEY_DISC)`; `... was made from a worktree with uncommitted changes`; `... is for another commit (<10 digits>, the tip is <10 digits>)`; `checked: the log <file> differs from the hash the build record kept (it was edited)`; and `checked: the build record's test counts differ from the Check stamp's` | `task check` |
@@ -212,9 +213,9 @@ The facts say which stages passed, with their hashes cut to 12 digits, from the 
 chain head, the change and the `<remote>/<default branch>` commit it is on, then one line each for the functions studied
 and compared (pairs counted by relation), the tests that failed first, the tests that keep behaviour (passing before
 the change and after it, named apart: [Keeps](stamps.md#keeps)), Check (profile, preset, the build's counts,
-pytest's counts, build record; a profile with no build says `no build`, or `no build or test run` for `docs`, which
-runs no pytest, and names the checks it ran) and Review (verdict, model, functions by class), and the stand-in and
-not-ported pieces of the pairs. A stage with no stamp
+pytest's counts and which tests it ran, build record; a profile with no build says `no build` and names the checks it
+ran, with pytest reading `of the whole suite` or `of the tests reading <classes>` before its counts) and Review
+(verdict, model, functions by class), and the stand-in and not-ported pieces of the pairs. A stage with no stamp
 reads `Check: not run` or `Review: not reviewed`, and a Check or Review made for another change reads `stale (made for
 change <12 digits>)` instead of its verdict, as `pr verify` refuses it. Every name from a stamp or a pairs file is a
 code span with backticks and `@` neutralised, because those strings are not trusted text. The block is at most 8,000
