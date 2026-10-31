@@ -90,9 +90,9 @@ class Victim {
     void die(const IncomingHit& hit, const VictimFrame& frame, HumanAnimator& animator);
 
     /// The ground starts (a knockdown, a throw's landing) at `nowMs`; with `stunned` the stun lasts until the rise +
-    /// the stun time. The doublings by the attack's clip flags `0x100` / `0x200`, a class-13 attacker's 2 s and flag
-    /// `0x80`'s ground of no time are not ported (#685).
-    /// Research: docs/research/characters.md#code-core
+    /// the stun time (`Human_SetDownTimers`' end, which the rise's end replaces: step()). The doublings by the attack's
+    /// clip flags `0x100` / `0x200`, a class-13 attacker's 2 s and flag `0x80`'s ground of no time are not ported
+    /// (#685). Research: docs/research/characters.md#code-core
     /// @orig 0x0022f4f8 Human_SetDownTimers (unknown)
     void knockDown(std::uint64_t nowMs, bool stunned);
     /// Stuns it from `nowMs` for the class's stun time. The doubling by the attack's clip flag `0x200` is not ported
@@ -130,15 +130,16 @@ class Victim {
     /// One update's timers at `nowMs`. Standing stunned with no clip driving the human (a reaction, the rise or 355 is
     /// not cut short, the stun's loop 356 is): once its time has passed the stun ends, its state clearing as 357
     /// starts (then `idle`); before, the clip that ended returns to 355, then 356. A grounded victim with `canRise`
-    /// gets up with 199 once its ground time has passed (then the stun's clips while stunned, else `idle`). Returns
-    /// true on the update it rises.
+    /// gets up with 199 once its ground time has passed (then the stun's loop 356 while stunned, else `idle`); as 199
+    /// ends, a stun's time starts again from that update. Returns true on the update it rises.
     /// Research: docs/research/combat-reactions.md#stun-end
     /// @orig 0x00256a60 Human_UpdateDown (unknown)
     /// @orig 0x0022f8d8 Human_EndStun (unknown)
+    /// @orig 0x0022f3c8 Human_GetUp (unknown)
     bool step(HumanAnimator& animator, std::uint32_t idle, std::uint64_t nowMs, bool canRise);
     /// A command made while lying down: once the knockdown's reaction is over (lying in 196) it cuts the ground time
-    /// by combat::mashCut(); during the reaction it does nothing. The stun after the rise moves with it (**Coney's
-    /// choice**). Returns whether it cut.
+    /// by combat::mashCut(), up to the update that lands on the rise's time; during the reaction it does nothing. A
+    /// stun after the rise is not cut (its time starts again as 199 ends). Returns whether it cut.
     bool mash(const HumanAnimator& animator, std::uint64_t nowMs);
 
     [[nodiscard]] const combat::PowerClass& powerClass() const { return m_class; }
@@ -169,6 +170,7 @@ class Victim {
     std::uint64_t m_stunUntilMs = 0; // 0 when not stunned; kept past its time until the stun ends
     bool m_stunEntered = false;      // 355 has played since the clip the stun began in
     bool m_stunTimeOver = false;     // the stun's time was ended from outside (expireStun())
+    bool m_rising = false;           // 199 plays: its end restarts a stun's time (Human_GetUp)
     std::uint64_t m_riseAtMs = 0;
     int m_reactions = 0;
     int m_stuns = 0;

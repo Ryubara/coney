@@ -86,6 +86,7 @@ void Victim::die(const IncomingHit& hit, const VictimFrame& frame, HumanAnimator
     m_grounded = true;
     m_stunUntilMs = 0;
     m_stunTimeOver = false;
+    m_rising = false;
 }
 
 void Victim::knockDown(std::uint64_t nowMs, bool stunned) {
@@ -96,6 +97,7 @@ void Victim::knockDown(std::uint64_t nowMs, bool stunned) {
     m_stunUntilMs = stunned ? m_riseAtMs + static_cast<std::uint64_t>(m_class.stunMs) : 0;
     m_stunEntered = false;
     m_stunTimeOver = false;
+    m_rising = false;
 }
 
 void Victim::stun(std::uint64_t nowMs) {
@@ -108,6 +110,7 @@ void Victim::clear() {
     m_grounded = false;
     m_stunUntilMs = 0;
     m_stunTimeOver = false;
+    m_rising = false;
 }
 
 bool Victim::step(HumanAnimator& animator, std::uint32_t idle, std::uint64_t nowMs, bool canRise) {
@@ -115,6 +118,15 @@ bool Victim::step(HumanAnimator& animator, std::uint32_t idle, std::uint64_t now
     // reaction, the rise and 355 hold one, the loop 356 none). Its time passed, the stun ends and its state clears as
     // 357 starts (`Human_EndStun`, then `Human_BuildIdleTasks`): at once when the clip that held it ends late enough.
     // Its time not passed, the clip that ended returns to 355, then the loop 356 (`Human_BuildIdleTasks`).
+    // 0. The rise 199 over (`Human_GetUp`, its end callback): a stunned human's stun time starts again from now
+    // (`Human_SetStunTimer`), in the loop 356 the rise handed over to.
+    if (m_rising && !animator.drivingClipPlaying()) {
+        m_rising = false;
+        if (stunned() && !m_stunTimeOver) {
+            m_stunUntilMs = nowMs + static_cast<std::uint64_t>(m_class.stunMs);
+            m_stunEntered = true;
+        }
+    }
     if (stunned() && !m_grounded && !animator.drivingClipPlaying()) {
         // Past, not on it: the original tests the time minus now below zero. A stun ended from outside is over now.
         if (m_stunTimeOver || nowMs > m_stunUntilMs) {
@@ -130,12 +142,12 @@ bool Victim::step(HumanAnimator& animator, std::uint32_t idle, std::uint64_t now
                                 static_cast<std::uint32_t>(combat::kStunLoop), AnimState::Hold);
         }
     }
-    // 2. Down long enough (past its time, as the stun), it gets up: into the stun's loop while stunned (355 first, from
-    // step 1), else the idle.
+    // 2. Down long enough (past its time, as the stun), it gets up: into the stun's loop while stunned (its time
+    // restarted as 199 ends, step 0), else the idle.
     if (m_grounded && canRise && nowMs > m_riseAtMs) {
         m_grounded = false;
+        m_rising = true;
         if (stunned()) {
-            m_stunEntered = false;
             animator.playCombat(one(kGroundedRise), static_cast<std::uint32_t>(combat::kStunLoop), AnimState::Hold,
                                 kCombatFade, kRiseHolds);
         } else {
@@ -152,14 +164,10 @@ bool Victim::mash(const HumanAnimator& animator, std::uint64_t nowMs) {
     if (!m_grounded || animator.drivingClipPlaying() || nowMs > m_riseAtMs) {
         return false;
     }
-    // The cut may take the rise's time below now, as the original's does: step() then rises this update.
+    // The cut may take the rise's time below now, as the original's does: step() then rises this update. A stun after
+    // the rise is not cut: its time starts again as 199 ends.
     const auto cut = static_cast<std::uint64_t>(combat::mashCut(m_class.groundMs, m_random));
-    const std::uint64_t left = m_riseAtMs - nowMs;
     m_riseAtMs -= std::min(cut, m_riseAtMs);
-    // The stun after the rise moves by the time the cut saves, no more (Coney's choice).
-    if (m_stunUntilMs != 0) {
-        m_stunUntilMs -= std::min(cut, left);
-    }
     return true;
 }
 
