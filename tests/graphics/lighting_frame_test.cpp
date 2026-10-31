@@ -305,6 +305,7 @@ TEST_CASE("The stealth shadow flag never reads the level's shadow light or caste
 // negative number, and keeps the low byte, so a component above 1 wraps instead of saturating.
 TEST_CASE("The fog colour keeps each component's low byte, as the original truncates and narrows it",
           "[graphics][lighting_frame]") {
+    // Expected: lighting.md#world, confirmed (code)
     const coney::graphics::Rgba inRange = coney::graphics::fogColourOf(1.0F, 0.5F, 0.0F);
     CHECK(inRange.r == 255);
     CHECK(inRange.g == 127);

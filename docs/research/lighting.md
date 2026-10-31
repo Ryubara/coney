@@ -339,6 +339,9 @@ prelighting plus 0.227 grey, plus two lamps that light both (flags 3, radius 3 a
 **Fog and background.** One colour: the device's `+0x440` ([Fog](world.md#fog)); fog starts at the device's `+0x444`
 × the draw distance. `level99`: `SetFogColor(0.05, 0.05, 0.02)` gives (12, 12, 5, 255); fog start 0.5. Confirmed
 (runtime).
+`Level_SetFogColour` (`0x0040c868`) turns each component × 255 into a whole number with `Float_ToUInt` (`0x0042c718`:
+0 for a negative number, all ones past the 32-bit range) and keeps only the low byte, so a component above 1 wraps
+(1.2 gives 50) rather than saturating. Confirmed (code).
 
 **Time of day.** None: each level's lights are set once by its scripts (`LightData` in `global.lua`, then the level's
 lamps); nothing in the manager changes them over time except flicker and light B. Inferred (no timer-driven caller of
