@@ -394,6 +394,25 @@ TEST_CASE("the attack action writes its command once, as it starts, and waits on
     CHECK(playedS1);
 }
 
+TEST_CASE("an attack action runs through the update that pressed it, so the next press waits an update", "[ai]") {
+    // Expected: ai-fights.md#attack-action, confirmed (code): AttackAction_Init (0x002fa918) sets +0x20 to 1, and
+    // AttackAction_Update (0x002fad70) clears it and says running, before it looks at the held flags.
+    Scene scene;
+    Brain& gang = scene.add({40.0F, 41.0F, 0.0F}, 180.0F, BrainType::Gang);
+    gang.setTarget(&scene.playerBrain());
+    REQUIRE(gang.queueAction(std::make_unique<coney::ai::AttackAction>(1, 0)));
+    REQUIRE(gang.queueAction(std::make_unique<coney::ai::AttackAction>(2, 0)));
+    // Only the brain runs: no human takes the press and no clip sets a held flag.
+    gang.update(stepMs(30));
+    CHECK(gang.actionCount() == 2);
+    CHECK(gang.human().record().command == command::kSquarePressed);
+    // The next update ends the first (its flags are clear) and starts the second in the same update.
+    gang.human().record().command = command::kNone;
+    gang.update(stepMs(31));
+    CHECK(gang.actionCount() == 1);
+    CHECK(gang.human().record().command == command::kCrossPressed);
+}
+
 TEST_CASE("a brain counts the attack starts its range and field of view take in", "[ai]") {
     // Expected: ai-fights.md#block, confirmed (code)
     Scene scene;
