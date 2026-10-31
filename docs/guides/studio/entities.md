@@ -350,7 +350,7 @@ reach without a wall of fields:
   default, a `from-type` default included (Godot's revert arrow; the debug menu's reset to the configured value).
 - **Conditions.** A property whose `when` is false is not drawn: no wheelchair switch on a non-player, no AI group
   without a brain.
-- **Prefab overrides** are drawn in bold with a bar in the margin, with *Revert* and *Apply to prefab* (Unity's);
+- **Prefab overrides** are drawn in bold with a bar in the margin, with *Revert* and *Apply* (Unity's);
   what each does is [Prefab overrides](#prefab-overrides).
 - **Multiple selection.** With several entities of one kind, every `multi` property is shown and a value they differ
   in shows as a dash; setting it sets all, as one undo step. With several kinds, only the groups they share (Entity,
@@ -388,7 +388,7 @@ Neither marks where an asset comes from, since neither has a disc: the badge and
 
 ### Prefab overrides {#prefab-overrides}
 
-An instance's changed value is drawn in bold with a bar in the margin, with *Revert* and *Apply to prefab*, and the
+An instance's changed value is drawn in bold with a bar in the margin, with *Revert* and *Apply*, and the
 header's *Overrides* menu lists them all. What each action does, how it is undone and what the level file holds after
 it are [Prefabs](prefabs.md).
 

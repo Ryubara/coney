@@ -9,14 +9,14 @@ Roblox: an editor for one game's content, not a general engine like Unity. The p
 kinds](../writing-docs.md#page-kinds): each one says what Studio should do and why, and names the questions only a
 maintainer can answer. The maintainer's decisions so far are [below](#decisions). What gets built moves into a guide.
 
-!!! warning "Nothing from the disc goes into a project or a `.cmod`"
+!!! warning "Nothing from the disc goes into a `.cmod`, and a project holds none but a derived file"
     A project refers to the game's assets only by `game:/` path, resolved on each player's machine against their own
-    disc ([Paths](content-and-formats.md#paths)); it never holds a copy of them. An edited export of a disc asset (a
-    repainted texture, a reshaped model) is a **derived file**: it works on the player's machine and is never packaged
-    ([Provenance](content-and-formats.md#import)). The `.cmod` export refuses any file marked derived or whose bytes
-    match a disc asset's hash, and names each one ([The `.cmod` package](project-formats.md#cmod)). Why:
-    [LEGAL.md](repo:LEGAL.md#no-game-data). Studio's user guide (its getting-started page, planned) opens with this
-    same callout.
+    disc ([Paths](content-and-formats.md#paths)); it never holds a copy of them, with one exception. An edited export
+    of a disc asset (a repainted texture, a reshaped model) is a **derived file**: it may sit in a project on the
+    player's own machine, where it works, and is never packaged ([Provenance](content-and-formats.md#import)). The `.cmod`
+    export refuses any file marked derived or whose bytes match a disc asset's hash, and names each one ([The `.cmod`
+    package](project-formats.md#cmod)). Why: [LEGAL.md](repo:LEGAL.md#no-game-data). Studio's user guide (its
+    getting-started page, planned) opens with this same callout.
 
 ## What Studio is {#principles}
 
