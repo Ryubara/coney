@@ -75,13 +75,14 @@ TEST_CASE("a woman's random size falls by 0.01 a quarter of the draw, a hat keep
     // Expected: characters.md#body-scale, confirmed (code)
     BodySizeInput woman = gangMember();
     woman.woman = true;
-    CHECK(*sizeFor(woman, 0) == Catch::Approx(1.0F));
-    CHECK(*sizeFor(woman, 25) == Catch::Approx(0.99F));
-    CHECK(*sizeFor(woman, 50) == Catch::Approx(0.98F));
-    CHECK(*sizeFor(woman, 99) == Catch::Approx(0.97F));
+    // value_or(-1) keeps an empty result a failed check rather than a read of an empty optional.
+    CHECK(sizeFor(woman, 0).value_or(-1.0F) == Catch::Approx(1.0F));
+    CHECK(sizeFor(woman, 25).value_or(-1.0F) == Catch::Approx(0.99F));
+    CHECK(sizeFor(woman, 50).value_or(-1.0F) == Catch::Approx(0.98F));
+    CHECK(sizeFor(woman, 99).value_or(-1.0F) == Catch::Approx(0.97F));
     woman.hat = true;
-    CHECK(*sizeFor(woman, 99) == Catch::Approx(0.99F));
-    CHECK(*sizeFor(woman, 0) == Catch::Approx(1.0F));
+    CHECK(sizeFor(woman, 99).value_or(-1.0F) == Catch::Approx(0.99F));
+    CHECK(sizeFor(woman, 0).value_or(-1.0F) == Catch::Approx(1.0F));
 }
 
 TEST_CASE("the random size draws once from the gameplay stream, and not at all for the humans it skips",

@@ -40,7 +40,9 @@ std::optional<float> randomBodySize(const BodySizeInput& input, GameRandom& rand
     }
     const std::int32_t r = random.range(RandomStream::Gameplay, 0, kDrawMax);
     if (input.woman) {
-        const float size = 1.0F - (static_cast<float>(r / kWomanStep) * kWomanShrink);
+        // The original divides in integers first (0x00218008): only whole quarters count, so 24 still gives 1.0.
+        const std::int32_t wholeQuarters = r / kWomanStep;
+        const float size = 1.0F - (static_cast<float>(wholeQuarters) * kWomanShrink);
         return input.hat && !(kHattedWomanLeast < size) ? kHattedWomanLeast : size;
     }
     if (r <= kPlainUpTo) {
