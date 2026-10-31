@@ -1279,6 +1279,13 @@ the witnesses' message 7 and alert, the crime score 4-8 and the lines 128 / 143.
   Coney (108.8 degrees against 81.0), because Coney does not scale a clip's root turn by the task's rate (issue #263,
   [Root motion](formats/animation.md#root-motion)); the freer ends about 30 degrees past facing the cuffed human until
   that is fixed (the `[!mayfail]` disc case of `repo:tests/platform/disc_level80_test.cpp`).
+- **The cuffed human's heading after level80's arrest** ([the freer's place](#uncuff-pose)): the original's state had
+  Snow cuffed at heading 105 and Cowboy at 43; Coney's arrest at checkpoint 2 leaves Cowboy at 43.00 and Snow at
+  101.49 with the boxes on their one-in-five schedule ([The schedule](trigger-updates.md#schedule)), 97.43 with every
+  box updated each frame, both within 0.05 m of the original's positions. So Snow's final heading hangs on the frame
+  the scene's box starts the arrest. The original's numbers come from a state saved after the arrest, so the counter's
+  turn at the arrest (`0x00514804`) cannot be read from it; what turns Snow during the arrest is not traced. The disc
+  test starts the uncuff from the original's cuffed poses, so this does not reach its steer.
 - **GetItem's swing at glass** ([AI: GetItem](ai/index.md#get-item)): at level80's pharmacy (scenario `steal_store`) two
   Warriors reached the glass branch 23 times each in 60 s and no pane broke. Whether the queued kind 0 played at all
   (the anim-dispatch log of that run was not read), whether its strike reaches the pane's body from the standing point,

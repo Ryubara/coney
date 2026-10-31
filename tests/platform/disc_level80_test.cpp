@@ -607,6 +607,8 @@ namespace {
 struct UncuffPose {
     double flag = 0;
     std::array<float, 3> start{};
+    std::array<float, 2> cuffedAt{}; ///< Where the original's cuffed human stood (to 0.1 m), the uncuff's own start.
+    float cuffedHeading = 0.0F;      ///< His heading there, degrees.
     float steeredDistance = 0.0F;
     float steeredHeading = 0.0F;
     float facedHeading = 0.0F;
@@ -616,11 +618,15 @@ struct UncuffPose {
 constexpr std::array<UncuffPose, 2> kUncuffPoses{
     UncuffPose{.flag = 20,
                .start = {-196.0F, 231.65F, 1.23F},
+               .cuffedAt = {-194.9F, 231.8F},
+               .cuffedHeading = 105.0F,
                .steeredDistance = 0.747F,
                .steeredHeading = -2.36F,
                .facedHeading = -83.34F},
     UncuffPose{.flag = 21,
                .start = {-196.95F, 233.9F, 1.22F},
+               .cuffedAt = {-197.5F, 234.8F},
+               .cuffedHeading = 43.0F,
                .steeredDistance = 0.683F,
                .steeredHeading = 111.31F,
                .facedHeading = 30.32F},
@@ -693,6 +699,15 @@ std::vector<UncuffMeasured> measureUncuffPoses(coney::platform::RenderEngine& en
             }
         }
         REQUIRE(cuffed != nullptr);
+        // The uncuff starts from the original's cuffed pose, not from where Coney's arrest left him: the arrest is
+        // its own behaviour, and Snow's heading after it hangs on the frame the scene's box starts it
+        // (docs/research/crimes.md#open-questions, the cuffed human's heading after level80's arrest).
+        std::printf("  level80 uncuff pose (flag %g): Coney's arrest left the cuffed human at (%.3f, %.3f) heading "
+                    "%.2f deg (original (%.1f, %.1f), %.2f)\n",
+                    pose.flag, cuffed->position().x, cuffed->position().y, cuffed->heading() * kDegrees,
+                    pose.cuffedAt[0], pose.cuffedAt[1], pose.cuffedHeading);
+        auto& movable = const_cast<coney::human::Human&>(*cuffed);
+        movable.place({pose.cuffedAt[0], pose.cuffedAt[1], cuffed->position().z}, pose.cuffedHeading / kDegrees);
         const coney::human::Human& freer = level.play()->player().human();
         const coney::anim::Vec3 cuffedAt = cuffed->position();
         const float cuffedHeading = cuffed->heading();
@@ -743,7 +758,7 @@ std::vector<UncuffMeasured> measureUncuffPoses(coney::platform::RenderEngine& en
 TEST_CASE("the disc's level80: the uncuff steers the freer onto 325's reach from the cuffed human, who does not move",
           "[disc][story][uncuff][pose]") {
     // Expected: crimes.md#uncuff-pose, confirmed (code) at 0x00260ca8 and 0x002761c8 and confirmed (runtime): the
-    // original's distances and headings read in PCSX2 (kUncuffPoses); the heading's 7 degree margin is Coney's
+    // original's distances and headings read in PCSX2 (kUncuffPoses), from the original's cuffed poses
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -756,14 +771,10 @@ TEST_CASE("the disc's level80: the uncuff steers the freer onto 325's reach from
         const UncuffPose& pose = kUncuffPoses.at(i);
         const UncuffMeasured& got = measured.at(i);
         CHECK(std::fabs(got.steeredDistance - pose.steeredDistance) < 0.03F);
-        // Within 7 degrees: Coney's 325 turns the root during the steer's three updates as well (about 1.3 degrees an
-        // update), where the original's steer alone turns him (docs/research/crimes.md#uncuff-pose, open question).
-        // And the cuffed human's own pose comes from the arrest, which the scene's box starts on its turn of the
-        // one-in-five schedule (docs/research/trigger-updates.md#schedule), and the original's numbers were read at
-        // a turn of its counter not known. Measured for flag 20 on 2026-10-31: with every box updated each frame the
-        // cuffed human stood at heading 97.43 and the steer ended at -5.77 (3.4 from the original's); on the schedule
-        // he stands at 101.49 and the steer ends at -7.86 (5.5 from it).
-        CHECK(std::fabs(degreesBetween(pose.steeredHeading, got.steeredHeading)) < 7.0F);
+        // Within 5 degrees: Coney's 325 turns the root during the steer's three updates as well (about 1.3 degrees an
+        // update), where the original's steer alone turns him (docs/research/crimes.md#open-questions, the freer's
+        // turn during the uncuff's steer). Measured on 2026-10-31: 3.36 degrees short for flag 20, 3.37 for flag 21.
+        CHECK(std::fabs(degreesBetween(pose.steeredHeading, got.steeredHeading)) < 5.0F);
         CHECK(got.cuffedStill);
     }
 }
