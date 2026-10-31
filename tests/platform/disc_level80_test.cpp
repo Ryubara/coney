@@ -742,6 +742,8 @@ std::vector<UncuffMeasured> measureUncuffPoses(coney::platform::RenderEngine& en
 
 TEST_CASE("the disc's level80: the uncuff steers the freer onto 325's reach from the cuffed human, who does not move",
           "[disc][story][uncuff][pose]") {
+    // Expected: crimes.md#uncuff-pose, confirmed (code) at 0x00260ca8 and 0x002761c8 and confirmed (runtime): the
+    // original's distances and headings read in PCSX2 (kUncuffPoses); the heading's 7 degree margin is Coney's
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");

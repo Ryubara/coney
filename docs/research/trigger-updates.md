@@ -1,6 +1,6 @@
 ---
 kind: feature
-owns: {functions: ["0x00412ca0", "0x004125b8", "0x004134f8", "0x00414548", "0x004146e0", "0x00415378"]}
+owns: {functions: ["0x0024dee8", "0x00412ca0", "0x004125b8", "0x004134f8", "0x00414548", "0x004146e0", "0x00415378"]}
 ---
 # Trigger boxes and spheres: the update
 
@@ -125,8 +125,8 @@ nobody. Both pass mask 1. Confirmed (code) at `0x004146e0`, `0x00415378`.
 3. Then, unless the sphere was freed, each of the 60 occupant slots, whether or not the sphere is still armed: a
    handle that does not resolve (`0x00390268`) is skipped and kept; a human flagged dead (`0x00227eb0`) or no longer
    accepted is removed and message 4 goes. The pass stops when the sphere was freed. Confirmed (code). So a handler
-   that disarms with `TriggerSphereCfg` (`0x00414bc0`, which keeps the occupants) still has 4 sent for each occupant
-   who left; `TriggerSphereEnable` off empties the list, so nothing follows.
+   that disarms with `TriggerSphereCfg` (`TriggerSphere_Configure`, `0x00414bc0`, which keeps the occupants) still
+   has 4 sent for each occupant who left; `TriggerSphereEnable` off empties the list, so nothing follows.
 4. A sphere freed during the check is freed now.
 
 ### The accept test {#accepts}
