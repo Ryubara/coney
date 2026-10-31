@@ -147,16 +147,18 @@ bool Victim::step(HumanAnimator& animator, std::uint32_t idle, std::uint64_t now
 }
 
 bool Victim::mash(const HumanAnimator& animator, std::uint64_t nowMs) {
-    // Only lying in the ground's loop: a press during the knockdown's reaction does nothing.
-    if (!m_grounded || animator.drivingClipPlaying() || nowMs >= m_riseAtMs) {
+    // Only lying in the ground's loop: a press during the knockdown's reaction does nothing. Down until the rise's time
+    // is past (step()), so a press on the update that lands on it still cuts.
+    if (!m_grounded || animator.drivingClipPlaying() || nowMs > m_riseAtMs) {
         return false;
     }
+    // The cut may take the rise's time below now, as the original's does: step() then rises this update.
     const auto cut = static_cast<std::uint64_t>(combat::mashCut(m_class.groundMs, m_random));
     const std::uint64_t left = m_riseAtMs - nowMs;
-    const std::uint64_t taken = std::min(cut, left);
-    m_riseAtMs -= taken;
+    m_riseAtMs -= std::min(cut, m_riseAtMs);
+    // The stun after the rise moves by the time the cut saves, no more (Coney's choice).
     if (m_stunUntilMs != 0) {
-        m_stunUntilMs -= taken;
+        m_stunUntilMs -= std::min(cut, left);
     }
     return true;
 }
