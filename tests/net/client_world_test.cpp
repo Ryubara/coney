@@ -33,6 +33,7 @@
 #include "net/net_id.h"
 #include "net/net_server.h"
 #include "net/snapshot.h"
+#include "support/optional_value.h"
 
 using Catch::Approx;
 using coney::anim::AnimClip;
@@ -298,7 +299,7 @@ TEST_CASE("client world: every snapshot decoded since the last step goes into th
     for (std::uint32_t shown = 1; shown <= 2; ++shown) {
         world.step();
         REQUIRE(world.shownTime() == std::optional<std::uint64_t>{shown * kTimeUnitsPerStep});
-        CHECK(world.buffer().sample()->toStep == shown);
+        CHECK(coney::test::got(world.buffer().sample()).toStep == shown);
     }
 }
 
@@ -514,6 +515,7 @@ TEST_CASE("client world: once the jitter buffer settles, every field the client 
         // The server's step: its humans, and their snapshot.
         const auto humans = sceneAt(step);
         std::vector<SnapshotHuman> snapshot;
+        snapshot.reserve(humans.size());
         for (const auto& [id, human] : humans) {
             snapshot.push_back({.id = id, .words = humanWords(human)});
         }
@@ -530,9 +532,10 @@ TEST_CASE("client world: once the jitter buffer settles, every field the client 
     // Every snapshot the client decoded reached the buffer: each step one shows, from the first drawn to the last, was
     // blended to or from, and drawn exactly when the clock was on it.
     int unbuffered = 0;
-    const auto lastShown = static_cast<std::uint32_t>(*world.shownTime() / kTimeUnitsPerStep);
+    const auto lastShown = static_cast<std::uint32_t>(coney::test::got(world.shownTime()) / kTimeUnitsPerStep);
+    const std::uint64_t firstTime = coney::test::got(firstShown);
     for (const std::uint32_t decodedStep : decoded) {
-        if (decodedStep * kTimeUnitsPerStep >= *firstShown && decodedStep <= lastShown &&
+        if (decodedStep * kTimeUnitsPerStep >= firstTime && decodedStep <= lastShown &&
             !sampled.contains(decodedStep)) {
             ++unbuffered;
         }
