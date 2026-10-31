@@ -253,7 +253,7 @@ class RenderEngine final : public graphics::RenderDevice {
     [[nodiscard]] const std::optional<DrawStream>& drawStream() const { return m_drawStream; }
 
     /// What the current frame, or the last one presented until the next begins, has drawn of its 2D side and screen
-    /// passes (docs/engine/renderer.md#frame-description). Built with either backend, so headless tests read it.
+    /// passes (docs/engine/renderer.md#frame-description). Built with all three backends, so headless tests read it.
     [[nodiscard]] const graphics::FrameDescription& frame() const { return m_frame; }
 
   private:

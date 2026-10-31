@@ -29,7 +29,8 @@ namespace coney::platform {
 /// the screen passes, which copy the frame, only with a camera.
 class Gl3Renderer {
   public:
-    /// What a frame is drawn into: the RenderEngine's camera (null with the NULL backend) and its frame's size.
+    /// What a frame is drawn into: the RenderEngine's camera (null with the NULL and GPU backends: the GPU
+    /// backend has no librw camera, so no screen pass runs for it) and its frame's size.
     struct Target {
         rw::Camera* camera = nullptr;
         graphics::Extent frameSize;

@@ -242,7 +242,7 @@ its tests build it headless ([frame_description_test.cpp](repo:tests/graphics/fr
   whole view as it records them.
 
 `RenderEngine` records every `RenderDevice` call and the screen passes into its description (`RenderEngine::frame()`,
-kept until the next frame begins), with either backend, and `Gl3Renderer`
+kept until the next frame begins), with all three backends (OpenGL, NULL and GPU), and `Gl3Renderer`
 ([gl3_renderer.h](repo:src/platform/gl3_renderer.h)) draws it through the draw layer with the calls the 2D side and the
 screen passes made before, so the draw-stream hashes did not move. It owns the screen passes' copies of the frame,
 including the motion blur's kept frame, which `MotionBlurPass` now only names; that frame is now a bare raster, with no
