@@ -579,8 +579,10 @@ TEST_CASE("a recent project that is gone is marked missing, refuses to open and 
     CHECK(refused.error().code == coney::ErrorCode::NotFound);
     CHECK(refused.error().message.find("gone") != std::string::npos);
     CHECK(app.recentProjects().size() == 2);
-    REQUIRE(app.project().has_value());
-    CHECK((app.project().has_value() && app.project()->manifest().name == "kept"));
+    // One reference to the optional, so clang-tidy sees the REQUIRE guard the access.
+    const auto& stillOpen = app.project();
+    REQUIRE(stillOpen.has_value());
+    CHECK(stillOpen->manifest().name == "kept");
     // Remove takes it off the list, and the file, so it does not come back.
     CHECK(app.removeRecent(dir.path() / "gone"));
     CHECK_FALSE(app.removeRecent(dir.path() / "gone"));
@@ -590,8 +592,9 @@ TEST_CASE("a recent project that is gone is marked missing, refuses to open and 
     CHECK(next.recentProjects().size() == 1);
     // A recent project that is there opens by its entry.
     REQUIRE(next.openRecent(dir.path() / "kept").has_value());
-    REQUIRE(next.project().has_value());
-    CHECK((next.project().has_value() && next.project()->manifest().name == "kept"));
+    const auto& reopened = next.project();
+    REQUIRE(reopened.has_value());
+    CHECK(reopened->manifest().name == "kept");
 }
 
 TEST_CASE("the start screen draws with recent projects, missing ones too, until a project opens", "[studio]") {
