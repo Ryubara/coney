@@ -200,7 +200,12 @@ TEST_CASE("mode 1 needs a walkable line from the centre to the feet, not a clear
     CHECK(checkAll(spheres, humans, 0) == Sent{{7, VolumeBoxes::kEntered, 100}});
     CHECK(clearLines == 0);
     REQUIRE_FALSE(asked.empty());
-    CHECK(asked.front().first == locate(7).value());
+    const std::optional<std::array<float, 3>> centre = locate(7);
+    REQUIRE(centre.has_value());
+    if (!centre) {
+        return;
+    }
+    CHECK(asked.front().first == *centre);
     CHECK(asked.front().second == humans[0].position);
 }
 
@@ -221,7 +226,12 @@ TEST_CASE("mode 2 needs a clear ray between the centre and the feet, both raised
     clear = true;
     CHECK(checkAll(spheres, humans, 0) == Sent{{7, VolumeBoxes::kEntered, 100}});
     REQUIRE_FALSE(lines.empty());
-    CHECK(lines.front().first[2] == locate(7).value()[2] + 0.01F);
+    const std::optional<std::array<float, 3>> centre = locate(7);
+    REQUIRE(centre.has_value());
+    if (!centre) {
+        return;
+    }
+    CHECK(lines.front().first[2] == (*centre)[2] + 0.01F);
     CHECK(lines.front().second[2] == 0.01F);
 }
 
