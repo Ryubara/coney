@@ -48,9 +48,19 @@ default_role = "contributor"
 deny_tool_prefixes = ["mcp__ghidra-mcp__", "mcp__pcsx2__", "mcp__xemu__"]
 # `original` is the old name of the `orig` stage commands (coney_tools/renames.py), refused until the cutover.
 deny_coney_tools = [
-  "orig study", "orig compare", "orig fails-first", "task start", "task check", "task review",
-  "original study", "original compare", "original fails-first",
+  "orig study", "orig compare", "task start", "task check", "task review",
+  "original study", "original compare",
 ]
+# `orig fails-first` is refused too, except `--accept-change`, which only the coordinator runs
+# (docs/guides/coney-tools-fidelity.md, stamps.md#changed-test). The pattern refuses the command (either name, any
+# spelling of `coney-tools`, any letter case) unless the same command, up to a `;`, `&`, `|` or the line end, carries
+# the option: `--ac` to `--accept-change`, the prefixes argparse takes (`--a` is ambiguous with `--agent`), with
+# `=REASON` or a space. It refuses it again when that command also carries `--none` or `--keeps` (any prefix,
+# `--n` and `--k` on): the CLI takes `--none` first and would stamp it, and the coordinator may only record the
+# decision.
+# It judges spelling only: `# --accept-change` in a comment, a redirect target or `$(...)` read as the option, as in
+# every pattern of this file.
+deny_commands = ['(?i)\bconey(?:-tools(?:\.exe)?|_tools[./\\]cli(?:\.py)?)\b[^;&|\n]*[ \t]orig(?:inal)?[ \t]+fails-first(?=[\s;&|)]|$)(?:(?![^;&|\n]*[ \t]--ac(?:c(?:e(?:p(?:t(?:-(?:c(?:h(?:a(?:n(?:g(?:e)?)?)?)?)?)?)?)?)?)?)?(?=[\s=;&|)]|$))|(?=[^;&|\n]*[ \t]--(?:n(?:o(?:n(?:e)?)?)?|k(?:e(?:e(?:p(?:s)?)?)?)?)(?=[\s=;&|)]|$)))']
 deny_write_dirs = ["src", "tests", "python", "docs/research", "research"]
 deny_commit_under = ["/worktrees/coney/"]
 hint = "Give the work to an engineer (or the tooling agent), which commits in its own worktree."
