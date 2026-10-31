@@ -1,6 +1,6 @@
 ---
 kind: feature
-owns: {functions: ["0x004125b8", "0x004134f8", "0x00414548", "0x004146e0", "0x00415378"]}
+owns: {functions: ["0x00412ca0", "0x004125b8", "0x004134f8", "0x00414548", "0x004146e0", "0x00415378"]}
 ---
 # Trigger boxes and spheres: the update
 
@@ -11,13 +11,17 @@ Verified against: `SLUS_212.15` (NTSC-U); runtime claims cite run records.
 A mission script hears a human come into a place, stay there and leave it through three messages to a trigger: 3
 (entered), 5 (still inside) and 4 (left). The triggers are the volume boxes a script adds with `AddVolumeBox` (kind 0
 for anyone, kind 2 for the players only) and the trigger sphere round an object (`TriggerSphereCfg`). This page is
-how one update of a trigger decides what to send and when: the stay timer behind message 5, the order the messages
-go out in and what stops an update part-way. What the triggers are, their records and pools, the inside test and the
-other messages (6, damage; 7, theft) are on [Scripting: trigger boxes and spheres](scripting.md#triggers); how a
-message reaches Lua is on [Message handlers](scripting.md#message-handlers).
+which frames a trigger is updated on, and how one update decides what to send and when: the stay timer behind
+message 5, the order the messages go out in and what stops an update part-way. What the triggers are, their records
+and pools, the inside test and the other messages (6, damage; 7, theft) are on
+[Scripting: trigger boxes and spheres](scripting.md#triggers); how a message reaches Lua is on
+[Message handlers](scripting.md#message-handlers).
 
 ## Rules
 
+- Each box is updated on one frame in five, its turn fixed by the order it was added; so is each sphere, by its slot.
+  A message can come up to four frames after the human crossed the edge.
+- Only the first 128 boxes a level adds are ever updated.
 - Message 5 comes on the trigger's own beat, not a period after each human came in: the stay timer is re-armed
   whenever it falls due, whether or not anyone is inside, so a human who entered just before a beat gets his first 5
   on that beat.
@@ -34,6 +38,8 @@ message reaches Lua is on [Message handlers](scripting.md#message-handlers).
 
 | Behaviour | Function | Section |
 | --- | --- | --- |
+| Which boxes update this frame; the camera-inside mark | `0x00412ca0` `VolumeBoxes_UpdateAll` | [The schedule](#schedule) |
+| Which spheres check this frame | `0x00414398` `TriggerSpheres_UpdateAll` | [The schedule](#schedule) |
 | A sphere's check: timer, found humans, occupants | `0x004146e0` `TriggerSphere_Update` | [A sphere's check](#sphere) |
 | Whether a sphere accepts a point: radius, then the mode's test | `0x00414548` `TriggerSphere_Accepts` | [The accept test](#accepts) |
 | A kind-0 box's update | `0x00415378` `VolumeBox_Update` | [A box's update](#box) |
@@ -43,6 +49,38 @@ message reaches Lua is on [Message handlers](scripting.md#message-handlers).
 | `AddVolumeBox`: the pool by kind, the corners | `0x004125b8` `VolumeBox_Add` | [Adding a box](#add) |
 
 ## Behaviour
+
+### The schedule {#schedule}
+
+Every frame of play, mode 1's step 6 runs `GameMode_UpdateTriggers` (`0x001562a0`), which calls
+`VolumeBoxes_UpdateAll` (`0x00412ca0`) and then `TriggerSpheres_UpdateAll` (`0x00414398`)
+([A frame of play](level-loading.md#a-frame-of-play)). Confirmed (code) at `0x001562a0`.
+
+`VolumeBoxes_UpdateAll` walks the handle-table indices `0x26c` to `0x2eb` (620 to 747, 128 entries) in order. For
+each index that holds a box, it first does the camera mark below, then calls the box's update (its vtable `+0x54`:
+`VolumeBox_Update` for kind 0, `PlayerBox_Update` for kind 2) when the index modulo 5 equals a frame counter
+(`0x00514804`). After the walk the counter goes up by one and back to 0 past 4. The counter starts at 0 (`.bss`
+reads 0) and nothing else writes it: it is not reset when a level loads. So each box is updated on one frame in five,
+and the box's own enable test comes inside its update. Confirmed (code) at `0x00412ca0` and the counter's
+cross-references.
+
+A box's index is fixed when it is made: the box base's constructor (`Box_Construct`, `0x004127c0`) takes the first
+free handle-table index from 620 (`Handle_FindFreeBox`, `0x0038ff18`, through `Handle_FindFree`, `0x0038fe28`), for
+kinds 0, 2 and 3 alike (kind 1 makes no box). Confirmed (code). A box's handle is freed only by its destructor
+(`Box_Destruct`, `0x00412888`, from the three kinds' destructors, which nothing calls directly: inferred, through the
+pools being destroyed with the level), and no script function removes one box, so within a level the boxes hold
+indices 620, 621, ... in the order they were added: the *n*-th box added (from 0) is updated when *n* modulo 5
+equals the counter, since 620 is a multiple of 5. Inferred from the code above. A box at index 748 or beyond, the
+129th and later, is never updated; another kind filling indices from 620 first (the world flags search from 108) is
+possible only with over 500 flags. Inferred.
+
+The camera mark, for each box whose flags byte `+0x6a` (`AddVolumeBox`'s last argument) is set, on every frame: when
+player 0's camera position is outside the box (`VolumeBox_ContainsPoint`) the box's `+0x69` becomes 0; when inside
+and `+0x69` is not already 2, it becomes 2 when the game state's `+0x268` (`0x0051489c`) is below 1, else 1.
+Confirmed (code) at `0x00412ca0`. Who reads `+0x69` is not traced.
+
+`TriggerSpheres_UpdateAll` does the same for the 100 sphere slots (`0x006fd6e0`): slot *i*, when filled, is checked
+when *i* modulo 5 equals its own counter (`0x0051482c`), stepped the same way. Confirmed (code) at `0x00414398`.
 
 ### The stay timer {#stay-timer}
 
@@ -131,6 +169,11 @@ decompiled scripts.
 
 ## In Coney
 
+- `VolumeBoxes::update()` is one frame of the schedule: the box at position *n* of Coney's list (the order added,
+  turf boxes included) is updated when *n* modulo `kFramesPerUpdate` (5) equals the box list's frame counter, and
+  boxes past the 128th never are. Coney's choice: the counter starts at 0 with each box list and `clear()` resets it,
+  where the original's runs on from boot across levels. The camera mark is not ported (Coney does not keep the flags
+  byte). `TriggerSpheres::update()` keeps the spheres' schedule the same way.
 - `world_objects::TriggerSpheres::update()` and `world_objects::VolumeBoxes::update()` (`src/world_objects/`) are the
   three updates; `VolumeBoxes::setStayPeriod()` gives a box its handler's period, which `GameplayMode::updateBoxes()` reads
   from the box's `TriggerSphereCfg` record (`TriggerSphere::handlerPeriodMs`), 1000 ms when it has none. Unit tests:

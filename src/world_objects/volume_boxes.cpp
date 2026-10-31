@@ -68,17 +68,21 @@ bool VolumeBoxes::inside(const VolumeBox& box, const std::array<float, 3>& point
 }
 
 void VolumeBoxes::update(std::span<const BoxSubject> subjects, std::uint64_t nowMs, const Send& send) {
-    // By index, not by reference: a handler may add a box, which can move the others.
-    for (std::size_t i = 0; i < m_boxes.size(); ++i) {
-        if (!m_boxes[i].enabled) {
+    // By index, not by reference: a handler may add a box, which can move the others. A box's handle index is
+    // 620 + its place in the list, since boxes take the first free index in the order added and none is freed alone.
+    // Stand-in: the camera-inside mark (+0x69) the same walk keeps for boxes with flags byte +0x6a is not ported.
+    for (std::size_t i = 0; i < m_boxes.size() && i < kUpdatedBoxes; ++i) {
+        if ((kFirstHandleIndex + i) % kFramesPerUpdate != m_frame || !m_boxes[i].enabled) {
             continue;
         }
+        // The box's own update (vtable +0x54); a turf box (kind 3) has none that sends anything.
         if (m_boxes[i].kind == 0) {
             updateBox(i, subjects, nowMs, send);
         } else if (m_boxes[i].kind == 2) {
             updatePlayerBox(i, subjects, nowMs, send);
         }
     }
+    m_frame = (m_frame + 1) % kFramesPerUpdate;
 }
 
 bool VolumeBoxes::stillEnabled(std::size_t index, double handle) const {

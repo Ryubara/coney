@@ -347,11 +347,11 @@ Most of the first mission's progress is driven by message 3 on volume boxes. Con
 
 - **A volume box** (`AddVolumeBox`, kind 0: vtable `0x00545df8`, pools on [Tasks](tasks.md#classes)) keeps the
   handles of up to 60 occupants (`+0x70`, cleared to `NilHandle` by `0x004151c0`) and its own handler component at
-  `+0x160`. Every box's update runs **once every fifth frame**, round-robin by handle (`VolumeBoxes_UpdateAll`,
-  `0x00412ca0`, from mode 1's step 6; the same pass marks in `+0x69` whether player 1's camera is inside a box that
-  asks for it, `+0x6a`). The update (`0x00415378`), while enabled (byte `+0x68`), collects the humans within its
-  bounding sphere (centre `+0x30`, radius `+0x40`; `0x002274a8`, at most 60), skips the dead (`0x00227eb0`), and
-  tests each:
+  `+0x160`. Every box's update runs **once every fifth frame**, round-robin by handle
+  ([The schedule](trigger-updates.md#schedule); `VolumeBoxes_UpdateAll`, `0x00412ca0`, from mode 1's step 6; the
+  same pass marks in `+0x69` whether player 1's camera is inside a box that asks for it, `+0x6a`). The update
+  (`0x00415378`), while enabled (byte `+0x68`), collects the humans within its bounding sphere (centre `+0x30`,
+  radius `+0x40`; `0x002274a8`, at most 60), skips the dead (`0x00227eb0`), and tests each:
     - inside and new: added to the occupants, message **3** (entered);
     - inside and already an occupant: message **5**, at most once per repeat period (next time at `+0x1e0`);
     - an occupant no longer inside, or dead: removed, message **4** (left).
@@ -2808,8 +2808,8 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   `HuGetGang` still gives its gang. A human's events reach its own handlers through its brain, a flag arrival is
   message 8 ([AI](ai/index.md#in-coney)). **Message 6** (`VolumeBoxes::sendDamage()`): a pane, door or car hit that the
   object took sends `(human, box, object)` to every enabled kind-0 box the attacker (a thrown object's thrower)
-  stands in. Coney does not send it for props, has no 30 m alert after it, and updates the boxes every frame
-  instead of the original's every-fifth-frame round-robin. **`--script-trace`** (`ScriptSystem::traceCalls()`,
+  stands in. Coney does not send it for props and has no 30 m alert after it. The boxes update on one frame in five,
+  each in its turn ([The schedule](trigger-updates.md#schedule)). **`--script-trace`** (`ScriptSystem::traceCalls()`,
   [Running Coney](../guides/running.md#tracing)) logs every binding call and every call into the scripts by name,
   Coney's own tool.
 - **Trigger spheres** (`src/world_objects/trigger_spheres.h`, `TriggerSphereCfg` in `src/scripting/world_bindings.h`):

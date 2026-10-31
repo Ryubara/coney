@@ -92,8 +92,12 @@ class VolumeBoxes {
     [[nodiscard]] const VolumeBox* find(double handle) const;
     /// Every box, oldest first.
     [[nodiscard]] const std::vector<VolumeBox>& all() const { return m_boxes; }
-    /// Forgets every box: the level is unloaded.
-    void clear() { m_boxes.clear(); }
+    /// Forgets every box: the level is unloaded. Coney's choice: the frame counter starts again at 0, where the
+    /// original's (`0x00514804`) runs on across levels (docs/research/trigger-updates.md#schedule).
+    void clear() {
+        m_boxes.clear();
+        m_frame = 0;
+    }
 
     /// Whether `point` is inside `box`: between its lowest and highest z, and inside its four corners turned about
     /// its centre by its matrix (the bounding-sphere test that comes first is implied by this one).
@@ -104,11 +108,15 @@ class VolumeBoxes {
     static constexpr std::size_t kMaxPlayerOccupants = 2;
     /// Frames between two updates of one box (docs/research/trigger-updates.md#schedule).
     static constexpr std::uint32_t kFramesPerUpdate = 5;
+    /// The boxes the frame pass walks: handle indices `0x26c`-`0x2eb`, so a box past the 128th is never updated.
+    static constexpr std::size_t kUpdatedBoxes = 128;
+    /// The first handle index a box takes (`0x0038ff18`): the box at position n of the list holds index 620 + n.
+    static constexpr std::size_t kFirstHandleIndex = 0x26c;
 
-    /// One trigger update of every enabled kind-0 box (updateBox()) and kind-2 box (updatePlayerBox()) at game time
-    /// `nowMs` over `subjects`, the messages going to `send` as they happen.
-    /// @orig 0x00415378 VolumeBox_Update (unknown)
-    /// @orig 0x004134f8 PlayerVolumeBox_Update (unknown)
+    /// One frame of the boxes at game time `nowMs` over `subjects`: each box whose turn it is (its handle index modulo
+    /// kFramesPerUpdate against the frame count, among the first kUpdatedBoxes) gets its trigger update if enabled,
+    /// updateBox() for kind 0 and updatePlayerBox() for kind 2, the messages going to `send` as they happen.
+    /// @orig 0x00412ca0 VolumeBoxes_UpdateAll (unknown)
     void update(std::span<const BoxSubject> subjects, std::uint64_t nowMs, const Send& send);
 
     /// Damage done by a human whose feet are at `human`: every enabled kind-0 box that `human` is inside goes to
@@ -155,6 +163,7 @@ class VolumeBoxes {
     std::vector<VolumeBox> m_boxes;
     Resolves m_resolves;
     Period m_stayPeriod;
+    std::uint32_t m_frame = 0; ///< `0x00514804`: whose turn it is, 0-4.
 };
 
 } // namespace coney::world_objects

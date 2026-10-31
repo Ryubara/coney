@@ -2099,7 +2099,7 @@ address = 0x004134f8
 name = "PlayerBox_Update"
 page = "trigger-updates.md#player-box"
 level = "confirmed-code"
-coney = "src/world_objects/volume_boxes.h:VolumeBoxes::update"
+coney = "src/world_objects/volume_boxes.h:VolumeBoxes::updatePlayerBox"
 status = "compared"
 
 [[function]]
@@ -2200,7 +2200,7 @@ address = 0x00415378
 name = "VolumeBox_Update"
 page = "trigger-updates.md#box"
 level = "confirmed-code"
-coney = "src/world_objects/volume_boxes.h:VolumeBoxes::update"
+coney = "src/world_objects/volume_boxes.h:VolumeBoxes::updateBox"
 status = "compared"
 
 [[function.gaps]]
