@@ -3,6 +3,7 @@
 // prototype other than the Level view (docs/guides/studio/prototype.md; the Level view is studio_level_view.cpp). The
 // state they act on is studio_app.cpp's. @coney-only the editor;
 // the original has none.
+#include <algorithm>
 #include <array>
 #include <format>
 #include <string>
@@ -42,6 +43,7 @@ void StudioApp::frame(std::uint32_t steps, float stepSeconds, float alpha) {
     drawFileSystem();
     drawConsole();
     drawNewProjectDialog();
+    drawPreferencesDialog();
 }
 
 void StudioApp::drawMenuBar() {
@@ -58,6 +60,12 @@ void StudioApp::drawMenuBar() {
         ImGui::Separator();
         if (ImGui::MenuItem("Quit")) {
             m_quit = true;
+        }
+        ImGui::EndMenu();
+    }
+    if (ImGui::BeginMenu("Edit")) {
+        if (ImGui::MenuItem("Preferences...")) {
+            m_preferencesOpen = true;
         }
         ImGui::EndMenu();
     }
@@ -382,10 +390,11 @@ void StudioApp::drawNewProjectDialog() {
     ImGui::InputText("In folder", &m_newFolder);
     ImGui::SameLine();
     if (ImGui::Button("Browse...")) {
-        m_host.pickFolder("Where to make the project", std::nullopt,
+        const std::filesystem::path typed = pathFromUtf8(m_newFolder);
+        m_host.pickFolder("Where to make the project", typed.empty() ? projectsFolder() : std::optional(typed),
                           [this](std::optional<std::filesystem::path> folder) {
                               if (folder) {
-                                  m_newFolder = folder->string();
+                                  m_newFolder = pathToUtf8(*folder);
                               }
                           });
     }
@@ -403,12 +412,138 @@ void StudioApp::drawNewProjectDialog() {
     const bool ready = validProjectName(m_newName) && !m_newFolder.empty();
     ImGui::BeginDisabled(!ready);
     if (ImGui::Button("Create")) {
-        if (auto made = newProject(std::filesystem::path(m_newFolder) / m_newName, m_newName, chosen); !made) {
+        if (auto made = newProject(pathFromUtf8(m_newFolder) / m_newName, m_newName, chosen); !made) {
             report("make the project", made.error());
         }
         ImGui::CloseCurrentPopup();
     }
     ImGui::EndDisabled();
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel")) {
+        ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndPopup();
+}
+
+void StudioApp::drawStartScreen() {
+    const float scale = m_settings.uiScale;
+    // Which recent projects are still there is looked at again every couple of seconds, so a project moved while the
+    // screen is up is marked without a restart.
+    if (const double now = ImGui::GetTime(); m_recentCheckedAt == 0.0 || now - m_recentCheckedAt >= 2.0) {
+        refreshRecent();
+        m_recentCheckedAt = now > 0.0 ? now : 1.0;
+    }
+    ImGui::Dummy(ImVec2(0.0F, 28.0F * scale));
+    ImGui::Indent(36.0F * scale);
+    const float rowWidth = std::max(ImGui::GetContentRegionAvail().x - (36.0F * scale), 100.0F * scale);
+    if (m_boldFont != nullptr) {
+        ImGui::PushFont(m_boldFont, 0.0F);
+    }
+    ImGui::TextUnformatted("Coney Studio");
+    if (m_boldFont != nullptr) {
+        ImGui::PopFont();
+    }
+    ImGui::TextDisabled("Make a project, or open one.");
+    ImGui::Spacing();
+    if (ImGui::Button("New project...")) {
+        askNewProject();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Open project...")) {
+        askOpenProject();
+    }
+    ImGui::Dummy(ImVec2(0.0F, 12.0F * scale));
+    ImGui::Separator();
+    ImGui::Spacing();
+    ImGui::TextUnformatted("Recent projects");
+    ImGui::Spacing();
+    if (m_recent.empty()) {
+        ImGui::TextDisabled("The projects you make or open are listed here, the newest first.");
+    }
+    // A copy: a click that opens a project, or removes one, changes the list mid-loop.
+    const std::vector<RecentEntry> entries = m_recent;
+    const float removeWidth = ImGui::CalcTextSize("Remove").x + (2.0F * ImGui::GetStyle().FramePadding.x);
+    for (std::size_t i = 0; i < entries.size(); ++i) {
+        const RecentEntry& entry = entries[i];
+        const std::string path = pathToUtf8(entry.root);
+        ImGui::PushID(static_cast<int>(i));
+        const float startX = ImGui::GetCursorPosX();
+        const float nameWidth = rowWidth - removeWidth - ImGui::GetStyle().ItemSpacing.x;
+        // A missing project is named in the warning colour and cannot be opened, only removed.
+        ImGui::BeginDisabled(entry.missing);
+        if (ImGui::Selectable(entry.name.c_str(), false, ImGuiSelectableFlags_None, ImVec2(nameWidth, 0.0F))) {
+            if (auto opened = openRecent(entry.root); !opened) {
+                report("open the project", opened.error());
+            }
+        }
+        ImGui::EndDisabled();
+        if (!entry.missing && ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("Open %s", path.c_str());
+        }
+        ImGui::SameLine(startX + rowWidth - removeWidth);
+        if (ImGui::SmallButton("Remove")) {
+            removeRecent(entry.root);
+        }
+        if (entry.missing) {
+            ImGui::TextColored(ImVec4(1.0F, 0.8F, 0.4F, 1.0F), "Missing: %s", path.c_str());
+        } else {
+            ImGui::TextDisabled("%s", path.c_str());
+        }
+        ImGui::Spacing();
+        ImGui::PopID();
+    }
+    ImGui::Dummy(ImVec2(0.0F, 8.0F * scale));
+    ImGui::Separator();
+    ImGui::Spacing();
+    const auto folder = projectsFolder();
+    ImGui::TextDisabled("Projects folder: %s",
+                        folder ? pathToUtf8(*folder).c_str() : "none (no documents or home folder)");
+    ImGui::SameLine();
+    if (ImGui::SmallButton("Change...")) {
+        m_preferencesOpen = true;
+    }
+    ImGui::Unindent(36.0F * scale);
+}
+
+void StudioApp::drawPreferencesDialog() {
+    if (m_preferencesOpen) {
+        const auto folder = projectsFolder();
+        m_projectsFolderText = folder ? pathToUtf8(*folder) : std::string();
+        ImGui::OpenPopup("Preferences");
+        m_preferencesOpen = false;
+    }
+    ImGui::SetNextWindowSize(ImVec2(520.0F * m_settings.uiScale, 0.0F));
+    if (!ImGui::BeginPopupModal("Preferences", nullptr, ImGuiWindowFlags_NoResize)) {
+        return;
+    }
+    // The projects folder: where New project suggests making a project and Open project starts, made when first used.
+    ImGui::InputText("Projects folder", &m_projectsFolderText);
+    ImGui::SameLine();
+    if (ImGui::Button("Browse...")) {
+        const std::filesystem::path typed = pathFromUtf8(m_projectsFolderText);
+        m_host.pickFolder("Choose the projects folder", typed.empty() ? projectsFolder() : std::optional(typed),
+                          [this](std::optional<std::filesystem::path> chosen) {
+                              if (chosen) {
+                                  m_projectsFolderText = pathToUtf8(*chosen);
+                              }
+                          });
+    }
+    if (ImGui::Button("Use the default")) {
+        const auto standard = defaultProjectsFolder();
+        m_projectsFolderText = standard ? pathToUtf8(*standard) : std::string();
+    }
+    ImGui::TextDisabled("New project suggests this folder and Open project starts in it.");
+    if (ImGui::Button("Apply")) {
+        // The default is kept as "no choice", so it follows the user's documents folder if that moves.
+        std::optional<std::filesystem::path> chosen = pathFromUtf8(m_projectsFolderText);
+        if (chosen->empty() || chosen == defaultProjectsFolder()) {
+            chosen.reset();
+        }
+        if (auto saved = setProjectsFolder(std::move(chosen)); !saved) {
+            report("save Studio's preferences", saved.error());
+        }
+        ImGui::CloseCurrentPopup();
+    }
     ImGui::SameLine();
     if (ImGui::Button("Cancel")) {
         ImGui::CloseCurrentPopup();

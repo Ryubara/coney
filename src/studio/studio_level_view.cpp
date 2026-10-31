@@ -33,8 +33,13 @@ void StudioApp::drawLevelView(std::uint32_t steps, float stepSeconds, float alph
         return;
     }
     const ImVec2 size = ImGui::GetContentRegionAvail();
+    if (!m_project && size.x >= 2.0F && size.y >= 2.0F) {
+        drawStartScreen();
+        ImGui::End();
+        return;
+    }
     if (!m_level || size.x < 2.0F || size.y < 2.0F) {
-        ImGui::TextDisabled("  Open a project to see its level here");
+        ImGui::TextDisabled("  Open a level to see it here");
         ImGui::End();
         return;
     }

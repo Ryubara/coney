@@ -4,6 +4,7 @@
 #include <expected>
 #include <filesystem>
 #include <optional>
+#include <string>
 #include <string_view>
 
 #include "core/error.h"
@@ -35,5 +36,12 @@ struct UserFolders {
 /// Makes `folder` and the folders above it when they do not exist (the first use of the default). Fails with
 /// ErrorCode::Io when it cannot, or when `folder` exists as a file.
 [[nodiscard]] std::expected<void, Error> ensureFolderExists(const std::filesystem::path& folder);
+
+/// `path` as UTF-8 text, which is what Dear ImGui's text fields and SDL hold: the narrow string of a path is the
+/// system's code page on Windows and loses letters outside it.
+[[nodiscard]] std::string pathToUtf8(const std::filesystem::path& path);
+
+/// The path the UTF-8 `text` names; the reverse of pathToUtf8().
+[[nodiscard]] std::filesystem::path pathFromUtf8(std::string_view text);
 
 } // namespace coney::studio

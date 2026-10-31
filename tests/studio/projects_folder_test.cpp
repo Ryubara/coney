@@ -5,6 +5,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <string>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -81,4 +82,13 @@ TEST_CASE("the projects folder cannot be made where a file is in the way", "[stu
     const auto made = ensureFolderExists(fake.path() / "Documents" / "Coney Studio" / "Projects");
     REQUIRE_FALSE(made.has_value());
     CHECK(made.error().code == coney::ErrorCode::Io);
+}
+
+TEST_CASE("a path goes to UTF-8 text and back, whatever letters it holds", "[studio]") {
+    // The text fields and SDL hold UTF-8; on Windows the narrow string of a path would lose the letter.
+    const fs::path path = fs::path(std::u8string(u8"projects/café über/yard"));
+    const std::string text = coney::studio::pathToUtf8(path);
+    CHECK(text.find("caf\xC3\xA9") != std::string::npos);
+    CHECK(coney::studio::pathFromUtf8(text) == path);
+    CHECK(coney::studio::pathFromUtf8("").empty());
 }

@@ -3,10 +3,10 @@
 The design of how Coney Studio looks and feels to the person using it: its words, its panels and their default layout,
 the layouts a user saves, the project folder, a new level, Play mode, importing files and previews. Moving round a level
 and building it (the fly camera, the keymap, the gizmo, selection, undo and composing) are on [The Level view, gizmos
-and composing](level-view.md). **Status: design; the first prototype builds the theme, the default layout and the
-project folder** ([Coney Studio: the prototype](prototype.md)), and nothing else here yet. What Studio is, and the
-other design pages, are on [Coney Studio](index.md); the GUI library, the program and how Play and live edits run
-inside it are the [technology](technology.md) page's.
+and composing](level-view.md). **Status: design; the first prototype builds the theme, the default layout, the
+project folder, the projects folder and the recent projects** ([Coney Studio: the prototype](prototype.md)), and
+nothing else here yet. What Studio is, and the other design pages, are on [Coney Studio](index.md); the GUI library,
+the program and how Play and live edits run inside it are the [technology](technology.md) page's.
 
 The design comes from four editors people already know: Unity, Godot, Unreal and above all **Roblox Studio**, the
 closest model, because it too is an editor for one game's content rather than a general engine. FiveM is the model for
@@ -431,6 +431,27 @@ add others. A project's first level format is the **sandbox layout** Coney loads
 format](../sandbox.md#the-layout-format)): it already has shapes, textures, spawn points, targets, AI fighters, camera
 views and a sun, and Coney already plays one with the player at a chosen spawn (`--play-level sandbox:NAME --spawn
 NAME`).
+
+### Where projects go, and the recent ones {#projects-folder}
+
+A project is a folder, so a user needs a place to keep them and a way back to the last few. Unity Hub, Godot's project
+manager and Unreal's launcher each offer a projects location the user can change and a list of recent projects; Studio
+does the same in a smaller way, without a launcher of its own.
+
+- **The projects folder** is `Coney Studio/Projects` inside the user's documents folder: `Documents` on Windows and
+  macOS and the XDG documents directory on Linux (SDL3's `SDL_GetUserFolder`), or inside the home folder where the
+  system reports no documents folder. It is made the first time Studio needs it (New project or Open project), never
+  at start-up, and nothing in it is touched but the projects the user puts there.
+- **New project suggests it**: the dialog's *In folder* starts as the projects folder, and *Browse...* opens the picker
+  there. **Open project starts the picker in it.**
+- **The user can change it** in *Edit > Preferences...* (and from *Change...* on the start screen): a folder typed or
+  picked, or *Use the default*. The choice is a per-user preference, saved at once in Studio's preferences file in the
+  user's data folder beside the [layouts](#layouts-coney), never in a project. Choosing the default stores no folder,
+  so the default follows the user's documents folder if it moves.
+- **Recent projects**: every project Studio makes or opens goes to the top of a list of the last ten, kept in the same
+  preferences file. The start screen (what the Level view shows until a project is open) lists them, newest first, with
+  the folder under each name; a click opens one. A project whose folder or manifest has gone is shown as *missing* in
+  the warning colour and cannot be opened; *Remove* takes any entry off the list, and nothing else is deleted.
 
 ## A new level {#new-level}
 
