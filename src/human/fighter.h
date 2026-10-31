@@ -821,7 +821,9 @@ class Fighter {
     // 210 seats the pair (seatMount()).
     void mountVictim(const HumanAnimator& animator);
     // Plays the mount's move the dispatcher decided: a strike and the victim's reaction (the next id), back to the
-    // mount; the pick-up to the front hold; or getting off, the victim rising.
+    // mount; the pick-up to the front hold; or getting off, the victim rising (docs/research/combat-grabs.md#mount).
+    // @orig 0x00271808 Mount_ReturnToFrontGrab (unknown)
+    // @orig 0x00271098 Mount_GetOff (unknown)
     void playMountAction(const combat::CombatOutput& out, HumanAnimator& animator);
     // The grab's mount or the tackle has played (210 started): the mounter turns and slides over 0.1 s to stand with
     // the victim at clip 210's offset (0.120 m left, 0.032 m ahead), facing it; the victim does not move
