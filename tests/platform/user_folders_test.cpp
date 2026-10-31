@@ -9,7 +9,6 @@
 
 using coney::platform::UserFolder;
 
-// Break-and-revert pair (fails-first): on the break commit the helper below is lossy and this test fails.
 TEST_CASE("the platform reports absolute user folders, or none", "[user_folders]") {
     // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
     // has none). A machine may have no documents folder (a bare Linux account), so a missing one is allowed there; one

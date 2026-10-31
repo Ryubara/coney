@@ -183,7 +183,6 @@ TEST_CASE("the File system lists a project folder, folders first, and nothing ab
     CHECK(project->list("project:/levels/main.layout").error().code == ErrorCode::NotFound);
 }
 
-// Break-and-revert pair (fails-first): on the break commit the helper below is lossy and this test fails.
 TEST_CASE("a path goes to UTF-8 text and back, whatever letters it holds", "[studio]") {
     // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
     // has none). The text fields and SDL hold UTF-8; on Windows the narrow string of a path would lose the letter.

@@ -9,8 +9,7 @@ namespace coney::platform {
 
 std::optional<std::filesystem::path> userFolder(UserFolder which) {
     // SDL keeps the string for the life of the program (it is not ours to free) and gives null when there is none.
-    const char* folder = nullptr;
-    (void)which;
+    const char* folder = SDL_GetUserFolder(which == UserFolder::Home ? SDL_FOLDER_HOME : SDL_FOLDER_DOCUMENTS);
     if (folder == nullptr || folder[0] == '\0') {
         return std::nullopt;
     }
