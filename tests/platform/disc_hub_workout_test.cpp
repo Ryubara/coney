@@ -295,6 +295,7 @@ TEST_CASE("the disc's level95: triangle at the heavy bag walks the player to it 
     REQUIRE(gym.goToStation(bag, 3000));
     const std::size_t from = gym.trace().size();
     gym.frame(0, 0, "triangle");
+    // Expected: workouts.md#start, confirmed (code), and workouts.md#heavy-bag, confirmed (runtime)
     // worksetup.StartWorkout; the walk and turn to fWorkout[1] arrive (message 8: worksetup.DoWorkout) inside
     // worksetup.TimeOut's 5 s, also when a crew mate held the bag; the bag's game starts with its 26 s clock.
     REQUIRE(gym.idleUntil([&] { return gym.traced(from, "> worksetup.DoWorkout(") == 1; }, kArrivalFrames));

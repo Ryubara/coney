@@ -104,6 +104,7 @@ TEST_CASE("the start test adds the guard and the reach to the per-kind test", "[
 }
 
 TEST_CASE("a running AI picks only the charge kinds, a standing one never the charge or dive", "[ai]") {
+    // Expected: ai-fights.md#pick-attack, confirmed (code)
     const AttackWeights weights = weightsOf({0, 1, 19, 20, 21});
     PickContext context;
     context.running = true;
