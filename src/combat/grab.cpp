@@ -135,7 +135,11 @@ GrabOutcome updateGrab(const GrabInput& input, PowerMeter& power, const CombatTu
         }
         break;
     case command::kCirclePressed:
-        // The stick decides between a throw and, from the rear, the spin to the front.
+    case command::kCircleTapped:
+    case command::kCircleHeld:
+        // Circle is any of its press, tap and hold (`PlayerCmd_IsCircleAny`): an AI grabber's throws and its circle
+        // are the tap's 0xd. A player's later tap or hold reaches here only once the press's move has given back its
+        // bits. The stick decides between a throw and, from the rear, the spin to the front.
         if (input.stick.magnitude() > kThrowStick) {
             // Only a front hold's plain throw (147-153, `Attack_StartPaired`) checks the place: not a wall throw, and
             // not the rear hold's path (`Grab_StartPairedMove`), which spins to the front first

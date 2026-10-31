@@ -115,12 +115,19 @@ At runtime (confirmed (runtime)):
 | L2 held (5) | **lets go**: player 95, victim 94; confirmed (runtime) |
 
 The commands are those of the [table](combat/index.md#commands): square acts on its press (`0xf`), cross on its release
-(`0x10`), circle on its press (`0x1e`). A grab strike only **spends** power, at any meter level: 0.2 of the maximum,
-halved for a human with a player number (`+0x1b0`), so **40 of 400**. The power strike, `0x23` and the throws **need**
-more than 0.25 of the maximum and **spend** 0.25 (**100 of 400**); with 0.25 or less the grab is released instead
-(`0x0026c7e0`). Confirmed (code) at `0x0027f3b0` and `0x00262ac8`; confirmed (runtime): strikes 40 each, the power
-strike 236 → 135 with its 57 damage on the same update. The grab also ends when the victim drifts beyond the larger of
-reach + 0.2 m and reach × 1.2, or 0.2 m up or down.
+(`0x10`), circle on its press (`0x1e`). Circle is also its tap (`0xd`) and its hold (`0xe`) (`PlayerCmd_IsCircleAny`
+`0x0027bf30`, confirmed (code)): a player's tap or hold usually comes after the press's move has started and finds it
+playing, but an AI grabber's throws and its mount are the tap alone ([An AI grab at
+runtime](ai/index.md#ai-grab-runtime), confirmed (runtime), run r-20261031-civ-grab-1331). A tap pressed while the grab
+takes no move and released once it does acts on its release: with circle tapped every 6 updates at a puppet 1 m ahead
+(scenario `grab_circle_taps`), the first tap grabbed (71 at 42, the connect 72 / 73 from 47), the presses at 47-65 came
+in the connect and did nothing, and the release `0xd` at 66, the hold's first update, mounted (118 / 119). Confirmed
+(runtime), run r-20261031-grab-circle-taps-1331. A grab strike only **spends** power, at any meter level: 0.2 of the
+maximum, halved for a human with a player number (`+0x1b0`), so **40 of 400**. The power strike, `0x23` and the throws
+**need** more than 0.25 of the maximum and **spend** 0.25 (**100 of 400**); with 0.25 or less the grab is released
+instead (`0x0026c7e0`). Confirmed (code) at `0x0027f3b0` and `0x00262ac8`; confirmed (runtime): strikes 40 each, the
+power strike 236 → 135 with its 57 damage on the same update. The grab also ends when the victim drifts beyond the
+larger of reach + 0.2 m and reach × 1.2, or 0.2 m up or down.
 
 **The power strike at runtime** (confirmed (runtime), slot 6 copy, the civilian grabbed with circle; cross pressed,
 square 2 updates later, both released 4 updates after; then cross taps every 8 updates; scenario as

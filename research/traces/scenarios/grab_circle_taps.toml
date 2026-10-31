@@ -1,0 +1,24 @@
+# Circle tapped every 6 updates at a still puppet 1.0 m ahead, as level99's lesson 6 script taps it: the first tap
+# grabs; the taps during the connect do nothing, and the tap whose release (0xd) comes once the hold has begun mounts
+# the victim (Player_UpdateGrabbing, 0x0027f3b0). Research: docs/research/combat-grabs.md#grabbing.
+description = "slot 6: circle tapped every 6 updates at a puppet 1.0 m ahead, as level99's lesson 6 script does"
+research = "docs/research/combat-grabs.md#grabbing"
+input = "grab_circle_taps.txt"
+updates = 140
+fields = ["player", "enemy"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "puppet"]
+let = { enemy = 'human("PoizoCiv")' }
+setup = [
+  { address = "prec(enemy) + 0x1e", type = "u8", value = "0", frame = 0, until = 0 },
+  { address = "tf(enemy) + 0x0", type = "f32", value = "f32(tf(player)) - 1.0 * sin(heading(player))", until = 39 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 1.0 * cos(heading(player))", until = 39 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 39 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "sin((heading(player) + pi) / 2)", until = 39 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "cos((heading(player) + pi) / 2)", until = 39 },
+]
+
+[coney]
+level = "sandbox:combat"

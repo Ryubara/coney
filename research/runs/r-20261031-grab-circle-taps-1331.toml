@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261031-grab-circle-taps-1331"
+date = "2026-10-31"
+kind = "trace"
+tool = "trace original"
+digest = "b098788bf9d35dbc7a98d0b1ce1d7763d0c06ea3b5d21ebf8c5e93a22d2d656c"
+
+[who]
+agent = "a2671d44e4c5c7353"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = ["puppet", "right-stick", "scripted-pad"]
+
+[run]
+name = "grab_circle_taps"
+method = ""
+
+[values]
+updates = 141
+missed_updates = 0
+columns = 40
+
+[hashes]
+trace_csv = "995de86723b44c8b1bf626ad83cf43ba61ea74f812a958cad32288bc71a2b25d"

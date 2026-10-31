@@ -1,0 +1,3 @@
+# The player presses nothing: the AI grabs him and its brain alone acts in the hold. Frames are character updates of
+# 1/30 s.
+329 stick left 0 0

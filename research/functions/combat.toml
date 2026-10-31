@@ -2325,7 +2325,22 @@ role = "strikes, power strike, throws, mug, spin in a grab"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/combat/grab.h:updateGrab"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the drift release on an update with no command, the move gate's own mask (0x5c7eee1), triangle read before that gate, and the attack warning are not ported"
+relation = "not-ported"
+issue = 684
+
+[[function.gaps]]
+what = "an AI grabber's own branch (0x22 without the rage flag test, 0x23's 63), its whole strike cost, and the rage power strike's 231 damage, doubling and defeat test are not ported"
+relation = "not-ported"
+issue = 684
+
+[[function.gaps]]
+what = "square and cross from a rear hold spin to the front, the spin's power need and flags, the mount's refusing flag and the held-object moves (0x1e4-0x1ee) are not ported"
+relation = "not-ported"
+issue = 684
 
 [[function]]
 address = 0x0027fd68

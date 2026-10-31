@@ -730,8 +730,12 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
     if (helpless) {
         return in;
     }
-    // Circle in a grab with the stick out throws: into a wall within the side's reach, the wall throw.
-    if (m_combat.mode() == combat::CombatMode::Grabbing && input.command == combat::command::kCirclePressed) {
+    // Circle in a grab with the stick out throws: into a wall within the side's reach, the wall throw. Circle is its
+    // press, tap or hold (`PlayerCmd_IsCircleAny`): an AI's throw is the tap.
+    const bool circle = input.command == combat::command::kCirclePressed ||
+                        input.command == combat::command::kCircleTapped ||
+                        input.command == combat::command::kCircleHeld;
+    if (m_combat.mode() == combat::CombatMode::Grabbing && circle) {
         m_wallThrow = wallThrow(input);
         in.wallInReach = m_wallThrow.has_value();
     }

@@ -601,6 +601,11 @@ void Fighter::playMountAction(const combat::CombatOutput& out, HumanAnimator& an
             m_held->setAttached(false);
             m_pair = PairStage::Moving;
         }
+        // A pick-up in the mount's 0.1 s seat (an AI's circle comes two updates into 210: 210 at 127, 248 at 129 in
+        // docs/research/ai/index.md#ai-grab-runtime) leaves the seat unattached, so the pick-up's end snaps the victim
+        // into the hold. **Coney's reading**: the seat's attach is Coney's (attachSeat()); the original's pick-up
+        // (`0x00271808`) is not traced for a slide still running.
+        m_seatUpdates = 0;
         m_rear = false;
         break;
     case combat::MountAction::GetOff:
