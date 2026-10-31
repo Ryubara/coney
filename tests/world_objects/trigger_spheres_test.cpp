@@ -204,9 +204,9 @@ TEST_CASE("mode 1 needs a walkable line from the centre to the feet, not a clear
     CHECK(asked.front().second == humans[0].position);
 }
 
-TEST_CASE("mode 2 needs a clear line between the centre and the feet, both raised", "[trigger_spheres]") {
-    // Expected: trigger-updates.md#accepts, confirmed (code) that mode 2 casts a ray between the two points; the
-    // 1 m raise of both ends is Coney's stand-in (q-line-tests)
+TEST_CASE("mode 2 needs a clear ray between the centre and the feet, both raised 0.01 m", "[trigger_spheres]") {
+    // Expected: trigger-updates.md#accepts, confirmed (code) at 0x00414548: mode 2 casts Ray_IsClear between the two
+    // points, each moved by 0.01 times the up vector (0, 0, 1, 1) at 0x00511740, which nothing writes
     TriggerSpheres spheres;
     spheres.setLocate(locate);
     std::vector<std::pair<std::array<float, 3>, std::array<float, 3>>> lines;
@@ -221,8 +221,8 @@ TEST_CASE("mode 2 needs a clear line between the centre and the feet, both raise
     clear = true;
     CHECK(checkAll(spheres, humans, 0) == Sent{{7, VolumeBoxes::kEntered, 100}});
     REQUIRE_FALSE(lines.empty());
-    CHECK(lines.front().first[2] == locate(7).value()[2] + TriggerSpheres::kLineRaise);
-    CHECK(lines.front().second[2] == TriggerSpheres::kLineRaise);
+    CHECK(lines.front().first[2] == locate(7).value()[2] + 0.01F);
+    CHECK(lines.front().second[2] == 0.01F);
 }
 
 TEST_CASE("a sphere of a mode other than 1 and 2 accepts on the radius alone", "[trigger_spheres]") {
