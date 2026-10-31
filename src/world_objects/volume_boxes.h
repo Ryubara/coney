@@ -92,8 +92,9 @@ class VolumeBoxes {
     [[nodiscard]] const VolumeBox* find(double handle) const;
     /// Every box, oldest first.
     [[nodiscard]] const std::vector<VolumeBox>& all() const { return m_boxes; }
-    /// Forgets every box: the level is unloaded. Coney's choice: the frame counter starts again at 0, where the
-    /// original's (`0x00514804`) runs on across levels (docs/research/trigger-updates.md#schedule).
+    /// Forgets every box: the level is unloaded.
+    /// @coney-only the frame counter starts again at 0, where the original's (`0x00514804`) runs on across levels
+    /// (docs/research/trigger-updates.md#schedule)
     void clear() {
         m_boxes.clear();
         m_frame = 0;
