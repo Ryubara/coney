@@ -59,10 +59,12 @@ class Wad {
 
     /// Replaces whole entries with the files of `folder`, an install's `overrides/files/`
     /// (docs/guides/asset-and-script-architecture.md#file-overrides): each file named as lookup() takes a name
-    /// (`level99.lua`, any case, or `0x` and its name hash) is read by openEntry() in place of the entry's bytes in
-    /// WARRIORS.WAD. The names are taken in sorted order, so the first of two names for one entry wins. A missing
-    /// folder replaces nothing and keeps what an earlier call replaced. Fails with ErrorCode::NotFound when the folder
-    /// exists but cannot be listed.
+    /// (`level1.lev`, any case, or `0x` and its name hash) is read by openEntry() in place of the entry's bytes in
+    /// WARRIORS.WAD. A file is refused, and listed in WadOverrideReport::scripts, when the entry it names is a script
+    /// (its disc bytes are a Lua chunk) or the file is a Lua chunk itself: the disc's own chunks are the only bytecode
+    /// the game runs (docs/guides/studio/security.md#surface). The names are taken in sorted order, so the first of
+    /// two names for one entry wins. A missing folder replaces nothing and keeps what an earlier call replaced. Fails
+    /// with ErrorCode::NotFound when the folder exists but cannot be listed.
     /// @coney-only the original reads every entry from the disc; an install's overrides are Coney's modding path
     [[nodiscard]] std::expected<WadOverrideReport, Error> useOverrides(const std::filesystem::path& folder);
 

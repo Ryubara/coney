@@ -207,22 +207,24 @@ Built, and Coney's own: the original reads every entry from its disc. With `--da
 each file in `<install>/overrides/files/` to the WAD entry its name names, and `Wad::openEntry()` reads that file in
 place of the entry's range of `WARRIORS.WAD`:
 
-- A file is named as `--load` takes an entry: the entry's name in any letter case (`GLOBAL.LUA` and `global.lua` are
+- A file is named as `--load` takes an entry: the entry's name in any letter case (`INTRO.SCN` and `intro.scn` are
   one entry, hashed lower-case as [WARRIORS.DIR](../research/formats/wad-dir.md#name-lookup) says), or `0x` and the
-  hash (`0x7e23a6f2`).
+  hash.
 - Names are taken in sorted order, so of two names for one entry the first wins. The second name, and a name that
   matches no entry, are ignored with a warning. A missing folder replaces nothing.
+- **Never a script.** A file is refused, with a warning, when the entry it names is one of the game's scripts or the
+  file is a compiled Lua chunk itself, and the disc's entry is read: the player's own disc chunks are the only bytecode
+  the game state runs ([Attack surface](studio/security.md#surface)), and an edited game script is a `game-scripts`
+  patch ([Mission mods](studio/mission-mods.md#compiling)). `WARRIORS.DIR` records no kinds, so a script is told by
+  its bytes: every script on the disc is a precompiled chunk (`ESC Lua`).
 - A replaced entry is read whole at the file's own size, not the size in `WARRIORS.DIR`, and every other entry still
-  reads the archive. Every kind read through the WAD sees it, scripts and scenes included, and those readers size
-  their buffer from the stream, not the index, because a replacement is rarely the entry's size.
+  reads the archive. The readers of replaceable kinds, scenes among them, size their buffer from the stream, not the
+  index, because a replacement is rarely the entry's size.
 - Any replacement makes the session modded (`Wad::modded()`, logged at start-up). `--disc` never reads overrides.
-- Test mode does not yet keep them out: a `--headless` or `--input-script` run with `--data` reads them too (that is
-  how an edited script's checkpoint restart is tested), and only the "modded session" line tells. The disc tests
-  read the disc folder (`CONEY_DISC`), never an install's overrides. A reference or replay run is made with `--disc`,
-  or from an install whose `overrides/files/` is empty, until the store builds test mode from the PS2 source alone
-  ([the rule](#asset-layers)).
-
-How to play an edited script: [Running Coney](running.md#install).
+- Test mode does not yet keep them out: a `--headless` or `--input-script` run with `--data` reads them too, and only
+  the "modded session" line tells. The disc tests read the disc folder (`CONEY_DISC`), never an install's overrides.
+  A reference or replay run is made with `--disc`, or from an install whose `overrides/files/` is empty, until the
+  store builds test mode from the PS2 source alone ([the rule](#asset-layers)).
 
 ### The legacy loaders, one by one {#legacy-loaders}
 

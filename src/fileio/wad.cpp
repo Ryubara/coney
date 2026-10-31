@@ -2,7 +2,9 @@
 #include "fileio/wad.h"
 
 #include <algorithm>
+#include <array>
 #include <charconv>
+#include <cstddef>
 #include <filesystem>
 #include <format>
 #include <string>
@@ -11,6 +13,23 @@
 #include <vector>
 
 namespace coney::io {
+
+namespace {
+
+// Whether a stream starts with the signature of a precompiled Lua chunk (ESC "Lua"), as every script on the disc
+// does. A stream too short to hold it, or one that cannot be read, is no chunk.
+bool isLuaChunk(std::expected<FileStream, Error> stream) {
+    if (!stream || stream->size() < 4) {
+        return false;
+    }
+    std::array<std::byte, 4> head{};
+    if (!stream->read(head)) {
+        return false;
+    }
+    return head == std::array{std::byte{0x1b}, std::byte{'L'}, std::byte{'u'}, std::byte{'a'}};
+}
+
+} // namespace
 
 std::expected<Wad, Error> Wad::open(Disc disc) {
     auto dirData = disc.readFile(kWadDirFile);
@@ -90,9 +109,15 @@ std::expected<WadOverrideReport, Error> Wad::useOverrides(const std::filesystem:
     }
     std::ranges::sort(files);
     for (auto& [name, path] : files) {
+        std::error_code sizeError; // a file that cannot be sized opens as no chunk, and openEntry() reports it
         auto entry = lookup(name);
         if (!entry) {
             report.unmatched.push_back(name);
+        } else if (isLuaChunk(m_disc.openFileRange(kWadFile, (*entry)->wadOffset, (*entry)->size)) ||
+                   isLuaChunk(FileStream::open(path, 0, std::filesystem::file_size(path, sizeError)))) {
+            // Never a script: the player's own disc chunks are the only bytecode the game state runs
+            // (docs/guides/studio/security.md#surface). The WAD names no kinds, so a script is told by its bytes.
+            report.scripts.push_back(name);
         } else if (!m_overrides.try_emplace((*entry)->nameHash, std::move(path)).second) {
             report.duplicates.push_back(name);
         } else {
