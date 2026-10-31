@@ -41,8 +41,9 @@ struct ShadowLight {
     LightColour colour = kDefaultColour;
     /// Where the light stands from the casters' centre, in the game's axes (z up), metres.
     world::Vec3 offset = kDefaultOffset;
-    /// Whether a script set the colour or the offset. **Coney's reading**: a level whose scripts never set its
-    /// shadow light has none, so a Coney level without one keeps the PS2's blob in every preset.
+    /// Whether a script set the colour or the offset. **Coney's choice** (a stand-in): a level whose scripts never set
+    /// its shadow light has none, so a Coney level without one keeps the PS2's blob in every preset. The Xbox always
+    /// has its default shadow light (Xbox `0x000bda20`) and would use the defaults; its levels all set both values.
     bool scripted = false;
 
     /// `SetShadowColor(r, g, b)`: the shadow colour, alpha 1.
