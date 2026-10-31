@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+import yaml
 from conventions_support import write_checkout
 from git_support import git
 
@@ -74,9 +75,9 @@ class World:
         def run(context: task_check_steps.StepContext) -> StepResult:
             self.calls.append(name)
             self.contexts.append(context)
-            if name == "pytest":
+            if name == "pytest" and context.pytest_scope.whole:
                 with context.hold("pytest"):
-                    pass  # the real step runs its command inside the hold
+                    pass  # the real step runs the whole suite inside the hold, a scoped run without one
             if name in self.unavailable:
                 raise task_check_steps.CheckUnavailable(f"{name} is not installed")
             if name in self.on_step:
@@ -137,6 +138,7 @@ class World:
             who=lambda: {"kind": "tool", "tool": "coney-tools task check", "agent": {"id": "lane-a"}, "source": "hook"},
             stream=self.stream,
             hold=self.hold,
+            workers=lambda root: 3,
         )
 
     def request(self, **more: Any) -> task_check.Request:
@@ -190,7 +192,7 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> World:
 def test_a_documentation_change_runs_the_docs_profile_and_stamps_it(world: World) -> None:
     world.edit("docs/guides/widget.md", "# Widget\n\nTwo.\n")
     assert world.check() == 0
-    assert world.calls == ["docs-check", "mkdocs", "pre-commit"]
+    assert world.calls == ["docs-check", "mkdocs", "pre-commit", "pytest"]
     stamp = world.stamp
     change = world.change()
     assert (stamp.step, stamp.result, stamp.subject, stamp.commit) == ("checked", "pass", "", change.tip)
@@ -215,6 +217,41 @@ def test_the_stamp_records_the_pytest_counts_so_the_facts_can_show_them(world: W
     assert world.check() == 0
     assert world.stamp.detail["pytest"] == {"passed": 7276, "skipped": 11, "deselected": 1}
     assert "tests" not in world.stamp.detail
+
+
+@pytest.mark.parametrize(
+    ("name", "recorded", "said"),
+    [
+        ("docs/guides/widget.md", ["docs_only"], "pytest: only the tests marked as reading docs_only"),
+        ("src/ai/brain.cpp", ["engine"], "pytest: only the tests marked as reading engine"),
+        (
+            "python/src/coney_tools/widget.py",
+            "whole",
+            "pytest: the whole suite (python/src/coney_tools/widget.py runs everything)",
+        ),
+        (".github/conventions.yml", "whole", "pytest: the whole suite (.github/conventions.yml runs everything)"),
+    ],
+)
+def test_the_output_and_the_stamp_say_which_python_tests_ran(
+    world: World, name: str, recorded: object, said: str
+) -> None:
+    text = (world.root / name).read_text(encoding="utf-8") + "\n" if (world.root / name).is_file() else "x\n"
+    world.edit(name, text)
+    assert world.check() == 0
+    assert world.stamp.detail["pytest_scope"] == recorded
+    assert f"  {said}" in world.said
+    assert world.contexts[-1].workers == 3  # a check slot's share of the cores, from the environment
+
+
+def test_a_profile_without_pytest_records_no_scope(world: World) -> None:
+    data = yaml.safe_load((world.root / ".github" / "conventions.yml").read_text(encoding="utf-8"))
+    data["proof"]["profiles"][0]["checks"] = ["docs-check", "mkdocs", "pre-commit", "actionlint"]
+    (world.root / ".github" / "conventions.yml").write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+    git(world.root, "commit", "-qam", "no pytest for docs")
+    git(world.root, "branch", "-f", "main")
+    world.edit("docs/guides/widget.md", "# Widget\n\nTwo.\n")
+    assert world.check() == 0
+    assert "pytest" not in world.calls and "pytest_scope" not in world.stamp.detail
 
 
 def test_a_workflow_change_also_runs_actionlint(world: World) -> None:

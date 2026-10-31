@@ -1056,3 +1056,19 @@ def test_a_function_map_too_big_for_the_stamp_is_read_from_the_recorded_verdict(
     assert pr_proof._review_functions(subject, stamp) == {"0x00100010": "c"}
     other = cast(stamps.Stamp, SimpleNamespace(detail={}, covers={"review_sha256": "0" * 64}))
     assert pr_proof._review_functions(subject, other) is None
+
+
+def test_a_check_whose_python_tests_do_not_cover_the_change_is_refused(tmp_path: Path) -> None:
+    # The change is under src/ and tests/: it needs the tests marked as reading engine files, or the whole suite.
+    built = make(tmp_path, skip=frozenset({"checked"}))
+    built.check("full", pytest_scope=["docs_only"])
+    assert texts(built.verify(), "checked") == [
+        "checked: Check ran only the tests marked as reading docs_only; this change needs only the tests marked as "
+        "reading engine"
+    ]
+    for enough in (["engine"], ["docs_only", "engine"], "whole"):
+        built.check("full", pytest_scope=enough)
+        assert texts(built.verify(), "checked") == []
+    built.check("full", pytest_scope=7)
+    [line] = texts(built.verify(), "checked")
+    assert "pytest_scope is 7" in line

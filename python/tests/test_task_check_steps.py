@@ -2,7 +2,8 @@
 """Tests for the individual checks of `task check`: the commands they run, how a failure reads and what is missing."""
 
 import shutil
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
@@ -29,8 +30,22 @@ class Commands:
         return 0, ""
 
 
-def context(runner: Commands, root: Path = REPO) -> StepContext:
-    return StepContext(root, "origin/main", ("python/src/coney_tools/cli.py",), load_conventions(REPO), runner)
+def context(
+    runner: Commands,
+    root: Path = REPO,
+    paths: tuple[str, ...] = ("python/src/coney_tools/cli.py",),
+    workers: int = 1,
+    held: list[str] | None = None,
+) -> StepContext:
+    """A context for the checks of a change to `paths`, recording each check slot it holds in `held`."""
+
+    @contextmanager
+    def hold(what: str) -> Iterator[None]:
+        if held is not None:
+            held.append(what)
+        yield
+
+    return StepContext(root, "origin/main", paths, load_conventions(REPO), runner, hold, workers)
 
 
 def test_ruff_runs_both_of_ci_commands_and_mypy_the_strict_one() -> None:
@@ -54,11 +69,40 @@ def test_a_passing_pytest_run_says_how_many_tests_passed() -> None:
     runner = Commands()
     runner.codes["pytest"] = (0, "....\n4210 passed, 3 skipped in 3612.40s (1:00:12)\n")
     result = task_check_steps.pytest_step(context(runner))
-    assert result.ok and result.detail == "pytest python/tests: 4210 passed, 3 skipped"
+    assert result.ok and result.detail == "pytest python/tests, the whole suite: 4210 passed, 3 skipped"
     assert dict(result.counts) == {"passed": 4210, "skipped": 3}
     runner.codes["pytest"] = (0, "")
     empty = task_check_steps.pytest_step(context(runner))
-    assert empty.detail == "pytest python/tests" and empty.counts == ()
+    assert empty.detail == "pytest python/tests, the whole suite" and empty.counts == ()
+
+
+def test_the_whole_suite_runs_in_parallel_on_the_workers_of_a_check_slot_and_holds_one() -> None:
+    runner, held = Commands(), list[str]()
+    assert task_check_steps.pytest_step(context(runner, workers=4, held=held)).ok
+    assert runner.commands == [[*task_check_steps.PYTEST_COMMAND, "-n", "4"]]
+    assert held == ["pytest"]
+
+
+def test_a_docs_or_engine_change_runs_only_the_tests_marked_as_reading_them_without_a_slot() -> None:
+    runner, held = Commands(), list[str]()
+    runner.codes["pytest"] = (0, "212 passed, 9400 deselected in 40.00s\n")
+    paths = ("docs/guides/testing.md", "src/ai/brain.cpp")
+    result = task_check_steps.pytest_step(context(runner, paths=paths, workers=4, held=held))
+    selection = ["--reads", "docs_only", "--reads", "engine"]
+    assert runner.commands == [[*task_check_steps.PYTEST_COMMAND, *selection, "-n", "4"]]
+    assert held == []  # a scoped run is not a full suite
+    assert result.ok and result.detail == (
+        "pytest python/tests, only the tests marked as reading docs_only, engine: 212 passed, 9400 deselected"
+    )
+    assert dict(result.counts) == {"passed": 212, "deselected": 9400}
+
+
+def test_the_workers_of_a_check_slot_are_its_share_of_the_cores() -> None:
+    assert task_check_steps.pytest_workers(cores=16, slots=4) == 4
+    assert task_check_steps.pytest_workers(cores=16, slots=3) == 5
+    assert task_check_steps.pytest_workers(cores=2, slots=4) == 1
+    assert task_check_steps.pytest_workers(cores=None, slots=4) == 1
+    assert task_check_steps.pytest_arguments(1) == []  # one worker runs in the process, without xdist
 
 
 def test_the_pytest_counts_keep_every_kind_pytest_names() -> None:

@@ -417,8 +417,8 @@ cannot be read ends the run with exit 2.
 
 | Profile | For | Checks (in this order) |
 | --- | --- | --- |
-| `docs` | only documentation paths | `docs-check` (`coney-tools docs check --base`), `mkdocs` (`mkdocs build --strict`), `pre-commit` (all files), `actionlint` |
-| `tooling` | documentation and tooling paths (`python/`, `.claude/`, `.github/ISSUE_TEMPLATE/`, `python.yml`, ...; `paths.tools_only`) | the above and `ruff` (check and format), `mypy` (strict), `pytest` |
+| `docs` | only documentation paths | `docs-check` (`coney-tools docs check --base`), `mkdocs` (`mkdocs build --strict`), `pre-commit` (all files), `pytest` ([the tests that read the docs](#task-check-pytest)), `actionlint` |
+| `tooling` | documentation and tooling paths (`python/`, `.claude/`, `.github/ISSUE_TEMPLATE/`, `python.yml`, ...; `paths.tools_only`) | the above and `ruff` (check and format), `mypy` (strict); `pytest` is the whole suite |
 | `full` | anything else, including a path in no class (`.github/scripts/`) | the above and `msvc-ci-build` and `ctest-full-disc` |
 
 `actionlint` runs only when a changed path is under `.github/workflows/` or `.github/actions/` (`proof.only_when`).
@@ -435,8 +435,9 @@ codebase nightly ([building](clang-tidy.md)).
 * The stamp covers `diff_sha256`, `checks_sha256` (the checks that ran) and, for `full`, `build_record_sha256` (also
   when the build failed, if it left a record). Its `detail` holds the profile, the checks, the test counts, the preset
   and the minutes.
-* A passing `pytest` check says how many tests passed in the run's output (`pytest python/tests: 4210 passed`); the
-  stamp keeps these as `detail.pytest` (passed, skipped), and the facts of `pr text` report them beside the checks
+* A passing `pytest` check says which tests ran and how many passed in the run's output (`pytest python/tests, the
+  whole suite: 9612 passed`); the stamp keeps the counts as `detail.pytest` (passed, skipped, deselected) and the scope
+  as `detail.pytest_scope` ([below](#task-check-pytest)), and the facts of `pr text` report them beside the checks
   that ran; `detail.tests` holds only the build's counts, so a profile without a build has none.
 * A `full` run can take an hour. Start it with `run_in_background`, write STATUS.md and stop; it has no budget cap and
   waits for a slot up to `--max-wait`. Start it with `PYTHONUNBUFFERED=1` and redirect its output to a file: every line
@@ -444,8 +445,9 @@ codebase nightly ([building](clang-tidy.md)).
 * **It is live.** Each check prints `[14:03:09] start <check>` when it begins and `[14:41:20] ok   <check>: ...` when it
   ends; the build is one stage (`start msvc-ci-build and ctest-full-disc`) that prints its own waiting and `still
   running` lines. A long check streams its output to `check-logs/<program>.log` in the task's scratch folder and says it
-  is still running every minute. `pytest`, and the engine's full ctest run inside the build, wait for a **check slot**
-  first ([Check slots](coney-tools-build.md#check-slots)), so a profile with `pytest` needs `--agent` too.
+  is still running every minute. The whole pytest suite, and the engine's full ctest run inside the build, wait for a
+  **check slot** first ([Check slots](coney-tools-build.md#check-slots)), so a run of either needs `--agent` too; a
+  scoped pytest run takes none.
 * A fix task's id (`task check 812-fix`) is checked in its parent's folder: the stamp, the build record and the check
   logs go where `pr verify` and `pr open` read them, the parent's, as the fix's unit record says, and the first line
   says so ([A fix task](issues.md#starting)). A fix task with no unit record (made by hand, or before the records) is
@@ -455,6 +457,36 @@ codebase nightly ([building](clang-tidy.md)).
 Exit 0 every check passed and the stamp is written; 1 a check failed (a `fail` stamp is written); 2 it cannot run or
 cannot stamp (nothing is written); 75 the build or the pytest run gave up waiting for a slot (nothing is written; run
 it again).
+
+#### Which Python tests run {#task-check-pytest}
+
+The `pytest` check runs only the tests a change can break, by the same path classes CI sorts a pull request by
+(`paths` in [.github/conventions.yml](repo:.github/conventions.yml), which `.github/scripts/ci-scope.sh` reads too).
+The rule is `proof.pytest`, read from the base like the profiles:
+
+* **The whole suite** when any changed path is under `python/`, `.claude/` or `.github/` (`proof.pytest.whole_when`:
+  the package and its tests, the hooks, the rules, workflows and scripts), or is of a class that is not scoped
+  (`tools_only`, or a file no class names), or when no path changed. It runs in parallel with pytest-xdist, on a check
+  slot's share of the cores (16 cores and 4 `check_slots` give `-n 4`), and holds a check slot.
+* **Only the tests that read the changed classes** when every changed path is of a `proof.pytest.scoped` class
+  (`docs_only` or `engine`) outside those folders: `pytest python/tests --reads docs_only --reads engine`, which keeps
+  the tests marked `@pytest.mark.reads("docs_only")` or `reads("engine")`. These are the tests that read the
+  checkout's own docs, research data and engine sources (the docs and repository checks, the progress inputs, the
+  natives scan). The run takes no check slot.
+
+The output says which (`pytest: only the tests marked as reading docs_only`, or `pytest: the whole suite
+(python/src/coney_tools/cli.py runs everything)`) and the stamp records it as `detail.pytest_scope`: `whole`, or the
+list of classes. `pr verify` recomputes the scope from the change's paths and refuses a Check whose recorded scope does
+not hold it; a stamp from before the scope was recorded counts as the whole suite.
+
+**The markers are checked, not trusted.** `python/tests/repo_reads.py` watches every test through an audit hook
+(`sys.addaudithook`): each file it opens and each folder it lists, from its setup to its teardown, and what its module
+reads while it is imported. A test that reads a file of a scoped class its `reads` marker does not name fails at
+teardown, with the paths and the marker to add. CI runs the whole suite on every ready pull request, so a test that a
+scoped local run would have skipped cannot go unmarked past CI, and nothing a scoped run skips goes unchecked before
+the merge. A test that starts a program inside the checkout reads what that program reads, which the hook cannot see:
+such a test is marked by hand. `CONEY_TEST_READS_LOG=<folder>` writes what each test read, one JSON line per test, to
+review the markers.
 
 <!-- command-reference:begin task -->
 ## Parameters of `task` {#task-parameters}

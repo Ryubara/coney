@@ -388,7 +388,7 @@ at most `check_slots` of them run at once, across all worktrees:
 
 | Holder | What holds the slot |
 | --- | --- |
-| `task check` | the `pytest` check (the whole suite), for the run of pytest |
+| `task check` | the `pytest` check when it runs the whole suite, for the run of pytest; a scoped run, only the tests that read the changed docs or engine files, holds none ([Which Python tests run](coney-tools-repo.md#task-check-pytest)) |
 | `ci run`, `ci pr` | the `python` step's pytest, for the run of pytest |
 | `build --test` with no filter (so also `task check`'s build) | the test phase when it has **no `-R` or `-L` filter**: the whole ctest run; an agent may start it only with `--full` ([When the whole suite runs](#build)). The wait for the check slot comes before the wait for a build slot, so a run in the check queue holds no build slot |
 
@@ -402,7 +402,9 @@ status` lists the check lane with the others; `build unclaim --lane check --agen
 hand.
 
 `check_slots` is in [`coney.local.toml`](workspace.md#local-config); `0` (the default) means one slot for every four
-cores and at least one: 2 on an 8-core machine, 4 on 16. Set it lower when the machine does more than tests.
+cores and at least one: 2 on an 8-core machine, 4 on 16. Set it lower when the machine does more than tests. A slot is
+also a share of the cores: `task check` runs the whole pytest suite on `cores / check_slots` pytest-xdist workers
+(`-n 4` on 16 cores with 4 slots), so the suites that may run at once use about every core between them.
 
 A slow run must be told from a hung one, so `task check`, `ci run` and `orig fails-first` print a line when each stage
 starts and ends, with the time of day, and flush every line at once (a run redirected to a file shows it grow). A check

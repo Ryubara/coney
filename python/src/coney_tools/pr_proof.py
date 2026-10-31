@@ -537,10 +537,25 @@ def check_checked(subject: Subject) -> list[Refusal]:
     for check in subject.checks:
         if check not in done:
             found.append(Refusal("checked", f"checked: Check did not run: {check}", "task check"))
+    if "pytest" in subject.checks:
+        found += _pytest_scope(subject, stamp)
     # A profile with the build checks has a build record behind them (`proof.build`), as `task check` writes it.
     if set(subject.checks) & set(proof.build.checks):
         found += _build_record(subject, stamp)
     return found
+
+
+def _pytest_scope(subject: Subject, stamp: stamps.Stamp) -> list[Refusal]:
+    """The Python tests the Check ran (`detail.pytest_scope`; none recorded is the whole suite, as before the scope
+    was) hold every test the change needs (`proof_profiles.pytest_scope` of its paths, the base's rules)."""
+    needed = proof_profiles.pytest_scope(subject.conventions, subject.paths)
+    try:
+        ran = proof_profiles.scope_from_record(stamp.detail.get("pytest_scope"))
+    except ConventionsError as error:
+        return [Refusal("checked", f"checked: {error}", "task check")]
+    if proof_profiles.covers(ran, needed):
+        return []
+    return [Refusal("checked", f"checked: Check ran {ran.text}; this change needs {needed.text}", "task check")]
 
 
 def _checked_unsettled(stamp: stamps.Stamp | None) -> Refusal | None:
