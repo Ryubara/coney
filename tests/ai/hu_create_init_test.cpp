@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <expected>
 #include <memory>
+#include <set>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -216,6 +217,41 @@ TEST_CASE("HuCreate's human of a sized class takes its size; any other is made a
     CHECK(level.create(35).human().scale() == 1.03F);
     CHECK(level.create(32, 1).human().scale() == 0.97F);
     CHECK(level.create(417).human().scale() == 1.0F);
+}
+
+TEST_CASE("HuCreate's random size counts any woman byte but 0, and any hat name but none, an empty one too",
+          "[ai][hu_create]") {
+    // Expected: characters.md#body-scale, confirmed (code) (the woman byte at +0x3b8 is tested for not 0, the hat
+    // name compared with "none" at 0x0021900c)
+    Level level;
+    // Class 300 has the women's byte 2; class 301 an empty hat name; class 302 the hat none. Category 9, brain 0.
+    std::vector<Value> woman = cfgChar(300, 9, 2, "none");
+    woman[12] = Value(2.0);
+    woman[10] = Value(std::string("none"));
+    std::vector<Value> emptyHat = cfgChar(301, 9, 2, "none");
+    emptyHat[10] = Value(std::string());
+    std::vector<Value> noHat = cfgChar(302, 9, 2, "none");
+    noHat[10] = Value(std::string("none"));
+    level.configure("CfgChar", woman);
+    level.configure("CfgChar", emptyHat);
+    level.configure("CfgChar", noHat);
+    std::set<float> womanSizes;
+    std::set<float> emptyHatSizes;
+    std::set<float> noHatSizes;
+    for (int i = 0; i < 12; ++i) {
+        womanSizes.insert(level.create(300).human().scale());
+        emptyHatSizes.insert(level.create(301).human().scale());
+        noHatSizes.insert(level.create(302).human().scale());
+    }
+    // A woman's sizes are 1.0 to 0.97 in steps of 0.01; 0.99 and 0.97 are a woman's alone.
+    for (const float size : womanSizes) {
+        CHECK((size == 1.0F || size == 0.99F || size == 0.98F || size == 0.97F));
+    }
+    CHECK((womanSizes.contains(0.99F) || womanSizes.contains(0.97F)));
+    // A hat never takes 0.98 or 1.02 (draws 31-54 give it 1.01); without one, those draws give 0.98 here.
+    CHECK_FALSE(emptyHatSizes.contains(0.98F));
+    CHECK_FALSE(emptyHatSizes.contains(1.02F));
+    CHECK(noHatSizes.contains(0.98F));
 }
 
 TEST_CASE("HuCreate's class size is the size the human is made at, which a reset goes back to", "[ai][hu_create]") {
