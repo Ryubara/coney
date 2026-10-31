@@ -112,6 +112,7 @@ void convertTextures(const coney::io::Wad& wad, const coney::io::WadEntry& entry
     for (coney::platform::TextureDictionary& dictionary : *dictionaries) {
         const std::vector<rw::Texture*> textures = dictionary.textures();
         std::vector<std::expected<coney::graphics::TextureData, coney::Error>> converted;
+        converted.reserve(textures.size());
         for (rw::Texture* texture : textures) {
             converted.push_back(coney::platform::textureFromRw(*texture));
         }
@@ -217,7 +218,10 @@ TEST_CASE("every model and texture of the disc's level99 converts into Coney's m
         ++totals.worlds;
         const std::string streamName = name + "_sec.wld";
         auto stream = readEntry(*wad, streamName);
-        REQUIRE(stream.has_value());
+        if (!stream) {
+            ++totals.failures;
+            continue;
+        }
         auto world = coney::world::inspectWorldStream(*stream);
         REQUIRE(world.has_value());
         std::vector<std::string> files{streamName};

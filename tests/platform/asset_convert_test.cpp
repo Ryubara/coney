@@ -18,9 +18,11 @@
 #include "graphics/asset_store.h"
 #include "graphics/mesh_data.h"
 #include "graphics/texture_data.h"
+#include "graphics/texture_lod.h"
 #include "platform/character_skin.h"
 #include "platform/render_engine.h"
 #include "platform/texture_dictionary.h"
+#include "support/optional_value.h"
 #include "support/rw_fixtures.h"
 
 // These tests run librw on its NULL device (RenderBackend::Null): no window, no GPU, as on CI. Every geometry and
@@ -166,7 +168,7 @@ std::vector<std::uint8_t> librwFirstRead(rw::int32 width, rw::int32 height, cons
                                           rw::PLATFORM_PS2);
     REQUIRE(lone != nullptr);
     std::memcpy(lone->pixels, bytes, pal8LevelBytes(width, height));
-    std::memcpy(lone->palette, palette, 256 * 4);
+    std::memcpy(lone->palette, palette, std::size_t{256} * 4);
     std::vector<std::uint8_t> texels = librwLevel0(lone);
     lone->destroy();
     return texels;
@@ -286,8 +288,9 @@ TEST_CASE("the texture format reads a PS2 32-bit raster's texels as librw does",
     // The fixture's filter word: linear, wrap in U and V; its K value 0xFC0 is -4.0 (graphics/texture_lod.h).
     CHECK(converted->sampler == coney::graphics::TextureSampler{});
     REQUIRE(converted->lod.has_value());
-    CHECK(converted->lod->k == -4.0F);
-    CHECK(converted->lod->l == 0);
+    const coney::graphics::TextureLod lod = coney::test::got(converted->lod);
+    CHECK(lod.k == -4.0F);
+    CHECK(lod.l == 0);
 
     texture->setFilter(rw::Texture::LINEARMIPLINEAR);
     texture->setAddressU(rw::Texture::CLAMP);
@@ -334,8 +337,9 @@ TEST_CASE("the texture format expands a PS2 8-bit palette raster as librw does",
     std::vector<std::uint8_t> expected;
     for (rw::int32 y = 0; y < kSide; ++y) {
         for (rw::int32 x = 0; x < kSide; ++x) {
-            const int index = image->pixels[y * image->stride + x];
-            expected.insert(expected.end(), image->palette + index * 4, image->palette + index * 4 + 4);
+            const std::size_t index = image->pixels[y * image->stride + x];
+            const rw::uint8* entry = image->palette + index * 4;
+            expected.insert(expected.end(), entry, entry + 4);
         }
     }
     CHECK(level.texels == expected);
@@ -422,6 +426,7 @@ TEST_CASE("the texture format reads each level of a mipmapped PS2 8-bit palette 
     const rw::int32 levels = raster->getNumLevels();
     REQUIRE(levels >= 3); // 32, 16 and 8 wide: the last below the transfer's width
     std::vector<std::vector<std::uint8_t>> expected;
+    expected.reserve(static_cast<std::size_t>(levels));
     for (rw::int32 level = 0; level < levels; ++level) {
         expected.push_back(librwFirstRead(kSide >> level, kSide >> level, pal8Level(raster, level), raster->palette));
     }
