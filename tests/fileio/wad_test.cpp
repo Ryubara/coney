@@ -224,3 +224,79 @@ TEST_CASE("Wad refuses overrides that would put a script in place of the disc's"
     CHECK(untouched->size() == 12);
     CHECK(untouched->readU32Le() == 1U);
 }
+
+TEST_CASE("Wad refuses a script override named in another letter case or by its name hash", "[wad]") {
+    // Expected: docs/guides/studio/security.md#surface (Bytecode, Lua 4.0), Coney's own rule
+    TempDir disc;
+    writeScriptDisc(disc);
+    TempDir overrides;
+    // Two names for level99.lua: its hash, and its name in capitals. Both are refused, so neither is a duplicate.
+    Bytes source;
+    source.text("HuCreate(\"Cleon\", 2)");
+    const std::string byHash = std::format("0x{:08x}", coney::nameHash("./ee_files/level99.lua"));
+    overrides.write(byHash, source.span());
+    overrides.write("LEVEL99.LUA", source.span());
+    auto opened = Disc::open(disc.path());
+    REQUIRE(opened.has_value());
+    auto wad = Wad::open(std::move(*opened));
+    REQUIRE(wad.has_value());
+
+    auto report = wad->useOverrides(overrides.path());
+    REQUIRE(report.has_value());
+    CHECK(report->replaced == 0);
+    CHECK(report->scripts == std::vector<std::string>{byHash, "LEVEL99.LUA"});
+    CHECK(report->duplicates.empty());
+    CHECK_FALSE(wad->modded());
+}
+
+TEST_CASE("Wad refuses a file shorter than a chunk's signature in place of a script", "[wad]") {
+    // Expected: docs/guides/studio/security.md#surface (Bytecode, Lua 4.0), Coney's own rule
+    TempDir disc;
+    writeScriptDisc(disc);
+    TempDir overrides;
+    // Two bytes, too short to be a chunk: over the script it is refused by the entry it names, over the data entry
+    // it is an ordinary replacement.
+    Bytes tiny;
+    tiny.u8(1).u8(2);
+    overrides.write("level99.lua", tiny.span());
+    overrides.write("level1.lev", tiny.span());
+    auto opened = Disc::open(disc.path());
+    REQUIRE(opened.has_value());
+    auto wad = Wad::open(std::move(*opened));
+    REQUIRE(wad.has_value());
+
+    auto report = wad->useOverrides(overrides.path());
+    REQUIRE(report.has_value());
+    CHECK(report->replaced == 1);
+    CHECK(report->scripts == std::vector<std::string>{"level99.lua"});
+    auto script = wad->lookup("level99.lua");
+    REQUIRE(script.has_value());
+    auto stream = wad->openEntry(**script);
+    REQUIRE(stream.has_value());
+    CHECK(stream->size() == 8);
+}
+
+TEST_CASE("Wad refuses an override when the entry it names cannot be read to check it", "[wad]") {
+    // Expected: docs/guides/studio/security.md#surface, Coney's own rule: a check that cannot run refuses
+    TempDir disc;
+    writeScriptDisc(disc);
+    auto opened = Disc::open(disc.path());
+    REQUIRE(opened.has_value());
+    auto wad = Wad::open(std::move(*opened));
+    REQUIRE(wad.has_value());
+    // The archive shrinks after the index was read, so level1.lev's range at 2048 can no longer be read.
+    Bytes shortWad;
+    shortWad.u8(0x1b).text("Lua").u8(0x40).u8(1).u8(2).u8(3);
+    disc.write("WARRIORS.WAD", shortWad.span());
+    TempDir overrides;
+    Bytes data;
+    data.u32(4);
+    overrides.write("level1.lev", data.span());
+
+    auto report = wad->useOverrides(overrides.path());
+    REQUIRE(report.has_value());
+    CHECK(report->replaced == 0);
+    CHECK(report->unreadable == std::vector<std::string>{"level1.lev"});
+    CHECK(report->scripts.empty());
+    CHECK_FALSE(wad->modded());
+}

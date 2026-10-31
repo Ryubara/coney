@@ -28,6 +28,7 @@ struct WadOverrideReport {
     std::vector<std::string> unmatched;  ///< File names that name no entry, ignored.
     std::vector<std::string> duplicates; ///< File names of an entry an earlier name (in sorted order) already replaced.
     std::vector<std::string> scripts;    ///< File names refused: a script in place of the disc's, never run.
+    std::vector<std::string> unreadable; ///< File names refused: the entry or the file could not be read to check it.
 };
 
 /// The game's archive on the player's disc: WARRIORS.DIR parsed into an index, and WARRIORS.WAD read entry by entry.

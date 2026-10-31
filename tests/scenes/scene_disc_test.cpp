@@ -28,7 +28,7 @@ TEST_CASE("the scene reader reads a replaced .scn entry at the override's size",
     Bytes wadData;
     wadData.u32(1).u32(2);
     disc.write("WARRIORS.WAD", wadData.span());
-    // A replacement longer than the entry: read whole, not cut at the 8 bytes WARRIORS.DIR lists.
+    // A data replacement longer than the entry: read whole, not cut at the 8 bytes WARRIORS.DIR lists.
     TempDir overrides;
     Bytes edited;
     edited.u32(7).u32(8).u32(9);
