@@ -282,7 +282,8 @@ TEST_CASE("past its deadline the fight goal ends for a fighter out of the man's 
 TEST_CASE("a stunned fighter stays stunned through 355 and 356 and fights on the update its reaction goal ends",
           "[ai][stun]") {
     // Expected: combat-reactions.md#stun-end and ai/index.md#reaction-goals, confirmed (code) at 0x00256a60,
-    // 0x0025f770, 0x002b4bb8 and 0x002240e8; the order confirmed (runtime), run r-20261031-civ-knockdown-691
+    // 0x0025f770, 0x002b4bb8 and 0x002240e8; the order confirmed (runtime): 357, the goal's end and the move in run
+    // r-20261031-civ-stun, 355 then 356 in task 691's civ_knockdown trace (combat-reactions.md#stun-end)
     Scene scene;
     Brain& gang = scene.add({40.0F, 41.5F, 0.0F}, 180.0F, BrainType::Gang, onlyKind(1));
     gang.setTarget(&scene.playerBrain());
