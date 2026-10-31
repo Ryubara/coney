@@ -417,8 +417,8 @@ std::filesystem::path fakeProjects(const std::filesystem::path& dir) {
 } // namespace
 
 TEST_CASE("New project suggests the projects folder and makes it on first use", "[studio]") {
-    // Expected: the issue's rule: `Coney Studio/Projects` in the documents folder, created on first use, suggested by
-    // New project.
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the issue's rule: `Coney Studio/Projects` in
+    // the documents folder, created on first use, suggested by New project.
     const BareContext context;
     const coney::test::TempDir dir;
     FakeHost host;
@@ -437,6 +437,8 @@ TEST_CASE("New project suggests the projects folder and makes it on first use", 
 }
 
 TEST_CASE("Open project starts the folder picker in the projects folder", "[studio]") {
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none).
     const BareContext context;
     const coney::test::TempDir dir;
     FakeHost host;
@@ -458,6 +460,8 @@ TEST_CASE("Open project starts the folder picker in the projects folder", "[stud
 }
 
 TEST_CASE("the home folder holds the projects folder when there are no documents", "[studio]") {
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none).
     const BareContext context;
     const coney::test::TempDir dir;
     FakeHost host;
@@ -468,6 +472,8 @@ TEST_CASE("the home folder holds the projects folder when there are no documents
 
 TEST_CASE("the projects folder setting replaces the default, is saved with Studio's preferences and is read again",
           "[studio]") {
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none).
     const BareContext context;
     const coney::test::TempDir dir;
     FakeHost host;
@@ -498,6 +504,8 @@ TEST_CASE("the projects folder setting replaces the default, is saved with Studi
 
 TEST_CASE("opened and made projects fill the recent list, most recent first, and it is kept for the next run",
           "[studio]") {
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none).
     const BareContext context;
     const coney::test::TempDir dir;
     FakeHost host;
@@ -530,6 +538,8 @@ TEST_CASE("opened and made projects fill the recent list, most recent first, and
 }
 
 TEST_CASE("the recent list keeps ten projects", "[studio]") {
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none).
     const BareContext context;
     const coney::test::TempDir dir;
     FakeHost host;
@@ -545,6 +555,8 @@ TEST_CASE("the recent list keeps ten projects", "[studio]") {
 }
 
 TEST_CASE("a recent project that is gone is marked missing, refuses to open and can be removed", "[studio]") {
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none).
     const BareContext context;
     const coney::test::TempDir dir;
     FakeHost host;
@@ -583,8 +595,9 @@ TEST_CASE("a recent project that is gone is marked missing, refuses to open and 
 }
 
 TEST_CASE("the start screen draws with recent projects, missing ones too, until a project opens", "[studio]") {
-    // The panels read the list every frame: a frame with a present entry, a missing entry and no project must draw
-    // without trouble, and the Level view then shows the level once a project opens.
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none). The panels read the list every frame: a frame with a present entry, a missing entry and no project
+    // must draw without trouble, and the Level view then shows the level once a project opens.
     const BareContext context;
     const coney::test::TempDir dir;
     FakeHost host;

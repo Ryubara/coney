@@ -43,6 +43,8 @@ std::vector<std::string> roots(const StudioPreferences& preferences) {
 } // namespace
 
 TEST_CASE("recent projects come most recent first, and a reopened one moves to the front", "[studio]") {
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none).
     StudioPreferences preferences;
     addRecentProject(preferences, recent("projects/a"));
     addRecentProject(preferences, recent("projects/b"));
@@ -55,6 +57,8 @@ TEST_CASE("recent projects come most recent first, and a reopened one moves to t
 }
 
 TEST_CASE("the recent list keeps ten projects and drops the oldest", "[studio]") {
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none).
     StudioPreferences preferences;
     for (std::size_t i = 0; i < kMaxRecentProjects + 3; ++i) {
         addRecentProject(preferences, recent(fs::path("projects") / ("p" + std::to_string(i))));
@@ -66,6 +70,8 @@ TEST_CASE("the recent list keeps ten projects and drops the oldest", "[studio]")
 }
 
 TEST_CASE("one folder written two ways is one recent project", "[studio]") {
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none).
     StudioPreferences preferences;
     addRecentProject(preferences, recent("projects/a"));
     addRecentProject(preferences, recent("projects/b"));
@@ -77,6 +83,8 @@ TEST_CASE("one folder written two ways is one recent project", "[studio]") {
 }
 
 TEST_CASE("removing a recent project takes it off the list and says whether it was there", "[studio]") {
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none).
     StudioPreferences preferences;
     addRecentProject(preferences, recent("projects/a"));
     addRecentProject(preferences, recent("projects/b"));
@@ -88,6 +96,8 @@ TEST_CASE("removing a recent project takes it off the list and says whether it w
 }
 
 TEST_CASE("a project is missing when its folder or its manifest is gone", "[studio]") {
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none).
     const coney::test::TempDir dir;
     CHECK_FALSE(projectExists(dir.path() / "nothing"));
     fs::create_directories(dir.path() / "empty");
@@ -100,6 +110,8 @@ TEST_CASE("a project is missing when its folder or its manifest is gone", "[stud
 }
 
 TEST_CASE("preferences read back the same, whatever the paths hold", "[studio]") {
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none).
     StudioPreferences preferences;
     preferences.projectsFolder = fs::path("D:/My Work/Coney \"projects\"");
     // A quote, a backslash and a letter outside ASCII (UTF-8) in the names and folders.
@@ -123,6 +135,8 @@ TEST_CASE("preferences read back the same, whatever the paths hold", "[studio]")
 }
 
 TEST_CASE("preferences text keeps the list's order, skips what it does not know and drops repeats", "[studio]") {
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none).
     const auto read = parsePreferences("# Coney Studio preferences\n"
                                        "[projects]\n"
                                        "folder = \"projects-root\"   # chosen\n"
@@ -156,6 +170,8 @@ TEST_CASE("preferences text keeps the list's order, skips what it does not know 
 }
 
 TEST_CASE("preferences text with a broken line is refused, naming the line", "[studio]") {
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none).
     const auto noEquals = parsePreferences("[projects]\nfolder\n");
     REQUIRE_FALSE(noEquals.has_value());
     CHECK(noEquals.error().code == coney::ErrorCode::Invalid);
@@ -167,6 +183,8 @@ TEST_CASE("preferences text with a broken line is refused, naming the line", "[s
 }
 
 TEST_CASE("preferences are saved to a file in a folder made for it and loaded back", "[studio]") {
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none).
     const coney::test::TempDir dir;
     const fs::path file = dir.path() / "user data" / "coney-studio-preferences.toml";
     StudioPreferences preferences;
@@ -194,6 +212,8 @@ TEST_CASE("preferences are saved to a file in a folder made for it and loaded ba
 }
 
 TEST_CASE("a preferences file that is not there is the defaults, and one that is broken is an error", "[studio]") {
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none).
     const coney::test::TempDir dir;
     const auto none = loadPreferences(dir.path() / "absent.toml");
     REQUIRE(none.has_value());

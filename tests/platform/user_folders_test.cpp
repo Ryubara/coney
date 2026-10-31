@@ -8,8 +8,9 @@
 using coney::platform::UserFolder;
 
 TEST_CASE("the platform reports absolute user folders, or none", "[user_folders]") {
-    // A machine may have no documents folder (a bare Linux account), so a missing one is allowed; one that is
-    // reported is a whole path, which the projects folder is made inside.
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none). A machine may have no documents folder (a bare Linux account), so a missing one is allowed; one that
+    // is reported is a whole path, which the projects folder is made inside.
     for (const UserFolder which : {UserFolder::Home, UserFolder::Documents}) {
         const auto folder = coney::platform::userFolder(which);
         if (folder) {

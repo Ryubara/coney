@@ -18,9 +18,10 @@ using coney::studio::UserFolders;
 namespace fs = std::filesystem;
 
 TEST_CASE("the default projects folder is Coney Studio/Projects in the documents folder of each platform", "[studio]") {
-    // Expected: the issue's rule, SDL_GetUserFolder(SDL_FOLDER_DOCUMENTS) joined with `Coney Studio/Projects`; the
-    // three platforms' documents folders as SDL reports them: Windows and macOS `Documents`, Linux the XDG directory
-    // (which the user may have renamed or translated).
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the issue's rule,
+    // SDL_GetUserFolder(SDL_FOLDER_DOCUMENTS) joined with `Coney Studio/Projects`; the three platforms' documents
+    // folders as SDL reports them: Windows and macOS `Documents`, Linux the XDG directory (which the user may have
+    // renamed or translated).
     const coney::test::TempDir fake;
     const fs::path windows = fake.path() / "Users" / "ana" / "Documents";
     const fs::path mac = fake.path() / "Users" / "bo" / "Documents";
@@ -34,7 +35,8 @@ TEST_CASE("the default projects folder is Coney Studio/Projects in the documents
 }
 
 TEST_CASE("without a documents folder the default projects folder is in the home folder", "[studio]") {
-    // Expected: the issue's fallback, "the home folder ... when there is none".
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the issue's fallback, "the home folder ...
+    // when there is none".
     const coney::test::TempDir fake;
     const fs::path home = fake.path() / "home" / "dee";
     const auto folder = defaultProjectsFolder(UserFolders{.documents = std::nullopt, .home = home});
@@ -43,6 +45,8 @@ TEST_CASE("without a documents folder the default projects folder is in the home
 }
 
 TEST_CASE("the documents folder wins over home, and with neither there is no default", "[studio]") {
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none).
     const fs::path documents = fs::path("docs-root") / "Documents";
     const fs::path home = fs::path("home-root");
     CHECK(defaultProjectsFolder(UserFolders{.documents = documents, .home = home}) ==
@@ -53,7 +57,8 @@ TEST_CASE("the documents folder wins over home, and with neither there is no def
 }
 
 TEST_CASE("a trailing separator on the folder the platform reports changes nothing", "[studio]") {
-    // SDL ends the folders it reports with a separator (`C:\Users\ana\Documents\`).
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none). SDL ends the folders it reports with a separator (`C:\Users\ana\Documents\`).
     const coney::test::TempDir fake;
     const fs::path documents = fake.path() / "Documents";
     const fs::path withSeparator = documents / "";
@@ -64,6 +69,8 @@ TEST_CASE("a trailing separator on the folder the platform reports changes nothi
 }
 
 TEST_CASE("the projects folder is made with the folders above it on first use, and only then", "[studio]") {
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none).
     const coney::test::TempDir fake;
     const fs::path folder = fake.path() / "Documents" / "Coney Studio" / "Projects";
     REQUIRE_FALSE(fs::exists(folder));
@@ -76,6 +83,8 @@ TEST_CASE("the projects folder is made with the folders above it on first use, a
 }
 
 TEST_CASE("the projects folder cannot be made where a file is in the way", "[studio]") {
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none).
     const coney::test::TempDir fake;
     std::ofstream(fake.path() / "Documents") << "a file, not a folder";
     const auto made = ensureFolderExists(fake.path() / "Documents" / "Coney Studio" / "Projects");

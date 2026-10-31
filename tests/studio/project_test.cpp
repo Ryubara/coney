@@ -184,7 +184,8 @@ TEST_CASE("the File system lists a project folder, folders first, and nothing ab
 }
 
 TEST_CASE("a path goes to UTF-8 text and back, whatever letters it holds", "[studio]") {
-    // The text fields and SDL hold UTF-8; on Windows the narrow string of a path would lose the letter.
+    // Expected: docs/guides/studio/editor-experience.md#projects-folder, the design (Coney's own tooling; the original
+    // has none). The text fields and SDL hold UTF-8; on Windows the narrow string of a path would lose the letter.
     const std::filesystem::path path = std::filesystem::path(std::u8string(u8"projects/café über/yard"));
     const std::string text = coney::studio::pathToUtf8(path);
     CHECK(text.find("caf\xC3\xA9") != std::string::npos);
