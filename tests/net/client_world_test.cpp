@@ -11,10 +11,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <map>
 #include <memory>
 #include <numbers>
 #include <optional>
+#include <set>
 #include <vector>
 
 #include <catch2/catch_approx.hpp>
@@ -178,6 +180,41 @@ TEST_CASE("client world: a jump, a new clip and a new layer's fade are drawn as 
     CHECK(decoded.layers[1].clip == 5);
 }
 
+// Expected: unverified, #555 (Coney's own; a gait blend's clip is GaitBlendTask::animId(), the leading clip of its
+// pair, so it changes while the value and phase run on)
+TEST_CASE("client world: a gait blend crossing from the walk into the jog blends on, and names the clip its value "
+          "plays",
+          "[net][client_world]") {
+    // A walk speeding into a jog: the lower pair's walk leads at 0.9, the jog pair's jog at 1.1.
+    HumanState from = standing(0.0F);
+    from.layers[0] = HumanAnimLayer{.clip = 20, .playhead = 0.2F, .gait = 0.9F, .fade = 1.0F};
+    HumanState to = standing(0.1F);
+    to.layers[0] = HumanAnimLayer{.clip = 21, .playhead = 0.3F, .gait = 1.1F, .fade = 1.0F};
+
+    // A quarter of the way the value is still in the walk's pair: the walk named, the value and phase blended.
+    HumanState blended = blendHumans(from, to, 0.25F);
+    CHECK(blended.layers[0].gait == Approx(0.95F));
+    CHECK(blended.layers[0].playhead == Approx(0.225F));
+    CHECK(blended.layers[0].clip == 20);
+    // Three quarters of the way it is in the jog's pair: the jog named.
+    blended = blendHumans(from, to, 0.75F);
+    CHECK(blended.layers[0].gait == Approx(1.05F));
+    CHECK(blended.layers[0].playhead == Approx(0.275F));
+    CHECK(blended.layers[0].clip == 21);
+    // Slowing down is the same the other way.
+    blended = blendHumans(to, from, 0.75F);
+    CHECK(blended.layers[0].gait == Approx(0.95F));
+    CHECK(blended.layers[0].clip == 20);
+
+    // A clip with no gait value (any other task) into a gait blend is a cut, drawn as the newer snapshot has it.
+    HumanState other = standing(0.0F, 0.6F);
+    other.layers[0].clip = 9;
+    blended = blendHumans(other, to, 0.25F);
+    CHECK(blended.layers[0].clip == 21);
+    CHECK(blended.layers[0].gait == 1.1F);
+    CHECK(blended.layers[0].playhead == 0.3F);
+}
+
 // Expected: unverified, #555 (Coney's own; docs/guides/conventions.md#update-and-render's two-step blend)
 TEST_CASE("client world: each step draws the buffer's time, and a frame between two steps blends them through "
           "DrawnPoses",
@@ -224,6 +261,45 @@ TEST_CASE("client world: each step draws the buffer's time, and a frame between 
     const auto last = world.drawn(1.0F);
     CHECK(last.at(idOf(0)).state == world.humans().at(idOf(0)));
     CHECK(last.at(idOf(0)).pose.position.x == world.humans().at(idOf(0)).position.x);
+}
+
+// Expected: unverified, #555 (Coney's own; NetClient::receive() decodes every snapshot that arrived in a step)
+TEST_CASE("client world: every snapshot decoded since the last step goes into the buffer, not only the newest",
+          "[net][client_world]") {
+    SnapshotSender sender;
+    SnapshotReceiver receiver;
+    ClientWorld world;
+    // The snapshot of a human 0.1 m a step along at `step`, decoded and acknowledged, but not yet taken.
+    const auto decode = [&](std::uint32_t step) {
+        const Snapshot snapshot =
+            sender.build(step, std::vector<SnapshotHuman>{
+                                   {.id = idOf(0), .words = humanWords(standing(0.1F * static_cast<float>(step)))}});
+        REQUIRE(receiver.apply(snapshot) == SnapshotApplied::Applied);
+        REQUIRE(sender.acknowledge(snapshot.sequence).has_value());
+    };
+
+    // Four arrive before the client's first step: all four are buffered, so the clock starts the delay behind the
+    // newest, at the first.
+    for (std::uint32_t step = 0; step <= 3; ++step) {
+        decode(step);
+    }
+    world.receive(receiver);
+    CHECK(world.buffer().size() == 4);
+    world.step();
+    CHECK(world.shownTime() == std::optional<std::uint64_t>{0});
+
+    // Two arrive in one step: the older is drawn at its own step too, not blended across.
+    decode(4);
+    decode(5);
+    world.receive(receiver);
+    world.receive(receiver); // taking again adds nothing
+    CHECK(world.buffer().newestStep() == 5);
+    CHECK(world.buffer().size() == 6);
+    for (std::uint32_t shown = 1; shown <= 2; ++shown) {
+        world.step();
+        REQUIRE(world.shownTime() == std::optional<std::uint64_t>{shown * kTimeUnitsPerStep});
+        CHECK(world.buffer().sample()->toStep == shown);
+    }
 }
 
 // Expected: unverified, #555 (Coney's own; the pose is AnimTaskStack::sample()'s,
@@ -376,20 +452,55 @@ TEST_CASE("client world: once the jitter buffer settles, every field the client 
 
     ClientWorld world;
     std::map<std::uint32_t, std::map<NetId, HumanState>> sent; // what the server's game had at each step
+    std::map<std::uint32_t, std::uint32_t> sentStep;           // the server's step of each snapshot sequence sent
+    std::set<std::uint32_t> decoded;                           // the steps whose snapshot the client decoded
+    std::set<std::uint32_t> sampled;                           // the steps the buffer's samples blended to or from
+    std::uint32_t seen = 0;                                    // the newest sequence looked at
     std::uint32_t step = 0;
+    std::optional<std::uint64_t> firstShown;
     int compared = 0;
+    int missed = 0;  // shown on a decoded snapshot's step, but not drawn from that snapshot
+    int between = 0; // shown between two whole steps (while easing)
+    int lost = 0;    // shown on a step whose snapshot the client never decoded
     int settled = 0;
     int counted = 0;
+    std::uint64_t leastDelay = std::numeric_limits<std::uint64_t>::max();
+    std::uint64_t mostDelay = 0;
     const auto stepGame = [&] {
+        // What the client decoded this step, every snapshot of it, and not only the newest.
+        const SnapshotReceiver& snapshots = session.client.snapshots();
+        for (std::uint32_t sequence = seen + 1; sequence <= snapshots.newest(); ++sequence) {
+            if (snapshots.holding(sequence) != nullptr) {
+                decoded.insert(sentStep.at(sequence));
+            }
+        }
+        seen = snapshots.newest();
         // The client's step: what arrived goes into the buffer, and the buffer's time is drawn.
-        world.receive(session.client.snapshots());
+        world.receive(snapshots);
         world.step();
         if (step >= 90) { // three seconds to settle
             ++counted;
             settled += world.buffer().settled() ? 1 : 0;
+            leastDelay = std::min(leastDelay, world.buffer().delay());
+            mostDelay = std::max(mostDelay, world.buffer().delay());
             const auto sample = world.buffer().sample();
             const auto shown = world.shownTime();
-            if (sample.has_value() && shown.has_value() && sample->toStep * kTimeUnitsPerStep == *shown) {
+            REQUIRE(sample.has_value());
+            REQUIRE(shown.has_value());
+            firstShown = firstShown.value_or(*shown);
+            sampled.insert(sample->fromStep);
+            sampled.insert(sample->toStep);
+            const bool whole = *shown % kTimeUnitsPerStep == 0;
+            if (whole && decoded.contains(static_cast<std::uint32_t>(*shown / kTimeUnitsPerStep)) &&
+                sample->toStep * kTimeUnitsPerStep != *shown) {
+                ++missed; // the client had this step's snapshot, but blended across it
+            }
+            if (!whole) {
+                ++between;
+            } else if (!decoded.contains(static_cast<std::uint32_t>(*shown / kTimeUnitsPerStep))) {
+                ++lost;
+            }
+            if (sample->toStep * kTimeUnitsPerStep == *shown) {
                 // On a step a snapshot shows: the very humans the server had then, each field its word.
                 const auto& expected = sent.at(sample->toStep);
                 REQUIRE(world.humans().size() == expected.size());
@@ -407,15 +518,36 @@ TEST_CASE("client world: once the jitter buffer settles, every field the client 
             snapshot.push_back({.id = id, .words = humanWords(human)});
         }
         session.server.sendSnapshots(step, snapshot);
+        REQUIRE(session.server.clients().size() == 1);
+        sentStep.emplace(session.server.clients().front().snapshots.sequence(), step);
         sent.emplace(step, humans);
         ++step;
     };
     session.run(400, stepGame);
     REQUIRE(session.client.state() == ClientState::Connected);
-    CHECK(compared > 200); // most steps: the rest lost their snapshot, or fell between steps while easing
+    REQUIRE(firstShown.has_value());
+
+    // Every snapshot the client decoded reached the buffer: each step one shows, from the first drawn to the last, was
+    // blended to or from, and drawn exactly when the clock was on it.
+    int unbuffered = 0;
+    const auto lastShown = static_cast<std::uint32_t>(*world.shownTime() / kTimeUnitsPerStep);
+    for (const std::uint32_t decodedStep : decoded) {
+        if (decodedStep * kTimeUnitsPerStep >= *firstShown && decodedStep <= lastShown &&
+            !sampled.contains(decodedStep)) {
+            ++unbuffered;
+        }
+    }
+    CHECK(unbuffered == 0);
+    CHECK(missed == 0);
+    // Every step drawn is compared but those whose snapshot the client never decoded: lost on the link, or overtaken
+    // by a newer one while reordered (so stale). On this seeded link that is 23 of the 310 (measured, the same each
+    // run); no step fell between whole steps, since the clock never had to ease.
+    CHECK(compared + lost == counted);
+    CHECK(between == 0);
+    CHECK(compared >= 287);
     CHECK(settled * 10 >= counted * 9);
     CHECK(world.buffer().snaps() == 0);
-    // It draws the past, about the delay behind the newest snapshot.
-    CHECK(world.buffer().delay() <= 5 * kTimeUnitsPerStep);
-    CHECK(world.buffer().delay() >= 1 * kTimeUnitsPerStep);
+    // It draws the past, about the delay behind the newest snapshot, at every step (1 to 3 steps, measured).
+    CHECK(leastDelay >= 1 * kTimeUnitsPerStep);
+    CHECK(mostDelay <= 5 * kTimeUnitsPerStep);
 }
