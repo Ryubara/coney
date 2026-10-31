@@ -82,10 +82,19 @@ reason, so the coordinator starts the work or waives. A start ends it at once: t
   the turn with a note shown to the user and a line in `coney-hooks.log`. And the tool lets a session's turn end after
   `tasks.start.fill.block.max_in_a_row` blocks in a row, counting again after `reset_minutes` without a
   block; a pass clears the count, and a counter that cannot be written never blocks.
-- **It is quick.** Every turn end runs it, so the lists it reads from GitHub are cached. Each `gh`
+- **It is quick.** Every turn end runs it, so the reads are few and the answers cached. A normal run makes five `gh`
+  calls, however many issues there are: the ready issues (`gh issue list`), the claim cards of every issue assigned to
+  the account (one GraphQL search with each issue's first 100 comments; an issue with more is read on its own), the
+  states of every blocker the ready issues name (one GraphQL query, 100 numbers at most; a number GitHub does not know
+  warns only for the issues that name it), and the pull requests with the branch's required checks. A test
+  (`test_a_realistic_run_makes_a_handful_of_gh_calls`) pins the count for 20 assigned and 30 ready issues. Each `gh`
   call is killed after `github_seconds`, all the reads together stop at `budget_seconds`, and the answers are kept
   `cache_seconds` in the scratch folder, dropped as soon as a task file or unit record is newer than them (so a claim
-  made a moment ago shows). The hook waits longer than the tool's longest run (`TIMEOUT`, held there by a test).
+  made a moment ago shows). The budget is for a slow GitHub, never for the number of issues: when the reads together
+  do pass it, the warning says "the reads together took longer than the <budget_seconds> s allowed for all of them (N
+  gh calls made)", names every issue whose blockers were not read in one line, and the check passes. Do not raise the
+  budget to cure a warning; count the calls. The hook waits longer than the tool's longest run (`TIMEOUT`, held there
+  by a test).
 - **It does not copy the rules.** Every number is the tool's, read from the conventions; the hook knows only the exit
   code, the word `Blocked:` and the role.
 

@@ -234,6 +234,8 @@ def analyse_issues(
     game_found = 0
     networking_found = 0
     renderer_found = 0
+    #: The issues whose blockers could not be read, by the reason: one warning for each, not one for each issue.
+    unread: dict[str, list[int]] = {}
     for issue in sorted(pool, key=lambda item: _priority(item, fill.priority_order)):
         if (
             len(eligible) - networking_found - renderer_found >= want
@@ -249,7 +251,7 @@ def analyse_issues(
             open_blockers = sources.blockers(issue)
         except ConfigError as error:
             open_blockers = []
-            warnings.append(f"whether #{issue.number} is blocked was not read ({error})")
+            unread.setdefault(str(error), []).append(issue.number)
         if open_blockers:
             blocked.append(f"#{issue.number} (by {', '.join(f'#{n}' for n in open_blockers)})")
             continue
@@ -265,6 +267,10 @@ def analyse_issues(
         renderer_found += track == "renderer"
         if not exempt:
             room -= 1
+    for reason, numbers in unread.items():
+        names = ", ".join(f"#{number}" for number in numbers)
+        verb = "is" if len(numbers) == 1 else "are"
+        warnings.append(f"whether {names} {verb} blocked was not read ({reason})")
     # The reasons are kept when some issue can start too: a place that cannot take it (the kept game place and a
     # Studio issue) is then left free for these.
     if blocked:
