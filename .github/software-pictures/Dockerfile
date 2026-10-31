@@ -20,13 +20,18 @@ ARG LLVM=1:20.1.2-0ubuntu1~24.04.3
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Read the packages from the snapshot of that day, not from the live archive. The URI is http:// on purpose: the base
-# image has no ca-certificates yet (it is installed below, from this very source), so an https source could not be
-# verified on the first `apt-get update`. Nothing is lost: apt checks every index against the archive's signing key
-# (`Signed-By`, the keyring the base image ships) and every package against its index's hashes, and the snapshot serves
-# the archive's own signed files. Installing ca-certificates first from the live archive would have used a source that
-# moves and could not hold the exact versions, which is the pin's point.
-RUN printf 'Types: deb\nURIs: http://snapshot.ubuntu.com/ubuntu/%s\nSuites: noble noble-updates noble-security\nComponents: main universe\nSigned-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n' "$SNAPSHOT" \
+# The base image has no ca-certificates, and the snapshot service answers every http request with a redirect to https
+# (the first CI run of this job failed on that), so the certificates come first, from the image's own package source.
+# They are not part of the pin: they only let apt open the https snapshot, and every package that matters is checked
+# against the archive's signing key below.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Read the packages from the snapshot of that day, not from the live archive. Signed-By keeps the archive's own signing
+# key (the keyring the base image ships) as the one that vouches for every index, and every package is checked against
+# its index's hashes.
+RUN printf 'Types: deb\nURIs: https://snapshot.ubuntu.com/ubuntu/%s\nSuites: noble noble-updates noble-security\nComponents: main universe\nSigned-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n' "$SNAPSHOT" \
       > /etc/apt/sources.list.d/ubuntu.sources \
     && rm -f /etc/apt/sources.list
 
@@ -37,7 +42,7 @@ RUN apt-get -o Acquire::Check-Valid-Until=false update \
          "libgl1-mesa-dri=$MESA" "libglx-mesa0=$MESA" "libegl-mesa0=$MESA" "libgbm1=$MESA" "mesa-libgallium=$MESA" \
          "libglapi-mesa=$GLAPI" "libllvm20=$LLVM" \
          libgl1 libegl1 libx11-6 libxext6 libxcursor1 libxfixes3 libxi6 libxrandr2 libxss1 libxtst6 libxkbcommon0 \
-         xvfb xauth ca-certificates \
+         xvfb xauth \
     && rm -rf /var/lib/apt/lists/* \
     && test "$(dpkg-query -W -f='${Version}' libgl1-mesa-dri)" = "$MESA" \
     && test "$(dpkg-query -W -f='${Version}' mesa-libgallium)" = "$MESA" \

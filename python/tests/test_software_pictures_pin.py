@@ -51,12 +51,18 @@ def test_every_action_the_job_uses_is_pinned_to_a_commit() -> None:
             assert re.search(r"@[0-9a-f]{40}$", match.group(1)), f"not pinned to a commit: {match.group(1)}"
 
 
-def test_the_snapshot_source_is_plain_http_because_the_base_image_has_no_ca_certificates() -> None:
-    # The base image ships without ca-certificates (the Dockerfile installs it from this source), so an https source
-    # fails certificate verification on the first update; Signed-By keeps the plain one authenticated.
+def test_the_snapshot_is_read_over_https_after_ca_certificates_came_from_the_base_images_own_source() -> None:
+    # The snapshot service redirects every http request to https, and the base image ships without ca-certificates, so a
+    # source written first fails certificate verification on the first update (the first CI run of the job failed that
+    # way). The certificates come first, from the base image's own source, before the snapshot source is written.
     source = re.search(r"URIs: (\S+?)/ubuntu/%s", DOCKERFILE)
-    assert source is not None and source.group(1).startswith("http://")
+    assert source is not None and source.group(1).startswith("https://")
     assert "Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg" in DOCKERFILE
+    certificates = DOCKERFILE.index("install -y --no-install-recommends ca-certificates")
+    assert certificates < DOCKERFILE.index("snapshot.ubuntu.com/ubuntu/%s")
+    # Mesa's versions are read from the snapshot alone: ca-certificates is not in the pinned install any more.
+    pinned = DOCKERFILE[DOCKERFILE.index('"libgl1-mesa-dri=$MESA"') :]
+    assert "ca-certificates" not in pinned.split("&&")[0]
 
 
 def test_the_job_passes_while_there_are_no_references_and_is_not_yet_a_required_check() -> None:
