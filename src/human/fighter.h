@@ -784,10 +784,20 @@ class Fighter {
                    HumanAnimator& animator);
     // The grabber's connecting clip for the side the grab is on; the victim plays the next id.
     [[nodiscard]] std::uint32_t connectClip() const { return static_cast<std::uint32_t>(m_connect + (m_rear ? 2 : 0)); }
-    // A strong grapple's connect or the mount's pick-up (`clip`) has ended in the hold: the victim takes the clip's
-    // damage, reported as the hold's id (docs/research/combat-grabs.md#strong-grapple, #mount).
+    // What landGrapple() dealt, for scoreGrapple() once the victim is in the hold: whether the hit landed (the grabber
+    // had power) and whether it may earn rage (the victim had health before it).
+    struct LandedGrapple {
+        bool landed = false;
+        bool scoresRage = false;
+    };
+    // A strong grapple's connect or the mount's pick-up (`clip`) has ended, before the reach gate: the victim takes the
+    // clip's damage, reported as the hold's id (docs/research/combat-grabs.md#strong-grapple, #mount).
     // @orig 0x0026bad8 Grab_ConnectEnd (unknown)
-    void landGrapple(const FighterInput& input, std::uint32_t clip);
+    LandedGrapple landGrapple(const FighterInput& input, std::uint32_t clip);
+    // The gate has passed and the victim is snapped: the hit landGrapple() dealt scores as `clip` (rage and the repeat
+    // note), as Grab_ConnectEnd scores only after the snap.
+    // @orig 0x0026bad8 Grab_ConnectEnd (unknown)
+    void scoreGrapple(const FighterInput& input, std::uint32_t clip, LandedGrapple landed);
     // During its grab's or tackle's intro, the victim's counter press (Holdable::takeCounterPress()), face to face:
     // the hold ends, the victim plays the counter (76 or 9) and this human the reaction from the victim's set (77 or
     // 10), takes the counter's damage and is stunned. Returns whether it played.

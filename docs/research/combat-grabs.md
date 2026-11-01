@@ -751,10 +751,14 @@ in the fight-stance idle, not mounting, the victim is grounded and not mounted, 
 
 **Where Coney differs: the pick-up's end** ([The mount](#mount), #684). At the end of 248 Coney runs the connect's end
 as the original does (`Fighter::followPairClips`, `Fighter::landGrapple`): with power left the victim takes 248's
-damage-table value first, then the gate lets a victim out of reach go, otherwise the snap and attach, and the hit scores
-as 248; a grab's connect end deals its clip's value before the gate in the same way. A stand-in at both: the gate has no
-clear-line test, the victim's coin-flip circle escape or reverse is not run (a held human's command does not reach the
-grabber), and with no power Coney still gates and snaps where the original does neither. The pick-up also skips parts of
+damage-table value first, then the gate lets a victim out of reach go, otherwise the snap and attach, and only then
+does the hit score as 248 (`Grab_ScoreMove`, `0x00264fa0`); a grab's connect end deals its clip's value before the gate
+and scores after the snap in the same way, so a strong grapple's victim out of reach is hurt and let go with no rage
+earned. A stand-in at both: the gate has no clear-line test (`Human_IsClearToTarget`, `0x0021c240`); the escape the
+original always gives a victim in state 0x20000 after the snap, and the victim's coin-flip circle escape or reverse
+(`Grab_Reverse`), are not run, as Coney's held human reports its commands only once attached and the reverse is not
+ported, so the move always scores; and with no power Coney still gates and snaps where the original does neither,
+since a victim left unattached would refuse every move in the hold. The pick-up also skips parts of
 `Tackle_End` (`0x0022c388`) and `Grab_Link`: the move styles (0xc, 0xb, 7, 8), the cleared states 0x400 / 0x800,
 `Human_GoDown` for either human in state 0x80000, the fight stance, speech command 8, the victim's brain target and
 tutorial hint 0xe. The get-off's 0.2 s blends from 244 and 199 into the idles are cuts in Coney.

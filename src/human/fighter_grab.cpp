@@ -238,20 +238,25 @@ void Fighter::followPairClips(const FighterInput& input, HumanAnimator& animator
                                             m_rear ? kRearHoldOffset : kFrontHoldOffset);
         // The connect's end (`Grab_ConnectEnd` `0x0026bad8`), which `Mount_ReturnToFrontGrab` `0x00271808` hangs on
         // the pick-up 248 too: with power left the victim takes the ended clip's damage-table value (a plain grab's 72
-        // deals none) before the gate, so a victim out of reach is hurt and let go; otherwise the snap.
-        // **Stand-in** (#684): the gate does not test for a clear line (`Human_IsClearToTarget`), the victim's
-        // coin-flip circle escape or reverse is not run (a held human's command does not reach the grabber), and with
-        // no power the original skips the gate and the snap where Coney gates and snaps.
-        if (pickedUp) {
-            landGrapple(input, pickUp);
-        } else if (connectEnded && m_connect != static_cast<int>(clips::kGrabFrontEnd)) {
-            landGrapple(input, connectClip());
+        // deals none) before the gate, so a victim out of reach is hurt and let go with nothing scored; otherwise the
+        // snap, and only then the move scores (`Grab_ScoreMove` `0x00264fa0`).
+        // **Stand-in** (#684): the gate does not test for a clear line (`Human_IsClearToTarget` `0x0021c240`, not
+        // ported). After the snap the original lets a victim in state 0x20000 escape at once, and a victim pressing
+        // circle escapes or reverses the grab on a coin flip, scoring nothing; Coney runs neither, as its held human
+        // reports its commands only once attached (heldInGrab()) and `Grab_Reverse` is not ported, so the move always
+        // scores. With no power the original skips the gate and the snap; Coney gates and snaps, since a victim left
+        // unattached would make every move in the hold refuse (victimInPlace()).
+        const std::uint32_t ended = pickedUp ? pickUp : connectClip();
+        LandedGrapple landed;
+        if (pickedUp || (connectEnded && m_connect != static_cast<int>(clips::kGrabFrontEnd))) {
+            landed = landGrapple(input, ended);
         }
         if ((connectEnded || pickedUp) && !holdGatePasses(input.position, m_held->position(), anim::length(offset))) {
             releaseHold(animator, false);
             return;
         }
         snapAttach(input, heading, offset, m_rear ? 0.0F : kPi);
+        scoreGrapple(input, ended, landed);
     }
     detachForSpin(animator);
 }
@@ -316,12 +321,12 @@ void Fighter::connect(const FighterInput& input, HumanAnimator& animator, float 
     m_pair = PairStage::Moving;
 }
 
-void Fighter::landGrapple(const FighterInput& input, std::uint32_t clip) {
+Fighter::LandedGrapple Fighter::landGrapple(const FighterInput& input, std::uint32_t clip) {
     // With power left, the victim takes the damage table's value of the clip that ended (`Grab_ConnectEnd`). The hit
-    // is reported as the hold's id, which is playing when the victim applies it: the tutorial waits for 82 or 84. It
-    // scores as the clip.
+    // is reported as the hold's id, which is playing when the victim applies it: the tutorial waits for 82 or 84.
+    // Whether it may earn rage is read before the hit (`Hit_Score` gives none on a man already out of health).
     if (m_held == nullptr || m_combat.power().value() <= 0) {
-        return;
+        return {};
     }
     const auto strike = static_cast<int>(clip);
     const int damage = quarteredFor(*m_held, m_ranges != nullptr ? combat::strikeDamage(*m_ranges, strike) : 0);
@@ -340,7 +345,16 @@ void Fighter::landGrapple(const FighterInput& input, std::uint32_t clip) {
     if (m_player) {
         m_strikes.push_back(hold);
     }
-    if (scores) {
+    return {.landed = true, .scoresRage = scores};
+}
+
+void Fighter::scoreGrapple(const FighterInput& input, std::uint32_t clip, LandedGrapple landed) {
+    // The move scores as the clip (`Grab_ScoreMove`), once the victim is in the hold.
+    if (!landed.landed) {
+        return;
+    }
+    const auto strike = static_cast<int>(clip);
+    if (landed.scoresRage) {
         earnRage(strike, input.nowMs, false);
     }
     m_repeat.note(strike, input.nowMs);

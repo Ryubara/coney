@@ -1195,7 +1195,7 @@ coney = "src/human/fighter.h:Fighter::followPairClips"
 status = "compared"
 
 [[function.gaps]]
-what = "the victim's coin-flip circle escape or reverse is not run, the gate has no clear-line test (Human_IsClearToTarget), and with no power Coney still gates and snaps where the original does neither"
+what = "the escape after the snap for a victim in state 0x20000 and the victim's coin-flip circle escape or reverse (Grab_Reverse) are not run, so the move always scores; the gate has no clear-line test (Human_IsClearToTarget); and with no power Coney still gates and snaps where the original does neither"
 relation = "stand-in"
 issue = 684
 
@@ -1464,7 +1464,7 @@ relation = "not-ported"
 issue = 684
 
 [[function.gaps]]
-what = "248's end hook Grab_ConnectEnd (0x0026bad8) is ported for the pick-up but for two parts, a stand-in at the code: the clip's damage-table value with the grabber's power above 0, the release when the victim is out of reach and the move's scoring run (Fighter::followPairClips, landGrapple); the victim's coin-flip circle escape or reverse is not run (at a connect's end either), and with no power Coney still gates and snaps where the original does neither"
+what = "248's end hook Grab_ConnectEnd (0x0026bad8) is ported for the pick-up but for two parts, a stand-in at the code: the clip's damage-table value with the grabber's power above 0, the release when the victim is out of reach and the move's scoring after the snap run (Fighter::followPairClips, landGrapple, scoreGrapple); the escape for a victim in state 0x20000 and the victim's coin-flip circle escape or reverse is not run (at a connect's end either), and with no power Coney still gates and snaps where the original does neither"
 relation = "stand-in"
 issue = 684
 

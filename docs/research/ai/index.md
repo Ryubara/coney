@@ -586,7 +586,7 @@ r-20261031-civ-grab-1331. The ids are those of record `+0x20`:
 | 127 | the mount, 210 | 207 |
 | 129 | command `0xd`, no stick: the pick-up, 248 | 249 |
 | 165 | front hold 82 | 83 |
-| 167 | command `0xd` with the stick at 1.0: a wall throw, 161 (155 in the other run) | 162 (156), 80 damage, down |
+| 167 | command `0xd` with the stick at 1.0: a wall throw, 155 (161 in the other run, which has no record) | 156 (162), 80 damage, down |
 
 So each hold of the player lasted **2 updates**: on its second update the grabbing goal's first pick was a throw, and
 the throw ended the grab. The press is the circle **tap's** command `0xd` with a full stick, written by
