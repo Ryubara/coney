@@ -126,6 +126,51 @@ TEST_CASE("the mesh views draw a model as the game does while off and put its ma
     }
 }
 
+namespace {
+
+// How many times staleDrawElements was called.
+int staleDraws = 0;
+
+// Stands in for an OpenGL entry point an earlier renderer loaded and left behind: glad keeps its pointers after that
+// renderer's context is gone, so a NULL engine started after it still sees them set (issue #1268).
+void APIENTRY staleDrawElements(GLenum /*mode*/, GLsizei /*count*/, GLenum /*type*/, const void* /*indices*/) {
+    ++staleDraws;
+}
+
+// Puts glad's glDrawElements back however the test ends.
+struct RestoreDrawElements {
+    PFNGLDRAWELEMENTSPROC saved = glad_glDrawElements;
+    ~RestoreDrawElements() { glad_glDrawElements = saved; }
+    RestoreDrawElements() = default;
+    RestoreDrawElements(const RestoreDrawElements&) = delete;
+    RestoreDrawElements& operator=(const RestoreDrawElements&) = delete;
+    RestoreDrawElements(RestoreDrawElements&&) = delete;
+    RestoreDrawElements& operator=(RestoreDrawElements&&) = delete;
+};
+
+} // namespace
+
+TEST_CASE("a flat pass on the NULL backend leaves librw alone though OpenGL was loaded before", "[mesh]") {
+    // Expected: unverified, #1268 (the NULL backend draws nothing; a whole test run started OpenGL windows first)
+    const RestoreDrawElements restore;
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    const coney::characters::CharacterModel model = fixtureModel();
+    {
+        coney::platform::CharacterMesh mesh(model, nullptr);
+        coney::debug::DebugDrawOptions options;
+        options.mesh.view = coney::debug::MeshShading::Material;
+        coney::platform::MeshViews views(options);
+        const std::vector<MaterialLook> before = looksOf(mesh.atomic());
+        glad_glDrawElements = staleDrawElements;
+        staleDraws = 0;
+        views.draw(mesh.atomic(), coney::platform::DrawKind::Humans, false, [] {});
+        CHECK(staleDraws == 0);
+        CHECK(views.passDraws() == model.clump.materials.size());
+        CHECK(looksOf(mesh.atomic()) == before);
+    }
+}
+
 TEST_CASE("the scene counters count each draw as the kind its scope names", "[mesh][perf]") {
     // Expected: unverified, #210 (docs/guides/performance.md#counters)
     using coney::platform::DrawKind;
