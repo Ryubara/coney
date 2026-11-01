@@ -159,8 +159,9 @@ if(CONEY_DEBUG_TOOLS)
     add_test(NAME coney_studio.start_screen
              COMMAND coney-studio --settings "${CMAKE_CURRENT_BINARY_DIR}/studio-smoke-preferences.toml" --new-project-dialog
                      --frames 10 --no-activate --screenshot "${CMAKE_CURRENT_BINARY_DIR}/studio-start.png")
-    set_tests_properties(coney_studio.start_screen PROPERTIES TIMEOUT 60 SKIP_RETURN_CODE 77 LABELS studio
-                         FIXTURES_REQUIRED studio_smoke PASS_REGULAR_EXPRESSION "studio: 10 frames, project none")
+    set_tests_properties(coney_studio.start_screen PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD} SKIP_RETURN_CODE 77
+                         LABELS studio FIXTURES_REQUIRED studio_smoke
+                         PASS_REGULAR_EXPRESSION "studio: 10 frames, project none")
 endif()
 
 # The release build's smoke tests, on its entry point in every build: it starts and stops headless, prints a player's
