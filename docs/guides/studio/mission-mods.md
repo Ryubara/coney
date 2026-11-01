@@ -593,6 +593,14 @@ A mission names exactly one of `after` and `replace`. A project with a `[story]`
 enabled every story game is a modded session ([Modded saves and replays](mods.md#saves-replays)), whatever its
 `autostart`, and its scripts run when its missions' levels do.
 
+**Built** ([#1301](issue:1301)): `story::parseStorySection` (`repo:src/core/story_manifest.h`) reads the section from a
+manifest's whole text and skips every other table, so the rest of the manifest keeps its own reader. A `[story]`
+table alone is a story mod with no missions. A manifest is refused, with its line or its mission named, for a broken
+line, `[story.missions]` written as a plain table, a mission without a valid id (1-64 lower case letters, digits and
+'-'), an id used twice in the mod, a mission without a `level`, one naming both or neither of `after` and `replace`,
+and a `chapter` without an `after = "hub:<n>"`. Anchors and guards are written as story ids: `level80`, `hub:6`, or a
+mod's mission as `<mod>.<id>`, the mod's own included.
+
 ### Anchors {#anchors}
 
 | Anchor | Where the mission goes | What follows it |
@@ -609,27 +617,45 @@ enabled every story game is a modded session ([Modded saves and replays](mods.md
 - **Anchoring on a replaced mission** places the mission after its replacement, since the anchor names a place in the
   story.
 - **Hub chapters 11 and 12** offer nothing in the original; a mission after either is a mission after the story's end.
+- **Only a mission is replaced.** A `replace` naming a hub chapter is refused ("aaa.x: 'hub:3' is a hub chapter, not
+  a mission"); a replaced side step (`level64`) leaves its replacement a side step.
 
 ### Merging and refusals {#graph-merge}
 
 The graph is built when the mods start, before any script runs, from the seed and each story mod's missions, mods in
 load order ([Load order](mods.md#load-order)) and each mod's missions in manifest order:
 
-- **Two missions on one anchor** go in load order: the first placed nearest the anchor, the next after it. The Mods
-  screen can swap them, and the swap is kept in `enabled.toml` with both package hashes, as a script merge choice is
-  ([Two mods patching one script](#two-mods)).
+- **Two missions on one anchor** go in load order: the first placed nearest the anchor, the next after it and after
+  everything placed after the first (its new hub chapter, a mission anchored on it), so on a hub chapter the first
+  mission's new chapter offers the second. The Mods screen can swap them, and the swap is kept in `enabled.toml` with
+  both package hashes, as a script merge choice is ([Two mods patching one script](#two-mods)).
+- **An anchor not placed yet** (a mission of a mod later in load order, or later in the same manifest) makes the
+  mission wait: after each mission placed or refused, the earliest waiting one takes its turn again, so it is placed as
+  soon as its anchor is. What still waits when no turn changes anything is refused, by the next three rules.
 - **A missing anchor** (an id no step has, a hub chapter outside 1-12, a mission of a mod that is off or refused)
   refuses that mission with a message naming the mod, the mission and the anchor ("yard-brawl.alley: no story step
-  'level70'"); the rest of the story plays. A mission anchored on a refused one is refused the same way.
+  'level70'"); the rest of the story plays. A mission anchored on a refused one is refused the same way
+  ("yard-brawl.roof: story step 'yard-brawl.alley' was refused").
 - **A `before` guard** refuses the mission when, at its turn in the merge, the step after its anchor is not the one
-  named: another mod has moved in, and the author asked to be told.
-- **A cycle** (`a` after `b`, `b` after `a`) refuses every mission in it, with one message naming the cycle, as a
-  dependency cycle does ([Dependencies](mods.md#dependencies)).
-- **Two replacements of one mission**: the first in load order takes the place and the other is refused, until the
-  player chooses on the Mods screen ([For the user](#graph-questions)).
+  named: another mod has moved in, and the author asked to be told ("bbb.y: expected 'level87' after 'level80', found
+  'aaa.x'"). A guard naming a replaced mission means its replacement.
+- **A cycle** (`a` after `b`, `b` after `a`) refuses every mission in it, with one message naming the cycle ("story
+  cycle: aaa.x, bbb.y, aaa.x"), as a dependency cycle does ([Dependencies](mods.md#dependencies)).
+- **Two replacements of one mission**: the first in load order takes the place and the other is refused ("bbb.y:
+  'level86' is already replaced by 'aaa.x'"), until the player chooses on the Mods screen ([#1304](issue:1304)).
 - **A mission whose level or script is missing** from the package is refused at the mod's check, before the merge.
 
-Without story mods the merge is the seed and nothing else: no question is asked and nothing is written.
+Without story mods the merge is the seed and nothing else: no question is asked and nothing is written, and the
+graph's hash is the seed's.
+
+**Built** ([#1301](issue:1301)): `story::mergeStory` (`repo:src/core/story_merge.h`) takes the seed and the enabled
+story mods in load order and gives the merged graph, the missions placed (each with its manifest entry, for the
+readers below), the refusals with their messages, and whether the session is modded: any story mod given makes it so,
+even one whose missions were all refused. A mod's step carries its story id in `StoryStep::modId`; its level number is
+0 until the natives give it one from the pool ([#1300](issue:1300)), and the new hub chapters play once
+[#1302](issue:1302) is built. Nothing calls the merge yet: Coney does not start mods yet, and the story session holds
+the seed. `repo:tests/core/story_merge_test.cpp` and `repo:tests/core/story_manifest_test.cpp` check each rule above
+on synthetic manifests.
 
 ### The Mods screen's story view {#graph-mods-screen}
 
@@ -691,20 +717,20 @@ Written first, before the natives:
   in both load orders, a missing anchor, a failed `before`, a cycle and two replacements of one mission each give the
   chain and the messages expected; with no story mod the graph's hash equals the seed's.
 
-### For the user {#graph-questions}
+### Questions decided {#graph-questions}
 
-- **For the user: the natives without mods.** The design sets the two natives in every session, so there is one path,
-  proved equal to the original by the disc test. The other choice is to leave the game's own Lua functions in place
-  when no story mod is enabled, so an unmodded game runs the original's tables exactly, at the cost of two paths.
-  Which does the user want?
-- **For the user: two replacements of one mission.** The design lets the first in load order win and the Mods screen
-  offer the choice. Should both be refused instead until the player chooses?
-- **For the user: a new hub chapter without a script.** The design's default chapter is chapter *n*'s environment and a
-  red circle at the next giver, with no cut-scene. Is that enough, or should a mod that anchors on a hub chapter have to
-  bring its own chapter script?
-- **For the user: mod missions on the original's screens.** The design lists completed mod missions on the mission menu
-  (by `area` and `label`) and the statistics screen (after the original's). The other choice keeps those screens to the
-  original's missions and lists mod missions only at the Mods screen's `missions` point. Which does the user want?
+The four questions the design asked were settled for [#1301](issue:1301) by the coordinator under the maintainer's
+grant, 2026-11-01:
+
+- **The natives without mods.** The two natives are set in every session, mods or none: one path, proved equal to the
+  original by the disc test.
+- **Two replacements of one mission.** The first in load order wins and the second is refused with its message; the
+  Mods screen offers the choice ([#1304](issue:1304)).
+- **A new hub chapter without a script.** Coney's default chapter is the default: chapter *n*'s environment and a red
+  circle at the next giver, with no cut-scene; a mod's `chapter` script is optional.
+- **Mod missions on the original's screens.** Left open, outside #1301: whether completed mod missions join the
+  mission menu and the statistics screen or stay at the Mods screen's `missions` point. The merge keeps what either
+  needs: each placed mission's `title`, `area` and `label` (`story::PlacedMission`).
 
 ## The order of the work {#order}
 
@@ -755,7 +781,7 @@ When this design is accepted:
 4. **Decided: the story graph's frame** ([#1178](issue:1178)): the order as data seeded with the original's rows, read
    by two `@coney-only` natives, progress by mission id, missions placed by anchor in the manifest, load order on a
    shared anchor with a swap on the Mods screen, the original's forgetting kept, a story with mod missions a modded
-   session. Its open choices are [For the user](#graph-questions).
+   session. Its open choices are settled in [Questions decided](#graph-questions), one left open there.
 
 ## Open questions {#open-questions}
 
@@ -836,8 +862,8 @@ Under [#1054](issue:1054), in order; the save format is [#1179](issue:1179)'s.
    [In Coney](../../research/story-progress.md#coney)): the chain, its views and the walk and disc tests.
 2. **core: Add native runNextMission and findLastMission over the graph** ([#1300](issue:1300)): the two natives, the
    hub's offer written into `fRunMission`, level numbers for mod missions from the pool of free numbers 2-59.
-3. **core: Add the manifest's story section and the story graph merge** ([#1301](issue:1301)): `[story]`, anchors, the
-   merge and its refusals.
+3. **core: Add the manifest's story section and the story graph merge** ([#1301](issue:1301), built:
+   [Merging and refusals](#graph-merge)): `[story]`, anchors, the merge and its refusals.
 4. **core: Add hub chapters that mod missions open** ([#1302](issue:1302)): a new chapter at chapter *n*'s time, the
    mod's chapter script or Coney's default chapter.
 5. **core: Add story progress by mission id to the save** ([#1303](issue:1303)): mod missions' completion, ranks and

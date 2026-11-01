@@ -9,8 +9,8 @@
 #include <system_error>
 #include <utility>
 
+#include "core/toml_lite.h"
 #include "studio/project_manifest.h"
-#include "studio/toml_lite.h"
 
 namespace coney::studio {
 
