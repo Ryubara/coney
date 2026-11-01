@@ -339,7 +339,17 @@ def test_task_check_holds_the_activity_while_it_runs(space: Space, monkeypatch: 
 
     monkeypatch.setattr(task_check, "run_check", run_check)
     args = argparse.Namespace(
-        name=None, worktree=tree, base=None, agent="a", profile=None, keep_going=False, dry_run=False, max_wait=1.0
+        name=None,
+        worktree=tree,
+        base=None,
+        agent="a",
+        profile=None,
+        keep_going=False,
+        dry_run=False,
+        max_wait=1.0,
+        result=False,
+        detach=False,
+        result_file=None,
     )
     assert task_check.run(args) == 0
     assert seen == [{"1-check"}]
