@@ -823,6 +823,9 @@ class ProofCtest:
     whole_when: tuple[str, ...] = ()
     #: The end of a test file's name (one ctest label per test file, from Catch2's `--filenames-as-tags`).
     test_suffix: str = "_test.cpp"
+    #: The folder of the test programs: a source there that is no test file (a helper program, a check outside
+    #: Catch2) is reached by no file label, so its change runs the whole suite.
+    tests: str = "tests/"
     #: A change reaching more test files than this runs the narrow set of those near it (ctest_scope.narrow).
     max_files: int = 0
 
@@ -3241,12 +3244,13 @@ def _read_proof_ctest(data: object, where: str) -> ProofCtest:
         skip=skip,
         whole_when=_texts(table["whole_when"], _at(where, "whole_when"), empty_ok=True),
         test_suffix=suffix,
+        tests=_text(table["tests"], _at(where, "tests")),
         max_files=_count(table["max_files"], _at(where, "max_files")),
     )
 
 
 #: The keys of `proof.ctest`.
-CTEST_KEYS = ("skip", "whole_when", "test_suffix", "max_files")
+CTEST_KEYS = ("skip", "whole_when", "test_suffix", "tests", "max_files")
 
 
 def _read_research(data: object, where: str) -> Research:

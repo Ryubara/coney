@@ -94,6 +94,8 @@ def ctest_scope(conventions: Conventions, paths: Iterable[str], tree: Mapping[st
         if path.startswith(tidy.folders) and path.endswith(suffixes):
             if path not in tree:
                 return _whole(f"{path} was deleted or moved")
+            if path.startswith(rules.tests) and path.endswith(tidy.sources) and not path.endswith(rules.test_suffix):
+                return _whole(f"{path} is a test program's source with no file label")
             changed.append(path)
         elif conventions.paths.ci_class(path) not in rules.skip:
             return _whole(f"{path} is not a C++ file the tests can be traced from")

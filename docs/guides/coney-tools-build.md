@@ -339,13 +339,14 @@ untrue, and it is kept in the build record's command line. The flag is a stateme
 handover one: use it for that run only, since every other full suite holds the slots the other agents' builds wait for
 ([Check slots](#check-slots)).
 
-**Choosing tests.** `-R REGEX` runs the tests whose names match and `-L LABEL` those with a label that
-matches (ctest's two filters; both together select the tests that satisfy both). The command lists the selection
-first (`ctest -N`), takes the fast lane for 20 tests or fewer and fails, naming the filter, when nothing matches. Every
-test that needs the player's disc has the label **`disc`**: the Catch2 tag `[disc]` of a test case becomes a ctest label
+**Choosing tests.** `-R REGEX` runs the tests whose names match and `-L LABEL` those with a label that matches (ctest's
+two filters; both together select the tests that satisfy both). The command lists the selection first (`ctest -N`),
+takes the fast lane for 20 tests or fewer and fails, naming the filter, when nothing matches. Every test that needs the
+player's disc has the label **`disc`**: the Catch2 tag `[disc]` of a test case becomes a ctest label
 (`catch_discover_tests(... ADD_TAGS_AS_LABELS)`), and the `coney --disc` checks that exist only when `CONEY_DISC` is set
-at configure time carry it too. So `build --test -L disc` runs exactly the disc tests (they skip without the disc), and
-every other tag is a label as well (`-L routes`). `-L` matches a part of a label name: `-L '^disc$'` is the exact one.
+at configure time carry it too. So `build --test -L '^disc$'` runs exactly the disc tests (they skip without the disc),
+and every other tag is a label as well (`-L routes`). `-L` matches a part of a label name: `-L '^disc$'` is the exact
+one.
 `-R` is a **CMake regular expression**, and the tool passes it to ctest exactly as it was typed (a test checks that a
 regex with `^ ( | ) $ . + \` and spaces reaches ctest unchanged), so a test that matches nothing is usually the
 expression. Test names hold spaces, `.`, `+`, parentheses, `:` and quotes, and `. + ( ) [ ] * ? ^ $ |` mean something to
@@ -393,14 +394,13 @@ at most `check_slots` of them run at once, across all worktrees:
 | `build --test` with no filter (so also `task check`'s build when it runs the whole suite, and `ci disc-suite`) | the test phase when it has **no `-R` or `-L` filter**: the whole ctest run (a `task check` that runs only the test files a change reaches passes `-L` and holds none: [Which C++ tests run](coney-tools-repo.md#task-check-ctest)); an agent may start it only with `--full` ([When the whole suite runs](#build)). The wait for the check slot comes before the wait for a build slot, so a run in the check queue holds no build slot |
 
 A **targeted** run takes none: `build --test -R ...` (so `orig fails-first`, which names its tests), or `pytest` on a
-few test files typed by hand. Run those freely; leave the full suite to `task check`, CI and `ci disc-suite`. A run that
+few test files typed by hand. Run those freely; leave the full suite to CI and `ci disc-suite`. A run that
 has to wait says so, and again every minute: `waiting for a check slot (pytest): place 2 of 3, about 40 min; held by
 alice (dev, 12 min), bob (ctest, 3 min); 2 full suites may run at once (check_slots in coney.local.toml)`. It gives up
-after
-`--max-wait` minutes with exit 75 (nothing is written: run it again), like a build waiting for a slot. A holder that
-crashed leaves a stale claim: the next suite takes it over, says so and stops what the dead run left running. `build
-status` lists the check lane with the others; `build unclaim --lane check --agent ID` frees an agent's check slots by
-hand.
+after `--max-wait` minutes with exit 75 (nothing is written: run it again), like a build waiting for a slot. A holder
+that crashed leaves a stale claim: the next suite takes it over, says so and stops what the dead run left running.
+`build status` lists the check lane with the others; `build unclaim --lane check --agent ID` frees an agent's check
+slots by hand.
 
 `check_slots` is in [`coney.local.toml`](workspace.md#local-config); `0` (the default) means one slot for every four
 cores and at least one: 2 on an 8-core machine, 4 on 16. Set it lower when the machine does more than tests. A slot is

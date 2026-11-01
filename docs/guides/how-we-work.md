@@ -530,10 +530,8 @@ requests and tidies after merges. It works under these rules:
   affected section; once it merges the coordinator edits each of them, and `pr.affected-unedited` reports the ones left
   ([After a merge](issues.md#after-a-merge)). The `/repo-hygiene` skill runs the audit and fixes each finding by its
   class ([Merging safely](#merging)).
-- **The local gate runs the tests a change needs; CI and the after-merge disc run are the full-suite gate.** `task
-  check` runs the Python and C++ tests the change can reach ([Which C++ tests run](coney-tools-repo.md#task-check-ctest)),
-  CI runs every test but the disc tests on each pull request, and after engine merges the coordinator runs the whole
-  C++ suite with the disc on `main` ([ci disc-suite](coney-tools-ci.md#disc-suite)); its failure is a `P-high` issue.
+- **The local gate runs the tests a change needs; CI and the after-merge disc run are the full-suite gate**
+  ([The local gate](testing.md#local-gate)).
 - **Merge on the automated gate, not on play-tests.** A pull request merges by squash once every required check
   passes; the coordinator runs no full suite of its own first, because the engineer's `task check` already ran it on
   the branch. Since the maintainer's grant of 2026-11-01 that holds for a change to the convention files, `AGENTS.md`

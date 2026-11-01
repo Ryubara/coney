@@ -1152,17 +1152,17 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
 def _skipped_disc(options: Options, context: Context, tests: TestScan) -> tuple[int, str]:
     """How many of the skipped tests need the disc, and why that could not be told (empty when it could). Without a
     disc every skip counts (the disc tests skip, and the run is not a whole one); with one, a skip counts when
-    `ctest -N -L disc` lists the test. When the listing fails every skip counts and the reason is returned, so the
+    `ctest -N -L '^disc$'` lists the test. When the listing fails every skip counts and the reason is returned, so the
     caller fails the run instead of passing a gate it could not check."""
     if not tests.skipped:
         return 0, ""
     if options.disc is None or options.disc.source is None:
         return tests.skipped, ""
-    code, output = context.toolchain.capture(_ctest(options, "-N", "-L", "disc"), None)
+    code, output = context.toolchain.capture(_ctest(options, "-N", "-L", "^disc$"), None)
     if code != 0:
         return (
             tests.skipped,
-            f"could not list the disc tests with `ctest -N -L disc` (exit {code}), so the skips are unchecked",
+            f"could not list the disc tests with `ctest -N -L '^disc$'` (exit {code}), so the skips are unchecked",
         )
     listed = set(parse_test_names(output))
     return sum(1 for name in tests.skipped_names if name in listed), ""

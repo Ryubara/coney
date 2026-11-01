@@ -1085,6 +1085,7 @@ proof:
     skip: [docs_only, tools_only]
     whole_when: ["python/tests/lua4/fixtures/"]   # tools_only, but the decompiler's C++ tests read them
     test_suffix: _test.cpp
+    tests: tests/                                 # a source here that is no test file has no label: whole suite
     max_files: 100                               # more test files reached: the narrow set runs instead
   # The CMake preset of the build and the test run behind the two checks of `checks` (MSVC with /WX), the first
   # answering whether it built and the second whether the suite ran whole with the disc, from the build record a

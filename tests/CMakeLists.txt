@@ -581,8 +581,8 @@ if(CONEY_DEBUG_TOOLS)
 endif()
 include(Catch)
 # The disc check skips (Catch2's exit code 4) unless CONEY_DISC names the player's disc; ctest reports it as skipped.
-# A Catch2 tag is also a ctest label: a test case tagged [disc] is the label `disc`, so `ctest -L disc` runs (or lists)
-# the tests that need the disc and `-LE disc` leaves them out. Every test that opens the disc carries the tag.
+# A Catch2 tag is also a ctest label: a test case tagged [disc] is the label `disc`, so `ctest -L '^disc$'` runs (or lists)
+# the tests that need the disc and `-LE '^disc$'` leaves them out. Every test that opens the disc carries the tag.
 # `--filenames-as-tags` (passed to the listing only, through TEST_SPEC) also tags each case `#<its file's name>`, so
 # each test file is a label: `task check` runs `ctest -L '^#(a_test|b_test)$'` for the files a change reaches
 # (python/src/coney_tools/ctest_scope.py, docs/guides/coney-tools-repo.md#task-check).

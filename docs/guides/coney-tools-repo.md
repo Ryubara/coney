@@ -425,9 +425,8 @@ cannot be read ends the run with exit 2.
 The build checks run `coney-tools build --preset ci --test` once, with the disc, on [the C++ tests the change
 reaches](#task-check-ctest) (`-L`) or the whole suite (`--full`), and read the build record it leaves ([The build
 record](stamps.md#build-record)): one answers whether it built (MSVC with /WX), the other whether those tests ran with
-none failed and no disc test skipped. **The local gate is the tests a change needs; the full-suite gate is CI** (every
-test but the disc tests, on every pull request) **and the after-merge disc run** ([`ci
-disc-suite`](coney-tools-ci.md#disc-suite)), which runs the whole suite with the disc on `main`. The ruff and mypy
+none failed and no disc test skipped. The local gate is the tests a change needs, not the full suite ([The local
+gate](testing.md#local-gate) says which gate runs the rest). The ruff and mypy
 commands are the ones of `ci run`; there is no clang-tidy here: clang-tidy is CI's alone, on the changed lines of every
 pull request and on the whole codebase nightly ([building](clang-tidy.md)).
 
@@ -556,13 +555,14 @@ The files are read at the change's tip through git, so `task check` and `pr veri
   several hundred test files. The set is the changed test files, the test files that `#include` a changed file
   directly or the header a changed source is named after (`human.h` for `human_hiding.cpp`), and the test files named
   after a changed file (`brain.cpp`: `brain_test.cpp`, `brain_events_test.cpp`); when there are none, the test files
-  of its subsystem that reach it (`src/ai/...`: `tests/ai/`). The disc tests among them run with the disc, with no
-  check slot. The stamp says so in `detail.ctest_narrowed`, which names CI and the after-merge disc suite as what runs
-  the rest.
+  of its subsystem (`src/ai/...`: `tests/ai/`), only those that reach the change when some test file does. The disc
+  tests among them run with the disc, with no check slot. The stamp says so in `detail.ctest_narrowed`, which names
+  CI and the after-merge disc suite as what runs the rest.
 * **The whole suite**, holding a check slot, only for what cannot be traced: a changed path under
   `proof.ctest.whole_when` (the Lua 4.0 fixtures the decompiler's C++ tests read), or of a class other than
   `docs_only` and `tools_only` that is no C++ file (CMake files, `cmake/`, `CMakePresets.json`, assets, a disc test's
-  input script, an unknown path), or deleted or moved, and a change with no test file near it at all.
+  input script, an unknown path), or deleted or moved; a source under `tests/` that is no test file (a helper
+  program, a check outside Catch2: these have no file label); and a change with no test file near it at all.
 
 The output says which (`ctest: the tests of 2 test files the change reaches, with the disc`, `ctest: the tests of 69
 test files, with the disc, narrowed by reach (256 test files reach it, more than 100; ...)`, or `ctest: the whole suite
@@ -571,14 +571,12 @@ with the disc (cmake/deps.cmake is not a C++ file the tests can be traced from)`
 recomputes the scope at the tip and refuses a Check whose recorded files do not hold it, or whose build record ran
 other tests; a stamp from before the scope was recorded counts as the whole suite.
 
-**A narrowed run is not the whole check, by design** (the maintainer's decision of 2026-11-01: the local gate runs
-the affected tests and CI is the full-suite gate). What the narrow set leaves out, and what the include graph cannot
-see, a narrowed run can miss: code reached only through a name (a Lua binding called
-from a disc script, a registry filled at start-up by a file nobody includes), a function defined in a source of
-another folder, and the tests outside Catch2 (the shader refusal, the error dialog and frame copy checks, which have no
-file label). CI runs every test but the disc tests on each pull request, so a missed test without the disc is caught
-before the merge, and [`ci disc-suite`](coney-tools-ci.md#disc-suite) runs the whole suite with the disc on `main`
-after merges, so a missed disc test is caught there and opens a `P-high` issue.
+**A narrowed run is not the whole check, by design** (the maintainer's decision of 2026-11-01; [The local
+gate](testing.md#local-gate) says what runs the rest). What the narrow set leaves out, and what the include graph
+cannot see, a narrowed run can miss: code reached only through a name (a Lua binding called from a disc script, a
+registry filled at start-up by a file nobody includes), a function defined in a source of another folder, and the
+tests outside Catch2 (the shader refusal, the error dialog and frame copy checks, which have no file label) when a
+change reaches them from `src/`.
 
 <!-- command-reference:begin task -->
 ## Parameters of `task` {#task-parameters}

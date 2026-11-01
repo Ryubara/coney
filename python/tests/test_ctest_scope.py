@@ -32,6 +32,7 @@ TREE = {
     "tests/launcher/update_plan_test.cpp": '#include "launcher/update_plan.h"\n',
     "tests/human/human_test.cpp": '#include "human/human.h"\n#include "support/fixtures.h"\n',
     "tests/platform/disc_story_test.cpp": '#include "gamemodes/game_session.h"\n',
+    "tests/support/frame_copy_check.cpp": "int main() { return 0; }\n",
     "tests/world/cover_test.cpp": '// #include "human/human.h" is only a comment\n#include "world/cover.h"\n',
 }
 
@@ -44,7 +45,7 @@ def scope_of(*paths: str, tree: dict[str, str] | None = None) -> ctest_scope.Cte
 def test_the_rules_are_read_from_the_conventions() -> None:
     rules = CONVENTIONS.proof.ctest
     assert rules.enabled and rules.skip == ("docs_only", "tools_only") and rules.test_suffix == "_test.cpp"
-    assert rules.whole_when == ("python/tests/lua4/fixtures/",) and rules.max_files == 100
+    assert rules.whole_when == ("python/tests/lua4/fixtures/",) and rules.max_files == 100 and rules.tests == "tests/"
 
 
 @pytest.mark.parametrize(
@@ -91,6 +92,8 @@ def test_the_label_selects_the_test_files_by_name() -> None:
         (["src/human/human_old.cpp"], "human_old.cpp was deleted or moved"),
         (["src/gamemodes/main.cpp"], "deleted or moved"),
         (["docs/guides/testing.md"], "the change has no C++ file"),
+        # the checks outside Catch2 and the helper programs have no file label
+        (["tests/support/frame_copy_check.cpp"], "frame_copy_check.cpp is a test program's source with no file label"),
     ],
 )
 def test_what_cannot_be_mapped_runs_the_whole_suite(paths: list[str], why: str) -> None:

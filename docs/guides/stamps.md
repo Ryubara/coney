@@ -155,7 +155,7 @@ bytes, so the `checked` stamp covers it by `build_record_sha256` and an edited r
 | `tip`, `dirty` | The commit built, and whether the worktree had uncommitted changes, both read before the run starts (a commit made during the run is not the one built) |
 | `preset`, `filters`, `command_line` | The CMake preset, the test filters (`-R`, `-L`; any makes it a partial run) and the arguments |
 | `exit_code`, `ran` | The run's exit code, and which of `configure`, `build`, `test` started |
-| `tests` | `total`, `passed`, `failed`, `skipped` and `skipped_disc` (the skipped tests that need the disc: all skips when the run had none, else those `ctest -N -L disc` lists); null when no test run ended |
+| `tests` | `total`, `passed`, `failed`, `skipped` and `skipped_disc` (the skipped tests that need the disc: all skips when the run had none, else those `ctest -N -L '^disc$'` lists); null when no test run ended |
 | `tool_revision` | The commit of the coney-tools code that ran the build (null for a copy outside a git checkout) |
 | `disc` | Where the disc came from (`CONEY_DISC`, a config file), null when there was none; the ISO is not hashed (slow, and a hash proves nothing about what the player owns) |
 | `log`, `log_sha256` | The run's log in scratch and its hash |
@@ -164,14 +164,13 @@ bytes, so the `checked` stamp covers it by `build_record_sha256` and an edited r
 `problems(record, tip=, preset=, label=)` returns every reason a record is not one clean run of the preset on the tip
 with the disc, of the whole suite or, with a `label`, of the whole suite or exactly `-L <label>` (the test files a
 change reaches, [Which C++ tests run](coney-tools-repo.md#task-check-ctest)): another preset or version, any other
-filters, a non-zero exit, another commit, uncommitted changes, no
-test run, no tests, failed tests, skipped disc tests, a log that no longer matches its hash. A skipped test counts as
-a disc test when `ctest -N -L disc` lists it; if that listing fails the run fails (every skip would otherwise pass as a
-non-disc skip). `task check` refuses to count a record that has one. The record holds no game data and no test output,
-only counts. Only `coney-tools build` writes it, the protect hook refuses an agent's Edit, Write or shell write into
-a `build-runs` folder as it does for `stamps`, and the newest 20 records are kept (the logs' rule), except a record
-that a stamp in any task's live log covers, which is never removed. None of this stops the person at the machine, as
-with the stamps.
+filters, a non-zero exit, another commit, uncommitted changes, no test run, no tests, failed tests, skipped disc tests,
+a log that no longer matches its hash. A skipped test counts as a disc test when `ctest -N -L '^disc$'` lists it; if
+that listing fails the run fails (every skip would otherwise pass as a non-disc skip). `task check` refuses to count a
+record that has one. The record holds no game data and no test output, only counts. Only `coney-tools build` writes it,
+the protect hook refuses an agent's Edit, Write or shell write into a `build-runs` folder as it does for `stamps`, and
+the newest 20 records are kept (the logs' rule), except a record that a stamp in any task's live log covers, which is
+never removed. None of this stops the person at the machine, as with the stamps.
 
 ## Study {#study}
 
