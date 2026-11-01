@@ -50,11 +50,12 @@ And the touch-it rule ([Touch a page, fix the page](writing-docs.md#touch-it), f
   change touched are held to the standard: a `comment` or `tag` finding when a changed line is in its function (from
   its first line to its closing brace; a declaration's one statement), a `type-doc` finding when one is in its type
   (from the `class` or `struct` to its closing brace), a `citation` finding when one is in its test case (from the
-  comment block right above the macro to the line before the next case). A new file is held whole, and a file the
-  change renamed (as `git diff -M` finds it, at `research.moved_similarity`) is read from git's diff of the renamed
-  pair, as a moved page is. A function that only moved, to another file, folder or class with its code, tags and
-  standing as they were, is not touched, nor is the line where its old copy was deleted
-  ([Any function](orig-body-hash.md#any-function)). One report per rule with the number of findings and the first;
+  comment block right above the macro to the line before the next case). A new file is held whole, and a file the change
+  renamed (as `git diff -M` finds it, at `research.moved_similarity`) is read from git's diff of the renamed pair, as a
+  moved page is. A function that only moved, to another file, folder or class with its code, tags and standing as they
+  were, is not touched, nor is the line where its old copy was deleted, as long as that deletion took out only the moved
+  code, comments and blank lines ([Any function](orig-body-hash.md#any-function)). One report per rule with the number
+  of findings and the first;
 * every other finding of a touched file is `info`: it fails nothing, and `check` prints one line for the file,
   `path:1: info: touch-it: N findings outside what the change touched (rule count, ...)`. `check --cleanup` (and
   `docs check --cleanup`) prints each one instead, so the coordinator can file them as cleanup issues; `scan --files`

@@ -14,7 +14,14 @@ from coney_tools.docs_link_moves import link_only_change, touched_lines
 
 FOLDER = "docs/research"
 #: The pages the made-up change renamed or deleted, and the pages and anchors that exist after it.
-GONE = {"docs/research/combat.md", "docs/research/old-name.md", "src/platform/play_level_objects.cpp"}
+GONE = {
+    "docs/research/combat.md",
+    "docs/research/old-name.md",
+    "src/platform/play_level_objects.cpp",
+    "src/platform/play_level_split.cpp",
+}
+#: The files the change renamed (old path -> new, as git pairs them); `play_level_split.cpp` was only deleted.
+RENAMED = {"src/platform/play_level_objects.cpp": "src/gamemodes/play_level_objects.cpp"}
 PAGES = {
     # A source file the change moved with `git mv`, at its new path, and one that stayed.
     "src/gamemodes/play_level_objects.cpp": set(),
@@ -50,7 +57,7 @@ def held(path: str, anchor: str) -> bool:
 
 def same(old: str, new: str) -> bool:
     """Whether the change of `old` to `new` is only a link rewrite."""
-    return link_only_change(old, new, FOLDER, GONE, resolves, None, held)
+    return link_only_change(old, new, FOLDER, GONE, resolves, None, held, RENAMED)
 
 
 # --- one line ---------------------------------------------------------------------------------------------------------
@@ -565,6 +572,8 @@ def test_a_repo_path_rewrite_that_follows_no_move_is_a_touch() -> None:
     assert not same(f"`PlayLevelMode::trySwap` (`repo:{OLD_PATH}`)", renamed)
     assert not same("See [it](combat.md).", f"See [it](repo:{NEW_PATH}).")
     assert not same(f"In play (`{OLD_PATH}`).", f"In play (`{OLD_PATH}` and `{NEW_PATH}`).")
+    # A file only deleted (split, say) does not say where its code went, even to a path that exists.
+    assert not same("In play (`repo:src/platform/play_level_split.cpp`).", f"In play (`repo:{NEW_PATH}`).")
 
 
 def test_the_lines_a_diff_touches_leave_out_a_repo_path_rewrite() -> None:
@@ -572,7 +581,8 @@ def test_the_lines_a_diff_touches_leave_out_a_repo_path_rewrite() -> None:
         f"@@ -3 +3 @@\n-In play (`repo:{OLD_PATH}`), triangle\n+In play (`repo:{NEW_PATH}`), triangle\n"
         "@@ -5 +5 @@\n-Plain.\n+Plain, edited.\n"
     )
-    assert touched_lines(diff, FOLDER, GONE, resolves) == frozenset({5})
+    assert touched_lines(diff, FOLDER, GONE, resolves, renamed=RENAMED) == frozenset({5})
+    assert touched_lines(diff, FOLDER, GONE, resolves) == frozenset({3, 5})
 
 
 def test_a_page_whose_only_change_repoints_a_path_to_a_file_moved_with_git_mv_is_untouched(tmp_path: Path) -> None:
@@ -584,3 +594,12 @@ def test_a_page_whose_only_change_repoints_a_path_to_a_file_moved_with_git_mv_is
     assert touches(root) == {"docs/research/ai.md": frozenset()}
     write(root, "docs/research/ai.md", text.replace("src/ai/play.cpp", "src/human/play.cpp").replace("Plain", "Edit"))
     assert touches(root) == {"docs/research/ai.md": frozenset({5})}
+
+
+def test_a_page_repointing_a_path_from_a_deleted_file_to_another_one_is_touched(tmp_path: Path) -> None:
+    text = "# Links\n\nIn play (`repo:src/ai/play.cpp`), triangle.\n\nPlain.\n"
+    files = {"docs/research/ai.md": text, "src/ai/play.cpp": "int play();\n", "src/ai/other.cpp": "int other();\n"}
+    root = checkout(tmp_path, files=files)
+    git(root, "rm", "-q", "src/ai/play.cpp")
+    write(root, "docs/research/ai.md", text.replace("src/ai/play.cpp", "src/ai/other.cpp"))
+    assert touches(root) == {"docs/research/ai.md": frozenset({3})}

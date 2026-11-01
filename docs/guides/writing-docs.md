@@ -442,13 +442,15 @@ changed lines: a link split over lines of which only the `](target)` line change
 at a blank line); and a list item rewrapped by the longer target is no touch when the list markers (`-`, `1.`) stand on
 the same lines of the hunk on both sides. A repository path that follows a renamed file is no touch either: a
 `repo:<path>` link, or a code span that holds only a path (`` `repo:src/gamemodes/play_level_objects.cpp` `` or the bare
-`` `src/gamemodes/play_level_objects.cpp` ``), rewritten from a file the same change renamed or deleted (a source file
-moved with `git mv`) to a path that exists. Only the path may change: a class or function name renamed beside it
-(`PlayLevelMode::trySwap` to `PlayLevelSimulation::trySwap`) is an edit of the line. A link to a page that stayed, to a
-target that resolves nowhere, a page link turned into a `repo:` path, a `repo:` path whose file stayed, an address, an
-image, or any other edit on the line is a touch of that line. So moving a page does not end the excuse of every page
-that links to it. The same rule frees a source or test file whose only change is a comment's reference to a moved
-research page, with its own reading of a comment: [the standards](coney-tools-standards.md#standards).
+`` `src/gamemodes/play_level_objects.cpp` ``), rewritten from a file the same change renamed to the path git pairs it
+with (a source file moved with `git mv`), which exists. A file the change only deleted, perhaps split in two, says
+nothing of where its code went, so a path repointed from it is a touch. Only the path may change: a class or function
+name renamed beside it (`PlayLevelMode::trySwap` to `PlayLevelSimulation::trySwap`) is an edit of the line. A link to a
+page that stayed, to a target that resolves nowhere, a page link turned into a `repo:` path, a `repo:` path whose file
+stayed, an address, an image, or any other edit on the line is a touch of that line. So moving a page does not end the
+excuse of every page that links to it. The same rule frees a source or test file whose only change is a comment's
+reference to a moved research page, with its own reading of a comment: [the
+standards](coney-tools-standards.md#standards).
 
 `coney-tools docs legacy` prints what a scan finds; `--prune` takes out what is fixed and lowers the counts, `--check`
 exits 1 when the file lists something that passes or grew since the branch left `--base`. The file is first written by

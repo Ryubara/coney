@@ -875,3 +875,63 @@ def test_taking_a_moved_function_out_of_its_old_place_does_not_touch_its_neighbo
     git(root, "add", "-A")
     git(root, "commit", "-q", "-m", "work")
     assert owed(root) == set()
+
+
+def move_guess_and_delete(root: Path, deleted: str) -> None:
+    """Commit, as the base, `CLASS_CPP` with `deleted` (lines) after `think`'s `a += 1;`; then on a branch move
+    `guess` to a class and file of its own and delete those lines from `think`."""
+    base = CLASS_CPP.replace("    a += 1;\n", f"    a += 1;\n{deleted}", 1)
+    (root / "src/ai/brain.cpp").write_text(base, encoding="utf-8")
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "with the lines")
+    git(root, "checkout", "-q", "-b", "work")
+    think, guess = CLASS_CPP.split("\n\n", 1)
+    (root / "src/ai/brain.cpp").write_text(think + "\n", encoding="utf-8")
+    (root / "src/ai/brain.h").write_text(CLASS_H.replace("    /// Guesses.\n    int guess();\n", ""))
+    (root / "src/ai/mind.h").write_text(
+        "#pragma once\n/// A mind.\nclass Mind {\npublic:\n    /// Guesses.\n    int guess();\n};\n", encoding="utf-8"
+    )
+    (root / "src/ai/mind.cpp").write_text('#include "ai/mind.h"\n' + guess.replace("Brain::", "Mind::"))
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "work")
+
+
+@pytest.mark.parametrize("deleted", ["    *p = 5;\n", "    /* x */ a = 9;\n", "    a = 9; // and a note\n"])
+def test_deleting_code_that_looks_like_a_comment_from_a_ported_function_still_owes_its_comparison(
+    tmp_path: Path, deleted: str
+) -> None:
+    # The change also moves `guess`, so the pure deletion is read for what it took out: these lines are code.
+    root = build(tmp_path, {"src/ai/brain.h": CLASS_H, "src/ai/brain.cpp": CLASS_CPP})
+    move_guess_and_delete(root, deleted)
+    assert ("src/ai/brain.cpp", "compared", 2) in owed(root)
+
+
+@pytest.mark.parametrize("deleted", ["    // A note.\n", "    /*\n     * A note\n     * over lines.\n     */\n"])
+def test_deleting_a_comment_beside_a_move_is_no_touch(tmp_path: Path, deleted: str) -> None:
+    root = build(tmp_path, {"src/ai/brain.h": CLASS_H, "src/ai/brain.cpp": CLASS_CPP})
+    move_guess_and_delete(root, deleted)
+    assert owed(root) == set()
+
+
+def test_a_copy_of_a_class_whose_old_one_stays_is_held_whole(tmp_path: Path) -> None:
+    root = build(tmp_path, {"src/ai/brain.h": CLASS_H, "src/ai/brain.cpp": CLASS_CPP})
+    git(root, "checkout", "-q", "-b", "work")
+    (root / "src/human").mkdir()
+    for old, new in (("src/ai/brain.h", "src/human/mind.h"), ("src/ai/brain.cpp", "src/human/mind.cpp")):
+        text = (root / old).read_text(encoding="utf-8").replace("Brain", "Mind").replace("ai/brain.h", "human/mind.h")
+        (root / new).write_text(text, encoding="utf-8")
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "work")
+    assert {("src/human/mind.cpp", "compared", 2), ("src/human/mind.cpp", "tag", 8)} <= owed(root)
+
+
+def test_a_moved_untagged_function_that_was_renamed_is_held_to_the_standard(tmp_path: Path) -> None:
+    root = build(tmp_path, {"src/ai/brain.h": CLASS_H, "src/ai/brain.cpp": CLASS_CPP})
+    move_class(root)
+    for name in ("src/human/mind.h", "src/human/mind.cpp"):
+        path = root / name
+        path.write_text(path.read_text(encoding="utf-8").replace("guess", "ponder"), encoding="utf-8")
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "rename")
+    assert ("src/human/mind.cpp", "tag", 8) in owed(root)
+    assert all(rule != "compared" for _, rule, _ in owed(root))

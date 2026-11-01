@@ -287,3 +287,18 @@ def test_a_copy_into_a_gameplay_folder_is_new_work(repo: Path) -> None:
     )
     git(repo, "add", "-A")
     assert [p.split(": ")[1].split()[0] for p in orig_check.check(repo, "HEAD")] == ["PlayLevelSimulation::stepHats"]
+
+
+def test_a_moved_function_that_lost_its_orig_tag_is_refused(repo: Path) -> None:
+    moved_base(repo, marker="\n// @orig 0x00100030 Mode_StepHats (Mode.cpp)")
+    move_to_gamemodes(repo)
+    assert [p.split(": ")[1].split()[0] for p in orig_check.check(repo, "HEAD")] == ["PlayLevelSimulation::stepHats"]
+
+
+def test_a_moved_function_whose_parameters_changed_with_its_class_is_new_work(repo: Path) -> None:
+    moved_base(repo)
+    move_to_gamemodes(repo)
+    for name in ("src/gamemodes/play_level_hats.cpp", "src/gamemodes/play_level_simulation.h"):
+        path = repo / name
+        path.write_text(path.read_text(encoding="utf-8").replace("int count", "long count"), encoding="utf-8")
+    assert [p.split(": ")[1].split()[0] for p in orig_check.check(repo, "HEAD")] == ["PlayLevelSimulation::stepHats"]

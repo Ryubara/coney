@@ -95,7 +95,12 @@ function moved with `git mv`, into another class or to another file or folder ke
 * The touch-it rule leaves its lines out of what the change touched, so it owes neither the comment and tag rules nor a
   comparison (a moved `@orig` function the function database lists as `legacy` is not asked for one), and a new file
   that only took it in is held for the rest. Deleting the moved code from its old place is part of the move: a pure
-  deletion of blank lines, comment lines and lines of functions that moved away does not touch the line it sits at.
+  deletion whose lines are each blank, nothing but comment (as a scan of the old file's comments reads it: a line in
+  a block comment is one, while `*p = 5;` or `/* x */ a = 9;` is code) or a line of a function that moved away does
+  not touch the line it sits at. git may align the deletion on equal lines of the function above (its `return a;`
+  and `}` taken for the moved function's), so a deleted code line also counts as the moved code's when an equal line
+  of it stayed in place; each such line counts once, so a code line deleted beside the move still touches its
+  function.
 
 A function whose body, declaration, tags or marker changed on the way, one renamed without a tag, and a copy whose old
 function is still there are new work as before. A class that is new, or renamed, is a touched type: its own comment is

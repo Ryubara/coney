@@ -18,8 +18,9 @@ the target of an inline link `[text](target)` does not count as touched when, fo
   `#rage` that cites the flash, now `#flash`), but only the anchors are looked at, not where the new section came
   from. An anchor that replaced the old one (a renamed section) is a touch; or
 * both name a file of the repository, as a `repo:<path>` link or a code span that holds only a path (`repo:<path>`, or
-  a bare `src/platform/play_level_objects.cpp`), the old file is one the same change renamed or deleted (a source file
-  moved with `git mv`) and the new path resolves: a path repointed to where its file went.
+  a bare `src/platform/play_level_objects.cpp`), the same change renamed the old file to the new path (git's rename
+  pair: a source file moved with `git mv`) and the new path resolves: a path repointed to where its file went. A file
+  only deleted (perhaps split) says nothing of where its code went, so a path repointed from it is a touch.
 
 The text of the link, the rest of the line and the number of links and paths must be equal (spaces and line breaks do
 not count, so a link split over two lines is read whole, and so is the paragraph or list item that a longer target made
@@ -36,7 +37,7 @@ from __future__ import annotations
 
 import posixpath
 import re
-from collections.abc import Callable, Collection, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 
 #: An inline link, not an image: its text, its target and whatever follows the target inside the parentheses (a title).
 _LINK = re.compile(r"(?<!!)\[(?P<text>[^\]\n]*)\]\((?P<target>[^)\s]*)(?P<tail>[^)\n]*)\)")
@@ -85,14 +86,16 @@ def _targets(line: str) -> tuple[list[str], list[str]]:
     )
 
 
-def _repo_moved(old: str, new: str, gone: Collection[str], resolves: Callable[[str, str], bool]) -> bool:
-    """Whether the `repo:` target `old` became the `repo:` target `new` because its file moved: the old file (any
-    anchor) is in `gone` and the new path resolves, with the new anchor when it names one."""
-    if not (old.startswith(_REPO) and new.startswith(_REPO)):
+def _repo_moved(old: str, new: str, renamed: Mapping[str, str] | None, resolves: Callable[[str, str], bool]) -> bool:
+    """Whether the `repo:` target `old` became the `repo:` target `new` because its file moved: the change renamed the
+    old file (any anchor) to the new path (`renamed`: old path -> new, as git pairs them), which resolves, with the new
+    anchor when it names one. A file only deleted (perhaps split in two) does not say where its code went, so a path
+    repointed from it is a touch."""
+    if renamed is None or not (old.startswith(_REPO) and new.startswith(_REPO)):
         return False
     before = old.removeprefix(_REPO).partition("#")[0]
     after, _, anchor = new.removeprefix(_REPO).partition("#")
-    return before in gone and resolves(after, anchor)
+    return renamed.get(before) == after and resolves(after, anchor)
 
 
 def _split(target: str, folder: str) -> tuple[str, str] | None:
@@ -113,6 +116,7 @@ def _rewritten(
     gone: Collection[str],
     resolves: Callable[[str, str], bool],
     held: Callable[[str, str], bool] | None,
+    renamed: Mapping[str, str] | None = None,
 ) -> bool:
     """Whether the target `old` (read from `old_folder`) was rewritten to `new` (read from `folder`) because a page
     moved: the old page is in `gone` and the new target resolves, both name the same page and anchor, or both name the
@@ -121,7 +125,7 @@ def _rewritten(
     but holds the new one only now (an anchor new on the page, as when a section is split). Without `held` the last
     two cases are not looked at."""
     if old.startswith(_REPO) or new.startswith(_REPO):
-        return _repo_moved(old, new, gone, resolves)
+        return _repo_moved(old, new, renamed, resolves)
     before, after = _split(old, old_folder), _split(new, folder)
     if before is None or after is None:
         return False
@@ -157,6 +161,7 @@ def link_only_change(
     resolves: Callable[[str, str], bool],
     old_folder: str | None = None,
     held: Callable[[str, str], bool] | None = None,
+    renamed: Mapping[str, str] | None = None,
 ) -> bool:
     """Whether the text `old` (a line, or the lines of a hunk) became `new` by rewriting link targets to moved pages and
     nothing else; runs of spaces and line breaks count as one space.
@@ -165,7 +170,8 @@ def link_only_change(
     paths the change renamed or deleted, and `resolves(path, anchor)` whether `path` exists after the change and holds
     `anchor` (any, when it is empty). `old_folder` is the folder the page held `old` in when the change moved the page
     (None: it did not move). `held(path, anchor)` is whether `path` held `anchor` before the change (None: a section
-    that moved between pages is not looked for)."""
+    that moved between pages is not looked for). `renamed` maps each file the change renamed to its new path, for a
+    `repo:` path that follows one (None: none is looked for)."""
     from_folder = folder if old_folder is None else old_folder
     old, new = " ".join(old.split()), " ".join(new.split())
     (links, paths), (new_links, new_paths) = _targets(old), _targets(new)
@@ -175,7 +181,9 @@ def link_only_change(
         return False
     pairs = [*zip(links, new_links, strict=True), *zip(paths, new_paths, strict=True)]
     changed = [pair for pair in pairs if pair[0] != pair[1]]
-    return bool(changed) and all(_rewritten(a, b, folder, from_folder, gone, resolves, held) for a, b in changed)
+    return bool(changed) and all(
+        _rewritten(a, b, folder, from_folder, gone, resolves, held, renamed) for a, b in changed
+    )
 
 
 def _continues(before: Sequence[str]) -> bool:
@@ -265,6 +273,7 @@ def touched_lines(
     old_folder: str | None = None,
     new_lines: Sequence[str] | None = None,
     held: Callable[[str, str], bool] | None = None,
+    renamed: Mapping[str, str] | None = None,
 ) -> frozenset[int]:
     """The lines of the new file that the zero-context `diff` of one file touches, a link rewrite to a moved page
     (`link_only_change`) left out. A hunk whose removed and added lines read the same but for such rewrites touches
@@ -277,7 +286,7 @@ def touched_lines(
     both sides: a longer target pushed a first line past the width and the editor rewrapped the item. A hunk that begins
     inside a link split over lines (its first line holds `](target)` and no `[`) is widened upwards, through the
     unchanged lines of `new_lines` (the new file's lines), to the line holding the `[`, so the link is read whole.
-    `old_folder` and `held` are as for `link_only_change`."""
+    `old_folder`, `held` and `renamed` are as for `link_only_change`."""
     touched: set[int] = set()
     start = 0
     removed: list[str] = []
@@ -292,7 +301,7 @@ def touched_lines(
             return False
         above = _link_head(now, start, new_lines)
         return link_only_change(
-            " ".join([*above, *was]), " ".join([*above, *now]), folder, gone, resolves, old_folder, held
+            " ".join([*above, *was]), " ".join([*above, *now]), folder, gone, resolves, old_folder, held, renamed
         )
 
     def close() -> None:
@@ -309,7 +318,8 @@ def touched_lines(
             touched.update(
                 start + offset
                 for offset, (was, now) in enumerate(zip(removed, added, strict=True))
-                if _lead(was) != _lead(now) or not link_only_change(was, now, folder, gone, resolves, old_folder, held)
+                if _lead(was) != _lead(now)
+                or not link_only_change(was, now, folder, gone, resolves, old_folder, held, renamed)
             )
 
     for raw in diff.splitlines():
