@@ -170,6 +170,7 @@ TEST_CASE("a file of another version is listed as a damaged profile", "[disk_pro
 }
 
 TEST_CASE("finishing the story on HARDCORE SOLDIER unlocks the fourth difficulty", "[disk_profile_store]") {
+    // Expected: save.md#slots, confirmed (code) (SaveSystem_MarkHardcoreDone, slot +0x28)
     TempDir dir;
     GameState state;
     DiskProfileStore store(dir.path(), state);

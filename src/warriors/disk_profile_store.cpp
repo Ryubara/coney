@@ -76,14 +76,17 @@ std::optional<DiskProfileStore::Slot> DiskProfileStore::readSlot(std::size_t slo
     }
     const std::optional<std::vector<std::byte>> bytes = readFile(path);
     if (bytes) {
-        if (auto record = ProfileRecord::parse(*bytes); record) {
-            return Slot{.profile = profileOf(*record), .record = std::move(*record)};
+        // Any version SaveGame reads, the bare record of earlier Coney builds included.
+        if (auto save = SaveGame::parse(*bytes); save) {
+            return Slot{.profile = profileOf(save->profile),
+                        .record = std::move(save->profile),
+                        .modded = std::move(save->modded)};
         }
     }
-    // A file there that is not a record: list it as damaged, under its header's name when it has one.
+    // A file there that cannot be loaded: list it as damaged, under the name it holds when that can be read.
     Slot damaged;
     if (bytes) {
-        damaged.profile.name = ProfileRecord::headerName(*bytes).value_or(std::string{});
+        damaged.profile.name = SaveGame::nameOf(*bytes);
     }
     damaged.profile.damaged = true;
     return damaged;
@@ -100,7 +103,10 @@ std::expected<void, Error> DiskProfileStore::writeSlot(std::size_t slot, const P
     std::filesystem::path temporary = path;
     temporary += ".tmp";
     {
-        const auto bytes = record.serialise();
+        // What the file holds beyond the record is kept from a loadable slot; a new profile starts with none.
+        const std::optional<Slot>& held = m_slots.at(slot);
+        const SaveGame save{.profile = record, .modded = held && held->record ? held->modded : ModdedProgress{}};
+        const std::vector<std::byte> bytes = save.serialise();
         std::ofstream out(temporary, std::ios::binary | std::ios::trunc);
         out.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
         out.close();
@@ -146,7 +152,13 @@ const ProfileRecord* DiskProfileStore::record(std::size_t slot) const {
     return &held->record.value();
 }
 
-const ModdedProgress* DiskProfileStore::modded(std::size_t /*slot*/) const { return nullptr; }
+const ModdedProgress* DiskProfileStore::modded(std::size_t slot) const {
+    if (slot >= kSlots) {
+        return nullptr;
+    }
+    const std::optional<Slot>& held = m_slots.at(slot);
+    return held.has_value() && held->record.has_value() ? &held->modded : nullptr;
+}
 
 bool DiskProfileStore::create(std::size_t slot, const Profile& profile) {
     if (slot >= kSlots) {

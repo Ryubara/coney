@@ -27,12 +27,14 @@ void applyProfile(const ProfileRecord& record, GameState& state);
 void captureProfile(const GameState& state, ProfileRecord& record);
 
 /// The save system with Coney's storage in place of the memory card: each of the six profile slots is one file,
-/// `profile-<slot + 1>.sav`, holding the 1,284-byte record, in a folder the caller names (the platform's per-user data
-/// folder in the game, a temporary folder in tests). There are no card dialogs: no format, space or icon checks, and
-/// every write happens at once (docs/research/save.md#coney).
+/// `profile-<slot + 1>.sav`, in Coney's own save format (SaveGame), in a folder the caller names (the platform's
+/// per-user data folder in the game, a temporary folder in tests). There are no card dialogs: no format, space or icon
+/// checks, and every write happens at once (docs/research/save.md#coney). A file an earlier Coney wrote (the bare
+/// 1,284-byte record) loads, and is rewritten in the current format at its next save.
 ///
-/// A file that cannot be read as a record (another size, another version) is listed as a damaged profile under the
-/// name in its header, the original's "not loadable" slot (`+0x24`), which PM_Load sends to PM_Delete.
+/// A file that cannot be loaded (damaged, or made by a newer Coney) is listed as a damaged profile under the name it
+/// holds, the original's "not loadable" slot (`+0x24`), which PM_Load sends to PM_Delete. A save keeps the story
+/// entries and mod sections the file held (docs/research/save.md#save-mods).
 ///
 /// Research: docs/research/save.md
 class DiskProfileStore final : public ProfileStore {
@@ -83,18 +85,23 @@ class DiskProfileStore final : public ProfileStore {
     [[nodiscard]] const std::optional<Error>& lastError() const { return m_lastError; }
 
   private:
-    // One used slot: what the screens see and, unless damaged, the record behind it.
+    // One used slot: what the screens see and, unless damaged, the record behind it and what the file holds beyond
+    // the record, which every save of the slot writes back.
     struct Slot {
         Profile profile;
         std::optional<ProfileRecord> record;
+        ModdedProgress modded;
     };
 
     // Reads every slot's file and forgets the loaded profile (the constructor's read and reload(), kept non-virtual so
     // the constructor makes no virtual call).
     void readFolder();
-    // Reads one slot's file: nothing when there is none, a damaged slot when it is not a record.
+    // Reads one slot's file: nothing when there is none, a damaged slot when it cannot be loaded.
+    // @coney-only one file per slot in place of the memory card's image (docs/research/save.md#coneys-implementation)
     [[nodiscard]] std::optional<Slot> readSlot(std::size_t slot) const;
-    // Writes `record` as `slot`'s file through a temporary file, so a failed write never leaves half a record.
+    // Writes `record` as `slot`'s file through a temporary file, so a failed write never leaves half a save, keeping
+    // the story entries and mod sections a loadable slot already holds (a slot being created holds none).
+    // @coney-only one file per slot in place of the memory card's image (docs/research/save.md#coneys-implementation)
     [[nodiscard]] std::expected<void, Error> writeSlot(std::size_t slot, const ProfileRecord& record) const;
     // The screens' view of a record.
     [[nodiscard]] static Profile profileOf(const ProfileRecord& record);
