@@ -81,7 +81,11 @@ command](agents.md#identity)). `who_from_env` reads the file as the command's fi
 `who.source` as `hook` when a valid, unexpired file was found, and `unverified` otherwise, with every field `unknown`,
 however the environment was set (a person at a terminal, a PowerShell command outside `bypassPermissions`, an agent
 that typed variables or a token of its own). Recording never refuses a command: [`pr verify`](pr.md#verify) requires
-`source` to be `hook` on the stamps it relies on when `stamps.require_hook_source` is on. A [run
+`source` to be `hook` on the stamps it relies on when `stamps.require_hook_source` is on. A detached run
+(`--detach` of `build`, `ci run` and `task check`) starts its child after the caller's command has returned and the
+hook has removed its file, so the caller hands on what the hook vouched for to it: a file of the same format under a
+fresh token, in the child's environment only, with the same 10-minute life (`identity.hand_on`); an unverified caller
+hands on nothing, so its child is unverified too. A [run
 record](research-evidence.md#run-records) takes its `who` the same way and marks its source the same way; a run itself
 is not stamped.
 

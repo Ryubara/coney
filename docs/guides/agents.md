@@ -353,11 +353,11 @@ any other), and the call is refused unless all of these hold:
 3. **A Studio unit names an allowed model and effort**: the Agent call's `model` and `effort` are one of the pairs of
    `tasks.start.slots.tracks.studio.models` ([Which model](#models)); a call that names neither is refused too.
 4. **Its track has room**: its cap (`max`) is not reached, and the machine has a place once the places other tracks
-   keep are set aside; a kept place whose track has nothing to start has lapsed and is not set aside
-   ([lapse](slot-fill.md)). The kind comes from `TASK.md`, the liveness from `unit.json`, its worktree and the stamp log
-   (`task start` counts the same way), the labels from the claim cards and the build slots from `coney.local.toml`, so
-   the hook copies none of it. A refusal names the reason, the busy units and what frees a place. A second start for a
-   unit whose agent has not run `task start` yet is refused too (a workflow unit keeps no reservation, so not for it).
+   keep, unless [lapsed](slot-fill.md#lapse), are set aside. The kind comes from `TASK.md`, the liveness from
+   `unit.json`, its worktree and the stamp log (`task start` counts the same way), the labels from the claim cards and
+   the build slots from `coney.local.toml`, so the hook copies none of it. A refusal names the reason, the busy units
+   and what frees a place. A second start for a unit whose agent has not run `task start` yet is refused too (a workflow
+   unit keeps no reservation, so not for it).
 
 A start that is let through keeps the place for the agent (`slot.json`, which names its track) until its `task
 start` makes the unit. Every GitHub read happens before the slot lock is taken, so a slow GitHub never holds the lock.
@@ -492,20 +492,16 @@ export CONEY_AGENT_TOKEN=<32 hex digits>; <the command>
 
 `coney_tools.identity` reads the file the token names, as the first thing a `coney-tools` command does. A token that is
 typed, changed or expired finds no file, so the tool records the identity as **unverified** (every field `unknown`),
-never as another role; `stamps.who_from_env` takes it from there. The file holds the id (the
-subagent's, or `main`), type (or `none`), model (the id of the agent's latest turn in its transcript, or `unknown`),
-the session, agent and tool call it was written for, and when it expires (`[identity] ttl_seconds`, 10 minutes). It is
-read, not consumed, because one command can run several tools (`coney-tools ... && git commit`); the dispatcher removes
-it when the command ends, fails (`PostToolUseFailure`) or is denied (`PermissionDenied`), and a call that issues a
-token removes the expired files and leftover temporary ones. A background command (`run_in_background`) keeps its file
-for the sweep, because the end of the call comes as soon as the process is started, before uv has started the tool. A
-detached run (`--detach` of `build`, `ci run` and `task check`) starts its child after the caller's command has
-returned and its file is gone, so the caller hands on what the hook vouched for to it: a file of the same format under
-a fresh token, in the child's environment only, with the same 10-minute life (`identity.hand_on`); an unverified
-caller hands on nothing, and its child is unverified too. A
-tool that runs for long has read the file at its start and keeps the answer; a tool that starts after the file's life,
-such as a later `coney-tools` in a chain that runs past 10 minutes, finds none and is unverified. The folder is 0700
-and a file 0600.
+never as another role; `stamps.who_from_env` takes it from there. The file holds the id (the subagent's, or `main`),
+type (or `none`), model (the id of the agent's latest turn in its transcript, or `unknown`), the session, agent and tool
+call it was written for, and when it expires (`[identity] ttl_seconds`, 10 minutes). It is read, not consumed, because
+one command can run several tools (`coney-tools ... && git commit`); the dispatcher removes it when the command ends,
+fails (`PostToolUseFailure`) or is denied (`PermissionDenied`), and a call that issues a token removes the expired files
+and leftover temporary ones. A background command (`run_in_background`) keeps its file for the sweep, because the end of
+the call comes as soon as the process is started, before uv has started the tool. A detached run's child gets the
+caller's verified identity in a file of its own ([Who](stamps.md#who)). A tool that runs for long has read the file at
+its start and keeps the answer; a tool that starts after the file's life, such as a later `coney-tools` in a chain that
+runs past 10 minutes, finds none and is unverified. The folder is 0700 and a file 0600.
 
 What an agent can still do: read its own token (it proves only its own identity); write an identity file itself, which
 needs the folder, and the hooks refuse every session to name any of `~/.coney` (and `~/.ssh/`, the stamp logs
@@ -616,10 +612,9 @@ uv run --project python coney-tools build --agent <id> --preset dev --test -R <r
   it prints first.
 - **A second configuration** (a Clang build beside the default compiler's) is `--build-dir build/clang --env
   CC=clang-19 --env CXX=clang++-19` with `--configure-only`; never a raw `cmake`.
-- **Exit code 75 means "still queued".** The command left the queue: its wait reached `--max-wait`, or the wait the
-  queue still expects plus the step would pass the time budget (`--budget`), in which case it leaves at its first look.
-  It said its position and the numbers. Do other work and run the same command again later, or detach it and stop
-  ([Build waits](#build-waits)); do not loop on it in one call. Run again within the hour, it keeps its place.
+- **Exit code 75 means "still queued".** The command left the queue, saying its place: its wait reached `--max-wait`, or
+  the expected wait plus the step would pass `--budget` (then at its first look). Do other work and run it again later
+  (within the hour it keeps its place), or detach it and stop ([Build waits](#build-waits)); never loop on it.
 - **`--priority`** goes ahead of the queue. The coordinator uses it for a build somebody is waiting on; an agent does
   not set it on its own.
 - **`build status`** shows who holds the slots and who waits. A crashed run is taken over by the next claimer, which
