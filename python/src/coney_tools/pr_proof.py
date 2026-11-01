@@ -581,7 +581,7 @@ def _build_record(subject: Subject, stamp: stamps.Stamp) -> list[Refusal]:
         return [Refusal("checked", f"checked: {text}", "task check")]
 
     try:
-        ran = ctest_scope.scope_from_record(stamp.detail.get("ctest_scope"))
+        ran = ctest_scope.scope_from_record(stamp.detail.get("ctest_scope"), subject.unit.dir / ctest_scope.FOLDER)
     except ConventionsError as error:
         return refuse(str(error))
     if not ran.whole:

@@ -9,7 +9,7 @@ import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
-from typing import cast
+from typing import Any, cast
 
 import pytest
 from conventions_support import REMOVE, changed
@@ -35,6 +35,7 @@ from test_orig_study import ADDRESS
 
 from coney_tools import (
     build_record,
+    ctest_scope,
     fails_first,
     orig_copy,
     orig_pairs,
@@ -367,6 +368,35 @@ def test_a_narrowed_check_whose_record_ran_another_label_is_refused(tmp_path: Pa
     assert texts(built.verify(), "checked") == [
         f"checked: the build record is a filtered run (-L ^#(other_test)$); Check needs -L {WIDGET_LABEL}"
     ]
+
+
+def kept_scope(built: Any, files: list[str]) -> dict[str, Any]:
+    """The stamp's record of a narrowed scope of `files`, with the list saved beside the stamps as `task check` does."""
+    scope = ctest_scope.CtestScope(False, tuple(files))
+    ctest_scope.write_files(built.unit.dir / ctest_scope.FOLDER, scope)
+    record = ctest_scope.scope_record(scope)
+    assert isinstance(record, dict)
+    return record
+
+
+def test_a_check_whose_test_files_are_kept_beside_the_stamps_passes(tmp_path: Path) -> None:
+    built = make(tmp_path, skip=frozenset({"checked"}))
+    scope = kept_scope(built, [TEST_FILE, *(f"tests/ai/more_{i}_test.cpp" for i in range(300))])
+    built.check("full", ctest_scope=scope)
+    assert texts(built.verify(), "checked") == []
+
+
+def test_a_check_whose_kept_list_of_test_files_is_gone_or_edited_is_refused(tmp_path: Path) -> None:
+    built = make(tmp_path, skip=frozenset({"checked"}))
+    scope = kept_scope(built, [TEST_FILE])
+    built.check("full", ctest_scope=scope)
+    kept = built.unit.dir / ctest_scope.FOLDER / f"{scope['sha256']}.json"
+    kept.write_text("[]", encoding="utf-8")
+    [line] = texts(built.verify(), "checked")
+    assert "does not hash to its name" in line
+    kept.unlink()
+    [line] = texts(built.verify(), "checked")
+    assert "is missing from" in line and "run task check again" in line
 
 
 def test_a_ctest_scope_that_is_not_a_list_of_test_files_is_refused(tmp_path: Path) -> None:

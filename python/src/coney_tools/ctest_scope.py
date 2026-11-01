@@ -23,18 +23,24 @@ the same tip whatever the worktree holds. Standard library only.
 
 from __future__ import annotations
 
+import hashlib
+import json
+import os
 import re
 import subprocess
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
+from typing import Any
 
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions, ConventionsError
 
 #: How a stamp records the whole suite (`scope_record`).
 WHOLE = "whole"
+#: The folder in a task's scratch folder that keeps the test files a narrowed scope lists (`write_files`).
+FOLDER = "ctest-scope"
 #: The tag Catch2 gives a test case for its file (`--filenames-as-tags`), before the file's name.
 LABEL_PREFIX = "#"
 #: A quoted include: the path as written. Angle brackets are other libraries'.
@@ -250,19 +256,78 @@ def covers(ran: CtestScope, needed: CtestScope) -> bool:
     return ran.whole or (not needed.whole and set(needed.files) <= set(ran.files))
 
 
-def scope_record(scope: CtestScope) -> str | list[str]:
-    """The scope as the `checked` stamp records it (`detail.ctest_scope`): `whole`, or the list of test files."""
-    return WHOLE if scope.whole else list(scope.files)
+def scope_record(scope: CtestScope) -> str | dict[str, Any]:
+    """The scope as the `checked` stamp records it (`detail.ctest_scope`): `whole`, or the count and hash of its test
+    files, `{"files": N, "sha256": H}`. The list itself is too long for a stamp's `detail` (a change in the engine's
+    core reaches hundreds of test files), so it is kept beside the stamps (`write_files`)."""
+    if scope.whole:
+        return WHOLE
+    return {"files": len(scope.files), "sha256": files_sha256(scope.files)}
 
 
-def scope_from_record(value: object) -> CtestScope:
+def files_sha256(files: Iterable[str]) -> str:
+    """The SHA-256 of the sorted test files, as `write_files` saves them: the name of their file in `FOLDER`."""
+    return hashlib.sha256(_files_bytes(files)).hexdigest()
+
+
+def _files_bytes(files: Iterable[str]) -> bytes:
+    """The canonical JSON of the sorted, distinct test files (what `files_sha256` hashes and `write_files` saves)."""
+    return json.dumps(sorted(set(files)), separators=(",", ":"), ensure_ascii=True).encode("utf-8")
+
+
+def write_files(folder: Path, scope: CtestScope) -> Path | None:
+    """Save the test files of a narrowed scope as `<folder>/<sha256>.json`, named by the hash its stamp holds; None for
+    the whole suite, which has no list. The write is atomic and a file already there is left as it is."""
+    if scope.whole:
+        return None
+    data = _files_bytes(scope.files)
+    path = folder / f"{hashlib.sha256(data).hexdigest()}.json"
+    if not path.is_file():
+        folder.mkdir(parents=True, exist_ok=True)
+        temporary = folder / f".{path.stem}.{os.getpid()}.tmp"
+        temporary.write_bytes(data)
+        temporary.replace(path)
+    return path
+
+
+def scope_from_record(value: object, folder: Path | None = None) -> CtestScope:
     """The scope a stamp recorded; a stamp without one (made before the scope was recorded) ran the whole suite.
-    ConventionsError for anything else."""
+    A list is read as it is (a stamp of the first form wrote the files into `detail`); `{"files", "sha256"}` is read
+    from `<folder>/<sha256>.json`, which must hash to its name and hold that many files. ConventionsError for
+    anything else, or for a list that is missing or edited."""
     if value is None or value == WHOLE:
         return CtestScope(True)
     if isinstance(value, list) and value and all(isinstance(item, str) for item in value):
         return CtestScope(False, tuple(value))
+    if isinstance(value, dict) and set(value) == {"files", "sha256"}:
+        return _read_files(value, folder)
     raise ConventionsError(f"checked stamp: ctest_scope is {value!r}, not {WHOLE!r} or a list of test files")
+
+
+def _read_files(value: Mapping[str, Any], folder: Path | None) -> CtestScope:
+    """The scope whose test files are saved in `folder`, as the record `value` says; ConventionsError when the file is
+    missing, edited or the wrong size."""
+    name, count = value["sha256"], value["files"]
+    if not isinstance(name, str) or not re.fullmatch(r"[0-9a-f]{64}", name) or not isinstance(count, int):
+        raise ConventionsError(f"checked stamp: ctest_scope is {value!r}, not {WHOLE!r} or a list of test files")
+    where = f"checked stamp: ctest_scope lists {count} test files in {FOLDER}/{name[:12]}.json"
+    if folder is None:
+        raise ConventionsError(f"{where}, which is not kept here")
+    try:
+        data = (folder / f"{name}.json").read_bytes()
+    except OSError as error:
+        raise ConventionsError(f"{where}, which is missing from {folder} (run task check again)") from error
+    if hashlib.sha256(data).hexdigest() != name:
+        raise ConventionsError(f"{where}, which does not hash to its name (it was edited)")
+    try:
+        files = json.loads(data.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as error:
+        raise ConventionsError(f"{where}, which is not valid JSON ({error})") from error
+    if not isinstance(files, list) or not files or not all(isinstance(item, str) for item in files):
+        raise ConventionsError(f"{where}, which is not a list of test files")
+    if len(files) != count:
+        raise ConventionsError(f"{where}, which holds {len(files)}")
+    return CtestScope(False, tuple(files))
 
 
 # --- reading the files at a commit -----------------------------------------------------------------------------------

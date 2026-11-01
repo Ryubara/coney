@@ -22,6 +22,7 @@ from coney_tools import (
     build_record,
     build_run,
     check_progress,
+    ctest_scope,
     local_gate,
     pr_diff,
     stamps,
@@ -299,10 +300,33 @@ def test_an_engine_change_runs_only_the_test_files_that_reach_it_and_stamps_whic
     assert world.check() == 0
     assert world.labels == ["^#(brain_test)$"]
     stamp = world.stamp
-    assert stamp.detail["ctest_scope"] == ["tests/ai/brain_test.cpp"] and stamp.detail["tests"] == TESTS
+    scope = stamp.detail["ctest_scope"]  # a count and hash; the list is kept beside the stamps
+    assert scope == {"files": 1, "sha256": ctest_scope.files_sha256(["tests/ai/brain_test.cpp"])}
+    kept = unit.Unit.of(world.root, TASK).dir / ctest_scope.FOLDER / f"{scope['sha256']}.json"
+    assert json.loads(kept.read_text(encoding="utf-8")) == ["tests/ai/brain_test.cpp"]
+    assert stamp.detail["tests"] == TESTS
     assert "  ctest: the tests of 1 test file the change reaches, with the disc" in world.said
     assert any("--test -L ^#(brain_test)$" in line for line in world.said)
     assert "ctest_narrowed" not in stamp.detail  # every test file it reaches ran
+
+
+def test_a_change_reaching_dozens_of_test_files_still_writes_its_stamp_with_the_list_beside_it(world: World) -> None:
+    engine(world)
+    git(world.root, "checkout", "-q", "main")
+    (world.root / "tests" / "misc").mkdir(parents=True)
+    for i in range(90):  # 90 paths are over the 2 KB a stamp's detail may hold, and under the limit that narrows
+        (world.root / "tests" / "misc" / f"t{i}_test.cpp").write_text('#include "ai/brain.h"\n', encoding="utf-8")
+    world.edit("src/ai/mind.h", "#pragma once\n", "many")
+    git(world.root, "checkout", "-q", "work")
+    git(world.root, "rebase", "-q", "main")
+    world.edit("src/ai/brain.cpp", '#include "ai/brain.h"\nint think() { return 2; }\n')
+    assert world.check() == 0
+    scope = world.stamp.detail["ctest_scope"]
+    assert world.stamp.result == "pass" and scope["files"] == 91 and "ctest_narrowed" not in world.stamp.detail
+    kept = unit.Unit.of(world.root, TASK).dir / ctest_scope.FOLDER / f"{scope['sha256']}.json"
+    files = json.loads(kept.read_text(encoding="utf-8"))
+    assert len(files) == 91 and "tests/ai/brain_test.cpp" in files and "tests/misc/t89_test.cpp" in files
+    assert len(stamps.canonical(world.stamp.detail)) < stamps.MAX_DETAIL
 
 
 def test_a_change_whose_reach_is_too_wide_runs_the_tests_near_it_and_stamps_that(world: World) -> None:
