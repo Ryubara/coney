@@ -30,7 +30,9 @@ from coney_tools import (
     slot_waivers,
     stamps,
     task_check,
+    task_overlap,
     task_slots,
+    unit,
     watched_drives,
 )
 from coney_tools.audit_github import Runner, run_gh
@@ -42,6 +44,7 @@ from coney_tools.issue_claim_remote import GhRemote, Remote
 from coney_tools.pr_hold import holds_folder, read_active
 from coney_tools.slot_fill_github import GhSources, bounded_runner
 from coney_tools.task_create import CreateEnv, CreateRequest, create_task, match_lines
+from coney_tools.task_file import TaskFile
 from coney_tools.task_leads import LeadsResult, Searcher
 from coney_tools.task_leads_index import CachedIndex, prepare_index
 from coney_tools.task_review import add_review_parser, run_review_command
@@ -147,6 +150,15 @@ def add_task_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser])
     leads.add_argument("--terms", nargs="+", required=True, metavar="TERM", help="names to search for")
     leads.add_argument("--issue", type=int, metavar="N", help="also match the identifiers this issue writes")
     leads.add_argument("--refresh", action="store_true", help="rebuild the index first")
+    overlap = commands.add_parser(
+        "overlap",
+        help="list the open pull requests and the other units in progress that touch the paths and @orig addresses "
+        "of a task (docs/guides/pending-work.md)",
+    )
+    overlap.add_argument("task", nargs="?", help="the task id (default: CONEY_TASK, else the branch)")
+    overlap.add_argument(
+        "--write", action="store_true", help="also replace the task file's 'Pending work that overlaps' section"
+    )
     index = commands.add_parser("index", help="rebuild the cached leads index")
     index.add_argument("--no-gh", action="store_true", help="leave the merged pull requests out")
     task_check.add_parser(commands)
@@ -375,6 +387,46 @@ def _run_slots(
     return 0 if verdict.allowed else task_slots.REFUSED
 
 
+def _overlap_env(
+    root: Path, conventions: Conventions, gh: Runner | None, now: Callable[[], datetime]
+) -> task_overlap.OverlapEnv:
+    """The reads of the pending work: the given `gh` runner and clock, the scratch folder of the checkout."""
+    return task_overlap.OverlapEnv(scratch=scratch_folder(root), conventions=conventions, gh=gh, now=now)
+
+
+def _overlap_gh(conventions: Conventions, run: Runner, remote: Remote | None) -> Runner | None:
+    """The `gh` the pending-work reads use: the runner a caller injected, else none when the caller injected GitHub's
+    remote (a test that stands in for GitHub as a whole reaches no real pull requests), else a bounded `gh`."""
+    if run is not run_gh:
+        return run
+    if remote is not None:
+        return None
+    return bounded_runner(float(conventions.tasks.overlap.gh_seconds))
+
+
+def _start_overlap(
+    env: task_overlap.OverlapEnv,
+) -> Callable[[TaskFile, UnitRecord | None, bool], list[str]]:
+    """What `task start` calls to read the pending work and (when asked) write it into the task file."""
+
+    def lines(task: TaskFile, record: UnitRecord | None, write: bool) -> list[str]:
+        """The lines for the start's report."""
+        path = env.scratch / task.task / env.conventions.tasks.file
+        return task_overlap.start_lines(env, task, record, write, path)
+
+    return lines
+
+
+def _run_overlap(
+    args: argparse.Namespace, root: Path, conventions: Conventions, now: Callable[[], datetime], gh: Runner | None
+) -> int:
+    """`task overlap`: print the pending work that overlaps a task, and with `--write` record it in the task file."""
+    name = unit.task_name(root, args.task)
+    for line in task_overlap.show(_overlap_env(root, conventions, gh, now), name, args.write):
+        print(line)
+    return 0
+
+
 def run_task(
     args: argparse.Namespace,
     run: Runner = run_gh,
@@ -395,6 +447,8 @@ def run_task(
     rules = conventions.claims
     if args.command == "slots":
         return _run_slots(args, root, conventions, now, remote, sources, drives)
+    if args.command == "overlap":
+        return _run_overlap(args, root, conventions, now, _overlap_gh(conventions, run, remote))
     if args.command == "index":
         index = _index(root, conventions, None if args.no_gh else run, True, now())
         print(f"index: {len(index.entries)} entries at {index.head[:10]}")
@@ -409,7 +463,14 @@ def run_task(
         if not name:
             raise ConfigError("task start: name the task (an argument, or CONEY_TASK)")
         start_env = StartEnv(
-            root, github, conventions, scratch_folder(root), now, lambda: who, build_slots=_build_slots(root)
+            root,
+            github,
+            conventions,
+            scratch_folder(root),
+            now,
+            lambda: who,
+            build_slots=_build_slots(root),
+            overlap=_start_overlap(_overlap_env(root, conventions, _overlap_gh(conventions, run, remote), now)),
         )
         return start_task(
             StartRequest(name, args.base, args.remote, not args.no_fetch, args.dry_run, args.adopt, args.adopt_branch),

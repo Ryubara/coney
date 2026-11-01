@@ -314,6 +314,7 @@ nav:
       - Agent tools other than Claude Code: guides/agents-other-tools.md
       - Keeping the places full: guides/slot-fill.md
       - Issues: guides/issues.md
+      - Pending work that overlaps a unit: guides/pending-work.md
       - Building and testing: guides/building.md
       - The shader build: guides/shaders.md
       - clang-tidy: guides/clang-tidy.md

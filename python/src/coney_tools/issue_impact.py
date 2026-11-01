@@ -29,7 +29,7 @@ from __future__ import annotations
 import re
 import subprocess
 from collections import Counter
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -270,6 +270,23 @@ def gather(
         touched.fixes |= closing_numbers(text)
     touched.replaces = list(dict.fromkeys([*replaced_refs("\n".join(messages)), *replaces]))
     return touched
+
+
+def diff_addresses(patch: str, only: Collection[str] | None = None) -> dict[str, str]:
+    """The addresses a `git diff` patch holds in changed lines, each with the first file that holds it.
+
+    The files and lines `gather` counts and no others: a test file's invented fixture values and generated or binary
+    files say nothing about the original's addresses. Used for a pull request's diff, which is not a checkout, and for
+    a unit's; `only`, when given, limits it to those (new) paths.
+    """
+    found: dict[str, str] = {}
+    for diff in parse_diff(patch):
+        if (only is not None and diff.new not in only) or _SKIP_CONTENT.search(diff.new) or _TEST_FILE.search(diff.new):
+            continue
+        for text in diff.text:
+            for address in _ADDRESS.findall(text):
+                found.setdefault(address.lower(), diff.new)
+    return found
 
 
 def _add_file(root: Path, touched: Touched, diff: _FileDiff, base: str, head: str) -> None:

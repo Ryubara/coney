@@ -57,6 +57,7 @@ from coney_tools import (
     pr_text_file,
     review_verdict,
     stamps,
+    task_overlap,
     unit,
 )
 from coney_tools.config import ConfigError, find_repo_root
@@ -757,6 +758,8 @@ def run_review_command(args: argparse.Namespace) -> int:
         mode = "text" if args.text else "full"
         if args.record:
             return record(env, mode)
+        # Work that appeared since the start is shown before the review (docs/guides/pending-work.md).
+        task_overlap.report_stage(env.root, env.unit.task, env.conventions, _say, True)
         if args.run:
             return run(
                 env,

@@ -1006,6 +1006,22 @@ class LeadsRules:
     merged_prs: int
 
 
+@dataclass(frozen=True)
+class OverlapRules:
+    """How much of the pending work that overlaps a unit is read and listed (docs/guides/pending-work.md)."""
+
+    #: Open pull requests read in one call.
+    open_prs: int
+    #: Open pull requests diffed for the `@orig` addresses they touch, at most.
+    diff_prs: int
+    #: Items listed, strongest first.
+    max_listed: int
+    #: Overlapping paths named per item.
+    max_paths: int
+    #: The longest one `gh` call may take, in seconds.
+    gh_seconds: int
+
+
 #: The kinds of review a change can need, each with a checklist (docs/guides/review/index.md): the order is the order
 #: the reviewer applies them in.
 REVIEW_KINDS = ("code", "docs", "research", "orig", "text", "commits")
@@ -1187,6 +1203,7 @@ class Tasks:
     #: The task file's name inside the task's scratch folder.
     file: str
     leads: LeadsRules
+    overlap: OverlapRules
     start: TaskStart
     review: TaskReview
 
@@ -2523,7 +2540,11 @@ def _read_fill(data: object, where: str) -> FillRules:
 
 def _read_tasks(data: object, where: str) -> Tasks:
     """The `tasks` section: the task kinds, the task file's name, the leads limits, `task start` and the review."""
-    table = _table(data, where, ("kinds", "file", "leads", "start", "review"))
+    table = _table(data, where, ("kinds", "file", "leads", "overlap", "start", "review"))
+    overlap_where = _at(where, "overlap")
+    overlap_keys = ("open_prs", "diff_prs", "max_listed", "max_paths", "gh_seconds")
+    overlap = _table(table["overlap"], overlap_where, overlap_keys)
+    overlap_numbers = {key: _count(overlap[key], _at(overlap_where, key)) for key in overlap_keys}
     leads_where = _at(where, "leads")
     keys = ("rare_max_entries", "common_min_entries", "max_per_source", "index_max_age_hours", "merged_prs")
     leads = _table(table["leads"], leads_where, keys)
@@ -2558,6 +2579,7 @@ def _read_tasks(data: object, where: str) -> Tasks:
         kinds=kinds,
         file=file,
         leads=LeadsRules(**numbers),
+        overlap=OverlapRules(**overlap_numbers),
         start=TaskStart(
             unit_file=unit_file,
             slots=TaskSlots(

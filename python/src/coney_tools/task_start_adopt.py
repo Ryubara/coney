@@ -27,6 +27,7 @@ from coney_tools.task_start import (
     _stamp_start,
     _summary,
     _warn_unverified,
+    pending_lines,
 )
 from coney_tools.unit_record import UnitRecord, write_record
 
@@ -129,6 +130,7 @@ def start_adopted(
     _warn_unverified(who, env)
     _stamp_start(record, task, who, env, steps, tip, fork_point, adopted=True)
     _post_progress(record, record_path, env)
-    _summary(record, steps, line, env.scratch, "adopted the branch (started on the existing branch)", env)
+    extra = pending_lines(env, task, record, True)
+    _summary(record, steps, line, env.scratch, "adopted the branch (started on the existing branch)", env, extra)
     out(f"  redo the stages the pull request needs, then: pr open {task.task} --adopt <head> (docs/guides/pr.md#adopt)")
     return 0

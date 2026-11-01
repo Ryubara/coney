@@ -54,6 +54,7 @@ from coney_tools import (
     pr_diff,
     proof_profiles,
     stamps,
+    task_overlap,
     unit,
 )
 from coney_tools.build_claims import SlotTimeout
@@ -110,6 +111,9 @@ class Env:
     #: The writer of the run's progress file; `_run` attaches it to the unit's scratch folder. The real environment
     #: hands the same one to the build, the streaming runner and the check slot, so that all of them report to it.
     progress: check_progress.Progress = field(default_factory=check_progress.Progress)
+    #: `(checkout, task, conventions, say, write)`: prints the pending work that overlaps the unit again when it differs
+    #: from the task file's record of it, and records it (`task_overlap.report_stage`); the default reads nothing.
+    overlap: Callable[[Path, str, Conventions, Callable[[str], None], bool], None] = task_overlap.skip_stage
 
 
 def no_disc_reason(root: Path) -> str | None:
@@ -161,6 +165,7 @@ def default_env(max_wait: float = build_cli.DETACHED_MAX_WAIT) -> Env:
         hold=_real_hold(max_wait, progress),
         workers=_workers,
         progress=progress,
+        overlap=task_overlap.report_stage,
     )
 
 
@@ -198,7 +203,8 @@ def _run(request: Request, env: Env) -> int:
     who = env.who()  # first: a hook's identity file lives only a few minutes
     root = find_repo_root(request.worktree or Path.cwd())
     conventions = load_conventions(root)
-    task = _log_task(root, unit.task_name(root, request.task), conventions, env.say)
+    named = unit.task_name(root, request.task)
+    task = _log_task(root, named, conventions, env.say)
     base = request.base or f"origin/{conventions.repo.default_branch}"
     conventions, rules_from = _rules(root, base, conventions, env.say)
     dirty = unit.status_lines(root)
@@ -228,6 +234,7 @@ def _run(request: Request, env: Env) -> int:
     tests = _ctest_scope(root, conventions, change) if build.checks[-1] in builds else None
     if tests is not None:
         env.say(f"  ctest: {tests.text}")
+    env.overlap(root, named, conventions, env.say, not request.dry_run)
     if request.dry_run:
         env.say("  dry run: nothing was run and no stamp was written")
         return 0

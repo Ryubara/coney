@@ -19,7 +19,7 @@ from conventions_support import REMOVE, changed, write_checkout
 from git_support import git
 from review_support import make_verdict
 
-from coney_tools import fails_first, identity, orig_pairs, pr_proof, review_verdict, stamps, task_review
+from coney_tools import fails_first, identity, orig_pairs, pr_proof, review_verdict, stamps, task_overlap, task_review
 from coney_tools.config import ConfigError
 from coney_tools.conventions import ConventionsError, load_conventions
 from coney_tools.review_verdict import problems as verdict_problems
@@ -1161,3 +1161,20 @@ def test_every_command_the_refusals_of_the_tool_part_name_exists(tmp_path: Path)
     assert any(c.startswith("orig compare 0x00100010 --coney-function") for c in mentioned), problems
     assert "orig fails-first" in mentioned, problems
     assert unknown_commands(text) == []
+
+
+def test_a_review_shows_the_pending_work_that_changed_but_a_record_does_not(
+    rig: Rig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    shown: list[tuple[str, bool]] = []
+    monkeypatch.setattr(task_review, "environment", lambda args: rig.env())
+    monkeypatch.setattr(task_review, "prepare", lambda env, mode: 0)
+    monkeypatch.setattr(task_review, "record", lambda env, mode: 0)
+    monkeypatch.setattr(
+        task_overlap,
+        "report_stage",
+        lambda root, task, conventions, say, write: shown.append((task, write)),
+    )
+    assert task_review.run_review_command(arguments(text=False, record=False, run=False)) == 0
+    assert task_review.run_review_command(arguments(text=False, record=True, run=False)) == 0
+    assert shown == [(rig.env().unit.task, True)]

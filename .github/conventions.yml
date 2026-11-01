@@ -545,6 +545,15 @@ tasks:
     max_per_source: 8                             # ranked matches listed per source (matches named in the issue are extra)
     index_max_age_hours: 24                       # the cached index is rebuilt when older
     merged_prs: 400                               # merged pull requests read for the index
+  # Pending work that overlaps a unit (docs/guides/pending-work.md): the open pull requests and the other units in
+  # progress whose changes touch a path or an @orig address the unit names or changes. `task start` writes the list into
+  # the task file, `task check` and `task review` print it again when it changed, `task overlap` shows it.
+  overlap:
+    open_prs: 100                                 # open pull requests read (their changed files come with the list)
+    diff_prs: 30                                  # at most this many open pull requests are diffed for the @orig addresses they touch
+    max_listed: 12                                # items listed (the strongest first); the count of the rest is said
+    max_paths: 4                                  # overlapping paths named per item; the count of the rest is said
+    gh_seconds: 30                                # the longest one `gh` call may take; a failed read is a note, never a refusal
   # `task review` (docs/guides/review/task.md): the reviewer agent (.claude/agents/<agent>.md) and the files of a
   # review, all inside <scratch>/<task>/<folder>/. The tool writes the packet (what to judge and the hashes the verdict
   # must quote); the reviewer writes the verdict and its report; `task review --record` binds the verdict to the change

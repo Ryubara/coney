@@ -27,7 +27,7 @@ hooks.
 from __future__ import annotations
 
 import subprocess
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
@@ -81,6 +81,9 @@ class StartEnv:
     out: Callable[[str], None] = print
     #: The machine's build slots (`build_slots` in coney.local.toml), which set its limit of units in work.
     build_slots: int = DEFAULT_SLOTS
+    #: `(task, record, write) -> lines`: the pending work that overlaps the unit (docs/guides/pending-work.md),
+    #: written to the task file when `write` (not for a dry run); None reads none (a test that does not ask for it).
+    overlap: Callable[[TaskFile, UnitRecord | None, bool], list[str]] | None = None
 
 
 def front_sha256(task: TaskFile) -> str:
@@ -324,8 +327,27 @@ def _post_progress(record: UnitRecord, record_path: Path, env: StartEnv) -> None
         write_record(record_path, replace(record, progress_posted=True))
 
 
-def _summary(record: UnitRecord, steps: list[str], line: str, scratch: Path, headline: str, env: StartEnv) -> None:
-    """Print what the unit is and where."""
+def pending_lines(env: StartEnv, task: TaskFile, record: UnitRecord | None, write: bool) -> list[str]:
+    """What the start says about the pending work that overlaps the unit, and (with `write`) records in the task file.
+    Reading it is never a reason to refuse or to fail a start: a fault becomes a note."""
+    if env.overlap is None:
+        return []
+    try:
+        return env.overlap(task, record, write)
+    except (ConfigError, OSError, ValueError, subprocess.SubprocessError) as error:
+        return [f"pending work that overlaps: not read ({str(error)[:120]})"]
+
+
+def _summary(
+    record: UnitRecord,
+    steps: list[str],
+    line: str,
+    scratch: Path,
+    headline: str,
+    env: StartEnv,
+    extra: Sequence[str] = (),
+) -> None:
+    """Print what the unit is and where, then `extra` lines (the pending work that overlaps)."""
     out = env.out
     out(f"task {record.task}: {headline}")
     if record.parent:
@@ -337,6 +359,8 @@ def _summary(record: UnitRecord, steps: list[str], line: str, scratch: Path, hea
     if steps:
         out(f"  stamps    {', '.join(steps)}")
     out(f"  {line}")
+    for more in extra:
+        out(f"  {more}")
     # The worktree is printed above; repeating the path here only made the output longer.
     out("next: work in the worktree; the stage commands find this unit from its branch")
 
@@ -464,6 +488,8 @@ def _start_unit(
         out(f"dry run: would make the branch '{task.task}' from {base_ref} ({base_commit[:12]}) in {tree}")
         out(f"dry run: would write {record_path}, stamp assigned and claimed, and post /progress claimed on each issue")
         out(f"dry run: {line}")
+        for more in pending_lines(env, task, None, False):
+            out(f"dry run: {more}")
         return 0
     done = _git(main, "worktree", "add", "-b", task.task, str(tree), base_commit)
     if done.returncode != 0:
@@ -474,7 +500,7 @@ def _start_unit(
     _warn_unverified(who, env)
     _stamp_start(record, task, who, env, steps, base_commit, base_commit)
     _post_progress(record, record_path, env)
-    _summary(record, steps, line, env.scratch, "started", env)
+    _summary(record, steps, line, env.scratch, "started", env, pending_lines(env, task, record, True))
     return 0
 
 
@@ -521,5 +547,5 @@ def _start_fix(request: StartRequest, env: StartEnv, task: TaskFile, user: str, 
     steps = _missing_steps(record, report)
     _warn_unverified(who, env)
     _stamp_start(record, task, who, env, steps, head_commit(parent.worktree), parent.base_commit)
-    _summary(record, steps, line, env.scratch, "started", env)
+    _summary(record, steps, line, env.scratch, "started", env, pending_lines(env, task, record, True))
     return 0
