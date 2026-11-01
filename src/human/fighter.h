@@ -786,6 +786,7 @@ class Fighter {
     [[nodiscard]] std::uint32_t connectClip() const { return static_cast<std::uint32_t>(m_connect + (m_rear ? 2 : 0)); }
     // A strong grapple's connect or the mount's pick-up (`clip`) has ended in the hold: the victim takes the clip's
     // damage, reported as the hold's id (docs/research/combat-grabs.md#strong-grapple, #mount).
+    // @orig 0x0026bad8 Grab_ConnectEnd (unknown)
     void landGrapple(const FighterInput& input, std::uint32_t clip);
     // During its grab's or tackle's intro, the victim's counter press (Holdable::takeCounterPress()), face to face:
     // the hold ends, the victim plays the counter (76 or 9) and this human the reaction from the victim's set (77 or
@@ -798,7 +799,9 @@ class Fighter {
     void endPowerMove();
     // The pair's moments, read from the grabber's clip at the start of an update: the connecting clip starting (the
     // alignment and the victim's paired clip), a connecting clip or a spin ending (the gate and the snap), and a spin
-    // starting (detachForSpin()).
+    // starting (detachForSpin()). The connect's and the pick-up's ends port Grab_ConnectEnd (with landGrapple()
+    // and holdGatePasses()); the connect's start is Grab_Connect's (connect()).
+    // @orig 0x0026bad8 Grab_ConnectEnd (unknown)
     void followPairClips(const FighterInput& input, HumanAnimator& animator, float heading);
     // A spin has started: the victim leaves its offset and moves by its own clip until the spin's end.
     void detachForSpin(const HumanAnimator& animator);
