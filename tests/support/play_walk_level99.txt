@@ -1,0 +1,24 @@
+# play_walk.txt for level99 from the play mode (--play-level level99 --skip-movies): the level script's intro scene,
+# l99_c1, starts four frames into play and holds Rembrandt, so cross skips it first (a scene takes a skip only after
+# 60 of its updates), then the same walk as play_walk.txt, 120 frames later. Frames are 1/30 s.
+# Skip the intro scene.
+70 tap cross
+# Stand still while the view fades back in.
+# Walk forward at 30 % for two seconds, then at 60 % (the walk speed does not depend on how far the stick is pushed).
+150 stick left 0 30
+210 stick left 0 60
+# Run: full deflection, up and to the right.
+270 stick left 50 87
+# A turning arc while running: the stick swings to the right and round.
+300 stick left 50 87
+315 stick left 87 50
+330 stick left 100 0
+# Let go: the run skids through the run stop (0.8 s), then the idle.
+360 stick left 0 0
+# Walk again at 45 %, to the left.
+390 stick left -45 0
+# The camera: the right stick at 60 % to the right for a second, then full left.
+420 stick right 60 0
+450 stick right -100 0
+465 stick right 0 0
+480 stick left 0 0

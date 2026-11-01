@@ -607,7 +607,8 @@ if(CONEY_SHADERS)
                          -DGOOD=${PROJECT_SOURCE_DIR}/src/platform/shaders/blit.frag.hlsl
                          -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/shader_refusal_${_format}
                          -P ${CMAKE_CURRENT_SOURCE_DIR}/support/shader_refusal_check.cmake)
-        set_tests_properties(coney.shaders.refuse_a_broken_shader_${_format} PROPERTIES TIMEOUT 120)
+        set_tests_properties(coney.shaders.refuse_a_broken_shader_${_format} PROPERTIES
+                             TIMEOUT ${CONEY_TEST_HANG_GUARD})
     endforeach()
 endif()
 
@@ -617,10 +618,11 @@ if(MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_executable(error_dialogs_check support/error_dialogs_check.cpp)
     coney_target_defaults(error_dialogs_check)
     target_link_libraries(error_dialogs_check PRIVATE coney_platform)
+    # The script's own timeout on the check is the hang guard, so ctest needs none: a hang reaches the script's message.
     add_test(NAME coney.error_dialogs_off
-             COMMAND ${CMAKE_COMMAND} -DCHECK_EXE=$<TARGET_FILE:error_dialogs_check> -P
+             COMMAND ${CMAKE_COMMAND} -DCHECK_EXE=$<TARGET_FILE:error_dialogs_check>
+                     -DHANG_GUARD=${CONEY_TEST_HANG_GUARD} -P
                      "${CMAKE_CURRENT_SOURCE_DIR}/support/error_dialogs_check.cmake")
-    set_tests_properties(coney.error_dialogs_off PROPERTIES TIMEOUT 60)
 endif()
 
 # Coney's Lua 4.0 compiler behind luac's command line, for the decompiler's round trip (support/coney_luac.cpp,
@@ -635,4 +637,4 @@ add_executable(frame_copy_check support/frame_copy_check.cpp)
 coney_target_defaults(frame_copy_check)
 target_link_libraries(frame_copy_check PRIVATE coney_platform)
 add_test(NAME coney.frame_copies_upright COMMAND frame_copy_check)
-set_tests_properties(coney.frame_copies_upright PROPERTIES TIMEOUT 60 SKIP_RETURN_CODE 77)
+set_tests_properties(coney.frame_copies_upright PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD} SKIP_RETURN_CODE 77)
