@@ -15,7 +15,7 @@ second (one per fixed step), 720 lines high at the picture's shape (960 x 720 fo
 ```sh
 CLIPS=$(uv run --project python coney-tools clips folder my-task)   # the absolute path of the clips folder
 build/dev/src/platform/coney --disc /path/to/warriors.iso --record "$CLIPS/front-end.mp4" --record-seconds 5
-build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 --input-script tests/support/play_walk.txt --record "$CLIPS/walk.mp4"
+build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 --skip-movies --input-script tests/support/play_walk_level99.txt --record "$CLIPS/walk.mp4"
 ```
 
 - **What it records.** The frames Coney draws, read back from its own frame buffer after the game's 2D layers (HUD,
