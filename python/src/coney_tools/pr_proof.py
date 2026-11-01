@@ -129,6 +129,9 @@ class Subject:
     #: Each original address -> the keys of all the `@orig` functions at the tip that carry it (a `compared` stamp
     #: belongs to one of them when there are several).
     citing: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
+    #: The `@orig` functions the branch only moved (another class, name or file; code and tags as they were): they
+    #: owe no study or compare of their own (`orig_review.moves`).
+    moved: tuple[orig_review.Move, ...] = ()
 
 
 @dataclass
@@ -203,25 +206,21 @@ def _touches_source(paths: Sequence[str]) -> bool:
 
 def changed_functions(
     root: Path, base: str, tip: str, paths: Sequence[str]
-) -> tuple[tuple[OrigUnit, ...], tuple[OrigUnit, ...], dict[str, tuple[str, ...]]]:
-    """The `@orig` functions the branch adds or changes, those it removes, between `base` and `tip`, and which Coney
+) -> tuple[tuple[OrigUnit, ...], tuple[OrigUnit, ...], dict[str, tuple[str, ...]], tuple[orig_review.Move, ...]]:
+    """The `@orig` functions the branch adds or changes, those it removes, between `base` and `tip`, which Coney
     functions at the tip cite each original address (`orig_review.citing`: a `compared` stamp belongs to one of
-    several functions that share an address, so the lookup needs all of them, not only the changed ones).
+    several functions that share an address, so the lookup needs all of them, not only the changed ones) and those it
+    only moved (`orig_review.moves`: a function whose code and tags are as they were under another qualified name or
+    in another file keeps its compare, so it is in neither of the first two).
 
     Reading every source file at two commits takes seconds, so a change that touches no C++ file under `src/` (a
     guide, a tool, a workflow) is known to add, change and remove none, and to need no stamp looked up, without reading
     them."""
     if not _touches_source(paths):
-        return (), (), {}
-    before = {u.key: u for u in orig_review.units_at(root, base)}
-    after = {u.key: u for u in orig_review.units_at(root, tip)}
-    changed = tuple(
-        u
-        for u in after.values()
-        if u.key not in before or before[u.key].body_sha256 != u.body_sha256 or before[u.key].cited != u.cited
-    )
-    removed = tuple(u for key, u in before.items() if key not in after)
-    return changed, removed, orig_review.citing(after.values())
+        return (), (), {}, ()
+    after = orig_review.units_at(root, tip)
+    found = orig_review.moves(orig_review.units_at(root, base), after)
+    return found.changed, found.removed, orig_review.citing(after), found.moved
 
 
 def load_subject(
@@ -268,7 +267,7 @@ def load_subject(
     change = pr_diff.change_of(root, remote_ref, tip)
     base, paths = change.base, change.paths
     profile = proof_profiles.required_profile(rules, paths)
-    changed, removed, citing = changed_functions(root, base, tip, paths) if scan else ((), (), {})
+    changed, removed, citing, moved = changed_functions(root, base, tip, paths) if scan else ((), (), {}, ())
     return Subject(
         root=root,
         unit=unit,
@@ -287,6 +286,7 @@ def load_subject(
         changed=changed,
         citing=citing,
         removed=removed,
+        moved=moved,
         dirty=dirty_paths(root),
         now=now or datetime.now(UTC),
     )
@@ -295,8 +295,8 @@ def load_subject(
 def scanned(subject: Subject) -> Subject:
     """`subject` with the `@orig` functions its change adds, changes and removes read in (`load_subject(scan=False)`
     leaves them out)."""
-    changed, removed, citing = changed_functions(subject.root, subject.base, subject.tip, subject.paths)
-    return dataclasses.replace(subject, changed=changed, removed=removed, citing=citing)
+    changed, removed, citing, moved = changed_functions(subject.root, subject.base, subject.tip, subject.paths)
+    return dataclasses.replace(subject, changed=changed, removed=removed, citing=citing, moved=moved)
 
 
 def refusals_before_scan(subject: Subject) -> list[Refusal]:
@@ -616,11 +616,16 @@ def check_compared(
 ) -> tuple[list[Refusal], list[str]]:
     """Step 3: every `@orig` function the branch adds or changes was studied and compared at the body it has now, at
     every address it carries, and is clean of decompiler fingerprints. Returns the refusals and the notes (functions
-    the branch removed)."""
+    the branch removed, and those it moved, which keep their compare)."""
     found: list[Refusal] = []
     notes = [
         f"{u.coney} ({', '.join(_addresses(u))}) is no longer in the code: removed or untagged by this change"
         for u in subject.removed
+    ]
+    notes += [
+        f"{m.unit.coney} ({', '.join(_addresses(m.unit))}) moved from {m.was.coney} ({m.was.where}) with its code and "
+        "tags as they were: it keeps its study and compare, so none is asked"
+        for m in subject.moved
     ]
     tracked = tracked_files(subject.root)
     files: set[str] = set()

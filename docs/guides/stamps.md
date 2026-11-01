@@ -321,6 +321,11 @@ merge_reason = ""          # needed when lines cover more than one piece
    space](coney-tools-fidelity.md#body-hash)), and a count of the relations. A second run that changes nothing writes
    no stamp.
 
+A function that only **moved** (another class, a renamed class or function, another file, with its code and its `@orig`
+tags as they were) keeps the study and compare it had and owes none: `task review` and `pr verify` do not count it as
+changed and `pr verify` notes it. A changed body, address or tag still owes a new compare
+([A moved function](coney-tools-fidelity.md#moved)).
+
 ### Two Coney functions, one address {#shared-address}
 
 When two Coney functions port parts of one original function

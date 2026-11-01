@@ -123,8 +123,9 @@ A unit has a key (`Brain::think(int)`, with the file in front for a file's priva
 the working tree.
 
 * `review-stamp` prints JSON.
-    * With `--branch` or `--worktree` (pr mode) it gives the branch's `tip`, the `base` it left, and the units that
-      are new at the tip or whose body or addresses changed.
+    * With `--branch` or `--worktree` (pr mode) it gives the branch's `tip`, the `base` it left, the units that
+      are new at the tip or whose body or addresses changed (`functions`), and apart those that only
+      [moved](#moved) (`moved`, each with the key it `was`): a moved unit needs no review and no compare.
     * With `--folder` or `--address` (sweep mode) it gives the units at `--ref` in scope that the ledger has not
       seen at their current body; `--every` lists all of them.
 * `check-review` is the release gate. A branch that changes no unit passes. Otherwise the passing verdict
@@ -151,7 +152,8 @@ It is one JSON object per review and is never committed. `orig legacy-queue` rea
 
 A unit's `body_sha256` is the SHA-256 of its definition's **code**, which is what decides that a function changed
 (`review-stamp`, `check-review`, the ledger, a `compared` stamp's `coney_body_sha256`, `task review` and `pr verify`
-all read this one hash, `orig_review.code_text` and `_body_hash`).
+all read this one hash, `orig_review.code_text` and `_body_hash`); [a moved function](#moved) is told by a second hash
+that leaves its own qualified name out.
 
 * **Left out:** every comment (`//` to the end of the line, also over a trailing backslash, and `/* ... */` across any
   number of lines) and all white space: indentation, trailing blanks, line breaks, the spacing around an operator.
@@ -176,6 +178,31 @@ rehashing, not migrated, so none is invalidated when the hash changes and no sta
   edit it is stale, as before, and the function is reviewed again.
 * An `ORIG-REVIEW.json` verdict is not rehashed: it lives as long as its branch, and one written before this change is
   refused as "reviewed at another body"; the reviewer writes it again from `review-stamp`.
+
+### A moved function {#moved}
+
+Moving an `@orig` function into another class, renaming the class or the function, or putting it in another file
+changes its key and, for an out-of-class definition, the line that names its class, so its body hash changes while its
+logic does not. That is not a new function: a function that **keeps its code and its tags** keeps the study and the
+compare it already had, and is not asked for new ones. `orig_review.moves` reads the units at the base and at the tip
+and calls a unit with a new key a **move** when one unit that is gone at the tip (taken over once, so a copy is not a
+move) has all of:
+
+* the same `@orig` addresses, in both builds, and the same names in its tags;
+* the same code, so either the same body hash, or the same **moved hash** (`Unit.moved_sha256`, `_moved_hash`): the
+  [body hash](#body-hash) of the definition with every `Scope::` that leads to its own class dropped wherever it stands
+  (`ns::Mind::`, `Mind::`, also inside the body: `Mind::kStep`) and its own name dropped at its declarator. A body that
+  now calls, reads or names anything else (`Other::kStep`, another function, a changed literal or operator) has another
+  moved hash and stays changed.
+
+A moved function is in neither `functions` nor `removed` of `review-stamp --branch`, so `orig check-review` and
+`task review` ask for no verdict and no `compared` stamp of it, and `pr verify` lists it as a note
+(`Mind::think (0x00100010) moved from Brain::think (src/ai/brain.cpp:3) with its code and tags as they were: it keeps
+its study and compare, so none is asked`) instead of refusing it as never studied. A function whose body, address or
+tag changed in the same branch is changed, moved or not: it owes a fresh compare as any changed function does, and so
+does one whose old copy is still in the code. A function that is a move in one branch and edited in the next is checked
+against the branch's base, so the edit is a change. The review ledger is by key, so a moved function starts there as
+unreviewed.
 
 ### orig study, compare, verify and fails-first {#orig-stages}
 

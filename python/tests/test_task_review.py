@@ -253,6 +253,23 @@ def test_the_packet_says_what_to_judge_and_quotes_the_hashes(rig: Rig) -> None:
     assert len(packet["pairs_set_sha256"]) == 64 and packet["rubric_version"] == 1
 
 
+def test_a_function_that_only_moved_needs_no_compare_and_no_orig_review(rig: Rig) -> None:
+    """The class is renamed and nothing else: the packet lists the moves apart and asks for no compare of them."""
+    git(rig.root, "checkout", "-q", "-b", "moving", "origin/main")
+    for name in ("src/ai/brain.h", "src/ai/brain.cpp"):
+        path = rig.root / name
+        text = path.read_text(encoding="utf-8")
+        path.write_text(text.replace("class Brain", "class Mind").replace("Brain::", "Mind::"), encoding="utf-8")
+    git(rig.root, "commit", "-q", "-a", "-m", "rename the class")
+    packet, problems = rig.prepare()
+    assert [p for p in problems if p.startswith("compared")] == []
+    assert packet["functions"] == [] and "orig" not in packet["kinds"]
+    assert {m["coney"]: m["was"] for m in packet["moved"]} == {
+        "Mind::think": "Brain::think(int)",
+        "Mind::wait": "Brain::wait()",
+    }
+
+
 def test_a_research_data_file_is_research_work_but_no_page(rig: Rig) -> None:
     rules = rig.conventions.tasks.review
     assert rules.is_research_page("docs/research/ai/brain.md") and rules.is_research_page("research/notes.md")

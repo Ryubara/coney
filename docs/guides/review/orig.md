@@ -176,7 +176,8 @@ opens callees as far as the comparison needs, gives each function exactly one [c
 1. Run `uv run --project python coney-tools orig review-stamp --branch <branch> --base <base>` from the main checkout
    (or `--worktree <path>`). It prints the `tip`, the `base` and the `@orig` functions the branch adds or changes: each
    one's `key`, `where`, `coney`, `addresses` and `body_sha256`. When it lists none, write no verdict and say so: the
-   branch needs none.
+   branch needs none. The functions it lists under `moved` (same code and tags under another class, name or file;
+   [A moved function](../coney-tools-fidelity.md#moved)) are not to be reviewed again.
 2. Review every listed function. If there are more than can be read with care, sample by risk as the
    [limits](#limits) say, and name the skipped ones.
 3. Compare each function: read the Coney function at `where` and enough of what it calls to know its behaviour,

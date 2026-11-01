@@ -291,7 +291,8 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
     files = sorted(item for item in _git(worktree, "diff", "--name-only", "-z", base, tip).split("\0") if item)
     report = stamps.verify(env.unit.stamps, env.conventions.stamps)
     problems += [f"stamp log: {p}" for p in report.problems if p.severity == "error"]
-    functions = orig_review.pr_stamp(worktree, tip, base)["functions"] if tip != base else []
+    found = orig_review.pr_stamp(worktree, tip, base) if tip != base else {"functions": [], "moved": []}
+    functions, moved = found["functions"], found["moved"]
     function_problems, pairs_set = _function_problems(env, functions, report, tip)
     diff = env.change_hash(worktree, base, tip)
     try:
@@ -329,6 +330,9 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
         "kinds": _kinds(files, functions, env, mode),
         "files": files,
         "functions": functions if mode == "full" else [],
+        # Functions that kept their code and tags under another class, name or file: their compare stands, so the
+        # reviewer is told of them and asked nothing (docs/guides/coney-tools-fidelity.md#moved).
+        "moved": moved if mode == "full" else [],
         "pairs_set_sha256": pairs_set,
         "pages": _pages(files, env, tip) if mode == "full" else [],
         "tests": tests,
@@ -396,6 +400,9 @@ def prepare(env: ReviewEnv, mode: str) -> int:
     print(f"task review {task}: {mode} review of {tip} (base {base}, change {diff})")
     print(f"  checklists: {', '.join(packet['kinds'])}")
     print(f"  @orig functions: {functions}")
+    if packet["moved"]:
+        moved = ", ".join(f"{f['coney']} (was {f['was']})" for f in packet["moved"])
+        print(f"  @orig functions moved, their compare kept: {moved}")
     print(f"  research pages: {', '.join(p['path'] for p in packet['pages']) or 'none'}")
     print("  the tool part passed")
     print(f"  {_description_note(packet)}")

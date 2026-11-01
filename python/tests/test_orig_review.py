@@ -558,3 +558,104 @@ def test_the_orig_review_still_refuses_a_wrong_value_or_a_key_with_no_default(
         orig_review.check_verdict_file(repo, path, tip, "main")
     with pytest.raises(ConventionsError, match=r"missing the key 'check_stall_minutes'"):
         orig_review.default_ledger(repo)
+
+
+# --- a function that moved keeps its compare (issue 1272) ----------------------------------------------------------
+
+
+def move_brain(repo: Path, branch: str = "move", after: str = "Mind", **edits: str) -> str:
+    """A branch that renames the class `Brain` to `after` in both files, and applies `edits` (old text -> new text) on
+    top of the rename in either; returns its tip. Only the class name changes: the `@orig` tags stay as they were."""
+    git(repo, "checkout", "-q", "-b", branch)
+    for name in ("src/ai/brain.h", "src/ai/brain.cpp"):
+        path = repo / name
+        text = (
+            path.read_text(encoding="utf-8").replace("class Brain", f"class {after}").replace("Brain::", f"{after}::")
+        )
+        for old, new in edits.items():
+            text = text.replace(old, new)
+        path.write_text(text, encoding="utf-8")
+    return commit_all(repo, "move the brain")
+
+
+def test_a_function_moved_to_a_renamed_class_is_not_a_changed_function(repo: Path) -> None:
+    tip = move_brain(repo)
+    stamp = orig_review.pr_stamp(repo, tip, "main")
+    assert stamp["functions"] == []
+    moved = {m["coney"]: m for m in stamp["moved"]}
+    assert sorted(moved) == ["Mind::think", "Mind::wait"]
+    assert moved["Mind::think"]["was"] == "Brain::think(int)"
+    assert moved["Mind::think"]["key"] == "Mind::think(int)"
+    assert moved["Mind::think"]["addresses"] == ["0x00100010"]
+
+
+def test_a_stamp_without_a_move_lists_none(repo: Path) -> None:
+    assert orig_review.pr_stamp(repo, change_think(repo), "main")["moved"] == []
+
+
+def test_a_changed_body_in_a_moved_function_is_still_a_changed_function(repo: Path) -> None:
+    tip = move_brain(repo, **{"hunger > 3": "hunger > 4"})
+    stamp = orig_review.pr_stamp(repo, tip, "main")
+    assert [f["coney"] for f in stamp["functions"]] == ["Mind::think"]
+    assert [m["coney"] for m in stamp["moved"]] == ["Mind::wait"]
+
+
+def test_a_changed_address_in_a_moved_function_is_still_a_changed_function(repo: Path) -> None:
+    tip = move_brain(repo, **{"0x00100010 Brain_Think": "0x00100018 Brain_Think"})
+    assert [f["coney"] for f in orig_review.pr_stamp(repo, tip, "main")["functions"]] == ["Mind::think"]
+
+
+def test_a_changed_tag_name_in_a_moved_function_is_still_a_changed_function(repo: Path) -> None:
+    tip = move_brain(repo, **{"Brain_Think (Brain.cpp)": "Brain_Ponder (Brain.cpp)"})
+    assert [f["coney"] for f in orig_review.pr_stamp(repo, tip, "main")["functions"]] == ["Mind::think"]
+
+
+def test_a_copy_is_not_a_move(repo: Path) -> None:
+    """The old function is still there, so the new one is new code that owes its own compare."""
+    git(repo, "checkout", "-q", "-b", "copy")
+    path = repo / "src/ai/mind.cpp"
+    path.write_text(
+        '#include "ai/mind.h"\nint Mind::think(int hunger) {\n    return hunger > 3 ? 1 : 0;\n}\n', encoding="utf-8"
+    )
+    (repo / "src/ai/mind.h").write_text(
+        "class Mind {\n  public:\n    /// Thinks.\n"
+        "    /// @orig 0x00100010 Brain_Think (Brain.cpp)\n    int think(int hunger);\n};\n",
+        encoding="utf-8",
+    )
+    stamp = orig_review.pr_stamp(repo, commit_all(repo, "copy"), "main")
+    assert [f["coney"] for f in stamp["functions"]] == ["Mind::think"] and stamp["moved"] == []
+
+
+def test_a_function_moved_to_another_file_and_renamed_keeps_its_compare(repo: Path) -> None:
+    """The qualified name is the class and the name; the file is not part of what changed the code."""
+    git(repo, "checkout", "-q", "-b", "elsewhere")
+    cpp = repo / "src/ai/brain.cpp"
+    cpp.write_text(
+        cpp.read_text(encoding="utf-8").replace("int Brain::think(int hunger) {", "int Brain::ponder(int hunger) {")
+    )
+    header = repo / "src/ai/brain.h"
+    header.write_text(header.read_text(encoding="utf-8").replace("int think(int hunger);", "int ponder(int hunger);"))
+    # The other file takes over the cpp as it is (a move of the file with the class renamed too).
+    (repo / "src/ai/mind.cpp").write_text(
+        cpp.read_text(encoding="utf-8").replace("Brain::", "Mind::"), encoding="utf-8"
+    )
+    cpp.unlink()
+    header.rename(repo / "src/ai/mind.h")
+    mind = repo / "src/ai/mind.h"
+    mind.write_text(mind.read_text(encoding="utf-8").replace("class Brain", "class Mind"), encoding="utf-8")
+    stamp = orig_review.pr_stamp(repo, commit_all(repo, "file move"), "main")
+    assert stamp["functions"] == []
+    assert {m["coney"]: m["was"] for m in stamp["moved"]}["Mind::ponder"] == "Brain::think(int)"
+
+
+def test_the_normal_form_of_a_body_drops_its_own_qualifier_and_name_only() -> None:
+    def hash_of(scope: str, name: str, body: str) -> str:
+        text = f"/// @orig 0x00100010 Think (Brain.cpp)\nint {scope}::{name}(int a) {{\n{body}\n}}\n"
+        (unit,) = orig_review.units_from({"src/ai/x.cpp": text})
+        return unit.moved_sha256
+
+    same = hash_of("Brain", "think", "return Brain::kPatience + a;")
+    assert hash_of("Mind", "ponder", "return Mind::kPatience + a;") == same
+    assert hash_of("ai::Mind", "think", "return Mind::kPatience + a;") == same
+    assert hash_of("Mind", "think", "return Mind::kPatience + a + 1;") != same
+    assert hash_of("Mind", "think", "return Other::kPatience + a;") != same
