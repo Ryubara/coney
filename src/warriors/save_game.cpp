@@ -546,14 +546,17 @@ std::expected<SaveGame, Error> SaveGame::parse(std::span<const std::byte> bytes)
                     std::format("the save was made by a newer Coney (version {}; this one reads up to {})",
                                 framed->version, kVersion));
     }
-    // Step the sections up to the current version, then read them.
+    // Step the sections up to the current version, then read them. While version 1 is the current one there is no
+    // step, and the loop is left out so that the compiler does not report it as unreachable.
     std::vector<Section> sections = std::move(framed->sections);
-    for (std::uint32_t version = framed->version; version < kVersion; ++version) {
-        auto stepped = kSteps.at(version - 1)(std::move(sections));
-        if (!stepped) {
-            return std::unexpected(stepped.error());
+    if constexpr (!kSteps.empty()) {
+        for (std::uint32_t version = framed->version; version < kVersion; ++version) {
+            auto stepped = kSteps.at(version - 1)(std::move(sections));
+            if (!stepped) {
+                return std::unexpected(stepped.error());
+            }
+            sections = std::move(*stepped);
         }
-        sections = std::move(*stepped);
     }
     return decodeCurrent(sections);
 }
