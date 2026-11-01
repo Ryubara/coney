@@ -784,9 +784,9 @@ class Fighter {
                    HumanAnimator& animator);
     // The grabber's connecting clip for the side the grab is on; the victim plays the next id.
     [[nodiscard]] std::uint32_t connectClip() const { return static_cast<std::uint32_t>(m_connect + (m_rear ? 2 : 0)); }
-    // A strong grapple's connect has ended in the hold: the victim takes the strike's damage, reported as the hold's
-    // id (docs/research/combat-grabs.md#strong-grapple).
-    void landGrapple(const FighterInput& input);
+    // A strong grapple's connect or the mount's pick-up (`clip`) has ended in the hold: the victim takes the clip's
+    // damage, reported as the hold's id (docs/research/combat-grabs.md#strong-grapple, #mount).
+    void landGrapple(const FighterInput& input, std::uint32_t clip);
     // During its grab's or tackle's intro, the victim's counter press (Holdable::takeCounterPress()), face to face:
     // the hold ends, the victim plays the counter (76 or 9) and this human the reaction from the victim's set (77 or
     // 10), takes the counter's damage and is stunned. Returns whether it played.

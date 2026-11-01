@@ -228,20 +228,29 @@ void Fighter::followPairClips(const FighterInput& input, HumanAnimator& animator
         return;
     }
     // A connecting clip, a spin or the mount's pick-up has ended: the victim is snapped to the hold of the side the
-    // grab is now on (a spin set the side as it started). At a connecting clip's end the gate may release the grab
-    // instead.
+    // grab is now on (a spin set the side as it started). At a connecting clip's or the pick-up's end the gate may
+    // release the grab instead.
     const bool connectEnded = m_lastClip == connectClip();
-    const bool pickedUp = m_lastClip == clips::clipOf(combat::anim_id::kMountPickup);
+    const auto pickUp = clips::clipOf(combat::anim_id::kMountPickup);
+    const bool pickedUp = m_lastClip == pickUp;
     if (clip != m_lastClip && m_pair == PairStage::Moving && (connectEnded || pickedUp || clips::isSpin(m_lastClip))) {
         const anim::Vec3 offset = pairPoint(m_ranges, m_rear ? clips::kGrabRearHold : clips::kGrabHold,
                                             m_rear ? kRearHoldOffset : kFrontHoldOffset);
-        if (connectEnded && !holdGatePasses(input.position, m_held->position(), anim::length(offset))) {
+        // The pick-up's end is the connect's end (`Mount_ReturnToFrontGrab` `0x00271808` hangs `Grab_ConnectEnd`
+        // `0x0026bad8` on 248): with power left the victim takes 248's damage-table value before the gate, so a victim
+        // out of reach is hurt and let go. **Stand-in** (#684): the victim's coin-flip circle escape or reverse there
+        // is not run, at a connect's end either (a held human's command does not reach the grabber), and with no power
+        // the original skips the gate and the snap where Coney gates and snaps.
+        if (pickedUp) {
+            landGrapple(input, pickUp);
+        }
+        if ((connectEnded || pickedUp) && !holdGatePasses(input.position, m_held->position(), anim::length(offset))) {
             releaseHold(animator, false);
             return;
         }
         snapAttach(input, heading, offset, m_rear ? 0.0F : kPi);
         if (connectEnded && m_connect != static_cast<int>(clips::kGrabFrontEnd)) {
-            landGrapple(input);
+            landGrapple(input, connectClip());
         }
     }
     detachForSpin(animator);
@@ -307,14 +316,14 @@ void Fighter::connect(const FighterInput& input, HumanAnimator& animator, float 
     m_pair = PairStage::Moving;
 }
 
-void Fighter::landGrapple(const FighterInput& input) {
-    // With power left, the victim takes the damage table's value of the strike (`Grab_ConnectEnd`). The hit is
-    // reported as the hold's id, which is playing when the victim applies it: the tutorial waits for 82 or 84. It
-    // scores as the strike.
+void Fighter::landGrapple(const FighterInput& input, std::uint32_t clip) {
+    // With power left, the victim takes the damage table's value of the clip that ended (`Grab_ConnectEnd`). The hit
+    // is reported as the hold's id, which is playing when the victim applies it: the tutorial waits for 82 or 84. It
+    // scores as the clip.
     if (m_held == nullptr || m_combat.power().value() <= 0) {
         return;
     }
-    const auto strike = static_cast<int>(connectClip());
+    const auto strike = static_cast<int>(clip);
     const int damage = quarteredFor(*m_held, m_ranges != nullptr ? combat::strikeDamage(*m_ranges, strike) : 0);
     const bool scores = scoresRageOn(*m_held);
     const auto hold = static_cast<int>(m_rear ? clips::kGrabRearHold : clips::kGrabHold);
