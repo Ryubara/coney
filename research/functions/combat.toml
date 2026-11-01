@@ -324,6 +324,20 @@ coney = "src/human/victim.h:Victim::react"
 status = "legacy"
 
 [[function]]
+address = 0x0022f3c8
+name = "Human_GetUp"
+page = "characters.md#code-core"
+role = "the end of being down, as the rise 199 ends: a stunned human's stun time starts again, else the fight stance"
+level = "confirmed-code"
+coney = "src/human/victim.h:Victim::step"
+status = "compared"
+
+[[function.gaps]]
+what = "the push weight back to 1.0 is not ported, and Coney's ground ends as 199 starts, not as it ends (a stand-in)"
+relation = "not-ported"
+issue = 685
+
+[[function]]
 address = 0x0022f4f8
 name = "Human_SetDownTimers"
 page = "characters.md#code-core"
