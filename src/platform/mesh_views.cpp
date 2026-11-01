@@ -167,9 +167,11 @@ void MeshViews::flatPass(rw::Atomic* atomic, const debug::MeshDrawPlan& plan, bo
         draw::setRenderState(rw::ZWRITEENABLE, 0);
         draw::setWireframe(true);
     }
-    // Drawn in the flat world, so librw lights it with the white ambient alone; not at all without OpenGL (librw's NULL
-    // device, as the tests run it).
-    if (glad_glDrawElements != nullptr) {
+    // Drawn in the flat world, so librw lights it with the white ambient alone; not at all while the draws do not reach
+    // OpenGL (librw's NULL device, as the tests run it). The renderer's forwarding says so, not glad's pointers: those
+    // stay set after an OpenGL renderer stops, so a NULL one started later in the same process would draw through them
+    // with no context (issue #1268).
+    if (draw::forwarding()) {
         rw::World* current = rw::engine->currentWorld;
         rw::World* home = atomic->world;
         rw::engine->currentWorld = flatWorld();
