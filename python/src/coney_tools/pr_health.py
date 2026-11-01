@@ -33,7 +33,9 @@ from coney_tools.pr_labels import LabelChange, plan, unknown_numbers, write
 from coney_tools.pr_rerun import FailedCheck, PullChecks, Rerun, plan_reruns
 
 #: The JSON fields read from `gh pr list`.
-PULL_FIELDS = "number,title,headRefName,baseRefName,isDraft,mergeable,autoMergeRequest,statusCheckRollup,labels,url"
+PULL_FIELDS = (
+    "number,title,headRefName,baseRefName,isDraft,mergeable,autoMergeRequest,statusCheckRollup,labels,url,files"
+)
 #: The fields `--rerun` reads besides those: the head commit, and the description to check against the template.
 RERUN_FIELDS = f"{PULL_FIELDS},headRefOid,body"
 #: More open pull requests than this are not expected; the command says so when it reaches it.
@@ -264,7 +266,11 @@ def judge(
             found.append(
                 Stuck(number, branch, "ci-stuck", f"{detail} (limit {_hours(limit)})", WHO["ci-stuck"], url, names)
             )
-        if base == default and not pull.get("autoMergeRequest"):
+        # A change to a manual path is held on purpose while `auto_merge_manual_paths` is off: the maintainer merges it.
+        held = not conventions.pull_requests.auto_merge_manual_paths and bool(
+            conventions.merge.manual_among(str(item.get("path", "")) for item in pull.get("files") or [])
+        )
+        if base == default and not pull.get("autoMergeRequest") and not held:
             found.append(Stuck(number, branch, "auto-merge-off", f"into {base}", WHO["auto-merge-off"], url))
         health.stuck.extend(sorted(found, key=lambda item: CAUSES.index(item.cause)))
     return health

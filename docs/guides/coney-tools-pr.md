@@ -82,7 +82,7 @@ hand-typed ways around it in every session ([The PR guard](enforcement.md#pr-gua
 | `--remote NAME` | `origin` | The git remote the branch is pushed to and whose default branch is the base |
 | `--repo OWNER/NAME` | what `gh` resolves for the remote (the parent of a fork) | The repository the pull request is opened in |
 | `--reopen` | off | Reopen a closed, unmerged pull request of the branch and update it |
-| `--no-auto-merge` | off | Open without turning on auto-merge, and turn it off when it is already on for the pull request (it is turned on when `merge.auto_merge` is true, the change touches no path of `merge.manual_paths` and the viewer's permission allows it) |
+| `--no-auto-merge` | off | Open without turning on auto-merge, and turn it off when it is already on for the pull request (it is turned on when `merge.auto_merge` is true, the change touches no path of `merge.manual_paths` or `pull_requests.auto_merge_manual_paths` is true, and the viewer's permission allows it) |
 | `--adopt HEAD` | none | Take over a pull request no `pr open` pushed (opened by hand): `HEAD` is the full 40-digit commit its branch is at on the remote, used once as the lease of the push; refused (exit 2, nothing touched) when there is no pull request, an earlier run already pushed it, the branch is elsewhere, or the branch has a commit whose change the unit's branch lacks ([Taking over a pull request](pr.md#adopt)) |
 | `--adopt-rewrite` | none | With `--adopt`: go on although the pull request's branch has commits whose change the unit's branch lacks; the push drops them |
 | `--dry-run` | off | Steps 1 to 5 in a throwaway worktree: the rebase is tried there and nothing in the unit's folder (no lock, no `REBASE.md`), the log, git or GitHub changes |
@@ -236,7 +236,7 @@ number, and changes nothing (except `--rerun --apply`, below):
 | `checks-failed` | a **required** check failed (failure, timeout, cancelled). Its class is `lint` for the checks in `hygiene.pr_health.lint_checks` (title, body, docs, format, mkdocs, markdownlint, actionlint) and `code` for the others (`build-ok`, `python-ok`); a mix lists both | author |
 | `conflict` | GitHub says the pull request conflicts with its base | author (for the branches of units with a worktree here, [Conclave](conclave.md#conflicts) tries the rebase and raises `unit-ready` or a `conflict-fix` wake with the command to run) |
 | `ci-stuck` | a required check has been queued or running longer than `hygiene.thresholds.pr_pending_hours` (default 3; `--pending-hours H` overrides it for one run) | coordinator |
-| `auto-merge-off` | the pull request is not a draft, targets `main` and has auto-merge off | coordinator |
+| `auto-merge-off` | the pull request is not a draft, targets `main` and has auto-merge off, unless it changes a path of `merge.manual_paths` while `pull_requests.auto_merge_manual_paths` is false (held on purpose) | coordinator |
 
 A failing check that is not required is ignored. A draft is never stuck. A stacked pull request (base other than
 `main`) is reported as `stacked` and never as lacking auto-merge; its failures and conflicts count. GitHub answers

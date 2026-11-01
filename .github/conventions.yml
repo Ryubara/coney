@@ -265,6 +265,11 @@ pull_requests:
   # The hook runs without packages and reads this key with a small reader of its own, so keep it a plain
   # `open_only: true|false` line, two spaces in, under `pull_requests:`.
   open_only: true
+  # Whether `pr open` turns auto-merge on for a change to `merge.manual_paths` (the convention files, AGENTS.md and the
+  # agent rules) like any other pull request: the coordinator then approves and merges it on the maintainer's behalf,
+  # once every required check passes (maintainer's grant, 2026-11-01). Off, `pr open` leaves auto-merge off for such a
+  # change, the maintainer merges it by hand, and `pr list-stuck` does not report that as a stuck pull request.
+  auto_merge_manual_paths: true
 
 merge:
   # Mirrors the GitHub ruleset "Main" and the repository settings, which only a maintainer changes; the audit (a later
@@ -278,8 +283,8 @@ merge:
   up_to_date_required: false                     # no merge queue yet (how-we-work#merging)
   required_checks: [title, docs, body, build-ok, python-ok, format, mkdocs, markdownlint, actionlint, dependencies, clang-tidy]
   who: [maintainer, coordinator]                 # never the agent that wrote the work
-  # A change to one of these paths (a file, or a folder ending in /) is the maintainer's to merge: `pr open`
-  # leaves auto-merge off for it and says why.
+  # A change to one of these paths (a file, or a folder ending in /) is held back from auto-merge when
+  # `pull_requests.auto_merge_manual_paths` is off: `pr open` leaves auto-merge off for it and says why.
   # The hook files of the other agent tools run the same dispatcher (docs/guides/enforcement.md#harnesses).
   manual_paths: [.github/conventions.yml, AGENTS.md, .claude/settings.json, .claude/hooks/, .codex/, .gemini/settings.json,
                  .agents/hooks.json, .cursor/hooks.json, .github/hooks/, .grok/hooks/]

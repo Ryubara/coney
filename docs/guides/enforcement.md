@@ -40,7 +40,7 @@ settings are `.claude/hooks/hooks.toml`:
 | --- | --- | --- | --- |
 | `require_role` | `true` | A session with no role (not started through [`coney-agent`](agents.md#session-launcher)) may only read | Leave it on: off, a session with no role gets no role rules |
 | `pull_requests.open_only` (in `.github/conventions.yml`, not here) | `true` (since 2026-10-27) | Only `coney-tools pr open` opens, updates, auto-merges or pushes a pull request ([The PR guard](#pr-guard) lists what is refused) | One line, merged by a maintainer: a maintainer decision |
-| `tasks.start.fill` (in `.github/conventions.yml`, not here) | the start gate, the waiver codes and their hours, the cap on blocks in a row | What the `Stop` hook `slot_fill_guard.py` holds the coordinator to at the end of a turn ([Keeping the places full](slot-fill.md)); the hook copies none of it | A pull request that changes the conventions, which a maintainer merges |
+| `tasks.start.fill` (in `.github/conventions.yml`, not here) | the start gate, the waiver codes and their hours, the cap on blocks in a row | What the `Stop` hook `slot_fill_guard.py` holds the coordinator to at the end of a turn ([Keeping the places full](slot-fill.md)); the hook copies none of it | A pull request that changes the conventions, which the coordinator merges on the maintainer's behalf |
 | `[identity] enabled`, `ttl_seconds` | `true`, `600` | Write the caller's identity file (named by a hash of the token) and put its token in front of `coney-tools` and `git commit` commands; how long the file lives | |
 | `[identity] powershell_modes` | `["bypassPermissions"]` | The permission modes in which a PowerShell command gets a token too | The tool refuses the assignment in the others |
 | (built into `protect.py`) | not a setting | What no session may touch: `~/.coney`, private keys, stamp logs and build records, other processes' command lines. A settings file that cannot be read does not take it away | Edit `protect.py` |
@@ -326,8 +326,9 @@ What each vendor's own page says, read on 2026-10-27:
 cannot start (no Python 3.12, no `uv`) must not lock the tools (Copilot denies every call whose hook fails), and the
 refusal is the JSON. `; exit 0` works in sh, bash, zsh and PowerShell alike; `$(git rev-parse --show-toplevel)` inside
 double quotes works in sh and PowerShell, not in `cmd.exe` (Codex on Windows is untested). The timeouts are at least
-twice the PR guard's check time, as Claude Code's are. These files are `merge.manual_paths`: the maintainer merges a
-change to them.
+twice the PR guard's check time, as Claude Code's are. These files are `merge.manual_paths`: the coordinator merges a
+change to them on the maintainer's behalf (the maintainer by hand while `pull_requests.auto_merge_manual_paths` is
+off).
 
 **How a refusal is written.** Codex gets Claude Code's `hookSpecificOutput`, Gemini CLI and Antigravity a `decision` and
 a `reason`, as their pages show. Cursor, Copilot and Grok Build also run other tools' hook files

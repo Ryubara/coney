@@ -3,6 +3,7 @@
 
 import argparse
 import json
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -12,7 +13,7 @@ from conventions_support import REMOVE, REPO, changed, conventions_with, write_c
 
 from coney_tools import pr_health
 from coney_tools.config import ConfigError
-from coney_tools.conventions import load_conventions
+from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.pr_health import judge, required_from_rules
 
 NOW = datetime(2026, 10, 12, 12, 0, tzinfo=UTC)
@@ -172,6 +173,39 @@ def test_auto_merge_off_on_a_ready_pull_request_into_main() -> None:
     health = judge([pull(autoMergeRequest=None)], REQUIRED, CONVENTIONS, NOW)
     assert causes(health) == [(10, "auto-merge-off", "into main")]
     assert health.stuck[0].who == "coordinator"
+
+
+def held(manual: bool) -> Conventions:
+    """The conventions with `pull_requests.auto_merge_manual_paths` set to `manual`."""
+    return replace(CONVENTIONS, pull_requests=replace(CONVENTIONS.pull_requests, auto_merge_manual_paths=manual))
+
+
+def test_auto_merge_off_on_a_change_to_a_manual_path_is_stuck_while_the_setting_is_on() -> None:
+    # `pr open` would have turned it on, so an off switch is a pull request somebody has to look at.
+    changed = [{"path": "AGENTS.md"}, {"path": "docs/guides/pr.md"}]
+    health = judge([pull(autoMergeRequest=None, files=changed)], REQUIRED, held(True), NOW)
+    assert causes(health) == [(10, "auto-merge-off", "into main")]
+
+
+def test_auto_merge_off_on_a_change_to_a_manual_path_is_not_stuck_while_the_setting_is_off() -> None:
+    # The pull request is held on purpose (the maintainer merges it), so it is no finding.
+    changed = [{"path": ".github/conventions.yml"}]
+    assert judge([pull(autoMergeRequest=None, files=changed)], REQUIRED, held(False), NOW).stuck == []
+    folder = [{"path": ".claude/hooks/pr_guard.py"}]
+    assert judge([pull(autoMergeRequest=None, files=folder)], REQUIRED, held(False), NOW).stuck == []
+
+
+def test_auto_merge_off_elsewhere_is_stuck_whatever_the_setting() -> None:
+    changed = [{"path": "docs/guides/pr.md"}]
+    for manual in (True, False):
+        health = judge([pull(autoMergeRequest=None, files=changed)], REQUIRED, held(manual), NOW)
+        assert causes(health) == [(10, "auto-merge-off", "into main")]
+
+
+def test_a_held_pull_request_with_a_failed_check_is_still_stuck_while_the_setting_is_off() -> None:
+    rollup = [run("format", "FAILURE")] + [run(n) for n in REQUIRED if n != "format"]
+    pulls = [pull(autoMergeRequest=None, statusCheckRollup=rollup, files=[{"path": "AGENTS.md"}])]
+    assert [item.cause for item in judge(pulls, REQUIRED, held(False), NOW).stuck] == ["checks-failed"]
 
 
 def test_a_stacked_pull_request_is_a_note_and_never_lacks_auto_merge() -> None:

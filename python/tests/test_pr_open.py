@@ -816,19 +816,50 @@ def test_the_release_rules_are_read_once_from_the_remotes_default_branch(
     assert seen == ["origin/main"]
 
 
-@pytest.mark.parametrize("name", ["AGENTS.md", ".github/conventions.yml", ".claude/hooks/pr_guard.py"])
-def test_auto_merge_stays_off_for_a_change_that_is_the_maintainers_to_merge(tmp_path: Path, name: str) -> None:
-    shape = "tooling" if name.startswith(".claude") else "docs"
-    opened = docs_unit(tmp_path, shape)
+def set_manual_paths(opened: Open, on: bool) -> None:
+    """Make `pull_requests.auto_merge_manual_paths` say `on` on the remote's main."""
+    path = opened.built.root / ".github" / "conventions.yml"
+    text = path.read_text(encoding="utf-8")
+    line = "  auto_merge_manual_paths: "
+    assert f"{line}true" in text
+    opened.advance_main(".github/conventions.yml", text.replace(f"{line}true", f"{line}{str(on).lower()}"), "set")
+
+
+def touch_manual_path(opened: Open, name: str, shape: str) -> None:
+    """Commit a change to `name`, a path that is the maintainer's to merge, and get the unit ready to release."""
     built = opened.built
     text = (built.root / name).read_text(encoding="utf-8") if (built.root / name).exists() else "x\n"
     built.edit(name, text + "\n# one more line\n", "a change the maintainer merges")
     built.check(shape)
     built.review(functions={})
+
+
+MANUAL = ["AGENTS.md", ".github/conventions.yml", ".claude/hooks/pr_guard.py"]
+
+
+@pytest.mark.parametrize("name", MANUAL)
+def test_auto_merge_stays_off_for_a_manual_path_when_the_setting_is_off(tmp_path: Path, name: str) -> None:
+    shape = "tooling" if name.startswith(".claude") else "docs"
+    opened = docs_unit(tmp_path, shape)
+    set_manual_paths(opened, False)
+    # The branch takes main's new file before its own change, so the stamps cover what is released.
+    git(opened.built.root, "fetch", "-q", "origin", "main")
+    git(opened.built.root, "rebase", "-q", "origin/main")
+    touch_manual_path(opened, name, shape)
     assert opened.run() == 0, opened.text()
     assert not any(args[:2] == ["pr", "merge"] for args, _ in opened.gh.calls)
     assert f"auto-merge left off: the change touches {name}, which the maintainer merges" in opened.text()
     assert opened.said[-1].endswith("auto-merge off)")
+
+
+@pytest.mark.parametrize("name", MANUAL)
+def test_auto_merge_is_on_for_a_manual_path_when_the_setting_is_on(tmp_path: Path, name: str) -> None:
+    shape = "tooling" if name.startswith(".claude") else "docs"
+    opened = docs_unit(tmp_path, shape)
+    touch_manual_path(opened, name, shape)
+    assert opened.run() == 0, opened.text()
+    assert opened.gh.prs[812]["auto"] is True and "left off" not in opened.text()
+    assert opened.said[-1].endswith("auto-merge on)")
 
 
 def test_the_fix_scope_count_leaves_out_what_main_changed_in_the_rebase(tmp_path: Path) -> None:
@@ -853,6 +884,7 @@ def test_a_fix_round_that_now_touches_a_maintainer_file_turns_auto_merge_off(tmp
     built = opened.built
     assert opened.run() == 0
     assert opened.gh.prs[812]["auto"] is True
+    set_manual_paths(opened, False)
     start_fix(opened)
     text = (built.root / "AGENTS.md").read_text(encoding="utf-8") if (built.root / "AGENTS.md").exists() else "x\n"
     built.edit("AGENTS.md", text + "\nOne more line.\n", "docs: fix touches AGENTS.md")
@@ -979,6 +1011,7 @@ def test_auto_merge_is_off_before_the_push_so_a_failed_edit_cannot_leave_the_new
     built = opened.built
     assert opened.run() == 0
     assert opened.gh.prs[812]["auto"] is True
+    set_manual_paths(opened, False)
     start_fix(opened)
     text = (built.root / "AGENTS.md").read_text(encoding="utf-8") if (built.root / "AGENTS.md").exists() else "x\n"
     built.edit("AGENTS.md", text + "\nOne more line.\n", "docs: fix touches AGENTS.md")
@@ -1001,6 +1034,7 @@ def test_auto_merge_that_stays_on_stops_the_run_before_anything_is_pushed(tmp_pa
     opened = docs_unit(tmp_path)
     built = opened.built
     assert opened.run() == 0
+    set_manual_paths(opened, False)
     start_fix(opened)
     text = (built.root / "AGENTS.md").read_text(encoding="utf-8") if (built.root / "AGENTS.md").exists() else "x\n"
     built.edit("AGENTS.md", text + "\nOne more line.\n", "docs: fix touches AGENTS.md")

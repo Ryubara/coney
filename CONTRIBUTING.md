@@ -275,8 +275,9 @@ The person who submits or merges the work answers for it. The full rule is in [L
 - Keep a pull request to one subject. Unrelated changes belong in separate pull requests.
 - The project's agents never open their own pull requests: the coordinator releases each one with `coney-tools pr
   open` ([pr open](docs/guides/pr.md#open)). It checks the pull request, rebases and pushes the branch, opens the pull
-  request and turns on auto-merge, except for a change to a path the maintainer merges by hand (`merge.manual_paths`
-  in `.github/conventions.yml`, such as `AGENTS.md`). A pull request you open yourself needs none of those steps; the
+  request and turns on auto-merge, for a change to `AGENTS.md` or the conventions file too
+  (`pull_requests.auto_merge_manual_paths` in `.github/conventions.yml`; with it off, a change to a path of
+  `merge.manual_paths` is left for the maintainer). A pull request you open yourself needs none of those steps; the
   rules above still apply.
 
 ### Working from a fork

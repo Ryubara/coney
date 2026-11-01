@@ -33,7 +33,8 @@ ready only it is startable, as the claim Action demands ([Claiming](issues.md#cl
 [.github/conventions.yml](repo:.github/conventions.yml)): with `enabled`, of the ready issues only those with a gate
 label, the listed issue numbers and `P-critical` issues are eligible. It carried the "workflow first" rule of
 2026-10-27 and is off since the engineer tracks, which keep a place for game work and give Coney Studio the rest; it
-stays as the way to narrow what starts, by a one-line pull request a maintainer merges like the other conventions.
+stays as the way to narrow what starts, by a one-line pull request the coordinator merges, on the maintainer's
+behalf, like the other conventions.
 
 A ready issue or claimed task labelled `workflow` is not work for any place while `tasks.start.slots.exempt_workflow`
 is on: its unit holds no place, so starting it would leave the place free and the next check would ask again. The
