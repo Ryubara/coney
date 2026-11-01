@@ -1189,10 +1189,20 @@ level = "confirmed-code"
 address = 0x0026bad8
 name = "Grab_ConnectEnd"
 page = "combat-grabs.md#grab-posing"
-role = "end of 72 / 74: distance check, snap and attach in the hold"
+role = "end of 72 / 74 and of the mount's pick-up 248: damage, distance check, snap and attach in the hold, escape or reverse, scoring"
 level = "confirmed-code"
-coney = "src/human/pair_placement.h:holdGatePasses"
-status = "legacy"
+coney = "src/human/fighter.h:Fighter::followPairClips"
+status = "compared"
+
+[[function.gaps]]
+what = "the victim's coin-flip circle escape or reverse is not run, the gate has no clear-line test (Human_IsClearToTarget), and with no power Coney still gates and snaps where the original does neither"
+relation = "stand-in"
+issue = 684
+
+[[function.gaps]]
+what = "the victim's state flags 0x100000000 and 0x80000000 and a knocked-out victim are not tested, and the grabber's record +0xb8 is not cleared"
+relation = "not-ported"
+issue = 684
 
 [[function]]
 address = 0x0026be68

@@ -236,22 +236,22 @@ void Fighter::followPairClips(const FighterInput& input, HumanAnimator& animator
     if (clip != m_lastClip && m_pair == PairStage::Moving && (connectEnded || pickedUp || clips::isSpin(m_lastClip))) {
         const anim::Vec3 offset = pairPoint(m_ranges, m_rear ? clips::kGrabRearHold : clips::kGrabHold,
                                             m_rear ? kRearHoldOffset : kFrontHoldOffset);
-        // The pick-up's end is the connect's end (`Mount_ReturnToFrontGrab` `0x00271808` hangs `Grab_ConnectEnd`
-        // `0x0026bad8` on 248): with power left the victim takes 248's damage-table value before the gate, so a victim
-        // out of reach is hurt and let go. **Stand-in** (#684): the victim's coin-flip circle escape or reverse there
-        // is not run, at a connect's end either (a held human's command does not reach the grabber), and with no power
-        // the original skips the gate and the snap where Coney gates and snaps.
+        // The connect's end (`Grab_ConnectEnd` `0x0026bad8`), which `Mount_ReturnToFrontGrab` `0x00271808` hangs on
+        // the pick-up 248 too: with power left the victim takes the ended clip's damage-table value (a plain grab's 72
+        // deals none) before the gate, so a victim out of reach is hurt and let go; otherwise the snap.
+        // **Stand-in** (#684): the gate does not test for a clear line (`Human_IsClearToTarget`), the victim's
+        // coin-flip circle escape or reverse is not run (a held human's command does not reach the grabber), and with
+        // no power the original skips the gate and the snap where Coney gates and snaps.
         if (pickedUp) {
             landGrapple(input, pickUp);
+        } else if (connectEnded && m_connect != static_cast<int>(clips::kGrabFrontEnd)) {
+            landGrapple(input, connectClip());
         }
         if ((connectEnded || pickedUp) && !holdGatePasses(input.position, m_held->position(), anim::length(offset))) {
             releaseHold(animator, false);
             return;
         }
         snapAttach(input, heading, offset, m_rear ? 0.0F : kPi);
-        if (connectEnded && m_connect != static_cast<int>(clips::kGrabFrontEnd)) {
-            landGrapple(input, connectClip());
-        }
     }
     detachForSpin(animator);
 }
