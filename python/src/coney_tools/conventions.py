@@ -3512,7 +3512,8 @@ def _own_defaults() -> Mapping[str, Any] | None:
 
 
 def load_conventions_leniently(root: Path, say: Callable[[str], None] | None = None) -> Conventions:
-    """`load_conventions` for the release commands (`pr open`, `pr verify`, `pr text` and `task review`): a key this
+    """`load_conventions` for the release commands (`pr open`, `pr verify`, `pr text` and `task review`, and the docs
+    check and orig review it runs on the branch): a key this
     tool does not know is skipped, and a required key the file lacks takes the value of this tool's own checkout
     (`_own_defaults`); `say` (if given) is told which, one line each. The file is the branch under release's, which
     main's tool reads before the branch is rebased onto a change to the file, whichever way it differs. It is read

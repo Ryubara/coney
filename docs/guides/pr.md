@@ -255,8 +255,9 @@ commit: what is pushed is exactly what Check and Review saw. Its options and exi
    that `task start` cut from any other base (a stacked task) is refused: the rules never come from an unmerged branch,
    and no pull request is stacked ([No stacked work](how-we-work.md#working-in-parallel)).
    The branch's own `.github/conventions.yml` is read leniently by `pr open`, `pr verify` and `pr text` (and by `task
-   review`): a key the tool does not know is skipped with a `note: ... ignoring <key>` line (a branch that adds a rule is
-   read by the tool `main` already has), and a required key the branch lacks (it was cut before `main` added it) takes
+   review`, with the docs check and orig review it runs): a key the tool does not know is skipped with a `note: ...
+   ignoring <key>` line (a branch that adds a rule is read by the tool `main` already has), and a required key the
+   branch lacks (it was cut before `main` added it) takes
    `main`'s value with a `note: ... missing <key>` line, so an older unit needs no rebase to be released. A wrong value
    is still an error ([How it is read](repo-conventions.md#how-it-is-read)). What it skips or fills adds no steering,
    because the sections that decide a release are not the branch's: `pr open`, `pr verify` and `pr text` read them from
