@@ -75,7 +75,8 @@ the candidates, less the issues the task finishes, into a `TODO:` that the check
 What it reads from the branch (`git diff -U0` from the merge base with `--base` to `--head`):
 
 * the changed paths, a renamed file under both names;
-* the `@orig` addresses and Coney names of the functions whose body or tags changed (the same reader as
+* the `@orig` addresses and Coney names of the functions whose body or tags changed, and of those that only
+  [moved](orig-body-hash.md#moved) (the same reader as
   [`orig check-review`](coney-tools-fidelity.md#orig)), and every `0x????????` address in a changed line;
 * the code-like names (an underscore, `::`, a digit or an inner capital) in changed lines and hunk headers;
 * for a changed Markdown page, the anchors of the sections whose lines changed, with the enclosing sections;

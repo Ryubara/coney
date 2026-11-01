@@ -7,8 +7,10 @@ what to review and holds its results:
 
 * a **unit** is one Coney function definition with a body whose `@orig` addresses come from its own comment, a
   comment in its body or its declaration's comment; its body hash (of the code only: comments and white space are
-  left out) says whether it changed since a review;
-* `pr_stamp` lists the units a branch adds or changes (`orig review-stamp --branch`), `sweep_stamp` the units of a
+  left out) says whether it changed since a review; its **moved hash** is the same with its own qualified name left
+  out too, which says a function that changed class, name or file kept its code (`moves`);
+* `pr_stamp` lists the units a branch adds or changes (`orig review-stamp --branch`) and, apart, those it only moved
+  (their review and compare stand), `sweep_stamp` the units of a
   folder or of chosen addresses not yet reviewed at their current body (`orig review-stamp --folder`);
 * `verdict_problems` and `gate` are the release gate on a branch's `ORIG-REVIEW.json` (`orig check-review`, run by
   `.claude/hooks/pr_guard.py` before `gh pr create`);
@@ -88,6 +90,9 @@ class Unit:
     legacy_sha256: str = field(default="", compare=False, repr=False)
     #: Addresses in the Xbox port's `default.xbe` (`@orig xbox`): the reviewer reads them by hand, no stamp covers them.
     xbox: tuple[int, ...] = ()
+    #: The hash of the code with the function's own qualifier and name left out (`_moved_hash`): equal for a function
+    #: whose code is as it was and whose class, name or file changed.
+    moved_sha256: str = field(default="", compare=False, repr=False)
 
     @property
     def where(self) -> str:
@@ -215,6 +220,74 @@ def _legacy_body_hash(lines: list[str], function: Function) -> str:
     return hashlib.sha256(body.encode("utf-8")).hexdigest()
 
 
+#: What stands in the moved hash for a function's own name.
+_NAME_SLOT = "\x01"
+
+
+def _normal_form(text: str, function: Function) -> str:
+    """`text` (a definition's or a declaration's code) with the function's own qualified name left out: every `Scope::`
+    that leads to its class (`ns::Mind::`, `Mind::`) is dropped wherever it stands, and every use of the function's own
+    name (the declarator and a recursive call) becomes one placeholder. A name the code uses for something else
+    (`Other::kStep`, another function's call) stays, so a function renamed to the name of a helper it called is not
+    the same text as one that calls itself. A string, raw string or character literal is data, not a name: it is left
+    as it is, so a message that names the old class or the function is another message."""
+    # Each literal stands behind a mask (no word or colon in it) while the names are rewritten, then comes back.
+    literals: list[str] = []
+
+    def mask(match: re.Match[str]) -> str:
+        if match.lastgroup in ("raw", "string", "char"):
+            literals.append(match.group(0))
+            return f"\x02{len(literals) - 1}\x03"
+        return match.group(0)
+
+    text = "".join(mask(m) for m in _TOKEN.finditer(text))
+    if function.scope:
+        owner = re.escape(function.scope.rsplit("::", 1)[-1])
+        text = re.sub(rf"(?<![\w:])(?:\w+::)*{owner}::", "", text)
+    name = function.name.lstrip("~")
+    word = rf"\b{re.escape(name)}\b" if re.fullmatch(r"\w+", name) else re.escape(name)
+    text = re.sub(word, _NAME_SLOT, text)
+    return re.sub(r"\x02(\d+)\x03", lambda m: literals[int(m.group(1))], text)
+
+
+def _moved_hash(lines: list[str], function: Function, declaration: str = "") -> str:
+    """The SHA-256 of a definition's code and its separate declaration (`declaration`: the header's text up to its `;`)
+    without the function's own qualified name (`_normal_form`), so a function that moved to another class, a renamed
+    class, another name or another file keeps the hash while its code and its declaration (a default argument,
+    `virtual`, `static`, a return type) do not change. A body that now reads other things has another hash."""
+    text = code_text("\n".join(lines[function.line - 1 : function.line - 1 + function.lines]))
+    parts = [_normal_form(text, function), _normal_form(declaration, function)]
+    return hashlib.sha256("\x00".join(parts).encode("utf-8")).hexdigest()
+
+
+def _declaration_text(function: Function, texts: dict[str, str], decls: list[Function]) -> str:
+    """The code of `function`'s separate declaration, from its first line to the `;` that ends it, or "" when it is
+    defined in its class or has none in these files. The declaration nearest to the definition by file, folder, then
+    anywhere (a member), with the same parameter types, is the one read."""
+    if function.in_class or not decls:
+        return ""
+    stem = _stem(function.path)
+    near: tuple[Callable[[Function], bool], ...] = (
+        lambda f: _stem(f.path) == stem,
+        lambda f: _stem(f.path)[0] == stem[0],
+        lambda f: bool(function.scope),
+    )
+    for check in near:
+        group = [f for f in decls if check(f) and (not function.helper or f.path == function.path)]
+        exact = [f for f in group if f.params == function.params]
+        chosen = exact[0] if exact else (group[0] if len({f.params for f in group}) == 1 else None)
+        if chosen is not None:
+            window = texts[chosen.path].splitlines()[chosen.line - 1 : chosen.line + 7]
+            # The `;` is a token of its own, so one inside a string default does not end the declaration early.
+            kept: list[str] = []
+            for match in _TOKEN.finditer(code_text("\n".join(window))):
+                if match.group(0) == ";":
+                    break
+                kept.append(match.group(0))
+            return "".join(kept)
+    return ""
+
+
 def _stem(path: str) -> tuple[str, str]:
     """(folder, file stem): what a header and its source file share."""
     pure = PurePosixPath(path)
@@ -230,6 +303,12 @@ def units_from(texts: dict[str, str]) -> list[Unit]:
         for function in source.functions:
             if function.tags:
                 declared[function.key].append((function, function.tags))
+    # Every separate declaration (no body), by the function's scope and name: what a move reads beside the definition.
+    declarations: dict[tuple[str, str], list[Function]] = defaultdict(list)
+    for source in sources.values():
+        for function in source.functions:
+            if not function.body:
+                declarations[function.key].append(function)
     found: list[Unit] = []
     for path, source in sources.items():
         lines = texts[path].splitlines()
@@ -253,6 +332,9 @@ def units_from(texts: dict[str, str]) -> list[Unit]:
                     _body_hash(lines, function),
                     _legacy_body_hash(lines, function),
                     tuple(dict.fromkeys(t.address for t in tags if t.build == XBOX)),
+                    _moved_hash(
+                        lines, function, _declaration_text(function, texts, declarations.get(function.key, []))
+                    ),
                 )
             )
     # Two definitions with one key (a platform variant of a free function) are told apart by their file.
@@ -300,18 +382,87 @@ def units_at(root: Path, ref: str) -> list[Unit]:
 # --- stamps -------------------------------------------------------------------------------------------------------
 
 
-def pr_stamp(root: Path, tip_ref: str, base_ref: str) -> dict[str, Any]:
-    """What a branch's orig review covers: the units at its tip that are new or changed (body or addresses) since
-    it left `base_ref`."""
-    tip = resolve(root, tip_ref)
-    base = _git(root, "merge-base", resolve(root, base_ref), tip).decode().strip()
-    before = {u.key: u for u in units_at(root, base)}
+@dataclass(frozen=True)
+class Move:
+    """A function that kept its code and its `@orig` tags and changed its qualified name or its file: `unit` as it is
+    now, `was` as it stood."""
+
+    unit: Unit
+    was: Unit
+
+    def to_json(self) -> dict[str, Any]:
+        """The unit as a stamp lists it, with the key it moved from."""
+        return {**self.unit.to_json(), "was": self.was.key, "was_where": self.was.where}
+
+
+@dataclass(frozen=True)
+class Changes:
+    """What a branch did to the `@orig` functions: those it adds or changes, those it removes and those it moved."""
+
+    changed: tuple[Unit, ...]
+    removed: tuple[Unit, ...]
+    moved: tuple[Move, ...]
+
+
+def _same_tags(was: Unit, now: Unit) -> bool:
+    """Whether two units cite the same original functions under the same tags (the addresses of both builds and the
+    original's names)."""
+    return was.cited == now.cited and sorted(was.names) == sorted(now.names)
+
+
+def moves(before: Iterable[Unit], after: Iterable[Unit]) -> Changes:
+    """The changes from the units `before` to the units `after`. A unit is **changed** when its key is new or its code
+    or its addresses are not as they were. A new key whose code (the body hash, or the moved hash when only its
+    qualified name differs), addresses and tag names equal those of a unit that is gone is a **move**, not a change:
+    the function kept its study and its compare. Each gone unit is taken over once, so a copy (the old one still in
+    the code) and a second function with the same code stay changed. A unit gone and not taken over is **removed**."""
+    was = {u.key: u for u in before}
+    now = {u.key: u for u in after}
     changed = [
         u
-        for u in units_at(root, tip)
-        if u.key not in before or before[u.key].body_sha256 != u.body_sha256 or before[u.key].cited != u.cited
+        for u in now.values()
+        if u.key not in was or was[u.key].body_sha256 != u.body_sha256 or was[u.key].cited != u.cited
     ]
-    return {"mode": "pr", "tip": tip, "base": base, "functions": [u.to_json() for u in changed]}
+    gone = [u for key, u in was.items() if key not in now]
+    taken: set[str] = set()
+    found: dict[str, Move] = {}
+    for exact in (True, False):  # the same code first, then the same code but for its own qualified name
+        for unit in changed:
+            if unit.key in found or unit.key in was:
+                continue
+            for old in gone:
+                if old.key in taken or not _same_tags(old, unit):
+                    continue
+                same = (
+                    old.body_sha256 == unit.body_sha256
+                    if exact
+                    else bool(unit.moved_sha256) and (old.moved_sha256 == unit.moved_sha256)
+                )
+                if same:
+                    taken.add(old.key)
+                    found[unit.key] = Move(unit, old)
+                    break
+    return Changes(
+        tuple(u for u in changed if u.key not in found),
+        tuple(u for u in gone if u.key not in taken),
+        tuple(found[u.key] for u in changed if u.key in found),
+    )
+
+
+def pr_stamp(root: Path, tip_ref: str, base_ref: str) -> dict[str, Any]:
+    """What a branch's orig review covers: the units at its tip that are new or changed (body or addresses) since
+    it left `base_ref`. A function that only moved (`moves`) is listed under `moved`, not in `functions`: its review
+    and its compare stand."""
+    tip = resolve(root, tip_ref)
+    base = _git(root, "merge-base", resolve(root, base_ref), tip).decode().strip()
+    found = moves(units_at(root, base), units_at(root, tip))
+    return {
+        "mode": "pr",
+        "tip": tip,
+        "base": base,
+        "functions": [u.to_json() for u in found.changed],
+        "moved": [m.to_json() for m in found.moved],
+    }
 
 
 def sweep_stamp(

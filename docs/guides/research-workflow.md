@@ -79,6 +79,14 @@ source file or a word a player uses, and `orig study` prints the same lines unde
 ([Finding where a behaviour lives](research-where.md)). Read the page it names before the decompile. The tools for the
 rest are on [Research tools](research-tools.md#tools).
 
+### Moving a ported function {#moving}
+
+Moving an `@orig` function (into a renamed class, another class or file, or under another name) needs no new
+`orig study` or `orig compare` when its code and its `@orig` tags are as they were: `orig review-stamp --branch`,
+`task review` and `pr verify` recognise the move by the address, the tags and the body with its own class and name
+taken out, and say so. Change the code or a tag in the same branch and the function is a changed one again, owing its
+compare. The rule, and what counts as the same code, is [A moved function](orig-body-hash.md#moved).
+
 ### When a research page isn't enough
 
 Sooner or later you need something the page doesn't say. Look at the original to answer it, and put the answer on

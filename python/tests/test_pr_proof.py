@@ -100,6 +100,7 @@ def test_a_change_to_a_header_or_a_deleted_source_file_is_scanned(tmp_path: Path
         (),
         (),
         {},
+        (),
     )
 
 
@@ -538,6 +539,55 @@ def test_a_removed_orig_function_is_a_note_not_a_refusal(tmp_path: Path) -> None
     commit_all(built.root, "remove old")
     result = built.verify()
     assert any("Old_Thing" in note or "oldThing" in note for note in result.notes), result.notes
+
+
+OLD_THING = """// Old.
+/// @orig 0x00509999 Old_Thing (Old.cpp)
+int Old::thing(int a) {
+    return a + Old::kStep;
+}
+"""
+
+
+def with_old_thing_on_main(built: Built) -> None:
+    """Put `Old::thing` on main (and so in the branch's base), a function no stamp of this unit mentions."""
+    git(built.root, "checkout", "-q", "main")
+    write(built.root, "src/ai/old.cpp", OLD_THING)
+    commit_all(built.root, "old")
+    git(built.root, "push", "-q", "origin", "main")
+    git(built.root, "checkout", "-q", "work")
+    git(built.root, "rebase", "-q", "main")
+
+
+def test_a_function_moved_to_a_renamed_class_needs_no_new_study_or_compare(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    with_old_thing_on_main(built)
+    built.edit("src/ai/old.cpp", OLD_THING.replace("Old::", "Fresh::"))
+    result = built.verify()
+    assert texts(result, "compared") == []
+    assert [u.coney for u in result.subject.changed] == ["Widget::update"]
+    assert [(m.unit.coney, m.was.coney) for m in result.subject.moved] == [("Fresh::thing", "Old::thing")]
+    assert any("Fresh::thing" in n and "Old::thing" in n and "compare" in n for n in result.notes), result.notes
+
+
+@pytest.mark.parametrize(
+    "edit",
+    [
+        ("a + Old::kStep", "a + Old::kStep + 1"),
+        ("0x00509999", "0x0050999a"),
+        ("Old_Thing", "Old_Other"),
+    ],
+    ids=["body", "address", "tag"],
+)
+def test_a_moved_function_that_changed_its_body_address_or_tag_is_refused_until_compared(
+    tmp_path: Path, edit: tuple[str, str]
+) -> None:
+    built = make(tmp_path)
+    with_old_thing_on_main(built)
+    # The edit comes first (it is written against the old names), then the class is renamed.
+    built.edit("src/ai/old.cpp", OLD_THING.replace(*edit).replace("Old::", "Fresh::"))
+    refused = texts(built.verify(), "compared")
+    assert any("Fresh::thing" in t and "never studied" in t for t in refused), refused
 
 
 # --- fails first ------------------------------------------------------------------------------------------------------

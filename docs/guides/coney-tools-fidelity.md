@@ -1,7 +1,7 @@
 # The coney-tools fidelity and research commands
 
 The commands behind legacy fidelity and the research pages: [`orig`](#orig) studies an original function and
-compares it with Coney's ([the stage commands](#orig-stages)) and indexes and checks the `@orig` tags, [`stamp`](#stamp)
+compares it with Coney's ([the stage commands](orig-stages.md)) and indexes and checks the `@orig` tags, [`stamp`](#stamp)
 verifies a unit's stamp log, [`research`](#research) keeps the function database and reports the claims a branch changed
 on the research pages, and [`lua`](#lua) decompiles the game's compiled scripts, a research aid. The other groups are
 listed in [the command line overview](coney-tools.md#groups); `standards`, which marks what is below today's standards
@@ -119,12 +119,14 @@ These commands feed the orig review, which compares `@orig` functions with the o
 ([Orig review](review/orig.md), the [reviewer agent](agents.md#reviewer)). Each one works on **units**. A
 unit is a function definition with a body that a tag covers: its own tag, one in its body, or its declaration's.
 A unit has a key (`Brain::think(int)`, with the file in front for a file's private helper) and a
-[hash of its body](#body-hash): its code, without comments or white space. The source is read from commits, not from
-the working tree.
+[hash of its body](orig-body-hash.md#body-hash): its code, without comments or white space. The source is read from
+commits, not from the working tree.
 
 * `review-stamp` prints JSON.
-    * With `--branch` or `--worktree` (pr mode) it gives the branch's `tip`, the `base` it left, and the units that
-      are new at the tip or whose body or addresses changed.
+    * With `--branch` or `--worktree` (pr mode) it gives the branch's `tip`, the `base` it left, the units that
+      are new at the tip or whose body or addresses changed (`functions`), and apart those that only
+      [moved](orig-body-hash.md#moved) (`moved`, each with the key it `was`): a moved unit needs no review and no
+      compare.
     * With `--folder` or `--address` (sweep mode) it gives the units at `--ref` in scope that the ledger has not
       seen at their current body; `--every` lists all of them.
 * `check-review` is the release gate. A branch that changes no unit passes. Otherwise the passing verdict
@@ -147,88 +149,11 @@ It is one JSON object per review and is never committed. `orig legacy-queue` rea
 * an unreviewed one gains 3 points, and a stale one 5;
 * a review finding adds its class's weight, from `unclear` (6) to `diff-bug` (40).
 
-### The body hash {#body-hash}
+The rule for what counts as a change of a function, and as a move, has [its own page](orig-body-hash.md): the
+[body hash](orig-body-hash.md#body-hash) (code without comments or white space) and
+[a moved function](orig-body-hash.md#moved).
 
-A unit's `body_sha256` is the SHA-256 of its definition's **code**, which is what decides that a function changed
-(`review-stamp`, `check-review`, the ledger, a `compared` stamp's `coney_body_sha256`, `task review` and `pr verify`
-all read this one hash, `orig_review.code_text` and `_body_hash`).
-
-* **Left out:** every comment (`//` to the end of the line, also over a trailing backslash, and `/* ... */` across any
-  number of lines) and all white space: indentation, trailing blanks, line breaks, the spacing around an operator.
-  Repointing a research link in a comment, rewording one, or re-wrapping a line is not a change of the function, and
-  neither `task review` nor `pr verify` asks for a new `orig compare` for it.
-* **Kept:** every token. A string, a raw string and a character literal are read whole before any comment is looked
-  for, so a `//` or `/*` inside one is code and editing it changes the hash; so does a space inside a literal. A
-  single space stays where its absence would join two tokens (`return x`, `a + +b` against `a ++b`), because there
-  it is code.
-* **Not a comment:** commenting code out removes tokens, so it changes the hash; the code is gone from the function.
-
-**Stamps and records made under the old hash** (the lines of the definition, trailing blanks dropped) are read by
-rehashing, not migrated, so none is invalidated when the hash changes and no stamp or ledger line is rewritten:
-
-* A `compared` stamp whose `coney_body_sha256` is not the hash now is checked against the function's code at the
-  stamp's own `commit`: it stands when that hash is the old-style hash of the function at that commit and the new-style
-  hash of the function there equals the one now. So an unchanged function keeps its stamp, a comment edit after the
-  stamp keeps it too, and any edit of the code refuses it ("no current `compared` stamp") until `orig compare` is
-  run again. A stamp whose commit is gone from the repository (a garbage-collected branch) cannot be rehashed and is
-  refused the same way; run `orig compare` again.
-* A ledger entry made under the old hash counts while the function's lines are exactly as they were then. After any
-  edit it is stale, as before, and the function is reviewed again.
-* An `ORIG-REVIEW.json` verdict is not rehashed: it lives as long as its branch, and one written before this change is
-  refused as "reviewed at another body"; the reviewer writes it again from `review-stamp`.
-
-### orig study, compare, verify and fails-first {#orig-stages}
-
-The commands of the study-and-compare stage ([Stamps, studies and pairs](stamps.md)). Each writes into the task's
-folder in the scratch folder (the task is `--task`, else `CONEY_TASK`, else the branch) and appends a stamp when its
-step ends. Exit codes: 0 done, 1 refused (the output says what to fix), 2 it cannot start, 3 no ghidra-mcp answers.
-
-```sh
-uv run --project python coney-tools orig study ADDR [--task T] [--url URL] [--recut] [--print]
-uv run --project python coney-tools orig verify ADDR [--task T] [--url URL]
-uv run --project python coney-tools orig compare ADDR [--task T] [--base REF] [--coney-function KEY] [--carry] [--show]
-uv run --project python coney-tools orig fails-first [--keeps] --test NAME [--test NAME ...] --test-commit SHA [--fix-commit SHA] [--preset P] --agent ID
-uv run --project python coney-tools orig fails-first --none REASON
-uv run --project python coney-tools orig fails-first --accept-change REASON --test NAME [--test NAME ...] --test-commit SHA [--fix-commit SHA]
-```
-
-* `study` reads the function at ADDR from the running ghidra-mcp (reading endpoints only), saves the decompile, callers,
-  callees and globals in scratch (never committed), numbers the statements, cuts the pieces and appends `studied`. It
-  writes nothing when Ghidra is down. It ends with the lines of `research where` for the address (the owning page, the
-  function database entry, the pages that cite it), or one line saying the lookup is not available.
-  [Details](stamps.md#study), [the lookup](research-where.md#study)
-* `verify` re-reads the function and says whether the saved study is `fresh`, `renamed` (a one-to-one rename only) or
-  `stale`; it exits 1 when stale.
-* `compare` writes `mapping/<addr>.toml` with a blank pair per piece on its first run; later runs show the decompile beside
-  the Coney function, check the pairs, the committed Coney file and `orig check-copy`, and append `compared` when all of
-  it holds. A refusal writes no stamp. [Details](stamps.md#compare)
-* `fails-first` runs the named tests through `build --test -R` on the test commit (they must fail) and the fix commit (they
-  must pass) and appends a `fails-first` stamp per test. With `--keeps` (a test that guards a refactor, a performance
-  change or behaviour that already matches) the test must pass on both and the stamp's result is `keeps`. With
-  `--accept-change` the coordinator records its yes to a test that had to change between the two commits, and nothing
-  runs. [Details](stamps.md#fails-first), [keeps](stamps.md#keeps)
-
-Every option:
-
-| Command | Option | What it does |
-| --- | --- | --- |
-| all four | `--task T` | The task whose scratch folder and stamp log are used (default: `CONEY_TASK`, else the branch) |
-| `study`, `verify`, `compare` | `ADDR` | The original function's entry point, such as `0x00230d00` (another address is refused, naming the start) |
-| `study`, `verify` | `--url URL` | The ghidra-mcp server (default `http://127.0.0.1:8090`) |
-| `study` | `--recut` | Cut the saved decompile again without Ghidra; refused unless the saved files and the function's name, program and signature match the newest `studied` stamp |
-| `study` | `--print` | Also print the numbered decompile |
-| `compare` | `--base REF` | What the copy check measures the Coney change from (default `origin/main`) |
-| `compare` | `--coney-function KEY` | Which Coney function to compare, when several carry `@orig ADDR` |
-| `compare` | `--carry` | Bring the pairs forward onto a changed or renamed study |
-| `compare` | `--show` | Print the side-by-side view |
-| `fails-first` | `--test NAME` | A whole test name as ctest lists it, found as `TEST_CASE("NAME"` in the test commit's files (adjacent literals are joined, comments between them dropped, escapes unescaped; a `SECTION` name or any other quoted string is refused; repeatable) |
-| `fails-first` | `--test-commit SHA` | The commit that adds the test, and only the stubs it needs to compile |
-| `fails-first` | `--fix-commit SHA` | The commit that makes it pass (default `HEAD`) |
-| `fails-first` | `--preset P` | The CMake preset the tests are built with (default `dev`) |
-| `fails-first` | `--agent ID` | Your id for the build slots, as `build --agent` |
-| `fails-first` | `--keeps` | The tests guard a refactor or behaviour Coney already has: each must pass on the test commit and on the fix, unchanged, and is stamped `keeps` (not with `--none` or `--accept-change`); the test commit is never the fix commit ([Keeps](stamps.md#keeps)) |
-| `fails-first` | `--none REASON` | Run nothing and stamp that the task has no such test (one line, at most 200 characters, not with `--test`) |
-| `fails-first` | `--accept-change REASON` | The coordinator only: run nothing and record that the named tests may change between `--test-commit` and `--fix-commit`, with the reason (one line, at most 200 characters); the engineer's next run of the same names and commits is then allowed ([A changed test](stamps.md#changed-test)). The hook lets the coordinator run `orig fails-first` only in this form, alone: not with `--none` or `--keeps` (any prefix of them), which would stamp, and every other `orig fails-first` stays refused to it ([roles](agents.md#roles)) |
+The study-and-compare stage commands (`orig study`, `verify`, `compare` and `fails-first`) have [their own page](orig-stages.md).
 
 <!-- command-reference:begin orig -->
 ## Parameters of `orig` {#orig-parameters}

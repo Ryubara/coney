@@ -315,7 +315,8 @@ def _changed_anchors(root: Path, ref: str, path: str, ranges: Sequence[tuple[int
 
 
 def _add_functions(root: Path, touched: Touched, base: str, head: str) -> None:
-    """Record the `@orig` address and name of every function whose body or tags the branch changed."""
+    """Record the `@orig` address and name of every function whose body or tags the branch changed, and of every one
+    that only moved (an issue that cites its address is still about code the branch touched)."""
     try:
         stamp = orig_review.pr_stamp(root, head, base)
     except ConfigError as error:
@@ -326,6 +327,10 @@ def _add_functions(root: Path, touched: Touched, base: str, head: str) -> None:
             touched.addresses[address.lower()] = (
                 f"the @orig of {function['coney']} ({function['where']}), which changed"
             )
+    for moved in stamp["moved"]:
+        note = f"the @orig of {moved['coney']} ({moved['where']}), which moved with its code as it was"
+        for address in moved["addresses"]:
+            touched.addresses.setdefault(address.lower(), note)
 
 
 # --- matching the open issues ----------------------------------------------------------------------------------

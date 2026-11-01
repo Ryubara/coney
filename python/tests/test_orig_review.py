@@ -558,3 +558,256 @@ def test_the_orig_review_still_refuses_a_wrong_value_or_a_key_with_no_default(
         orig_review.check_verdict_file(repo, path, tip, "main")
     with pytest.raises(ConventionsError, match=r"missing the key 'check_stall_minutes'"):
         orig_review.default_ledger(repo)
+
+
+# --- a function that moved keeps its compare (issue 1272) ----------------------------------------------------------
+
+
+def move_brain(repo: Path, branch: str = "move", after: str = "Mind", **edits: str) -> str:
+    """A branch that renames the class `Brain` to `after` in both files, and applies `edits` (old text -> new text) on
+    top of the rename in either; returns its tip. Only the class name changes: the `@orig` tags stay as they were."""
+    git(repo, "checkout", "-q", "-b", branch)
+    for name in ("src/ai/brain.h", "src/ai/brain.cpp"):
+        path = repo / name
+        text = (
+            path.read_text(encoding="utf-8").replace("class Brain", f"class {after}").replace("Brain::", f"{after}::")
+        )
+        for old, new in edits.items():
+            text = text.replace(old, new)
+        path.write_text(text, encoding="utf-8")
+    return commit_all(repo, "move the brain")
+
+
+def test_a_function_moved_to_a_renamed_class_is_not_a_changed_function(repo: Path) -> None:
+    tip = move_brain(repo)
+    stamp = orig_review.pr_stamp(repo, tip, "main")
+    assert stamp["functions"] == []
+    moved = {m["coney"]: m for m in stamp["moved"]}
+    assert sorted(moved) == ["Mind::think", "Mind::wait"]
+    assert moved["Mind::think"]["was"] == "Brain::think(int)"
+    assert moved["Mind::think"]["key"] == "Mind::think(int)"
+    assert moved["Mind::think"]["addresses"] == ["0x00100010"]
+
+
+def test_a_stamp_without_a_move_lists_none(repo: Path) -> None:
+    assert orig_review.pr_stamp(repo, change_think(repo), "main")["moved"] == []
+
+
+def test_a_changed_body_in_a_moved_function_is_still_a_changed_function(repo: Path) -> None:
+    tip = move_brain(repo, **{"hunger > 3": "hunger > 4"})
+    stamp = orig_review.pr_stamp(repo, tip, "main")
+    assert [f["coney"] for f in stamp["functions"]] == ["Mind::think"]
+    assert [m["coney"] for m in stamp["moved"]] == ["Mind::wait"]
+
+
+def test_a_changed_address_in_a_moved_function_is_still_a_changed_function(repo: Path) -> None:
+    tip = move_brain(repo, **{"0x00100010 Brain_Think": "0x00100018 Brain_Think"})
+    assert [f["coney"] for f in orig_review.pr_stamp(repo, tip, "main")["functions"]] == ["Mind::think"]
+
+
+def test_a_changed_tag_name_in_a_moved_function_is_still_a_changed_function(repo: Path) -> None:
+    tip = move_brain(repo, **{"Brain_Think (Brain.cpp)": "Brain_Ponder (Brain.cpp)"})
+    assert [f["coney"] for f in orig_review.pr_stamp(repo, tip, "main")["functions"]] == ["Mind::think"]
+
+
+def test_a_copy_is_not_a_move(repo: Path) -> None:
+    """The old function is still there, so the new one is new code that owes its own compare."""
+    git(repo, "checkout", "-q", "-b", "copy")
+    path = repo / "src/ai/mind.cpp"
+    path.write_text(
+        '#include "ai/mind.h"\nint Mind::think(int hunger) {\n    return hunger > 3 ? 1 : 0;\n}\n', encoding="utf-8"
+    )
+    (repo / "src/ai/mind.h").write_text(
+        "class Mind {\n  public:\n    /// Thinks.\n"
+        "    /// @orig 0x00100010 Brain_Think (Brain.cpp)\n    int think(int hunger);\n};\n",
+        encoding="utf-8",
+    )
+    stamp = orig_review.pr_stamp(repo, commit_all(repo, "copy"), "main")
+    assert [f["coney"] for f in stamp["functions"]] == ["Mind::think"] and stamp["moved"] == []
+
+
+def test_a_function_moved_to_another_file_and_renamed_keeps_its_compare(repo: Path) -> None:
+    """The qualified name is the class and the name; the file is not part of what changed the code."""
+    git(repo, "checkout", "-q", "-b", "elsewhere")
+    cpp = repo / "src/ai/brain.cpp"
+    cpp.write_text(
+        cpp.read_text(encoding="utf-8").replace("int Brain::think(int hunger) {", "int Brain::ponder(int hunger) {")
+    )
+    header = repo / "src/ai/brain.h"
+    header.write_text(header.read_text(encoding="utf-8").replace("int think(int hunger);", "int ponder(int hunger);"))
+    # The other file takes over the cpp as it is (a move of the file with the class renamed too).
+    (repo / "src/ai/mind.cpp").write_text(
+        cpp.read_text(encoding="utf-8").replace("Brain::", "Mind::"), encoding="utf-8"
+    )
+    cpp.unlink()
+    header.rename(repo / "src/ai/mind.h")
+    mind = repo / "src/ai/mind.h"
+    mind.write_text(mind.read_text(encoding="utf-8").replace("class Brain", "class Mind"), encoding="utf-8")
+    stamp = orig_review.pr_stamp(repo, commit_all(repo, "file move"), "main")
+    assert stamp["functions"] == []
+    assert {m["coney"]: m["was"] for m in stamp["moved"]}["Mind::ponder"] == "Brain::think(int)"
+
+
+def test_the_normal_form_of_a_body_drops_its_own_qualifier_and_name_only() -> None:
+    def hash_of(scope: str, name: str, body: str) -> str:
+        text = f"/// @orig 0x00100010 Think (Brain.cpp)\nint {scope}::{name}(int a) {{\n{body}\n}}\n"
+        (unit,) = orig_review.units_from({"src/ai/x.cpp": text})
+        return unit.moved_sha256
+
+    same = hash_of("Brain", "think", "return Brain::kPatience + a;")
+    assert hash_of("Mind", "ponder", "return Mind::kPatience + a;") == same
+    assert hash_of("ai::Mind", "think", "return Mind::kPatience + a;") == same
+    assert hash_of("Mind", "think", "return Mind::kPatience + a + 1;") != same
+    assert hash_of("Mind", "think", "return Other::kPatience + a;") != same
+
+
+def moved_hash_of(scope: str, name: str, body: str) -> str:
+    """The moved hash of `scope::name` defined with `body`, tagged `@orig 0x00100010`."""
+    text = f"/// @orig 0x00100010 Think (Brain.cpp)\nint {scope}::{name}(int a) {{\n{body}\n}}\n"
+    (unit,) = orig_review.units_from({"src/ai/x.cpp": text})
+    return unit.moved_sha256
+
+
+def test_the_normal_form_of_a_body_leaves_a_literal_as_it_is() -> None:
+    """A literal is data, not a name: a message that says `Brain::think` and then `Mind::think` is another message."""
+    same = moved_hash_of("Brain", "think", 'return log("Brain::think failed", a);')
+    assert moved_hash_of("Mind", "think", 'return log("Brain::think failed", a);') == same
+    assert moved_hash_of("Mind", "think", 'return log("Mind::think failed", a);') != same
+    assert moved_hash_of("Mind", "think", 'return log("think failed", a);') != same
+    raw = moved_hash_of("Brain", "think", 'return log(R"(Brain::go)", a);')
+    assert moved_hash_of("Mind", "think", 'return log(R"(go)", a);') != raw
+    assert moved_hash_of("Mind", "think", 'return log(R"(Brain::go)", a);') == raw
+    # A character literal is left alone too: the owner's name in it is data, so each class keeps its own.
+    assert moved_hash_of("Mind", "think", "return a + sizeof('Mind::');") != moved_hash_of(
+        "Brain", "think", "return a + sizeof('Brain::');"
+    )
+    assert moved_hash_of("Mind", "think", "return a + sizeof('Brain::');") == moved_hash_of(
+        "Brain", "think", "return a + sizeof('Brain::');"
+    )
+    # The function's own name in a literal is data as well: it is not taken for the name (the declarator's).
+    assert moved_hash_of("Mind", "ponder", 'return log("think", a);') == moved_hash_of(
+        "Brain", "think", 'return log("think", a);'
+    )
+    assert moved_hash_of("Mind", "ponder", 'return log("ponder", a);') != moved_hash_of(
+        "Brain", "think", 'return log("think", a);'
+    )
+
+
+def test_a_function_whose_message_changed_with_its_class_is_a_changed_function(repo: Path) -> None:
+    """The rename of the class must not rewrite the text a function logs."""
+    git(repo, "checkout", "-q", "-b", "message")
+    cpp = repo / "src/ai/brain.cpp"
+    cpp.write_text(
+        cpp.read_text(encoding="utf-8").replace(
+            "return hunger > 3 ? 1 : 0;", 'return hunger > 3 ? log("Brain::think failed") : 0;'
+        ),
+        encoding="utf-8",
+    )
+    base = commit_all(repo, "a message")
+    tip = move_brain(repo, branch="message-move")
+    stamp = orig_review.pr_stamp(repo, tip, base)
+    # The rename rewrote the message too (move_brain replaces every `Brain::`), so it is not the same message.
+    assert [f["coney"] for f in stamp["functions"]] == ["Mind::think"]
+    assert [m["coney"] for m in stamp["moved"]] == ["Mind::wait"]
+
+
+def test_two_new_functions_with_the_code_of_one_gone_function_share_one_move() -> None:
+    """The first takes the gone function's compare; the second is new code that owes its own."""
+    body = "return a > 3 ? 1 : 0;"
+
+    def text(scope: str) -> str:
+        return f"/// @orig 0x00100010 Think (Brain.cpp)\nint {scope}::think(int a) {{\n    {body}\n}}\n"
+
+    before = orig_review.units_from({"src/ai/brain.cpp": text("Brain")})
+    after = orig_review.units_from({"src/ai/mind.cpp": text("Mind"), "src/ai/psyche.cpp": text("Psyche")})
+    found = orig_review.moves(before, after)
+    assert [m.unit.key for m in found.moved] == ["Mind::think(int)"]
+    assert [u.key for u in found.changed] == ["Psyche::think(int)"]
+    assert found.removed == ()
+
+
+def class_units(
+    scope: str,
+    name: str = "think",
+    body: str = "return a > 3 ? 1 : 0;",
+    params: str = "int a",
+    specifier: str = "",
+    returns: str = "int",
+    template: str = "",
+) -> dict[str, str]:
+    """A header declaring `scope::name` (tagged `@orig 0x00100010`) and the source file defining it with `body`."""
+    header = (
+        f"{template}class {scope} {{\n  public:\n    /// Thinks.\n    /// @orig 0x00100010 Think (Brain.cpp)\n"
+        f"    {specifier}{returns} {name}({params});\n}};\n"
+    )
+    source = f"{returns} {scope}::{name}(int a) {{\n    {body}\n}}\n"
+    return {f"src/ai/{scope.lower()}.h": header, f"src/ai/{scope.lower()}.cpp": source}
+
+
+def changes_between(before: dict[str, str], after: dict[str, str]) -> orig_review.Changes:
+    """What `moves` says of the units of two sets of files."""
+    return orig_review.moves(orig_review.units_from(before), orig_review.units_from(after))
+
+
+def test_a_pure_rename_of_the_class_and_the_function_is_a_move() -> None:
+    found = changes_between(class_units("Brain"), class_units("Mind", name="ponder"))
+    assert [m.unit.key for m in found.moved] == ["Mind::ponder(int)"] and found.changed == ()
+
+
+def test_a_function_renamed_to_the_name_of_the_helper_it_called_is_a_changed_function() -> None:
+    """`alpha` calling `beta` that becomes `beta` calling `beta` calls itself now: that is not a rename."""
+    before = class_units("Brain", name="alpha", body="return beta(a);")
+    after = class_units("Mind", name="beta", body="return beta(a);")
+    found = changes_between(before, after)
+    assert found.moved == () and [u.key for u in found.changed] == ["Mind::beta(int)"]
+
+
+def test_a_function_renamed_with_its_own_recursive_call_is_a_move() -> None:
+    before = class_units("Brain", name="alpha", body="return a > 0 ? alpha(a - 1) : 0;")
+    after = class_units("Mind", name="beta", body="return a > 0 ? beta(a - 1) : 0;")
+    assert [m.unit.key for m in changes_between(before, after).moved] == ["Mind::beta(int)"]
+
+
+def test_a_recursive_call_left_under_the_old_name_is_a_changed_function() -> None:
+    before = class_units("Brain", name="alpha", body="return a > 0 ? alpha(a - 1) : 0;")
+    after = class_units("Mind", name="beta", body="return a > 0 ? alpha(a - 1) : 0;")
+    assert changes_between(before, after).moved == ()
+
+
+def test_a_default_argument_changed_in_the_declaration_is_a_changed_function() -> None:
+    before = class_units("Brain", params="int a = 3")
+    same = changes_between(before, class_units("Mind", params="int a = 3"))
+    assert [m.unit.key for m in same.moved] == ["Mind::think(int)"]
+    found = changes_between(before, class_units("Mind", params="int a = 4"))
+    assert found.moved == () and [u.key for u in found.changed] == ["Mind::think(int)"]
+
+
+def test_a_declaration_made_virtual_or_static_is_a_changed_function() -> None:
+    before = class_units("Brain")
+    for specifier in ("virtual ", "static ", "[[nodiscard]] ", "constexpr "):
+        found = changes_between(before, class_units("Mind", specifier=specifier))
+        assert found.moved == (), specifier
+        assert [u.key for u in found.changed] == ["Mind::think(int)"], specifier
+
+
+def test_a_changed_return_or_template_argument_in_the_declaration_is_a_changed_function() -> None:
+    before = class_units("Brain")
+    for returns in ("long", "const int", "auto"):
+        assert changes_between(before, class_units("Mind", returns=returns)).moved == (), returns
+    boxed = class_units("Brain", returns="Box<3>")
+    assert changes_between(boxed, class_units("Mind", returns="Box<3>")).moved
+    assert changes_between(boxed, class_units("Mind", returns="Box<4>")).moved == ()
+
+
+def test_a_changed_default_argument_in_the_definitions_own_text_is_a_changed_function() -> None:
+    """A default or a template argument written in the definition itself is read with the body."""
+    text = (
+        "/// @orig 0x00100010 Think (Brain.cpp)\nBox<{box}> {scope}::think(int a = {default}) {{\n    return a;\n}}\n"
+    )
+
+    def units(scope: str, default: str, box: str = "3") -> dict[str, str]:
+        return {"src/ai/x.cpp": text.format(scope=scope, default=default, box=box)}
+
+    assert changes_between(units("Brain", "3"), units("Mind", "3")).moved
+    assert changes_between(units("Brain", "3"), units("Mind", "4")).moved == ()
+    assert changes_between(units("Brain", "3"), units("Mind", "3", box="4")).moved == ()

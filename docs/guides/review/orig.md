@@ -171,12 +171,21 @@ file and the Coney function it names, decompiles each address (`disassemble_func
 opens callees as far as the comparison needs, gives each function exactly one [class](#classes) and writes it into the
 `functions` of `REVIEW.json` ([format](task.md#verdict)).
 
+**A moved function** (the packet's `moved`: the same code and tags under another class, name or file; [A moved
+function](../orig-body-hash.md#moved)) needs no class and no compare, but it is still reviewed, with one step: diff
+its two copies (the packet entry's `was` at the base, its `where` at the tip) and their declarations, and write a
+finding if anything but names differs. The tools read names as text and cannot tell a recursive call left under the old
+name, an unqualified call or member that now resolves in another class, or a change only the header's declaration
+shows, so this diff is the control. They cannot tell either whether the gone function ever had a compare.
+
 **Pr mode**, for the legacy release check that predates `task review` (retired at the cutover):
 
 1. Run `uv run --project python coney-tools orig review-stamp --branch <branch> --base <base>` from the main checkout
    (or `--worktree <path>`). It prints the `tip`, the `base` and the `@orig` functions the branch adds or changes: each
    one's `key`, `where`, `coney`, `addresses` and `body_sha256`. When it lists none, write no verdict and say so: the
-   branch needs none.
+   branch needs none. The functions it lists under `moved` (same code and tags under another class, name or file;
+   [A moved function](../orig-body-hash.md#moved)) need no class and no compare, but their two copies and declarations
+   are diffed ([the step above](#procedure)).
 2. Review every listed function. If there are more than can be read with care, sample by risk as the
    [limits](#limits) say, and name the skipped ones.
 3. Compare each function: read the Coney function at `where` and enough of what it calls to know its behaviour,
@@ -232,7 +241,7 @@ these keys:
 - no finding is a blocker, and the rubric version matches.
 
 The verdict binds to the function bodies it reviewed (their code: comments and white space are not part of the
-[body hash](../coney-tools-fidelity.md#body-hash)), so a rebase that leaves them unchanged keeps it, and any
+[body hash](../orig-body-hash.md#body-hash)), so a rebase that leaves them unchanged keeps it, and any
 change to one of them makes it stale. A pass is recorded in the ledger. `ORIG-REVIEW.md` is the same verdict for a
 person: the verdict, then one line per function with its class and note, then the findings.
 
