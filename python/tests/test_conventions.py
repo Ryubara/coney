@@ -672,6 +672,7 @@ def test_the_real_runtime_rule() -> None:
     runtime = load_conventions(REPO).pull_requests.runtime
     assert {"gameplay", "graphics", "audio"} <= set(runtime.areas)
     assert runtime.section == "Testing" and runtime.line == "Runtime:" and runtime.none == "Runtime: none"
+    assert runtime.pictures == "Pictures:"
 
 
 def test_a_runtime_area_must_be_a_commit_title_area() -> None:

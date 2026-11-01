@@ -78,7 +78,7 @@ hand-typed ways around it in every session ([The PR guard](enforcement.md#pr-gua
 | --- | --- | --- |
 | `TASK` | `CONEY_TASK`, else the branch | The task whose unit is released. A fix task (`parent:` in its `TASK.md`) is released onto its parent's pull request |
 | `--worktree DIR` | the worktree `task start` recorded | The unit's worktree, which `pr open` rebases; it must be clean and on the unit's branch |
-| `--text FILE` | `PR.md` in the task's scratch folder (a fix task: its parent's) | The engineer's title, paragraph, `Runtime:` line and pictures; `gh` runs in its folder, and the generated files and `pr-published.json` stay in the task's folder |
+| `--text FILE` | `PR.md` in the task's scratch folder (a fix task: its parent's) | The engineer's title, paragraph, `Runtime:` and `Pictures:` lines and pictures; `gh` runs in its folder, and the generated files and `pr-published.json` stay in the task's folder |
 | `--remote NAME` | `origin` | The git remote the branch is pushed to and whose default branch is the base |
 | `--repo OWNER/NAME` | what `gh` resolves for the remote (the parent of a fork) | The repository the pull request is opened in |
 | `--reopen` | off | Reopen a closed, unmerged pull request of the branch and update it |

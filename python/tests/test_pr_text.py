@@ -22,6 +22,9 @@ from coney_tools.task_create import CreateRequest, build_task_file
 from coney_tools.task_file import parse_task_file, render_task_file
 from coney_tools.task_leads import LeadsResult
 
+#: The refusal of a line in Testing that is neither the Runtime nor the Pictures line.
+TESTING_REFUSAL = 'text: PR.md: "## Testing" holds only the "Runtime:" and "Pictures:" lines; the facts are generated'
+
 
 def generate(built: Built, text: str | None = None, trailers: tuple[str, ...] = (), **more: object) -> Generated:
     """Generate the description of the unit as it is now, from `text` (default: the PR.md the unit has)."""
@@ -88,6 +91,37 @@ def test_a_branch_that_drops_the_runtime_line_for_gameplay_is_held_to_the_defaul
     built.edit_rules(("pull_requests.runtime.areas", ["graphics", "audio"]))
     generated = generate(built, without)
     assert any("Runtime" in t for t in problems(generated)), problems(generated)
+
+
+def test_the_testing_section_keeps_a_pictures_line_beside_the_runtime_line(tmp_path: Path) -> None:
+    """testing.md#picture-counts and the reviewer's checklist ask for a `Pictures:` bullet next to `Runtime:`."""
+    built = make(tmp_path)
+    text = (built.unit.dir / "PR.md").read_text(encoding="utf-8")
+    runtime = "- Runtime: trace diff widget60, 600 updates, 0 outside tolerance"
+    pictures = "- Pictures: 6 named frames, branch against base, 12 pixels over 2 of 255, limit 0.1 % each: ok"
+    kept = generate(built, text.replace(runtime, f"{runtime}\n{pictures}"))
+    assert problems(kept) == []
+    assert f"{runtime}\n{pictures}\n" in kept.body
+    # Either order is written the same way: the Runtime line, then the Pictures line.
+    swapped = generate(built, text.replace(runtime, f"{pictures}\n{runtime}"))
+    assert problems(swapped) == [] and f"{runtime}\n{pictures}\n" in swapped.body
+    # The none form, and a bullet that wraps onto a second line, are kept whole.
+    none = "- Pictures: none (draw-stream hashes\n  are unchanged)"
+    wrapped = generate(built, text.replace(runtime, f"{runtime}\n{none}"))
+    assert problems(wrapped) == []
+    assert "- Pictures: none (draw-stream hashes are unchanged)\n" in wrapped.body
+
+
+def test_the_pictures_line_alone_is_kept_and_other_testing_lines_are_still_refused(tmp_path: Path) -> None:
+    built = make(tmp_path, shape="tooling")
+    text = (built.unit.dir / "PR.md").read_text(encoding="utf-8").split("\n", 1)[1]
+    pictures = "- Pictures: none (no pixel moves)"
+    alone = text.replace("## Screenshots", f"## Testing\n\n{pictures}\n\n## Screenshots")
+    only = generate(built, "tools: Fix the widget\n" + alone)
+    assert problems(only) == [] and pictures in only.body
+    stray = text.replace("## Screenshots", f"## Testing\n\n{pictures}\n- 412 passed\n\n## Screenshots")
+    refused = problems(generate(built, "tools: Fix the widget\n" + stray))
+    assert TESTING_REFUSAL in refused
 
 
 def test_a_section_the_conventions_add_is_generated_as_a_todo_the_checks_refuse(tmp_path: Path) -> None:
@@ -221,7 +255,7 @@ Screenshots: none (no visible change)
     assert 'text: PR.md: "## Checklist" is generated; remove it' in refused
     assert 'text: PR.md: "Fixes" lines are generated from TASK.md; remove them' in refused
     assert "text: PR.md: the markers are generated; remove them" in refused
-    assert 'text: PR.md: "## Testing" holds only the "Runtime:" line; the facts are generated' in refused
+    assert TESTING_REFUSAL in refused
     assert 'text: PR.md: "## AI use" is generated from the log and the commits; remove it' in refused
 
 

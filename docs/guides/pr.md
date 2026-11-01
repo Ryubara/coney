@@ -168,6 +168,7 @@ Docs: none
 ## Testing
 
 - Runtime: trace diff widget60, 600 updates, 0 outside tolerance
+- Pictures: none (no pixel moves; the draw-stream hashes are unchanged)
 
 ## Screenshots
 
@@ -175,8 +176,10 @@ Docs: none
 ```
 
 Line 1 is the title (`area: Verb the rest`). The Summary is one paragraph and, if the change needs no documentation,
-a `Docs: none` line. Testing holds only the `Runtime:` line, and the facts are generated; which title areas need the
-line is in [the `Runtime:` line](testing.md#runtime-line). Issues affected holds
+a `Docs: none` line. Testing holds only the `Runtime:` line and, for a change to drawing, the `Pictures:` line (its own
+bullet, as in the example; [picture counts](testing.md#picture-counts)), and the facts are generated; which title areas
+need the `Runtime:` line is in [the `Runtime:` line](testing.md#runtime-line). `pr text` keeps both lines in that
+order and refuses any other line in Testing. Issues affected holds
 one `- #N: how it is affected` line per open issue the change affects, or
 `None (<reason>)` (`pull_requests.issues_affected`; [Issues a pull request changes](issues.md#affected)). Screenshots
 holds image references under `./shots/`, or `Screenshots: none (<reason>)`. Anything else is refused: `Fixes` lines,
@@ -196,7 +199,7 @@ line and refused by the checks until it is.
 | --- | --- |
 | Summary | The paragraph between `<!-- coney:summary -->` markers, the `Docs: none` line, and one `Fixes #N` line per issue of `TASK.md` (none for a task whose front block says `finishes: false`) |
 | Checklist | One ticked item per bullet of the task's Done section, read past the quote marks (`>`) `task create` writes; a bullet that wraps onto more lines is one whole item (its lines are joined, up to a blank line or the next bullet); a Done section of prose gives one item per paragraph. A Done section with no criterion (the `See issue #N.` placeholder) is refused |
-| Testing | The [facts block](#facts) between `<!-- coney:facts -->` markers, then the engineer's `Runtime:` line |
+| Testing | The [facts block](#facts) between `<!-- coney:facts -->` markers, then the engineer's `Runtime:` and `Pictures:` lines |
 | Screenshots | The engineer's section, as written |
 | AI use | `Commits written by: an AI` and the models the branch's `Co-Authored-By` trailers name, else the models of the engineers in the log. No trailer lines are added to the description: GitHub copies the branch commits' trailers into the squash commit |
 | Issues affected | The engineer's section of `PR.md`, as written (`check-body` checks its form: [Issues a pull request changes](issues.md#affected)). Without it, a `TODO:` that says what the section holds and lists the candidates of [`issue impact`](coney-tools-issues.md#issue-impact) (the issues the task finishes left out); it is refused until the engineer has read the candidates and written the section |

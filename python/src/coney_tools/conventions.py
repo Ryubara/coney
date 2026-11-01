@@ -283,6 +283,10 @@ class RuntimeEvidence:
     none: str
     #: `required`: the `none` line must give a reason.
     reason: str
+    #: The start of the picture-counts line beside it in the same section (`Pictures:`): a pull request that changes
+    #: drawing reports its picture counts there, or `Pictures: none (<reason>)` (docs/guides/testing.md#picture-counts).
+    #: `pr text` keeps it; only the reviewer checks it.
+    pictures: str
 
 
 @dataclass(frozen=True)
@@ -1927,7 +1931,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
     checklist, checklist_where = sub("checklist", "section", "unchecked", "since", "legacy_label")
     affected, affected_where = sub("issues_affected", "section", "none", "reason", "example", "since")
     screenshots, screenshots_where = sub("screenshots", "section", "none", "reason", "uploaded_only")
-    runtime, runtime_where = sub("runtime", "areas", "section", "line", "none", "reason")
+    runtime, runtime_where = sub("runtime", "areas", "section", "line", "none", "reason", "pictures")
     ai_use, ai_where = sub("ai_use", "section", "written_by", "model")
     review, review_where = sub("review", "agent", "verdict_file", "report_file", "body_hash", "identical_images")
     agent = _text(review["agent"], _at(review_where, "agent"))
@@ -2020,6 +2024,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
             line=_text(runtime["line"], _at(runtime_where, "line")),
             none=_text(runtime["none"], _at(runtime_where, "none")),
             reason=_choice(runtime["reason"], _at(runtime_where, "reason"), ("required",)),
+            pictures=_text(runtime["pictures"], _at(runtime_where, "pictures")),
         ),
         ai_use=AiUse(
             section=ai_use["section"],

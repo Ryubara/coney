@@ -2,14 +2,14 @@
 
 For a reviewer of one pull request description, the way a careful maintainer would read it on GitHub. A description is
 two files ([the generated sections](task.md#generated)): the engineer's `PR.md` (the title on line 1, then the summary
-paragraph, the `Runtime:` line, Issues affected and the pictures), and `PR-BODY.md` beside it, which `coney-tools pr
-text` generates from `PR.md`, `TASK.md` and the stamps: the `Fixes` lines, the Checklist, the facts of Testing and AI
-use. The packet's `text.generated_sections` lists the generated ones and `text.generated_body` the file. `coney-tools pr
-check-body` and the [tool part of `task review`](task.md#tool-part) have already checked the structure; the reviewer
-checks that the description is **true**: every picture shows what the text says, and every claim is backed by the diff
-or a log. Report findings in the [format on the index page](index.md#finding-format) and never edit. The rules are in
-[What a pull request shows](../testing.md#pr-evidence), the [Runtime line](../testing.md#runtime-line) and the
-`pull_requests` section of [.github/conventions.yml](repo:.github/conventions.yml).
+paragraph, the `Runtime:` and `Pictures:` lines, Issues affected and the pictures), and `PR-BODY.md` beside it, which
+`coney-tools pr text` generates from `PR.md`, `TASK.md` and the stamps: the `Fixes` lines, the Checklist, the facts of
+Testing and AI use. The packet's `text.generated_sections` lists the generated ones and `text.generated_body` the file.
+`coney-tools pr check-body` and the [tool part of `task review`](task.md#tool-part) have already checked the structure;
+the reviewer checks that the description is **true**: every picture shows what the text says, and every claim is backed
+by the diff or a log. Report findings in the [format on the index page](index.md#finding-format) and never edit. The
+rules are in [What a pull request shows](../testing.md#pr-evidence), the [Runtime line](../testing.md#runtime-line) and
+the `pull_requests` section of [.github/conventions.yml](repo:.github/conventions.yml).
 
 The reviewer reads only: `git diff`, `git log`, `git show` and the logs in the scratch folder (their ends, or with
 grep); it changes no worktree, commits nothing and does not touch GitHub.
@@ -56,14 +56,14 @@ grep); it changes no worktree, commits nothing and does not touch GitHub.
       original cannot show it (a refactor whose trace diff is unchanged, a Coney-only debug feature) is fine;
     - the before and after pictures have a view of the original from the same spot, or a stated reason why not.
 - [ ] **A change to drawing reports its picture counts** when the diff touches how Coney draws (the renderer, its
-  shaders, render states, what a layer or a pass draws): the Testing section has a `Pictures:` line with the pixels over
-  the tolerance and the largest difference of the named frames, branch against base
-  ([Picture counts](../testing.md#picture-counts)), or `Pictures: none (<reason>)` with a reason that says why no pixel
-  moves. Open the output it names in the scratch folder and check that the numbers are in it, that it compares
-  frames of one machine and the same views, and that the limit it names is the renderer design's. A change to drawing
-  with no line, or a line with no output behind it, is Important. A pull request that moves the software pictures' pin
-  (`.github/software-pictures/`) also needs the old and new counts, and the regenerated references in the same pull
-  request ([The software pictures](../testing.md#software-pictures)).
+  shaders, render states, what a layer or a pass draws): the Testing section has its own `Pictures:` bullet (written in
+  `PR.md`, kept by `pr text` in `PR-BODY.md`) with the pixels over the tolerance and the largest difference of the named
+  frames, branch against base ([Picture counts](../testing.md#picture-counts)), or `Pictures: none (<reason>)` with a
+  reason that says why no pixel moves. Open the output it names in the scratch folder and check that the numbers are in
+  it, that it compares frames of one machine and the same views, and that the limit it names is the renderer design's. A
+  change to drawing with no line, or a line with no output behind it, is Important. A pull request that moves the
+  software pictures' pin (`.github/software-pictures/`) also needs the old and new counts, and the regenerated
+  references in the same pull request ([The software pictures](../testing.md#software-pictures)).
 - [ ] **The rules a program cannot check:**
     - `Fixes #N` and `Refs #N` (in `PR-BODY.md`) fit the change (`gh issue view N` is read only and allowed); a `Fixes`
       line for work the change does not finish is Important;

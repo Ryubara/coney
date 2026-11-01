@@ -3,11 +3,12 @@
 stamps, and checked with the checks CI runs (docs/guides/pr.md#text).
 
 The engineer writes one small file, `PR.md` in the task's scratch folder: line 1 the title, a `## Summary` with one
-paragraph (and perhaps a `Docs: none` line), a `## Testing` holding only the `Runtime:` line and a `## Screenshots`
-holding image references or `Screenshots: none (reason)`. Everything else is generated: the `Fixes` lines and the
-Checklist from `TASK.md`, the facts block from the stamp log, the AI use section from the commits and the log, and every
-other section the template has. The generated description therefore cannot disagree with the stamps, and the sections
-it has are the template's: they are read from `pull_requests.sections` in `.github/conventions.yml`, never listed here.
+paragraph (and perhaps a `Docs: none` line), a `## Testing` holding only the `Runtime:` and `Pictures:` lines and a
+`## Screenshots` holding image references or `Screenshots: none (reason)`. Everything else is generated: the `Fixes`
+lines and the Checklist from `TASK.md`, the facts block from the stamp log, the AI use section from the commits and the
+log, and every other section the template has. The generated description therefore cannot disagree with the stamps, and
+the sections it has are the template's: they are read from `pull_requests.sections` in `.github/conventions.yml`, never
+listed here.
 
 `generate` writes no file and reads none but the pictures, with one exception: a section only a person can fill
 (`pull_requests.issues_affected.section`) that the engineer's file leaves out is suggested by running `coney-tools
@@ -83,6 +84,8 @@ class EngineerText:
     screenshots_none: str | None
     #: A person's own `Commits written by:` and `Model:` values, when the file has an `## AI use` section.
     ai_use: tuple[str, str] | None
+    #: The `Pictures:` line's text (picture counts, or `Pictures: none (reason)`) without a list marker, or None.
+    pictures: str | None = None
     problems: tuple[str, ...] = ()
     #: The text of every other section of the template that the file holds (a section the conventions add, such as
     #: "Issues affected", whose content only a person can confirm), by the template's name for it.
@@ -161,7 +164,7 @@ def read_engineer_file(path: Path, conventions: Conventions) -> EngineerText:
     if not title.strip():
         problems.append(f"text: {name}: line 1 must be the title")
     paragraph, docs_none = _summary(_find(sections, summary_name), rules, name, problems)
-    runtime = _runtime(_find(sections, testing_name), rules, name, problems)
+    runtime, pictures = _testing_lines(_find(sections, testing_name), rules, name, problems)
     images, none = _screenshots(_find(sections, shots_name), path.parent, rules, name, problems)
     ai_lines = _find(sections, ai_name)
     ai_use = None
@@ -179,6 +182,7 @@ def read_engineer_file(path: Path, conventions: Conventions) -> EngineerText:
         tuple(images),
         none,
         ai_use,
+        pictures,
         tuple(problems),
         extra,
     )
@@ -221,26 +225,33 @@ def _summary(lines: list[str] | None, rules: Any, name: str, problems: list[str]
     return _squash(" ".join(paragraphs[0])), docs_none
 
 
-def _runtime(lines: list[str] | None, rules: Any, name: str, problems: list[str]) -> str | None:
-    """The `Runtime:` line of the Testing section; the facts are generated, so nothing else belongs there."""
+def _testing_lines(
+    lines: list[str] | None, rules: Any, name: str, problems: list[str]
+) -> tuple[str | None, str | None]:
+    """The `Runtime:` and `Pictures:` lines of the Testing section; the facts are generated, so nothing else belongs
+    there. A bullet that wraps onto indented lines is one line."""
     if lines is None:
-        return None
-    runtime: list[str] = []
+        return None, None
+    held: dict[str, list[str]] = {}
+    labels = (rules.runtime.line, rules.runtime.pictures)
+    current: list[str] | None = None
     for line in lines:
         stripped = re.sub(r"^[-*+]\s+", "", line.strip()).replace("**", "")
         if not stripped:
             continue
-        if stripped.startswith(rules.runtime.line):
-            runtime = [stripped]
-        elif runtime and line[:1] in (" ", "\t"):
-            runtime.append(stripped)
+        label = next((label for label in labels if stripped.startswith(label)), None)
+        if label is not None:
+            current = held[label] = [stripped]
+        elif current is not None and line[:1] in (" ", "\t"):
+            current.append(stripped)
         else:
+            shown = " and ".join(f'"{label}"' for label in labels)
             problems.append(
-                f'text: {name}: "## {rules.runtime.section}" holds only the "{rules.runtime.line}" line; '
-                "the facts are generated"
+                f'text: {name}: "## {rules.runtime.section}" holds only the {shown} lines; the facts are generated'
             )
             break
-    return _squash(" ".join(runtime)) if runtime else None
+    joined = {label: _squash(" ".join(parts)) for label, parts in held.items()}
+    return joined.get(labels[0]), joined.get(labels[1])
 
 
 def _screenshots(
@@ -656,8 +667,10 @@ def _checklist_section(ctx: _Context) -> str:
 def _testing_section(ctx: _Context) -> str:
     rules = ctx.subject.conventions.pull_requests
     parts = [_marked(rules.markers.facts, ctx.facts)]
-    if ctx.text.runtime:
-        parts.append(f"- {ctx.text.runtime}")
+    # The engineer's lines follow the facts as one list, the Runtime line first.
+    lines = [f"- {line}" for line in (ctx.text.runtime, ctx.text.pictures) if line]
+    if lines:
+        parts.append("\n".join(lines))
     return "\n\n".join(parts)
 
 
@@ -692,7 +705,8 @@ def generated_sections(conventions: Conventions) -> list[tuple[str, str]]:
         ),
         rules.checklist.section: "one ticked item per criterion of the Done section of TASK.md",
         rules.runtime.section: (
-            f"the facts block from the stamp log; the engineer writes only the `{rules.runtime.line}` line"
+            f"the facts block from the stamp log; the engineer writes only the `{rules.runtime.line}` and "
+            f"`{rules.runtime.pictures}` lines"
         ),
         rules.ai_use.section: "the models of the commits' `Co-Authored-By` trailers, else of the engineers in the log",
     }
