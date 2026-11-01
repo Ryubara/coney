@@ -148,7 +148,8 @@ if(CONEY_DEBUG_TOOLS)
     add_test(NAME coney_studio.opens_new_project
              COMMAND coney-studio --new-project "${CMAKE_CURRENT_BINARY_DIR}/studio-smoke/yard" --template combat
                      --select 6 --frame --frames 20 --no-activate --screenshot "${CMAKE_CURRENT_BINARY_DIR}/studio-smoke.png")
-    set_tests_properties(coney_studio.opens_new_project PROPERTIES TIMEOUT 60 SKIP_RETURN_CODE 77 LABELS studio
+    set_tests_properties(coney_studio.opens_new_project PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD} SKIP_RETURN_CODE 77
+                         LABELS studio
                          FIXTURES_REQUIRED studio_smoke
                          PASS_REGULAR_EXPRESSION "studio: 20 frames, project yard, level .*selection 6")
     # The start screen and the New project dialog, with the preferences file named by --settings so the run never reads
@@ -166,7 +167,7 @@ endif()
 # options, refuses a developer's by name, plays a synthetic input script, and holds none of the debug tools (the
 # debug pages' titles and Dear ImGui's settings file are not in the executable).
 add_test(NAME coney.release.runs_headless COMMAND ${_coney_release_exe} --headless --frames 3)
-set_tests_properties(coney.release.runs_headless PROPERTIES TIMEOUT 30)
+set_tests_properties(coney.release.runs_headless PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD})
 add_test(NAME coney.release.help COMMAND ${_coney_release_exe} --help)
 set_tests_properties(coney.release.help PROPERTIES PASS_REGULAR_EXPRESSION "--skip-movies" FAIL_REGULAR_EXPRESSION
                                                    "--play-level|--sandbox|--tunables")
@@ -177,13 +178,13 @@ set_tests_properties(coney.release.refuses_developer_option PROPERTIES PASS_REGU
 add_test(NAME coney.release.plays_input_script
          COMMAND ${_coney_release_exe} --headless --frames 10 --input-script
                  "${PROJECT_SOURCE_DIR}/tests/support/menu_input.txt")
-set_tests_properties(coney.release.plays_input_script PROPERTIES TIMEOUT 30)
+set_tests_properties(coney.release.plays_input_script PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD})
 add_test(NAME coney.release.hosts_headless COMMAND ${_coney_release_exe} --headless --frames 3 --host 127.0.0.1:0
                                                      --net-name Tester)
-set_tests_properties(coney.release.hosts_headless PROPERTIES TIMEOUT 30 PASS_REGULAR_EXPRESSION
+set_tests_properties(coney.release.hosts_headless PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD} PASS_REGULAR_EXPRESSION
                                                              "net: hosting on port [1-9][0-9]* as Tester")
 add_test(NAME coney.release.joins_headless COMMAND ${_coney_release_exe} --headless --frames 3 --join 127.0.0.1:1)
-set_tests_properties(coney.release.joins_headless PROPERTIES TIMEOUT 30)
+set_tests_properties(coney.release.joins_headless PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD})
 add_test(NAME coney.release.host_and_join_refused COMMAND ${_coney_release_exe} --headless --frames 3 --host 0 --join
                                                             127.0.0.1)
 set_tests_properties(coney.release.host_and_join_refused PROPERTIES WILL_FAIL TRUE)
@@ -211,7 +212,7 @@ endif()
 if(CONEY_DEBUG_TOOLS)
 # Headless smoke tests: the NULL renderer needs no display or GPU, so these run on CI and in a future test harness.
 add_test(NAME coney.runs_headless COMMAND coney --headless --frames 3)
-set_tests_properties(coney.runs_headless PROPERTIES TIMEOUT 30)
+set_tests_properties(coney.runs_headless PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD})
 add_test(NAME coney.help COMMAND coney --help)
 set_tests_properties(coney.help PROPERTIES PASS_REGULAR_EXPRESSION "--view-sheet SHEET")
 # `--install` refuses a disc that is not there with a message (it exits 1; the message is what is checked).
@@ -247,20 +248,22 @@ add_test(NAME coney.rejects_missing_disc COMMAND coney --disc "${CMAKE_CURRENT_B
 set_tests_properties(coney.rejects_missing_disc PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.plays_input_script
          COMMAND coney --headless --frames 10 --input-script "${PROJECT_SOURCE_DIR}/tests/support/menu_input.txt")
-set_tests_properties(coney.plays_input_script PROPERTIES TIMEOUT 30)
+set_tests_properties(coney.plays_input_script PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD})
 add_test(NAME coney.rejects_missing_input_script COMMAND coney --headless --frames 1 --input-script no-such-script.txt)
 set_tests_properties(coney.rejects_missing_input_script PROPERTIES WILL_FAIL TRUE)
 # The pad debug menu, headless: the chord opens it, the pad walks to Cheats and sends a code through the script state
 # (docs/guides/debug-menu.md). Without a disc the menus' sandbox state has no cheat callback, which the log reports.
 add_test(NAME coney.debug_menu_by_pad
          COMMAND coney --headless --frames 30 --input-script "${PROJECT_SOURCE_DIR}/tests/support/debug_menu.txt")
-set_tests_properties(coney.debug_menu_by_pad PROPERTIES TIMEOUT 30 PASS_REGULAR_EXPRESSION "> DbgEnterCheat\\(0\\)")
+set_tests_properties(coney.debug_menu_by_pad PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD}
+                     PASS_REGULAR_EXPRESSION "> DbgEnterCheat\\(0\\)")
 # The Time page's scale by pad, headless: the chord opens the menu, the left stick at a partial push walks to the 0.25x
 # preset and cross chooses it, which the session prints as a notice (docs/guides/debug-menu.md#pages).
 add_test(NAME coney.debug_menu_time_scale
          COMMAND coney --headless --frames 40
                  --input-script "${PROJECT_SOURCE_DIR}/tests/support/debug_menu_time_scale.txt")
-set_tests_properties(coney.debug_menu_time_scale PROPERTIES TIMEOUT 30 PASS_REGULAR_EXPRESSION "Time scale 0[.]25x")
+set_tests_properties(coney.debug_menu_time_scale PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD}
+                     PASS_REGULAR_EXPRESSION "Time scale 0[.]25x")
 add_test(NAME coney.rejects_bad_tunables COMMAND coney --headless --frames 1
                                                  --tunables "${PROJECT_SOURCE_DIR}/tests/support/debug_menu.txt")
 set_tests_properties(coney.rejects_bad_tunables PROPERTIES WILL_FAIL TRUE)
@@ -274,47 +277,55 @@ if(DEFINED ENV{CONEY_DISC} AND NOT "$ENV{CONEY_DISC}" STREQUAL "")
     add_test(NAME coney.reaches_main_menu
              COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 530 --skip-movies
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/start_menu.txt")
-    set_tests_properties(coney.reaches_main_menu PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "profile manager: PM_Mode")
+    set_tests_properties(coney.reaches_main_menu PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD}
+                         PASS_REGULAR_EXPRESSION "profile manager: PM_Mode")
     # STORY with a new profile through the profile screens into level99 at checkpoint 1, headless
     # (docs/guides/running-input.md#input-scripts). States only.
     add_test(NAME coney.story_reaches_level99
              COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 790 --skip-movies
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/story_new_profile_session.txt")
-    set_tests_properties(coney.story_reaches_level99 PROPERTIES TIMEOUT 120
+    set_tests_properties(coney.story_reaches_level99 PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD}
                          PASS_REGULAR_EXPRESSION "movie: L99_IN")
     # The start-up movies headless (docs/research/movies.md#coneys-implementation): LOGO plays to its end, a tap skips
     # PLOGO and another L1_IN; then the legal screen. Counts only.
     add_test(NAME coney.plays_movies
              COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 160
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/movie_skip.txt")
-    set_tests_properties(coney.plays_movies PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION
+    set_tests_properties(coney.plays_movies PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD} PASS_REGULAR_EXPRESSION
                          "LOGO ended after 114 frames.*PLOGO skipped.*L1_IN skipped.*movies: 3 played \\(2 skipped")
     # The character viewer headless: Rembrandt loaded through the Character List, the orbit camera driven by partial
     # stick deflections and a clip change, 90 frames (docs/guides/running-viewers.md#the-character-viewer). Counts only.
     add_test(NAME coney.views_character
              COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 90 --view-character
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/character_orbit.txt")
-    set_tests_properties(coney.views_character PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "character viewer: 90 frames")
-    # Playing level99 headless: Rembrandt walked, run, turned and stopped by partial stick deflections, the follow
-    # camera turned by the right stick, 390 frames (docs/guides/running-play-level.md#playing-a-level). Counts only.
+    set_tests_properties(coney.views_character PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD}
+                         PASS_REGULAR_EXPRESSION "character viewer: 90 frames")
+    # Playing level99 headless: the intro scene skipped with cross, then Rembrandt walked, run, turned and stopped by
+    # partial stick deflections, the follow camera turned by the right stick
+    # (docs/guides/running-play-level.md#playing-a-level).
+    # The intro movie is skipped: played, it was 2852 frames of video decoded before the first frame of play, the walk
+    # then ran under l99_c1 and Rembrandt never moved. The first step of play runs in the loading screen's last
+    # frame, so 510 frames count as 511. Counts only.
     add_test(NAME coney.plays_level
-             COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 390 --play-level level99
-                     --input-script "${PROJECT_SOURCE_DIR}/tests/support/play_walk.txt")
-    set_tests_properties(coney.plays_level PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "play: 390 frames.*grounded")
+             COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 510 --play-level level99 --skip-movies
+                     --input-script "${PROJECT_SOURCE_DIR}/tests/support/play_walk_level99.txt")
+    set_tests_properties(coney.plays_level PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD} PASS_REGULAR_EXPRESSION
+                         "cutscene: end l99_c1 [^\n]*, skipped.*play: 511 frames, [^\n]* grounded [^\n]*travelled [1-9][0-9]*[.]")
     # Levels played with the game's sound exit cleanly: a test with PASS_REGULAR_EXPRESSION ignores the exit code, so a
     # crash after the summary line (a destructor reading the freed sound output) passed unseen. These check the exit
-    # code alone (docs/guides/conventions.md#shutdown-order).
+    # code alone (docs/guides/conventions.md#shutdown-order). The intro movie, over before the first frame of play, is
+    # skipped.
     foreach(level level95 level99)
         add_test(NAME coney.exits_cleanly_${level}
-                 COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 60 --play-level ${level})
-        set_tests_properties(coney.exits_cleanly_${level} PROPERTIES TIMEOUT 120)
+                 COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 60 --play-level ${level} --skip-movies)
+        set_tests_properties(coney.exits_cleanly_${level} PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD})
     endforeach()
     # Rembrandt in the parkour sandbox headless: the same play mode and script on the sandbox's collision mesh, from
     # the run-up lane's spawn point (docs/guides/sandbox.md). Counts only.
     add_test(NAME coney.plays_sandbox
              COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 390 --play-level sandbox:parkour --spawn lane
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/play_walk.txt")
-    set_tests_properties(coney.plays_sandbox PROPERTIES TIMEOUT 60
+    set_tests_properties(coney.plays_sandbox PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD}
                          PASS_REGULAR_EXPRESSION "play: 390 frames.*grounded.*respawns 0.*sandbox \"Traversal course\"")
     # A matched view of level99 headless (docs/guides/running-play-level.md#matched-views): the view pinned, the world
     # frozen after its first step of play while the walk script pushes the stick, so the player stays where he started.
@@ -322,19 +333,21 @@ if(DEFINED ENV{CONEY_DISC} AND NOT "$ENV{CONEY_DISC}" STREQUAL "")
              COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 200 --play-level level99 --skip-movies
                      --freeze-world --camera 75.2,41.1,1.8,0,0,0.7071068,0.7071068,65
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/play_walk.txt")
-    set_tests_properties(coney.freezes_level PROPERTIES TIMEOUT 120 PASS_REGULAR_EXPRESSION
+    set_tests_properties(coney.freezes_level PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD} PASS_REGULAR_EXPRESSION
                          "camera: pinned at \\(75.200, 41.100, 1.800\\).*fov 65.0.*world: frozen after frame")
     # A bench (docs/guides/performance.md): level99 headless with 10 AI fighters spawned on its first frame of play,
-    # 30 frames of warm-up, then 60 measured; the report is written to the build folder. Counts and times only.
+    # 30 frames of warm-up, then 60 measured; the report is written to the build folder. The intro movie, played before
+    # the first frame of play and not measured, is skipped. Counts and times only.
     add_test(NAME coney.bench_level
-             COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 90 --play-level level99
+             COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 90 --play-level level99 --skip-movies
                      --bench "${CMAKE_CURRENT_BINARY_DIR}/bench_level.json" --bench-fighters 10 --bench-warmup 30)
-    set_tests_properties(coney.bench_level PROPERTIES TIMEOUT 120 PASS_REGULAR_EXPRESSION
+    set_tests_properties(coney.bench_level PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD} PASS_REGULAR_EXPRESSION
                          "bench: 10 fighters, 60 frames: frame [0-9.]+ ms mean")
     # Every check above needs the disc: label them like the disc tests of coney_tests, so `ctest -L disc` runs (or
     # lists) them all, and `-LE disc` leaves them out.
     set_tests_properties(coney.reaches_main_menu coney.story_reaches_level99 coney.plays_movies coney.views_character
-                         coney.bench_level coney.plays_level coney.exits_cleanly_level95 coney.exits_cleanly_level99 coney.plays_sandbox
+                         coney.bench_level coney.plays_level coney.exits_cleanly_level95 coney.exits_cleanly_level99
+                         coney.plays_sandbox
                          coney.freezes_level PROPERTIES LABELS disc)
 endif()
 
@@ -349,11 +362,13 @@ add_dependencies(coney coney_assets)
 # deflections and a viewpoint change (docs/guides/sandbox.md). Counts only.
 add_test(NAME coney.flies_sandbox
          COMMAND coney --headless --frames 60 --sandbox --input-script "${PROJECT_SOURCE_DIR}/tests/support/sandbox_fly.txt")
-set_tests_properties(coney.flies_sandbox PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "sandbox: 60 frames.*view overview")
+set_tests_properties(coney.flies_sandbox PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD}
+                     PASS_REGULAR_EXPRESSION "sandbox: 60 frames.*view overview")
 add_test(NAME coney.flies_parkour_sandbox
          COMMAND coney --headless --frames 60 --sandbox parkour
                  --input-script "${PROJECT_SOURCE_DIR}/tests/support/sandbox_fly.txt")
-set_tests_properties(coney.flies_parkour_sandbox PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "sandbox: 60 frames")
+set_tests_properties(coney.flies_parkour_sandbox PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD}
+                     PASS_REGULAR_EXPRESSION "sandbox: 60 frames")
 add_test(NAME coney.rejects_unknown_sandbox COMMAND coney --headless --frames 1 --sandbox no-such-layout)
 set_tests_properties(coney.rejects_unknown_sandbox PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.play_sandbox_needs_disc COMMAND coney --play-level sandbox:parkour)
@@ -361,14 +376,14 @@ set_tests_properties(coney.play_sandbox_needs_disc PROPERTIES WILL_FAIL TRUE)
 # The sound output in test mode: the tone sweep mixed offline, a step of frames per frame, with no device and no clock
 # (docs/guides/running-options.md#sound). Counts and a hash only.
 add_test(NAME coney.audio_test_offline COMMAND coney --headless --frames 60 --audio-test)
-set_tests_properties(coney.audio_test_offline PROPERTIES TIMEOUT 30
+set_tests_properties(coney.audio_test_offline PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD}
                      PASS_REGULAR_EXPRESSION "audio: offline, 96000 frames mixed .2.00 s at 48000 Hz., peak [1-9]")
 add_test(NAME coney.audio_test_refuses_no_audio COMMAND coney --headless --frames 1 --audio-test --no-audio)
 set_tests_properties(coney.audio_test_refuses_no_audio PROPERTIES WILL_FAIL TRUE)
 # Network play from the command line (docs/guides/multiplayer.md). The host listens on 127.0.0.1 only, so no desktop
 # firewall asks about the test program; the port is any free one.
 add_test(NAME coney.hosts_headless COMMAND coney --headless --frames 3 --host 127.0.0.1:0 --net-name Tester)
-set_tests_properties(coney.hosts_headless PROPERTIES TIMEOUT 30
+set_tests_properties(coney.hosts_headless PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD}
                      PASS_REGULAR_EXPRESSION "net: hosting on port [1-9][0-9]* as Tester")
 add_test(NAME coney.host_and_join_refused COMMAND coney --headless --frames 3 --host 0 --join 127.0.0.1)
 set_tests_properties(coney.host_and_join_refused PROPERTIES WILL_FAIL TRUE)

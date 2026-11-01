@@ -1,8 +1,9 @@
 # Runs error_dialogs_check (CHECK_EXE) and passes when the debug runtime's report reached the output and the process
 # ended by itself. It ends by aborting, which ctest alone would count as a failure whatever the output; a hang on a
-# dialog shows here as the timeout.
+# dialog shows here as the timeout, HANG_GUARD seconds (the root CMakeLists.txt's CONEY_TEST_HANG_GUARD).
 # Two variables: with one for both streams, CMake loses the runtime's report (seen with CMake 3.31 on Windows).
-execute_process(COMMAND "${CHECK_EXE}" TIMEOUT 30 RESULT_VARIABLE result OUTPUT_VARIABLE stdout ERROR_VARIABLE stderr)
+execute_process(COMMAND "${CHECK_EXE}" TIMEOUT ${HANG_GUARD} RESULT_VARIABLE result OUTPUT_VARIABLE stdout
+                ERROR_VARIABLE stderr)
 set(out "${stdout}${stderr}")
 if(result MATCHES "timeout")
     message(FATAL_ERROR "error_dialogs_check did not end: an error dialog is waiting for a click")

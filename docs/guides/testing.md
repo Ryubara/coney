@@ -97,6 +97,21 @@ else, so these reports go to stderr and the process ends at once; the `coney.err
 MSVC debug builds. In tests, check a container's size (`REQUIRE(!starts.empty())`) before reading `front()`,
 `back()` or an index, so a missing value fails one test cleanly instead of ending the whole run.
 
+### No wall-clock limits {#no-wall-clock-limits}
+
+A test's result never depends on how busy the machine is, so a check is never run again just in case. Test mode is
+lockstep (the fixed step, scripted input, game time only), so only a timeout can make a run's result depend on time.
+Every test's `TIMEOUT`, and every timeout a test's CMake script gives the process it runs, is therefore
+`CONEY_TEST_HANG_GUARD` (ten minutes, set in the root `CMakeLists.txt`): a guard against a hang, never a speed limit.
+`python/tests/test_test_timeouts.py` refuses any other value. A test that must measure speed reports it (the bench)
+and does not fail on it.
+
+A disc run spends its time on what it checks: one that does not check a level's intro movie passes `--skip-movies`
+and skips a scene that holds the player, as `coney.plays_level` does with `tests/support/play_walk_level99.txt`.
+Before that, `coney.plays_level` decoded the whole 95-second level99 intro movie before its first frame of play, then
+walked through the intro scene with the player held. It took about 10 seconds on a quiet machine and over its
+60-second timeout when several builds ran at once.
+
 ### Python tests do not depend on the shell {#python-environment}
 
 A Python test gives the same answer in a task's shell (`CONEY_TASK` and `VIRTUAL_ENV` set), inside an agent tool
