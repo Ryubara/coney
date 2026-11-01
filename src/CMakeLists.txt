@@ -84,6 +84,7 @@ add_library(coney_core STATIC
     graphics/car_draw.cpp
     graphics/human_blood.cpp
     graphics/throw_arc.cpp
+    graphics/vertex_light.cpp
     graphics/human_lighting.cpp
     graphics/level_lighting.cpp
     graphics/lighting_frame.cpp
