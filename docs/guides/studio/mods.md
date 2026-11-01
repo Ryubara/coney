@@ -230,8 +230,9 @@ leave `server.cfg` alone.
 A maintainer decision: the release build **includes a player console**, limited in what it can reach, with its code kept
 cleanly apart from the developer debug tools, which stay out of the release build; it is the FiveM-style Dear ImGui
 console, in release builds and not only in developer ones, and the way players and modders turn scripts on and off
-(a maintainer decision, 2026-10-29). [The Coney console](console.md#release) owns how, and the rule's new wording is
-build issue [7](security.md#build-issues), shared with it. What a mod's own commands and the release console may reach
+(a maintainer decision, 2026-10-29). [The Coney console](console.md#release) owns how, and the rule's wording, in
+[AGENTS.md](repo:AGENTS.md) and [the building guide](../building.md#debug-tools), was build issue
+[7](security.md#build-issues), shared with it. What a mod's own commands and the release console may reach
 is [Script security](security.md#console).
 
 ## Modded saves and replays {#saves-replays}

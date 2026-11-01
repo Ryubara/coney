@@ -6,11 +6,11 @@ rendering and assets. Docs and comments say where behaviour lives in the origina
 
 ## Layout
 
-`src/core/` platform-neutral engine code; `src/platform/` the only place for OS, SDL3 or librw code; `tests/`
-Catch2; `python/` the `coney-tools` CLI (uv); `docs/research/` what we know about the original; `docs/guides/` how
-we work; `assets/` Coney's own assets (sandbox layouts, CC0 textures; never game data); `cmake/deps.cmake` pinned
-dependencies. Worktrees go in `../../worktrees/coney/<branch>/`, scratch output in `../../scratch/`; game files,
-emulators and tool installs live beside the repo, never in it.
+`src/core/` platform-neutral engine code; `src/platform/` the only place for OS, SDL3 or librw code; `tests/` Catch2;
+`python/` the `coney-tools` CLI; `docs/research/` what we know of the original; `docs/guides/` how we work; `assets/`
+Coney's own assets; `cmake/deps.cmake` pinned dependencies. Worktrees go in `../../worktrees/coney/<branch>/`, scratch
+in `../../scratch/`; game files, emulators and tool installs live beside the repo, never in it. The release build holds
+no debug tools; the player console, once built, is its one console (`docs/guides/building.md#debug-tools`).
 
 ## How we work
 

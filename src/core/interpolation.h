@@ -50,7 +50,7 @@ namespace coney {
 template <typename T> class Interpolated {
   public:
     /// Both steps hold `value`.
-    explicit Interpolated(T value) : m_previous(value), m_current(value) {}
+    explicit Interpolated(const T& value) : m_previous(value), m_current(value) {}
 
     /// Starts a step: the newest value becomes the previous one.
     void commit() { m_previous = m_current; }

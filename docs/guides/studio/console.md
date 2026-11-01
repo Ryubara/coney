@@ -496,12 +496,15 @@ tool ships, and newly proves the console does:
 2. **The catalog checks.** The generator refuses a developer entry in `src/console/commands.toml`; CI fails when a
    generated table is not current; a unit test in the release build's list compares the registry's commands with the
    player catalog, so a command registered from code without an entry fails.
-3. **The markers: the release marker list changes.** Today `cmake/debug_tools_markers.cmake` treats Dear ImGui itself
-   as a debug tool: its default settings file name, `imgui.ini`, is one of the markers. With the console, the release
-   build links Dear ImGui and so contains that name, and **`imgui.ini` leaves the list**. Debug-only markers take its
-   place: the list keeps the debug pages' titles and the developer overlay's settings file (`coney-imgui.ini`), and
-   gains the developer commands' summaries, generated from `src/debug/console_commands.toml`, so a developer command
-   linked into the release build is found. No player command's text uses a marker's words.
+3. **The markers: the release marker list changes.** `cmake/debug_tools_markers.cmake` treated Dear ImGui itself as
+   a debug tool: its default settings file name, `imgui.ini`, was one of the markers. With the console, the release
+   build links Dear ImGui and so contains that name, and **`imgui.ini` has left the list** (done with the rule's text,
+   [#1166](issue:1166)). Debug-only markers took its place: the list keeps the debug pages' titles and the developer
+   overlay's settings file (`coney-imgui.ini`), and has gained two strings only the debug tools hold, the Entity
+   editor's former title and an item of its page. It gains the developer commands' summaries, generated from
+   `src/debug/console_commands.toml`, with the developer catalog, so a developer command linked into the release build
+   is found. No player command's text uses a marker's words, and no marker is a string of a source the release build
+   links (the command-line help in `src/core/options.cpp` is one: its option names and texts cannot be markers).
 4. **The twin check.** A new test, `coney.release.has_player_console`, finds the console's own marker (its banner,
    `Coney console`) in the release executable, so the release build is proved to carry the console, as
    `coney.debug_tools_markers_found` proves the markers check finds something.
@@ -510,12 +513,14 @@ tool ships, and newly proves the console does:
    built yet, such as `mission`, is left out); `noclip` and `lua print(1)` print "unknown command";
    `quit` ends the run with exit code 0. On the debug tools' `coney`, the same `noclip` is accepted.
 
-The rule that the release build holds no debug tools is written in one place,
+The rule that the release build holds no debug tools is written in [AGENTS.md](repo:AGENTS.md), with its detail in
 [The debug tools and the game](../building.md#debug-tools), and checked by the split test above, which names
-`coney_devtools` as the one target that links `imgui`. The text gains the console as the one console the release
-build holds and Dear ImGui as the console's toolkit. That change of text is shared: it is build issue 7 of the script
-security design ([Script security: Proposed build issues](security.md#build-issues)), made once for both designs, and
-this page's front-end issue depends on it ([Proposed build issues](#build-issues)).
+`coney_devtools` as the target that links `imgui` today. Both texts now name the console as the one console the release
+build holds and Dear ImGui as the console's toolkit, kept apart from the debug tools by target and by model. That change
+of text was shared: it is build issue 7 of the script security design ([Script security: Proposed
+build issues](security.md#build-issues)), made once for both designs ([#1166](issue:1166)); this page's front-end issue
+depended on it ([Proposed build issues](#build-issues)). The split test's rule for `imgui` changes with the front end's
+code, as the list above says.
 
 ## Determinism, replays and the network {#determinism}
 

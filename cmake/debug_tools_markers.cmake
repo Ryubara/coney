@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Whether an executable holds the debug tools (docs/guides/building.md#debug-tools), from strings only they put in it:
-# the debug pages' titles, the developer overlay's settings file and Dear ImGui's own default settings file name. Run
-# as a script by ctest:
+# the debug pages' titles and items and the developer overlay's settings file. Dear ImGui's own default settings file
+# name (`imgui.ini`) is not a marker: the release build's player console links Dear ImGui and so holds it. A marker
+# must not appear in a source the release build links, the command-line help (src/core/options.cpp) and the player
+# console's text included. Run as a script by ctest:
 #
 #   cmake -DEXE=<executable> -DEXPECT=absent|present -P debug_tools_markers.cmake
 #
@@ -14,7 +16,8 @@ if(NOT EXISTS "${EXE}")
     message(FATAL_ERROR "${EXE}: no such file")
 endif()
 
-set(_markers "Entity inspector" "Lua console" "Animation player" "coney-imgui.ini" "imgui.ini")
+set(_markers "Entity inspector" "Entity editor" "Scale collision with mesh" "Lua console" "Animation player"
+            "coney-imgui.ini")
 list(JOIN _markers "|" _pattern)
 string(REPLACE "." "\\." _pattern "${_pattern}")
 file(STRINGS "${EXE}" _found REGEX "${_pattern}")
