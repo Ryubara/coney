@@ -16,7 +16,8 @@ whose agent has not started, then the ready issues that pass the start gate (`ta
 `P-critical`, which comes first as the claim Action demands) and are not blocked and fit the open-claims limit (a
 Studio, networking, renderer or `workflow` issue is outside it); for the fix track, a queued fix task, then each open
 pull request of this account with a failed required check that no fix unit and no hold covers. *Reasons* the tool
-finds itself: no issue passes the gate, the claim limit is reached, free disk is under the workspace floor.
+finds itself: no issue passes the gate, the claim limit is reached, a watched drive's free disk is under its floor
+(watched_drives.py: the workspace's, the build root's and the `watch_paths` of `coney.local.toml`).
 Anything else is a waiver (`slot_waivers.py`).
 
 GitHub is read through `Sources` (`slot_fill_github.py` is the real one), so the decision is pure and the tests never
@@ -26,7 +27,7 @@ nothing.
 
 from __future__ import annotations
 
-from collections.abc import Collection, Iterable
+from collections.abc import Collection, Iterable, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -42,6 +43,7 @@ from coney_tools.pr_hold import Hold
 from coney_tools.task_create import kind_of_labels
 from coney_tools.task_file import TaskFile
 from coney_tools.unit_record import UnitRecord
+from coney_tools.watched_drives import Drive, gb_text
 
 #: What the message of a failing check starts with: the Stop hook blocks only on exit code 1 with this first word, so a
 #: crash (which also exits with 1) can never block a turn.
@@ -408,13 +410,13 @@ def fill_check(
     now: datetime,
     sources: Sources,
     build_slots: int,
-    free_gb: float | None = None,
+    drives: Sequence[Drive] | None = None,
     holds: list[Hold] | None = None,
 ) -> Check:
     """Decide whether a free place has startable work and no reason to stay free.
 
-    `build_slots` is the machine's (`coney.local.toml`); `free_gb` is the free space of the workspace's drive (None: not
-    known, so no reason). Reads the places from the scratch folder, the work from `sources`; a GitHub that cannot be
+    `build_slots` is the machine's (`coney.local.toml`); `drives` are the watched drives with their free space (None:
+    not known, so no reason). Reads the places from the scratch folder, the work from `sources`; a GitHub that cannot be
     read passes the check with a warning."""
     fill = conventions.tasks.start.fill
     warnings: list[str] = []
@@ -437,11 +439,15 @@ def fill_check(
         return Check(False, f"ok: every place is full ({summary})", tuple(warnings))
     if mine is None:
         return Check(False, f"ok, not checked: {summary}", tuple(warnings))
-    if free_gb is not None and free_gb < conventions.workspace.disk_min_free_gb:
+    low = [drive for drive in drives or () if drive.low]
+    if low:
+        said = "; ".join(
+            f"{gb_text(drive.free_gb)} GB on {drive.name} ({drive.phrase()}), under its {drive.min_free_gb} GB floor"
+            for drive in low
+        )
         return Check(
             False,
-            f"ok: free disk is {free_gb:.0f} GB, under the {conventions.workspace.disk_min_free_gb} GB floor "
-            f"(workspace.disk_min_free_gb), so no new build folder starts ({summary})",
+            f"ok: free disk is {said} (workspace.disk_min_free_gb), so no new build folder starts ({summary})",
             tuple(warnings),
         )
     # A claim paused by a label waits for a maintainer: it is not work to start.

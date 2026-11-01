@@ -16,15 +16,23 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import shutil
 import subprocess
 import sys
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
-from coney_tools import build_claims, slot_fill, slot_fill_blocks, slot_waivers, stamps, task_check, task_slots
+from coney_tools import (
+    build_claims,
+    slot_fill,
+    slot_fill_blocks,
+    slot_waivers,
+    stamps,
+    task_check,
+    task_slots,
+    watched_drives,
+)
 from coney_tools.audit_github import Runner, run_gh
 from coney_tools.build_claims import MAIN_LANE
 from coney_tools.config import ConfigError, find_repo_root, load_config, main_checkout, workspace_folder
@@ -39,6 +47,7 @@ from coney_tools.task_leads_index import CachedIndex, prepare_index
 from coney_tools.task_review import add_review_parser, run_review_command
 from coney_tools.task_start import StartEnv, StartRequest, start_task
 from coney_tools.unit_record import UnitRecord
+from coney_tools.watched_drives import Drive
 from coney_tools.workspace_clean import list_worktrees
 
 
@@ -204,15 +213,16 @@ def _bounded_gh(arguments: list[str]) -> str:
     return done.stdout
 
 
-def _free_gb(folder: Path) -> float | None:
-    """The free space, in GB, of the drive `folder` (or its nearest existing parent) is on; None when unreadable."""
-    here = folder
-    while not here.exists() and here != here.parent:
-        here = here.parent
+def _watched(root: Path, conventions: Conventions, warnings: list[str]) -> list[Drive] | None:
+    """The watched drives with their free space now (watched_drives.py); None, with a warning, when they cannot be read
+    (no drive is then a reason to leave a place free)."""
     try:
-        return shutil.disk_usage(here).free / 1024**3
-    except OSError:
+        found = watched_drives.read(root, conventions.workspace)
+    except (ConfigError, OSError) as error:
+        warnings.append(f"the free disk space could not be read ({error}), so it was not checked")
         return None
+    warnings.extend(found.problems)
+    return found.drives
 
 
 def _waiver_who() -> str:
@@ -261,7 +271,7 @@ def _run_fill_check(
     conventions: Conventions,
     now: Callable[[], datetime],
     sources: slot_fill.Sources | None,
-    free_gb: float | None,
+    drives: Sequence[Drive] | None,
 ) -> int:
     """`task slots --fill-check`: 1 with the work to start when a place is free for no reason, else 0.
 
@@ -272,9 +282,10 @@ def _run_fill_check(
     fill = conventions.tasks.start.fill
     read = sources or GhSources(conventions, scratch, bounded_runner(fill.github_seconds), now)
     holds = read_active(holds_folder(scratch, conventions.conclave.watch), now()).holds
-    space = free_gb if free_gb is not None else _free_gb(scratch)
+    notes: list[str] = []
+    space = drives if drives is not None else _watched(root, conventions, notes)
     check = slot_fill.fill_check(scratch, conventions, now(), read, _build_slots(root), space, holds)
-    warnings = list(check.warnings)
+    warnings = [*check.warnings, *notes]
     blocked = check.blocked
     if blocked and args.session and not slot_fill_blocks.may_block(scratch, conventions, args.session, now()):
         blocked = False
@@ -297,7 +308,7 @@ def _run_slots(
     now: Callable[[], datetime],
     remote: Remote | None,
     sources: slot_fill.Sources | None = None,
-    free_gb: float | None = None,
+    drives: Sequence[Drive] | None = None,
 ) -> int:
     """`task slots`: the report, or with `--admit` the verdict on one start (0 may start, 3 refused). The claim cards
     (whether a claim is held, whether an issue has the workflow or the Studio label) are read from GitHub, each call
@@ -308,7 +319,7 @@ def _run_slots(
     if sum(modes) > 1:
         raise ConfigError("task slots: --admit, --fill-check and --waive are separate commands")
     if args.fill_check:
-        return _run_fill_check(args, root, conventions, now, sources, free_gb)
+        return _run_fill_check(args, root, conventions, now, sources, drives)
     if args.waive is not None:
         return _run_waive(args, root, conventions, now())
     scratch = scratch_folder(root)
@@ -371,9 +382,9 @@ def run_task(
     sleep: Callable[[float], None] = time.sleep,
     remote: Remote | None = None,
     sources: slot_fill.Sources | None = None,
-    free_gb: float | None = None,
+    drives: Sequence[Drive] | None = None,
 ) -> int:
-    """Dispatch a `task` command; 0 on success, 1 when the claim or the task was refused. `sources` and `free_gb`
+    """Dispatch a `task` command; 0 on success, 1 when the claim or the task was refused. `sources` and `drives`
     stand in for GitHub and the disk in the tests of `task slots --fill-check`."""
     if args.command == "check":
         return task_check.run(args)
@@ -383,7 +394,7 @@ def run_task(
     conventions = load_conventions(root)
     rules = conventions.claims
     if args.command == "slots":
-        return _run_slots(args, root, conventions, now, remote, sources, free_gb)
+        return _run_slots(args, root, conventions, now, remote, sources, drives)
     if args.command == "index":
         index = _index(root, conventions, None if args.no_gh else run, True, now())
         print(f"index: {len(index.entries)} entries at {index.head[:10]}")

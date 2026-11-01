@@ -70,7 +70,7 @@ test('the band counts units, failures, pull requests, claims, builds and disk on
     expect((await ui.find({ key: 'claims' }))?.text).toBe('claims 2')
     expect((await ui.find({ key: 'builds' }))?.text).toBe('builds 1 (+1 queued)')
     expect((await ui.find({ key: 'critical' }))?.text).toBe('⚠ P-critical #790')
-    expect((await ui.find({ key: 'disk' }))?.text).toBe('disk 61 GB')
+    expect((await ui.find({ key: 'disk' }))?.text).toBe('disk C: 61 GB')
     await ui.unmount()
   }
 })
@@ -149,6 +149,25 @@ for (const [free, color] of [
   })
 }
 
+test('the disk item names the drive with the least room and is coloured by that drive', async ($, on) => {
+  const world = engine(
+    on,
+    prints(
+      snapshot(copy => {
+        if (copy.machine.error !== null) return
+        Object.assign(copy.machine, { drive: 'E:', free_gb: 3.7 })
+        copy.machine.drives.push({ name: 'E:', holds: ['the build root'], free_gb: 3.7, min_free_gb: 30, warn_free_gb: 40 })
+      }),
+    ),
+  )
+  await start($, world)
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  const disk = await ui.find({ type: 'Text', text: /disk/ })
+  expect(disk?.text).toBe('disk E: 4 GB')
+  expect(disk?.props.color).toBe('error')
+  await ui.unmount()
+})
+
 test('a narrow band takes two lines', async ($, on) => {
   const world = engine(on, prints(snapshot()))
   await start($, world)
@@ -158,7 +177,7 @@ test('a narrow band takes two lines', async ($, on) => {
   const second = await ui.findAll({ type: 'Box', key: 'line-1' })
   expect(lines).toHaveLength(1)
   expect(second).toHaveLength(1)
-  expect(second[0]?.text).toContain('disk 61 GB')
+  expect(second[0]?.text).toContain('disk C: 61 GB')
   await ui.unmount()
 })
 

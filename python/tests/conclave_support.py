@@ -20,10 +20,29 @@ from coney_tools.issue_claim_model import Card
 from coney_tools.pr_ready import Readiness
 from coney_tools.task_file import TaskFile, render_task_file
 from coney_tools.unit import Unit
+from coney_tools.watched_drives import Drive, Watch
 
 CONVENTIONS = load_conventions(REPO)
 NOW = datetime(2026, 10, 23, 14, 0, tzinfo=UTC)
 HASH = "a" * 40
+
+
+def drive(name: str, free_gb: float, holds: tuple[str, ...] = ("the workspace drive",), floor: int = 30) -> Drive:
+    """A watched drive with this much free space, judged by the conventions' margin."""
+    return Drive(name, holds, int(free_gb * 1024**3), floor, CONVENTIONS.workspace.disk_margin_gb)
+
+
+def watching(*free_gb: float, problems: list[str] | None = None) -> Watch:
+    """The drives `C:`, `E:`, `F:` with this much free space each (the first holds the workspace)."""
+    names = ("C:", "E:", "F:")
+    holds = (
+        ("the workspace drive",),
+        ("the build root (E:/coney_builds)",),
+        ("the watched folder (F:/scratch)",),
+    )
+    return Watch(
+        [drive(name, free, held) for name, free, held in zip(names, free_gb, holds, strict=False)], problems or []
+    )
 
 
 def ago(**delta: float) -> datetime:
@@ -365,7 +384,7 @@ def sources(made: Layout, gh: FakeGh | None = None, plain: tuple[str, ...] = (),
         "conventions": CONVENTIONS,
         "checkout": made.checkout,
         "coord": CoordSources(**coord),
-        "free_bytes": lambda: 61 * 1024**3,
+        "drives": lambda: watching(61),
         "claims": lambda: [card(741), card(770, "contrib-a", hours_idle=50, scope=("assets/",))],
         "ready": ready_now,
         "trial": untried,

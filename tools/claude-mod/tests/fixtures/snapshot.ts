@@ -462,9 +462,22 @@ export default {
  },
  "machine": {
   "error": null,
+  "drive": "C:",
   "free_gb": 61.0,
   "min_free_gb": 30,
-  "warn_free_gb": 40
+  "warn_free_gb": 40,
+  "drives": [
+   {
+    "name": "C:",
+    "holds": [
+     "the workspace drive"
+    ],
+    "free_gb": 61.0,
+    "min_free_gb": 30,
+    "warn_free_gb": 40
+   }
+  ],
+  "problems": []
  },
  "claims": {
   "error": null,

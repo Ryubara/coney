@@ -2,7 +2,7 @@
 """Tests for `coney-tools task slots --fill-check` and `--waive` (task_cli): exit codes, what is printed, the cap on
 blocks in a row, and that `task slots` lists the waivers (docs/guides/slot-fill.md).
 
-GitHub and the disk are stand-ins (`FakeSources`, `free_gb`); the scratch folder is a temporary one.
+GitHub and the disk are stand-ins (`FakeSources`, `drives`); the scratch folder is a temporary one.
 """
 
 import argparse
@@ -13,8 +13,9 @@ import pytest
 from slot_fill_support import FakeSources, issue
 from test_task_slots import Scene
 
-from coney_tools import slot_fill, slot_fill_blocks, slot_waivers, task_cli
+from coney_tools import slot_fill, slot_fill_blocks, slot_waivers, task_cli, watched_drives
 from coney_tools.config import ConfigError
+from coney_tools.watched_drives import Drive
 
 
 @pytest.fixture
@@ -39,11 +40,21 @@ def slots(
     monkeypatch.setattr(task_cli, "_waiver_who", lambda: "coordinator test")
     monkeypatch.setattr(task_cli, "_build_slots", lambda root: scene.build_slots)
 
-    def run(*words: str, free_gb: float = 500.0) -> tuple[int, str]:
+    def run(
+        *words: str, free_gb: float = 500.0, drives: list[Drive] | None = None, read_disk: bool = False
+    ) -> tuple[int, str]:
         group = argparse.ArgumentParser().add_subparsers(dest="group")
         task_cli.add_task_parser(group)
         args = group.choices["task"].parse_args(["slots", *words])
-        code = task_cli.run_task(args, now=scene.now, remote=scene.github, sources=sources, free_gb=free_gb)
+        code = task_cli.run_task(
+            args,
+            now=scene.now,
+            remote=scene.github,
+            sources=sources,
+            drives=None
+            if read_disk
+            else drives or [Drive("C:", ("the workspace drive",), int(free_gb * 1024**3), 30, 10)],
+        )
         return code, capsys.readouterr().out
 
     return run
@@ -68,6 +79,38 @@ def test_low_disk_passes_and_says_so(scene: Scene, sources: FakeSources, slots: 
     sources.ready_issues = [issue(7)]
     assert slots("--fill-check", free_gb=5.0)[0] == 0
     assert slots("--fill-check", free_gb=80.0)[0] == 1
+
+
+def test_a_low_second_drive_passes_and_says_which(sources: FakeSources, slots: Callable[..., tuple[int, str]]) -> None:
+    sources.ready_issues = [issue(7)]
+    drives = [
+        Drive("C:", ("the workspace drive",), 300 * 1024**3, 30, 10),
+        Drive("E:", ("the build root (E:/b)",), int(3.7 * 1024**3), 30, 10),
+    ]
+    code, out = slots("--fill-check", drives=drives)
+    assert code == 0 and "3.7 GB on E: (the build root (E:/b)), under its 30 GB floor" in out
+
+
+def test_drives_that_cannot_be_read_are_no_reason_and_a_warning(
+    sources: FakeSources, slots: Callable[..., tuple[int, str]], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def broken(checkout: object, workspace: object) -> object:
+        raise ConfigError("coney.local.toml: watch_paths must be a list")
+
+    monkeypatch.setattr(watched_drives, "read", broken)
+    sources.ready_issues = [issue(7)]
+    code, out = slots("--fill-check", read_disk=True)
+    assert code == 1 and "\nwarning: the free disk space could not be read (coney.local.toml: watch_paths" in out
+
+
+def test_a_drive_that_is_not_plugged_in_is_a_warning_beside_the_others(
+    sources: FakeSources, slots: Callable[..., tuple[int, str]], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    found = watched_drives.Watch([Drive("C:", ("the workspace drive",), 300 * 1024**3, 30, 10)], ["F: is not ready"])
+    monkeypatch.setattr(watched_drives, "read", lambda checkout, workspace: found)
+    sources.ready_issues = [issue(7)]
+    code, out = slots("--fill-check", read_disk=True)
+    assert code == 1 and "\nwarning: F: is not ready" in out
 
 
 def test_a_github_that_cannot_be_read_exits_0_with_a_warning_line(

@@ -31,7 +31,7 @@ request problems nobody holds. What comes next is under [Planned](#planned).
 | `checks 4 (+6 queued)` | Check slots in use (full suites: `task check`'s pytest and the build's ctest run) and suites waiting for one ([Check slots](coney-tools-build.md#check-slots)) | none |
 | `⚠2 stalled` | Units whose running check has a fraction that has not moved for `check_stall_minutes` | amber |
 | `⚠ P-critical #790` | The first open issue labelled `P-critical`, and how many more | amber |
-| `disk 61 GB` | Free space on the workspace drive | amber under `workspace.disk_min_free_gb` + `workspace.disk_margin_gb`, red under `workspace.disk_min_free_gb` |
+| `disk C: 61 GB` | Free space on the [watched drive](workspace.md#watched-drives) with the least room above its floor, the drive named: every drive that holds a Coney folder (the workspace's, the build root's, the folders of `watch_paths` in `coney.local.toml`), each counted once | amber under that drive's floor plus its margin (`workspace.disk_min_free_gb` + `workspace.disk_margin_gb`, or the limits `watch_paths` gives it), red under its floor |
 
 A snapshot older than `stale_after_reads` (3) local intervals dims the band and adds `stale 4m`. A failed first read
 shows the first line of the error; a snapshot of a newer shape than the mod knows shows "update the checkout" and
@@ -106,6 +106,7 @@ with nothing new is left alone, and the idle wake stays Tether's ([boundary](#bo
 | `merged` | A pull request merged within `merged_minutes` (30) | `merged:<n>` | Never: it leaves the list when the window ends | Bring the issues it affected up to date ([After a merge](issues.md#after-a-merge)) |
 | `unit-ready` | A release-queue file (`PR.md`, `PR-<n>.md`) in the scratch folder of a unit with a worktree, its branch has no pull request since the file changed, no `HOLD.md` lies beside it and [`pr open` would pass its proof](#ready); or a pull request in conflict whose [trial rebase](#conflicts) is clean and whose stamps still cover the rebased change | `unit:<branch>:<file>:<change>`: the first twelve digits of the [change](stamps.md#change) the stamps cover, so editing the file or rebasing the branch is the same event and a new commit is a new one | The branch gets a pull request: it leaves the list. The proof stops holding, or a hold is made: it leaves the list too, and is told again if it holds again | `coney-tools pr open <task>` |
 | `question` | `QUESTION.md` or `QUESTION-<n>.md` in the scratch folder of a task unit or of any branch with a worktree ([Questions](#questions)) | `question:<task>:<file>:<time the file changed>` | An `ANSWER.md` (`ANSWER-<n>.md`) written at or after the question's last change | Read it and answer |
+| `disk-low` | A [watched drive](workspace.md#watched-drives) is under its floor (`workspace.disk_min_free_gb`, or the limit `watch_paths` gives it), whichever drive it is: the build drive can fill while the workspace drive has room | `disk-low:<drive>` (`disk-low:E:`), so it is told once while the drive stays low and again if it recovers and falls | Never: it leaves the list when the drive is above its floor again | Run `coney-tools workspace clean --apply` before builds fail, and free a drive it cannot (a scratch or emulator folder) by hand |
 
 An event that can come back once handled (a pull request problem, when a hold runs out) stays in the list as
 `handled` with who holds it and until when, so the mod can tell the change. The others leave the list when they are
@@ -430,9 +431,9 @@ read keeps the pull requests, claim overlaps and events of the last GitHub read.
 | --- | --- | --- |
 | `config` | The roles and helpers of the hook settings, the intervals and limits | `.claude/hooks/hooks.toml`, the `conclave` keys |
 | `units` | Each unit: task file, stage from the stamp log, build, check, worktree, overlaps, pull request | `scratch/<task>/TASK.md`, the stamp log, `coord status` (builds and checks) |
-| `builds`, `machine` | Build and check slots and queues; free disk with its two limits | `build status`, the workspace drive |
+| `builds`, `machine` | Build slots and queues; the free disk of the [watched drives](workspace.md#watched-drives): the one with the least room above its floor (`drive`, `free_gb` and its two limits, what the band shows), every drive in `drives` and any that could not be read in `problems` | `build status`, the watched drives |
 | `claims`, `prs`, `issues` | Held claims with deadlines and titles; open and merged pull requests; the issues the pane names (`--github` only) | the claim cards, `pr list-stuck`, `gh` |
-| `events` | The [watchers' events](#watchers), each with an id and a state, the kinds that could not be read (`unread`) and any hold file that could not (`holds_problems`) (`--github` only) | `pr list-stuck`, the release queue with the proof of [each unit in it](#ready), the [trial rebase](#conflicts) of each conflict, the holds (`pr hold`, `HOLD.md`), the question files of the unit folders |
+| `events` | The [watchers' events](#watchers), each with an id and a state, the kinds that could not be read (`unread`) and any hold file that could not (`holds_problems`) (`--github` only) | `pr list-stuck`, the release queue with the proof of [each unit in it](#ready), the [trial rebase](#conflicts) of each conflict, the holds (`pr hold`, `HOLD.md`), the question files of the unit folders, the snapshot's own `machine` section (`disk-low`) |
 
 A section that cannot be read holds only its `error`, and the others stand. The object carries `schema` (3 since the
 units' `check`); the mod refuses a higher number than it was built for. A unit's **stage** is the step after the highest

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The events of the Conclave snapshot: what Coney itself raises for the coordinator (docs/guides/conclave.md#watchers).
 
-Four things need the coordinator and are found here, each as an event with an id that names the occurrence and a state:
+Five things need the coordinator and are found here, each as an event with an id that names the occurrence and a state:
 
 * `check-failed` and `pr-stuck`: an open pull request that `pr list-stuck` calls stuck (a failed required check, or a
   conflict, a CI run that never ends, auto-merge off). The id is the pull request, the cause and the head commit (and
@@ -16,6 +16,8 @@ Four things need the coordinator and are found here, each as an event with an id
   or a rebase, is the same event; a unit that was released leaves the list.
 * `question`: `QUESTION.md` (or `QUESTION-<n>.md`) in the scratch folder of a task unit or of any branch with a worktree
   (most tracks are plain branches, as for `unit-ready`) with no newer `ANSWER` of the same number.
+* `disk-low`: a watched drive (watched_drives.py) under its floor, so the coordinator runs `workspace clean` before
+  builds fail. The id is the drive, so it is told once while the drive stays low and again if it recovers and falls.
 
 An event that cannot come back once handled leaves the list when it is handled. `guard` marks the events the stop guard
 holds the coordinator's turn end for (the pull request problems nobody owns). A kind whose source could not be read is
@@ -39,7 +41,7 @@ from coney_tools.pr_hold import Hold, HoldsRead, covers_conflict, holds_folder, 
 from coney_tools.unit import Unit
 
 #: Every kind of event, in the order `unread` lists them.
-KINDS = ("check-failed", "pr-stuck", "conflict-fix", "merged", "unit-ready", "question")
+KINDS = ("check-failed", "pr-stuck", "conflict-fix", "merged", "unit-ready", "question", "disk-low")
 #: The kinds that read the open and merged pull requests, the release queue and the unit folders.
 PR_KINDS = ("check-failed", "pr-stuck", "conflict-fix", "merged")
 #: How many digits of the change hash an event's id keeps.
@@ -121,6 +123,31 @@ def _merges(prs: dict[str, Any], rules: ConclaveWatch, now: datetime) -> list[di
                 "bring the issues it affected up to date (issues.md#after-a-merge)",
                 merged_at,
                 {"pr": number, "task": None, "branch": str(pull.get("branch") or "") or None},
+            )
+        )
+    return found
+
+
+def _low_drives(report: dict[str, Any], now: datetime, unread: set[str]) -> list[dict[str, Any]]:
+    """An event for each watched drive under its floor, from the snapshot's `machine` section; a machine section that
+    could not be read names the kind in `unread`, since it may be low and saying nothing is not "all well"."""
+    machine = report.get("machine")
+    if not isinstance(machine, dict) or machine.get("error"):
+        unread.add("disk-low")
+        return []
+    found: list[dict[str, Any]] = []
+    for drive in machine.get("drives", []):
+        if drive["free_gb"] >= drive["min_free_gb"]:
+            continue
+        found.append(
+            event_row(
+                f"disk-low:{drive['name']}",
+                "disk-low",
+                f"{drive['name']} has {drive['free_gb']:.1f} GB free, under its {drive['min_free_gb']} GB floor "
+                f"({'; '.join(drive['holds'])})",
+                "run `coney-tools workspace clean --apply` before builds fail (workspace.md#cleanup)",
+                iso_utc(now),
+                {"pr": None, "task": None, "branch": None},
             )
         )
     return found
@@ -264,6 +291,7 @@ def collect_events(src: Sources, report: dict[str, Any], release: dict[str, Any]
     found += ready
     folders = _question_folders(src, report, unread)
     found += _questions(scratch, folders, rules)
+    found += _low_drives(report, now, unread)
     found.sort(key=lambda event: (event["since"] or "", event["id"]))
     return {
         "error": None,

@@ -54,7 +54,11 @@ check says so, and lists the game or Studio work behind it instead.
   (`feature`) issue can start; likewise the place kept for networking cannot take anything but a networking issue, and
   the one kept for the renderer anything but a renderer issue.
 - **The networking or renderer track is full**: a unit of it runs, and the track holds one.
-- **Free disk is below the floor** (`workspace.disk_min_free_gb`): a new unit builds, and a build folder is large.
+- **Free disk is below the floor** (`workspace.disk_min_free_gb`) on any [watched drive](workspace.md#watched-drives):
+  a new unit builds, and a build folder is large. The drives are the workspace's, the build root's (it fills first
+  where the builds are on another drive) and the folders of `watch_paths` in `coney.local.toml`, each with the limits
+  it is given; the `ok:` line names every drive under its floor, with how much it has and what lives there. A drive
+  that cannot be read is a `warning:` and no reason.
 
 Anything else needs a waiver.
 

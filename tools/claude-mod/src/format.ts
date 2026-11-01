@@ -295,9 +295,10 @@ export function bandItems(held: Held, nowMs: number): BandItem[] {
     }
   }
   if (snapshot.machine.error === null) {
-    const { free_gb, min_free_gb, warn_free_gb } = snapshot.machine
+    // The snapshot names the watched drive with the least room above its own floor, with that drive's limits.
+    const { drive, free_gb, min_free_gb, warn_free_gb } = snapshot.machine
     const tone: Tone = free_gb < min_free_gb ? 'bad' : free_gb < warn_free_gb ? 'warn' : 'normal'
-    items.push({ key: 'disk', text: `disk ${Math.round(free_gb)} GB`, tone })
+    items.push({ key: 'disk', text: `disk ${drive} ${Math.round(free_gb)} GB`, tone })
   }
   return items
 }

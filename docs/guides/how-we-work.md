@@ -437,8 +437,9 @@ something:
   worktree for a stretch where files must not change and deletes it when it finishes, and deletes its own `build/`
   folder when its task passes Review. The coordinator runs `coney-tools workspace clean --apply` after every merge (it
   removes merged worktrees and old build folders, and never touches busy or unmerged work) and
-  `coney-tools workspace check-space` before starting builds: below 30 GB free it cleans first
-  ([Cleanup](workspace.md#cleanup)).
+  `coney-tools workspace check-space` before starting builds: below 30 GB free on any [watched
+  drive](workspace.md#watched-drives) (the workspace's, the build root's and the `watch_paths` of `coney.local.toml`)
+  it cleans first ([Cleanup](workspace.md#cleanup)).
 - **Heavy builds take a slot, from a tool.** A full engine build uses every core, so only two run at once and the
   rest queue: every build and test run goes through `coney-tools build`, which claims a build slot like a PCSX2 copy (a
   fast lane for small jobs, a fair queue, priority for builds someone waits on; [`build`](coney-tools-build.md#build)),
