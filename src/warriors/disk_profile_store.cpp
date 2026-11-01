@@ -172,7 +172,8 @@ bool DiskProfileStore::create(std::size_t slot, const Profile& profile) {
     m_state.brightness = profile.brightness;
     m_state.subtitles = profile.subtitles;
     captureProfile(m_state, record);
-    // Coney writes the new profile at once: the original's autosave right after a new game would store the same.
+    // Coney's choice: it writes the new profile at once, with nothing modded, where the original writes the slot's
+    // header and marks it created since the last save; the original's autosave right after a new game stores the same.
     if (auto written = writeSlot(slot, record, ModdedProgress{}); !written) {
         m_lastError = written.error();
         return false;
@@ -225,6 +226,8 @@ bool DiskProfileStore::save() {
     CONEY_ASSERT(slot.has_value() && slot->record.has_value());
     ProfileRecord record = slot->record.value();
     captureProfile(m_state, record);
+    // Coney's choice: one file per slot, so there are no six headers to write first; the file keeps the story
+    // entries and mod sections the slot holds.
     if (auto written = writeSlot(index, record, slot->modded); !written) {
         m_lastError = written.error();
         return false;
