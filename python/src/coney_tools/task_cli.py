@@ -126,7 +126,7 @@ def add_task_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser])
     slots.add_argument(
         "--issues",
         metavar="N,M",
-        help="with --waive: the issues the work is blocked on (a code that blocks issues names them)",
+        help="with --waive: the issues the work waits on; the waiver ends when they are all closed",
     )
     slots.add_argument(
         "--admit",

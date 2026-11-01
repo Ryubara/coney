@@ -102,6 +102,10 @@ class Sources(Protocol):
         a fix task for it has nothing left to fix."""
         ...
 
+    def closed(self, numbers: Collection[int]) -> set[int]:
+        """Which of `numbers` (issues or pull requests) are closed or merged: a waiver that names them all ends."""
+        ...
+
 
 @dataclass(frozen=True)
 class Check:
@@ -535,7 +539,7 @@ def fill_check(
             )
         text = "; ".join(reasons) or "there is no work to start"
         return Check(False, f"ok: {text} ({summary})", tuple(warnings))
-    waivers = slot_waivers.active_waivers(slot_waivers.read_waivers(scratch), now)
+    waivers, ended = _running_waivers(scratch, now, sources, warnings)
     waived = sum(waiver.slots for waiver in waivers)
     if startable <= waived:
         named = "; ".join(waiver.line(now) for waiver in waivers)
@@ -571,5 +575,36 @@ def fill_check(
         lines += [f"  - {item}" for item in work_fix[: fill.top]]
     if waived:
         lines.append(f"Active waivers cover {waived} place(s); {startable} could start work.")
+    lines += [f"waiver #{waiver.id} ended: {waiver.ended}" for waiver in ended]
     lines.append(f"A reason to leave a place free is a waiver (logged, expiring): {waiver_hint(conventions)}")
     return Check(True, "\n".join(lines), tuple(warnings))
+
+
+def _running_waivers(
+    scratch: Path, now: datetime, sources: Sources, warnings: list[str]
+) -> tuple[list[slot_waivers.Waiver], list[slot_waivers.Waiver]]:
+    """The active waivers, and those this call ended because every issue they name is closed (one GitHub read for all
+    their issues; a waiver that names none runs its hours and reads nothing). A read that fails keeps every waiver,
+    with a warning: an end is written only for issues seen closed."""
+    active = slot_waivers.active_waivers(slot_waivers.read_waivers(scratch), now)
+    named = sorted({number for waiver in active for number in waiver.issues})
+    if not named:
+        return active, []
+    try:
+        closed = sources.closed(named)
+    except ConfigError as error:
+        warnings += [
+            f"whether the issues of waiver #{waiver.id} are closed was not read ({error})"
+            for waiver in active
+            if waiver.issues
+        ]
+        return active, []
+    running: list[slot_waivers.Waiver] = []
+    ended: list[slot_waivers.Waiver] = []
+    for waiver in active:
+        if waiver.issues and all(number in closed for number in waiver.issues):
+            why = f"every issue it names is closed ({', '.join(f'#{n}' for n in waiver.issues)})"
+            ended.append(slot_waivers.end_waiver(scratch, waiver, now, why))
+        else:
+            running.append(waiver)
+    return running, ended

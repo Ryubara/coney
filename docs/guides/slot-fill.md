@@ -63,11 +63,18 @@ check says so, and lists the game or Studio work behind it instead.
 Anything else needs a waiver.
 
 **Waivers.** `coney-tools task slots --waive N --reason <code> --hours H --note "<why>" [--issues A,B]` says that `N`
-free places may stay free for `H` hours. It is logged (`slot-waivers.jsonl` in the scratch folder, never
-edited), expires by itself, and `task slots` lists the active ones. The codes are `tasks.start.fill.waivers.codes`; each
-has a meaning, the most hours it allows (`max_hours`, under the cap of `waivers.max_hours`) and whether `--issues` must
-name the blocked issues. The tool refuses a waiver that breaks them and prints the codes it knows: a maintainer's
-pause, a decision a maintainer owes, and a loaded machine (the last allows the fewest hours).
+free places may stay free for `H` hours. It is logged (`slot-waivers.jsonl` in the scratch folder, never edited),
+expires by itself, and `task slots` lists the active ones. **A waiver that names issues (`--issues`, on any code) also
+ends as soon as every one of them is closed**: the check reads their states in one call while such a waiver runs,
+appends an end record to the log (which every reader applies, so `task slots` counts it as ended) and says `waiver #N
+ended: every issue it names is closed (...)`. A waiver that names none runs its hours; so when the gap waits for issues
+(a pause until some pull requests merge), name them, or the places stay waived after they merge (on 2026-11-01 a pause
+until three issues merged kept two places waived for hours after they had; issue 1370). A read that fails keeps the
+waiver, with a warning, and an issue reopened later does not bring an ended waiver back. The codes are
+`tasks.start.fill.waivers.codes`; each has a meaning, the most hours it allows (`max_hours`, under the cap of
+`waivers.max_hours`) and whether `--issues` must name the blocked issues. The tool refuses a waiver that breaks them and
+prints the codes it knows: a maintainer's pause, a decision a maintainer owes, and a loaded machine (the last allows the
+fewest hours).
 
 The note is at least `waivers.note_min_characters` long. The check passes while the active waivers cover at least as
 many places as could start work now; waivers add up. Only the coordinator waives: `hooks.toml` refuses the command to

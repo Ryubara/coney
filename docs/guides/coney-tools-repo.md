@@ -654,7 +654,7 @@ coney-tools task slots [--json] [--fill-check] [--session ID] [--waive N] [--rea
 | `--reason CODE` | text | none | with --waive: a code of tasks.start.fill.waivers.codes |
 | `--hours H` | number | none | with --waive: how long it runs (within the code's hours) |
 | `--note TEXT` | text | none | with --waive: why, in words |
-| `--issues N,M` | text | none | with --waive: the issues the work is blocked on (a code that blocks issues names them) |
+| `--issues N,M` | text | none | with --waive: the issues the work waits on; the waiver ends when they are all closed |
 | `--admit` | flag | off | check a start instead of listing: exit 0 when it may, 3 with the reasons when it is refused (any other code: it could not judge) |
 | `--agent-type AGENT_TYPE` | text | `engineer` | with --admit: the subagent type (default: engineer) |
 | `--task TASK` | text | none | with --admit: the task id (default: the `Task id:` line of the brief) |

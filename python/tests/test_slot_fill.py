@@ -976,6 +976,43 @@ def test_the_report_lists_active_waivers_and_counts_the_ended(scene: Scene) -> N
     assert slot_waivers.report([], scene.now()) == ["waivers: none active"]
 
 
+def test_a_waiver_that_names_issues_ends_when_they_all_close(scene: Scene, sources: FakeSources) -> None:
+    # Issue 1370: waiver #17 kept two places waived for hours after the issues it waited on had merged.
+    scene.unit("a-one")
+    sources.ready_issues = [issue(5), issue(6)]
+    waive(scene, 2, "maintainer-pause", 24, issues=(1360, 1361), note="paused until the gate issues merge")
+    sources.closed_issues = {1360}
+    assert not check(scene, sources).blocked  # one of them is still open
+    sources.closed_issues = {1360, 1361}
+    result = check(scene, sources)
+    assert result.blocked and "Active waivers" not in result.message
+    assert "waiver #1 ended: every issue it names is closed (#1360, #1361)" in result.message
+    (waiver,) = slot_waivers.read_waivers(scene.scratch)
+    assert not waiver.active(scene.now()) and waiver.ended == "every issue it names is closed (#1360, #1361)"
+    assert slot_waivers.report([waiver], scene.now()) == ["waivers: none active", "  (1 ended, in slot-waivers.jsonl)"]
+    sources.closed_issues = set()  # ended for good: a reopened issue does not bring it back
+    assert check(scene, sources).blocked
+
+
+def test_a_waiver_without_issues_runs_its_hours_and_reads_nothing(scene: Scene, sources: FakeSources) -> None:
+    scene.unit("a-one")
+    sources.ready_issues = [issue(5), issue(6)]
+    waive(scene, 2)
+    sources.closed_issues = {5, 6}
+    assert not check(scene, sources).blocked and "closed" not in sources.calls
+
+
+def test_a_waiver_whose_issues_cannot_be_read_stays(scene: Scene, sources: FakeSources) -> None:
+    scene.unit("a-one")
+    sources.ready_issues = [issue(5), issue(6)]
+    waive(scene, 2, "maintainer-decision", 24, issues=(1360,))
+    sources.closed_issues = {1360}
+    sources.down = {"closed"}
+    result = check(scene, sources)
+    assert not result.blocked and any("whether the issues of waiver #1 are closed" in w for w in result.warnings)
+    assert slot_waivers.read_waivers(scene.scratch)[0].ended == ""
+
+
 # --- the Stop hook's cap on blocks in a row -------------------------------------------------------------------------
 
 
