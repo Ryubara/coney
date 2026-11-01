@@ -179,7 +179,13 @@ std::string parseArguments(std::span<const std::string_view> args, InputEvent& e
     case InputEvent::Action::Disconnect:
         return args.empty() ? std::string() : "takes no arguments";
     case InputEvent::Action::Console:
-        return "unknown action";
+        // The words are views of one line, so the line runs from the first to the end of the last, as written.
+        if (args.empty()) {
+            return "console needs a line to type";
+        }
+        event.text = std::string(args.front().data(), static_cast<std::size_t>(args.back().data() + args.back().size() -
+                                                                               args.front().data()));
+        return {};
     }
     return "unknown action";
 }
@@ -215,6 +221,8 @@ std::string parseLine(std::span<const std::string_view> words, InputEvent& event
         event.action = InputEvent::Action::Connect;
     } else if (action == "disconnect") {
         event.action = InputEvent::Action::Disconnect;
+    } else if (action == "console") {
+        event.action = InputEvent::Action::Console;
     } else {
         return std::format("unknown action \"{}\"", action);
     }
@@ -332,6 +340,9 @@ void ScriptedInput::apply(const InputEvent& event) {
         port.connected = false;
         break;
     case InputEvent::Action::Console:
+        if (m_consoleSink) {
+            m_consoleSink(event.port, event.text);
+        }
         break;
     }
 }
