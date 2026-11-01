@@ -24,9 +24,11 @@ from conclave_support import (
     sources,
     stamp_steps,
     unit,
+    write_check,
 )
 
-from coney_tools import conclave_cli
+from coney_tools import conclave_cli, coord_cli
+from coney_tools.check_progress import Fraction
 from coney_tools.conclave_snapshot import SCHEMA, collect
 from coney_tools.config import ConfigError
 from coney_tools.issue_claim_cli import held_cards
@@ -129,6 +131,47 @@ def test_the_build_wait_shows_on_the_units_row(layout: Layout) -> None:
     }
     waiting = unit(report, "fix-new")["build"]
     assert waiting == {"state": "waiting", "preset": "dev", "position": 1, "lane": "main"}
+
+
+def test_a_units_task_check_is_read_through_coord_status(layout: Layout) -> None:
+    write_check(layout.scratch, "fix-frame-812", ran=50, moved=1, fraction=Fraction(64, 100, "%"))
+    write_check(layout.scratch, "fix-new", ran=4, waiting=True)
+    src = sources(layout)
+    report = collect(src, github=False)
+    running, waiting = unit(report, "fix-frame-812")["check"], unit(report, "fix-new")["check"]
+    assert (running["state"], running["short"], running["stalled"]) == ("running", "pytest 64% 50m", False)
+    assert running["text"] == "check 6 of 8, pytest: running 50 min, 64% done"
+    assert (waiting["state"], waiting["short"]) == ("waiting", "queued 5/6 ~36m")
+    # the same readings `coord status` gives: the snapshot has no parser of the file
+    rows = {row["task"]: row for row in coord_cli.checks(src.coord, NOW)["checks"]}
+    assert running == rows["fix-frame-812"] and waiting == rows["fix-new"]
+
+
+def test_a_stalled_check_is_marked_by_the_conventions_limit(layout: Layout) -> None:
+    write_check(layout.scratch, "fix-frame-812", ran=60, moved=40, fraction=Fraction(64, 100, "%"))
+    row = unit(collect(sources(layout), github=False), "fix-frame-812")
+    assert row["check"]["stalled"] is True and row["check"]["short"] == "pytest 64% 1h00m stalled"
+    assert CONVENTIONS.conclave.check_stall_minutes == 30
+
+
+def test_a_check_slot_is_no_build_of_the_unit(layout: Layout) -> None:
+    # A unit that holds or waits for a check slot and nothing else has no build: the slot is its `check`, which its
+    # progress file tells (the pane would otherwise say `build: slot 1 50m` for a pytest run).
+    src = sources(layout)
+    lanes = src.coord.builds()
+    src.coord.builds = lambda: {"check": lanes["check"]}
+    report = collect(src, github=False)
+    assert unit(report, "fix-frame-812")["build"] is None and unit(report, "fix-new")["build"] is None
+    assert collect(sources(layout), github=False)["builds"]["lanes"]["check"]["slots"][0]["claim"]["step"] == "pytest"
+
+
+def test_a_unit_without_a_check_file_has_no_check(layout: Layout) -> None:
+    assert unit(collect(sources(layout), github=False), "fix-new")["check"] is None
+
+
+def test_a_unit_is_not_hidden_by_a_check_that_cannot_be_read(layout: Layout) -> None:
+    (layout.scratch / "fix-new" / "check-progress.json").write_text("{not json", encoding="utf-8")
+    assert unit(collect(sources(layout), github=False), "fix-new")["check"] is None
 
 
 def test_a_units_last_detached_build_is_kept(layout: Layout) -> None:

@@ -75,6 +75,49 @@ test('the band counts units, failures, pull requests, claims, builds and disk on
   }
 })
 
+test('the band counts the check slots beside the builds and marks a stalled check', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await start($, world)
+
+  for (const surface of ['terminal', 'desktop'] as const) {
+    const ui = await $.ui.mount({ ...BAND, surface })
+    // the fixture holds one check slot and one waiting for it, and `fix-frame-812`'s pytest is stuck at 64%
+    expect((await ui.find({ key: 'checks' }))?.text).toBe('checks 1 (+1 queued)')
+    expect((await ui.find({ key: 'stalled' }))?.text).toBe('⚠1 stalled')
+    expect((await ui.find({ type: 'Text', text: /stalled/ }))?.props.color).toBe('warning')
+    // the builds count the build lanes only: the check lane is not a build
+    expect((await ui.find({ key: 'builds' }))?.text).toBe('builds 1 (+1 queued)')
+    await ui.unmount()
+  }
+})
+
+test('a check that moves is not marked, and no check slot in use leaves the item out', async ($, on) => {
+  const world = engine(
+    on,
+    prints(
+      snapshot(copy => {
+        if (copy.units.error !== null) return
+        for (const unit of copy.units.units) if (unit.check !== null) unit.check.stalled = false
+      }),
+    ),
+  )
+  await start($, world)
+  let ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect((await ui.find({ key: 'checks' }))?.text).toBe('checks 1 (+1 queued)')
+  expect(await ui.find({ key: 'stalled' })).toBeUndefined()
+  await ui.unmount()
+
+  world.answer = prints(
+    snapshot(copy => {
+      if (copy.builds.error === null) delete copy.builds.lanes.check
+    }),
+  )
+  await world.clock.advance(60_000)
+  ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await ui.find({ key: 'checks' })).toBeUndefined()
+  await ui.unmount()
+})
+
 test('a claim near its deadline turns the claims item amber', async ($, on) => {
   const world = engine(on, prints(snapshot(enforced)))
   await start($, world)
@@ -196,14 +239,14 @@ test('a snapshot of a newer schema is refused, not drawn', async ($, on) => {
     on,
     prints(
       snapshot(copy => {
-        copy.schema = 3
+        copy.schema = 4
       }),
     ),
   )
   await start($, world)
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect((await ui.find({ type: 'Text', text: /update the checkout/ }))?.text).toContain('schema 3')
+  expect((await ui.find({ type: 'Text', text: /update the checkout/ }))?.text).toContain('schema 4')
   expect(await ui.find({ key: 'units' })).toBeUndefined()
   await ui.unmount()
 })
@@ -251,6 +294,98 @@ test('the pane lists failed units first and opens a row on a press', async ($, o
     expect(await ui.find({ type: 'Text', text: /^reason/ })).toBeUndefined()
     await ui.unmount()
   }
+})
+
+test("a unit's check shows on its row in the short form and in full when the row opens", async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await start($, world)
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: 120 } })
+  const rows = await ui.findAll({ type: 'Button' })
+  expect(rows[0]?.text).toContain('pytest 64% 50m stalled')
+  expect(rows[1]?.text).toContain('queued 5/6 ~36m')
+  expect(rows[2]?.text).not.toContain('pytest') // the merged unit has no check
+  expect(await ui.find({ type: 'Text', text: /^check/ })).toBeUndefined()
+
+  await ui.press({ key: 'task:fix-frame-812' })
+  const stalled = await ui.find({ type: 'Text', text: /^check/ })
+  expect(stalled?.text).toBe('check     check 6 of 8, pytest: running 50 min, 64% done; stalled: no progress for 40 min')
+  expect(stalled?.props.color).toBe('warning')
+  await ui.press({ key: 'task:fix-new' })
+  const queued = await ui.find({ type: 'Text', text: /^check/ })
+  expect(queued?.text).toContain('waiting for a check slot, place 5 of 6, about 36 min; held by bob')
+  expect(queued?.props.color).toBeUndefined()
+  await ui.unmount()
+})
+
+for (const [columns, where] of [
+  [120, 'on the row'],
+  [80, 'first on the second line'],
+  [40, 'on the second line after the pull request'],
+  [30, 'on the second line after the pull request'],
+] as const) {
+  test(`at ${columns} columns the short form of a check is ${where} and every line fits`, async ($, on) => {
+    const world = engine(on, prints(snapshot()))
+    await start($, world)
+
+    const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: columns } })
+    const lines = await drawn(ui)
+    // the wide row is let wrap, as every wide row is; the shorter layouts clip each line to the pane
+    if (columns < 110) expect(overflows(lines, columns)).toEqual([])
+    const at = lines.findIndex(line => line.text.includes('pytest 6'))
+    expect(at).toBeGreaterThan(-1)
+    if (columns >= 110) {
+      expect(lines[at]?.text).toContain('pytest 64% 50m stalled') // the wide row says it whole, after the build
+    } else if (columns >= 60) {
+      // the check leads the dim second line, where a clip cuts the title and the build before it
+      expect(lines[at]?.text.trimStart().startsWith('pytest 6')).toBe(true)
+      expect(lines[at - 1]?.text).toContain('compared failed')
+    } else {
+      // the narrow pane keeps the pull request first, then the check
+      expect(lines[at]?.text.trimStart().startsWith('PR #812 · pytest 6')).toBe(true)
+      expect(lines[at - 1]?.text).toContain('compared failed')
+    }
+    await ui.unmount()
+  })
+}
+
+test('a check that passed, or no check, adds nothing to the row', async ($, on) => {
+  const world = engine(
+    on,
+    prints(
+      snapshot(copy => {
+        if (copy.units.error !== null) return
+        for (const unit of copy.units.units) if (unit.check !== null) unit.check.state = 'passed'
+      }),
+    ),
+  )
+  await start($, world)
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: 120 } })
+  for (const row of await ui.findAll({ type: 'Button' })) expect(row.text).not.toContain('pytest')
+  await ui.unmount()
+})
+
+test('an abandoned check is marked amber in the row detail', async ($, on) => {
+  const world = engine(
+    on,
+    prints(
+      snapshot(copy => {
+        if (copy.units.error !== null) return
+        const check = copy.units.units.find(unit => unit.task === 'fix-frame-812')?.check
+        if (check == null) return
+        check.state = 'abandoned'
+        check.stalled = false
+        check.short = 'pytest abandoned'
+        check.text = 'check 6 of 8, pytest: abandoned, its process is gone (last seen running, 64% done)'
+      }),
+    ),
+  )
+  await start($, world)
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: 120 } })
+  expect((await ui.findAll({ type: 'Button' }))[0]?.text).toContain('pytest abandoned')
+  await ui.press({ key: 'task:fix-frame-812' })
+  expect((await ui.find({ type: 'Text', text: /^check/ }))?.props.color).toBe('warning')
+  await ui.unmount()
 })
 
 test('one row is open at a time', async ($, on) => {

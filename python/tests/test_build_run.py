@@ -6,6 +6,7 @@ ends, a wait that gives up with exit code 75. No compiler, no CMake and no real 
 returns canned output."""
 
 import io
+import json
 import os
 import time
 from collections.abc import Callable, Sequence
@@ -13,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from coney_tools import build_run
+from coney_tools import build_run, check_progress
 from coney_tools.build_claims import Slots
 from coney_tools.build_history import History, step_key
 from coney_tools.build_run import (
@@ -28,6 +29,7 @@ from coney_tools.build_run import (
     parallel_tests_for,
     parse_environment,
 )
+from coney_tools.check_progress import Progress
 from coney_tools.test_costs import COST_DATA, TestCosts
 
 NOW = 1_800_000_000.0
@@ -524,6 +526,8 @@ class Run:
         self.test_jobs = 0
         #: Seconds between the "still running" lines (real time: the heartbeat is a thread).
         self.progress_every = 3600.0
+        #: The writer of the progress file (check_progress.py); unattached: it writes nothing.
+        self.progress = Progress()
 
     def clock(self) -> float:
         return self.now
@@ -560,6 +564,7 @@ class Run:
             test_jobs=self.test_jobs,
             check=self.check,
             progress_every=self.progress_every,
+            progress=self.progress,
         )
         return execute(self.options, context)
 
@@ -1669,7 +1674,7 @@ def test_a_quiet_step_says_it_is_still_running_with_the_tests_done_so_far(tmp_pa
     assert run.go().ok
     beats = [line for line in run.lines if line.startswith("test: still running")]
     assert beats, run.lines
-    assert "3 tests done, 0 failed" in beats[0]
+    assert "3 of 3 tests done, 0 failed" in beats[0]
 
 
 def test_a_long_build_says_how_far_ninja_got(tmp_path: Path) -> None:
@@ -1678,3 +1683,48 @@ def test_a_long_build_says_how_far_ninja_got(tmp_path: Path) -> None:
     run.toolchain.real_seconds["build"] = 0.5
     assert run.go().ok
     assert any(line.startswith("build: still running") and "ninja step 2 of 2" in line for line in run.lines), run.lines
+
+
+def read_progress(file: Path) -> dict[str, object]:
+    """The progress file as the writer left it."""
+    return json.loads(file.read_text(encoding="utf-8"))  # type: ignore[no-any-return]
+
+
+def test_a_long_build_gives_ninjas_step_to_the_progress_file_as_a_build(tmp_path: Path) -> None:
+    run = Run(tmp_path, configure=True)
+    file = tmp_path / "unit" / check_progress.FILE_NAME
+    run.progress.attach(file)
+    run.progress.start("msvc-ci-build and ctest-full-disc", "build", 8)
+    run.progress_every = 0.05
+    run.toolchain.real_seconds["build"] = 0.5
+    assert run.go().ok
+    assert any(line.startswith("build: still running") and "ninja step 2 of 2" in line for line in run.lines)
+    final = read_progress(file)
+    assert final["kind"] == "build" and final["done"] == {"done": 2, "of": 2, "unit": "steps", "failed": None}
+
+
+def test_a_test_run_is_a_ctest_with_its_count_and_a_wait_for_the_check_slot_in_the_progress_file(
+    tmp_path: Path,
+) -> None:
+    run = Run(tmp_path, test=True)
+    file = tmp_path / "unit" / check_progress.FILE_NAME
+    run.progress.attach(file)
+    run.progress.start("msvc-ci-build and ctest-full-disc", "build", 8)
+    occupy(run.check, run, "bob", 777)
+    waits: list[dict[str, object]] = []
+
+    def free() -> None:
+        waits.append(read_progress(file))  # the file while the suite waits
+        run.alive.discard(777)  # bob's suite ends while this one waits
+
+    run.on_sleep.append(free)
+    run.progress_every = 0.05
+    run.toolchain.real_seconds["test"] = 0.5
+    assert run.go().ok
+    waiting = next(wait for wait in waits if wait["state"] == "waiting")
+    assert waiting["kind"] == "ctest"
+    queue = waiting["queue"]
+    assert isinstance(queue, dict) and (queue["lane"], queue["place"], queue["held_by"]) == ("check", 1, ["bob"])
+    final = read_progress(file)
+    assert final["state"] == "running" and final["kind"] == "ctest" and final["queue"] is None
+    assert final["done"] == {"done": 3, "of": 3, "unit": "tests", "failed": 0}

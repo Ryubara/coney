@@ -51,6 +51,7 @@ from coney_tools.build_claims import (
     Waiting,
 )
 from coney_tools.build_history import History, step_key
+from coney_tools.check_progress import STEPS, TESTS, Fraction, Progress
 from coney_tools.config import ConfigError
 from coney_tools.test_costs import COST_DATA, TestCosts, parse_test_names
 
@@ -86,7 +87,9 @@ _PROGRESS = re.compile(r"^\[(\d+)/(\d+)\] ")
 _EXPLAIN = re.compile(r"^ninja explain: (.*)$")
 # A test's name holds spaces, commas and quotes: it runs up to the dots that pad it to the state column (ctest glues the
 # state to them when it is a failure: `.....***Failed`).
-_TEST_LINE = re.compile(r"^\s*\d+/\d+ Test\s+#\d+: (?P<name>.+) \.{2,}\s*(?P<state>.*?)\s+[\d.]+ sec\s*$")
+_TEST_LINE = re.compile(
+    r"^\s*(?P<done>\d+)/(?P<of>\d+) Test\s+#\d+: (?P<name>.+) \.{2,}\s*(?P<state>.*?)\s+[\d.]+ sec\s*$"
+)
 _TEST_SUMMARY = re.compile(r"(\d+)% tests passed, (\d+) tests? failed out of (\d+)")
 _TEST_FAILED_HEADING = "The following tests FAILED:"
 # An entry is `N - name (state)`, then the test's labels when it has any (`(Failed) disc story`). The name is lazy and
@@ -169,6 +172,8 @@ class TestScan:
         #: Their names, in the order ctest ran them.
         self.skipped_names: list[str] = []
         self._summary: tuple[int, int] | None = None
+        #: The `n/m` of the last test line: ctest's own count of the tests finished and of all of them.
+        self.progress: tuple[int, int] | None = None
         self._listed_failures: list[str] = []
         # True while the lines are the entries under ctest's "The following tests FAILED:" heading.
         self._in_failed_list = False
@@ -234,6 +239,7 @@ class TestScan:
                 return
         test = _TEST_LINE.match(line)
         if test:
+            self.progress = (int(test.group("done")), int(test.group("of")))
             state = test.group("state")
             if state.startswith("***") and "Skipped" not in state:
                 self._lines_failed.append(test.group("name"))
@@ -654,6 +660,9 @@ class Context:
     #: The parallel tests of a full or filtered test run when no `-j` is given (`test_jobs` of coney.local.toml); 0:
     #: half the cores, or the build's share of them when that is more (parallel_tests_for).
     test_jobs: int = 0
+    #: The writer of the progress file of a `task check` run (check_progress.py): the run's waits and fractions go to
+    #: it. Unattached, as `coney-tools build` has it, it writes nothing.
+    progress: Progress = field(default_factory=Progress)
 
 
 @dataclass(frozen=True)
@@ -771,8 +780,9 @@ class _Phase:
         self.slots = context.fast if lane == FAST_LANE else context.slots
         #: Told the step each command starts, for the folder lock's owner file.
         self.note = note
-        #: What a "still running" line adds about a step (ninja's `[n/m]`, the tests done so far); set by the caller.
-        self.progress: Callable[[str], str] = lambda step: ""
+        #: How far a step is (ninja's `[n/m]`, the tests done so far), for its "still running" line and the progress
+        #: file (check_progress.py), which say the same numbers; set by the caller.
+        self.fraction: Callable[[str], Fraction | None] = lambda step: None
         self.waited = 0.0
         self.queued: SlotTimeout | None = None
 
@@ -799,6 +809,8 @@ class _Phase:
                 f"about {waiting.minutes:.0f} min; held by {_holders_text(waiting.holders, self.slots.clock())}; "
                 f"{_gives_up(options)}"
             )
+            holders = [holder.agent for holder in waiting.holders]
+            context.progress.waiting(self.lane_name, waiting.place, waiting.total, waiting.minutes, holders)
 
         # The budget's estimate of this phase: its steps' usual durations together.
         keyed = [(step, self.size_of(step)) for step, _, _ in steps]
@@ -820,6 +832,7 @@ class _Phase:
                 abandon=abandon,
             ) as claim:
                 self.waited = self.slots.clock() - started
+                context.progress.running()
                 if self.slots.last_takeover is not None:
                     context.emit(f"took over a stale build claim of {self.slots.last_takeover.agent}")
                     _report_reaped(context, self.slots)
@@ -831,10 +844,13 @@ class _Phase:
 
                     def beat(step: str = step, began: float = began) -> None:
                         """A progress line: the step is still running (a quiet compile or one slow test)."""
+                        fraction = self.fraction(step)
                         context.emit(
                             f"{step}: still running, {live_progress.minutes_text(self.slots.clock() - began)}"
-                            f"{self.progress(step)}"
+                            f"{fraction.suffix() if fraction else ''}"
                         )
+                        context.progress.fraction(fraction)
+                        context.progress.beat()
 
                     with live_progress.Heartbeat(context.progress_every, beat):
                         code = context.toolchain.run(command, on_line)
@@ -964,6 +980,7 @@ def _check_slot(options: Options, context: Context) -> Iterator[None]:
         poll=context.poll,
         report_every=context.report_every,
         abandon=_budget_check(options, context, context.check.clock, None, 0.0, ""),
+        progress=context.progress,
     ):
         yield
 
@@ -1038,11 +1055,12 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
         targets = ["--target", *options.targets] if options.targets else []
         build_steps.append(("build", ["cmake", "--build", *folder, *targets, "-j", jobs], build_line))
     note("measuring")
+    context.progress.set_kind("build")
     lane, measured = _choose_build_lane(options, context)
     if measured is not None:
         context.emit(f"measured: {measured} step{'s' if measured != 1 else ''} out of date, so the {lane} lane")
     phase = _Phase(options, context, "build", lane, note)
-    phase.progress = lambda step: f", ninja step {scan.progress[0]} of {scan.progress[1]}" if scan.progress else ""
+    phase.fraction = lambda step: Fraction(scan.progress[0], scan.progress[1], STEPS) if scan.progress else None
     ran = phase.run(build_steps)
     result.ran = tuple(step for step, _, _ in ran)
     if phase.queued is not None:
@@ -1066,6 +1084,7 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
         return result
 
     # Phase 2: the tests, with a claim of their own.
+    context.progress.set_kind("ctest")
     lane, selected = _choose_test_lane(options, context)
     if selected == 0:
         result.summary.append(f"test: FAILED: no tests match {options.filter_text}")
@@ -1084,8 +1103,11 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
     test_jobs = str(parallel_tests_for(context.slots.slots, context.cpus, options.jobs, context.test_jobs))
     command = _ctest(options, "-j", test_jobs, *options.filters)
     phase = _Phase(options, context, "test", lane, note, "filtered" if options.filters else "full")
-    phase.progress = lambda step: (
-        f", {tests.passed + tests.failed_count + tests.skipped} tests done, {tests.failed_count} failed"
+    phase.fraction = lambda step: Fraction(
+        tests.passed + tests.failed_count + tests.skipped,
+        tests.progress[1] if tests.progress else None,
+        TESTS,
+        tests.failed_count,
     )
     try:
         with _check_slot(options, context):

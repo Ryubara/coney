@@ -1324,6 +1324,9 @@ class Conclave:
     unit_days: int
     #: A claim's countdown turns red in its last hours (it turns amber at `claims.warn_hours`).
     claim_red_hours: int
+    #: A running `task check` whose fraction (pytest's percent, ninja's step, ctest's count) has not moved for this many
+    #: minutes is marked stalled by `coord status` and the pane (docs/guides/coney-tools-repo.md#check-progress).
+    check_stall_minutes: int
     #: The watchers: Coney's own events, told to the coordinator once.
     watch: ConclaveWatch
 
@@ -2525,6 +2528,7 @@ def _read_conclave(data: object, where: str) -> Conclave:
         "merged_visible_minutes",
         "unit_days",
         "claim_red_hours",
+        "check_stall_minutes",
         "watch",
     )
     table = _table(data, where, keys)
@@ -2532,6 +2536,8 @@ def _read_conclave(data: object, where: str) -> Conclave:
     hooks_file = _text(table["hooks_file"], _at(where, "hooks_file"))
     if hooks_file.startswith(("/", "\\")) or ".." in hooks_file or ":" in hooks_file:
         raise _fail(_at(where, "hooks_file"), "a path inside the checkout")
+    if numbers["check_stall_minutes"] < 1:
+        raise _fail(_at(where, "check_stall_minutes"), "must be at least 1")
     if numbers["pane_min_columns"] < PANE_MIN_COLUMNS_FLOOR:
         raise _fail(_at(where, "pane_min_columns"), f"must be at least {PANE_MIN_COLUMNS_FLOOR}")
     if numbers["pane_compact_columns"] < numbers["pane_min_columns"]:

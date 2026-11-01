@@ -1178,6 +1178,7 @@ conclave:
   merged_visible_minutes: 10                     # a merged unit stays on the pane this long
   unit_days: 3                                   # a unit with no worktree stays on the pane this long after its last change
   claim_red_hours: 6                             # a claim's countdown is red in its last hours (amber from claims.warn_hours)
+  check_stall_minutes: 30                        # a running `task check` whose fraction has not moved this long is marked stalled
   # The watchers (docs/guides/conclave.md#watchers): Coney's own events told to the coordinator once. Never an idle wake,
   # which stays Tether's.
   watch:

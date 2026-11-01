@@ -26,6 +26,7 @@ from datetime import datetime
 from pathlib import Path
 from types import TracebackType
 
+from coney_tools.check_progress import PERCENT, Fraction, Progress
 from coney_tools.local_gate import low_priority
 
 #: Seconds between progress lines of a long step.
@@ -115,13 +116,15 @@ def run_streamed(
     append: bool = True,
     interval: float = HEARTBEAT_SECONDS,
     clock: Callable[[], float] = time.monotonic,
+    progress: Progress | None = None,
 ) -> tuple[int, str]:
     """Run a command below normal priority (`local_gate.low_priority`) and return its exit code and its output (stdout
     and stderr together), like `local_gate.run_command`, but live: each line goes to the `log` file (written line by
     line and flushed, so a reader sees it grow; `append=False` starts the file again) as it is printed, and `say` is
     called with a progress line every `interval` seconds while the command runs (`pytest: still running, 12 min, 45%
     done`). The child runs with PYTHONUNBUFFERED=1 so a Python program does not hold its output back either. A missing
-    program is code 127. An interrupt stops the child and what it started, then goes on up."""
+    program is code 127. An interrupt stops the child and what it started, then goes on up. With a `progress`
+    (check_progress.py) the percent pytest prints goes to it as a `Fraction`, the same one the progress line says."""
     name = label or command_label(command)
     lowered, options = low_priority(command)
     environment = {**os.environ, "PYTHONUNBUFFERED": "1"}
@@ -147,8 +150,10 @@ def run_streamed(
     percent: list[int] = []  # the last percentage seen, in a list so the heartbeat reads it without a lock
 
     def beat() -> None:
-        done = f", {percent[-1]}% done" if percent else ""
+        done = Fraction(percent[-1], 100, PERCENT).suffix() if percent else ""
         say(f"  [{clock_text()}] {name}: still running, {minutes_text(clock() - started)}{done}")
+        if progress is not None:
+            progress.beat()  # the file is written when the line is said, from the same numbers
 
     try:
         assert process.stdout is not None
@@ -165,6 +170,8 @@ def run_streamed(
                     if found:
                         percent.append(int(found[-1]))
                         del percent[:-1]
+                        if progress is not None:
+                            progress.fraction(Fraction(percent[-1], 100, PERCENT))
                 code = process.wait()
             sink.write(f"==== exit {code}\n")
     except BaseException:
@@ -190,12 +197,16 @@ class _NoFile:
 
 
 def streaming_runner(
-    say: Callable[[str], None], logs: Path | None = None, interval: float = HEARTBEAT_SECONDS
+    say: Callable[[str], None],
+    logs: Path | None = None,
+    interval: float = HEARTBEAT_SECONDS,
+    progress: Progress | None = None,
 ) -> Callable[[Sequence[str], Path], tuple[int, str]]:
     """A runner in the shape of `task_check_steps.Runner` (a command and a folder, giving the exit code and the output)
     that streams: every command logs to `logs/<program>.log` when `logs` is given (one file per program: the first
     command of a program in this runner starts the file again, so a rerun does not grow it for ever, and its later
-    commands append) and says a progress line every `interval` seconds."""
+    commands append) and says a progress line every `interval` seconds. Each command's percent goes to `progress`, when
+    given (run_streamed)."""
     started: set[Path] = set()
 
     def run(command: Sequence[str], cwd: Path) -> tuple[int, str]:
@@ -204,6 +215,8 @@ def streaming_runner(
         fresh = log is not None and log not in started
         if log is not None:
             started.add(log)
-        return run_streamed(command, cwd, say, label=label, log=log, append=not fresh, interval=interval)
+        return run_streamed(
+            command, cwd, say, label=label, log=log, append=not fresh, interval=interval, progress=progress
+        )
 
     return run

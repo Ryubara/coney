@@ -9,7 +9,7 @@ import { PANE } from './format'
 import { changeHeld, clearOffer, getHeld, getRole, setNow } from './state'
 
 /** The snapshot shape this mod draws; `coney-tools conclave snapshot` prints it as `schema`. */
-export const SCHEMA = 2
+export const SCHEMA = 3
 // The three numbers the mod holds itself, because it needs them before any snapshot has said otherwise (every other
 // number arrives in the snapshot, from .github/conventions.yml). A read that overruns is killed, so a hung `uv` never
 // outlives its bound: a session that ends meanwhile (`claude -p`) is not held by it either.

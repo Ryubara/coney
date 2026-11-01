@@ -4,6 +4,9 @@ with the build record), and every way it refuses. The checks and the build are f
 the build records are real files in a temporary folder."""
 
 import hashlib
+import json
+import os
+import sys
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
@@ -18,6 +21,7 @@ from git_support import git
 from coney_tools import (
     build_record,
     build_run,
+    check_progress,
     local_gate,
     pr_diff,
     stamps,
@@ -717,3 +721,116 @@ def test_a_fix_task_with_no_unit_record_is_stamped_in_the_log_of_the_parent_its_
     assert world.stamp.step == "checked" and world.stamp.task == TASK
     assert not unit.Unit.of(world.root, "757-fix").stamps.exists()
     assert any("757-fix is a fix of 757-fix-widget" in line for line in world.said), world.said
+
+
+# --- the progress file (issue 1328) --------------------------------------------------------------------------------
+
+
+def progress_file(world: World) -> Path:
+    """Where the run writes where it is: the progress file in the task's scratch folder."""
+    return unit.Unit.of(world.root, TASK).dir / check_progress.FILE_NAME
+
+
+def progress_now(world: World) -> dict[str, Any]:
+    """The progress file as it is now."""
+    return json.loads(progress_file(world).read_text(encoding="utf-8"))  # type: ignore[no-any-return]
+
+
+def test_a_passing_run_leaves_a_progress_file_that_says_it_passed(world: World) -> None:
+    world.edit("docs/guides/widget.md", DOC)
+    assert world.check() == 0
+    record = progress_now(world)
+    assert record["state"] == "passed" and record["total"] == 4 and record["index"] == 4
+    assert record["check"] == "pytest" and record["pid"] == os.getpid()
+
+
+def test_the_file_says_which_check_of_the_list_is_running(world: World) -> None:
+    seen: dict[str, dict[str, Any]] = {}
+
+    def note(name: str) -> Callable[[], None]:
+        return lambda: seen.__setitem__(name, progress_now(world))
+
+    for name in ("docs-check", "mkdocs", "pytest"):
+        world.on_step[name] = note(name)
+    world.edit("docs/guides/widget.md", DOC)
+    assert world.check() == 0
+    assert [(seen[name]["index"], seen[name]["total"], seen[name]["state"]) for name in seen] == [
+        (1, 4, "running"),
+        (2, 4, "running"),
+        (4, 4, "running"),
+    ]
+    assert seen["mkdocs"]["check"] == "mkdocs" and seen["mkdocs"]["kind"] == "mkdocs"
+
+
+def test_a_failing_check_leaves_a_progress_file_that_says_it_failed(world: World) -> None:
+    world.edit("docs/guides/widget.md", DOC)
+    world.failing["mkdocs"] = ["a broken link"]
+    assert world.check() == 1
+    record = progress_now(world)
+    assert record["state"] == "failed" and record["check"] == "mkdocs" and record["index"] == 2
+
+
+def test_a_run_that_cannot_go_on_leaves_a_progress_file_that_says_it_was_abandoned(world: World) -> None:
+    world.edit("python/src/coney_tools/widget.py", PY)
+    world.unavailable.add("mypy")
+    assert world.check() == 2
+    assert progress_now(world)["state"] == "abandoned"
+
+
+def test_a_run_that_gave_up_waiting_for_a_slot_is_abandoned(world: World) -> None:
+    world.edit("python/src/coney_tools/widget.py", PY)
+    world.hold_timeout = SlotTimeout("no check slot free after 180 minutes; held by bob (pytest)", 2, 3)
+    assert world.check() == 75
+    assert progress_now(world)["state"] == "abandoned"
+
+
+def test_an_interrupt_leaves_the_file_abandoned_and_goes_on_up(world: World) -> None:
+    def interrupt() -> None:
+        raise KeyboardInterrupt
+
+    world.on_step["mkdocs"] = interrupt
+    world.edit("docs/guides/widget.md", DOC)
+    with pytest.raises(KeyboardInterrupt):
+        world.check()
+    assert progress_now(world)["state"] == "abandoned"
+
+
+def test_a_dry_run_and_a_refused_run_write_no_progress_file(world: World) -> None:
+    world.edit("docs/guides/widget.md", DOC)
+    assert world.check(dry_run=True) == 0
+    assert not progress_file(world).exists()
+    (world.root / "notes.txt").write_text("loose", encoding="utf-8")
+    assert world.check() == 2
+    assert not progress_file(world).exists()
+
+
+def test_the_build_run_is_one_entry_at_the_place_of_its_first_check(world: World) -> None:
+    seen: list[dict[str, Any]] = []
+    original = world.build
+
+    def build(root: Path, agent: str, preset: str, task: str) -> build_run.Result:
+        seen.append(progress_now(world))
+        return original(root, agent, preset, task)
+
+    world.build = build  # type: ignore[method-assign]
+    world.edit("src/ai/brain.cpp", "int main() { return 0; }\n")
+    assert world.check() == 0
+    names = load_conventions(world.root).proof.build.checks
+    assert seen[0]["check"] == " and ".join(names) and seen[0]["kind"] == "build"
+    assert (seen[0]["index"], seen[0]["total"]) == (
+        7,
+        8,
+    )  # the seventh of eight: the eighth is answered by the same run
+    assert progress_now(world)["state"] == "passed"
+
+
+def test_the_real_environment_gives_its_one_writer_to_everything_it_runs(tmp_path: Path) -> None:
+    env = task_check.default_env(30.0)
+    assert isinstance(env.progress, check_progress.Progress)
+    file = tmp_path / "unit" / check_progress.FILE_NAME
+    env.progress.attach(file)
+    env.progress.start("pytest", "pytest", 1)
+    assert env.stream is not None
+    env.stream(tmp_path / "logs")([sys.executable, "-c", "print('.' * 4 + ' [ 33%]')"], tmp_path)
+    env.progress.beat()
+    assert json.loads(file.read_text(encoding="utf-8"))["done"]["done"] == 33

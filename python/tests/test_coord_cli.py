@@ -10,7 +10,8 @@ from typing import Any
 
 import pytest
 
-from coney_tools import cli, coord_cli
+from coney_tools import check_progress, cli, coord_cli
+from coney_tools.check_progress import Fraction, Progress
 from coney_tools.coord_cli import Sources, actions, collect
 
 NOW = datetime(2026, 10, 20, 12, 0, tzinfo=UTC)
@@ -440,3 +441,90 @@ def test_ids_and_json_together_are_refused(layout: dict[str, Path]) -> None:
     args = argparse.Namespace(json=True, github=False, ids=True, kind=None)
     assert coord_cli.run(args, sources(layout), print, errors.append) == 2
     assert errors == ["coord status: --ids and --json print different things; give one"]
+
+
+# --- the checks section (issue 1328) -------------------------------------------------------------------------------
+
+
+def write_progress(
+    layout: dict[str, Path],
+    task: str,
+    *,
+    ran: float = 0.0,
+    written: float = 0.0,
+    moved: float | None = None,
+    pid: int = 100,
+    stop: str | None = None,
+    fraction: Fraction | None = None,
+) -> None:
+    """A unit's progress file as `task check` left it: running pytest (6 of 8) since `ran` minutes before NOW, last
+    written `written` minutes before NOW, its fraction (when given) moved `moved` minutes before NOW (default: at the
+    last write); `stop` ends it as `waiting` for a slot or `passed`."""
+    now = [NOW - timedelta(minutes=ran)]
+    progress = Progress(clock=lambda: now[0], pid=pid)
+    progress.attach(layout["scratch"] / task / check_progress.FILE_NAME)
+    progress.plan(8)
+    progress.start("pytest", "pytest", 6)
+    if fraction is not None:
+        now[0] = NOW - timedelta(minutes=written if moved is None else moved)
+        progress.fraction(fraction)
+    now[0] = NOW - timedelta(minutes=written)
+    if stop == "waiting":
+        progress.waiting("check", 5, 6, 36.0, ["bob"])
+    elif stop == "passed":
+        progress.finish(True)
+    else:
+        progress.beat()
+
+
+def test_the_checks_section_shows_each_units_live_check_and_leaves_old_finished_ones_out(
+    layout: dict[str, Path],
+) -> None:
+    write_progress(layout, "unit-a", ran=50, written=0.5, fraction=Fraction(64, 100, "%"))
+    write_progress(layout, "unit-b", ran=4, written=0.2, stop="waiting")
+    write_progress(layout, "fresh", ran=30, written=20, stop="passed")  # finished lately: still news
+    write_progress(layout, "gone", ran=700, written=600, stop="passed")  # finished long ago: history
+    report = collect(sources(layout, check_alive=lambda pid: True), github=False)
+    checks = {row["task"]: row for row in report["checks"]["checks"]}
+    assert set(checks) == {"unit-a", "unit-b", "fresh"}
+    assert checks["unit-a"]["short"] == "pytest 64% 50m" and checks["unit-a"]["stalled"] is False
+    assert checks["unit-b"]["short"] == "queued 5/6 ~36m" and checks["unit-b"]["state"] == "waiting"
+    assert checks["fresh"]["state"] == "passed"
+    assert report["checks"]["error"] is None
+
+
+def test_a_check_whose_fraction_has_not_moved_is_stalled_by_the_conventions_limit(layout: dict[str, Path]) -> None:
+    write_progress(layout, "unit-a", ran=60, written=0.1, moved=50, fraction=Fraction(64, 100, "%"))
+    report = collect(sources(layout, check_alive=lambda pid: True, check_stall_minutes=30), github=False)
+    row = report["checks"]["checks"][0]
+    assert row["stalled"] is True and row["short"] == "pytest 64% 1h00m stalled"
+    longer = collect(sources(layout, check_alive=lambda pid: True, check_stall_minutes=60), github=False)
+    assert longer["checks"]["checks"][0]["stalled"] is False
+
+
+def test_a_check_whose_process_is_gone_is_abandoned(layout: dict[str, Path]) -> None:
+    write_progress(layout, "unit-a", ran=10, written=1, pid=777, fraction=Fraction(64, 100, "%"))
+    report = collect(sources(layout, check_alive=lambda pid: False), github=False)
+    assert report["checks"]["checks"][0]["state"] == "abandoned"
+
+
+def test_the_text_form_counts_the_checks_by_state_and_lists_each(layout: dict[str, Path]) -> None:
+    write_progress(layout, "unit-a", ran=60, written=0.5, moved=50, fraction=Fraction(64, 100, "%"))
+    write_progress(layout, "unit-b", ran=4, written=0.2, stop="waiting")
+    write_progress(layout, "fresh", ran=5, written=1, pid=777)
+    report = collect(sources(layout, check_alive=lambda pid: pid != 777), github=False)
+    lines = coord_cli.format_text(report)
+    assert "checks: 1 running (1 stalled), 1 waiting, 1 abandoned" in lines
+    assert "  unit-a: check 6 of 8, pytest: running 1 h 00 min, 64% done; stalled: no progress for 50 min" in lines
+    assert "  unit-b: check 6 of 8, pytest: waiting for a check slot, place 5 of 6, about 36 min; held by bob" in lines
+
+
+def test_no_progress_files_is_an_empty_section_not_an_error(layout: dict[str, Path]) -> None:
+    report = collect(sources(layout), github=False)
+    assert report["checks"] == {"error": None, "checks": []}
+    assert not any(line.startswith("checks:") for line in coord_cli.format_text(report))
+
+
+def test_a_kind_does_not_read_the_checks(layout: dict[str, Path]) -> None:
+    write_progress(layout, "unit-a", ran=1, written=0.5)
+    assert collect(sources(layout), github=False, kinds=["build"])["checks"] is None

@@ -23,7 +23,10 @@ The run is live: each check prints a `start` line when it begins and its result 
 every line is flushed at once (a run redirected to a file shows it grow). The full suites (pytest here, the engine's
 ctest run inside the build) wait for a check slot first (`check_slots`, check_slots.py), and a long check prints a
 progress line every minute with its output going to `check-logs/` in the task's scratch folder
-(live_progress.py; docs/guides/coney-tools-repo.md#task-check).
+(live_progress.py; docs/guides/coney-tools-repo.md#task-check). The same run writes where it is to
+`check-progress.json` in that folder, from the same numbers (check_progress.py; docs/guides/coney-tools-repo.md
+#check-progress): the check and its place in the list, its kind and time, how far it is, its place in a slot queue, and
+at the end whether it passed, failed or was abandoned.
 """
 
 from __future__ import annotations
@@ -32,7 +35,7 @@ import argparse
 import os
 from collections.abc import Callable, Mapping
 from contextlib import AbstractContextManager, nullcontext
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -42,6 +45,7 @@ from coney_tools import (
     build_cli,
     build_record,
     build_run,
+    check_progress,
     check_slots,
     live_progress,
     pr_diff,
@@ -99,6 +103,9 @@ class Env:
     hold: Callable[[Path, str, str], AbstractContextManager[None]] = lambda root, agent, what: nullcontext()
     #: The pytest workers of the checkout's machine (a check slot's share of the cores); the default runs one.
     workers: Callable[[Path], int] = lambda root: 1
+    #: The writer of the run's progress file; `_run` attaches it to the unit's scratch folder. The real environment
+    #: hands the same one to the build, the streaming runner and the check slot, so that all of them report to it.
+    progress: check_progress.Progress = field(default_factory=check_progress.Progress)
 
 
 def _no_disc_reason(root: Path) -> str | None:
@@ -117,12 +124,16 @@ def _say(line: str) -> None:
     print(line, flush=True)
 
 
-def _real_hold(max_wait: float) -> Callable[[Path, str, str], AbstractContextManager[None]]:
-    """The check slot of this machine: the queue of `check_slots`, saying the place while it waits, giving up after
-    `max_wait` minutes with a SlotTimeout."""
+def _real_hold(
+    max_wait: float, progress: check_progress.Progress | None = None
+) -> Callable[[Path, str, str], AbstractContextManager[None]]:
+    """The check slot of this machine: the queue of `check_slots`, saying the place while it waits (and telling the
+    `progress` file), giving up after `max_wait` minutes with a SlotTimeout."""
 
     def hold(root: Path, agent: str, what: str) -> AbstractContextManager[None]:
-        return check_slots.hold(check_slots.default_check_slots(root), agent, root.name, what, _say, max_wait=max_wait)
+        return check_slots.hold(
+            check_slots.default_check_slots(root), agent, root.name, what, _say, max_wait=max_wait, progress=progress
+        )
 
     return hold
 
@@ -130,19 +141,22 @@ def _real_hold(max_wait: float) -> Callable[[Path, str, str], AbstractContextMan
 def default_env(max_wait: float = build_cli.DETACHED_MAX_WAIT) -> Env:
     """The real machine: the checks of `task_check_steps`, the build through `coney-tools build`'s own code, the disc
     the build would give the tests, and the identity the hook vouched for. Its checks stream their output into a log
-    and say a progress line every minute, and pytest waits for a check slot."""
+    and say a progress line every minute, and pytest waits for a check slot. One `Progress` writes the run's progress
+    file and is handed to all of them."""
+    progress = check_progress.Progress()
     return Env(
         steps=IMPLEMENTED,
         build=lambda root, agent, preset, task: build_cli.build_and_test(
-            root, agent, preset, task=task, max_wait=max_wait
+            root, agent, preset, task=task, max_wait=max_wait, progress=progress
         ),
         disc=_no_disc_reason,
         clock=lambda: datetime.now(UTC),
         say=_say,
         who=lambda: stamps.who_from_env("coney-tools task check"),
-        stream=lambda logs: live_progress.streaming_runner(_say, logs),
-        hold=_real_hold(max_wait),
+        stream=lambda logs: live_progress.streaming_runner(_say, logs, progress=progress),
+        hold=_real_hold(max_wait, progress),
         workers=_workers,
+        progress=progress,
     )
 
 
@@ -218,38 +232,51 @@ def _run(request: Request, env: Env) -> int:
     # Only a build and a full suite take a slot, so only a run that has one needs an id for it.
     holds = bool(builds) or (scope is not None and scope.whole)
     agent = agent_for(request.agent, who, _person) if holds else ""
-    run = env.stream(unit.Unit.of(root, task).dir / "check-logs") if env.stream is not None else env.run
+    folder = unit.Unit.of(root, task).dir
+    run = env.stream(folder / "check-logs") if env.stream is not None else env.run
 
     def hold(what: str) -> AbstractContextManager[None]:
         """A check slot for this run's checkout and id."""
         return env.hold(root, agent, what)
 
     context = StepContext(root, base, change.paths, conventions, run, hold, env.workers(root) if scope else 1)
-    outcome = _execute(request, env, context, checks, builds, task, agent, change)
-    if isinstance(outcome, int):
-        return outcome
-    ran, failed, record, tests, counted = outcome
-    detail_more: dict[str, Any] = {}
-    _unchanged(root, base, change)
-    if scope is not None and "pytest" in ran:
-        detail_more["pytest_scope"] = proof_profiles.scope_record(scope)
-    return _stamp(
-        env,
-        root,
-        conventions,
-        task,
-        change,
-        who,
-        profile,
-        ran,
-        failed,
-        record,
-        tests,
-        counted,
-        started,
-        rules_from,
-        detail_more,
-    )
+    # From here the run writes where it is; whatever ends it without a verdict (a refusal, an interrupt, a wait that
+    # gave up) leaves the file abandoned, and the heartbeat keeps it fresh while a check says nothing.
+    progress = env.progress
+    progress.attach(folder / check_progress.FILE_NAME)
+    progress.plan(len(checks))
+    try:
+        with live_progress.Heartbeat(live_progress.HEARTBEAT_SECONDS, progress.beat):
+            outcome = _execute(request, env, context, checks, builds, task, agent, change)
+            if isinstance(outcome, int):
+                progress.abandon()
+                return outcome
+            ran, failed, record, tests, counted = outcome
+            detail_more: dict[str, Any] = {}
+            _unchanged(root, base, change)
+            if scope is not None and "pytest" in ran:
+                detail_more["pytest_scope"] = proof_profiles.scope_record(scope)
+            progress.finish(not failed)
+            return _stamp(
+                env,
+                root,
+                conventions,
+                task,
+                change,
+                who,
+                profile,
+                ran,
+                failed,
+                record,
+                tests,
+                counted,
+                started,
+                rules_from,
+                detail_more,
+            )
+    except BaseException:
+        progress.abandon()
+        raise
 
 
 def _log_task(root: Path, task: str, conventions: Conventions, say: Callable[[str], None]) -> str:
@@ -306,6 +333,7 @@ def _execute(
         if name in builds:
             queue = [other for other in queue if other not in builds]
             env.say(f"  [{_at()}] start {' and '.join(builds)} (one build run)")
+            env.progress.start(" and ".join(builds), "build", checks.index(builds[0]) + 1)
             results = _build_results(env, context, task, agent, change, builds)
             if isinstance(results, int):
                 return results
@@ -316,6 +344,7 @@ def _execute(
                 raise ConfigError(f"check {name!r} is in .github/conventions.yml but this tool does not know it")
             started = env.clock()
             env.say(f"  [{_at()}] start {name}")
+            env.progress.start(name, name, checks.index(name) + 1)
             try:
                 step_results = [_timed(step(context), env, started)]
             except SlotTimeout as timeout:

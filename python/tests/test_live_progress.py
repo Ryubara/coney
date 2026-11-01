@@ -4,6 +4,7 @@ interval however quiet the command is, and an interrupt stops the child. The com
 here; no real suite runs."""
 
 import _thread
+import json
 import subprocess
 import sys
 import threading
@@ -12,6 +13,8 @@ from pathlib import Path
 
 import pytest
 
+from coney_tools import check_progress
+from coney_tools.check_progress import Progress
 from coney_tools.live_progress import Heartbeat, command_label, minutes_text, run_streamed, streaming_runner
 
 
@@ -75,6 +78,32 @@ def test_the_progress_line_carries_the_percent_pytest_printed(tmp_path: Path) ->
     code = "import time; print('.' * 10 + ' [ 45%]', flush=True); time.sleep(1.2)"
     run_streamed(python(code), tmp_path, said.append, label="pytest", interval=0.2)
     assert any("45% done" in line for line in said), said
+
+
+def test_the_percent_reaches_the_progress_file_as_the_same_numbers_the_line_says(tmp_path: Path) -> None:
+    # One value feeds both: the line says `45% done` and the file holds 45 of 100 percent, with the time it moved.
+    file = tmp_path / "unit" / check_progress.FILE_NAME
+    progress = Progress()
+    progress.attach(file)
+    progress.plan(1)
+    progress.start("pytest", "pytest", 1)
+    said: list[str] = []
+    code = "import time; print('.' * 10 + ' [ 45%]', flush=True); time.sleep(1.2)"
+    run_streamed(python(code), tmp_path, said.append, label="pytest", interval=0.2, progress=progress)
+    assert any("45% done" in line for line in said), said
+    progress.beat()
+    assert json.loads(file.read_text(encoding="utf-8"))["done"] == {"done": 45, "of": 100, "unit": "%", "failed": None}
+
+
+def test_the_streaming_runner_hands_its_progress_to_every_command(tmp_path: Path) -> None:
+    file = tmp_path / check_progress.FILE_NAME
+    progress = Progress()
+    progress.attach(file)
+    progress.start("pytest", "pytest", 1)
+    run = streaming_runner(lambda _: None, None, 60.0, progress)
+    run(python("print('.' * 5 + ' [ 80%]')"), tmp_path)
+    progress.beat()
+    assert json.loads(file.read_text(encoding="utf-8"))["done"]["done"] == 80
 
 
 def test_a_failing_command_gives_its_code_and_all_its_output(tmp_path: Path) -> None:

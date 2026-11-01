@@ -27,7 +27,9 @@ request problems nobody holds. What comes next is under [Planned](#planned).
 | `2 units`, `✖1 failed` | Units with a task file that are not merged: their count, and how many failed a step, have a pull request whose checks failed or have a task file that cannot be read | red when any failed |
 | `PRs 4 (✖1 #812)` | Open pull requests, and the first one with a failed check or a cause from [`pr list-stuck`](coney-tools-pr.md#pr-list-stuck) | red when any failed |
 | `claims 3` | Held claims of every contributor | amber from the warning hours, red in the last `claim_red_hours` of any claim, once expiry is enforced |
-| `builds 2 (+3 queued)` | Build slots in use and builds waiting, over every lane | none |
+| `builds 2 (+3 queued)` | Build slots in use and builds waiting, over the build lanes | none |
+| `checks 4 (+6 queued)` | Check slots in use (full suites: `task check`'s pytest and the build's ctest run) and suites waiting for one ([Check slots](coney-tools-build.md#check-slots)) | none |
+| `⚠2 stalled` | Units whose running check has a fraction that has not moved for `check_stall_minutes` | amber |
 | `⚠ P-critical #790` | The first open issue labelled `P-critical`, and how many more | amber |
 | `disk 61 GB` | Free space on the workspace drive | amber under `workspace.disk_min_free_gb` + `workspace.disk_margin_gb`, red under `workspace.disk_min_free_gb` |
 
@@ -63,8 +65,9 @@ place an unasked pane, and waits for `/conclave` where it is not; the engine sea
   numbers, the title, who works on it, the stage, the build it runs or waits for, the pull request and its age. A press
   opens the row, one at a time, and shows the claimant and agent, the status and time in stage, the claim's expiry,
   the scope and the units or claims it overlaps, every stamp step (`✔` done, `✖` failed, `–` not needed, `·` missing),
-  the reason a failed row is red, the last detached build and the links. Failed rows come first, then active, not
-  started and merged ones (merged units stay for `merged_visible_minutes`).
+  the reason a failed row is red, the `check` line ([a unit's check](#unit-check)), the last detached build and the
+  links. Failed rows come first, then active, not started and merged ones (merged units stay for
+  `merged_visible_minutes`).
 - **Claims** lists every held claim with its countdown. The countdown runs on the mod's own clock, once a second while
   the pane is shown, from the deadline in the snapshot, so the display never waits for a read. A claim whose release
   clock waits (an `S-blocked`, `S-needs-info` or `S-on-hold` issue) says why instead of a time, and while
@@ -72,6 +75,18 @@ place an unasked pane, and waits for `/conclave` where it is not; the engine sea
 
 Marks are single-width coloured symbols (`⚠ ● ✔ ✖`) on the terminal, which depends on the font, and emoji on the
 desktop, VS Code and mobile surfaces.
+
+### A unit's check {#unit-check}
+
+A unit's check is what `task check` is doing, from its [progress
+file](coney-tools-repo.md#check-progress). The row shows the short form after the build (`pytest 64% 50m`, `queued 5/6
+~36m`, `pytest 64% 50m stalled`, `pytest abandoned`) while the check waits, runs or was abandoned; a check that passed
+or failed is the stage's to say. In the compact layout it leads the dim second line, so a clip cuts the title and the
+build before it; in the narrow layout it follows the pull request on that line. The open row's `check` line has the full
+form (`check 6 of 8, pytest: running 50 min, 64% done; stalled: no progress for 40 min`), amber when the check is stalled
+or abandoned. Both forms are written by `check_progress.py` and reach the mod through `coord status`, so the mod
+words and judges nothing: the stall limit is `check_stall_minutes` in the conventions, and a check slot a unit holds is
+its `check`, never its build.
 
 ## The watchers {#watchers}
 
@@ -247,6 +262,9 @@ Session health belongs to [Tether](coney-tools-setup.md#coord-wakes): the contex
 expiry, the automatic `/clear` and the "Continue from HANDOFF.md" message, subagents past their context limit, the
 checkpoint cycle and the cache guard. **Conclave shows no context or cache figure, sends no wake about them and adds no
 hook that overlaps them.** The idle wake stays in Tether too, now and in later versions.
+What a unit's `task check` is doing ([a unit's check](#unit-check): which check, how far, queued, stalled) is Coney's own
+state, a file a tool of this repository writes, not the session's health, so it is Conclave's to show; a stalled check
+wakes nobody, because waking is the watchers' and Tether's.
 `python/tests/test_conclave_mod.py` holds the line, so a change that crosses it fails the Python tests. The check does
 not read spellings: it builds the mod with the TypeScript compiler (`python/tests/conclave_boundary.cjs`) and judges the
 tree and the types, so a renamed `$`, an alias, a spread or a cast cannot hide a call. It refuses:
@@ -411,16 +429,15 @@ read keeps the pull requests, claim overlaps and events of the last GitHub read.
 | Section | Holds | Read from |
 | --- | --- | --- |
 | `config` | The roles and helpers of the hook settings, the intervals and limits | `.claude/hooks/hooks.toml`, the `conclave` keys |
-| `units` | Each unit: task file, stage from the stamp log, build, worktree, overlaps, pull request | `scratch/<task>/TASK.md`, the stamp log, `coord status` |
-| `builds`, `machine` | Build slots and queues; free disk with its two limits | `build status`, the workspace drive |
+| `units` | Each unit: task file, stage from the stamp log, build, check, worktree, overlaps, pull request | `scratch/<task>/TASK.md`, the stamp log, `coord status` (builds and checks) |
+| `builds`, `machine` | Build and check slots and queues; free disk with its two limits | `build status`, the workspace drive |
 | `claims`, `prs`, `issues` | Held claims with deadlines and titles; open and merged pull requests; the issues the pane names (`--github` only) | the claim cards, `pr list-stuck`, `gh` |
 | `events` | The [watchers' events](#watchers), each with an id and a state, the kinds that could not be read (`unread`) and any hold file that could not (`holds_problems`) (`--github` only) | `pr list-stuck`, the release queue with the proof of [each unit in it](#ready), the [trial rebase](#conflicts) of each conflict, the holds (`pr hold`, `HOLD.md`), the question files of the unit folders |
 
-A section that cannot be read holds only its `error`, and the others stand. The object carries `schema` (2 since the
-events); the mod refuses a higher number than it was built for. A unit's **stage** is the step after the highest one
-done in the stamp log (a
-step whose latest stamp is `pass` or `none`), and it is `failed` when the latest stamp of that step failed; the step
-names are `stamps.steps`, never listed in the mod.
+A section that cannot be read holds only its `error`, and the others stand. The object carries `schema` (3 since the
+units' `check`); the mod refuses a higher number than it was built for. A unit's **stage** is the step after the highest
+one done in the stamp log (a step whose latest stamp is `pass` or `none`), and it is `failed` when the latest stamp of
+that step failed; the step names are `stamps.steps`, never listed in the mod.
 
 ## Hiding agent types {#agent-types}
 

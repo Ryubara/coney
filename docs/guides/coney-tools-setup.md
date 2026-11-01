@@ -22,6 +22,12 @@ Without `--github` it reads only the machine, in a few seconds, and never touche
 * the PCSX2 copies (the rows of `pcsx2 status --json`);
 * the build slots and queues (`build status --json`);
 * each worktree's last detached build (`build result`);
+* the checks: the progress file of each unit's `task check` ([The progress file](coney-tools-repo.md#check-progress)),
+  for the checks going on and those that ended within the last hour. A row names the unit's check and its place in the
+  list, its time, how far it is, its place in a slot queue, and whether it is stalled or abandoned. The text form
+  prints a count by state and one line per unit (`checks: 1 running (1 stalled), 1 waiting`). A stalled check is one
+  whose fraction has not moved for `conclave.check_stall_minutes` (30). No id is raised for it, so a poller is not
+  woken, and a `--kind` read does not read the checks;
 * the release queue: each `PR.md` or `PR-<n>.md` in the scratch folder of a branch that has a worktree, and whether
   `origin` has the branch, as the local clone knows it;
 * the tracks: each scratch folder's `STATUS.md`, kept while its worktree exists or for three days after its last
@@ -37,7 +43,7 @@ Without `--github` it reads only the machine, in a few seconds, and never touche
   the file last changed. A unit with neither is queued.
 
 `--json` prints one object: `time`, `checkout`, `github`, the sections `worktrees`, `pcsx2`, `builds`, `results`,
-`tracks`, `release`, `issues`, `prs` and `ci`, and `action`. The last three sections are `null` without `--github`.
+`checks`, `tracks`, `release`, `issues`, `prs` and `ci`, and `action`. The last three sections are `null` without `--github`.
 Each section has `error`, `null` when it was read. A section that could not be read holds only `error`, and the
 others stand, so a failure is never taken for "nothing waits". The exit code is 0, and 2 when the command cannot run
 at all (outside a checkout). `action` lists the ids of what waits, sorted:

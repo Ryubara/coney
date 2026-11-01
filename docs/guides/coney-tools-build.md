@@ -412,7 +412,12 @@ that runs a long program (pytest, mypy, pre-commit) streams its output into `che
 scratch folder, line by line (a new run starts the file again), and prints `pytest: still running, 12 min, 45% done` at
 least every minute. `orig fails-first` shows the build's own lines as they come. The engine's build and test run print
 the same kind of line from inside `build`: `build: still running, 9 min, ninja step 410 of 1204` and `test: still
-running, 22 min, 1310 tests done, 2 failed`.
+running, 22 min, 1310 of 2400 tests done, 2 failed`.
+
+Under `task check` the same numbers go to a small file too: each of those lines, and each report of a wait for a check
+slot or a build slot (`waiting for a check slot (pytest): place 5 of 6, about 36 min`), also updates the run's
+`check-progress.json`, so `coord status` and Conclave show how far every unit's check is without anyone reading a log
+([The progress file](coney-tools-repo.md#check-progress)). A plain `build` writes none.
 
 <!-- command-reference:begin build -->
 ## Parameters of `build` {#build-parameters}
