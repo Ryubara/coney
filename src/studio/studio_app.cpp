@@ -43,6 +43,17 @@ StudioApp::StudioApp(StudioHost& host, StudioSettings settings)
       m_view(std::make_unique<platform::ImGuiModelView>(m_model)) {
     m_view->setUiScale(m_settings.uiScale);
     log(ConsoleLine::Level::Info, "Coney Studio: File > New project or Open project to start");
+    // Studio's preferences: the projects folder and the recent projects. A file that cannot be read is reported, and
+    // the defaults used; the next change then replaces it.
+    if (!m_settings.preferencesFile.empty()) {
+        if (auto loaded = loadPreferences(m_settings.preferencesFile)) {
+            m_preferences = std::move(*loaded);
+        } else {
+            log(ConsoleLine::Level::Warn,
+                "could not read Studio's preferences, using the defaults: " + loaded.error().message);
+        }
+    }
+    refreshRecent();
 }
 
 StudioApp::~StudioApp() = default;
@@ -111,6 +122,9 @@ std::expected<void, Error> StudioApp::openProject(const std::filesystem::path& r
         return std::unexpected(std::move(project.error()));
     }
     m_project = std::move(*project);
+    addRecentProject(m_preferences, RecentProject{.root = m_project->root(), .name = m_project->manifest().name});
+    savePreferencesQuietly();
+    refreshRecent();
     m_level.reset();
     m_folders.clear();
     select(std::nullopt);
@@ -200,6 +214,102 @@ void StudioApp::log(ConsoleLine::Level level, std::string text) {
     m_console.push_back(ConsoleLine{.level = level, .text = std::move(text)});
     while (m_console.size() > kConsoleLines) {
         m_console.pop_front();
+    }
+}
+
+std::expected<void, Error> StudioApp::openRecent(const std::filesystem::path& root) {
+    if (!projectExists(root)) {
+        refreshRecent();
+        return fail(ErrorCode::NotFound,
+                    std::format("{} is missing (moved or deleted): remove it from the list", root.string()));
+    }
+    return openProject(root);
+}
+
+void StudioApp::askNewProject() {
+    // The dialog suggests the projects folder, made now if this is its first use; one that cannot be made is still
+    // suggested, and Create says why it fails.
+    m_newFolder.clear();
+    if (const auto folder = projectsFolder()) {
+        if (auto made = ensureFolderExists(*folder); !made) {
+            report("make the projects folder", made.error());
+        }
+        m_newFolder = pathToUtf8(*folder);
+    }
+    m_newProjectOpen = true;
+}
+
+void StudioApp::askOpenProject() {
+    // The picker starts in the projects folder, made now if this is its first use.
+    std::optional<std::filesystem::path> start = projectsFolder();
+    if (start) {
+        if (auto made = ensureFolderExists(*start); !made) {
+            report("make the projects folder", made.error());
+            start.reset();
+        }
+    }
+    m_host.pickFolder("Open a Coney Studio project", start, [this](std::optional<std::filesystem::path> folder) {
+        if (folder) {
+            if (auto opened = openProject(*folder); !opened) {
+                report("open the project", opened.error());
+            }
+        }
+    });
+}
+
+std::optional<std::filesystem::path> StudioApp::defaultProjectsFolder() const {
+    return studio::defaultProjectsFolder(m_host.userFolders());
+}
+
+std::optional<std::filesystem::path> StudioApp::projectsFolder() const {
+    return m_preferences.projectsFolder ? m_preferences.projectsFolder : defaultProjectsFolder();
+}
+
+std::expected<void, Error> StudioApp::setProjectsFolder(std::optional<std::filesystem::path> folder) {
+    if (folder && folder->empty()) {
+        folder.reset();
+    }
+    m_preferences.projectsFolder = std::move(folder);
+    if (m_settings.preferencesFile.empty()) {
+        return {};
+    }
+    return savePreferences(m_settings.preferencesFile, m_preferences);
+}
+
+std::expected<std::filesystem::path, Error> StudioApp::ensureProjectsFolder() {
+    const auto folder = projectsFolder();
+    if (!folder) {
+        return fail(ErrorCode::NotFound, "the system reports no documents or home folder to keep projects in");
+    }
+    if (auto made = ensureFolderExists(*folder); !made) {
+        return std::unexpected(std::move(made.error()));
+    }
+    return *folder;
+}
+
+void StudioApp::refreshRecent() {
+    m_recent.clear();
+    for (const RecentProject& project : m_preferences.recent) {
+        m_recent.push_back(
+            RecentEntry{.root = project.root, .name = project.name, .missing = !projectExists(project.root)});
+    }
+}
+
+bool StudioApp::removeRecent(const std::filesystem::path& root) {
+    if (!removeRecentProject(m_preferences, root)) {
+        return false;
+    }
+    savePreferencesQuietly();
+    refreshRecent();
+    return true;
+}
+
+void StudioApp::savePreferencesQuietly() {
+    if (m_settings.preferencesFile.empty()) {
+        return;
+    }
+    if (auto saved = savePreferences(m_settings.preferencesFile, m_preferences); !saved) {
+        report("save Studio's preferences", saved.error());
     }
 }
 

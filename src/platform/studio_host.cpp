@@ -7,6 +7,8 @@
 
 #include <SDL3/SDL.h>
 
+#include "platform/user_folders.h"
+
 namespace coney::platform {
 
 namespace {
@@ -36,12 +38,24 @@ SdlStudioHost::~SdlStudioHost() {
     }
 }
 
-void SdlStudioHost::pickFolder(std::string_view title, std::function<void(std::optional<std::filesystem::path>)> done) {
+void SdlStudioHost::pickFolder(std::string_view title, const std::optional<std::filesystem::path>& startIn,
+                               std::function<void(std::optional<std::filesystem::path>)> done) {
     static_cast<void>(title); // SDL 3's simple folder dialog takes no title
     m_pending = std::make_shared<Pending>();
     m_done = std::move(done);
+    // The dialog opens at `startIn` when it is given; SDL takes UTF-8, and a folder that is not there is ignored by the
+    // system's dialog, which then opens where it likes.
+    const std::string start = startIn ? [&] {
+        const std::u8string text = startIn->u8string();
+        return std::string(reinterpret_cast<const char*>(text.data()), text.size());
+    }()
+                                      : std::string();
     SDL_ShowOpenFolderDialog(folderChosen, new std::shared_ptr<Pending>(m_pending), static_cast<SDL_Window*>(m_window),
-                             nullptr, false);
+                             start.empty() ? nullptr : start.c_str(), false);
+}
+
+studio::UserFolders SdlStudioHost::userFolders() {
+    return studio::UserFolders{.documents = userFolder(UserFolder::Documents), .home = userFolder(UserFolder::Home)};
 }
 
 std::expected<void, Error> SdlStudioHost::startProcess(const std::vector<std::string>& command) {

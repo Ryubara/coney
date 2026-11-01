@@ -47,6 +47,9 @@ constexpr std::string_view kUsage =
     "  --project DIR          open the project in DIR\n"
     "  --new-project DIR      make a project in DIR (its name is the folder's) and open it\n"
     "  --template NAME        the first level of --new-project: basic, default, combat or parkour (basic)\n"
+    "  --settings FILE        Studio's preferences file: the projects folder and the recent projects (else the\n"
+    "                         user's data folder; none in a --frames run)\n"
+    "  --new-project-dialog   open the New project dialog at the start\n"
     "  --disc PATH            the player's disc, for Run in Coney to play the level (else CONEY_DISC)\n"
     "  --select N             select entity N of the open level\n"
     "  --frame                glide the Level view's camera to frame the selection, as F does\n"
@@ -63,6 +66,7 @@ struct StudioOptions {
     std::optional<std::filesystem::path> newProject;
     std::string levelTemplate{"basic"};
     std::optional<std::string> disc;
+    std::optional<std::filesystem::path> settings;
     std::optional<std::uint32_t> select;
     std::optional<std::string> view;
     std::optional<int> frames;
@@ -71,6 +75,7 @@ struct StudioOptions {
     int height = 900;
     bool activate = true;
     bool frame = false;
+    bool newProjectDialog = false;
     bool help = false;
 };
 
@@ -95,9 +100,11 @@ std::expected<StudioOptions, std::string> parse(const std::vector<std::string_vi
             options.frame = true;
         } else if (arg == "--no-activate") {
             options.activate = false;
+        } else if (arg == "--new-project-dialog") {
+            options.newProjectDialog = true;
         } else if (arg == "--project" || arg == "--new-project" || arg == "--template" || arg == "--disc" ||
-                   arg == "--select" || arg == "--view" || arg == "--frames" || arg == "--screenshot" ||
-                   arg == "--window-size") {
+                   arg == "--select" || arg == "--view" || arg == "--settings" || arg == "--frames" ||
+                   arg == "--screenshot" || arg == "--window-size") {
             const auto given = value();
             if (!given) {
                 return std::unexpected(std::format("{} needs a value", arg));
@@ -110,6 +117,8 @@ std::expected<StudioOptions, std::string> parse(const std::vector<std::string_vi
                 options.levelTemplate = std::string(*given);
             } else if (arg == "--disc") {
                 options.disc = std::string(*given);
+            } else if (arg == "--settings") {
+                options.settings = std::filesystem::path(*given);
             } else if (arg == "--view") {
                 options.view = std::string(*given);
             } else if (arg == "--screenshot") {
@@ -163,16 +172,37 @@ ImFont* addFont(const std::filesystem::path& path, float size) {
     return ImGui::GetIO().Fonts->AddFontFromFileTTF(path.string().c_str(), size);
 }
 
-// Where Studio keeps the user's layout: Dear ImGui's settings in the per-user data folder, never in a project
+// Studio's per-user data folder (SDL's preference folder for Coney, with a trailing separator), or nothing when SDL
+// cannot give one. The layout and the preferences are kept there, never in a project
 // (docs/guides/studio/editor-experience.md#layouts-coney).
-std::string layoutFile() {
+std::string dataFolder() {
     char* folder = SDL_GetPrefPath("Coney", "Coney");
     if (folder == nullptr) {
         return {};
     }
-    std::string path = std::string(folder) + "coney-studio-layout.ini";
+    std::string path = folder;
     SDL_free(folder);
     return path;
+}
+
+// Where Studio keeps the user's layout: Dear ImGui's settings file.
+std::string layoutFile() {
+    const std::string folder = dataFolder();
+    return folder.empty() ? std::string() : folder + "coney-studio-layout.ini";
+}
+
+// Where Studio keeps the user's preferences (docs/guides/studio/editor-experience.md#projects-folder): `--settings`,
+// else the data folder's `coney-studio-preferences.toml`, and none in a test run, which must not read or change the
+// user's own.
+std::filesystem::path preferencesFile(const StudioOptions& options, bool testMode) {
+    if (options.settings) {
+        return *options.settings;
+    }
+    const std::string folder = testMode ? std::string() : dataFolder();
+    return folder.empty()
+               ? std::filesystem::path()
+               : std::filesystem::path(std::u8string(reinterpret_cast<const char8_t*>(folder.data()), folder.size())) /
+                     "coney-studio-preferences.toml";
 }
 
 } // namespace
@@ -243,7 +273,8 @@ int main(int argc, char** argv) {
                                                .coney = coney::studio::coneyBeside(here / "coney-studio.exe"),
                                                .disc = options.disc,
                                                .theme = tokens,
-                                               .uiScale = scale};
+                                               .uiScale = scale,
+                                               .preferencesFile = preferencesFile(options, testMode)};
 #ifndef _WIN32
         settings.coney = here / "coney";
 #endif
@@ -276,6 +307,9 @@ int main(int argc, char** argv) {
             if (auto opened = app.openProject(*options.project); !opened) {
                 reportFailure("open the project", opened.error());
             }
+        }
+        if (options.newProjectDialog) {
+            app.askNewProject();
         }
         if (options.select) {
             app.select(options.select);

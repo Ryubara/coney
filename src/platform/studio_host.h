@@ -33,7 +33,9 @@ class SdlStudioHost final : public studio::StudioHost {
     SdlStudioHost(SdlStudioHost&&) = delete;
     SdlStudioHost& operator=(SdlStudioHost&&) = delete;
 
-    void pickFolder(std::string_view title, std::function<void(std::optional<std::filesystem::path>)> done) override;
+    void pickFolder(std::string_view title, const std::optional<std::filesystem::path>& startIn,
+                    std::function<void(std::optional<std::filesystem::path>)> done) override;
+    studio::UserFolders userFolders() override;
     std::expected<void, Error> startProcess(const std::vector<std::string>& command) override;
     std::uint64_t drawLevel(const studio::LevelDocument& level, const studio::LevelView& view) override;
     bool setRelativeMouse(bool on) override;

@@ -8,54 +8,16 @@
 #include <string>
 #include <string_view>
 
+#include "studio/toml_lite.h"
+
 namespace coney::studio {
 
 namespace {
 
-// `text` without blanks at either end.
-std::string_view trim(std::string_view text) {
-    const auto first = text.find_first_not_of(" \t\r");
-    if (first == std::string_view::npos) {
-        return {};
-    }
-    const auto last = text.find_last_not_of(" \t\r");
-    return text.substr(first, last - first + 1);
-}
-
-// A quoted value with its escapes (\" and \\) undone, and how many characters of `text` it took, quotes included;
-// nothing when the closing quote is missing.
-std::optional<std::pair<std::string, std::size_t>> readString(std::string_view text) {
-    std::string out;
-    for (std::size_t i = 1; i < text.size(); ++i) {
-        const char c = text[i];
-        if (c == '"') {
-            return std::pair{out, i + 1};
-        }
-        if (c == '\\' && i + 1 < text.size()) {
-            out += text[++i];
-        } else {
-            out += c;
-        }
-    }
-    return std::nullopt;
-}
-
-// `text` as a quoted TOML string, `"` and `\` escaped.
-std::string quoted(std::string_view text) {
-    std::string out = "\"";
-    for (const char c : text) {
-        if (c == '"' || c == '\\') {
-            out += '\\';
-        }
-        out += c;
-    }
-    return out + "\"";
-}
-
-// A `line N: ...` failure.
-std::unexpected<Error> lineError(std::size_t line, std::string_view what) {
-    return fail(ErrorCode::Invalid, std::format("line {}: {}", line, what));
-}
+using toml::lineError;
+using toml::quoted;
+using toml::readString;
+using toml::trim;
 
 } // namespace
 

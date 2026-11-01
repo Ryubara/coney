@@ -25,6 +25,8 @@ where Studio looks for them.
 | `--project DIR` | Opens the project in `DIR` and its play level |
 | `--new-project DIR` | Makes a project in `DIR` (named after the folder) and opens it |
 | `--template NAME` | The first level of `--new-project`: `basic` (the default), `default`, `combat` or `parkour` |
+| `--settings FILE` | Studio's preferences file (the projects folder and the recent projects); without it a `--frames` run keeps them in memory and any other run uses `coney-studio-preferences.toml` in the user's data folder |
+| `--new-project-dialog` | Opens the New project dialog at the start (a picture of it) |
 | `--disc PATH` | The player's disc, for Run in Coney to play the level; `CONEY_DISC` otherwise |
 | `--select N` | Selects entity `N` of the open level |
 | `--frame` | Glides the Level view's camera to frame the selection, as *F* does |
@@ -48,6 +50,8 @@ coney-studio --new-project <scratch>/yard --template combat --select 3 --frames 
 | Theme | Godot 4's *Modern* default: base `#292929`, accent `#569EFF`, contrast 0.3, 4 px corners, Inter for the interface (bold for the Inspector's headers) and JetBrains Mono for the Console, all at the display's scale; the panels stand on Godot's darker background with gaps between them, and the accent marks the selected tab, chosen rows, toggles, focus and Play. Colours, sizes and font files are one set of tokens (`ThemeTokens`), ready for the preferences | [Look and theme](editor-experience.md#theme) |
 | Layout | Godot's arrangement, docked: Hierarchy over File system on the left, Level and Game views in the middle, Console under them, Inspector on the right; *Window > Reset layout* puts it back; the layout is kept per user (`coney-studio-layout.ini` in the user's data folder), never in a project | [The default layout](editor-experience.md#layout-default) |
 | Projects | *File > New project* (a name, a folder, the first level) and *Open project*; the File system panel shows the project as `project:/` and nothing outside it | [The project](editor-experience.md#project-coney) |
+| Projects folder | `Coney Studio/Projects` in the user's documents folder (the home folder without one), made on first use; New project suggests it and Open project starts there; *Edit > Preferences...* changes it | [Where projects go](editor-experience.md#projects-folder) |
+| Start screen | The Level view's place while no project is open: New and Open buttons, the last ten projects newest first (a missing one marked and removable) and the projects folder with *Change...* | [Where projects go](editor-experience.md#projects-folder) |
 | Level view | The open level drawn as `coney --sandbox` draws it, into a texture the panel shows; the spawn points, targets, fighters and camera views as coloured dots with their names; the selection outlined in the accent colour | [The Level view](level-view.md#level-view) |
 | Fly camera | Right mouse held: move the mouse to look (the cursor is kept inside the window and hidden, and put back on release; 1x sensitivity counted in the display's scale-1 pixels), W A S D to fly, Q and E to sink and rise, speeding up the longer a key is held as [Unity's camera acceleration](level-view.md#fly-acceleration) does (its [Scene Camera reference](https://docs.unity.com/en-us/engine/current/manual/unity-editor/editor-windows-views-reference/using-the-scene-view/scene-view-camera) describes it), Shift faster on top, Alt slower, the wheel changes the base speed | [The fly camera](level-view.md#fly-camera) |
 | Selection | A click in the Level view selects what is under it (the nearest primitive's triangle or point's box), a click on the sky clears it; the Hierarchy and the Inspector show the same selection | [Selection](level-view.md#selection) |
@@ -75,20 +79,23 @@ them and their licences (SIL Open Font License 1.1, [LEGAL.md](repo:LEGAL.md#lic
 | Code | What it holds |
 | --- | --- |
 | `src/studio/project.h`, `project_manifest.h` | The project folder, the `project:/` root rule and the manifest |
+| `src/studio/projects_folder.h`, `studio_preferences.h` | The default projects folder from the user's folders, and the preferences file: the projects folder setting and the recent projects list |
 | `src/studio/level_document.h`, `level_templates.h` | A sandbox layout as a level of entities with ids; the Basic template and the shipped courses' copy |
 | `src/studio/level_camera.h` | The fly camera, the view math, the click's ray and picking |
 | `src/studio/inspector.h` | The Inspector's page as debug menu items |
 | `src/studio/theme.h` | The design tokens and the Dear ImGui style derived from them |
 | `src/studio/run_in_coney.h` | Run in Coney's command line |
 | `src/studio/studio_app.h` | The editor's state and its interface (`studio_panels.cpp`); `StudioHost` is what it asks of the platform |
-| `src/platform/studio_main.cpp`, `studio_host.h`, `studio_level_renderer.h` | The entry point, the SDL3 folder picker and child processes, and the Level view drawn by librw into a texture |
+| `src/platform/studio_main.cpp`, `studio_host.h`, `studio_level_renderer.h`, `user_folders.h` | The entry point, the SDL3 folder picker and child processes, the user's documents and home folders, and the Level view drawn by librw into a texture |
 
 `src/studio/` touches no window, graphics API or operating system call itself, so its tests
 (`tests/studio/`, the `[studio]` tag) run over a bare Dear ImGui context with no window, as the developer overlay's do:
-the root rule, the manifest, a layout opened as entities, the Basic template, the camera, picking, the Inspector's
-groups, the default layout's six docked panels, New and Open project, a selection and Run in Coney's command. The
-`coney_studio.*` ctests (label `studio`) start the real program: `--help`, a refused option, and a new project opened
-in a window with a screenshot, which reports itself skipped where there is no display.
+the root rule, the manifest, the projects folder chosen from made-up user folders, the preferences file and the recent
+list (order, limit, missing entries), a layout opened as entities, the Basic template, the camera, picking, the
+Inspector's groups, the default layout's six docked panels, New and Open project, a selection and Run in Coney's
+command. The `coney_studio.*` ctests (label `studio`) start the real program: `--help`, a refused option, a new project
+opened in a window with a screenshot, and the start screen with the New project dialog (their preferences file is
+named by `--settings`, so no run touches the user's own); they report themselves skipped where there is no display.
 
 ## Not in the prototype {#not-yet}
 

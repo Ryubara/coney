@@ -19,6 +19,8 @@
 #include "studio/level_camera.h"
 #include "studio/level_document.h"
 #include "studio/project.h"
+#include "studio/projects_folder.h"
+#include "studio/studio_preferences.h"
 #include "studio/theme.h"
 
 struct ImFont;
@@ -59,9 +61,14 @@ struct MouseMotion {
 class StudioHost {
   public:
     virtual ~StudioHost() = default;
-    /// Asks the user for a folder, then calls `done` with it, or with nothing when they cancel. May call `done` later,
-    /// from the event loop; never opens a dialog in a test.
-    virtual void pickFolder(std::string_view title, std::function<void(std::optional<std::filesystem::path>)> done) = 0;
+    /// Asks the user for a folder, with the picker opened at `startIn` when that is given and exists, then calls `done`
+    /// with it, or with nothing when they cancel. May call `done` later, from the event loop; never opens a dialog in
+    /// a test.
+    virtual void pickFolder(std::string_view title, const std::optional<std::filesystem::path>& startIn,
+                            std::function<void(std::optional<std::filesystem::path>)> done) = 0;
+    /// The user's documents and home folders, as the platform reports them (SDL3's `SDL_GetUserFolder`); either may be
+    /// missing. The default projects folder is made from them (defaultProjectsFolder()).
+    virtual UserFolders userFolders() = 0;
     /// Starts `command` (the program first) as a child process that runs on its own. Fails with
     /// ErrorCode::PlatformFailure when it cannot be started.
     virtual std::expected<void, Error> startProcess(const std::vector<std::string>& command) = 0;
@@ -89,6 +96,18 @@ struct StudioSettings {
     /// How fast the right mouse button turns the Level view's camera, as a factor of the default (1): the one setting
     /// the preferences will hold (docs/guides/studio/level-view.md#fly-look).
     float lookSensitivity = 1.0F;
+    /// The preferences file (StudioPreferences), read when Studio starts and written whenever they change. Empty keeps
+    /// them in memory only, as a test run does.
+    std::filesystem::path preferencesFile;
+};
+
+/// One recent project as the start screen shows it.
+struct RecentEntry {
+    std::filesystem::path root; ///< The project's folder.
+    std::string name;           ///< Its name.
+    bool missing = false;       ///< The folder, or its manifest, is gone: shown as missing, and can be removed.
+
+    friend bool operator==(const RecentEntry&, const RecentEntry&) = default;
 };
 
 /// One Console line.
@@ -119,8 +138,41 @@ class StudioApp {
     /// from the assets.
     std::expected<void, Error> newProject(const std::filesystem::path& root, std::string_view name,
                                           std::string_view levelTemplate);
-    /// Opens the project at `root` and its `[play] level`, when it has one that loads. Fails as Project::open() does.
+    /// Opens the project at `root` and its `[play] level`, when it has one that loads, and puts it first in the recent
+    /// projects. Fails as Project::open() does.
     std::expected<void, Error> openProject(const std::filesystem::path& root);
+    /// Opens the recent project in `root` (openProject()); fails with ErrorCode::NotFound, naming the folder, when it
+    /// is missing, and leaves it on the list to be removed.
+    std::expected<void, Error> openRecent(const std::filesystem::path& root);
+    /// Opens the *New project* dialog, with its folder set to the projects folder, which is made if it is not there
+    /// yet.
+    void askNewProject();
+    /// Opens the folder picker for *Open project*, started in the projects folder (made if it is not there yet).
+    void askOpenProject();
+
+    /// The folder New project suggests and Open project starts in: the user's choice (setProjectsFolder()), else the
+    /// default in their documents folder; nothing when the platform reports no documents or home folder.
+    [[nodiscard]] std::optional<std::filesystem::path> projectsFolder() const;
+    /// The default projects folder for this user: `Coney Studio/Projects` in the documents folder, else the home
+    /// folder.
+    [[nodiscard]] std::optional<std::filesystem::path> defaultProjectsFolder() const;
+    /// Makes `folder` the projects folder and saves the preferences; nothing puts the default back. Fails as
+    /// savePreferences() does (the choice is kept for the run).
+    std::expected<void, Error> setProjectsFolder(std::optional<std::filesystem::path> folder);
+    /// Makes the projects folder if it is not there (the first use), and returns it. Fails with ErrorCode::Io when it
+    /// cannot be made and ErrorCode::NotFound when there is none.
+    std::expected<std::filesystem::path, Error> ensureProjectsFolder();
+    /// The recent projects, most recent first, each marked missing when its project is gone as of the last
+    /// refreshRecent() (every change to the list and the start screen's drawing do it).
+    [[nodiscard]] const std::vector<RecentEntry>& recentProjects() const { return m_recent; }
+    /// Looks at the disk again for which recent projects are missing.
+    void refreshRecent();
+    /// Takes the project in `root` off the recent list and saves. False when it was not on it.
+    bool removeRecent(const std::filesystem::path& root);
+    /// The folder the *New project* dialog holds now.
+    [[nodiscard]] const std::string& newProjectFolder() const { return m_newFolder; }
+    /// What is kept per user.
+    [[nodiscard]] const StudioPreferences& preferences() const { return m_preferences; }
     /// Opens the level at `projectPath` in the open project, puts the camera at its first view and clears the
     /// selection. Fails with ErrorCode::InvalidArgument without a project, as Project::resolve() does, and as
     /// LevelDocument::load() does.
@@ -207,8 +259,12 @@ class StudioApp {
     void refreshInspector();
     // Starts the camera's glide to frame the selection in the Level view's current shape.
     void startFraming();
-    // Opens the folder picker for Open project.
-    void askOpenProject();
+    // Saves the preferences to the preferences file, if there is one; a failure goes to the Console.
+    void savePreferencesQuietly();
+    // The start screen: the Level view's place until a project is open. New and Open buttons and the recent projects.
+    void drawStartScreen();
+    // The Preferences window (Edit > Preferences): the projects folder.
+    void drawPreferencesDialog();
     // Logs a failed action's error.
     void report(std::string_view what, const Error& error);
 
@@ -237,6 +293,11 @@ class StudioApp {
     ImFont* m_codeFont = nullptr;
     bool m_quit = false;
     bool m_newProjectOpen = false;
+    bool m_preferencesOpen = false;
+    StudioPreferences m_preferences;
+    std::vector<RecentEntry> m_recent;
+    double m_recentCheckedAt = 0.0;   // Dear ImGui's time of the last refreshRecent() from the start screen
+    std::string m_projectsFolderText; // the Preferences window's text for the projects folder
     std::string m_newName = "my-project";
     std::string m_newFolder;
     int m_newTemplate = 0;
