@@ -276,7 +276,7 @@ the game with none of the debug tools compiled in and one console, the
 [player console](studio/mods.md#player-console); the launcher installs it. The debug tools are the
 [debug menus](debug-menu.md) and their pages, the developer overlay, the debug lines, the viewers, the cheats and
 tunables, the [sandbox](sandbox.md) and the developers' command-line options. The CMake option `CONEY_DEBUG_TOOLS` (on
-by default) chooses: off, the debug libraries are not made and Dear ImGui is not fetched for them, so nothing can link
+by default) chooses: off, the debug libraries are not made and Dear ImGui is not fetched at all, so nothing can link
 them by mistake.
 
 **The one console in the release build** (a maintainer decision, 2026-10-29) is the **player console** ([The Coney
