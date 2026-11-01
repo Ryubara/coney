@@ -315,6 +315,59 @@ TEST_CASE("circle + cross grabs with the strike 657, deals its 60 as the hold st
     CHECK(fight.player().animator().animId() == 82U);
 }
 
+namespace {
+
+// What a player's strong grapple (circle + cross, 657) left once it had played: the damage the victim took, the
+// player's rage and whether he still holds the victim.
+struct Grapple {
+    bool played = false;
+    bool heldAfter = false;
+    int damage = 0;
+    int rage = 0;
+};
+
+// The player, who may rage, grabs with the strong grapple; with `outOfReach` the victim is carried 3 m off while 657
+// plays, far past the front hold's reach, so its end finds him out of reach.
+Grapple strongGrappleRun(bool outOfReach) {
+    const FightCharacter character;
+    HumanFight fight(character, 1.0F);
+    fight.player().setFlag(flag::kRageAllowed, true);
+    const auto strong = static_cast<std::uint32_t>(combat::anim_id::kStrongGrapple);
+    Grapple result;
+    fight.run("5 press circle cross\n9 release circle cross\n", 150, [&](std::uint64_t /*frame*/) {
+        if (fight.player().animator().animId() != strong) {
+            return;
+        }
+        result.played = true;
+        if (coney::human::Holdable* held = fight.other().holdable(); outOfReach && held != nullptr) {
+            const Vec3 at = fight.player().position();
+            held->place(Vec3{at.x + 3.0F, at.y, at.z}, fight.other().heading());
+        }
+    });
+    result.heldAfter = fight.player().fighter().held() != nullptr;
+    result.damage = fight.damageTaken();
+    result.rage = fight.player().fighter().combat().rage().value();
+    return result;
+}
+
+} // namespace
+
+TEST_CASE("a strong grapple whose victim is out of reach at its end deals its damage, scores no rage and lets go",
+          "[human][combat]") {
+    // Expected: combat-grabs.md#strong-grapple, confirmed (code) (Grab_ConnectEnd 0x0026bad8 deals the clip's damage
+    // before the reach test, and scores the move with Grab_ScoreMove 0x00264fa0 only after the snap)
+    const Grapple inReach = strongGrappleRun(false);
+    REQUIRE(inReach.played);
+    CHECK(inReach.heldAfter);
+    CHECK(inReach.damage == 60);
+    CHECK(inReach.rage > 0);
+    const Grapple away = strongGrappleRun(true);
+    REQUIRE(away.played);
+    CHECK_FALSE(away.heldAfter);
+    CHECK(away.damage == 60);
+    CHECK(away.rage == 0);
+}
+
 TEST_CASE("the power strike ends the grab with the victim down, unless square in its window extends it to 59",
           "[human][combat]") {
     // Expected: combat-grabs.md#grabbing, confirmed (runtime)
