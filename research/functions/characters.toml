@@ -1548,7 +1548,12 @@ name = "Players_ChangeGang"
 page = "characters.md#players"
 level = "confirmed-code"
 coney = "src/ai/scripted_brains.h:ScriptedBrains::changePlayerGang"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "Coney has one player: instead of releasing the old gang's players and making the chosen member player 1 (with the released pad and a camera target), the player human takes the chosen one's place (PlayLevelSimulation::takePlace)"
+relation = "stand-in"
+issue = 548
 
 [[function]]
 address = 0x00239e30
