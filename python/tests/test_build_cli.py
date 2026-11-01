@@ -1215,6 +1215,19 @@ def test_the_build_for_a_check_runs_the_whole_suite_and_returns_its_record(
     assert TIED  # the run is tied to its caller like any other
 
 
+def test_the_build_for_a_narrowed_check_runs_only_the_labelled_tests_and_records_the_filter(
+    checkout: Path, tmp_path: Path, fake_toolchain: type[FakeToolchain]
+) -> None:
+    git_checkout(checkout)
+    fake_toolchain.outputs["test"] = (0, PASSING_TESTS)
+    result = build_cli.build_and_test(checkout, "alice", "ci", task="757-fix-widget", label="^#(brain_test)$")
+    assert result.exit_code == 0 and result.record is not None
+    record = build_record.read(result.record.parent, result.record.stem)
+    assert record["filters"] == ["-L", "^#(brain_test)$"]
+    [ctest] = [c for c in fake_toolchain.commands if c[0] == "ctest" and "-N" not in c]
+    assert ctest[-2:] == ["-L", "^#(brain_test)$"]
+
+
 def test_the_build_for_a_check_refuses_an_unknown_preset_with_a_config_error(
     checkout: Path, fake_toolchain: type[FakeToolchain]
 ) -> None:

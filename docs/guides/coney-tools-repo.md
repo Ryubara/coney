@@ -419,22 +419,25 @@ cannot be read ends the run with exit 2.
 | --- | --- | --- |
 | `docs` | only documentation paths | `docs-check` (`coney-tools docs check --base`), `mkdocs` (`mkdocs build --strict`), `pre-commit` (all files), `pytest` ([the tests that read the docs](#task-check-pytest)), `actionlint` |
 | `tooling` | documentation and tooling paths (`python/`, `.claude/`, `.github/ISSUE_TEMPLATE/`, `python.yml`, ...; `paths.tools_only`) | the above and `ruff` (check and format), `mypy` (strict); `pytest` is the whole suite |
-| `full` | anything else, including a path in no class (`.github/scripts/`) | the above and `msvc-ci-build` and `ctest-full-disc` |
+| `full` | anything else, including a path in no class (`.github/scripts/`) | the above and `msvc-ci-build` and `ctest-full-disc` ([the C++ tests the change reaches](#task-check-ctest), with the disc) |
 
 `actionlint` runs only when a changed path is under `.github/workflows/` or `.github/actions/` (`proof.only_when`).
-The build checks run `coney-tools build --preset ci --test --full` once, with the whole suite and the disc, and read
-the build record it leaves ([The build record](stamps.md#build-record)): one answers whether it built (MSVC with /WX),
-the other whether the suite ran whole with no disc test skipped. The ruff and mypy commands are the ones of `ci run`;
-there is no clang-tidy here: clang-tidy is CI's alone, on the changed lines of every pull request and on the whole
-codebase nightly ([building](clang-tidy.md)).
+The build checks run `coney-tools build --preset ci --test` once, with the disc, on [the C++ tests the change
+reaches](#task-check-ctest) (`-L`) or the whole suite (`--full`), and read the build record it leaves ([The build
+record](stamps.md#build-record)): one answers whether it built (MSVC with /WX), the other whether those tests ran with
+none failed and no disc test skipped. **The local gate is the tests a change needs; the full-suite gate is CI** (every
+test but the disc tests, on every pull request) **and the after-merge disc run** ([`ci
+disc-suite`](coney-tools-ci.md#disc-suite)), which runs the whole suite with the disc on `main`. The ruff and mypy
+commands are the ones of `ci run`; there is no clang-tidy here: clang-tidy is CI's alone, on the changed lines of every
+pull request and on the whole codebase nightly ([building](clang-tidy.md)).
 
 * A fault of the machine is not a verdict about the change: a program that is missing, no disc for a `full` run
   (including a `CONEY_DISC` that names nothing), a worktree that changed during the run, a build that got no slot.
   These write no stamp.
 * A `fail` stamp names the checks that failed in `detail.failed`; fix, commit and run again.
 * The stamp covers `diff_sha256`, `checks_sha256` (the checks that ran) and, for `full`, `build_record_sha256` (also
-  when the build failed, if it left a record). Its `detail` holds the profile, the checks, the test counts, the preset
-  and the minutes.
+  when the build failed, if it left a record). Its `detail` holds the profile, the checks, the test counts, the preset,
+  the minutes and, for `full`, which C++ tests ran (`detail.ctest_scope`, [below](#task-check-ctest)).
 * A passing `pytest` check says which tests ran and how many passed in the run's output (`pytest python/tests, the
   whole suite: 9612 passed`); the stamp keeps the counts as `detail.pytest` (passed, skipped, deselected) and the scope
   as `detail.pytest_scope` ([below](#task-check-pytest)), and the facts of `pr text` report them beside the checks
@@ -445,9 +448,9 @@ codebase nightly ([building](clang-tidy.md)).
 * **It is live.** Each check prints `[14:03:09] start <check>` when it begins and `[14:41:20] ok   <check>: ...` when it
   ends; the build is one stage (`start msvc-ci-build and ctest-full-disc`) that prints its own waiting and `still
   running` lines. A long check streams its output to `check-logs/<program>.log` in the task's scratch folder and says it
-  is still running every minute. The whole pytest suite, and the engine's full ctest run inside the build, wait for a
+  is still running every minute. The whole pytest suite, and the engine's whole ctest run inside the build, wait for a
   **check slot** first ([Check slots](coney-tools-build.md#check-slots)), so a run of either needs `--agent` too; a
-  scoped pytest run takes none.
+  scoped pytest run and a narrowed ctest run take none.
 * **It writes where it is.** While it runs, a progress file in the task's scratch folder says which check of the list
   is going on, how long, how far and, while it waits, its place in the queue ([The progress file](#check-progress)), so
   nobody has to read the logs to see how far a run is.
@@ -533,6 +536,40 @@ see, and a test that has one of these is marked by hand:
   `research` or `src` would be the checkout's own folder; Windows removes by full path and never showed it.
 
 `CONEY_TEST_READS_LOG=<folder>` writes what each test read, one JSON line per test, to review the markers.
+
+#### Which C++ tests run {#task-check-ctest}
+
+The `ctest-full-disc` check runs, with the disc, only the C++ tests a change can reach, by the rule `proof.ctest` in
+[.github/conventions.yml](repo:.github/conventions.yml), read from the base like the profiles
+(`python/src/coney_tools/ctest_scope.py`). A test can only call code its file reaches: the headers it `#include`s, what
+those include, and the sources that implement each header, with their own includes in turn. A header is implemented by
+the source of its name in its folder (`brain.h`, `brain.cpp`) and by each source of that folder with no header of its
+own that includes it (`human.h`, `human_hiding.cpp`). Each changed C++ file (`ci.tidy`: under `src/` or `tests/`,
+`.cpp`, `.h` or `.hpp`) selects the test files (`*_test.cpp`) whose reach holds it; a changed test file selects itself.
+The files are read at the change's tip through git, so `task check` and `pr verify` compute the same scope.
+
+* **Only those test files** otherwise: the build runs `ctest -L '^#(brain_test|human_test)$'`. Each test file is one
+  ctest label because tests/CMakeLists.txt lists the tests with Catch2's `--filenames-as-tags` (`TEST_SPEC`), which
+  tags each case `#<file name>`. The disc tests among them run with the disc; the run takes no check slot.
+* **The whole suite**, holding a check slot, when a changed path is under `proof.ctest.whole_when` (the Lua 4.0
+  fixtures the decompiler's C++ tests read), or is of a class other than `docs_only` and `tools_only` that is no C++
+  file (CMake files, `cmake/`, `CMakePresets.json`, assets, a disc test's input script, an unknown path), or was
+  deleted or moved; when no test file reaches the change; and when more than `proof.ctest.max_files` (100) do.
+
+The game's core is one large cycle of such links, so most changes to gameplay code reach several hundred test files and
+run the whole suite: the narrowed run is for test files, leaf code (the launcher, the installer's helpers, a small
+module) and changes no test reaches but a few. The output says which (`ctest: the tests of 2 test files the change
+reaches, with the disc`, or `ctest: the whole suite with the disc (cmake/deps.cmake is not a C++ file the tests can be
+traced from)`) and the stamp records it as `detail.ctest_scope`: `whole`, or the list of test files. `pr verify`
+recomputes the scope at the tip and refuses a Check whose recorded files do not hold it, or whose build record ran
+other tests; a stamp from before the scope was recorded counts as the whole suite.
+
+What the include graph cannot see, a narrowed run can miss: code reached only through a name (a Lua binding called
+from a disc script, a registry filled at start-up by a file nobody includes), a function defined in a source of
+another folder, and the tests outside Catch2 (the shader refusal, the error dialog and frame copy checks, which have no
+file label). CI runs every test but the disc tests on each pull request, so a missed test without the disc is caught
+before the merge, and [`ci disc-suite`](coney-tools-ci.md#disc-suite) runs the whole suite with the disc on `main`
+after merges, so a missed disc test is caught there and opens a `P-high` issue.
 
 <!-- command-reference:begin task -->
 ## Parameters of `task` {#task-parameters}
@@ -634,8 +671,8 @@ coney-tools task index [--no-gh]
 
 ### `task check` {#task-check-usage}
 
-Run every check the change needs (MSVC ci build and the full suite with the disc for engine changes) and stamp the
-result, bound to the change.
+Run every check the change needs (for engine changes the MSVC ci build and the C++ tests the change reaches, with the
+disc) and stamp the result, bound to the change.
 
 ```text
 coney-tools task check [TASK] [--worktree WORKTREE] [--base BASE] [--agent AGENT] [--profile PROFILE] [--keep-going]

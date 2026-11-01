@@ -85,12 +85,12 @@ flowchart TB
 | 4 | Study | Engineer (and its helpers) | `coney-tools orig study <addr>`; PCSX2 for what a player sees | Per function: the decompile, callers, callees and data reads saved and hashed, the lines numbered and cut into pieces; the expected values found (code or runtime); research claims written and graded | `studied` per address | [Study](stamps.md#study), [The engineer's steps](#engineer-steps) |
 | 5 | Port | Engineer | `coney-tools build --agent <id> --preset dev --test -R ...`; `coney-tools orig fails-first` | The test is written first from the study's result, cites its expected values and fails; the port makes it pass; the copy check is clean | `fails-first` per test | [Fails first](stamps.md#fails-first), [Testing](testing.md) |
 | 6 | Compare | Engineer | `coney-tools orig compare <addr>` | Every numbered line of each ported function is in a pair (`same`, `stand-in` with a reason, `not-ported` with an issue) | `compared` per function | [Pairs](stamps.md#pairs), [Compare](stamps.md#compare) |
-| 7 | Check | Engineer | Commit, then `coney-tools task check` | The whole gate for the change's kind on the committed tip: for engine changes the MSVC `ci` build and the full suite with the disc | `checked` | [task check](coney-tools-repo.md#task-check), [The local gate](testing.md#local-gate) |
+| 7 | Check | Engineer | Commit, then `coney-tools task check` | The whole gate for the change's kind on the committed tip: for engine changes the MSVC `ci` build and the C++ tests the change reaches, with the disc (the whole suite when it cannot be traced) | `checked` | [task check](coney-tools-repo.md#task-check), [The local gate](testing.md#local-gate) |
 | 8 | Review | Reviewer | `coney-tools task review <task>`, then `--record` | The tool part passes; every checklist, `@orig` function, research page and picture is judged, the description included | `reviewed` | [Task review](review/task.md) |
 | 9 | Open the pull request | Coordinator | `coney-tools pr open <task>` | The stamps hold for this change; the generated text passes CI's checks; pushed, opened, auto-merge on | `pr-opened` | [pr open](pr.md#open), [Opening the pull request](#release-queue) |
 | 10 | CI | GitHub | (automatic) | Every required check passes | none | [What CI runs](building.md#what-ci-runs) |
 | 11 | Squash merge | GitHub, or a maintainer for `merge.manual_paths` when `pull_requests.auto_merge_manual_paths` is off | (auto-merge) | One commit on `main` with the pull request's title | none | [Merging safely](#merging) |
-| 12 | After merge | Coordinator | `/repo-hygiene`, `coney-tools workspace clean --apply` | The issues it lists under Issues affected edited, its issues closed, the merged worktree and old build folders removed | none | [After a merge](issues.md#after-a-merge) |
+| 12 | After merge | Coordinator | `/repo-hygiene`, `coney-tools workspace clean --apply`, `coney-tools ci disc-suite --apply` | The issues it lists under Issues affected edited, its issues closed, the merged worktree and old build folders removed; after engine merges the whole suite with the disc run on `main` (a failure files a `P-high` issue) | none | [After a merge](issues.md#after-a-merge), [ci disc-suite](coney-tools-ci.md#disc-suite) |
 
 - **Study, Port and Compare repeat per function**; Check, Review and Open once per tip. Review may run while Check
   runs, on the same tip; the task moves on when both pass. A commit after either makes it stale.
@@ -530,6 +530,10 @@ requests and tidies after merges. It works under these rules:
   affected section; once it merges the coordinator edits each of them, and `pr.affected-unedited` reports the ones left
   ([After a merge](issues.md#after-a-merge)). The `/repo-hygiene` skill runs the audit and fixes each finding by its
   class ([Merging safely](#merging)).
+- **The local gate runs the tests a change needs; CI and the after-merge disc run are the full-suite gate.** `task
+  check` runs the Python and C++ tests the change can reach ([Which C++ tests run](coney-tools-repo.md#task-check-ctest)),
+  CI runs every test but the disc tests on each pull request, and after engine merges the coordinator runs the whole
+  C++ suite with the disc on `main` ([ci disc-suite](coney-tools-ci.md#disc-suite)); its failure is a `P-high` issue.
 - **Merge on the automated gate, not on play-tests.** A pull request merges by squash once every required check
   passes; the coordinator runs no full suite of its own first, because the engineer's `task check` already ran it on
   the branch. Since the maintainer's grant of 2026-11-01 that holds for a change to the convention files, `AGENTS.md`

@@ -30,6 +30,7 @@ from typing import Any
 
 from coney_tools import (
     build_record,
+    ctest_scope,
     fails_first,
     identity,
     orig_copy,
@@ -570,13 +571,25 @@ def _checked_unsettled(stamp: stamps.Stamp | None) -> Refusal | None:
 
 
 def _build_record(subject: Subject, stamp: stamps.Stamp) -> list[Refusal]:
-    """The `full` Check's build record: it exists and hashes to what the stamp covers, `build_record.problems` (the
-    rule `task check` applies) finds nothing wrong with it at the commit the stamp names, and its test counts are the
-    stamp's."""
+    """The `full` Check's build record: the C++ tests the stamp says ran (`detail.ctest_scope`; none recorded is the
+    whole suite) hold every test the change needs (ctest_scope.py, from its C++ files at the tip), the record exists
+    and hashes to what the stamp covers, `build_record.problems` (the rule `task check` applies) finds nothing wrong
+    with it at the commit the stamp names for that scope, and its test counts are the stamp's."""
     wanted = str(stamp.covers.get("build_record_sha256", ""))
 
     def refuse(text: str) -> list[Refusal]:
         return [Refusal("checked", f"checked: {text}", "task check")]
+
+    try:
+        ran = ctest_scope.scope_from_record(stamp.detail.get("ctest_scope"))
+    except ConventionsError as error:
+        return refuse(str(error))
+    if not ran.whole:
+        tidy = subject.conventions.ci.tidy
+        tree = ctest_scope.tree_at(subject.root, subject.tip, tidy.folders, (*tidy.sources, *tidy.headers))
+        needed = ctest_scope.ctest_scope(subject.conventions, subject.paths, tree)
+        if not ctest_scope.covers(ran, needed):
+            return refuse(f"Check ran {ran.text}; this change needs {needed.text}")
 
     try:
         record = build_record.read(subject.unit.dir / build_record.FOLDER, wanted)
@@ -584,7 +597,7 @@ def _build_record(subject: Subject, stamp: stamps.Stamp) -> list[Refusal]:
         return refuse(f"the build record {_hex(wanted, 12)} cannot be read: {error}")
     preset = subject.conventions.proof.build.preset
     found: list[Refusal] = []
-    for problem in build_record.problems(record, tip=stamp.commit, preset=preset):
+    for problem in build_record.problems(record, tip=stamp.commit, preset=preset, label=ran.label):
         found += refuse(problem)
     counts = record.get("tests")
     tests: dict[str, Any] = counts if isinstance(counts, dict) else {}

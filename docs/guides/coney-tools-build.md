@@ -390,12 +390,13 @@ at most `check_slots` of them run at once, across all worktrees:
 | --- | --- |
 | `task check` | the `pytest` check when it runs the whole suite, for the run of pytest; a scoped run, only the tests that read the changed docs or engine files, holds none ([Which Python tests run](coney-tools-repo.md#task-check-pytest)) |
 | `ci run`, `ci pr` | the `python` step's pytest, for the run of pytest |
-| `build --test` with no filter (so also `task check`'s build) | the test phase when it has **no `-R` or `-L` filter**: the whole ctest run; an agent may start it only with `--full` ([When the whole suite runs](#build)). The wait for the check slot comes before the wait for a build slot, so a run in the check queue holds no build slot |
+| `build --test` with no filter (so also `task check`'s build when it runs the whole suite, and `ci disc-suite`) | the test phase when it has **no `-R` or `-L` filter**: the whole ctest run (a `task check` that runs only the test files a change reaches passes `-L` and holds none: [Which C++ tests run](coney-tools-repo.md#task-check-ctest)); an agent may start it only with `--full` ([When the whole suite runs](#build)). The wait for the check slot comes before the wait for a build slot, so a run in the check queue holds no build slot |
 
 A **targeted** run takes none: `build --test -R ...` (so `orig fails-first`, which names its tests), or `pytest` on a
-few test files typed by hand. Run those freely; run the full suite once, in `task check`. A run that has to wait says
-so, and again every minute: `waiting for a check slot (pytest): place 2 of 3, about 40 min; held by alice (dev, 12
-min), bob (ctest, 3 min); 2 full suites may run at once (check_slots in coney.local.toml)`. It gives up after
+few test files typed by hand. Run those freely; leave the full suite to `task check`, CI and `ci disc-suite`. A run that
+has to wait says so, and again every minute: `waiting for a check slot (pytest): place 2 of 3, about 40 min; held by
+alice (dev, 12 min), bob (ctest, 3 min); 2 full suites may run at once (check_slots in coney.local.toml)`. It gives up
+after
 `--max-wait` minutes with exit 75 (nothing is written: run it again), like a build waiting for a slot. A holder that
 crashed leaves a stale claim: the next suite takes it over, says so and stops what the dead run left running. `build
 status` lists the check lane with the others; `build unclaim --lane check --agent ID` frees an agent's check slots by

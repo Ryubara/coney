@@ -141,13 +141,12 @@ another one. The accepted cost is that a clean rebase can combine with upstream 
 
 ## The build record {#build-record}
 
-`task check` and `pr verify` must know that the engine built and the whole suite ran with the
-disc, without parsing printed text. Every run of `coney-tools build` that configured, built or tested therefore ends
-by writing one record to `<scratch>/<task>/build-runs/<sha256>.json` (the task is `CONEY_TASK`, else the branch; no
+`task check` and `pr verify` must know that the engine built and the C++ tests the change needs (or the whole suite) ran
+with the disc, without parsing printed text. Every run of `coney-tools build` that configured, built or tested therefore
+ends by writing one record to `<scratch>/<task>/build-runs/<sha256>.json` (the task is `CONEY_TASK`, else the branch; no
 record outside a git checkout). The file is canonical JSON, like a stamp's line, and is named by the SHA-256 of its
-bytes, so the `checked`
-stamp covers it by `build_record_sha256` and an edited record no longer reads. The code is `coney_tools/build_record.py`
-(`make`, `write`, `read`, `problems`).
+bytes, so the `checked` stamp covers it by `build_record_sha256` and an edited record no longer reads. The code is
+`coney_tools/build_record.py` (`make`, `write`, `read`, `problems`).
 
 | Field | Meaning |
 | --- | --- |
@@ -162,8 +161,10 @@ stamp covers it by `build_record_sha256` and an edited record no longer reads. T
 | `log`, `log_sha256` | The run's log in scratch and its hash |
 | `started`, `ended` | Times, UTC |
 
-`problems(record, tip=, preset=)` returns every reason a record is not one whole, clean, full-suite run of the preset
-on the tip with the disc: another preset or version, filters, a non-zero exit, another commit, uncommitted changes, no
+`problems(record, tip=, preset=, label=)` returns every reason a record is not one clean run of the preset on the tip
+with the disc, of the whole suite or, with a `label`, of the whole suite or exactly `-L <label>` (the test files a
+change reaches, [Which C++ tests run](coney-tools-repo.md#task-check-ctest)): another preset or version, any other
+filters, a non-zero exit, another commit, uncommitted changes, no
 test run, no tests, failed tests, skipped disc tests, a log that no longer matches its hash. A skipped test counts as
 a disc test when `ctest -N -L disc` lists it; if that listing fails the run fails (every skip would otherwise pass as a
 non-disc skip). `task check` refuses to count a record that has one. The record holds no game data and no test output,
@@ -518,7 +519,7 @@ What the three steps bound to the change record (all unsigned, in the local log)
 
 | Step | `covers` | `detail` (at most 2 KB) |
 | --- | --- | --- |
-| `checked` | `diff_sha256`; `build_record_sha256` (profile `full` only); `checks_sha256`, the SHA-256 of the canonical JSON of the sorted list `detail.checks` | `profile` (`docs`, `tooling` or `full`: the checks of `proof.profiles` in [.github/conventions.yml](repo:.github/conventions.yml), written by `task check`), `rules` (`base`: the profiles and path classes were read from the base's file; `branch`: the base has no `proof` section yet), `checks` (the names that ran, in order), `failed` (the names that failed, on a `fail`), `tests` {total, passed, failed, skipped, skipped_disc} (the build's, which `pr verify` matches against its record), `pytest` {passed, skipped, deselected, and any other kind pytest printed} (its last line, by kind), `pytest_scope` (`whole`, or the list of the `proof.pytest.scoped` classes whose tests ran, such as `["docs_only"]`; a stamp without it ran the whole suite, and `pr verify` refuses one that does not hold the classes of the change's paths: [pytest scope](coney-tools-repo.md#task-check-pytest)), `preset`, `minutes` |
+| `checked` | `diff_sha256`; `build_record_sha256` (profile `full` only); `checks_sha256`, the SHA-256 of the canonical JSON of the sorted list `detail.checks` | `profile` (`docs`, `tooling` or `full`: the checks of `proof.profiles` in [.github/conventions.yml](repo:.github/conventions.yml), written by `task check`), `rules` (`base`: the profiles and path classes were read from the base's file; `branch`: the base has no `proof` section yet), `checks` (the names that ran, in order), `failed` (the names that failed, on a `fail`), `tests` {total, passed, failed, skipped, skipped_disc} (the build's, which `pr verify` matches against its record), `pytest` {passed, skipped, deselected, and any other kind pytest printed} (its last line, by kind), `pytest_scope` (`whole`, or the list of the `proof.pytest.scoped` classes whose tests ran, such as `["docs_only"]`; a stamp without it ran the whole suite, and `pr verify` refuses one that does not hold the classes of the change's paths: [pytest scope](coney-tools-repo.md#task-check-pytest)), `ctest_scope` (`whole`, or the list of the test files whose C++ tests ran, such as `["tests/ai/brain_test.cpp"]`; a stamp without it ran the whole suite, and `pr verify` refuses one that does not hold the test files the change reaches or whose build record ran other tests: [C++ scope](coney-tools-repo.md#task-check-ctest)), `preset`, `minutes` |
 | `reviewed` | `diff_sha256`, `pairs_set_sha256`, `title_sha256`, `paragraph_sha256`, `images_sha256`, `review_sha256` (the recorded verdict, kept as `<scratch>/<task>/reviewed.json`) | `verdict`, `scope`, `kinds`, `functions` (address to a one-letter class; `function_count` when the list would not fit), `pages`, `reviewer` {id, type, model}, `blockers`, `notes`, `not_reviewed`; a text review adds `full_seq` ([Task review](review/task.md#stamp)) |
 | `pr-opened` | `tip`, `base`, `diff_sha256`, `title_sha256`, `paragraph_sha256`, `facts_sha256`, `images_sha256`, `chain_head` | `engineer`, `opener`, `kind`, `issues`, `profile`, `rebased_from`, `fix` |
 

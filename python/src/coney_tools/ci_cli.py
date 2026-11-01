@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """`coney-tools ci`: the commands the CI workflows run (docs/guides/coney-tools-ci.md).
 
-Each command is a thin wrapper: the logic is in the module it names (`ci_dependencies`, `ci_tidy`, `ci_failure`), so a
-workflow holds no logic of its own and a person can run the same command by hand.
+Each command is a thin wrapper: the logic is in the module it names (`ci_dependencies`, `ci_tidy`, `ci_failure`,
+`disc_suite`), so a workflow holds no logic of its own and a person can run the same command by hand. `disc-suite` is
+the one no workflow runs: CI has no disc, so the coordinator runs it on this machine after merges.
 """
 
 from __future__ import annotations
@@ -13,9 +14,9 @@ import os
 import sys
 from pathlib import Path
 
-from coney_tools import ci_dependencies, ci_failure, ci_tidy
+from coney_tools import build_cli, ci_dependencies, ci_failure, ci_tidy, disc_suite, task_check
 from coney_tools.audit_github import Runner, run_gh
-from coney_tools.config import ConfigError, find_repo_root
+from coney_tools.config import ConfigError, find_repo_root, main_checkout
 from coney_tools.conventions import load_conventions
 
 
@@ -68,6 +69,27 @@ def add_ci_parser(
     )
     failure.add_argument("--run", type=int, required=True, metavar="ID", help="the workflow run's id")
     failure.add_argument("--apply", action="store_true", help="really create the issue or comment (default: print it)")
+    suite = commands.add_parser(
+        "disc-suite",
+        help="run the whole C++ suite with the disc on the default branch; a failure opens a P-high issue",
+        description=(
+            "Fetches the default branch, moves the suite's own worktree (ci.disc_suite.worktree) to it, detached, and "
+            "runs coney-tools build --preset <proof.build.preset> --test --full there with the disc, holding a check "
+            "slot. CI has no disc and task check runs only the C++ tests a change reaches, so the coordinator runs "
+            "this after merges. A failure opens an issue labelled ci.disc_suite.labels, or comments on the one still "
+            "open; without --apply it prints what it would write. Exit code 0 passed, 1 failed, 2 cannot run, 75 the "
+            "build gave up waiting for a slot."
+        ),
+    )
+    suite.add_argument("--agent", help="your id for the build slots (default: a person's user name)")
+    suite.add_argument("--apply", action="store_true", help="really create the issue or comment (default: print it)")
+    suite.add_argument(
+        "--max-wait",
+        type=float,
+        default=build_cli.DETACHED_MAX_WAIT,
+        metavar="MIN",
+        help="minutes the build may wait for a slot before giving up with exit 75 (default %(default)s)",
+    )
     plan = commands.add_parser(
         "tidy-plan",
         help="choose the files and lines clang-tidy checks for a pull request's diff",
@@ -222,6 +244,24 @@ def _report_failure(args: argparse.Namespace, run: Runner, git: ci_failure.GitRu
     return 0
 
 
+def _disc_suite(args: argparse.Namespace, run: Runner) -> int:
+    """`ci disc-suite`: the whole suite with the disc on the default branch, reporting a failure."""
+    root = find_repo_root(Path.cwd())
+    agent = args.agent or build_cli.default_agent_id()
+    if not agent:
+        raise ConfigError("pass --agent <your id> (the build slots need one; docs/guides/coney-tools-build.md)")
+    env = disc_suite.SuiteEnv(
+        git=disc_suite.run_git,
+        build=lambda root, who, preset, task: build_cli.build_and_test(
+            root, who, preset, task=task, max_wait=args.max_wait
+        ),
+        disc=task_check.no_disc_reason,
+        gh=run,
+        say=lambda line: print(line, flush=True),
+    )
+    return disc_suite.run_suite(main_checkout(root), load_conventions(root), agent, env, args.apply)
+
+
 def run_ci(
     args: argparse.Namespace,
     run: Runner = run_gh,
@@ -242,6 +282,8 @@ def run_ci(
             return _tidy_run(args, tidy_runner)
         if args.command == "report-failure":
             return _report_failure(args, run, git_runner)
+        if args.command == "disc-suite":
+            return _disc_suite(args, run)
         return _rerun_dependencies(args, run)
     except OSError as error:
         print(f"coney-tools: {error}", file=sys.stderr)

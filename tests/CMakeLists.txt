@@ -583,7 +583,10 @@ include(Catch)
 # The disc check skips (Catch2's exit code 4) unless CONEY_DISC names the player's disc; ctest reports it as skipped.
 # A Catch2 tag is also a ctest label: a test case tagged [disc] is the label `disc`, so `ctest -L disc` runs (or lists)
 # the tests that need the disc and `-LE disc` leaves them out. Every test that opens the disc carries the tag.
-catch_discover_tests(coney_tests ADD_TAGS_AS_LABELS)
+# `--filenames-as-tags` (passed to the listing only, through TEST_SPEC) also tags each case `#<its file's name>`, so
+# each test file is a label: `task check` runs `ctest -L '^#(a_test|b_test)$'` for the files a change reaches
+# (python/src/coney_tools/ctest_scope.py, docs/guides/coney-tools-repo.md#task-check).
+catch_discover_tests(coney_tests TEST_SPEC --filenames-as-tags ADD_TAGS_AS_LABELS)
 
 # The HLSL shaders the build compiles and embeds (docs/guides/shaders.md): that each one has its SPIR-V, DXIL and MSL, and
 # that the compiler refuses a shader that does not compile instead of leaving an empty file behind. A small executable of
@@ -593,7 +596,7 @@ if(CONEY_SHADERS)
     coney_target_defaults(coney_shader_tests)
     target_include_directories(coney_shader_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
     target_link_libraries(coney_shader_tests PRIVATE coney_shaders Catch2::Catch2WithMain)
-    catch_discover_tests(coney_shader_tests ADD_TAGS_AS_LABELS)
+    catch_discover_tests(coney_shader_tests TEST_SPEC --filenames-as-tags ADD_TAGS_AS_LABELS)
     foreach(_format SPIRV DXIL MSL)
         add_test(NAME coney.shaders.refuse_a_broken_shader_${_format}
                  COMMAND ${CMAKE_COMMAND} -DTOOL=${CONEY_SHADERCROSS} -DFORMAT=${_format}

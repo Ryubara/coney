@@ -506,11 +506,13 @@ finds a difference fixes it forward.
 
 The whole gate, which `task check` runs:
 
-- **Engine changes:** the `ci` preset build and its tests with the disc configured, in one command:
-  `uv run --project python coney-tools build --agent <id> --preset ci --test --full` (it waits for a free
-  [build slot](coney-tools-build.md#build), loads the MSVC environment itself and passes the configured disc to the tests;
-  agents never run `cmake --build` or `ctest` directly). Read its `disc tests:` line: `SKIPPED` means no disc test
-  ran, and the run is made again with a disc.
+- **Engine changes:** the `ci` preset build and the C++ tests the change needs, with the disc configured, in one
+  command: `coney-tools build --agent <id> --preset ci --test -L <the change's test files>`, or `--full` for the whole
+  suite when the change cannot be traced to a few test files (a CMake file, a widely included header, an unknown
+  path; [Which C++ tests run](coney-tools-repo.md#task-check-ctest)). It waits for a free
+  [build slot](coney-tools-build.md#build), loads the MSVC environment itself and passes the configured disc to the
+  tests; agents never run `cmake --build` or `ctest` directly. Read its `disc tests:` line: `SKIPPED` means no disc
+  test ran, and the run is made again with a disc.
 - **Python:** `ruff check` and `ruff format --check` on `python/` and `.claude/hooks/`, `mypy` and `pytest` on
   `python/`. pytest runs the whole suite or only the tests a change can break, by a rule in
   [.github/conventions.yml](repo:.github/conventions.yml); the output and the stamp say which ([Which Python tests
@@ -527,6 +529,12 @@ The whole gate, which `task check` runs:
 
 Commands and presets: [Building and testing](building.md).
 
+**The local gate is the tests a change needs; the full-suite gate is CI and the after-merge disc run.** `task check`
+runs only the Python and C++ tests the change can reach. CI runs every test on every pull request, except the disc
+tests (CI has no game data), and the coordinator runs the whole C++ suite with the disc on `main` after each round of
+merges ([`ci disc-suite`](coney-tools-ci.md#disc-suite)), whose failure files a `P-high` issue as a red CI run on `main`
+does. A test a narrowed check skips is still run before the merge (without the disc) or right after it (with it).
+
 The whole gate runs once per tip, in `task check`, before Review. While working,
 check with the `dev` preset and only the tests the change touches
 (`coney-tools build --agent <id> --preset dev --test -R <pattern>`, or `-L disc` when the disc tests are the ones
@@ -535,8 +543,9 @@ minutes, so running it for every step makes everyone else wait. The tool keeps t
 with no `-R` or `-L` is refused unless it carries `--full` ([When the whole suite runs](coney-tools-build.md#build)).
 
 **A full suite takes a check slot.** The whole pytest run and the whole ctest run each take 30 to 40 minutes on a
-machine to themselves, so `task check` (its whole pytest suite), `ci run` (its pytest) and `build --test` with no `-R`
-or `-L` hold a **check slot** while they run: `check_slots` in `coney.local.toml` of them at once across all worktrees
+machine to themselves, so `task check` (its whole pytest suite), `ci run` (its pytest), `ci disc-suite` and
+`build --test` with no `-R` or `-L` hold a **check slot** while they run (a narrowed `task check` ctest run of at most
+`proof.ctest.max_files` test files holds none): `check_slots` in `coney.local.toml` of them at once across all worktrees
 (default one per four cores), the others wait in a queue that says its place every minute
 ([Check slots](coney-tools-build.md#check-slots)). A few test files typed by hand (`pytest python/tests/test_x.py`,
 `build --test -R <pattern>`) need no slot: run those while working, and the full suite once, in `task check`. The

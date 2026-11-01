@@ -592,7 +592,7 @@ job no workflow has, or a required check is in none.
 <!-- conventions:begin check-places -->
 | Check | Where | CI jobs |
 | --- | --- | --- |
-| Full suite with the disc | local | none |
+| C++ tests with the disc: those a change reaches (task check), the whole suite after merges (ci disc-suite) | local | none |
 | MSVC `ci` build (/WX, C4062) | local | none |
 | Study, pairs, copy check, fails-first | local | none |
 | Formatting | local; CI: every pull request, a push to main, a push to a release branch, nightly, a manual run (applied by a git pre-commit hook, verified by CI) | `build/format` |
