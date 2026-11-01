@@ -40,8 +40,8 @@ struct GsColour {
 };
 
 /// The light-block entry of `record`: its type, the colour it shines with now (`record.current`), its direction,
-/// position and radius.
-/// @orig 0x00476cc8 RwPS2_QueueLightForVU1 (unknown)
+/// position and radius, as RenderWare's PS2 light upload (`0x00476cc8`, middleware Coney replaces) queues them.
+/// @coney-only Coney's reading of RenderWare's light block (docs/research/lighting.md#vertex-reference)
 [[nodiscard]] Vu1Light vu1Light(const LightRecord& record);
 
 /// The light block of one atomic: `selection`'s records of `manager`, in the selection's order.

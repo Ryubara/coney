@@ -111,6 +111,20 @@ coney = "src/graphics/light_manager.h:LightManager::select"
 status = "legacy"
 
 [[function]]
+address = 0x0017e810
+name = "LightManager_UploadSelected"
+page = "lighting.md#vertex-reference"
+role = "hands the selected lights, in order, to RenderWare's PS2 light upload and sends the block to VU1"
+level = "confirmed-code"
+coney = "src/graphics/vertex_light.h:vu1Lights"
+status = "compared"
+
+[[function.gaps]]
+what = "the block is handed to Coney's CPU reference in world space, not packed with an identity matrix and sent to VU1 by DMA"
+relation = "stand-in"
+issue = 1192
+
+[[function]]
 address = 0x0017ea60
 name = "LightManager_BeginViewport"
 page = "lighting.md#original-structure"

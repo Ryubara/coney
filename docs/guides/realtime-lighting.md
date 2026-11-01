@@ -8,11 +8,11 @@ and does not repeat it. The [renderer design](../engine/renderer.md) owns the de
 backend, the presets, the one shadow source and the order of the work ([Lighting and
 shadows](../engine/renderer.md#lighting)); this page owns the lighting model, the lab, the tests and the sun.
 
-**Status: design only; nothing on this page is built.** Enhancements may be built now, as options beside the faithful
-look (AGENTS.md, "Faithful first", since 2026-10-25), and what the Xbox port does differently in its lighting and
-shadows ([Xbox lighting and shadows](../research/xbox-lighting.md)) is one of its sources. Every enhancement ships
-**off** and is forced off in test mode, so tests and reference screenshots show the *PS2* preset, the faithful image
-(the name the renderer design gives what this page called *Faithful*).
+**Status: design; of its build issues only the CPU vertex reference (item 5) is built.** Enhancements may be built now,
+as options beside the faithful look (AGENTS.md, "Faithful first", since 2026-10-25), and what the Xbox port does
+differently in its lighting and shadows ([Xbox lighting and shadows](../research/xbox-lighting.md)) is one of its
+sources. Every enhancement ships **off** and is forced off in test mode, so tests and reference screenshots show the
+*PS2* preset, the faithful image (the name the renderer design gives what this page called *Faithful*).
 
 ## What the original gives us
 
@@ -172,6 +172,8 @@ record](research-evidence.md#run-records); the CSV stays in scratch and the reco
 A **CPU reference** of the PS2's light model, `min(1, prelight + Σ light) × material` with the falloff and clamp of
 [World lighting](../research/lighting.md#world), gives the expected colour of any vertex in the GS's 0-128 scale. It
 is Coney's own code, the one the lab's *runtime share* view uses, and it is the yardstick for both renderers.
+Built: `repo:src/graphics/vertex_light.h`, with the reference scenes in `repo:tests/graphics/vertex_light_test.cpp`
+(the light block it reads and its stand-ins: [The vertex reference](../research/lighting.md#vertex-reference)).
 
 | Test | What it checks | Where | Tolerance |
 | --- | --- | --- | --- |

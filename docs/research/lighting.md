@@ -347,6 +347,46 @@ prelighting plus 0.227 grey, plus two lamps that light both (flags 3, radius 3 a
 lamps); nothing in the manager changes them over time except flicker and light B. Inferred (no timer-driven caller of
 the colour setters found).
 
+### The vertex reference {#vertex-reference}
+
+What the EE hands the VU1 lighting code for one atomic, and how Coney's CPU reference of [the maths](#world) reads it.
+The VU1 microcode itself is not read; the formula above is the one the GS dumps fit.
+
+**The light block.** Confirmed (code) at `0x0017e810`, `0x0017e930` and `0x00476cc8`:
+
+- `LightManager_UploadSelected` (`0x0017e810`) queues each selected light in the selection's order, with scale 1 and
+  no matrix, then closes the block and sends it to VU1. The character pipelines' atomic callback `0x0017e930` does the
+  same only for a geometry with the light flag (`0x20`), and passes the inverse of the atomic's matrix (`0x0047ccc8`,
+  RenderWare's inverse: a transpose for a matrix flagged orthonormal) and a scale: 1 for an orthonormal matrix, else
+  the length of the inverse's third row, with its reciprocal.
+- RenderWare's PS2 light upload (`0x00476cc8`, middleware) writes a header of four quadwords before the first light:
+  the matrix (identity when none is given), the scale in the `w` of its first three rows and the reciprocal in the
+  last. Then each light: a quadword of the RpLight's current colour (`+0x18`, brightness, offset and flicker applied)
+  with RenderWare's type in `w`; an ambient adds nothing; a directional light adds its frame's `at` vector, the way the
+  light travels (`w` 0); a point light its frame's position with the **radius as it is** in `w` (not its reciprocal);
+  a spot light (types `0x81`, `0x82`) the position and radius, then the `at` vector with the RpLight's cone value
+  (`+0x28`) in `w`. A light of another type writes its colour and does not advance the block, so it is dropped.
+- It queues nothing once the block holds 124 quadwords; an atomic's at most 8 lights take 4 + 8 × 3 = 28, so the
+  limit is never reached.
+
+Inferred from the scale and the inverse matrix: VU1 lights in the atomic's own space and the scale turns its distances
+back into the world's metres, so lighting in world space, as the reference does, gives the same result for a uniformly
+scaled atomic.
+
+**The scales.** Inferred from the measured colours of [World lighting](#world) and
+[In Coney](#coneys-implementation): a lit colour reaches the GS **truncated**, not rounded (the object ambient's 0.232
+shows as 29, not the 29.7 rounding would make 30; 0.3 × 64/255 shows as 9, not 10); a model colour (`HuColor`) is a
+factor of 0-255 (0x80 halves 128 to 64); a packed prelighting byte is on the GS's scale, 0x80 = 1.0 (the sky box's 30
+plus the world ambient's 29 reaches the GS as 59).
+
+**In Coney.** `repo:src/graphics/vertex_light.h` is the CPU reference: the light block of a selection (`vu1Lights`, from
+the manager's records), the light at a vertex, the colour `min(1, prelight + light) × material` and its GS value. It is
+the yardstick the [faithful comparison tests](../guides/realtime-lighting.md#test-vertex-colour) hold the renderers to:
+exact in floats against the formula, within 1 of 128 after the truncation. Its stand-ins, where the research is silent:
+a point light of radius 0 adds nothing ([Open questions](#open-questions), q-zero-radius), nor does a vertex at a lamp's
+centre, and a spot light lights as a point light inside a hard-edged cone and nothing outside it ([Open
+questions](#open-questions), q-spot-light).
+
 ### Coronas and flicker {#coronas}
 
 #### Coronas {#corona}
@@ -491,6 +531,9 @@ unlit vertices (0) reach the GS as 59, 64 and 29 of 128 (street dump), `level100
   `level99` checkpoint 2 has no light in mode 4 (0 of 96 records over 20 samples, run r-20261030-light-selection):
   mode 4 comes from the chunk `0x4B` glows ([`0x0017e490`](#code-index)). Find out: in PCSX2, a level whose chunk
   `0x4B` gives a light mode 4, its record and its RpLight colour read over a few frames.
+- **Spot lights**{#q-spot-light}: how VU1 lights a spot light (`0x81` and `0x82`, with the cone value
+  `+0x28`): its cone's edge and falloff. No light of `level99` is a spot light. Find out: in PCSX2, a GS dump of a
+  surface under a spot light a level script sets, against the same frame with the light off.
 - **A point light of radius 0**{#q-zero-radius}: what the VU1 light code does with a corona-only light the selection
   keeps (its falloff divides by the radius). Find out: in PCSX2, an object whose bounding sphere holds a corona-only
   light, its GS dump against the same frame with the light switched off.
