@@ -652,6 +652,85 @@ TEST_CASE("an AI that picks the tackled player up as the mount seats him strikes
     CHECK(health.maximum() - health.value() == 57);
 }
 
+namespace {
+
+// What an AI's pick-up of the tackled player left: the damage he took and whether the AI still holds him once the
+// pick-up (248) has ended.
+struct PickUp {
+    bool picked = false;
+    bool heldAfter = false;
+    int damage = 0;
+};
+
+// The AI tackles the player at update 2 and taps circle two updates into the mount; `during` runs after each update
+// in which the AI plays the pick-up (248). The run stops 10 updates after 248 ends, before any move in the hold.
+template <typename During> PickUp pickUpRun(const FightCharacter& character, During during) {
+    HumanFight fight(character, 2.0F);
+    fight.otherFightsPlayer = true;
+    std::optional<std::uint64_t> mountedAt;
+    fight.otherCommand = [&](std::uint64_t frame) {
+        if (frame == 2) {
+            return combat::command::kCircleHeld;
+        }
+        if (mountedAt.has_value() && frame == *mountedAt + 2) {
+            return combat::command::kCircleTapped;
+        }
+        return combat::command::kNone;
+    };
+    const auto pickUp = static_cast<std::uint32_t>(combat::anim_id::kMountPickup);
+    PickUp result;
+    std::optional<std::uint64_t> endedAt;
+    fight.run("", 200, [&](std::uint64_t frame) {
+        const std::uint32_t clip = fight.other().animator().animId();
+        if (!mountedAt.has_value() && clip == coney::human::clips::kMountingIdle) {
+            mountedAt = frame;
+        }
+        if (clip == pickUp) {
+            result.picked = true;
+            during(fight);
+        } else if (result.picked && !endedAt.has_value()) {
+            endedAt = frame;
+        }
+        if (endedAt.has_value() && frame == *endedAt + 10) {
+            result.heldAfter = fight.other().fighter().held() != nullptr;
+            const auto& health = fight.player().fighter().health();
+            result.damage = health.maximum() - health.value();
+        }
+    });
+    return result;
+}
+
+} // namespace
+
+TEST_CASE("an AI's pick-up from the mount deals the pick-up clip's damage as it hands over to the hold",
+          "[human][combat]") {
+    // Expected: combat-grabs.md#mount, confirmed (code) (Mount_ReturnToFrontGrab 0x00271808 hangs Grab_ConnectEnd
+    // 0x0026bad8 on 248's end: the clip's damage-table value while the grabber has power, then the hold)
+    FightCharacter character;
+    REQUIRE(character.ranges.setDamage(static_cast<std::size_t>(combat::anim_id::kMountPickup), 25));
+    const PickUp result = pickUpRun(character, [](HumanFight& /*fight*/) {});
+    REQUIRE(result.picked);
+    CHECK(result.heldAfter);
+    CHECK(result.damage == 25);
+}
+
+TEST_CASE("an AI's pick-up from the mount lets the player go when he is out of reach at its end", "[human][combat]") {
+    // Expected: combat-grabs.md#mount, confirmed (code) (Grab_ConnectEnd 0x0026bad8: the damage first, then the
+    // release past the larger of the hold's reach + 0.2 m and its reach x 1.2)
+    FightCharacter character;
+    REQUIRE(character.ranges.setDamage(static_cast<std::size_t>(combat::anim_id::kMountPickup), 25));
+    // The player is carried 3 m off while the pick-up plays: far past the front hold's 1.081 m reach.
+    const PickUp result = pickUpRun(character, [](HumanFight& fight) {
+        const Vec3 at = fight.other().position();
+        if (coney::human::Holdable* held = fight.player().holdable(); held != nullptr) {
+            held->place(Vec3{at.x + 3.0F, at.y, at.z}, fight.player().heading());
+        }
+    });
+    REQUIRE(result.picked);
+    CHECK_FALSE(result.heldAfter);
+    CHECK(result.damage == 25);
+}
+
 TEST_CASE("an AI attacker's double damage gets through the player's hit armour", "[human][combat]") {
     // Expected: combat/index.md#human-flags, confirmed (code)
     const FightCharacter character;
