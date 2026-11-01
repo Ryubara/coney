@@ -131,6 +131,8 @@ GsColour toGs(const LightColour& colour) {
 }
 
 LightColour prelightFromPacked(const std::array<std::uint8_t, 4>& rgba) {
+    // The colour bytes are on the GS's scale, 0x80 = 1.0 (lighting.md#vertex-reference, the sky box's 30 + 29 = 59);
+    // alpha is not lit or clamped, only passed on as an opacity, so it keeps the byte's own 0-255 range.
     constexpr float kOne = 128.0F;
     return LightColour{static_cast<float>(rgba[0]) / kOne, static_cast<float>(rgba[1]) / kOne,
                        static_cast<float>(rgba[2]) / kOne, static_cast<float>(rgba[3]) / 255.0F};

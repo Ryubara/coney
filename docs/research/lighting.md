@@ -365,8 +365,12 @@ The VU1 microcode itself is not read; the formula above is the one the GS dumps 
   with RenderWare's type in `w`; an ambient adds nothing; a directional light adds its frame's `at` vector, the way the
   light travels (`w` 0); a point light its frame's position with the **radius as it is** in `w` (not its reciprocal);
   a spot light (types `0x81`, `0x82`) the position and radius, then the `at` vector with the RpLight's cone value
-  (`+0x28`) in `w`. A light of another type writes its colour and does not advance the block, so it is dropped.
-  Confirmed (code).
+  (`+0x28`) in `w`. That value is a cosine, not an angle: RenderWare's RpLight keeps `−cos` of the cone's half angle
+  there (its radius at `+0x14` and colour at `+0x18`, both read by this upload, fit the same layout), and librw's
+  `setAngle` stores it the same way. Inferred (RenderWare's layout). The reference's spot stand-in takes the half
+  angle in radians, as Coney's light records and `setAngle` hold it, and compares against its cosine. A light of
+  another type writes its colour and does not advance the block, so it is dropped. Confirmed (code), but for
+  the cone value's meaning (inferred, above).
 - It queues nothing once the block holds 124 quadwords; an atomic's at most 8 lights take 4 + 8 × 3 = 28, so the
   limit is never reached.
 
@@ -377,8 +381,9 @@ scaled atomic.
 **The scales.** Inferred from the measured colours of [World lighting](#world) and
 [In Coney](#coneys-implementation): a lit colour reaches the GS **truncated**, not rounded (the object ambient's 0.232
 shows as 29, not the 29.7 rounding would make 30; 0.3 × 64/255 shows as 9, not 10); a model colour (`HuColor`) is a
-factor of 0-255 (0x80 halves 128 to 64); a packed prelighting byte is on the GS's scale, 0x80 = 1.0 (the sky box's 30
-plus the world ambient's 29 reaches the GS as 59).
+factor of 0-255 (0x80 halves 128 to 64); a packed prelighting byte is on the GS's scale, 0x80 = 1.0 (the sky box's
+disc byte 30 plus the world ambient's 29 reaches the GS as 59; [In Coney](#coneys-implementation) gives it as 60
+because Coney's librw loader doubles the disc byte to librw's 255 scale).
 
 **In Coney.** `repo:src/graphics/vertex_light.h` is the CPU reference: the light block of a selection (`vu1Lights`, from
 the manager's records), the light at a vertex, the colour `min(1, prelight + light) × material` and its GS value. It is
@@ -489,9 +494,10 @@ above say, each human by the sphere of his posed body; humans also get the shado
 the fade from 60 to 70 m and a blob shadow (`repo:src/graphics/human_lighting.h`). A disc test checks `level99`'s
 values against the table above (all match). The background's models (sky box, cloud box, skyline, glows) carry no
 light flag and no normals, and librw would draw them by their prelighting alone; Coney lights them for the draw, since
-the original adds the world ambient all the same: `level99`'s sky box (prelight 60), cloud box (70) and skyline's
-unlit vertices (0) reach the GS as 59, 64 and 29 of 128 (street dump), `level100`'s sky box (70) as 64, prelight +
-0.227 each. Inferred (Coney's models against the GS dumps). Coney's choices:
+the original adds the world ambient all the same (prelights as Coney's loader holds them, the disc byte doubled):
+`level99`'s sky box (prelight 60), cloud box (70) and skyline's unlit vertices (0) reach the GS as 59, 64 and 29
+of 128 (street dump), `level100`'s sky box (70) as 64, prelight + 0.227 each. Inferred (Coney's
+models against the GS dumps). Coney's choices:
 
 - The flicker steps with the simulation (game time per step) for the lights the cull would keep, drawing from the
   manager's own random sequence, not the game's; a burst starts with its pause.

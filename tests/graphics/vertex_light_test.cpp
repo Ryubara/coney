@@ -127,7 +127,7 @@ float expectedChannel(float prelight, float ambientLevel, float directionalLevel
     return std::min(1.0F, prelight + ambientLevel + (directionalLevel * facing)) * material;
 }
 
-// Whether `gs` is `expected` (1.0 = 128) after the GS's rounding, within the stated ±1 of 128.
+// Whether `gs` is `expected` (1.0 = 128) after the GS's truncation, within the stated ±1 of 128.
 bool withinOneOf128(std::uint8_t gs, float expected) {
     return std::abs(static_cast<float>(gs) - (expected * 128.0F)) <= 1.0F;
 }
@@ -218,7 +218,7 @@ TEST_CASE("A point light lights a surface by how far it faces the lamp") {
 TEST_CASE("A directional light from behind adds nothing, and lights every grid normal by its facing") {
     // Expected: lighting.md#world, confirmed (runtime)
     // Every vertex of a grid with normals in all 26 directions, under ambient 0.1 and a directional light 0.6 that
-    // travels straight down: exact in floats against the formula, and within 1 of 128 after the GS's rounding.
+    // travels straight down: exact in floats against the formula, and within 1 of 128 after the GS's truncation.
     const Vec3 down{0.0F, -1.0F, 0.0F};
     const std::array<Vu1Light, 2> lights{ambient(0.1F, 0.1F, 0.1F), directional(0.6F, down)};
     for (const ReferenceVertex& vertex : normalGrid()) {

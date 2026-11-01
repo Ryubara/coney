@@ -118,6 +118,7 @@ role = "hands the selected lights, in order, to RenderWare's PS2 light upload an
 level = "confirmed-code"
 coney = "src/graphics/vertex_light.h:vu1Lights"
 status = "compared"
+note = "in-game lights reach the renderer through SceneLighting::useLights (src/platform/scene_lighting.cpp), librw's lighting; vu1Lights feeds the CPU reference"
 
 [[function.gaps]]
 what = "the block is handed to Coney's CPU reference in world space, not packed with an identity matrix and sent to VU1 by DMA"

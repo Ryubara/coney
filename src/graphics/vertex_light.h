@@ -19,7 +19,7 @@ struct Vu1Light {
     world::Vec3 position;   ///< Point and spot lights, RenderWare's axes.
     world::Vec3 direction;  ///< Directional and spot lights: the way the light travels (unit).
     float radius = 0.0F;    ///< Point and spot lights, metres, as given (the block holds no inverse).
-    float coneAngle = 0.0F; ///< Spot lights: the cone's half angle, radians.
+    float coneAngle = 0.0F; ///< Spot lights: the cone's half angle, radians (the block holds −cos of it, inferred).
 };
 
 /// A vertex to light: where it is, which way it faces and its baked colour.
@@ -44,8 +44,9 @@ struct GsColour {
 /// @coney-only Coney's reading of RenderWare's light block (docs/research/lighting.md#vertex-reference)
 [[nodiscard]] Vu1Light vu1Light(const LightRecord& record);
 
-/// The light block of one atomic: `selection`'s records of `manager`, in the selection's order.
-/// @orig 0x0017e810 LightManager_UploadSelected (LightManager.cpp)
+/// The light block of one atomic: `selection`'s records of `manager`, in the selection's order. In the game, lights
+/// reach the renderer through SceneLighting::useLights (librw's lighting); this block feeds the CPU reference.
+/// @orig 0x0017e810 LightManager_UploadSelected (LightManager.cpp), docs/research/lighting.md#vertex-reference
 [[nodiscard]] std::vector<Vu1Light> vu1Lights(const LightManager& manager, const LightSelection& selection);
 
 /// The light `lights` add at a vertex at `position` facing `normal`: each ambient's colour, each directional
@@ -57,7 +58,7 @@ struct GsColour {
 [[nodiscard]] LightColour lightAtVertex(world::Vec3 position, world::Vec3 normal, std::span<const Vu1Light> lights);
 
 /// The colour the PS2 gives `vertex` lit by `lights` with `material` (0-1 a channel): min(1, prelight + light) ×
-/// material per channel, alpha the material's, on the lighting scale (1.0 = 0x80). Exact in floats; toGs() rounds.
+/// material per channel, alpha the material's, on the lighting scale (1.0 = 0x80). Exact in floats; toGs() truncates.
 /// @coney-only the CPU reference of the PS2 pipeline's VU1 lighting (docs/research/lighting.md#vertex-reference)
 [[nodiscard]] LightColour referenceColour(const ReferenceVertex& vertex, std::span<const Vu1Light> lights,
                                           LightColour material);
