@@ -69,6 +69,8 @@ ReactionKind Victim::react(const IncomingHit& hit, const VictimFrame& frame, Hum
     // A reaction with a knockdown event lays it down; a stunned one stays stunned until after the rise.
     if (knocksDown(animator, reaction.animId)) {
         animator.playCombat(one(clip), kGroundedIdle, AnimState::Hold);
+        // **Stand-in**: `Human_PlayReaction` stuns at a knockdown when the reaction's id is above 0x127 (the crushing
+        // 296-303), not by the attack's stun flag; an earlier stun is `Human_SetDownTimers`' (#685).
         knockDown(nowMs, stuns);
         ++m_knockdowns;
         return ReactionKind::Knockdown;
