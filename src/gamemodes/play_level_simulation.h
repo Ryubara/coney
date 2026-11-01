@@ -238,6 +238,7 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // --- play_level_objects.cpp: the level's glass panes and doors.
 
     // Points `objects` (the scripts' cast's, may be null) at the scenery's collision mesh and path data.
+    // @coney-only Coney's wiring of the scripts' objects to the scenery
     void bindObjects(world_objects::LevelObjects* objects, const script::RecordedCalls* recorded);
     // The lock pick before the player's step: triangle at a pickable door starts one; while one runs the dial turns,
     // cross judges a pin and triangle or another button abandons. Returns whether it holds the pad this step.
@@ -271,6 +272,7 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     [[nodiscard]] double handleOf(const human::Human& human) const;
     // Whether a ray from `from` to `to` meets the level's collision (the panes' and doors' among it): the pick-up
     // search's and the walk-over's sight test.
+    // @coney-only Coney's sight ray through its collision world
     [[nodiscard]] bool sightBlocked(anim::Vec3 from, anim::Vec3 to) const;
     // Player 1 walks over the power-ups he touches (LevelPickups::walkOver(), which plays their pick-up sounds).
     void walkOverPowerups();
@@ -281,6 +283,7 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     void reportNoise();
     // Gives player 1 triangle's pick-up over `pickups` (may be null: none): the search, with sight rays through the
     // level's collision, starts the pick-up on him.
+    // @coney-only Coney's wiring of the pick-up search to the level's power-ups
     void bindPickups(LevelPickups* pickups);
     // The car whose freed stereo is in reach of feet at `feet` (a kind-3 context record), nearest first; null for none.
     [[nodiscard]] const world_objects::Car* stereoInReach(anim::Vec3 feet) const;
@@ -327,6 +330,7 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // glass panes, aiming at their positions, aim points and centres.
     void giveObjectTargets();
     // The type of the world object `handle` (a spawn record) when its body makes it a strike target; null otherwise.
+    // @coney-only Coney's lookup of a world object's strike-target type
     [[nodiscard]] const world_objects::ObjectType* worldObjectType(double handle) const;
     // The bodies of the world objects in the world this step (their types' CfgObj shapes at their poses), and the
     // walking humans' slide along the BLOCKHUMANS ones (docs/research/physics.md#bodies). First the RUNTARGET bodies
@@ -393,6 +397,7 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
 
     // Where object `held` hangs in player 1's hand at `snapshot`'s pose; nothing when it is not a record in the hand
     // with a pick-up clip's take event (docs/research/objects.md#held).
+    // @coney-only Coney's lookup of the held object's hand pose for player 1
     [[nodiscard]] std::optional<world_objects::WorldPose> heldPose(double held,
                                                                    const human::PlayerSnapshot& snapshot) const;
     // Where object `held` hangs in `human`'s hand, `character` posed by `pose` at `feet` facing `heading`: the bone
