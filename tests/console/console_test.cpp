@@ -233,6 +233,26 @@ TEST_CASE("a queued command whose registration went away does not run") {
     CHECK_THAT(lastLine(console), ContainsSubstring("no longer registered"));
 }
 
+TEST_CASE("a queued command whose registration changed its arguments does not run on the old values") {
+    // Expected: Coney's own rule, docs/guides/studio/console.md#mod-commands (a mod's restart between two steps)
+    Console console({}, {});
+    int ran = 0;
+    const auto handler = [&ran](CommandContext&) -> std::expected<void, std::string> {
+        ++ran;
+        return {};
+    };
+    REQUIRE(console.registry().addModCommand(
+        "yard-brawl", CommandSpec{.name = "wave", .scope = Scope::Session, .summary = "Waves.", .args = kSetArgs},
+        handler));
+    CHECK(console.submit("wave vsync 1", LineSource::Typed) == Outcome::Queued);
+    // The mod restarts with another argument list before the step boundary.
+    REQUIRE(console.registry().addModCommand(
+        "yard-brawl", CommandSpec{.name = "wave", .scope = Scope::Session, .summary = "Waves."}, handler));
+    CHECK(console.runQueued() == 0);
+    CHECK(ran == 0);
+    CHECK_THAT(lastLine(console), ContainsSubstring("changed"));
+}
+
 TEST_CASE("a mod command's output carries the mod's name, and a handler's error is shown") {
     // Expected: Coney's own rule, docs/guides/studio/console.md#mod-commands
     Console console({}, {});

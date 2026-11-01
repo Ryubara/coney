@@ -17,6 +17,8 @@
 using Catch::Matchers::ContainsSubstring;
 using coney::ErrorCode;
 using coney::console::Access;
+using coney::console::ArgSpec;
+using coney::console::ArgType;
 using coney::console::BuiltinHandler;
 using coney::console::CommandContext;
 using coney::console::CommandSpec;
@@ -203,4 +205,34 @@ TEST_CASE("registerBuiltins registers the entries with handlers and refuses a ha
     const auto refused = registerBuiltins(other, kCatalog, stray);
     REQUIRE_FALSE(refused.has_value());
     CHECK_THAT(refused.error().message, ContainsSubstring("helpp"));
+}
+
+TEST_CASE("a mod's own name is a command name, so `mod:name` can reach its commands") {
+    // Expected: Coney's own rule, docs/guides/studio/console.md#mod-commands
+    Registry registry;
+    CHECK_FALSE(registry.addModCommand("", spec("wave"), kNothing).has_value());
+    CHECK_FALSE(registry.addModCommand("yard:brawl", spec("wave"), kNothing).has_value());
+    CHECK_FALSE(registry.addModCommand("Yard Brawl", spec("wave"), kNothing).has_value());
+    CHECK(registry.addModCommand("yard-brawl", spec("wave"), kNothing).has_value());
+}
+
+TEST_CASE("a default that its argument would not take is refused when the command registers") {
+    // Expected: Coney's own rule, docs/guides/studio/console.md#catalog
+    constexpr std::array<std::string_view, 2> kChoices{"low", "high"};
+    const std::array<ArgSpec, 1> badCount{
+        ArgSpec{.name = "count", .type = ArgType::Int, .optional = true, .defaultValue = "many"}};
+    const std::array<ArgSpec, 1> badChoice{ArgSpec{
+        .name = "level", .type = ArgType::Choice, .optional = true, .defaultValue = "medium", .choices = kChoices}};
+    const std::array<ArgSpec, 1> good{ArgSpec{
+        .name = "level", .type = ArgType::Choice, .optional = true, .defaultValue = "low", .choices = kChoices}};
+    Registry registry;
+    CommandSpec command = spec("wave");
+    command.args = badCount;
+    const auto refused = registry.addBuiltin(command, kNothing);
+    REQUIRE_FALSE(refused.has_value());
+    CHECK_THAT(refused.error().message, ContainsSubstring("count"));
+    command.args = badChoice;
+    CHECK_FALSE(registry.addModCommand("m", command, kNothing).has_value());
+    command.args = good;
+    CHECK(registry.addBuiltin(command, kNothing).has_value());
 }

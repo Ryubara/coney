@@ -130,3 +130,12 @@ TEST_CASE("a setting argument takes a name of the host's list and completes by p
     CHECK_FALSE(passes(setting, "Bad Name", kNoValues));
     CHECK(completeArg(setting, "s", {}, kValues) == Strings{"show_fps"});
 }
+
+TEST_CASE("completions put numbers first in their order, then names, whatever the list mixes") {
+    // Expected: Coney's own rule, docs/guides/studio/console.md#terminal
+    const ValueSource mixed = [](ArgType, std::span<const std::string>) {
+        return std::optional<Strings>(Strings{"1x", "10", "b", "2", "a"});
+    };
+    const ArgSpec setting{.name = "setting", .type = ArgType::Setting};
+    CHECK(completeArg(setting, "", {}, mixed) == Strings{"2", "10", "1x", "a", "b"});
+}
