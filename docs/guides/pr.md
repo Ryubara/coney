@@ -302,7 +302,7 @@ commit: what is pushed is exactly what Check and Review saw. Its options and exi
    maintainer's grant of 2026-11-01, so those changes get auto-merge like any other; off, the maintainer merges them
    and the message says so) or the viewer's permission on the repository is not admin, maintain or write (a fork's
    owner has none: the pull request opens without it). Either way a pull request merges by squash once every
-   required check passes, with no local full-suite run before it: `task check` already ran it on the branch.
+   required check passes; the coordinator runs no full suite first, as `task check` already ran it on the branch.
 9. **Read back.** The title, the head commit, the pictures (as many addresses as pictures), the marked blocks, the
    absence of any local path and auto-merge are read from GitHub. A wrong description is repaired once with `gh pr
    edit`; a second failure is exit 4 with the pull request's address (it exists, and rerunning repairs it). Auto-merge

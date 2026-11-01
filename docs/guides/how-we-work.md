@@ -531,11 +531,11 @@ requests and tidies after merges. It works under these rules:
   ([After a merge](issues.md#after-a-merge)). The `/repo-hygiene` skill runs the audit and fixes each finding by its
   class ([Merging safely](#merging)).
 - **Merge on the automated gate, not on play-tests.** A pull request merges by squash once every required check
-  passes, with no local full-suite run before it (`task check` ran it on the branch). Since the maintainer's grant of
-  2026-11-01 that holds for a change to the convention files, `AGENTS.md` and the agent rules too: the coordinator
-  approves and merges it on the maintainer's behalf, `pr open` turns auto-merge on for it
-  (`pull_requests.auto_merge_manual_paths`), and Conclave does not raise an auto-merge-off alert for a pull request
-  held by that setting turned off.
+  passes; the coordinator runs no full suite of its own first, because the engineer's `task check` already ran it on
+  the branch. Since the maintainer's grant of 2026-11-01 that holds for a change to the convention files, `AGENTS.md`
+  and the agent rules too: `pr open` turns auto-merge on for it (`pull_requests.auto_merge_manual_paths`) and the
+  coordinator approves and merges it on the maintainer's behalf. If that setting is switched off, such a pull request
+  is held for the maintainer and Conclave does not raise an auto-merge-off alert for it.
 - **Ship after every merged feature.** Build the release locally and hand the play-testers one list of what changed
   and how to reach it ([Play-testing](testing.md#play-testing)). Research-only merges need no build.
 - **Resume what was interrupted.** A usage limit, an account switch or a cleared session can stop agents mid-task;

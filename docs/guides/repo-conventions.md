@@ -207,9 +207,9 @@ the `reviewed` stamp again under `origin/<default
 branch>`'s rules, so a branch cannot loosen its own review. In the default branch's own sections a missing key or a
 wrong value stays an error (it names `origin/<default branch>`). A misspelt required key reads as an unknown key plus a
 missing one, so it is named twice and its value comes from the checkout the tool runs from: a typo of an optional key
-(`except`, `manual_paths`, `jobs` and the like) is skipped like any unknown key and its default applies, because a new
-key next to an old one cannot be told from a typo of it. `repo check-conventions`, `task check`, the tests and the
-Action stay strict and catch every typo.
+(`except`, `manual_paths`, `auto_merge_manual_paths`, `jobs` and the like) is skipped like any unknown key and its
+default applies, because a new key next to an old one cannot be told from a typo of it. `repo check-conventions`,
+`task check`, the tests and the Action stay strict and catch every typo.
 
 `coney-tools repo check-conventions` loads the file, so a mistake in it fails the `python` workflow and `coney-tools ci
 run` before anything else runs. Every command that needs a rule exits with code 2 and one line when the file is missing
