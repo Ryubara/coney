@@ -12,7 +12,9 @@ result says the run's own exit code once it ended, 75 while it runs, and 1 with 
 process is gone without writing one (killed).
 
 The record's reading and writing are `build_cli`'s, so the three kinds of detached run judge "still running" the same
-way (a live pid that started when the record says).
+way (a live pid that started when the record says). The child stamps as the caller: `spawn_detached` hands the
+caller's verified identity on to it (`identity.hand_on`), since the hook removes the caller's own identity file once
+the caller returns.
 """
 
 from __future__ import annotations

@@ -29,6 +29,7 @@ from coney_tools import (
     build_root,
     build_run,
     compiler_cache,
+    identity,
     pcsx2_proc,
     process_lifetime,
     shared_deps,
@@ -684,9 +685,18 @@ def _child_command(
 
 def spawn_detached(command: list[str], cwd: Path, output: Path) -> int:
     """Start `command` apart from this process and its shell (no console, a process group or session of its own, out
-    of the caller's job where Windows allows it), its console output in `output`; returns its pid."""
+    of the caller's job where Windows allows it), its console output in `output`; returns its pid. The child gets the
+    caller's verified identity in a file of its own (`identity.hand_on`): the hook removes the caller's as soon as the
+    caller returns, before the child reads it."""
+    env = identity.child_environment(os.environ, identity.current())
     with output.open("w", encoding="utf-8") as sink:
-        common: dict[str, Any] = {"cwd": cwd, "stdin": subprocess.DEVNULL, "stdout": sink, "stderr": subprocess.STDOUT}
+        common: dict[str, Any] = {
+            "cwd": cwd,
+            "stdin": subprocess.DEVNULL,
+            "stdout": sink,
+            "stderr": subprocess.STDOUT,
+            "env": env,
+        }
         if sys.platform != "win32":
             return subprocess.Popen(command, start_new_session=True, **common).pid
         # CREATE_NO_WINDOW, never DETACHED_PROCESS: the venv python.exe is a launcher whose child interpreter finds no

@@ -498,6 +498,10 @@ read, not consumed, because one command can run several tools (`coney-tools ... 
 it when the command ends, fails (`PostToolUseFailure`) or is denied (`PermissionDenied`), and a call that issues a
 token removes the expired files and leftover temporary ones. A background command (`run_in_background`) keeps its file
 for the sweep, because the end of the call comes as soon as the process is started, before uv has started the tool. A
+detached run (`--detach` of `build`, `ci run` and `task check`) starts its child after the caller's command has
+returned and its file is gone, so the caller hands on what the hook vouched for to it: a file of the same format under
+a fresh token, in the child's environment only, with the same 10-minute life (`identity.hand_on`); an unverified
+caller hands on nothing, and its child is unverified too. A
 tool that runs for long has read the file at its start and keeps the answer; a tool that starts after the file's life,
 such as a later `coney-tools` in a chain that runs past 10 minutes, finds none and is unverified. The folder is 0700
 and a file 0600.

@@ -26,6 +26,7 @@ import hashlib
 import json
 import os
 import re
+import secrets
 import time
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -125,6 +126,56 @@ def same_agent(first: Mapping[str, object], second: Mapping[str, object]) -> boo
         return True
     first_session, second_session = first.get("session"), second.get("session")
     return isinstance(first_session, str) and bool(first_session) and first_session == second_session
+
+
+#: How long a handed-on identity file lives (seconds): as long as the hook's default, ample for a child's start.
+HAND_ON_SECONDS = 600
+
+
+def hand_on(found: Identity, folder: Path | None = None, now: float | None = None) -> str | None:
+    """Write an identity file for a process this one starts apart from itself, and return its token; None (and no
+    file) when `found` is not verified.
+
+    A detached run's child (`build_cli.spawn_detached`) starts after the hook has removed the caller's file, because
+    the hook does so as soon as the caller's command returns, so the caller's own token finds nothing (issue 1370: its
+    `checked` stamp was unverified). The caller hands on only what the hook vouched for to it, in a file of the hook's
+    format under a fresh token; the file expires like the hook's and the hook's sweep removes it."""
+    if not found.verified:
+        return None
+    where = default_folder() if folder is None else folder
+    moment = time.time() if now is None else now
+    where.mkdir(parents=True, exist_ok=True, mode=0o700)
+    token = secrets.token_hex(16)
+    data = {
+        "version": VERSION,
+        "id": found.id,
+        "type": found.type,
+        "model": found.model,
+        "session": found.session,
+        "tool_use_id": "",
+        "handed_on": True,
+        "issued": moment,
+        "expires": moment + HAND_ON_SECONDS,
+    }
+    final = where / file_name(token)
+    temporary = final.with_suffix(".tmp")
+    descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+        handle.write(json.dumps(data))
+    temporary.replace(final)
+    return token
+
+
+def child_environment(
+    env: Mapping[str, str], found: Identity, folder: Path | None = None, now: float | None = None
+) -> dict[str, str]:
+    """`env` for a process started apart from this one: the caller's token replaced by a handed-on one
+    (`hand_on`), or removed when the caller is not verified."""
+    child = {name: value for name, value in env.items() if name != TOKEN_VARIABLE}
+    token = hand_on(found, folder, now)
+    if token is not None:
+        child[TOKEN_VARIABLE] = token
+    return child
 
 
 _current: Identity | None = None
