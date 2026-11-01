@@ -132,11 +132,15 @@ TEST_CASE("a game played from an install reads its overrides/files in place of t
 
     auto wad = coney::platform::openGameDisc(options);
     REQUIRE(wad.has_value());
-    REQUIRE(wad->has_value());
-    CHECK((*wad)->modded());
-    auto level1 = (*wad)->lookup("level1.lev");
+    auto& game = *wad;
+    REQUIRE(game.has_value());
+    if (!game) {
+        return; // REQUIRE has failed the test; this keeps clang-tidy's optional check satisfied
+    }
+    CHECK(game->modded());
+    auto level1 = game->lookup("level1.lev");
     REQUIRE(level1.has_value());
-    auto stream = (*wad)->openEntry(**level1);
+    auto stream = game->openEntry(**level1);
     REQUIRE(stream.has_value());
     CHECK(stream->size() == 16);
 
@@ -145,6 +149,10 @@ TEST_CASE("a game played from an install reads its overrides/files in place of t
     disc.discPath = options.discPath;
     auto plain = coney::platform::openGameDisc(disc);
     REQUIRE(plain.has_value());
-    REQUIRE(plain->has_value());
-    CHECK_FALSE((*plain)->modded());
+    auto& unmodded = *plain;
+    REQUIRE(unmodded.has_value());
+    if (!unmodded) {
+        return; // as above
+    }
+    CHECK_FALSE(unmodded->modded());
 }
