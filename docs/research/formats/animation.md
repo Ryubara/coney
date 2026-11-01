@@ -461,7 +461,8 @@ so the speeds on [Characters](../characters.md#speed-classes) stand.
 
 **The end test** is in the cursor's advance (`AnimCursor_Advance`, `0x001044a0`), and every clip task uses it: the
 clip that hands over (types 3 and 6, `0x00105af0`, `0x00108bd0`) and the loop (type 1, `0x00105770`). With *t* the
-cursor's time (`+0x18`), *s* the step (dt × the task's rate) and *D* the descriptor's duration (`+0x0c`):
+cursor's time (`+0x18`), *s* the step (dt × the task's rate) and *D* the descriptor's duration (`+0x0c`), confirmed
+(code):
 
 ```text
 end   = uint(D × 30 + 0.5)          the frame count F (D is a whole number of frames on the disc)
@@ -483,35 +484,35 @@ is F = 2 at 0.75 (k = 2), which acts on time; see the overshoot of 0.0 below.
 **On the end update** (confirmed (code) at `0x00105af0`, `0x00108bd0`, `0x00105570`, `0x00105f78`):
 
 1. The ending step changes nothing: no channel steps and **no event fires**, so an event at frame F or later never
-   fires in a clip that hands over (events fire only from the step, `AnimCursor_Step` `0x00104110`).
+   fires in a clip that hands over (events fire only from the step, `AnimCursor_Step` `0x00104110`). Confirmed (code).
 2. Types 3 and 6 put their **next task** on the stack in their own place, **in the same update**: the next task, not
    the old clip, is sampled for the pose and its root motion that update. With a blend time of 0 the next task is not
    advanced that update (it shows its time 0); with a blend time it is advanced by dt (its own advance applies its
    rate), having followed the last *b* seconds of the clip in the sampler (`0x00105ba0`: its time kept to the time
    into the blend window, its pose blended over the clip's by that share of *b*). The overshoot is used only as a
-   flag; it is not carried into the next task.
+   flag; it is not carried into the next task. Confirmed (code).
 3. The old task is put on a deferred list (`AnimTask_DeferGive` `0x00105640`), which `AnimTask_FlushDeferred`
    (`0x00105570`) empties once every human's animation has stepped, **before** the state updates and the actions of
    the same update ([Humans_Update](../tasks.md#humans-update)). The release (`0x00105f78` for type 3) clears the
    human's state flag `0x4000000000` and the **held flags** the task still holds from record `+0x08`, sets bit
    `0x80000000` at `+0x40` of an object the human reports (vtable `+0xf4`) when the held flags had `0x400000`, and
    calls the **end callback** (`+0x2c`) with the human. The flush then refreshes the human's playing anim id (record
-   `+0x20`) from the new top task.
+   `+0x20`) from the new top task. Confirmed (code).
 
 So on the end update the dispatcher, the stick gate and the AI already see the move as over: its held flags are clear,
 its callback has run and record `+0x20` names the next clip. That is the "free again" update of the attack tables.
 A task **cut off** before its end (vtable slot `+0x84`, `AnimTaskChained_CutOff` `0x00105d70` for type 3, which
 `Human_PlayReaction` and `Human_PlayRise` call on the stack's top) does not run its end callback: when the task has
-held flags or a callback, the cut-off calls slot `+0xc4` (`0x004da470`, one store that zeroes the callback at `+0x2c`),
+held flags or a callback, the cut-off calls slot `+0xc4` (a two-instruction function that zeroes the callback at `+0x2c`),
 clears the held flags itself, sets task flag `0x10` and cuts its next task off too, so the release that follows finds
-no callback. Confirmed (code) at `0x00105d70`, `0x004da470` and the type 3 vtable `0x00534fa8`. A task that ends
+no callback. Confirmed (code) at `0x00105d70` and at slot `+0xc4` of the type 3 vtable `0x00534fa8`. A task that ends
 runs it (above); the release alone (`0x00105f78`) does not test how the task ended.
 
 **A loop** (type 1, `0x00105770`) wraps on the same test: it restarts its cursor (`AnimCursor_Restart`), advances it
 by the returned overshoot and calls its wrap callback (`+0x28`, with the human at handle `+0x24`). Because the
 overshoot is measured from *D* − 1/60, **a loop repeats every *D* − 1/60 seconds of clip time** (F − 0.5 frames), not
 every *D*: the frame F key is never shown, and each pass starts 1/60 s of clip time later than an exact *D* period
-would. Confirmed (code); confirmed (runtime) below.
+would. Confirmed (code); measured at runtime below.
 
 A step whose overshoot comes out exactly 0.0 is taken as "not ended" by the callers (confirmed (code) at
 `0x00105af0`, `0x00108bd0`, `0x00105770`), although the cursor was not stepped, so the task would repeat that update

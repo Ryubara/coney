@@ -1079,7 +1079,9 @@ counter of the player's grab starts the player's stun time at the counter ([Open
 **Stand-ins**: the stun's end keeps the speed multiplier as it is; the original's 0.65 under the flag at `0x0051021c`
 is not ported ([#1346](issue:1346)). Coney's ground ends as 199 starts, the rise clip holding the victim instead,
 where the original keeps the knocked-down state (`0x80000`) until 199 ends (`Victim::step`, step 2); a hit that cuts
-199 puts the ground back (`Victim::react`). **Gap**: a victim with flag `0x100` (never stunned) that is already stunned
+199 puts the ground back (`Victim::react`). A knockdown stuns in Coney when the attack stuns or the victim already is; `Human_PlayReaction`
+(`0x0026a6d0`) stuns at a knockdown when the reaction's id is above `0x127` (the crushing 296-303), confirmed (code)
+([#685](issue:685)). **Gap**: a victim with flag `0x100` (never stunned) that is already stunned
 loses its stun at a knockdown; the original keeps it until after the rise (`Human_SetDownTimers`, `0x0022f4f8`;
 [#1351](issue:1351)).
 
