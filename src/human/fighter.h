@@ -822,6 +822,8 @@ class Fighter {
     void mountVictim(const HumanAnimator& animator);
     // Plays the mount's move the dispatcher decided: a strike and the victim's reaction (the next id), back to the
     // mount; the pick-up to the front hold; or getting off, the victim rising (docs/research/combat-grabs.md#mount).
+    // Only the pick-up (MountAction::ToHold) ports Mount_ReturnToFrontGrab and only getting off (MountAction::GetOff)
+    // ports Mount_GetOff; the strike cases play the clips Player_UpdateMounting (`0x0027ec20`) starts.
     // @orig 0x00271808 Mount_ReturnToFrontGrab (unknown)
     // @orig 0x00271098 Mount_GetOff (unknown)
     void playMountAction(const combat::CombatOutput& out, HumanAnimator& animator);

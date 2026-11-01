@@ -116,9 +116,10 @@ At runtime (confirmed (runtime)):
 
 The commands are those of the [table](combat/index.md#commands): square acts on its press (`0xf`), cross on its release
 (`0x10`), circle on its press (`0x1e`). Circle is also its tap (`0xd`) and its hold (`0xe`) (`PlayerCmd_IsCircleAny`
-`0x0027bf30`, confirmed (code)): a player's tap or hold usually comes after the press's move has started and finds it
-playing, but an AI grabber's throws and its mount are the tap alone ([An AI grab at
-runtime](ai/index.md#ai-grab-runtime), confirmed (runtime), run r-20261031-civ-grab-1331). A tap pressed while the grab
+`0x0027bf30`, confirmed (code)). A player's tap or hold usually comes after the press's move has started and finds it
+playing (inferred from the taps below, run r-20261031-grab-circle-taps-1331), but an AI grabber's throws and its mount
+are the tap alone ([An AI grab at runtime](ai/index.md#ai-grab-runtime), confirmed (runtime), run
+r-20261031-civ-grab-1331). A tap pressed while the grab
 takes no move and released once it does acts on its release: with circle tapped every 6 updates at a puppet 1 m ahead
 (scenario `grab_circle_taps`), the first tap grabbed (71 at 42, the connect 72 / 73 from 47), the presses at 47-65 came
 in the connect and did nothing, and the release `0xd` at 66, the hold's first update, mounted (118 / 119). Confirmed
@@ -527,6 +528,12 @@ square, cross, circle and L2, **the same after a tackle or a grab**:
 | L2 (5) | gets off: 244 / 245, the victim rises with 199 (`Mount_GetOff`, `0x00271098`, confirmed (code)) |
 | triangle | mug ([Mugging](combat-throws.md#mugging)) |
 
+The pick-up back to the hold (`Mount_ReturnToFrontGrab`, `0x00271808`) ends the tackle (`Tackle_End`), links the pair as
+a front grab (`Grab_Link`) and gives 248 the connect's end hook, `Grab_ConnectEnd` (`0x0026bad8`), confirmed (code):
+at 248's end the victim takes the clip's [damage table](combat/index.md#damage-table) value while the grabber has
+power, the grab is released when the victim is out of reach, and the pair is snapped, attached and scored, as at the
+end of a grab's connect ([Grab and tackle](#grab)).
+
 The mount drains power at the tackle's 15 per second ([constants](combat/index.md#constants)). The strikes ran 16, 19
 and 28 updates back to 210. Level 99's tutorial follows this through two callbacks: `AddAnimCallback(player, 210,
 "PlayerState")` shows the mount's prompt when 210 starts, and `HUDSetTutorialCallback("P1.BasicAttacks")`, which
@@ -741,6 +748,13 @@ stick is released; a stick at 0.9 neither turns nor moves the pair.
 The check that will show it (no disc needed, synthetic clips): mount, power strike, run to the end; the mounter stands
 in the fight-stance idle, not mounting, the victim is grounded and not mounted, and no frame after the strike shows
 210 / 207. A level99 cp1 playthrough step can assert the same on the hobo.
+
+**Where Coney differs: the pick-up's end** ([The mount](#mount), #684). At the end of 248 Coney only snaps and attaches
+the victim into the hold. The original's `Grab_ConnectEnd` also deals the clip's damage-table value, releases a victim
+out of reach, gives the victim its circle escape or reverse and scores the move. The pick-up also skips parts of
+`Tackle_End` and `Grab_Link`: the move styles (0xc, 0xb, 7, 8), the cleared states 0x400 / 0x800 and the fight stance,
+speech command 8, the victim's brain target and tutorial hint 0xe. The get-off's 0.2 s blends from 244 and 199 into
+the idles are cuts in Coney.
 
 The spray can of [Rembrandt's power move](#power-move-props) (#223): `Human` acts on its clip events for any human
 (`repo:src/human/carried_prop.h`, `Human::carriedProp()`): `0x30` notes the named prop, `0x37` its place (the word's
