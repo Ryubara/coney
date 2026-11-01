@@ -295,9 +295,9 @@ keeps the places full ([Keeping the places full](slot-fill.md)) from the open is
 | Is | What | Its rule (each of the first five needs a held claim, a fix its parent's, and a place) |
 | --- | --- | --- |
 | **Reimplementation** | An `engineer` or `tooling` agent on a task whose issues are labelled none of `studio`, `networking` and `renderer`: game issues and pull requests outside Coney Studio, networking and the renderer | At least one game (`feature`) unit always (`min: 1`, `min_kinds`): while none runs, one place is kept for it, which Studio and tooling or docs units may not take. No cap but the machine's |
-| **Fix** | An agent on a `kind: fix` task, made by `task create --fix-of` after a CI check failed on the pull request of a task that passed Review | One at a time (`max: 1`), oldest failure first; one place is kept for it (`min: 1`), so a full machine still takes a fix, except one with a single build slot |
+| **Fix** | An agent on a `kind: fix` task, made by `task create --fix-of` after a CI check failed on the pull request of a task that passed Review | One at a time (`max: 1`), oldest failure first; one place is kept for it (`min: 1`), so a full machine still takes a fix, except one with a single build slot; the place never [lapses](slot-fill.md#lapse) |
 | **Studio** | A task whose issue carries the `studio` label (`claims.studio_label`): Coney Studio research and development, the sub-issues of #1054 and the Studio build issues | As many as the machine holds once the kept places are set aside, on one of the models of [Which model](#models) |
-| **Networking** | A task whose issue carries the `networking` label (`claims.networking_label`): the co-op plan in [multiplayer](multiplayer.md#plan), network ids, snapshots, interpolation, the level-load barrier | One at a time (`max: 1`) and always one (`min: 1`): while none runs, one place is kept for it, so a full machine still takes it. Any model, as the reimplementation track; its claim is outside the open-claims limit ([Claiming an issue](issues.md#claiming)) |
+| **Networking** | A task whose issue carries the `networking` label (`claims.networking_label`): the co-op plan in [multiplayer](multiplayer.md#plan), network ids, snapshots, interpolation, the level-load barrier | One at a time (`max: 1`) and always one (`min: 1`): while none runs, one place is kept for it, so a full machine still takes it; the place [lapses](slot-fill.md#lapse) while no networking task or issue can start. Any model, as the reimplementation track; its claim is outside the open-claims limit ([Claiming an issue](issues.md#claiming)) |
 | **Renderer** | A task whose issue carries the `renderer` label (`claims.renderer_label`): the SDL3 GPU migration (design #883), Coney's own renderer on SDL3's GPU API with librw kept only for reading data | As networking: one at a time (`max: 1`) and always one (`min: 1`), with its place kept, any model, and its claim outside the open-claims limit. An issue with `networking` and `renderer` is a networking unit; with `renderer` and `studio`, a renderer one |
 | **Workflow unit** | A task whose issue carries the `workflow` label (`claims.exempt_label`) now: a unit that builds the new workflow | A held claim, no place, while `tasks.start.slots.exempt_workflow` is on; **the cutover turns it off** (a test fails if `claims.adopt` or `claims.release` is on while it is still on) and such units count like the rest |
 | **Reviewer**, **helper** | A `reviewer` ([Task review](review/task.md)); an `Explore`, `Plan` or `claude-code-guide` agent, a `fork`, and any agent an engineer starts for its own task (no cap) | No claim, no place, no `Task id:` line |
@@ -353,10 +353,11 @@ any other), and the call is refused unless all of these hold:
 3. **A Studio unit names an allowed model and effort**: the Agent call's `model` and `effort` are one of the pairs of
    `tasks.start.slots.tracks.studio.models` ([Which model](#models)); a call that names neither is refused too.
 4. **Its track has room**: its cap (`max`) is not reached, and the machine has a place once the places other tracks
-   keep are set aside. The kind comes from `TASK.md`, the liveness from `unit.json`, its worktree and the stamp log
-   (`task start` counts the same way), the labels from the claim cards and the build slots from `coney.local.toml`, so
-   the hook copies none of it. A refusal names the reason, the busy units and what frees a place. A second start for a
-   unit whose agent has not run `task start` yet is refused too (a workflow unit keeps no reservation, so not for it).
+   keep, unless [lapsed](slot-fill.md#lapse), are set aside. The kind comes from `TASK.md`, the liveness from
+   `unit.json`, its worktree and the stamp log (`task start` counts the same way), the labels from the claim cards and
+   the build slots from `coney.local.toml`, so the hook copies none of it. A refusal names the reason, the busy units
+   and what frees a place. A second start for a unit whose agent has not run `task start` yet is refused too (a workflow
+   unit keeps no reservation, so not for it).
 
 A start that is let through keeps the place for the agent (`slot.json`, which names its track) until its `task
 start` makes the unit. Every GitHub read happens before the slot lock is taken, so a slow GitHub never holds the lock.
@@ -491,16 +492,16 @@ export CONEY_AGENT_TOKEN=<32 hex digits>; <the command>
 
 `coney_tools.identity` reads the file the token names, as the first thing a `coney-tools` command does. A token that is
 typed, changed or expired finds no file, so the tool records the identity as **unverified** (every field `unknown`),
-never as another role; `stamps.who_from_env` takes it from there. The file holds the id (the
-subagent's, or `main`), type (or `none`), model (the id of the agent's latest turn in its transcript, or `unknown`),
-the session, agent and tool call it was written for, and when it expires (`[identity] ttl_seconds`, 10 minutes). It is
-read, not consumed, because one command can run several tools (`coney-tools ... && git commit`); the dispatcher removes
-it when the command ends, fails (`PostToolUseFailure`) or is denied (`PermissionDenied`), and a call that issues a
-token removes the expired files and leftover temporary ones. A background command (`run_in_background`) keeps its file
-for the sweep, because the end of the call comes as soon as the process is started, before uv has started the tool. A
-tool that runs for long has read the file at its start and keeps the answer; a tool that starts after the file's life,
-such as a later `coney-tools` in a chain that runs past 10 minutes, finds none and is unverified. The folder is 0700
-and a file 0600.
+never as another role; `stamps.who_from_env` takes it from there. The file holds the id (the subagent's, or `main`),
+type (or `none`), model (the id of the agent's latest turn in its transcript, or `unknown`), the session, agent and tool
+call it was written for, and when it expires (`[identity] ttl_seconds`, 10 minutes). It is read, not consumed, because
+one command can run several tools (`coney-tools ... && git commit`); the dispatcher removes it when the command ends,
+fails (`PostToolUseFailure`) or is denied (`PermissionDenied`), and a call that issues a token removes the expired files
+and leftover temporary ones. A background command (`run_in_background`) keeps its file for the sweep, because the end of
+the call comes as soon as the process is started, before uv has started the tool. A detached run's child gets the
+caller's verified identity in a file of its own ([Who](stamps.md#who)). A tool that runs for long has read the file at
+its start and keeps the answer; a tool that starts after the file's life, such as a later `coney-tools` in a chain that
+runs past 10 minutes, finds none and is unverified. The folder is 0700 and a file 0600.
 
 What an agent can still do: read its own token (it proves only its own identity); write an identity file itself, which
 needs the folder, and the hooks refuse every session to name any of `~/.coney` (and `~/.ssh/`, the stamp logs
@@ -611,10 +612,9 @@ uv run --project python coney-tools build --agent <id> --preset dev --test -R <r
   it prints first.
 - **A second configuration** (a Clang build beside the default compiler's) is `--build-dir build/clang --env
   CC=clang-19 --env CXX=clang++-19` with `--configure-only`; never a raw `cmake`.
-- **Exit code 75 means "still queued".** The command left the queue: its wait reached `--max-wait`, or the wait the
-  queue still expects plus the step would pass the time budget (`--budget`), in which case it leaves at its first
-  look. It said its position and the numbers. Do other work and run the same command again later, or detach it and
-  stop ([Build waits](#build-waits)); do not loop on it in one call.
+- **Exit code 75 means "still queued".** The command left the queue, saying its place: its wait reached `--max-wait`, or
+  the expected wait plus the step would pass `--budget` (then at its first look). Do other work and run it again later
+  (within the hour it keeps its place), or detach it and stop ([Build waits](#build-waits)); never loop on it.
 - **`--priority`** goes ahead of the queue. The coordinator uses it for a build somebody is waiting on; an agent does
   not set it on its own.
 - **`build status`** shows who holds the slots and who waits. A crashed run is taken over by the next claimer, which
@@ -670,8 +670,8 @@ wakes up and writes its whole context again, which on 2026-10-12 cost about 1.1 
   no budget). Write `STATUS.md` naming the worktree and the command, and end your turn. Whoever continues runs
   `coney-tools build result --dir <worktree>`: exit 75 while it runs, then the run's summary, log path and exit code
   ([`build result`](coney-tools-build.md#build)).
-- `coney-tools ci run --detach` runs the CI-style checks of the changed files in the background; whoever
-  continues runs `coney-tools ci result` in the worktree ([`ci result`](coney-tools-ci.md#ci-run)).
+- `ci run --detach` and `task check --detach` run apart from your shell, which may then die; whoever continues runs
+  `ci result` or [`task check --result`](coney-tools-repo.md#task-check) in the worktree.
 
 ## The PCSX2 MCP guard {#pcsx2-guard}
 

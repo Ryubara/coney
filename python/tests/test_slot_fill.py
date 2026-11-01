@@ -28,7 +28,7 @@ from slot_fill_support import (
 )
 from test_task_slots import USER, Scene, reserve_minutes, set_slots, start_agent
 
-from coney_tools import slot_fill, slot_fill_blocks, slot_waivers
+from coney_tools import slot_fill, slot_fill_blocks, slot_waivers, task_slots
 from coney_tools.config import ConfigError
 from coney_tools.pr_hold import Hold
 from coney_tools.slot_fill import FailedPull
@@ -43,6 +43,13 @@ def scene(tmp_path: Path) -> Scene:
 @pytest.fixture
 def sources() -> FakeSources:
     return FakeSources()
+
+
+def with_lapse(scene: Scene, tracks: tuple[str, ...]) -> None:
+    """The scene with only `tracks` in `tasks.start.slots.lapse.tracks`."""
+    slots = replace(scene.conventions.tasks.start.slots, lapse_tracks=tracks)
+    start = replace(scene.conventions.tasks.start, slots=slots)
+    scene.conventions = replace(scene.conventions, tasks=replace(scene.conventions.tasks, start=start))
 
 
 def hold_claims(scene: Scene, sources: FakeSources) -> None:
@@ -89,7 +96,9 @@ def test_a_free_place_and_a_ready_issue_is_a_failure(scene: Scene, sources: Fake
     sources.ready_issues = [issue(7, "P-high", title="tools: Add a thing")]
     result = check(scene, sources)
     assert result.blocked and result.message.startswith(slot_fill.BLOCKED)
+    # Nothing to fix, yet the place kept for a fix stays kept: a pull request that fails must find it.
     assert "(free: 0 kept for game work, 1 kept for a fix, 2 open)" in result.message
+    assert "The place kept for fix lapsed" not in result.message
     assert "#7 [P-high] tools: Add a thing" in result.message
     assert "1 of 4 places in use, reimplementation: a-one" in result.message
     assert "coney-tools task slots --waive <places> --reason <maintainer-pause|maintainer-decision|machine-load>" in (
@@ -220,9 +229,11 @@ def test_studio_units_in_work_hold_places_of_the_machine(scene: Scene, sources: 
         scene.unit(name, studio=True)
     hold_claims(scene, sources)
     sources.ready_issues = [issue(7, "studio")]
+    sources.pulls = [FailedPull(40, "f-branch", ("python",), (900,))]
     result = check(scene, sources)
-    # 2 of 4 places: one is kept for game work and one for a fix, so Studio may not take either.
-    assert not result.blocked and "2 of 4 places in use, studio: a-studio, b-studio" in result.message
+    # 2 of 4 places: one is kept for game work and one for a fix (a pull request failed), so Studio takes neither.
+    assert result.blocked and "2 of 4 places in use, studio: a-studio, b-studio" in result.message
+    assert "#40 (f-branch)" in result.message and "#7 " not in result.message
 
 
 # --- the networking track ---------------------------------------------------------------------------------------------
@@ -251,9 +262,53 @@ def test_the_place_kept_for_networking_does_not_take_game_or_studio_work(scene: 
     scene.unit("a-game")
     scene.unit("b-game")
     scene.unit("c-fix", kind="fix")
-    sources.ready_issues = [issue(7, "P-high"), issue(8, "studio")]
+    sources.ready_issues = [issue(7, "P-high"), issue(8, "studio"), issue(9, NETWORKING, "P-low")]
+    sources.blocked_by = {9: [1]}  # blocked for now
+    with_lapse(scene, ())  # without the lapse, a kept place takes only its own track's work
     result = check(scene, sources)
     assert not result.blocked and "kept for networking cannot take game, Coney Studio" in result.message
+
+
+def test_the_place_kept_for_networking_lapses_while_no_networking_issue_can_start(
+    scene: Scene, sources: FakeSources
+) -> None:
+    # Issue 1370: every networking issue was S-blocked, and the place it kept held back two fix tasks for hours.
+    with_networking(scene)
+    scene.unit("a-game")
+    scene.unit("b-game")
+    scene.unit("c-fix", kind="fix")
+    sources.ready_issues = [issue(7, "P-high"), issue(9, NETWORKING, "P-low")]
+    sources.blocked_by = {9: [1]}
+    result = check(scene, sources)
+    assert result.blocked and "The place kept for networking lapsed, so it is open: no networking" in result.message
+    assert "0 kept for networking" not in result.message and "1 open" in result.message and "#7 " in result.message
+    assert task_slots.read_lapses(scene.scratch, scene.conventions, scene.now()) == {
+        "networking": "no networking task or issue can start (none is claimed and waiting, ready and unblocked)"
+    }
+    sources.blocked_by = {}  # #9 can start again: the place is kept again at the next check
+    result = check(scene, sources)
+    assert result.blocked and "kept for networking (a networking issue):\n  - #9 " in result.message
+    assert task_slots.read_lapses(scene.scratch, scene.conventions, scene.now()) == {}
+
+
+def test_a_kept_place_does_not_lapse_when_the_issues_cannot_be_read(scene: Scene, sources: FakeSources) -> None:
+    with_networking(scene)
+    scene.unit("a-game")
+    scene.unit("b-game")
+    scene.unit("c-fix", kind="fix")
+    sources.down = {"ready"}
+    check(scene, sources)
+    assert "networking" not in task_slots.read_lapses(scene.scratch, scene.conventions, scene.now())
+
+
+def test_the_place_kept_for_game_work_does_not_lapse(scene: Scene, sources: FakeSources) -> None:
+    # Only the tracks of tasks.start.slots.lapse.tracks lapse: the committed list leaves game work's floor alone.
+    for name in ("a-tool", "b-tool"):
+        scene.unit(name, kind="tooling")
+    scene.unit("c-fix", kind="fix")
+    sources.ready_issues = [issue(8, "studio")]
+    result = check(scene, sources)
+    assert not result.blocked and "kept for game work cannot take Coney Studio" in result.message
 
 
 def test_a_networking_issue_does_not_take_the_place_kept_for_game_work(scene: Scene, sources: FakeSources) -> None:
@@ -343,8 +398,12 @@ def test_the_place_kept_for_the_renderer_does_not_take_game_or_studio_work(scene
     scene.unit("b-game")
     scene.unit("c-fix", kind="fix")
     sources.ready_issues = [issue(7, "P-high"), issue(8, "studio"), issue(9, NETWORKING)]
+    with_lapse(scene, ())  # without the lapse, a kept place takes only its own track's work
     result = check(scene, sources)
     assert not result.blocked and "kept for the renderer cannot take game, Coney Studio" in result.message
+    with_lapse(scene, ("renderer",))  # with it, no renderer issue can start, so the place is open
+    result = check(scene, sources)
+    assert result.blocked and "The place kept for renderer lapsed" in result.message
 
 
 def test_a_renderer_issue_does_not_take_the_place_kept_for_game_work(scene: Scene, sources: FakeSources) -> None:
@@ -974,6 +1033,43 @@ def test_the_report_lists_active_waivers_and_counts_the_ended(scene: Scene) -> N
     assert lines[0] == "waivers: 1 active" and "#2 2 place(s), machine-load" in lines[1]
     assert lines[-1] == "  (1 ended, in slot-waivers.jsonl)"
     assert slot_waivers.report([], scene.now()) == ["waivers: none active"]
+
+
+def test_a_waiver_that_names_issues_ends_when_they_all_close(scene: Scene, sources: FakeSources) -> None:
+    # Issue 1370: waiver #17 kept two places waived for hours after the issues it waited on had merged.
+    scene.unit("a-one")
+    sources.ready_issues = [issue(5), issue(6)]
+    waive(scene, 2, "maintainer-pause", 24, issues=(1360, 1361), note="paused until the gate issues merge")
+    sources.closed_issues = {1360}
+    assert not check(scene, sources).blocked  # one of them is still open
+    sources.closed_issues = {1360, 1361}
+    result = check(scene, sources)
+    assert result.blocked and "Active waivers" not in result.message
+    assert "waiver #1 ended: every issue it names is closed (#1360, #1361)" in result.message
+    (waiver,) = slot_waivers.read_waivers(scene.scratch)
+    assert not waiver.active(scene.now()) and waiver.ended == "every issue it names is closed (#1360, #1361)"
+    assert slot_waivers.report([waiver], scene.now()) == ["waivers: none active", "  (1 ended, in slot-waivers.jsonl)"]
+    sources.closed_issues = set()  # ended for good: a reopened issue does not bring it back
+    assert check(scene, sources).blocked
+
+
+def test_a_waiver_without_issues_runs_its_hours_and_reads_nothing(scene: Scene, sources: FakeSources) -> None:
+    scene.unit("a-one")
+    sources.ready_issues = [issue(5), issue(6)]
+    waive(scene, 2)
+    sources.closed_issues = {5, 6}
+    assert not check(scene, sources).blocked and "closed" not in sources.calls
+
+
+def test_a_waiver_whose_issues_cannot_be_read_stays(scene: Scene, sources: FakeSources) -> None:
+    scene.unit("a-one")
+    sources.ready_issues = [issue(5), issue(6)]
+    waive(scene, 2, "maintainer-decision", 24, issues=(1360,))
+    sources.closed_issues = {1360}
+    sources.down = {"closed"}
+    result = check(scene, sources)
+    assert not result.blocked and any("whether the issues of waiver #1 are closed" in w for w in result.warnings)
+    assert slot_waivers.read_waivers(scene.scratch)[0].ended == ""
 
 
 # --- the Stop hook's cap on blocks in a row -------------------------------------------------------------------------

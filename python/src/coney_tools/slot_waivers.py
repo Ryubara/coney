@@ -6,13 +6,16 @@
 coordinator knows them: the maintainer asked for a pause, the work waits on a maintainer decision, the machine is too
 loaded. `task slots --waive N --reason <code>` records that for N places, for at most the hours the reason code allows
 (`tasks.start.fill.waivers` in `.github/conventions.yml`, which holds the codes). The log is one JSON object per line
-in the scratch folder and is never edited: a waiver ends by expiring, and `task slots` lists the active ones.
+in the scratch folder and is never edited: a waiver ends by expiring, or, when it names issues (`--issues`), as soon as
+the fill check finds every one of them closed, which appends an end record (`end_waiver`) that every reader applies
+(issue 1370: a pause until three issues merged kept two places waived for hours after they had). A waiver that names
+no issue runs its hours. `task slots` lists the active ones.
 """
 
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -40,6 +43,8 @@ class Waiver:
     issues: tuple[int, ...]
     #: Who made it: the agent type and id the hook vouched for, or `unverified`.
     who: str
+    #: Why it ended before `until` (its issues closed), from an end record of the log; empty while it runs its hours.
+    ended: str = ""
 
     def active(self, now: datetime) -> bool:
         """Whether the waiver still runs at `now`."""
@@ -90,13 +95,42 @@ def _parse(line: str) -> Waiver | None:
         return None
 
 
+def _parse_end(line: str) -> tuple[int, datetime, str] | None:
+    """The waiver id, time and reason of an end record (`end_waiver`), or None for a line that is not one."""
+    try:
+        data = json.loads(line)
+        if data["v"] != VERSION:
+            return None
+        return int(data["end"]), parse_time(str(data["at"])), str(data["why"])
+    except (ValueError, KeyError, TypeError):
+        return None
+
+
 def read_waivers(scratch: Path) -> list[Waiver]:
-    """Every waiver in the log, oldest first; a line that cannot be read is skipped (a damaged log excuses nothing)."""
+    """Every waiver in the log, oldest first, each ended at its end record when it has one; a line that cannot be read
+    is skipped (a damaged log excuses nothing)."""
     try:
         text = (scratch / WAIVER_FILE).read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
         return []
-    return [waiver for waiver in (_parse(line) for line in text.splitlines() if line.strip()) if waiver is not None]
+    lines = [line for line in text.splitlines() if line.strip()]
+    ends = {found[0]: found[1:] for found in (_parse_end(line) for line in lines if '"end"' in line) if found}
+    waivers = [waiver for waiver in (_parse(line) for line in lines) if waiver is not None]
+    return [
+        replace(waiver, until=min(waiver.until, ends[waiver.id][0]), ended=ends[waiver.id][1])
+        if waiver.id in ends
+        else waiver
+        for waiver in waivers
+    ]
+
+
+def end_waiver(scratch: Path, waiver: Waiver, now: datetime, why: str) -> Waiver:
+    """End a waiver at `now` for `why` (every issue it names is closed): an end record appended to the log, which
+    `read_waivers` applies; the waiver as it now reads."""
+    record = {"v": VERSION, "end": waiver.id, "at": iso_time(now), "why": why}
+    with (scratch / WAIVER_FILE).open("a", encoding="utf-8", newline="\n") as log:
+        log.write(json.dumps(record) + "\n")
+    return replace(waiver, until=min(waiver.until, now), ended=why)
 
 
 def active_waivers(waivers: list[Waiver], now: datetime) -> list[Waiver]:

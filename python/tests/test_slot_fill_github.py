@@ -544,3 +544,18 @@ def test_a_fix_is_not_over_while_a_pull_request_is_open_or_none_exists(
 def test_a_fix_is_not_over_when_github_cannot_be_read(tmp_path: Path, gh: FakeGh, clock: Clock) -> None:
     gh.fail = "api graphql"
     assert sources(tmp_path, gh, clock).pulls_over((7,)) is False
+
+
+def test_the_issues_a_waiver_names_are_closed_in_any_way_and_read_in_one_query(
+    tmp_path: Path, gh: FakeGh, clock: Clock
+) -> None:
+    gh.states = {
+        1: issue_node("OPEN"),
+        2: issue_node("CLOSED", "COMPLETED"),
+        3: issue_node("CLOSED", "NOT_PLANNED"),
+        4: {"__typename": "PullRequest", "state": "MERGED"},
+        5: {"__typename": "PullRequest", "state": "OPEN"},
+        99: None,  # GitHub has no such number: not closed, so the waiver runs its hours
+    }
+    assert sources(tmp_path, gh, clock).closed([1, 2, 3, 4, 5, 99]) == {2, 3, 4}
+    assert gh.queries("issueOrPullRequest") == 1

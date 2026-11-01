@@ -50,6 +50,10 @@ CARDS_QUERY = (
     "body}}}}}}"
 )
 
+#: Whether an issue or a pull request is closed, for a waiver that names issues (a pull request's state is MERGED once
+#: merged).
+STATE_FIELDS = "__typename ... on Issue{state} ... on PullRequest{state}"
+
 #: The finished-ness of a blocker: an issue's state and the pull requests that close it, or a pull request's merge.
 BLOCKER_FIELDS = (
     "__typename ... on Issue{state stateReason closedByPullRequestsReferences(first:10,includeClosedPrs:true)"
@@ -419,6 +423,26 @@ class GhSources:
             raise ConfigError("gh api graphql did not return the repository")
         here = str(repository.get("nameWithOwner") or "").lower()
         return {number: _is_finished(repository.get(f"b{number}"), here) for number in numbers}
+
+    def closed(self, numbers: Collection[int]) -> set[int]:
+        """Which of `numbers` are closed (an issue in any way, a pull request merged or closed), for the waivers that
+        name issues: one query of `BLOCKERS_PER_QUERY` numbers at most each, not kept in the cache (it is asked only
+        while such a waiver runs). A number GitHub does not know is not closed, so its waiver runs its hours."""
+        found: set[int] = set()
+        wanted = sorted(set(numbers))
+        for start in range(0, len(wanted), BLOCKERS_PER_QUERY):
+            part = wanted[start : start + BLOCKERS_PER_QUERY]
+            aliases = " ".join(f"b{n}:issueOrPullRequest(number:{n}){{{STATE_FIELDS}}}" for n in part)
+            query = f"query($owner:String!,$name:String!){{repository(owner:$owner,name:$name){{{aliases}}}}}"
+            data = self._graphql(query, {"owner": "{owner}", "name": "{repo}"}, _only_not_found)
+            repository = data.get("repository")
+            if not isinstance(repository, dict):
+                raise ConfigError("gh api graphql did not return the repository")
+            for number in part:
+                node = repository.get(f"b{number}")
+                if isinstance(node, dict) and node.get("state") in ("CLOSED", "MERGED"):
+                    found.add(number)
+        return found
 
     def pulls_over(self, issues: Collection[int]) -> bool:
         """Whether the pull request that closes one of `issues` is merged or closed (`task_slots.pulls_over`); False

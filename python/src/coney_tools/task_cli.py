@@ -126,7 +126,7 @@ def add_task_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser])
     slots.add_argument(
         "--issues",
         metavar="N,M",
-        help="with --waive: the issues the work is blocked on (a code that blocks issues names them)",
+        help="with --waive: the issues the work waits on; the waiver ends when they are all closed",
     )
     slots.add_argument(
         "--admit",
@@ -358,9 +358,15 @@ def _run_slots(
         if args.json:
             shown = task_slots.as_json(current, conventions, build_slots)
             shown["waivers"] = [slot_waivers.as_json(waiver) for waiver in slot_waivers.active_waivers(waivers, now())]
+            shown["lapsed"] = task_slots.read_lapses(scratch, conventions, now())
             print(json.dumps(shown, indent=2))
         else:
-            lines = [*task_slots.report(current, conventions, build_slots), *slot_waivers.report(waivers, now())]
+            lines = [
+                *task_slots.report(
+                    current, conventions, build_slots, task_slots.read_lapses(scratch, conventions, now())
+                ),
+                *slot_waivers.report(waivers, now()),
+            ]
             print("\n".join(lines))
         return 0
     brief = ""

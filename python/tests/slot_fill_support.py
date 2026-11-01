@@ -79,6 +79,8 @@ class FakeSources:
         #: The issues whose fix task has nothing left to fix: their pull request merged or closed.
         self.over: set[int] = set()
         self.asked_over: list[tuple[int, ...]] = []
+        #: The issues that are closed, for the waivers that name issues (`closed`).
+        self.closed_issues: set[int] = set()
         #: The methods that raise ConfigError, as a GitHub that cannot be read does.
         self.down: set[str] = set()
         self.calls: list[str] = []
@@ -107,6 +109,10 @@ class FakeSources:
     def pulls_over(self, issues: Collection[int]) -> bool:
         self.asked_over.append(tuple(issues))
         return any(number in self.over for number in issues)
+
+    def closed(self, numbers: Collection[int]) -> set[int]:
+        self._read("closed")
+        return {number for number in numbers if number in self.closed_issues}
 
 
 def full_places(scene: Scene) -> None:

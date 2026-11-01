@@ -128,7 +128,9 @@ def _slot_check(task: TaskFile, env: StartEnv, engine: Engine) -> tuple[str, str
         told.renderer if told is not None else False,
     )
     current = task_slots.scan(env.scratch, conventions, env.now(), labels=labels)
-    fit = task_slots.room(current, track, task.task, conventions, env.build_slots, task.kind)
+    # A kept place whose track had nothing to start when the fill check last looked is open (tasks.start.slots.lapse).
+    lapsed = task_slots.read_lapses(env.scratch, conventions, env.now())
+    fit = task_slots.room(current, track, task.task, conventions, env.build_slots, task.kind, lapsed)
     line = f"slots: {fit.note(task.task)}"
     if fit.fits:
         return line, None

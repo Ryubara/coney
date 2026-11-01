@@ -102,6 +102,10 @@ class Sources(Protocol):
         a fix task for it has nothing left to fix."""
         ...
 
+    def closed(self, numbers: Collection[int]) -> set[int]:
+        """Which of `numbers` (issues or pull requests) are closed or merged: a waiver that names them all ends."""
+        ...
+
 
 @dataclass(frozen=True)
 class Check:
@@ -456,14 +460,18 @@ def fill_check(
     networking_issues = {card.issue for card in mine if card.networking}
     renderer_issues = {card.issue for card in mine if card.renderer}
     reasons: list[str] = []
+    # The places each track keeps now, before any lapses: the work is read for all of them, so a kept place whose
+    # track has nothing to start can lapse and open to the rest (tasks.start.slots.lapse).
+    kept = places.kept_places(current, conventions)
     # Work for the kept and open places: a claimed task with no agent first, then the ready issues by priority.
-    wants = free.game + free.open + free.networking + free.renderer
+    wants = free.game + free.open + free.networking + free.renderer + kept["networking"] + kept["renderer"]
     waiting = waiting_tasks(scratch, conventions, current, claimed, now) if wants else []
     # A claimed workflow task would hold no place once it runs, so it is not work for a free one.
     exempt_workflow = conventions.tasks.start.slots.exempt_workflow
     placeless = {card.issue for card in mine if exempt_workflow and card.in_workflow}
     waiting = [task for task in waiting if not placeless.intersection(task.issues)]
     work = [_game_work(task, studio_issues, networking_issues, renderer_issues) for task in waiting]
+    issues_read = False
     if wants:
         try:
             analysis = analyse_issues(
@@ -471,14 +479,16 @@ def fill_check(
                 counted_claims(mine),
                 conventions,
                 sources,
-                max(free.game + free.open - sum(1 for item in work if item.track not in ("networking", "renderer")), 0),
+                # Every free place may be open once a kept one lapses, so enough work for all of them is looked for.
+                max(free.total - sum(1 for item in work if item.track not in ("networking", "renderer")), 0),
                 max(
                     free.game - sum(1 for item in work if places.fills_game_place(item.kind, item.track, conventions)),
                     0,
                 ),
-                max(free.networking - sum(1 for item in work if item.track == "networking"), 0),
-                max(free.renderer - sum(1 for item in work if item.track == "renderer"), 0),
+                max(kept["networking"] - sum(1 for item in work if item.track == "networking"), 0),
+                max(kept["renderer"] - sum(1 for item in work if item.track == "renderer"), 0),
             )
+            issues_read = True
         except ConfigError as error:
             warnings.append(f"the ready issues could not be read ({error})")
             analysis = Analysis((), ())
@@ -503,6 +513,10 @@ def fill_check(
         ]
         if not work_fix:
             reasons.append("no open pull request has a failed required check without a fix unit")
+    lapsed = _lapses(conventions, kept, work, issues_read)
+    task_slots.write_lapses(scratch, now, lapsed)
+    reasons += [f"the place kept for {track} lapsed, so it is open: {why}" for track, why in lapsed.items()]
+    free = places.free_places(current, conventions, build_slots, lapsed)
     # The kept game place takes the first game work of a kind that fills it (`feature`), the one kept for networking
     # the first networking work, the one kept for the renderer the first renderer work; every open place, the next work
     # in order that is neither (their tracks hold at most `max` units, so they never take an open place).
@@ -535,7 +549,7 @@ def fill_check(
             )
         text = "; ".join(reasons) or "there is no work to start"
         return Check(False, f"ok: {text} ({summary})", tuple(warnings))
-    waivers = slot_waivers.active_waivers(slot_waivers.read_waivers(scratch), now)
+    waivers, ended = _running_waivers(scratch, now, sources, warnings)
     waived = sum(waiver.slots for waiver in waivers)
     if startable <= waived:
         named = "; ".join(waiver.line(now) for waiver in waivers)
@@ -548,6 +562,7 @@ def fill_check(
         "there is a reason (docs/guides/slot-fill.md).",
         f"Now: {summary}.",
     ]
+    lines += [f"The place kept for {track} lapsed, so it is open: {why}." for track, why in lapsed.items()]
     if game_work:
         lines.append(
             f"Start now, for the {free.game} place(s) kept for game work (a `feature` task), most urgent first:"
@@ -571,5 +586,58 @@ def fill_check(
         lines += [f"  - {item}" for item in work_fix[: fill.top]]
     if waived:
         lines.append(f"Active waivers cover {waived} place(s); {startable} could start work.")
+    lines += [f"waiver #{waiver.id} ended: {waiver.ended}" for waiver in ended]
     lines.append(f"A reason to leave a place free is a waiver (logged, expiring): {waiver_hint(conventions)}")
     return Check(True, "\n".join(lines), tuple(warnings))
+
+
+def _lapses(
+    conventions: Conventions,
+    kept: dict[str, int],
+    work: list[places.Work],
+    issues_read: bool,
+) -> dict[str, str]:
+    """The tracks of `tasks.start.slots.lapse.tracks` that keep a place now and have nothing to start, each with why:
+    no claimed task and no ready, unblocked issue of its own. Issues that could not be read (GitHub down) lapse
+    nothing. The fix track is never listed (conventions.py refuses it): a pull request that fails always finds its
+    place."""
+    lapsed: dict[str, str] = {}
+    for track in conventions.tasks.start.slots.lapse_tracks:
+        if not kept.get(track):
+            continue
+        if issues_read and track == "reimplementation":
+            if not any(places.fills_game_place(item.kind, item.track, conventions) for item in work):
+                lapsed[track] = "no game (`feature`) task or issue can start"
+        elif issues_read and not any(item.track == track for item in work):
+            lapsed[track] = f"no {track} task or issue can start (none is claimed and waiting, ready and unblocked)"
+    return lapsed
+
+
+def _running_waivers(
+    scratch: Path, now: datetime, sources: Sources, warnings: list[str]
+) -> tuple[list[slot_waivers.Waiver], list[slot_waivers.Waiver]]:
+    """The active waivers, and those this call ended because every issue they name is closed (one GitHub read for all
+    their issues; a waiver that names none runs its hours and reads nothing). A read that fails keeps every waiver,
+    with a warning: an end is written only for issues seen closed."""
+    active = slot_waivers.active_waivers(slot_waivers.read_waivers(scratch), now)
+    named = sorted({number for waiver in active for number in waiver.issues})
+    if not named:
+        return active, []
+    try:
+        closed = sources.closed(named)
+    except ConfigError as error:
+        warnings += [
+            f"whether the issues of waiver #{waiver.id} are closed was not read ({error})"
+            for waiver in active
+            if waiver.issues
+        ]
+        return active, []
+    running: list[slot_waivers.Waiver] = []
+    ended: list[slot_waivers.Waiver] = []
+    for waiver in active:
+        if waiver.issues and all(number in closed for number in waiver.issues):
+            why = f"every issue it names is closed ({', '.join(f'#{n}' for n in waiver.issues)})"
+            ended.append(slot_waivers.end_waiver(scratch, waiver, now, why))
+        else:
+            running.append(waiver)
+    return running, ended

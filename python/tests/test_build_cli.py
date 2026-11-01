@@ -16,7 +16,16 @@ from typing import Any, ClassVar
 
 import pytest
 
-from coney_tools import build_cli, build_record, build_root, build_run, compiler_cache, pcsx2_proc, process_lifetime
+from coney_tools import (
+    build_cli,
+    build_record,
+    build_root,
+    build_run,
+    compiler_cache,
+    identity,
+    pcsx2_proc,
+    process_lifetime,
+)
 from coney_tools.build_claims import FAST_LANE, MAIN_LANE, default_slots, folder_lock
 from coney_tools.cli import _build_parser, main
 from coney_tools.config import ConfigError
@@ -992,6 +1001,25 @@ def test_the_detached_child_on_windows_has_no_window_and_a_group_of_its_own(monk
     hidden = CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP
     assert seen == [hidden | CREATE_BREAKAWAY_FROM_JOB, hidden]
     assert not any(flags & DETACHED_PROCESS for flags in seen)
+
+
+def test_the_detached_child_gets_the_callers_verified_identity(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    # The hook removes the caller's identity file when its command returns, before the child reads it (issue 1370):
+    # without a file of its own, a detached task check stamps as unverified.
+    seen: list[dict[str, str]] = []
+
+    class FakePopen:
+        pid = 7
+
+        def __init__(self, command: list[str], **kwargs: Any) -> None:
+            seen.append(kwargs["env"])
+
+    caller = identity.Identity(id="a1", type="tooling", model="claude-opus-5-5", verified=True, session="s1")
+    monkeypatch.setattr(identity, "current", lambda: caller)
+    monkeypatch.setattr(identity, "default_folder", lambda: tmp_path)
+    monkeypatch.setattr(subprocess, "Popen", FakePopen)
+    assert build_cli.spawn_detached(["x"], Path(), Path(os.devnull)) == 7
+    assert identity.load(seen[0], folder=tmp_path) == caller
 
 
 def set_game_dir(checkout: Path, game: Path) -> None:

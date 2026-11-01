@@ -1265,3 +1265,18 @@ def test_a_rerun_of_an_adopted_start_changes_nothing(world: World) -> None:
 def test_the_command_line_has_adopt() -> None:
     assert parse("start", "10-fix").adopt is False
     assert parse("start", "10-fix", "--adopt").adopt is True
+
+
+def test_task_start_follows_a_lapsed_kept_place(world: World) -> None:
+    # Issue 1370: the guard and `task start` read the fill check's record of the places that lapsed.
+    # Two game units and a fix leave one place, the one kept for networking; the fix place never lapses.
+    world.conventions = with_networking_place(world.conventions, CONVENTIONS.tasks.start.slots.tracks.networking.min)
+    plant_unit(world, "30-x")
+    plant_unit(world, "31-x")
+    plant_unit(world, "32-x", kind="fix")
+    world.ready()
+    assert world.run() == 1 and "1 kept for networking" in world.said()
+    world.output.clear()
+    task_slots.write_lapses(world.scratch, world.clock.now(), {"networking": "no networking task or issue can start"})
+    assert world.run() == 0
+    assert "slots: 4 of 4 places on this machine in use" in world.said()

@@ -155,3 +155,27 @@ def test_a_main_caller_with_a_session_is_vouched_for(tmp_path: Path) -> None:
     found = identity.load({"CONEY_AGENT_TOKEN": TOKEN}, folder=tmp_path)
     assert found.verified and found.session == "s1"
     assert stamps.who_from_env("coney-tools x", {"CONEY_AGENT_TOKEN": TOKEN}, tmp_path)["source"] == "hook"
+
+
+def test_a_verified_identity_is_handed_on_to_a_process_started_later(tmp_path: Path) -> None:
+    # A detached run's child starts after the hook removed the caller's file (issue 1370): it gets one of its own.
+    found = identity.Identity(id="a1", type="tooling", model="claude-opus-5-5", verified=True, session="s1")
+    token = identity.hand_on(found, folder=tmp_path, now=NOW)
+    assert token is not None and token != TOKEN
+    assert identity.load({"CONEY_AGENT_TOKEN": token}, folder=tmp_path, now=NOW + 60) == found
+    # It lives as long as a file the hook writes, then the child finds none.
+    assert not identity.load({"CONEY_AGENT_TOKEN": token}, folder=tmp_path, now=NOW + identity.HAND_ON_SECONDS).verified
+
+
+def test_an_unverified_identity_is_never_handed_on(tmp_path: Path) -> None:
+    assert identity.hand_on(identity.Identity(), folder=tmp_path, now=NOW) is None
+    assert not list(tmp_path.glob("*"))
+
+
+def test_the_environment_of_a_later_process_carries_only_a_handed_on_token(tmp_path: Path) -> None:
+    found = identity.Identity(id="a1", type="tooling", model="claude-opus-5-5", verified=True, session="s1")
+    env = identity.child_environment({"CONEY_AGENT_TOKEN": TOKEN, "PATH": "p"}, found, folder=tmp_path, now=NOW)
+    assert env["PATH"] == "p" and env["CONEY_AGENT_TOKEN"] != TOKEN
+    assert identity.load(env, folder=tmp_path, now=NOW).verified
+    # An unverified caller passes on no token at all, not its own (which would expire or be removed anyway).
+    assert "CONEY_AGENT_TOKEN" not in identity.child_environment({"CONEY_AGENT_TOKEN": TOKEN}, identity.Identity())

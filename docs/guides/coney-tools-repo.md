@@ -449,9 +449,16 @@ pull request and on the whole codebase nightly ([building](clang-tidy.md)).
   whole suite: 9612 passed`); the stamp keeps the counts as `detail.pytest` (passed, skipped, deselected) and the scope
   as `detail.pytest_scope` ([below](#task-check-pytest)), and the facts of `pr text` report them beside the checks
   that ran; `detail.tests` holds only the build's counts, so a profile without a build has none.
-* A `full` run can take an hour. Start it with `run_in_background`, write STATUS.md and stop; it has no budget cap and
-  waits for a slot up to `--max-wait`. Start it with `PYTHONUNBUFFERED=1` and redirect its output to a file: every line
-  is flushed as it is printed, so `tail` of that file shows it grow.
+* A `full` run can take an hour. **Start it with `--detach`**, write STATUS.md and stop: the run starts in a process
+  of its own, apart from your shell, and returns at once, so a `timeout` wrapper or a background tool's limit that kills
+  the shell no longer ends it (on 2026-11-01 two runs died that way, one after its build had linked and one at 2988 of
+  3655 tests, an hour of work each with no stamp and no error; issue 1370). Its output goes to
+  `task-check-detached.out` in the worktree's scratch folder, and `task check --result` prints that output and the
+  run's exit code once it ended, `75` while it runs and `1` with `ended without a result` when its process was killed;
+  a second `--detach` while one runs is refused. The run has no budget cap and waits for a slot up to `--max-wait`.
+  A run in the foreground flushes every line as it is printed, so a redirected output file shows it grow. A rerun
+  starts from the beginning (only the build itself is incremental); resuming from the checks already passed for the
+  same change is not built.
 * **It is live.** Each check prints `[14:03:09] start <check>` when it begins and `[14:41:20] ok   <check>: ...` when it
   ends; the build is one stage (`start msvc-ci-build and ctest-full-disc`) that prints its own waiting and `still
   running` lines. A long check streams its output to `check-logs/<program>.log` in the task's scratch folder and says it
@@ -654,7 +661,7 @@ coney-tools task slots [--json] [--fill-check] [--session ID] [--waive N] [--rea
 | `--reason CODE` | text | none | with --waive: a code of tasks.start.fill.waivers.codes |
 | `--hours H` | number | none | with --waive: how long it runs (within the code's hours) |
 | `--note TEXT` | text | none | with --waive: why, in words |
-| `--issues N,M` | text | none | with --waive: the issues the work is blocked on (a code that blocks issues names them) |
+| `--issues N,M` | text | none | with --waive: the issues the work waits on; the waiver ends when they are all closed |
 | `--admit` | flag | off | check a start instead of listing: exit 0 when it may, 3 with the reasons when it is refused (any other code: it could not judge) |
 | `--agent-type AGENT_TYPE` | text | `engineer` | with --admit: the subagent type (default: engineer) |
 | `--task TASK` | text | none | with --admit: the task id (default: the `Task id:` line of the brief) |
@@ -710,7 +717,7 @@ disc) and stamp the result, bound to the change.
 
 ```text
 coney-tools task check [TASK] [--worktree WORKTREE] [--base BASE] [--agent AGENT] [--profile PROFILE] [--keep-going]
-    [--dry-run] [--max-wait MIN]
+    [--dry-run] [--max-wait MIN] [--detach] [--result]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -723,6 +730,8 @@ coney-tools task check [TASK] [--worktree WORKTREE] [--base BASE] [--agent AGENT
 | `--keep-going` | flag | off | run every check even after one fails |
 | `--dry-run` | flag | off | print the profile and the checks; run nothing |
 | `--max-wait MIN` | number | `240.0` | minutes the build may wait for a slot before giving up with exit 75 (default 240.0) |
+| `--detach` | flag | off | run apart from this shell (a killed caller does not end it), return at once; --result shows the outcome |
+| `--result` | flag | off | print the output and outcome of the worktree's last --detach run (exit 75 while it runs) |
 
 ### `task review` {#task-review-usage}
 

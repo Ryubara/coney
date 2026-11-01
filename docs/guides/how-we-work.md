@@ -231,7 +231,8 @@ Engineer work runs in five tracks (maintainer decisions of 2026-10-28, which put
 A machine holds a fixed number of units of all tracks together for each of its build slots, the ones `coney-tools build`
 keeps ([Engineer tracks](agents.md#slots) has the number and the evidence for it). One place is kept for game work while
 no `feature` unit runs, one for a fix, one for networking and one for the renderer while none runs, so Studio never
-takes any of them (a machine with one build slot cannot keep all four) (`tasks.start.slots` in
+takes any of them (a machine with one build slot cannot keep all four), except that the networking place
+lapses while its track has nothing to start ([A kept place lapses](slot-fill.md#lapse)) (`tasks.start.slots` in
 [.github/conventions.yml](repo:.github/conventions.yml)); `task start` refuses a start over the limit and the
 coordinator's Agent guard refuses the engineer before it starts ([Engineer tracks](agents.md#slots) has the rule in
 full). There are no standing teams: the coordinator assigns the next task from the triaged issues, `P-critical` first

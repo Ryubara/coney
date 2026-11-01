@@ -671,7 +671,8 @@ def test_configure_build_is_one_claim_and_the_test_run_another(tmp_path: Path) -
     kinds = [run.toolchain.kind(c) for c in run.toolchain.commands]
     assert kinds == ["configure", "build", "test"]  # no -R: nothing to count first
     assert run.toolchain.during["configure"] == run.toolchain.during["build"] == (1, 0)
-    assert run.toolchain.during["test"] == (1, 0)  # no -R: every test, so a main slot
+    assert run.toolchain.during["test"] == (0, 0)  # no -R: every test, so a check slot and no build slot
+    assert run.toolchain.checks_during["test"] == 1
     assert run.main.status().queue == [] and all(r.claim is None for r in run.main.status().slots)
     assert all(r.claim is None for r in run.fast.status().slots)
 
@@ -685,10 +686,11 @@ def test_a_test_run_of_few_selected_tests_takes_the_fast_lane(tmp_path: Path) ->
     assert listing[-2:] == ["-R", "core"]
 
 
-def test_a_test_run_selecting_many_tests_or_all_takes_a_main_slot(tmp_path: Path) -> None:
+def test_a_test_run_selecting_many_tests_takes_a_check_slot_and_no_build_slot(tmp_path: Path) -> None:
     many = Run(tmp_path / "many", test=True, regex="smoke")
     many.toolchain.output["ctest-list"] = (0, "Total Tests: 21\n")
-    assert many.go().ok and many.toolchain.during["test"] == (1, 0)
+    assert many.go().ok and many.toolchain.during["test"] == (0, 0)
+    assert many.toolchain.checks_during["test"] == 1
     exactly = Run(tmp_path / "exactly", test=True, regex="smoke")
     exactly.toolchain.output["ctest-list"] = (0, "Total Tests: 20\n")
     assert exactly.go().ok and exactly.toolchain.during["test"] == (0, 1)
@@ -716,16 +718,16 @@ def _timed_run(tmp_path: Path, folder_costs: str | None, shared: str | None = No
     return run
 
 
-def test_a_filtered_run_whose_recorded_time_is_long_takes_a_main_slot_whatever_its_count(tmp_path: Path) -> None:
+def test_a_filtered_run_whose_recorded_time_is_long_takes_a_check_slot_whatever_its_count(tmp_path: Path) -> None:
     run = _timed_run(tmp_path, f"{CHASE} 2 1500.0\n")
     assert run.go().ok
-    assert run.toolchain.during["test"] == (1, 0)
-    assert any("1 test expected to take 25.0 min" in line and "main lane" in line for line in run.lines)
+    assert run.toolchain.during["test"] == (0, 0) and run.toolchain.checks_during["test"] == 1
+    assert any("1 test expected to take 25.0 min" in line and "check lane" in line for line in run.lines)
 
 
-def test_another_worktrees_record_sends_a_fresh_folders_long_run_to_a_main_slot(tmp_path: Path) -> None:
+def test_another_worktrees_record_sends_a_fresh_folders_long_run_to_a_check_slot(tmp_path: Path) -> None:
     run = _timed_run(tmp_path, None, shared=f"{CHASE} 2 1500.0\n")
-    assert run.go().ok and run.toolchain.during["test"] == (1, 0)
+    assert run.go().ok and run.toolchain.during["test"] == (0, 0) and run.toolchain.checks_during["test"] == 1
 
 
 def test_a_filtered_run_whose_recorded_time_is_short_takes_the_fast_lane(tmp_path: Path) -> None:
@@ -744,11 +746,11 @@ def test_the_time_limit_can_be_turned_off(tmp_path: Path) -> None:
     assert run.go().ok and run.toolchain.during["test"] == (0, 1)
 
 
-def test_lane_main_sends_a_small_build_and_a_small_test_run_to_a_main_slot(tmp_path: Path) -> None:
+def test_lane_main_sends_a_small_build_to_a_main_slot_and_a_small_test_run_to_a_check_slot(tmp_path: Path) -> None:
     run = _timed_run(tmp_path, f"{CHASE} 2 40.0\n", lane="main")
     assert run.go().ok
     assert run.toolchain.during["build"] == (1, 0)  # two steps out of date, which would take the fast lane
-    assert run.toolchain.during["test"] == (1, 0)
+    assert run.toolchain.during["test"] == (0, 0) and run.toolchain.checks_during["test"] == 1
     assert not any(c[0] == "ninja" for c in run.toolchain.commands)  # nothing measured
 
 
@@ -920,7 +922,7 @@ def test_the_claim_records_the_step_while_it_runs(tmp_path: Path) -> None:
     original = run.toolchain.run
 
     def watching(command: list[str], on_line: Callable[[str], None]) -> int:
-        for row in run.main.status().slots + run.fast.status().slots:
+        for row in run.main.status().slots + run.fast.status().slots + run.check.status().slots:
             if row.claim:
                 seen.append(row.claim.step)
         return original(command, on_line)
@@ -982,8 +984,7 @@ def test_a_test_phase_that_cannot_get_a_slot_reports_the_finished_build(tmp_path
     def building(command: list[str], on_line: Callable[[str], None]) -> int:
         code = original(command, on_line)
         if run.toolchain.kind(command) == "build":
-            occupy(run.main, run, "bob", 101)
-            occupy(run.main, run, "carol", 102)
+            occupy(run.check, run, "bob", 101)  # the test run waits for a check slot, not a build slot
         return code
 
     run.toolchain.run = building  # type: ignore[method-assign]
@@ -1175,7 +1176,7 @@ def test_a_regex_and_a_label_together_select_with_both(tmp_path: Path) -> None:
     run.toolchain.output["ctest-list"] = (0, "Total Tests: 400\n")
     assert run.go().ok
     assert ["ctest", "--preset", "dev", "-j", "8", "-R", "level80", "-L", "disc"] in run.toolchain.commands
-    assert run.toolchain.during["test"] == (1, 0)
+    assert run.toolchain.during["test"] == (0, 0) and run.toolchain.checks_during["test"] == 1
 
 
 def test_a_label_that_selects_no_tests_fails_and_says_so(tmp_path: Path) -> None:
@@ -1427,17 +1428,18 @@ def test_the_test_phase_counts_the_whole_call_against_the_budget(tmp_path: Path)
     def building(command: list[str], on_line: Callable[[str], None]) -> int:
         code = original(command, on_line)
         if run.toolchain.kind(command) == "build":
-            occupy(run.main, run, "bob", 101)
-            occupy(run.main, run, "carol", 102)
+            occupy(run.check, run, "bob", 101)  # the test run waits for a check slot, not a build slot
         return code
 
     run.toolchain.run = building  # type: ignore[method-assign]
     result = run.go()
     assert result.exit_code == 75
-    # 40 min of build, then the full test run (typical 10 min) leaves after about 5 min of waiting.
-    assert 44 * MINUTE < run.now - NOW <= 45 * MINUTE
+    # 40 min of build, then the full test run (typical 10 min) behind a check slot the queue expects to stay held for
+    # about 35 min more: the wait cannot end inside the budget, so it leaves at its first look.
+    assert run.now - NOW <= 41 * MINUTE
     text = "\n".join(result.summary)
     assert "build: ok" in text and "test: still queued" in text and "the tests would take about 10 min" in text
+    assert "the queue ahead is about" in text
 
 
 def test_the_wait_for_the_build_folder_counts_against_the_budget(tmp_path: Path) -> None:
@@ -1632,10 +1634,12 @@ def test_the_result_says_which_steps_ran(tmp_path: Path) -> None:
 # -- check slots and the live progress of the engine's full test run (issue 1135) ----------------------------------
 
 
-def test_a_full_test_run_holds_a_check_slot_besides_its_main_slot_and_frees_both(tmp_path: Path) -> None:
+def test_a_full_test_run_holds_a_check_slot_and_gives_its_build_slot_back(tmp_path: Path) -> None:
+    # Issue 1370: a disc ctest held a main slot for 40 minutes after its compile ended, and builds queued for it.
     run = Run(tmp_path, test=True)
     assert run.go().ok
-    assert run.toolchain.checks_during["test"] == 1 and run.toolchain.during["test"] == (1, 0)
+    assert run.toolchain.during["build"] == (0, 1)  # the compile holds a build slot (here the fast one)
+    assert run.toolchain.checks_during["test"] == 1 and run.toolchain.during["test"] == (0, 0)
     assert run.toolchain.checks_during.get("build", 0) == 0  # the build needs no check slot
     assert all(row.claim is None for row in run.check.status().slots)  # released with the run
 
@@ -1728,3 +1732,18 @@ def test_a_test_run_is_a_ctest_with_its_count_and_a_wait_for_the_check_slot_in_t
     final = read_progress(file)
     assert final["state"] == "running" and final["kind"] == "ctest" and final["queue"] is None
     assert final["done"] == {"done": 3, "of": 3, "unit": "tests", "failed": 0}
+
+
+def test_a_full_test_run_does_not_wait_behind_full_build_slots(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True)
+    occupy(run.main, run, "bob", 777)
+    occupy(run.main, run, "carol", 778)  # every main slot is building someone else's tree
+    result = run.go()
+    assert result.ok and not any(line.startswith("waiting for a build slot") for line in run.lines)
+
+
+def test_without_check_slots_a_big_test_run_takes_a_main_slot(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True)
+    run.check = None  # type: ignore[assignment]
+    run.toolchain.check = None
+    assert run.go().ok and run.toolchain.during["test"] == (1, 0)

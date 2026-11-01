@@ -29,6 +29,30 @@ renderer only renderer work, the one for game work only game work. Most
 urgent first is `tasks.start.fill.priority_order`: `P-critical` first, and while an unclaimed `P-critical` issue is
 ready only it is startable, as the claim Action demands ([Claiming](issues.md#claiming)).
 
+## A kept place lapses while its track has nothing to start {#lapse}
+
+A place a track keeps is for work that can start. On 2026-11-01 every networking issue was `S-blocked`, yet the place
+kept for networking stayed kept for hours, so two fix tasks could not start while the machine sat at 30% (issue
+1370). So **a kept place of a track in `tasks.start.slots.lapse.tracks` (the networking track) lapses while that
+track has nothing to start**, and is open to any track meanwhile:
+
+- **The check judges it.** Each run reads the work for every kept place, not only the free ones: a claimed task of the
+  track with no agent, or a ready issue of the track that is not blocked. A kept place with neither lapses, and the
+  check says so (`the place kept for networking lapsed, so it is open: ...`) and counts it as open. A track whose work
+  could not be read (GitHub down) keeps its place. The place kept for game work does not lapse: the reimplementation
+  track is not in the list. The place kept for a fix never lapses, and the conventions refuse the fix track in the
+  list: a pull request that fails must always find its fix place, so a full machine still takes a fix (a maintainer
+  decision of 2026-11-01).
+- **The check records it**, in `slot-lapses.json` in the scratch folder, rewritten whole at each run that judges, so
+  the place is kept again at the first run that finds the track's work (a blocker merged, an issue made ready).
+- **`task start` and the Agent guard follow the record** while it is younger than `tasks.start.slots.lapse.minutes`
+  (15): the lapsed place does not count against another track's start, and the start's line says so. An older record,
+  a missing one or a damaged one lapses nothing, so the rule never opens a place the check did not see empty. `task
+  slots` lists the lapsed places.
+
+A unit of the track that comes back finds the place taken until one frees: a place freed is kept for it again. Add the
+reimplementation track to the list to let the place kept for game work lapse too; that is a change of the conventions.
+
 **The start gate** is a key the tool reads (`tasks.start.fill.gate` in
 [.github/conventions.yml](repo:.github/conventions.yml)): with `enabled`, of the ready issues only those with a gate
 label, the listed issue numbers and `P-critical` issues are eligible. It carried the "workflow first" rule of
@@ -52,7 +76,8 @@ check says so, and lists the game or Studio work behind it instead.
   started then.
 - **The place kept for game work cannot take Coney Studio, networking, renderer, tooling or docs work**, and no game
   (`feature`) issue can start; likewise the place kept for networking cannot take anything but a networking issue, and
-  the one kept for the renderer anything but a renderer issue.
+  the one kept for the renderer anything but a renderer issue, while their tracks have work that can start (with none
+  the place [lapses](#lapse) and is open).
 - **The networking or renderer track is full**: a unit of it runs, and the track holds one.
 - **Free disk is below the floor** (`workspace.disk_min_free_gb`) on any [watched drive](workspace.md#watched-drives):
   a new unit builds, and a build folder is large. The drives are the workspace's, the build root's (it fills first
@@ -63,11 +88,18 @@ check says so, and lists the game or Studio work behind it instead.
 Anything else needs a waiver.
 
 **Waivers.** `coney-tools task slots --waive N --reason <code> --hours H --note "<why>" [--issues A,B]` says that `N`
-free places may stay free for `H` hours. It is logged (`slot-waivers.jsonl` in the scratch folder, never
-edited), expires by itself, and `task slots` lists the active ones. The codes are `tasks.start.fill.waivers.codes`; each
-has a meaning, the most hours it allows (`max_hours`, under the cap of `waivers.max_hours`) and whether `--issues` must
-name the blocked issues. The tool refuses a waiver that breaks them and prints the codes it knows: a maintainer's
-pause, a decision a maintainer owes, and a loaded machine (the last allows the fewest hours).
+free places may stay free for `H` hours. It is logged (`slot-waivers.jsonl` in the scratch folder, never edited),
+expires by itself, and `task slots` lists the active ones. **A waiver that names issues (`--issues`, on any code) also
+ends as soon as every one of them is closed**: the check reads their states in one call while such a waiver runs,
+appends an end record to the log (which every reader applies, so `task slots` counts it as ended) and says `waiver #N
+ended: every issue it names is closed (...)`. A waiver that names none runs its hours; so when the gap waits for issues
+(a pause until some pull requests merge), name them, or the places stay waived after they merge (on 2026-11-01 a pause
+until three issues merged kept two places waived for hours after they had; issue 1370). A read that fails keeps the
+waiver, with a warning, and an issue reopened later does not bring an ended waiver back. The codes are
+`tasks.start.fill.waivers.codes`; each has a meaning, the most hours it allows (`max_hours`, under the cap of
+`waivers.max_hours`) and whether `--issues` must name the blocked issues. The tool refuses a waiver that breaks them and
+prints the codes it knows: a maintainer's pause, a decision a maintainer owes, and a loaded machine (the last allows the
+fewest hours).
 
 The note is at least `waivers.note_min_characters` long. The check passes while the active waivers cover at least as
 many places as could start work now; waivers add up. Only the coordinator waives: `hooks.toml` refuses the command to
