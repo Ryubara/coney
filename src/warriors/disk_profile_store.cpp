@@ -146,6 +146,8 @@ const ProfileRecord* DiskProfileStore::record(std::size_t slot) const {
     return &held->record.value();
 }
 
+const ModdedProgress* DiskProfileStore::modded(std::size_t /*slot*/) const { return nullptr; }
+
 bool DiskProfileStore::create(std::size_t slot, const Profile& profile) {
     if (slot >= kSlots) {
         return false;

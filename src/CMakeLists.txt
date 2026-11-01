@@ -205,6 +205,7 @@ add_library(coney_core STATIC
     warriors/player_stats.cpp
     warriors/profile_record.cpp
     warriors/profile_store.cpp
+    warriors/save_game.cpp
     warriors/stop_watch.cpp
     warriors/tag_game.cpp
     warriors/tag_session.cpp

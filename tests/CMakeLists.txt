@@ -280,6 +280,7 @@ add_executable(coney_tests
     warriors/level_table_test.cpp
     warriors/player_state_test.cpp
     warriors/profile_record_test.cpp
+    warriors/save_game_test.cpp
     warriors/tag_game_test.cpp
     warriors/unlock_counts_test.cpp
     world/debug_camera_test.cpp

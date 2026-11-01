@@ -403,7 +403,8 @@ TEST_CASE("start-up with scripts: a new story profile is saved to the profile fo
         CHECK(run.flow->profiles().count() == 0);
         run.frames(446);
         CHECK(run.logged("profile manager: profile \"A\" created in slot 0"));
-        CHECK(std::filesystem::file_size(folder.path() / "profile-1.sav") == coney::ProfileRecord::kSize);
+        // Coney's own save format, not the bare record (save.md#save-format).
+        CHECK(std::filesystem::file_size(folder.path() / "profile-1.sav") != coney::ProfileRecord::kSize);
         CHECK(run.flow->profiles().inUse());
     }
     // A later run over the same folder lists it, and the store loads it.

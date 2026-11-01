@@ -11,6 +11,7 @@
 #include "warriors/game_state.h"
 #include "warriors/profile_record.h"
 #include "warriors/profile_store.h"
+#include "warriors/save_game.h"
 
 namespace coney {
 
@@ -72,6 +73,10 @@ class DiskProfileStore final : public ProfileStore {
 
     /// The record in `slot`, or null for an empty or damaged slot.
     [[nodiscard]] const ProfileRecord* record(std::size_t slot) const;
+    /// The story entries and mod sections the file in `slot` holds (kept through every save), or null for an empty or
+    /// damaged slot.
+    /// @coney-only the original's save has no mod progress (docs/research/save.md#save-mods)
+    [[nodiscard]] const ModdedProgress* modded(std::size_t slot) const;
     /// The file `slot` is kept in.
     [[nodiscard]] std::filesystem::path slotFile(std::size_t slot) const;
     /// The last write or delete that failed, kept for the log; nothing after a success.
