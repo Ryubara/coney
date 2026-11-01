@@ -354,11 +354,11 @@ The VU1 microcode itself is not read; the formula above is the one the GS dumps 
 
 **The light block.** Confirmed (code) at `0x0017e810`, `0x0017e930` and `0x00476cc8`:
 
-- `LightManager_UploadSelected` (`0x0017e810`) queues each selected light in the selection's order, with scale 1 and
-  no matrix, then closes the block and sends it to VU1. The character pipelines' atomic callback `0x0017e930` does the
-  same only for a geometry with the light flag (`0x20`), and passes the inverse of the atomic's matrix (`0x0047ccc8`,
-  RenderWare's inverse: a transpose for a matrix flagged orthonormal) and a scale: 1 for an orthonormal matrix, else
-  the length of the inverse's third row, with its reciprocal.
+- `LightManager_UploadSelected` (`0x0017e810`) queues each selected light in the selection's order, with scale 1 and no
+  matrix, then closes the block and sends it to VU1. Confirmed (code). The character pipelines' atomic callback
+  `0x0017e930` does the same only for a geometry with the light flag (`0x20`), and passes the inverse of the atomic's
+  matrix (`0x0047ccc8`, RenderWare's inverse: a transpose for a matrix flagged orthonormal) and a scale: 1 for an
+  orthonormal matrix, else the length of the inverse's third row, with its reciprocal. Confirmed (code).
 - RenderWare's PS2 light upload (`0x00476cc8`, middleware) writes a header of four quadwords before the first light:
   the matrix (identity when none is given), the scale in the `w` of its first three rows and the reciprocal in the
   last. Then each light: a quadword of the RpLight's current colour (`+0x18`, brightness, offset and flicker applied)
@@ -366,6 +366,7 @@ The VU1 microcode itself is not read; the formula above is the one the GS dumps 
   light travels (`w` 0); a point light its frame's position with the **radius as it is** in `w` (not its reciprocal);
   a spot light (types `0x81`, `0x82`) the position and radius, then the `at` vector with the RpLight's cone value
   (`+0x28`) in `w`. A light of another type writes its colour and does not advance the block, so it is dropped.
+  Confirmed (code).
 - It queues nothing once the block holds 124 quadwords; an atomic's at most 8 lights take 4 + 8 × 3 = 28, so the
   limit is never reached.
 

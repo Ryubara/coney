@@ -9,12 +9,15 @@ namespace coney::graphics {
 namespace {
 
 // The dot product of `a` and `b`.
+// @coney-only a vector helper of the CPU reference
 float dot(world::Vec3 a, world::Vec3 b) { return (a.x * b.x) + (a.y * b.y) + (a.z * b.z); }
 
 // `a` − `b`.
+// @coney-only a vector helper of the CPU reference
 world::Vec3 minus(world::Vec3 a, world::Vec3 b) { return world::Vec3{a.x - b.x, a.y - b.y, a.z - b.z}; }
 
 // Adds `colour` × `share` to `sum`'s colour channels.
+// @coney-only a colour helper of the CPU reference
 void addScaled(LightColour& sum, const LightColour& colour, float share) {
     sum.r += colour.r * share;
     sum.g += colour.g * share;
@@ -23,6 +26,7 @@ void addScaled(LightColour& sum, const LightColour& colour, float share) {
 
 // The share of a point or spot light `light` at a vertex at `position` facing `normal`: how far the vertex faces the
 // lamp, max(0, n · −L), times the linear falloff max(0, 1 − d / radius); for a spot light, 0 outside its cone.
+// @coney-only the CPU reference of VU1's point-light term (docs/research/lighting.md#world)
 float pointShare(const Vu1Light& light, world::Vec3 position, world::Vec3 normal) {
     // Stand-in (lighting.md#q-zero-radius): the falloff divides by the radius, and what VU1 makes of 0 is not known.
     if (light.radius <= 0.0F) {
@@ -43,6 +47,7 @@ float pointShare(const Vu1Light& light, world::Vec3 position, world::Vec3 normal
 }
 
 // One channel on the lighting scale as the GS takes it: × 128, truncated, within 0-128.
+// @coney-only the CPU reference's GS truncation (docs/research/lighting.md#vertex-reference)
 std::uint8_t gsChannel(float value) {
     const float scaled = std::clamp(value * 128.0F, 0.0F, 128.0F);
     return static_cast<std::uint8_t>(scaled);
