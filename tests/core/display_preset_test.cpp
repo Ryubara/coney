@@ -149,6 +149,7 @@ TEST_CASE("a preset and a value changed in the same batch keep the value", "[dis
     saved.settle();
     CHECK(saved.preset() == DisplayPreset::Enhanced);
     CHECK(saved.current() == presetValues(DisplayPreset::Enhanced));
+    CHECK(otherRenderer == 1);
 }
 
 TEST_CASE("a preset chosen for the next settle wins over the saved settings", "[display][presets]") {

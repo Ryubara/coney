@@ -148,8 +148,8 @@ int main(int argc, char** argv) {
     // draws PS2 unless `--preset` names another, chosen at once outside test mode and pinned in it.
     coney::DisplaySettings& display = coney::displaySettings();
     display.pin(coney::pinnedDisplayPreset(*options));
-    if (options->displayPreset && !display.pinned()) {
-        display.choose(*options->displayPreset);
+    if (const std::optional<coney::DisplayPreset> chosen = options->displayPreset; chosen && !display.pinned()) {
+        display.choose(*chosen);
     }
 
     // The game over the disc (platform/game_session.h), from boot; without a disc only the idle screen. Declared

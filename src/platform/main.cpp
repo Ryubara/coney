@@ -941,8 +941,8 @@ int main(int argc, char** argv) {
     // settle after each batch of tunable changes, so a preset chosen in the menus writes its values for the next frame.
     coney::DisplaySettings& display = coney::displaySettings();
     display.pin(coney::pinnedDisplayPreset(*options));
-    if (options->displayPreset && !display.pinned()) {
-        display.chooseAtNextSettle(*options->displayPreset);
+    if (const std::optional<coney::DisplayPreset> chosen = options->displayPreset; chosen && !display.pinned()) {
+        display.chooseAtNextSettle(*chosen);
     }
     debugSession.gate().addBetweenSteps([&display] { display.settle(); });
     // The game reads its pads through network play, after the gate: a guest sends what their game reads, and a host's
