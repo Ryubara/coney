@@ -582,6 +582,9 @@ TEST_CASE("a recent project that is gone is marked missing, refuses to open and 
     // One reference to the optional, so clang-tidy sees the REQUIRE guard the access.
     const auto& stillOpen = app.project();
     REQUIRE(stillOpen.has_value());
+    if (!stillOpen) {
+        return; // REQUIRE has failed the test; this keeps clang-tidy's optional check satisfied
+    }
     CHECK(stillOpen->manifest().name == "kept");
     // Remove takes it off the list, and the file, so it does not come back.
     CHECK(app.removeRecent(dir.path() / "gone"));
@@ -594,6 +597,9 @@ TEST_CASE("a recent project that is gone is marked missing, refuses to open and 
     REQUIRE(next.openRecent(dir.path() / "kept").has_value());
     const auto& reopened = next.project();
     REQUIRE(reopened.has_value());
+    if (!reopened) {
+        return; // REQUIRE has failed the test; this keeps clang-tidy's optional check satisfied
+    }
     CHECK(reopened->manifest().name == "kept");
 }
 
