@@ -33,16 +33,17 @@ ready only it is startable, as the claim Action demands ([Claiming](issues.md#cl
 
 A place a track keeps is for work that can start. On 2026-11-01 every networking issue was `S-blocked`, yet the place
 kept for networking stayed kept for hours, so two fix tasks could not start while the machine sat at 30% (issue
-1370). So **a kept place of a track in `tasks.start.slots.lapse.tracks` (the networking track) lapses while that
-track has nothing to start**, and is open to any track meanwhile:
+1370); the renderer queue is often all `S-blocked` too (issue 1391). So **a kept place of a track in
+`tasks.start.slots.lapse.tracks` (the networking and renderer tracks) lapses while that track has nothing to start**,
+and is open to any track meanwhile:
 
 - **The check judges it.** Each run reads the work for every kept place, not only the free ones: a claimed task of the
   track with no agent, or a ready issue of the track that is not blocked. A kept place with neither lapses, and the
-  check says so (`the place kept for networking lapsed, so it is open: ...`) and counts it as open. A track whose work
-  could not be read (GitHub down) keeps its place. The place kept for game work does not lapse: the reimplementation
-  track is not in the list. The place kept for a fix never lapses, and the conventions refuse the fix track in the
-  list: a pull request that fails must always find its fix place, so a full machine still takes a fix (a maintainer
-  decision of 2026-11-01).
+  check says so (`the place kept for networking lapsed, so it is open: ...`, or for the renderer) and counts it as
+  open. A track whose work could not be read (GitHub down) keeps its place. The place kept for game work does not
+  lapse: the reimplementation track is not in the list. The place kept for a fix never lapses, and the conventions
+  refuse the fix track in the list: a pull request that fails must always find its fix place, so a full machine still
+  takes a fix (a maintainer decision of 2026-11-01).
 - **The check records it**, in `slot-lapses.json` in the scratch folder, rewritten whole at each run that judges, so
   the place is kept again at the first run that finds the track's work (a blocker merged, an issue made ready).
 - **`task start` and the Agent guard follow the record** while it is younger than `tasks.start.slots.lapse.minutes`
