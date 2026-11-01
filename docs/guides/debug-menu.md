@@ -431,13 +431,13 @@ model's kind is the one the play mode's scene-counter scope names around its dra
 group shows, around each human's draw.
 The rules (which model gets which passes and colours) are `src/debug/mesh_views.h`, tested without a window in
 `tests/debug/mesh_views_test.cpp`, and `tests/platform/mesh_views_test.cpp` checks on librw's NULL device that a model
-gets the game's draw alone while the views are off and its materials back after a pass. On a disc,
-`tests/platform/disc_mesh_views_test.cpp` plays a level and the sandbox's fight yard with a hook of its own and checks
-what the play mode hands the hook; `tests/platform/disc_mesh_views_draw_test.cpp` checks that the passes the game draws
-are the same with the views off, with a hook that is off and with a flat view on, and, on a hidden OpenGL window where
-there is one, that every frame is the same pixel for pixel with the views off, and again after `--mesh-view`'s frames.
-By hand, `--mesh-view wire=all,view=material,frames=30 --frames 90 --screenshot a.png` gives the same last frame, byte
-for byte, as the same run without `--mesh-view` ([options](running-options.md#the-debug-menus)).
+gets the game's draw alone while the views are off and its materials back after a pass, and that no pass draws there
+after an OpenGL renderer ran. On a disc, `tests/platform/disc_mesh_views_test.cpp` plays a level and the sandbox's fight
+yard with a hook of its own and checks what the play mode hands the hook; `tests/platform/disc_mesh_views_draw_test.cpp`
+checks that the passes the game draws are the same with the views off, with a hook that is off and with a flat view on,
+and, on a hidden OpenGL window, that every frame is the same pixel for pixel with the views off, and again after
+`--mesh-view`'s frames. By hand, `--mesh-view wire=all,view=material,frames=30 --frames 90 --screenshot a.png` gives the
+same last frame, byte for byte, as the run without `--mesh-view` ([options](running-options.md#the-debug-menus)).
 
 ### Entity inspector {#entity-inspector}
 
