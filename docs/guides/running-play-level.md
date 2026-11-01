@@ -75,7 +75,8 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 -
 
 At level99's checkpoint 1 the level script's intro scene, `l99_c1`, holds Rembrandt from the fourth frame of play
 until it ends or cross or START skips it, so `play_walk_level99.txt` taps cross first and then walks as
-`play_walk.txt` does (which drives the sandbox, where no scene plays).
+`play_walk.txt` does. `play_walk.txt` drives Rembrandt where no scene holds him: on level99's ground in the player and
+frame-rate disc tests, in `coney.freezes_level` (level99 with the world frozen) and in the parkour sandbox.
 
 The simulation runs on the fixed 1/30 s step and reads only the pads and game time, so a script gives the same path,
 clips and camera every time, in a window or headless. Drawing blends the snapshots of the last two steps (Rembrandt's
