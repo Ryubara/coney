@@ -67,7 +67,8 @@ Rules that keep the layers apart:
   executable tables. This extends the Xbox policy (assets only, never behaviour) to every source. The store
   reports a **simulation digest** over the simulation kinds it served, which test mode and multiplayer compare.
 - **Test mode uses the PS2 data only.** `--headless`, `--input-script` and the disc tests build a store with the PS2
-  source alone, so reference comparisons never see an override or an Xbox texture.
+  source alone, so reference comparisons never see an override or an Xbox texture. Until the store exists, the one
+  override built ([`overrides/files/`](#file-overrides)) is read by every `--data` run, test mode included.
 - **librw stays a renderer detail.** Presentation loaders return CPU data (an image with its palette and mip
   levels, a mesh). `src/platform/` uploads that data. Today librw both parses and uploads RenderWare streams; the
   boundary moves in two steps ([Benefits](#benefits)).
@@ -199,6 +200,32 @@ The `mods/`, `cache/`, `modded/` and `mod-data/` entries, and why scripts never 
 - **Command line.** `--data <install>` opens the install folder, and `--disc` stays for development and CI. With
   neither, Coney looks for `game/ps2/` next to its executable. All three build the same store. Built (N7): until
   the store exists, `--data` and the lookup point `--disc` at `<install>/game/ps2/` ([Running Coney](running.md#install)).
+
+#### Replacing a WAD entry: `overrides/files/` {#file-overrides}
+
+Built, and Coney's own: the original reads every entry from its disc. With `--data`, `io::Wad::useOverrides()` maps
+each file in `<install>/overrides/files/` to the WAD entry its name names, and `Wad::openEntry()` reads that file in
+place of the entry's range of `WARRIORS.WAD`:
+
+- A file is named as `--load` takes an entry: the entry's name in any letter case (`INTRO.SCN` and `intro.scn` are
+  one entry, hashed lower-case as [WARRIORS.DIR](../research/formats/wad-dir.md#name-lookup) says), or `0x` and the
+  hash.
+- Names are taken in sorted order, so of two names for one entry the first wins. The second name, and a name that
+  matches no entry, are ignored with a warning. A missing folder replaces nothing.
+- **Never a script.** A file is refused, with a warning, when the entry it names is one of the game's scripts or the
+  file is a compiled Lua chunk itself, and the disc's entry is read: the player's own disc chunks are the only bytecode
+  the game state runs ([Attack surface](studio/security.md#surface)), and an edited game script is a `game-scripts`
+  patch ([Mission mods](studio/mission-mods.md#compiling)). `WARRIORS.DIR` records no kinds, so a script is told by
+  its bytes: every script on the disc is a precompiled chunk (`ESC Lua`). A file is refused too when it, or the entry
+  it names, cannot be read to tell: the check fails closed.
+- A replaced entry is read whole at the file's own size, not the size in `WARRIORS.DIR`, and every other entry still
+  reads the archive. The readers of replaceable kinds, scenes among them, size their buffer from the stream, not the
+  index, because a replacement is rarely the entry's size.
+- Any replacement makes the session modded (`Wad::modded()`, logged at start-up). `--disc` never reads overrides.
+- Test mode does not yet keep them out: a `--headless` or `--input-script` run with `--data` reads them too, and only
+  the "modded session" line tells. The disc tests read the disc folder (`CONEY_DISC`), never an install's overrides.
+  A reference or replay run is made with `--disc`, or from an install whose `overrides/files/` is empty, until the
+  store builds test mode from the PS2 source alone ([the rule](#asset-layers)).
 
 ### The legacy loaders, one by one {#legacy-loaders}
 

@@ -19,6 +19,7 @@ namespace coney::scenes {
 /// Reads `<name>.scn` records from `wad`, which must outlive the source. **Coney stand-in**: the 24 records whose
 /// list names are cut to 16 characters hash to no WAD name and are not found (the disc check finds them by content);
 /// no scene the first mission plays is among them.
+/// @coney-only Coney's reader over the WAD; the original streams each record through its stream file system
 [[nodiscard]] SceneRecordSource wadSceneSource(const io::Wad& wad);
 
 } // namespace coney::scenes

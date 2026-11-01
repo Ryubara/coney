@@ -8,7 +8,7 @@ page = "file-io.md#original-structure"
 role = "start an IOP read of a WAD entry"
 level = "confirmed-code"
 coney = "src/fileio/wad.h:Wad::openEntry"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001490b8

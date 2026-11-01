@@ -46,11 +46,14 @@ struct StringLoadReport {
 /// when a script fails.
 ///
 /// Research: docs/research/gui.md#strings, docs/research/frontend.md#the-front-end-scripts
+/// @coney-only runs the game's string scripts alone, outside a level, to fill the string tables; the original runs
+/// them in its boot preload with every binding
 [[nodiscard]] std::expected<StringLoadReport, Error> loadGlobalStrings(const ScriptSource& source, Language language,
                                                                        gui::GlobalStrings& strings);
 
 /// A ScriptSource over the WAD: the entry `./ee_files/<name>`. Fails with ErrorCode::NotFound for no such entry and as
 /// the read does otherwise. `wad` must outlive the result.
+/// @coney-only Coney's reader over the WAD; the original streams each script through its stream file system
 [[nodiscard]] ScriptSource wadScriptSource(const io::Wad& wad);
 
 } // namespace coney::script

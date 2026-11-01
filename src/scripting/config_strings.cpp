@@ -23,11 +23,19 @@ constexpr double kMaxStringId = 4294967295.0;
 // What a binding returns: no results, or an error.
 using BindingResult = std::expected<std::vector<Value>, Error>;
 
-// A binding `name(id, text)` that stores the text as string `id` of `table`.
+// A binding `name(id, text)` that stores the text as string `id` of `table`. The other four Cfg*Message bindings
+// are taken to read their arguments as CfgHUDMessage does (inferred: only CfgHUDMessage is compared).
+// @orig 0x0035e5d0 CfgHUDMessage (unknown)
 NativeFunction stringSetter(std::string_view name, gui::StringTable table, gui::GlobalStrings& strings) {
     return [name = std::string(name), table, &strings](std::span<const Value> args) -> BindingResult {
+        // The original reads both arguments with Lua's optional readers: a missing or nil id is 0, a numeric string
+        // id converts, a number given as the text becomes its text and a missing text is stored as none.
+        // Coney's choice: the id must be given as a number and the text as a string, or the script stops, so a slip
+        // in an edited script is reported rather than stored as string 0 or no text (the disc's scripts pass none).
         const std::optional<double> id = args.empty() ? std::nullopt : args[0].number();
         const std::optional<std::string_view> text = args.size() < 2 ? std::nullopt : args[1].string();
+        // Coney's choice: an id that is not a whole number in range stops the script too; the original cuts any
+        // number to an integer (docs/research/gui.md#strings).
         if (!id || *id < 0 || *id > kMaxStringId || std::floor(*id) != *id) {
             return fail(ErrorCode::Invalid, std::format("{}: the id must be a whole number from 0", name));
         }
@@ -40,6 +48,7 @@ NativeFunction stringSetter(std::string_view name, gui::StringTable table, gui::
 }
 
 // Reads `name` through `source` and runs it in `vm`; errors name the script.
+// @coney-only the string load's own runner over a ScriptSource; the original's doFile reads its stream file system
 std::expected<void, Error> runScript(LuaVm& vm, const ScriptSource& source, std::string_view name) {
     auto bytes = source(name);
     if (!bytes) {
@@ -114,7 +123,9 @@ ScriptSource wadScriptSource(const io::Wad& wad) {
         if (!stream) {
             return std::unexpected(std::move(stream.error()));
         }
-        std::vector<std::byte> bytes((*entry)->size);
+        // The stream's size, not the index's: the stream is what is read. An install's overrides never replace a
+        // script, but a data entry this reads may be replaced at another size.
+        std::vector<std::byte> bytes(static_cast<std::size_t>(stream->size()));
         if (auto read = stream->read(bytes); !read) {
             return std::unexpected(std::move(read.error()));
         }

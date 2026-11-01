@@ -9,6 +9,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/options.h"
+#include "platform/game_run.h"
 #include "support/fixtures.h"
 #include "support/install_fixtures.h"
 
@@ -52,6 +54,7 @@ FixtureRelease smallRelease() {
 } // namespace
 
 TEST_CASE("coney --install copies the disc into the folder and prints counts and the digest", "[install]") {
+    // Expected: discs.md#digests, Coney's own install record
     TempDir dir;
     const FixtureRelease release = smallRelease();
     for (const auto& [name, data] : release.contents()) {
@@ -80,6 +83,7 @@ TEST_CASE("coney --install copies the disc into the folder and prints counts and
 }
 
 TEST_CASE("coney --install refuses a folder that is not the game's disc", "[install]") {
+    // Expected: discs.md#ps2-ntsc-u, Coney's own check of the known releases
     TempDir dir;
     const FixtureRelease release = smallRelease();
     dir.write("other/SLES_000.00", std::vector<std::byte>(5));
@@ -93,6 +97,7 @@ TEST_CASE("coney --install refuses a folder that is not the game's disc", "[inst
 }
 
 TEST_CASE("only a finished install is one to play from", "[install]") {
+    // Expected: discs.md#digests, Coney's own install record (written last)
     TempDir dir;
     const FixtureRelease release = smallRelease();
     for (const auto& [name, data] : release.contents()) {
@@ -107,4 +112,47 @@ TEST_CASE("only a finished install is one to play from", "[install]") {
     options.dataPath = root.string();
     REQUIRE(run(options, release).first == 0);
     CHECK(coney::platform::checkInstallFolder(root).has_value());
+}
+
+TEST_CASE("a game played from an install reads its overrides/files in place of the WAD's entries", "[install][wad]") {
+    // Expected: docs/guides/asset-and-script-architecture.md#file-overrides, Coney's own behaviour
+    // An install's game/ps2 holds the disc's files; overrides/files/<wad name> replaces one entry whole
+    // (docs/guides/asset-and-script-architecture.md#file-overrides).
+    TempDir dir;
+    dir.write("Coney/game/ps2/WARRIORS.DIR", coney::test::twoEntryDir().span());
+    coney::test::Bytes wadData;
+    wadData.text("hello").padTo(2048).u32(1).u32(2).u32(3);
+    dir.write("Coney/game/ps2/WARRIORS.WAD", wadData.span());
+    coney::test::Bytes edited; // a data entry's replacement, longer than the entry; never a script
+    edited.u32(4).u32(5).u32(6).u32(7);
+    dir.write("Coney/overrides/files/level1.lev", edited.span());
+    coney::Options options;
+    options.dataPath = (dir.path() / "Coney").string();
+    options.discPath = coney::installGameFolder(*options.dataPath);
+
+    auto wad = coney::platform::openGameDisc(options);
+    REQUIRE(wad.has_value());
+    auto& game = *wad;
+    REQUIRE(game.has_value());
+    if (!game) {
+        return; // REQUIRE has failed the test; this keeps clang-tidy's optional check satisfied
+    }
+    CHECK(game->modded());
+    auto level1 = game->lookup("level1.lev");
+    REQUIRE(level1.has_value());
+    auto stream = game->openEntry(**level1);
+    REQUIRE(stream.has_value());
+    CHECK(stream->size() == 16);
+
+    // The same files given as a disc (`--disc`) are the unmodded game: overrides belong to an install.
+    coney::Options disc;
+    disc.discPath = options.discPath;
+    auto plain = coney::platform::openGameDisc(disc);
+    REQUIRE(plain.has_value());
+    auto& unmodded = *plain;
+    REQUIRE(unmodded.has_value());
+    if (!unmodded) {
+        return; // as above
+    }
+    CHECK_FALSE(unmodded->modded());
 }

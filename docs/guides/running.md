@@ -146,6 +146,13 @@ says how to finish it, and cannot be given with `--disc`. With neither `--disc` 
 folder: run from a finished install (the `coney` that `--install` copied there), it plays that install, so a player
 just starts `coney`. A `--disc` on the command line always wins.
 
+**Replacing a WAD file: `overrides/files/`.** A game played from an install reads each file in `DIR/overrides/files/`
+in place of the WAD entry it is named after (`intro.scn`, or `0x` and the name hash), and logs `overrides/files: N WAD
+entries replaced: a modded session`; `--disc` ignores the folder. The folder never holds a script: a file that would
+replace one of the game's scripts, or that is a compiled Lua chunk, is refused with a warning, and the disc's script
+runs. An edited game script is a patch ([Script patches](#script-patches)). The naming rules and warnings:
+[Replacing a WAD entry](asset-and-script-architecture.md#file-overrides).
+
 ## Script patches {#script-patches}
 
 `--script-patch make|apply` makes a script patch from a decompiled game script and your edit of it, or applies one,

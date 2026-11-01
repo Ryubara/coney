@@ -6,13 +6,17 @@
 #include <map>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/error.h"
 #include "core/language.h"
+#include "fileio/disc.h"
+#include "fileio/wad.h"
 #include "gui/global_strings.h"
+#include "support/fixtures.h"
 #include "support/lua_fixtures.h"
 
 using coney::Error;
@@ -95,6 +99,7 @@ ScriptSource sources(std::map<std::string, std::vector<std::byte>> files) {
 } // namespace
 
 TEST_CASE("the string load runs the language's strings file and fills the HUD table", "[config_strings]") {
+    // Expected: gui.md#strings, confirmed (code)
     const ScriptSource source = sources({
         {"enum_preload.lua", luaChunk(enumScript())},
         {"config_preload2.lua", luaChunk(configScript())},
@@ -123,6 +128,7 @@ TEST_CASE("the string load runs the language's strings file and fills the HUD ta
 }
 
 TEST_CASE("the string bindings refuse a bad id or a non-string text", "[config_strings]") {
+    // Expected: gui.md#strings, Coney's own argument check
     coney::script::LuaVm vm;
     GlobalStrings strings;
     coney::script::addStringBindings(vm, strings);
@@ -136,4 +142,29 @@ TEST_CASE("the string bindings refuse a bad id or a non-string text", "[config_s
     CHECK(vm.call(vm.global("CfgCrimeMessage"), std::vector<Value>{Value(0.0), Value(std::string("c"))}).has_value());
     CHECK(strings.get(StringTable::Crime, 0) == "c");
     CHECK(strings.get(0).empty()); // the crime table is not the HUD table
+}
+
+TEST_CASE("wadScriptSource reads a replaced entry at the replacement's own size", "[scripting][wad]") {
+    // Expected: docs/guides/asset-and-script-architecture.md#file-overrides, Coney's own behaviour
+    // The source sizes its read from the stream, not WARRIORS.DIR: a replaced data entry is rarely the entry's size.
+    // A script is never replaced (the overrides refuse one), so the entry replaced here is level1.lev's data.
+    coney::test::TempDir disc;
+    disc.write("WARRIORS.DIR", coney::test::twoEntryDir().span());
+    coney::test::Bytes wadData;
+    wadData.text("hello").padTo(2048).u32(1).u32(2).u32(3);
+    disc.write("WARRIORS.WAD", wadData.span());
+    coney::test::TempDir overrides;
+    coney::test::Bytes edited;
+    edited.u32(4).u32(5).u32(6).u32(7);
+    overrides.write("level1.lev", edited.span());
+    auto opened = coney::io::Disc::open(disc.path());
+    REQUIRE(opened.has_value());
+    auto wad = coney::io::Wad::open(std::move(*opened));
+    REQUIRE(wad.has_value());
+    REQUIRE(wad->useOverrides(overrides.path()).has_value());
+
+    auto bytes = coney::script::wadScriptSource(*wad)("level1.lev");
+    REQUIRE(bytes.has_value());
+    CHECK(bytes->size() == 16);
+    CHECK(bytes->back() == std::byte{0}); // the last byte of the little-endian 7
 }

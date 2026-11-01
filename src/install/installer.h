@@ -25,10 +25,12 @@ inline constexpr std::string_view kPs2Folder = "game/ps2";
 inline constexpr std::string_view kIndexFolder = "index";
 /// The record of a finished install; its absence means the install has not finished.
 inline constexpr std::string_view kManifestPath = "index/install.json";
+/// The overrides folder whose files replace whole WAD entries by name (io::Wad::useOverrides()).
+inline constexpr std::string_view kFileOverridesFolder = "overrides/files";
 /// The empty folders an install makes for mods and texture packs.
 inline constexpr std::array<std::string_view, 6> kOverrideFolders{"overrides/packs",        "overrides/textures",
                                                                   "overrides/audio/sounds", "overrides/audio/music",
-                                                                  "overrides/movies",       "overrides/files"};
+                                                                  "overrides/movies",       kFileOverridesFolder};
 /// The suffix a file has while it is copied; it is renamed once its SHA-1 has been checked.
 inline constexpr std::string_view kPartSuffix = ".part";
 
