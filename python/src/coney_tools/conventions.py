@@ -1872,9 +1872,10 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
         "images",
         "markers",
         "open_only",
-        "auto_merge_manual_paths",
     )
-    table = _table(data, where, keys)
+    # `auto_merge_manual_paths` is optional so that a tool which has it can still read a default branch that does not
+    # yet (`pr open` on the very branch that adds it); a file without it means on, the maintainer's 2026-11-01 grant.
+    table = _table(data, where, keys, ("auto_merge_manual_paths",))
     sections = _texts(table["sections"], _at(where, "sections"))
     filled = _texts(table["filled"], _at(where, "filled"))
     _names_in(filled, sections, _at(where, "filled"), "one of the sections")
@@ -2021,7 +2022,9 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
         ),
         markers=Markers(summary=marker_names[0], facts=marker_names[1]),
         open_only=_flag(table["open_only"], _at(where, "open_only")),
-        auto_merge_manual_paths=_flag(table["auto_merge_manual_paths"], _at(where, "auto_merge_manual_paths")),
+        auto_merge_manual_paths=_flag(
+            table.get("auto_merge_manual_paths", True), _at(where, "auto_merge_manual_paths")
+        ),
     )
 
 

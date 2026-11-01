@@ -74,6 +74,11 @@ def test_pull_requests_auto_merge_manual_paths_is_read_as_a_yes_or_no() -> None:
     )
 
 
+def test_a_pull_requests_table_without_auto_merge_manual_paths_means_on() -> None:
+    # Optional, so a tool that has the key reads a default branch that has not got it yet (the branch that adds it).
+    assert conventions_with(("pull_requests.auto_merge_manual_paths", REMOVE)).pull_requests.auto_merge_manual_paths
+
+
 def test_the_real_review_gate() -> None:
     review = load_conventions(REPO).pull_requests.review
     # The legacy gate runs the one merged reviewer (docs/guides/review/index.md), like `task review`.
