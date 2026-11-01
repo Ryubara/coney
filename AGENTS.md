@@ -6,11 +6,11 @@ rendering and assets. Docs and comments say where behaviour lives in the origina
 
 ## Layout
 
-`src/core/` platform-neutral engine code; `src/platform/` the only place for OS, SDL3 or librw code; `tests/`
-Catch2; `python/` the `coney-tools` CLI (uv); `docs/research/` what we know about the original; `docs/guides/` how
-we work; `assets/` Coney's own assets (sandbox layouts, CC0 textures; never game data); `cmake/deps.cmake` pinned
-dependencies. Worktrees go in `../../worktrees/coney/<branch>/`, scratch output in `../../scratch/`; game files,
-emulators and tool installs live beside the repo, never in it.
+`src/core/` platform-neutral engine code; `src/platform/` the only place for OS, SDL3 or librw code; `tests/` Catch2;
+`python/` the `coney-tools` CLI (uv); `docs/research/` what we know of the original; `docs/guides/` how we work;
+`assets/` Coney's own assets (sandbox layouts, CC0 textures; never game data); `cmake/deps.cmake` pinned dependencies.
+Worktrees go in `../../worktrees/coney/<branch>/`, scratch in `../../scratch/`; game files, emulators and tools stay
+beside the repo. The release build has no debug tools, only the player console (`docs/guides/building.md#debug-tools`).
 
 ## How we work
 
@@ -70,10 +70,6 @@ section Your first hour; the rest is for agents. Other tools: `uvx pre-commit in
 - Write for networked play: state owned by the game mode, player slots not one player, ids not pointers, gameplay
   randomness only from `GameRandom`, simulated effects as events: `docs/guides/network-architecture.md#checklist`.
 - Port, never transcribe: keep the logic, write Coney's own code (`conventions.md#porting`); the rest: `conventions.md`.
-- The release build a player gets holds no debug tools and one console, the player console (the F8 console, Dear
-  ImGui in its own target, the player's commands alone), kept apart from the debug tools by target and by model; a
-  marker check proves it: `docs/guides/building.md#debug-tools`. The console is a design until built
-  (`docs/guides/studio/console.md`).
 
 ## Documentation
 
