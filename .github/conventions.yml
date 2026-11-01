@@ -1074,16 +1074,18 @@ proof:
   # changed C++ file (`ci.tidy`: its folders, sources and headers) selects the test files (`test_suffix`) whose
   # `#include`s reach it, through the headers they include and the sources that implement those headers (a source of
   # the header's name, or one with no header of its own that includes it); the run is `ctest -L` on their labels
-  # (Catch2's `--filenames-as-tags`, tests/CMakeLists.txt). A change also runs the whole suite, holding a check slot,
-  # when a path is under `whole_when`, is of a class other than `skip` and no C++ file (CMake files, cmake/, assets,
-  # test scripts, unknown paths), was deleted or moved, reaches no test file, or reaches more than `max_files`. CI
-  # runs every test without the disc on each pull request, and `coney-tools ci disc-suite` runs the whole suite with
-  # the disc on the default branch after merges, so a test a narrowed run skips is still run.
+  # (Catch2's `--filenames-as-tags`, tests/CMakeLists.txt). A change that reaches no test file or more than
+  # `max_files` runs a narrow set instead: the test files that include a changed file (or the header a changed source
+  # is named after) directly, and those named after a changed file; failing those, its subsystem's test files. Only
+  # what cannot be traced runs the whole suite, holding a check slot: a path under `whole_when`, of a class other
+  # than `skip` that is no C++ file (CMake files, cmake/, presets, assets, test scripts, unknown paths), or deleted or
+  # moved. CI runs every test without the disc on each pull request, and `coney-tools ci disc-suite` runs the whole
+  # suite with the disc on the default branch after merges, so a test a narrowed run skips is still run.
   ctest:
     skip: [docs_only, tools_only]
     whole_when: ["python/tests/lua4/fixtures/"]   # tools_only, but the decompiler's C++ tests read them
     test_suffix: _test.cpp
-    max_files: 100
+    max_files: 100                               # more test files reached: the narrow set runs instead
   # The CMake preset of the build and the test run behind the two checks of `checks` (MSVC with /WX), the first
   # answering whether it built and the second whether the suite ran whole with the disc, from the build record a
   # run of `coney-tools build` leaves (docs/guides/stamps.md#build-record).

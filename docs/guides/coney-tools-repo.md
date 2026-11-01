@@ -551,20 +551,29 @@ The files are read at the change's tip through git, so `task check` and `pr veri
 * **Only those test files** otherwise: the build runs `ctest -L '^#(brain_test|human_test)$'`. Each test file is one
   ctest label because tests/CMakeLists.txt lists the tests with Catch2's `--filenames-as-tags` (`TEST_SPEC`), which
   tags each case `#<file name>`. The disc tests among them run with the disc; the run takes no check slot.
-* **The whole suite**, holding a check slot, when a changed path is under `proof.ctest.whole_when` (the Lua 4.0
-  fixtures the decompiler's C++ tests read), or is of a class other than `docs_only` and `tools_only` that is no C++
-  file (CMake files, `cmake/`, `CMakePresets.json`, assets, a disc test's input script, an unknown path), or was
-  deleted or moved; when no test file reaches the change; and when more than `proof.ctest.max_files` (100) do.
+* **A narrow set, narrowed by reach**, when no test file reaches the change or more than `proof.ctest.max_files` (100)
+  do, which is most gameplay changes: the game's core is one large cycle of such links, so a gameplay file reaches
+  several hundred test files. The set is the changed test files, the test files that `#include` a changed file
+  directly or the header a changed source is named after (`human.h` for `human_hiding.cpp`), and the test files named
+  after a changed file (`brain.cpp`: `brain_test.cpp`, `brain_events_test.cpp`); when there are none, the test files
+  of its subsystem that reach it (`src/ai/...`: `tests/ai/`). The disc tests among them run with the disc, with no
+  check slot. The stamp says so in `detail.ctest_narrowed`, which names CI and the after-merge disc suite as what runs
+  the rest.
+* **The whole suite**, holding a check slot, only for what cannot be traced: a changed path under
+  `proof.ctest.whole_when` (the Lua 4.0 fixtures the decompiler's C++ tests read), or of a class other than
+  `docs_only` and `tools_only` that is no C++ file (CMake files, `cmake/`, `CMakePresets.json`, assets, a disc test's
+  input script, an unknown path), or deleted or moved, and a change with no test file near it at all.
 
-The game's core is one large cycle of such links, so most changes to gameplay code reach several hundred test files and
-run the whole suite: the narrowed run is for test files, leaf code (the launcher, the installer's helpers, a small
-module) and changes no test reaches but a few. The output says which (`ctest: the tests of 2 test files the change
-reaches, with the disc`, or `ctest: the whole suite with the disc (cmake/deps.cmake is not a C++ file the tests can be
-traced from)`) and the stamp records it as `detail.ctest_scope`: `whole`, or the list of test files. `pr verify`
+The output says which (`ctest: the tests of 2 test files the change reaches, with the disc`, `ctest: the tests of 69
+test files, with the disc, narrowed by reach (256 test files reach it, more than 100; ...)`, or `ctest: the whole suite
+with the disc (cmake/deps.cmake is not a C++ file the tests can be traced from)`) and the stamp records it as
+`detail.ctest_scope`: `whole`, or the list of test files. `pr verify`
 recomputes the scope at the tip and refuses a Check whose recorded files do not hold it, or whose build record ran
 other tests; a stamp from before the scope was recorded counts as the whole suite.
 
-What the include graph cannot see, a narrowed run can miss: code reached only through a name (a Lua binding called
+**A narrowed run is not the whole check, by design** (the maintainer's decision of 2026-11-01: the local gate runs
+the affected tests and CI is the full-suite gate). What the narrow set leaves out, and what the include graph cannot
+see, a narrowed run can miss: code reached only through a name (a Lua binding called
 from a disc script, a registry filled at start-up by a file nobody includes), a function defined in a source of
 another folder, and the tests outside Catch2 (the shader refusal, the error dialog and frame copy checks, which have no
 file label). CI runs every test but the disc tests on each pull request, so a missed test without the disc is caught

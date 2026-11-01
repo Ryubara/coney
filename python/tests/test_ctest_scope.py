@@ -104,19 +104,40 @@ def test_what_cannot_be_mapped_runs_the_whole_suite(paths: list[str], why: str) 
     assert scope.text.startswith("the whole suite with the disc (")
 
 
-def test_a_change_that_reaches_more_test_files_than_the_cap_runs_the_whole_suite() -> None:
-    include = '#include "core/assert.h"\n'
-    tree = {**TREE, **{f"tests/core/t{i}_test.cpp": include for i in range(97)}}
-    assert len(scope_of("src/core/assert.h", tree=tree).files) == 100  # the three of TREE and 97 more: at the cap
-    tree["tests/core/t97_test.cpp"] = include
-    scope = scope_of("src/core/assert.h", tree=tree)
-    assert scope.whole and scope.culprit == "101 test files reach the change, more than proof.ctest.max_files 100"
+def wide(tree: dict[str, str]) -> dict[str, str]:
+    """`tree` with 101 more test files that reach the human only through the session, so a change to it is too wide."""
+    return {**tree, **{f"tests/misc/t{i}_test.cpp": '#include "gamemodes/game_session.h"\n' for i in range(101)}}
 
 
-def test_a_file_no_test_reaches_runs_the_whole_suite() -> None:
+def test_a_change_that_reaches_more_test_files_than_the_cap_runs_the_tests_near_it() -> None:
+    # human_test includes human.h, the header human_hiding.cpp is named after; the 101 session tests are left out
+    scope = scope_of("src/human/human_hiding.cpp", tree=wide(TREE))
+    assert not scope.whole and scope.files == ("tests/human/human_test.cpp",)
+    assert scope.narrowed == (
+        "103 test files reach it, more than 100; the test files that include it directly or are named after it; "
+        "CI and ci disc-suite after the merge run the rest"
+    )
+    assert scope.text.startswith("the tests of 1 test file, with the disc, narrowed by reach (103 test files")
+    assert scope_of("src/human/human_hiding.cpp").narrowed == ""  # under the cap: every test file it reaches
+
+
+def test_a_test_file_named_after_the_change_is_near_it() -> None:
+    tree = {**wide(TREE), "tests/world/cover_edges_test.cpp": "int edges;\n"}
+    scope = scope_of("src/world/cover.cpp", tree=tree)  # the 101 session tests reach it through human_hiding.cpp
+    assert scope.files == ("tests/world/cover_edges_test.cpp", "tests/world/cover_test.cpp")
+
+
+def test_with_nothing_near_the_change_its_subsystems_test_files_run() -> None:
     tree = {**TREE, "src/platform/main.cpp": '#include "gamemodes/game_session.h"\n'}
-    scope = scope_of("src/platform/main.cpp", tree=tree)
-    assert scope.whole and scope.culprit == "no test file reaches src/platform/main.cpp"
+    scope = scope_of("src/platform/main.cpp", tree=tree)  # no test reaches it, none is named after it
+    assert scope.files == ("tests/platform/disc_story_test.cpp",)
+    assert scope.narrowed.startswith("no test file reaches it; the test files of its subsystem;")
+
+
+def test_a_change_with_no_test_file_near_it_at_all_runs_the_whole_suite() -> None:
+    tree = {**TREE, "src/launch/boot.cpp": "int boot;\n"}
+    scope = scope_of("src/launch/boot.cpp", tree=tree)
+    assert scope.whole and scope.culprit == "no test file reaches it, and no test file is near src/launch/boot.cpp"
 
 
 def test_a_test_file_whose_name_a_label_cannot_hold_runs_the_whole_suite() -> None:

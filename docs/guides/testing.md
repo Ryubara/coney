@@ -507,9 +507,10 @@ finds a difference fixes it forward.
 The whole gate, which `task check` runs:
 
 - **Engine changes:** the `ci` preset build and the C++ tests the change needs, with the disc configured, in one
-  command: `coney-tools build --agent <id> --preset ci --test -L <the change's test files>`, or `--full` for the whole
-  suite when the change cannot be traced to a few test files (a CMake file, a widely included header, an unknown
-  path; [Which C++ tests run](coney-tools-repo.md#task-check-ctest)). It waits for a free
+  command: `coney-tools build --agent <id> --preset ci --test -L <the change's test files>`: the test files that reach
+  the change, or, when too many do (most gameplay changes), the ones that include it directly or are named after it.
+  Only a change that cannot be traced (a CMake file, `cmake/`, a preset, a test script, an unknown or deleted path)
+  runs the whole suite (`--full`; [Which C++ tests run](coney-tools-repo.md#task-check-ctest)). It waits for a free
   [build slot](coney-tools-build.md#build), loads the MSVC environment itself and passes the configured disc to the
   tests; agents never run `cmake --build` or `ctest` directly. Read its `disc tests:` line: `SKIPPED` means no disc
   test ran, and the run is made again with a disc.
@@ -530,7 +531,8 @@ The whole gate, which `task check` runs:
 Commands and presets: [Building and testing](building.md).
 
 **The local gate is the tests a change needs; the full-suite gate is CI and the after-merge disc run.** `task check`
-runs only the Python and C++ tests the change can reach. CI runs every test on every pull request, except the disc
+runs only the Python and C++ tests the change can reach, and a narrower set still when it reaches too many: it does not
+run the whole C++ suite for a gameplay change. CI runs every test on every pull request, except the disc
 tests (CI has no game data), and the coordinator runs the whole C++ suite with the disc on `main` after each round of
 merges ([`ci disc-suite`](coney-tools-ci.md#disc-suite)), whose failure files a `P-high` issue as a red CI run on `main`
 does. A test a narrowed check skips is still run before the merge (without the disc) or right after it (with it).

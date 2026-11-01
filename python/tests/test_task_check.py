@@ -302,6 +302,23 @@ def test_an_engine_change_runs_only_the_test_files_that_reach_it_and_stamps_whic
     assert stamp.detail["ctest_scope"] == ["tests/ai/brain_test.cpp"] and stamp.detail["tests"] == TESTS
     assert "  ctest: the tests of 1 test file the change reaches, with the disc" in world.said
     assert any("--test -L ^#(brain_test)$" in line for line in world.said)
+    assert "ctest_narrowed" not in stamp.detail  # every test file it reaches ran
+
+
+def test_a_change_whose_reach_is_too_wide_runs_the_tests_near_it_and_stamps_that(world: World) -> None:
+    engine(world)
+    git(world.root, "checkout", "-q", "main")
+    (world.root / "tests" / "misc").mkdir(parents=True)
+    for i in range(101):  # tests that reach the brain only through a wider header
+        (world.root / "tests" / "misc" / f"t{i}_test.cpp").write_text('#include "ai/mind.h"\n', encoding="utf-8")
+    world.edit("src/ai/mind.h", '#include "ai/brain.h"\n', "wide")
+    git(world.root, "checkout", "-q", "work")
+    git(world.root, "rebase", "-q", "main")
+    world.edit("src/ai/brain.cpp", '#include "ai/brain.h"\nint think() { return 2; }\n')
+    assert world.check() == 0
+    assert world.labels == ["^#(brain_test)$"]
+    narrowed = world.stamp.detail["ctest_narrowed"]
+    assert narrowed.startswith("102 test files reach it, more than 100;") and "ci disc-suite" in narrowed
 
 
 def test_a_change_the_scope_cannot_map_runs_the_whole_suite_and_says_why(world: World) -> None:

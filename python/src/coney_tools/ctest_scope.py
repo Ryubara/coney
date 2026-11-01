@@ -6,14 +6,16 @@ that implement each of them, with their own includes in turn. So a changed C++ f
 reach holds it. A header is implemented by the source of its own name in its folder (`brain.h`, `brain.cpp`) and by
 every source of that folder that has no header of its own and includes it (`human.h` and `human_hiding.cpp`), which is
 how the code splits a big class. The game's core is one large cycle of such links, so a change there reaches hundreds
-of test files and runs the whole suite; a leaf (the launcher, a test file, a small helper) reaches a few.
+of test files; a leaf (the launcher, a test file, a small helper) reaches a few. A change that reaches more than
+`max_files`, or none, runs a narrow set instead (`narrow`): the test files near it, named in the stamp as narrowed by
+reach, since CI and `ci disc-suite` after the merge run the rest (the maintainer's decision of 2026-11-01).
 
 Each test file is one ctest label: tests/CMakeLists.txt lists the tests with Catch2's `--filenames-as-tags`, which tags
 every test case `#<file name without extension>`, and `catch_discover_tests(... ADD_TAGS_AS_LABELS)` makes the tags
 labels. The narrowed run is `ctest -L '^#(a_test|b_test)$'`, the disc tests among them with the disc. A path this
 cannot map runs the whole suite: a prefix of `whole_when`, a class outside `skip` that is no C++ file (CMake files,
 cmake/, assets, test scripts, an unknown path), a file the change deleted or moved (what included it is gone), no test
-file reached, more than `max_files`, or a test file whose name a label cannot hold.
+file near it at all, or a test file whose name a label cannot hold.
 
 The files are read at a commit through git (`tree_at`), so `task check` and `pr verify` compute the same scope from
 the same tip whatever the worktree holds. Standard library only.
@@ -49,6 +51,8 @@ class CtestScope:
     whole: bool
     files: tuple[str, ...] = ()
     culprit: str = field(default="", compare=False)  # not part of the scope: only why it is whole
+    #: Why the files are a narrow set rather than every test file the change reaches ("" when they are all of them).
+    narrowed: str = field(default="", compare=False)
 
     @property
     def label(self) -> str | None:
@@ -63,7 +67,10 @@ class CtestScope:
         """The scope in words, for `task check`'s output."""
         if not self.whole:
             count = len(self.files)
-            return f"the tests of {count} test file{'s' if count != 1 else ''} the change reaches, with the disc"
+            files = f"{count} test file{'s' if count != 1 else ''}"
+            if self.narrowed:
+                return f"the tests of {files}, with the disc, narrowed by reach ({self.narrowed})"
+            return f"the tests of {files} the change reaches, with the disc"
         return f"the whole suite with the disc ({self.culprit})" if self.culprit else "the whole suite with the disc"
 
 
@@ -92,15 +99,64 @@ def ctest_scope(conventions: Conventions, paths: Iterable[str], tree: Mapping[st
             return _whole(f"{path} is not a C++ file the tests can be traced from")
     if not changed:
         return _whole("the change has no C++ file")
-    reached = sorted(p for p in reaching(tree, changed, tidy.folders, tidy.headers) if p.endswith(rules.test_suffix))
-    if not reached:
-        return _whole(f"no test file reaches {changed[0]}")
-    if len(reached) > rules.max_files:
-        return _whole(f"{len(reached)} test files reach the change, more than proof.ctest.max_files {rules.max_files}")
+    edges = includes(tree, tidy.folders)
+    implemented = implementers(tree, edges, tidy.headers)
+    reached = sorted(p for p in reaching(edges, implemented, changed) if p.endswith(rules.test_suffix))
+    narrowed = ""
+    if not reached or len(reached) > rules.max_files:
+        why = (
+            f"{len(reached)} test files reach it, more than {rules.max_files}" if reached else "no test file reaches it"
+        )
+        near, how = narrow(tree, edges, implemented, changed, rules.test_suffix)
+        if reached and how == SUBSYSTEM:
+            near = [path for path in near if path in reached]  # a subsystem's files that do not reach it test nothing
+        reached = near
+        if not reached:
+            return _whole(f"{why}, and no test file is near {changed[0]}")
+        narrowed = f"{why}; {how}; CI and ci disc-suite after the merge run the rest"
     for path in reached:
         if not _LABEL_NAME.fullmatch(PurePosixPath(path).name.split(".")[0]):
             return _whole(f"{path}: a ctest label cannot hold that name")
-    return CtestScope(False, tuple(reached))
+    return CtestScope(False, tuple(reached), narrowed=narrowed)
+
+
+def narrow(
+    tree: Mapping[str, str],
+    edges: Mapping[str, set[str]],
+    implemented: Mapping[str, set[str]],
+    changed: list[str],
+    suffix: str,
+) -> tuple[list[str], str]:
+    """The narrow set of a change whose reach is too wide (or empty), and how it was chosen: the changed test files,
+    the test files that directly include a changed file or a header a changed source implements and is named after,
+    and those whose name holds a changed file's name as whole words (`brain.cpp`: `brain_test.cpp`,
+    `brain_events_test.cpp`); when there are none, the test files of the changed files' subsystems (`src/ai/...`:
+    `tests/ai/`)."""
+    tests = [path for path in tree if path.endswith(suffix)]
+    # A header a changed source implements counts when the source is named after it (`human.h`: `human.cpp`,
+    # `human_hiding.cpp`), not every header a source with no header of its own includes (`main.cpp`).
+    targets = set(changed) | {
+        header
+        for header, sources in implemented.items()
+        for source in sources & set(changed)
+        if f"{PurePosixPath(source).stem}_".startswith(f"{PurePosixPath(header).stem}_")
+    }
+    stems = {PurePosixPath(path).stem for path in changed}
+    found = {
+        test
+        for test in tests
+        if test in targets
+        or edges.get(test, set()) & targets
+        or any(f"_{stem}_" in f"_{PurePosixPath(test).stem}_" for stem in stems)
+    }
+    if found:
+        return sorted(found), "the test files that include it directly or are named after it"
+    folders = {f"tests/{parts[1]}/" for parts in (PurePosixPath(path).parts for path in changed) if len(parts) > 2}
+    return sorted(test for test in tests if test.startswith(tuple(folders))), SUBSYSTEM
+
+
+#: How `narrow` says it fell back to the subsystem's test files.
+SUBSYSTEM = "the test files of its subsystem"
 
 
 def includes(tree: Mapping[str, str], folders: tuple[str, ...]) -> dict[str, set[str]]:
@@ -164,13 +220,9 @@ def _stem(path: str) -> str:
     return str(PurePosixPath(path).with_suffix(""))
 
 
-def reaching(
-    tree: Mapping[str, str], changed: Iterable[str], folders: tuple[str, ...], headers: tuple[str, ...]
-) -> set[str]:
-    """Every file of `tree` whose reach holds one of `changed` (itself included): a file reaches what it includes, and
-    a header reaches the sources that implement it."""
-    edges = includes(tree, folders)
-    implemented = implementers(tree, edges, headers)
+def reaching(edges: Mapping[str, set[str]], implemented: Mapping[str, set[str]], changed: Iterable[str]) -> set[str]:
+    """Every file whose reach holds one of `changed` (itself included), given the includes (`includes`) and the
+    implementing sources (`implementers`): a file reaches what it includes, and a header the sources implementing it."""
     reached_by: dict[str, set[str]] = defaultdict(set)  # file -> the files that reach it in one step
     for path, targets in edges.items():
         for target in targets:

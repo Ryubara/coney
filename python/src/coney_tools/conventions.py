@@ -823,7 +823,7 @@ class ProofCtest:
     whole_when: tuple[str, ...] = ()
     #: The end of a test file's name (one ctest label per test file, from Catch2's `--filenames-as-tags`).
     test_suffix: str = "_test.cpp"
-    #: A change reaching more test files than this runs the whole suite, which holds a check slot.
+    #: A change reaching more test files than this runs the narrow set of those near it (ctest_scope.narrow).
     max_files: int = 0
 
 
@@ -3225,7 +3225,8 @@ def _read_proof_pytest(data: object, where: str) -> ProofPytest:
 
 def _read_proof_ctest(data: object, where: str) -> ProofCtest:
     """`proof.ctest`: the classes no C++ test reads, the prefixes that run the whole suite, the test files' suffix and
-    the most test files a narrowed run may hold. Absent: every engine change runs the whole suite."""
+    the most test files a change may reach before only those near it run. Absent: every engine change runs the
+    whole suite."""
     if data is None:
         return ProofCtest()
     table = _table(data, where, CTEST_KEYS)

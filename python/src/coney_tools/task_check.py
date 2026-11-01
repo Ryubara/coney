@@ -265,6 +265,8 @@ def _run(request: Request, env: Env) -> int:
                 detail_more["pytest_scope"] = proof_profiles.scope_record(scope)
             if tests is not None and build.checks[-1] in ran:
                 detail_more["ctest_scope"] = ctest_scope.scope_record(tests)
+                if tests.narrowed:  # narrowed by reach: CI and the after-merge disc suite run the rest
+                    detail_more["ctest_narrowed"] = tests.narrowed
             progress.finish(not failed)
             return _stamp(
                 env,
