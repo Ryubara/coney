@@ -3,8 +3,8 @@
 The commands that record per-update traces and event logs and compare the original's with Coney's: [`trace`](#trace)
 plays a scenario on the original in PCSX2 (`trace original`, under a [`pcsx2`](coney-tools-pcsx2.md#pcsx2) claim) or on
 Coney headless (`trace coney`), compares two traces step by step, reports a gang fight, and records and compares event
-logs (`trace events`, `trace events-diff`). The other groups are listed in [the command line
-overview](coney-tools.md#groups).
+logs (`trace events`, `trace events-diff`). Pictures are compared by [`picture`](coney-tools-picture.md#picture). The
+other groups are listed in [the command line overview](coney-tools.md#groups).
 
 ## trace {#trace}
 

@@ -338,6 +338,7 @@ nav:
           - PCSX2 and clip commands: guides/coney-tools-pcsx2.md
           - xemu commands: guides/coney-tools-xemu.md
           - Trace commands: guides/coney-tools-trace.md
+          - Picture commands: guides/coney-tools-picture.md
           - Repository commands: guides/coney-tools-repo.md
           - Pull request commands: guides/coney-tools-pr.md
           - Issue commands: guides/coney-tools-issues.md

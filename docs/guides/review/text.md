@@ -55,6 +55,15 @@ grep); it changes no worktree, commits nothing and does not touch GitHub.
       to capture") when PCSX2 copies and the save states were available is Important; a reason that says why the
       original cannot show it (a refactor whose trace diff is unchanged, a Coney-only debug feature) is fine;
     - the before and after pictures have a view of the original from the same spot, or a stated reason why not.
+- [ ] **A change to drawing reports its picture counts** when the diff touches how Coney draws (the renderer, its
+  shaders, render states, what a layer or a pass draws): the Testing section has a `Pictures:` line with the pixels over
+  the tolerance and the largest difference of the named frames, branch against base
+  ([Picture counts](../testing.md#picture-counts)), or `Pictures: none (<reason>)` with a reason that says why no pixel
+  moves. Open the output it names in the scratch folder and check that the numbers are in it, that it compares
+  frames of one machine and the same views, and that the limit it names is the renderer design's. A change to drawing
+  with no line, or a line with no output behind it, is Important. A pull request that moves the software pictures' pin
+  (`.github/software-pictures/`) also needs the old and new counts, and the regenerated references in the same pull
+  request ([The software pictures](../testing.md#software-pictures)).
 - [ ] **The rules a program cannot check:**
     - `Fixes #N` and `Refs #N` (in `PR-BODY.md`) fit the change (`gh issue view N` is read only and allowed); a `Fixes`
       line for work the change does not finish is Important;

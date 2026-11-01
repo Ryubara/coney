@@ -1,0 +1,33 @@
+# The synthetic scenes of the picture comparison (docs/guides/coney-tools-picture.md#picture): each is a `coney` command
+# line that draws a world of Coney's own (the sandbox layouts and their CC0 textures; no game data) and saves its
+# last frame. `coney-tools picture scenes` draws them and compares each with tests/pictures/reference/NAME.png;
+# CI's `software-pictures` job does so through Mesa's llvmpipe in a pinned container (docs/guides/testing.md#software-pictures).
+# Paths in `args` are relative to the repository root, where the command runs.
+
+# The tolerance: a pixel is over when a channel differs by more than channel_tolerance (of 255), and a picture passes
+# when at most max_share_percent of its pixels are over. Stand-ins (docs/engine/renderer.md#comparing) until the
+# measured values are recorded there.
+channel_tolerance = 2
+max_share_percent = 0.1
+
+# What every scene draws with unless it says otherwise: three frames at half the original's frame size.
+frames = 3
+render_size = "320x224"
+
+[[scene]]
+name = "sandbox-default-start"
+args = ["--sandbox", "default"]
+
+# The same layout from its second viewpoint: a script taps the free camera's next-view button on its first frame.
+[[scene]]
+name = "sandbox-default-overview"
+args = ["--sandbox", "default", "--input-script", "tests/pictures/next_view.txt"]
+frames = 4
+
+[[scene]]
+name = "sandbox-combat-start"
+args = ["--sandbox", "combat"]
+
+[[scene]]
+name = "sandbox-parkour-start"
+args = ["--sandbox", "parkour"]

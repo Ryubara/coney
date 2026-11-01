@@ -426,6 +426,7 @@ def _build_parser() -> argparse.ArgumentParser:
     standards_cli.add_parser(groups)
     perf_cli.add_parser(groups)
     _add_trace_commands(groups)
+    _add_picture_commands(groups)
     return parser
 
 
@@ -938,6 +939,89 @@ def _gang_list(text: str) -> list[int]:
         raise argparse.ArgumentTypeError(f"{text!r}: expected gang ids separated by commas") from error
 
 
+def _add_picture_commands(groups: Any) -> None:
+    """Register `coney-tools picture ...`."""
+    group = groups.add_parser(
+        "picture", help="compare pictures with a tolerance, and check Coney's synthetic scenes against references"
+    )
+    commands = group.add_subparsers(dest="command", required=True)
+    compare = commands.add_parser(
+        "compare", help="count the pixels over the tolerance and the largest difference; exit 1 past the limit"
+    )
+    compare.add_argument("first", type=Path, help="a PNG, or a folder of them")
+    compare.add_argument("second", type=Path, help="a PNG, or a folder of them (pictures are paired by name)")
+    compare.add_argument(
+        "--channel-tolerance",
+        type=int,
+        default=None,
+        metavar="N",
+        help="the most a channel may differ, of 255, before its pixel counts as over (default 2)",
+    )
+    compare.add_argument(
+        "--max-share",
+        type=float,
+        default=None,
+        metavar="PERCENT",
+        help="the share of a picture's pixels allowed over the tolerance, in percent (default 0.1)",
+    )
+    compare.add_argument(
+        "--diff-out", type=Path, metavar="DIR", help="write NAME.diff.png here for each picture that has pixels over"
+    )
+    scenes = commands.add_parser(
+        "scenes", help="draw the synthetic scenes with coney and compare them with their reference pictures"
+    )
+    scenes.add_argument(
+        "--coney",
+        default="build/dev/src/platform/coney",
+        help="the coney executable (default build/dev/src/platform/coney)",
+    )
+    scenes.add_argument(
+        "--launcher", default="", metavar="COMMAND", help="a command put before coney, such as 'xvfb-run -a'"
+    )
+    scenes.add_argument("--scenes", type=Path, help="the scene list (default tests/pictures/scenes.toml)")
+    scenes.add_argument("--references", type=Path, help="the reference pictures (default tests/pictures/reference)")
+    scenes.add_argument("--out", type=Path, required=True, help="where the drawn pictures go (outside the repository)")
+    scenes.add_argument(
+        "--repeat",
+        type=int,
+        default=1,
+        metavar="N",
+        help="draw each scene N times and compare the repeats with the first",
+    )
+    scenes.add_argument(
+        "--update",
+        action="store_true",
+        help="replace the references with the drawn pictures, after printing the counts",
+    )
+    scenes.add_argument(
+        "--allow-no-references",
+        action="store_true",
+        help="pass, with a notice, when the references folder holds no picture yet; the scenes are still drawn",
+    )
+    scenes.add_argument("--channel-tolerance", type=int, metavar="N", help="override the scene list's tolerance")
+    scenes.add_argument("--max-share", type=float, metavar="PERCENT", help="override the scene list's share")
+
+
+def _run_picture(args: argparse.Namespace) -> int:
+    """Run `coney-tools picture ...`; NumPy and Pillow load only here."""
+    from coney_tools import picture_cli
+
+    if args.command == "compare":
+        return picture_cli.run_compare(args.first, args.second, args.channel_tolerance, args.max_share, args.diff_out)
+    return picture_cli.run_scenes(
+        args.coney,
+        args.launcher,
+        args.scenes,
+        args.references,
+        args.out,
+        args.repeat,
+        args.update,
+        args.allow_no_references,
+        args.channel_tolerance,
+        args.max_share,
+    )
+
+
 def _add_trace_commands(groups: Any) -> None:
     """Register `coney-tools trace ...`."""
     group = groups.add_parser(
@@ -1181,6 +1265,8 @@ def _run(args: argparse.Namespace) -> int:
         return extract.run(
             disc_arg, out_dir, args.only, args.verify, args.jobs, args.xbox, args.xbox_index, args.xbox_texture_map
         )
+    if args.group == "picture":
+        return _run_picture(args)
     if args.group == "movies":
         return movies_cli.run_list(args.disc)
     if args.group == "cpak":
