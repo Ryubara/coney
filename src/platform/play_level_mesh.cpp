@@ -80,15 +80,15 @@ std::optional<PlayLevelControls::HumanDraw> PlayLevelControls::humanDrawOf(const
                          .lean = 0.0F};
     }
     if (const auto index = inspectIndexIn(id, kInspectAiBase);
-        index && mode.m_ai && *index < mode.m_ai->humans().size() && *index < mode.m_fighterMeshes.size()) {
+        index && mode.m_ai && *index < mode.m_ai->humans().size()) {
         const ai::AiHuman& fighter = mode.m_ai->humans()[*index];
-        const auto& mesh = mode.m_fighterMeshes[*index];
-        if (fighter.removed || mesh.hidden) {
+        const auto mesh = mode.m_fighterMeshes.find(fighter.human.get());
+        if (fighter.removed || mesh == mode.m_fighterMeshes.end() || mesh->second.hidden) {
             return std::nullopt;
         }
         const human::TargetSnapshot drawn = human::interpolate(fighter.previous, fighter.current, alpha);
-        return HumanDraw{.mesh = mesh.mesh.get(),
-                         .character = mesh.character,
+        return HumanDraw{.mesh = mesh->second.mesh.get(),
+                         .character = &mode.characterOf(*fighter.human),
                          .pose = drawn.pose,
                          .feet = drawn.feet,
                          .heading = drawn.heading,

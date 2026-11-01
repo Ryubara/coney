@@ -274,8 +274,8 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
 
 | Ready now | In the way |
 | --- | --- |
-| One fixed 1/30 s step, no clock outside the frame pacer, game time from the step count | **One player** is built into the level glue: `PlayLevelMode::m_player`, pad port 0, HUD panel 0, the radar, crew, hiding, tagging, revive, uncuff |
-| Pads sampled once per step through one `InputSource` and the pad record; the AI writes the same `PlayerRecord` | **Simulation inside `src/platform/`**: about 4,800 lines of `play_level_*.cpp` mix player-1 gameplay (pickups, throw aim, mugging, object attacks) with drawing |
+| One fixed 1/30 s step, no clock outside the frame pacer, game time from the step count | **One player** is built into the level glue: `PlayLevelSimulation::m_player`, pad port 0, HUD panel 0, the radar, crew, hiding, tagging, revive, uncuff |
+| Pads sampled once per step through one `InputSource` and the pad record; the AI writes the same `PlayerRecord` | **Simulation inside `src/platform/`**: the level's simulation is a core base now (`PlayLevelSimulation`, [Missions](#sub-missions)), but the platform's mode still runs its step, with the streaming, the lights, the glints, the rings and the HUD's sprites in it, and the character and level loaders need librw |
 | Script handles from one deterministic counter, and ordered `std::map<double, ...>` almost everywhere | **No copy or restore** of simulation state; `Human`, `Brain` and `Player` are not copyable, and humans link to each other by raw pointer |
 | Per-human and per-brain `CombatRandom` streams; cosmetic effects on their own streams | **`GameRandom`** is drawn by presentation-adjacent code too (system music, radios, effects), each on its own stream as the original's ([Maths](../research/maths.md#random)), so those draws no longer move the gameplay stream, but they still run in the simulation |
 | A headless mode that runs the whole simulation, and input scripts | **Sounds, particles and HUD changes** are direct calls from the simulation, with no event that could be sent |
@@ -370,7 +370,7 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
   handles in ordered maps (the best replication keys in the code); doors and props tick at 60 Hz, two ticks a step.
 - **In the way:** doors, glass, props and radios draw from `GameRandom` (the effects and ambient streams) through
   `ObjectWorld::random`: fine on the server, so a client must never run that logic itself. Player-specific object code
-  (carrying, the object attack) lives in `PlayLevelMode` for player 1.
+  (carrying, the object attack) lives in `PlayLevelSimulation` for player 1.
 
 ### Effects (`effects/`) {#sub-effects}
 
@@ -401,7 +401,13 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
   player's snapshot.
 - **Today:** `GameState` owns the level table, checkpoint, `GameRandom`, `PlayerState` (inventory, stats, two slots),
   story and hub state, and the `twoPlayers` flag (set by the front end, read by nothing in play). Level jumps happen
-  in `beginFrame`, outside any step. The save is the profile record only.
+  in `beginFrame`, outside any step. The save is the profile record only. A level in play is
+  `PlayLevelSimulation` (`gamemodes/play_level_simulation.h`, built in `coney_core` with neither librw nor SDL): the
+  player, the cast and the fighters, the panes, doors, world, loose and held objects, the hats, the carried props, the
+  throw aim, the lock pick, the mugging, the theft, the flash, the deals, the game-over check and the HUD's state
+  (`hud::HudOwner`). The platform's `PlayLevelMode` derives from it and adds the drawing (a mesh per human, keyed by
+  the human), the scenery's streaming and the scenes' stage; the simulation tells it of a human made and of player
+  1's model changed through virtual hooks, and asks it whether a scene holds a human.
 - **In the way:** the two-player game state paths are unbuilt; level changes need a load barrier
   ([Story](#story)).
 
@@ -411,7 +417,8 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
   prompts. **Owner:** server. **How:** a per-player HUD state in that player's snapshot, and messages as reliable
   events; the client draws it.
 - **Today:** `HUD` has two player panels, of which only panel and radar 0 are driven. Menus read pad port 0; the
-  pause menu leaves out the co-op quit.
+  pause menu leaves out the co-op quit. The play mode's HUD state is the simulation's (`hud::HudOwner`, its own HUD or
+  the game's); `platform::HudLayer` only steps it and draws its sprites.
 - **In the way:** panel 1 and the second radar; a menu driven by whichever player opened it (the original's pause
   stores the player).
 
@@ -689,7 +696,7 @@ All on NTSC-U `SLUS_212.15`.
 
 One fixed step of exactly 1/30 s at any display rate, bit for bit the same at every rate
 ([Update and render](conventions.md#update-and-render)). Inside it the objects take the original's two 60 Hz ticks
-(`src/platform/play_level_objects.cpp`, `LooseObjects::kTicksPerStep`, the doors', glints' and light tasks' ticks);
+(`src/gamemodes/play_level_objects.cpp`, `LooseObjects::kTicksPerStep`, the doors', glints' and light tasks' ticks);
 the humans, cameras, scripts and HUD step once. Drawing blends the last two steps, so 60, 144 or 240 frames a second
 already look smooth.
 

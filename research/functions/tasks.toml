@@ -269,7 +269,7 @@ name = "WorldObject_OnImpact"
 page = "tasks.md#code-objects-dynamic-objects"
 role = "On contact: impact sound by material, damage, a hearing event; kind 8 reports a crime."
 level = "confirmed-code"
-coney = "src/platform/play_level_mode.h:PlayLevelMode::flyingBreak"
+coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::flyingBreak"
 status = "legacy"
 
 [[function]]
@@ -278,7 +278,7 @@ name = "WorldObject_Break"
 page = "tasks.md#code-objects-dynamic-objects"
 role = "Breaks an object: dropped, body freed, break message; kind 8 explodes."
 level = "confirmed-code"
-coney = "src/platform/play_level_mode.h:PlayLevelMode::flyingBreak"
+coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::flyingBreak"
 status = "legacy"
 
 [[function]]

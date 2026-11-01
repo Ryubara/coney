@@ -2951,7 +2951,7 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   and every other one to `HumanAnimator::setOverride()`, which all of the human's own clip lookups go through (a paired
   clip taken from another human's set does not). **Stand-ins**: a clip already playing is not restarted when its slot
   changes (the original's state flag `0x20000000`), and a dynamic clip plays at the rate of the id it replaces.
-- **Hats** ([Hats](#hats); `src/world_objects/hats.*`, `src/platform/play_level_hats.cpp`): the class's hat when the
+- **Hats** ([Hats](#hats); `src/world_objects/hats.*`, `src/gamemodes/play_level_hats.cpp`): the class's hat when the
   human is made, and `HuPlaceHatOnHead`'s, each a pinned world object on bone 6. A Warrior wears it at his set's
   fitting; anyone else at the hat type's own pose (`CfgObj` arguments 21 and 22). The offset is multiplied by the
   wearer's scale. A hat comes off when a knockdown grounds its wearer (not a cop's, nor class `0x80`'s or 13's unless
@@ -3126,7 +3126,7 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   run it. A level that places player 1 at a flag (the hub, the Rumble arenas) starts him on the flag ([World
   flags](flags.md#coneys-implementation)). The character's lights (ambient 0.45, one directional 0.7) stand in for the
   LightManager, and he is drawn between the level's two worlds.
-- **Handing the player over** (`ScriptedBrains::changePlayerGang`, `PlayLevelMode::takePlace`, from
+- **Handing the player over** (`ScriptedBrains::changePlayerGang`, `PlayLevelSimulation::takePlace`, from
   [Players](#players)): a later `HuCreate` with player argument 1 makes an AI human (the argument is kept as its
   priority), and `HuChangePlayerGang` picks the gang's member as `Gang_PickNextPlayer` does. **Coney's stand-in**:
   Coney has one player human, so instead of making the chosen human the player and leaving the old one in the world

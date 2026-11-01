@@ -968,7 +968,7 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   ([Sound](sound.md#interface-sounds)); silent without sound. A play returns the player's handle (`HudSound`), so the
   money count's looping cue `0x10` is kept while the count runs, started again if it was lost, and stopped when the
   count ends (`PlayerPanel`, [Sound events: the money count's sound](sound-events.md#money-count-sound)).
-- **The action prompt** (`repo:src/gamemodes/gameplay_mode.cpp`, the level's part `PlayLevelMode::promptOffer()`):
+- **The action prompt** (`repo:src/gamemodes/gameplay_mode.cpp`, the level's part `PlayLevelSimulation::promptOffer()`):
   each frame of play player 0's text is chosen in `HUD_Update`'s order: nothing while he tags, plays a scene part,
   mugs, steals a stereo or picks a lock; a held human set up for interrogation gives `GSTRING.HUD` 0 (interrogate,
   whatever he carries), one with money or a pocket item who may be mugged gives
@@ -1002,7 +1002,7 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   the mask's states (knocked out, by health or by a script, arrested, wounded), so beside a downed Warrior no "Give
   Weapon" shows. A Warrior's brain that a script knocked out is off in Coney (BrDead), so its think clears the prompt
   instead (`Brain::think`). Still to do: the player's own knocked-out gate on the other prompt steps.
-- **The stereo-theft panel** (`repo:src/hud/stereo_hud.h`, stepped by `PlayLevelMode::stepStereoPanel()`) as
+- **The stereo-theft panel** (`repo:src/hud/stereo_hud.h`, stepped by `PlayLevelSimulation::stepStereoPanel()`) as
   [the stereo panel on screen](hud-functions-panels.md#stereo-layout) says: up from the triangle press, the arrow round
   the backdrop's corners by stage, the gauge sized and turned by the angle turned and dropping by a doubling step while
   a stage is complete, the stick's four pictures and the turning ring, always mirrored (it never flickers); cue `0x22`
@@ -1010,7 +1010,7 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   and the instruction arrow) go through `SpriteBatch::addSprite(sprite, rotation)`, a positive angle turning clockwise
   on screen as the original's widgets do. **Coney's stand-in**: the stick and ring are timed on the game clock, not the
   timer `0x0050b8b8`.
-- **The mug meter** (`repo:src/hud/mug_meter.h`, stepped by `PlayLevelMode::stepMugMeter()`) as
+- **The mug meter** (`repo:src/hud/mug_meter.h`, stepped by `PlayLevelSimulation::stepMugMeter()`) as
   [the mug meter on screen](hud-functions-panels.md#mug-meter-layout) says, while player 1 mugs (mode 0): the two
   `part_page0` bars, the stick's ball and dot following the raw left stick, the three arcs rippling two updates each at
   the last direction the stick picked while it is on target, and `GSTRING.HUD` `0x180` (`0x181` for modes 1 and 3)
@@ -1018,7 +1018,7 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   bar 1 is the off-target time against the allowance (record `+0x0c`, what fails a player's mugging in Coney) instead of
   the time since the start against `+0x134`. Coney has no modes 1-3 (a player victim and the hold), which need two
   players and the hold's states.
-- **The lock-pick dial** (`repo:src/hud/lock_pick_hud.h`, stepped by `PlayLevelMode::stepLockPickDial()`) as
+- **The lock-pick dial** (`repo:src/hud/lock_pick_hud.h`, stepped by `PlayLevelSimulation::stepLockPickDial()`) as
   [the dial's layout](hud-functions-lua.md#lock-pick-dial-layout) says, while player 1 picks a lock: the three pins at
   the player's centre point at distance 1, turned by their angles (gone once every pin is done), then over every sprite
   the good and perfect wedges (whole rim vertices coloured, the next segment fading to clear) and the lock face, as

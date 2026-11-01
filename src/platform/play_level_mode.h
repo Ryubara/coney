@@ -34,6 +34,7 @@
 #include "fileio/wad.h"
 #include "gamemodes/game_mode.h"
 #include "gamemodes/gameplay_mode.h"
+#include "gamemodes/play_level_simulation.h"
 #include "graphics/lighting_switches.h"
 #include "graphics/render_device.h"
 #include "graphics/throw_arc.h"
@@ -144,22 +145,28 @@ using SceneLines = std::function<std::vector<SceneLine>(const PlayLevelMode& mod
 ///
 /// A level entered through GameplayMode (the story, `--play-level LEVEL`) brings its scripts' cast (ScriptedCast):
 /// player 1 is the scripts' first player, and every other human the scripts create is an AI human (ai::AiHumans on
-/// the level's brains) drawn with its own model (play_level_cast.cpp). Otherwise the other characters are a sandbox
-/// layout's `target` lines, Coney's passive targets (human::TargetHuman) stepped after the player, and AI fighters (a
-/// layout's `fighter` lines, or spawned from the debug menus), humans with a brain stepped in the player's characters'
-/// step; both are drawn with the player's model. The parts follow docs/research/characters.md,
+/// the level's brains) drawn with its own model (src/gamemodes/play_level_cast.cpp). Otherwise the other characters are
+/// a sandbox layout's `target` lines, Coney's passive targets (human::TargetHuman) stepped after the player, and AI
+/// fighters (a layout's `fighter` lines, or spawned from the debug menus), humans with a brain stepped in the player's
+/// characters' step; both are drawn with the player's model. The parts follow docs/research/characters.md,
 /// docs/research/combat/index.md, docs/research/ai/index.md and docs/research/camera.md; the mode is Coney's own glue.
 ///
 /// A level entered through gameplay also brings its glass panes and doors (ScriptedCast::objects,
-/// play_level_objects.cpp): they get the level's collision mesh and path data, tick twice a step, take player 1's
-/// landed hits, and triangle at a pickable door starts a lock pick that takes the pad until it ends.
+/// src/gamemodes/play_level_objects.cpp): they get the level's collision mesh and path data, tick twice a step, take
+/// player 1's landed hits, and triangle at a pickable door starts a lock pick that takes the pad until it ends.
+///
+/// What it simulates (the cast and the fighters, the objects, the hats, the carried props, the throw aim, the HUD's
+/// state) is its base, PlayLevelSimulation (src/gamemodes/play_level_simulation.h), which needs neither librw nor SDL;
+/// this class adds the drawing (the meshes per human, the textures, the lights, the world objects' models, the HUD's
+/// sprites, the throw arc), the scenery's streaming and the scenes' stage, and runs the step, calling the simulation's
+/// steps in the original's order (docs/guides/network-architecture.md#sub-missions).
 ///
 /// It also has Coney's own capabilities, which the original has nothing like (docs/guides/conventions.md#coney-only):
 /// teleporting, freezing and flying the player, the free camera, spawning fighters and objects, changing his character.
 /// The debug menus reach them, and the parts that are debug tooling alone (the Entity inspector, the Animation player,
 /// the Debug draw page's lines), through PlayLevelControls in the debug tools (src/platform/play_level_controls.h,
 /// docs/guides/building.md#debug-tools); render() draws the lines a hook gives.
-class PlayLevelMode final : public GameMode, public ScriptedPlayer, public OverlaidLevel {
+class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
   public:
     /// The mode's id, outside the original's range.
     static constexpr std::uint32_t kId = 0x106;
@@ -205,22 +212,8 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     /// One line: frames, the player's position, heading, speed, gait, clip and state, then the scenery's counts.
     [[nodiscard]] std::string summary() const;
 
-    /// Player 1.
-    [[nodiscard]] const human::Player& player() const { return *m_player; }
     /// The sandbox's targets (none in a level).
     [[nodiscard]] std::span<human::TargetHuman* const> targets() const { return m_targetPointers; }
-    /// The AI fighters.
-    [[nodiscard]] const ai::AiHumans& fighters() const { return *m_ai; }
-    /// The AI fighters, to steer: a disc test gives one an order as a script would.
-    [[nodiscard]] ai::AiHumans& fighters() { return *m_ai; }
-    /// Player 1's throw aim (docs/research/objects.md#throws).
-    [[nodiscard]] const combat::ThrowAimState& throwAim() const { return m_throwAim; }
-    /// The ribbon of player 1's throw-aim arc `alpha` of the way from the step before's arc to the newest (1 for the
-    /// newest): what the arc's drawing draws, 36 vertices; empty while he does not aim
-    /// (docs/research/graphics.md#throw-arc).
-    [[nodiscard]] std::vector<graphics::ThrowArcVertex> throwArcRibbon(float alpha) const;
-    /// Player 1's lock pick under way; null when none runs (docs/research/crimes.md#lockpick).
-    [[nodiscard]] const world_objects::LockPick* lockPick() const { return m_lockPick ? &*m_lockPick : nullptr; }
     /// Player 1's statistics as the play mode counts them.
     [[nodiscard]] const PlayStats& stats() const { return m_stats; }
 
@@ -243,9 +236,6 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     /// in the world objects there, and every frame is drawn from that step with the scenery's animations held, so each
     /// frame shows the same picture: `--freeze-world`.
     void freezeWorld() { m_freezeWorld = true; }
-    /// Player 1 holds the counts `gifts` give from the first step of play on (applied once, before that step's
-    /// pickups): `--give`, Coney's test aid for captures that need an item.
-    void giveAtStart(std::vector<ItemGift> gifts) { m_gifts = std::move(gifts); }
     /// Whether the world is frozen now (freezeWorld() and its first step done).
     [[nodiscard]] bool worldFrozen() const { return m_freezeWorld && m_frozenSince.has_value(); }
 
@@ -264,18 +254,14 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     /// Changes the scenery through the debug tools' world edits (PlayScenery::setEditHook(): `--world-edit`); null:
     /// none.
     /// @coney-only the debug tools' world edits; the original has none
-    void setWorldEdits(const std::shared_ptr<WorldEditHook>& edits) { m_scenery->setEditHook(edits); }
+    void setWorldEdits(const std::shared_ptr<WorldEditHook>& edits) { m_playScenery.setEditHook(edits); }
 
     // Coney's own capabilities and views of the play: the debug menus' Player, Camera, Spawner and AI fighters pages
     // reach them through PlayLevelControls, and the disc tests call them.
-    /// The scenery's name: the level, or the sandbox layout's title.
-    [[nodiscard]] std::string sceneName() const { return m_scenery->name(); }
     /// Player 1's feet, in the game's axes.
     [[nodiscard]] anim::Vec3 playerFeet() const;
     /// Player 1's heading in degrees (0 faces +y).
     [[nodiscard]] float playerHeadingDegrees() const;
-    /// The level's parked cars (their stereos), or null without any.
-    [[nodiscard]] const world_objects::Cars* cars() const { return m_cars; }
     /// Player 1's speed, metres a second.
     [[nodiscard]] float playerSpeed() const;
     /// One line of how player 1 moves: gait, clip, ground or air, traversal, stamina.
@@ -305,16 +291,16 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     /// The collision mesh the player and the AI stand on: the level's or the sandbox's, with any spawned objects in it.
     [[nodiscard]] const raycast::CollisionMesh& collision() const { return m_scenery->collision(); }
     /// Whether objects can be spawned into the scenery (spawn()).
-    [[nodiscard]] bool canSpawn() const { return m_scenery->canSpawn(); }
+    [[nodiscard]] bool canSpawn() const { return m_playScenery.canSpawn(); }
     /// Puts `extras` in the scenery and its collision in place of those added before (the debug tools' Spawner,
     /// PlayLevelControls::spawn()); empty: the scenery as made. Fails as PlayScenery::setExtras() does.
     std::expected<void, Error> setSceneExtras(SceneExtras extras) {
-        return m_scenery->setExtras(m_engine, std::move(extras));
+        return m_playScenery.setExtras(m_engine, std::move(extras));
     }
     /// The objects added to the scenery now.
-    [[nodiscard]] const SceneExtras& sceneExtras() const { return m_scenery->extras(); }
+    [[nodiscard]] const SceneExtras& sceneExtras() const { return m_playScenery.extras(); }
     /// How many objects were added to the scenery.
-    [[nodiscard]] std::size_t spawnedCount() const { return m_scenery->extras().count; }
+    [[nodiscard]] std::size_t spawnedCount() const { return m_playScenery.extras().count; }
     /// Makes an AI fighter at `feet` facing `headingDegrees`, drawn as the scene's character.
     std::expected<void, Error> spawnFighter(anim::Vec3 feet, float headingDegrees);
     /// The models a fighter can be drawn as: the distinct models of characterChoices(), sorted.
@@ -322,8 +308,6 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     /// Makes an AI fighter drawn as `model`, on `side` (ai::FighterSides::join() says which gang that puts it in).
     std::expected<void, Error> spawnFighterAs(anim::Vec3 feet, float headingDegrees, std::string_view model,
                                               ai::FighterSide side = ai::FighterSide::Enemy);
-    /// How many AI humans there are in the world.
-    [[nodiscard]] std::size_t fighterCount() const { return m_ai->liveCount(); }
     /// Removes the AI fighters the debug menus spawned (spawnFighter(), spawnFighterAs()), through the game's removal;
     /// the player, his crew, the level's scripts' humans and the layout's fighters stay.
     /// @coney-only debug tooling: the original has no spawner
@@ -334,10 +318,6 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     void setFightersEngage(bool on) { m_ai->setEngaging(on); }
     /// One line of the fighters' state.
     [[nodiscard]] std::string fightersState() const;
-    /// The character types the player can be made as (changeCharacter()), each with its model.
-    [[nodiscard]] std::vector<characters::CharacterChoice> characterChoices() const;
-    /// The character type the player is.
-    [[nodiscard]] int playerType() const { return m_type; }
     /// One line of the player's character and classes.
     [[nodiscard]] std::string characterState() const;
     /// What the pause menu's Stats screen reads of player 1 (docs/research/pause.md#stats-screen): his type, his
@@ -367,9 +347,6 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     void setSounds(audio::SoundPlayer* sounds) { m_stage->setSounds(sounds); }
     /// The scene stage: what the playing scene shows.
     [[nodiscard]] const SceneStage& stage() const { return *m_stage; }
-    /// The object of the prop `human` carries (its handle), made from his clip's event `0x30`; nothing when he carries
-    /// none (docs/research/combat-grabs.md#power-move-props).
-    [[nodiscard]] std::optional<double> carriedPropOf(const human::Human& human) const;
 
     /// Poses `mesh` as `character` in `pose`, leaned by `lean` and turned to `heading` at `feet`, in the world
     /// (RenderWare's axes) for drawing (CharacterMesh::pose()), the body `scale` times its size (1 unless the Entity
@@ -396,55 +373,15 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     void restartTagSpray() override;
     /// ScriptedPlayer: player 1's spray clips end.
     void endTagSpray() override;
-    /// ScriptedPlayer: what player 1 can act on for the action prompt: nothing during a mugging, a theft or a lock
-    /// pick; else a held human to mug, a pickable door, a freed car stereo and a dealer's offer in reach.
-    [[nodiscard]] PromptOffer promptOffer() const override;
-    [[nodiscard]] bool combatFraming() const override { return m_player->combatFraming(); }
-    /// ScriptedPlayer: `Human_ReleasePlayer` on the human the pad drives, with no one taking the pad
-    /// (ai::AiHumans::releasePlayer()): he fights on as his class's brain. False with no cast or no player left.
-    bool releasePlayerToAi() override;
-    /// The model the player is drawn as.
-    [[nodiscard]] const std::string& model() const { return m_model; }
 
-    /// The HUD the mode steps and draws (its own until useHud()), for the HUD page and the scripts.
-    [[nodiscard]] hud::Hud* hud() { return &m_hud->hud(); }
     /// How many HUD sprites the newest step queued (HudLayer::spritesQueued()).
-    [[nodiscard]] std::size_t hudSprites() const { return m_hud->spritesQueued(); }
-    /// Steps and draws `shared` (the game's HUD, which the scripts' bindings act on; it must outlive the mode) instead
-    /// of the mode's own, with the player attached to its panel 0.
-    void useHud(hud::Hud& shared);
-
-    /// The level's world objects (the scripts' spawn records brought in round the camera, the objective markers):
-    /// what the newest step draws (play_level_world.cpp).
-    [[nodiscard]] const world_objects::ObjectTasks& worldObjects() const { return m_objectTasks; }
+    [[nodiscard]] std::size_t hudSprites() const { return m_hudLayer->spritesQueued(); }
     /// The glints of the pickups and lock-pickable doors the newest step keeps (docs/research/particles.md#glints).
     [[nodiscard]] const effects::Triglints& glints() const { return m_glints; }
     /// The health rings and L1 markers the newest step queued.
     [[nodiscard]] const hud::HealthRings& healthRings() const { return m_rings; }
-    /// The parked cars' hit effects of the newest step (world_objects::Cars::takeHitEffects()), in order: the sparks,
-    /// the windows' shatters with their glass sound, the bonnet's steam (docs/research/cars.md#hit-effects).
-    [[nodiscard]] const std::vector<world_objects::CarHitEffect>& carHitEffects() const { return m_carHitEffects; }
     /// How many world objects the last frame drew (0 without pixels).
     [[nodiscard]] std::size_t objectsDrawn() const { return m_placed ? m_placed->drawn() : 0; }
-    /// One object in a human's hand as a frame draws it: who holds it, its handle, the pose bone it hangs from and its
-    /// world pose (game axes).
-    struct HeldDraw {
-        const human::Human* holder = nullptr;
-        double handle = 0.0;
-        std::size_t bone = 0;
-        world_objects::WorldPose pose;
-    };
-    /// The objects in every human's hand at the newest step, player 1's and each AI human's, posed by his own hand
-    /// bone as render() places them (docs/research/objects.md#given-weapon): a disc test's way to ask what is drawn in
-    /// a hand, whatever the renderer. An object that is not a spawn record of a type with a pick-up clip's take event
-    /// is left out, as the draw leaves it out.
-    [[nodiscard]] std::vector<HeldDraw> heldDraws() const;
-    /// How many objects made as `typeName` the level's spawn records still hold (not removed): a disc test's way to ask
-    /// whether the boards a broken fence threw are still standing, whatever the renderer.
-    [[nodiscard]] std::size_t standingObjectsOf(std::string_view typeName) const;
-    /// How many doors and barriers within `radius` of `at` would be drawn now (the doors' draw list, hidden and removed
-    /// ones left out): a disc test's way to ask whether a broken fence is still on screen.
-    [[nodiscard]] std::size_t doorsDrawnNear(anim::Vec3 at, float radius) const;
 
   private:
     // A character's resources and its texture dictionaries, ready to draw.
@@ -466,10 +403,6 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     void swapPlayerModel(LoadedCharacter loaded, const std::string& model);
     // The texture a character's dictionaries hold, which every material uses; null when none.
     [[nodiscard]] static rw::Texture* textureOf(const std::vector<TextureDictionary>& dictionaries);
-    // The character the player plays: his own after a change of character, else the scene's.
-    [[nodiscard]] const human::PlayerCharacter& playerCharacter() const {
-        return m_playerCharacter ? *m_playerCharacter : *m_character;
-    }
 
     // The camera of `snapshot` as the scenery draws it, in RenderWare's axes, with `drawDistance` as its far clip.
     [[nodiscard]] WorldView view(const human::PlayerSnapshot& snapshot, float drawDistance) const;
@@ -494,207 +427,37 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     [[nodiscard]] bool sceneHoldsPlayer() const;
     // The ground a placement of `human` drops onto (human::Human::place()): the level's collision, or null while a
     // scene holds the human.
-    [[nodiscard]] const raycast::CollisionMesh* placeGround(double human) const;
+    [[nodiscard]] const raycast::CollisionMesh* placeGround(double human) const override;
     // The brain's part of a placement of `human` (ai::Brain::placed(): its front move popped), when it has a brain.
     void brainPlaced(const human::Human& human);
-    // The handle the scripts name a cast AI human by (its brain's); 0 for one with no brain.
-    [[nodiscard]] double castHandleOf(const ai::AiHuman& fighter);
-    // The cast AI human the scripts name `handle`; null when none is.
-    [[nodiscard]] const ai::AiHuman* castHumanOf(double handle);
     // Makes the layout's targets, dropped onto the ground, with a mesh each.
     void makeTargets(rw::Texture* texture);
-    // Spawns a fighter dropped onto the ground below `spot`, with its mesh, as the character of `model` (empty: the
-    // scene's own).
-    void addFighter(anim::Vec3 spot, float headingDegrees, const std::string& model = {}, bool debugSpawned = false,
-                    ai::FighterSide side = ai::FighterSide::Enemy);
-    // The level's scripts' humans as AI humans: the AI on the scripts' brains, then the scripts' hold released with
-    // castHuman() as its spawner, which makes the humans created so far and replays the calls on them.
-    void makeCast(const ScriptedCast& cast, const ai::AiConfig& fighters);
-    // One human the scripts created, made: player 1's first creation is the player (his brain bound to it); any other
-    // with a position an AI human of its type's class, drawn as its model, snapped as `HuCreate` snaps. Returns its
-    // brain; null for a creation with no position.
-    ai::Brain* castHuman(const HumanCreation& human);
-    // HuChangePlayerGang's hand-over to `to` (a cast human): the player is moved, drawn and named as it, and it leaves.
-    void takePlace(const ai::Brain& to);
-    // The brain type a human of character type `type` fights as: its class's, as castHuman() makes it.
-    [[nodiscard]] ai::BrainType castBrainType(int type) const;
     // A character to draw and animate a human as, and its texture.
     struct CastLook {
         const human::PlayerCharacter* character = nullptr;
         rw::Texture* texture = nullptr;
     };
-    // The character `model` names, loaded once for every human of it; the scene's character when it is empty or fails
-    // to load.
-    CastLook castCharacter(const std::string& model);
-    // Gives a fighter the debug menus spawned, drawn as `look` for `model`, the character type it is drawn as (its
-    // voice set) and, in a level with scripts, a handle of its own in the scripts' hold, so that gameplay hands its
-    // sounds to the game's sound as it does a script's human's (the original plays every human's clip sounds,
-    // docs/research/sound.md#anim-sounds).
-    // Research: docs/guides/debug-menu.md#pages (AI fighters)
-    // @coney-only debug tooling: the original has no spawner
-    void bindDebugFighter(human::Human& made, const CastLook& look, const std::string& model);
-    // Takes the handles of the fighters the debug menus spawned out of the scripts' hold, before their removal.
-    // Research: docs/guides/debug-menu.md#pages (AI fighters)
-    // @coney-only debug tooling: the original has no spawner
-    void unbindDebugFighters();
-    // --- play_level_objects.cpp: the level's glass panes and doors.
+    // A character for a human of `model` to be drawn as: the one the simulation plays (castCharacter()) and the
+    // texture its dictionaries hold; the scene's character and texture when it is empty or did not load.
+    CastLook castLook(const std::string& model);
+    // The simulation's hooks (PlayLevelSimulation): the character `model` names, loaded with its textures (kept for
+    // drawing by model); a mesh for the AI human made; the player drawn as `model` (HuChangePlayerGang's hand-over).
+    [[nodiscard]] std::expected<std::unique_ptr<human::PlayerCharacter>, Error>
+    loadCastCharacter(std::string_view model) override;
+    void humanMade(const human::Human& human, const std::string& model) override;
+    void changePlayerModel(const std::string& model) override;
 
-    // Points `objects` (the scripts' cast's, may be null) at the scenery's collision mesh and path data.
-    void bindObjects(world_objects::LevelObjects* objects, const script::RecordedCalls* recorded);
-    // The lock pick before the player's step: triangle at a pickable door starts one; while one runs the dial turns,
-    // cross judges a pin and triangle or another button abandons. Returns whether it holds the pad this step.
-    bool stepLockPick(const Pad& pad);
-    // After the player's step: his object attack's hit sent to its object, then the objects' two 60 Hz ticks.
-    void stepObjects();
-    // Player 1's object attack under way (Player_ObjectAttack's clip, 661 or 662, with its object): whether its hit
-    // lands on the object this step. It lands when the clip's strike shapes come on (a car or other object) or strike
-    // it (a pane or door, through strikeObjects()), not at the attack's start
-    // (docs/research/combat-targets.md#breakables).
-    // @orig 0x0021b290 Strike_Contact (unknown)
-    [[nodiscard]] std::optional<double> objectAttackLands(const human::Human& human);
-    // The strike test's objects (`Strike_Contact`'s object branch, docs/research/combat/index.md#moving-strikes):
-    // `human`'s posed strike `shapes` strike each door or barrier whose enabled triangles they touch, each pane whose
-    // body they reach and each strike-target world object (a street prop) whose body (props.h bodyTouches()) they
-    // reach, once while the shapes stay on, with message 1 of the attack record's hit kind, each sounding as its type's
-    // material; then the level (strikeLevel()). **Coney's stand-ins**: a car's hit is not made here; only the drawn
-    // world objects are tested.
-    void strikeObjects(human::Human& human, std::span<const human::PosedShape> shapes);
-    // The strike shapes' contact with the level mesh: once while the shapes stay on, the fist (or the charging body)
-    // against the triangle met, as `human`'s sound (`player`: he is player 1; docs/research/sound-events.md).
-    void strikeLevel(human::Human& human, std::span<const human::PosedShape> shapes, bool player);
-    // A strike from `attacker` of `kind` on the world object `handle` of `type` at `point`, which stands at `pose` (the
-    // prop's `Strike_Contact`, world_objects::Props::strike()), printed as an `objects:` line.
-    // `runIn`: the attacker ran into it (a sprint into a RUNTARGET body).
-    void strikeProp(double attacker, double handle, const world_objects::ObjectType& type, world_objects::HitKind kind,
-                    anim::Vec3 point, anim::Vec3 direction, anim::Vec3 attackerAt, const world_objects::PropPose& pose,
-                    bool runIn = false);
-    // The handle `human` goes by as an attacker: player 1's, its brain's, else none.
-    [[nodiscard]] double handleOf(const human::Human& human) const;
-    // Whether a ray from `from` to `to` meets the level's collision (the panes' and doors' among it): the pick-up
-    // search's and the walk-over's sight test.
-    [[nodiscard]] bool sightBlocked(anim::Vec3 from, anim::Vec3 to) const;
-    // Player 1 walks over the power-ups he touches (LevelPickups::walkOver(), which plays their pick-up sounds).
-    void walkOverPowerups();
-    // A strike on a world object or a car reports a 30 m noise (`AI_ReportNoise`, `0x002936a8`;
-    // docs/research/combat/index.md, cars.md#hit-effects). Coney's AI does not hear it yet; the noise stamps the
-    // ambient manager's event, which opens the `_DAM_` emitters' window (docs/research/sound.md#ambient).
-    // @orig 0x002936a8 AI_ReportNoise (unknown)
-    void reportNoise();
-    // Gives player 1 triangle's pick-up over `pickups` (may be null: none): the search, with sight rays through the
-    // level's collision, starts the pick-up on him.
-    void bindPickups(LevelPickups* pickups);
-    // The car whose freed stereo is in reach of feet at `feet` (a kind-3 context record), nearest first; null for none.
-    [[nodiscard]] const world_objects::Car* stereoInReach(anim::Vec3 feet) const;
-    // The pickable door nearest feet at `feet` within reach (a kind-2 context record); null for none.
-    [[nodiscard]] const world_objects::Door* lockInReach(anim::Vec3 feet) const;
-    // Player 1's triangle at a dealer offering a deal (a kind-4 context record, docs/research/ai-scripting.md#dealer):
-    // the first whose offer is within ai::kDealReach in plan and whose feet are within the prompt height of the human's
-    // waist deals. Returns whether one took the press.
-    bool tryDeal(human::Human& human);
-    // Player 1's triangle beside a Warrior whose swap prompt is up (docs/research/ai-brain-types.md#warrior-swap): the
-    // Warriors ahead within 1.5 m are asked nearest first; the first that does not refuse turns to him over 0.2 s and
-    // the two swap what they hold at once, and player 1 says `give_me` when he now holds something. Returns whether one
-    // took the press. **Coney's stand-in**: the two-player swap is not built.
-    // @orig 0x00306040 WarriorBrain_OnPrompt (unknown)
-    bool trySwap(human::Human& human, const world_objects::SightBlocked& blocked);
-    // A deal's outcome for player 1: the item and money moved for a sale or a rip-off, and the dealer's line.
-    void settleDeal(ai::Brain& brain, ai::DealerGoal& dealer, ai::DealOutcome outcome);
-    // Each dealer whose money clip (`money_take`, his 668) passed its action event completes the sale its pair
-    // started (`DealerGoal_FinishPair`, docs/research/ai-scripting.md#dealer-buy).
-    void stepDealerPairs();
-    // The game-over check each update (GameState_CheckGameOver, docs/research/combat-reactions.md#defeat) with player 1
-    // as it sees him, then the failure's hand-off: the HUD hidden at its first update, and after 180 updates (10 once
-    // cross is newly pressed) the mission-failed mode with the reason's `GSTRING.HUD` title. **Coney's stand-ins**: a
-    // player at 0 health counts as knocked out and none as dead; no player frees himself (Coney has no uncuffing);
-    // `+0x414` never blocks the wait; a held member is one attached to his holder; the route check is a route request
-    // (no blocked links in Coney); the failed camera, the tint, the blur and the music's fade are not built.
-    // @orig 0x004197a8 GameState_CheckGameOver (unknown)
-    // @orig 0x00169dd8 Gang_NoneAbleToHelp (unknown)
-    // @orig 0x00169ea0 Gang_CanReachToHelp (unknown)
-    void stepGameOver(const Pad& pad);
-    // Player 1's flash (command 0x28, d-pad right, docs/research/combat-rage.md#flash): with a flash carried and health
-    // below its maximum, refused only when down or dead, cuffed, airborne or climbing: 665 SPECIAL_FLASH plays when
-    // nothing holds him, and its action event 25 updates in uses the flash (a clip cut first spends nothing); when
-    // something holds him (a grab, which stays; a knockdown, a stun, a hit reaction) the flash is used at once, unless
-    // 665 already plays. **Coney's stand-in**: the full-health rage use (upgrade (6, 8)) is not built.
-    // @orig 0x002843f8 Player_UseItemCommand (unknown)
-    void stepFlash();
-    // `Flash_Use`: one flash spent, interface sound 23 (`vags/misc/flash`), the health filled and wounding ended, and
-    // the HUD's ring request. **Coney's stand-in**: always the full heal (Coney has no difficulty setting; above
-    // normal the original heals a player by half), and the player's screen effect reset is not built.
-    // @orig 0x00284280 Flash_Use (unknown)
-    void useFlash(human::Human& human);
-    // Player 1's square may strike the world objects that are strike targets, the cars he faces and the level's whole
-    // glass panes, aiming at their positions, aim points and centres.
-    void giveObjectTargets();
-    // The type of the world object `handle` (a spawn record) when its body makes it a strike target; null otherwise.
-    [[nodiscard]] const world_objects::ObjectType* worldObjectType(double handle) const;
-    // The bodies of the world objects in the world this step (their types' CfgObj shapes at their poses), and the
-    // walking humans' slide along the BLOCKHUMANS ones (docs/research/physics.md#bodies). First the RUNTARGET bodies
-    // running humans met last step take their strike (Human_OnContact, docs/research/objects.md#trash-props).
-    // @orig 0x00391d48 Obj_CreatePhysicsBody (unknown)
-    void stepObjectBodies();
-    // Player 1's pick-up that reached its clip's event this step: the object is taken.
-    void stepPickups();
-    // A take from `object` when it is a weapon pile (world_objects::Props::takeFromPile()): the object made for the
-    // hand, kNoObject when none was made; nothing when `object` is no pile, or a pile taken itself.
-    [[nodiscard]] std::optional<double> takeFromPile(double object);
-    // Player 1 lets go of `held`: it leaves the hand from where the hand holds it and falls (dropHeld()), or, `thrown`,
-    // flies off with the throw's velocity and spin (docs/research/objects.md#held).
-    // @orig 0x00257f38 Human_DropHeld (unknown)
-    // @orig 0x002586d8 Human_ReleaseThrow (unknown)
-    // @orig 0x003fe6b8 MeleeWeapon_Detach (unknown)
-    void dropHeld(human::Human& human, double held, bool thrown = false);
-    // What the run log says of the object `handle` a player holds or lets go: its type name, its kind (`CfgObj`'s
-    // objectKind) and its hold style (the anim set it gives the hand), as ` (type NAME, kind K, hold style S)`; empty
-    // when its type is unknown (docs/guides/run-log.md).
-    [[nodiscard]] std::string heldObjectLogText(double handle) const;
-    // The loose objects in flight: their fall, bounce and settle (docs/research/physics.md#settle), their poses written
-    // back into their spawn records, each level impact's sound (impactSound()); an object that wears out on a contact
-    // breaks (flyingBreak()).
-    void stepLooseObjects();
-    // A flying object's level contact that did not break it (docs/research/sound-events.md#objects): its material
-    // against the surface's at 1 / (n + 1), for its first three impacts above 2 m/s.
-    // @orig 0x003939a8 WorldObject_OnImpact (unknown)
-    void impactSound(double handle, const world_objects::LooseImpact& impact);
-    // A flying object's break at its contact (docs/research/objects.md#throws): the impact's material pairs on the
-    // level mesh, message 6 from the boxes its thrower stands in, then its class's break: a `thrown_weapon` at the hit
-    // point with its dust and glass, gone at the next step; an `overhead_weapon` or a cash register through
-    // Props::breakFlying().
-    // @orig 0x003939a8 WorldObject_OnImpact (unknown)
-    // @orig 0x00393e20 WorldObject_Break (unknown)
-    // @orig 0x004034b8 ThrownWeapon_Break (unknown)
-    void flyingBreak(double handle, const world_objects::LooseObject& object);
-    // Player 1's mugging: the scripts' record for the next one, and the end of one (the money, the mug callback).
-    void stepMugging(human::Human& human);
-    // The stereo-theft panel follows player 1's theft: shown from the press, its progress each update with cue 0x22 per
-    // stage (and 0x23 for the last), gone as the end clip starts (docs/research/hud-functions-panels.md#stereo-layout).
-    void stepStereoPanel(const human::Human& human);
-    // The mug meter follows player 1's mugging: shown while it runs, with the raw left stick, whether it is on target
-    // and both bars' fills (docs/research/hud-functions-panels.md#mug-meter-layout).
-    void stepMugMeter(const human::Human& human, const Pad& pad);
+    // --- play_level_world.cpp: the throw's arc and the glass panes, drawn.
 
-    // --- play_level_throw_aim.cpp: the throw's aim.
-
-    // Player 1's throw aim (docs/research/objects.md#throws): L1 with a set 5 object enters it, `pad`'s raw left stick
-    // turns and pitches it, the arc is traced through the level each frame and what it meets is kept for HuIsAimingAt;
-    // L1 again, the object lost, a grab or the pad lost leaves it. **Coney's stand-ins**: the sweeps are sampled along
-    // the arc's segments, humans are upright capsules, a human target's point is a fixed head height.
-    // @orig 0x0027da10 Player_OnL1Pressed (unknown)
-    void stepThrowAim(const Pad& pad);
     // Draws player 1's throw-aim arc while he aims, `alpha` of the way from the step before's arc to the newest, red
     // while it meets a target (docs/research/graphics.md#throw-arc).
     // @orig 0x00419da0 ThrowArcs_RenderAll (unknown)
     void drawThrowArc(float alpha);
-    // The lock-pick dial follows player 1's pick: shown at its difficulty while it runs, with the pins' angles and the
-    // pin the next press judges (docs/research/hud-functions-lua.md#lock-pick-dial-layout).
-    void stepLockPickDial();
     // The level's glass panes, after the opaque world and before the rings (docs/research/objects.md#pane-draw).
     void drawGlass() const;
-    // Player 1's handle, as the scripts know him; the nil handle without a cast.
-    [[nodiscard]] double playerHandle() const;
 
-    // --- play_level_world.cpp: the world objects and the health rings.
+    // --- play_level_world.cpp: the world objects and the health rings, and what the humans hold, wear and carry,
+    // drawn (the simulation keeps them: src/gamemodes/play_level_simulation.h).
 
     // Loads the Object List the world objects' models come by (only when the engine draws).
     void makeWorldObjects(const ScriptedCast& cast);
@@ -722,81 +485,18 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     // Draws the world objects (lit as objects) `alpha` of the way from the step before to the newest, then what the
     // humans hold and wear (drawAttachedObjects()).
     void drawWorldObjects(float alpha);
-    // Where object `held` hangs in player 1's hand at `snapshot`'s pose; nothing when it is not a record in the hand
-    // with a pick-up clip's take event (docs/research/objects.md#held).
-    [[nodiscard]] std::optional<world_objects::WorldPose> heldPose(double held,
-                                                                   const human::PlayerSnapshot& snapshot) const;
-    // Where object `held` hangs in `human`'s hand, `character` posed by `pose` at `feet` facing `heading`: the bone
-    // and offset of its type's pick-up clip's take event in his own animations, at his scale. Nothing when it is not a
-    // record of a type with such an event (docs/research/objects.md#given-weapon).
-    [[nodiscard]] std::optional<HeldDraw> heldDrawOf(double held, const human::Human& human,
-                                                     const human::PlayerCharacter& character, const anim::Pose& pose,
-                                                     anim::Vec3 feet, float heading) const;
     // Queues the object in `human`'s hand for this frame's draw (drawAttachedObjects()), posed as heldDrawOf() says.
     void poseHeldObject(const human::Human& human, const human::PlayerCharacter& character, const anim::Pose& pose,
                         anim::Vec3 feet, float heading);
     // Draws this step's health rings and L1 markers, each under where its human is drawn (`feet` by ring id).
     void drawRings(const std::map<std::uint64_t, anim::Vec3>& feet) const;
 
-    // --- play_level_hats.cpp: the hats the humans wear (docs/research/characters.md#hats).
-
-    // One human's hat as the mode keeps it: whether his class's hat was given, the hat worn (0 for none), where it sits
-    // on his head and where it was at the last step, and his state then.
-    struct Wearer {
-        bool dressed = false;
-        double hat = 0.0;
-        world_objects::HeldAttachment local;
-        world_objects::WorldPose pose;
-        human::TargetState state = human::TargetState::Standing;
-    };
-    // After the humans' step: every human's hat put on, replaced or knocked off, and the falling hats moved.
-    void stepHats();
-    // One human's part of stepHats(), made as `type` (none: no class hat) and posed at this step by `pose` of
-    // `character` at `feet` facing `heading`.
-    void stepWearer(human::Human& human, std::optional<int> type, const human::PlayerCharacter& character,
-                    const anim::Pose& pose, anim::Vec3 feet, float heading);
-    // Makes hat `hat` of type `hatName` (when its record is not there yet) and puts it on `human`'s head as `wearer`'s.
-    // @orig 0x0024bfc0 Human_SpawnHat (unknown)
-    // @orig 0x003a3ba0 Human_PlaceHat (unknown)
-    void putOnHat(const human::Human& human, std::optional<int> type, const characters::CharacterType* classRecord,
-                  double hat, const std::string& hatName, Wearer& wearer);
-    // `wearer`'s hat leaves his head (he faces `heading`) and falls.
-    // @orig 0x00258330 Human_KnockOffHat (unknown)
-    void knockOffHat(Wearer& wearer, float heading);
-    // A deleted human's hat is removed with him.
-    void removeWornHat(human::Human& human);
-    // Player 1 takes `from`'s place (takePlace()): he wears `from`'s hat, and his own is removed.
-    void takeHatOf(const human::Human& from);
     // Notes where `human`'s hat is drawn this frame, `character` posed by `pose` at `feet` facing `heading`.
     void poseHat(const human::Human& human, const human::PlayerCharacter& character, const anim::Pose& pose,
                  anim::Vec3 feet, float heading);
     // Places this frame's worn hats and carried props among the world objects (before PlacedObjects::draw()).
     void drawAttachedObjects();
 
-    // --- play_level_props.cpp: the props the humans' clips make them carry
-    // (docs/research/combat-grabs.md#power-move-props).
-
-    // One human's carried prop as the mode keeps it: its object (0 for none), type and where it hangs.
-    struct Carrier {
-        double prop = 0.0;
-        std::string typeName;
-        world_objects::HeldAttachment local;
-    };
-    // After the humans' step: every human's carried prop made, hung from its attach point or removed.
-    void stepCarriedProps();
-    // One human's part of stepCarriedProps(), posed at this step by `pose` of `character` at `feet` facing `heading`.
-    void stepCarrier(human::Human& human, const human::PlayerCharacter& character, const anim::Pose& pose,
-                     anim::Vec3 feet, float heading);
-    // Makes the object of `prop` at `human` and attaches it at point 0x13 with its type's held offset, as `carrier`'s;
-    // a type that is missing or not one to carry is not made, and the human carries nothing.
-    // @orig 0x0024cbb0 Human_CreateCarriedProp (unknown)
-    // @orig 0x0024cd30 Human_AttachCarriedProp (unknown)
-    void makeCarriedProp(human::Human& human, const human::CarriedProp& prop, Carrier& carrier);
-    // Removes `carrier`'s object.
-    void removeCarriedProp(Carrier& carrier);
-    // Removes the object of a prop `human` no longer carries now, not at the next stepCarriedProps(): a scene bind's
-    // reset releases it in the middle of the step, and the original's release destroys the object at once.
-    void dropReleasedProp(const human::Human& human);
     // Notes where `human`'s carried prop is drawn this frame, `character` posed by `pose` at `feet` facing `heading`.
     void poseCarriedProp(const human::Human& human, const human::PlayerCharacter& character, const anim::Pose& pose,
                          anim::Vec3 feet, float heading);
@@ -825,35 +525,13 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     friend class PlayLevelControls;
 
     RenderEngine& m_engine;
-    const io::Wad& m_wad;
-    // The scripts' dynamic clips (HuUseAnim's idle replacements), loaded from the disc when first named.
-    characters::DynamicClips m_dynamicClips{
-        [this](std::string_view name) { return characters::loadAnimResource(m_wad, name); }};
-    std::unique_ptr<PlayScenery> m_scenery;
-    std::unique_ptr<human::PlayerCharacter> m_character; // the scene's: the targets and fighters play it
-    std::vector<TextureDictionary> m_dictionaries;       // before the mesh, which holds a reference to their texture
+    // The simulation's scenery (PlayLevelSimulation::m_scenery, which owns it), with its streaming and drawing.
+    PlayScenery& m_playScenery;
+    std::vector<TextureDictionary> m_dictionaries; // before the mesh, which holds a reference to their texture
     // The humans' shared blood textures, before every mesh, whose dual layers hold references to them.
     std::optional<BloodTextures> m_blood;
-    // After a change of character, the player's own character and textures; and the characters he played before,
-    // kept while the mode lasts because a target may still be playing a paired clip from one of their anim sets.
-    std::unique_ptr<human::PlayerCharacter> m_playerCharacter;
+    // After a change of character, the textures of the player's own character (PlayLevelSimulation::m_playerCharacter).
     std::vector<TextureDictionary> m_playerDictionaries;
-    std::vector<std::unique_ptr<human::PlayerCharacter>> m_retired;
-    // The Animation player's other characters' anim sets, by model (src/platform/play_level_anim.cpp): loaded when
-    // first opened and kept while the mode lasts, declared before the player, whose tasks may hold their clips.
-    struct AnimSetCharacter {
-        std::unique_ptr<human::PlayerCharacter> character;
-        std::unique_ptr<characters::AnimSet> own; // its own clips only
-    };
-    std::map<std::string, AnimSetCharacter, std::less<>> m_animSetCharacters;
-    std::unique_ptr<characters::AnimSet> m_genericAnims; // the generic character data alone, made when first opened
-    std::string m_animSetName;                           // the set and the clip the Animation player last played
-    std::string m_animClipName;
-    characters::CharacterTypes m_types; // the configuration's types
-    int m_type = 0;                     // the type the player is
-    int m_levelNumber = 0;              // the scene's level number (its models), 0 for a sandbox
-    std::unique_ptr<human::Player> m_player;
-    std::function<void(std::string_view)> m_print;
     std::unique_ptr<CharacterMesh> m_mesh;
     std::unique_ptr<PlayLighting> m_lights; // the level's lights (the cast's), or a stand-in
     Interpolated<float> m_drawDistance;     // at the last two steps
@@ -865,7 +543,6 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     bool m_frozen = false;
     std::optional<CameraPin> m_pinnedCamera;                      // `--camera`
     bool m_freezeWorld = false;                                   // `--freeze-world`
-    std::vector<ItemGift> m_gifts;                                // `--give`'s counts, until the first step's pickups
     std::optional<std::uint64_t> m_frozenSince;                   // the game ticks of the step the world froze after
     std::optional<Interpolated<world::DebugCamera>> m_freeCamera; // at the last two steps, while it is on
     // The sandbox's targets, each drawn with its own copy of the character's mesh.
@@ -879,23 +556,17 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     std::vector<Target> m_targets;
     std::vector<human::TargetHuman*> m_targetPointers;
     std::vector<human::Combatant*> m_combatants; // the targets, as the player's step takes them
-    // The characters the scripts' humans are drawn as, by model, before the AI so they outlive the humans playing them.
-    std::map<std::string, LoadedCharacter, std::less<>> m_castCharacters;
-    ScriptedCast m_cast;            // the level's scripts' humans and brains; all null without them
-    bool m_castPlayerBound = false; // whether player 1's creation is bound to the player
-    // The level's route planner (null without path data), before the AI so it outlives the brains that use it.
-    std::unique_ptr<ai::RoutePlanner> m_planner;
-    // The AI fighters, and a mesh each (in the fighters' order).
-    std::unique_ptr<ai::AiHumans> m_ai;
+    // The textures of the characters the scripts' humans and the fighters are drawn as, by model (the characters
+    // themselves are the simulation's: PlayLevelSimulation::m_castCharacters); none for a model that did not load.
+    std::map<std::string, std::vector<TextureDictionary>, std::less<>> m_castDictionaries;
+    // The AI humans' meshes, by human (drawn in the fighters' order), each skinned as the character he plays
+    // (PlayLevelSimulation::characterOf()).
     struct FighterMesh {
-        const human::PlayerCharacter* character = nullptr; // the character it is skinned as
         std::unique_ptr<CharacterMesh> mesh;
-        std::string model;   // the model it was spawned as; empty: the scene's character
         bool hidden = false; // its human was deleted
     };
-    std::vector<FighterMesh> m_fighterMeshes;
+    std::map<const human::Human*, FighterMesh> m_fighterMeshes;
     rw::Texture* m_texture = nullptr; // the character's texture, for new meshes
-    std::string m_model;              // the Character List model the player is
     std::string m_sceneModel;         // the model of the scene's character (m_character), as the mode started
     // The scenes: the stage drawn and stepped with them, the system attached (or the test aid's own) and player 1's
     // handle in them.
@@ -903,33 +574,6 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     scenes::SceneSystem* m_scenes = nullptr;
     std::unique_ptr<scenes::SceneList> m_ownSceneList;
     std::unique_ptr<scenes::SceneSystem> m_ownScenes;
-    double m_playerHandle = 0.0;
-    // The level's glass panes and doors (gameplay's; null without them), the lock pick under way, and its difficulty.
-    world_objects::LevelObjects* m_objects = nullptr;
-    double m_heldObject = 0.0;             // what player 1 held at the last step (world_objects::kNoObject for nothing)
-    world_objects::Cars* m_cars = nullptr; // the level's parked cars, for their stereos; not owned
-    std::optional<double> m_theftCar;      // the car whose stereo player 1 is stealing
-    // Player 1's object attack waiting for its strike window (objectAttackLands()).
-    struct ObjectAttack {
-        double object = 0;      // the object it aims at
-        std::uint32_t clip = 0; // its clip, 661 or 662
-        bool shapesOn = false;  // its strike shapes have come on
-    };
-    std::optional<ObjectAttack> m_objectAttack;
-    std::vector<world_objects::CarHitEffect> m_carHitEffects; // the cars' hit effects of the newest step
-    GameOverCheck* m_gameOver = nullptr;                      // the game-over check (GameState::gameOver); not owned
-    const std::array<PadOptions, 2>* m_padOptions = nullptr;  // the pads' options (GameState::saved.pads); not owned
-    std::function<void(std::string_view)> m_missionFailed;    // opens the mission-failed mode with a title
-    bool m_failShown = false;                                 // the failure's first hand-off update ran
-    bool m_wasMugging = false;                                // player 1 was mugging at the last step
-    std::optional<bool> m_mugEnding;                          // a decided mugging's result, until its end clip finishes
-    std::uint32_t m_mugEndClip = 0;                           // that end clip
-    LevelPickups* m_pickups = nullptr;                        // the level's loose objects for the pick-up; not owned
-    int m_theftStage = 0;                                     // the theft's stage the panel last showed
-    std::optional<world_objects::LockPick> m_lockPick;
-    int m_lockPickDifficulty = 0;
-    bool m_flashRingRequest = false;      // a flash used: the HUD's ring request (docs/research/hud.md)
-    script::SoundHost* m_sound = nullptr; // the game's sound for the dealers' lines; not owned
     // The --trace file (closed when unset) and the steps traced.
     std::optional<std::ofstream> m_trace;
     std::uint64_t m_traceSteps = 0;
@@ -937,42 +581,19 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     std::shared_ptr<HumansTrace> m_humansTrace;
     // The level's parked cars, particles and motion blur (play_level_effects.h), when gameplay brought them.
     std::unique_ptr<PlayLevelEffects> m_levelEffects;
-    // The world objects: the scripts' records and types (null without a cast), their objects, the models they are
-    // drawn with (null without pixels or an Object List), and the health rings.
-    world_objects::SpawnRecords* m_records = nullptr;
-    const world_objects::ObjectTypes* m_objectTypes = nullptr;
-    world_objects::ObjectTasks m_objectTasks;
     // The world objects' and doors' poses at the last two steps, by their draw id, and the spinning icons' by their
     // human, for a render between steps (docs/research/rendering.md#interpolation).
     world_objects::DrawnPoses<double> m_drawnPoses;
     world_objects::DrawnPoses<const human::Human*> m_iconPoses;
     effects::Triglints m_glints;
-    world_objects::ObjectBodies m_objectBodies;   // this step's world-object bodies
-    combat::ThrowAimState m_throwAim;             // player 1's throw aim
-    std::vector<anim::Vec3> m_previousArc;        // the arc's points on the step before (none: not aiming)
-    std::unique_ptr<ThrowArcRenderer> m_throwArc; // made when the arc is first drawn
-    // The RUNTARGET bodies running humans met last step: (the human's handle, his feet, the object), struck next step.
-    std::vector<std::tuple<double, anim::Vec3, double>> m_runContacts;
-    world_objects::LooseObjects m_looseObjects;              // the dropped objects falling or settling
-    std::vector<double> m_brokenThrown;                      // thrown objects broken last step, removed this one
-    combat::CombatRandom m_throwRandom{0x7417U};             // a thrown object's spin (a fixed seed)
+    std::unique_ptr<ThrowArcRenderer> m_throwArc;            // made when the arc is first drawn
     std::unique_ptr<world_objects::ObjectList> m_objectList; // before the models that read it
     std::unique_ptr<PlacedObjects> m_placed;
-    // The hats: the fittings (read once from the recorded `CfgHat` calls), each human's, the handles worn, those
-    // falling, and where this frame draws the worn ones.
-    world_objects::HatFits m_hatFits;
-    bool m_hatFitsRead = false;
-    std::map<const human::Human*, Wearer> m_wearers;
-    std::set<double> m_wornHats;
-    world_objects::FallingHats m_fallingHats;
-    // The carried props: each human's and the handles carried.
-    std::map<const human::Human*, Carrier> m_carriers;
-    std::set<double> m_carriedProps;
     // Where this frame draws the worn hats and the carried props.
     std::vector<std::pair<double, world_objects::WorldPose>> m_attachedDraws;
     hud::HealthRings m_rings;
     std::map<std::uint64_t, int> m_ringHealth; // each ringed human's health at the last step, for its hit pulse
-    std::unique_ptr<HudLayer> m_hud;           // the HUD's sheets, batches and pass (src/platform/hud_layer.h)
+    std::unique_ptr<HudLayer> m_hudLayer;      // the HUD's sheets, batches and pass (src/platform/hud_layer.h)
     // The layer renderWithOverlay() adds over the HUD for the render it runs; null otherwise.
     const std::function<void(graphics::RenderDevice&)>* m_overlay = nullptr;
     // Whether the render renderWorldWithOverlay() runs leaves the HUD out.

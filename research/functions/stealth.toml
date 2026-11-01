@@ -24,7 +24,7 @@ address = 0x0027da10
 name = "Player_OnL1Pressed"
 page = "stealth.md#stealth-kill"
 level = "confirmed-code"
-coney = "src/platform/play_level_mode.h:PlayLevelMode::stepThrowAim"
+coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::stepThrowAim"
 status = "legacy"
 
 [[function]]
@@ -33,7 +33,7 @@ name = "AI_ReportNoise"
 page = "stealth.md#original-structure"
 role = "a noise: event `0x17` to the humans who hear it"
 level = "confirmed-code"
-coney = "src/platform/play_level_mode.h:PlayLevelMode::reportNoise"
+coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::reportNoise"
 status = "legacy"
 
 [[function]]

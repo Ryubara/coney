@@ -1118,7 +1118,7 @@ its speed per step in the difficulty's direction and judges a press against the 
 both counters and every pin); `LockPick` runs the start, stage-fail, success and stop callbacks, plays the click on a
 miss, unlocks and opens the door on success (a break-in unless all three presses were perfect, which score bonus event
 1-3) and counts an abandoned pick at the door (the third reports a break-in). The door side is on
-[World objects](objects.md#coneys-implementation). In play (`repo:src/platform/play_level_objects.cpp`), triangle
+[World objects](objects.md#coneys-implementation). In play (`repo:src/gamemodes/play_level_objects.cpp`), triangle
 within 1.5 m of a pickable door (**Coney's stand-in** for the kind-2 record's reach, not traced) starts a pick at the
 difficulty of the player's `CfgWarriorClass` byte `+0x0a` less 1; the pick takes the pad until it ends, the dial
 turning each step, cross judging and any button but cross, L1, R2, the d-pad and SELECT abandoning. Not built: the
@@ -1194,7 +1194,7 @@ and buttons other than the stick ending a session.
 **Car stereos** (`repo:src/world_objects/cars.h`, 2026-10-06): `CarSpawnRadio` puts a stereo in a parked car;
 breaking window 15 ([Cars](cars.md#windows)), or a type-12 pane within 2 m (`ObjectServices::freeCarStereos`), frees
 it, and `Cars::takeStereo` takes it once. **The theft** (`PlayLevelMode`'s context action,
-`repo:src/platform/play_level_objects.cpp`): with no kind-1 prompt in reach, triangle within 2 m in plan of a freed
+`repo:src/gamemodes/play_level_objects.cpp`): with no kind-1 prompt in reach, triangle within 2 m in plan of a freed
 stereo not below the feet starts it (`Human::startStereoTheft`: the player turns to the stereo, 683 then the loop
 684, mode 3 with 3 turns a stage, the player's class byte 2); success calls `LevelPickups::stereoStolen` ($15 and
 item 11, then the `CfgSetSteroTheftHandler` callback with the human and the car). **Coney's readings**: the turn to
@@ -1215,7 +1215,7 @@ the same draws in the same order (`repo:tests/ai/spawner_money_test.cpp`). It ta
 record (`v16` not -1), so `level87`'s sellers get $0 and a type 197 soldier $5 in 21 of 101 rolls and $0 otherwise,
 as in the original ([level87's sellers and soldiers](#starting-money); inferred from reading
 `repo:src/characters/starting_money.cpp`, not rerun for these types). Player 1's won mugging
-(`PlayLevelMode::stepMugging()`) moves all the victim's money in the deciding update (`LevelPickups::mugPaid()`:
+(`PlayLevelSimulation::stepMugging()`) moves all the victim's money in the deciding update (`LevelPickups::mugPaid()`:
 item 2 with the money and inventory callbacks, then item 2's pick-up sound); his
 `HuSetMugCallback` callback runs with (mugger, 1 or nil) when his end clip (344 or 346) finishes, or at once for a
 let-go or a hit (`LevelPickups::mugEnded()`). **Coney's stand-ins**: a `grp_` object group carries nothing and a
@@ -1223,7 +1223,7 @@ rolled object is not given to the human; `HuSetInterrogation` keeps the lines an
 (`ScriptState::interrogationLines`, `interrogationCallback`) and the prompt reads "interrogate", but not its
 mugging (the set lines, no pay, the callback once); not built: the pocket items, the half-way `no_item` stop, ped
 type 5's 1.5 times and the statistic. While he mugs, the HUD's mug meter shows
-(`PlayLevelMode::stepMugMeter()`, [HUD: the mug meter](hud-functions-panels.md#mug-meter-layout)).
+(`PlayLevelSimulation::stepMugMeter()`, [HUD: the mug meter](hud-functions-panels.md#mug-meter-layout)).
 
 **The arrest and the uncuffing** (2026-10-07): `HuSetArrested` (`ai::ScriptedHumans::setArrested()`) cuffs the human
 (`Human::setArrested()`: stopped, its fighting ended, 320 looping), resets its brain as `Brain_OnArrested` does

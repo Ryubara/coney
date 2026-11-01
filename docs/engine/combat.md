@@ -469,7 +469,7 @@ it.
 - The combat walk's clip by eight even 45° sectors centred on the clips' directions; the walk starts at its full speed
   (the 5 slower first updates backward are not known). Tracked by
   [q-backward-walk](../research/combat/index.md#q-backward-walk).
-- **The flash** (`PlayLevelMode::stepFlash()`, `useFlash()`): d-pad right with a flash carried and health below the
+- **The flash** (`PlayLevelSimulation::stepFlash()`, `useFlash()`): d-pad right with a flash carried and health below the
   maximum is refused only when the player is down or dead, cuffed, airborne or climbing over (`Human::refusesFlash()`),
   as `Player_UseItemCommand` (`0x002843f8`) refuses it. When nothing holds him it plays 665
   (`Human::pushOverlayClip()`): at the clip's rate of 0.75, which `AnimTask5_Construct` (`0x00106240`) takes from the

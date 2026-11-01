@@ -56,17 +56,6 @@ rw::Texture* PlayLevelMode::textureOf(const std::vector<TextureDictionary>& dict
     return textures.empty() ? nullptr : textures.front();
 }
 
-std::vector<characters::CharacterChoice> PlayLevelMode::characterChoices() const {
-    // Every configured type a player can be drawn as: those whose record (or class record) names a model.
-    std::vector<characters::CharacterChoice> choices;
-    for (const characters::CharacterType& type : m_types.all()) {
-        if (std::optional<std::string> model = m_types.modelFor(type.type, 1, m_levelNumber); model) {
-            choices.push_back(characters::CharacterChoice{.type = type.type, .model = std::move(*model)});
-        }
-    }
-    return choices;
-}
-
 std::string PlayLevelMode::characterState() const {
     const combat::Health& health = m_player->human().health();
     std::string state = std::format("type {} {}, health {}/{}", m_type, m_model, health.value(), health.maximum());
@@ -93,6 +82,43 @@ gui::WarriorStats PlayLevelMode::warriorStats() const {
         }
     }
     return stats;
+}
+
+PlayLevelMode::CastLook PlayLevelMode::castLook(const std::string& model) {
+    const human::PlayerCharacter& character = castCharacter(model);
+    if (&character == m_character.get()) {
+        return CastLook{.character = m_character.get(), .texture = m_texture};
+    }
+    const auto found = m_castDictionaries.find(model);
+    return CastLook{.character = &character,
+                    .texture = found != m_castDictionaries.end() ? textureOf(found->second) : m_texture};
+}
+
+std::expected<std::unique_ptr<human::PlayerCharacter>, Error> PlayLevelMode::loadCastCharacter(std::string_view model) {
+    auto loaded = loadCharacter(m_engine, m_wad, model);
+    if (!loaded) {
+        return std::unexpected(std::move(loaded.error()));
+    }
+    // The character is the simulation's; its textures stay here, for the meshes that draw it.
+    m_castDictionaries.insert_or_assign(std::string(model), std::move(loaded->dictionaries));
+    return std::move(loaded->character);
+}
+
+void PlayLevelMode::humanMade(const human::Human& human, const std::string& model) {
+    const CastLook look =
+        model.empty() ? CastLook{.character = m_character.get(), .texture = m_texture} : castLook(model);
+    FighterMesh mesh;
+    mesh.mesh = std::make_unique<CharacterMesh>(characterOf(human).assets().model, look.texture, Skinning::Gpu);
+    m_fighterMeshes.insert_or_assign(&human, std::move(mesh));
+}
+
+void PlayLevelMode::changePlayerModel(const std::string& model) {
+    if (auto loaded = loadCharacter(m_engine, m_wad, model); loaded) {
+        swapPlayerModel(std::move(*loaded), model);
+    } else {
+        m_print(
+            std::format("cast: model {} not loaded ({}); player 1 keeps {}\n", model, loaded.error().message, m_model));
+    }
 }
 
 void PlayLevelMode::swapPlayerModel(LoadedCharacter loaded, const std::string& model) {
@@ -155,7 +181,7 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
     const human::PlayerStart here{.position = before.position(), .headingDegrees = degreesOf(before.heading())};
     const human::PlayerStart start = m_player->start();
     std::vector<human::PlayerStart> fighters;
-    // The model each fighter was spawned as (the meshes are in the fighters' order), so it keeps its look, and whether
+    // The model each fighter was spawned as (the simulation's record of him), so it keeps its look, and whether
     // the debug menus spawned it, so Clear fighters still finds it, and its side.
     std::vector<std::string> fighterModels;
     std::vector<bool> fighterDebug;
@@ -169,7 +195,8 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
         }
         fighters.push_back(human::PlayerStart{.position = fighter.human->position(),
                                               .headingDegrees = degreesOf(fighter.human->heading())});
-        fighterModels.push_back(i < m_fighterMeshes.size() ? m_fighterMeshes[i].model : std::string{});
+        const auto played = m_played.find(fighter.human.get());
+        fighterModels.push_back(played != m_played.end() ? played->second.model : std::string{});
         fighterDebug.push_back(fighter.debugSpawned);
         fighterSides.push_back(fighter.side);
     }
@@ -177,6 +204,7 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
     const bool engaging = m_ai->engaging();
     m_ai.reset();
     m_fighterMeshes.clear();
+    m_played.clear();
     // A target the old player held in a grab is let go: nothing places it any more.
     for (Target& target : m_targets) {
         target.human->setAttached(false);

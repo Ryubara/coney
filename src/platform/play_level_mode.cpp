@@ -117,23 +117,6 @@ const char* gaitName(human::Gait gait) {
     return "?";
 }
 
-// The level number of a scene called `name` (99 for `level99`), which picks the Armies of the Night models; 0 for a
-// sandbox or any other name.
-int levelNumberOf(std::string_view name) {
-    constexpr std::string_view kPrefix = "level";
-    if (!name.starts_with(kPrefix) || name.size() == kPrefix.size()) {
-        return 0;
-    }
-    int number = 0;
-    for (const char c : name.substr(kPrefix.size())) {
-        if (c < '0' || c > '9' || number > 9999) {
-            return 0;
-        }
-        number = (number * 10) + (c - '0');
-    }
-    return number;
-}
-
 } // namespace
 
 std::expected<std::unique_ptr<PlayLevelMode>, Error>
@@ -197,13 +180,11 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
                              LoadedCharacter loaded, std::function<void(std::string_view)> print, std::string model,
                              const PlayerSetup& setup, const ScriptedCast* cast,
                              std::unique_ptr<PlayLevelEffects> levelEffects)
-    : m_engine(engine), m_wad(wad), m_scenery(std::move(scenery)), m_character(std::move(loaded.character)),
-      m_dictionaries(std::move(loaded.dictionaries)), m_types(setup.types), m_type(setup.type),
-      m_levelNumber(levelNumberOf(m_scenery->name())),
-      // A start with no snap is spawned without the mesh; the first update's ground snap then settles the feet.
-      m_player(std::make_unique<human::Player>(*m_character, setup.snapToGround ? &m_scenery->collision() : nullptr,
-                                               m_scenery->start(), human::playerClassOf(setup.types, setup.type))),
-      m_print(std::move(print)), m_drawDistance(m_scenery->drawDistance()), m_model(std::move(model)) {
+    : PlayLevelSimulation(wad, std::move(scenery), std::move(loaded.character), std::move(print), std::move(model),
+                          setup.types, setup.type, setup.snapToGround),
+      // The ground the simulation was given is this scenery.
+      m_engine(engine), m_playScenery(static_cast<PlayScenery&>(*m_scenery)),
+      m_dictionaries(std::move(loaded.dictionaries)), m_drawDistance(m_playScenery.drawDistance()) {
     m_texture = textureOf(m_dictionaries);
     m_sceneModel = m_model;
     // The blood of every human's second pass; without it humans are drawn in one pass.
@@ -215,8 +196,8 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
     m_mesh = std::make_unique<CharacterMesh>(m_character->assets().model, m_texture, Skinning::Gpu);
     // The level's lights as its scripts set them, or a stand-in; the scenery draws with them too.
     m_lights = std::make_unique<PlayLighting>(engine, wad, cast != nullptr ? cast->lighting : nullptr,
-                                              m_scenery->lightDirection(), m_print);
-    m_scenery->setLighting(&m_lights->scene());
+                                              m_playScenery.lightDirection(), m_print);
+    m_playScenery.setLighting(&m_lights->scene());
     m_print(m_lights->summary());
     makeTargets(m_texture);
     // The glints' blink draws from the game's random table when the disc's executable has the NTSC-U one.
@@ -256,7 +237,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
         }
     }
     // The HUD, with the player on panel 0 (docs/research/hud.md#the-player-panel).
-    m_hud = HudLayer::create(wad, engine.drawsPixels(), m_print);
+    m_hudLayer = HudLayer::create(*m_hud, wad, engine.drawsPixels(), m_print);
     m_hud->hud().attachPlayer(0, m_type);
     makeStage();
     // Whose face clips show (Human_UsesQueuedPose, docs/research/face.md): nobody a scene holds; an AI
@@ -286,11 +267,6 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
     m_levelEffects = std::move(levelEffects);
 }
 
-void PlayLevelMode::useHud(hud::Hud& shared) {
-    m_hud->useHud(shared);
-    shared.attachPlayer(0, m_type);
-}
-
 PlayLevelMode::~PlayLevelMode() {
     // The dynamic clips go with the mode; the scripts' hold (gameplay's, which outlives it) must not use them.
     if (m_cast.scripted != nullptr) {
@@ -300,7 +276,7 @@ PlayLevelMode::~PlayLevelMode() {
     }
     m_levelEffects.reset();
     attachScenes(nullptr, 0.0); // the scenes may outlive the stage they were hosted by
-    m_scenery->setLighting(nullptr);
+    m_playScenery.setLighting(nullptr);
     m_lights.reset();
     m_ai.reset(); // out of the player's step before he goes
     m_fighterMeshes.clear();
@@ -339,34 +315,6 @@ void PlayLevelMode::makeTargets(rw::Texture* texture) {
     }
 }
 
-void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std::string& model, bool debugSpawned,
-                               ai::FighterSide side) {
-    // Dropped onto the ground below its spot, as a teleport is.
-    raycast::Vec3 feet{spot.x, spot.y, spot.z + kTeleportDrop};
-    if (!raycast::dropToGround(m_scenery->collision(), kTeleportDrop * 2.0F, feet)) {
-        feet.z = spot.z;
-    }
-    // The scene's character, or the one `model` names (loaded once and kept, as the scripts' humans' are; a model that
-    // does not load falls back to the scene's, with a line saying so).
-    const CastLook look =
-        model.empty() ? CastLook{.character = m_character.get(), .texture = m_texture} : castCharacter(model);
-    human::Human& made = m_ai->spawnFighter(*look.character, &m_scenery->collision(),
-                                            anim::Vec3{feet.x, feet.y, feet.z}, headingDegrees, side);
-    if (debugSpawned) {
-        m_ai->markDebugSpawned(made);
-        bindDebugFighter(made, look, model);
-    }
-    // With every gang slot in use the fighter has no gang, so it is nobody's friend or enemy: say so.
-    if (const ai::Brain* brain = m_ai->brainOf(made); brain != nullptr && brain->gang() == nullptr) {
-        m_print("fighters: no free gang slot, so a fighter was made with no gang\n");
-    }
-    FighterMesh mesh;
-    mesh.character = look.character;
-    mesh.model = model;
-    mesh.mesh = std::make_unique<CharacterMesh>(look.character->assets().model, look.texture, Skinning::Gpu);
-    m_fighterMeshes.push_back(std::move(mesh));
-}
-
 std::expected<void, Error> PlayLevelMode::spawnFighter(anim::Vec3 feet, float headingDegrees) {
     addFighter(feet, headingDegrees, {}, true);
     return {};
@@ -389,7 +337,7 @@ std::expected<void, Error> PlayLevelMode::spawnFighterAs(anim::Vec3 feet, float 
 
 void PlayLevelMode::clearFighters() {
     // Only the fighters the menus spawned, taken out as a level's script deletes a human: their entries stay (so the
-    // meshes keep their indexes and the scripts' handles on the others stay good) and are no longer drawn. Their own
+    // fighters keep their indexes and the scripts' handles on the others stay good) and are no longer drawn. Their own
     // handles leave the scripts' hold first, as a deleted script human's do.
     unbindDebugFighters();
     m_ai->removeDebugSpawned();
@@ -474,8 +422,8 @@ WorldView PlayLevelMode::stepSceneryView(const FrameTime& frame) {
         m_freeCamera ? std::optional<world::CameraPose>(m_freeCamera->current().pose()) : std::nullopt;
     const world::CameraPose* freePose = free ? &*free : nullptr;
     const world::Vec3 eye = chosenView(m_player->current(), m_drawDistance.current(), 1.0F, freePose).pose.position;
-    m_scenery->step(eye, frame);
-    m_drawDistance.current() = m_scenery->drawDistance();
+    m_playScenery.step(eye, frame);
+    m_drawDistance.current() = m_playScenery.drawDistance();
     return chosenView(m_player->current(), m_drawDistance.current(), 1.0F, freePose);
 }
 
@@ -484,7 +432,7 @@ void PlayLevelMode::stepFrozen(const FrameTime& frame) {
     // round the camera, with no time passing for them.
     m_drawDistance.commit();
     const WorldView stepView = stepSceneryView(frame);
-    m_scenery->findVisible(stepView);
+    m_playScenery.findVisible(stepView);
     stepWorldObjects(stepView.pose.position, stepView, 0);
     recordDrawnPoses();
     ++m_stats.frames;
@@ -509,7 +457,7 @@ std::expected<void, Error> PlayLevelMode::traceTo(const std::string& path) {
     return {};
 }
 
-void PlayLevelMode::enter() { m_scenery->preload(toRenderWare(m_player->camera().position())); }
+void PlayLevelMode::enter() { m_playScenery.preload(toRenderWare(m_player->camera().position())); }
 
 void PlayLevelMode::skin(const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet,
                          float heading, float lean, CharacterMesh& mesh, float scale) {
@@ -541,12 +489,10 @@ void PlayLevelMode::drawCharacter() const {
     for (const Target& target : m_targets) {
         drawHumanPasses(*target.mesh, false, bloodTextureFor(target.human->health()));
     }
-    const std::vector<ai::AiHuman>& fighters = m_ai->humans();
-    for (std::size_t i = 0; i < m_fighterMeshes.size(); ++i) {
-        const FighterMesh& fighter = m_fighterMeshes[i];
-        if (!fighter.hidden) {
-            rw::Texture* blood = i < fighters.size() ? bloodTextureFor(fighters[i].human->health()) : nullptr;
-            drawHumanPasses(*fighter.mesh, false, blood);
+    for (const ai::AiHuman& fighter : m_ai->humans()) {
+        const auto mesh = m_fighterMeshes.find(fighter.human.get());
+        if (mesh != m_fighterMeshes.end() && !mesh->second.hidden) {
+            drawHumanPasses(*mesh->second.mesh, false, bloodTextureFor(fighter.human->health()));
         }
     }
     // A scene's puppets are lit like any human (a bare render of their atomics crashes: issue 446); no blood layer.
@@ -667,7 +613,7 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     // The lights' flicker and the player's shadow dimming, stepped with the simulation.
     m_lights->step(stepView, m_scenery->collision(), m_player->human().position(),
                    static_cast<std::uint32_t>(std::lround(frame.seconds * 1000.0)));
-    m_scenery->findVisible(stepView);
+    m_playScenery.findVisible(stepView);
     // The world objects round the camera, after the scripts and the scenes moved them.
     stepWorldObjects(eye, stepView, static_cast<std::uint32_t>(std::lround(frame.seconds * 1000.0)));
     recordDrawnPoses();
@@ -708,7 +654,7 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
         values.items = {m_pickups->carried(0, item::kRevive), m_pickups->carried(0, item::kSprayPaint),
                         m_pickups->carried(0, item::kHandcuffs), m_pickups->carried(0, item::kHandcuffKey)};
     }
-    m_hud->step(hudFrame);
+    m_hudLayer->step(hudFrame);
     recordIconPoses();
     // The health rings, after the HUD's step: hidden with it.
     stepRings(playerPad, stepView, hudFrame.nowMs);
@@ -716,7 +662,7 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     // `--freeze-world`: the world stops here, its animations held at this step's time.
     if (m_freezeWorld && !m_frozenSince) {
         m_frozenSince = frame.gameTicks;
-        m_scenery->freezeAnimation(millisecondsOf(frame.gameTicks));
+        m_playScenery.freezeAnimation(millisecondsOf(frame.gameTicks));
         m_print(std::format("world: frozen after frame {}\n", frame.index));
     }
     return ModeResult::Stay;
@@ -809,10 +755,14 @@ void PlayLevelMode::render(const RenderTime& time) {
             ringFeet[ringKey(target.human.get())] = pose.feet;
         }
         const std::vector<ai::AiHuman>& fighters = m_ai->humans();
-        for (std::size_t i = 0; i < fighters.size() && i < m_fighterMeshes.size(); ++i) {
+        for (std::size_t i = 0; i < fighters.size(); ++i) {
+            const auto found = m_fighterMeshes.find(fighters[i].human.get());
+            if (found == m_fighterMeshes.end()) {
+                continue;
+            }
             // A deleted human is not drawn.
             if (fighters[i].removed) {
-                m_fighterMeshes[i].hidden = true;
+                found->second.hidden = true;
                 continue;
             }
             human::TargetSnapshot pose = human::interpolate(fighters[i].previous, fighters[i].current, alpha);
@@ -825,12 +775,13 @@ void PlayLevelMode::render(const RenderTime& time) {
                     pose.heading = posed->heading;
                 }
             }
-            FighterMesh& mesh = m_fighterMeshes[i];
-            skin(*mesh.character, pose.pose, pose.feet, pose.heading, 0.0F, *mesh.mesh, fighters[i].human->meshScale());
-            poseHat(*fighters[i].human, *mesh.character, pose.pose, pose.feet, pose.heading);
+            const human::PlayerCharacter& character = characterOf(*fighters[i].human);
+            skin(character, pose.pose, pose.feet, pose.heading, 0.0F, *found->second.mesh,
+                 fighters[i].human->meshScale());
+            poseHat(*fighters[i].human, character, pose.pose, pose.feet, pose.heading);
             // What he holds, posed by his own hand as player 1's is (docs/research/objects.md#given-weapon).
-            poseHeldObject(*fighters[i].human, *mesh.character, pose.pose, pose.feet, pose.heading);
-            poseCarriedProp(*fighters[i].human, *mesh.character, pose.pose, pose.feet, pose.heading);
+            poseHeldObject(*fighters[i].human, character, pose.pose, pose.feet, pose.heading);
+            poseCarriedProp(*fighters[i].human, character, pose.pose, pose.feet, pose.heading);
             m_lights->addShadow(ground, pose.feet);
             ringFeet[ringKey(fighters[i].human.get())] = pose.feet;
         }
@@ -851,7 +802,7 @@ void PlayLevelMode::render(const RenderTime& time) {
         m_engine.addFrameOverlay([this](RenderEngine& engine) { m_levelEffects->drawScreenEffects(engine); });
     }
     if (!m_hudHidden) {
-        m_engine.addFrameOverlay([this](RenderEngine& engine) { m_hud->draw(engine); });
+        m_engine.addFrameOverlay([this](RenderEngine& engine) { m_hudLayer->draw(engine); });
     }
     if (m_levelEffects && !effectsFirst) {
         m_engine.addFrameOverlay([this](RenderEngine& engine) { m_levelEffects->drawScreenEffects(engine); });
@@ -924,7 +875,7 @@ void PlayLevelMode::render(const RenderTime& time) {
     m_lights->scene().setGameView(gameView);
     {
         const DrawKindScope kind(DrawKind::Scenery);
-        m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), drawObjects, afterWorlds);
+        m_playScenery.draw(m_engine, blended, millisecondsOf(time.gameTicks), drawObjects, afterWorlds);
     }
     m_lights->scene().setMeshViews(nullptr);
 }
@@ -1130,7 +1081,7 @@ std::string PlayLevelMode::summary() const {
         m_stats.frames, p.x, p.y, p.z, human.heading() * 180.0F / std::numbers::pi_v<float>, human.speed(),
         gaitName(human.gait()), human.animator().animId(), human.airborne() ? "airborne" : "grounded",
         human::traversalName(human.traversal()), human.stamina().value(), m_stats.travelled, m_player->respawns(),
-        anim::distance(c, m_player->camera().lookAt()), fight, m_scenery->summary(),
+        anim::distance(c, m_player->camera().lookAt()), fight, m_playScenery.summary(),
         m_scenes != nullptr ? m_stage->summary() + scenesSummary(m_scenes->stats()) : std::string{});
 }
 

@@ -599,7 +599,7 @@ prompt](#think-warrior) (`repo:src/ai/swap_prompt.h`): talkable (`ScriptState::t
 or 0xe while a player of his gang within 1.5 m, below a jog, has him standing in front, nobody attacks him and one
 of the two holds an object (**Coney's reading**: the hand's object, `+0x338`); the blocked and held-flag tests, the
 sparring byte and `+0x121` are not modelled, nor the two-player prompt. The other steps are not built. **The swap**
-(`PlayLevelMode::trySwap`, `ai::swapHeldObjects`): player 1's triangle, after the dealers' offers, asks the Warriors
+(`PlayLevelSimulation::trySwap`, `ai::swapHeldObjects`): player 1's triangle, after the dealers' offers, asks the Warriors
 ahead of him within 1.5 m nearest first; one that is talkable, not grabbed, with a clear line to him and both of them
 in the free combat mode (**Coney's stand-in** for the blocked and held-flag tests) clears his actions and turns to
 him over 0.2 s, and the two hands swap at once (a left-hand or hat object stays at its giver's feet); player 1 says

@@ -50,17 +50,20 @@ std::string PlayLevelControls::modelOf(const PlayLevelMode& mode, debug::EntityI
         const std::string& model = mode.m_targets[*index].model;
         return model.empty() ? mode.m_sceneModel : model;
     }
-    if (const auto index = indexIn(id, kAiBase); index && *index < mode.m_fighterMeshes.size()) {
-        // The model its mesh was given by name (spawned or swapped as), else the one the mode loaded for its
-        // character, else the scene's character, which is named in a sandbox (a level's cast falls back to it only
-        // when its own did not load, and then says so).
-        const PlayLevelMode::FighterMesh& mesh = mode.m_fighterMeshes[*index];
-        if (!mesh.model.empty()) {
-            return mesh.model;
+    if (const auto index = indexIn(id, kAiBase); index && mode.m_ai && *index < mode.m_ai->humans().size()) {
+        // The model it was given by name (spawned or swapped as), else the one the mode loaded for its character, else
+        // the scene's character, which is named in a sandbox (a level's cast falls back to it only when its own did
+        // not load, and then says so).
+        const auto played = mode.m_played.find(mode.m_ai->humans()[*index].human.get());
+        if (played == mode.m_played.end()) {
+            return {};
         }
-        const human::PlayerCharacter* character = mesh.character;
+        if (!played->second.model.empty()) {
+            return played->second.model;
+        }
+        const human::PlayerCharacter* character = played->second.character;
         for (const auto& [name, loaded] : mode.m_castCharacters) {
-            if (loaded.character.get() == character) {
+            if (loaded.get() == character) {
                 return name;
             }
         }
@@ -77,9 +80,9 @@ std::expected<void, Error> PlayLevelControls::swapModel(debug::EntityId id, cons
         if (name == mode.m_sceneModel) {
             return PlayLevelMode::CastLook{.character = mode.m_character.get(), .texture = mode.m_texture};
         }
-        const PlayLevelMode::CastLook look = mode.castCharacter(name);
+        const PlayLevelMode::CastLook look = mode.castLook(name);
         const auto found = mode.m_castCharacters.find(name);
-        if (found == mode.m_castCharacters.end() || found->second.character == nullptr) {
+        if (found == mode.m_castCharacters.end() || found->second == nullptr) {
             return fail(ErrorCode::NotFound, std::format("model {} did not load", name));
         }
         return look;
@@ -122,19 +125,20 @@ std::expected<void, Error> PlayLevelControls::swapModel(debug::EntityId id, cons
     }
 
     // An AI human: its mesh, the character it is skinned as and its skeleton; a script's human's record too.
-    if (const auto index = aiIndexOf(id); index && *index < mode.m_fighterMeshes.size()) {
-        PlayLevelMode::FighterMesh& mesh = mode.m_fighterMeshes[*index];
-        if (mesh.hidden) {
+    if (const auto index = aiIndexOf(id); index && mode.m_ai && *index < mode.m_ai->humans().size()) {
+        human::Human& human = *mode.m_ai->humans()[*index].human;
+        const auto found = mode.m_fighterMeshes.find(&human);
+        if (found == mode.m_fighterMeshes.end() || found->second.hidden) {
             return fail(ErrorCode::NotFound, "that entity is gone");
         }
         auto look = lookFor(model);
         if (!look) {
             return std::unexpected(std::move(look.error()));
         }
-        human::Human& human = *mode.m_ai->humans()[*index].human;
-        mesh.mesh = std::make_unique<CharacterMesh>(look->character->assets().model, look->texture, Skinning::Gpu);
-        mesh.character = look->character;
-        mesh.model = model;
+        // What draws him, and the character the simulation has him play.
+        found->second.mesh =
+            std::make_unique<CharacterMesh>(look->character->assets().model, look->texture, Skinning::Gpu);
+        mode.m_played[&human] = PlayLevelMode::Played{.character = look->character, .model = model};
         human.setSkeleton(&look->character->skeleton());
         if (const ai::Brain* brain = mode.m_ai->brainOf(human); brain != nullptr) {
             recordModel(brain->handle());

@@ -73,6 +73,13 @@ add_library(coney_core STATIC
     gamemodes/mission_failed_mode.cpp
     gamemodes/movie_player.cpp
     gamemodes/pause_mode.cpp
+    gamemodes/play_level_cast.cpp
+    gamemodes/play_level_hats.cpp
+    gamemodes/play_level_held.cpp
+    gamemodes/play_level_objects.cpp
+    gamemodes/play_level_props.cpp
+    gamemodes/play_level_simulation.cpp
+    gamemodes/play_level_throw_aim.cpp
     gamemodes/hud_feed.cpp
     gamemodes/player_frame.cpp
     gamemodes/profile_manager_mode.cpp

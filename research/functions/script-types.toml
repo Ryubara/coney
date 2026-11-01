@@ -433,7 +433,7 @@ page = "script-types.md#thrown-weapon"
 kind = "message 1"
 role = "state −5 (removed next update), position set to the hit point, effects by model hash (below)"
 level = "confirmed-code"
-coney = "src/platform/play_level_mode.h:PlayLevelMode::flyingBreak"
+coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::flyingBreak"
 status = "legacy"
 
 [[function]]

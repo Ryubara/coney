@@ -580,7 +580,7 @@ address = 0x00391d48
 name = "Obj_CreatePhysicsBody"
 page = "physics.md#bodies"
 level = "confirmed-code"
-coney = "src/platform/play_level_mode.h:PlayLevelMode::stepObjectBodies"
+coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::stepObjectBodies"
 status = "legacy"
 
 [[function]]

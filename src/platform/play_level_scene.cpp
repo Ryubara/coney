@@ -162,23 +162,6 @@ void PlayLevelMode::attachScenes(scenes::SceneSystem* scenes, double playerHandl
 
 bool PlayLevelMode::sceneHoldsPlayer() const { return m_scenes != nullptr && m_stage->holds(m_playerHandle); }
 
-double PlayLevelMode::castHandleOf(const ai::AiHuman& fighter) {
-    const ai::Brain* brain = m_cast.scripted != nullptr ? m_ai->brainOf(*fighter.human) : nullptr;
-    return brain != nullptr ? brain->handle() : 0.0;
-}
-
-const ai::AiHuman* PlayLevelMode::castHumanOf(double handle) {
-    if (handle == 0.0 || m_cast.scripted == nullptr) {
-        return nullptr;
-    }
-    for (const ai::AiHuman& fighter : m_ai->humans()) {
-        if (castHandleOf(fighter) == handle) {
-            return &fighter;
-        }
-    }
-    return nullptr;
-}
-
 void PlayLevelMode::stepScenes(std::uint64_t nowMs, std::uint16_t buttons) {
     if (m_scenes == nullptr) {
         return;

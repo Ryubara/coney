@@ -2173,7 +2173,7 @@ Coney's stand-ins for the world objects, where this page is silent:
   edge's door number is decoded into `world::PathEdge::door`.
 - **Bindings** (`repo:src/scripting/object_bindings.h`): the 22 glass, door, link and lock-pick bindings; `SpawnDoor`
   reads its type from the recorded `CfgObj` calls.
-- **In play** (`repo:src/gamemodes/gameplay_mode.h`, `repo:src/platform/play_level_objects.cpp`): gameplay owns the
+- **In play** (`repo:src/gamemodes/gameplay_mode.h`, `repo:src/gamemodes/play_level_objects.cpp`): gameplay owns the
   level's `LevelObjects`; the boot scripts' recorded `CfgSetGlassProperties` calls are applied before the level script
   spawns into them. The play mode gives them the level's collision mesh and path data, ticks them twice a step, and
   sends each human's strike-shape contacts to the pane or door the shapes meet
@@ -2208,7 +2208,7 @@ stick: the feet crossed its plane at x −187.63 at about 3.3 m/s; inward he sto
 0.01 m back-off from the plane). Now every write the objects make to a triangle (`markTriangles`: the two-sided, door,
 breakable, testable-while-disabled and `CamGhostDoor` bits and the material; `setTrianglesEnabled`: the enabled bit) is
 kept in `ObjectWorld::triangleWrites` as well as applied to a bound mesh, and `ObjectWorld::bindCollision`
-(`repo:src/world_objects/object_services.cpp`, called by `PlayLevelMode::bindObjects` and with null when the mode
+(`repo:src/world_objects/object_services.cpp`, called by `PlayLevelSimulation::bindObjects` and with null when the mode
 ends) applies them all to the mesh it binds, so a freshly loaded mesh carries the same flags as the original's live
 one. A script's `ChangeCollision` (a volume box's triangles switched on or off) is kept the same way
 (`ObjectWorld::boxWrites`), since which triangles lie inside is known only with a mesh; the bind applies the bits and

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The play mode's cast: the humans a level's scripts create (`HuCreate`), made AI humans in the scene once the level
-// has loaded, each drawn as the model its type names and fighting as its class, its brain bound to the handle the
-// scripts name it by (docs/research/ai/index.md#in-coney, docs/research/characters.md#creation).
+// The level simulation's cast: the humans a level's scripts create (`HuCreate`), made AI humans in the scene once the
+// level has loaded, each playing the character its type's model names (the platform draws him as it) and fighting as
+// its class, its brain bound to the handle the scripts name it by (docs/research/ai/index.md#in-coney,
+// docs/research/characters.md#creation); and the fighters a sandbox layout or the debug menus spawn.
 #include <array>
 #include <expected>
 #include <format>
@@ -10,6 +11,7 @@
 #include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "ai/ai_config.h"
 #include "ai/ai_humans.h"
@@ -18,15 +20,24 @@
 #include "ai/scripted_brains.h"
 #include "characters/character_choice.h"
 #include "characters/character_types.h"
+#include "gamemodes/play_level_simulation.h"
 #include "human/human.h"
 #include "human/player.h"
 #include "human/tag_colour.h"
-#include "platform/play_level_mode.h"
+#include "raycast/collision_mesh.h"
 #include "scripting/sound_bindings.h"
 
-namespace coney::platform {
+namespace coney {
 
-void PlayLevelMode::makeCast(const ScriptedCast& cast, const ai::AiConfig& fighters) {
+namespace {
+
+// How far above a fighter's spot the drop onto the ground starts, and half how far it reaches, in metres (as a
+// teleport's).
+constexpr float kFighterDrop = 2.0F;
+
+} // namespace
+
+void PlayLevelSimulation::makeCast(const ScriptedCast& cast, const ai::AiConfig& fighters) {
     m_cast = cast;
     // Player 1's cameras, which the level script set up: the player steps them and draws through the current one.
     if (cast.cameras != nullptr) {
@@ -84,7 +95,7 @@ void PlayLevelMode::makeCast(const ScriptedCast& cast, const ai::AiConfig& fight
                         held));
 }
 
-ai::Brain* PlayLevelMode::castHuman(const HumanCreation& human) {
+ai::Brain* PlayLevelSimulation::castHuman(const HumanCreation& human) {
     // Player 1's first creation is the player the mode made at its start.
     if (human.playerIndex == 1 && !m_castPlayerBound) {
         m_castPlayerBound = true;
@@ -102,24 +113,23 @@ ai::Brain* PlayLevelMode::castHuman(const HumanCreation& human) {
         m_cast.recorded != nullptr ? ai::aiConfigFrom(*m_cast.recorded, human.type, powerClass) : ai::AiConfig{};
     // HuCreate's flag makes him a gang member unless his class makes Warriors (docs/research/human-init.md#brain-type).
     config.fighter.brain = ai::createdBrainType(config.fighter.brain, human.gangFlag);
-    const CastLook look = castCharacter(human.model);
+    const human::PlayerCharacter& character = castCharacter(human.model);
     // Snapped to the ground as HuCreate snaps (Human::spawn: a 2.5 m ray from 1 m above).
     const std::array<float, 3>& p = *human.position;
-    ai::Brain& brain = m_ai->spawn(*look.character, config, &m_scenery->collision(), anim::Vec3{p[0], p[1], p[2]},
-                                   human.headingDegrees);
+    ai::Brain& brain =
+        m_ai->spawn(character, config, &m_scenery->collision(), anim::Vec3{p[0], p[1], p[2]}, human.headingDegrees);
     // Human_Init's tag colour: a civilian woman's is ff ef ef ef, everyone else keeps the default; the brain type is
     // the one after the `+0x19d` remap (docs/research/human-init.md#brain-type).
     if (config.fighter.brain == ai::BrainType::Civilian && type != nullptr && type->female.value_or(0) == 1) {
         brain.human().script().tagColour = human::kFemaleCivilianTagColour;
     }
-    FighterMesh mesh;
-    mesh.character = look.character;
-    mesh.mesh = std::make_unique<CharacterMesh>(look.character->assets().model, look.texture, Skinning::Gpu);
-    m_fighterMeshes.push_back(std::move(mesh));
+    // The character he plays, and what draws him.
+    m_played[&brain.human()] = Played{.character = &character, .model = human.model};
+    humanMade(brain.human(), human.model);
     return &brain;
 }
 
-void PlayLevelMode::takePlace(const ai::Brain& to) {
+void PlayLevelSimulation::takePlace(const ai::Brain& to) {
     // **Coney's stand-in** for HuChangePlayerGang's hand-over (docs/research/characters.md#level99-handover): the
     // original makes the chosen AI human player 1 and leaves the old one in the world as an AI until its gang is
     // deleted. Coney has one player human, so he takes the chosen human's place instead: put where it stands (placed
@@ -147,12 +157,7 @@ void PlayLevelMode::takePlace(const ai::Brain& to) {
         m_cast.humans->setPlayer(1, to.handle());
     }
     if (made != nullptr && !made->model.empty() && made->model != m_model) {
-        if (auto loaded = loadCharacter(m_engine, m_wad, made->model); loaded) {
-            swapPlayerModel(std::move(*loaded), made->model);
-        } else {
-            m_print(std::format("cast: model {} not loaded ({}); player 1 keeps {}\n", made->model,
-                                loaded.error().message, m_model));
-        }
+        changePlayerModel(made->model);
     }
     if (made != nullptr) {
         m_type = made->type;
@@ -162,7 +167,7 @@ void PlayLevelMode::takePlace(const ai::Brain& to) {
                         m_player->human().health().value(), m_player->human().health().maximum()));
 }
 
-bool PlayLevelMode::releasePlayerToAi() {
+bool PlayLevelSimulation::releasePlayerToAi() {
     if (!m_ai) {
         return false;
     }
@@ -176,35 +181,38 @@ bool PlayLevelMode::releasePlayerToAi() {
     return true;
 }
 
-ai::BrainType PlayLevelMode::castBrainType(int type) const {
+ai::BrainType PlayLevelSimulation::castBrainType(int type) const {
     const characters::CharacterType* found = m_types.find(type);
     const int powerClass = found != nullptr && found->powerClass ? *found->powerClass : ai::kFighterPowerClass;
     return m_cast.recorded != nullptr ? ai::aiConfigFrom(*m_cast.recorded, type, powerClass).fighter.brain
                                       : ai::AiConfig{}.fighter.brain;
 }
 
-PlayLevelMode::CastLook PlayLevelMode::castCharacter(const std::string& model) {
+const human::PlayerCharacter& PlayLevelSimulation::castCharacter(const std::string& model) {
     auto found = m_castCharacters.find(model);
     if (found == m_castCharacters.end()) {
         // **Coney choice**: a type with no model, or one that fails to load, looks and moves as the scene's character
         // (kept as an empty entry, so the failure is printed once).
-        std::expected<LoadedCharacter, Error> loaded =
-            model.empty() ? std::expected<LoadedCharacter, Error>(fail(ErrorCode::NotFound, "no model"))
-                          : loadCharacter(m_engine, m_wad, model);
+        std::expected<std::unique_ptr<human::PlayerCharacter>, Error> loaded =
+            model.empty()
+                ? std::expected<std::unique_ptr<human::PlayerCharacter>, Error>(fail(ErrorCode::NotFound, "no model"))
+                : loadCastCharacter(model);
         if (!loaded) {
             m_print(std::format("cast: model {} not loaded ({}); drawn as {}\n", model.empty() ? "(none)" : model,
                                 loaded.error().message, m_model));
         }
-        found = m_castCharacters.emplace(model, loaded ? std::move(*loaded) : LoadedCharacter{}).first;
+        found = m_castCharacters.emplace(model, loaded ? std::move(*loaded) : nullptr).first;
     }
-    const LoadedCharacter& entry = found->second;
-    if (entry.character == nullptr) {
-        return CastLook{.character = m_character.get(), .texture = m_texture};
-    }
-    return CastLook{.character = entry.character.get(), .texture = textureOf(entry.dictionaries)};
+    return found->second != nullptr ? *found->second : *m_character;
 }
 
-void PlayLevelMode::bindDebugFighter(human::Human& made, const CastLook& look, const std::string& model) {
+const human::PlayerCharacter& PlayLevelSimulation::characterOf(const human::Human& human) const {
+    const auto found = m_played.find(&human);
+    return found != m_played.end() && found->second.character != nullptr ? *found->second.character : *m_character;
+}
+
+void PlayLevelSimulation::bindDebugFighter(human::Human& made, const human::PlayerCharacter& character,
+                                           const std::string& model) {
     ai::Brain* brain = m_ai->brains().find(made);
     if (brain == nullptr) {
         return;
@@ -212,7 +220,7 @@ void PlayLevelMode::bindDebugFighter(human::Human& made, const CastLook& look, c
     // The type it is drawn as: the player's for the scene's own character (a model that did not load falls back to
     // it), else the first configured type a player of which is drawn as `model`. Its voice set follows from it.
     int type = m_type;
-    if (look.character != m_character.get()) {
+    if (&character != m_character.get()) {
         for (const characters::CharacterChoice& choice : characterChoices()) {
             if (choice.model == model) {
                 type = choice.type;
@@ -232,7 +240,7 @@ void PlayLevelMode::bindDebugFighter(human::Human& made, const CastLook& look, c
     }
 }
 
-void PlayLevelMode::unbindDebugFighters() {
+void PlayLevelSimulation::unbindDebugFighters() {
     if (m_cast.scripted == nullptr) {
         return;
     }
@@ -248,4 +256,56 @@ void PlayLevelMode::unbindDebugFighters() {
     }
 }
 
-} // namespace coney::platform
+void PlayLevelSimulation::addFighter(anim::Vec3 spot, float headingDegrees, const std::string& model, bool debugSpawned,
+                                     ai::FighterSide side) {
+    // Dropped onto the ground below its spot, as a teleport is.
+    raycast::Vec3 feet{spot.x, spot.y, spot.z + kFighterDrop};
+    if (!raycast::dropToGround(m_scenery->collision(), kFighterDrop * 2.0F, feet)) {
+        feet.z = spot.z;
+    }
+    // The scene's character, or the one `model` names (loaded once and kept, as the scripts' humans' are; a model that
+    // does not load falls back to the scene's, with a line saying so).
+    const human::PlayerCharacter& character = model.empty() ? *m_character : castCharacter(model);
+    human::Human& made = m_ai->spawnFighter(character, &m_scenery->collision(), anim::Vec3{feet.x, feet.y, feet.z},
+                                            headingDegrees, side);
+    if (debugSpawned) {
+        m_ai->markDebugSpawned(made);
+        bindDebugFighter(made, character, model);
+    }
+    // With every gang slot in use the fighter has no gang, so it is nobody's friend or enemy: say so.
+    if (const ai::Brain* brain = m_ai->brainOf(made); brain != nullptr && brain->gang() == nullptr) {
+        m_print("fighters: no free gang slot, so a fighter was made with no gang\n");
+    }
+    m_played[&made] = Played{.character = &character, .model = model};
+    humanMade(made, model);
+}
+
+double PlayLevelSimulation::castHandleOf(const ai::AiHuman& fighter) {
+    const ai::Brain* brain = m_cast.scripted != nullptr ? m_ai->brainOf(*fighter.human) : nullptr;
+    return brain != nullptr ? brain->handle() : 0.0;
+}
+
+const ai::AiHuman* PlayLevelSimulation::castHumanOf(double handle) {
+    if (handle == 0.0 || m_cast.scripted == nullptr) {
+        return nullptr;
+    }
+    for (const ai::AiHuman& fighter : m_ai->humans()) {
+        if (castHandleOf(fighter) == handle) {
+            return &fighter;
+        }
+    }
+    return nullptr;
+}
+
+std::vector<characters::CharacterChoice> PlayLevelSimulation::characterChoices() const {
+    // Every configured type a player can be drawn as: those whose record (or class record) names a model.
+    std::vector<characters::CharacterChoice> choices;
+    for (const characters::CharacterType& type : m_types.all()) {
+        if (std::optional<std::string> model = m_types.modelFor(type.type, 1, m_levelNumber); model) {
+            choices.push_back(characters::CharacterChoice{.type = type.type, .model = std::move(*model)});
+        }
+    }
+    return choices;
+}
+
+} // namespace coney

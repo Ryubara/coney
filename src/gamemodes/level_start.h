@@ -177,7 +177,7 @@ class LevelScripts {
     [[nodiscard]] world_objects::SpawnRecords& spawnRecords() { return m_spawnRecords; }
     /// The calls of the recording bindings.
     [[nodiscard]] script::RecordedCalls& recorded() { return m_recorded; }
-    /// The HUD the scripts' HUD bindings act on, for the play mode to draw (PlayLevelMode::useHud()).
+    /// The HUD the scripts' HUD bindings act on, for the play mode to draw (PlayLevelSimulation::useHud()).
     [[nodiscard]] hud::Hud& hud() { return m_hud; }
     /// The bindings' host: what the scripts asked of the game that the runner of the level acts on.
     [[nodiscard]] QuietBindingHost& host() { return m_host; }

@@ -2055,7 +2055,7 @@ name = "Human_SpawnHat"
 page = "characters.md#code-update"
 role = "Creates the hat object by name at the human, pins it and stores its handle `+0x364`."
 level = "confirmed-code"
-coney = "src/platform/play_level_mode.h:PlayLevelMode::putOnHat"
+coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::putOnHat"
 status = "legacy"
 
 [[function]]
@@ -2064,7 +2064,7 @@ name = "Human_CreateCarriedProp"
 page = "characters.md#code-update"
 role = "Destroys the prop at `+0x348`, creates the named object at the human, keeps it in `+0x34c` and attaches it at point `0x13` (`Human_AttachCarriedProp`); clip event `0x30` ([Combat: props of a power move](combat-grabs.md#power-move-props))."
 level = "confirmed-code"
-coney = "src/platform/play_level_mode.h:PlayLevelMode::makeCarriedProp"
+coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::makeCarriedProp"
 status = "legacy"
 
 [[function]]
@@ -2073,7 +2073,7 @@ name = "Human_AttachCarriedProp"
 page = "characters.md#code-update"
 role = "Attaches the prop `+0x34c` to attach point 0x13 with its type's offset."
 level = "confirmed-code"
-coney = "src/platform/play_level_mode.h:PlayLevelMode::makeCarriedProp"
+coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::makeCarriedProp"
 status = "legacy"
 
 [[function]]
@@ -2199,7 +2199,7 @@ name = "Human_KnockOffHat"
 page = "characters.md#code-movement"
 role = "Throws the worn hat off (unless HuSetKeepHat or kind 27): spin 8 rad/s, drop at 2 m/s, +0x364 cleared ([Hats](characters.md#hats))."
 level = "confirmed-code"
-coney = "src/platform/play_level_mode.h:PlayLevelMode::knockOffHat"
+coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::knockOffHat"
 status = "legacy"
 
 [[function]]
@@ -2512,7 +2512,7 @@ address = 0x003a3ba0
 name = "Human_PlaceHat"
 page = "characters.md#hats"
 level = "confirmed-code"
-coney = "src/platform/play_level_mode.h:PlayLevelMode::putOnHat"
+coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::putOnHat"
 status = "legacy"
 
 [[function]]
@@ -2521,7 +2521,7 @@ name = "GameState_CheckGameOver"
 page = "characters.md#warriors-functions"
 role = "each update, when enabled (`+0x155`), outside Rumble (`+0x158`) and not already over (`+0x14c`): over when a player has state flag `0x100000000`; when every player is knocked out or cuffed, not over while player 1 is cuffed, awake and can uncuff himself (upgrade (6, 15) and item 6); over when no gang member can help (`Gang_NoneAbleToHelp`); over at once when player 1 is out with no flash (item 1) or byte `+0x414 + player` is set; otherwise every 37th update asks `Gang_CanReachToHelp` and is over after 4 failures in a row (`+0x56e6`). The mission-failed reason is GSTRING 21 when cuffed (`+0x118` = 1), else 20"
 level = "confirmed-code"
-coney = "src/platform/play_level_mode.h:PlayLevelMode::stepGameOver"
+coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::stepGameOver"
 status = "legacy"
 
 [[function]]
