@@ -315,6 +315,14 @@ def test_a_change_the_scope_cannot_map_runs_the_whole_suite_and_says_why(world: 
     )
 
 
+def test_a_narrowed_run_that_finds_no_test_says_to_rebase(world: World) -> None:
+    engine(world)
+    world.edit("tests/ai/brain_test.cpp", '#include "ai/brain.h"\nint more;\n')
+    world.build_tests = {"total": 0, "passed": 0, "failed": 0, "skipped": 0, "skipped_disc": 0}
+    assert world.check() == 1
+    assert any("no test has the label ^#(brain_test)$: rebase onto the default branch" in line for line in world.said)
+
+
 def test_a_narrowed_run_whose_record_ran_other_tests_fails_the_test_check(world: World) -> None:
     engine(world)
     world.edit("tests/ai/brain_test.cpp", '#include "ai/brain.h"\nint more;\n')

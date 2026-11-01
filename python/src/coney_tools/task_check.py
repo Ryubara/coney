@@ -434,6 +434,9 @@ def _build_results(
         if counts
         else "no test run"
     )
+    if label and counts is not None and not counts.get("total"):
+        # A branch made before the test files had labels lists none: its narrowed run selects nothing.
+        problems.append(f"no test has the label {label}: rebase onto the default branch (the labels are new)")
     if problems:
         results.append(StepResult(test_name, False, detail, output=tuple(problems or tail)))
     else:
