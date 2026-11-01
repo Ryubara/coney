@@ -614,7 +614,11 @@ uv run --project python coney-tools build --agent <id> --preset dev --test -R <r
 - **Exit code 75 means "still queued".** The command left the queue: its wait reached `--max-wait`, or the wait the
   queue still expects plus the step would pass the time budget (`--budget`), in which case it leaves at its first
   look. It said its position and the numbers. Do other work and run the same command again later, or detach it and
-  stop ([Build waits](#build-waits)); do not loop on it in one call.
+  stop ([Build waits](#build-waits)); do not loop on it in one call. Run again within the hour, it keeps the place it
+  had rather than joining at the back ([The queue](coney-tools-build.md#build)).
+- **A test run holds no build slot.** Once the compile ends its slot goes back to the queue; a test run too big for the
+  fast lane (the whole suite, or many or long tests) waits for a check slot instead ([Check
+  slots](coney-tools-build.md#check-slots)).
 - **`--priority`** goes ahead of the queue. The coordinator uses it for a build somebody is waiting on; an agent does
   not set it on its own.
 - **`build status`** shows who holds the slots and who waits. A crashed run is taken over by the next claimer, which

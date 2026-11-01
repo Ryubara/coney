@@ -147,8 +147,10 @@ stays required whenever the output is not a terminal, as under every agent tool,
    (repeatable) builds only those targets and what they need: `--target coney` is a play build, the executable
    without the roughly thousand test files of `coney_tests`. It is refused with `--test` (the tests would run an
    old `coney_tests` or `coney`) and with `--configure-only`.
-4. *Test*, with `--test` and only after a successful build, a claim of its own (it queues again between the two, so a
-   long test run does not hold a slot against other agents' builds longer than it must): `ctest --preset P -j N` (`N` is
+4. *Test*, with `--test` and only after a successful build, a claim of its own: the build slot is given back when the
+   compile ends, and the tests take the fast lane when they are few and short, else a **check slot**, never a build slot
+   (a disc suite once held a main slot for 40 minutes after its compile, and five builds queued for it on a machine at
+   30%: issue 1370; [Check slots](#check-slots)): `ctest --preset P -j N` (`N` is
    `-j`, else `test_jobs`, else half the cores: see "Parallelism" below), with the filters `-R REGEX` and `-L LABEL`
    when given (see "Choosing tests" below).
 
@@ -232,10 +234,16 @@ through a lock folder, as the PCSX2 claims do.
 the queue may claim, so waiters cannot overtake one another; `--priority` tickets go ahead of normal ones (for the
 coordinator, or a build somebody is waiting on). A ticket whose process is gone is dropped. While it waits, the
 command prints its place, a rough wait (from the holders' recorded step and how long they have run it) and the
-holders, every minute. **It does not wait for ever:** after `--max-wait` minutes (default and most 40, per claim;
-also spelled `--max-wait`), so that an agent never outlives its one-hour prompt cache, it leaves the queue and
-exits `75` with `still queued, position N of M, try again later` and the way on: do other work and run the same
-command again, or start it with `--detach`, write `STATUS.md` and stop ([Build waits](agents.md#build-waits)).
+holders, every minute. At every look it reads `build_slots` (or `check_slots`) of `coney.local.toml` again, so a count
+raised while builds wait is used at once, and it drops a stale claim of a slot above the count (left from a larger
+count; nothing would ever take it over). **It does not wait for ever:** after `--max-wait` minutes (default and most
+40, per claim; also spelled `--max-wait`), so that an agent never outlives its one-hour prompt cache, it leaves the
+queue and exits `75` with `still queued, position N of M, try again later` and the way on: do other work and run the same
+command again, or start it with `--detach`, write `STATUS.md` and stop ([Build waits](agents.md#build-waits)). **A
+run that gave up keeps its place**: the same agent's run of the same worktree and preset (or check name) that joins the
+lane's queue again within an hour stands where its first ticket stood, ahead of the builds that came after it, instead
+of at the back (`kept-<queue>/` in the claims directory, used once; a place whose first ticket is six hours old is not
+kept). The same holds for a wait that the time budget ended, and for the folder lock's queue.
 
 **The time budget.** `--max-wait` caps one wait; `--budget` (minutes, default and most 45) caps the whole call,
 waits and steps together, so an agent's wait plus its build stays inside the hour its prompt cache lasts. A larger
@@ -286,19 +294,19 @@ source, and one for each source that includes a touched header. For a test run, 
 counts the tests selected. A build with fewer than `build_fast_lane_steps` causes (default 50) or a filtered test run of
 at most `build_fast_lane_tests` tests (default 20) takes the **fast lane**: one extra slot of its own (`fast-1.claim/`,
 queue `queue-fast/`), so at most one such job runs at once, with a short queue of its own. A first build, a
-`--configure`, a build that cannot be measured (the manifest refresh failed, ninja printed no cause) and any test run
-without a filter take a main slot. A threshold of `0` turns the lane off. The summary line says what decided it ("fast
-lane, 2 steps out of date").
+`--configure` and a build that cannot be measured (the manifest refresh failed, ninja printed no cause) take a main
+slot; any test run without a filter, or with one that selects more tests, takes a check slot. A threshold of `0`
+turns the lane off. The summary line says what decided it ("fast lane, 2 steps out of date").
 
 A filtered test run is also measured by **time**: one disc playthrough of a single test can hold a slot for half an
 hour, which the fast lane exists to prevent. When any test the filter selects has a recorded time, and those times add
-up to more than `build_fast_lane_test_seconds` (default 300; `0` turns the rule off), the run takes a main slot
-whatever its count, and says so ("1 test expected to take 25.0 min by its recorded time, ... so the main lane"). A test
+up to more than `build_fast_lane_test_seconds` (default 300; `0` turns the rule off), the run takes a check slot
+whatever its count, and says so ("1 test expected to take 25.0 min by its recorded time, ... so the check lane"). A test
 with no recorded time adds nothing, so a run of only such tests goes by its count. The times are ctest's own averages
 (`Testing/Temporary/CTestCostData.txt` in the build folder) and, because a build folder is often new, a copy kept per
 preset in `claims/test-costs.json` that every test run updates from its folder's file; the folder's own times win.
-`--lane main` sends any run, build and tests, to a main slot without measuring, for a job you know is long; the
-default, `--lane auto`, chooses as above.
+`--lane main` sends any build to a main slot and any test run to a check slot without measuring, for a job you know is
+long; the default, `--lane auto`, chooses as above.
 
 **The cap on build folders.** A build folder is about 7 GB and the drive must keep 30 GB free, so only so many
 worktrees can hold one. `build` refuses to configure a **new** build folder (one that is not on disk) while the
@@ -327,7 +335,7 @@ covers the run from its measuring on, so the manifest refresh and the dry run ne
 a run that waited looks at the folder again once the lock is its own (the run before it may have configured it).
 
 **When the whole suite runs.** `--test` with no `-R` or `-L` is the whole suite, the longest job on the machine (most
-of it the disc tests), which holds a main slot and a check slot for the whole run ([Check slots](#check-slots)). An
+of it the disc tests), which holds a check slot for the whole run and no build slot ([Check slots](#check-slots)). An
 agent runs it **once, at the handover tip**, and `task check` does it (it calls the same code and says so), so while
 iterating an agent runs the tests it touched with `-R` or `-L`. The command keeps that rule: **a run that names its
 `--agent` and has `--test` with neither filter is refused (exit 2) unless it carries `--full`**, the flag that says
@@ -391,12 +399,13 @@ at most `check_slots` of them run at once, across all worktrees:
 | --- | --- |
 | `task check` | the `pytest` check when it runs the whole suite, for the run of pytest; a scoped run, only the tests that read the changed docs or engine files, holds none ([Which Python tests run](coney-tools-repo.md#task-check-pytest)) |
 | `ci run`, `ci pr` | the `python` step's pytest, for the run of pytest |
-| `build --test` with no filter (so also `task check`'s build when it runs the whole suite, and `ci disc-suite`) | the test phase when it has **no `-R` or `-L` filter**: the whole ctest run (a `task check` that runs only the test files a change reaches passes `-L` and holds none: [Which C++ tests run](coney-tools-repo.md#task-check-ctest)); an agent may start it only with `--full` ([When the whole suite runs](#build)). The wait for the check slot comes before the wait for a build slot, so a run in the check queue holds no build slot |
+| `build --test` (so also `task check`'s build, and `ci disc-suite`) | the test phase when it is **too big for the fast lane**: the whole ctest run with no `-R` or `-L` filter, or a filter that selects more than `build_fast_lane_tests` tests or tests whose recorded times pass `build_fast_lane_test_seconds` (a `task check` that runs only the test files a change reaches passes `-L`: [Which C++ tests run](coney-tools-repo.md#task-check-ctest)); an agent may start the whole suite only with `--full` ([When the whole suite runs](#build)). The test phase holds the check slot **instead of** a build slot: the compile gives its build slot back when it ends, so builds never queue behind a test run (issue 1370) |
 
-A **targeted** run takes none: `build --test -R ...` (so `orig fails-first`, which names its tests), or `pytest` on a
-few test files typed by hand. Run those freely; leave the full suite to CI and `ci disc-suite`. A run that
-has to wait says so, and again every minute: `waiting for a check slot (pytest): place 2 of 3, about 40 min; held by
-alice (dev, 12 min), bob (ctest, 3 min); 2 full suites may run at once (check_slots in coney.local.toml)`. It gives up
+A **targeted** run takes none: `build --test -R ...` that selects a few short tests (the fast lane; so `orig
+fails-first`, which names its tests), or `pytest` on a few test files typed by hand. Run those freely; leave the full
+suite to CI and `ci disc-suite`. A run that has to wait says so, and again every minute: `waiting for a check slot
+(pytest): place 2 of 3, about 40 min; held by alice (dev, 12 min), bob (ctest, 3 min); 2 full suites may run at once
+(check_slots in coney.local.toml)`. It gives up
 after `--max-wait` minutes with exit 75 (nothing is written: run it again), like a build waiting for a slot. A holder
 that crashed leaves a stale claim: the next suite takes it over, says so and stops what the dead run left running.
 `build status` lists the check lane with the others; `build unclaim --lane check --agent ID` frees an agent's check

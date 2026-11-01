@@ -28,6 +28,16 @@ suites: every command that runs the whole pytest suite or the engine's whole cte
 16 suites never share an 8-core machine (check_slots.py; docs/guides/coney-tools-build.md#check-slots). It is the same
 machinery again, so it queues, goes stale and is released like a build slot.
 
+A build that gives up waiting (`SlotTimeout`: its `--max-wait` or its time budget ran out, exit 75) **keeps its place**:
+`kept-<queue>/<digest>.json` remembers when its ticket joined, for its agent, worktree and preset, and the same build
+run again within `KEEP_PLACE_SECONDS` joins with that time, so it stands where it stood instead of at the back (issue
+1370: two builds lost 20 to 40 minutes each to the rejoin). The place is used once and lapses unused.
+
+A waiting build reads the lane's slot count again at every look (`recount`: `build_slots` or `check_slots` of
+coney.local.toml), so a count raised while it waits is used at once, and it drops the stale claims of slots above the
+count (a dead holder of a slot that a lowered count no longer has is never taken over, and sat in `build status` for
+hours).
+
 Everything reported is rebuilt from those files and the live processes each time; no cached state file exists to go
 stale. A claim is stale, and may be taken over, when its holder's process is gone, or when it is older than the
 maximum age (a hung build; a pid can also be reused). A ticket is stale when its process is gone, and is dropped.
@@ -74,6 +84,9 @@ TICKET_MAX_AGE = 12 * 3600.0
 ACTIVITY_MAX_AGE = 24 * 3600.0
 #: The folder of the activities, beside the claims.
 ACTIVITY_FOLDER = "active"
+#: A build that gave up waiting keeps its place in the queue this long (seconds) for its next run: long enough for a
+#: `task check` to reach its build again after its other steps, short enough that a build nobody runs again frees it.
+KEEP_PLACE_SECONDS = 60 * 60.0
 #: Seconds between looks at the queue while waiting.
 POLL_SECONDS = 2.0
 #: Seconds between "you are Nth in the queue" lines while waiting.
@@ -88,6 +101,8 @@ LANES: tuple[str, ...] = (MAIN_LANE, FAST_LANE, CHECK_LANE)
 #: What each lane calls its claim folders and its queue folder.
 _PREFIX = {MAIN_LANE: "slot", FAST_LANE: "fast", CHECK_LANE: "check"}
 _QUEUE_DIR = {MAIN_LANE: "queue", FAST_LANE: "queue-fast", CHECK_LANE: "queue-check"}
+#: The folder of each queue's kept places (builds that gave up waiting): `kept-queue`, `kept-queue-fast`, ...
+_KEPT_PREFIX = "kept-"
 #: A full suite takes about this many minutes on a machine to itself (the wait estimate's unit for the check lane).
 CHECK_MINUTES = 35.0
 #: One check slot per this many cores when `check_slots` is 0 (at least 1): an 8-core machine runs 2 suites at once.
@@ -210,8 +225,23 @@ def default_slots(lane: str = MAIN_LANE, root: Path | None = None) -> Slots:
     directory = claims or workspace_folder(main, "scratch") / "build-claims"
     if lane == CHECK_LANE:
         count = check_slot_count(config.numbers["check_slots"] if config else 0, os.cpu_count())
-        return Slots(directory, count, lane=lane, what="check slot", reap=reap_claim)
-    return Slots(directory, count, lane=lane, what="build slot", reap=reap_claim)
+        return Slots(directory, count, lane=lane, what="check slot", reap=reap_claim, recount=_recount(root, lane))
+    recount = None if lane == FAST_LANE else _recount(root, lane)
+    return Slots(directory, count, lane=lane, what="build slot", reap=reap_claim, recount=recount)
+
+
+def _recount(root: Path, lane: str) -> Callable[[], int]:
+    """The reader of a lane's slot count as coney.local.toml has it now (`build_slots`, or `check_slots` for the check
+    lane), for a build that waits while the file changes; the defaults when there is no file."""
+
+    def count() -> int:
+        """The count now."""
+        config = load_config(root) if local_config_file(root) else None
+        if lane == CHECK_LANE:
+            return check_slot_count(config.numbers["check_slots"] if config else 0, os.cpu_count())
+        return config.numbers["build_slots"] if config else DEFAULT_SLOTS
+
+    return count
 
 
 def live_worktrees(claims_dir: Path) -> set[str]:
@@ -344,12 +374,14 @@ class Slots:
         lane: str = MAIN_LANE,
         what: str = "build slot",
         reap: Callable[[BuildClaim], list[object]] | None = None,
+        recount: Callable[[], int] | None = None,
     ) -> None:
         """`clock` returns epoch seconds, `alive` says whether a pid lives and `sleep` waits (default: the real ones;
         tests pass fakes).
         `lane` picks the claim folders and the queue this object works on; `what` names what is claimed, in messages.
         `reap` stops what a dead claimant left running and returns what it stopped (none by default; the machine's
-        slots, `default_slots` and `folder_lock`, use `reap_claim`)."""
+        slots, `default_slots` and `folder_lock`, use `reap_claim`). `recount` reads the slot count again (`refresh`,
+        at every look of a wait; None: `slots` stands)."""
         self.claims_dir = claims_dir
         self.slots = slots
         self.max_age = max_age
@@ -364,6 +396,18 @@ class Slots:
         self.reap = reap
         #: How many leftover process trees the last takeover stopped, for the caller to report.
         self.last_reaped = 0
+        self.recount = recount
+
+    def refresh(self) -> None:
+        """Read the slot count again (`recount`); a count that cannot be read, or is not 1 or more, keeps the last."""
+        if self.recount is None:
+            return
+        try:
+            count = self.recount()
+        except (ConfigError, OSError, ValueError, KeyError):
+            return
+        if count >= 1:
+            self.slots = count
 
     # -- files
 
@@ -434,14 +478,51 @@ class Slots:
     # -- the queue
 
     def join(self, agent: str, worktree: str, preset: str, priority: bool, pid: int) -> Ticket:
-        """Take a place in the queue. The ticket file appears complete (written privately, then renamed)."""
+        """Take a place in the queue. The ticket file appears complete (written privately, then renamed). A build that
+        gave up waiting a short while ago (`keep_place`) joins with the time of its first ticket, so it stands where
+        it stood; the kept place is used up."""
         if not AGENT_NAME.match(agent):
             raise BuildClaimError(f"agent id {agent!r}: use letters, digits, '.', '_' and '-' (at most 64)")
         now = self.clock()
-        name = f"{int(now * 1000):015d}-{pid}-{uuid.uuid4().hex[:6]}.json"
-        ticket = Ticket(name, agent, worktree, preset, pid, priority, now)
+        kept = self._kept_place(agent, worktree, preset, now)
+        when = now if kept is None else kept
+        name = f"{int(when * 1000):015d}-{pid}-{uuid.uuid4().hex[:6]}.json"
+        ticket = Ticket(name, agent, worktree, preset, pid, priority, when)
         self._write_ticket(ticket)
         return ticket
+
+    def _kept_file(self, agent: str, worktree: str, preset: str) -> Path:
+        """Where the kept place of one build (its agent, worktree and preset) is remembered."""
+        key = "\n".join((agent, worktree, preset)).encode("utf-8")
+        digest = hashlib.sha1(key, usedforsecurity=False).hexdigest()[:16]
+        return self.claims_dir / f"{_KEPT_PREFIX}{_QUEUE_DIR[self.lane]}" / f"{digest}.json"
+
+    def keep_place(self, ticket: Ticket) -> None:
+        """Remember the place of a build that gives up waiting, for its next run (`join`). A place that cannot be
+        written is not kept: the next run joins at the back, as before."""
+        file = self._kept_file(ticket.agent, ticket.worktree, ticket.preset)
+        try:
+            file.parent.mkdir(parents=True, exist_ok=True)
+            temporary = file.with_name(f".{file.name}.{os.getpid()}.tmp")
+            temporary.write_text(json.dumps({"time": ticket.time, "kept": self.clock()}), encoding="utf-8")
+            temporary.replace(file)
+        except OSError:
+            return
+
+    def _kept_place(self, agent: str, worktree: str, preset: str, now: float) -> float | None:
+        """The time of this build's first ticket when it kept a place within `KEEP_PLACE_SECONDS` (the file is removed:
+        a place is used once), else None. A first ticket half as old as `TICKET_MAX_AGE` is not reused, so a ticket
+        never joins nearly stale."""
+        file = self._kept_file(agent, worktree, preset)
+        try:
+            data = json.loads(file.read_text(encoding="utf-8"))
+            joined, kept = float(data["time"]), float(data["kept"])
+        except (OSError, ValueError, KeyError, TypeError):
+            return None
+        file.unlink(missing_ok=True)
+        if now - kept > KEEP_PLACE_SECONDS or now - joined > TICKET_MAX_AGE / 2 or joined > now:
+            return None
+        return joined
 
     def _write_ticket(self, ticket: Ticket) -> None:
         """Write a ticket file whole: a temporary file, then an atomic rename (so a reader never sees half of one)."""
@@ -463,6 +544,24 @@ class Slots:
         for ticket in dropped:
             self.leave(ticket)
         return dropped
+
+    def drop_stale_claims(self) -> list[BuildClaim]:
+        """Remove the stale claims of slots above the count (left from a larger `build_slots` or `check_slots`), which
+        no claim ever takes over, and stop what a dead one left running; returns what was removed. The stale claims of
+        the slots in the count are left to the takeover, which reports them."""
+        removed: list[BuildClaim] = []
+        for number in self._numbers():
+            seen = self._read(number)
+            if number <= self.slots or seen is None or not self.is_stale(seen):
+                continue
+
+            def unchanged(held: BuildClaim = seen, slot: int = number) -> bool:
+                return self._read(slot) == held
+
+            if claim_files.remove_under_lock(self._folder(number), unchanged) == "removed":
+                self._reap(seen)
+                removed.append(seen)
+        return removed
 
     # -- claiming and releasing
 
@@ -578,14 +677,17 @@ class Slots:
         with a Waiting (place, queue length, holders, a rough wait) when waiting starts and every `report_every`
         seconds after. Raises SlotTimeout, carrying the place, after `timeout` seconds or as soon as `abandon` (asked at
         every look that finds no slot, with the seconds waited so far and the rough seconds still to wait) answers
-        with a reason: the caller's own limit, such as a time budget the wait plus the build would pass. The ticket is
-        gone however this returns or raises."""
+        with a reason: the caller's own limit, such as a time budget the wait plus the build would pass; the place is
+        then kept for the build's next run (`keep_place`). Every look reads the slot count again (`refresh`) and drops
+        the stale claims above it. The ticket is gone however this returns or raises."""
         ticket = self.join(agent, worktree, preset, priority, pid)
         started = self.clock()
         last_report: float | None = None
         try:
             while True:
+                self.refresh()
                 self.drop_stale_tickets()
+                self.drop_stale_claims()
                 if not (self._queue() / ticket.name).is_file():
                     self._write_ticket(ticket)  # removed by hand: take the same place again
                 claim = self.try_claim(ticket)
@@ -600,8 +702,10 @@ class Slots:
                 minutes = estimate_wait(place, holders, self.slots, now, self.lane)
                 reason = abandon(now - started, minutes * 60) if abandon is not None else None
                 if reason is not None:
+                    self.keep_place(ticket)
                     raise SlotTimeout(f"{reason}; held by {held}", place, len(live))
                 if timeout is not None and now - started >= timeout:
+                    self.keep_place(ticket)
                     raise SlotTimeout(
                         f"no {self.what} free after {timeout / 60:.0f} minutes; held by {held}", place, len(live)
                     )

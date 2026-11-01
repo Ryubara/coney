@@ -6,8 +6,10 @@ A run first takes the **lock of its build folder** (build_claims.folder_lock): o
 configure to the last test, so two runs never link the same executable or write the same files. Then it has up to two
 **phases**, each holding its own claim (build_claims.py): configure and build together, then the test run. A small job
 (a build with a few out-of-date steps, a `ctest -R` or `-L` that selects a few tests) takes the single fast-lane slot;
-everything else takes one of the main slots, and waits in the queue for one. The full output goes to a log; what is
-printed is the outcome of each step, the first compile errors and the failed tests.
+any other configure and build takes one of the main slots, and any other test run a check slot (`check_slots`), never a
+build slot: a test run compiles nothing, and a disc suite that held a main slot for 40 minutes after its compile ended
+kept five builds queued on a machine at 30% (issue 1370). Each waits in its lane's queue. The full output goes to a log;
+what is printed is the outcome of each step, the first compile errors and the failed tests.
 
 A run has a **time budget** for the whole call (`--budget`, 45 minutes by default and at most unless the run is
 detached, build_cli.py: an agent's prompt cache lasts an hour, and a call that outlasts it pays to write the cache
@@ -20,8 +22,8 @@ Everything that touches the machine is behind `Toolchain` (running a command, ca
 a run, the lane choice, the claims and the summary are tested with canned output.
 
 A filtered test run is small by its **count and its time**: one disc playthrough can hold a slot for half an hour, so a
-run whose selected tests' recorded times (test_costs.py) add up to more than the limit takes a main slot whatever its
-count. `--lane main` sends any run to a main slot.
+run whose selected tests' recorded times (test_costs.py) add up to more than the limit takes a check slot whatever its
+count. `--lane main` sends any build to a main slot and any test run to a check slot, without measuring.
 """
 
 from __future__ import annotations
@@ -33,14 +35,14 @@ import shutil
 import subprocess
 import sys
 from collections import deque
-from collections.abc import Callable, Iterator, Mapping, Sequence
-from contextlib import contextmanager
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, TextIO
 
 from coney_tools import check_slots, live_progress, process_lifetime
 from coney_tools.build_claims import (
+    CHECK_LANE,
     FAST_LANE,
     FAST_MINUTES,
     MAIN_LANE,
@@ -650,9 +652,9 @@ class Context:
     #: A filtered test run whose selected tests' recorded times add up to more seconds than this takes a main slot
     #: (0: the count alone decides).
     fast_test_seconds: float = 0.0
-    #: The check slots (build_claims.CHECK_LANE): a test run with no `-R` or `-L` filter, the whole ctest suite, holds
-    #: one for the run, so a machine runs only `check_slots` full suites at once. None: no limit (a targeted run takes
-    #: none).
+    #: The check slots (build_claims.CHECK_LANE): a test run too big for the fast lane (the whole ctest suite, or a
+    #: filter that selects many tests or long ones) holds one for the run instead of a build slot, so a machine runs
+    #: only `check_slots` of them at once and its build slots stay for compiles. None: such a run takes a main slot.
     check: Slots | None = None
     #: Seconds between the "still running" lines of a long step (live_progress.py): a build or a test run says so at
     #: least this often, however quiet the compiler or the tests are.
@@ -777,7 +779,7 @@ class _Phase:
         #: How big the phase's job is, for the history's keys: a test run's "full" or "filtered"; None: the lane for a
         #: build, "main" for a configure.
         self.size = size
-        self.slots = context.fast if lane == FAST_LANE else context.slots
+        self.slots = {FAST_LANE: context.fast, CHECK_LANE: context.check}.get(lane) or context.slots
         #: Told the step each command starts, for the folder lock's owner file.
         self.note = note
         #: How far a step is (ninja's `[n/m]`, the tests done so far), for its "still running" line and the progress
@@ -804,11 +806,15 @@ class _Phase:
         started = self.slots.clock()
 
         def report(waiting: Waiting) -> None:
-            context.emit(
-                f"waiting for a build slot ({self.lane_name} lane): place {waiting.place} of {waiting.total}, "
-                f"about {waiting.minutes:.0f} min; held by {_holders_text(waiting.holders, self.slots.clock())}; "
-                f"{_gives_up(options)}"
-            )
+            if self.lane_name == CHECK_LANE:
+                line = check_slots.waiting_line(waiting, self.slots, "ctest", self.slots.clock())
+                context.emit(f"{line}; {_gives_up(options)}")
+            else:
+                context.emit(
+                    f"waiting for a build slot ({self.lane_name} lane): place {waiting.place} of {waiting.total}, "
+                    f"about {waiting.minutes:.0f} min; held by {_holders_text(waiting.holders, self.slots.clock())}; "
+                    f"{_gives_up(options)}"
+                )
             holders = [holder.agent for holder in waiting.holders]
             context.progress.waiting(self.lane_name, waiting.place, waiting.total, waiting.minutes, holders)
 
@@ -834,7 +840,7 @@ class _Phase:
                 self.waited = self.slots.clock() - started
                 context.progress.running()
                 if self.slots.last_takeover is not None:
-                    context.emit(f"took over a stale build claim of {self.slots.last_takeover.agent}")
+                    context.emit(f"took over a stale {self.slots.what} of {self.slots.last_takeover.agent}")
                     _report_reaped(context, self.slots)
                 for step, command, on_line in steps:
                     claim = self.slots.set_step(claim, step) or claim
@@ -936,14 +942,15 @@ def _ctest(options: Options, *more: str) -> list[str]:
 def _choose_test_lane(options: Options, context: Context) -> tuple[str, int | None]:
     """The lane of the test phase and how many tests the filter selects (None when unknown). Only a `-R` or `-L` filter
     can be small, by its count and, when any selected test has a recorded time, by those times; a full run, and any run
-    with `--lane main`, takes a main slot. The count is still listed with `--lane main`: a filter that selects nothing
-    fails before it waits."""
+    with `--lane main`, takes a check slot (a main slot when the context has no check slots). The count is still
+    listed with `--lane main`: a filter that selects nothing fails before it waits."""
+    big = CHECK_LANE if context.check is not None else MAIN_LANE
     if not options.filters:
-        return MAIN_LANE, None
+        return big, None
     code, output = context.toolchain.capture(_ctest(options, "-N", *options.filters), None)
     tests = count_ctest_tests(output) if code == 0 else None
     if options.lane == MAIN_LANE:
-        return MAIN_LANE, tests
+        return big, tests
     small = tests is not None and 0 < tests <= context.fast_tests
     if small and context.test_costs is not None and context.fast_test_seconds > 0:
         costs = context.test_costs.load(options.preset, options.folder / COST_DATA)
@@ -953,36 +960,10 @@ def _choose_test_lane(options: Options, context: Context) -> tuple[str, int | No
             context.emit(
                 f"measured: {len(known)} test{'s' if len(known) != 1 else ''} expected to take {_duration(expected)} "
                 f"by {'their' if len(known) != 1 else 'its'} recorded time, more than the fast lane's "
-                f"{_duration(context.fast_test_seconds)}, so the {MAIN_LANE} lane"
+                f"{_duration(context.fast_test_seconds)}, so the {big} lane"
             )
             small = False
-    return (FAST_LANE if small else MAIN_LANE), tests
-
-
-@contextmanager
-def _check_slot(options: Options, context: Context) -> Iterator[None]:
-    """A check slot for a full test run (one with no `-R` or `-L` filter), taken before the test phase takes its build
-    slot: the wait for the check queue holds no build slot, and the suites hold only `check_slots` of them at once. A
-    filtered run, which is a few tests, takes none, and neither does a context with no check slots. Raises SlotTimeout
-    after `max_wait` minutes, like the build slot's wait."""
-    if options.filters or context.check is None:
-        yield
-        return
-    with check_slots.hold(
-        context.check,
-        options.agent,
-        options.checkout.name,
-        "ctest",
-        context.emit,
-        max_wait=options.max_wait,
-        priority=options.priority,
-        pid=context.pid,
-        poll=context.poll,
-        report_every=context.report_every,
-        abandon=_budget_check(options, context, context.check.clock, None, 0.0, ""),
-        progress=context.progress,
-    ):
-        yield
+    return (FAST_LANE if small else big), tests
 
 
 def execute(options: Options, context: Context) -> Result:
@@ -1109,11 +1090,7 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
         TESTS,
         tests.failed_count,
     )
-    try:
-        with _check_slot(options, context):
-            ran = phase.run([("test", command, test_line)])
-    except SlotTimeout as timeout:
-        return _gave_up(result, "test", timeout)
+    ran = phase.run([("test", command, test_line)])
     if phase.queued is not None:
         return _gave_up(result, "test", phase.queued)
     result.ran = (*result.ran, "test")

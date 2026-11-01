@@ -575,3 +575,88 @@ def test_releasing_a_dead_claim_by_hand_stops_its_leftovers_and_a_forced_live_on
     slots.release("alice")
     slots.release("bob", force=True)
     assert reaped == ["alice"]
+
+
+# -- issue 1370: a requeue keeps its place, a waiting build re-reads the slot count, the queue drops dead holders ----
+
+
+def test_a_build_that_gave_up_waiting_and_runs_again_keeps_its_place(tmp_path: Path, world: World) -> None:
+    slots = make(tmp_path, world, slots=1)
+    assert take(slots, world, "holder", 1701) is not None
+    with pytest.raises(SlotTimeout):
+        slots.acquire("alice", "wt-alice", "dev", False, 11702, poll=10, timeout=60)
+    world.alive.discard(11702)  # alice's run exited 75
+    later = ticket(slots, world, "bob", 1703)  # bob joins while alice is between her runs
+    reports: list[Waiting] = []
+    with pytest.raises(SlotTimeout):
+        slots.acquire("alice", "wt-alice", "dev", False, 11704, poll=10, report=reports.append, timeout=30)
+    assert (reports[0].place, reports[0].total) == (1, 2)  # ahead of bob, who came after her first wait
+    slots.leave(later)
+
+
+def test_a_kept_place_is_for_the_same_build_and_only_for_a_while(tmp_path: Path, world: World) -> None:
+    from coney_tools.build_claims import KEEP_PLACE_SECONDS
+
+    slots = make(tmp_path, world, slots=1)
+    assert take(slots, world, "holder", 1801) is not None
+    with pytest.raises(SlotTimeout):
+        slots.acquire("alice", "wt-alice", "dev", False, 11802, poll=10, timeout=60)
+    other = ticket(slots, world, "bob", 1803)
+    reports: list[Waiting] = []
+    with pytest.raises(SlotTimeout):  # another worktree's build has no kept place
+        slots.acquire("alice", "wt-other", "dev", False, 11804, poll=10, report=reports.append, timeout=30)
+    assert reports[0].place == 2
+    world.now += KEEP_PLACE_SECONDS + 1
+    world.alive.add(1803)
+    reports.clear()
+    with pytest.raises(SlotTimeout):  # too late: the place is gone, so the back of the queue
+        slots.acquire("alice", "wt-alice", "dev", False, 11805, poll=10, report=reports.append, timeout=30)
+    assert reports[0].place == 2
+    slots.leave(other)
+
+
+def test_a_waiting_build_reads_a_new_slot_count_while_it_waits(tmp_path: Path, world: World) -> None:
+    count = [1]
+    slots = Slots(
+        tmp_path / "claims", 1, clock=world.clock, alive=world.is_alive, sleep=world.sleep, recount=lambda: count[0]
+    )
+    assert take(slots, world, "holder", 1901) is not None
+    world.on_sleep.append(lambda n: count.__setitem__(0, 2) if n == 2 else None)  # build_slots raised meanwhile
+    claim = slots.acquire("waiter", "wt", "dev", False, 11902, poll=10, timeout=600)
+    assert claim.slot == 2 and slots.slots == 2
+
+
+def test_a_slot_count_that_cannot_be_read_keeps_the_last_one(tmp_path: Path, world: World) -> None:
+    def broken() -> int:
+        raise OSError("coney.local.toml is being written")
+
+    slots = Slots(tmp_path / "claims", 2, clock=world.clock, alive=world.is_alive, sleep=world.sleep, recount=broken)
+    slots.refresh()
+    assert slots.slots == 2
+
+
+def test_the_default_slots_read_the_local_config_again_when_refreshed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from coney_tools import build_claims
+
+    (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
+    config = tmp_path / "coney.local.toml"
+    config.write_text("build_slots = 3\ncheck_slots = 2\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    main, check = build_claims.default_slots(), build_claims.default_slots(build_claims.CHECK_LANE)
+    config.write_text("build_slots = 4\ncheck_slots = 3\n", encoding="utf-8")
+    main.refresh()
+    check.refresh()
+    assert (main.slots, check.slots) == (4, 3)
+
+
+def test_a_waiting_build_drops_a_dead_holder_beyond_the_slot_count(tmp_path: Path, world: World) -> None:
+    wide = make(tmp_path, world, slots=3)
+    for agent, pid in (("alice", 2001), ("bob", 2002), ("carol", 2003)):
+        assert take(wide, world, agent, pid) is not None
+    world.alive.discard(2003)  # carol's run died, holding slot 3
+    narrow = make(tmp_path, world, slots=2)  # and the lane has two slots now
+    with pytest.raises(SlotTimeout):
+        narrow.acquire("dave", "wt-dave", "dev", False, 12004, poll=10, timeout=30)
+    assert [row.number for row in narrow.status().slots] == [1, 2]  # slot 3's dead entry is gone
