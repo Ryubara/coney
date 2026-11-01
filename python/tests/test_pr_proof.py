@@ -584,7 +584,8 @@ def test_a_moved_function_that_changed_its_body_address_or_tag_is_refused_until_
 ) -> None:
     built = make(tmp_path)
     with_old_thing_on_main(built)
-    built.edit("src/ai/old.cpp", OLD_THING.replace("Old::", "Fresh::").replace(*edit))
+    # The edit comes first (it is written against the old names), then the class is renamed.
+    built.edit("src/ai/old.cpp", OLD_THING.replace(*edit).replace("Old::", "Fresh::"))
     refused = texts(built.verify(), "compared")
     assert any("Fresh::thing" in t and "never studied" in t for t in refused), refused
 

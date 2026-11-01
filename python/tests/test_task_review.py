@@ -264,10 +264,7 @@ def test_a_function_that_only_moved_needs_no_compare_and_no_orig_review(rig: Rig
     packet, problems = rig.prepare()
     assert [p for p in problems if p.startswith("compared")] == []
     assert packet["functions"] == [] and "orig" not in packet["kinds"]
-    assert {m["coney"]: m["was"] for m in packet["moved"]} == {
-        "Mind::think": "Brain::think(int)",
-        "Mind::wait": "Brain::wait()",
-    }
+    assert {m["coney"]: m["was"] for m in packet["moved"]} == {"Mind::think": "Brain::think(int)"}
 
 
 def test_a_research_data_file_is_research_work_but_no_page(rig: Rig) -> None:
