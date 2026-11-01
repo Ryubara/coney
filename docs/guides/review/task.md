@@ -107,7 +107,7 @@ exist ([test citations](../testing.md#done), the standards of touched files).
 | `kinds` | The [checklists](#kinds) to apply |
 | `files` | The paths the change touches |
 | `functions` | Each changed `@orig` function: `key`, `where`, `coney`, `addresses`, `names`, `body_sha256` (`orig review-stamp --branch` lists the same) |
-| `moved` | Each `@orig` function that only moved (same code and tags under another class, name or file): the same fields as `functions` and `was`, the key it had. Nothing is asked of it: its study and compare stand ([A moved function](../orig-body-hash.md#moved)) |
+| `moved` | Each `@orig` function that only moved (same code and tags under another class, name or file): the same fields as `functions` and `was`, the key it had. No compare is asked of it (its study and compare stand), and the `orig` checklist is opened for it: the reviewer diffs its two copies and their declarations and writes a finding if anything but names differs ([the step](orig.md#procedure), [why](../orig-body-hash.md#moved)) |
 | `pairs_set_sha256` | The hash of the pairs files of those functions, which a `compared` stamp covers one by one |
 | `pages` | Each touched research page and the addresses it writes |
 | `tests` | Each added C++ test and the result of its `fails-first` stamp (`pass`, `keeps`, `fail` or `missing`) |

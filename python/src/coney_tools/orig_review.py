@@ -224,14 +224,13 @@ def _legacy_body_hash(lines: list[str], function: Function) -> str:
 _NAME_SLOT = "\x01"
 
 
-def _moved_hash(lines: list[str], function: Function) -> str:
-    """The SHA-256 of a definition's code without its own qualified name: every `Scope::` that leads to the function's
-    class (`ns::Mind::`, `Mind::`) is dropped wherever it stands, and the function's name is dropped where it first
-    stands (its declarator), so a function that moved to another class, a renamed class, another name or another file
-    keeps the hash while its code does not change. A name the code uses for something else (`Other::kStep`, a call)
-    still counts, so a moved body that now reads other things has another hash. A string, raw string or character
-    literal is data, not a name: it is left as it is, so a message that names the old class is another message."""
-    text = code_text("\n".join(lines[function.line - 1 : function.line - 1 + function.lines]))
+def _normal_form(text: str, function: Function) -> str:
+    """`text` (a definition's or a declaration's code) with the function's own qualified name left out: every `Scope::`
+    that leads to its class (`ns::Mind::`, `Mind::`) is dropped wherever it stands, and every use of the function's own
+    name (the declarator and a recursive call) becomes one placeholder. A name the code uses for something else
+    (`Other::kStep`, another function's call) stays, so a function renamed to the name of a helper it called is not
+    the same text as one that calls itself. A string, raw string or character literal is data, not a name: it is left
+    as it is, so a message that names the old class or the function is another message."""
     # Each literal stands behind a mask (no word or colon in it) while the names are rewritten, then comes back.
     literals: list[str] = []
 
@@ -247,9 +246,46 @@ def _moved_hash(lines: list[str], function: Function) -> str:
         text = re.sub(rf"(?<![\w:])(?:\w+::)*{owner}::", "", text)
     name = function.name.lstrip("~")
     word = rf"\b{re.escape(name)}\b" if re.fullmatch(r"\w+", name) else re.escape(name)
-    text = re.sub(word, _NAME_SLOT, text, count=1)
-    text = re.sub(r"\x02(\d+)\x03", lambda m: literals[int(m.group(1))], text)
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+    text = re.sub(word, _NAME_SLOT, text)
+    return re.sub(r"\x02(\d+)\x03", lambda m: literals[int(m.group(1))], text)
+
+
+def _moved_hash(lines: list[str], function: Function, declaration: str = "") -> str:
+    """The SHA-256 of a definition's code and its separate declaration (`declaration`: the header's text up to its `;`)
+    without the function's own qualified name (`_normal_form`), so a function that moved to another class, a renamed
+    class, another name or another file keeps the hash while its code and its declaration (a default argument,
+    `virtual`, `static`, a return type) do not change. A body that now reads other things has another hash."""
+    text = code_text("\n".join(lines[function.line - 1 : function.line - 1 + function.lines]))
+    parts = [_normal_form(text, function), _normal_form(declaration, function)]
+    return hashlib.sha256("\x00".join(parts).encode("utf-8")).hexdigest()
+
+
+def _declaration_text(function: Function, texts: dict[str, str], decls: list[Function]) -> str:
+    """The code of `function`'s separate declaration, from its first line to the `;` that ends it, or "" when it is
+    defined in its class or has none in these files. The declaration nearest to the definition by file, folder, then
+    anywhere (a member), with the same parameter types, is the one read."""
+    if function.in_class or not decls:
+        return ""
+    stem = _stem(function.path)
+    near: tuple[Callable[[Function], bool], ...] = (
+        lambda f: _stem(f.path) == stem,
+        lambda f: _stem(f.path)[0] == stem[0],
+        lambda f: bool(function.scope),
+    )
+    for check in near:
+        group = [f for f in decls if check(f) and (not function.helper or f.path == function.path)]
+        exact = [f for f in group if f.params == function.params]
+        chosen = exact[0] if exact else (group[0] if len({f.params for f in group}) == 1 else None)
+        if chosen is not None:
+            window = texts[chosen.path].splitlines()[chosen.line - 1 : chosen.line + 7]
+            # The `;` is a token of its own, so one inside a string default does not end the declaration early.
+            kept: list[str] = []
+            for match in _TOKEN.finditer(code_text("\n".join(window))):
+                if match.group(0) == ";":
+                    break
+                kept.append(match.group(0))
+            return "".join(kept)
+    return ""
 
 
 def _stem(path: str) -> tuple[str, str]:
@@ -267,6 +303,12 @@ def units_from(texts: dict[str, str]) -> list[Unit]:
         for function in source.functions:
             if function.tags:
                 declared[function.key].append((function, function.tags))
+    # Every separate declaration (no body), by the function's scope and name: what a move reads beside the definition.
+    declarations: dict[tuple[str, str], list[Function]] = defaultdict(list)
+    for source in sources.values():
+        for function in source.functions:
+            if not function.body:
+                declarations[function.key].append(function)
     found: list[Unit] = []
     for path, source in sources.items():
         lines = texts[path].splitlines()
@@ -290,7 +332,9 @@ def units_from(texts: dict[str, str]) -> list[Unit]:
                     _body_hash(lines, function),
                     _legacy_body_hash(lines, function),
                     tuple(dict.fromkeys(t.address for t in tags if t.build == XBOX)),
-                    _moved_hash(lines, function),
+                    _moved_hash(
+                        lines, function, _declaration_text(function, texts, declarations.get(function.key, []))
+                    ),
                 )
             )
     # Two definitions with one key (a platform variant of a free function) are told apart by their file.

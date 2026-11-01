@@ -677,11 +677,18 @@ def test_the_normal_form_of_a_body_leaves_a_literal_as_it_is() -> None:
     raw = moved_hash_of("Brain", "think", 'return log(R"(Brain::go)", a);')
     assert moved_hash_of("Mind", "think", 'return log(R"(go)", a);') != raw
     assert moved_hash_of("Mind", "think", 'return log(R"(Brain::go)", a);') == raw
-    assert moved_hash_of("Mind", "think", "return a + sizeof('Brain::');") != moved_hash_of(
-        "Brain", "think", "return a + sizeof('');"
+    # A character literal is left alone too: the owner's name in it is data, so each class keeps its own.
+    assert moved_hash_of("Mind", "think", "return a + sizeof('Mind::');") != moved_hash_of(
+        "Brain", "think", "return a + sizeof('Brain::');"
     )
-    # The name stands once in a literal and then in the declarator's place: the literal is not taken for the name.
+    assert moved_hash_of("Mind", "think", "return a + sizeof('Brain::');") == moved_hash_of(
+        "Brain", "think", "return a + sizeof('Brain::');"
+    )
+    # The function's own name in a literal is data as well: it is not taken for the name (the declarator's).
     assert moved_hash_of("Mind", "ponder", 'return log("think", a);') == moved_hash_of(
+        "Brain", "think", 'return log("think", a);'
+    )
+    assert moved_hash_of("Mind", "ponder", 'return log("ponder", a);') != moved_hash_of(
         "Brain", "think", 'return log("think", a);'
     )
 
@@ -717,3 +724,90 @@ def test_two_new_functions_with_the_code_of_one_gone_function_share_one_move() -
     assert [m.unit.key for m in found.moved] == ["Mind::think(int)"]
     assert [u.key for u in found.changed] == ["Psyche::think(int)"]
     assert found.removed == ()
+
+
+def class_units(
+    scope: str,
+    name: str = "think",
+    body: str = "return a > 3 ? 1 : 0;",
+    params: str = "int a",
+    specifier: str = "",
+    returns: str = "int",
+    template: str = "",
+) -> dict[str, str]:
+    """A header declaring `scope::name` (tagged `@orig 0x00100010`) and the source file defining it with `body`."""
+    header = (
+        f"{template}class {scope} {{\n  public:\n    /// Thinks.\n    /// @orig 0x00100010 Think (Brain.cpp)\n"
+        f"    {specifier}{returns} {name}({params});\n}};\n"
+    )
+    source = f"{returns} {scope}::{name}(int a) {{\n    {body}\n}}\n"
+    return {f"src/ai/{scope.lower()}.h": header, f"src/ai/{scope.lower()}.cpp": source}
+
+
+def changes_between(before: dict[str, str], after: dict[str, str]) -> orig_review.Changes:
+    """What `moves` says of the units of two sets of files."""
+    return orig_review.moves(orig_review.units_from(before), orig_review.units_from(after))
+
+
+def test_a_pure_rename_of_the_class_and_the_function_is_a_move() -> None:
+    found = changes_between(class_units("Brain"), class_units("Mind", name="ponder"))
+    assert [m.unit.key for m in found.moved] == ["Mind::ponder(int)"] and found.changed == ()
+
+
+def test_a_function_renamed_to_the_name_of_the_helper_it_called_is_a_changed_function() -> None:
+    """`alpha` calling `beta` that becomes `beta` calling `beta` calls itself now: that is not a rename."""
+    before = class_units("Brain", name="alpha", body="return beta(a);")
+    after = class_units("Mind", name="beta", body="return beta(a);")
+    found = changes_between(before, after)
+    assert found.moved == () and [u.key for u in found.changed] == ["Mind::beta(int)"]
+
+
+def test_a_function_renamed_with_its_own_recursive_call_is_a_move() -> None:
+    before = class_units("Brain", name="alpha", body="return a > 0 ? alpha(a - 1) : 0;")
+    after = class_units("Mind", name="beta", body="return a > 0 ? beta(a - 1) : 0;")
+    assert [m.unit.key for m in changes_between(before, after).moved] == ["Mind::beta(int)"]
+
+
+def test_a_recursive_call_left_under_the_old_name_is_a_changed_function() -> None:
+    before = class_units("Brain", name="alpha", body="return a > 0 ? alpha(a - 1) : 0;")
+    after = class_units("Mind", name="beta", body="return a > 0 ? alpha(a - 1) : 0;")
+    assert changes_between(before, after).moved == ()
+
+
+def test_a_default_argument_changed_in_the_declaration_is_a_changed_function() -> None:
+    before = class_units("Brain", params="int a = 3")
+    same = changes_between(before, class_units("Mind", params="int a = 3"))
+    assert [m.unit.key for m in same.moved] == ["Mind::think(int)"]
+    found = changes_between(before, class_units("Mind", params="int a = 4"))
+    assert found.moved == () and [u.key for u in found.changed] == ["Mind::think(int)"]
+
+
+def test_a_declaration_made_virtual_or_static_is_a_changed_function() -> None:
+    before = class_units("Brain")
+    for specifier in ("virtual ", "static ", "[[nodiscard]] ", "constexpr "):
+        found = changes_between(before, class_units("Mind", specifier=specifier))
+        assert found.moved == (), specifier
+        assert [u.key for u in found.changed] == ["Mind::think(int)"], specifier
+
+
+def test_a_changed_return_or_template_argument_in_the_declaration_is_a_changed_function() -> None:
+    before = class_units("Brain")
+    for returns in ("long", "const int", "auto"):
+        assert changes_between(before, class_units("Mind", returns=returns)).moved == (), returns
+    boxed = class_units("Brain", returns="Box<3>")
+    assert changes_between(boxed, class_units("Mind", returns="Box<3>")).moved
+    assert changes_between(boxed, class_units("Mind", returns="Box<4>")).moved == ()
+
+
+def test_a_changed_default_argument_in_the_definitions_own_text_is_a_changed_function() -> None:
+    """A default or a template argument written in the definition itself is read with the body."""
+    text = (
+        "/// @orig 0x00100010 Think (Brain.cpp)\nBox<{box}> {scope}::think(int a = {default}) {{\n    return a;\n}}\n"
+    )
+
+    def units(scope: str, default: str, box: str = "3") -> dict[str, str]:
+        return {"src/ai/x.cpp": text.format(scope=scope, default=default, box=box)}
+
+    assert changes_between(units("Brain", "3"), units("Mind", "3")).moved
+    assert changes_between(units("Brain", "3"), units("Mind", "4")).moved == ()
+    assert changes_between(units("Brain", "3"), units("Mind", "3", box="4")).moved == ()

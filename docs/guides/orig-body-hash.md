@@ -46,18 +46,25 @@ move) has all of:
 
 * the same `@orig` addresses, in both builds, and the same names in its tags;
 * the same code, so either the same body hash, or the same **moved hash** (`Unit.moved_sha256`, `_moved_hash`): the
-  [body hash](#body-hash) of the definition with every `Scope::` that leads to its own class dropped wherever it stands
-  (`ns::Mind::`, `Mind::`, also inside the body: `Mind::kStep`) and its own name dropped at its declarator. A body that
-  now calls, reads or names anything else (`Other::kStep`, another function, a changed literal or operator) has another
-  moved hash and stays changed. A string, raw string or character literal is data and is left as it is: a message
-  `"Brain::think failed"` that becomes `"Mind::think failed"` is a changed literal, not a rewritten name.
+  [body hash](#body-hash) of the definition, and of its separate declaration (the header's text up to the `;`: a
+  default argument, `virtual`, `static`, a return type), with every `Scope::` that leads to its own class dropped
+  wherever it stands (`ns::Mind::`, `Mind::`, also inside the body: `Mind::kStep`) and every use of its own name, the
+  declarator and a recursive call, replaced by one placeholder. A body or a declaration that now calls, reads or
+  names anything else (`Other::kStep`, a changed literal or operator, a changed default argument) has another moved
+  hash and stays changed. A function renamed to the name of a helper it called (`alpha` calling `beta` becomes `beta`
+  calling `beta`) stays changed, because that name is now its own; a rename that also renames its own recursive call
+  is a move; a recursive call left under the old name stays changed. A string, raw string or character literal is
+  data and is left as it is: a message `"Brain::think failed"` that becomes `"Mind::think failed"` is a changed
+  literal, not a rewritten name.
 
-The two hashes read **names as text**, not as what they resolve to, so a program cannot tell some changes from a move:
-a recursive call left under the function's old name (`think` after a rename to `ponder`), and an unqualified call or
-member that now resolves in another class, leave the hash as it was and read as a move. The reviewer reads the diff of
-a moved function's two copies for that, as for any change of a name, and the compare is run again when it shows one.
-When two new functions have the code of one gone function, the first takes its study and compare and the second stays
-changed.
+The hashes read **names as text**, not as what they resolve to, so a program still cannot tell some changes from a
+move: a body that calls another function whose meaning changed with the move (an unqualified call or member that now
+resolves in another class, so that the same name reaches other code). It also cannot tell whether the gone function
+ever had a compare: a legacy function that was never compared is cleared by a move as well, and the review ledger,
+which is by key, starts it as unreviewed. So a moved function is not left unread: `task review` opens the
+[orig checklist](review/orig.md#procedure) for each one, and its one step is to diff the two copies and their
+declarations and write a finding if anything but names differs; the compare is run again when it does. When two new
+functions have the code of one gone function, the first takes its study and compare and the second stays changed.
 
 A moved function is in neither `functions` nor `removed` of `review-stamp --branch`, so `orig check-review` and
 `task review` ask for no verdict and no `compared` stamp of it, and `pr verify` lists it as a note

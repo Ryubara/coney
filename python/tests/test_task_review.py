@@ -253,8 +253,9 @@ def test_the_packet_says_what_to_judge_and_quotes_the_hashes(rig: Rig) -> None:
     assert len(packet["pairs_set_sha256"]) == 64 and packet["rubric_version"] == 1
 
 
-def test_a_function_that_only_moved_needs_no_compare_and_no_orig_review(rig: Rig) -> None:
-    """The class is renamed and nothing else: the packet lists the moves apart and asks for no compare of them."""
+def test_a_function_that_only_moved_needs_no_compare_but_is_still_reviewed(rig: Rig) -> None:
+    """The class is renamed and nothing else: the packet lists the moves apart, asks for no compare of them, and
+    opens the orig checklist, whose one step for a move is to diff the two copies and their declarations."""
     git(rig.root, "checkout", "-q", "-b", "moving", "origin/main")
     for name in ("src/ai/brain.h", "src/ai/brain.cpp"):
         path = rig.root / name
@@ -263,7 +264,7 @@ def test_a_function_that_only_moved_needs_no_compare_and_no_orig_review(rig: Rig
     git(rig.root, "commit", "-q", "-a", "-m", "rename the class")
     packet, problems = rig.prepare()
     assert [p for p in problems if p.startswith("compared")] == []
-    assert packet["functions"] == [] and "orig" not in packet["kinds"]
+    assert packet["functions"] == [] and "orig" in packet["kinds"]
     assert {m["coney"]: m["was"] for m in packet["moved"]} == {"Mind::think": "Brain::think(int)"}
 
 

@@ -161,8 +161,11 @@ def default_change_hash(worktree: Path, base: str, tip: str) -> str:
 # --- the packet ------------------------------------------------------------------------------------------------------
 
 
-def _kinds(files: list[str], functions: list[dict[str, Any]], env: ReviewEnv, mode: str) -> list[str]:
-    """Which checklists the change needs, in the order the reviewer applies them (docs/guides/review/index.md)."""
+def _kinds(
+    files: list[str], functions: list[dict[str, Any]], moved: list[dict[str, Any]], env: ReviewEnv, mode: str
+) -> list[str]:
+    """Which checklists the change needs, in the order the reviewer applies them (docs/guides/review/index.md). A moved
+    function opens the orig one too: its compare stands, but the reviewer still diffs its two copies."""
     if mode == "text":
         return ["text"]
     rules = env.conventions.tasks.review
@@ -176,7 +179,7 @@ def _kinds(files: list[str], functions: list[dict[str, Any]], env: ReviewEnv, mo
             needed.add("docs")
         else:
             needed.add("code")
-    if functions:
+    if functions or moved:
         needed.add("orig")
     return [kind for kind in REVIEW_KINDS if kind in needed]
 
@@ -327,11 +330,11 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
         "tip": tip,
         "base": base,
         "diff_sha256": diff,
-        "kinds": _kinds(files, functions, env, mode),
+        "kinds": _kinds(files, functions, moved, env, mode),
         "files": files,
         "functions": functions if mode == "full" else [],
-        # Functions that kept their code and tags under another class, name or file: their compare stands, so the
-        # reviewer is told of them and asked nothing (docs/guides/orig-body-hash.md#moved).
+        # Functions that kept their code and tags under another class, name or file: their compare stands, but the
+        # reviewer diffs the two copies and their declarations (docs/guides/review/orig.md#moved).
         "moved": moved if mode == "full" else [],
         "pairs_set_sha256": pairs_set,
         "pages": _pages(files, env, tip) if mode == "full" else [],
@@ -402,7 +405,7 @@ def prepare(env: ReviewEnv, mode: str) -> int:
     print(f"  @orig functions: {functions}")
     if packet["moved"]:
         moved = ", ".join(f"{f['coney']} (was {f['was']})" for f in packet["moved"])
-        print(f"  @orig functions moved, their compare kept: {moved}")
+        print(f"  @orig functions moved, their compare kept, copies to diff: {moved}")
     print(f"  research pages: {', '.join(p['path'] for p in packet['pages']) or 'none'}")
     print("  the tool part passed")
     print(f"  {_description_note(packet)}")
