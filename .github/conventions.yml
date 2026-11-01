@@ -111,6 +111,8 @@ paths:
     - {path: "docs/missions/", by: "coney-tools missions render"}
     - {path: "docs/guides/pcsx2-recipes.md", by: "coney-tools pcsx2 recipes render"}
     - {path: "docs/guides/pcsx2-recipes/", by: "coney-tools pcsx2 recipes render"}
+    - {path: "docs/guides/console-commands.md", by: "coney-tools console render"}
+    - {path: "src/console/commands_table.cpp", by: "coney-tools console render-cpp"}
   # The agent entry files hold one line that imports AGENTS.md and nothing of their own, so the rules cannot drift.
   pointer_files: {files: ["CLAUDE.md", "GEMINI.md"], line: "@AGENTS.md", max_bytes: 400}
   # Only these files may hold the repository's or the docs site's address.
@@ -144,7 +146,7 @@ paths:
     - "src/world_objects/"
   # Coney's own by nature: the operating system, SDL3 and librw (platform), the engine's plumbing (core, fileio),
   # the debug tools, network play and the sandbox. Their functions need no marker.
-  coney_only: ["src/platform/", "src/core/", "src/fileio/", "src/debug/", "src/net/", "src/sandbox/", "src/install/", "src/launcher/", "src/studio/"]
+  coney_only: ["src/platform/", "src/core/", "src/console/", "src/fileio/", "src/debug/", "src/net/", "src/sandbox/", "src/install/", "src/launcher/", "src/studio/"]
 
 commits:
   title:

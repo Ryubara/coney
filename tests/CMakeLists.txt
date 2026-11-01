@@ -1,6 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 add_executable(coney_tests
     camera/camera_lens_test.cpp
+    console/arg_types_test.cpp
+    console/catalog_test.cpp
+    console/console_test.cpp
+    console/registry_test.cpp
+    console/terminal_test.cpp
+    console/tokenizer_test.cpp
     core/chunk_system_test.cpp
     core/clip_recording_test.cpp
     core/cpak_archive_test.cpp

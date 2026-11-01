@@ -27,6 +27,7 @@ struct InputEvent {
         Connect,    ///< Plug the pad in.
         Disconnect, ///< Pull the pad out.
         Steer,      ///< Push the left stick toward each point of `route` in turn, at `x` per cent.
+        Console,    ///< Hand `text`, a console line, to the console (docs/guides/console.md#input-script).
     };
 
     std::uint64_t frame = 0; ///< The frame (FrameTime::index) the line takes effect on.
@@ -38,6 +39,8 @@ struct InputEvent {
     int y = 0;                 ///< Stick: -100 (full down) to 100 (full up).
     /// Steer: the world points (metres, x and y) to reach one after the other.
     std::vector<std::array<float, 2>> route;
+    /// Console: the line, as written after the action word.
+    std::string text;
 };
 
 /// Where a port's player stands and which way its camera faces, as a `steer` line needs them: the player's feet
@@ -72,7 +75,8 @@ inline constexpr float kSteerArrival = 1.0F;
 /// ACTION is `press`, `release` or `tap` followed by button names (`cross`, `circle`, `triangle`, `square`, `l1`,
 /// `r1`, `l2`, `r2`, `l3`, `r3`, `start`, `select`, `up`, `down`, `left`, `right`), `stick left|right X Y` with X and
 /// Y whole numbers from -100 to 100 (y up), `steer [PERCENT] X,Y...` (the left stick pushed toward each world point
-/// in turn, PERCENT 1 to 100, default 100), `connect` or `disconnect`. The port defaults to p1. Frames must not
+/// in turn, PERCENT 1 to 100, default 100), `connect`, `disconnect`, or `console LINE` (LINE, the rest of the line, is
+/// typed into the console for that port's player). The port defaults to p1. Frames must not
 /// decrease from one line to the next. Fails with ErrorCode::Invalid naming the line for anything else.
 [[nodiscard]] std::expected<std::vector<InputEvent>, Error> parseInputScript(std::string_view text);
 
@@ -104,6 +108,12 @@ class ScriptedInput final : public InputSource {
     /// a steering port's left stick stays centred.
     void setSteerSource(SteerSource source) { m_steerSource = std::move(source); }
 
+    /// Where `console` lines go: the console's model, on the frame each names, with its port (0 for p1). Without one
+    /// they are dropped, as a run without a console has nowhere to type.
+    using ConsoleSink = std::function<void(std::size_t port, std::string_view line)>;
+    /// Sets where `console` lines go.
+    void setConsoleSink(ConsoleSink sink) { m_consoleSink = std::move(sink); }
+
   private:
     // A `steer` line under way: its points and the next one to reach.
     struct Route {
@@ -124,6 +134,7 @@ class ScriptedInput final : public InputSource {
     std::uint64_t m_nextFrame = 0;                        // the lowest frame the next sample() may ask for
     std::array<std::optional<Route>, kPadPorts> m_routes; // each port's `steer` line under way
     SteerSource m_steerSource;
+    ConsoleSink m_consoleSink;
 };
 
 } // namespace coney

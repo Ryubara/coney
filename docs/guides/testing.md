@@ -544,8 +544,8 @@ The whole gate, which `task check` runs:
   the reviewer and on pytest in its `checked` stamp ([pr verify](pr.md#verify)); `coney-tools repo check-conventions`;
   `coney-tools progress check` (the progress inputs; its tables are built into the docs, not committed); and every
   generator's `--check` (`bindings render`, `bindings sync-coney`, `bindings render-cpp`, `refs render`, `missions
-  render`, `research render`, `pcsx2 recipes render`). Rerun a generator without `--check` when you change what it
-  reads.
+  render`, `research render`, `pcsx2 recipes render`, `console render-cpp`, `console render`). Rerun a generator
+  without `--check` when you change what it reads.
 - **Everything:** `uvx pre-commit run --all-files` leaves the tree unchanged, markdownlint passes,
   `mkdocs build --strict` passes, and `coney-tools docs check` passes on the pages you touched.
 

@@ -53,6 +53,9 @@ target_sources(coney_platform PRIVATE script_patch_command.cpp)
 target_sources(coney_platform PRIVATE profile_folder.cpp)
 # What both entry points (main_release.cpp and main.cpp) set up the same way (docs/guides/building.md#debug-tools).
 target_sources(coney_platform PRIVATE game_run.cpp)
+# The game's console: its model set up with network play's role, the history file and the input script's lines
+# (docs/guides/console.md#in-the-game).
+target_sources(coney_platform PRIVATE game_console.cpp)
 # Network play over UDP with ENet, and the game's side of it (host, join, the Network page's figures); the sessions
 # themselves are coney_net (docs/guides/multiplayer.md).
 target_sources(coney_platform PRIVATE enet_transport.cpp net_play.cpp)

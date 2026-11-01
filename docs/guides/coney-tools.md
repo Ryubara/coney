@@ -40,6 +40,7 @@ so they go, with these ids, once those pages are touched and cite the disc page.
 
 * [`progress`](coney-tools-references.md#progress): the progress tables.
 * [`bindings`](coney-tools-references.md#bindings): the script-binding masterlist.
+* [`console`](coney-tools-references.md#console): the Coney console's command catalog.
 * [`refs`](coney-tools-references.md#refs): the game reference lists.
 * [`missions`](coney-tools-references.md#missions): the mission status pages.
 

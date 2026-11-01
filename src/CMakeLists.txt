@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 add_library(coney_core STATIC
     camera/camera_lens.cpp
+    console/arg_types.cpp
+    console/catalog.cpp
+    console/command_queue.cpp
+    console/command_spec.cpp
+    console/commands_table.cpp
+    console/console.cpp
+    console/owned_spec.cpp
+    console/registry.cpp
+    console/terminal.cpp
+    console/tokenizer.cpp
     core/assert.cpp
     core/chunk_stacks.cpp
     core/chunk_system.cpp

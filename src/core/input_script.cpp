@@ -178,6 +178,8 @@ std::string parseArguments(std::span<const std::string_view> args, InputEvent& e
     case InputEvent::Action::Connect:
     case InputEvent::Action::Disconnect:
         return args.empty() ? std::string() : "takes no arguments";
+    case InputEvent::Action::Console:
+        return "unknown action";
     }
     return "unknown action";
 }
@@ -328,6 +330,8 @@ void ScriptedInput::apply(const InputEvent& event) {
         break;
     case InputEvent::Action::Disconnect:
         port.connected = false;
+        break;
+    case InputEvent::Action::Console:
         break;
     }
 }
