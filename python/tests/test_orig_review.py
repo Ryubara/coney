@@ -659,3 +659,61 @@ def test_the_normal_form_of_a_body_drops_its_own_qualifier_and_name_only() -> No
     assert hash_of("ai::Mind", "think", "return Mind::kPatience + a;") == same
     assert hash_of("Mind", "think", "return Mind::kPatience + a + 1;") != same
     assert hash_of("Mind", "think", "return Other::kPatience + a;") != same
+
+
+def moved_hash_of(scope: str, name: str, body: str) -> str:
+    """The moved hash of `scope::name` defined with `body`, tagged `@orig 0x00100010`."""
+    text = f"/// @orig 0x00100010 Think (Brain.cpp)\nint {scope}::{name}(int a) {{\n{body}\n}}\n"
+    (unit,) = orig_review.units_from({"src/ai/x.cpp": text})
+    return unit.moved_sha256
+
+
+def test_the_normal_form_of_a_body_leaves_a_literal_as_it_is() -> None:
+    """A literal is data, not a name: a message that says `Brain::think` and then `Mind::think` is another message."""
+    same = moved_hash_of("Brain", "think", 'return log("Brain::think failed", a);')
+    assert moved_hash_of("Mind", "think", 'return log("Brain::think failed", a);') == same
+    assert moved_hash_of("Mind", "think", 'return log("Mind::think failed", a);') != same
+    assert moved_hash_of("Mind", "think", 'return log("think failed", a);') != same
+    raw = moved_hash_of("Brain", "think", 'return log(R"(Brain::go)", a);')
+    assert moved_hash_of("Mind", "think", 'return log(R"(go)", a);') != raw
+    assert moved_hash_of("Mind", "think", 'return log(R"(Brain::go)", a);') == raw
+    assert moved_hash_of("Mind", "think", "return a + sizeof('Brain::');") != moved_hash_of(
+        "Brain", "think", "return a + sizeof('');"
+    )
+    # The name stands once in a literal and then in the declarator's place: the literal is not taken for the name.
+    assert moved_hash_of("Mind", "ponder", 'return log("think", a);') == moved_hash_of(
+        "Brain", "think", 'return log("think", a);'
+    )
+
+
+def test_a_function_whose_message_changed_with_its_class_is_a_changed_function(repo: Path) -> None:
+    """The rename of the class must not rewrite the text a function logs."""
+    git(repo, "checkout", "-q", "-b", "message")
+    cpp = repo / "src/ai/brain.cpp"
+    cpp.write_text(
+        cpp.read_text(encoding="utf-8").replace(
+            "return hunger > 3 ? 1 : 0;", 'return hunger > 3 ? log("Brain::think failed") : 0;'
+        ),
+        encoding="utf-8",
+    )
+    base = commit_all(repo, "a message")
+    tip = move_brain(repo, branch="message-move")
+    stamp = orig_review.pr_stamp(repo, tip, base)
+    # The rename rewrote the message too (move_brain replaces every `Brain::`), so it is not the same message.
+    assert [f["coney"] for f in stamp["functions"]] == ["Mind::think"]
+    assert [m["coney"] for m in stamp["moved"]] == ["Mind::wait"]
+
+
+def test_two_new_functions_with_the_code_of_one_gone_function_share_one_move() -> None:
+    """The first takes the gone function's compare; the second is new code that owes its own."""
+    body = "return a > 3 ? 1 : 0;"
+
+    def text(scope: str) -> str:
+        return f"/// @orig 0x00100010 Think (Brain.cpp)\nint {scope}::think(int a) {{\n    {body}\n}}\n"
+
+    before = orig_review.units_from({"src/ai/brain.cpp": text("Brain")})
+    after = orig_review.units_from({"src/ai/mind.cpp": text("Mind"), "src/ai/psyche.cpp": text("Psyche")})
+    found = orig_review.moves(before, after)
+    assert [m.unit.key for m in found.moved] == ["Mind::think(int)"]
+    assert [u.key for u in found.changed] == ["Psyche::think(int)"]
+    assert found.removed == ()

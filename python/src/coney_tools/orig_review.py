@@ -229,14 +229,26 @@ def _moved_hash(lines: list[str], function: Function) -> str:
     class (`ns::Mind::`, `Mind::`) is dropped wherever it stands, and the function's name is dropped where it first
     stands (its declarator), so a function that moved to another class, a renamed class, another name or another file
     keeps the hash while its code does not change. A name the code uses for something else (`Other::kStep`, a call)
-    still counts, so a moved body that now reads other things has another hash."""
+    still counts, so a moved body that now reads other things has another hash. A string, raw string or character
+    literal is data, not a name: it is left as it is, so a message that names the old class is another message."""
     text = code_text("\n".join(lines[function.line - 1 : function.line - 1 + function.lines]))
+    # Each literal stands behind a mask (no word or colon in it) while the names are rewritten, then comes back.
+    literals: list[str] = []
+
+    def mask(match: re.Match[str]) -> str:
+        if match.lastgroup in ("raw", "string", "char"):
+            literals.append(match.group(0))
+            return f"\x02{len(literals) - 1}\x03"
+        return match.group(0)
+
+    text = "".join(mask(m) for m in _TOKEN.finditer(text))
     if function.scope:
         owner = re.escape(function.scope.rsplit("::", 1)[-1])
         text = re.sub(rf"(?<![\w:])(?:\w+::)*{owner}::", "", text)
     name = function.name.lstrip("~")
     word = rf"\b{re.escape(name)}\b" if re.fullmatch(r"\w+", name) else re.escape(name)
     text = re.sub(word, _NAME_SLOT, text, count=1)
+    text = re.sub(r"\x02(\d+)\x03", lambda m: literals[int(m.group(1))], text)
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 

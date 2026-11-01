@@ -527,3 +527,15 @@ def test_bad_cache_data_is_a_cache_miss_not_a_crash(tmp_path: Path, stored: Any)
     cache.write_text(json.dumps(stored), encoding="utf-8")
     with pytest.raises(ConfigError, match="cannot read the open issues"):
         issue_impact_open.read_open_issues(cache, RULES, FakeGh([], fail=True), NOW)
+
+
+def test_the_address_of_a_function_that_only_moved_is_still_touched(repo: Path) -> None:
+    """A moved function keeps its compare, but an issue that cites its address is still about code that moved."""
+    git(repo, "checkout", "-q", "main")
+    git(repo, "checkout", "-q", "-b", "moved-demo")
+    for name in ("src/ai/brain.h", "src/ai/brain.cpp"):
+        text = (repo / name).read_text(encoding="utf-8")
+        put(repo, name, text.replace("class Brain", "class Mind").replace("Brain::", "Mind::"))
+    commit_all(repo, "core: Rework the brain's name")
+    touched = issue_impact.gather(repo, "main", "moved-demo")
+    assert "Mind::think" in touched.addresses["0x001490b8"] and "moved" in touched.addresses["0x001490b8"]

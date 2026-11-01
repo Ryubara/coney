@@ -49,7 +49,15 @@ move) has all of:
   [body hash](#body-hash) of the definition with every `Scope::` that leads to its own class dropped wherever it stands
   (`ns::Mind::`, `Mind::`, also inside the body: `Mind::kStep`) and its own name dropped at its declarator. A body that
   now calls, reads or names anything else (`Other::kStep`, another function, a changed literal or operator) has another
-  moved hash and stays changed.
+  moved hash and stays changed. A string, raw string or character literal is data and is left as it is: a message
+  `"Brain::think failed"` that becomes `"Mind::think failed"` is a changed literal, not a rewritten name.
+
+The two hashes read **names as text**, not as what they resolve to, so a program cannot tell some changes from a move:
+a recursive call left under the function's old name (`think` after a rename to `ponder`), and an unqualified call or
+member that now resolves in another class, leave the hash as it was and read as a move. The reviewer reads the diff of
+a moved function's two copies for that, as for any change of a name, and the compare is run again when it shows one.
+When two new functions have the code of one gone function, the first takes its study and compare and the second stays
+changed.
 
 A moved function is in neither `functions` nor `removed` of `review-stamp --branch`, so `orig check-review` and
 `task review` ask for no verdict and no `compared` stamp of it, and `pr verify` lists it as a note
