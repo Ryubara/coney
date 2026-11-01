@@ -295,9 +295,9 @@ keeps the places full ([Keeping the places full](slot-fill.md)) from the open is
 | Is | What | Its rule (each of the first five needs a held claim, a fix its parent's, and a place) |
 | --- | --- | --- |
 | **Reimplementation** | An `engineer` or `tooling` agent on a task whose issues are labelled none of `studio`, `networking` and `renderer`: game issues and pull requests outside Coney Studio, networking and the renderer | At least one game (`feature`) unit always (`min: 1`, `min_kinds`): while none runs, one place is kept for it, which Studio and tooling or docs units may not take. No cap but the machine's |
-| **Fix** | An agent on a `kind: fix` task, made by `task create --fix-of` after a CI check failed on the pull request of a task that passed Review | One at a time (`max: 1`), oldest failure first; one place is kept for it (`min: 1`), so a full machine still takes a fix, except one with a single build slot |
+| **Fix** | An agent on a `kind: fix` task, made by `task create --fix-of` after a CI check failed on the pull request of a task that passed Review | One at a time (`max: 1`), oldest failure first; one place is kept for it (`min: 1`), so a full machine still takes a fix, except one with a single build slot; the place [lapses](slot-fill.md#lapse) while no fix is queued and no pull request fails (`tasks.start.slots.lapse`) |
 | **Studio** | A task whose issue carries the `studio` label (`claims.studio_label`): Coney Studio research and development, the sub-issues of #1054 and the Studio build issues | As many as the machine holds once the kept places are set aside, on one of the models of [Which model](#models) |
-| **Networking** | A task whose issue carries the `networking` label (`claims.networking_label`): the co-op plan in [multiplayer](multiplayer.md#plan), network ids, snapshots, interpolation, the level-load barrier | One at a time (`max: 1`) and always one (`min: 1`): while none runs, one place is kept for it, so a full machine still takes it. Any model, as the reimplementation track; its claim is outside the open-claims limit ([Claiming an issue](issues.md#claiming)) |
+| **Networking** | A task whose issue carries the `networking` label (`claims.networking_label`): the co-op plan in [multiplayer](multiplayer.md#plan), network ids, snapshots, interpolation, the level-load barrier | One at a time (`max: 1`) and always one (`min: 1`): while none runs, one place is kept for it, so a full machine still takes it; the place [lapses](slot-fill.md#lapse) while no networking task or issue can start. Any model, as the reimplementation track; its claim is outside the open-claims limit ([Claiming an issue](issues.md#claiming)) |
 | **Renderer** | A task whose issue carries the `renderer` label (`claims.renderer_label`): the SDL3 GPU migration (design #883), Coney's own renderer on SDL3's GPU API with librw kept only for reading data | As networking: one at a time (`max: 1`) and always one (`min: 1`), with its place kept, any model, and its claim outside the open-claims limit. An issue with `networking` and `renderer` is a networking unit; with `renderer` and `studio`, a renderer one |
 | **Workflow unit** | A task whose issue carries the `workflow` label (`claims.exempt_label`) now: a unit that builds the new workflow | A held claim, no place, while `tasks.start.slots.exempt_workflow` is on; **the cutover turns it off** (a test fails if `claims.adopt` or `claims.release` is on while it is still on) and such units count like the rest |
 | **Reviewer**, **helper** | A `reviewer` ([Task review](review/task.md)); an `Explore`, `Plan` or `claude-code-guide` agent, a `fork`, and any agent an engineer starts for its own task (no cap) | No claim, no place, no `Task id:` line |
@@ -612,13 +612,9 @@ uv run --project python coney-tools build --agent <id> --preset dev --test -R <r
 - **A second configuration** (a Clang build beside the default compiler's) is `--build-dir build/clang --env
   CC=clang-19 --env CXX=clang++-19` with `--configure-only`; never a raw `cmake`.
 - **Exit code 75 means "still queued".** The command left the queue: its wait reached `--max-wait`, or the wait the
-  queue still expects plus the step would pass the time budget (`--budget`), in which case it leaves at its first
-  look. It said its position and the numbers. Do other work and run the same command again later, or detach it and
-  stop ([Build waits](#build-waits)); do not loop on it in one call. Run again within the hour, it keeps the place it
-  had rather than joining at the back ([The queue](coney-tools-build.md#build)).
-- **A test run holds no build slot.** Once the compile ends its slot goes back to the queue; a test run too big for the
-  fast lane (the whole suite, or many or long tests) waits for a check slot instead ([Check
-  slots](coney-tools-build.md#check-slots)).
+  queue still expects plus the step would pass the time budget (`--budget`), in which case it leaves at its first look.
+  It said its position and the numbers. Do other work and run the same command again later, or detach it and stop
+  ([Build waits](#build-waits)); do not loop on it in one call. Run again within the hour, it keeps its place.
 - **`--priority`** goes ahead of the queue. The coordinator uses it for a build somebody is waiting on; an agent does
   not set it on its own.
 - **`build status`** shows who holds the slots and who waits. A crashed run is taken over by the next claimer, which

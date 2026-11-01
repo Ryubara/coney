@@ -1265,3 +1265,13 @@ def test_a_rerun_of_an_adopted_start_changes_nothing(world: World) -> None:
 def test_the_command_line_has_adopt() -> None:
     assert parse("start", "10-fix").adopt is False
     assert parse("start", "10-fix", "--adopt").adopt is True
+
+
+def test_task_start_follows_a_lapsed_kept_place(world: World) -> None:
+    # Issue 1370: the guard and `task start` read the fill check's record of the places that lapsed.
+    for number in range(30, 33):
+        plant_unit(world, f"{number}-x")
+    world.ready()
+    task_slots.write_lapses(world.scratch, world.clock.now(), {"fix": "nothing to fix"})
+    assert world.run() == 0
+    assert "slots: 4 of 4 places on this machine in use" in world.said()

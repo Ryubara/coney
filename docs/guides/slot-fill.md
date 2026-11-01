@@ -29,6 +29,29 @@ renderer only renderer work, the one for game work only game work. Most
 urgent first is `tasks.start.fill.priority_order`: `P-critical` first, and while an unclaimed `P-critical` issue is
 ready only it is startable, as the claim Action demands ([Claiming](issues.md#claiming)).
 
+## A kept place lapses while its track has nothing to start {#lapse}
+
+A place a track keeps is for work that can start. On 2026-11-01 every networking issue was `S-blocked`, yet the place
+kept for networking stayed kept for hours, so two fix tasks could not start while the machine sat at 30% (issue
+1370). So **a kept place of a track in `tasks.start.slots.lapse.tracks` (the fix, networking and renderer tracks)
+lapses while that track has nothing to start**, and is open to any track meanwhile:
+
+- **The check judges it.** Each run reads the work for every kept place, not only the free ones: for networking and the
+  renderer a claimed task of the track with no agent, or a ready issue of the track that is not blocked; for the fix
+  track a queued fix task, or a failed pull request without a fix. A kept place with none of these lapses, and the
+  check says so (`the place kept for networking lapsed, so it is open: ...`) and counts it as open. A track whose work
+  could not be read (GitHub down) keeps its place. The place kept for game work does not lapse: the reimplementation
+  track is not in the list.
+- **The check records it**, in `slot-lapses.json` in the scratch folder, rewritten whole at each run that judges, so
+  the place is kept again at the first run that finds the track's work (a blocker merged, a pull request failed).
+- **`task start` and the Agent guard follow the record** while it is younger than `tasks.start.slots.lapse.minutes`
+  (15): the lapsed place does not count against another track's start, and the start's line says so. An older record,
+  a missing one or a damaged one lapses nothing, so the rule never opens a place the check did not see empty. `task
+  slots` lists the lapsed places.
+
+A unit of the track that comes back finds the place taken until one frees: a place freed is kept for it again. Add the
+reimplementation track to the list to let the place kept for game work lapse too; that is a change of the conventions.
+
 **The start gate** is a key the tool reads (`tasks.start.fill.gate` in
 [.github/conventions.yml](repo:.github/conventions.yml)): with `enabled`, of the ready issues only those with a gate
 label, the listed issue numbers and `P-critical` issues are eligible. It carried the "workflow first" rule of
@@ -52,7 +75,8 @@ check says so, and lists the game or Studio work behind it instead.
   started then.
 - **The place kept for game work cannot take Coney Studio, networking, renderer, tooling or docs work**, and no game
   (`feature`) issue can start; likewise the place kept for networking cannot take anything but a networking issue, and
-  the one kept for the renderer anything but a renderer issue.
+  the one kept for the renderer anything but a renderer issue, while their tracks have work that can start (with none
+  the place [lapses](#lapse) and is open).
 - **The networking or renderer track is full**: a unit of it runs, and the track holds one.
 - **Free disk is below the floor** (`workspace.disk_min_free_gb`) on any [watched drive](workspace.md#watched-drives):
   a new unit builds, and a build folder is large. The drives are the workspace's, the build root's (it fills first

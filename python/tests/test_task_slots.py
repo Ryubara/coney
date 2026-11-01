@@ -2011,3 +2011,53 @@ def test_the_json_report_leaves_out_a_fix_whose_pull_request_merged(
     scene.github.link_pr(8, 900, state="closed")
     code, out = run(scene, monkeypatch, capsys, "--json")
     assert code == 0 and json.loads(out)["queued_fixes"] == []
+
+
+# --- a kept place lapses while its track has nothing to start (issue 1370) -------------------------------------------
+
+
+def lapse(scene: Scene, minutes_ago: float = 1, **lapsed: str) -> None:
+    """The fill check's record that the kept places of `lapsed` lapsed, made `minutes_ago`."""
+    task_slots.write_lapses(scene.scratch, scene.now() - timedelta(minutes=minutes_ago), lapsed)
+
+
+def test_a_lapsed_networking_place_is_open_to_studio(scene: Scene) -> None:
+    committed_networking(scene)
+    scene.unit("s-one", kind="tooling", studio=True)
+    scene.task("s-two", kind="tooling", studio=True)
+    assert not admit_studio(scene, "s-two").allowed  # the networking place is kept
+    lapse(scene, networking="no networking task or issue can start")
+    verdict = admit_studio(scene, "s-two")
+    assert verdict.allowed and "the place kept for networking lapsed (no networking task" in verdict.message
+
+
+def test_a_lapse_record_older_than_its_minutes_lapses_nothing(scene: Scene) -> None:
+    committed_networking(scene)
+    scene.unit("s-one", kind="tooling", studio=True)
+    scene.task("s-two", kind="tooling", studio=True)
+    minutes = scene.conventions.tasks.start.slots.lapse_minutes
+    lapse(scene, minutes_ago=minutes + 1, networking="no networking task or issue can start")
+    assert not admit_studio(scene, "s-two").allowed
+    assert task_slots.read_lapses(scene.scratch, scene.conventions, scene.now()) == {}
+
+
+def test_only_the_listed_tracks_lapse(scene: Scene) -> None:
+    lapse(scene, reimplementation="no game work", fix="nothing to fix")
+    assert task_slots.read_lapses(scene.scratch, scene.conventions, scene.now()) == {"fix": "nothing to fix"}
+
+
+def test_a_damaged_lapse_record_lapses_nothing(scene: Scene) -> None:
+    scene.scratch.mkdir(parents=True, exist_ok=True)
+    (scene.scratch / task_slots.LAPSE_FILE).write_text("{not json", encoding="utf-8")
+    assert task_slots.read_lapses(scene.scratch, scene.conventions, scene.now()) == {}
+
+
+def test_the_report_says_which_kept_places_lapsed(scene: Scene) -> None:
+    lapse(scene, fix="nothing to fix")
+    lines = task_slots.report(
+        scene.scan(),
+        scene.conventions,
+        scene.build_slots,
+        task_slots.read_lapses(scene.scratch, scene.conventions, scene.now()),
+    )
+    assert "the place kept for fix has lapsed, open to any track: nothing to fix" in lines

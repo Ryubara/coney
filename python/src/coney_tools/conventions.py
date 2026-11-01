@@ -1128,6 +1128,10 @@ class TaskSlots:
     agent_types: tuple[str, ...]
     #: How long the guard keeps the slot of an agent it let start, while the agent has not yet run `task start`.
     reserve_minutes: int
+    #: The tracks whose kept places (`min`) lapse while the fill check finds nothing of theirs to start, and how many
+    #: minutes its record of that holds for `task start` and the Agent guard (docs/guides/slot-fill.md#lapse).
+    lapse_tracks: tuple[str, ...] = ()
+    lapse_minutes: int = 15
 
 
 @dataclass(frozen=True)
@@ -2563,7 +2567,16 @@ def _read_tasks(data: object, where: str) -> Tasks:
     slots = _table(
         start["slots"],
         slots_where,
-        ("tracks", "per_build_slot", "enforce", "exempt_workflow", "agent_types", "reserve_minutes"),
+        ("tracks", "per_build_slot", "enforce", "exempt_workflow", "agent_types", "reserve_minutes", "lapse"),
+    )
+    lapse_where = _at(slots_where, "lapse")
+    lapse = _table(slots["lapse"], lapse_where, ("tracks", "minutes"))
+    lapse_tracks = _texts(lapse["tracks"], _at(lapse_where, "tracks"), empty_ok=True)
+    _names_in(
+        lapse_tracks,
+        ("reimplementation", "fix", "studio", "networking", "renderer"),
+        _at(lapse_where, "tracks"),
+        "a track",
     )
     per_build_slot = _count(slots["per_build_slot"], _at(slots_where, "per_build_slot"))
     tracks = _read_tracks(slots["tracks"], _at(slots_where, "tracks"), per_build_slot)
@@ -2589,6 +2602,8 @@ def _read_tasks(data: object, where: str) -> Tasks:
                 exempt_workflow=_flag(slots["exempt_workflow"], _at(slots_where, "exempt_workflow")),
                 agent_types=_texts(slots["agent_types"], _at(slots_where, "agent_types")),
                 reserve_minutes=_count(slots["reserve_minutes"], _at(slots_where, "reserve_minutes")),
+                lapse_tracks=lapse_tracks,
+                lapse_minutes=_count(lapse["minutes"], _at(lapse_where, "minutes")),
             ),
             fill=_read_fill(start["fill"], _at(start_where, "fill")),
         ),

@@ -4,6 +4,7 @@ the work that may take one. Split from `slot_fill.py`, which decides from them."
 
 from __future__ import annotations
 
+from collections.abc import Collection
 from dataclasses import dataclass
 
 from coney_tools import task_slots
@@ -26,15 +27,27 @@ class Free:
     open: int
 
 
-def free_places(current: task_slots.Scan, conventions: Conventions, build_slots: int) -> Free:
-    """Which places of the machine are free now, by the rule of `task_slots.room`: a track that runs fewer than its
-    `min` units that fill it keeps the difference, and the rest are open."""
+#: The tracks whose kept places the check fills (Studio keeps none).
+KEEPING = ("reimplementation", "fix", "networking", "renderer")
+
+
+def kept_places(current: task_slots.Scan, conventions: Conventions) -> dict[str, int]:
+    """The places each track keeps now, before any lapses: its `min` less its units that fill it, never below 0."""
     tracks = conventions.tasks.start.slots.tracks
-    total = max(task_slots.machine_limit(conventions, build_slots) - len(current.holders), 0)
-    kept = {
+    return {
         name: max(tracks.of(name).min - task_slots.filling_count(current.holders, name, conventions), 0)
-        for name in ("reimplementation", "fix", "networking", "renderer")
+        for name in KEEPING
     }
+
+
+def free_places(
+    current: task_slots.Scan, conventions: Conventions, build_slots: int, lapsed: Collection[str] = ()
+) -> Free:
+    """Which places of the machine are free now, by the rule of `task_slots.room`: a track that runs fewer than its
+    `min` units that fill it keeps the difference, unless its kept place lapsed (`lapsed`: it has nothing to start),
+    and the rest are open."""
+    total = max(task_slots.machine_limit(conventions, build_slots) - len(current.holders), 0)
+    kept = {name: 0 if name in lapsed else places for name, places in kept_places(current, conventions).items()}
     game = min(kept["reimplementation"], total)
     fix = min(kept["fix"], total - game)
     networking = min(kept["networking"], total - game - fix)

@@ -358,9 +358,15 @@ def _run_slots(
         if args.json:
             shown = task_slots.as_json(current, conventions, build_slots)
             shown["waivers"] = [slot_waivers.as_json(waiver) for waiver in slot_waivers.active_waivers(waivers, now())]
+            shown["lapsed"] = task_slots.read_lapses(scratch, conventions, now())
             print(json.dumps(shown, indent=2))
         else:
-            lines = [*task_slots.report(current, conventions, build_slots), *slot_waivers.report(waivers, now())]
+            lines = [
+                *task_slots.report(
+                    current, conventions, build_slots, task_slots.read_lapses(scratch, conventions, now())
+                ),
+                *slot_waivers.report(waivers, now()),
+            ]
             print("\n".join(lines))
         return 0
     brief = ""

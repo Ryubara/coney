@@ -460,14 +460,18 @@ def fill_check(
     networking_issues = {card.issue for card in mine if card.networking}
     renderer_issues = {card.issue for card in mine if card.renderer}
     reasons: list[str] = []
+    # The places each track keeps now, before any lapses: the work is read for all of them, so a kept place whose
+    # track has nothing to start can lapse and open to the rest (tasks.start.slots.lapse).
+    kept = places.kept_places(current, conventions)
     # Work for the kept and open places: a claimed task with no agent first, then the ready issues by priority.
-    wants = free.game + free.open + free.networking + free.renderer
+    wants = free.game + free.open + free.networking + free.renderer + kept["networking"] + kept["renderer"]
     waiting = waiting_tasks(scratch, conventions, current, claimed, now) if wants else []
     # A claimed workflow task would hold no place once it runs, so it is not work for a free one.
     exempt_workflow = conventions.tasks.start.slots.exempt_workflow
     placeless = {card.issue for card in mine if exempt_workflow and card.in_workflow}
     waiting = [task for task in waiting if not placeless.intersection(task.issues)]
     work = [_game_work(task, studio_issues, networking_issues, renderer_issues) for task in waiting]
+    issues_read = False
     if wants:
         try:
             analysis = analyse_issues(
@@ -475,14 +479,16 @@ def fill_check(
                 counted_claims(mine),
                 conventions,
                 sources,
-                max(free.game + free.open - sum(1 for item in work if item.track not in ("networking", "renderer")), 0),
+                # Every free place may be open once a kept one lapses, so enough work for all of them is looked for.
+                max(free.total - sum(1 for item in work if item.track not in ("networking", "renderer")), 0),
                 max(
                     free.game - sum(1 for item in work if places.fills_game_place(item.kind, item.track, conventions)),
                     0,
                 ),
-                max(free.networking - sum(1 for item in work if item.track == "networking"), 0),
-                max(free.renderer - sum(1 for item in work if item.track == "renderer"), 0),
+                max(kept["networking"] - sum(1 for item in work if item.track == "networking"), 0),
+                max(kept["renderer"] - sum(1 for item in work if item.track == "renderer"), 0),
             )
+            issues_read = True
         except ConfigError as error:
             warnings.append(f"the ready issues could not be read ({error})")
             analysis = Analysis((), ())
@@ -490,13 +496,15 @@ def fill_check(
         reasons += analysis.reasons
         work += [_issue_work(issue, conventions) for issue in analysis.eligible]
     work_fix: list[str] = []
-    if free.fix:
+    pulls_read = False
+    if kept["fix"]:
         work_fix += [f"fix task {name} is queued; start its agent (oldest first)" for name in current.queued_fixes]
         fix_names = [holder.task for holder in current.held("fix")] + list(current.queued_fixes)
         try:
             pulls = uncovered_pulls(
                 sources.failed_pulls(), _fix_issues(scratch, conventions, fix_names), holds or [], now
             )
+            pulls_read = True
         except ConfigError as error:
             pulls = []
             warnings.append(f"the pull requests could not be read ({error})")
@@ -505,8 +513,12 @@ def fill_check(
             f"`task create --fix-of <issue>`, then start its agent"
             for pull in pulls
         ]
-        if not work_fix:
-            reasons.append("no open pull request has a failed required check without a fix unit")
+    lapsed = _lapses(conventions, kept, work, work_fix, issues_read, pulls_read)
+    task_slots.write_lapses(scratch, now, lapsed)
+    reasons += [f"the place kept for {track} lapsed, so it is open: {why}" for track, why in lapsed.items()]
+    free = places.free_places(current, conventions, build_slots, lapsed)
+    if free.fix and not work_fix:
+        reasons.append("no open pull request has a failed required check without a fix unit")
     # The kept game place takes the first game work of a kind that fills it (`feature`), the one kept for networking
     # the first networking work, the one kept for the renderer the first renderer work; every open place, the next work
     # in order that is neither (their tracks hold at most `max` units, so they never take an open place).
@@ -552,6 +564,7 @@ def fill_check(
         "there is a reason (docs/guides/slot-fill.md).",
         f"Now: {summary}.",
     ]
+    lines += [f"The place kept for {track} lapsed, so it is open: {why}." for track, why in lapsed.items()]
     if game_work:
         lines.append(
             f"Start now, for the {free.game} place(s) kept for game work (a `feature` task), most urgent first:"
@@ -578,6 +591,35 @@ def fill_check(
     lines += [f"waiver #{waiver.id} ended: {waiver.ended}" for waiver in ended]
     lines.append(f"A reason to leave a place free is a waiver (logged, expiring): {waiver_hint(conventions)}")
     return Check(True, "\n".join(lines), tuple(warnings))
+
+
+def _lapses(
+    conventions: Conventions,
+    kept: dict[str, int],
+    work: list[places.Work],
+    work_fix: list[str],
+    issues_read: bool,
+    pulls_read: bool,
+) -> dict[str, str]:
+    """The tracks of `tasks.start.slots.lapse.tracks` that keep a place now and have nothing to start, each with why:
+    for the fix track no queued fix and no failed pull request without one, for another track no claimed task and no
+    ready, unblocked issue of its own. A track whose work could not be read keeps its place (a GitHub that cannot be
+    read lapses nothing)."""
+    lapsed: dict[str, str] = {}
+    for track in conventions.tasks.start.slots.lapse_tracks:
+        if not kept.get(track):
+            continue
+        if track == "fix":
+            if pulls_read and not work_fix:
+                lapsed[track] = (
+                    "no fix task is queued and no open pull request has a failed required check without a fix unit"
+                )
+        elif issues_read and track == "reimplementation":
+            if not any(places.fills_game_place(item.kind, item.track, conventions) for item in work):
+                lapsed[track] = "no game (`feature`) task or issue can start"
+        elif issues_read and not any(item.track == track for item in work):
+            lapsed[track] = f"no {track} task or issue can start (none is claimed and waiting, ready and unblocked)"
+    return lapsed
 
 
 def _running_waivers(

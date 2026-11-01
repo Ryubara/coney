@@ -67,6 +67,8 @@ REFUSED = 3
 #: The reservation file in a task's scratch folder, and its format version.
 RESERVATION_FILE = "slot.json"
 VERSION = 1
+#: The fill check's record of the kept places that lapsed (their track had nothing to start), in the scratch folder.
+LAPSE_FILE = "slot-lapses.json"
 #: The lock that makes "count, then reserve" one step when several Agent calls arrive together.
 LOCK_FILE = ".slots.lock"
 #: How long a lock may be held before it is taken as left by a crashed process, and how long a caller waits for it:
@@ -551,14 +553,55 @@ def filling_count(holders: Iterable[Holder], track: str, conventions: Convention
     return sum(1 for holder in holders if holder.track == track and rule.fills_min(holder.kind))
 
 
-def room(current: Scan, track: str, task: str, conventions: Conventions, build_slots: int, kind: str = "") -> Room:
+def write_lapses(scratch: Path, now: datetime, lapsed: dict[str, str]) -> None:
+    """Record the fill check's judgement of the kept places: `lapsed` maps each track whose kept place lapsed (it has
+    nothing to start) to why. Written whole each time the check judges, so a track that has work again keeps its place
+    at once; a file that cannot be written leaves the old record to age out."""
+    data = {"v": VERSION, "at": iso_time(now), "lapsed": lapsed}
+    try:
+        scratch.mkdir(parents=True, exist_ok=True)
+        temporary = scratch / f"{LAPSE_FILE}.{os.getpid()}.tmp"
+        temporary.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8", newline="\n")
+        temporary.replace(scratch / LAPSE_FILE)
+    except OSError:
+        return
+
+
+def read_lapses(scratch: Path, conventions: Conventions, now: datetime) -> dict[str, str]:
+    """The tracks whose kept place lapsed, with why, from the fill check's record while it is younger than
+    `tasks.start.slots.lapse.minutes` and only for the tracks of `lapse.tracks`. A record that is missing, old, from a
+    later clock or unreadable lapses nothing: every track keeps its place, as before the rule."""
+    slots = conventions.tasks.start.slots
+    try:
+        data = json.loads((scratch / LAPSE_FILE).read_text(encoding="utf-8"))
+        at = parse_time(str(data["at"]))
+        lapsed = data["lapsed"]
+        if data["v"] != VERSION or not isinstance(lapsed, dict):
+            return {}
+    except (OSError, ValueError, KeyError, TypeError):
+        return {}
+    if not timedelta(0) <= now - at <= timedelta(minutes=slots.lapse_minutes):
+        return {}
+    return {str(track): str(why) for track, why in lapsed.items() if track in slots.lapse_tracks}
+
+
+def room(
+    current: Scan,
+    track: str,
+    task: str,
+    conventions: Conventions,
+    build_slots: int,
+    kind: str = "",
+    lapsed: Collection[str] = (),
+) -> Room:
     """Whether a unit of `track` (the task `task` of this `kind`, which is left out of the count) fits beside what
     `current` holds.
 
     It fits while its track is under its own `max` and the machine (`machine_limit`) has a place once the `min`
-    places of every track that runs fewer than its `min` are set aside (`tasks.start.slots.tracks`). A track's own
-    place is set aside from a unit that would not fill it (a tooling unit in the reimplementation track), so such
-    units cannot take the last place game work keeps."""
+    places of every track that runs fewer than its `min` are set aside (`tasks.start.slots.tracks`), except the
+    tracks in `lapsed` (`read_lapses`: the fill check found nothing of theirs to start), whose places are open. A
+    track's own place is set aside from a unit that would not fill it (a tooling unit in the reimplementation track),
+    so such units cannot take the last place game work keeps."""
     tracks = conventions.tasks.start.slots.tracks
     others = [holder for holder in current.holders if holder.task != task]
     counts = {name: sum(1 for holder in others if holder.track == name) for name in TRACKS}
@@ -566,7 +609,9 @@ def room(current: Scan, track: str, task: str, conventions: Conventions, build_s
     kept = {
         name: tracks.of(name).min - filling[name]
         for name in TRACKS
-        if filling[name] < tracks.of(name).min and (name != track or not tracks.of(name).fills_min(kind))
+        if filling[name] < tracks.of(name).min
+        and name not in lapsed
+        and (name != track or not tracks.of(name).fills_min(kind))
     }
     return Room(
         track=track,
@@ -727,15 +772,23 @@ def admit(
                 f"denied), wait {slots.reserve_minutes} minutes or delete {scratch / named / RESERVATION_FILE} "
                 "(docs/guides/agents.md#slots).\n",
             )
-        fit = room(current, track, named, conventions, build_slots, found.kind)
+        lapsed = read_lapses(scratch, conventions, now)
+        fit = room(current, track, named, conventions, build_slots, found.kind, lapsed)
         if not fit.fits and slots.enforce:
             return Verdict(False, _full(current, fit, found, build_slots, conventions))
-        note = fit.note(named)
+        note = fit.note(named) + _lapse_note(lapsed)
         if not fit.fits:
             note += " (over the limit, which is not enforced: tasks.start.slots.enforce)"
         if reserve:
             write_reservation(scratch / named, found, track, agent_type, now)
         return Verdict(True, note, warning)
+
+
+def _lapse_note(lapsed: dict[str, str]) -> str:
+    """What a start says of the kept places that lapsed, or nothing."""
+    if not lapsed:
+        return ""
+    return "; " + "; ".join(f"the place kept for {track} lapsed ({why})" for track, why in sorted(lapsed.items()))
 
 
 def write_reservation(folder: Path, task: TaskFile, track: str, agent_type: str, now: datetime) -> None:
@@ -851,9 +904,11 @@ def _track_words(conventions: Conventions, track: str) -> str:
     return ", ".join(parts)
 
 
-def report(current: Scan, conventions: Conventions, build_slots: int) -> list[str]:
-    """The lines `task slots` prints: the machine's places, each track with its holders, the units without a place,
-    the queued fixes and the worktrees the count cannot see."""
+def report(
+    current: Scan, conventions: Conventions, build_slots: int, lapsed: dict[str, str] | None = None
+) -> list[str]:
+    """The lines `task slots` prints: the machine's places, each track with its holders, the kept places that lapsed
+    (`read_lapses`), the units without a place, the queued fixes and the worktrees the count cannot see."""
     slots = conventions.tasks.start.slots
     machine = machine_limit(conventions, build_slots)
     lines = [
@@ -870,6 +925,10 @@ def report(current: Scan, conventions: Conventions, build_slots: int) -> list[st
         lines.append("no networking unit is in work: the track keeps one going")
     if not filling_count(current.holders, "renderer", conventions):
         lines.append("no renderer unit is in work: the track keeps one going")
+    lines += [
+        f"the place kept for {track} has lapsed, open to any track: {why}"
+        for track, why in sorted((lapsed or {}).items())
+    ]
     if current.exempt:
         lines.append(f"no place (workflow units until the cutover): {', '.join(current.exempt)}")
     if current.unchecked:
