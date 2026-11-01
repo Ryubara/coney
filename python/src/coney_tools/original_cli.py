@@ -13,9 +13,19 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-from coney_tools import build_claims, fails_first, orig_compare, orig_study, research_where, stamps, unit
+from coney_tools import (
+    build_claims,
+    detached_runs,
+    fails_first,
+    fails_first_detach,
+    orig_compare,
+    orig_study,
+    research_where,
+    stamps,
+    unit,
+)
 from coney_tools.config import find_repo_root
-from coney_tools.conventions import Conventions, load_conventions
+from coney_tools.conventions import Conventions, Stamps, load_conventions
 from coney_tools.progress_research import DEFAULT_GHIDRA_URL, http_fetch
 from coney_tools.unit_record import log_task_of
 
@@ -86,7 +96,9 @@ def add_commands(commands: Any) -> None:
             "--fix-commit (they must pass), restoring the branch afterwards. With --keeps, a test that guards a "
             "refactor must pass on both and is stamped `keeps`. With --none REASON, stamps that the task "
             "has no such test (docs, tooling) and runs nothing. With --accept-change REASON, the coordinator records "
-            "its yes to a test that had to change between the two commits, and runs nothing."
+            "its yes to a test that had to change between the two commits, and runs nothing. With --detach the "
+            "builds and test runs happen in a process of their own with no time budget (for a build that would not "
+            "fit the 45 minutes of a call you wait on) and the call returns at once; --result shows how it went."
         ),
     )
     first.add_argument(
@@ -110,6 +122,19 @@ def add_commands(commands: Any) -> None:
         metavar="REASON",
         help="the coordinator only: record that the named tests may change between --test-commit and --fix-commit",
     )
+    first.add_argument(
+        "--detach",
+        action="store_true",
+        help="run apart from this shell with no time budget and return at once: the stamps are written when it ends "
+        "and --result shows the outcome; the worktree is the run's until then",
+    )
+    first.add_argument(
+        "--result",
+        action="store_true",
+        help="print the output and outcome of the task's last --detach run (exit 75 while it runs)",
+    )
+    # Internal: where a --detach run's child records its outcome.
+    first.add_argument("--result-file", type=Path, help=argparse.SUPPRESS)
     _task(first)
 
 
@@ -241,6 +266,17 @@ def _fails_first(
 ) -> int:
     """`orig fails-first`."""
     rules = conventions.stamps
+    if args.result:
+        if args.detach or args.test or args.test_commit or args.fix_commit or args.keeps or args.none is not None:
+            print("orig fails-first: --result goes alone, without --detach, --test, --test-commit or --keeps")
+            return 2
+        if args.accept_change is not None:
+            print("orig fails-first: --result goes alone, without --accept-change")
+            return 2
+        return detached_runs.read(fails_first_detach.KIND, folder.dir)
+    if args.detach and (args.none is not None or args.accept_change is not None):
+        print("orig fails-first: --detach runs the tests; give it without --none or --accept-change")
+        return 2
     if args.none is not None and (args.test or args.test_commit or args.fix_commit or args.keeps):
         print("orig fails-first: --none runs nothing; give it alone, without --test, --test-commit or --keeps")
         return 2
@@ -273,6 +309,43 @@ def _fails_first(
     if agent == "unknown":
         print("orig fails-first: give --agent ID (the build slots need one)")
         return 2
+    if args.detach:
+        return _detach(args, root, rules, folder, agent)
+    if args.result_file is not None:
+        # The child of --detach: the same run, its exit code recorded in the result file however it ends.
+        return detached_runs.child(
+            fails_first_detach.KIND,
+            args.result_file,
+            agent,
+            lambda: _run_tests(args, root, rules, folder, who, agent, detached=True),
+        )
+    return _run_tests(args, root, rules, folder, who, agent, detached=False)
+
+
+def _detach(args: argparse.Namespace, root: Path, rules: Stamps, folder: unit.Unit, agent: str) -> int:
+    """`orig fails-first --detach`: refuse what a run would refuse (and a second detached run), then start the run in a
+    process of its own and return at once (fails_first_detach.py)."""
+    fails_first_detach.refuse_while_running(folder.dir)
+    fails_first.preflight(
+        folder, root, tests=args.test, test_commit=args.test_commit, fix_commit=args.fix_commit, rules=rules
+    )
+    result, _ = fails_first_detach.KIND.files(folder.dir)
+    command = fails_first_detach.child_command(args, unit.task_name(root, args.task), agent, result)
+    return detached_runs.start(fails_first_detach.KIND, folder.dir, command, root, agent)
+
+
+def _run_tests(
+    args: argparse.Namespace,
+    root: Path,
+    rules: Stamps,
+    folder: unit.Unit,
+    who: dict[str, Any],
+    agent: str,
+    *,
+    detached: bool,
+) -> int:
+    """The run itself: the tests on both commits, the stamps and their lines. In the detached child the builds have no
+    time budget (`unattended`)."""
     # Recorded as running for the whole run: between its two builds the worktree holds no build slot, and `workspace
     # clean` must not take its build for idle (build_claims.activity).
     with build_claims.unit_activity(root, agent, "orig fails-first"):
@@ -283,10 +356,11 @@ def _fails_first(
             test_commit=args.test_commit,
             fix_commit=args.fix_commit,
             preset=args.preset,
-            runner=fails_first.build_runner(agent),
+            runner=fails_first.build_runner(agent, unattended=detached),
             rules=rules,
             who=who,
             keeps=args.keeps,
+            detached=detached,
             say=lambda line: print(line, flush=True),
         )
     for stamp in written:

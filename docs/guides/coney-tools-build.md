@@ -279,6 +279,10 @@ program had been given the pid. A pid whose process began at another time is gon
 time is judged by the record's own time: a process that began long after it is a stranger), and a start time that
 cannot be read counts as running.
 
+A process of ours that runs `build` for a detached run of its own (`orig fails-first --detach`, [Fails first](stamps.md#fails-first-detach))
+hands it the internal `--unattended` flag: the build has a detached run's limits (a wait of up to 240 minutes, no budget)
+and is not detached again, so the caller's own record and result stay the one place to look.
+
 **The fast lane.** A small job should not queue behind a full build. Before claiming, the command measures the job.
 For a build: the manifest is brought up to date for real with `ninja build.ninja` (it re-checks the `CONFIGURE_DEPENDS`
 globs, which is cheap, and re-runs CMake only when a CMake file or a glob changed, which the build would do first

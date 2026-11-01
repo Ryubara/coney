@@ -374,6 +374,9 @@ def test_fails_first_holds_the_activity_while_it_runs(space: Space, monkeypatch:
         fix_commit=None,
         agent="a",
         preset="dev",
+        result=False,
+        detach=False,
+        result_file=None,
     )
     conventions = load_conventions(REPO)
     folder = unit.Unit("1-fix", space.root / "scratch" / "1-fix")

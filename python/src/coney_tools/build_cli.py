@@ -181,6 +181,9 @@ def add_parser(groups: Any) -> None:
     # Internal: how --detach starts its child (where its log and result go).
     group.add_argument("--log-file", type=Path, help=argparse.SUPPRESS)
     group.add_argument("--result-file", type=Path, help=argparse.SUPPRESS)
+    # Internal: a run that a detached process of ours waits on (`orig fails-first --detach`), not a caller with a prompt
+    # cache to keep: it has the limits of a --detach run, a long wait and no budget, and is not itself detached.
+    group.add_argument("--unattended", action="store_true", help=argparse.SUPPRESS)
     group.add_argument("-j", "--jobs", type=int, help="parallel jobs (default: the cores divided by the slots)")
     commands = group.add_subparsers(dest="build_command")
     status = commands.add_parser("status", help="who holds the slots (the build lanes), who waits, and stale entries")
@@ -301,8 +304,9 @@ def disc_environment(env: dict[str, str], root: Path) -> tuple[dict[str, str], b
 
 def limits(args: argparse.Namespace) -> tuple[float, float]:
     """The run's (max wait, budget) in minutes: the flags, else the caps, or for a --detach run DETACHED_MAX_WAIT and
-    no budget. Raises ConfigError for a run its caller waits on that asks for more than the caps."""
-    detached = args.detach or args.result_file is not None
+    no budget (so too for `--unattended`, the build run by a detached process of ours). Raises ConfigError for a run its
+    caller waits on that asks for more than the caps."""
+    detached = args.detach or args.result_file is not None or args.unattended
     max_wait = args.max_wait if args.max_wait is not None else (DETACHED_MAX_WAIT if detached else MAX_WAIT_CAP)
     budget = args.budget if args.budget is not None else (0.0 if detached else BUDGET_CAP)
     if not detached and (max_wait > MAX_WAIT_CAP or budget <= 0 or budget > BUDGET_CAP):
@@ -366,6 +370,7 @@ def build_and_test(
         detach=False,
         log_file=None,
         result_file=None,
+        unattended=False,
         jobs=None,
         build_command=None,
     )

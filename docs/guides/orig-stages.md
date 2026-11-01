@@ -11,7 +11,8 @@ step ends. Exit codes: 0 done, 1 refused (the output says what to fix), 2 it can
 uv run --project python coney-tools orig study ADDR [--task T] [--url URL] [--recut] [--print]
 uv run --project python coney-tools orig verify ADDR [--task T] [--url URL]
 uv run --project python coney-tools orig compare ADDR [--task T] [--base REF] [--coney-function KEY] [--carry] [--show]
-uv run --project python coney-tools orig fails-first [--keeps] --test NAME [--test NAME ...] --test-commit SHA [--fix-commit SHA] [--preset P] --agent ID
+uv run --project python coney-tools orig fails-first [--keeps] --test NAME [--test NAME ...] --test-commit SHA [--fix-commit SHA] [--preset P] --agent ID [--detach]
+uv run --project python coney-tools orig fails-first --result
 uv run --project python coney-tools orig fails-first --none REASON
 uv run --project python coney-tools orig fails-first --accept-change REASON --test NAME [--test NAME ...] --test-commit SHA [--fix-commit SHA]
 ```
@@ -31,6 +32,12 @@ uv run --project python coney-tools orig fails-first --accept-change REASON --te
   change or behaviour that already matches) the test must pass on both and the stamp's result is `keeps`. With
   `--accept-change` the coordinator records its yes to a test that had to change between the two commits, and nothing
   runs. [Details](stamps.md#fails-first), [keeps](stamps.md#keeps)
+* `fails-first --detach` is for a build that would not fit the call's 45-minute budget (a commit far out of date at
+  peak load: `build` leaves at its first look with exit 75, and a plain run then says to use `--detach`). It checks the
+  run as usual, then does it all in a process of its own with no time budget (it checks out the test commit and the
+  fix commit, builds and tests each, puts the branch back and writes the stamps, as the agent that started it) and
+  returns at once; `fails-first --result` shows the output and outcome later (exit 75 while it runs). The worktree is
+  the run's until it ends: edit and commit nothing in it. [Details](stamps.md#fails-first-detach)
 
 Every option:
 
@@ -51,5 +58,7 @@ Every option:
 | `fails-first` | `--preset P` | The CMake preset the tests are built with (default `dev`) |
 | `fails-first` | `--agent ID` | Your id for the build slots, as `build --agent` |
 | `fails-first` | `--keeps` | The tests guard a refactor or behaviour Coney already has: each must pass on the test commit and on the fix, unchanged, and is stamped `keeps` (not with `--none` or `--accept-change`); the test commit is never the fix commit ([Keeps](stamps.md#keeps)) |
+| `fails-first` | `--detach` | Run apart from this shell with no time budget and return at once: the stamps are written when it ends and `--result` shows the outcome; the worktree is the run's until then (not with `--none` or `--accept-change`) |
+| `fails-first` | `--result` | Print the output and outcome of the task's last `--detach` run: the run's own exit code once it ended, 75 while it runs, 1 when none was recorded or its process is gone (alone: with no other option but `--task`) |
 | `fails-first` | `--none REASON` | Run nothing and stamp that the task has no such test (one line, at most 200 characters, not with `--test`) |
 | `fails-first` | `--accept-change REASON` | The coordinator only: run nothing and record that the named tests may change between `--test-commit` and `--fix-commit`, with the reason (one line, at most 200 characters); the engineer's next run of the same names and commits is then allowed ([A changed test](stamps.md#changed-test)). The hook lets the coordinator run `orig fails-first` only in this form, alone: not with `--none` or `--keeps` (any prefix of them), which would stamp, and every other `orig fails-first` stays refused to it ([roles](agents.md#roles)) |
