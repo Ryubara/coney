@@ -66,9 +66,11 @@ kind, and the console itself names no command:
 
 - **Built-ins** come through `addBuiltin`, the player set at start-up by `registerBuiltins` from the catalog, each
   bound to its handler by name. A second registration of a name is refused, and so is a developer command in a registry
-  made for the player level (the release build's).
+  made for the player level (the release build's). A default that its argument would not take (`many` for an int, a
+  value outside a choice's list) is refused too, here and by the generator.
 - **Mod commands** come through `addModCommand`, always at the player level: a name of at most 32 characters, never a
-  built-in's, at most 64 a mod. The same mod registering its name again replaces the command and keeps its id;
+  built-in's, at most 64 a mod, whose own name is spelled as a command name is (at most 64 characters), since
+  `<mod>:<name>` has to reach it. The same mod registering its name again replaces the command and keeps its id;
   `removeMod` takes all of a mod's commands away. Two mods' commands of one name are reached as `<mod>:<name>`
   (`yard-brawl:wave`), and the bare name is refused as ambiguous with both listed. Nothing calls it yet: the SDK
   function `Coney.RegisterCommand` is build issue 7.
@@ -119,7 +121,8 @@ arguments and each against its type), so a mistake is answered at once. Then:
 - a **session** command, or a local one with `changes`, is queued, and the queue runs before the next simulation step,
   in the order the lines were entered. A step therefore never sees the game change half-way, and a paused game takes
   the command at its next frame, since the step hook runs for held steps too
-  ([Update and render](conventions.md#update-and-render)).
+  ([Update and render](conventions.md#update-and-render)). A queued line whose command was removed, or registered
+  again by its mod with other arguments, does not run: the terminal says it changed.
 
 **Scope in a network session.** On a guest, a session command is refused before anything is sent: "only the host can
 do this in a network game". Local commands run on any machine. The role comes from network play

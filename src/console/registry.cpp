@@ -6,6 +6,7 @@
 #include <limits>
 #include <utility>
 
+#include "console/arg_types.h"
 #include "core/assert.h"
 
 namespace coney::console {
@@ -32,6 +33,21 @@ std::size_t editDistance(std::string_view a, std::string_view b) {
 
 // The farthest a known name may be from a typed one to be offered instead.
 constexpr std::size_t kSuggestDistance = 2;
+
+// Whether each default in the spec suits its argument's type, so a left-out argument can never hand a handler a value
+// the line would have been refused for. The lists the game gives (missions, settings) are not asked: only the shape.
+std::expected<void, Error> checkDefaults(const CommandSpec& spec) {
+    for (const ArgSpec& arg : spec.args) {
+        if (arg.defaultValue.empty()) {
+            continue;
+        }
+        if (auto checked = checkArg(arg, arg.defaultValue, {}, ValueSource{}); !checked) {
+            return fail(ErrorCode::InvalidArgument,
+                        std::format(R"("{}": the default of "{}" is wrong: {})", spec.name, arg.name, checked.error()));
+        }
+    }
+    return {};
+}
 
 } // namespace
 
@@ -66,6 +82,9 @@ std::expected<CommandId, Error> Registry::addBuiltin(const CommandSpec& spec, Ha
     if (taken) {
         return fail(ErrorCode::InvalidArgument, std::format(R"("{}" is registered already)", spec.name));
     }
+    if (auto defaults = checkDefaults(spec); !defaults) {
+        return std::unexpected(std::move(defaults.error()));
+    }
     return store(Origin::Builtin, {}, spec, std::move(handler));
 }
 
@@ -75,6 +94,15 @@ std::expected<CommandId, Error> Registry::addModCommand(std::string_view mod, co
         return fail(ErrorCode::InvalidArgument,
                     std::format(R"("{}" is not a command name: at most {} lower-case letters, digits, - and _)",
                                 spec.name, kModCommandNameMax));
+    }
+    // The mod's own name is what `mod:name` puts before a command, so it is spelled as a command name is.
+    if (!isCommandName(mod, kModNameMax)) {
+        return fail(
+            ErrorCode::InvalidArgument,
+            std::format(R"("{}" is not a mod name: at most {} lower-case letters, digits, - and _)", mod, kModNameMax));
+    }
+    if (auto defaults = checkDefaults(spec); !defaults) {
+        return std::unexpected(std::move(defaults.error()));
     }
     const bool builtinName = std::ranges::any_of(m_commands, [&](const std::unique_ptr<Command>& command) {
         return command && command->origin == Origin::Builtin && command->spec().name == spec.name;

@@ -80,6 +80,8 @@ inline constexpr std::size_t kModCommandNameMax = 32;
 inline constexpr std::size_t kModCommandsMax = 64;
 /// The longest built-in name the registry takes (the catalog's names are far shorter).
 inline constexpr std::size_t kBuiltinNameMax = 64;
+/// The most characters in a mod's own name, which `mod:name` puts before a command's.
+inline constexpr std::size_t kModNameMax = 64;
 
 /// The console's commands: the built-ins, registered at start-up through addBuiltin() (the player catalog by
 /// registerBuiltins(), and in a build with the debug tools the developer set), and the running mods' commands

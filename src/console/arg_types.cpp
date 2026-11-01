@@ -115,9 +115,14 @@ std::vector<std::string> completeArg(const ArgSpec& arg, std::string_view prefix
             matches.push_back(std::move(value));
         }
     }
-    // Numbers in their order (2 before 10), names alphabetically.
+    // Numbers first in their order (2 before 10), then names alphabetically: one total order, whatever the list mixes.
     std::ranges::sort(matches, [](const std::string& a, const std::string& b) {
-        if (isCount(a) && isCount(b) && a.size() != b.size()) {
+        const bool aCount = isCount(a);
+        const bool bCount = isCount(b);
+        if (aCount != bCount) {
+            return aCount;
+        }
+        if (aCount && a.size() != b.size()) {
             return a.size() < b.size();
         }
         return a < b;

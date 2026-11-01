@@ -77,6 +77,11 @@ def test_parse_reads_every_field() -> None:
         (('summary = "Starts a wave."', 'summary = "Starts a wave."\ncolour = "red"'), "unknown key(s) colour"),
         (('choices = ["left", "right"], ', ""), "a choice argument lists its choices"),
         (('line = "start-wave 3 right"', 'line = "wave 3"'), "does not start with the command's name"),
+        (('default = "left"', 'default = "up"'), "the default 'up' is not a value of type choice"),
+        (
+            ('{ name = "count", type = "int", help', '{ name = "count", type = "int", default = "many", help'),
+            "the default 'many' is not a value of type int",
+        ),
     ],
 )
 def test_parse_refuses_mistakes(change: tuple[str, str], problem: str) -> None:

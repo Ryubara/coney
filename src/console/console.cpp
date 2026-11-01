@@ -33,6 +33,20 @@ std::string_view needPhrase(Need need) {
 
 constexpr std::array<Need, 4> kNeeds{Need::Game, Need::Profile, Need::Level, Need::Disc};
 
+// Whether the values checked against an earlier spec still suit this one: the same number, each of its shape.
+bool argsFit(const CommandSpec& spec, const std::vector<std::string>& values) {
+    if (values.size() != spec.args.size()) {
+        return false;
+    }
+    for (std::size_t i = 0; i < values.size(); ++i) {
+        const std::span<const std::string> earlier(values.data(), i);
+        if (!checkArg(spec.args[i], values[i], earlier, ValueSource{})) {
+            return false;
+        }
+    }
+    return true;
+}
+
 } // namespace
 
 std::string usageLine(const CommandSpec& spec, std::string_view name) {
@@ -145,8 +159,14 @@ Outcome Console::submit(std::string_view line, LineSource source, PlayerSlot slo
 std::size_t Console::runQueued() {
     std::size_t ran = 0;
     for (QueuedCommand& queued : m_queue.take()) {
-        if (m_registry.find(queued.id) == nullptr) {
+        const Command* command = m_registry.find(queued.id);
+        if (command == nullptr) {
             refuse(std::format(R"("{}" did not run: its command is no longer registered)", queued.line));
+            continue;
+        }
+        // A mod may have registered the name again since the line was checked, with other arguments.
+        if (!argsFit(command->spec(), queued.args)) {
+            refuse(std::format(R"("{}" did not run: its command changed since it was entered)", queued.line));
             continue;
         }
         logging::info(logging::Category::Engine, std::format("{}ran {}", kLogPrefix, queued.line));

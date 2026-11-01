@@ -12,6 +12,7 @@ a command without an example. docs/guides/console.md#catalog.
 
 from __future__ import annotations
 
+import math
 import re
 import tomllib
 from dataclasses import dataclass, field
@@ -154,6 +155,8 @@ def _arg(where: str, raw: Any, problems: list[str]) -> Arg | None:
         return None
     if kind != "choice" and choices:
         problems.append(f"{where}: argument {name}: only a choice argument has choices")
+    if default and not _default_fits(kind, default, choices):
+        problems.append(f"{where}: argument {name}: the default {default!r} is not a value of type {kind}")
     return Arg(
         name=name,
         type=kind,
@@ -162,6 +165,26 @@ def _arg(where: str, raw: Any, problems: list[str]) -> Arg | None:
         default=default,
         choices=tuple(choices) if kind == "choice" else (),
     )
+
+
+def _default_fits(kind: str, default: str, choices: Any) -> bool:
+    """Whether a default has the shape its argument type takes (the C++ side refuses a registration that has not)."""
+    if kind == "int":
+        return re.fullmatch(r"-?\d+", default) is not None
+    if kind == "number":
+        try:
+            return math.isfinite(float(default))
+        except ValueError:
+            return False
+    if kind == "bool":
+        return default in ("on", "off")
+    if kind == "choice":
+        return isinstance(choices, list) and default in choices
+    if kind in ("mission", "checkpoint"):
+        return re.fullmatch(r"[1-9]\d*", default) is not None
+    if kind == "text":
+        return True
+    return re.fullmatch(r"[A-Za-z0-9_.:/-]+", default) is not None
 
 
 def _examples(where: str, name: str, raw: Any, problems: list[str]) -> tuple[Example, ...]:
