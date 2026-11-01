@@ -92,7 +92,8 @@ std::optional<DiskProfileStore::Slot> DiskProfileStore::readSlot(std::size_t slo
     return damaged;
 }
 
-std::expected<void, Error> DiskProfileStore::writeSlot(std::size_t slot, const ProfileRecord& record) const {
+std::expected<void, Error> DiskProfileStore::writeSlot(std::size_t slot, const ProfileRecord& record,
+                                                       const ModdedProgress& modded) const {
     std::error_code ec;
     std::filesystem::create_directories(m_folder, ec);
     if (ec) {
@@ -103,9 +104,7 @@ std::expected<void, Error> DiskProfileStore::writeSlot(std::size_t slot, const P
     std::filesystem::path temporary = path;
     temporary += ".tmp";
     {
-        // What the file holds beyond the record is kept from a loadable slot; a new profile starts with none.
-        const std::optional<Slot>& held = m_slots.at(slot);
-        const SaveGame save{.profile = record, .modded = held && held->record ? held->modded : ModdedProgress{}};
+        const SaveGame save{.profile = record, .modded = modded};
         const std::vector<std::byte> bytes = save.serialise();
         std::ofstream out(temporary, std::ios::binary | std::ios::trunc);
         out.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
@@ -174,7 +173,7 @@ bool DiskProfileStore::create(std::size_t slot, const Profile& profile) {
     m_state.subtitles = profile.subtitles;
     captureProfile(m_state, record);
     // Coney writes the new profile at once: the original's autosave right after a new game would store the same.
-    if (auto written = writeSlot(slot, record); !written) {
+    if (auto written = writeSlot(slot, record, ModdedProgress{}); !written) {
         m_lastError = written.error();
         return false;
     }
@@ -226,7 +225,7 @@ bool DiskProfileStore::save() {
     CONEY_ASSERT(slot.has_value() && slot->record.has_value());
     ProfileRecord record = slot->record.value();
     captureProfile(m_state, record);
-    if (auto written = writeSlot(index, record); !written) {
+    if (auto written = writeSlot(index, record, slot->modded); !written) {
         m_lastError = written.error();
         return false;
     }

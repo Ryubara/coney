@@ -392,8 +392,9 @@ earlier Coney builds wrote (the bare 1,284-byte record) still load.
 
 ### What Coney stores instead of a memory card {#coneys-implementation}
 
-- [`SaveGame`](repo:src/warriors/save_game.h) writes and reads the save format; a file it cannot read (damaged, or
-  made by a newer Coney) is listed as a damaged ("not loadable") profile under the name it holds.
+- [`SaveGame`](repo:src/warriors/save_game.h) writes and reads the save format (the frame and the steps between
+  versions in `save_game.cpp`, the current version's section codecs in `save_sections.cpp`); a file it cannot read
+  (damaged, or made by a newer Coney) is listed as a damaged ("not loadable") profile under the name it holds.
   [`ProfileRecord`](repo:src/warriors/profile_record.h) stays the codec of the original's record, field by field: the
   migration from version 0 reads Coney's older files with it, and the memory-card importer will read real saves with it.
   `SavedProgress` holds the fields with no other home in Coney's game state (`GameState::saved`), with the money bank's
@@ -402,7 +403,7 @@ earlier Coney builds wrote (the bare 1,284-byte record) still load.
   `profile-6.sav` in one folder. `create` makes a profile from the template with the three screen choices and writes
   it at once (the autosave after a new game); `save` is the autosave (only while saving is enabled); `remove` deletes
   the file, with no undo. A save rewrites the faithful sections from the game state and keeps the story entries and mod
-  sections the file already held.
+  sections the file already held; `create` writes a new profile with none, even over a slot that held a modded save.
 - The folder ([`profileFolder`](repo:src/platform/profile_folder.h)) is `--profiles DIR`, else `profiles` in SDL's
   per-user data folder; test mode without `--profiles` keeps the profiles in memory for the run
   (`SessionProfileStore`). The start-up flow picks the store; the mission-complete mode (0xb) autosaves after its pop.
@@ -455,9 +456,10 @@ sections by name. The reader takes them in any order, each name once.
 
 #### Sections of version 1 {#save-mapping}
 
-Every field of the record is in exactly one section, and the first eight sections hold nothing else. A flag is one
-byte, 0 or 1 (the record keeps it in a word that `Profile_Read` reads as true when it is not 0); the brightness and
-the difficulty are one byte each, as the game state keeps them.
+Every field of the record is in exactly one section, and the seven faithful sections (`profile` to `script-flags`)
+hold nothing else; the `missions` count byte is the format's own, not a field of the record. A flag is one byte, 0 or
+1 (the record keeps it in a word, which `ProfileRecord::parse` reads as true when it is not 0); the brightness and the
+difficulty are one byte each, as the game state keeps them.
 
 | Section | Field, in order | Bytes | Record offset |
 | --- | --- | --- | --- |
@@ -471,7 +473,7 @@ the difficulty are one byte each, as the game state keeps them.
 | `bank` | the banked money (u32) | 4 | `0x4ac` |
 | `options` | the option block's `+0x00` (u32), brightness, SoundFX volume (f32), Music volume (f32), the block's `+0x10` (u32); per pad, P1 then P2: invert camera, auto-adjust camera, vibration; split-screen merge, subtitles, Pro Logic II, Wide video | 4 + 1 + 4 + 4 + 4 + 6 + 4 | `0x4b0`-`0x4c0`, `0x4c4`, `0x4dc`, `0x4e0`, `0x4e4`, `0x4e8` |
 | `script-flags` | flags 1-128, flag *n* at byte (*n* - 1) / 8, bit (*n* - 1) % 8 | 16 | `0x4f4` |
-| `story` (optional) | the count (u32); per mod mission, sorted by id: its id (a string, `<mod>.<id>`), complete, the rank records (u32, bit *k* - 1 for record (*level*, 0, *k*), *k* 1-32), and a best record with the original's fields: best score (u32), total (u32), grade, percentage | 4 + per entry 1 + *n* + 15 | none |
+| `story` (optional) | the count (u32); per mod mission, sorted by id: its id (a string, `<mod>.<id>`: a mod's name, a `.`, then the mission's own id of `a`-`z`, `0`-`9`, `-` and `_`), complete, the rank records (u32, bit *k* - 1 for record (*level*, 0, *k*), *k* 1-32), and a best record with the original's fields: best score (u32), total (u32), grade, percentage | 4 + per entry 1 + *n* + 15 | none |
 | `mod:<name>` (optional, one per mod) | the mod's version (a string), its package hash (SHA-256, 32 bytes), then its data (u32 length, bytes) | 1 + *n* + 32 + 4 + *length* | none |
 
 The record's version word (`0x000`, always `0x11`) becomes the format's version; the three bytes after the brightness
@@ -503,8 +505,11 @@ before it, so it never has to read the newest layout. Each older version keeps a
 A file is listed as a damaged profile (slot `+0x24`, which PM_Load sends to PM_Delete), under the name it holds when
 that can be read, when: it has neither the magic nor the size and version of a record; its CRC-32 does not match; it
 ends early or runs past its sections; its version is newer than this Coney's (the message says so); a section is
-missing, repeated, unknown or of the wrong length, or holds a flag that is not 0 or 1; or a name breaks its rules.
-Deleting it is the player's choice, as on the PS2.
+missing, repeated, unknown or of the wrong length, or holds a flag that is not 0 or 1; or a name or a story id breaks
+its rules. The name is read from the `profile` section when the frame can be read (a wrong CRC-32 or a newer version
+still has it); a file with the magic whose frame cannot be read (cut short, bytes before the CRC-32, a section name
+outside the rules) has no name, and only a file without the magic is listed under a record header's name
+(`SaveGame::nameOf`). Deleting it is the player's choice, as on the PS2.
 
 ## Open questions
 

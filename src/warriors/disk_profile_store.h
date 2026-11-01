@@ -99,10 +99,11 @@ class DiskProfileStore final : public ProfileStore {
     // Reads one slot's file: nothing when there is none, a damaged slot when it cannot be loaded.
     // @coney-only one file per slot in place of the memory card's image (docs/research/save.md#coneys-implementation)
     [[nodiscard]] std::optional<Slot> readSlot(std::size_t slot) const;
-    // Writes `record` as `slot`'s file through a temporary file, so a failed write never leaves half a save, keeping
-    // the story entries and mod sections a loadable slot already holds (a slot being created holds none).
+    // Writes `record` and `modded` as `slot`'s file through a temporary file, so a failed write never leaves half a
+    // save. The caller names what goes beyond the record: a save keeps what the slot holds, a new profile has none.
     // @coney-only one file per slot in place of the memory card's image (docs/research/save.md#coneys-implementation)
-    [[nodiscard]] std::expected<void, Error> writeSlot(std::size_t slot, const ProfileRecord& record) const;
+    [[nodiscard]] std::expected<void, Error> writeSlot(std::size_t slot, const ProfileRecord& record,
+                                                       const ModdedProgress& modded) const;
     // The screens' view of a record.
     [[nodiscard]] static Profile profileOf(const ProfileRecord& record);
 
