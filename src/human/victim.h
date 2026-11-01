@@ -111,6 +111,7 @@ class Victim {
         m_stunTimeOver = false;
     }
     /// Forgets the stun only.
+    /// @coney-only Coney's reset of its own stun timer (a script's or a scene's clear)
     void endStun() {
         m_stunUntilMs = 0;
         m_stunTimeOver = false;
@@ -140,6 +141,7 @@ class Victim {
     /// A command made while lying down: once the knockdown's reaction is over (lying in 196) it cuts the ground time
     /// by combat::mashCut(), up to the update that lands on the rise's time; during the reaction it does nothing. A
     /// stun after the rise is not cut (its time starts again as 199 ends). Returns whether it cut.
+    /// @orig 0x00256a60 Human_UpdateDown (unknown)
     bool mash(const HumanAnimator& animator, std::uint64_t nowMs);
 
     [[nodiscard]] const combat::PowerClass& powerClass() const { return m_class; }

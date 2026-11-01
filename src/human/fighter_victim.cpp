@@ -537,7 +537,10 @@ void Fighter::stunFor(HumanAnimator& animator, std::uint64_t nowMs, std::uint64_
                         static_cast<std::uint32_t>(combat::kStunLoop), AnimState::Hold);
 }
 
-void Fighter::endStun() { m_victim.expireStun(); }
+void Fighter::endStun(std::uint64_t /*nowMs*/) {
+    // The stun's time is over whatever now is: this update's step ends it (Victim::expireStun()).
+    m_victim.expireStun();
+}
 
 void Fighter::releaseFromGrab(HumanAnimator& animator) {
     if (!m_grabbed.has_value()) {
