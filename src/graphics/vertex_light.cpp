@@ -78,6 +78,7 @@ std::vector<Vu1Light> vu1Lights(const LightManager& manager, const LightSelectio
     for (const std::uint16_t index : selection.lights()) {
         block.push_back(vu1Light(manager.record(index)));
     }
+    // Stand-in: the original closes the block with its DMA tag and sends it to VU1; the reference lights on the CPU.
     return block;
 }
 
