@@ -108,8 +108,9 @@ void MeshViews::draw(rw::Atomic* atomic, DrawKind kind, bool layer, const std::f
     if (plan.flat) {
         flatPass(atomic, plan, false);
     }
-    // OpenGL ES has no line polygon mode: no wire there.
-    if (plan.wire && glad_glPolygonMode != nullptr) {
+    // No wire where the draws do not reach OpenGL (the same decision as flatPass makes: glad's table outlives its
+    // context, so a pointer says nothing there); and OpenGL ES has no line polygon mode, which its loader leaves unset.
+    if (plan.wire && draw::forwarding() && glad_glPolygonMode != nullptr) {
         flatPass(atomic, plan, true);
     }
 }
