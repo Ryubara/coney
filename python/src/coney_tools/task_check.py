@@ -264,6 +264,8 @@ def _run(request: Request, env: Env) -> int:
             if scope is not None and "pytest" in ran:
                 detail_more["pytest_scope"] = proof_profiles.scope_record(scope)
             if tests is not None and build.checks[-1] in ran:
+                # the list of test files is too long for the stamp's detail: it is kept beside the stamps, by hash
+                ctest_scope.write_files(unit.Unit.of(root, task).dir / ctest_scope.FOLDER, tests)
                 detail_more["ctest_scope"] = ctest_scope.scope_record(tests)
                 if tests.narrowed:  # narrowed by reach: CI and the after-merge disc suite run the rest
                     detail_more["ctest_narrowed"] = tests.narrowed

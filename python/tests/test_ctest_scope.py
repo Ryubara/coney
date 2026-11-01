@@ -3,6 +3,7 @@
 through the `#include`s and the sources that implement the headers, and when it is the whole suite. The trees are
 synthetic; one test reads the real tests/CMakeLists.txt for the labels the scope selects by."""
 
+import json
 from pathlib import Path
 
 import pytest
@@ -189,10 +190,16 @@ def test_a_scope_covers_one_that_needs_its_files_or_fewer() -> None:
     assert not ctest_scope.covers(leaf, both) and not ctest_scope.covers(both, whole)
 
 
-def test_the_scope_is_recorded_and_read_back_from_its_stamp_form() -> None:
+def test_the_scope_is_recorded_as_a_count_and_hash_and_read_back_from_its_file(tmp_path: Path) -> None:
     for scope in (scope_of("CMakeLists.txt"), scope_of("src/world/cover.h")):
-        assert ctest_scope.scope_from_record(ctest_scope.scope_record(scope)) == scope
-    assert ctest_scope.scope_record(scope_of("tests/world/cover_test.cpp")) == ["tests/world/cover_test.cpp"]
+        ctest_scope.write_files(tmp_path, scope)
+        assert ctest_scope.scope_from_record(ctest_scope.scope_record(scope), tmp_path) == scope
+    leaf = scope_of("tests/world/cover_test.cpp")
+    record = ctest_scope.scope_record(leaf)
+    assert record == {"files": 1, "sha256": ctest_scope.files_sha256(["tests/world/cover_test.cpp"])}
+    assert ctest_scope.scope_record(scope_of("CMakeLists.txt")) == "whole"
+    assert ctest_scope.write_files(tmp_path, scope_of("CMakeLists.txt")) is None  # the whole suite has no list
+    assert ctest_scope.scope_from_record(["tests/world/cover_test.cpp"]) == leaf  # a stamp of the first form
     assert ctest_scope.scope_from_record(None).whole  # a stamp from before the scope was recorded ran everything
     with pytest.raises(ConventionsError, match="ctest_scope"):
         ctest_scope.scope_from_record([])
@@ -221,3 +228,34 @@ def test_the_test_programs_tag_each_test_with_its_file_so_ctest_has_the_labels()
     discovered = [line for line in text.splitlines() if line.strip().startswith("catch_discover_tests(")]
     assert discovered and all("TEST_SPEC --filenames-as-tags" in line for line in discovered)
     assert all("ADD_TAGS_AS_LABELS" in line for line in discovered)
+
+
+def test_a_scope_of_hundreds_of_test_files_fits_a_stamp_and_reads_back(tmp_path: Path) -> None:
+    files = tuple(f"tests/misc/some_longish_directory_name/test_number_{i:04d}_test.cpp" for i in range(400))
+    scope = ctest_scope.CtestScope(False, files)
+    record = ctest_scope.scope_record(scope)
+    assert len(json.dumps(record)) < 200
+    path = ctest_scope.write_files(tmp_path / "ctest-scope", scope)
+    assert path is not None and path.name == f"{record['sha256']}.json"  # type: ignore[index]
+    assert ctest_scope.scope_from_record(record, tmp_path / "ctest-scope") == scope
+    assert ctest_scope.write_files(tmp_path / "ctest-scope", scope) == path  # again: nothing changes
+
+
+def test_a_scope_file_that_is_missing_edited_or_wrong_is_refused(tmp_path: Path) -> None:
+    scope = ctest_scope.CtestScope(False, ("tests/a_test.cpp", "tests/b_test.cpp"))
+    record = ctest_scope.scope_record(scope)
+    with pytest.raises(ConventionsError, match="not kept here"):
+        ctest_scope.scope_from_record(record)
+    with pytest.raises(ConventionsError, match="missing"):
+        ctest_scope.scope_from_record(record, tmp_path)
+    path = ctest_scope.write_files(tmp_path, scope)
+    assert path is not None
+    path.write_text('["tests/a_test.cpp"]', encoding="utf-8")
+    with pytest.raises(ConventionsError, match="does not hash to its name"):
+        ctest_scope.scope_from_record(record, tmp_path)
+    wrong = {"files": 3, "sha256": record["sha256"]}  # type: ignore[index]
+    path.write_bytes(json.dumps(["tests/a_test.cpp", "tests/b_test.cpp"], separators=(",", ":")).encode())
+    with pytest.raises(ConventionsError, match="holds 2"):
+        ctest_scope.scope_from_record(wrong, tmp_path)
+    with pytest.raises(ConventionsError, match="ctest_scope"):
+        ctest_scope.scope_from_record({"files": 1, "sha256": "nope"}, tmp_path)

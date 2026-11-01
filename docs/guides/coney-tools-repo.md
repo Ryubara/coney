@@ -567,9 +567,14 @@ The files are read at the change's tip through git, so `task check` and `pr veri
 The output says which (`ctest: the tests of 2 test files the change reaches, with the disc`, `ctest: the tests of 69
 test files, with the disc, narrowed by reach (256 test files reach it, more than 100; ...)`, or `ctest: the whole suite
 with the disc (cmake/deps.cmake is not a C++ file the tests can be traced from)`) and the stamp records it as
-`detail.ctest_scope`: `whole`, or the list of test files. `pr verify`
+`detail.ctest_scope`: `whole`, or `{"files": N, "sha256": H}`, the count and hash of the test files. The list
+itself is too long for a stamp's `detail` (2 KB) once a change reaches dozens of test files, so `task check` saves it as
+`<scratch>/<task>/ctest-scope/<H>.json` before it writes the stamp, as a verdict keeps a long function list in its own
+file; `pr text` counts the files from the stamp, and `pr verify` reads the list from there (a file that is missing,
+edited or of another size is refused: run `task check` again). `pr verify`
 recomputes the scope at the tip and refuses a Check whose recorded files do not hold it, or whose build record ran
-other tests; a stamp from before the scope was recorded counts as the whole suite.
+other tests; a stamp from before the scope was recorded counts as the whole suite, and one of the first form, which
+held the list in `detail`, is still read.
 
 **A narrowed run is not the whole check, by design** (the maintainer's decision of 2026-11-01; [The local
 gate](testing.md#local-gate) says what runs the rest). What the narrow set leaves out, and what the include graph

@@ -408,6 +408,12 @@ def test_the_facts_name_every_stage_with_its_stamp_the_change_and_the_chain_head
     assert "Stand-ins:\n- `src/ai/widget.cpp:12` `the sound plays later`" in facts
 
 
+def test_the_facts_count_the_test_files_a_narrowed_check_ran(tmp_path: Path) -> None:
+    built = make(tmp_path, skip=frozenset({"checked"}))
+    built.check("full", ctest_scope={"files": 57, "sha256": "0" * 64})
+    assert "412 passed, 0 failed, 0 skipped (the tests of 57 test files) (stamp" in pr_text.facts_block(built.subject())
+
+
 def test_two_functions_of_one_address_are_counted_by_their_own_compared_stamps(tmp_path: Path) -> None:
     built = make(tmp_path)
     built.edit(SOURCE_FILE, TWO_FUNCTIONS)

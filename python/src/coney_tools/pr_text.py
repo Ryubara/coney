@@ -479,7 +479,7 @@ def _stage_lines(subject: pr_proof.Subject, short: bool) -> list[str]:
             outcome += ran_pytest + (f"; checks {ran}" if ran else "")
         else:
             preset = f"preset {code(d.get('preset', ''))}, "
-            outcome = f"{preset}{_counted(tests)}{ran_pytest}"
+            outcome = f"{preset}{_counted(tests)}{_ctest_scope_words(d.get('ctest_scope'))}{ran_pytest}"
         lines.append(
             f"- Check: {_stale(subject, checked)}profile {code(d.get('profile', ''))}, "
             f"{outcome} (stamp `{_h(checked)}`{extra})"
@@ -527,6 +527,19 @@ def _pytest_scope_words(scope: object) -> str:
     if isinstance(scope, list) and scope:
         return f"of the tests reading {', '.join(str(name) for name in scope)} "
     return ""
+
+
+def _ctest_scope_words(scope: object) -> str:
+    """Which C++ tests a Check ran, after the build's counts (`detail.ctest_scope`): the test files of a narrowed run
+    (counted from the stamp, which holds the count and hash of the list kept beside the stamps; a stamp of the first
+    form held the list), nothing for the whole suite or a stamp from before the scope was recorded."""
+    if isinstance(scope, dict) and isinstance(scope.get("files"), int):
+        count = scope["files"]
+    elif isinstance(scope, list):
+        count = len(scope)
+    else:
+        return ""
+    return f" (the tests of {count} test file{'s' if count != 1 else ''})" if count else ""
 
 
 def facts_block(subject: pr_proof.Subject) -> str:
