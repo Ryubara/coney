@@ -207,6 +207,7 @@ add_executable(coney_tests
     platform/disc_level_test.cpp
     platform/disc_movies_test.cpp
     platform/disc_play_frame_rate_test.cpp
+    platform/disc_play_level_simulation_test.cpp
     platform/disc_world_streaming_test.cpp
     platform/clip_recorder_test.cpp
     platform/draw_calls_test.cpp
