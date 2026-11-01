@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -266,6 +267,46 @@ TEST_CASE("653's stun restarts as 199 ends: 356 for the stun's 200 ms, then 357"
     REQUIRE(rose);
     CHECK(ended);
     // 200 ms is 6 updates; the one 199 ends on and the one 357 starts on put it at 6-7.
+    CHECK(loopAfterRise >= 6);
+    CHECK(loopAfterRise <= 7);
+}
+
+TEST_CASE("a hit during 199 leaves the victim down: its reaction, 199 again, then the stun's 200 ms in 356",
+          "[human][combat]") {
+    // Expected: combat-reactions.md#stun-end, confirmed (code): a hit on a human holding 199's 0x8000 plays a standing
+    // reaction (Human_ApplyPendingDamage 0x00265f70); Human_PlayReaction (0x0026a6d0) cuts 199's task, whose cut-off
+    // (0x00105d70) drops its end callback, so Human_GetUp never runs: the human stays down (0x80000) and
+    // Human_UpdateDown (0x00256a60) plays 199 again once the reaction ends, its end restarting the stun.
+    const FightCharacter character;
+    Fight fight(character, 30.0F);
+    fight.human().takeHit(hitOf(653, 50, 0x39, 0x400));
+    // Into 199, then 3 updates of it (the clip lasts 12).
+    int riseUpdates = 0;
+    for (int update = 0; update < 140 && riseUpdates < 4; ++update) {
+        fight.run("", 1);
+        riseUpdates += fight.human().animator().animId() == 199U ? 1 : 0;
+    }
+    REQUIRE(riseUpdates == 4);
+    REQUIRE(fight.human().fighter().victim().stunned());
+    // The civilian's S1 (14) from in front: 272, a stun since he is stunned. He is down again while it plays.
+    fight.human().takeHit(hitOf(12, 14, 0x0a, 0x800));
+    fight.run("", 1);
+    CHECK(fight.human().animator().animId() == 272U);
+    CHECK(fight.human().fighter().victim().grounded());
+    ClipLog log;
+    int loopAfterRise = 0;
+    fight.run("", 80, [&](std::uint64_t) {
+        const std::uint32_t clip = fight.human().animator().animId();
+        log.note(clip);
+        if (log.has(199) && !log.has(357) && clip == 356U) {
+            ++loopAfterRise;
+        }
+    });
+    // 272 hands straight to a second 199 (no 355: the stun's loop follows the rise), then 356, then 357.
+    const std::vector<std::uint32_t> expected{272U, 199U, 356U, 357U};
+    REQUIRE(log.clips().size() >= expected.size());
+    CHECK(std::equal(expected.begin(), expected.end(), log.clips().begin()));
+    // The stun's 200 ms from the second 199's end: 6-7 updates, as after the first rise.
     CHECK(loopAfterRise >= 6);
     CHECK(loopAfterRise <= 7);
 }
