@@ -48,6 +48,8 @@ void PlayLevelSimulation::stepHats() {
     const std::vector<ai::AiHuman>& fighters = m_ai->humans();
     for (std::size_t i = 0; i < fighters.size(); ++i) {
         human::Human& human = *fighters[i].human;
+        // **Coney's stand-in** for the hat's removal (state -5): a deleted human's hat goes with him
+        // (docs/research/characters.md#coneys-implementation, Hats).
         if (fighters[i].removed) {
             removeWornHat(human);
             continue;
@@ -58,7 +60,10 @@ void PlayLevelSimulation::stepHats() {
         stepWearer(human, made != nullptr ? std::optional<int>(made->type) : std::nullopt, character, now.pose,
                    now.feet, now.heading);
     }
-    // The hats in flight fall; each one's record follows it, and stays where it lands.
+    // **Coney's stand-in** for the hat object's update while it falls (docs/research/script-types.md#hat-object): the
+    // hats in flight fall by Coney's own gravity each step, not by the physics body's flags and 45-update count; each
+    // one's record follows it, and stays where it lands. Picking one up again, the Warriors' hat's duplicates and a
+    // held hat dropped when its holder goes down are #731's.
     const raycast::CollisionMesh& mesh = m_scenery->collision();
     const auto ground = [&mesh](anim::Vec3 at) -> std::optional<float> {
         const raycast::Ray ray{.origin = raycast::Vec3{at.x, at.y, at.z + kGroundRayAbove},
@@ -72,6 +77,7 @@ void PlayLevelSimulation::stepHats() {
             record->position = {pose.position.x, pose.position.y, pose.position.z};
             record->rotation = {pose.rotation.x, pose.rotation.y, pose.rotation.z, pose.rotation.w};
         } else {
+            // **Coney's stand-in**: a hat whose record is gone is forgotten, as the original removes one at state -5.
             m_fallingHats.forget(hat);
         }
     }

@@ -213,9 +213,14 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     void makeCast(const ScriptedCast& cast, const ai::AiConfig& fighters);
     // One human the scripts created, made: player 1's first creation is the player (his brain bound to it); any other
     // with a position an AI human of its type's class, drawn as its model, snapped as `HuCreate` snaps. Returns its
-    // brain; null for a creation with no position.
+    // brain; null for a creation with no position. The script's half (name, slot, handle) is makeHuCreate's.
+    // Research: docs/research/characters.md#creation
+    // @orig 0x00233d60 Human_Create (unknown)
     ai::Brain* castHuman(const HumanCreation& human);
     // HuChangePlayerGang's hand-over to `to` (a cast human): the player is moved, drawn and named as it, and it leaves.
+    // The gang's pick is ai::ScriptedBrains::changePlayerGang()'s. Research:
+    // docs/research/characters.md#level99-handover
+    // @orig 0x00239b80 Players_ChangeGang (unknown)
     void takePlace(const ai::Brain& to);
     // The brain type a human of character type `type` fights as: its class's, as castHuman() makes it.
     [[nodiscard]] ai::BrainType castBrainType(int type) const;
@@ -418,7 +423,9 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
         world_objects::WorldPose pose;
         human::TargetState state = human::TargetState::Standing;
     };
-    // After the humans' step: every human's hat put on, replaced or knocked off, and the falling hats moved.
+    // After the humans' step: every human's hat put on, replaced or knocked off, and the falling hats moved (the
+    // hat object's update). Research: docs/research/script-types.md#hat-object
+    // @orig 0x003e7b88 HatObject_Update (unknown)
     void stepHats();
     // One human's part of stepHats(), made as `type` (none: no class hat) and posed at this step by `pose` of
     // `character` at `feet` facing `heading`.
@@ -447,6 +454,7 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
         world_objects::HeldAttachment local;
     };
     // After the humans' step: every human's carried prop made, hung from its attach point or removed.
+    // @coney-only Coney's per-frame loop over the level's humans; each one's step carries its @orig
     void stepCarriedProps();
     // One human's part of stepCarriedProps(), posed at this step by `pose` of `character` at `feet` facing `heading`.
     void stepCarrier(human::Human& human, const human::PlayerCharacter& character, const anim::Pose& pose,
