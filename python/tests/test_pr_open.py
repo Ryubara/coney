@@ -1011,6 +1011,7 @@ def test_auto_merge_is_off_before_the_push_so_a_failed_edit_cannot_leave_the_new
     built = opened.built
     assert opened.run() == 0
     assert opened.gh.prs[812]["auto"] is True
+    set_manual_paths(opened, False)
     start_fix(opened)
     text = (built.root / "AGENTS.md").read_text(encoding="utf-8") if (built.root / "AGENTS.md").exists() else "x\n"
     built.edit("AGENTS.md", text + "\nOne more line.\n", "docs: fix touches AGENTS.md")
@@ -1033,6 +1034,7 @@ def test_auto_merge_that_stays_on_stops_the_run_before_anything_is_pushed(tmp_pa
     opened = docs_unit(tmp_path)
     built = opened.built
     assert opened.run() == 0
+    set_manual_paths(opened, False)
     start_fix(opened)
     text = (built.root / "AGENTS.md").read_text(encoding="utf-8") if (built.root / "AGENTS.md").exists() else "x\n"
     built.edit("AGENTS.md", text + "\nOne more line.\n", "docs: fix touches AGENTS.md")
