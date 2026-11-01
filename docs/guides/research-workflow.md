@@ -85,7 +85,7 @@ Moving an `@orig` function (into a renamed class, another class or file, or unde
 `orig study` or `orig compare` when its code and its `@orig` tags are as they were: `orig review-stamp --branch`,
 `task review` and `pr verify` recognise the move by the address, the tags and the body with its own class and name
 taken out, and say so. Change the code or a tag in the same branch and the function is a changed one again, owing its
-compare. The rule, and what counts as the same code, is [A moved function](coney-tools-fidelity.md#moved).
+compare. The rule, and what counts as the same code, is [A moved function](orig-body-hash.md#moved).
 
 ### When a research page isn't enough
 

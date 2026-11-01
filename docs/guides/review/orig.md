@@ -177,7 +177,7 @@ opens callees as far as the comparison needs, gives each function exactly one [c
    (or `--worktree <path>`). It prints the `tip`, the `base` and the `@orig` functions the branch adds or changes: each
    one's `key`, `where`, `coney`, `addresses` and `body_sha256`. When it lists none, write no verdict and say so: the
    branch needs none. The functions it lists under `moved` (same code and tags under another class, name or file;
-   [A moved function](../coney-tools-fidelity.md#moved)) are not to be reviewed again.
+   [A moved function](../orig-body-hash.md#moved)) are not to be reviewed again.
 2. Review every listed function. If there are more than can be read with care, sample by risk as the
    [limits](#limits) say, and name the skipped ones.
 3. Compare each function: read the Coney function at `where` and enough of what it calls to know its behaviour,
@@ -233,7 +233,7 @@ these keys:
 - no finding is a blocker, and the rubric version matches.
 
 The verdict binds to the function bodies it reviewed (their code: comments and white space are not part of the
-[body hash](../coney-tools-fidelity.md#body-hash)), so a rebase that leaves them unchanged keeps it, and any
+[body hash](../orig-body-hash.md#body-hash)), so a rebase that leaves them unchanged keeps it, and any
 change to one of them makes it stale. A pass is recorded in the ledger. `ORIG-REVIEW.md` is the same verdict for a
 person: the verdict, then one line per function with its class and note, then the findings.
 

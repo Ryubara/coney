@@ -10,7 +10,7 @@ ended with a result on a commit, covering exact hashes. Stamps are not signed, a
 folder, never committed. For a function ported from the original the proof is a **study** (the original function
 saved, its lines numbered and cut into pieces) and a **pairs file** (each piece joined to the Coney code that does
 it). This page defines the formats and what each command checks. The commands are in
-[the coney-tools reference](coney-tools-fidelity.md#orig-stages); the verdict a reviewer gives on the pairs is
+[the coney-tools reference](orig-stages.md); the verdict a reviewer gives on the pairs is
 [Orig review](review/orig.md). The stage commands are `orig study`, `orig compare` and `orig fails-first`; their
 first names (`original ...`) still work until the cutover ([Renamed commands](coney-tools.md#renamed)).
 
@@ -318,13 +318,13 @@ merge_reason = ""          # needed when lines cover more than one piece
       types, raw byte-offset reads and `goto` are refused.
 3. When all of it holds it appends the `compared` stamp, covering the decompile, Ghidra's function hash, the cut, the
    pairs file's hash (line endings normalised) and the Coney function's body hash ([its code without comments or white
-   space](coney-tools-fidelity.md#body-hash)), and a count of the relations. A second run that changes nothing writes
+   space](orig-body-hash.md#body-hash)), and a count of the relations. A second run that changes nothing writes
    no stamp.
 
 A function that only **moved** (another class, a renamed class or function, another file, with its code and its `@orig`
 tags as they were) keeps the study and compare it had and owes none: `task review` and `pr verify` do not count it as
 changed and `pr verify` notes it. A changed body, address or tag still owes a new compare
-([A moved function](coney-tools-fidelity.md#moved)).
+([A moved function](orig-body-hash.md#moved)).
 
 ### Two Coney functions, one address {#shared-address}
 
@@ -360,7 +360,7 @@ The reviewer ([Orig review](review/orig.md)) answers each pair: condition, value
 stand-in true. The tool part of that check is that the decompile still matches Ghidra (`orig verify`), the cut and
 the pairs file hash agree with the stamp, and the Coney body is unchanged. A comment or white space edit is not a
 change of the body; a stamp made when the hash still covered them is read by rehashing the function at the stamp's
-commit, so it keeps covering an unchanged function ([The body hash](coney-tools-fidelity.md#body-hash)).
+commit, so it keeps covering an unchanged function ([The body hash](orig-body-hash.md#body-hash)).
 
 ## Fails first {#fails-first}
 
@@ -373,7 +373,7 @@ C++ tests run), does the same on the fix commit (default HEAD), then puts the br
   one file under `tests/`. The test commit and the fix commit are two commits: a test committed with the change has
   no before, so a test commit that is the fix commit is refused.
 * **The test must not change** between the two commits: each test file the test commit changes reads the same in
-  both as the compiler reads it (`orig_review.code_text`, which [the body hash](coney-tools-fidelity.md#body-hash) uses:
+  both as the compiler reads it (`orig_review.code_text`, which [the body hash](orig-body-hash.md#body-hash) uses:
   comments and layout aside, every literal and raw string exactly as written), so a commit that adds a cite comment to
   a test is not a change. A test that had to change to pass is a decision point for the coordinator: the run is
   refused, and says to ask through `QUESTION.md` and which command records a yes ([A changed test](#changed-test)).
@@ -444,7 +444,7 @@ SHA-256 of (`fails_first.test_sha256`):
 
 * the test's name and, for each test file of the stamp (`detail.test_files`) that declares it, the file's path;
 * the test's **code**: the `TEST_CASE(...)` macro with its name and tags through the closing brace of its body, without
-  comments and white space (the rule of [the body hash](coney-tools-fidelity.md#body-hash), `orig_review.code_text`),
+  comments and white space (the rule of [the body hash](orig-body-hash.md#body-hash), `orig_review.code_text`),
   so clang-format or a reworded comment is no change; a string (a raw string too, whatever it holds), a tag or a
   number is code;
 * its **registration**: the lines of the `CMakeLists.txt` files from the test file's folder up to `tests/` that name the

@@ -326,6 +326,8 @@ nav:
       - The launcher: guides/launcher.md
       - Testing: guides/testing.md
       - Stamps, studies and pairs: guides/stamps.md
+      - The orig study and compare commands: guides/orig-stages.md
+      - The body hash and a moved function: guides/orig-body-hash.md
       - Releasing a pull request: guides/pr.md
       - The sandbox: guides/sandbox.md
       - Local workspace: guides/workspace.md

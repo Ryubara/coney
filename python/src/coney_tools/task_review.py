@@ -331,7 +331,7 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
         "files": files,
         "functions": functions if mode == "full" else [],
         # Functions that kept their code and tags under another class, name or file: their compare stands, so the
-        # reviewer is told of them and asked nothing (docs/guides/coney-tools-fidelity.md#moved).
+        # reviewer is told of them and asked nothing (docs/guides/orig-body-hash.md#moved).
         "moved": moved if mode == "full" else [],
         "pairs_set_sha256": pairs_set,
         "pages": _pages(files, env, tip) if mode == "full" else [],
