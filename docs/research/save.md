@@ -384,20 +384,25 @@ otherwise.
 
 ## In Coney {#coney}
 
-Coney keeps each profile as one file holding the 1,284-byte record above (same fields and order, little-endian) in the
-platform's per-user data folder, writes it whenever the original would autosave, and has no format, space or icon
-dialogs.
+Coney keeps each profile as one file in its own versioned save format ([The save format](#save-format)), in the
+platform's per-user data folder. Without mods a file holds exactly the fields of the record above and nothing else;
+the format adds room for what the original has no place for: mod missions' progress by mission id and one section per
+mod. Coney writes a profile whenever the original would autosave, and has no format, space or icon dialogs. Files that
+earlier Coney builds wrote (the bare 1,284-byte record) still load.
 
 ### What Coney stores instead of a memory card {#coneys-implementation}
 
-- [`ProfileRecord`](repo:src/warriors/profile_record.h) writes and reads the record field by field; a record of
-  another size or version is an error, and the store lists that file as a damaged ("not loadable") profile under the
-  name in its header. `SavedProgress` holds the fields with no other home in Coney's game state
-  (`GameState::saved`), with the money bank's add and the unlock and script-flag bits.
+- [`SaveGame`](repo:src/warriors/save_game.h) writes and reads the save format; a file it cannot read (damaged, or
+  made by a newer Coney) is listed as a damaged ("not loadable") profile under the name it holds.
+  [`ProfileRecord`](repo:src/warriors/profile_record.h) stays the codec of the original's record, field by field: the
+  migration from version 0 reads Coney's older files with it, and the memory-card importer will read real saves with it.
+  `SavedProgress` holds the fields with no other home in Coney's game state (`GameState::saved`), with the money bank's
+  add and the unlock and script-flag bits.
 - [`DiskProfileStore`](repo:src/warriors/disk_profile_store.h) is the save system: six slots, `profile-1.sav` to
   `profile-6.sav` in one folder. `create` makes a profile from the template with the three screen choices and writes
   it at once (the autosave after a new game); `save` is the autosave (only while saving is enabled); `remove` deletes
-  the file, with no undo.
+  the file, with no undo. A save rewrites the faithful sections from the game state and keeps the story entries and mod
+  sections the file already held.
 - The folder ([`profileFolder`](repo:src/platform/profile_folder.h)) is `--profiles DIR`, else `profiles` in SDL's
   per-user data folder; test mode without `--profiles` keeps the profiles in memory for the run
   (`SessionProfileStore`). The start-up flow picks the store; the mission-complete mode (0xb) autosaves after its pop.
@@ -411,11 +416,95 @@ dialogs.
   for the run only (the original's fields past the saved words are not named).
 - The pause menu's Options screen ([Pause menu](pause.md#coneys-implementation)) writes its values into the game
   state as the setters above do (`storeOptionValues` in `repo:src/gamemodes/pause_mode.h`), so the autosave keeps them.
-- Not implemented: the money bank's adds (Coney has no inventories).
+- Not implemented: the money bank's adds (Coney has no inventories); the `modded/` folder and writing the running
+  mods' sections (the mod loader, [Mods](../guides/studio/mods.md#saves-replays)); writing the story section
+  ([#1303](issue:1303)).
 - **Coney's choices**: bit *i* of the unlockable and script-flag sets is byte *i* / 8, bit *i* % 8 (the little-endian
-  layout of 32-bit words, inferred); the three bytes after the brightness byte are written as zero; the date and time a
-  slot keeps (`+0x16`) are not stored; the fourth-difficulty unlock (slot `+0xb4`) leaves the "every story level
-  unlocked" test to its caller until the unlockables have records.
+  layout of 32-bit words, inferred); the three bytes after the brightness byte are written as zero in a version-0
+  record; the date and time a slot keeps (`+0x16`) are not stored; the fourth-difficulty unlock (slot `+0xb4`) leaves
+  the "every story level unlocked" test to its caller until the unlockables have records.
+
+### The save format {#save-format}
+
+Coney's own design ([#1179](issue:1179)), with no counterpart in the original; what it carries without mods is the
+record's field set above, confirmed (code) at `Profile_Write` (`0x00421708`). The original's record has no room to
+grow, no place for a mod and no check against damage, so Coney keeps the fields and replaces the container.
+
+**Rules.**
+
+- **The faithful field set is unchanged.** A save made with no mod running holds exactly what `Profile_Write` stores,
+  one field for one field ([the mapping](#save-mapping)), and nothing it does not: no checkpoint, no inventories, no
+  running statistics, no `SetLUASaveDataFloat` slots. Faithful play reads and writes what the PS2 does.
+- **Named sections, one version.** The file is a list of named sections. One format version covers them all; a change
+  to any section's layout raises it and adds one migration step.
+- **The frame never changes.** The header, a section's frame, the trailer and the name at the start of the `profile`
+  section stay the same in every version, so any Coney can list a newer file under its name, though it cannot load it.
+- **A section the session does not own is kept.** A save keeps the story entries and the mod sections the file
+  already held, so a save made without a mod keeps that mod's section and its missions' progress.
+
+**Layout.** Little-endian throughout; a string is a one-byte length and that many bytes, with no terminator.
+
+| Part | Bytes | What |
+| --- | --- | --- |
+| Header | 16 | the magic `CONEYSAV` (8 bytes), the format version (u32, now **1**), the section count (u32, at most 1,024) |
+| Each section | 1 + *n* + 4 + *length* | its name (a string of 1-64 bytes: `a`-`z`, `0`-`9`, `-`, `:`), the payload's length (u32), the payload |
+| Trailer | 4 | the CRC-32 (zlib's) of every byte before it |
+
+The writer puts the sections in the order of the table below, then `story` when it has entries, then the mod
+sections by name. The reader takes them in any order, each name once.
+
+#### Sections of version 1 {#save-mapping}
+
+Every field of the record is in exactly one section, and the first eight sections hold nothing else. A flag is one
+byte, 0 or 1 (the record keeps it in a word that `Profile_Read` reads as true when it is not 0); the brightness and
+the difficulty are one byte each, as the game state keeps them.
+
+| Section | Field, in order | Bytes | Record offset |
+| --- | --- | --- | --- |
+| `profile` | the name (a string of 0-8 bytes) | 1 + *n* | `0x004` |
+| | story finished on HARDCORE SOLDIER | 1 | `0x00c` |
+| | difficulty | 1 | `0x4ec` |
+| | the unidentified game-state word (`W_GameState + 0x00`) | 4 | `0x4f0` |
+| `missions` | the count, 30; then per mission byte: best score (u32), total (u32), grade, percentage, the two bytes after them | 1 + 30 × 12 | `0x010` |
+| `unlockables` | the locked bits, then the "new" bits | 80 + 80 | `0x178`, `0x1c8` |
+| `rumble` | the custom-gang store, then its packed first 512 bits | 0x254 + 0x40 | `0x218`, `0x46c` |
+| `bank` | the banked money (u32) | 4 | `0x4ac` |
+| `options` | the option block's `+0x00` (u32), brightness, SoundFX volume (f32), Music volume (f32), the block's `+0x10` (u32); per pad, P1 then P2: invert camera, auto-adjust camera, vibration; split-screen merge, subtitles, Pro Logic II, Wide video | 4 + 1 + 4 + 4 + 4 + 6 + 4 | `0x4b0`-`0x4c0`, `0x4c4`, `0x4dc`, `0x4e0`, `0x4e4`, `0x4e8` |
+| `script-flags` | flags 1-128, flag *n* at byte (*n* - 1) / 8, bit (*n* - 1) % 8 | 16 | `0x4f4` |
+| `story` (optional) | the count (u32); per mod mission, sorted by id: its id (a string, `<mod>.<id>`), complete, the rank records (u32, bit *k* - 1 for record (*level*, 0, *k*), *k* 1-32), and a best record with the original's fields: best score (u32), total (u32), grade, percentage | 4 + per entry 1 + *n* + 15 | none |
+| `mod:<name>` (optional, one per mod) | the mod's version (a string), its package hash (SHA-256, 32 bytes), then its data (u32 length, bytes) | 1 + *n* + 32 + 4 + *length* | none |
+
+The record's version word (`0x000`, always `0x11`) becomes the format's version; the three bytes after the brightness
+byte are not kept (Coney writes them as zero in a version-0 record, [above](#coneys-implementation)).
+
+#### Story and mod sections {#save-mods}
+
+The story section is the one place for a mod mission's progress, keyed by its id ([Mission mods:
+Progress](../guides/studio/mission-mods.md#graph-progress)): complete or not, the rank records
+`MissionCompleteUnlocks` gives it, and a best record; no checkpoint, as for original missions. Nothing of a mod mission
+goes into the 640 unlock bits or the 30 best records, which stay the original missions'. A mod's section names it by
+name, version and package hash ([Modded saves](../guides/studio/mods.md#saves-replays)), so a load can name each
+difference, and holds the mod's own bytes. A save with any story entry or mod section is a modded save and belongs in
+`modded/`, never over the faithful profile.
+
+#### Versions and migrations {#save-versions}
+
+| Version | What | Migration to the next |
+| --- | --- | --- |
+| 0 | the original's record, 1,284 bytes, first word `0x11`, no magic: what Coney wrote before this format, and what the importer reads | `ProfileRecord::parse`, each field into its section of the mapping; no story entries, no mod sections |
+| 1 | the format above | (current) |
+
+A file is read by running the steps from its version up to the current one; Coney writes only the current version, so
+an older file is rewritten at its next save and is not touched before. A step works on the sections of the version
+before it, so it never has to read the newest layout. Each older version keeps a test fixture that must load.
+
+#### Not loadable {#save-damaged}
+
+A file is listed as a damaged profile (slot `+0x24`, which PM_Load sends to PM_Delete), under the name it holds when
+that can be read, when: it has neither the magic nor the size and version of a record; its CRC-32 does not match; it
+ends early or runs past its sections; its version is newer than this Coney's (the message says so); a section is
+missing, repeated, unknown or of the wrong length, or holds a flag that is not 0 or 1; or a name breaks its rules.
+Deleting it is the player's choice, as on the PS2.
 
 ## Open questions
 
