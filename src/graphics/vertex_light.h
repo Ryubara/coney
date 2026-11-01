@@ -15,11 +15,11 @@ namespace coney::graphics {
 /// Colours are on the lighting scale, where 1.0 is the GS's 0x80.
 struct Vu1Light {
     LightType type = LightType::Ambient;
-    LightColour colour;     ///< The colour the light shines with now (brightness, offset and flicker applied).
-    world::Vec3 position;   ///< Point and spot lights, RenderWare's axes.
-    world::Vec3 direction;  ///< Directional and spot lights: the way the light travels (unit).
-    float radius = 0.0F;    ///< Point and spot lights, metres, as given (the block holds no inverse).
-    float coneAngle = 0.0F; ///< Spot lights: the cone's half angle, radians (the block holds −cos of it, inferred).
+    LightColour colour{};    ///< The colour the light shines with now (brightness, offset and flicker applied).
+    world::Vec3 position{};  ///< Point and spot lights, RenderWare's axes.
+    world::Vec3 direction{}; ///< Directional and spot lights: the way the light travels (unit).
+    float radius = 0.0F;     ///< Point and spot lights, metres, as given (the block holds no inverse).
+    float coneAngle = 0.0F;  ///< Spot lights: the cone's half angle, radians (the block holds −cos of it, inferred).
 };
 
 /// A vertex to light: where it is, which way it faces and its baked colour.
@@ -46,7 +46,8 @@ struct GsColour {
 
 /// The light block of one atomic: `selection`'s records of `manager`, in the selection's order. In the game, lights
 /// reach the renderer through SceneLighting::useLights (librw's lighting); this block feeds the CPU reference.
-/// @orig 0x0017e810 LightManager_UploadSelected (LightManager.cpp), docs/research/lighting.md#vertex-reference
+/// Research: docs/research/lighting.md#vertex-reference
+/// @orig 0x0017e810 LightManager_UploadSelected (LightManager.cpp)
 [[nodiscard]] std::vector<Vu1Light> vu1Lights(const LightManager& manager, const LightSelection& selection);
 
 /// The light `lights` add at a vertex at `position` facing `normal`: each ambient's colour, each directional
@@ -69,7 +70,7 @@ struct GsColour {
                                                   std::span<const Vu1Light> lights, LightColour material);
 
 /// A colour on the lighting scale as the GS receives it: × 128, truncated, kept within 0-128.
-/// @coney-only the CPU reference's GS rounding (docs/research/lighting.md#vertex-reference)
+/// @coney-only the CPU reference's GS truncation (docs/research/lighting.md#vertex-reference)
 [[nodiscard]] GsColour toGs(const LightColour& colour);
 
 /// A packed prelighting colour as the disc stores it (0x80 = 1.0) on the lighting scale.
