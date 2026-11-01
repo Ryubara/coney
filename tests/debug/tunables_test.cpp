@@ -128,8 +128,9 @@ TEST_CASE("the game's movement and camera tunables edit the values the game read
     CHECK(registry.inCategory("Sprint").size() == 1);
     CHECK(registry.inCategory("Jump").size() == 4);
     CHECK(registry.inCategory("Climb").size() == 11);
-    // The cutscene letterbox, and the renderer the next start draws with (docs/engine/gpu-renderer.md#choice).
-    CHECK(registry.inCategory("Display").size() == 2);
+    // The cutscene letterbox, the renderer the next start draws with (docs/engine/gpu-renderer.md#choice), and the
+    // display preset with the seven other values it sets (docs/engine/renderer.md#presets-built).
+    CHECK(registry.inCategory("Display").size() == 10);
     REQUIRE(registry.find("Movement/Run threshold") != nullptr);
     // Each traversal tunable starts at the original's value.
     REQUIRE(registry.find("Body/Step height") != nullptr);

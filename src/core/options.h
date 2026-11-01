@@ -9,6 +9,7 @@
 #include <string_view>
 #include <vector>
 
+#include "core/display_preset.h"
 #include "core/error.h"
 #include "core/language.h"
 #include "core/log_record.h"
@@ -377,6 +378,11 @@ struct Options {
     /// and reads no frame back, so it cannot be combined with `--headless`, `--load`, `--screenshot`, `--record` or
     /// `--render-references`.
     std::optional<RendererKind> renderer;
+    /// `--preset ps2|xbox|enhanced|high`: the display preset (docs/engine/renderer.md#presets). Outside test mode it is
+    /// chosen at the start, over the saved settings, and the player may change it after; in test mode it is what
+    /// drawing is pinned to in place of *PS2* (pinnedDisplayPreset()). Unset: the saved settings, or *PS2* in test
+    /// mode.
+    std::optional<DisplayPreset> displayPreset;
     /// `--no-audio`: no sound output at all: no mixer, no device (the debug menu's Audio page says so).
     bool noAudio = false;
     /// `--audio-test`: play a synthesised tone sweep, looping, from the start (audio::makeToneSweep()), and print what
@@ -416,6 +422,11 @@ inline constexpr int kDefaultBenchWarmup = 60;
 /// run a person plays, so not in test mode, and not for `--render-references`, whose offscreen drawing needs GL3
 /// (docs/engine/gpu-renderer.md#choice).
 [[nodiscard]] bool takesSavedRenderer(const Options& options);
+
+/// The display preset drawing is pinned to (DisplaySettings::pin()), whatever the saved settings say: in test mode
+/// and for `--render-references`, the preset `--preset` names, else *PS2*, so a test run draws the PS2 picture
+/// whatever a player saved (docs/engine/renderer.md#ps2-preset); nothing in a run a person plays.
+[[nodiscard]] std::optional<DisplayPreset> pinnedDisplayPreset(const Options& options);
 
 /// The character `--view-character` shows without a name: Rembrandt, the player of level99 (warr_re_cv).
 inline constexpr std::string_view kDefaultViewCharacter = "warr_re_cv";

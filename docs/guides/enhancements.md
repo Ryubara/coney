@@ -75,10 +75,15 @@ the game's options screens.
   overrides file (`coney-tunables.ini` in your config folder, or the file `--tunables FILE` names).
   `Display/Renderer` (0, GL3, by default): 1 will start SDL3's GPU renderer at the next start, as `--renderer gpu`
   does, once it draws its own menus; until then a saved 1 starts GL3 with a warning
-  ([The way back to GL3](../engine/gpu-renderer.md#way-back)); test mode ignores it.
-- **Command line.** Flags where they help scripted captures and benchmarks: `--preset ps2|xbox|enhanced|high`,
-  `--render-scale`, `--aspect`, `--fov-offset` and `--msaa`, beside the existing `--fps-cap` and `--vsync`. A
-  general `--set Display/<name>=<value>` covers the rest.
+  ([The way back to GL3](../engine/gpu-renderer.md#way-back)); test mode ignores it. `Display/Preset` (0, *PS2*, by
+  default) chooses one of the four [presets](../engine/renderer.md#presets) and writes its values at once (lights,
+  shadows, blob shadow, per-pixel fog, gamma ramp, reflections, anti-aliasing and the renderer); changing one of them
+  afterwards shows 4, *Custom*. Nothing draws those values yet, so every preset draws today's picture
+  ([Presets: Built](../engine/renderer.md#presets-built)); test mode draws *PS2* whatever is saved.
+- **Command line.** Flags where they help scripted captures and benchmarks: `--preset ps2|xbox|enhanced|high`
+  (built: chosen at the start, and in test mode drawn in place of *PS2*), and, to come, `--render-scale`, `--aspect`,
+  `--fov-offset` and `--msaa`, beside the existing `--fps-cap` and `--vsync`. A general `--set
+  Display/<name>=<value>` covers the rest.
 - **Coney natives.** The maintainers plan a FiveM-style script API of Coney's own on top of the game's bindings
   ([Script mods](../roadmap.md#script-mods)). The store therefore exposes every option by its stable
   `Display/<name>` key, with its type and range, through one get/set interface. A native can read or set an option

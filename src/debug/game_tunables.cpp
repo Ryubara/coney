@@ -2,6 +2,7 @@
 #include "debug/game_tunables.h"
 
 #include "camera/follow_camera.h"
+#include "core/display_preset.h"
 #include "human/body.h"
 #include "human/climb.h"
 #include "human/jump.h"
@@ -148,6 +149,35 @@ void registerGameTunables(TunableRegistry& registry) {
         .describe("0: librw's OpenGL 3.3 (the default); 1: SDL3's GPU API, which only clears and presents so far, "
                   "so a saved 1 starts OpenGL with a warning until it draws the menus. Applies at the next start; "
                   "--renderer overrides it, and test mode ignores it");
+    // The display preset and the values it sets (docs/engine/renderer.md#presets-built): the settings settle between
+    // frames (DisplaySettings::settle()), so a preset chosen here writes its values on the next frame and a value
+    // changed after it shows Custom. Nothing draws them but the renderer yet: each help line names the issue that will.
+    DisplaySettings& display = displaySettings();
+    registry.add("Display", "Preset", &display.presetSetting())
+        .range(0, kChoosablePresets, 1)
+        .describe("0: PS2, today's picture (the default); 1: Xbox; 2: Enhanced; 3: High; 4: Custom, shown once a "
+                  "value below differs from every preset's. Test mode draws PS2 whatever is set here");
+    DisplayValues& values = display.values();
+    registry.add("Display", "Lights", &values.lights)
+        .range(0, 3, 1)
+        .describe("0: per vertex at the PS2's caps; 1: the Xbox's caps; 2: per pixel; 3: clustered. Not drawn yet "
+                  "(#1217, #1221)");
+    registry.add("Display", "Shadows", &values.shadows)
+        .range(0, 3, 1)
+        .describe("0: no shadow map; 1: the Xbox's; 2: a fitted PCF map; 3: two cascades. Not drawn yet (#1220, "
+                  "#1222)");
+    registry.add("Display", "Blob shadow", &values.blobShadow)
+        .describe("The PS2's blob under each human; the Xbox draws a shadow map instead. Not switchable yet (#1220)");
+    registry.add("Display", "Per-pixel fog", &values.perPixelFog)
+        .describe("The Xbox's linear fog per pixel in place of the PS2's. Not drawn yet (#1217)");
+    registry.add("Display", "Gamma ramp", &values.gammaRamp)
+        .describe("The level's Xbox gamma ramp and its brightness default. Not drawn yet (#1216)");
+    registry.add("Display", "Reflections", &values.reflections)
+        .range(0, 2, 1)
+        .describe("0: none; 1: environment maps; 2: with GTAO and probes. Not drawn yet (realtime lighting design)");
+    registry.add("Display", "Anti-aliasing", &values.antiAliasing)
+        .range(0, 2, 1)
+        .describe("0: none; 1: SMAA; 2: MSAA or TAA with SMAA. Not drawn yet (#1219, #1218, #1224)");
 }
 
 RendererKind savedRenderer(const std::string& path) {
