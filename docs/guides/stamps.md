@@ -415,8 +415,45 @@ C++ tests run), does the same on the fix commit (default HEAD), then puts the br
 * **A test added later**, in a review round, gets its own `orig fails-first` run with its own test commit (and the
   stubs it needs); the stamps of the earlier tests stay valid, also when the new test is in the same file.
 * **`--keeps`** is the other mode, for a test that cannot fail first ([Keeps](#keeps)).
+* **`--detach`** is for a build that does not fit the call's 45-minute budget ([Detached](#fails-first-detach)).
 * A docs or tooling task has nothing to run: `--none REASON` (one line, at most 200 characters, given alone) stamps
   `result: none` with the reason.
+
+### A build past the budget: `--detach` {#fails-first-detach}
+
+A run you wait on builds each commit through `build`, whose call has a 45-minute time budget (an agent's prompt cache
+lasts an hour, [Build waits](agents.md#build-waits)). At peak load a build of a commit far out of date can need longer
+(issue 1384: 309 steps, a 46-minute median), and `build` then leaves at its first look with exit 75 and the run never
+queues. The run says so when it happens: the error names the budget and says to run `orig fails-first` again with
+`--detach`.
+
+```sh
+uv run --project python coney-tools orig fails-first --test NAME --test-commit SHA [--fix-commit SHA] --agent ID --detach
+uv run --project python coney-tools orig fails-first --result
+```
+
+`--detach` checks what a run checks (a clean tree, the commits' order, the names, a changed test's decision, and that
+no detached run of the unit still runs) in your own shell, so a refusal comes back at once; then it starts the same run
+in a process of its own, apart from the shell that started it, and returns with the process id and the output file.
+That process checks out the test commit and the fix commit in the unit's worktree one after the other, builds and tests
+each with no time budget (`build --unattended`: a wait for a slot of up to four hours, as a `build --detach` has),
+puts the branch back, writes the stamps and records its exit code. **The worktree is the run's until it ends**: it
+is detached at one of the commits for most of that time, so nothing is edited, committed or checked out in it. Write
+`STATUS.md` and stop, or work in another worktree.
+
+`orig fails-first --result` (alone, in the unit's worktree or with `--task`) prints the run's output and its outcome.
+The exit code is the run's own once it ended (0 every test proven, 1 a `fail` stamp, 2 a refusal such as a commit that
+did not build, with no stamp), 75 while it still runs and 1 when its process is gone without a result. The result and
+the output are `fails-first-result.json` and `fails-first-detached.out` in the unit's scratch folder
+(`coney_tools/fails_first_detach.py`, on `detached_runs.py` that `ci run --detach` shares). A second `--detach` while one
+runs is refused.
+
+**The stamps keep the caller's identity.** The hook removes the caller's identity file when its command returns
+([Who](#who)), which is before the detached process reads it. So `--detach` hands on what the hook vouched for
+(`identity.hand_on`): a file of the same format under a fresh token, in the child's environment only, with the same
+10-minute life. The stamps then say `source: hook` and the agent that started the run; a caller the hook did not vouch
+for hands on nothing and its stamps are `unverified`, as its own would be (issue 1370: a detached `task check` stamped
+`unverified`, agent `unknown`, for want of it).
 
 ### A changed test {#changed-test}
 

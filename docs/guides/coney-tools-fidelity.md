@@ -325,7 +325,7 @@ Run named tests on the test commit and on the fix commit and stamp `fails-first`
 
 ```text
 coney-tools orig fails-first [--test TEST] [--test-commit TEST_COMMIT] [--fix-commit FIX_COMMIT] [--preset PRESET]
-    [--agent AGENT] [--keeps] [--none REASON] [--accept-change REASON] [--task TASK]
+    [--agent AGENT] [--keeps] [--none REASON] [--accept-change REASON] [--detach] [--result] [--task TASK]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -338,6 +338,8 @@ coney-tools orig fails-first [--test TEST] [--test-commit TEST_COMMIT] [--fix-co
 | `--keeps` | flag | off | the tests guard a refactor or behaviour Coney already has: they must pass on both commits, unchanged |
 | `--none REASON` | text | none | stamp that there is no fails-first test, with the reason |
 | `--accept-change REASON` | text | none | the coordinator only: record that the named tests may change between --test-commit and --fix-commit |
+| `--detach` | flag | off | run apart from this shell with no time budget and return at once: the stamps are written when it ends and --result shows the outcome; the worktree is the run's until then |
+| `--result` | flag | off | print the output and outcome of the task's last --detach run (exit 75 while it runs) |
 | `--task TASK` | text | none | the task (default: CONEY_TASK, else the branch) |
 <!-- command-reference:end -->
 

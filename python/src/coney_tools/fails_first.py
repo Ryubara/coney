@@ -153,8 +153,10 @@ def stream_lines(command: Sequence[str], cwd: Path, on_line: Callable[[str], Non
         raise
 
 
-def build_runner(agent: str) -> Runner:
-    """A Runner that calls `coney-tools build --agent <agent> --preset <p> --test -R <names>` in the checkout."""
+def build_runner(agent: str, unattended: bool = False) -> Runner:
+    """A Runner that calls `coney-tools build --agent <agent> --preset <p> --test -R <names>` in the checkout. With
+    `unattended` (the run of `orig fails-first --detach`, which nobody waits on) the build has a detached run's limits:
+    a wait of up to four hours and no time budget; without it the build keeps the call's 45-minute budget."""
 
     def run(root: Path, preset: str, names: tuple[str, ...]) -> BuildOutcome:
         command = [
@@ -169,6 +171,7 @@ def build_runner(agent: str) -> Runner:
             "--test",
             "-R",
             name_regex(names),
+            *(["--unattended"] if unattended else []),
         ]
         code, output = stream_lines(command, root, lambda line: print(line, flush=True))
         return parse_build_output(output, code)
@@ -330,7 +333,14 @@ def _original_ref(root: Path) -> tuple[str, bool]:
 
 
 def _states(
-    root: Path, preset: str, runner: Runner, names: tuple[str, ...], outcome: BuildOutcome, commit: str, logs: list[str]
+    root: Path,
+    preset: str,
+    runner: Runner,
+    names: tuple[str, ...],
+    outcome: BuildOutcome,
+    commit: str,
+    logs: list[str],
+    detached: bool = False,
 ) -> dict[str, str]:
     """Each name's state at the checked-out commit, "failed" or "passed". A name the run's own words settle is settled:
     a run that was ok, or one whose ctest failure list was read whole. One a run leaves unknown (no log to read, or a
@@ -346,7 +356,7 @@ def _states(
         else:
             alone = runner(root, preset, (name,))
             logs.append(alone.output)
-            _need_a_run("rerun", commit, alone)
+            _need_a_run("rerun", commit, alone, detached)
             states[name] = "passed" if alone.ok else "failed"
     return states
 
@@ -538,31 +548,27 @@ def _check_names(root: Path, commit: str, test_files: list[str], names: Sequence
         raise FailsFirstError(f"{', '.join(missing)}: not found in the test files of {commit[:12]} ({where})")
 
 
-def run(
-    unit: Unit,
-    root: Path,
-    *,
-    tests: Sequence[str],
-    test_commit: str,
-    fix_commit: str | None,
-    preset: str,
-    runner: Runner,
-    rules: Stamps,
-    who: Mapping[str, object],
-    keeps: bool = False,
-    clock: Callable[[], datetime] = lambda: datetime.now(UTC),
-    say: Callable[[str], None] = lambda line: None,
-) -> list[stamps.Stamp]:
-    """Run `tests` on `test_commit` and `fix_commit` and append a `fails-first` stamp for each; returns the stamps.
-    With `keeps` a test must pass on both (`keeps`) instead of failing on the first (`pass`).
+@dataclass(frozen=True)
+class Plan:
+    """What `preflight` found out about a run: the commits, their test files and the state to come back to."""
 
-    Raises FailsFirstError (nothing stamped, the branch restored) for a dirty tree, a worktree an earlier run left
-    detached, commits out of order, a test file whose code changed between the commits with no coordinator's decision
-    for these names and commits (`record_decision`), names the test commit's files do not hold, or a run that could not
-    build or find the tests. The branch to come back to is written to scratch before the
-    first checkout; if putting it back fails, the error says so and how to do it by hand. `say` is told a line when each
-    stage starts and ends, with the time of day (live_progress.clock_text), as it happens.
-    """
+    names: tuple[str, ...]
+    #: (the branch checked out, or the commit when detached; whether it is a branch).
+    original: tuple[str, bool]
+    test: str
+    fix: str
+    test_files: list[str]
+    stubs: list[str]
+    #: The coordinator's decision stamp for each name run that changed between the commits.
+    decisions: dict[str, stamps.Stamp]
+
+
+def preflight(
+    unit: Unit, root: Path, *, tests: Sequence[str], test_commit: str, fix_commit: str | None, rules: Stamps
+) -> Plan:
+    """Everything `run` checks before it checks a commit out: the names, a clean tree, no earlier run that left the
+    worktree detached, commits in order and the test files' names and changes. Raises FailsFirstError (nothing
+    checked out), so a detached run (`orig fails-first --detach`) refuses in the caller's shell, not in its child."""
     names = tuple(tests)
     if not names:
         raise FailsFirstError("name at least one test (--test NAME)")
@@ -588,6 +594,40 @@ def run(
     decisions = _decisions(unit, rules, names, test, fix) if differing else {}
     if differing and any(name not in decisions for name in names):
         raise _changed_refusal(differing[0], test, fix)
+    return Plan(names, original, test, fix, test_files, stubs, decisions)
+
+
+def run(
+    unit: Unit,
+    root: Path,
+    *,
+    tests: Sequence[str],
+    test_commit: str,
+    fix_commit: str | None,
+    preset: str,
+    runner: Runner,
+    rules: Stamps,
+    who: Mapping[str, object],
+    keeps: bool = False,
+    detached: bool = False,
+    clock: Callable[[], datetime] = lambda: datetime.now(UTC),
+    say: Callable[[str], None] = lambda line: None,
+) -> list[stamps.Stamp]:
+    """Run `tests` on `test_commit` and `fix_commit` and append a `fails-first` stamp for each; returns the stamps.
+    With `keeps` a test must pass on both (`keeps`) instead of failing on the first (`pass`). `detached` says the run is
+    the child of `orig fails-first --detach`, which only changes what a queued build advises.
+
+    Raises FailsFirstError (nothing stamped, the branch restored) for a dirty tree, a worktree an earlier run left
+    detached, commits out of order, a test file whose code changed between the commits with no coordinator's decision
+    for these names and commits (`record_decision`), names the test commit's files do not hold, or a run that could not
+    build or find the tests. The branch to come back to is written to scratch before the
+    first checkout; if putting it back fails, the error says so and how to do it by hand. `say` is told a line when each
+    stage starts and ends, with the time of day (live_progress.clock_text), as it happens.
+    """
+    plan = preflight(unit, root, tests=tests, test_commit=test_commit, fix_commit=fix_commit, rules=rules)
+    names, original, test, fix = plan.names, plan.original, plan.test, plan.fix
+    test_files, stubs, decisions = plan.test_files, plan.stubs, plan.decisions
+    marker = _marker(unit)
     marker.parent.mkdir(parents=True, exist_ok=True)
     note = {"ref": original[0], "branch": original[1], "head": _commit(root, "HEAD")}
     marker.write_text(json.dumps(note), encoding="utf-8")
@@ -601,9 +641,9 @@ def run(
                 f"[{live_progress.clock_text()}] orig fails-first: end the {label} run at {commit[:12]}: "
                 f"{'tests passed' if first.ok else 'tests failed' if first.tests_ran else 'no test run'}"
             )
-            _need_a_run(label, commit, first)
+            _need_a_run(label, commit, first, detached)
             logs = [first.output]
-            runs[label] = (first, _states(root, preset, runner, names, first, commit, logs), logs)
+            runs[label] = (first, _states(root, preset, runner, names, first, commit, logs, detached), logs)
     finally:
         try:
             _checkout(root, original[0], detach=not original[1])
@@ -646,10 +686,22 @@ def run(
     return stamps.append_many(unit.stamps, rules=rules, task=unit.task, entries=entries, clock=clock)
 
 
-def _need_a_run(label: str, commit: str, outcome: BuildOutcome) -> None:
-    """Raise unless the build at `commit` ran the tests (a verdict needs a run)."""
+#: What a queued build advises a run you wait on: the build gave up on the call's time budget or on its wait for a
+#: slot, and a detached run has neither.
+DETACH_ADVICE = (
+    "run `orig fails-first` again with --detach (the same options): a detached run has no time budget and waits up to "
+    "four hours for a slot, writes its stamps when it ends and `orig fails-first --result` shows how it went"
+)
+
+
+def _need_a_run(label: str, commit: str, outcome: BuildOutcome, detached: bool = False) -> None:
+    """Raise unless the build at `commit` ran the tests (a verdict needs a run). A build that stayed queued advises
+    `--detach` (DETACH_ADVICE), unless this run is detached already."""
     if outcome.queued:
-        raise FailsFirstError(f"the build at {commit[:12]} stayed queued for a slot; run it again later")
+        advice = "run it again later" if detached else DETACH_ADVICE
+        # The build says which: its wait or step would pass the call's time budget, or the slot did not come in time.
+        why = "would not fit the call's time budget" if "time budget:" in outcome.output else "stayed queued for a slot"
+        raise FailsFirstError(f"the build at {commit[:12]} {why}; {advice}")
     if not outcome.built:
         raise FailsFirstError(f"the {label} commit {commit[:12]} did not build; fix the commit (see the build output)")
     if outcome.no_tests:
