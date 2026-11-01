@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
 from collections.abc import Callable, Mapping
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import asdict, dataclass, field, replace
@@ -50,6 +51,7 @@ from coney_tools import (
     check_progress,
     check_slots,
     ctest_scope,
+    detached_runs,
     live_progress,
     pr_diff,
     proof_profiles,
@@ -71,6 +73,10 @@ EXIT_UNABLE = 2
 EXIT_QUEUED = build_run.EXIT_QUEUED
 #: The most changed paths and status lines a message names.
 SHOWN = 5
+#: A detached run (`--detach`): its result and its console output in the worktree's scratch folder (detached_runs.py).
+DETACHED = detached_runs.Kind(
+    "task check", "coney-tools task check --result", "task-check-result.json", "task-check-detached.out"
+)
 
 
 @dataclass(frozen=True)
@@ -553,10 +559,55 @@ def add_parser(commands: Any) -> None:
         metavar="MIN",
         help="minutes the build may wait for a slot before giving up with exit 75 (default %(default)s)",
     )
+    check.add_argument(
+        "--detach",
+        action="store_true",
+        help="run apart from this shell (a killed caller does not end it), return at once; --result shows the outcome",
+    )
+    check.add_argument(
+        "--result",
+        action="store_true",
+        help="print the output and outcome of the worktree's last --detach run (exit 75 while it runs)",
+    )
+    # Internal: where a --detach run's child records its outcome.
+    check.add_argument("--result-file", type=Path, help=argparse.SUPPRESS)
+
+
+def _detached_folder(args: argparse.Namespace) -> tuple[Path, Path]:
+    """The checkout a detached run is about and its folder in the scratch directory (where `build` keeps its own)."""
+    root = find_repo_root(args.worktree or Path.cwd())
+    return root, build_cli.scratch_root(root) / root.name
+
+
+def child_command(args: argparse.Namespace, root: Path, result: Path) -> list[str]:
+    """The command line of a --detach run's child: this run's options, the worktree spelled out, and its result file."""
+    command = [sys.executable, "-m", "coney_tools.cli", "task", "check", *([args.name] if args.name else [])]
+    command += ["--worktree", str(root), "--max-wait", str(args.max_wait)]
+    for flag, value in (("--base", args.base), ("--agent", args.agent), ("--profile", args.profile)):
+        command += [flag, value] if value else []
+    command += ["--keep-going"] if args.keep_going else []
+    return [*command, "--result-file", str(result)]
 
 
 def run(args: argparse.Namespace) -> int:
-    """`task check`: the command line of `run_check`."""
+    """`task check`: the command line of `run_check`; with `--detach` the same run apart from the caller, with
+    `--result` that run's outcome (detached_runs.py)."""
+    if args.result or args.detach:
+        if args.dry_run or (args.result and args.detach):
+            raise ConfigError("task check: --detach and --result go alone, without --dry-run or each other")
+        root, folder = _detached_folder(args)
+        if args.result:
+            return detached_runs.read(DETACHED, folder)
+        result, _ = DETACHED.files(folder)
+        agent = args.agent or os.environ.get("CONEY_AGENT") or root.name
+        return detached_runs.start(DETACHED, folder, child_command(args, root, result), root, agent)
+    if args.result_file is not None:
+        return detached_runs.child(DETACHED, args.result_file, args.agent or "task-check", lambda: _run_here(args))
+    return _run_here(args)
+
+
+def _run_here(args: argparse.Namespace) -> int:
+    """`task check` in this process."""
     request = Request(
         task=args.name,
         worktree=args.worktree,

@@ -670,8 +670,8 @@ wakes up and writes its whole context again, which on 2026-10-12 cost about 1.1 
   no budget). Write `STATUS.md` naming the worktree and the command, and end your turn. Whoever continues runs
   `coney-tools build result --dir <worktree>`: exit 75 while it runs, then the run's summary, log path and exit code
   ([`build result`](coney-tools-build.md#build)).
-- `coney-tools ci run --detach` runs the CI-style checks of the changed files in the background; whoever
-  continues runs `coney-tools ci result` in the worktree ([`ci result`](coney-tools-ci.md#ci-run)).
+- `ci run --detach` and `task check --detach` run apart from your shell, which may then die; whoever continues runs
+  `ci result` or [`task check --result`](coney-tools-repo.md#task-check) in the worktree.
 
 ## The PCSX2 MCP guard {#pcsx2-guard}
 

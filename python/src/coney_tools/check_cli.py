@@ -24,6 +24,7 @@ from pathlib import Path
 from coney_tools import (
     build_cli,
     check_slots,
+    detached_runs,
     docs_check,
     docs_cli,
     live_progress,
@@ -70,6 +71,8 @@ RUFF_COMMANDS: tuple[tuple[str, ...], ...] = tuple(
 #: The files in the worktree's scratch folder that a --detach run records itself in, and its console output.
 RESULT_FILE = "check-result.json"
 DETACHED_OUTPUT = "check-detached.out"
+#: The detached gate (detached_runs.py).
+DETACHED = detached_runs.Kind("check", "coney-tools ci result", RESULT_FILE, DETACHED_OUTPUT)
 
 
 def _timed(name: str, work: Callable[[], StepResult]) -> StepResult:
@@ -387,79 +390,21 @@ def _child_command(args: argparse.Namespace, result: Path) -> list[str]:
 
 
 def _start_detached(args: argparse.Namespace) -> int:
-    """--detach: record the run as started, start its child apart from this shell and return at once. Refuses a
-    second detached gate in a worktree whose last one still runs (they would share one result file)."""
+    """--detach: record the run as started, start its child apart from this shell and return at once (detached_runs.py).
+    Refuses a second detached gate in a worktree whose last one still runs (they would share one result file)."""
     root = find_repo_root(Path.cwd())
     folder = _scratch_folder(root)
-    result = folder / RESULT_FILE
-    previous = build_cli._read_record(result)
-    if previous is not None and previous.get("state") == "running" and build_cli._alive(previous):
-        raise ConfigError(
-            f"a detached check of {previous.get('agent')} is still running (pid {previous.get('pid')}): "
-            "`coney-tools ci result` shows how it ends"
-        )
-    output = folder / DETACHED_OUTPUT
-    agent = default_agent(root, os.environ)
-    record = {"state": "running", "agent": agent, "pid": None, "log": str(output), "started": time.time()}
-    build_cli._write_record(result, record)
-    pid = build_cli.spawn_detached(_child_command(args, result), root, output)
-    print(f"detached: pid {pid}, output in {output}")
-    print(
-        "write STATUS.md and stop, or do other work: `coney-tools ci result` shows the outcome (exit 75 while it runs)"
-    )
-    return 0
+    result, _ = DETACHED.files(folder)
+    return detached_runs.start(DETACHED, folder, _child_command(args, result), root, default_agent(root, os.environ))
 
 
 def _detached_child(args: argparse.Namespace) -> int:
     """The child of a --detach run: the gate itself, its exit code recorded in --result-file however it ends."""
-    record = {
-        "state": "running",
-        "agent": default_agent(find_repo_root(Path.cwd()), os.environ),
-        "pid": os.getpid(),
-        # When this process started, so a later process given the same pid is not taken for this run (build_cli._alive).
-        "process_started": process_lifetime.process_started(os.getpid()),
-        "log": str(args.result_file.parent / DETACHED_OUTPUT),
-        "started": time.time(),
-    }
-    build_cli._write_record(args.result_file, record)
-    code = 1
-    try:
-        process_lifetime.bind_children()
-        process_lifetime.stop_on_signals()
-        code = run_changed(args.base, args.only, args.skip)
-        return code
-    except ConfigError as error:
-        print(f"coney-tools: {error}")
-        code = 2
-        return code
-    except KeyboardInterrupt:
-        code = 130
-        raise
-    finally:
-        sys.stdout.flush()
-        build_cli._write_record(args.result_file, {**record, "state": "done", "exit_code": code, "ended": time.time()})
+    agent = default_agent(find_repo_root(Path.cwd()), os.environ)
+    return detached_runs.child(DETACHED, args.result_file, agent, lambda: run_changed(args.base, args.only, args.skip))
 
 
 def run_result(directory: Path) -> int:
     """`ci result`: the output and outcome of the worktree's last --detach gate. Exit: the gate's own code once it
     has ended, 75 while it runs, 1 when there is none or it ended without a result."""
-    root = find_repo_root(directory)
-    folder = _scratch_folder(root)
-    record = build_cli._read_record(folder / RESULT_FILE)
-    if record is None:
-        print("no detached check recorded for this worktree")
-        return 1
-    output = folder / DETACHED_OUTPUT
-    try:
-        print(output.read_text(encoding="utf-8", errors="replace").rstrip())
-    except OSError:
-        print(f"(no output in {output} yet)")
-    if record.get("state") == "running":
-        if build_cli._alive(record):
-            print(f"still running (pid {record.get('pid')}): look again later")
-            return EXIT_QUEUED
-        print(f"ended without a result (pid {record.get('pid')} is gone)")
-        return 1
-    code = int(record.get("exit_code", 1))
-    print(f"exit {code}")
-    return code
+    return detached_runs.read(DETACHED, _scratch_folder(find_repo_root(directory)))
