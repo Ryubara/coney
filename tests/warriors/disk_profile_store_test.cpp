@@ -226,6 +226,7 @@ TEST_CASE("a profile file of an earlier Coney loads and is rewritten in the new 
 
 TEST_CASE("a mod's section survives a save made without that mod", "[disk_profile_store]") {
     // Expected: unverified, #1179 (Coney's own sections, save.md#save-mods; mods.md#saves-replays)
+    // The store's folder stands for `modded/`: a modded save loaded with no mod running is written back there.
     TempDir dir;
     SaveGame modded;
     modded.profile.name = "REMBRAND";

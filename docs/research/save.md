@@ -487,7 +487,9 @@ Progress](../guides/studio/mission-mods.md#graph-progress)): complete or not, th
 goes into the 640 unlock bits or the 30 best records, which stay the original missions'. A mod's section names it by
 name, version and package hash ([Modded saves](../guides/studio/mods.md#saves-replays)), so a load can name each
 difference, and holds the mod's own bytes. A save with any story entry or mod section is a modded save and belongs in
-`modded/`, never over the faithful profile.
+`modded/`, never over the faithful profile; a session with no mod running that saves it keeps its sections and writes
+it back there. `DiskProfileStore` serves one folder, and which of the two a slot's file lives in is the mod loader's
+choice ([Modded saves](../guides/studio/mods.md#saves-replays)).
 
 #### Versions and migrations {#save-versions}
 
