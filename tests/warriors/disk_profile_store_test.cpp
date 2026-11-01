@@ -257,6 +257,31 @@ TEST_CASE("a mod's section survives a save made without that mod", "[disk_profil
     CHECK(reread->modded == modded.modded);
 }
 
+TEST_CASE("a new profile over a slot that held a modded save starts with nothing modded", "[disk_profile_store]") {
+    // Expected: unverified, #1179 (save.md#save-mods: a new profile is a faithful one until a mod writes to it)
+    TempDir dir;
+    SaveGame modded;
+    modded.profile.name = "MASAI";
+    modded.modded.story.push_back({.id = "yard-brawl.alley", .complete = true});
+    modded.modded.mods.push_back({.name = "yard-brawl", .version = "0.3.0", .packageHash = {}, .data = {}});
+    dir.write("profile-2.sav", modded.serialise());
+
+    GameState state;
+    DiskProfileStore store(dir.path(), state);
+    REQUIRE(store.modded(1) != nullptr);
+    REQUIRE_FALSE(store.modded(1)->empty());
+    store.setInUse(true);
+    REQUIRE(store.create(1, chosen("RUBY")));
+
+    // Neither the file nor the slot keeps the old profile's story entries or mod sections.
+    auto written = SaveGame::parse(fileBytes(store.slotFile(1)));
+    REQUIRE(written.has_value());
+    CHECK(written->profile.name == "RUBY");
+    CHECK(written->modded.empty());
+    REQUIRE(store.modded(1) != nullptr);
+    CHECK(store.modded(1)->empty());
+}
+
 TEST_CASE("a save made by a newer Coney is listed as damaged under its name", "[disk_profile_store]") {
     // Expected: unverified, #1179 (Coney's own rule, save.md#save-damaged; the slot +0x24 of save.md#slots)
     TempDir dir;

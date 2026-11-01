@@ -380,3 +380,58 @@ TEST_CASE("a damaged save is not loadable", "[save_game]") {
         CHECK(SaveGame::parse(frame(SaveGame::kVersion, sections)).has_value());
     }
 }
+
+TEST_CASE("a Coney save too damaged to frame is listed with no name", "[save_game]") {
+    // Expected: unverified, #1179 (Coney's own frame, save.md#save-damaged: no name when the frame cannot be read)
+    SaveGame save;
+    save.profile.name = "AJAX";
+    const std::vector<std::byte> good = save.serialise();
+    REQUIRE(SaveGame::nameOf(good) == "AJAX");
+
+    // Cut anywhere past the magic: the record's header must not be read from the frame's bytes.
+    for (const std::size_t keep : {std::size_t{12}, std::size_t{20}, good.size() / 2, good.size() - 1}) {
+        const std::span<const std::byte> cut(good.data(), keep);
+        CHECK_FALSE(SaveGame::parse(cut).has_value());
+        CHECK(SaveGame::nameOf(cut).empty());
+    }
+    // Bytes between the last section and the CRC.
+    std::vector<std::byte> longer = good;
+    longer.push_back(std::byte{0});
+    CHECK(SaveGame::nameOf(longer).empty());
+    // A section name outside the frame's rules.
+    std::vector<RawSection> sections = sectionsOf(good);
+    sections.push_back({.name = "Bad Name", .payload = {}});
+    CHECK(SaveGame::nameOf(frame(SaveGame::kVersion, sections)).empty());
+}
+
+TEST_CASE("a story id not of the form <mod>.<id> is damage", "[save_game]") {
+    // Expected: unverified, #1179 (save.md#save-mapping: a story id is `<mod>.<id>`, mission-mods.md#graph)
+    SaveGame save;
+    save.profile.name = "AJAX";
+    const std::vector<RawSection> faithful = sectionsOf(save.serialise());
+    // A file of the faithful sections and a story section of one entry with `id`.
+    const auto withStoryId = [&](std::string_view id) {
+        std::vector<std::byte> story;
+        putU32(story, 1);
+        story.push_back(static_cast<std::byte>(id.size()));
+        for (const char c : id) {
+            story.push_back(static_cast<std::byte>(c));
+        }
+        story.push_back(std::byte{1}); // complete
+        putU32(story, 0);              // ranks
+        putU32(story, 0);              // best score
+        putU32(story, 0);              // total
+        story.push_back(std::byte{0}); // grade
+        story.push_back(std::byte{0}); // percentage
+        std::vector<RawSection> sections = faithful;
+        sections.push_back({.name = "story", .payload = std::move(story)});
+        return frame(SaveGame::kVersion, sections);
+    };
+    CHECK(SaveGame::parse(withStoryId("yard-brawl.alley")).has_value());
+    CHECK(SaveGame::parse(withStoryId("zeta.b_2")).has_value());
+    for (const std::string_view bad : {"alley", ".alley", "yard-brawl.", "Yard.alley", "yard brawl.alley",
+                                       "yard-brawl.Alley", "yard-brawl.al.ley"}) {
+        CAPTURE(bad);
+        CHECK_FALSE(SaveGame::parse(withStoryId(bad)).has_value());
+    }
+}
