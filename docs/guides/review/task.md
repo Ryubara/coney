@@ -133,18 +133,18 @@ test as it was. Whether that is honest is the reviewer's, who for each such test
 
 ### The description's generated sections {#generated}
 
-The description has two files. `PR.md` is the engineer's: the title, the summary paragraph and the `Runtime:` line, the
-pictures and any section only a person can fill (Issues affected). `coney-tools pr text` writes the rest and the whole
-description into `PR-BODY.md` beside it ([What is generated](../pr.md#generated)): the `Fixes #N` lines of the Summary,
-the Checklist, the facts of Testing and AI use. `pr open` refuses those sections in `PR.md` ([the engineer's
-file](../pr.md#file)), so a `PR.md` without them is right, and a finding against it for lacking them is wrong (it cost
-review rounds on #1057, #1058, #1062 and #1063). The packet's `text.generated_sections` lists them, read from the
-section names of `pull_requests` in [.github/conventions.yml](repo:.github/conventions.yml), and `text.generated_body`
-points at `PR-BODY.md`. The engineer runs `pr text` before `task review`, so the file is there; `prepare` prints the
-same in one line and says `not written yet` when `pr text` has not run (the reviewer then reads `PR.md` for the
-engineer's parts and asks for `pr text` before judging the rest). The [description checklist](text.md) says what to
-judge in each file. The text hashes of the verdict and the stamp cover `PR.md`; `PR-BODY.md` is read, not hashed,
-because it is regenerated from the stamps, among them this review's own.
+The description has two files. `PR.md` is the engineer's: the title, the summary paragraph and the `Runtime:` and
+`Pictures:` lines, the pictures and any section only a person can fill (Issues affected). `coney-tools pr text` writes
+the rest and the whole description into `PR-BODY.md` beside it ([What is generated](../pr.md#generated)): the `Fixes #N`
+lines of the Summary, the Checklist, the facts of Testing and AI use. `pr open` refuses those sections in `PR.md` ([the
+engineer's file](../pr.md#file)), so a `PR.md` without them is right, and a finding against it for lacking them is wrong
+(it cost review rounds on #1057, #1058, #1062 and #1063). The packet's `text.generated_sections` lists them, read from
+the section names of `pull_requests` in [.github/conventions.yml](repo:.github/conventions.yml), and
+`text.generated_body` points at `PR-BODY.md`. The engineer runs `pr text` before `task review`, so the file is there;
+`prepare` prints the same in one line and says `not written yet` when `pr text` has not run (the reviewer then reads
+`PR.md` for the engineer's parts and asks for `pr text` before judging the rest). The [description checklist](text.md)
+says what to judge in each file. The text hashes of the verdict and the stamp cover `PR.md`; `PR-BODY.md` is read, not
+hashed, because it is regenerated from the stamps, among them this review's own.
 
 ### Which checklists apply {#kinds}
 

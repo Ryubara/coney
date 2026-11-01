@@ -356,8 +356,8 @@ and reports the counts in its Testing section. The comparison is the [renderer d
 named frames from the branch against the same frames from its base commit, on one machine, with a pinned camera at
 `--render-size 640x448` ([Capturing and attaching](#pr-media)), compared with
 [`coney-tools picture compare`](coney-tools-picture.md#picture), which prints the pixels over the tolerance and the
-largest difference and exits 1 past the limit. The Testing section holds one line with the numbers, as for the
-`Runtime:` line:
+largest difference and exits 1 past the limit. The Testing section holds one line with the numbers, its own
+bullet beside the `Runtime:` line ([`pr text`](pr.md#file) keeps it, after the `Runtime:` line):
 
 ```text
 - Pictures: 6 named frames, branch against base, 12 pixels over 2 of 255, largest difference 7, limit 0.1 % each: ok
@@ -366,7 +366,8 @@ largest difference and exits 1 past the limit. The Testing section holds one lin
 The tool's output stays in the scratch folder while the pull request is open, because the reviewer opens it
 ([Description](review/text.md)); the frames are game pictures, so they are never committed. A change that moves no
 pixel says `Pictures: none (<reason>)`, for example a refactor whose draw-stream hashes are unchanged. Nothing checks
-the line but the reviewer, who refuses a pull request that changes drawing without it.
+the line but the reviewer, who refuses a pull request that changes drawing without it; `pr text` only keeps it, and the
+start of the line is `pull_requests.runtime.pictures`.
 
 ### Capturing and attaching {#pr-media}
 
