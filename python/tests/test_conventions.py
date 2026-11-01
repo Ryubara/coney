@@ -675,6 +675,14 @@ def test_the_real_runtime_rule() -> None:
     assert runtime.pictures == "Pictures:"
 
 
+def test_a_runtime_rule_without_a_pictures_line_means_the_pictures_label() -> None:
+    """A default branch cut before the key (what `pr text` reads) still loads."""
+    conventions = conventions_with(("pull_requests.runtime.pictures", REMOVE))
+    assert conventions.pull_requests.runtime.pictures == "Pictures:"
+    with pytest.raises(ConventionsError, match=r"pull_requests\.runtime\.pictures"):
+        conventions_with(("pull_requests.runtime.pictures", ""))
+
+
 def test_a_runtime_area_must_be_a_commit_title_area() -> None:
     with pytest.raises(ConventionsError, match=r"pull_requests\.runtime\.areas.*commits\.title\.areas"):
         conventions_with(("pull_requests.runtime.areas", ["gameplay", "not-an-area"]))

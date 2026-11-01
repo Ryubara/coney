@@ -285,7 +285,7 @@ class RuntimeEvidence:
     reason: str
     #: The start of the picture-counts line beside it in the same section (`Pictures:`): a pull request that changes
     #: drawing reports its picture counts there, or `Pictures: none (<reason>)` (docs/guides/testing.md#picture-counts).
-    #: `pr text` keeps it; only the reviewer checks it.
+    #: `pr text` keeps it; only the reviewer checks it. Optional in the file: `Pictures:` when absent.
     pictures: str
 
 
@@ -1931,7 +1931,10 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
     checklist, checklist_where = sub("checklist", "section", "unchecked", "since", "legacy_label")
     affected, affected_where = sub("issues_affected", "section", "none", "reason", "example", "since")
     screenshots, screenshots_where = sub("screenshots", "section", "none", "reason", "uploaded_only")
-    runtime, runtime_where = sub("runtime", "areas", "section", "line", "none", "reason", "pictures")
+    # `pictures` is optional like `auto_merge_manual_paths`: `pr text` reads the default branch's rules, which lack it
+    # until the pull request that adds it merges; a file without it means `Pictures:`.
+    runtime_where = _at(where, "runtime")
+    runtime = _table(table["runtime"], runtime_where, ("areas", "section", "line", "none", "reason"), ("pictures",))
     ai_use, ai_where = sub("ai_use", "section", "written_by", "model")
     review, review_where = sub("review", "agent", "verdict_file", "report_file", "body_hash", "identical_images")
     agent = _text(review["agent"], _at(review_where, "agent"))
@@ -2024,7 +2027,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
             line=_text(runtime["line"], _at(runtime_where, "line")),
             none=_text(runtime["none"], _at(runtime_where, "none")),
             reason=_choice(runtime["reason"], _at(runtime_where, "reason"), ("required",)),
-            pictures=_text(runtime["pictures"], _at(runtime_where, "pictures")),
+            pictures=_text(runtime.get("pictures", "Pictures:"), _at(runtime_where, "pictures")),
         ),
         ai_use=AiUse(
             section=ai_use["section"],

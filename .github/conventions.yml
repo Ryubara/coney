@@ -217,7 +217,7 @@ pull_requests:
     line: "Runtime:"
     none: "Runtime: none"
     reason: required
-    pictures: "Pictures:"                   # the picture-counts line beside it (testing.md#picture-counts); the reviewer checks it
+    pictures: "Pictures:"                   # the picture-counts line beside it (testing.md#picture-counts); the reviewer checks it; optional, this when absent
   ai_use:
     section: "AI use"
     written_by:
