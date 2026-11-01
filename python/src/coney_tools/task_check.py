@@ -4,9 +4,11 @@
 
 What a change needs is decided by the paths it touches (`proof_profiles`, the `proof` section of
 `.github/conventions.yml`): a documentation change runs the docs checks, a tooling change adds ruff, mypy, pytest and
-actionlint, and anything else also builds with the MSVC `ci` preset (/WX) and runs the whole suite with the disc
-(`coney-tools build` leaves a build record the stamp covers). The result is one `checked` stamp, `pass` or `fail`,
-bound to the change (`covers.diff_sha256`, `pr_diff`), so a clean rebase keeps it and any edit makes it stale. A fault
+actionlint, and anything else also builds with the MSVC `ci` preset (/WX) and runs the C++ tests the change needs
+with the disc: the test files its C++ files reach, or the whole suite (`proof.ctest`, ctest_scope.py; `coney-tools
+build` leaves a build record the stamp covers, and the stamp's `detail.ctest_scope` says which tests ran). The result
+is one `checked` stamp, `pass` or `fail`, bound to the change (`covers.diff_sha256`, `pr_diff`), so a clean rebase
+keeps it and any edit makes it stale. A fault
 of the machine (a program missing, no disc, no build slot, a worktree that changed under the run) is not a verdict
 about the change and writes no stamp. The profiles and the path classes are read from the base's
 `.github/conventions.yml`, not the branch's, so a branch cannot shrink the profile it is checked against (`pr verify`
@@ -47,6 +49,7 @@ from coney_tools import (
     build_run,
     check_progress,
     check_slots,
+    ctest_scope,
     live_progress,
     pr_diff,
     proof_profiles,
@@ -91,7 +94,8 @@ class Env:
     why not), the clock, where lines go, who is running it and how a command is run."""
 
     steps: Mapping[str, Step]
-    build: Callable[[Path, str, str, str], build_run.Result]
+    #: The build and its tests: checkout, agent id, preset, task and the ctest label of the tests to run (None: all).
+    build: Callable[[Path, str, str, str, str | None], build_run.Result]
     disc: Callable[[Path], str | None]
     clock: Callable[[], datetime]
     say: Callable[[str], None]
@@ -108,7 +112,7 @@ class Env:
     progress: check_progress.Progress = field(default_factory=check_progress.Progress)
 
 
-def _no_disc_reason(root: Path) -> str | None:
+def no_disc_reason(root: Path) -> str | None:
     """Why the tests would not have the disc (as `coney-tools build` would say), or None when they have it."""
     _, disc = build_cli.disc_environment(dict(os.environ), root)
     if disc.source is None:
@@ -146,10 +150,10 @@ def default_env(max_wait: float = build_cli.DETACHED_MAX_WAIT) -> Env:
     progress = check_progress.Progress()
     return Env(
         steps=IMPLEMENTED,
-        build=lambda root, agent, preset, task: build_cli.build_and_test(
-            root, agent, preset, task=task, max_wait=max_wait, progress=progress
+        build=lambda root, agent, preset, task, label: build_cli.build_and_test(
+            root, agent, preset, task=task, max_wait=max_wait, progress=progress, label=label
         ),
-        disc=_no_disc_reason,
+        disc=no_disc_reason,
         clock=lambda: datetime.now(UTC),
         say=_say,
         who=lambda: stamps.who_from_env("coney-tools task check"),
@@ -221,6 +225,9 @@ def _run(request: Request, env: Env) -> int:
     scope = proof_profiles.pytest_scope(conventions, change.paths) if "pytest" in checks else None
     if scope is not None:
         env.say(f"  pytest: {scope.text}")
+    tests = _ctest_scope(root, conventions, change) if build.checks[-1] in builds else None
+    if tests is not None:
+        env.say(f"  ctest: {tests.text}")
     if request.dry_run:
         env.say("  dry run: nothing was run and no stamp was written")
         return 0
@@ -247,15 +254,19 @@ def _run(request: Request, env: Env) -> int:
     progress.plan(len(checks))
     try:
         with live_progress.Heartbeat(live_progress.HEARTBEAT_SECONDS, progress.beat):
-            outcome = _execute(request, env, context, checks, builds, task, agent, change)
+            outcome = _execute(request, env, context, checks, builds, task, agent, change, tests)
             if isinstance(outcome, int):
                 progress.abandon()
                 return outcome
-            ran, failed, record, tests, counted = outcome
+            ran, failed, record, counts, counted = outcome
             detail_more: dict[str, Any] = {}
             _unchanged(root, base, change)
             if scope is not None and "pytest" in ran:
                 detail_more["pytest_scope"] = proof_profiles.scope_record(scope)
+            if tests is not None and build.checks[-1] in ran:
+                detail_more["ctest_scope"] = ctest_scope.scope_record(tests)
+                if tests.narrowed:  # narrowed by reach: CI and the after-merge disc suite run the rest
+                    detail_more["ctest_narrowed"] = tests.narrowed
             progress.finish(not failed)
             return _stamp(
                 env,
@@ -268,7 +279,7 @@ def _run(request: Request, env: Env) -> int:
                 ran,
                 failed,
                 record,
-                tests,
+                counts,
                 counted,
                 started,
                 rules_from,
@@ -277,6 +288,13 @@ def _run(request: Request, env: Env) -> int:
     except BaseException:
         progress.abandon()
         raise
+
+
+def _ctest_scope(root: Path, conventions: Conventions, change: pr_diff.Change) -> ctest_scope.CtestScope:
+    """The C++ tests the change needs (`proof.ctest`), from its C++ files at its tip: what `pr verify` recomputes."""
+    tidy = conventions.ci.tidy
+    tree = ctest_scope.tree_at(root, change.tip, tidy.folders, (*tidy.sources, *tidy.headers))
+    return ctest_scope.ctest_scope(conventions, change.paths, tree)
 
 
 def _log_task(root: Path, task: str, conventions: Conventions, say: Callable[[str], None]) -> str:
@@ -318,10 +336,12 @@ def _execute(
     task: str,
     agent: str,
     change: pr_diff.Change,
+    cpp: ctest_scope.CtestScope | None,
 ) -> int | tuple[list[str], list[str], Path | None, dict[str, int] | None, dict[str, dict[str, int]]]:
-    """Run the checks in order, stopping at the first failure unless asked not to. Returns the exit code when the run
-    cannot go on (the build had no slot), else the checks that ran, those that failed, the build record's path, the
-    build's test counts and what the other checks counted (pytest's), by check."""
+    """Run the checks in order, stopping at the first failure unless asked not to; the build runs the C++ tests of
+    `cpp` (None, as with no test check: all of them). Returns the exit code when the run cannot go on (the build had
+    no slot), else the checks that ran, those that failed, the build record's path, the build's test counts and what
+    the other checks counted (pytest's), by check."""
     ran: list[str] = []
     failed: list[str] = []
     record: Path | None = None
@@ -334,7 +354,7 @@ def _execute(
             queue = [other for other in queue if other not in builds]
             env.say(f"  [{_at()}] start {' and '.join(builds)} (one build run)")
             env.progress.start(" and ".join(builds), "build", checks.index(builds[0]) + 1)
-            results = _build_results(env, context, task, agent, change, builds)
+            results = _build_results(env, context, task, agent, change, builds, cpp.label if cpp else None)
             if isinstance(results, int):
                 return results
             step_results, record, tests = results
@@ -376,14 +396,24 @@ def _timed(result: StepResult, env: Env, started: datetime) -> StepResult:
 
 
 def _build_results(
-    env: Env, context: StepContext, task: str, agent: str, change: pr_diff.Change, builds: list[str]
+    env: Env,
+    context: StepContext,
+    task: str,
+    agent: str,
+    change: pr_diff.Change,
+    builds: list[str],
+    label: str | None,
 ) -> int | tuple[list[StepResult], Path | None, dict[str, int] | None]:
     """Run the build once and answer its two checks from what it left: the first (`msvc-ci-build`) is whether it
-    built, the second (`ctest-full-disc`) whether its build record is one whole clean run with the disc. Returns the
-    exit code when the build gave up waiting for a slot."""
+    built, the second (`ctest-full-disc`) whether its build record is one clean run with the disc of the whole suite
+    or, with a `label`, of the tests `ctest -L <label>` selects. Returns the exit code when the build gave up waiting
+    for a slot."""
     preset = context.conventions.proof.build.preset
-    env.say(f"  build: coney-tools build --preset {preset} --test as {agent} (waits for a slot; this takes a while)")
-    result = env.build(context.root, agent, preset, task)
+    tests = f"-L {label}" if label else "--full"
+    env.say(
+        f"  build: coney-tools build --preset {preset} --test {tests} as {agent} (waits for a slot; may take a while)"
+    )
+    result = env.build(context.root, agent, preset, task, label)
     if result.exit_code == EXIT_QUEUED:
         env.say("task check: the build gave up waiting for a slot (queued); nothing was stamped, run task check again")
         return EXIT_QUEUED
@@ -399,13 +429,16 @@ def _build_results(
     if result.record is None:
         raise ConfigError("the build left no build record (is this a git checkout with a task name?): cannot stamp")
     record = build_record.read(result.record.parent, result.record.stem)
-    problems = build_record.problems(record, tip=change.tip, preset=preset)
+    problems = build_record.problems(record, tip=change.tip, preset=preset, label=label)
     counts = record.get("tests") if isinstance(record.get("tests"), dict) else None
     detail = (
         f"{counts['passed']} passed, {counts['failed']} failed, {counts['skipped']} skipped of {counts['total']}"
         if counts
         else "no test run"
     )
+    if label and counts is not None and not counts.get("total"):
+        # A branch made before the test files had labels lists none: its narrowed run selects nothing.
+        problems.append(f"no test has the label {label}: rebase onto the default branch (the labels are new)")
     if problems:
         results.append(StepResult(test_name, False, detail, output=tuple(problems or tail)))
     else:
@@ -494,8 +527,8 @@ def add_parser(commands: Any) -> None:
     """Register `coney-tools task check` in the `task` group."""
     check = commands.add_parser(
         "check",
-        help="run every check the change needs (MSVC ci build and the full suite with the disc for engine changes) "
-        "and stamp the result, bound to the change",
+        help="run every check the change needs (for engine changes the MSVC ci build and the C++ tests the change "
+        "reaches, with the disc) and stamp the result, bound to the change",
     )
     check.add_argument("name", nargs="?", metavar="TASK", help="the task (default: CONEY_TASK, else the branch)")
     check.add_argument("--worktree", type=Path, help="the task's worktree (default: the current checkout)")

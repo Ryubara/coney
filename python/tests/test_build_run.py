@@ -1611,7 +1611,7 @@ def test_the_disc_listing_is_asked_with_the_disc_label(tmp_path: Path) -> None:
     run.toolchain.output["ctest-list"] = (0, DISC_LISTING)
     run.go()
     listing = next(c for c in run.toolchain.commands if c[0] == "ctest" and "-N" in c)
-    assert listing[listing.index("-L") + 1] == "disc"
+    assert listing[listing.index("-L") + 1] == "^disc$"  # anchored: the file labels (#disc_..._test) must not match
 
 
 def test_a_failed_disc_listing_fails_the_run_and_counts_every_skip_as_a_disc_skip(tmp_path: Path) -> None:
@@ -1620,7 +1620,7 @@ def test_a_failed_disc_listing_fails_the_run_and_counts_every_skip_as_a_disc_ski
     run.toolchain.output["ctest-list"] = (1, "")
     result = run.go()
     assert not result.ok and result.exit_code == 1
-    assert any("ctest -N -L disc" in line and "exit 1" in line for line in result.summary)
+    assert any("ctest -N -L '^disc$'" in line and "exit 1" in line for line in result.summary)
     assert result.tests is not None and (result.tests.skipped, result.tests.skipped_disc) == (2, 2)
 
 

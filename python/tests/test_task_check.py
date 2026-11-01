@@ -60,6 +60,8 @@ class World:
         self.failing: dict[str, list[str]] = {}
         self.unavailable: set[str] = set()
         self.builds: list[tuple[str, str, str]] = []
+        #: The ctest label each build was given (None: the whole suite).
+        self.labels: list[str | None] = []
         self.build_exit = 0
         self.build_tests: dict[str, int] | None = dict(TESTS)
         self.build_preset: str | None = None
@@ -92,8 +94,9 @@ class World:
 
         return run
 
-    def build(self, root: Path, agent: str, preset: str, task: str) -> build_run.Result:
+    def build(self, root: Path, agent: str, preset: str, task: str, label: str | None = None) -> build_run.Result:
         self.builds.append((agent, preset, task))
+        self.labels.append(label)
         result = build_run.Result(ok=self.build_exit == 0, exit_code=self.build_exit)
         if self.build_exit == 75:
             return result
@@ -107,7 +110,7 @@ class World:
             tip=tip,
             dirty=False,
             preset=self.build_preset or preset,
-            filters=self.build_filters,
+            filters=self.build_filters or (["-L", label] if label else []),
             command_line=["coney-tools", "build"],
             exit_code=self.build_exit,
             ran=result.ran,
@@ -272,9 +275,77 @@ def test_an_engine_change_builds_with_the_ci_preset_once_and_covers_the_build_re
     assert stamp.detail["profile"] == "full" and stamp.detail["preset"] == "ci"
     assert stamp.detail["checks"][-2:] == ["msvc-ci-build", "ctest-full-disc"]
     assert stamp.detail["tests"] == TESTS
+    # no test file reaches brain.cpp here, so the whole suite ran, holding nothing back
+    assert world.labels == [None] and stamp.detail["ctest_scope"] == "whole"
     [record] = (unit.Unit.of(world.root, TASK).dir / "build-runs").glob("*.json")
     assert stamp.covers["build_record_sha256"] == record.stem == hashlib.sha256(record.read_bytes()).hexdigest()
     assert int(stamp.detail["minutes"]) >= 0
+
+
+def engine(world: World) -> None:
+    """Give main a small engine: the brain, its test and a test that does not reach it."""
+    git(world.root, "checkout", "-q", "main")
+    world.edit("src/ai/brain.h", "#pragma once\nint think();\n", "engine")
+    world.edit("src/ai/brain.cpp", '#include "ai/brain.h"\nint think() { return 1; }\n', "engine")
+    world.edit("tests/ai/brain_test.cpp", '#include "ai/brain.h"\n', "engine")
+    world.edit("tests/core/json_test.cpp", "int json;\n", "engine")
+    git(world.root, "checkout", "-q", "work")
+    git(world.root, "rebase", "-q", "main")
+
+
+def test_an_engine_change_runs_only_the_test_files_that_reach_it_and_stamps_which(world: World) -> None:
+    engine(world)
+    world.edit("src/ai/brain.cpp", '#include "ai/brain.h"\nint think() { return 2; }\n')
+    assert world.check() == 0
+    assert world.labels == ["^#(brain_test)$"]
+    stamp = world.stamp
+    assert stamp.detail["ctest_scope"] == ["tests/ai/brain_test.cpp"] and stamp.detail["tests"] == TESTS
+    assert "  ctest: the tests of 1 test file the change reaches, with the disc" in world.said
+    assert any("--test -L ^#(brain_test)$" in line for line in world.said)
+    assert "ctest_narrowed" not in stamp.detail  # every test file it reaches ran
+
+
+def test_a_change_whose_reach_is_too_wide_runs_the_tests_near_it_and_stamps_that(world: World) -> None:
+    engine(world)
+    git(world.root, "checkout", "-q", "main")
+    (world.root / "tests" / "misc").mkdir(parents=True)
+    for i in range(101):  # tests that reach the brain only through a wider header
+        (world.root / "tests" / "misc" / f"t{i}_test.cpp").write_text('#include "ai/mind.h"\n', encoding="utf-8")
+    world.edit("src/ai/mind.h", '#include "ai/brain.h"\n', "wide")
+    git(world.root, "checkout", "-q", "work")
+    git(world.root, "rebase", "-q", "main")
+    world.edit("src/ai/brain.cpp", '#include "ai/brain.h"\nint think() { return 2; }\n')
+    assert world.check() == 0
+    assert world.labels == ["^#(brain_test)$"]
+    narrowed = world.stamp.detail["ctest_narrowed"]
+    assert narrowed.startswith("102 test files reach it, more than 100;") and "ci disc-suite" in narrowed
+
+
+def test_a_change_the_scope_cannot_map_runs_the_whole_suite_and_says_why(world: World) -> None:
+    engine(world)
+    world.edit("src/ai/brain.cpp", '#include "ai/brain.h"\nint think() { return 2; }\n')
+    world.edit("cmake/deps.cmake", "# a pin\n")
+    assert world.check() == 0
+    assert world.labels == [None] and world.stamp.detail["ctest_scope"] == "whole"
+    assert any(
+        "ctest: the whole suite with the disc (cmake/deps.cmake is not a C++ file" in line for line in world.said
+    )
+
+
+def test_a_narrowed_run_that_finds_no_test_says_to_rebase(world: World) -> None:
+    engine(world)
+    world.edit("tests/ai/brain_test.cpp", '#include "ai/brain.h"\nint more;\n')
+    world.build_tests = {"total": 0, "passed": 0, "failed": 0, "skipped": 0, "skipped_disc": 0}
+    assert world.check() == 1
+    assert any("no test has the label ^#(brain_test)$: rebase onto the default branch" in line for line in world.said)
+
+
+def test_a_narrowed_run_whose_record_ran_other_tests_fails_the_test_check(world: World) -> None:
+    engine(world)
+    world.edit("tests/ai/brain_test.cpp", '#include "ai/brain.h"\nint more;\n')
+    world.build_filters = ["-L", "^#(json_test)$"]
+    assert world.check() == 1
+    assert any("filtered run (-L ^#(json_test)$); Check needs -L ^#(brain_test)$" in line for line in world.said)
 
 
 def test_a_bigger_profile_than_needed_is_allowed_and_a_smaller_one_is_refused(world: World) -> None:
@@ -593,11 +664,11 @@ def test_a_disc_variable_that_names_nothing_is_a_machine_fault(tmp_path: Path, m
     root = tmp_path / "repo"
     root.mkdir()
     monkeypatch.setenv("CONEY_DISC", str(tmp_path / "no-such-disc"))
-    assert "does not exist" in str(task_check._no_disc_reason(root))
+    assert "does not exist" in str(task_check.no_disc_reason(root))
     here = tmp_path / "disc"
     here.mkdir()
     monkeypatch.setenv("CONEY_DISC", str(here))
-    assert task_check._no_disc_reason(root) is None
+    assert task_check.no_disc_reason(root) is None
 
 
 # --- check slots and live progress (issue 1135) --------------------------------------------------------------------
@@ -649,9 +720,9 @@ def test_a_build_stage_logs_its_start_before_it_runs(world: World) -> None:
     seen: list[str] = []
     original = world.build
 
-    def build(root: Path, agent: str, preset: str, task: str) -> build_run.Result:
+    def build(root: Path, agent: str, preset: str, task: str, label: str | None = None) -> build_run.Result:
         seen.extend(world.said)
-        return original(root, agent, preset, task)
+        return original(root, agent, preset, task, label)
 
     world.build = build  # type: ignore[method-assign]
     world.edit("src/ai/brain.cpp", "int main() { return 0; }\n")
@@ -808,9 +879,9 @@ def test_the_build_run_is_one_entry_at_the_place_of_its_first_check(world: World
     seen: list[dict[str, Any]] = []
     original = world.build
 
-    def build(root: Path, agent: str, preset: str, task: str) -> build_run.Result:
+    def build(root: Path, agent: str, preset: str, task: str, label: str | None = None) -> build_run.Result:
         seen.append(progress_now(world))
-        return original(root, agent, preset, task)
+        return original(root, agent, preset, task, label)
 
     world.build = build  # type: ignore[method-assign]
     world.edit("src/ai/brain.cpp", "int main() { return 0; }\n")

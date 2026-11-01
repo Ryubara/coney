@@ -336,12 +336,15 @@ def build_and_test(
     task: str | None = None,
     max_wait: float = DETACHED_MAX_WAIT,
     progress: Progress | None = None,
+    label: str | None = None,
 ) -> build_run.Result:
-    """The whole suite of `preset` for `coney-tools task check`: configure if needed, build and run every test under
-    the slots, as `build --test` does, but waiting up to `max_wait` minutes for a slot with no budget (the caller
-    outlasts a prompt cache on purpose and says so). The run leaves its build record in the folder of `task`; the
-    result's `record` is its path. With a `progress` (check_progress.py) the run's waits for a slot, its build and its
-    tests go to it as they happen. Raises ConfigError for a precheck that fails, as the command does."""
+    """The suite of `preset` for `coney-tools task check` and `ci disc-suite`: configure if needed, build and run every
+    test under the slots, as `build --test --full` does, or with a `label` only the tests `ctest -L <label>` selects
+    (the tests a change needs, ctest_scope.py), which holds no check slot. It waits up to `max_wait` minutes for a slot
+    with no budget (the caller outlasts a prompt cache on purpose and says so). The run leaves its build record in the
+    folder of `task`; the result's `record` is its path. With a `progress` (check_progress.py) the run's waits for a
+    slot, its build and its tests go to it as they happen. Raises ConfigError for a precheck that fails, as the command
+    does."""
     args = argparse.Namespace(
         agent=agent,
         preset=preset,
@@ -349,10 +352,10 @@ def build_and_test(
         configure=False,
         configure_only=False,
         test=True,
-        full=True,  # the handover tip's run: the whole suite is what `task check` is
+        full=label is None,  # the handover tip's run: the whole suite, unless the change needs only some tests
         targets=[],
         regex=None,
-        label=None,
+        label=label,
         build_dir=None,
         env=[],
         priority=False,

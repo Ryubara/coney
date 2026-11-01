@@ -108,6 +108,18 @@ For each pull request that merged, take the issues from two places and bring eac
 If the list looks short for the size of the change, run `coney-tools issue impact --base <merge base> --head <tip>` on
 the merged branch's commits for candidates the author did not list, and edit those too.
 
+When a merged pull request changed engine files, also start the whole C++ suite with the disc on `main`, in the
+background (`run_in_background`; it takes a whole suite's time and holds a check slot):
+
+```sh
+uv run --project python coney-tools ci disc-suite --agent <your id> --apply
+```
+
+`task check` runs only the C++ tests a change reaches and CI has no disc, so this is where a disc test no check ran is
+run ([ci disc-suite](../../../docs/guides/coney-tools-ci.md#disc-suite)). A failure files a `P-high` issue (or comments
+on the open one) by itself; triage it like a CI failure on `main`. One run covers every merge before it: start it once
+per round, not once per pull request.
+
 ## 4. Check and report
 
 Run the audit again. Report the counts per class before and after, what you changed (item numbers), what you left and

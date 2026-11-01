@@ -137,17 +137,19 @@ def read(folder: Path, sha256: str) -> dict[str, Any]:
     return record
 
 
-def problems(record: Mapping[str, Any], *, tip: str, preset: str) -> list[str]:
-    """Why `record` is not one whole, clean run of `preset` on the commit `tip` with the disc: every reason, in words
-    that name what to do, or an empty list. A record whose log still exists must also match the log's hash."""
+def problems(record: Mapping[str, Any], *, tip: str, preset: str, label: str | None = None) -> list[str]:
+    """Why `record` is not one clean run of `preset` on the commit `tip` with the disc, of the whole suite or (with a
+    `label`) of at least the tests `ctest -L <label>` selects (ctest_scope.py): every reason, in words that name what to
+    do, or an empty list. A record whose log still exists must also match the log's hash."""
     found: list[str] = []
     if record.get("record_version") != RECORD_VERSION:
         found.append(f"the build record has version {record.get('record_version')!r}, this tool reads {RECORD_VERSION}")
     if record.get("preset") != preset:
         found.append(f"the build record is preset {record.get('preset')}, Check needs {preset}")
-    filters = record.get("filters") or []
-    if filters:
-        found.append(f"the build record is a filtered run ({' '.join(map(str, filters))}); Check needs the full suite")
+    filters = [str(item) for item in record.get("filters") or []]
+    if filters and filters != ["-L", label]:  # the whole suite holds any label's tests
+        needs = f"-L {label}" if label else "the full suite"
+        found.append(f"the build record is a filtered run ({' '.join(filters)}); Check needs {needs}")
     if record.get("exit_code") != 0:
         found.append(f"the build record's run failed (exit {record.get('exit_code')})")
     if record.get("tip") != tip:

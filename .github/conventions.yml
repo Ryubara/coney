@@ -1070,6 +1070,23 @@ proof:
   pytest:
     scoped: [docs_only, engine]
     whole_when: ["python/", ".claude/", ".github/"]   # the package, its hooks and the rules, workflows and scripts
+  # Which C++ tests the `ctest-full-disc` check runs, with the disc (docs/guides/coney-tools-repo.md#task-check). Each
+  # changed C++ file (`ci.tidy`: its folders, sources and headers) selects the test files (`test_suffix`) whose
+  # `#include`s reach it, through the headers they include and the sources that implement those headers (a source of
+  # the header's name, or one with no header of its own that includes it); the run is `ctest -L` on their labels
+  # (Catch2's `--filenames-as-tags`, tests/CMakeLists.txt). A change that reaches no test file or more than
+  # `max_files` runs a narrow set instead: the test files that include a changed file (or the header a changed source
+  # is named after) directly, and those named after a changed file; failing those, its subsystem's test files. Only
+  # what cannot be traced runs the whole suite, holding a check slot: a path under `whole_when`, of a class other
+  # than `skip` that is no C++ file (CMake files, cmake/, presets, assets, test scripts, unknown paths), or deleted or
+  # moved. CI runs every test without the disc on each pull request, and `coney-tools ci disc-suite` runs the whole
+  # suite with the disc on the default branch after merges, so a test a narrowed run skips is still run.
+  ctest:
+    skip: [docs_only, tools_only]
+    whole_when: ["python/tests/lua4/fixtures/"]   # tools_only, but the decompiler's C++ tests read them
+    test_suffix: _test.cpp
+    tests: tests/                                 # a source here that is no test file has no label: whole suite
+    max_files: 100                               # more test files reached: the narrow set runs instead
   # The CMake preset of the build and the test run behind the two checks of `checks` (MSVC with /WX), the first
   # answering whether it built and the second whether the suite ran whole with the disc, from the build record a
   # run of `coney-tools build` leaves (docs/guides/stamps.md#build-record).
@@ -1280,6 +1297,15 @@ ci:
     files_listed: 8                              # the files named in the issue, each with its last commits
     commits_per_file: 3
     log_lines: 40                                # the lines of the failed steps' log quoted in the issue
+  # The whole C++ suite with the disc on the default branch (`coney-tools ci disc-suite`), which the coordinator runs in
+  # the after-merge tidy: CI has no game data and `task check` runs only the tests a change reaches (`proof.ctest`), so
+  # this is where an untouched disc test is run. A failure opens a P-high issue, or comments on the one still open.
+  disc_suite:
+    worktree: disc-suite                         # the <branch> of workspace.worktrees: its own worktree, detached at main
+    labels: [task, P-high, A-tools, S-ready-to-start]   # the type, priority, area and status of the issue
+    area: A-tools                                # the form's Area answer
+    marker: coney-disc-suite                     # <!-- coney-disc-suite --> in the body finds the open issue again
+    summary_lines: 12                            # the lines of the run's summary quoted in the issue (the failed tests among them)
   # One place per check: where each check of the project runs. `local` is `task check` (which writes the `checked`
   # stamp, running the checks of `proof.profiles`), a stamp command (`orig study`, `compare`, `fails-first`) or a
   # git hook; the CI words are `ci` (every pull request), `main` (a push to main), `release` (a push to a `release/`
@@ -1288,7 +1314,7 @@ ci:
   # names its jobs as <workflow file>/<job id>; `coney-tools repo audit --files` (files.ci-places) fails when a job is
   # missing from the workflows, a job is in no place or a required check (merge.required_checks) is in none.
   places:
-    - {id: full-suite, check: "Full suite with the disc", where: [local]}
+    - {id: full-suite, check: "C++ tests with the disc: those a change reaches (task check), the whole suite after merges (ci disc-suite)", where: [local]}
     - {id: msvc-ci-build, check: "MSVC `ci` build (/WX, C4062)", where: [local]}
     - {id: study, check: "Study, pairs, copy check, fails-first", where: [local]}
     - {id: format, check: "Formatting", where: [local, ci, main, release, nightly, manual], jobs: ["build/format"], note: "applied by a git pre-commit hook, verified by CI"}

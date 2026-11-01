@@ -810,6 +810,27 @@ class ProofPytest:
 
 
 @dataclass(frozen=True)
+class ProofCtest:
+    """Which C++ tests the build check runs (`proof.ctest`): the tests of the test files whose `#include`s reach the
+    changed C++ files, or the whole suite (docs/guides/coney-tools-repo.md#task-check). Without the key (a base older
+    than it) every engine change runs the whole suite, as before."""
+
+    #: Whether the key was there: False is the default of a base older than it, which runs the whole suite.
+    enabled: bool = False
+    #: CI scope classes the C++ tests never read: a change there adds no test.
+    skip: tuple[str, ...] = ()
+    #: Path prefixes whose changes always run the whole suite (read by the tests or the build, but no C++ file).
+    whole_when: tuple[str, ...] = ()
+    #: The end of a test file's name (one ctest label per test file, from Catch2's `--filenames-as-tags`).
+    test_suffix: str = "_test.cpp"
+    #: The folder of the test programs: a source there that is no test file (a helper program, a check outside
+    #: Catch2) is reached by no file label, so its change runs the whole suite.
+    tests: str = "tests/"
+    #: A change reaching more test files than this runs the narrow set of those near it (ctest_scope.narrow).
+    max_files: int = 0
+
+
+@dataclass(frozen=True)
 class Proof:
     """What a change must pass before it is opened as a pull request (docs/guides/coney-tools-repo.md#task-check)."""
 
@@ -819,6 +840,7 @@ class Proof:
     only_when: Mapping[str, tuple[str, ...]]
     build: ProofBuild
     pytest: ProofPytest = ProofPytest()
+    ctest: ProofCtest = ProofCtest()
 
 
 @dataclass(frozen=True)
@@ -1393,6 +1415,22 @@ class CiFailure:
 
 
 @dataclass(frozen=True)
+class CiDiscSuite:
+    """The whole C++ suite with the disc on the default branch, after merges (`coney-tools ci disc-suite`): CI has no
+    game data, so this is where a disc test that no narrowed `task check` ran is run."""
+
+    #: The `<branch>` of `workspace.worktrees` it runs in, a worktree of its own detached at the default branch.
+    worktree: str
+    #: The labels of the issue a failure opens (type, priority, area, status) and the form's Area answer.
+    labels: tuple[str, ...]
+    area: str
+    #: `<!-- marker -->` in the body finds the open issue again.
+    marker: str
+    #: The lines of the run's summary the issue quotes (its failed tests among them).
+    summary_lines: int
+
+
+@dataclass(frozen=True)
 class CiPlace:
     """One check of the project and where it runs."""
 
@@ -1412,6 +1450,7 @@ class Ci:
     dependencies: CiDependencies
     tidy: CiTidy
     failure: CiFailure
+    disc_suite: CiDiscSuite
     places: tuple[CiPlace, ...]
 
     def jobs(self) -> tuple[str, ...]:
@@ -2735,7 +2774,7 @@ def _read_ci(
     job_ids: Callable[[Iterable[str]], tuple[str, ...]],
 ) -> Ci:
     """The `ci` section: the CI jobs' settings and the places of the checks; every required check has a place."""
-    table = _table(data, where, ("dependencies", "tidy", "failure", "places"))
+    table = _table(data, where, ("dependencies", "tidy", "failure", "disc_suite", "places"))
     dep_where = _at(where, "dependencies")
     dependencies = _table(table["dependencies"], dep_where, ("workflow", "rerun_limit"))
     workflow = _text(dependencies["workflow"], _at(dep_where, "workflow"))
@@ -2775,6 +2814,18 @@ def _read_ci(
     marker = _text(failure["marker"], _at(failure_where, "marker"))
     if not re.fullmatch(r"[a-z][a-z0-9-]*", marker):
         raise _fail(_at(failure_where, "marker"), "lower case letters, digits and dashes")
+    disc_where = _at(where, "disc_suite")
+    disc = _table(table["disc_suite"], disc_where, ("worktree", "labels", "area", "marker", "summary_lines"))
+    disc_worktree = _text(disc["worktree"], _at(disc_where, "worktree"))
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", disc_worktree):
+        raise _fail(_at(disc_where, "worktree"), "a folder name: lower case letters, digits and dashes")
+    disc_labels = _texts(disc["labels"], _at(disc_where, "labels"))
+    _names_in(disc_labels, label_names(), _at(disc_where, "labels"), "in labels.list")
+    disc_area = _text(disc["area"], _at(disc_where, "area"))
+    _names_in((disc_area,), disc_labels, _at(disc_where, "area"), "one of the labels")
+    disc_marker = _text(disc["marker"], _at(disc_where, "marker"))
+    if not re.fullmatch(r"[a-z][a-z0-9-]*", disc_marker):
+        raise _fail(_at(disc_where, "marker"), "lower case letters, digits and dashes")
     places = _each(table["places"], _at(where, "places"), _read_ci_place)
     ids = [place.id for place in places]
     if len(set(ids)) != len(ids):
@@ -2809,6 +2860,13 @@ def _read_ci(
             files_listed=_count(failure["files_listed"], _at(failure_where, "files_listed")),
             commits_per_file=_count(failure["commits_per_file"], _at(failure_where, "commits_per_file")),
             log_lines=_count(failure["log_lines"], _at(failure_where, "log_lines")),
+        ),
+        disc_suite=CiDiscSuite(
+            worktree=disc_worktree,
+            labels=disc_labels,
+            area=disc_area,
+            marker=disc_marker,
+            summary_lines=_count(disc["summary_lines"], _at(disc_where, "summary_lines")),
         ),
         places=places,
     )
@@ -3114,7 +3172,7 @@ CI_CLASSES = ("docs_only", "tools_only", "engine", "unknown")
 
 def _read_proof(data: object, where: str) -> Proof:
     """The `proof` section: the profiles of checks, the conditional checks and the build behind them."""
-    table = _table(data, where, ("profiles", "only_when", "build"), ("pytest",))
+    table = _table(data, where, ("profiles", "only_when", "build"), ("pytest", "ctest"))
     profiles_where = _at(where, "profiles")
 
     def read_profile(value: object, here: str) -> ProofProfile:
@@ -3152,6 +3210,7 @@ def _read_proof(data: object, where: str) -> Proof:
             checks=build_checks,
         ),
         pytest=_read_proof_pytest(table.get("pytest"), _at(where, "pytest")),
+        ctest=_read_proof_ctest(table.get("ctest"), _at(where, "ctest")),
     )
 
 
@@ -3165,6 +3224,33 @@ def _read_proof_pytest(data: object, where: str) -> ProofPytest:
     known = [name for name in CI_CLASSES if name != "unknown"]
     _names_in(scoped, known, _at(where, "scoped"), "a CI scope class other than unknown (" + ", ".join(known) + ")")
     return ProofPytest(scoped=scoped, whole_when=_texts(table["whole_when"], _at(where, "whole_when"), empty_ok=True))
+
+
+def _read_proof_ctest(data: object, where: str) -> ProofCtest:
+    """`proof.ctest`: the classes no C++ test reads, the prefixes that run the whole suite, the test files' suffix and
+    the most test files a change may reach before only those near it run. Absent: every engine change runs the
+    whole suite."""
+    if data is None:
+        return ProofCtest()
+    table = _table(data, where, CTEST_KEYS)
+    skip = _texts(table["skip"], _at(where, "skip"), empty_ok=True)
+    known = [name for name in CI_CLASSES if name != "unknown"]
+    _names_in(skip, known, _at(where, "skip"), "a CI scope class other than unknown (" + ", ".join(known) + ")")
+    suffix = _text(table["test_suffix"], _at(where, "test_suffix"))
+    if not re.fullmatch(r"[A-Za-z0-9_]*[.][A-Za-z0-9]+", suffix):
+        raise _fail(_at(where, "test_suffix"), f"'{suffix}' must be the end of a file name, such as _test.cpp")
+    return ProofCtest(
+        enabled=True,
+        skip=skip,
+        whole_when=_texts(table["whole_when"], _at(where, "whole_when"), empty_ok=True),
+        test_suffix=suffix,
+        tests=_text(table["tests"], _at(where, "tests")),
+        max_files=_count(table["max_files"], _at(where, "max_files")),
+    )
+
+
+#: The keys of `proof.ctest`.
+CTEST_KEYS = ("skip", "whole_when", "test_suffix", "tests", "max_files")
 
 
 def _read_research(data: object, where: str) -> Research:
@@ -3424,7 +3510,7 @@ def load_proof_rules_at(root: Path, ref: str, own: Conventions) -> tuple[Convent
     if "proof" not in data:
         return own, "branch"
     try:
-        proof = _read_proof(_keep(data["proof"], ("profiles", "only_when", "build", "pytest")), "proof")
+        proof = _read_proof(_keep(data["proof"], ("profiles", "only_when", "build", "pytest", "ctest")), "proof")
         scopes = _keep(data.get("paths"), ("docs_only", "tools_only", "engine"))
         table = _table(scopes, "paths", ("docs_only", "tools_only", "engine"))
         paths = replace(
@@ -3488,6 +3574,8 @@ def _keep(value: object, keys: Iterable[str]) -> object:
         kept["build"] = _keep(kept["build"], ("preset", "checks"))
     if "pytest" in kept:
         kept["pytest"] = _keep(kept["pytest"], ("scoped", "whole_when"))
+    if "ctest" in kept:
+        kept["ctest"] = _keep(kept["ctest"], CTEST_KEYS)
     return kept
 
 

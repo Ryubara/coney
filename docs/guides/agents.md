@@ -599,7 +599,7 @@ uv run --project python coney-tools build --agent <id> --preset dev --test -R <r
   one edited source is one step however much sits behind it), or a test run filtered with `-R` or `-L` to a few
   tests, takes the fast lane and does not queue behind full builds. Rerun a failed test with `-R <its name>`, not the
   whole suite: the full run (no `-R` or `-L`) is `task check`'s, and an agent's is refused without `--full`
-  ([the rule](coney-tools-build.md#build)). `-L disc` runs only the tests that need the game's disc. `-R` is a CMake
+  ([the rule](coney-tools-build.md#build)). `-L '^disc$'` runs only the tests that need the game's disc. `-R` is a CMake
   regular expression: escape `.` `+` `(` `)` with a backslash and quote it with single quotes ([Choosing tests](coney-tools-build.md#build)).
 - **A play build is `--target coney`.** It builds the executable and what it links, not the tests; it cannot be
   combined with `--test`. Every build goes through the shared [compiler cache](building.md#compiler-cache), so the

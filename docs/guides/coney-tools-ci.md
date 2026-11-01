@@ -2,7 +2,8 @@
 
 What CI checks: [`ci`](#ci), the local gate that runs CI's checks on the files a change touched ([`ci run`](#ci-run))
 and on a whole pull request ([`ci pr`](#ci-pr)), and the commands the CI workflows run (the `dependencies` check and its
-reruns, the changed-lines clang-tidy, the issue for a failure on `main`). The repository's own rules are checked by
+reruns, the changed-lines clang-tidy, the issue for a failure on `main`), and the whole C++ suite with the disc on
+`main` after merges ([`ci disc-suite`](#disc-suite)). The repository's own rules are checked by
 [`repo`](coney-tools-repo.md#repo); the other groups are listed in [the command line overview](coney-tools.md#groups).
 
 ## ci {#ci}
@@ -14,6 +15,7 @@ uv run --project python coney-tools ci tidy-plan --diff FILE|- --out FILE
 uv run --project python coney-tools ci tidy-run --plan FILE --build-dir DIR [--clang-tidy PROGRAM] [--jobs N]
     [--sarif FILE] [--summary FILE] [--annotate]
 uv run --project python coney-tools ci report-failure --run ID [--apply]
+uv run --project python coney-tools ci disc-suite --agent <id> [--apply]   # not a workflow's: see below
 ```
 
 The commands the CI workflows run, so that a workflow holds no logic and a person can run the same command by hand. The
@@ -159,6 +161,32 @@ CI's `pr` workflow (`title`, `docs`, `body`) runs on a fork's pull request witho
 GitHub holds them for a first-time contributor until a maintainer approves them. This command is how the contributor
 finds out first.
 
+### ci disc-suite {#disc-suite}
+
+```sh
+uv run --project python coney-tools ci disc-suite --agent <id> [--apply] [--max-wait MIN]
+```
+
+The whole C++ suite with the disc on the default branch. CI has no game data, so its runs skip every disc test, and
+[`task check`](coney-tools-repo.md#task-check-ctest) runs only the C++ tests a change reaches: a disc test no change
+reached would never run. **The coordinator runs this in the after-merge tidy**, after a round of merges (the
+[repo-hygiene skill](repo:.claude/skills/repo-hygiene/SKILL.md)), in the background, since it takes as long as a whole
+suite (20 to 30 minutes on a quiet machine, more while it waits for a slot).
+
+It fetches the default branch, moves a worktree of its own to it, detached (`ci.disc_suite.worktree`, `disc-suite`, as
+the `<branch>` of `workspace.worktrees`: `../../worktrees/coney/disc-suite/`; made on the first run, refused when it
+holds uncommitted changes), and runs `coney-tools build --preset ci --test --full` there with the disc, holding a
+[check slot](coney-tools-build.md#check-slots) like any whole suite. The build record goes to the `disc-suite` scratch
+folder, and the run passes only when [`build_record.problems`](stamps.md#build-record), `task check`'s own rule, finds
+nothing wrong with it: built, every test passed, no disc test skipped.
+
+A failure opens an issue in the task form labelled `ci.disc_suite.labels` (`task`, `P-high`, `A-tools`,
+`S-ready-to-start`), titled `tests: Fix the disc suite failing on main`, with the commit, what failed and the last lines
+of the run's summary (`ci.disc_suite.summary_lines`, the failed tests among them); while that issue is open (found by
+`<!-- coney-disc-suite -->` in its body), a new failure comments on it instead. Without `--apply` it prints the title and
+text it would write. Exit codes: 0 the suite passed, 1 it failed, 2 it cannot run (no disc, a dirty worktree, git or gh
+failed), 75 the build gave up waiting for a slot (run it again).
+
 <!-- command-reference:begin ci -->
 ## Parameters of `ci` {#ci-parameters}
 
@@ -201,6 +229,20 @@ coney-tools ci report-failure --run ID [--apply]
 | --- | --- | --- | --- |
 | `--run ID` | integer | required | the workflow run's id |
 | `--apply` | flag | off | really create the issue or comment (default: print it) |
+
+### `ci disc-suite` {#ci-disc-suite-usage}
+
+Run the whole C++ suite with the disc on the default branch; a failure opens a P-high issue.
+
+```text
+coney-tools ci disc-suite [--agent AGENT] [--apply] [--max-wait MIN]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--agent AGENT` | text | none | your id for the build slots (default: a person's user name) |
+| `--apply` | flag | off | really create the issue or comment (default: print it) |
+| `--max-wait MIN` | number | `240.0` | minutes the build may wait for a slot before giving up with exit 75 (default 240.0) |
 
 ### `ci tidy-plan` {#ci-tidy-plan-usage}
 

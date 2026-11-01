@@ -333,6 +333,48 @@ def test_a_build_record_that_is_not_a_full_ci_run_is_refused(
     assert any(t.startswith(message) for t in refused), refused
 
 
+#: The label of the one test file the change of `make` reaches (it changes the test file, and no test reaches the
+#: source it adds).
+WIDGET_LABEL = "^#(widget_test)$"
+
+
+def test_a_check_of_the_test_files_the_change_reaches_passes(tmp_path: Path) -> None:
+    built = make(tmp_path, skip=frozenset({"checked"}))
+    built.check("full", record=built.build_record(filters=["-L", WIDGET_LABEL]), ctest_scope=[TEST_FILE])
+    assert texts(built.verify(), "checked") == []
+
+
+def test_a_narrowed_check_whose_record_is_the_whole_suite_passes(tmp_path: Path) -> None:
+    built = make(tmp_path, skip=frozenset({"checked"}))
+    built.check("full", ctest_scope=[TEST_FILE])
+    assert texts(built.verify(), "checked") == []
+
+
+def test_a_check_that_ran_fewer_test_files_than_the_change_reaches_is_refused(tmp_path: Path) -> None:
+    built = make(tmp_path, skip=frozenset({"checked"}))
+    other = "tests/ai/other_test.cpp"
+    built.check("full", record=built.build_record(filters=["-L", "^#(other_test)$"]), ctest_scope=[other])
+    assert texts(built.verify(), "checked") == [
+        "checked: Check ran the tests of 1 test file the change reaches, with the disc; this change needs the tests "
+        "of 1 test file the change reaches, with the disc"
+    ]
+
+
+def test_a_narrowed_check_whose_record_ran_another_label_is_refused(tmp_path: Path) -> None:
+    built = make(tmp_path, skip=frozenset({"checked"}))
+    built.check("full", record=built.build_record(filters=["-L", "^#(other_test)$"]), ctest_scope=[TEST_FILE])
+    assert texts(built.verify(), "checked") == [
+        f"checked: the build record is a filtered run (-L ^#(other_test)$); Check needs -L {WIDGET_LABEL}"
+    ]
+
+
+def test_a_ctest_scope_that_is_not_a_list_of_test_files_is_refused(tmp_path: Path) -> None:
+    built = make(tmp_path, skip=frozenset({"checked"}))
+    built.check("full", ctest_scope=7)
+    [line] = texts(built.verify(), "checked")
+    assert line.startswith("checked: checked stamp: ctest_scope is 7")
+
+
 def test_a_build_record_of_another_version_is_refused(tmp_path: Path) -> None:
     built = make(tmp_path, skip=frozenset({"checked"}))
     record = build_record.make(**built.record_fields())

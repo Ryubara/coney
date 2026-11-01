@@ -243,10 +243,11 @@ menu, the character viewer, a level played under a scripted pad):
 CONEY_DISC=/path/to/warriors.iso build/dev/tests/coney_tests "[disc]"
 ```
 
-Under `ctest` each test case is a test, and its Catch2 tags are its labels, so `-L disc` selects the disc tests (the
+Under `ctest` each test case is a test, and its Catch2 tags are its labels, so `-L '^disc$'` selects the disc tests (the
 hand-registered `coney.*` checks that exist only when `CONEY_DISC` is set at configure time carry the label too) and
-`-LE disc` leaves them out: `coney-tools build --agent <id> --test -L disc` ([`build`](coney-tools-build.md#build)). A
-test case that skips without the disc but lacks the tag fails a Python test.
+`-LE '^disc$'` leaves them out: `coney-tools build --agent <id> --test -L '^disc$'`
+([`build`](coney-tools-build.md#build)). Anchor it: each test file is also a label (`#disc_story_test`), which a bare
+`-L disc` matches too. A test case that skips without the disc but lacks the tag fails a Python test.
 
 `coney-tools build --test` runs `ctest` with `-j N` set from the cores, not from the compile's share of them, because a
 test run does not overlap its own compile: half the cores by default, `test_jobs` in `coney.local.toml` to change it
@@ -592,7 +593,7 @@ job no workflow has, or a required check is in none.
 <!-- conventions:begin check-places -->
 | Check | Where | CI jobs |
 | --- | --- | --- |
-| Full suite with the disc | local | none |
+| C++ tests with the disc: those a change reaches (task check), the whole suite after merges (ci disc-suite) | local | none |
 | MSVC `ci` build (/WX, C4062) | local | none |
 | Study, pairs, copy check, fails-first | local | none |
 | Formatting | local; CI: every pull request, a push to main, a push to a release branch, nightly, a manual run (applied by a git pre-commit hook, verified by CI) | `build/format` |

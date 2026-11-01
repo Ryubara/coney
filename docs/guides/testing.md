@@ -75,7 +75,7 @@ either ([Studying the original](research-workflow.md#studying-the-original)).
   `game_dir` in `coney.local.toml` when the environment does not, and its summary says whether the disc tests ran or
   were skipped ([the disc for the tests](coney-tools-build.md#build)); without a disc they skip, and ctest counts a skip
   as a pass, so a suite is not whole while that line says `SKIPPED`. Every one carries the ctest label `disc` (the Catch2
-  tag `[disc]`), so `coney-tools build --test -L disc` runs them and nothing else ([`build`](coney-tools-build.md#build)).
+  tag `[disc]`), so `coney-tools build --test -L '^disc$'` runs them and nothing else ([`build`](coney-tools-build.md#build)).
 - **Playthrough tests** are disc tests that play a mission checkpoint from start to end through the pad.
 - **Event diffs** replay a recorded run of the original into Coney and compare the ordered events.
 - **Trace diffs** record the same scripted scenario on the original and on Coney, per update, and compare the
@@ -506,11 +506,14 @@ finds a difference fixes it forward.
 
 The whole gate, which `task check` runs:
 
-- **Engine changes:** the `ci` preset build and its tests with the disc configured, in one command:
-  `uv run --project python coney-tools build --agent <id> --preset ci --test --full` (it waits for a free
-  [build slot](coney-tools-build.md#build), loads the MSVC environment itself and passes the configured disc to the tests;
-  agents never run `cmake --build` or `ctest` directly). Read its `disc tests:` line: `SKIPPED` means no disc test
-  ran, and the run is made again with a disc.
+- **Engine changes:** the `ci` preset build and the C++ tests the change needs, with the disc configured, in one
+  command: `coney-tools build --agent <id> --preset ci --test -L <the change's test files>`: the test files that reach
+  the change, or, when too many do (most gameplay changes), the ones that include it directly or are named after it.
+  Only a change that cannot be traced (a CMake file, `cmake/`, a preset, a test script, an unknown or deleted path)
+  runs the whole suite (`--full`; [Which C++ tests run](coney-tools-repo.md#task-check-ctest)). It waits for a free
+  [build slot](coney-tools-build.md#build), loads the MSVC environment itself and passes the configured disc to the
+  tests; agents never run `cmake --build` or `ctest` directly. Read its `disc tests:` line: `SKIPPED` means no disc
+  test ran, and the run is made again with a disc.
 - **Python:** `ruff check` and `ruff format --check` on `python/` and `.claude/hooks/`, `mypy` and `pytest` on
   `python/`. pytest runs the whole suite or only the tests a change can break, by a rule in
   [.github/conventions.yml](repo:.github/conventions.yml); the output and the stamp say which ([Which Python tests
@@ -527,16 +530,27 @@ The whole gate, which `task check` runs:
 
 Commands and presets: [Building and testing](building.md).
 
+**The local gate is the tests a change needs; the full-suite gate is CI and the after-merge disc run.** `task check`
+runs only the Python and C++ tests the change can reach, and a narrower set still when it reaches too many: it does not
+run the whole C++ suite for a gameplay change ([Which C++ tests run](coney-tools-repo.md#task-check-ctest)). CI runs
+the C++ tests on every pull request except those it cannot: the disc tests (CI has no game data), the frame copy check
+(it needs a display and skips) and the error dialog check (MSVC Debug builds only). The coordinator runs the whole C++
+suite with the disc on `main` after each round of merges, on this machine, which has a display
+([`ci disc-suite`](coney-tools-ci.md#disc-suite)); its failure files a `P-high` issue as a red CI run on `main` does.
+So a test a narrowed check skips is run before the merge by CI when CI can run it, and otherwise only after the merge
+by `ci disc-suite`.
+
 The whole gate runs once per tip, in `task check`, before Review. While working,
 check with the `dev` preset and only the tests the change touches
-(`coney-tools build --agent <id> --preset dev --test -R <pattern>`, or `-L disc` when the disc tests are the ones
+(`coney-tools build --agent <id> --preset dev --test -R <pattern>`, or `-L '^disc$'` when the disc tests are the ones
 affected). Builds share a few slots on one machine, and a full `ci` build with the whole suite holds one for 15 to 30
 minutes, so running it for every step makes everyone else wait. The tool keeps the rule: an agent's `build --test`
 with no `-R` or `-L` is refused unless it carries `--full` ([When the whole suite runs](coney-tools-build.md#build)).
 
 **A full suite takes a check slot.** The whole pytest run and the whole ctest run each take 30 to 40 minutes on a
-machine to themselves, so `task check` (its whole pytest suite), `ci run` (its pytest) and `build --test` with no `-R`
-or `-L` hold a **check slot** while they run: `check_slots` in `coney.local.toml` of them at once across all worktrees
+machine to themselves, so `task check` (its whole pytest suite), `ci run` (its pytest), `ci disc-suite` and
+`build --test` with no `-R` or `-L` hold a **check slot** while they run (a narrowed `task check` ctest run of at most
+`proof.ctest.max_files` test files holds none): `check_slots` in `coney.local.toml` of them at once across all worktrees
 (default one per four cores), the others wait in a queue that says its place every minute
 ([Check slots](coney-tools-build.md#check-slots)). A few test files typed by hand (`pytest python/tests/test_x.py`,
 `build --test -R <pattern>`) need no slot: run those while working, and the full suite once, in `task check`. The
