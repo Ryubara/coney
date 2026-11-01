@@ -2042,8 +2042,9 @@ def test_a_lapse_record_older_than_its_minutes_lapses_nothing(scene: Scene) -> N
 
 
 def test_only_the_listed_tracks_lapse(scene: Scene) -> None:
-    lapse(scene, reimplementation="no game work", fix="nothing to fix")
-    assert task_slots.read_lapses(scene.scratch, scene.conventions, scene.now()) == {"fix": "nothing to fix"}
+    # A record that names the fix track (or any track not listed) lapses nothing of it: the fix place never lapses.
+    lapse(scene, reimplementation="no game work", fix="nothing to fix", networking="no networking work")
+    assert task_slots.read_lapses(scene.scratch, scene.conventions, scene.now()) == {"networking": "no networking work"}
 
 
 def test_a_damaged_lapse_record_lapses_nothing(scene: Scene) -> None:
@@ -2053,11 +2054,11 @@ def test_a_damaged_lapse_record_lapses_nothing(scene: Scene) -> None:
 
 
 def test_the_report_says_which_kept_places_lapsed(scene: Scene) -> None:
-    lapse(scene, fix="nothing to fix")
+    lapse(scene, networking="nothing to start")
     lines = task_slots.report(
         scene.scan(),
         scene.conventions,
         scene.build_slots,
         task_slots.read_lapses(scene.scratch, scene.conventions, scene.now()),
     )
-    assert "the place kept for fix has lapsed, open to any track: nothing to fix" in lines
+    assert "the place kept for networking has lapsed, open to any track: nothing to start" in lines

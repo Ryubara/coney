@@ -510,12 +510,12 @@ tasks:
       agent_types: [engineer, tooling]
       reserve_minutes: 45                         # an agent let start keeps its slot this long before its `task start`
       # A place a track keeps (`min`) lapses while that track has nothing to start: `task slots --fill-check` judges it
-      # (no claimed task without an agent and no ready, unblocked issue of the track; for the fix track, no queued fix
-      # and no failed pull request without one) and records it, and `task start` and the Agent guard read that record
-      # for `minutes` after it was made, so the place is open to any track meanwhile (issue 1370: the networking place
-      # stayed kept while every networking issue was S-blocked, and two fix tasks could not start). Only the `tracks`
-      # listed lapse; the reimplementation floor for game work does not.
-      lapse: {tracks: [fix, networking, renderer], minutes: 15}
+      # (no claimed task without an agent and no ready, unblocked issue of the track) and records it, and `task start`
+      # and the Agent guard read that record for `minutes` after it was made, so the place is open to any track
+      # meanwhile (issue 1370: the networking place stayed kept while every networking issue was S-blocked, and two fix
+      # tasks could not start). Only the `tracks` listed lapse: networking. The fix track may not be listed (a pull
+      # request that fails must always find its fix place, 2026-11-01); game work's floor does not lapse either.
+      lapse: {tracks: [networking], minutes: 15}
     # Keeping the places full (maintainer, 2026-10-27; docs/guides/slot-fill.md): `coney-tools task slots --fill-check`
     # fails while a place is free, work can be started for it and nothing excuses the gap; the coordinator's Stop hook
     # (.claude/hooks/slot_fill_guard.py) blocks the end of a turn on it. The places are the machine's (`slots` above):

@@ -91,8 +91,8 @@ KEEP_PLACE_SECONDS = 60 * 60.0
 POLL_SECONDS = 2.0
 #: Seconds between "you are Nth in the queue" lines while waiting.
 REPORT_SECONDS = 60.0
-#: The lanes: the main slots (full builds, full test runs), the single fast-lane slot (small jobs) and the check slots
-#: (one per full suite running at once).
+#: The lanes: the main slots (builds too big for the fast lane), the single fast-lane slot (small jobs) and the check
+#: slots (one per full suite or other test run too big for the fast lane, running at once).
 MAIN_LANE = "main"
 FAST_LANE = "fast"
 CHECK_LANE = "check"

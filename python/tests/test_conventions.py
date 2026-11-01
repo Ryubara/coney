@@ -737,8 +737,9 @@ def test_the_real_task_start_rules() -> None:
     assert set(tracks.reimplementation.min_kinds) <= set(load_conventions(REPO).tasks.kinds)
     assert start.slots.agent_types == ("engineer", "tooling")
     assert start.slots.reserve_minutes > 0
-    # A kept place lapses while its track has nothing to start (issue 1370): the fix, networking and renderer floors.
-    assert start.slots.lapse_tracks == ("fix", "networking", "renderer") and start.slots.lapse_minutes > 0
+    # A kept place lapses while its track has nothing to start (issue 1370): only networking's. The fix place never
+    # lapses, so a pull request that fails always finds it.
+    assert start.slots.lapse_tracks == ("networking",) and start.slots.lapse_minutes > 0
 
 
 def test_the_workflow_exemption_from_the_slots_ends_at_the_cutover() -> None:
@@ -793,6 +794,7 @@ def test_the_workflow_exemption_from_the_slots_ends_at_the_cutover() -> None:
         (("tasks.start.slots.reserve_minutes", 0), r"tasks\.start\.slots\.reserve_minutes: expected a whole number"),
         (("tasks.start.slots.lapse.minutes", 0), r"tasks\.start\.slots\.lapse\.minutes: expected a whole number"),
         (("tasks.start.slots.lapse.tracks", ["games"]), r"tasks\.start\.slots\.lapse\.tracks: 'games' is not a track"),
+        (("tasks.start.slots.lapse.tracks", ["fix"]), r"lapse\.tracks: 'fix' is not a track whose place may lapse"),
         (("tasks.start", REMOVE), "missing the key 'start'"),
     ],
 )

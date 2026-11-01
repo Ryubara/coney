@@ -496,15 +496,13 @@ def fill_check(
         reasons += analysis.reasons
         work += [_issue_work(issue, conventions) for issue in analysis.eligible]
     work_fix: list[str] = []
-    pulls_read = False
-    if kept["fix"]:
+    if free.fix:
         work_fix += [f"fix task {name} is queued; start its agent (oldest first)" for name in current.queued_fixes]
         fix_names = [holder.task for holder in current.held("fix")] + list(current.queued_fixes)
         try:
             pulls = uncovered_pulls(
                 sources.failed_pulls(), _fix_issues(scratch, conventions, fix_names), holds or [], now
             )
-            pulls_read = True
         except ConfigError as error:
             pulls = []
             warnings.append(f"the pull requests could not be read ({error})")
@@ -513,12 +511,12 @@ def fill_check(
             f"`task create --fix-of <issue>`, then start its agent"
             for pull in pulls
         ]
-    lapsed = _lapses(conventions, kept, work, work_fix, issues_read, pulls_read)
+        if not work_fix:
+            reasons.append("no open pull request has a failed required check without a fix unit")
+    lapsed = _lapses(conventions, kept, work, issues_read)
     task_slots.write_lapses(scratch, now, lapsed)
     reasons += [f"the place kept for {track} lapsed, so it is open: {why}" for track, why in lapsed.items()]
     free = places.free_places(current, conventions, build_slots, lapsed)
-    if free.fix and not work_fix:
-        reasons.append("no open pull request has a failed required check without a fix unit")
     # The kept game place takes the first game work of a kind that fills it (`feature`), the one kept for networking
     # the first networking work, the one kept for the renderer the first renderer work; every open place, the next work
     # in order that is neither (their tracks hold at most `max` units, so they never take an open place).
@@ -597,24 +595,17 @@ def _lapses(
     conventions: Conventions,
     kept: dict[str, int],
     work: list[places.Work],
-    work_fix: list[str],
     issues_read: bool,
-    pulls_read: bool,
 ) -> dict[str, str]:
     """The tracks of `tasks.start.slots.lapse.tracks` that keep a place now and have nothing to start, each with why:
-    for the fix track no queued fix and no failed pull request without one, for another track no claimed task and no
-    ready, unblocked issue of its own. A track whose work could not be read keeps its place (a GitHub that cannot be
-    read lapses nothing)."""
+    no claimed task and no ready, unblocked issue of its own. Issues that could not be read (GitHub down) lapse
+    nothing. The fix track is never listed (conventions.py refuses it): a pull request that fails always finds its
+    place."""
     lapsed: dict[str, str] = {}
     for track in conventions.tasks.start.slots.lapse_tracks:
         if not kept.get(track):
             continue
-        if track == "fix":
-            if pulls_read and not work_fix:
-                lapsed[track] = (
-                    "no fix task is queued and no open pull request has a failed required check without a fix unit"
-                )
-        elif issues_read and track == "reimplementation":
+        if issues_read and track == "reimplementation":
             if not any(places.fills_game_place(item.kind, item.track, conventions) for item in work):
                 lapsed[track] = "no game (`feature`) task or issue can start"
         elif issues_read and not any(item.track == track for item in work):

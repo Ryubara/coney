@@ -459,7 +459,7 @@ coney-tools build [--agent AGENT] [--preset PRESET] [--dir DIR] [--configure] [-
 | `--build-dir BUILD_DIR` | path | none | build in this folder instead of build/\<preset\> (relative to the checkout; with a build root, build/... moves into it), with the preset's settings; for a second configuration, such as a Clang one next to the default compiler's |
 | `--env NAME=VALUE` | text | none | set an environment variable for the run, e.g. CC=clang-19 (repeatable); CMake reads CC and CXX at the first configure of a folder |
 | `--priority` | flag | off | go ahead of the normal queue (a build someone awaits) |
-| `--lane RUN_LANE` | choice | `auto` | auto (default): a small build or test run takes the fast lane; main: always a main slot, for a run you know is long. One of `auto`, `main`. |
+| `--lane RUN_LANE` | choice | `auto` | auto (default): a small build or test run takes the fast lane; main: a build always takes a main slot and a test run a check slot, for a run you know is long. One of `auto`, `main`. |
 | `--max-wait MIN` | number | none | minutes to wait for a slot, per phase, before exiting with code 75 (default and most 40; with --detach default 240, no limit) |
 | `--budget MIN` | number | none | minutes the whole call may take, waits and steps together: stop waiting (exit 75) once the wait plus what the step usually takes would pass it (default and most 45, inside an hour's prompt cache; with --detach default 0: no budget) |
 | `--detach` | flag | off | run in the background, apart from this shell, and return at once: the result goes to build-result.json in the worktree's scratch folder (`build result` shows it); for a wait or a run that would outlast your prompt cache |

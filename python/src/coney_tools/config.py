@@ -40,7 +40,7 @@ PATH_KEYS: tuple[str, ...] = (
 #: Keys of `coney.local.toml` that hold whole numbers, with their defaults (`build_slots`: how many builds run at
 #: once; `build_worktree_cap`: how many worktrees may hold a `build/` folder at once, 0 turning the cap off
 #: (build_cap.py); `build_fast_lane_steps` and `build_fast_lane_tests`: the sizes below which a job uses the fast lane;
-#: `build_fast_lane_test_seconds`: the recorded test time above which a filtered test run takes a main slot anyway, 0
+#: `build_fast_lane_test_seconds`: the recorded test time above which a filtered test run takes a check slot anyway, 0
 #: turning that off; `check_slots`: how many full suites (the whole pytest run, the engine's whole ctest run) may run at
 #: once, 0 meaning one per four cores (build_claims.py, `check_slot_count`); `test_jobs`: the tests `coney-tools build
 #: --test` runs in parallel (`ctest -j`), 0 meaning half the cores or a build slot's share when that is more

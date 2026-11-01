@@ -615,6 +615,41 @@ def test_a_kept_place_is_for_the_same_build_and_only_for_a_while(tmp_path: Path,
     slots.leave(other)
 
 
+def test_a_wait_ended_by_the_time_budget_keeps_its_place(tmp_path: Path, world: World) -> None:
+    # `abandon` (a run's time budget, build_run) ends the wait as a --max-wait does, and keeps the place the same way.
+    slots = make(tmp_path, world, slots=1)
+    assert take(slots, world, "holder", 2001) is not None
+    started = world.now
+    with pytest.raises(SlotTimeout, match="the budget would pass"):
+        slots.acquire(
+            "alice", "wt-alice", "dev", False, 12002, poll=10, abandon=lambda waited, rest: "the budget would pass"
+        )
+    later = ticket(slots, world, "bob", 2003)
+    assert slots.join("alice", "wt-alice", "dev", False, 12004).time == started  # where her first wait stood
+    slots.leave(later)
+
+
+def test_a_kept_place_whose_first_ticket_is_half_the_ticket_age_is_not_reused(tmp_path: Path, world: World) -> None:
+    # A ticket that joined with a time six hours old would soon be judged stale (TICKET_MAX_AGE): the back instead.
+    from coney_tools.build_claims import TICKET_MAX_AGE
+
+    slots = make(tmp_path, world, slots=1, max_age=TICKET_MAX_AGE * 2)
+    assert take(slots, world, "holder", 2101) is not None
+    with pytest.raises(SlotTimeout):
+        slots.acquire("alice", "wt-alice", "dev", False, 12102, poll=600, timeout=TICKET_MAX_AGE / 2 + 1)
+    assert slots.join("alice", "wt-alice", "dev", False, 12103).time == world.now
+
+
+def test_a_kept_place_dated_in_the_future_is_not_reused(tmp_path: Path, world: World) -> None:
+    # A clock set back since the place was kept would put the ticket ahead of builds that came first: the back instead.
+    slots = make(tmp_path, world, slots=1)
+    assert take(slots, world, "holder", 2201) is not None
+    with pytest.raises(SlotTimeout):
+        slots.acquire("alice", "wt-alice", "dev", False, 12202, poll=10, timeout=60)
+    world.now -= 3600
+    assert slots.join("alice", "wt-alice", "dev", False, 12203).time == world.now
+
+
 def test_a_waiting_build_reads_a_new_slot_count_while_it_waits(tmp_path: Path, world: World) -> None:
     count = [1]
     slots = Slots(

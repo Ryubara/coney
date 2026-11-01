@@ -2578,6 +2578,13 @@ def _read_tasks(data: object, where: str) -> Tasks:
         _at(lapse_where, "tracks"),
         "a track",
     )
+    # A pull request that fails must always find its fix place (docs/guides/slot-fill.md#lapse).
+    _names_in(
+        lapse_tracks,
+        ("reimplementation", "studio", "networking", "renderer"),
+        _at(lapse_where, "tracks"),
+        "a track whose place may lapse (a failed pull request always finds its fix place)",
+    )
     per_build_slot = _count(slots["per_build_slot"], _at(slots_where, "per_build_slot"))
     tracks = _read_tracks(slots["tracks"], _at(slots_where, "tracks"), per_build_slot)
     kinds = _texts(table["kinds"], _at(where, "kinds"))

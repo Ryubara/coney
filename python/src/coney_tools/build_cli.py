@@ -153,8 +153,8 @@ def add_parser(groups: Any) -> None:
         choices=("auto", MAIN_LANE),
         default="auto",
         dest="run_lane",
-        help="auto (default): a small build or test run takes the fast lane; main: always a main slot, for a run you "
-        "know is long",
+        help="auto (default): a small build or test run takes the fast lane; main: a build always takes a main slot "
+        "and a test run a check slot, for a run you know is long",
     )
     group.add_argument(
         "--max-wait",

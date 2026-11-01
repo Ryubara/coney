@@ -96,9 +96,9 @@ def test_a_free_place_and_a_ready_issue_is_a_failure(scene: Scene, sources: Fake
     sources.ready_issues = [issue(7, "P-high", title="tools: Add a thing")]
     result = check(scene, sources)
     assert result.blocked and result.message.startswith(slot_fill.BLOCKED)
-    # Nothing to fix: the place kept for a fix lapses and is open (tasks.start.slots.lapse, issue 1370).
-    assert "(free: 0 kept for game work, 0 kept for a fix, 3 open)" in result.message
-    assert "The place kept for fix lapsed, so it is open: no fix task is queued" in result.message
+    # Nothing to fix, yet the place kept for a fix stays kept: a pull request that fails must find it.
+    assert "(free: 0 kept for game work, 1 kept for a fix, 2 open)" in result.message
+    assert "The place kept for fix lapsed" not in result.message
     assert "#7 [P-high] tools: Add a thing" in result.message
     assert "1 of 4 places in use, reimplementation: a-one" in result.message
     assert "coney-tools task slots --waive <places> --reason <maintainer-pause|maintainer-decision|machine-load>" in (
@@ -113,7 +113,7 @@ def test_a_workflow_unit_in_work_holds_no_place_so_the_places_stay_free(scene: S
     hold_claims(scene, sources)
     sources.ready_issues = [issue(7)]
     result = check(scene, sources)
-    assert result.blocked and "(free: 1 kept for game work, 0 kept for a fix, 3 open)" in result.message
+    assert result.blocked and "(free: 1 kept for game work, 1 kept for a fix, 2 open)" in result.message
 
 
 def test_the_machine_limit_follows_the_build_slots(scene: Scene, sources: FakeSources) -> None:

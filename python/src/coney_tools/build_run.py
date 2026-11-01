@@ -594,7 +594,8 @@ class Options:
     #: Whether the disc tests have the disc (set by the caller, who passes it to the run's environment); None: the
     #: summary says nothing of it.
     disc: DiscTests | None = None
-    #: `main` sends both phases to a main slot without measuring (`--lane main`); None chooses by size.
+    #: `main` sends the build to a main slot and the test phase to a check slot without measuring (`--lane main`);
+    #: None chooses by size.
     lane: str | None = None
 
     @property
