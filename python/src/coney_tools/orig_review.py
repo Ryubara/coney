@@ -40,8 +40,8 @@ from typing import Any
 from coney_tools import stamps
 from coney_tools.config import ConfigError, workspace_folder
 from coney_tools.conventions import load_conventions_leniently
-from coney_tools.orig_index import SOURCE_DIR, SOURCE_SUFFIXES
-from coney_tools.orig_scan import PS2, XBOX, Function, Tag, read_source
+from coney_tools.orig_index import SOURCE_DIR, SOURCE_SUFFIXES, TagCoverage
+from coney_tools.orig_scan import PS2, XBOX, Function, SourceFile, Tag, read_source
 
 #: The classes a reviewed function gets, as docs/guides/review/orig.md defines them.
 CLASSES = (
@@ -260,7 +260,7 @@ def _moved_hash(lines: list[str], function: Function, declaration: str = "") -> 
     return hashlib.sha256("\x00".join(parts).encode("utf-8")).hexdigest()
 
 
-def _declaration_text(function: Function, texts: dict[str, str], decls: list[Function]) -> str:
+def _declaration_text(function: Function, texts: Mapping[str, str], decls: list[Function]) -> str:
     """The code of `function`'s separate declaration, from its first line to the `;` that ends it, or "" when it is
     defined in its class or has none in these files. The declaration nearest to the definition by file, folder, then
     anywhere (a member), with the same parameter types, is the one read."""
@@ -277,21 +277,37 @@ def _declaration_text(function: Function, texts: dict[str, str], decls: list[Fun
         exact = [f for f in group if f.params == function.params]
         chosen = exact[0] if exact else (group[0] if len({f.params for f in group}) == 1 else None)
         if chosen is not None:
-            window = texts[chosen.path].splitlines()[chosen.line - 1 : chosen.line + 7]
-            # The `;` is a token of its own, so one inside a string default does not end the declaration early.
-            kept: list[str] = []
-            for match in _TOKEN.finditer(code_text("\n".join(window))):
-                if match.group(0) == ";":
-                    break
-                kept.append(match.group(0))
-            return "".join(kept)
+            return _statement_text(texts[chosen.path].splitlines(), chosen)
     return ""
+
+
+def _statement_text(lines: list[str], declaration: Function) -> str:
+    """The code of a declaration with no body, from its first line to the `;` that ends it (eight lines at most)."""
+    window = lines[declaration.line - 1 : declaration.line + 7]
+    # The `;` is a token of its own, so one inside a string default does not end the declaration early.
+    kept: list[str] = []
+    for match in _TOKEN.finditer(code_text("\n".join(window))):
+        if match.group(0) == ";":
+            break
+        kept.append(match.group(0))
+    return "".join(kept)
 
 
 def _stem(path: str) -> tuple[str, str]:
     """(folder, file stem): what a header and its source file share."""
     pure = PurePosixPath(path)
     return (pure.parent.as_posix(), pure.stem)
+
+
+def _declarations(sources: Mapping[str, SourceFile]) -> dict[tuple[str, str], list[Function]]:
+    """Every separate declaration (no body), by the function's scope and name: what a move reads beside the
+    definition."""
+    declarations: dict[tuple[str, str], list[Function]] = defaultdict(list)
+    for source in sources.values():
+        for function in source.functions:
+            if not function.body:
+                declarations[function.key].append(function)
+    return declarations
 
 
 def units_from(texts: dict[str, str]) -> list[Unit]:
@@ -303,12 +319,7 @@ def units_from(texts: dict[str, str]) -> list[Unit]:
         for function in source.functions:
             if function.tags:
                 declared[function.key].append((function, function.tags))
-    # Every separate declaration (no body), by the function's scope and name: what a move reads beside the definition.
-    declarations: dict[tuple[str, str], list[Function]] = defaultdict(list)
-    for source in sources.values():
-        for function in source.functions:
-            if not function.body:
-                declarations[function.key].append(function)
+    declarations = _declarations(sources)
     found: list[Unit] = []
     for path, source in sources.items():
         lines = texts[path].splitlines()
@@ -367,11 +378,16 @@ def _declared_tags(function: Function, candidates: list[tuple[Function, list[Tag
     return []
 
 
-def units_now(root: Path) -> list[Unit]:
-    """The units of `src/` as the files are on disk."""
+def texts_now(root: Path) -> dict[str, str]:
+    """Every C++ file under `src/` as it is on disk -> its text."""
     base = root / SOURCE_DIR
     paths = sorted(p for p in base.rglob("*") if p.suffix in SOURCE_SUFFIXES and p.is_file()) if base.is_dir() else []
-    return units_from({p.relative_to(root).as_posix(): p.read_text(encoding="utf-8", errors="replace") for p in paths})
+    return {p.relative_to(root).as_posix(): p.read_text(encoding="utf-8", errors="replace") for p in paths}
+
+
+def units_now(root: Path) -> list[Unit]:
+    """The units of `src/` as the files are on disk."""
+    return units_from(texts_now(root))
 
 
 def units_at(root: Path, ref: str) -> list[Unit]:
@@ -447,6 +463,70 @@ def moves(before: Iterable[Unit], after: Iterable[Unit]) -> Changes:
         tuple(u for u in gone if u.key not in taken),
         tuple(found[u.key] for u in changed if u.key in found),
     )
+
+
+#: What a function's standing is read from besides its tags, kept in the names of `_standings`: its marker state
+#: (`TagCoverage.lookup`) and whether a comment stands above it. A move keeps both, so a function that loses its
+#: `@coney-only` marker or its doc comment on the way is not a move.
+_STANDING = "\x00standing:{state}:{comment}"
+
+
+def _standings(texts: Mapping[str, str]) -> dict[str, Unit]:
+    """Every function of these files, a definition or a separate declaration, tagged or not, as a unit that `moves`
+    can read: its key names its file (so moving it to another file is a new key) and, for a declaration, ends in `;`;
+    its names are its tags' names, or its own name when it has none (an untagged function is a move only under its
+    own name: it has no address to tell it by), and its standing (`_STANDING`)."""
+    sources = {path: read_source(path, text) for path, text in sorted(texts.items())}
+    coverage = TagCoverage(list(sources.values()))
+    declarations = _declarations(sources)
+    found: dict[str, Unit] = {}
+    for path, source in sources.items():
+        lines = texts[path].splitlines()
+        for function in source.functions:
+            tags = [*function.tags, *function.body_tags]
+            if not tags:
+                tags = [t for other in coverage.declarations(function) for t in (*other.tags, *other.body_tags)]
+            standing = _STANDING.format(state=coverage.lookup(function), comment=bool(function.comment.strip()))
+            names = tuple(dict.fromkeys(t.name for t in tags)) or (function.name,)
+            if function.body:
+                declaration = _declaration_text(function, texts, declarations.get(function.key, []))
+                body, moved = _body_hash(lines, function), _moved_hash(lines, function, declaration)
+            else:
+                text = _statement_text(lines, function)
+                body = hashlib.sha256(text.encode("utf-8")).hexdigest()
+                moved = hashlib.sha256(_normal_form(text, function).encode("utf-8")).hexdigest()
+            key = f"{path}::{function.qualified}({function.params}){'' if function.body else ';'}"
+            while key in found:  # one name twice in a file (a platform variant): told apart by their order
+                key += "'"
+            found[key] = Unit(
+                key,
+                path,
+                function.line,
+                function.qualified,
+                tuple(dict.fromkeys(t.address for t in tags if t.build == PS2)),
+                (*names, standing),
+                body,
+                xbox=tuple(dict.fromkeys(t.address for t in tags if t.build == XBOX)),
+                moved_sha256=moved,
+            )
+    return found
+
+
+def function_moves(before: Mapping[str, str], after: Mapping[str, str]) -> dict[tuple[str, int], Unit]:
+    """Every function of the files `after` (path -> text) that only moved from the files `before`: the (path, line)
+    of its definition or declaration now -> what it was. It moved when it is new under its file, qualified name and
+    parameters and one function gone under its own has its code (the body hash, or the moved hash: its own class and
+    name left out), its tags and its standing (its marker state and whether a comment stands above it), by the rules
+    of `moves`, which `orig review-stamp` reads for the `@orig` units; an untagged function also keeps its name. `orig
+    check-tags` and the touch-it rule of `standards check` read it, so a function a change only moved keeps the
+    standing it had (docs/guides/orig-body-hash.md#moved)."""
+    found = moves(_standings(before).values(), _standings(after).values()).moved
+    return {(move.unit.path, move.unit.line): move.was for move in found}
+
+
+def moves_since(root: Path, since: str) -> dict[tuple[str, int], Unit]:
+    """`function_moves` from the commit `since` to the files of `src/` as they are on disk."""
+    return function_moves(files_at(root, since), texts_now(root))
 
 
 def pr_stamp(root: Path, tip_ref: str, base_ref: str) -> dict[str, Any]:

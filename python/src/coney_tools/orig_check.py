@@ -7,15 +7,17 @@ function it reimplements, or `@coney-only <reason>` (docs/guides/conventions.md#
 not a gate, so the check refuses only what a change adds: a function that is untagged now and was not, under the same
 scope, name and parameter types in the same folder (a private helper: the same file), at the point where the branch
 left `base`. A function that loses its tag, an exempt accessor that grows, and a new function marked only by the older
-"Coney's own" wording count as new; a file renamed with `git mv` keeps its old functions. Every folder of `src/` must
-also be in `paths.gameplay` or `paths.coney_only`, so a new subsystem cannot slip past.
+"Coney's own" wording count as new; a file renamed with `git mv` keeps its old functions, and a function that only
+moved (to another file, folder or class, its code, tags and standing as they were: `orig_review.function_moves`) keeps
+the standing it had. Every folder of `src/` must also be in `paths.gameplay` or `paths.coney_only`, so a new subsystem
+cannot slip past.
 """
 
 from __future__ import annotations
 
 from pathlib import Path, PurePosixPath
 
-from coney_tools import local_gate
+from coney_tools import local_gate, orig_review
 from coney_tools.config import find_repo_root
 from coney_tools.conventions import CONVENTIONS_FILE, load_conventions
 from coney_tools.orig_index import SOURCE_DIR, SOURCE_SUFFIXES, Untagged, find_untagged, read_sources
@@ -80,8 +82,13 @@ def check(root: Path, base: str) -> list[str]:
     before, _ = find_untagged(then, paths.gameplay, with_legacy=True)
     # A function exempt at the base (an accessor) that is no longer exempt is new work and needs its tag.
     old = {_known(u) for u in before if not u.exempt}
-    for function in current:
-        if not function.exempt and _known(function) not in old:
+    new = [f for f in current if not f.exempt and _known(f) not in old]
+    # A function that only moved (its code, tags and standing as they were, from any folder: orig_review.moves)
+    # keeps the standing it had: it was in the fidelity audit's backlog, or needed nothing in a Coney-only folder.
+    moved = orig_review.moves_since(root, since) if new else {}
+    for function in new:
+        path, line = function.where.rsplit(":", 1)
+        if (path, int(line)) not in moved:
             wording = ' (the older "Coney\'s own" wording marks only code written before this check)'
             problems.append(
                 f"{function.where}: {function.coney} has no @orig and no @coney-only"

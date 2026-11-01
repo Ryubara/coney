@@ -16,13 +16,17 @@ the target of an inline link `[text](target)` does not count as touched when, fo
   page held the old anchor before the change but not the new one, and holds both now. Any anchor new on that page
   qualifies: the reason is a section split in two, the part the link cites moving out under its own id (a link to
   `#rage` that cites the flash, now `#flash`), but only the anchors are looked at, not where the new section came
-  from. An anchor that replaced the old one (a renamed section) is a touch.
+  from. An anchor that replaced the old one (a renamed section) is a touch; or
+* both name a file of the repository, as a `repo:<path>` link or a code span that holds only a path (`repo:<path>`, or
+  a bare `src/platform/play_level_objects.cpp`), the old file is one the same change renamed or deleted (a source file
+  moved with `git mv`) and the new path resolves: a path repointed to where its file went.
 
-The text of the link, the rest of the line and the number of links must be equal (spaces and line breaks do not count,
-so a link split over two lines is read whole, and so is the paragraph or list item that a longer target made the editor
-reflow), so any other edit on the line is a touch. A link to a page that was not moved, a link to something outside the
-pages (a scheme, `repo:`, an image) and a target that resolves nowhere are all touches (the last also fails the build:
-MkDocs checks the link).
+The text of the link, the rest of the line and the number of links and paths must be equal (spaces and line breaks do
+not count, so a link split over two lines is read whole, and so is the paragraph or list item that a longer target made
+the editor reflow), so any other edit on the line is a touch: a name renamed beside the path (`PlayLevelMode::trySwap`
+to `PlayLevelSimulation::trySwap`) as much as a word. A link to a page that was not moved, a page link turned into a
+`repo:` path or back, a link to something else outside the pages (a scheme, an image) and a target that resolves
+nowhere are all touches (the last also fails the build: MkDocs checks the link).
 
 The functions are pure: the caller says which paths are gone, whether a target resolves after the change and, for a
 section that moved, whether the old page held its anchor before it.
@@ -60,11 +64,35 @@ _LINK_TAIL = re.compile(r"^[^\[\]]*\]\(")
 _LINK_REACH = 5
 #: Stands in for a target when two lines are compared without their targets.
 _TARGET = "\x00"
+#: The prefix of a link to a file of the repository outside the pages (writing-docs.md, step 3 of Adding a page).
+_REPO = "repo:"
+#: A code span that holds only a repository path: `repo:<path>` (an anchor allowed), or a bare path with a folder.
+_PATH_SPAN = re.compile(r"`(?P<path>repo:[\w./-]+(?:#[\w-]+)?|[\w.-]+(?:/[\w.-]+)+)`")
 
 
 def _without_targets(line: str) -> str:
-    """`line` with the target of every inline link blanked."""
-    return _LINK.sub(lambda match: f"[{match.group('text')}]({_TARGET}{match.group('tail')})", line)
+    """`line` with the target of every inline link and every path span (`_PATH_SPAN`) blanked."""
+    line = _LINK.sub(lambda match: f"[{match.group('text')}]({_TARGET}{match.group('tail')})", line)
+    return _PATH_SPAN.sub(f"`{_TARGET}`", line)
+
+
+def _targets(line: str) -> tuple[list[str], list[str]]:
+    """The targets of `line`'s inline links, and its path spans as `repo:` targets, each in order."""
+    paths = [m.group("path") for m in _PATH_SPAN.finditer(line)]
+    return (
+        [m.group("target") for m in _LINK.finditer(line)],
+        [p if p.startswith(_REPO) else f"{_REPO}{p}" for p in paths],
+    )
+
+
+def _repo_moved(old: str, new: str, gone: Collection[str], resolves: Callable[[str, str], bool]) -> bool:
+    """Whether the `repo:` target `old` became the `repo:` target `new` because its file moved: the old file (any
+    anchor) is in `gone` and the new path resolves, with the new anchor when it names one."""
+    if not (old.startswith(_REPO) and new.startswith(_REPO)):
+        return False
+    before = old.removeprefix(_REPO).partition("#")[0]
+    after, _, anchor = new.removeprefix(_REPO).partition("#")
+    return before in gone and resolves(after, anchor)
 
 
 def _split(target: str, folder: str) -> tuple[str, str] | None:
@@ -92,6 +120,8 @@ def _rewritten(
     moved between two pages that stayed), or both name the same page, which `held` the old anchor and still holds it
     but holds the new one only now (an anchor new on the page, as when a section is split). Without `held` the last
     two cases are not looked at."""
+    if old.startswith(_REPO) or new.startswith(_REPO):
+        return _repo_moved(old, new, gone, resolves)
     before, after = _split(old, old_folder), _split(new, folder)
     if before is None or after is None:
         return False
@@ -138,11 +168,13 @@ def link_only_change(
     that moved between pages is not looked for)."""
     from_folder = folder if old_folder is None else old_folder
     old, new = " ".join(old.split()), " ".join(new.split())
-    before, after = list(_LINK.finditer(old)), list(_LINK.finditer(new))
-    if not before or len(before) != len(after) or _without_targets(old) != _without_targets(new):
+    (links, paths), (new_links, new_paths) = _targets(old), _targets(new)
+    if len(links) != len(new_links) or len(paths) != len(new_paths):
         return False
-    changed = [(a.group("target"), b.group("target")) for a, b in zip(before, after, strict=True)]
-    changed = [pair for pair in changed if pair[0] != pair[1]]
+    if not (links or paths) or _without_targets(old) != _without_targets(new):
+        return False
+    pairs = [*zip(links, new_links, strict=True), *zip(paths, new_paths, strict=True)]
+    changed = [pair for pair in pairs if pair[0] != pair[1]]
     return bool(changed) and all(_rewritten(a, b, folder, from_folder, gone, resolves, held) for a, b in changed)
 
 

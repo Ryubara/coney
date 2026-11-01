@@ -144,7 +144,10 @@ lists outside the sections a change touches.
 The same rule holds for the other things a change touches: each function and type of a source file the change touches
 meets the comment and tag rules of [the conventions](conventions.md#comments-and-orig), each test case it touches cites
 the source of its expected values ([testing](testing.md#citations)), a new file meets them throughout, and a ported
-function whose lines it touches is compared with the original. What is below the standard today is listed, and
+function whose lines it touches is compared with the original. A move is judged by what it changed: a source file
+renamed with git is read from the diff of the renamed pair, and a function the change only moved, to another file,
+folder or class with its code, tags and standing as they were, keeps the standing it had ([Any
+function](orig-body-hash.md#any-function)). What is below the standard today is listed, and
 `coney-tools standards` holds the touched parts to it ([the standards](coney-tools-standards.md#standards)). How far
 the rule reaches, the section's heading level and the rules owed page-wide, is `standards.touch` in
 [.github/conventions.yml](repo:.github/conventions.yml).
@@ -437,10 +440,15 @@ their indents (a rewrap that joins the lines into one, or splits one, has none t
 changed lines: a link split over lines of which only the `](target)` line changed is read from the line holding its `[`
 (the diff has no context, so the checker widens the hunk through the unchanged lines above, stopping after five lines or
 at a blank line); and a list item rewrapped by the longer target is no touch when the list markers (`-`, `1.`) stand on
-the same lines of the hunk on both sides. A link to a page that stayed, to a target that resolves nowhere, to a `repo:`
-path or an address, an image, or any other edit on the line is a touch of that line. So moving a page does not end the
-excuse of every page that links to it. The same rule frees a source or test file whose only change is a comment's
-reference to a moved research page, with its own reading of a comment: [the standards](coney-tools-standards.md#standards).
+the same lines of the hunk on both sides. A repository path that follows a renamed file is no touch either: a
+`repo:<path>` link, or a code span that holds only a path (`` `repo:src/gamemodes/play_level_objects.cpp` `` or the bare
+`` `src/gamemodes/play_level_objects.cpp` ``), rewritten from a file the same change renamed or deleted (a source file
+moved with `git mv`) to a path that exists. Only the path may change: a class or function name renamed beside it
+(`PlayLevelMode::trySwap` to `PlayLevelSimulation::trySwap`) is an edit of the line. A link to a page that stayed, to a
+target that resolves nowhere, a page link turned into a `repo:` path, a `repo:` path whose file stayed, an address, an
+image, or any other edit on the line is a touch of that line. So moving a page does not end the excuse of every page
+that links to it. The same rule frees a source or test file whose only change is a comment's reference to a moved
+research page, with its own reading of a comment: [the standards](coney-tools-standards.md#standards).
 
 `coney-tools docs legacy` prints what a scan finds; `--prune` takes out what is fixed and lowers the counts, `--check`
 exits 1 when the file lists something that passes or grew since the branch left `--base`. The file is first written by

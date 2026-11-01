@@ -80,8 +80,10 @@ forwarder) and a constructor or destructor with an empty body. A file's private 
 the change adds counts: a function untagged now that was not untagged, under the same scope, name and parameter types
 in the same folder (a file's private helper: in the same file), where the branch left `--base`. So editing an old
 untagged function, moving it to another file of its folder, or renaming its file with `git mv` (to any folder)
-passes; removing a tag, adding an untagged overload, changing an untagged function's parameter types, or growing an
-exempt accessor into more than one statement fails.
+passes, and so does a function that only moved from any folder, a Coney-only one included, into another file, folder or
+class with its code, name, tags and standing as they were ([Any function](orig-body-hash.md#any-function)); removing a
+tag, adding an untagged overload, changing an untagged function's parameter types, changing a moved function's body,
+or growing an exempt accessor into more than one statement fails.
 The older wording ("Coney's own", "(no @orig)") marks only functions that had it at `--base`; a new function needs
 `@coney-only <reason>`. The functions that said neither before the check existed are the sweep's backlog in
 `untagged.tsv`. Each finding names the file, line and function and what to add; exit code 1 when there is one.

@@ -2,7 +2,9 @@
 
 How `coney-tools orig` decides that an `@orig` function **changed** (the body hash) and that it only **moved** (a second
 hash that leaves its own qualified name out). Everything that reads units, `orig review-stamp`, `orig check-review`,
-`task review` and `pr verify`, uses these two. The commands are on [the fidelity page](coney-tools-fidelity.md#orig).
+`task review` and `pr verify`, uses these two, and `orig check-tags` and the touch-it rule of `docs check` read the
+same moves for every function ([Any function](#any-function)). The commands are on [the fidelity
+page](coney-tools-fidelity.md#orig).
 
 ## The body hash {#body-hash}
 
@@ -74,3 +76,27 @@ tag changed in the same branch is changed, moved or not: it owes a fresh compare
 does one whose old copy is still in the code. A function that is a move in one branch and edited in the next is checked
 against the branch's base, so the edit is a change. The review ledger is by key, so a moved function starts there as
 unreviewed.
+
+### Any function, tagged or not {#any-function}
+
+The same rule decides that any function only moved, for the two checks that judge a change by what it adds: [`orig
+check-tags`](coney-tools-fidelity.md#orig) and the touch-it rule of [the standards](coney-tools-standards.md#standards)
+(which `docs check` runs). `orig_review.function_moves` reads every definition and every separate declaration at the
+base and now, tagged or not, and calls one whose file, qualified name and parameter types are new a move of one that is
+gone under its own when `moves` would: the same body hash or moved hash, the same tags, each gone function taken over
+once. Two more things must be as they were, since a function without a tag has no address to be told by: its
+**standing** (its marker state, `@orig`, `@coney-only`, the older wording or none, from its own comment, its
+declaration's or its file's, and whether a comment stands above it) and, for an untagged function, its own name. So a
+function moved with `git mv`, into another class or to another file or folder keeps the standing it had:
+
+* `orig check-tags` counts it as known, as it does a function of a renamed file: it was in the fidelity audit's backlog,
+  or needed no marker in a Coney-only folder (`src/platform/` to `src/gamemodes/`, the class renamed). It joins the
+  backlog of `orig index` there, not the gate.
+* The touch-it rule leaves its lines out of what the change touched, so it owes neither the comment and tag rules nor a
+  comparison (a moved `@orig` function the function database lists as `legacy` is not asked for one), and a new file
+  that only took it in is held for the rest. Deleting the moved code from its old place is part of the move: a pure
+  deletion of blank lines, comment lines and lines of functions that moved away does not touch the line it sits at.
+
+A function whose body, declaration, tags or marker changed on the way, one renamed without a tag, and a copy whose old
+function is still there are new work as before. A class that is new, or renamed, is a touched type: its own comment is
+owed.

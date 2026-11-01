@@ -50,17 +50,20 @@ And the touch-it rule ([Touch a page, fix the page](writing-docs.md#touch-it), f
   change touched are held to the standard: a `comment` or `tag` finding when a changed line is in its function (from
   its first line to its closing brace; a declaration's one statement), a `type-doc` finding when one is in its type
   (from the `class` or `struct` to its closing brace), a `citation` finding when one is in its test case (from the
-  comment block right above the macro to the line before the next case). A new file is held whole. One report per rule
-  with the number of findings and the first;
+  comment block right above the macro to the line before the next case). A new file is held whole, and a file the
+  change renamed (as `git diff -M` finds it, at `research.moved_similarity`) is read from git's diff of the renamed
+  pair, as a moved page is. A function that only moved, to another file, folder or class with its code, tags and
+  standing as they were, is not touched, nor is the line where its old copy was deleted
+  ([Any function](orig-body-hash.md#any-function)). One report per rule with the number of findings and the first;
 * every other finding of a touched file is `info`: it fails nothing, and `check` prints one line for the file,
   `path:1: info: touch-it: N findings outside what the change touched (rule count, ...)`. `check --cleanup` (and
   `docs check --cleanup`) prints each one instead, so the coordinator can file them as cleanup issues; `scan --files`
   lists the findings of every file;
-* a ported function whose lines the change touches (a new file touches all of its functions) and whose status is not
-  `compared` is reported with the address it ports: study it, pair it and have it reviewed, then set `compared`. Its
-  tags count wherever they are written: above it, inside its body, or on its declaration in the header, matched
-  overload by overload as [`orig check-tags`](coney-tools-fidelity.md#orig) matches them, so touching one overload owes
-  only its own address.
+* a ported function whose lines the change touches (a new file touches all of its functions but those it only moved
+  in) and whose status is not `compared` is reported with the address it ports: study it, pair it and have it reviewed,
+  then set `compared`. Its tags count wherever they are written: above it, inside its body, or on its declaration in
+  the header, matched overload by overload as [`orig check-tags`](coney-tools-fidelity.md#orig) matches them, so
+  touching one overload owes only its own address.
 
 **A comment's research link that follows a page move is no touch.** A hunk of a source or test file's diff that only
 rewrites research references in comments does not touch the file (nor the functions whose lines it sits in) when every

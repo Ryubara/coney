@@ -254,7 +254,8 @@ def change_touches(root: Path, base: str, names: Iterable[str], similarity: int 
     page it was moved from when git sees a rename at or above `similarity` percent (the research conventions'
     `moved_similarity`; git's own 50 when None), and which lines it added or changed (committed or not).
 
-    A line whose only change is a link rewritten to a page the change moved is no touch (`docs_link_moves`)."""
+    A line whose only change is a link rewritten to a page the change moved, or a repository path repointed to where a
+    file the change renamed went, is no touch (`docs_link_moves`)."""
     since = local_gate.merge_base(root, base)
     moves = local_gate.renamed_files(root, base, similarity)
     gone = local_gate.removed_files(root, base, similarity)
