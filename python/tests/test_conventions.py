@@ -65,6 +65,15 @@ def test_pull_requests_open_only_is_read_as_a_yes_or_no() -> None:
     assert conventions_with(("pull_requests.open_only", False)).pull_requests.open_only is False
 
 
+def test_pull_requests_auto_merge_manual_paths_is_read_as_a_yes_or_no() -> None:
+    # Whether `pr open` turns auto-merge on for a change to merge.manual_paths.
+    assert load_conventions(REPO).pull_requests.auto_merge_manual_paths is True
+    assert (
+        conventions_with(("pull_requests.auto_merge_manual_paths", False)).pull_requests.auto_merge_manual_paths
+        is False
+    )
+
+
 def test_the_real_review_gate() -> None:
     review = load_conventions(REPO).pull_requests.review
     # The legacy gate runs the one merged reviewer (docs/guides/review/index.md), like `task review`.
@@ -389,6 +398,11 @@ BAD: list[tuple[str, tuple[tuple[str, object], ...], str]] = [
         "a pull_requests table with no open_only",
         (("pull_requests.open_only", REMOVE),),
         r"pull_requests: missing the key 'open_only'",
+    ),
+    (
+        "an auto_merge_manual_paths that is text",
+        (("pull_requests.auto_merge_manual_paths", "yes please"),),
+        r"pull_requests\.auto_merge_manual_paths: expected true or false",
     ),
     ("a boolean where text goes", (("repo.default_branch", False),), r"repo\.default_branch: expected non-empty"),
     (

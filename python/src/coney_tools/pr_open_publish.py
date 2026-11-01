@@ -158,18 +158,18 @@ def _commits_the_unit_lacks(run: Run, head: str) -> list[tuple[str, str]]:
 def manual_paths(run: Run, proof: Proof) -> list[str]:
     """The changed paths that are the maintainer's to merge (`merge.manual_paths` of the default branch's rules)."""
     assert run.rules is not None
-    rules = run.rules.merge.manual_paths
-    return sorted(p for p in proof.subject.paths if any(p == r or (r.endswith("/") and p.startswith(r)) for r in rules))
+    return run.rules.merge.manual_among(proof.subject.paths)
 
 
 def wants_auto_merge(run: Run, proof: Proof) -> bool:
     """Whether auto-merge should be on: not declined, allowed by the default branch's rules, not a change that is the
-    maintainer's to merge, and allowed by the signed-in account's permission."""
+    maintainer's to merge (only while `pull_requests.auto_merge_manual_paths` is off), and allowed by the signed-in
+    account's permission."""
     assert run.rules is not None
     merge = run.rules.merge
     if run.request.no_auto_merge or not merge.auto_merge:
         return False
-    held_back = manual_paths(run, proof)
+    held_back = [] if run.rules.pull_requests.auto_merge_manual_paths else manual_paths(run, proof)
     if held_back:
         shown = ", ".join(held_back[:3]) + (" ..." if len(held_back) > 3 else "")
         run.say(f"  auto-merge left off: the change touches {shown}, which the maintainer merges")

@@ -326,8 +326,9 @@ What each vendor's own page says, read on 2026-10-27:
 cannot start (no Python 3.12, no `uv`) must not lock the tools (Copilot denies every call whose hook fails), and the
 refusal is the JSON. `; exit 0` works in sh, bash, zsh and PowerShell alike; `$(git rev-parse --show-toplevel)` inside
 double quotes works in sh and PowerShell, not in `cmd.exe` (Codex on Windows is untested). The timeouts are at least
-twice the PR guard's check time, as Claude Code's are. These files are `merge.manual_paths`: the maintainer merges a
-change to them.
+twice the PR guard's check time, as Claude Code's are. These files are `merge.manual_paths`: the coordinator merges a
+change to them on the maintainer's behalf (the maintainer by hand while `pull_requests.auto_merge_manual_paths` is
+off).
 
 **How a refusal is written.** Codex gets Claude Code's `hookSpecificOutput`, Gemini CLI and Antigravity a `decision` and
 a `reason`, as their pages show. Cursor, Copilot and Grok Build also run other tools' hook files

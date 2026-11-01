@@ -89,7 +89,7 @@ flowchart TB
 | 8 | Review | Reviewer | `coney-tools task review <task>`, then `--record` | The tool part passes; every checklist, `@orig` function, research page and picture is judged, the description included | `reviewed` | [Task review](review/task.md) |
 | 9 | Open the pull request | Coordinator | `coney-tools pr open <task>` | The stamps hold for this change; the generated text passes CI's checks; pushed, opened, auto-merge on | `pr-opened` | [pr open](pr.md#open), [Opening the pull request](#release-queue) |
 | 10 | CI | GitHub | (automatic) | Every required check passes | none | [What CI runs](building.md#what-ci-runs) |
-| 11 | Squash merge | GitHub, or a maintainer for `merge.manual_paths` | (auto-merge) | One commit on `main` with the pull request's title | none | [Merging safely](#merging) |
+| 11 | Squash merge | GitHub, or a maintainer for `merge.manual_paths` when `pull_requests.auto_merge_manual_paths` is off | (auto-merge) | One commit on `main` with the pull request's title | none | [Merging safely](#merging) |
 | 12 | After merge | Coordinator | `/repo-hygiene`, `coney-tools workspace clean --apply` | The issues it lists under Issues affected edited, its issues closed, the merged worktree and old build folders removed | none | [After a merge](issues.md#after-a-merge) |
 
 - **Study, Port and Compare repeat per function**; Check, Review and Open once per tip. Review may run while Check
@@ -338,9 +338,9 @@ Several tasks run at once, each owning the scope its claim names:
   README's badges and picture are produced by the docs build ([Measuring progress](#measuring-progress)), so a merge
   to `main` never makes another pull request conflict on them.
 - **Pull requests merge one at a time**, by GitHub's auto-merge once every required check passes, or by a maintainer
-  for the paths kept for one ([Merging safely](#merging)), never by the agent that wrote them. Each is squash-merged, so
-  it lands on `main` as one commit; work-in-progress commits on the branch are dropped by the squash and need no
-  tidying first.
+  for the paths kept for one while `pull_requests.auto_merge_manual_paths` is off ([Merging safely](#merging)), never
+  by the agent that wrote them. Each is squash-merged, so it lands on `main` as one commit; work-in-progress commits
+  on the branch are dropped by the squash and need no tidying first.
 - **Each task's state is on disk**: its task file, unit record and stamp log, and `STATUS.md` in its scratch folder
   ([Unit status](#status)), not in anyone's head.
 
@@ -358,7 +358,8 @@ coordinator then opens the pull request.
   ([Which role to start](agents.md#roles)).
 - **`coney-tools pr open <task>` opens the pull request** ([pr open](pr.md#open)): it proves the unit, writes the
   text, pushes and turns on auto-merge, and does not wait for CI room. A refusal lists every stage to redo and goes back
-  to the engineer; a change to a path in `merge.manual_paths` is merged by a maintainer.
+  to the engineer; a change to a path in `merge.manual_paths` gets auto-merge too while
+  `pull_requests.auto_merge_manual_paths` is on, and is left for a maintainer when it is off.
 - **The PR guard keeps the release to `pr open`.** A Claude Code hook (`.claude/hooks/pr_guard.py`) refuses, in every
   session, the coordinator's too, the hand-typed routes it recognises: opening a pull request, rewriting its text,
   turning on auto-merge, moving its branch and pushing this repository. Its switch is `pull_requests.open_only` in
@@ -529,7 +530,12 @@ requests and tidies after merges. It works under these rules:
   affected section; once it merges the coordinator edits each of them, and `pr.affected-unedited` reports the ones left
   ([After a merge](issues.md#after-a-merge)). The `/repo-hygiene` skill runs the audit and fixes each finding by its
   class ([Merging safely](#merging)).
-- **Merge on the automated gate, not on play-tests.** Pull requests merge once the required checks pass.
+- **Merge on the automated gate, not on play-tests.** A pull request merges by squash once every required check
+  passes, with no local full-suite run before it (`task check` ran it on the branch). Since the maintainer's grant of
+  2026-11-01 that holds for a change to the convention files, `AGENTS.md` and the agent rules too: the coordinator
+  approves and merges it on the maintainer's behalf, `pr open` turns auto-merge on for it
+  (`pull_requests.auto_merge_manual_paths`), and Conclave does not raise an auto-merge-off alert for a pull request
+  held by that setting turned off.
 - **Ship after every merged feature.** Build the release locally and hand the play-testers one list of what changed
   and how to reach it ([Play-testing](testing.md#play-testing)). Research-only merges need no build.
 - **Resume what was interrupted.** A usage limit, an account switch or a cleared session can stop agents mid-task;

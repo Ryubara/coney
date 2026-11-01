@@ -409,6 +409,10 @@ class PullRequests:
     #: hand-typed routes (docs/guides/enforcement.md#pr-guard). The hook reads this one key from the file itself (it
     #: runs without packages); `test_pr_guard.py` holds its reader to this loader.
     open_only: bool
+    #: Whether `pr open` turns auto-merge on for a change to `merge.manual_paths` like for any other: the coordinator
+    #: then merges it on the maintainer's behalf once every required check passes. Off, such a change is held for the
+    #: maintainer (auto-merge left off) and `pr list-stuck` does not count that as stuck.
+    auto_merge_manual_paths: bool
 
 
 @dataclass(frozen=True)
@@ -425,9 +429,15 @@ class Merge:
     required_checks: tuple[str, ...]
     #: Who may merge: never the agent that wrote the work.
     who: tuple[str, ...]
-    #: Paths whose change is the maintainer's to merge (a file, or a folder ending in `/`): `pr open` leaves
-    #: auto-merge off for a change that touches one.
+    #: Paths whose change is the maintainer's to merge (a file, or a folder ending in `/`): with
+    #: `pull_requests.auto_merge_manual_paths` off, `pr open` leaves auto-merge off for a change that touches one.
     manual_paths: tuple[str, ...]
+
+    def manual_among(self, paths: Iterable[str]) -> list[str]:
+        """The `paths` that are the maintainer's to merge (`manual_paths`: a file, or a folder ending in `/`)."""
+        return sorted(
+            p for p in paths if any(p == r or (r.endswith("/") and p.startswith(r)) for r in self.manual_paths)
+        )
 
 
 @dataclass(frozen=True)
@@ -1862,6 +1872,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
         "images",
         "markers",
         "open_only",
+        "auto_merge_manual_paths",
     )
     table = _table(data, where, keys)
     sections = _texts(table["sections"], _at(where, "sections"))
@@ -2010,6 +2021,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
         ),
         markers=Markers(summary=marker_names[0], facts=marker_names[1]),
         open_only=_flag(table["open_only"], _at(where, "open_only")),
+        auto_merge_manual_paths=_flag(table["auto_merge_manual_paths"], _at(where, "auto_merge_manual_paths")),
     )
 
 

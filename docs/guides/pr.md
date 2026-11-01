@@ -298,16 +298,19 @@ commit: what is pushed is exactly what Check and Review saw. Its options and exi
    names. On an update only pictures that are new are attached; an unchanged one keeps the address of its upload from
    `pr-published.json`. Then `gh pr merge --squash --auto`, unless `--no-auto-merge` is given, `merge.auto_merge` is
    off, the change touches a path of `merge.manual_paths` (`.github/conventions.yml`, `AGENTS.md`,
-   `.claude/settings.json`, `.claude/hooks/`: the maintainer merges those, and the message says so) or the viewer's
-   permission on the repository is not admin, maintain or write (a fork's owner has none: the pull request opens
-   without it).
+   `.claude/settings.json`, `.claude/hooks/`) while `pull_requests.auto_merge_manual_paths` is off (it is on since the
+   maintainer's grant of 2026-11-01, so those changes get auto-merge like any other; off, the maintainer merges them
+   and the message says so) or the viewer's permission on the repository is not admin, maintain or write (a fork's
+   owner has none: the pull request opens without it). Either way a pull request merges by squash once every
+   required check passes, with no local full-suite run before it: `task check` already ran it on the branch.
 9. **Read back.** The title, the head commit, the pictures (as many addresses as pictures), the marked blocks, the
    absence of any local path and auto-merge are read from GitHub. A wrong description is repaired once with `gh pr
-   edit`; a second failure is exit 4 with the pull request's address (it exists, and rerunning repairs it).
-   Auto-merge that is on when this release should leave it off (a fix round that now touches a `manual_paths` file,
-   `--no-auto-merge`, a frozen `merge.auto_merge`, or a hand-set one) is turned off with `gh pr merge --disable-auto`.
-   For a pull request that already exists this happens before the push (step 7), so a failed step later cannot leave
-   the new tip to merge by itself; if it stays on, the run stops with exit 4 before pushing anything.
+   edit`; a second failure is exit 4 with the pull request's address (it exists, and rerunning repairs it). Auto-merge
+   that is on when this release should leave it off (a fix round that now touches a `manual_paths` file while
+   `auto_merge_manual_paths` is off, `--no-auto-merge`, a frozen `merge.auto_merge`, or a hand-set one) is turned off
+   with `gh pr merge --disable-auto`. For a pull request that already exists this happens before the push (step 7), so
+   a failed step later cannot leave the new tip to merge by itself; if it stays on, the run stops with exit 4 before
+   pushing anything.
 10. **Record.** `/progress pr-opened` is posted once on each issue (the claim Action then shows `PR #N open`),
     `pr-published.json` is written (number, address, pushed tip, picture hashes to addresses, the engineer, the
     time) and one line is printed: `opened #812 <url> (task ..., engineer ..., auto-merge on)`. `--json` prints the
@@ -382,7 +385,7 @@ the coordinator) has the commit that turned it on. What each release need takes 
 | Pictures | `./shots/` references in `PR.md`; `pr open` attaches the new ones and reads the addresses back | `gh pr create` or `gh pr edit` with `--attach` |
 | Bring a branch up to date with `main` | `pr open` rebases it onto `origin/main` | `gh pr update-branch`, `gh api` calls that make, move or delete a ref or commit to the branch, which would move it and make the next lease fail |
 | A branch holding merge commits | The engineer merges `origin/main` into the branch as its last commit before Check and Review; a branch that already holds `origin/main` is pushed as it is, merges and all. If `main` moved since, `pr open` rebases linearly (`--no-rebase-merges`); a conflict is exit 3 and the engineer merges `main` again (the stamps bind to the change, so a clean merge leaves them valid) | |
-| Auto-merge | `pr open` turns it on, or leaves it off for `merge.manual_paths` and `--no-auto-merge` | `gh pr merge --auto` |
+| Auto-merge | `pr open` turns it on, or leaves it off for `--no-auto-merge` (and for `merge.manual_paths` while `pull_requests.auto_merge_manual_paths` is off) | `gh pr merge --auto` |
 | Merge a pull request whose checks passed, where the maintainer allows the coordinator to | `gh pr merge <N> --squash` (no `--auto`) | |
 | Clips | `clips publish --pr <N>` | |
 | Labels, comments, reviewers, holds, reruns | `gh pr edit <N> --add-label ...`, `gh pr comment`, `pr hold`, `gh run rerun`, `pr list-stuck --rerun --apply` | |
@@ -399,9 +402,10 @@ uv run --project python coney-tools pr hold --list [--json]
 ```
 
 A pull request with a failed check, a conflict, a CI run that never ends or auto-merge off is a problem the
-coordinator must see: [Conclave's watchers](conclave.md#watchers) wake it for each one and its stop guard keeps it from
-ending a turn on one nobody holds. `pr hold` records that somebody holds the problem, so it is neither told again nor
-guarded:
+coordinator must see (auto-merge off on a change to `merge.manual_paths` is not one while
+`pull_requests.auto_merge_manual_paths` is off: it is held on purpose for the maintainer): [Conclave's
+watchers](conclave.md#watchers) wake it for each one and its stop guard keeps it from ending a turn on one nobody
+holds. `pr hold` records that somebody holds the problem, so it is neither told again nor guarded:
 
 - `pr hold 812 --who engineer-2` says that engineer-2 is fixing #812. Start the agent, then record it.
 - `pr hold 812 --note "the runner pool is down"` (no `--who`) is a **waiver**: a known wait, with nobody working on
