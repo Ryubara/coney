@@ -378,6 +378,15 @@ other level is given.
   `Human_SetStunTimer` (`0x0022f9e0`) with no attacker: the stun's end becomes now + the class's stun time, or now - 1
   ms for a human with flag `0x100`, replacing `Human_SetDownTimers`' rise + stun time. At runtime 653's stun on the
   player stood 7 updates in 356 after 199, then 357 ([Being hit at runtime](#being-hit-runtime)).
+- **A hit during the rise leaves the human down, and he rises again.** While 199 holds `0x8000` a hit plays a
+  standing reaction: `Human_ApplyPendingDamage` (`0x00265f70`) sends a human in `0xe0000` that holds any of
+  `0xc48000` to `Hit_PlayReaction`, not to the ground's 195. `Human_PlayReaction` (`0x0026a6d0`) restarts a stunned
+  human's stun time (`Human_Stun`, `0x0022f658`) and cuts the stack's top, 199's task, whose cut-off drops its end
+  callback ([When a clip ends](formats/animation.md#clip-end)): `Human_EndDownState` and `Human_GetUp` never run, so
+  the human keeps state `0x80000` with his ground time past. Once the reaction ends, `Human_UpdateDown` (no held flag,
+  knocked down) plays 199 again at once, and that rise's end restarts the stun as above. A second hit during the
+  reaction (held `0x400`, not in `0xc48000`) gets the ground's 195. Confirmed (code); not seen at runtime. In the first
+  0.1 s of 199 the stack's top is the rise's blend-out task instead, whose cut-off is not read.
 - **A clip that ends while still stunned returns to 355.** `Human_BuildIdleTasks` plays 355 `STUNNED_ENTER`
   (`0x163`) whenever state `0x100000` is set, and 356 `STUNNED_IDLE` follows it; `Human_PlayStanceIdleState`
   (`0x0025fa48`) does the same for the fight stance's idle.
@@ -1060,14 +1069,17 @@ hand](combat-throws.md#bat-knockdown-coney).
 
 `Victim::step()` (`repo:src/human/victim.cpp`) keeps the stun's state until no clip drives the human, then plays 357
 and clears it, or 355 and the loop 356 while its time still runs, both the stun and the rise waiting until their time is
-past, not on it; a stun after a knockdown starts again as 199 ends (`Human_GetUp`), and a press on the update
-that lands on the rise's time still cuts the ground; the AI's free test (`freeHuman`,
+past, not on it; a stun after a knockdown starts again as 199 ends (`Human_GetUp`); a hit during 199 lays the victim
+down again under its standing reaction, after which it rises with 199 again; the rise waits for no clip driving the
+human; and a press on the update that lands on the rise's time still cuts the ground; the AI's free test (`freeHuman`,
 `repo:src/ai/attack_views.cpp`) reads the state alone. On `civ_stun` Coney's fighter matches the original's offsets
 from the stun's start: 357 and the state's end 27 updates after it, the reaction goal's end and the fight's next move
 28 after. **Coney's choices**: a boss's tired stun (`Victim::stunUntil`) starts in 356 without 355, and Coney's
 counter of the player's grab starts the player's stun time at the counter ([Open questions](#open-questions)).
-**Stand-in**: the stun's end keeps the speed multiplier as it is; the original's 0.65 under the flag at `0x0051021c`
-is not ported ([#1346](issue:1346)). **Gap**: a victim with flag `0x100` (never stunned) that is already stunned
+**Stand-ins**: the stun's end keeps the speed multiplier as it is; the original's 0.65 under the flag at `0x0051021c`
+is not ported ([#1346](issue:1346)). Coney's ground ends as 199 starts, the rise clip holding the victim instead,
+where the original keeps the knocked-down state (`0x80000`) until 199 ends (`Victim::step`, step 2); a hit that cuts
+199 puts the ground back (`Victim::react`). **Gap**: a victim with flag `0x100` (never stunned) that is already stunned
 loses its stun at a knockdown; the original keeps it until after the rise (`Human_SetDownTimers`, `0x0022f4f8`;
 [#1351](issue:1351)).
 
@@ -1308,8 +1320,9 @@ civilian's clips).
 **Stun and ground time.** The player's stun is **200 ms** (`+0x100` = hit + 200): shorter than his reaction clips, so
 the stunned reactions went straight to 357 `STUNNED_EXIT` when the clip ended (0.9-1.2 s after the hit), with no
 356 loop. Knocked down, `+0x104` = hit + **2750 ms**; the player lay in 196 and rose with 199 **83 updates (2.77 s)
-after the hit** with no input. The crushing 653 also set the stun to the rise + 200 ms, so after 199 he stood in 356
-for 7 updates, then 357.
+after the hit** with no input. The crushing 653 also set the stun to the rise + 200 ms, a time long past by the end of
+the 28-update 199; after 199 he stood in 356 for 7 updates, then 357, because 199's end restarts the stun
+([The stun's end](#stun-end)).
 
 **Mashing.** A press while still in the knockdown reaction (288) did nothing. Pressed while lying in 196 with about
 1.3 s left, one square press made him rise on the next update in 2 runs of 5, and about 13 updates later (when the

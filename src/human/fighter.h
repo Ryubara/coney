@@ -441,8 +441,10 @@ class Fighter {
     /// class's stun is. **Coney reading**: the loop plays at once, as after a stunning hit's reaction.
     /// @orig 0x0022f658 Human_Stun (unknown)
     void stunFor(HumanAnimator& animator, std::uint64_t nowMs, std::uint64_t durationMs);
-    /// `Human_EndStun` from outside: the stun ends now, its end clip (357) once the clip playing is over (this update's
-    /// step when none drives the human; `nowMs` is the caller's and no longer needed).
+    /// `Human_EndStun` from outside: the stun's time is over now (Victim::expireStun()). Standing, the stun ends and
+    /// 357 plays on this update's step when no clip drives the human, else once that clip ends, so stunned() stays true
+    /// until then; knocked down, the stun is forgotten at once. **Coney's reading**: the original clears the stun's
+    /// state at once either way. `nowMs` is the caller's and no longer needed.
     /// @orig 0x0022f8d8 Human_EndStun (unknown)
     void endStun(std::uint64_t nowMs);
     /// Breaks any pair this human is in from outside, as every placement of it does (a teleport, a scene's end

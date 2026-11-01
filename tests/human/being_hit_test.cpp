@@ -168,11 +168,12 @@ TEST_CASE("knocked down the player lies 2750 ms in 196, then rises with 199", "[
     CHECK(fight.human().fighter().health().value() == 900 - 46);
 }
 
-TEST_CASE("653's stun outlasts the rise: 199, then 357", "[human][combat]") {
+TEST_CASE("653's stun lasts through the rise: stunned as 199 starts, 357 after it", "[human][combat]") {
     // Expected: combat-reactions.md#being-hit-runtime, confirmed (runtime)
     const FightCharacter character;
     Fight fight(character, 30.0F);
-    // The crushing special (0x39) with its stun: 303, down, stunned until the rise + 200 ms.
+    // The crushing special (0x39) with its stun: 303, down, still stunned as 199 starts (its time restarts as 199 ends,
+    // so 356 comes between 199 and 357: the test "653's stun restarts as 199 ends" checks that order).
     fight.human().takeHit(hitOf(653, 50, 0x39, 0x400));
     ClipLog log;
     bool stunnedAtRise = false;

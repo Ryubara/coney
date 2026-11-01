@@ -500,9 +500,12 @@ is F = 2 at 0.75 (k = 2), which acts on time; see the overshoot of 0.0 below.
 
 So on the end update the dispatcher, the stick gate and the AI already see the move as over: its held flags are clear,
 its callback has run and record `+0x20` names the next clip. That is the "free again" update of the attack tables.
-The release is the same function when a task is cut off rather than ending, so **the end callback also runs when a
-clip is cut off** (confirmed (code) at `0x00105f78`: nothing in it tests how the task ended); a task cut off before its
-end also gives its next task back.
+A task **cut off** before its end (vtable slot `+0x84`, `AnimTaskChained_CutOff` `0x00105d70` for type 3, which
+`Human_PlayReaction` and `Human_PlayRise` call on the stack's top) does not run its end callback: when the task has
+held flags or a callback, the cut-off calls slot `+0xc4` (`0x004da470`, one store that zeroes the callback at `+0x2c`),
+clears the held flags itself, sets task flag `0x10` and cuts its next task off too, so the release that follows finds
+no callback. Confirmed (code) at `0x00105d70`, `0x004da470` and the type 3 vtable `0x00534fa8`. A task that ends
+runs it (above); the release alone (`0x00105f78`) does not test how the task ended.
 
 **A loop** (type 1, `0x00105770`) wraps on the same test: it restarts its cursor (`AnimCursor_Restart`), advances it
 by the returned overshoot and calls its wrap callback (`+0x28`, with the human at handle `+0x24`). Because the

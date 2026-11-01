@@ -75,8 +75,10 @@ class Victim {
     /// Plays the reaction to `hit` on its feet through `animator` at game time `nowMs`: a knockdown when the reaction's
     /// clip has an event of type 7 (the ground for the class's ground time; stunned too when the attack stuns or it
     /// already is, until the rise + the stun time), else a stun when the attack's flags stun or it already is (the
-    /// class's stun time; never for a victim with flag `0x100`), else a plain reaction that returns to `idle`. Returns
-    /// the kind; `lastReaction()` names the clip.
+    /// class's stun time; never for a victim with flag `0x100`), else a plain reaction that returns to `idle`. A hit
+    /// during the rise 199 cuts it without its end (`Human_GetUp` does not run): the victim is down again under the
+    /// standing reaction and rises with 199 once it ends (step()). Returns the kind; `lastReaction()` names the clip.
+    /// Research: docs/research/combat-reactions.md#stun-end
     /// @orig 0x0026a6d0 Human_PlayReaction (unknown)
     /// @orig 0x0022f658 Human_Stun (unknown)
     /// @orig 0x0022f100 Human_KnockDown (unknown)
@@ -131,8 +133,9 @@ class Victim {
     /// One update's timers at `nowMs`. Standing stunned with no clip driving the human (a reaction, the rise or 355 is
     /// not cut short, the stun's loop 356 is): once its time has passed the stun ends, its state clearing as 357
     /// starts (then `idle`); before, the clip that ended returns to 355, then 356. A grounded victim with `canRise`
-    /// gets up with 199 once its ground time has passed (then the stun's loop 356 while stunned, else `idle`); as 199
-    /// ends, a stun's time starts again from that update. Returns true on the update it rises.
+    /// and no clip driving it gets up with 199 once its ground time has passed (then the stun's loop 356 while
+    /// stunned, else `idle`); as 199 ends, a stun's time starts again from that update. Returns true on the update it
+    /// rises.
     /// Research: docs/research/combat-reactions.md#stun-end
     /// @orig 0x00256a60 Human_UpdateDown (unknown)
     /// @orig 0x0022f8d8 Human_EndStun (unknown)

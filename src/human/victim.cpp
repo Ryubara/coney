@@ -62,12 +62,21 @@ ReactionKind Victim::react(const IncomingHit& hit, const VictimFrame& frame, Hum
     ++m_reactions;
     // A victim with flag 0x100 is never stunned.
     const bool stuns = !frame.unstunnable && ((hit.flags & combat::kRangeFlagStun) != 0 || stunned());
+    // A hit during 199 cuts the rise. The cut drops 199's end callback (`AnimTaskChained_CutOff` clears it before the
+    // release), so `Human_GetUp` never runs: the original's human is still down (state 0x80000), its ground time past.
+    const bool cutsRise = m_rising;
+    m_rising = false;
     // A reaction with a knockdown event lays it down; a stunned one stays stunned until after the rise.
     if (knocksDown(animator, reaction.animId)) {
         animator.playCombat(one(clip), kGroundedIdle, AnimState::Hold);
         knockDown(nowMs, stuns);
         ++m_knockdowns;
         return ReactionKind::Knockdown;
+    }
+    // Down again under the standing reaction (Coney's ground ended as 199 began): step() rises with 199 once the
+    // reaction ends, and that rise's end restarts a stun.
+    if (cutsRise) {
+        m_grounded = true;
     }
     if (stuns) {
         animator.playCombat(one(clip), static_cast<std::uint32_t>(combat::kStunLoop), AnimState::Hold);
@@ -114,12 +123,9 @@ void Victim::clear() {
 }
 
 bool Victim::step(HumanAnimator& animator, std::uint32_t idle, std::uint64_t nowMs, bool canRise) {
-    // 1. Standing stunned with no clip driving the human (`Human_UpdateDown` tests the stun only with no held flag: a
-    // reaction, the rise and 355 hold one, the loop 356 none). Its time passed, the stun ends and its state clears as
-    // 357 starts (`Human_EndStun`, then `Human_BuildIdleTasks`): at once when the clip that held it ends late enough.
-    // Its time not passed, the clip that ended returns to 355, then the loop 356 (`Human_BuildIdleTasks`).
     // 0. The rise 199 over (`Human_GetUp`, its end callback): a stunned human's stun time starts again from now
-    // (`Human_SetStunTimer`), in the loop 356 the rise handed over to.
+    // (`Human_SetStunTimer`), in the loop 356 the rise handed over to. A hit that cuts 199 drops the callback
+    // (react()).
     if (m_rising && !animator.drivingClipPlaying()) {
         m_rising = false;
         if (stunned() && !m_stunTimeOver) {
@@ -127,6 +133,10 @@ bool Victim::step(HumanAnimator& animator, std::uint32_t idle, std::uint64_t now
             m_stunEntered = true;
         }
     }
+    // 1. Standing stunned with no clip driving the human (`Human_UpdateDown` tests the stun only with no held flag: a
+    // reaction, the rise and 355 hold one, the loop 356 none). Its time passed, the stun ends and its state clears as
+    // 357 starts (`Human_EndStun`, then `Human_BuildIdleTasks`): at once when the clip that held it ends late enough.
+    // Its time not passed, the clip that ended returns to 355, then the loop 356 (`Human_BuildIdleTasks`).
     if (stunned() && !m_grounded && !animator.drivingClipPlaying()) {
         // Past, not on it: the original tests the time minus now below zero. A stun ended from outside is over now.
         if (m_stunTimeOver || nowMs > m_stunUntilMs) {
@@ -142,9 +152,10 @@ bool Victim::step(HumanAnimator& animator, std::uint32_t idle, std::uint64_t now
                                 static_cast<std::uint32_t>(combat::kStunLoop), AnimState::Hold);
         }
     }
-    // 2. Down long enough (past its time, as the stun), it gets up: into the stun's loop while stunned (its time
-    // restarted as 199 ends, step 0), else the idle.
-    if (m_grounded && canRise && nowMs > m_riseAtMs) {
+    // 2. Down long enough (past its time, as the stun) with no clip driving the human (`Human_UpdateDown` tests the
+    // ground only with no held flag), it gets up: into the stun's loop while stunned (its time restarted as 199 ends,
+    // step 0), else the idle.
+    if (m_grounded && canRise && nowMs > m_riseAtMs && !animator.drivingClipPlaying()) {
         // **Stand-in**: the original keeps the knocked-down state (0x80000) until 199 ends (`Human_GetUp`); Coney's
         // ground ends as 199 starts, the rise clip holding the human instead.
         m_grounded = false;
