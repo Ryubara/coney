@@ -145,6 +145,8 @@ bool Victim::step(HumanAnimator& animator, std::uint32_t idle, std::uint64_t now
     // 2. Down long enough (past its time, as the stun), it gets up: into the stun's loop while stunned (its time
     // restarted as 199 ends, step 0), else the idle.
     if (m_grounded && canRise && nowMs > m_riseAtMs) {
+        // **Stand-in**: the original keeps the knocked-down state (0x80000) until 199 ends (`Human_GetUp`); Coney's
+        // ground ends as 199 starts, the rise clip holding the human instead.
         m_grounded = false;
         m_rising = true;
         if (stunned()) {
