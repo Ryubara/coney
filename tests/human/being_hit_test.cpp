@@ -205,11 +205,14 @@ TEST_CASE("the stun ends and the victim rises only once their time is past, not 
     CHECK_FALSE(victim.stunned());
     CHECK(animator.animId() == static_cast<std::uint32_t>(combat::kStunEnd));
     // The civilian's 2000 ms on the ground, a whole number of 1/30 s clock steps (33, 33, 34 ms): it rises after it.
+    // Lying in the ground's loop (a fresh animator: nothing steps this one, so its 357 would still drive the human and
+    // hold the rise).
+    coney::human::HumanAnimator lying(character.anims, coney::human::AnimSlots::player());
     victim.knockDown(3000, false);
     REQUIRE(victim.riseAtMs() == 5000);
-    CHECK_FALSE(victim.step(animator, coney::human::kAnimFightIdle, 5000, true));
+    CHECK_FALSE(victim.step(lying, coney::human::kAnimFightIdle, 5000, true));
     CHECK(victim.grounded());
-    CHECK(victim.step(animator, coney::human::kAnimFightIdle, 5001, true));
+    CHECK(victim.step(lying, coney::human::kAnimFightIdle, 5001, true));
     CHECK_FALSE(victim.grounded());
 }
 
