@@ -9,12 +9,13 @@ from pathlib import Path
 
 import pytest
 import yaml
-from conventions_support import REPO
+from conventions_support import NEWER_KEY, REMOVE, REPO, changed, write_older_checkout
 from git_support import git
 from research_support import page as survey_page
 
 from coney_tools import check_cli, docs_check, docs_cli, docs_legacy
 from coney_tools.config import ConfigError
+from coney_tools.conventions import ConventionsError
 from coney_tools.docs_check import Context, Finding, check_page
 from coney_tools.local_gate import StepResult
 
@@ -529,3 +530,36 @@ def test_a_longer_fence_can_show_a_shorter_one() -> None:
 def test_the_owner_of_a_thing_is_not_a_person() -> None:
     context = Context(avoid=("owner",))
     assert errors(GUIDE, "# G\n\nThe owner of the task runs it.\n", context) == []
+
+
+# --- a branch cut before main added a conventions key (#1355) -------------------------------------------------------
+
+
+def test_the_docs_check_fills_a_key_main_added_from_the_defaults(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """`task review` runs the docs check on a branch whose file lacks a key main added since: the key takes main's
+    value, as the release commands' lenient read does, instead of stopping the review."""
+    root = checkout_with_conventions(tmp_path)
+    write_older_checkout(root)
+    docs_check.context_for(root)
+    assert check_cli._standards(root, "main") == (0, [], [])  # nothing changed to check: the read alone must not fail
+    monkeypatch.chdir(root)
+    assert docs_cli.run_check([], "main", False, False) == 0
+    assert NEWER_KEY not in capsys.readouterr().out
+
+
+def test_the_docs_check_still_refuses_a_wrong_value_or_a_key_with_no_default(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = checkout_with_conventions(tmp_path)
+    write_older_checkout(root, (NEWER_KEY, "lots"))
+    with pytest.raises(ConventionsError, match=r"check_stall_minutes: expected a whole number"):
+        docs_check.context_for(root)
+    # Main's file lacking the key too leaves nothing to fill it from.
+    write_older_checkout(root)
+    monkeypatch.setattr("coney_tools.conventions._own_defaults", lambda: changed((NEWER_KEY, REMOVE)))
+    with pytest.raises(ConventionsError, match=r"missing the key 'check_stall_minutes'"):
+        docs_check.context_for(root)
+    with pytest.raises(ConventionsError, match=r"missing the key 'check_stall_minutes'"):
+        check_cli._standards(root, "main")

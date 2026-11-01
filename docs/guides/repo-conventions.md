@@ -201,7 +201,9 @@ which model), `proof`, `paths`, `pull_requests`, `commits`, `repo`, `merge` and 
 `origin/<default branch>`, which a branch cannot have edited, and replace the branch's (`load_release_rules_at`; the
 table is [Where the rules come from](pr.md#rules)). The branch's file is read for the rest of `tasks` (the task file's
 name and kinds, `task start`) and nothing else a release uses. `task review` reads the whole file leniently from the
-branch, because it only records a verdict; `pr verify` checks the `reviewed` stamp again under `origin/<default
+branch, because it only records a verdict, and so does everything it runs on the branch: the docs check (the page and
+standards reads) and the orig review's reads (the verdict check, the release gate and the ledger). `pr verify` checks
+the `reviewed` stamp again under `origin/<default
 branch>`'s rules, so a branch cannot loosen its own review. In the default branch's own sections a missing key or a
 wrong value stays an error (it names `origin/<default branch>`). A misspelt required key reads as an unknown key plus a
 missing one, so it is named twice and its value comes from the checkout the tool runs from: a typo of an optional key

@@ -37,7 +37,7 @@ from typing import Any
 
 from coney_tools import stamps
 from coney_tools.config import ConfigError, workspace_folder
-from coney_tools.conventions import load_conventions
+from coney_tools.conventions import load_conventions_leniently
 from coney_tools.orig_index import SOURCE_DIR, SOURCE_SUFFIXES
 from coney_tools.orig_scan import PS2, XBOX, Function, Tag, read_source
 
@@ -481,7 +481,7 @@ def check_verdict_file(
         return stamp, [f"{path} is missing; the branch changes {len(stamp['functions'])} @orig function(s)"]
     except (OSError, ValueError) as error:
         return stamp, [f"{path}: cannot be read ({error})"]
-    rubric = load_conventions(root).pull_requests.orig_review.rubric_version
+    rubric = load_conventions_leniently(root).pull_requests.orig_review.rubric_version
     return stamp, verdict_problems(verdict, stamp, rubric, strict_tip)
 
 
@@ -517,13 +517,13 @@ def gate(root: Path, body: Path, head: str | None, base: str | None, cwd: str | 
     """Why the branch a `gh pr create` opens may not be opened yet (empty: it may). A branch that adds or changes no
     `@orig` function needs no verdict; one that does needs a passing `ORIG-REVIEW.json` for its tip next to the
     description. A pass is recorded in the ledger. CannotTell when the branch or base cannot be found."""
-    rules = load_conventions(root).pull_requests.orig_review
+    rules = load_conventions_leniently(root).pull_requests.orig_review
     branch = _branch_of(root, body, head, cwd)
     try:
         tip = resolve(root, f"refs/heads/{branch}")
     except ConfigError as error:
         raise CannotTell(f"branch {branch!r} not found: {error}") from None
-    base_ref = base or f"origin/{load_conventions(root).repo.default_branch}"
+    base_ref = base or f"origin/{load_conventions_leniently(root).repo.default_branch}"
     try:
         stamp = pr_stamp(root, tip, base_ref)
     except ConfigError as error:
@@ -587,7 +587,7 @@ class Ledger:
 
 def default_ledger(root: Path) -> Ledger:
     """The workspace's ledger (`pull_requests.orig_review.ledger` under the scratch folder)."""
-    return Ledger(scratch_root(root) / load_conventions(root).pull_requests.orig_review.ledger)
+    return Ledger(scratch_root(root) / load_conventions_leniently(root).pull_requests.orig_review.ledger)
 
 
 def entry(unit: Unit, commit: str, cls: str, mode: str, source: str, note: str, evidence: str = "") -> dict[str, Any]:

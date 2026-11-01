@@ -29,7 +29,7 @@ from pathlib import Path
 from coney_tools import docs_legacy, local_gate, source_files, standards_check
 from coney_tools.audit_files import repository_address_terms
 from coney_tools.config import ConfigError
-from coney_tools.conventions import Research, TouchScope, load_conventions
+from coney_tools.conventions import Research, TouchScope, load_conventions_leniently
 from coney_tools.docs_engine import FOLDER as ENGINE_FOLDER
 from coney_tools.docs_engine import INDEX as ENGINE_INDEX
 from coney_tools.docs_engine import check_engine, index_finding
@@ -207,7 +207,8 @@ def check_page(path: str, text: str, context: Context | None = None, touch: Touc
 def context_for(root: Path) -> Context:
     """The `Context` of the checkout at `root`: the wording to avoid, the address of the repository and the research
     standard with the data it checks against."""
-    conventions = load_conventions(root)
+    # Lenient: `task review` runs this on a branch cut before main added a key; main's value fills it (#1355).
+    conventions = load_conventions_leniently(root)
     research = conventions.research
     try:
         systems = load_all(root, Path(research.files.functions))
@@ -361,7 +362,8 @@ def _add_standards(result: Result, root: Path, base: str, names: list[str]) -> N
     """Hold the files the change touches to the code and test standards, and the legacy marks to their rules, when the
     change can move them (`standards_check`). Each file with a report becomes a "page" of the result, so the output
     reads like the pages'."""
-    conventions = load_conventions(root)
+    # Lenient: `task review` runs this on a branch cut before main added a key; main's value fills it (#1355).
+    conventions = load_conventions_leniently(root)
     if not standards_check.relevant(names, conventions):
         return
     try:

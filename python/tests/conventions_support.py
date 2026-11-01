@@ -74,6 +74,17 @@ def write_checkout(root: Path, data: dict[str, Any] | None = None) -> Path:
     return root
 
 
+#: A key main's conventions file added after a branch was cut: the one a branch's file lacks in the tests of the reads
+#: that must fill it from the defaults (#1355).
+NEWER_KEY = "conclave.check_stall_minutes"
+
+
+def write_older_checkout(root: Path, *changes: tuple[str, object]) -> Path:
+    """`write_checkout` of the real data without `NEWER_KEY`, as a branch cut before main added it has the file, with
+    the `changes` applied on top (a wrong value for the key itself, say)."""
+    return write_checkout(root, changed((NEWER_KEY, REMOVE), *changes))
+
+
 #: Paths of this repository and the CI scope class each falls in (.github/scripts/ci-scope.sh sorts them the same way:
 #: test_audit_files.py runs the script on these and checks it agrees).
 CI_CLASSES = [

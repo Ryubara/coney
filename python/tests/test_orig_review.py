@@ -8,11 +8,12 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from conventions_support import write_checkout
+from conventions_support import NEWER_KEY, REMOVE, changed, write_checkout, write_older_checkout
 from git_support import git
 
 from coney_tools import orig_queue, orig_review
 from coney_tools.cli import main
+from coney_tools.conventions import ConventionsError
 
 BRAIN_H = """#pragma once
 namespace coney::ai {
@@ -517,3 +518,43 @@ def test_a_recorded_body_that_matches_nothing_at_its_commit_is_not_current(repo:
     assert not orig_review.recorded_body_is_current(repo, "0" * 64, commit, unit.key, unit.body_sha256)
     assert not orig_review.recorded_body_is_current(repo, "1" * 64, "2" * 40, unit.key, unit.body_sha256)
     assert not orig_review.recorded_body_is_current(repo, None, commit, unit.key, unit.body_sha256)
+
+
+# --- a branch cut before main added a conventions key (#1355) -------------------------------------------------------
+
+
+def test_the_orig_review_fills_a_key_main_added_from_the_defaults(repo: Path, tmp_path: Path) -> None:
+    """The verdict check, the release gate and the ledger's place read the branch's file; one lacking a key main
+    added since takes main's value, as the release commands' lenient read does."""
+    tip = change_think(repo, "tools-x")
+    write_older_checkout(repo)
+    path = tmp_path / "ORIG-REVIEW.json"
+    stamp = orig_review.pr_stamp(repo, tip, "main")
+    path.write_text(json.dumps(verdict(stamp)), encoding="utf-8")
+    assert orig_review.check_verdict_file(repo, path, tip, "main")[1] == []
+    folder = repo.parent.parent / "scratch" / "tools-x"
+    folder.mkdir(parents=True)
+    body = folder / "PR.md"
+    body.write_text("tools: Add x\n\nbody\n", encoding="utf-8")
+    (folder / "ORIG-REVIEW.json").write_text(json.dumps(verdict(stamp)), encoding="utf-8")
+    ledger = orig_review.Ledger(folder.parent / "orig-review" / "ledger.jsonl")
+    assert orig_review.gate(repo, body, None, "main", None, ledger) == []
+    orig_review.default_ledger(repo)
+
+
+def test_the_orig_review_still_refuses_a_wrong_value_or_a_key_with_no_default(
+    repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    tip = change_think(repo, "tools-x")
+    path = tmp_path / "ORIG-REVIEW.json"
+    stamp = orig_review.pr_stamp(repo, tip, "main")
+    path.write_text(json.dumps(verdict(stamp)), encoding="utf-8")
+    write_older_checkout(repo, (NEWER_KEY, "lots"))
+    with pytest.raises(ConventionsError, match=r"check_stall_minutes: expected a whole number"):
+        orig_review.check_verdict_file(repo, path, tip, "main")
+    write_older_checkout(repo)
+    monkeypatch.setattr("coney_tools.conventions._own_defaults", lambda: changed((NEWER_KEY, REMOVE)))
+    with pytest.raises(ConventionsError, match=r"missing the key 'check_stall_minutes'"):
+        orig_review.check_verdict_file(repo, path, tip, "main")
+    with pytest.raises(ConventionsError, match=r"missing the key 'check_stall_minutes'"):
+        orig_review.default_ledger(repo)
