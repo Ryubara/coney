@@ -310,7 +310,7 @@ if(DEFINED ENV{CONEY_DISC} AND NOT "$ENV{CONEY_DISC}" STREQUAL "")
              COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 510 --play-level level99 --skip-movies
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/play_walk_level99.txt")
     set_tests_properties(coney.plays_level PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD} PASS_REGULAR_EXPRESSION
-                         "cutscene: end l99_c1 .*, skipped.*play: 511 frames, .* grounded .*travelled [1-9][0-9]*[.]")
+                         "cutscene: end l99_c1 [^\n]*, skipped.*play: 511 frames, [^\n]* grounded [^\n]*travelled [1-9][0-9]*[.]")
     # Levels played with the game's sound exit cleanly: a test with PASS_REGULAR_EXPRESSION ignores the exit code, so a
     # crash after the summary line (a destructor reading the freed sound output) passed unseen. These check the exit
     # code alone (docs/guides/conventions.md#shutdown-order). The intro movie, over before the first frame of play, is

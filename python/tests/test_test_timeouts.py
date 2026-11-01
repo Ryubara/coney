@@ -23,16 +23,23 @@ _PROPERTIES = re.compile(r"set_tests_properties\(([^)]*)\)", re.DOTALL)
 _TIMEOUT = re.compile(r"\bTIMEOUT\s+(\S+)")
 #: A timeout an `execute_process` in a test's CMake script gives the process it runs.
 _PROCESS = re.compile(r"execute_process\(([^)]*)\)", re.DOTALL)
+#: A quoted CMake argument, escapes included: a `)` or a `TIMEOUT` inside one (a PASS_REGULAR_EXPRESSION) is not code.
+_QUOTED = re.compile(r'"(?:[^"\\]|\\.)*"', re.DOTALL)
+
+
+def _unquoted(text: str) -> str:
+    """`text` with every quoted argument emptied, so a call ends at its own `)`, not at one inside a regex."""
+    return _QUOTED.sub('""', text)
 
 
 def _property_timeouts(text: str) -> list[str]:
     """The value of every TIMEOUT a CMake file's `set_tests_properties` calls set."""
-    return [value for block in _PROPERTIES.findall(text) for value in _TIMEOUT.findall(block)]
+    return [value for block in _PROPERTIES.findall(_unquoted(text)) for value in _TIMEOUT.findall(block)]
 
 
 def _process_timeouts(text: str) -> list[str]:
     """The value of every TIMEOUT a CMake script's `execute_process` calls set."""
-    return [value for block in _PROCESS.findall(text) for value in _TIMEOUT.findall(block)]
+    return [value for block in _PROCESS.findall(_unquoted(text)) for value in _TIMEOUT.findall(block)]
 
 
 def _test_cmake_files() -> list[Path]:
@@ -45,8 +52,13 @@ def test_the_timeouts_are_read() -> None:
     text += "set_tests_properties(b c\n    PROPERTIES LABELS disc TIMEOUT ${CONEY_TEST_HANG_GUARD})\n"
     text += "set_tests_properties(d PROPERTIES WILL_FAIL TRUE)\n"
     assert _property_timeouts(text) == ["60", GUARD]
+    # A `)` inside a quoted regex does not end the call, so the TIMEOUT after it is still read; a TIMEOUT inside a
+    # quoted string is not one.
+    regex = r'set_tests_properties(e PROPERTIES PASS_REGULAR_EXPRESSION "f\\(0\\) \"TIMEOUT 5\"" TIMEOUT 60)' + "\n"
+    assert _property_timeouts(regex) == ["60"]
     script = 'execute_process(COMMAND "${X}" TIMEOUT 30 RESULT_VARIABLE r)\nexecute_process(COMMAND y)\n'
     assert _process_timeouts(script) == ["30"]
+    assert _process_timeouts('execute_process(COMMAND x "a)b" TIMEOUT 30)\n') == ["30"]
 
 
 def test_the_root_sets_a_generous_hang_guard() -> None:
