@@ -431,7 +431,8 @@ model's kind is the one the play mode's scene-counter scope names around its dra
 group shows, around each human's draw.
 The rules (which model gets which passes and colours) are `src/debug/mesh_views.h`, tested without a window in
 `tests/debug/mesh_views_test.cpp`, and `tests/platform/mesh_views_test.cpp` checks on librw's NULL device that a model
-gets the game's draw alone while the views are off and its materials back after a pass. On a disc,
+gets the game's draw alone while the views are off and its materials back after a pass, and that a flat pass draws
+nothing there even when an OpenGL renderer earlier in the run left glad's pointers set. On a disc,
 `tests/platform/disc_mesh_views_test.cpp` plays a level and the sandbox's fight yard with a hook of its own and checks
 what the play mode hands the hook; `tests/platform/disc_mesh_views_draw_test.cpp` checks that the passes the game draws
 are the same with the views off, with a hook that is off and with a flat view on, and, on a hidden OpenGL window where
