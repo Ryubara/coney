@@ -70,6 +70,10 @@ section Your first hour; the rest is for agents. Other tools: `uvx pre-commit in
 - Write for networked play: state owned by the game mode, player slots not one player, ids not pointers, gameplay
   randomness only from `GameRandom`, simulated effects as events: `docs/guides/network-architecture.md#checklist`.
 - Port, never transcribe: keep the logic, write Coney's own code (`conventions.md#porting`); the rest: `conventions.md`.
+- The release build a player gets holds no debug tools and one console, the player console (the F8 console, Dear
+  ImGui in its own target, the player's commands alone), kept apart from the debug tools by target and by model; a
+  marker check proves it: `docs/guides/building.md#debug-tools`. The console is a design until built
+  (`docs/guides/studio/console.md`).
 
 ## Documentation
 

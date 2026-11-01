@@ -272,11 +272,18 @@ when `CONEY_AUDIO_WAV` names one, to listen to; keep it out of the repository.
 
 Coney has two kinds of build (a maintainer decision, 2026-10-21): builds with the **debug tools**, which developers
 and agents use (`dev`, `playtest`, `ci`, `asan`), and the **release** build a player gets (`release`, `ci-release`),
-the game alone with none of the tools compiled in; the launcher installs it. The debug tools are the
-[debug menus](debug-menu.md) and their pages, the developer overlay and Dear ImGui, the debug lines, the viewers, the
-cheats and tunables, the [sandbox](sandbox.md) and the developers' command-line options. The CMake option
-`CONEY_DEBUG_TOOLS` (on by default) chooses: off, the debug libraries are not made and Dear ImGui is not even fetched,
-so nothing can link them by mistake.
+the game with none of the debug tools compiled in and one console, the
+[player console](studio/mods.md#player-console); the launcher installs it. The debug tools are the
+[debug menus](debug-menu.md) and their pages, the developer overlay, the debug lines, the viewers, the cheats and
+tunables, the [sandbox](sandbox.md) and the developers' command-line options. The CMake option `CONEY_DEBUG_TOOLS` (on
+by default) chooses: off, the debug libraries are not made and Dear ImGui is not fetched for them, so nothing can link
+them by mistake.
+
+**The one console in the release build** (a maintainer decision, 2026-10-29) is the **player console** ([The Coney
+console](studio/console.md)): the F8 console drawn with Dear ImGui, limited to what a player can already do or only
+read. It is kept apart from the debug tools by target (`coney_console_ui`, over a core in `coney_core` that includes
+nothing of the debug tools) and by model (its catalog holds the player's commands alone). It is a design until built;
+until then the release build holds no console, and the rest of this section describes the build as it is.
 
 The split is made by target, not by `#ifdef`. The game is `coney_core`, `coney_audio`, `coney_movies`, `coney_net`
 and `coney_platform`; the debug tools are two libraries of their own:
@@ -284,7 +291,7 @@ and `coney_platform`; the debug tools are two libraries of their own:
 | Target | Folder | Holds |
 | --- | --- | --- |
 | `coney_debug` | `src/` | the debug menus' model and pages (`src/debug/`), the pad menu's renderer and bitmap font, the sandbox's worlds, the sheet and text viewers |
-| `coney_devtools` | `src/platform/` | the menus' platform glue and their controls of the play mode, the sound output and network play, the developer overlay (the only target that links Dear ImGui), the sandbox as a scenery and its renderer, the texture, character and sandbox viewers, the reference images |
+| `coney_devtools` | `src/platform/` | the menus' platform glue and their controls of the play mode, the sound output and network play, the developer overlay (links Dear ImGui, as the player console's `coney_console_ui` will), the sandbox as a scenery and its renderer, the texture, character and sandbox viewers, the reference images |
 | `coney_studio` | `src/studio/` | [Coney Studio](studio/prototype.md)'s editor over `coney_devtools`; its executable `coney-studio` is made in `src/platform/` beside `coney`, with Studio's fonts |
 
 `coney` and `coney_tests` link both. The game reaches the debug tools only through hooks it offers, never the other way
@@ -314,16 +321,18 @@ counts) is `platform/game_run.h`, so a player's game is set up as the tested one
 **What proves it.** Besides the Python test below, ctest runs the release entry point's smoke tests (`coney.release.*`:
 it starts headless, prints a player's options, refuses `--play-level`, plays an input script, hosts and joins,
 `--install` refuses a missing disc and `--data` an unfinished install) in every build, and
-`coney.release.has_no_debug_tools` looks for strings only the debug tools put in an executable (the debug pages' titles,
-the developer overlay's settings file, Dear ImGui's default one; `cmake/debug_tools_markers.cmake`) and fails when it
-finds one. On the debug tools' `coney` the same script must find them (`coney.debug_tools_markers_found`), so the check
-cannot pass by finding nothing. The release build also builds and runs every unit test of the game; the tests of the
+`coney.release.has_no_debug_tools` looks for strings only the debug tools put in an executable (the debug pages' titles
+and items, the developer overlay's settings file; `cmake/debug_tools_markers.cmake`) and fails when it finds one.
+`imgui.ini`, Dear ImGui's default settings file, is no marker: the player console links it ([the release
+checks](studio/console.md#release)).
+On the debug tools' `coney` the same script must find them (`coney.debug_tools_markers_found`), so the check cannot pass
+by finding nothing. The release build also builds and runs every unit test of the game; the tests of the
 debug tools (the menus, the overlay, the sandbox, the viewers and the disc tests that drive the game through them) are
 listed apart in `tests/CMakeLists.txt` and built only with the tools, and a Python test refuses a test of the release
 build's list that includes a debug tools' header. CI builds the release build and runs its tests on Windows and Linux
 ([What CI runs](#what-ci-runs)). `python/tests/test_debug_tools_split.py` reads the CMake files and the game's sources
 and fails when a game library lists a debug source, includes a `debug/` or `sandbox/` header or links a debug library,
-or anything but `coney_devtools` links `imgui`.
+or anything but `coney_devtools` (and, once built, `coney_console_ui`) links `imgui`.
 
 **What it saves.** Measured with MSVC on Windows (2026-10-21): the `release` preset's `coney.exe` is 8.4 MB
 (Release, no tools); the `dev` preset's `coney.exe` is 33.0 MB and its `coney_release.exe`, the same Debug build

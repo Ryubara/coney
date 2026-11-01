@@ -705,7 +705,9 @@ and 8 also with [the console](console.md#build-issues)), 12 with its compiler (S
    the conventions and [The debug tools and the game](../building.md#debug-tools) that the release build holds no
    debug tools gains the player console as the one console it holds, kept apart by target and model ([The player
    console](mods.md#player-console)); the release marker list loses `imgui.ini` and gains markers only the debug
-   tools carry. A maintainer decided the console; this issue changes the text that states the rule.
+   tools carry. A maintainer decided the console; this issue changes the text that states the rule. Done in
+   [#1166](issue:1166): the rule is stated in [AGENTS.md](repo:AGENTS.md) and in the building guide, and the markers
+   are the debug pages' titles and items and the developer overlay's settings file.
 8. **core: Add the mods' console commands.** The `ModHost` side of the console: the commands of [Console
    commands](mods.md#console) (`mods`, `mod`, `levels`, `start`, `stop`, `restart`, `ensure`, `refresh`, `enable`,
    `disable`, `play`), for the running session only, at a step boundary, the host's or operator's online. Built on the
