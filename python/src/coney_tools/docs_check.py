@@ -254,12 +254,15 @@ def change_touches(root: Path, base: str, names: Iterable[str], similarity: int 
     page it was moved from when git sees a rename at or above `similarity` percent (the research conventions'
     `moved_similarity`; git's own 50 when None), and which lines it added or changed (committed or not).
 
-    A line whose only change is a link rewritten to a page the change moved is no touch (`docs_link_moves`)."""
+    A line whose only change is a link rewritten to a page the change moved, or a repository path repointed to where a
+    file the change renamed went, is no touch (`docs_link_moves`)."""
     since = local_gate.merge_base(root, base)
     moves = local_gate.renamed_files(root, base, similarity)
     gone = local_gate.removed_files(root, base, similarity)
     resolves = link_resolver(root)
     held = link_resolver(root, since)
+    # A `repo:` path follows a renamed file only to where git says it went (old path -> new).
+    renamed = {old: new for new, old in moves.items()}
     touches: dict[str, Touch] = {}
     for name in names:
         if kind_of(name) not in CHECKED_KINDS or not (root / name).is_file():
@@ -272,9 +275,8 @@ def change_touches(root: Path, base: str, names: Iterable[str], similarity: int 
             diff = local_gate.run_command(
                 ["git", "-C", str(root), "diff", "-U0", detect, since, "--", old, name], root
             )[1]
-            lines = touched_lines(
-                diff, posixpath.dirname(name), gone, resolves, posixpath.dirname(old), _file_lines(root, name), held
-            )
+            folders = (posixpath.dirname(name), posixpath.dirname(old))
+            lines = touched_lines(diff, folders[0], gone, resolves, folders[1], _file_lines(root, name), held, renamed)
             touches[name] = Touch(lines, moved_from=old)
             continue
         code, _ = local_gate.run_command(["git", "-C", str(root), "cat-file", "-e", f"{since}:{name}"], root)
@@ -282,7 +284,9 @@ def change_touches(root: Path, base: str, names: Iterable[str], similarity: int 
             touches[name] = Touch(None, True)
             continue
         diff = local_gate.run_command(["git", "-C", str(root), "diff", "-U0", since, "--", name], root)[1]
-        lines = touched_lines(diff, posixpath.dirname(name), gone, resolves, None, _file_lines(root, name), held)
+        lines = touched_lines(
+            diff, posixpath.dirname(name), gone, resolves, None, _file_lines(root, name), held, renamed
+        )
         touches[name] = Touch(lines)
     return touches
 

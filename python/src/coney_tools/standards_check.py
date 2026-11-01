@@ -22,17 +22,19 @@ change can move them.
 from __future__ import annotations
 
 import dataclasses
-from collections.abc import Callable
+from collections import Counter
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from coney_tools import local_gate
+from coney_tools import local_gate, orig_review
 from coney_tools.code_link_moves import CodeDiff, touched_code_lines
+from coney_tools.comment_spans import comment_spans, is_comment
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
 from coney_tools.docs_link_resolve import link_resolver
 from coney_tools.orig_index import SOURCE_DIR, TagCoverage, read_sources
-from coney_tools.orig_scan import PS2, SourceFile, Tag
+from coney_tools.orig_scan import PS2, Function, SourceFile, Tag, read_source
 from coney_tools.research_functions import (
     Entry,
     ResearchFunctionsError,
@@ -288,13 +290,19 @@ def _code_diff(
     gone: set[str],
     resolves: Callable[[str, str], bool],
     held: Callable[[str, str], bool],
+    renamed: dict[str, str],
+    similarity: int,
 ) -> CodeDiff | None:
-    """What the change touched of `name` (committed or not), or None for a new file (all of it). A hunk that only
-    rewrites research references in comments to follow a page the change moved touches nothing (`code_link_moves`)."""
-    before = _file_at(root, since, name)
+    """What the change touched of `name` (committed or not), or None for a new file (all of it). A file the change
+    renamed (`renamed`: new path -> old, as git finds it at `similarity` percent) is read from git's diff of the renamed
+    pair, so only what the move changed is touched, as `docs check` reads a moved page. A hunk that only rewrites
+    research references in comments to follow a page the change moved touches nothing (`code_link_moves`)."""
+    old = renamed.get(name, name)
+    before = _file_at(root, since, old)
     if before is None:
         return None
-    diff = local_gate.run_command(["git", "-C", str(root), "diff", "-U0", since, "--", name], root)[1]
+    pair = [f"-M{similarity}%", since, "--", old, name] if old != name else [since, "--", name]
+    diff = local_gate.run_command(["git", "-C", str(root), "diff", "-U0", *pair], root)[1]
     after = (root / name).read_bytes().decode("utf-8", errors="replace")
     return touched_code_lines(diff, gone, resolves, held, _git_lines(before), _git_lines(after))
 
@@ -360,25 +368,33 @@ def touched(
     found: list[Report] = []
     findings = scan.findings()
     since = local_gate.merge_base(root, base)
-    # What the pages moved is read as `docs check` reads it (`docs_check.change_touches`).
-    gone = local_gate.removed_files(root, base, conventions.research.moved_similarity)
+    # What the pages and files moved is read as `docs check` reads it (`docs_check.change_touches`).
+    similarity = conventions.research.moved_similarity
+    gone = local_gate.removed_files(root, base, similarity)
+    renamed = local_gate.renamed_files(root, base, similarity)
     resolves, held = link_resolver(root), link_resolver(root, since)
     diffs: dict[str, CodeDiff | None] = {
-        name: _code_diff(root, since, name, gone, resolves, held) for name in names if rules_of(name, standards)
+        name: _code_diff(root, since, name, gone, resolves, held, renamed, similarity)
+        for name in names
+        if rules_of(name, standards)
     }
+    lines = _changed_lines(root, scan, since, diffs, renamed)
     for name in diffs:
         diff = diffs[name]
         if diff is not None and diff.link_moves_only:
             continue  # a file whose only change is its comments' research links following a moved page
-        changed = None if diff is None else diff.lines
-        units = _units(root, name, scan, conventions) if diff is not None else ([], False)
+        changed = lines[name]
+        units = _units(root, name, scan, conventions) if changed is not None else ([], False)
         by_rule: dict[str, list[Finding]] = {}
         for item in findings.get(name, []):
             if _held(item, units, changed):
                 by_rule.setdefault(item.rule, []).append(item)
             else:
                 found.append(Report(name, item.line, item.rule, item.message, False, info=True))
-        what = "a new file, which meets the standard whole" if diff is None else "the parts the change touched"
+        what = "the parts the change touched"
+        if diff is None:
+            whole = changed is None
+            what = "a new file, which meets the standard whole" if whole else "a new file, but for what it only moved"
         for rule, items in by_rule.items():
             first = items[0]
             found.append(
@@ -390,17 +406,101 @@ def touched(
                     error,
                 )
             )
-    found.extend(_touched_functions(root, conventions, scan, since, diffs, error))
+    found.extend(_touched_functions(root, conventions, scan, lines, error))
     return found
 
 
+def _changed_lines(
+    root: Path, scan: Scan, since: str, diffs: dict[str, CodeDiff | None], renamed: dict[str, str]
+) -> dict[str, frozenset[int] | None]:
+    """The lines of each file of `diffs` that the change touched (None: all of a new file), without the functions it
+    only moved: a definition or declaration whose code, tags and standing are those of one gone from the base, under
+    another file, class or both (`orig_review.function_moves`, the rule `orig review-stamp` and `orig check-tags`
+    read), keeps the standing it had, so neither its findings nor its comparison are owed. A file that only moved code
+    in from elsewhere is held for the rest of what it holds. Taking the moved code out of its old place is part of the
+    move: a pure deletion whose lines are each nothing but comment and blanks (as a scan of the old file's comments
+    reads them) or a line of a function that moved away (`renamed` gives a renamed file's old path) does not touch the
+    line it sits at."""
+    lines: dict[str, frozenset[int] | None] = {name: None if d is None else d.lines for name, d in diffs.items()}
+    if not any(name.startswith(f"{SOURCE_DIR.as_posix()}/") for name in diffs):
+        return lines
+    before = orig_review.files_at(root, since)
+    moved = orig_review.function_moves(before, orig_review.texts_now(root))
+    if not moved:
+        return lines
+    kept: dict[str, set[int]] = {}
+    for source in scan.sources:
+        if source.path in diffs:
+            for function in source.functions:
+                if (source.path, function.line) in moved:
+                    kept.setdefault(source.path, set()).update(_span(function))
+    away = _moved_away(before, moved.values())
+    for name, diff in diffs.items():
+        changed = lines[name]
+        if diff is not None:
+            gone = away.get(renamed.get(name, name), set())
+            marks = _deletion_marks(before.get(renamed.get(name, name), ""), diff.deletions, gone)
+            changed = frozenset(line for line in diff.lines if line in diff.added or line in marks)
+        elif name in kept:
+            count = len(_git_lines((root / name).read_bytes().decode("utf-8", errors="replace")))
+            changed = frozenset(range(1, count + 1))
+        lines[name] = None if changed is None else changed - kept.get(name, set())
+    return lines
+
+
+def _span(function: Function) -> range:
+    """The lines of a definition or declaration, from its statement's first line."""
+    return range(function.line, function.line + max(function.lines, 1))
+
+
+def _moved_away(before: dict[str, str], was: Iterable[orig_review.Unit]) -> dict[str, set[int]]:
+    """The lines, file by file at the base, of the functions that moved elsewhere (`was`: where each stood)."""
+    starts: dict[str, set[int]] = {}
+    for unit in was:
+        starts.setdefault(unit.path, set()).add(unit.line)
+    lines: dict[str, set[int]] = {}
+    for path, wanted in starts.items():
+        for function in read_source(path, before.get(path, "")).functions:
+            if function.line in wanted:
+                lines.setdefault(path, set()).update(_span(function))
+    return lines
+
+
+def _deletion_marks(text: str, deletions: Sequence[tuple[int, int, int]], away: set[int]) -> set[int]:
+    """The lines that the pure `deletions` of the old file `text` touch, leaving out each one that only took out moved
+    code: its lines are each nothing but comment and blanks, as a scan of the old file's comments reads them (a line
+    inside a block comment is one; `*p = 5;` and code beside a comment are not), or a line of a function that moved
+    away (`away`). git may align a deletion on equal lines of the function above (its `return a;` and `}` for the moved
+    function's), so a code line outside `away` is the moved code's too while an equal line of `away` is left that no
+    deletion took out; each such line counts once, so a code line deleted beside a move still touches its function."""
+    if not deletions:
+        return set()
+    old = _git_lines(text)
+    spans = comment_spans(old)
+    taken = {n for _, first, count in deletions for n in range(first, first + count)}
+    # The lines of the moved code that git's alignment kept in place: what a deleted equal line stands for.
+    spare = Counter(old[n - 1].strip() for n in away - taken if n <= len(old))
+    marks: set[int] = set()
+    for line, first, count in deletions:
+        for number in range(first, first + count):
+            if number in away or (number <= len(old) and is_comment(old[number - 1], spans[number - 1])):
+                continue
+            code = old[number - 1].strip() if number <= len(old) else ""
+            if spare[code] > 0:
+                spare[code] -= 1
+            else:
+                marks.add(line)
+    return marks
+
+
 def _touched_functions(
-    root: Path, conventions: Conventions, scan: Scan, since: str, diffs: dict[str, CodeDiff | None], error: bool
+    root: Path, conventions: Conventions, scan: Scan, lines: dict[str, frozenset[int] | None], error: bool
 ) -> list[Report]:
-    """The ported functions whose lines a changed file touches that are not `compared`. A function is held to its tags
-    wherever they are written: above it, inside its body, or on its declaration (most ports carry `@orig` in the
-    header), the declaration matched overload by overload as `orig check-tags` matches it (`TagCoverage`)."""
-    wanted = {n for n in diffs if n.startswith(f"{SOURCE_DIR.as_posix()}/")}
+    """The ported functions whose lines a changed file touches (`lines`: None for all of a new file) that are not
+    `compared`. A function is held to its tags wherever they are written: above it, inside its body, or on its
+    declaration (most ports carry `@orig` in the header), the declaration matched overload by overload as `orig
+    check-tags` matches it (`TagCoverage`)."""
+    wanted = {n for n in lines if n.startswith(f"{SOURCE_DIR.as_posix()}/")}
     if not wanted:
         return []
     database = _ported(root, conventions)
@@ -409,8 +509,7 @@ def _touched_functions(
     for source in scan.sources:
         if source.path not in wanted:
             continue
-        diff = diffs[source.path]
-        changed = None if diff is None else diff.lines
+        changed = lines[source.path]
         for function in source.functions:
             span = range(function.line, function.line + max(function.lines, 1))
             if changed is not None and not any(line in changed for line in span):

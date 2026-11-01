@@ -191,3 +191,114 @@ def test_a_one_line_member_with_a_lambda_or_a_condition_is_not_exempt(member: st
 
     function = read_source("src/ai/s.h", f"struct S {{\n    {member}\n    int m_a = 0;\n}};\n").functions[0]
     assert not is_exempt(function)
+
+
+#: A class of a Coney-only folder whose untagged members needed no marker there (src/platform/ is Coney-only).
+MODE_H = """#pragma once
+namespace coney {
+class PlayLevelMode {
+  public:
+    void stepHats(int count);
+};
+} // namespace coney
+"""
+
+#: Its member's definition, in a file of its own that a move takes to a gameplay folder.
+MODE_HATS_CPP = """#include "platform/play_level_mode.h"
+namespace coney {
+// Each hat.
+void PlayLevelMode::stepHats(int count) {
+    for (int i = 0; i < count; ++i) {
+        PlayLevelMode::kick(i);
+    }
+}
+} // namespace coney
+"""
+
+
+def moved_base(repo: Path, marker: str = "") -> None:
+    """Commit the platform class and its member (with `marker` above the definition) as part of the base."""
+    commit(
+        repo,
+        {
+            "src/platform/play_level_mode.h": MODE_H,
+            "src/platform/play_level_hats.cpp": MODE_HATS_CPP.replace("// Each hat.\n", f"// Each hat.{marker}\n"),
+        },
+    )
+
+
+def move_to_gamemodes(repo: Path, body: str = "", marker: str = "") -> None:
+    """Move the member into a renamed class of src/gamemodes/ with `git mv`, its body as it was (or with `body` added),
+    and the declaration into the new class's header (with `marker` on the definition's comment)."""
+    (repo / "src/gamemodes").mkdir(exist_ok=True)
+    git(repo, "mv", "src/platform/play_level_hats.cpp", "src/gamemodes/play_level_hats.cpp")
+    moved = MODE_HATS_CPP.replace("PlayLevelMode", "PlayLevelSimulation").replace(
+        "platform/play_level_mode.h", "gamemodes/play_level_simulation.h"
+    )
+    moved = moved.replace("// Each hat.\n", f"// Each hat.{marker}\n")
+    if body:
+        moved = moved.replace("    }\n}", f"    }}\n    {body}\n}}")
+    (repo / "src/gamemodes/play_level_hats.cpp").write_text(moved, encoding="utf-8")
+    (repo / "src/gamemodes/play_level_simulation.h").write_text(
+        MODE_H.replace("PlayLevelMode", "PlayLevelSimulation"), encoding="utf-8"
+    )
+    (repo / "src/platform/play_level_mode.h").write_text(
+        MODE_H.replace("    void stepHats(int count);\n", ""), encoding="utf-8"
+    )
+    git(repo, "add", "-A")
+
+
+def test_a_function_moved_unchanged_into_a_gameplay_folder_and_a_renamed_class_keeps_its_standing(repo: Path) -> None:
+    moved_base(repo)
+    move_to_gamemodes(repo)
+    assert orig_check.check(repo, "HEAD") == []
+
+
+def test_a_moved_function_whose_body_changed_is_new_work(repo: Path) -> None:
+    moved_base(repo)
+    move_to_gamemodes(repo, body="kick(count);")
+    problems = orig_check.check(repo, "HEAD")
+    assert [p.split(": ")[1].split()[0] for p in problems] == ["PlayLevelSimulation::stepHats"]
+
+
+def test_a_moved_function_that_lost_its_marker_is_refused(repo: Path) -> None:
+    moved_base(repo, marker=" @coney-only the level's own loop")
+    move_to_gamemodes(repo)
+    assert [p.split(": ")[1].split()[0] for p in orig_check.check(repo, "HEAD")] == ["PlayLevelSimulation::stepHats"]
+
+
+def test_a_moved_function_that_was_also_renamed_is_new_work(repo: Path) -> None:
+    moved_base(repo)
+    move_to_gamemodes(repo)
+    for name in ("src/gamemodes/play_level_hats.cpp", "src/gamemodes/play_level_simulation.h"):
+        path = repo / name
+        path.write_text(path.read_text(encoding="utf-8").replace("stepHats", "stepCaps"), encoding="utf-8")
+    assert [p.split(": ")[1].split()[0] for p in orig_check.check(repo, "HEAD")] == ["PlayLevelSimulation::stepCaps"]
+
+
+def test_a_copy_into_a_gameplay_folder_is_new_work(repo: Path) -> None:
+    moved_base(repo)
+    (repo / "src/gamemodes").mkdir(exist_ok=True)
+    (repo / "src/gamemodes/play_level_hats.cpp").write_text(
+        MODE_HATS_CPP.replace("PlayLevelMode", "PlayLevelSimulation"), encoding="utf-8"
+    )
+    (repo / "src/gamemodes/play_level_simulation.h").write_text(
+        MODE_H.replace("PlayLevelMode", "PlayLevelSimulation"), encoding="utf-8"
+    )
+    git(repo, "add", "-A")
+    assert [p.split(": ")[1].split()[0] for p in orig_check.check(repo, "HEAD")] == ["PlayLevelSimulation::stepHats"]
+
+
+def test_a_moved_function_that_lost_its_orig_tag_is_refused(repo: Path) -> None:
+    moved_base(repo, marker="\n// @orig 0x00100030 Mode_StepHats (Mode.cpp)")
+    move_to_gamemodes(repo)
+    assert [p.split(": ")[1].split()[0] for p in orig_check.check(repo, "HEAD")] == ["PlayLevelSimulation::stepHats"]
+
+
+def test_a_moved_function_whose_parameters_changed_with_its_class_is_new_work(repo: Path) -> None:
+    moved_base(repo)
+    move_to_gamemodes(repo)
+    for name in ("src/gamemodes/play_level_hats.cpp", "src/gamemodes/play_level_simulation.h"):
+        path = repo / name
+        path.write_text(path.read_text(encoding="utf-8").replace("int count", "long count"), encoding="utf-8")
+    assert [p.split(": ")[1].split()[0] for p in orig_check.check(repo, "HEAD")] == ["PlayLevelSimulation::stepHats"]

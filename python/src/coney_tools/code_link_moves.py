@@ -57,6 +57,11 @@ class CodeDiff:
     lines: frozenset[int]
     #: The hunks the diff holds.
     hunks: int
+    #: Each pure deletion that touches a line: (the line of the new file it marks, the first removed line of the old
+    #: file, how many it removed). A caller that knows the removed lines only moved elsewhere can let the mark go.
+    deletions: tuple[tuple[int, int, int], ...] = ()
+    #: The lines that hunks adding lines touch (a pure deletion's mark is not one of them).
+    added: frozenset[int] = frozenset()
 
     @property
     def link_moves_only(self) -> bool:
@@ -159,10 +164,12 @@ def touched_code_lines(
     new_lines: Sequence[str] | None = None,
 ) -> CodeDiff:
     """The lines of the new file that the zero-context `diff` of one file touches: every line a hunk adds, the line a
-    pure deletion sits at, and none of a hunk that is a research link move (`link_move_hunk`). `old_lines` and
-    `new_lines` are the lines of the file before and after the change, which tell the lines of a block comment from
-    code; they are scanned only when a hunk needs it."""
+    pure deletion sits at (each also listed with what it removed), and none of a hunk that is a research link move
+    (`link_move_hunk`). `old_lines` and `new_lines` are the lines of the file before and after the change, which tell
+    the lines of a block comment from code; they are scanned only when a hunk needs it."""
     touched: set[int] = set()
+    adding: set[int] = set()
+    deletions: list[tuple[int, int, int]] = []
     hunks = 0
     start = old = 0
     removed: list[str] = []
@@ -189,6 +196,10 @@ def touched_code_lines(
         spans = (before, after) if before is not None and after is not None else None
         if not link_move_hunk(removed, added, gone, resolves, held, spans):
             touched.update(range(start, start + max(len(added), 1)))
+            if added:
+                adding.update(range(start, start + len(added)))
+            else:
+                deletions.append((start, old, len(removed)))
 
     for raw in diff.splitlines():
         header = _HUNK.match(raw)
@@ -202,4 +213,4 @@ def touched_code_lines(
         elif opened and raw.startswith("+"):
             added.append(raw[1:])
     close()
-    return CodeDiff(frozenset(touched), hunks)
+    return CodeDiff(frozenset(touched), hunks, tuple(deletions), frozenset(adding))
