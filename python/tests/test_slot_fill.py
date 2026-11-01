@@ -406,6 +406,54 @@ def test_the_place_kept_for_the_renderer_does_not_take_game_or_studio_work(scene
     assert result.blocked and "The place kept for renderer lapsed" in result.message
 
 
+def test_the_place_kept_for_the_renderer_lapses_while_every_renderer_issue_is_blocked(
+    scene: Scene, sources: FakeSources
+) -> None:
+    # Issue 1391: the renderer queue is often all S-blocked, and the place it keeps lapses as the networking one does.
+    # The committed lapse list is used, not a test's own.
+    with_renderer(scene)
+    scene.unit("a-game")
+    scene.unit("b-game")
+    scene.unit("c-fix", kind="fix")
+    sources.ready_issues = [issue(7, "P-high"), issue(9, RENDERER, "P-low"), issue(10, RENDERER, "P-low")]
+    sources.blocked_by = {9: [1], 10: [2]}
+    result = check(scene, sources)
+    assert result.blocked and "The place kept for renderer lapsed, so it is open: no renderer" in result.message
+    assert "kept for the renderer" not in result.message and "1 open" in result.message and "#7 " in result.message
+    assert task_slots.read_lapses(scene.scratch, scene.conventions, scene.now()) == {
+        "renderer": "no renderer task or issue can start (none is claimed and waiting, ready and unblocked)"
+    }
+
+
+def test_the_place_kept_for_the_renderer_stays_kept_while_a_renderer_issue_can_start(
+    scene: Scene, sources: FakeSources
+) -> None:
+    with_renderer(scene)
+    scene.unit("a-game")
+    scene.unit("b-game")
+    scene.unit("c-fix", kind="fix")
+    sources.ready_issues = [issue(9, RENDERER, "P-low"), issue(10, RENDERER, "P-low")]
+    sources.blocked_by = {9: [1]}  # #10 is ready
+    result = check(scene, sources)
+    assert result.blocked and "kept for the renderer (a renderer issue):\n  - #10 " in result.message
+    assert "lapsed" not in result.message
+    assert task_slots.read_lapses(scene.scratch, scene.conventions, scene.now()) == {}
+
+
+def test_a_claimed_renderer_task_without_an_agent_keeps_the_renderer_place(scene: Scene, sources: FakeSources) -> None:
+    with_renderer(scene)
+    scene.unit("a-game")
+    scene.unit("b-game")
+    scene.unit("c-fix", kind="fix")
+    scene.task("r-gpu", renderer=True)
+    hold_claims(scene, sources)
+    sources.ready_issues = [issue(9, RENDERER, "P-low")]
+    sources.blocked_by = {9: [1]}  # every renderer issue is blocked, yet a claimed task waits for an agent
+    result = check(scene, sources)
+    assert result.blocked and "claimed, not started: r-gpu" in result.message and "lapsed" not in result.message
+    assert task_slots.read_lapses(scene.scratch, scene.conventions, scene.now()) == {}
+
+
 def test_a_renderer_issue_does_not_take_the_place_kept_for_game_work(scene: Scene, sources: FakeSources) -> None:
     with_renderer(scene)
     scene.unit("a-gpu", renderer=True)
