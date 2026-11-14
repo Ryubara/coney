@@ -785,14 +785,16 @@ there is no player (`GameState_FindNearestPlayer` gives the nearest and its squa
   384, sorted by `0x003868d0` (inferred: by distance), the first that passes): not broken (object `+0x54` bit
   `0x10`), class flags
   (vtable `+0x54`) without bit 26 or `0x800000`, **vandalisable** (`Object_IsVandalisable` `0x00394f30`: object kind,
-  `CfgObj` `+0x86`, not 30 `TYPE_BREAKANDENTER_DOOR`, 40 `TYPE_EXPLOSIVE` or 42 `TYPE_FIREBARREL`; not of class
-  `dyn_masks` when type byte `+0x5a` < 1; not in the excluded vandalize zone (`CfgExcludedVandalizeZone`,
-  `0x005148bc`, object `+0x114`); then true when its vtable `+0xf4` record has `+0x40` & `0x30`, or its anim set
-  `+0x87` is 4 or 5), not claimed by the rioter's own gang in the last 5 s (object `+0xec` gang, `+0xf0` time), for
-  an AI rioter not within 1 m of a player, and with a stand point at the type's reach (the larger of `+0x78` and
-  `+0x7c`) on the rioter's side (`0x00252410`) that the rioter reaches in a straight line. The search claims it for
-  the gang for 5 s. If its position passes the turf gate, the rioter gets a **VandalizeItem** goal (type 47,
-  `0x002dd630` → `0x002dd6b8`, cheer flag 1) on it.
+  `CfgObj` `+0x86`, not 30 `TYPE_BREAKANDENTER_DOOR`, 40 `TYPE_EXPLOSIVE` or 42 `TYPE_FIREBARREL`; a type worth
+  under 1 (byte `+0x5a`) only when its class **is** `dyn_masks`; not in the excluded vandalize zone
+  (`CfgExcludedVandalizeZone`, `0x005148bc`, object `+0x114`); then true when its vtable `+0xf4` record has `+0x40` &
+  `0x30`, or its anim set `+0x87` is 4 or 5), not claimed by the rioter's own gang in the last 5 s (object `+0xec`
+  gang, `+0xf0` time), for an AI rioter not within 1 m of a player, and with a point the rioter can reach on the
+  navigation ground under it: the object's own spot, whatever its size, since `Nav_FindPolygonUnder` (`0x00252410`)
+  overwrites the stand-off it is passed at `0x00252454` and never reads the direction. The search claims it for the
+  gang for 5 s. Confirmed (code) at `0x00394f30` and `0x00252410`, as read on [The smash
+  target](crew-wreck.md#smash-target) and [The stand point](crew-wreck.md#stand-point). If its position passes the
+  turf gate, the rioter gets a **VandalizeItem** goal (type 47, `0x002dd630` → `0x002dd6b8`, cheer flag 1) on it.
 - **2, loot.** The nearest **store flag** (activity 14, `storeJewelry` / `storeFront`, [Flags](flags.md)) within
   20 m; its group (`+0xd8`) must still have objects (`0x0039a580`), and the rioter must reach the flag in a straight
   line (`0x0024e078`). The target is then the nearest object of that object zone (`0x0039a2c0` mode 2) spawned with
