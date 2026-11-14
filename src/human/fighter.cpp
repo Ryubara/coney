@@ -177,7 +177,7 @@ bool fightable(const Combatant& target, const anim::Vec3& from, bool down = fals
 }
 
 // The nearest fightable target of `input` within `reach` and, when `cone` is above 0, within `cone` degrees of the
-// heading `along`, a downed one too with `down`; null for none.
+// heading `along`, a downed one too with `down`, across the ground (**Coney stand-in**, #1396); null for none.
 // @orig 0x0027a6c0 Player_PickTarget (unknown)
 // @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
 Combatant* nearestFightable(const FighterInput& input, float along, float reach, float cone, bool down = false) {
@@ -258,9 +258,9 @@ float aimHeading(const FighterInput& input, float offset) {
                                                 : wrapAngle(input.heading + offset);
 }
 
-// The input with no objects: L1's stand-in pick (pickTarget()) searches the humans only, as the original's L1 search
-// (`Player_FindLockTarget` 0x0027b2a8) has no object or pane pass (docs/research/combat-targets.md#searches-coney).
-// @coney-only the input of L1's stand-in pick, which has no original of its own
+// The input with no objects: L1's and the counters' stand-in picks (pickTarget()) search the humans only, as the
+// original's L1 and counter searches (0x0027b2a8, `Player_FindCounterTarget` 0x0027ac30) have no object or pane pass.
+// @coney-only the input of the stand-in picks of L1 and the counters, which have no search of their own here
 FighterInput humansOnly(const FighterInput& input) {
     FighterInput only = input;
     only.objects = {};
@@ -557,7 +557,8 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     }
     bool reacting = stepVictim(input, animator);
     if (reacting) {
-        riseCountered = riseCounter(input, animator);
+        // The counters' stand-in pick searches the humans only (humansOnly()).
+        riseCountered = riseCounter(humansOnly(input), animator);
         reacting = !riseCountered;
     } else {
         m_riseCounterAsked = false;
@@ -612,7 +613,7 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
         updateL1(humansOnly(input), animator.flags());
     }
     combat::CombatInput in = combatInput(input, animator, false);
-    if (riseCountered || duckCounter(input, animator)) {
+    if (riseCountered || duckCounter(humansOnly(input), animator)) {
         in.command = combat::command::kNone;
     }
     // **Coney's choice**: the attacker and the grabber take no command until their tandem clips are over (the
@@ -726,7 +727,8 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
                                                                                           : combat::TargetKind::None;
     // An object the pick found (a car, a world object or a pane, whose passes run between the human ones) is square's
     // object attack's target: Player_ObjectAttack picks the clip by its height
-    // (docs/research/combat-targets.md#targets).
+    // (docs/research/combat-targets.md#targets). **Coney stand-in** (#1396): the object attack has no approach
+    // (`Human_AlignForObjectAttack`), so an object picked up to 2 m away is struck from where the player stands.
     if (input.command == combat::command::kSquarePressed) {
         if (const ObjectTarget* object = picked.object; object != nullptr) {
             in.target = combat::TargetKind::Breakable;

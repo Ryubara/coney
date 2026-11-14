@@ -1082,10 +1082,12 @@ Where Coney still differs (stand-ins, each marked at the code):
   object picked wherever it stands, so an object picked up to 2 m away is struck from where the player is.
 - Every search and the kept rule measure across the ground, where the original measures in three dimensions (run
   r-20261114-pick-object-distance-3d, [Target selection](#targets)). The two wait for the object attack's approach:
-  with 3D distances and no approach, the level99 register stops being picked after 5 of its 8 hits, as the player
-  drifts from it ([The searches' distances](#open-questions)); issue #1396 ports the two together.
+  with 3D distances and no approach, the level99 register stops being picked after 5 of its 8 hits, most likely as
+  the player drifts from it (inferred: not traced) ([The searches' distances](#open-questions)); issue #1396 ports the two together.
 - L1's stand-in pick ([The fight stance and the lock](#fight-stance-coney)) searches the humans only, as the
-  original's L1 search has no object or pane pass.
+  original's L1 search has no object or pane pass; so do the duck and rise counters' stand-in picks, as the original's
+  counter search (`Player_FindCounterTarget`, `0x0027ac30`) walks only the human list: confirmed (code) at that
+  address.
 - The dive (`Player_StartDive`, `0x00264878`) makes an object its search finds the target, so a locked player loses
   his human target to it; Coney's dive sees only the human part of its search and keeps a locked target then.
 
