@@ -130,6 +130,19 @@ TEST_CASE("the pick searches the world objects, then the panes, then the humans 
     CHECK(Fighter::pickTargetOrObject(searchInput(targets, behind), 2.0F).human == &beside);
 }
 
+TEST_CASE("the pick measures an object's distance in three dimensions", "[human][combat][targeting]") {
+    // Expected: combat-targets.md#targets, confirmed (runtime)
+    // As in the original's yard: a world object 0.70 m above the feet is picked 1.85 m ahead (1.978 m away) and not
+    // 1.90 m ahead (2.025 m away); at the feet's height it is picked 1.95 m ahead.
+    const std::vector<Combatant*> none;
+    const std::vector<ObjectTarget> near{object(1, Vec3{0.0F, 1.85F, 0.70F}, ObjectKind::WorldObject)};
+    CHECK(handleOf(Fighter::pickTargetOrObject(searchInput(none, near), 2.0F)) == 1.0);
+    const std::vector<ObjectTarget> past{object(1, Vec3{0.0F, 1.90F, 0.70F}, ObjectKind::WorldObject)};
+    CHECK_FALSE(handleOf(Fighter::pickTargetOrObject(searchInput(none, past), 2.0F)));
+    const std::vector<ObjectTarget> level{object(1, Vec3{0.0F, 1.95F, 0.0F}, ObjectKind::WorldObject)};
+    CHECK(handleOf(Fighter::pickTargetOrObject(searchInput(none, level), 2.0F)) == 1.0);
+}
+
 TEST_CASE("the pick's 135 degree pass takes a world object within 0.8 x the range before a human at any angle",
           "[human][combat][targeting]") {
     // Expected: combat-targets.md#targets, confirmed (code)
