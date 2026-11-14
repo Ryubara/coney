@@ -1065,9 +1065,7 @@ and the charge's and the dive's search go through them; an object found is the s
 for the others it means no human, as `Human_GetTarget` of an object is null. The play mode
 (`PlayLevelMode::giveObjectTargets()`, `repo:src/platform/play_level_objects.cpp`) lists the world objects whose type
 makes them a strike target with their body flags, the whole panes and the cars the car pass takes, each with its
-kind; the lists are the player's alone, as only a player's searches have these passes. The objects' passes and the
-kept rule measure distances in three dimensions, as the run above found; the human and pane passes still measure
-across the ground ([The searches' distances](#open-questions)). Tests: `repo:tests/human/target_passes_test.cpp`.
+kind; the lists are the player's alone, as only a player's searches have these passes. Tests: `repo:tests/human/target_passes_test.cpp`.
 
 Where Coney still differs (stand-ins, each marked at the code):
 
@@ -1080,6 +1078,10 @@ Where Coney still differs (stand-ins, each marked at the code):
   resolves).
 - The object attack has no approach (`Human_AlignForObjectAttack`, [Breakables](#breakables)) and its hit lands on the
   object picked wherever it stands, so an object picked up to 2 m away is struck from where the player is.
+- Every search measures across the ground, where the original's world object list measures in three dimensions (run
+  r-20261114-pick-object-distance-3d, [Target selection](#targets)). The two wait for the object attack's approach:
+  with 3D distances and no approach, the level99 register stops being picked after 5 of its 8 hits, as the player
+  drifts from it ([The searches' distances](#open-questions)).
 - L1's stand-in pick ([The fight stance and the lock](#fight-stance-coney)) searches the humans only, as the
   original's L1 search has no object or pane pass.
 - The dive (`Player_StartDive`, `0x00264878`) makes an object its search finds the target, so a locked player loses
@@ -1127,7 +1129,8 @@ target's own turn is not dropped there, a `Combatant` offering none.
   human `+0x280`, or state `0x800000`), which Coney's targets do not report ([The fight stance](#fight-stance)).
 - **The searches' distances**{#q-search-distance}: whether the human and pane searches (`Humans_FindInRange`
   `0x00227598`, `GlassTaskManager_ListInRange` `0x0038fc70`) measure in three dimensions as the world object list's
-  does ([Target selection](#targets)); Coney's human and pane passes measure across the ground. Found by the same run as
+  does ([Target selection](#targets)), and porting the 3D distance together with the object attack's approach
+  (`Human_AlignForObjectAttack`), which Coney's searches wait for. Found by the same run as
   r-20261114-pick-object-distance-3d with a pane high above the feet and an enemy on a step or a ramp, which the yard
   used there has none of (its humans are all Warriors).
 - **The object as the target**{#q-object-target}: what keeps an object as human `+0xc8` after square's object attack

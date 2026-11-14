@@ -198,7 +198,7 @@ Combatant* nearestFightable(const FighterInput& input, float along, float reach,
     return best;
 }
 
-// object list's search with its filter, nearest first in 3D. The lists skip what lies nearer than record `+0xd8`
+// object list's search with its filter, nearest first. The lists skip what lies nearer than record `+0xd8`
 // object list's search with its filter, then the sort by distance. The lists skip what lies nearer than record `+0xd8`
 // (`nearest`: 0 for the pick and the attack search, the attack's reach for the charge's and the dive's).
 // @orig 0x0027a6c0 Player_PickTarget (unknown)
@@ -213,10 +213,10 @@ const ObjectTarget* nearestObject(const FighterInput& input, ObjectKind kind, fl
         if (object.kind != kind || !accepts(object)) {
             continue;
         }
-        // In three dimensions (run r-20261114-pick-object-distance-3d). **Coney stand-in**: a pane is measured across
-        // the ground until a run measures the pane list (docs/research/combat-targets.md#open-questions).
+        // **Coney stand-in**: across the ground, where the original measures in 3D (run r-20261114-pick-object-
+        // distance-3d), until the object attack's approach is built (docs/research/combat-targets.md#searches-coney).
         const anim::Vec3 to = anim::subtract(object.point, input.position);
-        const float distance = kind == ObjectKind::Glass ? std::hypot(to.x, to.y) : anim::length(to);
+        const float distance = std::hypot(to.x, to.y);
         if (distance >= nearest && distance <= bestDistance) {
             best = &object;
             bestDistance = distance;
@@ -230,7 +230,7 @@ const ObjectTarget* nearestObject(const FighterInput& input, ObjectKind kind, fl
 // @orig 0x0027a6c0 Player_PickTarget (unknown)
 // @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
 Combatant* keptTarget(const FighterInput& input, const Combatant* current, float range) {
-    if (current == nullptr || anim::length(anim::subtract(current->position(), input.position)) > range) {
+    if (current == nullptr || flatDistance(input.position, current->position()) > range) {
         return nullptr;
     }
     const auto found = std::ranges::find(input.targets, current);
@@ -242,7 +242,7 @@ Combatant* keptTarget(const FighterInput& input, const Combatant* current, float
 // @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
 const ObjectTarget* keptObject(const FighterInput& input, const ObjectTarget* current, float range) {
     if (current == nullptr || current->kind == ObjectKind::Car || !current->hasBody ||
-        anim::length(anim::subtract(current->point, input.position)) > range) {
+        flatDistance(input.position, current->point) > range) {
         return nullptr;
     }
     return current;
