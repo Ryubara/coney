@@ -74,6 +74,19 @@ def test_the_tests_that_failed_in_a_tasks_shell_pass_in_one(test: str) -> None:
     assert "1 passed" in done.stdout
 
 
+def test_a_child_pytest_gets_a_base_folder_of_its_own_and_no_inherited_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A child pytest that shares the suite's temp folders removes the suite's own temp repos while they are in use.
+    monkeypatch.setenv("PYTEST_ADDOPTS", "--basetemp=C:/shared")
+    command, env = child_pytest("test_x.py::test_y", tmp_path)
+    basetemps = [part for part in command if part.startswith("--basetemp=")]
+    assert len(basetemps) == 1
+    assert Path(basetemps[0].removeprefix("--basetemp=")).parent == tmp_path
+    assert "PYTEST_ADDOPTS" not in env
+    assert env["CONEY_TASK"] == TASK_SHELL["CONEY_TASK"]
+
+
 def _is_mapping(node: ast.expr) -> bool:
     """Whether `node` is the environment: `os.environ`, `self.env`, a parameter called `env`, ..."""
     if isinstance(node, ast.Attribute):
