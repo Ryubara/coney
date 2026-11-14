@@ -1651,6 +1651,11 @@ what = "an object is the target only from square's pick until its attack lands, 
 relation = "stand-in"
 question = "combat-targets.md#q-object-target"
 
+[[function.gaps]]
+what = "a glass pane's distance is measured across the ground; the original's pane list is taken to measure in three dimensions as its world object list does"
+relation = "stand-in"
+question = "combat-targets.md#q-search-distance"
+
 [[function]]
 address = 0x0027a6c0
 name = "Player_PickTarget"
@@ -1664,6 +1669,11 @@ status = "compared"
 what = "an object is the target only from square's pick until its attack lands, and the first step tests it with the 135 degree cone and this update's aim, where the original reads what the last search left"
 relation = "stand-in"
 question = "combat-targets.md#q-object-target"
+
+[[function.gaps]]
+what = "a glass pane's distance is measured across the ground; the original's pane list is taken to measure in three dimensions as its world object list does"
+relation = "stand-in"
+question = "combat-targets.md#q-search-distance"
 
 [[function]]
 address = 0x0027aa38
@@ -1694,6 +1704,11 @@ role = "The charge and dive's target: the nearest human between the clip's reach
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::nearestInReach"
 status = "compared"
+
+[[function.gaps]]
+what = "a glass pane's distance is measured across the ground; the original's pane list is taken to measure in three dimensions as its world object list does"
+relation = "stand-in"
+question = "combat-targets.md#q-search-distance"
 
 [[function]]
 address = 0x0027b1a0
