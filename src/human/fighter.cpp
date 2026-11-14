@@ -262,6 +262,27 @@ Combatant* Fighter::pickTarget(const FighterInput& input, float range, const Com
     return keptTarget(input, current, range);
 }
 
+// Stubs for the tests (the passes are not ported yet).
+bool objectTargetable(const ObjectTarget& /*object*/, anim::Vec3 /*from*/, float /*along*/, float /*cone*/) {
+    return false;
+}
+
+bool glassTargetable(const ObjectTarget& /*pane*/, anim::Vec3 /*from*/, float /*along*/, float /*cone*/) {
+    return false;
+}
+
+TargetPick Fighter::pickTargetOrObject(const FighterInput& input, float range, const Combatant* current,
+                                       const ObjectTarget* /*currentObject*/) {
+    return TargetPick{.human = pickTarget(input, range, current)};
+}
+
+TargetPick Fighter::attackSearch(const FighterInput& /*input*/, float /*far*/, float /*along*/,
+                                 const Combatant* /*current*/, const ObjectTarget* /*currentObject*/) {
+    return {};
+}
+
+TargetPick Fighter::reachSearch(const FighterInput& /*input*/, float /*nearest*/, float /*far*/) { return {}; }
+
 Combatant* Fighter::findAttackTarget(const FighterInput& input, int farId) const {
     const float far = reachOf(farId);
     const float along = aimHeading(input, attackDirection(farId));
