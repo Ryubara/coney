@@ -206,6 +206,56 @@ def test_a_run_that_draws_nothing_is_an_error(tmp_path: Path, scenes_file: Path)
         )
 
 
+def test_coneys_output_is_kept_beside_each_picture_it_draws(tmp_path: Path, scenes_file: Path) -> None:
+    # The job uploads the output folder, so Coney's own log of every draw (repeats included) reaches the artifact.
+    def talks(command: Sequence[str], **_: object) -> subprocess.CompletedProcess[str]:
+        shot = Path(command[command.index("--screenshot") + 1])
+        shot.parent.mkdir(parents=True, exist_ok=True)
+        Image.new("RGBA", (20, 10), (10, 20, 30, 255)).save(shot)
+        return subprocess.CompletedProcess(list(command), 0, f"drew {shot.stem}\n", "a warning\n")
+
+    out = tmp_path / "out"
+    picture_scenes.run_scenes(
+        scenes_file, coney=["coney"], references=references(tmp_path / "ref"), out=out, runner=talks, repeat=2
+    )
+    assert (out / "flat.log").read_text(encoding="utf-8") == "drew flat\na warning\n"
+    assert (out / "repeats" / "2" / "second.log").read_text(encoding="utf-8") == "drew second\na warning\n"
+
+
+def test_a_failed_run_keeps_coneys_output_and_names_its_log(tmp_path: Path, scenes_file: Path) -> None:
+    fake = FakeConey(fail_on="second")
+    out = tmp_path / "out"
+    with pytest.raises(ConfigError, match=r"second.*exit code 3.*no window.*second\.log"):
+        picture_scenes.run_scenes(
+            scenes_file, coney=["coney"], references=references(tmp_path / "ref"), out=out, runner=fake
+        )
+    assert (out / "second.log").read_text(encoding="utf-8") == "no window"
+
+
+def test_a_run_past_the_timeout_names_the_scene_and_keeps_the_output_so_far(tmp_path: Path, scenes_file: Path) -> None:
+    # subprocess.run kills the child at the timeout and hands back what it had captured, as bytes.
+    seen: list[object] = []
+
+    def hangs(command: Sequence[str], **options: object) -> subprocess.CompletedProcess[str]:
+        seen.append(options.get("timeout"))
+        raise subprocess.TimeoutExpired(list(command), 7, output=b"started\n", stderr=b"waiting for the display\n")
+
+    out = tmp_path / "out"
+    with pytest.raises(ConfigError, match=r"flat: coney did not finish in 7 s.*waiting for the display.*flat\.log"):
+        picture_scenes.run_scenes(
+            scenes_file, coney=["coney"], references=references(tmp_path / "ref"), out=out, runner=hangs, timeout=7
+        )
+    assert seen == [7]
+    assert (out / "flat.log").read_text(encoding="utf-8") == "started\nwaiting for the display\n"
+
+
+def test_the_timeout_must_be_positive(tmp_path: Path, scenes_file: Path) -> None:
+    with pytest.raises(ConfigError, match="--timeout"):
+        picture_scenes.run_scenes(
+            scenes_file, coney=["coney"], references=tmp_path / "ref", out=tmp_path / "out", runner=FakeConey(), timeout=0
+        )
+
+
 def test_repeat_draws_each_scene_again_and_compares_the_repeats(
     tmp_path: Path, scenes_file: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -293,6 +343,23 @@ def test_the_command_line_takes_the_executable_and_a_launcher(
     assert code == 0
     root = find_repo_root(Path(__file__))
     assert fake.commands[0][:3] == ["xvfb-run", "-a", str(root / "build/ci/src/platform/coney")]
+
+
+def test_the_command_line_takes_a_timeout_per_run(
+    tmp_path: Path, scenes_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    timeouts: list[object] = []
+    fake = FakeConey()
+
+    def timed(command: Sequence[str], **options: object) -> subprocess.CompletedProcess[str]:
+        timeouts.append(options.get("timeout"))
+        return fake(command, **options)
+
+    monkeypatch.setattr(subprocess, "run", timed)
+    args = ["picture", "scenes", "--coney", "coney", "--scenes", str(scenes_file)]
+    args += ["--references", str(references(tmp_path / "ref")), "--out", str(tmp_path / "out"), "--timeout", "45"]
+    assert main(args) == 0
+    assert timeouts == [45, 45]
 
 
 @pytest.mark.reads("docs_only")

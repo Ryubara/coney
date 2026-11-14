@@ -73,3 +73,11 @@ def test_the_job_passes_while_there_are_no_references_and_is_not_yet_a_required_
     conventions = (ROOT / ".github" / "conventions.yml").read_text(encoding="utf-8")
     required = re.search(r"^\s+required_checks: \[(.*)\]", conventions, re.MULTILINE)
     assert required is not None and "software-pictures" not in required.group(1)
+
+
+def test_the_container_has_an_init_process_so_xvfb_run_gets_past_its_start() -> None:
+    # xvfb-run waits for Xvfb's ready signal, and Xvfb sends it only to a parent whose pid is above 1: as the container's
+    # first process xvfb-run waited for ever (every run from #1296's merge to #1392). `--init` puts docker's init first.
+    job = WORKFLOW[WORKFLOW.index("  software-pictures:") :].split("\n  cache-prune:")[0]
+    launcher = re.search(r'launcher="docker run ([^"]*)"', job)
+    assert launcher is not None and "--init" in launcher.group(1).split()
