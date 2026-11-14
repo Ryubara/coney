@@ -1191,8 +1191,7 @@ Combatant* Fighter::nearestInReach(int animId, const FighterInput& input) const 
 void Fighter::steerDive(const FighterInput& input, const HumanAnimator& animator, float heading) {
     const int dive = id::kRunningAttackDive;
     Combatant* found = nearestInReach(dive, input);
-    // The result is the target; none found clears it, unless the player is locked on. **Coney stand-in**: an object
-    // its search finds would be the target and drop a locked one (docs/research/combat-targets.md#searches-coney).
+    // The result is the target; none found clears it, unless the player is locked on.
     if (found != nullptr || lockTarget() == nullptr) {
         m_target = found;
     }
