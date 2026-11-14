@@ -348,7 +348,7 @@ TargetPick Fighter::pickTargetOrObject(const FighterInput& input, float range, c
     if (Combatant* found = nearestFightable(input, along, range * kPickWideScale, 0.0F, true); found != nullptr) {
         return TargetPick{.human = found};
     }
-    // 7. Nothing found: the current target, when it is no car, has a body and is within range.
+    // 7. Nothing found: the target kept when no car, with a body, within range (**Coney stand-in**: objectTargetIn()).
     if (current != nullptr) {
         return TargetPick{.human = keptTarget(input, current, range)};
     }
@@ -384,7 +384,7 @@ TargetPick Fighter::attackSearch(const FighterInput& input, float far, float alo
             return TargetPick{.human = found};
         }
     }
-    // Nothing found: the human target as it is, at any distance; else an object target that is no car and has a body.
+    // Nothing found: the target kept as it is (**Coney stand-in**: an object target is only objectTargetIn()'s).
     if (current != nullptr) {
         return TargetPick{.human = keptTarget(input, current, std::numeric_limits<float>::max())};
     }
