@@ -1074,6 +1074,8 @@ Where Coney still differs (stand-ins, each marked at the code):
   object picked wherever it stands, so an object picked up to 2 m away is struck from where the player is.
 - L1's stand-in pick ([The fight stance and the lock](#fight-stance-coney)) searches the humans only, as the
   original's L1 search has no object or pane pass.
+- The dive (`Player_StartDive`, `0x00264878`) makes an object its search finds the target, so a locked player loses
+  his human target to it; Coney's dive sees only the human part of its search and keeps a locked target then.
 
 ### The steer {#steer-coney}
 

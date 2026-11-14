@@ -639,9 +639,9 @@ class Fighter {
     void steerDive(const FighterInput& input, const HumanAnimator& animator, float heading);
     // The reach search of attack `animId` (the dive's, the charge's): reachSearch() between its reach and far range.
     // The dive's warning and steer (warnTarget(), steerDive()) and a player's charge warning (warnTarget(), as
-    // Player_StartCharge `0x00264a80` searches) use it; an object found is no human.
+    // Player_StartCharge `0x00264a80` searches) use it; an object found is no human, null.
     // @orig 0x0027b058 Attack_FindNearestInReach (unknown)
-    [[nodiscard]] TargetPick nearestInReach(int animId, const FighterInput& input) const;
+    [[nodiscard]] Combatant* nearestInReach(int animId, const FighterInput& input) const;
     // The turn and the slide onto the reach of attack `animId` from `target`, at a constant rate from the next state
     // update (m_steer), the target led by its velocity x (`toEvent` + 0.1 s). The attack's flag 0x8 (ledSteer())
     // picks the steer: the led one takes `toEvent` + 0.1 s, the other `seconds`, cut to `toEvent` + 0.1 s. The led

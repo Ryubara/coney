@@ -605,7 +605,8 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
                            (m_combat.mode() == combat::CombatMode::Grabbing && m_combat.powerMove() != id::kNone);
     if (m_player && !powerMove) {
         updateStance(input, animator.flags());
-        updateL1(input, animator.flags());
+        // L1's stand-in pick searches the humans only (humansOnly()).
+        updateL1(humansOnly(input), animator.flags());
     }
     combat::CombatInput in = combatInput(input, animator, false);
     if (riseCountered || duckCounter(input, animator)) {
@@ -1027,7 +1028,7 @@ void Fighter::warnTarget(int animId, const FighterInput& input, bool chainStep) 
     // finds (Player_StartCharge's Attack_FindNearestInReach with the charge's reach and far range); it takes none
     // (docs/research/combat/index.md#charge-aim).
     if (animId == id::kRunningAttackCharge) {
-        Combatant* target = m_target != nullptr ? m_target : m_player ? nearestInReach(animId, input).human : nullptr;
+        Combatant* target = m_target != nullptr ? m_target : m_player ? nearestInReach(animId, input) : nullptr;
         if (target != nullptr) {
             target->announceAttack(input.position);
         }
@@ -1037,7 +1038,7 @@ void Fighter::warnTarget(int animId, const FighterInput& input, bool chainStep) 
     // makes next), none when it finds none; the research does not list the dive's warning
     // (docs/research/combat/index.md#attack-warnings).
     if (animId == id::kRunningAttackDive) {
-        if (Combatant* target = nearestInReach(id::kRunningAttackDive, input).human; target != nullptr) {
+        if (Combatant* target = nearestInReach(id::kRunningAttackDive, input); target != nullptr) {
             target->announceAttack(input.position);
         }
         return;
@@ -1179,20 +1180,20 @@ void Fighter::steer(int animId, const FighterInput& input, const HumanAnimator& 
     steerOnto(animId, *target, input, toEvent, toEvent, heading);
 }
 
-TargetPick Fighter::nearestInReach(int animId, const FighterInput& input) const {
-    // Attack_FindNearestInReach: the band between the attack's reach and its far range (reachSearch()).
+Combatant* Fighter::nearestInReach(int animId, const FighterInput& input) const {
+    // Attack_FindNearestInReach: the band between the attack's reach and its far range (reachSearch()), seen as a
+    // human (an object or a pane found is none).
     const combat::AnimRange* range = m_ranges != nullptr ? m_ranges->find(static_cast<std::size_t>(animId)) : nullptr;
     const float nearest = range != nullptr ? range->reach : 0.0F;
-    return reachSearch(input, nearest, reachOf(animId));
+    return reachSearch(input, nearest, reachOf(animId)).human;
 }
 
 void Fighter::steerDive(const FighterInput& input, const HumanAnimator& animator, float heading) {
     const int dive = id::kRunningAttackDive;
-    const TargetPick pick = nearestInReach(dive, input);
-    Combatant* found = pick.human;
-    // The result is the target; none found clears it, unless the player is locked on. An object found is the target,
-    // so the human one goes (**Coney stand-in**: Coney's object target is square's alone, so the dive keeps none).
-    if (found != nullptr || pick.object != nullptr || lockTarget() == nullptr) {
+    Combatant* found = nearestInReach(dive, input);
+    // The result is the target; none found clears it, unless the player is locked on. **Coney stand-in**: an object
+    // its search finds would be the target and drop a locked one (docs/research/combat-targets.md#searches-coney).
+    if (found != nullptr || lockTarget() == nullptr) {
         m_target = found;
     }
     if (found == nullptr) {
@@ -1680,7 +1681,7 @@ void Fighter::updateL1(const FighterInput& input, std::uint32_t phase) {
     // distance; the original's L1 search (`Player_FindLockTarget` 0x0027b2a8) runs its own passes out to 6 m
     // (docs/research/combat-targets.md#open-questions).
     if (m_target == nullptr) {
-        m_target = pickTarget(humansOnly(input), combat::combatTuning().stanceMid);
+        m_target = pickTarget(input, combat::combatTuning().stanceMid);
     }
     if (m_target == nullptr) {
         return;
