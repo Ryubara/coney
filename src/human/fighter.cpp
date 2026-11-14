@@ -198,7 +198,7 @@ Combatant* nearestFightable(const FighterInput& input, float along, float reach,
     return best;
 }
 
-// object list's search with its filter, nearest first. The lists skip what lies nearer than record `+0xd8`
+// The nearest of `input.objects` of `kind` between `nearest` and `reach` metres that `accepts` takes, or null: one
 // object list's search with its filter, then the sort by distance. The lists skip what lies nearer than record `+0xd8`
 // (`nearest`: 0 for the pick and the attack search, the attack's reach for the charge's and the dive's).
 // @orig 0x0027a6c0 Player_PickTarget (unknown)
@@ -225,8 +225,8 @@ const ObjectTarget* nearestObject(const FighterInput& input, ObjectKind kind, fl
     return best;
 }
 
-// The current human target a search keeps when it found nothing: while he is among the targets (**Coney stand-in**
-// for the handle that still resolves to a body) and within `range`, whatever his state.
+// The current human target a search keeps when nothing is found: among the targets (**Coney stand-in** for a handle
+// that resolves) and within `range` across the ground (stand-in, #1396: Object_Distance is 3D), whatever his state.
 // @orig 0x0027a6c0 Player_PickTarget (unknown)
 // @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
 Combatant* keptTarget(const FighterInput& input, const Combatant* current, float range) {
@@ -237,7 +237,7 @@ Combatant* keptTarget(const FighterInput& input, const Combatant* current, float
     return found != input.targets.end() ? *found : nullptr;
 }
 
-// The current object target a search keeps when it found nothing: one that is no car and has a body, within `range`.
+// An object target kept when nothing is found: no car, a body, `range` across the ground (**Coney stand-in**, #1396).
 // @orig 0x0027a6c0 Player_PickTarget (unknown)
 // @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
 const ObjectTarget* keptObject(const FighterInput& input, const ObjectTarget* current, float range) {
@@ -404,7 +404,7 @@ TargetPick Fighter::reachSearch(const FighterInput& input, float nearest, float 
             continue;
         }
         const anim::Vec3 to = anim::subtract(target->position(), input.position);
-        const float distance = std::hypot(to.x, to.y);
+        const float distance = std::hypot(to.x, to.y); // **Coney stand-in** (#1396): the original's list is in 3D
         const float off = std::fabs(wrapAngle(headingOf(to) - along));
         if (distance >= nearest && distance <= bestDistance && off <= kPickConeDegrees * kDegrees) {
             found = target;

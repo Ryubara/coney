@@ -84,8 +84,8 @@ fields this page adds, each read in the function named:
 
 Read in Ghidra: confirmed (code) where no other level is given.
 
-Angles are measured from an **aim heading**; distances are flat squared distances between the humans' positions;
-"nearest" sorts by that distance (`SortByKeyAscending` `0x003868d0`).
+Angles are measured from an **aim heading**; distances are squared distances between the positions in three
+dimensions ([Target selection](#targets)); "nearest" sorts by that distance (`SortByKeyAscending` `0x003868d0`).
 
 | Move | Target it uses |
 | --- | --- |
@@ -161,8 +161,10 @@ passes search the same band as their humans. Confirmed (code) at the addresses n
 The world object list's search measures the distance from the feet to the object's position in three dimensions, not
 across the ground: square's pick took a strike-target object 0.70 m above the feet at 1.85 m ahead (1.978 m away) and
 not at 1.90 m ahead (2.025 m away), and one at the feet's height at 1.95 m ahead; confirmed (runtime), run
-r-20261114-pick-object-distance-3d. The human and pane searches and `Object_Distance` (`0x00229960`, the kept rule's
-test) run the same vector sequence, so they measure in three dimensions too: inferred ([The searches'
+r-20261114-pick-object-distance-3d. The human search (`Humans_FindInRange` `0x00227598`) and `Object_Distance`
+(`0x00229960`, the kept rule's test) run the same vector sequence on the two positions, so they measure in three
+dimensions too: confirmed (code) at those addresses. The pane search (`GlassTaskManager_ListInRange` `0x0038fc70`)
+subtracts through `Vec4_Sub` before the same products and sums: inferred ([The searches'
 distances](#open-questions)).
 
 **Objects as targets** (`Player_PickTarget`, `0x0027a6c0`):
@@ -1078,7 +1080,7 @@ Where Coney still differs (stand-ins, each marked at the code):
   resolves).
 - The object attack has no approach (`Human_AlignForObjectAttack`, [Breakables](#breakables)) and its hit lands on the
   object picked wherever it stands, so an object picked up to 2 m away is struck from where the player is.
-- Every search measures across the ground, where the original's world object list measures in three dimensions (run
+- Every search and the kept rule measure across the ground, where the original measures in three dimensions (run
   r-20261114-pick-object-distance-3d, [Target selection](#targets)). The two wait for the object attack's approach:
   with 3D distances and no approach, the level99 register stops being picked after 5 of its 8 hits, as the player
   drifts from it ([The searches' distances](#open-questions)); issue #1396 ports the two together.
@@ -1127,12 +1129,11 @@ target's own turn is not dropped there, a `Combatant` offering none.
 - **The clear-line test**{#q-clear-line}: porting `Human_IsClearToTarget` (`0x0021c240`, a capsule cast through the
   physics) for the stance's nearest enemy, and the scene state a target's drop also reads (`Human_IsInSceneState`:
   human `+0x280`, or state `0x800000`), which Coney's targets do not report ([The fight stance](#fight-stance)).
-- **The searches' distances**{#q-search-distance}: whether the human and pane searches (`Humans_FindInRange`
-  `0x00227598`, `GlassTaskManager_ListInRange` `0x0038fc70`) measure in three dimensions as the world object list's
-  does ([Target selection](#targets)), and porting the 3D distance together with the object attack's approach
-  (`Human_AlignForObjectAttack`), which Coney's searches wait for. Found by the same run as
-  r-20261114-pick-object-distance-3d with a pane high above the feet and an enemy on a step or a ramp, which the yard
-  used there has none of (its humans are all Warriors).
+- **The searches' distances**{#q-search-distance}: whether the pane search (`GlassTaskManager_ListInRange`
+  `0x0038fc70`) measures in three dimensions as the world object list's does ([Target selection](#targets)), and
+  porting the 3D distances together with the object attack's approach (`Human_AlignForObjectAttack`), which Coney's
+  searches wait for (#1396). Found by the same run as r-20261114-pick-object-distance-3d with a pane high above the
+  feet.
 - **The object as the target**{#q-object-target}: what keeps an object as human `+0xc8` after square's object attack
   in the original (`Human_SetTargetObject`, then which call clears it: the next pick, the stance, a hit), so Coney can
   keep its object target past the hit and run the pick's first step and kept rule on it ([The target
