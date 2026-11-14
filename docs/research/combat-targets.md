@@ -158,6 +158,13 @@ human that only step 5 or 6 would find, a downed one among them. Step 5's "no cu
 `Attack_FindNearestInReach` (`0x0027b058`) sets to the attack's reach, so the charge's and the dive's object and pane
 passes search the same band as their humans. Confirmed (code) at the addresses named.
 
+The world object list's search measures the distance from the feet to the object's position in three dimensions, not
+across the ground: square's pick took a strike-target object 0.70 m above the feet at 1.85 m ahead (1.978 m away) and
+not at 1.90 m ahead (2.025 m away), and one at the feet's height at 1.95 m ahead; confirmed (runtime), run
+r-20261114-pick-object-distance-3d. The human and pane searches and `Object_Distance` (`0x00229960`, the kept rule's
+test) run the same vector sequence, so they measure in three dimensions too: inferred ([The searches'
+distances](#open-questions)).
+
 **Objects as targets** (`Player_PickTarget`, `0x0027a6c0`):
 
 - **Cars** (world `+0x844`, `CarManager_FindTarget`, 1.0 m) come first among the objects, through `Target_CarFilter`
@@ -1058,8 +1065,9 @@ and the charge's and the dive's search go through them; an object found is the s
 for the others it means no human, as `Human_GetTarget` of an object is null. The play mode
 (`PlayLevelMode::giveObjectTargets()`, `repo:src/platform/play_level_objects.cpp`) lists the world objects whose type
 makes them a strike target with their body flags, the whole panes and the cars the car pass takes, each with its
-kind; the lists are the player's alone, as only a player's searches have these passes. Tests:
-`repo:tests/human/target_passes_test.cpp`.
+kind; the lists are the player's alone, as only a player's searches have these passes. The objects' passes and the
+kept rule measure distances in three dimensions, as the run above found; the human passes still measure across the
+ground ([The searches' distances](#open-questions)). Tests: `repo:tests/human/target_passes_test.cpp`.
 
 Where Coney still differs (stand-ins, each marked at the code):
 
@@ -1117,6 +1125,10 @@ target's own turn is not dropped there, a `Combatant` offering none.
 - **The clear-line test**{#q-clear-line}: porting `Human_IsClearToTarget` (`0x0021c240`, a capsule cast through the
   physics) for the stance's nearest enemy, and the scene state a target's drop also reads (`Human_IsInSceneState`:
   human `+0x280`, or state `0x800000`), which Coney's targets do not report ([The fight stance](#fight-stance)).
+- **The searches' distances**{#q-search-distance}: whether the human searches (`Humans_FindInRange`, `0x00227598`)
+  measure in three dimensions as the world object list's does ([Target selection](#targets)); Coney's human passes
+  measure across the ground. Found by the same run as r-20261114-pick-object-distance-3d with an enemy standing on a
+  step or a ramp, which the yard used there has none of (its humans are all Warriors).
 - **The object as the target**{#q-object-target}: what keeps an object as human `+0xc8` after square's object attack
   in the original (`Human_SetTargetObject`, then which call clears it: the next pick, the stance, a hit), so Coney can
   keep its object target past the hit and run the pick's first step and kept rule on it ([The target
