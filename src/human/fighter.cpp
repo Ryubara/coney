@@ -213,8 +213,8 @@ const ObjectTarget* nearestObject(const FighterInput& input, ObjectKind kind, fl
         if (object.kind != kind || !accepts(object)) {
             continue;
         }
-        // **Coney stand-in**: across the ground, where the original measures in 3D (run r-20261114-pick-object-
-        // distance-3d), until the object attack's approach is built (docs/research/combat-targets.md#searches-coney).
+        // **Coney stand-in** (#1396): across the ground, where the original measures in 3D (run r-20261114-pick-
+        // object-distance-3d), until the object attack's approach is built (combat-targets.md#searches-coney).
         const anim::Vec3 to = anim::subtract(object.point, input.position);
         const float distance = std::hypot(to.x, to.y);
         if (distance >= nearest && distance <= bestDistance) {

@@ -1081,7 +1081,7 @@ Where Coney still differs (stand-ins, each marked at the code):
 - Every search measures across the ground, where the original's world object list measures in three dimensions (run
   r-20261114-pick-object-distance-3d, [Target selection](#targets)). The two wait for the object attack's approach:
   with 3D distances and no approach, the level99 register stops being picked after 5 of its 8 hits, as the player
-  drifts from it ([The searches' distances](#open-questions)).
+  drifts from it ([The searches' distances](#open-questions)); issue #1396 ports the two together.
 - L1's stand-in pick ([The fight stance and the lock](#fight-stance-coney)) searches the humans only, as the
   original's L1 search has no object or pane pass.
 - The dive (`Player_StartDive`, `0x00264878`) makes an object its search finds the target, so a locked player loses
