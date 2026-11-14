@@ -116,6 +116,11 @@ tool that does that adds the name to `ambient_env.py` by hand. It also runs one 
 `CONEY_TASK` in a shell with `CONEY_TASK`, `VIRTUAL_ENV` and `CLAUDECODE` set. A tool that starts reading a new variable
 adds it to `ambient_env.py` in the same commit.
 
+A test that starts pytest itself gives that run a `--basetemp` of its own under its `tmp_path` and drops any inherited
+`PYTEST_ADDOPTS`. pytest keeps only the newest three numbered folders under `pytest-of-<user>`, so a few child sessions
+remove the running suite's own folder, and a shared `--basetemp` is emptied when the child starts: either way temp
+repos vanish under tests still using them, and a different handful of tests fails on every full run.
+
 A test that runs a shell script gets its `bash` from `python/tests/shell_support.py`, never from
 `shutil.which("bash")`. On a Windows machine with the Windows Subsystem for Linux that call can find System32's
 `bash.exe`, a Linux that sees the checkout as `/mnt/c/...` and has no `uv`, so a script fails or, behind a hook
