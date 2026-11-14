@@ -189,14 +189,14 @@ TEST_CASE("the object filter takes a world object with a strike-target body with
     ObjectTarget broken = ahead;
     broken.hasBody = false;
     CHECK_FALSE(coney::human::objectTargetable(broken, feet, 0.0F, 54.0F));
-    CHECK_FALSE(coney::human::objectTargetable(object(1, Vec3{0.0F, 1.0F, 2.1F}, ObjectKind::WorldObject), feet,
-                                               0.0F, 54.0F));
+    CHECK_FALSE(
+        coney::human::objectTargetable(object(1, Vec3{0.0F, 1.0F, 2.1F}, ObjectKind::WorldObject), feet, 0.0F, 54.0F));
     // 60° off the aim: outside 54°, inside 135°.
     const ObjectTarget side = object(1, Vec3{0.866F, 0.5F, 0.5F}, ObjectKind::WorldObject);
     CHECK_FALSE(coney::human::objectTargetable(side, feet, 0.0F, 54.0F));
     CHECK(coney::human::objectTargetable(side, feet, 0.0F, 135.0F));
-    CHECK_FALSE(coney::human::objectTargetable(object(1, Vec3{0.0F, 1.0F, 0.5F}, ObjectKind::Glass), feet, 0.0F,
-                                               54.0F));
+    CHECK_FALSE(
+        coney::human::objectTargetable(object(1, Vec3{0.0F, 1.0F, 0.5F}, ObjectKind::Glass), feet, 0.0F, 54.0F));
 }
 
 TEST_CASE("the glass filter takes a pane with a body within the cone and 2 m in height", "[human][combat][targeting]") {
@@ -207,10 +207,9 @@ TEST_CASE("the glass filter takes a pane with a body within the cone and 2 m in 
     ObjectTarget broken = pane;
     broken.hasBody = false;
     CHECK_FALSE(coney::human::glassTargetable(broken, feet, 0.0F, 54.0F));
-    CHECK_FALSE(coney::human::glassTargetable(object(1, Vec3{0.0F, 1.0F, 2.1F}, ObjectKind::Glass), feet, 0.0F,
-                                              54.0F));
-    CHECK_FALSE(coney::human::glassTargetable(object(1, Vec3{0.866F, 0.5F, 1.5F}, ObjectKind::Glass), feet, 0.0F,
-                                              54.0F));
+    CHECK_FALSE(coney::human::glassTargetable(object(1, Vec3{0.0F, 1.0F, 2.1F}, ObjectKind::Glass), feet, 0.0F, 54.0F));
+    CHECK_FALSE(
+        coney::human::glassTargetable(object(1, Vec3{0.866F, 0.5F, 1.5F}, ObjectKind::Glass), feet, 0.0F, 54.0F));
 }
 
 TEST_CASE("the attack search's object and pane passes come before its any-angle and wide passes",

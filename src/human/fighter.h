@@ -276,11 +276,9 @@ class Fighter {
     /// slides to `goal`, each at a constant rate over `seconds` (TurnAndSlide), on top of its clip's root motion, as
     /// the steer of an attack does (Holdable::carryOver(), docs/research/combat-throws.md#throw-direction).
     void carryOver(anim::Vec3 position, float heading, anim::Vec3 goal, float targetHeading, float seconds);
-    /// The target human the search would pick for an attack of `range` metres with `current` as the current target
-    /// (null for none): the nearest standing enemy within range × 1.1 and 54° of the stick's heading (the facing with
-    /// the stick at rest); with no current target, within range × 0.9 at any angle; then within range × 0.7 at any
-    /// angle. With none found, the current target when it is standing within range; else null. A human target is
-    /// always searched for again (only an object target is kept as it is, which this search does not pick).
+    /// The target human the search would pick for an attack of `range` metres with `current` as the current human
+    /// target (null for none): pickTargetOrObject() seen as a human, so null when a car, a world object or a pane wins
+    /// (`Human_GetTarget` of an object is null).
     /// @orig 0x0027a6c0 Player_PickTarget (unknown)
     [[nodiscard]] static Combatant* pickTarget(const FighterInput& input, float range,
                                                const Combatant* current = nullptr);
@@ -301,19 +299,12 @@ class Fighter {
     /// as it is, else `currentObject` when it is no car and has a body (docs/research/combat-targets.md#targeting).
     /// @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
     [[nodiscard]] static TargetPick attackSearch(const FighterInput& input, float far, float along,
-                                                 const Combatant* current,
-                                                 const ObjectTarget* currentObject = nullptr);
+                                                 const Combatant* current, const ObjectTarget* currentObject = nullptr);
     /// `Attack_FindNearestInReach`'s passes between `nearest` and `far` metres within 54° of the stick's heading (the
     /// facing at rest): the standing enemies, then the world objects, then the panes; the nearest of the first pass
     /// that finds any (docs/research/combat/index.md#charge-aim).
     /// @orig 0x0027b058 Attack_FindNearestInReach (unknown)
     [[nodiscard]] static TargetPick reachSearch(const FighterInput& input, float nearest, float far);
-    // Square's object target, with no human in front: of `input.objects` within the object attack's far range, the
-    // nearest within 54° of the stick's heading (the facing at rest), else within 135°. Null for none.
-    // **Coney's choices**: range is the object attack's far range (the original approaches from farther, not built);
-    // the 135° pass keeps the whole range (the original's × 0.8 is not applied).
-    // @orig 0x0027a6c0 Player_PickTarget (unknown)
-    [[nodiscard]] const ObjectTarget* pickObjectTarget(const FighterInput& input) const;
     // Circle + cross's search (combat::nearestInCone() along the stick, combat::strongGrappleRange()): makes the human
     // found the target and returns it when it may be grabbed, else null.
     // @orig 0x00263c90 Player_SpecialAttack (unknown)
@@ -596,6 +587,11 @@ class Fighter {
     // same range; the nearest, else the current target when it is standing within that range.
     // @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
     [[nodiscard]] Combatant* findAttackTarget(const FighterInput& input, int farId) const;
+    // The object that is this human's target, in this update's `input.objects`: square's object target while no human
+    // is the target and its attack has not landed (**Coney stand-in** for an object at human `+0xc8`,
+    // docs/research/combat-targets.md#q-object-target); null for none.
+    // @coney-only finds Coney's object target in this update's list, as the original holds it at +0xc8
+    [[nodiscard]] const ObjectTarget* objectTargetIn(const FighterInput& input) const;
     // The target attack `animId` goes for (combat::attackTarget()): `chainStep` when the chain's buffer played it.
     // @orig 0x00286cc8 Player_Square (unknown)
     // @orig 0x00287a18 Player_Cross (unknown)
@@ -641,11 +637,11 @@ class Fighter {
     // takes it there over 0.1 s (docs/research/combat/index.md#charge-aim).
     // @orig 0x00264878 Player_StartDive (unknown)
     void steerDive(const FighterInput& input, const HumanAnimator& animator, float heading);
-    // The reach search of attack `animId` (the dive's, the charge's): the nearest standing human between its reach and
-    // far range within 54° of the stick or the facing, or null. The dive's warning and steer (warnTarget(),
-    // steerDive()) and a player's charge warning (warnTarget(), as Player_StartCharge `0x00264a80` searches) use it.
+    // The reach search of attack `animId` (the dive's, the charge's): reachSearch() between its reach and far range.
+    // The dive's warning and steer (warnTarget(), steerDive()) and a player's charge warning (warnTarget(), as
+    // Player_StartCharge `0x00264a80` searches) use it; an object found is no human.
     // @orig 0x0027b058 Attack_FindNearestInReach (unknown)
-    [[nodiscard]] Combatant* nearestInReach(int animId, const FighterInput& input) const;
+    [[nodiscard]] TargetPick nearestInReach(int animId, const FighterInput& input) const;
     // The turn and the slide onto the reach of attack `animId` from `target`, at a constant rate from the next state
     // update (m_steer), the target led by its velocity x (`toEvent` + 0.1 s). The attack's flag 0x8 (ledSteer())
     // picks the steer: the led one takes `toEvent` + 0.1 s, the other `seconds`, cut to `toEvent` + 0.1 s. The led
