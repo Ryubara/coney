@@ -1132,7 +1132,7 @@ target's own turn is not dropped there, a `Combatant` offering none.
 - **The searches' distances**{#q-search-distance}: whether the pane search (`GlassTaskManager_ListInRange`
   `0x0038fc70`) measures in three dimensions as the world object list's does ([Target selection](#targets)), and
   porting the 3D distances together with the object attack's approach (`Human_AlignForObjectAttack`), which Coney's
-  searches wait for (#1396). Found by the same run as r-20261114-pick-object-distance-3d with a pane high above the
+  searches wait for. Found by the same run as r-20261114-pick-object-distance-3d with a pane high above the
   feet.
 - **The object as the target**{#q-object-target}: what keeps an object as human `+0xc8` after square's object attack
   in the original (`Human_SetTargetObject`, then which call clears it: the next pick, the stance, a hit), so Coney can
