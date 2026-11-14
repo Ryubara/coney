@@ -586,6 +586,22 @@ The runner image's own Mesa moves with the image, so the drawing runs in a conta
 version**, checked at the end of the build. The job caches the built image on the runner's cache, keyed by the
 Dockerfile's hash.
 
+What the image needs, and how the job runs it:
+
+- **Its packages:** Mesa's GLX and EGL with the llvmpipe driver and the LLVM it compiles shaders with (pinned),
+  `xvfb` and `xauth` for the virtual display, and the X11 and xkb libraries SDL3 opens a window with. Its environment
+  picks llvmpipe (`LIBGL_ALWAYS_SOFTWARE`, `GALLIUM_DRIVER`) and SDL's silent audio driver (`SDL_AUDIODRIVER=dummy`).
+- **Outside the pin:** `ca-certificates`, with the `openssl` and `libssl3t64` it brings, comes from the base image's
+  own source, the live archive, because the snapshot is read over https and the base image has no certificates. It
+  only lets apt open the snapshot (every pinned package is checked against the archive's signing key) and plays no
+  part in a picture.
+- **An init process:** the job starts the container with `docker run --init`. `xvfb-run` waits for Xvfb's ready
+  signal, and Xvfb sends it only to a parent whose process id is above 1, so as the container's first process
+  `xvfb-run` waited for ever and the first scene timed out (#1354, #1392). Run by hand, the image needs the same flag.
+- **What the job leaves when a scene fails:** Coney's output of every run is kept beside its picture (`NAME.log`) and
+  uploaded with the pictures, and a run that has not ended after 60 seconds (`--timeout`) fails the step naming its
+  scene, with the last lines Coney printed ([`picture scenes`](coney-tools-picture.md#picture)).
+
 - **Moving the pin is a pull request of its own.** Changing the digest, the snapshot, or a version in the Dockerfile
   changes the pictures, so that pull request regenerates `tests/pictures/reference/` in the same pull request
   (`coney-tools picture scenes --update`, in the container the job builds, or from the job's uploaded pictures) and

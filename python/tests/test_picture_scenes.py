@@ -225,7 +225,7 @@ def test_coneys_output_is_kept_beside_each_picture_it_draws(tmp_path: Path, scen
 def test_a_failed_run_keeps_coneys_output_and_names_its_log(tmp_path: Path, scenes_file: Path) -> None:
     fake = FakeConey(fail_on="second")
     out = tmp_path / "out"
-    with pytest.raises(ConfigError, match=r"second.*exit code 3.*no window.*second\.log"):
+    with pytest.raises(ConfigError, match=r"(?s)second.*exit code 3.*second\.log.*no window"):
         picture_scenes.run_scenes(
             scenes_file, coney=["coney"], references=references(tmp_path / "ref"), out=out, runner=fake
         )
@@ -241,7 +241,7 @@ def test_a_run_past_the_timeout_names_the_scene_and_keeps_the_output_so_far(tmp_
         raise subprocess.TimeoutExpired(list(command), 7, output=b"started\n", stderr=b"waiting for the display\n")
 
     out = tmp_path / "out"
-    with pytest.raises(ConfigError, match=r"flat: coney did not finish in 7 s.*waiting for the display.*flat\.log"):
+    with pytest.raises(ConfigError, match=r"(?s)flat: coney did not finish in 7 s.*flat\.log.*waiting for the display"):
         picture_scenes.run_scenes(
             scenes_file, coney=["coney"], references=references(tmp_path / "ref"), out=out, runner=hangs, timeout=7
         )
@@ -252,7 +252,12 @@ def test_a_run_past_the_timeout_names_the_scene_and_keeps_the_output_so_far(tmp_
 def test_the_timeout_must_be_positive(tmp_path: Path, scenes_file: Path) -> None:
     with pytest.raises(ConfigError, match="--timeout"):
         picture_scenes.run_scenes(
-            scenes_file, coney=["coney"], references=tmp_path / "ref", out=tmp_path / "out", runner=FakeConey(), timeout=0
+            scenes_file,
+            coney=["coney"],
+            references=tmp_path / "ref",
+            out=tmp_path / "out",
+            runner=FakeConey(),
+            timeout=0,
         )
 
 
