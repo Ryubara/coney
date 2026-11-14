@@ -148,7 +148,9 @@ def _draw(scene: Scene, coney: Sequence[str], target: Path, runner: Runner, cwd:
     try:
         done = runner(command, capture_output=True, text=True, timeout=timeout, check=False, cwd=cwd)
     except subprocess.TimeoutExpired as error:
-        # What Coney printed before it was stopped says how far it got: the last step it logged.
+        # What Coney printed before it was stopped says how far it got: the last step it logged. The timeout stops the
+        # launcher's process only: under `docker run` the container may outlive it, which is harmless because the
+        # command ends here at the first hung scene and CI's runner is thrown away after the job.
         output = _text(error.stdout) + _text(error.stderr)
         log.write_text(output, encoding="utf-8")
         raise ConfigError(
