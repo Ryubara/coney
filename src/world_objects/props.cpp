@@ -158,6 +158,21 @@ void dropBottle(anim::Vec3 point, anim::Quat rotation, ObjectWorld& world) {
 
 } // namespace
 
+int hitpointsWord(const ObjectType& type) {
+    // DynMasks_Init (0x003b7538) writes 1 when the type has hits, then 0 when it has hitpoints; with neither the word
+    // keeps the type's hitpoints, 0. DynMasks_OnHit writes it again only from the type of a next model a broken prop
+    // takes, which Coney's props do not take (masksHit()), so a prop keeps its init's word.
+    if (type.className == kDynMasksClass) {
+        return type.hitpoints == 0 && type.value != 0 ? 1 : 0;
+    }
+    // dyn_ctrl_box's init (0x003ee9d8) sets it through WorldObject_SetHitMode, whatever its CfgObj says.
+    if (type.className == kCtrlBoxClass) {
+        return kCtrlBoxHitWord;
+    }
+    // Every other world object keeps what WorldObject_Init (0x003918b8) wrote: its type's hitpoints (+0x58).
+    return type.hitpoints;
+}
+
 std::uint32_t bodyFlagsOf(std::uint16_t typeWord) {
     std::uint32_t flags = kBodyBase;
     for (const BodyBit& bit : kBodyBits) {

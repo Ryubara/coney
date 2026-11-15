@@ -1897,11 +1897,6 @@ level = "confirmed-code"
 coney = "src/scripting/object_bindings.cpp:makeGetHitpoints"
 status = "compared"
 
-[[function.gaps]]
-what = "the hitpoints of world objects other than doors and barriers"
-relation = "stand-in"
-issue = 1021
-
 [[function]]
 address = 0x00385950
 name = "Object_GetTypeBits"

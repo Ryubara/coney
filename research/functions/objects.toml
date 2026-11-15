@@ -204,7 +204,7 @@ role = "vtable `+0x4c`: message 2 to the object's handlers, out of its record, d
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/world_objects/doors.h:Doors::takeRemoved"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00395b70
@@ -875,11 +875,6 @@ status = "compared"
 what = "message `0x10`'s leaf pins"
 relation = "not-ported"
 issue = 710
-
-[[function.gaps]]
-what = "message `0x20`'s leaf removal"
-relation = "not-ported"
-issue = 1021
 
 [[function.gaps]]
 what = "message `0x3e`, the angle answered"

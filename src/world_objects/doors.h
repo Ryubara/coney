@@ -160,6 +160,7 @@ struct DoorLeaf {
     int swingTicks = 0;    ///< Ticks since the swing started (`+0x50`).
     bool turned = false;   ///< A new target waits for the leaf's next update (data `+0x14`).
     bool broken = false;   ///< A cabin door's leaf, flagged broken.
+    bool removed = false;  ///< Removed with its door (message `0x20`): gone for good.
 };
 
 /// `SpawnDoor`'s arguments.
@@ -294,7 +295,9 @@ class Doors {
     void remove(double handle);
     /// Message `0x19`: sets the hitpoints.
     void setHitpoints(double handle, int hitpoints);
-    /// `GetHitpoints`: the hitpoints mirror; 0 for no door.
+    /// The hitpoints in the door's data block (`+0x08`); 0 for no door. `GetHitpoints` reads the word `+0x128`
+    /// instead, which a swinging door's hits change only for the splintering types
+    /// (docs/research/objects.md#hitpoints-word).
     [[nodiscard]] int hitpoints(double handle) const;
     /// A barrier's message 10: whether it can be hit.
     void setHittable(double handle, bool hittable);
@@ -366,6 +369,8 @@ class Doors {
     static void hitSplinters(Door& door, const ObjectHit& hit, ObjectWorld& world);
     // The model stage a splintering door's hit crosses, read at `hitpoints`, its sound at `at`.
     static void takeModelStage(Door& door, int hitpoints, anim::Vec3 at, ObjectWorld& world);
+    // Message 0x20, which a door hears as it is deleted: a swinging door's leaves removed, each named in `removed`.
+    static void removeLeaves(Door& door, std::vector<double>& removed);
     // A barrier's hit: damage, and broken at no hitpoints.
     static void hitBarrier(Door& door, const ObjectHit& hit, ObjectWorld& world);
     // The ends of a splintering door and a cabin door: triangles off, wreck pieces, state 6.

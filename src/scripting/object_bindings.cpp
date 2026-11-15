@@ -8,6 +8,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -15,6 +16,9 @@
 #include "world_objects/level_objects.h"
 #include "world_objects/nav_links.h"
 #include "world_objects/object_breaks.h"
+#include "world_objects/object_types.h"
+#include "world_objects/props.h"
+#include "world_objects/spawn_records.h"
 
 namespace coney::script {
 
@@ -248,12 +252,49 @@ NativeFunction makeIsDoorOpen(const BindingContext& context) {
     };
 }
 
-// `GetHitpoints(object)`: a door's or barrier's hitpoints; 0 for anything else.
+// The hitpoints word (+0x128) of the door `door`: a barrier's and a splintering door's hitpoints, which their
+// WorldObject_SetHitMode calls keep there; any other door's is its type's, as WorldObject_Init left it (a cabin door's
+// hits change only its data block). 0 once it is removed (docs/research/objects.md#hitpoints-word).
+// @orig 0x00385918 Object_GetHitpoints (unknown)
+int doorHitpointsWord(const world_objects::Door& door) {
+    if (door.removed) {
+        return 0;
+    }
+    if (door.doorClass == world_objects::DoorClass::Barrier ||
+        door.setup.breaking == world_objects::DoorBreaking::Splinters) {
+        return door.hitpoints;
+    }
+    return door.maxHitpoints;
+}
+
+// `GetHitpoints(object)`: the world object's hitpoints word (+0x128): a door's (doorHitpointsWord()), or a leaf's or a
+// spawn record's object's as its type and class leave it (world_objects::hitpointsWord()); 0 for anything that is no
+// world object (a human, car, pane, flag or bad handle) or is gone (docs/research/objects.md#hitpoints-word).
 // @orig 0x00385918 Object_GetHitpoints (unknown)
 NativeFunction makeGetHitpoints(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
-        world_objects::LevelObjects* const objects = context->objects;
-        return binding::number(objects != nullptr ? objects->doors.hitpoints(binding::number(args, 0)) : 0);
+        const double handle = binding::number(args, 0);
+        // The handle resolves to a door, to one of its leaves, or to a spawn record's object (made live when it is
+        // not).
+        std::string_view typeName;
+        if (const LevelObjects* objects = context->objects) {
+            if (const world_objects::Door* door = objects->doors.find(handle)) {
+                return binding::number(doorHitpointsWord(*door));
+            }
+            if (const world_objects::Door* door = objects->doors.findByLeaf(handle)) {
+                const auto leaf = std::ranges::find(door->leaves, handle, &world_objects::DoorLeaf::handle);
+                typeName = leaf->model;
+            }
+        }
+        if (typeName.empty() && context->spawnRecords != nullptr) {
+            if (const world_objects::SpawnRecord* record = context->spawnRecords->resolve(handle)) {
+                typeName = record->typeName;
+            }
+        }
+        // Anything else is no world object, and answers 0; so does an object whose type no CfgObj made.
+        const world_objects::ObjectType* type =
+            typeName.empty() || context->objectTypes == nullptr ? nullptr : context->objectTypes->find(typeName);
+        return binding::number(type != nullptr ? world_objects::hitpointsWord(*type) : 0);
     };
 }
 

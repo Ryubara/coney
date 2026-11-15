@@ -351,7 +351,7 @@ page = "tasks.md#code-objects-dynamic-objects"
 role = "Destroys an object."
 level = "confirmed-code"
 coney = "src/scripting/world_bindings.cpp:makeObjDestroy"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00397330

@@ -35,6 +35,16 @@ inline constexpr std::string_view kCashRegisterPiece = "dyn_cashreg_c";
 inline constexpr std::string_view kFadeObjectClass = "fade_object";
 /// The material that wears on every contact whatever its class (`GUITAR`).
 inline constexpr std::uint8_t kGuitarMaterial = 154;
+/// The control box's class, whose init sets its hitpoints word to kCtrlBoxHitWord.
+inline constexpr std::string_view kCtrlBoxClass = "dyn_ctrl_box";
+inline constexpr int kCtrlBoxHitWord = 15;
+
+/// The hitpoints word (`+0x128`) `GetHitpoints` reads of a world object of `type` other than a door: what its class's
+/// init leaves there. The type's hitpoints (`WorldObject_Init`), kCtrlBoxHitWord for a `dyn_ctrl_box`, and for a
+/// `dyn_masks` prop its hit mode: 1 when it has hits and no hitpoints (each hit takes one point), else 0.
+/// Research: docs/research/objects.md#hitpoints-word
+/// @orig 0x00385918 Object_GetHitpoints (unknown)
+[[nodiscard]] int hitpointsWord(const ObjectType& type);
 
 /// A collision body's flags from its type's word `+0x5e`: bit `0x1` gives `0x2`, `0x2` → `0x4`, `0x4` → `0x10`,
 /// `0x8` → `0x8`, `0x10` → `0x40`, `0x20` → `0x20`, `0x40` → `0x2000`, `0x80` → `0x10000`, `0x100` → `0x20000`, on top

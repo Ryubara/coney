@@ -1009,8 +1009,8 @@ void Doors::hitBarrier(Door& door, const ObjectHit& hit, ObjectWorld& world) {
 // Message 0x15: flag 0x40 and update interval 2 (docs/research/objects.md#door-states).
 // @orig 0x003fb8d0 DynDoorSwinging_OnMessage (unknown)
 void Doors::destroy(double handle) {
-    // Not ported, from the same message handler: 0x10's pinning of the leaves for streaming (#710), 0x20's removal of
-    // the leaves (#1021) and 0x3e's answer of the angle (#707).
+    // Not ported, from the same message handler: 0x10's pinning of the leaves for streaming (#710) and 0x3e's answer
+    // of the angle (#707). Its 0x20, the leaves' removal, is removeLeaves().
     Door* door = findMutable(handle);
     if (door == nullptr || door->doorClass != DoorClass::Swinging || door->ended) {
         return;
@@ -1031,7 +1031,40 @@ std::size_t Doors::destroyInRadius(anim::Vec3 centre, float radius) {
     return count;
 }
 
-void Doors::remove(double /*handle*/) {}
+void Doors::remove(double handle) {
+    Door* door = findMutable(handle);
+    if (door == nullptr || door->removed) {
+        return;
+    }
+    // No settle to cancel: flag 0x40000 marks an object settling after a flight's landing, and a door never flies.
+    // Its handlers hear message 2 and its spawn record is forgotten: takeRemoved()'s caller does both (a door has no
+    // record).
+    m_removed.push_back(door->handle);
+    // The delete: the door's task is gone for good, and it hears message 0x20 (a script's ObjDestroy runs while the
+    // level plays, never as it is torn down, when the delete sends nothing).
+    door->removed = true;
+    door->ended = true;
+    removeLeaves(*door, m_removed);
+}
+
+// Message 0x20, sent by the door's delete: unless it is dyn_door_stall, its left leaf and then its right are removed
+// (WorldObject_Remove, each heard as message 2 by its handlers); a leaf already gone no longer resolves and is skipped
+// (docs/research/objects.md#door-removal).
+// @orig 0x003fb8d0 DynDoorSwinging_OnMessage (unknown)
+void Doors::removeLeaves(Door& door, std::vector<double>& removed) {
+    // A barrier's and a sliding door's handlers do nothing with 0x20 (0x003b3158, 0x003f5ef0): a sliding door's leaves
+    // outlive it.
+    if (door.doorClass != DoorClass::Swinging || door.type == kStall) {
+        return;
+    }
+    for (DoorLeaf& leaf : door.leaves) {
+        if (leaf.removed) {
+            continue;
+        }
+        leaf.removed = true;
+        removed.push_back(leaf.handle);
+    }
+}
 
 // Message 0x19: the hitpoints, a swinging door's or a barrier's (docs/research/objects.md#door-states,
 // docs/research/objects.md#barriers).
@@ -1043,11 +1076,9 @@ void Doors::setHitpoints(double handle, int hitpoints) {
     }
 }
 
-// The hitpoints Object_GetHitpoints reads (object +0x128), 0 for no door (docs/research/objects.md#doors).
-// @orig 0x00385918 Object_GetHitpoints (unknown)
+// The hitpoints in a door's data block (+0x08), 0 for no door (docs/research/objects.md#doors).
+// @coney-only an accessor of the data block's hitpoints, which the tests read
 int Doors::hitpoints(double handle) const {
-    // Stand-in (#1021): the original reads any world object's +0x128 (a prop's hitpoints too); Coney answers only for
-    // doors and barriers, 0 for anything else.
     const Door* door = find(handle);
     return door != nullptr ? door->hitpoints : 0;
 }
@@ -1193,7 +1224,9 @@ const Door* Doors::findByTriangle(std::uint32_t triangle) const {
 // @coney-only a lookup by leaf handle
 const Door* Doors::findByLeaf(double leaf) const {
     const auto found = std::ranges::find_if(m_doors, [leaf](const Door& door) {
-        return std::ranges::find(door.leaves, leaf, &DoorLeaf::handle) != door.leaves.end();
+        // A leaf removed with its door no longer resolves.
+        return std::ranges::any_of(door.leaves,
+                                   [leaf](const DoorLeaf& made) { return made.handle == leaf && !made.removed; });
     });
     return found == m_doors.end() ? nullptr : &*found;
 }
@@ -1203,9 +1236,11 @@ const Door* Doors::findByLeaf(double leaf) const {
 std::vector<DoorDraw> doorDraws(const Doors& doors) {
     std::vector<DoorDraw> draws;
     for (const Door& door : doors.doors()) {
-        if (door.ended || door.hidden || door.removed) {
+        if (door.hidden) {
             continue;
         }
+        // A sliding door's leaves are objects of their own, which outlive its removal
+        // (docs/research/objects.md#door-removal).
         if (door.doorClass == DoorClass::Sliding && !door.slidingLeaves.empty()) {
             for (const SlidingLeaf& leaf : door.slidingLeaves) {
                 draws.push_back(DoorDraw{.handle = leaf.handle,
@@ -1218,7 +1253,15 @@ std::vector<DoorDraw> doorDraws(const Doors& doors) {
             continue;
         }
         if (door.doorClass == DoorClass::Swinging) {
+            // A broken door's leaves went at its break. Stand-in (#707): dyn_door_liz's and dyn_door_dclub's went at a
+            // model stage before it. A removed door's leaves went with it, all but dyn_door_stall's.
+            if (door.state == door_state::kBroken) {
+                continue;
+            }
             for (const DoorLeaf& leaf : door.leaves) {
+                if (leaf.removed) {
+                    continue;
+                }
                 draws.push_back(DoorDraw{.handle = leaf.handle,
                                          .modelHash = crc32(leaf.model),
                                          .fallbackHash = crc32(fallbackModelOf(door.type)),
@@ -1226,6 +1269,9 @@ std::vector<DoorDraw> doorDraws(const Doors& doors) {
                                          .rotation = leaf.rotation,
                                          .tint = door.tint});
             }
+            continue;
+        }
+        if (door.ended || door.removed) {
             continue;
         }
         // dyn_door_vargas swaps to its broken model at the end (a broken barrier of another class is hidden).

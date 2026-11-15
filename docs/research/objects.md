@@ -2150,8 +2150,11 @@ Coney's stand-ins for the world objects, where this page is silent:
   pair and shards drawn from the game's random numbers.
 - **Doors** (`doors.h`): the per-type set-up, leaves, triangle flags, the state machine and its timing in ticks, the
   state commands, `DoorOpen` away from the human, `DoorOpenDegree`, pickable doors, message `0x15`, the breakable
-  types' hits and the barriers. **Links** (`nav_links.h`): retag, open and close by number (the door's hole found as
-  [A door's hole](#nav-links) gives, `NavLinks::holeOf()`, `world::PathMap::holeAt()`), nearest by position. The
+  types' hits and the barriers. `ObjDestroy(door)` removes a door (`Doors::remove()`, named by `takeRemoved()`), and its
+  message `0x20` its leaves, all but `dyn_door_stall`'s, which stays drawn; a broken swinging door draws no leaves.
+  `GetHitpoints` answers the [hitpoints word](#hitpoints-word) of a door, a leaf or any spawn record's object
+  (`world_objects::hitpointsWord()`). **Links** (`nav_links.h`): retag, open and close by number (the door's hole
+  found as [A door's hole](#nav-links) gives, `NavLinks::holeOf()`, `world::PathMap::holeAt()`), nearest by position. The
   edge's door number is decoded into `world::PathEdge::door`.
 - **Bindings** (`repo:src/scripting/object_bindings.h`): the 22 glass, door, link and lock-pick bindings; `SpawnDoor`
   reads its type from the recorded `CfgObj` calls.
@@ -2311,6 +2314,13 @@ the drawer and lifts the register with clip 504 (disc checks, 2026-10-08).
 - Trash props ([Trash cans and bags](#trash-props)): what sets game-state set 3's bits. (Message `0x20` is the
   delete's, [Removing a door](#door-removal).)
 - `dyn_door_vargas`' second object, and the leaf models of `dyn_door_chainlnk_pick` (no `dyn_dr_chainlnk_pick` record).
+- **`ObjDestroy` of something a human wears or carries, or by message**{#q-objdestroy-held}: `Obj_Destroy`
+  (`0x00396c58`) knocks a hat off (pick-up animation 6, `Human_KnockOffHat` `0x00258330`), releases carried props
+  (animation 5, `Human_ReleaseCarriedProps` `0x0024ce40`) or drops a held object (`Human_DropHeld`); Coney's binding
+  only makes the holder let go of it, as `HuDropWeapon` does. With its second argument it sends the destroy message
+  `0x15`, which Coney handles only for an objective marker and a swinging door; any other object goes at once, where the
+  original's class answers the message (a `dyn_masks` prop hits itself, [Breakable props](#breakable-props)). Which
+  scripts destroy a worn hat or a carried prop, or another class by message, is not checked.
 - Where a cabin door's wreck pieces and a barrier's boards appear (its leaves are removed at the break,
   [Breaking a door](#door-break)).
 - Cash register ([Script types](script-types.md#dyn-cashreg)): how many throws or swings break a lifted register at
