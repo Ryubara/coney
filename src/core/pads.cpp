@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "core/pads.h"
 
+#include <array>
 #include <cstddef>
 
 #include "core/assert.h"
@@ -17,6 +18,13 @@ void Pads::update(const PortSamples& samples) {
     for (std::size_t port = 0; port < kPadPorts; ++port) {
         m_records.at(recordOfPort(port)).update(samples.at(port));
     }
+}
+
+void Pads::turnSticks(StickTurnCameras& /*cameras*/) {}
+
+const std::array<float, 4>& Pads::keptOrientation(std::size_t player) const {
+    CONEY_ASSERT(player < kPlayers);
+    return m_kept.at(player);
 }
 
 const Pad& Pads::record(std::size_t index) const {

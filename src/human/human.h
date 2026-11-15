@@ -109,6 +109,10 @@ struct PlayerRecord {
     /// The brain's move, which replaces the stick while set. **Coney choice**: kept beside the record, as Coney's
     /// locomotion reads only the record; the original keeps it in the brain.
     std::optional<BrainMove> move;
+    /// The pad record's left stick already turned by the player's camera (`+0x00`, `+0x04`), when the pads update
+    /// turned it in play (Pads::turnSticks()): the stick's angle is read from it, not from `cameraForward`
+    /// (docs/research/input.md#turned-stick). None for a brain or a pad no player's camera turned.
+    std::optional<std::array<float, 2>> turnedStick;
 };
 
 /// The record part of `input`, a pad's (so pad-driven).

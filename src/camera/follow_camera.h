@@ -346,6 +346,13 @@ class FollowCamera {
     /// @orig 0x0011c638 Camera_SetFollowPosition (unknown)
     void placeAt(anim::Vec3 position);
 
+    /// Whether the pads update takes this camera's orientation afresh to turn its player's stick (`+0x473`, 1 when
+    /// made) rather than reuse the orientation it kept for him (docs/research/input.md#turned-stick).
+    [[nodiscard]] bool takesStickFrameAfresh() const { return m_stickFrameAfresh; }
+    /// Sets that flag: the pads update sets it when the player's stick is at rest; the co-op view change
+    /// (`0x001276a0`, two player cameras only, which Coney does not have) is the one write that can clear it.
+    void setStickFrameAfresh(bool afresh) { m_stickFrameAfresh = afresh; }
+
     /// Where the camera is.
     [[nodiscard]] anim::Vec3 position() const { return m_position; }
     /// Where it wants to be (`+0x250`).
@@ -512,7 +519,8 @@ class FollowCamera {
     bool m_viewLatch = false;          // +0x45d
     int m_standingUpdates = 0;         // updates in a row the target has stood (gait 0, on the ground)
     float m_lastAutoTurn = 0.0F;
-    bool m_autoAdjust = true; // the camera's player's Auto Adjust option (0x0050b240 + its pad)
+    bool m_stickFrameAfresh = false; // +0x473
+    bool m_autoAdjust = true;        // the camera's player's Auto Adjust option (0x0050b240 + its pad)
     float m_lastFrameTurn = 0.0F;
     float m_configuredPitch;         // +0x30c
     float m_fov;                     // the field of view now

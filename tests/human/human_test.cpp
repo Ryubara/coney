@@ -2,6 +2,7 @@
 #include "human/human.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <memory>
@@ -287,6 +288,24 @@ TEST_CASE("the stick is camera-relative: up walks away from the camera", "[human
     CHECK(human.position().x < 38.0F);
     CHECK(human.position().y == Approx(40.0F).margin(0.3));
     CHECK(human.heading() == Approx(std::numbers::pi_v<float> / 2.0F).margin(1e-3));
+}
+
+TEST_CASE("a record with the pad's turned stick follows it, not the camera's view", "[human]") {
+    // Expected: input.md#turned-stick, confirmed (code)
+    // PlayerRecord_Update reads the stick's angle from the pad record's turned stick (+0x00, +0x04).
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
+    // The view looks along +y, but the turned stick points along -x.
+    coney::human::PlayerRecord record;
+    record.stickY = 0.6F;
+    record.cameraForward = kAlongY;
+    record.turnedStick = std::array<float, 2>{-0.6F, 0.0F};
+    human.record() = record;
+    human.animate(mesh.get());
+    human.updateState(mesh.get());
+    CHECK(human.intent().angle == Approx(std::numbers::pi_v<float>));
+    CHECK(human.intent().magnitude == Approx(0.6F));
 }
 
 TEST_CASE("a fall lands on the first update that starts 0.17 m or more below the floor, falling through until then",

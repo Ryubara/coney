@@ -118,6 +118,8 @@ void Pad::update(const PadSample& sample, const std::optional<StickTurn>& turn) 
     m_ring.at(m_current) = keepOneDirection(sample.buttons, m_pressure);
 }
 
+void Pad::turnStick(const StickTurn& /*turn*/) {}
+
 void Pad::countHolds(std::uint16_t word) {
     for (std::size_t i = 0; i < m_holdCounts.size(); ++i) {
         std::uint8_t& count = m_holdCounts.at(i);

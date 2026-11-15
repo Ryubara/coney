@@ -414,7 +414,8 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
                                           .padCommand = padCommand,
                                           .buttons = buttons,
                                           .padDriven = false,
-                                          .move = std::nullopt};
+                                          .move = std::nullopt,
+                                          .turnedStick = std::nullopt};
     } else {
         // Only the view and the brain's move survive; the pad's fields read as released.
         PlayerRecord idle;

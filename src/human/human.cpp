@@ -193,7 +193,8 @@ PlayerRecord recordOf(const HumanInput& input) {
                         .padCommand = combat::command::kNone,
                         .buttons = input.buttons,
                         .padDriven = true,
-                        .move = std::nullopt};
+                        .move = std::nullopt,
+                        .turnedStick = std::nullopt};
 }
 
 // @coney-only the trace's names

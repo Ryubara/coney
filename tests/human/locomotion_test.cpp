@@ -260,3 +260,16 @@ TEST_CASE("an AI starts at 2 m/s, gains 1.067 an update until 2 m/s short, then 
     CHECK(aiApproachSpeed(7.8F, 0.0F) == Approx(7.8F - 32.0F / 30.0F));
     CHECK(aiApproachSpeed(1.6F, 1.0F) == Approx(1.0F));
 }
+
+TEST_CASE("a pad's turned stick gives its angle and length as they stand, the length at most 1", "[locomotion]") {
+    // Expected: input.md#turned-stick, confirmed (code)
+    // PlayerRecord_Update stores atan2(+0x04, +0x00) and the length clamped to 1; with input locked (+0x1f), pi/2 and
+    // 0.
+    auto yard = coney::human::turnedStickIntent(0.7156380F, -0.0886695F);
+    CHECK(yard.angle == Approx(std::atan2(-0.0886695F, 0.7156380F)));
+    CHECK(yard.magnitude == Approx(0.7211103F));
+    CHECK(coney::human::turnedStickIntent(1.0F, 1.0F).magnitude == 1.0F);
+    auto locked = coney::human::turnedStickIntent(0.7F, 0.1F, true);
+    CHECK(locked.magnitude == 0.0F);
+    CHECK(locked.angle == Approx(kPi / 2.0F));
+}
