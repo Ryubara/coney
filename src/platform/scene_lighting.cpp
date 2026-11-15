@@ -226,7 +226,10 @@ void SceneLighting::useLights(const graphics::LightSelection& selection) {
 }
 
 void SceneLighting::recordSelection(rw::Atomic* atomic) {
-    if (!m_pending) {
+    // A second layer of a model (a human's blood pass) adds no row: the original selects once per human
+    // (HumanRender_Draw's one call, docs/research/lighting.md#select), and Coney's second selection repeats the first.
+    if (!m_pending || atomic == m_meshLayer) {
+        m_pending.reset();
         return;
     }
     // The caller from the draw kind the play mode names (cars are drawn among the objects), and the inputs each draw
@@ -249,7 +252,6 @@ void SceneLighting::recordSelection(rw::Atomic* atomic) {
     m_frame.selections.push_back(graphics::frameSelectionOf(m_lighting.lights, caller, distSq, sphere, objects,
                                                             pointLights, false, human, *m_pending));
     m_pending.reset();
-    m_hiddenHuman = false;
 }
 
 void SceneLighting::renderInRig(rw::Atomic* atomic) {

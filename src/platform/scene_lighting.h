@@ -97,8 +97,8 @@ class SceneLighting {
     /// A simulation step ran: *Hold lighting* moves on to the next frame's moment.
     /// @coney-only the lighting lab's Hold lighting (docs/guides/realtime-lighting.md#lab)
     void stepped() { m_hold.stepped(); }
-    /// Whether the next human atomic drawn is hidden in a shadow (its selection looks for no point light), for the
-    /// lighting frame's row of it; the caller of drawHumanAtomic() says so first.
+    /// Whether the human atomics drawn from now on are hidden in a shadow (their selection looks for no point light),
+    /// for the lighting frame's rows of them; the caller of drawHumanAtomic() says so before each human.
     /// @coney-only the lighting frame's selection rows
     void noteHiddenHuman(bool hidden) { m_hiddenHuman = hidden; }
     /// Whether the humans' blob shadows are drawn: off only under the lighting lab's layer.

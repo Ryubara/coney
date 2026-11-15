@@ -132,7 +132,7 @@ inspector's ([Adding a feature](debug-menu.md#adding-a-feature)). In test mode e
 
 | Group | What it shows or does |
 | --- | --- |
-| Frame | **Hold lighting**: the flicker, the pulse and every atomic's selection stay as they are on this step while the game is paused, so one frame can be studied; *Step one* on the Time page moves it on by one step. **Light from**: the game camera (the default) or the view camera; the original culls and caps from the player camera, so with the free camera flying the lighting stays the game's. **Dump this frame**: writes the lighting frame, every light and every atomic's selection, as rows in the same columns as the original's trace, to the run log folder, for the comparison tool |
+| Frame | **Hold lighting**: the flicker, the pulse and every atomic's selection stay as they are on this step while the game is paused, so one frame can be studied; *Step one* on the Time page moves it on by one step. **Light from**: the game camera (the default) or the view camera; the original culls and caps from the player camera, so with the free camera flying the lighting stays the game's (as built, the cull only: [What is built](#lab-built)). **Dump this frame**: writes the lighting frame, every light and every atomic's selection, as rows in the same columns as the original's trace, to the run log folder, for the comparison tool |
 | Counts | Watches: light records in use (of 512), visible point lights (objects, world), coronas drawn, atomics lit, humans by number of lights (3 to 6), selections whose list was full |
 | Lights | Every light record, one line each: index, kind (ambient, directional, point, spot, corona only), what it lights (world, objects, both), on or off, base colour and current colour (with brightness and offset), radius, corona (rectangle, height, pull, size), flicker mode and its timer, and its **source**: built in (A, B, the glow), `global.lua`'s `LightData`, the level script and function that called `SetLight`, a chunk `0x4B` glow, or a light task (`sub_fire2_light`). Choosing one marks it in the scene, moves the view camera to it, and offers on, off, colour and radius as debug edits |
 | Selection | For the Entity inspector's selection (a human, object or car) or the sector under the view's centre: its lights this step in order, each with its kind, its score, where it came from (the copied list, the glow, the point lists) and whether it replaced another; the cap and the distance that set it; the point lights that overlapped and were dropped. Lines from the atomic's sphere to each chosen light |
@@ -177,7 +177,8 @@ scripted pad through the input gate and draw it in both front ends (`repo:tests/
 - **Debug draw**: point lights as spheres, corona-only lights as crosses, directional lights as arrows from the light
   view, the cull's reach, the Selection group's sphere with a line to each point light it chose, and the light marked
   in the Lights group. Edits (on, radius, colour) are queued and applied between two steps.
-- **Rows by caller.** Coney draws cars as objects, so their rows say `object` (the original's car caller passes
+- **Rows by caller.** A human's blood layer, which Coney lights with a second selection, adds no row: the original
+  selects once per human. Coney draws cars as objects, so their rows say `object` (the original's car caller passes
   `distSq` 0); every row's `pulse` is 0, as no Coney object uses light C yet.
 
 **Not built yet**, each shown as such on the page: the prelighting layer and the runtime-only, runtime-share,
