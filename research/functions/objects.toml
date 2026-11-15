@@ -651,7 +651,7 @@ coney = "src/world_objects/doors.h:Doors::openBy"
 status = "compared"
 
 [[function.gaps]]
-what = "the destroy, detach and data messages"
+what = "the detach and data messages"
 relation = "not-ported"
 issue = 707
 

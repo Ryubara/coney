@@ -662,8 +662,8 @@ void Doors::openToDegree(double handle, float degrees, ObjectWorld& world) {
 void Doors::openBy(double handle, anim::Vec3 humanAt, ObjectWorld& world) {
     if (Door* door = findMutable(handle)) {
         // A sliding door opened by a human takes command 2 (DynDoorSliding_OnMessage `0x0b`). Not ported from that
-        // handler: message 8's detach from the parent, 0x15's own destroy and 0x3e's data (#707), 0x10 and 0x13's
-        // pinning of the leaves for streaming (#710).
+        // handler: message 8's detach from the parent and 0x3e's data (#707), 0x10 and 0x13's pinning of the leaves for
+        // streaming (#710). Its 0x15, the door's own removal, is in destroy().
         if (door->doorClass == DoorClass::Sliding) {
             runSlidingCommand(*door, door_command::kOpen, world);
             return;
