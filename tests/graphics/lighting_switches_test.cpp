@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The lighting lab's drawing-side switches (docs/guides/realtime-lighting.md#lab): the layers that leave lights out of
 // a draw or draw them with another colour, the views, and Hold lighting, which keeps one moment's lighting while no
-// step runs. Synthetic lights only; nothing here reaches the simulation.
+// step runs. Synthetic lights only; nothing here reaches the simulation, and the page that sets them is tested in
+// tests/debug/lighting_page_test.cpp.
 #include "graphics/lighting_switches.h"
 
 #include <cstdint>

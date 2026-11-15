@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The lighting frame (docs/engine/renderer.md#lighting, docs/guides/realtime-lighting.md#the-lighting-frame): the
 // lights the viewport's cull kept with this step's flicker colour, the level's shadow light and who casts a shadow
-// (docs/research/xbox-lighting.md#shadow-light), and that none of it reaches the simulation. Synthetic lights only.
+// (docs/research/xbox-lighting.md#shadow-light), each atomic's selection row as the lighting lab dumps it, and that
+// none of it reaches the simulation. Synthetic lights only.
 #include "graphics/lighting_frame.h"
 
 #include <cmath>

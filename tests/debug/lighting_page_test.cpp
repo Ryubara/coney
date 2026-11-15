@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The Lighting page, the lighting lab (docs/guides/realtime-lighting.md#lab): its groups over a fake play mode with a
-// synthetic level's lights and lighting frame, driven by a scripted pad through the input gate as a player drives the
-// menu, drawn by both front ends from the one model, and *Dump this frame*'s files in the columns of the original's
-// trace. No game, no disc.
+// The Lighting page (src/debug/pages_lighting.cpp), the lighting lab (docs/guides/realtime-lighting.md#lab): its groups
+// over a fake play mode with a synthetic level's lights and lighting frame, driven by a scripted pad through the input
+// gate as a player drives the menu, drawn by both front ends from the one model, and *Dump this frame*'s files in the
+// columns of the original's trace. No game, no disc.
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
