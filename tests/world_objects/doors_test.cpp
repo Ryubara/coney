@@ -491,6 +491,33 @@ TEST_CASE("a removed swinging door takes its leaves with it (message 0x20), but 
     CHECK(draws[0].handle == leaf);
 }
 
+TEST_CASE("the destroy message removes a sliding door, whose leaves stay", "[world_objects][doors]") {
+    // Expected: objects.md#door-removal, confirmed (code)
+    coney::test::ObjectWorldFixture fixture;
+    Doors doors;
+    const ObjectTypeInfo info{.className = "dyn_door_sliding",
+                              .hitpoints = 0,
+                              .size = {3.0F, 0.2F, 3.0F},
+                              .material = 9,
+                              .leafWidth = 1.5F,
+                              .property6 = 0.05F,
+                              .property7 = 0.0F,
+                              .property8 = 3.0F,
+                              .objectType = 0};
+    const double handle =
+        doors
+            .spawn(
+                fixture.handle(), at("dyn_door_rollup"), &info, [&fixture] { return fixture.handle(); }, fixture.world)
+            .handle;
+    const double leaf = doors.find(handle)->slidingLeaves[0].handle;
+    doors.destroy(handle);
+    CHECK(doors.takeRemoved() == std::vector<double>{handle});
+    // Its handler has nothing for message 0x20: the leaf is an object of its own and stays drawn.
+    const std::vector<coney::world_objects::DoorDraw> draws = coney::world_objects::doorDraws(doors);
+    REQUIRE(draws.size() == 1);
+    CHECK(draws[0].handle == leaf);
+}
+
 TEST_CASE("a barrier: links charged through, boards, hidden, then removed with its body at its next update",
           "[world_objects][doors]") {
     // Expected: objects.md#barriers, confirmed (code)

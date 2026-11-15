@@ -221,6 +221,31 @@ TEST_CASE("GetHitpoints keeps a cabin door's type hitpoints through its hits; a 
     CHECK(h.first("GetHitpoints", {Value(liz)}).number() == 96.0);
 }
 
+TEST_CASE("GetHitpoints answers 0 for a broken cabin door and its leaves", "[object_bindings]") {
+    // Expected: objects.md#hitpoints-word, confirmed (runtime)
+    Harness h;
+    h.first("CfgObj", cfgObj("dyn_door_cabin_a", "dyn_door_swinging", 12));
+    h.first("CfgObj", cfgObj("dyn_dr_cabin_a", "sub_swinging_door", 100));
+    const double cabin =
+        h.first("SpawnDoor", {str("dyn_door_cabin_a"), list({4, 2, 0}), list({0, 0, 0, 1}), list({0, 1}), Value(7.0)})
+            .number()
+            .value_or(0.0);
+    const double left = h.first("GetLeftDoorHandle", {Value(cabin)}).number().value_or(0.0);
+    CHECK(h.first("GetHitpoints", {Value(left)}).number() == 100.0);
+    // Three destroy messages, each a self-hit of 4 points: the third breaks it; its next update removes it.
+    for (int message = 0; message < 3; ++message) {
+        h.first("BreakObjectsInRadius", {Value(cabin), Value(0.5)});
+        for (int tick = 0; tick < 10; ++tick) {
+            h.objects.tick();
+        }
+    }
+    for (int tick = 0; tick < 400; ++tick) {
+        h.objects.tick();
+    }
+    CHECK(h.first("GetHitpoints", {Value(cabin)}).number() == 0.0);
+    CHECK(h.first("GetHitpoints", {Value(left)}).number() == 0.0);
+}
+
 TEST_CASE("ObjDestroy of a swinging door removes its leaves, but not dyn_door_stall's", "[object_bindings]") {
     // Expected: objects.md#door-removal, confirmed (runtime)
     Harness h;
