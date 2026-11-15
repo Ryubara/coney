@@ -1263,12 +1263,12 @@ way round; 1,328 have `firstGlyph` -1. The table in `warriors.glr` has 576 recor
 whose size equals the record's `size`, and records 0, 1, 3, 7, 8, 10, 13 and 51 are the CRC-32s of `part_page0`,
 `part_page1`, `menu_system`, `part_fire`, `lighting`, `hud_minigames`, `big_font` and `legal_screen`, as above.
 
-- **Sprite batches** (`src/graphics/sprite_batch.h`, `SpriteBatch`): a sheet, a capacity and a depth;
-  `addSprite` (`0x00182de0`) appends a [sprite record](#sprite-record) of format 0 (position in overlay-camera space,
-  size, texture rectangle, colour) and drops it past the capacity, returning false; `render` (`0x00197168`) projects
-  each sprite through the overlay camera ([Graphics](graphics.md#coneys-implementation)), centred on its position,
-  and draws the batch as one call with the sheet's texture and source-alpha blending. The largest count seen is kept
-  as at `+0x74`.
+- **Sprite batches** (`src/graphics/sprite_batch.h`, `SpriteBatch`): a sheet, a capacity and a depth; `addSprite`
+  (`Instance_AddSprite`, `0x00182de0`) appends a [sprite record](#sprite-record) of format 0 (position in overlay-camera
+  space, size, texture rectangle, colour) and drops it past the capacity, returning false; `render` (`Instance_Render`,
+  `0x00197168`) projects each sprite through the overlay camera ([Graphics](graphics.md#coneys-implementation)), centred
+  on its position, and draws the batch as one call with the sheet's texture and source-alpha blending. The largest count
+  seen is kept as at `+0x74`.
 - **The 2D pass** (`OverlayPass`): batches queued for the frame, drawn in [ascending key](#draw-order) (the depth
   by default), then every batch and the queue emptied (`0x00185d20`, the comparator `0x00184890`, `0x00185cc8`).
   Coney's choices: batches with equal keys keep the order they were queued in (the original's `qsort` promises no
@@ -1278,21 +1278,20 @@ whose size equals the record's `size`, and records 0, 1, 3, 7, 8, 10, 13 and 51 
   through a batch and the 2D pass ([Running Coney](../guides/running.md#run-coney)): `menu_system` (6
   rectangles over a 512 × 256 texture) and `big_font` (262 glyphs) show correctly on the NTSC-U disc.
 
-- **UI strings** (`src/gui/global_strings.h`, `src/scripting/config_strings.h`), loaded [as the game
-  does](#strings): in a game run, by the legal screen's preloads in the script system
-  ([Scripts](scripting.md#coneys-implementation)); for `--view-text` and the strings disc check, by a short load that
-  runs the game's own bytecode, `enum_preload.lua` and then `config_preload2.lua`, in its Lua 4.0 virtual machine
-  (`src/scripting/lua_vm.h`, [Front end](frontend.md#coneys-implementation)) with `GetLanguage` (the language field's
-  value, 0 English to 4 German), `GetPlatform` and `doFile` provided. `doFile` runs
-  `config_strings_<code>.lua`, and the script's loops pass every entry of `GSTRING.HUD`, `GSTRING.CRIME`, `TSTRING`,
-  `GSTRING.COMMAND` and `GSTRING.ANNOUNCE` to `CfgHUDMessage` (`0x0035e5d0`), `CfgCrimeMessage`,
-  `CfgTutorialMessage`, `CfgWarriorCommand` and `CfgAnnounceMessage`, which fill `GlobalStrings`; `get(id)`
-  (`0x0019ee70`) returns a HUD string or an empty one, `set` (`0x0019eea0`) stores one. **The id is the table key the
-  script gives**, explicit in the files (`GSTRING.HUD[n] = ...`), not the order of the entries. The other ~1,800
-  binding calls of `config_preload2.lua` (character, weapon and sound configuration) are skipped as no-ops.
-  Coney's choices: every table is a map, so any id works (the original's HUD array at `0x00600048` has a size not
-  yet known); `doFile("config_strings_en")` adds the `.lua` the WAD entry has, as the original does; `GetPlatform`
-  returns 1, as on the PS2 (below).
+- **UI strings** (`src/gui/global_strings.h`, `src/scripting/config_strings.h`), loaded [as the game does](#strings): in
+  a game run, by the legal screen's preloads in the script system ([Scripts](scripting.md#coneys-implementation)); for
+  `--view-text` and the strings disc check, by a short load that runs the game's own bytecode, `enum_preload.lua` and
+  then `config_preload2.lua`, in its Lua 4.0 virtual machine (`src/scripting/lua_vm.h`, [Front
+  end](frontend.md#coneys-implementation)) with `GetLanguage` (the language field's value, 0 English to 4 German),
+  `GetPlatform` and `doFile` provided. `doFile` runs `config_strings_<code>.lua`, and the script's loops pass every
+  entry of `GSTRING.HUD`, `GSTRING.CRIME`, `TSTRING`, `GSTRING.COMMAND` and `GSTRING.ANNOUNCE` to `CfgHUDMessage`
+  (`0x0035e5d0`), `CfgCrimeMessage`, `CfgTutorialMessage`, `CfgWarriorCommand` and `CfgAnnounceMessage`, which fill
+  `GlobalStrings`; `get(id)` (`0x0019ee70`) returns a HUD string or an empty one, `set` (`GlobalString_Set`,
+  `0x0019eea0`) stores one. **The id is the table key the script gives**, explicit in the files (`GSTRING.HUD[n] =
+  ...`), not the order of the entries. The other ~1,800 binding calls of `config_preload2.lua` (character, weapon and
+  sound configuration) are skipped as no-ops. Coney's choices: every table is a map, so any id works (the original's HUD
+  array at `0x00600048` has a size not yet known); `doFile("config_strings_en")` adds the `.lua` the WAD entry has, as
+  the original does; `GetPlatform` returns 1, as on the PS2 (below).
 
 **Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[disc][strings]"` with `CONEY_DISC` set loads all five
 languages. HUD strings: English, Spanish and German 388, French 386, Italian 387, with ids 0-388 (id 372 is unset in
@@ -1311,7 +1310,7 @@ runs about 42,600 Lua instructions and skips 1,796 binding calls.
   splits a text at `<` ... `>`. A tag name compares exactly; a `<` with no `>` after it is text; a name not in the
   table is skipped and counted. All 66 names are known, the HUD icon tags 22-32 with their characters;
   `stickCharacter` gives an animated stick tag's character for the text's time (its own first, Coney's choice).
-- **Layout** (`src/gui/text_layout.h`, `layoutText`, `TextWidget_Layout` `0x001b9600`): measures each line's runs, grows
+- **Layout** (`src/gui/text_layout.h`, `layoutText`, `MessageHUD_Layout` `0x001b9600`): measures each line's runs, grows
   the box to the widest line, places each line by its alignment and draws each run with `Font::draw` into sprites tagged
   with their font slot; `addTextSprites` hands them to each slot's batch. It implements `COLOR` (alpha × the widget's
   fade), `SIZE`, `PULSE`, `DISPLAYTIME` (hidden after, fading over the last second), `BIGFONT` (slot 6),
@@ -1335,21 +1334,21 @@ runs about 42,600 Lua instructions and skips 1,796 binding calls.
   (`0x001c81e8`) and update (`0x001c83c8`) with the results "stay" (`-0x100`) and "back" (`-0xff`); a code without a
   transition is ignored; the flow is done when its stack is empty. Coney's choice: `exit` is called only on an entered
   screen, so unwinding exits the top screen alone (the covered ones were exited when they were covered).
-- **Widgets** (`src/gui/widget.h` and beside it): `Widget` (`0x001a8e30`) with `init` once (until `shutdown`),
+- **Widgets** (`src/gui/widget.h` and beside it): `Widget_Construct` (`0x001a8e30`) with `init` once (until `shutdown`),
   `update` with the frame's game time and the player's pad, `render` into batches, and visibility. `BaseWidget`
   (`0x001a1bf8`, its sprite `0x001a2690`): one rectangle of a sheet as one sprite, after the black shadow at (0.0025,
   0.004) with alpha × 128 / 255. The classes of [The widget classes](#widget-classes), as written there:
   `BaseWidget` (setup `0x001a1db8`): size in overlay units with the width from the rectangle's shape (or given), the
   aspect fix, the anchor (centre, left edge, right edge) and an optional shadow at the unshifted position with alpha ×
-  0.502. `TextWidget` (`0x001ccf88`, setup `0x001cd060`, text `0x001cd1e0`) stands for both text widgets: a text
+  0.502. `TextWidget_Construct` (`0x001ccf88`, setup `0x001cd060`, text `0x001cd1e0`) stands for both text widgets: a text
   through `layoutText` placed left at x, centred on it or ending at it, in the font slot given, shadow 0x80, with a
   fade and its own time for `<PULSE>` and `<DISPLAYTIME>`. `OptionGrid` (setup `0x001d4110`, add item `0x001d4230` up to
   50, focus `0x001d4d28`, handler `0x001d4c40`): row counts, left-packed or centred rows, the `" : "` separator,
   `kSelectedGrey` for the focused selection, the moves, wrap only from 3 items, cue `+0x94` and `0xe`, and the d-pad's
   plain query after a refused move, and a fade over every item (Coney's, for the pause menu's fade out). `ScrollingMenu`
   (`0x001e1338`, `src/gui/scrolling_menu.h`): no wrap, cue 4 and `0xe`, 100 ms between moves, a window around the
-  cursor ([Front end](frontend.md#rm-layout)). `UsageInfo` (`0x001ceb40`, text `0x001cec28`): size 1.0, `kMenuGrey`,
-  left-aligned or centred. `Bar` (`0x001a0fd0`) and the message box (`src/gui/message_box.h`, [Front end](frontend.md#message-box)).
+  cursor ([Front end](frontend.md#rm-layout)). `UsageInfo_Setup` (`0x001ceb40`, text `0x001cec28`): size 1.0, `kMenuGrey`,
+  left-aligned or centred. `Bar_Construct` (`0x001a0fd0`) and the message box (`src/gui/message_box.h`, [Front end](frontend.md#message-box)).
   The colour table is `src/gui/colour_table.h`. Coney's choices: a grid's row pitch adds 0.0036 to 6h / 7 so rows land
   0.0505 apart at size 1.15, as measured ([Front end](frontend.md#pm-layout)); items past the row counts get a row each;
   part_page0 is Coney's font slot 2 (the original's 3). The screens that use them are on
@@ -1389,11 +1388,10 @@ TODO for research, found while implementing:
   `if Platform == 2 then ... else ... end`; the two branches differ mainly in naming triangle or circle as "back"
   (`0x1f` among them). Coney returns 0 (the triangle branch, which matches [Front end](frontend.md#input)'s reading).
   Which platform is 2, and which branch does the NTSC-U game show?
-- **Who runs `config_preload2.lua`, and when?** (answered): the legal screen's `Enter` (`0x00161218`), after
-  `enum_preload.lua` and `config_preload.lua` and before `config_preload3.lua`, all in one Lua state
-  ([Scripts](scripting.md#life-of-the-lua-state)); Coney's order matches for the two it runs. Originally: Coney runs it
-  after `enum_preload.lua` to get the strings; the
-  original's call site is not on this page.
+- **Who runs `config_preload2.lua`, and when?** (answered): the legal screen's `Enter` (`RunPreloadScripts`,
+  `0x00161218`), after `enum_preload.lua` and `config_preload.lua` and before `config_preload3.lua`, all in one Lua
+  state ([Scripts](scripting.md#life-of-the-lua-state)); Coney's order matches for the two it runs. Originally: Coney
+  runs it after `enum_preload.lua` to get the strings; the original's call site is not on this page.
 - **`doFile`** (answered): it always adds `.lua` (`0x003579a0` formats `"%s.lua"`, `0x00579058`) and runs the
   result as a WAD name (script system slot `+0x34`), as Coney does. Originally: does the binding add `.lua` to a name
   without an extension (as Coney does), or look the name up some
@@ -1434,17 +1432,17 @@ What the implementer still needs:
 
 **The radar's blip steps** (`hud::stepRadarBlips` and its helpers in `src/hud/radar.h`, the hooks in `hud::Hud`): the
 steps of [`Radar_Update`](#radar-update) for radar 0, whose blips are the ones Coney keeps and draws. Its differences,
-each marked in the code: a blip whose object cannot be found keeps its slot and skips the step (**Coney's choice**:
-Coney cannot yet locate every kind of object, so freeing would drop blips the scripts made); a blip is settled
-(`Radar_AddBlip`'s batch and first show) at the next radar step or show, not as it is added; the objectives' blink runs
-on Coney's radar update count (**Coney's stand-in**), not each blip's own count from its add, so its phase can be up to
-4 updates off; the police hint's once-flag (`0x200`) is kept with the HUD for the level, not in the game's hint word (a
-stand-in until [#332](issue:332) ports that word); `Tutorial_IsHintUnlocked(8)` is not read ([#662](issue:662), as for
-hint `0x15`); hint `0x16` is [#332](issue:332)'s. Nothing in Coney marks a blip yet (the enemy scan's marks are
-[#1011](issue:1011)'s, through `Hud::markRadarBlip`), Coney makes no type-6 or type-8 blip yet (`HUD_RadarAddHuman`
-gives every human type 7), and the player arrow's icon is 362 until something sets it (the down icons and the two-player
-icons, [#549](issue:549)). The police hint's brain lookup (`Hud::setRadarBrainLookup`) is not given by play yet, so the
-hint waits for the police blips. Tests: `repo:tests/hud/radar_blips_test.cpp`.
+each marked in the code: a blip whose object cannot be found keeps its slot, skips the step and loses its place, so no
+dot is drawn (**Coney's choice**: Coney cannot yet locate every kind of object, so freeing would drop blips the scripts
+made); a blip is settled (`Radar_AddBlip`'s batch and first show) at the next radar step or show, not as it is added;
+the objectives' blink runs on Coney's radar update count (**Coney's stand-in**), not each blip's own count from its add,
+so its phase can be up to 4 updates off; the police hint's once-flag (`0x200`) is kept with the HUD for the level, not
+in the game's hint word (a stand-in until [#332](issue:332) ports that word); `Tutorial_IsHintUnlocked(8)` is not read
+([#662](issue:662), as for hint `0x15`); hint `0x16` is [#332](issue:332)'s. Nothing in Coney marks a blip yet (the
+enemy scan's marks are [#1011](issue:1011)'s, through `Hud::markRadarBlip`), Coney makes no type-6 or type-8 blip yet
+(`HUD_RadarAddHuman` gives every human type 7), and the player arrow's icon is 362 until something sets it (the down
+icons and the two-player icons, [#549](issue:549)). The police hint's brain lookup (`Hud::setRadarBrainLookup`) is not
+given by play yet, so the hint waits for the police blips. Tests: `repo:tests/hud/radar_blips_test.cpp`.
 
 ## Open questions
 

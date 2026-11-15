@@ -280,7 +280,9 @@ bool stepRadarBlips(RadarState& radar, const RadarStepContext& context) {
         }
         // **Coney's choice** (#1018): a blip whose object cannot be found keeps its slot and skips the step, where
         // the original frees the slot of a dead handle (Radar_FreeSlot): Coney cannot yet locate every kind of object.
+        // It loses its place, so no dot is drawn frozen where it was last found.
         if (!at) {
+            blip.place.reset();
             continue;
         }
         blip.place = at;
