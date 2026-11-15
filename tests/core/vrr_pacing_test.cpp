@@ -51,7 +51,8 @@ TEST_CASE("vrr pacing caps just under the display's refresh rate", "[vrr][pacing
 }
 
 TEST_CASE("vrr pacing has no cap for an unknown refresh rate and keeps within the largest cap", "[vrr][pacing]") {
-    // Expected: SDL_DisplayMode::refresh_rate is 0 when unknown; kMaxFpsCap bounds every cap (core/options.h)
+    // Expected: ../guides/running-options.md#frame-rate, Coney's own choice
+    // (SDL_DisplayMode::refresh_rate is 0 when unknown; kMaxFpsCap in core/options.h bounds every cap)
     CHECK_FALSE(vrrFpsCap(0.0).has_value());
     CHECK_FALSE(vrrFpsCap(-60.0).has_value());
     CHECK_FALSE(vrrFpsCap(std::numeric_limits<double>::quiet_NaN()).has_value());
@@ -61,7 +62,7 @@ TEST_CASE("vrr pacing has no cap for an unknown refresh rate and keeps within th
 }
 
 TEST_CASE("vrr pacing turns vsync off and caps under the refresh rate", "[vrr][pacing]") {
-    // Expected: ../engine/renderer.md#frame-rate-gaps (vsync off and a cap just under the display's refresh rate)
+    // Expected: ../engine/renderer.md#frame-rate-gaps, Coney's own choice (vsync off, a cap under the refresh rate)
     const coney::PacingChoice vrr = choosePacing(0, true, true, 144.0);
     CHECK(vrr.vrr);
     CHECK_FALSE(vrr.vsync);
@@ -78,7 +79,8 @@ TEST_CASE("vrr pacing turns vsync off and caps under the refresh rate", "[vrr][p
 }
 
 TEST_CASE("vrr pacing with no known refresh rate keeps the cap and vsync as given", "[vrr][pacing]") {
-    // Expected: Coney's own fallback; vsync off with no cap would tear on a display whose range is unknown
+    // Expected: ../guides/running-options.md#frame-rate, Coney's own choice
+    // (vsync off with no cap would tear on a display whose range is unknown)
     const coney::PacingChoice unknown = choosePacing(0, true, true, 0.0);
     CHECK_FALSE(unknown.vrr);
     CHECK(unknown.vsync);
@@ -108,7 +110,7 @@ TEST_CASE("the fps cap option takes vrr in both builds", "[vrr][options]") {
 }
 
 TEST_CASE("the vrr fps cap is refused in test mode and beside vsync", "[vrr][options]") {
-    // Expected: ../guides/running-options.md#frame-rate; test mode keeps no real clock (core/options.h, isTestMode)
+    // Expected: ../guides/running-options.md#frame-rate, Coney's own option (test mode keeps no real clock)
     // Taken alone in a windowed run, so each refusal below is the combination's.
     REQUIRE(parse(std::array<std::string_view, 2>{"--fps-cap", "vrr"}).has_value());
     CHECK(!parse(std::array<std::string_view, 3>{"--fps-cap", "vrr", "--headless"}).has_value());
@@ -119,7 +121,7 @@ TEST_CASE("the vrr fps cap is refused in test mode and beside vsync", "[vrr][opt
 }
 
 TEST_CASE("vrr pacing comes from the option or the saved setting outside test mode", "[vrr][options]") {
-    // Expected: ../guides/running-options.md#frame-rate: the option wins, the saved Display/VRR is a player's
+    // Expected: ../guides/running-options.md#frame-rate, Coney's own option (the saved Display/VRR is a player's)
     const auto none = parse(std::array<std::string_view, 0>{});
     REQUIRE(none.has_value());
     CHECK_FALSE(coney::wantsVrr(*none, false));
@@ -138,7 +140,7 @@ TEST_CASE("vrr pacing comes from the option or the saved setting outside test mo
 }
 
 TEST_CASE("vrr pacing says in the run log what it chose or why it could not", "[vrr][pacing]") {
-    // Expected: Coney's own run log line; nothing when VRR was not asked for
+    // Expected: ../guides/running-options.md#frame-rate, Coney's own run log line (none without VRR)
     CHECK(coney::vrrLogLine(choosePacing(0, true, true, 144.0), 144.0) ==
           "VRR pacing: vsync off, at most 138 frames a second, under the display's 144 Hz");
     CHECK(coney::vrrLogLine(choosePacing(0, true, true, 0.0), 0.0) ==
