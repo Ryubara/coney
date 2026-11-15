@@ -1602,7 +1602,9 @@ break or a model stage ([Breaking a door](#door-break)). Inferred from the code.
 nothing with `0x20`, so a sliding door's leaves outlive it; a sliding door also removes itself on the destroy message
 `0x15` (`ObjDestroy` with its second argument, `BreakObjectsInRadius`), where a barrier ignores it. Confirmed (code).
 A broken swinging door's removal ends `GetHitpoints` for it too: it answers 0 from the update after the break, and its
-leaves from the break ([The hitpoints word](#hitpoints-word)).
+leaves from the break ([The hitpoints word](#hitpoints-word)). Confirmed (code) at `0x003fbba0` and `0x00395b70`
+(state 6 removes the door) and `0x003fa17c` (the cabin's break removes each leaf); confirmed (runtime) for a cabin
+door, run r-20261115-cabin-door-hitpoints-word.
 
 ### Breakable barriers {#barriers}
 
@@ -1977,8 +1979,9 @@ Confirmed (runtime), run r-20261115-get-hitpoints-props (`level99`, each object 
 150, `dyn_speaker` 100, `dyn_newsstand_a` 1, `dyn_parkbench_a` 0, `dyn_ctrl_box` 15, `NilHandle` 0; a swinging door
 and its leaves answer their hitpoints (`dyn_door_wood` 100, each `dyn_dr_wood` leaf its type's 100), run
 r-20261115-door-leaves-removed; a `dyn_door_cabin_a` answers 12 before and after two hits of 4 points (the third
-breaks it), run r-20261115-cabin-door-hitpoints-word. `hifi.lua` scores a carried speaker, TV or register by
-`GetHitpoints / 10`, and `level55_lizziesattack.lua` (`DoorDamage`) shows a door's hitpoints as a bar.
+breaks it), and 0 once the third has broken and removed it, run r-20261115-cabin-door-hitpoints-word. `hifi.lua`
+scores a carried speaker, TV or register by `GetHitpoints / 10`, and `level55_lizziesattack.lua` (`DoorDamage`) shows a
+door's hitpoints as a bar.
 
 ### Trains (moving hazards) {#trains}
 

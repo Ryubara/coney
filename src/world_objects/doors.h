@@ -213,7 +213,7 @@ struct Door {
     int interval = kDoorInterval;  ///< Its update interval, ticks.
     int countdown = kDoorInterval; ///< Ticks to its next update.
     bool destroying = false;       ///< Message `0x15` (flag `0x40`): it will hit itself.
-    bool ended = false;            ///< Its task ended (a broken swinging door's next update).
+    bool ended = false;            ///< Its task ended (a broken swinging door's next update, or remove()).
 
     bool hittable = true;            ///< A barrier's message 10.
     bool hidden = false;             ///< A broken barrier hides itself.
@@ -396,9 +396,11 @@ struct DoorDraw {
 
 /// What the level's doors draw: each leaf of a swinging door at its pose (its model `dyn_dr_*`), and a barrier or a
 /// door of another class as its type's model (`dyn_door_wall_a` broken its damaged model, `dyn_door_vargas` broken
-/// its broken one); nothing for a hidden barrier or a door whose task has ended. **Coney's stand-in** until the draw is
-/// traced: a swinging door's frame type draws no model of its own, and a model stage a splintering door or a leaf takes
-/// is not shown.
+/// its broken one); nothing for a hidden barrier, a barrier or door of another class whose task has ended, a broken
+/// swinging door (its leaves went at its break) or a leaf removed with its door. A removed sliding door's leaves and a
+/// removed dyn_door_stall's leaf still draw (docs/research/objects.md#door-removal). **Coney's stand-in** until the
+/// draw is traced: a swinging door's frame type draws no model of its own, and a model stage a splintering door or a
+/// leaf takes is not shown.
 [[nodiscard]] std::vector<DoorDraw> doorDraws(const Doors& doors);
 
 } // namespace coney::world_objects

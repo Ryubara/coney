@@ -197,7 +197,9 @@ TEST_CASE("GetHitpoints reads any world object's hitpoints word", "[object_bindi
 
 TEST_CASE("GetHitpoints keeps a cabin door's type hitpoints through its hits; a splintering door's follow them",
           "[object_bindings]") {
-    // Expected: objects.md#hitpoints-word, confirmed (runtime)
+    // Expected: objects.md#hitpoints-word: the cabin door's 12 confirmed (runtime), run
+    // r-20261115-cabin-door-hitpoints-word; dyn_door_liz's 96 confirmed (code), DoorSwing_HitBreakable's SetHitMode at
+    // 0x003fab04
     Harness h;
     h.first("CfgObj", cfgObj("dyn_door_cabin_a", "dyn_door_swinging", 12));
     h.first("CfgObj", cfgObj("dyn_door_liz", "dyn_door_swinging", 100));

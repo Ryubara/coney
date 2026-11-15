@@ -37,6 +37,7 @@ inline constexpr std::string_view kFadeObjectClass = "fade_object";
 inline constexpr std::uint8_t kGuitarMaterial = 154;
 /// The control box's class, whose init sets its hitpoints word to kCtrlBoxHitWord.
 inline constexpr std::string_view kCtrlBoxClass = "dyn_ctrl_box";
+/// The hitpoints word a dyn_ctrl_box's init writes (`0x003ee9d8`), whatever its type's hitpoints.
 inline constexpr int kCtrlBoxHitWord = 15;
 
 /// The hitpoints word (`+0x128`) `GetHitpoints` reads of a world object of `type` other than a door: what its class's
