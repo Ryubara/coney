@@ -118,10 +118,10 @@ std::expected<std::filesystem::path, Error> writeLightingDump(const graphics::Li
 /// A debug edit of one light (the *Lights* group): what to change, queued and applied between two steps.
 struct LightEdit {
     std::uint16_t record = 0;
-    std::optional<bool> on;
-    std::optional<float> radius;
+    std::optional<bool> on = std::nullopt;
+    std::optional<float> radius = std::nullopt;
     /// The base colour's red, green and blue, each its own edit, so edits queued in one frame do not undo each other.
-    std::array<std::optional<float>, 3> colour;
+    std::array<std::optional<float>, 3> colour{};
 };
 
 /// The Lighting page's edits, queued while the page acts (from either front end, at any time in a frame) and applied

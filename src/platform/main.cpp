@@ -766,8 +766,9 @@ int main(int argc, char** argv) {
     if (runLog) {
         debugServices.writeBugReport = [&runLog] { return runLog->writeBugReport(); };
         // The Lighting page's Dump this frame writes beside the log file.
-        if (runLog->file()) {
-            debugServices.runLogFolder = runLog->file()->parent_path();
+        const auto& logFile = runLog->file();
+        if (logFile.has_value()) {
+            debugServices.runLogFolder = logFile->parent_path();
         }
     }
     // The main loop's pacing (docs/guides/conventions.md#update-and-render). Test mode runs in lockstep with no clock:

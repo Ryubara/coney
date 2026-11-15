@@ -388,7 +388,7 @@ std::expected<std::filesystem::path, Error> writeLightingDump(const graphics::Li
     std::filesystem::create_directories(folder, ec);
     // The first number whose files are not there yet, so a dump never replaces an earlier one.
     for (int n = 1; n < 100000; ++n) {
-        const std::filesystem::path selections = folder / std::format("lighting-{}-selections.csv", n);
+        std::filesystem::path selections = folder / std::format("lighting-{}-selections.csv", n);
         const std::filesystem::path lights = folder / std::format("lighting-{}-lights.csv", n);
         if (std::filesystem::exists(selections, ec) || std::filesystem::exists(lights, ec)) {
             continue;
