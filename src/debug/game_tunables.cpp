@@ -193,4 +193,9 @@ RendererKind savedRenderer(const std::string& path) {
     return rendererOfSetting(value);
 }
 
+bool savedVrr(const std::string& path) {
+    (void)path;
+    return false;
+}
+
 } // namespace coney::debug

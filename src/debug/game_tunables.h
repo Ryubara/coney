@@ -33,4 +33,9 @@ void registerGameTunables(TunableRegistry& registry);
 /// the start reports a bad file and stops the run).
 [[nodiscard]] RendererKind savedRenderer(const std::string& path);
 
+/// Whether the overrides file at `path` saves the VRR frame-pacing mode on (`Display/VRR`, core/vrr_pacing.h), read
+/// before the frame pacer starts, as savedRenderer() is: off when the file is missing, does not set it, or does not
+/// load.
+[[nodiscard]] bool savedVrr(const std::string& path);
+
 } // namespace coney::debug
