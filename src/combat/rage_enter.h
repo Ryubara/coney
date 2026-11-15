@@ -23,9 +23,19 @@ struct RageEnterSteps {
     bool playClip = false;  ///< 643 `RAGE_START` plays full-body.
 };
 
-/// Rage's start's two decisions: whether the pair is broken, and whether 643 plays.
-[[nodiscard]] constexpr RageEnterSteps rageEnterSteps(const RageEnterState& /*state*/) {
-    return RageEnterSteps{.breakPair = false, .playClip = true};
+/// Rage's start's two decisions, made before rage starts: a pair the human is in is broken unless a move it holds keeps
+/// it (`+0x08` any of kRagePairHeldMask); then, out of any pair, not down or cuffed and holding nothing of
+/// kRageClipBusyMask, 643 `RAGE_START` plays. Rage starts either way. **Coney's reading**: `Human_BreakPair` always
+/// unlinks (docs/research/combat-grabs.md#pair-break), so a broken pair counts as none when the original tests the pair
+/// again.
+/// Research: docs/research/combat-rage.md#rage-effects
+/// @orig 0x00284340 Rage_Enter (unknown)
+[[nodiscard]] constexpr RageEnterSteps rageEnterSteps(const RageEnterState& state) {
+    RageEnterSteps steps;
+    steps.breakPair = state.paired && (state.held & kRagePairHeldMask) == 0;
+    const bool stillPaired = state.paired && !steps.breakPair;
+    steps.playClip = !stillPaired && !state.downOrCuffed && (state.held & kRageClipBusyMask) == 0;
+    return steps;
 }
 
 } // namespace coney::combat

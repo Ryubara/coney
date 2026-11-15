@@ -387,10 +387,18 @@ Read in Ghidra: confirmed (code) at the cited functions unless a line says other
 ("Runtime:" or "(runtime: ...)") are confirmed (runtime), measured as [Rage, at runtime](#rage-effects-setup) says.
 
 **`Rage_Enter`** (`0x00284340`), confirmed (code): plays the 2D sound `vags/misc/rage_mode_06` through the game
-state's handle at `+0x264` (restarted when it is still playing, `0x004194b8`); when the state word has any of
-`0x18003ff0` and `+0x08` none of `0x2fefefff`, the pair is broken (`Human_BreakPair`); then, if nothing of
-`0x18003ff0` or `0xe0000` is left and `+0x08` is free of `0xfc1fe7b`, rage starts (`0x00236d28`) and 643
-`RAGE_START` plays as a full-body clip holding `0x2000` (`0x0025a8c0`); otherwise rage starts without the clip.
+state's handle at `+0x264` (`GameState_PlayRageSound` `0x004194b8`: a handle that still resolves, the one the meter
+prepared or one still playing, is started again with `Sound_StartPrepared` `0x00110258`; otherwise a new 2D play by
+name, duckable, whose task gets the owner flag 1, `SoundTask_SetOwnerFlag` `0x0011b3f8`); when the state word has any
+of `0x18003ff0` and `+0x08` none of `0x2fefefff`, the pair is broken (`Human_BreakPair`); then, if nothing of
+`0x18003ff0` or `0xe0000` is left and `+0x08` is free of `0xfc1fe7b`, rage starts (`0x00236d28`) and **then** 643
+`RAGE_START` plays as a full-body clip holding `0x2000` (`0x0025a8c0`); otherwise rage starts without the clip. Its
+one caller is `Player_UseItemCommand`, which gives a cuffed human only the key ([L1 + R1 and the flash](#flash)), so
+the cuffed bit of `0xe0000` never matters here (inferred). Confirmed (runtime), run `r-20261115-rage-enter-order`: in
+the mission 1 yard (rage turned on with a setup write of human `+0xe0` bit `0x2000000`, the meter set to 78), L1 + R1
+hit `Rage_Enter`, `GameState_PlayRageSound`, `Human_StartRageMode` and `Human_PlayActionClip(643)` in that order at
+one game time; the state word and `+0x08` were 0 at the entry, the raging count `+0x268` went from 0 to 1, and the
+handle at `+0x264` changed at the sound's call (the meter's prepared handle was replaced by a new play).
 
 `level99`'s last lesson waits for this command through `PadSetHandlerEx` (the handler receives it even when
 `EnableCommand` has turned it off, [Commands](combat/index.md#commands)).
@@ -401,9 +409,10 @@ state's handle at `+0x264` (restarted when it is still playing, `0x004194b8`); w
    prepared: `Human_UpdateMeters` (`0x002562d0`) prepares it through `RageSound_Prepare` (`0x00419460`) while the
    meter is above 90 % of its maximum and no one rages, and stops it again below that (runtime: the handle at game
    state `+0x264` appeared as soon as the meter, written full, fell under the hold timer's decay at 75 of 78).
-2. A pair the player is in is broken first (`Human_BreakPair`), then the clip 643 `RAGE_START` plays full-body,
-   holding `0x2000` (`0x0025a8c0`), unless the player is still paired, down (state `0xe0000`) or holds a busy flag;
-   rage starts either way.
+2. A pair the player is in is broken first (`Human_BreakPair`), unless a held move keeps it (`+0x08` any of
+   `0x2fefefff`). Rage starts either way (steps 3 to 7); after it, on the same update, the clip 643 `RAGE_START`
+   plays full-body, holding `0x2000` (`0x0025a8c0`), unless the player is still paired, down (state `0xe0000`) or
+   holds a busy flag (`+0x08` any of `0xfc1fe7b`). Confirmed (runtime), run `r-20261115-rage-enter-order`.
 3. **The script's enter handler** (`CfgRageHandlers`' first name, `0x006b6830`) with `(human, flag)`, the flag true
    when no one else rages (game state `+0x268` below 1). `global.lua` registers `SetRageMode`, which turns on, by
    binding: `HuSetGodMode` (`0x10`), `HuSetUnstunnable` (`0x100`), `HuSetReducedReact` (`0x200`),
@@ -508,9 +517,16 @@ Coney as of `781d7768`, against [Everything rage does](#rage-effects):
   [Graphics: the rage look](graphics.md#rage-look): the tint blend to (51, 25, 0, 80) over 1.0 s, the 9 × 9 ghost
   grid at a blur alpha of 150, then on the end the 2.5 s grid fade, the 5 s tint and blur blends back to the base
   look, or the instant snap for the instant ends above. `effects::ScreenTint` today models only looks 9 and 10.
-- **Sounds (missing; item 26)**: `vags/misc/rage_mode_06` on start (2D, held in one game-wide handle, restarted if it
-  ends while a player rages, faded out over 2 s when the last rager ends); `vags/misc/rage_ends_01` once at each
-  player's end. Prepare-at-90 % is a loading detail; starting it on rage is enough.
+- **Rage's start** (`Rage_Enter`, done): `human::Fighter::enterRage` asks for the rage sound
+  (`HumanSound::Kind::RageStart`), breaks a pair and plays 643 as `combat::rageEnterSteps`
+  (`repo:src/combat/rage_enter.h`) decides; `audio::GameSound::playRageSound` plays `vags/misc/rage_mode_06` 2D in
+  one game-wide handle. Two **Coney's choices**: a rage sound still playing plays on, no second one starts, and the
+  owner flag is not set ([the open question](combat-rage.md#q-rage-sound-restart)); 643 holds the attack's phases as
+  every move the dispatcher starts, not `0x2000` ([the open question](combat-rage.md#q-rage-clip-holds)). Rage
+  itself starts in the dispatcher (`combat::RageMeter::start`), on the same update but before the sound and the
+  break.
+- **Sounds (missing; item 26)**: the rage sound restarted if it ends while a player rages, and faded out over 2 s
+  when the last rager ends; `vags/misc/rage_ends_01` once at each player's end. Prepare-at-90 % is a loading detail.
 - **`RageFull(human, false)`**: Coney calls the full handler only when the meter fills; add the false call when the
   hold timer runs out on an unspent full meter, or the 75 blur stays on.
 - **Rage start outside a block**: the original starts it from any free state ([Commands](combat/index.md#commands)); Coney
@@ -523,6 +539,17 @@ Coney as of `781d7768`, against [Everything rage does](#rage-effects):
   hit](combat-throws.md#keep-weapon), with its own list for Coney.
 
 ## Open questions
+
+- **A start on a live rage sound**{#q-rage-sound-restart}: `GameState_PlayRageSound` (`0x004194b8`) starts a handle
+  that still resolves with `Sound_StartPrepared`; for one the meter prepared that starts it, but what the sound
+  device's start (`0x0011b298`, device slot `+0x78`) does to a voice already playing (a second player's rage, or a
+  rage soon after the last) is not read, nor what the owner flag 1 changes beyond the stream priority. Coney keeps a
+  playing rage sound playing and sets no owner flag (`audio::GameSound::playRageSound`). A watch on the voice's
+  position across a second `Rage_Enter` would tell.
+- **The bits 643 holds**{#q-rage-clip-holds}: rage's start plays 643 holding `0x2000` (`Human_PlayActionClip`,
+  `0x0025a8c0`); Coney holds the attack's phases as for every move its dispatcher starts
+  (`human::clips::kAttackHolds`), because its gates do not read `0x2000` as the original's do. What the original's
+  gates let through during 643 (a press, the block, the flash) decides whether the two differ for a player.
 
 - **The presses on landing**{#q-flash-landing}: whether d-pad right pressed on landing from a jump gives a command at
   all ([The flash during a move](#flash-mid-move)). A watch on the per-player command `+0x20` through a landing would
