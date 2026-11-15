@@ -545,7 +545,8 @@ void Hud::updateRadar(const HudFrame& frame) {
     // The police hint's own conditions: the game's hints on, not an Armies of the Night level, not given yet (flag
     // 0x200), not levels 80 and 99. Not ported (#662): Tutorial_IsHintUnlocked(8), as for hint 0x15.
     context.policeHintAllowed = m_gameTutorialText && !isArmiesLevel(m_levelNumber) && !m_policeHintGiven &&
-                                m_levelNumber != kRadarNoPoliceHintLevels[0] && m_levelNumber != kRadarNoPoliceHintLevels[1];
+                                m_levelNumber != kRadarNoPoliceHintLevels[0] &&
+                                m_levelNumber != kRadarNoPoliceHintLevels[1];
     if (stepRadarBlips(m_radar, context)) {
         m_policeHintGiven = true;
         m_hints.queue(read(m_services.tutorialString, kRadarPoliceHint), kGameHintPriority);
