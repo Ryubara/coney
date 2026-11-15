@@ -478,6 +478,9 @@ void Hud::update(const HudFrame& frame) {
     }
 }
 
+// Test-first stub (replaced by the port in the next commit).
+void Hud::markRadarBlip(double /*handle*/) {}
+
 void Hud::setRadarRange(float near, float far) {
     m_radar.rest = near;
     m_radar.fast = far;

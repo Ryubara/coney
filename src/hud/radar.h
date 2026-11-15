@@ -36,6 +36,16 @@ struct RadarBlip {
     bool flashing = false;                    ///< `HUDSetRadarObjectFlash` (the dot's blinking state).
     bool iconLock = false;                    ///< Slot `+0x34`: icon and scale changes are ignored while set.
     int flashCountdown = 0;                   ///< Slot `+0x32`: a new objective blinks for 100 updates.
+    /// Slot `+0x00` with in-use `+0x31` = 2: a fixed point the blip stays at instead of following its object. Nothing
+    /// in the original makes such a slot (docs/research/gui.md#radar-update).
+    std::optional<anim::Vec3> fixedPlace;
+    /// Radar_AddBlip's batch and first show or hide have been applied (settleRadarBlip(), at the next radar step).
+    bool settled = false;
+    int depth = 0;         ///< The depth of the sprite batch the dot draws in (slot `+0x20`); higher draws on top.
+    bool marked = false;   ///< Slot `+0x30`: always for types 7, 9, 10 and 12, else set by the scanner's mark.
+    int markTimer = 0;     ///< Slot `+0x2e`: updates left of the scanner's mark (300 a mark).
+    bool dotShown = false; ///< The dot's own shown state (its hide flag, messages `0x2a` and `0x29`).
+    std::optional<anim::Vec3> place; ///< Where the last radar step found it.
 };
 
 /// What the radar of player 0 is given each step: where the player stands and faces, how fast he moves and where the
@@ -72,6 +82,18 @@ struct RadarState {
     /// The chase HUD (the pursuit widget at `0x00609e80`) exists. **Coney stand-in**: it is not built or drawn; only
     /// `HUDSetChaseHUDState_DESTROY` clears it.
     bool chaseHud = false;
+    /// Radar 0's shown (`+0x08`, Radar_Show) and hidden (`+0x0c`, Radar_HideAllBlips) flags: its dots are set by
+    /// the blip step only while it is shown and not hidden. Coney's blips are radar 0's.
+    bool shown = true;
+    bool hidden = false;
+    /// `+0x14`: enemy dots may show beyond the zoom. 0 from `HUD_Construct` and `Radar_Setup`, and no other writer
+    /// was found (confirmed (runtime): 0).
+    bool edgeEnemies = false;
+    /// `+0x18`: every dot inside the zoom shows and the scanner's marks never run out. 1 from `HUD_Construct`, and no
+    /// other writer was found (confirmed (runtime): 1).
+    bool keepShown = true;
+    /// The player arrow widget's icon (the type-9 slot's sprite word): 362 as `Radar_AddBlip` makes it.
+    int playerIcon = 362;
     std::array<RadarTint, 2> tint{};
     std::array<RadarTint, 2> previousTint{};
     std::array<std::uint64_t, 2> tintChangedMs{};
@@ -152,9 +174,86 @@ struct RadarOffset {
 void addRadarDisc(graphics::SpriteBatch& batch, graphics::OverlayPoint centre, float rx, float ry,
                   const RadarState& radar, graphics::Rgba colour);
 
-/// Whether a blip of this kind shows now: never type 5 (no blip); types 6 and 8 (enemies, police) only when marked by
-/// the scanner (**Coney stand-in**, #1018: no marks yet, so never); a new objective blinks for its first 100 updates; a
-/// flashing blip blinks the same way.
+/// Whether a blip's dot is lit this update: its own shown state (RadarBlip::dotShown), blinking for a new objective's
+/// first 100 updates and while flashing.
 [[nodiscard]] bool radarBlipShown(const RadarBlip& blip, std::uint64_t updates);
+
+/// The scanner's mark lasts this many radar updates (`Radar_MarkBlip`).
+inline constexpr int kRadarMarkUpdates = 300;
+/// An objective more than 1 m (`0x0050e9ac`) above or below the player and within 20 m (`0x0050e9b8`, |dx| + |dy|)
+/// shows an arrow; the arrow's size factors (`0x0050e9b0`, `0x0050e9b4`).
+inline constexpr float kRadarHeightStep = 1.0F;
+inline constexpr float kRadarHeightReach = 20.0F;
+inline constexpr float kRadarArrowFactor = 0.9F;
+inline constexpr float kRadarTargetArrowFactor = 1.2F;
+/// The objective icons and the arrows that stand for them above (75) and below (74).
+inline constexpr int kRadarRedIcon = 27;
+inline constexpr int kRadarYellowIcon = 28;
+inline constexpr int kRadarTargetIcon = 22;
+inline constexpr int kRadarAboveIcon = 75;
+inline constexpr int kRadarBelowIcon = 74;
+/// The arrow's colour, which remembers the icon it stands for: red for 27, yellow for 28, purple for 22.
+inline constexpr graphics::Rgba kRadarRaisedRed{0xb0, 0x00, 0x00, 0xff};
+inline constexpr graphics::Rgba kRadarRaisedYellow{0xe3, 0xbc, 0x42, 0xff};
+inline constexpr graphics::Rgba kRadarRaisedPurple{0x6a, 0x41, 0x83, 0xff};
+/// A type-12 blip's colour, set every update.
+inline constexpr graphics::Rgba kRadarType12Colour{0x80, 0x80, 0x80, 0xf0};
+/// Icons 25 and 26 draw in the radar's top batch (`+0x48`, depth 10,000).
+inline constexpr int kRadarTopBatchDepth = 10000;
+/// The police hint: tutorial string 8, for a police dot within 0.9 × the zoom.
+inline constexpr std::uint32_t kRadarPoliceHint = 8;
+inline constexpr float kRadarPoliceHintReach = 0.9F;
+
+/// The depth of the batch `Radar_AddBlip` puts a dot of `type` in (`Radar_Setup`'s batches): 9,000 for objectives,
+/// 7,000 type 2, 6,000 type 3, 1,000 types 6-8 (layer 0) and 5,000 the rest.
+/// @orig 0x001c4d00 Radar_AddBlip (RadarHUD.cpp)
+/// @orig 0x001c3de0 Radar_Setup (RadarHUD.cpp)
+[[nodiscard]] int radarBatchDepth(int type);
+
+/// `Radar_AddBlip`'s batch and first show: types 7, 9, 10 and 12 are marked for good, and the dot shows only when
+/// marked while the radar is shown and not hidden.
+/// @orig 0x001c4d00 Radar_AddBlip (RadarHUD.cpp)
+void settleRadarBlip(RadarBlip& blip, const RadarState& radar);
+
+/// `Radar_SetSlotIcon`: unless the icon is locked, the icon and the size × `factor`.
+/// @orig 0x001c4690 Radar_SetSlotIcon (RadarHUD.cpp)
+void setRadarSlotIcon(RadarBlip& blip, float factor, int icon);
+
+/// `Radar_MarkBlip`: the enemy scanner saw this blip's human; it is marked for 300 updates.
+/// @orig 0x001c4be0 Radar_MarkBlip (RadarHUD.cpp)
+void markRadarBlip(RadarBlip& blip);
+
+/// `Radar_Show` on radar 0: while it is on, every dot shown; then shown set and hidden cleared.
+/// @orig 0x001c4388 Radar_Show (RadarHUD.cpp)
+void showRadarDots(RadarState& radar);
+/// `Radar_Hide` on radar 0: while it is on, every dot hidden and shown cleared.
+/// @orig 0x001c4448 Radar_Hide (RadarHUD.cpp)
+void hideRadarDots(RadarState& radar);
+/// `Radar_HideAllBlips` on radar 0: hidden set and every dot hidden.
+/// @orig 0x001c42e8 Radar_HideAllBlips (RadarHUD.cpp)
+void hideAllRadarDots(RadarState& radar);
+
+/// What the blip step needs besides the radar: the objects' places, a human's brain type, and whether the police
+/// hint may be given (the game's hints on, not an Armies of the Night level, not yet given, not levels 80 and 99).
+struct RadarStepContext {
+    std::function<std::optional<anim::Vec3>(double handle)> locate;
+    std::function<std::optional<int>(double handle)> brainType; ///< Human_GetBrain `+0x04`; none for a non-human.
+    bool policeHintAllowed = false;
+};
+
+/// `Radar_Update`'s blip loop for radar 0 (call only while it is on): each blip followed, its objective arrow, type-12
+/// colour, icons 25 and 26's batch, its dot shown or hidden by its kind and place, and the scanner's mark counted down.
+/// Returns true when the police hint 8 is due (the caller queues it and sets its once-flag).
+/// @orig 0x001c5210 Radar_Update (RadarHUD.cpp)
+bool stepRadarBlips(RadarState& radar, const RadarStepContext& context);
+
+/// The player arrow widget's size and whether it turns with the player, for its icon.
+struct RadarArrowLook {
+    float size = 0.03F; ///< Its width in overlay units.
+    bool turned = true; ///< Turned by the player's heading minus the camera's.
+};
+/// 0.035 and upright for icons 25 and 26; upright for the two-player icons 0x15e, 0x15f, 0x168 and 0x169; else 0.03.
+/// @orig 0x001c5210 Radar_Update (RadarHUD.cpp)
+[[nodiscard]] RadarArrowLook radarPlayerArrowLook(int icon);
 
 } // namespace coney::hud

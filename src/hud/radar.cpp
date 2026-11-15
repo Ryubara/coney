@@ -113,4 +113,15 @@ bool radarBlipShown(const RadarBlip& blip, std::uint64_t updates) {
     return true;
 }
 
+// Test-first stubs (replaced by the port in the next commit).
+int radarBatchDepth(int /*type*/) { return 0; }
+void settleRadarBlip(RadarBlip& /*blip*/, const RadarState& /*radar*/) {}
+void setRadarSlotIcon(RadarBlip& /*blip*/, float /*factor*/, int /*icon*/) {}
+void markRadarBlip(RadarBlip& /*blip*/) {}
+void showRadarDots(RadarState& /*radar*/) {}
+void hideRadarDots(RadarState& /*radar*/) {}
+void hideAllRadarDots(RadarState& /*radar*/) {}
+bool stepRadarBlips(RadarState& /*radar*/, const RadarStepContext& /*context*/) { return false; }
+RadarArrowLook radarPlayerArrowLook(int /*icon*/) { return {}; }
+
 } // namespace coney::hud

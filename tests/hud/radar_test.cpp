@@ -107,16 +107,18 @@ TEST_CASE("the disc is 32 segments: a filled part and a ring fading to nothing",
     CHECK(corners[4].position.y == Approx(-0.3F + 0.11F));
 }
 
-TEST_CASE("blips blink as new objectives and while flashing; enemies show only when marked", "[hud][radar]") {
+TEST_CASE("blips blink as new objectives and while flashing, whatever their type", "[hud][radar]") {
+    // Expected: gui.md#radar-update, confirmed (code)
     coney::hud::RadarBlip blip;
     CHECK(coney::hud::radarBlipShown(blip, 0));
     blip.flashCountdown = 10;
     CHECK(coney::hud::radarBlipShown(blip, 0));
     CHECK_FALSE(coney::hud::radarBlipShown(blip, 4));
     CHECK(coney::hud::radarBlipShown(blip, 8));
+    // An enemy's dot is shown or hidden by the blip step (RadarBlip::dotShown), not here.
     blip.flashCountdown = 0;
     blip.type = 6;
-    CHECK_FALSE(coney::hud::radarBlipShown(blip, 0));
+    CHECK(coney::hud::radarBlipShown(blip, 4));
 }
 
 TEST_CASE("a dot's size is twice its size over its rectangle, the height by the texture's shape and 0.925",
