@@ -1463,11 +1463,11 @@ after the swing starts (inferred from the scheduling, [Tasks](tasks.md#wheel)).
 | --- | --- |
 | 2, 8 (`OpenDoor`) | when not pickable: reset the leaves, angle 170°, state 3, the open sound |
 | 3, 7 (`CloseDoor`) | angle 0; from state 2 only a reset to state 0, otherwise swing back with the close sound and state 0; then as 6 |
-| 6 | triangles enabled, the object's collision body back (`0x003a52c8`), the number's links get the avoid bit and its hole loses path flag 8 (`0x00250d00`, [A door's hole](#nav-links)) |
-| 5 (`DisableDoorCollision`) | the number's links lose the avoid bit and its hole gets path flag 8 (`0x00250c50`), triangles disabled, the collision body removed (`0x003a5340`) |
+| 6 | triangles enabled, the object's collision body back (`0x003a52c8`), the number's links get the avoid bit and its hole loses path flag 8 (`0x00250d00`, [A door's hole](#nav-links)); confirmed (code) |
+| 5 (`DisableDoorCollision`) | the number's links lose the avoid bit and its hole gets path flag 8 (`0x00250c50`), triangles disabled, the collision body removed (`0x003a5340`); confirmed (code) |
 | 10 / 0, 11 (`SetDoorPickable`) | pickable on / off ([Lock picking](#lock-pick)) |
 
-The commands, confirmed (code) at `0x003f9770` (`DoorSwing_StateCommand`).
+The commands are `DoorSwing_StateCommand`'s, confirmed (code) at `0x003f9770`.
 
 **Messages**, confirmed (code) at `0x003fb8d0`:
 
