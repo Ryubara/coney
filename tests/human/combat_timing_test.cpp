@@ -843,6 +843,27 @@ TEST_CASE("rage's start plays to its end under square spam, the body held", "[hu
     CHECK(fight.human().fighter().combat().rage().raging());
 }
 
+TEST_CASE("rage's start asks for the rage sound once, on the update it starts", "[human][combat][sound]") {
+    // Expected: combat-rage.md#rage-effects, confirmed (code)
+    Fight fight(timingCharacter(), 30.0F);
+    fight.human().reportSounds(true);
+    combat::RageMeter& rage = fight.human().fighter().combat().rage();
+    for (const float gain : {25.0F, 25.0F, 5.0F}) {
+        rage.add(gain, combat::combatTuning(), 0);
+    }
+    REQUIRE(rage.full());
+    std::vector<std::uint64_t> asked;
+    fight.run("10 press l1 r1\n12 release l1 r1\n", 40, [&](std::uint64_t update) {
+        for (const coney::human::HumanSound& sound : fight.human().takeSounds()) {
+            if (sound.kind == coney::human::HumanSound::Kind::RageStart) {
+                asked.push_back(update);
+            }
+        }
+    });
+    CHECK(asked == std::vector<std::uint64_t>{10});
+    CHECK(rage.raging());
+}
+
 TEST_CASE("a duck's counter is asked once under square spam and plays to its end; R1 let go keeps the duck",
           "[human][combat][timing]") {
     // Expected: combat/index.md#block, confirmed (code)

@@ -405,6 +405,7 @@ target_sources(coney_tests PRIVATE
     combat/meters_test.cpp
     combat/player_combat_test.cpp
     combat/rage_awards_test.cpp
+    combat/rage_enter_test.cpp
     combat/revive_test.cpp
     combat/reactions_test.cpp
     combat/stick_games_test.cpp
