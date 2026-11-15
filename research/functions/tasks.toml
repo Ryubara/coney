@@ -353,6 +353,16 @@ level = "confirmed-code"
 coney = "src/scripting/world_bindings.cpp:makeObjDestroy"
 status = "compared"
 
+[[function.gaps]]
+what = "a held object's release by its pick-up animation (a worn hat knocked off, carried props released): the holder only lets go"
+relation = "stand-in"
+question = "objects.md#q-objdestroy-held"
+
+[[function.gaps]]
+what = "the destroy message `0x15` to a class other than an objective marker or a swinging door: the object goes at once"
+relation = "stand-in"
+question = "objects.md#q-objdestroy-held"
+
 [[function]]
 address = 0x00397330
 name = "Door_EmptyStub"

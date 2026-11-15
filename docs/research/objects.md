@@ -2295,8 +2295,8 @@ the drawer and lifts the register with clip 504 (disc checks, 2026-10-08).
 - Door blocking ([How a closed door stops a human](#door-blocking)): read the `PHYFLAG`s of the door types with an
   `OBB` body (`dyn_door_store`, the cabin doors) to settle whether their body ever meets a walker.
 - Which search mask admits `0x40` links.
-- What human state 26 (the animated open) plays and when it sends the door `0x0b`; what fills a player's interaction
-  record (`+0x660`) for a door.
+- **The animated open**{#q-door-open-animated}: what human state 26 (the animated open) plays and when it sends the door
+  `0x0b`; what fills a player's interaction record (`+0x660`) for a door.
 - Check at runtime that a broken pane is no longer drawn ([Drawing a pane](#pane-draw)), and that a leaf model
   spans its local x from 0 to −w ([Leaves](#leaves)).
 - How the PTank builds a matrix sprite's corners and texture coordinates (inferred equal to the near path's), and
