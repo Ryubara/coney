@@ -109,8 +109,8 @@ class FakePlay final : public coney::debug::PlayControls {
     [[nodiscard]] float playerHeadingDegrees() const override { return 0.0F; }
     [[nodiscard]] float playerSpeed() const override { return 0.0F; }
     [[nodiscard]] std::string playerState() const override { return "-"; }
-    void teleport(const Place& /*place*/) override {}
-    [[nodiscard]] std::vector<Place> places() const override { return {}; }
+    void teleport(const coney::debug::Place& /*place*/) override {}
+    [[nodiscard]] std::vector<coney::debug::Place> places() const override { return {}; }
     [[nodiscard]] bool playerFrozen() const override { return false; }
     void setPlayerFrozen(bool /*frozen*/) override {}
     [[nodiscard]] coney::anim::Vec3 cameraEye() const override { return {}; }
