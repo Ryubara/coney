@@ -398,7 +398,8 @@ the cuffed bit of `0xe0000` never matters here (inferred). Confirmed (runtime), 
 the mission 1 yard (rage turned on with a setup write of human `+0xe0` bit `0x2000000`, the meter set to 78), L1 + R1
 hit `Rage_Enter`, `GameState_PlayRageSound`, `Human_StartRageMode` and `Human_PlayActionClip(643)` in that order at
 one game time; the state word and `+0x08` were 0 at the entry, the raging count `+0x268` went from 0 to 1, and the
-handle at `+0x264` changed at the sound's call (the meter's prepared handle was replaced by a new play).
+handle at `+0x264` changed at the sound's call (from the one the meter had prepared to another; why it changed, a
+start of the prepared handle or a new play, the run does not tell).
 
 `level99`'s last lesson waits for this command through `PadSetHandlerEx` (the handler receives it even when
 `EnableCommand` has turned it off, [Commands](combat/index.md#commands)).
@@ -507,7 +508,7 @@ tells it apart.
 
 ### Rage {#rage-coney}
 
-Coney as of `781d7768`, against [Everything rage does](#rage-effects):
+Coney as of the port of rage's start (`Rage_Enter`, 2026-11-15), against [Everything rage does](#rage-effects):
 
 - Done: the meter, its gains, drain and decay (`repo:src/combat/meters.h`), L1 + R1 from the block, the moves 63,
   231, 645 / 647, 649 / 651, no power in rage, the rage handlers called with the original's flag
@@ -559,12 +560,16 @@ Coney as of `781d7768`, against [Everything rage does](#rage-effects):
 
 The code claims were read in Ghidra on `SLUS_212.15` (NTSC-U); the clip events were read from the disc's clips
 (numbers only) and the script handlers from the disc's scripts. The runtime claims were read with PCSX2 2.9.94 over
-PINE, before run records existed, so none of them has one:
+PINE, before run records existed, so none of them has one, except the order of rage's start (below):
 
 - **The power meter** and **Rage**: copies of slot 6 (`level99`, Rembrandt) with a puppet civilian, driven with the
   scripted pad; the runtime power classes were read from the humans in those runs.
 - **The flash during a move**: below ([The flash, at runtime](#flash-setup)).
 - **Everything rage does**: below ([Rage, at runtime](#rage-effects-setup)).
+- **The order of rage's start** (`Rage_Enter`): run `r-20261115-rage-enter-order`, PCSX2 v2.9.129 with the
+  `scripted-pad` and `right-stick` patches, the mission 1 yard from a cold boot; rage allowed by a setup write of human
+  `+0xe0` bit `0x2000000`, the meter set to 78 (`set-rage`), L1 + R1 held 10 updates (`pad`), breakpoints on the four
+  calls and reads of game state `+0x264` and `+0x268`.
 
 The "civilian" whose meter refilled to 300 at about 100 per second was the puppet at human 0 in those runs, which
 was **Vermin** (1800 health, 400 power), not the `PoizoCiv`: the script had set its health to 600 of 1800 (33 %,
