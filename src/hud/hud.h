@@ -158,9 +158,6 @@ struct ActionCycle {
 /// @orig 0x001acee0 HUD::HUD (unknown)
 class Hud {
   public:
-    /// The player's own blip: `part_page0` icon 362 in grey `0x787878ff`.
-    static constexpr std::size_t kRadarPlayerIcon = 362;
-
     explicit Hud(HudServices services = {});
 
     /// Replaces the services (strings, colours, sound).
@@ -541,7 +538,8 @@ class Hud {
     bool m_visible = true;
     bool m_gameTutorialText = false;
     bool m_firstObjectiveHintGiven = false; // the game-state flag 0x40000
-    bool m_policeHintGiven = false;         // the game-state flag 0x200
+    // The game-state flag 0x200. **Coney stand-in** (#332, the hint flag word): kept for the level, not the game.
+    bool m_policeHintGiven = false;
     bool m_clubActionText = false;
     std::array<bool, kPlayers> m_promptTextHidden{}; // the cycle's start hid the text, until it changes
     bool m_letterbox = false;
@@ -550,6 +548,7 @@ class Hud {
     enum class LetterboxRestore : std::uint8_t { Idle, Armed, Stamped };
     LetterboxRestore m_letterboxRestore = LetterboxRestore::Idle;
     bool m_radarsAutoOn = false; // HUD +0x177b0: the radars' automatic return has turned them on
+    bool m_radarDotsOn = true;   // radar 0's on flag as its dots last followed it (updateRadar())
     bool m_wanted = false;       // radar +0x1c (HUD +0x15ec)
     Spinner m_spinner;           // HUD +0xe050
 };

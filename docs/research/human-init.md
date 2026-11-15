@@ -151,8 +151,8 @@ one update after the hit, before the charge reaches its body, and Coney's charge
 is in that case is open ([q-early-removal](#q-early-removal)).
 
 Stand-ins: the voice is read from the type when a line plays, so type 259's draw and `+0x3b4` are not kept, and the idle
-lines are not counted ([q-voice](#q-voice)); no radar blip, task byte or `+0x19e` ([q-radar](#q-radar); types 6 and 8
-also wait for the scanner's marks, [#1018](issue:1018)); no `+0x3bc` ([q-name-byte](#q-name-byte)). A player's switches
+lines are not counted ([q-voice](#q-voice)); no radar blip, task byte or `+0x19e` ([q-radar](#q-radar); the HUD shows types 6 and 8
+once they exist, [GUI: Radar_Update's steps](gui.md#radar-update)); no `+0x3bc` ([q-name-byte](#q-name-byte)). A player's switches
 wait for `Human_MakePlayer`'s port ([#1011](issue:1011)). Each of the original's draws is made on its own stream
 ([Maths: random numbers](maths.md#random)), so the draws Coney leaves out here (the voice on `0x006eb8b0`, the
 woundable roll on `0x006eb898`) do not move the gameplay stream's.

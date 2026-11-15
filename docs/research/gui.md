@@ -704,8 +704,8 @@ A radar's fields and its 128 slots of `0x40` bytes (from radar `+0x920`). Confir
 | --- | --- |
 | `+0x00` / `+0x04` | created / on (`HUDTurnOnRadar`) |
 | `+0x08` / `+0x0c` | shown (`Radar_Show`) / hidden (`Radar_HideAllBlips`) |
-| `+0x14` | enemy blips (types 5, 6, 8) may show when marked (inferred) |
-| `+0x18` | enemy marks never time out (inferred) |
+| `+0x14` | enemy dots may show beyond the zoom; 0 ([steps](#radar-update)) |
+| `+0x18` | every dot inside the zoom shows and marks never run out; 1 ([steps](#radar-update)) |
 | `+0x20`, `+0x24`, `+0x28` | zoom, fast and rest radii ([HUD](hud-radar.md#the-radar-on-screen)) |
 | `+0x38`-`+0x40` | disc colour state, old state, change time |
 | `+0x48`-`+0x60` | the sprite batches ([table above](#radar-icons)); `+0x48` holds icons 25 and 26 |
@@ -897,28 +897,59 @@ plain struct, not a widget, with 128 blip slots of `0x40` bytes from `+0x920` (l
 | `0x001c5108` | `Radar_RemoveHandle` | frees the handle's slot when found | confirmed (code) |
 | `0x001c5158` | `Radar_FindFreeSlot` | first slot whose in-use byte `+0x31` is 0, or -1 | confirmed (code) |
 | `0x001c5188` | `Radar_FindSlot(radar, handle, layer)` | the (`layer` + 1)-th slot holding the handle, or -1 | confirmed (code) |
-| `0x001c5210` | `Radar_Update(radar, playerMatrix)` | per frame from `HUD_Update`; below the table | confirmed (code) |
+| `0x001c5210` | `Radar_Update(radar, playerMatrix)` | per frame from `HUD_Update`; [its steps](#radar-update) | confirmed (code) |
 | `0x001c60b0` | `Radar_Render` | the map disc ([HUD](hud-radar.md#the-radar-on-screen)) | confirmed (code) |
 | `0x001c6730` | `Radar_MoveSlotToBatch48` | recreates a slot's dot in batch `+0x48`, keeping its size and icon; `Radar_Update` does it for icons 25 and 26 (so batch `+0x48`, depth 10,000, holds those two) | confirmed (code) |
 | `0x001c6878` | `Radar_GetBlipPosition(out, radar, handle)` | the layer-0 dot's world position (its vtable `+0xac`); the instruction arrow uses it | confirmed (code) |
 
-**`Radar_Update`** (`0x001c5210`), each frame while the radar is created and on, confirmed (code):
+#### `Radar_Update`'s steps {#radar-update}
+
+`Radar_Update` (`0x001c5210`) runs each frame while the radar is created and on; confirmed (code) unless marked. The
+runtime checks are run `r-20261115-radar-blip-steps` (mission 1's yard, the crew's slots rewritten over PINE).
 
 - The player's position and matrix are copied to `+0x70` and `+0x80`.
-- A slot in use with `+0x31` = 1 follows its object (position from the handle's vtable `+0xac`; a dead handle frees the
-  slot); `+0x31` = 2 is a fixed point (slot `+0x00`).
+- **Icons 25 and 26** (other than a type-9 slot's) are moved to batch `+0x48` when not already there
+  (`Radar_MoveSlotToBatch48`, `0x001c6730`): a new dot in that batch (depth 10,000, over the others) with the slot's
+  colour, icon and size, hidden unless the radar is shown, not hidden and the slot marked. They are the crew's down
+  icons that `HUD_RadarUpdateHumanIcon` (`0x001b3020`) sets on type-7 and type-9 blips.
+- **Following:** a slot in use with `+0x31` = 1 follows its object (position from the handle's vtable `+0xac`; a dead
+  handle frees the slot, `Radar_FreeSlot`); `+0x31` = 2 is a fixed point (slot `+0x00`). Nothing makes a mode-2 slot:
+  the only stores to `+0x31` are `Radar_AddBlip`'s 1 and the zeroes of `Radar_Setup`, `Radar_Shutdown` and
+  `Radar_FreeSlot`, and slot `+0x00` is only ever reset (confirmed (code), a search of every store at those offsets).
+- **Objectives (type 10), the height arrow:** when the object is more than 1 m (`0x0050e9ac`) above the player and
+  within 20 m (`0x0050e9b8`, |dx| + |dy|), the blip becomes **icon 75** (the up arrow); more than 1 m below, **icon 74**.
+  The arrow is coloured by the icon it replaces, and the colour is how the icon comes back: icon 27 red `0xb00000ff`
+  and icon 28 yellow `0xe3bc42ff`, both with the size × 0.9 (`0x0050e9b0`), icon 22 purple `0x6a4183ff` × 1.2
+  (`0x0050e9b4`); an objective already showing its arrow, or with another icon, is left alone. Level again, or 20 m
+  or more away, an objective whose icon is not 27, 28 or 22 gets the icon its colour names back (27 or 28 × 1/0.9, 22 ×
+  1/1.2) and is coloured white, whatever its icon. A locked icon (`+0x34`) keeps its icon and size; only the colour
+  changes. Confirmed (runtime): an objective with icon 27 on the yard's roof, above the player, read icon 75 and colour
+  `0xb00000ff` and drew a red arrow. The first such objective in a story level with the hints on queues hint `0x16`
+  once (game flag `0x10000000`; [#332](issue:332)). A new objective blip flashes for 100 updates (alpha toggled every
+  4) before it is drawn solid.
+- **Type 12** blips are coloured `0x808080f0` every update, inside the zoom or not (confirmed (runtime)). Who adds
+  type 12 is not traced ([Open questions](#open-questions)).
 - **Placement:** the offset from the player in x and y is turned by the camera; at distance `d` < zoom (`+0x20`) the
   blip sits at offset × 0.12 / zoom from the disc centre (`+0x2930`, `+0x2938`), otherwise on the edge at 0.9 × 0.12
   along its direction (`0x0050e9bc`). Screen x adds, screen y subtracts the offset's second component.
-- **Objectives (type 10):** when the object is more than 1 m (`0x0050e9ac`) above or below the player and within
-  20 m (`0x0050e9b8`, |dx| + |dy|), icons 27 and 28 are re-coloured and drawn at 0.9 (`0x0050e9b0`), icon 22 at 1.2
-  (`0x0050e9b4`), icons 74 and 75 left alone; the first time in a story level with hints on (`W_GameState + 0x56e2`,
-  not an Armies of the Night level), hint `0x16` is queued (game flag `0x10000000`). A new objective blip flashes for
-  100 updates (alpha toggled every 4) before it is drawn solid.
-- **Enemies (types 5, 6, 8):** inside the zoom they show only while the radar is shown, not hidden, its `+0x14` is
-  set and the slot is marked (`+0x30`). A police blip (type 8) within 0.9 × zoom of a story player whose brain is
-  type 1, while marked or `+0x18` is set, queues hint 8 once (flag `0x200`; not in levels 80 and 99). The mark timer
-  `+0x2e` counts down each update; at 0 the mark is cleared and the dot hidden unless `+0x18` is set.
+- **Enemy and police dots (types 5, 6, 8):** inside the zoom a dot shows while the radar is shown (`+0x08`), not hidden
+  (`+0x0c`) and the slot is marked (`+0x30`), else it is hidden; beyond the zoom it shows only when `+0x14` is set as
+  well. Then, for every type, while the radar is shown and not hidden and `+0x18` is set, the dot shows (beyond the
+  zoom only with `+0x14` too), except a type-9 slot's dot, which is hidden. `HUD_Construct` sets `+0x14` = 0 and
+  `+0x18` = 1 for both radars and `Radar_Setup` sets `+0x14` = 0 again; no other store to either was found. So in the
+  game **every dot inside the zoom shows, enemies marked or not, and enemy dots hide beyond it**; other dots beyond
+  the zoom keep the state they had. Confirmed (runtime): `+0x14` read 0 and `+0x18` 1; three slots rewritten to
+  unmarked type 6 stayed on the disc, and went once `+0x18` was written 0.
+- **The scanner's marks:** `Radar_MarkBlip` (`0x001c4be0`, from `HUD_RadarMarkEnemies`, `0x001b3610`, on both radars)
+  sets the mark timer `+0x2e` to 300 and the mark `+0x30`. The timer counts down by one each update; on an update that
+  finds it at 0, an enemy slot's mark is cleared and its dot hidden, unless `+0x18` is set. Confirmed (runtime): with
+  `+0x18` cleared a marked type-6 dot showed, its timer read 235 about 2 s later, then 0 with the mark cleared and the
+  dot gone.
+- **The police hint:** a type-8 dot inside 0.9 × the zoom queues tutorial hint 8 once (game flag `0x200`) when the
+  game's hints are on (`W_GameState + 0x56e2`, not an Armies of the Night level), the hint is unlocked
+  (`Tutorial_IsHintUnlocked`), the radar is shown and not hidden, the slot is marked or `+0x18` is set, the level is
+  not 80 or 99, and the human the blip follows has a brain of type 1 (`Object_AsHuman`, `Human_GetBrain` `+0x04`).
+  The brain checked is the officer's, not the player's.
 - **The player arrow (type 9):** a `BaseWidget` (depth 20,000, on top of the blips) at the blip position (the disc
   centre), turned by the **player's heading minus the camera's** (`Quat_Heading` of the human's rotation and of radar
   `+0x80`, into widget `+0xa0`, radians). Confirmed (runtime): with the player turned 79° to the left of the camera's
@@ -928,7 +959,24 @@ plain struct, not a widget, with 128 blip slots of `0x40` bytes from `+0x920` (l
   four are not turned. Its size is set to 0.026 (`0x0050e9cc`) and then, the same frame, to 0.035 for icons 25 and 26
   and **0.03** otherwise (`BaseWidget_SetSize(s, s, widget, 1)`; with mode 1 the height follows the width by the
   rectangle's aspect, [Widgets](#widget-classes); inferred that `s` ends as the width in overlay units).
-- Icons 25 and 26 are moved to batch `+0x48` when not already there (`0x001c6730`).
+
+The radar's shown and hidden flags change with the HUD: `HUD_Hide` (`0x001b1f38`) runs `Radar_HideAllBlips` (hidden
+set, every dot hidden), `HUD_Restore` (`0x001b20f8`) runs `Radar_Show` (every dot shown, hidden cleared, shown set,
+only while the radar is on), and `HUD_RadarEnable` (`0x001b2610`) sets the radar on and then shows it, while
+`HUD_RadarDisable` (`0x001b2658`) hides it (shown cleared, every dot hidden) before clearing on. A new blip of type 7,
+9, 10 or 12 is marked for good and shows while the radar is shown and not hidden; any other starts hidden
+(`Radar_AddBlip`), and so, beyond the zoom, stays hidden until a `Radar_Show` or the zoom brings it in.
+
+**Coney** (`hud::stepRadarBlips` and its helpers in `src/hud/radar.h`, the hooks in `hud::Hud`): the steps above for
+radar 0, whose blips are the ones Coney keeps and draws. Its differences, each marked in the code: a blip whose
+object cannot be found keeps its slot and skips the step (**Coney's choice**: Coney cannot yet locate every kind of
+object, so freeing would drop blips the scripts made); a blip is settled (`Radar_AddBlip`'s batch and first show) at
+the next radar step or show, not as it is added; `Tutorial_IsHintUnlocked(8)` is not read ([#662](issue:662), as for
+hint `0x15`); hint `0x16` is [#332](issue:332)'s. Nothing in Coney marks a blip yet (the enemy scan's marks are
+[#1011](issue:1011)'s, through `Hud::markRadarBlip`), Coney makes no type-6 or type-8 blip yet (`HUD_RadarAddHuman`
+gives every human type 7), and the player arrow's icon is 362 until something sets it (the down icons and the
+two-player icons, [#549](issue:549)). The police hint's brain lookup (`Hud::setRadarBrainLookup`) is not given by
+play yet, so the hint waits for the police blips. Tests: `repo:tests/hud/radar_blips_test.cpp`.
 
 ### `GUI/ScreenFlowController.cpp` {#fn-screenflowcontroller}
 

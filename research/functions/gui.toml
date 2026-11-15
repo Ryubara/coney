@@ -162,6 +162,60 @@ coney = "src/hud/hud.h:Hud::setRadarMap"
 status = "compared"
 
 [[function]]
+address = 0x001c42e8
+name = "Radar_HideAllBlips"
+page = "gui.md#fn-radarhud"
+role = "when created: hidden `+0x0c` = 1 and every used slot's dot or widget hidden"
+level = "confirmed-code"
+coney = "src/hud/radar.h:hideAllRadarDots"
+status = "compared"
+
+[[function]]
+address = 0x001c4388
+name = "Radar_Show"
+page = "gui.md#fn-radarhud"
+role = "while on: every used slot's dot or widget shown, hidden `+0x0c` cleared, shown `+0x08` set"
+level = "confirmed-code"
+coney = "src/hud/radar.h:showRadarDots"
+status = "compared"
+
+[[function]]
+address = 0x001c4448
+name = "Radar_Hide"
+page = "gui.md#fn-radarhud"
+role = "while on: every used slot's dot or widget hidden, shown `+0x08` cleared"
+level = "confirmed-code"
+coney = "src/hud/radar.h:hideRadarDots"
+status = "compared"
+
+[[function]]
+address = 0x001c4690
+name = "Radar_SetSlotIcon"
+page = "gui.md#fn-radarhud"
+role = "unless the icon is locked: the dot's size × the factor, its icon and slot `+0x18`"
+level = "confirmed-code"
+coney = "src/hud/radar.h:setRadarSlotIcon"
+status = "compared"
+
+[[function]]
+address = 0x001c4be0
+name = "Radar_MarkBlip"
+page = "gui.md#fn-radarhud"
+role = "an enemy seen by the scanner: mark timer `+0x2e` = 300, marked `+0x30` = 1"
+level = "confirmed-code"
+coney = "src/hud/radar.h:markRadarBlip"
+status = "compared"
+
+[[function]]
+address = 0x001c4d00
+name = "Radar_AddBlip"
+page = "gui.md#fn-radarhud"
+role = "a blip's slot, batch by type, and its first show: types 7, 9, 10, 12 marked and shown on a shown radar"
+level = "confirmed-code"
+coney = "src/hud/radar.h:settleRadarBlip"
+status = "compared"
+
+[[function]]
 address = 0x001c5210
 name = "Radar_Update"
 page = "gui.md#fn-radarhud"
@@ -171,9 +225,14 @@ coney = "src/hud/radar.h:radarBlipOffset"
 status = "compared"
 
 [[function.gaps]]
-what = "icons 25 and 26's batch, the objective blips' height icons, fixed-point and type-12 blips, the enemy marks and the police hint 8"
-relation = "not-ported"
+what = "a blip whose object cannot be found keeps its slot and skips the step (the original frees the slot of a dead handle)"
+relation = "stand-in"
 issue = 1018
+
+[[function.gaps]]
+what = "the police hint's once-flag is kept for the level, not in the game's hint word; Tutorial_IsHintUnlocked(8) is not read"
+relation = "stand-in"
+issue = 332
 
 [[function.gaps]]
 what = "hint 22"
@@ -198,6 +257,15 @@ status = "compared"
 what = "the video modes other than the default"
 relation = "not-ported"
 issue = 890
+
+[[function]]
+address = 0x001c6730
+name = "Radar_MoveSlotToBatch48"
+page = "gui.md#fn-radarhud"
+role = "recreates a slot's dot in batch `+0x48` (icons 25 and 26), hidden unless shown, not hidden and marked"
+level = "confirmed-code"
+coney = "src/hud/radar.h:stepRadarBlips"
+status = "compared"
 
 [[function]]
 address = 0x001c7e80

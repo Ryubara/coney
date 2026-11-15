@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The radar's map disc and the placement of its blips (docs/research/hud-radar.md#the-radar-on-screen,
-// docs/research/gui.md#fn-radarhud).
+// The radar's map disc, the placement of its blips and Radar_Update's blip steps
+// (docs/research/hud-radar.md#the-radar-on-screen, docs/research/gui.md#fn-radarhud, docs/research/gui.md#radar-update).
 #include "hud/radar.h"
 
 #include <algorithm>
 #include <cmath>
 #include <numbers>
+#include <optional>
 
 namespace coney::hud {
 
@@ -26,6 +27,68 @@ PlanAxes axesOf(float heading) {
 graphics::Rgba withAlpha(graphics::Rgba colour, std::uint8_t alpha) {
     colour.a = alpha;
     return colour;
+}
+
+// Types 5, 6 and 8: the dots of humans against the player (none is made for type 5), shown by the scanner's marks.
+bool isEnemyType(int type) { return type == 5 || type == 6 || type == 8; }
+
+// Icons 25 and 26 draw in the radar's top batch.
+bool isTopBatchIcon(int icon) { return icon == 25 || icon == 26; }
+
+// Whether the radar's dots are shown now (`+0x08` set, `+0x0c` clear).
+bool dotsShowing(const RadarState& radar) { return radar.shown && !radar.hidden; }
+
+// Settles every blip added since the last step, so a show or hide finds it made as Radar_AddBlip would have.
+// @orig 0x001c4d00 Radar_AddBlip (RadarHUD.cpp)
+void settleNewBlips(RadarState& radar) {
+    for (auto& [handle, blip] : radar.blips) {
+        if (!blip.settled) {
+            settleRadarBlip(blip, radar);
+        }
+    }
+}
+
+// The objective's arrow: an objective over 1 m above or below the player and within 20 m (|dx| + |dy|) shows arrow
+// 75 or 74 in the colour of the icon it stands for, which brings that icon back once it is level or far again.
+// @orig 0x001c5210 Radar_Update (RadarHUD.cpp)
+void stepObjectiveHeight(RadarBlip& blip, anim::Vec3 player, anim::Vec3 at) {
+    const bool near = std::abs(at.x - player.x) + std::abs(at.y - player.y) < kRadarHeightReach;
+    int arrow = 0;
+    if (near && at.z > player.z + kRadarHeightStep) {
+        arrow = kRadarAboveIcon;
+    } else if (near && at.z < player.z - kRadarHeightStep) {
+        arrow = kRadarBelowIcon;
+    }
+    if (arrow != 0) {
+        // Not ported (#332): the first such objective in a story level with the game's hints on queues hint 22 once.
+        if (blip.icon == arrow) {
+            return;
+        }
+        if (blip.icon == kRadarRedIcon) {
+            blip.colour = kRadarRaisedRed;
+            setRadarSlotIcon(blip, kRadarArrowFactor, arrow);
+        } else if (blip.icon == kRadarYellowIcon) {
+            blip.colour = kRadarRaisedYellow;
+            setRadarSlotIcon(blip, kRadarArrowFactor, arrow);
+        } else if (blip.icon == kRadarTargetIcon) {
+            blip.colour = kRadarRaisedPurple;
+            setRadarSlotIcon(blip, kRadarTargetArrowFactor, arrow);
+        }
+        return;
+    }
+    // Level, or far: an icon of its own stays; an arrow (or any other icon) gives back the icon its colour names, at
+    // its old size, and every such objective is white.
+    if (blip.icon == kRadarRedIcon || blip.icon == kRadarYellowIcon || blip.icon == kRadarTargetIcon) {
+        return;
+    }
+    if (blip.colour == kRadarRaisedRed) {
+        setRadarSlotIcon(blip, 1.0F / kRadarArrowFactor, kRadarRedIcon);
+    } else if (blip.colour == kRadarRaisedYellow) {
+        setRadarSlotIcon(blip, 1.0F / kRadarArrowFactor, kRadarYellowIcon);
+    } else if (blip.colour == kRadarRaisedPurple) {
+        setRadarSlotIcon(blip, 1.0F / kRadarTargetArrowFactor, kRadarTargetIcon);
+    }
+    blip.colour = graphics::kWhite;
 }
 
 } // namespace
@@ -104,24 +167,158 @@ void addRadarDisc(graphics::SpriteBatch& batch, graphics::OverlayPoint centre, f
 }
 
 bool radarBlipShown(const RadarBlip& blip, std::uint64_t updates) {
-    if (blip.type == 5 || blip.type == 6 || blip.type == 8) {
-        return false;
-    }
     if (blip.flashCountdown > 0 || blip.flashing) {
         return (updates / kRadarFlashPeriod) % 2 == 0;
     }
     return true;
 }
 
-// Test-first stubs (replaced by the port in the next commit).
-int radarBatchDepth(int /*type*/) { return 0; }
-void settleRadarBlip(RadarBlip& /*blip*/, const RadarState& /*radar*/) {}
-void setRadarSlotIcon(RadarBlip& /*blip*/, float /*factor*/, int /*icon*/) {}
-void markRadarBlip(RadarBlip& /*blip*/) {}
-void showRadarDots(RadarState& /*radar*/) {}
-void hideRadarDots(RadarState& /*radar*/) {}
-void hideAllRadarDots(RadarState& /*radar*/) {}
-bool stepRadarBlips(RadarState& /*radar*/, const RadarStepContext& /*context*/) { return false; }
-RadarArrowLook radarPlayerArrowLook(int /*icon*/) { return {}; }
+int radarBatchDepth(int type) {
+    switch (type) {
+    case 10:
+        return 9000;
+    case 6:
+    case 7:
+    case 8:
+        // Layer 0's batch (`+0x5c`); layer 1's (`+0x60`, 2,000) holds the second dots Coney does not make.
+        return 1000;
+    case 2:
+        return 7000;
+    case 3:
+        return 6000;
+    default:
+        return 5000;
+    }
+}
+
+void settleRadarBlip(RadarBlip& blip, const RadarState& radar) {
+    blip.settled = true;
+    blip.depth = radarBatchDepth(blip.type);
+    blip.marked = blip.type == 7 || blip.type == 9 || blip.type == 10 || blip.type == 12;
+    blip.dotShown = blip.marked && dotsShowing(radar);
+}
+
+void setRadarSlotIcon(RadarBlip& blip, float factor, int icon) {
+    if (blip.iconLock) {
+        return;
+    }
+    blip.icon = icon;
+    blip.scale *= factor;
+}
+
+void markRadarBlip(RadarBlip& blip) {
+    // The first mark re-sends the slot's colour to the dot; Coney's dot draws in the slot's colour already.
+    blip.markTimer = kRadarMarkUpdates;
+    blip.marked = true;
+}
+
+void showRadarDots(RadarState& radar) {
+    if (!radar.on.at(0)) {
+        return;
+    }
+    settleNewBlips(radar);
+    for (auto& [handle, blip] : radar.blips) {
+        blip.dotShown = true;
+    }
+    radar.hidden = false;
+    radar.shown = true;
+}
+
+void hideRadarDots(RadarState& radar, bool on) {
+    if (!on) {
+        return;
+    }
+    settleNewBlips(radar);
+    for (auto& [handle, blip] : radar.blips) {
+        blip.dotShown = false;
+    }
+    radar.shown = false;
+}
+
+void hideAllRadarDots(RadarState& radar) {
+    radar.hidden = true;
+    settleNewBlips(radar);
+    for (auto& [handle, blip] : radar.blips) {
+        blip.dotShown = false;
+    }
+}
+
+bool stepRadarBlips(RadarState& radar, const RadarStepContext& context) {
+    const bool showing = dotsShowing(radar);
+    bool policeHint = false;
+    for (auto& [handle, blip] : radar.blips) {
+        if (!blip.settled) {
+            settleRadarBlip(blip, radar);
+        }
+        // The player's own blip is the arrow widget, which Coney draws apart (Hud::renderPlayerArrow).
+        if (blip.type == 9) {
+            continue;
+        }
+        // 1. Icons 25 and 26 go to the top batch (Radar_MoveSlotToBatch48): a new dot, at the same size and colour,
+        // hidden unless the radar shows and the blip is marked.
+        if (isTopBatchIcon(blip.icon) && blip.depth != kRadarTopBatchDepth) {
+            blip.depth = kRadarTopBatchDepth;
+            blip.dotShown = showing && blip.marked;
+        }
+        // 2. Where it is: its fixed point, or its object, whose objective arrow follows the height.
+        std::optional<anim::Vec3> at = blip.fixedPlace;
+        if (!at && context.locate) {
+            at = context.locate(handle);
+            if (at && blip.type == 10) {
+                stepObjectiveHeight(blip, radar.view.position, *at);
+            }
+        }
+        // **Coney's choice** (#1018): a blip whose object cannot be found keeps its slot and skips the step, where
+        // the original frees the slot of a dead handle (Radar_FreeSlot): Coney cannot yet locate every kind of object.
+        if (!at) {
+            continue;
+        }
+        blip.place = at;
+        // 3. A new objective's blinking counts down.
+        if (blip.flashCountdown > 0) {
+            --blip.flashCountdown;
+        }
+        // 4. Its dot by its kind and whether it is inside the zoom.
+        const float distance = std::hypot(at->x - radar.view.position.x, at->y - radar.view.position.y);
+        const bool inside = distance < radar.zoom;
+        if (blip.type == 12) {
+            blip.colour = kRadarType12Colour;
+        } else if (isEnemyType(blip.type)) {
+            // A police officer (brain type 1) close in queues the police hint once.
+            if (inside && blip.type == 8 && context.policeHintAllowed && !policeHint &&
+                distance < kRadarPoliceHintReach * radar.zoom && showing && (blip.marked || radar.keepShown) &&
+                context.brainType && context.brainType(handle) == 1) {
+                policeHint = true;
+            }
+            // Enemies show only while marked, and beyond the zoom only with `+0x14`.
+            blip.dotShown = showing && blip.marked && (inside || radar.edgeEnemies);
+        }
+        // With `+0x18` every dot shows (beyond the zoom only with `+0x14` too).
+        if (showing && radar.keepShown && (inside || radar.edgeEnemies)) {
+            blip.dotShown = true;
+        }
+        // 5. The scanner's mark runs out: at 0 an enemy's mark ends and its dot goes, unless `+0x18` keeps them.
+        if (blip.markTimer == 0) {
+            if (isEnemyType(blip.type) && !radar.keepShown) {
+                blip.marked = false;
+                blip.dotShown = false;
+            }
+        } else {
+            --blip.markTimer;
+        }
+    }
+    return policeHint;
+}
+
+RadarArrowLook radarPlayerArrowLook(int icon) {
+    if (isTopBatchIcon(icon)) {
+        return RadarArrowLook{.size = 0.035F, .turned = false};
+    }
+    // The two-player arrows (#549) are upright too.
+    if (icon == 0x15e || icon == 0x15f || icon == 0x168 || icon == 0x169) {
+        return RadarArrowLook{.size = 0.03F, .turned = false};
+    }
+    return RadarArrowLook{};
+}
 
 } // namespace coney::hud

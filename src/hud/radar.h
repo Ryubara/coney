@@ -203,11 +203,12 @@ inline constexpr int kRadarTopBatchDepth = 10000;
 /// The police hint: tutorial string 8, for a police dot within 0.9 × the zoom.
 inline constexpr std::uint32_t kRadarPoliceHint = 8;
 inline constexpr float kRadarPoliceHintReach = 0.9F;
+/// The levels that never give it (`level80`, `level99`).
+inline constexpr std::array<int, 2> kRadarNoPoliceHintLevels{80, 99};
 
 /// The depth of the batch `Radar_AddBlip` puts a dot of `type` in (`Radar_Setup`'s batches): 9,000 for objectives,
 /// 7,000 type 2, 6,000 type 3, 1,000 types 6-8 (layer 0) and 5,000 the rest.
 /// @orig 0x001c4d00 Radar_AddBlip (RadarHUD.cpp)
-/// @orig 0x001c3de0 Radar_Setup (RadarHUD.cpp)
 [[nodiscard]] int radarBatchDepth(int type);
 
 /// `Radar_AddBlip`'s batch and first show: types 7, 9, 10 and 12 are marked for good, and the dot shows only when
@@ -226,9 +227,10 @@ void markRadarBlip(RadarBlip& blip);
 /// `Radar_Show` on radar 0: while it is on, every dot shown; then shown set and hidden cleared.
 /// @orig 0x001c4388 Radar_Show (RadarHUD.cpp)
 void showRadarDots(RadarState& radar);
-/// `Radar_Hide` on radar 0: while it is on, every dot hidden and shown cleared.
+/// `Radar_Hide` on radar 0: while it is on (`on`, its on flag as the hide comes; RadarState::on may already be
+/// clear), every dot hidden and shown cleared.
 /// @orig 0x001c4448 Radar_Hide (RadarHUD.cpp)
-void hideRadarDots(RadarState& radar);
+void hideRadarDots(RadarState& radar, bool on);
 /// `Radar_HideAllBlips` on radar 0: hidden set and every dot hidden.
 /// @orig 0x001c42e8 Radar_HideAllBlips (RadarHUD.cpp)
 void hideAllRadarDots(RadarState& radar);
@@ -245,6 +247,7 @@ struct RadarStepContext {
 /// colour, icons 25 and 26's batch, its dot shown or hidden by its kind and place, and the scanner's mark counted down.
 /// Returns true when the police hint 8 is due (the caller queues it and sets its once-flag).
 /// @orig 0x001c5210 Radar_Update (RadarHUD.cpp)
+/// @orig 0x001c6730 Radar_MoveSlotToBatch48 (RadarHUD.cpp)
 bool stepRadarBlips(RadarState& radar, const RadarStepContext& context);
 
 /// The player arrow widget's size and whether it turns with the player, for its icon.
