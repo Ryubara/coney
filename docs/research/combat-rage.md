@@ -550,7 +550,10 @@ Coney as of the port of rage's start (`Rage_Enter`, 2026-11-15), against [Everyt
 - **The bits 643 holds**{#q-rage-clip-holds}: rage's start plays 643 holding `0x2000` (`Human_PlayActionClip`,
   `0x0025a8c0`); Coney holds the attack's phases as for every move its dispatcher starts
   (`human::clips::kAttackHolds`), because its gates do not read `0x2000` as the original's do. What the original's
-  gates let through during 643 (a press, the block, the flash) decides whether the two differ for a player.
+  gates let through during 643 (a press, the block, the flash) decides whether the two differ for a player. A runtime
+  check would tell: start rage in PCSX2 (`set-rage`, then L1 + R1 with the `pad` recipe), press square, R1 and d-pad
+  right during the 643 that follows, and watch whether an attack, the block or the flash starts before 643 ends,
+  then press the same in Coney's rage start.
 
 - **The presses on landing**{#q-flash-landing}: whether d-pad right pressed on landing from a jump gives a command at
   all ([The flash during a move](#flash-mid-move)). A watch on the per-player command `+0x20` through a landing would
