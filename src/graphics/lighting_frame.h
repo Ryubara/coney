@@ -71,6 +71,7 @@ struct FrameSelection {
     std::size_t count = 0; ///< Lights chosen.
 
     /// The lights chosen, in order.
+    /// @coney-only the render-side lighting frame
     [[nodiscard]] std::span<const ChosenLight> chosen() const { return {lights.data(), count}; }
     /// Whether the list reached its cap.
     [[nodiscard]] bool full() const { return count >= cap; }

@@ -44,6 +44,7 @@ struct LightingSwitches {
     LightingView view = LightingView::Final;
 
     /// Whether these draw the faithful picture: every layer on and the final view (hold and the camera aside).
+    /// @coney-only the lighting lab's switches
     [[nodiscard]] bool faithfulPicture() const { return layers == LightingLayers{} && view == LightingView::Final; }
 };
 
