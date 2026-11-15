@@ -219,7 +219,7 @@ status = "compared"
 address = 0x001c5210
 name = "Radar_Update"
 page = "gui.md#fn-radarhud"
-role = "per frame from `HUD_Update`; below the table"
+role = "per frame from `HUD_Update`: the blips followed, placed, shown or hidden ([its steps](gui.md#radar-update))"
 level = "confirmed-code"
 coney = "src/hud/radar.h:radarBlipOffset"
 status = "compared"
@@ -240,9 +240,14 @@ relation = "stand-in"
 issue = 1018
 
 [[function.gaps]]
-what = "the police hint's once-flag is kept for the level, not in the game's hint word; Tutorial_IsHintUnlocked(8) is not read"
+what = "the police hint's once-flag is kept for the level, not in the game's hint word"
 relation = "stand-in"
 issue = 332
+
+[[function.gaps]]
+what = "Tutorial_IsHintUnlocked(8) is not read for the police hint"
+relation = "not-ported"
+issue = 662
 
 [[function.gaps]]
 what = "hint 22"

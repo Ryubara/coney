@@ -962,8 +962,8 @@ Confirmed (code) at the cited addresses unless a line says otherwise; the runtim
   dot's handle (`+0x24`) and returns from the whole update when it does not resolve (`0x001c5fbc`), before that
   slot's mark countdown and without stepping the slots after it. `Radar_AddBlip` gives a type-9 slot no dot (its
   `+0x24` stays the none handle); a slot made type 9 later by `Radar_SetBlipType` keeps its dot, as the yard's
-  player slot does (confirmed (runtime), run r-20261115-radar-blip-steps: its `+0x24` named a dot and the crew
-  slots after it were stepped).
+  player slot does (inferred from a read of the yard's slots during run r-20261115-radar-blip-steps that the record
+  does not hold: slot 0, type 9, had a handle at `+0x24`, and the crew slots after it changed as the steps say).
 - **The player arrow (type 9):** a `BaseWidget` (depth 20,000, on top of the blips) at the blip position (the disc
   centre), turned by the **player's heading minus the camera's** (`Quat_Heading` of the human's rotation and of radar
   `+0x80`, into widget `+0xa0`, radians). Inferred from a run-time reading made before run records were kept: with the
@@ -1446,11 +1446,11 @@ stepped can differ (**Coney's stand-in**); the objectives' blink runs on Coney's
 stand-in**), not each blip's own count from its add, so its phase can be up to 4 updates off; the police hint's
 once-flag (`0x200`) is kept with the HUD for the level, not in the game's hint word (a stand-in until [#332](issue:332)
 ports that word); `Tutorial_IsHintUnlocked(8)` is not read ([#662](issue:662), as for hint `0x15`); hint `0x16` is
-[#332](issue:332)'s. Nothing in Coney marks a blip yet (the enemy scan's marks are [#1011](issue:1011)'s, through
-`Hud::markRadarBlip`), Coney makes no type-6 or type-8 blip yet (`HUD_RadarAddHuman` gives every human type 7), and the
-player arrow's icon is 362 until something sets it (the down icons and the two-player icons, [#549](issue:549)). The
-police hint's brain lookup (`Hud::setRadarBrainLookup`) is not given by play yet, so the hint waits for the police
-blips. Tests: `repo:tests/hud/radar_blips_test.cpp`.
+[#332](issue:332)'s. Nothing in Coney marks a blip yet (the enemy scan's marks are [#1402](issue:1402)'s, with the rest
+of the wiring in play, through `Hud::markRadarBlip`), Coney makes no type-6 or type-8 blip yet (`HUD_RadarAddHuman`
+gives every human type 7), and the player arrow's icon is 362 until something sets it (the down icons and the two-player
+icons, [#549](issue:549)). The police hint's brain lookup (`Hud::setRadarBrainLookup`) is not given by play yet, so the
+hint waits for the police blips. Tests: `repo:tests/hud/radar_blips_test.cpp`.
 
 ## Open questions
 
