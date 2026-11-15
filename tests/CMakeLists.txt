@@ -94,6 +94,7 @@ add_executable(coney_tests
     graphics/human_lighting_test.cpp
     graphics/light_manager_test.cpp
     graphics/lighting_frame_test.cpp
+    graphics/lighting_switches_test.cpp
     graphics/overlay_camera_test.cpp
     graphics/particle_page_test.cpp
     graphics/ps2_world_mesh_test.cpp
@@ -515,6 +516,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/fighter_spawn_test.cpp
         debug/human_shapes_test.cpp
         debug/input_gate_test.cpp
+        debug/lighting_page_test.cpp
         debug/lua_console_test.cpp
         debug/menu_navigator_test.cpp
         debug/mesh_views_test.cpp

@@ -340,3 +340,52 @@ TEST_CASE("The fog colour keeps each component's low byte, as the original trunc
     CHECK(outOfRange.b == 254); // 510 wraps to 254
     CHECK(outOfRange.a == 255);
 }
+
+TEST_CASE("The lighting frame's selection row keeps the call's inputs, its cap and each chosen light as chosen",
+          "[graphics][lighting_frame]") {
+    // Expected: lighting.md#select, confirmed (code): the caps 6, 5, 4, 3 at 40, 56.6 and 69.3 m (4 with the pulse),
+    // 8 for the world, and the trace's values per chosen light (type, radius, colour, position)
+    CHECK(coney::graphics::selectionCap(0.0F, false, false) == 8);
+    CHECK(coney::graphics::selectionCap(1599.0F, true, false) == 6);
+    CHECK(coney::graphics::selectionCap(1600.0F, true, false) == 5);
+    CHECK(coney::graphics::selectionCap(3200.0F, true, false) == 4);
+    CHECK(coney::graphics::selectionCap(4800.0F, true, false) == 3);
+    CHECK(coney::graphics::selectionCap(90000.0F, true, false) == 3);
+    CHECK(coney::graphics::selectionCap(90000.0F, true, true) == 4);
+
+    LevelLighting level;
+    static_cast<void>(level.lights.addLight(
+        global(LightType::Ambient, LightColour{0.1F, 0.1F, 0.1F, 1.0F}, coney::graphics::kLightsObjects)));
+    const LightHandle near = level.lights.addLight(lamp({0, 0, 10}, 3.0F));
+    level.lights.beginViewport(camera(), 0);
+    const coney::graphics::LightSphere sphere{.centre = {0.0F, 0.0F, 9.0F}, .radius = 1.0F};
+    const coney::graphics::GlowRequest glow{.position = {0.5F, 1.0F, 9.0F}, .rgba = {255, 0, 0, 200}};
+    const coney::graphics::LightSelection chosen = level.lights.select(81.0F, sphere, true, true, false, glow);
+    const coney::graphics::FrameSelection row = coney::graphics::frameSelectionOf(
+        level.lights, coney::graphics::SelectionCaller::Human, 81.0F, sphere, true, true, false, true, chosen);
+
+    CHECK(row.caller == coney::graphics::SelectionCaller::Human);
+    CHECK(row.distSq == 81.0F);
+    CHECK(row.sphere.centre.z == 9.0F);
+    CHECK(row.sphere.radius == 1.0F);
+    CHECK(row.objects);
+    CHECK(row.pointLights);
+    CHECK_FALSE(row.pulse);
+    CHECK(row.human);
+    CHECK(row.cap == 6);
+    REQUIRE(row.count == chosen.count);
+    REQUIRE(row.count == 3);
+    CHECK_FALSE(row.full());
+    // The ambient, then the glow where the human put it, in his colour, then the lamp.
+    CHECK(row.chosen()[0].type == LightType::Ambient);
+    CHECK(row.chosen()[1].record == LightManager::kGlow);
+    CHECK(row.chosen()[1].position.x == 0.5F);
+    CHECK(row.chosen()[1].colour.r == Approx(1.0F));
+    CHECK(row.chosen()[1].colour.g == 0.0F);
+    CHECK(row.chosen()[1].radius == LightManager::kGlowRadius);
+    CHECK(row.chosen()[2].record == static_cast<std::uint16_t>(near - 1));
+    CHECK(row.chosen()[2].type == LightType::Point);
+    CHECK(row.chosen()[2].radius == 3.0F);
+    CHECK(row.chosen()[2].position.z == 10.0F);
+    CHECK(row.chosen()[2].colour == level.lights.record(static_cast<std::uint16_t>(near - 1)).current);
+}

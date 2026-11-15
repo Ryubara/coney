@@ -102,6 +102,10 @@ std::size_t LightManager::count() const {
     return static_cast<std::size_t>(std::ranges::count_if(m_records, [](const LightRecord& r) { return r.inUse; }));
 }
 
+bool LightManager::setOrigin(LightHandle /*handle*/, LightOrigin /*origin*/) { return false; }
+
+LightOrigin LightManager::origin(std::uint16_t /*index*/) const { return LightOrigin::Untagged; }
+
 bool LightManager::setLight(LightHandle handle, const LightDescriptor& desc) {
     LightRecord* record = find(handle);
     if (record == nullptr) {

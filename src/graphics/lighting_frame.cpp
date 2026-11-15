@@ -38,6 +38,14 @@ const FrameLight* LightingFrame::light(std::uint16_t record) const {
     return found != lights.end() && found->record == record ? &*found : nullptr;
 }
 
+std::size_t selectionCap(float /*distSq*/, bool /*objects*/, bool /*pulse*/) { return 0; }
+
+FrameSelection frameSelectionOf(const LightManager& /*manager*/, SelectionCaller /*caller*/, float /*distSq*/,
+                                const LightSphere& /*sphere*/, bool /*objects*/, bool /*pointLights*/, bool /*pulse*/,
+                                bool /*human*/, const LightSelection& /*chosen*/) {
+    return {};
+}
+
 LightingFrame buildLightingFrame(const LevelLighting& level, const LightView& view) {
     const LightManager& manager = level.lights;
     LightingFrame frame;
