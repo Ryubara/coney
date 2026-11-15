@@ -45,7 +45,8 @@ struct PacingChoice {
 [[nodiscard]] std::string vrrLogLine(const PacingChoice& choice, double refreshHz);
 
 /// Whether a run paces in the VRR mode: `--fps-cap vrr`; else, in a run a person plays (takesSavedRenderer(), so never
-/// in test mode) with no `--fps-cap N`, `saved`, the overrides file's `Display/VRR`.
+/// in test mode) with no `--fps-cap N`, `saved`, the overrides file's `Display/VRR`; a typed `--vsync` does not
+/// override the saved mode, which turns vsync off as the option does.
 /// @coney-only enhancement: VRR frame pacing
 [[nodiscard]] bool wantsVrr(const Options& options, bool saved);
 

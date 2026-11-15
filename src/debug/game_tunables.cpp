@@ -154,7 +154,8 @@ void registerGameTunables(TunableRegistry& registry) {
     // (#1239) will change it live.
     registry.add("Display", "VRR", &vrrSetting())
         .describe("Pace for a G-Sync or FreeSync display: vsync off and a cap just under the display's refresh rate. "
-                  "Applies at the next start; --fps-cap overrides it, and test mode ignores it");
+                  "Applies at the next start; --fps-cap N overrides it (--vsync does not), and test mode ignores "
+                  "it");
     // The display preset and the values it sets (docs/engine/renderer.md#presets-built): the settings settle between
     // frames (DisplaySettings::settle()), so a preset chosen here writes its values on the next frame and a value
     // changed after it shows Custom. Nothing draws them but the renderer yet: each help line names the issue that will.
