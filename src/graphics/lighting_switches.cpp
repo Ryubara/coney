@@ -38,7 +38,8 @@ LightColour layeredColour(const LightManager& manager, std::uint16_t index, cons
     if (layers.brightness) {
         return record.current;
     }
-    // The world ambient's base is set at each viewport from SetWorldAmbient's colour; the others' is their own.
+    // Every ambient and directional light shines with its base plus the brightness and offset (the world ambient's
+    // base is set at each viewport), so taking the added colour away gives the base.
     const LightColour added = manager.addedColour();
     return LightColour{record.current.r - added.r, record.current.g - added.g, record.current.b - added.b,
                        record.current.a};
