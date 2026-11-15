@@ -38,12 +38,35 @@ const FrameLight* LightingFrame::light(std::uint16_t record) const {
     return found != lights.end() && found->record == record ? &*found : nullptr;
 }
 
-std::size_t selectionCap(float /*distSq*/, bool /*objects*/, bool /*pulse*/) { return 0; }
+std::size_t selectionCap(float distSq, bool objects, bool pulse) {
+    if (!objects) {
+        return kMaxSelectedLights;
+    }
+    constexpr float kObjectLightStep = 1600.0F; // a light fewer per 1600 m² (40 m, 56.6 m, 69.3 m)
+    const int steps = static_cast<int>(distSq / kObjectLightStep);
+    return static_cast<std::size_t>(6 - std::min(steps, pulse ? 2 : 3));
+}
 
-FrameSelection frameSelectionOf(const LightManager& /*manager*/, SelectionCaller /*caller*/, float /*distSq*/,
-                                const LightSphere& /*sphere*/, bool /*objects*/, bool /*pointLights*/, bool /*pulse*/,
-                                bool /*human*/, const LightSelection& /*chosen*/) {
-    return {};
+FrameSelection frameSelectionOf(const LightManager& manager, SelectionCaller caller, float distSq,
+                                const LightSphere& sphere, bool objects, bool pointLights, bool pulse, bool human,
+                                const LightSelection& chosen) {
+    FrameSelection row{.caller = caller,
+                       .distSq = distSq,
+                       .sphere = sphere,
+                       .objects = objects,
+                       .pointLights = pointLights,
+                       .pulse = pulse,
+                       .human = human,
+                       .cap = selectionCap(distSq, objects, pulse)};
+    for (const std::uint16_t index : chosen.lights()) {
+        const LightRecord& record = manager.record(index);
+        row.lights.at(row.count++) = ChosenLight{.record = index,
+                                                 .type = record.desc.type,
+                                                 .radius = record.desc.radius,
+                                                 .colour = record.current,
+                                                 .position = record.desc.position};
+    }
+    return row;
 }
 
 LightingFrame buildLightingFrame(const LevelLighting& level, const LightView& view) {

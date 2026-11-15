@@ -347,6 +347,7 @@ std::expected<std::unique_ptr<GameMode>, Error> GameSession::loadLevel(const Lev
     }
     (*mode)->setSceneLines(m_sceneLines);
     (*mode)->setMeshViews(m_meshViews);
+    (*mode)->setLightingSwitches(m_lightingSwitches);
     (*mode)->setSounds(m_audio != nullptr ? &m_audio->sounds() : nullptr);
     // The game's HUD, which the scripts' bindings act on.
     (*mode)->useHud(m_flow->hud());

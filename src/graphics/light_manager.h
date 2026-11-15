@@ -247,6 +247,9 @@ class LightManager {
     [[nodiscard]] LightSelection select(float distSq, const LightSphere& sphere, bool objects, bool pointLights,
                                         bool pulse, const std::optional<GlowRequest>& glow = std::nullopt);
 
+    /// Drops this viewport's corona sprites: the lighting lab's coronas layer, after the frame has counted them.
+    /// @coney-only the lighting lab's layers (docs/guides/realtime-lighting.md#lab)
+    void clearCoronas();
     /// This viewport's corona sprites (beginViewport()), in record order.
     [[nodiscard]] std::span<const CoronaSprite> coronas() const { return m_coronas; }
     /// This viewport's lists: A (ambient and directional lights of the world), B and C (of objects), and the visible

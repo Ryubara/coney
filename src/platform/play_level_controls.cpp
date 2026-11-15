@@ -85,12 +85,29 @@ std::vector<SceneLine> PlayLevelControls::sceneLines(const PlayLevelMode& mode, 
     }
     // The collision shapes, the classified wireframe and the Entity inspector's highlight (play_level_inspect.cpp).
     addInspectorLines(mode, options, lines, snapshot, alpha);
+    // The lighting lab's lines, from the frame being drawn (docs/guides/realtime-lighting.md#lab).
+    if (options.lighting != debug::LightingDrawOptions{}) {
+        const graphics::LightingFrame& frame = mode.m_lights->scene().lightingFrame();
+        const graphics::FrameSelection* selected =
+            options.lighting.selection
+                ? debug::labSelection(frame, entitiesOf(mode), options.inspected, mode.playerFeet())
+                : nullptr;
+        lines.append(debug::lightingLines(frame, options.lighting, selected));
+    }
     std::vector<SceneLine> out;
     out.reserve(lines.lines().size());
     for (const debug::DebugLine& line : lines.lines()) {
         out.push_back(SceneLine{.a = line.a, .b = line.b, .colour = line.colour});
     }
     return out;
+}
+
+const graphics::LightingFrame* PlayLevelControls::lightingFrame() const {
+    return m_mode != nullptr ? &m_mode->m_lights->scene().lightingFrame() : nullptr;
+}
+
+graphics::LightManager* PlayLevelControls::lightManager() {
+    return m_mode != nullptr ? &m_mode->m_lights->lights() : nullptr;
 }
 
 SceneLines PlayLevelControls::sceneLinesFor(const debug::DebugDrawOptions& options) {

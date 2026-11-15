@@ -44,13 +44,13 @@ std::unique_ptr<graphics::LevelLighting> standIn(anim::Vec3 direction) {
     const float a = PlayLighting::kStandInAmbient;
     ambient.colour = graphics::LightColour{a, a, a, 1.0F};
     ambient.lights = graphics::kLightsObjects;
-    lighting->lights.addLight(ambient);
+    static_cast<void>(lighting->lights.setOrigin(lighting->lights.addLight(ambient), graphics::LightOrigin::StandIn));
     graphics::LightDescriptor sun = ambient;
     sun.type = graphics::LightType::Directional;
     const float d = PlayLighting::kStandInDirectional;
     sun.colour = graphics::LightColour{d, d, d, 1.0F};
     sun.direction = graphics::gameToRenderWare(direction.x, direction.y, direction.z);
-    lighting->lights.addLight(sun);
+    static_cast<void>(lighting->lights.setOrigin(lighting->lights.addLight(sun), graphics::LightOrigin::StandIn));
     return lighting;
 }
 
@@ -86,6 +86,8 @@ void PlayLighting::step(const WorldView& view, const raycast::CollisionMesh& mes
                             elapsedMs);
     m_playerDim.step(graphics::onShadowGround(mesh, raycast::Vec3{playerFeet.x, playerFeet.y, playerFeet.z}),
                      elapsedMs);
+    // The lighting lab's Hold lighting moves on with each step.
+    m_scene->stepped();
 }
 
 bool PlayLighting::drawHuman(rw::Atomic* atomic, bool player) {
@@ -124,7 +126,9 @@ bool PlayLighting::drawHuman(rw::Atomic* atomic, bool player) {
     for (rw::int32 i = 0; i < atomic->geometry->matList.numMaterials; ++i) {
         atomic->geometry->matList.materials[i]->color.alpha = alpha;
     }
-    m_scene->drawHumanAtomic(atomic, player && m_playerDim.hidden());
+    const bool hidden = player && m_playerDim.hidden();
+    m_scene->noteHiddenHuman(hidden);
+    m_scene->drawHumanAtomic(atomic, hidden);
     return true;
 }
 
@@ -158,7 +162,9 @@ void PlayLighting::addShadow(const raycast::CollisionMesh& mesh, anim::Vec3 feet
 }
 
 void PlayLighting::drawShadows() {
-    m_scene->drawBlobShadows(m_shadows);
+    if (m_scene->drawsBlobShadows()) {
+        m_scene->drawBlobShadows(m_shadows);
+    }
     m_shadows.clear();
 }
 

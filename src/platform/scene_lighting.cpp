@@ -154,12 +154,29 @@ SceneLighting::~SceneLighting() {
 }
 
 void SceneLighting::beginFrame(const world::CameraPose& pose, float nearClip, float farClip, std::uint64_t nowMs) {
-    m_pose = pose;
-    const graphics::LightView view{
+    const graphics::LightView drawn{
         .position = pose.position, .forward = pose.forward, .nearClip = nearClip, .farClip = farClip};
-    m_lighting.lights.beginViewport(view, nowMs);
-    // The render-side description of the frame's lights, read by drawing only, never by the simulation.
-    m_frame = graphics::buildLightingFrame(m_lighting, view);
+    // The lighting lab's Light from and Hold lighting choose the view and the time the lights are culled at; without
+    // its switches, the frame's own camera and time.
+    const bool fromGame = m_switches != nullptr && m_switches->lightFromGameCamera && m_gameView.has_value();
+    const graphics::LitMoment lit =
+        m_hold.choose(graphics::LitMoment{.view = fromGame ? *m_gameView : drawn, .nowMs = nowMs},
+                      m_switches != nullptr && m_switches->hold);
+    // The caps and the humans' fade read the place of the lights' view; the coronas face the screen's camera.
+    m_pose = pose;
+    m_pose.position = lit.view.position;
+    m_lighting.lights.beginViewport(lit.view, lit.nowMs);
+    // The render-side description of the frame's lights, read by drawing only, never by the simulation. The rows of
+    // the last frame's selections give their storage to this one's.
+    std::vector<graphics::FrameSelection> rows = std::move(m_frame.selections);
+    rows.clear();
+    m_frame = graphics::buildLightingFrame(m_lighting, lit.view);
+    m_frame.coronas = m_lighting.lights.coronas().size();
+    m_frame.selections = std::move(rows);
+    m_pending.reset();
+    if (m_switches != nullptr && !m_switches->layers.coronas) {
+        m_lighting.lights.clearCoronas();
+    }
 }
 
 rw::Light* SceneLighting::mirror(std::uint16_t index) {
@@ -179,7 +196,9 @@ rw::Light* SceneLighting::mirror(std::uint16_t index) {
         light->setFlags(rw::Light::LIGHTATOMICS);
         light->setFrame(rw::Frame::create());
     }
-    light->setColor(record.current.r, record.current.g, record.current.b);
+    const graphics::LightColour colour =
+        m_switches != nullptr ? graphics::layeredColour(m_lighting.lights, index, m_switches->layers) : record.current;
+    light->setColor(colour.r, colour.g, colour.b);
     light->radius = record.desc.radius;
     if (record.desc.type == graphics::LightType::Spot) {
         light->setAngle(record.desc.coneAngle);
@@ -194,15 +213,48 @@ void SceneLighting::useLights(const graphics::LightSelection& selection) {
         m_world->removeLight(light);
     }
     m_inWorld.clear();
-    for (const std::uint16_t index : selection.lights()) {
+    m_pending = selection;
+    const graphics::LightSelection drawn =
+        m_switches != nullptr
+            ? graphics::layeredSelection(selection, m_lighting.lights, m_switches->layers, m_switches->view)
+            : selection;
+    for (const std::uint16_t index : drawn.lights()) {
         rw::Light* light = mirror(index);
         m_world->addLight(light);
         m_inWorld.push_back(light);
     }
 }
 
+void SceneLighting::recordSelection(rw::Atomic* atomic) {
+    if (!m_pending) {
+        return;
+    }
+    // The caller from the draw kind the play mode names (cars are drawn among the objects), and the inputs each draw
+    // function passes the selection: the world's lists with point lights (none for the background), the objects'
+    // with the squared distance to the camera and point lights unless a human is hidden.
+    const graphics::LightSphere sphere = sphereOf(atomic);
+    const DrawKind kind = currentDrawKind();
+    graphics::SelectionCaller caller = graphics::SelectionCaller::Sector;
+    if (m_background) {
+        caller = graphics::SelectionCaller::Background;
+    } else if (kind == DrawKind::Humans) {
+        caller = graphics::SelectionCaller::Human;
+    } else if (kind == DrawKind::Objects) {
+        caller = graphics::SelectionCaller::Object;
+    }
+    const bool human = caller == graphics::SelectionCaller::Human;
+    const bool objects = human || caller == graphics::SelectionCaller::Object;
+    const bool pointLights = caller != graphics::SelectionCaller::Background && !(human && m_hiddenHuman);
+    const float distSq = objects ? distanceSq(sphere.centre, m_pose.position) : 0.0F;
+    m_frame.selections.push_back(graphics::frameSelectionOf(m_lighting.lights, caller, distSq, sphere, objects,
+                                                            pointLights, false, human, *m_pending));
+    m_pending.reset();
+    m_hiddenHuman = false;
+}
+
 void SceneLighting::renderInRig(rw::Atomic* atomic) {
     ++m_atomicsDrawn;
+    recordSelection(atomic);
     // Without the mesh views the atomic is drawn as it always is; with them they decide what is drawn, by the kind the
     // caller's scope names (the play mode marks the scenery, the humans and the objects it draws).
     if (m_meshViews == nullptr) {
@@ -268,7 +320,9 @@ void SceneLighting::drawBackgroundAtomic(rw::Atomic* atomic) {
     rw::Geometry* geometry = atomic->geometry;
     const rw::uint32 flags = geometry->flags;
     geometry->flags |= rw::Geometry::LIGHT;
+    m_background = true;
     renderInRig(atomic);
+    m_background = false;
     geometry->flags = flags;
 }
 

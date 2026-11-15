@@ -15,6 +15,7 @@
 #include "animation/anim_math.h"
 #include "core/error.h"
 #include "debug/debug_lines.h"
+#include "debug/entity_inspect.h"
 #include "graphics/light_manager.h"
 #include "graphics/lighting_frame.h"
 
@@ -72,14 +73,26 @@ struct LightingCounts {
 /// One line of the *Lights* group for record `index`: its kind, what it lights, on or off, its colours, radius,
 /// corona, flicker and source.
 [[nodiscard]] std::string lightLine(const graphics::LightManager& manager, std::uint16_t index);
-/// The lines of the *Selection* group for `selection`: one for the call, then one per light chosen, in order.
-[[nodiscard]] std::vector<std::string> selectionLines(const graphics::FrameSelection& selection);
+/// The *Selection* group's line for the call of `selection`: its caller, where its sphere is (game axes), the lights it
+/// chose of its cap, and the distance the cap was read from.
+[[nodiscard]] std::string selectionSummary(const graphics::FrameSelection& selection);
+/// The *Selection* group's lines for `selection` of `frame`: one per light chosen, in order, with where it came from
+/// (the copied list, the glow, the point lists) and a point light's score; then the point lights of the list the call
+/// read that overlapped its sphere and were dropped.
+[[nodiscard]] std::vector<std::string> selectionLines(const graphics::FrameSelection& selection,
+                                                      const graphics::LightingFrame& frame);
 
 /// The selection of `frame` drawn for an atomic nearest `at` (game axes) among `caller`'s: the one the Selection group
 /// shows for a human or an object. Coney's choice, as the design's comparison matches atomics: by caller and by the
 /// sphere's centre. Null when the frame has none of `caller`'s.
 [[nodiscard]] const graphics::FrameSelection* selectionNear(const graphics::LightingFrame& frame,
                                                             graphics::SelectionCaller caller, anim::Vec3 at);
+
+/// The Selection group's atomic in `frame`: the Entity inspector's selection `inspected` among `entities` (a human's
+/// or an object's nearest selection), or the player's, at `playerFeet`, when nothing is inspected. Null for none.
+[[nodiscard]] const graphics::FrameSelection* labSelection(const graphics::LightingFrame& frame,
+                                                           std::span<const EntityRef> entities, EntityId inspected,
+                                                           anim::Vec3 playerFeet);
 
 /// The *Debug draw* group's lines for `frame` (game axes), as `options` switches them; `selected` is the Selection
 /// group's atomic (null: none).

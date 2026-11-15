@@ -765,6 +765,10 @@ int main(int argc, char** argv) {
     // The Time page's bug report: the run log's ring into the log file.
     if (runLog) {
         debugServices.writeBugReport = [&runLog] { return runLog->writeBugReport(); };
+        // The Lighting page's Dump this frame writes beside the log file.
+        if (runLog->file()) {
+            debugServices.runLogFolder = runLog->file()->parent_path();
+        }
     }
     // The main loop's pacing (docs/guides/conventions.md#update-and-render). Test mode runs in lockstep with no clock:
     // one step and one render per frame. Otherwise the frame pacer measures real time and the frame clock turns it
@@ -979,12 +983,14 @@ int main(int argc, char** argv) {
     if (playLevel) {
         playLevel->setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
         playLevel->setMeshViews(meshViews);
+        playLevel->setLightingSwitches(&debugSession.lighting());
         playLevel->setSounds(audio ? &audio->sounds() : nullptr);
         playLevel->hud()->setSoundOutput(sandboxHudSound, sandboxHudStop, sandboxHudPlaying);
     }
     if (session) {
         session->setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
         session->setMeshViews(meshViews);
+        session->setLightingSwitches(&debugSession.lighting());
     }
     // The mode a sandbox or a new game session replaces: the sandbox's play mode or the sandbox viewer; null when
     // neither runs.
@@ -1022,6 +1028,7 @@ int main(int argc, char** argv) {
             playLevel = std::move(*mode);
             playLevel->setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
             playLevel->setMeshViews(meshViews);
+            playLevel->setLightingSwitches(&debugSession.lighting());
             playLevel->setSounds(audio ? &audio->sounds() : nullptr);
             playLevel->hud()->setSoundOutput(sandboxHudSound, sandboxHudStop, sandboxHudPlaying);
             modes.push(*playLevel);
@@ -1057,6 +1064,7 @@ int main(int argc, char** argv) {
         started.attachAudio(audio.get());
         started.setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
         started.setMeshViews(meshViews);
+        started.setLightingSwitches(&debugSession.lighting());
         started.startAtLevel(name, checkpoint);
         debugSession.print(std::format("levels: playing {} at checkpoint {}", name, checkpoint));
     };
