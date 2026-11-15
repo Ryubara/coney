@@ -760,18 +760,8 @@ coney = "src/camera/rail_camera.h:RailCamera::damp"
 status = "compared"
 
 [[function.gaps]]
-what = "no damping while the target is in the falling states (0x1c00000000)"
-relation = "not-ported"
-issue = 1017
-
-[[function.gaps]]
 what = "the 40% look-at catch-up while +0x3ec is 1"
 relation = "not-ported"
-issue = 1017
-
-[[function.gaps]]
-what = "the segment's plan-length threshold (1e-5 squared; Coney: any length)"
-relation = "stand-in"
 issue = 1017
 
 [[function]]
@@ -798,18 +788,8 @@ coney = "src/camera/rail_camera.h:RailCamera::placeLevel"
 status = "compared"
 
 [[function.gaps]]
-what = "P put back when held, the world collision, and the +0x3ec step after a shake"
+what = "the world collision (CamRail_Collide, and CamRail_CollideTwoTargets when held) and the +0x3ec step after a shake"
 relation = "not-ported"
-issue = 1017
-
-[[function.gaps]]
-what = "a camera held at the start of placement is put back without placing; Coney places it again"
-relation = "stand-in"
-issue = 1017
-
-[[function.gaps]]
-what = "a height setting of exactly 0 is off in the original; Coney's ceiling then sits at the feet"
-relation = "stand-in"
 issue = 1017
 
 [[function]]
@@ -831,13 +811,8 @@ coney = "src/camera/rail_camera.h:RailCamera::placeLeading"
 status = "compared"
 
 [[function.gaps]]
-what = "the segment steps, the joint mean and the mirrored rail point: Coney walks the lead along the rail and clamps it to the ends"
-relation = "stand-in"
-issue = 1017
-
-[[function.gaps]]
-what = "switch 7: the camera off the rail beside the target, the look-at point P, and the collision rays and sphere push (Coney reads switch 7 as leading the look-at point)"
-relation = "stand-in"
+what = "switch 7's world rays from the rail point toward the camera and the 0.5 m sphere push of P"
+relation = "not-ported"
 issue = 1017
 
 [[function.gaps]]

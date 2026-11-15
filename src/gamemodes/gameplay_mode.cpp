@@ -526,6 +526,11 @@ void GameplayMode::enter() {
         }
         return std::nullopt;
     });
+    // The rail's damping skips a target that jumps or falls.
+    m_cameras->setAirborneTest([scripted = m_scripted.get()](double handle) {
+        const ai::Brain* brain = scripted->brain(handle);
+        return brain != nullptr && brain->human().airborne();
+    });
     // A locked camera's kept-in-view push moves a human the scripts made, keeping his heading.
     m_cameras->setMover([scripted = m_scripted.get()](double handle, anim::Vec3 feet) {
         if (ai::Brain* brain = scripted->brain(handle); brain != nullptr) {

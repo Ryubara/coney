@@ -36,9 +36,14 @@ constexpr float kTrailBaseSpeed = 1.0F;
 constexpr float kTrailBlendGrowth = 1.15F;
 constexpr float kTrailBlendDone = 0.3F;
 constexpr float kTrailEndSquared = 1e-10F;
+// The damping's rise tests need a segment at least this long in plan, squared (0x0013c06c).
+constexpr float kRiseTestPlanSquared = 1e-5F;
 
 // The length of a vector across the ground. @coney-only a maths helper
 float flatLength(anim::Vec3 v) { return std::hypot(v.x, v.y); }
+
+// The dot product of two vectors across the ground. @coney-only a maths helper
+float planDot(anim::Vec3 a, anim::Vec3 b) { return (a.x * b.x) + (a.y * b.y); }
 
 } // namespace
 
@@ -186,6 +191,13 @@ anim::Vec3 RailCamera::flatDirection() const {
     return flat > 0.0F ? anim::Vec3{along.x / flat, along.y / flat, 0.0F} : anim::Vec3{0.0F, 1.0F, 0.0F};
 }
 
+anim::Vec3 RailCamera::segmentVector(std::size_t i) const { return anim::subtract(m_points.at(i + 1), m_points.at(i)); }
+
+float RailCamera::planShare(anim::Vec3 p) const {
+    const float segmentPlan = flatLength(segmentVector(m_segment));
+    return segmentPlan > 0.0F ? flatLength(anim::subtract(p, m_points.at(m_segment))) / segmentPlan : 0.0F;
+}
+
 std::pair<float, float> RailCamera::project(std::size_t i, anim::Vec3 p) const {
     const anim::Vec3 a = m_points.at(i);
     const anim::Vec3 ab = anim::subtract(m_points.at(i + 1), a);
@@ -221,14 +233,18 @@ void RailCamera::makePoints(anim::Vec3 feet) { // stand-in (#1017): one target, 
     }
 }
 
-// Not ported (#1017): the original returns at once while the target is in the falling states (the target's state is
-// not passed in), and while `+0x3ec` is 1 (set after a shake, not built) the look-at point moves only 40% of the way
+// Not ported (#1017): while `+0x3ec` is 1 (set after a shake, not built) the look-at point moves only 40% of the way
 // each update until it arrives.
-void RailCamera::damp(anim::Vec3 oldTarget, anim::Vec3 oldLook) {
-    // The rise tests need a segment with a length in plan. Stand-in (#1017): any length above 0; the original's plan
-    // length squared above 1e-5.
-    const bool riseTests =
-        m_count >= 2 && flatLength(anim::subtract(m_points.at(m_segment + 1), m_points.at(m_segment))) > 0.0F;
+void RailCamera::damp(anim::Vec3 oldTarget, anim::Vec3 oldLook, bool airborne) {
+    // Nothing is damped while the target jumps or falls (state 0x1c00000000).
+    if (airborne) {
+        return;
+    }
+    // The rise tests need a segment of some length in plan.
+    const bool riseTests = m_count >= 2 && [this] {
+        const anim::Vec3 along = segmentVector(m_segment);
+        return planDot(along, along) >= kRiseTestPlanSquared;
+    }();
     const auto dampOne = [riseTests](anim::Vec3 old, anim::Vec3 now) {
         const anim::Vec3 delta = anim::subtract(now, old);
         const float plan = flatLength(delta);
@@ -291,12 +307,17 @@ void RailCamera::chooseSegmentFor(anim::Vec3 p) {
     m_segment = chosen;
 }
 
-void RailCamera::placeLevel(anim::Vec3 feet) {
-    const anim::Vec3 before = m_position;
-    const anim::Vec3 lookBefore = m_lookAt;
-    if (!m_held) {
-        chooseSegment();
+void RailCamera::placeLevel(anim::Vec3 feet, anim::Vec3 oldTarget, anim::Vec3 oldLook) {
+    // Held at the start (mode 3 reached an end, and the hold stays): not placed at all; P and the look-at point go back
+    // to the update's start, and the camera keeps its place. Not ported (#1017): CamRail_CollideTwoTargets then keeps
+    // the targets in frame.
+    if (m_held) {
+        m_target = oldTarget;
+        m_lookAt = oldLook;
+        return;
     }
+    const anim::Vec3 before = m_position;
+    chooseSegment();
     // The foot of the target point on the segment, clamped to its ends; within the reach of setting 0 in plan.
     anim::Vec3 q = m_points.at(m_segment);
     float t = 0.0F;
@@ -328,8 +349,8 @@ void RailCamera::placeLevel(anim::Vec3 feet) {
             m_blend = grown;
         }
     }
-    // The height: a ceiling over the target's feet. Stand-in: 0 is on here, off in the original (#1017).
-    if (m_height.current >= 0.0F) {
+    // The height: a ceiling over the target's feet, while the setting is above 0.
+    if (m_height.current > 0.0F) {
         q.z = std::min(q.z, feet.z + m_height.current);
     }
     // The fixed pitch: a look-at point 6 m from the camera toward the target in plan.
@@ -342,18 +363,16 @@ void RailCamera::placeLevel(anim::Vec3 feet) {
         }
     }
     // The ends: at the first point with the look-at point behind the rail's start, or at the last with it beyond the
-    // end, the camera keeps last update's view. **Coney's choice** (#1017): what clears the hold is not traced, so it
-    // holds only while that is so, and a camera held at the start of placement is placed again here where the
-    // original puts it back (with P) without placing.
-    m_held = false;
+    // end, the camera, P and the look-at point go back to the update's start. The hold this sets is put back to its
+    // start value by the collision step, so it lasts this update only.
     if (m_count >= 2 && m_placed) {
         const bool atStart = m_segment == 0 && t <= 0.0F && project(0, m_lookAt).first < 0.0F;
         const auto [lookT, lastLength] = project(m_count - 2, m_lookAt);
         const bool atEnd = m_segment == m_count - 2 && t >= length && lookT > lastLength;
         if (atStart || atEnd) {
-            m_held = true;
             m_position = before;
-            m_lookAt = lookBefore;
+            m_target = oldTarget;
+            m_lookAt = oldLook;
             return;
         }
     }
@@ -362,59 +381,102 @@ void RailCamera::placeLevel(anim::Vec3 feet) {
     m_position = q;
 }
 
-void RailCamera::placeLeading(anim::Vec3 feet, bool leadLook) {
-    // The target's place on the rail: its nearest point of the segments in plan. Stand-in (#1017): no segment steps.
-    float bestAway = std::numeric_limits<float>::max();
-    float along = 0.0F;
-    float total = 0.0F;
-    for (std::size_t i = 0; i + 1 < m_count; ++i) {
-        const auto [t, length] = project(i, feet);
-        const float clamped = std::clamp(t, 0.0F, length);
-        const anim::Vec3 ab = anim::subtract(m_points.at(i + 1), m_points.at(i));
-        const anim::Vec3 at = anim::add(m_points.at(i), anim::scale(ab, length > 0.0F ? clamped / length : 0.0F));
-        if (const float away = flatLength(anim::subtract(at, feet)); away < bestAway) {
-            bestAway = away;
-            along = total + clamped;
-        }
-        total += length;
+void RailCamera::placeLeading(anim::Vec3 feet, bool beside) {
+    // **Coney's choice**: a rail of one point holds the camera there; the original reads past it.
+    if (m_count < 2) {
+        m_position = m_points.at(0);
+        return;
     }
-    // The lead ahead or behind, clamped to the rail's ends. Stand-in (#1017): walked along the rail's segments.
     const float sense = m_mode == RailMode::Ahead ? 1.0F : -1.0F;
-    float left = std::clamp(along + (sense * m_lead.current), 0.0F, total);
-    anim::Vec3 direction{0.0F, 1.0F, 0.0F};
-    m_position = m_points.at(0);
-    for (std::size_t i = 0; i + 1 < m_count; ++i) {
-        const anim::Vec3 ab = anim::subtract(m_points.at(i + 1), m_points.at(i));
-        const float length = anim::length(ab);
-        if (length > 0.0F) {
-            direction = anim::scale(ab, 1.0F / length);
+    const float lead = m_lead.current;
+    const anim::Vec3 p = m_target;
+    // 1. P's segment: the nearest, then on while P lies past the segment's end point, then back while it lies before
+    // the segment's start (the forward steps only when P is farther from the start in plan than the segment is long).
+    chooseSegment();
+    if (planShare(p) > 1.0F) {
+        while (m_segment + 2 < m_count &&
+               planDot(anim::subtract(p, m_points.at(m_segment + 1)), segmentVector(m_segment)) > 0.0F) {
+            ++m_segment;
         }
-        if (left <= length || i + 2 == m_count) {
-            m_position = anim::add(m_points.at(i), anim::scale(direction, std::min(left, length)));
-            break;
-        }
-        left -= length;
     }
-    // Raised to the target's height plus the setting while it is above 0.
+    while (m_segment > 0 && planDot(anim::subtract(p, m_points.at(m_segment)), segmentVector(m_segment)) < 0.0F) {
+        --m_segment;
+    }
+    const std::size_t pSegment = m_segment;
+    // 2. P's foot F on that segment, level with its start, and the lead point B the lead ahead of or behind it.
+    // Not ported (#1017): with two or more targets B moves on by the farthest a target is ahead of P.
+    const anim::Vec3 u = flatDirection();
+    float along = planDot(anim::subtract(p, m_points.at(m_segment)), u);
+    anim::Vec3 foot = anim::add(m_points.at(m_segment), anim::scale(u, along));
+    const anim::Vec3 firstFoot = foot;
+    anim::Vec3 leadPoint = anim::add(foot, anim::scale(u, sense * lead));
+    // 3. B's segment: the same steps along P's segment's direction, the forward ones only while B is still past the
+    // segment's end; at a joint F and B are worked out again there and B is the mean of the two, so it does not jump.
+    if (planShare(leadPoint) > 1.0F) {
+        while (m_segment + 2 < m_count && planDot(anim::subtract(leadPoint, m_points.at(m_segment + 1)), u) > 0.0F) {
+            ++m_segment;
+            if (planShare(leadPoint) <= 1.0F) {
+                break;
+            }
+        }
+    }
+    while (m_segment > 0 && planDot(anim::subtract(leadPoint, m_points.at(m_segment)), u) < 0.0F) {
+        --m_segment;
+    }
+    anim::Vec3 direction = u;
+    if (m_segment != pSegment) {
+        direction = flatDirection();
+        along = planDot(anim::subtract(p, m_points.at(m_segment)), direction);
+        foot = anim::add(m_points.at(m_segment), anim::scale(direction, along));
+        const anim::Vec3 again = anim::add(foot, anim::scale(direction, sense * lead));
+        leadPoint = anim::scale(anim::add(leadPoint, again), 0.5F);
+    }
+    // 4. The rail point: B's plan distance from the segment's start over its plan length, a length, so a lead point
+    // before the start mirrors past it. At the ends: the first point when P is more than the lead behind the rail's
+    // start; the last point on the last segment unless P is still before it and F at least the lead from it.
+    float share = planShare(leadPoint);
+    if (m_segment == 0 && along < -lead) {
+        share = 0.0F;
+    } else if (m_segment + 2 >= m_count) {
+        const anim::Vec3 last = m_points.at(m_count - 1);
+        const bool beforeEnd = planDot(anim::subtract(p, last), direction) < 0.0F;
+        if (!beforeEnd || flatLength(anim::subtract(foot, last)) < lead) {
+            share = 1.0F;
+        }
+    }
+    const anim::Vec3 start = m_points.at(m_segment);
+    const anim::Vec3 railPoint =
+        anim::add(start, anim::scale(anim::subtract(m_points.at(m_segment + 1), start), share));
+    // 5. Switch 7: off the rail, the lead from P in plan along the way from the first foot to the rail point, at the
+    // rail point's height. A zero way gives no step: the VU's reciprocal square root of 0 times a zero vector
+    // (inferred).
+    anim::Vec3 placed = railPoint;
+    if (beside) {
+        const anim::Vec3 way{railPoint.x - firstFoot.x, railPoint.y - firstFoot.y, 0.0F};
+        const float wayLength = flatLength(way);
+        const anim::Vec3 step = wayLength > 0.0F ? anim::scale(way, lead / wayLength) : anim::Vec3{};
+        placed = anim::Vec3{p.x + step.x, p.y + step.y, railPoint.z};
+    }
+    // 6. Off the rail, it looks at P. Not ported (#1017): the world rays from the rail point toward the camera that
+    // pull it back short of a face, and P pushed out of the world by a 0.5 m sphere first.
+    if (flatLength(anim::subtract(placed, railPoint)) != 0.0F) {
+        m_lookAt = p;
+    }
+    m_position = placed;
+    // 7. Raised to the target's height plus the setting while it is above 0.
     if (m_height.current > 0.0F) {
         m_position.z = feet.z + m_height.current;
     }
-    // Not ported (#1017): with two or more targets the lead point moves on by the farthest a target is ahead (on each
-    // segment), CamRail_CollideTwoTargets, and the re-facing after a shake; the push out of nearby humans (#165).
-    // Switch 7: stand-in (#1017): the original puts the camera off the rail, the lead from P toward the rail point,
-    // pulls it back short of the world with two rays and a 0.5 m sphere, and looks at P; Coney keeps the camera on the
-    // rail and moves the look-at point on by the lead.
-    if (leadLook) {
-        m_lookAt = anim::add(m_lookAt, anim::scale(direction, sense * m_lead.current));
-    }
+    // Not ported: the push out of nearby humans (#165); CamRail_CollideTwoTargets with two or more targets and the
+    // re-facing after a shake (#1017).
 }
 
-void RailCamera::update(std::optional<anim::Vec3> feet, bool leadLook, float seconds, anim::Vec3 velocity,
-                        bool /*airborne*/) {
+void RailCamera::update(std::optional<anim::Vec3> feet, bool beside, float seconds, anim::Vec3 velocity,
+                        bool airborne) {
     if (seconds <= 0.0F && m_placed) {
         return;
     }
-    placeFor(feet, leadLook, seconds, velocity);
+    placeFor(feet, beside, seconds, velocity, airborne);
     // Not ported (#549): the split-screen extras (CamRail_UpdateSplitScreen) and the co-op flash's fade.
     // An update with time ends the activation's start and its undamped step, in any mode.
     if (seconds > 0.0F) {
@@ -423,7 +485,8 @@ void RailCamera::update(std::optional<anim::Vec3> feet, bool leadLook, float sec
     }
 }
 
-void RailCamera::placeFor(std::optional<anim::Vec3> feet, bool leadLook, float seconds, anim::Vec3 velocity) {
+void RailCamera::placeFor(std::optional<anim::Vec3> feet, bool beside, float seconds, anim::Vec3 velocity,
+                          bool airborne) {
     // The settings eased toward their targets; a height on its way off switches off once there.
     for (EasedValue* value : {&m_lead, &m_distance, &m_height, &m_fieldOfView, &m_shift, &m_lookShift, &m_pitch,
                               &m_lookHeight, &m_mode3Pitch, &m_mode3Margin}) {
@@ -452,12 +515,12 @@ void RailCamera::placeFor(std::optional<anim::Vec3> feet, bool leadLook, float s
         return;
     }
     if (m_placed && !m_undamped) {
-        damp(oldTarget, oldLook);
+        damp(oldTarget, oldLook, airborne);
     }
     if (m_mode == RailMode::Level) {
-        placeLevel(*feet);
+        placeLevel(*feet, oldTarget, oldLook);
     } else {
-        placeLeading(*feet, leadLook);
+        placeLeading(*feet, beside);
     }
     m_placed = true;
 }
