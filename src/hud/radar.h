@@ -174,8 +174,9 @@ struct RadarOffset {
 void addRadarDisc(graphics::SpriteBatch& batch, graphics::OverlayPoint centre, float rx, float ry,
                   const RadarState& radar, graphics::Rgba colour);
 
-/// Whether a blip's dot is lit this update: its own shown state (RadarBlip::dotShown), blinking for a new objective's
-/// first 100 updates and while flashing.
+/// Whether a shown dot (RadarBlip::dotShown) is lit this update: it blinks, its alpha toggled every 4 updates, for a
+/// new objective's first 100 updates and while flashing.
+/// @orig 0x001c5210 Radar_Update (RadarHUD.cpp)
 [[nodiscard]] bool radarBlipShown(const RadarBlip& blip, std::uint64_t updates);
 
 /// The scanner's mark lasts this many radar updates (`Radar_MarkBlip`).

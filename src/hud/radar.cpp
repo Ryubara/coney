@@ -31,12 +31,15 @@ graphics::Rgba withAlpha(graphics::Rgba colour, std::uint8_t alpha) {
 }
 
 // Types 5, 6 and 8: the dots of humans against the player (none is made for type 5), shown by the scanner's marks.
+// @orig 0x001c5210 Radar_Update (RadarHUD.cpp)
 bool isEnemyType(int type) { return type == 5 || type == 6 || type == 8; }
 
 // Icons 25 and 26 draw in the radar's top batch.
+// @orig 0x001c5210 Radar_Update (RadarHUD.cpp)
 bool isTopBatchIcon(int icon) { return icon == 25 || icon == 26; }
 
 // Whether the radar's dots are shown now (`+0x08` set, `+0x0c` clear).
+// @orig 0x001c5210 Radar_Update (RadarHUD.cpp)
 bool dotsShowing(const RadarState& radar) { return radar.shown && !radar.hidden; }
 
 // Settles every blip added since the last step, so a show or hide finds it made as Radar_AddBlip would have.
