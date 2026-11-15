@@ -10,6 +10,11 @@ level = "confirmed-code"
 coney = "src/human/locomotion.h:turnedStickIntent"
 status = "compared"
 
+[[function.gaps]]
+what = "the record's two bytes handed to the pad record's +0x41 and +0x40, the vibration"
+relation = "not-ported"
+issue = 179
+
 [[function]]
 address = 0x0016e258
 name = "LevelChunk_CharacterData"

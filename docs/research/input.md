@@ -144,7 +144,8 @@ When `0x0050b198` differs from `0x0050b19c`, a pad that does not use its kept qu
 (never the identity), and the slot it copies into is the one that camera names (its vtable slot `+0x27c`); the test
 for the kept quaternion still asks about the pad's own player (`+0x42`) and reads his slot. Confirmed (code). A pad
 with a player whose `Camera_GetPlayerCamera` is null gets no new matrix: `Pad_Update` is handed the stack buffer as the
-previous pad left it (inferred; Coney uses the identity there, a stand-in, see [Open questions](#open-questions)).
+previous pad left it (inferred from the buffer being written only in the two branches above; Coney uses the
+identity there, a stand-in, see [Open questions](#open-questions)).
 Confirmed (code) at `0x001454a8`; the loop runs for records 0 and 4 only (the `0x140`-byte stride of the `libpad`
 records, four pad records).
 
@@ -219,8 +220,8 @@ stick as well as the others (a Coney choice; the original leaves the record as i
 ## Open questions
 
 - What a pad whose player has no current camera is turned by: `Pads_Update` passes its stack matrix as the previous
-  pad left it, or whatever the stack held for the first pad (inferred from `0x001454a8`). Coney uses the identity (a
-  stand-in); no case in play is known where a bound player has no camera.
+  pad left it, or whatever the stack held for the first pad (inferred from the unwritten buffer at `0x001454a8`).
+  Coney uses the identity (a stand-in); no case in play is known where a bound player has no camera.
 
 - The role of the pad record's `+0x44` (set to −1 with `+0x42`; `Player_UnbindPad` copies `+0x42` there before clearing
   it, so it may be the last player).
