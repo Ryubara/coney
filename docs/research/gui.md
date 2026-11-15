@@ -1290,7 +1290,7 @@ whose size equals the record's `size`, and records 0, 1, 3, 7, 8, 10, 13 and 51 
   `0x0019eea0`) stores one. **The id is the table key the script gives**, explicit in the files (`GSTRING.HUD[n] =
   ...`), not the order of the entries. The other ~1,800 binding calls of `config_preload2.lua` (character, weapon and
   sound configuration) are skipped as no-ops. Coney's choices: every table is a map, so any id works (the original's HUD
-  array at `0x00600048` has a size not yet known); `doFile("config_strings_en")` adds the `.lua` the WAD entry has, as
+  array at `0x00600048` has an untraced size); `doFile("config_strings_en")` adds the `.lua` the WAD entry has, as
   the original does; `GetPlatform` returns 1, as on the PS2 (below).
 
 **Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[disc][strings]"` with `CONEY_DISC` set loads all five
