@@ -45,6 +45,7 @@ struct RadarBlip {
     bool marked = false;   ///< Slot `+0x30`: always for types 7, 10 and 12, else set by the scanner's mark.
     int markTimer = 0;     ///< Slot `+0x2e`: updates left of the scanner's mark (300 a mark).
     bool dotShown = false; ///< The dot's own shown state (its hide flag, messages `0x2a` and `0x29`).
+    bool hasDot = true;    ///< Slot `+0x24` names a dot: every blip but one added as type 9 (the arrow widget).
     std::optional<anim::Vec3> place; ///< Where the last radar step found it.
 };
 

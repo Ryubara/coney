@@ -202,6 +202,7 @@ void settleRadarBlip(RadarBlip& blip, const RadarState& radar) {
     blip.depth = radarBatchDepth(blip.type);
     // A type-9 slot gets the arrow widget instead of a dot, and neither a mark nor a first hide.
     if (blip.type == 9) {
+        blip.hasDot = false;
         return;
     }
     blip.marked = blip.type == 7 || blip.type == 10 || blip.type == 12;
@@ -260,8 +261,13 @@ bool stepRadarBlips(RadarState& radar, const RadarStepContext& context) {
         if (!blip.settled) {
             settleRadarBlip(blip, radar);
         }
-        // The player's own blip is the arrow widget, which Coney draws apart (Hud::renderPlayerArrow).
+        // The player's own blip is the arrow widget, which Coney draws apart (Hud::renderPlayerArrow). A slot whose dot
+        // does not resolve ends the whole update, so the blips after it are not stepped. **Coney's stand-in**: Coney's
+        // blips go in handle order, not the original's slot (add) order, so which blips come after it can differ.
         if (blip.type == 9) {
+            if (!blip.hasDot) {
+                return policeHint;
+            }
             continue;
         }
         // 1. Icons 25 and 26 go to the top batch (Radar_MoveSlotToBatch48): a new dot, at the same size and colour,

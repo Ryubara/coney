@@ -371,7 +371,8 @@ class Hud {
         m_brainOf = std::move(brainType);
     }
     /// The enemy scanner's mark on the blip of `handle` (`HUD_RadarMarkEnemies` marks both radars; Coney's blips are
-    /// radar 0's): it shows for 300 radar updates where marks count (RadarState::keepShown clear).
+    /// radar 0's): it shows for 300 radar updates where marks count (RadarState::keepShown clear). Nothing in Coney
+    /// calls it yet: the enemy scan's marks are #1402's.
     /// @orig 0x001c4be0 Radar_MarkBlip (RadarHUD.cpp)
     void markRadarBlip(double handle);
     /// The radars' state.

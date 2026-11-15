@@ -230,6 +230,11 @@ relation = "stand-in"
 issue = 1018
 
 [[function.gaps]]
+what = "the blips are stepped in handle order, not slot order, so which ones a dotless type-9 slot stops can differ"
+relation = "stand-in"
+issue = 1018
+
+[[function.gaps]]
 what = "the objectives' blink runs on Coney's radar update count, not each blip's own count from its add"
 relation = "stand-in"
 issue = 1018
