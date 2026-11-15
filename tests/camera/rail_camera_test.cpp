@@ -230,6 +230,38 @@ TEST_CASE("the rail camera's end hold reads the camera's point after the reach p
     CHECK(rail.position().y == Approx(4.0F / away * (away - 1.0F)));
 }
 
+TEST_CASE("the rail camera's end hold reads the look-at point as made, before the damping", "[camera]") {
+    // Expected: camera.md#rail, confirmed (code): CamRail_UpdatePosition (0x0013d6b0) step 6 tests +0x300, the look-at
+    // point CamRail_Update keeps as made (0x0013d464), not the damped one.
+    // A look-at offset 1 m back along x: P (19.5) and the look-at point (18.5), then the feet jump 4.5 m on. Damped by
+    // a quarter, P (20.625) has its foot at the end and the damped look-at point (19.625) is still short of it, but the
+    // look-at point as made (23) is beyond: the camera holds and P goes back.
+    RailCamera rail;
+    RailSetup setup;
+    setup.offset = Vec3{-1.0F, 0.0F, 1.5F};
+    rail.setup(setup);
+    rail.addPoint(Vec3{0.0F, 0.0F, 2.0F});
+    rail.addPoint(Vec3{10.0F, 0.0F, 2.0F});
+    rail.addPoint(Vec3{20.0F, 0.0F, 2.0F});
+    rail.update(Vec3{19.5F, 4.0F, 0.0F}, false, kStep);
+    REQUIRE(rail.targetPoint().x == Approx(19.5F));
+    rail.update(Vec3{24.0F, 4.0F, 0.0F}, false, kStep);
+    CHECK(rail.position().x == Approx(20.0F));
+    CHECK(rail.targetPoint().x == Approx(19.5F));
+    CHECK(rail.lookAt().x == Approx(18.5F));
+}
+
+TEST_CASE("the rail camera's end hold on an activation's update keeps the points it made", "[camera]") {
+    // Expected: camera.md#rail, confirmed (code): CamRail_Update (0x0013d010) replaces the update's start P and look-at
+    // point with the fresh ones while +0x3e8 is set (0x0013d45c-0x0013d488), so a hold puts back those.
+    RailCamera rail = straightRail();
+    rail.update(Vec3{15.0F, 4.0F, 0.0F}, false, kStep);
+    rail.activate();
+    rail.update(Vec3{30.0F, 4.0F, 0.0F}, false, kStep);
+    CHECK(rail.targetPoint().x == Approx(30.0F));
+    CHECK(rail.lookAt().x == Approx(30.0F));
+}
+
 TEST_CASE("a rail camera held at the start of its mode 0 placement is put back as it was, its target point too",
           "[camera]") {
     // Expected: camera.md#rail, confirmed (code): CamRail_UpdatePosition (0x0013d6b0), the hold.
@@ -313,14 +345,14 @@ TEST_CASE("the rail camera holds at the rail's end; its settings ease linearly; 
     rail.update(Vec3{15.0F, 4.0F, 0.0F}, false, kStep);
     CHECK(rail.position().x == Approx(15.0F));
     CHECK_FALSE(rail.held());
-    // The target runs on past the end: P is damped from 15 to 18.75, then to 21.5625 with the look-at point beyond the
-    // end, so the update puts the camera, P and the look-at point back (camera.md#rail step 6); the hold lasts that
-    // update only, and every later one does the same.
+    // The target runs on past the end: P is damped from 15 to 18.75, then to 21.5625, whose foot is the last point,
+    // with the look-at point beyond the end: the camera takes the end point and P and the look-at point go back
+    // (camera.md#rail step 6); the hold lasts that update only, and every later one does the same.
     for (int i = 0; i < 30; ++i) {
         rail.update(Vec3{30.0F, 4.0F, 0.0F}, false, kStep);
     }
     CHECK_FALSE(rail.held());
-    CHECK(rail.position().x == Approx(18.75F));
+    CHECK(rail.position().x == Approx(20.0F));
     CHECK(rail.targetPoint().x == Approx(18.75F));
     CHECK(rail.lookAt().x == Approx(18.75F));
 
