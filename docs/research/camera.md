@@ -2355,7 +2355,7 @@ addresses unless marked). `s` = +1 in mode 1 (ahead), −1 in mode 2 (behind); t
    is still more than its plan length. If they change the segment, `F` and `B` are worked out again on the new one
    (the farthest-ahead target added again, in either mode) and `B` is the mean of the old and new `B`: the camera
    does not jump at a joint. The new `F` is kept for step 4's end test (`0x0013f0c0`); step 5 still uses the first
-   (`0x0013f418`).
+   (`0x0013f418`). Confirmed (code).
 4. **Rail point.** `t` = `B`'s plan distance from the segment's start ÷ the segment's plan length, a **length**
    (the plan length of `B` − start, never negative) and not clamped on an inner segment. So a lead point
    before the start gives the same `t` as one that far after it: in mode 2 with `P` less than the lead past the
