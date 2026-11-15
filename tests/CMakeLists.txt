@@ -569,6 +569,7 @@ if(CONEY_DEBUG_TOOLS)
         platform/disc_tandem_test.cpp
         platform/imgui_model_view_test.cpp
         platform/imgui_ui_scale_test.cpp
+        platform/lighting_rows_test.cpp
         platform/mesh_views_test.cpp
         platform/world_edit_test.cpp
         platform/disc_world_split_test.cpp

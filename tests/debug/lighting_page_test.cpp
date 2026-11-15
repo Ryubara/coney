@@ -495,3 +495,23 @@ TEST_CASE("the lab's debug draw puts each light, the cull's reach and the select
     CHECK(toLamp.b.y == -10.0F);
     CHECK(toLamp.b.z == 1.0F);
 }
+
+TEST_CASE("two colour edits of one light in a frame both land between the steps", "[debug][lighting_lab]") {
+    // Expected: unverified, #1250 (Coney's own debug menu: edits queued and applied between two steps)
+    TunableRegistry tunables;
+    Level level;
+    FakePlay play(level);
+    DebugServices services;
+    services.play = [&play]() -> coney::debug::PlayControls* { return &play; };
+    DebugSession session(tunables, services, nullptr);
+    const std::string label = "#" + std::to_string(level.lamp - 1) + " point";
+    const auto lamp = open(*open(*session.model().openPage("Lighting"), "Lights"), label);
+    itemOn(*lamp, "Red").setNumber(0.25);
+    itemOn(*lamp, "Green").setNumber(0.5);
+    CHECK(session.lightEdits().pending() == 2);
+    static_cast<void>(session.lightEdits().applyPending(&level.lighting.lights));
+    const LightColour colour = level.lighting.lights.light(level.lamp)->desc.colour;
+    CHECK(colour.r == 0.25F);
+    CHECK(colour.g == 0.5F);
+    CHECK(colour.b == 0.8F);
+}
