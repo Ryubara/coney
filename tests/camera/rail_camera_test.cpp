@@ -216,6 +216,20 @@ TEST_CASE("the rail camera's damping skips its rise tests on a segment under 1e-
     CHECK(rail.targetPoint().z == Approx(1.8F));
 }
 
+TEST_CASE("the rail camera's end hold reads the camera's point after the reach pulls it off the rail", "[camera]") {
+    // Expected: camera.md#rail, confirmed (code): CamRail_UpdatePosition (0x0013d6b0) step 6 tests Q, the point after
+    // setting 0's pull, against the end point (3D, squared under 1e-10).
+    // P past the rail's end, 4 m to the side: the foot (20, 0) is pulled to within 1 m of P in plan, so Q is not the
+    // last point and the camera does not hold.
+    RailCamera rail = straightRail();
+    rail.modify(RailCamera::kDistance, 1.0F, 0.0F);
+    rail.update(Vec3{21.0F, 4.0F, 0.0F}, false, kStep);
+    rail.update(Vec3{21.3F, 4.0F, 0.0F}, false, kStep);
+    const float away = std::hypot(1.3F, 4.0F);
+    CHECK(rail.position().x == Approx(20.0F + (1.3F / away * (away - 1.0F))));
+    CHECK(rail.position().y == Approx(4.0F / away * (away - 1.0F)));
+}
+
 TEST_CASE("a rail camera held at the start of its mode 0 placement is put back as it was, its target point too",
           "[camera]") {
     // Expected: camera.md#rail, confirmed (code): CamRail_UpdatePosition (0x0013d6b0), the hold.
