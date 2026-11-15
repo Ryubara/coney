@@ -363,8 +363,8 @@ void RailCamera::placeLevel(anim::Vec3 feet, anim::Vec3 madeLook, anim::Vec3 old
     }
     // The ends: the camera's point at the first rail point (on segment 0) with the look-at point as made behind the
     // rail's start in plan, or else at the last point with it beyond the end, holds: the camera takes that end point
-    // (its place at the update's start after an activation) and P and the look-at point go back to the update's start.
-    // The hold this sets is put back to its start value by the collision step, so it lasts this update only.
+    // (after an activation its place at Q, within 1e-5 of it) and P and the look-at point go back to the update's
+    // start. The hold this sets is put back to its start value by the collision step, so it lasts this update only.
     if (m_count >= 2 && m_placed) {
         const auto atPoint = [q](anim::Vec3 point) {
             const anim::Vec3 away = anim::subtract(q, point);
@@ -377,7 +377,7 @@ void RailCamera::placeLevel(anim::Vec3 feet, anim::Vec3 madeLook, anim::Vec3 old
             atFirst ? planDot(segmentVector(0), anim::subtract(madeLook, first)) < 0.0F
                     : atPoint(last) && planDot(segmentVector(m_count - 2), anim::subtract(madeLook, last)) > 0.0F;
         if (ended) {
-            m_position = m_undamped ? before : (atFirst ? first : last);
+            m_position = m_undamped ? q : (atFirst ? first : last);
             m_target = oldTarget;
             m_lookAt = oldLook;
             return;

@@ -2186,11 +2186,12 @@ height set negative eases back to the present height before it switches off. Set
    look-at point tested is `+0x300`, the one `CamRail_Update` keeps as made, before the damping and step 5
    (`0x0013d464`; the tests `0x0013d97c`-`0x0013daec`). The test also writes that end point over the camera's saved
    start position (`0x0013d9c4`, `0x0013da80`), unless `+0x3e8` then copies the current place over it
-   (`0x0013db10`). Held, `P` and the look-at point go back to their values at the start of the update (on an
-   update with `+0x3e8` set, the freshly made ones: `CamRail_Update` saves them, `0x0013d45c`-`0x0013d488`) and the
-   camera takes that saved position (`0x0013db3c`), so it stands on the end point, then faces the look-at point
-   again. This hold lasts one update: step 7 clears it. So while the look-at point is past an end the camera stays
-   on the end point and `P` and the look-at point do not move on. Confirmed (code).
+   (`0x0013db10`), which is `Q` already (the camera was placed there at `0x0013d894`). Held, `P` and the look-at
+   point go back to their values at the start of the update (on an update with `+0x3e8` set, the freshly made ones:
+   `CamRail_Update` saves them, `0x0013d45c`-`0x0013d488`) and the camera takes that saved position (`0x0013db3c`),
+   so it stands on the end point, then faces the look-at point again. This hold lasts one update: step 7 clears it.
+   So while the look-at point is past an end the camera stays on the end point and `P` and the look-at point do not
+   move on. Confirmed (code).
 7. **Collision** (`0x0013dbbc`-`0x0013dc1c`): when the camera is held (by step 6 or by `CamLockRail`), or with
    switch 3 off, switch 8 on and two or more targets, `CamRail_CollideTwoTargets` (`0x00140708`) runs and the hold
    is then set back to its value at the start of placement. Otherwise `CamRail_Collide` (`0x00140830`) runs for the
