@@ -268,6 +268,9 @@ TEST_CASE("ObjDestroy of a swinging door removes its leaves, but not dyn_door_st
     CHECK(h.first("GetHitpoints", {Value(left)}).number() == 0.0);
     CHECK(h.first("GetHitpoints", {Value(right)}).number() == 0.0);
     CHECK_FALSE(h.objects.positionOf(left).has_value());
+    // The door's own handle no longer resolves either.
+    CHECK_FALSE(h.objects.positionOf(wood).has_value());
+    CHECK(h.first("IsDoorOpen", {Value(wood)}).isNil());
 
     const double stall =
         h.first("SpawnDoor", {str("dyn_door_stall"), list({8, 2, 0}), list({0, 0, 0, 1}), list({2, 3}), Value(8.0)})
@@ -278,6 +281,30 @@ TEST_CASE("ObjDestroy of a swinging door removes its leaves, but not dyn_door_st
     CHECK(h.first("GetHitpoints", {Value(stall)}).number() == 0.0);
     CHECK(h.first("GetHitpoints", {Value(leaf)}).number() == 100.0);
     CHECK(h.objects.positionOf(leaf).has_value());
+}
+
+TEST_CASE("GetHitpoints of a sliding door's leaf is its type's, before and after the door's removal",
+          "[object_bindings]") {
+    // Expected: objects.md#hitpoints-word, confirmed (code): a leaf is a world object, WorldObject_Init's word
+    Harness h;
+    std::vector<Value> sliding = cfgObj("dyn_door_rollup", "dyn_door_sliding", 0);
+    sliding[14] = Value(1.5);
+    sliding[15] = Value(0.05);
+    sliding[17] = Value(3.0);
+    h.first("CfgObj", sliding);
+    h.first("CfgObj", cfgObj("dyn_dr_rollup", "sub_sliding_door", 40));
+    const double door =
+        h.first("SpawnDoor", {str("dyn_door_rollup"), list({4, 2, 0}), list({0, 0, 0, 1}), list({0, 1}), Value(7.0)})
+            .number()
+            .value_or(0.0);
+    REQUIRE(h.objects.doors.find(door) != nullptr);
+    REQUIRE_FALSE(h.objects.doors.find(door)->slidingLeaves.empty());
+    const double leaf = h.objects.doors.find(door)->slidingLeaves[0].handle;
+    CHECK(h.first("GetHitpoints", {Value(leaf)}).number() == 40.0);
+    // The destroy message removes the door; its handler has nothing for 0x20, so the leaf stays.
+    h.first("ObjDestroy", {Value(door), Value(true)});
+    CHECK(h.first("GetHitpoints", {Value(door)}).number() == 0.0);
+    CHECK(h.first("GetHitpoints", {Value(leaf)}).number() == 40.0);
 }
 
 TEST_CASE("CfgSetGlassProperties, SpawnBreakableGlass and BreakGlassInRadius", "[object_bindings]") {
