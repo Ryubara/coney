@@ -37,8 +37,9 @@ struct LightingSwitches {
     /// Keep the light view and the time of the step it was held on (the flicker, the pulse and every selection) while
     /// no step runs; a step moves it on by one.
     bool hold = false;
-    /// Light from the game camera (the follow, scene or pinned camera) while the free camera flies, as the original
-    /// culls and caps from the player's camera; off: from the camera the frame is drawn through.
+    /// Cull the lights from the game camera (the follow, scene or pinned camera) while the free camera flies, as the
+    /// original culls from the player's camera; off: from the camera the frame is drawn through. The caps, read from
+    /// each atomic's distance in the ported draw functions, stay the drawn camera's either way.
     bool lightFromGameCamera = true;
     LightingLayers layers;
     LightingView view = LightingView::Final;

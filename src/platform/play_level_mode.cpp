@@ -908,7 +908,7 @@ void PlayLevelMode::render(const RenderTime& time) {
     MeshViewHook* views = m_meshViews && m_meshViews->beginFrame(*this) ? m_meshViews.get() : nullptr;
     m_lights->scene().setMeshViews(views);
     // The lighting lab's switches, and the game camera's view for its Light from while the free camera flies (the
-    // original culls and caps from the player's camera).
+    // original culls the lights from the player's camera).
     m_lights->scene().setSwitches(m_lightingSwitches);
     std::optional<graphics::LightView> gameView;
     if (m_lightingSwitches != nullptr && m_freeCamera) {

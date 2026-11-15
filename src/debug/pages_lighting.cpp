@@ -70,7 +70,8 @@ std::shared_ptr<MenuPage> framePage(DebugSession& session) {
                   "Light from", {"game camera", "view camera"},
                   [&switches] { return std::size_t{switches.lightFromGameCamera ? 0U : 1U}; },
                   [&switches](std::size_t choice) { switches.lightFromGameCamera = choice == 0; }))
-        .withHelp("Cull and cap the lights from the game's camera (as the original) or the camera drawn through");
+        .withHelp("Cull the lights from the game's camera (as the original) or the camera drawn through; the caps stay "
+                  "the drawn camera's");
     page->add(actionItem("Dump this frame",
                          [&session] {
                              const graphics::LightingFrame* frame = frameOf(session);
