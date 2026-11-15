@@ -1897,6 +1897,11 @@ level = "confirmed-code"
 coney = "src/scripting/object_bindings.cpp:makeGetHitpoints"
 status = "compared"
 
+[[function.gaps]]
+what = "the leaves dyn_door_liz and dyn_door_dclub remove at a model stage still answer until the break"
+relation = "stand-in"
+issue = 707
+
 [[function]]
 address = 0x00385950
 name = "Object_GetTypeBits"
