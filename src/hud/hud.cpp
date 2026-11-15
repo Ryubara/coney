@@ -118,7 +118,7 @@ void Hud::levelShutDown() {
 }
 
 void Hud::hideAll() {
-    // **Coney's choice**: the Armies of the Night exception (game state +0x14c) is not checked; it does not arise yet.
+    // **Coney stand-in** (#662): the Armies of the Night exception (game state +0x14c, not ported) is not checked.
     for (PlayerPanel& panel : m_panels) {
         panel.hide();
     }
@@ -289,6 +289,8 @@ void Hud::radarOn(int player) {
             m_radar.on.at(i) = true;
         }
     }
+    // HUD_RadarEnable also marks the automatic return as done (+0x177b0), so the next step turns no other radar on.
+    m_radarsAutoOn = true;
     // HUD_RadarEnable's Radar_Show, after the on flag: radar 0's dots.
     if (which.at(0)) {
         showRadarDots(m_radar);
@@ -309,6 +311,8 @@ void Hud::radarOff(int player) {
             m_radar.on.at(i) = false;
         }
     }
+    // HUD_RadarDisable clears the automatic return's mark (+0x177b0).
+    m_radarsAutoOn = false;
     m_radar.scriptOn = false;
 }
 
@@ -533,7 +537,7 @@ void Hud::updateRadar(const HudFrame& frame) {
         }
         m_radarDotsOn = m_radar.on.at(0);
     }
-    // Coney's blinking clock.
+    // Coney's blinking clock (radarBlipShown()).
     ++m_radar.updates;
     // Radar_Update's blips, only while the radar is on.
     if (!m_radar.on.at(0) || !m_radar.view.known) {

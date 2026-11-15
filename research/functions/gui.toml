@@ -210,7 +210,7 @@ status = "compared"
 address = 0x001c4d00
 name = "Radar_AddBlip"
 page = "gui.md#fn-radarhud"
-role = "a blip's slot, batch by type, and its first show: types 7, 9, 10, 12 marked and shown on a shown radar"
+role = "a blip's slot, batch by type, and its first show: types 7, 10, 12 marked and shown on a shown radar, type 9 a widget"
 level = "confirmed-code"
 coney = "src/hud/radar.h:settleRadarBlip"
 status = "compared"
@@ -226,6 +226,11 @@ status = "compared"
 
 [[function.gaps]]
 what = "a blip whose object cannot be found keeps its slot and skips the step (the original frees the slot of a dead handle)"
+relation = "stand-in"
+issue = 1018
+
+[[function.gaps]]
+what = "the objectives' blink runs on Coney's radar update count, not each blip's own count from its add"
 relation = "stand-in"
 issue = 1018
 

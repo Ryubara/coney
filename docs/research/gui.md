@@ -640,9 +640,9 @@ code use are 7-34 texels a side (disc check). `HUD_RadarSetBlipIcon` (`0x001b2ca
 | `+0x5c`, `+0x60` | 96 sprites each, depths 1,000, 2,000 | 6, 7, 8, by layer |
 | `+0x48` | 16 sprites, depth 10,000 | not traced |
 
-A new blip of type 7, 9, 10 or 12 stays visible while the radar's `+0x08` is set and `+0x0c` clear; any other is
-sent message `0x2a`, which sets flag `0x04` of the dot (`+0x54`; hidden, inferred) until message `0x29` clears it.
-`0x001b2990` adds nothing for type 5, and for type 6 adds two layers with icons 352 and 359.
+A new blip of type 7, 10 or 12 stays visible while the radar's `+0x08` is set and `+0x0c` clear (type 9 gets a widget
+and no dot); any other is sent message `0x2a`, which sets flag `0x04` of the dot (`+0x54`; hidden, inferred) until
+message `0x29` clears it. `0x001b2990` adds nothing for type 5, and for type 6 adds two layers with icons 352 and 359.
 
 **Humans.** `HUD_RadarAddHuman` (`0x001b4168`) picks the blip from the character class byte (`CfgChar` `+0x11a`,
 [AI](ai/index.md#types)): class 1 (police) type 8 with icon 356 on both layers; class 0 or 3 type 9 (icon 362, grey
@@ -728,7 +728,7 @@ A radar's fields and its 128 slots of `0x40` bytes (from radar `+0x920`). Confir
 | `+0x28` | ptr | the `BaseWidget` of a type-9 blip |
 | `+0x2c` | s16 | blip type |
 | `+0x2e` | s16 | mark timer, updates (300 per mark) |
-| `+0x30` | u8 | shown: always for types 7, 9, 10, 12; set by a mark for the others |
+| `+0x30` | u8 | marked: always for types 7, 10, 12; set by a mark for the others (0 for type 9) |
 | `+0x31` | u8 | in use: 1 follows its object, 2 a fixed point |
 | `+0x32` / `+0x33` | u8 | objective flash countdown (100) / phase |
 | `+0x34` | u32 | icon lock (`0x001c4640`) |
@@ -898,7 +898,7 @@ plain struct, not a widget, with 128 blip slots of `0x40` bytes from `+0x920` (l
 | `0x001c4a40` | `Radar_SetBlipType(radar, handle, type)` | changing to type 9 makes the slot's `BaseWidget` (size 1, depth 20,000, colour `0x005fd310`, sprite `0x16a` = 362, batch 2); leaving type 9 frees it; slot `+0x2c` = type | confirmed (code) |
 | `0x001c4be0` | `Radar_MarkBlip` | an enemy seen by the scanner: re-sends the slot's colour on a first mark, mark timer `+0x2e` = 300 updates, marked `+0x30` = 1 | confirmed (code) |
 | `0x001c4c88` | `Radar_IsObjectiveBlip` | layer 0 slot type is 10 | confirmed (code) |
-| `0x001c4d00` | `Radar_AddBlip` | [The radar](#radar-icons); also records the batch at `+0x20`, icon `0x45` at `+0x18`, flash counter `+0x32` = 100 and phase `+0x33` = 2; types 7, 9, 10 and 12 get `+0x30` = 1 (always shown) | confirmed (code) |
+| `0x001c4d00` | `Radar_AddBlip` | [The radar](#radar-icons); also records the batch at `+0x20`, icon `0x45` at `+0x18`, flash counter `+0x32` = 100 and phase `+0x33` = 2; types 7, 10 and 12 get `+0x30` = 1 (always shown); type 9 gets the widget, `+0x30` = 0 and no hide | confirmed (code) |
 | `0x001c4ff8` | `Radar_FreeSlot` | frees the widget, kills the dot (vtable `+0x4c`) in task phase 0, resets every field | confirmed (code) |
 | `0x001c5108` | `Radar_RemoveHandle` | frees the handle's slot when found | confirmed (code) |
 | `0x001c5158` | `Radar_FindFreeSlot` | first slot whose in-use byte `+0x31` is 0, or -1 | confirmed (code) |
@@ -971,10 +971,12 @@ Confirmed (code) at the cited addresses unless a line says otherwise; the runtim
 
 The radar's shown and hidden flags change with the HUD: `HUD_Hide` (`0x001b1f38`) runs `Radar_HideAllBlips` (hidden
 set, every dot hidden), `HUD_Restore` (`0x001b20f8`) runs `Radar_Show` (every dot shown, hidden cleared, shown set,
-only while the radar is on), and `HUD_RadarEnable` (`0x001b2610`) sets the radar on and then shows it, while
-`HUD_RadarDisable` (`0x001b2658`) hides it (shown cleared, every dot hidden) before clearing on. A new blip of type 7,
-9, 10 or 12 is marked for good and shows while the radar is shown and not hidden; any other starts hidden
-(`Radar_AddBlip`), and so, beyond the zoom, stays hidden until a `Radar_Show` or the zoom brings it in.
+only while the radar is on), and `HUD_RadarEnable` (`0x001b2610`) sets the radar on and HUD `+0x177b0` (the automatic
+return's mark, so `HUD_Update` then turns no other radar on) and shows it, while `HUD_RadarDisable` (`0x001b2658`)
+clears `+0x177b0`, hides it (shown cleared, every dot hidden) and then clears on. A new blip of type 7, 10 or 12 is
+marked for good and shows while the radar is shown and not hidden; a type-9 slot gets the arrow widget, no mark and no
+hide; any other starts hidden (`Radar_AddBlip`), and so, beyond the zoom, stays hidden until a `Radar_Show` or the
+zoom brings it in.
 
 ### `GUI/ScreenFlowController.cpp` {#fn-screenflowcontroller}
 
@@ -1434,13 +1436,15 @@ What the implementer still needs:
 steps of [`Radar_Update`](#radar-update) for radar 0, whose blips are the ones Coney keeps and draws. Its differences,
 each marked in the code: a blip whose object cannot be found keeps its slot and skips the step (**Coney's choice**:
 Coney cannot yet locate every kind of object, so freeing would drop blips the scripts made); a blip is settled
-(`Radar_AddBlip`'s batch and first show) at the next radar step or show, not as it is added;
-`Tutorial_IsHintUnlocked(8)` is not read ([#662](issue:662), as for hint `0x15`); hint `0x16` is [#332](issue:332)'s.
-Nothing in Coney marks a blip yet (the enemy scan's marks are [#1011](issue:1011)'s, through `Hud::markRadarBlip`),
-Coney makes no type-6 or type-8 blip yet (`HUD_RadarAddHuman` gives every human type 7), and the player arrow's icon is
-362 until something sets it (the down icons and the two-player icons, [#549](issue:549)). The police hint's brain lookup
-(`Hud::setRadarBrainLookup`) is not given by play yet, so the hint waits for the police blips. Tests:
-`repo:tests/hud/radar_blips_test.cpp`.
+(`Radar_AddBlip`'s batch and first show) at the next radar step or show, not as it is added; the objectives' blink runs
+on Coney's radar update count (**Coney's stand-in**), not each blip's own count from its add, so its phase can be up to
+4 updates off; the police hint's once-flag (`0x200`) is kept with the HUD for the level, not in the game's hint word (a
+stand-in until [#332](issue:332) ports that word); `Tutorial_IsHintUnlocked(8)` is not read ([#662](issue:662), as for
+hint `0x15`); hint `0x16` is [#332](issue:332)'s. Nothing in Coney marks a blip yet (the enemy scan's marks are
+[#1011](issue:1011)'s, through `Hud::markRadarBlip`), Coney makes no type-6 or type-8 blip yet (`HUD_RadarAddHuman`
+gives every human type 7), and the player arrow's icon is 362 until something sets it (the down icons and the two-player
+icons, [#549](issue:549)). The police hint's brain lookup (`Hud::setRadarBrainLookup`) is not given by play yet, so the
+hint waits for the police blips. Tests: `repo:tests/hud/radar_blips_test.cpp`.
 
 ## Open questions
 

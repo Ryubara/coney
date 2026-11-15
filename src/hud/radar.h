@@ -42,7 +42,7 @@ struct RadarBlip {
     /// Radar_AddBlip's batch and first show or hide have been applied (settleRadarBlip(), at the next radar step).
     bool settled = false;
     int depth = 0;         ///< The depth of the sprite batch the dot draws in (slot `+0x20`); higher draws on top.
-    bool marked = false;   ///< Slot `+0x30`: always for types 7, 9, 10 and 12, else set by the scanner's mark.
+    bool marked = false;   ///< Slot `+0x30`: always for types 7, 10 and 12, else set by the scanner's mark.
     int markTimer = 0;     ///< Slot `+0x2e`: updates left of the scanner's mark (300 a mark).
     bool dotShown = false; ///< The dot's own shown state (its hide flag, messages `0x2a` and `0x29`).
     std::optional<anim::Vec3> place; ///< Where the last radar step found it.
@@ -212,8 +212,8 @@ inline constexpr std::array<int, 2> kRadarNoPoliceHintLevels{80, 99};
 /// @orig 0x001c4d00 Radar_AddBlip (RadarHUD.cpp)
 [[nodiscard]] int radarBatchDepth(int type);
 
-/// `Radar_AddBlip`'s batch and first show: types 7, 9, 10 and 12 are marked for good, and the dot shows only when
-/// marked while the radar is shown and not hidden.
+/// `Radar_AddBlip`'s batch and first show: types 7, 10 and 12 are marked for good, and the dot shows only when marked
+/// while the radar is shown and not hidden; a type-9 slot is the player's arrow widget, unmarked and with no dot.
 /// @orig 0x001c4d00 Radar_AddBlip (RadarHUD.cpp)
 void settleRadarBlip(RadarBlip& blip, const RadarState& radar);
 

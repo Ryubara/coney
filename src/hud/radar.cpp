@@ -171,6 +171,8 @@ void addRadarDisc(graphics::SpriteBatch& batch, graphics::OverlayPoint centre, f
 }
 
 bool radarBlipShown(const RadarBlip& blip, std::uint64_t updates) {
+    // **Coney's stand-in**: the blink runs on Coney's radar update count, where the original toggles each objective's
+    // alpha on its own count from its add (every fourth of its 100), so the phase can be up to 4 updates off.
     if (blip.flashCountdown > 0 || blip.flashing) {
         return (updates / kRadarFlashPeriod) % 2 == 0;
     }
@@ -198,7 +200,11 @@ int radarBatchDepth(int type) {
 void settleRadarBlip(RadarBlip& blip, const RadarState& radar) {
     blip.settled = true;
     blip.depth = radarBatchDepth(blip.type);
-    blip.marked = blip.type == 7 || blip.type == 9 || blip.type == 10 || blip.type == 12;
+    // A type-9 slot gets the arrow widget instead of a dot, and neither a mark nor a first hide.
+    if (blip.type == 9) {
+        return;
+    }
+    blip.marked = blip.type == 7 || blip.type == 10 || blip.type == 12;
     blip.dotShown = blip.marked && dotsShowing(radar);
 }
 
