@@ -3380,9 +3380,9 @@ The world viewer keeps its own free camera with the player camera's lens
   choices and stand-ins** (the side-by-side comparisons of `0x0013bad0`, `0x0013bfe0`, `0x0013d6b0` and `0x0013e708`
   for [#85](issue:85) list each one, and each is marked at its line in the code, most citing
   [#1017](issue:1017)): the damping skips an airborne target (state flags `0x1c00000000`) only through
-  `Cameras::setAirborneTest()`, which gameplay does not set yet, so in play the target is damped while he jumps or
-  falls; switch 7's world rays and
-  sphere push are not built, so a leading camera beside its target can stand inside a wall; the tie
+  `Cameras::setAirborneTest()`, which gameplay does not set yet ([#1406](issue:1406)), so in play the target is damped
+  while he jumps or falls; switch 7's world rays and sphere push are not built, so a leading camera beside its target
+  can stand inside a wall; the tie
   between two nearest rail points (with the segment choice's other differences, [#956](issue:956)), the 40% look-at
   catch-up (`+0x3ec`), the `+0x330` vector, the split-screen halving and extras, mode 3's keep-in-frame step
   (setting 7 is kept, `0x00140d68` not built) and the push out of world collision are not built; a rail with no

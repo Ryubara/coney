@@ -767,7 +767,7 @@ issue = 1017
 [[function.gaps]]
 what = "no damping while the target jumps or falls: RailCamera has it, but gameplay sets no airborne test on the camera manager yet"
 relation = "stand-in"
-issue = 1017
+issue = 1406
 
 [[function]]
 address = 0x0013d010
