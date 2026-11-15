@@ -268,6 +268,19 @@ int doorHitpointsWord(const world_objects::Door& door) {
     return door.maxHitpoints;
 }
 
+// The type of the sliding door leaf `handle`, an object of its own that outlives its door's removal; empty for none
+// (docs/research/objects.md#door-removal).
+// @coney-only a lookup by sliding leaf handle
+std::string_view slidingLeafModel(const world_objects::Doors& doors, double handle) {
+    for (const world_objects::Door& door : doors.doors()) {
+        const auto leaf = std::ranges::find(door.slidingLeaves, handle, &world_objects::SlidingLeaf::handle);
+        if (leaf != door.slidingLeaves.end()) {
+            return leaf->model;
+        }
+    }
+    return {};
+}
+
 // `GetHitpoints(object)`: the world object's hitpoints word (+0x128): a door's (doorHitpointsWord()), or a leaf's or a
 // spawn record's object's as its type and class leave it (world_objects::hitpointsWord()); 0 for anything that is no
 // world object (a human, car, pane, flag or bad handle) or is gone (docs/research/objects.md#hitpoints-word).
@@ -275,8 +288,8 @@ int doorHitpointsWord(const world_objects::Door& door) {
 NativeFunction makeGetHitpoints(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
         const double handle = binding::number(args, 0);
-        // The handle resolves to a door, to one of its leaves, or to a spawn record's object (made live when it is
-        // not).
+        // The handle resolves to a door, to one of its leaves (a swinging or a sliding door's), or to a spawn record's
+        // object (made live when it is not).
         std::string_view typeName;
         if (const LevelObjects* objects = context->objects) {
             if (const world_objects::Door* door = objects->doors.find(handle)) {
@@ -291,6 +304,8 @@ NativeFunction makeGetHitpoints(const BindingContext& context) {
                 }
                 const auto leaf = std::ranges::find(door->leaves, handle, &world_objects::DoorLeaf::handle);
                 typeName = leaf->model;
+            } else {
+                typeName = slidingLeafModel(objects->doors, handle);
             }
         }
         if (typeName.empty() && context->spawnRecords != nullptr) {

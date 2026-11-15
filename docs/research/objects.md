@@ -1588,7 +1588,9 @@ instance, body, sound and handle. Two callers delete an object: `WorldObject_Rem
 a task, with no spawn record, so it is never streamed out; it is removed by `ObjDestroy(door)` without its second
 argument (`Obj_Destroy`, `0x00396c58`, calls vtable `+0x4c`) and by the object update (`WorldObject_Update`,
 `0x00395b70`), which removes an object whose class update answers 1, as `DynDoorSwinging_Update` (`0x003fbba0`) does in
-state 6. Confirmed (code).
+state 6. Confirmed (code). Its handle freed, a removed door no longer resolves: Coney's lookups of a door by handle or
+by triangle skip it, so a door spawned on the same triangles (`level86`'s store door) takes their hits. Inferred from
+the delete freeing the handle.
 
 **A swinging door's `0x20`** (`DynDoorSwinging_OnMessage`, `0x003fb8d0`): unless the door is `dyn_door_stall`, it
 resolves its left leaf (data `+0x14`) and, when that names an object, removes it (vtable `+0x4c`); then the same for
@@ -1974,6 +1976,10 @@ object included. Confirmed (code). Who writes that word, confirmed (code) at eac
 - `DynMasks_Init` (`0x003b7538`) and `DynMasks_OnHit` (`0x003b7a88`, when a broken prop takes its next model): 1 when
   the type has hits (`+0x5a`), then 0 when it has hitpoints (`+0x58`). So it is a hit mode for a `dyn_masks` prop: 1,
   each hit takes one point (`WorldObject_TakeHit`, [Breakable props](#breakable-props)). Confirmed (code).
+
+A door's leaf, a swinging or a sliding door's, is a world object of its own, so it answers its type's word; a sliding
+door's leaf keeps answering it after its door is removed ([Removing a door](#door-removal)). Inferred from
+`WorldObject_Init` writing the word for every world object.
 
 Confirmed (runtime), run r-20261115-get-hitpoints-props (`level99`, each object made with `ObjSpawn`): `dyn_trashcan`
 150, `dyn_speaker` 100, `dyn_newsstand_a` 1, `dyn_parkbench_a` 0, `dyn_ctrl_box` 15, `NilHandle` 0; a swinging door

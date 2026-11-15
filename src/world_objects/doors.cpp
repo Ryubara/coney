@@ -1045,7 +1045,8 @@ void Doors::remove(double handle) {
     }
     // No settle to cancel: flag 0x40000 marks an object settling after a flight's landing, and a door never flies.
     // Its handlers hear message 2 and its spawn record is forgotten: takeRemoved()'s caller does both (a door has no
-    // record).
+    // record). Stand-in: the caller does it at the end of the object step, where the original's handlers hear it inside
+    // the ObjDestroy call; a script reading them in between is the only one who could tell.
     m_removed.push_back(door->handle);
     // The delete: the door's task is gone for good, and it hears message 0x20 (a script's ObjDestroy runs while the
     // level plays, never as it is torn down, when the delete sends nothing).
@@ -1210,20 +1211,24 @@ bool Doors::lockPickAbandoned(double handle) {
 
 // @coney-only a lookup by handle
 const Door* Doors::find(double handle) const {
-    const auto found = std::ranges::find(m_doors, handle, &Door::handle);
+    // A removed door's handle was freed by its delete and no longer resolves (docs/research/objects.md#door-removal).
+    const auto found =
+        std::ranges::find_if(m_doors, [handle](const Door& door) { return door.handle == handle && !door.removed; });
     return found == m_doors.end() ? nullptr : &*found;
 }
 
 // @coney-only a lookup by handle
 Door* Doors::findMutable(double handle) {
-    const auto found = std::ranges::find(m_doors, handle, &Door::handle);
+    const auto found =
+        std::ranges::find_if(m_doors, [handle](const Door& door) { return door.handle == handle && !door.removed; });
     return found == m_doors.end() ? nullptr : &*found;
 }
 
 // @coney-only a lookup by triangle
 const Door* Doors::findByTriangle(std::uint32_t triangle) const {
+    // A removed door gives its triangles up, to a door spawned in its place.
     const auto found = std::ranges::find_if(m_doors, [triangle](const Door& door) {
-        return door.triangles[0] == triangle || door.triangles[1] == triangle;
+        return !door.removed && (door.triangles[0] == triangle || door.triangles[1] == triangle);
     });
     return found == m_doors.end() ? nullptr : &*found;
 }
