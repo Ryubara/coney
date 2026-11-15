@@ -118,7 +118,7 @@ void Hud::levelShutDown() {
 }
 
 void Hud::hideAll() {
-    // The Armies of the Night exception (game state +0x14c) does not arise in Coney's levels yet.
+    // **Coney's choice**: the Armies of the Night exception (game state +0x14c) is not checked; it does not arise yet.
     for (PlayerPanel& panel : m_panels) {
         panel.hide();
     }
