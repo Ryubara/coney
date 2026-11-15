@@ -250,6 +250,19 @@ TEST_CASE("a fixed-point blip stays where it was put", "[hud][radar]") {
     CHECK(coney::test::got(onlyBlip(radar).place).x == Approx(4.0F));
 }
 
+TEST_CASE("a blip whose object can no longer be found keeps its slot but has no place to be drawn", "[hud][radar]") {
+    // Expected: gui.md#radar-update, confirmed (code)
+    RadarState radar = openRadar();
+    radar.blips[1.0] = RadarBlip{.type = 7};
+    coney::hud::stepRadarBlips(radar, everythingAt(Vec3{0.0F, 10.0F, 0.0F}));
+    REQUIRE(onlyBlip(radar).place.has_value());
+    RadarStepContext gone;
+    gone.locate = [](double) -> std::optional<Vec3> { return std::nullopt; };
+    coney::hud::stepRadarBlips(radar, gone);
+    CHECK(radar.blips.size() == 1);
+    CHECK_FALSE(onlyBlip(radar).place.has_value());
+}
+
 TEST_CASE("the HUD's radar on and off show and hide every dot; HideHud hides them until RestoreHud", "[hud][radar]") {
     // Expected: gui.md#radar-update, confirmed (code)
     coney::hud::Hud hud;
