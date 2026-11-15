@@ -80,21 +80,162 @@ TEST_CASE("the rail camera in mode 0 frames a chase as level3's main framing doe
     CHECK(rail.position().x == Approx(42.75F));
 }
 
-TEST_CASE("the rail camera leads its target ahead or behind along the rail, clamped to the rail's ends", "[camera]") {
-    // Expected: camera.md#rail, confirmed (code), but for the look-at point: unverified, #1017
-    // The look-at point's lead pins Coney's switch 7 (a stand-in): the original's switch 7 puts the camera off the rail
-    // and looks at the target point (camera.md#rail step 5).
+namespace {
+
+// An L-shaped rail: along +x to (10, 0), then along +y to (10, 10), 2 m up, with a look-at offset 1.5 m up.
+RailCamera cornerRail() {
+    RailCamera rail;
+    RailSetup setup;
+    setup.fieldOfView = 60.0F;
+    setup.offset = Vec3{0.0F, 0.0F, 1.5F};
+    rail.setup(setup);
+    rail.addPoint(Vec3{0.0F, 0.0F, 2.0F});
+    rail.addPoint(Vec3{10.0F, 0.0F, 2.0F});
+    rail.addPoint(Vec3{10.0F, 10.0F, 2.0F});
+    return rail;
+}
+
+} // namespace
+
+TEST_CASE("the rail camera's leading modes stand the lead from the target's foot on the rail, mirrored before the "
+          "first point and at the last point near the end",
+          "[camera]") {
+    // Expected: camera.md#rail-leading, confirmed (code): CamRail_PlaceLeading (0x0013e708) steps 1, 2 and 4 with
+    // switch 7 off; the rail point's share is a plan length over the segment's, so it is never negative.
+    struct Case {
+        bool ahead;
+        Vec3 feet;
+        float x; // where the camera stands along the straight rail (y 0, z 2)
+    };
+    const std::array<Case, 4> cases{{
+        // Ahead 3 m of P's foot (12, 0) on the last segment, which is 8 m from the end: 15.
+        {true, Vec3{12.0F, 4.0F, 0.0F}, 15.0F},
+        // Behind 3 m of the foot at 1 m: the lead point 2 m before the start gives the share 0.2, so 2 m past it.
+        {false, Vec3{1.0F, 4.0F, 0.0F}, 2.0F},
+        // P 1 m behind the start, within the lead: 3 + 1 m past it.
+        {false, Vec3{-1.0F, 4.0F, 0.0F}, 4.0F},
+        // P 4 m behind the start, more than the lead: the first point.
+        {false, Vec3{-4.0F, 4.0F, 0.0F}, 0.0F},
+    }};
+    for (const Case& c : cases) {
+        RailCamera rail = straightRail();
+        rail.setLead(3.0F, 0.0F, c.ahead);
+        rail.update(c.feet, false, kStep);
+        CHECK(rail.mode() == (c.ahead ? RailMode::Ahead : RailMode::Behind));
+        CHECK(rail.position().x == Approx(c.x).margin(1e-5F));
+        CHECK(rail.position().y == Approx(0.0F).margin(1e-5F));
+        CHECK(rail.position().z == Approx(2.0F));
+        // Switch 7 off: the look-at point is P, the feet raised by the offset.
+        CHECK(rail.lookAt().x == Approx(c.feet.x));
+        CHECK(rail.lookAt().z == Approx(1.5F));
+    }
+    // On the last segment past its end point the camera takes the last point.
     RailCamera rail = straightRail();
-    rail.setLead(3.0F, 0.0F, true);
-    rail.update(Vec3{12.0F, 4.0F, 0.0F}, true, kStep);
-    CHECK(rail.mode() == RailMode::Ahead);
-    CHECK(rail.position().x == Approx(15.0F));
-    CHECK(rail.lookAt().x == Approx(15.0F));
     rail.setLead(3.0F, 0.0F, false);
-    rail.update(Vec3{1.0F, 4.0F, 0.0F}, false, kStep);
-    CHECK(rail.position().x == Approx(0.0F));
     rail.update(Vec3{25.0F, 4.0F, 0.0F}, false, kStep);
-    CHECK(rail.position().x == Approx(17.0F));
+    CHECK(rail.position().x == Approx(20.0F));
+}
+
+TEST_CASE("the rail camera's lead point that crosses a joint is the mean of the old and new lead points; switch 7 "
+          "stands the camera the lead from the target toward the rail point and looks at the target",
+          "[camera]") {
+    // Expected: camera.md#rail-leading, confirmed (code): CamRail_PlaceLeading (0x0013e708) steps 3 and 5.
+    // P (8, -1) on the first segment: its foot F (8, 0), the lead point (11, 0) past the corner, so the segment steps
+    // on; there F' is (10, -1) and the lead point (10, 2); their mean (10.5, 1) lies sqrt(1.25) m from the corner: the
+    // share 0.1118 of the second segment.
+    const float share = std::sqrt(1.25F) / 10.0F;
+    RailCamera off = cornerRail();
+    off.setLead(3.0F, 0.0F, true);
+    off.update(Vec3{8.0F, -1.0F, 0.0F}, false, kStep);
+    CHECK(off.segment() == 1);
+    CHECK(off.position().x == Approx(10.0F));
+    CHECK(off.position().y == Approx(10.0F * share));
+    CHECK(off.position().z == Approx(2.0F));
+
+    // Switch 7 on: the camera leaves the rail, 3 m from P in plan along the direction from the first foot F (8, 0) to
+    // that rail point, at the rail point's height, and looks at P.
+    RailCamera on = cornerRail();
+    on.setLead(3.0F, 0.0F, true);
+    on.update(Vec3{8.0F, -1.0F, 0.0F}, true, kStep);
+    const float dx = 2.0F;
+    const float dy = 10.0F * share;
+    const float plan = std::hypot(dx, dy);
+    CHECK(on.position().x == Approx(8.0F + (3.0F * dx / plan)));
+    CHECK(on.position().y == Approx(-1.0F + (3.0F * dy / plan)));
+    CHECK(on.position().z == Approx(2.0F));
+    CHECK(on.lookAt().x == Approx(8.0F));
+    CHECK(on.lookAt().y == Approx(-1.0F));
+    CHECK(on.lookAt().z == Approx(1.5F));
+
+    // Along a straight rail it stands the lead ahead of him, beside the rail.
+    RailCamera beside = straightRail();
+    beside.setLead(3.0F, 0.0F, true);
+    beside.update(Vec3{12.0F, 4.0F, 0.0F}, true, kStep);
+    CHECK(beside.position().x == Approx(15.0F));
+    CHECK(beside.position().y == Approx(4.0F));
+    CHECK(beside.position().z == Approx(2.0F));
+    CHECK(beside.lookAt().x == Approx(12.0F));
+}
+
+TEST_CASE("the rail camera's height setting of exactly 0 is off in mode 0", "[camera]") {
+    // Expected: camera.md#rail, confirmed (code): CamRail_UpdatePosition (0x0013d6b0) step 4 tests setting 1 above 0.
+    RailCamera rail = straightRail();
+    rail.modify(RailCamera::kHeight, 0.0F, 0.0F);
+    rail.update(Vec3{15.0F, 4.0F, 0.0F}, false, kStep);
+    CHECK(rail.position().z == Approx(2.0F));
+}
+
+TEST_CASE("the rail camera does not damp its points while the target is airborne", "[camera]") {
+    // Expected: camera.md#rail, confirmed (code): CamRail_DampTargetPoint (0x0013bfe0) returns at once while the first
+    // target has a state flag of 0x1c00000000 (jumping or falling).
+    RailCamera rail = straightRail();
+    rail.update(Vec3{5.0F, 4.0F, 0.0F}, false, kStep);
+    // A 3 m step in plan, damped to a quarter on the ground, is taken whole in the air.
+    rail.update(Vec3{8.0F, 4.0F, 0.0F}, false, kStep, Vec3{}, true);
+    CHECK(rail.targetPoint().x == Approx(8.0F));
+    CHECK(rail.position().x == Approx(8.0F));
+    rail.update(Vec3{11.0F, 4.0F, 0.0F}, false, kStep, Vec3{}, false);
+    CHECK(rail.targetPoint().x == Approx(8.75F));
+}
+
+TEST_CASE("the rail camera's damping skips its rise tests on a segment under 1e-5 squared in plan", "[camera]") {
+    // Expected: camera.md#rail, confirmed (code): CamRail_DampTargetPoint (0x0013bfe0) runs the rise tests only when
+    // the segment's plan length squared is at least 1e-5.
+    // A segment 2 mm long in plan (4e-6 squared) that climbs 10 m; the leading mode, which never holds at an end.
+    RailCamera rail;
+    RailSetup setup;
+    setup.offset = Vec3{0.0F, 0.0F, 1.5F};
+    rail.setup(setup);
+    rail.addPoint(Vec3{0.0F, 0.0F, 2.0F});
+    rail.addPoint(Vec3{0.002F, 0.0F, 12.0F});
+    rail.setLead(1.0F, 0.0F, true);
+    rail.update(Vec3{0.0F, 1.0F, 0.0F}, false, kStep);
+    REQUIRE(rail.targetPoint().z == Approx(1.5F));
+    // A rise of 0.3 m with no step in plan: the rise test would keep 0.625 of it; without it, no damping.
+    rail.update(Vec3{0.0F, 1.0F, 0.3F}, false, kStep);
+    CHECK(rail.targetPoint().z == Approx(1.8F));
+}
+
+TEST_CASE("a rail camera held at the start of its mode 0 placement is put back as it was, its target point too",
+          "[camera]") {
+    // Expected: camera.md#rail, confirmed (code): CamRail_UpdatePosition (0x0013d6b0), the hold.
+    // Mode 3 holds at the rail's first point; switched back to mode 0 the hold stays.
+    RailCamera rail = straightRail();
+    rail.modify(RailCamera::kMode3Pitch, -7.0F, 0.0F);
+    rail.activate();
+    rail.update(Vec3{-5.0F, 4.0F, 0.0F}, false, kStep, Vec3{});
+    rail.update(Vec3{5.0F, 4.0F, 0.0F}, false, kStep, Vec3{3.0F, 0.0F, 0.0F});
+    REQUIRE(rail.held());
+    const Vec3 target = rail.targetPoint();
+    const Vec3 look = rail.lookAt();
+    rail.modify(RailCamera::kMode3Pitch, -400.0F, 0.0F);
+    REQUIRE(rail.mode() == RailMode::Level);
+    rail.update(Vec3{8.0F, 4.0F, 0.0F}, false, kStep);
+    CHECK(rail.held());
+    CHECK(rail.position().x == Approx(0.0F));
+    CHECK(rail.targetPoint().x == Approx(target.x));
+    CHECK(rail.lookAt().x == Approx(look.x));
+    CHECK(rail.lookAt().z == Approx(look.z));
 }
 
 TEST_CASE("the rail camera's hand-over between segments grows by 1.05 an update and lands on the rail's foot once "
@@ -158,11 +299,16 @@ TEST_CASE("the rail camera holds at the rail's end; its settings ease linearly; 
     rail.update(Vec3{15.0F, 4.0F, 0.0F}, false, kStep);
     CHECK(rail.position().x == Approx(15.0F));
     CHECK_FALSE(rail.held());
+    // The target runs on past the end: P is damped from 15 to 18.75, then to 21.5625 with the look-at point beyond the
+    // end, so the update puts the camera, P and the look-at point back (camera.md#rail step 6); the hold lasts that
+    // update only, and every later one does the same.
     for (int i = 0; i < 30; ++i) {
         rail.update(Vec3{30.0F, 4.0F, 0.0F}, false, kStep);
     }
-    CHECK(rail.held());
-    CHECK(rail.position().x <= 20.0F);
+    CHECK_FALSE(rail.held());
+    CHECK(rail.position().x == Approx(18.75F));
+    CHECK(rail.targetPoint().x == Approx(18.75F));
+    CHECK(rail.lookAt().x == Approx(18.75F));
 
     rail.modify(RailCamera::kFieldOfView, 30.0F, 1.0F);
     rail.update(Vec3{15.0F, 4.0F, 0.0F}, false, 0.5F);

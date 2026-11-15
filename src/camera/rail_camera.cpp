@@ -409,7 +409,8 @@ void RailCamera::placeLeading(anim::Vec3 feet, bool leadLook) {
     }
 }
 
-void RailCamera::update(std::optional<anim::Vec3> feet, bool leadLook, float seconds, anim::Vec3 velocity) {
+void RailCamera::update(std::optional<anim::Vec3> feet, bool leadLook, float seconds, anim::Vec3 velocity,
+                        bool /*airborne*/) {
     if (seconds <= 0.0F && m_placed) {
         return;
     }

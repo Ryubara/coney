@@ -114,7 +114,8 @@ class RailCamera {
     /// look-at point along the rail by the lead. That reading of switch 7 is a stand-in (#1017): the original's puts
     /// the camera off the rail beside the target and looks at the target point.
     /// @orig 0x0013d010 CamRail_Update (unknown)
-    void update(std::optional<anim::Vec3> feet, bool leadLook, float seconds, anim::Vec3 velocity = {});
+    void update(std::optional<anim::Vec3> feet, bool leadLook, float seconds, anim::Vec3 velocity = {},
+                bool airborne = false);
 
     /// What it shows: the view the update's end builds from the position and look-at point, in every mode.
     /// @orig 0x0013d010 CamRail_Update (unknown)
