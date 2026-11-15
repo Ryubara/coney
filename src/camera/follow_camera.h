@@ -519,8 +519,8 @@ class FollowCamera {
     bool m_viewLatch = false;          // +0x45d
     int m_standingUpdates = 0;         // updates in a row the target has stood (gait 0, on the ground)
     float m_lastAutoTurn = 0.0F;
-    bool m_stickFrameAfresh = false; // +0x473
-    bool m_autoAdjust = true;        // the camera's player's Auto Adjust option (0x0050b240 + its pad)
+    bool m_stickFrameAfresh = true; // +0x473, 1 when made (Cam_Follow_Construct)
+    bool m_autoAdjust = true;       // the camera's player's Auto Adjust option (0x0050b240 + its pad)
     float m_lastFrameTurn = 0.0F;
     float m_configuredPitch;         // +0x30c
     float m_fov;                     // the field of view now

@@ -5,10 +5,10 @@
 address = 0x00146078
 name = "PlayerRecord_Update"
 page = "characters.md#original-structure"
-role = "pad → stick angle and magnitude"
+role = "pad → stick angle and magnitude, from the pad record's camera-turned stick ([Input](input.md#turned-stick))"
 level = "confirmed-code"
-coney = "src/human/locomotion.h:stickIntent"
-status = "legacy"
+coney = "src/human/locomotion.h:turnedStickIntent"
+status = "compared"
 
 [[function]]
 address = 0x0016e258

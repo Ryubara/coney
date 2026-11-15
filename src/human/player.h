@@ -12,6 +12,7 @@
 #include "animation/skeleton.h"
 #include "camera/cameras.h"
 #include "camera/follow_camera.h"
+#include "camera/stick_turn_cameras.h"
 #include "characters/anim_set.h"
 #include "characters/character_assets.h"
 #include "characters/character_data.h"
@@ -263,6 +264,9 @@ class Player {
     [[nodiscard]] combat::CommandId command() const { return m_matcher.command(); }
     [[nodiscard]] const camera::FollowCamera& camera() const { return m_camera; }
     [[nodiscard]] camera::FollowCamera& camera() { return m_camera; }
+    /// His cameras as the pads update reads them to turn his stick (Pads::turnSticks()): the follow camera and the
+    /// manager it belongs to.
+    [[nodiscard]] camera::PlayerStickCameras stickCameras() { return camera::PlayerStickCameras(m_camera, m_cameras); }
     /// Where a human that fell out of the world is put back: the start it was made at.
     [[nodiscard]] const PlayerStart& start() const { return m_start; }
     /// Makes `start` where a fall out of the world puts the human back: a level script making player 1 again.

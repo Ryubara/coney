@@ -80,35 +80,7 @@ void Pad::update(const PadSample& sample, const std::optional<StickTurn>& turn) 
 
     // Step 2: the left stick turned by the player's camera, when the caller has one.
     if (turn) {
-        // Reversed while the player's own follow camera looks behind him (it then faces the player).
-        float x = m_leftX;
-        float y = m_leftY;
-        if (turn->followIsPlayerCamera && turn->lookingBehind) {
-            x = -x;
-            y = -y;
-        }
-        const float length = std::sqrt((x * x) + (y * y));
-        if (length > 0.0F) {
-            // Along the camera's axes, then back to the stick's own length (a tilted camera's axes are shorter seen
-            // from above); a turn of length 0 is kept as it is.
-            float turnedX = (x * turn->xAxis[0]) + (y * turn->yAxis[0]);
-            float turnedY = (x * turn->xAxis[1]) + (y * turn->yAxis[1]);
-            const float turnedLength = std::sqrt((turnedX * turnedX) + (turnedY * turnedY));
-            if (turnedLength != 0.0F) {
-                const float scale = length / turnedLength;
-                turnedX *= scale;
-                turnedY *= scale;
-            }
-            m_turnedX = turnedX;
-            m_turnedY = turnedY;
-        } else {
-            // At rest: the stick as it is, and the player's follow camera marked to take its orientation afresh.
-            m_turnedX = x;
-            m_turnedY = y;
-            // A stand-in for the original's write of 1 to that camera's +0x473: the record reports it for the caller,
-            // as no Coney camera keeps the flag yet.
-            m_followStickRest = turn->hasFollow;
-        }
+        turnStick(*turn);
     }
 
     // Step 3: the hold counters, from the word as read.
@@ -118,7 +90,41 @@ void Pad::update(const PadSample& sample, const std::optional<StickTurn>& turn) 
     m_ring.at(m_current) = keepOneDirection(sample.buttons, m_pressure);
 }
 
-void Pad::turnStick(const StickTurn& /*turn*/) {}
+void Pad::turnStick(const StickTurn& turn) {
+    m_followStickRest = false;
+    m_player = turn.player;
+    if (!m_connected) {
+        return;
+    }
+    // Reversed while the player's own follow camera looks behind him (it then faces the player).
+    float x = m_leftX;
+    float y = m_leftY;
+    if (turn.followIsPlayerCamera && turn.lookingBehind) {
+        x = -x;
+        y = -y;
+    }
+    const float length = std::sqrt((x * x) + (y * y));
+    if (length > 0.0F) {
+        // Along the camera's axes, then back to the stick's own length (a tilted camera's axes are shorter seen from
+        // above); a turn of length 0 is kept as it is.
+        float turnedX = (x * turn.xAxis[0]) + (y * turn.yAxis[0]);
+        float turnedY = (x * turn.xAxis[1]) + (y * turn.yAxis[1]);
+        const float turnedLength = std::sqrt((turnedX * turnedX) + (turnedY * turnedY));
+        if (turnedLength != 0.0F) {
+            const float scale = length / turnedLength;
+            turnedX *= scale;
+            turnedY *= scale;
+        }
+        m_turnedX = turnedX;
+        m_turnedY = turnedY;
+    } else {
+        // At rest: the stick as it is, and the player's follow camera marked to take its orientation afresh (the
+        // original writes 1 to its +0x473 here; the record reports it and the pads update tells the camera).
+        m_turnedX = x;
+        m_turnedY = y;
+        m_followStickRest = turn.hasFollow;
+    }
+}
 
 void Pad::countHolds(std::uint16_t word) {
     for (std::size_t i = 0; i < m_holdCounts.size(); ++i) {

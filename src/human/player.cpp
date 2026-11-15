@@ -2,6 +2,7 @@
 #include "human/player.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <format>
@@ -404,6 +405,12 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
         // A locked stick reads as centred (HuLockPadMovement); the buttons still act. In a throw's aim the stick turns
         // and pitches the aim instead (combat::ThrowAimState reads the pad itself).
         const bool stickFree = !script.movementLocked && !script.throwAiming;
+        // The pad's stick as its player's camera turned it in the pads update (Pads::turnSticks()); a pad no camera
+        // turned (no player bound) leaves the turn to cameraForward.
+        std::optional<std::array<float, 2>> turnedStick;
+        if (pad.player()) {
+            turnedStick = stickFree ? std::array<float, 2>{pad.turnedX(), pad.turnedY()} : std::array<float, 2>{};
+        }
         m_driven->record() = PlayerRecord{.stickX = stickFree ? pad.leftX() : 0.0F,
                                           .stickY = stickFree ? pad.leftY() : 0.0F,
                                           .cameraForward = cameraForward,
@@ -415,7 +422,7 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
                                           .buttons = buttons,
                                           .padDriven = false,
                                           .move = std::nullopt,
-                                          .turnedStick = std::nullopt};
+                                          .turnedStick = turnedStick};
     } else {
         // Only the view and the brain's move survive; the pad's fields read as released.
         PlayerRecord idle;
