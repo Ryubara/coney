@@ -193,8 +193,7 @@ PlayerRecord recordOf(const HumanInput& input) {
                         .padCommand = combat::command::kNone,
                         .buttons = input.buttons,
                         .padDriven = true,
-                        .move = std::nullopt,
-                        .turnedStick = std::nullopt};
+                        .move = std::nullopt};
 }
 
 // @coney-only the trace's names
@@ -1918,8 +1917,7 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
         loseBlockHumans();
     }
     m_lastMagnitude = m_intent.magnitude;
-    m_intent = m_record.turnedStick ? turnedStickIntent(m_record.turnedStick->at(0), m_record.turnedStick->at(1))
-                                    : stickIntent(m_record.stickX, m_record.stickY, m_record.cameraForward);
+    m_intent = stickIntent(m_record.stickX, m_record.stickY, m_record.cameraForward);
     // The stick's last angle and magnitude, kept while it is pushed and fading by 0.8 an update once it is let go.
     if (m_intent.magnitude > locomotionTuning().stickDeadZone) {
         m_lastStick = m_intent;

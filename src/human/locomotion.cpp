@@ -45,12 +45,8 @@ StickIntent stickIntent(float stickX, float stickY, anim::Vec3 cameraForward, bo
                        .magnitude = std::min(1.0F, std::hypot(turned.x, turned.y))};
 }
 
-StickIntent turnedStickIntent(float turnedX, float turnedY, bool locked) {
-    if (locked) {
-        return StickIntent{};
-    }
-    return StickIntent{.angle = std::atan2(turnedY, turnedX),
-                       .magnitude = std::min(1.0F, std::hypot(turnedX, turnedY))};
+anim::Vec3 turnedStickView(float /*stickX*/, float /*stickY*/, float /*turnedX*/, float /*turnedY*/, anim::Vec3 view) {
+    return view;
 }
 
 float targetSpeed(float magnitude, const Speeds& speeds, bool sprinting) {

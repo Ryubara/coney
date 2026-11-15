@@ -194,7 +194,10 @@ class Player {
     /// street's tables) and written with the left stick and the camera's view into the human's per-player record, the
     /// characters' step (humans()) with `targets` to fight, then the camera with the right stick. A human that fell
     /// out of the world is put back at the start (**Coney's choice**: the original fails the mission, which Coney has
-    /// no flow for yet).
+    /// no flow for yet). The left stick's frame is the pad's camera-turned stick when the pads update turned it
+    /// (docs/research/input.md#turned-stick).
+    /// @coney-only player 1's pad, record and camera around the characters' step, in the original's order
+    /// (docs/research/tasks.md#humans-update)
     void update(const Pad& pad, const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets = {});
 
     /// Moves the human to `start` as `TeleportToFlag` moves a human (place(), then Human::resetMotion(): his move

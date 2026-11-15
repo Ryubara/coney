@@ -251,6 +251,7 @@ TEST_CASE("in the fight stance an AI word of 24 degrees an update applies, 0.375
 
 TEST_CASE("an AI starts at 2 m/s, gains 1.067 an update until 2 m/s short, then 0.267, and slows 1.067 an update",
           "[locomotion][ai]") {
+    // Expected: characters.md#ai-locomotion, confirmed (code)
     using coney::human::aiApproachSpeed;
     CHECK(aiApproachSpeed(0.0F, 7.8F) == Approx(2.0F));
     CHECK(aiApproachSpeed(0.0F, 1.6F) == Approx(1.6F));
@@ -261,15 +262,16 @@ TEST_CASE("an AI starts at 2 m/s, gains 1.067 an update until 2 m/s short, then 
     CHECK(aiApproachSpeed(1.6F, 1.0F) == Approx(1.0F));
 }
 
-TEST_CASE("a pad's turned stick gives its angle and length as they stand, the length at most 1", "[locomotion]") {
-    // Expected: input.md#turned-stick, confirmed (code)
-    // PlayerRecord_Update stores atan2(+0x04, +0x00) and the length clamped to 1; with input locked (+0x1f), pi/2 and
-    // 0.
-    auto yard = coney::human::turnedStickIntent(0.7156380F, -0.0886695F);
-    CHECK(yard.angle == Approx(std::atan2(-0.0886695F, 0.7156380F)));
-    CHECK(yard.magnitude == Approx(0.7211103F));
-    CHECK(coney::human::turnedStickIntent(1.0F, 1.0F).magnitude == 1.0F);
-    auto locked = coney::human::turnedStickIntent(0.7F, 0.1F, true);
-    CHECK(locked.magnitude == 0.0F);
-    CHECK(locked.angle == Approx(kPi / 2.0F));
+TEST_CASE("the view handed to the locomotion turns the stick onto the pad's camera-turned stick", "[locomotion]") {
+    // Expected: input.md#turned-stick, confirmed (runtime)
+    // Run r-20261115-pads-stick-frame: the stick (0.6, 0.4) turned to (0.7156380, -0.0886695); PlayerRecord_Update
+    // reads atan2 of the turned stick and its length.
+    const Vec3 view = coney::human::turnedStickView(0.6F, 0.4F, 0.7156380F, -0.0886695F, Vec3{0.0F, 1.0F, 0.0F});
+    const auto intent = coney::human::stickIntent(0.6F, 0.4F, view);
+    CHECK(intent.angle == Approx(std::atan2(-0.0886695F, 0.7156380F)).margin(1e-5));
+    CHECK(intent.magnitude == Approx(0.7211103F));
+    // A stick at rest keeps the view it was given.
+    const Vec3 rest = coney::human::turnedStickView(0.0F, 0.0F, 0.0F, 0.0F, Vec3{2.0F, 0.0F, 0.0F});
+    CHECK(rest.x == 2.0F);
+    CHECK(rest.y == 0.0F);
 }

@@ -5,15 +5,10 @@
 address = 0x00146078
 name = "PlayerRecord_Update"
 page = "characters.md#original-structure"
-role = "pad → stick angle and magnitude, from the pad record's camera-turned stick ([Input](input.md#turned-stick))"
+role = "pad → stick angle and magnitude"
 level = "confirmed-code"
-coney = "src/human/locomotion.h:turnedStickIntent"
-status = "compared"
-
-[[function.gaps]]
-what = "the record's two bytes handed to the pad record's +0x41 and +0x40, the vibration"
-relation = "not-ported"
-issue = 179
+coney = "src/human/locomotion.h:stickIntent"
+status = "legacy"
 
 [[function]]
 address = 0x0016e258
