@@ -2,6 +2,7 @@
 // The lighting rig's side of the lighting lab (docs/guides/realtime-lighting.md#lab-built) on librw's NULL device, with
 // no window or GPU: the lighting frame's selection rows as the rig draws a synthetic human and object, and Light from,
 // which moves the lights' cull to the game camera but leaves the rig's own camera the one drawn through.
+#include <functional>
 #include <optional>
 #include <utility>
 
@@ -13,6 +14,7 @@
 #include "graphics/light_manager.h"
 #include "graphics/lighting_switches.h"
 #include "platform/character_mesh.h"
+#include "platform/mesh_view_hook.h"
 #include "platform/perf_probes.h"
 #include "platform/render_engine.h"
 #include "platform/scene_lighting.h"
@@ -29,6 +31,14 @@ coney::characters::CharacterModel fixtureModel() {
     return std::move(*model);
 }
 
+// A mesh-view hook that draws nothing, so the rig runs on the NULL device without a camera.
+class SkipHook final : public coney::platform::MeshViewHook {
+  public:
+    bool beginFrame(const coney::platform::PlayLevelMode& /*mode*/) override { return true; }
+    void draw(rw::Atomic* /*atomic*/, coney::platform::DrawKind /*kind*/, bool /*layer*/,
+              const std::function<void()>& /*shaded*/) override {}
+};
+
 } // namespace
 
 TEST_CASE("the lighting frame keeps one row per human, a hidden human's without point lights", "[lighting_lab]") {
@@ -40,16 +50,20 @@ TEST_CASE("the lighting frame keeps one row per human, a hidden human's without 
     const coney::characters::CharacterModel model = fixtureModel();
     {
         coney::platform::CharacterMesh mesh(model, nullptr);
+        coney::platform::CharacterMesh second(model,
+                                              nullptr); // stands in for his blood layer: the rig marks any atomic
         coney::graphics::LevelLighting level;
         coney::platform::SceneLighting scene(level, std::nullopt, std::nullopt);
+        SkipHook hook;
+        scene.setMeshViews(&hook);
         scene.beginFrame(coney::world::CameraPose{}, 0.1F, 100.0F, 0);
         {
-            // A hidden human in two passes, his blood layer marked as the play mode marks it.
+            // A hidden human in two passes, the second marked as a layer as the play mode marks his blood layer.
             const coney::platform::DrawKindScope kind(DrawKind::Humans);
             scene.noteHiddenHuman(true);
             scene.drawHumanAtomic(mesh.atomic(), true);
-            scene.setMeshLayer(mesh.bloodAtomic());
-            scene.drawHumanAtomic(mesh.bloodAtomic(), true);
+            scene.setMeshLayer(second.atomic());
+            scene.drawHumanAtomic(second.atomic(), true);
             scene.setMeshLayer(nullptr);
         }
         {
@@ -63,6 +77,7 @@ TEST_CASE("the lighting frame keeps one row per human, a hidden human's without 
         CHECK_FALSE(rows[0].pointLights);
         CHECK(rows[1].caller == coney::graphics::SelectionCaller::Object);
         CHECK(rows[1].pointLights);
+        scene.setMeshViews(nullptr);
     }
 }
 
