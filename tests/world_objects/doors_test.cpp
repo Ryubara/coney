@@ -455,6 +455,42 @@ TEST_CASE("other swinging doors ignore hits; a destroyed one hits itself", "[wor
     CHECK(doors.hitpoints(cabin) == 8);
 }
 
+TEST_CASE("a removed swinging door takes its leaves with it (message 0x20), but not dyn_door_stall",
+          "[world_objects][doors]") {
+    // Expected: objects.md#door-removal, confirmed (runtime)
+    coney::test::ObjectWorldFixture fixture;
+    Doors doors;
+    const ObjectTypeInfo info = swinging(100);
+    const Door& wood = doors.spawn(
+        fixture.handle(), at("dyn_door_wood"), &info, [&fixture] { return fixture.handle(); }, fixture.world);
+    const double door = wood.handle;
+    const double left = wood.leaves[0].handle;
+    const double right = wood.leaves[1].handle;
+    doors.remove(door);
+    // The door goes first (WorldObject_Remove), then its message 0x20 removes the left leaf and the right.
+    CHECK(doors.takeRemoved() == std::vector<double>{door, left, right});
+    CHECK(doors.findByLeaf(left) == nullptr);
+    CHECK(doors.findByLeaf(right) == nullptr);
+    CHECK_FALSE(doors.hit(door, hitBy(HitKind::Plain), fixture.world));
+    CHECK(coney::world_objects::doorDraws(doors).empty());
+    // A second removal finds nothing to remove.
+    doors.remove(door);
+    CHECK(doors.takeRemoved().empty());
+
+    const ObjectTypeInfo stallInfo = swinging(10);
+    const Door& stall = doors.spawn(
+        fixture.handle(), at("dyn_door_stall"), &stallInfo, [&fixture] { return fixture.handle(); }, fixture.world);
+    const double stallDoor = stall.handle;
+    const double leaf = stall.leaves[0].handle;
+    doors.remove(stallDoor);
+    CHECK(doors.takeRemoved() == std::vector<double>{stallDoor});
+    CHECK(doors.findByLeaf(leaf) == doors.find(stallDoor));
+    // Its leaf stays in the world, drawn where it stood.
+    const std::vector<coney::world_objects::DoorDraw> draws = coney::world_objects::doorDraws(doors);
+    REQUIRE(draws.size() == 1);
+    CHECK(draws[0].handle == leaf);
+}
+
 TEST_CASE("a barrier: links charged through, boards, hidden, then removed with its body at its next update",
           "[world_objects][doors]") {
     // Expected: objects.md#barriers, confirmed (code)

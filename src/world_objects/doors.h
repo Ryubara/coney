@@ -286,6 +286,12 @@ class Doors {
     /// `BreakObjectsInRadius(centre, radius)`: message `0x15` to every door within `radius`. Returns how many.
     /// @orig 0x003961d0 World_BreakObjectsInRadius (unknown)
     std::size_t destroyInRadius(anim::Vec3 centre, float radius);
+    /// `WorldObject_Remove` on a door (`ObjDestroy` without its second argument): it is gone for good, and
+    /// takeRemoved() names it; then its delete's message `0x20`, which removes a swinging door's leaves, each named
+    /// after it, unless it is `dyn_door_stall` (docs/research/objects.md#door-removal). A door already removed is left
+    /// alone.
+    /// @orig 0x00391c10 WorldObject_Remove (unknown)
+    void remove(double handle);
     /// Message `0x19`: sets the hitpoints.
     void setHitpoints(double handle, int hitpoints);
     /// `GetHitpoints`: the hitpoints mirror; 0 for no door.

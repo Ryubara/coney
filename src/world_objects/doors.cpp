@@ -1031,6 +1031,8 @@ std::size_t Doors::destroyInRadius(anim::Vec3 centre, float radius) {
     return count;
 }
 
+void Doors::remove(double /*handle*/) {}
+
 // Message 0x19: the hitpoints, a swinging door's or a barrier's (docs/research/objects.md#door-states,
 // docs/research/objects.md#barriers).
 // @orig 0x003fb8d0 DynDoorSwinging_OnMessage (unknown)

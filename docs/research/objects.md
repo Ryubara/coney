@@ -217,7 +217,8 @@ unbroken type 1 within 100 m (`0x003e3058`).
 
 `dyn_door_swinging` is a frame object with one or two **leaves**, each a separate `sub_swinging_door` object. The door
 task: position `+0x10`, rotation `+0x20` (`SpawnDoor`'s), flags `+0x54` = `0x405`, triangles `+0xd8` / `+0xdc`, door
-number `+0xe0`, hitpoints mirror `+0x128` (what `GetHitpoints` reads). Its **data block** (vtable `+0x18c`), confirmed
+number `+0xe0`, hitpoints word `+0x128` (what `GetHitpoints` reads: the type's hitpoints, which only the splintering
+types' hits update, [The hitpoints word](#hitpoints-word)). Its **data block** (vtable `+0x18c`), confirmed
 (code) at `0x003fb5f8`:
 
 | Offset | Meaning |
@@ -1479,8 +1480,8 @@ after the swing starts (inferred from the scheduling, [Tasks](tasks.md#wheel)).
   [AI and the world: Doors](ai-world.md#doors).
 - `0x15` (destroy, what `BreakObjectsInRadius` sends): flag `0x40` and update interval 2; the update then raises the
   interval by one each time and, on reaching 3, sends the door a hit (message 1) from itself.
-- `0x19`: hitpoints = the argument. `0x20`: calls each leaf's vtable `+0x4c` (not `dyn_door_stall`). `0x3e`: answers
-  the angle.
+- `0x19`: hitpoints = the argument. `0x20`: removes each leaf (its vtable `+0x4c`, `WorldObject_Remove`), not
+  `dyn_door_stall`'s ([Removing a door](#door-removal)). `0x3e`: answers the angle.
 
 **Swinging**: `DoorSwing_SwingTo` (`0x003f8fd0`) sends each leaf message `0x35` with its target rotation: the door's
 rotation turned by the angle about the vertical axis (half-angle quaternion), the right leaf by the negated angle
@@ -1572,6 +1573,31 @@ or 22. Confirmed (code) at `0x003f9ad0`, `0x003fa438`, `0x003b2180`; the kinds o
   (`stall` on its first hit): triangles off, the number's links opened, alpha cleared, more dust and splinters, two
   wreck pieces (`dyn_dre_liz_e`/`_f`, `dyn_dre_stall_a`/`_b`, `dyn_dre_dclub_c`/`_d`), state 6. Confirmed (code).
 - Other swinging doors ignore hits.
+- **The leaves at the break**: a cabin door's break (`DoorSwing_Hit`, `0x003fa17c`-`0x003fa1b8`) flags both leaves and
+  then removes each (its vtable `+0x4c`), and `dyn_door_stall`'s break removes its leaf the same way. Confirmed (code).
+
+### Removing a door {#door-removal}
+
+**Message `0x20` is what every world object hears as it is deleted.** `WorldObject_Delete` (`0x00391b08`) sends the
+object `0x20` unless the task manager's `+0x828` word is set (inferred: the level is being torn down), then frees its
+instance, body, sound and handle. Two callers delete an object: `WorldObject_Remove` (`0x00391c10`, its vtable
+`+0x4c`: message 2 to its handlers, its spawn record forgotten, then the delete) and the streaming store
+(`ObjRecord_Store`, `0x00399428`, an object streamed out). A door is spawned by `Door_Spawn` (`0x00397230`) straight as
+a task, with no spawn record, so it is never streamed out; it is removed by `ObjDestroy(door)` without its second
+argument (`Obj_Destroy`, `0x00396c58`, calls vtable `+0x4c`) and by the object update (`WorldObject_Update`,
+`0x00395b70`), which removes an object whose class update answers 1, as `DynDoorSwinging_Update` (`0x003fbba0`) does in
+state 6. Confirmed (code).
+
+**A swinging door's `0x20`** (`DynDoorSwinging_OnMessage`, `0x003fb8d0`): unless the door is `dyn_door_stall`, it
+resolves its left leaf (data `+0x14`) and, when that names an object, removes it (vtable `+0x4c`); then the same for
+the right leaf (`+0x18`). Confirmed (code). So `ObjDestroy` of a swinging door removes its leaves with it, and
+`dyn_door_stall`'s leaf stays in the world as an object of its own: confirmed (runtime), run
+r-20261115-door-leaves-removed (in `level99`, after `ObjDestroy` a `dyn_door_wood`'s two leaves no longer resolve and
+`GetHitpoints` gives 0 for them, while a `dyn_door_stall`'s leaf still names `dyn_dr_stall` with 100 hitpoints). At a
+broken door's own removal (state 6) the message finds no leaves: every type that reaches state 6 removed them at its
+break or a model stage ([Breaking a door](#door-break)). Inferred from the code. The barriers'
+(`DoorFence_OnMessage`, `0x003b3158`) and the sliding doors' (`DynDoorSliding_OnMessage`, `0x003f5ef0`) handlers do
+nothing with `0x20`, so a sliding door's leaves outlive it. Confirmed (code).
 
 ### Breakable barriers {#barriers}
 
@@ -1921,6 +1947,33 @@ update. Confirmed (runtime); the bottle's path was not hooked.
 clears it. So the trash props mark the navigation mesh while they stand. Confirmed (code); what flag 8 means to the AI
 here is on [AI](ai/index.md).
 
+### The hitpoints word (`GetHitpoints`) {#hitpoints-word}
+
+`GetHitpoints(object)` (`Object_GetHitpoints`, `0x00385918`) resolves the handle (which spawns a spawn record's object
+that is not live), keeps it only when it is a world object (type bit `0x08`, `Object_AsWorldObject` `0x00395f38`:
+not a human, car, pane or flag; [Tasks](tasks.md)) and answers its word `+0x128`; 0 for anything else, a removed
+object included. Confirmed (code). Who writes that word, confirmed (code) at each address:
+
+- `WorldObject_Init` (`0x003918b8`, at `0x00391a74`): the type's hitpoints `+0x58` (`CfgObj`'s third argument), for
+  every world object.
+- `WorldObject_SetHitMode` (`0x003a6ec8`): the value given, also into the counter `+0x10d`. The barriers write their
+  hitpoints through it at their init, each hit and message `0x19` (`DoorFence_Init` `0x003b2f40`, `DoorFence_OnHit`
+  `0x003b2180`, `DoorFence_OnMessage` `0x003b3158`, and the `dyn_door_bar_bani`, `_bnstr`, `_fence_o` and `_parapet`
+  classes), and `dyn_ctrl_box`'s init (`0x003ee9d8`) writes 15 (its `CfgObj` says 100). Among the swinging doors only
+  `DoorSwing_HitBreakable` (`0x003fa438`, at `0x003fab04`: `dyn_door_liz`, `_dclub`, `_stall`) writes it, after each
+  hit's damage; a cabin door's hits (`DoorSwing_Hit`) and a swinging door's message `0x19` change only its data
+  `+0x08`, so its word stays its type's.
+- `DynMasks_Init` (`0x003b7538`) and `DynMasks_OnHit` (`0x003b7a88`, when a broken prop takes its next model): 1 when
+  the type has hits (`+0x5a`), then 0 when it has hitpoints (`+0x58`). So it is a hit mode for a `dyn_masks` prop: 1,
+  each hit takes one point (`WorldObject_TakeHit`, [Breakable props](#breakable-props)).
+
+Confirmed (runtime), run r-20261115-get-hitpoints-props (`level99`, each object made with `ObjSpawn`): `dyn_trashcan`
+150, `dyn_speaker` 100, `dyn_newsstand_a` 1, `dyn_parkbench_a` 0, `dyn_ctrl_box` 15, `NilHandle` 0; a swinging door
+and its leaves answer their hitpoints (`dyn_door_wood` 100, each `dyn_dr_wood` leaf its type's 100), run
+r-20261115-door-leaves-removed; a `dyn_door_cabin_a` answers 12 before and after two hits of 4 points (the third
+breaks it), run r-20261115-cabin-door-hitpoints-word. `hifi.lua` scores a carried speaker, TV or register by
+`GetHitpoints / 10`, and `level55_lizziesattack.lua` (`DoorDamage`) shows a door's hitpoints as a bar.
+
 ### Trains (moving hazards) {#trains}
 
 A **train** is a line of up to 12 objects (a subway train's cars) that AI humans step out of the way of; the scripts
@@ -2255,10 +2308,11 @@ the drawer and lifts the register with clip 504 (disc checks, 2026-10-08).
 - What the first camera's vtable `+0x214` returns (the streaming-out distance).
 - Held objects: what fills human `+0x348` / `+0x34c` (event `0x37`), what message `0x17` to the holder does, who
   sends `melee_weapon` messages `0x12` / `0x13`, and the frame of a thrown object's angular velocity.
-- Trash props ([Trash cans and bags](#trash-props)): what sets game-state set 3's bits, and who sends a broken prop
-  message `0x20`.
+- Trash props ([Trash cans and bags](#trash-props)): what sets game-state set 3's bits. (Message `0x20` is the
+  delete's, [Removing a door](#door-removal).)
 - `dyn_door_vargas`' second object, and the leaf models of `dyn_door_chainlnk_pick` (no `dyn_dr_chainlnk_pick` record).
-- What a cabin door's leaves do once it breaks, and where the wreck pieces and boards appear.
+- Where a cabin door's wreck pieces and a barrier's boards appear (its leaves are removed at the break,
+  [Breaking a door](#door-break)).
 - Cash register ([Script types](script-types.md#dyn-cashreg)): how many throws or swings break a lifted register at
   runtime.
 - Impact sounds ([Sound events](sound-events.md#objects)): which speed `WorldObject_OnImpact` tests against 2 m/s

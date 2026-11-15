@@ -1,0 +1,38 @@
+version = 1
+id = "r-20261115-get-hitpoints-props"
+date = "2026-11-15"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "04caa58c53b22e353ecc8e377978f068f8a8a3f7296cc802fd5faab438b401c5"
+
+[who]
+agent = "a499609601e6df2cc"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "level99 mission 1 yard start (a state from task 1011), patch call-brains: the lua recipe spawned one object of each type at the origin with ObjSpawn and stored GetHitpoints of its handle (which spawns the object) in a global; lua-globals read the globals back"
+
+[values]
+trashcan = 150
+newsstand_a = 1
+parkbench_a = 0
+ctrl_box = 15
+speaker = 100
+nil_handle = 0
+
+[addresses]
+object_get_hitpoints = 0x00385918
+worldobject_init = 0x003918b8
+dynmasks_init = 0x003b7538
+dynctrlbox_init = 0x003ee9d8
