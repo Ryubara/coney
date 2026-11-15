@@ -162,9 +162,9 @@ void SceneLighting::beginFrame(const world::CameraPose& pose, float nearClip, fl
     const graphics::LitMoment lit =
         m_hold.choose(graphics::LitMoment{.view = fromGame ? *m_gameView : drawn, .nowMs = nowMs},
                       m_switches != nullptr && m_switches->hold);
-    // The caps and the humans' fade read the place of the lights' view; the coronas face the screen's camera.
+    // The rig's camera stays the one drawn through: the caps, the coronas' facing, the humans' fade and the objects'
+    // cull read it. Only the cull of the lights and the coronas it makes follow Light from and Hold lighting.
     m_pose = pose;
-    m_pose.position = lit.view.position;
     m_lighting.lights.beginViewport(lit.view, lit.nowMs);
     // The render-side description of the frame's lights, read by drawing only, never by the simulation. The rows of
     // the last frame's selections give their storage to this one's.

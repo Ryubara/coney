@@ -156,8 +156,9 @@ position as chosen (`FrameSelection` in `repo:src/graphics/lighting_frame.h`). I
 scripted pad through the input gate and draw it in both front ends (`repo:tests/debug/lighting_page_test.cpp`).
 
 - **Frame.** *Hold lighting* keeps the light view and game time of the step it holds; each step that runs moves it on
-  (`LightingHold`). *Light from* is the game camera by default: while the free camera flies, the cull, the caps and the
-  humans' distance fade read the follow (or scene, or pinned) camera, and the coronas still face the screen.
+  (`LightingHold`). *Light from* is the game camera by default: while the free camera flies, the cull of the lights
+  (and the coronas it makes) reads the follow (or scene, or pinned) camera. The caps, read from each atomic's
+  distance inside ported draw functions, still follow the camera drawn through, as do the objects' and humans' fades.
 - **Dump this frame** writes two files beside the log file (`--log-file`; a run with no log file cannot dump):
   `lighting-<n>-selections.csv`, one row per call in the trace's columns of [Selection](../research/lighting.md#select)
   (the caller's return address, `dist_sq`, the sphere, `flags`, `point_lights`, `pulse`, `human`, `count`, then each of

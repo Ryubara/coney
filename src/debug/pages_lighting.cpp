@@ -159,13 +159,10 @@ std::shared_ptr<MenuPage> lightPage(DebugSession& session, std::uint16_t index, 
             [record, component] {
                 return record() != nullptr ? static_cast<double>(component(record()->desc.colour)) : 0.0;
             },
-            [&session, index, record, c](double value) {
-                if (record() == nullptr) {
-                    return;
-                }
-                graphics::LightColour colour = record()->desc.colour;
-                (c == 0 ? colour.r : (c == 1 ? colour.g : colour.b)) = static_cast<float>(value);
-                session.lightEdits().push(LightEdit{.record = index, .colour = colour});
+            [&session, index, c](double value) {
+                LightEdit edit{.record = index};
+                edit.colour.at(c) = static_cast<float>(value);
+                session.lightEdits().push(edit);
             },
             0.0, 2.0, 0.01, false));
     }

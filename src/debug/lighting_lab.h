@@ -120,7 +120,8 @@ struct LightEdit {
     std::uint16_t record = 0;
     std::optional<bool> on;
     std::optional<float> radius;
-    std::optional<graphics::LightColour> colour;
+    /// The base colour's red, green and blue, each its own edit, so edits queued in one frame do not undo each other.
+    std::array<std::optional<float>, 3> colour;
 };
 
 /// The Lighting page's edits, queued while the page acts (from either front end, at any time in a frame) and applied

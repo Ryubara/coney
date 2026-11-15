@@ -53,8 +53,8 @@ class SceneLighting {
     /// The start of a frame through a camera at `pose` (RenderWare's axes) with clip distances `nearClip` and
     /// `farClip`, at game time `nowMs`: the manager's viewport pass (the ambients, the cull, the coronas), then the
     /// lighting frame (lightingFrame()). With the lighting lab's switches set (setSwitches()), the lights are culled
-    /// and capped from the game camera's view (setGameView()) under *Light from*, and *Hold lighting* keeps the moment
-    /// of the step it holds; pose() is then that view's place, turned as `pose` so the coronas face the screen.
+    /// from the game camera's view (setGameView()) under *Light from*, and *Hold lighting* keeps the moment of the
+    /// step it holds; pose() stays `pose` either way.
     void beginFrame(const world::CameraPose& pose, float nearClip, float farClip, std::uint64_t nowMs);
 
     /// Draws a streamed sector's atomic with the world's lights (list A and the world's point lights it overlaps).
@@ -118,8 +118,7 @@ class SceneLighting {
     /// @coney-only the Entity inspector's Mesh group (docs/guides/debug-menu.md#mesh-group)
     [[nodiscard]] std::uint64_t atomicsDrawn() const { return m_atomicsDrawn; }
 
-    /// This frame's camera (RenderWare's axes), as beginFrame() was given it; under the lighting lab's *Light from*,
-    /// at the game camera's place, which the cull, the caps and the humans' distance fade read.
+    /// This frame's camera (RenderWare's axes), as beginFrame() was given it.
     [[nodiscard]] const world::CameraPose& pose() const { return m_pose; }
     /// This frame's lighting frame, built by beginFrame() after the cull, with each atomic's selection added as it is
     /// drawn: what the lighting lab and the GPU renderer's shadow maps and per-pixel lights read

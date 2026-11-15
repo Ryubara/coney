@@ -417,10 +417,11 @@ std::size_t LightEditQueue::applyPending(graphics::LightManager* manager) {
             if (edit.radius) {
                 desc.radius = *edit.radius;
             }
-            if (edit.colour) {
-                desc.colour = *edit.colour;
-            }
-            if (edit.radius || edit.colour) {
+            const bool recoloured = edit.colour[0] || edit.colour[1] || edit.colour[2];
+            desc.colour.r = edit.colour[0].value_or(desc.colour.r);
+            desc.colour.g = edit.colour[1].value_or(desc.colour.g);
+            desc.colour.b = edit.colour[2].value_or(desc.colour.b);
+            if (edit.radius || recoloured) {
                 static_cast<void>(manager->setLight(handle, desc));
             }
             if (edit.on) {
