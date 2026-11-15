@@ -263,6 +263,16 @@ TEST_CASE("a blip whose object can no longer be found keeps its slot but has no 
     CHECK_FALSE(onlyBlip(radar).place.has_value());
 }
 
+TEST_CASE("a type-9 blip with no dot of its own ends the step, so the blips after it are not stepped", "[hud][radar]") {
+    // Expected: gui.md#radar-update, confirmed (code)
+    RadarState radar = openRadar();
+    radar.blips[1.0] = RadarBlip{.type = 9};
+    radar.blips[2.0] = RadarBlip{.type = 12};
+    coney::hud::stepRadarBlips(radar, everythingAt(Vec3{3.0F, 0.0F, 0.0F}));
+    CHECK(radar.blips.at(2.0).colour == coney::graphics::kWhite);
+    CHECK_FALSE(radar.blips.at(2.0).place.has_value());
+}
+
 TEST_CASE("the HUD's radar on and off show and hide every dot; HideHud hides them until RestoreHud", "[hud][radar]") {
     // Expected: gui.md#radar-update, confirmed (code)
     coney::hud::Hud hud;
