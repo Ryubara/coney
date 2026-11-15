@@ -63,7 +63,9 @@ not in question in any option below; librw stays Coney's reader of RenderWare da
 The simulation runs in fixed 1/30 s steps; each real frame runs 0 to 4 steps and then one render, blended between the
 last two steps by `RenderTime::alpha` (`FrameClock`, `src/core/frame_clock.h`). Only the frame pacer reads the real
 clock (`src/platform/frame_pacer.cpp`), holding frames to `--fps-cap` with precise sleeps; `--vsync on|off` sets the
-swap interval. `--fps-cap 30` and test mode are lockstep: one step, one render at alpha 1. What is blended, and how,
+swap interval. `--fps-cap vrr` (or the saved `Display/VRR`) is the VRR mode: vsync off and a cap just under the
+display's refresh rate (`src/core/vrr_pacing.h`; [Gaps](#frame-rate-gaps)). `--fps-cap 30` and test mode are
+lockstep: one step, one render at alpha 1. What is blended, and how,
 is in [Update and render](../guides/conventions.md#update-and-render) and
 [Drawing between steps](../research/rendering.md#interpolation).
 
@@ -86,7 +88,10 @@ What still moves at 30 Hz, or behaves differently with the frame rate, above 30 
 
 **Frame pacing.** The pacer's sleep-to-a-cap stays the one clock. Two additions, render-side only: a *VRR* mode (vsync
 off and a cap just under the display's refresh rate, for G-Sync and FreeSync displays, where the display follows the
-frame; [Order](#order) item 18) and, on the new backend, the present mode chosen by the setting (`VSYNC`, `MAILBOX` for
+frame; [Order](#order) item 18, built: `--fps-cap vrr` and `Display/VRR`, read at the start, with the cap
+`refresh - refresh^2 / 3600` rounded down, 138 at 144 Hz, so the margin grows with the rate as a frame's timing jitter
+becomes a larger share of a shorter period; its live row on the Graphics page waits for [#1239](issue:1239)) and,
+on the new backend, the present mode chosen by the setting (`VSYNC`, `MAILBOX` for
 uncapped without tearing, `IMMEDIATE`), which SDL3's GPU API offers directly ([Backend](#backend)). Interpolation draws
 up to one step behind the newest state; that latency (at most 33 ms, and the original's own frame at 30 frames a second)
 is kept, because extrapolating past the newest step would draw states the simulation never had. With the simulation

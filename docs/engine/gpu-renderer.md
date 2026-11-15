@@ -47,7 +47,8 @@ never takes the keyboard focus, as with GL3.
 
 `choosePresentMode()` (`src/platform/present_mode.h`) picks `VSYNC` while `--vsync` is on; with it off, `MAILBOX` when
 nothing caps the rate (uncapped without tearing) and `IMMEDIATE` under `--fps-cap` (the pacer holds the rate, and a
-variable-refresh display follows each frame, as GL3's swap interval 0 does). A mode the window lacks falls back to the
+variable-refresh display follows each frame, as GL3's swap interval 0 does); so `--fps-cap vrr`, vsync off under a
+cap, presents `IMMEDIATE`. A mode the window lacks falls back to the
 other of those two, then to `VSYNC`. A change of vsync or cap on the debug menus' Display page takes effect at the next
 present.
 

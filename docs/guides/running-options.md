@@ -93,6 +93,7 @@ so motion is smooth above 30 frames a second and the game's speed never changes
 | Option | Does |
 | --- | --- |
 | `--fps-cap N` | at most N frames a second; 0, the default, is no cap. 30 is the original's rhythm: one step and one frame, nothing blended |
+| `--fps-cap vrr` | the VRR mode, for a G-Sync or FreeSync display: vsync off and a cap just under the refresh rate of the display the window opens on, read from SDL (59 at 60 Hz, 138 at 144 Hz, 224 at 240 Hz), so the display follows each frame and none tears. The run log names the cap; a display whose rate SDL does not know is paced as without it. Not with `--vsync`, which it sets itself. Unset, a windowed run outside test mode takes the saved `Display/VRR` (off by default) unless `--fps-cap N` is given |
 | `--vsync on\|off` | wait for the display's vertical blank when presenting (on, the default) or not (frames may tear) |
 | `--line-blend on\|off` | an optional PS2 look: soften the picture as the PS2's video output does, each shown line the mean of two neighbouring lines of the original's 448 (on; [Rendering](../research/rendering.md#output)), or show the frame as drawn (off, the default); reference renders are never blended |
 | `--show-fps` | print the frame and step rates once a second, and the totals when Coney stops |
@@ -108,7 +109,7 @@ the pads are read once per step, as in the original.
 
 Test mode is lockstep: with `--frames`, `--headless`, `--input-script`, `--screenshot` or `--record` every frame is
 one step and one render, with no clock, so a run gives the same result every time on any machine. `--fps-cap`
-and `--show-fps` are refused there.
+(`vrr` too) and `--show-fps` are refused there, and a saved `Display/VRR` is ignored.
 
 A test-mode run's window opens without taking the keyboard focus, so a scripted run never interrupts someone typing;
 `--no-activate` does the same for any other run, and `--render-references` never takes it. Agents start Coney only
@@ -117,6 +118,7 @@ this way ([Running Coney](research-tools.md#running-coney)).
 ```sh
 build/dev/src/platform/coney --disc /path/to/warriors.iso --show-fps
 build/dev/src/platform/coney --disc /path/to/warriors.iso --view-character --fps-cap 144 --vsync off --show-fps
+build/dev/src/platform/coney --disc /path/to/warriors.iso --fps-cap vrr --show-fps
 ```
 
 `--bench FILE` measures a `--play-level ... --frames N` run with Coney's profiler and writes the frame times, the

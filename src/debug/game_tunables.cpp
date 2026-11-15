@@ -3,6 +3,7 @@
 
 #include "camera/follow_camera.h"
 #include "core/display_preset.h"
+#include "core/vrr_pacing.h"
 #include "human/body.h"
 #include "human/climb.h"
 #include "human/jump.h"
@@ -149,6 +150,11 @@ void registerGameTunables(TunableRegistry& registry) {
         .describe("0: librw's OpenGL 3.3 (the default); 1: SDL3's GPU API, which only clears and presents so far, "
                   "so a saved 1 starts OpenGL with a warning until it draws the menus. Applies at the next start; "
                   "--renderer overrides it, and test mode ignores it");
+    // Read before the frame pacer starts (savedVrr()), so a change here applies at the next start; the Graphics page
+    // (#1239) will change it live.
+    registry.add("Display", "VRR", &vrrSetting())
+        .describe("Pace for a G-Sync or FreeSync display: vsync off and a cap just under the display's refresh rate. "
+                  "Applies at the next start; --fps-cap overrides it, and test mode ignores it");
     // The display preset and the values it sets (docs/engine/renderer.md#presets-built): the settings settle between
     // frames (DisplaySettings::settle()), so a preset chosen here writes its values on the next frame and a value
     // changed after it shows Custom. Nothing draws them but the renderer yet: each help line names the issue that will.
@@ -194,8 +200,15 @@ RendererKind savedRenderer(const std::string& path) {
 }
 
 bool savedVrr(const std::string& path) {
-    (void)path;
-    return false;
+    // As savedRenderer(): read alone, before the frame pacer starts and the game's tunables exist.
+    TunableRegistry scratch;
+    bool value = false;
+    scratch.add("Display", "VRR", &value);
+    if (!scratch.load(path)) {
+        return false;
+    }
+    scratch.applyPending();
+    return value;
 }
 
 } // namespace coney::debug
