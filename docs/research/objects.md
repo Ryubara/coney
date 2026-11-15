@@ -1467,6 +1467,8 @@ after the swing starts (inferred from the scheduling, [Tasks](tasks.md#wheel)).
 | 5 (`DisableDoorCollision`) | the number's links lose the avoid bit and its hole gets path flag 8 (`0x00250c50`), triangles disabled, the collision body removed (`0x003a5340`) |
 | 10 / 0, 11 (`SetDoorPickable`) | pickable on / off ([Lock picking](#lock-pick)) |
 
+The commands, confirmed (code) at `0x003f9770` (`DoorSwing_StateCommand`).
+
 **Messages**, confirmed (code) at `0x003fb8d0`:
 
 - `0x42` (`DoorOpenDegree`): when not pickable, angle = the argument, swing, state 2 → 3, the open sound; when
@@ -1955,17 +1957,17 @@ not a human, car, pane or flag; [Tasks](tasks.md)) and answers its word `+0x128`
 object included. Confirmed (code). Who writes that word, confirmed (code) at each address:
 
 - `WorldObject_Init` (`0x003918b8`, at `0x00391a74`): the type's hitpoints `+0x58` (`CfgObj`'s third argument), for
-  every world object.
+  every world object. Confirmed (code).
 - `WorldObject_SetHitMode` (`0x003a6ec8`): the value given, also into the counter `+0x10d`. The barriers write their
   hitpoints through it at their init, each hit and message `0x19` (`DoorFence_Init` `0x003b2f40`, `DoorFence_OnHit`
   `0x003b2180`, `DoorFence_OnMessage` `0x003b3158`, and the `dyn_door_bar_bani`, `_bnstr`, `_fence_o` and `_parapet`
   classes), and `dyn_ctrl_box`'s init (`0x003ee9d8`) writes 15 (its `CfgObj` says 100). Among the swinging doors only
   `DoorSwing_HitBreakable` (`0x003fa438`, at `0x003fab04`: `dyn_door_liz`, `_dclub`, `_stall`) writes it, after each
   hit's damage; a cabin door's hits (`DoorSwing_Hit`) and a swinging door's message `0x19` change only its data
-  `+0x08`, so its word stays its type's.
+  `+0x08`, so its word stays its type's. Confirmed (code).
 - `DynMasks_Init` (`0x003b7538`) and `DynMasks_OnHit` (`0x003b7a88`, when a broken prop takes its next model): 1 when
   the type has hits (`+0x5a`), then 0 when it has hitpoints (`+0x58`). So it is a hit mode for a `dyn_masks` prop: 1,
-  each hit takes one point (`WorldObject_TakeHit`, [Breakable props](#breakable-props)).
+  each hit takes one point (`WorldObject_TakeHit`, [Breakable props](#breakable-props)). Confirmed (code).
 
 Confirmed (runtime), run r-20261115-get-hitpoints-props (`level99`, each object made with `ObjSpawn`): `dyn_trashcan`
 150, `dyn_speaker` 100, `dyn_newsstand_a` 1, `dyn_parkbench_a` 0, `dyn_ctrl_box` 15, `NilHandle` 0; a swinging door
