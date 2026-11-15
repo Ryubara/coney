@@ -190,13 +190,15 @@ std::vector<std::string> linesOf(const std::string& text) {
     return lines;
 }
 
-// The comma-separated fields of `line`.
+// The comma-separated fields of `line`, an empty last one included.
 std::vector<std::string> fieldsOf(const std::string& line) {
     std::vector<std::string> fields;
-    std::istringstream in(line);
-    for (std::string field; std::getline(in, field, ',');) {
-        fields.push_back(field);
+    std::size_t start = 0;
+    for (std::size_t comma = line.find(','); comma != std::string::npos; comma = line.find(',', start)) {
+        fields.push_back(line.substr(start, comma - start));
+        start = comma + 1;
     }
+    fields.push_back(line.substr(start));
     return fields;
 }
 
