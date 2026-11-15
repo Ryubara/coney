@@ -59,8 +59,8 @@ void Pad::update(const PadSample& sample, const std::optional<StickTurn>& turn) 
     m_connected = sample.connected;
     if (!sample.connected) {
         // The original stops here for a disconnected pad; Coney also empties the slot and the counters and centres the
-        // sticks (the turned one too), so a pad pulled out mid-hold neither stays held nor keeps auto-repeating (a
-        // Coney choice).
+        // sticks (the turned one too), so a pad pulled out mid-hold neither stays held nor keeps auto-repeating
+        // (Coney's choice).
         m_ring.at(m_current) = 0;
         m_holdCounts = {};
         m_rawSticks = {pad::kStickCentre, pad::kStickCentre, pad::kStickCentre, pad::kStickCentre};
