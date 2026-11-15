@@ -251,13 +251,16 @@ TEST_CASE("the rail camera's end hold reads the look-at point as made, before th
     CHECK(rail.lookAt().x == Approx(18.5F));
 }
 
-TEST_CASE("the rail camera's end hold on an activation's update keeps the points it made", "[camera]") {
+TEST_CASE("the rail camera's end hold on an activation's update keeps the points it made, on the end point",
+          "[camera]") {
     // Expected: camera.md#rail, confirmed (code): CamRail_Update (0x0013d010) replaces the update's start P and look-at
-    // point with the fresh ones while +0x3e8 is set (0x0013d45c-0x0013d488), so a hold puts back those.
+    // point with the fresh ones while +0x3e8 is set (0x0013d45c-0x0013d488), so a hold puts back those; the camera's
+    // saved place is then its place at Q (set at 0x0013d894, copied at 0x0013db10), the end point.
     RailCamera rail = straightRail();
     rail.update(Vec3{15.0F, 4.0F, 0.0F}, false, kStep);
     rail.activate();
     rail.update(Vec3{30.0F, 4.0F, 0.0F}, false, kStep);
+    CHECK(rail.position().x == Approx(20.0F));
     CHECK(rail.targetPoint().x == Approx(30.0F));
     CHECK(rail.lookAt().x == Approx(30.0F));
 }
