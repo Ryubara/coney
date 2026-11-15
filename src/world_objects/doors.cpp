@@ -1006,12 +1006,19 @@ void Doors::hitBarrier(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     door.hidden = true;
 }
 
-// Message 0x15: flag 0x40 and update interval 2 (docs/research/objects.md#door-states).
+// Message 0x15: a swinging door's flag 0x40 and update interval 2 (docs/research/objects.md#door-states); a sliding
+// door removes itself (docs/research/objects.md#door-removal).
 // @orig 0x003fb8d0 DynDoorSwinging_OnMessage (unknown)
+// @orig 0x003f5ef0 DynDoorSliding_OnMessage (unknown)
 void Doors::destroy(double handle) {
     // Not ported, from the same message handler: 0x10's pinning of the leaves for streaming (#710) and 0x3e's answer
     // of the angle (#707). Its 0x20, the leaves' removal, is removeLeaves().
     Door* door = findMutable(handle);
+    // A sliding door's 0x15 removes it (its vtable +0x4c); a barrier's handler ignores the message.
+    if (door != nullptr && door->doorClass == DoorClass::Sliding) {
+        remove(handle);
+        return;
+    }
     if (door == nullptr || door->doorClass != DoorClass::Swinging || door->ended) {
         return;
     }

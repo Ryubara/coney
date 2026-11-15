@@ -94,9 +94,10 @@ NativeFunction makeFlagNetTraverse(const BindingContext& context) {
 
 // `ObjDestroy(object, viaMessage)`: the object goes for good, a human holding it letting go first. Without
 // `viaMessage` at once; with it the destroy message 0x15, which an objective marker handles by fading out before it
-// goes (marked dying; world_objects::ObjectTasks removes it at alpha 0) and a swinging door by hitting itself. A door
-// removed at once takes its leaves with it, but dyn_door_stall (docs/research/objects.md#door-removal). Coney's other
-// classes have no handling of their own, so they go at once (docs/research/objects.md#objective-markers).
+// goes (marked dying; world_objects::ObjectTasks removes it at alpha 0), a swinging door by hitting itself and a
+// sliding door by removing itself. A door removed takes its leaves with it, but dyn_door_stall's and a sliding door's
+// (docs/research/objects.md#door-removal). Coney's other classes have no handling of their own, so they go at once
+// (docs/research/objects.md#objective-markers).
 // @orig 0x00396c58 Obj_Destroy (unknown)
 NativeFunction makeObjDestroy(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
@@ -130,8 +131,8 @@ NativeFunction makeObjDestroy(const BindingContext& context) {
         const world_objects::ObjectType* type = record != nullptr && context->objectTypes != nullptr
                                                     ? context->objectTypes->find(record->typeName)
                                                     : nullptr;
-        // Stand-in (docs/research/objects.md#q-objdestroy-held): of the classes sent the destroy message only an
-        // objective marker answers it here; any other object goes at once.
+        // Stand-in (docs/research/objects.md#q-objdestroy-held): of the spawn records' classes sent the destroy message
+        // only an objective marker answers it here; any other one goes at once (the doors answer theirs above).
         if (record != nullptr && !record->removed && type != nullptr && booleanArg(args, 1, false) &&
             type->className == world_objects::kObjectiveClass) {
             record->dying = true;

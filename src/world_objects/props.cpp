@@ -165,7 +165,8 @@ int hitpointsWord(const ObjectType& type) {
     if (type.className == kDynMasksClass) {
         return type.hitpoints == 0 && type.value != 0 ? 1 : 0;
     }
-    // dyn_ctrl_box's init (0x003ee9d8) sets it through WorldObject_SetHitMode, whatever its CfgObj says.
+    // dyn_ctrl_box's init (0x003ee9d8) sets it through WorldObject_SetHitMode, whatever its CfgObj says. Its message
+    // handler (0x003eeaa8) sets it again at each hit and on 0x19; Coney builds neither, so the box keeps its init's.
     if (type.className == kCtrlBoxClass) {
         return kCtrlBoxHitWord;
     }

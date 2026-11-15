@@ -254,10 +254,11 @@ NativeFunction makeIsDoorOpen(const BindingContext& context) {
 
 // The hitpoints word (+0x128) of the door `door`: a barrier's and a splintering door's hitpoints, which their
 // WorldObject_SetHitMode calls keep there; any other door's is its type's, as WorldObject_Init left it (a cabin door's
-// hits change only its data block). 0 once it is removed (docs/research/objects.md#hitpoints-word).
+// hits change only its data block). 0 once it is removed, by ObjDestroy or, for a broken swinging door, at the update
+// after its break, which ends its task (docs/research/objects.md#hitpoints-word).
 // @orig 0x00385918 Object_GetHitpoints (unknown)
 int doorHitpointsWord(const world_objects::Door& door) {
-    if (door.removed) {
+    if (door.removed || door.ended) {
         return 0;
     }
     if (door.doorClass == world_objects::DoorClass::Barrier ||
@@ -282,6 +283,12 @@ NativeFunction makeGetHitpoints(const BindingContext& context) {
                 return binding::number(doorHitpointsWord(*door));
             }
             if (const world_objects::Door* door = objects->doors.findByLeaf(handle)) {
+                // A broken swinging door's leaves went at its break (a cabin's, dyn_door_stall's) and no longer
+                // resolve. Stand-in (#707): dyn_door_liz's and dyn_door_dclub's went earlier, at a model stage.
+                if (door->doorClass == world_objects::DoorClass::Swinging &&
+                    door->state == world_objects::door_state::kBroken) {
+                    return binding::number(0);
+                }
                 const auto leaf = std::ranges::find(door->leaves, handle, &world_objects::DoorLeaf::handle);
                 typeName = leaf->model;
             }

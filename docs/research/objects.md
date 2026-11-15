@@ -1599,7 +1599,10 @@ r-20261115-door-leaves-removed (in `level99`, after `ObjDestroy` a `dyn_door_woo
 broken door's own removal (state 6) the message finds no leaves: every type that reaches state 6 removed them at its
 break or a model stage ([Breaking a door](#door-break)). Inferred from the code. The barriers'
 (`DoorFence_OnMessage`, `0x003b3158`) and the sliding doors' (`DynDoorSliding_OnMessage`, `0x003f5ef0`) handlers do
-nothing with `0x20`, so a sliding door's leaves outlive it. Confirmed (code).
+nothing with `0x20`, so a sliding door's leaves outlive it; a sliding door also removes itself on the destroy message
+`0x15` (`ObjDestroy` with its second argument, `BreakObjectsInRadius`), where a barrier ignores it. Confirmed (code).
+A broken swinging door's removal ends `GetHitpoints` for it too: it answers 0 from the update after the break, and its
+leaves from the break ([The hitpoints word](#hitpoints-word)).
 
 ### Breakable barriers {#barriers}
 
@@ -1961,7 +1964,8 @@ object included. Confirmed (code). Who writes that word, confirmed (code) at eac
 - `WorldObject_SetHitMode` (`0x003a6ec8`): the value given, also into the counter `+0x10d`. The barriers write their
   hitpoints through it at their init, each hit and message `0x19` (`DoorFence_Init` `0x003b2f40`, `DoorFence_OnHit`
   `0x003b2180`, `DoorFence_OnMessage` `0x003b3158`, and the `dyn_door_bar_bani`, `_bnstr`, `_fence_o` and `_parapet`
-  classes), and `dyn_ctrl_box`'s init (`0x003ee9d8`) writes 15 (its `CfgObj` says 100). Among the swinging doors only
+  classes), and `dyn_ctrl_box`'s init (`0x003ee9d8`) writes 15 (its `CfgObj` says 100), then its message handler
+  (`0x003eeaa8`) at each hit and on `0x19`. Among the swinging doors only
   `DoorSwing_HitBreakable` (`0x003fa438`, at `0x003fab04`: `dyn_door_liz`, `_dclub`, `_stall`) writes it, after each
   hit's damage; a cabin door's hits (`DoorSwing_Hit`) and a swinging door's message `0x19` change only its data
   `+0x08`, so its word stays its type's. Confirmed (code).
@@ -2320,9 +2324,10 @@ the drawer and lifts the register with clip 504 (disc checks, 2026-10-08).
   (`0x00396c58`) knocks a hat off (pick-up animation 6, `Human_KnockOffHat` `0x00258330`), releases carried props
   (animation 5, `Human_ReleaseCarriedProps` `0x0024ce40`) or drops a held object (`Human_DropHeld`); Coney's binding
   only makes the holder let go of it, as `HuDropWeapon` does. With its second argument it sends the destroy message
-  `0x15`, which Coney handles only for an objective marker and a swinging door; any other object goes at once, where the
-  original's class answers the message (a `dyn_masks` prop hits itself, [Breakable props](#breakable-props)). Which
-  scripts destroy a worn hat or a carried prop, or another class by message, is not checked.
+  `0x15`, which Coney handles for the doors and, of the spawn records' objects, only for an objective marker; any other
+  one goes at once, where the original's class answers the message (a `dyn_masks` prop hits itself, [Breakable
+  props](#breakable-props)). Which scripts destroy a worn hat or a carried prop, or another class by message, is not
+  checked.
 - Where a cabin door's wreck pieces and a barrier's boards appear (its leaves are removed at the break,
   [Breaking a door](#door-break)).
 - Cash register ([Script types](script-types.md#dyn-cashreg)): how many throws or swings break a lifted register at

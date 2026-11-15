@@ -282,7 +282,8 @@ class Doors {
     /// @orig 0x003fa438 DoorSwing_HitBreakable (unknown)
     /// @orig 0x003b2180 DoorFence_Hit (unknown)
     bool hit(double handle, const ObjectHit& hit, ObjectWorld& world);
-    /// Message `0x15` (what `BreakObjectsInRadius` sends): a swinging door hits itself a few ticks later.
+    /// Message `0x15` (what `BreakObjectsInRadius` and `ObjDestroy(door, true)` send): a swinging door hits itself a
+    /// few ticks later; a sliding door is removed (remove()), its leaves left standing.
     void destroy(double handle);
     /// `BreakObjectsInRadius(centre, radius)`: message `0x15` to every door within `radius`. Returns how many.
     /// @orig 0x003961d0 World_BreakObjectsInRadius (unknown)
@@ -327,7 +328,8 @@ class Doors {
     [[nodiscard]] const Door* findByLeaf(double leaf) const;
     /// Every door, oldest first.
     [[nodiscard]] std::span<const Door> doors() const { return m_doors; }
-    /// The barriers removed since the last call (`WorldObject_Remove`, docs/research/objects.md#barriers): the caller
+    /// The doors, barriers and leaves removed since the last call (`WorldObject_Remove`,
+    /// docs/research/objects.md#barriers, docs/research/objects.md#door-removal): the caller
     /// sends each one's handlers message 2 and removes its spawn record for good.
     /// @orig 0x00391c10 WorldObject_Remove (unknown)
     [[nodiscard]] std::vector<double> takeRemoved() { return std::exchange(m_removed, {}); }
@@ -377,7 +379,7 @@ class Doors {
     static void wreck(Door& door, ObjectWorld& world);
 
     std::vector<Door> m_doors;
-    std::vector<double> m_removed; // barriers removed since the last takeRemoved()
+    std::vector<double> m_removed; // doors, barriers and leaves removed since the last takeRemoved()
 };
 
 /// One model a door puts in the world this frame.
