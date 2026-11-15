@@ -5,7 +5,6 @@
 #include <cmath>
 #include <limits>
 #include <numbers>
-#include <tuple>
 #include <utility>
 
 namespace coney::camera {
@@ -26,6 +25,8 @@ constexpr float kZeroPitch = -0.05F;
 constexpr float kBlendStart = 0.1F;
 constexpr float kBlendGrowth = 1.05F;
 constexpr float kBlendDone = 0.01F;
+// Mode 0's camera point counts as at a rail end this near to it, squared (0x0013d98c, 0x0013da48).
+constexpr float kLevelEndSquared = 1e-10F;
 // Mode 3 (docs/research/camera.md#rail-mode3): the look-at point stands this far from the camera in plan; it moves at
 // most this share of the gap to its goal in one update, at the target's forward speed plus the base speed (`+0x1a4`);
 // the segment hand-over grows by kTrailBlendGrowth an update and ends at 1 or once the step is under kTrailBlendDone in
@@ -320,10 +321,8 @@ void RailCamera::placeLevel(anim::Vec3 feet, anim::Vec3 oldTarget, anim::Vec3 ol
     chooseSegment();
     // The foot of the target point on the segment, clamped to its ends; within the reach of setting 0 in plan.
     anim::Vec3 q = m_points.at(m_segment);
-    float t = 0.0F;
-    float length = 0.0F;
     if (m_count >= 2) {
-        std::tie(t, length) = project(m_segment, m_target);
+        const auto [t, length] = project(m_segment, m_target);
         const anim::Vec3 a = m_points.at(m_segment);
         const anim::Vec3 ab = anim::subtract(m_points.at(m_segment + 1), a);
         q = anim::add(a, anim::scale(ab, length > 0.0F ? std::clamp(t, 0.0F, length) / length : 0.0F));
@@ -362,14 +361,22 @@ void RailCamera::placeLevel(anim::Vec3 feet, anim::Vec3 oldTarget, anim::Vec3 ol
                                   q.z + (kPitchReach * std::tan(m_pitch.current * kRadians))};
         }
     }
-    // The ends: at the first point with the look-at point behind the rail's start, or at the last with it beyond the
-    // end, the camera, P and the look-at point go back to the update's start. The hold this sets is put back to its
-    // start value by the collision step, so it lasts this update only.
+    // The ends: the camera's point at the first rail point (on segment 0) with the look-at point behind the rail's
+    // start in plan, or else at the last point with it beyond the end, puts the camera, P and the look-at point back to
+    // the update's start. The hold this sets is put back to its start value by the collision step, so it lasts this
+    // update only.
     if (m_count >= 2 && m_placed) {
-        const bool atStart = m_segment == 0 && t <= 0.0F && project(0, m_lookAt).first < 0.0F;
-        const auto [lookT, lastLength] = project(m_count - 2, m_lookAt);
-        const bool atEnd = m_segment == m_count - 2 && t >= length && lookT > lastLength;
-        if (atStart || atEnd) {
+        const auto atPoint = [q](anim::Vec3 point) {
+            const anim::Vec3 away = anim::subtract(q, point);
+            return anim::dot(away, away) < kLevelEndSquared;
+        };
+        const anim::Vec3 first = m_points.at(0);
+        const anim::Vec3 last = m_points.at(m_count - 1);
+        const bool ended =
+            m_segment == 0 && atPoint(first)
+                ? planDot(segmentVector(0), anim::subtract(m_lookAt, first)) < 0.0F
+                : atPoint(last) && planDot(segmentVector(m_count - 2), anim::subtract(m_lookAt, last)) > 0.0F;
+        if (ended) {
             m_position = before;
             m_target = oldTarget;
             m_lookAt = oldLook;
@@ -405,6 +412,8 @@ void RailCamera::placeLeading(anim::Vec3 feet, bool beside) {
     const std::size_t pSegment = m_segment;
     // 2. P's foot F on that segment, level with its start, and the lead point B the lead ahead of or behind it.
     // Not ported (#1017): with two or more targets B moves on by the farthest a target is ahead of P.
+    // u: the segment's direction in plan. **Coney's choice** (flatDirection()): +y for a segment with no length in
+    // plan, where the VU's reciprocal square root makes it 0.
     const anim::Vec3 u = flatDirection();
     float along = planDot(anim::subtract(p, m_points.at(m_segment)), u);
     anim::Vec3 foot = anim::add(m_points.at(m_segment), anim::scale(u, along));

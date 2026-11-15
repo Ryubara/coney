@@ -2179,11 +2179,13 @@ height set negative eases back to the present height before it switches off. Set
    [player, Diego] rail. The camera stands at `Q`. Confirmed (code).
 5. **Look-at**: with setting 8 on, the look-at point is replaced by the point 6 m from `Q` toward the targets in plan,
    raised by 6 × tan(setting 8). The camera then faces the look-at point.
-6. **Ends**: when `Q` is the rail's first point and the look-at point lies behind the rail's start, or `Q` is the
-   last point and the look-at point lies beyond the end, the hold `+0x3e4` is set (`0x0013dafc`) and the camera is
-   put back as it was at the start of the update (position, orientation, `P`, look-at point), then faces the
-   look-at point again. This hold lasts one update: step 7 clears it. So the camera stands still while the look-at
-   point is past an end and follows again on the first update it is not. Confirmed (code).
+6. **Ends**: when `Q` (after setting 0's pull, the blend and the height ceiling, so a camera they move off the end
+   point does not hold) is the rail's first point on segment 0 and the look-at point lies behind the rail's start, or
+   else `Q` is the last point and the look-at point lies beyond the end (`Q` within 10⁻⁵ m in 3D, behind and beyond
+   along the end segment in plan, `0x0013d97c`-`0x0013daec`), the hold `+0x3e4` is set (`0x0013dafc`) and the
+   camera is put back as it was at the start of the update (position, orientation, `P`, look-at point), then faces
+   the look-at point again. This hold lasts one update: step 7 clears it. So the camera stands still while the
+   look-at point is past an end and follows again on the first update it is not. Confirmed (code).
 7. **Collision** (`0x0013dbbc`-`0x0013dc1c`): when the camera is held (by step 6 or by `CamLockRail`), or with
    switch 3 off, switch 8 on and two or more targets, `CamRail_CollideTwoTargets` (`0x00140708`) runs and the hold
    is then set back to its value at the start of placement. Otherwise `CamRail_Collide` (`0x00140830`) runs for the
