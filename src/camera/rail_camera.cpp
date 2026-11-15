@@ -308,7 +308,7 @@ void RailCamera::chooseSegmentFor(anim::Vec3 p) {
     m_segment = chosen;
 }
 
-void RailCamera::placeLevel(anim::Vec3 feet, anim::Vec3 oldTarget, anim::Vec3 oldLook) {
+void RailCamera::placeLevel(anim::Vec3 feet, anim::Vec3 madeLook, anim::Vec3 oldTarget, anim::Vec3 oldLook) {
     // Held at the start (mode 3 reached an end, and the hold stays): not placed at all; P and the look-at point go back
     // to the update's start, and the camera keeps its place. Not ported (#1017): CamRail_CollideTwoTargets then keeps
     // the targets in frame.
@@ -361,10 +361,10 @@ void RailCamera::placeLevel(anim::Vec3 feet, anim::Vec3 oldTarget, anim::Vec3 ol
                                   q.z + (kPitchReach * std::tan(m_pitch.current * kRadians))};
         }
     }
-    // The ends: the camera's point at the first rail point (on segment 0) with the look-at point behind the rail's
-    // start in plan, or else at the last point with it beyond the end, puts the camera, P and the look-at point back to
-    // the update's start. The hold this sets is put back to its start value by the collision step, so it lasts this
-    // update only.
+    // The ends: the camera's point at the first rail point (on segment 0) with the look-at point as made behind the
+    // rail's start in plan, or else at the last point with it beyond the end, holds: the camera takes that end point
+    // (its place at the update's start after an activation) and P and the look-at point go back to the update's start.
+    // The hold this sets is put back to its start value by the collision step, so it lasts this update only.
     if (m_count >= 2 && m_placed) {
         const auto atPoint = [q](anim::Vec3 point) {
             const anim::Vec3 away = anim::subtract(q, point);
@@ -372,12 +372,12 @@ void RailCamera::placeLevel(anim::Vec3 feet, anim::Vec3 oldTarget, anim::Vec3 ol
         };
         const anim::Vec3 first = m_points.at(0);
         const anim::Vec3 last = m_points.at(m_count - 1);
+        const bool atFirst = m_segment == 0 && atPoint(first);
         const bool ended =
-            m_segment == 0 && atPoint(first)
-                ? planDot(segmentVector(0), anim::subtract(m_lookAt, first)) < 0.0F
-                : atPoint(last) && planDot(segmentVector(m_count - 2), anim::subtract(m_lookAt, last)) > 0.0F;
+            atFirst ? planDot(segmentVector(0), anim::subtract(madeLook, first)) < 0.0F
+                    : atPoint(last) && planDot(segmentVector(m_count - 2), anim::subtract(madeLook, last)) > 0.0F;
         if (ended) {
-            m_position = before;
+            m_position = m_undamped ? before : (atFirst ? first : last);
             m_target = oldTarget;
             m_lookAt = oldLook;
             return;
@@ -513,9 +513,16 @@ void RailCamera::placeFor(std::optional<anim::Vec3> feet, bool beside, float sec
         return;
     }
     m_feet = *feet;
-    const anim::Vec3 oldTarget = m_target;
-    const anim::Vec3 oldLook = m_lookAt;
+    anim::Vec3 oldTarget = m_target;
+    anim::Vec3 oldLook = m_lookAt;
     makePoints(*feet);
+    // The look-at point as made, before the damping and the fixed pitch: mode 0's end test reads it (`+0x300`).
+    const anim::Vec3 madeLook = m_lookAt;
+    // An undamped update (after an activation) keeps the fresh points as the update's start, which a hold puts back.
+    if (m_undamped) {
+        oldTarget = m_target;
+        oldLook = m_lookAt;
+    }
     if (m_count == 0) {
         if (!m_placed) {
             m_position = anim::Vec3{m_lookAt.x, m_lookAt.y - kNoRailBack, m_lookAt.z + kNoRailUp};
@@ -527,7 +534,7 @@ void RailCamera::placeFor(std::optional<anim::Vec3> feet, bool beside, float sec
         damp(oldTarget, oldLook, airborne);
     }
     if (m_mode == RailMode::Level) {
-        placeLevel(*feet, oldTarget, oldLook);
+        placeLevel(*feet, madeLook, oldTarget, oldLook);
     } else {
         placeLeading(*feet, beside);
     }

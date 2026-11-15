@@ -153,10 +153,11 @@ class RailCamera {
     /// @orig 0x0013bfe0 CamRail_DampTargetPoint (unknown)
     void damp(anim::Vec3 oldTarget, anim::Vec3 oldLook, bool airborne);
     // Mode 0's placement; the projection on the segment and setting 0's pull are CamRail_ProjectOnSegment's, inlined.
-    // `oldTarget` and `oldLook` are P and the look-at point at the update's start, which a hold puts back.
+    // `madeLook` is the look-at point as made this update (the end test's), `oldTarget` and `oldLook` P and the look-at
+    // point at the update's start, which a hold puts back.
     /// @orig 0x0013d6b0 CamRail_UpdatePosition (unknown)
     /// @orig 0x00140308 CamRail_ProjectOnSegment (unknown)
-    void placeLevel(anim::Vec3 feet, anim::Vec3 oldTarget, anim::Vec3 oldLook);
+    void placeLevel(anim::Vec3 feet, anim::Vec3 madeLook, anim::Vec3 oldTarget, anim::Vec3 oldLook);
     // Modes 1 and 2: the lead ahead of or behind the target's foot on the rail, stepping segments at the joints; with
     // `beside` (switch 7) off the rail, the lead from the target.
     /// @orig 0x0013e708 CamRail_PlaceLeading (unknown)
