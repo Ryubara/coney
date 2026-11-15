@@ -211,11 +211,12 @@ slot, or reuses the kept one while the follow camera is the base camera and its 
 while the views differ, and tells the cameras of a stick at rest. `camera::PlayerStickCameras` answers for Coney's one
 player: record 0 is player 0, his camera is the manager's current view, his follow camera keeps `+0x473`
 (`FollowCamera::takesStickFrameAfresh`, 1 when made) and is taken as his base camera, nothing looks behind (Coney has
-no reverse camera yet) and the views never differ. `human::Player` hands the record's turned stick to the human
-(`PlayerRecord::turnedStick`) when a player's camera turned it, and the human reads the stick's angle and length from
-it (`turnedStickIntent`, `PlayerRecord_Update`); a pad no camera turned (a test that drives the player without the
-pads update) is still turned by the camera's view direction (`stickIntent`). A disconnected pad centres the turned
-stick as well as the others (a Coney choice; the original leaves the record as it was).
+no reverse camera yet) and the views never differ. `human::Player` hands the pad's turned stick to the human's
+record when a player's camera turned it: as the turned stick keeps the stick's length it is the stick rotated, so the
+record's view is the one that turns the raw stick onto it (`turnedStickView`), and `stickIntent` then gives the angle
+and length `PlayerRecord_Update` reads; the raw stick stays in the record for combat. A pad no camera turned (a test
+that drives the player without the pads update) is still turned by the camera's view direction. A disconnected pad
+centres the turned stick as well as the others (a Coney choice; the original leaves the record as it was).
 
 ## Open questions
 

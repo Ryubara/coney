@@ -45,8 +45,13 @@ StickIntent stickIntent(float stickX, float stickY, anim::Vec3 cameraForward, bo
                        .magnitude = std::min(1.0F, std::hypot(turned.x, turned.y))};
 }
 
-anim::Vec3 turnedStickView(float /*stickX*/, float /*stickY*/, float /*turnedX*/, float /*turnedY*/, anim::Vec3 view) {
-    return view;
+anim::Vec3 turnedStickView(float stickX, float stickY, float turnedX, float turnedY, anim::Vec3 view) {
+    if ((stickX == 0.0F && stickY == 0.0F) || (turnedX == 0.0F && turnedY == 0.0F)) {
+        return view;
+    }
+    // The turn from the stick to the turned stick, applied to straight up (0, 1).
+    const float turn = std::atan2(turnedY, turnedX) - std::atan2(stickY, stickX);
+    return anim::Vec3{-std::sin(turn), std::cos(turn), 0.0F};
 }
 
 float targetSpeed(float magnitude, const Speeds& speeds, bool sprinting) {
