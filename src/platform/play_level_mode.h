@@ -599,7 +599,8 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     void stepDealerPairs();
     // The AI humans' clip events of their power class's actions: the flash's action event heals him, with the flash's
     // interface sound, and the weapon draw's `random` event puts his class's weapon in his hand
-    // (docs/research/characters.md#power-class-bytes).
+    // (docs/research/characters.md#power-class-bytes). **Coney stand-in**: they are answered here, after the humans'
+    // step, where the original answers each as its clip fires it.
     void stepAiClipEvents();
     // The game-over check each update (GameState_CheckGameOver, docs/research/combat-reactions.md#defeat) with player 1
     // as it sees him, then the failure's hand-off: the HUD hidden at its first update, and after 180 updates (10 once

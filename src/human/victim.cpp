@@ -77,14 +77,15 @@ ReactionKind Victim::react(const IncomingHit& hit, const VictimFrame& frame, Hum
         return ReactionKind::Ignored;
     }
     // 2. Early in it (getting up, say), the hit floors him again with 195, counted as a ground strike. Human_KnockDown
-    // is told to stun for an anim above 295 only, which 195 is not.
+    // is asked for no new stun (an anim above 295 only), but a stun already running lasts until the new rise + the
+    // stun time (Human_SetDownTimers, 0x0022f4f8).
     const anim::AnimTask* top = animator.tasks().top();
     if (inReaction && top != nullptr && top->normalisedTime() < kRefloorProgress) {
         m_lastReaction = static_cast<int>(kGroundedStrike);
         ++m_reactions;
         ++m_groundStrikes;
         animator.playCombat(one(kGroundedStrike), kGroundedIdle, AnimState::Hold);
-        knockDown(nowMs, false);
+        knockDown(nowMs, stunned());
         ++m_knockdowns;
         return ReactionKind::Knockdown;
     }
