@@ -549,6 +549,8 @@ bool Fighter::startGroundedMount(Holdable& victim, const FighterInput& input, fl
 
 void Fighter::endGroundedMountClip(const FighterInput& input, HumanAnimator& animator) {
     m_groundMountLanding = false;
+    // Coney stand-in: no reach, height or clear-line get-off (the seat at 210 places the pair); the move is not scored
+    // and +0xb8 is not cleared.
     // The victim's chance as the clip lands: its command and stick through its record, and its auto-escape flag.
     const Holdable& victim = *m_held;
     const combat::MountEnd end =
