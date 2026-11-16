@@ -46,7 +46,9 @@ bool shouldFlash(const Brain& brain) {
     if (health.maximum() <= 0) {
         return false;
     }
-    const float percent = static_cast<float>(health.value()) * 100.0F / static_cast<float>(health.maximum());
+    // Human_GetHealthPercentRaw: health over its maximum, then times 100 (90 of 300 is not under 30).
+    const float fraction = static_cast<float>(health.value()) / static_cast<float>(health.maximum());
+    const float percent = fraction * 100.0F;
     return percent < kFlashHealthPercent;
 }
 

@@ -3,13 +3,13 @@ id = "r-20261116-class-draw-flash"
 date = "2026-11-16"
 kind = "method"
 tool = "pcsx2 record-run"
-digest = "0f6432b205106bc6930ad4d2d4d3f507b8002b6de0ec6a6e629530c8fbedbc7d"
+digest = "8e7b033fbacecdcdd324cdb1ed855be054e0b3c462a82d7b81d8c2b6966dcb33"
 
 [who]
-agent = "unknown"
-type = "unknown"
-model = "unknown"
-source = "unverified"
+agent = "ad9fd490c8e83d72b"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
 
 [pcsx2]
 version = "v2.9.129"
@@ -21,14 +21,16 @@ patches = ["call-brains"]
 
 [run]
 name = ""
-method = "level99 cp1 yard state with call-brains; a spawned yard human (type 272, class 39) with class bytes +0x41 then +0x42 set to 1, put in a fight with GoalFight; human record +0x20, +0x144, +0x146 and human +0x338 polled"
+method = "level99 cp1 yard state with call-brains; a spawned yard human (type 272, class 39) put in a fight with BrSetThreatResponse and GoalFight; class bytes +0x42 then +0x41 set to 1; human record +0x20 (anim), +0x144/+0x146 (health) and human +0x338 (hand) polled every 10 ms"
 
 [values]
-hand_empty_ms = 140313
-draw_start_ms = 140413
-draw_in_hand_ms = 140546
-flash_health_before = 89
-flash_health_after = 300
+flash_health_89_before = 89
+flash_health_89_after = 300
+flash_at_90_of_300 = 0
+hand_empty_ms = 82788
+draw_413_ms = 83188
+draw_477_ms = 83255
+draw_in_hand_ms = 83389
 health_max = 300
 
 [addresses]

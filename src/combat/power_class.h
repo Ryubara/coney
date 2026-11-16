@@ -43,13 +43,13 @@ struct PowerClass {
     std::int8_t blockFromReact = 0; ///< Byte `+0x3d` (argument 26): 1 sets the human flag `0x800000000`.
     std::int8_t reactBoost = 0;     ///< Byte `+0x3e` (argument 28): 1, -1 or 0 for flag `0x200000`, `0x400000`, none.
     std::int8_t comboReact = 0;     ///< Byte `+0x3f` (argument 27): 1, -1 or 0 for flag `0x400`, `0x200`, none.
-    /// Byte `+0x38` (argument 20, 0-127): the most ground strikes a downed human reacts to; hit while he gets up after
+    /// Byte `+0x38` (argument 21, 0-127): the most ground strikes a downed human reacts to; hit while he gets up after
     /// that many, he reacts to nothing (`Human_PlayReaction`, docs/research/characters.md#power-class-bytes).
     int groundStrikeCap = 3;
-    /// Byte `+0x41` (argument 29, 0-1): an AI of the class in a fight with nothing in hand draws a weapon (clip 477,
+    /// Byte `+0x41` (argument 30, 0-1): an AI of the class in a fight with nothing in hand draws a weapon (clip 477,
     /// `Brain_Think`; ai::thinkClassActions()).
     bool drawsWeapon = false;
-    /// Byte `+0x42` (argument 30, 0-1): an AI of the class in a fight under 30 % health uses a flash (clip 665).
+    /// Byte `+0x42` (argument 31, 0-1): an AI of the class in a fight under 30 % health uses a flash (clip 665).
     bool flashesWhenHurt = false;
 };
 

@@ -830,7 +830,7 @@ _POWER_DOCS = (
     ("stamina_refill", "`+0x2e`: stamina refill per second.", "Stamina refill/s"),
     ("down_ms", "`+0x34`: ms a knocked-down human stays down.", "Down ms"),
     ("stun_ms", "`+0x30`: ms a stun lasts.", "Stun ms"),
-    ("v32", "`+0x32` (16-bit); not traced.", "+0x32"),
+    ("v32", "`+0x32` (16-bit): ms an AI hit stays busy.", "+0x32"),
     (
         "weapon_stun",
         "`+0x00`: as the attacker, scales the victim's stun for weapon hits of 20-49 damage.",
@@ -851,17 +851,17 @@ _POWER_DOCS = (
     ),
     ("pattern", "`+0x37` (0-15): the AI's pattern-reading threshold.", "Pattern"),
     ("counter", "`+0x24` (0-1): the AI's counter chance.", "Counter"),
-    ("v38", "`+0x38` (0-127); not traced.", "+0x38"),
+    ("v38", "`+0x38` (0-127): the most ground strikes a downed human reacts to.", "+0x38"),
     ("v39", "`+0x39` (0 or 1); not traced.", "+0x39"),
     ("v3a", "`+0x3a`; not traced.", "+0x3a"),
-    ("v3b", "`+0x3b`; not traced.", "+0x3b"),
+    ("v3b", "`+0x3b`: 1 makes the human hard to stun.", "+0x3b"),
     ("v3c", "`+0x3c`; not traced.", "+0x3c"),
     ("v3d", "`+0x3d`; not traced.", "+0x3d"),
     ("v3f", "`+0x3f` (-1, 0 or 1); not traced.", "+0x3f"),
     ("v3e", "`+0x3e` (-1, 0 or 1); not traced.", "+0x3e"),
     ("v40", "`+0x40` (0-100, a percentage); not traced.", "+0x40"),
-    ("v41", "`+0x41` (0 or 1); not traced.", "+0x41"),
-    ("v42", "`+0x42` (0 or 1); not traced.", "+0x42"),
+    ("v41", "`+0x41` (0 or 1): an AI fighting with an empty hand draws a weapon.", "+0x41"),
+    ("v42", "`+0x42` (0 or 1): an AI fighting under 30 % health uses a flash.", "+0x42"),
 )
 
 POWER_CLASSES = Topic(

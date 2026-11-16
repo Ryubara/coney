@@ -94,7 +94,7 @@ TEST_CASE("a cop with a weapon draws it in or out of a fight; one whose weapon i
 }
 
 TEST_CASE("an AI of a class that flashes, fighting under 30 % health, plays 665 before any draw", "[ai]") {
-    // Expected: characters.md#power-class-bytes, confirmed (code)
+    // Expected: characters.md#power-class-bytes, confirmed (code), confirmed (runtime) (no flash at 90 of 300)
     AiScene scene;
     coney::combat::PowerClass both = flashing();
     both.drawsWeapon = true;

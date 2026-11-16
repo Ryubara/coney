@@ -329,7 +329,7 @@ Evidence levels used: confirmed-code.
 | `stamina_refill` | float | | `+0x2e`: stamina refill per second. |
 | `down_ms` | float | | `+0x34`: ms a knocked-down human stays down. |
 | `stun_ms` | float | | `+0x30`: ms a stun lasts. |
-| `v32` | float | | `+0x32` (16-bit); not traced. |
+| `v32` | float | | `+0x32` (16-bit): ms an AI hit stays busy. |
 | `weapon_stun` | float | | `+0x00`: as the attacker, scales the victim's stun for weapon hits of 20-49 damage. |
 | `hurt` | float | | `+0x04`: the hurt threshold, a fraction of maximum health. |
 | `block` | float | | `+0x08`: the AI's block chance. |
@@ -342,17 +342,17 @@ Evidence levels used: confirmed-code.
 | `grab_divisor` | float | | `+0x36`, a byte (3.5 is stored as 3): a grabbed human's strike costs the grabber 1 / this of its power. |
 | `pattern` | float | | `+0x37` (0-15): the AI's pattern-reading threshold. |
 | `counter` | float | | `+0x24` (0-1): the AI's counter chance. |
-| `v38` | float | | `+0x38` (0-127); not traced. |
+| `v38` | float | | `+0x38` (0-127): the most ground strikes a downed human reacts to. |
 | `v39` | float | | `+0x39` (0 or 1); not traced. |
 | `v3a` | float | | `+0x3a`; not traced. |
-| `v3b` | float | | `+0x3b`; not traced. |
+| `v3b` | float | | `+0x3b`: 1 makes the human hard to stun. |
 | `v3c` | float | | `+0x3c`; not traced. |
 | `v3d` | float | | `+0x3d`; not traced. |
 | `v3f` | float | | `+0x3f` (-1, 0 or 1); not traced. |
 | `v3e` | float | | `+0x3e` (-1, 0 or 1); not traced. |
 | `v40` | float | | `+0x40` (0-100, a percentage); not traced. |
-| `v41` | float | | `+0x41` (0 or 1); not traced. |
-| `v42` | float | | `+0x42` (0 or 1); not traced. |
+| `v41` | float | | `+0x41` (0 or 1): an AI fighting with an empty hand draws a weapon. |
+| `v42` | float | | `+0x42` (0 or 1): an AI fighting under 30 % health uses a flash. |
 | `players` | str | | The Warriors who get the class as a player (by character type). |
 | `types` | list | | Character types an AI human gets it with on this difficulty (`CfgChar`'s `v11d`). |
 | `source` | str | yes | Where the entry comes from: a script and binding, an address, a chunk. |
