@@ -215,7 +215,8 @@ void Brain::think(std::uint64_t nowMs) {
             thinkSwapPrompt(*this);
         }
     }
-    // Then, for every brain, the power class's flash when hurt and weapon draw in a fight.
+    // Then, for every brain, the power class's flash when hurt and weapon draw in a fight. **Coney stand-ins**: no
+    // scene test skips the think, and the perception is not updated here.
     thinkClassActions(*this);
 }
 

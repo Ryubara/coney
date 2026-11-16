@@ -57,6 +57,8 @@ void playWhenFree(Brain& brain, int animId) {
     if (services == nullptr || !humanFree(brain) || !brain.clearActions()) {
         return;
     }
+    // **Coney stand-in**: a play-anim action with the scripted clips' fade and held bit, not PlayAnimIdAction's 0.1 s
+    // blends nor GenToIdleAnimAction's held 0x20000 and return to the idle.
     static_cast<void>(brain.queueAction(std::make_unique<PlayAnimAction>(*services, animId, true)));
 }
 
