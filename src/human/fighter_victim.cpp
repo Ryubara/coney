@@ -451,7 +451,8 @@ void Fighter::struggleInMount(const FighterInput& input, const HumanAnimator& an
                                   .noBreak = hasFlag(flag::kNoEscape),
                                   .noReversal = hasFlag(flag::kBlockTackle),
                                   .reversalCommand = combat::command::kR1Pressed,
-                                  .mounter = held->grabber};
+                                  .mounter = held->grabber,
+                                  .ownPowerFull = m_combat.rage().raging() || m_combat.power().unlimited()};
     const combat::TackledOutcome outcome = combat::updateTackled(in, m_grabbedRandom);
     // The drain adds up until the mounter takes the report; one move is kept until then.
     m_heldReport.grabberPowerCost += outcome.mounterPowerCost;

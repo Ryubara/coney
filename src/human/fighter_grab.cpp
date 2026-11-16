@@ -542,8 +542,27 @@ bool Fighter::startGroundedMount(Holdable& victim, const FighterInput& input, fl
     victim.setAttached(false);
     m_pair = PairStage::Moving;
     m_mountPending = true;
+    m_groundMountLanding = true;
     logging::info(logging::Category::Combat, std::format("grounded mount: {} with {}", logName(), clip));
     return true;
+}
+
+void Fighter::endGroundedMountClip(const FighterInput& input, HumanAnimator& animator) {
+    m_groundMountLanding = false;
+    // The victim's chance as the clip lands: its command and stick through its record, and its auto-escape flag.
+    const Holdable& victim = *m_held;
+    const combat::MountEnd end =
+        combat::mountClipEnd(combat::MountEndInput{.command = victim.mountCommand(),
+                                                   .stickMagnitude = victim.mountStick(),
+                                                   .autoEscape = (victim.flags() & flag::kAutoEscape) != 0},
+                             m_grabbedRandom);
+    if (end == combat::MountEnd::GetOff) {
+        getOffMount(animator);
+    } else if (end == combat::MountEnd::Reverse) {
+        GrabbedReport reversal;
+        reversal.mount = combat::TackledAction::Reversal;
+        applyMountReport(reversal, input, animator);
+    }
 }
 
 void Fighter::mountVictim(const HumanAnimator& animator) {

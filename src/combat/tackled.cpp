@@ -9,6 +9,8 @@ namespace {
 
 // A struggle needs more than this share of his own maximum power (`Grab_CanStruggle`: max / 6, integer division).
 constexpr int kStruggleOwnPowerDivisor = 6;
+// At a mount's clip end, circle with the stick at or below this reverses the mount; above it, it breaks out.
+constexpr float kMountEndStickAtRest = 0.25F;
 
 } // namespace
 
@@ -17,7 +19,9 @@ bool mountStruggleAllowed(const TackledInput& input) {
     if (input.hurt || input.mounter.raging || input.ownPower <= ownMax / kStruggleOwnPowerDivisor) {
         return false;
     }
-    const float ownFraction = static_cast<float>(input.ownPower) / static_cast<float>(ownMax);
+    // Human_PowerFraction: full while raging or tireless.
+    const float ownFraction =
+        input.ownPowerFull ? 1.0F : static_cast<float>(input.ownPower) / static_cast<float>(ownMax);
     return 1.0F / static_cast<float>(std::max(1, input.mounter.struggleDivisor)) < ownFraction;
 }
 
@@ -64,7 +68,20 @@ TackledOutcome updateTackled(const TackledInput& input, CombatRandom& random) {
     return outcome;
 }
 
-// Stub for the test commit: the mount always goes on.
-MountEnd mountClipEnd(const MountEndInput& /*input*/, CombatRandom& /*random*/) { return MountEnd::Stay; }
+MountEnd mountClipEnd(const MountEndInput& input, CombatRandom& random) {
+    // The auto-escape flag gets the mounter off at once.
+    if (input.autoEscape) {
+        return MountEnd::GetOff;
+    }
+    // Circle (any kind) wins on a coin (Random_Int(2) == 0): with the stick at rest (the per-player record's current
+    // magnitude, 0.25 or less) the mount is reversed, with it pushed the mounter is thrown off.
+    const CommandId pressed = input.command;
+    const bool circle =
+        pressed == command::kCirclePressed || pressed == command::kCircleTapped || pressed == command::kCircleHeld;
+    if (!circle || random.coin()) {
+        return MountEnd::Stay;
+    }
+    return input.stickMagnitude <= kMountEndStickAtRest ? MountEnd::Reverse : MountEnd::GetOff;
+}
 
 } // namespace coney::combat

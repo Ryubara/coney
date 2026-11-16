@@ -525,6 +525,16 @@ at 64, during 303, the same command fell through to the tackle (3, then the miss
   one is in the cone. An AI's circle searches nothing and takes its own target (brain `+0x04` not 0). Confirmed (code).
 - **Too far: nothing.** Beyond the far range of 237 + the side (× 1.25 for a player) `Mount_StartOnGrounded` returns
   0, and so does `Player_GrabOrTackle`: no mount, no tackle and no miss. Confirmed (code).
+- **As the mount lands.** The grounded mount's clip ends through `Mount_OnStrikeEnd` (`0x002700a8`), the end hook a
+  mount strike's clip also has: the mounter gets off (`Mount_GetOff`) when the victim is over 0.2 m above or below it,
+  farther than the larger of its reach + 0.34 and its reach × 1.2, or not clear of it; otherwise it is turned and slid
+  onto the victim's facing at clip 210's offset over 0.1 s (`Human_AlignToVictimFacing`). Then a victim with human
+  flag `0x20000` (`HuSetAutoEscape`) gets it off at once; a victim whose command is any circle wins on a coin
+  (`Random_Int(2)` = 0) and then reverses the mount (`Mount_StartReversal`) when the float of his per-player record at
+  `+0x10` + 4 × `+0x18` is 0.25 or less, else gets the mounter off; with no circle, or the coin lost, the move is scored
+  (`Grab_ScoreMove`). The record's `+0x10` / `+0x14` pair beside the stick's angles at `+0x08` / `+0x0c` (both chosen
+  by `+0x18`, [Throws](combat-throws.md#throw-direction)) is read as the left stick's magnitude: inferred, from the
+  layout; see Open questions. Confirmed (code) but where marked.
 - **The struggle's hit** (`Mount_Strike`, `0x00271ef0`, called with 250): the victim's own Anim Range List damage of
   250, dealt to the mounter (`Human_DealDamage`) as 250 / 251 start (251 an overlay on the mounter holding `0x400`,
   250 holding `0x1`). A struggle whose damage would defeat the mounter (the test doubles it when the victim has human
@@ -1045,8 +1055,13 @@ Read 2026-10-11, the rise counter 2026-10-13 (`src/combat`, `src/human`, `src/ai
   on it; the mounter plays both sides (`Fighter::applyMountReport`), the break through `Fighter::getOffMount` (246 /
   247, both free), which a mounter at 0 power also gets, and the reversal through `Fighter::reverseMount` (242 / 243,
   then the reverser on top). It is the same for any human, a player or an AI, on either side.
-- Stand-ins: an AI's circle searches like a player's instead of taking its own target; the steer onto the clip's
-  reach is the seat at 210; the reversal links the mount at once, not at 242's end, and does not read the new
+- Built: the landing (`Fighter::endGroundedMountClip`, `combat::mountClipEnd`): as 237-240 ends, the auto-escape
+  flag gets the mounter off and a circle wins on a coin, reversing with the stick at rest (0.25 or less) or breaking
+  out with it pushed (the stick read is an open question). A raging or tireless victim reads
+  his power as full for the struggle's share, as `Human_PowerFraction` does.
+- Stand-ins: an AI's circle searches like a player's instead of taking its own target; the landing's reach, height and
+  clear-line tests are the seat's, its move is not scored, and a mount strike's end is not tested; the steer onto the
+  clip's reach is the seat at 210; the reversal links the mount at once, not at 242's end, and does not read the new
   victim's flag `0x20000`; a struggle that would defeat the mounter ends the mount as a let-go (the victim rises with
   199) instead of the mounter's death reaction; the victim of a grounded mount is not warned.
 - Tests: `repo:tests/combat/tackled_test.cpp` (the decision), `repo:tests/human/grounded_mount_test.cpp` (an AI's
@@ -1160,6 +1175,10 @@ fade and the `dyn_cross` icon are not built.
   `revive_crew` scenario.
 - **The revive's `+0xe4` calls**{#q-revive-weight}: what `Revive_Start`'s vtable `+0xe4` calls with (1e9, 7) and (1.0,
   7) set (inferred: the push weight, as `Human_KnockOut` gives 1e9). Found by reading the human's vtable slot.
+- **The float a mount's end reads**{#q-mount-end-stick}: whether the per-player record's float at `+0x10` + 4 ×
+  `+0x18`, which `Mount_OnStrikeEnd` compares with 0.25 to choose a reversal over a break ([Down and under
+  attack](#ground-escape)), is the left stick's magnitude, as Coney reads it. A watch on it with the stick pushed and at
+  rest would tell.
 - **A knocked-out tackled victim**{#q-tackle-knockout}: whether a tackled victim is ever knocked out when
   `Tackle_OnVictimRiseEnd` fires ([Who sets and clears the knocked-out bit](#knocked-out-bit)). A breakpoint on the
   hook with the state word read would tell.

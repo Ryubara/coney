@@ -476,6 +476,14 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     if (m_mountPending && m_held != nullptr && animator.animId() == clips::kMountingIdle) {
         seatMount(input, animator, heading);
     }
+    // The grounded mount's clip has ended (210 plays): the victim's chance to get out as it lands. A mount that ended
+    // another way first has nothing to test.
+    if (m_held == nullptr || m_combat.mode() != combat::CombatMode::Tackling) {
+        m_groundMountLanding = false;
+    }
+    if (m_groundMountLanding && m_held != nullptr && animator.animId() == clips::kMountingIdle) {
+        endGroundedMountClip(input, animator);
+    }
     // An attack's hit; on a body with strike shapes a free attack lands through them instead (landHit()).
     if (out.hitAnim != id::kNone) {
         if ((out.hitAnim == id::kBreakObjectLow || out.hitAnim == id::kBreakObjectMid) && m_objectTarget) {
@@ -487,7 +495,8 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
 
     // 6. A hold ends when the victim has no health left; a mount whose power meter is empty breaks as circle's
     // break does, 246 / 247 (`Human_UpdateMeters` 0x002562d0 calls `Mount_GetOff` on a tackling human at 0 power while
-    // the victim has health above its +0x118, docs/research/combat-reactions.md#ground-escape).
+    // the victim has health above its +0x118, docs/research/combat-reactions.md#ground-escape). Coney stand-in: the
+    // +0x118 test is read as the victim having health left (the branch above lets go of one with none).
     const combat::CombatMode mode = m_combat.mode();
     const bool holding = mode == combat::CombatMode::Grabbing || mode == combat::CombatMode::Tackling ||
                          mode == combat::CombatMode::Mugging;

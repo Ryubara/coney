@@ -932,6 +932,12 @@ class Fighter {
     // blends are Coney's fades; the victim is not warned (`Human_WarnOfAttack`).
     // @orig 0x00271b30 Mount_StartOnGrounded (unknown)
     bool startGroundedMount(Holdable& victim, const FighterInput& input, float& heading, HumanAnimator& animator);
+    // The grounded mount's clip (237-240) has ended: a victim with the auto-escape flag gets this mounter off, and one
+    // pressing circle wins on a coin, reversing the mount with his stick at rest or breaking out with it pushed
+    // (combat::mountClipEnd()). Coney stand-in: the reach, height and clear-line tests are the seat at 210's, the move
+    // is not scored (`Grab_ScoreMove`) and the record's +0xb8 is not cleared; a mount strike's end is not tested here.
+    // @orig 0x002700a8 Mount_OnStrikeEnd (unknown)
+    void endGroundedMountClip(const FighterInput& input, HumanAnimator& animator);
 
     const combat::AnimRangeList* m_ranges;
     std::uint64_t m_flags = 0; // the human flag word (+0xe0)
@@ -1015,20 +1021,21 @@ class Fighter {
     int m_holdUnkept = 0;              // own updates held since the grabber last kept the hold (keepHold())
     std::uint64_t m_l1WindowEndMs = 0; // record +0xf4: L1's release window's end
     // The flags, together so the class packs.
-    bool m_player = true;         // FighterProfile::player
-    bool m_bossClass = false;     // FighterProfile::bossClass
-    bool m_warriorBrain = false;  // setWarriorBrain(): brain type 3
-    bool m_l1Held = false;        // L1 held this update
-    bool m_stanceOn = false;      // a player's fight stance (record +0x00 0x1)
-    bool m_stanceEntered = false; // enterStance() ran since takeStanceEntered(): the hiding ends
-    bool m_lockOn = false;        // a player's lock (0x4) and lock-on movement (Human_FightStanceMove)
-    bool m_l1Lock = false;        // L1's lock bit (0x8)
-    bool m_lockBlocked = false;   // setLockBlocked(): hidden, the target does not lock
-    bool m_lockMoveFree = false;  // locked, but a throw put him on the free movement (0x00240e38)
-    bool m_tacklePending = false; // the tackle's intro plays; the victim reacts when its hit clip starts
-    bool m_mountPending = false;  // the grab's mount (118) or the tackle plays; the mounter is seated at 210
-    bool m_groundMount = false;   // this update's circle found its human lying where it mounts him (m_candidate)
-    int m_seatUpdates = 0;        // the updates of the seat's slide left; the victim is attached when it ends
+    bool m_player = true;              // FighterProfile::player
+    bool m_bossClass = false;          // FighterProfile::bossClass
+    bool m_warriorBrain = false;       // setWarriorBrain(): brain type 3
+    bool m_l1Held = false;             // L1 held this update
+    bool m_stanceOn = false;           // a player's fight stance (record +0x00 0x1)
+    bool m_stanceEntered = false;      // enterStance() ran since takeStanceEntered(): the hiding ends
+    bool m_lockOn = false;             // a player's lock (0x4) and lock-on movement (Human_FightStanceMove)
+    bool m_l1Lock = false;             // L1's lock bit (0x8)
+    bool m_lockBlocked = false;        // setLockBlocked(): hidden, the target does not lock
+    bool m_lockMoveFree = false;       // locked, but a throw put him on the free movement (0x00240e38)
+    bool m_tacklePending = false;      // the tackle's intro plays; the victim reacts when its hit clip starts
+    bool m_mountPending = false;       // the grab's mount (118) or the tackle plays; the mounter is seated at 210
+    bool m_groundMount = false;        // this update's circle found its human lying where it mounts him (m_candidate)
+    bool m_groundMountLanding = false; // the grounded mount's clip plays; its end is tested at 210
+    int m_seatUpdates = 0;             // the updates of the seat's slide left; the victim is attached when it ends
     bool m_mugOnTarget = false;
     bool m_rear = false;     // the hold is from the victim's rear
     bool m_rearHeld = false; // held: its grabber holds it from its rear in a grab (setRearHeld())
