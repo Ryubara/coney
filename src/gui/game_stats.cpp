@@ -27,49 +27,6 @@ constexpr graphics::Rgba kPurpleRgba{106, 65, 131, 255};
 constexpr std::uint32_t kHubPicture = 0x180001;
 constexpr std::uint32_t kArmiesPicture = 0x180000;
 constexpr std::uint32_t kRumblePicture = 0x180003;
-// The room past the list's clip a header may end in: the stacked heights' rounding.
-constexpr float kClipSlack = 1e-4F;
-// The default mode's layout (stub: the other modes' are not used yet).
-constexpr float kBackgroundWidth = 1.15F;
-constexpr float kBackgroundHeight = 1.1F;
-constexpr float kSummaryX = 0.01F;
-constexpr float kSummaryY = 0.06F;
-constexpr float kListX = 0.185F;
-constexpr float kListY = 0.45F;
-constexpr float kUsageX = 0.01F;
-constexpr float kUsageY = 0.94F;
-constexpr float kClipHeight = 0.5F;
-constexpr float kHeaderWidth = 0.35F;
-constexpr float kHeaderHeight = 0.09F;
-constexpr float kCircleWidth = 0.065F;
-constexpr float kCircleHeight = 0.11F;
-
-// The first `count` lines of marked-up `text`: the text up to its count-th line break (`<CR>`, `<CR2>`, `<CR3 f>` or
-// `<CRM>`), so the tags before it still apply.
-// @coney-only Coney's crop of the sub-item's text to the lines that fit; the original's text widget crops by height
-std::string firstLines(std::string_view text, std::size_t count) {
-    std::size_t lines = 1;
-    for (std::size_t open = text.find('<'); open != std::string_view::npos; open = text.find('<', open + 1)) {
-        const std::size_t close = text.find('>', open);
-        if (close == std::string_view::npos) {
-            break;
-        }
-        // The tag's name runs to its first space or its `>`, as the layout reads it.
-        const std::string_view inside = text.substr(open + 1, close - open - 1);
-        const std::optional<MarkupTag> tag = findMarkupTag(inside.substr(0, inside.find(' ')));
-        const bool lineBreak =
-            tag == MarkupTag::Cr || tag == MarkupTag::Cr2 || tag == MarkupTag::Cr3 || tag == MarkupTag::Crm;
-        if (!lineBreak) {
-            continue;
-        }
-        if (lines == count) {
-            return std::string(text.substr(0, open));
-        }
-        ++lines;
-    }
-    return count == 0 ? std::string{} : std::string(text);
-}
-
 // The sub-item's label grey (178).
 constexpr std::string_view kSubLabelGrey = "B2B2B2FF";
 // The lines a sub-item's block is padded to.
@@ -307,31 +264,36 @@ TextLayout GameStatsSubItem::fullLayout() const {
     return layoutText(m_text.text(), m_text.style(), {});
 }
 
-float GameStatsSubItem::fullHeight() const { return fullLayout().height; }
+float GameStatsSubItem::fullHeight() const {
+    // The text widget's height is its measure's bottom less its top, the bottom one line past the last line's centre
+    // line (MessageHUD_Layout): Coney's layout ends at the last glyph's bottom, so the last line's gap is added.
+    return fullLayout().height + graphics::fontMetrics(kLineSize).lineGap;
+}
 
-void GameStatsSubItem::moveTo(float x, float top, float shown) {
-    const TextLayout whole = fullLayout();
-    const float full = whole.height;
-    const float height = std::clamp(shown, 0.0F, 1.0F) * full;
-    m_drawn = height > 0.0F;
-    // The picture centred on the block's x and on its shown height, the column's width wide. Coney's choice: drawn
-    // whole in the shown height (the original cuts its texture rectangle by the reveal).
+void GameStatsSubItem::moveTo(float x, float top, float reveal) {
+    const float full = fullHeight();
+    const float shown = std::clamp(reveal, 0.0F, 1.0F);
+    const float height = full * shown;
+    m_drawn = shown > 0.0F;
+    // The picture centred on the block's x and on its shown height, the column's width wide, its texture rectangle cut
+    // to the shown share.
     m_picture.setup(BaseWidgetSetup{.x = x,
                                     .y = top + (height / 2.0F),
                                     .height = height,
-                                    .width = graphics::OverlayCamera::guiWidthToOverlay(kColumnWidth)});
+                                    .width = graphics::OverlayCamera::guiWidthToOverlay(kColumnWidth),
+                                    .rectShare = shown});
     // The block is as wide as the column (its text widget is set up with width 0), so its left edge is half a column
     // left of x; the text starts kTextGap past the column, its first line half a size-1.0 line below the top (the
-    // original measures `Font_Size(1.0)` here, not the text's `<SIZE 1.2>`). Only the lines that fit the shown height.
+    // original measures `Font_Size(1.0)` here, not the text's `<SIZE 1.2>`).
     TextStyle& style = m_text.style();
     const float left = x - (kColumnWidth / 2.0F);
     style.x = left + kColumnWidth + kTextGap;
     style.y = top + (graphics::fontMetrics(kLayoutFontSize).height / 2.0F);
-    // Coney's choice: the lines that fit the shown height are drawn (the original's text widget crops by height).
-    const auto fit =
-        static_cast<std::size_t>((static_cast<float>(whole.lines) * height / std::max(full, 1e-6F)) + 1e-3F);
-    m_shownLines = fit;
-    m_text.setVisible(fit > 0);
+    // The text takes the same reveal and is wiped from the top, line by line, to the depth of its height less a line
+    // gap of its widget's size (ScrollingTextWidget_Update's crop).
+    m_text.setReveal(shown);
+    m_text.setRevealDepth(std::max(full - graphics::fontMetrics(kTextSize).lineGap, 0.0F));
+    m_text.setVisible(m_drawn);
 }
 
 void GameStatsSubItem::update(const GuiFrame& frame) { m_text.update(frame); }
@@ -341,23 +303,73 @@ void GameStatsSubItem::render(const GuiCanvas& canvas) const {
         return;
     }
     m_picture.render(canvas);
-    // The text's lines that fit, laid out as its widget would.
-    if (m_text.visible() && canvas.fonts && canvas.textBatch) {
-        addTextSprites(layoutText(firstLines(m_text.text(), m_shownLines), m_text.style(), canvas.fonts),
-                       canvas.textBatch);
+    m_text.render(canvas);
+}
+
+GameStatsLayout GameStatsLayout::forFlags(bool flag02, bool widescreen, bool flag20) {
+    // Flag 0x02 first, with or without 16:9; then progressive, whatever its shape; then 16:9; else the default. The
+    // fields: text x, summary y, usage y, background width and height, header width and height, circle width and
+    // height, list x and y, clip height, step divisor.
+    if (flag02) {
+        return widescreen ? GameStatsLayout{-0.15F,
+                                            0.14F,
+                                            0.86F,
+                                            1.55F,
+                                            0.95F,
+                                            0.43F,
+                                            0.078F,
+                                            0.051F,
+                                            0.077F,
+                                            0.07F,
+                                            0.46F,
+                                            0.4F,
+                                            CircledText::kStepDivisor02}
+                          : GameStatsLayout{0.02F,
+                                            0.16F,
+                                            0.82F,
+                                            1.1F,
+                                            0.8F,
+                                            0.3F,
+                                            0.07F,
+                                            0.05F,
+                                            0.077F,
+                                            0.17F,
+                                            0.445F,
+                                            0.38F,
+                                            CircledText::kStepDivisor02};
     }
-}
-
-GameStatsLayout GameStatsLayout::forFlags(bool /*flag02*/, bool /*widescreen*/, bool /*flag20*/) {
+    if (flag20) {
+        // The circles keep their static size, the default mode's.
+        return GameStatsLayout{-0.05F,
+                               0.08F,
+                               0.9F,
+                               0.74F,
+                               0.74F,
+                               0.3F,
+                               0.09F,
+                               0.065F,
+                               0.11F,
+                               0.1F,
+                               0.45F,
+                               0.5F,
+                               CircledText::kStepDivisor};
+    }
+    if (widescreen) {
+        return GameStatsLayout{-0.07F,
+                               0.04F,
+                               0.94F,
+                               1.45F,
+                               1.2F,
+                               0.43F,
+                               0.09F,
+                               0.081F,
+                               0.11F,
+                               0.145F,
+                               0.45F,
+                               0.5F,
+                               CircledText::kStepDivisor};
+    }
     return GameStatsLayout{};
-}
-
-// The summary's and the usage line's places and fonts.
-GameStatsScreen::GameStatsScreen() {
-    m_summary.setup(
-        TextWidgetSetup{.x = kSummaryX, .y = kSummaryY, .colour = kMenuGrey, .fontSlot = CircledText::kFontSlot});
-    // Coney's choice: a text widget in the text font draws the usage line (the original's UsageInfo).
-    m_usage.setup(TextWidgetSetup{.x = kUsageX, .y = kUsageY, .colour = kMenuGrey, .fontSlot = kTextFontSlot});
 }
 
 graphics::Rgba GameStatsScreen::backgroundColour(std::size_t step, float share) {
@@ -398,12 +410,18 @@ void GameStatsScreen::open(GameStatsData data, std::uint64_t nowMs) {
     m_stepStartMs = nowMs;
     m_colourStep = 0;
     m_background.setBatch(m_batches.background);
-    // The background: kBackgroundWidth (a GUI width, converted) by kBackgroundHeight, as each update sizes it.
+    // The background: the layout's width (a GUI width, converted) by its height, as each update sizes it.
     m_background.setup(BaseWidgetSetup{.x = 0.5F,
                                        .y = 0.5F,
-                                       .height = kBackgroundHeight,
-                                       .width = graphics::OverlayCamera::guiWidthToOverlay(kBackgroundWidth),
+                                       .height = m_layout.backgroundHeight,
+                                       .width = graphics::OverlayCamera::guiWidthToOverlay(m_layout.backgroundWidth),
                                        .colour = kColours.at(0)});
+    // The summary and the usage line at the layout's places.
+    m_summary.setup(TextWidgetSetup{
+        .x = m_layout.textX, .y = m_layout.summaryY, .colour = kMenuGrey, .fontSlot = CircledText::kFontSlot});
+    // Coney's choice: a text widget in the text font draws the usage line (the original's UsageInfo).
+    m_usage.setup(
+        TextWidgetSetup{.x = m_layout.textX, .y = m_layout.usageY, .colour = kMenuGrey, .fontSlot = kTextFontSlot});
     // Coney's choice: the summary's bottom and the usage line's top, which the original also stores, are not kept
     // (nothing reads them).
     m_summary.setText(gameStatsSummary(m_data, m_strings));
@@ -419,12 +437,13 @@ void GameStatsScreen::open(GameStatsData data, std::uint64_t nowMs) {
         // original's CircledText is placed by its centre); Coney's CircledText takes the left edge.
         header->setBack(m_batches.header, kHeaderRect);
         header->setCircleSprite(m_batches.header, kHeaderRect);
-        header->setup(CircledTextSetup{.x = kListX - (kHeaderWidth / 2.0F),
-                                       .y = kListY,
-                                       .width = kHeaderWidth,
-                                       .height = kHeaderHeight,
-                                       .circleWidth = kCircleWidth,
-                                       .circleHeight = kCircleHeight});
+        header->setup(CircledTextSetup{.x = m_layout.listX - (m_layout.headerWidth / 2.0F),
+                                       .y = m_layout.listY,
+                                       .width = m_layout.headerWidth,
+                                       .height = m_layout.headerHeight,
+                                       .circleWidth = m_layout.circleWidth,
+                                       .circleHeight = m_layout.circleHeight,
+                                       .stepDivisor = m_layout.stepDivisor});
         header->setBackColour(graphics::Rgba{0, 0, 0, 0});
         header->setText(level.name);
         // A special entry sets only its text: no circled characters, no colours.
@@ -439,10 +458,16 @@ void GameStatsScreen::open(GameStatsData data, std::uint64_t nowMs) {
         m_subItems.push_back(std::move(item));
     }
     m_list.setup(ScrollingMenuSetup{.visible = kVisible, .playCue = m_playCue}, m_data.levels.size());
+    m_window.setup(
+        ScrollingWindowSetup{
+            .maxVisible = kVisible, .clipHeight = m_layout.clipHeight, .step = kRevealStep, .evenRows = true},
+        m_data.levels.size());
     m_list.takeFocus(m_input, nowMs);
-    // The first entry is focused with its description open at once.
+    m_lastCommandMs.reset();
+    // The first entry is focused, its description open at once and given the focus too, which it keeps until a move.
     m_focused = 0;
     m_focusMs = nowMs;
+    m_firstBlockFocused = !m_subItems.empty();
     if (!m_subItems.empty()) {
         m_subItems.front()->setReveal(1.0F);
     }
@@ -455,6 +480,7 @@ void GameStatsScreen::close() {
 }
 
 void GameStatsScreen::handle(MenuCommand command, std::uint64_t nowMs) {
+    m_lastCommandMs = nowMs;
     switch (command) {
     case MenuCommand::Back:
         m_closed = true;
@@ -464,15 +490,59 @@ void GameStatsScreen::handle(MenuCommand command, std::uint64_t nowMs) {
     case MenuCommand::Up:
     case MenuCommand::Down:
     case MenuCommand::Left:
-    case MenuCommand::Right:
+    case MenuCommand::Right: {
+        const std::size_t before = m_list.selected();
         (void)m_list.handle(command, nowMs);
-        // A new selection takes the focus now.
-        if (m_list.selected() != m_focused) {
-            m_focused = m_list.selected();
-            m_focusMs = nowMs;
+        const std::size_t selected = m_list.selected();
+        if (selected == before) {
+            return;
         }
+        // A new selection takes the focus now, from both parts of the entry before it, and the window may scroll.
+        if (command == MenuCommand::Down) {
+            m_window.moveDown(selected);
+        } else {
+            m_window.moveUp(selected);
+        }
+        m_focused = selected;
+        m_focusMs = nowMs;
+        m_firstBlockFocused = false;
         return;
     }
+    }
+}
+
+float GameStatsScreen::layOutEntry(std::size_t index, std::optional<float> offset, float reveal,
+                                   const GuiFrame& frame) {
+    CircledText& header = *m_headers.at(index);
+    GameStatsSubItem& item = *m_subItems.at(index);
+    // The header at the list's place plus the offset, with the entry's reveal.
+    header.setReveal(reveal);
+    if (offset) {
+        header.moveTo(m_layout.listY + *offset);
+    }
+    header.setFocused(index == m_list.selected());
+    header.update(frame);
+    // The block opens a step an update while its header shows whole and it has the focus (the first entry's from the
+    // start, any entry's from kRevealDelayMs after it took the focus), with cue 0xd as it starts; otherwise it closes.
+    const bool focused =
+        (index == 0 && m_firstBlockFocused) || (index == m_focused && frame.timeMs - m_focusMs >= kRevealDelayMs);
+    if (header.reveal() == 1.0F && focused) {
+        if (item.reveal() == 0.0F) {
+            playCue(kRevealCue);
+        }
+        if (item.reveal() < 1.0F) {
+            item.setReveal(item.reveal() + kRevealStep);
+        }
+    } else if (item.reveal() > 0.0F) {
+        item.setReveal(item.reveal() - kRevealStep);
+    }
+    // The block from the header's shown bottom less kRowOverlap, on the list's x.
+    const float headerY = header.text().style().y;
+    item.moveTo(m_layout.listX, headerY + (m_layout.headerHeight * reveal / 2.0F) - kRowOverlap, item.reveal());
+    item.update(frame);
+    // The entry's height at reveal 1: the header's, and the shown block's less the overlap while it shows.
+    const float block = item.height();
+    return m_layout.headerHeight + (block > 0.0F && item.reveal() > 0.0F ? block - kRowOverlap : 0.0F);
 }
 
 void GameStatsScreen::update(const GuiFrame& frame) {
@@ -491,61 +561,28 @@ void GameStatsScreen::update(const GuiFrame& frame) {
     }
     m_background.setColour(backgroundColour(m_colourStep, share));
     m_summary.update(frame);
-    m_usage.update(frame);
-    // The descriptions: the focused one opens once the delay has run, the others close, a step a frame.
-    for (std::size_t i = 0; i < m_subItems.size(); ++i) {
-        GameStatsSubItem& item = *m_subItems.at(i);
-        if (i != m_focused) {
-            item.setReveal(item.reveal() - kRevealStep);
-            continue;
-        }
-        // Coney's choice: the focused one holds until the delay has run (so the first, open from the start, stays
-        // open); the description's own focus, which the original's menu input waits on, is not modelled.
-        if (frame.timeMs - m_focusMs >= kRevealDelayMs && item.reveal() < 1.0F) {
-            if (item.reveal() == 0.0F) {
-                playCue(kRevealCue);
-            }
-            item.setReveal(item.reveal() + kRevealStep);
-        }
-    }
-    // The window's entries, stacked down from the list's place: each header centred where the stack has reached, its
-    // block from the header's bottom less kRowOverlap, the next entry one header and the shown block (less the overlap)
-    // further down. The stacked heights are clipped at kClipHeight.
-    const std::size_t first = m_list.firstVisible();
-    float centre = kListY;
-    float used = 0.0F;
-    for (std::size_t i = 0; i < m_headers.size(); ++i) {
-        CircledText& header = *m_headers.at(i);
-        GameStatsSubItem& item = *m_subItems.at(i);
-        const bool inWindow = i >= first && i < first + m_list.visibleCount();
-        // Coney's choice: the window jumps to keep the cursor in its middle row (the original scrolls with a reveal),
-        // and a header that ends on the clip fits (a little room for the sum's rounding).
-        const bool shown = inWindow && used + kHeaderHeight <= kClipHeight + kClipSlack;
-        header.setVisible(shown);
-        item.setVisible(shown);
-        if (!shown) {
-            continue;
-        }
-        header.moveTo(centre);
-        header.setFocused(i == m_list.selected());
-        header.update(frame);
-        // The block under its header. Coney's choice: a block the clip cuts is cut at the clip (the original reveals
-        // the last item in part).
-        const float full = item.fullHeight();
-        const float room = kClipHeight - used - kHeaderHeight + kRowOverlap;
-        const float shownShare = full > 0.0F ? std::clamp(std::min(item.reveal(), room / full), 0.0F, 1.0F) : 0.0F;
-        item.moveTo(kListX, centre + (kHeaderHeight / 2.0F) - kRowOverlap, shownShare);
-        item.update(frame);
-        const float shownHeight = full * shownShare;
-        const float step = kHeaderHeight + (shownHeight > 0.0F ? shownHeight - kRowOverlap : 0.0F);
-        centre += step;
-        used += step;
-    }
-    if (!m_closed && frame.pad != nullptr) {
+
+    // The list: the pad's command first, read only while the window is still and kInputGapMs after the last command;
+    // then the window's update, which lays the entries out.
+    const bool waited = !m_lastCommandMs || frame.timeMs > *m_lastCommandMs + kInputGapMs;
+    if (!m_closed && frame.pad != nullptr && !m_window.scrolling() && waited) {
         if (const std::optional<MenuCommand> command = m_input.dispatch(*frame.pad, frame.timeMs)) {
             handle(*command, frame.timeMs);
         }
     }
+    m_window.update(ScrollingWindow::Entries{
+        .layOut = [this, &frame](std::size_t index, std::optional<float> offset,
+                                 float reveal) { return layOutEntry(index, offset, reveal, frame); },
+        .focused = [this](std::size_t index) { return index == m_list.selected(); },
+    });
+    // Only the window's drawn entries are drawn.
+    const std::size_t first = m_window.first();
+    for (std::size_t i = 0; i < m_headers.size(); ++i) {
+        const bool drawn = i >= first && i < first + m_window.drawn();
+        m_headers.at(i)->setVisible(drawn);
+        m_subItems.at(i)->setVisible(drawn);
+    }
+    m_usage.update(frame);
 }
 
 void GameStatsScreen::render(const GuiCanvas& canvas) const {
@@ -554,11 +591,10 @@ void GameStatsScreen::render(const GuiCanvas& canvas) const {
     }
     m_background.render(canvas);
     m_summary.render(canvas);
-    for (std::size_t i = 0; i < m_headers.size(); ++i) {
-        if (m_headers.at(i)->visible()) {
-            m_headers.at(i)->render(canvas);
-            m_subItems.at(i)->render(canvas);
-        }
+    // The window's drawn entries, each header and then its block.
+    for (std::size_t i = m_window.first(); i < m_window.first() + m_window.drawn(); ++i) {
+        m_headers.at(i)->render(canvas);
+        m_subItems.at(i)->render(canvas);
     }
     m_usage.render(canvas);
 }

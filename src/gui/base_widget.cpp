@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "gui/base_widget.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <utility>
 
@@ -49,7 +50,11 @@ void BaseWidget::render(const GuiCanvas& /*canvas*/) const {
     if (!visible() || m_batch == nullptr || m_rect >= m_batch->sheet().page.rects.size()) {
         return;
     }
-    const graphics::UvRect& uv = m_batch->sheet().page.rect(m_rect);
+    // The rectangle, cut to its top rectShare by a reveal (the size keeps the whole rectangle's shape).
+    graphics::UvRect uv = m_batch->sheet().page.rect(m_rect);
+    if (m_setup.rectShare < 1.0F) {
+        uv.v1 = uv.v0 + ((uv.v1 - uv.v0) * std::max(m_setup.rectShare, 0.0F));
+    }
     const std::pair<float, float> size = overlaySize();
     // The sprite centred at a GUI point, with the widget's size and rectangle.
     const auto sprite = [&uv, size](float x, float y, graphics::Rgba colour) {

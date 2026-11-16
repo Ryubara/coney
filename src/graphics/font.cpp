@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "graphics/font.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -129,6 +130,17 @@ void Font::draw(std::vector<Sprite>& out, std::string_view text, float x, float 
     }
 }
 
-void revealSprite(Sprite& /*sprite*/, float /*share*/) {}
+void revealSprite(Sprite& sprite, float share) {
+    if (share >= 1.0F) {
+        return;
+    }
+    // The glyph keeps its top edge (the overlay's y is up), so its centre rises by half the height it loses; its
+    // rectangle keeps v0 and loses the same share from the bottom.
+    const float shown = std::max(share, 0.0F);
+    const float height = sprite.height * shown;
+    sprite.position.y += (sprite.height - height) / 2.0F;
+    sprite.height = height;
+    sprite.uv.v1 = sprite.uv.v0 + ((sprite.uv.v1 - sprite.uv.v0) * shown);
+}
 
 } // namespace coney::graphics

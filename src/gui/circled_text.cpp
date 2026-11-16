@@ -44,7 +44,8 @@ void CircledText::setup(const CircledTextSetup& setup) {
 void CircledText::setText(std::string_view text) { m_text.setText(text); }
 
 void CircledText::setCircled(std::string_view characters) {
-    // Stand-in: the count is capped at the two circles there are; the original writes past them.
+    // One circle per character, at most the two the object holds: the original counts every character and writes a
+    // third circle and text past its room, which no header on the disc reaches (docs/research/circled-text.md#third).
     m_used = std::min(characters.size(), kCircles);
     for (std::size_t i = 0; i < m_used; ++i) {
         m_chars.at(i).setText(characters.substr(i, 1));
@@ -64,19 +65,20 @@ void CircledText::update(const GuiFrame& frame) {
         return;
     }
     const CircledTextSetup& s = m_setup;
-    // The back sprite over the rectangle, its height × the reveal with its top edge kept. Its size is set after the
-    // widget's update, through the device's conversion, so the GUI width is stretched into overlay units.
-    // Stand-in: drawn whole at that height, where the original also cuts its texture rectangle by the reveal.
+    // The back sprite over the rectangle, its height × the reveal with its top edge kept and its texture rectangle cut
+    // to the same share. Its size is set after the widget's update, through the device's conversion, so the GUI width
+    // is stretched into overlay units.
     m_back.setup(BaseWidgetSetup{.x = s.x,
                                  .y = s.y - ((s.height - height()) / 2.0F),
                                  .height = height(),
                                  .width = graphics::OverlayCamera::guiWidthToOverlay(s.width),
                                  .colour = m_backColour,
-                                 .anchor = SpriteAnchor::Left});
+                                 .anchor = SpriteAnchor::Left,
+                                 .rectShare = m_reveal});
 
     // The circles from x0, each adding the step before and after itself (circleW is added to GUI x as it is); each
-    // character centred on its circle at the row's y. Stand-in: the texts are drawn whole (no reveal in Coney's text).
-    const float step = s.circleWidth / kStepDivisor;
+    // character centred on its circle at the row's y, cut by the reveal as the text is.
+    const float step = s.circleWidth / s.stepDivisor;
     const float shownHeight = s.circleHeight * m_reveal;
     float x = s.x + s.circleOffset;
     float textX = x;
@@ -85,21 +87,24 @@ void CircledText::update(const GuiFrame& frame) {
         TextWidget& character = m_chars.at(i);
         character.style().x = centre;
         character.style().y = s.y;
+        character.setReveal(m_reveal);
         character.update(frame);
         // The circle's size is set after its update, without the conversion, so it is drawn circleW wide as given and
-        // not refitted to the rectangle's shape; the top edge stays put as the reveal shrinks it.
-        // Stand-in: drawn whole, where the original also cuts its texture rectangle by the reveal.
+        // not refitted to the rectangle's shape; the top edge stays put as the reveal shrinks it, and its texture
+        // rectangle is cut to the same share.
         m_circles.at(i).setup(
             BaseWidgetSetup{.x = centre,
                             .y = s.y - ((s.circleHeight - shownHeight) / 2.0F) + (s.circleHeight * kCircleDrop),
                             .height = shownHeight,
                             .width = s.circleWidth,
-                            .colour = m_circleColour});
+                            .colour = m_circleColour,
+                            .rectShare = m_reveal});
         textX = centre + (s.circleWidth / 2.0F);
         x = centre + step;
     }
     m_text.style().x = textX;
     m_text.style().y = s.y;
+    m_text.setReveal(m_reveal);
     m_text.update(frame);
 }
 

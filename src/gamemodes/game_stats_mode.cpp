@@ -12,11 +12,12 @@ namespace coney {
 
 GameStatsMode::GameStatsMode(graphics::RenderDevice& device, PauseSheetLoader loadSheet, PauseRecordLoader loadRecord,
                              const gui::GlobalStrings& strings, FrontEndServices& services, graphics::ScreenFade& fade,
-                             GameState& state, script::ScriptSystem& scripts, GameModeStack& stack,
+                             GameState& state, script::ScriptSystem& scripts, GameModeStack& stack, bool europe,
                              std::function<void(std::string_view)> log)
     : m_device(device), m_loadSheet(std::move(loadSheet)), m_loadRecord(std::move(loadRecord)), m_strings(strings),
       m_services(services), m_fade(fade), m_state(state), m_scripts(scripts), m_stack(stack), m_log(std::move(log)) {
     m_screen.setStrings(&m_strings);
+    m_screen.setLayout(gui::GameStatsLayout::forFlags(europe, false, false));
     m_screen.setSoundSink([this](int cue) { m_services.playCue(cue); });
 }
 
@@ -56,7 +57,8 @@ void GameStatsMode::enter() {
 
 ModeResult GameStatsMode::update(GameModeStack& stack, const FrameTime& frame) {
     const std::uint64_t nowMs = frame.gameTicks / (GameTimer::kTicksPerSecond / 1000);
-    // Coney's stand-in: no world frame (the original runs one, unseen under the screen); the fade's step.
+    // Coney's stand-in: no world frame (the original's runs the level's AI and characters on, unseen under the
+    // screen: docs/research/game-stats.md#mode); the fade's step.
     m_fade.update(nowMs);
     if (m_openPending) {
         m_openPending = false;

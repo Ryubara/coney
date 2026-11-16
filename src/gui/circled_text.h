@@ -45,7 +45,7 @@ struct CircledTextSetup {
 ///   focused, else the normal one), each circle and its character, which takes the focused colour unless it is black.
 ///
 /// The original has room for two circles and no bound on their count: a third character's circle and text are written
-/// past the object (docs/research/circled-text.md#q-third-circle). No level header on the disc has more than two
+/// past the object (docs/research/circled-text.md#third). No level header on the disc has more than two
 /// characters, so Coney keeps at most kCircles.
 ///
 /// Research: docs/research/circled-text.md#circled-text
@@ -103,6 +103,8 @@ class CircledText : public Widget {
     /// Moves the rectangle's centre to GUI y `y` (the list places its entries each frame).
     void moveTo(float y) { m_setup.y = y; }
 
+    /// The reveal.
+    [[nodiscard]] float reveal() const { return m_reveal; }
     /// The rectangle's height × the reveal.
     /// @orig 0x001d11f8 CircledText_GetRect (unknown)
     [[nodiscard]] float height() const { return m_setup.height * m_reveal; }
