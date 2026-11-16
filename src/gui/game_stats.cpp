@@ -307,67 +307,68 @@ void GameStatsSubItem::render(const GuiCanvas& canvas) const {
 }
 
 GameStatsLayout GameStatsLayout::forFlags(bool flag02, bool widescreen, bool flag20) {
-    // Flag 0x02 first, with or without 16:9; then progressive, whatever its shape; then 16:9; else the default. The
-    // fields: text x, summary y, usage y, background width and height, header width and height, circle width and
-    // height, list x and y, clip height, step divisor.
+    // Flag 0x02 first, with or without 16:9.
+    if (flag02 && widescreen) {
+        return GameStatsLayout{.textX = -0.15F,
+                               .summaryY = 0.14F,
+                               .usageY = 0.86F,
+                               .backgroundWidth = 1.55F,
+                               .backgroundHeight = 0.95F,
+                               .headerWidth = 0.43F,
+                               .headerHeight = 0.078F,
+                               .circleWidth = 0.051F,
+                               .circleHeight = 0.077F,
+                               .listX = 0.07F,
+                               .listY = 0.46F,
+                               .clipHeight = 0.4F,
+                               .stepDivisor = CircledText::kStepDivisor02};
+    }
     if (flag02) {
-        return widescreen ? GameStatsLayout{-0.15F,
-                                            0.14F,
-                                            0.86F,
-                                            1.55F,
-                                            0.95F,
-                                            0.43F,
-                                            0.078F,
-                                            0.051F,
-                                            0.077F,
-                                            0.07F,
-                                            0.46F,
-                                            0.4F,
-                                            CircledText::kStepDivisor02}
-                          : GameStatsLayout{0.02F,
-                                            0.16F,
-                                            0.82F,
-                                            1.1F,
-                                            0.8F,
-                                            0.3F,
-                                            0.07F,
-                                            0.05F,
-                                            0.077F,
-                                            0.17F,
-                                            0.445F,
-                                            0.38F,
-                                            CircledText::kStepDivisor02};
+        return GameStatsLayout{.textX = 0.02F,
+                               .summaryY = 0.16F,
+                               .usageY = 0.82F,
+                               .backgroundWidth = 1.1F,
+                               .backgroundHeight = 0.8F,
+                               .headerWidth = 0.3F,
+                               .headerHeight = 0.07F,
+                               .circleWidth = 0.05F,
+                               .circleHeight = 0.077F,
+                               .listX = 0.17F,
+                               .listY = 0.445F,
+                               .clipHeight = 0.38F,
+                               .stepDivisor = CircledText::kStepDivisor02};
     }
+    // Then progressive, whatever its shape: the circles keep their static size, the default mode's.
     if (flag20) {
-        // The circles keep their static size, the default mode's.
-        return GameStatsLayout{-0.05F,
-                               0.08F,
-                               0.9F,
-                               0.74F,
-                               0.74F,
-                               0.3F,
-                               0.09F,
-                               0.065F,
-                               0.11F,
-                               0.1F,
-                               0.45F,
-                               0.5F,
-                               CircledText::kStepDivisor};
+        return GameStatsLayout{.textX = -0.05F,
+                               .summaryY = 0.08F,
+                               .usageY = 0.9F,
+                               .backgroundWidth = 0.74F,
+                               .backgroundHeight = 0.74F,
+                               .headerWidth = 0.3F,
+                               .headerHeight = 0.09F,
+                               .circleWidth = 0.065F,
+                               .circleHeight = 0.11F,
+                               .listX = 0.1F,
+                               .listY = 0.45F,
+                               .clipHeight = 0.5F,
+                               .stepDivisor = CircledText::kStepDivisor};
     }
+    // Then 16:9; else the default.
     if (widescreen) {
-        return GameStatsLayout{-0.07F,
-                               0.04F,
-                               0.94F,
-                               1.45F,
-                               1.2F,
-                               0.43F,
-                               0.09F,
-                               0.081F,
-                               0.11F,
-                               0.145F,
-                               0.45F,
-                               0.5F,
-                               CircledText::kStepDivisor};
+        return GameStatsLayout{.textX = -0.07F,
+                               .summaryY = 0.04F,
+                               .usageY = 0.94F,
+                               .backgroundWidth = 1.45F,
+                               .backgroundHeight = 1.2F,
+                               .headerWidth = 0.43F,
+                               .headerHeight = 0.09F,
+                               .circleWidth = 0.081F,
+                               .circleHeight = 0.11F,
+                               .listX = 0.145F,
+                               .listY = 0.45F,
+                               .clipHeight = 0.5F,
+                               .stepDivisor = CircledText::kStepDivisor};
     }
     return GameStatsLayout{};
 }
