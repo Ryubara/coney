@@ -277,6 +277,10 @@ void Human::applyDamageModifier(float factor) {
 }
 
 void Human::applyClassFarRanges(std::span<const float> metres) {
+    // **Coney stand-in**: the rest of Human_AttachInstance is not this call's: the instance and its record, the
+    // brain's enable, the gait speeds, the idle task, the held object, hat and prop, the physics body, waking, the
+    // cuffs, the type's size and a player's gear are Coney's set-up elsewhere (Human::spawn, humanInitSteps), and
+    // class 5's rage damages (645 and 647 at 80) are not written.
     if (m_ranges == nullptr || metres.empty()) {
         return;
     }
