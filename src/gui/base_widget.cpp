@@ -50,6 +50,7 @@ void BaseWidget::render(const GuiCanvas& /*canvas*/) const {
     if (!visible() || m_batch == nullptr || m_rect >= m_batch->sheet().page.rects.size()) {
         return;
     }
+    // Coney's choice: no timed fade (`+0xf0`-`+0xf8`), which no menu Coney has starts: the alpha is the colour's.
     // The rectangle, cut to its top rectShare by a reveal (the size keeps the whole rectangle's shape).
     graphics::UvRect uv = m_batch->sheet().page.rect(m_rect);
     if (m_setup.rectShare < 1.0F) {
