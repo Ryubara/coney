@@ -94,6 +94,7 @@ ReactionKind Victim::react(const IncomingHit& hit, const VictimFrame& frame, Hum
     m_lastReaction = reaction.animId;
     ++m_reactions;
     // A victim with flag 0x100 is never stunned; a hard-to-stun one only when already stunned on his feet.
+    // **Coney stand-in**: no caller asks for a stun (`Human_PlayReaction`'s last argument).
     const bool stunsNow = (hit.flags & combat::kRangeFlagStun) != 0 && !frame.hardToStun;
     const bool stuns = !frame.unstunnable && (stunsNow || stunned());
     // A reaction with a knockdown event lays it down; a stunned one stays stunned until after the rise.
