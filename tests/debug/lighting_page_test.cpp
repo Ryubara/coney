@@ -388,8 +388,13 @@ TEST_CASE("both debug-menu front ends draw the Lighting page from the one model"
         CHECK(overlay.drawItem(item, "Lighting/" + item.label));
         ++drawn;
         if (item.kind == ItemKind::Submenu) {
-            for (const MenuItem& child : item.open()->items()) {
+            // Hold the group's page: open() makes a fresh one, and a range-for over `item.open()->items()` frees it
+            // before the body runs where the compiler does not yet extend that temporary's life (P2718: GCC 13, MSVC).
+            const std::shared_ptr<MenuPage> group = item.open();
+            REQUIRE(group != nullptr);
+            for (const MenuItem& child : group->items()) {
                 INFO(item.label << "/" << child.label);
+                CHECK_FALSE(child.label.empty());
                 CHECK(overlay.drawItem(child, "Lighting/" + item.label + "/" + child.label));
                 ++drawn;
             }
