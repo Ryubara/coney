@@ -23,6 +23,8 @@ struct CircledTextSetup {
     float circleHeight = 0.05F; ///< `circleH` (`+0x5f4`): a circle's height.
     float circleOffset = 0.0F;  ///< `+0x240`: where the circles and the text start, from the left edge.
     float textSize = 1.7F;      ///< The texts' font size (the metrics the caller passes).
+    /// The circles' step divisor (`0x0050ec64`): 3, or 2 with the device's flag `0x02`, which the set-up reads.
+    float stepDivisor = 3.0F;
 };
 
 /// A text after up to two **circled characters** on a back sprite (our name `CircledText`, vtable `0x0053b390`): the
@@ -33,16 +35,18 @@ struct CircledTextSetup {
 ///   the characters without a shadow; reveal 1.
 /// - **Text** (setText(), setCircled()): the main text; one character of the string per circle.
 /// - **Layout** (update(), `CircledText_Update`), with r the reveal: the back sprite over the rectangle, H × r high,
-///   its top edge kept; from x0 = the left edge + circleOffset, circle i centred at x0 + (2i + 1) × `circleW` / 3
-///   (the divisor `0x0050ec64`: each circle adds the step before and after itself), `circleH` × r high with its top
-///   edge kept, `circleH` × 0.1 (`0x0050ec68`) below the row; its character centred on it at the row's y; the text at
-///   the last circle's centre + `circleW` / 2, or at x0 without circles.
+///   its top edge kept and its texture rectangle cut to r of its height; from x0 = the left edge + circleOffset,
+///   circle i centred at x0 + (2i + 1) × `circleW` / d (d the step divisor `0x0050ec64`, 3 or 2: each circle adds the
+///   step before and after itself), `circleH` × r high with its top edge kept and its rectangle cut to r, `circleH` ×
+///   0.1 (`0x0050ec68`) below the row; its character centred on it at the row's y; the text at the last circle's centre
+///   + `circleW` / 2, or at x0 without circles; the texts and the characters take the reveal r, which cuts each glyph
+///   to the top r of itself.
 /// - **Drawing** (render(), `CircledText_Render`): the back sprite, the text (focused colour `0x005fd318` when
 ///   focused, else the normal one), each circle and its character, which takes the focused colour unless it is black.
 ///
-/// Stand-ins: the back sprite and the circles are drawn whole at their reduced height (the original also cuts their
-/// texture rectangles by the reveal), and the texts are not revealed (Coney's text widget has no reveal); more than
-/// kCircles characters are dropped (the original has room for two and writes past them).
+/// The original has room for two circles and no bound on their count: a third character's circle and text are written
+/// past the object (docs/research/circled-text.md#q-third-circle). No level header on the disc has more than two
+/// characters, so Coney keeps at most kCircles.
 ///
 /// Research: docs/research/circled-text.md#circled-text
 class CircledText : public Widget {
@@ -55,9 +59,9 @@ class CircledText : public Widget {
     /// The back sprite's and the circles' colours from the set-up.
     static constexpr graphics::Rgba kBackColour{128, 128, 128, 255};
     static constexpr graphics::Rgba kCircleColour{160, 16, 16, 255};
-    /// The step divisor between circles (`0x0050ec64`: 3). Stand-in: 2 with device flag `0x02`, which Coney does not
-    /// model.
+    /// The step divisor between circles (`0x0050ec64`) in the default modes, and with the device's flag `0x02`.
     static constexpr float kStepDivisor = 3.0F;
+    static constexpr float kStepDivisor02 = 2.0F;
     /// How far below the row a circle sits, in circle heights (`0x0050ec68` = `circleH` × 0.1).
     static constexpr float kCircleDrop = 0.1F;
     /// The font slot of the texts (the menus' text font).

@@ -29,6 +29,20 @@ constexpr std::uint32_t kArmiesPicture = 0x180000;
 constexpr std::uint32_t kRumblePicture = 0x180003;
 // The room past the list's clip a header may end in: the stacked heights' rounding.
 constexpr float kClipSlack = 1e-4F;
+// The default mode's layout (stub: the other modes' are not used yet).
+constexpr float kBackgroundWidth = 1.15F;
+constexpr float kBackgroundHeight = 1.1F;
+constexpr float kSummaryX = 0.01F;
+constexpr float kSummaryY = 0.06F;
+constexpr float kListX = 0.185F;
+constexpr float kListY = 0.45F;
+constexpr float kUsageX = 0.01F;
+constexpr float kUsageY = 0.94F;
+constexpr float kClipHeight = 0.5F;
+constexpr float kHeaderWidth = 0.35F;
+constexpr float kHeaderHeight = 0.09F;
+constexpr float kCircleWidth = 0.065F;
+constexpr float kCircleHeight = 0.11F;
 
 // The first `count` lines of marked-up `text`: the text up to its count-th line break (`<CR>`, `<CR2>`, `<CR3 f>` or
 // `<CRM>`), so the tags before it still apply.
@@ -332,6 +346,10 @@ void GameStatsSubItem::render(const GuiCanvas& canvas) const {
         addTextSprites(layoutText(firstLines(m_text.text(), m_shownLines), m_text.style(), canvas.fonts),
                        canvas.textBatch);
     }
+}
+
+GameStatsLayout GameStatsLayout::forFlags(bool /*flag02*/, bool /*widescreen*/, bool /*flag20*/) {
+    return GameStatsLayout{};
 }
 
 // The summary's and the usage line's places and fonts.

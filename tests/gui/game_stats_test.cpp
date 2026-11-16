@@ -285,27 +285,223 @@ TEST_CASE("the list: five entries at most centred on (0.185, 0.45), headers 0.35
     CHECK(cues.size() == 1);
 }
 
-TEST_CASE("a mission's block draws only the lines of its text that fit its shown height", "[game_stats]") {
-    // Expected: game-stats.md#block, speculative (Coney's choice: the original's text widget crops by height)
+TEST_CASE("the layout per video mode: GameStats_Init's values for the 0x02 modes, progressive, 16:9 and the default",
+          "[game_stats]") {
+    // Expected: game-stats.md#values, confirmed (code) at 0x00215e78
+    using Layout = gui::GameStatsLayout;
+    const Layout normal = Layout::forFlags(false, false, false);
+    CHECK(normal.textX == Approx(0.01F));
+    CHECK(normal.summaryY == Approx(0.06F));
+    CHECK(normal.usageY == Approx(0.94F));
+    CHECK(normal.backgroundWidth == Approx(1.15F));
+    CHECK(normal.backgroundHeight == Approx(1.1F));
+    CHECK(normal.headerWidth == Approx(0.35F));
+    CHECK(normal.headerHeight == Approx(0.09F));
+    CHECK(normal.circleWidth == Approx(0.065F));
+    CHECK(normal.circleHeight == Approx(0.11F));
+    CHECK(normal.listX == Approx(0.185F));
+    CHECK(normal.listY == Approx(0.45F));
+    CHECK(normal.clipHeight == Approx(0.5F));
+    CHECK(normal.stepDivisor == 3.0F);
+
+    // 16:9 (flag 0x04 alone).
+    const Layout wide = Layout::forFlags(false, true, false);
+    CHECK(wide.textX == Approx(-0.07F));
+    CHECK(wide.summaryY == Approx(0.04F));
+    CHECK(wide.usageY == Approx(0.94F));
+    CHECK(wide.backgroundWidth == Approx(1.45F));
+    CHECK(wide.backgroundHeight == Approx(1.2F));
+    CHECK(wide.headerWidth == Approx(0.43F));
+    CHECK(wide.headerHeight == Approx(0.09F));
+    CHECK(wide.circleWidth == Approx(0.081F));
+    CHECK(wide.circleHeight == Approx(0.11F));
+    CHECK(wide.listX == Approx(0.145F));
+    CHECK(wide.listY == Approx(0.45F));
+    CHECK(wide.clipHeight == Approx(0.5F));
+
+    // Progressive (0x20), with or without 16:9; its circles keep their static size.
+    for (const bool widescreen : {false, true}) {
+        const Layout progressive = Layout::forFlags(false, widescreen, true);
+        CHECK(progressive.textX == Approx(-0.05F));
+        CHECK(progressive.summaryY == Approx(0.08F));
+        CHECK(progressive.usageY == Approx(0.9F));
+        CHECK(progressive.backgroundWidth == Approx(0.74F));
+        CHECK(progressive.backgroundHeight == Approx(0.74F));
+        CHECK(progressive.headerWidth == Approx(0.3F));
+        CHECK(progressive.headerHeight == Approx(0.09F));
+        CHECK(progressive.circleWidth == Approx(0.065F));
+        CHECK(progressive.circleHeight == Approx(0.11F));
+        CHECK(progressive.listX == Approx(0.1F));
+        CHECK(progressive.listY == Approx(0.45F));
+        CHECK(progressive.clipHeight == Approx(0.5F));
+        CHECK(progressive.stepDivisor == 3.0F);
+    }
+
+    // 0x02, before any other flag, alone and with 16:9; the circles step half their width.
+    const Layout flag02 = Layout::forFlags(true, false, true);
+    CHECK(flag02.textX == Approx(0.02F));
+    CHECK(flag02.summaryY == Approx(0.16F));
+    CHECK(flag02.usageY == Approx(0.82F));
+    CHECK(flag02.backgroundWidth == Approx(1.1F));
+    CHECK(flag02.backgroundHeight == Approx(0.8F));
+    CHECK(flag02.headerWidth == Approx(0.3F));
+    CHECK(flag02.headerHeight == Approx(0.07F));
+    CHECK(flag02.circleWidth == Approx(0.05F));
+    CHECK(flag02.circleHeight == Approx(0.077F));
+    CHECK(flag02.listX == Approx(0.17F));
+    CHECK(flag02.listY == Approx(0.445F));
+    CHECK(flag02.clipHeight == Approx(0.38F));
+    CHECK(flag02.stepDivisor == 2.0F);
+    const Layout flag02Wide = Layout::forFlags(true, true, false);
+    CHECK(flag02Wide.textX == Approx(-0.15F));
+    CHECK(flag02Wide.summaryY == Approx(0.14F));
+    CHECK(flag02Wide.usageY == Approx(0.86F));
+    CHECK(flag02Wide.backgroundWidth == Approx(1.55F));
+    CHECK(flag02Wide.backgroundHeight == Approx(0.95F));
+    CHECK(flag02Wide.headerWidth == Approx(0.43F));
+    CHECK(flag02Wide.headerHeight == Approx(0.078F));
+    CHECK(flag02Wide.circleWidth == Approx(0.051F));
+    CHECK(flag02Wide.circleHeight == Approx(0.077F));
+    CHECK(flag02Wide.listX == Approx(0.07F));
+    CHECK(flag02Wide.listY == Approx(0.46F));
+    CHECK(flag02Wide.clipHeight == Approx(0.4F));
+    CHECK(flag02Wide.stepDivisor == 2.0F);
+}
+
+TEST_CASE("the screen in the 0x02 mode: the summary, the background, the headers and their circles where the mode's "
+          "values put them",
+          "[game_stats]") {
+    // Expected: game-stats.md#values, confirmed (code) at 0x00215e78 and 0x002155a8
+    const gui::GlobalStrings text = strings();
+    gui::GameStatsScreen screen;
+    screen.setStrings(&text);
+    screen.setLayout(gui::GameStatsLayout::forFlags(true, false, false));
+    gui::GameStatsData data;
+    data.levels.resize(3);
+    for (gui::GameStatsLevel& level : data.levels) {
+        level.circled = "12";
+    }
+    screen.open(data, 0);
+    screen.update(gui::GuiFrame{33, nullptr});
+    CHECK(screen.summary().style().x == Approx(0.02F));
+    CHECK(screen.summary().style().y == Approx(0.16F));
+    CHECK(screen.background().setupValues().height == Approx(0.8F));
+    CHECK(screen.background().setupValues().width.value_or(0.0F) ==
+          Approx(coney::graphics::OverlayCamera::guiWidthToOverlay(1.1F)));
+    // The first header centred on (0.17, 0.445), 0.3 x 0.07: its left edge at 0.02; its circles 0.05 x 0.077, each
+    // stepping half its width before and after itself.
+    const gui::CircledText& first = screen.header(0);
+    CHECK(first.height() == Approx(0.07F));
+    CHECK(first.text().style().y == Approx(0.445F));
+    CHECK(first.circle(0).setupValues().width.value_or(0.0F) == Approx(0.05F));
+    CHECK(first.circle(0).setupValues().height == Approx(0.077F));
+    CHECK(first.circle(0).setupValues().x == Approx(0.02F + 0.025F));
+    CHECK(first.circle(1).setupValues().x == Approx(0.02F + 0.075F));
+}
+
+TEST_CASE("the list scrolls: a move past the middle row hides the top header a quarter an update while the next one "
+          "shows at the bottom, and the hidden header is not drawn",
+          "[game_stats]") {
+    // Expected: game-stats.md#scroll, confirmed (runtime) and confirmed (code) at 0x001e1d70 and 0x001e21d8
+    const gui::GlobalStrings text = strings();
+    gui::GameStatsScreen screen;
+    screen.setStrings(&text);
+    gui::GameStatsData data;
+    data.levels.resize(7);
+    screen.open(data, 0);
+    std::uint64_t now = 0;
+    // Updates every 33 ms (the original's 30 a second) up to `until`.
+    const auto runTo = [&](std::uint64_t until) {
+        while (now + 33 <= until) {
+            now += 33;
+            screen.update(gui::GuiFrame{now, nullptr});
+        }
+    };
+    runTo(100);
+    screen.handle(gui::MenuCommand::Down, now);
+    runTo(1000);
+    CHECK(screen.window().first() == 0);
+    // The third entry is past the middle row: the first header goes, the sixth comes.
+    screen.handle(gui::MenuCommand::Down, now);
+    const float shares[] = {0.75F, 0.5F, 0.25F};
+    for (const float share : shares) {
+        runTo(now + 33);
+        CHECK(screen.header(0).height() == Approx(0.09F * share));
+        CHECK(screen.header(5).height() == Approx(0.09F * (1.0F - share)));
+        // The second header follows the first's shown height (its block closed long ago).
+        CHECK(screen.header(1).text().style().y == Approx(0.45F + (0.09F * share)));
+    }
+    runTo(now + 33);
+    CHECK(screen.window().first() == 1);
+    CHECK_FALSE(screen.header(0).visible());
+    CHECK(screen.header(1).visible());
+    CHECK(screen.header(1).text().style().y == Approx(0.45F));
+}
+
+TEST_CASE("a mission's block: five lines high, its picture's rectangle cut by the reveal and its text wiped from the "
+          "top, line by line",
+          "[game_stats]") {
+    // Expected: game-stats.md#block, confirmed (code) at 0x00217788, 0x001e32a0, 0x001e3070 and 0x001b9600
     const gui::GlobalStrings text = strings();
     const coney::graphics::Font font = coney::test::testFont();
     coney::graphics::SpriteBatch batch(font.sheet(), 4096, 9000.0F);
     const gui::GuiCanvas canvas{.fonts = [&font](int /*slot*/) { return &font; },
                                 .textBatch = [&batch](int /*slot*/) { return &batch; }};
-    // A level below no goal: the score line, the time line and three empty lines.
+    // A level with all three counts: the score line, the three counts and the time line.
+    gui::GameStatsLevel level;
+    level.targets.groupItems.total = 2;
+    level.targets.characters.total = 1;
+    level.targets.arenas.total = 3;
     gui::GameStatsSubItem block;
-    block.setup(gui::GameStatsLevel{}, &text, nullptr);
-    // The sprites drawn with `shown` of the block's height open.
-    const auto drawn = [&](float shown) {
+    block.setup(level, &text, nullptr);
+    // Its height is five of its lines (size 1.2), each a glyph's height and the (negative) line gap.
+    const coney::graphics::FontMetrics line = coney::graphics::fontMetrics(1.2F);
+    const coney::graphics::FontMetrics base = coney::graphics::fontMetrics(1.0F);
+    const float advance = line.height + line.lineGap;
+    CHECK(block.fullHeight() == Approx(5.0F * advance));
+    // The heights of the text's sprites with `reveal` of the block shown.
+    const auto heights = [&](float reveal) {
         batch.clear();
-        block.moveTo(0.2F, 0.1F, shown);
+        block.moveTo(0.2F, 0.1F, reveal);
         block.render(canvas);
-        return batch.sprites().size();
+        std::vector<float> out;
+        for (const coney::graphics::Sprite& sprite : batch.sprites()) {
+            out.push_back(sprite.height);
+        }
+        return out;
     };
-    const std::size_t all = drawn(1.0F);
-    const std::size_t scoreLine = drawn(0.2F); // one of the five lines
-    CHECK(drawn(0.1F) == 0);
-    CHECK(scoreLine > 0);
-    CHECK(scoreLine < all);
-    CHECK(drawn(0.4F) == all); // the two lines with characters
+    // Whole: every glyph whole.
+    const std::vector<float> whole = heights(1.0F);
+    REQUIRE_FALSE(whole.empty());
+    for (const float height : whole) {
+        CHECK(height == Approx(line.height));
+    }
+    // The picture is as high as the shown block, its rectangle cut to the same share.
+    (void)heights(0.5F);
+    CHECK(block.picture().setupValues().height == Approx(2.5F * advance));
+    CHECK(block.picture().setupValues().rectShare == 0.5F);
+    // At 0.9 the time line (the fifth) shows (depth x 0.9 - 4 lines) / h of each glyph, depth the text's height less a
+    // size-1.0 line gap; the score line shows whole.
+    const float depth = (5.0F * advance) - base.lineGap;
+    const float timeShare = ((depth * 0.9F) - (4.0F * advance)) / line.height;
+    REQUIRE(timeShare > 0.0F);
+    REQUIRE(timeShare < 1.0F);
+    const std::vector<float> most = heights(0.9F);
+    CHECK(most.size() == whole.size());
+    std::size_t cut = 0;
+    for (const float height : most) {
+        if (height == Approx(line.height * timeShare)) {
+            ++cut;
+        } else {
+            CHECK(height == Approx(line.height));
+        }
+    }
+    CHECK(cut > 0);
+    CHECK(cut < whole.size());
+    // At 0.5 the last two lines are gone; at 0.1 only the top of the score line shows.
+    CHECK(heights(0.5F).size() < whole.size());
+    for (const float height : heights(0.1F)) {
+        CHECK(height == Approx(depth * 0.1F));
+    }
+    CHECK(heights(0.0F).empty());
 }

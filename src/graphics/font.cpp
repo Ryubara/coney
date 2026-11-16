@@ -129,4 +129,6 @@ void Font::draw(std::vector<Sprite>& out, std::string_view text, float x, float 
     }
 }
 
+void revealSprite(Sprite& /*sprite*/, float /*share*/) {}
+
 } // namespace coney::graphics

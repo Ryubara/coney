@@ -17,6 +17,7 @@
 #include "gui/global_strings.h"
 #include "gui/menu_input.h"
 #include "gui/scrolling_menu.h"
+#include "gui/scrolling_window.h"
 #include "gui/text_widget.h"
 #include "gui/widget.h"
 #include "warriors/level_table.h"
@@ -200,6 +201,34 @@ class GameStatsSubItem : public Widget {
     std::size_t m_shownLines = 0; // the text's lines that fit the shown height, drawn from the first
 };
 
+/// The statistics screen's layout for one video mode: the values `GameStats_Init` writes into
+/// `0x005100e0`-`0x00510118` before it builds the screen, picked by the device's flags `0x02` first, then `0x20`
+/// (progressive), then `0x04` (16:9). Positions are GUI coordinates; the background's width is a GUI width the device
+/// stretches. The window (5 entries, `0x00510108`) and the reveal step are the same in every mode.
+///
+/// Research: docs/research/game-stats.md#values
+struct GameStatsLayout {
+    float textX = 0.01F;           ///< `0x00510114`: the summary's and the usage line's x (`0x005100f0` copies it).
+    float summaryY = 0.06F;        ///< `0x005100f4`.
+    float usageY = 0.94F;          ///< `0x00510118`.
+    float backgroundWidth = 1.15F; ///< `0x005100e8`.
+    float backgroundHeight = 1.1F; ///< `0x005100ec`.
+    float headerWidth = 0.35F;     ///< `0x005100e4`.
+    float headerHeight = 0.09F;    ///< `0x005100e0`.
+    float circleWidth = 0.065F;    ///< `0x005100f8`.
+    float circleHeight = 0.11F;    ///< `0x005100fc`.
+    float listX = 0.185F;          ///< `0x00510100`: the first header's centre.
+    float listY = 0.45F;           ///< `0x00510104`.
+    float clipHeight = 0.5F;       ///< `0x00510110`.
+    /// The headers' circle step divisor (CircledText_Setup's `0x0050ec64`): 3, or 2 with flag `0x02`.
+    float stepDivisor = 3.0F;
+
+    /// The layout of the mode the device's flags give: `flag02`, then `flag20`, then `widescreen` (flag `0x04`), else
+    /// the default. The progressive mode leaves the circles' size at its static value, the default mode's.
+    /// @orig 0x00215e78 GameStats_Init (GameStats.cpp)
+    [[nodiscard]] static GameStatsLayout forFlags(bool flag02, bool widescreen, bool flag20);
+};
+
 /// The statistics screen (`GUI/GameStats.cpp`, game mode 0x13's widget): the colour-cycling background (kColours, a
 /// step moving on the first frame more than kColourStepMs after the step began, the colour blended through the step),
 /// the summary,
@@ -225,12 +254,9 @@ class GameStatsSubItem : public Widget {
 /// Research: docs/research/game-stats.md#list, docs/research/game-stats.md#block
 class GameStatsScreen : public Widget {
   public:
-    // Coney's choice: the default video mode's layout values only (GameStats_Init sets others for the other modes).
-    /// The background's sprite (word `0xc0005`: record 12, rectangle 5), size and depth.
+    /// The background's sprite (word `0xc0005`: record 12, rectangle 5) and depth.
     static constexpr std::uint32_t kBackgroundRecord = 12;
     static constexpr std::size_t kBackgroundRect = 5;
-    static constexpr float kBackgroundWidth = 1.15F;
-    static constexpr float kBackgroundHeight = 1.1F;
     static constexpr float kBackgroundDepth = 8000.0F;
     /// The headers' back and circle sprite (word `0x180002`) and the specials' pictures' record; the headers' depth.
     static constexpr std::uint32_t kHeaderRecord = 24;
@@ -245,21 +271,11 @@ class GameStatsScreen : public Widget {
     /// The background's colours, in order (`0x00640c60`).
     static constexpr std::array<graphics::Rgba, 3> kColours{
         {{150, 50, 50, 255}, {50, 150, 50, 255}, {50, 50, 150, 255}}};
-    /// The summary's place (`0x005100f0` / `0x005100f4`), the list's and the usage line's.
-    static constexpr float kSummaryX = 0.01F;
-    static constexpr float kSummaryY = 0.06F;
-    static constexpr float kListX = 0.185F;
-    static constexpr float kListY = 0.45F;
-    static constexpr float kUsageX = 0.01F;
-    static constexpr float kUsageY = 0.94F;
-    /// The list's window (`0x00510108`) and clip height (`0x00510110`).
+    /// The list's window (`0x00510108`), in every mode.
     static constexpr std::size_t kVisible = 5;
-    static constexpr float kClipHeight = 0.5F;
-    /// A header's size (`0x005100e4` / `0x005100e0`) and its circles' (`0x005100f8` / `0x005100fc`).
-    static constexpr float kHeaderWidth = 0.35F;
-    static constexpr float kHeaderHeight = 0.09F;
-    static constexpr float kCircleWidth = 0.065F;
-    static constexpr float kCircleHeight = 0.11F;
+    /// The least time between two commands, in milliseconds: the list reads the pad only this long after the last
+    /// (`ScrollingMenu_Update`, `+0xd0`).
+    static constexpr std::uint64_t kInputGapMs = 100;
     /// How far a shown description reaches back into its header: 2 / the screen's height (448), in
     /// `ScrollingMenuItem_Update` and `_GetRect`.
     static constexpr float kRowOverlap = 2.0F / 448.0F;
@@ -279,6 +295,10 @@ class GameStatsScreen : public Widget {
     void setSoundSink(std::function<void(int cue)> playCue) { m_playCue = std::move(playCue); }
     /// Draws with `batches` (not owned) from now on.
     void setBatches(const GameStatsBatches& batches) { m_batches = batches; }
+    /// Lays the screen out with `layout` from the next open() (the video mode's values).
+    void setLayout(const GameStatsLayout& layout) { m_layout = layout; }
+    /// The layout.
+    [[nodiscard]] const GameStatsLayout& layout() const { return m_layout; }
 
     /// Opens the screen at `nowMs` over `data`: the summary, the list and the usage line.
     /// @orig 0x00215e78 GameStats_Init (GameStats.cpp)
@@ -318,6 +338,8 @@ class GameStatsScreen : public Widget {
     [[nodiscard]] const TextWidget& summary() const { return m_summary; }
     /// The list's cursor.
     [[nodiscard]] const ScrollingMenu& list() const { return m_list; }
+    /// The list's window: which entries are stacked, scrolled and drawn.
+    [[nodiscard]] const ScrollingWindow& window() const { return m_window; }
     /// Mission `index`'s header.
     [[nodiscard]] const CircledText& header(std::size_t index) const { return *m_headers.at(index); }
     /// Mission `index`'s sub-item.
@@ -342,12 +364,16 @@ class GameStatsScreen : public Widget {
     TextWidget m_usage;
     std::vector<std::unique_ptr<CircledText>> m_headers;
     std::vector<std::unique_ptr<GameStatsSubItem>> m_subItems;
+    GameStatsLayout m_layout;
     ScrollingMenu m_list;
+    ScrollingWindow m_window;
     MenuInput m_input;
-    std::size_t m_focused = 0;       // the entry whose description may open
-    std::uint64_t m_focusMs = 0;     // when it took the focus
-    std::uint64_t m_stepStartMs = 0; // when the colour step began (`+0xa8`)
-    std::size_t m_colourStep = 0;    // the colour step (`+0xac`)
+    std::size_t m_focused = 0;        // the entry whose description may open
+    std::uint64_t m_focusMs = 0;      // when it took the focus
+    bool m_firstBlockFocused = false; // the first entry's block keeps the focus it is opened with until a move
+    std::optional<std::uint64_t> m_lastCommandMs; // when the list last took a command (`+0xd0`)
+    std::uint64_t m_stepStartMs = 0;              // when the colour step began (`+0xa8`)
+    std::size_t m_colourStep = 0;                 // the colour step (`+0xac`)
     bool m_open = false;
     bool m_closed = false;
 };
