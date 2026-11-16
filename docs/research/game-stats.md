@@ -263,8 +263,9 @@ shows, times the reveal).
 - **Each update** (`ScrollingMenu_Update`, `0x001e21d8`) reads the pad only while the state is 0, 100 ms after the last
   command, then steps the state by `+0xc8` (0.25): state 2 lowers the first entry's reveal and gives the window's last
   entry 1 − that reveal; at 0 the window starts one lower. State 1 raises the first entry's reveal and gives the last
-  entry 1 − it; at 1 the scroll is done. State 3 raises the first entry's reveal, state 4 lowers it (at 0 the window
-  starts one lower), neither touching the last.
+  entry 1 − it; at 1 the scroll is done. State 3 raises the first entry's reveal without touching the last. State 4
+  lowers it (at 0 the window starts one lower) and, while the window's last entry is not the focused one, gives that
+  entry 1 − the first's reveal too.
 - **The window** is then `+0xb0` entries, one more while a state runs, cut to the list's end; each is placed at the
   stacked heights of those above it ([Placement](#placement)) and updated, which steps its block
   ([GUI: ScrollingMenuItem_Update](gui.md#fn-scrollingmenu)): the block opens only while its header shows whole.
@@ -279,9 +280,10 @@ shows, times the reveal).
   headers above it one by one (25 entries: the window ends at entries 23 and 24), and moving up reveals them again.
 
 Each header of the window is centred one entry height below the one above it, so while a header's reveal falls the
-headers under it move up with it (run r-20261116-stats-scroll: with the first entry at 0.75 the second sits at
-0.45 + 0.09 × 0.75 = 0.5175). The original's input (`ScrollingMenu_OnCommand`) also waits for an entry's description
-to drop its focus only when the menu's `+0xe4` is set, which the statistics screen leaves at 0.
+headers under it move up with it (inferred from [Placement](#placement): with the first entry at 0.75 the second sits
+at 0.45 + 0.09 × 0.75 = 0.5175, which the per-frame trace of run r-20261116-stats-scroll showed; the run record keeps
+the first header's place, not this sample). The original's input (`ScrollingMenu_OnCommand`) also waits for an
+entry's description to drop its focus only when the menu's `+0xe4` is set, which the statistics screen leaves at 0.
 
 ### A mission's block {#block}
 

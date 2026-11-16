@@ -46,6 +46,9 @@ enum class ScrollState : std::uint8_t {
 ///   above the window that would fit under the clip starts RevealTop (the drawn entries fewer than `maxVisible`); a
 ///   focused last drawn entry that runs past the clip, when it is not the first, starts HideTop.
 ///
+/// Only what the statistics screen uses is ported: `ScrollingMenu_Update`'s `+0xe0` mode (the last entry's partial
+/// reveal and its 0.007 bonus) and the last entry's slot-`0xcc` trim, both 0 there, are left out.
+///
 /// Research: docs/research/game-stats.md#scroll
 class ScrollingWindow {
   public:

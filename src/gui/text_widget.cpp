@@ -55,6 +55,8 @@ void TextWidget::render(const GuiCanvas& canvas) const {
     if (m_reveal < 1.0F) {
         // Each glyph cut to its share: the reveal itself, Font_Draw's argument, or for the markup widget its line's,
         // (depth × reveal + the first line's y − the glyph's y) / h, the line wipe of MessageHUD_Layout (`0x001b9600`).
+        // Its glyph-tag path (icons inside the text) uses h × reveal instead of depth × reveal; no Coney text has glyph
+        // tags yet, so only the run path is ported.
         // With a shadow every glyph comes after its shadow, which takes the glyph's share. Nothing is left of a glyph
         // whose share is not above 0.
         const std::size_t group = m_style.shadowAlpha != 0 ? 2 : 1;
