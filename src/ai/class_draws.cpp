@@ -23,7 +23,7 @@ constexpr std::uint32_t kNotFreeHeld = 0x2fefefff;
 constexpr double kEmptyHand = 0.0;
 
 // Whether `brain`'s human is free (`Human_IsFree`): no held flag of 0x2fefefff, and for the state word's 0x7bf9e9f7ff0
-// Coney's states: alive, standing, not held in a grab and his actions not blocked.
+// (**Coney stand-in**: Coney keeps no state word) its states: alive, standing, not held in a grab, actions not blocked.
 // @orig 0x002282d8 Human_IsFree (unknown)
 bool humanFree(const Brain& brain) {
     const human::Human& body = brain.human();
@@ -63,7 +63,7 @@ void playWhenFree(Brain& brain, int animId) {
 } // namespace
 
 void thinkClassActions(Brain& brain) {
-    // Nothing while the human's actions are blocked (no train is ever near: Coney has none).
+    // Nothing while the human's actions are blocked. **Coney stand-in**: no train is ever near (Coney has none).
     if (actionsBlocked(brain.human())) {
         return;
     }
@@ -111,7 +111,8 @@ void giveHandObject(Brain& brain) {
 }
 
 void useFlash(Brain& brain) {
-    // Human_Heal with "full": a new body, not wounded, at his maximum health.
+    // **Coney stand-in**: an AI has no inventory, HUD panel or screen look, so the flash's spend, the HUD's request and
+    // the look are not made. Human_Heal with "full" (no player): a new body, not wounded, at his maximum health.
     human::Human& body = brain.human();
     combat::Health& health = body.fighter().health();
     body.setWounded(false);
