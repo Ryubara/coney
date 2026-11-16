@@ -135,3 +135,27 @@ TEST_CASE("a class with a cap of 0 never reacts to a hit during his rise", "[hum
     fight.run("", 1);
     CHECK(fight.human().animator().animId() == kRise);
 }
+
+TEST_CASE("a stunned human floored again early in his rise keeps his stun past the next rise", "[human][combat]") {
+    // Expected: characters.md#power-class-bytes, confirmed (code) (Human_SetDownTimers keeps a running stun)
+    const FightCharacter character;
+    Fight fight(character, 30.0F);
+    // The crushing special with its stun: down, stunned until the rise + the stun time.
+    fight.human().takeHit(hitOf(653, 50, 0x39, 0x400));
+    int inRise = 0;
+    for (int update = 0; update < 200 && inRise < 2; ++update) {
+        fight.run("", 1);
+        if (fight.human().animator().animId() == kRise) {
+            ++inRise;
+        }
+    }
+    REQUIRE(inRise == 2);
+    REQUIRE(fight.human().fighter().victim().stunned());
+    // A plain hit early in the rise floors him again with 195; he stays stunned until after the next rise.
+    fight.human().takeHit(hitOf(12, 14, 0x0a, 0x800));
+    fight.run("", 1);
+    REQUIRE(fight.human().animator().animId() == kGroundStrike);
+    CHECK(fight.human().fighter().victim().grounded());
+    CHECK(fight.human().fighter().victim().stunned());
+    CHECK(fight.human().fighter().victim().riseAtMs() > 0);
+}
