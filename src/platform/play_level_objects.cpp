@@ -15,6 +15,7 @@
 
 #include "ai/ai_humans.h"
 #include "ai/brain.h"
+#include "ai/class_draws.h"
 #include "ai/dealer_goal.h"
 #include "ai/goal.h"
 #include "ai/swap_prompt.h"
@@ -513,6 +514,31 @@ void PlayLevelMode::stepDealerPairs() {
         if (const std::optional<ai::DealOutcome> outcome = dealer.finishPair(brain)) {
             settleDeal(brain, dealer, *outcome);
             m_print(std::format("deal: dealer {} completes the pair\n", i));
+        }
+    }
+}
+
+void PlayLevelMode::stepAiClipEvents() {
+    if (m_ai == nullptr) {
+        return;
+    }
+    ai::Brains& brains = m_ai->brains();
+    for (std::size_t i = 0; i < brains.size(); ++i) {
+        ai::Brain& brain = brains.at(i);
+        // The player's flash is his own (stepFlash()).
+        if (brain.type() == ai::BrainType::Player) {
+            continue;
+        }
+        if (brain.human().actionEvent() == kFlashAnim) {
+            ai::useFlash(brain);
+            if (m_hud != nullptr) {
+                m_hud->hud().services().sound.playCue(kFlashSoundCue);
+            }
+            m_print(std::format("flash: AI {} used one, health {}\n", i, brain.human().fighter().health().value()));
+        }
+        if (brain.human().handObjectEvent()) {
+            ai::giveHandObject(brain);
+            m_print(std::format("draw: AI {} holds {}\n", i, brain.human().script().heldObjectName));
         }
     }
 }

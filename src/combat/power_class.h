@@ -45,7 +45,7 @@ struct PowerClass {
     std::int8_t comboReact = 0;     ///< Byte `+0x3f` (argument 27): 1, -1 or 0 for flag `0x400`, `0x200`, none.
     /// Byte `+0x38` (argument 20, 0-127): the most ground strikes a downed human reacts to; hit while he gets up after
     /// that many, he reacts to nothing (`Human_PlayReaction`, docs/research/characters.md#power-class-bytes).
-    int groundStrikeCap = 0;
+    int groundStrikeCap = 3;
     /// Byte `+0x41` (argument 29, 0-1): an AI of the class in a fight with nothing in hand draws a weapon (clip 477,
     /// `Brain_Think`; ai::thinkClassActions()).
     bool drawsWeapon = false;
@@ -72,6 +72,7 @@ inline constexpr PowerClass kCivilianPowerClass{.powerMax = 200,
                                                 .attackDelayDownFactor = 3.0F,
                                                 .counterChance = 0.1F,
                                                 // **Coney's stand-in**: the civilian's byte is not read; Rembrandt's.
-                                                .ringByte = 35};
+                                                .ringByte = 35,
+                                                .groundStrikeCap = 4};
 
 } // namespace coney::combat

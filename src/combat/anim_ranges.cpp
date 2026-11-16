@@ -54,6 +54,24 @@ AnimRange readRecord(io::Reader& reader) {
     return range;
 }
 
+// The anim ids each attack kind's far range sets (`Attack_CallKindHandler`, the jump table at `0x0055d640`); -1 ends
+// a row. Kinds 15, 18 and 23-41 name none, and the handler takes no kind from 42 on.
+constexpr std::array<ClassDamageRow, 21> kFarRangeRows{{
+    {.index = 0, .ids = {11, -1, -1, -1, -1, -1}},      {.index = 1, .ids = {12, -1, -1, -1, -1, -1}},
+    {.index = 2, .ids = {13, -1, -1, -1, -1, -1}},      {.index = 3, .ids = {15, -1, -1, -1, -1, -1}},
+    {.index = 4, .ids = {14, -1, -1, -1, -1, -1}},      {.index = 5, .ids = {16, -1, -1, -1, -1, -1}},
+    {.index = 6, .ids = {17, -1, -1, -1, -1, -1}},      {.index = 7, .ids = {19, -1, -1, -1, -1, -1}},
+    {.index = 8, .ids = {18, -1, -1, -1, -1, -1}},      {.index = 9, .ids = {20, -1, -1, -1, -1, -1}},
+    {.index = 10, .ids = {25, 26, 27, 28, 29, 30}},     {.index = 11, .ids = {21, -1, -1, -1, -1, -1}},
+    {.index = 12, .ids = {193, -1, -1, -1, -1, -1}},    {.index = 13, .ids = {194, -1, -1, -1, -1, -1}},
+    {.index = 14, .ids = {237, 238, 239, 240, -1, -1}}, {.index = 16, .ids = {653, 655, -1, -1, -1, -1}},
+    {.index = 17, .ids = {657, 659, -1, -1, -1, -1}},   {.index = 19, .ids = {0, -1, -1, -1, -1, -1}},
+    {.index = 20, .ids = {0, -1, -1, -1, -1, -1}},      {.index = 21, .ids = {3, 4, -1, -1, -1, -1}},
+    {.index = 22, .ids = {70, 71, -1, -1, -1, -1}},
+}};
+// The metres-to-millimetres factor the far range is stored with (`AnimRange_SetFarRange`).
+constexpr float kMillimetres = 1000.0F;
+
 } // namespace
 
 std::expected<AnimRangeList, Error> AnimRangeList::parse(std::span<const std::byte> chunk) {
@@ -90,6 +108,16 @@ bool AnimRangeList::setDamage(std::size_t id, std::int16_t damage) {
     return true;
 }
 
+bool AnimRangeList::setFarRange(std::size_t id, float metres) {
+    if (id >= m_records.size()) {
+        return false;
+    }
+    // Stored as the s16 of whole millimetres, truncated, and read back as the file's are.
+    const auto millimetres = static_cast<std::int16_t>(static_cast<int>(metres * kMillimetres));
+    m_records[id].far = static_cast<float>(millimetres) * kMilli;
+    return true;
+}
+
 float AnimRangeList::farRange(std::size_t id) const {
     const AnimRange* range = find(id);
     if (range == nullptr) {
@@ -121,6 +149,20 @@ int applyClassDamage(AnimRangeList& list, std::span<const std::int16_t> values, 
     return written;
 }
 
-int applyClassFarRanges(AnimRangeList& /*list*/, std::span<const float> /*metres*/) { return 0; }
+int applyClassFarRanges(AnimRangeList& list, std::span<const float> metres) {
+    int written = 0;
+    for (const ClassDamageRow& row : kFarRangeRows) {
+        // A kind whose value is not above 0 keeps the list's own.
+        if (row.index >= metres.size() || !(metres[row.index] > 0.0F)) {
+            continue;
+        }
+        for (const int id : row.ids) {
+            if (id >= 0 && list.setFarRange(static_cast<std::size_t>(id), metres[row.index])) {
+                ++written;
+            }
+        }
+    }
+    return written;
+}
 
 } // namespace coney::combat

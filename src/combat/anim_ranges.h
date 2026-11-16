@@ -58,6 +58,10 @@ class AnimRangeList {
     /// it is made (the original's setter is `0x002548c8`); returns false for an id without a record. The damage
     /// measured at runtime is the overridden one: the file's differs (Rembrandt's S1 is 40 in the file, 17 in play).
     bool setDamage(std::size_t id, std::int16_t damage);
+    /// Replaces anim `id`'s far range with `metres`, stored as the record's whole millimetres (truncated); returns
+    /// false for an id without a record.
+    /// @orig 0x002545a8 AnimRange_SetFarRange (unknown)
+    bool setFarRange(std::size_t id, float metres);
 
   private:
     std::vector<AnimRange> m_records;
@@ -78,6 +82,8 @@ int applyClassDamage(AnimRangeList& list, std::span<const std::int16_t> values, 
 /// `list`, as the original does when a human's model is attached: each kind below 42 whose value is above 0 sets the
 /// far range of the anim ids it names, stored as whole millimetres (truncated); a 0 keeps the list's own. Returns how
 /// many records it set (docs/research/characters.md#classes).
+/// @orig 0x00217a98 Human_AttachInstance (unknown)
+/// @orig 0x002545e0 Attack_CallKindHandler (unknown)
 int applyClassFarRanges(AnimRangeList& list, std::span<const float> metres);
 
 } // namespace coney::combat

@@ -8,6 +8,7 @@
 
 #include "ai/attack_views.h"
 #include "ai/brain_events.h"
+#include "ai/class_draws.h"
 #include "ai/face_mood.h"
 #include "ai/fight_goal.h"
 #include "ai/gangs.h"
@@ -214,6 +215,8 @@ void Brain::think(std::uint64_t nowMs) {
             thinkSwapPrompt(*this);
         }
     }
+    // Then, for every brain, the power class's flash when hurt and weapon draw in a fight.
+    thinkClassActions(*this);
 }
 
 void Brain::setDead(bool dead) {

@@ -638,6 +638,13 @@ class Human final : public Holdable {
     /// that rounds to 0 keeps its damage. Nothing for a human made without a class damage table.
     /// @orig 0x00229b90 Human_ScaleAttackDamages (unknown)
     void applyDamageModifier(float factor);
+    /// Its class's range table `metres` (characters::CharacterType::ranges) written over its own copy of the list
+    /// (combat::applyClassFarRanges()), as `Human_AttachInstance` does when its model is attached; a human that used
+    /// the list as it is gets its own copy first, and its fighting afresh (setFighterProfile()), so call it when the
+    /// human is made. Nothing for none. **Coney's choice**, as for the damage: each human keeps its own list, where the
+    /// original writes the model's shared one (docs/research/characters.md#classes).
+    /// @orig 0x00217a98 Human_AttachInstance (unknown)
+    void applyClassFarRanges(std::span<const float> metres);
 
     // Being attacked: the entry points another human and the tests use. Each is acted on at the human's next step
     // (docs/research/combat-reactions.md#being-hit-runtime).
@@ -669,6 +676,10 @@ class Human final : public Holdable {
     /// clip playing passed in the last update, if any: for 665 `SPECIAL_FLASH` the flash is used, for 666 the door
     /// ahead opens and for 668 the dealer's goal is served (docs/research/combat-rage.md#flash).
     [[nodiscard]] std::optional<std::uint32_t> actionEvent() const { return m_actionEvent; }
+    /// Whether the clips passed an object event (type `0x30`) named `random` in the last update: the weapon draw's,
+    /// which puts the class's weapon in an AI's hand (ai::giveHandObject(),
+    /// docs/research/characters.md#power-class-bytes).
+    [[nodiscard]] bool handObjectEvent() const { return m_handObjectEvent; }
     /// Sets the characters' step its next updates advance by: kStepSeconds, or less in slow motion
     /// (docs/research/camera.md#slow-motion; Humans::update() sets it for every human).
     void setStepSeconds(float seconds) { m_stepSeconds = seconds; }
@@ -1132,6 +1143,8 @@ class Human final : public Holdable {
     // up to its end, at the frames the held flags' events use (anim::eventFrame()).
     // @orig 0x00101dd8 Anim_FireFrameEvents (unknown)
     void noteSlowMotion();
+    // Notes whether the last update's clips passed the weapon draw's `random` object event (handObjectEvent()).
+    void noteHandObjectEvent();
     // Switches the strike shapes by the events of the clip playing that this step's animation passed (as the held
     // flags' events fire, anim::eventFrame()). **Coney choice**: when another clip takes the top before the one that
     // switched them on ends its window, they go off, as its own off event would have switched them.
@@ -1211,6 +1224,7 @@ class Human final : public Holdable {
     std::optional<std::uint16_t> m_slowMotionEvent; // the last update's slow-motion event (0x2e / 0x2f)
     bool m_slowMotionEnd = false;                   // endSlowMotion(), takeSlowMotionEnd()
     bool m_slowMotionReset = false;                 // setNormalMode(), takeSlowMotionReset()
+    bool m_handObjectEvent = false;                 // noteHandObjectEvent()
     std::optional<std::uint32_t> m_actionEvent;     // the anim whose action event (0x41) the last update passed
     float m_stepSeconds = kStepSeconds;             // the characters' step (slow motion shortens it)
     std::uint64_t m_updates = 0;                    // updates stepped: combat's game time

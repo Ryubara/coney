@@ -47,6 +47,8 @@ struct VictimFrame {
     bool flag200 = false;     ///< Human flag `0x200` (`HuSetReducedReact`): strength - 1.
     bool flag80 = false;      ///< Human flag `0x80` (`HuSetUngroundable`): strength at most 1.
     bool unstunnable = false; ///< Human flag `0x100` (`HuSetUnstunnable`): never stunned.
+    /// Human flag `0x1000000000` (`HuSetHardToStun`, the power class's byte `+0x3b`): only a stun on his feet stuns.
+    bool hardToStun = false;
 };
 
 /// What a reaction on its feet turned out to be.
@@ -54,6 +56,7 @@ enum class ReactionKind : std::uint8_t {
     Plain,     ///< The reaction, then the idle.
     Stun,      ///< The reaction, then the stun's loop until its time passes, then 357 and the idle.
     Knockdown, ///< The reaction, then the ground (196) until it gets up with 199.
+    Ignored,   ///< No reaction: hit in a reaction clip after as many ground strikes as its class's cap.
 };
 
 /// The update's hit, the reaction and the timers of a human that takes hits.
@@ -72,16 +75,36 @@ class Victim {
     /// The reaction's input for `hit` on a victim standing as `frame`.
     [[nodiscard]] static combat::ReactionInput reactionInput(const IncomingHit& hit, const VictimFrame& frame);
 
-    /// Plays the reaction to `hit` on its feet through `animator` at game time `nowMs`: a knockdown when the reaction's
-    /// clip has an event of type 7 (the ground for the class's ground time; stunned too when the attack stuns or it
-    /// already is, until the rise + the stun time), else a stun when the attack's flags stun or it already is (the
-    /// class's stun time; never for a victim with flag `0x100`), else a plain reaction that returns to `idle`. Returns
+    /// Plays the reaction to `hit` on its feet through `animator` at game time `nowMs`. First, in a reaction clip
+    /// (inReactionClip()): nothing when it has taken as many ground strikes as its class's cap (groundStrikesCapped()),
+    /// and when the clip is under 70 % played, 195 and the ground instead of the hit's own reaction, counted as a
+    /// ground strike. Otherwise a knockdown when the reaction's clip has an event of type 7 (the ground for the class's
+    /// ground time; stunned too when the attack stuns or it already is, until the rise + the stun time), else a stun
+    /// when the attack's flags stun or it already is (the class's stun time; never for a victim with flag `0x100`, and
+    /// for a hard-to-stun one only when it is already stunned), else a plain reaction that returns to `idle`. Returns
     /// the kind; `lastReaction()` names the clip.
     /// @orig 0x0026a6d0 Human_PlayReaction (unknown)
     /// @orig 0x0022f658 Human_Stun (unknown)
     /// @orig 0x0022f100 Human_KnockDown (unknown)
     ReactionKind react(const IncomingHit& hit, const VictimFrame& frame, HumanAnimator& animator, std::uint32_t idle,
                        std::uint64_t nowMs);
+    /// Whether `animator` plays a reaction clip (`Human_IsInReactionClip`): the rise's held bit `0x8000`, a clip with
+    /// flag `0x80`, or the rise 199.
+    /// @orig 0x00228488 Human_IsInReactionClip (unknown)
+    [[nodiscard]] static bool inReactionClip(const HumanAnimator& animator);
+    /// Whether a hit now plays no reaction: in a reaction clip, with at least the class's cap (`+0x38`) of ground
+    /// strikes since it last got up.
+    /// @orig 0x0026a6d0 Human_PlayReaction (unknown)
+    /// @orig 0x002233c8 Human_GetClassReactFlag (unknown)
+    [[nodiscard]] bool groundStrikesCapped(const HumanAnimator& animator) const {
+        return inReactionClip(animator) && m_groundStrikes >= m_class.groundStrikeCap;
+    }
+    /// Counts a ground strike's 195 (record `+0xbe`; `Hit_PlayBegReaction` on a downed human).
+    /// @orig 0x00269b80 Hit_PlayBegReaction (unknown)
+    void countGroundStrike() { ++m_groundStrikes; }
+    /// The ground strikes since it last got up (record `+0xbe`).
+    [[nodiscard]] int groundStrikes() const { return m_groundStrikes; }
+
     /// Plays the dying reaction for `hit` (the `DIE` set half the time, else 292) and the ground for good.
     void die(const IncomingHit& hit, const VictimFrame& frame, HumanAnimator& animator);
 
@@ -106,8 +129,10 @@ class Victim {
     /// One update's timers at `nowMs`: a stun whose time has passed ends with 357 (then `idle`) once the clip playing
     /// is over (a reaction or the rise is not cut short); a grounded victim with `canRise` gets up with 199 once its
     /// ground time has passed (then the stun's loop while stunned, else `idle`). Returns true on the update it rises.
+    /// Once up with the rise over, its ground strikes are forgotten (`Human_EndDownState`, the rise's end).
     /// @orig 0x00256a60 Human_RefillMeters (unknown)
     /// @orig 0x0022f8d8 Human_EndStun (unknown)
+    /// @orig 0x0025e250 Human_EndDownState (unknown)
     bool step(HumanAnimator& animator, std::uint32_t idle, std::uint64_t nowMs, bool canRise);
     /// A command made while lying down: once the knockdown's reaction is over (lying in 196) it cuts the ground time
     /// by combat::mashCut(); during the reaction it does nothing. The stun after the rise moves with it (**Coney's
@@ -145,6 +170,7 @@ class Victim {
     int m_stuns = 0;
     int m_knockdowns = 0;
     int m_lastReaction = -1;
+    int m_groundStrikes = 0; // record +0xbe
 };
 
 } // namespace coney::human

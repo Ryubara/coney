@@ -83,6 +83,8 @@ struct PlayerTraits {
     /// 0); 0 when the type's call gives no health.
     int health = 0;
     std::optional<combat::RageClass> rage; ///< That class's rage; nothing when none was recorded.
+    /// The class record's range table (`+0x00`, CharacterType::ranges): his attacks' far ranges; empty for none.
+    std::vector<float> ranges;
 };
 
 /// Every character type the configuration defines, by type: the last `CfgChar` call of each type wins, as the

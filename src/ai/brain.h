@@ -328,7 +328,9 @@ class Brain {
     void update(std::uint64_t nowMs);
     /// One think (handler B), one update in five; nothing for a dead brain, whose handler B is a stub. **Coney
     /// choice**: the types' think handlers are not traced, so a think only counts; a fight is started by its caller
-    /// (GoalFight, ai::AiHumans).
+    /// (GoalFight, ai::AiHumans). Then, dead or not, the power class's flash and weapon draw
+    /// (ai::thinkClassActions()). **Coney stand-ins**: the scene test that skips a brain's think during a scene
+    /// (game state `+0x410`, `+0x411`, brain `+0x0a`) and the perception update are not made here.
     /// @orig 0x0028f6c0 Brain_Think (unknown)
     void think(std::uint64_t nowMs);
     /// Updates and thinks so far (`+0x34`, `+0x38`).

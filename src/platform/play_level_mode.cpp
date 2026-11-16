@@ -631,6 +631,7 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     stepLooseObjects();
     stepFlash();
     stepDealerPairs();
+    stepAiClipEvents();
     stepGameOver(pad);
     stepObjects();
     stepHats();

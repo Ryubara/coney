@@ -321,7 +321,7 @@ role = "grounded and its timer"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/human/victim.h:Victim::react"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0022f658
@@ -510,6 +510,24 @@ name = "AttackTable_GetFarRange"
 page = "combat/index.md#block"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/attack_reach.h:farReach"
+status = "compared"
+
+[[function]]
+address = 0x002545a8
+name = "AnimRange_SetFarRange"
+page = "characters.md#classes"
+role = "Writes an anim id's far range (metres x 1000, whole millimetres) into the human's Anim Range List."
+level = "confirmed-code"
+coney = "src/combat/anim_ranges.h:AnimRangeList::setFarRange"
+status = "compared"
+
+[[function]]
+address = 0x002545e0
+name = "Attack_CallKindHandler"
+page = "characters.md#classes"
+role = "The anim ids of an attack kind (0-41) whose far range the class's range table sets."
+level = "confirmed-code"
+coney = "src/combat/anim_ranges.h:applyClassFarRanges"
 status = "compared"
 
 [[function]]
@@ -996,6 +1014,8 @@ name = "Hit_PlayBegReaction"
 page = "combat/index.md#code-reactions"
 role = "A hit on a knocked-down, cuffed or wounded human: the beg reaction; says 73 beg."
 level = "confirmed-code"
+coney = "src/human/victim.h:Victim::countGroundStrike"
+status = "compared"
 
 [[function]]
 address = 0x00269dc8
@@ -1042,7 +1062,7 @@ role = "plays it; stun and knockdown"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/human/victim.h:Victim::react"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0026adf0

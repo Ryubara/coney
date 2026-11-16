@@ -1170,6 +1170,15 @@ coney = "src/ai/scripted_humans.h:ScriptedHumans::setArrested"
 status = "legacy"
 
 [[function]]
+address = 0x0028c780
+name = "Brain_GiveHandObject"
+page = "characters.md#power-class-bytes"
+role = "The weapon draw's random event: the class's weapon, or a switchblade, in the hand."
+level = "confirmed-code"
+coney = "src/ai/class_draws.h:giveHandObject"
+status = "compared"
+
+[[function]]
 address = 0x0028cdf8
 name = "Brain_SetTurnBoost"
 page = "ai-code.md#brain-record"
@@ -1456,7 +1465,7 @@ page = "ai/index.md#update"
 role = "call handler B / handler A"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::think"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0028f8b8

@@ -1,0 +1,35 @@
+version = 1
+id = "r-20261116-class-draw-flash"
+date = "2026-11-16"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "0f6432b205106bc6930ad4d2d4d3f507b8002b6de0ec6a6e629530c8fbedbc7d"
+
+[who]
+agent = "unknown"
+type = "unknown"
+model = "unknown"
+source = "unverified"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "level99 cp1 yard state with call-brains; a spawned yard human (type 272, class 39) with class bytes +0x41 then +0x42 set to 1, put in a fight with GoalFight; human record +0x20, +0x144, +0x146 and human +0x338 polled"
+
+[values]
+hand_empty_ms = 140313
+draw_start_ms = 140413
+draw_in_hand_ms = 140546
+flash_health_before = 89
+flash_health_after = 300
+health_max = 300
+
+[addresses]
+power_classes = 0x006619a0

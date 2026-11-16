@@ -125,6 +125,9 @@ struct PlayerClass {
     /// kPlayerHealth.
     int health = 0;
     std::optional<combat::RageClass> rage; ///< His Warrior class's rage; nothing keeps combat::kPlayerRageClass.
+    /// His class's range table (characters::PlayerTraits::ranges), written over his list's far ranges; empty keeps
+    /// them.
+    std::vector<float> ranges;
 };
 
 /// The fighter profile of a player of `playerClass`: his power class, health and rage, each the player's default

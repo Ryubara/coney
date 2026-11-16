@@ -157,9 +157,8 @@ wait for `Human_MakePlayer`'s port ([#1011](issue:1011)). Each of the original's
 ([Maths: random numbers](maths.md#random)), so the draws Coney leaves out here (the voice on `0x006eb8b0`, the
 woundable roll on `0x006eb898`) do not move the gameplay stream's.
 
-[Characters: Coney's implementation](characters.md#stats-coney) still lists the weapon as not traced and every human at
-the player's 0.97; this page is what Coney does until that legacy page's restructure ([#1164](issue:1164)) brings its
-table up to date.
+[Characters: Coney's implementation](characters.md#stats-coney) lists these with the other stats; an AI that later has
+nothing in hand draws the class's weapon again ([Power class fields](characters.md#power-class-bytes)).
 
 ## Open questions
 

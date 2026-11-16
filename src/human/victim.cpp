@@ -5,6 +5,7 @@
 #include <array>
 
 #include "animation/anim_clip.h"
+#include "animation/anim_task.h"
 #include "combat/attacks.h"
 #include "combat/being_hit.h"
 
@@ -20,6 +21,12 @@ constexpr std::uint16_t kKnockdownEvent = 7;
 // The rise holds 0x8000 on the record +0x08 (`Human_PlayRise`), which its recovery event (0x48, frame 14 on the disc)
 // replaces with 0x40000: from then on the rise's counter is refused (docs/research/combat-reactions.md#ground-escape).
 constexpr HeldFlags kRiseHolds{.held = combat::kPhaseRise, .set = combat::kPhaseRise};
+// The ground strike's reaction, which a hit early in a reaction clip plays instead of its own.
+constexpr std::uint32_t kGroundedStrike = 195;
+// How far into a reaction clip a hit still floors the human with 195 (`Human_PlayReaction`).
+constexpr float kRefloorProgress = 0.7F;
+// The clip flag that makes a clip a reaction clip (`Anim_HasFlag80`).
+constexpr std::uint32_t kReactionClipFlag = 0x80;
 
 // The one clip `clip` as an array.
 std::array<std::uint32_t, 1> one(std::uint32_t clip) { return {clip}; }
@@ -54,14 +61,41 @@ combat::ReactionInput Victim::reactionInput(const IncomingHit& hit, const Victim
     return input;
 }
 
+bool Victim::inReactionClip(const HumanAnimator& animator) {
+    if ((animator.flags() & combat::kPhaseRise) != 0 || animator.animId() == kGroundedRise) {
+        return true;
+    }
+    const anim::AnimClip* clip = animator.clip(animator.animId());
+    return clip != nullptr && (clip->flags & kReactionClipFlag) != 0;
+}
+
 ReactionKind Victim::react(const IncomingHit& hit, const VictimFrame& frame, HumanAnimator& animator,
                            std::uint32_t idle, std::uint64_t nowMs) {
+    // 1. In a reaction clip, as many ground strikes as the class takes: no reaction at all.
+    const bool inReaction = inReactionClip(animator);
+    if (inReaction && m_groundStrikes >= m_class.groundStrikeCap) {
+        return ReactionKind::Ignored;
+    }
+    // 2. Early in it (getting up, say), the hit floors him again with 195, counted as a ground strike. Human_KnockDown
+    // is told to stun for an anim above 295 only, which 195 is not.
+    const anim::AnimTask* top = animator.tasks().top();
+    if (inReaction && top != nullptr && top->normalisedTime() < kRefloorProgress) {
+        m_lastReaction = static_cast<int>(kGroundedStrike);
+        ++m_reactions;
+        ++m_groundStrikes;
+        animator.playCombat(one(kGroundedStrike), kGroundedIdle, AnimState::Hold);
+        knockDown(nowMs, false);
+        ++m_knockdowns;
+        return ReactionKind::Knockdown;
+    }
+    // 3. The hit's own reaction.
     const combat::Reaction reaction = combat::hitReaction(reactionInput(hit, frame));
     const auto clip = static_cast<std::uint32_t>(reaction.animId);
     m_lastReaction = reaction.animId;
     ++m_reactions;
-    // A victim with flag 0x100 is never stunned.
-    const bool stuns = !frame.unstunnable && ((hit.flags & combat::kRangeFlagStun) != 0 || stunned());
+    // A victim with flag 0x100 is never stunned; a hard-to-stun one only when already stunned on his feet.
+    const bool stunsNow = (hit.flags & combat::kRangeFlagStun) != 0 && !frame.hardToStun;
+    const bool stuns = !frame.unstunnable && (stunsNow || stunned());
     // A reaction with a knockdown event lays it down; a stunned one stays stunned until after the rise.
     if (knocksDown(animator, reaction.animId)) {
         animator.playCombat(one(clip), kGroundedIdle, AnimState::Hold);
@@ -116,7 +150,11 @@ bool Victim::step(HumanAnimator& animator, std::uint32_t idle, std::uint64_t now
         m_stunExitPending = false;
         animator.playCombat(one(static_cast<std::uint32_t>(combat::kStunEnd)), idle, AnimState::Attack);
     }
-    // 2. Down long enough, it gets up: into the stun's loop while stunned, else the idle.
+    // 2. Up with the rise over, its ground strikes are forgotten (Human_EndDownState at the rise's end).
+    if (!m_grounded && (animator.flags() & combat::kPhaseRise) == 0 && animator.animId() != kGroundedRise) {
+        m_groundStrikes = 0;
+    }
+    // 3. Down long enough, it gets up: into the stun's loop while stunned, else the idle.
     if (m_grounded && canRise && nowMs >= m_riseAtMs) {
         m_grounded = false;
         if (stunned()) {

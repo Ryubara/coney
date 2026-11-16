@@ -46,6 +46,8 @@ void readCharacter(std::span<const script::Value> call, AiConfig& config) {
         std::copy_n(parsed->attacks.begin(), kAttackKinds, config.settings.attackWeights.begin());
     }
     config.fighter.damage = parsed->damage;
+    config.fighter.ranges = parsed->ranges;
+    config.fighter.weapon = parsed->weapon;
 }
 
 // The power class's fields from its `CfgPowerClass` call (characters::parseCfgPowerClass()).

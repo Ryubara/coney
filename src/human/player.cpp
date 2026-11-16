@@ -158,7 +158,8 @@ PlayerClass playerClassOf(const characters::CharacterTypes& types, int type) {
                        .damagePercent = traits->damagePercent,
                        .powerClass = traits->powerClass,
                        .health = traits->health,
-                       .rage = traits->rage};
+                       .rage = traits->rage,
+                       .ranges = std::move(traits->ranges)};
 }
 
 void takeMetersOf(Human& player, const Human& chosen, int healthPercent) {
@@ -203,6 +204,7 @@ Player::Player(const PlayerCharacter& character, const raycast::CollisionMesh* m
     : m_start(start), m_human(character.anims(), AnimSlots::player(), anim::referenceRotations(), kPlayerBodyScale,
                               &character.ranges(), playerClass.damage, playerClass.damagePercent),
       m_camera(start.position, 0.0F) {
+    m_human.applyClassFarRanges(playerClass.ranges);
     m_human.setFighterProfile(playerProfileOf(playerClass));
     m_human.setSkeleton(&character.skeleton());
     m_humans.add(m_human, true);
@@ -223,6 +225,7 @@ void Player::changeCharacter(const PlayerCharacter& character, const raycast::Co
     const float headingDegrees = m_human.heading() * 180.0F / std::numbers::pi_v<float>;
     m_human.changeCharacter(character.anims(), &character.ranges(), playerClass.damage, playerClass.damagePercent,
                             profile);
+    m_human.applyClassFarRanges(playerClass.ranges);
     m_human.setSkeleton(&character.skeleton());
     m_human.spawn(mesh, feet, headingDegrees);
     m_current = capture();

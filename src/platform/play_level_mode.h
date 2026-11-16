@@ -597,6 +597,10 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     // Each dealer whose money clip (`money_take`, his 668) passed its action event completes the sale its pair
     // started (`DealerGoal_FinishPair`, docs/research/ai-scripting.md#dealer-buy).
     void stepDealerPairs();
+    // The AI humans' clip events of their power class's actions: the flash's action event heals him, with the flash's
+    // interface sound, and the weapon draw's `random` event puts his class's weapon in his hand
+    // (docs/research/characters.md#power-class-bytes).
+    void stepAiClipEvents();
     // The game-over check each update (GameState_CheckGameOver, docs/research/combat-reactions.md#defeat) with player 1
     // as it sees him, then the failure's hand-off: the HUD hidden at its first update, and after 180 updates (10 once
     // cross is newly pressed) the mission-failed mode with the reason's `GSTRING.HUD` title. **Coney's stand-ins**: a

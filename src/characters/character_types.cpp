@@ -31,6 +31,7 @@ constexpr std::size_t kHat = 10;        // the string at +0x14c
 constexpr std::size_t kMaxHatName = 31; // the most of it kept
 constexpr std::size_t kWarrior = 11;
 constexpr std::size_t kFemale = 12;
+constexpr std::size_t kRanges = 13;        // the floats at +0x00
 constexpr std::size_t kWeapon = 16;        // the string at +0x18c
 constexpr std::size_t kMaxWeaponName = 31; // the most of it kept
 
@@ -50,7 +51,10 @@ constexpr std::size_t kDelayDownFactor = 16; // +0x20
 constexpr std::size_t kStruggle = 17;        // +0x36
 constexpr std::size_t kCounter = 19;         // +0x24, clamped 0-1
 constexpr std::size_t kThrowsAtWalls = 21;   // +0x39, clamped 0-1
+constexpr std::size_t kGroundStrikeCap = 20; // +0x38, clamped 0-127
 constexpr std::size_t kRingByte = 28;        // +0x40, clamped 0-100
+constexpr std::size_t kDrawsWeapon = 29;     // +0x41, clamped 0-1
+constexpr std::size_t kFlashesWhenHurt = 30; // +0x42, clamped 0-1
 // The switches, each the number's low byte, unclamped; the last two are crossed in the record.
 constexpr std::size_t kCapsReaction = 22;   // +0x3a
 constexpr std::size_t kHardToStun = 23;     // +0x3b
@@ -60,6 +64,7 @@ constexpr std::size_t kComboReact = 26;     // +0x3f
 constexpr std::size_t kReactBoost = 27;     // +0x3e
 constexpr unsigned kLowByte = 0xffU;
 constexpr int kMaxRingByte = 100;
+constexpr int kMaxGroundStrikeCap = 127;
 
 // `CfgWarriorClass`'s arguments (docs/references/bindings/config.md#cfgwarriorclass), 0-based.
 constexpr std::size_t kWarriorClassId = 0;
@@ -172,6 +177,12 @@ std::optional<CharacterType> parseCfgChar(std::span<const script::Value> call) {
     for (const double value : listAt(call, kAttacks)) {
         parsed.attacks.push_back(static_cast<std::uint8_t>(std::clamp(value, 0.0, 255.0)));
     }
+    // The range table: each number read as an integer, times 0.01 in single precision (Cfg_SetCharacterClass).
+    constexpr float kHundredth = 0.01F;
+    for (const double value : listAt(call, kRanges)) {
+        const double whole = std::trunc(std::clamp(value, -2147483648.0, 2147483647.0));
+        parsed.ranges.push_back(static_cast<float>(static_cast<int>(whole)) * kHundredth);
+    }
     if (kCfgCharModelArgument < call.size()) {
         if (const std::optional<std::string_view> model = call[kCfgCharModelArgument].string()) {
             parsed.model = std::string(*model);
@@ -225,6 +236,16 @@ combat::PowerClass parseCfgPowerClass(std::span<const script::Value> call, const
     power.throwsAtWalls = std::clamp(walls, 0, 1) == 1;
     whole(kRingByte, power.ringByte);
     power.ringByte = std::clamp(power.ringByte, 0, kMaxRingByte);
+    // Cfg_SetPowerClass clamps the ground-strike cap to 0-127 and the two AI switches to 0-1.
+    whole(kGroundStrikeCap, power.groundStrikeCap);
+    power.groundStrikeCap = std::clamp(power.groundStrikeCap, 0, kMaxGroundStrikeCap);
+    const auto flag = [&call](std::size_t index, bool& field) {
+        if (const std::optional<int> value = wholeAt(call, index)) {
+            field = std::clamp(*value, 0, 1) == 1;
+        }
+    };
+    flag(kDrawsWeapon, power.drawsWeapon);
+    flag(kFlashesWhenHurt, power.flashesWhenHurt);
     // The switches are stored as the binding's bytes: the low eight bits, read back signed.
     const auto byte = [&call](std::size_t index, std::int8_t& field) {
         if (const std::optional<int> value = wholeAt(call, index)) {
@@ -287,6 +308,7 @@ std::optional<PlayerTraits> CharacterTypes::playerTraitsOf(int type) const {
     traits.classType = characterClassOf(type).id;
     if (const CharacterType* classRecord = find(traits.classType)) {
         traits.damage = classRecord->damage;
+        traits.ranges = classRecord->ranges;
     }
     traits.powerClassId = powerClassOf(type, own->category.value_or(0), own->powerClass.value_or(0));
     if (const combat::PowerClass* power = findSorted(m_powerClasses, traits.powerClassId)) {

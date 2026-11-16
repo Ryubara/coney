@@ -393,6 +393,7 @@ void GameplayMode::enter() {
         m_context.boxes->setResolves([this](double handle) { return m_humans.find(handle) != nullptr; });
     }
     m_context.ai = m_scripted.get();
+    m_scripted->setHandles(m_context.handles);
     // What the hub's bindings read beyond the brains: the configuration's categories and flee percentages, the
     // workout's tuning, the store boxes and their flags, and the crimes.
     wireHub();

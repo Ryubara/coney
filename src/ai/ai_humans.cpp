@@ -118,6 +118,7 @@ Brain& AiHumans::spawn(const human::PlayerCharacter& character, const AiConfig& 
         std::make_unique<human::Human>(character.anims(), human::AnimSlots::player(), anim::referenceRotations(),
                                        human::kPlayerBodyScale, &character.ranges(), kind.damage, 0);
     human::Human& made = *entry.human;
+    made.applyClassFarRanges(kind.ranges);
     made.setSkeleton(&character.skeleton());
     made.setFighterProfile(human::FighterProfile{.player = false,
                                                  .powerClass = config.powerClass,
@@ -128,6 +129,7 @@ Brain& AiHumans::spawn(const human::PlayerCharacter& character, const AiConfig& 
     entry.previous = entry.current;
     // Its brain, seeded by its slot so every run rolls the same.
     Brain& brain = m_brains->add(made, kind.brain, config.settings, static_cast<std::uint32_t>(m_brains->size() + 1));
+    brain.setClassWeapon(kind.weapon);
     m_player.humans().add(made, false);
     m_humans.push_back(std::move(entry));
     return brain;

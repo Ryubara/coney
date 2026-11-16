@@ -44,7 +44,8 @@ VictimFrame Fighter::frame(const FighterInput& input) const {
                        .flag400 = hasFlag(flag::kComboStrength),
                        .flag200 = hasFlag(flag::kReducedReact),
                        .flag80 = hasFlag(flag::kUngroundable),
-                       .unstunnable = hasFlag(flag::kUnstunnable)};
+                       .unstunnable = hasFlag(flag::kUnstunnable),
+                       .hardToStun = hasFlag(flag::kHardToStun)};
 }
 
 bool Fighter::helpless(const HumanAnimator& animator) const {
@@ -180,9 +181,15 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
     if (hitReactionsOff()) {
         return;
     }
-    // On the ground a strike gets the ground's reaction.
+    // On the ground a strike gets the ground's reaction, which counts towards the class's cap.
     if (m_victim.grounded()) {
         animator.playCombat(clips::one(clips::kGroundedStrikeReact), clips::kGroundedIdle, AnimState::Hold);
+        m_victim.countGroundStrike();
+        return;
+    }
+    // In a reaction clip after as many ground strikes as the class takes, the hit only takes health
+    // (`Human_PlayReaction`'s first test, before anything else it does).
+    if (m_victim.groundStrikesCapped(animator)) {
         return;
     }
     // 6. A player's hit armour: winding up or in the chain window, its attack goes on with no reaction.

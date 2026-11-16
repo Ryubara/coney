@@ -878,6 +878,16 @@ float ScriptedBrains::playTime(Brain& human, int animId) {
     return clip != nullptr ? clip->duration / anims.rate(static_cast<std::size_t>(animId)) : 0.0F;
 }
 
+void ScriptedBrains::giveHandObject(Brain& human, std::string_view type) {
+    human::ScriptState& script = human.human().script();
+    if (m_handles == nullptr || script.heldObject != kNilHandle) {
+        return;
+    }
+    script.heldObject = m_handles->next;
+    script.heldObjectName = std::string(type);
+    m_handles->next += 1;
+}
+
 std::optional<std::uint32_t> ScriptedBrains::playNamedClip(Brain& human, int animId, std::string_view name,
                                                            float fade) {
     const anim::AnimClip* clip = m_clipSource ? m_clipSource(name) : nullptr;
