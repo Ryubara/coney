@@ -369,12 +369,12 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     /// kScriptedClipHeld (`0x80000`, busy and gated), as which bits the original's holds is not traced; a dynamic clip
     /// plays at rate 1.
     [[nodiscard]] std::optional<std::uint32_t> playClip(Brain& human, int animId) override;
-    /// Starts the clip `name` from the clip source on `human` as anim `animId`, at rate 1, faded in over `fade` and
-    /// then the idle; holds kScriptedClipHeld as playClip() does. Nothing when the source has no such clip.
     /// A new `type` object in `human`'s free hand, named by the next of the session's world object handles
     /// (script::ScriptSystem::nextObjectHandle()); nothing when his hand is busy or there are no scripts.
     /// @orig 0x0024c280 Human_PlaceItemInHand (unknown)
     void giveHandObject(Brain& human, std::string_view type) override;
+    /// Starts the clip `name` from the clip source on `human` as anim `animId`, at rate 1, faded in over `fade` and
+    /// then the idle; holds kScriptedClipHeld as playClip() does. Nothing when the source has no such clip.
     [[nodiscard]] std::optional<std::uint32_t> playNamedClip(Brain& human, int animId, std::string_view name,
                                                              float fade) override;
     /// The gang's clip for `animId` at a random variant (Gang::randomClip()) from the clip source, at rate 1; else the

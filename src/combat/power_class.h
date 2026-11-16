@@ -44,7 +44,8 @@ struct PowerClass {
     std::int8_t reactBoost = 0;     ///< Byte `+0x3e` (argument 28): 1, -1 or 0 for flag `0x200000`, `0x400000`, none.
     std::int8_t comboReact = 0;     ///< Byte `+0x3f` (argument 27): 1, -1 or 0 for flag `0x400`, `0x200`, none.
     /// Byte `+0x38` (argument 21, 0-127): the most ground strikes a downed human reacts to; hit while he gets up after
-    /// that many, he reacts to nothing (`Human_PlayReaction`, docs/research/characters.md#power-class-bytes).
+    /// that many, he reacts to nothing (`Human_PlayReaction`, docs/research/characters.md#power-class-bytes). 3 is the
+    /// player's class 64's, as every default here is the player's; a class read from the configuration has its own.
     int groundStrikeCap = 3;
     /// Byte `+0x41` (argument 30, 0-1): an AI of the class in a fight with nothing in hand draws a weapon (clip 477,
     /// `Brain_Think`; ai::thinkClassActions()).
