@@ -417,6 +417,7 @@ target_sources(coney_core PRIVATE
     combat/commands.cpp
     combat/grab.cpp
     combat/grabbed.cpp
+    combat/tackled.cpp
     combat/lock_on.cpp
     combat/meters.cpp
     combat/player_combat.cpp

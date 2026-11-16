@@ -37,8 +37,9 @@ inline constexpr anim::Vec3 kAlongY{0.0F, 1.0F, 0.0F};
 // The range data the tests fight with: the damage measured on a civilian (combat.md#damage-table), the hit codes and
 // flags read at runtime (combat.md#hit-codes; `codes` replaces some ids' hit codes), a reach of 1 m (far 1.25 m) for
 // every attack, and the grab's and the tackle's far ranges and the grab's places; the strong grapple's strikes are
-// placed as the plain grab's connects.
-inline combat::AnimRangeList fightRanges(const std::map<int, std::int16_t>& codes = {}) {
+// placed as the plain grab's connects. `damages` replaces or adds some ids' damage.
+inline combat::AnimRangeList fightRanges(const std::map<int, std::int16_t>& codes = {},
+                                         const std::map<int, std::int16_t>& damages = {}) {
     struct Move {
         std::int16_t damage;
         std::int16_t code;
@@ -100,6 +101,9 @@ inline combat::AnimRangeList fightRanges(const std::map<int, std::int16_t>& code
         Move move = found != moves.end() ? found->second : Move{0, 0, 0};
         if (const auto code = codes.find(animId); code != codes.end()) {
             move.code = code->second;
+        }
+        if (const auto damage = damages.find(animId); damage != damages.end()) {
+            move.damage = damage->second;
         }
         std::int16_t far = 0;
         if (animId == combat::anim_id::kGrabIntro) {

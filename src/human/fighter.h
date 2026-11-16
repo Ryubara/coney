@@ -516,6 +516,8 @@ class Fighter {
     [[nodiscard]] int duckCounters() const { return m_duckCounters; }
     /// Counters played from the rise (617-620 out of 199, riseCounter()).
     [[nodiscard]] int riseCounters() const { return m_riseCounters; }
+    /// Mounts reversed from below (242, then on top: `Mount_StartReversal`, the statistics' combat event 4).
+    [[nodiscard]] int mountReversals() const { return m_mountReversals; }
     /// The repeat tracker of the player's hits.
     [[nodiscard]] const combat::RepeatTracker& repeats() const { return m_repeat; }
     /// Whether a hit plays no reaction (human `+0xe0` bit `0x800`): the hit still takes its health, but the human's
@@ -921,6 +923,7 @@ class Fighter {
     float m_grabTurn = 0.0F;       // the grab's stick turn of the last update, radians
     int m_duckCounters = 0;        // the duck counters played
     int m_riseCounters = 0;        // the counters played from the rise
+    int m_mountReversals = 0;      // mounts reversed from below (mountReversals())
     int m_hitsLanded = 0;
     int m_animSet = 0;                          // the anim set a held weapon applied (record +0x10's top)
     bool m_holdingObject = false;               // a world object in hand (setHoldingObject())
