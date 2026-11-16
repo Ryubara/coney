@@ -52,7 +52,8 @@ std::optional<YesNoAnswer> YesNoBox::handle(MenuCommand command) {
     case MenuCommand::Left:
     case MenuCommand::Right: {
         // Left picks Yes (selection 0) and right No (1), never a swap: cue 0xe when the answer was already chosen,
-        // cue 4 when it moves (confirmed (code) and runtime, run r-20261116-yes-no-box-sides).
+        // cue 4 when it moves (confirmed (code) and runtime, run r-20261116-yes-no-box-sides). The original's two
+        // writes to the Options menu here (its d-pad repeat flag and page-changed flag) are OptionMenu::itemCommand's.
         const bool pickYes = command == MenuCommand::Left;
         playCue(m_yesSelected == pickYes ? kRefusedCue : kMoveCue);
         m_yesSelected = pickYes;

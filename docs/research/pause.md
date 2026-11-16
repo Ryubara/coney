@@ -569,9 +569,11 @@ Confirmed (code) at the addresses cited unless a line says otherwise.
   Mode (`0x110`) and To Hangout or To Main Menu.
 
 **The Yes/No box** (`0x001d6738`, `0x001d6910`): the question, then "Yes" (`0x3b`) "/" "No" (`0x3c`), **No selected**
-(confirmed (runtime), run r-20261116-yes-no-box-sides: the Quit box's selection `+0x4c0` reads 1 when it opens; the
-write that selects it is not traced). The pause and mission-failed menus open it in confirm mode (`+0x4c8` = 1, read
-in the same run). **Left selects Yes and right selects No; they never swap the answer** (`YesNoBox_OnCommand`
+(confirmed (runtime), run r-20261116-yes-no-box-reopen: the Quit box's selection `+0x4c0` reads 1 when it opens, and
+1 again when it is opened a second time in the same pause after left and back). `PauseMenu_Init` (`0x001db550`) and
+`MissionFailedMenu_Open` (`0x001d23d0`) both set the box up with selection 1 and confirm mode 1 (`YesNoBox_Setup`
+stores them at `+0x4c0` and `+0x4c8`); confirmed (code). What sets No again when the box reopens in the same pause is
+not traced. **Left selects Yes and right selects No; they never swap the answer** (`YesNoBox_OnCommand`
 `0x001d6c10`: command 2 sets the selection to 0, command 3 to 1): cue 4 when the selection moves, `0xe` when that
 answer was already selected. Back (command 5) calls back 4 and plays **no cue**, neither in the box nor in its owners'
 routing (`0x001ded68`, `0x001d2970`), which play `0xe` for up and down and 8 for accept. Confirmed (code); confirmed
