@@ -38,7 +38,7 @@ struct RadarBlip {
     int flashCountdown = 0;                   ///< Slot `+0x32`: a new objective blinks for 100 updates.
     /// Slot `+0x00` with in-use `+0x31` = 2: a fixed point the blip stays at instead of following its object. Nothing
     /// in the original makes such a slot (docs/research/gui.md#radar-update).
-    std::optional<anim::Vec3> fixedPlace;
+    std::optional<anim::Vec3> fixedPlace{};
     /// Radar_AddBlip's batch and first show or hide have been applied (settleRadarBlip(), at the next radar step).
     bool settled = false;
     int depth = 0;         ///< The depth of the sprite batch the dot draws in (slot `+0x20`); higher draws on top.
@@ -46,7 +46,7 @@ struct RadarBlip {
     int markTimer = 0;     ///< Slot `+0x2e`: updates left of the scanner's mark (300 a mark).
     bool dotShown = false; ///< The dot's own shown state (its hide flag, messages `0x2a` and `0x29`).
     bool hasDot = true;    ///< Slot `+0x24` names a dot: every blip but one added as type 9 (the arrow widget).
-    std::optional<anim::Vec3> place; ///< Where the last radar step found it.
+    std::optional<anim::Vec3> place{}; ///< Where the last radar step found it.
 };
 
 /// What the radar of player 0 is given each step: where the player stands and faces, how fast he moves and where the
@@ -240,8 +240,8 @@ void hideAllRadarDots(RadarState& radar);
 /// What the blip step needs besides the radar: the objects' places, a human's brain type, and whether the police
 /// hint may be given (the game's hints on, not an Armies of the Night level, not yet given, not levels 80 and 99).
 struct RadarStepContext {
-    std::function<std::optional<anim::Vec3>(double handle)> locate;
-    std::function<std::optional<int>(double handle)> brainType; ///< Human_GetBrain `+0x04`; none for a non-human.
+    std::function<std::optional<anim::Vec3>(double handle)> locate{};
+    std::function<std::optional<int>(double handle)> brainType{}; ///< Human_GetBrain `+0x04`; none for a non-human.
     bool policeHintAllowed = false;
 };
 
