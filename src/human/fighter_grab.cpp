@@ -12,6 +12,7 @@
 #include "combat/combat_tuning.h"
 #include "combat/lock_on.h"
 #include "combat/reactions.h"
+#include "combat/tackled.h"
 #include "core/log.h"
 #include "human/fighter_clips.h"
 #include "human/pair_placement.h"
@@ -512,6 +513,39 @@ void Fighter::playGrabAction(const combat::CombatOutput& out, HumanAnimator& ani
     }
 }
 
+bool Fighter::startGroundedMount(Holdable& victim, const FighterInput& input, float& heading, HumanAnimator& animator) {
+    // The clip by the side of him the mounter stands on, refused beyond its far range (× 1.25 for a player).
+    const combat::Side side = combat::victimSide(victim.position(), victim.heading(), input.position);
+    const int clip = combat::kGroundedMountFront + static_cast<int>(side);
+    const float listed = m_ranges != nullptr ? m_ranges->farRange(static_cast<std::size_t>(clip)) : 0.0F;
+    const float far = m_player ? listed * kPlayerFarScale : listed;
+    const anim::Vec3 to = anim::subtract(victim.position(), input.position);
+    if (std::hypot(to.x, to.y) > far) {
+        return false;
+    }
+    // The pair is linked at once: the mounter in the mount, the victim mounted (and up from the ground). Coney
+    // stand-in: the held-flag tests are the search's (mountableOnGround()), the 0.1 s steer is the seat at 210, and
+    // no move style, push sphere or warning is set.
+    if (std::hypot(to.x, to.y) > 1e-4F) {
+        heading = headingOf(to);
+    }
+    m_held = &victim;
+    m_target = &victim;
+    m_rear = false;
+    m_spinThrow = id::kNone;
+    m_combat.startMounting();
+    animator.playCombat(clips::one(static_cast<std::uint32_t>(clip)), clips::kMountingIdle, AnimState::Hold,
+                        kCombatFade, clips::kGrabHolds);
+    victim.play(clips::one(static_cast<std::uint32_t>(combat::kGroundedMountReact)), clips::kMountedIdle,
+                AnimState::Hold, TargetState::Mounted);
+    // Nothing holds the pair during the clips: at 210 the mounter is seated onto him (seatMount()).
+    victim.setAttached(false);
+    m_pair = PairStage::Moving;
+    m_mountPending = true;
+    logging::info(logging::Category::Combat, std::format("grounded mount: {} with {}", logName(), clip));
+    return true;
+}
+
 void Fighter::mountVictim(const HumanAnimator& animator) {
     // The victim goes down under the player (the attacker's clip, a paired task), mounted, by its own clip; at 210
     // the mounter is moved onto it, as after the grab's mount (seatMount()).
@@ -726,6 +760,10 @@ combat::GrabberState Fighter::grabberState() const {
 }
 
 void Fighter::applyHeldReport(const GrabbedReport& report, const FighterInput& input, HumanAnimator& animator) {
+    if (m_held != nullptr && m_combat.mode() == combat::CombatMode::Tackling) {
+        applyMountReport(report, input, animator);
+        return;
+    }
     if (m_held == nullptr || m_combat.mode() != combat::CombatMode::Grabbing) {
         return;
     }
@@ -756,6 +794,76 @@ void Fighter::applyHeldReport(const GrabbedReport& report, const FighterInput& i
     case combat::GrabbedAction::Reversal:
         break;
     }
+}
+
+void Fighter::applyMountReport(const GrabbedReport& report, const FighterInput& input, HumanAnimator& animator) {
+    // The struggle's drain, spent even when no new 250 starts (a tireless mounter spends nothing).
+    if (report.grabberPowerCost > 0 && !m_combat.power().unlimited()) {
+        m_combat.power().set(std::max(0, m_combat.power().value() - report.grabberPowerCost));
+    }
+    switch (report.mount) {
+    case combat::TackledAction::Struggle: {
+        // The victim's damage of 250 to the mounter first; one that empties its health ends the mount. Coney stand-in:
+        // as a let-go (the victim rises with 199), not Grab_BreakOnHit and the death reaction; flag 0x4000 not read.
+        if (report.grabberDamage > 0 && m_health.apply(report.grabberDamage) > 0 && m_health.depleted()) {
+            releaseHold(animator, false);
+            return;
+        }
+        // The victim 250 and the mounter 251 from the victim's set, both back to the mount's idles.
+        Holdable& victim = *m_held;
+        animator.playPaired(clips::one(clips::clipOf(report.grabberClip)), victim.anims(), clips::kMountingIdle,
+                            AnimState::Hold);
+        victim.play(clips::one(clips::clipOf(report.victimClip)), clips::kMountedIdle, AnimState::Hold,
+                    TargetState::Mounted);
+        break;
+    }
+    case combat::TackledAction::Break:
+        getOffMount(animator);
+        break;
+    case combat::TackledAction::Reversal: {
+        // Out of the mount on this side; the victim takes it the other way round and plays both clips.
+        if (input.self == nullptr) {
+            break;
+        }
+        Holdable& victim = *m_held;
+        victim.setAttached(false);
+        m_held = nullptr;
+        m_pair = PairStage::None;
+        m_tacklePending = false;
+        m_mountPending = false;
+        m_seatUpdates = 0;
+        m_combat.release();
+        victim.takeReversedMount(*input.self);
+        break;
+    }
+    case combat::TackledAction::None:
+        break;
+    }
+}
+
+void Fighter::getOffMount(HumanAnimator& animator) {
+    // Nothing while the mounter's own grounded mount still plays (its 0x2000).
+    const std::uint32_t playing = animator.animId();
+    if (playing >= static_cast<std::uint32_t>(combat::kGroundedMountFront) &&
+        playing <= static_cast<std::uint32_t>(combat::kGroundedMountLeft)) {
+        return;
+    }
+    // Coney stand-in: no move styles, push spheres or held 0x2000; the end callbacks' Tackle_End is this release.
+    Holdable& victim = *m_held;
+    victim.setAttached(false);
+    m_held = nullptr;
+    m_pair = PairStage::None;
+    m_tacklePending = false;
+    m_mountPending = false;
+    m_seatUpdates = 0;
+    m_combat.release();
+    // The victim breaks out with 246 and stands in its fight idle; the mounter plays 247 from its set, then its own.
+    const auto breakOut = static_cast<std::uint32_t>(combat::kMountBreak);
+    if (!victim.health().depleted()) {
+        victim.play(clips::one(breakOut), kAnimFightIdle, AnimState::Attack, TargetState::Standing);
+    }
+    animator.playPaired(clips::one(breakOut + 1), victim.anims(), kAnimFightIdle, AnimState::Attack);
+    logging::info(logging::Category::Combat, std::format("mount broken: {} is off", logName()));
 }
 
 void Fighter::endPowerMove() {

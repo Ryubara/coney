@@ -511,9 +511,38 @@ Confirmed (code). A mounted human is state `0x800` instead, and the dispatcher s
 `Player_GrabOrTackle` (`0x00284920`) → `Mount_StartOnGrounded` (`0x00271b30`): clip **237 + the side** (237 front,
 238 right, 239 back, 240 left) on the attacker, steered on over 0.1 s, **241 `MOUNT_GROUNDED_REACT`** on the victim,
 then the mount's idles 210 / 207 (`Pair_LinkMount`). The tap (`0xd`) and the hold (`0xe`) both reach it; the AI's
-kind 14 is command `0xe`. A target in 199 (held `0x8000` alone) is still mounted while 199 is below 70 % played: the
-rise is cut. Confirmed (code); confirmed (runtime): command `0xe` at 84 played 240 / 241 at 85 and 210 / 207 at 112
-(27 updates); at 64, during 303, the same command fell through to the tackle (3, then the miss 2).
+kind 14 is command `0xe`. A target in 199 is still mounted while 199 is below **half** played: the rise is cut.
+Confirmed (code); confirmed (runtime): command `0xe` at 84 played 240 / 241 at 85 and 210 / 207 at 112 (27 updates);
+at 64, during 303, the same command fell through to the tackle (3, then the miss 2).
+
+- **Half, not 70 %.** `Mount_StartOnGrounded` itself refuses a target holding `0x8000` alone once 199 is 70 % played,
+  but `Human_CanBeGrabbed` (`0x002256a0`) runs first and refuses a knocked-down human holding any of `0x48000` (the
+  rise's `0x8000`, the recovery `0x40000`) once his top clip is half played, so the 70 % test is reached only below
+  half and never refuses. Confirmed (code). This page said 70 % before; the cut is at half.
+- **Who is found.** A player's circle searches with `Player_FindCounterTarget` (`0x0027ac30`) at the grab's or the
+  tackle's far range × 1.25: its first pass (`TargetFilter_Enemy`, `0x00279410`) refuses a human in state `0xe0000`,
+  its second (`0x00279568`) and the any-angle pass (`0x002797b0`) do not, so a downed foe is found when no standing
+  one is in the cone. An AI's circle searches nothing and takes its own target (brain `+0x04` not 0). Confirmed (code).
+- **Too far: nothing.** Beyond the far range of 237 + the side (× 1.25 for a player) `Mount_StartOnGrounded` returns
+  0, and so does `Player_GrabOrTackle`: no mount, no tackle and no miss. Confirmed (code).
+- **The struggle's hit** (`Mount_Strike`, `0x00271ef0`, called with 250): the victim's own Anim Range List damage of
+  250, dealt to the mounter (`Human_DealDamage`) as 250 / 251 start (251 an overlay on the mounter holding `0x400`,
+  250 holding `0x1`). A struggle whose damage would defeat the mounter (the test doubles it when the victim has human
+  flag `0x4000`) breaks the pair instead (`Grab_BreakOnHit`): the victim plays 250 then 199, the mounter its death
+  reaction from 211. Confirmed (code).
+- **The mounter's power runs out.** `Human_UpdateMeters` (`0x002562d0`) calls `Mount_GetOff` on a tackling human whose
+  power reaches 0 (no held `0xc02201`) while the victim has more health than its `+0x118`: the same break as circle's,
+  246 / 247. Confirmed (code); it is the escape at 169 in the runtime table below.
+- **The break** (`Mount_GetOff`, `0x00271470`, given the mounter): nothing while the mounter holds `0x2000` (the
+  mount's start, a getting-off); otherwise the victim plays 246 and the mounter 247 from the victim's set, both with a
+  0.2 s blend and then their own idle, both holding `0x2000`; the end callbacks (`Mount_OnGetOffEnd` `0x00270f88`,
+  `Mount_OnVictimGetOffEnd` `0x00270fc0`) end the tackle state on both (`Tackle_End`) and clear the victim's down
+  timers. Confirmed (code).
+- **The reversal** (`Mount_StartReversal`, `0x002723e8`): refused while either holds `0xc12200`; the pair's link is
+  broken (`Grab_BreakOnHit`), the victim plays 242 then 210, the mounter 243 (the victim's set) then 207, both holding
+  `0x2000`; a player's reversal counts statistics event 4. At 242's end `Mount_OnReversalEnd` (`0x00272310`) links the
+  mount the other way round (`Pair_LinkMount`) and gets off at once when the new victim has human flag `0x20000`.
+  Confirmed (code).
 
 The mounted victim's inputs (`Player_UpdateTackled`, [Combat moves](combat-moves.md#mounted-victim)), confirmed
 (code) and here from the grounded mount (runtime):
@@ -523,6 +552,14 @@ The mounted victim's inputs (`Player_UpdateTackled`, [Combat moves](combat-moves
 | square or cross | the struggle **250** / 251: the mounter loses 1 / the victim's class divisor of its power per press, and 250 hits it (40) | 250 at 151, the mounter 600 → 560 → 520; its power ran out and `Human_UpdateMeters` let the victim escape: **246** / 247 at 169 |
 | circle | the break `Mount_GetOff` (`0x00271470`): **246 `MOUNT_BREAK`** / 247, both to the fight-stance idle, when `Grab_CanEscape(mounter)` allows (always at or below a quarter of its power, else 1 in floor(power / quarter) per press; never while it rages); the victim's flag `0x2000000000` forbids it | 246 / 247 at 158 (3rd press), 48 updates, **no damage** to the mounter |
 | R1 (command 3) | the reversal `Mount_StartReversal` (`0x002723e8`): **242** / 243 (57 updates), then the roles swap: the victim mounts (210, the attacker 207) and has the mount's strikes; refused when the mounter has human flag `0x40` or the victim `0x100000000` | 242 at 166 (6th press), 210 / 207 at 223; then square played 221 / 222, 61 damage each |
+
+**A second run** (PCSX2 v2.9.129, `level99` checkpoint 1 in the yard, the Hurricane `SecondWave01` as the
+puppet with the scenario `ground_mounted_square`'s set-up, 600 health and 400 power): the circle held at 84 played
+240 / 241 at 85 and 210 / 207 at 112; squares from 150 played 250 / 251 at 151, 167 and 183, the mounter losing 40
+on each 250's first update (600, 560, 520, 480) and the presses between them draining it, until its power ran out
+and 246 / 247 played at 187 for 48 updates; square at 234 then played `S1` (12) at 235. Confirmed (runtime), run
+r-20261116-r-20261116-ground-mounted-square. The circle and R1 variants on the same state gave the break at 179
+and, with the mounter's power still high, no reversal (each R1 lost the roll).
 
 **What the attacker gets.** From the break: nothing but 247 and the stance (no damage, no knockdown, no stun);
 from the struggle: 40 a press that plays 250, and its power drained; from the reversal: it is mounted.
@@ -998,9 +1035,34 @@ Read 2026-10-11, the rise counter 2026-10-13 (`src/combat`, `src/human`, `src/ai
   nothing; cross pressed at 14 counters at 15 on its release; 618 to the right; no target, an AI, or the manual stun:
   nothing) and `repo:tests/platform/disc_rise_counter_test.cpp` (the disc's 199 events; on `level99` a square at
   k = 16 counters and one at 18 does not).
-- Missing: the grounded mount (`Mount_StartOnGrounded`) and the mounted player's inputs (`Player_UpdateTackled`: the
-  struggle, the break, the reversal, the escape when the mounter's power runs out). Kind 14 has a reach but no move,
-  and kind 42 on an AI himself is called "the get-up attack" where it should be one command that cuts his ground time.
+- Built (2026-11-16): the grounded mount and the mounted human's inputs. A circle (tap or hold) whose search finds no
+  standing human finds one lying in the grounded idle or under half through his rise (`Fighter::mountableOnGround`,
+  `Human_CanBeGrabbed`'s knocked-down branch read through the clips, since Coney's victim leaves the ground as 199
+  starts), and `Fighter::startGroundedMount` mounts him with 237 + the side (241 on him, then 210 / 207, the mounter
+  seated at 210), or does nothing beyond that clip's far range (× 1.25 for a player). Mounted, `combat::updateTackled`
+  (`Player_UpdateTackled`) decides from his own clip: square or cross struggles (250 / 251, the mounter drained by its
+  maximum over his divisor and struck with his damage of 250), circle breaks out on the mounter's roll and R1 reverses
+  on it; the mounter plays both sides (`Fighter::applyMountReport`), the break through `Fighter::getOffMount` (246 /
+  247, both free), which a mounter at 0 power also gets, and the reversal through `Fighter::reverseMount` (242 / 243,
+  then the reverser on top). It is the same for any human, a player or an AI, on either side.
+- Stand-ins: an AI's circle searches like a player's instead of taking its own target; the steer onto the clip's
+  reach is the seat at 210; the reversal links the mount at once, not at 242's end, and does not read the new
+  victim's flag `0x20000`; a struggle that would defeat the mounter ends the mount as a let-go (the victim rises with
+  199) instead of the mounter's death reaction; the victim of a grounded mount is not warned.
+- Tests: `repo:tests/combat/tackled_test.cpp` (the decision), `repo:tests/human/grounded_mount_test.cpp` (an AI's
+  circle mounts the downed player from his left with 240 and from his front with 237; not during the knockdown's
+  reaction, not from 2 m, not past half his rise; the struggle's 250 / 251 for 40 and 66 power; escaping when the
+  mounter's power runs out; circle's break at a quarter, then his square counters; the no-escape flag; R1's reversal
+  and his strike from on top; no reversal with the mounter's flag `0x40` or his own `0x100000000`) and
+  `repo:tests/platform/disc_ground_escape_test.cpp` (on `level99` a fighter's own kind 14 mounts the downed player with
+  240 / 241, his mashed squares struggle until he breaks out with 246, and his square then strikes the fighter).
+- Compared with the original running (2026-11-16): on the disc, `repo:tests/platform/disc_ground_escape_test.cpp`'s
+  fighter mounts with 240 / 241 on the update after its command and reaches 210 / 207 27 updates later, as the
+  original did; its 250 / 251 takes 40 on its first update; the mounter's power out breaks it with 246 / 247, which
+  plays 1.2 s at 0.75 (48 updates, as in the original); the square after it plays `S1` for 17. The fighter's class
+  has 180 power, so one struggle and the drain broke it where the runtime's 400 took three.
+- Kind 42 on an AI himself is still called "the get-up attack" in Coney's AI where it is one command that cuts his
+  ground time.
 
 ### The knock-out {#knockout-coney}
 
@@ -1115,7 +1177,8 @@ records existed, so none of them has one, except the knock-out's timing (2.9.129
   `charge1`.
 - **Scripted knockdowns**: 2026-10-12, the natives' functions called through the `call-brains` hook.
 - **Down and under attack**: scenarios `ground_kicked`, `ground_kicked_mash`, `ground_mounted_*` and, on 2026-10-13,
-  `ground_rise_counter` and its variants.
+  `ground_rise_counter` and its variants; on 2026-11-16 the `ground_mounted_*` scenarios again on a `level99` yard
+  state with `SecondWave01` as the puppet (PCSX2 v2.9.129, run r-20261116-r-20261116-ground-mounted-square).
 - **Reviving**: `level80` checkpoint 1 after the "Let's Go" lesson, scenario
   `repo:research/traces/scenarios/revive_crew.toml`; the setup is beside the runs ([at runtime](#revive-runtime)).
 - **Knocked out in a Rumble brawl**: the hook recordings of [Rumble](rumble.md#gang-battle-results).

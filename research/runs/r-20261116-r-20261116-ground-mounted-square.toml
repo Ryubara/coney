@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261116-r-20261116-ground-mounted-square"
+date = "2026-11-16"
+kind = "trace"
+tool = "trace original"
+digest = "879172788c9690efb35e9d52498bfd55f15614020d300a34696be839f066dcce"
+
+[who]
+agent = "a6b3aeffabb791d14"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["anim-dispatch", "puppet", "right-stick", "scripted-pad", "strike-contact"]
+
+[run]
+name = "gm_square"
+method = ""
+
+[values]
+updates = 301
+missed_updates = 0
+columns = 43
+
+[hashes]
+trace_csv = "0989c923d99efa7348b3b0431d891f5f31cc05ef2fa83c7c3e93078f57289ab2"

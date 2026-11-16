@@ -15,7 +15,8 @@
 
 namespace coney::combat {
 
-/// The grounded mount's first clip (`MOUNT_GROUNDED`, from the front); 238 right, 239 back, 240 left.
+/// The grounded mount's first clip (`MOUNT_GROUNDED`, from the front); 238 right, 239 back, 240 left
+/// (`Mount_StartOnGrounded` 0x00271b30: `Human_GetSideOf(victim, attacker)` + 0xed).
 inline constexpr int kGroundedMountFront = 237;
 /// `MOUNT_GROUNDED_REACT`: the downed human's side of the grounded mount.
 inline constexpr int kGroundedMountReact = 241;
@@ -26,9 +27,8 @@ inline constexpr int kMountBreak = 246;
 /// `MOUNT_REVERSAL`: the mounted human throws the mounter over (it plays 243); then the roles swap.
 inline constexpr int kMountReversal = 242;
 
-/// The grounded mount's clip for the side of the downed human the mounter stands on: 237 + the side
-/// (`Mount_StartOnGrounded` 0x00271b30, `Human_GetSideOf(victim, attacker)` + 0xed).
-[[nodiscard]] constexpr int groundedMountClip(Side side) { return kGroundedMountFront + static_cast<int>(side); }
+/// The last of the grounded mount's clips: 237 + the side, front, right, back, left.
+inline constexpr int kGroundedMountLeft = 240;
 
 /// What the mounted human's own clips allow this update, by the bits they hold (the record's `+0x08`).
 enum class TackledPhase : std::uint8_t {
@@ -69,7 +69,8 @@ struct TackledOutcome {
 
 /// Whether square or cross struggles (`Grab_CanStruggle` 0x002258f0, then `Player_UpdateTackled`'s own test): he is
 /// not hurt, the mounter does not rage, his power is above a sixth of his maximum, and his power's share of it is above
-/// 1 / the mounter's divisor.
+/// 1 / the mounter's divisor. Grab_CanStruggle's test is read inline, as combat::struggleAllowed() reads it.
+/// @orig 0x0027f1a0 Player_UpdateTackled (unknown)
 [[nodiscard]] bool mountStruggleAllowed(const TackledInput& input);
 
 /// One update of the mounted human: square or cross struggles (the mounter loses its maximum / his divisor, truncated,

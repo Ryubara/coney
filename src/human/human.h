@@ -707,6 +707,10 @@ class Human final : public Holdable {
         return m_fighter.startTandemVictim(start, m_animator, m_script.arrested, m_script.knockedOut);
     }
     [[nodiscard]] std::optional<int> takeTandemRequest() override { return m_fighter.takeTandemRequest(); }
+    /// Lying where a circle may mount it (Fighter::mountableOnGround()).
+    [[nodiscard]] bool mountableOnGround() const override { return m_fighter.mountableOnGround(m_animator); }
+    /// Its reversal of the mount on it (Fighter::reverseMount()): it mounts `mounter`.
+    void takeReversedMount(Holdable& mounter) override { m_fighter.reverseMount(mounter, m_animator); }
     /// Moves it there and stops it (its velocity goes): the attached hold's placement of the held human at the
     /// transform the grabber gives (fighter_grab.cpp), not a script's placement (place() above). It ports the placing
     /// part of `Human_MoveAttached` only. **Coney stand-in**: the original also sweeps the held body toward the point
