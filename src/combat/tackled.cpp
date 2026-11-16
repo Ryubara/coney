@@ -64,4 +64,7 @@ TackledOutcome updateTackled(const TackledInput& input, CombatRandom& random) {
     return outcome;
 }
 
+// Stub for the test commit: the mount always goes on.
+MountEnd mountClipEnd(const MountEndInput& /*input*/, CombatRandom& /*random*/) { return MountEnd::Stay; }
+
 } // namespace coney::combat

@@ -143,3 +143,53 @@ TEST_CASE("R1 reverses the mount with 242 on the roll; not against a mounter wit
     input.noReversal = true;
     CHECK(updateTackled(input, random).action == TackledAction::None);
 }
+
+TEST_CASE("a raging or tireless mounted human reads his power as full: he struggles below the mounter's share",
+          "[combat]") {
+    // Expected: combat-moves.md#mounted-victim, confirmed (code)
+    // Human_PowerFraction is 1.0 while raging or tireless; Grab_CanStruggle's sixth is still the raw power.
+    TackledInput input = mountedBy(command::kSquarePressed);
+    input.ownPower = 80;
+    CHECK_FALSE(mountStruggleAllowed(input));
+    input.ownPowerFull = true;
+    CHECK(mountStruggleAllowed(input));
+    CombatRandom random;
+    CHECK(updateTackled(input, random).action == TackledAction::Struggle);
+    input.ownPower = 66;
+    CHECK_FALSE(mountStruggleAllowed(input));
+}
+
+TEST_CASE("as a mount's clip ends: the auto-escape flag gets the mounter off; circle on a won coin breaks out with the "
+          "stick pushed, reverses with it at rest",
+          "[combat]") {
+    // Expected: combat-reactions.md#ground-escape, confirmed (code)
+    CombatRandom random(3);
+    MountEndInput input;
+    input.autoEscape = true;
+    CHECK(mountClipEnd(input, random) == MountEnd::GetOff);
+    // No circle: the mount goes on.
+    input = MountEndInput{};
+    input.command = command::kSquarePressed;
+    CHECK(mountClipEnd(input, random) == MountEnd::Stay);
+    // Circle: half the coins win; the stick above 0.25 breaks out, at 0.25 or less reverses.
+    int breaks = 0;
+    int reversals = 0;
+    int stays = 0;
+    constexpr int kTries = 200;
+    for (int i = 0; i < kTries; ++i) {
+        MountEndInput pushed{.command = command::kCircleTapped, .stickMagnitude = 0.8F, .autoEscape = false};
+        const MountEnd outcome = mountClipEnd(pushed, random);
+        breaks += outcome == MountEnd::GetOff ? 1 : 0;
+        stays += outcome == MountEnd::Stay ? 1 : 0;
+        CHECK(outcome != MountEnd::Reverse);
+        MountEndInput rest{.command = command::kCirclePressed, .stickMagnitude = 0.25F, .autoEscape = false};
+        const MountEnd still = mountClipEnd(rest, random);
+        reversals += still == MountEnd::Reverse ? 1 : 0;
+        CHECK(still != MountEnd::GetOff);
+    }
+    CHECK(breaks > 60);
+    CHECK(breaks < 140);
+    CHECK(stays > 60);
+    CHECK(reversals > 60);
+    CHECK(reversals < 140);
+}

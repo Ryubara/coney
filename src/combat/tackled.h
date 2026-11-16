@@ -58,6 +58,8 @@ struct TackledInput {
     /// The command the reversal takes besides `0x19` (`0x00510988`, R1 pressed in the street's tables).
     CommandId reversalCommand = command::kR1Pressed;
     GrabberState mounter; ///< The mounter's numbers this update.
+    /// Raging (`0x80000`) or tireless (`0x4000000`): `Human_PowerFraction` reads his power as full.
+    bool ownPowerFull = false;
 };
 
 /// What the update decided.
@@ -80,5 +82,25 @@ struct TackledOutcome {
 /// while it does.
 /// @orig 0x0027f1a0 Player_UpdateTackled (unknown)
 [[nodiscard]] TackledOutcome updateTackled(const TackledInput& input, CombatRandom& random);
+
+/// What a mount's clip ending decides (`Mount_OnStrikeEnd`, the end of the grounded mount's 237-240).
+enum class MountEnd : std::uint8_t {
+    Stay,    ///< The mount goes on.
+    GetOff,  ///< The mounter gets off (`Mount_GetOff`: 246 / 247).
+    Reverse, ///< The mounted human reverses it (`Mount_StartReversal`: 242 / 243).
+};
+
+/// What the mounted human shows as the mount's clip ends.
+struct MountEndInput {
+    CommandId command = command::kNone; ///< His command this update.
+    float stickMagnitude = 0.0F;        ///< His left stick's magnitude (the per-player record's, 0-1).
+    bool autoEscape = false;            ///< His human flag `0x20000` (`HuSetAutoEscape`).
+};
+
+/// The mounted human's chance as a mount's clip ends: with the auto-escape flag the mounter gets off; circle (any kind)
+/// wins on a coin, then reverses the mount with the stick at rest (0.25 or less) and breaks out with it pushed.
+/// Research: docs/research/combat-reactions.md#ground-escape
+/// @orig 0x002700a8 Mount_OnStrikeEnd (unknown)
+[[nodiscard]] MountEnd mountClipEnd(const MountEndInput& input, CombatRandom& random);
 
 } // namespace coney::combat

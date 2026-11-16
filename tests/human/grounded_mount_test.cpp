@@ -415,3 +415,20 @@ TEST_CASE("no reversal of a mounter with flag 0x40, nor for a player with the bl
         CHECK(fight.player().state() == TargetState::Mounted);
     }
 }
+
+TEST_CASE("a downed player with the auto-escape flag gets the mounter off as its grounded mount ends: 246 / 247",
+          "[human][combat]") {
+    // Expected: combat-reactions.md#ground-escape, confirmed (code)
+    const MountCharacter mount;
+    MountFight fight(mount.character, 0.8F);
+    knockDown(fight);
+    fight.player().setFlag(flag::kAutoEscape, true);
+    otherPresses(fight, combat::command::kCircleHeld);
+    Clips clips;
+    fight.run("", 40, [&](std::uint64_t /*frame*/) { clips.note(fight.player(), fight.other()); });
+    CHECK(played(clips.other, 240U));
+    CHECK(played(clips.player, 246U));
+    CHECK(played(clips.other, 247U));
+    CHECK(fight.player().state() == TargetState::Standing);
+    CHECK(fight.other().fighter().held() == nullptr);
+}
