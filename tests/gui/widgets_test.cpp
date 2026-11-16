@@ -531,6 +531,8 @@ TEST_CASE("scrolling menu: no wrap, the refused cue at the ends, a 100 ms gap an
 }
 
 TEST_CASE("option grid: the fade multiplies every item's alpha", "[gui]") {
+    // Expected: gui.md#coneys-implementation, inferred from Coney's own fade over every item (the pause menu's fade
+    // out)
     TextCanvas canvas;
     coney::gui::OptionGrid grid;
     grid.setup(coney::gui::OptionGridSetup{.y = 0.5F});
