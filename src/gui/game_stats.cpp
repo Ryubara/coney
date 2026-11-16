@@ -516,7 +516,10 @@ float GameStatsScreen::layOutEntry(std::size_t index, std::optional<float> offse
                                    const GuiFrame& frame) {
     CircledText& header = *m_headers.at(index);
     GameStatsSubItem& item = *m_subItems.at(index);
-    // The header at the list's place plus the offset, with the entry's reveal.
+    // The header at the list's place plus the offset, with the entry's reveal; laid out whether or not it was drawn
+    // last frame.
+    header.setVisible(true);
+    item.setVisible(true);
     header.setReveal(reveal);
     if (offset) {
         header.moveTo(m_layout.listY + *offset);
