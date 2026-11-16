@@ -1407,5 +1407,6 @@ What the implementer still needs:
 
 ### The sprite widget's timed fade {#q-widget-fade}
 
-`BaseWidget_AddSprite` (`0x001a2690`) takes the alpha from a timed fade while `+0xf4` is set (`+0xf0`-`+0xf8`), which
-nothing Coney ports starts, so Coney's sprite widget has none. Which widgets start it, and when, is not traced.
+`BaseWidget_RenderAlpha` (`0x001a2690`) takes the alpha from a timed fade while `+0xf4` is set (`+0xf0`-`+0xf8`).
+The fixed-camera icon starts one ([HUD](hud.md), ported by `src/hud/fixed_cam_icon.cpp` with its own fade), but no
+menu Coney ports does, so Coney's sprite widget has none. Whether any menu widget starts it is not traced.

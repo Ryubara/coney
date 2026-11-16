@@ -36,9 +36,9 @@ enum class ScrollState : std::uint8_t {
 ///   left below starts Down with one more entry in the window; a move up above the window, or above the middle row
 ///   while entries are left above, starts Up with the window one entry higher and one longer.
 /// - **Scrolling** (`ScrollingMenu_Update`), each update by `step`: Down hides the top entry (its reveal falls; at 0
-/// the
-///   window starts one lower) while the entry at its bottom shows 1 − that reveal; Up reveals the top entry (at 1 it is
-///   done) while the bottom one shows 1 − its reveal; RevealTop reveals the top entry; HideTop hides it.
+///   the window starts one lower) while the entry at its bottom shows 1 − that reveal; Up reveals the top entry (at 1
+///   it is done) while the bottom one shows 1 − its reveal; RevealTop reveals the top entry; HideTop hides it, the
+///   bottom entry showing 1 − its reveal when that entry is not the focused one.
 /// - **The window**: `maxVisible` entries, one more while scrolling, cut to the list's end; each placed at the stacked
 ///   heights of those above it, an entry's height its full height × its reveal.
 /// - **The clip**: stacking the window's heights (every reveal back to 1 when still), the first entry that takes the

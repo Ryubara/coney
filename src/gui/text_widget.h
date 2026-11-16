@@ -83,6 +83,7 @@ class TextWidget : public Widget {
     /// (depth × reveal + the first line's y − y) / h of itself, clamped to 0-1, so the text is wiped from the top
     /// (`0x001b9600`; docs/research/game-stats.md#block).
     /// @orig 0x001cd288 TextWidget_Render (unknown)
+    /// @orig 0x001b9600 MessageHUD_Layout (unknown)
     void render(const GuiCanvas& canvas) const override;
 
     /// Lays the text out with the canvas's fonts, without drawing: what render() would draw.
