@@ -569,13 +569,13 @@ Confirmed (code) at the addresses cited unless a line says otherwise.
   Mode (`0x110`) and To Hangout or To Main Menu.
 
 **The Yes/No box** (`0x001d6738`, `0x001d6910`): the question, then "Yes" (`0x3b`) "/" "No" (`0x3c`), **No selected**
-(confirmed (runtime), run `r-20261116-yes-no-box-sides`: the Quit box's selection `+0x4c0` reads 1 when it opens; the
+(confirmed (runtime), run r-20261116-yes-no-box-sides: the Quit box's selection `+0x4c0` reads 1 when it opens; the
 write that selects it is not traced). The pause and mission-failed menus open it in confirm mode (`+0x4c8` = 1, read
 in the same run). **Left selects Yes and right selects No; they never swap the answer** (`YesNoBox_OnCommand`
 `0x001d6c10`: command 2 sets the selection to 0, command 3 to 1): cue 4 when the selection moves, `0xe` when that
 answer was already selected. Back (command 5) calls back 4 and plays **no cue**, neither in the box nor in its owners'
 routing (`0x001ded68`, `0x001d2970`), which play `0xe` for up and down and 8 for accept. Confirmed (code); confirmed
-(runtime), run `r-20261116-yes-no-box-sides` (right on No: cue `0xe`, still 1; left: cue 4, then 0; left again: cue
+(runtime), run r-20261116-yes-no-box-sides (right on No: cue `0xe`, still 1; left: cue 4, then 0; left again: cue
 `0xe`; triangle: command 5, no cue, the box closed). Yes calls `PauseMenu_OnConfirm` with 2, No
 with 3, back with 4; No and back close the box
 (vtable `+0xcc`, `0x001df5e8`, clearing the quit and restart choices). Yes, story: Quit sets `+0x1b70` and closes
