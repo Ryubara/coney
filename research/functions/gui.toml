@@ -110,7 +110,12 @@ page = "gui.md#original-structure"
 role = "measures and draws marked-up text"
 level = "confirmed-code"
 coney = "src/gui/text_layout.h:layoutText"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "only the per-line reveal (`TextWidget::render`) is compared; the layout itself is ported untagged in `layoutText`"
+relation = "not-ported"
+issue = 987
 
 [[function]]
 address = 0x001bac20
