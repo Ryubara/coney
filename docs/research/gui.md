@@ -1136,7 +1136,7 @@ widget; it has no path string of its own and is placed here by address (inferred
 | `0x001e1fe0` | `ScrollingMenu_OnCommand` | interface slot `+0x08`: the owner `+0xcc` sees the command first; else 0 = up, 1 = down; stamps `+0xd0`; returns 1 | confirmed (code) |
 | `0x001e2090`, `0x001e2130` | `ScrollingMenu_Focus`, `_Unfocus` | slots `+0x90`/`+0x98`: clears the input record (`0x00146000`); focuses the selected item unless `+0xe8` | confirmed (code) |
 | `0x001e21c0` | `ScrollingMenu_SetPosition` | slot `+0x08`: `+0x20` | confirmed (code) |
-| `0x001e21d8` | `ScrollingMenu_Update` | slot `+0x30`: input only when focused, not scrolling, 100 ms after `+0xd0` and the item's description not focused (repeat pass `0x001e93c0`, or plain `0x001e9518` when `+0x104`, mask `0xf000`; button pass `0x001e9468`); scroll states `+0x80` (1 up, 2 down, 3 reveal top, 4 hide top) step `+0xc8`; stacks the window (`+0xa4` first, `+0xac` count, at most `+0xb0`) from `+0x20`; clip to `+0xb8` sets fit count `+0xb4` and a partial reveal of the last item | confirmed (code) |
+| `0x001e21d8` | `ScrollingMenu_Update` | slot `+0x30`: input only when focused, not scrolling, 100 ms after `+0xd0` and the item's description not focused (repeat pass `0x001e93c0`, or plain `0x001e9518` when `+0x104`, mask `0xf000`; button pass `0x001e9468`); scroll states `+0x80` (1 up, 2 down, 3 reveal top, 4 hide top) step `+0xc8`; stacks the window (`+0xa4` first, `+0xac` count, at most `+0xb0`) from `+0x20`; clip to `+0xb8` sets fit count `+0xb4` (the first entry past the clip ends it, counted when focused), with `+0xe0` a partial reveal of the last item instead; when still, starts state 3 or 4 by the clip ([The statistics screen: scrolling](game-stats.md#scroll)) | confirmed (code) |
 | `0x001e2e40` | `ScrollingMenu_Render` | slot `+0x38`: the visible items, one more in state 3 | confirmed (code) |
 | `0x001e2f40`, `0x001e2f98` | `ScrollingTextWidget_Construct`, `_Destroy` | 0x270 bytes, vtable `0x0053c2c8`; MessageHUD text `+0x70` | confirmed (code); file inferred |
 | `0x001e2fe8` | `ScrollingTextWidget_Setup` | slot `+0xc0`: position `+0x20`, size `+0x30`, offset `+0x60`; text width = size x, colour `0x005fd310`; focus colour `+0x260` = `0x005fd310` | confirmed (code) |
@@ -1257,8 +1257,9 @@ runs about 42,600 Lua instructions and skips 1,796 binding calls.
   `Font_Draw` (`0x00179c30`): right and centred alignment, one sprite per glyph centred at (pen + (width + spacing) /
   2, y) of size (width, h) through device slots `+0x90` and `+0x98`, and the black shadow at (0.0025, 0.004) with alpha
   shadow × colour alpha / 255. Coney's choices: a character past the sheet's last rectangle takes no room and draws
-  nothing; a space draws nothing; the shadow comes just before each glyph (the page's "added first", read per glyph);
-  the reveal fraction is not implemented yet.
+  nothing; a space draws nothing; the shadow comes just before each glyph (the page's "added first", read per glyph).
+  The reveal fraction is `graphics::revealSprite`, which `TextWidget::render` applies to the laid-out glyphs and their
+  shadows.
 - **Markup** (`src/gui/markup.h`): the tag table by index, with the characters of the glyph tags; `parseMarkup`
   splits a text at `<` ... `>`. A tag name compares exactly; a `<` with no `>` after it is text; a name not in the
   table is skipped and counted. All 66 names are known, the HUD icon tags 22-32 with their characters;
@@ -1380,9 +1381,11 @@ What the implementer still needs:
 
 - The other instance formats (1, a 2D rotation; 2, a full matrix), the resource manager's 255 instance slots and
   the worlds an instance can live in (3D overlay, 2D overlay), where the original's pass finds its batches.
-- The widget base's other slots (the rectangle, active, the text reveal) and `BaseWidget`'s timed fade.
-- Text widgets around the layout: the reveal fraction, `<SOUND>` played once, `<FREEZE>` on the game timer, and
-  the open tags above.
+- The widget base's other slots (the rectangle, active) and `BaseWidget`'s timed fade
+  ([q-widget-fade](#q-widget-fade)).
+- Text widgets around the layout: `<SOUND>` played once, `<FREEZE>` on the game timer, and the open tags above. The
+  reveal is drawn: `Font_Draw`'s cut of each glyph (`graphics::revealSprite`) and the markup widget's line wipe
+  (`TextWidget::setRevealDepth`, [The statistics screen](game-stats.md#block)).
 
 ## Open questions
 
@@ -1401,3 +1404,8 @@ What the implementer still needs:
   (`0x001d43f0(grid, 0x001d43e8(grid))`). Still open: setup's `a2` (`+0xa8`) and the item flags argument (4).
 - **The widget base's fields** (`+0x0c` initialised, `+0x40`, `+0x50` the input record, `+0x54`-`+0x68`) and the
   second interface at `+0x6c`.
+
+### The sprite widget's timed fade {#q-widget-fade}
+
+`BaseWidget_AddSprite` (`0x001a2690`) takes the alpha from a timed fade while `+0xf4` is set (`+0xf0`-`+0xf8`), which
+nothing Coney ports starts, so Coney's sprite widget has none. Which widgets start it, and when, is not traced.

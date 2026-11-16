@@ -31,9 +31,9 @@ void GameStatsMode::launch(std::string_view onClose) {
 
 void GameStatsMode::enter() {
     using Screen = gui::GameStatsScreen;
-    // Coney's stand-in: the task manager's phase and the store tint (a clear colour) are not set; nothing they change
-    // shows under the screen. No fade out yet; the fade in waits for the screen. The interface bank, unless it is
-    // already in sound RAM.
+    // Coney's stand-in: the task manager's phase is not set, as Coney runs no world frame under the screen
+    // (docs/research/game-stats.md#mode), and the store tint (a clear colour), which shows nothing, is not set either.
+    // No fade out yet; the fade in waits for the screen. The interface bank, unless it is already in sound RAM.
     m_fadingOut = false;
     m_fadeInPending = true;
     if (!m_services.bankLoaded(kSoundBank)) {

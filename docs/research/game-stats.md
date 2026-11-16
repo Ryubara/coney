@@ -53,22 +53,33 @@ list](frontend/functions.md); these are the entry points, each read in Ghidra at
 
 ### Layout values {#values}
 
-Confirmed (code) at `0x00215e78` unless a line says otherwise. `GameStats_Init` writes these globals for the default
-video mode; for the other modes it writes other values into the same globals (`0x005100e0`-`0x00510118`), which this
-page does not list. Positions are GUI coordinates ([HUD: coordinates](hud.md#coordinates)).
+Confirmed (code) at `0x00215e78` unless a line says otherwise. `GameStats_Init` writes these globals before it builds
+the screen, picking the column by the device's flags (`*0x0050cdb4`; [Graphics](graphics.md#video-mode)): flag `0x02`
+first, with or without `0x04` (16:9); then `0x20` (progressive), whatever its shape; then `0x04` alone; else the
+default. Positions are GUI coordinates ([HUD: coordinates](hud.md#coordinates)).
 
-| Value | Where | Default mode | Evidence |
+| Value | Where | Default | 16:9 (`0x04`) | Progressive (`0x20`) | `0x02` | `0x02` and `0x04` | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| the summary's and the usage line's x | `0x00510114` (copied to `0x005100f0`) | 0.01 | -0.07 | -0.05 | 0.02 | -0.15 | confirmed (code) |
+| the summary's y | `0x005100f4` | 0.06 | 0.04 | 0.08 | 0.16 | 0.14 | confirmed (code) |
+| the usage line's y | `0x00510118` | 0.94 | 0.94 | 0.9 | 0.82 | 0.86 | confirmed (code) |
+| the background's size | `0x005100e8` / `0x005100ec` | 1.15 × 1.1 | 1.45 × 1.2 | 0.74 × 0.74 | 1.1 × 0.8 | 1.55 × 0.95 | confirmed (code) |
+| a header's size | `0x005100e4` / `0x005100e0` | 0.35 × 0.09 | 0.43 × 0.09 | 0.3 × 0.09 | 0.3 × 0.07 | 0.43 × 0.078 | confirmed (code) |
+| a circle's size | `0x005100f8` / `0x005100fc` | 0.065 × 0.11 | 0.081 × 0.11 | not written: 0.065 × 0.11 | 0.05 × 0.077 | 0.051 × 0.077 | confirmed (code) |
+| the list's place: the first header's centre ([Placement](#placement)) | `0x00510100` / `0x00510104` | (0.185, 0.45) | (0.145, 0.45) | (0.1, 0.45) | (0.17, 0.445) | (0.07, 0.46) | confirmed (code) |
+| the clip height: the window's stacked heights are cut there | `0x00510110` | 0.5 | 0.5 | 0.5 | 0.38 | 0.4 | confirmed (code) |
+
+The progressive column leaves the circles' size at its static value (`.data`, the default's), since the video mode is
+chosen at boot (inferred from no other writer of `0x005100f8`). The circles' step divisor follows the mode too: 3, or 2
+with flag `0x02` (`CircledText_Setup`, [Circled texts](circled-text.md#ct-setup)). In every mode:
+
+| Value | Where | All modes | Evidence |
 | --- | --- | --- | --- |
-| summary's pen | `0x005100f0` / `0x005100f4` | (0.01, 0.06) | confirmed (code) |
-| list's place | `0x00510100` / `0x00510104` | (0.185, 0.45): the first header's centre ([Placement](#placement)) | confirmed (code) |
-| header size | `0x005100e4` / `0x005100e0` | 0.35 × 0.09 | confirmed (code) |
-| circle size | `0x005100f8` / `0x005100fc` | 0.065 × 0.11 | confirmed (code) |
 | window | `0x00510108` / `0x0051010c` | at most 5 entries | confirmed (code) |
-| clip height | `0x00510110` | 0.5: the window's stacked heights are cut there | confirmed (code) |
-| reveal step | `0x005100d4` | 0.25 a frame | confirmed (code) |
+| reveal step | `0x005100d4` | 0.25 an update | confirmed (code) |
 | colour step | `0x0051011c` | 5,000 ms | confirmed (code) at `0x00216a60` |
 | background colours | `0x00640c60` | (150, 50, 50), (50, 150, 50), (50, 50, 150), written by `GameStats_StaticInit` (`0x00216e00`) | confirmed (code) |
-| usage line | | string `0x19` at (0.01, 0.94) | confirmed (code) |
+| usage line | | string `0x19` at the column's x and y | confirmed (code) |
 
 ### The screen object {#screen-object}
 
@@ -112,10 +123,15 @@ Confirmed (code) at the cited addresses. `ShowGameStatsInterface` pushes game mo
   colour, loads the sound bank named at `0x0054ee50` (`menu`) unless it is the current bank, and runs `GameStats_Init`
   (`0x00215e78`) on the screen object.
 - **Update** (`GameStats_Update`, `0x001596d0`): one world frame, then the screen's update and render, and the overlay
-  only (`ResourceMgr_RenderOverlay`, `0x00185d20`). On the first frame the screen is ready (`GameStats_IsReady`) while
-  `+0xd4` is set it clears `+0xd4` and queues a fade in over 1 s (`ScreenFx_Queue`, `0x0018b168`). Once the auto-close
-  flag is set it queues a fade out over 1 s, once (`+0xd0` set), and pops the mode on the first frame that fade is over
-  (the fade's busy flag at `0x005fdeb8` + `0x1d4`).
+  only (`ResourceMgr_RenderOverlay`, `0x00185d20`). The world frame is a gameplay frame without its drawing: the tick,
+  the task manager's phase 0 (`TaskManager_Tick`), the cameras, the managers while `0x005e536c` is 1, streaming,
+  `WorldManager_Update`, the instances, the audio listener at the player camera (`AudioManager_Update`) and the pad
+  bindings; nothing of the world or the HUD is drawn and no script runs. So the level goes on under the screen: the
+  AI's update runs while it is open (confirmed (runtime), run r-20261116-stats-world-frame), and its characters move
+  and their sounds play (inferred from the frame's calls), unseen under the opaque background. On the first frame the
+  screen is ready (`GameStats_IsReady`) while `+0xd4` is set it clears `+0xd4` and queues a fade in over 1 s
+  (`ScreenFx_Queue`, `0x0018b168`). Once the auto-close flag is set it queues a fade out over 1 s, once (`+0xd0` set),
+  and pops the mode on the first frame that fade is over (the fade's busy flag at `0x005fdeb8` + `0x1d4`).
 - **Input** (`GameStats_OnCommand`, `0x002169a8`): back (command 5) sets the auto-close flag (`GameStats_SetAutoClose`,
   `0x00159520`); accept (4) is taken and does nothing; the list's own input moves the focus. The mode's exit runs the
   script's `onClose` callback.
@@ -228,6 +244,45 @@ screen's height (`ScrollingMenuItem_GetRect`, `0x001e0c90`). The description goe
 header's height / 2 − 2 / the screen's height (`ScrollingMenuItem_Update`, `0x001e0f98`, with `+0x78` = 0): from the
 header's bottom, two screen lines up. The next header follows one header and the shown block, less that overlap, below.
 
+### Scrolling {#scroll}
+
+Confirmed (code) at the cited addresses and confirmed (runtime), run r-20261116-stats-scroll, which read the menu every
+frame while the pad scrolled a list of 25 entries (all four states below seen, each over four updates).
+
+The menu keeps a window of entries, first `+0xa4`, count `+0xac`, at most `+0xb0` (5), and a scroll state `+0x80`. An
+entry (`ScrollingMenuItem`) has a reveal `+0x50`, 0 to 1, which it gives its header (`ScrollingMenuItem_SetReveal`,
+`0x001e0b58`; with `+0x68` = 0 the header's reveal is the entry's) and which scales its height
+(`ScrollingMenuItem_GetRect`, `0x001e0c90`: the header's height, plus the shown block less 2 / 448 while the block
+shows, times the reveal).
+
+- **A move** (`ScrollingMenu_MoveDown` `0x001e1d70`, `ScrollingMenu_MoveUp` `0x001e1cb8`, after
+  `ScrollingMenu_Select` moved the cursor): with `+0x100` set (the statistics screen's) the middle row is
+  count / 2 − 1, so row 1 of five. A move down to a row past it, while entries are left below the window, adds one to
+  the count and starts state 2 (down). A move up to an entry above the window, or to a row above the middle while
+  entries are above it, starts state 1 (up) with the window one entry higher and one longer.
+- **Each update** (`ScrollingMenu_Update`, `0x001e21d8`) reads the pad only while the state is 0, 100 ms after the last
+  command, then steps the state by `+0xc8` (0.25): state 2 lowers the first entry's reveal and gives the window's last
+  entry 1 − that reveal; at 0 the window starts one lower. State 1 raises the first entry's reveal and gives the last
+  entry 1 − it; at 1 the scroll is done. State 3 raises the first entry's reveal, state 4 lowers it (at 0 the window
+  starts one lower), neither touching the last.
+- **The window** is then `+0xb0` entries, one more while a state runs, cut to the list's end; each is placed at the
+  stacked heights of those above it ([Placement](#placement)) and updated, which steps its block
+  ([GUI: ScrollingMenuItem_Update](gui.md#fn-scrollingmenu)): the block opens only while its header shows whole.
+- **The clip** (`+0xb8`, 0.5): stacking the window's heights again (with every reveal set back to 1 while the state is
+  0), the first entry that takes the sum past the clip ends the drawn entries (`+0xb4`), itself drawn only when it is
+  focused. `ScrollingMenu_Render` (`0x001e2e40`) draws those, one more in state 3. So a header that would cross the
+  clip is not drawn at all, and the focused entry is drawn whole past it.
+- **The clip's scrolls**, while the state is 0: the entry above the window is measured at reveal 1 and put back at 0;
+  when the drawn entries and it fit under the clip and fewer than five are drawn, state 3 starts with the window one
+  entry higher. Otherwise, when the last drawn entry is not the first, the drawn entries run past the clip and that
+  entry is focused, state 4 starts. At the list's end, where a move cannot scroll, the last block opening hides the
+  headers above it one by one (25 entries: the window ends at entries 23 and 24), and moving up reveals them again.
+
+Each header of the window is centred one entry height below the one above it, so while a header's reveal falls the
+headers under it move up with it (run r-20261116-stats-scroll: with the first entry at 0.75 the second sits at
+0.45 + 0.09 × 0.75 = 0.5175). The original's input (`ScrollingMenu_OnCommand`) also waits for an entry's description
+to drop its focus only when the menu's `+0xe4` is set, which the statistics screen leaves at 0.
+
 ### A mission's block {#block}
 
 Confirmed (code) at the cited addresses.
@@ -243,6 +298,16 @@ the text's height × the reveal (`GameStatsSubItem_GetScaledRect`, `0x00217730`)
 centred on the block's position, the column's width wide and the shown height high, its texture rectangle cut by the
 reveal. The text starts at x − width / 2 + 0.35 + 0.02, its first line half a `Font_Size(1.0)` line below the block's
 top, with the same reveal.
+
+**The text's height and its wipe.** The text widget's height `+0x38` is its measure's bottom less its top
+(`ScrollingTextWidget_SetText`, `0x001e3070`), and the measure's bottom is one line, h + the line gap, past the last
+line's centre line (`MessageHUD_Layout`, `0x001b9600`), so a block of five size-1.2 lines is 5 × (h + gap) high: 0.2664
+in the default mode (run r-20261116-stats-scroll), the gap being −h / 7. `ScrollingTextWidget_Update` (`0x001e32a0`)
+sets the text's depth `+0x1f4` to that height less a line gap of the widget's metrics, and `MessageHUD_Layout` draws
+each line with the reveal r below 1 as a share of each glyph, (depth × r + the first line's y − the line's y) / h,
+clamped to 0-1, which `Font_Draw` (`0x00179c30`) turns into a glyph cut from the bottom (its height and its texture
+rectangle's v1 × the share, its top kept). So the text is wiped from the top, line by line, as the picture is cut.
+Confirmed (code) at those addresses.
 
 **Text** (`GameStatsSubItem_BuildText`, `0x00216eb0`), from the formats at `0x0055a268`-`0x0055a3e8`, confirmed (code):
 
@@ -299,53 +364,29 @@ the colours, the list's places and the blocks' reveal), `repo:tests/warriors/unl
 `repo:tests/platform/disc_game_stats_test.cpp`, which calls the binding in `level95` and moves through and closes the
 screen with the pad. On the NTSC-U disc 26 levels are listed, so the missions line counts 23.
 
+The layout of each video mode is `GameStatsLayout::forFlags`, which the mode picks from the device's flag `0x02`
+(Coney's European setting; its screen is never 16:9 or progressive). The window's scrolling and clip are
+`ScrollingWindow` (`repo:src/gui/scrolling_window.h`), tested by `repo:tests/gui/scrolling_window_test.cpp`; the reveal's
+cuts are `BaseWidgetSetup::rectShare` and `TextWidget::setReveal` (with a reveal depth for the block's line wipe).
+
 Stand-ins and deliberate differences:
 
-- Only the default video mode's values ([q-video-modes](#q-video-modes)).
-- The window keeps the cursor in its middle row and jumps, where the original scrolls with a reveal; a block the clip
-  cuts is cut at the clip, and a header the clip would cut is hidden with the entries below it, where the original
-  reveals the last item in part ([q-scroll](#q-scroll)).
-- The focused block holds its reveal until the delay has run, so the first stays open; the description's own focus,
-  which the original's menu input waits on, is not modelled ([q-scroll](#q-scroll)).
-- A block's picture is drawn whole in the shown height where the original cuts its texture, and its text shows the
-  lines that fit ([q-reveal-crop](#q-reveal-crop)).
 - An area byte other than 1-4 gives black, where the original leaves the colour unwritten; a tie in the mission byte is
   broken by the level number; fewer than three listed records count as none ([q-edge-cases](#q-edge-cases)).
 - `isLevelComplete` searches every record, without the original's bound of 32 ([q-edge-cases](#q-edge-cases)).
-- The mode runs no world frame and sets no store tint: neither shows under the opaque background
-  ([q-world-frame](#q-world-frame)).
+- The mode runs no world frame, where the original's runs the level on under the screen ([The mode](#mode)): Coney
+  has no world frame a menu mode can run yet, so the level stands still while the screen is open. The store tint is
+  not set either; it shows nothing.
 - Size-1.2 lines are drawn about 7 % shorter than the original's, from the font metrics' aspect
   ([q-line-height](#q-line-height)).
 
 ## Open questions
-
-### Other video modes {#q-video-modes}
-
-`GameStats_Init` (`0x00215e78`) writes other values into
-`0x005100e0`-`0x00510118` for the 16:9 and `0x02` modes; reading them there would let Coney lay the screen out in
-those modes.
-
-### Scrolling past the window {#q-scroll}
-
-How `ScrollingMenu_Update` (`0x001e21d8`) scrolls a window of 5 with a
-reveal, how it shows the last item in part at the clip, and what the description's focus changes in the menu's
-input; a capture of a long list scrolled in PCSX2 against the code would settle it.
-
-### The reveal's texture cut {#q-reveal-crop}
-
-Coney's sprite widgets have no texture cropping, so the picture is
-squeezed into the shown height instead of cut; a cropping sprite in Coney's widgets would make it faithful.
 
 ### Edge cases nobody has seen {#q-edge-cases}
 
 An area byte outside 1-4, a tie in the mission byte (the original's
 sort is not stable), fewer than three listed records, a level with more than 32 group-0 records. None happens on
 the NTSC-U disc; a modded table would show what the original does.
-
-### The world frame {#q-world-frame}
-
-Whether the world frame `0x001596d0` runs (with the task manager in phase 0)
-changes anything the player can see or hear behind the screen.
 
 ### Line height {#q-line-height}
 

@@ -69,7 +69,12 @@ name = "BaseWidget_RenderAlpha"
 page = "gui.md#fn-basewidget"
 level = "confirmed-code"
 coney = "src/gui/base_widget.h:BaseWidget::render"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the timed fade's alpha (`+0xf0`-`+0xf8`) is not modelled"
+relation = "stand-in"
+question = "gui.md#q-widget-fade"
 
 [[function]]
 address = 0x001a8e30
@@ -317,6 +322,15 @@ coney = "src/gui/text_widget.h:TextWidget::setText"
 status = "legacy"
 
 [[function]]
+address = 0x001cd288
+name = "TextWidget_Render"
+page = "gui.md#fn-after-textentrypad"
+role = "visible, active and not empty: `Font_Draw` at `+0x60` with the reveal `+0xc0`; the 3D path draws nothing"
+level = "confirmed-code"
+coney = "src/gui/text_widget.h:TextWidget::render"
+status = "compared"
+
+[[function]]
 address = 0x001cea70
 name = "UsageInfo_Construct"
 page = "gui.md#original-structure"
@@ -524,6 +538,33 @@ coney = "src/gui/option_grid.h:OptionGrid::render"
 status = "legacy"
 
 [[function]]
+address = 0x001e0b58
+name = "ScrollingMenuItem_SetReveal"
+page = "gui.md#fn-scrollingmenu"
+role = "slot `+0xa8`: the entry's reveal clamped to 0-1, given to its main widget past `+0x68`"
+level = "confirmed-code"
+coney = "src/gui/scrolling_window.h:ScrollingWindow::setReveal"
+status = "compared"
+
+[[function]]
+address = 0x001e0c90
+name = "ScrollingMenuItem_GetRect"
+page = "gui.md#fn-scrollingmenu"
+role = "slot `+0x70`: the main widget's rectangle plus the shown description less 2 / 448, × the reveal"
+level = "confirmed-code"
+coney = "src/gui/game_stats.h:GameStatsScreen::layOutEntry"
+status = "compared"
+
+[[function]]
+address = 0x001e0f98
+name = "ScrollingMenuItem_Update"
+page = "gui.md#fn-scrollingmenu"
+role = "slot `+0x30`: the description under the main widget, opened while the main widget shows whole and it has the focus"
+level = "confirmed-code"
+coney = "src/gui/game_stats.h:GameStatsScreen::layOutEntry"
+status = "compared"
+
+[[function]]
 address = 0x001e1338
 name = "ScrollingMenu_Construct"
 page = "gui.md#original-structure"
@@ -533,6 +574,33 @@ coney = "src/gui/scrolling_menu.h:ScrollingMenu"
 status = "legacy"
 
 [[function]]
+address = 0x001e16f0
+name = "ScrollingMenu_Setup"
+page = "gui.md#fn-scrollingmenu"
+role = "slot `+0xc0`: the menu's pad, owner, step, delay and an unbounded window and clip"
+level = "confirmed-code"
+coney = "src/gui/scrolling_window.h:ScrollingWindow::setup"
+status = "compared"
+
+[[function]]
+address = 0x001e1cb8
+name = "ScrollingMenu_MoveUp"
+page = "gui.md#fn-scrollingmenu"
+role = "slot `+0x1a8`: the cursor up, and the window's scroll up above the middle row"
+level = "confirmed-code"
+coney = "src/gui/scrolling_window.h:ScrollingWindow::moveUp"
+status = "compared"
+
+[[function]]
+address = 0x001e1d70
+name = "ScrollingMenu_MoveDown"
+page = "gui.md#fn-scrollingmenu"
+role = "slot `+0x1b0`: the cursor down, and the window's scroll down past the middle row"
+level = "confirmed-code"
+coney = "src/gui/scrolling_window.h:ScrollingWindow::moveDown"
+status = "compared"
+
+[[function]]
 address = 0x001e1e48
 name = "ScrollingMenu_Select"
 page = "gui.md#fn-scrollingmenu"
@@ -540,6 +608,33 @@ role = "slot `+0x1b8`: `+0x104` = 0, unfocuses the old item (releases its descri
 level = "confirmed-code"
 coney = "src/gui/scrolling_menu.h:ScrollingMenu::handle"
 status = "legacy"
+
+[[function]]
+address = 0x001e21d8
+name = "ScrollingMenu_Update"
+page = "gui.md#fn-scrollingmenu"
+role = "slot `+0x30`: input while still, the scroll states' steps, the window stacked and the clip's fit and scrolls"
+level = "confirmed-code"
+coney = "src/gui/scrolling_window.h:ScrollingWindow::update"
+status = "compared"
+
+[[function]]
+address = 0x001e2e40
+name = "ScrollingMenu_Render"
+page = "gui.md#fn-scrollingmenu"
+role = "slot `+0x38`: the fitting entries, one more in state 3"
+level = "confirmed-code"
+coney = "src/gui/scrolling_window.h:ScrollingWindow::drawn"
+status = "compared"
+
+[[function]]
+address = 0x001e3070
+name = "ScrollingTextWidget_SetText"
+page = "gui.md#fn-scrollingmenu"
+role = "slot `+0xc8`: the markup text and its height, the measure's bottom less its top"
+level = "confirmed-code"
+coney = "src/gui/game_stats.h:GameStatsSubItem::fullHeight"
+status = "compared"
 
 [[function]]
 address = 0x001e7e58

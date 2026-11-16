@@ -143,7 +143,7 @@ page = "graphics.md#code-misc"
 role = "[GUI](gui.md#text)"
 level = "confirmed-code"
 coney = "src/graphics/font.h:Font::draw"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0017a258
