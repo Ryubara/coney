@@ -60,6 +60,11 @@ level = "confirmed-code"
 coney = "src/combat/anim_ranges.h:applyClassFarRanges"
 status = "compared"
 
+[[function.gaps]]
+what = "the attach's other steps are Coney's set-up elsewhere; class 5's rage damages are not written"
+relation = "stand-in"
+question = "human-init.md#q-class-think"
+
 [[function]]
 address = 0x00218008
 name = "Human_Init"
@@ -517,6 +522,11 @@ role = "Free to act: no held flag of 0x2fefefff and no state of 0x7bf9e9f7ff0."
 level = "confirmed-code"
 coney = "src/ai/class_draws.cpp:humanFree"
 status = "compared"
+
+[[function.gaps]]
+what = "the state word's mask 0x7bf9e9f7ff0 is read as Coney's states"
+relation = "stand-in"
+question = "human-init.md#q-class-think"
 
 [[function]]
 address = 0x00228448
@@ -2107,6 +2117,11 @@ level = "confirmed-code"
 coney = "src/ai/scripted_brains.h:ScriptedBrains::giveHandObject"
 status = "compared"
 
+[[function.gaps]]
+what = "the object is the scripts' bookkeeping: no world object, pick-up clip or drop of what was held"
+relation = "stand-in"
+question = "human-init.md#q-held-object"
+
 [[function]]
 address = 0x0024cbb0
 name = "Human_CreateCarriedProp"
@@ -2233,6 +2248,11 @@ what = "of the no-refill states 0x1c18003ff0 only the paired attacker's 0x1000 (
 relation = "not-ported"
 issue = 719
 
+[[function.gaps]]
+what = "the legacy port, not yet compared"
+relation = "not-ported"
+issue = 1413
+
 [[function]]
 address = 0x002570e8
 name = "Human_ComputeThrowVelocity"
@@ -2321,6 +2341,11 @@ role = "The rise's end: clears record +0xbe (the ground strikes) and gets the hu
 level = "confirmed-code"
 coney = "src/human/victim.h:Victim::step"
 status = "compared"
+
+[[function.gaps]]
+what = "the rise's end beside the ground strikes' reset: the legacy ground port"
+relation = "not-ported"
+issue = 1413
 
 [[function]]
 address = 0x0025ec28

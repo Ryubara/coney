@@ -323,6 +323,11 @@ note = "confirmed (code), runtime"
 coney = "src/human/victim.h:Victim::react"
 status = "compared"
 
+[[function.gaps]]
+what = "the legacy port, not yet compared"
+relation = "not-ported"
+issue = 1413
+
 [[function]]
 address = 0x0022f658
 name = "Human_Stun"
@@ -333,6 +338,11 @@ note = "confirmed (code), runtime"
 coney = "src/human/fighter.h:Fighter::stunFor"
 status = "compared"
 
+[[function.gaps]]
+what = "the legacy port, not yet compared"
+relation = "not-ported"
+issue = 1413
+
 [[function]]
 address = 0x0022f8d8
 name = "Human_EndStun"
@@ -342,6 +352,11 @@ level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/human/fighter.h:Fighter::endStun"
 status = "compared"
+
+[[function.gaps]]
+what = "the legacy port, not yet compared"
+relation = "not-ported"
+issue = 1413
 
 [[function]]
 address = 0x00230328
@@ -815,6 +830,11 @@ note = "confirmed (code), runtime"
 coney = "src/human/target_human.h:TargetHuman::step"
 status = "compared"
 
+[[function.gaps]]
+what = "the legacy port beside the reaction's two calls, not yet compared"
+relation = "not-ported"
+issue = 1413
+
 [[function]]
 address = 0x00266b50
 name = "Hit_IsReactionWeakened"
@@ -1017,6 +1037,11 @@ level = "confirmed-code"
 coney = "src/human/victim.h:Victim::countGroundStrike"
 status = "compared"
 
+[[function.gaps]]
+what = "the cuffed and wounded beg reactions and the reaction's set-up: the legacy victim code"
+relation = "not-ported"
+issue = 1413
+
 [[function]]
 address = 0x00269dc8
 name = "Human_MoveAlongAxisOver"
@@ -1063,6 +1088,16 @@ level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/human/victim.h:Victim::react"
 status = "compared"
+
+[[function.gaps]]
+what = "the caller's request to stun"
+relation = "stand-in"
+question = "human-init.md#q-class-think"
+
+[[function.gaps]]
+what = "the reaction's set-up, camera shakes and tasks: the legacy port, not yet compared"
+relation = "not-ported"
+issue = 1413
 
 [[function]]
 address = 0x0026adf0
@@ -2346,6 +2381,11 @@ role = "spends a flash and heals"
 level = "confirmed-code"
 coney = "src/platform/play_level_mode.h:PlayLevelMode::useFlash"
 status = "compared"
+
+[[function.gaps]]
+what = "for an AI: no inventory spend, HUD request or screen look"
+relation = "stand-in"
+question = "human-init.md#q-class-think"
 
 [[function]]
 address = 0x00284340

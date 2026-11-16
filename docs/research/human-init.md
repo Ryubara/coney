@@ -162,6 +162,25 @@ nothing in hand draws the class's weapon again ([Power class fields](characters.
 
 ## Open questions
 
+### The AI's drawn object {#q-held-object}
+
+What the object a weapon draw puts in an AI's hand does in the original besides being held: whether its pick-up clip
+plays and whether its anim set changes how he fights. Coney keeps it as the scripts' bookkeeping (a handle and a type
+name, as the class's weapon at creation is), so no world object is made or drawn in his hand, a busy hand takes
+nothing where `Human_PlaceItemInHand` (`0x0024c280`) drops what it held, and the boss goals' own objects
+(`Brain_GiveHandObject` `0x0028c780`) are not made. Reading the held object's draw and the AI fighter's anim set in
+Ghidra, and a PCSX2 capture of a lieutenant's draw, answers it.
+
+### The class's think steps {#q-class-think}
+
+What Coney leaves out of `Brain_Think` (`0x0028f6c0`) and the reaction's set-up: the scene test that skips a think,
+the perception's update there, the state word's mask (`0x7bf9e9f7ff0`) that `Human_IsFree` reads (Coney reads its own
+states), the trains (`Brain_IsNearTrain`, none in Coney), the draw's and the flash's clip actions (a play-anim action,
+not `GenToIdleAnimAction` or `PlayAnimIdAction`'s 0.1 s blends), an AI flash's inventory, HUD and screen look
+(`Flash_Use` `0x00284280`, none for an AI), the caller's request to stun in `Human_PlayReaction` (`0x0026a6d0`, no
+Coney caller makes it), and the rest of `Human_AttachInstance` (`0x00217a98`) beside the range table (Coney's set-up
+elsewhere; class 5's rage damages, 645 and 647 at 80, not written). Each waits for the system it belongs to.
+
 ### The voice and the idle lines {#q-voice}
 
 What reads `+0x3b4` and the idle line count once the idle dialogue (`HuSetIdleDialogMaxIter`) is built. (The stream
