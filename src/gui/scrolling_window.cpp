@@ -56,7 +56,8 @@ void ScrollingWindow::update(const Entries& entries) {
         return;
     }
     // 1. The scroll's step. Down and HideTop hide the top entry (at 0 the window starts one lower), Up and RevealTop
-    // reveal it; Down and Up also give the window's last entry the rest of the top one's reveal.
+    // reveal it; Down and Up also give the window's last entry the rest of the top one's reveal, and so does HideTop
+    // when that entry is not the focused one.
     const std::size_t top = m_first;
     const std::size_t last = std::min(m_first + m_count - 1, total - 1);
     const ScrollState scroll = m_state;
@@ -78,7 +79,9 @@ void ScrollingWindow::update(const Entries& entries) {
             --m_count;
         }
     }
-    if (scroll == ScrollState::Down || scroll == ScrollState::Up) {
+    const bool trade = scroll == ScrollState::Down || scroll == ScrollState::Up ||
+                       (scroll == ScrollState::HideTop && !entries.focused(last));
+    if (trade) {
         setReveal(last, 1.0F - m_reveals.at(top));
     }
 

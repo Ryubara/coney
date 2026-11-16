@@ -5,7 +5,7 @@
 // loaded, the disc's level table gives 23 story missions, and a fresh profile shows the two entries that are always
 // listed (the hub and the Rumble arenas); the d-pad moves down the list and triangle closes it, the mode leaving
 // after its fade out and calling `onClose`. A second case counts the listed missions' circled numbers, none longer
-// than the two characters a header has room for (docs/research/circled-text.md#q-third-circle). It
+// than the two characters a header has room for (docs/research/circled-text.md#third). It
 // runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only
 // (LEGAL.md).
 // The first case failed first on the unit's stubbed source (coney-tools original fails-first); the second reads the
@@ -103,7 +103,7 @@ TEST_CASE("the disc's statistics screen: shown by the binding in the hub, moved 
 
 TEST_CASE("the disc's statistics headers: no listed mission circles more than the two characters a header has room for",
           "[disc][game_stats]") {
-    // Expected: circled-text.md#q-third-circle, confirmed (code) at 0x001d1008 and 0x002155a8 (the number before the
+    // Expected: circled-text.md#third, confirmed (code) at 0x001d1008 and 0x002155a8 (the number before the
     // title's ':' is circled, one circle per character, in room for two)
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
