@@ -117,9 +117,10 @@ class Holdable : public Combatant {
     /// It reversed the mount `mounter` held it in (`Mount_StartReversal`): it plays 242 and mounts `mounter`, which
     /// plays 243 (Fighter::reverseMount()). Nothing by default.
     virtual void takeReversedMount(Holdable& /*mounter*/) {}
-    /// What it shows its mounter as a mount's clip ends (`Mount_OnStrikeEnd` reads its per-player record): its command
-    /// this update and its left stick's magnitude. None and 0 by default (a passive target presses nothing).
+    /// Its command this update, which its mounter reads as a mount's clip ends (`Mount_OnStrikeEnd` reads its
+    /// per-player record). None by default (a passive target presses nothing).
     [[nodiscard]] virtual combat::CommandId mountCommand() const { return combat::command::kNone; }
+    /// Its left stick's magnitude (0-1), which the same end reads. 0 by default.
     [[nodiscard]] virtual float mountStick() const { return 0.0F; }
 };
 
