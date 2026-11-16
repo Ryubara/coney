@@ -331,7 +331,7 @@ role = "the stun timer"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/human/fighter.h:Fighter::stunFor"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0022f8d8
@@ -341,7 +341,7 @@ role = "the stun timer"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/human/fighter.h:Fighter::endStun"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00230328
@@ -813,7 +813,7 @@ role = "each update: block, damage, armour, then the reaction by state"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/human/target_human.h:TargetHuman::step"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00266b50
@@ -2345,7 +2345,7 @@ page = "combat-rage.md#flash"
 role = "spends a flash and heals"
 level = "confirmed-code"
 coney = "src/platform/play_level_mode.h:PlayLevelMode::useFlash"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00284340

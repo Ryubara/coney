@@ -203,7 +203,8 @@ The three airborne bits (`0x1c00000000`) are cleared on landing.
 player and `+0x1b8` otherwise (`0x00222b78`). Confirmed (code) for the reads at the cited addresses; Rembrandt's
 values inferred from the configuration, class 64 on normal ([Power classes](../references/power-classes.md)). A
 street civilian (class 2) had a 0.35 hurt threshold, stun 750 ms, ground time 2000 ms,
-power 200, byte `+0x36` 4 (confirmed (runtime)). The AI's fields `+0x08` (block chance), `+0x0c` (block chance while
+power 200, byte `+0x36` 4 (inferred from the configuration, class 2 on normal). The AI's fields `+0x08` (block
+chance), `+0x0c` (block chance while
 hurt), `+0x24` (counter chance) and `+0x37` (the pattern-reading threshold) are on [AI](ai-fights.md#block); `+0x32` and
 the bytes after `+0x37` are [below the table](#power-class-bytes), with what Coney does with them. The sparring
 Warriors' class 40 is on [AI](ai/index.md#level99):
@@ -346,7 +347,7 @@ the type's own record and the rest after the [remap](#type-to-model) from the cl
 | Speed class | byte `+0x11c` | record `+0x164`-`+0x17c` | the [speed class](#speed-classes), a fallback the clips' own speeds replace in play | confirmed (code) |
 | Power class | byte `+0x11d` | `+0x1b8`, `+0x1b9` | below; a Warriors player's `+0x1b9` is his Warrior's | confirmed (code) |
 | Health | s16 `+0x116` | record `+0x144` / `+0x146` | health and its maximum (1800 for every Warrior, 600 for the street civilian) | confirmed (runtime), run r-20261027-warrior-health-scale ([Combat: damage](combat-reactions.md#damage)) |
-| Damage table × damage scale | s16 × 45 at `+0xb8` | the human's Anim Range List | written over the list's damages when the model is attached (`0x00217a98`); a player's first times his Warrior class's damage % ([Damage](combat/index.md#damage-table)) | confirmed (code), confirmed (runtime) |
+| Damage table × damage scale | s16 × 45 at `+0xb8` | the human's Anim Range List | written over the list's damages when the model is attached (`0x00217a98`); a player's first times his Warrior class's damage % ([Damage](combat/index.md#damage-table)) | confirmed (code); the values at runtime on [Damage](combat/index.md#damage-table) |
 | Attack table | byte × 45 at `+0x11e` | brain `+0x298` | an AI's weight for each attack kind ([AI](ai/index.md)) | confirmed (code) |
 | Range table | float × 45 at `+0x00` (÷ 100) | the human's Anim Range List | each attack kind's far range ([Character classes](#classes)) | confirmed (code) |
 | Hat | string `+0x14c` | the hat object | worn from creation ([Hats](#hats)) | confirmed (code) |
@@ -361,12 +362,12 @@ the type's own record and the rest after the [remap](#type-to-model) from the cl
 
 | Stat | Field | What it does |
 | --- | --- | --- |
-| Power meter | s16 `+0x28`, `+0x2a` | maximum and refill per second (record `+0x148`); × `+0x18` while hurt (`0x00223068`); with the gym's power upgrade a player's maximum × (1 + byte 2 / 100) |
-| Stamina | s16 `+0x2c`, `+0x2e` | maximum and refill per second (record `+0x14a`, `Human_StaminaMax` `0x00223188`); with the gym's stamina upgrade a player's maximum × (1 + byte 3 / 100) |
-| Hurt threshold | float `+0x04` | below this share of maximum health the human is hurt (`0x00222ff8`) |
+| Power meter | s16 `+0x28`, `+0x2a` | maximum and refill per second (record `+0x148`); × `+0x18` while hurt (`0x00223068`); with the gym's power upgrade a player's maximum × (1 + byte 2 / 100); confirmed (code) |
+| Stamina | s16 `+0x2c`, `+0x2e` | maximum and refill per second (record `+0x14a`, `Human_StaminaMax` `0x00223188`); with the gym's stamina upgrade a player's maximum × (1 + byte 3 / 100); confirmed (code) |
+| Hurt threshold | float `+0x04` | below this share of maximum health the human is hurt (`0x00222ff8`); confirmed (code) |
 | Stun, down | s16 `+0x30`, `+0x34`; floats `+0x10`, `+0x14` | a stun's and a knockdown's length, ms, and their factors while hurt ([Reactions](combat-reactions.md#reactions)) |
-| Weapon stun | float `+0x00` | as the attacker, scales the victim's stun for weapon hits of 20-49 damage (`0x0022f658`) |
-| Grab struggle | byte `+0x36` | the grabbed human's strike costs the grabber 1 / n of its power (`0x0027fd68`) |
+| Weapon stun | float `+0x00` | as the attacker, scales the victim's stun for weapon hits of 20-49 damage (`0x0022f658`); confirmed (code) |
+| Grab struggle | byte `+0x36` | the grabbed human's strike costs the grabber 1 / n of its power (`0x0027fd68`); confirmed (code) |
 | AI: block, counter, attack delay | floats `+0x08`, `+0x0c`, `+0x24`, `+0x1c`, `+0x20`; bytes `+0x37`, `+0x39` | the AI's block chances, counter chance, attack delay factors, pattern-reading threshold and throws at walls ([AI](ai-fights.md#block)) |
 | Health bar | byte `+0x40` | the pause Stats screen's Health bar (`+0x40` / 100, [Stats screen](pause.md#stats-screen)); the health rings' span ([HUD](hud-radar.md#the-health-rings)) |
 | Busy after a hit | s16 `+0x32` | an AI hit is busy for this long, ms ([Power class fields](#power-class-bytes)) |
@@ -381,7 +382,7 @@ Warriors, 9 everyone else), read through `0x00222b58`. Confirmed (code) at each 
 | Stat | Field | What it does |
 | --- | --- | --- |
 | Rage | s16 `+0x00`; bytes `+0x02`-`+0x04` | the rage maximum, the gain percentage, and the idle decay and the drain while raging, percent of the maximum per 20 s ([Rage](combat-rage.md#rage)) |
-| Health % | byte `+0x05` | when the human becomes a player (`Human_MakePlayer` `0x00229c40`) his health and maximum are times n %, rounded; divided back when he stops being one (`0x0022a2a8`). Rembrandt: 1800 × 50 % = 900 |
+| Health % | byte `+0x05` | when the human becomes a player (`Human_MakePlayer` `0x00229c40`) his health and maximum are times n %, rounded; divided back when he stops being one (`0x0022a2a8`). Rembrandt: 1800 × 50 % = 900; confirmed (code) |
 | Damage % (Strength) | byte `+0x06` | a player's attack damages times n % ([Damage](combat/index.md#damage-table)); the Stats screen's Strength bar |
 | Context games | bytes `+0x07`-`+0x0c` | the cuffing hold, the uncuff mash, tagging, lock picking, the stereo theft and mugging |
 
@@ -422,7 +423,7 @@ type (`human::playerClassOf()`, `human::playerProfileOf()`):
 | Stamina (`+0x2c`, `+0x2e`) | yes, every human (was the player's 135 and 40 for all) | `human::Stamina`, `human::Human::spawn()` | `tests/human/stamina_test.cpp`, `tests/human/human_test.cpp`, `tests/platform/disc_change_character_test.cpp` |
 | Hurt threshold, stun, down times | yes | `human::Victim`, `human::Fighter::hurt()` | `tests/human/being_hit_test.cpp` |
 | Stun and down factors while hurt (`+0x10`, `+0x14`), weapon stun (`+0x00`) | no | | |
-| Busy after a hit (`+0x32`) | no: `Human_IsBusy`'s 48 callers are not ported ([#285](issue:285)) | | |
+| Busy after a hit (`+0x32`) | no: `Human_IsBusy`'s 48 callers are not ported | | |
 | Ground-strike cap (`+0x38`) | yes | `human::Victim` | `tests/human/class_reactions_test.cpp` |
 | Hard to stun (`+0x3b`, flag `0x1000000000`) | yes: the flag ([class switches](human-init.md#class-switches)) and the stun rule | `human::Victim::react()` | `tests/human/class_reactions_test.cpp` |
 | AI weapon draw (`+0x41`), flash when hurt (`+0x42`) | yes | `ai::thinkClassActions()`, `ai::giveHandObject()`, `ai::useFlash()` | `tests/ai/class_draws_test.cpp`, `tests/platform/disc_class_draws_test.cpp` |

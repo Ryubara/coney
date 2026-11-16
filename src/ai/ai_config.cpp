@@ -29,6 +29,7 @@ std::span<const script::Value> lastCallOf(const script::RecordedCalls& recorded,
 }
 
 // The fighter class from type `type`'s `CfgChar` call (characters::parseCfgChar()).
+// @coney-only reads Coney's record of the configuration calls for its AI fighters
 void readCharacter(std::span<const script::Value> call, AiConfig& config) {
     const std::optional<characters::CharacterType> parsed = characters::parseCfgChar(call);
     if (!parsed) {

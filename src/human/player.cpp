@@ -149,6 +149,7 @@ PlayerCharacter::PlayerCharacter(characters::CharacterAssets assets, characters:
     : m_assets(std::move(assets)), m_generic(std::move(generic)), m_anims(m_assets.data, &m_generic),
       m_skeleton(characters::characterSkeleton(m_assets.model)), m_ranges(std::move(ranges)) {}
 
+// @coney-only gathers the class records a player reads into Coney's player class
 PlayerClass playerClassOf(const characters::CharacterTypes& types, int type) {
     std::optional<characters::PlayerTraits> traits = types.playerTraitsOf(type);
     if (!traits) {
@@ -199,6 +200,7 @@ FighterProfile playerProfileOf(const PlayerClass& playerClass) {
     return profile;
 }
 
+// @coney-only Coney's player object: the original's player is a human made by HuCreate
 Player::Player(const PlayerCharacter& character, const raycast::CollisionMesh* mesh, const PlayerStart& start,
                const PlayerClass& playerClass)
     : m_start(start), m_human(character.anims(), AnimSlots::player(), anim::referenceRotations(), kPlayerBodyScale,
@@ -217,6 +219,7 @@ Player::Player(const PlayerCharacter& character, const raycast::CollisionMesh* m
     m_previous = m_current;
 }
 
+// @coney-only the debug menus' change of character; the original has none
 void Player::changeCharacter(const PlayerCharacter& character, const raycast::CollisionMesh* mesh,
                              const PlayerClass& playerClass) {
     // The constructor's profile: the player's own where the class gives nothing.

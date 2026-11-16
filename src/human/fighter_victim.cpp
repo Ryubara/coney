@@ -36,6 +36,7 @@ constexpr float kThirdHitPower = 0.6F;
 
 } // namespace
 
+// @coney-only gathers the fighter's flags into Coney's reaction input; the original reads them in place
 VictimFrame Fighter::frame(const FighterInput& input) const {
     // A player has human flag 0x400: combo hits keep their strength on it.
     return VictimFrame{.position = input.position,

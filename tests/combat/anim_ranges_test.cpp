@@ -80,6 +80,7 @@ TEST_CASE("an Anim Range List shorter than its count is refused", "[combat]") {
 
 TEST_CASE("a class's damage table is written over the list, scaled for a player by the Warrior percentage",
           "[combat]") {
+    // Expected: combat/index.md#damage-table, confirmed (code)
     // 700 records, each doing 40 (as the file's Rembrandt S1 does).
     Bytes bytes;
     bytes.u32(700);
