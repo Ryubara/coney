@@ -93,21 +93,30 @@ TEST_CASE("player 1's stick cameras are record 0's: his current view and his fol
 
     const auto camera = sticks.playerCamera(0);
     REQUIRE(camera.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty, which clang-tidy
+    // does not know.
     const coney::anim::Quat view = rig.cameras.view().orientation;
     CHECK(camera->orientation == std::array<float, 4>{view.x, view.y, view.z, view.w});
     CHECK(camera->slot == 0);
+    // NOLINTEND(bugprone-unchecked-optional-access)
 
     auto follow = sticks.follow(0);
     REQUIRE(follow.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty, which clang-tidy
+    // does not know.
     CHECK(follow->isPlayerCamera);
     CHECK(follow->takesFrameAfresh);
     CHECK_FALSE(follow->lookingBehind);
+    // NOLINTEND(bugprone-unchecked-optional-access)
 
     // A locked camera made current: the follow camera is no longer his player camera.
     rig.cameras.makeActive(kLockedHandle, 0.0F);
     follow = sticks.follow(0);
     REQUIRE(follow.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty, which clang-tidy
+    // does not know.
     CHECK_FALSE(follow->isPlayerCamera);
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 TEST_CASE("a stick at rest sets the follow camera's flag again after it was cleared", "[camera]") {
