@@ -1,0 +1,39 @@
+version = 1
+id = "r-20261116-yes-no-box-sides"
+date = "2026-11-16"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "cc465e37b492446d8e6981bd7d202badb32552fcc9fd8ab45729c4d07fa5a400"
+
+[who]
+agent = "afe6782bf24860683"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = []
+
+[run]
+name = ""
+method = "yard save state, pause menu Quit box (+0x1bd0 = 0x00630360); breakpoints on YesNoBox_OnCommand entry and the cue lookup 0x00111130 called from the menus, selection +0x4c0 read after each press: right on No, left on No, left on Yes, triangle"
+
+[values]
+open_selection = 1
+right_on_no_cue = 14
+after_right_selection = 1
+left_on_no_cue = 4
+after_left_selection = 0
+left_on_yes_cue = 14
+back_command = 5
+back_cues = 0
+
+[addresses]
+YesNoBox_OnCommand = 0x001d6c10
+cue_lookup = 0x00111130
+pause_box = 0x00630360

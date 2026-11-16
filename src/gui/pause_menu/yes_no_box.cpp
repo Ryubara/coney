@@ -50,17 +50,22 @@ std::optional<YesNoAnswer> YesNoBox::handle(MenuCommand command) {
         playCue(kRefusedCue);
         return std::nullopt;
     case MenuCommand::Left:
-    case MenuCommand::Right:
-        m_yesSelected = !m_yesSelected;
-        playCue(kMoveCue);
+    case MenuCommand::Right: {
+        // Left picks Yes (selection 0) and right No (1), never a swap: cue 0xe when the answer was already chosen,
+        // cue 4 when it moves (confirmed (code) and runtime, run r-20261116-yes-no-box-sides).
+        const bool pickYes = command == MenuCommand::Left;
+        playCue(m_yesSelected == pickYes ? kRefusedCue : kMoveCue);
+        m_yesSelected = pickYes;
         refreshAnswers();
         return std::nullopt;
+    }
     case MenuCommand::Accept:
+        // The owner's cue 8 (0x001ded68, 0x001d2970), then the box calls back 2 (Yes) or 3 (No).
         playCue(kAcceptCue);
         m_open = false;
         return m_yesSelected ? YesNoAnswer::Yes : YesNoAnswer::No;
     case MenuCommand::Back:
-        playCue(kBackCue);
+        // Back calls back 4 and plays nothing: neither the box nor its owners play a cue for it.
         m_open = false;
         return YesNoAnswer::Back;
     }
