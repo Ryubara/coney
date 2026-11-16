@@ -880,12 +880,15 @@ float ScriptedBrains::playTime(Brain& human, int animId) {
 
 void ScriptedBrains::giveHandObject(Brain& human, std::string_view type) {
     human::ScriptState& script = human.human().script();
-    if (m_handles == nullptr || script.heldObject != kNilHandle) {
+    if (m_scripts == nullptr || script.heldObject != kNilHandle) {
         return;
     }
-    script.heldObject = m_handles->next;
+    const double handle = m_scripts->nextObjectHandle();
+    if (handle == kNilHandle) {
+        return;
+    }
+    script.heldObject = handle;
     script.heldObjectName = std::string(type);
-    m_handles->next += 1;
 }
 
 std::optional<std::uint32_t> ScriptedBrains::playNamedClip(Brain& human, int animId, std::string_view name,

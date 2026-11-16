@@ -1,7 +1,7 @@
 ---
 kind: feature
 owns:
-  functions: ["0x00219638", "0x00222c98"]
+  functions: ["0x00219638", "0x00222c98", "0x0024c280"]
 ---
 # A new human's set-up after its model
 

@@ -38,12 +38,12 @@ inline constexpr std::string_view kNoWeapon = "none";
 /// @orig 0x002282d8 Human_IsFree (unknown)
 void thinkClassActions(Brain& brain);
 
-/// The draw's `random` object event (clip event type `0x30` named `random`): with no reaction goal and a goal on the
-/// stack, puts the class's weapon in the human's hand (ScriptServices::giveHandObject()), or kSwitchblade when it is
-/// `none`. **Coney stand-in**: the four boss goals' own objects (BigThrower, BigBrawler, BigLedgeThrower,
-/// StationaryThrower) are not built, so under one of them nothing is given.
+/// The draw's `random` object event (clip event type `0x30` named `random`, which the play mode finds among the clip
+/// events the human's animation fired): with no reaction goal and a goal on the stack, puts the class's weapon in the
+/// human's hand (ScriptServices::giveHandObject()), or kSwitchblade when it is `none`. **Coney stand-in**: the four
+/// boss goals' own objects (BigThrower, BigBrawler, BigLedgeThrower, StationaryThrower) are not built, so under one of
+/// them nothing is given.
 /// @orig 0x0028c780 Brain_GiveHandObject (unknown)
-/// @orig 0x00101dd8 Anim_FireFrameEvents (unknown)
 void giveHandObject(Brain& brain);
 
 /// The flash's action event on an AI (`Flash_Use`): he is healed to his maximum (`Human_Heal` with "full": not

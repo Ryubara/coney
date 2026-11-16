@@ -23,7 +23,6 @@
 #include "human/human_animator.h"
 #include "raycast/collision_mesh.h"
 #include "scripting/ai_bindings.h"
-#include "scripting/script_handles.h"
 #include "warriors/created_humans.h"
 #include "world_objects/flag_net.h"
 #include "world_objects/flags.h"
@@ -372,12 +371,10 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     [[nodiscard]] std::optional<std::uint32_t> playClip(Brain& human, int animId) override;
     /// Starts the clip `name` from the clip source on `human` as anim `animId`, at rate 1, faded in over `fade` and
     /// then the idle; holds kScriptedClipHeld as playClip() does. Nothing when the source has no such clip.
-    /// A new `type` object in `human`'s free hand, named by the next of the session's handles (setHandles()); nothing
-    /// when his hand is busy or no handles were given.
+    /// A new `type` object in `human`'s free hand, named by the next of the session's world object handles
+    /// (script::ScriptSystem::nextObjectHandle()); nothing when his hand is busy or there are no scripts.
     /// @orig 0x0024c280 Human_PlaceItemInHand (unknown)
     void giveHandObject(Brain& human, std::string_view type) override;
-    /// The session's script handles new hand objects take theirs from (null for none).
-    void setHandles(script::ScriptHandles* handles) { m_handles = handles; }
     [[nodiscard]] std::optional<std::uint32_t> playNamedClip(Brain& human, int animId, std::string_view name,
                                                              float fade) override;
     /// The gang's clip for `animId` at a random variant (Gang::randomClip()) from the clip source, at rate 1; else the
@@ -417,7 +414,6 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     const world_objects::FlagNet* m_flagNet = nullptr;
     PlaceGround m_placeGround; // setPlaceGround()
     ItemServices* m_items = nullptr;
-    script::ScriptHandles* m_handles = nullptr; // setHandles()
     script::AnimCallbacks* m_animCallbacks = nullptr;
     std::vector<std::pair<double, std::uint32_t>> m_animStarts; // (human, anim id) since runAnimCallbacks()
     Brain* m_player = nullptr;

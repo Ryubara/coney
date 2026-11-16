@@ -1635,7 +1635,6 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
     }
     sendWarnings(before, beforeId, beforeTime);
     noteSlowMotion();
-    noteHandObjectEvent();
     noteStrikeEvents(before, beforeId, beforeTime);
     noteReleaseEvent(before, beforeId, beforeTime);
     noteActionEvent(before, beforeId, beforeTime);
@@ -1738,15 +1737,6 @@ void Human::noteActionEvent(const anim::AnimTask* before, std::uint32_t beforeId
     if (passed) {
         m_actionEvent = top->animId();
     }
-}
-
-// @orig 0x00101dd8 Anim_FireFrameEvents (unknown)
-void Human::noteHandObjectEvent() {
-    constexpr std::uint16_t kObjectEvent = 0x30;
-    constexpr std::string_view kRandomObject = "random";
-    m_handObjectEvent = std::ranges::any_of(m_animator.tasks().firedEvents(), [&](const anim::ClipEvent& event) {
-        return event.type == kObjectEvent && anim::eventText(event) == kRandomObject;
-    });
 }
 
 void Human::noteSlowMotion() {

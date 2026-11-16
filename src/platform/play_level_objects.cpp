@@ -19,6 +19,7 @@
 #include "ai/dealer_goal.h"
 #include "ai/goal.h"
 #include "ai/swap_prompt.h"
+#include "animation/anim_clip.h"
 #include "characters/anim_set.h"
 #include "characters/character_class.h"
 #include "combat/anim_ids.h"
@@ -536,7 +537,12 @@ void PlayLevelMode::stepAiClipEvents() {
             }
             m_print(std::format("flash: AI {} used one, health {}\n", i, brain.human().fighter().health().value()));
         }
-        if (brain.human().handObjectEvent()) {
+        // Anim_FireFrameEvents' object event (type 0x30) named `random`: the weapon draw's.
+        constexpr std::uint16_t kObjectEvent = 0x30;
+        const bool draws = std::ranges::any_of(brain.human().animator().tasks().firedEvents(), [](const auto& event) {
+            return event.type == kObjectEvent && anim::eventText(event) == "random";
+        });
+        if (draws) {
             ai::giveHandObject(brain);
             m_print(std::format("draw: AI {} holds {}\n", i, brain.human().script().heldObjectName));
         }
