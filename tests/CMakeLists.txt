@@ -151,6 +151,7 @@ add_executable(coney_tests
     platform/disc_level80_test.cpp
     platform/disc_flash_test.cpp
     platform/disc_crew_commands_test.cpp
+    platform/disc_class_draws_test.cpp
     platform/disc_given_weapon_test.cpp
     platform/disc_level80_wreck_test.cpp
     platform/disc_revive_test.cpp
@@ -319,6 +320,7 @@ target_sources(coney_tests PRIVATE
     animation/skeleton_test.cpp
     characters/character_data_test.cpp
     characters/cfg_init_fields_test.cpp
+    characters/power_class_fields_test.cpp
     characters/character_class_test.cpp
     characters/character_types_test.cpp
     characters/body_size_test.cpp
@@ -373,6 +375,7 @@ target_sources(coney_tests PRIVATE
     human/player_stance_test.cpp
     human/player_targeting_test.cpp
     human/being_hit_test.cpp
+    human/class_reactions_test.cpp
     human/rise_counter_test.cpp
     human/human_grab_test.cpp
     human/human_tandem_test.cpp
@@ -426,6 +429,7 @@ target_sources(coney_tests PRIVATE
     ai/hu_create_init_test.cpp
     ai/attack_choice_test.cpp
     ai/attack_reach_test.cpp
+    ai/class_draws_test.cpp
     ai/fidget_action_test.cpp
     ai/fighter_sides_test.cpp
     ai/fight_goal_test.cpp

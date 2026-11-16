@@ -99,6 +99,9 @@ class ScriptServices {
     /// Whether the level-loaded clip `name` is available (the level's animation cache, `0x0016f980`). False by
     /// default.
     [[nodiscard]] virtual bool clipAvailable(std::string_view /*name*/) const { return false; }
+    /// Puts a new object of type `type` in `human`'s free hand (`Human_PlaceItemInHand(h, type, 1, 1)`), named by the
+    /// next of the scripts' handles; nothing when his hand is busy. Nothing by default.
+    virtual void giveHandObject(Brain& /*human*/, std::string_view /*type*/) {}
 };
 
 } // namespace coney::ai

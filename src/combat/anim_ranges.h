@@ -74,4 +74,10 @@ inline constexpr std::size_t kClassDamageEntries = 45;
 /// @orig 0x002548f0 AnimRange_ApplyClassDamage (unknown)
 int applyClassDamage(AnimRangeList& list, std::span<const std::int16_t> values, int playerPercent);
 
+/// Writes a character class's range table `metres` (the class record's 45 floats at `+0x00`, by attack kind) over
+/// `list`, as the original does when a human's model is attached: each kind below 42 whose value is above 0 sets the
+/// far range of the anim ids it names, stored as whole millimetres (truncated); a 0 keeps the list's own. Returns how
+/// many records it set (docs/research/characters.md#classes).
+int applyClassFarRanges(AnimRangeList& list, std::span<const float> metres);
+
 } // namespace coney::combat

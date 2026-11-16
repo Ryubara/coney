@@ -7,6 +7,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -246,6 +247,11 @@ class Brain {
     [[nodiscard]] int characterClass() const { return m_characterClass; }
     /// @coney-only setter that gives the class to the human too
     void setCharacterClass(int characterClass);
+    /// Its class's weapon (`CfgChar` `+0x18c` of the human's class record): the object a weapon draw puts in the hand
+    /// (ai::giveHandObject()); `none` for most classes, empty when the configuration gave none.
+    [[nodiscard]] const std::string& classWeapon() const { return m_classWeapon; }
+    /// Sets the class's weapon (the AI's spawner, from the configuration).
+    void setClassWeapon(std::string weapon) { m_classWeapon = std::move(weapon); }
     /// "Dead" to the AI (`+0x09`, `BrDead`): the actions are cleared (the goals stay) and the handlers installed
     /// again. A dead brain runs only the goals and actions it is given: its think and its event handler do nothing,
     /// so it counts no attack warnings, and a dead player's brain runs them too. A player's brain set dead gives up the
@@ -766,6 +772,7 @@ class Brain {
     float m_moveAimRadius = 0.0F;             // +0x118
     std::optional<std::uint32_t> m_routeNode; // RouteState_CurrentNode of +0xe0
     int m_characterClass = -1;                // the human's class
+    std::string m_classWeapon;                // its class record's +0x18c
     int m_seenHealth = -1;
     int m_unreportedDamage = 0;
     int m_turnBoost = 0; // +0x0b

@@ -121,4 +121,6 @@ int applyClassDamage(AnimRangeList& list, std::span<const std::int16_t> values, 
     return written;
 }
 
+int applyClassFarRanges(AnimRangeList& /*list*/, std::span<const float> /*metres*/) { return 0; }
+
 } // namespace coney::combat

@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 #include "ai/brain.h"
@@ -44,6 +45,10 @@ struct FighterClass {
     /// The class's damage table (`CfgChar`'s, × its damage scale), written over the human's Anim Range List; empty
     /// keeps the list's own.
     std::vector<std::int16_t> damage;
+    /// The class's range table (`CfgChar`'s, metres), written over the human's far ranges; empty keeps the list's own.
+    std::vector<float> ranges;
+    /// The class's weapon (`CfgChar` `+0x18c`): what a weapon draw puts in the hand (Brain::classWeapon()).
+    std::string weapon;
 };
 
 /// The configuration of Coney's AI fighters.

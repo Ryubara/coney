@@ -110,3 +110,38 @@ TEST_CASE("a class's damage table is written over the list, scaled for a player 
     AnimRangeList shortList = civilian;
     CHECK(coney::combat::applyClassDamage(shortList, std::span(values).first(1), 0) == 1);
 }
+
+TEST_CASE("a class's range table writes each attack kind's far range over its anim ids", "[combat]") {
+    // Expected: characters.md#classes, confirmed (code)
+    // 700 records at a reach of 1 m and no far range of their own (so 1.25 m), the grab's (70) at 2.499 m.
+    Bytes bytes;
+    bytes.u32(700);
+    for (int i = 0; i < 700; ++i) {
+        record(bytes, 0, 1000, 1.0F, i == 70 ? 2499 : 0, 0, 0, 0);
+    }
+    auto list = AnimRangeList::parse(bytes.span());
+    REQUIRE(list.has_value());
+    std::array<float, coney::combat::kClassDamageEntries> metres{};
+    metres[0] = 2.0F;   // kind 0: anim 11
+    metres[10] = 1.5F;  // kind 10: anims 25-30
+    metres[14] = 1.8F;  // kind 14: anims 237-240
+    metres[17] = 3.0F;  // kind 17: anims 657, 659
+    metres[20] = 4.25F; // kind 20: anim 0
+    metres[22] = 0.0F;  // kind 22 (the grab, 70 and 71): 0 keeps the list's own
+    metres[15] = 9.0F;  // kind 15 names no anim
+    metres[42] = 9.0F;  // kinds from 42 on are not looked at
+    CHECK(coney::combat::applyClassFarRanges(*list, metres) == 1 + 6 + 4 + 2 + 1);
+    CHECK(list->farRange(11) == Approx(2.0F));
+    CHECK(list->farRange(25) == Approx(1.5F));
+    CHECK(list->farRange(30) == Approx(1.5F));
+    CHECK(list->farRange(240) == Approx(1.8F));
+    CHECK(list->farRange(659) == Approx(3.0F));
+    CHECK(list->farRange(0) == Approx(4.25F));
+    CHECK(list->farRange(70) == Approx(2.499F));
+    // An id no kind names keeps the reach x 1.25.
+    CHECK(list->farRange(12) == Approx(1.25F));
+    // The value is stored as whole millimetres, truncated: 1.0009 m is 1000 mm, under the reach, so 1.25 m.
+    std::array<float, 1> almost{1.0009F};
+    CHECK(coney::combat::applyClassFarRanges(*list, almost) == 1);
+    CHECK(list->find(11)->far == Approx(1.0F));
+}

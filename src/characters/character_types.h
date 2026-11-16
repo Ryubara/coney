@@ -43,6 +43,10 @@ struct CharacterType {
     /// creation (`dyn_baton` for the police), `none` for most; empty when the call gave none
     /// (docs/research/characters.md#classes).
     std::string weapon;
+    /// `+0x00`, `CfgChar`'s 14th argument: the range table, 45 numbers ÷ 100, so metres: per attack kind, the far range
+    /// of that kind's anim ids (combat::applyClassFarRanges(); 0 keeps the anims' own); empty when the call gave none
+    /// (docs/research/characters.md#classes).
+    std::vector<float> ranges;
 };
 
 /// The type `call` (a recorded `CfgChar` call's arguments) configures; nothing when its first argument is not a number.

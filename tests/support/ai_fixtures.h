@@ -91,6 +91,7 @@ class KeepingServices final : public ai::ScriptServices {
     void say(ai::Brain& human, int command, bool /*interrupt*/, double /*target*/) override {
         said.emplace_back(&human, static_cast<std::uint32_t>(command));
     }
+    void giveHandObject(ai::Brain& /*human*/, std::string_view type) override { handObjects.emplace_back(type); }
 
     /// One addRadarIcon() call.
     struct RadarIcon {
@@ -121,6 +122,7 @@ class KeepingServices final : public ai::ScriptServices {
     float clipSeconds = 0.0F;                                         // what playTime() answers
     bool gesturesAllowed = true;                                      // what mayGesture() answers
     int gesturesAsked = 0;
+    std::vector<std::string> handObjects; // the object types giveHandObject() put in a hand, in order
 };
 
 /// Humans on a floor, each with a brain; slot 0 is the pad's player at (40, 40) facing +y.

@@ -366,6 +366,7 @@ target_sources(coney_core PRIVATE
     ai/enemy_scan.cpp
     ai/swap_prompt.cpp
     ai/tactic_scout.cpp
+    ai/class_draws.cpp
     ai/fidget_action.cpp
     ai/fight_goal.cpp
     ai/fight_trace.cpp
