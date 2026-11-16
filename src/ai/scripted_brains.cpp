@@ -880,6 +880,8 @@ float ScriptedBrains::playTime(Brain& human, int animId) {
 
 void ScriptedBrains::giveHandObject(Brain& human, std::string_view type) {
     human::ScriptState& script = human.human().script();
+    // **Coney stand-in**: a hand that holds anything takes nothing, where the original drops what it held (and refuses
+    // only a hand busy with held flag 0x4000); a weapon draw comes only with an empty hand.
     if (m_scripts == nullptr || script.heldObject != kNilHandle) {
         return;
     }
@@ -887,6 +889,8 @@ void ScriptedBrains::giveHandObject(Brain& human, std::string_view type) {
     if (handle == kNilHandle) {
         return;
     }
+    // **Coney stand-in**: the object is the scripts' bookkeeping (its handle and type name), as Human_Init's weapon is;
+    // no world object is made, pinned or put in the hand by its pick-up clip.
     script.heldObject = handle;
     script.heldObjectName = std::string(type);
 }
