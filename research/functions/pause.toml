@@ -188,10 +188,10 @@ status = "compared"
 address = 0x001d6c10
 name = "YesNoBox_OnCommand"
 page = "pause.md#fn-optionmenu"
-role = "Left 0, right 1 (cue 4, 0xe if unchanged; page changed); immediate callback unless confirm mode; accept in confirm mode calls back 2 or 3, back 4."
+role = "Left (2) sets selection 0, right (3) selection 1, never a swap (cue 4, 0xe if unchanged; page changed); immediate callback unless confirm mode; accept (4) in confirm mode calls back 2 or 3, back (5) calls back 4 with no cue."
 level = "confirmed-code"
 coney = "src/gui/pause_menu/yes_no_box.h:YesNoBox::handle"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001d7270

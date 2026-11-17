@@ -30,23 +30,22 @@ struct YesNoPlacement {
 
 /// The pause and mission-failed menus' Yes/No box (menu `+0x1bd0`): a question, then "Yes" "/" "No" with **No
 /// selected** when it opens. While it is open the menu hands it every command: up and down play cue 0xe (nothing to
-/// move to), left and right move between Yes and No, accept plays cue 8 and answers Yes or No, back answers Back. The
-/// box closes on any answer; the owner reads answer() once.
+/// move to), left selects Yes and right No (cue 4, or 0xe when that answer is already selected), accept plays cue 8
+/// and answers Yes or No, back answers Back with no cue. The box closes on any answer; the owner reads answer() once.
+/// It is the original's box in confirm mode (`+0x4c8`), the mode the pause and mission-failed menus open it in.
 ///
 /// Coney's stand-ins (docs/research/pause.md#open-questions): the texts' fonts and sizes are not on the page, so the
 /// question is drawn in the text font at size 1.0 and the answers in `big_font` at 1.15, both kMenuGrey; the selected
-/// answer is kSelectedGrey and the other kDimGrey (the grid's colours); left and right play the grid's move cue 4 and
-/// back cue 0xf.
+/// answer is kSelectedGrey and the other kDimGrey (the grid's colours).
 ///
 /// Research: docs/research/pause.md#the-items-screens
 /// @orig 0x001d6738 YesNoBox_Setup (unknown)
 class YesNoBox : public Widget {
   public:
-    /// Cues: a refused move, a move, accept, back.
+    /// Cues: a refused move (or a side already selected), a move, accept. Back plays none.
     static constexpr int kRefusedCue = 0xe;
     static constexpr int kMoveCue = 4;
     static constexpr int kAcceptCue = 8;
-    static constexpr int kBackCue = 0xf;
 
     /// Places the box's texts.
     void place(const YesNoPlacement& placement) { m_placement = placement; }
@@ -61,7 +60,8 @@ class YesNoBox : public Widget {
     [[nodiscard]] bool isOpen() const { return m_open; }
 
     /// Acts on one command (the menu passes every command while the box is open); returns the answer it ends with.
-    /// @orig 0x001d6c10 YesNoBox_OnCommand (unknown)
+    /// Research: docs/research/pause.md#the-items-screens
+    /// @orig 0x001d6c10 YesNoBox_OnCommand (OptionMenu.cpp)
     std::optional<YesNoAnswer> handle(MenuCommand command);
 
     /// Whether Yes is selected.

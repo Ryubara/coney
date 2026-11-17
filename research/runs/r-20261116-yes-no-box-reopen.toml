@@ -1,0 +1,34 @@
+version = 1
+id = "r-20261116-yes-no-box-reopen"
+date = "2026-11-16"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "f69e74f137c73a6a07d677579d11df38ce0dd3e32cce7024a73e275874fba10a"
+
+[who]
+agent = "afe6782bf24860683"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = []
+
+[run]
+name = ""
+method = "yard save state, pause menu Quit box (+0x1bd0 = 0x00630360), selection +0x4c0 and confirm mode +0x4c8 read: on opening, after left, then triangle and cross to open the box again in the same pause"
+
+[values]
+open_selection = 1
+open_confirm_mode = 1
+after_left_selection = 0
+reopen_selection = 1
+
+[addresses]
+YesNoBox_OnCommand = 0x001d6c10
+pause_box = 0x00630360

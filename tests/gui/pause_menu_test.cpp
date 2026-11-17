@@ -479,7 +479,7 @@ TEST_CASE("pause menu: Quit asks at once in level99 and offers the hangout first
     story.driver.tap(coney::pad::kCross);
     REQUIRE(story.menu.yesNo().isOpen());
     CHECK(story.menu.yesNo().question().text() == "#102");
-    story.driver.tap(coney::pad::kRight);
+    story.driver.tap(coney::pad::kLeft);
     story.driver.tap(coney::pad::kCross);
     CHECK(story.menu.outcome() == PauseOutcome::QuitToMainMenu);
 
@@ -512,19 +512,75 @@ TEST_CASE("pause menu: in a Rumble level Replay asks 0x105 at once and Objective
     CHECK(rumble.menu.yesNo().question().text() == "#105");
 }
 
-TEST_CASE("yes/no box: up and down are refused, left and right swap, back answers Back", "[pause_menu]") {
-    // Expected: pause.md#the-items-screens, confirmed (code)
+TEST_CASE("yes/no box: left picks Yes and right picks No, cue 0xe when already there; back plays no cue",
+          "[pause_menu]") {
+    // Expected: pause.md#the-items-screens, confirmed (code): YesNoBox_OnCommand 0x001d6c10 sets the selection to 0
+    // (Yes) on left and 1 (No) on right, cue 4 on a change and 0xe when it was already there; back (5) calls back 4
+    // with no cue; up and down are the owner's cue 0xe (0x001ded68, 0x001d2970).
     YesNoBox box;
     std::vector<int> cues;
     box.setSoundSink([&cues](int cue) { cues.push_back(cue); });
     box.open("Quit?", "Yes", "No");
     CHECK_FALSE(box.yesSelected());
     CHECK_FALSE(box.handle(MenuCommand::Up).has_value());
-    CHECK(cues.back() == YesNoBox::kRefusedCue);
+    CHECK(cues == std::vector<int>{YesNoBox::kRefusedCue});
+
+    // Right on No stays on No.
+    cues.clear();
     CHECK_FALSE(box.handle(MenuCommand::Right).has_value());
+    CHECK_FALSE(box.yesSelected());
+    CHECK(cues == std::vector<int>{YesNoBox::kRefusedCue});
+
+    // Left moves to Yes, then stays there.
+    cues.clear();
+    CHECK_FALSE(box.handle(MenuCommand::Left).has_value());
     CHECK(box.yesSelected());
+    CHECK_FALSE(box.handle(MenuCommand::Left).has_value());
+    CHECK(box.yesSelected());
+    CHECK(cues == std::vector<int>{YesNoBox::kMoveCue, YesNoBox::kRefusedCue});
+
+    // Right moves back to No.
+    cues.clear();
+    CHECK_FALSE(box.handle(MenuCommand::Right).has_value());
+    CHECK_FALSE(box.yesSelected());
+    CHECK(cues == std::vector<int>{YesNoBox::kMoveCue});
+
+    // Back answers Back and plays nothing.
+    cues.clear();
     CHECK(box.handle(MenuCommand::Back) == YesNoAnswer::Back);
     CHECK_FALSE(box.isOpen());
+    CHECK(cues.empty());
+}
+
+TEST_CASE("pause menu: in the Quit box right keeps No, left picks Yes, triangle closes it silently", "[pause_menu]") {
+    // Expected: pause.md#the-items-screens, confirmed (code): YesNoBox_OnCommand 0x001d6c10 through
+    // PauseMenu_OnYesNoCommand 0x001ded68
+    Paused paused(99);
+    paused.selectItem(PauseItem::Quit);
+    paused.driver.tap(coney::pad::kCross);
+    REQUIRE(paused.menu.yesNo().isOpen());
+    paused.cues.clear();
+    paused.driver.tap(coney::pad::kRight);
+    CHECK_FALSE(paused.menu.yesNo().yesSelected());
+    paused.driver.tap(coney::pad::kTriangle);
+    CHECK_FALSE(paused.menu.yesNo().isOpen());
+    CHECK_FALSE(paused.menu.closing());
+    CHECK(paused.cues == std::vector<int>{YesNoBox::kRefusedCue});
+
+    // Right then cross answers No: the menu stays open.
+    paused.driver.tap(coney::pad::kCross);
+    REQUIRE(paused.menu.yesNo().isOpen());
+    paused.driver.tap(coney::pad::kRight);
+    paused.driver.tap(coney::pad::kCross);
+    CHECK_FALSE(paused.menu.yesNo().isOpen());
+    CHECK_FALSE(paused.menu.closing());
+
+    // Left then cross answers Yes.
+    paused.driver.tap(coney::pad::kCross);
+    paused.driver.tap(coney::pad::kLeft);
+    CHECK(paused.menu.yesNo().yesSelected());
+    paused.driver.tap(coney::pad::kCross);
+    CHECK(paused.menu.outcome() == PauseOutcome::QuitToMainMenu);
 }
 
 TEST_CASE("mission failed: the reason, rows of 1 and 2, and the title by language", "[pause_menu]") {
