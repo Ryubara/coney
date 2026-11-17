@@ -775,7 +775,11 @@ int main(int argc, char** argv) {
     const auto pacingFor = [](std::uint32_t cap) {
         return cap == kStepsPerSecond ? coney::FramePacing::Lockstep : coney::FramePacing::Interpolated;
     };
-    const auto fpsCap = static_cast<std::uint32_t>(options->fpsCap.value_or(0));
+    // `--fps-cap N` and `--vsync`, or the VRR mode's cap under the display's refresh rate with vsync off.
+    const std::uint32_t fpsCap =
+        coney::platform::startPacing(*options, !savedSettings.empty() && coney::debug::savedVrr(savedSettings),
+                                     renderer, logText)
+            .fpsCap;
     // `--bench-real-time` paces a bench as a player's run, though `--frames` makes it test mode otherwise.
     const bool lockstep = testMode && !options->benchRealTime;
     coney::FrameClock clock(lockstep ? coney::FramePacing::Lockstep : pacingFor(fpsCap));

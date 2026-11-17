@@ -39,6 +39,7 @@ add_executable(coney_tests
     core/display_preset_test.cpp
     core/display_preset_option_test.cpp
     core/renderer_option_test.cpp
+    core/vrr_pacing_test.cpp
     core/player_options_test.cpp
     core/window_display_test.cpp
     effects/effect_culling_test.cpp

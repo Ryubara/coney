@@ -128,9 +128,10 @@ TEST_CASE("the game's movement and camera tunables edit the values the game read
     CHECK(registry.inCategory("Sprint").size() == 1);
     CHECK(registry.inCategory("Jump").size() == 4);
     CHECK(registry.inCategory("Climb").size() == 11);
-    // The cutscene letterbox, the renderer the next start draws with (docs/engine/gpu-renderer.md#choice), and the
+    // The cutscene letterbox, the renderer the next start draws with (docs/engine/gpu-renderer.md#choice), the VRR
+    // pacing mode (docs/guides/running-options.md#frame-rate), and the
     // display preset with the seven other values it sets (docs/engine/renderer.md#presets-built).
-    CHECK(registry.inCategory("Display").size() == 10);
+    CHECK(registry.inCategory("Display").size() == 11);
     REQUIRE(registry.find("Movement/Run threshold") != nullptr);
     // Each traversal tunable starts at the original's value.
     REQUIRE(registry.find("Body/Step height") != nullptr);
@@ -245,5 +246,43 @@ TEST_CASE("the renderer setting is GL3 by default and is read from the overrides
         REQUIRE(writer.save(other).has_value());
     }
     CHECK(coney::debug::savedRenderer(other) == coney::RendererKind::Gl3);
+    std::filesystem::remove_all(folder);
+}
+
+TEST_CASE("the vrr setting is off by default and is read from the overrides file before the start", "[debug][vrr]") {
+    // Expected: ../guides/running-options.md#frame-rate, Coney's own setting: `Display/VRR` in the overrides file,
+    // off by default, applied at the next start.
+    TunableRegistry registry;
+    coney::debug::registerGameTunables(registry);
+    const coney::debug::Tunable* vrr = registry.find("Display/VRR");
+    REQUIRE(vrr != nullptr);
+    CHECK(vrr->type() == TunableType::Bool);
+    CHECK(vrr->defaultValue() == 0.0);
+
+    const std::filesystem::path folder = std::filesystem::temp_directory_path() / "coney_vrr_setting_test";
+    std::filesystem::create_directories(folder);
+    CHECK_FALSE(coney::debug::savedVrr((folder / "missing.ini").string()));
+    // Saved on the Tunables page: the next start takes it.
+    const std::string saved = (folder / "saved.ini").string();
+    {
+        TunableRegistry writer;
+        bool value = false;
+        writer.add("Display", "VRR", &value);
+        writer.set("Display/VRR", 1.0);
+        writer.applyPending();
+        REQUIRE(writer.save(saved).has_value());
+    }
+    CHECK(coney::debug::savedVrr(saved));
+    // Another tunable's line leaves it off.
+    const std::string other = (folder / "other.ini").string();
+    {
+        TunableRegistry writer;
+        int renderer = 0;
+        writer.add("Display", "Renderer", &renderer).range(0, 1, 1);
+        writer.set("Display/Renderer", 1.0);
+        writer.applyPending();
+        REQUIRE(writer.save(other).has_value());
+    }
+    CHECK_FALSE(coney::debug::savedVrr(other));
     std::filesystem::remove_all(folder);
 }
