@@ -70,11 +70,14 @@ struct PadSample {
 };
 
 /// The player camera's turn for a pad's left stick, as the original's pads update hands it to each record's update
-/// (`Pads_Update`, 0x001454a8, builds it from the player camera's orientation): the x and y parts of the camera's x and
-/// y axes (rows 0 and 1 of the matrix), and the state of the pad's player's follow camera.
+/// (`Pads_Update`, 0x001454a8, builds it from the player camera's orientation: Pads::turnSticks()): the x and y parts
+/// of the camera's x and y axes (rows 0 and 1 of the matrix), the player the pad belongs to and the state of his
+/// follow camera. The default is the identity a pad with no player gets.
 ///
 /// Research: docs/research/input.md#turned-stick
 struct StickTurn {
+    /// The player the pad belongs to (the record's `+0x42`); none for -1.
+    std::optional<std::size_t> player;
     /// The world x and y of the camera's x axis.
     std::array<float, 2> xAxis{1.0F, 0.0F};
     /// The world x and y of the camera's y axis.
@@ -92,7 +95,7 @@ struct StickTurn {
 ///
 /// Like the original's 0x50-byte record it keeps the last 8 button words in a ring, hold counters for the four d-pad
 /// directions, the sticks in [-1, 1] with y up and the left stick turned by the player's camera. What it leaves out,
-/// for now: vibration and the player the pad belongs to (the caller says what the turn needs of him in StickTurn).
+/// for now: vibration, and the player the pad belongs to is the one the last turn named (StickTurn::player).
 ///
 /// Research: docs/research/frontend.md#pad-record, docs/research/input.md#pad-queries,
 /// docs/research/input.md#turned-stick
@@ -116,6 +119,13 @@ class Pad {
     /// reads.
     /// @orig 0x00144fb0 Pad_Update (unknown)
     void update(const PadSample& sample, const std::optional<StickTurn>& turn = std::nullopt);
+
+    /// Turns the left stick of the last sample by `turn` (step 2 of the update) and keeps the player it names: the
+    /// pads update in play runs it after the sample with the player's camera (Pads::turnSticks()). Nothing for a
+    /// disconnected record.
+    /// Its part of the original: step 2.
+    /// @orig 0x00144fb0 Pad_Update (unknown)
+    void turnStick(const StickTurn& turn);
 
     /// The button word `back` samples ago (0 is the current one), `back` clamped to kHistory - 1.
     /// @orig 0x00144a08 Pad_ButtonsBack (unknown)
@@ -162,6 +172,9 @@ class Pad {
     /// Whether the last update found the left stick at rest under a turn whose player has a follow camera: the
     /// original then sets that camera's `+0x473`, so the next pads update takes the camera's orientation afresh.
     [[nodiscard]] bool followStickRest() const { return m_followStickRest; }
+    /// The player the record belongs to (`+0x42`), as the last turn named him: none outside play, where the pads
+    /// update turns every stick by the identity.
+    [[nodiscard]] std::optional<std::size_t> player() const { return m_player; }
     /// Right stick x in [-1, 1], right positive.
     [[nodiscard]] float rightX() const { return m_rightX; }
     /// Right stick y in [-1, 1], up positive.
@@ -189,6 +202,7 @@ class Pad {
     float m_turnedX = 0.0F; // +0x00
     float m_turnedY = 0.0F; // +0x04
     bool m_followStickRest = false;
+    std::optional<std::size_t> m_player; // +0x42
     bool m_connected = false;
 };
 

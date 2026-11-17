@@ -33,7 +33,7 @@ constexpr std::string_view kPlayerSynopsis =
     "Usage: coney --install DISC --data DIR [--verify]\n"
     "       coney --script-patch make|apply ...   (coney --script-patch for its usage)\n"
     "       coney [--disc PATH | --data DIR] [--language CODE] [--profiles DIR]\n"
-    "             [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
+    "             [--fps-cap N|vrr] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
     "             [--renderer gl3|gpu] [--preset ps2|xbox|enhanced|high]\n"
     "             [--no-activate] [--window-display DISPLAY] [--no-audio] [--skip-movies]\n"
     "             [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]\n"
@@ -63,7 +63,7 @@ constexpr std::string_view kUsage =
     "             [--log-file FILE] [--log-verbose CATEGORIES]\n"
     "             [--dev-overlay N] [--mesh-view SPEC] [--world-edit FILE]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
-    "             [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
+    "             [--fps-cap N|vrr] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
     "             [--renderer gl3|gpu] [--preset ps2|xbox|enhanced|high]\n"
     "             [--no-activate] [--window-display DISPLAY]\n"
     "             [--no-audio | --audio-test] [--skip-movies] [--cpu-skinning]\n"
@@ -169,8 +169,10 @@ constexpr std::string_view kUsage =
     "                     particle type name, icon-N for a radar icon, or a 0x name hash); repeatable\n"
     "  --names FILE       with --render-references: model and object type names, one per line, to\n"
     "                     name the images by\n"
-    "  --fps-cap N        draw at most N frames a second (0, the default: no cap); the game runs at\n"
-    "                     its fixed 30 steps a second whatever the rate; 30 draws one frame per step\n"
+    "  --fps-cap N|vrr    draw at most N frames a second (0, the default: no cap); the game runs at\n"
+    "                     its fixed 30 steps a second whatever the rate; 30 draws one frame per step;\n"
+    "                     vrr, for a G-Sync or FreeSync display: vsync off and a cap just under the\n"
+    "                     display's refresh rate (not with --vsync)\n"
     "  --vsync on|off     wait for the display's vertical blank when presenting (default on)\n"
     "  --line-blend on|off  on: an optional PS2 look, the picture softened as the PS2's video output\n"
     "                     does, each line the mean of two neighbouring lines; off (the default)\n"
@@ -447,14 +449,15 @@ std::expected<void, Error> checkRenderer(const Options& options) {
 
 // Refuses the frame-pacing options where they cannot work: part of checkCombinations().
 std::expected<void, Error> checkPacing(const Options& options) {
-    if ((options.fpsCap.has_value() || options.showFps) && isTestMode(options)) {
+    if ((options.fpsCap.has_value() || options.vrrPacing || options.showFps) && isTestMode(options)) {
         return invalidArgument("--fps-cap and --show-fps pace a real-time run, so they cannot be combined with "
                                "--headless, --load, --frames, --input-script or --screenshot (test mode)");
     }
     if (!options.vsync && (options.headless || !options.loads.empty())) {
         return invalidArgument("--vsync needs a window, so it cannot be combined with --headless or --load");
     }
-    if ((options.fpsCap.has_value() || options.showFps || !options.vsync) && options.renderReferences.has_value()) {
+    if ((options.fpsCap.has_value() || options.vrrPacing || options.showFps || !options.vsync) &&
+        options.renderReferences.has_value()) {
         return invalidArgument("--fps-cap, --vsync and --show-fps cannot be combined with --render-references");
     }
     return {};
@@ -1149,11 +1152,17 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 !value) {
                 return std::unexpected(std::move(value.error()));
             }
-            auto cap = parseFpsCap(fpsCapArg.value_or(std::string{}));
-            if (!cap) {
-                return std::unexpected(std::move(cap.error()));
+            // `vrr` names the VRR mode (core/vrr_pacing.h), which takes its cap from the display once the window is
+            // open.
+            if (fpsCapArg == "vrr") {
+                options.vrrPacing = true;
+            } else {
+                auto cap = parseFpsCap(fpsCapArg.value_or(std::string{}));
+                if (!cap) {
+                    return std::unexpected(std::move(cap.error()));
+                }
+                options.fpsCap = *cap;
             }
-            options.fpsCap = *cap;
         } else if (arg == "--vsync") {
             if (auto value = takeValue(args, i, vsyncArg, "--vsync", "on or off"); !value) {
                 return std::unexpected(std::move(value.error()));
@@ -1471,6 +1480,10 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
     }
     if (auto combined = checkCombinations(options); !combined) {
         return std::unexpected(std::move(combined.error()));
+    }
+    // Only here is it known whether --vsync was typed, not merely left on by default.
+    if (options.vrrPacing && vsyncArg.has_value()) {
+        return invalidArgument("--fps-cap vrr turns vsync off itself, so it cannot be combined with --vsync");
     }
     return options;
 }

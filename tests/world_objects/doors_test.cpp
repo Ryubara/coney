@@ -455,6 +455,96 @@ TEST_CASE("other swinging doors ignore hits; a destroyed one hits itself", "[wor
     CHECK(doors.hitpoints(cabin) == 8);
 }
 
+TEST_CASE("a removed swinging door takes its leaves with it (message 0x20), but not dyn_door_stall",
+          "[world_objects][doors]") {
+    // Expected: objects.md#door-removal, confirmed (runtime)
+    coney::test::ObjectWorldFixture fixture;
+    Doors doors;
+    const ObjectTypeInfo info = swinging(100);
+    const Door& wood = doors.spawn(
+        fixture.handle(), at("dyn_door_wood"), &info, [&fixture] { return fixture.handle(); }, fixture.world);
+    const double door = wood.handle;
+    const double left = wood.leaves[0].handle;
+    const double right = wood.leaves[1].handle;
+    doors.remove(door);
+    // The door goes first (WorldObject_Remove), then its message 0x20 removes the left leaf and the right.
+    CHECK(doors.takeRemoved() == std::vector<double>{door, left, right});
+    CHECK(doors.findByLeaf(left) == nullptr);
+    CHECK(doors.findByLeaf(right) == nullptr);
+    CHECK_FALSE(doors.hit(door, hitBy(HitKind::Plain), fixture.world));
+    CHECK(coney::world_objects::doorDraws(doors).empty());
+    // A second removal finds nothing to remove.
+    doors.remove(door);
+    CHECK(doors.takeRemoved().empty());
+
+    const ObjectTypeInfo stallInfo = swinging(10);
+    const Door& stall = doors.spawn(
+        fixture.handle(), at("dyn_door_stall"), &stallInfo, [&fixture] { return fixture.handle(); }, fixture.world);
+    const double stallDoor = stall.handle;
+    const double leaf = stall.leaves[0].handle;
+    doors.remove(stallDoor);
+    CHECK(doors.takeRemoved() == std::vector<double>{stallDoor});
+    // The door's handle is freed, its leaf still resolves.
+    CHECK(doors.find(stallDoor) == nullptr);
+    REQUIRE(doors.findByLeaf(leaf) != nullptr);
+    CHECK(doors.findByLeaf(leaf)->handle == stallDoor);
+    // Its leaf stays in the world, drawn where it stood.
+    const std::vector<coney::world_objects::DoorDraw> draws = coney::world_objects::doorDraws(doors);
+    REQUIRE(draws.size() == 1);
+    CHECK(draws[0].handle == leaf);
+}
+
+TEST_CASE("a removed door no longer resolves; a door spawned on its triangles takes them", "[world_objects][doors]") {
+    // Expected: objects.md#door-removal, confirmed (code): WorldObject_Delete frees the handle
+    coney::test::ObjectWorldFixture fixture;
+    Doors doors;
+    const ObjectTypeInfo info = swinging(100);
+    const double old =
+        doors
+            .spawn(
+                fixture.handle(), at("dyn_door_wood"), &info, [&fixture] { return fixture.handle(); }, fixture.world)
+            .handle;
+    doors.remove(old);
+    CHECK(doors.find(old) == nullptr);
+    CHECK(doors.findByTriangle(0) == nullptr);
+    CHECK(doors.findByTriangle(1) == nullptr);
+    // level86's store door: destroyed, and a new one spawned in its place on the same triangles.
+    const double replacement =
+        doors
+            .spawn(
+                fixture.handle(), at("dyn_door_wood"), &info, [&fixture] { return fixture.handle(); }, fixture.world)
+            .handle;
+    REQUIRE(doors.findByTriangle(1) != nullptr);
+    CHECK(doors.findByTriangle(1)->handle == replacement);
+}
+
+TEST_CASE("the destroy message removes a sliding door, whose leaves stay", "[world_objects][doors]") {
+    // Expected: objects.md#door-removal, confirmed (code)
+    coney::test::ObjectWorldFixture fixture;
+    Doors doors;
+    const ObjectTypeInfo info{.className = "dyn_door_sliding",
+                              .hitpoints = 0,
+                              .size = {3.0F, 0.2F, 3.0F},
+                              .material = 9,
+                              .leafWidth = 1.5F,
+                              .property6 = 0.05F,
+                              .property7 = 0.0F,
+                              .property8 = 3.0F,
+                              .objectType = 0};
+    const double handle =
+        doors
+            .spawn(
+                fixture.handle(), at("dyn_door_rollup"), &info, [&fixture] { return fixture.handle(); }, fixture.world)
+            .handle;
+    const double leaf = doors.find(handle)->slidingLeaves[0].handle;
+    doors.destroy(handle);
+    CHECK(doors.takeRemoved() == std::vector<double>{handle});
+    // Its handler has nothing for message 0x20: the leaf is an object of its own and stays drawn.
+    const std::vector<coney::world_objects::DoorDraw> draws = coney::world_objects::doorDraws(doors);
+    REQUIRE(draws.size() == 1);
+    CHECK(draws[0].handle == leaf);
+}
+
 TEST_CASE("a barrier: links charged through, boards, hidden, then removed with its body at its next update",
           "[world_objects][doors]") {
     // Expected: objects.md#barriers, confirmed (code)
@@ -494,7 +584,7 @@ TEST_CASE("a barrier: links charged through, boards, hidden, then removed with i
     CHECK(doors.takeRemoved().empty());
     tick(doors, fixture, coney::world_objects::kBarrierInterval);
     CHECK(doors.takeRemoved() == std::vector<double>{handle});
-    CHECK(doors.find(handle)->removed);
+    CHECK(doors.find(handle) == nullptr);
     CHECK_FALSE(fixture.enabled(0));
     tick(doors, fixture, coney::world_objects::kBarrierInterval);
     CHECK(doors.takeRemoved().empty());

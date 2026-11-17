@@ -765,6 +765,11 @@ int main(int argc, char** argv) {
     // The Time page's bug report: the run log's ring into the log file.
     if (runLog) {
         debugServices.writeBugReport = [&runLog] { return runLog->writeBugReport(); };
+        // The Lighting page's Dump this frame writes beside the log file.
+        const auto& logFile = runLog->file();
+        if (logFile.has_value()) {
+            debugServices.runLogFolder = logFile->parent_path();
+        }
     }
     // The main loop's pacing (docs/guides/conventions.md#update-and-render). Test mode runs in lockstep with no clock:
     // one step and one render per frame. Otherwise the frame pacer measures real time and the frame clock turns it
@@ -775,7 +780,11 @@ int main(int argc, char** argv) {
     const auto pacingFor = [](std::uint32_t cap) {
         return cap == kStepsPerSecond ? coney::FramePacing::Lockstep : coney::FramePacing::Interpolated;
     };
-    const auto fpsCap = static_cast<std::uint32_t>(options->fpsCap.value_or(0));
+    // `--fps-cap N` and `--vsync`, or the VRR mode's cap under the display's refresh rate with vsync off.
+    const std::uint32_t fpsCap =
+        coney::platform::startPacing(*options, !savedSettings.empty() && coney::debug::savedVrr(savedSettings),
+                                     renderer, logText)
+            .fpsCap;
     // `--bench-real-time` paces a bench as a player's run, though `--frames` makes it test mode otherwise.
     const bool lockstep = testMode && !options->benchRealTime;
     coney::FrameClock clock(lockstep ? coney::FramePacing::Lockstep : pacingFor(fpsCap));
@@ -979,12 +988,14 @@ int main(int argc, char** argv) {
     if (playLevel) {
         playLevel->setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
         playLevel->setMeshViews(meshViews);
+        playLevel->setLightingSwitches(&debugSession.lighting());
         playLevel->setSounds(audio ? &audio->sounds() : nullptr);
         playLevel->hud()->setSoundOutput(sandboxHudSound, sandboxHudStop, sandboxHudPlaying);
     }
     if (session) {
         session->setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
         session->setMeshViews(meshViews);
+        session->setLightingSwitches(&debugSession.lighting());
     }
     // The mode a sandbox or a new game session replaces: the sandbox's play mode or the sandbox viewer; null when
     // neither runs.
@@ -1022,6 +1033,7 @@ int main(int argc, char** argv) {
             playLevel = std::move(*mode);
             playLevel->setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
             playLevel->setMeshViews(meshViews);
+            playLevel->setLightingSwitches(&debugSession.lighting());
             playLevel->setSounds(audio ? &audio->sounds() : nullptr);
             playLevel->hud()->setSoundOutput(sandboxHudSound, sandboxHudStop, sandboxHudPlaying);
             modes.push(*playLevel);
@@ -1057,6 +1069,7 @@ int main(int argc, char** argv) {
         started.attachAudio(audio.get());
         started.setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
         started.setMeshViews(meshViews);
+        started.setLightingSwitches(&debugSession.lighting());
         started.startAtLevel(name, checkpoint);
         debugSession.print(std::format("levels: playing {} at checkpoint {}", name, checkpoint));
     };

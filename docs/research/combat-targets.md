@@ -84,8 +84,8 @@ fields this page adds, each read in the function named:
 
 Read in Ghidra: confirmed (code) where no other level is given.
 
-Angles are measured from an **aim heading**; distances are flat squared distances between the humans' positions;
-"nearest" sorts by that distance (`SortByKeyAscending` `0x003868d0`).
+Angles are measured from an **aim heading**; distances are squared distances between the positions in three
+dimensions ([Target selection](#targets)); "nearest" sorts by that distance (`SortByKeyAscending` `0x003868d0`).
 
 | Move | Target it uses |
 | --- | --- |
@@ -103,7 +103,13 @@ Angles are measured from an **aim heading**; distances are flat squared distance
 `TargetFilter_EnemyStanding` inside 54°, then objects and glass, then, with no current target, the any-angle and the
 wide filters at the same range; nearest wins, else the previous target. Its aim heading is the stick's above 0.01,
 else the facing turned toward the id's offset point (`Attack_GetOffsetHeading` `0x00254310`; the plain aim heading
-when the id has no reach).
+when the id has no reach). Each pass runs only when the one before found nothing, so a world object or a pane in the
+cone keeps the any-angle and wide passes from running, and the search then gives no human (`Object_AsHuman` of an
+object is null). "No current target" is `Human_GetTarget` (`0x00226e60`), the target as a human: an object target does
+not count. With nothing found, a **human target is kept as it is**, whatever its state, distance or height (the
+function returns `Human_GetTarget`'s result untested); an object target is kept when it is no car (`Car_FromObject`,
+`0x00389848`) and its object query (vtable `+0xf4`, the body `Object_IsStrikeTarget` reads) holds; confirmed (code) at
+`0x0027a4b0`.
 
 **The current target between attacks** is the stance's ([The fight stance](#fight-stance)): the nearest threat within
 3 m is tracked (`Player_FindNearestEnemy`, `0x0027b1a0`); one within **2 m** enters the stance and becomes the target
@@ -118,7 +124,9 @@ Read in Ghidra: confirmed (code) where no other level is given.
 **`Player_PickTarget(range, h)`** (`0x0027a6c0`), in order; the first pass that finds anything ends the search:
 
 1. The current target is kept as it is only when `Target_ObjectFilter` (`0x0027a120`) accepts it, and that filter
-   accepts only world objects: a **human target is always searched for again**.
+   accepts only world objects: a **human target is always searched for again**. The test runs before the pick sets its
+   cone and aim heading, so it reads the cone the last search left in `0x0051096c` (2.356 rad after a pick, 0.9425 rad
+   after `Player_FindAttackTarget` or `Attack_FindNearestInReach`) and this player's last aim heading (record `+0xd4`).
 2. Record `+0xd8` is zeroed and the aim heading written to record `+0xd4`: the camera-turned stick's angle when the
    stick is above 0.01 (`Player_GetAimHeading`, `0x0021d1a0`), else the facing. The cone `0x0051096c` is set to
    **0.9425 rad (54°) each side** (`Target_AngleFromAimHeading` `0x002790a8`: the absolute wrapped difference).
@@ -139,7 +147,25 @@ Read in Ghidra: confirmed (code) where no other level is given.
    (`0x40000`) or wounded (`0x10000`, set by `Human_StartWounded` `0x0022fa78`, tested by `Human_IsWounded`
    `0x00227d98`) passes. This pass runs with or without a current target.
 7. The nearest found wins. With nothing found, the previous target is kept when it is not a car, has a body and is
-   within range.
+   within range (`Object_Distance`, `0x00229960`): a human target is kept so whatever his state, a downed or dead one
+   too, for no filter is applied to him here.
+
+Each step runs only when the ones before it found nothing, so a car, a world object or a pane in the cone wins over a
+human that only step 5 or 6 would find, a downed one among them. Step 5's "no current target" is `Human_GetTarget`
+(`0x00226e60`, the target as a human), while steps 1 and 7 read the target itself (`Human_GetTargetResolved`,
+`0x00226ea8`). The three lists' searches (`Humans_FindInRange` `0x00227598`, `ObjectList_FindInRange` `0x0039ab20`,
+`GlassTaskManager_ListInRange` `0x0038fc70`) each skip what lies nearer than record `+0xd8`, which the pick zeroes and
+`Attack_FindNearestInReach` (`0x0027b058`) sets to the attack's reach, so the charge's and the dive's object and pane
+passes search the same band as their humans. Confirmed (code) at the addresses named.
+
+The world object list's search measures the distance from the feet to the object's position in three dimensions, not
+across the ground: square's pick took a strike-target object 0.70 m above the feet at 1.85 m ahead (1.978 m away) and
+not at 1.90 m ahead (2.025 m away), and one at the feet's height at 1.95 m ahead; confirmed (runtime), run
+r-20261114-pick-object-distance-3d. The human search (`Humans_FindInRange` `0x00227598`) and `Object_Distance`
+(`0x00229960`, the kept rule's test) run the same vector sequence on the two positions, so they measure in three
+dimensions too: confirmed (code) at those addresses. The pane search (`GlassTaskManager_ListInRange` `0x0038fc70`)
+subtracts through `Vec4_Sub` before the same products and sums: inferred ([The searches'
+distances](#open-questions)).
 
 **Objects as targets** (`Player_PickTarget`, `0x0027a6c0`):
 
@@ -1031,6 +1057,41 @@ Tests: `repo:tests/human/player_targeting_test.cpp` (one case per scenario of [T
 `repo:tests/human/player_stance_test.cpp` (after a throw, the special, hidden L1) and,
 through the player's path, `repo:tests/platform/disc_level95_crew_lock_test.cpp`.
 
+### The target searches {#searches-coney}
+
+`Fighter::pickTargetOrObject()`, `Fighter::attackSearch()` and `Fighter::reachSearch()` (`repo:src/human/fighter.cpp`)
+are the three searches of [Target selection](#targets) and [Which target each move goes for](#targeting), with their
+passes over the humans and over the play mode's object list in the original's order, and `objectTargetable()` and
+`glassTargetable()` the two object filters (issue #1011). Square's pick, the spray's and a cross chain step's search,
+and the charge's and the dive's search go through them; an object found is the square's object attack's target, and
+for the others it means no human, as `Human_GetTarget` of an object is null. The play mode
+(`PlayLevelMode::giveObjectTargets()`, `repo:src/platform/play_level_objects.cpp`) lists the world objects whose type
+makes them a strike target with their body flags, the whole panes and the cars the car pass takes, each with its
+kind; the lists are the player's alone, as only a player's searches have these passes. Tests: `repo:tests/human/target_passes_test.cpp`.
+
+Where Coney still differs (stand-ins, each marked at the code):
+
+- An object is the target only from square's pick until its object attack lands (`Fighter`'s object target), not as
+  human `+0xc8` (`Human_SetTargetObject`), so the pick's first step and the kept rule meet an object only in that time
+  ([The object as the target](#open-questions)).
+- That first step tests the object with the 135° cone and this update's aim heading, where the original reads what the
+  last search left ([Target selection](#targets), step 1).
+- A human target "has a body" while he is among the fighter's targets (the targets list stands for the handle that
+  resolves).
+- The object attack has no approach (`Human_AlignForObjectAttack`, [Breakables](#breakables)) and its hit lands on the
+  object picked wherever it stands, so an object picked up to 2 m away is struck from where the player is.
+- Every search and the kept rule measure across the ground, where the original measures in three dimensions (run
+  r-20261114-pick-object-distance-3d, [Target selection](#targets)). The two wait for the object attack's approach:
+  with 3D distances and no approach, the level99 register stops being picked after 5 of its 8 hits, most likely as
+  the player drifts from it (inferred: not traced) ([The searches' distances](#open-questions)); issue #1396 ports
+  the two together.
+- L1's stand-in pick ([The fight stance and the lock](#fight-stance-coney)) searches the humans only, as the
+  original's L1 search has no object or pane pass; so do the duck and rise counters' stand-in picks, as the original's
+  counter search (`Player_FindCounterTarget`, `0x0027ac30`) walks only the human list: confirmed (code) at that
+  address.
+- The dive (`Player_StartDive`, `0x00264878`) makes an object its search finds the target, so a locked player loses
+  his human target to it; Coney's dive sees only the human part of its search and keeps a locked target then.
+
 ### The steer {#steer-coney}
 
 Coney's steer (`repo:src/human/turn_and_slide.h`) turns at angle / `T` and slides at (goal − position) / `T` for the
@@ -1071,6 +1132,16 @@ target's own turn is not dropped there, a `Combatant` offering none.
 - **The clear-line test**{#q-clear-line}: porting `Human_IsClearToTarget` (`0x0021c240`, a capsule cast through the
   physics) for the stance's nearest enemy, and the scene state a target's drop also reads (`Human_IsInSceneState`:
   human `+0x280`, or state `0x800000`), which Coney's targets do not report ([The fight stance](#fight-stance)).
+- **The searches' distances**{#q-search-distance}: whether the pane search (`GlassTaskManager_ListInRange`
+  `0x0038fc70`) measures in three dimensions as the world object list's does ([Target selection](#targets)), and
+  porting the 3D distances together with the object attack's approach (`Human_AlignForObjectAttack`), which Coney's
+  searches wait for. Found by the same run as r-20261114-pick-object-distance-3d with a pane high above the
+  feet.
+- **The object as the target**{#q-object-target}: what keeps an object as human `+0xc8` after square's object attack
+  in the original (`Human_SetTargetObject`, then which call clears it: the next pick, the stance, a hit), so Coney can
+  keep its object target past the hit and run the pick's first step and kept rule on it ([The target
+  searches](#searches-coney)). Found by reading who writes `+0xc8` with an object, and by watching it in PCSX2 across
+  two squares at a cabinet.
 - **L1's action delay**{#q-l1-delay}: who sets the per-player action delay (player state `+0x4d` / `+0x50`, read by
   `PlayerRec_GetActionDelayLeft`) that refuses L1 held ([The fight stance](#fight-stance)).
 

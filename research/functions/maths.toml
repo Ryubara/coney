@@ -43,6 +43,15 @@ coney = "src/camera/camera_shake.cpp:randomShare"
 status = "compared"
 
 [[function]]
+address = 0x00336500
+name = "Quat_ToMatrix"
+page = "maths.md#rotations"
+role = "A quaternion to a 4x4 rotation matrix whose rows are the rotated axes; the pads update turns the stick by rows 0 and 1."
+level = "confirmed-code"
+coney = "src/core/pads.cpp:turnOf"
+status = "compared"
+
+[[function]]
 address = 0x00336a00
 name = "Quat_Slerp"
 page = "maths.md#rotations"

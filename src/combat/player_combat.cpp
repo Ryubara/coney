@@ -142,6 +142,13 @@ void PlayerCombat::startHolding() {
     m_powerMove = anim_id::kNone;
 }
 
+void PlayerCombat::startMounting() {
+    m_chain.cancel();
+    m_blocking = false;
+    m_mode = CombatMode::Tackling;
+    m_powerMove = anim_id::kNone;
+}
+
 bool PlayerCombat::updateBlock(const CombatInput& input, CombatOutput& out) {
     // A block starts only on R1 held on a pad (the record's buttons): an AI's command 4 alone never starts one
     // (docs/research/ai-fights.md#block).

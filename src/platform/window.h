@@ -48,6 +48,10 @@ class Window {
     /// or pressed Escape when the filter did not take it.
     [[nodiscard]] bool pumpEvents(const EventFilter& filter = {});
 
+    /// The refresh rate of the display the window is on, in Hz, as SDL reports its current mode; 0 when SDL does not
+    /// know it. Read once at the start for the VRR pacing mode's cap (core/vrr_pacing.h).
+    [[nodiscard]] double refreshRate() const;
+
   private:
     void* m_handle; // SDL_Window*, kept opaque here
 };

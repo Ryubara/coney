@@ -199,7 +199,7 @@ step 0x6f0: count +0, selection +4, index +8, 5 item pointers +0x0c, description
 | `0x001d6908`, `0x001d6910`, `0x001d6960`, `0x001d6980` | `YesNoBox_Shutdown`, `_SetAnswers`, `_SetPosition`, `_SetAnswersPosition` | Empty shutdown; replace the answers; move the label; lay out answer, "/", answer by width. | confirmed (code) |
 | `0x001d6a50`, `0x001d6a60` | `YesNoBox_SaveSelection`, `YesNoBox_RevertSelection` | Slot +0xa0 saves the selection at +0x4cc (was undefined, created); slot +0xa8 restores it and calls the callback. | confirmed (code) |
 | `0x001d6a90`, `0x001d6ad0`, `0x001d6b00` | `YesNoBox_Update`, `_Render`, `_RenderColoured` | Chosen answer `0x005fd310`, the other `0x005fd320`. | confirmed (code) |
-| `0x001d6c10` | `YesNoBox_OnCommand` | Left 0, right 1 (cue 4, 0xe if unchanged; page changed); immediate callback unless confirm mode; accept in confirm mode calls back 2 or 3, back 4. | confirmed (code) |
+| `0x001d6c10` | `YesNoBox_OnCommand` | Left (2) sets selection 0, right (3) selection 1, never a swap (cue 4, 0xe if unchanged; page changed); immediate callback unless confirm mode; accept (4) in confirm mode calls back 2 or 3, back (5) calls back 4 with no cue. | confirmed (code) |
 | `0x001d6df8`, `0x001d6e80`, `0x001d7218` | `StatBarItem_Construct`, `_Destroy`, `_Shutdown` | Fill bar +0x250, back bar +0x2c0, three widgets; value +0x630 = 0.5. | confirmed (code) |
 | `0x001d6ef8` | `StatBarItem_Setup` | Slot +0xc0: an undrawn sheet-12 rect-0 sizing sprite (0xc0000) the item's width; fill and (21,21,21) back meters of sprite word 0x30036, height 0.025 (`0x0050ed2c`), caps and bodies transparent (+0x54, +0x58 = 0); value clamped 0-1, callback +0x638. | confirmed (code) |
 | `0x001d7238`, `0x001d7248` | `StatBarItem_SaveValue`, `StatBarItem_RevertValue` | +0x634 = value; restore and call back. | confirmed (code) |
@@ -527,8 +527,9 @@ Confirmed (code) at the addresses cited unless a line says otherwise.
 
 The grid ([OptionGrid](gui.md#widget-classes)) passes every command to `PauseMenu_OnCommand` (`0x001dee00`) first.
 Commands 0-5 are up, down, left, right, accept and back. Nothing is taken while closing (`+0x1b7c`, `+0x1b80`), and
-while the Yes/No box is open every command goes to it (`0x001ded68`: up and down play cue `0xe`, accept cue 8, left
-and right move between Yes and No). Confirmed (code). Without an item's screen open:
+while the Yes/No box is open every command goes to it (`0x001ded68`: up and down play cue `0xe`, accept cue 8,
+left selects Yes and right No, back plays nothing; [the box](#the-items-screens)). Confirmed (code). Without an
+item's screen open:
 
 - **left / right / up / down** move in the grid (the grid's own handling);
 - **accept** (cross): cue 8, set `+0x1b88` and run `PauseMenu_SelectItem` with the selected code;
@@ -568,7 +569,16 @@ Confirmed (code) at the addresses cited unless a line says otherwise.
   Mode (`0x110`) and To Hangout or To Main Menu.
 
 **The Yes/No box** (`0x001d6738`, `0x001d6910`): the question, then "Yes" (`0x3b`) "/" "No" (`0x3c`), **No selected**
-(inferred from the PCSX2 picture; the write that selects it is not traced). Yes calls `PauseMenu_OnConfirm` with 2, No
+(confirmed (runtime), run r-20261116-yes-no-box-reopen: the Quit box's selection `+0x4c0` reads 1 when it opens, and
+1 again when it is opened a second time in the same pause after left and back). `PauseMenu_Init` (`0x001db550`) and
+`MissionFailedMenu_Open` (`0x001d23d0`) both set the box up with selection 1 and confirm mode 1 (`YesNoBox_Setup`
+stores them at `+0x4c0` and `+0x4c8`); confirmed (code). What sets No again when the box reopens in the same pause is
+not traced. **Left selects Yes and right selects No; they never swap the answer** (`YesNoBox_OnCommand`
+`0x001d6c10`: command 2 sets the selection to 0, command 3 to 1): cue 4 when the selection moves, `0xe` when that
+answer was already selected. Back (command 5) calls back 4 and plays **no cue**, neither in the box nor in its owners'
+routing (`0x001ded68`, `0x001d2970`), which play `0xe` for up and down and 8 for accept. Confirmed (code); confirmed
+(runtime), run r-20261116-yes-no-box-sides (right on No: cue `0xe`, still 1; left: cue 4, then 0; left again: cue
+`0xe`; triangle: command 5, no cue, the box closed). Yes calls `PauseMenu_OnConfirm` with 2, No
 with 3, back with 4; No and back close the box
 (vtable `+0xcc`, `0x001df5e8`, clearing the quit and restart choices). Yes, story: Quit sets `+0x1b70` and closes
 (`0x001db918`); a restart closes (`0x004e8718`; the choice was set when the box opened); quitting the second player

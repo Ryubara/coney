@@ -201,7 +201,9 @@ int main(int argc, char** argv) {
     // original's rhythm of one step a frame.
     const bool testMode = coney::isTestMode(*options);
     constexpr std::uint32_t kStepsPerSecond = 30;
-    const auto fpsCap = static_cast<std::uint32_t>(options->fpsCap.value_or(0));
+    // `--fps-cap N` and `--vsync`, or `--fps-cap vrr`'s cap under the display's refresh rate with vsync off; the
+    // release build keeps no overrides file, so no saved Display/VRR.
+    const std::uint32_t fpsCap = coney::platform::startPacing(*options, false, renderer, logText).fpsCap;
     renderer.setFpsCap(fpsCap);
     coney::FrameClock clock(testMode || fpsCap == kStepsPerSecond ? coney::FramePacing::Lockstep
                                                                   : coney::FramePacing::Interpolated);

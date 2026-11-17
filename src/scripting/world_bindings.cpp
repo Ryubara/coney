@@ -94,8 +94,10 @@ NativeFunction makeFlagNetTraverse(const BindingContext& context) {
 
 // `ObjDestroy(object, viaMessage)`: the object goes for good, a human holding it letting go first. Without
 // `viaMessage` at once; with it the destroy message 0x15, which an objective marker handles by fading out before it
-// goes (marked dying; world_objects::ObjectTasks removes it at alpha 0). Coney's other classes have no handling of
-// their own, so they go at once (docs/research/objects.md#objective-markers).
+// goes (marked dying; world_objects::ObjectTasks removes it at alpha 0), a swinging door by hitting itself and a
+// sliding door by removing itself. A door removed takes its leaves with it, but dyn_door_stall's and a sliding door's
+// (docs/research/objects.md#door-removal). Coney's other classes have no handling of their own, so they go at once
+// (docs/research/objects.md#objective-markers).
 // @orig 0x00396c58 Obj_Destroy (unknown)
 NativeFunction makeObjDestroy(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
@@ -105,10 +107,22 @@ NativeFunction makeObjDestroy(const BindingContext& context) {
             objects != nullptr && objects->glass.release(object, objects->world)) {
             return binding::none();
         }
+        // Stand-in (docs/research/objects.md#q-objdestroy-held): whoever holds it lets go; the original knocks a worn
+        // hat off and releases carried props by the object's pick-up animation.
         if (context->ai != nullptr) {
             if (HumanBindingHost* humans = context->ai->humans(); humans != nullptr) {
                 humans->releaseObject(object);
             }
+        }
+        // A door, which has no spawn record: removed (WorldObject_Remove), or sent the destroy message.
+        if (world_objects::LevelObjects* objects = context->objects;
+            objects != nullptr && objects->doors.find(object) != nullptr) {
+            if (booleanArg(args, 1, false)) {
+                objects->doors.destroy(object);
+            } else {
+                objects->doors.remove(object);
+            }
+            return binding::none();
         }
         if (context->spawnRecords == nullptr) {
             return binding::none();
@@ -117,6 +131,8 @@ NativeFunction makeObjDestroy(const BindingContext& context) {
         const world_objects::ObjectType* type = record != nullptr && context->objectTypes != nullptr
                                                     ? context->objectTypes->find(record->typeName)
                                                     : nullptr;
+        // Stand-in (docs/research/objects.md#q-objdestroy-held): of the spawn records' classes sent the destroy message
+        // only an objective marker answers it here; any other one goes at once (the doors answer theirs above).
         if (record != nullptr && !record->removed && type != nullptr && booleanArg(args, 1, false) &&
             type->className == world_objects::kObjectiveClass) {
             record->dying = true;

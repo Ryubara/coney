@@ -518,8 +518,10 @@ models against the GS dumps). Coney's choices:
   ([Xbox lighting: the shadow light](xbox-lighting.md#shadow-light)), render-side only: the stealth flag and the
   dimming above read the ground check, never them. Each frame the play mode's rig builds the **lighting frame**
   (`repo:src/graphics/lighting_frame.h`) after the cull: the lights the cull kept with this step's flicker colour,
-  the cull's lists, the world ambient, the fog, the shadow light and the objects whose shadow is off. Nothing draws
-  from it yet ([Renderer: lighting](../engine/renderer.md#lighting)).
+  the cull's lists, the world ambient, the fog, the shadow light and the objects whose shadow is off, and, as it
+  draws, each atomic's selection in the trace's values above, which the [lighting
+  lab](../guides/realtime-lighting.md#lab-built) shows and dumps. Nothing draws from it yet ([Renderer:
+  lighting](../engine/renderer.md#lighting)).
 - A sandbox (no level scripts) gets a stand-in ambient and directional light; the front end's background has its own
   manager, which `global.lua`'s lights for level 100 fill, with black fog, and its objects are lit as world objects;
   the character viewer and the reference renders keep their fixed lights (`repo:src/platform/character_lights.h`).

@@ -61,13 +61,13 @@ name = "Pads_Update"
 page = "input.md#pads"
 role = "the per-frame update ([Input on the front end](frontend.md#input))"
 level = "confirmed-code"
-coney = "src/core/pads.h:Pads::update"
-status = "legacy"
+coney = "src/core/pads.h:Pads::turnSticks"
+status = "compared"
 
 [[function.gaps]]
-what = "each pad's stick turn built from its player's camera and handed to the record's update"
-relation = "not-ported"
-issue = 1136
+what = "a pad whose player has no current camera is turned by the identity, where the original passes its matrix as the previous pad left it"
+relation = "stand-in"
+question = "input.md#open-questions"
 
 [[function]]
 address = 0x00145698
