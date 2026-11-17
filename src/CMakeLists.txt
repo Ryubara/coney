@@ -290,6 +290,7 @@ target_sources(coney_core PRIVATE
     camera/camera_view.cpp
     camera/cameras.cpp
     camera/follow_camera.cpp
+    camera/stick_turn_cameras.cpp
     camera/follow_collision.cpp
     camera/locked_camera.cpp
     camera/path_camera.cpp

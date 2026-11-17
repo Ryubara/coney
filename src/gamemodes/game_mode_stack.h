@@ -127,6 +127,10 @@ class GameModeStack {
     /// without a source. runUntilEmpty() calls it each step; a test that drives step() itself can call it too.
     void samplePads(std::uint64_t frame);
 
+    /// Turns the pads' left sticks by their players' cameras (Pads::turnSticks()): a level's update calls it before
+    /// its characters' step, as the original's pads update is step 2 of the humans' update.
+    void turnSticks(StickTurnCameras& cameras) { m_pads.turnSticks(cameras); }
+
   private:
     /// step() without the pop: a Leave is kept in m_popPending for finishPop().
     void updateTop(const FrameTime& frame);

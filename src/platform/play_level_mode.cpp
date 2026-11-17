@@ -613,6 +613,9 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     stepObjectBodies();
     {
         CONEY_PERF_ZONE("play.humans");
+        // The pads' sticks turned by the player's camera as the last update left it, then the characters' step.
+        camera::PlayerStickCameras stickCameras = m_player->stickCameras();
+        stack.turnSticks(stickCameras);
         m_player->update(playerPad, &m_scenery->collision(), m_combatants);
         for (Target& target : m_targets) {
             if (!target.frozen) {

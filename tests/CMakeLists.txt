@@ -35,6 +35,7 @@ add_executable(coney_tests
     core/perf_frames_test.cpp
     core/pad_test.cpp
     core/pad_turn_test.cpp
+    core/pads_turn_test.cpp
     core/renderer_choice_test.cpp
     core/display_preset_test.cpp
     core/display_preset_option_test.cpp
@@ -349,6 +350,7 @@ target_sources(coney_tests PRIVATE
     camera/follow_collision_test.cpp
     camera/follow_placement_test.cpp
     camera/follow_script_test.cpp
+    camera/stick_turn_cameras_test.cpp
     human/disc_player_placement_test.cpp
     human/disc_player_test.cpp
     human/class_flags_test.cpp
