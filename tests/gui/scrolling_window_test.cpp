@@ -26,7 +26,7 @@ namespace {
 struct Entries {
     std::vector<float> heights;
     std::size_t focused = 0;
-    std::map<std::size_t, float> offsets;
+    std::map<std::size_t, float> offsets{};
 
     ScrollingWindow::Entries callbacks() {
         return ScrollingWindow::Entries{
