@@ -29,6 +29,10 @@ struct BaseWidgetSetup {
     SpriteAnchor anchor = SpriteAnchor::Centre;
     bool aspectFix = false; ///< `+0xe0`: the width × the view aspect (1.45) × 0.80357 more.
     bool shadow = false;    ///< A shadow record (`+0xec`); the original's setup makes none.
+    /// The share of the rectangle's height drawn, from its top: a reveal's cut, the rectangle's v1 moved to
+    /// v0 + (v1 − v0) × the share (`+0xb0`, which CircledText_Update and GameStatsSubItem_Layout write after each
+    /// update). It changes neither the size nor the width's shape, which is the whole rectangle's.
+    float rectShare = 1.0F;
 };
 
 /// A sprite widget: one rectangle of a sprite sheet, drawn each frame as one sprite of the batch over that sheet.

@@ -71,7 +71,19 @@ only a name. Confirmed (code) at those call sites.
 
 The object has room for two circles, but `CircledText_SetCircled` (`0x001d1008`) sets the count to the string's
 length with no bound, and the statistics screen passes up to three characters (confirmed (code) at `0x001d1008` and
-`0x002155a8`); what a third circle overwrites is [an open question](#q-third-circle).
+`0x002155a8`); [a third circle](#third) is written past the object.
+
+### A third circle {#third}
+
+Confirmed (code) at `0x001d0aa8`, `0x001d1008` and `0x001d1250`. With three characters `CircledText_SetCircled` sets
+the count to 3 and gives each character to the text widget at `+0x450` + `0xd0` × i: the third at `+0x5f0`, over
+`circleW`, `circleH` and the count and past the `0x5fc`-byte object into the next block, and the layout then places
+a third circle at `+0x450`, over the first character's text widget. Nothing guards it, and the header comes out
+broken. No level reaches it: the statistics screen circles the number before a mission title's `:`, and no listed
+record on the NTSC-U disc has more than two characters there. Disc check: the 26 listed records, none longer than two
+characters (`repo:tests/platform/disc_game_stats_test.cpp`). The pause header likewise has room for three circles and
+no bound; a title of a two-digit number and the checkpoint's letter fills them (inferred from the story's 18
+missions).
 
 ### The pause header {#pause-header}
 
@@ -143,14 +155,19 @@ made and the circle batch resident). With X, Y the position, W × H the size and
 
 - the back sprite is centred on X; its size (W, H × r) is set after its own update, through the device's width
   conversion, and it moves up by (H − H × r) / 2 so its top edge stays put; its texture rectangle is cut to r of its
-  height;
+  height: the update resets the rectangle from the sprite's word, then moves its v1 to v0 + (v1 − v0) × r, so the top
+  r of the picture shows, not the whole picture squeezed;
 - a pen starts at x0 = X − W / 2 + the circle offset. For each circle it moves `circleW` / 3 (the divisor, with the
   raw `circleW` added to a GUI x); the character goes half its measured width left of the pen, so centred on it, at
   y Y; the circle is centred on the pen at Y − (`circleH` − `circleH` × r) / 2 + `circleH` × 0.1, sized
   (`circleW`, `circleH` × r) after its update without the conversion, its texture cut to r; the pen moves `circleW` / 3
   again. So circle i is centred at x0 + (2i + 1) × `circleW` / 3;
 - the main text goes at the last circle's centre + `circleW` / 2, or at x0 without circles, at y Y;
-- the texts and the characters take the reveal r; the widget is visible while r is above 0.
+- the texts and the characters take the reveal r (the text widget's `+0xc0`), which `TextWidget_Render`
+  (`0x001cd288`) passes to `Font_Draw` (`0x00179c30`): below 1 each glyph keeps its top edge and is cut to r of its
+  height, its texture rectangle the same way; the widget is visible while r is above 0. In the statistics screen r is
+  the list entry's reveal while the window scrolls ([The statistics screen](game-stats.md#scroll); confirmed
+  (runtime), run r-20261116-stats-scroll, the header's reveal read equal to the entry's).
 
 ### `CircledText`: drawing {#ct-drawing}
 
@@ -239,14 +256,16 @@ drawing; the pause menu's use is on [Pause](pause.md#coneys-implementation). Tes
 `repo:tests/gui/circled_text_header_test.cpp`, `repo:tests/gui/game_stats_test.cpp` and
 `repo:tests/gui/widgets_test.cpp`.
 
+The reveal cuts `CircledText`'s back and circles (`BaseWidgetSetup::rectShare`) and its texts' glyphs
+(`TextWidget::setReveal`, `graphics::revealSprite`); its step divisor is the set-up's (`CircledTextSetup::stepDivisor`,
+2 for the `0x02` mode).
+
 Stand-ins and deliberate differences:
 
-- `CircledText` draws the back and the circles whole at their reduced height where the original also cuts their
-  textures, and its texts are not revealed, as Coney's text widget has no reveal ([q-reveal-crop](#q-reveal-crop)).
-- `CircledText` drops characters past two, and `CircledTextHeader` circles past three, where the original writes past
-  its room ([q-third-circle](#q-third-circle)).
-- `CircledText`'s step divisor is always 3, and the header's s is set per mode (the original keeps 0.84 after a `0x02`
-  mode); flag `0x08` is not modelled ([q-widescreen](#q-widescreen)).
+- `CircledText` keeps at most two characters, and `CircledTextHeader` three circles, where the original writes past
+  its room ([A third circle](#third)): no title on the disc has more.
+- The header's s is set per mode (the original keeps 0.84 after a `0x02` mode); flag `0x08` is not modelled
+  ([q-widescreen](#q-widescreen)).
 - The header makes no rule A (never drawn) and has no child (the pause menu draws its lists itself); its letters and
   subtitle take the update's size 1.7 from the start where the original sets them up at 1.561, and a letter's width
   is measured at 1.7 ([q-letter-size](#q-letter-size)).
@@ -264,24 +283,13 @@ Stand-ins and deliberate differences:
 of that read, and Coney's font metrics taking the live aspect, would close it; the statistics screen's size-1.2
 lines have the same cause ([The statistics screen](game-stats.md#q-line-height)).
 
-### A third circle in `CircledText` {#q-third-circle}
-
-With three characters `CircledText_SetCircled` (`0x001d1008`)
-writes a third circle and character past the two the object holds; what they overwrite, and whether a three-digit
-level number ever reaches it, is unread. The pause header likewise has room for three and no bound.
-
 ### 16:9 and the `0x02` modes {#q-widescreen}
 
 In the 16:9 row the factor d is 0, which would put the title on y 0;
-no 16:9 capture has checked it, nor the `0x02` modes' divisor and factors.
+no 16:9 capture has checked it, nor the `0x02` modes' header factors.
 
 ### The letters' first size {#q-letter-size}
 
 The header's letters and subtitle are set up at 1.561 and replaced by
 1.7 every update; whether a letter measured before the first update leaves its circle off-centre on the first frame
 is unchecked.
-
-### The reveal's texture cut {#q-reveal-crop}
-
-Coney's sprite widgets cannot cut a texture rectangle, so a partly
-revealed circle or back is squeezed rather than cut; a cropping sprite would make it faithful.

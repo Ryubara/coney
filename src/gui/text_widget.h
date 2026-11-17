@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -67,7 +68,22 @@ class TextWidget : public Widget {
     /// Advances the text's time to `frame`.
     void update(const GuiFrame& frame) override;
 
-    /// Lays the text out and adds its sprites to the canvas's batch of each font slot. Nothing while hidden.
+    /// The share of the text shown, from its top (the light widget's `+0xc0`, the markup widget's `+0x50`), clamped to
+    /// 0-1; 1 shows it whole.
+    void setReveal(float reveal) { m_reveal = reveal >= 0.0F ? std::min(reveal, 1.0F) : 0.0F; }
+    /// The share of the text shown.
+    [[nodiscard]] float reveal() const { return m_reveal; }
+    /// The markup widget's reveal depth (ScrollingTextWidget `+0x1f4`, the text's height less a line gap), GUI units;
+    /// unset for the light widget, whose reveal cuts every glyph alike.
+    void setRevealDepth(std::optional<float> depth) { m_revealDepth = depth; }
+
+    /// Lays the text out and adds its sprites to the canvas's batch of each font slot. Nothing while hidden. With a
+    /// reveal below 1 each glyph is cut from the bottom (graphics::revealSprite): the light widget's every glyph to the
+    /// reveal (Font_Draw's argument); the markup widget's line by line, a glyph of height h on a line at y showing
+    /// (depth × reveal + the first line's y − y) / h of itself, clamped to 0-1, so the text is wiped from the top
+    /// (`0x001b9600`; docs/research/game-stats.md#block).
+    /// @orig 0x001cd288 TextWidget_Render (unknown)
+    /// @orig 0x001b9600 MessageHUD_Layout (unknown)
     void render(const GuiCanvas& canvas) const override;
 
     /// Lays the text out with the canvas's fonts, without drawing: what render() would draw.
@@ -81,6 +97,8 @@ class TextWidget : public Widget {
     TextStyle m_style;
     std::optional<std::uint64_t> m_shownSinceMs; // game time of the first update after setText()
     bool m_anchored = false;                     // placed by setup(): x is the anchor point, not a box's left edge
+    float m_reveal = 1.0F;                       // the share shown from the top
+    std::optional<float> m_revealDepth;          // the markup widget's line wipe; unset: every glyph cut alike
 };
 
 } // namespace coney::gui

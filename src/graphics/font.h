@@ -37,6 +37,13 @@ inline constexpr std::uint32_t kFontCentred = 0x02;
 /// Font_Measure and Font_Draw flag: each glyph as wide as its rectangle's shape; otherwise all w wide.
 inline constexpr std::uint32_t kFontProportional = 0x04;
 
+/// Cuts a glyph's sprite to the top `share` of it, as Font_Draw draws a glyph with a reveal below 1: its height × the
+/// share with its top edge kept, and its rectangle's v1 moved to v0 + (v1 − v0) × the share, so the glyph is cut, not
+/// squeezed. A share of 1 or more changes nothing; one of 0 or less leaves a sprite of no height.
+/// Research: docs/research/gui.md#text
+/// @orig 0x00179c30 Font_Draw (unknown)
+void revealSprite(Sprite& sprite, float share);
+
 /// The black copy drawn under each glyph when a shadow is asked for: offset in GUI units.
 inline constexpr float kShadowOffsetX = 0.0025F;
 inline constexpr float kShadowOffsetY = 0.004F;

@@ -26,9 +26,11 @@ class GameModeStack;
 /// frame it is ready. Its update runs the screen with player 1's pad; back starts a fade out, and the mode pops on the
 /// first frame the fade is over, its exit calling the Lua function `onClose`.
 ///
-/// Coney's stand-ins: the original's update also runs one world frame with the task manager in phase 0 and its enter
-/// sets the store tint (`ScreenFx_EnterStore`) with a clear colour, neither of which shows under the screen's opaque
-/// background; Coney updates no world and draws the screen over black.
+/// Coney's stand-ins: the original's update also runs one world frame (the task manager's phase 0, the managers, the
+/// world and the audio from the player's camera), so the level's AI and characters go on under the screen, unseen
+/// under its opaque background (docs/research/game-stats.md#mode); Coney updates no world, as no menu mode runs one
+/// yet. Its enter sets the store tint (`ScreenFx_EnterStore`) with a clear colour, which shows nothing; Coney draws the
+/// screen over black.
 ///
 /// Research: docs/research/game-stats.md#mode
 class GameStatsMode final : public GameMode {
@@ -45,12 +47,13 @@ class GameStatsMode final : public GameMode {
     static constexpr double kFadeSeconds = 1.0;
 
     /// Draws through `device` with sheets from `loadSheet` and `loadRecord`, strings from `strings`, banks and cues
-    /// through `services`, fading through `fade`, reading `state` and calling `onClose` through `scripts`. Every
-    /// reference must outlive the mode.
+    /// through `services`, fading through `fade`, reading `state` and calling `onClose` through `scripts`, the screen
+    /// laid out for the video mode (`europe`: the device's flag `0x02`; Coney's screen is never 16:9 or progressive
+    /// here). Every reference must outlive the mode.
     /// @coney-only Coney's wiring of the mode's services
     GameStatsMode(graphics::RenderDevice& device, PauseSheetLoader loadSheet, PauseRecordLoader loadRecord,
                   const gui::GlobalStrings& strings, FrontEndServices& services, graphics::ScreenFade& fade,
-                  GameState& state, script::ScriptSystem& scripts, GameModeStack& stack,
+                  GameState& state, script::ScriptSystem& scripts, GameModeStack& stack, bool europe,
                   std::function<void(std::string_view)> log);
 
     [[nodiscard]] std::uint32_t id() const override { return kId; }

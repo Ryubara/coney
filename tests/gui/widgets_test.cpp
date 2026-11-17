@@ -531,6 +531,8 @@ TEST_CASE("scrolling menu: no wrap, the refused cue at the ends, a 100 ms gap an
 }
 
 TEST_CASE("option grid: the fade multiplies every item's alpha", "[gui]") {
+    // Expected: gui.md#coneys-implementation, inferred from Coney's own fade over every item (the pause menu's fade
+    // out)
     TextCanvas canvas;
     coney::gui::OptionGrid grid;
     grid.setup(coney::gui::OptionGridSetup{.y = 0.5F});
@@ -541,4 +543,47 @@ TEST_CASE("option grid: the fade multiplies every item's alpha", "[gui]") {
     for (const coney::graphics::Sprite& sprite : canvas.batch.sprites()) {
         CHECK(sprite.colour.a <= 128);
     }
+}
+
+TEST_CASE("sprite widget: a rectangle share below 1 draws the top of the rectangle at the widget's size", "[widgets]") {
+    // Expected: gui.md#widget-classes, confirmed (code) at 0x001a2690 and 0x001d1250
+    SpriteBatch batch(twoRectSheet(), 10, 8500.0F);
+    BaseWidget widget(&batch, 1);
+    widget.setup(BaseWidgetSetup{.x = 0.25F, .y = 0.5F, .height = 0.1F, .rectShare = 0.25F});
+    widget.render({});
+    REQUIRE(batch.sprites().size() == 1);
+    const auto& sprite = batch.sprites()[0];
+    CHECK(sprite.uv == UvRect{0.5F, 0.5F, 1.0F, 0.625F});
+    // The size stays the widget's, its shape the whole rectangle's.
+    CHECK(sprite.width == Approx(0.2F));
+    CHECK(sprite.height == Approx(0.1F));
+}
+
+TEST_CASE("text widget: a reveal cuts each glyph and its shadow to their top share", "[widgets]") {
+    // Expected: gui.md#text, confirmed (code) at 0x001cd288 and 0x00179c30
+    TextCanvas canvas;
+    TextWidget text;
+    text.setup(coney::gui::TextWidgetSetup{.x = 0.2F, .y = 0.3F});
+    text.setText("AB");
+    text.render(canvas.canvas);
+    const std::vector<coney::graphics::Sprite> whole = canvas.batch.sprites();
+    REQUIRE(whole.size() == 4);
+    canvas.batch.clear();
+    text.setReveal(0.25F);
+    text.render(canvas.canvas);
+    REQUIRE(canvas.batch.sprites().size() == whole.size());
+    for (std::size_t i = 0; i < whole.size(); ++i) {
+        const coney::graphics::Sprite& cut = canvas.batch.sprites()[i];
+        CHECK(cut.height == Approx(whole[i].height * 0.25F));
+        // The top edge kept (overlay y is up).
+        CHECK(cut.position.y + (cut.height / 2.0F) == Approx(whole[i].position.y + (whole[i].height / 2.0F)));
+        CHECK(cut.position.x == Approx(whole[i].position.x));
+        CHECK(cut.uv.v0 == Approx(whole[i].uv.v0));
+        CHECK(cut.uv.v1 == Approx(whole[i].uv.v0 + ((whole[i].uv.v1 - whole[i].uv.v0) * 0.25F)));
+    }
+    // Nothing at all at 0.
+    canvas.batch.clear();
+    text.setReveal(0.0F);
+    text.render(canvas.canvas);
+    CHECK(canvas.batch.sprites().empty());
 }
