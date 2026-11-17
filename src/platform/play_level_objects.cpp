@@ -1310,7 +1310,8 @@ void PlayLevelMode::stepObjects() {
         m_objects->tick();
     }
     walkOverPowerups();
-    // A broken barrier removed at its update: its handlers hear message 2 and its record goes.
+    // A broken barrier removed at its update, or a door ObjDestroy removed with its leaves: each one's handlers hear
+    // message 2 and its record goes.
     for (const double removed : m_objects->doors.takeRemoved()) {
         m_print(std::format("objects: {:.0f} removed\n", removed));
         if (m_pickups != nullptr) {

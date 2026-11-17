@@ -27,6 +27,7 @@
 #include "world_objects/glass.h"
 #include "world_objects/level_objects.h"
 #include "world_objects/object_types.h"
+#include "world_objects/spawn_records.h"
 
 using coney::script::LuaVm;
 using coney::script::ScriptSystem;
@@ -59,6 +60,7 @@ struct Harness {
     coney::CreatedHumans humans;
     coney::world_objects::WorldFlags flags;
     coney::world_objects::ObjectTypes types;
+    coney::world_objects::SpawnRecords records;
     coney::script::BindingContext context;
     ScriptSystem scripts;
 
@@ -70,6 +72,7 @@ struct Harness {
                   .humans = &humans,
                   .flags = &flags,
                   .objectTypes = &types,
+                  .spawnRecords = &records,
                   .objects = withObjects ? &objects : nullptr},
           scripts(
               [](std::string_view) -> std::expected<std::vector<std::byte>, coney::Error> {
@@ -109,6 +112,18 @@ std::vector<Value> cfgObj(const char* name, const char* className, double hitpoi
     args[7] = list({2.0, 0.1, 2.2});
     args[12] = Value(9.0);
     return args;
+}
+
+// `CfgObj(name, class, hitpoints, hits, ...)`: cfgObj() with the hits byte (`+0x5a`) set.
+std::vector<Value> cfgObjWithHits(const char* name, const char* className, double hitpoints, double hits) {
+    std::vector<Value> args = cfgObj(name, className, hitpoints);
+    args[3] = Value(hits);
+    return args;
+}
+
+// `ObjSpawn(type, {0, 0, 0})`: a spawn record's handle.
+double spawnAtOrigin(Harness& h, const char* type) {
+    return h.first("ObjSpawn", {str(type), list({0, 0, 0}), list({0, 0, 0, -1})}).number().value_or(0.0);
 }
 
 } // namespace
@@ -155,6 +170,141 @@ TEST_CASE("SpawnDoor, OpenDoor, IsDoorOpen, the leaves and the hitpoints", "[obj
     CHECK(h.objects.doors.find(door)->pickable);
     h.first("SetDoorPickable", {Value(door), Value()});
     CHECK_FALSE(h.objects.doors.find(door)->pickable);
+}
+
+TEST_CASE("GetHitpoints reads any world object's hitpoints word", "[object_bindings]") {
+    // Expected: objects.md#hitpoints-word, confirmed (runtime)
+    Harness h;
+    h.first("CfgObj", cfgObjWithHits("dyn_trashcan", "overhead_weapon", 150, 1));
+    h.first("CfgObj", cfgObjWithHits("dyn_speaker", "overhead_weapon", 100, 1));
+    h.first("CfgObj", cfgObjWithHits("dyn_newsstand_a", "dyn_masks", 0, 1));
+    h.first("CfgObj", cfgObjWithHits("dyn_parkbench_a", "dyn_masks", 10, 2));
+    h.first("CfgObj", cfgObj("dyn_ctrl_box", "dyn_ctrl_box", 100));
+    // WorldObject_Init's word: the type's hitpoints.
+    CHECK(h.first("GetHitpoints", {Value(spawnAtOrigin(h, "dyn_trashcan"))}).number() == 150.0);
+    CHECK(h.first("GetHitpoints", {Value(spawnAtOrigin(h, "dyn_speaker"))}).number() == 100.0);
+    // A dyn_masks prop's hit mode: 1 with hits and no hitpoints, 0 with hitpoints.
+    CHECK(h.first("GetHitpoints", {Value(spawnAtOrigin(h, "dyn_newsstand_a"))}).number() == 1.0);
+    CHECK(h.first("GetHitpoints", {Value(spawnAtOrigin(h, "dyn_parkbench_a"))}).number() == 0.0);
+    // dyn_ctrl_box's init writes 15 whatever its CfgObj says.
+    CHECK(h.first("GetHitpoints", {Value(spawnAtOrigin(h, "dyn_ctrl_box"))}).number() == 15.0);
+    // No world object: NilHandle, and an object destroyed for good.
+    CHECK(h.first("GetHitpoints", {Value(0.0)}).number() == 0.0);
+    const double gone = spawnAtOrigin(h, "dyn_trashcan");
+    h.first("ObjDestroy", {Value(gone)});
+    CHECK(h.first("GetHitpoints", {Value(gone)}).number() == 0.0);
+}
+
+TEST_CASE("GetHitpoints keeps a cabin door's type hitpoints through its hits; a splintering door's follow them",
+          "[object_bindings]") {
+    // Expected: objects.md#hitpoints-word: the cabin door's 12 confirmed (runtime), run
+    // r-20261115-cabin-door-hitpoints-word; dyn_door_liz's 96 confirmed (code), DoorSwing_HitBreakable's SetHitMode at
+    // 0x003fab04
+    Harness h;
+    h.first("CfgObj", cfgObj("dyn_door_cabin_a", "dyn_door_swinging", 12));
+    h.first("CfgObj", cfgObj("dyn_door_liz", "dyn_door_swinging", 100));
+    const double cabin =
+        h.first("SpawnDoor", {str("dyn_door_cabin_a"), list({4, 2, 0}), list({0, 0, 0, 1}), list({0, 1}), Value(7.0)})
+            .number()
+            .value_or(0.0);
+    const double liz =
+        h.first("SpawnDoor", {str("dyn_door_liz"), list({40, 2, 0}), list({0, 0, 0, 1}), list({2, 3}), Value(8.0)})
+            .number()
+            .value_or(0.0);
+    // The destroy message makes each door hit itself once, for 4 points.
+    h.first("BreakObjectsInRadius", {Value(cabin), Value(0.5)});
+    h.first("BreakObjectsInRadius", {Value(liz), Value(0.5)});
+    for (int tick = 0; tick < 10; ++tick) {
+        h.objects.tick();
+    }
+    REQUIRE(h.objects.doors.find(cabin)->hitpoints == 8);
+    REQUIRE(h.objects.doors.find(liz)->hitpoints == 96);
+    CHECK(h.first("GetHitpoints", {Value(cabin)}).number() == 12.0);
+    CHECK(h.first("GetHitpoints", {Value(liz)}).number() == 96.0);
+}
+
+TEST_CASE("GetHitpoints answers 0 for a broken cabin door and its leaves", "[object_bindings]") {
+    // Expected: objects.md#hitpoints-word, confirmed (runtime)
+    Harness h;
+    h.first("CfgObj", cfgObj("dyn_door_cabin_a", "dyn_door_swinging", 12));
+    h.first("CfgObj", cfgObj("dyn_dr_cabin_a", "sub_swinging_door", 100));
+    const double cabin =
+        h.first("SpawnDoor", {str("dyn_door_cabin_a"), list({4, 2, 0}), list({0, 0, 0, 1}), list({0, 1}), Value(7.0)})
+            .number()
+            .value_or(0.0);
+    const double left = h.first("GetLeftDoorHandle", {Value(cabin)}).number().value_or(0.0);
+    CHECK(h.first("GetHitpoints", {Value(left)}).number() == 100.0);
+    // Three destroy messages, each a self-hit of 4 points: the third breaks it; its next update removes it.
+    for (int message = 0; message < 3; ++message) {
+        h.first("BreakObjectsInRadius", {Value(cabin), Value(0.5)});
+        for (int tick = 0; tick < 10; ++tick) {
+            h.objects.tick();
+        }
+    }
+    for (int tick = 0; tick < 400; ++tick) {
+        h.objects.tick();
+    }
+    CHECK(h.first("GetHitpoints", {Value(cabin)}).number() == 0.0);
+    CHECK(h.first("GetHitpoints", {Value(left)}).number() == 0.0);
+}
+
+TEST_CASE("ObjDestroy of a swinging door removes its leaves, but not dyn_door_stall's", "[object_bindings]") {
+    // Expected: objects.md#door-removal, confirmed (runtime)
+    Harness h;
+    h.first("CfgObj", cfgObj("dyn_door_wood", "dyn_door_swinging", 100));
+    h.first("CfgObj", cfgObj("dyn_door_stall", "dyn_door_swinging", 10));
+    h.first("CfgObj", cfgObj("dyn_dr_wood", "sub_swinging_door", 100));
+    h.first("CfgObj", cfgObj("dyn_dr_stall", "sub_swinging_door", 100));
+    const double wood =
+        h.first("SpawnDoor", {str("dyn_door_wood"), list({4, 2, 0}), list({0, 0, 0, 1}), list({0, 1}), Value(7.0)})
+            .number()
+            .value_or(0.0);
+    const double left = h.first("GetLeftDoorHandle", {Value(wood)}).number().value_or(0.0);
+    const double right = h.first("GetRightDoorHandle", {Value(wood)}).number().value_or(0.0);
+    // A leaf is a world object of its own type.
+    CHECK(h.first("GetHitpoints", {Value(left)}).number() == 100.0);
+    h.first("ObjDestroy", {Value(wood)});
+    CHECK(h.first("GetHitpoints", {Value(wood)}).number() == 0.0);
+    CHECK(h.first("GetHitpoints", {Value(left)}).number() == 0.0);
+    CHECK(h.first("GetHitpoints", {Value(right)}).number() == 0.0);
+    CHECK_FALSE(h.objects.positionOf(left).has_value());
+    // The door's own handle no longer resolves either.
+    CHECK_FALSE(h.objects.positionOf(wood).has_value());
+    CHECK(h.first("IsDoorOpen", {Value(wood)}).isNil());
+
+    const double stall =
+        h.first("SpawnDoor", {str("dyn_door_stall"), list({8, 2, 0}), list({0, 0, 0, 1}), list({2, 3}), Value(8.0)})
+            .number()
+            .value_or(0.0);
+    const double leaf = h.first("GetLeftDoorHandle", {Value(stall)}).number().value_or(0.0);
+    h.first("ObjDestroy", {Value(stall)});
+    CHECK(h.first("GetHitpoints", {Value(stall)}).number() == 0.0);
+    CHECK(h.first("GetHitpoints", {Value(leaf)}).number() == 100.0);
+    CHECK(h.objects.positionOf(leaf).has_value());
+}
+
+TEST_CASE("GetHitpoints of a sliding door's leaf is its type's, before and after the door's removal",
+          "[object_bindings]") {
+    // Expected: objects.md#hitpoints-word, confirmed (code): a leaf is a world object, WorldObject_Init's word
+    Harness h;
+    std::vector<Value> sliding = cfgObj("dyn_door_rollup", "dyn_door_sliding", 0);
+    sliding[14] = Value(1.5);
+    sliding[15] = Value(0.05);
+    sliding[17] = Value(3.0);
+    h.first("CfgObj", sliding);
+    h.first("CfgObj", cfgObj("dyn_dr_rollup", "sub_sliding_door", 40));
+    const double door =
+        h.first("SpawnDoor", {str("dyn_door_rollup"), list({4, 2, 0}), list({0, 0, 0, 1}), list({0, 1}), Value(7.0)})
+            .number()
+            .value_or(0.0);
+    REQUIRE(h.objects.doors.find(door) != nullptr);
+    REQUIRE_FALSE(h.objects.doors.find(door)->slidingLeaves.empty());
+    const double leaf = h.objects.doors.find(door)->slidingLeaves[0].handle;
+    CHECK(h.first("GetHitpoints", {Value(leaf)}).number() == 40.0);
+    // The destroy message removes the door; its handler has nothing for 0x20, so the leaf stays.
+    h.first("ObjDestroy", {Value(door), Value(true)});
+    CHECK(h.first("GetHitpoints", {Value(door)}).number() == 0.0);
+    CHECK(h.first("GetHitpoints", {Value(leaf)}).number() == 40.0);
 }
 
 TEST_CASE("CfgSetGlassProperties, SpawnBreakableGlass and BreakGlassInRadius", "[object_bindings]") {
