@@ -82,6 +82,23 @@ TEST_CASE("a hard-to-stun human is not stunned by an attack that stuns", "[human
     CHECK(fight.human().fighter().victim().stuns() == 2);
 }
 
+TEST_CASE("a hard-to-stun human floored by an attack that stuns is still stunned when he gets up", "[human][combat]") {
+    // Expected: characters.md#power-class-bytes, confirmed (code): hard to stun changes only the standing stun
+    // (Human_PlayReaction 0x0026a6d0); the knockdown keeps its own stun rule (Human_KnockDown 0x0022f100).
+    const FightCharacter character;
+    Fight fight(character, 30.0F);
+    fight.human().setFlag(flag::kHardToStun, true);
+    // The crushing special with its stun flag 0x400: down, and stunned at the rise.
+    fight.human().takeHit(hitOf(653, 50, 0x39, 0x400));
+    bool rose = false;
+    for (int update = 0; update < 200 && !rose; ++update) {
+        fight.run("", 1);
+        rose = fight.human().animator().animId() == kRise;
+    }
+    REQUIRE(rose);
+    CHECK(fight.human().fighter().victim().stunned());
+}
+
 TEST_CASE("hit early in his rise, a human kicked fewer times than his cap goes down again with 195",
           "[human][combat]") {
     // Expected: characters.md#power-class-bytes, confirmed (code)
