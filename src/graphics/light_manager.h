@@ -86,16 +86,25 @@ struct FlickerTiming {
     std::uint32_t dim = 0;         ///< p10, `+0x19`: percent: blink's dimmed level, burst's upper bound.
 };
 
+/// Where a light record came from, for the lighting lab's list (docs/guides/realtime-lighting.md#lab). Debug
+/// information only: nothing the manager does reads it, and the original keeps nothing like it.
+enum class LightOrigin : std::uint8_t {
+    Untagged, ///< Made by a caller that does not say: `SetLight` from a script, or a light task.
+    BuiltIn,  ///< Light A, light B or the glow: the manager's own three.
+    StandIn,  ///< Coney's stand-in lights of a scenery played without a level's scripts.
+};
+
 /// One light record of the pool (0x50 bytes in the original): the descriptor, the colour the light shines with now
 /// (the RpLight's, `+0x04` → `+0x18`) and the flicker state.
 struct LightRecord {
     bool inUse = false;
-    LightDescriptor desc;        ///< `desc.colour` is the base colour (`+0x40`).
-    LightColour current;         ///< What the light shines with (offsets and flicker applied).
-    FlickerTiming flicker;       ///< `SetLightFlicker`'s timings.
-    std::int32_t timerMs = 0;    ///< `+0x34`: ms to the next flicker step.
-    std::uint32_t burstLeft = 0; ///< `+0x18`: flickers left in this burst.
-    bool dimmed = false;         ///< Blink and burst: in the dimmed (or flickering) phase.
+    LightDescriptor desc;                       ///< `desc.colour` is the base colour (`+0x40`).
+    LightColour current;                        ///< What the light shines with (offsets and flicker applied).
+    FlickerTiming flicker;                      ///< `SetLightFlicker`'s timings.
+    std::int32_t timerMs = 0;                   ///< `+0x34`: ms to the next flicker step.
+    std::uint32_t burstLeft = 0;                ///< `+0x18`: flickers left in this burst.
+    bool dimmed = false;                        ///< Blink and burst: in the dimmed (or flickering) phase.
+    LightOrigin origin = LightOrigin::Untagged; ///< Who made it (setOrigin()); the lab's only.
 };
 
 /// A light's handle: its record index plus 1, so 0 is no light, as `SetLight` returns 0 for none.
@@ -190,6 +199,12 @@ class LightManager {
     [[nodiscard]] const LightRecord& record(std::uint16_t index) const { return m_records.at(index); }
     /// Records in use, the built-in three included.
     [[nodiscard]] std::size_t count() const;
+    /// Tags the light `handle` with where it came from, for the lighting lab. False for no such light.
+    /// @coney-only the lighting lab's light list (docs/guides/realtime-lighting.md#lab); the original keeps no origin
+    bool setOrigin(LightHandle handle, LightOrigin origin);
+    /// Where record `index` came from: BuiltIn for the three built-in records, else its tag.
+    /// @coney-only the lighting lab's light list (docs/guides/realtime-lighting.md#lab)
+    [[nodiscard]] LightOrigin origin(std::uint16_t index) const;
 
     /// `SetLightFlicker`: blink (offTime not 0) or burst (offTime 0) for light `handle`, the mode written into its
     /// effects word. False for no such light. **Coney stand-in:** a light with radius 0, which the original turns into
@@ -232,6 +247,9 @@ class LightManager {
     [[nodiscard]] LightSelection select(float distSq, const LightSphere& sphere, bool objects, bool pointLights,
                                         bool pulse, const std::optional<GlowRequest>& glow = std::nullopt);
 
+    /// Drops this viewport's corona sprites: the lighting lab's coronas layer, after the frame has counted them.
+    /// @coney-only the lighting lab's layers (docs/guides/realtime-lighting.md#lab)
+    void clearCoronas();
     /// This viewport's corona sprites (beginViewport()), in record order.
     [[nodiscard]] std::span<const CoronaSprite> coronas() const { return m_coronas; }
     /// This viewport's lists: A (ambient and directional lights of the world), B and C (of objects), and the visible

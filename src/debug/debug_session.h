@@ -15,6 +15,7 @@
 #include "debug/audio_controls.h"
 #include "debug/entity_edit.h"
 #include "debug/input_gate.h"
+#include "debug/lighting_lab.h"
 #include "debug/lua_console.h"
 #include "debug/menu_model.h"
 #include "debug/menu_navigator.h"
@@ -23,6 +24,7 @@
 #include "debug/play_controls.h"
 #include "debug/time_control.h"
 #include "debug/tunables.h"
+#include "graphics/lighting_switches.h"
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
 #include "warriors/game_state.h"
@@ -101,6 +103,9 @@ struct DebugServices {
     /// Writes the run log's ring (the last 30 s at every level) into the log file for a bug report and returns the
     /// line to show (docs/guides/run-log.md#bug-reports); empty: the Time page dumps through the logger itself.
     std::function<std::string()> writeBugReport;
+    /// The run log's folder, where the Lighting page's *Dump this frame* writes (docs/guides/run-log.md#outputs); empty
+    /// in a run with no log file, which then cannot dump.
+    std::filesystem::path runLogFolder;
 };
 
 /// One debug session: the menu model with every page, the state its pages share (the time controls, the log, the Lua
@@ -108,7 +113,8 @@ struct DebugServices {
 /// its InputGate to the mode stack, and gives the model to the front ends, which only render it.
 ///
 /// The pages (src/debug/debug_pages.h): Favourites, Time, Tunables, Natives, Lua console, Cheats, Levels, Missions,
-/// Movies, Player, Camera, Spawner, AI fighters, HUD, Debug draw, Entity inspector, Display, Audio, Network, Input.
+/// Movies, Player, Camera, Spawner, AI fighters, HUD, Debug draw, Entity inspector, Lighting, Display, Audio, Network,
+/// Input.
 /// Adding a feature is adding a page or items here, once (docs/guides/debug-menu.md#adding-a-feature).
 class DebugSession {
   public:
@@ -141,6 +147,12 @@ class DebugSession {
     /// What the Debug draw page switches, for the play mode to draw.
     [[nodiscard]] DebugDrawOptions& debugDraw() { return m_debugDraw; }
     [[nodiscard]] const DebugDrawOptions& debugDraw() const { return m_debugDraw; }
+    /// What the Lighting page switches on the drawing side (docs/guides/realtime-lighting.md#lab), for the play mode's
+    /// lighting rig to read.
+    [[nodiscard]] graphics::LightingSwitches& lighting() { return m_lighting; }
+    [[nodiscard]] const graphics::LightingSwitches& lighting() const { return m_lighting; }
+    /// The Lighting page's light edits, applied between two steps to the play mode's light manager.
+    [[nodiscard]] LightEditQueue& lightEdits() { return m_lightEdits; }
     /// The mode the player plays in now (DebugServices::play), or null.
     [[nodiscard]] PlayControls* play() const { return m_services.play ? m_services.play() : nullptr; }
     /// The session's log: native calls, results, console output.
@@ -195,6 +207,8 @@ class DebugSession {
     TimeControl m_time;
     DisplayOptions m_display;
     DebugDrawOptions m_debugDraw;
+    graphics::LightingSwitches m_lighting;
+    LightEditQueue m_lightEdits;
     DebugLog m_log;
     EntityEditor m_entityEditor;
     LuaConsole m_console;

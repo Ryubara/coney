@@ -907,6 +907,18 @@ void PlayLevelMode::render(const RenderTime& time) {
     // they leave the GL calls out themselves), so the tests see the hook wired.
     MeshViewHook* views = m_meshViews && m_meshViews->beginFrame(*this) ? m_meshViews.get() : nullptr;
     m_lights->scene().setMeshViews(views);
+    // The lighting lab's switches, and the game camera's view for its Light from while the free camera flies (the
+    // original culls the lights from the player's camera).
+    m_lights->scene().setSwitches(m_lightingSwitches);
+    std::optional<graphics::LightView> gameView;
+    if (m_lightingSwitches != nullptr && m_freeCamera) {
+        const WorldView game = chosenView(snapshot, drawDistance, alpha, nullptr);
+        gameView = graphics::LightView{.position = game.pose.position,
+                                       .forward = game.pose.forward,
+                                       .nearClip = game.nearClip,
+                                       .farClip = game.drawDistance};
+    }
+    m_lights->scene().setGameView(gameView);
     {
         const DrawKindScope kind(DrawKind::Scenery);
         m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), drawObjects, afterWorlds);

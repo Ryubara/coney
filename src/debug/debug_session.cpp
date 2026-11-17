@@ -21,12 +21,16 @@ DebugSession::DebugSession(TunableRegistry& tunables, DebugServices services, In
         const NetControls* net = m_services.net ? m_services.net() : nullptr;
         return net == nullptr || net->status().role != NetRole::Client;
     });
-    // Between two steps: the queued tunable changes land, then the queued entity edits, then the channels take their
-    // sample.
+    // Between two steps: the queued tunable changes land, then the queued entity edits and the Lighting page's light
+    // edits, then the channels take their sample.
     m_gate.addBetweenSteps([this] { m_tunables.applyPending(); });
     m_gate.addBetweenSteps([this] {
         PlayControls* mode = play();
         m_entityEditor.applyPending(mode != nullptr ? mode->entityEdits() : nullptr);
+    });
+    m_gate.addBetweenSteps([this] {
+        PlayControls* mode = play();
+        static_cast<void>(m_lightEdits.applyPending(mode != nullptr ? mode->lightManager() : nullptr));
     });
     m_gate.addBetweenSteps([this] { m_model.sampleChannels(); });
     // A notice counts down by frames.
@@ -55,6 +59,7 @@ DebugSession::DebugSession(TunableRegistry& tunables, DebugServices services, In
     addHudPage(*this);
     addDebugDrawPage(*this);
     addEntityInspectorPage(*this);
+    addLightingPage(*this);
     addDisplayPage(*this);
     addAudioPage(*this);
     addNetworkPage(*this);

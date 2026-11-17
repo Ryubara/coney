@@ -132,7 +132,7 @@ inspector's ([Adding a feature](debug-menu.md#adding-a-feature)). In test mode e
 
 | Group | What it shows or does |
 | --- | --- |
-| Frame | **Hold lighting**: the flicker, the pulse and every atomic's selection stay as they are on this step while the game is paused, so one frame can be studied; *Step one* on the Time page moves it on by one step. **Light from**: the game camera (the default) or the view camera; the original culls and caps from the player camera, so with the free camera flying the lighting stays the game's. **Dump this frame**: writes the lighting frame, every light and every atomic's selection, as rows in the same columns as the original's trace, to the run log folder, for the comparison tool |
+| Frame | **Hold lighting**: the flicker, the pulse and every atomic's selection stay as they are on this step while the game is paused, so one frame can be studied; *Step one* on the Time page moves it on by one step. **Light from**: the game camera (the default) or the view camera; the original culls and caps from the player camera, so with the free camera flying the lighting stays the game's (as built, the cull only: [What is built](#lab-built)). **Dump this frame**: writes the lighting frame, every light and every atomic's selection, as rows in the same columns as the original's trace, to the run log folder, for the comparison tool |
 | Counts | Watches: light records in use (of 512), visible point lights (objects, world), coronas drawn, atomics lit, humans by number of lights (3 to 6), selections whose list was full |
 | Lights | Every light record, one line each: index, kind (ambient, directional, point, spot, corona only), what it lights (world, objects, both), on or off, base colour and current colour (with brightness and offset), radius, corona (rectangle, height, pull, size), flicker mode and its timer, and its **source**: built in (A, B, the glow), `global.lua`'s `LightData`, the level script and function that called `SetLight`, a chunk `0x4B` glow, or a light task (`sub_fire2_light`). Choosing one marks it in the scene, moves the view camera to it, and offers on, off, colour and radius as debug edits |
 | Selection | For the Entity inspector's selection (a human, object or car) or the sector under the view's centre: its lights this step in order, each with its kind, its score, where it came from (the copied list, the glow, the point lists) and whether it replaced another; the cap and the distance that set it; the point lights that overlapped and were dropped. Lines from the atomic's sphere to each chosen light |
@@ -145,6 +145,47 @@ switches beside the page's own: a dumped frame and a trace of the original from 
 `coney-tools trace diff`, and the *Selection* group can show the original's list for the matched atomic beside
 Coney's when a trace is loaded (`--light-trace FILE`). The original's frame comes from a PCSX2 save state, so the lab
 never needs the emulator running.
+
+### What is built {#lab-built}
+
+The page is built over what Coney has today ([#1250](issue:1250)): `repo:src/debug/pages_lighting.cpp` over the
+model of `repo:src/debug/lighting_lab.h`, the drawing-side switches of `repo:src/graphics/lighting_switches.h`, read by
+the play mode's rig (`repo:src/platform/scene_lighting.h`) and nothing else. The lighting frame now also holds every
+atomic's selection as it is drawn: the caller, the inputs, the cap and each chosen light's type, radius, colour and
+position as chosen (`FrameSelection` in `repo:src/graphics/lighting_frame.h`). Its tests drive the page with a
+scripted pad through the input gate and draw it in both front ends (`repo:tests/debug/lighting_page_test.cpp`).
+
+- **Frame.** *Hold lighting* keeps the light view and game time of the step it holds; each step that runs moves it on
+  (`LightingHold`). *Light from* is the game camera by default: while the free camera flies, the cull of the lights
+  (and the coronas it makes) reads the follow (or scene, or pinned) camera. The caps, read from each atomic's
+  distance inside ported draw functions, still follow the camera drawn through, as do the objects' and humans' fades.
+- **Dump this frame** writes two files beside the log file (`--log-file`; a run with no log file cannot dump):
+  `lighting-<n>-selections.csv`, one row per call in the trace's columns of [Selection](../research/lighting.md#select)
+  (the caller's return address, `dist_sq`, the sphere, `flags`, `point_lights`, `pulse`, `human`, `count`, then each of
+  the 8 slots' RenderWare type, radius, colour and position, RenderWare's axes), and `lighting-<n>-lights.csv`, the
+  frame's lights with a bit mask of the lists that hold them. Numbers only. The trace from PCSX2 ([#1251](issue:1251))
+  is to write the same columns.
+- **Counts, Lights, Selection** as the table says. A light's source is *built in (A, B, glow)*, *Coney's stand-in*
+  (a scenery without a level's scripts) or *script or light task*: tagging a light with the script and function that
+  made it, or as a light task, would change ported functions (`Light_SetFromScript`, `LightTask_SetParams`), so it
+  waits. The Selection group shows the Entity inspector's selection, or the player, matched to the nearest atomic of
+  its kind by the sphere's centre (Coney's choice, as the comparison matches atomics). Its lines name where each light
+  came from and a point light's score, then the overlapping point lights that were dropped; whether a kept light
+  replaced another is not recorded.
+- **Layers**: light A, the other ambient and directional lights, point lights, flicker (base colours), the brightness
+  and offset, coronas and blob shadows. **Views**: final and prelight only.
+- **Debug draw**: point lights as spheres, corona-only lights as crosses, directional lights as arrows from the light
+  view, the cull's reach, the Selection group's sphere with a line to each point light it chose, and the light marked
+  in the Lights group. Edits (on, radius, colour) are queued and applied between two steps.
+- **Rows by caller.** A human's blood layer, which Coney lights with a second selection, adds no row: the original
+  selects once per human. Coney draws cars as objects, so their rows say `object` (the original's car caller passes
+  `distSq` 0); every row's `pulse` is 0, as no Coney object uses light C yet.
+
+**Not built yet**, each shown as such on the page: the prelighting layer and the runtime-only, runtime-share,
+saturation and lights-per-atomic views (librw bakes the prelight into the instanced vertex colours, so they wait for
+Coney's shaders, renderer item 22); the sun layer ([#1257](issue:1257)); the Shadows group ([#1259](issue:1259)); the
+original's list beside Coney's and `--light-trace` ([#1252](issue:1252)); the sector under the view's centre; moving
+the view camera to a chosen light (the free camera has no place to set from the menu).
 
 ## Testing {#testing}
 

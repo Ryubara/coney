@@ -90,6 +90,7 @@ add_library(coney_core STATIC
     graphics/human_lighting.cpp
     graphics/level_lighting.cpp
     graphics/lighting_frame.cpp
+    graphics/lighting_switches.cpp
     graphics/light_manager.cpp
     graphics/mesh_data.cpp
     graphics/overlay_camera.cpp
@@ -524,6 +525,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/human_shapes.cpp
         debug/human_watch.cpp
         debug/input_gate.cpp
+        debug/lighting_lab.cpp
         debug/lua_console.cpp
         debug/menu_model.cpp
         debug/menu_navigator.cpp
@@ -538,6 +540,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/pages_entity.cpp
         debug/pages_entity_edit.cpp
         debug/pages_hud.cpp
+        debug/pages_lighting.cpp
         debug/pages_movies.cpp
         debug/pages_net.cpp
         debug/pages_play.cpp
