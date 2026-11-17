@@ -62,6 +62,8 @@ constexpr std::string_view kOtherLine = "vags/speeches/l99/l99_test_002";
 constexpr std::string_view kGull = "vags/ambient/test/gull";
 constexpr std::string_view kCrow = "vags/ambient/test/crow";
 constexpr std::string_view kBreath = "vags/character/test_breathe";
+// The rage sound's name (combat-rage.md#rage-effects); the made-up sound plays 3 s as the others.
+constexpr std::string_view kRageSound = "vags/misc/rage_mode_06";
 
 // The classes: a speech line (streamed, positional, priority 4), a voice line (streamed, positional, directional,
 // priority 9), an ambient sound (a positional bank sample, far 100 m).
@@ -86,6 +88,7 @@ SoundTables testTables() {
     add(kGull, kAmbientClass);
     add(kCrow, kAmbientClass);
     add(kBreath, kAmbientClass);
+    add(kRageSound, kAmbientClass);
     for (const std::string& name : voiceLines()) {
         add(name, kVoiceClass);
     }
@@ -978,4 +981,33 @@ TEST_CASE("a gesture takes a free slot of the speaker's reaction kind, up to his
     coney::script::HumanSoundCall unknown = cleonKind2;
     unknown.gestureKind = 9;
     CHECK_FALSE(rig.sound.mayGesture(unknown));
+}
+
+// Expected: combat-rage.md#rage-effects, confirmed (code)
+TEST_CASE("rage's start plays rage_mode_06 without a position, one at a time", "[audio]") {
+    Rig rig;
+    coney::script::HumanSoundCall cleon;
+    cleon.human = 10.0;
+    cleon.player = true;
+    cleon.position = {3.0F, 4.0F, 0.0F};
+    cleon.sound.kind = coney::human::HumanSound::Kind::RageStart;
+    const std::uint32_t rage = coney::crc32(kRageSound);
+    rig.sound.humanSound(cleon);
+    rig.frames(1);
+    CHECK(rig.engine().liveCount(rage) == 1);
+    const std::vector<coney::audio::LiveSound> live = rig.engine().liveSounds();
+    const auto found = std::ranges::find(live, rage, &coney::audio::LiveSound::hash);
+    REQUIRE(found != live.end());
+    CHECK_FALSE(found->positional);
+    // A second start while it plays: the game holds one rage sound, so no second one sounds.
+    rig.frames(30);
+    rig.sound.humanSound(cleon);
+    rig.frames(1);
+    CHECK(rig.engine().liveCount(rage) == 1);
+    // Once it has ended (3 s), the next start plays it again.
+    rig.frames(90);
+    CHECK(rig.engine().liveCount(rage) == 0);
+    rig.sound.humanSound(cleon);
+    rig.frames(1);
+    CHECK(rig.engine().liveCount(rage) == 1);
 }

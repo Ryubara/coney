@@ -549,7 +549,7 @@ class Fighter {
     [[nodiscard]] const GrabbedReport& grabbedReport() const { return m_report; }
     /// The shake the reaction played in the last update asks for; none when it played none.
     [[nodiscard]] const std::optional<ReactionShake>& reactionShake() const { return m_reactionShake; }
-    /// Whether rage started in the last update (a level-1 shake on the player's camera).
+    /// Whether rage started from the pad in the last update (`Rage_Enter` ran: a level-1 shake on the player's camera).
     [[nodiscard]] bool rageStarted() const { return m_rageStarted; }
     /// Held in another human's grab.
     [[nodiscard]] bool grabbed() const { return m_grabbed.has_value(); }
@@ -634,6 +634,11 @@ class Fighter {
     // @coney-only glue: Coney's dispatcher input, gathered from the world
     [[nodiscard]] combat::CombatInput combatInput(const FighterInput& input, const HumanAnimator& animator,
                                                   bool helpless);
+    // Rage's start, once the dispatcher has started the meter's rage (RageMeter::start(), its part of
+    // `Human_StartRageMode`): the rage sound asked for, a pair broken unless a held move keeps it, then 643 full-body
+    // when free (combat::rageEnterSteps(), docs/research/combat-rage.md#rage-effects).
+    // @orig 0x00284340 Rage_Enter (unknown)
+    void enterRage(HumanAnimator& animator);
     // Plays what the dispatcher decided: the block, rage, a grab or tackle, the grab's moves, the mugging, a theft,
     // an attack.
     // @coney-only glue: plays what Coney's dispatcher decided, through the tagged pieces

@@ -2410,6 +2410,13 @@ page = "combat-rage.md#rage-effects"
 role = "rage's start: the rage sound, a pair broken, 643 `RAGE_START` and `Human_StartRageMode` ([Everything rage does](combat-rage.md#rage-effects))"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
+coney = "src/human/fighter.h:Fighter::enterRage"
+status = "compared"
+
+[[function.gaps]]
+what = "643 holds the attack's phases, not `0x2000`"
+relation = "stand-in"
+question = "combat-rage.md#q-rage-clip-holds"
 
 [[function]]
 address = 0x002843f8
@@ -2646,6 +2653,13 @@ name = "GameState_PlayRageSound"
 page = "combat/index.md#warriors-functions"
 role = "(already named) the rage loop: when no sound is held at `W_GameState + 0x264` plays the 2D rage-mode loop by name and marks the task owned; otherwise restarts the prepared one"
 level = "confirmed-code"
+coney = "src/audio/game_sound.h:GameSound::playRageSound"
+status = "compared"
+
+[[function.gaps]]
+what = "a rage sound still playing plays on, and no owner flag is set"
+relation = "stand-in"
+question = "combat-rage.md#q-rage-sound-restart"
 
 [[function]]
 address = 0x00419558

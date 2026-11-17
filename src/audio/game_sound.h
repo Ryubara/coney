@@ -93,8 +93,14 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     void loadSoundBank(std::string_view name) override;
     void setNonDuckableDuck(float factor) override;
     void setPitchFactor(float factor) override;
-    /// The human's animation or hit sound (HumanSoundEvents), with his type's traits.
+    /// The human's animation or hit sound (HumanSoundEvents), with his type's traits; rage's start plays the rage sound
+    /// (playRageSound()).
     void humanSound(const script::HumanSoundCall& call) override;
+    /// Rage's start: the game's one rage sound, `vags/misc/rage_mode_06`, 2D (game state `+0x264`). While it still
+    /// plays nothing more starts (**Coney's choice**, below); otherwise it plays and is kept. Nothing without an
+    /// engine. Research: docs/research/combat-rage.md#rage-effects
+    /// @orig 0x004194b8 GameState_PlayRageSound (unknown)
+    void playRageSound();
     /// The voices' gesture test (Voices::mayGesture()), for the AI's taunts.
     [[nodiscard]] bool mayGesture(const script::HumanSoundCall& who) override { return m_humanVoices.mayGesture(who); }
     /// HumanSoundEvents::humanRemoved().
@@ -256,6 +262,7 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
         std::optional<double> lastMs;
     };
     Breathing m_breathing;
+    SoundHandle m_rageSound; // the rage sound (game state +0x264), playRageSound()
     Listener m_listener{};
 };
 

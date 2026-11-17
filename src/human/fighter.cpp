@@ -21,6 +21,7 @@
 #include "combat/grab.h"
 #include "combat/lock_on.h"
 #include "combat/rage_awards.h"
+#include "combat/rage_enter.h"
 #include "combat/reactions.h"
 #include "combat/revive.h"
 #include "combat/tandem.h"
@@ -928,6 +929,28 @@ combat::ChainTargets Fighter::chainTargets(const FighterInput& input) {
     return targets;
 }
 
+void Fighter::enterRage(HumanAnimator& animator) {
+    // The rage sound first, 2D and the game's one (`GameState_PlayRageSound`): the game's sound plays it.
+    m_sounds.push_back(HumanSound{.kind = HumanSound::Kind::RageStart, .at = {}, .sceneFeet = std::nullopt});
+    m_rageStarted = true;
+    // What the original tests: the pair (state 0x18003ff0, Coney's pairs), the held bits (+0x08, the clips' holds) and
+    // down (0xe0000: knocked down or out). Cuffed (0x20000) never comes here: Player_UseItemCommand gives a cuffed
+    // human only the key (docs/research/combat-rage.md#flash).
+    const combat::RageEnterSteps steps = combat::rageEnterSteps(
+        {.paired = inPair(), .held = animator.flags(), .downOrCuffed = m_victim.grounded() || healthOut()});
+    if (steps.breakPair) {
+        breakPair();
+    }
+    // Rage itself started in the dispatcher, before this (RageMeter::start()); the original starts it here, between the
+    // break and the clip, on the same update.
+    if (steps.playClip) {
+        // **Coney's choice**: 643 holds the attack's phases as every move the dispatcher starts, not the original's
+        // 0x2000 (`Human_PlayActionClip`), which Coney's gates do not read yet.
+        animator.playCombat(clips::one(id::kRageStart), kAnimFightIdle, AnimState::Attack, kCombatFade,
+                            clips::kAttackHolds);
+    }
+}
+
 void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode before, const FighterInput& input,
                             HumanAnimator& animator, float& heading) {
     // The block: its clip unless a clip under it plays (an attack, a block reaction, a duck; a move's closing 389 gives
@@ -952,9 +975,7 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
     }
     bool consumed = false;
     if (out.rageStarted) {
-        m_rageStarted = true;
-        animator.playCombat(clips::one(id::kRageStart), kAnimFightIdle, AnimState::Attack, kCombatFade,
-                            clips::kAttackHolds);
+        enterRage(animator);
         consumed = true;
     }
     enterStanceForHold(out);
