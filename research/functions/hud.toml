@@ -421,7 +421,12 @@ page = "hud-functions-parts.md#fn-hudinterface"
 role = "`HideHud`'s work ([Showing and hiding](hud.md#showing-and-hiding)); does nothing in an Armies of the Night level while game state `+0x14c` = 1"
 level = "confirmed-code"
 coney = "src/hud/hud.h:Hud::hideAll"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the Armies of the Night exception (game state `+0x14c` = 1) is not checked"
+relation = "stand-in"
+issue = 662
 
 [[function]]
 address = 0x001b2030
@@ -448,7 +453,7 @@ page = "hud-functions-parts.md#fn-hudinterface"
 role = "`RestoreHud`'s work ([Showing and hiding](hud.md#showing-and-hiding))"
 level = "confirmed-code"
 coney = "src/hud/hud.h:Hud::showAll"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001b2200

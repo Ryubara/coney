@@ -158,9 +158,6 @@ struct ActionCycle {
 /// @orig 0x001acee0 HUD::HUD (unknown)
 class Hud {
   public:
-    /// The player's own blip: `part_page0` icon 362 in grey `0x787878ff`.
-    static constexpr std::size_t kRadarPlayerIcon = 362;
-
     explicit Hud(HudServices services = {});
 
     /// Replaces the services (strings, colours, sound).
@@ -368,6 +365,16 @@ class Hud {
     void setRadarLocator(std::function<std::optional<anim::Vec3>(double handle)> locate) {
         m_locate = std::move(locate);
     }
+    /// Finds the brain type (Human_GetBrain `+0x04`) of the human a blip follows, for the police hint; nothing for a
+    /// handle that is not a human. Empty: the hint is never given.
+    void setRadarBrainLookup(std::function<std::optional<int>(double handle)> brainType) {
+        m_brainOf = std::move(brainType);
+    }
+    /// The enemy scanner's mark on the blip of `handle` (`HUD_RadarMarkEnemies` marks both radars; Coney's blips are
+    /// radar 0's): it shows for 300 radar updates where marks count (RadarState::keepShown clear). Nothing in Coney
+    /// calls it yet: the enemy scan's marks are #1402's.
+    /// @orig 0x001c4be0 Radar_MarkBlip (RadarHUD.cpp)
+    void markRadarBlip(double handle);
     /// The radars' state.
     [[nodiscard]] RadarState& radar() { return m_radar; }
     /// The radars' state, read-only.
@@ -517,6 +524,7 @@ class Hud {
     InstructionArrow m_arrow;
     RadarState m_radar;
     std::function<std::optional<anim::Vec3>(double)> m_locate;
+    std::function<std::optional<int>(double)> m_brainOf;
     std::array<NumIndicator, kNumIndicators> m_indicators{};
     CrimePanel m_crimePanel; // HUD +0x177d0: player 0's radar frame
     std::string m_crimeText; // the radar frame's widget +0x450: the crime message it last took
@@ -531,6 +539,8 @@ class Hud {
     bool m_visible = true;
     bool m_gameTutorialText = false;
     bool m_firstObjectiveHintGiven = false; // the game-state flag 0x40000
+    // The game-state flag 0x200. **Coney stand-in** (#332, the hint flag word): kept for the level, not the game.
+    bool m_policeHintGiven = false;
     bool m_clubActionText = false;
     std::array<bool, kPlayers> m_promptTextHidden{}; // the cycle's start hid the text, until it changes
     bool m_letterbox = false;
@@ -539,6 +549,7 @@ class Hud {
     enum class LetterboxRestore : std::uint8_t { Idle, Armed, Stamped };
     LetterboxRestore m_letterboxRestore = LetterboxRestore::Idle;
     bool m_radarsAutoOn = false; // HUD +0x177b0: the radars' automatic return has turned them on
+    bool m_radarDotsOn = true;   // radar 0's on flag as its dots last followed it (updateRadar())
     bool m_wanted = false;       // radar +0x1c (HUD +0x15ec)
     Spinner m_spinner;           // HUD +0xe050
 };

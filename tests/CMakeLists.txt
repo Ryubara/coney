@@ -130,6 +130,7 @@ add_executable(coney_tests
     hud/hud_test.cpp
     hud/mash_meter_test.cpp
     hud/radar_test.cpp
+    hud/radar_blips_test.cpp
     hud/player_panel_test.cpp
     hud/scripted_bars_test.cpp
     hud/stereo_hud_test.cpp
