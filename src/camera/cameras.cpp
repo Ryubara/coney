@@ -314,8 +314,10 @@ void Cameras::stepTracking(CameraRef ref, float seconds) {
         if (m_rail && m_place) {
             const auto placed = m_place(m_railTarget);
             const std::optional<anim::Vec3> velocity = m_velocity ? m_velocity(m_railTarget) : std::nullopt;
+            // Stand-in (#1406): gameplay sets no airborne test yet, so the damping never skips an airborne target.
+            const bool airborne = m_airborne && m_airborne(m_railTarget);
             m_rail->update(placed ? std::optional<anim::Vec3>(placed->first) : std::nullopt, enabled(kSwitchRailLead),
-                           seconds, velocity.value_or(anim::Vec3{}));
+                           seconds, velocity.value_or(anim::Vec3{}), airborne);
         }
         break;
     case CameraKind::Fixed:
