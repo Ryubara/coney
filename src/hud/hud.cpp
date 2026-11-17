@@ -593,17 +593,22 @@ void Hud::renderBlips(const HudCanvas& canvas, graphics::OverlayPoint centre) co
         return;
     }
     const graphics::SpriteSheet& sheet = canvas.parts->sheet();
-    std::vector<const RadarBlip*> shown;
+    // Each shown blip with its place copied out, so the draw loop reads no optional.
+    struct ShownBlip {
+        const RadarBlip* blip;
+        anim::Vec3 place;
+    };
+    std::vector<ShownBlip> shown;
     for (const auto& [handle, blip] : m_radar.blips) {
-        if (blip.place && blip.dotShown && radarBlipShown(blip, m_radar.updates) && blip.icon >= 0 &&
+        if (blip.place.has_value() && blip.dotShown && radarBlipShown(blip, m_radar.updates) && blip.icon >= 0 &&
             static_cast<std::size_t>(blip.icon) < sheet.page.rects.size()) {
-            shown.push_back(&blip);
+            shown.push_back(ShownBlip{&blip, *blip.place});
         }
     }
     // A deeper batch draws over a shallower one; within a batch, in Coney's blip order.
-    std::ranges::stable_sort(shown, {}, [](const RadarBlip* blip) { return blip->depth; });
-    for (const RadarBlip* blip : shown) {
-        const RadarOffset offset = radarBlipOffset(m_radar.view, m_radar.zoom, *blip->place);
+    std::ranges::stable_sort(shown, {}, [](const ShownBlip& entry) { return entry.blip->depth; });
+    for (const auto& [blip, place] : shown) {
+        const RadarOffset offset = radarBlipOffset(m_radar.view, m_radar.zoom, place);
         const graphics::UvRect uv = sheet.page.rect(static_cast<std::size_t>(blip->icon));
         const float texWidth = sheet.texture ? static_cast<float>(sheet.texture->width()) : 0.0F;
         const float texHeight = sheet.texture ? static_cast<float>(sheet.texture->height()) : 0.0F;
