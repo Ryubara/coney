@@ -58,20 +58,47 @@ def test_a_test_can_set_a_cleared_variable_for_itself(monkeypatch: pytest.Monkey
     assert unit.task_name(REPO) == "mine"
 
 
-@pytest.mark.parametrize("test", PREVIOUSLY_FAILING)
-def test_the_tests_that_failed_in_a_tasks_shell_pass_in_one(test: str) -> None:
-    """Run each as pytest does from a task's shell (`CONEY_TASK`, `VIRTUAL_ENV`, `CLAUDECODE` set to other values)."""
+def child_pytest(test: str, tmp_path: Path) -> tuple[list[str], dict[str, str]]:
+    """The command and environment of a pytest run of `test` inside this suite, as from a task's shell.
+
+    The child gets a base folder of its own under `tmp_path` and no inherited PYTEST_ADDOPTS. Without them it shares
+    the suite's temp folders: pytest keeps only the newest three numbered folders under `pytest-of-<user>`, so a few
+    child sessions remove the running suite's own, and a shared `--basetemp` is emptied when the child starts. Either
+    way the suite's temp repos vanish under tests still using them (different ones failing on every run)."""
     here = Path(__file__).resolve().parent
+    command = [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", f"--basetemp={tmp_path / 'child'}"]
+    env = {**os.environ, **TASK_SHELL}
+    env.pop("PYTEST_ADDOPTS", None)
+    return [*command, str(here / test)], env
+
+
+@pytest.mark.parametrize("test", PREVIOUSLY_FAILING)
+def test_the_tests_that_failed_in_a_tasks_shell_pass_in_one(test: str, tmp_path: Path) -> None:
+    """Run each as pytest does from a task's shell (`CONEY_TASK`, `VIRTUAL_ENV`, `CLAUDECODE` set to other values)."""
+    command, env = child_pytest(test, tmp_path)
     done = subprocess.run(
-        [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", str(here / test)],
+        command,
         cwd=REPO,
-        env={**os.environ, **TASK_SHELL},
+        env=env,
         capture_output=True,
         text=True,
         check=False,
     )
     assert done.returncode == 0, done.stdout[-3000:]
     assert "1 passed" in done.stdout
+
+
+def test_a_child_pytest_gets_a_base_folder_of_its_own_and_no_inherited_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A child pytest that shares the suite's temp folders removes the suite's own temp repos while they are in use.
+    monkeypatch.setenv("PYTEST_ADDOPTS", "--basetemp=C:/shared")
+    command, env = child_pytest("test_x.py::test_y", tmp_path)
+    basetemps = [part for part in command if part.startswith("--basetemp=")]
+    assert len(basetemps) == 1
+    assert Path(basetemps[0].removeprefix("--basetemp=")).parent == tmp_path
+    assert "PYTEST_ADDOPTS" not in env
+    assert env["CONEY_TASK"] == TASK_SHELL["CONEY_TASK"]
 
 
 def _is_mapping(node: ast.expr) -> bool:

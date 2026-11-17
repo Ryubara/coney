@@ -1000,6 +1000,13 @@ def _add_picture_commands(groups: Any) -> None:
     )
     scenes.add_argument("--channel-tolerance", type=int, metavar="N", help="override the scene list's tolerance")
     scenes.add_argument("--max-share", type=float, metavar="PERCENT", help="override the scene list's share")
+    scenes.add_argument(
+        "--timeout",
+        type=float,
+        default=180,
+        metavar="SECONDS",
+        help="how long one run of coney may take before it counts as hung (default 180)",
+    )
 
 
 def _run_picture(args: argparse.Namespace) -> int:
@@ -1019,6 +1026,7 @@ def _run_picture(args: argparse.Namespace) -> int:
         args.allow_no_references,
         args.channel_tolerance,
         args.max_share,
+        args.timeout,
     )
 
 
