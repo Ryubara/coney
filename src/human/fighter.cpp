@@ -417,6 +417,8 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
             updateGrabbed(input, animator);
         } else if (m_holdState == TargetState::Held) {
             struggleInHold(input, animator);
+        } else if (m_holdState == TargetState::Mounted) {
+            struggleInMount(input, animator);
         }
         noteClip(animator);
         return;
@@ -450,6 +452,7 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     if (riseCountered || duckCounter(input, animator)) {
         in.command = combat::command::kNone;
     }
+
     // **Coney's choice**: the attacker and the grabber take no command until their tandem clips are over (the
     // dispatcher's phase gate does not hold 0x800000, and what keeps the original's tandem whole is not traced).
     if (m_tandemRole != TandemRole::None) {
@@ -473,6 +476,14 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     if (m_mountPending && m_held != nullptr && animator.animId() == clips::kMountingIdle) {
         seatMount(input, animator, heading);
     }
+    // The grounded mount's clip has ended (210 plays): the victim's chance to get out as it lands. A mount that ended
+    // another way first has nothing to test.
+    if (m_held == nullptr || m_combat.mode() != combat::CombatMode::Tackling) {
+        m_groundMountLanding = false;
+    }
+    if (m_groundMountLanding && m_held != nullptr && animator.animId() == clips::kMountingIdle) {
+        endGroundedMountClip(input, animator);
+    }
     // An attack's hit; on a body with strike shapes a free attack lands through them instead (landHit()).
     if (out.hitAnim != id::kNone) {
         if ((out.hitAnim == id::kBreakObjectLow || out.hitAnim == id::kBreakObjectMid) && m_objectTarget) {
@@ -482,27 +493,37 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
         }
     }
 
-    // 6. A hold ends when the victim has no health left, and a tackle when the power meter is empty (**Coney's
-    // choice**: the research ends a grab at 0 power, which the dispatcher does; the tackle is taken to end alike).
+    // 6. A hold ends when the victim has no health left; a mount whose power meter is empty breaks as circle's
+    // break does, 246 / 247 (`Human_UpdateMeters` 0x002562d0 calls `Mount_GetOff` on a tackling human at 0 power while
+    // the victim has health above its +0x118, docs/research/combat-reactions.md#ground-escape). Coney stand-in: the
+    // +0x118 test is read as the victim having health left (the branch above lets go of one with none).
     const combat::CombatMode mode = m_combat.mode();
     const bool holding = mode == combat::CombatMode::Grabbing || mode == combat::CombatMode::Tackling ||
                          mode == combat::CombatMode::Mugging;
-    if (holding && m_held != nullptr &&
-        (m_held->health().depleted() || (mode == combat::CombatMode::Tackling && m_combat.power().value() == 0))) {
+    if (holding && m_held != nullptr && m_held->health().depleted()) {
         releaseHold(animator, false);
+    } else if (mode == combat::CombatMode::Tackling && m_held != nullptr && m_combat.power().value() == 0 &&
+               !m_tacklePending) {
+        getOffMount(animator);
     }
     // 7. A spin the dispatcher started lets go of the offset; an attached victim follows the grabber: its transform
     // times the stored offset. Then the target is kept or dropped.
     detachForSpin(animator);
     if (m_pair == PairStage::Attached && m_held != nullptr) {
         placeAttached(input.position, heading);
-        // The victim hears the grabber's numbers, for its struggle next update (a grab, not a tackle or the mugging).
+        // The victim hears the grabber's numbers, for its struggle next update (a grab, not the mugging).
         const bool grabbing = m_combat.mode() == combat::CombatMode::Grabbing;
         if (grabbing) {
             m_held->heldInGrab(grabberState(), m_rear);
         }
         // And the hold's side: a grab from its rear (state 0x20) is what a tandem starts at.
         m_held->holdSide(grabbing && m_rear);
+    }
+    // A mounted victim hears the mounter's numbers from the moment the mount links them, attached or not
+    // (Player_UpdateTackled reads them through the link; its own clips decide what it may do).
+    if (m_held != nullptr && m_combat.mode() == combat::CombatMode::Tackling &&
+        m_held->state() == TargetState::Mounted) {
+        m_held->heldInGrab(grabberState(), false);
     }
     if (!m_player) {
         trackTarget(input);
@@ -572,6 +593,7 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
         }
     }
     m_candidate = nullptr;
+    m_groundMount = false;
     const combat::GrabKind kind =
         input.command == combat::command::kCircleHeld ? combat::GrabKind::Tackle : combat::GrabKind::Grab;
     const float circleRange = m_ranges != nullptr ? combat::grabSearchRange(*m_ranges, kind, tuning.grabSearchScale)
@@ -579,15 +601,28 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
     if (input.command == combat::command::kCircleTapped || input.command == combat::command::kCircleHeld) {
         const float range = circleRange;
         // Any human that can be held (Combatant::holdable(): a passive target, or a human without flag 0x40) standing
-        // with health left.
+        // with health left; with none, one lying where a circle mounts him (Holdable::mountableOnGround()), as
+        // Player_FindCounterTarget's second pass takes a downed human its first refuses. **Coney stand-in**: an AI's
+        // circle searches the same way instead of taking its own target.
+        const auto lyingToMount = [](Combatant& target) {
+            const Holdable* holdable = target.holdable();
+            return holdable != nullptr && holdable->mountableOnGround();
+        };
         std::vector<combat::TargetCandidate> candidates;
         candidates.reserve(input.targets.size());
         for (Combatant* target : input.targets) {
             candidates.push_back(combat::TargetCandidate{
                 target->position(), target->holdable() != nullptr && target->state() == TargetState::Standing &&
-                                        !target->health().depleted()});
+                                        !target->health().depleted() && !lyingToMount(*target)});
         }
-        const std::size_t found = combat::nearestTarget(input.position, candidates, range);
+        std::size_t found = combat::nearestTarget(input.position, candidates, range);
+        if (found == combat::kNoTarget) {
+            for (std::size_t i = 0; i < candidates.size(); ++i) {
+                candidates[i].available = lyingToMount(*input.targets[i]);
+            }
+            found = combat::nearestTarget(input.position, candidates, range);
+            m_groundMount = found != combat::kNoTarget;
+        }
         m_candidate = found != combat::kNoTarget ? input.targets[found]->holdable() : nullptr;
     } else if (input.command == combat::command::kCircleCross) {
         m_candidate = strongGrappleTarget(input);
@@ -600,7 +635,8 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
     } else if (input.command == combat::command::kSquarePressed || input.command == combat::command::kCrossLongHold) {
         m_tandemCandidate = tandemTarget(input, combat::kKeepTargetRange);
     }
-    in.tandemTarget = m_tandemCandidate != nullptr;
+    // A human found lying is mounted before the tandem is tried (Player_GrabOrTackle tests him first).
+    in.tandemTarget = m_tandemCandidate != nullptr && !m_groundMount;
     in.grabTargetInReach = m_candidate != nullptr;
     in.grabBlocked = hasFlag(flag::kBlockFrontGrab) && hasFlag(flag::kBlockRearGrab);
     // Square with the stick asking for a snap: the snap's own search. The current target found means no snap.
@@ -759,7 +795,13 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
         }
         consumed = true;
     }
-    if ((out.grabStarted || out.tackleStarted) && m_candidate != nullptr) {
+    if ((out.grabStarted || out.tackleStarted) && m_candidate != nullptr && m_groundMount) {
+        // The search found him lying: the grounded mount, or nothing at all when it refuses (out of its reach).
+        if (!startGroundedMount(*m_candidate, input, heading, animator)) {
+            m_combat.release();
+        }
+        consumed = true;
+    } else if ((out.grabStarted || out.tackleStarted) && m_candidate != nullptr) {
         const int connect = out.grappleAnim != id::kNone ? out.grappleAnim : static_cast<int>(clips::kGrabFrontEnd);
         startHold(*m_candidate, input, heading, out.tackleStarted, connect, animator);
         consumed = true;

@@ -132,6 +132,9 @@ struct FighterInput {
     bool sprinting = false;    ///< L2 held with stamina left: the sprint state (`0x1000000`), which drops the target.
     bool padControlled = true; ///< The per-player record's `+0x1b` (HumanRecord::padDriven).
     bool throwAiming = false;  ///< In a throw aim (`Human_MoveThrowAim` drives it), where L1 held does nothing.
+    /// The human this fighter is, as another's grab or mount holds it: a mount's reversal hands the mounter over to
+    /// the human that reversed it (Holdable::takeReversedMount()). Null when none (then nothing can reverse it).
+    Holdable* self = nullptr;
 };
 
 /// The camera shake a reaction asks for (docs/research/camera.md#shake): on the attacker's camera when a player hit,
@@ -417,6 +420,22 @@ class Fighter {
     /// tackler whose intro is under way takes it and plays the pair (answerCounter()).
     /// Research: docs/research/ai-fights.md#block
     [[nodiscard]] std::optional<CounterPress> takeCounterPress();
+    /// Whether a circle at this human mounts it where it lies (the grounded mount): `Human_CanBeGrabbed`'s test of a
+    /// knocked-down human, read through Coney's clips. It lies in the grounded idle 196 (not in the knockdown's
+    /// reaction or a ground hit's 195, whose held bits the original refuses), or its rise 199 is under half played; it
+    /// has health left, is in no pair and has no flag `0x40`. **Coney's reading**: Coney's victim leaves the ground
+    /// as 199 starts, so the rise is read by its clip rather than the down state.
+    /// Research: docs/research/combat-reactions.md#ground-escape
+    /// @orig 0x002256a0 Human_CanBeGrabbed (unknown)
+    [[nodiscard]] bool mountableOnGround(const HumanAnimator& animator) const;
+    /// The reversal of the mount this human is held down in: it is out from under `mounter` and on top of it, playing
+    /// 242 then the mounting idle 210 (seated onto `mounter` there, seatMount()), while `mounter` plays 243 from this
+    /// human's set and then the mounted idle 207. **Coney stand-in**: the original unlinks the pair for the reversal's
+    /// clips and links it the other way at 242's end (`Mount_OnReversalEnd` 0x00272310, which also gets off at once
+    /// from a new victim with flag `0x20000`); Coney links it at once, and the auto-escape flag is not read there.
+    /// Research: docs/research/combat-reactions.md#ground-escape
+    /// @orig 0x002723e8 Mount_StartReversal (unknown)
+    void reverseMount(Holdable& mounter, HumanAnimator& animator);
     /// The grabbing player's movement: with the hold standing still (no move playing) and the stick beyond
     /// CombatTuning::grabTurnStick, turns `heading` towards the stick's heading `stickHeading` + 180° (the grabber's
     /// back to the stick) by combat::grabTurnStep() and returns the pair's backward walk (m/s, world axes); zero
@@ -442,6 +461,7 @@ class Fighter {
     /// Another human's grab or tackle that drives this one (the player holding an AI's human, Holdable) puts it in
     /// `targetState`: Held or Mounted holds it (what it was doing ends; it neither moves itself nor acts until let go),
     /// Standing frees it, Grounded knocks it down to rise later; a stun ends. The clips are the caller's.
+    /// @coney-only Coney's hold state, which the tagged grab and mount pieces set on their victim
     void enterHold(TargetState targetState, HumanAnimator& animator, std::uint64_t nowMs);
     /// Its grabber still drives the hold this update (Holdable::keepHold()). A held human whose grabber has not kept
     /// the hold for kHoldLostUpdates of its own updates is let go (freeFromLostGrabber()).
@@ -516,6 +536,8 @@ class Fighter {
     [[nodiscard]] int duckCounters() const { return m_duckCounters; }
     /// Counters played from the rise (617-620 out of 199, riseCounter()).
     [[nodiscard]] int riseCounters() const { return m_riseCounters; }
+    /// Mounts reversed from below (242, then on top: `Mount_StartReversal`, the statistics' combat event 4).
+    [[nodiscard]] int mountReversals() const { return m_mountReversals; }
     /// The repeat tracker of the player's hits.
     [[nodiscard]] const combat::RepeatTracker& repeats() const { return m_repeat; }
     /// Whether a hit plays no reaction (human `+0xe0` bit `0x800`): the hit still takes its health, but the human's
@@ -847,6 +869,12 @@ class Fighter {
     // (takeHeldReport()); nothing is played here. **Coney's choice**: the reversal (R1) is not offered this way.
     // @orig 0x0027fd68 Player_UpdateGrabbed (unknown)
     void struggleInHold(const FighterInput& input, const HumanAnimator& animator);
+    // One update held down in a mount another human drives (heldInGrab() gives the mounter's numbers): this update's
+    // command decides a struggle, a break or a reversal (combat::updateTackled()), reported for the mounter to play
+    // (takeHeldReport()); nothing is played here. Its own clips gate the input: the mounted idle reads everything, the
+    // struggle 250 only the drain, any other clip nothing (**Coney's reading** of the held bits 0x1 and 0x5c7eee0).
+    // @orig 0x0027f1a0 Player_UpdateTackled (unknown)
+    void struggleInMount(const FighterInput& input, const HumanAnimator& animator);
     // The wall a throw to the stick's side would meet (`Player_Throw` `0x0026dd08`,
     // docs/research/combat-throws.md#throws): a ray 1.4 m up along the side's body axis for the side's wall-throw far
     // range + 0.2 m, then along the stick's own direction; a steep face (normal · up below cos 80°) within the far
@@ -881,8 +909,35 @@ class Fighter {
     // The grabber's numbers its victim's struggle reads (power, hurt, rage, flag 0x40, its class's divisor).
     [[nodiscard]] combat::GrabberState grabberState() const;
     // The grabber's side of what its held victim decided: the power it costs, the move's pair of clips and damage,
-    // or the escape that knocks the grabber down.
+    // or the escape that knocks the grabber down; in a mount, applyMountReport() takes it.
+    // @coney-only Coney's hand-off of the held human's decision to the pieces that play it
     void applyHeldReport(const GrabbedReport& report, const FighterInput& input, HumanAnimator& animator);
+    // The mounter's side of what its mounted victim decided: the struggle's drain, then its strike (the victim 250 and
+    // the mounter 251 from the victim's set, the victim's damage of 250 to the mounter), the break (getOffMount()) or
+    // the reversal (the victim mounts this one, Holdable::takeReversedMount()). **Coney stand-in**: a struggle that
+    // empties the mounter's health ends the mount as a let-go does (the victim rises with 199), not with the mounter's
+    // death reaction from 211; the doubled damage of the victim's flag 0x4000 is not read.
+    // @orig 0x00271ef0 Mount_Strike (unknown)
+    void applyMountReport(const GrabbedReport& report, const FighterInput& input, HumanAnimator& animator);
+    // The mount is broken from below or its power is out: the victim plays 246 and the mounter 247 from the victim's
+    // set, both to the fight idle, both free; nothing while the mounter's own grounded mount (237-240) still plays (its
+    // 0x2000).
+    // @orig 0x00271470 Mount_GetOff (unknown)
+    void getOffMount(HumanAnimator& animator);
+    // The grounded mount on `victim`, lying where a circle mounts it (Holdable::mountableOnGround()), refused (false,
+    // nothing played) when it lies beyond the far range of 237 + the side the mounter stands on (× 1.25 for a player).
+    // Otherwise the mounter faces it and plays that clip then the mounting idle 210, where it is seated onto the
+    // victim (seatMount()); the victim plays 241 then the mounted idle 207, mounted from now on; the mounter is in
+    // the mount. **Coney's choice**: the 0.1 s steer onto the clip's reach is the seat at 210; the paired tasks' 0.1 s
+    // blends are Coney's fades; the victim is not warned (`Human_WarnOfAttack`).
+    // @orig 0x00271b30 Mount_StartOnGrounded (unknown)
+    bool startGroundedMount(Holdable& victim, const FighterInput& input, float& heading, HumanAnimator& animator);
+    // The grounded mount's clip (237-240) has ended: a victim with the auto-escape flag gets this mounter off, and one
+    // pressing circle wins on a coin, reversing the mount with his stick at rest or breaking out with it pushed
+    // (combat::mountClipEnd()). Coney stand-in: the reach, height and clear-line tests are the seat at 210's, the move
+    // is not scored (`Grab_ScoreMove`) and the record's +0xb8 is not cleared; a mount strike's end is not tested here.
+    // @orig 0x002700a8 Mount_OnStrikeEnd (unknown)
+    void endGroundedMountClip(const FighterInput& input, HumanAnimator& animator);
 
     const combat::AnimRangeList* m_ranges;
     std::uint64_t m_flags = 0; // the human flag word (+0xe0)
@@ -921,6 +976,7 @@ class Fighter {
     float m_grabTurn = 0.0F;       // the grab's stick turn of the last update, radians
     int m_duckCounters = 0;        // the duck counters played
     int m_riseCounters = 0;        // the counters played from the rise
+    int m_mountReversals = 0;      // mounts reversed from below (mountReversals())
     int m_hitsLanded = 0;
     int m_animSet = 0;                          // the anim set a held weapon applied (record +0x10's top)
     bool m_holdingObject = false;               // a world object in hand (setHoldingObject())
@@ -965,19 +1021,21 @@ class Fighter {
     int m_holdUnkept = 0;              // own updates held since the grabber last kept the hold (keepHold())
     std::uint64_t m_l1WindowEndMs = 0; // record +0xf4: L1's release window's end
     // The flags, together so the class packs.
-    bool m_player = true;         // FighterProfile::player
-    bool m_bossClass = false;     // FighterProfile::bossClass
-    bool m_warriorBrain = false;  // setWarriorBrain(): brain type 3
-    bool m_l1Held = false;        // L1 held this update
-    bool m_stanceOn = false;      // a player's fight stance (record +0x00 0x1)
-    bool m_stanceEntered = false; // enterStance() ran since takeStanceEntered(): the hiding ends
-    bool m_lockOn = false;        // a player's lock (0x4) and lock-on movement (Human_FightStanceMove)
-    bool m_l1Lock = false;        // L1's lock bit (0x8)
-    bool m_lockBlocked = false;   // setLockBlocked(): hidden, the target does not lock
-    bool m_lockMoveFree = false;  // locked, but a throw put him on the free movement (0x00240e38)
-    bool m_tacklePending = false; // the tackle's intro plays; the victim reacts when its hit clip starts
-    bool m_mountPending = false;  // the grab's mount (118) or the tackle plays; the mounter is seated at 210
-    int m_seatUpdates = 0;        // the updates of the seat's slide left; the victim is attached when it ends
+    bool m_player = true;              // FighterProfile::player
+    bool m_bossClass = false;          // FighterProfile::bossClass
+    bool m_warriorBrain = false;       // setWarriorBrain(): brain type 3
+    bool m_l1Held = false;             // L1 held this update
+    bool m_stanceOn = false;           // a player's fight stance (record +0x00 0x1)
+    bool m_stanceEntered = false;      // enterStance() ran since takeStanceEntered(): the hiding ends
+    bool m_lockOn = false;             // a player's lock (0x4) and lock-on movement (Human_FightStanceMove)
+    bool m_l1Lock = false;             // L1's lock bit (0x8)
+    bool m_lockBlocked = false;        // setLockBlocked(): hidden, the target does not lock
+    bool m_lockMoveFree = false;       // locked, but a throw put him on the free movement (0x00240e38)
+    bool m_tacklePending = false;      // the tackle's intro plays; the victim reacts when its hit clip starts
+    bool m_mountPending = false;       // the grab's mount (118) or the tackle plays; the mounter is seated at 210
+    bool m_groundMount = false;        // this update's circle found its human lying where it mounts him (m_candidate)
+    bool m_groundMountLanding = false; // the grounded mount's clip plays; its end is tested at 210
+    int m_seatUpdates = 0;             // the updates of the seat's slide left; the victim is attached when it ends
     bool m_mugOnTarget = false;
     bool m_rear = false;     // the hold is from the victim's rear
     bool m_rearHeld = false; // held: its grabber holds it from its rear in a grab (setRearHeld())

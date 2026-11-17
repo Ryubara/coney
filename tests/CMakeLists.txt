@@ -375,6 +375,7 @@ target_sources(coney_tests PRIVATE
     human/being_hit_test.cpp
     human/rise_counter_test.cpp
     human/human_grab_test.cpp
+    human/grounded_mount_test.cpp
     human/human_tandem_test.cpp
     human/script_state_test.cpp
     human/jump_test.cpp
@@ -401,6 +402,7 @@ target_sources(coney_tests PRIVATE
     combat/disc_combat_test.cpp
     combat/grab_test.cpp
     combat/grabbed_test.cpp
+    combat/tackled_test.cpp
     combat/lock_on_test.cpp
     combat/meters_test.cpp
     combat/player_combat_test.cpp
@@ -562,6 +564,7 @@ if(CONEY_DEBUG_TOOLS)
         platform/disc_mesh_views_test.cpp
         platform/disc_model_swap_test.cpp
         platform/disc_rise_counter_test.cpp
+        platform/disc_ground_escape_test.cpp
         platform/disc_sprint_attacks_test.cpp
         platform/disc_strike_contact_test.cpp
         platform/disc_tandem_test.cpp

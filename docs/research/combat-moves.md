@@ -3,7 +3,8 @@ kind: topic
 system: combat
 owns:
   functions: [
-    "0x00258e10", "0x00258e88", "0x002590f8", "0x0026f780", "0x0026f860", "0x00277458", "0x0027d6e0",
+    "0x00258e10", "0x00258e88", "0x002590f8", "0x0026f780", "0x0026f860", "0x00271470", "0x00271ef0", "0x00277458",
+    "0x0027d6e0", "0x0027f1a0",
   ]
 ---
 # Combat: moves, their timing and frame data
@@ -721,6 +722,10 @@ Confirmed (code); confirmed (runtime) below:
 `Grab_CanEscape` (`0x00225830`, confirmed (code): at or below a quarter of the mounter's maximum power, half
 when hurt, always; above it, a 1 in floor(power / that) chance per press; never while the mounter rages) makes the
 mounter's power the gate: struggle first, then circle or R1. The AI does the same through its commands.
+
+The struggle's strike is `Mount_Strike` (`0x00271ef0`) and the break `Mount_GetOff` (`0x00271470`), which a mounter
+whose power runs out also gets (`Human_UpdateMeters`); what each does to both humans is under [Down and under
+attack](combat-reactions.md#ground-escape). Confirmed (code).
 
 Confirmed (runtime) (`moves_mounted_square`, `_r1`, `_circle`; the puppet civilian at power 400 given the tackle command
 `0xe` 1.5 m away): its intro 3 ran 19 updates, then the player played 6 for 46 updates (every press refused) under
