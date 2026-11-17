@@ -751,13 +751,15 @@ flash and weapons sellers on difficulty 2 and up. Chapter 2's first spray seller
 
 ### GoalRiot {#riot}
 
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
 Type 84 (`Goal_Riot` `0x002d0e98`, `RiotGoal_Init` `0x002d0f68`, vtable `0x005414d0`, Process `RiotGoal_Process`
-`0x002d1c38`); the binding's arguments are on [`GoalRiot`](../references/bindings/ai.md#goalriot). Confirmed (code)
-unless marked. Fields: `+0x10` the wander vector, `+0x20` the move deadline, `+0x24` the next shout, `+0x2c` radius,
-`+0x32` act chance, `+0x33` acts left, `+0x34` fight chance, `+0x35` the player-fight chance, `+0x36` **state** (0
-roam, 1 smash, 2 loot, 3 leave), `+0x37` decided (set at the first decision, never cleared), `+0x38` failed moves,
-`+0x39` the roam counter (starts at 26), `+0x3a` shout. Init: the wander vector (0, 2.5, 0.2), and with
-`Random_Int(100)` < 51 (0-100 inclusive) the state starts at 1 or 2 (a second draw < 50: loot).
+`0x002d1c38`); the binding's arguments are on [`GoalRiot`](../references/bindings/ai.md#goalriot). Fields: `+0x10` the
+wander vector, `+0x20` the move deadline, `+0x24` the next shout, `+0x2c` radius, `+0x32` act chance, `+0x33` acts left,
+`+0x34` fight chance, `+0x35` the player-fight chance, `+0x36` **state** (0 roam, 1 smash, 2 loot, 3 leave), `+0x37`
+decided (set at the first decision, never cleared), `+0x38` failed moves, `+0x39` the roam counter (starts at 26),
+`+0x3a` shout. Init: the wander vector (0, 2.5, 0.2), and with `Random_Int(100)` < 51 (0-100 inclusive) the state starts
+at 1 or 2 (a second draw < 50: loot).
 
 **The turf gate** (`0x0028ff58(brain, human)` → `0x001652a0`): whether a human's position is inside the turf of
 the rioter's gang (brain `+0x20c`; `Gang_IsPointInTurf`, `0x001652e8`, true for a gang with no turf). The riot asks
@@ -785,14 +787,16 @@ there is no player (`GameState_FindNearestPlayer` gives the nearest and its squa
   384, sorted by `0x003868d0` (inferred: by distance), the first that passes): not broken (object `+0x54` bit
   `0x10`), class flags
   (vtable `+0x54`) without bit 26 or `0x800000`, **vandalisable** (`Object_IsVandalisable` `0x00394f30`: object kind,
-  `CfgObj` `+0x86`, not 30 `TYPE_BREAKANDENTER_DOOR`, 40 `TYPE_EXPLOSIVE` or 42 `TYPE_FIREBARREL`; not of class
-  `dyn_masks` when type byte `+0x5a` < 1; not in the excluded vandalize zone (`CfgExcludedVandalizeZone`,
-  `0x005148bc`, object `+0x114`); then true when its vtable `+0xf4` record has `+0x40` & `0x30`, or its anim set
-  `+0x87` is 4 or 5), not claimed by the rioter's own gang in the last 5 s (object `+0xec` gang, `+0xf0` time), for
-  an AI rioter not within 1 m of a player, and with a stand point at the type's reach (the larger of `+0x78` and
-  `+0x7c`) on the rioter's side (`0x00252410`) that the rioter reaches in a straight line. The search claims it for
-  the gang for 5 s. If its position passes the turf gate, the rioter gets a **VandalizeItem** goal (type 47,
-  `0x002dd630` → `0x002dd6b8`, cheer flag 1) on it.
+  `CfgObj` `+0x86`, not 30 `TYPE_BREAKANDENTER_DOOR`, 40 `TYPE_EXPLOSIVE` or 42 `TYPE_FIREBARREL`; a type worth
+  under 1 (byte `+0x5a`) only when its class **is** `dyn_masks`; not in the excluded vandalize zone
+  (`CfgExcludedVandalizeZone`, `0x005148bc`, object `+0x114`); then true when its vtable `+0xf4` record has `+0x40` &
+  `0x30`, or its anim set `+0x87` is 4 or 5), not claimed by the rioter's own gang in the last 5 s (object `+0xec`
+  gang, `+0xf0` time), for an AI rioter not within 1 m of a player, and with a point the rioter can reach on the
+  navigation ground under it: the object's own spot, whatever its size, since `Nav_FindPolygonUnder` (`0x00252410`)
+  overwrites the stand-off it is passed at `0x00252454` and never reads the direction. The search claims it for the
+  gang for 5 s. Confirmed (code) at `0x00394f30`, `0x0029d5f0` and `0x00252454`; the wreck reads the same on [The
+  smash target](crew-wreck.md#smash-target) and [The stand point](crew-wreck.md#stand-point). If its position passes
+  the turf gate, the rioter gets a **VandalizeItem** goal (type 47, `0x002dd630` → `0x002dd6b8`, cheer flag 1) on it.
 - **2, loot.** The nearest **store flag** (activity 14, `storeJewelry` / `storeFront`, [Flags](flags.md)) within
   20 m; its group (`+0xd8`) must still have objects (`0x0039a580`), and the rioter must reach the flag in a straight
   line (`0x0024e078`). The target is then the nearest object of that object zone (`0x0039a2c0` mode 2) spawned with
@@ -802,7 +806,8 @@ there is no player (`GameState_FindNearestPlayer` gives the nearest and its squa
 - **After 1 or 2** (target found or not): with `+0x37` set, acts left − 1, and at 0 state 3; else (only the free act
   from Init) back to 0. With acts left > 0 the state **stays** 1 or 2, so the next update looks for another target.
 - **3, leave.** The nearest enabled exit flag (activity 8) whose position passes the turf gate (`0x00416f08`); none:
-  try again next update. Found: push `GoalMoveToExitFlag` (`0x002da8f8`, gait 4, speech `0x59` when shout) on top.
+  try again next update. Found: push the MoveToExitFlag goal (`GoalMoveToExitFlag_Init` `0x002da8f8`, gait 4, speech
+  `0x59` when shout) on top.
 
 **The roam destination** (`0x002d18b8`), confirmed (code):
 
