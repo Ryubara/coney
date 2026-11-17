@@ -93,8 +93,11 @@ inline constexpr std::uint32_t kL1HeldRefused = 0x2000000;
 inline constexpr float kPickStick = 0.01F;
 /// Targets more than this far above or below are skipped.
 inline constexpr float kPickHeight = 2.0F;
-/// The object search's second, wider pass: objects within this many degrees of the heading.
+/// The object search's second, wider pass: objects within this many degrees of the heading (`0x0051096c` set to
+/// 2.356 rad).
 inline constexpr float kObjectWideConeDegrees = 135.0F;
+/// That wider pass searches the world objects within the range × this (`Player_PickTarget`).
+inline constexpr float kPickObjectWideScale = 0.8F;
 /// The strong grapple's search range without an Anim Range List (Rembrandt's, **Coney's choice**).
 inline constexpr float kStrongGrappleFallbackRange = 3.0F;
 /// Beyond the attack's far range the attacker only turns, onto the target led by his velocity; a lead faster than
@@ -107,11 +110,39 @@ inline constexpr int kPlayerHealth = 900;
 /// keeps the hold at most 2 of the victim's updates apart; 3 means it has stopped.
 inline constexpr int kHoldLostUpdates = 3;
 
-/// A breakable object square may strike (a glass pane): its handle and the point an attack aims at.
+/// Which of the world's lists an object target is in: the searches go through each list with its own filter
+/// (docs/research/combat-targets.md#targets).
+enum class ObjectKind : std::uint8_t {
+    Glass,       ///< A glass pane (world `+0x84c`), through `Target_GlassFilter`.
+    WorldObject, ///< A world object (world `+0x840`), through `Target_ObjectFilter`.
+    Car,         ///< A car (world `+0x844`) the car pass took (world_objects::carTargetable()).
+};
+
+/// An object an attack may strike: a glass pane, a world object or a car, its handle and the point an attack aims at.
 struct ObjectTarget {
     double handle = 0;
-    anim::Vec3 point{}; ///< The pane's centre.
+    anim::Vec3 point{}; ///< The pane's centre, the object's position, the car's aim point.
+    ObjectKind kind = ObjectKind::Glass;
+    std::uint32_t bodyFlags = 0; ///< A world object's body flags (world_objects::bodyFlagsOf()).
+    bool hasBody = true;         ///< The object query (vtable `+0xf4`) holds: a pane or object not yet broken.
 };
+
+/// What a target search found: a human, or one of FighterInput::objects (the original's target is one object, and
+/// `Human_GetTarget` of an object is null). Both null for nothing.
+struct TargetPick {
+    Combatant* human = nullptr;
+    const ObjectTarget* object = nullptr;
+};
+
+/// Whether the target searches take world object `object` for a searcher at `from` aiming along `along` (radians)
+/// within `cone` degrees: a world object with a body, within the cone and 2 m in height, whose body makes it a strike
+/// target (docs/research/combat-targets.md#targets).
+/// @orig 0x0027a120 Target_ObjectFilter (unknown)
+[[nodiscard]] bool objectTargetable(const ObjectTarget& object, anim::Vec3 from, float along, float cone);
+/// Whether the target searches take glass pane `pane` for a searcher at `from` aiming along `along` within `cone`
+/// degrees: a pane with a body, within the cone and 2 m in height (docs/research/combat-targets.md#targets).
+/// @orig 0x0027a070 Target_GlassFilter (unknown)
+[[nodiscard]] bool glassTargetable(const ObjectTarget& pane, anim::Vec3 from, float along, float cone);
 
 /// What the fighter is given each update.
 struct FighterInput {
@@ -132,6 +163,9 @@ struct FighterInput {
     bool sprinting = false;    ///< L2 held with stamina left: the sprint state (`0x1000000`), which drops the target.
     bool padControlled = true; ///< The per-player record's `+0x1b` (HumanRecord::padDriven).
     bool throwAiming = false;  ///< In a throw aim (`Human_MoveThrowAim` drives it), where L1 held does nothing.
+    /// The human this fighter is, as another's grab or mount holds it: a mount's reversal hands the mounter over to
+    /// the human that reversed it (Holdable::takeReversedMount()). Null when none (then nothing can reverse it).
+    Holdable* self = nullptr;
 };
 
 /// The camera shake a reaction asks for (docs/research/camera.md#shake): on the attacker's camera when a player hit,
@@ -245,20 +279,35 @@ class Fighter {
     /// slides to `goal`, each at a constant rate over `seconds` (TurnAndSlide), on top of its clip's root motion, as
     /// the steer of an attack does (Holdable::carryOver(), docs/research/combat-throws.md#throw-direction).
     void carryOver(anim::Vec3 position, float heading, anim::Vec3 goal, float targetHeading, float seconds);
-    /// The target human the search would pick for an attack of `range` metres with `current` as the current target
-    /// (null for none): the nearest standing enemy within range × 1.1 and 54° of the stick's heading (the facing with
-    /// the stick at rest); with no current target, within range × 0.9 at any angle; then within range × 0.7 at any
-    /// angle. With none found, the current target when it is standing within range; else null. A human target is
-    /// always searched for again (only an object target is kept as it is, which this search does not pick).
+    /// The target human the search would pick for an attack of `range` metres with `current` as the current human
+    /// target (null for none): pickTargetOrObject() seen as a human, so null when a car, a world object or a pane wins
+    /// (`Human_GetTarget` of an object is null).
     /// @orig 0x0027a6c0 Player_PickTarget (unknown)
     [[nodiscard]] static Combatant* pickTarget(const FighterInput& input, float range,
                                                const Combatant* current = nullptr);
-    // Square's object target, with no human in front: of `input.objects` within the object attack's far range, the
-    // nearest within 54° of the stick's heading (the facing at rest), else within 135°. Null for none.
-    // **Coney's choices**: range is the object attack's far range (the original approaches from farther, not built);
-    // the 135° pass keeps the whole range (the original's × 0.8 is not applied).
-    // @orig 0x0027a6c0 Player_PickTarget (unknown)
-    [[nodiscard]] const ObjectTarget* pickObjectTarget(const FighterInput& input) const;
+    /// `Player_PickTarget` in full, the first pass that finds anything ending it: `currentObject`, an object target,
+    /// kept while objectTargetable() takes it (135°); the enemies within range × 1.1 and 54° of the aim; a car;
+    /// the world objects within range and 54° (objectTargetable()); the panes within range and 54°
+    /// (glassTargetable()); with no current human target, the enemies within range × 0.9 at any angle; then the world
+    /// objects within range × 0.8 and 135°, and the humans within range × 0.7 at any angle, a downed one too. The
+    /// nearest of that pass wins; with none, the current target (`current`, else `currentObject`) when it is no car,
+    /// has a body and is within range (docs/research/combat-targets.md#targets).
+    /// @orig 0x0027a6c0 Player_PickTarget (unknown)
+    [[nodiscard]] static TargetPick pickTargetOrObject(const FighterInput& input, float range,
+                                                       const Combatant* current = nullptr,
+                                                       const ObjectTarget* currentObject = nullptr);
+    /// `Player_FindAttackTarget`'s passes at the far range `far` along the aim `along` (radians): the enemies within
+    /// 54°, the world objects, the panes, then with no current human target the enemies at any angle and the humans at
+    /// any angle, a downed one too. The nearest of the first pass that finds any; with none, the current human target
+    /// as it is, else `currentObject` when it is no car and has a body (docs/research/combat-targets.md#targeting).
+    /// @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
+    [[nodiscard]] static TargetPick attackSearch(const FighterInput& input, float far, float along,
+                                                 const Combatant* current, const ObjectTarget* currentObject = nullptr);
+    /// `Attack_FindNearestInReach`'s passes between `nearest` and `far` metres within 54° of the stick's heading (the
+    /// facing at rest): the standing enemies, then the world objects, then the panes; the nearest of the first pass
+    /// that finds any (docs/research/combat/index.md#charge-aim).
+    /// @orig 0x0027b058 Attack_FindNearestInReach (unknown)
+    [[nodiscard]] static TargetPick reachSearch(const FighterInput& input, float nearest, float far);
     // Circle + cross's search (combat::nearestInCone() along the stick, combat::strongGrappleRange()): makes the human
     // found the target and returns it when it may be grabbed, else null.
     // @orig 0x00263c90 Player_SpecialAttack (unknown)
@@ -417,6 +466,22 @@ class Fighter {
     /// tackler whose intro is under way takes it and plays the pair (answerCounter()).
     /// Research: docs/research/ai-fights.md#block
     [[nodiscard]] std::optional<CounterPress> takeCounterPress();
+    /// Whether a circle at this human mounts it where it lies (the grounded mount): `Human_CanBeGrabbed`'s test of a
+    /// knocked-down human, read through Coney's clips. It lies in the grounded idle 196 (not in the knockdown's
+    /// reaction or a ground hit's 195, whose held bits the original refuses), or its rise 199 is under half played; it
+    /// has health left, is in no pair and has no flag `0x40`. **Coney's reading**: Coney's victim leaves the ground
+    /// as 199 starts, so the rise is read by its clip rather than the down state.
+    /// Research: docs/research/combat-reactions.md#ground-escape
+    /// @orig 0x002256a0 Human_CanBeGrabbed (unknown)
+    [[nodiscard]] bool mountableOnGround(const HumanAnimator& animator) const;
+    /// The reversal of the mount this human is held down in: it is out from under `mounter` and on top of it, playing
+    /// 242 then the mounting idle 210 (seated onto `mounter` there, seatMount()), while `mounter` plays 243 from this
+    /// human's set and then the mounted idle 207. **Coney stand-in**: the original unlinks the pair for the reversal's
+    /// clips and links it the other way at 242's end (`Mount_OnReversalEnd` 0x00272310, which also gets off at once
+    /// from a new victim with flag `0x20000`); Coney links it at once, and the auto-escape flag is not read there.
+    /// Research: docs/research/combat-reactions.md#ground-escape
+    /// @orig 0x002723e8 Mount_StartReversal (unknown)
+    void reverseMount(Holdable& mounter, HumanAnimator& animator);
     /// The grabbing player's movement: with the hold standing still (no move playing) and the stick beyond
     /// CombatTuning::grabTurnStick, turns `heading` towards the stick's heading `stickHeading` + 180° (the grabber's
     /// back to the stick) by combat::grabTurnStep() and returns the pair's backward walk (m/s, world axes); zero
@@ -442,6 +507,7 @@ class Fighter {
     /// Another human's grab or tackle that drives this one (the player holding an AI's human, Holdable) puts it in
     /// `targetState`: Held or Mounted holds it (what it was doing ends; it neither moves itself nor acts until let go),
     /// Standing frees it, Grounded knocks it down to rise later; a stun ends. The clips are the caller's.
+    /// @coney-only Coney's hold state, which the tagged grab and mount pieces set on their victim
     void enterHold(TargetState targetState, HumanAnimator& animator, std::uint64_t nowMs);
     /// Its grabber still drives the hold this update (Holdable::keepHold()). A held human whose grabber has not kept
     /// the hold for kHoldLostUpdates of its own updates is let go (freeFromLostGrabber()).
@@ -483,7 +549,7 @@ class Fighter {
     [[nodiscard]] const GrabbedReport& grabbedReport() const { return m_report; }
     /// The shake the reaction played in the last update asks for; none when it played none.
     [[nodiscard]] const std::optional<ReactionShake>& reactionShake() const { return m_reactionShake; }
-    /// Whether rage started in the last update (a level-1 shake on the player's camera).
+    /// Whether rage started from the pad in the last update (`Rage_Enter` ran: a level-1 shake on the player's camera).
     [[nodiscard]] bool rageStarted() const { return m_rageStarted; }
     /// Held in another human's grab.
     [[nodiscard]] bool grabbed() const { return m_grabbed.has_value(); }
@@ -516,6 +582,8 @@ class Fighter {
     [[nodiscard]] int duckCounters() const { return m_duckCounters; }
     /// Counters played from the rise (617-620 out of 199, riseCounter()).
     [[nodiscard]] int riseCounters() const { return m_riseCounters; }
+    /// Mounts reversed from below (242, then on top: `Mount_StartReversal`, the statistics' combat event 4).
+    [[nodiscard]] int mountReversals() const { return m_mountReversals; }
     /// The repeat tracker of the player's hits.
     [[nodiscard]] const combat::RepeatTracker& repeats() const { return m_repeat; }
     /// Whether a hit plays no reaction (human `+0xe0` bit `0x800`): the hit still takes its health, but the human's
@@ -541,6 +609,11 @@ class Fighter {
     // same range; the nearest, else the current target when it is standing within that range.
     // @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
     [[nodiscard]] Combatant* findAttackTarget(const FighterInput& input, int farId) const;
+    // The object that is this human's target, in this update's `input.objects`: square's object target while no human
+    // is the target and its attack has not landed (**Coney stand-in** for an object at human `+0xc8`,
+    // docs/research/combat-targets.md#q-object-target); null for none.
+    // @coney-only finds Coney's object target in this update's list, as the original holds it at +0xc8
+    [[nodiscard]] const ObjectTarget* objectTargetIn(const FighterInput& input) const;
     // The target attack `animId` goes for (combat::attackTarget()): `chainStep` when the chain's buffer played it.
     // @orig 0x00286cc8 Player_Square (unknown)
     // @orig 0x00287a18 Player_Cross (unknown)
@@ -561,6 +634,11 @@ class Fighter {
     // @coney-only glue: Coney's dispatcher input, gathered from the world
     [[nodiscard]] combat::CombatInput combatInput(const FighterInput& input, const HumanAnimator& animator,
                                                   bool helpless);
+    // Rage's start, once the dispatcher has started the meter's rage (RageMeter::start(), its part of
+    // `Human_StartRageMode`): the rage sound asked for, a pair broken unless a held move keeps it, then 643 full-body
+    // when free (combat::rageEnterSteps(), docs/research/combat-rage.md#rage-effects).
+    // @orig 0x00284340 Rage_Enter (unknown)
+    void enterRage(HumanAnimator& animator);
     // Plays what the dispatcher decided: the block, rage, a grab or tackle, the grab's moves, the mugging, a theft,
     // an attack.
     // @coney-only glue: plays what Coney's dispatcher decided, through the tagged pieces
@@ -586,9 +664,9 @@ class Fighter {
     // takes it there over 0.1 s (docs/research/combat/index.md#charge-aim).
     // @orig 0x00264878 Player_StartDive (unknown)
     void steerDive(const FighterInput& input, const HumanAnimator& animator, float heading);
-    // The reach search of attack `animId` (the dive's, the charge's): the nearest standing human between its reach and
-    // far range within 54° of the stick or the facing, or null. The dive's warning and steer (warnTarget(),
-    // steerDive()) and a player's charge warning (warnTarget(), as Player_StartCharge `0x00264a80` searches) use it.
+    // The reach search of attack `animId` (the dive's, the charge's): reachSearch() between its reach and far range.
+    // The dive's warning and steer (warnTarget(), steerDive()) and a player's charge warning (warnTarget(), as
+    // Player_StartCharge `0x00264a80` searches) use it; an object found is no human, null.
     // @orig 0x0027b058 Attack_FindNearestInReach (unknown)
     [[nodiscard]] Combatant* nearestInReach(int animId, const FighterInput& input) const;
     // The turn and the slide onto the reach of attack `animId` from `target`, at a constant rate from the next state
@@ -847,6 +925,12 @@ class Fighter {
     // (takeHeldReport()); nothing is played here. **Coney's choice**: the reversal (R1) is not offered this way.
     // @orig 0x0027fd68 Player_UpdateGrabbed (unknown)
     void struggleInHold(const FighterInput& input, const HumanAnimator& animator);
+    // One update held down in a mount another human drives (heldInGrab() gives the mounter's numbers): this update's
+    // command decides a struggle, a break or a reversal (combat::updateTackled()), reported for the mounter to play
+    // (takeHeldReport()); nothing is played here. Its own clips gate the input: the mounted idle reads everything, the
+    // struggle 250 only the drain, any other clip nothing (**Coney's reading** of the held bits 0x1 and 0x5c7eee0).
+    // @orig 0x0027f1a0 Player_UpdateTackled (unknown)
+    void struggleInMount(const FighterInput& input, const HumanAnimator& animator);
     // The wall a throw to the stick's side would meet (`Player_Throw` `0x0026dd08`,
     // docs/research/combat-throws.md#throws): a ray 1.4 m up along the side's body axis for the side's wall-throw far
     // range + 0.2 m, then along the stick's own direction; a steep face (normal · up below cos 80°) within the far
@@ -881,8 +965,35 @@ class Fighter {
     // The grabber's numbers its victim's struggle reads (power, hurt, rage, flag 0x40, its class's divisor).
     [[nodiscard]] combat::GrabberState grabberState() const;
     // The grabber's side of what its held victim decided: the power it costs, the move's pair of clips and damage,
-    // or the escape that knocks the grabber down.
+    // or the escape that knocks the grabber down; in a mount, applyMountReport() takes it.
+    // @coney-only Coney's hand-off of the held human's decision to the pieces that play it
     void applyHeldReport(const GrabbedReport& report, const FighterInput& input, HumanAnimator& animator);
+    // The mounter's side of what its mounted victim decided: the struggle's drain, then its strike (the victim 250 and
+    // the mounter 251 from the victim's set, the victim's damage of 250 to the mounter), the break (getOffMount()) or
+    // the reversal (the victim mounts this one, Holdable::takeReversedMount()). **Coney stand-in**: a struggle that
+    // empties the mounter's health ends the mount as a let-go does (the victim rises with 199), not with the mounter's
+    // death reaction from 211; the doubled damage of the victim's flag 0x4000 is not read.
+    // @orig 0x00271ef0 Mount_Strike (unknown)
+    void applyMountReport(const GrabbedReport& report, const FighterInput& input, HumanAnimator& animator);
+    // The mount is broken from below or its power is out: the victim plays 246 and the mounter 247 from the victim's
+    // set, both to the fight idle, both free; nothing while the mounter's own grounded mount (237-240) still plays (its
+    // 0x2000).
+    // @orig 0x00271470 Mount_GetOff (unknown)
+    void getOffMount(HumanAnimator& animator);
+    // The grounded mount on `victim`, lying where a circle mounts it (Holdable::mountableOnGround()), refused (false,
+    // nothing played) when it lies beyond the far range of 237 + the side the mounter stands on (× 1.25 for a player).
+    // Otherwise the mounter faces it and plays that clip then the mounting idle 210, where it is seated onto the
+    // victim (seatMount()); the victim plays 241 then the mounted idle 207, mounted from now on; the mounter is in
+    // the mount. **Coney's choice**: the 0.1 s steer onto the clip's reach is the seat at 210; the paired tasks' 0.1 s
+    // blends are Coney's fades; the victim is not warned (`Human_WarnOfAttack`).
+    // @orig 0x00271b30 Mount_StartOnGrounded (unknown)
+    bool startGroundedMount(Holdable& victim, const FighterInput& input, float& heading, HumanAnimator& animator);
+    // The grounded mount's clip (237-240) has ended: a victim with the auto-escape flag gets this mounter off, and one
+    // pressing circle wins on a coin, reversing the mount with his stick at rest or breaking out with it pushed
+    // (combat::mountClipEnd()). Coney stand-in: the reach, height and clear-line tests are the seat at 210's, the move
+    // is not scored (`Grab_ScoreMove`) and the record's +0xb8 is not cleared; a mount strike's end is not tested here.
+    // @orig 0x002700a8 Mount_OnStrikeEnd (unknown)
+    void endGroundedMountClip(const FighterInput& input, HumanAnimator& animator);
 
     const combat::AnimRangeList* m_ranges;
     std::uint64_t m_flags = 0; // the human flag word (+0xe0)
@@ -921,6 +1032,7 @@ class Fighter {
     float m_grabTurn = 0.0F;       // the grab's stick turn of the last update, radians
     int m_duckCounters = 0;        // the duck counters played
     int m_riseCounters = 0;        // the counters played from the rise
+    int m_mountReversals = 0;      // mounts reversed from below (mountReversals())
     int m_hitsLanded = 0;
     int m_animSet = 0;                          // the anim set a held weapon applied (record +0x10's top)
     bool m_holdingObject = false;               // a world object in hand (setHoldingObject())
@@ -965,19 +1077,21 @@ class Fighter {
     int m_holdUnkept = 0;              // own updates held since the grabber last kept the hold (keepHold())
     std::uint64_t m_l1WindowEndMs = 0; // record +0xf4: L1's release window's end
     // The flags, together so the class packs.
-    bool m_player = true;         // FighterProfile::player
-    bool m_bossClass = false;     // FighterProfile::bossClass
-    bool m_warriorBrain = false;  // setWarriorBrain(): brain type 3
-    bool m_l1Held = false;        // L1 held this update
-    bool m_stanceOn = false;      // a player's fight stance (record +0x00 0x1)
-    bool m_stanceEntered = false; // enterStance() ran since takeStanceEntered(): the hiding ends
-    bool m_lockOn = false;        // a player's lock (0x4) and lock-on movement (Human_FightStanceMove)
-    bool m_l1Lock = false;        // L1's lock bit (0x8)
-    bool m_lockBlocked = false;   // setLockBlocked(): hidden, the target does not lock
-    bool m_lockMoveFree = false;  // locked, but a throw put him on the free movement (0x00240e38)
-    bool m_tacklePending = false; // the tackle's intro plays; the victim reacts when its hit clip starts
-    bool m_mountPending = false;  // the grab's mount (118) or the tackle plays; the mounter is seated at 210
-    int m_seatUpdates = 0;        // the updates of the seat's slide left; the victim is attached when it ends
+    bool m_player = true;              // FighterProfile::player
+    bool m_bossClass = false;          // FighterProfile::bossClass
+    bool m_warriorBrain = false;       // setWarriorBrain(): brain type 3
+    bool m_l1Held = false;             // L1 held this update
+    bool m_stanceOn = false;           // a player's fight stance (record +0x00 0x1)
+    bool m_stanceEntered = false;      // enterStance() ran since takeStanceEntered(): the hiding ends
+    bool m_lockOn = false;             // a player's lock (0x4) and lock-on movement (Human_FightStanceMove)
+    bool m_l1Lock = false;             // L1's lock bit (0x8)
+    bool m_lockBlocked = false;        // setLockBlocked(): hidden, the target does not lock
+    bool m_lockMoveFree = false;       // locked, but a throw put him on the free movement (0x00240e38)
+    bool m_tacklePending = false;      // the tackle's intro plays; the victim reacts when its hit clip starts
+    bool m_mountPending = false;       // the grab's mount (118) or the tackle plays; the mounter is seated at 210
+    bool m_groundMount = false;        // this update's circle found its human lying where it mounts him (m_candidate)
+    bool m_groundMountLanding = false; // the grounded mount's clip plays; its end is tested at 210
+    int m_seatUpdates = 0;             // the updates of the seat's slide left; the victim is attached when it ends
     bool m_mugOnTarget = false;
     bool m_rear = false;     // the hold is from the victim's rear
     bool m_rearHeld = false; // held: its grabber holds it from its rear in a grab (setRearHeld())

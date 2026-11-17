@@ -87,10 +87,13 @@ struct RiseRun {
 };
 
 // Knocks the player down with 653 from the attacker 0.8 m to his left, waits for 199, then plays `script` (its frame 0
-// is k = 1) for `updates` more updates. `player` false makes him a human no player controls.
+// is k = 1) for `updates` more updates. `player` false makes him a human no player controls; `objects` are the objects
+// his searches may find.
 RiseRun riseWith(const FightCharacter& character, const std::string& script, int updates = 60, bool player = true,
-                 std::uint64_t flags = 0, float sideways = kLeft) {
+                 std::uint64_t flags = 0, float sideways = kLeft,
+                 const std::vector<coney::human::ObjectTarget>& objects = {}) {
     Fight fight(character, 0.0F, sideways, -std::numbers::pi_v<float> / 2.0F);
+    fight.human().setObjectTargets(objects);
     if (!player) {
         fight.human().setFighterProfile(coney::human::FighterProfile{.player = false});
     }
@@ -145,6 +148,21 @@ TEST_CASE("square in the rise's window, k = 15-17, counters with 620 that update
         CHECK(run.attackerHealth == 50);
         CHECK(run.attackerKnockdowns == 1);
     }
+}
+
+TEST_CASE("the counter from the rise finds the attacker among glass panes: its search takes humans only",
+          "[human][combat]") {
+    // Expected: combat-targets.md#searches-coney, confirmed (code)
+    // The original's counter search (`Player_FindCounterTarget` 0x0027ac30) walks the humans alone; panes 0.6 m away
+    // on all four sides, nearer than the attacker, must not hide him.
+    const RiseCharacter rise;
+    const std::vector<coney::human::ObjectTarget> panes{{.handle = 1, .point = Vec3{40.0F, 40.6F, 0.5F}},
+                                                        {.handle = 2, .point = Vec3{40.0F, 39.4F, 0.5F}},
+                                                        {.handle = 3, .point = Vec3{40.6F, 40.0F, 0.5F}},
+                                                        {.handle = 4, .point = Vec3{39.4F, 40.0F, 0.5F}}};
+    const RiseRun run = riseWith(rise.character, tapAt("square", 15), 60, true, 0, kLeft, panes);
+    CHECK(firstK(run, kCounterLeft) == 15);
+    CHECK(run.riseCounters == 1);
 }
 
 TEST_CASE("square before or after the rise's window does nothing: he rises into the stun's end", "[human][combat]") {

@@ -65,7 +65,7 @@ class Cameras {
     static constexpr std::size_t kSwitchStick = 0;       ///< The right stick and zoom buttons.
     static constexpr std::size_t kSwitchSprintZoom = 5;  ///< The follow camera's sprint zoom.
     static constexpr std::size_t kSwitchShakeView = 6;   ///< The shake's view offset.
-    static constexpr std::size_t kSwitchRailLead = 7;    ///< The rail camera's look-at point led along the rail.
+    static constexpr std::size_t kSwitchRailLead = 7;    ///< A leading rail camera stands beside its target.
     static constexpr std::size_t kSwitchLookBehind = 11; ///< The look-behind button.
     /// The shared target list holds at most this many humans (`0x005d91a8`).
     static constexpr std::size_t kTargetListSize = 4;
@@ -100,6 +100,11 @@ class Cameras {
     /// Sets how the manager finds a human's locomotion velocity (m/s) by handle, which the rail's mode 3 reads
     /// (`Task_GetVelocity`, docs/research/camera.md#rail-mode3).
     void setVelocityLocator(Locator locator) { m_velocity = std::move(locator); }
+    /// Whether a human is jumping or falling (state `0x1c00000000`) by handle; the rail's damping skips such a target
+    /// (docs/research/camera.md#rail).
+    using AirborneTest = std::function<bool(double handle)>;
+    /// Sets how the manager tells an airborne human (null: never).
+    void setAirborneTest(AirborneTest test) { m_airborne = std::move(test); }
 
     /// `CamCanSee(object, range)`: whether the current camera sees the point just above the human (1 m up) or object
     /// (0.3 m up) `handle` names: within `range` of the camera (at most its far clip; 0 or less: the far clip), inside
@@ -406,6 +411,7 @@ class Cameras {
     Locator m_locate;
     Locator m_locateObject;
     Locator m_velocity;
+    AirborneTest m_airborne;
     Mover m_move;
     std::map<double, anim::Vec3> m_keptBefore; // each kept-in-view human's feet at the last update
     CameraShake m_shake;

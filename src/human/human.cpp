@@ -1128,7 +1128,8 @@ void Human::fight(std::span<Combatant* const> targets, const raycast::CollisionM
                                   .mesh = mesh,
                                   .sprinting = m_sprinting,
                                   .padControlled = m_record.padDriven,
-                                  .throwAiming = m_script.throwAiming},
+                                  .throwAiming = m_script.throwAiming,
+                                  .self = this},
                      m_animator, m_heading);
     // An attack, a grab, a tackle, a miss or a tandem entered the stance: `Player_EnterStance` (`0x00280068`) ends the
     // hiding through `Human_ClearHiddenState` (`0x00230140`), which a hidden player's own actions reach

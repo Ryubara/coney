@@ -204,7 +204,7 @@ role = "vtable `+0x4c`: message 2 to the object's handlers, out of its record, d
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/world_objects/doors.h:Doors::takeRemoved"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00395b70
@@ -651,7 +651,7 @@ coney = "src/world_objects/doors.h:Doors::openBy"
 status = "compared"
 
 [[function.gaps]]
-what = "the destroy, detach and data messages"
+what = "the detach and data messages"
 relation = "not-ported"
 issue = 707
 
@@ -877,14 +877,14 @@ relation = "not-ported"
 issue = 710
 
 [[function.gaps]]
-what = "message `0x20`'s leaf removal"
-relation = "not-ported"
-issue = 1021
-
-[[function.gaps]]
 what = "message `0x3e`, the angle answered"
 relation = "not-ported"
 issue = 707
+
+[[function.gaps]]
+what = "message 0's `Door_OpenAnimated`: `OpenDoorAnimated` swings the door away at once, the human's state 26 not traced"
+relation = "stand-in"
+question = "objects.md#q-door-open-animated"
 
 [[function]]
 address = 0x003fbba0

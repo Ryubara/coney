@@ -22,7 +22,8 @@ namespace coney::debug {
 /// - **Display** (src/scenes/letterbox.h, docs/guides/enhancements.md#where-the-settings-live): Coney's render-side
 ///   settings: whether the cutscene letterbox's bars are drawn (default on, the original's look), and the renderer the
 ///   next start draws with (`Display/Renderer`, core/renderer_choice.h: 0 GL3, the default; 1 the GPU renderer),
-///   and the display preset with the values it sets (`Display/Preset`, core/display_preset.h: 0 *PS2*, the default).
+///   whether the next start paces for a VRR display (`Display/VRR`, core/vrr_pacing.h: off by default), and the
+///   display preset with the values it sets (`Display/Preset`, core/display_preset.h: 0 *PS2*, the default).
 ///
 /// Call it once at start-up; the values live as long as the program. Unregister with
 /// TunableRegistry::removeCategory().
@@ -32,5 +33,10 @@ void registerGameTunables(TunableRegistry& registry);
 /// the game's tunables register: GL3 when the file is missing, does not set it, or does not load (the full load after
 /// the start reports a bad file and stops the run).
 [[nodiscard]] RendererKind savedRenderer(const std::string& path);
+
+/// Whether the overrides file at `path` saves the VRR frame-pacing mode on (`Display/VRR`, core/vrr_pacing.h), read
+/// before the frame pacer starts, as savedRenderer() is: off when the file is missing, does not set it, or does not
+/// load.
+[[nodiscard]] bool savedVrr(const std::string& path);
 
 } // namespace coney::debug

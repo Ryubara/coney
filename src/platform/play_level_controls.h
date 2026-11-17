@@ -147,6 +147,10 @@ class PlayLevelControls final : public debug::PlayControls, public debug::Entity
     void setEntityFrozen(debug::EntityId id, bool frozen) override;
     /// The Entity inspector's edit target: these controls (play_level_edit.cpp).
     [[nodiscard]] debug::EntityEditTarget* entityEdits() override { return m_mode != nullptr ? this : nullptr; }
+    /// The lighting frame the mode drew last (docs/guides/realtime-lighting.md#lab).
+    [[nodiscard]] const graphics::LightingFrame* lightingFrame() const override;
+    /// The light manager the mode draws with.
+    [[nodiscard]] graphics::LightManager* lightManager() override;
     /// Applies `command` to the human or object it names, between two steps (play_level_edit.cpp); fails, changing
     /// nothing, with the reason when the entity is gone or the edit does not apply to it.
     std::expected<void, Error> applyEdit(const debug::EntityCommand& command) override;

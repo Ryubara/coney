@@ -150,6 +150,7 @@ The Display page's *Debug UI scale* overrides the choice: *Auto* (the rule above
 | HUD | the [in-game HUD](../research/hud.md)'s parts on and off, player 1's rage, score, money and items set (-1 gives the value back), an objective, a hint and an announcement fired |
 | Debug draw | lines in the scene: collision near the player (plain or by wall class), the player's heading and velocity, the camera, places, every human's collision shapes, strike shapes and contacts; the [mesh views](#mesh-views): the models' own wireframe, a wireframe-only view, flat views by material, draw call or LOD, the selection's normals and bone axes |
 | Entity inspector | the one entity panel: pick a human or object once (nearest, next, looked at, from a list), mark it in the scene, watch everything Coney knows of it in groups, a human's [mesh](#mesh-group) included, and edit it in the same groups: move, turn, drop, meters, scale, speed, animation rate, freeze, kill, delete and [another model](#model-swap); each edit queued, applied between steps and written to the run log ([below](#entity-inspector)) |
+| Lighting | the [lighting lab](realtime-lighting.md#lab): Hold lighting, Light from, Dump this frame, the counts, every light with its source and edits, an atomic's selection, layers and views, lines in the scene |
 | Display | the frame-stats line, the FPS counter, the frame cap and vsync (live), the player's coordinates, the GUI safe area, the logical screen, the [overlay's size](#ui-scale) |
 | Audio | the output device, the master and bus volumes, a looping test tone, the voices playing (plotted) |
 | Network | [network play](multiplayer.md): status, player name, port, address, Host, Join, Disconnect, the ping (plotted), loss, bytes and packets, the players, a Simulate network submenu (latency, jitter, loss, duplicates, reordering), the log |
@@ -199,11 +200,10 @@ cannot load, in the original as in Coney ([Level loading](../research/level-load
 under *No level file*, and a jump to it typed by name is refused with a log line. With the retail disc that is 47 of
 the 114 records: the world-only levels (`level70`-`level74`, `level90`, `level91`, `level94`, `level96`-`level98` and
 four more) and the test records, among them `101 armies`, which is not Armies of the Night (its stages are on the
-Missions page) and left a black screen when it was offered. In a sandbox and the other modes run with a disc, the page lists
-instead every level with a streamed world on the disc (`level0` to `level199`,
-79 of them); choosing one, or typing its name, starts the game there as `--play-level` does, at the start of the next
-frame, in place of the
-play mode or sandbox viewer on top. *Sandbox layouts* lists the layouts in the sandbox folder
+Missions page) and left a black screen when it was offered. In a sandbox and the other modes run with a disc, the page
+lists instead every level with a streamed world on the disc (`level0` to `level199`, 79 of them); choosing one, or
+typing its name, starts the game there as `--play-level` does, at the start of the next frame, in place of the play
+mode or sandbox viewer on top. *Sandbox layouts* lists the layouts in the sandbox folder
 ([Sandbox](sandbox.md)); choosing one plays it at the start of the next frame, in place of the play mode or sandbox
 viewer on top: with Rembrandt when there is a disc for his character, else with the free camera.
 

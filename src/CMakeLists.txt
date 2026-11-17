@@ -26,6 +26,7 @@ add_library(coney_core STATIC
     core/options.cpp
     core/perf.cpp
     core/renderer_choice.cpp
+    core/vrr_pacing.cpp
     core/display_preset.cpp
     core/pad.cpp
     core/pad_handlers.cpp
@@ -89,6 +90,7 @@ add_library(coney_core STATIC
     graphics/human_lighting.cpp
     graphics/level_lighting.cpp
     graphics/lighting_frame.cpp
+    graphics/lighting_switches.cpp
     graphics/light_manager.cpp
     graphics/mesh_data.cpp
     graphics/overlay_camera.cpp
@@ -288,6 +290,7 @@ target_sources(coney_core PRIVATE
     camera/camera_view.cpp
     camera/cameras.cpp
     camera/follow_camera.cpp
+    camera/stick_turn_cameras.cpp
     camera/follow_collision.cpp
     camera/locked_camera.cpp
     camera/path_camera.cpp
@@ -417,6 +420,7 @@ target_sources(coney_core PRIVATE
     combat/commands.cpp
     combat/grab.cpp
     combat/grabbed.cpp
+    combat/tackled.cpp
     combat/lock_on.cpp
     combat/meters.cpp
     combat/player_combat.cpp
@@ -522,6 +526,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/human_shapes.cpp
         debug/human_watch.cpp
         debug/input_gate.cpp
+        debug/lighting_lab.cpp
         debug/lua_console.cpp
         debug/menu_model.cpp
         debug/menu_navigator.cpp
@@ -536,6 +541,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/pages_entity.cpp
         debug/pages_entity_edit.cpp
         debug/pages_hud.cpp
+        debug/pages_lighting.cpp
         debug/pages_movies.cpp
         debug/pages_net.cpp
         debug/pages_play.cpp

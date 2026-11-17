@@ -360,6 +360,10 @@ struct Options {
     Language language = Language::English;
     /// `--vsync on|off`: whether a present waits for the display's vertical blank; on by default. Needs a window.
     bool vsync = true;
+    /// `--fps-cap vrr`: pace for a variable-refresh (G-Sync, FreeSync) display: vsync off and a cap just under the
+    /// display's refresh rate (core/vrr_pacing.h, docs/guides/running-options.md#frame-rate). fpsCap stays unset. Not
+    /// in test mode, and not with `--vsync`, which it sets itself.
+    bool vrrPacing = false;
     /// `--line-blend on|off`: whether each shown line is the mean of two neighbouring lines, as the PS2's video output
     /// softens the picture (docs/research/rendering.md#output); off by default, an optional PS2 look: on a
     /// full-resolution monitor there is no interlace flicker to hide, and the one-line shift reads as a smear.

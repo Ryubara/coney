@@ -14,8 +14,9 @@
 // The rail camera (`Cam_Rail`, type 9, `CamSetupRail`): a camera that slides along a line of points the scripts lay
 // (`CamAddRailPoint`) while it frames its target, the chases' camera. In mode 0 it stands at the target point's foot on
 // the rail, within a reach of the target and below a ceiling; `CamLeadRail` puts it a lead ahead of or behind the
-// target along the rail (modes 1 and 2), and `CamModifyRail` eases its settings over time. One per player; Coney has
-// player 1's. Research: docs/research/camera.md#rail, docs/references/bindings/camera.md#camsetuprail
+// target (modes 1 and 2), on the rail or, with switch 7, beside it, and `CamModifyRail` eases its settings over time.
+// One per player; Coney has player 1's. Research: docs/research/camera.md#rail,
+// docs/references/bindings/camera.md#camsetuprail
 
 namespace coney::camera {
 
@@ -109,12 +110,13 @@ class RailCamera {
     static constexpr float kActivationSeconds = 1.0F / 60.0F;
 
     /// One update of `seconds` with the target's feet at `feet` (nothing: no target, the update stops after the
-    /// easing) and his locomotion's velocity `velocity` (mode 3 reads it): the settings eased, the target and look-at
-    /// points made and damped, then the camera placed by its mode; with `leadLook` (switch 7) a leading mode moves the
-    /// look-at point along the rail by the lead. That reading of switch 7 is a stand-in (#1017): the original's puts
-    /// the camera off the rail beside the target and looks at the target point.
+    /// easing), his locomotion's velocity `velocity` (mode 3 reads it) and whether he is `airborne` (jumping or
+    /// falling: the points are not damped): the settings eased, the target and look-at points made and damped, then
+    /// the camera placed by its mode; with `beside` (switch 7) a leading mode stands the camera off the rail, the lead
+    /// from the target, and looks at the target point (docs/research/camera.md#rail-leading).
     /// @orig 0x0013d010 CamRail_Update (unknown)
-    void update(std::optional<anim::Vec3> feet, bool leadLook, float seconds, anim::Vec3 velocity = {});
+    void update(std::optional<anim::Vec3> feet, bool beside, float seconds, anim::Vec3 velocity = {},
+                bool airborne = false);
 
     /// What it shows: the view the update's end builds from the position and look-at point, in every mode.
     /// @orig 0x0013d010 CamRail_Update (unknown)
@@ -143,20 +145,30 @@ class RailCamera {
   private:
     // update()'s body: the easing and the placement by mode.
     /// @orig 0x0013d010 CamRail_Update (unknown)
-    void placeFor(std::optional<anim::Vec3> feet, bool leadLook, float seconds, anim::Vec3 velocity);
+    void placeFor(std::optional<anim::Vec3> feet, bool beside, float seconds, anim::Vec3 velocity, bool airborne);
     // The target and look-at points of mode 0 or the leading modes from the feet.
     /// @orig 0x0013bad0 CamRail_UpdateTargetPoint (unknown)
     void makePoints(anim::Vec3 feet);
-    // Damps the target and look-at points toward last update's.
+    // Damps the target and look-at points toward last update's, unless the target is airborne.
     /// @orig 0x0013bfe0 CamRail_DampTargetPoint (unknown)
-    void damp(anim::Vec3 oldTarget, anim::Vec3 oldLook);
+    void damp(anim::Vec3 oldTarget, anim::Vec3 oldLook, bool airborne);
     // Mode 0's placement; the projection on the segment and setting 0's pull are CamRail_ProjectOnSegment's, inlined.
+    // `madeLook` is the look-at point as made this update (the end test's), `oldTarget` and `oldLook` P and the look-at
+    // point at the update's start, which a hold puts back.
     /// @orig 0x0013d6b0 CamRail_UpdatePosition (unknown)
     /// @orig 0x00140308 CamRail_ProjectOnSegment (unknown)
-    void placeLevel(anim::Vec3 feet);
-    // Modes 1 and 2: the lead ahead of or behind the target's place on the rail.
+    void placeLevel(anim::Vec3 feet, anim::Vec3 madeLook, anim::Vec3 oldTarget, anim::Vec3 oldLook);
+    // Modes 1 and 2: the lead ahead of or behind the target's foot on the rail, stepping segments at the joints; with
+    // `beside` (switch 7) off the rail, the lead from the target.
     /// @orig 0x0013e708 CamRail_PlaceLeading (unknown)
-    void placeLeading(anim::Vec3 feet, bool leadLook);
+    void placeLeading(anim::Vec3 feet, bool beside);
+    // Segment `i`'s vector, first point to second.
+    /// @orig 0x0013e708 CamRail_PlaceLeading (unknown)
+    [[nodiscard]] anim::Vec3 segmentVector(std::size_t i) const;
+    // How far `p` is from the current segment's start in plan, over the segment's plan length (0 with none): a
+    // length, never negative.
+    /// @orig 0x0013e708 CamRail_PlaceLeading (unknown)
+    [[nodiscard]] float planShare(anim::Vec3 p) const;
     // Mode 3's placement (CamRail_PlaceMode3): the start after an activation, else the trailing move.
     /// @orig 0x0013dcc8 CamRail_PlaceMode3 (unknown)
     void placeTrailing(std::optional<anim::Vec3> feet, anim::Vec3 velocity, float seconds);
@@ -208,7 +220,7 @@ class RailCamera {
     anim::Vec3 m_goal;               // +0x310: mode 3's goal for the look-at point
     bool m_heightOffPending = false; // a negative height eases back to the present height, then switches off
     float m_blend = 0.0F;            // +0x3cc: the soft hand-over between segments, 0 when none
-    bool m_held = false;
+    bool m_held = false;   // +0x3e4: set by mode 3 at an end; mode 0's end hold lasts one update and leaves it
     anim::Vec3 m_target;   // P
     anim::Vec3 m_position; // the camera
     anim::Vec3 m_lookAt;

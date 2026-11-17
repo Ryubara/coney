@@ -1,0 +1,39 @@
+version = 1
+id = "r-20261114-pick-object-distance-3d"
+date = "2026-11-14"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "3b264dda442df73b15b3f899b80199019d8fe4be1442f4c5f33fc5e5fe25c8d0"
+
+[who]
+agent = "a275501e25cab195f"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = []
+
+[run]
+name = ""
+method = "level99 mission 1 first yard, saved from a cold boot. Per trial: PCSX2 restarted on that state, player teleported to his spawn (-289.03, 120.29, z 0.25) facing +y, strike-target world object 35 (0x00eef7c0) moved straight ahead by writing its +0x10 position, breakpoints on Player_ObjectAttack and Attack_Start, square tapped. 0.70 m up: picked at 1.85 m (1.978 m 3D), not at 1.90 m (2.025 m 3D: S1, id 12). At the feet's height: picked at 1.95 m."
+
+[values]
+picked_ahead_m = 1.85
+picked_3d_m = 1.978
+refused_ahead_m = 1.9
+refused_3d_m = 2.025
+object_height_m = 0.7
+level_picked_ahead_m = 1.95
+refused_attack_id = 12
+
+[addresses]
+object_attack = 0x00264178
+attack_start = 0x002625a8
+pick = 0x0027a6c0
+object_list_search = 0x0039ab20

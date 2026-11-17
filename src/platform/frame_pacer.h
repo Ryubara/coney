@@ -7,6 +7,8 @@
 #include <string_view>
 
 #include "core/frame_rate_meter.h"
+#include "core/options.h"
+#include "core/vrr_pacing.h"
 
 // No SDL type appears in this header, so code that holds a FramePacer stays platform-neutral and never includes SDL.
 
@@ -56,5 +58,15 @@ class FramePacer {
     FrameRateMeter m_reportMeter{FrameRateMeter::kSecond}; // the report's second
     FrameRateMeter m_display{FrameRateMeter::kHalfSecond}; // the FPS counter's half second
 };
+
+class RenderEngine;
+
+/// The run's pacing (core/vrr_pacing.h): `--fps-cap N` and `--vsync`, or, when wantsVrr() says so for `options` and
+/// `savedVrr` (the overrides file's `Display/VRR`), the VRR mode's: vsync off and a cap just under the refresh rate of
+/// the display `renderer`'s window is on, read from SDL once, here. Sets the renderer's vsync to the choice and passes
+/// the VRR mode's line to `log`; the caller sets the cap on the renderer and the frame pacer.
+/// @coney-only enhancement: VRR frame pacing
+[[nodiscard]] PacingChoice startPacing(const Options& options, bool savedVrr, RenderEngine& renderer,
+                                       const std::function<void(std::string_view)>& log);
 
 } // namespace coney::platform

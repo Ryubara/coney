@@ -19,6 +19,7 @@
 #include "combat/meters.h"
 #include "combat/player_combat.h"
 #include "human/fighter.h"
+#include "human/locomotion.h"
 #include "human/script_state.h"
 
 namespace coney::human {
@@ -404,9 +405,15 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
         // A locked stick reads as centred (HuLockPadMovement); the buttons still act. In a throw's aim the stick turns
         // and pitches the aim instead (combat::ThrowAimState reads the pad itself).
         const bool stickFree = !script.movementLocked && !script.throwAiming;
+        // The stick's frame: the pad's stick as its player's camera turned it in the pads update
+        // (Pads::turnSticks()), handed over as the view that turns it so; a pad no camera turned (no player bound)
+        // is turned by the camera's view direction.
+        const anim::Vec3 stickView =
+            pad.player() ? turnedStickView(pad.leftX(), pad.leftY(), pad.turnedX(), pad.turnedY(), cameraForward)
+                         : cameraForward;
         m_driven->record() = PlayerRecord{.stickX = stickFree ? pad.leftX() : 0.0F,
                                           .stickY = stickFree ? pad.leftY() : 0.0F,
-                                          .cameraForward = cameraForward,
+                                          .cameraForward = stickView,
                                           .sprintHeld = !script.padLocked && pad.held(pad::kL2),
                                           .actionPressed = !script.padLocked && pad.pressed(pad::kTriangle),
                                           .command = command,

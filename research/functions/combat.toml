@@ -1266,6 +1266,13 @@ name = "Mount_OnStrikeEnd"
 page = "combat/index.md#code-reactions"
 role = "End hook of a mount strike or the grounded mount: gets off when the victim is over 0.2 m up or down, beyond max(reach + 0.34, reach x 1.2) or not clear; else re-places the mounter at clip 210's offset, scores the move, and may let a player victim reverse it."
 level = "confirmed-code"
+coney = "src/combat/tackled.h:mountClipEnd"
+status = "compared"
+
+[[function.gaps]]
+what = "only the grounded mount's end is tested; the reach, height and clear-line get-off is the seat at 210's, the move is not scored and +0xb8 is not cleared; the record float read as the stick's magnitude is inferred"
+relation = "stand-in"
+issue = 231
 
 [[function]]
 address = 0x00270560
@@ -1317,6 +1324,20 @@ role = "Gets the mounter off the victim and ends the tackle ([The mount](combat-
 level = "confirmed-code"
 
 [[function]]
+address = 0x00271470
+name = "Mount_GetOff"
+page = "combat-moves.md#mounted-victim"
+role = "the mount's break: the victim 246, the mounter 247 from the victim's set, both free; nothing while the mounter holds 0x2000"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::getOffMount"
+status = "compared"
+
+[[function.gaps]]
+what = "the move styles pushed and popped and the push spheres are not built; the end callbacks' Tackle_End is the release at the start"
+relation = "stand-in"
+issue = 231
+
+[[function]]
 address = 0x00271808
 name = "Mount_ReturnToFrontGrab"
 page = "combat/index.md#code-reactions"
@@ -1329,6 +1350,27 @@ name = "Mount_StartOnGrounded"
 page = "combat/index.md#code-reactions"
 role = "Mounts a grounded target: clip 237 + its side (far range x 1.25 for a player), steered on, then Pair_LinkMount ([Grab and tackle](combat-grabs.md#grab))."
 level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::startGroundedMount"
+status = "compared"
+
+[[function.gaps]]
+what = "the 0.1 s steer onto the clip's reach is the seat at 210; the victim is not warned (Human_WarnOfAttack)"
+relation = "stand-in"
+issue = 231
+
+[[function]]
+address = 0x00271ef0
+name = "Mount_Strike"
+page = "combat-moves.md#mounted-victim"
+role = "the mounted victim's struggle strike: 250 on the victim, 251 overlaid on the mounter, the victim's damage of 250 to the mounter; a defeating one breaks the pair"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::applyMountReport"
+status = "compared"
+
+[[function.gaps]]
+what = "a struggle that would defeat the mounter ends the mount as a let-go (the victim rises with 199) instead of Grab_BreakOnHit and the mounter's death reaction from 211; the doubled damage of the victim's flag 0x4000 is not read"
+relation = "stand-in"
+issue = 231
 
 [[function]]
 address = 0x00272310
@@ -1350,6 +1392,13 @@ name = "Mount_StartReversal"
 page = "combat/index.md#code-reactions"
 role = "The mounted victim's reversal: 242 then 210 on the victim, 243 then 207 on the mounter."
 level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::reverseMount"
+status = "compared"
+
+[[function.gaps]]
+what = "the pair is linked the other way at once rather than at 242's end (Mount_OnReversalEnd), whose get-off from a new victim with flag 0x20000 is not built; the 0xc12200 refusal is not read"
+relation = "stand-in"
+issue = 231
 
 [[function]]
 address = 0x00274ee0
@@ -1610,15 +1659,19 @@ status = "legacy"
 address = 0x0027a070
 name = "Target_GlassFilter"
 page = "combat-targets.md#targets"
-role = "the square's object targets ([Targets](combat-targets.md#targets))"
+role = "the target searches' pane filter: a pane with a body within the cone and 2 m in height ([Targets](combat-targets.md#targets))"
 level = "confirmed-code"
+coney = "src/human/fighter.h:glassTargetable"
+status = "compared"
 
 [[function]]
 address = 0x0027a120
 name = "Target_ObjectFilter"
 page = "combat-targets.md#targets"
-role = "the square's object targets ([Targets](combat-targets.md#targets))"
+role = "the target searches' world object filter: a strike target with a body within the cone and 2 m in height ([Targets](combat-targets.md#targets))"
 level = "confirmed-code"
+coney = "src/human/fighter.h:objectTargetable"
+status = "compared"
 
 [[function]]
 address = 0x0027a1e8
@@ -1643,9 +1696,15 @@ coney = "src/human/fighter.h:Fighter::findAttackTarget"
 status = "compared"
 
 [[function.gaps]]
-what = "the object and glass passes are not searched; the current target is kept only fightable within the range, where the original keeps any that is no car and whose object query holds"
+what = "an object is the target only from square's pick until its attack lands, so the kept rule meets an object target only then"
 relation = "stand-in"
-issue = 1011
+question = "combat-targets.md#q-object-target"
+
+[[function.gaps]]
+what = "objects and panes are measured across the ground, where the original's world object list measures in three dimensions (run r-20261114-pick-object-distance-3d), until the object attack's approach is built"
+relation = "stand-in"
+issue = 1396
+question = "combat-targets.md#q-search-distance"
 
 [[function]]
 address = 0x0027a6c0
@@ -1657,9 +1716,15 @@ coney = "src/human/fighter.h:Fighter::pickTarget"
 status = "compared"
 
 [[function.gaps]]
-what = "square's objects, panes and cars are searched only when no human is found, cars with the other objects, where the original searches the car, objects and panes between the human passes"
+what = "an object is the target only from square's pick until its attack lands, and the first step tests it with the 135 degree cone and this update's aim, where the original reads what the last search left"
 relation = "stand-in"
-issue = 1011
+question = "combat-targets.md#q-object-target"
+
+[[function.gaps]]
+what = "objects and panes are measured across the ground, where the original's world object list measures in three dimensions (run r-20261114-pick-object-distance-3d), until the object attack's approach is built"
+relation = "stand-in"
+issue = 1396
+question = "combat-targets.md#q-search-distance"
 
 [[function]]
 address = 0x0027aa38
@@ -1692,9 +1757,10 @@ coney = "src/human/fighter.h:Fighter::nearestInReach"
 status = "compared"
 
 [[function.gaps]]
-what = "the charge and dive search does not fall back on objects and glass when no human is in reach"
-relation = "not-ported"
-issue = 1011
+what = "objects and panes are measured across the ground, where the original's world object list measures in three dimensions (run r-20261114-pick-object-distance-3d), until the object attack's approach is built"
+relation = "stand-in"
+issue = 1396
+question = "combat-targets.md#q-search-distance"
 
 [[function]]
 address = 0x0027b1a0
@@ -2152,6 +2218,16 @@ coney = "src/combat/grab.h:updateMount"
 status = "legacy"
 
 [[function]]
+address = 0x0027f1a0
+name = "Player_UpdateTackled"
+page = "combat-moves.md#mounted-victim"
+role = "the mounted human's inputs: square or cross struggles (250), circle breaks out (Mount_GetOff), R1 reverses (Mount_StartReversal)"
+level = "confirmed-code"
+note = "confirmed (code), runtime"
+coney = "src/combat/tackled.h:updateTackled"
+status = "compared"
+
+[[function]]
 address = 0x0027f3b0
 name = "Player_UpdateGrabbing"
 page = "combat-grabs.md#grabbing"
@@ -2334,6 +2410,13 @@ page = "combat-rage.md#rage-effects"
 role = "rage's start: the rage sound, a pair broken, 643 `RAGE_START` and `Human_StartRageMode` ([Everything rage does](combat-rage.md#rage-effects))"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
+coney = "src/human/fighter.h:Fighter::enterRage"
+status = "compared"
+
+[[function.gaps]]
+what = "643 holds the attack's phases, not `0x2000`"
+relation = "stand-in"
+question = "combat-rage.md#q-rage-clip-holds"
 
 [[function]]
 address = 0x002843f8
@@ -2570,6 +2653,13 @@ name = "GameState_PlayRageSound"
 page = "combat/index.md#warriors-functions"
 role = "(already named) the rage loop: when no sound is held at `W_GameState + 0x264` plays the 2D rage-mode loop by name and marks the task owned; otherwise restarts the prepared one"
 level = "confirmed-code"
+coney = "src/audio/game_sound.h:GameSound::playRageSound"
+status = "compared"
+
+[[function.gaps]]
+what = "a rage sound still playing plays on, and no owner flag is set"
+relation = "stand-in"
+question = "combat-rage.md#q-rage-sound-restart"
 
 [[function]]
 address = 0x00419558

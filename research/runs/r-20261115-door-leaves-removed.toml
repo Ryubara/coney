@@ -1,0 +1,43 @@
+version = 1
+id = "r-20261115-door-leaves-removed"
+date = "2026-11-15"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "cd1d6a16602be1b822e1b848536338b4cb7aa5d0b6d8da616ee4a5e761d9db84"
+
+[who]
+agent = "a499609601e6df2cc"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "level99 mission 1 yard start (a state from task 1011), patch call-brains: the lua recipe spawned dyn_door_wood and dyn_door_stall at the origin with SpawnDoor, read their leaves with GetLeftDoorHandle and GetRightDoorHandle, then ObjDestroy(door); before and after, GetObjectName and GetHitpoints of each leaf were stored in globals and read back with lua-globals (1 = the leaf still resolves, 0 = it names nothing)"
+
+[values]
+wood_left_before = 1
+wood_right_before = 1
+wood_left_hitpoints_before = 100
+wood_door_hitpoints_before = 100
+wood_left_after = 0
+wood_right_after = 0
+wood_left_hitpoints_after = 0
+wood_door_hitpoints_after = 0
+stall_leaf_before = 1
+stall_leaf_after = 1
+stall_leaf_hitpoints_after = 100
+stall_door_after = 0
+
+[addresses]
+dyndoorswinging_onmessage = 0x003fb8d0
+worldobject_delete = 0x00391b08
+obj_destroy = 0x00396c58

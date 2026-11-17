@@ -34,6 +34,7 @@
 #include "fileio/wad.h"
 #include "gamemodes/game_mode.h"
 #include "gamemodes/gameplay_mode.h"
+#include "graphics/lighting_switches.h"
 #include "graphics/render_device.h"
 #include "graphics/throw_arc.h"
 #include "gui/pause_menu/pause_stats.h"
@@ -256,6 +257,10 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     /// drawn as the game draws it.
     /// @coney-only the debug tools' mesh views; the original has none
     void setMeshViews(std::shared_ptr<MeshViewHook> views) { m_meshViews = std::move(views); }
+    /// Sets the lighting lab's drawing-side switches (docs/guides/realtime-lighting.md#lab), which must outlive the
+    /// mode; null (the default): the faithful picture, lit from the camera drawn through.
+    /// @coney-only the debug tools' lighting lab; the original has none
+    void setLightingSwitches(const graphics::LightingSwitches* switches) { m_lightingSwitches = switches; }
     /// Changes the scenery through the debug tools' world edits (PlayScenery::setEditHook(): `--world-edit`); null:
     /// none.
     /// @coney-only the debug tools' world edits; the original has none
@@ -854,8 +859,9 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     Interpolated<float> m_drawDistance;     // at the last two steps
     PlayStats m_stats;
     std::uint32_t m_lastAnimId = 0;
-    SceneLines m_sceneLines;                   // setSceneLines()
-    std::shared_ptr<MeshViewHook> m_meshViews; // setMeshViews()
+    SceneLines m_sceneLines;                                        // setSceneLines()
+    std::shared_ptr<MeshViewHook> m_meshViews;                      // setMeshViews()
+    const graphics::LightingSwitches* m_lightingSwitches = nullptr; // setLightingSwitches()
     bool m_frozen = false;
     std::optional<CameraPin> m_pinnedCamera;                      // `--camera`
     bool m_freezeWorld = false;                                   // `--freeze-world`
