@@ -251,10 +251,16 @@ Coney's states for the original's state mask; the draw plays as a play-anim acti
 as `Human_Init`'s weapon is ([The weapon](human-init.md#weapon)); and an AI acts on a clip event at the play mode's step,
 after the humans', where the original does so as the event fires. `+0x32` is not read yet.
 
-Human flag `0x1000000000` (power class `+0x3b`, or `HuSetHardToStun`) changes the stun rule of `Human_PlayReaction`:
-without it a hit stuns when its Anim Range List flag `0x400` is set, the caller asks, or he is already stunned on his
-feet (`Human_IsStunnedStanding`); with it the flag and the caller's ask do not count, and the hit stuns only a human
-already stunned on his feet. Flag `0x100` (never stunned) is tested first. Confirmed (code) at `0x0026a6d0`. Who reads
+Human flag `0x1000000000` (power class `+0x3b`, or `HuSetHardToStun`) changes only the standing stun of
+`Human_PlayReaction`, the stun of a hit he stays on his feet for: without it such a hit stuns when its Anim Range List
+flag `0x400` is set, the caller asks, or he is already stunned on his feet (`Human_IsStunnedStanding`); with it the
+flag and the caller's ask do not count, and the hit stuns only a human already stunned on his feet. Flag `0x100` (never
+stunned) is tested first. Confirmed (code) at `0x0026a6d0`. A hit that floors him does not use that rule:
+`Human_PlayReaction` passes `Human_KnockDown` (`0x0022f100`) whether the reaction anim is above 295, and
+`Human_KnockDown` stuns on that alone (through `Human_Stun`, `0x0022f658`, which checks flag `0x100`), never reading
+`0x1000000000`, so a hard-to-stun human floored by an extreme reaction rises stunned like any other. Confirmed (code) at
+`0x0026a6d0` and `0x0022f100`. (Coney's knockdown still stuns on the hit's flag `0x400` or a running stun, its legacy
+port's rule, [#1413](issue:1413).) Who reads
 `0x400000` and `0x800000000` in the human flags was not found (the state and held flags of the same values are other
 words).
 

@@ -94,17 +94,19 @@ ReactionKind Victim::react(const IncomingHit& hit, const VictimFrame& frame, Hum
     const auto clip = static_cast<std::uint32_t>(reaction.animId);
     m_lastReaction = reaction.animId;
     ++m_reactions;
-    // A victim with flag 0x100 is never stunned; a hard-to-stun one only when already stunned on his feet.
-    // **Coney stand-in**: no caller asks for a stun (`Human_PlayReaction`'s last argument).
-    const bool stunsNow = (hit.flags & combat::kRangeFlagStun) != 0 && !frame.hardToStun;
-    const bool stuns = !frame.unstunnable && (stunsNow || stunned());
-    // A reaction with a knockdown event lays it down; a stunned one stays stunned until after the rise.
+    // A victim with flag 0x100 is never stunned; otherwise the hit's stun flag stuns him, or a stun already running.
+    const bool stunFlag = (hit.flags & combat::kRangeFlagStun) != 0;
+    // A reaction with a knockdown event lays it down; a stunned one stays stunned until after the rise. Hard to stun
+    // plays no part here: Human_KnockDown (0x0022f100) has its own stun rule and never reads that flag.
     if (knocksDown(animator, reaction.animId)) {
         animator.playCombat(one(clip), kGroundedIdle, AnimState::Hold);
-        knockDown(nowMs, stuns);
+        knockDown(nowMs, !frame.unstunnable && (stunFlag || stunned()));
         ++m_knockdowns;
         return ReactionKind::Knockdown;
     }
+    // On his feet, a hard-to-stun victim (0x1000000000) is stunned only when already stunned (Human_PlayReaction).
+    // **Coney stand-in**: no caller asks for a stun (`Human_PlayReaction`'s last argument).
+    const bool stuns = !frame.unstunnable && ((stunFlag && !frame.hardToStun) || stunned());
     if (stuns) {
         animator.playCombat(one(clip), static_cast<std::uint32_t>(combat::kStunLoop), AnimState::Hold);
         stun(nowMs);
