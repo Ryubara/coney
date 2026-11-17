@@ -372,6 +372,7 @@ target_sources(coney_tests PRIVATE
     human/attack_turn_test.cpp
     human/player_stance_test.cpp
     human/player_targeting_test.cpp
+    human/target_passes_test.cpp
     human/being_hit_test.cpp
     human/rise_counter_test.cpp
     human/human_grab_test.cpp

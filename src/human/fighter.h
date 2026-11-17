@@ -93,8 +93,11 @@ inline constexpr std::uint32_t kL1HeldRefused = 0x2000000;
 inline constexpr float kPickStick = 0.01F;
 /// Targets more than this far above or below are skipped.
 inline constexpr float kPickHeight = 2.0F;
-/// The object search's second, wider pass: objects within this many degrees of the heading.
+/// The object search's second, wider pass: objects within this many degrees of the heading (`0x0051096c` set to
+/// 2.356 rad).
 inline constexpr float kObjectWideConeDegrees = 135.0F;
+/// That wider pass searches the world objects within the range × this (`Player_PickTarget`).
+inline constexpr float kPickObjectWideScale = 0.8F;
 /// The strong grapple's search range without an Anim Range List (Rembrandt's, **Coney's choice**).
 inline constexpr float kStrongGrappleFallbackRange = 3.0F;
 /// Beyond the attack's far range the attacker only turns, onto the target led by his velocity; a lead faster than
@@ -107,11 +110,39 @@ inline constexpr int kPlayerHealth = 900;
 /// keeps the hold at most 2 of the victim's updates apart; 3 means it has stopped.
 inline constexpr int kHoldLostUpdates = 3;
 
-/// A breakable object square may strike (a glass pane): its handle and the point an attack aims at.
+/// Which of the world's lists an object target is in: the searches go through each list with its own filter
+/// (docs/research/combat-targets.md#targets).
+enum class ObjectKind : std::uint8_t {
+    Glass,       ///< A glass pane (world `+0x84c`), through `Target_GlassFilter`.
+    WorldObject, ///< A world object (world `+0x840`), through `Target_ObjectFilter`.
+    Car,         ///< A car (world `+0x844`) the car pass took (world_objects::carTargetable()).
+};
+
+/// An object an attack may strike: a glass pane, a world object or a car, its handle and the point an attack aims at.
 struct ObjectTarget {
     double handle = 0;
-    anim::Vec3 point{}; ///< The pane's centre.
+    anim::Vec3 point{}; ///< The pane's centre, the object's position, the car's aim point.
+    ObjectKind kind = ObjectKind::Glass;
+    std::uint32_t bodyFlags = 0; ///< A world object's body flags (world_objects::bodyFlagsOf()).
+    bool hasBody = true;         ///< The object query (vtable `+0xf4`) holds: a pane or object not yet broken.
 };
+
+/// What a target search found: a human, or one of FighterInput::objects (the original's target is one object, and
+/// `Human_GetTarget` of an object is null). Both null for nothing.
+struct TargetPick {
+    Combatant* human = nullptr;
+    const ObjectTarget* object = nullptr;
+};
+
+/// Whether the target searches take world object `object` for a searcher at `from` aiming along `along` (radians)
+/// within `cone` degrees: a world object with a body, within the cone and 2 m in height, whose body makes it a strike
+/// target (docs/research/combat-targets.md#targets).
+/// @orig 0x0027a120 Target_ObjectFilter (unknown)
+[[nodiscard]] bool objectTargetable(const ObjectTarget& object, anim::Vec3 from, float along, float cone);
+/// Whether the target searches take glass pane `pane` for a searcher at `from` aiming along `along` within `cone`
+/// degrees: a pane with a body, within the cone and 2 m in height (docs/research/combat-targets.md#targets).
+/// @orig 0x0027a070 Target_GlassFilter (unknown)
+[[nodiscard]] bool glassTargetable(const ObjectTarget& pane, anim::Vec3 from, float along, float cone);
 
 /// What the fighter is given each update.
 struct FighterInput {
@@ -248,20 +279,35 @@ class Fighter {
     /// slides to `goal`, each at a constant rate over `seconds` (TurnAndSlide), on top of its clip's root motion, as
     /// the steer of an attack does (Holdable::carryOver(), docs/research/combat-throws.md#throw-direction).
     void carryOver(anim::Vec3 position, float heading, anim::Vec3 goal, float targetHeading, float seconds);
-    /// The target human the search would pick for an attack of `range` metres with `current` as the current target
-    /// (null for none): the nearest standing enemy within range × 1.1 and 54° of the stick's heading (the facing with
-    /// the stick at rest); with no current target, within range × 0.9 at any angle; then within range × 0.7 at any
-    /// angle. With none found, the current target when it is standing within range; else null. A human target is
-    /// always searched for again (only an object target is kept as it is, which this search does not pick).
+    /// The target human the search would pick for an attack of `range` metres with `current` as the current human
+    /// target (null for none): pickTargetOrObject() seen as a human, so null when a car, a world object or a pane wins
+    /// (`Human_GetTarget` of an object is null).
     /// @orig 0x0027a6c0 Player_PickTarget (unknown)
     [[nodiscard]] static Combatant* pickTarget(const FighterInput& input, float range,
                                                const Combatant* current = nullptr);
-    // Square's object target, with no human in front: of `input.objects` within the object attack's far range, the
-    // nearest within 54° of the stick's heading (the facing at rest), else within 135°. Null for none.
-    // **Coney's choices**: range is the object attack's far range (the original approaches from farther, not built);
-    // the 135° pass keeps the whole range (the original's × 0.8 is not applied).
-    // @orig 0x0027a6c0 Player_PickTarget (unknown)
-    [[nodiscard]] const ObjectTarget* pickObjectTarget(const FighterInput& input) const;
+    /// `Player_PickTarget` in full, the first pass that finds anything ending it: `currentObject`, an object target,
+    /// kept while objectTargetable() takes it (135°); the enemies within range × 1.1 and 54° of the aim; a car;
+    /// the world objects within range and 54° (objectTargetable()); the panes within range and 54°
+    /// (glassTargetable()); with no current human target, the enemies within range × 0.9 at any angle; then the world
+    /// objects within range × 0.8 and 135°, and the humans within range × 0.7 at any angle, a downed one too. The
+    /// nearest of that pass wins; with none, the current target (`current`, else `currentObject`) when it is no car,
+    /// has a body and is within range (docs/research/combat-targets.md#targets).
+    /// @orig 0x0027a6c0 Player_PickTarget (unknown)
+    [[nodiscard]] static TargetPick pickTargetOrObject(const FighterInput& input, float range,
+                                                       const Combatant* current = nullptr,
+                                                       const ObjectTarget* currentObject = nullptr);
+    /// `Player_FindAttackTarget`'s passes at the far range `far` along the aim `along` (radians): the enemies within
+    /// 54°, the world objects, the panes, then with no current human target the enemies at any angle and the humans at
+    /// any angle, a downed one too. The nearest of the first pass that finds any; with none, the current human target
+    /// as it is, else `currentObject` when it is no car and has a body (docs/research/combat-targets.md#targeting).
+    /// @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
+    [[nodiscard]] static TargetPick attackSearch(const FighterInput& input, float far, float along,
+                                                 const Combatant* current, const ObjectTarget* currentObject = nullptr);
+    /// `Attack_FindNearestInReach`'s passes between `nearest` and `far` metres within 54° of the stick's heading (the
+    /// facing at rest): the standing enemies, then the world objects, then the panes; the nearest of the first pass
+    /// that finds any (docs/research/combat/index.md#charge-aim).
+    /// @orig 0x0027b058 Attack_FindNearestInReach (unknown)
+    [[nodiscard]] static TargetPick reachSearch(const FighterInput& input, float nearest, float far);
     // Circle + cross's search (combat::nearestInCone() along the stick, combat::strongGrappleRange()): makes the human
     // found the target and returns it when it may be grabbed, else null.
     // @orig 0x00263c90 Player_SpecialAttack (unknown)
@@ -563,6 +609,11 @@ class Fighter {
     // same range; the nearest, else the current target when it is standing within that range.
     // @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
     [[nodiscard]] Combatant* findAttackTarget(const FighterInput& input, int farId) const;
+    // The object that is this human's target, in this update's `input.objects`: square's object target while no human
+    // is the target and its attack has not landed (**Coney stand-in** for an object at human `+0xc8`,
+    // docs/research/combat-targets.md#q-object-target); null for none.
+    // @coney-only finds Coney's object target in this update's list, as the original holds it at +0xc8
+    [[nodiscard]] const ObjectTarget* objectTargetIn(const FighterInput& input) const;
     // The target attack `animId` goes for (combat::attackTarget()): `chainStep` when the chain's buffer played it.
     // @orig 0x00286cc8 Player_Square (unknown)
     // @orig 0x00287a18 Player_Cross (unknown)
@@ -608,9 +659,9 @@ class Fighter {
     // takes it there over 0.1 s (docs/research/combat/index.md#charge-aim).
     // @orig 0x00264878 Player_StartDive (unknown)
     void steerDive(const FighterInput& input, const HumanAnimator& animator, float heading);
-    // The reach search of attack `animId` (the dive's, the charge's): the nearest standing human between its reach and
-    // far range within 54° of the stick or the facing, or null. The dive's warning and steer (warnTarget(),
-    // steerDive()) and a player's charge warning (warnTarget(), as Player_StartCharge `0x00264a80` searches) use it.
+    // The reach search of attack `animId` (the dive's, the charge's): reachSearch() between its reach and far range.
+    // The dive's warning and steer (warnTarget(), steerDive()) and a player's charge warning (warnTarget(), as
+    // Player_StartCharge `0x00264a80` searches) use it; an object found is no human, null.
     // @orig 0x0027b058 Attack_FindNearestInReach (unknown)
     [[nodiscard]] Combatant* nearestInReach(int animId, const FighterInput& input) const;
     // The turn and the slide onto the reach of attack `animId` from `target`, at a constant rate from the next state

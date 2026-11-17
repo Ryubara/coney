@@ -1659,15 +1659,19 @@ status = "legacy"
 address = 0x0027a070
 name = "Target_GlassFilter"
 page = "combat-targets.md#targets"
-role = "the square's object targets ([Targets](combat-targets.md#targets))"
+role = "the target searches' pane filter: a pane with a body within the cone and 2 m in height ([Targets](combat-targets.md#targets))"
 level = "confirmed-code"
+coney = "src/human/fighter.h:glassTargetable"
+status = "compared"
 
 [[function]]
 address = 0x0027a120
 name = "Target_ObjectFilter"
 page = "combat-targets.md#targets"
-role = "the square's object targets ([Targets](combat-targets.md#targets))"
+role = "the target searches' world object filter: a strike target with a body within the cone and 2 m in height ([Targets](combat-targets.md#targets))"
 level = "confirmed-code"
+coney = "src/human/fighter.h:objectTargetable"
+status = "compared"
 
 [[function]]
 address = 0x0027a1e8
@@ -1692,9 +1696,15 @@ coney = "src/human/fighter.h:Fighter::findAttackTarget"
 status = "compared"
 
 [[function.gaps]]
-what = "the object and glass passes are not searched; the current target is kept only fightable within the range, where the original keeps any that is no car and whose object query holds"
+what = "an object is the target only from square's pick until its attack lands, so the kept rule meets an object target only then"
 relation = "stand-in"
-issue = 1011
+question = "combat-targets.md#q-object-target"
+
+[[function.gaps]]
+what = "objects and panes are measured across the ground, where the original's world object list measures in three dimensions (run r-20261114-pick-object-distance-3d), until the object attack's approach is built"
+relation = "stand-in"
+issue = 1396
+question = "combat-targets.md#q-search-distance"
 
 [[function]]
 address = 0x0027a6c0
@@ -1706,9 +1716,15 @@ coney = "src/human/fighter.h:Fighter::pickTarget"
 status = "compared"
 
 [[function.gaps]]
-what = "square's objects, panes and cars are searched only when no human is found, cars with the other objects, where the original searches the car, objects and panes between the human passes"
+what = "an object is the target only from square's pick until its attack lands, and the first step tests it with the 135 degree cone and this update's aim, where the original reads what the last search left"
 relation = "stand-in"
-issue = 1011
+question = "combat-targets.md#q-object-target"
+
+[[function.gaps]]
+what = "objects and panes are measured across the ground, where the original's world object list measures in three dimensions (run r-20261114-pick-object-distance-3d), until the object attack's approach is built"
+relation = "stand-in"
+issue = 1396
+question = "combat-targets.md#q-search-distance"
 
 [[function]]
 address = 0x0027aa38
@@ -1741,9 +1757,10 @@ coney = "src/human/fighter.h:Fighter::nearestInReach"
 status = "compared"
 
 [[function.gaps]]
-what = "the charge and dive search does not fall back on objects and glass when no human is in reach"
-relation = "not-ported"
-issue = 1011
+what = "objects and panes are measured across the ground, where the original's world object list measures in three dimensions (run r-20261114-pick-object-distance-3d), until the object attack's approach is built"
+relation = "stand-in"
+issue = 1396
+question = "combat-targets.md#q-search-distance"
 
 [[function]]
 address = 0x0027b1a0

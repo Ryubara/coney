@@ -51,9 +51,10 @@ namespace {
 // A segment strike shape meets a pane's body as spheres of its radius along it, at most this far apart (**Coney's
 // reading**: the pane test takes spheres).
 constexpr float kPaneSampleStep = 0.05F;
-// How near a world object must be to be offered as a target: the square's 2 m search
-// (docs/research/combat-targets.md#targets).
-constexpr float kObjectTargetReach = 2.0F;
+// How near a world object must be to be offered as a target: past the farthest search's range (the charge's and the
+// special's 4.11 m far range; **Coney's choice**, the searches test their own ranges,
+// docs/research/combat-targets.md#searches-coney).
+constexpr float kObjectTargetReach = 6.0F;
 // The strike test looks at world objects within this of the feet (Coney's stand-in for "the bodies near the human":
 // past every riot prop's body and a strike shape's reach).
 constexpr float kPropStrikeSearch = 4.0F;
@@ -738,21 +739,27 @@ void PlayLevelMode::giveObjectTargets() {
     }
     std::vector<human::ObjectTarget> objects;
     // The world objects in the world whose body makes them a strike target (a street prop, a trash can), not broken,
-    // within 2 m in height and near enough for the square's reach (docs/research/combat-targets.md#targets).
+    // within 2 m in height and near enough for the searches, with their body flags for the object filter
+    // (docs/research/combat-targets.md#targets).
     if (m_records != nullptr && m_objectTypes != nullptr) {
         const anim::Vec3 feet = m_player->human().position();
         for (const world_objects::ObjectDraw& draw : m_objectTasks.draws()) {
-            if (draw.column || worldObjectType(draw.handle) == nullptr || m_objects->props.broken(draw.handle) ||
+            const world_objects::ObjectType* type = draw.column ? nullptr : worldObjectType(draw.handle);
+            if (type == nullptr || m_objects->props.broken(draw.handle) ||
                 std::fabs(draw.position.z - feet.z) > human::kPickHeight ||
                 std::hypot(draw.position.x - feet.x, draw.position.y - feet.y) > kObjectTargetReach) {
                 continue;
             }
-            objects.push_back(human::ObjectTarget{.handle = draw.handle, .point = draw.position});
+            objects.push_back(human::ObjectTarget{.handle = draw.handle,
+                                                  .point = draw.position,
+                                                  .kind = human::ObjectKind::WorldObject,
+                                                  .bodyFlags = world_objects::bodyFlagsOf(type->bodyWord)});
         }
     }
     for (const world_objects::GlassPane& pane : m_objects->glass.panes()) {
         if (!pane.broken && !pane.hidden) {
-            objects.push_back(human::ObjectTarget{.handle = pane.handle, .point = pane.centre});
+            objects.push_back(
+                human::ObjectTarget{.handle = pane.handle, .point = pane.centre, .kind = human::ObjectKind::Glass});
         }
     }
     // The car pass (before the objects in the original): a car the player is close to and faces offers its aim point,
@@ -766,7 +773,8 @@ void PlayLevelMode::giveObjectTargets() {
                 continue;
             }
             if (const std::optional<anim::Vec3> aim = world_objects::carAimPoint(car, feet, forward)) {
-                objects.push_back(human::ObjectTarget{.handle = car.handle, .point = *aim});
+                objects.push_back(
+                    human::ObjectTarget{.handle = car.handle, .point = *aim, .kind = human::ObjectKind::Car});
             }
         }
     }
