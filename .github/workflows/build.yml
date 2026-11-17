@@ -360,16 +360,20 @@ jobs:
       # still drawn and uploaded (and each drawn twice), and the job passes with a warning on the run that says so,
       # because a job that failed here would open a P-critical issue on every push to main. Once one reference is
       # there, the allowance ends: a scene without its own reference fails.
+      # `--init` puts docker's init before xvfb-run: xvfb-run waits for Xvfb's ready signal, and Xvfb sends it only to
+      # a parent whose pid is above 1, so as the container's first process xvfb-run waited for ever (#1354, #1392).
+      # Coney's output of every run is kept beside its picture (NAME.log) and uploaded with it; a run that has not
+      # ended after 60 s (a few frames take seconds) fails the step naming its scene, with its output so far.
       - name: Draw the scenes and compare them with the references
         run: |
           out="$RUNNER_TEMP/pictures"
           if ! compgen -G "tests/pictures/reference/*.png" > /dev/null; then
             echo "::warning title=No reference pictures yet::tests/pictures/reference/ holds no picture, so nothing was compared. The drawn pictures are in the software-pictures-drawn artifact; a follow-up task adds them as the references and makes this a required check."
           fi
-          launcher="docker run --rm --user $(id -u):$(id -g) --volume $PWD:$PWD --volume $RUNNER_TEMP:$RUNNER_TEMP"
+          launcher="docker run --rm --init --user $(id -u):$(id -g) --volume $PWD:$PWD --volume $RUNNER_TEMP:$RUNNER_TEMP"
           launcher="$launcher --workdir $PWD $IMAGE xvfb-run --auto-servernum --server-args='-screen 0 640x480x24'"
           uv run --project python coney-tools picture scenes --coney build/ci/src/platform/coney \
-            --launcher "$launcher" --out "$out" --repeat 2 --allow-no-references
+            --launcher "$launcher" --out "$out" --repeat 2 --allow-no-references --timeout 60
       - name: Keep the drawn pictures
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

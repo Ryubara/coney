@@ -264,10 +264,13 @@ def test_the_conftest_fails_an_unmarked_test_at_teardown_and_selects_by_marker(t
     )
     env = {**os.environ, "PYTHONPATH": os.pathsep.join([str(here), os.environ.get("PYTHONPATH", "")])}
     env.pop("CONEY_TEST_READS_LOG", None)
+    # The child pytest gets a base folder of its own and no inherited one: sharing the suite's would remove the
+    # suite's temp folders under running tests (docs/guides/testing.md#python-environment).
+    env.pop("PYTEST_ADDOPTS", None)
 
     def run(*args: str) -> tuple[int, str]:
         done = subprocess.run(
-            [sys.executable, "-m", "pytest", "-p", "no:cacheprovider", "-q", *args],
+            [sys.executable, "-m", "pytest", "-p", "no:cacheprovider", "-q", f"--basetemp={tmp_path / 'child'}", *args],
             cwd=tmp_path,
             env=env,
             capture_output=True,
