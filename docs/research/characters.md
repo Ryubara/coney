@@ -260,7 +260,7 @@ stunned) is tested first. Confirmed (code) at `0x0026a6d0`. A hit that floors hi
 `Human_KnockDown` stuns on that alone (through `Human_Stun`, `0x0022f658`, which checks flag `0x100`), never reading
 `0x1000000000`, so a hard-to-stun human floored by an extreme reaction rises stunned like any other. Confirmed (code) at
 `0x0026a6d0` and `0x0022f100`. (Coney's knockdown still stuns on the hit's flag `0x400` or a running stun, its legacy
-port's rule, [#1413](issue:1413).) Who reads
+port's rule.) Who reads
 `0x400000` and `0x800000000` in the human flags was not found (the state and held flags of the same values are other
 words).
 
