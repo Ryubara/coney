@@ -116,6 +116,11 @@ tool that does that adds the name to `ambient_env.py` by hand. It also runs one 
 `CONEY_TASK` in a shell with `CONEY_TASK`, `VIRTUAL_ENV` and `CLAUDECODE` set. A tool that starts reading a new variable
 adds it to `ambient_env.py` in the same commit.
 
+A test that starts pytest itself gives that run a `--basetemp` of its own under its `tmp_path` and drops any inherited
+`PYTEST_ADDOPTS`. pytest keeps only the newest three numbered folders under `pytest-of-<user>`, so a few child sessions
+remove the running suite's own folder, and a shared `--basetemp` is emptied when the child starts: either way temp
+repos vanish under tests still using them, and a different handful of tests fails on every full run.
+
 A test that runs a shell script gets its `bash` from `python/tests/shell_support.py`, never from
 `shutil.which("bash")`. On a Windows machine with the Windows Subsystem for Linux that call can find System32's
 `bash.exe`, a Linux that sees the checkout as `/mnt/c/...` and has no `uv`, so a script fails or, behind a hook
@@ -585,6 +590,22 @@ The runner image's own Mesa moves with the image, so the drawing runs in a conta
 **snapshot date** (every pinned version stays installable), and Mesa and the LLVM that llvmpipe uses by **exact package
 version**, checked at the end of the build. The job caches the built image on the runner's cache, keyed by the
 Dockerfile's hash.
+
+What the image needs, and how the job runs it:
+
+- **Its packages:** Mesa's GLX and EGL with the llvmpipe driver and the LLVM it compiles shaders with (pinned),
+  `xvfb` and `xauth` for the virtual display, and the X11 and xkb libraries SDL3 opens a window with. Its environment
+  picks llvmpipe (`LIBGL_ALWAYS_SOFTWARE`, `GALLIUM_DRIVER`) and SDL's silent audio driver (`SDL_AUDIODRIVER=dummy`).
+- **Outside the pin:** `ca-certificates`, with the `openssl` and `libssl3t64` it brings, comes from the base image's
+  own source, the live archive, because the snapshot is read over https and the base image has no certificates. It
+  only lets apt open the snapshot (every pinned package is checked against the archive's signing key) and plays no
+  part in a picture.
+- **An init process:** the job starts the container with `docker run --init`. `xvfb-run` waits for Xvfb's ready
+  signal, and Xvfb sends it only to a parent whose process id is above 1, so as the container's first process
+  `xvfb-run` waited for ever and the first scene timed out (#1354, #1392). Run by hand, the image needs the same flag.
+- **What the job leaves when a scene fails:** Coney's output of every run is kept beside its picture (`NAME.log`) and
+  uploaded with the pictures, and a run that has not ended after 60 seconds (`--timeout`) fails the step naming its
+  scene, with the last lines Coney printed ([`picture scenes`](coney-tools-picture.md#picture)).
 
 - **Moving the pin is a pull request of its own.** Changing the digest, the snapshot, or a version in the Dockerfile
   changes the pictures, so that pull request regenerates `tests/pictures/reference/` in the same pull request

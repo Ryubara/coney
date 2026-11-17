@@ -34,6 +34,7 @@ the pixels over in magenta, so a reader sees where they are.
 ```sh
 uv run --project python coney-tools picture scenes --out DIR [--coney EXE] [--launcher COMMAND] [--scenes FILE]
     [--references DIR] [--repeat N] [--update] [--allow-no-references] [--channel-tolerance N] [--max-share PERCENT]
+    [--timeout SECONDS]
 ```
 
 Draws the synthetic scenes of `tests/pictures/scenes.toml` and compares each with the reference of the same name in
@@ -56,8 +57,14 @@ the folder you start the command in.
   compared` and exits 0 unless the repeats differ. CI passes it until the first references are added from its
   uploaded pictures ([The software pictures](testing.md#software-pictures)); the task that adds them drops it. A folder
   with some references but not all of them still fails.
+* **Coney's output** of every run (standard output, then standard error) is kept beside its picture as `NAME.log`
+  (`repeats/N/NAME.log` for a repeat), whether the run drew, failed or hung, so CI's uploaded pictures carry the log of
+  each scene.
+* **`--timeout SECONDS`** (default 180) is how long one run of Coney may take before it counts as hung: the run is
+  stopped, and the command ends with exit code 2, naming the scene and showing the last lines Coney printed (all of
+  them in its `NAME.log`). A few frames of a sandbox take seconds, so CI passes 60.
 * A scene whose reference is missing fails (`no reference`), and a run of Coney that fails or draws nothing ends the
-  command with exit code 2 and the last lines of its output.
+  command with exit code 2, its log's path and the last lines of its output.
 
 Disc frames are compared with `picture compare`: take the named frames from the branch and from its base commit with
 `--screenshot` at `--render-size 640x448` and a pinned camera ([Matched views](running-play-level.md#matched-views)),
@@ -90,7 +97,7 @@ Draw the synthetic scenes with coney and compare them with their reference pictu
 
 ```text
 coney-tools picture scenes [--coney CONEY] [--launcher COMMAND] [--scenes SCENES] [--references REFERENCES] --out OUT
-    [--repeat N] [--update] [--allow-no-references] [--channel-tolerance N] [--max-share PERCENT]
+    [--repeat N] [--update] [--allow-no-references] [--channel-tolerance N] [--max-share PERCENT] [--timeout SECONDS]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -105,4 +112,5 @@ coney-tools picture scenes [--coney CONEY] [--launcher COMMAND] [--scenes SCENES
 | `--allow-no-references` | flag | off | pass, with a notice, when the references folder holds no picture yet; the scenes are still drawn |
 | `--channel-tolerance N` | integer | none | override the scene list's tolerance |
 | `--max-share PERCENT` | number | none | override the scene list's share |
+| `--timeout SECONDS` | number | `180` | how long one run of coney may take before it counts as hung (default 180) |
 <!-- command-reference:end -->

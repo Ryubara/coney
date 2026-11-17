@@ -4,7 +4,8 @@
 A scene list (`tests/pictures/scenes.toml`) names scenes that need no game data: each is a command line of `coney`
 (a sandbox layout, which is Coney's own world of grid textures) at a fixed number of frames and render size. This
 module draws every scene to a PNG with `--screenshot`, compares it with the reference picture of the same name and
-prints the counts of coney_tools.picture_compare. CI runs it on Linux in a container image pinned by digest, with
+prints the counts of coney_tools.picture_compare; Coney's output of each run is kept beside its picture as NAME.log,
+and a run past `--timeout` fails naming its scene. CI runs it on Linux in a container image pinned by digest, with
 Mesa's llvmpipe as the OpenGL driver under a virtual display (`--launcher` puts `xvfb-run` before Coney); locally the
 same command compares against the references or, with `--update`, replaces them. `--repeat` draws each scene again
 and compares the repeats with the first, which is how the tolerance is measured from repeated captures of one build.
@@ -114,10 +115,26 @@ def _scene(path: Path, index: int, entry: object, default_frames: object, defaul
     return Scene(name, tuple(args), frames, size)
 
 
-def _draw(scene: Scene, coney: Sequence[str], target: Path, runner: Runner, cwd: Path | None) -> None:
-    """Run Coney on one scene so that it writes `target`; ConfigError when it fails or draws nothing."""
+def _text(output: str | bytes | None) -> str:
+    """Captured output as text: subprocess hands back bytes on a timeout even when it was asked for text."""
+    if isinstance(output, bytes):
+        return output.decode("utf-8", errors="replace")
+    return output or ""
+
+
+def _tail(output: str) -> str:
+    """The last lines of Coney's output, indented under an error message."""
+    return "".join(f"\n    {line}" for line in output.strip().splitlines()[-5:])
+
+
+def _draw(scene: Scene, coney: Sequence[str], target: Path, runner: Runner, cwd: Path | None, timeout: float) -> None:
+    """Run Coney on one scene so that it writes `target`; ConfigError when it fails, hangs or draws nothing.
+
+    Coney's output (standard output, then standard error) is kept beside the picture as NAME.log, whatever the run's
+    end, so the job's artifact holds the log of a scene that failed or hung as well as of one that drew."""
     target.parent.mkdir(parents=True, exist_ok=True)
     target.unlink(missing_ok=True)
+    log = target.with_suffix(".log")
     command = [
         *coney,
         *scene.args,
@@ -129,17 +146,30 @@ def _draw(scene: Scene, coney: Sequence[str], target: Path, runner: Runner, cwd:
         str(target),
     ]
     try:
-        done = runner(command, capture_output=True, text=True, timeout=RUN_TIMEOUT_SECONDS, check=False, cwd=cwd)
-    except (OSError, subprocess.TimeoutExpired) as error:
-        raise ConfigError(f"scene {scene.name}: cannot run {coney[-1]}: {error}") from error
-    if done.returncode != 0:
-        tail = (done.stderr or done.stdout or "").strip().splitlines()[-5:]
+        done = runner(command, capture_output=True, text=True, timeout=timeout, check=False, cwd=cwd)
+    except subprocess.TimeoutExpired as error:
+        # What Coney printed before it was stopped says how far it got: the last step it logged. The timeout stops the
+        # launcher's process only: under `docker run` the container may outlive it, which is harmless because the
+        # command ends here at the first hung scene and CI's runner is thrown away after the job.
+        output = _text(error.stdout) + _text(error.stderr)
+        log.write_text(output, encoding="utf-8")
         raise ConfigError(
-            f"scene {scene.name}: coney ended with exit code {done.returncode}"
-            + "".join(f"\n    {line}" for line in tail)
+            f"scene {scene.name}: coney did not finish in {timeout:g} s (hung, or far slower than a few frames take); "
+            f"its output so far is in {log}" + _tail(output)
+        ) from error
+    except OSError as error:
+        raise ConfigError(f"scene {scene.name}: cannot run {coney[-1]}: {error}") from error
+    output = _text(done.stdout) + _text(done.stderr)
+    log.write_text(output, encoding="utf-8")
+    if done.returncode != 0:
+        raise ConfigError(
+            f"scene {scene.name}: coney ended with exit code {done.returncode}; its output is in {log}"
+            + _tail(_text(done.stderr) or _text(done.stdout))
         )
     if not target.is_file():
-        raise ConfigError(f"scene {scene.name}: coney ended well but wrote no picture at {target}")
+        raise ConfigError(
+            f"scene {scene.name}: coney ended well but wrote no picture at {target}; its output is in {log}"
+        )
 
 
 def run_scenes(
@@ -154,6 +184,7 @@ def run_scenes(
     cwd: Path | None = None,
     channel_tolerance: int | None = None,
     max_share_percent: float | None = None,
+    timeout: float = RUN_TIMEOUT_SECONDS,
 ) -> int:
     """Draw every scene, compare it with its reference and print the counts; 0 when all pass, 1 when one does not.
 
@@ -166,13 +197,16 @@ def run_scenes(
     anywhere. With `allow_no_references` a references folder with no picture at all is the bootstrap, before the first
     references are made from what CI drew: every scene is still drawn (and kept in `out`, and drawn again for
     `repeat`), the run says loudly that nothing was compared, and it passes unless the repeats differ. A folder that
-    holds some references but not all of them is a mistake and fails as without the allowance."""
+    holds some references but not all of them is a mistake and fails as without the allowance. `timeout` is how long
+    one run of Coney may take, in seconds, before it counts as hung; its output so far is kept in NAME.log."""
     scene_list = load_scenes(scenes_path)
     tolerance = scene_list.channel_tolerance if channel_tolerance is None else channel_tolerance
     share = scene_list.max_share_percent if max_share_percent is None else max_share_percent
     picture_compare.check_limits(tolerance, share)
     if repeat < 1:
         raise ConfigError("--repeat must be at least 1")
+    if timeout <= 0:
+        raise ConfigError("--timeout must be more than 0 seconds")
     run = runner if runner is not None else subprocess.run
     # Coney runs in `cwd`, so the picture's path must not depend on it.
     out = out.resolve()
@@ -182,7 +216,7 @@ def run_scenes(
     updated = 0
     for scene in scene_list.scenes:
         drawn = out / f"{scene.name}.png"
-        _draw(scene, coney, drawn, run, cwd)
+        _draw(scene, coney, drawn, run, cwd, timeout)
         reference = references / f"{scene.name}.png"
         if reference.is_file():
             result = picture_compare.compare_arrays(
@@ -199,7 +233,7 @@ def run_scenes(
             print(results[-1].line(tolerance, share))
         for again in range(2, repeat + 1):
             repeated = out / "repeats" / str(again) / f"{scene.name}.png"
-            _draw(scene, coney, repeated, run, cwd)
+            _draw(scene, coney, repeated, run, cwd, timeout)
             same = picture_compare.compare_arrays(
                 f"repeat {again} of {drawn.name}",
                 picture_compare.load_picture(drawn),
