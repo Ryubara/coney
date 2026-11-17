@@ -41,6 +41,9 @@ struct HumanSound {
         /// Clip event `0x45` (message `0xc5`): the sound the human holds (the spray loop) stops
         /// (docs/research/sound-events.md#spray-loop).
         StopHeld,
+        /// Rage's start (`Rage_Enter`, `0x00284340`): the game's one rage sound, `vags/misc/rage_mode_06`, 2D
+        /// (docs/research/combat-rage.md#rage-effects).
+        RageStart,
     };
     Kind kind = Kind::Anim;
     std::uint32_t animSound = 0; ///< Anim: the `SA` id.

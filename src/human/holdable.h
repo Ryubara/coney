@@ -8,6 +8,7 @@
 #include "animation/anim_math.h"
 #include "characters/anim_set.h"
 #include "combat/grabbed.h"
+#include "combat/tackled.h"
 #include "human/combatant.h"
 #include "human/human_animator.h"
 
@@ -38,6 +39,9 @@ struct GrabbedReport {
     bool grabberKnockedDown = false; ///< The grabber goes down (an escape)...
     bool grabberStunned = false;     ///< ... and is stunned (an escape, a counter).
     bool ended = false;              ///< The grabbed human is out of the grab.
+    /// Mounted: what it did from under the mount (`Player_UpdateTackled`); `victimClip`, `grabberClip`,
+    /// `grabberPowerCost` and `grabberDamage` are the struggle's.
+    combat::TackledAction mount = combat::TackledAction::None;
 };
 
 /// What a tandem's attacker tells its victim as the tandem starts (Holdable::startTandem(),
@@ -106,6 +110,18 @@ class Holdable : public Combatant {
     /// holds it, so the grabber's clips start on the grabber's next update (the same step when the grabber acts after
     /// the attacker). Nothing by default.
     [[nodiscard]] virtual std::optional<int> takeTandemRequest() { return std::nullopt; }
+    /// Whether it lies where a circle at it mounts it with the grounded mount (`Human_CanBeGrabbed` 0x002256a0 for a
+    /// knocked-down human, docs/research/combat-reactions.md#ground-escape): down in its grounded idle, or less than
+    /// half way through its rise. False by default (a passive target is never mounted where it lies).
+    [[nodiscard]] virtual bool mountableOnGround() const { return false; }
+    /// It reversed the mount `mounter` held it in (`Mount_StartReversal`): it plays 242 and mounts `mounter`, which
+    /// plays 243 (Fighter::reverseMount()). Nothing by default.
+    virtual void takeReversedMount(Holdable& /*mounter*/) {}
+    /// Its command this update, which its mounter reads as a mount's clip ends (`Mount_OnStrikeEnd` reads its
+    /// per-player record). None by default (a passive target presses nothing).
+    [[nodiscard]] virtual combat::CommandId mountCommand() const { return combat::command::kNone; }
+    /// Its left stick's magnitude (0-1), which the same end reads. 0 by default.
+    [[nodiscard]] virtual float mountStick() const { return 0.0F; }
 };
 
 } // namespace coney::human

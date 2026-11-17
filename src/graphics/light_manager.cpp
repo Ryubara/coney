@@ -102,6 +102,21 @@ std::size_t LightManager::count() const {
     return static_cast<std::size_t>(std::ranges::count_if(m_records, [](const LightRecord& r) { return r.inUse; }));
 }
 
+bool LightManager::setOrigin(LightHandle handle, LightOrigin origin) {
+    LightRecord* record = find(handle);
+    if (record == nullptr) {
+        return false;
+    }
+    record->origin = origin;
+    return true;
+}
+
+LightOrigin LightManager::origin(std::uint16_t index) const {
+    return index <= kGlow ? LightOrigin::BuiltIn : m_records.at(index).origin;
+}
+
+void LightManager::clearCoronas() { m_coronas.clear(); }
+
 bool LightManager::setLight(LightHandle handle, const LightDescriptor& desc) {
     LightRecord* record = find(handle);
     if (record == nullptr) {

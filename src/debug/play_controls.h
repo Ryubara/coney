@@ -15,7 +15,10 @@
 #include "debug/anim_catalog.h"
 #include "debug/entity_edit.h"
 #include "debug/entity_inspect.h"
+#include "debug/lighting_lab.h"
 #include "debug/mesh_views.h"
+#include "graphics/light_manager.h"
+#include "graphics/lighting_frame.h"
 #include "human/place.h"
 #include "sandbox/sandbox_layout.h"
 
@@ -37,14 +40,15 @@ struct DebugDrawOptions {
     bool camera = false;          ///< The follow camera's wanted position and its look-at point.
     bool places = false;          ///< The places of PlayControls::places(), each a marker with its heading.
     // The collision shapes and the Entity inspector's highlight (src/debug/pages_entity.cpp, src/debug/human_shapes.h).
-    bool wallClasses = false;    ///< The collision wireframe coloured by how the walking sweep classes each triangle.
-    bool shapes = false;         ///< The humans' bodies: walking or air sphere, capsule, ground probe, climb.
-    bool shapesAllHumans = true; ///< The shapes on every human; off: on the player and the inspected entity only.
-    bool strikes = false;        ///< The strike shapes switched on, and the spine and head they are tested against.
-    bool contacts = false;       ///< The contacts the last walking sweep slid along: a point and its normal.
-    std::uint64_t inspected = 0; ///< The Entity inspector's selection (an EntityId; 0 for none).
-    bool highlight = true;       ///< Mark the inspected entity in the scene.
-    MeshViewOptions mesh;        ///< The mesh views: wireframes, flat views, normals and bone axes (mesh_views.h).
+    bool wallClasses = false;     ///< The collision wireframe coloured by how the walking sweep classes each triangle.
+    bool shapes = false;          ///< The humans' bodies: walking or air sphere, capsule, ground probe, climb.
+    bool shapesAllHumans = true;  ///< The shapes on every human; off: on the player and the inspected entity only.
+    bool strikes = false;         ///< The strike shapes switched on, and the spine and head they are tested against.
+    bool contacts = false;        ///< The contacts the last walking sweep slid along: a point and its normal.
+    std::uint64_t inspected = 0;  ///< The Entity inspector's selection (an EntityId; 0 for none).
+    bool highlight = true;        ///< Mark the inspected entity in the scene.
+    MeshViewOptions mesh;         ///< The mesh views: wireframes, flat views, normals and bone axes (mesh_views.h).
+    LightingDrawOptions lighting; ///< The Lighting page's lines (lighting_lab.h).
 };
 
 /// What a frame recorded by `--record` draws of the Debug draw page, given what the run switched on (`run`): nothing
@@ -245,6 +249,13 @@ class PlayControls {
     /// What the Entity inspector edits (docs/guides/debug-menu.md#entity-editor): the mode's humans and objects, called
     /// between simulation steps by the debug session's input gate. Null by default: the mode cannot be edited.
     [[nodiscard]] virtual EntityEditTarget* entityEdits() { return nullptr; }
+
+    /// The lighting lab's view of the frame (docs/guides/realtime-lighting.md#lab): the lighting frame the mode drew
+    /// last, its selections included; null when the mode draws none.
+    [[nodiscard]] virtual const graphics::LightingFrame* lightingFrame() const { return nullptr; }
+    /// The level's light manager, for the Lighting page's list of lights and its edits (applied between two steps);
+    /// null when the mode has none.
+    [[nodiscard]] virtual graphics::LightManager* lightManager() { return nullptr; }
 };
 
 /// The spot `distance` metres in front of feet `feet` facing `headingDegrees` (0 faces +y, counter-clockwise from

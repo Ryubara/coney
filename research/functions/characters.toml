@@ -506,6 +506,20 @@ coney = "src/human/human.h:Human::idleUnderControl"
 status = "legacy"
 
 [[function]]
+address = 0x002256a0
+name = "Human_CanBeGrabbed"
+page = "characters.md#code-core"
+role = "Whether the human may be grabbed or tackled by another: not down or in a scene, within 0.25 m of height, and none of the blocking state or held flags; a knocked-down one only before half its rise"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::mountableOnGround"
+status = "compared"
+
+[[function.gaps]]
+what = "only the knocked-down branch is ported, read through Coney's clips (the grounded idle, the rise under half); the standing branch is Combatant::holdable() and the searches' Standing test"
+relation = "stand-in"
+issue = 231
+
+[[function]]
 address = 0x00225f58
 name = "Human_IsFreeForFidget"
 page = "characters.md#code-core"

@@ -81,6 +81,10 @@ class PlayLighting {
 
     /// The rig, for the scenery's renderer.
     [[nodiscard]] SceneLighting& scene() { return *m_scene; }
+    [[nodiscard]] const SceneLighting& scene() const { return *m_scene; }
+    /// The light manager drawn with (the level's, or the stand-in's), for the lighting lab's list and edits.
+    /// @coney-only the lighting lab (docs/guides/realtime-lighting.md#lab)
+    [[nodiscard]] graphics::LightManager& lights() { return m_level->lights; }
     /// One line for the log: the lights, the world ambient, the fog.
     [[nodiscard]] std::string summary() const;
 

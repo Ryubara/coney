@@ -10,6 +10,7 @@
 #include "graphics/level_lighting.h"
 #include "graphics/light_manager.h"
 #include "graphics/lighting_frame.h"
+#include "graphics/lighting_switches.h"
 #include "graphics/particle_page.h"
 #include "hud/health_rings.h"
 #include "platform/mesh_view_hook.h"
@@ -51,7 +52,9 @@ class SceneLighting {
 
     /// The start of a frame through a camera at `pose` (RenderWare's axes) with clip distances `nearClip` and
     /// `farClip`, at game time `nowMs`: the manager's viewport pass (the ambients, the cull, the coronas), then the
-    /// lighting frame (lightingFrame()).
+    /// lighting frame (lightingFrame()). With the lighting lab's switches set (setSwitches()), the lights are culled
+    /// from the game camera's view (setGameView()) under *Light from*, and *Hold lighting* keeps the moment of the
+    /// step it holds; pose() stays `pose` either way.
     void beginFrame(const world::CameraPose& pose, float nearClip, float farClip, std::uint64_t nowMs);
 
     /// Draws a streamed sector's atomic with the world's lights (list A and the world's point lights it overlaps).
@@ -83,6 +86,25 @@ class SceneLighting {
     /// @orig 0x0017b2e0 GroundRing_DrawQueued (unknown)
     void drawGroundRings(std::span<const hud::GroundRing> rings, std::span<const hud::TargetMarker> markers) const;
 
+    /// The lighting lab's switches to draw with (docs/guides/realtime-lighting.md#lab), which must outlive their use;
+    /// null (the default): the faithful picture, lit from the frame's own camera, as without the debug tools.
+    /// @coney-only the lighting lab (docs/guides/realtime-lighting.md#lab); the original has none
+    void setSwitches(const graphics::LightingSwitches* switches) { m_switches = switches; }
+    /// The game camera's view (the follow, scene or pinned camera) for the next beginFrame()'s *Light from*; none:
+    /// the frame's own camera is the game's.
+    /// @coney-only the lighting lab's Light from (docs/guides/realtime-lighting.md#lab)
+    void setGameView(const std::optional<graphics::LightView>& view) { m_gameView = view; }
+    /// A simulation step ran: *Hold lighting* moves on to the next frame's moment.
+    /// @coney-only the lighting lab's Hold lighting (docs/guides/realtime-lighting.md#lab)
+    void stepped() { m_hold.stepped(); }
+    /// Whether the human atomics drawn from now on are hidden in a shadow (their selection looks for no point light),
+    /// for the lighting frame's rows of them; the caller of drawHumanAtomic() says so before each human.
+    /// @coney-only the lighting frame's selection rows
+    void noteHiddenHuman(bool hidden) { m_hiddenHuman = hidden; }
+    /// Whether the humans' blob shadows are drawn: off only under the lighting lab's layer.
+    /// @coney-only the lighting lab's layers (docs/guides/realtime-lighting.md#lab)
+    [[nodiscard]] bool drawsBlobShadows() const { return m_switches == nullptr || m_switches->layers.blobShadows; }
+
     /// Hands every atomic drawn from now on to the debug tools' mesh views (`hook`, which must outlive its use), or to
     /// nobody (null: each is drawn as it always is, the hook not consulted).
     /// @coney-only the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views); the original has none
@@ -98,8 +120,9 @@ class SceneLighting {
 
     /// This frame's camera (RenderWare's axes), as beginFrame() was given it.
     [[nodiscard]] const world::CameraPose& pose() const { return m_pose; }
-    /// This frame's lighting frame, built by beginFrame() after the cull: what the lighting lab and the GPU renderer's
-    /// shadow maps and per-pixel lights read (docs/engine/renderer.md#lighting). Nothing draws from it yet.
+    /// This frame's lighting frame, built by beginFrame() after the cull, with each atomic's selection added as it is
+    /// drawn: what the lighting lab and the GPU renderer's shadow maps and per-pixel lights read
+    /// (docs/engine/renderer.md#lighting). Nothing draws from it yet.
     [[nodiscard]] const graphics::LightingFrame& lightingFrame() const { return m_frame; }
     /// The light manager, for the summary.
     [[nodiscard]] const graphics::LightManager& lights() const { return m_lighting.lights; }
@@ -107,27 +130,37 @@ class SceneLighting {
     [[nodiscard]] const graphics::WorldFog& fog() const { return m_lighting.fog; }
 
   private:
-    // Puts the lights of `selection` into the rig's world, mirrored from the manager's records.
+    // Puts the lights of `selection` that the lab's layers keep into the rig's world, mirrored from the manager's
+    // records, and keeps `selection` for the frame's row of the atomic drawn next (renderInRig()).
     void useLights(const graphics::LightSelection& selection);
     // Draws `atomic` inside the rig's world (renderLit()), or through the mesh views' hook while one is set, as the
-    // kind the caller's DrawKindScope names.
+    // kind the caller's DrawKindScope names; first adds the lighting frame's row of its selection (recordSelection()).
     void renderInRig(rw::Atomic* atomic);
     // Draws `atomic` inside the rig's world, so librw lights it with the rig's lights, with its dual layer.
     void renderLit(rw::Atomic* atomic);
+    // Adds the row of the selection useLights() kept to the lighting frame, for `atomic`: its caller from the draw
+    // kind, its sphere and the inputs the draw functions pass (docs/research/lighting.md#select).
+    void recordSelection(rw::Atomic* atomic);
     // The librw light that mirrors record `index`, made on first use with the record's type.
     rw::Light* mirror(std::uint16_t index);
 
     graphics::LevelLighting& m_lighting;
     std::optional<graphics::SpriteSheet> m_coronaSheet;
     std::optional<graphics::SpriteSheet> m_shadowSheet;
-    rw::World* m_world = nullptr;            // owned: holds the current atomic's lights
-    std::vector<rw::Light*> m_mirrors;       // owned, with their frames; null where none is made yet
-    std::vector<rw::Light*> m_inWorld;       // the mirrors now in m_world
-    world::CameraPose m_pose;                // this frame's camera
-    graphics::LightingFrame m_frame;         // this frame's lighting frame (beginFrame())
-    MeshViewHook* m_meshViews = nullptr;     // setMeshViews(); null: none
-    const rw::Atomic* m_meshLayer = nullptr; // setMeshLayer()
-    std::uint64_t m_atomicsDrawn = 0;        // atomicsDrawn()
+    rw::World* m_world = nullptr;                           // owned: holds the current atomic's lights
+    std::vector<rw::Light*> m_mirrors;                      // owned, with their frames; null where none is made yet
+    std::vector<rw::Light*> m_inWorld;                      // the mirrors now in m_world
+    world::CameraPose m_pose;                               // this frame's camera
+    graphics::LightingFrame m_frame;                        // this frame's lighting frame (beginFrame())
+    MeshViewHook* m_meshViews = nullptr;                    // setMeshViews(); null: none
+    const rw::Atomic* m_meshLayer = nullptr;                // setMeshLayer()
+    std::uint64_t m_atomicsDrawn = 0;                       // atomicsDrawn()
+    const graphics::LightingSwitches* m_switches = nullptr; // setSwitches(); null: none
+    std::optional<graphics::LightView> m_gameView;          // setGameView()
+    graphics::LightingHold m_hold;                          // Hold lighting's moment
+    std::optional<graphics::LightSelection> m_pending;      // useLights()'s selection, until its atomic is drawn
+    bool m_background = false;                              // the atomic drawn next is the background's
+    bool m_hiddenHuman = false;                             // noteHiddenHuman()
 };
 
 } // namespace coney::platform

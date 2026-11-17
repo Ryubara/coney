@@ -21,12 +21,14 @@
 #include "combat/grab.h"
 #include "combat/lock_on.h"
 #include "combat/rage_awards.h"
+#include "combat/rage_enter.h"
 #include "combat/reactions.h"
 #include "combat/revive.h"
 #include "combat/tandem.h"
 #include "core/pad.h"
 #include "human/fighter_clips.h"
 #include "human/strike_shapes.h"
+#include "world_objects/props.h"
 
 namespace coney::human {
 
@@ -159,28 +161,6 @@ Combatant* Fighter::inFront(const FighterInput& input, float range, bool grounde
     return best;
 }
 
-const ObjectTarget* Fighter::pickObjectTarget(const FighterInput& input) const {
-    const float range = std::max(reachOf(id::kBreakObjectLow), reachOf(id::kBreakObjectMid));
-    const float along =
-        input.stick.magnitude() > kPickStick ? input.heading - (input.stick.angleDegrees() * kDegrees) : input.heading;
-    // The nearest object within `range` and `cone` degrees of the heading.
-    const auto nearest = [&](float cone) -> const ObjectTarget* {
-        const ObjectTarget* best = nullptr;
-        float bestDistance = range;
-        for (const ObjectTarget& object : input.objects) {
-            const anim::Vec3 to = anim::subtract(object.point, input.position);
-            const float distance = std::hypot(to.x, to.y);
-            if (distance <= bestDistance && std::fabs(wrapAngle(headingOf(to) - along)) <= cone * kDegrees) {
-                best = &object;
-                bestDistance = distance;
-            }
-        }
-        return best;
-    };
-    const ObjectTarget* found = nearest(kPickConeDegrees);
-    return found != nullptr ? found : nearest(kObjectWideConeDegrees);
-}
-
 namespace {
 
 // Whether `target` may be an attack's target: standing, with health left, targetable and at most 2 m above or below
@@ -198,7 +178,7 @@ bool fightable(const Combatant& target, const anim::Vec3& from, bool down = fals
 }
 
 // The nearest fightable target of `input` within `reach` and, when `cone` is above 0, within `cone` degrees of the
-// heading `along`, a downed one too with `down`; null for none.
+// heading `along`, a downed one too with `down`, across the ground (**Coney stand-in**, #1396); null for none.
 // @orig 0x0027a6c0 Player_PickTarget (unknown)
 // @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
 Combatant* nearestFightable(const FighterInput& input, float along, float reach, float cone, bool down = false) {
@@ -219,16 +199,54 @@ Combatant* nearestFightable(const FighterInput& input, float along, float reach,
     return best;
 }
 
-// The last resort: the current target, fightable within `range` (a stand-in for the original's object query).
+// The nearest of `input.objects` of `kind` between `nearest` and `reach` metres that `accepts` takes, or null: one
+// object list's search with its filter, then the sort by distance. The lists skip what lies nearer than record `+0xd8`
+// (`nearest`: 0 for the pick and the attack search, the attack's reach for the charge's and the dive's).
+// @orig 0x0027a6c0 Player_PickTarget (unknown)
+// @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
+// @orig 0x0027b058 Attack_FindNearestInReach (unknown)
+template <typename Accepts>
+const ObjectTarget* nearestObject(const FighterInput& input, ObjectKind kind, float nearest, float reach,
+                                  const Accepts& accepts) {
+    const ObjectTarget* best = nullptr;
+    float bestDistance = reach;
+    for (const ObjectTarget& object : input.objects) {
+        if (object.kind != kind || !accepts(object)) {
+            continue;
+        }
+        // **Coney stand-in** (#1396): across the ground, where the original measures in 3D (run r-20261114-pick-
+        // object-distance-3d), until the object attack's approach is built (combat-targets.md#searches-coney).
+        const anim::Vec3 to = anim::subtract(object.point, input.position);
+        const float distance = std::hypot(to.x, to.y);
+        if (distance >= nearest && distance <= bestDistance) {
+            best = &object;
+            bestDistance = distance;
+        }
+    }
+    return best;
+}
+
+// The current human target a search keeps when nothing is found: among the targets (**Coney stand-in** for a handle
+// that resolves) and within `range` across the ground (stand-in, #1396: Object_Distance is 3D), whatever his state.
 // @orig 0x0027a6c0 Player_PickTarget (unknown)
 // @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
 Combatant* keptTarget(const FighterInput& input, const Combatant* current, float range) {
-    if (current == nullptr || !fightable(*current, input.position) ||
-        flatDistance(input.position, current->position()) > range) {
+    if (current == nullptr || flatDistance(input.position, current->position()) > range) {
         return nullptr;
     }
     const auto found = std::ranges::find(input.targets, current);
     return found != input.targets.end() ? *found : nullptr;
+}
+
+// An object target kept when nothing is found: no car, a body, `range` across the ground (**Coney stand-in**, #1396).
+// @orig 0x0027a6c0 Player_PickTarget (unknown)
+// @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
+const ObjectTarget* keptObject(const FighterInput& input, const ObjectTarget* current, float range) {
+    if (current == nullptr || current->kind == ObjectKind::Car || !current->hasBody ||
+        flatDistance(input.position, current->point) > range) {
+        return nullptr;
+    }
+    return current;
 }
 
 // The heading a search runs along: the stick's when it is pushed (its angle is positive to the right, headings grow to
@@ -241,51 +259,198 @@ float aimHeading(const FighterInput& input, float offset) {
                                                 : wrapAngle(input.heading + offset);
 }
 
+// The input with no objects: L1's and the counters' stand-in picks (pickTarget()) search the humans only, as the
+// original's L1 and counter searches (0x0027b2a8, `Player_FindCounterTarget` 0x0027ac30) have no object or pane pass.
+// @coney-only the input of the stand-in picks of L1 and the counters, which have no search of their own here
+FighterInput humansOnly(const FighterInput& input) {
+    FighterInput only = input;
+    only.objects = {};
+    return only;
+}
+
+// Whether `point` lies within `cone` degrees of the aim `along` and 2 m above or below `from`: the filters' angle
+// (`Target_AngleFromAimHeading` 0x002790a8) and height (`0x00510970`) tests.
+// @orig 0x0027a120 Target_ObjectFilter (unknown)
+// @orig 0x0027a070 Target_GlassFilter (unknown)
+bool inConeAndHeight(anim::Vec3 point, anim::Vec3 from, float along, float cone) {
+    if (std::fabs(wrapAngle(headingOf(anim::subtract(point, from)) - along)) > cone * kDegrees) {
+        return false;
+    }
+    return std::fabs(point.z - from.z) <= kPickHeight;
+}
+
 } // namespace
 
-Combatant* Fighter::pickTarget(const FighterInput& input, float range, const Combatant* current) {
-    const float along = aimHeading(input, 0.0F);
-    // The passes in order; the first that finds anyone ends the search. (The objects' passes between them are
-    // pickObjectTarget()'s, a stand-in: square tries the objects only when no human is found.)
-    if (Combatant* found = nearestFightable(input, along, range * kPickConeScale, kPickConeDegrees); found != nullptr) {
-        return found;
+bool objectTargetable(const ObjectTarget& object, anim::Vec3 from, float along, float cone) {
+    // A body (the object query), then the angle and the height, then a world object whose body is a strike target.
+    if (!object.hasBody || !inConeAndHeight(object.point, from, along, cone)) {
+        return false;
     }
+    return object.kind == ObjectKind::WorldObject && world_objects::isStrikeTarget(object.bodyFlags);
+}
+
+bool glassTargetable(const ObjectTarget& pane, anim::Vec3 from, float along, float cone) {
+    // A body, then the angle and the height; a pane needs no strike-target body.
+    return pane.hasBody && inConeAndHeight(pane.point, from, along, cone);
+}
+
+Combatant* Fighter::pickTarget(const FighterInput& input, float range, const Combatant* current) {
+    // The pick seen as a human: an object found is no human (`Human_GetTarget` after `Human_SetTargetObject`).
+    return pickTargetOrObject(input, range, current).human;
+}
+
+TargetPick Fighter::pickTargetOrObject(const FighterInput& input, float range, const Combatant* current,
+                                       const ObjectTarget* currentObject) {
+    const float along = aimHeading(input, 0.0F);
+    // 1. An object target the object filter still takes is kept as it is; a human target is always searched for
+    // again. **Coney stand-in**: the filter tests the wide cone and this update's aim, where the original reads the
+    // cone and aim the last search left (docs/research/combat-targets.md#targets).
+    if (currentObject != nullptr && objectTargetable(*currentObject, input.position, along, kObjectWideConeDegrees)) {
+        return TargetPick{.object = currentObject};
+    }
+    const auto objectIn = [&input, along](float cone) {
+        return [&input, along, cone](const ObjectTarget& object) {
+            return objectTargetable(object, input.position, along, cone);
+        };
+    };
+    const auto paneIn = [&input, along](const ObjectTarget& pane) {
+        return glassTargetable(pane, input.position, along, kPickConeDegrees);
+    };
+    // 2. The enemies within range × 1.1 inside 54°.
+    if (Combatant* found = nearestFightable(input, along, range * kPickConeScale, kPickConeDegrees); found != nullptr) {
+        return TargetPick{.human = found};
+    }
+    // 3. A car the car pass took ends the search (the platform's carTargetable() is its 1 m and filter).
+    const auto anyCar = [](const ObjectTarget& /*car*/) { return true; };
+    if (const ObjectTarget* car =
+            nearestObject(input, ObjectKind::Car, 0.0F, std::numeric_limits<float>::max(), anyCar);
+        car != nullptr) {
+        return TargetPick{.object = car};
+    }
+    // 4. The world objects within range inside 54°, then the panes.
+    if (const ObjectTarget* found =
+            nearestObject(input, ObjectKind::WorldObject, 0.0F, range, objectIn(kPickConeDegrees));
+        found != nullptr) {
+        return TargetPick{.object = found};
+    }
+    if (const ObjectTarget* found = nearestObject(input, ObjectKind::Glass, 0.0F, range, paneIn); found != nullptr) {
+        return TargetPick{.object = found};
+    }
+    // 5. With no human target, the enemies within range × 0.9 at any angle.
     if (current == nullptr) {
         if (Combatant* found = nearestFightable(input, along, range * kPickAnyScale, 0.0F); found != nullptr) {
-            return found;
+            return TargetPick{.human = found};
         }
     }
-    // The wide pass takes a downed human as well.
-    if (Combatant* found = nearestFightable(input, along, range * kPickWideScale, 0.0F, true); found != nullptr) {
-        return found;
+    // 6. The cone widens to 135°: the world objects within range × 0.8 inside it, then the humans within range × 0.7
+    // at any angle, a downed one too.
+    if (const ObjectTarget* found = nearestObject(input, ObjectKind::WorldObject, 0.0F, range * kPickObjectWideScale,
+                                                  objectIn(kObjectWideConeDegrees));
+        found != nullptr) {
+        return TargetPick{.object = found};
     }
-    return keptTarget(input, current, range);
+    if (Combatant* found = nearestFightable(input, along, range * kPickWideScale, 0.0F, true); found != nullptr) {
+        return TargetPick{.human = found};
+    }
+    // 7. Nothing found: the target kept when no car, with a body, within range (**Coney stand-in**: objectTargetIn()).
+    if (current != nullptr) {
+        return TargetPick{.human = keptTarget(input, current, range)};
+    }
+    return TargetPick{.object = keptObject(input, currentObject, range)};
+}
+
+TargetPick Fighter::attackSearch(const FighterInput& input, float far, float along, const Combatant* current,
+                                 const ObjectTarget* currentObject) {
+    // The enemies at the far range inside 54°, then the world objects, then the panes; the first that finds any ends
+    // the search.
+    if (Combatant* found = nearestFightable(input, along, far, kPickConeDegrees); found != nullptr) {
+        return TargetPick{.human = found};
+    }
+    const auto objectIn = [&input, along](const ObjectTarget& object) {
+        return objectTargetable(object, input.position, along, kPickConeDegrees);
+    };
+    if (const ObjectTarget* found = nearestObject(input, ObjectKind::WorldObject, 0.0F, far, objectIn);
+        found != nullptr) {
+        return TargetPick{.object = found};
+    }
+    const auto paneIn = [&input, along](const ObjectTarget& pane) {
+        return glassTargetable(pane, input.position, along, kPickConeDegrees);
+    };
+    if (const ObjectTarget* found = nearestObject(input, ObjectKind::Glass, 0.0F, far, paneIn); found != nullptr) {
+        return TargetPick{.object = found};
+    }
+    // With no human target, the any-angle pass, then the wide one, which takes a downed human as well.
+    if (current == nullptr) {
+        if (Combatant* found = nearestFightable(input, along, far, 0.0F); found != nullptr) {
+            return TargetPick{.human = found};
+        }
+        if (Combatant* found = nearestFightable(input, along, far, 0.0F, true); found != nullptr) {
+            return TargetPick{.human = found};
+        }
+    }
+    // Nothing found: the target kept as it is (**Coney stand-in**: an object target is only objectTargetIn()'s).
+    if (current != nullptr) {
+        return TargetPick{.human = keptTarget(input, current, std::numeric_limits<float>::max())};
+    }
+    return TargetPick{.object = keptObject(input, currentObject, std::numeric_limits<float>::max())};
+}
+
+TargetPick Fighter::reachSearch(const FighterInput& input, float nearest, float far) {
+    const float along = aimHeading(input, 0.0F);
+    // The standing enemies between the reach and the far range inside 54°, nearest first.
+    Combatant* found = nullptr;
+    float bestDistance = far;
+    for (Combatant* target : input.targets) {
+        if (!fightable(*target, input.position)) {
+            continue;
+        }
+        const anim::Vec3 to = anim::subtract(target->position(), input.position);
+        const float distance = std::hypot(to.x, to.y); // **Coney stand-in** (#1396): the original's list is in 3D
+        const float off = std::fabs(wrapAngle(headingOf(to) - along));
+        if (distance >= nearest && distance <= bestDistance && off <= kPickConeDegrees * kDegrees) {
+            found = target;
+            bestDistance = distance;
+        }
+    }
+    if (found != nullptr) {
+        return TargetPick{.human = found};
+    }
+    // Then the world objects, then the panes, in the same band and cone.
+    const auto objectIn = [&input, along](const ObjectTarget& object) {
+        return objectTargetable(object, input.position, along, kPickConeDegrees);
+    };
+    if (const ObjectTarget* object = nearestObject(input, ObjectKind::WorldObject, nearest, far, objectIn);
+        object != nullptr) {
+        return TargetPick{.object = object};
+    }
+    const auto paneIn = [&input, along](const ObjectTarget& pane) {
+        return glassTargetable(pane, input.position, along, kPickConeDegrees);
+    };
+    return TargetPick{.object = nearestObject(input, ObjectKind::Glass, nearest, far, paneIn)};
+}
+
+const ObjectTarget* Fighter::objectTargetIn(const FighterInput& input) const {
+    if (m_target != nullptr || !m_objectTarget.has_value()) {
+        return nullptr;
+    }
+    const double handle = *m_objectTarget;
+    const auto found =
+        std::ranges::find_if(input.objects, [handle](const ObjectTarget& object) { return object.handle == handle; });
+    return found != input.objects.end() ? &*found : nullptr;
 }
 
 Combatant* Fighter::findAttackTarget(const FighterInput& input, int farId) const {
-    const float far = reachOf(farId);
-    const float along = aimHeading(input, attackDirection(farId));
-    if (Combatant* found = nearestFightable(input, along, far, kPickConeDegrees); found != nullptr) {
-        return found;
-    }
-    // With no current target, the any-angle pass, then the wide one, which takes a downed human as well.
-    if (m_target == nullptr) {
-        if (Combatant* found = nearestFightable(input, along, far, 0.0F); found != nullptr) {
-            return found;
-        }
-        if (Combatant* found = nearestFightable(input, along, far, 0.0F, true); found != nullptr) {
-            return found;
-        }
-    }
-    return keptTarget(input, m_target, far);
+    // The search's aim is the stick's, else the facing turned to the id's direction; an object or a pane found is no
+    // human.
+    return attackSearch(input, reachOf(farId), aimHeading(input, attackDirection(farId)), m_target,
+                        objectTargetIn(input))
+        .human;
 }
 
 Combatant* Fighter::attackTargetOf(int animId, const FighterInput& input, bool chainStep) const {
     // The spray searches afresh at its own far range, whatever is in hand (`Player_Special`'s
-    // `Player_FindAttackTarget(h, 664)`, docs/research/combat-targets.md#targeting). The original's search also has an
-    // object pass and a glass pass between the human ones, and an object or a pane found there makes the spray play at
-    // no one (`Object_AsHuman` gives null). **Coney stand-in**: findAttackTarget() has only the human passes
-    // (docs/engine/combat.md).
+    // `Player_FindAttackTarget(h, 664)`, docs/research/combat-targets.md#targeting). An object or a pane its passes
+    // find between the human ones makes the spray play at no one (`Object_AsHuman` gives null).
     if (animId == id::kSpraySpecial) {
         return findAttackTarget(input, id::kSpraySpecial);
     }
@@ -393,7 +558,8 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     }
     bool reacting = stepVictim(input, animator);
     if (reacting) {
-        riseCountered = riseCounter(input, animator);
+        // The counters' stand-in pick searches the humans only (humansOnly()).
+        riseCountered = riseCounter(humansOnly(input), animator);
         reacting = !riseCountered;
     } else {
         m_riseCounterAsked = false;
@@ -417,6 +583,8 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
             updateGrabbed(input, animator);
         } else if (m_holdState == TargetState::Held) {
             struggleInHold(input, animator);
+        } else if (m_holdState == TargetState::Mounted) {
+            struggleInMount(input, animator);
         }
         noteClip(animator);
         return;
@@ -444,12 +612,14 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
                            (m_combat.mode() == combat::CombatMode::Grabbing && m_combat.powerMove() != id::kNone);
     if (m_player && !powerMove) {
         updateStance(input, animator.flags());
-        updateL1(input, animator.flags());
+        // L1's stand-in pick searches the humans only (humansOnly()).
+        updateL1(humansOnly(input), animator.flags());
     }
     combat::CombatInput in = combatInput(input, animator, false);
-    if (riseCountered || duckCounter(input, animator)) {
+    if (riseCountered || duckCounter(humansOnly(input), animator)) {
         in.command = combat::command::kNone;
     }
+
     // **Coney's choice**: the attacker and the grabber take no command until their tandem clips are over (the
     // dispatcher's phase gate does not hold 0x800000, and what keeps the original's tandem whole is not traced).
     if (m_tandemRole != TandemRole::None) {
@@ -473,6 +643,14 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     if (m_mountPending && m_held != nullptr && animator.animId() == clips::kMountingIdle) {
         seatMount(input, animator, heading);
     }
+    // The grounded mount's clip has ended (210 plays): the victim's chance to get out as it lands. A mount that ended
+    // another way first has nothing to test.
+    if (m_held == nullptr || m_combat.mode() != combat::CombatMode::Tackling) {
+        m_groundMountLanding = false;
+    }
+    if (m_groundMountLanding && m_held != nullptr && animator.animId() == clips::kMountingIdle) {
+        endGroundedMountClip(input, animator);
+    }
     // An attack's hit; on a body with strike shapes a free attack lands through them instead (landHit()).
     if (out.hitAnim != id::kNone) {
         if ((out.hitAnim == id::kBreakObjectLow || out.hitAnim == id::kBreakObjectMid) && m_objectTarget) {
@@ -482,27 +660,37 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
         }
     }
 
-    // 6. A hold ends when the victim has no health left, and a tackle when the power meter is empty (**Coney's
-    // choice**: the research ends a grab at 0 power, which the dispatcher does; the tackle is taken to end alike).
+    // 6. A hold ends when the victim has no health left; a mount whose power meter is empty breaks as circle's
+    // break does, 246 / 247 (`Human_UpdateMeters` 0x002562d0 calls `Mount_GetOff` on a tackling human at 0 power while
+    // the victim has health above its +0x118, docs/research/combat-reactions.md#ground-escape). Coney stand-in: the
+    // +0x118 test is read as the victim having health left (the branch above lets go of one with none).
     const combat::CombatMode mode = m_combat.mode();
     const bool holding = mode == combat::CombatMode::Grabbing || mode == combat::CombatMode::Tackling ||
                          mode == combat::CombatMode::Mugging;
-    if (holding && m_held != nullptr &&
-        (m_held->health().depleted() || (mode == combat::CombatMode::Tackling && m_combat.power().value() == 0))) {
+    if (holding && m_held != nullptr && m_held->health().depleted()) {
         releaseHold(animator, false);
+    } else if (mode == combat::CombatMode::Tackling && m_held != nullptr && m_combat.power().value() == 0 &&
+               !m_tacklePending) {
+        getOffMount(animator);
     }
     // 7. A spin the dispatcher started lets go of the offset; an attached victim follows the grabber: its transform
     // times the stored offset. Then the target is kept or dropped.
     detachForSpin(animator);
     if (m_pair == PairStage::Attached && m_held != nullptr) {
         placeAttached(input.position, heading);
-        // The victim hears the grabber's numbers, for its struggle next update (a grab, not a tackle or the mugging).
+        // The victim hears the grabber's numbers, for its struggle next update (a grab, not the mugging).
         const bool grabbing = m_combat.mode() == combat::CombatMode::Grabbing;
         if (grabbing) {
             m_held->heldInGrab(grabberState(), m_rear);
         }
         // And the hold's side: a grab from its rear (state 0x20) is what a tandem starts at.
         m_held->holdSide(grabbing && m_rear);
+    }
+    // A mounted victim hears the mounter's numbers from the moment the mount links them, attached or not
+    // (Player_UpdateTackled reads them through the link; its own clips decide what it may do).
+    if (m_held != nullptr && m_combat.mode() == combat::CombatMode::Tackling &&
+        m_held->state() == TargetState::Mounted) {
+        m_held->heldInGrab(grabberState(), false);
     }
     if (!m_player) {
         trackTarget(input);
@@ -553,14 +741,18 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
     const bool keep = in.fightStance && m_target != nullptr &&
                       flatDistance(input.position, m_target->position()) <= combat::kKeepTargetRange;
     const bool armed = m_animSet >= 1 && m_animSet <= 3;
-    const Combatant* picked =
-        keep ? m_target : pickTarget(input, armed ? combat::kArmedPickRange : combat::kAttackPickRange, m_target);
-    in.target = picked != nullptr && picked->state() == TargetState::Grounded ? combat::TargetKind::Grounded
-                                                                              : combat::TargetKind::None;
-    // With no human in front, square aims at a breakable object (Player_ObjectAttack picks the clip by its height).
-    const Combatant* front = inFront(input, reachOf(id::kAttackS1), true);
-    if (front == nullptr && in.target == combat::TargetKind::None && input.command == combat::command::kSquarePressed) {
-        if (const ObjectTarget* object = pickObjectTarget(input); object != nullptr) {
+    const TargetPick picked =
+        keep ? TargetPick{.human = m_target}
+             : pickTargetOrObject(input, armed ? combat::kArmedPickRange : combat::kAttackPickRange, m_target,
+                                  objectTargetIn(input));
+    in.target = picked.human != nullptr && picked.human->state() == TargetState::Grounded ? combat::TargetKind::Grounded
+                                                                                          : combat::TargetKind::None;
+    // An object the pick found (a car, a world object or a pane, whose passes run between the human ones) is square's
+    // object attack's target: Player_ObjectAttack picks the clip by its height
+    // (docs/research/combat-targets.md#targets). **Coney stand-in** (#1396): the object attack has no approach
+    // (`Human_AlignForObjectAttack`), so an object picked up to 2 m away is struck from where the player stands.
+    if (input.command == combat::command::kSquarePressed) {
+        if (const ObjectTarget* object = picked.object; object != nullptr) {
             in.target = combat::TargetKind::Breakable;
             // A car's aim point at the feet (its low parts, docs/research/cars.md) is made from where the feet
             // were when the targets were given; the ground snap may have moved them by a hair since, which must not
@@ -572,6 +764,7 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
         }
     }
     m_candidate = nullptr;
+    m_groundMount = false;
     const combat::GrabKind kind =
         input.command == combat::command::kCircleHeld ? combat::GrabKind::Tackle : combat::GrabKind::Grab;
     const float circleRange = m_ranges != nullptr ? combat::grabSearchRange(*m_ranges, kind, tuning.grabSearchScale)
@@ -579,15 +772,28 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
     if (input.command == combat::command::kCircleTapped || input.command == combat::command::kCircleHeld) {
         const float range = circleRange;
         // Any human that can be held (Combatant::holdable(): a passive target, or a human without flag 0x40) standing
-        // with health left.
+        // with health left; with none, one lying where a circle mounts him (Holdable::mountableOnGround()), as
+        // Player_FindCounterTarget's second pass takes a downed human its first refuses. **Coney stand-in**: an AI's
+        // circle searches the same way instead of taking its own target.
+        const auto lyingToMount = [](Combatant& target) {
+            const Holdable* holdable = target.holdable();
+            return holdable != nullptr && holdable->mountableOnGround();
+        };
         std::vector<combat::TargetCandidate> candidates;
         candidates.reserve(input.targets.size());
         for (Combatant* target : input.targets) {
             candidates.push_back(combat::TargetCandidate{
                 target->position(), target->holdable() != nullptr && target->state() == TargetState::Standing &&
-                                        !target->health().depleted()});
+                                        !target->health().depleted() && !lyingToMount(*target)});
         }
-        const std::size_t found = combat::nearestTarget(input.position, candidates, range);
+        std::size_t found = combat::nearestTarget(input.position, candidates, range);
+        if (found == combat::kNoTarget) {
+            for (std::size_t i = 0; i < candidates.size(); ++i) {
+                candidates[i].available = lyingToMount(*input.targets[i]);
+            }
+            found = combat::nearestTarget(input.position, candidates, range);
+            m_groundMount = found != combat::kNoTarget;
+        }
         m_candidate = found != combat::kNoTarget ? input.targets[found]->holdable() : nullptr;
     } else if (input.command == combat::command::kCircleCross) {
         m_candidate = strongGrappleTarget(input);
@@ -600,7 +806,8 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
     } else if (input.command == combat::command::kSquarePressed || input.command == combat::command::kCrossLongHold) {
         m_tandemCandidate = tandemTarget(input, combat::kKeepTargetRange);
     }
-    in.tandemTarget = m_tandemCandidate != nullptr;
+    // A human found lying is mounted before the tandem is tried (Player_GrabOrTackle tests him first).
+    in.tandemTarget = m_tandemCandidate != nullptr && !m_groundMount;
     in.grabTargetInReach = m_candidate != nullptr;
     in.grabBlocked = hasFlag(flag::kBlockFrontGrab) && hasFlag(flag::kBlockRearGrab);
     // Square with the stick asking for a snap: the snap's own search. The current target found means no snap.
@@ -722,6 +929,28 @@ combat::ChainTargets Fighter::chainTargets(const FighterInput& input) {
     return targets;
 }
 
+void Fighter::enterRage(HumanAnimator& animator) {
+    // The rage sound first, 2D and the game's one (`GameState_PlayRageSound`): the game's sound plays it.
+    m_sounds.push_back(HumanSound{.kind = HumanSound::Kind::RageStart, .at = {}, .sceneFeet = std::nullopt});
+    m_rageStarted = true;
+    // What the original tests: the pair (state 0x18003ff0, Coney's pairs), the held bits (+0x08, the clips' holds) and
+    // down (0xe0000: knocked down or out). Cuffed (0x20000) never comes here: Player_UseItemCommand gives a cuffed
+    // human only the key (docs/research/combat-rage.md#flash).
+    const combat::RageEnterSteps steps = combat::rageEnterSteps(
+        {.paired = inPair(), .held = animator.flags(), .downOrCuffed = m_victim.grounded() || healthOut()});
+    if (steps.breakPair) {
+        breakPair();
+    }
+    // Rage itself started in the dispatcher, before this (RageMeter::start()); the original starts it here, between the
+    // break and the clip, on the same update.
+    if (steps.playClip) {
+        // **Coney's choice**: 643 holds the attack's phases as every move the dispatcher starts, not the original's
+        // 0x2000 (`Human_PlayActionClip`), which Coney's gates do not read yet.
+        animator.playCombat(clips::one(id::kRageStart), kAnimFightIdle, AnimState::Attack, kCombatFade,
+                            clips::kAttackHolds);
+    }
+}
+
 void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode before, const FighterInput& input,
                             HumanAnimator& animator, float& heading) {
     // The block: its clip unless a clip under it plays (an attack, a block reaction, a duck; a move's closing 389 gives
@@ -746,9 +975,7 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
     }
     bool consumed = false;
     if (out.rageStarted) {
-        m_rageStarted = true;
-        animator.playCombat(clips::one(id::kRageStart), kAnimFightIdle, AnimState::Attack, kCombatFade,
-                            clips::kAttackHolds);
+        enterRage(animator);
         consumed = true;
     }
     enterStanceForHold(out);
@@ -759,7 +986,13 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
         }
         consumed = true;
     }
-    if ((out.grabStarted || out.tackleStarted) && m_candidate != nullptr) {
+    if ((out.grabStarted || out.tackleStarted) && m_candidate != nullptr && m_groundMount) {
+        // The search found him lying: the grounded mount, or nothing at all when it refuses (out of its reach).
+        if (!startGroundedMount(*m_candidate, input, heading, animator)) {
+            m_combat.release();
+        }
+        consumed = true;
+    } else if ((out.grabStarted || out.tackleStarted) && m_candidate != nullptr) {
         const int connect = out.grappleAnim != id::kNone ? out.grappleAnim : static_cast<int>(clips::kGrabFrontEnd);
         startHold(*m_candidate, input, heading, out.tackleStarted, connect, animator);
         consumed = true;
@@ -1016,26 +1249,11 @@ void Fighter::steer(int animId, const FighterInput& input, const HumanAnimator& 
 }
 
 Combatant* Fighter::nearestInReach(int animId, const FighterInput& input) const {
-    // Attack_FindNearestInReach: the standing humans between the attack's reach and its far range, within 54° of the
-    // stick (or the facing), nearest first; no any-angle or wide pass.
+    // Attack_FindNearestInReach: the band between the attack's reach and its far range (reachSearch()), seen as a
+    // human (an object or a pane found is none).
     const combat::AnimRange* range = m_ranges != nullptr ? m_ranges->find(static_cast<std::size_t>(animId)) : nullptr;
     const float nearest = range != nullptr ? range->reach : 0.0F;
-    const float along = aimHeading(input, 0.0F);
-    Combatant* found = nullptr;
-    float bestDistance = reachOf(animId);
-    for (Combatant* target : input.targets) {
-        if (!fightable(*target, input.position)) {
-            continue;
-        }
-        const anim::Vec3 to = anim::subtract(target->position(), input.position);
-        const float distance = std::hypot(to.x, to.y);
-        const float off = std::fabs(wrapAngle(headingOf(to) - along));
-        if (distance >= nearest && distance <= bestDistance && off <= kPickConeDegrees * kDegrees) {
-            found = target;
-            bestDistance = distance;
-        }
-    }
-    return found;
+    return reachSearch(input, nearest, reachOf(animId)).human;
 }
 
 void Fighter::steerDive(const FighterInput& input, const HumanAnimator& animator, float heading) {
@@ -1298,7 +1516,7 @@ void Fighter::trackTarget(const FighterInput& input) {
     // L1 pressed or held picks one when there is none. **Coney's choice**: it searches as far as a target is kept.
     if (m_target == nullptr &&
         (input.command == combat::command::kL1Pressed || input.command == combat::command::kL1Held)) {
-        m_target = pickTarget(input, tuning.stanceMid);
+        m_target = pickTarget(humansOnly(input), tuning.stanceMid);
     }
 }
 

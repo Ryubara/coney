@@ -51,6 +51,8 @@ constexpr float kDefaultSceneDuck = 0.75F;
 // ... and the reverb's default (SoundSetEffect's type 1 at depth 0.1, no delay, no feedback).
 constexpr int kDefaultReverbType = 1;
 constexpr float kDefaultReverbDepth = 0.1F;
+// The rage sound, played from rage's start (docs/research/combat-rage.md#rage-effects).
+constexpr std::string_view kRageSound = "vags/misc/rage_mode_06";
 
 // A game-axes vector as the engine's.
 // @coney-only glue between Coney's vector types
@@ -183,6 +185,11 @@ std::string GameSound::summary() const {
 
 // @coney-only glue between the humans and their sounds, with Coney's counts; the work is HumanSoundEvents'
 void GameSound::humanSound(const script::HumanSoundCall& call) {
+    // Rage's start asks for the game's rage sound, not one of the human's own.
+    if (call.sound.kind == human::HumanSound::Kind::RageStart) {
+        playRageSound();
+        return;
+    }
     if (call.sound.kind != human::HumanSound::Kind::StopHeld) {
         ++(call.sound.kind == human::HumanSound::Kind::Anim ? m_animSounds : m_impactSounds);
     }
@@ -396,6 +403,22 @@ void GameSound::playAmbientTrack(std::uint32_t sound) {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr) {
         engine->playAmbientTrack(sound);
     }
+}
+
+void GameSound::playRageSound() {
+    SoundEngine* engine = m_sounds.engine();
+    if (engine == nullptr) {
+        return;
+    }
+    // A live handle is started again (`Sound_StartPrepared`): the one the meter prepared at 90 %, or one still
+    // playing. **Coney's choice**: Coney prepares no sound, so a live handle is one that plays, and it plays on (what
+    // the device makes of a start on a playing voice is not read, docs/research/combat-rage.md#q-rage-sound-restart).
+    if (engine->isPlaying(m_rageSound)) {
+        return;
+    }
+    // Else a new one, 2D and duckable, kept in the game's one handle. **Coney's choice**: the owner flag the original
+    // sets on it (`SoundTask_SetOwnerFlag(1)`, an IOP stream priority) has no counterpart in Coney's engine.
+    m_rageSound = engine->play(crc32(kRageSound));
 }
 
 // @coney-only glue between the bindings and the engine (SoundHost); Snd_Play2D is tagged on its binding

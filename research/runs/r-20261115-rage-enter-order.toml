@@ -1,0 +1,40 @@
+version = 1
+id = "r-20261115-rage-enter-order"
+date = "2026-11-15"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "31563e5db4f7ce7eb5a76c7ec9d6fdf2426525dcccbc3be92a7d7f3b8d7f8327"
+
+[who]
+agent = "a201259258f0391c2"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = ""
+method = "Mission 1 yard (cold-boot state of unit 1011), player Rembrandt: human +0xe0 bit 0x2000000 set by a setup write (the yard has rage off), set-rage 78, pad recipe L1+R1 for 10 updates. Breakpoints on Rage_Enter, GameState_PlayRageSound, Human_StartRageMode and Human_PlayActionClip with a1 643 hit in that order, all at one game time; read game state +0x264 (rage sound handle) and +0x268 (ragers), human state word and +0x08 at Rage_Enter, +0xe0 at the clip"
+
+[values]
+game_time_ms = 170943
+state_word_at_enter = 0
+held_08_at_enter = 0
+ragers_before = 0
+ragers_after_start = 1
+sound_handle_changed = 1
+clip_anim = 643
+breakpoints_hit_in_order = 4
+
+[addresses]
+rage_enter = 0x00284340
+play_rage_sound = 0x004194b8
+start_rage_mode = 0x00236d28
+play_action_clip = 0x0025a8c0

@@ -13,6 +13,7 @@
 #include "combat/combat_tuning.h"
 #include "combat/rage_awards.h"
 #include "combat/reactions.h"
+#include "combat/tackled.h"
 #include "combat/tandem.h"
 #include "core/log.h"
 #include "human/fighter_clips.h"
@@ -33,6 +34,9 @@ namespace id = combat::anim_id;
 
 // The share of its power a grabber loses when a third human hits it (`0x00510274`).
 constexpr float kThirdHitPower = 0.6F;
+// A rise played this far or more is not cut by a mount (`Human_CanBeGrabbed`: held 0x48000 and the top clip's
+// progress).
+constexpr float kRiseMountableShare = 0.5F;
 
 } // namespace
 
@@ -432,6 +436,97 @@ void Fighter::struggleInHold(const FighterInput& input, const HumanAnimator& ani
     }
 }
 
+void Fighter::struggleInMount(const FighterInput& input, const HumanAnimator& animator) {
+    // The mounter's numbers as it last gave them: kept while the mount lasts (enterHold() forgets them), so an update
+    // the mounter has not yet run still reads it, as the original reads the mounter's record through the link.
+    const std::optional<HeldGrabber>& held = m_heldGrabber;
+    if (!held.has_value()) {
+        return;
+    }
+    // His own clip gates the input: the struggle's 0x1 lets only the drain through, any other clip's bits close it.
+    combat::TackledPhase phase = combat::TackledPhase::Free;
+    if (animator.drivingClipPlaying()) {
+        phase = animator.animId() == static_cast<std::uint32_t>(combat::kMountStruggle)
+                    ? combat::TackledPhase::Struggling
+                    : combat::TackledPhase::Closed;
+    }
+    const combat::TackledInput in{.command = input.command,
+                                  .phase = phase,
+                                  .hurt = hurt(),
+                                  .ownPower = m_combat.power().value(),
+                                  .ownPowerMax = std::max(1, m_combat.power().maximum()),
+                                  .ownStruggleDivisor = m_victim.powerClass().struggleDivisor,
+                                  .noBreak = hasFlag(flag::kNoEscape),
+                                  .noReversal = hasFlag(flag::kBlockTackle),
+                                  .reversalCommand = combat::command::kR1Pressed,
+                                  .mounter = held->grabber,
+                                  .ownPowerFull = m_combat.rage().raging() || m_combat.power().unlimited()};
+    const combat::TackledOutcome outcome = combat::updateTackled(in, m_grabbedRandom);
+    // The drain adds up until the mounter takes the report; one move is kept until then.
+    m_heldReport.grabberPowerCost += outcome.mounterPowerCost;
+    if (outcome.action == combat::TackledAction::None || m_heldReport.mount != combat::TackledAction::None) {
+        return;
+    }
+    m_heldReport.mount = outcome.action;
+    m_heldReport.victimClip = outcome.animId;
+    m_heldReport.grabberClip = outcome.animId + 1;
+    m_heldReport.ended = outcome.action != combat::TackledAction::Struggle;
+    if (outcome.action == combat::TackledAction::Struggle) {
+        m_heldReport.grabberDamage =
+            m_ranges != nullptr ? m_ranges->damage(static_cast<std::size_t>(outcome.animId)) : 0;
+    }
+}
+
+bool Fighter::mountableOnGround(const HumanAnimator& animator) const {
+    // Out of health, in a pair, or a human nobody may grab: never. Coney stand-in: no scene or height test (the
+    // circle's search passes no grabber), and the standing branch is the searches' own.
+    if (m_health.depleted() || inPair() || hasFlag(flag::kUngrabbable)) {
+        return false;
+    }
+    // Down: only in the grounded idle. Coney stand-in: the state and held bits that refuse the knockdown's reaction
+    // and a ground hit's 195 are read through the clip.
+    const std::uint32_t clip = animator.animId();
+    if (m_victim.grounded()) {
+        return clip == clips::kGroundedIdle;
+    }
+    // Rising: while less than half of 199 has played.
+    if (clip != clips::kGroundedRise) {
+        return false;
+    }
+    const anim::AnimTask* top = animator.tasks().top();
+    return top != nullptr && top->duration() > 0.0F && top->time() / top->duration() < kRiseMountableShare;
+}
+
+void Fighter::reverseMount(Holdable& mounter, HumanAnimator& animator) {
+    // Out from under the mount: the hold on this human ends, and with it the ground and any stun. Coney stand-in: the
+    // pair is linked the other way at once (not at 242's end); the 0xc12200 refusal and push spheres are not read.
+    m_holdState.reset();
+    m_holdAttached = false;
+    m_holdUnkept = 0;
+    m_heldGrabber.reset();
+    m_heldReport = GrabbedReport{};
+    m_victim.clear();
+    m_reacting = false;
+    // On top: 242 then the mounting idle, seated onto the old mounter at 210 (seatMount()), in the mount.
+    m_held = &mounter;
+    m_target = &mounter;
+    m_rear = false;
+    m_pair = PairStage::Moving;
+    m_mountPending = true;
+    m_combat.startMounting();
+    animator.playCombat(clips::one(static_cast<std::uint32_t>(combat::kMountReversal)), clips::kMountingIdle,
+                        AnimState::Hold, clips::kPairFade, clips::kGrabHolds);
+    // The old mounter plays 243 from this human's set, then lies in the mounted idle, mounted.
+    mounter.playPaired(clips::one(static_cast<std::uint32_t>(combat::kMountReversal + 1)), animator.anims(),
+                       clips::kMountedIdle, AnimState::Hold, TargetState::Mounted);
+    mounter.setAttached(false);
+    // A player's reversal is the statistics' combat event 4.
+    if (m_player) {
+        ++m_mountReversals;
+    }
+    logging::info(logging::Category::Combat, std::format("mount reversed: {} is on top", logName()));
+}
+
 void Fighter::escapeGrab(int clip, HumanAnimator& animator) {
     // The escape knocks the grabber down and stuns it; the escapee takes the clip's own damage, as at runtime.
     animator.playCombat(clips::one(clips::clipOf(clip)), kAnimFightIdle, AnimState::Attack, clips::kPairFade);
@@ -578,6 +673,7 @@ void Fighter::enterHold(TargetState targetState, HumanAnimator& animator, std::u
             }
             m_catch.reset();
             m_grabbed.reset();
+            m_heldGrabber.reset();
             m_tacklePending = false;
             m_mountPending = false;
             m_combat.interrupt();
@@ -593,6 +689,7 @@ void Fighter::enterHold(TargetState targetState, HumanAnimator& animator, std::u
     }
     // Let go: the clip the grabber gave plays out before it acts again.
     m_holdState.reset();
+    m_heldGrabber.reset();
     m_holdAttached = false;
     m_reacting = true;
 }

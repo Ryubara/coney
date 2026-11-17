@@ -35,10 +35,12 @@ add_executable(coney_tests
     core/perf_frames_test.cpp
     core/pad_test.cpp
     core/pad_turn_test.cpp
+    core/pads_turn_test.cpp
     core/renderer_choice_test.cpp
     core/display_preset_test.cpp
     core/display_preset_option_test.cpp
     core/renderer_option_test.cpp
+    core/vrr_pacing_test.cpp
     core/player_options_test.cpp
     core/window_display_test.cpp
     effects/effect_culling_test.cpp
@@ -94,6 +96,7 @@ add_executable(coney_tests
     graphics/human_lighting_test.cpp
     graphics/light_manager_test.cpp
     graphics/lighting_frame_test.cpp
+    graphics/lighting_switches_test.cpp
     graphics/overlay_camera_test.cpp
     graphics/particle_page_test.cpp
     graphics/ps2_world_mesh_test.cpp
@@ -349,6 +352,7 @@ target_sources(coney_tests PRIVATE
     camera/follow_collision_test.cpp
     camera/follow_placement_test.cpp
     camera/follow_script_test.cpp
+    camera/stick_turn_cameras_test.cpp
     human/disc_player_placement_test.cpp
     human/disc_player_test.cpp
     human/class_flags_test.cpp
@@ -374,10 +378,12 @@ target_sources(coney_tests PRIVATE
     human/attack_turn_test.cpp
     human/player_stance_test.cpp
     human/player_targeting_test.cpp
+    human/target_passes_test.cpp
     human/being_hit_test.cpp
     human/class_reactions_test.cpp
     human/rise_counter_test.cpp
     human/human_grab_test.cpp
+    human/grounded_mount_test.cpp
     human/human_tandem_test.cpp
     human/script_state_test.cpp
     human/jump_test.cpp
@@ -404,10 +410,12 @@ target_sources(coney_tests PRIVATE
     combat/disc_combat_test.cpp
     combat/grab_test.cpp
     combat/grabbed_test.cpp
+    combat/tackled_test.cpp
     combat/lock_on_test.cpp
     combat/meters_test.cpp
     combat/player_combat_test.cpp
     combat/rage_awards_test.cpp
+    combat/rage_enter_test.cpp
     combat/revive_test.cpp
     combat/reactions_test.cpp
     combat/stick_games_test.cpp
@@ -519,6 +527,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/fighter_spawn_test.cpp
         debug/human_shapes_test.cpp
         debug/input_gate_test.cpp
+        debug/lighting_page_test.cpp
         debug/lua_console_test.cpp
         debug/menu_navigator_test.cpp
         debug/mesh_views_test.cpp
@@ -566,11 +575,13 @@ if(CONEY_DEBUG_TOOLS)
         platform/disc_mesh_views_test.cpp
         platform/disc_model_swap_test.cpp
         platform/disc_rise_counter_test.cpp
+        platform/disc_ground_escape_test.cpp
         platform/disc_sprint_attacks_test.cpp
         platform/disc_strike_contact_test.cpp
         platform/disc_tandem_test.cpp
         platform/imgui_model_view_test.cpp
         platform/imgui_ui_scale_test.cpp
+        platform/lighting_rows_test.cpp
         platform/mesh_views_test.cpp
         platform/world_edit_test.cpp
         platform/disc_world_split_test.cpp

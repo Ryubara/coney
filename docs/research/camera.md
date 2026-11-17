@@ -2102,7 +2102,7 @@ so the value arrives linearly in `seconds` (0: at once). Confirmed (code), as is
 | Setting | Target / time / current | Unit | Used by mode 0 as | Evidence |
 | --- | --- | --- | --- | --- |
 | 0 | `+0x378` / `+0x3a8` / `+0x3c8` | m, 0 = off (negative stored as 0) | the most the camera stays from its target point in plan | confirmed (code) |
-| 1 | `+0x37c` / `+0x3a4` / `+0x358` | m, negative = off | the most the camera stands above the first target's feet | confirmed (code) |
+| 1 | `+0x37c` / `+0x3a4` / `+0x358` | m, negative = off; the placements read it only above 0, so 0 is off too | the most the camera stands above the first target's feet | confirmed (code) |
 | 2 | `+0x374` / `+0x3a0` / the lens | degrees, negative ignored | field of view | confirmed (code) |
 | 3 | `+0x380` / `+0x3ac` / `+0x360` | m | the target point's shift along the rail | confirmed (code) |
 | 4 | `+0x384` / `+0x3b0` / `+0x364` | m | the look-at point's further shift along the rail | confirmed (code) |
@@ -2140,9 +2140,10 @@ height set negative eases back to the present height before it switches off. Set
    In modes 1-3 `P` += the offset and the look-at point = `P` (with two targets, modes 1 and 2 first pull `P` back
    toward the camera when the targets are spread wider than the camera's distance to them). With a split screen
    (`0x0050b1a4` = 0 and the view's `+0x44` ≠ `+0x48`) settings 3 and 4 and the offset's x and y are halved.
-   In modes 0-2, unless `+0x3e8` is set or the first target has a state flag of `0x1c00000000`, `0x0013bfe0` then
+   In modes 0-2, unless `+0x3e8` is set or the first target has a state flag of `0x1c00000000` (jumping or falling,
+   tested first, `0x0013c010`; then neither point is damped), `0x0013bfe0` then
    **damps** `P` and the look-at point toward last frame's values. With `Δ` = new − old, `h` its length in plan and
-   `dz` its rise (the rise tests are skipped when the segment has no length in plan):
+   `dz` its rise (the rise tests are skipped when the segment's plan length squared is under 10⁻⁵, `0x0013c06c`):
    `dz` > 0.5 → old + `Δ` × 0.5, then its z keeps only a quarter of its rise; else `h` > 1 → old + `Δ` × 0.25;
    else `dz` > 0.1 → with `f` = 1 − 1.875 (`dz` − 0.1), old + `Δ` × min(2`f`, 1), then its z keeps `f` of its
    rise; else `h` > 0.4 → old + `Δ` × (1 − 1.25 (`h` − 0.4)); else no damping. While `+0x3ec` is 1 the look-at
@@ -2172,18 +2173,25 @@ height set negative eases back to the present height before it switches off. Set
    `Q` += the vector at `+0x330`, which is always zero:
    only the constructor (zero, `0x0013b25c`) and `CamRail_CopySettings` (`0x0013b3d0`) write it (mode 3 also
    subtracts it, `0x0013e4a8`). Confirmed (code).
-4. **Height**: with setting 1 on, `Q.z` is lowered to the first target's feet + setting 1 when it is higher (a
-   ceiling, it never raises the camera). The first target is entry 0 of the gathered list (`+0x340`, read at
-   `0x0013d848`): the first kept entry of the shared list, so player 1 on a [player, Diego] rail. The camera stands at
-   `Q`.
-   Confirmed (code).
+4. **Height**: with setting 1 above 0 (`0x0013d838`: exactly 0 is off), `Q.z` is lowered to the first target's
+   feet + setting 1 when it is higher (a ceiling, it never raises the camera). The first target is entry 0 of the
+   gathered list (`+0x340`, read at `0x0013d848`): the first kept entry of the shared list, so player 1 on a
+   [player, Diego] rail. The camera stands at `Q`. Confirmed (code).
 5. **Look-at**: with setting 8 on, the look-at point is replaced by the point 6 m from `Q` toward the targets in plan,
    raised by 6 × tan(setting 8). The camera then faces the look-at point.
-6. **Ends**: when `Q` is the rail's first point and the look-at point lies behind the rail's start, or `Q` is the
-   last point and the look-at point lies beyond the end, the hold `+0x3e4` is set (`0x0013dafc`) and the camera is
-   put back as it was at the start of the update (position, orientation, `P`, look-at point), then faces the
-   look-at point again. This hold lasts one update: step 7 clears it. So the camera stands still while the look-at
-   point is past an end and follows again on the first update it is not. Confirmed (code).
+6. **Ends**: when `Q` (after setting 0's pull, the blend and the height ceiling, so a camera they move off the end
+   point does not hold) is the rail's first point on segment 0 and the look-at point lies behind the rail's start, or
+   else `Q` is the last point and the look-at point lies beyond the end, the hold `+0x3e4` is set (`0x0013dafc`).
+   `Q` counts as at the point within 10⁻⁵ m in 3D; behind and beyond are along the end segment in plan, and the
+   look-at point tested is `+0x300`, the one `CamRail_Update` keeps as made, before the damping and step 5
+   (`0x0013d464`; the tests `0x0013d97c`-`0x0013daec`). The test also writes that end point over the camera's saved
+   start position (`0x0013d9c4`, `0x0013da80`), unless `+0x3e8` then copies the current place over it
+   (`0x0013db10`), which is `Q` already (the camera was placed there at `0x0013d894`). Held, `P` and the look-at
+   point go back to their values at the start of the update (on an update with `+0x3e8` set, the freshly made ones:
+   `CamRail_Update` saves them, `0x0013d45c`-`0x0013d488`) and the camera takes that saved position (`0x0013db3c`),
+   so it stands on the end point, then faces the look-at point again. This hold lasts one update: step 7 clears it.
+   So while the look-at point is past an end the camera stays on the end point and `P` and the look-at point do not
+   move on. Confirmed (code).
 7. **Collision** (`0x0013dbbc`-`0x0013dc1c`): when the camera is held (by step 6 or by `CamLockRail`), or with
    switch 3 off, switch 8 on and two or more targets, `CamRail_CollideTwoTargets` (`0x00140708`) runs and the hold
    is then set back to its value at the start of placement. Otherwise `CamRail_Collide` (`0x00140830`) runs for the
@@ -2348,9 +2356,12 @@ addresses unless marked). `s` = +1 in mode 1 (ahead), −1 in mode 2 (behind); t
    it), at the start point's height; `B` = `F` + `s` × lead × `u`. With two or more targets, `B` moves on by `s` ×
    the farthest any target's feet are ahead of `P` along `u` (positive values only; in mode 2 the first pass never
    adds one, as decompiled, so trailing adds nothing there).
-3. **Lead point's segment.** The same forward and back steps for `B`. If they change the segment, `F` and `B` are
-   worked out again on the new one (the farthest-ahead target added again, in either mode) and `B` is the mean of
-   the old and new `B`: the camera does not jump at a joint.
+3. **Lead point's segment.** The same forward and back steps for `B`, measured along `P`'s segment's `u` throughout
+   (not each new segment's), the forward steps going on only while `B`'s plan distance from the new segment's start
+   is still more than its plan length. If they change the segment, `F` and `B` are worked out again on the new one
+   (the farthest-ahead target added again, in either mode) and `B` is the mean of the old and new `B`: the camera
+   does not jump at a joint. The new `F` is kept for step 4's end test (`0x0013f0c0`); step 5 still uses the first
+   (`0x0013f418`). Confirmed (code).
 4. **Rail point.** `t` = `B`'s plan distance from the segment's start ÷ the segment's plan length, a **length**
    (the plan length of `B` − start, never negative) and not clamped on an inner segment. So a lead point
    before the start gives the same `t` as one that far after it: in mode 2 with `P` less than the lead past the
@@ -2360,9 +2371,10 @@ addresses unless marked). `s` = +1 in mode 1 (ahead), −1 in mode 2 (behind); t
    the last segment, unless `P` is still before the last point and `F` is at least the lead from it, the camera
    takes the last point (`t` = 1). `C` = the 3D lerp of the segment's points by `t`, so the height follows the rail.
 5. **Switch 7** (`0x0050b2ac`, default 1, set to 1 again by every `CamSetupRail`, `0x0013b2b8`): when on, the
-   camera leaves the rail: `X` = `P` + (lead + the farthest-ahead extra) × the plan direction from `F` to `C`, at
-   `C`'s height. So it stands exactly the lead ahead of (or behind) the target in plan, beside the rail point. Off,
-   `X` = `C`, on the rail. `level54_park` turns it off (`CamEnable(7, nil, 0)`). Confirmed (code).
+   camera leaves the rail: `X` = `P` + (lead + the farthest-ahead extra) × the plan direction from `F` (the foot on
+   `P`'s own segment) to `C`, at `C`'s height (`0x0013f410`-`0x0013f498`). So it stands exactly the lead ahead of
+   (or behind) the target in plan, beside the rail point. Off, `X` = `C`, on the rail. `level54_park` turns it off
+   (`CamEnable(7, nil, 0)`). Confirmed (code).
 6. **Collision**, only when `X` ≠ `C`: a world ray (`CollisionMesh_RayCast`, mask `0x200`) from `C` toward `X`; on
    a hit `X` is pulled back toward `C` to stop short of the face (by max(0.5, 2 × the value of vtable slot `+0x5c`)
    plus that value; inferred: the near plane), and a second ray back from `X` can shorten it again. Then `P` is pushed
@@ -3373,11 +3385,10 @@ The world viewer keeps its own free camera with the player camera's lens
   snaps the settings and runs one undamped 1/60 s update, as `CamRail_Activate` and `CamRail_Reset` do. **Coney
   choices and stand-ins** (the side-by-side comparisons of `0x0013bad0`, `0x0013bfe0`, `0x0013d6b0` and `0x0013e708`
   for [#85](issue:85) list each one, and each is marked at its line in the code, most citing
-  [#1017](issue:1017)): a held camera is placed again instead of put back, and `P` is not put back; a height
-  setting of exactly 0 counts as on; the damping skips no target state and has no 40% catch-up; the leading modes
-  walk the lead along the rail (no segment steps, joint mean or mirrored rail point) and read switch 7 as leading the
-  look-at point, where the original's switch 7 puts the camera off the rail beside the target (step 5 above), with
-  its collision rays; the end hold lasts only while its condition does (what clears it is not traced); the tie
+  [#1017](issue:1017)): the damping skips an airborne target (state flags `0x1c00000000`) only through
+  `Cameras::setAirborneTest()`, which gameplay does not set yet ([#1406](issue:1406)), so in play the target is damped
+  while he jumps or falls; switch 7's world rays and sphere push are not built, so a leading camera beside its target
+  can stand inside a wall; the tie
   between two nearest rail points (with the segment choice's other differences, [#956](issue:956)), the 40% look-at
   catch-up (`+0x3ec`), the `+0x330` vector, the split-screen halving and extras, mode 3's keep-in-frame step
   (setting 7 is kept, `0x00140d68` not built) and the push out of world collision are not built; a rail with no

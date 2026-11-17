@@ -26,4 +26,14 @@ bool Window::pumpEvents(const EventFilter& filter) {
     return keepRunning;
 }
 
+double Window::refreshRate() const {
+    // The display holding most of the window; 0 when the window is on none SDL knows.
+    const SDL_DisplayID display = SDL_GetDisplayForWindow(static_cast<SDL_Window*>(m_handle));
+    if (display == 0) {
+        return 0.0;
+    }
+    const SDL_DisplayMode* mode = SDL_GetCurrentDisplayMode(display);
+    return mode != nullptr ? static_cast<double>(mode->refresh_rate) : 0.0;
+}
+
 } // namespace coney::platform

@@ -114,6 +114,14 @@ struct TurnState {
 /// @orig 0x00146078 PlayerRecord_Update (unknown)
 [[nodiscard]] StickIntent stickIntent(float stickX, float stickY, anim::Vec3 cameraForward, bool locked = false);
 
+/// The view across the ground that stickIntent() turns the stick (`stickX`, `stickY`) by to point it along the pad's
+/// camera-turned stick (`turnedX`, `turnedY`, the pad record's `+0x00`, `+0x04` that `PlayerRecord_Update` reads its
+/// angle from; docs/research/input.md#turned-stick). The turned stick keeps the stick's length, so it is the stick
+/// rotated, and the view is (0, 1) rotated the same way. `view` when either is at rest.
+/// @coney-only Coney's record keeps the raw stick and a view, so the pad's turned stick is handed over as the view
+/// that turns the stick to it
+[[nodiscard]] anim::Vec3 turnedStickView(float stickX, float stickY, float turnedX, float turnedY, anim::Vec3 view);
+
 /// The speed the stick asks for: 0 inside the dead zone, otherwise the walk speed (how far the stick is pushed does not
 /// matter beyond that); above kRunThreshold the run speed, or the sprint speed when `sprinting` (state flag
 /// `0x1000000` set and stamina not 0, `0x00225dc0`). Jog and the state overrides are not modelled.

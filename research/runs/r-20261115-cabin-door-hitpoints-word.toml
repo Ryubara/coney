@@ -1,0 +1,35 @@
+version = 1
+id = "r-20261115-cabin-door-hitpoints-word"
+date = "2026-11-15"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "ec4d98475cb9b7ea5a7af8b5e6c25c6e71ff86c9c36b66b7012e79e94110ae27"
+
+[who]
+agent = "a499609601e6df2cc"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "level99 mission 1 yard start (a state from task 1011), patch call-brains: the lua recipe spawned a dyn_door_cabin_a (12 hitpoints) with SpawnDoor and stored GetHitpoints of it; then BreakObjectsInRadius(door, 0.5) sent it the destroy message three times, a few seconds apart, each making the door hit itself once (4 points), with GetHitpoints read after each; after the third the door and its leaves no longer resolve (GetObjectName names nothing)"
+
+[values]
+before = 12
+after_first_self_hit = 12
+after_second_self_hit = 12
+after_third_self_hit_gone = 0
+
+[addresses]
+object_get_hitpoints = 0x00385918
+doorswing_hit = 0x003f9ad0
+worldobject_sethitmode = 0x003a6ec8

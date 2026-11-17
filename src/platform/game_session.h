@@ -21,6 +21,7 @@
 #include "gamemodes/loading_screen.h"
 #include "gamemodes/start_up_flow.h"
 #include "graphics/font.h"
+#include "graphics/lighting_switches.h"
 #include "graphics/particle_page.h"
 #include "gui/global_strings.h"
 #include "movies/movie_mode.h"
@@ -87,6 +88,10 @@ class GameSession {
     /// tools' Debug draw page); null: none.
     /// @coney-only the debug tools' mesh views; the original has none
     void setMeshViews(std::shared_ptr<MeshViewHook> views) { m_meshViews = std::move(views); }
+    /// The lighting lab's switches every level's play mode draws with (PlayLevelMode::setLightingSwitches(): the debug
+    /// tools' Lighting page), which must outlive the session; null: none.
+    /// @coney-only the debug tools' lighting lab; the original has none
+    void setLightingSwitches(const graphics::LightingSwitches* switches) { m_lightingSwitches = switches; }
 
     /// What the first level loaded does before its first frame (`--start`, `--camera`, `--trace`, `--scene`): called
     /// once, on that level's play mode; an error fails that level's load.
@@ -148,8 +153,9 @@ class GameSession {
     world::SectorBudget& m_budget;
     audio::ObjectSounds& m_objectSounds;
     std::function<void(std::string_view)> m_log;
-    SceneLines m_sceneLines;                   // setSceneLines()
-    std::shared_ptr<MeshViewHook> m_meshViews; // setMeshViews()
+    SceneLines m_sceneLines;                                        // setSceneLines()
+    std::shared_ptr<MeshViewHook> m_meshViews;                      // setMeshViews()
+    const graphics::LightingSwitches* m_lightingSwitches = nullptr; // setLightingSwitches()
     AudioOutput* m_audio = nullptr;
     LevelSetup m_firstLevelSetup;
     std::shared_ptr<HumansTrace> m_humansTrace;

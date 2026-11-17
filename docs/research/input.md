@@ -141,9 +141,28 @@ stick turned by the player's camera. `Pads_Update` (`0x001454a8`) hands `Pad_Upd
 - the identity (`0x005117a0`) for a pad with no player; confirmed (code).
 
 When `0x0050b198` differs from `0x0050b19c`, a pad that does not use its kept quaternion takes player 0's camera
-(never the identity), and the slot it copies into is the one that camera names (its vtable slot `+0x27c`).
-Confirmed (code). The step, at `0x001450a0`-`0x0014522c`,
-confirmed (code):
+(never the identity), and the slot it copies into is the one that camera names (its vtable slot `+0x27c`); the test
+for the kept quaternion still asks about the pad's own player (`+0x42`) and reads his slot. Confirmed (code). A pad
+with a player whose `Camera_GetPlayerCamera` is null gets no new matrix: `Pad_Update` is handed the stack buffer as the
+previous pad left it (inferred from the buffer being written only in the two branches above; Coney uses the
+identity there, a stand-in, see [Open questions](#open-questions)).
+Confirmed (code) at `0x001454a8`; the loop runs for records 0 and 4 only (the `0x140`-byte stride of the `libpad`
+records, four pad records).
+
+The follow camera's `+0x473` is written in four places, confirmed (code): `Cam_Follow_Construct` (`0x00124778`, at
+`0x001249f0`) and `Cam_Follow_Deactivate` (`0x001260e8`, at `0x00126354`) set it to 1, `Pad_Update` sets it to 1 for a
+stick at rest (`0x0014522c`), and `Cam_Follow_OnViewCountChange` (`0x001276a0`) sets it to its third argument or 1,
+only with two player cameras (`0x0050b19c` = 2). So with one player it is always 1 and the kept quaternion is never
+reused: the stick is turned by the camera's orientation of the update before.
+
+**At runtime** (confirmed (runtime), run r-20261115-pads-stick-frame, mission 1's yard): `0x0050b198` and `0x0050b19c`
+were 1, record 0's `+0x42` 0, the follow camera player 0's base and current camera, `+0x473` 1 at rest and with the
+stick held at (0.6, 0.4). Each read the kept quaternion was the camera's `+0x20` of one update before (the pads update
+runs before the cameras'). With `+0x473` written 0 while the stick was held, the kept quaternion (−0.048316, 0.017879,
+−0.346578, 0.936605) and the turned stick (0.7156380, −0.0886695) stayed the same for four reads while the camera
+turned on; on letting go `+0x473` read 1 again and the kept quaternion followed the camera once more.
+
+The step, at `0x001450a0`-`0x0014522c`, confirmed (code):
 
 1. **No matrix, no step:** with a null matrix `+0x00`/`+0x04` keep their last values.
 2. **The stick** is `(x, y)` = `+0x08`, `+0x0c` (the left stick, y up). When the pad belongs to a player (`+0x42` ≥
@@ -181,16 +200,29 @@ Coney's pads are `src/core/pad.h` (`Pad`, the pad record and its queries), `src/
 pressures. The command tables are not written yet.
 
 The camera-turned stick ([above](#turned-stick)): `Pad::update` takes an optional `StickTurn`, the x and y of the
-matrix's rows 0 and 1 and three facts about the player's follow camera (he has one, it is his current camera, it looks
-behind), and keeps the turned stick (`turnedX`, `turnedY`). For a stick at rest it reports `followStickRest`, the
-original's write of 1 to the follow camera's `+0x473`, for the caller to carry out: a stand-in, as no Coney camera
-keeps that flag. Nothing supplies a turn yet: building it from the player camera (and the kept quaternion that
-`+0x473` chooses) is `Pads_Update`'s, which Coney's `Pads::update` does not do (#1136), and Coney's locomotion turns
-the stick by the camera itself ([Characters](characters.md)), so nothing reads the record's turned stick yet. A
-disconnected pad centres the turned stick as well as the others (a Coney choice; the original leaves the record as it
-was).
+matrix's rows 0 and 1, the pad's player and three facts about his follow camera (he has one, it is his current
+camera, it looks behind), and keeps the turned stick (`turnedX`, `turnedY`) and the player (`player()`, `+0x42`);
+`Pad::turnStick` is that step alone. `Pads::update` samples both ports and turns each stick by the identity, as for a
+pad with no player (the front end). In play, `PlayLevelMode` then calls `Pads::turnSticks` (through
+`GameModeStack::turnSticks`) just before the player's update, as the original's pads update is step 2 of the humans'
+update: it asks a `StickTurnCameras` for each record's player, his current camera and his follow camera, builds the
+turn from the camera's orientation (rows 0 and 1 of `Quat_ToMatrix`, x and y) and keeps that orientation per player
+slot, or reuses the kept one while the follow camera is the base camera and its flag is 0, takes player 0's camera
+while the views differ, and tells the cameras of a stick at rest. `camera::PlayerStickCameras` answers for Coney's one
+player: record 0 is player 0, his camera is the manager's current view, his follow camera keeps `+0x473`
+(`FollowCamera::takesStickFrameAfresh`, 1 when made) and is taken as his base camera, nothing looks behind (Coney has
+no reverse camera yet) and the views never differ. `human::Player` hands the pad's turned stick to the human's
+record when a player's camera turned it: as the turned stick keeps the stick's length it is the stick rotated, so the
+record's view is the one that turns the raw stick onto it (`turnedStickView`), and `stickIntent` then gives the angle
+and length `PlayerRecord_Update` reads; the raw stick stays in the record for combat. A pad no camera turned (a test
+that drives the player without the pads update) is still turned by the camera's view direction. A disconnected pad
+centres the turned stick as well as the others (a Coney choice; the original leaves the record as it was).
 
 ## Open questions
+
+- What a pad whose player has no current camera is turned by: `Pads_Update` passes its stack matrix as the previous
+  pad left it, or whatever the stack held for the first pad (inferred from the unwritten buffer at `0x001454a8`).
+  Coney uses the identity (a stand-in); no case in play is known where a bound player has no camera.
 
 - The role of the pad record's `+0x44` (set to −1 with `+0x42`; `Player_UnbindPad` copies `+0x42` there before clearing
   it, so it may be the last player).

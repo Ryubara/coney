@@ -139,6 +139,10 @@ class PlayerCombat {
     void endAttack() { m_chain.cancel(); }
     /// The player holds someone without having grabbed them (the reversal of a grab on it): grabbing.
     void startHolding();
+    /// The fighter is on top of a human it did not tackle (the grounded mount, or the reversal of a mount on it): in
+    /// the mount, as `Pair_LinkMount` puts the mounter in the tackling state (`0x400`).
+    /// @coney-only Coney's combat mode for the state the tagged mount pieces link (Fighter::startGroundedMount())
+    void startMounting();
     /// Starts the duck's counter `animId` (617-620) as an attack with its hit timing: the block and any chain end.
     void startCounter(int animId, const CombatTuning& tuning);
     /// The mugging record the next mugging runs with in place of the tuning's: `SetInterrogateParam`'s override

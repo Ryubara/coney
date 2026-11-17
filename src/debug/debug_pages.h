@@ -86,6 +86,12 @@ void addEntityEditHeader(MenuPage& page, DebugSession& session);
 /// Tunables page's submenus, and any page that shows one category.
 void fillTunableCategory(MenuPage& page, TunableRegistry& registry, const std::string& category);
 
+/// The Lighting page, the lighting lab (docs/guides/realtime-lighting.md#lab): Frame (Hold lighting, Light from, Dump
+/// this frame), Counts, Lights (every record with its source, each with its edits), Selection (the inspected atomic's
+/// lights in order), Layers and views, Debug draw, and the groups that wait on other work. Over
+/// PlayControls::lightingFrame() and PlayControls::lightManager(); says so when no level draws.
+void addLightingPage(DebugSession& session);
+
 /// The Display page: the overlays of DisplayOptions.
 void addDisplayPage(DebugSession& session);
 /// The Audio page: the master and bus volumes, a test tone and the voices playing. Over AudioControls; says so when

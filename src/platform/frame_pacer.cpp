@@ -2,9 +2,13 @@
 #include "platform/frame_pacer.h"
 
 #include <format>
+#include <optional>
+#include <string>
 #include <utility>
 
 #include <SDL3/SDL.h>
+
+#include "platform/render_engine.h"
 
 namespace coney::platform {
 
@@ -71,6 +75,21 @@ std::string FramePacer::summary() const {
     return std::format("frame rate: {} frames and {} steps in {:.2f} s: {:.1f} frames/s, {:.2f} steps/s\n", m_frames,
                        m_steps, static_cast<double>(span) / static_cast<double>(kNanosecondsPerSecond),
                        perSecond(m_frames, span), perSecond(m_steps, span));
+}
+
+PacingChoice startPacing(const Options& options, bool savedVrr, RenderEngine& renderer,
+                         const std::function<void(std::string_view)>& log) {
+    const bool vrr = wantsVrr(options, savedVrr);
+    // The refresh rate is read only when VRR needs it, and only from a window: a headless run has none.
+    const std::optional<Window> window = renderer.window();
+    const double refreshHz = vrr && window ? window->refreshRate() : 0.0;
+    const PacingChoice choice =
+        choosePacing(static_cast<std::uint32_t>(options.fpsCap.value_or(0)), options.vsync, vrr, refreshHz);
+    renderer.setVsync(choice.vsync);
+    if (const std::string line = vrrLogLine(choice, refreshHz); !line.empty() && log) {
+        log(line);
+    }
+    return choice;
 }
 
 } // namespace coney::platform
