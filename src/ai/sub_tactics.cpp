@@ -30,6 +30,12 @@ bool SubTactic::process(Gang& gang, std::uint64_t nowMs) {
 
 void SubTactic::finish(Gang& gang) { onEnd(gang); }
 
+SubTacticPool::SubTacticPool() {
+    // The static initialiser's full reset (its arguments 1 and 0xffff, which only the compiler's start-up call passes):
+    // every record free.
+    clear();
+}
+
 void SubTacticPool::clear() {
     for (std::unique_ptr<SubTactic>& record : m_records) {
         record.reset();

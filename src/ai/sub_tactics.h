@@ -85,7 +85,7 @@ class SubTacticPool {
     /// An empty pool: the mask the executable's static initialiser clears at start-up.
     /// @orig 0x00321a98 SubTactic_Reset (unknown)
     /// @orig 0x00321ab8 SubTactic_ResetAll (unknown)
-    SubTacticPool() = default;
+    SubTacticPool();
 
     /// Every record free (the mask cleared; Game_InitializeSubsystems does it, and Coney's gangs when made).
     /// @orig 0x00321828 SubTactic_PoolClear (unknown)
