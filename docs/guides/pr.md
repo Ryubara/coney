@@ -62,10 +62,11 @@ the stamp come from one run).
 uv run --project python coney-tools pr verify [TASK]
 ```
 
-Runs steps 1 to 4 on the unit and prints one block per refusal: the message, then what to redo. Exit 0 when everything
-holds, 1 when something is refused, 2 when it cannot run (no `TASK.md`, an unknown base, `origin/HEAD` unset, unreadable
-rules). It changes nothing: no stamp, no file, no git state. It does not fetch; the base is `<remote>/<default branch>`
-as it was last fetched, so run `git fetch` first when main has moved.
+Runs steps 1 to 4 on the unit, and the `clips` check of the engineer's file (the before and after clips a visible change
+needs, [Clips in the description](testing.md#clips-in-the-description)), and prints one block per refusal: the message,
+then what to redo. Exit 0 when everything holds, 1 when something is refused, 2 when it cannot run (no `TASK.md`, an
+unknown base, `origin/HEAD` unset, unreadable rules). It changes nothing: no stamp, no file, no git state. It does not
+fetch; the base is `<remote>/<default branch>` as it was last fetched, so run `git fetch` first when main has moved.
 
 A worktree with uncommitted changes is refused first (`worktree:`), because the stamps are bound to what is committed
 and the checks read the files. A log that is not intact stops the run after step 1: nothing else in it can be trusted,
@@ -115,6 +116,8 @@ What it refuses, exactly (`<...>` is filled in):
 | `reviewed` | `reviewed: Review did not grade the research pages this change touches` (a change to a [research page](#research-page)) | `task review` |
 | `reviewed` | `reviewed: reviewer engineer-1 also worked on this task` (the reviewer wrote any stamp of the unit other than a `reviewed` one, whatever its agent type: the rule `task review --record` applies); `reviewed: the Review stamp names no reviewer` | `task review` (another reviewer) |
 | `reviewed` | `reviewed: the reviewer's type is engineer, not reviewer`; `reviewed: a review of orig work must run on opus; this review ran on <model>` (the agent and the model words of `tasks.review`, the rule `task review --record` applies; only with `stamps.require_hook_source`) | `task review` |
+| `clips` | `clips: '## Screenshots' needs a 'Before:' and an 'After:' clip (...) or a line 'Clips: none (<reason>)' (...), because the title area 'gameplay' is one a player sees` (or `because it changes src/studio/...`); `clips: ... a clip pair needs its 'After:' line too`; `clips: 'Clips: none' needs its reason in parentheses` (`pull_requests.clips`) | the engineer |
+| `clips` | every refusal of `clips check` for a clip the file shows: `clips: clips/after.mp4 does not exist`; `clips: clips/before.mp4: 12.00 s long, more than 10 s`; `clips: clips/after.mp4: metadata ...`; also `clips: clips/after.gif is identical to clips/before.mp4; a capture went wrong` and one over the upload limit. A clip an earlier `pr open` uploaded and deleted is not looked for | the engineer |
 
 `pr verify` recomputes the change hash itself, against the merge base with the remote default branch, so a `checked`
 stamp made with `task check --base <a branch commit>` (a hash of only the later commits, or rules read from the
@@ -173,6 +176,9 @@ Docs: none
 ## Screenshots
 
 ![after](./shots/after.png)
+
+- Before: ![before](./clips/before.mp4)
+- After: ![after](./clips/after.mp4)
 ```
 
 Line 1 is the title (`area: Verb the rest`). The Summary is one paragraph and, if the change needs no documentation,
@@ -182,7 +188,10 @@ need the `Runtime:` line is in [the `Runtime:` line](testing.md#runtime-line). `
 order and refuses any other line in Testing. Issues affected holds
 one `- #N: how it is affected` line per open issue the change affects, or
 `None (<reason>)` (`pull_requests.issues_affected`; [Issues a pull request changes](issues.md#affected)). Screenshots
-holds image references under `./shots/`, or `Screenshots: none (<reason>)`. Anything else is refused: `Fixes` lines,
+holds image references under `./shots/`, or `Screenshots: none (<reason>)`, and the clips: one image under `./clips/`
+(a `.mp4` or `.gif`) on each of its `Before:`, `After:` and `Original:` lines, or `Clips: none (<reason>)`; a title area
+a player sees and a change a player sees in Coney Studio need the pair or that line
+([Clips in the description](testing.md#clips-in-the-description)). Anything else is refused: `Fixes` lines,
 the markers and the Checklist are generated, so a hand-typed claim cannot disagree with the stamps. A heading that is
 not one of `pull_requests.sections` is refused ("is not a section of a pull request description"); a section of that
 list that only a person can fill (Issues affected, or one added later) goes in the file under its own heading and is
@@ -200,7 +209,7 @@ line and refused by the checks until it is.
 | Summary | The paragraph between `<!-- coney:summary -->` markers, the `Docs: none` line, and one `Fixes #N` line per issue of `TASK.md` (none for a task whose front block says `finishes: false`) |
 | Checklist | One ticked item per bullet of the task's Done section, read past the quote marks (`>`) `task create` writes; a bullet that wraps onto more lines is one whole item (its lines are joined, up to a blank line or the next bullet); a Done section of prose gives one item per paragraph. A Done section with no criterion (the `See issue #N.` placeholder) is refused |
 | Testing | The [facts block](#facts) between `<!-- coney:facts -->` markers, then the engineer's `Runtime:` and `Pictures:` lines |
-| Screenshots | The engineer's section, as written |
+| Screenshots | The engineer's pictures and `Screenshots: none` line, then each clip as a bold label line (`**Before:**`) with its `./clips/` image alone on the line below (where `pr open` can leave an MP4 as its bare upload address), then the `Clips: none` line |
 | AI use | `Commits written by: an AI` and the models the branch's `Co-Authored-By` trailers name, else the models of the engineers in the log. No trailer lines are added to the description: GitHub copies the branch commits' trailers into the squash commit |
 | Issues affected | The engineer's section of `PR.md`, as written (`check-body` checks its form: [Issues a pull request changes](issues.md#affected)). Without it, a `TODO:` that says what the section holds and lists the candidates of [`issue impact`](coney-tools-issues.md#issue-impact) (the issues the task finishes left out); it is refused until the engineer has read the candidates and written the section |
 | Any other section added to `pull_requests.sections` that only a person can fill | The engineer's section of `PR.md`, as written. Without it, a bare `TODO:`, which is refused |
@@ -228,14 +237,17 @@ a record for the reader, not proof: nothing in CI reads it, and the local log st
 
 ### The checks {#checks}
 
-On the generated text it runs `check-title` and `check-body` as the old description gate ran them (a local picture is
-accepted where CI wants an uploaded one, because `gh --attach` uploads it), `check-docs` with the changed paths (so
-`Docs: none` is honoured), the `TODO:` rule, and the pictures: each reference must be a relative path under `./shots/`
-(an absolute path, a drive or `..` is refused, as it would put a folder of the author's machine into the description),
-the file under `shots/` next to PR.md, outside any git checkout, one of `pull_requests.images.extensions` (a clip is
-refused: `clips publish` is the only video upload), at most `max_bytes` and not byte-identical to another, and there are
-at most `max_count`. Its output also holds the hashes a release records: the title, paragraph, pictures and facts
-(`--json`).
+On the generated text it runs `check-title` and `check-body` as the old description gate ran them (a local picture or
+clip is accepted where CI wants an uploaded one, because `gh --attach` uploads it; the change's paths are given, as
+CI's `body` job gives the pull request's files, so a Coney Studio path asks for the clips), `check-docs` with the
+changed paths (so `Docs: none` is honoured), the `TODO:` rule, and the pictures: each reference must be a relative path
+under `./shots/` (an absolute path, a drive or `..` is refused, as it would put a folder of the author's machine into
+the description), the file under `shots/` next to PR.md, outside any git checkout, one of
+`pull_requests.images.extensions` (a video there is refused: a clip goes on a clip line), at most `max_bytes` and not
+byte-identical to another, and there are at most `max_count`. Each clip must pass `clips check` (`clips.described_clip_problems`),
+be at most `max_bytes` and differ from the other clips; a clip an earlier `pr open` uploaded and deleted stands by its
+record in `pr-published.json`, whose hash also stands for the file in the review's picture hash. Its output also holds
+the hashes a release records: the title, paragraph, pictures (clips included) and facts (`--json`).
 
 ## pr open {#open}
 
@@ -297,29 +309,36 @@ commit: what is pushed is exactly what Check and Review saw. Its options and exi
    already at the tip is not pushed to, and a branch that is gone from the remote (GitHub deleted it after the pull
    request was closed) is expected absent, so `--reopen` pushes it again.
 8. **Create or update.** `gh pr create` (or `gh pr edit`, after a reopen when asked) with the generated title and
-   description and one `--attach` per picture, run in the folder of the engineer's file so `./shots/x.png` is the path
-   `gh` matches. The title, the body and `pr-published.json` are kept in the task's folder, whatever file `--text`
-   names. On an update only pictures that are new are attached; an unchanged one keeps the address of its upload from
-   `pr-published.json`. Then `gh pr merge --squash --auto`, unless `--no-auto-merge` is given, `merge.auto_merge` is
-   off, the change touches a path of `merge.manual_paths` (`.github/conventions.yml`, `AGENTS.md`,
-   `.claude/settings.json`, `.claude/hooks/`) while `pull_requests.auto_merge_manual_paths` is off (it is on since the
-   maintainer's grant of 2026-11-01, so those changes get auto-merge like any other; off, the maintainer merges them
-   and the message says so) or the viewer's permission on the repository is not admin, maintain or write (a fork's
-   owner has none: the pull request opens without it). Either way a pull request merges by squash once every
-   required check passes; the coordinator runs no full suite first, as `task check` already ran it on the branch.
-9. **Read back.** The title, the head commit, the pictures (as many addresses as pictures), the marked blocks, the
-   absence of any local path and auto-merge are read from GitHub. A wrong description is repaired once with `gh pr
-   edit`; a second failure is exit 4 with the pull request's address (it exists, and rerunning repairs it). Auto-merge
-   that is on when this release should leave it off (a fix round that now touches a `manual_paths` file while
-   `auto_merge_manual_paths` is off, `--no-auto-merge`, a frozen `merge.auto_merge`, or a hand-set one) is turned off
-   with `gh pr merge --disable-auto`. For a pull request that already exists this happens before the push (step 7), so
-   a failed step later cannot leave the new tip to merge by itself; if it stays on, the run stops with exit 4 before
-   pushing anything.
+   description and one `--attach` per picture and per clip, run in the folder of the engineer's file so `./shots/x.png`
+   and `./clips/x.mp4` are the paths `gh` matches. The title, the body and `pr-published.json` are kept in the task's
+   folder, whatever file `--text` names. On an update only pictures and clips that are new are attached; an unchanged
+   one (or a clip deleted after its upload) keeps the address of its upload from `pr-published.json`. Then `gh pr merge
+   --squash --auto`, unless `--no-auto-merge` is given, `merge.auto_merge` is off, the change touches a path of
+   `merge.manual_paths` (`.github/conventions.yml`, `AGENTS.md`, `.claude/settings.json`, `.claude/hooks/`) while
+   `pull_requests.auto_merge_manual_paths` is off (it is on since the maintainer's grant of 2026-11-01, so those changes
+   get auto-merge like any other; off, the maintainer merges them and the message says so) or the viewer's permission on
+   the repository is not admin, maintain or write (a fork's owner has none: the pull request opens without it). Either
+   way a pull request merges by squash once every required check passes; the coordinator runs no full suite first, as
+   `task check` already ran it on the branch.
+9. **Read back.** First the clips are placed: each clip's line of the body read back is put in the form GitHub draws (an
+   MP4 as its bare upload address alone on its line, the only form that gets a player; a GIF as an image), whatever `gh`
+   left there, and the body is sent once more without `--attach` ([Clips in the
+   description](testing.md#clips-in-the-description)). Then the title, the head commit, the pictures (as many addresses
+   as pictures and GIF clips), each clip uploaded in its form on its line, the marked blocks, the absence of any local
+   path, the checks CI runs (with the change's paths) and auto-merge are read from GitHub. A wrong description is
+   repaired once with `gh pr edit`; a second failure is exit 4 with the pull request's address (it exists, and rerunning
+   repairs it). Auto-merge that is on when this release should leave it off (a fix round that now touches a
+   `manual_paths` file while `auto_merge_manual_paths` is off, `--no-auto-merge`, a frozen `merge.auto_merge`, or a
+   hand-set one) is turned off with `gh pr merge --disable-auto`. For a pull request that already exists this happens
+   before the push (step 7), so a failed step later cannot leave the new tip to merge by itself; if it stays on, the run
+   stops with exit 4 before pushing anything.
 10. **Record.** `/progress pr-opened` is posted once on each issue (the claim Action then shows `PR #N open`),
-    `pr-published.json` is written (number, address, pushed tip, picture hashes to addresses, the engineer, the
-    time) and one line is printed: `opened #812 <url> (task ..., engineer ..., auto-merge on)`. `--json` prints the
-    same as one object: `ok`, `exit`, `task`, `dry_run`, `message`, `refusals`, `log`, `pr`, `tip`, `stamp`,
-    `auto_merge`.
+    `pr-published.json` is written (number, address, pushed tip, picture hashes to addresses, each clip's hash and
+    address, when the pull request was opened, the engineer, the time), and each clip the read-back found in place is
+    deleted, after its record is on disk (a clip whose upload was not found is kept, as `clips publish` keeps one gh
+    failed to upload), and one line is printed: `opened #812 <url> (task ..., engineer ..., auto-merge on)`.
+    `--json` prints the same as one object: `ok`, `exit`, `task`, `dry_run`, `message`, `refusals`, `log`, `pr`, `tip`,
+    `stamp`, `auto_merge`.
 
 `--dry-run` does steps 1 to 5 in a throwaway `git worktree add --detach` and says what 6 to 10 would do (open or
 update the pull request that exists, with or without auto-merge): nothing in the unit's folder, the log, git or GitHub
@@ -391,7 +410,7 @@ the coordinator) has the commit that turned it on. What each release need takes 
 | A branch holding merge commits | The engineer merges `origin/main` into the branch as its last commit before Check and Review; a branch that already holds `origin/main` is pushed as it is, merges and all. If `main` moved since, `pr open` rebases linearly (`--no-rebase-merges`); a conflict is exit 3 and the engineer merges `main` again (the stamps bind to the change, so a clean merge leaves them valid) | |
 | Auto-merge | `pr open` turns it on, or leaves it off for `--no-auto-merge` (and for `merge.manual_paths` while `pull_requests.auto_merge_manual_paths` is off) | `gh pr merge --auto` |
 | Merge a pull request whose checks passed, where the maintainer allows the coordinator to | `gh pr merge <N> --squash` (no `--auto`) | |
-| Clips | `clips publish --pr <N>` | |
+| Clips | `./clips/` references on the `Before:`, `After:` and `Original:` lines of `PR.md`; `pr open` attaches them, places them and deletes them. An extra clip as a comment: `clips publish --pr <N>` | `gh pr create` or `gh pr edit` with `--attach` |
 | Labels, comments, reviewers, holds, reruns | `gh pr edit <N> --add-label ...`, `gh pr comment`, `pr hold`, `gh run rerun`, `pr list-stuck --rerun --apply` | |
 | A pull request or branch with no unit (released before the task workflow: no `unit.json`, a stamp log that does not start with `assigned` and `claimed`) | `task create` (the coordinator), then `task start <task> --adopt` or `--adopt-branch <branch>` (the engineer): the unit is made on that branch, the old log moved aside, the stages redone; then `pr open <task> --adopt <head>` ([Adopting a branch](issues.md#adopting)) | everything above |
 | A pull request stacked on another one | None: `pr open` releases a unit based on the default branch only. Start the work again from `origin/main` once the base has merged, or, for a branch whose base already merged, adopt it as above and rebase it with `git rebase --onto origin/main <old base> <branch>` in the unit's worktree | `git push`, `gh pr edit` of the text |

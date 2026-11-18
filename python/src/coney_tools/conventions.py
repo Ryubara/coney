@@ -21,7 +21,7 @@ import contextvars
 import copy
 import re
 import subprocess
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -290,6 +290,58 @@ class RuntimeEvidence:
 
 
 @dataclass(frozen=True)
+class ClipRule:
+    """Before and after clips (maintainer's request, 2026-11-18): a pull request whose result a player sees shows a clip
+    of Coney before the change and one after it, on labelled lines of its Screenshots section, or says why not."""
+
+    #: The description section that holds the clip lines (`Screenshots`).
+    section: str
+    #: The labels that start the clip lines: the base's clip, the branch's, and the original's (that one optional).
+    before: str
+    after: str
+    original: str
+    #: The start of the line that says there is no clip to show, followed by the reason in parentheses.
+    none: str
+    #: `required`: the `none` line must give a reason.
+    reason: str
+    #: The title areas (keys of `commits.title.areas`) whose pull request needs the pair.
+    areas: tuple[str, ...]
+    #: Path prefixes whose change a player sees (Coney Studio): a pull request that changes one needs the pair too.
+    paths: tuple[str, ...]
+    #: The file endings of a clip, lower case, without the dot.
+    extensions: tuple[str, ...]
+    #: The address prefixes an uploaded clip has (`gh --attach` and the browser upload to GitHub's attachments): an
+    #: address elsewhere on a clip line is not a clip.
+    uploads: tuple[str, ...]
+    #: When the rule began (the second its pull request merged, UTC): a pull request opened earlier needs no pair.
+    since: datetime
+
+    @property
+    def labels(self) -> tuple[str, str, str]:
+        """The three labels, in the order a description shows them."""
+        return (self.before, self.after, self.original)
+
+    def required_by(
+        self, title: str | None, changed: Sequence[str] | None, opened: datetime | None = None
+    ) -> str | None:
+        """Why a pull request with `title` that changes `changed` needs the pair, in words; None when it does not.
+
+        A title that is not in the form says nothing; without `changed` the paths are not asked. A pull request
+        `opened` before `since` was written before the rule and needs none; without `opened` (one not yet opened,
+        as `pr text`, `pr verify` and `pr open` see it) the rule applies."""
+        if opened is not None and opened < self.since:
+            return None
+        form = re.match(r"^(?P<area>[a-z]+): ", title or "")
+        if form and form.group("area") in self.areas:
+            return f"the title area '{form.group('area')}' is one a player sees"
+        for path in changed or ():
+            normal = path.replace("\\", "/")
+            if any(normal.startswith(prefix) for prefix in self.paths):
+                return f"it changes {normal}, which a player sees in Coney Studio"
+        return None
+
+
+@dataclass(frozen=True)
 class WrittenBy:
     """Who wrote the commits: one of the choices."""
 
@@ -417,6 +469,8 @@ class PullRequests:
     #: then merges it on the maintainer's behalf once every required check passes. Off, such a change is held for the
     #: maintainer (auto-merge left off) and `pr list-stuck` does not count that as stuck.
     auto_merge_manual_paths: bool
+    #: The before and after clips a visible change shows; None when the file has no `clips` key (asks for none).
+    clips: ClipRule | None = None
 
 
 @dataclass(frozen=True)
@@ -1976,7 +2030,8 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
     )
     # `auto_merge_manual_paths` is optional so that a tool which has it can still read a default branch that does not
     # yet (`pr open` on the very branch that adds it); a file without it means on, the maintainer's 2026-11-01 grant.
-    table = _table(data, where, keys, ("auto_merge_manual_paths",))
+    # `clips` is optional for the same reason: a default branch older than the rule asks for no clips.
+    table = _table(data, where, keys, ("auto_merge_manual_paths", "clips"))
     sections = _texts(table["sections"], _at(where, "sections"))
     filled = _texts(table["filled"], _at(where, "filled"))
     _names_in(filled, sections, _at(where, "filled"), "one of the sections")
@@ -2130,6 +2185,49 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
         auto_merge_manual_paths=_flag(
             table.get("auto_merge_manual_paths", True), _at(where, "auto_merge_manual_paths")
         ),
+        clips=_read_clip_rule(table["clips"], _at(where, "clips"), sections) if "clips" in table else None,
+    )
+
+
+def _read_clip_rule(data: object, where: str, sections: tuple[str, ...]) -> ClipRule:
+    """The `pull_requests.clips` table; its section must be one of the description's, its labels distinct."""
+    fields = (
+        "section",
+        "before",
+        "after",
+        "original",
+        "none",
+        "reason",
+        "areas",
+        "paths",
+        "extensions",
+        "uploads",
+        "since",
+    )
+    table = _table(data, where, fields)
+    section = _text(table["section"], _at(where, "section"))
+    _names_in((section,), sections, _at(where, "section"), "one of the sections")
+    labels = [_text(table[name], _at(where, name)) for name in ("before", "after", "original")]
+    if len({label.casefold() for label in labels}) != 3:
+        raise _fail(_at(where, "after"), "before, after and original must differ")
+    extensions = _texts(table["extensions"], _at(where, "extensions"))
+    if any(ext != ext.lower() or ext.startswith(".") for ext in extensions):
+        raise _fail(_at(where, "extensions"), "write each in lower case without the dot")
+    uploads = _texts(table["uploads"], _at(where, "uploads"))
+    if any(not prefix.startswith("https://") for prefix in uploads):
+        raise _fail(_at(where, "uploads"), "each is an https:// address prefix")
+    return ClipRule(
+        section=section,
+        before=labels[0],
+        after=labels[1],
+        original=labels[2],
+        none=_text(table["none"], _at(where, "none")),
+        reason=_choice(table["reason"], _at(where, "reason"), ("required",)),
+        areas=_texts(table["areas"], _at(where, "areas")),
+        paths=_texts(table["paths"], _at(where, "paths"), empty_ok=True),
+        extensions=extensions,
+        uploads=uploads,
+        since=_moment(table["since"], _at(where, "since")),
     )
 
 
@@ -3565,6 +3663,13 @@ def _parse(data: object) -> Conventions:
         "pull_requests.runtime.areas",
         "a key of commits.title.areas",
     )
+    if pull_requests.clips is not None:
+        _names_in(
+            pull_requests.clips.areas,
+            _known(commits.title.areas, lambda data: data["commits"]["title"]["areas"], "commits", "pull_requests"),
+            "pull_requests.clips.areas",
+            "a key of commits.title.areas",
+        )
     runtime_line = pull_requests.runtime.line
     if not pull_requests.runtime.none.startswith(runtime_line):
         raise _fail("pull_requests.runtime.none", f"must start with the line '{runtime_line}'")

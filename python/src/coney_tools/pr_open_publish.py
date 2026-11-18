@@ -4,17 +4,24 @@ read it back and post the progress (docs/guides/pr.md#open).
 
 The steps use the run's state (`pr_open_run.Run`) and the proof of the tip being pushed (`pr_open_run.Proof`). The
 generated files and the record of what was published live in the task's folder; `gh` runs in the folder of the
-engineer's file, where the pictures' `./shots/x.png` paths are.
+engineer's file, where the pictures' `./shots/x.png` and the clips' `./clips/x.mp4` paths are.
+
+A clip needs one step more than a picture (docs/guides/testing.md#clips). `gh --attach` swaps the reference for the
+upload's address in place, but GitHub draws an MP4 as a player only from its bare address alone on its line, and what
+`gh` leaves there (an image, a link or the bare address) is not to be relied on. So the body is read back, each clip's
+line is put in its placed form (`place_clips`: the bare address for an MP4, an image for a GIF) and the body is edited
+once more without `--attach`. Each clip is deleted only once the read-back has found it uploaded in place.
 """
 
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from pathlib import Path
 
 from coney_tools import pr_publish
 from coney_tools.config import ConfigError
-from coney_tools.conventions import PullRequests
+from coney_tools.conventions import ClipRule, PullRequests
 from coney_tools.pr_open_run import (
     EXIT_FAILED,
     EXIT_REFUSED,
@@ -27,8 +34,81 @@ from coney_tools.pr_open_run import (
 )
 from coney_tools.pr_publish import PullRequest
 from coney_tools.pr_ready import Proof
-from coney_tools.pr_text import BODY_FILE, TITLE_FILE
-from coney_tools.repo_checks import check_body, image_targets
+from coney_tools.pr_text import BODY_FILE, TITLE_FILE, Clip
+from coney_tools.repo_checks import check_body, clip_label, image_targets
+
+#: An upload's address on a line, in whatever form `gh` left it: an image, a link or bare.
+_ADDRESS = re.compile(r"https?://[^\s)<>\"']+")
+#: A second-level heading of the body.
+_HEADING = re.compile(r"^##[ \t]+(?P<name>\S.*?)[ \t]*$")
+
+
+def placed_clip(clip: Clip, url: str) -> str:
+    """The line that shows `clip` uploaded at `url`: its bare address for an MP4 (GitHub draws a player only for that),
+    an image for a GIF (it plays inline and loops)."""
+    return url if clip.video else f"![{clip.alt}]({url})"
+
+
+def _clip_lines(body: str, rule: ClipRule) -> dict[str, int]:
+    """The index of the line after each bare clip label line of the clips' section (the line its clip stands on, blank
+    lines skipped), by label."""
+    lines = body.split("\n")
+    found: dict[str, int] = {}
+    inside = False
+    for index, line in enumerate(lines):
+        heading = _HEADING.match(line)
+        if heading:
+            inside = heading.group("name").casefold() == rule.section.casefold()
+            continue
+        labelled = clip_label(line, rule) if inside else None
+        if labelled is None or labelled[1]:
+            continue
+        follow = index + 1
+        while follow < len(lines) and not lines[follow].strip():
+            follow += 1
+        if follow < len(lines):
+            found[labelled[0]] = follow
+    return found
+
+
+def clip_addresses(body: str, clips: Sequence[Clip], rule: ClipRule) -> dict[str, str]:
+    """The upload address on each clip's line of `body`, by the clip's reference; a clip still shown by its local path
+    (not uploaded, or the upload appended elsewhere) has none."""
+    lines = body.split("\n")
+    where = _clip_lines(body, rule)
+    found: dict[str, str] = {}
+    for clip in clips:
+        if clip.label in where:
+            address = _ADDRESS.search(lines[where[clip.label]])
+            if address is not None:
+                found[clip.ref] = address.group(0)
+    return found
+
+
+def place_clips(body: str, clips: Sequence[Clip], rule: ClipRule) -> str:
+    """`body` with each uploaded clip's line in its placed form (`placed_clip`), whatever form `gh` left it in."""
+    lines = body.split("\n")
+    where = _clip_lines(body, rule)
+    addresses = clip_addresses(body, clips, rule)
+    for clip in clips:
+        if clip.ref in addresses:
+            lines[where[clip.label]] = placed_clip(clip, addresses[clip.ref])
+    return "\n".join(lines)
+
+
+def clip_placement_problems(body: str, clips: Sequence[Clip], rule: ClipRule) -> list[str]:
+    """What is wrong with the clips in a read-back `body`: a clip whose line holds no upload, or not in its placed
+    form."""
+    lines = body.split("\n")
+    where = _clip_lines(body, rule)
+    addresses = clip_addresses(body, clips, rule)
+    problems = []
+    for clip in clips:
+        if clip.ref not in addresses:
+            problems.append(f"the {clip.label} clip is not uploaded on its line")
+        elif lines[where[clip.label]].strip() != placed_clip(clip, addresses[clip.ref]):
+            problems.append(f"the {clip.label} clip is not {'alone on its line' if clip.video else 'an image'}")
+    return problems
 
 
 def task_folder(run: Run) -> Path:
@@ -38,9 +118,10 @@ def task_folder(run: Run) -> Path:
 
 
 def write_text(run: Run, proof: Proof, published: pr_publish.Published) -> tuple[Path, list[str]]:
-    """Write the title and body in the task's folder; the body file to give `gh` and the pictures to upload.
+    """Write the title and body in the task's folder; the body file to give `gh` and the pictures and clips to upload.
 
-    A picture an earlier run uploaded is shown by its address and not uploaded again.
+    A picture an earlier run uploaded is shown by its address and not uploaded again, and so is a clip whose file is
+    the one uploaded (or is gone, because that run deleted it), in its placed form (`placed_clip`).
     """
     generated = proof.generated
     assert generated is not None
@@ -57,6 +138,13 @@ def write_text(run: Run, proof: Proof, published: pr_publish.Published) -> tuple
             known = True
         else:
             attach.append(ref)
+    for clip, digest in proof.clips:
+        record = published.clips.get(clip.ref)
+        if record is not None and digest in ("", record["sha256"]):
+            body = body.replace(f"![{clip.alt}]({clip.ref})", placed_clip(clip, record["url"]))
+            known = True
+        else:
+            attach.append(clip.ref)
     if not known:
         return folder / BODY_FILE, attach
     (folder / UPLOAD_BODY).write_bytes(body.encode("utf-8"))
@@ -236,12 +324,19 @@ def _readback_problems(
     fixable: list[str] = []
     if view.title != proof.generated.title:
         fixable.append("the title differs")
-    fixable += [f"body: {text}" for text in check_body(view.body, rules, proof.models, view.title)]
+    paths = list(proof.subject.paths)
+    # When it was opened, as CI's `body` job passes it: a rule that began later does not ask it.
+    checked = check_body(view.body, rules, proof.models, view.title, paths, view.opened)
+    fixable += [f"body: {text}" for text in checked]
     for marker in (rules.markers.summary, rules.markers.facts):
         if f"<!-- {marker} -->" not in view.body or f"<!-- /{marker} -->" not in view.body:
             fixable.append(f"the {marker} block is damaged")
-    if len(image_targets(view.body)) != len(proof.pictures):
-        fixable.append(f"{len(image_targets(view.body))} pictures shown, {len(proof.pictures)} expected")
+    # A GIF clip is an image once placed; an MP4 is a bare address, which is no image.
+    expected = len(proof.pictures) + sum(1 for clip, _ in proof.clips if not clip.video)
+    if len(image_targets(view.body)) != expected:
+        fixable.append(f"{len(image_targets(view.body))} pictures shown, {expected} expected")
+    if rules.clips is not None:
+        fixable += clip_placement_problems(view.body, [clip for clip, _ in proof.clips], rules.clips)
     hard: list[str] = []
     if view.head != tip:
         hard.append(f"the pull request head is {view.head[:12]}, not the pushed tip {tip[:12]}")
@@ -252,19 +347,48 @@ def _readback_problems(
     return fixable, hard
 
 
-def read_back(run: Run, proof: Proof, pr: PullRequest, tip: str, want_auto: bool) -> pr_publish.View:
-    """Read the pull request back; repair the body once if it is wrong, then Stop(4) with its address if still wrong."""
+#: The body with the clips placed, which `place` sends without `--attach`.
+PLACED_BODY = "PR-BODY-placed.md"
+
+
+def place(run: Run, proof: Proof, pr: PullRequest, view: pr_publish.View) -> pr_publish.View:
+    """Put each uploaded clip's line of the read-back body in its placed form and send the body again (no `--attach`:
+    nothing is uploaded twice); the view read after it, or `view` when every clip already stood placed."""
+    assert run.rules is not None and proof.generated is not None
+    rule = run.rules.pull_requests.clips
+    if rule is None or not proof.clips:
+        return view
+    placed = place_clips(view.body, [clip for clip, _ in proof.clips], rule)
+    if placed == view.body:
+        return view
+    run.say("  placing the clips: each MP4 as its bare address alone on its line, each GIF as an image")
+    path = task_folder(run) / PLACED_BODY
+    path.write_bytes(placed.encode("utf-8"))
+    pr_publish.edit_pr(run.env.gh, run.repo, pr.number, proof.generated.title, path, [], run.text_path.parent)
+    return pr_publish.view_pr(run.env.gh, run.repo, pr.number)
+
+
+def read_back(
+    run: Run,
+    proof: Proof,
+    pr: PullRequest,
+    tip: str,
+    want_auto: bool,
+    published: pr_publish.Published | None = None,
+) -> pr_publish.View:
+    """Read the pull request back and place its clips (`place`); repair the body once if it is wrong, then Stop(4)
+    with its address if still wrong. The repair sends the text again with the uploads `published` knows by their
+    address and every other picture and clip attached."""
     assert run.rules is not None
     gh = run.env.gh
-    view = pr_publish.view_pr(gh, run.repo, pr.number)
+    view = place(run, proof, pr, pr_publish.view_pr(gh, run.repo, pr.number))
     fixable, hard = _readback_problems(proof, run.rules.pull_requests, view, tip, want_auto)
     if fixable:
         run.say(f"  the description on GitHub is wrong ({'; '.join(fixable[:3])}); repairing it once")
         assert proof.generated is not None
-        body = task_folder(run) / BODY_FILE
-        pictures = [ref for ref, _, _ in proof.pictures]
-        pr_publish.edit_pr(gh, run.repo, pr.number, proof.generated.title, body, pictures, run.text_path.parent)
-        view = pr_publish.view_pr(gh, run.repo, pr.number)
+        body, attach = write_text(run, proof, published if published is not None else pr_publish.Published())
+        pr_publish.edit_pr(gh, run.repo, pr.number, proof.generated.title, body, attach, run.text_path.parent)
+        view = place(run, proof, pr, pr_publish.view_pr(gh, run.repo, pr.number))
         fixable, hard = _readback_problems(proof, run.rules.pull_requests, view, tip, want_auto)
     if "auto-merge is off" in hard:
         pr_publish.enable_auto_merge(gh, run.repo, pr.number, run.rules.merge.methods[0])
@@ -283,11 +407,38 @@ def read_back(run: Run, proof: Proof, pr: PullRequest, tip: str, want_auto: bool
 
 
 def images_from(view: pr_publish.View, proof: Proof, published: pr_publish.Published) -> None:
-    """Remember the address of each picture's upload (the body shows them in the order of the file)."""
+    """Remember the address of each picture's upload (the body shows them in the order of the file, before the GIF
+    clips, which are images too)."""
     targets = image_targets(view.body)
-    if len(targets) == len(proof.pictures):
-        for (_ref, _path, digest), target in zip(proof.pictures, targets, strict=True):
+    if len(targets) == len(proof.pictures) + sum(1 for clip, _ in proof.clips if not clip.video):
+        for (_ref, _path, digest), target in zip(proof.pictures, targets[: len(proof.pictures)], strict=True):
             published.images[digest] = target
+
+
+def clips_from(run: Run, view: pr_publish.View, proof: Proof, published: pr_publish.Published) -> None:
+    """Remember the address of each clip's upload, with its file's hash (a clip uploaded by an earlier run and deleted
+    since keeps the hash recorded then)."""
+    assert run.rules is not None
+    rule = run.rules.pull_requests.clips
+    if rule is None:
+        return
+    addresses = clip_addresses(view.body, [clip for clip, _ in proof.clips], rule)
+    for clip, digest in proof.clips:
+        old = published.clips.get(clip.ref, {}).get("sha256", "")
+        if clip.ref in addresses and (digest or old):
+            published.clips[clip.ref] = {"sha256": digest or old, "url": addresses[clip.ref]}
+
+
+def delete_clips(proof: Proof, published: pr_publish.Published) -> list[Path]:
+    """Delete each clip file whose upload the read-back found in place (the record holds its address for this very
+    file), as `clips publish` does once gh reports success; the files deleted. A clip not uploaded is kept."""
+    deleted: list[Path] = []
+    for clip, digest in proof.clips:
+        record = published.clips.get(clip.ref)
+        if digest and record is not None and record["sha256"] == digest and clip.path.is_file():
+            clip.path.unlink()
+            deleted.append(clip.path)
+    return deleted
 
 
 def progress(run: Run, published: pr_publish.Published) -> None:

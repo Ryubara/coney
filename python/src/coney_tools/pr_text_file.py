@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from coney_tools.config import ConfigError
+from coney_tools.pr_publish import uploaded_clip
 from coney_tools.pr_review import local_images
 
 _SUMMARY = re.compile(r"^## Summary[ \t]*$", re.MULTILINE)
@@ -97,8 +98,11 @@ def _paragraph(body: str) -> str:
     return text
 
 
-def read(path: Path) -> TextFile:
-    """The description file at `path`; ConfigError when it cannot be read or has no title or no summary."""
+def read(path: Path, task_folder: Path | None = None) -> TextFile:
+    """The description file at `path`; ConfigError when it cannot be read or has no title or no summary.
+
+    A clip `pr open` uploaded and deleted is known by the record it keeps in the task's folder, `task_folder` (by
+    default the file's own, where `PR.md` lives unless `--text` names another)."""
     try:
         raw = path.read_bytes().decode("utf-8")
     except (OSError, UnicodeDecodeError) as error:
@@ -115,7 +119,13 @@ def read(path: Path) -> TextFile:
         try:
             digest = hashlib.sha256((path.parent / reference).read_bytes()).hexdigest()
         except OSError:
-            missing.append(reference)
+            # `pr open` deletes a clip once it is uploaded: the hash it recorded stands for the file, so the review
+            # that covered the clip still holds for a later release of the same text.
+            uploaded = uploaded_clip(task_folder or path.parent, reference)
+            if uploaded is None:
+                missing.append(reference)
+            else:
+                found.append(Image(reference, uploaded["sha256"]))
         else:
             found.append(Image(reference, digest))
     try:

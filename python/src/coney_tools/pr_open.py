@@ -104,7 +104,16 @@ def _prove(run: Run, root: Path) -> Proof:
     """Run steps 1-5 on the worktree `root` (the unit's, or a throwaway one): `pr_ready.prove`, which Conclave's
     `unit-ready` asks too."""
     assert run.unit is not None and run.task_file is not None
-    return pr_ready.prove(root, run.unit, run.owner, run.task_file, run.keys, run.text_path, remote=run.request.remote)
+    return pr_ready.prove(
+        root,
+        run.unit,
+        run.owner,
+        run.task_file,
+        run.keys,
+        run.text_path,
+        remote=run.request.remote,
+        opened=run.opened,
+    )
 
 
 def _refuse(run: Run, proof: Proof, tip: str) -> Stop:
@@ -234,13 +243,14 @@ def _dry_run(run: Run, upstream: str, first: Proof, existing: PullRequest | None
             folder.rmdir()
     assert run.record is not None
     run.say(f"dry run: would append a pr-opened stamp for {second.subject.tip[:12]} and push {run.record.branch}")
+    uploads = f"{len(second.pictures)} picture(s) and {len(second.clips)} clip(s)"
     if existing is None:
-        run.say(f"dry run: would open the pull request with {len(second.pictures)} picture(s)")
+        run.say(f"dry run: would open the pull request with {uploads}")
     else:
         verb = "reopen and update" if existing.state == "CLOSED" else "update"
         if run.request.adopt:
             verb = f"take over #{existing.number} at {run.request.adopt[:12]} and {verb}"
-        run.say(f"dry run: would {verb} #{existing.number} with {len(second.pictures)} picture(s)")
+        run.say(f"dry run: would {verb} #{existing.number} with {uploads}")
     if pr_open_publish.wants_auto_merge(run, second):
         run.say("dry run: would turn on auto-merge")
     else:
@@ -319,11 +329,20 @@ def _release_steps(run: Run, upstream: str, first: Proof, existing: PullRequest 
         pr = pr_open_publish.publish(run, proof, existing, published)
         pr_publish.write_published(folder, published)
         want_auto = pr_open_publish.auto_merge(run, pr.number, want_auto)
-        view = pr_open_publish.read_back(run, proof, pr, tip, want_auto)
+        view = pr_open_publish.read_back(run, proof, pr, tip, want_auto, published)
+        if view.opened is not None:
+            # Kept so that `pr text` and `pr verify` of a later fix round hold the update to the same rules as CI.
+            published.opened = view.opened.strftime("%Y-%m-%dT%H:%M:%SZ")
     finally:
         # What is known is kept even when a step fails, so a rerun finds the pull request and its uploads.
         pr_publish.write_published(folder, published)
     pr_open_publish.images_from(view, proof, published)
+    pr_open_publish.clips_from(run, view, proof, published)
+    # The record of each clip's upload is on disk before its file goes, so a rerun shows the clip from there.
+    pr_publish.write_published(folder, published)
+    deleted = pr_open_publish.delete_clips(proof, published)
+    if deleted:
+        run.say(f"  uploaded {len(deleted)} clip(s) into the description and deleted them")
     published.engineer = _engineer(proof.subject.report)
     published.time = env.clock().strftime("%Y-%m-%dT%H:%M:%SZ")
     pr_open_publish.progress(run, published)
@@ -345,8 +364,11 @@ def _release_steps(run: Run, upstream: str, first: Proof, existing: PullRequest 
         }
     )
     clips = run.unit.dir / "clips"
-    if clips.is_dir() and any(clips.iterdir()):
-        run.say(f"  note: clips are waiting in {clips}; `clips publish --pr {pr.number}` posts them")
+    if clips.is_dir() and any(path.is_file() for path in clips.iterdir()):
+        run.say(
+            f"  note: clips the description does not show are in {clips}; name them on a Before:, After: or Original: "
+            f"line of PR.md, or `clips publish --pr {pr.number}` posts them as a comment"
+        )
 
 
 def _run(run: Run) -> None:
@@ -373,6 +395,7 @@ def _run(run: Run) -> None:
         try:
             run.repo = pr_publish.resolve_repo(run.env.gh, run.env.git, run.root, run.request.remote, run.request.repo)
             existing = pr_open_publish.find(run)
+            run.opened = existing.opened if existing is not None else None
         except GhError as error:
             raise Stop(EXIT_UNABLE, f"gh: {error}") from error
         pr_open_publish.check_existing(run, existing)

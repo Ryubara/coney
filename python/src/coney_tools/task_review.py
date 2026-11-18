@@ -267,6 +267,38 @@ def _full_pass_problem(report: stamps.Report, diff: str, pairs_set: str) -> list
     return ["text: no passing full review covers the code as it is now (run `task review`, without --text)"]
 
 
+def _clips(env: ReviewEnv) -> dict[str, Any]:
+    """The clips the engineer's file shows, each with its line's label, its reference and its file (and whether that
+    file is there), and the reason of a `Clips: none` line; empty when the file cannot be parsed (the tool part says
+    why)."""
+    try:
+        text = pr_text.read_engineer_file(env.text_file, env.conventions)
+    except ConfigError:
+        return {"shown": [], "none": None}
+    shown = [
+        {"label": clip.label, "ref": clip.ref, "file": str(clip.path.resolve()), "exists": clip.path.is_file()}
+        for clip in text.clips
+    ]
+    return {"shown": shown, "none": text.clips_none}
+
+
+def _clip_note(packet: Mapping[str, Any]) -> str:
+    """What the reviewer is told about the clips: which to open, or the reason given for none."""
+    clips = packet["text"].get("clips", {"shown": [], "none": None})
+    if clips["shown"]:
+        listed = "; ".join(
+            f"{clip['label']} {clip['file']}" + ("" if clip["exists"] else " (uploaded already, file deleted)")
+            for clip in clips["shown"]
+        )
+        return (
+            f"clips: {listed}: play each and judge whether it shows what the description claims, the before and the "
+            "after the same run (docs/guides/review/text.md)"
+        )
+    if clips["none"] is not None:
+        return f"clips: none ({clips['none']}): judge whether the reason holds (docs/guides/review/text.md)"
+    return "clips: none shown"
+
+
 def generated_body(env: ReviewEnv) -> Path:
     """Where `pr text` writes the whole description: beside the engineer's file."""
     return env.text_file.parent / pr_text.BODY_FILE
@@ -300,7 +332,7 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
     function_problems, pairs_set = _function_problems(env, functions, report, tip)
     diff = env.change_hash(worktree, base, tip)
     try:
-        text = pr_text_file.read(env.text_file)
+        text = pr_text_file.read(env.text_file, env.unit.dir)
     except ConfigError as error:
         problems.append(str(error))
         text = pr_text_file.TextFile(env.text_file, "", "", (), ())
@@ -348,6 +380,9 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
             "paragraph_sha256": text.paragraph_sha256 if text.paragraph else "",
             "images": [{"path": image.path, "sha256": image.sha256} for image in text.images],
             "images_sha256": text.images_sha256,
+            # The clips are among the images (each is judged like a picture); this says which line each is on and
+            # where the file is, so the reviewer opens it and asks whether it shows what the description claims.
+            "clips": _clips(env),
             # `file` is the engineer's file; `pr text` writes the sections below, and the whole description, into
             # `generated_body`, so a missing Checklist, Testing facts, AI use or Fixes line in `file` is no finding.
             "generated_sections": [
@@ -410,6 +445,7 @@ def prepare(env: ReviewEnv, mode: str) -> int:
     print(f"  research pages: {', '.join(p['path'] for p in packet['pages']) or 'none'}")
     print("  the tool part passed")
     print(f"  {_description_note(packet)}")
+    print(f"  {_clip_note(packet)}")
     print(f"  packet: {packet_path}")
     print(
         f"  write {rules.verdict_file} and {rules.report_file} in {env.folder}, then run `task review {task} --record`"

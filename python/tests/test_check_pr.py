@@ -5,13 +5,15 @@ command's exit code and its steps."""
 from __future__ import annotations
 
 import subprocess
+from collections.abc import Sequence
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
 from conventions_support import REPO, write_checkout
 from test_repo_checks import body
 
-from coney_tools import check_cli, check_pr, local_gate
+from coney_tools import check_cli, check_pr, local_gate, pr_publish
 from coney_tools.build_claims import SlotTimeout
 from coney_tools.build_run import EXIT_QUEUED
 from coney_tools.cli import main
@@ -20,6 +22,19 @@ from coney_tools.conventions import load_conventions
 from coney_tools.local_gate import StepResult
 
 CONVENTIONS = load_conventions(REPO)
+#: A gameplay description with its Runtime line and no clips: what an open pull request written before the clip rule
+#: holds.
+NO_CLIPS = body(testing="- 3 tests passed\n- Runtime: none (no disc scenario reaches it)")
+
+
+@pytest.fixture(autouse=True)
+def no_pull_request(monkeypatch: pytest.MonkeyPatch) -> None:
+    """GitHub replaced: the branch has no pull request (a test that wants one passes its own `gh`)."""
+
+    def gh(args: Sequence[str], folder: Path | None) -> str:
+        raise pr_publish.GhError('gh pr view failed: no pull requests found for branch "work"')
+
+    monkeypatch.setattr(pr_publish, "lookup_gh", gh)
 
 
 def git(root: Path, *args: str) -> str:
@@ -100,6 +115,59 @@ def test_a_model_line_must_name_the_model_a_commit_trailer_names(checkout: Path)
 def test_a_title_a_player_sees_needs_the_runtime_line(checkout: Path) -> None:
     result = check_pr.step_body(checkout, body(), "gameplay: Add a thing", "main", CONVENTIONS)
     assert not result.ok and any("Runtime:" in line for line in result.output)
+
+
+def test_an_update_of_a_pull_request_opened_before_the_clip_rule_is_not_asked_for_clips(checkout: Path) -> None:
+    """As CI's `--opened`: #1415 and #1435 pass `ci pr` before an update, as they pass CI."""
+    rule = CONVENTIONS.pull_requests.clips
+    assert rule is not None
+    title = "gameplay: Add a thing"
+    earlier = check_pr.step_body(checkout, NO_CLIPS, title, "main", CONVENTIONS, opened=rule.since - timedelta(hours=1))
+    assert earlier.ok, earlier.output
+    for opened in (None, rule.since):
+        result = check_pr.step_body(checkout, NO_CLIPS, title, "main", CONVENTIONS, opened=opened)
+        assert not result.ok and any("Clips: none" in line for line in result.output)
+
+
+def test_ci_pr_asks_github_when_the_branch_s_pull_request_was_opened_unless_told(
+    checkout: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    rule = CONVENTIONS.pull_requests.clips
+    assert rule is not None
+    monkeypatch.chdir(checkout)
+    (checkout / "body.md").write_text(NO_CLIPS, encoding="utf-8")
+    asked: list[list[str]] = []
+    created = (rule.since - timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    def gh(args: Sequence[str], folder: Path | None) -> str:
+        asked.append(list(args))
+        return f'{{"createdAt": "{created}"}}'
+
+    args = ("main", "gameplay: Add a thing", checkout / "body.md", ["body"], None)
+    assert check_pr.run_pr(*args, gh=gh) == 0
+    assert asked == [["pr", "view", "--json", "createdAt"]]
+    # no pull request for the branch (the fixture's gh): not yet opened, so the pair is asked
+    assert check_pr.run_pr(*args) == 1
+    # --opened wins, and nothing is asked
+    assert check_pr.run_pr(*args, opened=created, gh=gh) == 0 and len(asked) == 1
+    capsys.readouterr()
+    assert main(["ci", "pr", "--base", "main", "--body", "body.md", "--title", "gameplay: Add a thing", "--only",
+                 "body", "--opened", created]) == 0  # fmt: skip
+    with pytest.raises(ConfigError, match="--opened"):
+        check_pr.run_pr(*args, opened="last week")
+
+
+def test_ci_pr_says_when_github_cannot_say_whether_the_branch_has_a_pull_request(
+    checkout: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(checkout)
+    (checkout / "body.md").write_text(NO_CLIPS, encoding="utf-8")
+
+    def offline(args: Sequence[str], folder: Path | None) -> str:
+        raise pr_publish.GhError("gh could not run: timed out after 20 seconds")
+
+    assert check_pr.run_pr("main", "gameplay: Add a thing", checkout / "body.md", ["body"], None, gh=offline) == 1
+    assert "whether this branch has a pull request is unknown" in capsys.readouterr().err
 
 
 # --- the docs rule -----------------------------------------------------------------------------------------------

@@ -87,6 +87,7 @@ def title_checkout(tmp_path: Path) -> Path:
         ("commits.title.areas", {"docs": "documentation"}),
         ("commits.title.verbs", ["Add"]),
         ("pull_requests.runtime.areas", ["docs"]),
+        ("pull_requests.clips.areas", ["docs"]),
     )
     return write_checkout(tmp_path, data)
 
@@ -351,6 +352,8 @@ def test_a_command_run_with_a_cp1252_pipe_prints_unicode(tmp_path: Path) -> None
 # --- check-body --title: the runtime-evidence line ---------------------------------------------------------------
 
 RUNTIME_BODY = GOOD_BODY.replace("## Checklist", "## Testing\n\n- `pytest`: 3 passed\n\n## Checklist")
+NO_CHANGE = "Screenshots: none (no change)\n"
+NO_CLIPS = "\nClips: none (a rename, nothing visible)\n"
 
 
 def runtime_checkout(tmp_path: Path) -> Path:
@@ -379,7 +382,8 @@ def test_check_body_with_a_player_facing_title_accepts_evidence_or_a_reasoned_no
 ) -> None:
     monkeypatch.chdir(runtime_checkout(tmp_path))
     for line in ("Runtime: trace diff of 600 updates, 0 differences", "Runtime: none (a rename)"):
-        monkeypatch.setattr("sys.stdin", io.StringIO(RUNTIME_BODY.replace("3 passed", f"3 passed\n- {line}")))
+        text = RUNTIME_BODY.replace("3 passed", f"3 passed\n- {line}").replace(NO_CHANGE, NO_CHANGE + NO_CLIPS)
+        monkeypatch.setattr("sys.stdin", io.StringIO(text))
         assert main(["pr", "check-body", "--title", "audio: Fix the cue"]) == 0
 
 
@@ -405,3 +409,76 @@ def test_the_ci_body_job_passes_the_title(tmp_path: Path) -> None:
     workflow = (Path(__file__).resolve().parents[2] / ".github" / "workflows" / "pr.yml").read_text(encoding="utf-8")
     assert 'check-body --body "$RUNNER_TEMP/pr-body.md" --title "$PR_TITLE"' in workflow
     assert "PR_TITLE: ${{ github.event.pull_request.title }}" in workflow
+
+
+def test_the_ci_body_job_passes_the_changed_files_for_the_studio_clips(tmp_path: Path) -> None:
+    workflow = (Path(__file__).resolve().parents[2] / ".github" / "workflows" / "pr.yml").read_text(encoding="utf-8")
+    body_job = workflow.split("\n  body:\n", 1)[1].split("\n  claim:\n", 1)[0]
+    assert '--changed "$RUNNER_TEMP/changed.txt"' in body_job and "pulls/$NUMBER/files" in body_job
+    assert "pull-requests: read" in body_job
+
+
+def test_check_body_asks_a_studio_change_for_clips_given_the_changed_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(runtime_checkout(tmp_path))
+    (tmp_path / "body.md").write_text(RUNTIME_BODY, encoding="utf-8")
+    (tmp_path / "changed.txt").write_text("docs/guides/studio/ui.md\nsrc\\studio\\inspector.cpp\n", encoding="utf-8")
+    args = ["pr", "check-body", "--body", "body.md", "--title", "core: Fix the inspector"]
+    assert main(args) == 0
+    assert main([*args, "--changed", "changed.txt"]) == 1
+    out = capsys.readouterr().out
+    assert "src/studio/inspector.cpp, which a player sees in Coney Studio" in out
+    (tmp_path / "body.md").write_text(RUNTIME_BODY.replace(NO_CHANGE, NO_CHANGE + NO_CLIPS), encoding="utf-8")
+    assert main([*args, "--changed", "changed.txt"]) == 0
+    assert main([*args, "--changed", "missing.txt"]) == 2
+
+
+def test_the_ci_body_job_passes_when_the_pull_request_was_opened(tmp_path: Path) -> None:
+    workflow = (Path(__file__).resolve().parents[2] / ".github" / "workflows" / "pr.yml").read_text(encoding="utf-8")
+    body_job = workflow.split("\n  body:\n", 1)[1].split("\n  claim:\n", 1)[0]
+    assert "PR_OPENED: ${{ github.event.pull_request.created_at }}" in body_job
+    assert '--opened "$PR_OPENED"' in body_job
+
+
+def test_check_body_asks_no_clips_of_a_pull_request_opened_before_the_rule(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(runtime_checkout(tmp_path))
+    (tmp_path / "body.md").write_text(RUNTIME_BODY, encoding="utf-8")
+    (tmp_path / "changed.txt").write_text("src/studio/inspector.cpp\n", encoding="utf-8")
+    args = ["pr", "check-body", "--body", "body.md", "--title", "core: Fix it", "--changed", "changed.txt"]
+    assert main([*args, "--opened", "2026-01-01T00:00:00Z"]) == 0
+    assert main([*args, "--opened", "2999-01-01T00:00:00Z"]) == 1
+    assert "Coney Studio" in capsys.readouterr().out
+    assert main([*args, "--opened", "yesterday"]) == 2
+    assert "--opened" in capsys.readouterr().err
+
+
+def test_check_body_with_local_images_checks_each_local_clip_like_clips_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from coney_tools import clips
+    from coney_tools.conventions import load_conventions
+
+    (tmp_path / "repo").mkdir()
+    root = runtime_checkout(tmp_path / "repo")
+    task = tmp_path / "scratch" / "my-task"
+    (task / "clips").mkdir(parents=True)
+    (task / "clips" / "before.mp4").write_bytes(b"not a real clip")
+    probed: list[Path] = []
+
+    def probe(path: Path) -> clips.ClipInfo:
+        probed.append(path)
+        return clips.ClipInfo(seconds=12.0, width=960, height=720, size=15, audio=False, tags=())
+
+    monkeypatch.setattr(clips, "probe_file", probe)
+    # gh runs in the scratch folder, outside any checkout: the rules are the checkout's
+    monkeypatch.setattr("coney_tools.cli._conventions", lambda: load_conventions(root))
+    monkeypatch.chdir(task)
+    pair = "**Before:**\n\n![before](./clips/before.mp4)\n\n**After:**\n\n![after](./clips/after.gif)\n"
+    (task / "PR-BODY.md").write_text(RUNTIME_BODY.replace(NO_CHANGE, pair), encoding="utf-8")
+    assert main(["pr", "check-body", "--body", "PR-BODY.md", "--title", "tools: Add it", "--local-images"]) == 1
+    out = capsys.readouterr().out
+    assert "clips: clips/before.mp4: 12.00 s long, more than 10 s" in out and "clips/after.gif does not exist" in out
+    assert probed == [(task / "clips" / "before.mp4").resolve()]

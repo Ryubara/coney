@@ -43,8 +43,8 @@ A before and after of one run, the same command on a build of the branch's merge
 [`coney-tools clips pair`](coney-tools-clips.md#clips-pair): it builds both, records both with `--record`, checks
 they hold as many frames, compares their frame hashes and stacks them side by side.
 
-Clips are uploaded only with `coney-tools clips publish`, which deletes them afterwards
-([Clips](testing.md#clips)).
+Clips are uploaded only by `coney-tools pr open` (a pull request's before and after clips, named in `PR.md`) and
+`coney-tools clips publish` (an issue or a comment), which delete them afterwards ([Clips](testing.md#clips)).
 
 ## Which display the window opens on {#window-display}
 

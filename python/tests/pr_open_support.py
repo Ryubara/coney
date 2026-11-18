@@ -7,6 +7,7 @@ say what was pushed, what was created and what was not touched.
 """
 
 import json
+import re
 import subprocess
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -49,6 +50,9 @@ class FakeGh:
         #: How many times the stored body keeps a path on the author's machine, whatever was sent.
         self.corrupt_body = 0
         self.uploads = 0
+        #: What an uploaded MP4's reference becomes: "image" (the address in the image), "link" (`[alt](address)`),
+        #: "bare" (the address alone) or "appended" (left as it was, the address added at the end).
+        self.video_form = "image"
 
     def names(self) -> list[str]:
         """The first two words of each call, for assertions."""
@@ -76,9 +80,18 @@ class FakeGh:
         text = (cwd / args[args.index("--body-file") + 1]).read_text(encoding="utf-8")
         for index, word in enumerate(args):
             if word == "--attach":
-                assert (cwd / args[index + 1]).is_file(), "an attached picture must exist under the working directory"
+                ref = args[index + 1]
+                assert (cwd / ref).is_file(), "an attached picture must exist under the working directory"
                 self.uploads += 1
-                text = text.replace(f"]({args[index + 1]})", f"](https://example.test/assets/{self.uploads})")
+                address = f"https://github.com/user-attachments/assets/{self.uploads}"
+                form = self.video_form if ref.endswith(".mp4") else "image"
+                if form == "appended":
+                    text += f"\n{address}\n"
+                elif form == "image":
+                    text = text.replace(f"]({ref})", f"]({address})")
+                else:
+                    shown = f"[{ref}]({address})" if form == "link" else address
+                    text = re.sub(rf"!\[[^\]]*\]\({re.escape(ref)}\)", shown.replace("\\", "\\\\"), text)
         if self.corrupt_body > 0:
             self.corrupt_body -= 1
             text += "\nSee C:\\Users\\someone\\scratch\\shots\\a.png\n"
@@ -115,6 +128,8 @@ class FakeGh:
                 "merged": False,
                 "auto": False,
                 "url": f"https://github.com/acme/widgets/pull/{number}",
+                # After the clip rule began, unless a test says otherwise (`createdAt`).
+                "created": "2026-12-01T00:00:00Z",
             }
             if self.create_then_fail:
                 self.create_then_fail = False
@@ -143,6 +158,7 @@ class FakeGh:
                     "body": pr["body"],
                     "headRefOid": self._tip(pr["head"]),
                     "autoMergeRequest": {"enabledBy": {"login": OPENER}} if pr["auto"] else None,
+                    "createdAt": pr.get("created"),
                 }
             )
         raise AssertionError(f"the fake gh has no answer for {args}")
@@ -155,6 +171,7 @@ def _listing(number: int, pr: dict[str, Any]) -> dict[str, Any]:
         "state": "MERGED" if pr["merged"] else pr["state"],
         "url": pr["url"],
         "mergedAt": "2026-10-24T00:00:00Z" if pr["merged"] else None,
+        "createdAt": pr.get("created"),
     }
 
 

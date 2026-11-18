@@ -29,6 +29,7 @@ import re
 import subprocess
 import sys
 from collections.abc import Callable, Sequence
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -193,7 +194,13 @@ def _image_problems(stamp_images: list[dict[str, Any]], reviewed: list[dict[str,
     return problems
 
 
-def description_problems(description: str, conventions: Conventions, branch_models: Sequence[str] = ()) -> list[str]:
+def description_problems(
+    description: str,
+    conventions: Conventions,
+    branch_models: Sequence[str] = (),
+    changed: Sequence[str] | None = None,
+    opened: datetime | None = None,
+) -> list[str]:
     """What CI's `title` and `body` jobs would refuse in the description file's text, each reason prefixed `title:` or
     `body:`.
 
@@ -202,13 +209,16 @@ def description_problems(description: str, conventions: Conventions, branch_mode
     image is accepted where CI wants an uploaded one, because `gh --attach` uploads it when the pull request is opened
     (a missing or identical picture is the verdict check's business). `branch_models` are the models the branch's
     commits credit in trailers: CI sees only the description and passes none, the local gate passes the branch's.
+    `changed` are the change's paths, which CI's `body` job reads from the API (a path a player sees in Coney Studio
+    asks for the clips). `opened` is when the pull request was opened, for an update of one, as CI's `body` job gives
+    it: one opened before the clip rule began is not asked for clips.
     """
     text = description.removeprefix("﻿").replace("\r\n", "\n").replace("\r", "\n")
     title, _, body = text.partition("\n")
     rules = conventions.pull_requests
     draft_rules = dataclasses.replace(rules, screenshots=dataclasses.replace(rules.screenshots, uploaded_only=False))
     return [f"title: {problem}" for problem in check_title(title, conventions.commits.title)] + [
-        f"body: {problem}" for problem in check_body(body, draft_rules, branch_models, title)
+        f"body: {problem}" for problem in check_body(body, draft_rules, branch_models, title, changed, opened)
     ]
 
 

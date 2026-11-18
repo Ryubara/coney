@@ -684,6 +684,27 @@ def test_a_runtime_rule_without_a_pictures_line_means_the_pictures_label() -> No
         conventions_with(("pull_requests.runtime.pictures", ""))
 
 
+def test_the_clip_rule_is_optional_so_an_older_default_branch_asks_for_no_clips() -> None:
+    assert conventions_with(("pull_requests.clips", REMOVE)).pull_requests.clips is None
+
+
+@pytest.mark.parametrize(
+    ("change", "where"),
+    [
+        (("pull_requests.clips.areas", ["gameplay", "not-an-area"]), r"pull_requests\.clips\.areas"),
+        (("pull_requests.clips.section", "Clips"), r"pull_requests\.clips\.section"),
+        (("pull_requests.clips.after", "Before:"), r"pull_requests\.clips\.after"),
+        (("pull_requests.clips.extensions", [".mp4"]), r"pull_requests\.clips\.extensions"),
+        (("pull_requests.clips.reason", "optional"), r"pull_requests\.clips\.reason"),
+        (("pull_requests.clips.since", "soon"), r"pull_requests\.clips\.since"),
+        (("pull_requests.clips.since", REMOVE), r"pull_requests\.clips"),
+    ],
+)
+def test_a_wrong_clip_rule_is_refused(change: tuple[str, object], where: str) -> None:
+    with pytest.raises(ConventionsError, match=where):
+        conventions_with(change)
+
+
 def test_a_runtime_area_must_be_a_commit_title_area() -> None:
     with pytest.raises(ConventionsError, match=r"pull_requests\.runtime\.areas.*commits\.title\.areas"):
         conventions_with(("pull_requests.runtime.areas", ["gameplay", "not-an-area"]))

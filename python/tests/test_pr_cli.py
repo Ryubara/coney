@@ -28,6 +28,17 @@ def test_verify_says_ok_for_a_complete_unit(
     assert "ok: the log, Check, the compared functions and Review all hold for this change" in out
 
 
+def test_verify_refuses_a_visible_change_with_no_clips_and_no_reason(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    built = make(tmp_path)  # a gameplay title
+    path = built.unit.dir / "PR.md"
+    path.write_text(path.read_text(encoding="utf-8").replace("Clips: none (no visible change)", ""), encoding="utf-8")
+    assert run(built, monkeypatch, "verify") == 1
+    out = capsys.readouterr().out
+    assert "clips: '## Screenshots' needs a 'Before:' and an 'After:' clip" in out and "redo: engineer" in out
+
+
 def add_unknown_key(built: Built) -> None:
     """A conventions file with a section the tool in these tests does not know (a branch that adds a rule)."""
     path = built.root / CONVENTIONS_FILE

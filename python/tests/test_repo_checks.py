@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tests for coney_tools.repo_checks: pointer files, commit titles and pull request descriptions."""
 
+import dataclasses
 import re
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -66,6 +68,7 @@ RULES = conventions_with(
     ("commits.title.areas", {"docs": "documentation", "ci": "workflows"}),
     ("commits.title.verbs", ["Add", "Fix", "Update"]),
     ("pull_requests.runtime.areas", ["docs"]),
+    ("pull_requests.clips.areas", ["docs"]),
 ).commits.title
 
 
@@ -594,6 +597,7 @@ def test_the_sections_and_labels_are_the_files() -> None:
     rules = conventions_with(
         ("pull_requests.sections", ["Summary", "Issues affected", "Checklist", "Testing", "Pictures", "AI use"]),
         ("pull_requests.screenshots.section", "Pictures"),
+        ("pull_requests.clips.section", "Pictures"),
     ).pull_requests
     text = body().replace("## Screenshots", "## Pictures")
     assert check_body(text, rules) == []
@@ -796,7 +800,8 @@ def runtime_problems_of(text: str, title: str = PLAYER) -> list[str]:
 
 
 def test_a_player_facing_title_with_evidence_passes() -> None:
-    assert check_body(with_testing("`pytest python/tests`: 120 passed", EVIDENCE), BODY_RULES, title=PLAYER) == []
+    text = with_testing("`pytest python/tests`: 120 passed", EVIDENCE).replace(NO_SHOTS, NO_SHOTS + "\n\n" + NO_CLIPS)
+    assert check_body(text, BODY_RULES, title=PLAYER) == []
 
 
 def test_a_player_facing_title_without_the_line_is_refused_with_the_rule() -> None:
@@ -884,7 +889,7 @@ def test_a_filled_template_needs_its_runtime_line_for_a_player_facing_title() ->
     filled = filled_template()
     problems = check_body(filled, BODY_RULES, title=PLAYER)
     assert any("Runtime: ..." in problem or "'Runtime:' is empty" in problem for problem in problems), problems
-    fixed = filled.replace("- Runtime: ...", "- " + EVIDENCE)
+    fixed = filled.replace("- Runtime: ...", "- " + EVIDENCE).replace("- **Before:** ...", NO_CLIPS)
     assert check_body(fixed, BODY_RULES, title=PLAYER) == []
 
 
@@ -892,6 +897,141 @@ def test_the_template_shows_the_runtime_line() -> None:
     template = read_template()
     assert f"{BODY_RULES.runtime.line} ..." in strip_comments(template)
     assert f"`{BODY_RULES.runtime.none} (<reason>)`" in template
+
+
+# --- the before and after clips -------------------------------------------------------------------------------------
+
+NO_CLIPS = "Clips: none (a refactor: no run shows a difference)"
+UPLOAD = "https://github.com/user-attachments/assets/0b3f5c2e-1111-4a2b-9c3d-000000000001"
+UPLOAD_2 = "https://github.com/user-attachments/assets/0b3f5c2e-1111-4a2b-9c3d-000000000002"
+
+
+def clip_problems_of(screenshots: str, title: str = PLAYER, changed: list[str] | None = None) -> list[str]:
+    """The problems about the clips alone, for a description with the Runtime line and these Screenshots."""
+    text = body(testing="- " + EVIDENCE, screenshots=screenshots)
+    return [p for p in check_body(text, BODY_RULES, title=title, changed=changed) if "Runtime" not in p]
+
+
+def test_the_clip_rule_is_read_from_the_conventions() -> None:
+    rule = BODY_RULES.clips
+    assert rule is not None and rule.section == "Screenshots" and rule.labels == ("Before:", "After:", "Original:")
+    assert rule.none == "Clips: none" and set(rule.areas) == {"gameplay", "graphics", "audio"}
+    assert "src/studio/" in rule.paths and set(rule.extensions) == {"gif", "mp4"}
+
+
+@pytest.mark.parametrize(
+    "screenshots",
+    [
+        # uploaded: a GIF as an image, an MP4 as its bare address alone on its line (how GitHub draws a player)
+        f"**Before:**\n\n{UPLOAD}\n\n**After:**\n\n{UPLOAD_2}",
+        f"- Before: ![before]({UPLOAD})\n- After: ![after]({UPLOAD_2})",
+        f"Before:\n\n[before.mp4]({UPLOAD})\n\nAfter:\n\n![after]({UPLOAD_2})\n\nOriginal:\n\n{UPLOAD}",
+        NO_SHOTS + "\n\n" + NO_CLIPS,
+        f"![shot]({UPLOAD})\n\n- **Clips:** none (no disc scenario reaches the error path)",
+    ],
+)
+def test_a_player_facing_title_with_a_pair_or_a_reason_passes(screenshots: str) -> None:
+    assert clip_problems_of(screenshots) == []
+
+
+def test_a_player_facing_title_without_clips_is_refused_with_the_rule() -> None:
+    (problem,) = clip_problems_of(f"![after]({UPLOAD})")
+    assert "'Before:'" in problem and "'After:'" in problem and "Clips: none (<reason>)" in problem
+    assert "'gameplay'" in problem and "docs/guides/testing.md#clips" in problem
+
+
+@pytest.mark.parametrize("area", ["tools", "docs", "core", "research"])
+def test_other_areas_need_no_clips(area: str) -> None:
+    assert clip_problems_of(NO_SHOTS, title=f"{area}: Fix the thing") == []
+
+
+def test_a_change_a_player_sees_in_coney_studio_needs_the_pair_whatever_the_title() -> None:
+    (problem,) = clip_problems_of(NO_SHOTS, title="core: Fix the inspector", changed=["src/studio/inspector.cpp"])
+    assert "src/studio/inspector.cpp" in problem and "Coney Studio" in problem
+    assert clip_problems_of(NO_SHOTS, title="core: Fix the reader", changed=["src/fileio/wad.cpp"]) == []
+    assert clip_problems_of(NO_SHOTS + "\n\n" + NO_CLIPS, "core: Fix it", ["src/studio/theme.cpp"]) == []
+
+
+def test_a_pull_request_opened_before_the_rule_began_is_not_asked_for_clips() -> None:
+    """Open pull requests are not refused at their next push: only those opened since `clips.since` need the pair."""
+    rule = BODY_RULES.clips
+    assert rule is not None and rule.since.utcoffset() == timedelta(0)
+    text = body(testing="- " + EVIDENCE, screenshots=NO_SHOTS)
+
+    def clips_for(opened: datetime | None) -> list[str]:
+        return [p for p in check_body(text, BODY_RULES, title=PLAYER, opened=opened) if "Clips" in p or "clip" in p]
+
+    assert clips_for(rule.since - timedelta(seconds=1)) == []
+    assert len(clips_for(rule.since)) == 1 and len(clips_for(rule.since + timedelta(days=1))) == 1
+    # Not yet opened (pr text, pr verify, pr open's own checks): the rule applies.
+    assert len(clips_for(None)) == 1
+    studio = check_body(text, BODY_RULES, title="core: Fix it", changed=["src/studio/a.cpp"], opened=rule.since)
+    assert any("Coney Studio" in p for p in studio)
+    assert check_body(text, BODY_RULES, title="core: Fix it", changed=["src/studio/a.cpp"],
+                      opened=rule.since - timedelta(hours=1)) == []  # fmt: skip
+
+
+def test_clip_lines_an_older_pull_request_writes_are_still_checked() -> None:
+    rule = BODY_RULES.clips
+    assert rule is not None
+    text = body(testing="- " + EVIDENCE, screenshots=f"Before: ![b]({UPLOAD})")
+    problems = check_body(text, BODY_RULES, title=PLAYER, opened=rule.since - timedelta(days=1))
+    assert any("needs its 'After:' line too" in p for p in problems)
+
+
+def test_without_a_title_or_changed_paths_no_clips_are_asked_for() -> None:
+    assert [p for p in check_body(body(), BODY_RULES) if "clip" in p.lower()] == []
+
+
+@pytest.mark.parametrize(
+    ("screenshots", "expected"),
+    [
+        ("Clips: none", "needs its reason"),
+        ("Clips: none (<reason>)", "needs its reason"),
+        (f"Before: ![b]({UPLOAD})", "needs its 'After:' line too"),
+        (f"After: ![a]({UPLOAD})", "needs its 'Before:' line too"),
+        (f"Before: ...\n\nAfter: ![a]({UPLOAD})", "needs its 'Before:' line too"),
+        (f"Before: ![b](./shots/before.png)\n\nAfter: ![a]({UPLOAD})", "the 'Before:' line shows no clip"),
+        (f"Before: ![b]({UPLOAD})\nAfter: ![a]({UPLOAD_2})\nAfter: ![a]({UPLOAD})", "'After:' is given twice"),
+        (f"Before: ![b]({UPLOAD})\nAfter: ![a]({UPLOAD_2})\n\n{NO_CLIPS}", "not both"),
+        # An address that is not an upload (another host, a page) is no clip: `uploads` names where clips live.
+        (f"Before: https://example.com/before.mp4\n\nAfter: ![a]({UPLOAD})", "the 'Before:' line shows no clip"),
+        (f"Before: ![b]({UPLOAD})\n\nAfter: [the run](https://github.com/acme/widgets/pull/1)", "'After:' line shows"),
+    ],
+)
+def test_a_broken_clip_line_is_refused(screenshots: str, expected: str) -> None:
+    problems = clip_problems_of(screenshots)
+    assert any(expected in problem for problem in problems), problems
+
+
+def test_a_draft_may_show_local_clips_which_pr_open_uploads() -> None:
+    draft = dataclasses.replace(
+        BODY_RULES, screenshots=dataclasses.replace(BODY_RULES.screenshots, uploaded_only=False)
+    )
+    text = body(testing="- " + EVIDENCE, screenshots="**Before:**\n\n![b](./clips/before.mp4)\n\n**After:**\n\n"
+                "![a](./clips/after.gif)")  # fmt: skip
+    assert check_body(text, draft, title=PLAYER) == []
+    # published, the same local clips are local files
+    assert any("is a local file" in p for p in check_body(text, BODY_RULES, title=PLAYER))
+
+
+def test_an_original_line_alone_is_not_a_pair() -> None:
+    (problem,) = clip_problems_of(f"Original: {UPLOAD}")
+    assert "needs a 'Before:' and an 'After:' clip" in problem
+
+
+def test_a_file_without_the_clip_rule_asks_for_none() -> None:
+    rules = dataclasses.replace(BODY_RULES, clips=None)
+    text = body(testing="- " + EVIDENCE)
+    assert check_body(text, rules, title=PLAYER) == []
+
+
+def test_the_template_shows_the_clip_lines() -> None:
+    template = strip_comments(read_template())
+    assert BODY_RULES.clips is not None
+    for label in BODY_RULES.clips.labels:
+        assert f"**{label}** ..." in template
+    assert f"`{BODY_RULES.clips.none} (<reason>)`" in read_template()
 
 
 # --- the Issues affected section ---------------------------------------------------------------------------------

@@ -87,6 +87,8 @@ class Pull:
     #: The issues GitHub links to it as the ones it closes.
     closes: tuple[int, ...]
     url: str
+    #: The paths it changes, read for an open pull request only (as CI's `body` job reads them); None when not read.
+    files: tuple[str, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -187,6 +189,7 @@ def parse_snapshot(data: Mapping[str, Any]) -> Snapshot:
                 auto_merge=bool(item.get("autoMergeRequest")),
                 closes=tuple(int(ref["number"]) for ref in item.get("closingIssuesReferences") or []),
                 url=str(item.get("url", "")),
+                files=tuple(str(path) for path in item["files"]) if isinstance(item.get("files"), list) else None,
             )
             for item in data["pulls"]
         )
@@ -305,6 +308,23 @@ def fetch_raw(run: Runner = run_gh, now: datetime | None = None) -> dict[str, An
     notices: list[str] = []
     issues = json.loads(run(["issue", "list", "--state", "all", "--limit", str(FETCH_LIMIT), "--json", ISSUE_FIELDS]))
     pulls = json.loads(run(["pr", "list", "--state", "all", "--limit", str(FETCH_LIMIT), "--json", PULL_FIELDS]))
+    try:
+        # The changed paths of the open ones only, as CI's `body` job reads them (a Coney Studio path asks for clips);
+        # every pull request's files would make the listing too big.
+        listed = json.loads(
+            run(["pr", "list", "--state", "open", "--limit", str(FETCH_LIMIT), "--json", "number,files"])
+        )
+        files = {
+            int(item["number"]): [str(entry["path"]) for entry in item.get("files") or [] if isinstance(entry, dict)]
+            for item in listed
+        }
+        for item in pulls:
+            if item["number"] in files:
+                item["files"] = files[item["number"]]
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        notices.append(
+            f"open pull requests' files not read ({error}); pr.body did not ask Coney Studio paths for clips"
+        )
     try:
         edits = fetch_edit_times(run, name)
         for item in issues:
@@ -830,7 +850,8 @@ def pr_title(context: GithubContext) -> Iterator[Problem]:
 def pr_body(context: GithubContext) -> Iterator[Problem]:
     """An open pull request's description passes the template check (sections, no local paths, images uploaded)."""
     for pull in context.snapshot.pulls_in("open"):
-        problems = check_body(pull.body, context.conventions.pull_requests, title=pull.title)
+        rules = context.conventions.pull_requests
+        problems = check_body(pull.body, rules, title=pull.title, changed=pull.files, opened=pull.created)
         if problems:
             shown = "; ".join(problems[:3]) + (f"; and {len(problems) - 3} more" if len(problems) > 3 else "")
             yield _problem(pull, shown)

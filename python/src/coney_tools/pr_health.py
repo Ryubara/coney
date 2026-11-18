@@ -36,8 +36,9 @@ from coney_tools.pr_rerun import FailedCheck, PullChecks, Rerun, plan_reruns
 PULL_FIELDS = (
     "number,title,headRefName,baseRefName,isDraft,mergeable,autoMergeRequest,statusCheckRollup,labels,url,files"
 )
-#: The fields `--rerun` reads besides those: the head commit, and the description to check against the template.
-RERUN_FIELDS = f"{PULL_FIELDS},headRefOid,body"
+#: The fields `--rerun` reads besides those: the head commit, the description to check against the template, and when
+#: the pull request was opened (one opened before the clip rule began is asked for no clips).
+RERUN_FIELDS = f"{PULL_FIELDS},headRefOid,body,createdAt"
 #: More open pull requests than this are not expected; the command says so when it reaches it.
 LIMIT = 200
 
@@ -314,6 +315,8 @@ def pull_checks(pull: dict[str, Any], required: Sequence[str]) -> PullChecks:
         head=str(pull.get("headRefOid") or ""),
         required=frozenset(required),
         failed=failed,
+        opened=_moment(pull.get("createdAt")),
+        changed=tuple(str(item.get("path", "")) for item in pull.get("files") or [] if isinstance(item, dict)),
     )
 
 

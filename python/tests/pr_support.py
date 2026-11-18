@@ -92,6 +92,8 @@ None (no open issue is affected)
 ## Screenshots
 
 Screenshots: none (no visible change)
+
+Clips: none (no visible change)
 """
 
 

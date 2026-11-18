@@ -8,8 +8,11 @@ screen or a window: `run_ffmpeg`, the one way the tools start FFmpeg, refuses an
 
 * a clip lives only in `<scratch>/<task>/clips/` and never inside a git checkout (`check_clip_path`);
 * it is at most `workspace.clips.max_seconds` long and carries no metadata (`clip_problems`, from ffprobe);
-* it is uploaded only by `clips publish`, which deletes it once gh reports the upload done, and `clips clean --apply`
-  deletes what is left after `workspace.clips.keep_hours` (without `--apply` it only lists it).
+* it is uploaded only by `clips publish` (an issue or a comment) or by `pr open` (a pull request's description, the
+  clips `PR.md` names: `pr_open_publish`), each of which deletes it once the upload is done, and `clips clean --apply`
+  deletes what is left after `workspace.clips.keep_hours` (without `--apply` it only lists it). The description's
+  checks (`pr text`, `pr verify`, `pr check-body --local-images`) hold each clip it shows to the same rules
+  (`described_clip_problems`).
 
 The limits are keys of `.github/conventions.yml` (`workspace.clips`), never constants here.
 """
@@ -137,8 +140,8 @@ def git_checkout_around(path: Path) -> Path | None:
 
 
 def check_clip_path(path: Path, scratch: Path, rules: Clips) -> Path:
-    """`path`, resolved, when it may hold a clip: `<scratch>/<task>/<rules.folder>/<name>.mp4`, outside every git
-    checkout, its name plain (CLIP_NAME). Raises ClipError naming the rule it breaks."""
+    """`path`, resolved, when it may hold a clip: `<scratch>/<task>/<rules.folder>/<name>.mp4` (or `.gif`), outside
+    every git checkout, its name plain (CLIP_NAME). Raises ClipError naming the rule it breaks."""
     resolved = path.resolve()
     checkout = git_checkout_around(resolved)
     if checkout is not None:
@@ -348,6 +351,31 @@ def verify(paths: Sequence[Path], scratch: Path, rules: Clips, ffprobe: Path, ru
     if problems:
         raise ClipError("; ".join(problems))
     return resolved
+
+
+def probe_file(path: Path) -> ClipInfo:
+    """ffprobe's account of the clip at `path`, with the ffprobe `find_tool` finds; the tests replace it."""
+    return probe(path, find_tool("ffprobe"), _run)
+
+
+def described_clip_problems(ref: str, path: Path, rules: Clips) -> list[str]:
+    """What is wrong with a clip a description shows at `ref` (`./clips/after.mp4`), whose file is `path`: what
+    `clips check` refuses (a clips folder of the scratch area, outside every checkout, a plain name, no longer than the
+    cap, no metadata) and a missing file. One message each, prefixed `clips:`; empty when it may be uploaded."""
+    label = ref.removeprefix("./")
+    resolved = path.resolve()
+    try:
+        # The task's folder is the clips folder's parent, wherever the scratch area is (`pr text --text` names any).
+        check_clip_path(path, resolved.parent.parent.parent, rules)
+    except ClipError as error:
+        return [f"clips: {label}: {error}"]
+    if not resolved.is_file():
+        return [f"clips: {label} does not exist"]
+    try:
+        info = probe_file(resolved)
+    except ClipError as error:
+        return [f"clips: {label}: {error}"]
+    return [f"clips: {label}: {problem}" for problem in clip_problems(info, rules)]
 
 
 # --- publishing and cleaning -----------------------------------------------------------------------------------------

@@ -19,10 +19,10 @@ request says so in a `Runtime:` line that CI checks ([below](#runtime-line)).
 | Work | Evidence |
 | --- | --- |
 | A format, parser or other pure code | Unit tests on synthetic fixtures; a disc test that prints aggregates when the disc is involved |
-| Engine behaviour that a player sees | Unit tests where it can be isolated, and a disc test that starts through [the player's path](#test-through-the-players-path); a [runtime comparison](#runtime-comparison) with the original; before and after captures of Coney and the original from the same spot for anything visible ([What a pull request shows](#pr-evidence)) |
-| A mission checkpoint | Its [playthrough test](#playthrough-tests) passes; `research/missions.yaml` updated; an [event diff](#diff-against-the-original) against the original where a recording exists; a [runtime comparison](#runtime-comparison) of the checkpoint's moments with the original; before and after captures of Coney and the original from the same spot for anything visible |
+| Engine behaviour that a player sees | Unit tests where it can be isolated, and a disc test that starts through [the player's path](#test-through-the-players-path); a [runtime comparison](#runtime-comparison) with the original; before and after captures of Coney and the original from the same spot for anything visible, with a [before and after clip](#clips-in-the-description) ([What a pull request shows](#pr-evidence)) |
+| A mission checkpoint | Its [playthrough test](#playthrough-tests) passes; `research/missions.yaml` updated; an [event diff](#diff-against-the-original) against the original where a recording exists; a [runtime comparison](#runtime-comparison) of the checkpoint's moments with the original; before and after captures of Coney and the original from the same spot for anything visible, with a [before and after clip](#clips-in-the-description) |
 | A change to drawing | The draw-stream hashes where they cover it, the local picture comparison's counts ([Picture counts](#picture-counts)), and CI's [software pictures](#software-pictures) passing |
-| A bug fix | A test that fails before the fix and passes after it (a test that guards a refactor of behaviour that already matched is [stamped `keeps`](#keeps)); in a player-facing area (`gameplay`, `graphics`, `audio`), also a [runtime comparison](#runtime-comparison) with the original, and before and after captures of Coney and the original from the same spot for anything visible |
+| A bug fix | A test that fails before the fix and passes after it (a test that guards a refactor of behaviour that already matched is [stamped `keeps`](#keeps)); in a player-facing area (`gameplay`, `graphics`, `audio`), also a [runtime comparison](#runtime-comparison) with the original, and before and after captures of Coney and the original from the same spot for anything visible, with a [before and after clip](#clips-in-the-description) |
 | A research finding | An address and an [evidence level](research-evidence.md#evidence-levels) on every claim; runtime claims checked in the emulator and citing their [run record](research-evidence.md#run-records); `research claims` clean on the pages changed; a [trace diff](research-traces.md#comparing-with-coney) where a scenario exists |
 | Python tools and generators | pytest, ruff and mypy; every generator's `--check` |
 | Docs | `mkdocs build --strict`, markdownlint and [`docs check`](writing-docs.md#checking) on the pages touched |
@@ -324,6 +324,11 @@ description that leaves either empty (`coney-tools pr check-body`). All of what 
   the evidence from the original running (a trace diff, an event diff, or named PCSX2 captures or reads compared with
   Coney's, with numbers) or `Runtime: none (<reason>)`. It is checked given the title (CI's `body` job and
   `legacy check-pr-review` give it).
+- Screenshots: when the title's area is one of `gameplay`, `graphics`, `audio`, or the change touches a path under
+  `src/studio/` (what a player sees in Coney Studio), a clip on a line `Before:` and one on a line `After:` (the
+  original's may follow on `Original:`), or a line `Clips: none (<reason>)`. A clip is a `.gif` or `.mp4` upload; in
+  `PR.md` it is a local `./clips/<name>` image that `pr open` uploads. It is checked given the title and, for the paths,
+  the changed files (CI's `body` job has both).
 - AI use: after `Commits written by:` one of `a person`, `an AI`, `an AI, edited by a person`, `a person, with AI help`;
   unless it is `a person`, `Model:` names the model (`n/a` is not enough).
 - `Model:` also names every model that a `Co-Authored-By` trailer on the branch's commits names (any case, anywhere on
@@ -347,7 +352,9 @@ What the two sections hold:
   the original in PCSX2 from the same place, so a reader can compare them (a view the original cannot show is
   said so, with the reason, in the caption). When
   nothing visible changes, the section is one line, `Screenshots: none (<reason>)`, for example `Screenshots: none
-  (no visible change)` or `Screenshots: none (research page only)`.
+  (no visible change)` or `Screenshots: none (research page only)`. For a title area a player sees and a change a
+  player sees in Coney Studio it also holds the before and after **clips**, on its `Before:` and `After:` lines, or
+  `Clips: none (<reason>)` ([Clips in the description](#clips-in-the-description)).
 
 ### The Runtime line {#runtime-line}
 
@@ -415,13 +422,15 @@ start of the line is `pull_requests.runtime.pictures`.
   it again. The `reviewer` agent checks the same before release, and `legacy check-pr-review` refuses byte-identical
   images ([Task review](review/task.md)).
 - **Video.** A short clip (10 seconds at most) of Coney comes from `coney --record`, one of the original from
-  `coney-tools clips record`, and both go up only with `coney-tools clips publish`: the rules and how each is kept are
-  in [Clips](#clips) below. Never a screen recorder.
+  `coney-tools clips record`; a pull request's go into its description on the `Before:`, `After:` and `Original:`
+  lines and up with `pr open`, an issue's with `coney-tools clips publish`: the rules and how each is kept are in
+  [Clips](#clips) below. Never a screen recorder.
 - **Agents** keep every capture in `scratch/<branch>/shots/` and write real image references in the pull request
   text (`PR.md`), paths relative to the scratch folder: `![Coney after](./shots/after.png)`. `coney-tools pr open`
   ([pr open](pr.md#open)) does the attaching when the coordinator releases the unit: it runs from that folder and passes
   one `--attach` per file (on an update only the pictures that are new), then reads the description back to check that
-  each reference became an upload address and no local path is left. Underneath it is this, which is what a person
+  each reference became an upload address and no local path is left. Clips go the same way, from `./clips/`, with
+  one step more ([Clips in the description](#clips-in-the-description)). Underneath it is this, which is what a person
   runs by hand from their own terminal or fork (in a Claude Code session in this repository the PR guard refuses it:
   [After the switch](pr.md#after-the-switch)):
 
@@ -438,17 +447,18 @@ start of the line is `pull_requests.runtime.pictures`.
   attach it.
 - **No local paths in the text.** A published pull request or issue body never names a file or folder on your machine:
   no `scratch/...`, `../../...`, `C:\...` or worktree path, and no "files in <folder>". Say "the scratch folder" and
-  describe the picture. The only local paths a draft may hold are the `![alt](./shots/<file>.png)` image references that
-  `gh --attach` rewrites to uploads. `check-body` refuses a body with any other such path in its text; code spans and
-  code blocks are not looked at. The files are game data: they stay in scratch and are deleted when the pull request is
-  merged ([Sharing one machine](how-we-work.md#shared-machine)).
+  describe the picture. The only local paths a draft may hold are the `![alt](./shots/<file>.png)` image references
+  and the `![alt](./clips/<file>.mp4)` clip references that `gh --attach` rewrites to uploads. `check-body` refuses a
+  body with any other such path in its text; code spans and code blocks are not looked at. The files are game data:
+  they stay in scratch and are deleted when the pull request is merged ([Sharing one machine](how-we-work.md#shared-machine)).
 
 ### Clips {#clips}
 
 !!! note "For the project's agents"
 
-    `coney-tools clips publish` and the rules below are how the project's agents publish clips. A person drags a short
-    clip into the pull request or issue on GitHub; the no-game-data rule still applies.
+    `coney-tools pr open`, `coney-tools clips publish` and the rules below are how the project's agents publish clips.
+    A person drags a short clip into the pull request (under its `Before:` and `After:` lines) or issue on GitHub; the
+    no-game-data rule still applies.
 
 A short video shows a bug or a fix better than screenshots: a before and after of Coney, and the original from the
 same place. Agents record and publish them themselves (the user's request, 2026-10-12), under five rules. Each is
@@ -458,8 +468,8 @@ kept by the code, not by memory or by this page:
 | --- | --- |
 | **Only the game's own picture.** Never a screen, desktop or window capture. | Coney's frames are read back from its own frame buffer (`RenderEngine::setFrameTap()`) and piped to FFmpeg's standard input, its only input (`clips::videoEncodeArguments()`, tested). The original's come from PCSX2's own capture of its GS output (`clips record`), re-encoded from that file. Every FFmpeg command `coney-tools` runs goes through `clips.run_ffmpeg`, which refuses any capture device (`gdigrab`, `ddagrab`, `x11grab`, `avfoundation`, `dshow`, `lavfi`, ...) and any input that is not a file; a test checks that `clips record` never calls `pcsx2 screenshot`'s window read. |
 | **Nothing private in the frames or the file.** No debug overlay, log, FPS counter, path, user name or window chrome; no metadata. | Coney reads the frame before the debug menus and the developer overlay are drawn and switches the debug lines off while recording (`--record-debug-draw` keeps the 3D lines the run itself switched on, such as a collision wireframe, never text); there is no window chrome in a frame buffer. `clips record` turns every PCSX2 on-screen display element off for the run. Every encode strips metadata and chapters (`-map_metadata -1`, `-map_chapters -1`), writes bit-exact headers and drops x264's settings note; a clip's name is plain letters, digits, `.`, `_`, `-`. `clips check` and `clips publish` refuse a clip whose ffprobe tags go beyond the fixed ones every MP4 carries. |
-| **Deleted once uploaded.** | `coney-tools clips publish` is the only upload: it posts the comment (or description) with `gh --attach` and deletes each clip only when gh reports success, keeping them and saying so otherwise. `coney-tools clips clean` lists the clips older than 24 hours in every task's clips folder, and with `--apply` deletes them. |
-| **Only in the scratch folder.** `<workspace>/scratch/<task>/clips/`, never in a worktree. | `coney --record`, `clips record`, `clips check` and `clips publish` refuse a path inside any git checkout or outside a `clips` folder (`clips::checkClipPath()`, `platform::checkClipLocation()`, `clips.check_clip_path`). |
+| **Deleted once uploaded.** | `coney-tools pr open` (a pull request's description) and `coney-tools clips publish` (an issue, a comment) are the only uploads: each sends the text with `gh --attach` and deletes each clip only once the upload succeeded (`pr open`: once the read-back found it in place), keeping them and saying so otherwise. `coney-tools clips clean` lists the clips older than 24 hours in every task's clips folder, and with `--apply` deletes them. |
+| **Only in the scratch folder.** `<workspace>/scratch/<task>/clips/`, never in a worktree. | `coney --record`, `clips record`, `clips check`, `clips publish` and the description checks (`pr text`, `pr verify`, `pr check-body --local-images`) refuse a path inside any git checkout or outside a `clips` folder (`clips::checkClipPath()`, `platform::checkClipLocation()`, `clips.check_clip_path`). |
 | **Short.** 10 seconds by default and at most. | `--record-seconds` and `clips record --seconds` refuse more; every encode cuts at the length (`-t`); `clips publish` refuses a longer file. The cap is `workspace.clips.max_seconds` in [.github/conventions.yml](repo:.github/conventions.yml), and a test checks that Coney's `kMaxClipSeconds` equals it. |
 
 The steps, for an agent:
@@ -468,9 +478,10 @@ The steps, for an agent:
 CLIPS=$(uv run --project python coney-tools clips folder my-task)   # makes and prints the absolute <workspace>/scratch/my-task/clips
 build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 --input-script walk.txt --record "$CLIPS/after.mp4"
 uv run --project python coney-tools clips check "$CLIPS/after.mp4"
-uv run --project python coney-tools clips publish --pr 123 --body "Coney after the fix" "$CLIPS/after.mp4"
 # the original: --iso and --scratch are needed when coney.local.toml has no game_dir or scratch_dir; --out is absolute, from any checkout
 uv run --project python coney-tools clips record STATE --out "$CLIPS/original.mp4" --agent ID --iso /path/to/warriors.iso --scratch /path/to/scratch
+# then name them in PR.md (below); for an issue or a comment instead:
+uv run --project python coney-tools clips publish --issue 123 --body "Coney after the fix" "$CLIPS/after.mp4"
 ```
 
 A before and after of Coney is one command, `coney-tools clips pair SCENARIO --agent ID` from the task's worktree:
@@ -479,11 +490,64 @@ stacked side by side, labelled, in `compare.mp4` (with `--original STATE` the or
 `--gif` a GIF sized for a description). Its scenarios, encodes and limits are on
 [its page](coney-tools-clips.md#clips-pair).
 
-An agent that cannot publish (agents do not post to GitHub: the coordinator does) names its clips in its report and
-leaves them in the clips folder; the coordinator publishes them after it opens the pull request, and
-`clips clean --apply` removes any left behind. Never attach a clip with `gh` directly, never commit one, and never
-reference one in `PR.md` (`pr check-body` refuses the local path): the clip goes in as a comment of its own. The
-commands: [coney-tools clips](coney-tools-clips.md#clips), [Recording a clip](running-options.md#record).
+Agents do not post to GitHub (the coordinator does), so an engineer names its clips in `PR.md` and leaves them in the
+clips folder; `pr open` uploads them with the pull request, and `clips clean --apply` removes any left behind. Never
+attach a clip with `gh` directly and never commit one. The commands: [coney-tools clips](coney-tools-clips.md#clips),
+[Recording a clip](running-options.md#record).
+
+### Clips in the description {#clips-in-the-description}
+
+Before and after clips are what lets a reader see a change (the maintainer's request, 2026-11-18): motion, timing, the
+AI, the camera, effects and sound do not show in a still. So a pull request whose title area is one a player sees
+(`gameplay`, `graphics`, `audio`), or that changes what a player sees in Coney Studio (a path under `src/studio/`),
+shows a clip of Coney before the change and one after it, from the same run, or says why it cannot. The rule is
+`pull_requests.clips` in [.github/conventions.yml](repo:.github/conventions.yml) (the generated list in [What a pull
+request shows](#pr-evidence) has it), and a brief names the pair as part of "done" ([Briefing](agents.md#briefs)).
+The rule has a start, its `since`, set no earlier than its own pull request merged. A pull request opened before then
+was written before the rule and is not asked for clips, at its next push or in a fix round: CI's `body` job passes its
+`created_at`, `pr open` its `createdAt` (and records it in `pr-published.json`), and `pr text` and `pr verify` read that
+record (or ask GitHub, for a pull request an older `pr open` recorded without it, and write the answer back);
+`ci pr` takes `--opened` or asks GitHub for the branch's pull request. Clip lines it writes anyway are still
+checked. A pull request not yet opened, or opened since, is always asked.
+
+The engineer writes the clips into the Screenshots section of `PR.md`, one per labelled line, each a local image under
+`./clips/` (the task's clips folder, beside `PR.md`), with the names [`clips pair`](coney-tools-clips.md#clips-pair)
+records them under:
+
+```markdown
+## Screenshots
+
+- Before: ![before](./clips/before.mp4)
+- After: ![after](./clips/after.mp4)
+- Original: ![original](./clips/original.mp4)
+```
+
+`Before:` and `After:` are the pair; `Original:` (the original in PCSX2 from the same place, for faithful work) is
+optional, and screenshots under `./shots/` may stand beside them. When nothing visible changes, or no disc scenario
+reaches the change yet, the section says so instead: `Clips: none (<reason>)`, for example `Clips: none (a refactor:
+the trace diff shows 0 differences)`. A reason of convenience is refused by the reviewer, as for the `Runtime:` line.
+
+**GIF or MP4.** A GIF plays inline the moment the page opens and loops, so it suits a short, silent clip of one thing; an
+MP4 carries sound, length and detail a GIF's palette loses. GitHub plays an MP4 only from its bare upload address
+standing alone on its line, and shows a GIF as an image; `pr open` puts each in that form, so `PR.md` writes both the
+same way.
+
+What checks it, at each step:
+
+| Step | What it checks |
+| --- | --- |
+| `pr text` (and `pr open`'s proof) | Each clip line holds one image under `./clips/`, a `.gif` or `.mp4`, at most one per label; each file passes `clips check` (a clips folder outside every checkout, a plain name, the length cap, no metadata), is under the 10 MB upload limit, and the before and after are not byte-identical; the pair, or the `none` line, is there when the title or a changed path asks for it and the pull request, if already open, was opened since the rule began |
+| `pr verify` | The same, as its `clips` stage, so an engineer sees it before Review |
+| `task review` | Lists each clip with its file for the reviewer, who plays it and judges whether it shows what the description claims, the before and the after of the same run ([Description](review/text.md)); a `Clips: none` reason is judged too |
+| `pr open` | Uploads each clip with one `--attach` (run from `PR.md`'s folder, so `./clips/x.mp4` is the path `gh` matches), reads the description back, puts each clip's line in its form (an MP4's bare address alone on its line, a GIF as an image) and sends it once more without `--attach`, checks each clip stands uploaded on its line, and only then deletes the files. It records each upload in `pr-published.json`, so a later release shows the clip from there and uploads nothing again ([pr open](pr.md#open)) |
+| CI's `body` job | `pr check-body --title ... --changed ... --opened ...`: the pair, as uploaded addresses (under `pull_requests.clips.uploads`, GitHub's attachments; any other address on a clip line is no clip), or the `none` line; it reads the pull request's files from the API for the Coney Studio paths, and passes when the pull request was opened, so one opened before the rule's `since` is not asked |
+
+`gh --attach` swaps a reference for the upload in place only when the reference names the same file as the `--attach`
+path, read from the folder `gh` runs in; otherwise it appends the upload at the end of the body and the reference
+stays local. And what it leaves in place of an MP4's reference (an image, a link, or the bare address) has differed
+between runs. That is why `pr open` reads the body back and places the clips itself rather than trusting the first
+send, and why the read-back is the check: a clip whose line holds no upload is repaired once, and otherwise the run
+stops with exit 4, the clip kept.
 
 ## Where the checks run {#where}
 

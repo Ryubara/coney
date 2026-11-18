@@ -56,8 +56,11 @@ def test_no_expression_reaches_a_script_except_through_the_environment() -> None
     for job in workflow()["jobs"].values():
         for step in job["steps"]:
             for value in step.get("env", {}).values():
+                # created_at is GitHub's own timestamp (the body job's --opened), not text an author writes.
                 assert re.fullmatch(
-                    r"\$\{\{ (github\.event\.pull_request\.(title|body|number)|github\.(token|repository)) \}\}", value
+                    r"\$\{\{ (github\.event\.pull_request\.(title|body|number|created_at)|github\.(token|repository)) "
+                    r"\}\}",
+                    value,
                 )
 
 
@@ -66,10 +69,11 @@ def test_the_token_reads_and_no_secret_is_used() -> None:
     assert "secrets." not in WORKFLOW.read_text(encoding="utf-8")
 
 
-def test_only_the_docs_and_claim_jobs_read_more_and_no_job_widens_the_token_further() -> None:
-    # `docs` calls the pull request files API; `claim` reads the claim cards on the issues the description closes.
+def test_only_the_docs_body_and_claim_jobs_read_more_and_no_job_widens_the_token_further() -> None:
+    # `docs` and `body` call the pull request files API; `claim` reads the claim cards on the issues it closes.
     allowed = {
         "docs": {"contents": "read", "pull-requests": "read"},
+        "body": {"contents": "read", "pull-requests": "read"},
         "claim": {"contents": "read", "issues": "read", "pull-requests": "read"},
     }
     for name, job in workflow()["jobs"].items():

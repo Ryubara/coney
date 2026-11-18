@@ -19,12 +19,12 @@ from __future__ import annotations
 
 import dataclasses
 import hashlib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from coney_tools import pr_proof, pr_text, stamps
+from coney_tools import pr_proof, pr_publish, pr_text, stamps
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
 from coney_tools.pr_proof import Refusal
@@ -43,6 +43,8 @@ class Proof:
     pictures: list[tuple[str, Path, str]]
     models: list[str]
     notes: list[str]
+    #: Each clip of the text with its file's hash; '' for one an earlier `pr open` uploaded and deleted.
+    clips: list[tuple[pr_text.Clip, str]] = field(default_factory=list)
 
     @property
     def conventions(self) -> Conventions:
@@ -67,38 +69,49 @@ def prove(
     remote: str = "origin",
     now: datetime | None = None,
     subject: pr_proof.Subject | None = None,
+    opened: datetime | None = None,
 ) -> Proof:
     """Steps 1-5 of a release on the worktree `root`: the stages of `pr verify`, then the title and description `pr
     text` generates from the engineer's file at `text_path`, with the checks CI runs on them.
 
     `owner` is the task whose log and branch the unit is (a fix task's parent). Every refusal is returned, none is
     raised; a ConfigError means the unit could not be read at all (an unknown ref, unreadable rules). `subject` is
-    the unit already read, with the functions of its change (`pr_proof.scanned`), when the caller has it."""
+    the unit already read, with the functions of its change (`pr_proof.scanned`), when the caller has it. `opened` is
+    when the task's pull request was opened (`pr open` passes GitHub's `createdAt`); without it, what the last `pr
+    open` recorded in the task's folder, so an update of a pull request opened before a rule began is not held to it.
+    """
     if subject is None:
         subject = pr_proof.load_subject(root, unit, owner, task_file.kind, remote=remote, now=now)
     try:
-        hashes: pr_proof.TextHashes | None = pr_text.hashes_of(text_path)
+        hashes: pr_proof.TextHashes | None = pr_text.hashes_of(text_path, unit.dir)
     except ConfigError:
         hashes = None  # the text check below says what is wrong with the file
     result = pr_proof.verify(subject, hashes)
     refusals = list(result.refusals)
     generated: pr_text.Generated | None = None
     pictures: list[tuple[str, Path, str]] = []
+    clips: list[tuple[pr_text.Clip, str]] = []
     models: list[str] = []
     try:
         form = pr_text.read_engineer_file(text_path, subject.conventions)
         models = branch_trailer_models(root, subject.base, subject.conventions.commits.trailers)
         shown = dataclasses.replace(subject, report=without_opened(subject.report))
-        generated = pr_text.generate(shown, task_file, form, keys=keys, trailer_models=models)
+        if opened is None:
+            opened = pr_publish.opened_of(unit.dir)
+        generated = pr_text.generate(shown, task_file, form, keys=keys, trailer_models=models, opened=opened)
         refusals += generated.refusals
         pictures = [
             (image.ref, image.path, hashlib.sha256(image.path.read_bytes()).hexdigest())
             for image in form.images
             if image.path.is_file()
         ]
+        clips = [
+            (clip, hashlib.sha256(clip.path.read_bytes()).hexdigest() if clip.path.is_file() else "")
+            for clip in form.clips
+        ]
     except ConfigError as error:
         refusals.append(Refusal("text", f"text: {error}", "engineer"))
-    return Proof(subject, refusals, generated, pictures, models, list(result.notes))
+    return Proof(subject, refusals, generated, pictures, models, list(result.notes), clips)
 
 
 # --- is the unit ready ----------------------------------------------------------------------------------------------
