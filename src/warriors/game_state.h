@@ -13,6 +13,7 @@
 #include "warriors/game_over.h"
 #include "warriors/hub_state.h"
 #include "warriors/level_table.h"
+#include "warriors/mod_story_progress.h"
 #include "warriors/player_state.h"
 #include "warriors/profile_record.h"
 #include "warriors/story_state.h"
@@ -90,6 +91,9 @@ struct GameState {
     /// flags `+0x572c`, the mission bests, the Rumble data): a fresh profile's until one is loaded
     /// (docs/research/save.md#record).
     SavedProgress saved;
+    /// Mod missions' progress (the save's story section, by mission id) and the session's numbers for mod missions,
+    /// which `UM_Unlock` and `UM_IsLevelComplete` use on a mod level's number (docs/research/save.md#save-mods).
+    ModStoryProgress modStory;
 
     // Globals of the original kept here because every binding state shares them.
     GameRandom random;             ///< The random table's index (`0x006eb880`) and the table.

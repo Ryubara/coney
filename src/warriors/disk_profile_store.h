@@ -47,10 +47,12 @@ class DiskProfileStore final : public ProfileStore {
     /// Coney has no space check: there is room while a slot is free.
     [[nodiscard]] bool hasRoom() const override { return freeSlot().has_value(); }
     /// Makes a new profile from the template (a fresh game state), puts it into the game state with the
-    /// difficulty, brightness and subtitles chosen on the screens, and writes its file at once.
+    /// difficulty, brightness and subtitles chosen on the screens and no story entries, and writes its file at once.
     /// @orig 0x00421e68 Profile_Create (W_SaveSystem.cpp)
     bool create(std::size_t slot, const Profile& profile) override;
-    /// Puts the profile in `slot` into the game state (save-system `+0xcc`). Fails for an empty or damaged slot.
+    /// Puts the profile in `slot` into the game state (save-system `+0xcc`), its story entries included
+    /// (GameState::modStory). Fails for an empty or damaged slot.
+    /// @orig 0x00422358 SaveSystem_LoadSlot (W_SaveSystem.cpp)
     bool load(std::size_t slot) override;
     /// Deletes the profile's file and empties the slot; a deleted profile cannot be brought back.
     /// @orig 0x00421f98 Profile_Delete (W_SaveSystem.cpp)
@@ -61,7 +63,8 @@ class DiskProfileStore final : public ProfileStore {
     [[nodiscard]] std::optional<std::size_t> loaded() const override { return m_loaded; }
     /// Whether any profile has finished the story on HARDCORE SOLDIER (slot `+0x28` of any slot, save-system `+0xac`).
     [[nodiscard]] bool fourthDifficultyUnlocked() const override;
-    /// The autosave: when saving is enabled and a profile is loaded, writes the game state into its record and file.
+    /// The autosave: when saving is enabled and a profile is loaded, writes the game state into its record and file,
+    /// the story entries of GameState::modStory with the slot's mod sections.
     /// Does nothing (and succeeds) otherwise; returns false when the file cannot be written.
     /// @orig 0x00421d98 SaveSystem_WriteCurrent (W_SaveSystem.cpp)
     bool save() override;

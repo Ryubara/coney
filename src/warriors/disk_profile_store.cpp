@@ -181,17 +181,23 @@ bool DiskProfileStore::create(std::size_t slot, const Profile& profile) {
     }
     m_lastError.reset();
     m_slots.at(slot) = Slot{.profile = profileOf(record), .record = std::move(record), .modded = {}};
+    m_state.modStory.setEntries({});
     m_loaded = slot;
     // Not ported: the original ends by applying the brightness to the display (Gamma_Set, #156).
     return true;
 }
 
 bool DiskProfileStore::load(std::size_t slot) {
+    // Coney's choice: the slot's file was read with the others (readSlots), so an empty or damaged slot fails here
+    // where the original reads its image anyway.
     const ProfileRecord* held = record(slot);
-    if (held == nullptr) {
+    const ModdedProgress* heldModded = modded(slot);
+    if (held == nullptr || heldModded == nullptr) {
         return false;
     }
     applyProfile(*held, m_state);
+    // The slot's mod missions too, those of mods the session lacks included: the next save writes them back.
+    m_state.modStory.setEntries(heldModded->story);
     m_loaded = slot;
     return true;
 }
@@ -228,15 +234,18 @@ bool DiskProfileStore::save() {
     CONEY_ASSERT(slot.has_value() && slot->record.has_value());
     ProfileRecord record = slot->record.value();
     captureProfile(m_state, record);
-    // Coney's choice: one file per slot, so there are no six headers to write first; the file keeps the story
-    // entries and mod sections the slot holds.
-    if (auto written = writeSlot(index, record, slot->modded); !written) {
+    // Coney's choice: one file per slot, so there are no six headers to write first; the file holds the session's
+    // story entries (the loaded ones and those played since) and the mod sections the slot holds.
+    ModdedProgress modded = slot->modded;
+    modded.story = m_state.modStory.entries();
+    if (auto written = writeSlot(index, record, modded); !written) {
         m_lastError = written.error();
         return false;
     }
     m_lastError.reset();
     slot->profile = profileOf(record);
     slot->record = std::move(record);
+    slot->modded = std::move(modded);
     return true;
 }
 

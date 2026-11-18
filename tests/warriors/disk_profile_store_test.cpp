@@ -284,6 +284,63 @@ TEST_CASE("a new profile over a slot that held a modded save starts with nothing
     CHECK(store.modded(1)->empty());
 }
 
+TEST_CASE("a mod mission's completion round-trips by id; the unlock bits and best records stay the original's",
+          "[disk_profile_store]") {
+    // Expected: unverified, #1303 (Coney's design, mission-mods.md#graph-progress and save.md#save-mods: the story
+    // section by id, nothing in the 640 bits or 30 records; a missing mod's entry kept)
+    TempDir dir;
+    // A save that holds a mission of a mod this session lacks.
+    SaveGame earlier;
+    earlier.profile.name = "COCHISE";
+    earlier.modded.story.push_back({.id = "gone.docks", .complete = true, .ranks = 1});
+    dir.write("profile-1.sav", earlier.serialise());
+
+    GameState state;
+    {
+        DiskProfileStore store(dir.path(), state);
+        REQUIRE(store.load(0));
+        CHECK(state.modStory.isComplete("gone.docks"));
+        // The session numbers its mod's mission and plays it to the end.
+        state.modStory.assign(4, "yard-brawl.alley");
+        CHECK(state.modStory.unlock(4, 0, 0));
+        CHECK(state.modStory.unlock(4, 0, 1));
+        CHECK(state.modStory.setBest(4, {.bestScore = 640, .total = 90, .grade = 1, .percent = 55, .rest = {}}));
+        store.setInUse(true);
+        REQUIRE(store.save());
+    }
+
+    auto written = SaveGame::parse(fileBytes(dir.path() / "profile-1.sav"));
+    REQUIRE(written.has_value());
+    // The faithful sections hold a fresh profile's bits and records: nothing of the mod mission went there.
+    const coney::SavedProgress fresh;
+    CHECK(written->profile.progress.lockedBits == fresh.lockedBits);
+    CHECK(written->profile.progress.newBits == fresh.newBits);
+    for (const coney::MissionBest& best : written->profile.progress.missionBests) {
+        CHECK(best.bestScore == 0);
+        CHECK(best.total == 0);
+    }
+    REQUIRE(written->modded.story.size() == 2);
+    CHECK(written->modded.story[0] == coney::MissionProgress{.id = "gone.docks", .complete = true, .ranks = 1});
+    CHECK(written->modded.story[1] == coney::MissionProgress{.id = "yard-brawl.alley",
+                                                             .complete = true,
+                                                             .ranks = 1,
+                                                             .bestScore = 640,
+                                                             .total = 90,
+                                                             .grade = 1,
+                                                             .percent = 55});
+
+    // Loaded again in a new session, the mission is complete under its new number.
+    GameState next;
+    DiskProfileStore store(dir.path(), next);
+    REQUIRE(store.load(0));
+    next.modStory.assign(7, "yard-brawl.alley");
+    CHECK(next.modStory.isLevelComplete(7) == true);
+    CHECK(next.modStory.isComplete("gone.docks"));
+    // A new profile starts with no story entries.
+    REQUIRE(store.create(1, chosen("VERMIN")));
+    CHECK(next.modStory.entries().empty());
+}
+
 TEST_CASE("a save made by a newer Coney is listed as damaged under its name", "[disk_profile_store]") {
     // Expected: unverified, #1179 (Coney's own rule, save.md#save-damaged; the slot +0x24 of save.md#slots)
     TempDir dir;

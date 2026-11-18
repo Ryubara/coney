@@ -251,6 +251,21 @@ The merge of the story mods' missions into that chain is built too: `story::merg
 [Merging and refusals](../guides/studio/mission-mods.md#graph-merge) describes; without a story mod its graph is the
 original's, with the same hash. Nothing calls it yet, since Coney does not start mods yet.
 
+Mod missions' progress is kept by mission id: `ModStoryProgress` (`repo:src/warriors/mod_story_progress.h`, held in
+the game state) routes `UM_Unlock` and `UM_IsLevelComplete` on a mod level's session number to the save's story
+section ([Profiles: story and mod sections](save.md#save-mods)) instead of the unlock records. The calls themselves
+are the original's (`Script_UMUnlock` `0x004237e8` and `Script_UMIsLevelComplete` `0x004238a8`, confirmed (code)):
+they keep a level's progress only as records `(level, group, item)`, so for a mod level the route keeps what those
+records would mean, `(level, 0, 0)` as the completion and `(level, 0, k)` for k 1-32 as rank record k, and nothing for
+any other call, since a pool number has no records for the original's search (`Unlockables_Unlock` `0x00423f70`) to
+match (inferred from the code: the pool's numbers are the ones no level record uses). A mod mission's best record
+keeps `MissionBest`'s four described fields. The save system puts a loaded profile's entries in and takes them back
+at each save, entries of mods the session lacks included, and a new profile starts with none; no checkpoint is kept.
+`latestMission` walks the chain latest first, an original mission by its record and a mod's by its entry, so a save
+loaded without one of its story mods goes on from the latest mission present, and `warnMissingStoryMods` names each
+missing mod in the run log. Nothing gives mod missions numbers in the game yet: the natives over the graph
+([#1300](issue:1300)) number them from the pool with `ModStoryProgress::assign` and call the other two.
+
 ## Open questions {#open-questions}
 
 - **What unlocks a flashback's trophy.** `flashback.Setup` needs a record of type 7 or 9 for the trophy's level; which

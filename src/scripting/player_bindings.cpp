@@ -288,14 +288,21 @@ void addUnlockBindings(LuaVm& vm, GameState& state) {
         unlocks.reset();
         return binding::none();
     });
+    // A mod level's number goes to its mission's story entry, any other to the original's records
+    // (docs/guides/studio/mission-mods.md#graph-progress).
     add(vm, "UM_Unlock", [&state, &unlocks](std::span<const Value> args) {
-        unlocks.unlock(state.saved, static_cast<std::uint8_t>(unsignedArg(args, 0)),
-                       static_cast<std::uint8_t>(unsignedArg(args, 1)),
-                       static_cast<std::uint8_t>(unsignedArg(args, 2)));
+        const auto level = static_cast<std::uint8_t>(unsignedArg(args, 0));
+        const auto group = static_cast<std::uint8_t>(unsignedArg(args, 1));
+        const auto item = static_cast<std::uint8_t>(unsignedArg(args, 2));
+        if (!state.modStory.unlock(level, group, item)) {
+            unlocks.unlock(state.saved, level, group, item);
+        }
         return binding::none();
     });
     add(vm, "UM_IsLevelComplete", [&state, &unlocks](std::span<const Value> args) {
-        return binding::boolean(unlocks.isLevelComplete(state.saved, static_cast<std::uint8_t>(unsignedArg(args, 0))));
+        const auto level = static_cast<std::uint8_t>(unsignedArg(args, 0));
+        const std::optional<bool> modComplete = state.modStory.isLevelComplete(level);
+        return binding::boolean(modComplete.has_value() ? *modComplete : unlocks.isLevelComplete(state.saved, level));
     });
     // @orig 0x00423868 UM_IsDataUnlocked (unknown)
     add(vm, "UM_IsDataUnlocked", [&state, &unlocks](std::span<const Value> args) {
@@ -311,7 +318,8 @@ void addUnlockBindings(LuaVm& vm, GameState& state) {
                                                     unsignedArg(args, 1), booleanArg(args, 2, true)));
     });
     // `UM_GetUnlockablesByType(type, out)`: out[1..32] become the indices of the records of the type, in table order,
-    // then 65535. **Coney choice**: past 32 matches the rest are dropped (the original overruns its buffer).
+    // then 65535. Coney's choice: past 32 matches the rest are dropped (the original overruns its buffer), and with no
+    // records the 32 slots are still set (the original then writes nothing; what its caller passes on is unstudied).
     // @orig 0x004237a8 UM_GetUnlockablesByType (unknown)
     // @orig 0x00423eb0 Unlockables_ListByType (unknown)
     add(vm, "UM_GetUnlockablesByType", [&unlocks](std::span<const Value> args) -> binding::Results {
@@ -322,6 +330,7 @@ void addUnlockBindings(LuaVm& vm, GameState& state) {
         }
         const auto type = static_cast<std::uint8_t>(unsignedArg(args, 0) & 0xffU);
         std::vector<double> indices;
+        // Coney's choice (above): at most 32 matches, and an empty table still sets the 32 slots.
         for (std::size_t index = 0; index < unlocks.records().size() && indices.size() < kSlots; ++index) {
             if (unlocks.records()[index].type == type) {
                 indices.push_back(static_cast<double>(index));

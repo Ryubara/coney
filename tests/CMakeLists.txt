@@ -290,6 +290,7 @@ add_executable(coney_tests
     warriors/disk_profile_store_test.cpp
     warriors/game_over_test.cpp
     warriors/level_table_test.cpp
+    warriors/mod_story_progress_test.cpp
     warriors/player_state_test.cpp
     warriors/profile_record_test.cpp
     warriors/save_game_test.cpp

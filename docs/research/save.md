@@ -14,6 +14,7 @@ owns:
     - "0x00421d98"
     - "0x00421e68"
     - "0x00421f98"
+    - "0x00422358"
 ---
 # Profiles, options and saving
 
@@ -491,6 +492,11 @@ difference, and holds the mod's own bytes. A save with any story entry or mod se
 it back there. `DiskProfileStore` serves one folder, and which of the two a slot's file lives in is the mod loader's
 choice ([Modded saves](../guides/studio/mods.md#saves-replays)).
 
+During a session the story entries live in the game state (`GameState::modStory`, `ModStoryProgress`): `load` puts the
+slot's entries there, `create` empties them and the autosave writes them back with the slot's mod sections, so a
+mission of a mod the session does not run keeps its entry. `UM_Unlock` and `UM_IsLevelComplete` fill and ask them on a
+mod level's number ([Story progress: In Coney](story-progress.md#coney)).
+
 #### Versions and migrations {#save-versions}
 
 | Version | What | Migration to the next |
@@ -525,6 +531,19 @@ outside the rules) has no name, and only a file without the magic is listed unde
 Whether `PM_TooManyProfiles` and `PM_NoSpace`, unreachable on the PS2 (`PM_Greet` never returns 1 or 2), are the Xbox
 version's screens: testable by finding `PM_Greet` in the Xbox executable and checking whether it returns 1 and 2 there
 (speculative until then).
+
+### Loading an empty or damaged slot {#q-load-empty-slot}
+
+`SaveSystem_LoadSlot` (`0x00422358`) makes the slot current and reads it with `Profile_Read`, then returns 1 whatever
+the slot held (confirmed (code)). Whether the profile screens ever load an empty or damaged slot is not traced
+(speculative that they never do). Coney's `DiskProfileStore::load` refuses one: a stand-in until this is known.
+
+### UM_GetUnlockablesByType's edges {#q-unlock-list-edges}
+
+With no unlockables table (`0x006fe998` zero) `UM_GetUnlockablesByType` (`0x004237a8`) writes nothing, and
+`Unlockables_ListByType` (`0x00423eb0`) writes a 33rd match past its 32 entries (confirmed (code)). What the binding's
+caller then hands the script, and whether any script lists more than 32 records of one type, are not studied
+(speculative). Coney sets all 32 slots of the script's table in both cases and drops matches past 32: stand-ins.
 
 ## How this was checked
 
