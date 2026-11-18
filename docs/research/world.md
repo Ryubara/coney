@@ -612,6 +612,12 @@ save work, [Visibility](#visibility)), no camera is added to or taken from each 
 arcs' place in step 10 is not traced. Not ported yet: nothing drawn under a full-screen fade (step 1), the humans'
 halved fog distance (step 7), and the litter and the embers in step 10.
 
+**The part read and free** are `WorldSet::readPart` and `freePart` ([Part file](#part-file)). Their stand-ins: no
+`Sectors<i>` clump or pool heap (librw allocates; the budget takes the manifest's part size rather than measuring
+the pool), the dictionary stays in the texture lookup while the part is loaded, the atomics keep librw's render
+callback (nothing calls it) and get no material texture check, and a part always frees (no sector is left in another
+state than 4), so the free returns nothing.
+
 **Reading and decoding** (2026-10-04, unchanged):
 
 - **`src/world/world_streams.h`** reads the layout of a world stream (`inspectWorldStream`: part count, dictionary,
