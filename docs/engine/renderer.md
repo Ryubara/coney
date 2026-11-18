@@ -289,7 +289,7 @@ from another loaded part's dictionary; its id would then go stale when that part
 through librw (the material holds a reference on the librw texture), but the GPU renderer (item 13) would draw it
 untextured.
 
-**The disc has none** (NTSC-U PS2, 2026-11-18, counts only): the disc check *no part's material takes its texture from
+**The disc has none** (NTSC-U PS2, counts only): the disc check *no part's material takes its texture from
 another part's dictionary* (`disc_world_streaming_test.cpp`) loads every part of each of the 80 levels, then loads each
 of the 1,564 parts again with every other part loaded, so the lookup could reach any other part's dictionary before the
 worlds' (parts are newer). Of 88,406 textured materials (19 have no texture), **0** take their texture from another

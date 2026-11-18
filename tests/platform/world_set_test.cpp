@@ -154,9 +154,9 @@ TEST_CASE("a world whose heap does not fit is not loaded", "[world_set]") {
     CHECK(budget.used() == 0);
 }
 
-// Expected: renderer.md#texture-lifetime (Coney's own bookkeeping; the lookup is graphics.md#texture-lookup,
-// confirmed (code) at 0x00489170): part 2's material names a texture only part 1's dictionary holds, so with part 1
-// loaded first the lookup finds it there, and the set counts that material as borrowing another part's texture.
+// Expected: graphics.md#texture-lookup, confirmed (code): part 2's material names a texture only part 1's dictionary
+// holds, so with part 1 loaded first the lookup finds it there, and the set counts that material as borrowing another
+// part's texture (the count is Coney's own guard: docs/engine/renderer.md#texture-lifetime).
 TEST_CASE("a material taking its texture from another part's dictionary is counted", "[world_set]") {
     auto engine = RenderEngine::start(RenderBackend::Null, {});
     REQUIRE(engine.has_value());

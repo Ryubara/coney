@@ -276,6 +276,7 @@ TEST_CASE("every level's streamed worlds stream under a camera path within the b
     CHECK(tight.partsEverLoaded == tight.parts);
 }
 
+// Expected: level-loading.md#worldmanager-loadlevel, confirmed (code): a level's worlds are found by its name.
 TEST_CASE("the playable levels are the level names with a streamed world", "[disc][world_streaming]") {
     const char* discPath = SDL_getenv("CONEY_DISC");
     if (discPath == nullptr || *discPath == '\0') {
@@ -299,6 +300,7 @@ TEST_CASE("the playable levels are the level names with a streamed world", "[dis
 // #texture-lifetime): with every other part of the level loaded, each part is loaded again last, so the lookup can
 // find any name in any other part's dictionary before the worlds' (parts are newer). WorldSet counts the materials
 // whose texture comes from another part (WorldSet::borrowedTextures()); counts only.
+// Expected: world.md#part-file, confirmed (code): 80 levels, and each part's materials read after its dictionary.
 TEST_CASE("no part's material takes its texture from another part's dictionary", "[disc][world_streaming]") {
     const char* discPath = SDL_getenv("CONEY_DISC");
     if (discPath == nullptr || *discPath == '\0') {
