@@ -288,14 +288,21 @@ void addUnlockBindings(LuaVm& vm, GameState& state) {
         unlocks.reset();
         return binding::none();
     });
+    // A mod level's number goes to its mission's story entry, any other to the original's records
+    // (docs/guides/studio/mission-mods.md#graph-progress).
     add(vm, "UM_Unlock", [&state, &unlocks](std::span<const Value> args) {
-        unlocks.unlock(state.saved, static_cast<std::uint8_t>(unsignedArg(args, 0)),
-                       static_cast<std::uint8_t>(unsignedArg(args, 1)),
-                       static_cast<std::uint8_t>(unsignedArg(args, 2)));
+        const auto level = static_cast<std::uint8_t>(unsignedArg(args, 0));
+        const auto group = static_cast<std::uint8_t>(unsignedArg(args, 1));
+        const auto item = static_cast<std::uint8_t>(unsignedArg(args, 2));
+        if (!state.modStory.unlock(level, group, item)) {
+            unlocks.unlock(state.saved, level, group, item);
+        }
         return binding::none();
     });
     add(vm, "UM_IsLevelComplete", [&state, &unlocks](std::span<const Value> args) {
-        return binding::boolean(unlocks.isLevelComplete(state.saved, static_cast<std::uint8_t>(unsignedArg(args, 0))));
+        const auto level = static_cast<std::uint8_t>(unsignedArg(args, 0));
+        const std::optional<bool> modComplete = state.modStory.isLevelComplete(level);
+        return binding::boolean(modComplete.has_value() ? *modComplete : unlocks.isLevelComplete(state.saved, level));
     });
     // @orig 0x00423868 UM_IsDataUnlocked (unknown)
     add(vm, "UM_IsDataUnlocked", [&state, &unlocks](std::span<const Value> args) {

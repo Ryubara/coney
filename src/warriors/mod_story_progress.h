@@ -89,6 +89,10 @@ class ModStoryProgress {
 [[nodiscard]] const story::StoryStep* latestMission(const story::StoryGraph& graph,
                                                     const std::function<bool(int level)>& isOriginalComplete,
                                                     const ModStoryProgress& progress);
+/// No walk over a temporary graph: the step returned points into it.
+const story::StoryStep* latestMission(story::StoryGraph&& graph,
+                                      const std::function<bool(int level)>& isOriginalComplete,
+                                      const ModStoryProgress& progress) = delete;
 
 /// The mods whose story entries name a mission `graph` lacks, each once, sorted: the mods a loaded save had that the
 /// session does not run. Writes one warning naming each to the run log; their entries stay and are saved again.

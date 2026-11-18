@@ -491,6 +491,11 @@ difference, and holds the mod's own bytes. A save with any story entry or mod se
 it back there. `DiskProfileStore` serves one folder, and which of the two a slot's file lives in is the mod loader's
 choice ([Modded saves](../guides/studio/mods.md#saves-replays)).
 
+During a session the story entries live in the game state (`GameState::modStory`, `ModStoryProgress`): `load` puts the
+slot's entries there, `create` empties them and the autosave writes them back with the slot's mod sections, so a
+mission of a mod the session does not run keeps its entry. `UM_Unlock` and `UM_IsLevelComplete` fill and ask them on a
+mod level's number ([Story progress: In Coney](story-progress.md#coney)).
+
 #### Versions and migrations {#save-versions}
 
 | Version | What | Migration to the next |
