@@ -350,6 +350,68 @@ mashing is measured in [Being hit](#being-hit-runtime).
 
 The victim can act again when its reaction clip ends (standing), its stun ends, or its rise ends.
 
+#### The stun's end and the way back into the fight {#stun-end}
+
+When a stunned human stands again, and when a stunned AI fighter acts again. Read in Ghidra: confirmed (code) where no
+other level is given.
+
+- **The stun ends only with no clip holding the human.** `Human_UpdateDown` (`0x00256a60`) tests a standing stun
+  (`Human_IsStunnedStanding`: `0x100000` and not `0x80000`) only when the human has no held flag at all and none of the
+  states `0x1c18003ff0`; then, once now passes `+0x100` and the human has no endless stun (`+0xe0` `0x8000000`), it
+  calls `Human_EndStun` (`0x0022f8d8`). So a reaction (held `0x400`), a paired reaction (`0x400000`) or the stun's
+  enter clip keep the stun's state past its time; the stun's loop holds nothing, so the stun ends in it at its time.
+  "Passes" is strict: both this test and the rise's (`+0x104`) are the time minus now below zero, so an update that
+  lands on the time (a civilian's 2000 ms ground or the player's 200 ms stun is a whole number of 33/33/34 ms clock
+  steps) keeps the stun or the ground one update more.
+- **`Human_EndStun` clears the state as 357 starts.** It pops move style `0xe`, sets state `0x20000000`, enters the
+  fight stance (state `0x1`), clears `0x100000` and sets record `+0x18` = `0xb`. The idle builder that runs next
+  (`Human_BuildIdleTasks`, `0x0025f770`) plays 357 `STUNNED_EXIT` from 356, and with `+0x18` = `0xb` it plays the
+  action clip after record `+0x28` (inferred to be 357 too: at runtime 357 followed a reaction directly, below). The
+  clip holds `0x80000`, or `0x40000000` when the player record's `+0x1b` is set.
+- **A game flag also slows the human.** When the word at `0x0051021c` is non-zero and the human has no state
+  `0x80000`, `Human_EndStun` sets the speed multiplier `+0x3a4` ([Humans](characters.md)) to 0.65 (`0x3f266666`).
+  Confirmed (code); the word is 0 in the executable and its one reference is this read (no writer found), so what
+  sets it is unknown ([Open questions](#open-questions)). Knocked down, dead or out, it only removes style `0xe` and
+  clears `0x100000`.
+- **A stun after a knockdown starts again as the rise ends.** `Human_GetUp` (`0x0022f3c8`), which the rise 199's end
+  callback `Human_EndDownState` (`0x0025e250`) calls, puts a stunned human in move style `0xe` and calls
+  `Human_SetStunTimer` (`0x0022f9e0`) with no attacker: the stun's end becomes now + the class's stun time, or now - 1
+  ms for a human with flag `0x100`, replacing `Human_SetDownTimers`' rise + stun time. At runtime 653's stun on the
+  player stood 7 updates in 356 after 199, then 357 ([Being hit at runtime](#being-hit-runtime)).
+- **A hit during the rise leaves the human down, and he rises again.** While 199 holds `0x8000` a hit plays a
+  standing reaction: `Human_ApplyPendingDamage` (`0x00265f70`) sends a human in `0xe0000` that holds any of
+  `0xc48000` to `Hit_PlayReaction`, not to the ground's 195. `Human_PlayReaction` (`0x0026a6d0`) calls
+  `Human_Stun` (`0x0022f658`) only for an attack whose range flags hold `0x400`, when its caller asks for a stun, or
+  for a human `Human_IsStunnedStanding` (`0x00223bc0`) finds stunned and standing, which is false during 199 (he holds
+  `0x80000`): a hit that does not stun leaves the stun's time alone. It cuts the stack's top, 199's task, whose
+  cut-off drops its end callback ([When a clip ends](formats/animation.md#clip-end)): `Human_EndDownState` and
+  `Human_GetUp` never run, so the human keeps state `0x80000` with his ground time past. Once the reaction ends,
+  `Human_UpdateDown` (no held flag, knocked down) plays 199 again at once, and that rise's end restarts the stun as
+  above. A second hit during the reaction (held `0x400`, not in `0xc48000`) gets the ground's 195. Confirmed (code); not
+  seen at runtime. In the first 0.1 s of 199 the stack's top is the rise's blend-out task instead, whose cut-off is
+  not read.
+- **A clip that ends while still stunned returns to 355.** `Human_BuildIdleTasks` plays 355 `STUNNED_ENTER`
+  (`0x163`) whenever state `0x100000` is set, and 356 `STUNNED_IDLE` follows it; `Human_PlayStanceIdleState`
+  (`0x0025fa48`) does the same for the fight stance's idle.
+- **The stunned reaction goal ends the update after.** `StunnedGoal_Process` (`0x002b4bb8`) is done once the human is
+  no longer stunned standing, so the brain's next update ends it and the stack's top, the fight goal, runs in that
+  update ([AI goals](ai-goals.md#goal-reactions)).
+- **The fighter is free in 357.** `Human_CanUseAttackKind` (`0x002240e8`) counts a human free when his state has
+  none of `0x7bf9e9f7ff0`; held flags and the clip playing are not read. With the stun's state gone the fight goal
+  picks a kind and queues its next action in that same update, while 357 still plays.
+
+At runtime (confirmed (runtime), run r-20261031-civ-stun; `repo:research/traces/scenarios/civ_stun.toml`, the
+`civ_knockdown` fighter, updates of 1/30 s): the player's `SSS3` hit the fighter at update 54, which played 276 (held
+`0x400`) and was stunned (state `0x100003`) with `+0x100` = the hit + 750 ms. The time passed at update 77, but 276
+held the stun until its end: at update 81 357 started, held `0x80000`, and the state was `0x3`; at 82 the reaction goal
+was gone and the fight goal had queued a move to the player, 357 still playing until 104. With the stun's time still
+to run when the clip ends, the clips go on to 355 and 356: in the `civ_knockdown` run of task 691 (the fighter's grab
+countered with 76, the fighter playing 77 from update 21) 77 ended at 67, 355 played at 68 (held `0x80000`), 356 from
+69 (held nothing), and the stun ended as 357 started at 80, the reaction goal at 81, with a move queued at 81
+(seen in that task's trace, which has no run record; a rerun of `civ_knockdown` with `--run-record` would give one).
+That stun's time ran 750 ms from update 57, as 76 and 77 ended, not from 21 (inferred from the 750 ms and the update
+357 began; [Open questions](#open-questions)).
+
 #### Scripted knockdowns, stuns and hits {#scripted-knockdowns}
 
 Read in Ghidra: confirmed (code) where no other level is given; each runtime block says confirmed (runtime).
@@ -1006,6 +1068,26 @@ implementation](combat/index.md#coneys-implementation) says what each file does,
 differs](combat-diffs.md) lists every difference in the fight. A bat's hit in Coney is on [Combat: throws, weapons in
 hand](combat-throws.md#bat-knockdown-coney).
 
+### The stun's end {#stun-end-coney}
+
+`Victim::step()` (`repo:src/human/victim.cpp`) keeps the stun's state until no clip drives the human, then plays 357
+and clears it, or 355 and the loop 356 while its time still runs, both the stun and the rise waiting until their time is
+past, not on it; a stun after a knockdown starts again as 199 ends (`Human_GetUp`); a hit during 199 lays the victim
+down again under its standing reaction, after which it rises with 199 again; the rise waits for no clip driving the
+human; and a press on the update that lands on the rise's time still cuts the ground; the AI's free test (`freeHuman`,
+`repo:src/ai/attack_views.cpp`) reads the state alone. On `civ_stun` Coney's fighter matches the original's offsets
+from the stun's start: 357 and the state's end 27 updates after it, the reaction goal's end and the fight's next move
+28 after. **Coney's choices**: a boss's tired stun (`Victim::stunUntil`) starts in 356 without 355, and Coney's
+counter of the player's grab starts the player's stun time at the counter ([Open questions](#open-questions)).
+**Stand-ins**: the stun's end keeps the speed multiplier as it is; the original's 0.65 under the flag at `0x0051021c`
+is not ported ([#1346](issue:1346)). Coney's ground ends as 199 starts, the rise clip holding the victim instead,
+where the original keeps the knocked-down state (`0x80000`) until 199 ends (`Victim::step`, step 2); a hit that cuts
+199 puts the ground back (`Victim::react`). A knockdown stuns in Coney when the attack stuns or the victim already is; `Human_PlayReaction`
+(`0x0026a6d0`) stuns at a knockdown when the reaction's id is above `0x127` (the crushing 296-303), confirmed (code)
+([#685](issue:685)). **Gap**: a victim with flag `0x100` (never stunned) that is already stunned
+loses its stun at a knockdown; the original keeps it until after the rise (`Human_SetDownTimers`, `0x0022f4f8`;
+[#1351](issue:1351)).
+
 ### Damage {#damage-coney}
 
 Coney quarters a fighter's strikes and grab strikes on class `0x80` when its brain is a Warrior's
@@ -1179,6 +1261,13 @@ fade and the `dyn_cross` icon are not built.
   `+0x18`, which `Mount_OnStrikeEnd` compares with 0.25 to choose a reversal over a break ([Down and under
   attack](#ground-escape)), is the left stick's magnitude, as Coney reads it. A watch on it with the stick pushed and at
   rest would tell.
+- **The grab counter's stun time**{#q-pair-stun}: which call starts the countered grabber's 750 ms when 76 and 77 end
+  rather than when they start ([The stun's end](#stun-end)); `Human_Stun` (`0x0022f658`) on a stunned human restarts
+  the time through `Human_SetStunTimer`. Coney's counter of the player's grab starts it at the counter. A watch on
+  record `+0x100` during the counter would name the writer.
+- **The stun end's slow flag**{#q-endstun-speed}: what writes the word at `0x0051021c` that makes `Human_EndStun` set
+  the speed multiplier to 0.65 ([The stun's end](#stun-end)); Ghidra shows only the read. Coney keeps the speed (a
+  stand-in). A PCSX2 write watchpoint on the word through a level, or a search for pointers to it, would tell.
 - **A knocked-out tackled victim**{#q-tackle-knockout}: whether a tackled victim is ever knocked out when
   `Tackle_OnVictimRiseEnd` fires ([Who sets and clears the knocked-out bit](#knocked-out-bit)). A breakpoint on the
   hook with the state word read would tell.
@@ -1202,6 +1291,8 @@ records existed, so none of them has one, except the knock-out's timing (2.9.129
   `repo:research/traces/scenarios/revive_crew.toml`; the setup is beside the runs ([at runtime](#revive-runtime)).
 - **Knocked out in a Rumble brawl**: the hook recordings of [Rumble](rumble.md#gang-battle-results).
 - **Hit blood**: scenario `blood_knife_grab`, the knife grab kill with call hooks on the functions named.
+- **The stun's end**: 2026-10-31, PCSX2 v2.9.129, scenario `repo:research/traces/scenarios/civ_stun.toml` (the
+  field set `stun` reads record `+0x100`), with its run record `r-20261031-civ-stun`.
 - **When the knock-out comes**: 2026-10-28, PCSX2 v2.9.129, scenario
   `repo:research/traces/scenarios/knockout_timing.toml`, with its run record `r-20261028-knockout-timing`.
 
@@ -1234,8 +1325,9 @@ civilian's clips).
 **Stun and ground time.** The player's stun is **200 ms** (`+0x100` = hit + 200): shorter than his reaction clips, so
 the stunned reactions went straight to 357 `STUNNED_EXIT` when the clip ended (0.9-1.2 s after the hit), with no
 356 loop. Knocked down, `+0x104` = hit + **2750 ms**; the player lay in 196 and rose with 199 **83 updates (2.77 s)
-after the hit** with no input. The crushing 653 also set the stun to the rise + 200 ms, so after 199 he stood in 356
-for 7 updates, then 357.
+after the hit** with no input. The crushing 653 also set the stun to the rise + 200 ms, a time long past by the end of
+the 28-update 199; after 199 he stood in 356 for 7 updates, then 357, because 199's end restarts the stun
+([The stun's end](#stun-end)).
 
 **Mashing.** A press while still in the knockdown reaction (288) did nothing. Pressed while lying in 196 with about
 1.3 s left, one square press made him rise on the next update in 2 runs of 5, and about 13 updates later (when the

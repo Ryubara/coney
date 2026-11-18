@@ -30,11 +30,15 @@ constexpr float kRunSpeedSlack = 0.01F;
 // The grab needs a fifth of the power meter.
 constexpr int kGrabPowerShare = 5;
 
-// Whether `human` is free: on its feet, in no pair, not lying, stunned or reacting.
+// Whether `human` is free: its state word holds none of `0x7bf9e9f7ff0` (`Human_CanUseAttackKind` `0x002240e8`): on
+// its feet, in no pair, not lying, stunned or out of health. A clip it plays is no bar: the original's test reads the
+// state alone, so a fighter is free in the stun's end clip 357 (docs/research/combat-reactions.md#stun-end).
+// **Coney reading**: Coney's fighter has no state word, so the bits are read from its states.
+// @orig 0x002240e8 Human_CanUseAttackKind (unknown)
 bool freeHuman(const human::Human& human) {
     const human::Fighter& fighter = human.fighter();
     return human.state() == human::TargetState::Standing && !fighter.inPair() && !fighter.victim().grounded() &&
-           !fighter.victim().stunned() && !fighter.helpless(human.animator());
+           !fighter.victim().stunned() && !fighter.health().depleted();
 }
 
 // Whether `human` is down, out of the fight or arrested (state any of `0xe0000`).

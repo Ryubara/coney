@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -16,6 +17,8 @@
 #include "combat/combat_tuning.h"
 #include "combat/grabbed.h"
 #include "combat/player_combat.h"
+#include "combat/power_class.h"
+#include "combat/reactions.h"
 #include "human/fighter.h"
 #include "human/human.h"
 #include "human/human_animator.h"
@@ -113,19 +116,32 @@ TEST_CASE("the player's 200 ms stun goes straight to 357 when the reaction ends,
     ClipLog log;
     // SX2 (0x1a, stun) from in front: 280.
     fight.human().takeHit(hitOf(15, 37, 0x1a, 0xc00));
-    std::uint64_t stunOver = 0;
-    fight.run("", 40, [&](std::uint64_t frame) {
-        log.note(fight.human().animator().animId());
-        if (stunOver == 0 && !fight.human().fighter().victim().stunned()) {
-            stunOver = frame;
+    // The stun's time (record +0x100) as the stun starts, and the update its state clears.
+    std::uint64_t stunTimeMs = 0;
+    bool stunTimeRead = false;
+    bool exitAtClear = false;
+    bool cleared = false;
+    fight.run("", 40, [&](std::uint64_t) {
+        const coney::human::Victim& victim = fight.human().fighter().victim();
+        const std::uint32_t clip = fight.human().animator().animId();
+        log.note(clip);
+        if (!stunTimeRead && victim.stunned()) {
+            stunTimeRead = true;
+            stunTimeMs = victim.stunUntilMs() - fight.human().nowMs();
+        }
+        if (stunTimeRead && !cleared && !victim.stunned()) {
+            cleared = true;
+            exitAtClear = clip == 357U;
         }
     });
     CHECK(log.has(280));
     CHECK(log.has(357));
     CHECK_FALSE(log.has(356));
-    // 200 ms is 6 updates.
-    CHECK(stunOver >= 5);
-    CHECK(stunOver <= 7);
+    // The stun's time is 200 ms from the hit; its state lasts through the reaction (Human_UpdateDown, 0x00256a60,
+    // ends a standing stun only with no held flag) and clears as 357 starts (combat-reactions.md#stun-end).
+    CHECK(stunTimeMs == 200);
+    CHECK(cleared);
+    CHECK(exitAtClear);
     // Free again after 357.
     CHECK_FALSE(fight.human().fighter().helpless(fight.human().animator()));
 }
@@ -152,11 +168,12 @@ TEST_CASE("knocked down the player lies 2750 ms in 196, then rises with 199", "[
     CHECK(fight.human().fighter().health().value() == 900 - 46);
 }
 
-TEST_CASE("653's stun outlasts the rise: 199, then 357", "[human][combat]") {
+TEST_CASE("653's stun lasts through the rise: stunned as 199 starts, 357 after it", "[human][combat]") {
     // Expected: combat-reactions.md#being-hit-runtime, confirmed (runtime)
     const FightCharacter character;
     Fight fight(character, 30.0F);
-    // The crushing special (0x39) with its stun: 303, down, stunned until the rise + 200 ms.
+    // The crushing special (0x39) with its stun: 303, down, still stunned as 199 starts (its time restarts as 199 ends,
+    // so 356 comes between 199 and 357: the test "653's stun restarts as 199 ends" checks that order).
     fight.human().takeHit(hitOf(653, 50, 0x39, 0x400));
     ClipLog log;
     bool stunnedAtRise = false;
@@ -172,6 +189,131 @@ TEST_CASE("653's stun outlasts the rise: 199, then 357", "[human][combat]") {
     const auto rise = std::ranges::find(log.clips(), 199U);
     REQUIRE(rise != log.clips().end());
     CHECK(std::find(rise, log.clips().end(), 357U) != log.clips().end());
+}
+
+TEST_CASE("the stun ends and the victim rises only once their time is past, not on it", "[human][combat]") {
+    // Expected: combat-reactions.md#stun-end, confirmed (code): Human_UpdateDown (0x00256a60) tests the stun's and the
+    // ground's time minus now below zero, so an update that lands on the time keeps the stun and the ground.
+    const FightCharacter character;
+    coney::human::HumanAnimator animator(character.anims, coney::human::AnimSlots::player());
+    coney::human::Victim victim(combat::kCivilianPowerClass);
+    // Standing stunned, in the loop (no clip drives the human): ends after 1000, not at it.
+    victim.stunUntil(1000);
+    victim.step(animator, coney::human::kAnimFightIdle, 1000, true);
+    CHECK(victim.stunned());
+    victim.step(animator, coney::human::kAnimFightIdle, 1001, true);
+    CHECK_FALSE(victim.stunned());
+    CHECK(animator.animId() == static_cast<std::uint32_t>(combat::kStunEnd));
+    // The civilian's 2000 ms on the ground, a whole number of 1/30 s clock steps (33, 33, 34 ms): it rises after it.
+    // Lying in the ground's loop (a fresh animator: nothing steps this one, so its 357 would still drive the human and
+    // hold the rise).
+    coney::human::HumanAnimator lying(character.anims, coney::human::AnimSlots::player());
+    victim.knockDown(3000, false);
+    REQUIRE(victim.riseAtMs() == 5000);
+    CHECK_FALSE(victim.step(lying, coney::human::kAnimFightIdle, 5000, true));
+    CHECK(victim.grounded());
+    CHECK(victim.step(lying, coney::human::kAnimFightIdle, 5001, true));
+    CHECK_FALSE(victim.grounded());
+}
+
+TEST_CASE("a stun ended from outside ends on the next step, whatever its time", "[human][combat]") {
+    // Expected: combat-reactions.md#stun-end, confirmed (code): Human_EndStun (0x0022f8d8) clears the stun at once
+    // when another system ends it (the boss tired goal, its break); standing, Coney's step that update plays 357, and
+    // knocked down the stun is gone at once.
+    const FightCharacter character;
+    coney::human::HumanAnimator animator(character.anims, coney::human::AnimSlots::player());
+    coney::human::Victim victim(combat::kCivilianPowerClass);
+    // Standing in the loop, its time ending on this very update: the strict test alone would keep it.
+    victim.stunUntil(1000);
+    victim.expireStun();
+    victim.step(animator, coney::human::kAnimFightIdle, 1000, true);
+    CHECK_FALSE(victim.stunned());
+    CHECK(animator.animId() == static_cast<std::uint32_t>(combat::kStunEnd));
+    // Knocked down with a stun after the rise: ended, it is forgotten before the rise.
+    victim.knockDown(2000, true);
+    REQUIRE(victim.stunned());
+    victim.expireStun();
+    CHECK_FALSE(victim.stunned());
+    CHECK(victim.grounded());
+}
+
+TEST_CASE("a press on the update that lands on the rise time gets the victim up that update", "[human][combat]") {
+    // Expected: combat-reactions.md#ground-escape, confirmed (code): Human_UpdateDown (0x00256a60) cuts the ground time
+    // on any command while knocked down, then tests the rise (time minus now below zero) in the same update.
+    const FightCharacter character;
+    coney::human::HumanAnimator animator(character.anims, coney::human::AnimSlots::player());
+    coney::human::Victim victim(combat::kCivilianPowerClass);
+    victim.knockDown(3000, false);
+    REQUIRE(victim.riseAtMs() == 5000);
+    CHECK(victim.mash(animator, 5000));
+    CHECK(victim.step(animator, coney::human::kAnimFightIdle, 5000, true));
+    CHECK_FALSE(victim.grounded());
+}
+
+TEST_CASE("653's stun restarts as 199 ends: 356 for the stun's 200 ms, then 357", "[human][combat]") {
+    // Expected: combat-reactions.md#being-hit-runtime, confirmed (runtime): after 199 he stood in 356 for 7 updates,
+    // then 357; Human_GetUp (0x0022f3c8), 199's end callback, restarts the stun time (Human_SetStunTimer), confirmed
+    // (code).
+    const FightCharacter character;
+    Fight fight(character, 30.0F);
+    fight.human().takeHit(hitOf(653, 50, 0x39, 0x400));
+    bool rose = false;
+    bool ended = false;
+    int loopAfterRise = 0;
+    fight.run("", 140, [&](std::uint64_t) {
+        const std::uint32_t clip = fight.human().animator().animId();
+        rose = rose || clip == 199U;
+        ended = ended || (rose && clip == 357U);
+        if (rose && !ended && clip == 356U) {
+            ++loopAfterRise;
+        }
+    });
+    REQUIRE(rose);
+    CHECK(ended);
+    // 200 ms is 6 updates; the one 199 ends on and the one 357 starts on put it at 6-7.
+    CHECK(loopAfterRise >= 6);
+    CHECK(loopAfterRise <= 7);
+}
+
+TEST_CASE("a hit during 199 leaves the victim down: its reaction, 199 again, then the stun's 200 ms in 356",
+          "[human][combat]") {
+    // Expected: combat-reactions.md#stun-end, confirmed (code): a hit on a human holding 199's 0x8000 plays a standing
+    // reaction (Human_ApplyPendingDamage 0x00265f70); Human_PlayReaction (0x0026a6d0) cuts 199's task, whose cut-off
+    // (0x00105d70) drops its end callback, so Human_GetUp never runs: the human stays down (0x80000) and
+    // Human_UpdateDown (0x00256a60) plays 199 again once the reaction ends, its end restarting the stun.
+    const FightCharacter character;
+    Fight fight(character, 30.0F);
+    fight.human().takeHit(hitOf(653, 50, 0x39, 0x400));
+    // Into 199, then 3 updates of it (the clip lasts 12).
+    int riseUpdates = 0;
+    for (int update = 0; update < 140 && riseUpdates < 4; ++update) {
+        fight.run("", 1);
+        riseUpdates += fight.human().animator().animId() == 199U ? 1 : 0;
+    }
+    REQUIRE(riseUpdates == 4);
+    REQUIRE(fight.human().fighter().victim().stunned());
+    // The civilian's S1 (14) from in front: 272, a stun by Coney's rule (he is stunned; the original restarts no stun
+    // here, as Human_IsStunnedStanding is false during 199, and no outcome differs). He is down again while it plays.
+    fight.human().takeHit(hitOf(12, 14, 0x0a, 0x800));
+    fight.run("", 1);
+    CHECK(fight.human().animator().animId() == 272U);
+    CHECK(fight.human().fighter().victim().grounded());
+    ClipLog log;
+    int loopAfterRise = 0;
+    fight.run("", 80, [&](std::uint64_t) {
+        const std::uint32_t clip = fight.human().animator().animId();
+        log.note(clip);
+        if (log.has(199) && !log.has(357) && clip == 356U) {
+            ++loopAfterRise;
+        }
+    });
+    // 272 hands straight to a second 199 (no 355: the stun's loop follows the rise), then 356, then 357.
+    const std::vector<std::uint32_t> expected{272U, 199U, 356U, 357U};
+    REQUIRE(log.clips().size() >= expected.size());
+    CHECK(std::equal(expected.begin(), expected.end(), log.clips().begin()));
+    // The stun's 200 ms from the second 199's end: 6-7 updates, as after the first rise.
+    CHECK(loopAfterRise >= 6);
+    CHECK(loopAfterRise <= 7);
 }
 
 TEST_CASE("presses during the knockdown's reaction do nothing; lying down each one cuts the time", "[human][combat]") {

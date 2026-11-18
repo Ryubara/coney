@@ -52,7 +52,7 @@ VictimFrame Fighter::frame(const FighterInput& input) const {
 }
 
 bool Fighter::helpless(const HumanAnimator& animator) const {
-    if (m_health.depleted() || m_victim.grounded() || m_victim.stunned() || m_victim.stunExitPending()) {
+    if (m_health.depleted() || m_victim.grounded() || m_victim.stunned()) {
         return true;
     }
     // A reaction, a rise, the stun's exit or an escape still playing.
@@ -259,8 +259,7 @@ bool Fighter::stepVictim(const FighterInput& input, HumanAnimator& animator) {
         m_victim.mash(animator, input.nowMs);
     }
     m_victim.step(animator, kAnimFightIdle, input.nowMs, !m_health.depleted());
-    const bool stillDown =
-        m_health.depleted() || m_victim.grounded() || m_victim.stunned() || m_victim.stunExitPending();
+    const bool stillDown = m_health.depleted() || m_victim.grounded() || m_victim.stunned();
     if (m_reacting && !stillDown && !animator.drivingClipPlaying()) {
         m_reacting = false;
     }
@@ -538,10 +537,9 @@ void Fighter::stunFor(HumanAnimator& animator, std::uint64_t nowMs, std::uint64_
                         static_cast<std::uint32_t>(combat::kStunLoop), AnimState::Hold);
 }
 
-void Fighter::endStun(std::uint64_t nowMs) {
-    if (m_victim.stunned()) {
-        m_victim.stunUntil(nowMs);
-    }
+void Fighter::endStun(std::uint64_t /*nowMs*/) {
+    // The stun's time is over whatever now is: this update's step ends it (Victim::expireStun()).
+    m_victim.expireStun();
 }
 
 void Fighter::releaseFromGrab(HumanAnimator& animator) {
@@ -569,9 +567,8 @@ bool Fighter::riseCounter(const FighterInput& input, HumanAnimator& animator) {
     // disc) swaps it for the recovery's 0x40000, which is refused: the clip's events fire before this runs, so a
     // request on frame 14's update is refused too.
     // The stun's state lasts until its end clip (357) plays, after the stun's time and the clip playing.
-    const bool stunState = m_victim.stunned() || m_victim.stunExitPending();
     const bool free = (animator.flags() & ~combat::kFreeToReactHeld) == 0 &&
-                      !(stunState && hasFlag(flag::kManualStun)) && !m_health.depleted() && !grabbed() &&
+                      !(m_victim.stunned() && hasFlag(flag::kManualStun)) && !m_health.depleted() && !grabbed() &&
                       !m_holdState.has_value() && m_tandemRole == TandemRole::None;
     // Only a player asks: an AI's Grounded goal answers no while it is down, and that lasts through the rise.
     if (!m_player || !free) {

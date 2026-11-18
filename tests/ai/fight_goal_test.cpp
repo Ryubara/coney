@@ -17,6 +17,7 @@
 #include "ai/idle_goals.h"
 #include "ai/melee_goal.h"
 #include "combat/commands.h"
+#include "combat/reactions.h"
 #include "human/human.h"
 #include "human/human_flags.h"
 #include "human/humans.h"
@@ -247,6 +248,8 @@ TEST_CASE("the EngageEnemy run-in raises the turn boost by one until it ends", "
 // FightGoal_Process (0x002b3ab0): past its deadline a fight goal ends once its fighter holds none of the man's active
 // places (a place is given up after each press), and a class-13 fighter ends whatever he holds.
 TEST_CASE("past its deadline the fight goal ends for a fighter out of the man's places, and for a boss", "[ai]") {
+    // Expected: ai-fights.md#fight-order (steps 8 and 9), #fight-durations and #attack-places, confirmed (code) at
+    // 0x002b3ab0 and 0x00291008
     Scene scene;
     const FightSettings square = onlyKind(1);
     Brain& front = scene.add({40.0F, 40.9F, 0.0F}, 180.0F, BrainType::Gang, square);
@@ -271,4 +274,71 @@ TEST_CASE("past its deadline the fight goal ends for a fighter out of the man's 
     REQUIRE(boss.pushGoal(std::make_unique<coney::ai::FightGoal>(500)));
     bossScene.run(60);
     CHECK(boss.findGoal(coney::ai::GoalType::Fight) == nullptr);
+}
+
+// A stunned fighter's way back into the fight (docs/research/combat-reactions.md#stun-end): the reaction, the stun's
+// enter 355 and loop 356 all still stunned; the stun ends as 357 starts, the stunned reaction goal ends the update
+// after, and the fight goal queues its next action in that same update, while 357 still plays.
+TEST_CASE("a stunned fighter stays stunned through 355 and 356 and fights on the update its reaction goal ends",
+          "[ai][stun]") {
+    // Expected: combat-reactions.md#stun-end and ai/index.md#reaction-goals, confirmed (code) at 0x00256a60,
+    // 0x0025f770, 0x002b4bb8 and 0x002240e8; the order confirmed (runtime): 357, the goal's end and the move in run
+    // r-20261031-civ-stun, 355 then 356 in task 691's civ_knockdown trace (combat-reactions.md#stun-end)
+    Scene scene;
+    Brain& gang = scene.add({40.0F, 41.5F, 0.0F}, 180.0F, BrainType::Gang, onlyKind(1));
+    gang.setTarget(&scene.playerBrain());
+    REQUIRE(gang.pushGoal(std::make_unique<coney::ai::FightGoal>(coney::test::kLongFightMs)));
+    scene.run(2);
+    // A stunning S1 from the player in front of it.
+    coney::human::IncomingHit hit;
+    hit.damage = 30;
+    hit.attackAnim = 12;
+    hit.code = 0x0a;
+    hit.flags = coney::combat::kRangeFlagStun;
+    hit.attacker = scene.playerBrain().human().position();
+    gang.human().hit(hit);
+    // The first update of each event, from the hit's update (-1: never).
+    int enter = -1;
+    int loop = -1;
+    int cleared = -1;
+    int goalEnded = -1;
+    bool hadGoal = false;
+    bool stunnedThroughClips = true;
+    bool actedAtGoalEnd = false;
+    bool exitAtClear = false;
+    for (int k = 0; k < 120; ++k) {
+        scene.run(1);
+        const Human& human = gang.human();
+        const std::uint32_t clip = human.animator().animId();
+        const bool stunned = human.fighter().victim().stunned();
+        if (enter < 0 && clip == 355U) {
+            enter = k;
+        }
+        if (loop < 0 && clip == 356U) {
+            loop = k;
+        }
+        // 355 and 356 still count as stunned.
+        if (clip == 355U || clip == 356U) {
+            stunnedThroughClips = stunnedThroughClips && stunned;
+        }
+        if (cleared < 0 && loop >= 0 && !stunned) {
+            cleared = k;
+            exitAtClear = clip == 357U;
+        }
+        const bool hasGoal = gang.reactionGoal() != nullptr;
+        if (goalEnded < 0 && hadGoal && !hasGoal) {
+            goalEnded = k;
+            actedAtGoalEnd = gang.actionCount() > 0;
+        }
+        hadGoal = hadGoal || hasGoal;
+    }
+    REQUIRE(enter >= 0);
+    REQUIRE(loop > enter);
+    CHECK(stunnedThroughClips);
+    REQUIRE(cleared > loop);
+    // The stun's bit clears as 357 starts.
+    CHECK(exitAtClear);
+    // The reaction goal ends the update after, and the fight goal acts in that update.
+    CHECK(goalEnded == cleared + 1);
+    CHECK(actedAtGoalEnd);
 }

@@ -321,7 +321,50 @@ role = "grounded and its timer"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/human/victim.h:Victim::react"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the player's stance exit and target drop, the throw aim's end, the brain calming gang-kind-4 attackers and the body's push weight are not ported"
+relation = "not-ported"
+issue = 685
+
+[[function.gaps]]
+what = "the knockdown hints 24 and 25 are not ported"
+relation = "not-ported"
+issue = 332
+
+[[function]]
+address = 0x0022f3c8
+name = "Human_GetUp"
+page = "characters.md#code-core"
+role = "the end of being down, as the rise 199 ends: a stunned human's stun time starts again, else the fight stance"
+level = "confirmed-code"
+coney = "src/human/victim.h:Victim::step"
+status = "compared"
+
+[[function.gaps]]
+what = "the push weight back to 1.0 is not ported, and Coney's ground ends as 199 starts, not as it ends (a stand-in)"
+relation = "not-ported"
+issue = 685
+
+[[function]]
+address = 0x0022f4f8
+name = "Human_SetDownTimers"
+page = "characters.md#code-core"
+role = "the down and stun end times of a knockdown"
+level = "confirmed-code"
+coney = "src/human/victim.h:Victim::knockDown"
+status = "compared"
+
+[[function.gaps]]
+what = "the attack's clip flags 0x100 / 0x200 double the down and stun times, a class-13 attacker adds 2 s, flag 0x80 gives no down time"
+relation = "not-ported"
+issue = 685
+
+[[function.gaps]]
+what = "an already stunned victim with flag 0x100 keeps its stun through the knockdown (its end at the rise - 1 ms); Coney's loses it"
+relation = "not-ported"
+issue = 1351
 
 [[function]]
 address = 0x0022f658
@@ -331,7 +374,17 @@ role = "the stun timer"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/human/fighter.h:Fighter::stunFor"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the refusal by the states 0xcf0, the held flags 0x10200 and the move styles 7-10, the object hit's class multiplier and the clip flag 0x200's doubling are not ported"
+relation = "not-ported"
+issue = 685
+
+[[function.gaps]]
+what = "the endless stun of a scripted stun with flag 0x8000000 is not ported"
+relation = "not-ported"
+issue = 177
 
 [[function]]
 address = 0x0022f8d8
@@ -340,8 +393,28 @@ page = "combat-reactions.md#reactions"
 role = "the stun timer"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
-coney = "src/human/fighter.h:Fighter::endStun"
-status = "legacy"
+coney = "src/human/victim.h:Victim::step"
+status = "compared"
+
+[[function.gaps]]
+what = "the speed multiplier 0.65 when the word at 0x0051021c is set"
+relation = "stand-in"
+issue = 1346
+question = "combat-reactions.md#q-endstun-speed"
+
+[[function]]
+address = 0x0022f9e0
+name = "Human_SetStunTimer"
+page = "characters.md#code-core"
+role = "the stun end time from the class's stun time"
+level = "confirmed-code"
+coney = "src/human/victim.h:Victim::stun"
+status = "compared"
+
+[[function.gaps]]
+what = "the attack's clip flag 0x200 doubles the stun time"
+relation = "not-ported"
+issue = 685
 
 [[function]]
 address = 0x00230328
@@ -856,6 +929,13 @@ name = "Human_PlayDeathReaction"
 page = "combat-reactions.md#knockout-timing"
 role = "The death chain: the dying reaction, a fall, 205, then the loop (349, 200 or 323); the last clip before the loop ends in Human_OnHealthOut, the knock-out."
 level = "confirmed-code"
+coney = "src/human/victim.h:Victim::die"
+status = "compared"
+
+[[function.gaps]]
+what = "the special cases' dying clips, the fall, 205, the loop, the held flag, push weight, blends, health 1 and the record resets"
+relation = "not-ported"
+issue = 1345
 
 [[function]]
 address = 0x00268430
@@ -1042,7 +1122,17 @@ role = "plays it; stun and knockdown"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/human/victim.h:Victim::react"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the class's reaction limit, a re-hit early in a reaction (195 and a knockdown), victim flag 0x1000000000, the caller's stun argument, the stun reaction's blend from event 0x2a, the reaction 77, the fall 198 and the attacker's target drop are not ported; the stun at a knockdown goes by the attack's flag, not the reaction's id above 0x127 (a stand-in)"
+relation = "not-ported"
+issue = 685
+
+[[function.gaps]]
+what = "the hat knocked off and the held object dropped are not ported"
+relation = "not-ported"
+issue = 656
 
 [[function]]
 address = 0x0026adf0

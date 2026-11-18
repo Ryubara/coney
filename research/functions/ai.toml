@@ -2857,6 +2857,21 @@ coney = "src/ai/fight_reactions.h:GroundedGoal::process"
 status = "legacy"
 
 [[function]]
+address = 0x002b4bb8
+name = "StunnedGoal_Process"
+page = "ai-goals.md#goal-reactions"
+kind = "Process"
+role = "Stunned: drops the brain's target each update; done once the human is no longer stunned standing"
+level = "confirmed-code"
+coney = "src/ai/reaction_goals.h:reactionHolds"
+status = "compared"
+
+[[function.gaps]]
+what = "the target dropped on every update while stunned: Coney's stunned goal keeps the brain's target"
+relation = "not-ported"
+issue = 685
+
+[[function]]
 address = 0x002b54d8
 name = "BlockGoal_Init"
 page = "ai-fights.md#block"

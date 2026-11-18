@@ -441,7 +441,10 @@ class Fighter {
     /// class's stun is. **Coney reading**: the loop plays at once, as after a stunning hit's reaction.
     /// @orig 0x0022f658 Human_Stun (unknown)
     void stunFor(HumanAnimator& animator, std::uint64_t nowMs, std::uint64_t durationMs);
-    /// `Human_EndStun` from outside: the stun ends now, its end clip (357) once the clip playing is over.
+    /// `Human_EndStun` from outside: the stun's time is over now (Victim::expireStun()). Standing, the stun ends and
+    /// 357 plays on this update's step when no clip drives the human, else once that clip ends, so stunned() stays true
+    /// until then; knocked down, the stun is forgotten at once. **Coney's reading**: the original clears the stun's
+    /// state at once either way. `nowMs` is the caller's and no longer needed.
     /// @orig 0x0022f8d8 Human_EndStun (unknown)
     void endStun(std::uint64_t nowMs);
     /// Breaks any pair this human is in from outside, as every placement of it does (a teleport, a scene's end
@@ -567,6 +570,7 @@ class Fighter {
     /// Hurt: below the power class's hurt fraction of its health.
     [[nodiscard]] bool hurt() const { return m_health.fraction() < m_victim.powerClass().hurtFraction; }
     /// Reacting to a hit, stunned, down or getting up: the player cannot act.
+    /// @coney-only Coney's summary of the states and clips that keep a fighter from acting
     [[nodiscard]] bool helpless(const HumanAnimator& animator) const;
     /// Hits that reached the player, blocked, ducked under, or taken under the hit armour (no reaction).
     [[nodiscard]] int hitsTaken() const { return m_hitsTaken; }
@@ -891,7 +895,7 @@ class Fighter {
     void takePending(const FighterInput& input, HumanAnimator& animator);
     // Acts on an attacker's warning: a blocking player ducks or plays its block reaction early.
     // @orig 0x00245920 Human_HandleMessage (unknown)
-    // @orig 0x00254e78 Human_UpdateBlockState (unknown)
+    // @orig 0x00254e78 Human_UpdateActions (unknown)
     void takeNotice(const FighterInput& input, HumanAnimator& animator);
     // The duck's counter: square or cross while the duck's own events 0x25 fire asks for it (record +0x14 = 0xe);
     // on the next update 617-620 plays by the side the attacker stands on. Returns whether this update's command
@@ -904,7 +908,7 @@ class Fighter {
     // stays free to react. Run while he is still reacting, before the ground's update skips the dispatcher. Returns
     // whether the counter played. An AI's Grounded goal says no through the whole rise, so only a player counters.
     // Research: docs/research/combat-reactions.md#ground-escape
-    // @orig 0x00254e78 Human_UpdateBlockState (unknown)
+    // @orig 0x00254e78 Human_UpdateActions (unknown)
     bool riseCounter(const FighterInput& input, HumanAnimator& animator);
     // Plays the counter 617-620 at `target` (by its side) and starts it as the dispatcher's attack.
     // @orig 0x002617f8 Block_DuckCounter (unknown)
@@ -912,7 +916,8 @@ class Fighter {
     // The reaction's frame of the player now.
     [[nodiscard]] VictimFrame frame(const FighterInput& input) const;
     // The timers of a reaction (the stun's end, the rise) and the mash while down; returns whether the player is
-    // still helpless.
+    // still helpless. Reads the command for the mash (the head of `Human_UpdateDown`, whose rest is Victim::step).
+    // @orig 0x00256a60 Human_UpdateDown (unknown)
     bool stepVictim(const FighterInput& input, HumanAnimator& animator);
     // A grab caught the player this update: a counter, or the held player's clips.
     void startGrabbed(const FighterInput& input, HumanAnimator& animator);

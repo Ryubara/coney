@@ -1146,3 +1146,10 @@ type = "s16"
 name = "d_state"                          # record +0x00, the player's state word (low half)
 address = "rec(player) + 0x0"
 type = "u32"
+
+# A stunned fighter (docs/research/combat-reactions.md#stun-end): the time its stun's time passes, which
+# Human_UpdateDown (0x00256a60) tests only once no held flag is set.
+[[stun]]
+name = "e_stun_until"                     # record +0x100, the time the enemy's stun passes (ms)
+address = "rec(enemy) + 0x100"
+type = "u32"
