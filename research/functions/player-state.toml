@@ -320,7 +320,11 @@ page = "player-state.md#warriors-functions"
 role = "the type form: `Unlockables_ListByType` when records exist"
 level = "confirmed-code"
 coney = "src/scripting/player_bindings.cpp:addUnlockBindings"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "with no records Coney still sets the 32 slots of the out table to 65535; the original writes nothing (the glue that hands its buffer to Lua is unstudied)"
+relation = "stand-in"
 
 [[function]]
 address = 0x004237e8
@@ -338,7 +342,7 @@ page = "player-state.md#warriors-functions"
 role = "`UM_IsUnlocked(index)`, `UM_IsDataUnlocked(type, data)`, `UM_IsLevelComplete(level)`: 0 when no records exist"
 level = "confirmed-code"
 coney = "src/scripting/player_bindings.cpp:addUnlockBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x004238a8
@@ -356,7 +360,7 @@ page = "player-state.md#warriors-functions"
 role = "`UM_GetRecordData(index, field)`: field 0-3 the level, group, item and type bytes, 4 the 16-bit extra, 5 the data id; 0 otherwise"
 level = "confirmed-code"
 coney = "src/scripting/player_bindings.cpp:addUnlockBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00423988
@@ -382,7 +386,11 @@ name = "Unlockables_ListByType"
 page = "player-state.md#unlockables"
 level = "confirmed-code"
 coney = "src/scripting/player_bindings.cpp:addUnlockBindings"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "Coney stops at 32 matches; the original overruns its 32-entry buffer"
+relation = "stand-in"
 
 [[function]]
 address = 0x00424130

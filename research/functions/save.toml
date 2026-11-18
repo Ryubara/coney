@@ -103,3 +103,15 @@ page = "save.md#original-structure"
 level = "confirmed-code"
 coney = "src/warriors/disk_profile_store.h:DiskProfileStore::remove"
 status = "legacy"
+[[function]]
+address = 0x00422358
+name = "SaveSystem_LoadSlot"
+page = "save.md#warriors-functions"
+role = "vtable `+0xcc`: makes the slot current and reads it into the game state (`Profile_Read`)"
+level = "confirmed-code"
+coney = "src/warriors/disk_profile_store.h:DiskProfileStore::load"
+status = "compared"
+
+[[function.gaps]]
+what = "the slot is read with the others, so an empty or damaged slot fails where the original reads its image anyway"
+relation = "stand-in"
