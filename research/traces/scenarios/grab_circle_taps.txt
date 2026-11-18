@@ -1,0 +1,9 @@
+# Circle tapped every 6 updates from update 40, the first tap at a puppet 1.0 m ahead. Frames are character updates
+# of 1/30 s.
+40 tap circle
+46 tap circle
+52 tap circle
+58 tap circle
+64 tap circle
+70 tap circle
+76 tap circle

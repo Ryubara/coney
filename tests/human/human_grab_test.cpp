@@ -16,6 +16,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_approx.hpp>
@@ -87,9 +88,10 @@ class HumanFight {
             if (!m_removed) {
                 const std::span<coney::human::Combatant* const> otherTargets =
                     otherFightsPlayer ? std::span{m_playerTarget} : std::span<coney::human::Combatant* const>{};
+                const std::pair<float, float> stick = otherStick ? otherStick(m_frame) : std::pair{0.0F, 0.0F};
                 m_other.step(
-                    coney::human::HumanInput{.stickX = 0.0F,
-                                             .stickY = 0.0F,
+                    coney::human::HumanInput{.stickX = stick.first,
+                                             .stickY = stick.second,
                                              .cameraForward = Vec3{0.0F, 1.0F, 0.0F},
                                              .sprintHeld = false,
                                              .actionPressed = false,
@@ -116,6 +118,8 @@ class HumanFight {
     Human& other() { return m_other; }
     // The other human's command on each update (its brain's, in play): none when empty.
     std::function<combat::CommandId(std::uint64_t)> otherCommand;
+    // The other human's stick on each update (x, y in the world, as its brain writes it): at rest when empty.
+    std::function<std::pair<float, float>(std::uint64_t)> otherStick;
     // The other human has the player as its target (an AI's attacks land on him).
     bool otherFightsPlayer = false;
     // The damage the other human has taken.
@@ -309,6 +313,101 @@ TEST_CASE("circle + cross grabs with the strike 657, deals its 60 as the hold st
     CHECK(fight.player().fighter().combat().mode() == combat::CombatMode::Grabbing);
     CHECK(fight.other().state() == TargetState::Held);
     CHECK(fight.player().animator().animId() == 82U);
+}
+
+namespace {
+
+// What a player's strong grapple (circle + cross, 657) left once it had played: the damage the victim took, the
+// player's rage and whether he still holds the victim.
+struct Grapple {
+    bool played = false;
+    bool heldAfter = false;
+    int damage = 0;
+    int rage = 0;
+};
+
+// The player, who may rage, grabs with the strong grapple; with `outOfReach` the victim is carried 3 m off while 657
+// plays, far past the front hold's reach, so its end finds him out of reach.
+Grapple strongGrappleRun(bool outOfReach) {
+    const FightCharacter character;
+    HumanFight fight(character, 1.0F);
+    fight.player().setFlag(flag::kRageAllowed, true);
+    const auto strong = static_cast<std::uint32_t>(combat::anim_id::kStrongGrapple);
+    Grapple result;
+    fight.run("5 press circle cross\n9 release circle cross\n", 150, [&](std::uint64_t /*frame*/) {
+        if (fight.player().animator().animId() != strong) {
+            return;
+        }
+        result.played = true;
+        if (coney::human::Holdable* held = fight.other().holdable(); outOfReach && held != nullptr) {
+            const Vec3 at = fight.player().position();
+            held->place(Vec3{at.x + 3.0F, at.y, at.z}, fight.other().heading());
+        }
+    });
+    result.heldAfter = fight.player().fighter().held() != nullptr;
+    result.damage = fight.damageTaken();
+    result.rage = fight.player().fighter().combat().rage().value();
+    return result;
+}
+
+} // namespace
+
+TEST_CASE("a strong grapple whose victim is out of reach at its end deals its damage, scores no rage and lets go",
+          "[human][combat]") {
+    // Expected: combat-grabs.md#strong-grapple, confirmed (code) (Grab_ConnectEnd 0x0026bad8 deals the clip's damage
+    // before the reach test, and scores the move with Grab_ScoreMove 0x00264fa0 only after the snap)
+    const Grapple inReach = strongGrappleRun(false);
+    REQUIRE(inReach.played);
+    CHECK(inReach.heldAfter);
+    CHECK(inReach.damage == 60);
+    CHECK(inReach.rage > 0);
+    const Grapple away = strongGrappleRun(true);
+    REQUIRE(away.played);
+    CHECK_FALSE(away.heldAfter);
+    CHECK(away.damage == 60);
+    CHECK(away.rage == 0);
+}
+
+TEST_CASE("a strong grapple's mount and pick-up score the strong grapple again at the pick-up's end",
+          "[human][combat]") {
+    // Expected: combat-grabs.md#mount, confirmed (code) (Grab_ConnectEnd 0x0026bad8, hung on 248's end by
+    // Mount_ReturnToFrontGrab 0x00271808, scores Grab_ScoreMove 0x00264fa0 with the grab's base id, record +0xb4,
+    // which Grab_Start 0x0026c548 set to the strong grapple's id and the mount does not clear)
+    const FightCharacter character;
+    HumanFight fight(character, 1.0F);
+    fight.player().setFlag(flag::kRageAllowed, true);
+    const auto pickUp = static_cast<std::uint32_t>(combat::anim_id::kMountPickup);
+    // The strong grapple, then circle taps: in the hold one mounts, in the mount one picks the victim up.
+    std::string script = "5 press circle cross\n9 release circle cross\n";
+    for (int frame = 100; frame < 200; frame += 20) {
+        script += std::to_string(frame) + " tap circle\n";
+    }
+    bool picked = false;
+    std::optional<int> rageInPickUp;
+    std::optional<int> rageAfter;
+    std::optional<bool> heldAfter;
+    // Only the first pick-up counts: the taps go on and mount the victim again from the hold that follows it.
+    fight.run(script, 200, [&](std::uint64_t /*frame*/) {
+        const int rage = fight.player().fighter().combat().rage().value();
+        if (rageAfter.has_value()) {
+            return;
+        }
+        if (fight.player().animator().animId() == pickUp) {
+            picked = true;
+            rageInPickUp = rage;
+        } else if (picked && !rageAfter.has_value()) {
+            rageAfter = rage;
+            heldAfter = fight.player().fighter().held() != nullptr;
+        }
+    });
+    REQUIRE(picked);
+    REQUIRE(rageInPickUp.has_value());
+    REQUIRE(rageAfter.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access): the REQUIREs above end the test when empty, which clang-tidy
+    // does not know; heldAfter is set together with rageAfter.
+    CHECK(*heldAfter);
+    CHECK(*rageAfter > *rageInPickUp);
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 TEST_CASE("the power strike ends the grab with the victim down, unless square in its window extends it to 59",
@@ -568,6 +667,163 @@ TEST_CASE("out of power, a victim with double damage or auto-escape escapes; wit
     // No-escape wins over the escape flags.
     CHECK_FALSE(escapes(flag::kDoubleDamage | flag::kNoEscape, false));
     CHECK_FALSE(escapes(flag::kAutoEscape | flag::kNoEscape, true));
+}
+
+TEST_CASE("an AI grabbing the player throws him on its circle tap with the stick, and the grab ends",
+          "[human][combat]") {
+    // Expected: ai/index.md#fight-reactions, confirmed (runtime) (the AI's throw in the hold is command 0xd with the
+    // stick; its throw lets the player go, on his back); combat-grabs.md#grabbing, confirmed (code)
+    const FightCharacter character;
+    HumanFight fight(character, 1.0F);
+    fight.otherFightsPlayer = true;
+    // The AI grabs at update 2 (0xd), then, two updates into the hold, taps circle again with the stick full ahead of
+    // it (it faces the world's -y), as its brain's throw does.
+    std::optional<std::uint64_t> heldAt;
+    fight.otherCommand = [&](std::uint64_t frame) {
+        if (frame == 2 || (heldAt.has_value() && frame == *heldAt + 2)) {
+            return combat::command::kCircleTapped;
+        }
+        return combat::command::kNone;
+    };
+    fight.otherStick = [&](std::uint64_t frame) {
+        return heldAt.has_value() && frame == *heldAt + 2 ? std::pair{0.0F, -1.0F} : std::pair{0.0F, 0.0F};
+    };
+    bool thrownDown = false;
+    fight.run("", 120, [&](std::uint64_t frame) {
+        if (!heldAt.has_value() && fight.other().fighter().pairStage() == coney::human::PairStage::Attached) {
+            heldAt = frame;
+        }
+        thrownDown = thrownDown || fight.player().state() == TargetState::Grounded;
+    });
+    REQUIRE(heldAt.has_value());
+    // The front throw (147) put him on the ground with its 66, and the AI holds no one.
+    CHECK(thrownDown);
+    const auto& health = fight.player().fighter().health();
+    CHECK(health.maximum() - health.value() == 66);
+    CHECK(fight.other().fighter().held() == nullptr);
+    CHECK_FALSE(fight.player().fighter().holdState().has_value());
+}
+
+TEST_CASE("an AI that picks the tackled player up as the mount seats him strikes him in the hold that follows",
+          "[human][combat]") {
+    // Expected: ai/index.md#ai-grab-runtime, confirmed (runtime) (circle two updates into the mount, 210 at 127 and
+    // the pick-up 248 at 129, then the front hold); combat-grabs.md#grabbing, confirmed (runtime) (square 51 or 53, 57)
+    const FightCharacter character;
+    HumanFight fight(character, 2.0F);
+    fight.otherFightsPlayer = true;
+    // The AI tackles at update 2 (0xe); two updates into the mount it taps circle (0xd), still in the mount's 0.1 s
+    // seat, and two updates into the hold that follows it squares.
+    std::optional<std::uint64_t> mountedAt;
+    std::optional<std::uint64_t> holdAt;
+    fight.otherCommand = [&](std::uint64_t frame) {
+        if (frame == 2) {
+            return combat::command::kCircleHeld;
+        }
+        if (mountedAt.has_value() && frame == *mountedAt + 2) {
+            return combat::command::kCircleTapped;
+        }
+        if (holdAt.has_value() && frame == *holdAt + 2) {
+            return combat::command::kSquarePressed;
+        }
+        return combat::command::kNone;
+    };
+    bool struck = false;
+    fight.run("", 200, [&](std::uint64_t frame) {
+        const std::uint32_t clip = fight.other().animator().animId();
+        if (!mountedAt.has_value() && clip == coney::human::clips::kMountingIdle) {
+            mountedAt = frame;
+        }
+        if (mountedAt.has_value() && !holdAt.has_value() && clip == coney::human::clips::kGrabHold) {
+            holdAt = frame;
+        }
+        struck = struck || clip == static_cast<std::uint32_t>(combat::anim_id::kGrabComboStrike1) ||
+                 clip == static_cast<std::uint32_t>(combat::anim_id::kGrabComboStrike2);
+    });
+    REQUIRE(mountedAt.has_value());
+    REQUIRE(holdAt.has_value());
+    // The strike played on the held player and took its 57.
+    CHECK(struck);
+    const auto& health = fight.player().fighter().health();
+    CHECK(health.maximum() - health.value() == 57);
+}
+
+namespace {
+
+// What an AI's pick-up of the tackled player left: the damage he took and whether the AI still holds him once the
+// pick-up (248) has ended.
+struct PickUp {
+    bool picked = false;
+    bool heldAfter = false;
+    int damage = 0;
+};
+
+// The AI tackles the player at update 2 and taps circle two updates into the mount; `during` runs after each update
+// in which the AI plays the pick-up (248). The run stops 10 updates after 248 ends, before any move in the hold.
+template <typename During> PickUp pickUpRun(const FightCharacter& character, During during) {
+    HumanFight fight(character, 2.0F);
+    fight.otherFightsPlayer = true;
+    std::optional<std::uint64_t> mountedAt;
+    fight.otherCommand = [&](std::uint64_t frame) {
+        if (frame == 2) {
+            return combat::command::kCircleHeld;
+        }
+        if (mountedAt.has_value() && frame == *mountedAt + 2) {
+            return combat::command::kCircleTapped;
+        }
+        return combat::command::kNone;
+    };
+    const auto pickUp = static_cast<std::uint32_t>(combat::anim_id::kMountPickup);
+    PickUp result;
+    std::optional<std::uint64_t> endedAt;
+    fight.run("", 200, [&](std::uint64_t frame) {
+        const std::uint32_t clip = fight.other().animator().animId();
+        if (!mountedAt.has_value() && clip == coney::human::clips::kMountingIdle) {
+            mountedAt = frame;
+        }
+        if (clip == pickUp) {
+            result.picked = true;
+            during(fight);
+        } else if (result.picked && !endedAt.has_value()) {
+            endedAt = frame;
+        }
+        if (endedAt.has_value() && frame == *endedAt + 10) {
+            result.heldAfter = fight.other().fighter().held() != nullptr;
+            const auto& health = fight.player().fighter().health();
+            result.damage = health.maximum() - health.value();
+        }
+    });
+    return result;
+}
+
+} // namespace
+
+TEST_CASE("an AI's pick-up from the mount deals the pick-up clip's damage as it hands over to the hold",
+          "[human][combat]") {
+    // Expected: combat-grabs.md#mount, confirmed (code) (Mount_ReturnToFrontGrab 0x00271808 hangs Grab_ConnectEnd
+    // 0x0026bad8 on 248's end: the clip's damage-table value while the grabber has power, then the hold)
+    FightCharacter character;
+    REQUIRE(character.ranges.setDamage(static_cast<std::size_t>(combat::anim_id::kMountPickup), 25));
+    const PickUp result = pickUpRun(character, [](HumanFight& /*fight*/) {});
+    REQUIRE(result.picked);
+    CHECK(result.heldAfter);
+    CHECK(result.damage == 25);
+}
+
+TEST_CASE("an AI's pick-up from the mount lets the player go when he is out of reach at its end", "[human][combat]") {
+    // Expected: combat-grabs.md#mount, confirmed (code) (Grab_ConnectEnd 0x0026bad8: the damage first, then the
+    // release past the larger of the hold's reach + 0.2 m and its reach x 1.2)
+    FightCharacter character;
+    REQUIRE(character.ranges.setDamage(static_cast<std::size_t>(combat::anim_id::kMountPickup), 25));
+    // The player is carried 3 m off while the pick-up plays: far past the front hold's 1.081 m reach.
+    const PickUp result = pickUpRun(character, [](HumanFight& fight) {
+        const Vec3 at = fight.other().position();
+        if (coney::human::Holdable* held = fight.player().holdable(); held != nullptr) {
+            held->place(Vec3{at.x + 3.0F, at.y, at.z}, fight.player().heading());
+        }
+    });
+    REQUIRE(result.picked);
+    CHECK_FALSE(result.heldAfter);
+    CHECK(result.damage == 25);
 }
 
 TEST_CASE("an AI attacker's double damage gets through the player's hit armour", "[human][combat]") {

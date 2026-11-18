@@ -780,13 +780,25 @@ class Fighter {
     void dropLostHold(const FighterInput& input, HumanAnimator& animator);
     // A grab or tackle started on `victim`: the intro plays (the player turning to face it), the victim waits. A grab
     // connects with front clip `connect` (72, or a strong grapple's strike), the rear one 2 on.
+    // @orig 0x0026c548 Grab_Start (unknown)
     void startHold(Holdable& victim, const FighterInput& input, float& heading, bool tackle, int connect,
                    HumanAnimator& animator);
     // The grabber's connecting clip for the side the grab is on; the victim plays the next id.
     [[nodiscard]] std::uint32_t connectClip() const { return static_cast<std::uint32_t>(m_connect + (m_rear ? 2 : 0)); }
-    // A strong grapple's connect has ended in the hold: the victim takes the strike's damage, reported as the hold's
-    // id (docs/research/combat-grabs.md#strong-grapple).
-    void landGrapple(const FighterInput& input);
+    // What landGrapple() dealt, for scoreGrapple() once the victim is in the hold: whether the hit landed (the grabber
+    // had power) and whether it may earn rage (the victim had health before it).
+    struct LandedGrapple {
+        bool landed = false;
+        bool scoresRage = false;
+    };
+    // A strong grapple's connect or the mount's pick-up (`clip`) has ended, before the reach gate: the victim takes the
+    // clip's damage, reported as the hold's id (docs/research/combat-grabs.md#strong-grapple, #mount).
+    // @orig 0x0026bad8 Grab_ConnectEnd (unknown)
+    LandedGrapple landGrapple(const FighterInput& input, std::uint32_t clip);
+    // The gate has passed and the victim is snapped: the hit landGrapple() dealt scores as `clip`, the grab's base id
+    // (rage and the repeat note), as Grab_ConnectEnd scores only after the snap.
+    // @orig 0x0026bad8 Grab_ConnectEnd (unknown)
+    void scoreGrapple(const FighterInput& input, std::uint32_t clip, LandedGrapple landed);
     // During its grab's or tackle's intro, the victim's counter press (Holdable::takeCounterPress()), face to face:
     // the hold ends, the victim plays the counter (76 or 9) and this human the reaction from the victim's set (77 or
     // 10), takes the counter's damage and is stunned. Returns whether it played.
@@ -798,7 +810,9 @@ class Fighter {
     void endPowerMove();
     // The pair's moments, read from the grabber's clip at the start of an update: the connecting clip starting (the
     // alignment and the victim's paired clip), a connecting clip or a spin ending (the gate and the snap), and a spin
-    // starting (detachForSpin()).
+    // starting (detachForSpin()). The connect's and the pick-up's ends port Grab_ConnectEnd (with landGrapple()
+    // and holdGatePasses()); the connect's start is Grab_Connect's (connect()).
+    // @orig 0x0026bad8 Grab_ConnectEnd (unknown)
     void followPairClips(const FighterInput& input, HumanAnimator& animator, float heading);
     // A spin has started: the victim leaves its offset and moves by its own clip until the spin's end.
     void detachForSpin(const HumanAnimator& animator);
@@ -821,7 +835,11 @@ class Fighter {
     // 210 seats the pair (seatMount()).
     void mountVictim(const HumanAnimator& animator);
     // Plays the mount's move the dispatcher decided: a strike and the victim's reaction (the next id), back to the
-    // mount; the pick-up to the front hold; or getting off, the victim rising.
+    // mount; the pick-up to the front hold; or getting off, the victim rising (docs/research/combat-grabs.md#mount).
+    // Only the pick-up (MountAction::ToHold) ports Mount_ReturnToFrontGrab and only getting off (MountAction::GetOff)
+    // ports Mount_GetOff; the strike cases play the clips Player_UpdateMounting (`0x0027ec20`) starts.
+    // @orig 0x00271808 Mount_ReturnToFrontGrab (unknown)
+    // @orig 0x00271098 Mount_GetOff (unknown)
     void playMountAction(const combat::CombatOutput& out, HumanAnimator& animator);
     // The grab's mount or the tackle has played (210 started): the mounter turns and slides over 0.1 s to stand with
     // the victim at clip 210's offset (0.120 m left, 0.032 m ahead), facing it; the victim does not move
@@ -1025,6 +1043,7 @@ class Fighter {
     Combatant* m_target = nullptr;             // the target kept (human +0xc8)
     Combatant* m_snapTarget = nullptr;         // what the snap's search found for this update's square (not the target)
     int m_connect = 72;            // the grab's front connecting clip: 72, or the strong grapple's 657 (649 in rage)
+    int m_grabBase = 72;           // the grab's base id (record +0xb4): 72, the tackle's 5 or a strong grapple's id
     anim::Vec3 m_slide;            // a grab's alignment's slide velocity, m/s
     int m_slideUpdates = 0;        // updates of slide left
     TurnAndSlide m_steer;          // an attack start's turn and slide onto its target

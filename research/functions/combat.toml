@@ -1189,10 +1189,20 @@ level = "confirmed-code"
 address = 0x0026bad8
 name = "Grab_ConnectEnd"
 page = "combat-grabs.md#grab-posing"
-role = "end of 72 / 74: distance check, snap and attach in the hold"
+role = "end of 72 / 74 and of the mount's pick-up 248: damage, distance check, snap and attach in the hold, escape or reverse, scoring"
 level = "confirmed-code"
-coney = "src/human/pair_placement.h:holdGatePasses"
-status = "legacy"
+coney = "src/human/fighter.h:Fighter::followPairClips"
+status = "compared"
+
+[[function.gaps]]
+what = "the escape after the snap for a victim in state 0x20000 and the victim's coin-flip circle escape or reverse (Grab_Reverse) are not run, so the move always scores; the gate has no clear-line test (Human_IsClearToTarget); and with no power Coney still gates and snaps where the original does neither"
+relation = "stand-in"
+issue = 684
+
+[[function.gaps]]
+what = "the victim's state flags 0x100000000 and 0x80000000 and a knocked-out victim are not tested, and the grabber's record +0xb8 is not cleared"
+relation = "not-ported"
+issue = 684
 
 [[function]]
 address = 0x0026be68
@@ -1225,6 +1235,13 @@ name = "Grab_Start"
 page = "combat-grabs.md#grab"
 role = "the grab's intro: 71 (or 70), then 69 and the idle; turns towards the target"
 level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::startHold"
+status = "compared"
+
+[[function.gaps]]
+what = "the AI's intro 70 (Coney always plays 71), 69 chained after the intro, the stance's idle loop under it, the other end hook Grab_OnStartEnd, the 0.01 s blend-out (Coney fades 0.1 s), the push sphere turned off and on and the throw aim's end are not ported"
+relation = "not-ported"
+issue = 684
 
 [[function]]
 address = 0x0026c7e0
@@ -1412,6 +1429,18 @@ name = "Mount_GetOff"
 page = "combat/index.md#code-reactions"
 role = "Gets the mounter off the victim and ends the tackle ([The mount](combat-grabs.md#mount))."
 level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::playMountAction"
+status = "compared"
+
+[[function.gaps]]
+what = "the get-off's refusals (held flag 0x2000 on either), a live victim's Grab_BreakOnHit with 245, move style 0xc, the knocked-out victim's 0x20000000, the push spheres switched off and the held flags are not ported"
+relation = "not-ported"
+issue = 684
+
+[[function.gaps]]
+what = "the 0.2 s blends from 244 into the stance idle and from 199 into the victim's idle are not ported; the 0.1 s blend-outs before 244 and 245 are (the 0.1 s fade-in of playCombat and Human::play)"
+relation = "not-ported"
+issue = 684
 
 [[function]]
 address = 0x00271470
@@ -1433,6 +1462,23 @@ name = "Mount_ReturnToFrontGrab"
 page = "combat/index.md#code-reactions"
 role = "From the mount back to a front grab (Grab_Link) ([The mount](combat-grabs.md#mount))."
 level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::playMountAction"
+status = "compared"
+
+[[function.gaps]]
+what = "the 0.1 s blend-outs before 248 / 249, the push spheres switched off and held flag 0x2000 on both are not ported"
+relation = "not-ported"
+issue = 684
+
+[[function.gaps]]
+what = "248's end hook Grab_ConnectEnd (0x0026bad8) is ported for the pick-up but for two parts, a stand-in at the code: the clip's damage-table value with the grabber's power above 0, the release when the victim is out of reach and the move's scoring after the snap run (Fighter::followPairClips, landGrapple, scoreGrapple); the escape for a victim in state 0x20000 and the victim's coin-flip circle escape or reverse is not run (at a connect's end either), and with no power Coney still gates and snaps where the original does neither"
+relation = "stand-in"
+issue = 684
+
+[[function.gaps]]
+what = "Tackle_End's mounter style 0xc and victim style 0xb, the cleared states 0x400 / 0x800, Human_GoDown for either human in state 0x80000 before the fight stance, and the fight stance, and Grab_Link's speech command 8, the victim's brain target, tutorial hint 0xe and move styles 7 / 8 are not ported for the pick-up"
+relation = "not-ported"
+issue = 684
 
 [[function]]
 address = 0x00271b30
@@ -2325,7 +2371,22 @@ role = "strikes, power strike, throws, mug, spin in a grab"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/combat/grab.h:updateGrab"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the drift release on an update with no command, the move gate's own mask (0x5c7eee1), triangle read before that gate, and the attack warning are not ported"
+relation = "not-ported"
+issue = 684
+
+[[function.gaps]]
+what = "an AI grabber's own branch (0x22 without the rage flag test, 0x23's 63), its whole strike cost, and the rage power strike's 231 damage, doubling and defeat test are not ported"
+relation = "not-ported"
+issue = 684
+
+[[function.gaps]]
+what = "square and cross from a rear hold spin to the front, the spin's power need and flags, the mount's refusing flag and the held-object moves (0x1e4-0x1ee) are not ported"
+relation = "not-ported"
+issue = 684
 
 [[function]]
 address = 0x0027fd68

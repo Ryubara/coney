@@ -118,8 +118,9 @@ struct GrabOutcome {
 ///   0.5 of the meter (40 of 400) at any level;
 /// - cross held and square pressed (0x22) is the power strike 57 (63 in rage); from the rear the spin to the front
 ///   plays first; circle + cross (0x23) does nothing in a player's grab (63 is an AI grabber's);
-/// - circle (its press, 0x1e) with the stick beyond kThrowStick throws by the stick's side (on the rear hold's path,
-///   GrabInput::rearThrow, after the spin to the front); without the stick, from the rear, it spins to the front;
+/// - circle (its press 0x1e, its tap 0xd or its hold 0xe: an AI grabber's throw is the tap) with the stick beyond
+///   kThrowStick throws by the stick's side (on the rear hold's path, GrabInput::rearThrow, after the spin to the
+///   front); without the stick, from the rear, it spins to the front;
 /// - the power strikes and the throws need more than CombatTuning::powerEndurance of the meter and spend it (100 of
 ///   400); with that much or less the grab is released instead;
 /// - R1 pressed (3) spins front to rear (78) or rear to front (80); L2 held (5) lets go (95);
@@ -129,8 +130,9 @@ struct GrabOutcome {
 ///   hold's path are not (docs/research/combat-throws.md#throw-direction).
 ///
 /// In rage nothing is spent or needed.
-/// - circle (its press) with the stick at kThrowStick or less from the front mounts the victim (118, victim 119, then
-///   210 on 207), with no power check and no cost (`Grab_StartMountFromFront`, docs/research/combat-grabs.md#mount);
+/// - circle (any of the three) with the stick at kThrowStick or less from the front mounts the victim (118, victim
+///   119, then 210 on 207), with no power check and no cost (`Grab_StartMountFromFront`,
+///   docs/research/combat-grabs.md#mount);
 ///
 /// **Coney choice**: cross strikes on 0x10, not on its press (which would fire before a power strike's square).
 /// @orig 0x0027f3b0 Player_UpdateGrabbing (unknown)

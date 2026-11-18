@@ -52,7 +52,11 @@ inline constexpr std::string_view kLessonsScript =
     "1954 stick left 8 39\n1960 stick left 8 40\n1965 stick left 7 40\n1972 stick left 0 0\n1972 tap cross circle\n"
     "1978 tap cross circle\n1984 tap cross circle\n1990 tap cross circle\n1996 tap cross circle\n"
     "2002 tap cross circle\n2008 tap cross circle\n2014 tap square cross\n2020 tap square cross\n2048 tap cross\n"
-    "2076 tap cross\n2150 tap circle\n2156 tap circle\n2162 tap circle\n2168 tap circle\n2174 tap circle\n"
+    // Lesson 6 grabs on one circle tap and then leaves circle alone: in a grab circle's tap, press and hold all count
+    // as its press (PlayerCmd_IsCircleAny 0x0027bf30), so a further tap would mount the bum before the power move.
+    // The original mounts on the same update (run r-20261031-grab-circle-taps-1331,
+    // docs/research/combat-grabs.md#grabbing).
+    "2076 tap cross\n2150 tap circle\n"
     "2180 tap square cross\n2208 tap cross\n2236 tap cross\n2310 tap square cross\n2338 tap cross\n2366 tap cross\n";
 
 // The frame the lesson's moves end on: lesson 7's scene starts after it.

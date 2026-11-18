@@ -115,12 +115,20 @@ At runtime (confirmed (runtime)):
 | L2 held (5) | **lets go**: player 95, victim 94; confirmed (runtime) |
 
 The commands are those of the [table](combat/index.md#commands): square acts on its press (`0xf`), cross on its release
-(`0x10`), circle on its press (`0x1e`). A grab strike only **spends** power, at any meter level: 0.2 of the maximum,
-halved for a human with a player number (`+0x1b0`), so **40 of 400**. The power strike, `0x23` and the throws **need**
-more than 0.25 of the maximum and **spend** 0.25 (**100 of 400**); with 0.25 or less the grab is released instead
-(`0x0026c7e0`). Confirmed (code) at `0x0027f3b0` and `0x00262ac8`; confirmed (runtime): strikes 40 each, the power
-strike 236 → 135 with its 57 damage on the same update. The grab also ends when the victim drifts beyond the larger of
-reach + 0.2 m and reach × 1.2, or 0.2 m up or down.
+(`0x10`), circle on its press (`0x1e`). Circle is also its tap (`0xd`) and its hold (`0xe`) (`PlayerCmd_IsCircleAny`
+`0x0027bf30`, confirmed (code)). A player's tap or hold usually comes after the press's move has started and finds it
+playing (inferred from the taps below, run r-20261031-grab-circle-taps-1331), but an AI grabber's throws and its mount
+are the tap alone ([An AI grab at runtime](ai/index.md#ai-grab-runtime), confirmed (runtime), run
+r-20261031-civ-grab-1331). A tap pressed while the grab
+takes no move and released once it does acts on its release: with circle tapped every 6 updates at a puppet 1 m ahead
+(scenario `grab_circle_taps`), the first tap grabbed (71 at 42, the connect 72 / 73 from 47), the presses at 47-65 came
+in the connect and did nothing, and the release `0xd` at 66, the hold's first update, mounted (118 / 119). Confirmed
+(runtime), run r-20261031-grab-circle-taps-1331. A grab strike only **spends** power, at any meter level: 0.2 of the
+maximum, halved for a human with a player number (`+0x1b0`), so **40 of 400**. The power strike, `0x23` and the throws
+**need** more than 0.25 of the maximum and **spend** 0.25 (**100 of 400**); with 0.25 or less the grab is released
+instead (`0x0026c7e0`). Confirmed (code) at `0x0027f3b0` and `0x00262ac8`; confirmed (runtime): strikes 40 each, the
+power strike 236 → 135 with its 57 damage on the same update. The grab also ends when the victim drifts beyond the
+larger of reach + 0.2 m and reach × 1.2, or 0.2 m up or down.
 
 **The power strike at runtime** (confirmed (runtime), slot 6 copy, the civilian grabbed with circle; cross pressed,
 square 2 updates later, both released 4 updates after; then cross taps every 8 updates; scenario as
@@ -520,6 +528,12 @@ square, cross, circle and L2, **the same after a tackle or a grab**:
 | L2 (5) | gets off: 244 / 245, the victim rises with 199 (`Mount_GetOff`, `0x00271098`, confirmed (code)) |
 | triangle | mug ([Mugging](combat-throws.md#mugging)) |
 
+The pick-up back to the hold (`Mount_ReturnToFrontGrab`, `0x00271808`) ends the tackle (`Tackle_End`), links the pair as
+a front grab (`Grab_Link`) and gives 248 the connect's end hook, `Grab_ConnectEnd` (`0x0026bad8`), confirmed (code):
+at 248's end the victim takes the clip's [damage table](combat/index.md#damage-table) value while the grabber has
+power, the grab is released when the victim is out of reach, and the pair is snapped, attached and scored, as at the
+end of a grab's connect ([Grab and tackle](#grab)).
+
 The mount drains power at the tackle's 15 per second ([constants](combat/index.md#constants)). The strikes ran 16, 19
 and 28 updates back to 210. Level 99's tutorial follows this through two callbacks: `AddAnimCallback(player, 210,
 "PlayerState")` shows the mount's prompt when 210 starts, and `HUDSetTutorialCallback("P1.BasicAttacks")`, which
@@ -734,6 +748,23 @@ stick is released; a stick at 0.9 neither turns nor moves the pair.
 The check that will show it (no disc needed, synthetic clips): mount, power strike, run to the end; the mounter stands
 in the fight-stance idle, not mounting, the victim is grounded and not mounted, and no frame after the strike shows
 210 / 207. A level99 cp1 playthrough step can assert the same on the hobo.
+
+**Where Coney differs: the pick-up's end** ([The mount](#mount), #684). At the end of 248 Coney runs the connect's end
+as the original does (`Fighter::followPairClips`, `Fighter::landGrapple`): with power left the victim takes 248's
+damage-table value first, then the gate lets a victim out of reach go, otherwise the snap and attach, and only then does
+the move score (`Grab_ScoreMove`, `0x00264fa0`), with the grab's base id at record `+0xb4` rather than 248: `Grab_Start`
+(`0x0026c548`) or `Tackle_Start` (`0x002707a8`) set it and the mount leaves it, so a strong grapple's mount scores 657
+again at the pick-up's end, and a plain grab's or a tackle's scores nothing (confirmed (code); Coney keeps the base id
+in `Fighter::m_grabBase`). A grab's connect end deals its clip's value before the gate and scores the base id after the
+snap in the same way, so a strong grapple's victim out of reach is hurt and let go with no rage earned. A stand-in at
+both: the gate has no clear-line test (`Human_IsClearToTarget`, `0x0021c240`); the escape the original always gives a
+victim in state 0x20000 after the snap, and the victim's coin-flip circle escape or reverse (`Grab_Reverse`), are not
+run, as Coney's held human reports its commands only once attached and the reverse is not ported, so the move always
+scores; and with no power Coney still gates and snaps where the original does neither, since a victim left unattached
+would refuse every move in the hold. The pick-up also skips parts of `Tackle_End` (`0x0022c388`) and `Grab_Link`: the
+move styles (0xc, 0xb, 7, 8), the cleared states 0x400 / 0x800, `Human_GoDown` for either human in state 0x80000, the
+fight stance, speech command 8, the victim's brain target and tutorial hint 0xe. The get-off's 0.2 s blends from 244 and
+199 into the idles are cuts in Coney.
 
 The spray can of [Rembrandt's power move](#power-move-props) (#223): `Human` acts on its clip events for any human
 (`repo:src/human/carried_prop.h`, `Human::carriedProp()`): `0x30` notes the named prop, `0x37` its place (the word's

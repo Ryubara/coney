@@ -567,6 +567,37 @@ said. Confirmed (code) at each address.
     ([Combat](../combat-reactions.md#ground-escape); inferred from the dispatcher not running for a downed human). It is
     not aimed "against the target" ([AI goals](../ai-goals.md#goal-reactions)).
 
+#### An AI grab of the player at runtime {#ai-grab-runtime}
+
+The scenario `civ_grab` (`repo:research/traces/scenarios/civ_grab.toml`) starts from the `pedestrian-grab` state
+(level99, checkpoint 2): PoizoCiv is made the type-2 fighter of `civ_fight`, 1 m in front of the player, and at update 6
+it grabs him through `Grab_Start` (`0x0026c548`), as a circle tap does (`Player_GrabOrTackle`, `0x00284920`). From then
+on its brain alone decides, and the player presses nothing. Two runs agreed update for update up to the second throw,
+which went into a wall in both and was a different one of the wall throws. Confirmed (runtime), run
+r-20261031-civ-grab-1331. The ids are those of record `+0x20`:
+
+| Update | The AI, the grabber | The player |
+| --- | --- | --- |
+| 7 | intro 70 | 359 |
+| 19 | connect 72 | 73 |
+| 38 | front hold 82 | 83 |
+| 40 | command `0xd` with the stick at 1.0: THROW_01 to the left, 153 | 154, 30 damage, down |
+| 100 | command `0xe`: the tackle, 240 | 241 |
+| 127 | the mount, 210 | 207 |
+| 129 | command `0xd`, no stick: the pick-up, 248 | 249 |
+| 165 | front hold 82 | 83 |
+| 167 | command `0xd` with the stick at 1.0: a wall throw, 155 (161 in the other run, which has no record) | 156 (162), 80 damage, down |
+
+So each hold of the player lasted **2 updates**: on its second update the grabbing goal's first pick was a throw, and
+the throw ended the grab. The press is the circle **tap's** command `0xd` with a full stick, written by
+`AttackAction_Start` (`0x002fa9a8`, the set-command hook's caller): the throw kinds' command (25 and 29,
+[Attack kinds](#attack-kinds)). The grab takes it as circle because `PlayerCmd_IsCircleAny` (`0x0027bf30`) is any of
+`0x1e`, `0xd` and `0xe` ([In the grab](../combat-grabs.md#grabbing)). The mount after the tackle lasted 2 updates as well
+before its circle (`0xd`, `PlayerCmd_IsCircleAnyB` `0x0027bff0`) brought the pair back up to the front hold. In these
+four holds the goal never picked the strike in the grab (kind 24), so its timing at runtime is not traced. Confirmed
+(runtime), run r-20261031-civ-grab-1331, for the clips, commands and damage; that the throw is kind 25 or 29 is
+inferred from its command and its stick.
+
 #### Who backs off (FightBackOff) {#fight-back-off-pusher}
 
 Confirmed (code) at the cited addresses unless a line says otherwise.
@@ -875,6 +906,12 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
   made, held off and handed back as the original does, with its exemptions; the arrested, on-fire and wounded goals,
   the Grabber and BigBull goals' tests and the `+0x2d7` test are not built (the function database lists each with its
   issue).
+- **An AI's moves in a grab** reach the hold through the same grab update as the player's (`combat::updateGrab`):
+  circle is its press, tap or hold there, so an AI grabber's throws (the tap with the stick) and its mount (the tap
+  without it) play, and its hold of the player ends as [the original's](#ai-grab-runtime) does. A pick-up in the
+  mount's 0.1 s seat, which an AI's circle two updates into the mount is, leaves the seat unattached, so the hold after
+  it takes moves (**Coney's reading**: the seat's attach is Coney's). Until #1331 the grab took circle only on its
+  press, and a pick-up in the seat left the held man at the mount's offset, so an AI held the player with no move.
 - **Hiding** (`repo:src/ai/hiding.h`, `repo:src/human/human_hiding.cpp`, [Stealth](../stealth.md#shadow-ground)):
   the ground snap keeps its triangle's flags (`Human::onShadowGround`, bit `0x10`); after the level's step
   `ai::updateHiding` runs the ground rule for player 1: on shadow ground with nobody hunting him (no other fightable
