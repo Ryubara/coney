@@ -8,6 +8,7 @@ add_library(coney_core STATIC
     console/commands_table.cpp
     console/console.cpp
     console/owned_spec.cpp
+    console/player_commands.cpp
     console/registry.cpp
     console/terminal.cpp
     console/tokenizer.cpp

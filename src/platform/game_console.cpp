@@ -9,14 +9,18 @@
 #include <SDL3/SDL.h>
 
 #include "console/catalog.h"
+#include "console/player_commands.h"
 #include "core/log.h"
 #include "net/net_status.h"
 
 namespace coney::platform {
 
+// A stub: the console's session host does nothing yet.
+class GameConsole::Session final {};
+
 class GameConsole::NetworkRole final : public console::NetworkHost {
   public:
-    explicit NetworkRole(const NetPlay& net) : m_net(net) {}
+    explicit NetworkRole(NetPlay& net) : m_net(net) {}
 
     // A host's console changes the session; a joined game's is a guest's.
     [[nodiscard]] console::SessionRole role() const override {
@@ -32,7 +36,7 @@ class GameConsole::NetworkRole final : public console::NetworkHost {
     }
 
   private:
-    const NetPlay& m_net;
+    NetPlay& m_net;
 };
 
 class GameConsole::HistoryFile final : public console::HistoryStore {
@@ -74,8 +78,9 @@ std::optional<std::filesystem::path> consoleHistoryPath() {
     return path;
 }
 
-GameConsole::GameConsole(const Options& options, const NetPlay& net, console::Access highest)
-    : m_network(std::make_unique<NetworkRole>(net)) {
+GameConsole::GameConsole(const Options& options, NetPlay& net, console::Access highest, GameConsoleLinks links)
+    : m_session(std::make_unique<Session>()), m_network(std::make_unique<NetworkRole>(net)) {
+    (void)links;
     // A test-mode run touches no user folder (docs/guides/console.md#test-mode).
     const bool testMode = isTestMode(options);
     if (!testMode) {
@@ -88,13 +93,18 @@ GameConsole::GameConsole(const Options& options, const NetPlay& net, console::Ac
         console::ConsoleHosts{.network = m_network.get(), .history = m_history.get()});
     // The player catalog. Its handlers come with the player commands (docs/guides/studio/console.md#build-issues,
     // issue 2); until then every entry stays out of the registry and is unknown when typed.
-    const auto registered = console::registerBuiltins(m_console->registry(), console::playerCatalog(), {});
+    const auto registered = console::registerPlayerCommands(*m_console);
     if (!registered) {
         logging::error(logging::Category::Engine, "console: " + registered.error().message);
     }
 }
 
 GameConsole::~GameConsole() = default;
+
+// A stub: nothing is linked yet, and `quit` is not a command that ends the run.
+void GameConsole::setLinks(GameConsoleLinks links) { (void)links; }
+
+bool GameConsole::quitRequested() const { return false; }
 
 void GameConsole::listenTo(ScriptedInput& script) {
     script.setConsoleSink([this](std::size_t port, std::string_view line) {
