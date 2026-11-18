@@ -3,10 +3,13 @@ add_library(coney_core STATIC
     camera/camera_lens.cpp
     console/arg_types.cpp
     console/catalog.cpp
+    console/command_picker.cpp
     console/command_queue.cpp
     console/command_spec.cpp
     console/commands_table.cpp
     console/console.cpp
+    console/console_pad.cpp
+    console/line_editor.cpp
     console/owned_spec.cpp
     console/player_commands.cpp
     console/registry.cpp

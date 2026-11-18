@@ -342,6 +342,10 @@ struct Options {
     /// test aid for checking that the overlay leaves the frame as it found it (docs/guides/debug-menu.md). Ignored
     /// without a window.
     std::optional<int> devOverlayFrames;
+    /// `--console-open`: open the console's F8 bar for this many frames from the start, then close it; a test aid for
+    /// checking that the bar leaves the frame as it found it once closed (docs/guides/console.md#front-end). In every
+    /// build, the release build included. Ignored without a window.
+    std::optional<int> consoleOpenFrames;
     /// `--fps-cap N`: draw at most N frames a second, 0 for no cap (the default; vsync still limits the rate while
     /// it is on). 30 is the original's rhythm: one step and one render per frame, nothing blended
     /// (docs/guides/running-options.md#frame-rate). Not in test mode.

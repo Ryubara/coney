@@ -72,6 +72,14 @@ if(TARGET coney_shaders)
     target_compile_definitions(coney_platform PRIVATE CONEY_GPU_SHADERS=1)
 endif()
 
+# The player console's front end, the F8 bar (docs/guides/console.md#front-end), in every build: its widgets over the
+# console's model (src/console/), drawn with Dear ImGui. Apart from the debug tools by target; the one target besides
+# coney_devtools that links Dear ImGui (docs/guides/building.md#debug-tools). The size rule's Dear ImGui side
+# (ui_scale.cpp) is here, outside the debug tools, as their overlay and the bar both use it.
+add_library(coney_console_ui STATIC console_view.cpp ui_scale.cpp)
+coney_target_defaults(coney_console_ui)
+target_link_libraries(coney_console_ui PUBLIC coney_platform imgui)
+
 # The executables (docs/guides/building.md#debug-tools). With the debug tools, `coney` is main.cpp over them, and
 # `coney_release` is the release build's entry point built beside it, so every build with the tools also links the
 # game without them. Without them (the release build), `coney` is the release build's entry point alone.
@@ -104,24 +112,23 @@ if(CONEY_DEBUG_TOOLS)
         sandbox_viewer_mode.cpp
         test_card_mode.cpp
         texture_viewer_mode.cpp
-        ui_scale.cpp
         world_edit.cpp)
     coney_target_defaults(coney_devtools)
-    target_link_libraries(coney_devtools PUBLIC coney_platform coney_debug imgui)
+    target_link_libraries(coney_devtools PUBLIC coney_platform coney_console_ui coney_debug imgui)
 
     add_executable(coney main.cpp)
     coney_target_defaults(coney)
-    target_link_libraries(coney PRIVATE coney_platform coney_devtools)
+    target_link_libraries(coney PRIVATE coney_platform coney_console_ui coney_devtools)
     # The build type a `--bench` report names (docs/guides/performance.md): Debug, RelWithDebInfo, Release.
     target_compile_definitions(coney PRIVATE CONEY_BUILD_TYPE="$<CONFIG>")
     add_executable(coney_release main_release.cpp)
     coney_target_defaults(coney_release)
-    target_link_libraries(coney_release PRIVATE coney_platform)
+    target_link_libraries(coney_release PRIVATE coney_platform coney_console_ui)
     set(_coney_release_exe coney_release)
 else()
     add_executable(coney main_release.cpp)
     coney_target_defaults(coney)
-    target_link_libraries(coney PRIVATE coney_platform)
+    target_link_libraries(coney PRIVATE coney_platform coney_console_ui)
     set(_coney_release_exe coney)
 endif()
 
@@ -241,7 +248,18 @@ set_tests_properties(coney.release.console_quit PROPERTIES
                      TIMEOUT ${CONEY_TEST_HANG_GUARD}
                      PASS_REGULAR_EXPRESSION "console:   quitting"
                      FAIL_REGULAR_EXPRESSION "Coney console: the commands this build has")
+# Its twin: the release build carries the player console's F8 bar (docs/guides/console.md#front-end).
+add_test(NAME coney.release.has_console_bar COMMAND "${CMAKE_COMMAND}" -DEXE=$<TARGET_FILE:${_coney_release_exe}> -P
+                                                    "${PROJECT_SOURCE_DIR}/cmake/console_bar_marker.cmake")
 if(CONEY_DEBUG_TOOLS)
+    # Closed means untouched (docs/guides/studio/console.md#tests): the last frame of a windowed run that opened the
+    # console's bar for its first frames is byte-identical to one without it. On the debug tools' `coney`, which takes
+    # --screenshot; without a display it reports itself skipped.
+    add_test(NAME coney.console_bar_leaves_frame
+             COMMAND "${CMAKE_COMMAND}" -DEXE=$<TARGET_FILE:coney> -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/console-frame
+                     -P "${PROJECT_SOURCE_DIR}/cmake/console_frame_check.cmake")
+    set_tests_properties(coney.console_bar_leaves_frame PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD}
+                         SKIP_REGULAR_EXPRESSION "console frame check skipped")
     # The same check on the debug tools' `coney` finds the markers, so the check above cannot pass by finding nothing.
     add_test(NAME coney.debug_tools_markers_found
              COMMAND "${CMAKE_COMMAND}" -DEXE=$<TARGET_FILE:coney> -DEXPECT=present -P
