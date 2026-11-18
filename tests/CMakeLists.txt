@@ -578,6 +578,7 @@ if(CONEY_DEBUG_TOOLS)
         platform/disc_sprint_attacks_test.cpp
         platform/disc_strike_contact_test.cpp
         platform/disc_tandem_test.cpp
+        platform/gpu_timer_test.cpp
         platform/imgui_model_view_test.cpp
         platform/imgui_ui_scale_test.cpp
         platform/lighting_rows_test.cpp

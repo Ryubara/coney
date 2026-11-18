@@ -650,6 +650,8 @@ void RenderEngine::startFrame(graphics::Rgba clear, const graphics::FrameStart& 
     rw::RGBA colour = toRw(clear);
     draw::clearCamera(m_camera, &colour, rw::Camera::CLEARIMAGE | rw::Camera::CLEARZ);
     draw::beginCameraUpdate(m_camera);
+    // The bench's GPU time for this frame, to its end in present().
+    beginGpuFrame();
 }
 
 void RenderEngine::drawTexture(rw::Texture* texture, graphics::ScreenRect rect) {
@@ -726,6 +728,7 @@ void RenderEngine::present() {
     const bool captureThisFrame = m_captureFrame.has_value() && *m_captureFrame == m_presented;
     if (m_camera != nullptr) {
         draw::endCameraUpdate(m_camera);
+        endGpuFrame();
         // Read the frame back before it is shown: after the buffer swap the back buffer's contents are undefined.
         if (captureThisFrame) {
             m_capture = captureBackBuffer(m_capturePath);

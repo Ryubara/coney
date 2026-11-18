@@ -576,8 +576,8 @@ above; the tolerance is here and in `tests/pictures/scenes.toml`.
 
 ### Benchmark {#benchmark}
 
-`coney-tools perf bench` and `coney --bench` ([Performance](../guides/performance.md#bench)) are the benchmark;
-they gain named scenes and a comparison:
+`coney-tools perf bench` and `coney --bench` ([Performance](../guides/performance.md#bench)) are the benchmark, with
+named scenes, GPU time and a comparison (built, [Scenes](../guides/performance.md#scenes)):
 
 ```sh
 uv run --project python coney-tools perf bench --scene hub,hub-crowd,street --out ../../scratch/perf
@@ -589,8 +589,9 @@ uv run --project python coney-tools perf bench --scene all --compare ../../scrat
   times, and the report's `meta` records the render size and the window beside the level.
 - **`--compare FOLDER`** prints each scene's median frame time beside the baseline's and the change in percent, and
   exits 1 when a scene is slower than the budget allows, on a quiet machine only ([Budget](#budget)).
-- **GPU time.** A `gpu.frame` measure from GPU timestamp queries (OpenGL timer queries, then the new renderer's), so
-  a report shows whether a frame is bound by the CPU or the GPU.
+- **GPU time.** A `gpu.frame` measure from GPU timestamp queries (OpenGL timer queries, built; the new renderer's
+  waits for it, [GPU time](../guides/performance.md#gpu-time)), so a report shows whether a frame is bound by the CPU
+  or the GPU.
 - **`--display-preset` and `--renderer`** are passed through to Coney, so every display preset and renderer is
   measured the same way (`--preset` stays the build's CMake preset).
 
@@ -633,14 +634,17 @@ What it says:
   changes on the new renderer bring that down, but at this count draws are not the limit.
 
 [Order](#order) item 16 records this again on the scene table with GPU time, on a quiet machine, and that record
-becomes the baseline `--compare` reads; the figures above are the starting point it replaces. The items that draw
-through GL3 (1 to 10 and 15 to 19) must keep these numbers (the *PS2* budget below); the GPU renderer's items are
-measured against them.
+becomes the baseline `--compare` reads; the figures above are the starting point it replaces. The scene table, the
+GPU time and the comparison are built ([Scenes](../guides/performance.md#scenes)); the recording is not yet
+([#1383](issue:1383)), since it needs a machine no other build is using: `coney-tools perf bench --scene all --out
+../../scratch/perf-baseline` on a quiet one, the table pasted here and the folder kept for `--compare`. Until then
+`--compare` has no folder to read and refuses. The items that draw through GL3 (1 to 10 and 15 to 19) must keep these
+numbers (the *PS2* budget below); the GPU renderer's items are measured against them.
 
 ### Budget {#budget}
 
-Frame-time budgets on this machine, each scene's median of three runs, checked by `perf bench --compare` once item 16
-lands. They are targets for the work in [Order](#order), not results:
+Frame-time budgets on this machine, each scene's median of three runs, checked by `perf bench --compare` (built; it
+reads the baseline item 16 records). They are targets for the work in [Order](#order), not results:
 
 | Preset and renderer | Scene | Budget | Why |
 | --- | --- | --- | --- |
