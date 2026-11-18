@@ -176,7 +176,7 @@ TEST_CASE("a cut takes a piece and its collision out of the world and moves both
     const coney::io::Wad wad = openWorldDisc(dir);
     coney::world::SectorBudget budget(10'000);
     const std::vector<std::string> names{"test"};
-    auto set = WorldSet::load(wad, names, budget, false);
+    auto set = WorldSet::load(wad, names, budget, false, (*engine)->sceneAssets());
     REQUIRE(set.has_value());
     auto mesh = levelMesh();
     std::string output;
@@ -220,7 +220,7 @@ TEST_CASE("a roof gets collision from the up-facing faces under its box, and a h
     const coney::io::Wad wad = openWorldDisc(dir);
     coney::world::SectorBudget budget(10'000);
     const std::vector<std::string> names{"test"};
-    auto set = WorldSet::load(wad, names, budget, false);
+    auto set = WorldSet::load(wad, names, budget, false, (*engine)->sceneAssets());
     REQUIRE(set.has_value());
     auto mesh = levelMesh();
     WorldEditor editor(editsOf("roof box=14,-8,4,18,-4,6 material=16\nhide s\n"), [](std::string_view) {});
@@ -252,7 +252,7 @@ TEST_CASE("a sector read again after its cut or its spread is cut and placed aga
     const coney::io::Wad wad = openWorldDisc(dir);
     coney::world::SectorBudget budget(10'000);
     const std::vector<std::string> names{"test"};
-    auto set = WorldSet::load(wad, names, budget, false);
+    auto set = WorldSet::load(wad, names, budget, false, (*engine)->sceneAssets());
     REQUIRE(set.has_value());
     REQUIRE(coney::world::requestPart(*(*set)->worlds()[0], 0, 1, budget, **set, 0).has_value());
     REQUIRE(coney::world::requestPart(*(*set)->worlds()[0], 0, 2, budget, **set, 0).has_value());

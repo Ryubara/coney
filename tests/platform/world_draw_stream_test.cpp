@@ -11,8 +11,10 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
@@ -20,8 +22,13 @@
 #include "core/name_hash.h"
 #include "fileio/disc.h"
 #include "fileio/wad.h"
+#include "graphics/asset_store.h"
+#include "graphics/frame_description.h"
+#include "graphics/mesh_data.h"
+#include "graphics/texture_data.h"
 #include "platform/draw_stream.h"
 #include "platform/render_engine.h"
+#include "platform/scene_assets.h"
 #include "platform/world_renderer.h"
 #include "platform/world_set.h"
 #include "support/fixtures.h"
@@ -31,9 +38,19 @@
 #include "world/sector_budget.h"
 #include "world/world_streamer.h"
 
+using coney::graphics::CullFaces;
+using coney::graphics::Draw3d;
+using coney::graphics::FrameDescription;
+using coney::graphics::Material3d;
+using coney::graphics::MeshData;
+using coney::graphics::MeshId;
+using coney::graphics::ScenePass;
+using coney::graphics::TextureData;
+using coney::graphics::TextureId;
 using coney::platform::DrawStream;
 using coney::platform::RenderBackend;
 using coney::platform::RenderEngine;
+using coney::platform::SceneAssets;
 using coney::platform::WorldRenderer;
 using coney::platform::WorldSet;
 using coney::platform::WorldView;
@@ -117,17 +134,23 @@ WorldView sceneView() {
     return view;
 }
 
-// Draws the world scene headless on a fresh renderer, recording its one frame, and returns the stream.
-DrawStream drawWorldScene(const WorldScene& scene) {
+// The headless renderer the scene draws on, at the original's frame size.
+std::unique_ptr<RenderEngine> startHeadless() {
     coney::platform::WindowDesc desc;
     desc.width = 640;
     desc.height = 448;
     auto engine = RenderEngine::start(RenderBackend::Null, desc);
     REQUIRE(engine.has_value());
+    return std::move(*engine);
+}
+
+// Draws the world scene headless on a fresh renderer, recording its one frame, and returns the stream.
+DrawStream drawWorldScene(const WorldScene& scene) {
+    auto engine = startHeadless();
     const SceneDisc disc;
     coney::world::SectorBudget budget(10'000);
     const std::vector<std::string> names{"scene"};
-    auto set = WorldSet::load(*disc.wad, names, budget, false);
+    auto set = WorldSet::load(*disc.wad, names, budget, false, engine->sceneAssets());
     REQUIRE(set.has_value());
     coney::world::StreamedWorld& world = *(*set)->worlds()[0];
     for (const std::uint32_t part : {1U, 2U}) {
@@ -139,9 +162,9 @@ DrawStream drawWorldScene(const WorldScene& scene) {
     {
         WorldRenderer renderer;
         renderer.recordHeadless(true);
-        (*engine)->requestDrawStream(0);
-        renderer.render(**engine, **set, nullptr, sceneView(), 1000.0F, scene.drawMs);
-        stream = (*engine)->drawStream();
+        engine->requestDrawStream(0);
+        renderer.render(*engine, **set, nullptr, sceneView(), 1000.0F, scene.drawMs);
+        stream = engine->drawStream();
     }
     REQUIRE(stream.has_value());
     return coney::test::got(stream);
@@ -166,4 +189,104 @@ TEST_CASE("the world scene hashes the same twice and sees a sector's fade", "[pl
     const std::uint64_t faded = drawWorldScene(WorldScene{}).hash();
     CHECK(drawWorldScene(WorldScene{}).hash() == faded);
     CHECK(drawWorldScene(WorldScene{.drawMs = 600}).hash() != faded); // half way through the fade
+}
+
+TEST_CASE("a loaded sector's mesh and textures are held by id until its part goes", "[platform][world][scene-assets]") {
+    // Expected: docs/engine/renderer.md#frame-description: WorldSet holds a part's dictionary textures and each
+    // sector's mesh in the engine's scene assets while the part is loaded; the mesh is the strip's four vertices
+    // (meshFromRw, docs/engine/asset-formats.md), its one material's texture the 2 x 2 "brick" of its part.
+    auto engine = startHeadless();
+    const SceneDisc disc;
+    coney::world::SectorBudget budget(10'000);
+    const std::vector<std::string> names{"scene"};
+    const SceneAssets& assets = engine->sceneAssets();
+    {
+        auto set = WorldSet::load(*disc.wad, names, budget, false, engine->sceneAssets());
+        REQUIRE(set.has_value());
+        coney::world::StreamedWorld& world = *(*set)->worlds()[0];
+        auto requested = coney::world::requestPart(world, 0, 1, budget, **set, 100);
+        REQUIRE(requested.has_value());
+        REQUIRE(*requested);
+
+        const WorldSet::SectorMesh* mesh = (*set)->sectorMesh(0, 0);
+        REQUIRE(mesh != nullptr);
+        CHECK(mesh->mesh.valid());
+        CHECK_FALSE(mesh->dualLayer.valid());       // no MatFX dual material
+        CHECK((*set)->sectorMesh(0, 1) == nullptr); // part 2 is not loaded
+        CHECK(assets.atomic(mesh->mesh) == (*set)->atomic(0, 0));
+        const MeshData* data = assets.store().mesh(mesh->mesh);
+        REQUIRE(data != nullptr);
+        CHECK(data->vertices.size() == 4);
+        const std::span<const TextureId> textures = assets.materialTextures(mesh->mesh);
+        REQUIRE(textures.size() == 1);
+        const TextureData* texture = assets.store().texture(textures[0]);
+        REQUIRE(texture != nullptr);
+        CHECK(texture->name == "brick");
+        REQUIRE_FALSE(texture->levels.empty());
+        CHECK(texture->levels[0].width == 2);
+
+        // The part goes, and its mesh and texture with it.
+        const MeshId meshId = mesh->mesh;
+        const TextureId textureId = textures[0];
+        (*set)->unloadPart(0, 1);
+        world.markPartUnloaded(1);
+        budget.release(300);
+        CHECK((*set)->sectorMesh(0, 0) == nullptr);
+        CHECK(assets.store().mesh(meshId) == nullptr);
+        CHECK(assets.store().texture(textureId) == nullptr);
+    }
+    CHECK(assets.store().meshCount() == 0);
+    CHECK(assets.store().textureCount() == 0);
+}
+
+TEST_CASE("the world scene's sectors are drawn from the frame description", "[platform][world][frame-description]") {
+    // Expected: docs/engine/renderer.md#frame-description: each sector is one 3D draw of its mesh by id with its
+    // material's texture id, placed at its sector's origin (WorldSet places each atomic there), faded in (alpha 255
+    // once the second after its part loaded is over: World_RenderSectorAtomic, docs/research/world.md#a-frame), with
+    // texture levels by distance (docs/research/rendering.md#world), in the world pass's states and lit by the world
+    // ambient at least (the light manager as it starts, docs/research/world.md#lighting).
+    auto engine = startHeadless();
+    const SceneDisc disc;
+    coney::world::SectorBudget budget(10'000);
+    const std::vector<std::string> names{"scene"};
+    auto set = WorldSet::load(*disc.wad, names, budget, false, engine->sceneAssets());
+    REQUIRE(set.has_value());
+    coney::world::StreamedWorld& world = *(*set)->worlds()[0];
+    for (const std::uint32_t part : {1U, 2U}) {
+        auto requested = coney::world::requestPart(world, 0, part, budget, **set, 100);
+        REQUIRE(requested.has_value());
+        REQUIRE(*requested);
+    }
+    {
+        WorldRenderer renderer;
+        renderer.recordHeadless(true);
+        engine->requestDrawStream(0);
+        renderer.render(*engine, **set, nullptr, sceneView(), 1000.0F, 2000);
+    }
+    const FrameDescription& frame = engine->frame();
+    const ScenePass* scene = nullptr;
+    for (const auto& pass : frame.passes()) {
+        if (const auto* found = std::get_if<ScenePass>(&pass); found != nullptr) {
+            scene = found;
+        }
+    }
+    REQUIRE(scene != nullptr);
+    REQUIRE(scene->draws.size() == 2);
+    for (const Draw3d& draw : scene->draws) {
+        const bool first = draw.mesh == (*set)->sectorMesh(0, 0)->mesh;
+        CHECK((first || draw.mesh == (*set)->sectorMesh(0, 1)->mesh));
+        CHECK(draw.transform.position[0] == (first ? 5.0F : 15.0F));
+        CHECK(draw.transform.position[1] == 5.0F);
+        CHECK(draw.material == Material3d{.fade = 255, .distanceLevels = true});
+        CHECK(draw.states.depthTest);
+        CHECK(draw.states.depthWrite);
+        CHECK(draw.states.cull == CullFaces::Back);
+        CHECK(draw.states.fog);
+        CHECK(draw.states.alphaBlend);
+        REQUIRE(frame.texturesOf(draw).size() == 1);
+        const TextureData* texture = engine->sceneAssets().store().texture(frame.texturesOf(draw)[0]);
+        REQUIRE(texture != nullptr);
+        CHECK(texture->name == (first ? "brick" : "slate"));
+        CHECK_FALSE(frame.lightsOf(draw).empty());
+    }
 }

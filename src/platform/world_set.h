@@ -13,6 +13,8 @@
 
 #include "core/error.h"
 #include "fileio/wad.h"
+#include "graphics/asset_store.h"
+#include "platform/scene_assets.h"
 #include "platform/texture_dictionary.h"
 #include "platform/texture_lookup.h"
 #include "platform/world_atomic.h"
@@ -48,10 +50,14 @@ class WorldSet final : public world::PartStore {
   public:
     /// Loads the worlds of `names` in order, as LoadLevel does: for each, the manifest, then room for its heap, then
     /// the world stream with its texture dictionary. No part is loaded. With `forDrawing` every dictionary is
-    /// converted for the OpenGL renderer as it is read. Fails when a file is missing or damaged, or with
-    /// ErrorCode::Invalid when a world's heap does not fit in `budget`, which must outlive the set.
-    [[nodiscard]] static std::expected<std::unique_ptr<WorldSet>, Error>
-    load(const io::Wad& wad, std::span<const std::string> names, world::SectorBudget& budget, bool forDrawing);
+    /// converted for the OpenGL renderer as it is read. Every dictionary's textures, and each loaded sector's mesh and
+    /// dual layer, are held in `assets` (the RenderEngine's, RenderEngine::sceneAssets()) while they are loaded, for
+    /// the frame description (sectorMesh()). Fails when a file is missing or damaged, or with ErrorCode::Invalid when
+    /// a world's heap does not fit in `budget`. `budget` and `assets` must outlive the set.
+    [[nodiscard]] static std::expected<std::unique_ptr<WorldSet>, Error> load(const io::Wad& wad,
+                                                                              std::span<const std::string> names,
+                                                                              world::SectorBudget& budget,
+                                                                              bool forDrawing, SceneAssets& assets);
 
     /// Frees every loaded part, then the worlds and their dictionaries, and gives their heaps back to the budget.
     /// @orig 0x00410b70 World_Unload (WorldPS2.cpp)
@@ -82,6 +88,21 @@ class WorldSet final : public world::PartStore {
     /// @coney-only the debug tools' world edits; the original has none
     [[nodiscard]] WorldAtomic* worldAtomic(std::size_t world, std::uint32_t sector);
 
+    /// A loaded sector's atomic and its dual layer, by their ids in the scene assets.
+    struct SectorMesh {
+        graphics::MeshId mesh;      ///< invalid when the atomic could not be converted
+        graphics::MeshId dualLayer; ///< invalid when it has none
+    };
+
+    /// The meshes of sector `sector` of world `world`, or null while its part is not loaded: what the world renderer
+    /// names in the frame description (docs/engine/renderer.md#frame-description).
+    [[nodiscard]] const SectorMesh* sectorMesh(std::size_t world, std::uint32_t sector) const;
+
+    /// Converts sector `sector` of world `world`'s atomic and dual layer into the scene assets again, under new ids,
+    /// after the debug tools' world edits cut it (WorldAtomic::cut()); nothing while its part is not loaded.
+    /// @coney-only the debug tools' world edits; the original never changes a sector's geometry
+    void refreshMesh(std::size_t world, std::uint32_t sector);
+
     /// Atomics resident now, over every world.
     [[nodiscard]] std::size_t residentAtomics() const;
 
@@ -101,6 +122,7 @@ class WorldSet final : public world::PartStore {
     struct Part {
         std::optional<TextureDictionary> dictionary;
         std::optional<TextureLookupEntry> lookup;
+        std::vector<graphics::TextureId> textures; // the dictionary's, in the scene assets
         std::vector<WorldAtomic> atomics;
     };
     // One world: its streaming state, its resident dictionary and its parts.
@@ -108,13 +130,16 @@ class WorldSet final : public world::PartStore {
         world::StreamedWorld state;
         TextureDictionary dictionary;
         TextureLookupEntry lookup;
-        std::vector<Part> parts;           // part i at [i - 1]
-        std::vector<rw::Atomic*> bySector; // by streamed index; null while not loaded
-        std::uint64_t heap = 0;            // charged to the budget while the world is loaded
-        bool drawn = true;                 // setDrawn()
+        std::vector<graphics::TextureId> textures;     // the dictionary's, in the scene assets
+        std::vector<Part> parts;                       // part i at [i - 1]
+        std::vector<rw::Atomic*> bySector;             // by streamed index; null while not loaded
+        std::vector<std::optional<SectorMesh>> meshes; // by streamed index; none while not loaded
+        std::uint64_t heap = 0;                        // charged to the budget while the world is loaded
+        bool drawn = true;                             // setDrawn()
     };
 
-    WorldSet(const io::Wad& wad, world::SectorBudget& budget) : m_wad(wad), m_budget(budget) {}
+    WorldSet(const io::Wad& wad, world::SectorBudget& budget, SceneAssets& assets)
+        : m_wad(wad), m_budget(budget), m_assets(assets) {}
 
     /// Loads one world and adds it to the set.
     /// @orig 0x00410648 World_LoadStream (WorldPS2.cpp)
@@ -123,6 +148,7 @@ class WorldSet final : public world::PartStore {
 
     const io::Wad& m_wad;
     world::SectorBudget& m_budget;
+    SceneAssets& m_assets;
     bool m_forDrawing = false;
     std::vector<std::unique_ptr<Loaded>> m_worlds;
     std::vector<world::StreamedWorld*> m_states;

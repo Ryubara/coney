@@ -103,7 +103,7 @@ TEST_CASE("a world loads resident, its parts come and go and the budget follows"
     coney::world::SectorBudget budget(10'000);
     {
         const std::vector<std::string> names{"test"};
-        auto set = WorldSet::load(wad, names, budget, false);
+        auto set = WorldSet::load(wad, names, budget, false, (*engine)->sceneAssets());
         REQUIRE(set.has_value());
         CHECK(budget.used() == 1000); // the manifest's world heap
         REQUIRE((*set)->worlds().size() == 1);
@@ -140,7 +140,7 @@ TEST_CASE("a world whose heap does not fit is not loaded", "[world_set]") {
     const coney::io::Wad wad = openWorldDisc(dir);
     coney::world::SectorBudget budget(500);
     const std::vector<std::string> names{"test"};
-    CHECK_FALSE(WorldSet::load(wad, names, budget, false).has_value());
+    CHECK_FALSE(WorldSet::load(wad, names, budget, false, (*engine)->sceneAssets()).has_value());
     CHECK(budget.used() == 0);
 }
 

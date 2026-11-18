@@ -81,9 +81,10 @@ std::vector<std::string> playableLevelNames(const io::Wad& wad) {
 }
 
 std::expected<std::unique_ptr<WorldSet>, Error> WorldSet::load(const io::Wad& wad, std::span<const std::string> names,
-                                                               world::SectorBudget& budget, bool forDrawing) {
+                                                               world::SectorBudget& budget, bool forDrawing,
+                                                               SceneAssets& assets) {
     installGlobalTextureLookup();
-    std::unique_ptr<WorldSet> set(new WorldSet(wad, budget));
+    std::unique_ptr<WorldSet> set(new WorldSet(wad, budget, assets));
     set->m_forDrawing = forDrawing;
     for (const std::string& name : names) {
         if (auto loaded = set->loadWorld(name, forDrawing); !loaded) {
@@ -198,6 +199,12 @@ WorldAtomic* WorldSet::worldAtomic(std::size_t world, std::uint32_t sector) {
     }
     return nullptr;
 }
+
+const WorldSet::SectorMesh* WorldSet::sectorMesh(std::size_t /*world*/, std::uint32_t /*sector*/) const {
+    return nullptr; // stub: the meshes are not held yet
+}
+
+void WorldSet::refreshMesh(std::size_t /*world*/, std::uint32_t /*sector*/) {}
 
 std::size_t WorldSet::residentAtomics() const {
     std::size_t count = 0;

@@ -16,6 +16,8 @@ void FrameDescription::begin(const FrameStart& start) {
     m_textures.clear();
     m_quads.clear();
     m_vertices.clear();
+    m_lights.clear();
+    m_sceneTextures.clear();
 }
 
 FrameTextureId FrameDescription::texture(const Texture* texture) {
@@ -89,6 +91,10 @@ void FrameDescription::addTriangles(const Material2d& material, std::span<const 
 
 void FrameDescription::addScreenPass(const ScreenPass& pass) { m_passes.emplace_back(pass); }
 
+void FrameDescription::addSceneDraw(Draw3d /*draw*/, std::span<const SceneLight> /*lights*/,
+                                    std::span<const TextureId> /*textures*/,
+                                    std::span<const TextureId> /*dualTextures*/) {} // stub: nothing kept yet
+
 std::span<const LogicalQuad> FrameDescription::quadsOf(const Draw2d& draw) const {
     CONEY_ASSERT(draw.shape == Shape2d::Quads && draw.first + draw.count <= m_quads.size());
     return std::span<const LogicalQuad>(m_quads).subspan(draw.first, draw.count);
@@ -98,5 +104,12 @@ std::span<const ScreenVertex> FrameDescription::verticesOf(const Draw2d& draw) c
     CONEY_ASSERT(draw.shape == Shape2d::Triangles && draw.first + draw.count <= m_vertices.size());
     return std::span<const ScreenVertex>(m_vertices).subspan(draw.first, draw.count);
 }
+
+// Stubs: no 3D draw is kept yet.
+std::span<const SceneLight> FrameDescription::lightsOf(const Draw3d& /*draw*/) const { return {}; }
+
+std::span<const TextureId> FrameDescription::texturesOf(const Draw3d& /*draw*/) const { return {}; }
+
+std::span<const TextureId> FrameDescription::dualTexturesOf(const Draw3d& /*draw*/) const { return {}; }
 
 } // namespace coney::graphics

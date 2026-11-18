@@ -58,7 +58,7 @@ std::expected<LevelScenery, Error> loadLevelScenery(RenderEngine& engine, const 
     if (auto lev = wad.lookup(std::string(name) + ".lev"); lev) {
         (void)budget.reserve(world::worldLevelPoolBytes((*lev)->size));
     }
-    auto set = WorldSet::load(wad, *names, budget, engine.drawsPixels());
+    auto set = WorldSet::load(wad, *names, budget, engine.drawsPixels(), engine.sceneAssets());
     if (!set) {
         return std::unexpected(std::move(set.error()));
     }
