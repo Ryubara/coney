@@ -56,10 +56,14 @@ so they go, with these ids, once those pages are touched and cite the disc page.
 
 * [`standards`](coney-tools-standards.md#standards): the legacy marks and the standards of touched files.
 
-### [The PCSX2 and clip commands](coney-tools-pcsx2.md)
+### [The PCSX2 commands](coney-tools-pcsx2.md)
 
 * [`pcsx2`](coney-tools-pcsx2.md#pcsx2): drive PCSX2: claims, recipes, save states, input recordings.
-* [`clips`](coney-tools-pcsx2.md#clips): in-game video clips, the original's recorded with `clips record`.
+
+### [The clip commands](coney-tools-clips.md)
+
+* [`clips`](coney-tools-clips.md#clips): in-game video clips, the original's recorded with `clips record`, before
+  and after pairs of one run with `clips pair`.
 
 ### [The xemu commands](coney-tools-xemu.md)
 

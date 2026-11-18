@@ -26,6 +26,10 @@ been touched for `build_hours` (`workspace.build_idle_hours`, 24 by default), wh
 "Touched" is the newest modification time of the worktree's tracked and untracked files, of its `HEAD` and of the
 build folder itself.
 
+A base checkout `clips pair` keeps (a detached worktree named `<workspace.clips.pair.base_prefix><commit>`, a cached
+build of a commit of `main`) is merged by definition; it is removed once idle for `build_hours`, as a build folder
+would be, so the next pair from the same base finds it built.
+
 **Disk pressure.** When the drive is still under the floor (`workspace.disk_min_free_gb`) after that, `clean` deletes
 the `build/` folders of the other worktrees, oldest last use first, until the free space reaches the floor plus
 `workspace.disk_margin_gb`. Only `build/` folders go in this mode, never a worktree or a source file, so uncommitted
@@ -369,6 +373,9 @@ class Settings:
     builds: bool = True
     #: How many worktrees are judged at once (git and the file system are waited for, not computed).
     workers: int = 8
+    #: The folder-name prefix of a base checkout `clips pair` keeps (`workspace.clips.pair.base_prefix`): a detached
+    #: worktree at a commit of `main`, removed once idle for `build_hours` like a build folder, not `worktree_hours`.
+    base_prefix: str = ""
 
 
 def busy_reason(path: Path, settings: Settings) -> str:
@@ -466,8 +473,12 @@ def assess(tree: GitWorktree, settings: Settings) -> Entry:
         else:
             entry.why = f"merged into {settings.base}"
         entry.merged = entry.why.startswith(("merged into", "pull request merged"))
+        # A clips pair base checkout is a cached build of a commit of main: it lives as long as a build folder.
+        cached = bool(settings.base_prefix) and tree.branch is None and path.name.startswith(settings.base_prefix)
+        if entry.merged and cached:
+            entry.why = "a clips pair base build"
         if entry.merged:
-            if idle() < settings.worktree_hours:
+            if idle() < (settings.build_hours if cached else settings.worktree_hours):
                 entry.why = f"{entry.why}, but used {idle():.1f} h ago"
             else:
                 entry.remove = True
@@ -799,6 +810,7 @@ def default_settings(
         merged_heads=merged_heads or gh_merged_heads(checkout),
         busy_file=known.busy_marker if known is not None else BUSY_FILE,
         marker_hours=build_hours,
+        base_prefix=known.clips.pair.base_prefix if known is not None else "",
         live=live_slots(workspace, checkout),
         running=running_checks(workspace, checkout),
     )

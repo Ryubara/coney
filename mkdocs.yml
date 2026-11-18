@@ -338,7 +338,8 @@ nav:
           - Reference commands: guides/coney-tools-references.md
           - Fidelity and research commands: guides/coney-tools-fidelity.md
           - Standards commands: guides/coney-tools-standards.md
-          - PCSX2 and clip commands: guides/coney-tools-pcsx2.md
+          - PCSX2 commands: guides/coney-tools-pcsx2.md
+          - Clip commands: guides/coney-tools-clips.md
           - xemu commands: guides/coney-tools-xemu.md
           - Trace commands: guides/coney-tools-trace.md
           - Picture commands: guides/coney-tools-picture.md

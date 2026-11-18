@@ -224,7 +224,7 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `xemu_copies` | `2` | a number: how many copies `xemu setup-copies` makes |
 | `xemu_gdb_base` | `1234` | a number: the GDB stub port of copy `xemu`; copy *i* uses this + *i* |
 | `xemu_monitor_base` | `4444` | a number: the QEMU monitor port of copy `xemu`; copy *i* uses this + *i* |
-| `ffmpeg_dir` | none (`PATH`) | the folder holding `ffmpeg` and `ffprobe`, for in-game clips ([`clips`](coney-tools-pcsx2.md#clips)); Coney itself reads `CONEY_FFMPEG` |
+| `ffmpeg_dir` | none (`PATH`) | the folder holding `ffmpeg` and `ffprobe`, for in-game clips ([`clips`](coney-tools-clips.md#clips)); Coney itself reads `CONEY_FFMPEG` |
 
 Each line is `key = "value"` (the number keys are written without quotes: `build_slots = 2`); a `#` starts a
 comment. A tool that needs a folder that does not exist stops with an
@@ -342,6 +342,10 @@ free space before and after.
   from the branch whose head is the branch's tip or a later commit; squash merges leave the branch's
   commits out of `main`, so `git branch --merged` alone would keep them all. Without `gh` (or when it fails), only
   what `origin/main` contains counts, so run `git fetch` (or pass `--fetch`) first; the rest is kept, never guessed.
+  A base checkout of [`clips pair`](coney-tools-clips.md#clips-pair) (`clips-base-<commit>`, the prefix being
+  `workspace.clips.pair.base_prefix`: a detached worktree at a commit of `main`, holding that commit's build for the
+  next pair from the same base) is merged by definition and goes once untouched for `--build-hours`, as a build folder
+  would.
 * **Deletes `build/`** (generated, ignored by git), and the worktree's folder in the [build root](#build-root) when
   `build_root` is set, from every worktree that is not busy (no live busy file, no build slot held or waited for, no
   check running) and has not been touched for

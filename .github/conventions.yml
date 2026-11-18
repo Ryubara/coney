@@ -1045,6 +1045,18 @@ workspace:
     max_seconds: 10
     warn_mb: 10
     keep_hours: 24
+    # `clips pair` and `clips encode` (docs/guides/coney-tools-clips.md#clips-pair): the named runs a pair records, where
+    # the merge base's build is kept, and the sizes an encode tries in order until the file fits GitHub.
+    pair:
+      scenarios: "tools/clips"                  # one TOML a scenario, read by the tools only
+      base_prefix: "clips-base-"                # worktrees/coney/<base_prefix><commit>: the base build, kept by commit
+      preset: "dev"                             # the preset both builds use (`--target coney` only)
+      upload_max_mb: 10                         # GitHub's limit for an attachment; an MP4 over it is encoded smaller
+      mp4_heights: [720, 540, 432, 360]         # a panel's height in a compare MP4
+      gif_widths: [800, 640, 480]               # a GIF's whole width (GitHub's description column is 814 px)
+      gif_fps: 10                               # whole hundredths of a second a frame, so the GIF plays evenly
+      gif_kb_per_second: 512                    # a GIF's budget, counted for gif_min_seconds to max_seconds
+      gif_min_seconds: 2
 
 stamps:
   # The proof log of a unit of work (docs/guides/stamps.md): one append-only chain of stamps per task, written only by

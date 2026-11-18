@@ -36,8 +36,9 @@ from coney_tools.config import (
 )
 from coney_tools.conventions import Clips, load_conventions
 
-#: A clip's file name: letters, digits, '.', '_' and '-', ending in .mp4 (no path, no user or machine name).
-CLIP_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.mp4$")
+#: A clip's file name: letters, digits, '.', '_' and '-', ending in .mp4 or, for an encode of one (`clips encode`,
+#: `clips pair --gif`), .gif (no path, no user or machine name). Coney's own `--record` writes .mp4 only.
+CLIP_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.(mp4|gif)$")
 #: A task's folder name in the scratch area (a branch or track name).
 TASK_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$")
 
@@ -143,7 +144,7 @@ def check_clip_path(path: Path, scratch: Path, rules: Clips) -> Path:
     if checkout is not None:
         raise ClipError(f"{path}: is inside the git checkout {checkout}; clips stay in the scratch folder")
     if not CLIP_NAME.match(resolved.name):
-        raise ClipError(f"{path}: a clip's name is letters, digits, '.', '_' and '-' ending in .mp4")
+        raise ClipError(f"{path}: a clip's name is letters, digits, '.', '_' and '-' ending in .mp4 or .gif")
     folder = resolved.parent
     if folder.name != rules.folder or folder.parent.parent != scratch.resolve():
         raise ClipError(f"{path}: clips live only in {scratch / '<task>' / rules.folder}")
