@@ -157,7 +157,7 @@ Exit codes: 0 the message passes, 1 it is refused, 2 the file cannot be read or 
 uv run --project python coney-tools pr check-title FILE|-
 uv run --project python coney-tools pr check-docs [--body FILE]      # changed paths on stdin
 uv run --project python coney-tools pr check-body [--body FILE|-] [--title TITLE] [--worktree WT [--base REF]]
-    [--local-images] [--changed FILE]
+    [--local-images] [--changed FILE] [--opened MOMENT]
 ```
 
 The checks CI's `title`, `docs` and `body` jobs run on a pull request, against the rules of `.github/conventions.yml`
@@ -179,7 +179,10 @@ The checks CI's `title`, `docs` and `body` jobs run on a pull request, against t
   The same title, or a path under `pull_requests.clips.paths` (`src/studio/`) in the file `--changed` names (one path
   a line; the `body` job writes the pull request's files there from the API), asks for the **before and after clips**:
   a clip on a `Before:` and an `After:` line of the Screenshots section, or `Clips: none (<reason>)`; a clip line that
-  is written must show one clip, once ([Clips in the description](testing.md#clips-in-the-description)).
+  is written must show one clip, once ([Clips in the description](testing.md#clips-in-the-description)). Given
+  `--opened` (the `body` job passes the pull request's `created_at`), a pull request opened before the rule began
+  (`pull_requests.clips.since`) is not asked for the pair; without it the rule applies, as to a description not yet
+  opened. The audit's `pr.body` and `pr health --rerun` judge an open pull request by its `createdAt` the same way.
   The **Issues affected** section must hold one `- #N: how it is affected` item for each open issue the change affects,
   or the single line `None (<reason>)` with any short reason (`None (one-line fix)`); an empty section, a `None` with
   no reason, an item with no line on how, a number listed twice and prose are refused, and the message says what to
@@ -341,7 +344,7 @@ Check a pull request description against the template: sections, summary, AI use
 
 ```text
 coney-tools pr check-body [--body BODY] [--title TITLE] [--worktree WORKTREE] [--base BASE] [--local-images]
-    [--changed FILE]
+    [--changed FILE] [--opened MOMENT]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -352,6 +355,7 @@ coney-tools pr check-body [--body BODY] [--title TITLE] [--worktree WORKTREE] [-
 | `--base BASE` | text | `origin/main` | what the branch is compared with, with --worktree (default: origin/main) |
 | `--local-images` | flag | off | accept an image that points at a local file, which `gh pr create --attach` uploads; a local clip must then pass `clips check`, read from the current folder |
 | `--changed FILE` | text | none | a file listing the changed paths, one per line: a path a player sees in Coney Studio then needs the before and after clips (CI's body job gives the pull request's files) |
+| `--opened MOMENT` | text | none | when the pull request was opened (ISO 8601, as GitHub's created_at): one opened before the clip rule began asks for no clips (CI's body job gives it; without it the rule applies) |
 
 ### `pr verify` {#pr-verify-usage}
 

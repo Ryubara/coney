@@ -250,14 +250,9 @@ instead of repeating it:
 - the task, its scope, the files not to touch, the [pending work that overlaps it](pending-work.md) and what
   "done" means ([Testing](testing.md#done)), and that it reports it in the Testing and Screenshots sections, with
   its captures saved in `scratch/<branch>/shots/` and referenced in `PR.md` as `![alt](./shots/file.png)`
-  ([Capturing and attaching](testing.md#pr-media)); video clips are recorded only with `coney --record` or
-  `coney-tools clips record` into `scratch/<branch>/clips/`, named in `PR.md` on its `Before:`, `After:` and
-  `Original:` lines and uploaded by `pr open`, which deletes them ([Clips](testing.md#clips));
-- for work a player sees (the title areas `gameplay`, `graphics` and `audio`, and a change a player sees in Coney
-  Studio), the brief names the clip pair as part of "done": a before clip from the base and an after clip from the
-  branch of the same run, `before` and `after` (`.mp4` or `.gif`) in the clips folder, on the `Before:` and `After:`
-  lines of `PR.md`, or a `Clips: none (<reason>)` line when nothing visible changes or no scenario reaches it; CI and
-  `pr verify` refuse the pull request without one ([Clips](testing.md#clips));
+  ([Capturing and attaching](testing.md#pr-media)); clips, recorded with `coney --record` or `clips record` into
+  `scratch/<branch>/clips/`, are uploaded by `pr open`; work a player sees names the pair in "done": `Before:` and
+  `After:` clips of one run, or `Clips: none (<reason>)` ([Clips](testing.md#clips-in-the-description));
 - for gameplay work (anything a player sees: the title areas `gameplay`, `graphics` and `audio`), the brief names the
   [runtime comparison](testing.md#runtime-comparison) with the original as part of "done", and the `Runtime:` line of
   the pull request's Testing section that reports it ([the Runtime line](testing.md#runtime-line)); it points at

@@ -503,8 +503,13 @@ AI, the camera, effects and sound do not show in a still. So a pull request whos
 shows a clip of Coney before the change and one after it, from the same run, or says why it cannot. The rule is
 `pull_requests.clips` in [.github/conventions.yml](repo:.github/conventions.yml) (the generated list in [What a pull
 request shows](#pr-evidence) has it), and a brief names the pair as part of "done" ([Briefing](agents.md#briefs)).
- The engineer writes the clips into the Screenshots section of `PR.md`, one per labelled line, each a local image under
-`./clips/` (the task's clips folder, beside `PR.md`), with the names [`clips pair`](coney-tools-clips.md#clips-pair) records them under:
+The rule has a start, its `since`: the second its own pull request merged. A pull request opened before then was
+written before the rule and is not asked for clips, so open pull requests are not refused at their next push; clip
+lines it writes anyway are still checked. One not yet opened (`pr text`, `pr verify`, `pr open`) is always asked.
+
+The engineer writes the clips into the Screenshots section of `PR.md`, one per labelled line, each a local image under
+`./clips/` (the task's clips folder, beside `PR.md`), with the names [`clips pair`](coney-tools-clips.md#clips-pair)
+records them under:
 
 ```markdown
 ## Screenshots
@@ -532,7 +537,7 @@ What checks it, at each step:
 | `pr verify` | The same, as its `clips` stage, so an engineer sees it before Review |
 | `task review` | Lists each clip with its file for the reviewer, who plays it and judges whether it shows what the description claims, the before and the after of the same run ([Description](review/text.md)); a `Clips: none` reason is judged too |
 | `pr open` | Uploads each clip with one `--attach` (run from `PR.md`'s folder, so `./clips/x.mp4` is the path `gh` matches), reads the description back, puts each clip's line in its form (an MP4's bare address alone on its line, a GIF as an image) and sends it once more without `--attach`, checks each clip stands uploaded on its line, and only then deletes the files. It records each upload in `pr-published.json`, so a later release shows the clip from there and uploads nothing again ([pr open](pr.md#open)) |
-| CI's `body` job | `pr check-body --title ... --changed ...`: the pair, as uploaded addresses, or the `none` line; it reads the pull request's files from the API for the Coney Studio paths |
+| CI's `body` job | `pr check-body --title ... --changed ... --opened ...`: the pair, as uploaded addresses, or the `none` line; it reads the pull request's files from the API for the Coney Studio paths, and passes when the pull request was opened, so one opened before the rule's `since` is not asked |
 
 `gh --attach` swaps a reference for the upload in place only when the reference names the same file as the `--attach`
 path, read from the folder `gh` runs in; otherwise it appends the upload at the end of the body and the reference

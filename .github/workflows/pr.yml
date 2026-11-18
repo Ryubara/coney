@@ -96,8 +96,8 @@ jobs:
   # Testing section with text, who wrote the commits (one of the template's choices) and, when an AI took part, the
   # model, and for a title area a player sees (gameplay, graphics, audio) the Testing section's `Runtime:` line, which
   # needs the title too, and the before and after clips (pull_requests.clips), which the title or a changed path a
-  # player sees in Coney Studio asks for. The rules are pull_requests in .github/conventions.yml. Editing the title or
-  # the description re-runs the check.
+  # player sees in Coney Studio asks for, unless the pull request was opened before that rule began (its `since`). The
+  # rules are pull_requests in .github/conventions.yml. Editing the title or the description re-runs the check.
   body:
     runs-on: ubuntu-24.04
     # Calls the API for the pull request's file list, as `docs` does.
@@ -120,13 +120,14 @@ jobs:
           NUMBER: ${{ github.event.pull_request.number }}
           PR_BODY: ${{ github.event.pull_request.body }}
           PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_OPENED: ${{ github.event.pull_request.created_at }}
         run: |
           set -euo pipefail
           [[ "$NUMBER" =~ ^[0-9]+$ ]] || { echo "unexpected pull request number" >&2; exit 1; }
           printf '%s\n' "$PR_BODY" > "$RUNNER_TEMP/pr-body.md"
           gh api --paginate "repos/$GH_REPO/pulls/$NUMBER/files" --jq '.[].filename' > "$RUNNER_TEMP/changed.txt"
           uv run --project python coney-tools pr check-body --body "$RUNNER_TEMP/pr-body.md" --title "$PR_TITLE" \
-            --changed "$RUNNER_TEMP/changed.txt"
+            --changed "$RUNNER_TEMP/changed.txt" --opened "$PR_OPENED"
 
   # Work starts with a claim (docs/guides/issues.md#claiming): every issue the description closes (`Fixes #N`) must be
   # held by a claim of the pull request's author, or the author is a maintainer. Until the cutover

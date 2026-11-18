@@ -20,6 +20,7 @@ import json
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from coney_tools.audit_github import Runner
 from coney_tools.conventions import Conventions
@@ -61,6 +62,9 @@ class PullChecks:
     required: frozenset[str]
     #: Every check whose latest state is failed, required or not.
     failed: tuple[FailedCheck, ...]
+    #: When it was opened (None when unknown) and the paths it changes: CI's `body` job judges the clips by both.
+    opened: datetime | None = None
+    changed: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -158,7 +162,7 @@ def _stale_text(pull: PullChecks, check: FailedCheck, conventions: Conventions) 
     if check.name == rules.title_check and not check_title(first_line(pull.title), conventions.commits.title):
         return "title", "the title now passes check-title"
     if check.name == rules.body_check and not check_body(
-        pull.body, conventions.pull_requests, title=first_line(pull.title)
+        pull.body, conventions.pull_requests, title=first_line(pull.title), changed=pull.changed, opened=pull.opened
     ):
         return "description", "the description now passes check-body"
     return None

@@ -8,6 +8,7 @@ import dataclasses
 import os
 import sys
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from importlib.metadata import version
 from pathlib import Path
 from typing import Any
@@ -205,6 +206,7 @@ def _repo_check_body(
     title: str | None = None,
     local_images: bool = False,
     changed_file: str | None = None,
+    opened: str | None = None,
 ) -> int:
     """Check the pull request description in `body_file` (`-` or none reads stdin); 1 when refused.
 
@@ -215,8 +217,17 @@ def _repo_check_body(
     list): a path a player sees in Coney Studio asks for the clips too. With `local_images` an image may point at a
     local file, as in a description `gh pr create --attach` is about to upload (the release guard hook passes it when
     the command attaches files), and each local clip it shows must pass `clips check`, read from the current folder
-    as `gh` reads it.
+    as `gh` reads it. `opened` is when the pull request was opened (ISO 8601, CI gives `created_at`): one opened before
+    the clip rule began (`pull_requests.clips.since`) is asked for no clips; without it the rule applies.
     """
+    opened_at: datetime | None = None
+    if opened is not None:
+        try:
+            opened_at = datetime.fromisoformat(opened)
+        except ValueError:
+            print(f"coney-tools: --opened {opened!r}: expected a moment such as 2026-11-18T17:00:00Z", file=sys.stderr)
+            return 2
+        opened_at = opened_at.replace(tzinfo=UTC) if opened_at.tzinfo is None else opened_at
     conventions = _conventions()
     rules = conventions.pull_requests
     if local_images:
@@ -236,7 +247,7 @@ def _repo_check_body(
         print(f"coney-tools: {reading}: cannot be read ({error})", file=sys.stderr)
         return 2
     models = branch_trailer_models(worktree, base, conventions.commits.trailers) if worktree else []
-    problems = check_body(body, rules, models, title, changed)
+    problems = check_body(body, rules, models, title, changed, opened_at)
     if local_images and rules.clips is not None:
         problems += _local_clip_problems(body, rules.clips.extensions, conventions.workspace.clips)
     if problems:
@@ -392,6 +403,12 @@ def _build_parser() -> argparse.ArgumentParser:
         metavar="FILE",
         help="a file listing the changed paths, one per line: a path a player sees in Coney Studio then needs the "
         "before and after clips (CI's body job gives the pull request's files)",
+    )
+    check_body_parser.add_argument(
+        "--opened",
+        metavar="MOMENT",
+        help="when the pull request was opened (ISO 8601, as GitHub's created_at): one opened before the clip rule "
+        "began asks for no clips (CI's body job gives it; without it the rule applies)",
     )
     render_parser = repo_commands.add_parser(
         "render",
@@ -1524,7 +1541,9 @@ def _run_pr(args: argparse.Namespace) -> int:
     if args.command == "check-docs":
         return _repo_check_docs(args.body)
     if args.command == "check-body":
-        return _repo_check_body(args.body, args.worktree, args.base, args.title, args.local_images, args.changed)
+        return _repo_check_body(
+            args.body, args.worktree, args.base, args.title, args.local_images, args.changed, args.opened
+        )
     return _pr_check_commit(args.file, args.model)
 
 

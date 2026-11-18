@@ -56,8 +56,11 @@ def test_no_expression_reaches_a_script_except_through_the_environment() -> None
     for job in workflow()["jobs"].values():
         for step in job["steps"]:
             for value in step.get("env", {}).values():
+                # created_at is GitHub's own timestamp (the body job's --opened), not text an author writes.
                 assert re.fullmatch(
-                    r"\$\{\{ (github\.event\.pull_request\.(title|body|number)|github\.(token|repository)) \}\}", value
+                    r"\$\{\{ (github\.event\.pull_request\.(title|body|number|created_at)|github\.(token|repository)) "
+                    r"\}\}",
+                    value,
                 )
 
 

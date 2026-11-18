@@ -7,6 +7,7 @@ from __future__ import annotations
 import re
 import subprocess
 from collections.abc import Iterable, Sequence
+from datetime import datetime
 from pathlib import Path
 
 from coney_tools.audit_text import LIST_MARKER, NUMBER_REFERENCE, OPEN_ITEM
@@ -577,14 +578,19 @@ def _holds_clip(text: str, rule: ClipPair, placeholders: Sequence[str]) -> bool:
 
 
 def clips_problems(
-    section: str, rules: PullRequests, title: str | None, changed: Sequence[str] | None = None
+    section: str,
+    rules: PullRequests,
+    title: str | None,
+    changed: Sequence[str] | None = None,
+    opened: datetime | None = None,
 ) -> list[str]:
     """Check the before and after clips of the Screenshots section against `pull_requests.clips`.
 
     A pull request whose title area a player sees, or that changes a path a player sees in Coney Studio
     (`ClipPair.required_by`), shows a clip on a `Before:` and an `After:` line, or holds a line `Clips: none
-    (<reason>)`. A label that is written must show its clip (an uploaded address, or a local `.gif` or `.mp4` image
-    while the description is a draft), once; `Original:` is optional. Whether the clips show what the text claims is
+    (<reason>)`, unless it was `opened` before the rule began (`clips.since`). A label that is written must show its
+    clip (an uploaded address, or a local `.gif` or `.mp4` image while the description is a draft), once; `Original:`
+    is optional. Whether the clips show what the text claims is
     the reviewer's question (docs/guides/review/text.md). Without the rule in the file nothing is asked.
     """
     rule = rules.clips
@@ -609,7 +615,7 @@ def clips_problems(
     pair = rule.before in segments and rule.after in segments
     if reasons and segments:
         problems.append(f"{name}: clips and '{rule.none}' together; show the clips or say why not, not both")
-    why = rule.required_by(title, changed)
+    why = rule.required_by(title, changed, opened)
     if pair or reasons:
         return problems
     if rule.before in segments or rule.after in segments:
@@ -731,6 +737,7 @@ def check_body(
     branch_models: Sequence[str] = (),
     title: str | None = None,
     changed: Sequence[str] | None = None,
+    opened: datetime | None = None,
 ) -> list[str]:
     """Check a pull request description against the template's form.
 
@@ -746,7 +753,8 @@ def check_body(
     (`runtime_problems`);
     without a title that rule cannot be applied and is skipped, so every caller that has the title passes it. The
     same title, or a `changed` path a player sees in Coney Studio, asks for the before and after clips
-    (`clips_problems`); without `changed` only the title asks.
+    (`clips_problems`); without `changed` only the title asks, and a pull request `opened` before the rule began
+    (`clips.since`) is asked for none: one not yet opened passes no `opened`.
     HTML comments and unchanged placeholder text count as empty, so the untouched template is refused. Returns one
     reason per broken rule; an empty list means the description passes.
     """
@@ -770,7 +778,7 @@ def check_body(
     if rules.clips is not None:
         clip_section = sections.get(rules.clips.section.casefold())
         if clip_section is not None:
-            problems.extend(clips_problems(clip_section, rules, title, changed))
+            problems.extend(clips_problems(clip_section, rules, title, changed, opened))
     ai_use = sections.get(rules.ai_use.section.casefold())
     if ai_use is not None:
         ai_problems = _check_ai_use(ai_use, rules)

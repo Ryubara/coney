@@ -310,16 +310,24 @@ class ClipPair:
     paths: tuple[str, ...]
     #: The file endings of a clip, lower case, without the dot.
     extensions: tuple[str, ...]
+    #: When the rule began (the second its pull request merged, UTC): a pull request opened earlier needs no pair.
+    since: datetime
 
     @property
     def labels(self) -> tuple[str, str, str]:
         """The three labels, in the order a description shows them."""
         return (self.before, self.after, self.original)
 
-    def required_by(self, title: str | None, changed: Sequence[str] | None) -> str | None:
+    def required_by(
+        self, title: str | None, changed: Sequence[str] | None, opened: datetime | None = None
+    ) -> str | None:
         """Why a pull request with `title` that changes `changed` needs the pair, in words; None when it does not.
 
-        A title that is not in the form says nothing; without `changed` the paths are not asked."""
+        A title that is not in the form says nothing; without `changed` the paths are not asked. A pull request
+        `opened` before `since` was written before the rule and needs none; without `opened` (one not yet opened,
+        as `pr text`, `pr verify` and `pr open` see it) the rule applies."""
+        if opened is not None and opened < self.since:
+            return None
         form = re.match(r"^(?P<area>[a-z]+): ", title or "")
         if form and form.group("area") in self.areas:
             return f"the title area '{form.group('area')}' is one a player sees"
@@ -2180,7 +2188,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
 
 def _read_clip_pair(data: object, where: str, sections: tuple[str, ...]) -> ClipPair:
     """The `pull_requests.clips` table; its section must be one of the description's, its labels distinct."""
-    fields = ("section", "before", "after", "original", "none", "reason", "areas", "paths", "extensions")
+    fields = ("section", "before", "after", "original", "none", "reason", "areas", "paths", "extensions", "since")
     table = _table(data, where, fields)
     section = _text(table["section"], _at(where, "section"))
     _names_in((section,), sections, _at(where, "section"), "one of the sections")
@@ -2200,6 +2208,7 @@ def _read_clip_pair(data: object, where: str, sections: tuple[str, ...]) -> Clip
         areas=_texts(table["areas"], _at(where, "areas")),
         paths=_texts(table["paths"], _at(where, "paths"), empty_ok=True),
         extensions=extensions,
+        since=_moment(table["since"], _at(where, "since")),
     )
 
 
