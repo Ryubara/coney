@@ -723,12 +723,13 @@ and 8 also with [the console](console.md#build-issues)), 12 with its compiler (S
     `Coney.JsonDecode`: plain values only, JSON in `mod-data/<project>/` keyed by name and signer, the quota, writes at
     step boundaries. Tests: a value round-trips; functions, cycles and userdata are refused; past the quota nothing is
     written; two projects never see each other's keys.
-11. **core: Add modded saves apart from the story and exact modded replays.** A save written while any mod runs goes to
-    the per-user `modded/` folder with every running mod's name, version and package hash; a save made with no mod is
-    unmarked, in `profiles/`; loading a modded save with a mod missing, stopped or changed warns; a replay records the
-    list and every start and stop in the run, and refuses to play back with any difference. Tests: a modded session's
-    save leaves `profiles/` byte-for-byte unchanged; a save without mods carries no mark; the warning names the missing
-    mod; a replay with one package changed is refused.
+11. **core: Add modded saves apart from the story and exact modded replays.** Saves as
+    [Modded saves and replays](mods.md#saves-replays) says: one written while any mod runs, or loaded from `modded/`,
+    goes to `modded/` with every running mod's name, version and package hash, so `profiles/` holds only faithful saves;
+    a modded save with a mod missing, stopped or changed warns; a replay records the list and every start and stop in the
+    run, and refuses to play back with any difference. Tests: a modded session's save leaves `profiles/` unchanged; a
+    modded save saved with no mod running keeps its sections in `modded/`; the warning names the missing mod; a replay
+    with one package changed is refused.
 12. **core: Add the safety rules around game-script patches.** Beside [Mission mods](mission-mods.md#build-issues)'
     issue 5, which runs patched scripts in the game state: `overrides/files/` script kinds refused; fuzz targets for the
     4.0 chunk loader and the `.cpatch` parser. Tests: a script chunk in `overrides/files/` is refused; a patch carrying

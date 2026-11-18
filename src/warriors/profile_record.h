@@ -89,9 +89,11 @@ struct SavedProgress {
     }
 };
 
-/// A profile as the save system stores it: the 1,284-byte record, version `0x11`, little-endian, fields in the order
-/// `Profile_Write` writes them. A default-constructed record is the template a new profile is made from (a fresh game
-/// state) with an empty name. Coney keeps one record per file (docs/research/save.md#coney).
+/// A profile as the original's save system stores it: the 1,284-byte record, version `0x11`, little-endian, fields in
+/// the order `Profile_Write` writes them. A default-constructed record is the template a new profile is made from (a
+/// fresh game state) with an empty name. Coney's files hold these fields in its own format (SaveGame); this codec reads
+/// the record that earlier Coney builds wrote (version 0) and, for the importer, the original's
+/// (docs/research/save.md#save-format).
 ///
 /// Research: docs/research/save.md#record
 struct ProfileRecord {

@@ -8,7 +8,7 @@
 #include <string>
 #include <string_view>
 
-#include "studio/toml_lite.h"
+#include "core/toml_lite.h"
 
 namespace coney::studio {
 

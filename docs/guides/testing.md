@@ -97,6 +97,21 @@ else, so these reports go to stderr and the process ends at once; the `coney.err
 MSVC debug builds. In tests, check a container's size (`REQUIRE(!starts.empty())`) before reading `front()`,
 `back()` or an index, so a missing value fails one test cleanly instead of ending the whole run.
 
+### No wall-clock limits {#no-wall-clock-limits}
+
+A test's result never depends on how busy the machine is, so a check is never run again just in case. Test mode is
+lockstep (the fixed step, scripted input, game time only), so only a timeout can make a run's result depend on time.
+Every test's `TIMEOUT`, and every timeout a test's CMake script gives the process it runs, is therefore
+`CONEY_TEST_HANG_GUARD` (ten minutes, set in the root `CMakeLists.txt`): a guard against a hang, never a speed limit.
+`python/tests/test_test_timeouts.py` refuses any other value. A test that must measure speed reports it (the bench)
+and does not fail on it.
+
+A disc run spends its time on what it checks: one that does not check a level's intro movie passes `--skip-movies`
+and skips a scene that holds the player, as `coney.plays_level` does with `tests/support/play_walk_level99.txt`.
+Before that, `coney.plays_level` decoded the whole 95-second level99 intro movie before its first frame of play, then
+walked through the intro scene with the player held. It took about 10 seconds on a quiet machine and over its
+60-second timeout when several builds ran at once.
+
 ### Python tests do not depend on the shell {#python-environment}
 
 A Python test gives the same answer in a task's shell (`CONEY_TASK` and `VIRTUAL_ENV` set), inside an agent tool
@@ -576,14 +591,13 @@ CI has no GPU, so the `software-pictures` job draws Coney's synthetic scenes (`t
 layouts and CC0 textures, no game data) through Mesa's software OpenGL driver, llvmpipe, under a virtual display
 (`xvfb-run`), and compares each picture with its reference in `tests/pictures/reference/` using the
 [tolerance](coney-tools-picture.md#picture) (`coney-tools picture scenes`). It runs on Linux in the build workflow with
-the engine jobs. It is **not a required check yet**: `tests/pictures/reference/` is empty until the references are made
-from the pictures the job's first run uploads, so until then the job draws the scenes, passes with a warning that
-nothing was compared (`--allow-no-references`, so that a red job never opens a P-critical issue on `main`) and keeps the
-pictures. The follow-up task that adds the references also adds `software-pictures` to `merge.required_checks` of
-[.github/conventions.yml](repo:.github/conventions.yml) (the maintainer adds the context to the ruleset) and drops the
-allowance, after which a scene without its reference fails the job. Each scene is drawn twice, and the second draw is
-compared with the first: a pinned Mesa that gives the same pixels on every run shows 0 pixels over in the log, and the
-tolerance exists for the rest.
+the engine jobs. It is a **required check** (`software-pictures` in `merge.required_checks` of
+[.github/conventions.yml](repo:.github/conventions.yml)): a scene whose picture is over the tolerance, or that has no
+reference, fails it. The references are the four scenes' pictures as the job drew them on `main` (the
+`software-pictures-drawn` artifact of one run, looked at first: each is Coney's own sandbox layout, never a game
+picture); a pull request that changes no engine file skips the job, and a skipped required job passes. Each scene is
+drawn twice, and the second draw is compared with the first: a pinned Mesa that gives the same pixels on every run
+shows 0 pixels over in the log, and the tolerance exists for the rest.
 
 The runner image's own Mesa moves with the image, so the drawing runs in a container image of its own
 (`.github/software-pictures/Dockerfile`): the base image is pinned by its **digest**, the package archive by a

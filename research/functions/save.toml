@@ -80,7 +80,7 @@ page = "save.md#original-structure"
 role = "all six headers, then the current slot's record"
 level = "confirmed-code"
 coney = "src/warriors/disk_profile_store.h:DiskProfileStore::save"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00421e68
@@ -89,7 +89,12 @@ page = "save.md#original-structure"
 role = "a new profile from the template"
 level = "confirmed-code"
 coney = "src/warriors/disk_profile_store.h:DiskProfileStore::create"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the brightness is not applied to the display (Gamma_Set)"
+relation = "not-ported"
+issue = 156
 
 [[function]]
 address = 0x00421f98

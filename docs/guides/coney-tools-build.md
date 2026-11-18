@@ -518,6 +518,8 @@ coney-tools build unclaim --agent RELEASE_AGENT [--force] [--slot SLOT] [--lane 
 uv run --project python coney-tools perf bench --out FOLDER [--fighters 0,10,25,50,100] [--level level95]
     [--frames 600] [--warmup 60] [--headless] [--cpu-skinning] [--preset playtest] [--coney EXE] [--disc DISC]
 uv run --project python coney-tools perf table REPORT.json ...
+uv run --project python coney-tools perf bench --out FOLDER --scene NAME[,NAME]|all [--compare BASELINE_FOLDER]
+    [--display-preset NAME] [--renderer gl3|gpu]
 ```
 
 `perf bench` plays the level (the hub, `level95`, by default) once per fighter count with `coney --bench`
@@ -531,6 +533,14 @@ the rows came from. Coney is `build/PRESET/src/platform/coney`, in the build roo
 default: an optimised build with the debug tools, which `--bench` needs), the disc `game_dir`. Exit 1 when a run fails.
 `perf table` prints the same table from reports already written.
 
+`perf bench --scene` runs the named scenes of a table in the tool instead of the fighter counts (`all` runs every one):
+each scene three times, the scenes interleaved, and prints a table of each figure's median over the runs with the
+fastest and slowest in brackets, including `gpu.frame`, the GPU's time from timer queries (`none` where the run has
+none). `--compare FOLDER` also prints each scene's median beside the baseline's reports in FOLDER and exits 1 when a
+scene is past the renderer design's budget, but only when no other build holds a build slot, which it checks before the
+runs and after them and names when it is not so ([Scenes](performance.md#scenes) has the table of scenes and the
+budget). Reports are `scene-NAME-runN.json` in `--out`.
+
 <!-- command-reference:begin perf -->
 ## Parameters of `perf` {#perf-parameters}
 
@@ -542,7 +552,8 @@ Play a level once per fighter count with `coney --bench` and print a table of th
 
 ```text
 coney-tools perf bench [--coney CONEY] [--preset PRESET] [--disc DISC] [--level LEVEL] [--fighters FIGHTERS]
-    [--frames FRAMES] [--warmup WARMUP] [--headless] [--cpu-skinning] --out OUT
+    [--frames FRAMES] [--warmup WARMUP] [--headless] [--cpu-skinning] [--scene SCENE] [--compare FOLDER]
+    [--display-preset DISPLAY_PRESET] [--renderer RENDERER] --out OUT
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -556,6 +567,10 @@ coney-tools perf bench [--coney CONEY] [--preset PRESET] [--disc DISC] [--level 
 | `--warmup WARMUP` | integer | `60` | frames before measuring (default 60) |
 | `--headless` | flag | off | no window: the simulation's cost alone |
 | `--cpu-skinning` | flag | off | skin the humans on the CPU (coney --cpu-skinning), to compare with the GPU's skinning |
+| `--scene SCENE` | text | none | run named scenes (comma-separated, or all) three times each instead of the fighter counts: hub, hub-crowd, street, hub-640, hub-2560, hub-headless, hub-crowd-headless; the scene sets the level, fighters, frames and size |
+| `--compare FOLDER` | path | none | with --scene: print each scene's median beside the baseline's reports in FOLDER; exit 1 when a scene is past the budget, if no other build holds a build slot |
+| `--display-preset DISPLAY_PRESET` | text | none | with --scene: coney --display-preset NAME |
+| `--renderer RENDERER` | text | none | with --scene: coney --renderer NAME (gl3 or gpu) |
 | `--out OUT` | path | required | the folder for the reports and logs (scratch) |
 
 ### `perf table` {#perf-table-usage}

@@ -10,11 +10,11 @@
 
 #include "core/error.h"
 
-// The few pieces of TOML Studio's own small files need (the project manifest, the preferences): trimmed lines, quoted
-// strings with their two escapes, and a `line N:` error. Not a TOML parser: each file reads the subset it writes.
-// Coney's own; the original has no such files.
+// The few pieces of TOML Coney's own small files need (Studio's project manifest and preferences, a mod's story
+// section): trimmed lines, quoted strings with their two escapes, and a `line N:` error. Not a TOML parser: each file
+// reads the subset it writes. Coney's own; the original has no such files.
 
-namespace coney::studio::toml {
+namespace coney::toml {
 
 /// `text` without blanks at either end.
 inline std::string_view trim(std::string_view text) {
@@ -61,4 +61,4 @@ inline std::unexpected<Error> lineError(std::size_t line, std::string_view what)
     return fail(ErrorCode::Invalid, std::format("line {}: {}", line, what));
 }
 
-} // namespace coney::studio::toml
+} // namespace coney::toml

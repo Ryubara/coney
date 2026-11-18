@@ -35,16 +35,33 @@ struct StoryStep {
     /// A side step is reached by its own route, never from the step before it: `level64`, the last Armies stage, which
     /// sits in the chain only so that it counts as later than `level84`. No hub chapter offers a side step.
     bool sideStep = false;
+    /// A step a mod placed (mergeStory()): its id, `<mod>.<id>` for a mission and `hub:<n>.<mod>.<id>` for the hub
+    /// chapter a mission after `hub:<n>` opens; empty for the original's steps, whose id comes from their numbers.
+    std::string modId;
 
     /// A mission: `level` entered at checkpoint 1.
     [[nodiscard]] static StoryStep mission(int level, bool sideStep = false) {
-        return {.kind = Kind::Mission, .level = level, .chapter = 0, .sideStep = sideStep};
+        return {.kind = Kind::Mission, .level = level, .chapter = 0, .sideStep = sideStep, .modId = {}};
     }
     /// Hub chapter `chapter`: the hub entered at that checkpoint.
     [[nodiscard]] static StoryStep hubChapter(int chapter) {
-        return {.kind = Kind::HubChapter, .level = kHubLevel, .chapter = chapter, .sideStep = false};
+        return {.kind = Kind::HubChapter, .level = kHubLevel, .chapter = chapter, .sideStep = false, .modId = {}};
     }
-    /// The step's id: an original mission's level name (`level80`), a hub chapter's `hub:<n>`.
+    /// A mod's mission `id`. Its level number is 0 until the session gives it one from the free numbers
+    /// (docs/guides/studio/mission-mods.md#graph-natives, #1300).
+    [[nodiscard]] static StoryStep modMission(std::string id, bool sideStep = false) {
+        return {.kind = Kind::Mission, .level = 0, .chapter = 0, .sideStep = sideStep, .modId = std::move(id)};
+    }
+    /// The new hub chapter `id` that a mod's mission after hub chapter `chapter` opens: the hub at that chapter's
+    /// checkpoint, a point in that chapter's time.
+    [[nodiscard]] static StoryStep modHubChapter(int chapter, std::string id) {
+        return {.kind = Kind::HubChapter,
+                .level = kHubLevel,
+                .chapter = chapter,
+                .sideStep = false,
+                .modId = std::move(id)};
+    }
+    /// The step's id: an original mission's level name (`level80`), a hub chapter's `hub:<n>`, a mod's step's modId.
     [[nodiscard]] std::string id() const;
     /// The checkpoint the step is entered at: the chapter for a hub chapter, 1 for a mission.
     [[nodiscard]] int checkpoint() const { return kind == Kind::HubChapter ? chapter : 1; }

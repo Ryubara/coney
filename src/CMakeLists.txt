@@ -39,6 +39,8 @@ add_library(coney_core STATIC
     core/script_patch_reader.cpp
     core/sequence_diff.cpp
     core/story_graph.cpp
+    core/story_manifest.cpp
+    core/story_merge.cpp
     core/sha256.cpp
     fileio/disc.cpp
     fileio/executable.cpp
@@ -205,6 +207,8 @@ add_library(coney_core STATIC
     warriors/player_stats.cpp
     warriors/profile_record.cpp
     warriors/profile_store.cpp
+    warriors/save_game.cpp
+    warriors/save_sections.cpp
     warriors/stop_watch.cpp
     warriors/tag_game.cpp
     warriors/tag_session.cpp

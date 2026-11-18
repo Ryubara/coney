@@ -563,21 +563,21 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
 
 | Check | What it compares | Gate | Tolerance |
 | --- | --- | --- | --- |
-| Software pictures | the synthetic scenes drawn under a virtual display through Mesa's software drivers (llvmpipe for GL3, lavapipe for Vulkan once item 11 lands), against reference images of those scenes kept in the tests (Coney-made, small). The runner image's own Mesa moves with the image, so the job runs in a container image pinned by its digest, with Mesa at a fixed package version, cached on the runner. Moving the pin is a pull request of its own that regenerates the reference images in the same pull request and reports the old and new counts | CI on Linux (item 2, built: the `software-pictures` job, [the software pictures](../guides/testing.md#software-pictures)), not a required check yet: it passes with a warning while `tests/pictures/reference/` is empty, and the task that adds the references from its first run's pictures adds the key to `merge.required_checks` of `.github/conventions.yml` | 2 of 255 and 0.1 % (stand-ins). Measured: 4 scenes drawn 10 times each, in separate runs of one build, on one machine's GPU driver: 0 pixels over, largest difference 0 (confirmed (runtime), `picture scenes --repeat 10`); under the pinned llvmpipe: open, the job prints its counts |
+| Software pictures | the synthetic scenes drawn under a virtual display through Mesa's software drivers (llvmpipe for GL3, lavapipe for Vulkan once item 11 lands), against reference images of those scenes kept in the tests (Coney-made, small). The runner image's own Mesa moves with the image, so the job runs in a container image pinned by its digest, with Mesa at a fixed package version, cached on the runner. Moving the pin is a pull request of its own that regenerates the reference images in the same pull request and reports the old and new counts | CI on Linux (item 2, built: the `software-pictures` job, [the software pictures](../guides/testing.md#software-pictures)), a required check (`software-pictures` in `merge.required_checks` of `.github/conventions.yml`) with the four scenes' references in `tests/pictures/reference/`, made from a `main` run's pictures | 2 of 255 and 0.1 % (stand-ins). Measured: 4 scenes drawn 10 times each, in separate runs of one build, on one machine's GPU driver: 0 pixels over, largest difference 0 (confirmed (runtime), `picture scenes --repeat 10`); under the pinned llvmpipe: the 4 scenes drawn twice in each of two `main` runs (44131342786 and 44183284280): every picture byte for byte the same, so 0 pixels over and largest difference 0 (confirmed (runtime), the `software-pictures-drawn` artifacts); the stand-ins stay as the room for a driver change |
 | Disc pictures, one renderer | `--screenshot` of named frames at `--render-size 640x448` with a pinned camera ([Matched views](../guides/running-play-level.md#matched-views)), from the branch against the same frames from its base commit, on one machine | local: every pull request from item 5 on that changes drawing reports the counts in its Testing section, from the tool's output kept in the scratch folder, and the reviewer refuses one without them, as for the Runtime line ([Capturing](../guides/testing.md#pr-media)) | at most 2 of 255 apart in any channel, over at most 0.1 % of the pixels: stand-ins: item 2's repeats of one build were identical (the Software pictures row), so a value waits for counts across drivers |
 | Across renderers | the same frames drawn by GL3 and by SDL3 GPU, on one machine and in CI's software pictures | as above, from item 11 on | looser; item 11 sets it from its first 2D comparison and records it here |
 
 The counts reported are the pixels over the tolerance and the largest difference
 ([`picture compare`](../guides/coney-tools-picture.md#picture)). Pictures of the game stay in the scratch folder and are
-never committed; only the synthetic scenes' references are in the repository. The software job's first counts set the
-tolerance, here and in `tests/pictures/scenes.toml`.
+never committed; only the synthetic scenes' references are in the repository. The software job's counts are in the table
+above; the tolerance is here and in `tests/pictures/scenes.toml`.
 
 ## Performance {#performance}
 
 ### Benchmark {#benchmark}
 
-`coney-tools perf bench` and `coney --bench` ([Performance](../guides/performance.md#bench)) are the benchmark;
-they gain named scenes and a comparison:
+`coney-tools perf bench` and `coney --bench` ([Performance](../guides/performance.md#bench)) are the benchmark, with
+named scenes, GPU time and a comparison (built, [Scenes](../guides/performance.md#scenes)):
 
 ```sh
 uv run --project python coney-tools perf bench --scene hub,hub-crowd,street --out ../../scratch/perf
@@ -589,8 +589,9 @@ uv run --project python coney-tools perf bench --scene all --compare ../../scrat
   times, and the report's `meta` records the render size and the window beside the level.
 - **`--compare FOLDER`** prints each scene's median frame time beside the baseline's and the change in percent, and
   exits 1 when a scene is slower than the budget allows, on a quiet machine only ([Budget](#budget)).
-- **GPU time.** A `gpu.frame` measure from GPU timestamp queries (OpenGL timer queries, then the new renderer's), so
-  a report shows whether a frame is bound by the CPU or the GPU.
+- **GPU time.** A `gpu.frame` measure from GPU timestamp queries (OpenGL timer queries, built; the new renderer's
+  waits for it, [GPU time](../guides/performance.md#gpu-time)), so a report shows whether a frame is bound by the CPU
+  or the GPU.
 - **`--display-preset` and `--renderer`** are passed through to Coney, so every display preset and renderer is
   measured the same way (`--preset` stays the build's CMake preset).
 
@@ -633,14 +634,17 @@ What it says:
   changes on the new renderer bring that down, but at this count draws are not the limit.
 
 [Order](#order) item 16 records this again on the scene table with GPU time, on a quiet machine, and that record
-becomes the baseline `--compare` reads; the figures above are the starting point it replaces. The items that draw
-through GL3 (1 to 10 and 15 to 19) must keep these numbers (the *PS2* budget below); the GPU renderer's items are
-measured against them.
+becomes the baseline `--compare` reads; the figures above are the starting point it replaces. The scene table, the
+GPU time and the comparison are built ([Scenes](../guides/performance.md#scenes)); the recording is not yet
+([#1383](issue:1383)), since it needs a machine no other build is using: `coney-tools perf bench --scene all --out
+../../scratch/perf-baseline` on a quiet one, the table pasted here and the folder kept for `--compare`. Until then
+`--compare` has no folder to read and refuses. The items that draw through GL3 (1 to 10 and 15 to 19) must keep these
+numbers (the *PS2* budget below); the GPU renderer's items are measured against them.
 
 ### Budget {#budget}
 
-Frame-time budgets on this machine, each scene's median of three runs, checked by `perf bench --compare` once item 16
-lands. They are targets for the work in [Order](#order), not results:
+Frame-time budgets on this machine, each scene's median of three runs, checked by `perf bench --compare` (built; it
+reads the baseline item 16 records). They are targets for the work in [Order](#order), not results:
 
 | Preset and renderer | Scene | Budget | Why |
 | --- | --- | --- | --- |

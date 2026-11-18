@@ -76,20 +76,24 @@ std::optional<DiskProfileStore::Slot> DiskProfileStore::readSlot(std::size_t slo
     }
     const std::optional<std::vector<std::byte>> bytes = readFile(path);
     if (bytes) {
-        if (auto record = ProfileRecord::parse(*bytes); record) {
-            return Slot{.profile = profileOf(*record), .record = std::move(*record)};
+        // Any version SaveGame reads, the bare record of earlier Coney builds included.
+        if (auto save = SaveGame::parse(*bytes); save) {
+            return Slot{.profile = profileOf(save->profile),
+                        .record = std::move(save->profile),
+                        .modded = std::move(save->modded)};
         }
     }
-    // A file there that is not a record: list it as damaged, under its header's name when it has one.
+    // A file there that cannot be loaded: list it as damaged, under the name it holds when that can be read.
     Slot damaged;
     if (bytes) {
-        damaged.profile.name = ProfileRecord::headerName(*bytes).value_or(std::string{});
+        damaged.profile.name = SaveGame::nameOf(*bytes);
     }
     damaged.profile.damaged = true;
     return damaged;
 }
 
-std::expected<void, Error> DiskProfileStore::writeSlot(std::size_t slot, const ProfileRecord& record) const {
+std::expected<void, Error> DiskProfileStore::writeSlot(std::size_t slot, const ProfileRecord& record,
+                                                       const ModdedProgress& modded) const {
     std::error_code ec;
     std::filesystem::create_directories(m_folder, ec);
     if (ec) {
@@ -100,7 +104,8 @@ std::expected<void, Error> DiskProfileStore::writeSlot(std::size_t slot, const P
     std::filesystem::path temporary = path;
     temporary += ".tmp";
     {
-        const auto bytes = record.serialise();
+        const SaveGame save{.profile = record, .modded = modded};
+        const std::vector<std::byte> bytes = save.serialise();
         std::ofstream out(temporary, std::ios::binary | std::ios::trunc);
         out.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
         out.close();
@@ -146,6 +151,14 @@ const ProfileRecord* DiskProfileStore::record(std::size_t slot) const {
     return &held->record.value();
 }
 
+const ModdedProgress* DiskProfileStore::modded(std::size_t slot) const {
+    if (slot >= kSlots) {
+        return nullptr;
+    }
+    const std::optional<Slot>& held = m_slots.at(slot);
+    return held.has_value() && held->record.has_value() ? &held->modded : nullptr;
+}
+
 bool DiskProfileStore::create(std::size_t slot, const Profile& profile) {
     if (slot >= kSlots) {
         return false;
@@ -159,14 +172,17 @@ bool DiskProfileStore::create(std::size_t slot, const Profile& profile) {
     m_state.brightness = profile.brightness;
     m_state.subtitles = profile.subtitles;
     captureProfile(m_state, record);
-    // Coney writes the new profile at once: the original's autosave right after a new game would store the same.
-    if (auto written = writeSlot(slot, record); !written) {
+    // Coney's choice: it writes the new profile at once, with nothing modded, where the original writes the template
+    // record into the card image at the slot's offset, then the slot's header, and marks the slot created since the
+    // last save; the original's autosave right after a new game stores the same.
+    if (auto written = writeSlot(slot, record, ModdedProgress{}); !written) {
         m_lastError = written.error();
         return false;
     }
     m_lastError.reset();
-    m_slots.at(slot) = Slot{.profile = profileOf(record), .record = std::move(record)};
+    m_slots.at(slot) = Slot{.profile = profileOf(record), .record = std::move(record), .modded = {}};
     m_loaded = slot;
+    // Not ported: the original ends by applying the brightness to the display (Gamma_Set, #156).
     return true;
 }
 
@@ -212,7 +228,9 @@ bool DiskProfileStore::save() {
     CONEY_ASSERT(slot.has_value() && slot->record.has_value());
     ProfileRecord record = slot->record.value();
     captureProfile(m_state, record);
-    if (auto written = writeSlot(index, record); !written) {
+    // Coney's choice: one file per slot, so there are no six headers to write first; the file keeps the story
+    // entries and mod sections the slot holds.
+    if (auto written = writeSlot(index, record, slot->modded); !written) {
         m_lastError = written.error();
         return false;
     }
