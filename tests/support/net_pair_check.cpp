@@ -426,7 +426,7 @@ int main(int argc, char** argv) {
     const std::optional<Args> args = parseArgs(argc, argv);
     if (!args) {
         std::fputs("usage: net_pair_check pair|offline --coney EXE --work DIR --host-script FILE [--guest-script FILE] "
-                   "--frames N [--guest-frames N] [-- ARGS...]\n",
+                   "--frames N [--guest-frames N] [--guest-after TEXT] [-- ARGS...]\n",
                    stderr);
         return 2;
     }

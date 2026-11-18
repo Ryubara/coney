@@ -173,3 +173,47 @@ TEST_CASE("clearing the humans, as a level going does, retires their ids") {
     REQUIRE(game.humans().size() == 1);
     CHECK(game.humans()[0].id == NetId{.slot = 1, .generation = 1});
 }
+
+TEST_CASE("released ids keep a long run of humans coming and going from running out", "[net]") {
+    // Expected: multiplayer.md#net-ids (65,536 slots; a released slot is used again with the next generation)
+    Scene scene;
+    scene.add(0.0F, 0.0F, 0.0F);
+    GameHumans game;
+    // More humans than there are slots, one at a time: each level's humans go and nobody can still name them.
+    constexpr std::size_t kCycles = kNetIdMaxSlots + 10;
+    for (std::size_t i = 0; i < kCycles; ++i) {
+        game.capture(scene.brains);
+        REQUIRE(game.humans().size() == 1);
+        game.clear();
+        game.releaseRetired();
+    }
+    // Every slot was used once; the ten after them are the oldest released slots, in their second generation.
+    game.capture(scene.brains);
+    REQUIRE(game.humans().size() == 1);
+    CHECK(game.humans()[0].id == NetId{.slot = 10, .generation = 2});
+}
+
+TEST_CASE("with capture off the game's humans hold nothing and keep no ids", "[net]") {
+    // Expected: unverified, #558 (Coney's own: only a session, --digest or --net-replay captures)
+    Scene scene;
+    scene.add(0.0F, 0.0F, 0.0F);
+    scene.add(2.0F, 0.0F, 0.0F);
+    GameHumans game;
+    CHECK(game.capturing());
+    game.capture(scene.brains);
+    REQUIRE(game.humans().size() == 2);
+    game.setCapturing(false);
+    CHECK_FALSE(game.capturing());
+    CHECK(game.humans().empty());
+    game.capture(scene.brains);
+    CHECK(game.humans().empty());
+    CHECK(game.holding().empty());
+    // Turned off and on more times than there are slots, it never runs out: turning off gives every id back.
+    for (std::size_t i = 0; i < kNetIdMaxSlots / 2 + 10; ++i) {
+        game.setCapturing(true);
+        game.capture(scene.brains);
+        REQUIRE(game.humans().size() == 2);
+        game.setCapturing(false);
+    }
+    CHECK(game.humans().empty());
+}

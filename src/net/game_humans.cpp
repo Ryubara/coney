@@ -86,6 +86,8 @@ void GameHumans::clear() {
     m_humans.clear();
 }
 
+void GameHumans::releaseRetired() {}
+
 SnapshotHumans GameHumans::holding() const {
     SnapshotHumans humans;
     for (const SnapshotHuman& human : m_humans) {

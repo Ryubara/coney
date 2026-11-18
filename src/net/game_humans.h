@@ -45,6 +45,12 @@ class GameHumans {
 
     /// No humans: the level has gone. Their ids are retired as the next capture() would.
     void clear();
+    /// Frees every retired id, for use again in its next generation: call it only when no peer can still name them.
+    void releaseRetired();
+    /// Whether capture() takes the humans (on at first).
+    [[nodiscard]] bool capturing() const { return m_capturing; }
+    /// Turns capture() on or off.
+    void setCapturing(bool on) { m_capturing = on; }
 
     /// The humans captured, in brain order, each with priority 1.
     [[nodiscard]] std::span<const SnapshotHuman> humans() const { return m_humans; }
@@ -55,6 +61,7 @@ class GameHumans {
     NetIdAllocator m_ids;
     NetIdTable<const human::Human*> m_table;
     std::vector<SnapshotHuman> m_humans;
+    bool m_capturing = true;
 };
 
 } // namespace coney::net

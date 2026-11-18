@@ -14,6 +14,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/options.h"
 #include "core/pad.h"
 #include "core/pads.h"
 #include "net/loopback_transport.h"
@@ -22,6 +23,7 @@
 #include "net/snapshot.h"
 #include "net/state_digest.h"
 #include "net/transport.h"
+#include "platform/net_game.h"
 
 using coney::InputSource;
 using coney::PadSample;
@@ -383,4 +385,32 @@ TEST_CASE("a host with nobody joined sends nothing and writes no snapshot digest
     games.run(5);
     CHECK(sent.empty());
     CHECK(games.host.steps() == 5);
+}
+
+TEST_CASE("the game's humans are captured only while a session or a proof needs them", "[net][net_play]") {
+    // Expected: unverified, #558 (Coney's own: offline play keeps no network ids)
+    TwoGames games;
+    auto opened = coney::platform::NetGame::open(coney::Options{});
+    REQUIRE(opened.has_value());
+    coney::platform::NetGame& game = **opened;
+    CHECK_FALSE(game.humans().capturing());
+    game.afterStep(games.host);
+    CHECK_FALSE(game.humans().capturing());
+    // Hosting: from the next step on, the host's snapshots need them.
+    games.host.setPort(0);
+    REQUIRE(games.host.host());
+    game.afterStep(games.host);
+    CHECK(game.humans().capturing());
+    // The session over, nobody can name them any more.
+    games.host.disconnect();
+    games.run(NetPlay::kCloseSteps + 1);
+    game.afterStep(games.host);
+    CHECK_FALSE(game.humans().capturing());
+
+    // A run that hosts from the start captures from its first step.
+    coney::Options hosting;
+    hosting.netHost = coney::NetEndpoint{};
+    auto hostOpened = coney::platform::NetGame::open(hosting);
+    REQUIRE(hostOpened.has_value());
+    CHECK((**hostOpened).humans().capturing());
 }

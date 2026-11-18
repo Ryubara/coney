@@ -685,9 +685,9 @@ endif()
 # Network play proved without a person (support/net_pair_check.cpp, docs/guides/multiplayer.md#two-processes): two
 # coney processes over ENet on 127.0.0.1 compare the digests of the snapshots sent and decoded, a replay of the host's
 # session record gives its digests again, and offline play is the same with a session nobody joins. Without the disc
-# the games have no humans, so the digests cover the pads and the snapshots' plumbing; the disc-backed pair in
-# src/platform/CMakeLists.txt plays level99 with its humans. Each run's frames are paced at 30 a second while a session
-# is open, so the host's 300 frames take ten seconds.
+# the games have no humans, so the digests cover the pads and the snapshots' plumbing; the disc-backed pair below
+# plays level99 with its humans. Each run's frames are paced at 30 a second while a session is open, so the host's 600
+# frames take twenty seconds, ample for a guest started under load to join and play its script.
 # The digest's options are the debug build's (main.cpp), so the release-only build has none of these.
 if(CONEY_DEBUG_TOOLS)
     add_executable(net_pair_check support/net_pair_check.cpp)
@@ -697,7 +697,7 @@ if(CONEY_DEBUG_TOOLS)
     set(_net_guest_script ${CMAKE_CURRENT_SOURCE_DIR}/support/net_guest.txt)
     add_test(NAME coney.net.two_processes
              COMMAND net_pair_check pair --coney $<TARGET_FILE:coney> --work ${CMAKE_CURRENT_BINARY_DIR}/net_pair
-                     --host-script ${_net_host_script} --guest-script ${_net_guest_script} --frames 300
+                     --host-script ${_net_host_script} --guest-script ${_net_guest_script} --frames 600
                      --guest-frames 200)
     add_test(NAME coney.net.offline_unchanged
              COMMAND net_pair_check offline --coney $<TARGET_FILE:coney> --work ${CMAKE_CURRENT_BINARY_DIR}/net_offline
@@ -712,7 +712,7 @@ if(CONEY_DEBUG_TOOLS)
         add_test(NAME coney.net.two_processes_level99
                  COMMAND net_pair_check pair --coney $<TARGET_FILE:coney> --work
                          ${CMAKE_CURRENT_BINARY_DIR}/net_pair_level99 --host-script ${_net_host_script} --guest-script
-                         ${_net_guest_script} --frames 300 --guest-frames 200 --guest-after "L99_IN skipped" --
+                         ${_net_guest_script} --frames 600 --guest-frames 200 --guest-after "L99_IN skipped" --
                          ${_net_level})
         add_test(NAME coney.net.offline_unchanged_level99
                  COMMAND net_pair_check offline --coney $<TARGET_FILE:coney> --work
