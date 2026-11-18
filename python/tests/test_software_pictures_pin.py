@@ -65,14 +65,15 @@ def test_the_snapshot_is_read_over_https_after_ca_certificates_came_from_the_bas
     assert "ca-certificates" not in pinned.split("&&")[0]
 
 
-def test_the_job_passes_while_there_are_no_references_and_is_not_yet_a_required_check() -> None:
-    # Not required, and green on main with an empty reference folder (a red main opens a P-critical issue); the task
-    # that adds the references makes it required and drops the allowance.
+def test_the_job_compares_for_real_and_is_a_required_check() -> None:
+    # The references are in the repository, so the job no longer lets a missing one pass, and a pull request cannot
+    # merge past a red comparison.
     job = WORKFLOW[WORKFLOW.index("  software-pictures:") :].split("\n  cache-prune:")[0]
-    assert "--allow-no-references" in job and "::warning" in job
+    assert "--allow-no-references" not in job and "::warning" not in job
     conventions = (ROOT / ".github" / "conventions.yml").read_text(encoding="utf-8")
-    required = re.search(r"^\s+required_checks: \[(.*)\]", conventions, re.MULTILINE)
-    assert required is not None and "software-pictures" not in required.group(1)
+    required = re.search(r"^\s+required_checks: \[(.*?)\]", conventions, re.MULTILINE | re.DOTALL)
+    assert required is not None
+    assert "software-pictures" in [name.strip() for name in required.group(1).split(",")]
 
 
 def test_the_container_has_an_init_process_so_xvfb_run_gets_past_its_start() -> None:

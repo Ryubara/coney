@@ -52,11 +52,11 @@ the folder you start the command in.
 * **`--update`** replaces the references with what was drawn, after printing the counts against the old ones (a missing
   reference is made and says `new reference`). It is for the pull request that moves the Mesa pin, which reports the old
   and the new counts ([The software pictures](testing.md#software-pictures)).
-* **`--allow-no-references`** is the bootstrap: when `tests/pictures/reference/` holds no picture at all, the scenes are
-  still drawn (and kept in `--out`, and drawn again for `--repeat`), the run says `no references yet ... nothing was
-  compared` and exits 0 unless the repeats differ. CI passes it until the first references are added from its
-  uploaded pictures ([The software pictures](testing.md#software-pictures)); the task that adds them drops it. A folder
-  with some references but not all of them still fails.
+* **`--allow-no-references`** is the bootstrap for a folder with no reference yet: when `tests/pictures/reference/`
+  holds no picture at all, the scenes are still drawn (and kept in `--out`, and drawn again for `--repeat`), the run
+  says `no references yet ... nothing was compared` and exits 0 unless the repeats differ. CI does not pass it: its
+  references are in the repository ([The software pictures](testing.md#software-pictures)), so a scene without one
+  fails. A folder with some references but not all of them fails either way.
 * **Coney's output** of every run (standard output, then standard error) is kept beside its picture as `NAME.log`
   (`repeats/N/NAME.log` for a repeat), whether the run drew, failed or hung, so CI's uploaded pictures carry the log of
   each scene.

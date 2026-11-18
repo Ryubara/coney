@@ -121,11 +121,11 @@ def test_the_shipped_scene_list_is_valid_and_has_a_reference_for_each_scene() ->
     root = find_repo_root(Path(__file__))
     scene_list = picture_scenes.load_scenes(root / picture_scenes.DEFAULT_SCENES)
     assert scene_list.scenes
-    # A reference may be missing while the pinned container has not drawn it yet, but never an unlisted extra.
+    # The job compares for real (no --allow-no-references): every scene has its reference, and no reference is left
+    # over from a scene that is gone.
     reference_folder = root / picture_scenes.DEFAULT_REFERENCES
-    if reference_folder.is_dir():
-        listed = {scene.name for scene in scene_list.scenes}
-        assert {path.stem for path in reference_folder.glob("*.png")} <= listed
+    listed = {scene.name for scene in scene_list.scenes}
+    assert {path.stem for path in reference_folder.glob("*.png")} == listed
 
 
 def test_every_scene_is_drawn_with_its_arguments_and_compared(

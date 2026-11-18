@@ -63,7 +63,9 @@ grep); it changes no worktree, commits nothing and does not touch GitHub.
   it, that it compares frames of one machine and the same views, and that the limit it names is the renderer design's. A
   change to drawing with no line, or a line with no output behind it, is Important. A pull request that moves the
   software pictures' pin (`.github/software-pictures/`) also needs the old and new counts, and the regenerated
-  references in the same pull request ([The software pictures](../testing.md#software-pictures)).
+  references in the same pull request ([The software pictures](../testing.md#software-pictures)); so does one that changes
+  a file of `tests/pictures/reference/` for any other reason (a new or changed scene): it names the scene, and the
+  picture is one the job drew, looked at, never a hardware GPU's or a game's.
 - [ ] **The rules a program cannot check:**
     - `Fixes #N` and `Refs #N` (in `PR-BODY.md`) fit the change (`gh issue view N` is read only and allowed); a `Fixes`
       line for work the change does not finish is Important;
