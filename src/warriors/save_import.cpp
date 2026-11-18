@@ -160,7 +160,9 @@ std::string_view describe(SaveSourceKind kind) {
 
 std::expected<std::vector<ImportCandidate>, Error> readPs2DataFile(std::span<const std::byte> bytes,
                                                                    std::vector<std::string>& skipped) {
-    // The load step reads the whole image, and any data file of another size is corrupt to the game.
+    // The load step reads the whole image, and any data file of another size is corrupt to the game. Coney's choice:
+    // the icons' sizes are not checked, so a data file copied on its own imports, and with the file given there is no
+    // card to be absent.
     if (bytes.size() != kPs2DataFileSize) {
         return fail(ErrorCode::Invalid,
                     std::format("the save file is {} bytes; the game's is 7,704 (six profiles of 1,284) and it calls "
@@ -168,13 +170,15 @@ std::expected<std::vector<ImportCandidate>, Error> readPs2DataFile(std::span<con
                                 bytes.size()));
     }
     std::vector<ImportCandidate> profiles;
+    // Coney's choice: every slot is read, as an import has no slot already marked not loadable.
     for (std::size_t slot = 0; slot < ProfileStore::kSlots; ++slot) {
         const auto record = bytes.subspan(slot * ProfileRecord::kSize, ProfileRecord::kSize);
         io::Reader header(record);
         // The data file is whole, so the header's version word is there.
         const std::uint32_t version = header.readU32Le().value();
         if (version != ProfileRecord::kVersion) {
-            // The game leaves such a slot unused and raises its "bad version" flag (`ss + 0x11c`).
+            // The game leaves such a slot unused and raises its "bad version" flag (`ss + 0x11c`); Coney's choice: the
+            // flag becomes a line naming the slot and its version.
             skipped.push_back(std::format("slot {}: version {:#x}, not the game's {:#x}", slot + 1, version,
                                           ProfileRecord::kVersion));
             continue;
