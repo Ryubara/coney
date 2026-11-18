@@ -139,7 +139,7 @@ Writes the last 30 s of the run log, every level, into the log file and says whe
 
 ```text
 > bugreport
-bug report: the last 412 events written to /home/you/.local/share/Coney/Coney/coney.log
+bug report: the last 412 events written to <your data folder>/coney.log
 ```
 
 ## settings {#settings}
