@@ -447,7 +447,8 @@ def busy(checkout: Path, agent: str, marker: str) -> Iterator[None]:
     mine = f"{agent} clips pair {os.getpid()}\n"
     made = False
     try:
-        path.open("x", encoding="utf-8").write(mine)
+        with path.open("x", encoding="utf-8") as written:
+            written.write(mine)
         made = True
     except FileExistsError:
         pass
