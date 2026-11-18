@@ -112,6 +112,19 @@ std::optional<int> StoryGraph::offer(int chapter) const {
     return std::nullopt;
 }
 
+std::optional<std::size_t> StoryGraph::find(std::string_view /*id*/) const { return std::nullopt; }
+
+std::optional<StoryStep> StoryGraph::nextStep(std::optional<std::string_view> /*lastMissionId*/) const {
+    return std::nullopt;
+}
+
+std::optional<StoryStep> StoryGraph::offerOf(std::string_view /*chapterId*/) const { return std::nullopt; }
+
+std::optional<StoryStep> StoryGraph::hubChapterAt(int /*checkpoint*/,
+                                                  std::optional<std::string_view> /*lastMissionId*/) const {
+    return std::nullopt;
+}
+
 Sha256Digest StoryGraph::hash() const {
     Sha256 sha;
     sha.update(kHashVersion);
