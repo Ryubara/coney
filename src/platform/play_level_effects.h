@@ -33,8 +33,9 @@ class PlayLevelEffects {
                      const world_objects::Cars* cars, std::function<void(std::string_view)> print);
 
     /// Draws the parked cars' `pass` (docs/research/graphics.md#car-draw): the opaque parts with the solid objects, the
-    /// glass after the see-through ones; through the current camera, each atomic lit and drawn by `render`.
-    void drawCars(const std::function<void(rw::Atomic*)>& render, graphics::CarPass pass);
+    /// glass after the see-through ones; through the current camera, each part lit and drawn by `render`
+    /// (drawObject()).
+    void drawCars(const std::function<void(const ObjectDraw&)>& render, graphics::CarPass pass);
     /// Draws the particle systems through the current camera at `view` (RenderWare's axes), after everything solid.
     void drawInScene(const world::CameraPose& view);
     /// Draws the glints of the pickups and lock-pickable doors (effects::Triglints::sprites()) through the current

@@ -50,8 +50,8 @@ const LevelClumpObject* clumpOf(const ObjectModel& model) {
 } // namespace
 
 ParkedCars::ParkedCars(const io::Wad& wad, const world_objects::Cars& cars, bool forDrawing,
-                       std::function<void(std::string_view)> print)
-    : m_wad(wad), m_cars(cars), m_forDrawing(forDrawing), m_print(std::move(print)),
+                       std::function<void(std::string_view)> print, SceneAssets* assets)
+    : m_wad(wad), m_cars(cars), m_forDrawing(forDrawing), m_print(std::move(print)), m_assets(assets),
       m_table(chunk::ChunkHandlerTable::withDefaults()) {
     // The readers an Object List model needs: its texture dictionary and the level file's 0x47 model.
     addTextureDictionaryHandlers(m_table);
@@ -118,7 +118,7 @@ ParkedCars::TypeModel* ParkedCars::model(std::uint8_t type) {
     return slot.get();
 }
 
-void ParkedCars::draw(const std::function<void(rw::Atomic*)>& render, graphics::CarPass pass) {
+void ParkedCars::draw(const std::function<void(const ObjectDraw&)>& render, graphics::CarPass pass) {
     const bool glass = pass == graphics::CarPass::Glass;
     if (!glass) {
         m_drawn = 0;
@@ -148,14 +148,14 @@ void ParkedCars::draw(const std::function<void(rw::Atomic*)>& render, graphics::
             }
             rw::Atomic* atomic = parts[a].atomic.atomic();
             // The paint on the painted parts, white elsewhere so the texture shows as it is (chrome, lights, glass).
-            const rw::RGBA colour = graphics::carPartPainted(graphics::carPartOf(a))
-                                        ? rw::RGBA{paint.r, paint.g, paint.b, 255}
-                                        : rw::RGBA{255, 255, 255, 255};
-            for (rw::int32 m = 0; m < atomic->geometry->matList.numMaterials; ++m) {
-                atomic->geometry->matList.materials[m]->color = colour;
-            }
+            const graphics::Rgba colour = graphics::carPartPainted(graphics::carPartOf(a))
+                                              ? graphics::Rgba{paint.r, paint.g, paint.b, 255}
+                                              : graphics::kWhite;
             place(atomic, anim::multiply(pose, toMat34(parts[a].frame)));
-            render(atomic);
+            render(ObjectDraw{.atomic = atomic,
+                              .mesh = a < typeModel->meshes.size() ? typeModel->meshes[a] : ObjectMesh{},
+                              .material =
+                                  graphics::Material3d{.colour = graphics::MaterialColour::Paint, .tint = colour}});
         }
         if (!glass) {
             ++m_drawn;

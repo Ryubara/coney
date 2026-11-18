@@ -157,11 +157,29 @@ struct SceneStates {
     friend bool operator==(const SceneStates&, const SceneStates&) = default;
 };
 
+/// How a 3D draw changes the colours of its mesh's materials.
+enum class MaterialColour : std::uint8_t {
+    /// Every material's alpha set to Material3d::fade and kept, written only where it differs: a streamed sector's
+    /// fade-in (World_RenderSectorAtomic, docs/research/world.md#a-frame).
+    Fade,
+    /// Each material's colour multiplied by Material3d::tint for this draw alone (each channel `(c × t + 127) / 255`),
+    /// the mesh modulated by its material colour while the tint is not opaque white: a world object's tint and alpha
+    /// (docs/research/objects.md#tint).
+    Tint,
+    /// Every material's colour set to Material3d::tint and kept: a car part's paint, or white
+    /// (docs/research/graphics.md#car-draw).
+    Paint,
+};
+
 /// What a 3D draw changes about its mesh's own materials this frame.
 struct Material3d {
-    /// The alpha of every material colour: a streamed sector's fade-in (World_RenderSectorAtomic,
-    /// docs/research/world.md#a-frame), 255 once faded in.
+    /// How the materials' colours change (MaterialColour).
+    MaterialColour colour = MaterialColour::Fade;
+    /// The alpha of every material colour under MaterialColour::Fade: a streamed sector's fade-in
+    /// (World_RenderSectorAtomic, docs/research/world.md#a-frame), 255 once faded in.
     std::uint8_t fade = 255;
+    /// The colour MaterialColour::Tint multiplies by and MaterialColour::Paint sets.
+    Rgba tint = kWhite;
     /// Texture levels picked by the distance to the camera, as the original draws the streamed sectors alone
     /// (docs/research/rendering.md#world); level 0 otherwise.
     bool distanceLevels = false;
@@ -201,7 +219,8 @@ struct Draw3d {
 };
 
 /// A pass of 3D draws through the frame's camera, in their order: the streamed world's sectors (item 7 of
-/// docs/engine/renderer.md#order); objects, cars, humans and effects join it with items 8 to 10.
+/// docs/engine/renderer.md#order), the world objects and the parked cars (item 8); humans and effects join it with
+/// items 9 and 10.
 struct ScenePass {
     std::vector<Draw3d> draws;
 };
@@ -225,12 +244,12 @@ struct FrameStart {
 /// far). Textures are held by id, so a description names no graphics API: the GL3 renderer draws it through librw
 /// (platform/gl3_renderer.h) and the SDL3 GPU renderer will draw the same description.
 ///
-/// It holds the 2D side, the screen passes and the streamed world's sectors (scene passes of 3D draws, each a mesh
-/// and its textures by AssetStore id). The rest of the 3D scene (the camera, the level's background, objects, cars,
-/// humans and effects) still goes to librw directly between them (items 8 to 10 of docs/engine/renderer.md#order move
-/// it here), so the GL3 renderer draws each part as it is added rather than the whole frame at its end. Draws are given
-/// in logical pixels with the window rectangle they are mapped onto, or in window pixels, and are kept in window
-/// pixels.
+/// It holds the 2D side, the screen passes, the streamed world's sectors, the world objects and the parked cars (scene
+/// passes of 3D draws, each a mesh and its textures by AssetStore id). The rest of the 3D scene (the camera, the
+/// level's background, humans and effects) still goes to librw directly between them (items 9 and 10 of
+/// docs/engine/renderer.md#order move it here), so the GL3 renderer draws each part as it is added rather than the
+/// whole frame at its end. Draws are given in logical pixels with the window rectangle they are mapped onto, or in
+/// window pixels, and are kept in window pixels.
 class FrameDescription {
   public:
     /// Forgets the last frame's passes, textures and primitives and starts a new frame as `start` says.

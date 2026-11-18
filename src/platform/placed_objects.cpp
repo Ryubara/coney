@@ -10,6 +10,7 @@
 
 #include "platform/draw_calls.h"
 #include "platform/level_file.h"
+#include "platform/lit_atomic.h"
 #include "world/level_object.h"
 #include "world_objects/object_tasks.h"
 
@@ -35,9 +36,9 @@ anim::Mat34 objectRenderTransform(anim::Quat rotation, anim::Vec3 position) {
 }
 
 PlacedObjects::PlacedObjects(const io::Wad& wad, const world_objects::ObjectList& list,
-                             std::function<void(std::string_view)> print, bool forDrawing)
+                             std::function<void(std::string_view)> print, bool forDrawing, SceneAssets* assets)
     : m_wad(wad), m_list(list), m_print(std::move(print)), m_table(chunk::ChunkHandlerTable::withDefaults()),
-      m_forDrawing(forDrawing) {
+      m_forDrawing(forDrawing), m_assets(assets) {
     // The readers an Object List model needs: its texture dictionary and the level file's 0x47 model.
     addTextureDictionaryHandlers(m_table);
     m_table.setHandlers(world::kPreinstanceObjectChunk, chunk::ChunkHandlers{{}, readPreinstanceObjectChunk});
@@ -145,36 +146,24 @@ int PlacedObjects::alphaOf(const Placed& object, rw::Atomic* atomic, const DrawO
     return static_cast<int>(alpha);
 }
 
-void PlacedObjects::drawOne(const Placed& object, rw::Atomic* atomic, int alpha, const DrawOptions& options) const {
-    // The tint multiplies each material's colour, its alpha the material's; the materials are shared by every object
-    // of the type, so they are put back after.
-    rw::Geometry* geometry = atomic->geometry;
-    std::vector<rw::RGBA> own;
-    const auto channel = [](rw::uint8 base, std::uint32_t tint) {
-        return static_cast<rw::uint8>((static_cast<std::uint32_t>(base) * (tint & 0xFFU) + 127U) / 255U);
-    };
+void PlacedObjects::drawOne(const Placed& object, rw::Atomic* atomic, const ObjectMesh& mesh, int alpha,
+                            const DrawOptions& options) const {
+    // The tint multiplies each material's colour, its alpha the material's (the materials are shared by every object
+    // of the type, so the change lasts for the draw alone).
     const std::uint32_t tint = object.look.tint;
-    for (rw::int32 i = 0; i < geometry->matList.numMaterials; ++i) {
-        rw::RGBA& colour = geometry->matList.materials[i]->color;
-        own.push_back(colour);
-        colour = rw::RGBA{channel(colour.red, tint >> 24U), channel(colour.green, tint >> 16U),
-                          channel(colour.blue, tint >> 8U), channel(colour.alpha, static_cast<std::uint32_t>(alpha))};
-    }
-    // librw multiplies by the material's colour only for a geometry that modulates: set for the draw when the colour
-    // changes anything.
-    const rw::uint32 flags = geometry->flags;
-    if (tint != 0xFFFFFFFFU || alpha < 255) {
-        geometry->flags |= rw::Geometry::MODULATE;
-    }
+    const ObjectDraw draw{
+        .atomic = atomic,
+        .mesh = mesh,
+        .material = graphics::Material3d{
+            .colour = graphics::MaterialColour::Tint,
+            .tint = graphics::Rgba{static_cast<std::uint8_t>(tint >> 24U), static_cast<std::uint8_t>(tint >> 16U),
+                                   static_cast<std::uint8_t>(tint >> 8U), static_cast<std::uint8_t>(alpha)}}};
     if (options.render) {
-        options.render(atomic);
-    } else {
-        draw::renderAtomic(atomic);
+        options.render(draw);
+        return;
     }
-    geometry->flags = flags;
-    for (rw::int32 i = 0; i < geometry->matList.numMaterials; ++i) {
-        geometry->matList.materials[i]->color = own.at(static_cast<std::size_t>(i));
-    }
+    const MaterialChange colours(*atomic, draw.material);
+    draw::renderAtomic(atomic);
 }
 
 void PlacedObjects::draw(const DrawOptions& options) {
@@ -205,7 +194,8 @@ void PlacedObjects::draw(const DrawOptions& options) {
                 continue;
             }
             draw::setRenderState(rw::ZWRITEENABLE, object.look.translucent ? 0 : 1);
-            drawOne(object, level->atomic(), alpha, options);
+            const auto mesh = m_meshes.find(object.modelHash);
+            drawOne(object, level->atomic(), mesh != m_meshes.end() ? mesh->second : ObjectMesh{}, alpha, options);
             ++m_drawn;
         }
     }
