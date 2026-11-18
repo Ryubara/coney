@@ -74,7 +74,7 @@ from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.conventions_render import run_render
 from coney_tools.hygiene_cli import add_hygiene_parser, run_hygiene
 from coney_tools.pr_health import add_pr_health_parser, run_pr_health
-from coney_tools.pr_review import DEFAULT_BASE, add_review_parsers, run_review_command
+from coney_tools.pr_review import DEFAULT_BASE, add_review_parsers, local_images, run_review_command
 from coney_tools.repo_checks import (
     branch_trailer_models,
     check_body,
@@ -204,34 +204,58 @@ def _repo_check_body(
     base: str = DEFAULT_BASE,
     title: str | None = None,
     local_images: bool = False,
+    changed_file: str | None = None,
 ) -> int:
     """Check the pull request description in `body_file` (`-` or none reads stdin); 1 when refused.
 
     With a `worktree`, the Model line must also name the models its commits after `base` credit in trailers; CI has
     only the description and gives none. With the pull request's `title` (CI gives it), a title area a player sees must
-    have the Testing section's `Runtime:` line; without one that rule is skipped, and the output says so. With
-    `local_images` an image may point at a local file, as in a description `gh pr create --attach` is about to upload
-    (the release guard hook passes it when the command attaches files).
+    have the Testing section's `Runtime:` line and the before and after clips; without one those rules are skipped,
+    and the output says so. `changed_file` lists the changed paths, one per line (CI's `body` job gives the API's
+    list): a path a player sees in Coney Studio asks for the clips too. With `local_images` an image may point at a
+    local file, as in a description `gh pr create --attach` is about to upload (the release guard hook passes it when
+    the command attaches files), and each local clip it shows must pass `clips check`, read from the current folder
+    as `gh` reads it.
     """
     conventions = _conventions()
     rules = conventions.pull_requests
     if local_images:
         rules = dataclasses.replace(rules, screenshots=dataclasses.replace(rules.screenshots, uploaded_only=False))
-    if body_file is None or body_file == "-":
-        body = sys.stdin.read()
-    else:
-        try:
+    changed: list[str] | None = None
+    reading = changed_file
+    try:
+        if changed_file is not None:
+            text = Path(changed_file).read_text(encoding="utf-8")
+            changed = [line.strip().replace("\\", "/") for line in text.splitlines() if line.strip()]
+        reading = body_file
+        if body_file is None or body_file == "-":
+            body = sys.stdin.read()
+        else:
             body = Path(body_file).read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError) as error:
-            print(f"coney-tools: {body_file}: cannot be read ({error})", file=sys.stderr)
-            return 2
+    except (OSError, UnicodeDecodeError) as error:
+        print(f"coney-tools: {reading}: cannot be read ({error})", file=sys.stderr)
+        return 2
     models = branch_trailer_models(worktree, base, conventions.commits.trailers) if worktree else []
-    problems = check_body(body, rules, models, title)
+    problems = check_body(body, rules, models, title, changed)
+    if local_images and rules.clips is not None:
+        problems += _local_clip_problems(body, rules.clips.extensions, conventions.workspace.clips)
     if problems:
         print(f"body refused: {'; '.join(problems)} (see .github/pull_request_template.md)")
         return 1
-    print("body: ok" if title is not None else "body: ok (no --title, so the Runtime: line was not checked)")
+    print("body: ok" if title is not None else "body: ok (no --title, so the Runtime: line and clips were not checked)")
     return 0
+
+
+def _local_clip_problems(body: str, extensions: Sequence[str], rules: clips.Clips) -> list[str]:
+    """What `clips check` refuses in each local clip the description shows (an image in a clips folder whose file ends
+    in one of `extensions`; a GIF under `./shots/` is a picture), each read from the current folder, as `gh --attach`
+    reads it."""
+    found: list[str] = []
+    for target in local_images(body):
+        in_folder = Path(target.replace("\\", "/")).parent.name == rules.folder
+        if in_folder and target.rsplit(".", 1)[-1].lower() in extensions:
+            found += clips.described_clip_problems(target, Path.cwd() / target, rules)
+    return found
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -345,7 +369,8 @@ def _build_parser() -> argparse.ArgumentParser:
     check_body_parser.add_argument(
         "--title",
         help="the pull request's title: a title area a player sees (gameplay, graphics, audio) then needs the "
-        "Testing section's `Runtime:` line, as in CI; without it that rule is not checked",
+        "Testing section's `Runtime:` line and the before and after clips, as in CI; without it those rules are not "
+        "checked",
     )
     check_body_parser.add_argument(
         "--worktree",
@@ -359,7 +384,14 @@ def _build_parser() -> argparse.ArgumentParser:
     check_body_parser.add_argument(
         "--local-images",
         action="store_true",
-        help="accept an image that points at a local file, which `gh pr create --attach` uploads",
+        help="accept an image that points at a local file, which `gh pr create --attach` uploads; a local clip must "
+        "then pass `clips check`, read from the current folder",
+    )
+    check_body_parser.add_argument(
+        "--changed",
+        metavar="FILE",
+        help="a file listing the changed paths, one per line: a path a player sees in Coney Studio then needs the "
+        "before and after clips (CI's body job gives the pull request's files)",
     )
     render_parser = repo_commands.add_parser(
         "render",
@@ -1492,7 +1524,7 @@ def _run_pr(args: argparse.Namespace) -> int:
     if args.command == "check-docs":
         return _repo_check_docs(args.body)
     if args.command == "check-body":
-        return _repo_check_body(args.body, args.worktree, args.base, args.title, args.local_images)
+        return _repo_check_body(args.body, args.worktree, args.base, args.title, args.local_images, args.changed)
     return _pr_check_commit(args.file, args.model)
 
 

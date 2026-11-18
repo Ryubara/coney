@@ -191,6 +191,16 @@ def _pr_rules(conventions: Conventions) -> list[str]:
         f"captures or reads compared with Coney's, with numbers) or `{runtime.none} (<reason>)`. It is checked given "
         "the title (CI's `body` job and `legacy check-pr-review` give it)."
     )
+    clips = rules.clips
+    if clips is not None:
+        kinds = " or ".join(f"`.{ext}`" for ext in clips.extensions)
+        lines += _bullet(
+            f"{clips.section}: when the title's area is one of {_codes(clips.areas)}, or the change touches a path "
+            f"under {_codes(clips.paths)} (what a player sees in Coney Studio), a clip on a line `{clips.before}` and "
+            f"one on a line `{clips.after}` (the original's may follow on `{clips.original}`), or a line `{clips.none} "
+            f"(<reason>)`. A clip is a {kinds} upload; in `PR.md` it is a local `./clips/<name>` image that `pr open` "
+            "uploads. It is checked given the title and, for the paths, the changed files (CI's `body` job has both)."
+        )
     ai = rules.ai_use
     lines += _bullet(
         f"{ai.section}: after `{ai.written_by.label}` one of {_codes(ai.written_by.choices)}; unless it is "

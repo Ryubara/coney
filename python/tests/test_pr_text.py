@@ -11,7 +11,7 @@ from conventions_support import changed
 from pr_support import PARAGRAPH, SOURCE_FILE, Built, make
 from test_orig_compare import TWO_FUNCTIONS
 
-from coney_tools import pr_proof, pr_text, stamps
+from coney_tools import clips, pr_proof, pr_publish, pr_text, stamps
 from coney_tools.config import ConfigError
 from coney_tools.conventions import parse_conventions
 from coney_tools.issue_claim_remote import IssueView
@@ -572,7 +572,10 @@ def test_pictures_are_kept_in_the_body_as_relative_references_and_hashed(tmp_pat
     ("files", "message"),
     [
         ({"missing.png": b""}, None),
-        ({"clip.mp4": b"v"}, "images: shots/clip.mp4 is a video; use clips publish"),
+        (
+            {"clip.mp4": b"v"},
+            "images: shots/clip.mp4 is a video; a clip goes under clips/ on a Before:, After: or Original: line",
+        ),
         ({"notes.txt": b"t"}, "images: shots/notes.txt is not a picture (png, jpg, jpeg, gif)"),
         ({"a.png": b"same", "b.png": b"same"}, "images: shots/b.png is identical to shots/a.png"),
     ],
@@ -631,6 +634,136 @@ def test_a_picture_replaced_after_review_makes_the_review_stale(tmp_path: Path) 
     (built.unit.dir / "shots" / "after.png").write_bytes(b"two")
     result = built.verify()
     assert "reviewed: stale: the screenshots changed since Review" in [r.text for r in result.refusals]
+
+
+# --- clips ----------------------------------------------------------------------------------------------------------
+
+NO_CLIPS = "Clips: none (no visible change)"
+
+
+@pytest.fixture
+def probed(monkeypatch: pytest.MonkeyPatch) -> list[Path]:
+    """ffprobe replaced: every clip is a clean 5-second one, except a file whose bytes say `long`."""
+    seen: list[Path] = []
+
+    def probe(path: Path) -> clips.ClipInfo:
+        seen.append(path)
+        seconds = 14.0 if path.read_bytes().startswith(b"long") else 5.0
+        return clips.ClipInfo(seconds=seconds, width=960, height=720, size=path.stat().st_size, audio=False, tags=())
+
+    monkeypatch.setattr(clips, "probe_file", probe)
+    return seen
+
+
+def with_clips(built: Built, lines: str, **files: bytes) -> None:
+    """Put clips in the unit's clips folder and make PR.md's clip lines `lines` (in place of its `Clips: none`)."""
+    folder = built.unit.dir / "clips"
+    folder.mkdir(exist_ok=True)
+    for name, data in files.items():
+        (folder / name).write_bytes(data)
+    path = built.unit.dir / "PR.md"
+    path.write_text(path.read_text(encoding="utf-8").replace(NO_CLIPS, lines), encoding="utf-8")
+
+
+PAIR = "- Before: ![before](./clips/before.mp4)\n- **After:** ![after](./clips/after.gif)"
+
+
+def test_a_clip_pair_is_generated_each_clip_alone_under_its_label(tmp_path: Path, probed: list[Path]) -> None:
+    built = make(tmp_path)
+    with_clips(built, PAIR, **{"before.mp4": b"one", "after.gif": b"two"})
+    generated = generate(built)
+    assert problems(generated) == []
+    screenshots = generated.body.split("## Screenshots\n\n", 1)[1].split("\n\n## ", 1)[0]
+    assert screenshots == (
+        "Screenshots: none (no visible change)\n\n**Before:**\n\n![before](./clips/before.mp4)\n\n"
+        "**After:**\n\n![after](./clips/after.gif)"
+    )
+    assert [path.name for path in probed] == ["before.mp4", "after.gif"]
+    text = pr_text.read_engineer_file(built.unit.dir / "PR.md", built.conventions)
+    assert [(clip.label, clip.video) for clip in text.clips] == [("Before:", True), ("After:", False)]
+
+
+def test_a_gameplay_title_without_clips_or_a_reason_is_refused(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    with_clips(built, "")
+    refused = problems(generate(built))
+    assert any("needs a 'Before:' and an 'After:' clip" in p and "'gameplay'" in p for p in refused), refused
+    reason = generate(built, (built.unit.dir / "PR.md").read_text(encoding="utf-8") + "\n" + NO_CLIPS + "\n")
+    assert problems(reason) == [] and f"\n\n{NO_CLIPS}" in reason.body
+
+
+def test_a_studio_change_needs_clips_whatever_its_title(tmp_path: Path) -> None:
+    built = make(tmp_path, shape="tooling")
+    subject = dataclasses.replace(built.subject(), paths=(*built.subject().paths, "src/studio/inspector.cpp"))
+    task_text = (built.unit.dir / "TASK.md").read_text(encoding="utf-8")
+    engineer = pr_text.read_engineer_file(built.unit.dir / "PR.md", subject.conventions)
+    generated = pr_text.generate(subject, parse_task_file(task_text, subject.conventions.tasks), engineer)
+    assert any("src/studio/inspector.cpp, which a player sees in Coney Studio" in p for p in problems(generated))
+
+
+@pytest.mark.parametrize(
+    ("lines", "files", "expected"),
+    [
+        (PAIR, {"before.mp4": b"one"}, "clips: clips/after.gif does not exist"),
+        (PAIR, {"before.mp4": b"same", "after.gif": b"same"}, "clips/after.gif is identical to clips/before.mp4"),
+        (PAIR, {"before.mp4": b"long", "after.gif": b"two"}, "clips: clips/before.mp4: 14.00 s long, more than 10 s"),
+        ("- Before: ![b](./shots/b.mp4)\n- After: ![a](./clips/a.mp4)", {"a.mp4": b"a"}, "is not a .gif or .mp4 under"),
+        ("- Before: ![b](./clips/b.webm)\n- After: ![a](./clips/a.mp4)", {"a.mp4": b"a"}, "not a .gif or .mp4 under"),
+        ("- Before: the old one\n- After: ![a](./clips/a.mp4)", {"a.mp4": b"a"}, "the Before: line holds one clip"),
+        (PAIR + "\n- After: ![a](./clips/a.mp4)", {"before.mp4": b"1", "after.gif": b"2", "a.mp4": b"3"},
+         "After: is given twice"),
+    ],
+)  # fmt: skip
+def test_a_bad_clip_is_refused(
+    tmp_path: Path, probed: list[Path], lines: str, files: dict[str, bytes], expected: str
+) -> None:
+    built = make(tmp_path)
+    with_clips(built, lines, **files)
+    refused = problems(generate(built))
+    assert any(expected in p for p in refused), refused
+
+
+def test_a_clip_with_a_bad_name_is_refused_as_clips_check_refuses_it(tmp_path: Path, probed: list[Path]) -> None:
+    built = make(tmp_path)
+    with_clips(built, "- Before: ![b](./clips/my%20clip.mp4)\n- After: ![a](./clips/a.mp4)", **{"a.mp4": b"a"})
+    assert any("a clip's name is letters, digits" in p for p in problems(generate(built)))
+
+
+def test_a_clip_an_earlier_release_uploaded_and_deleted_still_counts(tmp_path: Path, probed: list[Path]) -> None:
+    built = make(tmp_path)
+    with_clips(built, PAIR, **{"before.mp4": b"one", "after.gif": b"two"})
+    reviewed = built.text_hashes()
+    record = {
+        "./clips/before.mp4": {"sha256": pr_text._sha(b"one"), "url": "https://github.com/user-attachments/assets/1"},
+        "./clips/after.gif": {"sha256": pr_text._sha(b"two"), "url": "https://github.com/user-attachments/assets/2"},
+    }
+    pr_publish.write_published(built.unit.dir, pr_publish.Published(number=812, url="u", tip="t", clips=record))
+    for name in ("before.mp4", "after.gif"):
+        (built.unit.dir / "clips" / name).unlink()
+    probed.clear()
+    assert problems(generate(built)) == [] and probed == []
+    # the review that covered the clips still holds: their recorded hashes stand for the deleted files
+    assert built.text_hashes() == reviewed
+
+
+def test_verify_refuses_a_visible_change_without_clips(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    with_clips(built, "")
+    refusals = pr_text.clip_refusals(built.subject(), built.unit.dir / "PR.md")
+    assert [r.stage for r in refusals] == ["clips"] and refusals[0].redo == "engineer"
+    assert "needs a 'Before:' and an 'After:' clip" in refusals[0].text
+    path = built.unit.dir / "PR.md"
+    path.write_text(path.read_text(encoding="utf-8") + "\n" + NO_CLIPS + "\n", encoding="utf-8")
+    assert pr_text.clip_refusals(built.subject(), path) == []
+
+
+def test_no_clip_rule_in_the_conventions_asks_for_no_clips(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    with_clips(built, "")
+    conventions = dataclasses.replace(
+        built.conventions, pull_requests=dataclasses.replace(built.conventions.pull_requests, clips=None)
+    )
+    assert problems(generate(built, conventions=conventions)) == []
 
 
 # --- AI use ---------------------------------------------------------------------------------------------------------

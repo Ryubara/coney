@@ -22,8 +22,9 @@ uv run --project python coney-tools pr verify [TASK] [--worktree DIR] [--remote 
 
 Steps 1 to 4 of a release, read only: the stamp log is intact, Check ran a big enough profile on this change, every
 `@orig` function the branch changes was studied and compared at its current body, every test it adds failed first or
-is stamped `keeps`, and Review passed for this change, these pairs and this text. Prints one block per refusal (the
-message, then what to redo), or `ok`. It changes no stamp, file or git state and does not fetch.
+is stamped `keeps`, and Review passed for this change, these pairs and this text; and the engineer's file shows the
+before and after clips a visible change needs, or says why not (the `clips` refusals). Prints one block per refusal
+(the message, then what to redo), or `ok`. It changes no stamp, file or git state and does not fetch.
 
 | Argument or option | Default | What it does |
 | --- | --- | --- |
@@ -67,7 +68,8 @@ uv run --project python coney-tools pr open [TASK] [--worktree DIR] [--text FILE
 
 The coordinator's release command: it runs `pr verify` and `pr text` on the unit, rebases it onto the remote's default
 branch, pushes it with a lease, opens or updates the pull request with the generated title and description and the
-pictures attached, turns on auto-merge, reads the pull request back and records it. It commits nothing. An engineer or
+pictures and clips attached, places each clip in the form GitHub plays, turns on auto-merge, reads the pull request back,
+records it and deletes the clips it uploaded. It commits nothing. An engineer or
 reviewer identity is refused. The steps, each refusal and what to redo: [pr open](pr.md#open). There is deliberately no
 option to skip a check, to take a stamp from elsewhere or to name another base branch. Its own `git` and `gh` calls are
 subprocesses, which no hook sees; with `pull_requests.open_only` on (since 2026-10-27), the PR guard refuses the
@@ -155,7 +157,7 @@ Exit codes: 0 the message passes, 1 it is refused, 2 the file cannot be read or 
 uv run --project python coney-tools pr check-title FILE|-
 uv run --project python coney-tools pr check-docs [--body FILE]      # changed paths on stdin
 uv run --project python coney-tools pr check-body [--body FILE|-] [--title TITLE] [--worktree WT [--base REF]]
-    [--local-images]
+    [--local-images] [--changed FILE]
 ```
 
 The checks CI's `title`, `docs` and `body` jobs run on a pull request, against the rules of `.github/conventions.yml`
@@ -174,13 +176,19 @@ The checks CI's `title`, `docs` and `body` jobs run on a pull request, against t
   `Runtime:` in the Testing section: the evidence of a comparison with the original running, with numbers, or `Runtime:
   none (<reason>)` ([the Runtime line](testing.md#runtime-line)). Without `--title` that rule is not checked and the
   output says so; `legacy check-pr-review` always has the title (line 1 of `PR.md`).
+  The same title, or a path under `pull_requests.clips.paths` (`src/studio/`) in the file `--changed` names (one path
+  a line; the `body` job writes the pull request's files there from the API), asks for the **before and after clips**:
+  a clip on a `Before:` and an `After:` line of the Screenshots section, or `Clips: none (<reason>)`; a clip line that
+  is written must show one clip, once ([Clips in the description](testing.md#clips-in-the-description)).
   The **Issues affected** section must hold one `- #N: how it is affected` item for each open issue the change affects,
   or the single line `None (<reason>)` with any short reason (`None (one-line fix)`); an empty section, a `None` with
   no reason, an item with no line on how, a number listed twice and prose are refused, and the message says what to
   write. Whether the list is complete is the reviewer's judgement;
   [`issue impact`](coney-tools-issues.md#issue-impact) suggests it.
   `--local-images` accepts an image that points at a local file, as in a description that `gh pr create --attach`
-  is about to upload; the PR guard hook passes it ([Opening the pull request](how-we-work.md#release-queue)).
+  is about to upload; the PR guard hook passes it ([Opening the pull request](how-we-work.md#release-queue)). With it,
+  each local clip (an image under `./clips/`) must also pass [`clips check`](coney-tools-clips.md#clips), read from
+  the current folder as `gh` reads it.
 
 ### The Model line and the branch's trailers {#pr-model-line}
 
@@ -333,15 +341,17 @@ Check a pull request description against the template: sections, summary, AI use
 
 ```text
 coney-tools pr check-body [--body BODY] [--title TITLE] [--worktree WORKTREE] [--base BASE] [--local-images]
+    [--changed FILE]
 ```
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `--body BODY` | text | none | a file holding the pull request description; - or omitted reads stdin |
-| `--title TITLE` | text | none | the pull request's title: a title area a player sees (gameplay, graphics, audio) then needs the Testing section's `Runtime:` line, as in CI; without it that rule is not checked |
+| `--title TITLE` | text | none | the pull request's title: a title area a player sees (gameplay, graphics, audio) then needs the Testing section's `Runtime:` line and the before and after clips, as in CI; without it those rules are not checked |
 | `--worktree WORKTREE` | path | none | the branch's worktree: also require the Model line to name every model its commits credit in a Co-Authored-By trailer (what `legacy check-pr-review` does) |
 | `--base BASE` | text | `origin/main` | what the branch is compared with, with --worktree (default: origin/main) |
-| `--local-images` | flag | off | accept an image that points at a local file, which `gh pr create --attach` uploads |
+| `--local-images` | flag | off | accept an image that points at a local file, which `gh pr create --attach` uploads; a local clip must then pass `clips check`, read from the current folder |
+| `--changed FILE` | text | none | a file listing the changed paths, one per line: a path a player sees in Coney Studio then needs the before and after clips (CI's body job gives the pull request's files) |
 
 ### `pr verify` {#pr-verify-usage}
 

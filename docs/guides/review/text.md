@@ -36,6 +36,15 @@ grep); it changes no worktree, commits nothing and does not touch GitHub.
       program; also flag two shots that look the same where the text claims a visible change);
     - the frame, settings or options the text states (render size, camera, checkpoint, update number) fit what is
       seen.
+- [ ] **The clips show what the description claims.** `task review` prints each clip on a `Before:`, `After:` or
+  `Original:` line with its file (the packet's `text.clips`; the clips are among its `images`, so each is judged like
+  a picture). Play each (or open its frames) and check that the before and the after are the same run (the same
+  level, place and moment) and differ where the change says they should; that the after shows the change the Summary
+  claims; that each is gameplay, not a menu or a loading screen; and that an `Original:` clip shows the original from
+  the same place. A `Clips: none (<reason>)` line for a title area a player sees, or a Coney Studio change, gives a
+  real reason (nothing visible changes, no disc scenario reaches it yet); convenience is Important, as for the
+  `Runtime:` line ([Clips in the description](../testing.md#clips-in-the-description)). A clip already uploaded by an
+  earlier `pr open` is deleted locally: judge it on the pull request.
 - [ ] **Each claim in Summary and Testing is backed** by the diff or a log the description cites: test names exist in
   the diff or the tree, counts ("412 passed") appear in a log, a stated behaviour is in the code, a command named
   would run. A claim with nothing behind it is Important.

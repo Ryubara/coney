@@ -4,13 +4,15 @@ stamps, and checked with the checks CI runs (docs/guides/pr.md#text).
 
 The engineer writes one small file, `PR.md` in the task's scratch folder: line 1 the title, a `## Summary` with one
 paragraph (and perhaps a `Docs: none` line), a `## Testing` holding only the `Runtime:` and `Pictures:` lines and a
-`## Screenshots` holding image references or `Screenshots: none (reason)`. Everything else is generated: the `Fixes`
+`## Screenshots` holding image references or `Screenshots: none (reason)`, and the clips on its `Before:`, `After:` and
+`Original:` lines or `Clips: none (reason)` (`pull_requests.clips`). Everything else is generated: the `Fixes`
 lines and the Checklist from `TASK.md`, the facts block from the stamp log, the AI use section from the commits and the
 log, and every other section the template has. The generated description therefore cannot disagree with the stamps, and
 the sections it has are the template's: they are read from `pull_requests.sections` in `.github/conventions.yml`, never
 listed here.
 
-`generate` writes no file and reads none but the pictures, with one exception: a section only a person can fill
+`generate` writes no file and reads none but the pictures, the clips (through ffprobe, `clips.probe_file`) and the
+record of clips an earlier release uploaded (`pr-published.json`), with one exception: a section only a person can fill
 (`pull_requests.issues_affected.section`) that the engineer's file leaves out is suggested by running `coney-tools
 issue impact`, which reads GitHub (`issues_affected`). `pr text` writes `PR-TITLE.txt` and `PR-BODY.md`.
 """
@@ -29,17 +31,17 @@ from typing import Any
 
 import yaml
 
-from coney_tools import orig_pairs, pr_proof, pr_text_file, proof_profiles, stamps
+from coney_tools import clips, orig_pairs, pr_proof, pr_publish, pr_text_file, proof_profiles, stamps
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
 from coney_tools.pr_proof import Refusal, TextHashes
 from coney_tools.pr_review import description_problems
-from coney_tools.repo_checks import check_docs, issues_affected_shape
+from coney_tools.repo_checks import check_docs, clip_label, clips_problems, issues_affected_shape, none_reason
 from coney_tools.task_file import TaskFile
 
 #: The most characters the facts block may have before its per-stage lines become counts.
 FACTS_LIMIT = 8000
-#: File endings of a video; a clip is uploaded by `clips publish`, never in a description.
+#: File endings of a video: refused as a picture, because a clip goes on a clip line (`Clip`).
 VIDEO_EXTENSIONS = ("mp4", "webm", "mkv", "mov", "avi", "m4v")
 #: The folder of the pictures, next to the engineer's file (`![alt](./shots/x.png)`).
 SHOTS = "shots"
@@ -90,6 +92,28 @@ class EngineerText:
     #: The text of every other section of the template that the file holds (a section the conventions add, such as
     #: "Issues affected", whose content only a person can confirm), by the template's name for it.
     extra: dict[str, str] = field(default_factory=dict)
+    #: The clips of the `Before:`, `After:` and `Original:` lines, in the file's order.
+    clips: tuple[Clip, ...] = ()
+    #: The reason of a `Clips: none (reason)` line, or None.
+    clips_none: str | None = None
+
+
+@dataclass(frozen=True)
+class Clip:
+    """A clip the engineer's file shows on a labelled line (`- Before: ![before](./clips/before.mp4)`)."""
+
+    #: The label as the conventions spell it (`Before:`).
+    label: str
+    alt: str
+    #: The reference as written (`./clips/before.mp4`).
+    ref: str
+    #: Where it is on disk (relative to the file's folder).
+    path: Path
+
+    @property
+    def video(self) -> bool:
+        """Whether it is an MP4, which GitHub plays only from its bare address alone on a line (a GIF is an image)."""
+        return self.path.suffix.lower() == ".mp4"
 
 
 def _sha(text: str | bytes) -> str:
@@ -165,7 +189,8 @@ def read_engineer_file(path: Path, conventions: Conventions) -> EngineerText:
         problems.append(f"text: {name}: line 1 must be the title")
     paragraph, docs_none = _summary(_find(sections, summary_name), rules, name, problems)
     runtime, pictures = _testing_lines(_find(sections, testing_name), rules, name, problems)
-    images, none = _screenshots(_find(sections, shots_name), path.parent, rules, name, problems)
+    shots = _screenshots(_find(sections, shots_name), path.parent, conventions, name, problems)
+    images, none, clips, clips_none = shots
     ai_lines = _find(sections, ai_name)
     ai_use = None
     if ai_lines is not None:
@@ -185,6 +210,8 @@ def read_engineer_file(path: Path, conventions: Conventions) -> EngineerText:
         pictures,
         tuple(problems),
         extra,
+        tuple(clips),
+        clips_none,
     )
 
 
@@ -254,12 +281,55 @@ def _testing_lines(
     return joined.get(labels[0]), joined.get(labels[1])
 
 
+def _relative_under(ref: str, folder_name: str) -> bool:
+    """Whether `ref` is a relative path under `./<folder_name>/`: the reference is copied into the body as written,
+    and an absolute path or `..` would put a folder of the author's machine into the description."""
+    parts = ref.replace("\\", "/").split("/")
+    if parts[:1] == ["."]:
+        parts = parts[1:]
+    return len(parts) >= 2 and parts[0] == folder_name and ".." not in parts and ":" not in ref and ref[:1] not in "/\\"
+
+
+def _clip_line(
+    stripped: str, folder: Path, conventions: Conventions, name: str, problems: list[str]
+) -> Clip | str | None:
+    """A clip line of the Screenshots section as a Clip, a `Clips: none (reason)` line as its reason, or None for any
+    other line. A clip line that is not one image under the clips folder is refused (into `problems`) and returns ''
+    (the caller tells it from an empty reason by looking at the line again)."""
+    rule = conventions.pull_requests.clips
+    if rule is None:
+        return None
+    reason = none_reason(stripped, rule.none)
+    if reason is not None:
+        return reason
+    labelled = clip_label(stripped, rule)
+    if labelled is None:
+        return None
+    label, rest = labelled
+    clips_folder = conventions.workspace.clips.folder
+    image = _IMAGE_LINE.match(rest)
+    shape = f"(write {label} ![alt](./{clips_folder}/<name>.gif) or .mp4)"
+    if image is None:
+        problems.append(f"text: {name}: the {label} line holds one clip {shape}; found: {stripped[:60]}")
+        return ""
+    ref = image.group("ref")
+    extension = ref.rsplit(".", 1)[-1].lower()
+    if not _relative_under(ref, clips_folder) or extension not in rule.extensions:
+        problems.append(f"text: {name}: the clip {ref[:60]} is not a .gif or .mp4 under ./{clips_folder}/ {shape}")
+        return ""
+    return Clip(label, image.group("alt"), ref, folder / ref)
+
+
 def _screenshots(
-    lines: list[str] | None, folder: Path, rules: Any, name: str, problems: list[str]
-) -> tuple[list[Image], str | None]:
-    """The image references and the `Screenshots: none (reason)` line of the Screenshots section."""
+    lines: list[str] | None, folder: Path, conventions: Conventions, name: str, problems: list[str]
+) -> tuple[list[Image], str | None, list[Clip], str | None]:
+    """The image references, the `Screenshots: none (reason)` line, the clip lines and the `Clips: none (reason)` line
+    of the Screenshots section (the clips' section, `pull_requests.clips.section`, is the same one)."""
+    rules = conventions.pull_requests
     images: list[Image] = []
     none: str | None = None
+    clips: list[Clip] = []
+    clips_none: str | None = None
     none_line = re.compile(
         rf"^(?:[-*+]\s+)?{re.escape(rules.screenshots.none)}\s*\((?P<reason>.*)\)\s*$", re.IGNORECASE
     )
@@ -267,16 +337,21 @@ def _screenshots(
         stripped = line.strip()
         if not stripped:
             continue
+        clip = _clip_line(stripped, folder, conventions, name, problems)
+        if isinstance(clip, Clip):
+            if any(seen.label == clip.label for seen in clips):
+                problems.append(f"text: {name}: {clip.label} is given twice; one clip per label")
+            clips.append(clip)
+            continue
+        if isinstance(clip, str):
+            if rules.clips is not None and none_reason(stripped, rules.clips.none) is not None:
+                clips_none = clip  # an empty reason is kept, so the body check asks for one
+            continue
         image = _IMAGE_LINE.match(re.sub(r"^[-*+]\s+(?:\*\*[^*]*\*\*\s*)?", "", stripped))
         reason = none_line.match(stripped.replace("**", ""))
         if image:
             ref = image.group("ref")
-            # The reference is copied into the body as written, so only a relative path under the shots folder is
-            # taken: an absolute path or `..` would put a folder of the author's machine into the description.
-            parts = ref.replace("\\", "/").split("/")
-            if parts[:1] == ["."]:
-                parts = parts[1:]
-            if len(parts) < 2 or parts[0] != SHOTS or ".." in parts or ":" in ref or ref.startswith(("/", "\\")):
+            if not _relative_under(ref, SHOTS):
                 problems.append(
                     f"text: {name}: the picture {ref[:60]} is not a relative path under ./{SHOTS}/ "
                     f"(write ![alt](./{SHOTS}/file.png))"
@@ -290,7 +365,7 @@ def _screenshots(
                 f'text: {name}: "## {rules.screenshots.section}" holds image references '
                 f"(![alt](./{SHOTS}/file.png)) or a {rules.screenshots.none} (<reason>) line; found: {stripped[:60]}"
             )
-    return images, none
+    return images, none, clips, clips_none
 
 
 def hashes_of(path: Path) -> TextHashes:
@@ -688,10 +763,17 @@ def _testing_section(ctx: _Context) -> str:
 
 
 def _screenshots_section(ctx: _Context) -> str:
+    """The pictures, then each clip under its own label line, then the `none` lines. A clip's reference stands alone on
+    its line, so that once `gh --attach` has uploaded it `pr open` can leave an MP4 as its bare address there (the
+    only form GitHub draws as a player) and a GIF as an image (docs/guides/testing.md#clips)."""
     rules = ctx.subject.conventions.pull_requests
     lines = [f"![{image.alt}]({image.ref})" for image in ctx.text.images]
     if ctx.text.screenshots_none is not None and not lines:
         lines = [f"{rules.screenshots.none} ({ctx.text.screenshots_none})"]
+    for clip in ctx.text.clips:
+        lines += [f"**{clip.label}**", f"![{clip.alt}]({clip.ref})"]
+    if ctx.text.clips_none is not None and rules.clips is not None:
+        lines.append(f"{rules.clips.none} ({ctx.text.clips_none})")
     return "\n\n".join(lines)
 
 
@@ -796,10 +878,11 @@ def generate(
 
 def check(subject: pr_proof.Subject, text: EngineerText, models: Sequence[str], body: str) -> list[Refusal]:
     """The checks CI runs on the title and body (`check_title`, `check_body` with a local picture accepted, as the old
-    description gate ran them), the `Docs:` rule, a section still left as a TODO, and the pictures."""
+    description gate ran them, and the change's paths, as CI's `body` job gives them), the `Docs:` rule, a section
+    still left as a TODO, the pictures and the clips."""
     conventions = subject.conventions
     found: list[Refusal] = []
-    for problem in description_problems(f"{text.title}\n{body}", conventions, models):
+    for problem in description_problems(f"{text.title}\n{body}", conventions, models, list(subject.paths)):
         found.append(Refusal("text", problem, "engineer"))
     for problem in check_docs(list(subject.paths), body, conventions.paths, conventions.pull_requests.docs_none):
         found.append(Refusal("text", f"docs: {problem}", "engineer"))
@@ -807,6 +890,7 @@ def check(subject: pr_proof.Subject, text: EngineerText, models: Sequence[str], 
         if content.lstrip().startswith(TODO):
             found.append(Refusal("text", f"body: '## {name}' is not filled in ({content.strip()[:60]})", "engineer"))
     found += [Refusal("text", p, "engineer") for p in image_problems(text, conventions)]
+    found += [Refusal("text", p, "engineer") for p in clip_problems(text, conventions)]
     return found
 
 
@@ -849,7 +933,7 @@ def image_problems(text: EngineerText, conventions: Conventions) -> list[str]:
             continue
         extension = path.suffix.lower().lstrip(".")
         if extension in VIDEO_EXTENSIONS:
-            found.append(f"images: {label} is a video; use clips publish")
+            found.append(f"images: {label} is a video; a clip goes under clips/ on a Before:, After: or Original: line")
             continue
         if extension not in rules.extensions:
             found.append(f"images: {label} is not a picture ({', '.join(rules.extensions)})")
@@ -862,6 +946,54 @@ def image_problems(text: EngineerText, conventions: Conventions) -> list[str]:
         digest = _sha(path.read_bytes())
         if digest in seen:
             found.append(f"images: {label} is identical to {seen[digest]}")
+        else:
+            seen[digest] = label
+    return found
+
+
+def clip_refusals(subject: pr_proof.Subject, path: Path) -> list[Refusal]:
+    """The `clips` stage of `pr verify`: the engineer's file at `path` shows the before and after clips the change
+    needs (`clips_problems`, given its title and the change's paths, as CI's `body` job checks the description), or
+    says why not, and each clip passes `clip_problems`. A file that cannot be read gives nothing here: the `reviewed`
+    stage already refuses it."""
+    conventions = subject.conventions
+    rule = conventions.pull_requests.clips
+    if rule is None:
+        return []
+    try:
+        text = read_engineer_file(path, conventions)
+        raw = path.read_bytes().decode("utf-8")
+    except (ConfigError, OSError, UnicodeDecodeError):
+        return []
+    body = raw.removeprefix("﻿").replace("\r\n", "\n").replace("\r", "\n").partition("\n")[2]
+    section = "\n".join(_find(_sections(body.split("\n")), rule.section) or [])
+    problems = [f"clips: {p}" for p in clips_problems(section, conventions.pull_requests, text.title, subject.paths)]
+    problems += clip_problems(text, conventions)
+    return [Refusal("clips", problem, "engineer") for problem in problems]
+
+
+def clip_problems(text: EngineerText, conventions: Conventions) -> list[str]:
+    """What is wrong with the clips: what `clips check` refuses in each (`clips.described_clip_problems`), too big for
+    an upload, two byte-identical (a before and after that do not differ mean a capture went wrong), or missing. A clip
+    an earlier `pr open` uploaded from this folder is gone on purpose (it deletes each once uploaded): its upload
+    stands, so it is not checked again. One message each, with the `clips:` prefix."""
+    limit = conventions.pull_requests.images.max_bytes
+    found: list[str] = []
+    seen: dict[str, str] = {}
+    for clip in text.clips:
+        label = clip.ref.removeprefix("./")
+        if not clip.path.exists() and pr_publish.uploaded_clip(text.folder, clip.ref) is not None:
+            continue
+        problems = clips.described_clip_problems(clip.ref, clip.path, conventions.workspace.clips)
+        found += problems
+        if problems:
+            continue
+        size = clip.path.stat().st_size
+        if size > limit:
+            found.append(f"clips: {label} is {size // (1024 * 1024)} MB (limit {limit // (1024 * 1024)})")
+        digest = _sha(clip.path.read_bytes())
+        if digest in seen:
+            found.append(f"clips: {label} is identical to {seen[digest]}; a capture went wrong")
         else:
             seen[digest] = label
     return found

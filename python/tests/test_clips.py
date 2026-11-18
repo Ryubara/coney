@@ -105,9 +105,30 @@ def _clip(scratch: Path, name: str = "after.mp4", task: str = "my-task", age_hou
 # --- where clips live ------------------------------------------------------------------------------------------------
 
 
-def test_a_clip_in_a_tasks_clips_folder_is_accepted(scratch: Path) -> None:
-    path = scratch / "my-task" / "clips" / "before.mp4"
+@pytest.mark.parametrize("name", ["before.mp4", "after.gif", "compare.mp4"])
+def test_a_clip_in_a_tasks_clips_folder_is_accepted(scratch: Path, name: str) -> None:
+    path = scratch / "my-task" / "clips" / name
     assert clips.check_clip_path(path, scratch, RULES) == path.resolve()
+
+
+def test_a_clip_a_description_shows_is_checked_like_clips_check(scratch: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    good = _clip(scratch, "after.gif")
+    long = _clip(scratch, "before.mp4")
+    seconds = {good.name: 5.0, long.name: 11.0}
+    monkeypatch.setattr(clips, "probe_file", lambda path: clips.ClipInfo(seconds[path.name], 960, 720, 64, False, ()))
+    assert clips.described_clip_problems("./clips/after.gif", good, RULES) == []
+    assert clips.described_clip_problems("./clips/before.mp4", long, RULES) == [
+        "clips: clips/before.mp4: 11.00 s long, more than 10 s"
+    ]
+    missing = scratch / "my-task" / "clips" / "original.mp4"
+    assert clips.described_clip_problems("./clips/original.mp4", missing, RULES) == [
+        "clips: clips/original.mp4 does not exist"
+    ]
+    (scratch / "my-task" / "shots").mkdir()
+    elsewhere = scratch / "my-task" / "shots" / "after.mp4"
+    elsewhere.write_bytes(b"v")
+    (problem,) = clips.described_clip_problems("./shots/after.mp4", elsewhere, RULES)
+    assert "clips live only in" in problem
 
 
 @pytest.mark.parametrize(
@@ -117,7 +138,7 @@ def test_a_clip_in_a_tasks_clips_folder_is_accepted(scratch: Path) -> None:
         ("my-task/shots/before.mp4", "clips live only in"),
         ("my-task/clips/deeper/before.mp4", "clips live only in"),
         ("before.mp4", "clips live only in"),
-        ("my-task/clips/before.mkv", "ending in .mp4"),
+        ("my-task/clips/before.mkv", "ending in .mp4 or .gif"),
         ("my-task/clips/my clip.mp4", "ending in .mp4"),
         ("my-task/clips/.hidden.mp4", "ending in .mp4"),
     ],

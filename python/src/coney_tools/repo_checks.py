@@ -11,7 +11,7 @@ from pathlib import Path
 
 from coney_tools.audit_text import LIST_MARKER, NUMBER_REFERENCE, OPEN_ITEM
 from coney_tools.config import ConfigError
-from coney_tools.conventions import DocsNone, Paths, PointerFiles, PullRequests, TitleRules, Trailers
+from coney_tools.conventions import ClipPair, DocsNone, Paths, PointerFiles, PullRequests, TitleRules, Trailers
 
 # Every rule these checks apply is a key of .github/conventions.yml (coney_tools/conventions.py reads it); nothing
 # below hard-codes an area, a limit, a section name or a path class.
@@ -513,6 +513,117 @@ def runtime_problems(section: str, title: str, rules: PullRequests) -> list[str]
     return []
 
 
+# --- the before and after clips ------------------------------------------------------------------------------------
+
+
+#: What `clip_segments` gives a label written twice, so `clips_problems` can say so.
+_TWICE = "<given twice>"
+
+
+def clip_label(line: str, rule: ClipPair) -> tuple[str, str] | None:
+    """The clip label that starts `line` (a list marker and bold are ignored) and the rest of the line, or None."""
+    content = LIST_MARKER.sub("", line.replace("**", "").strip()).strip()
+    for label in rule.labels:
+        if content.casefold().startswith(label.casefold()):
+            return label, content[len(label) :].strip()
+    return None
+
+
+def none_reason(line: str, none_line: str) -> str | None:
+    """The reason of a `<none_line> (<reason>)` line (list marker and bold ignored), '' when it gives none, None when
+    the line is not one."""
+    content = LIST_MARKER.sub("", line.replace("**", "").strip()).strip()
+    found = re.match(rf"^{re.escape(none_line)}\b\s*(?:\((?P<reason>.*)\))?[\s.]*$", content, re.IGNORECASE)
+    if found is None:
+        return None
+    return (found.group("reason") or "").strip()
+
+
+def clip_segments(section: str, rule: ClipPair) -> tuple[dict[str, str], list[str]]:
+    """The text under each clip label of `section` (from the label to the next label or `none` line, the rest of the
+    label's own line included), by label, and the reasons of its `none` lines in order. A label given twice keeps
+    both texts joined, so `clips_problems` can say so."""
+    segments: dict[str, str] = {}
+    reasons: list[str] = []
+    current: str | None = None
+    counts: dict[str, int] = {}
+    for line in section.splitlines():
+        reason = none_reason(line, rule.none)
+        if reason is not None:
+            reasons.append(reason)
+            current = None
+            continue
+        labelled = clip_label(line, rule)
+        if labelled is not None:
+            current = labelled[0]
+            counts[current] = counts.get(current, 0) + 1
+            segments[current] = "\n".join(part for part in (segments.get(current, ""), labelled[1]) if part)
+        elif current is not None:
+            segments[current] += "\n" + line
+    for label, count in counts.items():
+        if count > 1:
+            segments[label] = _TWICE
+    return segments, reasons
+
+
+def _holds_clip(text: str, rule: ClipPair, placeholders: Sequence[str]) -> bool:
+    """Whether a label's text shows a clip: an uploaded address (any http(s) URL, as an image, a link or alone on its
+    line, the way GitHub draws a video) or an image that points at a local clip file `gh --attach` will upload."""
+    if text.strip() in placeholders:
+        return False
+    if _URL.search(text):
+        return True
+    return any(target.rsplit(".", 1)[-1].lower() in rule.extensions for target in image_targets(text))
+
+
+def clips_problems(
+    section: str, rules: PullRequests, title: str | None, changed: Sequence[str] | None = None
+) -> list[str]:
+    """Check the before and after clips of the Screenshots section against `pull_requests.clips`.
+
+    A pull request whose title area a player sees, or that changes a path a player sees in Coney Studio
+    (`ClipPair.required_by`), shows a clip on a `Before:` and an `After:` line, or holds a line `Clips: none
+    (<reason>)`. A label that is written must show its clip (an uploaded address, or a local `.gif` or `.mp4` image
+    while the description is a draft), once; `Original:` is optional. Whether the clips show what the text claims is
+    the reviewer's question (docs/guides/review/text.md). Without the rule in the file nothing is asked.
+    """
+    rule = rules.clips
+    if rule is None:
+        return []
+    name = f"'## {rule.section}'"
+    segments, reasons = clip_segments(section, rule)
+    # A label left as the template has it (`- **Before:** ...`) or with nothing after it is not written.
+    segments = {label: text for label, text in segments.items() if text.strip() not in ("", *rules.placeholders)}
+    problems: list[str] = []
+    for label, text in segments.items():
+        if text == _TWICE:
+            problems.append(f"{name}: '{label}' is given twice; one clip per label")
+        elif not _holds_clip(text, rule, rules.placeholders):
+            problems.append(
+                f"{name}: the '{label}' line shows no clip: write ![alt](./clips/<name>.gif) or a .mp4 there, which "
+                "pr open uploads (docs/guides/testing.md#clips)"
+            )
+    for reason in reasons:
+        if not reason or reason in rules.placeholders:
+            problems.append(f"{name}: '{rule.none}' needs its reason in parentheses: '{rule.none} (<reason>)'")
+    pair = rule.before in segments and rule.after in segments
+    if reasons and segments:
+        problems.append(f"{name}: clips and '{rule.none}' together; show the clips or say why not, not both")
+    why = rule.required_by(title, changed)
+    if pair or reasons:
+        return problems
+    if rule.before in segments or rule.after in segments:
+        missing = rule.after if rule.before in segments else rule.before
+        problems.append(f"{name}: a clip pair needs its '{missing}' line too")
+    elif why is not None:
+        problems.append(
+            f"{name} needs a '{rule.before}' and an '{rule.after}' clip (![alt](./clips/<name>.gif) or .mp4, uploaded "
+            f"by pr open) or a line '{rule.none} (<reason>)' (nothing visible, or no disc scenario reaches it), "
+            f"because {why} (docs/guides/testing.md#clips)"
+        )
+    return problems
+
+
 #: An item of the Issues affected section once its list marker is gone: `#12: how it is affected`.
 _ORDERED_MARKER = re.compile(r"^\d+[.)][ \t]+")
 _AFFECTED_ITEM = re.compile(
@@ -615,7 +726,11 @@ def affected_issues(body: str, rules: PullRequests) -> list[int]:
 
 
 def check_body(
-    body: str, rules: PullRequests, branch_models: Sequence[str] = (), title: str | None = None
+    body: str,
+    rules: PullRequests,
+    branch_models: Sequence[str] = (),
+    title: str | None = None,
+    changed: Sequence[str] | None = None,
 ) -> list[str]:
     """Check a pull request description against the template's form.
 
@@ -629,7 +744,9 @@ def check_body(
     them, whoever wrote the commits; a description alone has no branch, so CI passes none. With the pull request's
     `title`, a title area a player sees (`pull_requests.runtime`) also needs the Testing section's `Runtime:` line
     (`runtime_problems`);
-    without a title that rule cannot be applied and is skipped, so every caller that has the title passes it.
+    without a title that rule cannot be applied and is skipped, so every caller that has the title passes it. The
+    same title, or a `changed` path a player sees in Coney Studio, asks for the before and after clips
+    (`clips_problems`); without `changed` only the title asks.
     HTML comments and unchanged placeholder text count as empty, so the untouched template is refused. Returns one
     reason per broken rule; an empty list means the description passes.
     """
@@ -650,6 +767,10 @@ def check_body(
     screenshots = sections.get(rules.screenshots.section.casefold())
     if screenshots is not None:
         problems.extend(_check_screenshots(screenshots, rules))
+    if rules.clips is not None:
+        clip_section = sections.get(rules.clips.section.casefold())
+        if clip_section is not None:
+            problems.extend(clips_problems(clip_section, rules, title, changed))
     ai_use = sections.get(rules.ai_use.section.casefold())
     if ai_use is not None:
         ai_problems = _check_ai_use(ai_use, rules)

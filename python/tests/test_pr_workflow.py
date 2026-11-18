@@ -66,10 +66,11 @@ def test_the_token_reads_and_no_secret_is_used() -> None:
     assert "secrets." not in WORKFLOW.read_text(encoding="utf-8")
 
 
-def test_only_the_docs_and_claim_jobs_read_more_and_no_job_widens_the_token_further() -> None:
-    # `docs` calls the pull request files API; `claim` reads the claim cards on the issues the description closes.
+def test_only_the_docs_body_and_claim_jobs_read_more_and_no_job_widens_the_token_further() -> None:
+    # `docs` and `body` call the pull request files API; `claim` reads the claim cards on the issues it closes.
     allowed = {
         "docs": {"contents": "read", "pull-requests": "read"},
+        "body": {"contents": "read", "pull-requests": "read"},
         "claim": {"contents": "read", "issues": "read", "pull-requests": "read"},
     }
     for name, job in workflow()["jobs"].items():

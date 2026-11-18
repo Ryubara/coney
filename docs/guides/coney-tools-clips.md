@@ -41,14 +41,19 @@ are `workspace.clips` in `.github/conventions.yml`.
 
 * `folder` makes and prints a task's clips folder, `<scratch>/<task>/clips/`, where `<scratch>` is the workspace's
   shared scratch folder (`../../scratch` beside the main checkout).
-* `check` runs ffprobe on each clip and prints its length, size, picture and whether it has sound. It refuses a clip
-  outside a task's clips folder or inside a git checkout, one longer than `max_seconds` (10), and one with any tag
-  beyond the fixed ones an MP4's boxes carry (`major_brand`, `minor_version`, `compatible_brands`, `language`,
-  `handler_name`, `vendor_id` and a version-free `encoder`); one bigger than `warn_mb` (10 MB) gets a warning.
+* `check` runs ffprobe on each clip (an `.mp4`, or a `.gif`) and prints its length, size, picture and whether it has
+  sound. It refuses a clip outside a task's clips folder or inside a git checkout, one longer than `max_seconds` (10),
+  and one with any tag beyond the fixed ones an MP4's boxes carry (`major_brand`, `minor_version`, `compatible_brands`,
+  `language`, `handler_name`, `vendor_id` and a version-free `encoder`); one bigger than `warn_mb` (10 MB) gets a
+  warning. `pr check-body --local-images`, `pr text` and `pr verify` run the same checks on the clips a description
+  shows.
 * `publish` makes the same checks, then uploads every clip in one gh command, `gh pr|issue comment N` (or `edit` with
   `--edit`, into the description) with one `--attach` per clip, and **deletes the clips once gh succeeds**. When gh
   fails, it keeps them and says so (exit 1). A body may place a clip with a `./clips/<name>.mp4` reference, which gh
-  replaces with the upload when the clip is named the same way. It is the only way clips are uploaded.
+  replaces with the upload when the clip is named the same way. A pull request's before and after clips go into its
+  description through [`pr open`](pr.md#open) instead, which uploads them the same way, puts each in the form GitHub
+  plays and deletes it ([Clips](testing.md#clips)); `publish` is for an issue and for a comment. These two are the only
+  ways clips are uploaded.
 * `clean` lists every file in the task clips folders older than `keep_hours` (24; `--older-than` overrides it),
   including what a failed recording left (part files, a `clips record` staging folder), and deletes them with `--apply`
   (a dry run without it, as `workspace clean` is; its old `--dry-run` is accepted with a notice until the cutover).

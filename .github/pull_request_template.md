@@ -49,20 +49,23 @@ Done:
 
 ## Screenshots
 
-<!-- For anything a player can see, show it: Coney before, Coney after and the original
-     (PCSX2) from the same place. Write each picture as a Markdown image, `![alt](./shots/file.png)`; it is
-     uploaded with `gh pr create --body-file ... --attach ./shots/file.png` (gh 2.99+), or drag a PNG into this
-     box on GitHub. A short video clip goes up with `coney-tools clips publish`, which deletes it afterwards
-     (docs/guides/testing.md#clips). Never commit it (LEGAL.md). An agent keeps its captures in
-     scratch/<branch>/shots/ and writes the image references with paths relative to that folder; the coordinator
-     attaches them when opening the pull request. The text never names a path on your machine (no scratch/...,
-     ../../..., C:\...): say "the scratch folder"; only these image references may be local.
-     When nothing visible changes, replace the three lines with one: `Screenshots: none (<reason>)`, for example
-     `Screenshots: none (no visible change)`. -->
+<!-- For anything a player can see, show it: Coney before the change, Coney after it and the original (PCSX2) from
+     the same place. A title area a player sees (`gameplay`, `graphics`, `audio`) and a change a player sees in
+     Coney Studio need a short clip (10 seconds at most) on the Before and After lines below, and CI refuses the pull
+     request without them: drag a GIF or an MP4 into this box on GitHub under each line (an MP4's address stays alone
+     on its line, so GitHub draws a player), or write `Clips: none (<reason>)` when nothing visible changes or no
+     scenario reaches it. The Original line is for the original's clip, and is optional. Screenshots are Markdown
+     images, `![alt](./shots/file.png)`, uploaded with `gh pr create --body-file ... --attach ./shots/file.png`
+     (gh 2.99+) or dragged in. Never commit a clip or a picture (LEGAL.md). An agent writes its clips as
+     `![after](./clips/after.mp4)` on these lines and its pictures under ./shots/, relative to its scratch folder;
+     `coney-tools pr open` uploads them (docs/guides/testing.md#clips). The text never names a path on your machine
+     (no scratch/..., ../../..., C:\...): say "the scratch folder"; only these image references may be local.
+     When nothing visible changes, replace the lines with `Screenshots: none (<reason>)`, for example
+     `Screenshots: none (no visible change)`, and for a title area a player sees `Clips: none (<reason>)` beside it. -->
 
-- **Coney before:** ...
-- **Coney after:** ...
-- **Original (PCSX2):** ...
+- **Before:** ...
+- **After:** ...
+- **Original:** ...
 
 ## AI use
 

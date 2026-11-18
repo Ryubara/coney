@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import os
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from coney_tools import build_cli, check_cli, local_gate
@@ -56,11 +56,14 @@ def step_title(title: str, conventions: Conventions) -> StepResult:
     return StepResult("title", True, "follows area: Verb the rest")
 
 
-def step_body(root: Path, body: str, title: str, base: str, conventions: Conventions) -> StepResult:
-    """CI's `body` job, which sees only the description and the title, and one more rule CI cannot see: the `Model:`
-    line names every model that a trailer on the branch's commits names (`pr check-body --worktree`)."""
+def step_body(
+    root: Path, body: str, title: str, base: str, conventions: Conventions, changed: Sequence[str] | None = None
+) -> StepResult:
+    """CI's `body` job, which sees the description, the title and the pull request's files (`changed`: a path a player
+    sees in Coney Studio asks for the clips), and one more rule CI cannot see: the `Model:` line names every model that
+    a trailer on the branch's commits names (`pr check-body --worktree`)."""
     models = branch_trailer_models(root, base, conventions.commits.trailers)
-    problems = check_body(body, conventions.pull_requests, models, title)
+    problems = check_body(body, conventions.pull_requests, models, title, changed)
     if problems:
         return StepResult("body", False, "refused (see .github/pull_request_template.md)", output=tuple(problems))
     return StepResult("body", True, "sections, summary, AI use and the model line")
@@ -118,7 +121,7 @@ def pr_steps(
     listed = local_gate.pull_request_files(root, base)
     steps: dict[str, Callable[[], StepResult]] = {
         "title": lambda: step_title(title, conventions),
-        "body": lambda: step_body(root, body, title, base, conventions),
+        "body": lambda: step_body(root, body, title, base, conventions, listed),
         "docs-rule": lambda: step_docs_rule(listed, body, conventions),
         ENGINE_STEP: lambda: step_engine(root, listed, conventions, preset, agent),
     }

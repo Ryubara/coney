@@ -315,7 +315,8 @@ def push(git: Git, worktree: Path, remote: str, branch: str, tip: str, expected:
 
 @dataclass
 class Published:
-    """What `pr open` remembers of the pull request in the task's scratch folder: the lease, the uploaded pictures."""
+    """What `pr open` remembers of the pull request in the task's scratch folder: the lease, the uploaded pictures and
+    clips."""
 
     number: int = 0
     url: str = ""
@@ -327,6 +328,14 @@ class Published:
     time: str = ""
     #: Whether `/progress pr-opened` was posted on the issues.
     progress_posted: bool = False
+    #: Each clip uploaded, by its reference in the text (`./clips/after.mp4`): its file's `sha256` and the `url` of its
+    #: upload. The file is deleted once uploaded, so a later run shows it from here (`uploaded_clip`).
+    clips: dict[str, dict[str, str]] = field(default_factory=dict)
+
+
+def uploaded_clip(folder: Path, ref: str) -> dict[str, str] | None:
+    """The record (`sha256`, `url`) of the clip `ref` an earlier `pr open` uploaded from `folder`, or None."""
+    return read_published(folder).clips.get(ref)
 
 
 def read_published(folder: Path) -> Published:
@@ -341,6 +350,10 @@ def read_published(folder: Path) -> Published:
             engineer=dict(data.get("engineer", {})),
             time=str(data.get("time", "")),
             progress_posted=bool(data.get("progress_posted", False)),
+            clips={
+                str(ref): {"sha256": str(entry["sha256"]), "url": str(entry["url"])}
+                for ref, entry in dict(data.get("clips", {})).items()
+            },
         )
     except (OSError, ValueError, KeyError, TypeError):
         return Published()
@@ -356,6 +369,7 @@ def write_published(folder: Path, published: Published) -> None:
         "engineer": published.engineer,
         "time": published.time,
         "progress_posted": published.progress_posted,
+        "clips": published.clips,
     }
     folder.mkdir(parents=True, exist_ok=True)
     temporary = folder / (PUBLISHED_FILE + ".tmp")

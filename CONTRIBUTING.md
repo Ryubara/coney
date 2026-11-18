@@ -165,6 +165,11 @@ created with `gh pr create --body-file`, and reruns when you edit it. These rule
   the evidence from the original running (a trace diff, an event diff, or named PCSX2 captures or reads compared with
   Coney's, with numbers) or `Runtime: none (<reason>)`. It is checked given the title (CI's `body` job and
   `legacy check-pr-review` give it).
+- Screenshots: when the title's area is one of `gameplay`, `graphics`, `audio`, or the change touches a path under
+  `src/studio/` (what a player sees in Coney Studio), a clip on a line `Before:` and one on a line `After:` (the
+  original's may follow on `Original:`), or a line `Clips: none (<reason>)`. A clip is a `.gif` or `.mp4` upload; in
+  `PR.md` it is a local `./clips/<name>` image that `pr open` uploads. It is checked given the title and, for the paths,
+  the changed files (CI's `body` job has both).
 - AI use: after `Commits written by:` one of `a person`, `an AI`, `an AI, edited by a person`, `a person, with AI help`;
   unless it is `a person`, `Model:` names the model (`n/a` is not enough).
 - `Model:` also names every model that a `Co-Authored-By` trailer on the branch's commits names (any case, anywhere on

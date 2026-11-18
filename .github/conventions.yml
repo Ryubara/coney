@@ -220,6 +220,24 @@ pull_requests:
     none: "Runtime: none"
     reason: required
     pictures: "Pictures:"                   # the picture-counts line beside it (testing.md#picture-counts); the reviewer checks it; optional, this when absent
+  # Before and after clips (maintainer's request, 2026-11-18: motion, timing, AI, the camera, effects and sound do not
+  # show in a still). A pull request whose title area is one of `areas`, or that changes a path under one of `paths`
+  # (what a player sees in Coney Studio), shows a clip on a `before` and an `after` line of `section`, and may show
+  # the original on an `original` line; or it holds the `none` line with a reason in parentheses (nothing visible, or
+  # no disc scenario reaches it). In PR.md a clip is `![alt](./<workspace.clips.folder>/<name>.<extension>)`, which
+  # `pr open` uploads with `gh --attach` (an MP4 then stands alone on its line as its upload address, a GIF is an
+  # image) and deletes once uploaded. `pr check-body` checks it given --title (and --changed for `paths`, which CI's
+  # `body` job gives), and so do `pr text` and `pr verify`. Optional: a file without it asks for no clips.
+  clips:
+    section: Screenshots
+    before: "Before:"
+    after: "After:"
+    original: "Original:"
+    none: "Clips: none"
+    reason: required
+    areas: [gameplay, graphics, audio]
+    paths: [src/studio/]
+    extensions: [gif, mp4]
   ai_use:
     section: "AI use"
     written_by:
@@ -258,7 +276,7 @@ pull_requests:
     auto_merge_on_non_default_base: false
     after_base_merges: "git rebase --onto origin/main <old base> <branch>"
   # The generated description (`coney-tools pr text`, docs/guides/pr.md). Its pictures: GitHub's limits, and what a picture
-  # is (a clip goes up with `clips publish`). Its two blocks the engineer's paragraph and the facts are written between
+  # is (a clip, under the clips folder, is not one: see `clips`). Its two blocks the engineer's paragraph and the facts are written between
   # `<!-- name -->` and `<!-- /name -->`, so a later edit finds them again.
   images: {max_bytes: 10485760, max_count: 20, extensions: [png, jpg, jpeg, gif]}
   markers: {summary: "coney:summary", facts: "coney:facts"}

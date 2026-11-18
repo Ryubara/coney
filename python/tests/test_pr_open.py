@@ -14,9 +14,9 @@ import yaml
 from conventions_support import changed
 from git_support import git
 from pr_open_support import OPENER, PNG, REPO, Open, make_open, picture, show
-from pr_support import UNVERIFIED, make
+from pr_support import UNVERIFIED, Built, make
 
-from coney_tools import conventions, identity, pr_open, pr_open_unit, pr_proof, pr_publish, pr_ready, unit_record
+from coney_tools import clips, conventions, identity, pr_open, pr_open_unit, pr_proof, pr_publish, pr_ready, unit_record
 from coney_tools.cli import main
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
@@ -321,7 +321,7 @@ def test_a_dry_run_changes_nothing(tmp_path: Path) -> None:
     assert opened.snapshot() == before
     assert opened.gh.writes() == [] and len(opened.github.comment_list[757]) == comments
     assert "dry run: rebase onto origin/main: rebased" in opened.text()
-    assert "dry run: would open the pull request with 0 picture(s)" in opened.text()
+    assert "dry run: would open the pull request with 0 picture(s) and 0 clip(s)" in opened.text()
     assert not [p for p in git(opened.built.root, "worktree", "list").splitlines() if "coney-pr-open" in p]
 
 
@@ -480,6 +480,96 @@ def test_a_description_that_stays_wrong_after_the_repair_exits_4_with_the_pull_r
     opened.gh.corrupt_body = 0
     assert opened.run() == 0, opened.text()  # rerunning repairs it in place
     assert opened.gh.names().count("pr create") == 1
+
+
+# --- clips in the description ----------------------------------------------------------------------------------------
+
+
+@pytest.fixture
+def clean_clips(monkeypatch: pytest.MonkeyPatch) -> None:
+    """ffprobe replaced: every clip is a clean 5-second one."""
+
+    def probe(path: Path) -> clips.ClipInfo:
+        return clips.ClipInfo(seconds=5.0, width=960, height=720, size=path.stat().st_size, audio=False, tags=())
+
+    monkeypatch.setattr(clips, "probe_file", probe)
+
+
+def clip_pair(built: Built, before: bytes = b"mp4 one", after: bytes = b"gif two") -> tuple[Path, Path]:
+    """Put a before MP4 and an after GIF in the unit's clips folder, name them in PR.md and stamp a Review of the
+    text as it is now."""
+    folder = built.unit.dir / "clips"
+    folder.mkdir(exist_ok=True)
+    (folder / "before.mp4").write_bytes(before)
+    (folder / "after.gif").write_bytes(after)
+    path = built.unit.dir / "PR.md"
+    lines = "- Before: ![before](./clips/before.mp4)\n- After: ![after](./clips/after.gif)\n"
+    path.write_text(path.read_text(encoding="utf-8") + "\n" + lines, encoding="utf-8")
+    built.review()
+    return folder / "before.mp4", folder / "after.gif"
+
+
+def screenshots_of(body: str) -> str:
+    """The Screenshots section of a body."""
+    return body.split("## Screenshots\n\n", 1)[1].split("\n\n## ", 1)[0]
+
+
+PLACED = "**Before:**\n\nhttps://example.test/assets/1\n\n**After:**\n\n![after](https://example.test/assets/2)"
+
+
+@pytest.mark.parametrize("form", ["image", "link", "bare"])
+def test_clips_are_uploaded_placed_read_back_and_then_deleted(tmp_path: Path, clean_clips: None, form: str) -> None:
+    opened = docs_unit(tmp_path)
+    before, after = clip_pair(opened.built)
+    opened.gh.video_form = form
+    assert opened.run() == 0, opened.text()
+    [create] = [args for args, _ in opened.gh.calls if args[:2] == ["pr", "create"]]
+    assert create[-4:] == ["--attach", "./clips/before.mp4", "--attach", "./clips/after.gif"]
+    # the MP4 stands alone on its line as its address (GitHub draws a player), the GIF is an image
+    assert screenshots_of(opened.gh.prs[812]["body"]).endswith(PLACED)
+    placed = [args for args, _ in opened.gh.calls if args[:2] == ["pr", "edit"]]
+    assert len(placed) == (0 if form == "bare" else 1) and all("--attach" not in args for args in placed)
+    assert not before.exists() and not after.exists()
+    assert "uploaded 2 clip(s) into the description and deleted them" in opened.text()
+    record = json.loads((opened.built.unit.dir / pr_publish.PUBLISHED_FILE).read_text(encoding="utf-8"))["clips"]
+    assert record["./clips/before.mp4"]["url"] == "https://example.test/assets/1"
+    assert record["./clips/after.gif"]["url"] == "https://example.test/assets/2"
+
+
+def test_a_clip_upload_appended_elsewhere_is_repaired_and_never_deleted_unplaced(
+    tmp_path: Path, clean_clips: None
+) -> None:
+    opened = docs_unit(tmp_path)
+    before, _ = clip_pair(opened.built)
+    opened.gh.video_form = "appended"
+    assert opened.run() == 4
+    assert "the Before: clip is not uploaded on its line" in opened.text()
+    assert before.exists(), "a clip whose upload was not found in place is kept"
+    opened.gh.video_form = "image"
+    opened.said.clear()
+    assert opened.run() == 0, opened.text()  # the rerun uploads it again, in place
+    assert not before.exists()
+
+
+def test_a_later_release_shows_the_deleted_clips_from_the_record_and_uploads_nothing_again(
+    tmp_path: Path, clean_clips: None
+) -> None:
+    opened = docs_unit(tmp_path)
+    clip_pair(opened.built)
+    assert opened.run() == 0, opened.text()
+    opened.gh.calls.clear()
+    assert opened.run() == 0, opened.text()
+    [edit] = [args for args, _ in opened.gh.calls if args[:2] == ["pr", "edit"]]
+    assert "--attach" not in edit
+    assert screenshots_of(opened.gh.prs[812]["body"]).endswith(PLACED)
+
+
+def test_a_failed_upload_keeps_every_clip(tmp_path: Path, clean_clips: None) -> None:
+    opened = docs_unit(tmp_path)
+    before, after = clip_pair(opened.built)
+    opened.gh.fail["pr create"] = 9
+    assert opened.run() == 4
+    assert before.exists() and after.exists()
 
 
 # --- 34: the repository's name ---------------------------------------------------------------------------------------

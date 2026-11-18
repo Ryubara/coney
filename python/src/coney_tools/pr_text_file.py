@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from coney_tools.config import ConfigError
+from coney_tools.pr_publish import uploaded_clip
 from coney_tools.pr_review import local_images
 
 _SUMMARY = re.compile(r"^## Summary[ \t]*$", re.MULTILINE)
@@ -115,7 +116,13 @@ def read(path: Path) -> TextFile:
         try:
             digest = hashlib.sha256((path.parent / reference).read_bytes()).hexdigest()
         except OSError:
-            missing.append(reference)
+            # `pr open` deletes a clip once it is uploaded: the hash it recorded stands for the file, so the review
+            # that covered the clip still holds for a later release of the same text.
+            uploaded = uploaded_clip(path.parent, reference)
+            if uploaded is None:
+                missing.append(reference)
+            else:
+                found.append(Image(reference, uploaded["sha256"]))
         else:
             found.append(Image(reference, digest))
     try:

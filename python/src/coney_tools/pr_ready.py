@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import dataclasses
 import hashlib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -43,6 +43,8 @@ class Proof:
     pictures: list[tuple[str, Path, str]]
     models: list[str]
     notes: list[str]
+    #: Each clip of the text with its file's hash; '' for one an earlier `pr open` uploaded and deleted.
+    clips: list[tuple[pr_text.Clip, str]] = field(default_factory=list)
 
     @property
     def conventions(self) -> Conventions:
@@ -84,6 +86,7 @@ def prove(
     refusals = list(result.refusals)
     generated: pr_text.Generated | None = None
     pictures: list[tuple[str, Path, str]] = []
+    clips: list[tuple[pr_text.Clip, str]] = []
     models: list[str] = []
     try:
         form = pr_text.read_engineer_file(text_path, subject.conventions)
@@ -96,9 +99,13 @@ def prove(
             for image in form.images
             if image.path.is_file()
         ]
+        clips = [
+            (clip, hashlib.sha256(clip.path.read_bytes()).hexdigest() if clip.path.is_file() else "")
+            for clip in form.clips
+        ]
     except ConfigError as error:
         refusals.append(Refusal("text", f"text: {error}", "engineer"))
-    return Proof(subject, refusals, generated, pictures, models, list(result.notes))
+    return Proof(subject, refusals, generated, pictures, models, list(result.notes), clips)
 
 
 # --- is the unit ready ----------------------------------------------------------------------------------------------

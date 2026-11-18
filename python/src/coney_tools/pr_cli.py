@@ -142,6 +142,8 @@ def run_verify(args: argparse.Namespace) -> int:
     result: ProofResult = pr_proof.verify(subject, hashes)
     if unreadable is not None:
         result.refusals.append(unreadable)
+    # The before and after clips a visible change needs (pull_requests.clips), as CI's body job will ask for them.
+    result.refusals += pr_text.clip_refusals(subject, text_path)
     if args.json:
         print(
             json.dumps(

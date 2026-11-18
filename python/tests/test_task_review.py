@@ -566,6 +566,33 @@ def test_prepare_writes_the_packet_and_removes_an_old_verdict(rig: Rig, capsys: 
     assert "task review t1" in out and "task review t1 --record" in out and "PACKET.json" in out
 
 
+def test_the_reviewer_is_shown_each_clip_to_play_and_judge(rig: Rig, capsys: pytest.CaptureFixture[str]) -> None:
+    (rig.unit.dir / "clips").mkdir()
+    (rig.unit.dir / "clips" / "before.mp4").write_bytes(b"mp4")
+    (rig.unit.dir / "clips" / "after.gif").write_bytes(b"gif")
+    lines = "\n- Before: ![before](./clips/before.mp4)\n- After: ![after](./clips/after.gif)\n"
+    rig.text.write_text(rig.text.read_text(encoding="utf-8") + lines, encoding="utf-8")
+    packet, problems = rig.prepare()
+    assert problems == []
+    shown = packet["text"]["clips"]["shown"]
+    assert [(clip["label"], clip["ref"], clip["exists"]) for clip in shown] == [
+        ("Before:", "./clips/before.mp4", True),
+        ("After:", "./clips/after.gif", True),
+    ]
+    # each clip is a picture of the description, so the verdict must judge it like one
+    assert {image["path"] for image in packet["text"]["images"]} >= {"./clips/before.mp4", "./clips/after.gif"}
+    assert task_review.prepare(rig.env(), "full") == 0
+    out = capsys.readouterr().out
+    assert "clips: Before: " in out and "after.gif" in out and "shows what the description claims" in out
+
+
+def test_a_clips_none_line_is_put_to_the_reviewer(rig: Rig, capsys: pytest.CaptureFixture[str]) -> None:
+    text = rig.text.read_text(encoding="utf-8") + "\nClips: none (a menu nobody reaches yet)\n"
+    rig.text.write_text(text, encoding="utf-8")
+    assert task_review.prepare(rig.env(), "full") == 0
+    assert "clips: none (a menu nobody reaches yet): judge whether the reason holds" in capsys.readouterr().out
+
+
 def test_prepare_with_problems_writes_nothing_and_exits_one(rig: Rig, capsys: pytest.CaptureFixture[str]) -> None:
     rig.copies = ["src/ai/brain.cpp:3: `iVar1`: automatic name"]
     assert task_review.prepare(rig.env(), "full") == 1
