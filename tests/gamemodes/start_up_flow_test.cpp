@@ -8,7 +8,9 @@
 #include <cstdint>
 #include <expected>
 #include <filesystem>
+#include <fstream>
 #include <functional>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <optional>
@@ -47,6 +49,7 @@
 #include "warriors/disk_profile_store.h"
 #include "warriors/game_state.h"
 #include "warriors/profile_record.h"
+#include "warriors/save_game.h"
 
 using coney::GameModeStack;
 using coney::GameTimer;
@@ -403,7 +406,16 @@ TEST_CASE("start-up with scripts: a new story profile is saved to the profile fo
         CHECK(run.flow->profiles().count() == 0);
         run.frames(446);
         CHECK(run.logged("profile manager: profile \"A\" created in slot 0"));
-        CHECK(std::filesystem::file_size(folder.path() / "profile-1.sav") == coney::ProfileRecord::kSize);
+        // Coney's own save format, not the bare record (save.md#save-format): the file reads as one, under its name.
+        std::ifstream in(folder.path() / "profile-1.sav", std::ios::binary);
+        const std::vector<char> chars{std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
+        std::vector<std::byte> bytes;
+        std::ranges::transform(chars, std::back_inserter(bytes), [](char c) { return static_cast<std::byte>(c); });
+        CHECK(bytes.size() != coney::ProfileRecord::kSize);
+        const auto save = coney::SaveGame::parse(bytes);
+        REQUIRE(save.has_value());
+        CHECK(save->profile.name == "A");
+        CHECK(save->modded.empty());
         CHECK(run.flow->profiles().inUse());
     }
     // A later run over the same folder lists it, and the store loads it.

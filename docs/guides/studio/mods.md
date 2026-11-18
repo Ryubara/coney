@@ -239,7 +239,10 @@ is [Script security](security.md#console).
 
 - **Saves.** A save written while any mod is running records every running mod's name, version and package hash, and
   goes into the per-user `modded/` folder, never over the faithful profile ([Limits](security.md#limits)). A story save
-  made with no mod running is written exactly as without the SDK: unmarked, in `profiles/`. Loading a modded save with
+  made with no mod running from a faithful profile is written exactly as without the SDK: unmarked, in `profiles/`. A
+  modded save loaded by a session with no mod running stays a modded save: it keeps its story entries and mod sections
+  and is written back to `modded/` ([Story and mod sections](../../research/save.md#save-mods)), so `profiles/` only
+  ever holds faithful saves. Loading a modded save with
   a mod missing, stopped or of another package hash warns and names each difference; the player may go on. A content
   mod's own progress (a custom mission's best time) is the mod's store, not a save.
 - **Replays.** A replay records the session's seed, its inputs, the same list in load order, and any `start`, `stop`
