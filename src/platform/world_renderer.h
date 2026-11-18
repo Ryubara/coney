@@ -86,7 +86,8 @@ class WorldRenderer {
     /// when given, draws after the world with no depth test, before the frame is presented (the menus' 2D pass).
     /// `afterWorlds`, when given, draws after the `d` world in the world pass's states, before the coronas: the water
     /// and the see-through parts (steps 9-10). With
-    /// the NULL backend the frame is begun and presented and nothing is drawn.
+    /// the NULL backend the frame is begun and presented and nothing is drawn, unless recordHeadless() is on and the
+    /// draw layer records (draw::recording()): the frame is then recorded through a camera of the renderer's own.
     /// @orig 0x0040e8d8 WorldManager_Render (WorldManagerPS2.cpp)
     void render(RenderEngine& engine, const WorldSet& set, const world::LevelObject* level, const WorldView& view,
                 float pendingDistance, std::uint64_t nowMs, const std::function<void()>& drawObjects = {},
@@ -123,11 +124,16 @@ class WorldRenderer {
     /// @orig 0x00411990 World_RenderSectorAtomic (WorldPS2.cpp)
     void renderSectorAtomic(rw::Atomic* atomic, std::uint64_t fadeEndMs, std::uint64_t nowMs) const;
 
+    /// The camera a frame is recorded through on the NULL backend, which has none (made on first use, no buffers).
+    /// @coney-only the draw-stream hashes' synthetic scenes (docs/engine/renderer.md#comparing)
+    rw::Camera* recordingCamera();
+
     std::unique_ptr<graphics::LevelLighting> m_ownLevel; // the manager as it starts, for frames without a level's
     std::unique_ptr<SceneLighting> m_ownLighting;
     SceneLighting* m_lighting = nullptr; // a level's, when set
     std::uint32_t m_drawn = 0;
     std::optional<std::uint64_t> m_animationMs; // freezeAnimation()'s time
+    rw::Camera* m_recordingCamera = nullptr;    // owned, with its frame: recordingCamera()
     bool m_recordHeadless = false;              // recordHeadless()
 };
 

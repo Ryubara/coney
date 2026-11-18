@@ -280,7 +280,7 @@ void SceneLighting::renderLit(rw::Atomic* atomic) {
         draw::setRenderState(rw::GSALPHATEST, 1);
         draw::setRenderState(rw::GSALPHATESTREF, kFirstPassAlphaRef);
     }
-    atomic->render();
+    renderAtomic(atomic);
     if (firstPass) {
         draw::setRenderState(rw::GSALPHATEST, 0);
     }
@@ -296,7 +296,7 @@ void SceneLighting::renderLit(rw::Atomic* atomic) {
         const rw::uint32 testFunc = draw::getRenderState(rw::ALPHATESTFUNC);
         draw::setRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);
         layer->world = m_world;
-        layer->render();
+        renderAtomic(layer);
         layer->world = nullptr;
         draw::setRenderState(rw::ALPHATESTFUNC, testFunc);
     }
@@ -304,12 +304,22 @@ void SceneLighting::renderLit(rw::Atomic* atomic) {
     rw::engine->currentWorld = current;
 }
 
+void SceneLighting::renderAtomic(rw::Atomic* atomic) const {
+    if (m_routed) {
+        draw::renderAtomic(atomic);
+    } else {
+        atomic->render();
+    }
+}
+
 void SceneLighting::drawWorldAtomic(rw::Atomic* atomic) {
     useLights(m_lighting.lights.select(0.0F, sphereOf(atomic), false, true, false));
     // The sectors are the only geometry the original draws with mipmaps, levels picked by distance
     // (docs/research/rendering.md#world).
     setDistanceMipmaps(true);
+    m_routed = true;
     renderInRig(atomic);
+    m_routed = false;
     setDistanceMipmaps(false);
 }
 
@@ -323,7 +333,9 @@ void SceneLighting::drawBackgroundAtomic(rw::Atomic* atomic) {
     const rw::uint32 flags = geometry->flags;
     geometry->flags |= rw::Geometry::LIGHT;
     m_background = true;
+    m_routed = true;
     renderInRig(atomic);
+    m_routed = false;
     m_background = false;
     geometry->flags = flags;
 }

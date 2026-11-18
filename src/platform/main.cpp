@@ -1433,10 +1433,10 @@ int main(int argc, char** argv) {
             return 1;
         }
         const coney::platform::DrawCounts& counts = stream->counts();
-        logText(std::format("draw stream: {} records: {} Im2D and {} Im3D draws of {} vertices, {} camera, {} raster "
-                            "and {} frame operations, hash {:#018x}\n",
-                            counts.records, counts.im2dDraws, counts.im3dDraws, counts.vertices, counts.cameraOps,
-                            counts.rasterOps, counts.frameOps, stream->hash()));
+        logText(std::format("draw stream: {} records: {} Im2D, {} Im3D and {} atomic draws of {} vertices, {} camera, "
+                            "{} raster and {} frame operations, hash {:#018x}\n",
+                            counts.records, counts.im2dDraws, counts.im3dDraws, counts.atomicDraws, counts.vertices,
+                            counts.cameraOps, counts.rasterOps, counts.frameOps, stream->hash()));
     }
     return clipFailed ? 1 : 0;
 }

@@ -141,6 +141,9 @@ class SceneLighting {
     // Adds the row of the selection useLights() kept to the lighting frame, for `atomic`: its caller from the draw
     // kind, its sphere and the inputs the draw functions pass (docs/research/lighting.md#select).
     void recordSelection(rw::Atomic* atomic);
+    // Renders `atomic` through the draw layer while m_routed is set (the world's atomics, item 7 of
+    // docs/engine/renderer.md#order), else on librw directly (the objects and humans, which items 8 and 9 route).
+    void renderAtomic(rw::Atomic* atomic) const;
     // The librw light that mirrors record `index`, made on first use with the record's type.
     rw::Light* mirror(std::uint16_t index);
 
@@ -161,6 +164,7 @@ class SceneLighting {
     std::optional<graphics::LightSelection> m_pending;      // useLights()'s selection, until its atomic is drawn
     bool m_background = false;                              // the atomic drawn next is the background's
     bool m_hiddenHuman = false;                             // noteHiddenHuman()
+    bool m_routed = false;                                  // the atomic drawn next goes through the draw layer
 };
 
 } // namespace coney::platform

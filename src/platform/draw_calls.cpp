@@ -15,6 +15,7 @@
 #include <rw.h>
 
 #include "platform/draw_stream.h"
+#include "platform/texture_lod.h"
 
 namespace coney::platform::draw {
 
@@ -173,6 +174,132 @@ void recordIm3D(int type, const void* indices, rw::int32 numIndices) {
         out->gridValue(v.v);
     }
     writeIndices(*out, indices, indices != nullptr ? numIndices : 0);
+}
+
+// Writes a colour of librw's floats (a light's, which may pass 1) on the grid, alpha included.
+void writeColourValues(DrawStream& out, const rw::RGBAf& colour) {
+    out.gridValue(colour.red);
+    out.gridValue(colour.green);
+    out.gridValue(colour.blue);
+    out.gridValue(colour.alpha);
+}
+
+// Writes the lights of `list` (a world's global or local lights) in their order: type, flags, colour, the frame's
+// position and direction, radius and cone; a count first.
+void writeLights(DrawStream& out, rw::LinkList& list) {
+    std::uint32_t count = 0;
+    FORLIST(link, list) { ++count; }
+    out.word(count);
+    FORLIST(link, list) {
+        rw::Light* light = rw::Light::fromWorld(link);
+        out.word(static_cast<std::uint32_t>(light->getType()));
+        out.word(light->getFlags());
+        writeColourValues(out, light->color);
+        rw::Frame* frame = light->getFrame();
+        out.word(frame != nullptr ? 1 : 0);
+        if (frame != nullptr) {
+            const rw::Matrix* ltm = frame->getLTM();
+            for (const rw::V3d* axis : {&ltm->pos, &ltm->at}) {
+                out.gridValue(axis->x);
+                out.gridValue(axis->y);
+                out.gridValue(axis->z);
+            }
+        }
+        out.gridValue(light->radius);
+        out.gridValue(light->minusCosAngle);
+    }
+}
+
+// Writes `geometry` as the atomic's pipeline reads it: flags and counts, the first morph target's positions and
+// normals, the prelighting, the texture coordinates and the triangles, each array marked present or not.
+void writeGeometry(DrawStream& out, const rw::Geometry& geometry) {
+    out.word(geometry.flags);
+    const auto vertices = static_cast<std::uint32_t>(std::max(geometry.numVertices, 0));
+    const auto triangles = static_cast<std::uint32_t>(std::max(geometry.numTriangles, 0));
+    out.word(vertices);
+    out.word(triangles);
+    out.word(static_cast<std::uint32_t>(geometry.numMorphTargets));
+    out.word(static_cast<std::uint32_t>(geometry.numTexCoordSets));
+    out.countVertices(vertices);
+    const rw::MorphTarget* target = geometry.numMorphTargets > 0 ? &geometry.morphTargets[0] : nullptr;
+    // A vector array on the grid, or a word saying there is none.
+    const auto writeVectors = [&out, vertices](const rw::V3d* array) {
+        out.word(array != nullptr ? 1 : 0);
+        for (std::uint32_t i = 0; array != nullptr && i < vertices; ++i) {
+            out.gridValue(array[i].x);
+            out.gridValue(array[i].y);
+            out.gridValue(array[i].z);
+        }
+    };
+    writeVectors(target != nullptr ? target->vertices : nullptr);
+    writeVectors(target != nullptr ? target->normals : nullptr);
+    out.word(geometry.colors != nullptr ? 1 : 0);
+    for (std::uint32_t i = 0; geometry.colors != nullptr && i < vertices; ++i) {
+        const rw::RGBA& c = geometry.colors[i];
+        out.colour(c.red, c.green, c.blue, c.alpha);
+    }
+    const rw::int32 sets = std::clamp<rw::int32>(geometry.numTexCoordSets, 0, 8);
+    for (rw::int32 set = 0; set < sets; ++set) {
+        const rw::TexCoords* uv = geometry.texCoords[set];
+        out.word(uv != nullptr ? 1 : 0);
+        for (std::uint32_t i = 0; uv != nullptr && i < vertices; ++i) {
+            out.gridValue(uv[i].u);
+            out.gridValue(uv[i].v);
+        }
+    }
+    out.word(geometry.triangles != nullptr ? 1 : 0);
+    for (std::uint32_t i = 0; geometry.triangles != nullptr && i < triangles; ++i) {
+        const rw::Triangle& t = geometry.triangles[i];
+        out.word(static_cast<std::uint32_t>(t.v[0]) | static_cast<std::uint32_t>(t.v[1]) << 16U);
+        out.word(static_cast<std::uint32_t>(t.v[2]) | static_cast<std::uint32_t>(t.matId) << 16U);
+    }
+}
+
+// Records a render of `atomic`: the states, the distance levels switch, its frame, its geometry, its materials and
+// the lights librw lights it with (renderAtomic() says which).
+void recordAtomic(rw::Atomic* atomic) {
+    DrawStream* out = stream();
+    if (out == nullptr) {
+        return;
+    }
+    out->begin(DrawRecord::AtomicDraw);
+    writeStates(*out);
+    out->word(distanceMipmaps() ? 1 : 0);
+    rw::Frame* frame = atomic->getFrame();
+    out->word(frame != nullptr ? 1 : 0);
+    if (frame != nullptr) {
+        writeMatrix(*out, *frame->getLTM());
+    }
+    const rw::Geometry* geometry = atomic->geometry;
+    out->word(geometry != nullptr ? 1 : 0);
+    if (geometry == nullptr) {
+        return;
+    }
+    writeGeometry(*out, *geometry);
+    out->word(static_cast<std::uint32_t>(std::max(geometry->matList.numMaterials, 0)));
+    for (rw::int32 m = 0; m < geometry->matList.numMaterials; ++m) {
+        const rw::Material* material = geometry->matList.materials[m];
+        out->colour(material->color.red, material->color.green, material->color.blue, material->color.alpha);
+        out->gridValue(material->surfaceProps.ambient);
+        out->gridValue(material->surfaceProps.specular);
+        out->gridValue(material->surfaceProps.diffuse);
+        rw::Texture* texture = material->texture;
+        out->word(texture != nullptr ? 1 : 0);
+        if (texture != nullptr) {
+            out->word(static_cast<std::uint32_t>(texture->filterAddressing));
+            writeRaster(*out, texture->raster);
+        }
+    }
+    // librw lights an atomic from the current world, and that world's local lights only when the atomic is in it.
+    rw::World* world = rw::engine->currentWorld;
+    out->word(world != nullptr ? 1 : 0);
+    if (world != nullptr) {
+        writeLights(*out, world->globalLights);
+        out->word(atomic->world == world ? 1 : 0);
+        if (atomic->world == world) {
+            writeLights(*out, world->localLights);
+        }
+    }
 }
 
 // Starts a record of `kind` with `values` after it, when a recording runs.
@@ -381,6 +508,16 @@ void im3dEnd() {
     current.im3dFlags = 0;
     if (current.forwarding) {
         rw::im3d::End();
+    }
+}
+
+void renderAtomic(rw::Atomic* atomic) {
+    if (atomic == nullptr) {
+        return;
+    }
+    recordAtomic(atomic);
+    if (forwarding()) {
+        atomic->render();
     }
 }
 

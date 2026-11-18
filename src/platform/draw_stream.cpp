@@ -58,6 +58,9 @@ void DrawStream::begin(DrawRecord kind) {
     case DrawRecord::Im3DDraw:
         ++m_counts.im3dDraws;
         break;
+    case DrawRecord::AtomicDraw:
+        ++m_counts.atomicDraws;
+        break;
     case DrawRecord::CameraClear:
     case DrawRecord::CameraBegin:
     case DrawRecord::CameraEnd:
