@@ -368,6 +368,45 @@ TEST_CASE("a strong grapple whose victim is out of reach at its end deals its da
     CHECK(away.rage == 0);
 }
 
+TEST_CASE("a strong grapple's mount and pick-up score the strong grapple again at the pick-up's end",
+          "[human][combat]") {
+    // Expected: combat-grabs.md#mount, confirmed (code) (Grab_ConnectEnd 0x0026bad8, hung on 248's end by
+    // Mount_ReturnToFrontGrab 0x00271808, scores Grab_ScoreMove 0x00264fa0 with the grab's base id, record +0xb4,
+    // which Grab_Start 0x0026c548 set to the strong grapple's id and the mount does not clear)
+    const FightCharacter character;
+    HumanFight fight(character, 1.0F);
+    fight.player().setFlag(flag::kRageAllowed, true);
+    const auto pickUp = static_cast<std::uint32_t>(combat::anim_id::kMountPickup);
+    // The strong grapple, then circle taps: in the hold one mounts, in the mount one picks the victim up.
+    std::string script = "5 press circle cross\n9 release circle cross\n";
+    for (int frame = 100; frame < 200; frame += 20) {
+        script += std::to_string(frame) + " tap circle\n";
+    }
+    bool picked = false;
+    std::optional<int> rageInPickUp;
+    std::optional<int> rageAfter;
+    std::optional<bool> heldAfter;
+    // Only the first pick-up counts: the taps go on and mount the victim again from the hold that follows it.
+    fight.run(script, 200, [&](std::uint64_t /*frame*/) {
+        const int rage = fight.player().fighter().combat().rage().value();
+        if (rageAfter.has_value()) {
+            return;
+        }
+        if (fight.player().animator().animId() == pickUp) {
+            picked = true;
+            rageInPickUp = rage;
+        } else if (picked && !rageAfter.has_value()) {
+            rageAfter = rage;
+            heldAfter = fight.player().fighter().held() != nullptr;
+        }
+    });
+    REQUIRE(picked);
+    REQUIRE(rageInPickUp.has_value());
+    REQUIRE(rageAfter.has_value());
+    CHECK(*heldAfter);
+    CHECK(*rageAfter > *rageInPickUp);
+}
+
 TEST_CASE("the power strike ends the grab with the victim down, unless square in its window extends it to 59",
           "[human][combat]") {
     // Expected: combat-grabs.md#grabbing, confirmed (runtime)
