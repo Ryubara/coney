@@ -76,7 +76,9 @@ order, it:
    carries other pull requests' changes the branch does not have; a fetch is yours to run first) and builds it in its
    own detached worktree, `worktrees/coney/clips-base-<commit>`, holding its busy marker meanwhile. The next pair from
    the same base, any task's, finds it built, and [`workspace clean`](workspace.md#cleanup) removes it once it has
-   been idle as long as a build folder may be. It counts toward the [cap on build folders](agents.md#build-cap);
+   been idle as long as a build folder may be. It counts toward the [cap on build folders](agents.md#build-cap) like
+   any build, with no exemption: a pair from a base without a build folder needs one free build place, or the base
+   build is refused and the pair ends with its exit code;
 3. records the run on the base (`before.mp4`) and on the task (`after.mp4`) with `coney --record`
    ([Recording a clip](running-options.md#record)): test mode, the task's own input script on both sides, each run
    from its build's checkout, FFmpeg from `CONEY_FFMPEG` or the one the tools find;
@@ -104,7 +106,8 @@ show), and optionally `start_frame` (the frame of play the clips start at), `che
 most.
 
 **The encodes** port the ideas of GD Studio's capture tools to Coney's clips. `clips encode` re-encodes any clip the
-same way: a GIF for an `--out` ending in `.gif`, else a silent MP4.
+same way: a GIF for an `--out` ending in `.gif`, else a silent MP4. A bare `--out` name goes beside the clip, never
+in the current folder (usually the checkout, where clips may not be written); a path with a folder is used as given.
 
 * **An MP4 fits GitHub's limit** (`upload_max_mb`, 10 MB): a compare is encoded with 720-pixel panels and again at
   each height of `mp4_heights` (540, 432, 360) while it is over; still over at the last, it fails and says so.
@@ -250,7 +253,7 @@ coney-tools clips encode CLIP --out OUT [--start-frame START_FRAME] [--seconds S
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `CLIP` | path | required | the clip to encode, in a task's clips folder |
-| `--out OUT` | path | required | the new file in the same rules: NAME.gif or NAME.mp4 |
+| `--out OUT` | path | required | the new file, NAME.gif or NAME.mp4: a bare name goes beside the clip |
 | `--start-frame START_FRAME` | integer | `0` | the clip's frame to start at (30 a second) |
 | `--seconds SECONDS` | number | none | how many seconds of the clip (default: the rest of it) |
 | `--slow SLOW` | number | `1.0` | play it N times slower, every frame kept |

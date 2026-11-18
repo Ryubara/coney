@@ -718,6 +718,13 @@ def run_pair_command(
     )
 
 
+def encode_target(clip: Path, out: Path) -> Path:
+    """Where `clips encode` writes: a bare `--out` name (no folder) beside the clip it encodes, as the usage
+    `--out NAME.gif` reads; a path with a folder as given. A bare name is never taken from the current folder, which
+    is usually the checkout clips may not be written in."""
+    return clip.parent / out.name if out.parent == Path() else out
+
+
 def run_encode(
     clip: Path,
     out: Path,
@@ -734,7 +741,7 @@ def run_encode(
     rules = clips.clip_rules(root)
     scratch = clips.scratch_root(root)
     source = clips.check_clip_path(clip, scratch, rules)
-    target = clips.check_clip_path(out, scratch, rules)
+    target = clips.check_clip_path(encode_target(source, out), scratch, rules)
     if slow <= 0:
         raise ClipError(f"--slow must be more than 0, not {slow:g}")
     if source == target:

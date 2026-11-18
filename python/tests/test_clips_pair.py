@@ -294,6 +294,13 @@ def test_a_gif_over_its_budget_at_every_width_is_kept_with_a_warning(
     assert "warning:" in capsys.readouterr().out
 
 
+def test_an_encodes_bare_out_name_goes_beside_the_clip_and_a_path_stays_as_given(tmp_path: Path) -> None:
+    clip = tmp_path / "task" / "clips" / "after.mp4"
+    assert clips_pair.encode_target(clip, Path("compare.gif")) == tmp_path / "task" / "clips" / "compare.gif"
+    elsewhere = tmp_path / "other" / "walk.mp4"
+    assert clips_pair.encode_target(clip, elsewhere) == elsewhere
+
+
 def test_a_label_is_a_small_picture_of_its_text(tmp_path: Path) -> None:
     from PIL import Image
 

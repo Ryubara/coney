@@ -944,7 +944,9 @@ def _add_clips_pair_commands(commands: Any) -> None:
         "encode", help="re-encode a clip for GitHub: a GIF for a .gif, else a silent MP4, fitted to the size limits"
     )
     encode.add_argument("clip", type=Path, help="the clip to encode, in a task's clips folder")
-    encode.add_argument("--out", type=Path, required=True, help="the new file in the same rules: NAME.gif or NAME.mp4")
+    encode.add_argument(
+        "--out", type=Path, required=True, help="the new file, NAME.gif or NAME.mp4: a bare name goes beside the clip"
+    )
     encode.add_argument("--start-frame", type=int, default=0, help="the clip's frame to start at (30 a second)")
     encode.add_argument("--seconds", type=float, help="how many seconds of the clip (default: the rest of it)")
     encode.add_argument("--slow", type=float, default=1.0, help="play it N times slower, every frame kept")
