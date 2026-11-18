@@ -392,7 +392,7 @@ The kinds (vtable slot `+0x2c`, read from the five vtables `0x00544220`, `0x0054
 `0x00544338`): Grab 6, Charge 0, Guard 1, Leader 4, Throw 5. The Starts of Grab (`0x00321c48`), Charge
 (`0x00322040`) and Guard (`0x00322440`) and Charge's End (`0x00322048`) are empty.
 
-### `GangConfig_SetStrategy` / `GangConfig_GetStrategyEntry` (`0x001645d0`, `0x00164610`)
+### `GangConfig_SetStrategy` / `GangConfig_GetStrategyEntry` (`0x001645d0`, `0x00164610`) {#gang-strategy}
 
 The seven weights of a gang kind's strategy (`CfgGang`'s sixth argument) are bytes `+0x73`-`+0x79` of its
 configuration record (28 records of `0x7a` at `0x0050caa8`); the getter returns byte *i*. The weight table per

@@ -98,8 +98,10 @@ class SubTacticPool {
     /// @orig 0x00321890 SubTactic_Free (unknown)
     void free(std::size_t slot);
     /// The order in record `slot`; null for a free record or a slot outside the pool.
+    /// @coney-only the record by its slot: the original holds the record's address
     [[nodiscard]] SubTactic* at(std::size_t slot) const;
     /// How many records are in use.
+    /// @coney-only a count for tests and tools; the original never counts its mask
     [[nodiscard]] std::size_t inUse() const;
 
   private:

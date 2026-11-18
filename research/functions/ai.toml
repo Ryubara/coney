@@ -40,7 +40,7 @@ status = "legacy"
 [[function]]
 address = 0x001645d0
 name = "GangConfig_SetStrategy"
-page = "ai-reimpl.md#gangconfig_setstrategy--gangconfig_getstrategyentry-0x001645d0-0x00164610"
+page = "ai-reimpl.md#gang-strategy"
 role = "stores the seven team-up weights of a gang kind (`CfgGang`'s sixth argument) as bytes `+0x73`-`+0x79`"
 level = "confirmed-code"
 coney = "src/ai/ai_config.h:gangStrategiesFrom"
@@ -49,7 +49,7 @@ status = "compared"
 [[function]]
 address = 0x00164610
 name = "GangConfig_GetStrategyEntry"
-page = "ai-reimpl.md#gangconfig_setstrategy--gangconfig_getstrategyentry-0x001645d0-0x00164610"
+page = "ai-reimpl.md#gang-strategy"
 role = "a gang kind's team-up weight *i*"
 level = "confirmed-code"
 coney = "src/ai/gangs.h:Gangs::strategyWeight"
@@ -5445,7 +5445,7 @@ status = "legacy"
 [[function]]
 address = 0x00307a10
 name = "AttackTactic_StartSubTactic"
-page = "ai-reimpl.md#start-sub-tactic"
+page = "gang-fights.md#gang"
 role = "the team-up draw: the gates, the enemy gang in sight, the weighted draw and the order it makes"
 level = "confirmed-code"
 coney = "src/ai/tactic_attack.h:TacticAttack::startSubTactic"
@@ -5494,7 +5494,7 @@ status = "legacy"
 [[function]]
 address = 0x00308150
 name = "AttackTactic_OnStrategyEnd"
-page = "ai-reimpl.md#the-strategy-slot-0x00306b50-0x00306b88-0x00306bd0"
+page = "gang-fights.md#gang"
 role = "a guard order (kind 1) ending gives the members Melee again"
 level = "confirmed-code"
 coney = "src/ai/tactic_attack.h:TacticAttack::strategyEnded"

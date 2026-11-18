@@ -156,6 +156,7 @@ std::uint32_t tacticValue(const Tactic* tactic) {
 // The `g_order` value of a gang: the draw number of the team-up order its attack tactic runs (0 Charge, 1 Guard, 2
 // Guard backing off, 3 Throw from a pile, 4 Leader, 5 Throw, 6 Grab), as the original's trace reads it from the order's
 // vtable and flags; -1 with no order or under another tactic.
+// @coney-only the trace's column; the original's trace computes it in its field formula
 int orderDraw(const Gang* gang) {
     const auto* attack = gang != nullptr ? dynamic_cast<const TacticAttack*>(gang->tactic()) : nullptr;
     if (attack == nullptr || !attack->strategy()) {

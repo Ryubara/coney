@@ -445,7 +445,7 @@ TEST_CASE("a gang may join a fight against an enemy gang that fights and has a m
 }
 
 TEST_CASE("CfgGang's strategy table gives a gang kind's seven weights as bytes", "[ai][gangs][teamup]") {
-    // Expected: ai-reimpl.md#gangconfig_setstrategy--gangconfig_getstrategyentry-0x001645d0-0x00164610, confirmed
+    // Expected: ai-reimpl.md#gang-strategy, confirmed
     // (code)
     namespace script = coney::script;
     script::RecordedCalls recorded;
