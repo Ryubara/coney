@@ -97,10 +97,10 @@ class GpuRenderer {
     /// A texture's pixels to upload this frame.
     struct PendingUpload {
         SDL_GPUTexture* texture = nullptr;
-        std::uint64_t serial = 0; // the cache's key, forgotten when the upload fails (0 for the white texture)
         std::vector<std::uint8_t> pixels;
         int width = 0;
         int height = 0;
+        std::uint64_t serial = 0; // the cache's key, forgotten when the upload fails (0 for the white texture)
     };
 
     explicit GpuRenderer(SDL_GPUDevice* device) : m_device(device) {}
