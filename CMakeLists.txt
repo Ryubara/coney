@@ -16,6 +16,11 @@ if(CONEY_SHADERS)
 endif()
 
 enable_testing()
+# Every test's TIMEOUT, and every timeout a test's script gives the process it runs: a hang guard only. Test mode is
+# lockstep, so a run's result never depends on time; a timeout a few times a run's usual length failed tests whenever
+# the machine ran several builds at once (docs/guides/testing.md#no-wall-clock-limits; checked by
+# python/tests/test_test_timeouts.py).
+set(CONEY_TEST_HANG_GUARD 600)
 if(CONEY_SHADERS)
     add_subdirectory(src/platform/shaders)
 endif()
