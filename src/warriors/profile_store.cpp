@@ -54,7 +54,18 @@ bool SessionProfileStore::load(std::size_t slot) {
     return true;
 }
 
-bool SessionProfileStore::importRecord(std::size_t /*slot*/, const ProfileRecord& /*record*/) { return false; }
+bool SessionProfileStore::importRecord(std::size_t slot, const ProfileRecord& record) {
+    if (slot >= m_slots.size() || m_slots.at(slot).has_value()) {
+        return false;
+    }
+    Profile profile;
+    profile.name = record.name;
+    profile.difficulty = record.difficulty;
+    profile.brightness = record.brightness;
+    profile.subtitles = record.subtitles;
+    m_slots.at(slot) = profile;
+    return true;
+}
 
 void SessionProfileStore::remove(std::size_t slot) {
     if (slot < m_slots.size()) {

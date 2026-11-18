@@ -9,6 +9,7 @@
 
 #include "gui/profile_management_gui/pm_extras.h"
 #include "gui/profile_management_gui/pm_greet.h"
+#include "gui/profile_management_gui/pm_import.h"
 #include "gui/profile_management_gui/pm_mode.h"
 #include "gui/profile_management_gui/pm_new_game_screens.h"
 #include "gui/profile_management_gui/pm_placeholder.h"
@@ -22,7 +23,8 @@ namespace coney::gui {
 /// docs/research/frontend.md#profile-manager, starting at PM_Greet. It is done when a screen sets the done flag
 /// (`0x0050f5b0`: PM_Subtitles, PM_Load, PM_Continue), or when the flow's stack is empty.
 ///
-/// PM_NoSpace and PM_TooManyProfiles are PmPlaceholder stand-ins (Coney's): Xbox screens no PS2 path reaches.
+/// PM_NoSpace and PM_TooManyProfiles are PmPlaceholder stand-ins (Coney's): Xbox screens no PS2 path reaches. Coney
+/// adds PM_Import (PmImport), reached from PM_Profile's IMPORT PROFILE (result 5) and leading back to it (result 0).
 ///
 /// Research: docs/research/frontend.md#profile-manager, docs/research/gui.md#screen-flow
 class PmController {
@@ -90,6 +92,7 @@ class PmController {
     PmDifficulty m_difficulty;
     PmLight m_light;
     PmSubtitles m_subtitles;
+    PmImport m_import;
     std::array<std::unique_ptr<PmPlaceholder>, kPlaceholderNames.size()> m_placeholders;
     std::string m_onRumble;
 };

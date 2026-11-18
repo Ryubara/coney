@@ -84,6 +84,7 @@
 #include "platform/game_session_debug.h"
 #include "platform/humans_trace.h"
 #include "platform/imgui_overlay.h"
+#include "platform/import_command.h"
 #include "platform/install_command.h"
 #include "platform/log_output.h"
 #include "platform/mesh_views.h"
@@ -310,6 +311,11 @@ int main(int argc, char** argv) {
         return coney::platform::runInstallCommand(
             *options, coney::install::knownDiscs(),
             coney::platform::installProgramFiles(options->dataPath.value_or(""), argc > 0 ? argv[0] : nullptr), stderr);
+    }
+    // `--import-save` (docs/guides/running.md#import-save): import a PS2 save's profiles and exit, before anything
+    // opens a window or a device.
+    if (options->importSave.has_value()) {
+        return coney::platform::runImportCommand(*options, stderr);
     }
     // `--data`: play only from a finished install; an unfinished one says how to finish it.
     if (const std::optional<std::string> data = options->dataPath; data) {

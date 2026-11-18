@@ -79,6 +79,9 @@ class DiskProfileStore final : public ProfileStore {
     /// makes of a record), and lists it; the game state is left alone.
     /// @coney-only the importer's way into the save system (docs/research/save.md#import)
     bool importRecord(std::size_t slot, const ProfileRecord& record) override;
+    /// `import` in the profiles' folder: where the player puts original saves for PM_Import to offer.
+    /// @coney-only the front end's import folder (docs/research/save.md#import)
+    [[nodiscard]] std::optional<std::filesystem::path> importFolder() const override { return m_folder / "import"; }
 
     /// The record in `slot`, or null for an empty or damaged slot.
     [[nodiscard]] const ProfileRecord* record(std::size_t slot) const;

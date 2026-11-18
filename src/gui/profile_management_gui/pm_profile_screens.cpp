@@ -111,7 +111,11 @@ void PmProfile::setUp() {
     m_choices.set(std::move(items));
 }
 
-void PmProfile::addImport(std::vector<PmChoices::Item>& items) const { (void)items; }
+void PmProfile::addImport(std::vector<PmChoices::Item>& items) const {
+    if (PmImport::offered(m_shared)) {
+        items.push_back({std::string(PmImport::kImportText), kImport});
+    }
+}
 
 int PmProfile::accept(int code) {
     m_shared.session.deleteMode = false;
@@ -123,6 +127,9 @@ int PmProfile::accept(int code) {
     case kDelete:
         m_shared.session.deleteMode = true;
         return 2;
+    case kImport:
+        // Coney's item: the import screen (docs/research/frontend.md#pm-import).
+        return kImport;
     default:
         callScript("Menu.reloadProfiles");
         return kStay;

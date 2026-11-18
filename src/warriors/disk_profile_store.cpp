@@ -187,7 +187,18 @@ bool DiskProfileStore::create(std::size_t slot, const Profile& profile) {
     return true;
 }
 
-bool DiskProfileStore::importRecord(std::size_t /*slot*/, const ProfileRecord& /*record*/) { return false; }
+bool DiskProfileStore::importRecord(std::size_t slot, const ProfileRecord& record) {
+    if (slot >= kSlots || m_slots.at(slot).has_value()) {
+        return false;
+    }
+    if (auto written = writeSlot(slot, record, ModdedProgress{}); !written) {
+        m_lastError = written.error();
+        return false;
+    }
+    m_lastError.reset();
+    m_slots.at(slot) = Slot{.profile = profileOf(record), .record = record, .modded = {}};
+    return true;
+}
 
 bool DiskProfileStore::load(std::size_t slot) {
     // Coney's choice: the slot's file was read with the others (readSlots), so an empty or damaged slot fails here

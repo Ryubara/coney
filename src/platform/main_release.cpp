@@ -43,6 +43,7 @@
 #include "platform/game_console_links.h"
 #include "platform/game_run.h"
 #include "platform/game_session.h"
+#include "platform/import_command.h"
 #include "platform/install_command.h"
 #include "platform/net_play.h"
 #include "platform/render_engine.h"
@@ -96,6 +97,11 @@ int main(int argc, char** argv) {
         return coney::platform::runInstallCommand(
             *options, coney::install::knownDiscs(),
             coney::platform::installProgramFiles(options->dataPath.value_or(""), argc > 0 ? argv[0] : nullptr), stderr);
+    }
+    // `--import-save` (docs/guides/running.md#import-save): import a PS2 save's profiles and exit, before anything
+    // opens a window or a device.
+    if (options->importSave.has_value()) {
+        return coney::platform::runImportCommand(*options, stderr);
     }
     // `--data`: play only from a finished install; an unfinished one says how to finish it.
     if (const std::optional<std::string> data = options->dataPath; data) {

@@ -38,6 +38,24 @@ coney = "src/gamemodes/memory_card_mode.h:MemoryCardMode::exit"
 status = "legacy"
 
 [[function]]
+address = 0x0041fcc8
+name = "PS2Save_CheckFileSizes"
+page = "save.md#card-files"
+role = "loading's check of the three save files' sizes"
+level = "confirmed-code"
+coney = "src/warriors/save_import.h:readPs2DataFile"
+status = "compared"
+
+[[function]]
+address = 0x004215d8
+name = "SaveSystem_ReadHeaders"
+page = "save.md#card-files"
+role = "reads the six slot headers after a load"
+level = "confirmed-code"
+coney = "src/warriors/save_import.h:readPs2DataFile"
+status = "compared"
+
+[[function]]
 address = 0x00421638
 name = "ProfileHeader_Write"
 page = "save.md#original-structure"
