@@ -2401,9 +2401,6 @@ citation = 1
 ["tests/platform/disc_throw_arc_test.cpp"]
 citation = 1
 
-["tests/platform/disc_world_streaming_test.cpp"]
-citation = 2
-
 ["tests/platform/disc_world_test.cpp"]
 citation = 1
 
@@ -2462,7 +2459,7 @@ citation = 1
 citation = 1
 
 ["tests/platform/world_set_test.cpp"]
-citation = 5
+citation = 3
 
 ["tests/raycast/collision_builder_test.cpp"]
 citation = 6

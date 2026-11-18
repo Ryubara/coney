@@ -34,9 +34,11 @@ using coney::test::TempDir;
 
 namespace {
 
-// One part atomic: a four-vertex strip, two triangles, positions scaled by 0.5.
-Bytes stripAtomic() {
+// One part atomic: a four-vertex strip, two triangles, positions scaled by 0.5, its material textured by `texture`
+// (none when empty).
+Bytes stripAtomic(const std::string& texture = {}) {
     coney::test::AtomicFields fields;
+    fields.texture = texture;
     fields.meshChains.push_back(
         coney::test::ps2MeshChain({{coney::test::ps2Vertex(0, 0, 0), coney::test::ps2Vertex(4, 0, 0),
                                     coney::test::ps2Vertex(0, 4, 0), coney::test::ps2Vertex(4, 4, 0)}},
@@ -47,13 +49,17 @@ Bytes stripAtomic() {
 }
 
 // A synthetic disc holding one streamed world, `test`: two sectors side by side (x 0..10 and 10..20), each the only
-// sector of its part, with the manifest and both part files.
-std::vector<std::byte> buildWorldDisc() {
+// sector of its part, with the manifest and both part files (`part1` and `part2`, untextured strips when empty).
+std::vector<std::byte> buildWorldDisc(Bytes part1 = {}, Bytes part2 = {}) {
     std::vector<Bytes> leaves{coney::test::worldSector({0, 0, 0}, {10, 10, 10}, 0, 1, {5, 5, 5}),
                               coney::test::worldSector({10, 0, 0}, {20, 10, 10}, 1, 2, {15, 5, 5})};
     const Bytes stream = coney::test::worldStream(2, leaves, 1, 2);
-    const Bytes part1 = coney::test::partFile(0, {{0, stripAtomic()}});
-    const Bytes part2 = coney::test::partFile(0, {{1, stripAtomic()}});
+    if (part1.size() == 0) {
+        part1 = coney::test::partFile(0, {{0, stripAtomic()}});
+    }
+    if (part2.size() == 0) {
+        part2 = coney::test::partFile(0, {{1, stripAtomic()}});
+    }
     Bytes manifest;
     manifest.u32(static_cast<std::uint32_t>(stream.size())).u32(1000);
     manifest.u32(2).u32(static_cast<std::uint32_t>(part1.size())).u32(300);
@@ -64,7 +70,8 @@ std::vector<std::byte> buildWorldDisc() {
     dir.header(4, 0, 0, 0);
     for (const auto& [name, data] :
          {std::pair<const char*, const Bytes*>{"test_sec.mem", &manifest}, std::pair{"test_sec.wld", &stream},
-          std::pair{"test_ms1.sec", &part1}, std::pair{"test_ms2.sec", &part2}}) {
+          std::pair<const char*, const Bytes*>{"test_ms1.sec", &part1},
+          std::pair<const char*, const Bytes*>{"test_ms2.sec", &part2}}) {
         dir.u32(static_cast<std::uint32_t>(wad.size()))
             .u32(static_cast<std::uint32_t>(data->size()))
             .u32(coney::nameHash(std::string("./ee_files/") + name));
@@ -74,9 +81,9 @@ std::vector<std::byte> buildWorldDisc() {
     return coney::test::buildIso({{"WARRIORS.DIR;1", dir.data()}, {"WARRIORS.WAD;1", wad.data()}});
 }
 
-// Writes the synthetic disc into `dir` and opens its WAD.
-coney::io::Wad openWorldDisc(const TempDir& dir) {
-    const auto image = dir.write("disc.iso", buildWorldDisc());
+// Writes the synthetic disc (with `part1` and `part2` as buildWorldDisc() takes them) into `dir` and opens its WAD.
+coney::io::Wad openWorldDisc(const TempDir& dir, Bytes part1 = {}, Bytes part2 = {}) {
+    const auto image = dir.write("disc.iso", buildWorldDisc(std::move(part1), std::move(part2)));
     auto disc = coney::io::Disc::open(image);
     REQUIRE(disc.has_value());
     auto wad = coney::io::Wad::open(std::move(*disc));
@@ -145,6 +152,33 @@ TEST_CASE("a world whose heap does not fit is not loaded", "[world_set]") {
     const std::vector<std::string> names{"test"};
     CHECK_FALSE(WorldSet::load(wad, names, budget, false, (*engine)->sceneAssets()).has_value());
     CHECK(budget.used() == 0);
+}
+
+// Expected: graphics.md#texture-lookup, confirmed (code): part 2's material names a texture only part 1's dictionary
+// holds, so with part 1 loaded first the lookup finds it there, and the set counts that material as borrowing another
+// part's texture (the count is Coney's own guard: docs/engine/renderer.md#texture-lifetime).
+TEST_CASE("a material taking its texture from another part's dictionary is counted", "[world_set]") {
+    auto engine = RenderEngine::start(RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    TempDir dir;
+    const coney::io::Wad wad =
+        openWorldDisc(dir,
+                      coney::test::partFile(0, {{0, stripAtomic("own")}},
+                                            coney::test::texDictionary({coney::test::rgbaTexture2x2("own"),
+                                                                        coney::test::rgbaTexture2x2("lent")})),
+                      coney::test::partFile(0, {{1, stripAtomic("lent")}}));
+    coney::world::SectorBudget budget(10'000);
+    const std::vector<std::string> names{"test"};
+    auto set = WorldSet::load(wad, names, budget, false, (*engine)->sceneAssets());
+    REQUIRE(set.has_value());
+    coney::world::StreamedWorld& world = *(*set)->worlds()[0];
+
+    REQUIRE(coney::world::requestPart(world, 0, 1, budget, **set, 100).has_value());
+    CHECK((*set)->borrowedTextures() == 0); // part 1's material takes its texture from its own dictionary
+    REQUIRE(coney::world::requestPart(world, 0, 2, budget, **set, 100).has_value());
+    REQUIRE((*set)->atomic(0, 1) != nullptr);
+    REQUIRE((*set)->atomic(0, 1)->geometry->matList.materials[0]->texture != nullptr);
+    CHECK((*set)->borrowedTextures() == 1);
 }
 
 TEST_CASE("textures are found by name across every registered dictionary, newest first", "[texture_lookup]") {

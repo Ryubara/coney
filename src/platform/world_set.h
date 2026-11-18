@@ -106,6 +106,12 @@ class WorldSet final : public world::PartStore {
     /// Atomics resident now, over every world.
     [[nodiscard]] std::size_t residentAtomics() const;
 
+    /// Materials, over every part loaded so far, whose texture the lookup found in another loaded part's dictionary
+    /// rather than in the part's own or a world's: SceneAssets notes their texture ids when the part loads, and those
+    /// ids would go stale when the other part unloads. The disc has none, so this is a guard: a part that has some is
+    /// also reported with a warning (docs/engine/renderer.md#texture-lifetime).
+    [[nodiscard]] std::size_t borrowedTextures() const { return m_borrowedTextures; }
+
     /// Reads part `part` of world `world` (readPart()), then holds its sectors' meshes in the scene assets beside the
     /// textures its dictionary put there; on a failure nothing of it stays held.
     [[nodiscard]] std::expected<void, Error> loadPart(std::size_t world, std::uint32_t part) override;
@@ -175,6 +181,9 @@ class WorldSet final : public world::PartStore {
     [[nodiscard]] SectorMesh addMeshes(rw::Atomic* atomic);
     /// Drops `mesh`'s ids from the scene assets.
     void removeMeshes(const SectorMesh& mesh);
+    /// How many of `atomic`'s materials have a texture from the dictionary of a loaded part other than part `part` of
+    /// world `world` (borrowedTextures()).
+    [[nodiscard]] std::size_t countBorrowed(const rw::Atomic* atomic, std::size_t world, std::uint32_t part) const;
 
     /// Loads one world and adds it to the set.
     /// @orig 0x00410648 World_LoadStream (WorldPS2.cpp)
@@ -185,6 +194,7 @@ class WorldSet final : public world::PartStore {
     world::SectorBudget& m_budget;
     SceneAssets& m_assets;
     bool m_forDrawing = false;
+    std::size_t m_borrowedTextures = 0; // borrowedTextures()
     std::vector<std::unique_ptr<Loaded>> m_worlds;
     std::vector<world::StreamedWorld*> m_states;
     std::vector<Held> m_held;                        // by world, beside m_worlds
