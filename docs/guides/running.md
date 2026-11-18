@@ -166,7 +166,7 @@ or folder card, a dump of a real card (MemCard PRO, SD2PSX, a card tool), a `.ps
 save's folder `BASLUS-21215` or its data file. The save is only read, never changed.
 
 ```sh
-build/dev/src/platform/coney --import-save "C:/Users/me/Documents/PCSX2/memcards/Mcd001.ps2"
+build/dev/src/platform/coney --import-save PCSX2/memcards/Mcd001.ps2
 build/dev/src/platform/coney --import-save usb/BASLUS-21215 --profiles ../../profiles
 ```
 

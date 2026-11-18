@@ -606,6 +606,14 @@ profile a new Coney save in a free slot. The Xbox build's save is [#1421](issue:
 - The bit order of the unlockable and script-flag sets in the record (byte *i* / 8, bit *i* % 8 is inferred).
 - Which message a slot-1 card change shows (`0xa1`-`0xa4`) in each case, not traced.
 
+### Where the importer reads more loosely than the game {#q-import-choices}
+
+The importer ([Importing a PS2 save](#import)) differs from the game's load on purpose in two places: it does not
+check the icon files' sizes (`PS2Save_CheckFileSizes`, `0x0041fcc8`), so a data file copied on its own imports, and it
+names a slot of another version in a message instead of raising the "bad version" flag (`ProfileHeader_Read`,
+`0x004219d0`). Whether a save with wrong icon sizes should be refused as the game would refuse it is open; no player
+save with such icons has been seen.
+
 ### The two unreachable profile screens {#q-xbox-profile-screens}
 
 Whether `PM_TooManyProfiles` and `PM_NoSpace`, unreachable on the PS2 (`PM_Greet` never returns 1 or 2), are the Xbox
