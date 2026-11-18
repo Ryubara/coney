@@ -397,6 +397,8 @@ TEST_CASE("PM_Mode: story leads to PM_Profile, quick rumble calls the first call
 
 TEST_CASE("PM_Mode: input waits while the screen is faded; story with two pads asks for the players",
           "[profile_manager]") {
+    // Expected: frontend.md#pm-screens (PM_Mode's handler 0x0020a268: input is ignored while a fade runs; STORY
+    // leads to PM_NumPlayers with two or more pads, frontend.md#fn-pm-mode)
     Harness h;
     h.start();
     h.step(coney::pad::kStart);
@@ -666,6 +668,8 @@ TEST_CASE("profile manager: every screen of the table exists; stop empties the f
 }
 
 TEST_CASE("PM_Extras: TRAILER at (0, 0.81); cross plays Menu.playMovie(1) and stays", "[profile_manager]") {
+    // Expected: frontend.md#pm-screens (PM_Extras: the grid at (x, 0.81), x 0 by default; accept calls
+    // Menu.playMovie(1), cue 9, and stays)
     Harness g;
     g.start();
     g.step(coney::pad::kStart);

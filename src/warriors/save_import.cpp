@@ -260,6 +260,7 @@ std::expected<std::size_t, Error> importProfile(const ProfileRecord& record, Pro
     return *slot;
 }
 
+// @coney-only the import screen counts what the import folder offers
 std::size_t ImportScan::profileCount() const {
     std::size_t count = 0;
     for (const OriginalSave& save : saves) {

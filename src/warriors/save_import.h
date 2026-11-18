@@ -87,7 +87,7 @@ struct ImportScan {
     std::vector<OriginalSave> saves;
     std::vector<std::string> problems;
 
-    /// Every profile found, in order.
+    /// How many profiles the saves hold together.
     [[nodiscard]] std::size_t profileCount() const;
 };
 

@@ -127,11 +127,14 @@ int PmProfile::accept(int code) {
     case kDelete:
         m_shared.session.deleteMode = true;
         return 2;
+    case kReload:
+        callScript("Menu.reloadProfiles");
+        return kStay;
     case kImport:
         // Coney's item: the import screen (docs/research/frontend.md#pm-import).
         return kImport;
     default:
-        callScript("Menu.reloadProfiles");
+        // Any other code does nothing, as in the original.
         return kStay;
     }
 }

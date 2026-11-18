@@ -909,23 +909,6 @@ the Lua function `Menu.reloadProfiles` (`0x00558fe0`; no item of this menu has c
 `ShowProfileManager` argument, `Menu.fadeToRMI`) and stay. The script then fades out and opens the Rumble mode
 interface ([Scripts](scripting.md#level100lua-the-front-end)).
 
-#### Coney's import screen {#pm-import}
-
-The original has no import; this is Coney's own screen ([Importing a PS2 save](save.md#import)), added where the
-original's profile items are so a player finds it beside CREATE NEW PROFILE and RELOAD PROFILES, and shown only when
-there is something to import, so a player without a save to bring over sees the original's PM_Profile exactly.
-
-- **PM_Profile** gets a last item, `IMPORT PROFILE` (code 5, result 5), after reload, while the save system's import
-  folder (`import` beside the profiles) holds a file or folder and a slot is free (the rule that shows CREATE).
-- **PM_Import** is laid out as PM_Load: the title `IMPORT PROFILE`, then one item per profile found in the folder's
-  saves (its name), two a row, at most six, in the folder's name order and each save's slot order. A line in the text
-  font, size 0.85, at y 0.58 (above a three-row grid's title) says where the selected profile comes from (grey: the file
-  or folder and the card slot), or why nothing can be imported (red: the first unreadable file and its problem).
-- **Accept** imports the profile into the first free slot and returns 0, back to PM_Profile, which then offers it
-  under USE EXISTING PROFILE; the profile is not loaded. A refused import (the name is taken, no slot is free) plays cue
-  `0xe` after the accept's 9, shows the reason in red and stays. **Back** pops, cue `0xf`.
-- The text is Coney's, in English for every language: the game's string tables have nothing for it.
-
 ### The 3D background {#background}
 
 Behind the PM screens is `level100`'s world, seen through the **Wonder Wheel scene's own camera**. The script's
@@ -2462,6 +2445,23 @@ and its gap; a line's height is one line of its text size; the flag `0x0063083c`
 `repo:tests/platform/disc_credits_test.cpp`, which runs the disc's `credits.lua` in `level99` started as
 `--play-level` starts it and scrolls it to its `CreditEnd`.
 
+### Coney's import screen {#pm-import}
+
+The original has no import; this is Coney's own screen ([Importing a PS2 save](save.md#import)), added where the
+original's profile items are so a player finds it beside CREATE NEW PROFILE and RELOAD PROFILES, and shown only when
+there is something to import, so a player without a save to bring over sees the original's PM_Profile exactly.
+
+- **PM_Profile** gets a last item, `IMPORT PROFILE` (code 5, result 5), after reload, while the save system's import
+  folder (`import` beside the profiles) holds a file or folder and a slot is free (the rule that shows CREATE).
+- **PM_Import** is laid out as PM_Load: the title `IMPORT PROFILE`, then one item per profile found in the folder's
+  saves (its name), two a row, at most six, in the folder's name order and each save's slot order. A line in the text
+  font, size 0.85, at y 0.58 (above a three-row grid's title) says where the selected profile comes from (grey: the file
+  or folder and the card slot), or why nothing can be imported (red: the first unreadable file and its problem).
+- **Accept** imports the profile into the first free slot and returns 0, back to PM_Profile, which then offers it
+  under USE EXISTING PROFILE; the profile is not loaded. A refused import (the name is taken, no slot is free) plays cue
+  `0xe` after the accept's 9, shows the reason in red and stays. **Back** pops, cue `0xf`.
+- The text is Coney's, in English for every language: the game's string tables have nothing for it.
+
 ## Open questions
 
 - **The end credits' layout** ([`GUI/Credits.cpp`](#fn-credits)): which text a centred line (styles 0, 2 and 3)
@@ -2532,3 +2532,19 @@ and its gap; a line's height is one line of its text size; the flag `0x0063083c`
   [Sound](sound.md)).
 - **PM_Light's colour** (answered): the light manager's brightness, added to every ambient and directional light
   ([Lighting](lighting.md#brightness)); 40 is also the constructor's default.
+
+### What Coney's `PM_Controller` leaves out {#q-pm-controller}
+
+The constructor (`0x002040f0`) stores at `+0x60` a value of the game mode below the top (`0x0015e790`), confirmed
+(code). No reader has been found: the controller's start, update, stop and shutdown (`0x00204a78`, `0x00204ba0`,
+`0x00204c20`, `0x00204d18`) and the screen flow's update do not read it (confirmed (code) at those addresses), so
+Coney does not keep it. It also builds the Xbox screens `PM_NoSpace` and `PM_TooManyProfiles` as stand-ins that show
+their name, since the PS2 never reaches them (inferred from PM_Greet's results, [The screens](#pm-screens)). Open:
+whether anything reads `+0x60` through the controller, and whether the Xbox build reaches the two screens.
+
+### The PM screens' fade test {#q-pm-fade-gate}
+
+Coney's PM screens take no input while a fade runs or its level is not 0, one test for all. PM_Profile's handler
+(`0x0020c588`) tests the fade level (`+0x1d8`) alone, confirmed (code), and PM_Greet tests both
+([PM_Greet's blink and idle](#pm-screens)), so on the first frame of a fade out, at level 0, PM_Profile would take a
+press that Coney ignores. Open: which test each screen's handler makes.

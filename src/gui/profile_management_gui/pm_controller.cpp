@@ -13,6 +13,8 @@ PmController::PmController(PmShared& shared)
     : m_shared(shared), m_greet(shared), m_mode(shared), m_extras(shared), m_numPlayers(shared), m_profile(shared),
       m_create(shared), m_load(shared), m_continue(shared), m_delete(shared), m_difficulty(shared), m_light(shared),
       m_subtitles(shared), m_import(shared) {
+    // Coney's choice: the game mode below the top, which the original keeps at +0x60, is not kept, as nothing is
+    // known to read it (docs/research/frontend.md#q-pm-controller). The Xbox screens below are stand-ins.
     for (std::size_t i = 0; i < kPlaceholderNames.size(); ++i) {
         m_placeholders.at(i) = std::make_unique<PmPlaceholder>(kPlaceholderNames.at(i), shared);
     }
