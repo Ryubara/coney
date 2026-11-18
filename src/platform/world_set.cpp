@@ -311,9 +311,11 @@ void WorldSet::unloadPart(std::size_t world, std::uint32_t part) {
     // Out of the scene assets first, while the atomics and the dictionary are still there.
     Held& held = m_held[world];
     for (const std::uint32_t sector : m_worlds[world]->state.part(part).sectors) {
-        if (held.meshes[sector]) {
-            removeMeshes(*held.meshes[sector]);
-            held.meshes[sector].reset();
+        // Bound once: clang-tidy does not follow the engaged check through a repeated subscript.
+        std::optional<SectorMesh>& mesh = held.meshes[sector];
+        if (mesh) {
+            removeMeshes(*mesh);
+            mesh.reset();
         }
     }
     dropTextures(held.parts[part - 1]);
