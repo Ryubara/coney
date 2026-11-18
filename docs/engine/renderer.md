@@ -564,10 +564,12 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
   than the estimate of about 290 because the `rw::gl3::` vertex types are not calls and the renders below wait. Routed
   with item 7 ([#1199](issue:1199)): `WorldRenderer::render`'s render states and camera begin, and the world's atomic
   renders (`draw::renderAtomic`): each streamed sector, its dual layer, and the level's sky, clouds, skyline and light
-  glows, each one record (the states, distance levels, frame, geometry, materials and lights: draw_calls.h). With items
-  8 and 9: `ParkedCars::draw` and `PlacedObjects::draw` ([#1200](issue:1200)), `PlayLighting::drawHumanPasses`
-  ([#1201](issue:1201)), their renders and what runs inside their pipelines (the `VERTEXALPHA` state in
-  `texture_lod.cpp` and `character_skin.cpp`, the skinning buffers). Never: the start-up and the profiler's queries.
+  glows, each one record (the states, distance levels, frame, geometry, materials and lights: draw_calls.h). Routed
+  with item 8 ([#1200](issue:1200)): `ParkedCars::draw`'s and `PlacedObjects::draw`'s render states and their atomic
+  renders, each car part and world object one record (`SceneLighting::drawObjectAtomic` and an object drawn with no
+  lights of its own). With item 9: `PlayLighting::drawHumanPasses` ([#1201](issue:1201)), its renders and what runs
+  inside their pipelines (the `VERTEXALPHA` state in `texture_lod.cpp` and `character_skin.cpp`, the skinning
+  buffers). Never: the start-up and the profiler's queries.
 - **What a record holds.** A draw holds its primitive, every render state set so far with its value as it stands at
   the draw (a raster as its place in the recording's order of first use, its size and format, and a digest of the
   pixels Coney uploaded to it), the vertices and the indices; Im3D also its normals, world matrix and flags. A camera's
@@ -586,6 +588,10 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
   [draw_stream_test.cpp](repo:tests/platform/draw_stream_test.cpp). The world scene
   ([world_draw_stream_test.cpp](repo:tests/platform/world_draw_stream_test.cpp), item 7): two Coney-made textured
   sectors drawn headless by `WorldRenderer` through a camera of its own, with its hash and a check that a fade moves it.
+  The object scene ([object_draw_stream_test.cpp](repo:tests/platform/object_draw_stream_test.cpp), item 8): two
+  Coney-made crates (one tinted and translucent) and a painted car of 26 parts, loaded from a synthetic archive by
+  `PlacedObjects` and `ParkedCars` and drawn headless by `WorldRenderer` among the objects and after the worlds, with
+  its hash and checks that a tint and a paint move it.
 - **Disc frames.** `--draw-hash` prints the last frame's counts and hash ([Running Coney](../guides/running.md)). The
   named frames are run with a window, the world frozen and a fixed size, from the level's first frame of play:
 

@@ -9,6 +9,7 @@
 
 #include "animation/anim_math.h"
 #include "graphics/car_draw.h"
+#include "platform/draw_calls.h"
 #include "platform/level_file.h"
 #include "platform/texture_dictionary.h"
 #include "world/level_object.h"
@@ -123,9 +124,9 @@ void ParkedCars::draw(const std::function<void(rw::Atomic*)>& render, graphics::
         m_drawn = 0;
     }
     // Both passes draw both sides; only the opaque one writes Z, so the glass blends over what is behind it.
-    rw::SetRenderState(rw::ZTESTENABLE, 1);
-    rw::SetRenderState(rw::ZWRITEENABLE, glass ? 0 : 1);
-    rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
+    draw::setRenderState(rw::ZTESTENABLE, 1);
+    draw::setRenderState(rw::ZWRITEENABLE, glass ? 0 : 1);
+    draw::setRenderState(rw::CULLMODE, rw::CULLNONE);
     const std::vector<world_objects::Car>& cars = m_cars.all();
     for (std::size_t i = 0; i < cars.size(); ++i) {
         // The glass pass goes from the end of the list.
@@ -160,8 +161,8 @@ void ParkedCars::draw(const std::function<void(rw::Atomic*)>& render, graphics::
             ++m_drawn;
         }
     }
-    rw::SetRenderState(rw::ZWRITEENABLE, 1);
-    rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
+    draw::setRenderState(rw::ZWRITEENABLE, 1);
+    draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
 }
 
 } // namespace coney::platform

@@ -147,8 +147,8 @@ class SceneLighting {
     // kind the caller's DrawKindScope names; first adds the lighting frame's row of its selection (recordSelection()).
     void renderInRig(rw::Atomic* atomic);
     // Draws `atomic` inside the rig's world, so librw lights it with the rig's lights, with its dual layer
-    // (drawLitAtomic()), through the draw layer while m_routed is set (the world's atomics, item 7 of
-    // docs/engine/renderer.md#order), else on librw directly (the objects and humans, which items 8 and 9 route).
+    // (drawLitAtomic()), through the draw layer while m_routed is set (the world's atomics, the objects' and the cars',
+    // items 7 and 8 of docs/engine/renderer.md#order), else on librw directly (the humans, which item 9 routes).
     void renderLit(rw::Atomic* atomic);
     // Adds the row of the selection useLights() kept to the lighting frame, for `atomic`: its caller from the draw
     // kind, its sphere and the inputs the draw functions pass (docs/research/lighting.md#select).

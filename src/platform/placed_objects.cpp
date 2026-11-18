@@ -8,6 +8,7 @@
 
 #include <rw.h>
 
+#include "platform/draw_calls.h"
 #include "platform/level_file.h"
 #include "world/level_object.h"
 #include "world_objects/object_tasks.h"
@@ -168,7 +169,7 @@ void PlacedObjects::drawOne(const Placed& object, rw::Atomic* atomic, int alpha,
     if (options.render) {
         options.render(atomic);
     } else {
-        atomic->render();
+        draw::renderAtomic(atomic);
     }
     geometry->flags = flags;
     for (rw::int32 i = 0; i < geometry->matList.numMaterials; ++i) {
@@ -178,10 +179,10 @@ void PlacedObjects::drawOne(const Placed& object, rw::Atomic* atomic, int alpha,
 
 void PlacedObjects::draw(const DrawOptions& options) {
     m_drawn = 0;
-    rw::SetRenderState(rw::ZTESTENABLE, 1);
-    rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
-    rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-    rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+    draw::setRenderState(rw::ZTESTENABLE, 1);
+    draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
+    draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+    draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
     // Two passes: the opaque objects with Z writes, then the translucent ones over them (Coney's order: the original
     // draws objects in its instance order).
     for (const bool translucentPass : {false, true}) {
@@ -203,12 +204,12 @@ void PlacedObjects::draw(const DrawOptions& options) {
             if ((object.look.translucent || alpha < 255) != translucentPass) {
                 continue;
             }
-            rw::SetRenderState(rw::ZWRITEENABLE, object.look.translucent ? 0 : 1);
+            draw::setRenderState(rw::ZWRITEENABLE, object.look.translucent ? 0 : 1);
             drawOne(object, level->atomic(), alpha, options);
             ++m_drawn;
         }
     }
-    rw::SetRenderState(rw::ZWRITEENABLE, 1);
+    draw::setRenderState(rw::ZWRITEENABLE, 1);
 }
 
 } // namespace coney::platform
