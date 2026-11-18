@@ -780,6 +780,7 @@ class Fighter {
     void dropLostHold(const FighterInput& input, HumanAnimator& animator);
     // A grab or tackle started on `victim`: the intro plays (the player turning to face it), the victim waits. A grab
     // connects with front clip `connect` (72, or a strong grapple's strike), the rear one 2 on.
+    // @orig 0x0026c548 Grab_Start (unknown)
     void startHold(Holdable& victim, const FighterInput& input, float& heading, bool tackle, int connect,
                    HumanAnimator& animator);
     // The grabber's connecting clip for the side the grab is on; the victim plays the next id.

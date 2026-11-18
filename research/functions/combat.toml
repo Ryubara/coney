@@ -1235,6 +1235,13 @@ name = "Grab_Start"
 page = "combat-grabs.md#grab"
 role = "the grab's intro: 71 (or 70), then 69 and the idle; turns towards the target"
 level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::startHold"
+status = "compared"
+
+[[function.gaps]]
+what = "the AI's intro 70 (Coney always plays 71), 69 chained after the intro, the stance's idle loop under it, the other end hook Grab_OnStartEnd, the 0.01 s blend-out (Coney fades 0.1 s), the push sphere turned off and on and the throw aim's end are not ported"
+relation = "not-ported"
+issue = 684
 
 [[function]]
 address = 0x0026c7e0
