@@ -26,6 +26,7 @@
 #include "gui/global_strings.h"
 #include "movies/movie_mode.h"
 #include "platform/movie_screen.h"
+#include "platform/pixel_texture.h"
 #include "platform/play_level_mode.h"
 #include "platform/render_engine.h"
 #include "scenes/scene_list.h"
@@ -165,7 +166,8 @@ class GameSession {
     std::optional<std::vector<std::string>> m_discMovies;
     std::optional<scenes::SceneList> m_sceneList;
     bool m_sceneListFailed = false;
-    std::optional<RasterMovieScreen> m_movieScreen;
+    std::unique_ptr<movies::MovieScreen>
+        m_movieScreen; // the renderer's own (makeMovieScreen()); null when it draws none
     std::optional<graphics::Font> m_captionFont;
     std::optional<movies::MovieMode> m_movieMode;
     std::optional<LoadingScreen> m_loadingScreen;

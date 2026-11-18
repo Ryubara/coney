@@ -38,7 +38,7 @@ struct UvRect {
 class Texture {
   public:
     virtual ~Texture() = default;
-    Texture() : m_serial(0) {} // stub: the serial comes with the implementation
+    Texture() : m_serial(nextSerial()) {}
     Texture(const Texture&) = delete;
     Texture& operator=(const Texture&) = delete;
     Texture(Texture&&) = delete;

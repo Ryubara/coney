@@ -5,6 +5,7 @@
 #include <span>
 
 #include "graphics/render_device.h"
+#include "graphics/texture_data.h"
 #include "movies/movie_mode.h"
 
 namespace rw {
@@ -18,7 +19,8 @@ namespace coney::platform {
 /// with every frame shown. RenderEngine::drawQuads() draws it like a sprite sheet's texture.
 class MovieTexture final : public graphics::Texture {
   public:
-    MovieTexture() = default;
+    /// A texture sampled with `filter` (a movie's frames: linear); Nearest and MipNearest take the nearest texel.
+    explicit MovieTexture(graphics::TextureFilter filter = graphics::TextureFilter::Linear) : m_filter(filter) {}
     ~MovieTexture() override;
     MovieTexture(const MovieTexture&) = delete;
     MovieTexture& operator=(const MovieTexture&) = delete;
@@ -39,6 +41,7 @@ class MovieTexture final : public graphics::Texture {
     /// Frees the texture and its raster.
     void release();
 
+    graphics::TextureFilter m_filter;
     rw::Texture* m_texture = nullptr;
     int m_width = 0;
     int m_height = 0;

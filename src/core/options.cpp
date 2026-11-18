@@ -52,7 +52,7 @@ constexpr std::string_view kUsage =
     "             [--play-level NAME [--spawn NAME | --checkpoint N] [--start X,Y,Z,H[,D,YAW]]\n"
     "             [--give ITEM,COUNT]...\n"
     "             [--trace FILE] [--script-trace FILE] [--scene NAME] [--camera X,Y,Z,QX,QY,QZ,QW[,FOV]]\n"
-    "             [--freeze-world]] [--sandbox [NAME]]\n"
+    "             [--freeze-world]] [--sandbox [NAME]] [--test-card NAME]\n"
     "             [--assets DIR]\n"
     "             [--event-log FILE] [--pad-pipe] [--trace-humans FILE]\n"
     "             [--ai-player] [--ai-seed N]\n"
@@ -156,6 +156,8 @@ constexpr std::string_view kUsage =
     "                     once, with stand-ins in its roles and the player in his; a test aid\n"
     "  --sandbox [NAME]   fly round a sandbox test world: default (the default), parkour, or a\n"
     "                     .layout file; needs no disc\n"
+    "  --test-card NAME   draw one of Coney's own 2D test cards: shapes, textures or triangles; needs\n"
+    "                     no disc (the software pictures draw them on both renderers)\n"
     "  --assets DIR       the folder of Coney's own assets (sandbox layouts and textures), in place\n"
     "                     of the assets folder beside the executable\n"
     "  --render-references DIR\n"
@@ -179,7 +181,7 @@ constexpr std::string_view kUsage =
     "                     shows the frame as drawn\n"
     "  --show-fps         print the frame and step rates once a second\n"
     "  --renderer gl3|gpu draw with librw's OpenGL 3.3 (gl3, the default) or SDL3's GPU API (gpu:\n"
-    "                     Vulkan, Direct3D 12 or Metal; it only clears and presents so far); unset,\n"
+    "                     Vulkan, Direct3D 12 or Metal; it draws the 2D layers so far); unset,\n"
     "                     the saved Display/Renderer setting outside test mode, but a saved 1 starts\n"
     "                     gl3, with a warning, while the GPU renderer draws no menus\n"
     "  --preset ps2|xbox|enhanced|high\n"
@@ -433,16 +435,31 @@ std::expected<void, Error> checkReferenceRenderer(const Options& options) {
     return {};
 }
 
-// Refuses `--renderer gpu` where it cannot work: part of checkCombinations(). It opens a window of its own and draws
-// nothing yet, so there is no frame to read back.
+// Refuses `--renderer gpu` where it cannot work: part of checkCombinations(). It opens a window of its own, hands no
+// frame to the clip recorder, and the reference renders are GL3's offscreen; a screenshot it takes.
 std::expected<void, Error> checkRenderer(const Options& options) {
     if (options.renderer != RendererKind::Gpu) {
         return {};
     }
-    if (options.headless || !options.loads.empty() || options.screenshotPath.has_value() ||
-        options.recordPath.has_value() || options.renderReferences.has_value()) {
-        return invalidArgument("--renderer gpu opens a window and reads no frame back yet, so it cannot be combined "
-                               "with --headless, --load, --screenshot, --record or --render-references");
+    if (options.headless || !options.loads.empty() || options.recordPath.has_value() ||
+        options.renderReferences.has_value()) {
+        return invalidArgument("--renderer gpu opens a window and records no clip or reference render, so it cannot "
+                               "be combined with --headless, --load, --record or --render-references");
+    }
+    return {};
+}
+
+// Refuses `--test-card` with another mode: part of checkCombinations(). A card is one picture, drawn on its own.
+std::expected<void, Error> checkTestCard(const Options& options) {
+    if (!options.testCard.has_value()) {
+        return {};
+    }
+    if (!options.loads.empty() || options.viewTxd.has_value() || options.viewSheet.has_value() ||
+        options.viewText.has_value() || options.viewWorld.has_value() || options.viewCharacter.has_value() ||
+        options.playLevel.has_value() || options.sandbox.has_value() || options.renderReferences.has_value() ||
+        options.rumble.has_value()) {
+        return invalidArgument("--test-card cannot be combined with --load, the viewers, --play-level, --sandbox, "
+                               "--rumble or --render-references");
     }
     return {};
 }
@@ -573,6 +590,9 @@ std::expected<void, Error> checkCombinations(const Options& options) {
     }
     if (auto sandbox = checkSandbox(options); !sandbox) {
         return sandbox;
+    }
+    if (auto card = checkTestCard(options); !card) {
+        return card;
     }
     if (!options.loads.empty() && !options.discPath.has_value()) {
         return invalidArgument("--load needs --disc to say where the game's files are");
@@ -1048,6 +1068,10 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             }
             const bool named = i + 1 < args.size() && !args[i + 1].empty() && !args[i + 1].starts_with("--");
             options.sandbox = named ? std::string(args[++i]) : std::string(kDefaultSandbox);
+        } else if (arg == "--test-card") {
+            if (auto value = takeValue(args, i, options.testCard, "--test-card", "a card's name"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
         } else if (arg == "--view-character") {
             // The name is optional: without one (the end, or another option next) the viewer shows Rembrandt.
             if (options.viewCharacter.has_value()) {

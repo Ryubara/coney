@@ -506,6 +506,10 @@ std::string_view RenderEngine::gpuDriver() const {
     return m_gpu ? std::string_view(m_gpu->driver()) : std::string_view();
 }
 
+std::string_view RenderEngine::gpuDrawingProblem() const {
+    return m_gpu ? std::string_view(m_gpu->drawingProblem()) : std::string_view();
+}
+
 PresentMode RenderEngine::presentMode() const { return m_gpu ? m_gpu->mode() : PresentMode::Vsync; }
 
 PresentModes RenderEngine::offeredPresentModes() const { return m_gpu ? m_gpu->offered() : PresentModes{}; }
@@ -744,16 +748,22 @@ void RenderEngine::present() {
         draw::showCameraRaster(m_camera, m_vsync ? rw::Raster::FLIPWAITVSYNCH : 0);
 
     } else if (m_gpu) {
-        if (captureThisFrame) {
-            m_capture = std::unexpected(Error{ErrorCode::PlatformFailure, "the GPU renderer reads no frames back yet"});
-        }
-        // Stand-in until the GPU renderer draws (docs/engine/renderer.md#order, item 11): the whole frame is cleared to
-        // the frame's colour (beginFrame()'s logical screen, beginWindowFrame()'s window), with no black border round
-        // the logical screen. A change of vsync or cap is taken here, between frames.
+        // The whole frame description drawn at once (docs/engine/gpu-renderer.md#drawing). A change of vsync or cap is
+        // taken here, between frames.
         m_gpu->choosePresentMode(m_vsync, m_fpsCap);
         CONEY_PERF_ZONE("present.swap");
-        if (m_gpu->clearAndPresent(m_clearColour)) {
+        GpuPresenter::Presented presented = m_gpu->present(m_frame, m_frameSize, captureThisFrame);
+        if (presented.shown) {
             ++m_shown;
+        }
+        if (captureThisFrame) {
+            if (presented.capture && presented.capture->has_value()) {
+                m_capture = saveCapture(std::move(**presented.capture), m_capturePath);
+            } else {
+                m_capture =
+                    std::unexpected(presented.capture ? presented.capture->error()
+                                                      : Error{ErrorCode::PlatformFailure, "no frame read back"});
+            }
         }
     } else if (captureThisFrame) {
         m_capture = std::unexpected(Error{ErrorCode::PlatformFailure, "the headless renderer draws no frames"});
@@ -830,6 +840,14 @@ std::expected<CapturedFrame, Error> RenderEngine::captureBackBuffer(const std::s
     std::vector<std::uint8_t> rgba(bottomUp.size());
     for (std::size_t y = 0; y < height; ++y) {
         std::memcpy(&rgba[y * rowBytes], &bottomUp[(height - 1 - y) * rowBytes], rowBytes);
+    }
+    return saveCapture(std::move(rgba), path);
+}
+
+std::expected<CapturedFrame, Error> RenderEngine::saveCapture(std::vector<std::uint8_t> rgba,
+                                                              const std::string& path) const {
+    if (rgba.size() != static_cast<std::size_t>(m_frameSize.width) * static_cast<std::size_t>(m_frameSize.height) * 4) {
+        return std::unexpected(Error{ErrorCode::PlatformFailure, "the frame read back is not the frame's size"});
     }
     // The screen shows no alpha: blending leaves partial alpha in the frame buffer (a fading atomic), which an image
     // viewer would otherwise composite over its own background.

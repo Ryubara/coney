@@ -40,8 +40,8 @@ enum class RenderBackend : std::uint8_t {
     OpenGl, ///< librw's GL3 device: a window with an OpenGL 3.3 core context (2.1 or GLES as fallbacks), drawn into.
     Null,   ///< librw's NULL device: no window, no GPU, nothing drawn; for CI, tests and console tools.
     /// SDL3's GPU API (docs/engine/renderer.md#migration): a window Coney makes, SDL's GPU device and swapchain, and
-    /// librw on its NULL device for data only, as for Null. Frames are cleared and presented; nothing else is drawn
-    /// yet.
+    /// librw on its NULL device for data only, as for Null. Each frame's 2D passes are drawn (GpuRenderer); the 3D
+    /// scene, which still draws through librw, is not yet.
     Gpu,
 };
 
@@ -70,8 +70,8 @@ void setWindowActivation(bool activate);
 ///
 /// The GPU backend (docs/engine/renderer.md#migration) opens librw exactly as the NULL backend does, for data only, and
 /// makes the window itself through SDL3, with SDL's GPU device and swapchain (GpuPresenter, gpu_presenter.h); from
-/// there on librw's GL3 device is used only by the OpenGL backend. Its frames are cleared to the frame's colour and
-/// presented, and nothing else is drawn in them yet.
+/// there on librw's GL3 device is used only by the OpenGL backend. present() hands it the frame description, whose 2D
+/// passes it draws with Coney's own shaders (docs/engine/gpu-renderer.md#drawing).
 ///
 /// librw keeps its engine in global state, so only one RenderEngine may run at a time; a second start() while one
 /// runs fails at librw's init step. A RenderEngine does not move (librw keeps pointers into it), hence the unique_ptr.
@@ -89,13 +89,19 @@ class RenderEngine final : public graphics::RenderDevice {
 
     /// The backend it runs.
     [[nodiscard]] RenderBackend backend() const { return m_backend; }
-    /// Whether the game's picture is drawn: true for OpenGL only. Textures can be converted for drawing only then; the
-    /// GPU backend shows frames but draws nothing in them yet.
+    /// Whether librw's GL3 device draws the picture: true for OpenGL only. Textures can be converted for librw's
+    /// drawing only then, and the 3D scene, which still draws through librw, is drawn only then.
     [[nodiscard]] bool drawsPixels() const { return m_backend == RenderBackend::OpenGl; }
+    /// Whether the frame description's 2D passes are drawn (the front end, the movies, the HUD): OpenGL and GPU, the
+    /// backends with a window.
+    [[nodiscard]] bool drawsOverlays() const { return m_backend != RenderBackend::Null; }
     /// Whether librw runs its NULL device, reading RenderWare data and drawing nothing: the NULL and GPU backends.
     [[nodiscard]] bool librwDataOnly() const { return m_backend != RenderBackend::OpenGl; }
     /// The GPU backend's SDL driver (`vulkan`, `direct3d12`, `metal`); empty for the others.
     [[nodiscard]] std::string_view gpuDriver() const;
+    /// Why the GPU backend only clears its frames (its 2D drawing could not be made); empty while it draws, and for
+    /// the other backends.
+    [[nodiscard]] std::string_view gpuDrawingProblem() const;
     /// The present mode the GPU backend's swapchain shows frames with (setVsync(), setFpsCap(), applied at the next
     /// present()); Vsync for the others.
     [[nodiscard]] PresentMode presentMode() const;
@@ -295,6 +301,10 @@ class RenderEngine final : public graphics::RenderDevice {
     void tapFrame();
     /// Reads the back buffer, summarises it and writes it as a PNG, for requestCapture().
     [[nodiscard]] std::expected<CapturedFrame, Error> captureBackBuffer(const std::string& path) const;
+    /// Summarises `rgba` (the frame, rows top first) and writes it as a PNG at `path` with alpha 255: the part of a
+    /// capture both windowed backends share.
+    [[nodiscard]] std::expected<CapturedFrame, Error> saveCapture(std::vector<std::uint8_t> rgba,
+                                                                  const std::string& path) const;
     /// Stops librw and, with the OpenGL backend, SDL, if this object started them.
     void shutDown() noexcept;
 

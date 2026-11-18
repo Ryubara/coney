@@ -40,7 +40,9 @@ bool MovieTexture::write(std::span<const std::uint8_t> rgba, int width, int heig
             return false;
         }
         m_texture = rw::Texture::create(raster);
-        m_texture->setFilter(rw::Texture::LINEAR);
+        const bool nearest =
+            m_filter == graphics::TextureFilter::Nearest || m_filter == graphics::TextureFilter::MipNearest;
+        m_texture->setFilter(nearest ? rw::Texture::NEAREST : rw::Texture::LINEAR);
         m_width = width;
         m_height = height;
     }
