@@ -635,8 +635,8 @@ What it says:
 
 [Order](#order) item 16 records this again on the scene table with GPU time, on a quiet machine, and that record
 becomes the baseline `--compare` reads; the figures above are the starting point it replaces. The scene table, the
-GPU time and the comparison are built ([Scenes](../guides/performance.md#scenes)); the recording is not yet (#1383),
-since it needs a machine no other build is using: `coney-tools perf bench --scene all --out
+GPU time and the comparison are built ([Scenes](../guides/performance.md#scenes)); the recording is not yet
+([#1383](issue:1383)), since it needs a machine no other build is using: `coney-tools perf bench --scene all --out
 ../../scratch/perf-baseline` on a quiet one, the table pasted here and the folder kept for `--compare`. Until then
 `--compare` has no folder to read and refuses. The items that draw through GL3 (1 to 10 and 15 to 19) must keep these
 numbers (the *PS2* budget below); the GPU renderer's items are measured against them.
