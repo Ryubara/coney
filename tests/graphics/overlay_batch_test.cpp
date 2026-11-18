@@ -184,3 +184,20 @@ TEST_CASE("the upload cache finds, replaces and drops textures by serial and use
     cache.clear();
     CHECK(cache.size() == 0);
 }
+
+TEST_CASE("the upload cache forgets a texture whose upload failed, so the next frame uploads it again",
+          "[graphics][gpu-renderer]") {
+    // Expected: docs/engine/gpu-renderer.md#textures; a frame whose upload buffer cannot be made or mapped forgets
+    // the textures it meant to upload, so none stays marked as holding pixels it never received.
+    UploadCache<std::unique_ptr<int>> cache;
+    cache.put(7, 3, 1, std::make_unique<int>(70));
+    cache.put(8, 0, 1, std::make_unique<int>(80));
+
+    CHECK(cache.forget(7));
+    CHECK(cache.find(7, 2) == nullptr);
+    CHECK(cache.find(8, 2) != nullptr);
+    CHECK(cache.size() == 1);
+    // A serial it does not keep is nothing to forget.
+    CHECK_FALSE(cache.forget(7));
+    CHECK_FALSE(cache.forget(99));
+}
