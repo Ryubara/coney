@@ -323,6 +323,8 @@ void WorldSet::unloadPart(std::size_t world, std::uint32_t part) {
 std::expected<void, Error> WorldSet::readPart(std::size_t world, std::uint32_t part) {
     CONEY_ASSERT(world < m_worlds.size());
     Loaded& loaded = *m_worlds[world];
+    // Stand-in: no `Sectors<i>` clump is made in the Sector Pool for the part, nor its heap made current around the
+    // reads (librw allocates), so the part's size is not measured from the pool: the budget takes the manifest's.
     const std::string fileName = std::format("{}_ms{}.sec", loaded.state.name(), part);
     auto file = readEntry(m_wad, fileName);
     if (!file) {
@@ -334,7 +336,8 @@ std::expected<void, Error> WorldSet::readPart(std::size_t world, std::uint32_t p
     }
 
     // Its dictionary first, into the lookup, so the atomics' materials find their textures in it (or in any other
-    // loaded dictionary).
+    // loaded dictionary). Coney's choice: it stays in the lookup while the part is loaded, where the original makes it
+    // current and then none.
     Part record;
     if (layout->dictionaryBytes > 0) {
         auto dictionary = readDictionary(*file, layout->dictionaryOffset, layout->dictionaryBytes, m_forDrawing);
@@ -362,6 +365,8 @@ std::expected<void, Error> WorldSet::readPart(std::size_t world, std::uint32_t p
         atomic->unpack();
         // Modulate by the material colour, whose alpha fades the atomic in (World_ReadPart sets flag 0x40).
         atomic->atomic()->geometry->flags |= rw::Geometry::MODULATE;
+        // Stand-in: the atomic keeps librw's render callback, which nothing calls (WorldRenderer draws it), where the
+        // original swaps in a do-nothing one; and its materials' texture check (0x00198190) is not made.
         record.atomics.push_back(std::move(*atomic));
         placed.push_back(entry.streamedIndex);
     }
@@ -375,9 +380,13 @@ std::expected<void, Error> WorldSet::readPart(std::size_t world, std::uint32_t p
 void WorldSet::freePart(std::size_t world, std::uint32_t part) {
     CONEY_ASSERT(world < m_worlds.size());
     Loaded& loaded = *m_worlds[world];
+    // Stand-in: every atomic releases (one thread draws and frees), so the part always frees and nothing is returned,
+    // where the original stops and returns 0 at the first sector its release leaves in a state other than 4.
     for (const std::uint32_t sector : loaded.state.part(part).sectors) {
         loaded.bySector[sector] = nullptr;
     }
+    // Stand-in: no pool heap to make current or lock (librw allocates), and the world's in-flight part is
+    // world::StreamedWorld's to clear.
     // Atomics, then the lookup entry, then the dictionary their materials took textures from.
     Part& record = loaded.parts[part - 1];
     record.atomics.clear();
