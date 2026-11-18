@@ -2,12 +2,15 @@
 #pragma once
 
 #include <cstddef>
+#include <memory>
 #include <span>
 #include <vector>
 
 #include "graphics/frame_description.h"
 #include "graphics/render_device.h"
 #include "graphics/texture_grid.h"
+#include "platform/lit_atomic.h"
+#include "platform/scene_assets.h"
 
 // librw's types, declared rather than included: <rw.h> brings in SDL and the OpenGL loader.
 namespace rw {
@@ -23,17 +26,22 @@ namespace coney::platform {
 /// difference: the motion blur keeps its frame as a bare raster, with no librw texture around it, and its draw binds
 /// the raster and sets the filter as render states; the picture is the same.
 ///
-/// While the 3D scene still goes to librw directly (until items 7 to 10 of docs/engine/renderer.md#order), the
-/// RenderEngine calls drawNew() after each part it adds, so the parts draw in their place among the 3D drawing.
-/// The 2D draws are made with a camera or while the draw layer records (the NULL backend records what it would draw);
-/// the screen passes, which copy the frame, only with a camera.
+/// The 3D draws (the streamed world's sectors, item 7) are drawn as the world drew them before: each mesh's librw
+/// atomic, found in the scene assets, with the draw's states, fade and lights, through drawLitAtomic().
+///
+/// While the rest of the 3D scene still goes to librw directly (until items 8 to 10 of docs/engine/renderer.md#order),
+/// the RenderEngine calls drawNew() after each part it adds, so the parts draw in their place among the 3D drawing.
+/// The 2D and 3D draws are made with a camera or while the draw layer records (the NULL backend records what it would
+/// draw); the screen passes, which copy the frame, only with a camera.
 class Gl3Renderer {
   public:
     /// What a frame is drawn into: the RenderEngine's camera (null with the NULL and GPU backends: the GPU
-    /// backend has no librw camera, so no screen pass runs for it) and its frame's size.
+    /// backend has no librw camera, so no screen pass runs for it) and its frame's size; and the scene assets the 3D
+    /// draws' meshes are found in (null: no 3D draw is made).
     struct Target {
         rw::Camera* camera = nullptr;
         graphics::Extent frameSize;
+        const SceneAssets* assets = nullptr;
     };
 
     Gl3Renderer() = default;
@@ -58,7 +66,8 @@ class Gl3Renderer {
     /// Drops the copies made again for each pass at the view's size (the line blend's, the blur pulse's), when the
     /// window's buffers are remade.
     void releaseViewCopies();
-    /// Drops every copy, the kept ones too, before librw stops (its raster count must then be 0).
+    /// Drops every copy, the kept ones too, and the 3D draws' lights, before librw stops (its raster count must then
+    /// be 0).
     void releaseAll();
 
   private:
@@ -75,6 +84,10 @@ class Gl3Renderer {
     void drawOverlay(const graphics::FrameDescription& frame, const graphics::Draw2d& draw, const Target& target);
     // One screen pass.
     void drawScreenPass(const graphics::ScreenPass& pass, const Target& target);
+    // One 3D draw of `frame`: a streamed sector's atomic as WorldRenderer::renderSectorAtomic records it (the port of
+    // World_RenderSectorAtomic), its fade written into its materials where it changes, lit by the draw's lights, then
+    // its dual layer.
+    void drawScene(const graphics::FrameDescription& frame, const graphics::Draw3d& draw, const Target& target);
     /// The blur pulse's drawing (device slot `+0x108`, docs/research/graphics.md#blur-pulse).
     /// @orig 0x00193d80 RwDevice_BlurPass (unknown)
     void drawBlurPulse(const graphics::BlurPulse& blur, const graphics::ScreenRect& viewport, const Target& target);
@@ -105,6 +118,7 @@ class Gl3Renderer {
     rw::Raster* m_halfRaster = nullptr;
     std::vector<KeptCopy> m_kept;
     graphics::ScreenCopyId m_nextCopy = 1;
+    std::unique_ptr<LightRig> m_lights; // the 3D draws' lights, made with the first one
 };
 
 } // namespace coney::platform

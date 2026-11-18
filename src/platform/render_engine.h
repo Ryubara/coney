@@ -264,6 +264,11 @@ class RenderEngine final : public graphics::RenderDevice {
     /// The scene assets, to read.
     [[nodiscard]] const SceneAssets& sceneAssets() const { return m_assets; }
 
+    /// Adds the 3D draw `draw`, lit by `lights`, to the frame description with its meshes' material textures from the
+    /// scene assets, and has the GL3 renderer draw it at once, in its place among the 3D drawing that still goes to
+    /// librw directly. Only between beginFrame() and present() (checked by CONEY_ASSERT).
+    void drawScene(const graphics::Draw3d& draw, std::span<const graphics::SceneLight> lights);
+
   private:
     // Only start() makes one, which then fills it in as librw comes up.
     RenderEngine(RenderBackend backend, const WindowDesc& desc);

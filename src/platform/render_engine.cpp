@@ -610,7 +610,13 @@ void RenderEngine::drawTexturedQuads(const graphics::Texture* texture, std::span
     drawDescribed();
 }
 
-void RenderEngine::drawDescribed() { m_gl3.drawNew(m_frame, Gl3Renderer::Target{m_camera, m_frameSize}); }
+void RenderEngine::drawDescribed() { m_gl3.drawNew(m_frame, Gl3Renderer::Target{m_camera, m_frameSize, &m_assets}); }
+
+void RenderEngine::drawScene(const graphics::Draw3d& draw, std::span<const graphics::SceneLight> lights) {
+    CONEY_ASSERT(m_inFrame);
+    m_frame.addSceneDraw(draw, lights, m_assets.materialTextures(draw.mesh), m_assets.materialTextures(draw.dualLayer));
+    drawDescribed();
+}
 
 void RenderEngine::startFrame(graphics::Rgba clear, const graphics::FrameStart& start) {
     CONEY_ASSERT(!m_inFrame);

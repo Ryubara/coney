@@ -1,9 +1,11 @@
 # Mesh and texture formats
 
 Coney's own mesh and texture data: what both renderers draw from, converted once from what librw reads and held by
-id. It is item 6 of [the renderer's migration](renderer.md#order). Nothing draws from it yet: the GL3 renderer keeps
-librw's instancing, and the frame description (items 7 to 10) and the GPU renderer (items 13 and 14) are its first
-users. All of it is Coney's own.
+id. It is item 6 of [the renderer's migration](renderer.md#order). The streamed world's sectors and their textures
+are held in it while they are loaded, and the [frame description](renderer.md#frame-description) names them by id
+(item 7; objects, cars and humans follow with items 8 and 9). Nothing draws its data yet: the GL3 renderer keeps
+librw's instancing, drawing each mesh's librw atomic, and the GPU renderer (items 13 and 14) will be the first to
+upload it. All of it is Coney's own.
 
 ## The parts {#parts}
 
@@ -13,6 +15,7 @@ users. All of it is Coney's own.
 | Texture (`graphics::TextureData`) | The name, a format (`Rgba8` only: every PS2 raster is 4- or 8-bit with a 32-bit palette, [PS2 raster](../research/formats/renderware.md#ps2-raster); BC1 to BC3 join with the Xbox build's DXT rasters), every mip level, the sampler (RenderWare's filter and addressing) and, for a PS2 raster, the GS level of detail (`graphics::TextureLod`) | `src/graphics/texture_data.h` |
 | Store (`graphics::AssetStore`) | Meshes and textures by `MeshId` and `TextureId`: counted up from 1 and never handed out twice, so a stale id finds nothing. It takes only data that holds together (`validateMesh`, `validateTexture`), so a renderer uploads what it finds without checking it again. One thread; the loader thread (item 43) decides how it is shared | `src/graphics/asset_store.h` |
 | Conversion | `platform::meshFromRw` reads plain `rw::Geometry` (world atomics after `WorldAtomic::unpack()`; characters with their `SkinVertexData`); `platform::textureFromRw` reads a texture's raster on either backend, the headless one included | `src/platform/asset_convert.h` |
+| Scene assets (`platform::SceneAssets`) | One store per `RenderEngine`, with the librw atomic each mesh came from (which the GL3 renderer draws) and the id of each material's texture, a texture known by the librw texture it was converted from. `WorldSet` fills it: a dictionary's textures as it is read, before the GL3 path converts its rasters, then each sector's atomic and dual layer; it empties it again as parts and worlds go ([The frame description](renderer.md#frame-description)) | `src/platform/scene_assets.h` |
 | Hashes | `hashMesh`, `hashTexture`: 64-bit FNV-1a over every field, floats by their bits, so the disc check prints hashes in place of data | `src/graphics/asset_hash.h` |
 
 ## Reading PS2 rasters {#ps2-rasters}

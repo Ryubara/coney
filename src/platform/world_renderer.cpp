@@ -59,6 +59,18 @@ void replaceCamera(rw::Camera* camera, const WorldView& view, world::Vec3 positi
     rw::engine->currentWorld = lights;
 }
 
+// The frame description's alpha test for librw's ALPHATESTFUNC `value`.
+graphics::AlphaTest sceneAlphaTest(rw::uint32 value) {
+    switch (value) {
+    case rw::ALPHAGREATEREQUAL:
+        return graphics::AlphaTest::GreaterEqual;
+    case rw::ALPHALESS:
+        return graphics::AlphaTest::Less;
+    default:
+        return graphics::AlphaTest::Always;
+    }
+}
+
 // The atomic of a level object's part, or null.
 rw::Atomic* atomicOf(const chunk::LoadedObject* object) { return levelAtomic(object); }
 
@@ -134,9 +146,27 @@ rw::Camera* WorldRenderer::recordingCamera() {
     return m_recordingCamera;
 }
 
-void WorldRenderer::renderSectorAtomic(rw::Atomic* atomic, std::uint64_t fadeEndMs, std::uint64_t nowMs) const {
-    // Every material's alpha follows the fade, written only when it changes, as the original does.
+void WorldRenderer::renderSectorAtomic(RenderEngine& engine, rw::Atomic* atomic, const WorldSet::SectorMesh* mesh,
+                                       const graphics::SceneStates& states, std::uint64_t fadeEndMs,
+                                       std::uint64_t nowMs) const {
     const std::uint8_t alpha = world::fadeInAlpha(fadeEndMs, nowMs);
+    // The frame description's draw: the meshes by id, where the atomic is, its fade, the world pass's states and the
+    // lights the light manager selects for its sphere; the GL3 renderer writes the fade and draws it.
+    if (mesh != nullptr && mesh->mesh.valid() && !lighting().meshViewsOn()) {
+        const rw::Matrix* ltm = atomic->getFrame()->getLTM();
+        const auto axis = [](const rw::V3d& v) { return std::array<float, 3>{v.x, v.y, v.z}; };
+        graphics::Draw3d draw;
+        draw.mesh = mesh->mesh;
+        draw.dualLayer = mesh->dualLayer;
+        draw.transform = graphics::Transform3d{
+            .right = axis(ltm->right), .up = axis(ltm->up), .at = axis(ltm->at), .position = axis(ltm->pos)};
+        draw.material = graphics::Material3d{.fade = alpha, .distanceLevels = true};
+        draw.states = states;
+        const std::vector<graphics::SceneLight> lights = lighting().worldLights(atomic);
+        engine.drawScene(draw, lights);
+        return;
+    }
+    // Every material's alpha follows the fade, written only when it changes, as the original does.
     rw::Geometry* geometry = atomic->geometry;
     for (rw::int32 i = 0; i < geometry->matList.numMaterials; ++i) {
         rw::Material* material = geometry->matList.materials[i];
@@ -206,7 +236,10 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
         draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
     }
 
-    // 6. The `s` world. 7. The objects, when there are any. 8. The `d` world, the same way as the `s` world.
+    // 6. The `s` world. 7. The objects, when there are any. 8. The `d` world, the same way as the `s` world. The
+    // sectors' draws carry the world pass's states, with the alpha test as it stands at each.
+    graphics::SceneStates states;
+    states.fogColour = fogColour;
     const std::span<world::StreamedWorld* const> worlds = set.worlds();
     const world::ViewFrustum frustum(view.pose, view.halfWidth, view.halfHeight, view.nearClip, view.drawDistance);
     for (std::size_t w = 0; w < worlds.size(); ++w) {
@@ -224,7 +257,8 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
         for (const std::uint32_t sector : worlds[w]->collectSectorsIn(view.pose.position, frustum)) {
 
             if (rw::Atomic* atomic = set.atomic(w, sector); atomic != nullptr) {
-                renderSectorAtomic(atomic, sectors[sector].fadeEndMs, nowMs);
+                states.alphaTest = sceneAlphaTest(draw::getRenderState(rw::ALPHATESTFUNC));
+                renderSectorAtomic(engine, atomic, set.sectorMesh(w, sector), states, sectors[sector].fadeEndMs, nowMs);
                 ++m_drawn;
             }
         }

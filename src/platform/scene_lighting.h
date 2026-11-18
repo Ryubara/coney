@@ -6,6 +6,7 @@
 #include <span>
 #include <vector>
 
+#include "graphics/frame_description.h"
 #include "graphics/human_lighting.h"
 #include "graphics/level_lighting.h"
 #include "graphics/light_manager.h"
@@ -60,6 +61,15 @@ class SceneLighting {
     /// Draws a streamed sector's atomic with the world's lights (list A and the world's point lights it overlaps).
     /// @orig 0x00411990 World_RenderSectorAtomic (WorldPS2.cpp)
     void drawWorldAtomic(rw::Atomic* atomic);
+    /// The lights a streamed sector's atomic is drawn with (list A and the world's point lights it overlaps), by value,
+    /// as drawWorldAtomic() would put them in librw's world, with the lighting lab's layers applied: for the frame
+    /// description's draw of the sector (docs/engine/renderer.md#frame-description). Counts the atomic as drawn and
+    /// adds the lighting frame's row of its selection, as drawWorldAtomic() does.
+    [[nodiscard]] std::vector<graphics::SceneLight> worldLights(rw::Atomic* atomic);
+    /// Whether the debug tools' mesh views are set (setMeshViews()): they decide per atomic what is drawn, so the world
+    /// renderer then draws its sectors through drawWorldAtomic().
+    /// @coney-only the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views); the original has none
+    [[nodiscard]] bool meshViewsOn() const { return m_meshViews != nullptr; }
     /// Draws the background's atomics with the world's ambient and directional lights only.
     void drawBackgroundAtomic(rw::Atomic* atomic);
     /// Draws a human's atomic: the objects' lights for his squared distance to the camera, and the point lights his
@@ -136,14 +146,15 @@ class SceneLighting {
     // Draws `atomic` inside the rig's world (renderLit()), or through the mesh views' hook while one is set, as the
     // kind the caller's DrawKindScope names; first adds the lighting frame's row of its selection (recordSelection()).
     void renderInRig(rw::Atomic* atomic);
-    // Draws `atomic` inside the rig's world, so librw lights it with the rig's lights, with its dual layer.
+    // Draws `atomic` inside the rig's world, so librw lights it with the rig's lights, with its dual layer
+    // (drawLitAtomic()), through the draw layer while m_routed is set (the world's atomics, item 7 of
+    // docs/engine/renderer.md#order), else on librw directly (the objects and humans, which items 8 and 9 route).
     void renderLit(rw::Atomic* atomic);
     // Adds the row of the selection useLights() kept to the lighting frame, for `atomic`: its caller from the draw
     // kind, its sphere and the inputs the draw functions pass (docs/research/lighting.md#select).
     void recordSelection(rw::Atomic* atomic);
-    // Renders `atomic` through the draw layer while m_routed is set (the world's atomics, item 7 of
-    // docs/engine/renderer.md#order), else on librw directly (the objects and humans, which items 8 and 9 route).
-    void renderAtomic(rw::Atomic* atomic) const;
+    // The light record `index` as the rig draws it: its type, the colour the lab's layers leave, its place.
+    [[nodiscard]] graphics::SceneLight sceneLightOf(std::uint16_t index) const;
     // The librw light that mirrors record `index`, made on first use with the record's type.
     rw::Light* mirror(std::uint16_t index);
 

@@ -120,9 +120,13 @@ class WorldRenderer {
     void renderBackground(rw::Camera* camera, const world::LevelObject& level, const WorldView& view,
                           graphics::Rgba fogColour, float pendingDistance, std::uint64_t nowMs) const;
 
-    /// Fades one sector's atomic in by its material colours' alpha, then draws it with the world's lights.
+    /// Fades one sector's atomic in by its material colours' alpha and lights it with the world's lights: recorded
+    /// into the frame description as a 3D draw of `mesh` (its meshes by id, docs/engine/renderer.md#frame-description)
+    /// in the world pass's `states`, which the GL3 renderer draws at once; drawn through SceneLighting as before when
+    /// the sector has no mesh id or the debug tools' mesh views are on.
     /// @orig 0x00411990 World_RenderSectorAtomic (WorldPS2.cpp)
-    void renderSectorAtomic(rw::Atomic* atomic, std::uint64_t fadeEndMs, std::uint64_t nowMs) const;
+    void renderSectorAtomic(RenderEngine& engine, rw::Atomic* atomic, const WorldSet::SectorMesh* mesh,
+                            const graphics::SceneStates& states, std::uint64_t fadeEndMs, std::uint64_t nowMs) const;
 
     /// The camera a frame is recorded through on the NULL backend, which has none (made on first use, no buffers).
     /// @coney-only the draw-stream hashes' synthetic scenes (docs/engine/renderer.md#comparing)

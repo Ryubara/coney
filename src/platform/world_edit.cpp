@@ -201,6 +201,8 @@ void WorldEditor::recutReread(WorldSet& worlds) {
             (void)atomic->cut(
                 debug::trianglesInBox(mesh.positions, mesh.triangles, m_edits.cuts[c].box, m_edits.cuts[c].rule));
         }
+        // The frame description names the sector's mesh as the cuts left it.
+        worlds.refreshMesh(known.world, known.sector);
         known.atomic = atomic->atomic();
         known.triangles = atomic->atomic()->geometry->numTriangles;
         ++m_recut;
@@ -226,6 +228,9 @@ void WorldEditor::makeCut(std::size_t index, WorldSet& worlds, raycast::Collisio
         const std::vector<std::uint8_t> take = debug::trianglesInBox(mesh.positions, mesh.triangles, cut.box, cut.rule);
         std::optional<WorldAtomic> piece = atomic->cut(take);
         rememberCut(w, k, *atomic->atomic());
+        if (piece) {
+            worlds.refreshMesh(w, k); // the frame description names the sector's mesh as the cut left it
+        }
         if (!piece) {
             continue;
         }
