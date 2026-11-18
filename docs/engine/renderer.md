@@ -625,7 +625,9 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
   heap pointer and gaps, which made two runs differ. Item 7's, the same after both its commits: `level99-street` 48
   records (23 atomic draws), `0xe25af3f2c222b401`; `level95-hub` 47 (29), `0x996fcc94058f3360`; their screenshots
   matched the base's pixel for pixel. `level95-hub`'s screenshot is black in every build (base included), so only its
-  draw-stream hash covers that frame.
+  draw-stream hash covers that frame. Item 8's, the same after both its commits, the objects' and cars' draws now
+  recorded: `level99-street` 132 records (107 atomic draws), `0x3f33251f6811e9d6`; `level95-hub` 60 (42),
+  `0x87ef01e331e744cb`; their screenshots again matched the base's pixel for pixel.
 - **The grid across systems** is the open question this item leaves to CI: the expected hashes were recorded on
   Windows, and the first CI run on Linux and macOS shows whether they hold. If one differs, the fallback grid is 1/256
   of a unit for positions and texture coordinates (`kDrawGridSteps`) with colours kept at 8 bits, and the expected
