@@ -551,24 +551,31 @@ void Gangs::setTactic(int id, std::unique_ptr<Tactic> tactic) {
 }
 
 void Gangs::update(std::uint64_t nowMs) {
+    // Coney stand-in: the debug build's check that player 1 stands on the path data, with its warning text, is left
+    // out.
     m_nowMs = nowMs;
     // A new update: the brains that follow may scan again.
     m_scans.beginUpdate();
     // The turn moves on: this update's fifth of the gangs updates its bounds.
     m_boundsTurn = m_boundsTurn + 1 >= kBoundsTurns ? 0 : m_boundsTurn + 1;
     for (Gang& gang : m_gangs) {
+        // Coney stand-in: an exiting gang with no living member is freed by ScriptedStory (its exit callback), not
+        // here.
         if (!gang.m_inUse) {
             continue;
         }
-        // Each gang's tactic (Gang_CachePlayerInfo runs it), then its bounds when its turn has come.
+        // Each gang's tactic, then its bounds when its turn has come. Coney stand-in: of Gang_CachePlayerInfo only the
+        // tactic's update is built (the player cache, crime level, wanted state and spawners are not; #645).
         if (!gang.m_members.empty() && gang.m_tactic != nullptr) {
             gang.processTactic();
         }
         if (gang.m_id % kBoundsTurns == m_boundsTurn) {
             gang.updateBounds();
+            // Not built here: the return to calm, the neutral rule and the idle flag of this step (#1442).
         }
     }
-    // The tactics replaced since the last update are freed (`0x00306630`).
+    // Coney's choice: the tactics replaced since the last update are freed once after the loop, where the original
+    // calls the same freeing (`0x00306630`) at each gang. The truce ends when read past its end (Gangs::truce()).
     m_retired.clear();
 }
 
