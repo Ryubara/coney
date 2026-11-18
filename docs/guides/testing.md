@@ -112,6 +112,18 @@ Before that, `coney.plays_level` decoded the whole 95-second level99 intro movie
 walked through the intro scene with the player held. It took about 10 seconds on a quiet machine and over its
 60-second timeout when several builds ran at once.
 
+### A window test does not wait for the machine's input devices {#device-scan}
+
+On Windows, SDL's video starts a thread that asks every keyboard and mouse HID device for its name, and the video's quit
+waits for that thread. A test that starts and stops the renderer several times (`coney.frame_copies_upright` does so
+about eight times) therefore waits for the machine's slowest device at each quit: measured with 16 busy-loop processes
+running, 40 starts and stops of the video took 17 s with the scan and 2.4 s without it, and a device that never answers
+holds the quit for good. That is what made the test time out at its old 60 s limit in a full local check (#1365).
+`RenderEngine::start` turns the scan off for a hidden window (`WindowDesc::hidden`, which every test window is), and
+test code that starts SDL's video itself calls `setDeviceHotplugScan(false)` first and `true` after
+(`src/platform/render_engine.h`); `device_hotplug_scan_test.cpp` and `frame_copy_check.cpp` check it. A window a person
+plays keeps the scan.
+
 ### Python tests do not depend on the shell {#python-environment}
 
 A Python test gives the same answer in a task's shell (`CONEY_TASK` and `VIRTUAL_ENV` set), inside an agent tool
