@@ -401,7 +401,9 @@ releases them all); ids come from slots never used first, so a release changes n
 used. In a session they stay retired, as the removals' acknowledgements are not built yet; a human that finds no free
 slot is left out of the snapshots rather than stopping the game. Humans are told apart by address, so a human removed
 and another made at the same address in one step would keep the old one's id. Nothing checks that a level never does
-this; the words sent would still be right, only the id would carry the old human's history.
+this; the words sent would still be right, only the id would carry the old human's history. The `GameHumans` belong to
+the run's `NetGame`, which `coney` opens before its play modes and its session, so it outlives every mode that
+captures into it.
 
 ### The state digest {#digest}
 
@@ -488,7 +490,8 @@ draws against what the server had over a bad link ([The client's world](client-w
 InputCommands' and InputTiming's bytes; `tests/net/state_digest_test.cpp` covers the digest (pinned, in id order,
 moved by any change), the first difference, the digest lines and their comparison; `tests/net/game_humans_test.cpp`
 reads synthetic humans' state and ids from their brains; `tests/net/session_record_test.cpp` covers the record's lines
-and the replay; `net_play_test.cpp` also checks the host's snapshots of its game's humans against the guest's digests;
+and the replay; `tests/platform/net_game_test.cpp` covers `NetGame`'s refusals, its replay of port 2, its record
+lines and its notes; `net_play_test.cpp` also checks the host's snapshots of its game's humans against the guest's digests;
 the [two-process checks](#two-processes) run `coney` itself;
 `tests/gamemodes/game_mode_stack_test.cpp` checks that `beforeStep` comes before the pads are read;
 `tests/debug/net_page_test.cpp` drives the Network page over a fake

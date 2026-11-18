@@ -168,6 +168,15 @@ int main(int argc, char** argv) {
     coney::gui::GlobalStrings strings;
     coney::world::SectorBudget sectorBudget(coney::world::kSectorPoolSize);
     coney::audio::ObjectSounds objectSounds;
+    // Network play's view of the game: the humans a host's snapshots send (docs/guides/multiplayer.md#digest). The
+    // release build takes none of its files' options, so it opens none.
+    // Opened before the session, whose play modes share its humans, so that it outlives them.
+    auto netGameOpened = coney::platform::NetGame::open(*options);
+    if (!netGameOpened) {
+        logError(netGameOpened.error().message);
+        return 1;
+    }
+    coney::platform::NetGame& netGame = **netGameOpened;
     std::optional<coney::platform::GameSession> session;
     if (wad) {
         session.emplace(renderer, modes, *wad, chunkHandlers, sectorBudget, strings, objectSounds,
@@ -198,14 +207,6 @@ int main(int argc, char** argv) {
             logWarning(std::format("{}; running without pads", started.error().message));
         }
     }
-    // Network play's view of the game: the humans a host's snapshots send (docs/guides/multiplayer.md#digest). The
-    // release build takes none of its files' options, so it opens none.
-    auto netGameOpened = coney::platform::NetGame::open(*options);
-    if (!netGameOpened) {
-        logError(netGameOpened.error().message);
-        return 1;
-    }
-    coney::platform::NetGame& netGame = **netGameOpened;
     if (session) {
         session->setNetHumans(&netGame.humans());
     }

@@ -512,6 +512,15 @@ int main(int argc, char** argv) {
         }
         worldEdits = std::move(*loaded);
     }
+    // Network play's view of the game, and the files that prove it (`--digest`, `--digest-net`, `--net-record`,
+    // `--net-replay`; docs/guides/multiplayer.md#digest), opened before the first level loads, and before
+    // the play modes and the session that share its humans, so that it outlives them.
+    auto netGameOpened = coney::platform::NetGame::open(*options);
+    if (!netGameOpened) {
+        logError(netGameOpened.error().message);
+        return 1;
+    }
+    coney::platform::NetGame& netGame = **netGameOpened;
     std::unique_ptr<coney::platform::WorldViewerMode> worldViewer;
     std::unique_ptr<coney::platform::CharacterViewerMode> characterViewer;
     std::unique_ptr<coney::platform::PlayLevelMode> playLevel;
@@ -537,14 +546,6 @@ int main(int argc, char** argv) {
         }
         humansTrace = std::move(*opened);
     }
-    // Network play's view of the game, and the files that prove it (`--digest`, `--digest-net`, `--net-record`,
-    // `--net-replay`; docs/guides/multiplayer.md#digest), opened before the first level loads.
-    auto netGameOpened = coney::platform::NetGame::open(*options);
-    if (!netGameOpened) {
-        logError(netGameOpened.error().message);
-        return 1;
-    }
-    coney::platform::NetGame& netGame = **netGameOpened;
     const auto makeSession = [&]() -> coney::platform::GameSession& {
         return session.emplace(renderer, modes, *wad, chunkHandlers, sectorBudget, strings, objectSounds,
                                sessionSettings, logText);
