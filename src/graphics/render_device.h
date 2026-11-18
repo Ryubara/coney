@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <atomic>
 #include <cstdint>
 #include <span>
 
@@ -37,7 +38,7 @@ struct UvRect {
 class Texture {
   public:
     virtual ~Texture() = default;
-    Texture() = default;
+    Texture() : m_serial(0) {} // stub: the serial comes with the implementation
     Texture(const Texture&) = delete;
     Texture& operator=(const Texture&) = delete;
     Texture(Texture&&) = delete;
@@ -47,6 +48,19 @@ class Texture {
     [[nodiscard]] virtual int width() const = 0;
     /// Height of the texture in texels.
     [[nodiscard]] virtual int height() const = 0;
+
+    /// A number no other texture of the run has had, from 1 up: a renderer that keeps its own copy of a texture (the
+    /// GPU renderer's upload) finds it by this, never by the texture's address, which a later texture may reuse.
+    [[nodiscard]] std::uint64_t serial() const { return m_serial; }
+
+  private:
+    // The next serial; textures may be made on any thread (the loader's, later).
+    static std::uint64_t nextSerial() {
+        static std::atomic<std::uint64_t> next{1};
+        return next.fetch_add(1, std::memory_order_relaxed);
+    }
+
+    std::uint64_t m_serial;
 };
 
 /// One textured rectangle of a 2D pass, in the logical screen's pixels (graphics/screen.h).

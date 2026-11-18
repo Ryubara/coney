@@ -169,6 +169,10 @@ struct Options {
     /// a `.layout` file; kDefaultSandbox when given without one. Needs no disc; cannot be combined with `--load`, the
     /// viewers or `--play-level`.
     std::optional<std::string> sandbox;
+    /// `--test-card`: one of Coney's own 2D test cards to draw (`shapes`, `textures`, `triangles`;
+    /// platform/test_card_mode.h), for the software pictures. Needs no disc; cannot be combined with `--load`, the
+    /// viewers, `--play-level`, `--sandbox` or `--render-references`.
+    std::optional<std::string> testCard;
     /// `--spawn`: the spawn point of a sandbox layout the player starts at (`--play-level sandbox:NAME`); the layout's
     /// first when unset. Requires playLevel to name a sandbox.
     std::optional<std::string> spawn;
