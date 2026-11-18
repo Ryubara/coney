@@ -95,7 +95,7 @@ void PmScreen::enter(ScreenFlowController& /*flow*/) {
 int PmScreen::update() {
     const GuiFrame& frame = m_shared.frame;
     int result = poll();
-    if (result == kStay && frame.pad != nullptr && !faded()) {
+    if (result == kStay && frame.pad != nullptr && !inputPaused()) {
         if (const std::optional<MenuCommand> command = m_shared.input.dispatch(*frame.pad, frame.timeMs)) {
             result = handle(*command);
         }
@@ -104,8 +104,6 @@ int PmScreen::update() {
     return result;
 }
 
-// Coney's choice: one test for every screen, a fade running or a level not 0; some of the original's handlers test the
-// level alone (docs/research/frontend.md#q-pm-fade-gate).
 bool PmScreen::faded() const {
     return m_shared.fade != nullptr && (m_shared.fade->running() || m_shared.fade->level() != 0.0F);
 }

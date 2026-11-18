@@ -98,15 +98,16 @@ class Ps2MemoryCard {
 
 /// Reads a single-save export in the PSU format (EMS and uLaunchELF's `.psu`, mymc's export): the folder's directory
 /// entry, its "." and ".." entries, then each file's entry followed by its bytes padded to 1,024. Fails with
-/// ErrorCode::Invalid when the first entry is not a folder's or a file's length runs past the export, and
+/// ErrorCode::Invalid when it does not start as looksLikePsu() says or a file's length runs past the export, and
 /// ErrorCode::Truncated when it ends early.
 ///
 /// Research: docs/research/save.md#import-containers
 /// @coney-only reads a card tool's export format for the importer
 [[nodiscard]] std::expected<Ps2SaveFolder, Error> readPsuExport(std::span<const std::byte> bytes);
 
-/// Whether `bytes` could be a PSU export: a whole number of 512-byte entries at least, the first a folder's entry that
-/// exists, with "." as the second.
+/// Whether `bytes` could be a PSU export, by the rule readPsuExport() reads by: it starts with a save folder's entry
+/// that exists and then that folder's "." entry. The size need not be whole entries: the last file's padding may be
+/// left out.
 /// @coney-only recognises a card tool's export format for the importer
 [[nodiscard]] bool looksLikePsu(std::span<const std::byte> bytes);
 

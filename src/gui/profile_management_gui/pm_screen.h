@@ -100,6 +100,8 @@ class PmScreen : public ScreenFlowState {
 
     /// Whether input waits for the screen fade (running, or its level not 0).
     [[nodiscard]] bool faded() const;
+    /// Whether menu commands wait this frame: faded() unless the screen's handler tests the fade otherwise.
+    [[nodiscard]] virtual bool inputPaused() const { return faded(); }
     /// Plays front-end sound cue `cue`, if the profile manager has a way to.
     void playSound(int cue) const;
     /// Calls the Lua function `function` with `args`, if the profile manager has a way to.

@@ -1033,15 +1033,10 @@ status = "compared"
 address = 0x0020c588
 name = "PM_Profile_OnCommand"
 page = "frontend.md#fn-pm-profile"
-role = "clears delete mode; item 0 result 0 (`PM_Load`), 1 result 1 (`PM_Create`), 2 delete mode and result 2, 3 Lua Menu.reloadProfiles; ignored while a fade runs"
+role = "clears delete mode; item 0 result 0 (`PM_Load`), 1 result 1 (`PM_Create`), 2 delete mode and result 2, 3 Lua Menu.reloadProfiles; ignored while the fade level (`+0x1d8`) is not 0 (a fade still at level 0 does not stop it)"
 level = "confirmed-code"
 coney = "src/gui/profile_management_gui/pm_profile_screens.h:PmProfile::accept"
 status = "compared"
-
-[[function.gaps]]
-what = "input waits while a fade runs as well as while its level is not 0; the original tests the level alone"
-relation = "stand-in"
-question = "frontend.md#q-pm-fade-gate"
 
 [[function]]
 address = 0x0020c8d0

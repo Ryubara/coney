@@ -111,9 +111,14 @@ void PmProfile::setUp() {
     m_choices.set(std::move(items));
 }
 
-void PmProfile::addImport(std::vector<PmChoices::Item>& items) const {
+void PmProfile::addImport(std::vector<PmChoices::Item>& items) {
     if (PmImport::offered(m_shared)) {
         items.push_back({std::string(PmImport::kImportText), kImport});
+    }
+    // The original's places stop at four rows; a fifth goes one row pitch higher.
+    if (items.size() > 4) {
+        m_titleY = pm_look::titleY(4) - pm_look::kRowPitch;
+        m_gridY = pm_look::gridY(4) - pm_look::kRowPitch;
     }
 }
 
@@ -138,6 +143,8 @@ int PmProfile::accept(int code) {
         return kStay;
     }
 }
+
+bool PmProfile::inputPaused() const { return m_shared.fade != nullptr && m_shared.fade->level() != 0.0F; }
 
 // PM_Load
 

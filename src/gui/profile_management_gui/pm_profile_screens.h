@@ -87,11 +87,15 @@ class PmProfile final : public PmListScreen {
     void setUp() override;
     /// @orig 0x0020c588 PM_Profile::HandleCommand (PM_Profile.cpp)
     int accept(int code) override;
+    /// The handler's fade test: the fade level alone (`+0x1d8`), so a press counts while a fade is still at level 0.
+    /// @orig 0x0020c588 PM_Profile::HandleCommand (PM_Profile.cpp)
+    [[nodiscard]] bool inputPaused() const override;
 
   private:
-    // Adds Coney's IMPORT PROFILE item when there is something to import.
+    // Adds Coney's IMPORT PROFILE item when there is something to import, and with it a fifth row: the title and grid
+    // one row pitch above the four-row places, so the last row ends where a four-row grid's does.
     // @coney-only the import entry (docs/research/frontend.md#pm-import)
-    void addImport(std::vector<PmChoices::Item>& items) const;
+    void addImport(std::vector<PmChoices::Item>& items);
 };
 
 /// PM_Load, choose a profile: title `0x88` (or `0x7e` in delete mode) and one item per used slot (its name, code = the

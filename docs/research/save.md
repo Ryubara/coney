@@ -132,10 +132,14 @@ unlocked (`0x00424540`), `+0xcc` loads a slot into the game state (`Profile_Read
 
 ### The containers players have {#import-containers}
 
-None of this is the game's code, which reaches the card through Sony's `libmc` ([The card library](#card-library)):
-the PCSX2 card file and the file system below are confirmed (runtime), run r-20261118-ps2-card-save, from a card the
-game formatted and saved to in PCSX2 and read back by a separate script; the other containers are inferred from the
-formats as the open-source card tools (mymc, uLaunchELF) and PCSX2 read and write them. A player's save of the game is
+None of this is the game's code, which reaches the card through Sony's `libmc` ([The card library](#card-library)).
+The layout below is inferred from the formats as the open-source card tools (mymc, uLaunchELF) and PCSX2 read and
+write them. Run r-20261118-ps2-card-save confirmed (runtime) the numbers it records, on a card the game formatted and
+saved to in PCSX2 and that a separate script read back: a card file of 8,650,752 bytes, 512-byte pages, two to a
+cluster, 8,192 clusters, the allocation offset 41, the root directory at cluster 0 with 3 entries, the indirect FAT
+cluster 8, and the save folder's 5 entries with the data file (7,704 bytes), the icon (79,128) and `icon.sys` (964).
+The other values (the erase block, the backup blocks, the end of allocation, the bad block list, the card type and
+flags, the entry modes, times and attributes) are inferred from those tools. A player's save of the game is
 the folder `BASLUS-21215` with its data file of the same name, in one of these containers:
 
 | Container | What it is | How it is told apart |
@@ -161,8 +165,8 @@ without it is free. A directory is a chain of 512-byte entries: mode `+0x00` (u1
 `+0x08` (8 bytes), first cluster `+0x10`, the entry's place in its parent `+0x14`, modification time `+0x18`, attributes
 `+0x20`, the name `+0x40` (32 bytes, zero-terminated). The root's first entry, `.`, holds the root's entry count; a
 folder's own `.` entry holds 0, so its count is read from its entry in the root. On the card of the run the root held
-`.`, `..` and `BASLUS-21215` (5 entries: `.`, `..` and the three files of [The save file on the card](#card-files)), the
-indirect FAT list named cluster 8, and the files' modes were `0x8497` (bit `0x0080` set too) and the folders' `0x8427`.
+`.`, `..` and `BASLUS-21215` (5 entries: `.`, `..` and the three files of [The save file on the card](#card-files)) and
+the indirect FAT list named cluster 8.
 
 **What Coney does not read**: CodeBreaker (`.cbs`, compressed and enciphered), Action Replay MAX (`.max`, LZARI
 compressed), SharkPort and X-Port (`.sps`, `.xps`) and the PS3's `.psv` exports; a player converts one to a PSU with a
@@ -579,8 +583,10 @@ profile a new Coney save in a free slot. The Xbox build's save is [#1421](issue:
 - **Reading.** [`readOriginalSave`](repo:src/warriors/save_import.h) takes a path (a file or a folder) and tells the
   [container](#import-containers) apart by its content; [`Ps2MemoryCard`](repo:src/fileio/ps2_memory_card.h) reads a
   card image of any size its superblock describes, with or without the spares (not checking the error-correction
-  bytes), and `readPsuExport` a PSU. Every chain is followed through the FAT, and one that loops, leaves the card or
-  meets a free cluster before the file's length is refused as a damaged card.
+  bytes), and `readPsuExport` a PSU, whose last file may lack its padding. Every chain is followed through the FAT,
+  and one that loops, leaves the card or meets a free cluster before the file's length is refused as a damaged card.
+  **Coney's limit**: no file larger than a 64 MB card with its spares (69,206,016 bytes; PCSX2 makes cards of 8, 16,
+  32 and 64 MB) is read at all, as the profile screen scans the import folder each time it opens.
 - **The data file** is read as the game loads it ([Which slots hold a profile](#card-files)), in `readPs2DataFile`:
   refused unless it is 7,704 bytes (`PS2Save_CheckFileSizes`); a slot whose name starts with a zero byte is empty; a slot
   of another version is left out and named. `ProfileRecord::parse` reads each used record. **Coney's choice**: the

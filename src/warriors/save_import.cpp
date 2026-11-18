@@ -3,12 +3,11 @@
 
 #include <algorithm>
 #include <format>
-#include <fstream>
-#include <iterator>
 #include <optional>
 #include <system_error>
 #include <utility>
 
+#include "fileio/file_stream.h"
 #include "fileio/ps2_memory_card.h"
 #include "fileio/reader.h"
 
@@ -19,16 +18,30 @@ namespace {
 // The marker file PCSX2 keeps at the root of a folder card (docs/research/save.md#import-containers).
 constexpr std::string_view kFolderCardMarker = "_pcsx2_superblock";
 
-// Reads a whole file; nothing when it cannot be opened.
+// Reads a whole file, or says why not; a file larger than any save is refused before a byte of it is read, as the
+// profile screen scans the import folder each time it opens.
 // @coney-only the importer's file read
-std::optional<std::vector<std::byte>> readFile(const std::filesystem::path& path) {
-    std::ifstream in(path, std::ios::binary);
-    if (!in) {
-        return std::nullopt;
+std::expected<std::vector<std::byte>, Error> readFile(const std::filesystem::path& path) {
+    const std::string name = path.filename().string();
+    std::error_code ec;
+    const std::uintmax_t size = std::filesystem::file_size(path, ec);
+    if (ec) {
+        return fail(ErrorCode::Io, std::format("{}: cannot be read ({})", name, ec.message()));
     }
-    std::vector<char> chars((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-    std::vector<std::byte> bytes(chars.size());
-    std::ranges::transform(chars, bytes.begin(), [](char c) { return static_cast<std::byte>(c); });
+    if (size > kLargestOriginalSave) {
+        return fail(ErrorCode::Invalid,
+                    std::format("{}: too large to be a PS2 save: {} bytes, and the largest, a 64 MB "
+                                "PCSX2 card, is {}",
+                                name, size, kLargestOriginalSave));
+    }
+    auto stream = io::FileStream::open(path, 0, size);
+    if (!stream) {
+        return fail(ErrorCode::Io, std::format("{}: cannot be read ({})", name, stream.error().message));
+    }
+    std::vector<std::byte> bytes(static_cast<std::size_t>(size));
+    if (auto read = stream->read(bytes); !read) {
+        return fail(ErrorCode::Io, std::format("{}: cannot be read ({})", name, read.error().message));
+    }
     return bytes;
 }
 
@@ -124,7 +137,7 @@ std::expected<OriginalSave, Error> fromFolder(const std::filesystem::path& path)
         }
         const auto bytes = readFile(data);
         if (!bytes) {
-            return fail(ErrorCode::Io, std::format("{}: {} cannot be read", source, data.string()));
+            return fail(bytes.error().code, std::format("{}: {}", source, bytes.error().message));
         }
         return fromDataFile(*bytes, kind, source);
     }
@@ -237,7 +250,7 @@ std::expected<OriginalSave, Error> readOriginalSave(const std::filesystem::path&
     }
     const auto bytes = readFile(path);
     if (!bytes) {
-        return fail(ErrorCode::Io, std::format("{}: cannot be read", path.string()));
+        return std::unexpected(bytes.error());
     }
     return readOriginalSave(*bytes, path.filename().string());
 }

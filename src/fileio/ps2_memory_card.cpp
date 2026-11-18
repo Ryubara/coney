@@ -258,11 +258,12 @@ std::expected<Ps2SaveFolder, Error> Ps2MemoryCard::folder(std::string_view name)
 }
 
 bool looksLikePsu(std::span<const std::byte> bytes) {
-    if (bytes.size() < 3 * kEntryBytes || bytes.size() % kEntryBytes != 0) {
+    if (bytes.size() < 2 * kEntryBytes) {
         return false;
     }
     const std::uint16_t mode = halfAt(bytes, 0);
-    return (mode & (kExists | kFolder)) == (kExists | kFolder) && entryName(bytes.subspan(kEntryBytes)) == ".";
+    return (mode & (kExists | kFolder)) == (kExists | kFolder) &&
+           entryName(bytes.subspan(kEntryBytes, kEntryBytes)) == ".";
 }
 
 std::expected<Ps2SaveFolder, Error> readPsuExport(std::span<const std::byte> bytes) {
@@ -279,8 +280,8 @@ std::expected<Ps2SaveFolder, Error> readPsuExport(std::span<const std::byte> byt
     if (!head) {
         return std::unexpected(head.error());
     }
-    if ((halfAt(*head, 0) & (kExists | kFolder)) != (kExists | kFolder)) {
-        return fail(ErrorCode::Invalid, "not a PSU export: its first entry is not a save folder's");
+    if (!looksLikePsu(bytes)) {
+        return fail(ErrorCode::Invalid, "not a PSU export: it does not start with a save folder's entry and its \".\"");
     }
     const std::uint32_t count = wordAt(*head, 4);
     Ps2SaveFolder folder{entryName(*head), {}};
