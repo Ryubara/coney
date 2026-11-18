@@ -98,7 +98,8 @@ TEST_CASE("the story goes on from the latest mission present, skipping a missing
     CHECK(latest->id() == "yard-brawl.alley");
 
     // Without the mod in the chain the story goes on from level80.
-    latest = coney::latestMission(StoryGraph::original(), isComplete, progress);
+    const StoryGraph original = StoryGraph::original();
+    latest = coney::latestMission(original, isComplete, progress);
     REQUIRE(latest != nullptr);
     CHECK(latest->id() == "level80");
 
@@ -108,7 +109,7 @@ TEST_CASE("the story goes on from the latest mission present, skipping a missing
     REQUIRE(latest != nullptr);
     CHECK(latest->id() == "level87");
 
-    CHECK(coney::latestMission(StoryGraph::original(), [](int) { return false; }, ModStoryProgress{}) == nullptr);
+    CHECK(coney::latestMission(original, [](int) { return false; }, ModStoryProgress{}) == nullptr);
 }
 
 TEST_CASE("a save's story mods the session lacks are named, and their entries stay", "[mod_story]") {
