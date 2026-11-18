@@ -431,9 +431,10 @@ inline constexpr int kMaxBenchFighters = 1000;
 /// The frames a bench leaves unmeasured after the first frame of play unless `--bench-warmup` says otherwise.
 inline constexpr int kDefaultBenchWarmup = 60;
 
-/// Whether `options` ask for test mode: `--headless`, `--load`, `--frames`, `--input-script`, `--screenshot` or
-/// `--record`. Test mode runs the main loop in lockstep, one fixed step and one render per frame, and never reads a
-/// real clock, so a run gives the same result every time on any machine (docs/guides/conventions.md#platform-code).
+/// Whether `options` ask for test mode: `--headless`, `--load`, `--frames`, `--input-script`, `--screenshot`,
+/// `--record`, `--digest` or `--net-replay`. Test mode runs the main loop in lockstep, one fixed step and one render
+/// per frame, and never reads a real clock, so a run gives the same result every time on any machine
+/// (docs/guides/conventions.md#platform-code).
 [[nodiscard]] bool isTestMode(const Options& options);
 
 /// Whether the window may take the keyboard focus when it opens: only in a run a person plays, so not with

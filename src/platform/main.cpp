@@ -88,6 +88,7 @@
 #include "platform/install_command.h"
 #include "platform/log_output.h"
 #include "platform/mesh_views.h"
+#include "platform/net_game.h"
 #include "platform/net_play.h"
 #include "platform/net_play_controls.h"
 #include "platform/pad_pipe.h"
@@ -536,6 +537,14 @@ int main(int argc, char** argv) {
         }
         humansTrace = std::move(*opened);
     }
+    // Network play's view of the game, and the files that prove it (`--digest`, `--digest-net`, `--net-record`,
+    // `--net-replay`; docs/guides/multiplayer.md#digest), opened before the first level loads.
+    auto netGameOpened = coney::platform::NetGame::open(*options);
+    if (!netGameOpened) {
+        logError(netGameOpened.error().message);
+        return 1;
+    }
+    coney::platform::NetGame& netGame = **netGameOpened;
     const auto makeSession = [&]() -> coney::platform::GameSession& {
         return session.emplace(renderer, modes, *wad, chunkHandlers, sectorBudget, strings, objectSounds,
                                sessionSettings, logText);
@@ -656,6 +665,7 @@ int main(int argc, char** argv) {
             if (humansTrace) {
                 playLevel->traceHumansTo(humansTrace);
             }
+            playLevel->shareHumansWith(&netGame.humans());
             modes.push(*playLevel);
         } else {
             // The level as the story reaches it, started directly in the game session (GameSession::startAtLevel(),
@@ -779,7 +789,12 @@ int main(int argc, char** argv) {
     coney::debug::DebugServices debugServices;
     // Network play (docs/guides/multiplayer.md): hosted or joined from the Network page, or from the start with
     // `--host` or `--join`; a port that cannot be opened ends the run, as any bad argument does.
-    coney::platform::NetPlay netPlay(coney::platform::makeEnetTransport, printText);
+    // Its log goes to the session record too (`--net-record`).
+    coney::platform::NetPlay netPlay(coney::platform::makeEnetTransport, [&netGame](std::string_view line) {
+        printText(line);
+        netGame.note(line);
+    });
+    netGame.attach(netPlay);
     coney::platform::NetPlayControls netControls(netPlay); // the Network page's view of network play
     debugServices.net = [&netControls]() -> coney::debug::NetControls* { return &netControls; };
     if (!coney::platform::startNetPlay(netPlay, *options)) {
@@ -858,6 +873,7 @@ int main(int argc, char** argv) {
     if (session) {
         session->attachAudio(audio.get());
         session->setHumansTrace(humansTrace);
+        session->setNetHumans(&netGame.humans());
         if (commandLineLevel) {
             session->setFirstLevelSetup(
                 [&options, &worldEdits](coney::platform::PlayLevelMode& mode) -> std::expected<void, coney::Error> {
@@ -998,8 +1014,10 @@ int main(int argc, char** argv) {
     debugSession.gate().addBetweenSteps([&display] { display.settle(); });
     // The game reads its pads through network play, after the gate: a guest sends what their game reads, and a host's
     // pad port 2 is the guest's pad (docs/guides/multiplayer.md#player-two).
+    // `--net-replay` plays a recorded session's port 2 over it, and `--net-record` records what port 2 played.
     coney::platform::NetInput netInput(&debugSession.gate(), netPlay);
-    modes.setInput(&netInput);
+    netGame.setInner(&netInput);
+    modes.setInput(&netGame);
     std::optional<coney::graphics::Font> debugFont;
     if (wad) {
         if (auto sheet = loadSheet(coney::gui::kTextFontSheet); sheet) {
@@ -1303,7 +1321,7 @@ int main(int argc, char** argv) {
         };
     }
     // Network play receives before each step and sends after it.
-    coney::platform::addNetPlayHooks(hooks, netPlay, pacer.has_value());
+    coney::platform::addNetPlayHooks(hooks, netPlay, netGame, pacer.has_value(), options->netHost || options->netJoin);
     // The console's queued commands run before each step, after network play's receive.
     gameConsole.addHooks(hooks);
     // `--bench-spawn-step` counts the steps of play.

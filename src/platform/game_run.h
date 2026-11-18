@@ -14,6 +14,7 @@
 #include "platform/audio_output.h"
 #include "platform/game_session.h"
 #include "platform/log_output.h"
+#include "platform/net_game.h"
 #include "platform/net_play.h"
 #include "platform/render_engine.h"
 #include "platform/window.h"
@@ -82,9 +83,13 @@ void printGameSummary(GameSession& session, AudioOutput* audio, const audio::Obj
 [[nodiscard]] bool startNetPlay(NetPlay& net, const Options& options);
 
 /// Network play's part of the main loop: each step receives before it and sends after it (FrameHooks::beforeStep and
-/// afterStep), and `realTime` says whether the frame pacer passes it the real time (NetPlay::advance() from
-/// waitForFrame); without one (test mode) each step passes a fixed step's time, so a run is the same every time.
-void addNetPlayHooks(FrameHooks& hooks, NetPlay& net, bool realTime);
+/// afterStep), with `game`'s digest written and its humans handed over in between (NetGame::afterStep()); `realTime`
+/// says whether the frame pacer passes it the real time (NetPlay::advance() from waitForFrame); without one (test mode)
+/// each step passes a fixed step's time, so a run is the same every time. A test-mode run with a session from the
+/// command line (`session`) still waits for each frame to take a real 1/30 s: the other game is another process, which
+/// steps on its own, and without the wait one game would end its run before the other had joined. It stays one step a
+/// frame (docs/guides/multiplayer.md#two-processes).
+void addNetPlayHooks(FrameHooks& hooks, NetPlay& net, NetGame& game, bool realTime, bool session);
 
 /// The end of network play: the summary line when the run hosted or joined, then the leave, waiting a little real time
 /// for the other games to get this one's Bye (NetPlay::shutdown()).

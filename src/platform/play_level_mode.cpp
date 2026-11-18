@@ -30,6 +30,7 @@
 #include "graphics/human_blood.h"
 #include "human/human_animator.h"
 #include "human/player_trace.h"
+#include "net/game_humans.h"
 #include "platform/draw_calls.h"
 #include "platform/object_draw.h"
 #include "platform/perf_probes.h"
@@ -254,6 +255,10 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
 }
 
 PlayLevelMode::~PlayLevelMode() {
+    // The level's humans go with it; network play must not hold them.
+    if (m_netHumans != nullptr) {
+        m_netHumans->clear();
+    }
     // The dynamic clips go with the mode; the scripts' hold (gameplay's, which outlives it) must not use them.
     if (m_cast.scripted != nullptr) {
         m_cast.scripted->setClipSource({});
@@ -495,6 +500,10 @@ void PlayLevelMode::traceStep() {
     // Every human's row for this step, after all their updates.
     if (m_humansTrace) {
         m_humansTrace->write(m_ai->brains());
+    }
+    // Network play's view of the same humans: the host's snapshots and the state digest.
+    if (m_netHumans != nullptr) {
+        m_netHumans->capture(m_ai->brains());
     }
 }
 

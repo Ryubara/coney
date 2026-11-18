@@ -85,6 +85,10 @@ namespace coney::script {
 class SoundHost;
 } // namespace coney::script
 
+namespace coney::net {
+class GameHumans;
+} // namespace coney::net
+
 namespace coney::platform {
 
 class PlayLevelEffects;
@@ -212,6 +216,9 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
     /// Writes every human's row (ai::FightTracer) to `trace` after every step: `--trace-humans`. The file is shared, so
     /// a run that loads several levels writes one.
     void traceHumansTo(std::shared_ptr<HumansTrace> trace) { m_humansTrace = std::move(trace); }
+    /// Captures every human into `humans` (null for none) after every step, for network play's snapshots and the state
+    /// digest (docs/guides/multiplayer.md#digest); the mode leaves it empty when it goes. `humans` outlives the mode.
+    void shareHumansWith(net::GameHumans* humans) { m_netHumans = humans; }
 
     /// Starts the player at `place` instead (dropped onto the ground below it, as a start is), and the camera where it
     /// says, if it says: `--start`, Coney's own test aid.
@@ -558,6 +565,8 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
     std::uint64_t m_traceSteps = 0;
     // The --trace-humans file (shared with the other levels of the run), when asked for.
     std::shared_ptr<HumansTrace> m_humansTrace;
+    // Network play's view of the humans (shareHumansWith()), when the run has one.
+    net::GameHumans* m_netHumans = nullptr;
     // The level's parked cars, particles and motion blur (play_level_effects.h), when gameplay brought them.
     std::unique_ptr<PlayLevelEffects> m_levelEffects;
     // The world objects' and doors' poses at the last two steps, by their draw id, and the spinning icons' by their

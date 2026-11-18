@@ -167,6 +167,29 @@ build/dev/src/platform/coney --join 192.168.1.20 --net-name Swan # another machi
 build/dev/src/platform/coney --headless --frames 3 --host 127.0.0.1:0
 ```
 
+A test-mode run with `--host` or `--join` still makes each frame wait for a real 1/30 s while it runs, one step a
+frame: the other game is another process, and without the wait one would end its run before the other joined.
+
+Four options write the files that prove network play without a person
+([The state digest](multiplayer.md#digest), [Replays](multiplayer.md#replays)); each takes a path, which it replaces:
+
+- `--digest FILE`: one line a step, the state digest of the game's humans and of the pads the step played. It makes
+  the run test mode, and works offline too.
+- `--digest-net FILE`, with `--host` or `--join`: one line per snapshot, a host's for what each one it sent leaves the
+  guest holding, a guest's for each one it decoded.
+- `--net-record FILE`, with `--host`: the session record, each step's pad on port 2 and the session's events.
+- `--net-replay FILE`: plays a record's port 2 with no session (so not with `--host` or `--join`); with the host's own
+  input script the run writes the host's digest again.
+
+```sh
+build/dev/src/platform/coney --headless --frames 300 --input-script tests/support/net_host.txt --host 127.0.0.1:0 \
+    --digest host.txt --digest-net host-net.txt --net-record session.txt
+build/dev/src/platform/coney --headless --frames 200 --input-script tests/support/net_guest.txt \
+    --join 127.0.0.1:PORT --digest-net guest-net.txt
+build/dev/src/platform/coney --headless --frames 300 --input-script tests/support/net_host.txt \
+    --net-replay session.txt --digest replay.txt
+```
+
 ## The debug menus {#the-debug-menus}
 
 Every run has Coney's debug menu and, in a window, the developer overlay; [The debug menus](debug-menu.md) has the

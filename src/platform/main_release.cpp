@@ -198,6 +198,17 @@ int main(int argc, char** argv) {
             logWarning(std::format("{}; running without pads", started.error().message));
         }
     }
+    // Network play's view of the game: the humans a host's snapshots send (docs/guides/multiplayer.md#digest). The
+    // release build takes none of its files' options, so it opens none.
+    auto netGameOpened = coney::platform::NetGame::open(*options);
+    if (!netGameOpened) {
+        logError(netGameOpened.error().message);
+        return 1;
+    }
+    coney::platform::NetGame& netGame = **netGameOpened;
+    if (session) {
+        session->setNetHumans(&netGame.humans());
+    }
     // Network play (docs/guides/multiplayer.md), hosted or joined from the start with `--host` or `--join`; a port that
     // cannot be opened ends the run, as any bad argument does.
     coney::platform::NetPlay netPlay(coney::platform::makeEnetTransport, printText);
@@ -207,7 +218,8 @@ int main(int argc, char** argv) {
     // The game reads its pads through network play: a guest sends what their game reads, and a host's pad port 2 is
     // the guest's pad (docs/guides/multiplayer.md#player-two).
     coney::platform::NetInput netInput(input.get(), netPlay);
-    modes.setInput(&netInput);
+    netGame.setInner(&netInput);
+    modes.setInput(&netGame);
     // The console (docs/guides/console.md): the player commands only, as the release build holds no developer set.
     // No front end yet, so its lines come from the input script.
     coney::platform::GameConsole gameConsole(*options, netPlay, coney::console::Access::Player);
@@ -279,7 +291,7 @@ int main(int argc, char** argv) {
     } else if (audio) {
         hooks.endFrame = [&audio](std::uint32_t steps) { audio->endFrame(steps); };
     }
-    coney::platform::addNetPlayHooks(hooks, netPlay, pacer.has_value());
+    coney::platform::addNetPlayHooks(hooks, netPlay, netGame, pacer.has_value(), options->netHost || options->netJoin);
     gameConsole.addHooks(hooks);
     modes.runUntilEmpty(timer, clock, hooks, frameLimit);
     if (pacer && options->showFps) {

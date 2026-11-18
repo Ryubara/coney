@@ -43,6 +43,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
         [--bench-neutrals N] [--bench-fps]]
       [--log-file FILE] [--log-verbose CATEGORIES]
       [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME] [--cpu-skinning]
+      [--digest FILE] [--digest-net FILE] [--net-record FILE | --net-replay FILE]
 ```
 
 That is the command line of a build with the debug tools (`dev`, `playtest`, `ci`). The release build a player gets
@@ -195,7 +196,8 @@ command are in [Script patches](script-patches.md#command-line).
   {#frame-rate}
 * [`--no-audio`, `--audio-test`](running-options.md#sound): the sound.
   {#sound}
-* [`--host`, `--join`](running-options.md#network-play): network play.
+* [`--host`, `--join`](running-options.md#network-play): network play; `--digest`, `--digest-net`, `--net-record` and
+  `--net-replay`, its proof without a person.
 * [`--tunables`, `--dev-overlay`, `--mesh-view`](running-options.md#the-debug-menus): the debug menus' options.
 
 ### [Loading and viewing your disc](running-viewers.md)

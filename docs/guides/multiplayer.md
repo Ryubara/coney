@@ -16,8 +16,9 @@ game's side: hosting and joining from the debug menus' Network page or the comma
 and the guest's pad as the host's pad port 2 ([Player two](#player-two)); the network ids and the replicated-field
 tables ([Network ids](#net-ids)); and [snapshots](snapshots.md) of humans, delta-compressed against acknowledged
 baselines within a 1,200-byte budget; and [the client's world](client-world.md), the jitter buffer and the blends that
-draw a client's humans from them. The guest does not see the host's game: nothing fills the snapshots from it, and no
-client game mode draws them.
+draw a client's humans from them; the host's game's humans in those snapshots, sent to the guest every step; and
+the proof of it without a person: the [state digest](#digest), [two processes](#two-processes) over ENet in CI and
+[replays](#replays). The guest does not see the host's game yet: no client game mode draws the snapshots it decodes.
 **Next:** the layers under [The plan](#plan).
 
 ## The model {#model}
@@ -57,6 +58,9 @@ client game mode draws them.
 | Field tables | `src/net/replicated_fields.h` | each replicated kind's fields: their encodings, bits and ranges |
 | Snapshots | `src/net/snapshot.h` | each client's humans as deltas against what it acknowledged, within a budget ([Snapshots](snapshots.md)) |
 | The client's world | `src/net/jitter_buffer.h`, `client_world.h` | the decoded snapshots played a delay behind the newest, blended, and each human's pose from its layers ([The client's world](client-world.md)) |
+| The game's humans | `src/net/game_humans.h` | the server's humans as snapshots take them: their state read from the game, their ids |
+| State digest | `src/net/state_digest.h` | a hash of the replicated state at a step; the first difference; the digest files |
+| Session record | `src/net/session_record.h` | a host's record of port 2's pad and the session's events, and its replay |
 | ENet | `src/platform/enet_transport.h` | the transport over UDP |
 
 `coney_net` is platform-neutral: no socket, no ENet and no operating-system code, the same rule as the rest of
@@ -375,6 +379,80 @@ only, so a walking human's delta is 84 bits, under 11 bytes ([What a scene costs
 bits as a number and back, which is what a snapshot compares and sends. `validateFields()` checks a table (named fields,
 different names, bits 1 to 32, ranges that fit their bits), and the tests check every table with it.
 
+## Proof without a person {#proof}
+
+Network play is checked by the automated tests alone ([Testing](testing.md)): two games as two processes, compared
+by a hash of what they hold.
+
+### The game's humans in the snapshots {#game-humans}
+
+Each step, after every human's update, the play mode captures the level's humans into a `net::GameHumans`
+(`PlayLevelMode::shareHumansWith()`, beside the `--trace-humans` rows): for each brain, in slot order, its human's
+replicated state (`net::replicatedState()`: the feet, heading, health and its maximum, the four animation layers of
+its `AnimTaskStack` with each clip, playhead, gait value and fade, on the ground, knocked out or wounded) as the field
+table's words, and a network id it keeps while it lives. A human gone from the brains has its id retired, and a level
+that ends clears them all. Hosting, `NetPlay` sends the joined guest a snapshot of them after every step
+(`NetServer::sendSnapshots()`, numbered by the host's step counted from 0). Humans are told apart by address, so a
+human removed and another made at the same address in one step would keep the id; a level does not do that.
+
+### The state digest {#digest}
+
+The **state digest** (`src/net/state_digest.h`) is a 64-bit FNV-1a hash, fed a byte at a time least significant
+first so every machine gets the same value:
+
+- of the **humans**: their count, then each in id order, its id and its 23 field words. Words, not values, so a
+  guest's decoded state and the host's compare exactly, quantization included;
+- of the **pads** a step played, port 1 then port 2: plugged in, and only when it is, the buttons, sticks and
+  pressures.
+
+`--digest FILE` writes a line a step, `digest STEP HUMANS COUNT PADS` (the step in decimal, the digests as 16
+lowercase hex digits), offline as well as hosting. `--digest-net FILE` writes a line per snapshot without the pads: a
+host's for what each snapshot it sent leaves the guest holding (`SnapshotSender::holding()`), which is the whole state
+only when the budget let every human in; a guest's for each snapshot it decoded, by the host's step it shows.
+`matchDigests()` compares a guest's lines with the host's by step (a guest may skip a lost or stale snapshot, never a
+step the host did not send), and `firstDifference()` names the first human and field in which two holdings differ,
+the dump that says what two digests disagree about. The Network page does not show the digest yet.
+
+### Two processes {#two-processes}
+
+`tests/support/net_pair_check.cpp` runs `coney` as separate processes and compares their files, as two ctest tests:
+
+- **`coney.net.two_processes`**: a headless host on a free port of 127.0.0.1 (`--host 127.0.0.1:0`, the port read from
+  its "hosting on port" line), then a headless guest that joins it, each with its input script
+  (`tests/support/net_host.txt`, `net_guest.txt`: partial stick deflections and held buttons). It checks that every
+  snapshot the guest decoded has the digest of what the host's left it holding (and that it decoded some), that the
+  host played the guest's buttons on port 2, and that the replay of the host's session record gives the host's digest
+  on every step ([Replays](#replays)).
+- **`coney.net.offline_unchanged`**: the host's script offline and as a host nobody joins: the two digests are the same
+  on every step, so a session changes nothing in the game, and the pads the offline run played are those the input
+  script gives (`ScriptedInput`, read by the check itself), so networking puts nothing between the script and the game.
+  A level played from the command line starts its script at the first frame of play (`DeferredInput`), so the check
+  finds the step the script starts on: the pads unchanged before it, the script's on every step from it.
+  The baseline is the script, not a committed digest file, so nothing needs refreshing when the game changes.
+
+Without the disc (CI) the games have no humans, so the digests cover the pads and the snapshots' plumbing. With the
+disc, `coney.net.two_processes_level99` and `coney.net.offline_unchanged_level99` (label `disc`, run by
+[`ci disc-suite`](coney-tools-ci.md#disc-suite)) play level99, whose crew and gang are humans the snapshots carry;
+level99 rather than the sandbox, which holds the player alone. There the guest starts once the host prints that the
+intro movie is skipped (`--guest-after`), the level's first frame of play: the load before it can take longer than the
+guest's whole run, and a guest that left during it was seen by the host as a lost connection. The checks print counts
+and hashes only.
+
+The two games step on their own, so a test-mode run with `--host` or `--join` waits for each frame to take a real
+1/30 s (`addNetPlayHooks()`), still one step a frame: unpaced, a host could end its run before the guest had joined,
+or time the guest out by its step-counted timeouts. The host's 300 frames take ten seconds. Which of the host's steps
+a guest's pad lands on depends on that timing, which is why the replay works from a record and not from the guest's
+script.
+
+### Replays {#replays}
+
+`--net-record FILE` on the host writes, for every step, the pad its game played on port 2 (`pad STEP 0` unplugged, else
+`pad STEP 1 BUTTONS STICKS PRESSURES` in hex) and each line of network play's log as `event STEP TEXT` (joins,
+leaves). The remote pad is the only thing a session changes in the host's game, so `--net-replay FILE`, which plays the
+recorded port 2 over the run's own pads with no session, with the host's input script and level gives the host's
+`--digest` lines again, step for step. `net::SessionReplay` reads a record strictly (a malformed line or a step
+recorded twice is refused, naming the line) and ignores the events.
+
 ## Testing {#testing}
 
 Everything above `EnetTransport` is tested on the loopback, frame by frame with no real time, in `tests/net/`: the
@@ -398,7 +476,11 @@ the refusals and an infinite angle; `tests/net/snapshot_test.cpp` covers snapsho
 `tests/net/jitter_buffer_test.cpp` and `tests/net/client_world_test.cpp` cover the client's world, and what a client
 draws against what the server had over a bad link ([The client's world](client-world.md#testing));
 `tests/net/protocol_test.cpp` pins
-InputCommands' and InputTiming's bytes;
+InputCommands' and InputTiming's bytes; `tests/net/state_digest_test.cpp` covers the digest (pinned, in id order,
+moved by any change), the first difference, the digest lines and their comparison; `tests/net/game_humans_test.cpp`
+reads synthetic humans' state and ids from their brains; `tests/net/session_record_test.cpp` covers the record's lines
+and the replay; `net_play_test.cpp` also checks the host's snapshots of its game's humans against the guest's digests;
+the [two-process checks](#two-processes) run `coney` itself;
 `tests/gamemodes/game_mode_stack_test.cpp` checks that `beforeStep` comes before the pads are read;
 `tests/debug/net_page_test.cpp` drives the Network page over a fake
 `NetControls`; and the `coney.hosts_headless` smoke test runs `coney --headless --frames 3 --host 127.0.0.1:0`.
@@ -415,7 +497,8 @@ Each step is a pull request that builds and is tested on its own.
    ([Input commands](#input-commands)).
 5. **Replicated players:** network ids and the field tables (built: [Network ids](#net-ids)), snapshots (built:
    quantized, delta-compressed against acknowledged baselines, [Snapshots](snapshots.md)), the client's jitter buffer
-   and interpolation (built: [The client's world](client-world.md)), the game's humans in them, a client game mode that
-   draws them, and its own follow camera.
+   and interpolation (built: [The client's world](client-world.md)), the game's humans in them (built: [The game's
+   humans](#game-humans)), a client game mode that draws them, and its own follow camera. The state digest,
+   two-process tests and replays (built: [Proof without a person](#proof)).
 6. **AI humans, events, mission state:** the rest of what a client must see and hear, events reliable.
 7. **Prediction:** the local player predicted and corrected from the server's snapshots.

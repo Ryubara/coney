@@ -71,6 +71,7 @@ constexpr std::string_view kUsage =
     "             [--no-audio | --audio-test] [--skip-movies] [--cpu-skinning]\n"
     "             [--record FILE [--record-seconds N] [--record-debug-draw]]\n"
     "             [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]\n"
+    "             [--digest FILE] [--digest-net FILE] [--net-record FILE | --net-replay FILE]\n"
     "\n"
     "  --install DISC     install the PS2 disc (a mounted disc, a folder of its files or an ISO image)\n"
     "                     into the folder --data names: its files copied as they are and checked,\n"
@@ -204,6 +205,10 @@ constexpr std::string_view kUsage =
     "  --join ADDR[:PORT] join the network game at ADDR (a host name or IPv4 address), port 27615 unless\n"
     "                     given\n"
     "  --net-name NAME    the player name a network game shows (1 to 32 printable ASCII characters)\n"
+    "  --digest FILE      write each step's state digest (the humans and the pads played) to FILE\n"
+    "  --digest-net FILE  with --host or --join: write the digest of each snapshot sent or decoded\n"
+    "  --net-record FILE  with --host: record each step's pad on port 2 and the session's events\n"
+    "  --net-replay FILE  play a --net-record file's pads on port 2, with no session\n"
     "  --skip-movies      skip every movie at once, as if it had ended (by default they play, in\n"
     "                     test mode too; any pad button skips one, as in the game)\n"
     "  --cpu-skinning     skin the humans on the CPU instead of the GPU, to compare the two\n"
@@ -486,6 +491,21 @@ std::expected<void, Error> checkPacing(const Options& options) {
     return {};
 }
 
+// Refuses the network test files where they cannot work: part of checkCombinations().
+std::expected<void, Error> checkNetFiles(const Options& options) {
+    if (options.netDigestFile && !options.netHost && !options.netJoin) {
+        return invalidArgument("--digest-net needs --host or --join: it writes the digest of each snapshot");
+    }
+    if (options.netRecordFile && !options.netHost) {
+        return invalidArgument("--net-record needs --host: it records the remote player's pad the host played");
+    }
+    if (options.netReplayFile && (options.netHost || options.netJoin)) {
+        return invalidArgument("--net-replay cannot be combined with --host or --join: it plays a session's pads with "
+                               "no session");
+    }
+    return {};
+}
+
 // Refuses `--record` where it cannot work: part of checkCombinations().
 std::expected<void, Error> checkRecord(const Options& options) {
     if (options.recordSeconds.has_value() && !options.recordPath.has_value()) {
@@ -587,6 +607,9 @@ std::expected<void, Error> checkCombinations(const Options& options) {
     }
     if (auto renderer = checkRenderer(options); !renderer) {
         return renderer;
+    }
+    if (auto net = checkNetFiles(options); !net) {
+        return net;
     }
     if (auto record = checkRecord(options); !record) {
         return record;
@@ -907,7 +930,7 @@ std::expected<RenderSize, Error> parseRenderSize(std::string_view text) {
 bool isTestMode(const Options& options) {
     return options.headless || !options.loads.empty() || options.frameLimit.has_value() ||
            options.inputScript.has_value() || options.padPipe || options.screenshotPath.has_value() ||
-           options.recordPath.has_value();
+           options.recordPath.has_value() || options.digestFile.has_value() || options.netReplayFile.has_value();
 }
 
 bool activatesWindow(const Options& options) {
@@ -1281,6 +1304,25 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             options.netJoin = std::move(*endpoint);
         } else if (arg == "--net-name") {
             if (auto value = takeValue(args, i, options.netName, "--net-name", "a player name"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--digest") {
+            if (auto value = takeValue(args, i, options.digestFile, "--digest", "the path of a text file"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--digest-net") {
+            if (auto value = takeValue(args, i, options.netDigestFile, "--digest-net", "the path of a text file");
+                !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--net-record") {
+            if (auto value = takeValue(args, i, options.netRecordFile, "--net-record", "the path of a text file");
+                !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--net-replay") {
+            if (auto value = takeValue(args, i, options.netReplayFile, "--net-replay", "the path of a text file");
+                !value) {
                 return std::unexpected(std::move(value.error()));
             }
         } else if (arg == "--no-audio") {
