@@ -14,6 +14,7 @@
 #include "ai/reaction_goals.h"
 #include "ai/route_planner.h"
 #include "ai/script_services.h"
+#include "ai/swap_prompt.h"
 #include "ai/taunt_action.h"
 #include "ai/threats.h"
 #include "ai/turn_action.h"
@@ -317,9 +318,10 @@ Brain* pickSideInFight(Brain& hearer, const BrainEvent& event) {
 }
 
 void onViolenceSeen(Brain& brain, const BrainEvent& event) {
-    // Only a man free to take part: a threat response, no target, nothing held, free actions, not closing in.
+    // Only a man free to take part: a threat response, no target, nothing held, actions his state does not block (out
+    // of health, his death chain's loop holds nothing, so only his state keeps him out), not closing in.
     if (brain.threatResponse() == 0 || brain.target() != nullptr || brain.human().animator().flags() != 0 ||
-        brain.actionCount() > 0) {
+        brain.actionCount() > 0 || actionsBlocked(brain.human())) {
         return;
     }
     if (const Goal* top = brain.topGoal(); top != nullptr && top->type() == GoalType::EngageEnemy) {

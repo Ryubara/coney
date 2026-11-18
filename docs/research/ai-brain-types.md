@@ -355,6 +355,13 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
       base, `Gang_SendHelper(self, side, 0, −1)`.
 2. With a Mark goal: when a side is found, a ReactNoise goal on top (popping an earlier one) at the side's position.
 
+"Actions free" is `HumanRecord_AreActionsBlocked` (`0x00228228`), the state mask `0x7bf9e9f7ff0`, which holds
+knocked out (`0x40000`) and dying (`0x80000000`): a knocked-out human lying in the death chain's loop 349, which holds
+no flag ([When the knock-out comes](combat-reactions.md#knockout-timing)), never takes a side. Confirmed (code),
+`0x00291960` and `0x00228228`. Coney's `onViolenceSeen` (`repo:src/ai/brain_events.cpp`) asks `actionsBlocked` for it;
+without it, knocked-out Hurricanes in level5's bar fight took slots on the player and the fight stalled
+(`repo:tests/platform/disc_level5_fights_test.cpp`).
+
 ### Civilians (type 4) {#think-civilian}
 
 Confirmed (code) at the cited addresses unless a line says otherwise.

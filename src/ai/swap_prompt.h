@@ -39,7 +39,7 @@ void thinkSwapPrompt(Brain& brain);
 /// Whether a human's actions are blocked (`HumanRecord_AreActionsBlocked`, state mask `0x7bf9e9f7ff0`), as far as
 /// Coney models his states: knocked out (`0x40000`, his health gone or a script's), arrested (`0x20000`) or wounded
 /// (`0x10000`) are all in the mask. **Coney's reading**: the mask's other states are not modelled. The swap prompt and
-/// the revive ask it.
+/// the revive ask it, and the answer to violence seen (onViolenceSeen()).
 /// @orig 0x00228228 HumanRecord_AreActionsBlocked (unknown)
 [[nodiscard]] bool actionsBlocked(const human::Human& human);
 
