@@ -136,6 +136,7 @@ ProfileRecord everyFieldChanged() {
 // The names of the sections, in file order.
 std::vector<std::string> namesOf(const std::vector<RawSection>& sections) {
     std::vector<std::string> names;
+    names.reserve(sections.size());
     for (const RawSection& section : sections) {
         names.push_back(section.name);
     }
@@ -230,6 +231,7 @@ TEST_CASE("a save without mods holds the faithful sections and nothing else", "[
     // Each section's size is its fields' sizes, so nothing beyond the record's fields is stored.
     const std::vector<std::size_t> sizes{1 + 4 + 1 + 1 + 4, 1 + 30 * 12, 80 + 80, 0x254 + 0x40, 4, 27, 16};
     std::vector<std::size_t> found;
+    found.reserve(sections.size());
     for (const RawSection& section : sections) {
         found.push_back(section.payload.size());
     }
