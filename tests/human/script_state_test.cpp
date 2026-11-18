@@ -183,7 +183,9 @@ TEST_CASE("HuRevive brings a human out of health back up with full health; HuSet
 
     // The death chain's clips hold 0x2000 until the idle's 0.15 s fade has taken them away: a hit before then gets no
     // reaction, as the original's revived human still playing the chain gets none
-    // (docs/research/combat-reactions.md#knockout-timing).
+    // (docs/research/combat-reactions.md#knockout-timing). The stun 6 updates later is Coney's own revive, which
+    // stops the chain for the idle: the original's Human_Revive (0x002377f8) keeps the chain, gives that hit no
+    // reaction and knocks the human out at the chain's end (#685).
     fight.run("", 6);
     fight.human().takeHit(hitOf(15, 37, 0x1a, 0xc00));
     fight.run("", 2);

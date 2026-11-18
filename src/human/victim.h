@@ -129,6 +129,7 @@ class Victim {
     /// event's value is 0), then 205 for a woundable human not yet wounded, then the loop (200 after 205, 323 cuffed,
     /// else 349), each clip holding `0x2000`. Its owner knocks it out as the last clip before the loop ends. The hit
     /// waiting is dropped. deathChain() keeps the clips and their blends.
+    /// Research: docs/research/combat-reactions.md#knockout-timing
     /// @orig 0x00267a00 Human_PlayDeathReaction (unknown)
     void die(const IncomingHit& hit, const VictimFrame& frame, const DyingState& dying, HumanAnimator& animator);
     /// The chain the last die() played.

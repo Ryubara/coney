@@ -1216,6 +1216,13 @@ Still counted **from the hit**, where the original waits for the same clip end: 
 slow motion going off (`ai::Brains::reportDowns`), `BLOCKHUMANS` lost (`Human::updateState`) and the mission-failing
 check's knocked-out players and helpers (`PlayLevelSimulation::stepGameOver`).
 
+**Not ported** (#685): only the loop 349 stops a second chain (`Fighter`'s check of `Human_PlayLethalReaction`
+`0x00267e48`), so a woundable human looping 200 replays the chain when hit again. In the original,
+`Human_OnHealthOut` (`0x002674c0`) clears state `0x80000000` at the chain's end, so a later hit gets an ordinary
+reaction: confirmed (code), `0x002674c0`. `HuRevive` (`Human_Revive` `0x002377f8`) only heals and sets state
+`0x20000000`, leaving the chain playing to its end: confirmed (code), `0x002377f8`. Coney's revive stops the chain
+for the idle instead (#685).
+
 ### The revive {#revive-coney}
 
 Coney builds it for player 1 (`repo:src/gamemodes/gameplay_revive.cpp`, `repo:src/human/human_revive.cpp`, the tests as

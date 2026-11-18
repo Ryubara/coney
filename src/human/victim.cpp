@@ -199,6 +199,7 @@ void Victim::die(const IncomingHit& hit, const VictimFrame& frame, const DyingSt
     m_deathChain = DeathChain{.steps = std::move(steps), .loop = loop};
     // 6. The hit waiting is dropped (the pending damage +0x118).
     m_hasPending = false;
+    // **Gap**: the original then sets the health to 1 (it reads 0 here, the fighter's spent health; #592).
     m_lastReaction = static_cast<int>(dyingClip);
     // stand-in: the ground and the fighter's spent health stand for the dying state 0x80000000, and the animator's
     // held state for the record's +0x18 = 0.

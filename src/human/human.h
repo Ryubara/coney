@@ -912,7 +912,7 @@ class Human final : public Holdable {
     [[nodiscard]] bool linkedWith(const Human& other) const;
     /// Its push weight (attribute 7, `+0x27c`): 1e9 while it must not move (linked in a pair, arrested, freeing a
     /// cuffed human, or out of health: dying, then knocked out), else 1.
-    /// @coney-only a read of the weight the links and the arrest give (the original keeps it at attribute 7)
+    /// Research: docs/research/combat-reactions.md#knockout-timing (its definition carries `Human_GetAttribute`'s tag)
     [[nodiscard]] float pushWeight() const;
     /// Whether another human's walk pushes it: not when a script made it unpushable (`HuSetPushable(false)`, body flag
     /// `0x200`), when it is only slid along.
