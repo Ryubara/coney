@@ -2,12 +2,19 @@
 #pragma once
 
 #include <cstddef>
+#include <expected>
+#include <memory>
 #include <string>
+#include <string_view>
 
 #include "ai/ai_humans.h"
 #include "combat/throw_aim.h"
+#include "core/error.h"
 #include "gamemodes/game_mode.h"
+#include "human/human.h"
 #include "human/player.h"
+#include "raycast/collision_mesh.h"
+#include "world_objects/flags.h"
 
 namespace coney {
 
@@ -24,6 +31,22 @@ class PlayLevelSimulation : public GameMode {
     [[nodiscard]] virtual std::string sceneName() const = 0;
     /// How many AI humans there are in the world.
     [[nodiscard]] virtual std::size_t fighterCount() const = 0;
+    /// Stub: the script's teleport, which does nothing yet.
+    virtual void teleportPlayer(const world_objects::Placement& /*placement*/,
+                                world_objects::TeleportMotion /*motion*/) {}
+
+  protected:
+    /// Stub: no ground.
+    [[nodiscard]] virtual const raycast::CollisionMesh* placeGround(double /*human*/) const { return nullptr; }
+    /// Stub: loads nothing.
+    [[nodiscard]] virtual std::expected<std::unique_ptr<human::PlayerCharacter>, Error>
+    loadCastCharacter(std::string_view /*model*/) {
+        return fail(ErrorCode::NotFound, "stub");
+    }
+    /// Stub: hears of no human.
+    virtual void humanMade(const human::Human& /*human*/, const std::string& /*model*/) {}
+    /// Stub: hears of no model change.
+    virtual void changePlayerModel(const std::string& /*model*/) {}
 };
 
 } // namespace coney
