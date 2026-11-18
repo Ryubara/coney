@@ -77,7 +77,9 @@ class PmScreen : public ScreenFlowState {
   public:
     /// Takes the input focus and calls open().
     void enter(ScreenFlowController& flow) final;
-    /// One frame: poll(), then the menu command into handle(), then draw(). Returns the first result that is not kStay.
+    /// One frame: poll(), then the menu command into handle() unless inputPaused(), then draw(). Returns the first
+    /// result that is not kStay.
+    /// @coney-only the frame the PM screens share; each screen's own update and handler carry their @orig
     int update() final;
     /// Calls close().
     void exit() final { close(); }

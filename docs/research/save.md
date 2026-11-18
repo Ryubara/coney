@@ -132,15 +132,15 @@ unlocked (`0x00424540`), `+0xcc` loads a slot into the game state (`Profile_Read
 
 ### The containers players have {#import-containers}
 
-None of this is the game's code, which reaches the card through Sony's `libmc` ([The card library](#card-library)).
-The layout below is inferred from the formats as the open-source card tools (mymc, uLaunchELF) and PCSX2 read and
-write them. Run r-20261118-ps2-card-save confirmed (runtime) the numbers it records, on a card the game formatted and
-saved to in PCSX2 and that a separate script read back: a card file of 8,650,752 bytes, 512-byte pages, two to a
-cluster, 8,192 clusters, the allocation offset 41, the root directory at cluster 0 with 3 entries, the indirect FAT
-cluster 8, and the save folder's 5 entries with the data file (7,704 bytes), the icon (79,128) and `icon.sys` (964).
-The other values (the erase block, the backup blocks, the end of allocation, the bad block list, the card type and
-flags, the entry modes, times and attributes) are inferred from those tools. A player's save of the game is
-the folder `BASLUS-21215` with its data file of the same name, in one of these containers:
+None of this is the game's code, which reaches the card through Sony's `libmc` ([The card library](#card-library)). The
+layout below is inferred from the formats as the open-source card tools (mymc, uLaunchELF) and PCSX2 read and write
+them. The numbers run r-20261118-ps2-card-save records are confirmed (runtime), run r-20261118-ps2-card-save, on a card
+the game formatted and saved to in PCSX2 and that a separate script read back: a card file of 8,650,752 bytes, 512-byte
+pages, two to a cluster, 8,192 clusters, the allocation offset 41, the root directory at cluster 0 with 3 entries, the
+indirect FAT cluster 8, and the save folder's 5 entries with the data file (7,704 bytes), the icon (79,128) and
+`icon.sys` (964). The other values (the erase block, the backup blocks, the end of allocation, the bad block list, the
+card type and flags, the entry modes, times and attributes) are inferred from those tools. A player's save of the game
+is the folder `BASLUS-21215` with its data file of the same name, in one of these containers:
 
 | Container | What it is | How it is told apart |
 | --- | --- | --- |

@@ -43,6 +43,8 @@ class PmListScreen : public PmScreen {
     /// Releases a screen's own widgets.
     virtual void closeExtras() {}
 
+    /// Builds the screen for this entry: setUp(), then the title, grid and usage line at their places.
+    /// @coney-only the list screens' shared Init steps; each screen's own Init is cited at its setUp()
     void open() final;
     void close() final;
     void draw() final;
