@@ -122,7 +122,7 @@ emits, macOS, the sanitizers and clang-tidy (see [the local gate](testing.md#loc
 
 ```sh
 uv run --project python coney-tools ci pr --title TITLE --body FILE [--base origin/main] [--only STEP ...]
-    [--skip STEP ...] [--preset dev] [--agent ID]
+    [--skip STEP ...] [--preset dev] [--agent ID] [--opened MOMENT]
 ```
 
 Everything CI checks on a pull request, run before it is opened: [`ci run`](#ci-run) plus the pull request's
@@ -136,7 +136,7 @@ between the text steps and `engine` are the steps of `ci run`, with the same rul
 | Step | CI job it is | What it does |
 | --- | --- | --- |
 | `title` | `title` | [`pr check-title`](coney-tools-pr.md#pr-check-title-usage): `area: Verb the rest`, the length, the tense, no trailing period |
-| `body` | `body` | [`pr check-body`](coney-tools-pr.md#pr-check-body-usage) with the title, so the `Runtime:` line of a title a player sees is checked, and with the branch's commits, so the `Model:` line names every model a `Co-Authored-By` trailer names (CI sees only the description and cannot) |
+| `body` | `body` | [`pr check-body`](coney-tools-pr.md#pr-check-body-usage) with the title, so the `Runtime:` line and the clips of a title a player sees are checked, the changed files and when the pull request was opened (`--opened`, else the branch's pull request's `createdAt` asked of GitHub with a 20-second limit; none: not yet opened), so an update of one opened before the clip rule began is not asked for clips, as in CI, and with the branch's commits, so the `Model:` line names every model a `Co-Authored-By` trailer names (CI sees only the description and cannot) |
 | `docs-rule` | `docs` | [`pr check-docs`](coney-tools-pr.md#pr-check-docs-usage): a change to `src/` or `python/src/` changes `docs/` or `research/`, or the description has `Docs: none` |
 | `repo`, `orig`, `pre-commit`, `docs`, `python` | `python`, `format`, `markdownlint`, `mkdocs` | the steps of `ci run` above |
 | `engine` | `build-ok` | `coney-tools build --preset dev --test --full` (`--preset` and `--agent` change it; `--full` because an agent's unfiltered `--test` run is refused without it), when a changed file is in the `engine` class of `paths` in `.github/conventions.yml` or in no class (CI runs everything for it); skipped for a change to docs or tools alone. It takes as long as a build and the tests do, so `--skip engine` leaves it out for a first pass |
@@ -307,6 +307,7 @@ What CI checks on a pull request, before you open it: title, description, the ga
 
 ```text
 coney-tools ci pr --title TITLE --body BODY [--base BASE] [--only ONLY] [--skip SKIP] [--preset PRESET] [--agent AGENT]
+    [--opened MOMENT]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -318,4 +319,5 @@ coney-tools ci pr --title TITLE --body BODY [--base BASE] [--only ONLY] [--skip 
 | `--skip SKIP` | choice | none | leave this step out (repeatable). One of `title`, `body`, `docs-rule`, `repo`, `orig`, `pre-commit`, `docs`, `python`, `engine`. |
 | `--preset PRESET` | text | `dev` | the preset the engine step builds and tests |
 | `--agent AGENT` | text | none | your id for the engine step's build slot and log (default: as `build`) |
+| `--opened MOMENT` | text | none | when the pull request was opened (ISO 8601), for an update: one opened before a rule began is not held to it, as in CI (default: the branch's pull request, asked of GitHub; none means not yet opened) |
 <!-- command-reference:end -->

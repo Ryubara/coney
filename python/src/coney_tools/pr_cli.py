@@ -144,7 +144,7 @@ def run_verify(args: argparse.Namespace) -> int:
         result.refusals.append(unreadable)
     # The before and after clips a visible change needs (pull_requests.clips), as CI's body job will ask for them.
     # A pull request already open is asked only what a rule that started before it asks (CI passes `--opened`).
-    opened = pr_publish.opened_of(subject.unit.dir, pr_publish.real_gh)
+    opened = pr_publish.opened_of(subject.unit.dir, pr_publish.lookup_gh)
     result.refusals += pr_text.clip_refusals(subject, text_path, opened)
     if args.json:
         print(
@@ -180,7 +180,7 @@ def run_text(args: argparse.Namespace) -> int:
     subject, task_file, keys, text_path = _load(args)
     text = pr_text.read_engineer_file(text_path, subject.conventions)
     models = branch_trailer_models(subject.root, subject.base, subject.conventions.commits.trailers)
-    opened = pr_publish.opened_of(subject.unit.dir, pr_publish.real_gh)
+    opened = pr_publish.opened_of(subject.unit.dir, pr_publish.lookup_gh)
     generated = pr_text.generate(subject, task_file, text, keys=keys, trailer_models=models, opened=opened)
     folder = text_path.parent
     written: list[Path] = []

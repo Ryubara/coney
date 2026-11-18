@@ -506,7 +506,8 @@ request shows](#pr-evidence) has it), and a brief names the pair as part of "don
 The rule has a start, its `since`, set no earlier than its own pull request merged. A pull request opened before then
 was written before the rule and is not asked for clips, at its next push or in a fix round: CI's `body` job passes its
 `created_at`, `pr open` its `createdAt` (and records it in `pr-published.json`), and `pr text` and `pr verify` read that
-record (or ask GitHub, for a pull request an older `pr open` recorded without it). Clip lines it writes anyway are still
+record (or ask GitHub, for a pull request an older `pr open` recorded without it, and write the answer back);
+`ci pr` takes `--opened` or asks GitHub for the branch's pull request. Clip lines it writes anyway are still
 checked. A pull request not yet opened, or opened since, is always asked.
 
 The engineer writes the clips into the Screenshots section of `PR.md`, one per labelled line, each a local image under

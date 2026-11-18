@@ -543,6 +543,12 @@ def _add_gate_commands(commands: Any) -> None:
     pr.add_argument("--skip", action="append", choices=check_pr.STEPS, help="leave this step out (repeatable)")
     pr.add_argument("--preset", default=check_pr.DEFAULT_PRESET, help="the preset the engine step builds and tests")
     pr.add_argument("--agent", help="your id for the engine step's build slot and log (default: as `build`)")
+    pr.add_argument(
+        "--opened",
+        metavar="MOMENT",
+        help="when the pull request was opened (ISO 8601), for an update: one opened before a rule began is not held "
+        "to it, as in CI (default: the branch's pull request, asked of GitHub; none means not yet opened)",
+    )
 
 
 def _add_wad_commands(groups: Any) -> None:
@@ -1375,7 +1381,9 @@ def _run(args: argparse.Namespace) -> int:
         if args.command in ("run", "result"):
             return check_cli.run_check(args)
         if args.command == "pr":
-            return check_pr.run_pr(args.base, args.title, args.body, args.only, args.skip, args.preset, args.agent)
+            return check_pr.run_pr(
+                args.base, args.title, args.body, args.only, args.skip, args.preset, args.agent, args.opened
+            )
         return ci_cli.run_ci(args)
     if args.group == "wad":
         return _run_wad(args)

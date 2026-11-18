@@ -17,9 +17,10 @@ from __future__ import annotations
 import os
 import sys
 from collections.abc import Callable, Sequence
+from datetime import datetime
 from pathlib import Path
 
-from coney_tools import build_cli, check_cli, local_gate
+from coney_tools import build_cli, check_cli, local_gate, pr_publish
 from coney_tools.build_run import EXIT_QUEUED
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import Conventions, load_conventions
@@ -57,13 +58,20 @@ def step_title(title: str, conventions: Conventions) -> StepResult:
 
 
 def step_body(
-    root: Path, body: str, title: str, base: str, conventions: Conventions, changed: Sequence[str] | None = None
+    root: Path,
+    body: str,
+    title: str,
+    base: str,
+    conventions: Conventions,
+    changed: Sequence[str] | None = None,
+    opened: datetime | None = None,
 ) -> StepResult:
-    """CI's `body` job, which sees the description, the title and the pull request's files (`changed`: a path a player
-    sees in Coney Studio asks for the clips), and one more rule CI cannot see: the `Model:` line names every model that
-    a trailer on the branch's commits names (`pr check-body --worktree`)."""
+    """CI's `body` job, which sees the description, the title, the pull request's files (`changed`: a path a player
+    sees in Coney Studio asks for the clips) and when it was `opened` (an update of one opened before a rule began is
+    not held to it), and one more rule CI cannot see: the `Model:` line names every model that a trailer on the
+    branch's commits names (`pr check-body --worktree`)."""
     models = branch_trailer_models(root, base, conventions.commits.trailers)
-    problems = check_body(body, conventions.pull_requests, models, title, changed)
+    problems = check_body(body, conventions.pull_requests, models, title, changed, opened)
     if problems:
         return StepResult("body", False, "refused (see .github/pull_request_template.md)", output=tuple(problems))
     return StepResult("body", True, "sections, summary, AI use and the model line")
@@ -112,16 +120,23 @@ def step_engine(root: Path, changed: list[str], conventions: Conventions, preset
 
 
 def pr_steps(
-    root: Path, base: str, title: str, body: str, preset: str, agent: str | None
+    root: Path,
+    base: str,
+    title: str,
+    body: str,
+    preset: str,
+    agent: str | None,
+    opened: datetime | None = None,
 ) -> dict[str, Callable[[], StepResult]]:
-    """Every step of `STEPS` by name, for the change since `base` and the text `title` and `body`."""
+    """Every step of `STEPS` by name, for the change since `base` and the text `title` and `body` of a pull request
+    `opened` then (None: not yet opened)."""
     conventions = load_conventions(root)
     changed = local_gate.changed_files(root, base)
     # The two checks of CI that read the pull request's file list read the committed one, deletions included.
     listed = local_gate.pull_request_files(root, base)
     steps: dict[str, Callable[[], StepResult]] = {
         "title": lambda: step_title(title, conventions),
-        "body": lambda: step_body(root, body, title, base, conventions, listed),
+        "body": lambda: step_body(root, body, title, base, conventions, listed, opened),
         "docs-rule": lambda: step_docs_rule(listed, body, conventions),
         ENGINE_STEP: lambda: step_engine(root, listed, conventions, preset, agent),
     }
@@ -145,14 +160,26 @@ def run_pr(
     skip: list[str] | None,
     preset: str = DEFAULT_PRESET,
     agent: str | None = None,
+    opened: str | None = None,
+    gh: pr_publish.Gh | None = None,
 ) -> int:
     """Check the pull request that the change since `base` and the text (`title`, the description in `body_file`) make;
-    print a line per step; 0 when all pass, 1 when any fails (CI would refuse it too), 2 for a setup problem."""
+    print a line per step; 0 when all pass, 1 when any fails (CI would refuse it too), 2 for a setup problem.
+
+    `opened` is when the pull request was opened (ISO 8601), for an update: as CI's `--opened`, one opened before a
+    rule began (the clips' `since`) is not held to it. Without it, the branch's pull request is asked of GitHub through
+    `gh` (default: `pr_publish.lookup_gh`); a branch with none is a pull request not yet opened."""
     root = find_repo_root(Path.cwd())
     body = _read(body_file, "the description")
+    if opened is not None:
+        moment = pr_publish.moment(opened)
+        if moment is None:
+            raise ConfigError(f"--opened {opened!r}: expected a moment such as 2026-11-18T17:00:00Z")
+    else:
+        moment = pr_publish.branch_opened(gh or pr_publish.lookup_gh, root)
     bind_children()  # an interrupted run leaves none of its programs behind
     wanted = [step for step in STEPS if (not only or step in only) and step not in (skip or [])]
-    steps = pr_steps(root, base, title.strip(), body, preset, engine_agent(root, agent))
+    steps = pr_steps(root, base, title.strip(), body, preset, engine_agent(root, agent), moment)
     print(f"pull request {title.strip()!r}: changes since {base}")
     code = check_cli.run_steps(wanted, steps, "ci pr")
     if code == EXIT_QUEUED:

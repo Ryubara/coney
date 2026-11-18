@@ -805,14 +805,31 @@ def test_opened_of_asks_github_only_for_a_pull_request_recorded_without_it(tmp_p
 
     assert pr_publish.opened_of(tmp_path, gh) is None and asked == []  # no pull request yet
     pr_publish.write_published(tmp_path, pr_publish.Published(number=1415, url="https://github.com/a/b/pull/1415"))
-    assert pr_publish.opened_of(tmp_path, gh) == datetime(2026, 11, 12, 8, tzinfo=UTC)
-    assert asked == [["pr", "view", "https://github.com/a/b/pull/1415", "--json", "createdAt"]]
-    assert pr_publish.opened_of(tmp_path) is None  # without gh nothing is asked
+    said: list[str] = []
 
     def failing(args: Sequence[str], folder: Path | None) -> str:
-        raise pr_publish.GhError("offline")
+        raise pr_publish.GhError("gh could not run: timed out")
 
-    assert pr_publish.opened_of(tmp_path, failing) is None  # the rule then applies
+    assert pr_publish.opened_of(tmp_path, failing, said.append) is None  # the rule then applies, and it says why
+    assert len(said) == 1 and "pull/1415 was opened is unknown (gh could not run: timed out)" in said[0]
+    assert pr_publish.opened_of(tmp_path) is None  # without gh nothing is asked
+    assert pr_publish.opened_of(tmp_path, gh) == datetime(2026, 11, 12, 8, tzinfo=UTC)
+    assert asked == [["pr", "view", "https://github.com/a/b/pull/1415", "--json", "createdAt"]]
+    # written back: the next run, and `prove` (which asks nothing), have it without asking again
+    assert pr_publish.read_published(tmp_path).opened == "2026-11-12T08:00:00Z"
+    assert pr_publish.opened_of(tmp_path) == datetime(2026, 11, 12, 8, tzinfo=UTC) and len(asked) == 1
+
+
+def test_a_lookup_of_when_a_pull_request_was_opened_has_a_short_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list[float] = []
+
+    def run(args: Sequence[str], folder: Path | None, timeout: float = 600) -> str:
+        seen.append(timeout)
+        return "{}"
+
+    monkeypatch.setattr(pr_publish, "real_gh", run)
+    pr_publish.lookup_gh(["pr", "view"], None)
+    assert seen == [pr_publish.LOOKUP_SECONDS] and pr_publish.LOOKUP_SECONDS <= 30
 
 
 def test_a_clip_uploaded_from_the_task_folder_counts_when_the_text_is_elsewhere(tmp_path: Path) -> None:

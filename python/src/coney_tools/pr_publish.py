@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import sys
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -55,8 +56,8 @@ def real_git(folder: Path, args: Sequence[str]) -> subprocess.CompletedProcess[s
         raise ConfigError(f"git cannot be run ({error})") from error
 
 
-def real_gh(args: Sequence[str], folder: Path | None) -> str:
-    """Run `gh` in `folder`; its output, or GhError with its message."""
+def real_gh(args: Sequence[str], folder: Path | None, timeout: float = 600) -> str:
+    """Run `gh` in `folder`; its output, or GhError with its message (a run past `timeout` seconds too)."""
     try:
         done = subprocess.run(
             ["gh", *args],
@@ -64,7 +65,7 @@ def real_gh(args: Sequence[str], folder: Path | None) -> str:
             capture_output=True,
             encoding="utf-8",
             errors="replace",
-            timeout=600,
+            timeout=timeout,
             check=False,
         )
     except (OSError, subprocess.SubprocessError) as error:
@@ -385,20 +386,63 @@ def read_published(folder: Path) -> Published:
         return Published()
 
 
-def opened_of(folder: Path, gh: Gh | None = None) -> datetime | None:
+#: How long a lookup of when a pull request was opened may take: a stalled network must not hold `pr text` for long.
+LOOKUP_SECONDS = 20
+
+
+def lookup_gh(args: Sequence[str], folder: Path | None) -> str:
+    """`real_gh` with the short timeout of a lookup (`LOOKUP_SECONDS`)."""
+    return real_gh(args, folder, timeout=LOOKUP_SECONDS)
+
+
+def _warn(line: str) -> None:
+    """A note on stderr, so that a `--json` answer on stdout stays whole."""
+    print(line, file=sys.stderr)
+
+
+def _created_at(output: str) -> datetime | None:
+    """The `createdAt` of `gh pr view --json createdAt`'s output, or None."""
+    try:
+        data = json.loads(output)
+    except ValueError:
+        return None
+    return moment(data.get("createdAt")) if isinstance(data, dict) else None
+
+
+def opened_of(folder: Path, gh: Gh | None = None, say: Callable[[str], None] = _warn) -> datetime | None:
     """When the task's pull request was opened, for the rules that start at a moment (`pull_requests.clips.since`):
     what `pr open` recorded in `folder`, else, for a pull request an older `pr open` recorded without it, GitHub's
-    `createdAt` asked by its address through `gh` (when one is given). None when the task has no pull request yet, or
-    GitHub cannot say: the rule then applies, as to a description not yet opened."""
+    `createdAt` asked by its address through `gh` (when one is given) and written back to the record, so the next run
+    (and `pr_ready.prove`, which asks nothing) has it. None when the task has no pull request yet, or GitHub cannot say,
+    which `say` reports in one line: the rule then applies, as to a description not yet opened."""
     published = read_published(folder)
     recorded = moment(published.opened)
     if recorded is not None or gh is None or not published.url:
         return recorded
     try:
-        data = json.loads(gh(["pr", "view", published.url, "--json", "createdAt"], None))
-    except (GhError, ValueError):
+        found = _created_at(gh(["pr", "view", published.url, "--json", "createdAt"], None))
+    except GhError as error:
+        found = None
+        reason = str(error)
+    else:
+        reason = "gh gave no createdAt"
+    if found is None:
+        say(f"note: when {published.url} was opened is unknown ({reason}); rules with a start apply to it")
         return None
-    return moment(data.get("createdAt")) if isinstance(data, dict) else None
+    published.opened = found.strftime("%Y-%m-%dT%H:%M:%SZ")
+    write_published(folder, published)
+    return found
+
+
+def branch_opened(gh: Gh, folder: Path, say: Callable[[str], None] = _warn) -> datetime | None:
+    """When the pull request of the branch checked out in `folder` was opened (`gh pr view`'s `createdAt`), for a
+    check run before an update (`ci pr`); None when the branch has none, or GitHub cannot say (`say` reports that)."""
+    try:
+        return _created_at(gh(["pr", "view", "--json", "createdAt"], folder))
+    except GhError as error:
+        if "no pull requests found" not in str(error).lower():
+            say(f"note: whether this branch has a pull request is unknown ({error}); rules with a start apply")
+        return None
 
 
 def write_published(folder: Path, published: Published) -> None:
