@@ -164,6 +164,9 @@ void Fighter::startHold(Holdable& victim, const FighterInput& input, float& head
     m_rear = false;
     m_pair = PairStage::None;
     m_spinThrow = id::kNone;
+    // The grab's base id (record +0xb4), which the connect's and the pick-up's ends score: `Player_GrabOrTackle`
+    // passes `Tackle_Start` 5 (0x00284aac) and `Grab_Start` 0x48 (0x00284c6c), a strong grapple passes its own.
+    m_grabBase = tackle ? static_cast<int>(clips::kTackleHit) : connect;
     if (tackle) {
         // The tackle faces the victim at once; the intro covers the distance and the victim waits for the hit clip.
         heading = toVictim;
@@ -239,7 +242,7 @@ void Fighter::followPairClips(const FighterInput& input, HumanAnimator& animator
         // The connect's end (`Grab_ConnectEnd` `0x0026bad8`), which `Mount_ReturnToFrontGrab` `0x00271808` hangs on
         // the pick-up 248 too: with power left the victim takes the ended clip's damage-table value (a plain grab's 72
         // deals none) before the gate, so a victim out of reach is hurt and let go with nothing scored; otherwise the
-        // snap, and only then the move scores (`Grab_ScoreMove` `0x00264fa0`).
+        // snap, and only then the move scores (`Grab_ScoreMove` `0x00264fa0`) as the grab's base id, not the clip.
         // **Stand-in** (#684): the gate does not test for a clear line (`Human_IsClearToTarget` `0x0021c240`, not
         // ported). After the snap the original lets a victim in state 0x20000 escape at once, and a victim pressing
         // circle escapes or reverses the grab on a coin flip, scoring nothing; Coney runs neither, as its held human
@@ -256,7 +259,7 @@ void Fighter::followPairClips(const FighterInput& input, HumanAnimator& animator
             return;
         }
         snapAttach(input, heading, offset, m_rear ? 0.0F : kPi);
-        scoreGrapple(input, ended, landed);
+        scoreGrapple(input, static_cast<std::uint32_t>(m_grabBase), landed);
     }
     detachForSpin(animator);
 }
@@ -349,7 +352,7 @@ Fighter::LandedGrapple Fighter::landGrapple(const FighterInput& input, std::uint
 }
 
 void Fighter::scoreGrapple(const FighterInput& input, std::uint32_t clip, LandedGrapple landed) {
-    // The move scores as the clip (`Grab_ScoreMove`), once the victim is in the hold.
+    // The move scores as the grab's base id (`Grab_ScoreMove` with record +0xb4), once the victim is in the hold.
     if (!landed.landed) {
         return;
     }

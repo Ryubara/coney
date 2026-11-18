@@ -794,8 +794,8 @@ class Fighter {
     // clip's damage, reported as the hold's id (docs/research/combat-grabs.md#strong-grapple, #mount).
     // @orig 0x0026bad8 Grab_ConnectEnd (unknown)
     LandedGrapple landGrapple(const FighterInput& input, std::uint32_t clip);
-    // The gate has passed and the victim is snapped: the hit landGrapple() dealt scores as `clip` (rage and the repeat
-    // note), as Grab_ConnectEnd scores only after the snap.
+    // The gate has passed and the victim is snapped: the hit landGrapple() dealt scores as `clip`, the grab's base id
+    // (rage and the repeat note), as Grab_ConnectEnd scores only after the snap.
     // @orig 0x0026bad8 Grab_ConnectEnd (unknown)
     void scoreGrapple(const FighterInput& input, std::uint32_t clip, LandedGrapple landed);
     // During its grab's or tackle's intro, the victim's counter press (Holdable::takeCounterPress()), face to face:
@@ -1042,6 +1042,7 @@ class Fighter {
     Combatant* m_target = nullptr;             // the target kept (human +0xc8)
     Combatant* m_snapTarget = nullptr;         // what the snap's search found for this update's square (not the target)
     int m_connect = 72;            // the grab's front connecting clip: 72, or the strong grapple's 657 (649 in rage)
+    int m_grabBase = 72;           // the grab's base id (record +0xb4): 72, the tackle's 5 or a strong grapple's id
     anim::Vec3 m_slide;            // a grab's alignment's slide velocity, m/s
     int m_slideUpdates = 0;        // updates of slide left
     TurnAndSlide m_steer;          // an attack start's turn and slide onto its target
