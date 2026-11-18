@@ -375,14 +375,17 @@ void TacticAttack::startSubTactic(Gang& gang) {
     OrderArgs args;
     switch (draw) {
     case 0:
+        // Coney stand-in for ChargeSubTactic_Init until #338.
         args = {.kind = OrderKind::Charge, .count = share, .flag = false, .limitMs = kChargeLimitMs, .deadlineAtMs = 0};
         break;
     case 3:
     case 5:
+        // Coney stand-in for ThrowSubTactic_Init until #340.
         args = {
             .kind = OrderKind::Throw, .count = share, .flag = draw == 3, .limitMs = kThrowLimitMs, .deadlineAtMs = 0};
         break;
     case 4:
+        // Coney stand-in for LeaderSubTactic_Init until #338.
         args = {.kind = OrderKind::Leader,
                 .count = living - 1,
                 .flag = false,
@@ -390,10 +393,12 @@ void TacticAttack::startSubTactic(Gang& gang) {
                 .deadlineAtMs = 0};
         break;
     case 6:
+        // Coney stand-in for GrabSubTactic_Init until #338.
         args = {.kind = OrderKind::Grab, .count = 0, .flag = false, .limitMs = -1, .deadlineAtMs = 0};
         break;
     default:
-        // Draws 1 and 2: Guard times itself from now (its record's limit is none); 2 backs off.
+        // Draws 1 and 2: Guard times itself from now (its record's limit is none); 2 backs off. Coney stand-in for
+        // GuardSubTactic_Init until #339.
         args = {.kind = OrderKind::Guard,
                 .count = 0,
                 .flag = draw == 2,
