@@ -74,7 +74,8 @@ class Console {
     Outcome submit(std::string_view line, LineSource source, PlayerSlot slot = 0);
 
     /// Runs the queued commands in the order they were entered: the step boundary. Returns how many ran (a command
-    /// removed since it was queued is reported and does not run).
+    /// removed since it was queued, or registered again with arguments its values no longer fit, is reported and
+    /// does not run).
     std::size_t runQueued();
 
     /// The completions of the word being typed at the end of `line`: command names for the first word, then the

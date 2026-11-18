@@ -92,12 +92,14 @@ class Registry {
     explicit Registry(Access highest = Access::Player) : m_highest(highest) {}
 
     /// Registers a built-in. Fails with ErrorCode::InvalidArgument when the name is badly spelled, already a
-    /// built-in's or a mod's, or the access level is above the registry's.
+    /// built-in's or a mod's, the access level is above the registry's, or an argument's default is not a value of
+    /// its type.
     [[nodiscard]] std::expected<CommandId, Error> addBuiltin(const CommandSpec& spec, Handler handler);
 
     /// Registers `mod`'s command `spec` (its access is Player whatever the spec says). Registering a name the same mod
     /// already has replaces that command, keeping its id. Fails with ErrorCode::InvalidArgument when the name is badly
-    /// spelled or over kModCommandNameMax, a built-in's, or the mod already has kModCommandsMax commands.
+    /// spelled or over kModCommandNameMax, a built-in's, the mod already has kModCommandsMax commands, the mod's own
+    /// name is badly spelled or over kModNameMax, or an argument's default is not a value of its type.
     [[nodiscard]] std::expected<CommandId, Error> addModCommand(std::string_view mod, const CommandSpec& spec,
                                                                 Handler handler);
 

@@ -33,12 +33,17 @@ std::string_view needPhrase(Need need) {
 
 constexpr std::array<Need, 4> kNeeds{Need::Game, Need::Profile, Need::Level, Need::Disc};
 
-// Whether the values checked against an earlier spec still suit this one: the same number, each of its shape.
+// Whether the values checked against an earlier spec still suit this one: the same number, each of its shape. The
+// empty string `submit` stores for an optional argument left out with no default is no value to check: it fits as
+// long as the argument is still optional with no default.
 bool argsFit(const CommandSpec& spec, const std::vector<std::string>& values) {
     if (values.size() != spec.args.size()) {
         return false;
     }
     for (std::size_t i = 0; i < values.size(); ++i) {
+        if (values[i].empty() && spec.args[i].optional && spec.args[i].defaultValue.empty()) {
+            continue;
+        }
         const std::span<const std::string> earlier(values.data(), i);
         if (!checkArg(spec.args[i], values[i], earlier, ValueSource{})) {
             return false;

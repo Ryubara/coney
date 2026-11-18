@@ -167,24 +167,51 @@ def _arg(where: str, raw: Any, problems: list[str]) -> Arg | None:
     )
 
 
+_INT64_MIN = -(2**63)
+_INT64_MAX = 2**63 - 1
+# A decimal number as std::from_chars reads it: ASCII only, no `+`, space, `_`, hexadecimal, infinity or NaN.
+_DECIMAL = re.compile(r"-?(?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?", re.ASCII)
+_WHOLE = re.compile(r"-?[0-9]+", re.ASCII)
+_NAME = re.compile(r"[A-Za-z0-9_.:/-]+", re.ASCII)
+
+
+def _whole_number(text: str) -> bool:
+    """Whether `text` is a whole number of 64 bits: an optional `-` and ASCII digits (the C++ isWholeNumber)."""
+    return (
+        _WHOLE.fullmatch(text) is not None
+        and len(text.lstrip("-").lstrip("0")) <= 19
+        and _INT64_MIN <= int(text) <= _INT64_MAX
+    )
+
+
+def _decimal(text: str) -> bool:
+    """Whether `text` is a finite decimal number in the range of a double (the C++ parseDecimal)."""
+    if _DECIMAL.fullmatch(text) is None:
+        return False
+    value = float(text)
+    if not math.isfinite(value):
+        return False
+    # A nonzero mantissa that underflows to zero is out of range for from_chars.
+    mantissa = re.split("[eE]", text)[0]
+    return value != 0.0 or not any(c in "123456789" for c in mantissa)
+
+
 def _default_fits(kind: str, default: str, choices: Any) -> bool:
-    """Whether a default has the shape its argument type takes (the C++ side refuses a registration that has not)."""
+    """Whether a default is exactly what the C++ check (arg_types.cpp checkShape) takes for its argument type, so
+    registerBuiltins never stops partway through the catalog on one."""
     if kind == "int":
-        return re.fullmatch(r"-?\d+", default) is not None
+        return _whole_number(default)
     if kind == "number":
-        try:
-            return math.isfinite(float(default))
-        except ValueError:
-            return False
+        return _decimal(default)
     if kind == "bool":
         return default in ("on", "off")
     if kind == "choice":
         return isinstance(choices, list) and default in choices
     if kind in ("mission", "checkpoint"):
-        return re.fullmatch(r"[1-9]\d*", default) is not None
+        return _whole_number(default) and not default.startswith("-") and default != "0"
     if kind == "text":
         return True
-    return re.fullmatch(r"[A-Za-z0-9_.:/-]+", default) is not None
+    return _NAME.fullmatch(default) is not None
 
 
 def _examples(where: str, name: str, raw: Any, problems: list[str]) -> tuple[Example, ...]:

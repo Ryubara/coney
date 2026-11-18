@@ -71,14 +71,18 @@ std::string quoteWord(std::string_view word) {
     if (plain) {
         return std::string(word);
     }
+    // A backslash only escapes a quote, so one before the closing quote would escape it: the word's trailing
+    // backslashes go after the closing quote, where they are plain text of the same word.
+    const std::size_t kept = word.find_last_not_of('\\') + 1;
     std::string quoted = "\"";
-    for (const char c : word) {
+    for (const char c : word.substr(0, kept)) {
         if (c == '"') {
             quoted += '\\';
         }
         quoted += c;
     }
     quoted += '"';
+    quoted.append(word.substr(kept));
     return quoted;
 }
 
