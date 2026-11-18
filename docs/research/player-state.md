@@ -138,8 +138,10 @@ What each type's data is:
 
 Which records are **new** (not yet seen in a menu) is a separate bit set at `0x006fe948` (`Unlockables_IsDirty` /
 `Unlockables_ClearDirty`). `UM_GetUnlockablesByType` fills the unused entries of its result with 65535 and does not
-check the 32-entry bound (`0x00423eb0`). Confirmed (code). No engine code reads `extra`; only `UM_GetRecordData`
-returns it. What the menus count is under [The counts the menus show](#unlockable-counts).
+check the 32-entry bound (`0x00423eb0`); with no records table (`0x006fe998` zero, `0x004237a8`) it writes nothing.
+Confirmed (code). Coney stops at 32 and, being a Lua binding, still sets all 32 slots of its out table when there
+are no records: a stand-in until the script glue that hands the original's buffer to Lua is studied. No engine
+code reads `extra`; only `UM_GetRecordData` returns it. What the menus count is under [The counts the menus show](#unlockable-counts).
 
 Type 6, by data id (confirmed (code) at the tests cited; ids 1, 2 and 16-28 are tested only by scripts, 3 and 4 by
 the hub, [World flags](flags.md)):
