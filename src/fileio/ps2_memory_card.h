@@ -26,8 +26,8 @@ struct Ps2SaveFolder {
     std::string name;               ///< The folder's name, `B` + region + product code for a game's save.
     std::vector<Ps2SaveFile> files; ///< Its files ("." and ".." left out).
 
-    /// The file called `name` (exact bytes), or null.
-    [[nodiscard]] const Ps2SaveFile* file(std::string_view name) const;
+    /// The file called `fileName` (exact bytes), or null.
+    [[nodiscard]] const Ps2SaveFile* file(std::string_view fileName) const;
 };
 
 /// A PS2 memory card image as the players have one: the 8 MB card file PCSX2 keeps (`Mcd001.ps2`, the card's raw pages

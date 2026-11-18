@@ -60,8 +60,8 @@ std::string entryName(std::span<const std::byte> entry) {
 
 } // namespace
 
-const Ps2SaveFile* Ps2SaveFolder::file(std::string_view name) const {
-    const auto found = std::ranges::find(files, name, &Ps2SaveFile::name);
+const Ps2SaveFile* Ps2SaveFolder::file(std::string_view fileName) const {
+    const auto found = std::ranges::find(files, fileName, &Ps2SaveFile::name);
     return found != files.end() ? &*found : nullptr;
 }
 
