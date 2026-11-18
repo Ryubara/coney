@@ -27,7 +27,8 @@ constexpr std::uint8_t kModLevel = 4;
 
 // The original's chain with mod mission `id` after level80, as mergeStory() places one.
 StoryGraph withModAfterLevel80(const std::string& id) {
-    std::vector<StoryStep> steps(StoryGraph::original().steps().begin(), StoryGraph::original().steps().end());
+    const StoryGraph original = StoryGraph::original();
+    std::vector<StoryStep> steps(original.steps().begin(), original.steps().end());
     steps.insert(steps.begin() + 2, StoryStep::modMission(id));
     return StoryGraph(std::move(steps));
 }
