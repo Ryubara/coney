@@ -116,6 +116,9 @@ class GpuRenderer {
     /// `uploads` when it is new or has a new revision; null when it cannot be drawn (a kind of texture the GPU renderer
     /// does not take, or SDL refused it).
     const OwnedTexture* textureFor(const graphics::Texture* texture, std::vector<PendingUpload>& uploads);
+    /// Forgets what `uploads` meant to put on the GPU (a frame that failed before it could): the white texel and each
+    /// texture's cache entry, so the next frame uploads them again.
+    void forgetUploads(const std::vector<PendingUpload>& uploads);
     /// The sampler for `linear` filtering (else nearest) and `address`.
     SDL_GPUSampler* samplerFor(bool linear, graphics::TextureAddress address) const;
 

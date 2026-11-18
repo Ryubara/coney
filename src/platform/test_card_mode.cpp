@@ -201,7 +201,7 @@ void TestCardMode::drawTriangles() {
     constexpr float kCentreY = 200.0F;
     constexpr float kRadius = 128.0F;
     std::vector<LogicalVertex> fan;
-    fan.reserve(kSegments * 3);
+    fan.reserve(static_cast<std::size_t>(kSegments) * 3);
     const auto rim = [&](int i) {
         const float angle = static_cast<float>(i) * 2.0F * std::numbers::pi_v<float> / kSegments;
         const auto shade = static_cast<std::uint8_t>((i * 255) / kSegments);

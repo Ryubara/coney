@@ -396,6 +396,18 @@ const GpuRenderer::OwnedTexture* GpuRenderer::textureFor(const graphics::Texture
     return &entry->value;
 }
 
+// Treats this frame's pending uploads as never made, so the next frame uploads the white texel and each texture's
+// pixels again rather than drawing them from pixels the GPU never got.
+void GpuRenderer::forgetUploads(const std::vector<PendingUpload>& uploads) {
+    for (const PendingUpload& upload : uploads) {
+        if (upload.texture == m_white.texture) {
+            m_whiteUploaded = false;
+        } else {
+            m_textures.forget(upload.serial);
+        }
+    }
+}
+
 SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphics::FrameDescription& frame,
                                     graphics::Extent size) {
     ++m_frame;
@@ -429,6 +441,8 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
     const bool drawsSomething = vertexBytes > 0 && indexBytes > 0;
     if (drawsSomething && (!ensureBuffer(m_vertices, m_vertexCapacity, vertexBytes, SDL_GPU_BUFFERUSAGE_VERTEX) ||
                            !ensureBuffer(m_indices, m_indexCapacity, indexBytes, SDL_GPU_BUFFERUSAGE_INDEX))) {
+        // No buffer to draw from: forget the pixels this frame meant to upload, as a failed upload buffer does.
+        forgetUploads(uploads);
         return nullptr;
     }
     if (total > 0) {
@@ -439,13 +453,7 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
         if (bytes == nullptr) {
             // Nothing reached the GPU: forget what this frame meant to upload, so the next frame uploads it again
             // rather than drawing it from pixels it never got, and draw nothing from the last frame's buffers.
-            for (const PendingUpload& upload : uploads) {
-                if (upload.texture == m_white.texture) {
-                    m_whiteUploaded = false;
-                } else {
-                    m_textures.forget(upload.serial);
-                }
-            }
+            forgetUploads(uploads);
             return nullptr;
         }
         if (vertexBytes > 0) {
