@@ -358,7 +358,9 @@ The list is `ci.pull_request_target.workflows` in `.github/conventions.yml`, whi
 maintainer's). `python/tests/test_pull_request_target.py` refuses the event in any workflow not on the list and holds
 each listed one to GitHub's rules: every checkout is the base branch (no `ref`, no `repository`, no
 `allow-unsafe-pr-checkout`) with `persist-credentials: false`; nothing names, fetches or restores the pull request's
-code (no head ref or SHA, `refs/pull/`, `git fetch`, `gh pr checkout`, artifact download or cache action); no
+code (no head ref or SHA, `refs/pull/`, `git fetch`, `pull` or `clone`, `git remote add`, `gh repo clone`, `gh pr
+checkout` or `diff`, a patch, diff or archive URL, artifact download or cache action), and no job hands its work to a
+reusable workflow (a job-level `uses:`); no
 `${{ }}` expression appears in a `run:` line, so a title, body, branch name or comment reaches a script only through
 `env`; the only actions are the pinned checkout and uv; no secret is read; and a token writes nothing but `issues` and
 `pull-requests`. Without the setting, from 2026-12-02 none of the three runs on a pull request: the required `title`,
@@ -368,7 +370,7 @@ The review, 2026-11-18, of each workflow on `pull_request_target`:
 
 | Workflow | Checks out | Runs | Pull request text | Token writes | Decision |
 | --- | --- | --- | --- | --- | --- |
-| `pr.yml` (required `title`, `docs`, `body`, and `claim`) | the base branch, no credentials kept | the base branch's `coney-tools pr check-title`, `check-docs`, `check-body`, `claim check-pr`; the changed files come from the API | title and body through `env` (and a file made from it); the claim job reads the event file | nothing (`contents: read`, and `pull-requests` or `issues` read in two jobs) | keep |
+| `pr.yml` (the required `title`, `docs` and `body`, and the `claim` check, which is not required) | the base branch, no credentials kept | the base branch's `coney-tools pr check-title`, `check-docs`, `check-body`, `claim check-pr`; the changed files come from the API | title and body through `env` (and a file made from it); the claim job reads the event file | nothing (`contents: read`, and `pull-requests` or `issues` read in two jobs) | keep |
 | `claim.yml` | the base branch; credentials no longer kept (this change) | the base branch's `coney-tools claim run` with the event file | only in the event file and in `if:` expressions, never in a shell | `issues` (assignees, labels, its comments) | keep |
 | `hygiene.yml` | the base branch; credentials no longer kept (this change) | the base branch's `coney-tools repo post-findings` (and `pr list-stuck` on a push or the sweep) | the item number through `env`, checked to be digits; findings quoted into comments only after `neutralize` | `issues` and `pull-requests` (comments and the `S-conflict`/`S-failing` labels) | keep |
 

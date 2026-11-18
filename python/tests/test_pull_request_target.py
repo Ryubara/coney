@@ -34,7 +34,15 @@ FORBIDDEN = (
     "merge_commit_sha",
     "gh pr checkout",
     "git fetch",
+    "git pull",
     "git clone",
+    "git remote add",
+    "gh repo clone",
+    "gh pr diff",
+    ".patch",
+    ".diff",
+    "tarball",
+    "zipball",
     "download-artifact",
     "actions/cache",
     "cache-mode",
@@ -79,6 +87,13 @@ def test_every_checkout_is_the_base_branch_and_keeps_no_credentials(name: str) -
     for step in checkouts:
         # No `ref` and no `repository`: on pull_request_target that is the base branch, never the pull request's code.
         assert step.get("with") == {"persist-credentials": False}, name
+
+
+@pytest.mark.parametrize("name", LISTED)
+def test_every_job_runs_its_own_steps(name: str) -> None:
+    # A job-level `uses:` (a reusable workflow) would run steps none of these tests sees.
+    for job_id, job in parsed(WORKFLOWS / name)["jobs"].items():
+        assert "uses" not in job and job.get("steps"), f"{name}: {job_id}"
 
 
 @pytest.mark.parametrize("name", LISTED)
