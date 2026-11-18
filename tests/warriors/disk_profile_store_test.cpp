@@ -2,12 +2,13 @@
 // The disk-backed save system: one file per profile slot (docs/research/save.md#coney).
 #include "warriors/disk_profile_store.h"
 
-#include <cstdint>
-
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>

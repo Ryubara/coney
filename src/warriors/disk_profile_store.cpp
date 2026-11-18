@@ -172,8 +172,9 @@ bool DiskProfileStore::create(std::size_t slot, const Profile& profile) {
     m_state.brightness = profile.brightness;
     m_state.subtitles = profile.subtitles;
     captureProfile(m_state, record);
-    // Coney's choice: it writes the new profile at once, with nothing modded, where the original writes the slot's
-    // header and marks it created since the last save; the original's autosave right after a new game stores the same.
+    // Coney's choice: it writes the new profile at once, with nothing modded, where the original writes the template
+    // record into the card image at the slot's offset, then the slot's header, and marks the slot created since the
+    // last save; the original's autosave right after a new game stores the same.
     if (auto written = writeSlot(slot, record, ModdedProgress{}); !written) {
         m_lastError = written.error();
         return false;
@@ -181,6 +182,7 @@ bool DiskProfileStore::create(std::size_t slot, const Profile& profile) {
     m_lastError.reset();
     m_slots.at(slot) = Slot{.profile = profileOf(record), .record = std::move(record)};
     m_loaded = slot;
+    // Not ported: the original ends by applying the brightness to the display (Gamma_Set, #156).
     return true;
 }
 
