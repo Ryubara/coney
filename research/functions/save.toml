@@ -85,7 +85,7 @@ page = "save.md#original-structure"
 role = "the 16-byte slot header"
 level = "confirmed-code"
 coney = "src/warriors/profile_record.h:ProfileRecord::parse"
-status = "legacy"
+status = "compared"
 
 [[function.gaps]]
 what = "the importer (readPs2DataFile) reads every slot, as none is marked not loadable before it, and names a slot of another version in a line instead of raising the bad-version flag"
