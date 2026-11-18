@@ -124,6 +124,7 @@ class FakeNetwork final : public NetworkHost {
     Strings calls;
     Strings* order = nullptr;
     bool hostFails = false;
+    bool leaveFails = false; // leave() says it could not
 
     [[nodiscard]] SessionRole role() const override { return current; }
     [[nodiscard]] std::expected<std::string, std::string> host(std::optional<int> port) override {
@@ -146,7 +147,7 @@ class FakeNetwork final : public NetworkHost {
         calls.emplace_back("leave");
         const bool was = current != SessionRole::Offline;
         current = SessionRole::Offline;
-        return was;
+        return was && !leaveFails;
     }
 };
 
@@ -417,7 +418,7 @@ TEST_CASE("quit says so when the run cannot be ended from the console") {
     CHECK(lines[0].find("cannot") != std::string::npos);
 }
 
-TEST_CASE("a guest's quit leaves the host's game first, as the Player 2 quit does, then ends the program") {
+TEST_CASE("a guest's quit leaves the host's game as the Player 2 quit does, and ends the program") {
     // Expected: docs/guides/studio/console.md#coop (quit on a guest)
     Fixture fixture;
     Strings order;
@@ -425,7 +426,7 @@ TEST_CASE("a guest's quit leaves the host's game first, as the Player 2 quit doe
     fixture.network.order = &order;
     fixture.network.current = SessionRole::Guest;
     fixture.run("quit");
-    CHECK(order == Strings{"leave", "quit"});
+    CHECK(order == Strings{"quit", "leave"});
 }
 
 TEST_CASE("a host's quit ends the session with the game") {
@@ -436,7 +437,32 @@ TEST_CASE("a host's quit ends the session with the game") {
     fixture.network.order = &order;
     fixture.network.current = SessionRole::Host;
     fixture.run("quit");
-    CHECK(order == Strings{"leave", "quit"});
+    CHECK(order == Strings{"quit", "leave"});
+}
+
+TEST_CASE("a quit the run cannot do leaves the network session alone") {
+    // Expected: docs/guides/studio/console.md#coop (quit on a guest); Coney's own rule: nothing is left for a quit that
+    // then fails
+    Fixture fixture;
+    fixture.session.canQuit = false;
+    fixture.network.current = SessionRole::Guest;
+    const Strings lines = fixture.run("quit");
+    REQUIRE(lines.size() == 1);
+    CHECK(lines[0].find("cannot") != std::string::npos);
+    CHECK(fixture.network.calls.empty());
+    CHECK(fixture.network.current == SessionRole::Guest);
+}
+
+TEST_CASE("a quit says so when the session could not be left, and ends the game all the same") {
+    // Expected: Coney's own rule, docs/guides/studio/console.md#release-set (quit)
+    Fixture fixture;
+    fixture.network.current = SessionRole::Guest;
+    fixture.network.leaveFails = true;
+    const Strings lines = fixture.run("quit");
+    REQUIRE(lines.size() == 2);
+    CHECK(lines[0] == "quitting");
+    CHECK(lines[1] == "the network session could not be left cleanly");
+    CHECK(fixture.session.quits == 1);
 }
 
 TEST_CASE("an offline quit does not touch network play") {

@@ -510,6 +510,8 @@ target_sources(coney_tests PRIVATE net/bit_stream_test.cpp net/input_buffer_test
                                    net/jitter_buffer_test.cpp net/client_world_test.cpp
                                    net/sessions_test.cpp platform/enet_transport_test.cpp platform/net_play_test.cpp
                                    platform/game_console_test.cpp platform/game_settings_test.cpp)
+# What the console takes from the running game, apart from the list above so that its tests' registration stays theirs.
+target_sources(coney_tests PRIVATE platform/game_console_links_test.cpp)
 # The helper that registers one test case per item, so that ctest runs a long disc test's items in parallel
 # (docs/guides/testing.md#one-test-per-item).
 target_sources(coney_tests PRIVATE support/each_case_test.cpp)

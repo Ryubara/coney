@@ -238,7 +238,7 @@ int main(int argc, char** argv) {
         .debugTools = false,
         .rendererKind = rendererKind,
         .renderer = &renderer,
-        .session = [&session]() -> coney::platform::GameSession* { return session ? &*session : nullptr; },
+        .session = [&session] { return coney::platform::sessionFacts(session ? &*session : nullptr); },
         .pacer = pacer ? &*pacer : nullptr,
         .clock = &clock,
         .audio = audio.get(),

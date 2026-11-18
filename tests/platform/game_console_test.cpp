@@ -187,6 +187,8 @@ TEST_CASE("a guest's console reads, and changes only the guest's own machine") {
     CHECK(games.host.state.fpsCap == 60);
     CHECK(games.guest.run("get fps_cap") == Strings{"fps_cap 144"});
     CHECK(games.guest.run("settings") == Strings{"fps_cap  144", "volume   1"});
+    // Stand-in: the guest lists its own profile; the design says the host's, read-only (studio/console.md#coop), which
+    // waits for the host's profile to be sent to the guest. This pins today's behaviour, not the design's.
     CHECK(games.guest.run("missions") == Strings{"1  checkpoints 1-3", "2  checkpoints 1-2"});
 }
 
