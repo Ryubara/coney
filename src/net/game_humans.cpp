@@ -55,14 +55,21 @@ HumanState replicatedState(const human::Human& human) {
 }
 
 void GameHumans::capture(const ai::Brains& brains) {
-    // Ids for the humans seen this step, new ones in brain order.
     m_humans.clear();
+    if (!m_capturing) {
+        return;
+    }
+    // Ids for the humans seen this step, new ones in brain order. A human that finds no free slot (65,536 held or
+    // retired, as a long session whose removals nobody has acknowledged could leave) is left out of this step rather
+    // than stopping the game; it gets an id once one is released.
     std::set<const human::Human*> seen;
     for (std::size_t slot = 0; slot < brains.size(); ++slot) {
         const human::Human& human = brains.at(slot).human();
-        const auto id = m_table.assign(m_ids, &human);
-        CONEY_ASSERT(id.has_value()); // 65,536 ids: more humans than any level holds
         seen.insert(&human);
+        const auto id = m_table.assign(m_ids, &human);
+        if (!id) {
+            continue;
+        }
         m_humans.push_back(SnapshotHuman{.id = *id, .words = humanWords(replicatedState(human)), .priority = 1});
     }
     // The humans gone since the last step lose their ids.
@@ -73,7 +80,9 @@ void GameHumans::capture(const ai::Brains& brains) {
         }
     });
     for (const human::Human* handle : gone) {
-        m_table.retire(m_ids, handle);
+        if (const auto id = m_table.retire(m_ids, handle); id) {
+            m_retired.push_back(*id);
+        }
     }
 }
 
@@ -81,12 +90,29 @@ void GameHumans::clear() {
     std::vector<const human::Human*> all;
     m_table.forEach([&all](NetId, const human::Human* handle) { all.push_back(handle); });
     for (const human::Human* handle : all) {
-        m_table.retire(m_ids, handle);
+        if (const auto id = m_table.retire(m_ids, handle); id) {
+            m_retired.push_back(*id);
+        }
     }
     m_humans.clear();
 }
 
-void GameHumans::releaseRetired() {}
+void GameHumans::releaseRetired() {
+    for (const NetId id : m_retired) {
+        const bool released = m_ids.release(id);
+        CONEY_ASSERT(released); // only this class retires, each id once
+    }
+    m_retired.clear();
+}
+
+void GameHumans::setCapturing(bool on) {
+    // Off: nobody needs the humans or can name their ids, so all of it goes.
+    if (!on) {
+        clear();
+        releaseRetired();
+    }
+    m_capturing = on;
+}
 
 SnapshotHumans GameHumans::holding() const {
     SnapshotHumans humans;

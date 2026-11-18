@@ -113,6 +113,8 @@ class NetPlay final {
     bool join();
     /// Leaves the session: says Bye to the server, or to every player when hosting.
     void disconnect();
+    /// Whether a session is open: hosting, or joining or joined (not a join that has ended).
+    [[nodiscard]] bool inSession() const;
     /// The simulated network.
     [[nodiscard]] net::NetSimulation simulation() const { return m_simulation; }
     /// Changes the simulated network, live, on the current session and the next.

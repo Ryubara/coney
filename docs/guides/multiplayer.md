@@ -387,13 +387,21 @@ by a hash of what they hold.
 ### The game's humans in the snapshots {#game-humans}
 
 Each step, after every human's update, the play mode captures the level's humans into a `net::GameHumans`
-(`PlayLevelMode::shareHumansWith()`, beside the `--trace-humans` rows): for each brain, in slot order, its human's
+(`PlayLevelMode::shareHumansWith()`, beside the `--trace-humans` rows), while something needs them: a session (hosting
+or joined, from the command line or the Network page, from the step after it opens) or `--digest` or `--net-replay`
+(`NetGame::afterStep()`). Offline play captures nothing and holds no ids. For each brain, in slot order, its human's
 replicated state (`net::replicatedState()`: the feet, heading, health and its maximum, the four animation layers of
 its `AnimTaskStack` with each clip, playhead, gait value and fade, on the ground, knocked out or wounded) as the field
 table's words, and a network id it keeps while it lives. A human gone from the brains has its id retired, and a level
 that ends clears them all. Hosting, `NetPlay` sends the joined guest a snapshot of them after every step
-(`NetServer::sendSnapshots()`, numbered by the host's step counted from 0). Humans are told apart by address, so a
-human removed and another made at the same address in one step would keep the id; a level does not do that.
+(`NetServer::sendSnapshots()`, numbered by the host's step counted from 0).
+
+With no session, nobody can still name a retired id, so they are released after each step (and turning capture off
+releases them all); ids come from slots never used first, so a release changes no id until all 65,536 slots have been
+used. In a session they stay retired, as the removals' acknowledgements are not built yet; a human that finds no free
+slot is left out of the snapshots rather than stopping the game. Humans are told apart by address, so a human removed
+and another made at the same address in one step would keep the old one's id. Nothing checks that a level never does
+this; the words sent would still be right, only the id would carry the old human's history.
 
 ### The state digest {#digest}
 
@@ -440,7 +448,8 @@ and hashes only.
 
 The two games step on their own, so a test-mode run with `--host` or `--join` waits for each frame to take a real
 1/30 s (`addNetPlayHooks()`), still one step a frame: unpaced, a host could end its run before the guest had joined,
-or time the guest out by its step-counted timeouts. The host's 300 frames take ten seconds. Which of the host's steps
+or time the guest out by its step-counted timeouts. The host's 600 frames take twenty seconds, which leaves a guest
+started under load ample time to join and play its script. Which of the host's steps
 a guest's pad lands on depends on that timing, which is why the replay works from a record and not from the guest's
 script.
 

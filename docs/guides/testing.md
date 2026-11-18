@@ -101,6 +101,9 @@ MSVC debug builds. In tests, check a container's size (`REQUIRE(!starts.empty())
 
 A test's result never depends on how busy the machine is, so a check is never run again just in case. Test mode is
 lockstep (the fixed step, scripted input, game time only), so only a timeout can make a run's result depend on time.
+The one exception is network play between two processes: a run with `--host` or `--join` paces its frames at a real
+1/30 s, bounded by `--frames` and kept out of the simulation, so two games stepping on their own can meet
+([Two processes](multiplayer.md#two-processes)).
 Every test's `TIMEOUT`, and every timeout a test's CMake script gives the process it runs, is therefore
 `CONEY_TEST_HANG_GUARD` (ten minutes, set in the root `CMakeLists.txt`): a guard against a hang, never a speed limit.
 `python/tests/test_test_timeouts.py` refuses any other value. A test that must measure speed reports it (the bench)

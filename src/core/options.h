@@ -434,7 +434,9 @@ inline constexpr int kDefaultBenchWarmup = 60;
 /// Whether `options` ask for test mode: `--headless`, `--load`, `--frames`, `--input-script`, `--screenshot`,
 /// `--record`, `--digest` or `--net-replay`. Test mode runs the main loop in lockstep, one fixed step and one render
 /// per frame, and never reads a real clock, so a run gives the same result every time on any machine
-/// (docs/guides/conventions.md#platform-code).
+/// (docs/guides/conventions.md#platform-code). The one exception: with `--host` or `--join` each frame waits for a real
+/// 1/30 s, so two games stepping on their own can meet; the steps stay fixed, `--frames` still bounds the run, and the
+/// simulation never sees the time (docs/guides/multiplayer.md#two-processes).
 [[nodiscard]] bool isTestMode(const Options& options);
 
 /// Whether the window may take the keyboard focus when it opens: only in a run a person plays, so not with

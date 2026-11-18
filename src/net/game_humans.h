@@ -32,11 +32,13 @@ namespace coney::net {
 
 /// The humans of the server's game, each step, as the snapshots and the digest take them. Each human gets a network id
 /// the first step it is seen (in brain order, so the same game gives the same ids) and keeps it; a human gone from the
-/// brains has its id retired, never handed out again in that generation. Simulation-side state, owned by whatever
-/// writes the game's snapshots or digest.
+/// brains has its id retired, never handed out again in that generation until releaseRetired() frees it. Ids come from
+/// slots never used first, so releasing changes no id until all 65,536 slots have been used. Simulation-side state,
+/// owned by whatever writes the game's snapshots or digest.
 ///
 /// Humans are told apart by address: a human removed and another made at the same address within one step would keep
-/// the id. A level removes and makes humans on different steps, so this does not happen in play.
+/// the old one's id, and its first snapshot would read as the old human changing. Nothing checks that a level never
+/// does this; the human's words are still right, only the id's history is.
 /// @coney-only network play; the original has none
 class GameHumans {
   public:
@@ -45,12 +47,14 @@ class GameHumans {
 
     /// No humans: the level has gone. Their ids are retired as the next capture() would.
     void clear();
-    /// Frees every retired id, for use again in its next generation: call it only when no peer can still name them.
+    /// Frees every retired id, for use again in its next generation: call it only when no peer can still name them
+    /// (no session, or every client has acknowledged the removals).
     void releaseRetired();
     /// Whether capture() takes the humans (on at first).
     [[nodiscard]] bool capturing() const { return m_capturing; }
-    /// Turns capture() on or off.
-    void setCapturing(bool on) { m_capturing = on; }
+    /// Turns capture() on or off. Turning it off clears the humans and releases every id, so call it with false only
+    /// when no peer can still name them; while off, capture() takes nothing.
+    void setCapturing(bool on);
 
     /// The humans captured, in brain order, each with priority 1.
     [[nodiscard]] std::span<const SnapshotHuman> humans() const { return m_humans; }
@@ -61,6 +65,7 @@ class GameHumans {
     NetIdAllocator m_ids;
     NetIdTable<const human::Human*> m_table;
     std::vector<SnapshotHuman> m_humans;
+    std::vector<NetId> m_retired; // retired ids waiting for releaseRetired()
     bool m_capturing = true;
 };
 

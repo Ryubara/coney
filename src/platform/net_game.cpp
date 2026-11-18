@@ -70,6 +70,10 @@ std::expected<std::unique_ptr<NetGame>, Error> NetGame::open(const Options& opti
         }
         game->m_replay = std::move(*replay);
     }
+    // Capture only what needs the humans: a proof, or a session from the command line (one hosted later turns it on
+    // after its first step, afterStep()). Offline play keeps no network ids.
+    game->m_proofNeedsHumans = options.digestFile.has_value() || options.netReplayFile.has_value();
+    game->m_humans.setCapturing(game->m_proofNeedsHumans || options.netHost.has_value() || options.netJoin.has_value());
     return game;
 }
 
@@ -106,6 +110,12 @@ void NetGame::afterStep(NetPlay& net) {
                   << '\n';
     }
     net.setGameHumans(m_humans.humans());
+    // The next step's capture; with no session nobody can name a retired id, so they are freed for use again.
+    const bool session = net.inSession();
+    if (!session) {
+        m_humans.releaseRetired();
+    }
+    m_humans.setCapturing(m_proofNeedsHumans || session);
 }
 
 void NetGame::note(std::string_view line) {

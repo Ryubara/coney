@@ -172,6 +172,14 @@ void NetPlay::disconnect() {
     teardown();
 }
 
+bool NetPlay::inSession() const {
+    if (m_server) {
+        return true;
+    }
+    return m_client && m_client->state() != net::ClientState::Idle &&
+           m_client->state() != net::ClientState::Disconnected;
+}
+
 void NetPlay::teardown() {
     m_server.reset();
     m_client.reset();

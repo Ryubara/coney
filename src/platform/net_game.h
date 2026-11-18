@@ -44,7 +44,9 @@ class NetGame final : public InputSource {
     /// Gives `net` the digest sink of `--digest-net`, when asked for.
     void attach(NetPlay& net);
     /// After a step, before network play sends: writes the step's digest line (`--digest`) and hands the humans to
-    /// `net` for its snapshots.
+    /// `net` for its snapshots. Then decides the next step's capture: the humans are captured only while `net` has a
+    /// session or `--digest` or `--net-replay` needs them, and with no session their retired ids are released, since
+    /// no peer can name them.
     void afterStep(NetPlay& net);
     /// Notes a line of network play's log in the session record, at the step being played.
     void note(std::string_view line);
@@ -53,6 +55,7 @@ class NetGame final : public InputSource {
     NetGame() = default;
 
     net::GameHumans m_humans;
+    bool m_proofNeedsHumans = false; // `--digest` or `--net-replay`: capture with no session too
     InputSource* m_inner = nullptr;
     std::optional<net::SessionReplay> m_replay;
     std::optional<std::ofstream> m_digest;
