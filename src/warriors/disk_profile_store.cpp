@@ -191,12 +191,13 @@ bool DiskProfileStore::load(std::size_t slot) {
     // Coney's choice: the slot's file was read with the others (readSlots), so an empty or damaged slot fails here
     // where the original reads its image anyway.
     const ProfileRecord* held = record(slot);
-    if (held == nullptr) {
+    const ModdedProgress* heldModded = modded(slot);
+    if (held == nullptr || heldModded == nullptr) {
         return false;
     }
     applyProfile(*held, m_state);
     // The slot's mod missions too, those of mods the session lacks included: the next save writes them back.
-    m_state.modStory.setEntries(m_slots.at(slot)->modded.story);
+    m_state.modStory.setEntries(heldModded->story);
     m_loaded = slot;
     return true;
 }
