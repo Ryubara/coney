@@ -62,9 +62,11 @@ class TestCardMode final : public GameMode {
 
     TestCardMode(RenderEngine& engine, Card card);
 
-    // The cards.
+    // The shapes card: flat and blended quads, one too faint for the alpha test, and window rectangles.
     void drawShapes();
+    // The textures card: one checkerboard drawn filtered, to the nearest texel, repeated and tinted.
     void drawTextures();
+    // The triangles card: coloured triangles and two alpha tests on triangles.
     void drawTriangles();
 
     RenderEngine& m_engine;

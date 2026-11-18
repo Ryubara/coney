@@ -54,7 +54,8 @@ class Texture {
     [[nodiscard]] std::uint64_t serial() const { return m_serial; }
 
   private:
-    // The next serial; textures may be made on any thread (the loader's, later).
+    // The next serial; textures may be made on any thread (the loader's, later). @coney-only renderer bookkeeping:
+    // the GPU renderer's upload cache keys on it.
     static std::uint64_t nextSerial() {
         static std::atomic<std::uint64_t> next{1};
         return next.fetch_add(1, std::memory_order_relaxed);

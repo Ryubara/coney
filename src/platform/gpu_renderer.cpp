@@ -121,16 +121,19 @@ struct AlphaUniform {
 
 } // namespace
 
+// Gives the texture back to the device, unless it was moved away.
 GpuRenderer::OwnedTexture::~OwnedTexture() {
     if (texture != nullptr) {
         SDL_ReleaseGPUTexture(device, texture); // SDL waits for the GPU to finish with it
     }
 }
 
+// Takes the other's texture, leaving it empty so only one owner releases it.
 GpuRenderer::OwnedTexture::OwnedTexture(OwnedTexture&& other) noexcept
     : device(other.device), texture(std::exchange(other.texture, nullptr)), width(other.width), height(other.height),
       linear(other.linear) {}
 
+// Releases this texture, then takes the other's, as the move constructor does.
 GpuRenderer::OwnedTexture& GpuRenderer::OwnedTexture::operator=(OwnedTexture&& other) noexcept {
     if (this != &other) {
         if (texture != nullptr) {

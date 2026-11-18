@@ -113,8 +113,9 @@ TEST_CASE("an overlay batch keeps the draws' order, textures and addressing acro
 }
 
 TEST_CASE("an overlay draw keeps the alpha GL3 keeps", "[graphics][gpu-renderer]") {
-    // Expected: librw's GL3 device (the file comment): the quads with its start state, at least 10 of 255; a reference
-    // above 0 as at least round(ref * 255) / 255; 0 as every fragment, -1000 to 1000.
+    // Expected: docs/engine/gpu-renderer.md#drawing (What it matches), from librw's GL3 device: the quads with its
+    // start state, at least 10 of 255; a reference above 0 as at least round(ref * 255) / 255; 0 as every fragment,
+    // -1000 to 1000.
     CHECK(coney::graphics::alphaRangeOf(Material2d{}) == AlphaRange{10.0F / 255.0F, 1000.0F});
     CHECK(coney::graphics::alphaRangeOf(Material2d{kNoFrameTexture, TextureAddress::Clamp, 0.5F}) ==
           AlphaRange{128.0F / 255.0F, 1000.0F});
@@ -131,15 +132,15 @@ TEST_CASE("an overlay draw keeps the alpha GL3 keeps", "[graphics][gpu-renderer]
 }
 
 TEST_CASE("a frame clears the window to black unless it clears the whole window", "[graphics][gpu-renderer]") {
-    // Expected: RenderEngine::beginFrame() (the window black, the logical screen filled by the first draw) and
-    // beginWindowFrame() (the whole window in the colour), src/platform/render_engine.h.
+    // Expected: docs/engine/gpu-renderer.md#drawing (step 3), as RenderEngine::beginFrame() (the window black, the
+    // logical screen filled by the first draw) and beginWindowFrame() (the whole window in the colour).
     CHECK(coney::graphics::windowClearOf(FrameStart{Rgba{10, 20, 30, 255}, false}) == coney::graphics::kBlack);
     CHECK(coney::graphics::windowClearOf(FrameStart{Rgba{10, 20, 30, 255}, true}) == Rgba{10, 20, 30, 255});
 }
 
 TEST_CASE("every texture has a serial of its own", "[graphics][gpu-renderer]") {
-    // Expected: Texture::serial()'s contract (src/graphics/render_device.h): from 1 up, never repeated, so a texture
-    // made where another was freed is not taken for it.
+    // Expected: docs/engine/gpu-renderer.md#textures and Texture::serial()'s contract: from 1 up, never repeated, so a
+    // texture made where another was freed is not taken for it.
     std::uint64_t first = 0;
     {
         const FakeTexture gone;
@@ -153,7 +154,7 @@ TEST_CASE("every texture has a serial of its own", "[graphics][gpu-renderer]") {
 }
 
 TEST_CASE("the upload cache finds, replaces and drops textures by serial and use", "[graphics][gpu-renderer]") {
-    // Expected: UploadCache's contract (src/graphics/upload_cache.h).
+    // Expected: docs/engine/gpu-renderer.md#textures and UploadCache's contract (src/graphics/upload_cache.h).
     UploadCache<std::unique_ptr<int>> cache;
     CHECK(cache.find(7, 1) == nullptr);
     cache.put(7, 3, 1, std::make_unique<int>(70));

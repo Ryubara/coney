@@ -94,6 +94,7 @@ std::expected<std::unique_ptr<TestCardMode>, Error> TestCardMode::create(RenderE
     return std::unique_ptr<TestCardMode>(new TestCardMode(engine, card));
 }
 
+// Makes the cards' textures once, so every frame draws the same ones.
 TestCardMode::TestCardMode(RenderEngine& engine, Card card) : m_engine(engine), m_card(card) {
     // The textures, made once: a checkerboard filtered linearly, the same to the nearest texel, an alpha ramp.
     const std::vector<std::uint8_t> checker = checkerTexels();
@@ -119,6 +120,7 @@ void TestCardMode::render(const RenderTime& /*time*/) {
     m_engine.present();
 }
 
+// The shapes card: opaque bars, blended quads, one quad too faint for the alpha test, a wash and window rectangles.
 void TestCardMode::drawShapes() {
     // A slate logical screen, black round it (beginFrame()'s fill quad).
     m_engine.beginFrame(Rgba{32, 36, 52, 255});
@@ -159,6 +161,7 @@ void TestCardMode::drawShapes() {
     m_engine.drawWindowRects(corners);
 }
 
+// The textures card: the checkerboard at its size, enlarged both ways, repeated, tinted, and the alpha ramp.
 void TestCardMode::drawTextures() {
     m_engine.beginFrame(Rgba{20, 20, 20, 255});
     const graphics::Texture* linear = m_textures[0].get();
@@ -188,6 +191,8 @@ void TestCardMode::drawTextures() {
     m_engine.drawQuads(ramp, std::span<const LogicalQuad>(&overBars, 1));
 }
 
+// The triangles card: a fan with a colour at each corner, the ramp alpha tested at a half and at 0, and the
+// checkerboard repeated on triangles.
 void TestCardMode::drawTriangles() {
     m_engine.beginFrame(Rgba{16, 24, 16, 255});
     // A fan of 24 triangles round a white centre, each outer corner its own colour, every fragment kept.

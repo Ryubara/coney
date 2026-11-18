@@ -41,6 +41,7 @@ void drawCard(RenderEngine& engine, std::string_view name) {
 
 } // namespace
 
+// Expected: docs/guides/running-viewers.md#test-cards (the shapes card) and src/platform/test_card_mode.cpp.
 TEST_CASE("the shapes card draws flat quads in one overlay pass", "[render][test-card]") {
     auto engine = RenderEngine::start(RenderBackend::Null, {});
     REQUIRE(engine.has_value());
@@ -58,6 +59,7 @@ TEST_CASE("the shapes card draws flat quads in one overlay pass", "[render][test
     CHECK_FALSE(frame.start().clear == coney::graphics::kBlack);
 }
 
+// Expected: docs/guides/running-viewers.md#test-cards (the textures card) and src/platform/test_card_mode.cpp.
 TEST_CASE("the textures card draws three textures, one repeated", "[render][test-card]") {
     auto engine = RenderEngine::start(RenderBackend::Null, {});
     REQUIRE(engine.has_value());
@@ -75,6 +77,7 @@ TEST_CASE("the textures card draws three textures, one repeated", "[render][test
     CHECK(textured == 6);
 }
 
+// Expected: docs/guides/running-viewers.md#test-cards (the triangles card) and src/platform/test_card_mode.cpp.
 TEST_CASE("the triangles card draws triangles alpha tested at 0 and at a half", "[render][test-card]") {
     auto engine = RenderEngine::start(RenderBackend::Null, {});
     REQUIRE(engine.has_value());
@@ -94,6 +97,7 @@ TEST_CASE("the triangles card draws triangles alpha tested at 0 and at a half", 
     CHECK(half == 1);
 }
 
+// Expected: docs/guides/running-viewers.md#test-cards (the cards' names).
 TEST_CASE("a test card of no such name is refused with the names", "[render][test-card]") {
     auto engine = RenderEngine::start(RenderBackend::Null, {});
     REQUIRE(engine.has_value());

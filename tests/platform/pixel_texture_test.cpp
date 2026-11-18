@@ -15,6 +15,7 @@
 using coney::platform::PixelTexture;
 using coney::platform::RenderBackend;
 
+// Expected: docs/engine/gpu-renderer.md#textures (pixel textures: RGBA kept in memory, a new revision per frame).
 TEST_CASE("a pixel texture keeps its frame and counts its revisions", "[render][gpu-renderer]") {
     PixelTexture texture(coney::graphics::TextureFilter::Nearest);
     CHECK(texture.width() == 0);
@@ -41,6 +42,7 @@ TEST_CASE("a pixel texture keeps its frame and counts its revisions", "[render][
     CHECK(texture.revision() == 2);
 }
 
+// Expected: docs/engine/gpu-renderer.md#textures (makeMovieScreen() gives each backend its screen).
 TEST_CASE("each renderer gets the movie screen it draws from", "[render][gpu-renderer][movies]") {
     // NULL draws nothing, so it gets none.
     CHECK(coney::platform::makeMovieScreen(RenderBackend::Null) == nullptr);
