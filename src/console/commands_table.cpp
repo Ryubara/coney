@@ -51,7 +51,7 @@ constexpr std::array<CommandSpec, 19> kCommands{{
     {"clear", "The terminal", Access::Player, Scope::Local, false,
      "Empties the terminal's output.", 0, "", {}},
     {"version", "The terminal", Access::Player, Scope::Local, false,
-     "Coney's version and build, the SDK level, the disc's region and the renderer.", 0, "", {}},
+     "Coney's version and build, the disc's region and the renderer.", 0, "", {}},
     {"quit", "The game", Access::Player, Scope::Local, true,
      "Ends the game through its normal exit, as closing the window does.", 0, "", {}},
     {"where", "The game", Access::Player, Scope::Local, false,

@@ -140,21 +140,26 @@ Result bugReport(Console& console, CommandContext& context) {
     return {};
 }
 
-// `quit`: a guest leaves the host's game first, as the pause menu's Player 2 quit does, then the game ends through its
-// normal exit; a host's session ends with the game.
+// `quit`: the game ends through its normal exit, at the next frame, and a guest leaves the host's game as the pause
+// menu's Player 2 quit does; a host's session ends with the game. The end is asked for first, so a run that cannot be
+// ended from the console leaves its session alone; the leave still happens before the game ends, as the exit comes only
+// at the next frame.
 Result quit(Console& console, CommandContext& context) {
     SessionHost* session = console.hosts().session;
     if (session == nullptr) {
         return std::unexpected("there is no game to end");
     }
-    NetworkHost* network = console.hosts().network;
-    if (network != nullptr && network->role() != SessionRole::Offline) {
-        network->leave();
-    }
     if (!session->requestQuit()) {
         return std::unexpected("this run cannot be ended from the console");
     }
+    NetworkHost* network = console.hosts().network;
+    const bool inSession = network != nullptr && network->role() != SessionRole::Offline;
+    const bool left = !inSession || network->leave();
     context.print("quitting");
+    if (!left) {
+        // The session ended between the check and the leave, or could not be told; the game ends all the same.
+        context.print("the network session could not be left cleanly");
+    }
     return {};
 }
 
@@ -212,6 +217,9 @@ std::string missionLine(const CompletedMission& mission) {
 }
 
 // `missions`: what the active profile has completed, with the checkpoints of each.
+// Stand-in: on a guest this lists the guest's own profile; the design says the host's, read-only
+// (docs/guides/studio/console.md#coop), which needs the host's profile sent to the guest (network-architecture.md,
+// Saves). It stays so until that exists; `missions` is not in a build before `mission-select` is.
 Result missions(Console& console, CommandContext& context) {
     const SessionHost* session = console.hosts().session;
     const std::vector<CompletedMission> done =

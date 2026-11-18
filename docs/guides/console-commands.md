@@ -20,7 +20,7 @@ which the command is absent. Each example shows a line as typed (after `>`) and 
 | --- | --- | --- | --- | --- |
 | [`help`](#help) | The terminal | player | local | Lists the commands this build and the running mods offer, by group, or one command's arguments and help. |
 | [`clear`](#clear) | The terminal | player | local | Empties the terminal's output. |
-| [`version`](#version) | The terminal | player | local | Coney's version and build, the SDK level, the disc's region and the renderer. |
+| [`version`](#version) | The terminal | player | local | Coney's version and build, the disc's region and the renderer. |
 | [`quit`](#quit) | The game | player | local | Ends the game through its normal exit, as closing the window does. |
 | [`where`](#where) | The game | player | local | The level, the checkpoint, the step and the play time, as the run log stamps them. |
 | [`bugreport`](#bugreport) | The game | player | local | Writes the last 30 s of the run log, every level, into the log file and says where. |
@@ -82,7 +82,7 @@ It prints nothing.
 version
 ```
 
-Coney's version and build, the SDK level, the disc's region and the renderer.
+Coney's version and build, the disc's region and the renderer.
 
 - **Access:** player; **scope:** local, runs at once
 - **Doubles:** none: a reading

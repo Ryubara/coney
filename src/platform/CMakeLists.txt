@@ -217,15 +217,16 @@ add_test(NAME coney.release.has_no_debug_tools
 add_test(NAME coney.release.has_player_console
          COMMAND "${CMAKE_COMMAND}" -DEXE=$<TARGET_FILE:${_coney_release_exe}> "-DTEXT=Coney console" -P
                  "${PROJECT_SOURCE_DIR}/cmake/executable_has_string.cmake")
-# The console's lines from input scripts, on the release executable: `help` lists the player commands and no developer
-# one, a developer command is unknown there, and `quit` ends the run with exit code 0 well before its frames are over.
+# The console's lines from input scripts, on the release executable: `help` lists exactly the commands the catalog has
+# available (the script reads them from src/console/commands.toml, so the two cannot drift, and a developer's command or
+# a missing one fails it), a developer command is unknown there, and `quit` ends the run with exit code 0 well before
+# its frames are over.
 add_test(NAME coney.release.console_help
-         COMMAND ${_coney_release_exe} --headless --frames 5 --input-script
-                 "${PROJECT_SOURCE_DIR}/tests/support/console_release_help.txt")
-set_tests_properties(coney.release.console_help PROPERTIES
-                     TIMEOUT ${CONEY_TEST_HANG_GUARD}
-                     PASS_REGULAR_EXPRESSION "Coney console: the commands this build has.*  where .*  disconnect "
-                     FAIL_REGULAR_EXPRESSION "  noclip|  lua |\\[dev\\]|  mission ")
+         COMMAND "${CMAKE_COMMAND}" -DEXE=$<TARGET_FILE:${_coney_release_exe}>
+                 "-DCATALOG=${PROJECT_SOURCE_DIR}/src/console/commands.toml"
+                 "-DINPUT=${PROJECT_SOURCE_DIR}/tests/support/console_release_help.txt" -P
+                 "${PROJECT_SOURCE_DIR}/cmake/console_help_matches_catalog.cmake")
+set_tests_properties(coney.release.console_help PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD})
 add_test(NAME coney.release.console_refuses_developer_commands
          COMMAND ${_coney_release_exe} --headless --frames 5 --input-script
                  "${PROJECT_SOURCE_DIR}/tests/support/console_release_unknown.txt")
@@ -235,9 +236,11 @@ set_tests_properties(coney.release.console_refuses_developer_commands PROPERTIES
 add_test(NAME coney.release.console_quit
          COMMAND ${_coney_release_exe} --headless --frames 600 --input-script
                  "${PROJECT_SOURCE_DIR}/tests/support/console_release_quit.txt")
+# The script's `help`, ten frames in, is after the quit: a run the quit did not end (its hook not wired in) prints it.
 set_tests_properties(coney.release.console_quit PROPERTIES
                      TIMEOUT ${CONEY_TEST_HANG_GUARD}
-                     PASS_REGULAR_EXPRESSION "console:   quitting")
+                     PASS_REGULAR_EXPRESSION "console:   quitting"
+                     FAIL_REGULAR_EXPRESSION "Coney console: the commands this build has")
 if(CONEY_DEBUG_TOOLS)
     # The same check on the debug tools' `coney` finds the markers, so the check above cannot pass by finding nothing.
     add_test(NAME coney.debug_tools_markers_found

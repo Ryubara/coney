@@ -66,7 +66,7 @@ decisions](#decisions)). Four rules shape every section:
 | **Scope** | What a command touches: **local** (this machine's view: the log, a panel, quitting) or **session** (the game everyone in the session plays) |
 | **The bar** | The menu bar across the top of the screen while the console is open, with its panels ([The F8 bar](console-bar.md#bar)) |
 | **Panel** | A window of the bar: the terminal, Resources, Performance, Log, Network. A panel can be **pinned** to stay on screen with the console closed |
-| **Setting** | A player option the console can read and change for the session: `fps_cap`, `vsync`, `show_fps`. The console's convars, in FiveM's word; the developer's **tunables** are the debug menus' ([Tunables](../debug-menu.md#tunables)) |
+| **Setting** | A player option the console can read and change for the session: `fps_cap`, `vsync`, `volume`, `display_preset`. The console's convars, in FiveM's word; the developer's **tunables** are the debug menus' ([Tunables](../debug-menu.md#tunables)) |
 
 The other words are the SDK's: **mod**, **project**, **native**, the **game state** and a **project state**
 ([Terms](lua-sdk.md#terms)), and **level** for a game level or one a user builds.
@@ -239,10 +239,10 @@ Every build has these. Each is a second way to something the player can already 
 | `help [command]` | local | Lists the commands this build and the running mods offer, by group, or one command's arguments and help | none: a reading |
 | `clear` | local | Empties the terminal's output | none |
 | `quit` | local | Ends the game through its normal exit, as closing the window does | Closing the window, the menus |
-| `version` | local | Coney's version and build, the SDK level, the disc's region, the renderer | none: a reading |
+| `version` | local | Coney's version and build, the disc's region, the renderer (the SDK level joins them once there is an SDK to name) | none: a reading |
 | `where` | local | The level, the checkpoint, the step and the play time, as the run log stamps them ([Reading a line](../run-log.md#reading)) | none: a reading; the name of the recipe that reads the same in the original |
 | `settings` | local | Lists the settings with their values | The options and the player's command line |
-| `get <setting>`, `set <setting> <value>` | local | Reads or changes a setting for this session: `fps_cap`, `vsync`, `show_fps`, the volumes, the PS2 look; never written to a file | The options and `--fps-cap`, `--vsync`, `--show-fps` and the other player options ([The debug tools and the game](../building.md#debug-tools)) |
+| `get <setting>`, `set <setting> <value>` | local | Reads or changes a setting for this session: the game links `fps_cap`, `vsync`, `volume` (the master volume) and `display_preset`, and more (`show_fps`, the bus volumes) come when what they change can be changed live; never written to a file | The options and `--fps-cap`, `--vsync` and the other player options ([The debug tools and the game](../building.md#debug-tools)) |
 | `bugreport` | local | Writes the last 30 s of the run log, every level, into the log file and says where, as the Time page's *Write bug report log* does in a developer build ([Bug reports](../run-log.md#bug-reports)) | The debug menus' Time page, which the release build lacks: today a player has no way to write one |
 | `missions` | local | The missions the active profile has completed, with their checkpoints | The original's mission select, which lists the completed missions per area with their checkpoints ([Front end: mission select](../../research/frontend.md#fn-missionselecthud)) |
 | `mission <n> [checkpoint]` | session | Starts a completed mission at a checkpoint, as the mission select starts it | The same screen; available once Coney's mission select is built |
@@ -390,7 +390,7 @@ the host what player 1 has.
 | `get`, `set` (settings for this session) | yes | yes, the host's own display and sound | yes, the guest's own display and sound; no setting changes the shared game |
 | `quit` | ends the game | ends the game, and with it the session for the guest, as the network page's session ends with the host ([Saves](../network-architecture.md#saves)) | leaves the host's game as the pause menu's Player 2 quit does, then ends the guest's program |
 | `host`, `connect`, `disconnect` | `host`, `connect` | `disconnect` ends the session; the guest is dropped as by the Player 2 quit | `disconnect` is the Player 2 quit |
-| `missions`, `mission` | yes | yes: the host's profile and the host's mission select ([Saves](../network-architecture.md#saves)) | `missions` lists the host's, read-only; `mission` refused |
+| `missions`, `mission` | yes | yes: the host's profile and the host's mission select ([Saves](../network-architecture.md#saves)) | `missions` lists the host's, read-only; `mission` refused (**stand-in:** built, a guest's `missions` lists the guest's own profile, as the host's profile is not sent to a guest yet) |
 | Toggling scripts (`start`, `stop`, `enable`, ...) | yes | yes ([Mods: Console commands](mods.md#console)) | refused: a guest's console lists the session's mods and nothing more |
 | A project's commands | yes | yes | a server script's unrestricted command as a request with the guest's slot; a `restricted` one refused ([Mod commands](#mod-commands)) |
 | Developer set (developer builds only) | yes | yes, except the time controls in a session ([Debug tools](../network-architecture.md#sub-debug)) | refused |

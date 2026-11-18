@@ -62,7 +62,7 @@ name = "version"
 group = "The terminal"
 access = "player"
 scope = "local"
-summary = "Coney's version and build, the SDK level, the disc's region and the renderer."
+summary = "Coney's version and build, the disc's region and the renderer."
 doubles = "none: a reading"
 examples = [
   { line = "version", output = [

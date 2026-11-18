@@ -36,7 +36,8 @@ struct GameConsoleLinks {
     /// Writes the run log's ring into the log file and returns the line to show (`bugreport`).
     std::function<std::string()> writeBugReport;
     /// The missions the active profile has completed, and the start of one at a checkpoint: Coney's mission select
-    /// (`missions`, `mission`).
+    /// (`missions`, `mission`). Stand-in: a guest's `missions` reads the guest's own profile, where the design has it
+    /// list the host's, read-only (docs/guides/studio/console.md#coop).
     std::function<std::vector<console::CompletedMission>()> completedMissions;
     std::function<std::expected<std::string, std::string>(int mission, int checkpoint)> startMission;
     /// The Coney features built, which let the commands that wait for them in (`mission-select`).

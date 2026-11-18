@@ -171,21 +171,19 @@ command that needs one says so when it runs.
 The release set's handlers, `src/console/player_commands.cpp`, are bound to the catalog's entries by name
 (`registerPlayerCommands()` over `playerCatalog()`), and each reaches the game only through the console's hosts when it
 runs. Every one is in the [console commands reference](console-commands.md) with its syntax and examples; what each
-does, and where it reaches:
+does, and where it reaches, is there and not repeated here.
 
-| Command | Scope | What it does | Reaches |
-| --- | --- | --- | --- |
-| `help [command]` | local | Lists the present commands by group, under the banner `Coney console`, a developer's marked `[dev]` and a mod's with its name; with a command, its usage, summary and arguments | the registry |
-| `clear` | local | Empties the terminal's output | the terminal |
-| `version` | local | Coney's version and build, the disc's region and the renderer | the session host |
-| `quit` | local, at the step boundary | A guest leaves the host's game first, as the Player 2 quit does; then the game ends at its next frame, through the exit closing the window takes | the session and network hosts |
-| `where` | local | The level in play, the checkpoint, the step and the play time, as the run log's stamp reads them | the session host, the run log |
-| `bugreport` | local | The run log's last 30 s, every level, into the log file, saying where; through the logger's dump when the host has no log file | the session host, the run log |
-| `settings`, `get <setting>` | local | The settings with their values, and one of them | the session host |
-| `set <setting> <value>` | local, at the step boundary | Changes a setting for this session only: nothing is written to a file ([Settings](#settings)) | the session host |
-| `missions`, `mission <n> [checkpoint]` | local; session | The completed missions with their checkpoints; starts one as the mission select does (the profile's list is read again when it runs, so a mission or a checkpoint that is not there is refused) | the session host |
-| `host [port]`, `connect <address>` | session | Hosts, or joins, from an offline game; refused in a session already, with a word to `disconnect` first | the network host |
-| `disconnect` | local, at the step boundary | A guest's is the Player 2 quit, the host's ends the session; "not in a network session" offline | the network host |
+A few things are not obvious from the reference:
+
+- `quit` asks for the end of the run first (the exit closing the window takes, at the next frame), then a guest leaves
+  the host's game as the pause menu's Player 2 quit does and a host's session ends with the game. A run that cannot be
+  ended from the console leaves its session alone.
+- `set`, `quit` and `disconnect` change something and so wait for the step boundary (the catalog's `changes`); the
+  rest read at once.
+- Two stand-ins, counted until Coney replaces them: the disc region `version` prints is `NTSC-U` whenever a game
+  session exists, as it is the only disc Coney knows (`makeGameConsoleLinks()`), and on a guest `missions` lists the
+  guest's own profile where the design has the host's, read-only ([Who may run what in
+  co-op](studio/console.md#coop)); both wait on features not built (a second disc, a profile sent to the guest).
 
 `mission` and `missions` are registered with their handlers and wait in the registry for the feature `mission-select`,
 which the game marks built when Coney has a mission select; the game gives no profile yet, so until then they stay
