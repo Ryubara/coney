@@ -283,8 +283,8 @@ frame's arrays holding its lights by value (`SceneLight`) and each material's `T
 
 `SceneAssets::addAtomic` notes each material's `TextureId` once, when a part loads, and `WorldSet` drops a part's
 dictionary's textures when the part unloads. Because materials find their textures by name through every loaded
-dictionary ([Finding textures by name](../research/graphics.md#texture-lookup); a part's dictionary is made current
-and then none before its atomics are read, confirmed (code) at `0x004110c0`), a part's material could take its texture
+dictionary ([Finding textures by name](../research/graphics.md#texture-lookup); how the original reads a part's
+dictionary: [Part file](../research/world.md#part-file)), a part's material could take its texture
 from another loaded part's dictionary; its id would then go stale when that part unloads. GL3 would still draw it
 through librw (the material holds a reference on the librw texture), but the GPU renderer (item 13) would draw it
 untextured.
