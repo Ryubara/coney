@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The play mode's carried props: the object a human's clip makes him carry for a move (Rembrandt's spray can in his
-// power move 59) made when his clip asks for it, hung from its attach point each step, drawn there, and removed when
-// the clip, a cinematic's start or his removal takes it away (docs/research/combat-grabs.md#power-move-props).
+// The level simulation's carried props: the object a human's clip makes him carry for a move (Rembrandt's spray can
+// in his power move 59) made when his clip asks for it, hung from its attach point each step (the platform draws it
+// there: src/platform/play_level_world.cpp), and removed when the clip, a cinematic's start or his removal takes it
+// away (docs/research/combat-grabs.md#power-move-props).
 #include <format>
 #include <optional>
 #include <utility>
 
 #include "animation/skeleton.h"
+#include "gamemodes/play_level_simulation.h"
 #include "human/carried_prop.h"
 #include "human/human.h"
-#include "platform/play_level_mode.h"
 #include "world_objects/object_tasks.h"
 
-namespace coney::platform {
+namespace coney {
 
-void PlayLevelMode::stepCarriedProps() {
+void PlayLevelSimulation::stepCarriedProps() {
     if (m_records == nullptr || m_objectTypes == nullptr) {
         return;
     }
@@ -30,16 +31,14 @@ void PlayLevelMode::stepCarriedProps() {
             }
             continue;
         }
-        const human::PlayerCharacter& character = i < m_fighterMeshes.size() && m_fighterMeshes[i].character != nullptr
-                                                      ? *m_fighterMeshes[i].character
-                                                      : *m_character;
+        const human::PlayerCharacter& character = characterOf(human);
         const human::TargetSnapshot& now = fighters[i].current;
         stepCarrier(human, character, now.pose, now.feet, now.heading);
     }
 }
 
-void PlayLevelMode::stepCarrier(human::Human& human, const human::PlayerCharacter& character, const anim::Pose& pose,
-                                anim::Vec3 feet, float heading) {
+void PlayLevelSimulation::stepCarrier(human::Human& human, const human::PlayerCharacter& character,
+                                      const anim::Pose& pose, anim::Vec3 feet, float heading) {
     const std::optional<human::CarriedProp>& wanted = human.carriedProp();
     const auto found = m_carriers.find(&human);
     if (found == m_carriers.end() && !wanted) {
@@ -77,7 +76,7 @@ void PlayLevelMode::stepCarrier(human::Human& human, const human::PlayerCharacte
     }
 }
 
-void PlayLevelMode::makeCarriedProp(human::Human& human, const human::CarriedProp& prop, Carrier& carrier) {
+void PlayLevelSimulation::makeCarriedProp(human::Human& human, const human::CarriedProp& prop, Carrier& carrier) {
     // The type the event names, which must be one a human carries (kind 5). **Coney's stand-in**: a type of another
     // kind is not made (the original ignores kind 6 and puts any other kind in the hand, which no clip on the disc is
     // known to ask for), so the human carries nothing.
@@ -112,7 +111,7 @@ void PlayLevelMode::makeCarriedProp(human::Human& human, const human::CarriedPro
                         handle, at.x, at.y, at.z));
 }
 
-void PlayLevelMode::removeCarriedProp(Carrier& carrier) {
+void PlayLevelSimulation::removeCarriedProp(Carrier& carrier) {
     if (carrier.prop == 0.0) {
         return;
     }
@@ -122,29 +121,14 @@ void PlayLevelMode::removeCarriedProp(Carrier& carrier) {
     carrier.typeName.clear();
 }
 
-void PlayLevelMode::dropReleasedProp(const human::Human& human) {
+void PlayLevelSimulation::dropReleasedProp(const human::Human& human) {
     const auto found = m_carriers.find(&human);
     if (found != m_carriers.end() && !human.carriedProp()) {
         removeCarriedProp(found->second);
     }
 }
 
-void PlayLevelMode::poseCarriedProp(const human::Human& human, const human::PlayerCharacter& character,
-                                    const anim::Pose& pose, anim::Vec3 feet, float heading) {
-    const auto found = m_carriers.find(&human);
-    if (found == m_carriers.end() || found->second.prop == 0.0) {
-        return;
-    }
-    const auto bones = anim::boneTransforms(character.skeleton(), pose);
-    if (found->second.local.bone >= bones.size()) {
-        return;
-    }
-    m_attachedDraws.emplace_back(
-        found->second.prop,
-        world_objects::heldWorldPose(feet, heading, bones.at(found->second.local.bone), 1.0F, found->second.local));
-}
-
-std::optional<double> PlayLevelMode::carriedPropOf(const human::Human& human) const {
+std::optional<double> PlayLevelSimulation::carriedPropOf(const human::Human& human) const {
     const auto found = m_carriers.find(&human);
     if (found == m_carriers.end() || found->second.prop == 0.0) {
         return std::nullopt;
@@ -152,4 +136,4 @@ std::optional<double> PlayLevelMode::carriedPropOf(const human::Human& human) co
     return found->second.prop;
 }
 
-} // namespace coney::platform
+} // namespace coney

@@ -18,6 +18,7 @@
 #include "graphics/render_device.h"
 #include "graphics/sprite_batch.h"
 #include "hud/hud.h"
+#include "hud/hud_owner.h"
 
 namespace coney::platform {
 
@@ -27,9 +28,9 @@ namespace coney::platform {
 [[nodiscard]] std::vector<std::uint32_t> sheetTableHashes(const io::Wad& wad);
 
 /// The HUD on screen: the sprite sheets and batches the HUD draws with, loaded from the disc, and the 2D pass that
-/// draws them over the play mode's frame. It drives a hud::Hud (its own, or one the game shares with the scripts'
-/// bindings, useHud()): step() is the HUD's step and lists its sprites, draw() draws the newest step's sprites, as
-/// often as frames ask.
+/// draws them over the play mode's frame. It drives the hud::Hud its owner gives (hud::HudOwner, the simulation's: its
+/// own HUD, or the one the game shares with the scripts' bindings): step() is the HUD's step and lists its sprites,
+/// draw() draws the newest step's sprites, as often as frames ask.
 ///
 /// The sheets: `part_page0` (text font slot 2 and the HUD's icons), `big_font` (font slot 6, and Coney's stand-in for
 /// the radar disc), `hud_minigames` (the arrow), and each banner's sheet by its sheet-table record. A sheet that does
@@ -38,16 +39,14 @@ namespace coney::platform {
 /// Research: docs/research/hud.md, docs/research/gui.md#a-frame-of-2d
 class HudLayer {
   public:
-    /// Loads the HUD's sheets from `wad`, converted for drawing with `drawsPixels`. `print` gets a line per sheet that
-    /// fails. Never fails itself: a HUD without sheets draws nothing.
-    [[nodiscard]] static std::unique_ptr<HudLayer> create(const io::Wad& wad, bool drawsPixels,
+    /// Loads the HUD's sheets from `wad`, converted for drawing with `drawsPixels`, to step and draw the HUD `owner`
+    /// gives (which must outlive the layer). `print` gets a line per sheet that fails. Never fails itself: a HUD
+    /// without sheets draws nothing.
+    [[nodiscard]] static std::unique_ptr<HudLayer> create(hud::HudOwner& owner, const io::Wad& wad, bool drawsPixels,
                                                           const std::function<void(std::string_view)>& print);
 
-    /// The HUD stepped and drawn: the layer's own until useHud().
-    [[nodiscard]] hud::Hud& hud() { return *m_hud; }
-    /// Steps and draws `shared` (which must outlive the layer) instead of the layer's own HUD: the game's, which the
-    /// scripts' bindings act on.
-    void useHud(hud::Hud& shared) { m_hud = &shared; }
+    /// The HUD stepped and drawn: the one the owner gives now.
+    [[nodiscard]] hud::Hud& hud() { return m_owner.hud(); }
 
     /// The HUD's step with `frame`, then its sprites for the step: the pass emptied, the HUD rendered into the batches,
     /// the batches queued. Loads a banner's sheet the first time a panel shows it.
@@ -58,7 +57,7 @@ class HudLayer {
     [[nodiscard]] std::size_t spritesQueued() const { return m_spritesQueued; }
 
   private:
-    HudLayer(const io::Wad& wad, bool drawsPixels);
+    HudLayer(hud::HudOwner& owner, const io::Wad& wad, bool drawsPixels);
 
     // Loads sprite sheet `name` (a resource name), or nothing with a log line.
     [[nodiscard]] std::optional<graphics::SpriteSheet> loadSheet(std::string_view name,
@@ -79,8 +78,7 @@ class HudLayer {
     bool m_drawsPixels;
     chunk::ChunkHandlerTable m_handlers;
     std::vector<std::uint32_t> m_sheetHashes; // the sheet table's name hashes by record
-    hud::Hud m_ownHud;
-    hud::Hud* m_hud = &m_ownHud;
+    hud::HudOwner& m_owner;
     std::optional<graphics::Font> m_textFont; // part_page0, slot 2
     std::optional<graphics::Font> m_bigFont;  // big_font, slot 6
     std::unique_ptr<graphics::SpriteBatch> m_parts;

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Player 1's throw aim in the level (docs/research/objects.md#throws): L1 with a set 5 object in hand enters it, the
 // left stick turns and pitches it, the arc is traced through the level's humans, world objects and mesh each frame,
-// and L1 again, a lost object or a grab leaves it. The aim itself is combat::ThrowAimState's.
+// and L1 again, a lost object or a grab leaves it. The aim itself is combat::ThrowAimState's; the platform draws the
+// arc (platform::PlayLevelMode::drawThrowArc()).
 
 #include <algorithm>
 #include <array>
@@ -20,12 +21,12 @@
 #include "combat/commands.h"
 #include "combat/throw_aim.h"
 #include "combat/throw_velocity.h"
+#include "gamemodes/play_level_simulation.h"
 #include "graphics/throw_arc.h"
-#include "platform/play_level_mode.h"
 #include "raycast/collision_mesh.h"
 #include "world_objects/object_bodies.h"
 
-namespace coney::platform {
+namespace coney {
 
 namespace {
 
@@ -72,7 +73,7 @@ template <typename Meets> std::optional<float> sweep(anim::Vec3 from, anim::Vec3
 
 } // namespace
 
-void PlayLevelMode::stepThrowAim(const Pad& pad) {
+void PlayLevelSimulation::stepThrowAim(const Pad& pad) {
     // The arc as the step before left it, for a render between the steps to blend from; none while not aiming.
     m_previousArc.clear();
     if (m_throwAim.active()) {
@@ -217,7 +218,7 @@ void PlayLevelMode::stepThrowAim(const Pad& pad) {
     }
 }
 
-std::vector<graphics::ThrowArcVertex> PlayLevelMode::throwArcRibbon(float alpha) const {
+std::vector<graphics::ThrowArcVertex> PlayLevelSimulation::throwArcRibbon(float alpha) const {
     // Only while he is in the aiming state and holds the object (ThrowArcs_RenderAll, ThrowArc_Render).
     if (!m_throwAim.active() || m_throwAim.arcPoints() < 2) {
         return {};
@@ -230,18 +231,4 @@ std::vector<graphics::ThrowArcVertex> PlayLevelMode::throwArcRibbon(float alpha)
     return graphics::throwArcStrip(points, right, m_throwAim.arcCut(), m_throwAim.aimed() != 0.0);
 }
 
-void PlayLevelMode::drawThrowArc(float alpha) {
-    if (!m_engine.drawsPixels()) {
-        return;
-    }
-    const std::vector<graphics::ThrowArcVertex> ribbon = throwArcRibbon(alpha);
-    if (ribbon.empty()) {
-        return;
-    }
-    if (!m_throwArc) {
-        m_throwArc = std::make_unique<ThrowArcRenderer>(m_wad, m_print);
-    }
-    m_throwArc->draw(ribbon);
-}
-
-} // namespace coney::platform
+} // namespace coney

@@ -70,6 +70,7 @@ add_executable(coney_tests
     gamemodes/frame_rate_test.cpp
     gamemodes/gameplay_objects_test.cpp
     gamemodes/gameplay_sound_call_test.cpp
+    gamemodes/play_level_simulation_test.cpp
     gamemodes/gameplay_tag_test.cpp
     gamemodes/tag_lines_test.cpp
     gamemodes/game_mode_stack_test.cpp
@@ -131,6 +132,7 @@ add_executable(coney_tests
     hud/credits_test.cpp
     hud/health_rings_test.cpp
     hud/hud_test.cpp
+    hud/hud_owner_test.cpp
     hud/mash_meter_test.cpp
     hud/radar_test.cpp
     hud/radar_blips_test.cpp
@@ -207,6 +209,7 @@ add_executable(coney_tests
     platform/disc_level_test.cpp
     platform/disc_movies_test.cpp
     platform/disc_play_frame_rate_test.cpp
+    platform/disc_play_level_simulation_test.cpp
     platform/disc_world_streaming_test.cpp
     platform/clip_recorder_test.cpp
     platform/draw_calls_test.cpp

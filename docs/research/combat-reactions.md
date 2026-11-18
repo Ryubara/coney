@@ -1179,7 +1179,7 @@ of health is knocked out (the original's wounded humans with flag `0x8` and the 
 not; [Open questions](#open-questions), when a player is dead). Still counted **from the hit**, where the original
 waits for the same clip end: the brain's knock-out and the player's slow motion going off (`ai::Brains::reportDowns`),
 `BLOCKHUMANS` lost (`Human::updateState`) and the mission-failing check's knocked-out players and helpers
-(`PlayLevelMode::stepGameOver`).
+(`PlayLevelSimulation::stepGameOver`).
 
 ### The revive {#revive-coney}
 
@@ -1220,7 +1220,7 @@ Readings and stand-ins:
 
 ### The mission failing {#game-over-coney}
 
-`repo:src/warriors/game_over.h`, `PlayLevelMode::stepGameOver()`: the check runs each update in the order of [The
+`repo:src/warriors/game_over.h`, `PlayLevelSimulation::stepGameOver()`: the check runs each update in the order of [The
 mission failing](#mission-failing), on at each level's start and switched by `EnableGameOverCheck`; a failure hides the
 HUD and, 180 updates later (10 once cross is newly pressed), opens the mission-failed mode with `GSTRING.HUD` 20 or 21
 as its title. Stand-ins ([Open questions](#open-questions): when a player is dead, and a tackled victim's wounded bit):

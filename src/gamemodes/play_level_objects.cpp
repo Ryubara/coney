@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The play mode's part of the level's glass panes and doors (docs/research/objects.md#coneys-implementation): their
-// world, their ticks, player 1's hits on them and the lock pick (docs/research/crimes.md#lockpick).
+// The level simulation's part of the level's glass panes and doors (docs/research/objects.md#coneys-implementation):
+// their world, their ticks, player 1's hits on them and the lock pick (docs/research/crimes.md#lockpick).
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -27,6 +27,7 @@
 #include "combat/player_combat.h"
 #include "combat/stick_games.h"
 #include "combat/throw_velocity.h"
+#include "gamemodes/play_level_simulation.h"
 #include "hud/hud.h"
 #include "human/fighter.h"
 #include "human/fighter_clips.h"
@@ -35,7 +36,6 @@
 #include "human/humans.h"
 #include "human/locomotion.h"
 #include "human/locomotion_gate.h"
-#include "platform/play_level_mode.h"
 #include "raycast/collision_mesh.h"
 #include "scripting/object_bindings.h"
 #include "scripting/sound_bindings.h"
@@ -44,7 +44,7 @@
 #include "world_objects/object_bodies.h"
 #include "world_objects/props.h"
 
-namespace coney::platform {
+namespace coney {
 
 namespace {
 
@@ -167,7 +167,7 @@ constexpr int kLastStageCue = 0x23;
 
 } // namespace
 
-void PlayLevelMode::bindObjects(world_objects::LevelObjects* objects, const script::RecordedCalls* recorded) {
+void PlayLevelSimulation::bindObjects(world_objects::LevelObjects* objects, const script::RecordedCalls* recorded) {
     m_objects = objects;
     if (m_objects == nullptr) {
         return;
@@ -214,7 +214,7 @@ void PlayLevelMode::bindObjects(world_objects::LevelObjects* objects, const scri
                         m_objects->doors.doors().size()));
 }
 
-void PlayLevelMode::bindPickups(LevelPickups* pickups) {
+void PlayLevelSimulation::bindPickups(LevelPickups* pickups) {
     m_pickups = pickups;
     if (m_pickups == nullptr) {
         return;
@@ -295,7 +295,7 @@ void PlayLevelMode::bindPickups(LevelPickups* pickups) {
     });
 }
 
-const world_objects::Car* PlayLevelMode::stereoInReach(anim::Vec3 feet) const {
+const world_objects::Car* PlayLevelSimulation::stereoInReach(anim::Vec3 feet) const {
     if (m_cars == nullptr) {
         return nullptr;
     }
@@ -316,7 +316,7 @@ const world_objects::Car* PlayLevelMode::stereoInReach(anim::Vec3 feet) const {
     return best;
 }
 
-const world_objects::Door* PlayLevelMode::lockInReach(anim::Vec3 feet) const {
+const world_objects::Door* PlayLevelSimulation::lockInReach(anim::Vec3 feet) const {
     if (m_objects == nullptr) {
         return nullptr;
     }
@@ -332,7 +332,7 @@ const world_objects::Door* PlayLevelMode::lockInReach(anim::Vec3 feet) const {
     return nearest;
 }
 
-PromptOffer PlayLevelMode::promptOffer() const {
+PromptOffer PlayLevelSimulation::promptOffer() const {
     PromptOffer offer;
     const human::Human& human = m_player->human();
     const combat::PlayerCombat& fight = human.fighter().combat();
@@ -384,7 +384,7 @@ PromptOffer PlayLevelMode::promptOffer() const {
     return offer;
 }
 
-bool PlayLevelMode::trySwap(human::Human& human, const world_objects::SightBlocked& blocked) {
+bool PlayLevelSimulation::trySwap(human::Human& human, const world_objects::SightBlocked& blocked) {
     if (m_ai == nullptr || m_pickups == nullptr) {
         return false;
     }
@@ -446,7 +446,7 @@ bool PlayLevelMode::trySwap(human::Human& human, const world_objects::SightBlock
     return false;
 }
 
-bool PlayLevelMode::tryDeal(human::Human& human) {
+bool PlayLevelSimulation::tryDeal(human::Human& human) {
     if (m_ai == nullptr || m_pickups == nullptr) {
         return false;
     }
@@ -479,7 +479,7 @@ bool PlayLevelMode::tryDeal(human::Human& human) {
     return false;
 }
 
-void PlayLevelMode::settleDeal(ai::Brain& brain, ai::DealerGoal& dealer, ai::DealOutcome outcome) {
+void PlayLevelSimulation::settleDeal(ai::Brain& brain, ai::DealerGoal& dealer, ai::DealOutcome outcome) {
     const std::optional<ai::DealTerms> terms = ai::dealTerms(dealer.type());
     if (!terms) {
         return;
@@ -497,7 +497,7 @@ void PlayLevelMode::settleDeal(ai::Brain& brain, ai::DealerGoal& dealer, ai::Dea
     }
 }
 
-void PlayLevelMode::stepDealerPairs() {
+void PlayLevelSimulation::stepDealerPairs() {
     if (m_ai == nullptr || m_pickups == nullptr) {
         return;
     }
@@ -518,7 +518,7 @@ void PlayLevelMode::stepDealerPairs() {
     }
 }
 
-void PlayLevelMode::stepGameOver(const Pad& pad) {
+void PlayLevelSimulation::stepGameOver(const Pad& pad) {
     if (m_gameOver == nullptr || m_pickups == nullptr || m_ai == nullptr) {
         return;
     }
@@ -590,7 +590,7 @@ void PlayLevelMode::stepGameOver(const Pad& pad) {
     }
 }
 
-void PlayLevelMode::stepFlash() {
+void PlayLevelSimulation::stepFlash() {
     human::Human& human = m_player->human();
     if (m_pickups == nullptr) {
         return;
@@ -624,7 +624,7 @@ void PlayLevelMode::stepFlash() {
     }
 }
 
-void PlayLevelMode::useFlash(human::Human& human) {
+void PlayLevelSimulation::useFlash(human::Human& human) {
     if (m_pickups->carried(0, item::kRevive) < 1) {
         return;
     }
@@ -639,7 +639,7 @@ void PlayLevelMode::useFlash(human::Human& human) {
     m_print(std::format("flash: used, health {}\n", health.value()));
 }
 
-std::optional<double> PlayLevelMode::takeFromPile(double object) {
+std::optional<double> PlayLevelSimulation::takeFromPile(double object) {
     if (m_objects == nullptr || m_records == nullptr || m_objectTypes == nullptr) {
         return std::nullopt;
     }
@@ -654,7 +654,7 @@ std::optional<double> PlayLevelMode::takeFromPile(double object) {
     return m_objects->props.takeFromPile(object, *type, pose, m_objects->world);
 }
 
-const world_objects::ObjectType* PlayLevelMode::worldObjectType(double handle) const {
+const world_objects::ObjectType* PlayLevelSimulation::worldObjectType(double handle) const {
     if (m_records == nullptr || m_objectTypes == nullptr) {
         return nullptr;
     }
@@ -667,7 +667,7 @@ const world_objects::ObjectType* PlayLevelMode::worldObjectType(double handle) c
                                                                                                         : nullptr;
 }
 
-void PlayLevelMode::stepObjectBodies() {
+void PlayLevelSimulation::stepObjectBodies() {
     m_objectBodies.clear();
     if (m_records == nullptr || m_objectTypes == nullptr) {
         m_runContacts.clear();
@@ -733,7 +733,7 @@ void PlayLevelMode::stepObjectBodies() {
     });
 }
 
-void PlayLevelMode::giveObjectTargets() {
+void PlayLevelSimulation::giveObjectTargets() {
     if (m_objects == nullptr) {
         return;
     }
@@ -781,7 +781,7 @@ void PlayLevelMode::giveObjectTargets() {
     m_player->human().setObjectTargets(std::move(objects));
 }
 
-void PlayLevelMode::stepPickups() {
+void PlayLevelSimulation::stepPickups() {
     if (m_pickups == nullptr) {
         return;
     }
@@ -852,7 +852,7 @@ void PlayLevelMode::stepPickups() {
     human.fighter().setSprayPaint(m_pickups->carried(0, item::kSprayPaint) > 0);
 }
 
-void PlayLevelMode::stepStereoPanel(const human::Human& human) {
+void PlayLevelSimulation::stepStereoPanel(const human::Human& human) {
     hud::Hud& hud = m_hud->hud();
     hud::StereoHud& panel = hud.stereo(0);
     const std::optional<combat::StereoTheft>& theft = human.fighter().combat().theft();
@@ -886,7 +886,7 @@ void PlayLevelMode::stepStereoPanel(const human::Human& human) {
     }
 }
 
-void PlayLevelMode::stepMugMeter(const human::Human& human, const Pad& pad) {
+void PlayLevelSimulation::stepMugMeter(const human::Human& human, const Pad& pad) {
     hud::MugMeter& meter = m_hud->hud().mug(0);
     const combat::PlayerCombat& fight = human.fighter().combat();
     const std::optional<combat::MuggingGame>& game = fight.mugging();
@@ -908,7 +908,7 @@ void PlayLevelMode::stepMugMeter(const human::Human& human, const Pad& pad) {
     meter.setFills(share(game->offTargetMs(), params.offTargetMs), share(game->progressMs(), params.requiredMs));
 }
 
-void PlayLevelMode::stepLockPickDial() {
+void PlayLevelSimulation::stepLockPickDial() {
     hud::LockPickHud& dial = m_hud->hud().lockPick(0);
     if (!m_lockPick) {
         if (dial.shown()) {
@@ -923,7 +923,7 @@ void PlayLevelMode::stepLockPickDial() {
     dial.setPins(pins.pins(), std::max(pins.good(), 0));
 }
 
-std::string PlayLevelMode::heldObjectLogText(double handle) const {
+std::string PlayLevelSimulation::heldObjectLogText(double handle) const {
     const world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(handle) : nullptr;
     if (record == nullptr) {
         return {};
@@ -933,7 +933,7 @@ std::string PlayLevelMode::heldObjectLogText(double handle) const {
                        m_pickups->animSetOf(record->typeName));
 }
 
-void PlayLevelMode::dropHeld(human::Human& human, double held, bool thrown) {
+void PlayLevelSimulation::dropHeld(human::Human& human, double held, bool thrown) {
     if (!thrown) {
         m_print(std::format("pickup: dropped object {:.0f}{}\n", held, heldObjectLogText(held)));
     }
@@ -1025,7 +1025,7 @@ void PlayLevelMode::dropHeld(human::Human& human, double held, bool thrown) {
     m_looseObjects.start(held, start.position, start.rotation, kind, velocity, spin, thrown ? handleOf(human) : 0.0);
 }
 
-void PlayLevelMode::stepLooseObjects() {
+void PlayLevelSimulation::stepLooseObjects() {
     if (m_records == nullptr) {
         m_looseObjects.clear();
         return;
@@ -1103,7 +1103,7 @@ void PlayLevelMode::stepLooseObjects() {
     }
 }
 
-void PlayLevelMode::impactSound(double handle, const world_objects::LooseImpact& impact) {
+void PlayLevelSimulation::impactSound(double handle, const world_objects::LooseImpact& impact) {
     const world_objects::SpawnRecord* record = m_records->find(handle);
     const world_objects::ObjectType* type =
         record != nullptr && m_objectTypes != nullptr ? m_objectTypes->find(record->typeName) : nullptr;
@@ -1117,7 +1117,7 @@ void PlayLevelMode::impactSound(double handle, const world_objects::LooseImpact&
                                1.0F / static_cast<float>(impact.index + 1));
 }
 
-void PlayLevelMode::flyingBreak(double handle, const world_objects::LooseObject& object) {
+void PlayLevelSimulation::flyingBreak(double handle, const world_objects::LooseObject& object) {
     // The impact's two material pairs: (its, its) at full volume, (its, the surface's) at half / (n + 1).
     constexpr float kOwnPairVolume = 1.0F;
     constexpr float kSurfacePairVolume = 0.5F;
@@ -1165,7 +1165,7 @@ void PlayLevelMode::flyingBreak(double handle, const world_objects::LooseObject&
     m_objects->props.setCounters(handle, *type, object.counter, object.secondCounter);
 }
 
-void PlayLevelMode::stepMugging(human::Human& human) {
+void PlayLevelSimulation::stepMugging(human::Human& human) {
     // The next mugging runs with SetInterrogateParam's record while the scripts have one set.
     combat::PlayerCombat& fight = human.fighter().combat();
     fight.setMuggingOverride(m_pickups->muggingOverride());
@@ -1207,12 +1207,12 @@ void PlayLevelMode::stepMugging(human::Human& human) {
     m_mugEndClip = *m_mugEnding ? human::clips::kMugEnd : human::clips::kMugFail;
 }
 
-double PlayLevelMode::playerHandle() const {
+double PlayLevelSimulation::playerHandle() const {
     const HumanCreation* player = m_cast.humans != nullptr ? m_cast.humans->player(1) : nullptr;
     return player != nullptr ? player->handle : world_objects::kNoObject;
 }
 
-bool PlayLevelMode::stepLockPick(const Pad& pad) {
+bool PlayLevelSimulation::stepLockPick(const Pad& pad) {
     if (m_objects == nullptr) {
         return false;
     }
@@ -1249,7 +1249,7 @@ bool PlayLevelMode::stepLockPick(const Pad& pad) {
     return true;
 }
 
-void PlayLevelMode::stepObjects() {
+void PlayLevelSimulation::stepObjects() {
     if (m_objects == nullptr) {
         return;
     }
@@ -1338,7 +1338,7 @@ void PlayLevelMode::stepObjects() {
     }
 }
 
-std::size_t PlayLevelMode::standingObjectsOf(std::string_view typeName) const {
+std::size_t PlayLevelSimulation::standingObjectsOf(std::string_view typeName) const {
     if (m_records == nullptr) {
         return 0;
     }
@@ -1348,7 +1348,7 @@ std::size_t PlayLevelMode::standingObjectsOf(std::string_view typeName) const {
         }));
 }
 
-std::size_t PlayLevelMode::doorsDrawnNear(anim::Vec3 at, float radius) const {
+std::size_t PlayLevelSimulation::doorsDrawnNear(anim::Vec3 at, float radius) const {
     if (m_objects == nullptr) {
         return 0;
     }
@@ -1357,7 +1357,7 @@ std::size_t PlayLevelMode::doorsDrawnNear(anim::Vec3 at, float radius) const {
         draws, [at, radius](const world_objects::DoorDraw& d) { return anim::distance(d.position, at) <= radius; }));
 }
 
-std::optional<double> PlayLevelMode::objectAttackLands(const human::Human& human) {
+std::optional<double> PlayLevelSimulation::objectAttackLands(const human::Human& human) {
     if (!m_objectAttack) {
         return std::nullopt;
     }
@@ -1389,7 +1389,7 @@ std::optional<double> PlayLevelMode::objectAttackLands(const human::Human& human
     return std::nullopt;
 }
 
-void PlayLevelMode::strikeObjects(human::Human& human, std::span<const human::PosedShape> shapes) {
+void PlayLevelSimulation::strikeObjects(human::Human& human, std::span<const human::PosedShape> shapes) {
     if (m_objects == nullptr || m_objects->world.collision == nullptr) {
         return;
     }
@@ -1478,7 +1478,7 @@ void PlayLevelMode::strikeObjects(human::Human& human, std::span<const human::Po
     strikeLevel(human, shapes, player);
 }
 
-void PlayLevelMode::strikeLevel(human::Human& human, std::span<const human::PosedShape> shapes, bool player) {
+void PlayLevelSimulation::strikeLevel(human::Human& human, std::span<const human::PosedShape> shapes, bool player) {
     if (m_objects == nullptr || m_objects->world.collision == nullptr) {
         return;
     }
@@ -1509,9 +1509,9 @@ void PlayLevelMode::strikeLevel(human::Human& human, std::span<const human::Pose
     }
 }
 
-void PlayLevelMode::strikeProp(double attacker, double handle, const world_objects::ObjectType& type,
-                               world_objects::HitKind kind, anim::Vec3 point, anim::Vec3 direction,
-                               anim::Vec3 attackerAt, const world_objects::PropPose& pose, bool runIn) {
+void PlayLevelSimulation::strikeProp(double attacker, double handle, const world_objects::ObjectType& type,
+                                     world_objects::HitKind kind, anim::Vec3 point, anim::Vec3 direction,
+                                     anim::Vec3 attackerAt, const world_objects::PropPose& pose, bool runIn) {
     reportNoise();
     const world_objects::PropStrike strike = m_objects->props.strike(handle, type,
                                                                      world_objects::ObjectHit{.attacker = attacker,
@@ -1525,7 +1525,7 @@ void PlayLevelMode::strikeProp(double attacker, double handle, const world_objec
                         strike.intactBefore ? "" : " (already broken)", strike.broke ? ", broke" : ""));
 }
 
-bool PlayLevelMode::sightBlocked(anim::Vec3 from, anim::Vec3 to) const {
+bool PlayLevelSimulation::sightBlocked(anim::Vec3 from, anim::Vec3 to) const {
     const raycast::Vec3 d{to.x - from.x, to.y - from.y, to.z - from.z};
     const float length = std::sqrt((d.x * d.x) + (d.y * d.y) + (d.z * d.z));
     if (length < 1e-4F) {
@@ -1539,7 +1539,7 @@ bool PlayLevelMode::sightBlocked(anim::Vec3 from, anim::Vec3 to) const {
     return mesh->rayCast(ray, {}, 0).has_value();
 }
 
-void PlayLevelMode::walkOverPowerups() {
+void PlayLevelSimulation::walkOverPowerups() {
     if (m_pickups == nullptr) {
         return;
     }
@@ -1554,13 +1554,13 @@ void PlayLevelMode::walkOverPowerups() {
     }
 }
 
-void PlayLevelMode::reportNoise() {
+void PlayLevelSimulation::reportNoise() {
     if (m_sound != nullptr) {
         m_sound->markAmbientEvent();
     }
 }
 
-double PlayLevelMode::handleOf(const human::Human& human) const {
+double PlayLevelSimulation::handleOf(const human::Human& human) const {
     if (&human == &m_player->human()) {
         return playerHandle();
     }
@@ -1568,4 +1568,4 @@ double PlayLevelMode::handleOf(const human::Human& human) const {
     return brain != nullptr ? brain->handle() : world_objects::kNoObject;
 }
 
-} // namespace coney::platform
+} // namespace coney

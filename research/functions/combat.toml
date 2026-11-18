@@ -2490,7 +2490,7 @@ name = "Flash_Use"
 page = "combat-rage.md#flash"
 role = "spends a flash and heals"
 level = "confirmed-code"
-coney = "src/platform/play_level_mode.h:PlayLevelMode::useFlash"
+coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::useFlash"
 status = "legacy"
 
 [[function]]

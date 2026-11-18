@@ -261,6 +261,26 @@ coney = "src/world_objects/hats.h:FallingHats::knockOff"
 status = "legacy"
 
 [[function]]
+address = 0x003e7b88
+name = "HatObject_Update"
+page = "script-types.md#hat-object"
+kind = "`hat_object` update"
+role = "once, for a Warriors' hat: every other loose `dyn_warr_cb` object is detached and removed, or this one goes when a player holds one; lands after a fall; ends when its wearer is down or gone"
+level = "confirmed-code"
+coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::stepHats"
+status = "compared"
+
+[[function.gaps]]
+what = "the fall is Coney's own gravity each step until the ground, not the physics body's flags, update interval and 45-update count"
+relation = "stand-in"
+issue = 656
+
+[[function.gaps]]
+what = "the Warriors' hat's loose duplicates are not removed, and a hat taken in hand is not dropped when its holder goes down (no hat is picked up yet)"
+relation = "not-ported"
+issue = 731
+
+[[function]]
 address = 0x003e8408
 name = "Strober_Init"
 page = "script-types.md#small-lights-functions"
@@ -433,7 +453,7 @@ page = "script-types.md#thrown-weapon"
 kind = "message 1"
 role = "state −5 (removed next update), position set to the hit point, effects by model hash (below)"
 level = "confirmed-code"
-coney = "src/platform/play_level_mode.h:PlayLevelMode::flyingBreak"
+coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::flyingBreak"
 status = "legacy"
 
 [[function]]

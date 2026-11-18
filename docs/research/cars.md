@@ -678,7 +678,7 @@ Checked 2026-10-10 by playing `car_punch` and `car_glance` on Coney (`level99` c
 `main`) beside the same car. The user's report, "no destruction, only the glass breaks, and hits must land on very
 particular spots", comes from these gaps:
 
-- **Only the square's object attack hits a car.** `PlayLevelMode::stepObjects()` passes a car hit to
+- **Only the square's object attack hits a car.** `PlayLevelSimulation::stepObjects()` passes a car hit to
   `Cars::humanHit()` only when player 1's object attack aimed at the car lands; the strike shapes never test the
   car. So the car must be the square's target: within 1 m of its box, faced within 45° of a face's normal, before any
   human target. In `car_punch` Coney matched the original for the two aimed squares (662 broke window 17, 661 reached

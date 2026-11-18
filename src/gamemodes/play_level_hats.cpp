@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The play mode's hats: each human's class hat put on when he is made, a script's hat put on, the hat drawn on his
-// head, knocked off when he goes down, and falling until it lies on the ground (docs/research/characters.md#hats).
+// The level simulation's hats: each human's class hat put on when he is made, a script's hat put on, the hat kept on
+// his head (the platform draws it there: src/platform/play_level_world.cpp), knocked off when he goes down, and
+// falling until it lies on the ground (docs/research/characters.md#hats).
 #include <cmath>
 #include <format>
 #include <optional>
@@ -9,13 +10,13 @@
 #include "ai/brain.h"
 #include "animation/skeleton.h"
 #include "characters/character_class.h"
+#include "gamemodes/play_level_simulation.h"
 #include "human/human.h"
 #include "human/human_flags.h"
-#include "platform/play_level_mode.h"
 #include "raycast/collision_mesh.h"
 #include "world_objects/hats.h"
 
-namespace coney::platform {
+namespace coney {
 
 namespace {
 
@@ -33,7 +34,7 @@ constexpr float kGroundRayLength = 50.0F;
 
 } // namespace
 
-void PlayLevelMode::stepHats() {
+void PlayLevelSimulation::stepHats() {
     if (m_records == nullptr || m_objectTypes == nullptr) {
         return;
     }
@@ -47,19 +48,22 @@ void PlayLevelMode::stepHats() {
     const std::vector<ai::AiHuman>& fighters = m_ai->humans();
     for (std::size_t i = 0; i < fighters.size(); ++i) {
         human::Human& human = *fighters[i].human;
+        // **Coney's stand-in** for the hat's removal (state -5): a deleted human's hat goes with him
+        // (docs/research/characters.md#coneys-implementation, Hats).
         if (fighters[i].removed) {
             removeWornHat(human);
             continue;
         }
         const HumanCreation* made = m_cast.humans != nullptr ? m_cast.humans->find(castHandleOf(fighters[i])) : nullptr;
-        const human::PlayerCharacter& character = i < m_fighterMeshes.size() && m_fighterMeshes[i].character != nullptr
-                                                      ? *m_fighterMeshes[i].character
-                                                      : *m_character;
+        const human::PlayerCharacter& character = characterOf(human);
         const human::TargetSnapshot& now = fighters[i].current;
         stepWearer(human, made != nullptr ? std::optional<int>(made->type) : std::nullopt, character, now.pose,
                    now.feet, now.heading);
     }
-    // The hats in flight fall; each one's record follows it, and stays where it lands.
+    // **Coney's stand-in** for the hat object's update while it falls (docs/research/script-types.md#hat-object): the
+    // hats in flight fall by Coney's own gravity each step, not by the physics body's flags and 45-update count; each
+    // one's record follows it, and stays where it lands. Picking one up again, the Warriors' hat's duplicates and a
+    // held hat dropped when its holder goes down are #731's.
     const raycast::CollisionMesh& mesh = m_scenery->collision();
     const auto ground = [&mesh](anim::Vec3 at) -> std::optional<float> {
         const raycast::Ray ray{.origin = raycast::Vec3{at.x, at.y, at.z + kGroundRayAbove},
@@ -73,13 +77,15 @@ void PlayLevelMode::stepHats() {
             record->position = {pose.position.x, pose.position.y, pose.position.z};
             record->rotation = {pose.rotation.x, pose.rotation.y, pose.rotation.z, pose.rotation.w};
         } else {
+            // **Coney's stand-in**: a hat whose record is gone is forgotten, as the original removes one at state -5.
             m_fallingHats.forget(hat);
         }
     }
 }
 
-void PlayLevelMode::stepWearer(human::Human& human, std::optional<int> type, const human::PlayerCharacter& character,
-                               const anim::Pose& pose, anim::Vec3 feet, float heading) {
+void PlayLevelSimulation::stepWearer(human::Human& human, std::optional<int> type,
+                                     const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet,
+                                     float heading) {
     Wearer& wearer = m_wearers[&human];
     human::ScriptState& script = human.script();
     const characters::CharacterType* classRecord =
@@ -152,9 +158,9 @@ void PlayLevelMode::stepWearer(human::Human& human, std::optional<int> type, con
     }
 }
 
-void PlayLevelMode::putOnHat(const human::Human& human, std::optional<int> type,
-                             const characters::CharacterType* classRecord, double hat, const std::string& hatName,
-                             Wearer& wearer) {
+void PlayLevelSimulation::putOnHat(const human::Human& human, std::optional<int> type,
+                                   const characters::CharacterType* classRecord, double hat, const std::string& hatName,
+                                   Wearer& wearer) {
     const world_objects::ObjectType* hatType = m_objectTypes->find(hatName);
     if (hatType == nullptr) {
         m_print(std::format("hats: no object type {}; human not given hat {}\n", hatName, hat));
@@ -188,13 +194,13 @@ void PlayLevelMode::putOnHat(const human::Human& human, std::optional<int> type,
                         at.y, at.z));
 }
 
-void PlayLevelMode::knockOffHat(Wearer& wearer, float heading) {
+void PlayLevelSimulation::knockOffHat(Wearer& wearer, float heading) {
     m_wornHats.erase(wearer.hat);
     m_fallingHats.knockOff(wearer.hat, wearer.pose, heading, world_objects::hatThrow(kKnockSide));
     wearer.hat = 0.0;
 }
 
-void PlayLevelMode::removeWornHat(human::Human& human) {
+void PlayLevelSimulation::removeWornHat(human::Human& human) {
     const auto found = m_wearers.find(&human);
     if (found == m_wearers.end() || found->second.hat == 0.0) {
         return;
@@ -207,7 +213,7 @@ void PlayLevelMode::removeWornHat(human::Human& human) {
     human.script().hatName.clear();
 }
 
-void PlayLevelMode::takeHatOf(const human::Human& from) {
+void PlayLevelSimulation::takeHatOf(const human::Human& from) {
     human::Human& player = m_player->human();
     removeWornHat(player);
     const auto found = m_wearers.find(&from);
@@ -223,28 +229,4 @@ void PlayLevelMode::takeHatOf(const human::Human& from) {
     m_wearers[&player] = moved;
 }
 
-void PlayLevelMode::poseHat(const human::Human& human, const human::PlayerCharacter& character, const anim::Pose& pose,
-                            anim::Vec3 feet, float heading) {
-    const auto found = m_wearers.find(&human);
-    if (found == m_wearers.end() || found->second.hat == 0.0) {
-        return;
-    }
-    const auto bones = anim::boneTransforms(character.skeleton(), pose);
-    m_attachedDraws.emplace_back(
-        found->second.hat,
-        world_objects::heldWorldPose(feet, heading, bones.at(world_objects::kHatBone), 1.0F, found->second.local));
-}
-
-void PlayLevelMode::drawAttachedObjects() {
-    for (const auto& [hat, pose] : m_attachedDraws) {
-        const world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(hat) : nullptr;
-        const world_objects::ObjectType* type =
-            record != nullptr && m_objectTypes != nullptr ? m_objectTypes->find(record->typeName) : nullptr;
-        if (type != nullptr && !record->hidden) {
-            m_placed->place(hat, type->modelHash, pose.position, pose.rotation,
-                            PlacedObjects::Look{.tint = record->tint, .sizeCullExempt = true});
-        }
-    }
-}
-
-} // namespace coney::platform
+} // namespace coney

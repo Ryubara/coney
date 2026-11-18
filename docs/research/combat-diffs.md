@@ -184,7 +184,7 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 
 The Coney side of each entry is named in it. The files the entries cite: `repo:src/combat/player_combat.cpp` (the
 dispatcher and the commands it takes), `repo:src/combat/attacks.cpp` (which attack a press starts),
-`repo:src/human/fighter.cpp` (targets and the steer), `repo:src/platform/play_level_objects.cpp` (moving attacks on
+`repo:src/human/fighter.cpp` (targets and the steer), `repo:src/gamemodes/play_level_objects.cpp` (moving attacks on
 objects), `repo:src/animation/anim_task.cpp` and `repo:src/human/human_animator.cpp` (clip timing). Coney's choices
 and stand-ins as a whole are listed on [Combat](combat/index.md#coneys-implementation).
 

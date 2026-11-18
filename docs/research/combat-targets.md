@@ -1065,9 +1065,10 @@ passes over the humans and over the play mode's object list in the original's or
 `glassTargetable()` the two object filters (issue #1011). Square's pick, the spray's and a cross chain step's search,
 and the charge's and the dive's search go through them; an object found is the square's object attack's target, and
 for the others it means no human, as `Human_GetTarget` of an object is null. The play mode
-(`PlayLevelMode::giveObjectTargets()`, `repo:src/platform/play_level_objects.cpp`) lists the world objects whose type
-makes them a strike target with their body flags, the whole panes and the cars the car pass takes, each with its
-kind; the lists are the player's alone, as only a player's searches have these passes. Tests: `repo:tests/human/target_passes_test.cpp`.
+(`PlayLevelSimulation::giveObjectTargets()`, `repo:src/gamemodes/play_level_objects.cpp`) lists the world objects
+whose type makes them a strike target with their body flags, the whole panes and the cars the car pass takes, each
+with its kind; the lists are the player's alone, as only a player's searches have these passes.
+Tests: `repo:tests/human/target_passes_test.cpp`.
 
 Where Coney still differs (stand-ins, each marked at the code):
 

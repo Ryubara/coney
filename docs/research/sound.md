@@ -1287,7 +1287,7 @@ loops come back on their own (mode 3 restarts a loop whenever none plays), the b
   **Coney's stand-ins**: the striking limb comes from the strike clip's name (`kick`, `stomp`, `knee` a foot; `headbutt`
   the head; else a hand), not the striking shape's bone; nobody is hidden in shadow, burning or holding a world object;
   only the humans held by a script handle report sounds: the scripts' own and, in a level with scripts, the debug menus'
-  fighters, which `PlayLevelMode::bindDebugFighter` gives a handle from the counter `HuCreate` uses and the character
+  fighters, which `PlayLevelSimulation::bindDebugFighter` gives a handle from the counter `HuCreate` uses and the character
   type they are drawn as (so a voice set), while the original plays every human's clip sounds whoever made him
   (`Human_OnAnimSoundEvent`, `0x0021f700`, tests nothing of the sort); there are no punch bags (`BAG`); a strike shape
   meets the level when its segment, as a ray, crosses a level triangle, without the turn limits and state `0x4000000`; a

@@ -60,15 +60,16 @@ std::vector<std::uint32_t> sheetTableHashes(const io::Wad& wad) {
     return hashes;
 }
 
-HudLayer::HudLayer(const io::Wad& wad, bool drawsPixels)
-    : m_wad(wad), m_drawsPixels(drawsPixels), m_handlers(chunk::ChunkHandlerTable::withDefaults()) {
+// The layer over `owner`'s HUD, with the chunk handlers its sheets load through; create() loads the sheets.
+HudLayer::HudLayer(hud::HudOwner& owner, const io::Wad& wad, bool drawsPixels)
+    : m_wad(wad), m_drawsPixels(drawsPixels), m_handlers(chunk::ChunkHandlerTable::withDefaults()), m_owner(owner) {
     addTextureDictionaryHandlers(m_handlers);
     addSpriteSheetHandlers(m_handlers);
 }
 
-std::unique_ptr<HudLayer> HudLayer::create(const io::Wad& wad, bool drawsPixels,
+std::unique_ptr<HudLayer> HudLayer::create(hud::HudOwner& owner, const io::Wad& wad, bool drawsPixels,
                                            const std::function<void(std::string_view)>& print) {
-    std::unique_ptr<HudLayer> layer(new HudLayer(wad, drawsPixels));
+    std::unique_ptr<HudLayer> layer(new HudLayer(owner, wad, drawsPixels));
     layer->m_sheetHashes = sheetTableHashes(wad);
     // part_page0: the text font of slot 2 and the HUD's icons, one batch as the original's one instance.
     if (auto sheet = layer->loadSheet(gui::kTextFontSheet, print)) {
@@ -148,7 +149,7 @@ graphics::SpriteBatch* HudLayer::sheetBatch(std::uint32_t record) {
 graphics::SpriteBatch* HudLayer::radarMapBatch() {
     // `Radar_Setup`: the sheet named after the level's world is the map; loaded again only when the level's map
     // changes, a failure logged once and drawn as no disc.
-    const std::string& name = m_hud->radar().map.sheet;
+    const std::string& name = m_owner.hud().radar().map.sheet;
     if (name != m_radarSheet) {
         m_radarSheet = name;
         m_radarMap.reset();
@@ -165,7 +166,7 @@ graphics::SpriteBatch* HudLayer::radarMapBatch() {
 }
 
 void HudLayer::step(const hud::HudFrame& frame) {
-    m_hud->update(frame);
+    m_owner.hud().update(frame);
     m_pass.empty();
     // The canvas: fonts by slot (slot 6 big_font, every other slot part_page0) and their batches.
     hud::HudCanvas canvas;
@@ -189,7 +190,7 @@ void HudLayer::step(const hud::HudFrame& frame) {
         return shadow ? batches->shadow.get() : batches->banner.get();
     };
     canvas.sheet = [this](std::uint32_t record) { return sheetBatch(record); };
-    m_hud->render(canvas);
+    m_owner.hud().render(canvas);
     // Every batch is queued; an empty one draws nothing.
     m_spritesQueued = 0;
     for (graphics::SpriteBatch* batch : {m_flat.get(), m_radarMap.get(), m_bigText.get(), m_parts.get(),

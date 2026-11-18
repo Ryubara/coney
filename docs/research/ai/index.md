@@ -891,7 +891,7 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
   `Brains` and `ScriptedBrains` before its script runs and holds every AI call on a human (`ScriptedBrains::hold`)
   until the play mode has loaded the level and made the humans; `release` then makes each `HuCreate`d human (player 1
   bound to the player's brain, the others AI humans of the class `aiConfigFrom` gives their type, drawn with their own
-  model, `repo:src/platform/play_level_cast.cpp`) and replays the held calls in order. A later `HuCreate` of player 1
+  model, `repo:src/gamemodes/play_level_cast.cpp`) and replays the held calls in order. A later `HuCreate` of player 1
   is an AI human until `HuChangePlayerGang` hands player 1 over ([Characters](../characters.md#coneys-implementation)),
   and `GangDelete` takes every member but player 1 out of the world at once ([Deleting a gang](../ai-gangs.md#gang-delete)).
   A teleport moves an AI human;
@@ -1151,8 +1151,8 @@ far range ([pick-ups: using](../ai-gangs.md#warrior-pickups)). He keeps a knife,
 kind 4 or 6 is **dropped** at his next think with no enemies unless the steal tactic runs
 ([Think, step 3](../ai-brain-types.md#think-warrior)). In Coney, `ai::swapHeldObjects` (`repo:src/ai/swap_prompt.cpp`)
 moves the handle
-and `PlayLevelMode::trySwap` (`repo:src/platform/play_level_objects.cpp`) sets his anim set, so his attack pick
-counts him armed (`repo:src/ai/attack_views.cpp`), and `PlayLevelMode::heldDrawOf`
+and `PlayLevelSimulation::trySwap` (`repo:src/gamemodes/play_level_objects.cpp`) sets his anim set, so his attack pick
+counts him armed (`repo:src/ai/attack_views.cpp`), and `PlayLevelSimulation::heldDrawOf`
 (`repo:src/platform/play_level_world.cpp`) draws the object in his own right hand, as player 1's
 ([Objects: a weapon given to a Warrior](../objects.md#given-weapon), issue #78). The disc test
 `repo:tests/platform/disc_given_weapon_test.cpp` gives a bat through the swap at `level80` checkpoint 3 and checks that

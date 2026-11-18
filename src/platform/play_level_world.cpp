@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The play mode's world objects and health rings: the scripts' spawn records brought in round the camera and drawn
-// with their models, tints and fades, the objective markers (docs/research/objects.md#objective-markers), the object
-// in player 1's hand, the glints of the pickups and lock-pickable doors (docs/research/particles.md#glints), and the
-// rings under player 1 and his target (docs/research/hud-radar.md#the-health-rings).
+// with their models, tints and fades, the objective markers (docs/research/objects.md#objective-markers), the objects
+// in the humans' hands, the hats they wear and the props they carry (which the simulation keeps:
+// src/gamemodes/play_level_held.cpp, play_level_hats.cpp, play_level_props.cpp), player 1's throw-aim arc, the glints
+// of the pickups and lock-pickable doors (docs/research/particles.md#glints), and the rings under player 1 and his
+// target (docs/research/hud-radar.md#the-health-rings).
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <format>
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -16,6 +19,7 @@
 #include "animation/skeleton.h"
 #include "core/name_hash.h"
 #include "core/pad.h"
+#include "graphics/throw_arc.h"
 #include "human/combatant.h"
 #include "human/fighter.h"
 #include "human/human.h"
@@ -182,73 +186,12 @@ void PlayLevelMode::stepRings(const Pad& pad, const WorldView& view, std::uint64
     m_rings.update(frame);
 }
 
-std::optional<world_objects::WorldPose> PlayLevelMode::heldPose(double held,
-                                                                const human::PlayerSnapshot& snapshot) const {
-    const std::optional<HeldDraw> draw =
-        heldDrawOf(held, m_player->human(), playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading);
-    return draw ? std::optional<world_objects::WorldPose>(draw->pose) : std::nullopt;
-}
-
-// @orig 0x0024c6d8 Human_PlaceObjectInHandByPickupClip (unknown)
-// @orig 0x003a19b0 Obj_GetWorldPose (unknown)
-std::optional<PlayLevelMode::HeldDraw> PlayLevelMode::heldDrawOf(double held, const human::Human& human,
-                                                                 const human::PlayerCharacter& character,
-                                                                 const anim::Pose& pose, anim::Vec3 feet,
-                                                                 float heading) const {
-    // The pick-up clip's take event in his own animations gives the bone and the local pose, at his scale, as the
-    // swap and HuPlaceItemInHand place it for any human (docs/research/objects.md#given-weapon); composed with the
-    // bone of his pose and the body's placement (the lean left out). **Coney's reading**: the bone's position is not
-    // scaled by the human's scale, as Coney draws the body unscaled.
-    const world_objects::SpawnRecord* record =
-        held != world_objects::kNoObject && m_records != nullptr ? m_records->find(held) : nullptr;
-    const world_objects::ObjectType* type =
-        record != nullptr && m_objectTypes != nullptr ? m_objectTypes->find(record->typeName) : nullptr;
-    const anim::AnimClip* clip =
-        type != nullptr
-            ? character.anims().clip(static_cast<std::size_t>(world_objects::pickupClip(type->pickupAnim, 0.0F)))
-            : nullptr;
-    const std::optional<world_objects::HeldAttachment> attachment =
-        clip != nullptr ? world_objects::heldAttachment(*clip, human.scale(), type->grip) : std::nullopt;
-    if (!attachment || attachment->bone >= anim::kPoseBones) {
-        return std::nullopt;
-    }
-    const auto bones = anim::boneTransforms(character.skeleton(), pose);
-    return HeldDraw{.holder = &human,
-                    .handle = held,
-                    .bone = attachment->bone,
-                    .pose = world_objects::heldWorldPose(feet, heading, bones.at(attachment->bone), 1.0F, *attachment)};
-}
-
 void PlayLevelMode::poseHeldObject(const human::Human& human, const human::PlayerCharacter& character,
                                    const anim::Pose& pose, anim::Vec3 feet, float heading) {
     if (const std::optional<HeldDraw> draw =
             heldDrawOf(human.script().heldObject, human, character, pose, feet, heading)) {
         m_attachedDraws.emplace_back(draw->handle, draw->pose);
     }
-}
-
-std::vector<PlayLevelMode::HeldDraw> PlayLevelMode::heldDraws() const {
-    // Player 1 and each AI human not deleted, at the newest step's pose, skinned as render() skins them.
-    std::vector<HeldDraw> draws;
-    const human::PlayerSnapshot& player = m_player->current();
-    if (std::optional<HeldDraw> draw = heldDrawOf(m_player->human().script().heldObject, m_player->human(),
-                                                  playerCharacter(), player.pose, player.feet, player.heading)) {
-        draws.push_back(*draw);
-    }
-    const std::vector<ai::AiHuman>& fighters = m_ai->humans();
-    for (std::size_t i = 0; i < fighters.size() && i < m_fighterMeshes.size(); ++i) {
-        const human::PlayerCharacter* character = m_fighterMeshes[i].character;
-        if (fighters[i].removed || character == nullptr) {
-            continue;
-        }
-        const human::Human& human = *fighters[i].human;
-        const human::TargetSnapshot& now = fighters[i].current;
-        if (std::optional<HeldDraw> draw =
-                heldDrawOf(human.script().heldObject, human, *character, now.pose, now.feet, now.heading)) {
-            draws.push_back(*draw);
-        }
-    }
-    return draws;
 }
 
 void PlayLevelMode::recordDrawnPoses() {
@@ -368,6 +311,59 @@ void PlayLevelMode::drawRings(const std::map<std::uint64_t, anim::Vec3>& feet) c
         }
     }
     m_lights->drawRings(rings, markers);
+}
+
+void PlayLevelMode::poseHat(const human::Human& human, const human::PlayerCharacter& character, const anim::Pose& pose,
+                            anim::Vec3 feet, float heading) {
+    const auto found = m_wearers.find(&human);
+    if (found == m_wearers.end() || found->second.hat == 0.0) {
+        return;
+    }
+    const auto bones = anim::boneTransforms(character.skeleton(), pose);
+    m_attachedDraws.emplace_back(
+        found->second.hat,
+        world_objects::heldWorldPose(feet, heading, bones.at(world_objects::kHatBone), 1.0F, found->second.local));
+}
+
+void PlayLevelMode::drawAttachedObjects() {
+    for (const auto& [hat, pose] : m_attachedDraws) {
+        const world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(hat) : nullptr;
+        const world_objects::ObjectType* type =
+            record != nullptr && m_objectTypes != nullptr ? m_objectTypes->find(record->typeName) : nullptr;
+        if (type != nullptr && !record->hidden) {
+            m_placed->place(hat, type->modelHash, pose.position, pose.rotation,
+                            PlacedObjects::Look{.tint = record->tint, .sizeCullExempt = true});
+        }
+    }
+}
+
+void PlayLevelMode::poseCarriedProp(const human::Human& human, const human::PlayerCharacter& character,
+                                    const anim::Pose& pose, anim::Vec3 feet, float heading) {
+    const auto found = m_carriers.find(&human);
+    if (found == m_carriers.end() || found->second.prop == 0.0) {
+        return;
+    }
+    const auto bones = anim::boneTransforms(character.skeleton(), pose);
+    if (found->second.local.bone >= bones.size()) {
+        return;
+    }
+    m_attachedDraws.emplace_back(
+        found->second.prop,
+        world_objects::heldWorldPose(feet, heading, bones.at(found->second.local.bone), 1.0F, found->second.local));
+}
+
+void PlayLevelMode::drawThrowArc(float alpha) {
+    if (!m_engine.drawsPixels()) {
+        return;
+    }
+    const std::vector<graphics::ThrowArcVertex> ribbon = throwArcRibbon(alpha);
+    if (ribbon.empty()) {
+        return;
+    }
+    if (!m_throwArc) {
+        m_throwArc = std::make_unique<ThrowArcRenderer>(m_wad, m_print);
+    }
+    m_throwArc->draw(ribbon);
 }
 
 } // namespace coney::platform

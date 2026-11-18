@@ -30,7 +30,7 @@ address = 0x0024c6d8
 name = "Human_PlaceObjectInHandByPickupClip"
 page = "objects.md#held"
 level = "confirmed-code"
-coney = "src/platform/play_level_world.cpp:PlayLevelMode::heldDrawOf"
+coney = "src/gamemodes/play_level_held.cpp:PlayLevelSimulation::heldDrawOf"
 status = "legacy"
 
 [[function]]
@@ -112,7 +112,7 @@ name = "Human_ReleaseThrow"
 page = "objects.md#original-structure"
 role = "a held object let go: dropped / thrown"
 level = "confirmed-code"
-coney = "src/platform/play_level_mode.h:PlayLevelMode::dropHeld"
+coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::dropHeld"
 status = "legacy"
 
 [[function]]
@@ -415,7 +415,7 @@ page = "objects.md#original-structure"
 role = "vtable function words `+0x9c` / `+0xa4` (slots `+0x98` / `+0xa0` of `0x005453a0` and the car's `0x00544c08`): an attached object's pose through its parent's bone"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
-coney = "src/platform/play_level_world.cpp:PlayLevelMode::heldDrawOf"
+coney = "src/gamemodes/play_level_held.cpp:PlayLevelSimulation::heldDrawOf"
 status = "legacy"
 
 [[function]]
@@ -909,7 +909,7 @@ name = "MeleeWeapon_Detach"
 page = "objects.md#original-structure"
 role = "messages `0x1b` / `0x1c` of `melee_weapon`"
 level = "confirmed-code"
-coney = "src/platform/play_level_mode.h:PlayLevelMode::dropHeld"
+coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::dropHeld"
 status = "legacy"
 
 [[function]]
