@@ -325,6 +325,7 @@ status = "compared"
 [[function.gaps]]
 what = "with no records Coney still sets the 32 slots of the out table to 65535; the original writes nothing (the glue that hands its buffer to Lua is unstudied)"
 relation = "stand-in"
+question = "save.md#q-unlock-list-edges"
 
 [[function]]
 address = 0x004237e8
@@ -391,6 +392,7 @@ status = "compared"
 [[function.gaps]]
 what = "Coney stops at 32 matches; the original overruns its 32-entry buffer"
 relation = "stand-in"
+question = "save.md#q-unlock-list-edges"
 
 [[function]]
 address = 0x00424130

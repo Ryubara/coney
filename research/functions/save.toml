@@ -115,3 +115,4 @@ status = "compared"
 [[function.gaps]]
 what = "the slot is read with the others, so an empty or damaged slot fails where the original reads its image anyway"
 relation = "stand-in"
+question = "save.md#q-load-empty-slot"
