@@ -66,6 +66,11 @@ class SceneLighting {
     /// description's draw of the sector (docs/engine/renderer.md#frame-description). Counts the atomic as drawn and
     /// adds the lighting frame's row of its selection, as drawWorldAtomic() does.
     [[nodiscard]] std::vector<graphics::SceneLight> worldLights(rw::Atomic* atomic);
+    /// The lights a world object's or car part's atomic is drawn with (the objects' lights for its squared distance to
+    /// the camera and the point lights its sphere overlaps), by value, as drawObjectAtomic() would put them in librw's
+    /// world, with the lighting lab's layers applied: for the frame description's draw of it (drawObject()). Counts the
+    /// atomic as drawn and adds the lighting frame's row of its selection, as drawObjectAtomic() does.
+    [[nodiscard]] std::vector<graphics::SceneLight> objectLights(rw::Atomic* atomic);
     /// Whether the debug tools' mesh views are set (setMeshViews()): they decide per atomic what is drawn, so the world
     /// renderer then draws its sectors through drawWorldAtomic().
     /// @coney-only the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views); the original has none
@@ -153,6 +158,10 @@ class SceneLighting {
     // Adds the row of the selection useLights() kept to the lighting frame, for `atomic`: its caller from the draw
     // kind, its sphere and the inputs the draw functions pass (docs/research/lighting.md#select).
     void recordSelection(rw::Atomic* atomic);
+    // The lights of `selection` that the lab's layers keep, by value, for `atomic`'s frame-description draw: keeps the
+    // selection for the frame's row, counts the atomic as drawn and adds the row (recordSelection()).
+    [[nodiscard]] std::vector<graphics::SceneLight> lightsOf(const graphics::LightSelection& selection,
+                                                             rw::Atomic* atomic);
     // The light record `index` as the rig draws it: its type, the colour the lab's layers leave, its place.
     [[nodiscard]] graphics::SceneLight sceneLightOf(std::uint16_t index) const;
     // The librw light that mirrors record `index`, made on first use with the record's type.

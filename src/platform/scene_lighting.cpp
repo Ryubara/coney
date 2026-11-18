@@ -239,9 +239,20 @@ void SceneLighting::renderInRig(rw::Atomic* atomic) {
 void SceneLighting::renderLit(rw::Atomic* atomic) { drawLitAtomic(atomic, dualLayerOf(atomic), m_world, m_routed); }
 
 std::vector<graphics::SceneLight> SceneLighting::worldLights(rw::Atomic* atomic) {
-    // The selection drawWorldAtomic() makes, kept for the lighting frame's row, and the lights the lab's layers keep,
-    // by value.
-    const graphics::LightSelection selection = m_lighting.lights.select(0.0F, sphereOf(atomic), false, true, false);
+    // The selection drawWorldAtomic() makes.
+    return lightsOf(m_lighting.lights.select(0.0F, sphereOf(atomic), false, true, false), atomic);
+}
+
+std::vector<graphics::SceneLight> SceneLighting::objectLights(rw::Atomic* atomic) {
+    // The selection drawObjectAtomic() makes.
+    const graphics::LightSphere sphere = sphereOf(atomic);
+    return lightsOf(m_lighting.lights.select(distanceSq(sphere.centre, m_pose.position), sphere, true, true, false),
+                    atomic);
+}
+
+std::vector<graphics::SceneLight> SceneLighting::lightsOf(const graphics::LightSelection& selection,
+                                                          rw::Atomic* atomic) {
+    // The selection kept for the lighting frame's row, and the lights the lab's layers keep, by value.
     m_pending = selection;
     const graphics::LightSelection drawn =
         m_switches != nullptr

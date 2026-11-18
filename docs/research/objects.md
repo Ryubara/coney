@@ -2077,6 +2077,8 @@ only without the frame does the objective disc (an identity frame, its centre 1.
 as the runtime sees it. The draw (`PlacedObjects::draw`) follows [The tint](#tint): the tint word multiplies the
 materials' colours and alpha, then the size cull (the model's bounding sphere), the `ObjShow` distance and the alpha
 floor of 10; opaque objects first, then the translucent ones. Not modelled: the camera fade and the second dictionary.
+Each object is one 3D draw of the frame description, its model's mesh and texture held by id, its tint as the draw's
+colour change ([Renderer](../engine/renderer.md#frame-description)).
 The front end draws the live records' objects this way, without a camera (no cull), each lit as a world object
 ([Front end](frontend.md#coneys-implementation)); the eight Wonder Wheel types' frames are all the z-up turn, so
 leaving the frame out draws them as turning by it would.

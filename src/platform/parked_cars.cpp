@@ -11,6 +11,7 @@
 #include "graphics/car_draw.h"
 #include "platform/draw_calls.h"
 #include "platform/level_file.h"
+#include "platform/scene_assets.h"
 #include "platform/texture_dictionary.h"
 #include "world/level_object.h"
 
@@ -59,7 +60,19 @@ ParkedCars::ParkedCars(const io::Wad& wad, const world_objects::Cars& cars, bool
 }
 
 ParkedCars::~ParkedCars() {
-    // The materials let go of their textures before the dictionaries that own them go.
+    // The scene assets let go of the models' meshes and textures first, then the materials of their textures before
+    // the dictionaries that own them go.
+    if (m_assets != nullptr) {
+        for (const auto& [type, model] : m_models) {
+            if (model == nullptr) {
+                continue;
+            }
+            for (const ObjectMesh& mesh : model->meshes) {
+                removeObjectMesh(*m_assets, mesh);
+            }
+            m_assets->removeTexture(model->model.texture.id);
+        }
+    }
     for (auto& [type, model] : m_models) {
         const LevelClumpObject* clump = model != nullptr ? clumpOf(model->model) : nullptr;
         if (clump == nullptr) {
@@ -95,8 +108,11 @@ ParkedCars::TypeModel* ParkedCars::model(std::uint8_t type) {
         }
         return nullptr;
     }
-    auto loaded = loadObjectModel(m_wad, *record, m_table, m_forDrawing);
+    auto loaded = loadObjectModel(m_wad, *record, m_table, m_forDrawing, m_assets);
     if (!loaded || clumpOf(*loaded) == nullptr) {
+        if (loaded && m_assets != nullptr) {
+            m_assets->removeTexture(loaded->texture.id);
+        }
         if (m_print) {
             m_print(std::format("cars: model of {} not loaded: {}\n", name,
                                 loaded ? std::string("not a car's clump") : loaded.error().error.message));
@@ -112,6 +128,10 @@ ParkedCars::TypeModel* ParkedCars::model(std::uint8_t type) {
         geometry->flags |= rw::Geometry::MODULATE;
         for (rw::int32 m = 0; m < geometry->matList.numMaterials; ++m) {
             geometry->matList.materials[m]->setTexture(typeModel->model.texture.texture);
+        }
+        // Its meshes into the scene assets once its materials have the texture, so they name the texture's id.
+        if (m_assets != nullptr) {
+            typeModel->meshes.push_back(addObjectMesh(*m_assets, *part.atomic.atomic()));
         }
     }
     slot = std::move(typeModel);
@@ -157,6 +177,8 @@ void ParkedCars::draw(const std::function<void(const ObjectDraw&)>& render, grap
                               .material =
                                   graphics::Material3d{.colour = graphics::MaterialColour::Paint, .tint = colour}});
         }
+        // Coney's choice: nothing is returned and the frame the car was last drawn is not kept (nothing reads either
+        // yet); the opaque pass counts the cars drawn.
         if (!glass) {
             ++m_drawn;
         }

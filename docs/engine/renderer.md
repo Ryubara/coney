@@ -254,12 +254,11 @@ screen passes made before, so the draw-stream hashes did not move. It owns the s
 including the motion blur's kept frame, which `MotionBlurPass` now only names; that frame is now a bare raster, with no
 librw texture around it (the draw binds the raster and sets the filter as render states, so the picture is the same).
 The named disc frames' hashes cover the line blend (`--line-blend on`) but not the blur pulse or the motion blur, which
-neither frame draws. Because the camera, the level's background, objects, cars and
-humans still draw through librw between the 2D layers and the world's sectors, `Gl3Renderer` draws each part as it is
-added rather than the whole frame at `present()`; once items 8 to 10 move them onto the description too, a frame can be
-drawn whole, and by the SDL3 GPU renderer (item 11). Not in it yet: the texture viewer's `RenderEngine::drawTexture`,
-which draws a librw texture of a texture dictionary and waits for Coney's own texture ids (item 6), and Dear ImGui
-(item 12).
+neither frame draws. Because the camera, the level's background and the humans still draw through librw between the 2D
+layers, the world's sectors, the objects and the cars, `Gl3Renderer` draws each part as it is added rather than the
+whole frame at `present()`; once items 9 and 10 move them onto the description too, a frame can be drawn whole, and by
+the SDL3 GPU renderer (item 11). Not in it yet: the texture viewer's `RenderEngine::drawTexture`, which draws a librw
+texture of a texture dictionary and waits for Coney's own texture ids (item 6), and Dear ImGui (item 12).
 
 **Built for the streamed world's sectors (item 7).** A *scene pass* (`ScenePass`) lists 3D draws (`Draw3d`): the mesh
 and its [dual layer](../research/rendering.md#dual) by the asset store's `MeshId`, the frame's matrix, the fade and
@@ -275,10 +274,29 @@ frame's arrays holding its lights by value (`SceneLight`) and each material's `T
   sector through `RenderEngine::drawScene` with its fade and lights (`SceneLighting::worldLights`), and `Gl3Renderer`
   draws it at once: its states where they differ from those in force, the fade into the atomic's materials, the lights
   in a librw world of its own (`LightRig`), then `drawLitAtomic` ([lit_atomic.h](repo:src/platform/lit_atomic.h)), which
-  `SceneLighting` still draws objects and humans through. The draw-stream hashes did not move between item 7's commits.
+  `SceneLighting` still draws the humans through. The draw-stream hashes did not move between item 7's commits.
 - **Not in it yet** (drawn through the draw layer as before): the camera, the level's background (sky, clouds, skyline,
   glows: the level file's models), the debug tools' own sector draws, and every sector while the mesh views are on. The
   GL3 renderer draws the atomic at its own frame, so only the GPU renderer (item 13) will read the transform.
+
+**Built for the world objects and the parked cars (item 8).** They join the scene pass the same way, through one seam,
+`drawObject` ([object_draw.h](repo:src/platform/object_draw.h)), which `PlacedObjects::draw` (`ObjectRender_Draw`,
+`0x0017fd78`) and `ParkedCars::draw` (`CarInstance_Render`, `0x00172c70`) hand each placed atomic to.
+
+- **By id.** `PlacedObjects` and `ParkedCars` hold each model they load in the scene assets: its dictionary's first
+  texture before the rasters are converted (`loadObjectModel`'s `assets`), then each atomic and its dual layer once
+  its materials have that texture, all dropped as they go.
+- **Colours.** `Material3d` says how a draw changes its materials' colours (`MaterialColour`): a sector's fade
+  (`Fade`, kept), an object's tint and alpha (`Tint`, each channel multiplied, the mesh modulated by it while the tint
+  is not opaque white, put back after the draw: [The tint](../research/objects.md#tint)) or a car part's paint or white
+  (`Paint`, kept: [Drawing a car](../research/graphics.md#car-draw)). `MaterialChange`
+  ([lit_atomic.h](repo:src/platform/lit_atomic.h)) makes the change, for the GL3 renderer and for the draws outside
+  the description alike.
+- **Recorded and drawn.** Each draw carries the objects' lights for its sphere (`SceneLighting::objectLights`) and the
+  states its pass set as it went (`sceneStatesInForce`: both sides for the cars, Z written by the opaque passes), and
+  `Gl3Renderer` draws it as a sector, so the object scene's hash and the disc frames' did not move between item 8's
+  commits. While the mesh views are on, or a mesh did not convert, the atomic goes through the lighting rig as before
+  (`SceneLighting::drawObjectAtomic`) with the same colours.
 
 #### Texture lifetime {#texture-lifetime}
 

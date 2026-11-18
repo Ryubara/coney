@@ -651,7 +651,8 @@ first 26 atomics of each car, each at its frame and given the dictionary's first
   two passes of [Drawing a car](graphics.md#car-draw) (`repo:src/graphics/car_draw.h`): both sides of every triangle,
   the opaque parts after the humans with Z written, the glass parts (6, 7, 15, 17, 19, 21) after the glass panes
   without, from the last car; a part's damaged form from half damage, the wheels always undamaged, the removed parts
-  not at all; the paint on the parts of the paint mask (0, 4, 5, 10-14, 16, 18, 20), white elsewhere. A car adds
+  not at all; the paint on the parts of the paint mask (0, 4, 5, 10-14, 16, 18, 20), white elsewhere; each part one
+  3D draw of the frame description ([Renderer](../engine/renderer.md#frame-description)). A car adds
   nothing to the collision mesh: as in the original, a walker meets and climbs it through its shell in the level's
   own mesh ([Characters](characters.md#car-shells), [Physics](physics.md#layers)).
 

@@ -11,6 +11,7 @@
 #include "platform/draw_calls.h"
 #include "platform/level_file.h"
 #include "platform/lit_atomic.h"
+#include "platform/scene_assets.h"
 #include "world/level_object.h"
 #include "world_objects/object_tasks.h"
 
@@ -45,7 +46,18 @@ PlacedObjects::PlacedObjects(const io::Wad& wad, const world_objects::ObjectList
 }
 
 PlacedObjects::~PlacedObjects() {
-    // The materials let go of their textures before the dictionaries that own them go.
+    // The scene assets let go of the models' meshes and textures first, then the materials of their textures before
+    // the dictionaries that own them go.
+    if (m_assets != nullptr) {
+        for (const auto& [hash, mesh] : m_meshes) {
+            removeObjectMesh(*m_assets, mesh);
+        }
+        for (const auto& [hash, model] : m_models) {
+            if (model != nullptr) {
+                m_assets->removeTexture(model->texture.id);
+            }
+        }
+    }
     for (auto& [hash, model] : m_models) {
         rw::Atomic* atomic = model != nullptr ? levelAtomic(model->model.get()) : nullptr;
         if (atomic != nullptr && atomic->geometry->matList.numMaterials > 0) {
@@ -66,8 +78,11 @@ const ObjectModel* PlacedObjects::model(std::uint32_t modelHash) {
         }
         return nullptr;
     }
-    auto loaded = loadObjectModel(m_wad, *record, m_table, m_forDrawing);
+    auto loaded = loadObjectModel(m_wad, *record, m_table, m_forDrawing, m_assets);
     if (!loaded || levelAtomic(loaded->model.get()) == nullptr) {
+        if (loaded && m_assets != nullptr) {
+            m_assets->removeTexture(loaded->texture.id);
+        }
         if (m_print) {
             m_print(std::format("objects: model {:#010x} not loaded: {}\n", modelHash,
                                 loaded ? std::string("not one atomic") : loaded.error().error.message));
@@ -78,6 +93,10 @@ const ObjectModel* PlacedObjects::model(std::uint32_t modelHash) {
     if (rw::Atomic* atomic = levelAtomic(loaded->model.get());
         loaded->texture.texture != nullptr && atomic->geometry->matList.numMaterials > 0) {
         atomic->geometry->matList.materials[0]->setTexture(loaded->texture.texture);
+    }
+    // Its mesh into the scene assets once its material has the texture, so the mesh names the texture's id.
+    if (m_assets != nullptr) {
+        m_meshes.emplace(modelHash, addObjectMesh(*m_assets, *levelAtomic(loaded->model.get())));
     }
     slot = std::make_unique<ObjectModel>(std::move(*loaded));
     return slot.get();
@@ -193,6 +212,9 @@ void PlacedObjects::draw(const DrawOptions& options) {
             if ((object.look.translucent || alpha < 255) != translucentPass) {
                 continue;
             }
+            // Coney's stand-in for the rest of ObjectRender_Draw (docs/research/objects.md#models): no camera fade,
+            // pulse, small-object lights, parent's fade distance, instance timer or MatFX textures from the second
+            // dictionary, and Z writes off for a translucent look rather than for the camera fade.
             draw::setRenderState(rw::ZWRITEENABLE, object.look.translucent ? 0 : 1);
             const auto mesh = m_meshes.find(object.modelHash);
             drawOne(object, level->atomic(), mesh != m_meshes.end() ? mesh->second : ObjectMesh{}, alpha, options);
