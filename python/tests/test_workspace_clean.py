@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tests for coney_tools.workspace_clean: `workspace clean` and `workspace check-space` on made-up git repositories."""
 
+import dataclasses
 import json
 import os
 import shutil
@@ -312,6 +313,58 @@ def test_detached_head_worktree_that_is_merged_is_removed(space: Space) -> None:
     entry = space.entries()["loose"]
     assert entry.remove
     assert entry.branch is None
+
+
+def test_a_clips_pair_base_checkout_is_kept_as_long_as_a_build(space: Space) -> None:
+    # `clips pair` keeps the merge base's build in a detached worktree named by its commit, for the next pair from
+    # the same base: it goes once it is as idle as a build folder would be, not an hour after its last use.
+    path = space.worktree("clips-base-0123456789ab", build=5000)
+    git(path, "checkout", "-q", "--detach")
+    settings = dataclasses.replace(space.settings(build_hours=24.0), base_prefix="clips-base-")
+    space.touch(path, 5.0)
+    entries, _ = plan(settings)
+    entry = next(entry for entry in entries if entry.name == "clips-base-0123456789ab")
+    assert not entry.remove
+    assert "clips pair base" in entry.why
+    space.touch(path, 30.0)
+    entries, _ = plan(settings)
+    assert next(entry for entry in entries if entry.name == "clips-base-0123456789ab").remove
+
+
+def test_a_clips_pair_base_of_a_branch_never_merged_goes_once_idle(space: Space) -> None:
+    # `clips pair --base other-branch` keeps a base whose commit main never gets; a branch holds that commit, so the
+    # checkout is only a cache. A commit made in the checkout itself is on no branch and keeps it.
+    cached = space.worktree("clips-base-aaaaaaaaaaaa", commits=1, build=5000)
+    git(cached, "checkout", "-q", "--detach")
+    own = space.worktree("clips-base-bbbbbbbbbbbb")
+    git(own, "checkout", "-q", "--detach")
+    (own / "mine.txt").write_text("x\n", encoding="utf-8")
+    git(own, "add", "-A")
+    git(own, "commit", "-q", "-m", "only here")
+    settings = dataclasses.replace(space.settings(build_hours=24.0), base_prefix="clips-base-")
+    space.touch(cached, 5.0)
+    space.touch(own, 30.0)
+    entries = {entry.name: entry for entry in plan(settings)[0]}
+    assert not entries["clips-base-aaaaaaaaaaaa"].remove
+    assert "clips pair base" in entries["clips-base-aaaaaaaaaaaa"].why
+    assert not entries["clips-base-bbbbbbbbbbbb"].remove
+    space.touch(cached, 30.0)
+    entries = {entry.name: entry for entry in plan(settings)[0]}
+    assert entries["clips-base-aaaaaaaaaaaa"].remove
+
+
+def test_a_busy_marker_naming_a_dead_process_no_longer_protects(space: Space) -> None:
+    # A marker with an agent id protects for ever; one that names its process (`pid=N`, as `clips pair` writes)
+    # protects only while that process lives, so a hard kill does not keep the worktree and its build for good.
+    alive = {111}
+    settings = dataclasses.replace(space.settings(), alive=lambda pid: pid in alive)
+    path = space.worktree("killed")
+    (path / ".coney-busy").write_text("me clips pair pid=222\n", encoding="utf-8")
+    assert workspace_clean.busy_reason(path, settings) == ""
+    (path / ".coney-busy").write_text("me clips pair pid=111\n", encoding="utf-8")
+    assert workspace_clean.busy_reason(path, settings) == "busy (.coney-busy)"
+    (path / ".coney-busy").write_text("1430-engineer\n", encoding="utf-8")
+    assert workspace_clean.busy_reason(path, settings) == "busy (.coney-busy)"
 
 
 def test_detached_head_with_unmerged_commits_is_kept(space: Space) -> None:

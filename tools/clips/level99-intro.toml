@@ -1,0 +1,7 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): the level99 street's first five seconds of
+# play: the intro scene, skipped at frame 70, and the view fading back in on the player. For a change to scenes, their
+# skip, fades or what the level shows at its start.
+description = "level99 street: the intro scene, its skip and the fade back in"
+level = "level99"
+input = "tests/support/play_walk_level99.txt"
+seconds = 5

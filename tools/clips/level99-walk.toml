@@ -1,0 +1,9 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): the level99 street from the play mode. The
+# input script skips the intro scene at frame 70, walks at 30 % from frame 150 and at 60 % from frame 210, and runs on
+# a diagonal from frame 270; the clip shows those five seconds. For a change to the player's walk, run, camera or the
+# street as he moves through it.
+description = "level99 street: the walk at 30 % and 60 %, then the run"
+level = "level99"
+input = "tests/support/play_walk_level99.txt"
+start_frame = 150
+seconds = 5

@@ -39,6 +39,10 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 -
   program, else `ffmpeg` is looked up on `PATH`. Frames go to FFmpeg through its standard input (its only input), the
   sound is muxed in a second pass; the part files beside the clip are deleted. A clip over 10 MB prints a warning.
 
+A before and after of one run, the same command on a build of the branch's merge base and on the task's, is
+[`coney-tools clips pair`](coney-tools-clips.md#clips-pair): it builds both, records both with `--record`, checks
+they hold as many frames, compares their frame hashes and stacks them side by side.
+
 Clips are uploaded only with `coney-tools clips publish`, which deletes them afterwards
 ([Clips](testing.md#clips)).
 

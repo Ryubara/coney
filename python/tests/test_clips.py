@@ -18,9 +18,10 @@ import pytest
 from conventions_support import REPO, conventions_with
 
 from coney_tools import clips, pcsx2_claims, pcsx2_cli, pcsx2_clip, pcsx2_proc
-from coney_tools.conventions import Clips
+from coney_tools.conventions import ClipPair, Clips
 
-RULES = Clips(folder="clips", max_seconds=10, warn_mb=10, keep_hours=24)
+PAIR = ClipPair("tools/clips", "clips-base-", "dev", 10, (720, 540), (800, 640), 10, 512, 2)
+RULES = Clips(folder="clips", max_seconds=10, warn_mb=10, keep_hours=24, pair=PAIR)
 
 #: What ffprobe says of a clean clip, as Coney's encoder writes it.
 CLEAN_PROBE: dict[str, Any] = {

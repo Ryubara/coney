@@ -473,11 +473,17 @@ uv run --project python coney-tools clips publish --pr 123 --body "Coney after t
 uv run --project python coney-tools clips record STATE --out "$CLIPS/original.mp4" --agent ID --iso /path/to/warriors.iso --scratch /path/to/scratch
 ```
 
+A before and after of Coney is one command, `coney-tools clips pair SCENARIO --agent ID` from the task's worktree:
+the same run recorded on a build of the branch's merge base and on the task's, checked to be the same run, and
+stacked side by side, labelled, in `compare.mp4` (with `--original STATE` the original's panel first, and with
+`--gif` a GIF sized for a description). Its scenarios, encodes and limits are on
+[its page](coney-tools-clips.md#clips-pair).
+
 An agent that cannot publish (agents do not post to GitHub: the coordinator does) names its clips in its report and
 leaves them in the clips folder; the coordinator publishes them after it opens the pull request, and
 `clips clean --apply` removes any left behind. Never attach a clip with `gh` directly, never commit one, and never
 reference one in `PR.md` (`pr check-body` refuses the local path): the clip goes in as a comment of its own. The
-commands: [coney-tools clips](coney-tools-pcsx2.md#clips), [Recording a clip](running-options.md#record).
+commands: [coney-tools clips](coney-tools-clips.md#clips), [Recording a clip](running-options.md#record).
 
 ## Where the checks run {#where}
 

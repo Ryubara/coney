@@ -224,7 +224,7 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `xemu_copies` | `2` | a number: how many copies `xemu setup-copies` makes |
 | `xemu_gdb_base` | `1234` | a number: the GDB stub port of copy `xemu`; copy *i* uses this + *i* |
 | `xemu_monitor_base` | `4444` | a number: the QEMU monitor port of copy `xemu`; copy *i* uses this + *i* |
-| `ffmpeg_dir` | none (`PATH`) | the folder holding `ffmpeg` and `ffprobe`, for in-game clips ([`clips`](coney-tools-pcsx2.md#clips)); Coney itself reads `CONEY_FFMPEG` |
+| `ffmpeg_dir` | none (`PATH`) | the folder holding `ffmpeg` and `ffprobe`, for in-game clips ([`clips`](coney-tools-clips.md#clips)); Coney itself reads `CONEY_FFMPEG` |
 
 Each line is `key = "value"` (the number keys are written without quotes: `build_slots = 2`); a `#` starts a
 comment. A tool that needs a folder that does not exist stops with an
@@ -342,6 +342,11 @@ free space before and after.
   from the branch whose head is the branch's tip or a later commit; squash merges leave the branch's
   commits out of `main`, so `git branch --merged` alone would keep them all. Without `gh` (or when it fails), only
   what `origin/main` contains counts, so run `git fetch` (or pass `--fetch`) first; the rest is kept, never guessed.
+  A base checkout of [`clips pair`](coney-tools-clips.md#clips-pair) (`clips-base-<commit>`, the prefix being
+  `workspace.clips.pair.base_prefix`: a detached worktree at a commit of `main`, holding that commit's build for the
+  next pair from the same base) is merged by definition and goes once untouched for `--build-hours`, as a build folder
+  would. So does one at a commit of a branch given to `clips pair --base` that `main` never gets, as long as a branch
+  holds that commit; a commit made in the checkout itself is on no branch and keeps it.
 * **Deletes `build/`** (generated, ignored by git), and the worktree's folder in the [build root](#build-root) when
   `build_root` is set, from every worktree that is not busy (no live busy file, no build slot held or waited for, no
   check running) and has not been touched for
@@ -398,7 +403,9 @@ on them](agents.md#build-cap).
 when it is done (`echo <id> > .coney-busy`; it is in `.gitignore`). While it exists, `clean` leaves that worktree and
 its `build/` entirely alone, however old its files look: use it for any stretch where files may not change for hours
 (a long build, a test sweep, a wait on the emulator). A file with something in it left behind by a dead agent
-protects its worktree for good; delete it once you know the work is over. An **empty** file older than
+protects its worktree for good; delete it once you know the work is over. A file that names its process (a `pid=N`
+word, as [`clips pair`](coney-tools-clips.md#clips-pair) writes) protects only while that process runs, so a run
+killed hard leaves nothing protected. An **empty** file older than
 `--build-hours` (24 by default) is taken for a dead agent's and ignored, so a marker made with a bare `touch` still
 protects for a day. The file's name is `workspace.busy_marker` of the conventions file.
 

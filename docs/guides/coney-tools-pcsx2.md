@@ -1,10 +1,10 @@
-# The coney-tools PCSX2 and clip commands
+# The coney-tools PCSX2 commands
 
 The commands that drive the original in PCSX2: [`pcsx2`](#pcsx2) claims a copy, starts it, runs recipes, keeps the
 save-state library and moves input recordings ([`trace original`](coney-tools-trace.md#trace) records a per-update
-trace with it), and [`clips`](#clips) records clips of the original and checks, publishes and cleans up in-game video
-clips, whether made in PCSX2 or by `coney --record`. The other groups are listed
-in [the command line overview](coney-tools.md#groups).
+trace with it). The clips of the original that `clips record` makes with PCSX2's own capture are on
+[the clip commands' page](coney-tools-clips.md#clips). The other groups are listed in
+[the command line overview](coney-tools.md#groups).
 
 ## pcsx2 {#pcsx2}
 
@@ -566,135 +566,4 @@ coney-tools pcsx2 states repack SOURCE OUT [--pcsx2-dir PCSX2_DIR]
 | `SOURCE` | text | required | a .p2s file, or slot:N for quick-save slot N (only read) |
 | `OUT` | path | required | the repacked copy (outside the repository and sstates/) |
 | `--pcsx2-dir PCSX2_DIR` | path | none | the portable PCSX2 folder; default: pcsx2_dir |
-<!-- command-reference:end -->
-
-## clips {#clips}
-
-```sh
-uv run --project python coney-tools clips record STATE --out CLIP --agent ID [--seconds N] [--iso DISC] [--scratch DIR]
-```
-
-Records a short clip of the original (`--seconds`, 1 to 10, default 10) with **PCSX2's own video capture of its GS
-output**: nothing on the desktop is read. For the run, the claimed copy's ini switches the capture on (with sound),
-points PCSX2's videos folder at a staging folder beside the clip, turns every on-screen display element off (FPS,
-messages, the recording indicator) and binds "Toggle Video Capture" to F12, which is posted to PCSX2's window by handle
-to start and stop it; the ini is put back when PCSX2 closes. The capture is then re-encoded into `CLIP` as Coney's
-clips are (960 x 720, H.264 and AAC, no metadata, cut at the length) through `clips.run_ffmpeg`, and the staging
-folder deleted. PCSX2 2.9.94 tears the first ~1.15 s of its capture (a black band along the bottom), so the capture
-runs 1.5 s longer (`CAPTURE_START_TRIM`) and the clip starts after that, still lasting `--seconds`.
-`--out` is a path under the scratch folder, `<workspace>/scratch/<task>/clips/NAME.mp4`; give it absolute (the
-folder `clips folder TASK` prints), because a relative `../../scratch/...` is wrong from a worktree, which sits three
-levels below the workspace. The game comes from `game_dir` in `coney.local.toml`; without it pass `--iso DISC`,
-and likewise `--scratch DIR` (an absolute path) without `scratch_dir`.
-`CLIP` follows the clips rules below. It needs FFmpeg as `clips` finds it, and Windows (keys by
-handle). PCSX2 starts on `STATE` under `--agent`'s claim, released at the end when `clips record` made it.
-
-```sh
-uv run --project python coney-tools clips folder TASK
-uv run --project python coney-tools clips check CLIP [CLIP...]
-uv run --project python coney-tools clips publish (--pr N | --issue N) [--edit] (--body TEXT | --body-file FILE) CLIP [CLIP...]
-uv run --project python coney-tools clips clean [--older-than HOURS] [--apply]
-```
-
-In-game video clips for issues and pull requests, made by `coney --record` ([Recording a
-clip](running-options.md#record)) or `clips record` (above). The rules and why: [Clips](testing.md#clips); the limits
-are `workspace.clips` in `.github/conventions.yml`.
-
-* `folder` makes and prints a task's clips folder, `<scratch>/<task>/clips/`, where `<scratch>` is the workspace's
-  shared scratch folder (`../../scratch` beside the main checkout).
-* `check` runs ffprobe on each clip and prints its length, size, picture and whether it has sound. It refuses a clip
-  outside a task's clips folder or inside a git checkout, one longer than `max_seconds` (10), and one with any tag
-  beyond the fixed ones an MP4's boxes carry (`major_brand`, `minor_version`, `compatible_brands`, `language`,
-  `handler_name`, `vendor_id` and a version-free `encoder`); one bigger than `warn_mb` (10 MB) gets a warning.
-* `publish` makes the same checks, then uploads every clip in one gh command, `gh pr|issue comment N` (or `edit` with
-  `--edit`, into the description) with one `--attach` per clip, and **deletes the clips once gh succeeds**. When gh
-  fails, it keeps them and says so (exit 1). A body may place a clip with a `./clips/<name>.mp4` reference, which gh
-  replaces with the upload when the clip is named the same way. It is the only way clips are uploaded.
-* `clean` lists every file in the task clips folders older than `keep_hours` (24; `--older-than` overrides it),
-  including what a failed recording left (part files, a `clips record` staging folder), and deletes them with `--apply`
-  (a dry run without it, as `workspace clean` is; its old `--dry-run` is accepted with a notice until the cutover).
-
-FFmpeg and ffprobe are found in `ffmpeg_dir` of `coney.local.toml`, else beside `CONEY_FFMPEG` (the variable Coney's
-`--record` reads), else on `PATH`. Every FFmpeg command the tools run goes through `clips.run_ffmpeg`, which refuses a
-capture device or any input that is not a file.
-
-<!-- command-reference:begin clips -->
-## Parameters of `clips` {#clips-parameters}
-
-Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
-
-### `clips record` {#clips-record-usage}
-
-Record a short clip of the original with PCSX2's own capture of its game output (never the screen).
-
-```text
-coney-tools clips record STATE --out OUT [--seconds SECONDS] [--agent AGENT] [--pcsx2-dir PCSX2_DIR] [--iso ISO]
-    [--scratch SCRATCH]
-```
-
-| Parameter | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `STATE` | path | required | the .p2s state to start from (a copy outside sstates/) |
-| `--out OUT` | path | required | the clip: \<scratch\>/\<task\>/clips/\<name\>.mp4 |
-| `--seconds SECONDS` | integer | `10` | how long, 1 to the cap of 10 (default 10) |
-| `--agent AGENT` | text | none | your id; runs under your claim (made, and released at the end, if none) |
-| `--pcsx2-dir PCSX2_DIR` | path | none | the portable PCSX2 folder; default: pcsx2_dir |
-| `--iso ISO` | path | none | the disc image (or a folder with one); default: game_dir |
-| `--scratch SCRATCH` | path | none | where state copies and the disc link go; default: scratch_dir |
-
-### `clips folder` {#clips-folder-usage}
-
-Make and print a task's clips folder (\<scratch\>/\<task\>/clips).
-
-```text
-coney-tools clips folder TASK
-```
-
-| Parameter | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `TASK` | text | required | the task's scratch folder name (your branch or track) |
-
-### `clips check` {#clips-check-usage}
-
-Check clips as publish does (place, length, metadata), upload nothing.
-
-```text
-coney-tools clips check CLIP [CLIP ...]
-```
-
-| Parameter | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `CLIP [CLIP ...]` | path | required | the clip files to check |
-
-### `clips publish` {#clips-publish-usage}
-
-Upload clips with gh --attach to a pull request or issue, then delete them.
-
-Exactly one of `--pr`, `--issue` is required.
-
-```text
-coney-tools clips publish CLIP [CLIP ...] (--pr PR | --issue ISSUE) [--edit] [--body BODY | --body-file BODY_FILE]
-```
-
-| Parameter | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `CLIP [CLIP ...]` | path | required | the clip files to upload |
-| `--pr PR` | integer | none | the pull request's number. Not with `--issue`. |
-| `--issue ISSUE` | integer | none | the issue's number. Not with `--pr`. |
-| `--edit` | flag | off | put them into the description instead of a comment |
-| `--body BODY` | text | none | the comment's (or description's) text. Not with `--body-file`. |
-| `--body-file BODY_FILE` | path | none | a file with the text; ./clips/\<name\>.mp4 references are replaced. Not with `--body`. |
-
-### `clips clean` {#clips-clean-usage}
-
-Delete clips left in the scratch clips folders past the age limit (a dry run unless --apply).
-
-```text
-coney-tools clips clean [--older-than HOURS] [--apply]
-```
-
-| Parameter | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `--older-than HOURS` | number | none | default: workspace.clips.keep_hours (24) |
-| `--apply` | flag | off | delete; without it, only list what would go |
 <!-- command-reference:end -->

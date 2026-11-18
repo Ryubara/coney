@@ -20,6 +20,7 @@ from coney_tools import (
     ci_cli,
     claim_progress,
     clips,
+    clips_pair,
     commit_message,
     conclave_cli,
     console_cli,
@@ -915,10 +916,75 @@ def _add_clips_commands(groups: Any) -> None:
     )
     clean.add_argument("--older-than", type=float, metavar="HOURS", help="default: workspace.clips.keep_hours (24)")
     clean.add_argument("--apply", action="store_true", help="delete; without it, only list what would go")
+    _add_clips_pair_commands(commands)
+
+
+def _add_clips_pair_commands(commands: Any) -> None:
+    """Register `coney-tools clips pair`, `clips encode` and `clips scenarios`."""
+    pair = commands.add_parser(
+        "pair",
+        help="record one run before (the merge base's build) and after (the task's), and stack them side by side",
+    )
+    pair.add_argument("scenario", nargs="?", help="a named scenario (`clips scenarios` lists them)")
+    pair.add_argument("--agent", required=True, help="your id: the builds and the original's PCSX2 claim are yours")
+    pair.add_argument("--level", help="without a scenario: the level to play (--play-level)")
+    pair.add_argument("--input-script", type=Path, help="without a scenario: the input script to play")
+    pair.add_argument("--seconds", type=int, help="without a scenario: how many seconds the clips show (default 10)")
+    pair.add_argument("--start-frame", type=int, help="without a scenario: the frame of play the clips start at")
+    pair.add_argument("--checkpoint", type=int, help="without a scenario: the checkpoint to start at")
+    pair.add_argument("--ai-seed", type=int, help="without a scenario: the AI's seed")
+    pair.add_argument("--original", type=Path, metavar="STATE", help="a .p2s state: add the original's panel first")
+    pair.add_argument("--gif", action="store_true", help="also write compare.gif, sized for a description")
+    pair.add_argument(
+        "--slow", type=float, default=1.0, help="play the compare N times slower (an MP4 keeps every frame)"
+    )
+    pair.add_argument("--prefix", default="", help="name the files PREFIX-before.mp4 and so on (several pairs)")
+    pair.add_argument("--disc", help="the disc for Coney; default: game_dir of coney.local.toml")
+    pair.add_argument("--base", help="the branch whose merge base is the before (default origin/main)")
+    pair.add_argument("--task", help="the task whose clips folder takes the clips (default: the checkout's)")
+    encode = commands.add_parser(
+        "encode", help="re-encode a clip for GitHub: a GIF for a .gif, else a silent MP4, fitted to the size limits"
+    )
+    encode.add_argument("clip", type=Path, help="the clip to encode, in a task's clips folder")
+    encode.add_argument(
+        "--out", type=Path, required=True, help="the new file, NAME.gif or NAME.mp4: a bare name goes beside the clip"
+    )
+    encode.add_argument("--start-frame", type=int, default=0, help="the clip's frame to start at (30 a second)")
+    encode.add_argument("--seconds", type=float, help="how many seconds of the clip (default: the rest of it)")
+    encode.add_argument("--slow", type=float, default=1.0, help="play it N times slower (an MP4 keeps every frame)")
+    encode.add_argument("--label", help="a label in the top left corner")
+    commands.add_parser("scenarios", help="list the named scenarios clips pair records")
+
+
+def _run_clips_pair(args: argparse.Namespace) -> int:
+    """Dispatch `clips pair`, `clips encode` or `clips scenarios`."""
+    if args.command == "scenarios":
+        return clips_pair.run_scenarios()
+    if args.command == "encode":
+        return clips_pair.run_encode(
+            args.clip, args.out, start_frame=args.start_frame, seconds=args.seconds, slow=args.slow, label=args.label
+        )
+    root = find_repo_root(Path.cwd())
+    rules = load_conventions(root).workspace.clips.pair
+    numbers = (args.seconds, args.start_frame, args.checkpoint, args.ai_seed)
+    run = clips_pair.run_from_flags(args.scenario, args.level, args.input_script, numbers, root, rules)
+    return clips_pair.run_pair_command(
+        run,
+        args.agent,
+        disc=args.disc,
+        original=args.original,
+        gif=args.gif,
+        slow=args.slow,
+        prefix=args.prefix,
+        base_ref=args.base,
+        task=args.task,
+    )
 
 
 def _run_clips(args: argparse.Namespace) -> int:
     """Dispatch a `clips` command."""
+    if args.command in ("pair", "encode", "scenarios"):
+        return _run_clips_pair(args)
     if args.command == "folder":
         return clips.run_folder(args.task)
     if args.command == "check":

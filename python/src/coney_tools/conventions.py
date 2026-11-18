@@ -716,6 +716,30 @@ class Hygiene:
 
 
 @dataclass(frozen=True)
+class ClipPair:
+    """How `clips pair` records a before and after and how `clips encode` fits a clip to GitHub."""
+
+    #: The folder of the named scenarios, relative to the checkout (one TOML each).
+    scenarios: str
+    #: The folder name of a cached base checkout, before its commit: `worktrees/<repo>/<base_prefix><commit>`.
+    base_prefix: str
+    #: The build preset of both sides.
+    preset: str
+    #: The largest file GitHub takes as an attachment, in megabytes (decimal); an MP4 over it is encoded smaller.
+    upload_max_mb: int
+    #: A compare MP4's panel heights, tried in order until the file fits.
+    mp4_heights: tuple[int, ...]
+    #: A GIF's whole widths, tried in order until it fits its budget.
+    gif_widths: tuple[int, ...]
+    #: A GIF's frame rate when every frame cannot be kept.
+    gif_fps: int
+    #: A GIF's budget: this many kilobytes (1024 bytes) for each second of it...
+    gif_kb_per_second: int
+    #: ...counted for at least this many seconds (and at most `Clips.max_seconds`).
+    gif_min_seconds: int
+
+
+@dataclass(frozen=True)
 class Clips:
     """The in-game video clips' rules (`coney-tools clips`, `clips record`)."""
 
@@ -727,6 +751,8 @@ class Clips:
     warn_mb: int
     #: `clips clean --apply` deletes clips older than this many hours (without `--apply` it lists them).
     keep_hours: int
+    #: `clips pair` and `clips encode`.
+    pair: ClipPair
 
 
 @dataclass(frozen=True)
@@ -3195,7 +3221,7 @@ def _read_workspace(data: object, where: str) -> Workspace:
     )
     table = _table(data, where, keys)
     clips_where = _at(where, "clips")
-    clips = _table(table["clips"], clips_where, ("folder", "max_seconds", "warn_mb", "keep_hours"))
+    clips = _table(table["clips"], clips_where, ("folder", "max_seconds", "warn_mb", "keep_hours", "pair"))
     return Workspace(
         worktrees=_text(table["worktrees"], _at(where, "worktrees")),
         scratch=_text(table["scratch"], _at(where, "scratch")),
@@ -3214,7 +3240,47 @@ def _read_workspace(data: object, where: str) -> Workspace:
             max_seconds=_count(clips["max_seconds"], _at(clips_where, "max_seconds")),
             warn_mb=_count(clips["warn_mb"], _at(clips_where, "warn_mb")),
             keep_hours=_count(clips["keep_hours"], _at(clips_where, "keep_hours")),
+            pair=_read_clip_pair(clips["pair"], _at(clips_where, "pair")),
         ),
+    )
+
+
+def _ladder(value: object, where: str) -> tuple[int, ...]:
+    """A size ladder: pixel sizes, largest first, tried in order until a file fits; at least one, each even (H.264
+    in yuv420p takes even sizes only)."""
+    sizes = _numbers(value, where)
+    if not sizes or list(sizes) != sorted(sizes, reverse=True) or any(size % 2 for size in sizes):
+        raise _fail(where, "expected even pixel sizes, largest first")
+    return sizes
+
+
+def _read_clip_pair(data: object, where: str) -> ClipPair:
+    """The `workspace.clips.pair` section: `clips pair`'s scenarios and base builds, and the encode's size ladders."""
+    keys = (
+        "scenarios",
+        "base_prefix",
+        "preset",
+        "upload_max_mb",
+        "mp4_heights",
+        "gif_widths",
+        "gif_fps",
+        "gif_kb_per_second",
+        "gif_min_seconds",
+    )
+    table = _table(data, where, keys)
+    prefix = _text(table["base_prefix"], _at(where, "base_prefix"))
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", prefix):
+        raise _fail(_at(where, "base_prefix"), "expected letters, digits, '.', '_' and '-' (it starts a folder name)")
+    return ClipPair(
+        scenarios=_text(table["scenarios"], _at(where, "scenarios")),
+        base_prefix=prefix,
+        preset=_text(table["preset"], _at(where, "preset")),
+        upload_max_mb=_count(table["upload_max_mb"], _at(where, "upload_max_mb")),
+        mp4_heights=_ladder(table["mp4_heights"], _at(where, "mp4_heights")),
+        gif_widths=_ladder(table["gif_widths"], _at(where, "gif_widths")),
+        gif_fps=_count(table["gif_fps"], _at(where, "gif_fps"), maximum=50),
+        gif_kb_per_second=_count(table["gif_kb_per_second"], _at(where, "gif_kb_per_second")),
+        gif_min_seconds=_count(table["gif_min_seconds"], _at(where, "gif_min_seconds")),
     )
 
 
