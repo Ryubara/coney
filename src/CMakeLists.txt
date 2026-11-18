@@ -57,6 +57,7 @@ add_library(coney_core STATIC
     fileio/disc.cpp
     fileio/executable.cpp
     fileio/file_stream.cpp
+    fileio/ps2_memory_card.cpp
     fileio/reader.cpp
     fileio/stream.cpp
     fileio/wad.cpp
@@ -163,6 +164,7 @@ add_library(coney_core STATIC
     gui/profile_management_gui/pm_mode.cpp
     gui/profile_management_gui/pm_new_game_screens.cpp
     gui/profile_management_gui/pm_placeholder.cpp
+    gui/profile_management_gui/pm_import.cpp
     gui/profile_management_gui/pm_profile_screens.cpp
     gui/profile_management_gui/pm_screen.cpp
     gui/profile_management_gui/pm_widgets.cpp
@@ -230,6 +232,7 @@ add_library(coney_core STATIC
     warriors/profile_record.cpp
     warriors/profile_store.cpp
     warriors/save_game.cpp
+    warriors/save_import.cpp
     warriors/save_sections.cpp
     warriors/stop_watch.cpp
     warriors/tag_game.cpp

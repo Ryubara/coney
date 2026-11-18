@@ -7,6 +7,7 @@
 
 #include "core/pad.h"
 #include "gui/profile_management_gui/pm_greet.h"
+#include "gui/profile_management_gui/pm_import.h"
 #include "gui/text_layout.h"
 
 namespace coney::gui {
@@ -106,8 +107,11 @@ void PmProfile::setUp() {
         items.push_back({std::string(m_shared.string(kDeleteString)), kDelete});
     }
     items.push_back({std::string(m_shared.string(kReloadString)), kReload});
+    addImport(items);
     m_choices.set(std::move(items));
 }
+
+void PmProfile::addImport(std::vector<PmChoices::Item>& items) const { (void)items; }
 
 int PmProfile::accept(int code) {
     m_shared.session.deleteMode = false;

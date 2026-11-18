@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <string_view>
+#include <vector>
 
 #include "gui/profile_management_gui/pm_list_screen.h"
 #include "gui/text_widget.h"
@@ -58,6 +59,9 @@ class PmNumPlayers final : public PmListScreen {
 /// delete mode, then: 0 → result 0 (PM_Load); 1 → 1 (PM_Create); 2 → delete mode and result 2 (PM_Load); 3 → the Lua
 /// function `Menu.reloadProfiles`, stay.
 ///
+/// Coney adds one item after reload: IMPORT PROFILE (code 5, result 5: PM_Import), only while PmImport::offered() (the
+/// import folder holds a save and a slot is free), so a player with nothing to import sees the original's menu.
+///
 /// Research: docs/research/frontend.md#pm-screens
 /// @orig 0x0020bc80 PM_Profile::PM_Profile (PM_Profile.cpp)
 class PmProfile final : public PmListScreen {
@@ -72,6 +76,8 @@ class PmProfile final : public PmListScreen {
     static constexpr int kCreate = 1;
     static constexpr int kDelete = 2;
     static constexpr int kReload = 3;
+    /// Coney's IMPORT PROFILE item's code, and its result (PM_Import).
+    static constexpr int kImport = 5;
 
     explicit PmProfile(PmShared& shared) : PmListScreen(shared) {}
     [[nodiscard]] std::string_view name() const override { return "PM_Profile"; }
@@ -81,6 +87,11 @@ class PmProfile final : public PmListScreen {
     void setUp() override;
     /// @orig 0x0020c588 PM_Profile::HandleCommand (PM_Profile.cpp)
     int accept(int code) override;
+
+  private:
+    // Adds Coney's IMPORT PROFILE item when there is something to import.
+    // @coney-only the import entry (docs/research/frontend.md#pm-import)
+    void addImport(std::vector<PmChoices::Item>& items) const;
 };
 
 /// PM_Load, choose a profile: title `0x88` (or `0x7e` in delete mode) and one item per used slot (its name, code = the

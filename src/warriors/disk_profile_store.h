@@ -75,6 +75,10 @@ class DiskProfileStore final : public ProfileStore {
     void noteStoryFinished();
     /// Reads the folder again, forgetting the loaded profile (mode 6's load: at boot and RELOAD PROFILES).
     void reload() override;
+    /// Writes the imported record as the slot's file, a Coney save with nothing modded (what the version-0 migration
+    /// makes of a record), and lists it; the game state is left alone.
+    /// @coney-only the importer's way into the save system (docs/research/save.md#import)
+    bool importRecord(std::size_t slot, const ProfileRecord& record) override;
 
     /// The record in `slot`, or null for an empty or damaged slot.
     [[nodiscard]] const ProfileRecord* record(std::size_t slot) const;

@@ -237,6 +237,10 @@ struct Options {
     /// `--profiles`: the folder the player profiles are kept in, one file per profile (docs/research/save.md#coney);
     /// unset: `profiles` in the user's data folder for a normal run, and none (profiles last the run) in test mode.
     std::optional<std::string> profilesDir;
+    /// `--import-save PATH`: import the profiles of the PS2 save at PATH (a card image, a folder card, a PSU export,
+    /// the save folder or its data file) into the profiles folder, then exit (docs/guides/running.md#import-save). Only
+    /// profilesDir goes with it.
+    std::optional<std::string> importSave;
     /// `--mesh-view`: the Debug draw page's mesh views to switch on from the first frame of play, as the debug tools
     /// parse it (debug::parseMeshViewSpec(), docs/guides/debug-menu.md#mesh-views); a test aid and the way to take a
     /// screenshot of a view.
