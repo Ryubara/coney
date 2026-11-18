@@ -14,6 +14,7 @@
 #include <utility>
 #include <vector>
 
+#include "ai/ai_config.h"
 #include "ai/brain.h"
 #include "ai/brains.h"
 #include "ai/gangs.h"
@@ -335,6 +336,9 @@ void GameplayMode::enter() {
         m_context.sound->gameplayEntered();
     }
     m_brains = std::make_unique<ai::Brains>(m_aiVariation);
+    // The gangs' team-ups draw from the game's random numbers, by the gang kinds' `CfgGang` strategies.
+    m_brains->gangs().setGameRandom(&m_state.random);
+    m_brains->gangs().setStrategies(ai::gangStrategiesFrom(m_recorded));
     // What the scripts' handles name: a human, else a live world object (IsInsideBox on a thrown bottle, a flag on an
     // object), at its spawn record's place and heading.
     m_scripted = std::make_unique<ai::ScriptedBrains>(

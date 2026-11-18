@@ -434,12 +434,13 @@ class Gangs {
     /// @orig 0x00165640 Gang_SetTactic (unknown)
     void setTactic(int id, std::unique_ptr<Tactic> tactic);
 
-    /// One step of the gangs at game time `nowMs` (`Gangs_Update`'s tactic part): the turn counter moves on (0 to 4),
-    /// and each gang in use whose id modulo 5 is the turn has its bounds updated (Gang::updateBounds()); each gang in
-    /// use with members then runs its tactic (Tactic::process()), whose non-zero result fires its callback with that
-    /// result. **Coney choices**: the return to calm, the neutral rule, the spawners and the alert state's anim
-    /// substitutions are not built; what the callback is given besides the gang is not traced; the turn starts at 5
-    /// with each level's gangs, where the original's counter keeps its place from the last level.
+    /// One step of the gangs at game time `nowMs` (`Gangs_Update`'s tactic part): the turn counter moves on (0 to 4);
+    /// then, gang by gang in id order, each gang in use with members runs its tactic (Tactic::process(), from the
+    /// original's `Gang_CachePlayerInfo`), whose non-zero result fires its callback with that result, and a gang in use
+    /// whose id modulo 5 is the turn has its bounds updated (Gang::updateBounds()). **Coney choices**: the return to
+    /// calm, the neutral rule, the spawners and the alert state's anim substitutions are not built; what the callback
+    /// is given besides the gang is not traced; the turn starts at 5 with each level's gangs, where the original's
+    /// counter keeps its place from the last level.
     /// @orig 0x0016d170 Gangs_Update (unknown)
     void update(std::uint64_t nowMs);
 

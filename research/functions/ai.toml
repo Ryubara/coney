@@ -38,6 +38,24 @@ coney = "src/ai/gangs.h:Gang::setClipGroup"
 status = "legacy"
 
 [[function]]
+address = 0x001645d0
+name = "GangConfig_SetStrategy"
+page = "ai-reimpl.md#gangconfig_setstrategy--gangconfig_getstrategyentry-0x001645d0-0x00164610"
+role = "stores the seven team-up weights of a gang kind (`CfgGang`'s sixth argument) as bytes `+0x73`-`+0x79`"
+level = "confirmed-code"
+coney = "src/ai/ai_config.h:gangStrategiesFrom"
+status = "compared"
+
+[[function]]
+address = 0x00164610
+name = "GangConfig_GetStrategyEntry"
+page = "ai-reimpl.md#gangconfig_setstrategy--gangconfig_getstrategyentry-0x001645d0-0x00164610"
+role = "a gang kind's team-up weight *i*"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::strategyWeight"
+status = "compared"
+
+[[function]]
 address = 0x001647e0
 name = "Gang_ClearMsgHandlers"
 page = "ai-code.md#gang-functions"
@@ -133,6 +151,15 @@ role = "The players' state for the gang, and whether its spawners may run (the c
 level = "confirmed-code"
 coney = "src/ai/spawners.h:Spawners::update"
 status = "legacy"
+
+[[function]]
+address = 0x00166b60
+name = "Gang_UpdateBounds"
+page = "ai-gangs.md#gang-update"
+role = "the centre and radius of the box round the members not cuffed or knocked out (one gang in five per update)"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gang::updateBounds"
+status = "compared"
 
 [[function]]
 address = 0x00166ff8
@@ -269,8 +296,8 @@ name = "Gang_NoneAbleToHelp"
 page = "ai-code.md#gang-functions"
 role = "True when the gang has members and none other than the given human is free (not cuffed, knocked out or wounded)"
 level = "confirmed-code"
-coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::stepGameOver"
-status = "legacy"
+coney = "src/ai/gangs.h:Gang::noneAbleToHelp"
+status = "compared"
 
 [[function]]
 address = 0x00169ea0
@@ -595,6 +622,20 @@ coney = "src/scripting/story_bindings.cpp:makeGangCanUseWorldFlags"
 status = "legacy"
 
 [[function]]
+address = 0x0016bfc8
+name = "Gang_CanJoinFightAgainst"
+page = "ai-reimpl.md#start-sub-tactic"
+role = "the team-up's filter: the other gang is an enemy, fighting (or pursuing), with living members able to help"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:canJoinFightAgainst"
+status = "compared"
+
+[[function.gaps]]
+what = "the pursue tactic's `+0x4c` reads as 0"
+relation = "stand-in"
+question = "ai-reimpl.md#q-pursue-flag"
+
+[[function]]
 address = 0x0016c358
 name = "Gangs_SetTruce"
 page = "ai-code.md#gang-functions"
@@ -621,6 +662,15 @@ coney = "src/ai/gangs.h:Gangs::makeNeutralOfType"
 status = "legacy"
 
 [[function]]
+address = 0x0016ca50
+name = "Gangs_FindWithinRadius"
+page = "ai-reimpl.md#start-sub-tactic"
+role = "the first gang by id within a radius of a gang's centre whose own radius is no larger, passing a filter"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::findWithinRadius"
+status = "compared"
+
+[[function]]
 address = 0x0016cdf0
 name = "Gang_Create"
 page = "ai-code.md#gang-functions"
@@ -636,7 +686,7 @@ page = "ai-gangs.md#original-structure"
 role = "Each update: every gang's update, its spawners asked once per gang"
 level = "confirmed-code"
 coney = "src/ai/gangs.h:Gangs::update"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0016d5c0
@@ -5281,7 +5331,7 @@ page = "ai-gangs.md#tactics"
 role = "[tactics](ai-gangs.md#tactics)"
 level = "confirmed-code"
 coney = "src/ai/tactic.h:Tactic::process"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00306850
@@ -5315,6 +5365,33 @@ role = "slot `+0x54`: when the tactic has a Lua callback (`+0x0c`), looks it up 
 level = "confirmed-code"
 coney = "src/ai/tactic.h:Tactic::fireCallback"
 status = "legacy"
+
+[[function]]
+address = 0x00306b50
+name = "Tactic_SetStrategy"
+page = "ai-reimpl.md#the-strategy-slot-0x00306b50-0x00306b88-0x00306bd0"
+role = "ends the running order and stores the new one in the slot"
+level = "confirmed-code"
+coney = "src/ai/tactic.h:Tactic::setStrategy"
+status = "compared"
+
+[[function]]
+address = 0x00306b88
+name = "Tactic_UpdateStrategy"
+page = "ai-reimpl.md#the-strategy-slot-0x00306b50-0x00306b88-0x00306bd0"
+role = "updates the running order and ends it once done"
+level = "confirmed-code"
+coney = "src/ai/tactic.h:Tactic::updateStrategy"
+status = "compared"
+
+[[function]]
+address = 0x00306bd0
+name = "Tactic_EndStrategy"
+page = "ai-reimpl.md#the-strategy-slot-0x00306b50-0x00306b88-0x00306bd0"
+role = "the order's end, then the tactic's slot `+0x1c`, then the record freed and the slot emptied"
+level = "confirmed-code"
+coney = "src/ai/tactic.h:Tactic::endStrategy"
+status = "compared"
 
 [[function]]
 address = 0x00307548
@@ -5366,6 +5443,35 @@ coney = "src/ai/tactic_attack.h:TacticAttack::onViolence"
 status = "legacy"
 
 [[function]]
+address = 0x00307a10
+name = "AttackTactic_StartSubTactic"
+page = "ai-reimpl.md#start-sub-tactic"
+role = "the team-up draw: the gates, the enemy gang in sight, the weighted draw and the order it makes"
+level = "confirmed-code"
+coney = "src/ai/tactic_attack.h:TacticAttack::startSubTactic"
+status = "compared"
+
+[[function.gaps]]
+what = "the leader's busy test is ai::humanBusy(), not the state mask and hit timer"
+relation = "stand-in"
+question = "ai-reimpl.md#q-teamup-busy"
+
+[[function.gaps]]
+what = "the Charge, Leader and Grab orders are stand-ins"
+relation = "not-ported"
+issue = 338
+
+[[function.gaps]]
+what = "the Guard orders are stand-ins"
+relation = "not-ported"
+issue = 339
+
+[[function.gaps]]
+what = "the Throw orders are stand-ins"
+relation = "not-ported"
+issue = 340
+
+[[function]]
 address = 0x00307d40
 name = "GangTactic_CheckFlee"
 page = "gang-fights.md#gang"
@@ -5386,13 +5492,22 @@ coney = "src/ai/tactic_attack.h:TacticAttack::end"
 status = "legacy"
 
 [[function]]
+address = 0x00308150
+name = "AttackTactic_OnStrategyEnd"
+page = "ai-reimpl.md#the-strategy-slot-0x00306b50-0x00306b88-0x00306bd0"
+role = "a guard order (kind 1) ending gives the members Melee again"
+level = "confirmed-code"
+coney = "src/ai/tactic_attack.h:TacticAttack::strategyEnded"
+status = "compared"
+
+[[function]]
 address = 0x003081a8
 name = "AttackTactic_Process"
 page = "gang-fights.md#help"
 level = "confirmed-code"
 note = "the level is from [ai-reimpl.md#attack-process](ai-reimpl.md#attack-process)"
 coney = "src/ai/tactic_attack.h:TacticAttack::update"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00308478
@@ -5402,7 +5517,7 @@ kind = "Event"
 role = "1/11 for an own member with no fight goal and no strategy: melee; 2 → 13 `TacMemberDied` unless the gang fled; 18 → `GangTactic_CheckFlee`; 19/22 → melee again; 20 → `AttackTactic_OnViolence`"
 level = "confirmed-code"
 coney = "src/ai/tactic_attack.h:TacticAttack::event"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00309a40
@@ -5969,6 +6084,85 @@ role = "on a full reset (1, `0xffff`): sets the ten handles of each of the 20 en
 level = "inferred"
 coney = "src/ai/steal_goals.h:StealClusters::clear"
 status = "legacy"
+
+[[function]]
+address = 0x00321828
+name = "SubTactic_PoolClear"
+page = "ai-reimpl.md#the-order-record-and-pool-0x00321828-0x00321ab8"
+role = "every order record free"
+level = "confirmed-code"
+coney = "src/ai/sub_tactics.h:SubTacticPool::clear"
+status = "compared"
+
+[[function]]
+address = 0x00321838
+name = "SubTactic_Alloc"
+page = "ai-reimpl.md#the-order-record-and-pool-0x00321828-0x00321ab8"
+role = "the first free of the eight order records; none when all are in use"
+level = "confirmed-code"
+coney = "src/ai/sub_tactics.h:SubTacticPool::allocate"
+status = "compared"
+
+[[function]]
+address = 0x00321890
+name = "SubTactic_Free"
+page = "ai-reimpl.md#the-order-record-and-pool-0x00321828-0x00321ab8"
+role = "frees an order record; an address outside the pool is ignored"
+level = "confirmed-code"
+coney = "src/ai/sub_tactics.h:SubTacticPool::free"
+status = "compared"
+
+[[function]]
+address = 0x003218d8
+name = "SubTactic_LeaderGesture"
+page = "ai-reimpl.md#the-order-record-and-pool-0x00321828-0x00321ab8"
+role = "the orders' leader gesture: his actions cleared and a gesture clip queued when nothing holds him"
+level = "confirmed-code"
+
+[[function]]
+address = 0x003219a0
+name = "SubTactic_Start"
+page = "ai-reimpl.md#the-order-record-and-pool-0x00321828-0x00321ab8"
+role = "makes an order's limit absolute, calls its Start, marks it started"
+level = "confirmed-code"
+coney = "src/ai/sub_tactics.h:SubTactic::start"
+status = "compared"
+
+[[function]]
+address = 0x00321a00
+name = "SubTactic_Process"
+page = "ai-reimpl.md#the-order-record-and-pool-0x00321828-0x00321ab8"
+role = "starts an order when needed; done past its limit, else its Process"
+level = "confirmed-code"
+coney = "src/ai/sub_tactics.h:SubTactic::process"
+status = "compared"
+
+[[function]]
+address = 0x00321a70
+name = "SubTactic_End"
+page = "ai-reimpl.md#the-order-record-and-pool-0x00321828-0x00321ab8"
+role = "calls the order's End"
+level = "confirmed-code"
+coney = "src/ai/sub_tactics.h:SubTactic::finish"
+status = "compared"
+
+[[function]]
+address = 0x00321a98
+name = "SubTactic_Reset"
+page = "ai-reimpl.md#the-order-record-and-pool-0x00321828-0x00321ab8"
+role = "the static initialiser: clears the pool mask on a full reset"
+level = "confirmed-code"
+coney = "src/ai/sub_tactics.h:SubTacticPool"
+status = "compared"
+
+[[function]]
+address = 0x00321ab8
+name = "SubTactic_ResetAll"
+page = "ai-reimpl.md#the-order-record-and-pool-0x00321828-0x00321ab8"
+role = "the static initialiser stub: `SubTactic_Reset(1, 0xffff)`"
+level = "confirmed-code"
+coney = "src/ai/sub_tactics.h:SubTacticPool"
+status = "compared"
 
 [[function]]
 address = 0x00394f30

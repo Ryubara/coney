@@ -356,9 +356,11 @@ Coney's state from reading `repo:src/ai/` (2026-10-12); each item names the rule
 2. **TacticAttack's members choose by the score**: built ([Unit 2](ai-reimpl.md#unit-2)); they run the real Melee
    goal, which picks with `Brain_PickBestEnemy`.
 3. **The 3 s idle check sends the idle to the farthest busy mate** (HelpRespond after Melee): built (Unit 2).
-4. **The team-ups** ([The gang as a whole](#gang) rule 4): not built (`repo:src/ai/tactic_attack.h`); with
-   `GangEnableAttackStrategies`, the seven orders, their weights, counts, lines, gestures and the leader order's two
-   temporary changes.
+4. **The team-ups** ([The gang as a whole](#gang) rule 4): the framework is built ([Unit 3](ai-reimpl.md#unit-3),
+   2026-11-18: `GangEnableAttackStrategies`, the 7 s timer, the draw over the `CfgGang` weights, the counts, the pool
+   and the strategy slot; the trace's `g_order` column reports the running draw). The orders are stand-ins that order
+   nobody until Units 4 to 6 (#338, #339, #340): their lines, gestures, goals and the leader order's two temporary
+   changes are not built.
 5. **The shared target**: the field exists (`Gang::chosenTarget`) but nothing sets it; the unforced attack command
    sets it from the chief's lock-on target, else from the crime reporter or the gang caller ([targets](#targets) rule
    4), and adds it to every AI member's list.

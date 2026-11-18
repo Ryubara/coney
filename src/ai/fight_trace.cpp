@@ -20,6 +20,7 @@
 #include "ai/move_to_human_action.h"
 #include "ai/play_anim_action.h"
 #include "ai/set_command_action.h"
+#include "ai/sub_tactics.h"
 #include "ai/tactic.h"
 #include "ai/tactic_attack.h"
 #include "ai/tactic_confront.h"
@@ -152,6 +153,34 @@ std::uint32_t tacticValue(const Tactic* tactic) {
     return kOtherTactic;
 }
 
+// The `g_order` value of a gang: the draw number of the team-up order its attack tactic runs (0 Charge, 1 Guard, 2
+// Guard backing off, 3 Throw from a pile, 4 Leader, 5 Throw, 6 Grab), as the original's trace reads it from the order's
+// vtable and flags; -1 with no order or under another tactic.
+int orderDraw(const Gang* gang) {
+    const auto* attack = gang != nullptr ? dynamic_cast<const TacticAttack*>(gang->tactic()) : nullptr;
+    if (attack == nullptr || !attack->strategy()) {
+        return -1;
+    }
+    const auto* order = dynamic_cast<const StandInOrder*>(gang->owner().subTactics().at(*attack->strategy()));
+    if (order == nullptr) {
+        return -1;
+    }
+    const OrderArgs& args = order->args();
+    switch (args.kind) {
+    case OrderKind::Charge:
+        return 0;
+    case OrderKind::Guard:
+        return args.flag ? 2 : 1;
+    case OrderKind::Leader:
+        return 4;
+    case OrderKind::Throw:
+        return args.flag ? 3 : 5;
+    case OrderKind::Grab:
+        return 6;
+    }
+    return -1;
+}
+
 // The row's text under construction: values appended in column order.
 class Row {
   public:
@@ -253,10 +282,12 @@ std::string FightTracer::rows(std::uint64_t step, const Brains& brains) {
         row.add(fight != nullptr ? static_cast<long>(fight->updates()) : -1L);
         row.add(fight != nullptr ? (fight->holdsPlace() ? 1 : 0) : -1);
         // The gang: the alert state is not modelled (-1, docs/research/gang-fights.md#coney item 9), the tactic as the
-        // original's vtable, and no team-up order ever runs (-1: TacticAttack's team-ups are not built).
+        // original's vtable, and the team-up order running as its draw number (orderDraw()).
         row.add(-1).add(tacticValue(gang != nullptr ? gang->tactic() : nullptr));
         row.add(idOfBrain(leader)).add(idOfBrain(chosen));
-        row.add(gang != nullptr && gang->orders().attackStrategies ? 1 : 0).add(-1).add(brain.dead() ? 1 : 0);
+        row.add(gang != nullptr && gang->orders().attackStrategies ? 1 : 0)
+            .add(orderDraw(gang))
+            .add(brain.dead() ? 1 : 0);
         row.add(target != nullptr ? brain.distanceTo(*target) : -1.0F, 3);
         row.add(actionName(front)).add(attack != nullptr ? attack->kind() : -1).add(brain.hasAttackSlot() ? 1 : 0);
         row.add(brain.helpCalls()).add(brain.helpersSent()).add(targetCauses(brain));

@@ -7,6 +7,8 @@
 
 #include "ai/gangs.h"
 #include "ai/script_services.h"
+#include "ai/sub_tactics.h"
+#include "core/assert.h"
 
 namespace coney::ai {
 
@@ -33,11 +35,14 @@ int Tactic::process(Gang& gang) {
     if (now > m_endsAtMs) {
         return 2;
     }
+    // The order it runs goes first, so an order ended now is gone before the class's update.
+    updateStrategy(gang);
     return update(gang);
 }
 
 void Tactic::finish(Gang& gang) {
-    // Not built: the strategy's end first (Tactic_EndStrategy), as Coney's tactics own no strategy yet (#337).
+    // The order it runs ends first, while the members still hold its goals.
+    endStrategy(gang);
     // Every AI member back down to his goal base: the tactic's goals and any pushed since its start go.
     for (Brain* member : gang.members()) {
         if (member->type() != BrainType::Player) {
@@ -57,10 +62,34 @@ void Tactic::fireCallback(Gang& gang, int code) {
     scripts->call(m_callback, args);
 }
 
-void Tactic::setStrategy(Gang& /*gang*/, std::optional<std::size_t> /*order*/) {}
+void Tactic::setStrategy(Gang& gang, std::optional<std::size_t> order) {
+    endStrategy(gang);
+    m_strategy = order;
+}
 
-void Tactic::updateStrategy(Gang& /*gang*/) {}
+void Tactic::updateStrategy(Gang& gang) {
+    if (!m_strategy) {
+        return;
+    }
+    SubTactic* order = gang.owner().subTactics().at(*m_strategy);
+    CONEY_ASSERT(order != nullptr);
+    if (order->process(gang, gang.owner().nowMs())) {
+        endStrategy(gang);
+    }
+}
 
-void Tactic::endStrategy(Gang& /*gang*/) {}
+void Tactic::endStrategy(Gang& gang) {
+    if (!m_strategy) {
+        return;
+    }
+    SubTacticPool& pool = gang.owner().subTactics();
+    SubTactic* order = pool.at(*m_strategy);
+    CONEY_ASSERT(order != nullptr);
+    // The order's end, then the class hears it while the slot still names it, then the record goes.
+    order->finish(gang);
+    strategyEnded(gang, *order);
+    pool.free(*m_strategy);
+    m_strategy.reset();
+}
 
 } // namespace coney::ai

@@ -94,7 +94,10 @@ members, confirmed (code):
 1. `0x00166708(gang, 1)`: the player's position and heading cached (1 s) and the time checks.
 2. With a tactic: **`Tactic_Process`** (`0x003067d8`); a non-zero result fires the tactic's Lua callback (vtable
    `+0x54`).
-3. One gang in five per update (a counter `0x0050cbec`, 0-4): the bounds, the return to calm, and the neutral rule
+3. One gang in five per update (a counter `0x0050cbec`, 0-4, moved on before the loop and 5 in the executable, so
+   the first update takes ids 0, 5, 10, ...; step 2 runs inside step 1's `0x00166708`, so a gang's tactic comes before
+   its bounds): the bounds
+   (`Gang_UpdateBounds` `0x00166b60`, [Unit 3](ai-reimpl.md#unit-3)), the return to calm, and the neutral rule
    (`0x00169d30`: a gang of kind `0x17` / `0x18` whose members all have threat response 0 is made neutral with the
    kind-0 gangs).
 4. `0x00306630` frees the tactics queued for freeing (up to 32, `0x006eb290`).
