@@ -30,10 +30,11 @@ struct DrawCounts {
     std::uint32_t records = 0; ///< every record, of any kind
     std::uint32_t im2dDraws = 0;
     std::uint32_t im3dDraws = 0;
-    std::uint32_t vertices = 0;  ///< over every Im2D and Im3D draw
-    std::uint32_t cameraOps = 0; ///< clears, begins, ends and shows
-    std::uint32_t rasterOps = 0; ///< creations, uploads and mip levels
-    std::uint32_t frameOps = 0;  ///< copies, read-backs, wireframe switches and window targets
+    std::uint32_t atomicDraws = 0; ///< stub: nothing counts them yet
+    std::uint32_t vertices = 0;    ///< over every Im2D and Im3D draw
+    std::uint32_t cameraOps = 0;   ///< clears, begins, ends and shows
+    std::uint32_t rasterOps = 0;   ///< creations, uploads and mip levels
+    std::uint32_t frameOps = 0;    ///< copies, read-backs, wireframe switches and window targets
 };
 
 /// The grid a draw stream rounds to: positions and texture coordinates to 1/1024 of a unit, colours to 8 bits a channel

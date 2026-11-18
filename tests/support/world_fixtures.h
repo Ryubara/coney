@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <initializer_list>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -118,6 +119,7 @@ struct AtomicFields {
     float secondScale = 0.25F;
     std::uint32_t materialIndex = 0;          ///< Material of every mesh (the list holds one).
     std::uint32_t geometryFlags = 0x0100001D; ///< Native, triangle strips, one texture set, prelit, normals.
+    std::string texture;                      ///< The material's texture, by name; empty for none.
 };
 
 /// A standalone atomic section (0x14) with PS2 native geometry, as a part file holds one.
@@ -130,11 +132,17 @@ inline Bytes nativeAtomic(const AtomicFields& fields) {
     }
     geometryStruct.u32(fields.geometryFlags).u32(fields.triangles).u32(total).u32(1);
     f32(f32(f32(f32(geometryStruct, 0.0F), 0.0F), 0.0F), 10.0F).u32(0).u32(0);
-    // Material list: one material, no texture.
+    // Material list: one material, with the texture `fields` names (linear, wrapped) or none.
     Bytes materialStruct;
-    materialStruct.u32(0).u32(0xFFFFFFFF).u32(0).u32(0);
+    materialStruct.u32(0).u32(0xFFFFFFFF).u32(0).u32(fields.texture.empty() ? 0 : 1);
     f32(f32(f32(materialStruct, 1.0F), 1.0F), 1.0F);
     Bytes material = rwSection(graphics::kRwStruct, materialStruct);
+    if (!fields.texture.empty()) {
+        Bytes texture = rwSection(graphics::kRwStruct, Bytes{}.u32(0x1102));
+        texture.append(rwString(fields.texture).span()).append(rwString("").span());
+        texture.append(rwEmptyExtension().span());
+        material.append(rwSection(0x06, texture).span());
+    }
     material.append(rwEmptyExtension().span());
     Bytes listStruct;
     listStruct.u32(1).u32(0xFFFFFFFF);
@@ -224,10 +232,12 @@ inline Bytes worldStream(std::uint32_t partCount, const std::vector<Bytes>& leav
     return stream;
 }
 
-/// A part file: the header with `hash`, an empty texture dictionary, then the `{index, atomic}` records.
-inline Bytes partFile(std::uint32_t hash, const std::vector<std::pair<std::uint32_t, Bytes>>& records) {
+/// A part file: the header with `hash`, a texture dictionary (`dictionary`, empty when not given), then the
+/// `{index, atomic}` records.
+inline Bytes partFile(std::uint32_t hash, const std::vector<std::pair<std::uint32_t, Bytes>>& records,
+                      const Bytes& dictionary = texDictionary({})) {
     Bytes file;
-    file.header(1, 0, 0, hash).append(texDictionary({}).span()).u32(static_cast<std::uint32_t>(records.size()));
+    file.header(1, 0, 0, hash).append(dictionary.span()).u32(static_cast<std::uint32_t>(records.size()));
     for (const auto& [index, atomic] : records) {
         file.u32(index).append(atomic.span());
     }

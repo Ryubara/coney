@@ -103,6 +103,11 @@ class WorldRenderer {
     /// to render()'s time for both.
     void freezeAnimation(std::optional<std::uint64_t> atMs) { m_animationMs = atMs; }
 
+    /// Chooses whether render() records its frame on the NULL backend while the draw layer records (off by default):
+    /// the draw-stream hashes' synthetic world scene (docs/engine/renderer.md#comparing), which has no window.
+    /// @coney-only the draw-stream hashes' synthetic scenes; the original has no headless renderer
+    void recordHeadless(bool on) { m_recordHeadless = on; }
+
     /// Atomics drawn by the last render().
     [[nodiscard]] std::uint32_t drawnAtomics() const { return m_drawn; }
 
@@ -123,6 +128,7 @@ class WorldRenderer {
     SceneLighting* m_lighting = nullptr; // a level's, when set
     std::uint32_t m_drawn = 0;
     std::optional<std::uint64_t> m_animationMs; // freezeAnimation()'s time
+    bool m_recordHeadless = false;              // recordHeadless()
 };
 
 } // namespace coney::platform
