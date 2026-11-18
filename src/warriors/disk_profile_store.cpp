@@ -180,7 +180,7 @@ bool DiskProfileStore::create(std::size_t slot, const Profile& profile) {
         return false;
     }
     m_lastError.reset();
-    m_slots.at(slot) = Slot{.profile = profileOf(record), .record = std::move(record)};
+    m_slots.at(slot) = Slot{.profile = profileOf(record), .record = std::move(record), .modded = {}};
     m_loaded = slot;
     // Not ported: the original ends by applying the brightness to the display (Gamma_Set, #156).
     return true;
