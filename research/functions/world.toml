@@ -186,7 +186,7 @@ name = "World_ReadPart"
 page = "world.md#original-structure"
 role = "reads one `<name>_ms<i>.sec`"
 level = "confirmed-code"
-coney = "src/platform/world_set.h:WorldSet::loadPart"
+coney = "src/platform/world_set.h:WorldSet::readPart"
 status = "legacy"
 
 [[function]]
@@ -195,7 +195,7 @@ name = "World_UnloadPart"
 page = "world.md#original-structure"
 role = "destroys a part's atomics, dictionary and clump"
 level = "confirmed-code"
-coney = "src/platform/world_set.h:WorldSet::unloadPart"
+coney = "src/platform/world_set.h:WorldSet::freePart"
 status = "legacy"
 
 [[function]]

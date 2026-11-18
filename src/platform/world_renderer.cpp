@@ -127,6 +127,7 @@ WorldRenderer::WorldRenderer()
     : m_ownLevel(std::make_unique<graphics::LevelLighting>()),
       m_ownLighting(std::make_unique<SceneLighting>(*m_ownLevel, std::nullopt, std::nullopt)) {}
 
+// Frees the recording camera and its frame, made on first use by recordingCamera().
 WorldRenderer::~WorldRenderer() {
     if (m_recordingCamera != nullptr) {
         rw::Frame* frame = m_recordingCamera->getFrame();

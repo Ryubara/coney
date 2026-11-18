@@ -95,6 +95,8 @@ TEST_CASE("a name stands for an s and d pair or a single world", "[world_set]") 
     CHECK(coney::platform::worldNamesFor(wad, "nothing").error().code == coney::ErrorCode::NotFound);
 }
 
+// Expected: world.md#loading-a-world, confirmed (code): the world is resident once loaded and its parts take room
+// from the budget while loaded, on the synthetic two-part fixture.
 TEST_CASE("a world loads resident, its parts come and go and the budget follows", "[world_set]") {
     auto engine = RenderEngine::start(RenderBackend::Null, {});
     REQUIRE(engine.has_value());
@@ -133,6 +135,7 @@ TEST_CASE("a world loads resident, its parts come and go and the budget follows"
     CHECK(budget.used() == 0); // the set gave back its world and its loaded part
 }
 
+// Expected: world.md#loading-a-world, confirmed (code): a world whose heap finds no room is not loaded.
 TEST_CASE("a world whose heap does not fit is not loaded", "[world_set]") {
     auto engine = RenderEngine::start(RenderBackend::Null, {});
     REQUIRE(engine.has_value());

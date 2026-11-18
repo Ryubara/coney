@@ -116,6 +116,7 @@ void drawLitAtomic(rw::Atomic* atomic, rw::Atomic* layer, rw::World* lights, boo
 
 LightRig::LightRig() : m_world(rw::World::create()) {}
 
+// Frees the rig's lights, their frames and its private world.
 LightRig::~LightRig() {
     // Lights out of the world first, then each light and its frame.
     for (std::size_t i = 0; i < m_inWorld; ++i) {

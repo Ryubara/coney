@@ -523,13 +523,6 @@ from the `LightManager` with its world bounding sphere (`0x0017de10`, `0x0017e81
 render callback (RenderWare's default, `0x00469ef8`, when none was saved). New scenery therefore **fades in over one
 second**.
 
-**Coney's port** is `WorldRenderer::render` with `renderSectorAtomic`, the objects, humans and effects drawn by the
-play mode's callbacks in the steps above ([The frame description](../engine/renderer.md#frame-description) says how a
-sector is recorded and drawn). Its stand-ins: the level's occluders and the PVS are not consulted (they only save
-work, [below](#visibility)), no camera is added to or taken from each world (librw needs none), and the throw arcs'
-place in step 10 is not traced. Not ported yet ([#657](issue:657)): nothing drawn under a full-screen fade (step 1),
-the humans' halved fog distance (step 7), and the litter and the embers in step 10.
-
 ### Visibility {#visibility}
 
 `World_FindVisibleSectors` (`0x00411d10`), confirmed (code):
@@ -611,6 +604,13 @@ gives 67 `SetFogColor` calls in those 66 files, each passing three literal numbe
 Reading, decoding, streaming and drawing exist (2026-10-04): `coney --view-world <level>` streams a level's two worlds
 around a free-flying camera ([Running Coney](../guides/running.md#the-world-viewer)). The level file, the level world,
 objects, PVS and occluders do not.
+
+**Coney's port** is `WorldRenderer::render` with `renderSectorAtomic`, the objects, humans and effects drawn by the play
+mode's callbacks in the steps of [A frame](#a-frame) ([The frame description](../engine/renderer.md#frame-description)
+says how a sector is recorded and drawn). Its stand-ins: the level's occluders and the PVS are not consulted (they only
+save work, [Visibility](#visibility)), no camera is added to or taken from each world (librw needs none), and the throw
+arcs' place in step 10 is not traced. Not ported yet: nothing drawn under a full-screen fade (step 1), the humans'
+halved fog distance (step 7), and the litter and the embers in step 10.
 
 **Reading and decoding** (2026-10-04, unchanged):
 

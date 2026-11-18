@@ -134,6 +134,7 @@ void WorldSet::removeMeshes(const SectorMesh& mesh) {
     m_assets.removeMesh(mesh.dualLayer);
 }
 
+// Gives back every texture still held for a world or one of its parts.
 WorldSet::HeldTextures::~HeldTextures() {
     for (Held& world : held) {
         for (const graphics::TextureId id : world.textures) {

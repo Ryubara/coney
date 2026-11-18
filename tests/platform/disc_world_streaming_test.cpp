@@ -232,6 +232,7 @@ void printTotals(const char* run, const StreamingTotals& totals) {
 
 } // namespace
 
+// Expected: world.md#disc-counts, confirmed (runtime): the parts and the budget peak counted on the NTSC-U disc.
 TEST_CASE("every level's streamed worlds stream under a camera path within the budget", "[disc][world_streaming]") {
     const char* discPath = SDL_getenv("CONEY_DISC");
     if (discPath == nullptr || *discPath == '\0') {

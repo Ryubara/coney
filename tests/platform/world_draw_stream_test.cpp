@@ -173,8 +173,8 @@ DrawStream drawWorldScene(const WorldScene& scene) {
 } // namespace
 
 TEST_CASE("the world scene's draw stream has its expected hash", "[platform][draw-stream][world]") {
-    // Expected: recorded from this scene when the world's renders were routed through the draw layer
-    // (docs/engine/renderer.md#comparing); the move onto the frame description keeps it.
+    // Expected: ../engine/renderer.md#comparing, Coney's own recording: taken from this scene when the world's
+    // renders were routed through the draw layer; the move onto the frame description keeps it.
     const DrawStream stream = drawWorldScene(WorldScene{});
     // Both sectors, one draw each: no dual layer (their material has no MatFX), no background (no level).
     CHECK(stream.counts().atomicDraws == 2);
