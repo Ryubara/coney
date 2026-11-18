@@ -503,7 +503,7 @@ AI, the camera, effects and sound do not show in a still. So a pull request whos
 shows a clip of Coney before the change and one after it, from the same run, or says why it cannot. The rule is
 `pull_requests.clips` in [.github/conventions.yml](repo:.github/conventions.yml) (the generated list in [What a pull
 request shows](#pr-evidence) has it), and a brief names the pair as part of "done" ([Briefing](agents.md#briefs)).
-The rule has a start, its `since`: the second its own pull request merged. A pull request opened before then was
+The rule has a start, its `since`, set no earlier than its own pull request merged. A pull request opened before then was
 written before the rule and is not asked for clips, so open pull requests are not refused at their next push; clip
 lines it writes anyway are still checked. One not yet opened (`pr text`, `pr verify`, `pr open`) is always asked.
 

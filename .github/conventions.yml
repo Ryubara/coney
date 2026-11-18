@@ -228,10 +228,10 @@ pull_requests:
   # `pr open` uploads with `gh --attach` (an MP4 then stands alone on its line as its upload address, a GIF is an
   # image) and deletes once uploaded. `pr check-body` checks it given --title (and --changed for `paths`, which CI's
   # `body` job gives), and so do `pr text` and `pr verify`. Optional: a file without it asks for no clips. `since` is
-  # the second (UTC) the rule began, set to the moment the rule's own pull request merges: a pull request opened
-  # before it was written before the rule and is not asked for clips (CI's `body` job passes `--opened`; the audit and
-  # `pr health --rerun` read `createdAt`), so open pull requests are not refused at their next push. Clip lines one
-  # writes anyway are still checked.
+  # the second (UTC) the rule begins, set no earlier than the rule's own pull request merges (a later start is
+  # harmless, an earlier one would refuse open pull requests): a pull request opened before it is not asked for clips
+  # (CI's `body` job passes `--opened`; the audit and `pr health --rerun` read `createdAt`), so open pull requests are
+  # not refused at their next push. Clip lines one writes anyway are still checked.
   clips:
     section: Screenshots
     before: "Before:"
@@ -242,7 +242,7 @@ pull_requests:
     areas: [gameplay, graphics, audio]
     paths: [src/studio/]
     extensions: [gif, mp4]
-    since: "2026-11-18T17:00:00Z"
+    since: "2026-11-20T00:00:00Z"
   ai_use:
     section: "AI use"
     written_by:
