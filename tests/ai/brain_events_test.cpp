@@ -131,6 +131,33 @@ TEST_CASE("a knocked-out attacker lets go of his target's slot and place and his
     CHECK_FALSE(attacker.knockedOut());
 }
 
+TEST_CASE("a knocked-out soldier whose death chain holds no flag takes no side in violence he sees", "[ai][events]") {
+    // Expected: Brain_OnViolenceSeen (0x00291960) answers only while HumanRecord_AreActionsBlocked (0x00228228) is
+    // false, and its mask holds the knocked-out and dying states: a human lying in the loop 349, which holds no flag
+    // (docs/research/combat-reactions.md#knockout-timing), still takes no side. Synthetic scene: neither human plays a
+    // clip, so neither holds a flag.
+    AiScene scene;
+    Brain& victim = member(scene, 19, "Punks", {44.0F, 40.0F, 0.0F});
+    Brain& standing = scene.add({46.0F, 40.0F, 0.0F}, 0.0F);
+    Brain& out = scene.add({44.0F, 42.0F, 0.0F}, 0.0F);
+    scene.brains.gangs().addMember(victim.gang()->id(), standing);
+    scene.brains.gangs().addMember(victim.gang()->id(), out);
+    Brain& aggressor = member(scene, 21, "Others", {45.0F, 40.0F, 0.0F});
+    out.human().fighter().health().set(0);
+    scene.run(1);
+    REQUIRE(out.knockedOut());
+    REQUIRE(out.human().animator().flags() == 0);
+    REQUIRE(standing.target() == nullptr);
+
+    const coney::ai::BrainEvent seen{
+        .id = coney::ai::kEventViolence, .other = &aggressor, .value = 0, .victim = &victim};
+    coney::ai::onViolenceSeen(standing, seen);
+    coney::ai::onViolenceSeen(out, seen);
+    CHECK(standing.target() == &aggressor);
+    CHECK(out.target() == nullptr);
+    CHECK(out.goalCount() == 0);
+}
+
 TEST_CASE("Warriors who see two strange gangs fight take no side, and the strangers list them only once made enemies",
           "[ai][events]") {
     // level34 checkpoint 5 (docs/research/scripting.md#level34-fixes, item 14): the Furies (kind 8) fight the hurt
