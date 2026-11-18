@@ -118,9 +118,11 @@ On Windows, SDL's video starts a thread that asks every keyboard and mouse HID d
 waits for that thread. A test that starts and stops the renderer several times (`coney.frame_copies_upright` does so
 about eight times) therefore waits for the machine's slowest device at each quit: measured with 16 busy-loop processes
 running, 40 starts and stops of the video took 17 s with the scan and 2.4 s without it, and a device that never answers
-holds the quit for good. That is what made the test time out at its old 60 s limit in a full local check (#1365).
-`RenderEngine::start` turns the scan off for a hidden window (`WindowDesc::hidden`, which every test window is), and
-test code that starts SDL's video itself calls `setDeviceHotplugScan(false)` first and `true` after
+holds the quit as long as it takes to answer. Stack samples of a slow run show the main thread in the video's quit,
+waiting for that thread, which is inside `HidD_GetProductString`; this is the best-supported cause of
+`coney.frame_copies_upright` timing out at its old 60 s limit in a full local check (#1365). `RenderEngine::start`
+turns the scan off for a hidden window (`WindowDesc::hidden`, which the window tests that draw offscreen set), and test
+code that starts SDL's video itself calls `setDeviceHotplugScan(false)` first and `true` after
 (`src/platform/render_engine.h`); `device_hotplug_scan_test.cpp` and `frame_copy_check.cpp` check it. A window a person
 plays keeps the scan.
 
