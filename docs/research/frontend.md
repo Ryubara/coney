@@ -2551,5 +2551,4 @@ Coney's PM screens take no menu command while a fade runs or its level is not 0 
 every screen but PM_Profile, whose handler (`0x0020c588`) tests the fade level (`+0x1d8`) alone, confirmed (code), and
 which Coney follows. The original's handlers differ: PM_Greet's tests a running fade ([The screens](#pm-screens)), and
 PM_Difficulty's (`0x00206d88`) has no fade test at all, confirmed (code), so during a fade the original takes a press
-there that Coney ignores. Open: the test each other screen's handler makes; matching them is issue #660's (the PM
-screens).
+there that Coney ignores. Open: the test each other screen's handler makes.
