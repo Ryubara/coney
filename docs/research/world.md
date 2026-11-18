@@ -523,6 +523,13 @@ from the `LightManager` with its world bounding sphere (`0x0017de10`, `0x0017e81
 render callback (RenderWare's default, `0x00469ef8`, when none was saved). New scenery therefore **fades in over one
 second**.
 
+**Coney's port** is `WorldRenderer::render` with `renderSectorAtomic`, the objects, humans and effects drawn by the
+play mode's callbacks in the steps above ([The frame description](../engine/renderer.md#frame-description) says how a
+sector is recorded and drawn). Its stand-ins: the level's occluders and the PVS are not consulted (they only save
+work, [below](#visibility)), no camera is added to or taken from each world (librw needs none), and the throw arcs'
+place in step 10 is not traced. Not ported yet ([#657](issue:657)): nothing drawn under a full-screen fade (step 1),
+the humans' halved fog distance (step 7), and the litter and the embers in step 10.
+
 ### Visibility {#visibility}
 
 `World_FindVisibleSectors` (`0x00411d10`), confirmed (code):

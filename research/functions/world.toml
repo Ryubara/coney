@@ -113,7 +113,17 @@ page = "world.md#original-structure"
 role = "the world part of a viewport's frame"
 level = "confirmed-code"
 coney = "src/platform/world_renderer.h:WorldRenderer::render"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "nothing drawn under a full-screen fade, the humans' halved fog distance, the litter and the embers in this pass"
+relation = "not-ported"
+issue = 657
+
+[[function.gaps]]
+what = "the level's occluders and the PVS are not consulted, no camera is added to each world, and the throw arcs' place in the order"
+relation = "stand-in"
+issue = 657
 
 [[function]]
 address = 0x0040f8a0
@@ -203,8 +213,8 @@ name = "World_RenderSectorAtomic"
 page = "world.md#original-structure"
 role = "fade-in, lights, default atomic render"
 level = "confirmed-code"
-coney = "src/platform/scene_lighting.h:SceneLighting::drawWorldAtomic"
-status = "legacy"
+coney = "src/platform/world_renderer.h:WorldRenderer::renderSectorAtomic"
+status = "compared"
 
 [[function]]
 address = 0x00411b20

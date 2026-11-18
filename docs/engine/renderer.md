@@ -261,38 +261,23 @@ drawn whole, and by the SDL3 GPU renderer (item 11). Not in it yet: the texture 
 which draws a librw texture of a texture dictionary and waits for Coney's own texture ids (item 6), and Dear ImGui
 (item 12).
 
-**Built for the streamed world's sectors (item 7).** A *scene pass* (`ScenePass`) is a list of 3D draws through the
-frame's camera. A 3D draw (`Draw3d`) names its mesh and its dual layer's (the [MatFX dual
-layer](../research/rendering.md#dual), a second mesh on the same frame) by the asset store's `MeshId`, and carries
-where the mesh is (`Transform3d`, its frame's matrix), what it changes of its materials this frame (`Material3d`: the
-fade-in's alpha of every material colour, and whether its texture levels are picked by distance, as the original does
-for the sectors alone), its fixed states (`SceneStates`: depth test and write, the faces culled, fog and its colour,
-blending, the alpha test) and the ranges of the frame's arrays that hold its lights (`SceneLight`, by value: type,
-colour, position, direction, radius and cone, as the light manager chose and coloured them) and the `TextureId` of each
-material of both meshes, in the mesh's material order.
+**Built for the streamed world's sectors (item 7).** A *scene pass* (`ScenePass`) lists 3D draws (`Draw3d`): the mesh
+and its [dual layer](../research/rendering.md#dual) by the asset store's `MeshId`, the frame's matrix, the fade and
+whether texture levels are picked by distance (`Material3d`), the fixed states (`SceneStates`), and ranges of the
+frame's arrays holding its lights by value (`SceneLight`) and each material's `TextureId`.
 
-- **Meshes and textures by id.** `SceneAssets` ([scene_assets.h](repo:src/platform/scene_assets.h)), one per
-  `RenderEngine` (`RenderEngine::sceneAssets()`), holds an [asset store](asset-formats.md) with the librw atomic each
-  mesh came from. `WorldSet` converts every texture of a world's and a part's dictionaries into it as the dictionary is
-  read (before the GL3 path converts the rasters for drawing, so a PS2 raster is read as loaded), and each sector's
-  atomic and dual layer as the part is read, and drops them with the part. A debug-tool cut of a sector converts its
-  mesh again (`WorldSet::refreshMesh`).
-- **Recorded by the world renderer.** `WorldRenderer::renderSectorAtomic` (the port of `World_RenderSectorAtomic`,
-  `0x00411990`) works out the sector's fade and its lights (`SceneLighting::worldLights`, which also adds the lighting
-  frame's row) and adds the draw through `RenderEngine::drawScene`, which records it with its meshes' texture ids and
-  has the GL3 renderer draw it at once, so it lands where the sector always drew, between the background, the objects
-  and the `d` world.
-- **Drawn by the GL3 renderer through librw.** `Gl3Renderer` finds each mesh's atomic, sets the draw's states where they
-  differ from the render states in force, writes the fade into the atomic's materials, puts the draw's lights into a
-  librw world of its own (`LightRig`, [lit_atomic.h](repo:src/platform/lit_atomic.h)) and draws the atomic and its dual
-  layer through `drawLitAtomic`, the same function the objects and humans are still drawn through from
-  `SceneLighting`, so the calls that reach the draw layer are those the world made before. The draw-stream hashes of the
-  synthetic world scene and the named disc frames did not move between item 7's two commits.
-- **Not in it yet**, drawn as before through the draw layer: the level's background (the sky, the turning clouds, the
-  skyline and the light glows, which are the level file's models, not a world's) and the camera's placing between them;
-  the sectors the debug tools draw themselves (the world edits' spread and pieces); and every sector while the debug
-  tools' mesh views are on, since those decide per atomic what is drawn. The transform is what the GL3 renderer's atomic
-  is drawn at already (its frame's matrix), so the GL3 renderer does not read it; the GPU renderer (item 13) will.
+- **By id.** `SceneAssets` ([scene_assets.h](repo:src/platform/scene_assets.h), `RenderEngine::sceneAssets()`) holds
+  an [asset store](asset-formats.md) with the librw atomic of each mesh. `WorldSet` converts a dictionary's textures as
+  it reads it (before the GL3 path converts the rasters) and a part's sectors and dual layers as it loads, and drops
+  them as parts and worlds go; a debug-tool cut converts the sector again (`WorldSet::refreshMesh`).
+- **Recorded and drawn.** `WorldRenderer::renderSectorAtomic` (`World_RenderSectorAtomic`, `0x00411990`) adds each
+  sector through `RenderEngine::drawScene` with its fade and lights (`SceneLighting::worldLights`), and `Gl3Renderer`
+  draws it at once: its states where they differ from those in force, the fade into the atomic's materials, the lights
+  in a librw world of its own (`LightRig`), then `drawLitAtomic` ([lit_atomic.h](repo:src/platform/lit_atomic.h)), which
+  `SceneLighting` still draws objects and humans through. The draw-stream hashes did not move between item 7's commits.
+- **Not in it yet** (drawn through the draw layer as before): the camera, the level's background (sky, clouds, skyline,
+  glows: the level file's models), the debug tools' own sector draws, and every sector while the mesh views are on. The
+  GL3 renderer draws the atomic at its own frame, so only the GPU renderer (item 13) will read the transform.
 
 ### Testing while it grows {#migration-testing}
 
@@ -555,17 +540,10 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
   than the estimate of about 290 because the `rw::gl3::` vertex types are not calls and the renders below wait. Routed
   with item 7 ([#1199](issue:1199)): `WorldRenderer::render`'s render states and camera begin, and the world's atomic
   renders (`draw::renderAtomic`): each streamed sector, its dual layer, and the level's sky, clouds, skyline and light
-  glows. Routed with items 8 and 9, whose renders they set up: `ParkedCars::draw` and `PlacedObjects::draw` (cars and
-  objects, [#1200](issue:1200)) and `PlayLighting::drawHumanPasses` (humans, [#1201](issue:1201)); with items 8 to 10,
-  their atomic, clump and human renders and what runs inside their pipelines (the one `VERTEXALPHA` state in each of
-  `texture_lod.cpp` and `character_skin.cpp`, the skinning buffers). Never: the device's set-up at start and the
-  profiler's OpenGL queries, which draw nothing.
-- **An atomic draw** (item 7) is one record: the render states as below, whether its texture levels are picked by
-  distance, its frame's matrix, its geometry (flags, counts, the first morph target's positions and normals, the
-  prelighting, every texture-coordinate set and the triangles), each material's colour, surface properties, texture
-  filter and addressing and raster (as below), and the lights librw lights it with: the current world's global lights
-  and, when the atomic is in that world, its local lights, each by type, flags, colour, position, direction, radius and
-  cone. What librw's pipeline then does inside the draw is librw's; the picture comparison covers it.
+  glows, each one record (the states, distance levels, frame, geometry, materials and lights: draw_calls.h). With items
+  8 and 9: `ParkedCars::draw` and `PlacedObjects::draw` ([#1200](issue:1200)), `PlayLighting::drawHumanPasses`
+  ([#1201](issue:1201)), their renders and what runs inside their pipelines (the `VERTEXALPHA` state in
+  `texture_lod.cpp` and `character_skin.cpp`, the skinning buffers). Never: the start-up and the profiler's queries.
 - **What a record holds.** A draw holds its primitive, every render state set so far with its value as it stands at
   the draw (a raster as its place in the recording's order of first use, its size and format, and a digest of the
   pixels Coney uploaded to it), the vertices and the indices; Im3D also its normals, world matrix and flags. A camera's
@@ -581,11 +559,9 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
   mesh under a placed camera with a Coney-made checkerboard, the throw arc's ribbon drawn by `ThrowArcRenderer`, and
   the named operations. Their expected hashes are in the test, beside checks that a repeated state keeps the hash and
   a grid step, a texel or a state moves it; the grid and the encoding are checked against the definition in
-  [draw_stream_test.cpp](repo:tests/platform/draw_stream_test.cpp). The world scene, in
-  [world_draw_stream_test.cpp](repo:tests/platform/world_draw_stream_test.cpp) (item 7): a Coney-made streamed world
-  of two textured sectors, each its part's, loaded through `WorldSet` and drawn by `WorldRenderer` headless (the
-  renderer then records through a camera of its own, since the NULL backend has none), with its expected hash and a
-  check that a sector's fade moves it.
+  [draw_stream_test.cpp](repo:tests/platform/draw_stream_test.cpp). The world scene
+  ([world_draw_stream_test.cpp](repo:tests/platform/world_draw_stream_test.cpp), item 7): two Coney-made textured
+  sectors drawn headless by `WorldRenderer` through a camera of its own, with its hash and a check that a fade moves it.
 - **Disc frames.** `--draw-hash` prints the last frame's counts and hash ([Running Coney](../guides/running.md)). The
   named frames are run with a window, the world frozen and a fixed size, from the level's first frame of play:
 
@@ -598,12 +574,9 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
   Testing section, and two runs of one build must agree. They need the window: headless, play draws only its 2D layer.
   Item 1's hashes, twice each on Windows: `level99-street` 23 records, `0xe923080c2453d3a4`; `level95-hub` 16 records,
   `0x4ba9bf8c9bdc48ed`. A PS2 texture's digest is of its texel and palette blocks alone: librw's data block also holds a
-  heap pointer and gaps, which made two runs differ. Item 7's, twice each on Windows, the same after its first commit
-  (the world's renders routed) and its second (the sectors drawn from the frame description): `level99-street` 48
-  records with 23 atomic draws, `0xe25af3f2c222b401`; `level95-hub` 47 records with 29 atomic draws,
-  `0x996fcc94058f3360` (on its base, which records no atomic draw: 24 records, `0x554a87a1926f16d3`, and 17,
-  `0xa049f83d5c42813c`). The screenshots of both frames were the same pixel for pixel on the base, after the first
-  commit and after the second.
+  heap pointer and gaps, which made two runs differ. Item 7's, the same after both its commits: `level99-street` 48
+  records (23 atomic draws), `0xe25af3f2c222b401`; `level95-hub` 47 (29), `0x996fcc94058f3360`; their screenshots
+  matched the base's pixel for pixel.
 - **The grid across systems** is the open question this item leaves to CI: the expected hashes were recorded on
   Windows, and the first CI run on Linux and macOS shows whether they hold. If one differs, the fallback grid is 1/256
   of a unit for positions and texture coordinates (`kDrawGridSteps`) with colours kept at 8 bits, and the expected
