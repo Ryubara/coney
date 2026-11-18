@@ -827,9 +827,13 @@ TEST_CASE("PM_Profile: a press counts while a fade out is still at level 0, not 
     Harness h;
     toStory(h);
     REQUIRE(h.controller->currentName() == "PM_Profile");
-    SECTION("level 0: the frame that only marks the fade running") {
+    SECTION("level 0: released on the frame that only marks the fade running") {
+        // A button counts on its release (frontend.md#input), so cross is held, the fade asked for, then cross let go.
+        h.step(coney::pad::kCross);
         h.fade.queue(coney::graphics::ScreenFade::kFadeOut, 1.0, Harness::msOf(h.frame));
-        h.tap(coney::pad::kCross);
+        h.step();
+        REQUIRE(h.fade.running());
+        REQUIRE(h.fade.level() == 0.0F);
         CHECK(h.controller->currentName() == "PM_Create");
     }
     SECTION("the level above 0") {
