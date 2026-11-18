@@ -132,10 +132,11 @@ unlocked (`0x00424540`), `+0xcc` loads a slot into the game state (`Profile_Read
 
 ### The containers players have {#import-containers}
 
-Inferred from the card format as the open-source card tools (mymc, uLaunchELF) and PCSX2 read and write it, and from
-the card image PCSX2 wrote for the game ([below](#card-files)); none of this is the game's code, which reaches the card
-through Sony's `libmc` ([The card library](#card-library)). A player's save of the game is the folder `BASLUS-21215`
-with its data file of the same name, in one of these containers:
+None of this is the game's code, which reaches the card through Sony's `libmc` ([The card library](#card-library)):
+the PCSX2 card file and the file system below are confirmed (runtime), run r-20261118-ps2-card-save, from a card the
+game formatted and saved to in PCSX2 and read back by a separate script; the other containers are inferred from the
+formats as the open-source card tools (mymc, uLaunchELF) and PCSX2 read and write them. A player's save of the game is
+the folder `BASLUS-21215` with its data file of the same name, in one of these containers:
 
 | Container | What it is | How it is told apart |
 | --- | --- | --- |
@@ -148,17 +149,20 @@ with its data file of the same name, in one of these containers:
 
 **The card file system.** Little-endian. The superblock is page 0: the magic (28 bytes), a version string (12), the page
 size `+0x28` (u16, 512), pages per cluster `+0x2a` (2, so 1,024-byte clusters), pages per erase block `+0x2c` (16),
-clusters on the card `+0x30` (u32, 8,192 for 8 MB), the allocation offset `+0x34` (the first allocatable cluster), the
-end of allocation `+0x38`, the root directory's first cluster `+0x3c` (counted from the allocation offset), the two
-backup blocks `+0x40`, `+0x44`, the indirect FAT cluster list `+0x50` (32 words, cluster numbers counted from the card's
-start, 0 after the last) and the bad block list `+0xd0`; the card type `+0x150` (2) and flags `+0x151`. The FAT is
-reached in two steps: for allocatable cluster *c*, word *c* / 256 / 256 of the list names an indirect cluster, its word
-(*c* / 256) % 256 names a FAT cluster, and that cluster's word *c* % 256 is the entry. An entry with bit 31 set is in
-use and its low 31 bits name the next cluster, all ones for the end of the chain; one without it is free. A directory is
-a chain of 512-byte entries: mode `+0x00` (u16: `0x8000` exists, `0x0020` folder, `0x0010` file, `0x0001`-`0x0004`
-read, write, run), length `+0x04` (a file's bytes, a folder's entries), creation time `+0x08` (8 bytes), first cluster
-`+0x10`, the entry's place in its parent `+0x14`, modification time `+0x18`, attributes `+0x20`, the name `+0x40` (32
-bytes, zero-terminated). The root's first entry, `.`, holds the root's entry count.
+clusters on the card `+0x30` (u32, 8,192 for 8 MB), the allocation offset `+0x34` (the first allocatable cluster, 41 on
+the card of the run), the end of allocation `+0x38`, the root directory's first cluster `+0x3c` (counted from the
+allocation offset), the two backup blocks `+0x40`, `+0x44`, the indirect FAT cluster list `+0x50` (32 words, cluster
+numbers counted from the card's start, 0 after the last) and the bad block list `+0xd0`; the card type `+0x150` (2) and
+flags `+0x151`. The FAT is reached in two steps: for allocatable cluster *c*, word *c* / 256 / 256 of the list names an
+indirect cluster, its word (*c* / 256) % 256 names a FAT cluster, and that cluster's word *c* % 256 is the entry. An
+entry with bit 31 set is in use and its low 31 bits name the next cluster, all ones for the end of the chain; one
+without it is free. A directory is a chain of 512-byte entries: mode `+0x00` (u16: `0x8000` exists, `0x0020` folder,
+`0x0010` file, `0x0001`-`0x0004` read, write, run), length `+0x04` (a file's bytes, a folder's entries), creation time
+`+0x08` (8 bytes), first cluster `+0x10`, the entry's place in its parent `+0x14`, modification time `+0x18`, attributes
+`+0x20`, the name `+0x40` (32 bytes, zero-terminated). The root's first entry, `.`, holds the root's entry count; a
+folder's own `.` entry holds 0, so its count is read from its entry in the root. On the card of the run the root held
+`.`, `..` and `BASLUS-21215` (5 entries: `.`, `..` and the three files of [The save file on the card](#card-files)), the
+indirect FAT list named cluster 8, and the files' modes were `0x8497` (bit `0x0080` set too) and the folders' `0x8427`.
 
 **What Coney does not read**: CodeBreaker (`.cbs`, compressed and enciphered), Action Replay MAX (`.max`, LZARI
 compressed), SharkPort and X-Port (`.sps`, `.xps`) and the PS3's `.psv` exports; a player converts one to a PSU with a
@@ -622,6 +626,10 @@ caller then hands the script, and whether any script lists more than 32 records 
 (speculative). Coney sets all 32 slots of the script's table in both cases and drops matches past 32: stand-ins.
 
 ## How this was checked
+
+The importer was checked against a real card as well as the synthetic ones its tests build: the card of run
+r-20261118-ps2-card-save (copied to scratch, never committed) read with `coney --import-save` gave its one profile, with
+the bank word the run wrote (1,234) and script flag 5 set.
 
 The runtime observations were made in PCSX2 2.9.94 (2026-10-06) from a fresh boot with a new, unformatted 8 MB card in
 slot 1 (no other card), driving the pad over PINE (the `scripted-pad` patch, written before the pad code first ran)

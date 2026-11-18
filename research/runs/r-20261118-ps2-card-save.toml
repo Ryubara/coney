@@ -1,0 +1,43 @@
+version = 1
+id = "r-20261118-ps2-card-save"
+date = "2026-11-18"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "32cf382c4cd981080bfd16a41b5d1bed675a901cf599839b14956b9f6a02b869"
+
+[who]
+agent = "a57af96ed7fc044c6"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "From the level99 street state: SSMC_format through the lua recipe formatted card 1 (an erased PCSX2 card file); Profile_Create called with slot 0 and a 7-character name; the bank word and saving enabled written; SetLUASaveDataBool(5, 1) and SSMC_StartSaveSequence through the lua recipe, which showed Autosaving and returned to play. The card file was then copied to scratch and its superblock and directories read by a separate script: values below."
+
+[values]
+card_bytes = 8650752
+page_bytes = 512
+pages_per_cluster = 2
+clusters = 8192
+alloc_offset = 41
+root_cluster = 0
+indirect_fat_cluster = 8
+root_entries = 3
+save_folder_entries = 5
+data_file_bytes = 7704
+icon_bytes = 79128
+icon_sys_bytes = 964
+bank_written = 1234
+
+[addresses]
+Profile_Create = 0x00421e68
+save_system = 0x006fe2f8
