@@ -1,0 +1,485 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Tests for `coney-tools clips pair`, `clips encode` and `clips scenarios`: the named scenarios, Coney's command line
+and its record line, the base checkout kept by commit, the side-by-side compare and the encodes that fit GitHub (the
+size ladders, the GIF budget, `--slow` and the cut message). Every program is a fake: no Coney, FFmpeg, PCSX2 or game
+data is needed, and the only frames are a synthetic label drawn here."""
+
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+from collections.abc import Sequence
+from fractions import Fraction
+from pathlib import Path
+
+import pytest
+from conventions_support import REPO
+
+from coney_tools import clips, clips_pair
+from coney_tools.conventions import ClipPair, Clips, load_conventions
+
+PAIR = ClipPair(
+    scenarios="tools/clips",
+    base_prefix="clips-base-",
+    preset="dev",
+    upload_max_mb=10,
+    mp4_heights=(720, 540, 432, 360),
+    gif_widths=(800, 640, 480),
+    gif_fps=10,
+    gif_kb_per_second=512,
+    gif_min_seconds=2,
+)
+RULES = Clips(folder="clips", max_seconds=10, warn_mb=10, keep_hours=24, pair=PAIR)
+
+#: The line `coney --record` prints at the end of a clip (src/platform/main.cpp).
+RECORD_LINE = (
+    "clip {path}: {frames} frames ({seconds:.2f} s) of 640x448 as 960x720, with sound, 1.20 MB, frames hash {digest}\n"
+)
+
+
+def _done(args: Sequence[str], code: int = 0, out: str = "", err: str = "") -> subprocess.CompletedProcess[str]:
+    """A finished process as subprocess.run returns it."""
+    return subprocess.CompletedProcess(list(args), code, out, err)
+
+
+def _git(folder: Path, *args: str) -> str:
+    """Run git in `folder` with a made-up identity; its output."""
+    env = {
+        **os.environ,
+        "GIT_AUTHOR_NAME": "t",
+        "GIT_AUTHOR_EMAIL": "t@example.invalid",
+        "GIT_COMMITTER_NAME": "t",
+        "GIT_COMMITTER_EMAIL": "t@example.invalid",
+    }
+    done = subprocess.run(["git", "-C", str(folder), *args], check=True, capture_output=True, text=True, env=env)
+    return done.stdout.strip()
+
+
+def _scenario(folder: Path, name: str, text: str) -> Path:
+    """A scenario file `name`.toml in `folder` holding `text`."""
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / f"{name}.toml"
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+@pytest.fixture
+def checkout(tmp_path: Path) -> Path:
+    """A folder standing for a checkout: an input script and a scenarios folder."""
+    root = tmp_path / "repo"
+    (root / "tests" / "support").mkdir(parents=True)
+    (root / "tests" / "support" / "walk.txt").write_text("150 stick left 0 60\n", encoding="utf-8")
+    return root
+
+
+# --- scenarios ---------------------------------------------------------------------------------------------------
+
+
+def test_a_scenario_loads_with_its_input_script_from_the_checkout(checkout: Path) -> None:
+    path = _scenario(
+        checkout / "tools" / "clips",
+        "walk",
+        'description = "a walk"\nlevel = "level99"\ninput = "tests/support/walk.txt"\nstart_frame = 150\nseconds = 5\n',
+    )
+    run = clips_pair.load_scenario(path, checkout)
+    assert run.name == "walk"
+    assert run.level == "level99"
+    assert run.input_script == (checkout / "tests" / "support" / "walk.txt").resolve()
+    assert (run.start_frame, run.seconds, run.skip_movies, run.checkpoint, run.ai_seed) == (150, 5, True, None, None)
+    assert run.record_seconds == 10
+
+
+@pytest.mark.parametrize(
+    ("extra", "message"),
+    [
+        ("speed = 2\n", "speed"),  # an unknown key
+        ('checkpoint = "two"\n', "checkpoint"),
+    ],
+)
+def test_a_scenario_refuses_an_unknown_key_or_a_wrong_type(checkout: Path, extra: str, message: str) -> None:
+    text = 'description = "d"\nlevel = "level99"\ninput = "tests/support/walk.txt"\nseconds = 5\n' + extra
+    path = _scenario(checkout / "tools" / "clips", "bad", text)
+    with pytest.raises(clips.ClipError, match=message):
+        clips_pair.load_scenario(path, checkout)
+
+
+def test_a_scenario_refuses_a_missing_input_script(checkout: Path) -> None:
+    path = _scenario(
+        checkout / "tools" / "clips", "lost", 'description = "d"\nlevel = "l"\ninput = "nope.txt"\nseconds = 5\n'
+    )
+    with pytest.raises(clips.ClipError, match=r"nope.txt"):
+        clips_pair.load_scenario(path, checkout)
+
+
+def test_a_run_longer_than_the_cap_is_refused_counting_its_start(checkout: Path) -> None:
+    script = checkout / "tests" / "support" / "walk.txt"
+    clips_pair.check_run(clips_pair.PairRun("w", "level99", script, seconds=5, start_frame=150), RULES)
+    with pytest.raises(clips.ClipError, match="10 s"):
+        clips_pair.check_run(clips_pair.PairRun("w", "level99", script, seconds=11), RULES)
+    # Coney records from the level's first frame of play, so the frames before the start count against the cap.
+    with pytest.raises(clips.ClipError, match="start"):
+        clips_pair.check_run(clips_pair.PairRun("w", "level99", script, seconds=8, start_frame=90), RULES)
+
+
+def test_an_unknown_scenario_name_lists_the_known_ones(checkout: Path) -> None:
+    folder = checkout / "tools" / "clips"
+    _scenario(folder, "walk", 'description = "d"\nlevel = "l"\ninput = "tests/support/walk.txt"\nseconds = 5\n')
+    assert clips_pair.scenario_path("walk", checkout, PAIR) == folder / "walk.toml"
+    with pytest.raises(clips.ClipError, match="walk"):
+        clips_pair.scenario_path("run", checkout, PAIR)
+
+
+@pytest.mark.reads("engine")
+def test_every_scenario_in_the_repository_loads_and_fits_the_cap() -> None:
+    rules = load_conventions(REPO).workspace.clips
+    runs = clips_pair.list_scenarios(REPO, rules.pair)
+    assert runs, f"no scenario in {rules.pair.scenarios}"
+    for run in runs:
+        clips_pair.check_run(run, rules)
+        assert run.description
+
+
+# --- Coney's command line and its record line ----------------------------------------------------------------------
+
+
+def test_coney_records_in_test_mode_with_a_window(checkout: Path) -> None:
+    script = checkout / "tests" / "support" / "walk.txt"
+    run = clips_pair.PairRun("w", "level99", script, seconds=5, start_frame=150, checkpoint=2, ai_seed=3)
+    args = clips_pair.coney_arguments(Path("coney.exe"), "H:/", run, Path("/s/t/clips/before.mp4"))
+    assert args[:3] == ["coney.exe", "--disc", "H:/"]
+    joined = " ".join(args)
+    for part in ("--play-level level99", "--checkpoint 2", "--ai-seed 3", "--skip-movies", "--record-seconds 10"):
+        assert part in joined
+    assert args[args.index("--input-script") + 1] == str(script)
+    assert args[args.index("--record") + 1] == str(Path("/s/t/clips/before.mp4"))
+    assert "--headless" not in args  # --record reads the frame buffer of a window
+
+
+def test_the_record_line_gives_the_frames_and_their_hash() -> None:
+    text = "loading\n" + RECORD_LINE.format(path="C:/s/clips/after.mp4", frames=300, seconds=10, digest="0x00ab")
+    recording = clips_pair.parse_record_line(text)
+    assert (recording.frames, recording.frames_hash) == (300, "0x00ab")
+    with pytest.raises(clips.ClipError, match="no clip line"):
+        clips_pair.parse_record_line("coney: --record: no folder\n")
+
+
+def test_two_recordings_must_have_as_many_frames() -> None:
+    before = clips_pair.Recording(Path("b.mp4"), 300, "0x1")
+    assert clips_pair.same_frames(before, clips_pair.Recording(Path("a.mp4"), 300, "0x2")) is False
+    assert clips_pair.same_frames(before, clips_pair.Recording(Path("a.mp4"), 300, "0x1")) is True
+    with pytest.raises(clips.ClipError, match="299"):
+        clips_pair.same_frames(before, clips_pair.Recording(Path("a.mp4"), 299, "0x2"))
+
+
+# --- the encodes ---------------------------------------------------------------------------------------------------
+
+
+def test_a_gif_keeps_every_frame_when_its_delay_is_whole() -> None:
+    assert clips_pair.gif_rate(Fraction(30), 10) == 10  # 30 fps cannot be a GIF's: one frame in three
+    assert clips_pair.gif_rate(Fraction(10), 10) == 10  # --slow 3: every frame, 10 hundredths each
+    assert clips_pair.gif_rate(Fraction(20), 10) == 20  # --slow 1.5: every frame, 5 hundredths each
+    assert clips_pair.gif_rate(Fraction(15), 10) == 10  # --slow 2: 15 fps is 6.67 hundredths, an uneven step
+    assert clips_pair.gif_rate(Fraction(30, 7), 10) == 4
+
+
+def test_a_gifs_budget_is_a_rate_counted_between_its_bounds() -> None:
+    assert clips_pair.gif_budget(5, RULES) == 5 * 512 * 1024
+    assert clips_pair.gif_budget(1, RULES) == 2 * 512 * 1024
+    assert clips_pair.gif_budget(30, RULES) == 10 * 512 * 1024
+
+
+def test_slowing_counts_against_the_cap_and_says_what_it_cut() -> None:
+    assert clips_pair.shown_seconds(5, 1.0, 10) == (5, None)
+    seconds, message = clips_pair.shown_seconds(5, 4.0, 10)
+    assert seconds == 2.5
+    assert message is not None
+    assert "cut at 10 s" in message
+    assert "75 frames (2.50 s) of 150" in message
+
+
+def _panels(folder: Path) -> list[clips_pair.Panel]:
+    """Two Coney panels with labels, as files refuse_screen_capture accepts."""
+    folder.mkdir(parents=True, exist_ok=True)
+    panels = []
+    for side in ("before", "after"):
+        (folder / f"{side}.mp4").write_bytes(b"x")
+        (folder / f"{side}.png").write_bytes(b"x")
+        panels.append(clips_pair.Panel(folder / f"{side}.mp4", folder / f"{side}.png", start_frame=150))
+    return panels
+
+
+def test_the_compare_stacks_the_labelled_panels_side_by_side_without_sound(tmp_path: Path) -> None:
+    panels = _panels(tmp_path)
+    args = clips_pair.compose_arguments(
+        Path("ffmpeg"), panels, tmp_path / "compare.mp4", seconds=5.0, slow=1.0, height=540
+    )
+    clips.refuse_screen_capture(args)
+    graph = args[args.index("-filter_complex") + 1]
+    assert "trim=start_frame=150:end_frame=300" in graph
+    assert "scale=-2:540" in graph
+    assert graph.count("overlay=") == 2
+    assert "hstack=inputs=2" in graph
+    for setting in ("-an", "-map_metadata", "+bitexact", "+faststart", "libx264"):
+        assert setting in args
+    assert args[args.index("-t") + 1] == "5.000"
+
+
+def test_a_slowed_compare_keeps_every_frame_and_lasts_longer(tmp_path: Path) -> None:
+    args = clips_pair.compose_arguments(
+        Path("ffmpeg"), _panels(tmp_path), tmp_path / "compare.mp4", seconds=2.5, slow=4.0, height=720
+    )
+    graph = args[args.index("-filter_complex") + 1]
+    assert "trim=start_frame=150:end_frame=225" in graph  # 2.5 s of source
+    assert "setpts=(PTS-STARTPTS)*4" in graph
+    assert args[args.index("-t") + 1] == "10.000"
+
+
+def test_a_gif_has_a_small_palette_and_loops(tmp_path: Path) -> None:
+    args = clips_pair.compose_arguments(
+        Path("ffmpeg"), _panels(tmp_path), tmp_path / "compare.gif", seconds=5.0, slow=1.0, gif=(800, 10)
+    )
+    graph = args[args.index("-filter_complex") + 1]
+    assert "palettegen=max_colors=128" in graph
+    assert "fps=10" in graph
+    assert "scale='min(800,iw)':-2" in graph
+    assert args[args.index("-loop", args.index("-filter_complex")) + 1] == "0"
+    assert "libx264" not in args
+
+
+class FakeFfmpeg:
+    """FFmpeg as a fake: each call writes its output file with the next size of `sizes`; the calls are kept."""
+
+    def __init__(self, sizes: Sequence[int]) -> None:
+        self.sizes = list(sizes)
+        self.calls: list[list[str]] = []
+
+    def __call__(self, args: Sequence[str]) -> subprocess.CompletedProcess[str]:
+        self.calls.append(list(args))
+        Path(args[-1]).write_bytes(b"\0" * self.sizes.pop(0))
+        return _done(args)
+
+
+def test_an_mp4_is_encoded_smaller_while_over_githubs_limit(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    fake = FakeFfmpeg([12_000_000, 9_000_000])
+    out = tmp_path / "compare.mp4"
+    size = clips_pair.encode_fitting(Path("ffmpeg"), _panels(tmp_path / "in"), out, RULES, 5.0, 1.0, runner=fake)
+    assert size == 9_000_000
+    assert out.stat().st_size == 9_000_000
+    assert ["scale=-2:720" in " ".join(call) for call in fake.calls] == [True, False]
+    assert "scale=-2:540" in " ".join(fake.calls[1])
+    assert not list(tmp_path.glob("*.part*"))
+    printed = capsys.readouterr().out
+    assert "12.00 MB" in printed
+    assert "9.00 MB" in printed
+
+
+def test_an_encode_too_big_at_every_size_fails_and_keeps_the_clip_that_was_there(tmp_path: Path) -> None:
+    out = tmp_path / "compare.mp4"
+    out.write_bytes(b"good")
+    fake = FakeFfmpeg([20_000_000] * 4)
+    with pytest.raises(clips.ClipError, match="10 MB"):
+        clips_pair.encode_fitting(Path("ffmpeg"), _panels(tmp_path / "in"), out, RULES, 5.0, 1.0, runner=fake)
+    assert out.read_bytes() == b"good"
+    assert not list(tmp_path.glob("*.part*"))
+
+
+def test_a_gif_over_its_budget_at_every_width_is_kept_with_a_warning(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fake = FakeFfmpeg([4_000_000, 3_500_000, 3_000_000])  # a 5 s GIF's budget is 2.6 MB
+    out = tmp_path / "compare.gif"
+    clips_pair.encode_fitting(Path("ffmpeg"), _panels(tmp_path / "in"), out, RULES, 5.0, 1.0, runner=fake)
+    assert out.stat().st_size == 3_000_000
+    assert "warning:" in capsys.readouterr().out
+
+
+def test_a_label_is_a_small_picture_of_its_text(tmp_path: Path) -> None:
+    from PIL import Image
+
+    out = clips_pair.label_image("Before", 720, tmp_path / "before.png")
+    with Image.open(out) as image:
+        assert 0 < image.height < 720 / 4
+        assert image.width > image.height
+
+
+# --- the base checkout -----------------------------------------------------------------------------------------------
+
+
+def test_the_base_checkout_is_a_detached_worktree_named_by_its_commit(tmp_path: Path) -> None:
+    main = tmp_path / "repos" / "coney"
+    main.mkdir(parents=True)
+    _git(main, "init", "-q", "-b", "main")
+    (main / "a.txt").write_text("a\n", encoding="utf-8")
+    _git(main, "add", "-A")
+    _git(main, "commit", "-q", "-m", "first")
+    commit = _git(main, "rev-parse", "HEAD")
+    path = clips_pair.base_checkout_path(main, "../../worktrees/coney/<branch>/", PAIR, commit)
+    assert path == (tmp_path / "worktrees" / "coney" / f"clips-base-{commit[:12]}").resolve()
+    clips_pair.ensure_base_checkout(main, path, commit, clips_pair.run_git)
+    assert _git(path, "rev-parse", "HEAD") == commit
+    assert _git(path, "rev-parse", "--abbrev-ref", "HEAD") == "HEAD"  # detached: workspace clean sees it merged
+    clips_pair.ensure_base_checkout(main, path, commit, clips_pair.run_git)  # kept: made once per commit
+
+
+def test_the_busy_marker_is_removed_only_when_it_is_ours(tmp_path: Path) -> None:
+    with clips_pair.busy(tmp_path, "me", ".coney-busy"):
+        assert "me" in (tmp_path / ".coney-busy").read_text(encoding="utf-8")
+    assert not (tmp_path / ".coney-busy").exists()
+    (tmp_path / ".coney-busy").write_text("someone\n", encoding="utf-8")
+    with clips_pair.busy(tmp_path, "me", ".coney-busy"):
+        pass
+    assert (tmp_path / ".coney-busy").read_text(encoding="utf-8") == "someone\n"
+
+
+# --- the whole pair --------------------------------------------------------------------------------------------------
+
+
+class FakeMachine:
+    """git, the builds, Coney and FFmpeg as fakes. Coney writes its clip and prints the record line, with the frames
+    and hash of `hashes` by side; every build and run is kept in order."""
+
+    def __init__(self, base_commit: str, hashes: dict[str, str], frames: dict[str, int] | None = None) -> None:
+        self.base_commit = base_commit
+        self.hashes = hashes
+        self.frames = frames or {"before": 300, "after": 300}
+        self.events: list[str] = []
+        self.busy_seen: list[bool] = []
+
+    def git(self, folder: Path, args: Sequence[str]) -> str:
+        if args[0] == "merge-base":
+            return self.base_commit + "\n"
+        if args[:2] == ["rev-parse", "HEAD"]:
+            return ("b" * 40 if folder.name.startswith("clips-base-") else "a" * 40) + "\n"
+        if args[:2] == ["status", "--porcelain"]:
+            return ""
+        if args[:2] == ["worktree", "add"]:
+            Path(args[-2]).mkdir(parents=True)
+            self.events.append("worktree add")
+            return ""
+        raise AssertionError(f"unexpected git {args}")
+
+    def build(self, checkout: Path, agent: str, preset: str) -> int:
+        side = "base" if checkout.name.startswith("clips-base-") else "task"
+        self.events.append(f"build {side} {preset}")
+        if side == "base":
+            self.busy_seen.append((checkout / ".coney-busy").exists())
+        exe = clips_pair.coney_executable(checkout, preset, must_exist=False)
+        exe.parent.mkdir(parents=True, exist_ok=True)
+        exe.write_bytes(b"")
+        return 0
+
+    def coney(self, args: Sequence[str], cwd: Path, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+        out = Path(args[args.index("--record") + 1])
+        side = out.stem.rsplit("-", 1)[-1]
+        self.events.append(f"record {side} in {'base' if cwd.name.startswith('clips-base-') else 'task'}")
+        assert "CONEY_FFMPEG" in env
+        out.write_bytes(b"clip")
+        line = RECORD_LINE.format(path=out, frames=self.frames[side], seconds=10, digest=self.hashes[side])
+        return _done(args, out=line)
+
+    def ffmpeg(self, args: Sequence[str]) -> subprocess.CompletedProcess[str]:
+        self.events.append(f"ffmpeg {Path(args[-1]).name}")
+        Path(args[-1]).write_bytes(b"\0" * 1000)
+        return _done(args)
+
+    def original(self, state: Path, seconds: int, out: Path, agent: str) -> None:
+        self.events.append(f"original {state.name} {seconds}")
+        out.write_bytes(b"clip")
+
+
+@pytest.fixture
+def space(tmp_path: Path) -> dict[str, Path]:
+    """A workspace's folders: the task's checkout and the scratch folder, and an input script."""
+    task = tmp_path / "worktrees" / "coney" / "my-task"
+    task.mkdir(parents=True)
+    script = task / "walk.txt"
+    script.write_text("150 stick left 0 60\n", encoding="utf-8")
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    return {"task": task, "scratch": scratch, "script": script, "main": tmp_path / "repos" / "coney"}
+
+
+def _pair(space: dict[str, Path], machine: FakeMachine, **options: object) -> int:
+    """Run the pair of a 5 s walk from frame 150 on the fakes."""
+    run = clips_pair.PairRun("walk", "level99", space["script"], seconds=5, start_frame=150)
+    env = clips_pair.PairEnv(
+        git=machine.git, build=machine.build, coney=machine.coney, ffmpeg=machine.ffmpeg, original=machine.original
+    )
+    settings = clips_pair.PairSettings(
+        rules=RULES,
+        worktrees="../../worktrees/coney/<branch>/",
+        busy_file=".coney-busy",
+        scratch=space["scratch"],
+        main=space["main"],
+        ffmpeg=Path("ffmpeg"),
+    )
+    return clips_pair.run_pair(space["task"], "my-task", run, "me", "H:/", settings, env, **options)  # type: ignore[arg-type]
+
+
+def test_a_pair_builds_both_sides_records_the_same_run_and_stacks_them(
+    space: dict[str, Path], capsys: pytest.CaptureFixture[str]
+) -> None:
+    machine = FakeMachine("c" * 40, {"before": "0x01", "after": "0x02"})
+    assert _pair(space, machine) == 0
+    assert machine.events == [
+        "build task dev",
+        "worktree add",
+        "build base dev",
+        "record before in base",
+        "record after in task",
+        "ffmpeg compare.part.mp4",
+    ]
+    assert machine.busy_seen == [True]
+    base = space["task"].parent / f"clips-base-{'c' * 12}"
+    assert not (base / ".coney-busy").exists()  # removed once the base build is no longer used
+    folder = space["scratch"] / "my-task" / "clips"
+    assert {path.name for path in folder.iterdir()} == {"before.mp4", "after.mp4", "compare.mp4", "pair.json"}
+    record = json.loads((folder / "pair.json").read_text(encoding="utf-8"))
+    assert record["before"]["frames_hash"] == "0x01"
+    assert record["before"]["commit"] == "c" * 40
+    assert record["after"]["frames_hash"] == "0x02"
+    assert record["run"]["start_frame"] == 150
+    printed = capsys.readouterr().out
+    assert "0x01" in printed
+    assert "0x02" in printed
+
+
+def test_a_pair_with_the_original_and_a_gif_has_three_panels(space: dict[str, Path]) -> None:
+    state = space["task"] / "street.p2s"
+    state.write_bytes(b"")
+    machine = FakeMachine("c" * 40, {"before": "0x01", "after": "0x02"})
+    assert _pair(space, machine, original=state, gif=True) == 0
+    assert "original street.p2s 5" in machine.events
+    assert machine.events[-2:] == ["ffmpeg compare.part.mp4", "ffmpeg compare.part.gif"]
+    folder = space["scratch"] / "my-task" / "clips"
+    assert (folder / "original.mp4").is_file()
+    assert (folder / "compare.gif").is_file()
+
+
+def test_a_pair_whose_runs_differ_in_length_is_refused(space: dict[str, Path]) -> None:
+    machine = FakeMachine("c" * 40, {"before": "0x01", "after": "0x02"}, frames={"before": 300, "after": 280})
+    with pytest.raises(clips.ClipError, match="not the same run"):
+        _pair(space, machine)
+    assert not any(event.startswith("ffmpeg") for event in machine.events)
+
+
+def test_a_pair_with_equal_frames_says_the_run_shows_no_change(
+    space: dict[str, Path], capsys: pytest.CaptureFixture[str]
+) -> None:
+    machine = FakeMachine("c" * 40, {"before": "0x01", "after": "0x01"})
+    assert _pair(space, machine) == 1
+    assert "shows nothing" in capsys.readouterr().out
+    assert not any(event.startswith("ffmpeg") for event in machine.events)
+
+
+def test_a_failed_build_stops_the_pair_with_its_exit_code(space: dict[str, Path]) -> None:
+    machine = FakeMachine("c" * 40, {"before": "0x01", "after": "0x02"})
+    machine.build = lambda checkout, agent, preset: 75  # type: ignore[method-assign]
+    assert _pair(space, machine) == 75
+
+
+def test_clip_names_may_be_gifs() -> None:
+    assert clips.CLIP_NAME.match("compare.gif")
+    assert clips.CLIP_NAME.match("compare.mp4")
+    assert not clips.CLIP_NAME.match("compare.png")

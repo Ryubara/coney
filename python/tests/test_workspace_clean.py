@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tests for coney_tools.workspace_clean: `workspace clean` and `workspace check-space` on made-up git repositories."""
 
+import dataclasses
 import json
 import os
 import shutil
@@ -312,6 +313,22 @@ def test_detached_head_worktree_that_is_merged_is_removed(space: Space) -> None:
     entry = space.entries()["loose"]
     assert entry.remove
     assert entry.branch is None
+
+
+def test_a_clips_pair_base_checkout_is_kept_as_long_as_a_build(space: Space) -> None:
+    # `clips pair` keeps the merge base's build in a detached worktree named by its commit, for the next pair from
+    # the same base: it goes once it is as idle as a build folder would be, not an hour after its last use.
+    path = space.worktree("clips-base-0123456789ab", build=5000)
+    git(path, "checkout", "-q", "--detach")
+    settings = dataclasses.replace(space.settings(build_hours=24.0), base_prefix="clips-base-")
+    space.touch(path, 5.0)
+    entries, _ = plan(settings)
+    entry = next(entry for entry in entries if entry.name == "clips-base-0123456789ab")
+    assert not entry.remove
+    assert "clips pair base" in entry.why
+    space.touch(path, 30.0)
+    entries, _ = plan(settings)
+    assert next(entry for entry in entries if entry.name == "clips-base-0123456789ab").remove
 
 
 def test_detached_head_with_unmerged_commits_is_kept(space: Space) -> None:
