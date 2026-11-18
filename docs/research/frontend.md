@@ -2544,3 +2544,12 @@ The constructor (`0x002040f0`) stores at `+0x60` a value of the game mode below 
 Coney does not keep it. It also builds the Xbox screens `PM_NoSpace` and `PM_TooManyProfiles` as stand-ins that show
 their name, since the PS2 never reaches them (inferred from PM_Greet's results, [The screens](#pm-screens)). Open:
 whether anything reads `+0x60` through the controller, and whether the Xbox build reaches the two screens.
+
+### The PM screens' fade test {#q-pm-fade-gate}
+
+Coney's PM screens take no menu command while a fade runs or its level is not 0 (`PmScreen::faded`), one test for
+every screen but PM_Profile, whose handler (`0x0020c588`) tests the fade level (`+0x1d8`) alone, confirmed (code), and
+which Coney follows. The original's handlers differ: PM_Greet's tests a running fade ([The screens](#pm-screens)), and
+PM_Difficulty's (`0x00206d88`) has no fade test at all, confirmed (code), so during a fade the original takes a press
+there that Coney ignores. Open: the test each other screen's handler makes; matching them is issue #660's (the PM
+screens).

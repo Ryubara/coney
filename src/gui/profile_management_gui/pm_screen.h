@@ -102,7 +102,9 @@ class PmScreen : public ScreenFlowState {
 
     /// Whether input waits for the screen fade (running, or its level not 0).
     [[nodiscard]] bool faded() const;
-    /// Whether menu commands wait this frame: faded() unless the screen's handler tests the fade otherwise.
+    /// Whether menu commands wait this frame; PM_Profile overrides it with its handler's test. The default, faded(),
+    /// is Coney's one test for the rest: some handlers test less (PM_Difficulty's, 0x00206d88, none at all), see
+    /// docs/research/frontend.md#q-pm-fade-gate.
     [[nodiscard]] virtual bool inputPaused() const { return faded(); }
     /// Plays front-end sound cue `cue`, if the profile manager has a way to.
     void playSound(int cue) const;
