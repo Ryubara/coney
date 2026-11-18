@@ -11,6 +11,7 @@
 
 using coney::story::parseStorySection;
 using coney::story::StoryMission;
+using coney::story::StorySection;
 using coney::story::validMissionId;
 
 namespace {
@@ -59,7 +60,9 @@ TEST_CASE("story manifest: the design's example reads every field of its three m
     const auto read = parseStorySection(kExample);
     REQUIRE(read.has_value());
     REQUIRE(read->has_value());
-    const auto& missions = (*read)->missions;
+    // The REQUIRE above is the check; value_or reads the section without an unchecked optional access.
+    const auto section = read.value().value_or(StorySection{});
+    const auto& missions = section.missions;
     REQUIRE(missions.size() == 3);
     CHECK(missions[0] == StoryMission{.id = "alley",
                                       .title = "Alley Cats",
@@ -83,7 +86,8 @@ TEST_CASE("story manifest: a [story] table makes a story mod, missions or none; 
     const auto story = parseStorySection("[project]\nname = \"yard\"\n[story]\n");
     REQUIRE(story.has_value());
     REQUIRE(story->has_value());
-    CHECK((*story)->missions.empty());
+    // The REQUIRE above is the check; value_or reads the section without an unchecked optional access.
+    CHECK(story.value().value_or(StorySection{}).missions.empty());
     const auto none = parseStorySection("[project]\nname = \"yard\"\n\n[play]\nlevel = \"project:/levels/a.layout\"\n");
     REQUIRE(none.has_value());
     CHECK_FALSE(none->has_value());
@@ -131,8 +135,10 @@ TEST_CASE("story manifest: keys and tables it does not know are skipped", "[stor
                                         "colour = \"red\"\ntags = [\"x\"]\n");
     REQUIRE(read.has_value());
     REQUIRE(read->has_value());
-    REQUIRE((*read)->missions.size() == 1);
-    CHECK((*read)->missions[0].id == "a");
+    // The REQUIRE above is the check; value_or reads the section without an unchecked optional access.
+    const auto section = read.value().value_or(StorySection{});
+    REQUIRE(section.missions.size() == 1);
+    CHECK(section.missions[0].id == "a");
 }
 
 TEST_CASE("story manifest: mission ids are lower case letters, digits and dashes", "[story_manifest]") {
