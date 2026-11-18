@@ -1355,6 +1355,11 @@ int main(int argc, char** argv) {
         logText(pacer->summary());
     }
     if (bench) {
+        // `--render-size`'s value or "none", copied to a local so the optional is checked where it is read.
+        const std::optional<coney::RenderSize> renderSizeAsked = options->renderSize;
+        const std::string renderSizeText = renderSizeAsked
+                                               ? std::format("{}x{}", renderSizeAsked->width, renderSizeAsked->height)
+                                               : std::string("none");
         auto line =
             bench->finish({{"level", commandLineLevel.value_or(std::string{})},
                            {"checkpoint", std::to_string(options->checkpoint.value_or(1))},
@@ -1363,9 +1368,7 @@ int main(int argc, char** argv) {
                            {"vsync", options->vsync ? "on" : "off"},
                            // What `--render-size` asked for and the window the run drew in (docs/engine/
                            // renderer.md#benchmark); a headless run has no window.
-                           {"render_size", options->renderSize ? std::format("{}x{}", options->renderSize->width,
-                                                                             options->renderSize->height)
-                                                               : std::string("none")},
+                           {"render_size", renderSizeText},
                            {"window", options->headless ? std::string("none")
                                                         : std::format("{}x{}", windowDesc.width, windowDesc.height)},
                            {"build", CONEY_BUILD_TYPE},

@@ -64,12 +64,13 @@ TEST_CASE("a frame's time comes back once the GPU has finished it", "[gpu_timer]
     timer.begin();
     timer.end();
     CHECK(driver.ends == 1);
+    REQUIRE(driver.begun.size() == 1);
     // Still on the GPU: nothing yet, and asking does not lose it.
     CHECK_FALSE(timer.takeResult().has_value());
     driver.finished[driver.begun.front()] = 2'500'000;
     const auto time = timer.takeResult();
     REQUIRE(time.has_value());
-    CHECK(*time == 2'500'000U);
+    CHECK(time == 2'500'000U);
     CHECK_FALSE(timer.takeResult().has_value());
 }
 
@@ -102,7 +103,7 @@ TEST_CASE("a GPU that falls behind drops frames instead of stalling", "[gpu_time
         timer.begin();
         timer.end();
     }
-    CHECK(driver.begun.size() == GpuTimer::kQueries);
+    REQUIRE(driver.begun.size() == GpuTimer::kQueries);
     // Every query is still pending: the next frame is not measured, and its end() closes nothing.
     const int endsBefore = driver.ends;
     timer.begin();
