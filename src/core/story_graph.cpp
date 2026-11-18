@@ -70,7 +70,8 @@ std::vector<int> StoryGraph::findLastMissionLevels() const {
 std::vector<HubOffer> StoryGraph::hubOffers() const {
     std::vector<HubOffer> offers;
     for (const StoryStep& step : m_steps) {
-        if (step.kind == StoryStep::Kind::HubChapter) {
+        // One row per original chapter; a new chapter shares its chapter's checkpoint and is no row.
+        if (step.kind == StoryStep::Kind::HubChapter && step.modId.empty()) {
             offers.push_back({.chapter = step.chapter, .level = offer(step.chapter)});
         }
     }
@@ -99,7 +100,7 @@ std::optional<StoryLoad> StoryGraph::nextLoad(int lastLevel) const {
 std::optional<int> StoryGraph::offer(int chapter) const {
     for (std::size_t index = 0; index < m_steps.size(); ++index) {
         const StoryStep& step = m_steps[index];
-        if (step.kind != StoryStep::Kind::HubChapter || step.chapter != chapter) {
+        if (step.kind != StoryStep::Kind::HubChapter || step.chapter != chapter || !step.modId.empty()) {
             continue;
         }
         // The chapter's last action loads the mission after it; a side step is reached by its own route.
@@ -112,16 +113,53 @@ std::optional<int> StoryGraph::offer(int chapter) const {
     return std::nullopt;
 }
 
-std::optional<std::size_t> StoryGraph::find(std::string_view /*id*/) const { return std::nullopt; }
+std::optional<std::size_t> StoryGraph::find(std::string_view id) const {
+    const auto found = std::ranges::find_if(m_steps, [id](const StoryStep& step) { return step.id() == id; });
+    if (found == m_steps.end()) {
+        return std::nullopt;
+    }
+    return static_cast<std::size_t>(found - m_steps.begin());
+}
 
-std::optional<StoryStep> StoryGraph::nextStep(std::optional<std::string_view> /*lastMissionId*/) const {
+std::optional<StoryStep> StoryGraph::nextStep(std::optional<std::string_view> lastMissionId) const {
+    // None complete: runNextMission's row for 0, the first step.
+    if (!lastMissionId) {
+        if (m_steps.empty()) {
+            return std::nullopt;
+        }
+        return m_steps.front();
+    }
+    // A mission's row: the step after it. A hub chapter, an unknown id or the last step has no row.
+    const std::optional<std::size_t> at = find(*lastMissionId);
+    if (!at || m_steps[*at].kind != StoryStep::Kind::Mission || *at + 1 >= m_steps.size()) {
+        return std::nullopt;
+    }
+    return m_steps[*at + 1];
+}
+
+std::optional<StoryStep> StoryGraph::offerOf(std::string_view chapterId) const {
+    const std::optional<std::size_t> at = find(chapterId);
+    if (!at || m_steps[*at].kind != StoryStep::Kind::HubChapter) {
+        return std::nullopt;
+    }
+    // The chapter's last action loads the mission after it; a side step is reached by its own route.
+    if (*at + 1 < m_steps.size() && m_steps[*at + 1].kind == StoryStep::Kind::Mission && !m_steps[*at + 1].sideStep) {
+        return m_steps[*at + 1];
+    }
     return std::nullopt;
 }
 
-std::optional<StoryStep> StoryGraph::offerOf(std::string_view /*chapterId*/) const { return std::nullopt; }
-
-std::optional<StoryStep> StoryGraph::hubChapterAt(int /*checkpoint*/,
-                                                  std::optional<std::string_view> /*lastMissionId*/) const {
+std::optional<StoryStep> StoryGraph::hubChapterAt(int checkpoint, std::optional<std::string_view> lastMissionId) const {
+    // The story's place: the chapter runNextMission enters after the latest mission, when the hub was entered at its
+    // checkpoint. A new chapter shares chapter n's checkpoint, so only the story's place tells the two apart.
+    if (const std::optional<StoryStep> next = nextStep(lastMissionId);
+        next && next->kind == StoryStep::Kind::HubChapter && next->chapter == checkpoint) {
+        return next;
+    }
+    // Anywhere else (a jump to the hub, a checkpoint that is not the story's): the original chapter itself.
+    if (const std::optional<std::size_t> at = find(std::format("hub:{}", checkpoint))) {
+        return m_steps[*at];
+    }
     return std::nullopt;
 }
 

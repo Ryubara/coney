@@ -620,6 +620,39 @@ mod's mission as `<mod>.<id>`, the mod's own included.
 - **Only a mission is replaced.** A `replace` naming a hub chapter is refused ("aaa.x: 'hub:3' is a hub chapter, not
   a mission"); a replaced side step (`level64`) leaves its replacement a side step.
 
+### Hub chapters that mod missions open {#hub-chapters}
+
+A new chapter shares chapter *n*'s checkpoint, so the checkpoint alone cannot say which of the two the hub is in: the
+story's progress does. The hub plays the chapter that `runNextMission` enters after the latest story mission
+complete, when the hub was entered at that chapter's checkpoint; anywhere else (a jump to the hub, a checkpoint that
+is not the story's place) it plays the original chapter. Chapter *n* offers the first mission placed after it, and
+each new chapter offers the step after it: the next mod mission on the same chapter, or chapter *n*'s original
+mission.
+
+What the hub's scripts do that this rests on, confirmed (code) in the decompiled `level95.lua`
+([Story progress: the hub](../../research/story-progress.md#hub)): `Main` (`f229`) asks for `level95_chapter<n>` with
+`RunLevel` (`f230`) as the callback, so the chapter file runs before `RunLevel`; the chapter file sets the crew, the
+radio, the chatter and the idle animations as globals, and defines its actions in `CfgMissionActions`, its cast in
+`CfgMissionHumans`, its scenes in `CfgSceneTables` and, in chapter 3, a side mission in `CfgMissionTable`;
+`clubhouse.Setup` (`f220`) calls each of the first three only when it is set, and `story.SetupSubmission` (`f54`) the
+last. Chapter 11's actions (`level95_chapter11.lua:f0`) are only a red circle at `fRunMission[checkpoint].flag` and
+the mission load.
+
+Coney's default chapter keeps chapter *n*'s file (its crew and time) and, before `RunLevel` runs, drops the cast,
+scene and side-mission configuration and sets the actions to chapter 11's shape: a red circle at chapter *n*'s giver,
+then the load of the new chapter's offer, with no cut-scene. A mod's `chapter` script runs over that default and may
+set any of the four itself. The offer goes into `fRunMission[n].level`, as the natives write it for every chapter
+([The natives](#graph-natives)); a mod mission without a level number yet loads nothing there.
+
+**Built** ([#1302](issue:1302)), not yet called: `story::StoryGraph` answers by step (`nextStep`, `offerOf`,
+`hubChapterAt`; the latest mission complete is `latestMission`'s, over both kinds of progress), `story::planHubChapter` (`repo:src/core/story_chapter.h`) gives the chapter, its offer, its mod and its
+`chapter` script, and `script::applyHubChapter` (`repo:src/scripting/hub_chapter.h`) applies a plan to the hub's
+script state after `level95.lua`'s main chunk. `hubOffers()` keeps the 12 rows of the original chapters. Calling it at
+the hub load, with the session's progress, comes with the natives ([#1300](issue:1300)).
+`repo:tests/core/story_chapter_test.cpp` walks a merged story through a new chapter at chapter 6's checkpoint to
+`hub:11`; `repo:tests/scripting/hub_chapter_test.cpp` plays the default chapter and a mod's chapter script over a
+synthetic hub.
+
 ### Merging and refusals {#graph-merge}
 
 The graph is built when the mods start, before any script runs, from the seed and each story mod's missions, mods in
@@ -652,10 +685,10 @@ graph's hash is the seed's.
 story mods in load order and gives the merged graph, the missions placed (each with its manifest entry, for the
 readers below), the refusals with their messages, and whether the session is modded: any story mod given makes it so,
 even one whose missions were all refused. A mod's step carries its story id in `StoryStep::modId`; its level number is
-0 until the natives give it one from the pool ([#1300](issue:1300)), and the new hub chapters play once
-[#1302](issue:1302) is built. Nothing calls the merge yet: Coney does not start mods yet, and the story session holds
-the seed. `repo:tests/core/story_merge_test.cpp` and `repo:tests/core/story_manifest_test.cpp` check each rule above
-on synthetic manifests.
+0 until the natives give it one from the pool ([#1300](issue:1300)), and the new hub chapters play as
+[Hub chapters that mod missions open](#hub-chapters) describes. Nothing calls the merge yet: Coney does not start
+mods yet, and the story session holds the seed. `repo:tests/core/story_merge_test.cpp` and
+`repo:tests/core/story_manifest_test.cpp` check each rule above on synthetic manifests.
 
 ### The Mods screen's story view {#graph-mods-screen}
 
@@ -864,8 +897,9 @@ Under [#1054](issue:1054), in order; the save format is [#1179](issue:1179)'s.
    hub's offer written into `fRunMission`, level numbers for mod missions from the pool of free numbers 2-59.
 3. **core: Add the manifest's story section and the story graph merge** ([#1301](issue:1301), built:
    [Merging and refusals](#graph-merge)): `[story]`, anchors, the merge and its refusals.
-4. **core: Add hub chapters that mod missions open** ([#1302](issue:1302)): a new chapter at chapter *n*'s time, the
-   mod's chapter script or Coney's default chapter.
+4. **core: Add hub chapters that mod missions open** ([#1302](issue:1302), built:
+   [Hub chapters that mod missions open](#hub-chapters)): a new chapter at chapter *n*'s time, the mod's chapter
+   script or Coney's default chapter; called at the hub load with #1300.
 5. **core: Add story progress by mission id to the save** ([#1303](issue:1303)): mod missions' completion, ranks and
    best records in the story section, after #1179.
 6. **gameplay: Add the story view to the Mods screen** ([#1304](issue:1304)): shared anchors with *Swap*, replacements,

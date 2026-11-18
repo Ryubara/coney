@@ -266,6 +266,12 @@ loaded without one of its story mods goes on from the latest mission present, an
 missing mod in the run log. Nothing gives mod missions numbers in the game yet: the natives over the graph
 ([#1300](issue:1300)) number them from the pool with `ModStoryProgress::assign` and call the other two.
 
+A mission after hub chapter *n* opens a new chapter at *n*'s checkpoint, which the hub tells from chapter *n* by the
+story's progress, not the checkpoint:
+[Hub chapters that mod missions open](../guides/studio/mission-mods.md#hub-chapters) gives the rule, the hub scripts
+it rests on (`Main` and `clubhouse.Setup`, `level95.lua:f229` and `f220`; chapter 11's actions) and what is built.
+The graph answers by step for it, and `fRunMission`'s view keeps the original chapters' 12 rows.
+
 ## Open questions {#open-questions}
 
 - **What unlocks a flashback's trophy.** `flashback.Setup` needs a record of type 7 or 9 for the trophy's level; which
