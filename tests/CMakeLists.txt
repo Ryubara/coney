@@ -252,6 +252,7 @@ add_executable(coney_tests
     platform/world_renderer_test.cpp
     platform/world_set_test.cpp
     platform/world_draw_stream_test.cpp
+    platform/object_draw_stream_test.cpp
     physics/overlaps_test.cpp
     physics/sphere_box_sweep_test.cpp
     raycast/collision_mesh_test.cpp
