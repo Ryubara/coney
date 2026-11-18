@@ -51,6 +51,9 @@ struct OriginalSave {
 inline constexpr std::string_view kPs2SaveName = "BASLUS-21215";
 /// The data file's size: six records (`ss + 0x10c`), the only size the game loads (`PS2Save_CheckFileSizes`).
 inline constexpr std::size_t kPs2DataFileSize = ProfileStore::kSlots * ProfileRecord::kSize;
+/// The largest file the importer reads: a 64 MB card, the largest PCSX2 makes, with its pages' 16-byte spares
+/// (docs/research/save.md#import). A larger file is refused without being read.
+inline constexpr std::uintmax_t kLargestOriginalSave = std::uintmax_t{64} * 1024 * 1024 / 512 * 528;
 
 /// Reads the profiles of the game's data file, six records of ProfileRecord::kSize. A slot whose name starts with a
 /// zero byte is empty; a slot whose version is not ProfileRecord::kVersion is not loaded and named in `skipped`. Fails

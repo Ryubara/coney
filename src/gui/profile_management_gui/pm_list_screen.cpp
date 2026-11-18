@@ -34,6 +34,8 @@ void PmListScreen::open() {
     }
     m_grid.build(m_choices, m_gridY.value_or(pm_look::gridY(rows)));
     placePmUsage(m_usage, m_shared);
+    m_placedTitleY = m_titleY.value_or(pm_look::titleY(rows));
+    m_placedGridY = m_gridY.value_or(pm_look::gridY(rows));
 }
 
 void PmListScreen::close() {

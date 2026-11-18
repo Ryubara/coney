@@ -14,6 +14,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 
+#include "fileio/ps2_memory_card.h"
 #include "support/fixtures.h"
 #include "support/optional_value.h"
 #include "support/ps2_card_fixtures.h"
@@ -311,4 +312,30 @@ TEST_CASE("the disk store offers an import folder beside the profiles", "[save_i
     DiskProfileStore store(dir.path(), state);
     REQUIRE(store.importFolder().has_value());
     CHECK(store.importFolder() == dir.path() / "import");
+}
+
+TEST_CASE("a PSU export whose last file's padding is left out is read", "[save_import]") {
+    // Expected: save.md#import-containers, inferred (some tools leave the last file's padding out)
+    auto psu = coney::test::buildPsu(saveFolder(twoProfiles()));
+    psu.resize(psu.size() - (1024 - 964)); // icon.sys, 964 bytes, is the last file
+    CHECK(coney::io::looksLikePsu(psu));
+    const auto save = coney::readOriginalSave(psu, "short.psu");
+    REQUIRE(save.has_value());
+    CHECK(save->kind == SaveSourceKind::Ps2Psu);
+    CHECK(save->profiles.size() == 2);
+}
+
+TEST_CASE("a file larger than any PS2 save is refused without being read, in the import folder too", "[save_import]") {
+    // Expected: save.md#import (Coney's limit: a 64 MB PCSX2 card with its pages' spares, the largest card PCSX2 makes)
+    CHECK(coney::kLargestOriginalSave == 69'206'016);
+    TempDir dir;
+    const std::filesystem::path big = dir.write("disc.iso", std::vector<std::byte>(16, std::byte{0}));
+    std::filesystem::resize_file(big, coney::kLargestOriginalSave + 1);
+    const auto save = coney::readOriginalSave(big);
+    REQUIRE_FALSE(save.has_value());
+    CHECK(save.error().message.starts_with("disc.iso: too large to be a PS2 save"));
+    const coney::ImportScan scan = coney::scanImportFolder(dir.path());
+    CHECK(scan.saves.empty());
+    REQUIRE(scan.problems.size() == 1);
+    CHECK(scan.problems.front().starts_with("disc.iso: too large to be a PS2 save"));
 }

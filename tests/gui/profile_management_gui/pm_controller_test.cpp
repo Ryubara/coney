@@ -28,6 +28,7 @@
 #include "gui/profile_management_gui/pm_widgets.h"
 #include "support/fixtures.h"
 #include "support/font_fixtures.h"
+#include "support/optional_value.h"
 #include "support/ps2_card_fixtures.h"
 #include "support/recording_device.h"
 #include "warriors/disk_profile_store.h"
@@ -789,4 +790,54 @@ TEST_CASE("PM_Import: a file in the import folder that is not a save shows why",
     // Back returns to PM_Profile.
     press(h, coney::pad::kTriangle);
     CHECK(h.controller->currentName() == "PM_Profile");
+}
+
+TEST_CASE("PM_Profile: with profiles and a save to import, five rows end where four do, above the usage line",
+          "[profile_manager]") {
+    // Expected: frontend.md#pm-import (Coney's fifth row: the four-row title and grid moved up one row pitch, so the
+    // last row ends where a four-row grid's does); frontend.md#pm-layout for the four-row values and the pitch
+    coney::test::TempDir dir;
+    dir.write("import/Mcd001.ps2", cardWith({"SNAKE"}));
+    Harness h;
+    coney::DiskProfileStore disk(dir.path(), h.state);
+    for (const char* name : {"CLEON", "AJAX", "VERMIN"}) {
+        coney::ProfileRecord record;
+        record.name = name;
+        const auto slot = disk.freeSlot();
+        REQUIRE(disk.importRecord(coney::test::got(slot), record));
+    }
+    h.shared.profiles = &disk;
+    toStory(h);
+    REQUIRE(h.controller->currentName() == "PM_Profile");
+    const coney::gui::PmListScreen* profile = listOnTop(h);
+    REQUIRE(profile != nullptr);
+    REQUIRE(profile->choices().items().size() == 5); // use, create, delete, reload, import
+    CHECK(profile->choices().items()[4].code == coney::gui::PmProfile::kImport);
+    namespace look = coney::gui::pm_look;
+    CHECK(profile->placedTitleY() == Catch::Approx(look::titleY(4) - look::kRowPitch));
+    CHECK(profile->placedGridY() == Catch::Approx(look::gridY(4) - look::kRowPitch));
+    const float lastRow = profile->placedGridY() + 4 * look::kRowPitch;
+    CHECK(lastRow == Catch::Approx(look::gridY(4) + 3 * look::kRowPitch));
+    CHECK(lastRow < look::kUsageY);
+}
+
+TEST_CASE("PM_Profile: a press counts while a fade out is still at level 0, not once the level rises",
+          "[profile_manager]") {
+    // Expected: frontend.md#pm-screens (PM_Profile's handler 0x0020c588 tests the fade level, +0x1d8, alone)
+    Harness h;
+    toStory(h);
+    REQUIRE(h.controller->currentName() == "PM_Profile");
+    SECTION("level 0: the frame that only marks the fade running") {
+        h.fade.queue(coney::graphics::ScreenFade::kFadeOut, 1.0, Harness::msOf(h.frame));
+        h.tap(coney::pad::kCross);
+        CHECK(h.controller->currentName() == "PM_Create");
+    }
+    SECTION("the level above 0") {
+        h.fade.queue(coney::graphics::ScreenFade::kFadeOut, 1.0, Harness::msOf(h.frame));
+        h.step();
+        h.step();
+        REQUIRE(h.fade.level() > 0.0F);
+        h.tap(coney::pad::kCross);
+        CHECK(h.controller->currentName() == "PM_Profile");
+    }
 }
