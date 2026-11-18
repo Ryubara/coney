@@ -43,7 +43,7 @@ void SubTacticPool::clear() {
 }
 
 std::optional<std::size_t> SubTacticPool::allocate(std::unique_ptr<SubTactic> order) {
-    const auto free = std::ranges::find(m_records, nullptr);
+    const auto free = std::ranges::find_if(m_records, [](const auto& record) { return record == nullptr; });
     if (free == m_records.end()) {
         return std::nullopt;
     }
