@@ -16,6 +16,8 @@ void FrameDescription::begin(const FrameStart& start) {
     m_textures.clear();
     m_quads.clear();
     m_vertices.clear();
+    m_lights.clear();
+    m_sceneTextures.clear();
 }
 
 FrameTextureId FrameDescription::texture(const Texture* texture) {
@@ -87,7 +89,29 @@ void FrameDescription::addTriangles(const Material2d& material, std::span<const 
     overlay().draws.push_back(Draw2d{Shape2d::Triangles, material, first, static_cast<std::uint32_t>(count)});
 }
 
+ScenePass& FrameDescription::scene() {
+    if (m_passes.empty() || !std::holds_alternative<ScenePass>(m_passes.back())) {
+        m_passes.emplace_back(ScenePass{});
+    }
+    return std::get<ScenePass>(m_passes.back());
+}
+
 void FrameDescription::addScreenPass(const ScreenPass& pass) { m_passes.emplace_back(pass); }
+
+void FrameDescription::addSceneDraw(Draw3d draw, std::span<const SceneLight> lights,
+                                    std::span<const TextureId> textures, std::span<const TextureId> dualTextures) {
+    // The ranges point into the frame's arrays, after what earlier draws added.
+    draw.firstLight = static_cast<std::uint32_t>(m_lights.size());
+    draw.lightCount = static_cast<std::uint32_t>(lights.size());
+    m_lights.insert(m_lights.end(), lights.begin(), lights.end());
+    draw.firstTexture = static_cast<std::uint32_t>(m_sceneTextures.size());
+    draw.textureCount = static_cast<std::uint32_t>(textures.size());
+    m_sceneTextures.insert(m_sceneTextures.end(), textures.begin(), textures.end());
+    draw.firstDualTexture = static_cast<std::uint32_t>(m_sceneTextures.size());
+    draw.dualTextureCount = static_cast<std::uint32_t>(dualTextures.size());
+    m_sceneTextures.insert(m_sceneTextures.end(), dualTextures.begin(), dualTextures.end());
+    scene().draws.push_back(draw);
+}
 
 std::span<const LogicalQuad> FrameDescription::quadsOf(const Draw2d& draw) const {
     CONEY_ASSERT(draw.shape == Shape2d::Quads && draw.first + draw.count <= m_quads.size());
@@ -97,6 +121,21 @@ std::span<const LogicalQuad> FrameDescription::quadsOf(const Draw2d& draw) const
 std::span<const ScreenVertex> FrameDescription::verticesOf(const Draw2d& draw) const {
     CONEY_ASSERT(draw.shape == Shape2d::Triangles && draw.first + draw.count <= m_vertices.size());
     return std::span<const ScreenVertex>(m_vertices).subspan(draw.first, draw.count);
+}
+
+std::span<const SceneLight> FrameDescription::lightsOf(const Draw3d& draw) const {
+    CONEY_ASSERT(draw.firstLight + draw.lightCount <= m_lights.size());
+    return std::span<const SceneLight>(m_lights).subspan(draw.firstLight, draw.lightCount);
+}
+
+std::span<const TextureId> FrameDescription::texturesOf(const Draw3d& draw) const {
+    CONEY_ASSERT(draw.firstTexture + draw.textureCount <= m_sceneTextures.size());
+    return std::span<const TextureId>(m_sceneTextures).subspan(draw.firstTexture, draw.textureCount);
+}
+
+std::span<const TextureId> FrameDescription::dualTexturesOf(const Draw3d& draw) const {
+    CONEY_ASSERT(draw.firstDualTexture + draw.dualTextureCount <= m_sceneTextures.size());
+    return std::span<const TextureId>(m_sceneTextures).subspan(draw.firstDualTexture, draw.dualTextureCount);
 }
 
 } // namespace coney::graphics

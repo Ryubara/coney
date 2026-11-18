@@ -605,6 +605,20 @@ Reading, decoding, streaming and drawing exist (2026-10-04): `coney --view-world
 around a free-flying camera ([Running Coney](../guides/running.md#the-world-viewer)). The level file, the level world,
 objects, PVS and occluders do not.
 
+**Coney's port** is `WorldRenderer::render` with `renderSectorAtomic`, the objects, humans and effects drawn by the play
+mode's callbacks in the steps of [A frame](#a-frame) ([The frame description](../engine/renderer.md#frame-description)
+says how a sector is recorded and drawn). Its stand-ins: the level's occluders and the PVS are not consulted (they only
+save work, [Visibility](#visibility)), no camera is added to or taken from each world (librw needs none), and the throw
+arcs' place in step 10 is not traced. Not ported yet: nothing drawn under a full-screen fade (step 1), the humans'
+halved fog distance (step 7), and the litter and the embers in step 10.
+
+**The part read and free** are `WorldSet::readPart` and `freePart` ([Part file](#part-file)). Their stand-ins: no
+`Sectors<i>` clump or pool heap (librw allocates; the budget takes the manifest's part size rather than measuring
+the pool), the dictionary stays in the texture lookup while the part is loaded, the atomics keep librw's render
+callback (nothing calls it) and `0x00198190` is not run over their materials (a texture check that also sets the
+environment map's frame on environment-mapped MatFX materials), and a part always frees (no sector is left in another
+state than 4), so the free returns nothing.
+
 **Reading and decoding** (2026-10-04, unchanged):
 
 - **`src/world/world_streams.h`** reads the layout of a world stream (`inspectWorldStream`: part count, dictionary,

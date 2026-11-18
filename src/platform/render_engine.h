@@ -21,6 +21,7 @@
 #include "platform/draw_stream.h"
 #include "platform/gl3_renderer.h"
 #include "platform/present_mode.h"
+#include "platform/scene_assets.h"
 #include "platform/window.h"
 
 // librw's types, declared rather than included: <rw.h> brings in SDL and the OpenGL loader.
@@ -256,6 +257,18 @@ class RenderEngine final : public graphics::RenderDevice {
     /// passes (docs/engine/renderer.md#frame-description). Built with all three backends, so headless tests read it.
     [[nodiscard]] const graphics::FrameDescription& frame() const { return m_frame; }
 
+    /// The meshes and textures the frame description's 3D draws name by id, with the librw atomics the GL3 renderer
+    /// draws for them: WorldSet fills it with the streamed world's sectors. Whoever adds to it removes again before the
+    /// engine stops.
+    [[nodiscard]] SceneAssets& sceneAssets() { return m_assets; }
+    /// The scene assets, to read.
+    [[nodiscard]] const SceneAssets& sceneAssets() const { return m_assets; }
+
+    /// Adds the 3D draw `draw`, lit by `lights`, to the frame description with its meshes' material textures from the
+    /// scene assets, and has the GL3 renderer draw it at once, in its place among the 3D drawing that still goes to
+    /// librw directly. Only between beginFrame() and present() (checked by CONEY_ASSERT).
+    void drawScene(const graphics::Draw3d& draw, std::span<const graphics::SceneLight> lights);
+
   private:
     // Only start() makes one, which then fills it in as librw comes up.
     RenderEngine(RenderBackend backend, const WindowDesc& desc);
@@ -310,7 +323,8 @@ class RenderEngine final : public graphics::RenderDevice {
     std::optional<std::expected<CapturedFrame, Error>> m_capture;
     std::optional<std::uint64_t> m_drawStreamFrame; // requestDrawStream()
     std::optional<DrawStream> m_drawStream;
-    graphics::FrameDescription m_frame; // the frame's 2D side and screen passes (frame())
+    SceneAssets m_assets;               // sceneAssets(), before m_frame and m_gl3, which name what it holds
+    graphics::FrameDescription m_frame; // the frame's 2D side, screen passes and sectors (frame())
     Gl3Renderer m_gl3;                  // draws m_frame through librw's GL3 device
     std::function<void(std::span<const std::uint8_t>, graphics::Extent)> m_frameTap; // setFrameTap()
     std::vector<std::uint8_t> m_tapRows;                                             // the tap's read-back, bottom up

@@ -96,7 +96,7 @@ void checkState(const coney::platform::WorldSet& set, const coney::world::Sector
 // Streams one level's worlds under the camera path and checks every frame. `extraBudget` is added to the worlds' own
 // heaps to size the budget; 0 means the default budget.
 void streamLevel(const coney::io::Wad& wad, const std::string& level, std::uint64_t extraBudget,
-                 StreamingTotals& totals) {
+                 coney::platform::SceneAssets& assets, StreamingTotals& totals) {
     auto names = coney::platform::worldNamesFor(wad, level);
     if (!names) {
         return;
@@ -106,7 +106,7 @@ void streamLevel(const coney::io::Wad& wad, const std::string& level, std::uint6
     std::uint64_t capacity = coney::world::kSectorPoolSize;
     if (extraBudget > 0) {
         coney::world::SectorBudget probe(coney::world::kSectorPoolSize);
-        auto measured = coney::platform::WorldSet::load(wad, *names, probe, false);
+        auto measured = coney::platform::WorldSet::load(wad, *names, probe, false, assets);
         if (!measured) {
             ++totals.loadFailures;
             return;
@@ -114,7 +114,7 @@ void streamLevel(const coney::io::Wad& wad, const std::string& level, std::uint6
         capacity = probe.used() + extraBudget;
     }
     coney::world::SectorBudget budget(capacity);
-    auto set = coney::platform::WorldSet::load(wad, *names, budget, false);
+    auto set = coney::platform::WorldSet::load(wad, *names, budget, false, assets);
     if (!set) {
         ++totals.loadFailures;
         std::printf("  %s: %s\n", level.c_str(), set.error().message.c_str());
@@ -232,6 +232,7 @@ void printTotals(const char* run, const StreamingTotals& totals) {
 
 } // namespace
 
+// Expected: world.md#disc-counts, confirmed (runtime): the parts and the budget peak counted on the NTSC-U disc.
 TEST_CASE("every level's streamed worlds stream under a camera path within the budget", "[disc][world_streaming]") {
     const char* discPath = SDL_getenv("CONEY_DISC");
     if (discPath == nullptr || *discPath == '\0') {
@@ -252,13 +253,13 @@ TEST_CASE("every level's streamed worlds stream under a camera path within the b
 
     StreamingTotals full;
     for (const std::string& level : levels) {
-        streamLevel(*wad, level, 0, full);
+        streamLevel(*wad, level, 0, (*engine)->sceneAssets(), full);
     }
     printTotals("default budget", full);
 
     StreamingTotals tight;
     for (const std::string& level : {std::string("level51"), std::string("level83"), std::string("level54")}) {
-        streamLevel(*wad, level, std::uint64_t{2} * 1024 * 1024, tight);
+        streamLevel(*wad, level, std::uint64_t{2} * 1024 * 1024, (*engine)->sceneAssets(), tight);
     }
     printTotals("worlds + 2 MB", tight);
 

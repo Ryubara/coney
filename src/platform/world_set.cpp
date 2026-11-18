@@ -39,21 +39,6 @@ std::unexpected<Error> inFile(const std::string& file, const Error& error) {
     return std::unexpected(Error{error.code, file + ": " + error.message});
 }
 
-// Reads the texture dictionary at `offset` of `file` and, for the OpenGL renderer, converts it for drawing.
-std::expected<TextureDictionary, Error> readDictionary(std::span<const std::byte> file, std::size_t offset,
-                                                       std::size_t bytes, bool forDrawing) {
-    auto dictionary = TextureDictionary::read(file.subspan(offset, bytes));
-    if (!dictionary) {
-        return dictionary;
-    }
-    if (forDrawing) {
-        if (auto converted = dictionary->convertForDrawing(); !converted) {
-            return std::unexpected(std::move(converted.error()));
-        }
-    }
-    return dictionary;
-}
-
 } // namespace
 
 std::expected<std::vector<std::string>, Error> worldNamesFor(const io::Wad& wad, std::string_view name) {
@@ -81,16 +66,92 @@ std::vector<std::string> playableLevelNames(const io::Wad& wad) {
 }
 
 std::expected<std::unique_ptr<WorldSet>, Error> WorldSet::load(const io::Wad& wad, std::span<const std::string> names,
-                                                               world::SectorBudget& budget, bool forDrawing) {
+                                                               world::SectorBudget& budget, bool forDrawing,
+                                                               SceneAssets& assets) {
     installGlobalTextureLookup();
-    std::unique_ptr<WorldSet> set(new WorldSet(wad, budget));
+    std::unique_ptr<WorldSet> set(new WorldSet(wad, budget, assets));
     set->m_forDrawing = forDrawing;
     for (const std::string& name : names) {
         if (auto loaded = set->loadWorld(name, forDrawing); !loaded) {
+            set->dropTextures(set->m_readTextures);
             return std::unexpected(std::move(loaded.error()));
         }
+        // What the world holds in the scene assets: its dictionary's textures now, its parts' and sectors' as they
+        // load.
+        const world::StreamedWorld& state = set->m_worlds.back()->state;
+        set->m_held.push_back(Held{.textures = std::exchange(set->m_readTextures, {}),
+                                   .parts = std::vector<std::vector<graphics::TextureId>>(state.partCount()),
+                                   .meshes = std::vector<std::optional<SectorMesh>>(state.sectors().size())});
     }
     return set;
+}
+
+std::expected<TextureDictionary, Error> WorldSet::readDictionary(std::span<const std::byte> file, std::size_t offset,
+                                                                 std::size_t bytes, bool forDrawing) {
+    auto dictionary = TextureDictionary::read(file.subspan(offset, bytes));
+    if (!dictionary) {
+        return dictionary;
+    }
+    // Its textures into the scene assets first, while a PS2 raster is still as loaded (docs/engine/asset-formats.md);
+    // one that cannot be converted is left out, and the materials naming it get no texture id.
+    rw::TexDictionary* rwDictionary = dictionary->rwDictionary();
+    FORLIST(link, rwDictionary->textures) {
+        if (auto id = m_assets.addTexture(*rw::Texture::fromDict(link)); id) {
+            m_readTextures.push_back(*id);
+        }
+    }
+    if (forDrawing) {
+        if (auto converted = dictionary->convertForDrawing(); !converted) {
+            return std::unexpected(std::move(converted.error()));
+        }
+    }
+    return dictionary;
+}
+
+void WorldSet::dropTextures(std::vector<graphics::TextureId>& textures) {
+    for (const graphics::TextureId id : textures) {
+        m_assets.removeTexture(id);
+    }
+    textures.clear();
+}
+
+WorldSet::SectorMesh WorldSet::addMeshes(rw::Atomic* atomic) {
+    // A mesh that cannot be converted keeps no id; the world renderer then draws its atomic as before.
+    SectorMesh mesh;
+    if (auto id = m_assets.addAtomic(*atomic); id) {
+        mesh.mesh = *id;
+    }
+    if (rw::Atomic* layer = dualLayerOf(atomic); layer != nullptr) {
+        if (auto id = m_assets.addAtomic(*layer); id) {
+            mesh.dualLayer = *id;
+        }
+    }
+    return mesh;
+}
+
+void WorldSet::removeMeshes(const SectorMesh& mesh) {
+    m_assets.removeMesh(mesh.mesh);
+    m_assets.removeMesh(mesh.dualLayer);
+}
+
+// Gives back every texture still held for a world or one of its parts.
+WorldSet::HeldTextures::~HeldTextures() {
+    for (Held& world : held) {
+        for (const graphics::TextureId id : world.textures) {
+            assets.removeTexture(id);
+        }
+        for (const std::vector<graphics::TextureId>& part : world.parts) {
+            for (const graphics::TextureId id : part) {
+                assets.removeTexture(id);
+            }
+        }
+        for (const std::optional<SectorMesh>& mesh : world.meshes) {
+            if (mesh) {
+                assets.removeMesh(mesh->mesh);
+                assets.removeMesh(mesh->dualLayer);
+            }
+        }
+    }
 }
 
 std::expected<void, Error> WorldSet::loadWorld(const std::string& name, bool forDrawing) {
@@ -199,6 +260,23 @@ WorldAtomic* WorldSet::worldAtomic(std::size_t world, std::uint32_t sector) {
     return nullptr;
 }
 
+const WorldSet::SectorMesh* WorldSet::sectorMesh(std::size_t world, std::uint32_t sector) const {
+    CONEY_ASSERT(world < m_held.size() && sector < m_held[world].meshes.size());
+    const std::optional<SectorMesh>& mesh = m_held[world].meshes[sector];
+    return mesh ? &*mesh : nullptr;
+}
+
+void WorldSet::refreshMesh(std::size_t world, std::uint32_t sector) {
+    CONEY_ASSERT(world < m_held.size() && sector < m_held[world].meshes.size());
+    std::optional<SectorMesh>& mesh = m_held[world].meshes[sector];
+    rw::Atomic* atomic = m_worlds[world]->bySector[sector];
+    if (!mesh || atomic == nullptr) {
+        return;
+    }
+    removeMeshes(*mesh);
+    mesh = addMeshes(atomic);
+}
+
 std::size_t WorldSet::residentAtomics() const {
     std::size_t count = 0;
     for (const auto& loaded : m_worlds) {
@@ -210,8 +288,45 @@ std::size_t WorldSet::residentAtomics() const {
 }
 
 std::expected<void, Error> WorldSet::loadPart(std::size_t world, std::uint32_t part) {
+    CONEY_ASSERT(world < m_worlds.size() && world < m_held.size());
+    auto read = readPart(world, part);
+    if (!read) {
+        dropTextures(m_readTextures);
+        return read;
+    }
+    // Its dictionary's textures went into the scene assets as it was read; its sectors' meshes go in now that their
+    // atomics and dual layers are made.
+    Held& held = m_held[world];
+    held.parts[part - 1] = std::exchange(m_readTextures, {});
+    for (const std::uint32_t sector : m_worlds[world]->state.part(part).sectors) {
+        if (rw::Atomic* atomic = m_worlds[world]->bySector[sector]; atomic != nullptr) {
+            held.meshes[sector] = addMeshes(atomic);
+        }
+    }
+    return read;
+}
+
+void WorldSet::unloadPart(std::size_t world, std::uint32_t part) {
+    CONEY_ASSERT(world < m_worlds.size() && world < m_held.size());
+    // Out of the scene assets first, while the atomics and the dictionary are still there.
+    Held& held = m_held[world];
+    for (const std::uint32_t sector : m_worlds[world]->state.part(part).sectors) {
+        // Bound once: clang-tidy does not follow the engaged check through a repeated subscript.
+        std::optional<SectorMesh>& mesh = held.meshes[sector];
+        if (mesh) {
+            removeMeshes(*mesh);
+            mesh.reset();
+        }
+    }
+    dropTextures(held.parts[part - 1]);
+    freePart(world, part);
+}
+
+std::expected<void, Error> WorldSet::readPart(std::size_t world, std::uint32_t part) {
     CONEY_ASSERT(world < m_worlds.size());
     Loaded& loaded = *m_worlds[world];
+    // Stand-in: no `Sectors<i>` clump is made in the Sector Pool for the part, nor its heap made current around the
+    // reads (librw allocates), so the part's size is not measured from the pool: the budget takes the manifest's.
     const std::string fileName = std::format("{}_ms{}.sec", loaded.state.name(), part);
     auto file = readEntry(m_wad, fileName);
     if (!file) {
@@ -223,7 +338,8 @@ std::expected<void, Error> WorldSet::loadPart(std::size_t world, std::uint32_t p
     }
 
     // Its dictionary first, into the lookup, so the atomics' materials find their textures in it (or in any other
-    // loaded dictionary).
+    // loaded dictionary). Coney's choice: it stays in the lookup while the part is loaded, where the original makes it
+    // current and then none.
     Part record;
     if (layout->dictionaryBytes > 0) {
         auto dictionary = readDictionary(*file, layout->dictionaryOffset, layout->dictionaryBytes, m_forDrawing);
@@ -251,6 +367,9 @@ std::expected<void, Error> WorldSet::loadPart(std::size_t world, std::uint32_t p
         atomic->unpack();
         // Modulate by the material colour, whose alpha fades the atomic in (World_ReadPart sets flag 0x40).
         atomic->atomic()->geometry->flags |= rw::Geometry::MODULATE;
+        // Stand-in: the atomic keeps librw's render callback, which nothing calls (WorldRenderer draws it), where the
+        // original swaps in a do-nothing one; and 0x00198190 is not run over its materials (it checks their textures
+        // and sets the environment map's frame on each environment-mapped MatFX material: no visible effect yet).
         record.atomics.push_back(std::move(*atomic));
         placed.push_back(entry.streamedIndex);
     }
@@ -261,12 +380,16 @@ std::expected<void, Error> WorldSet::loadPart(std::size_t world, std::uint32_t p
     return {};
 }
 
-void WorldSet::unloadPart(std::size_t world, std::uint32_t part) {
+void WorldSet::freePart(std::size_t world, std::uint32_t part) {
     CONEY_ASSERT(world < m_worlds.size());
     Loaded& loaded = *m_worlds[world];
+    // Stand-in: every atomic releases (one thread draws and frees), so the part always frees and nothing is returned,
+    // where the original stops and returns 0 at the first sector its release leaves in a state other than 4.
     for (const std::uint32_t sector : loaded.state.part(part).sectors) {
         loaded.bySector[sector] = nullptr;
     }
+    // Stand-in: no pool heap to make current or lock (librw allocates), and the world's in-flight part is
+    // world::StreamedWorld's to clear.
     // Atomics, then the lookup entry, then the dictionary their materials took textures from.
     Part& record = loaded.parts[part - 1];
     record.atomics.clear();

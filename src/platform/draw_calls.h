@@ -9,6 +9,7 @@
 // librw's types, declared rather than included: <rw.h> has no include guard, and the files that call this layer
 // include it themselves.
 namespace rw {
+struct Atomic;
 struct Camera;
 struct Image;
 struct Matrix;
@@ -23,14 +24,16 @@ struct RGBA;
 /// DrawStream, whose hash proves that a change to the renderer left the *PS2* picture alone.
 ///
 /// Routed here: the render states, Im2D, Im3D, the camera's clear, begin, end and show, raster creation, locks and
-/// uploads, and the named operations. Not yet: the atomic, clump and human renders, whose pipelines call OpenGL
-/// themselves (items 7 to 10 of docs/engine/renderer.md#order). The render states set around them are routed, except
-/// in the four functions items 7 to 9 route with their renders (WorldRenderer::render, ParkedCars::draw,
-/// PlacedObjects::draw, PlayLighting::drawHumanPasses), which set them on librw directly: a live record's states can be
-/// stale after those (docs/engine/renderer.md#comparing).
+/// uploads, the named operations, and the world's atomic renders (the streamed sectors with their dual layers and the
+/// level's background, item 7). Not yet: the other atomic, clump and human renders, whose pipelines call OpenGL
+/// themselves (items 8 to 10 of docs/engine/renderer.md#order). The render states set around them are routed, except
+/// in the three functions items 8 and 9 route with their renders (ParkedCars::draw, PlacedObjects::draw,
+/// PlayLighting::drawHumanPasses), which set them on librw directly: a live record's states can be stale after those
+/// (docs/engine/renderer.md#comparing).
 ///
 /// What a record holds:
 ///
+/// - an atomic draw: the states as below, then the atomic as renderAtomic() says;
 /// - a draw (Im2D or Im3D): the primitive type, every render state set so far in the process (a raster by its place
 ///   in this recording's order of first use, its size and format, and the digest of its pixels where Coney uploaded
 ///   them while rasters were tracked), the vertices (positions and texture coordinates on the 1/1024 grid, colours at
@@ -91,6 +94,15 @@ void im3dRenderPrimitive(int type);
 void im3dRenderIndexedPrimitive(int type, void* indices, std::int32_t numIndices);
 /// rw::im3d::End: the transformed vertices released.
 void im3dEnd();
+
+/// rw::Atomic::render: the atomic drawn by its pipeline, with the render states in force and the lights of the world
+/// librw lights it from (the current world, when the atomic is in it). Recorded as one draw: the states, whether its
+/// texture levels are picked by distance (setDistanceMipmaps()), its frame's matrix, its geometry (flags, the first
+/// morph target's positions and normals, the prelighting, every texture-coordinate set and the triangles), each
+/// material (colour, texture raster as writeRaster() writes one, the texture's filter and addressing, the surface
+/// properties) and each light (type, flags, colour, its frame's position and direction, radius and cone). What the
+/// pipeline then does inside the draw is librw's (docs/engine/renderer.md#comparing).
+void renderAtomic(rw::Atomic* atomic);
 
 /// rw::Camera::clear.
 void clearCamera(rw::Camera* camera, rw::RGBA* colour, std::uint32_t mode);

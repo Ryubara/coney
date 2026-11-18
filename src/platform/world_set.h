@@ -13,6 +13,8 @@
 
 #include "core/error.h"
 #include "fileio/wad.h"
+#include "graphics/asset_store.h"
+#include "platform/scene_assets.h"
 #include "platform/texture_dictionary.h"
 #include "platform/texture_lookup.h"
 #include "platform/world_atomic.h"
@@ -48,10 +50,14 @@ class WorldSet final : public world::PartStore {
   public:
     /// Loads the worlds of `names` in order, as LoadLevel does: for each, the manifest, then room for its heap, then
     /// the world stream with its texture dictionary. No part is loaded. With `forDrawing` every dictionary is
-    /// converted for the OpenGL renderer as it is read. Fails when a file is missing or damaged, or with
-    /// ErrorCode::Invalid when a world's heap does not fit in `budget`, which must outlive the set.
-    [[nodiscard]] static std::expected<std::unique_ptr<WorldSet>, Error>
-    load(const io::Wad& wad, std::span<const std::string> names, world::SectorBudget& budget, bool forDrawing);
+    /// converted for the OpenGL renderer as it is read. Every dictionary's textures, and each loaded sector's mesh and
+    /// dual layer, are held in `assets` (the RenderEngine's, RenderEngine::sceneAssets()) while they are loaded, for
+    /// the frame description (sectorMesh()). Fails when a file is missing or damaged, or with ErrorCode::Invalid when
+    /// a world's heap does not fit in `budget`. `budget` and `assets` must outlive the set.
+    [[nodiscard]] static std::expected<std::unique_ptr<WorldSet>, Error> load(const io::Wad& wad,
+                                                                              std::span<const std::string> names,
+                                                                              world::SectorBudget& budget,
+                                                                              bool forDrawing, SceneAssets& assets);
 
     /// Frees every loaded part, then the worlds and their dictionaries, and gives their heaps back to the budget.
     /// @orig 0x00410b70 World_Unload (WorldPS2.cpp)
@@ -82,17 +88,29 @@ class WorldSet final : public world::PartStore {
     /// @coney-only the debug tools' world edits; the original has none
     [[nodiscard]] WorldAtomic* worldAtomic(std::size_t world, std::uint32_t sector);
 
+    /// A loaded sector's atomic and its dual layer, by their ids in the scene assets.
+    struct SectorMesh {
+        graphics::MeshId mesh;      ///< invalid when the atomic could not be converted
+        graphics::MeshId dualLayer; ///< invalid when it has none
+    };
+
+    /// The meshes of sector `sector` of world `world`, or null while its part is not loaded: what the world renderer
+    /// names in the frame description (docs/engine/renderer.md#frame-description).
+    [[nodiscard]] const SectorMesh* sectorMesh(std::size_t world, std::uint32_t sector) const;
+
+    /// Converts sector `sector` of world `world`'s atomic and dual layer into the scene assets again, under new ids,
+    /// after the debug tools' world edits cut it (WorldAtomic::cut()); nothing while its part is not loaded.
+    /// @coney-only the debug tools' world edits; the original never changes a sector's geometry
+    void refreshMesh(std::size_t world, std::uint32_t sector);
+
     /// Atomics resident now, over every world.
     [[nodiscard]] std::size_t residentAtomics() const;
 
-    /// Reads part `part` of world `world`: its texture dictionary (into the lookup), then every `{index, atomic}`
-    /// record, each atomic read with librw, placed at its sector's origin, unpacked to plain geometry and given
-    /// geometry flag 0x40 (modulate by material colour, which the fade-in uses).
-    /// @orig 0x004110c0 World_ReadPart (WorldPS2.cpp)
+    /// Reads part `part` of world `world` (readPart()), then holds its sectors' meshes in the scene assets beside the
+    /// textures its dictionary put there; on a failure nothing of it stays held.
     [[nodiscard]] std::expected<void, Error> loadPart(std::size_t world, std::uint32_t part) override;
 
-    /// Frees part `part` of world `world`: its atomics first, then its dictionary.
-    /// @orig 0x004115d0 World_UnloadPart (WorldPS2.cpp)
+    /// Drops part `part` of world `world`'s meshes and textures from the scene assets, then frees it (freePart()).
     void unloadPart(std::size_t world, std::uint32_t part) override;
 
   private:
@@ -113,8 +131,50 @@ class WorldSet final : public world::PartStore {
         std::uint64_t heap = 0;            // charged to the budget while the world is loaded
         bool drawn = true;                 // setDrawn()
     };
+    // What a world holds in the scene assets: its dictionary's textures, each part's, and each loaded sector's
+    // meshes. Kept beside the world, so the ports of the original's loading and freeing stay as they are.
+    struct Held {
+        std::vector<graphics::TextureId> textures;           // the world's dictionary's
+        std::vector<std::vector<graphics::TextureId>> parts; // each part's dictionary's, part i at [i - 1]
+        std::vector<std::optional<SectorMesh>> meshes;       // by streamed index; none while not loaded
+    };
+    // Drops every texture the worlds' own dictionaries hold in the scene assets as the set goes, after
+    // World_Unload's port has freed the parts and the worlds (nothing reads them after it).
+    struct HeldTextures {
+        SceneAssets& assets;
+        std::vector<Held>& held;
+        HeldTextures(SceneAssets& heldIn, std::vector<Held>& worlds) : assets(heldIn), held(worlds) {}
+        HeldTextures(const HeldTextures&) = delete;
+        HeldTextures& operator=(const HeldTextures&) = delete;
+        HeldTextures(HeldTextures&&) = delete;
+        HeldTextures& operator=(HeldTextures&&) = delete;
+        ~HeldTextures();
+    };
 
-    WorldSet(const io::Wad& wad, world::SectorBudget& budget) : m_wad(wad), m_budget(budget) {}
+    WorldSet(const io::Wad& wad, world::SectorBudget& budget, SceneAssets& assets)
+        : m_wad(wad), m_budget(budget), m_assets(assets), m_heldTextures{assets, m_held} {}
+
+    /// Reads part `part` of world `world`: its texture dictionary (into the lookup), then every `{index, atomic}`
+    /// record, each atomic read with librw, placed at its sector's origin, unpacked to plain geometry and given
+    /// geometry flag 0x40 (modulate by material colour, which the fade-in uses).
+    /// @orig 0x004110c0 World_ReadPart (WorldPS2.cpp)
+    [[nodiscard]] std::expected<void, Error> readPart(std::size_t world, std::uint32_t part);
+
+    /// Frees part `part` of world `world`: its atomics first, then its dictionary.
+    /// @orig 0x004115d0 World_UnloadPart (WorldPS2.cpp)
+    void freePart(std::size_t world, std::uint32_t part);
+
+    /// Reads the texture dictionary of `bytes` at `offset` of `file`, puts its textures in the scene assets (their ids
+    /// go to m_readTextures, for the world or part that reads it) and, with `forDrawing`, then converts it for the
+    /// OpenGL renderer: the PS2 rasters are read as loaded (docs/engine/asset-formats.md).
+    [[nodiscard]] std::expected<TextureDictionary, Error>
+    readDictionary(std::span<const std::byte> file, std::size_t offset, std::size_t bytes, bool forDrawing);
+    /// Drops `textures` from the scene assets and empties it.
+    void dropTextures(std::vector<graphics::TextureId>& textures);
+    /// The ids of `atomic` and its dual layer in the scene assets, converted now.
+    [[nodiscard]] SectorMesh addMeshes(rw::Atomic* atomic);
+    /// Drops `mesh`'s ids from the scene assets.
+    void removeMeshes(const SectorMesh& mesh);
 
     /// Loads one world and adds it to the set.
     /// @orig 0x00410648 World_LoadStream (WorldPS2.cpp)
@@ -123,9 +183,13 @@ class WorldSet final : public world::PartStore {
 
     const io::Wad& m_wad;
     world::SectorBudget& m_budget;
+    SceneAssets& m_assets;
     bool m_forDrawing = false;
     std::vector<std::unique_ptr<Loaded>> m_worlds;
     std::vector<world::StreamedWorld*> m_states;
+    std::vector<Held> m_held;                        // by world, beside m_worlds
+    std::vector<graphics::TextureId> m_readTextures; // the textures readDictionary() put in, until they are placed
+    HeldTextures m_heldTextures;                     // the last member, so it drops the worlds' textures first
 };
 
 } // namespace coney::platform

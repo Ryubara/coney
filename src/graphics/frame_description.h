@@ -3,6 +3,7 @@
 // device
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -10,14 +11,17 @@
 #include <variant>
 #include <vector>
 
+#include "graphics/asset_store.h"
+#include "graphics/light_manager.h"
 #include "graphics/render_device.h"
 #include "graphics/texture_data.h"
 #include "graphics/texture_grid.h"
 
 namespace coney::graphics {
 
-/// A texture a frame's draws sample, by its place in the frame's texture table (FrameDescription::textureOf()). Not
-/// an AssetStore's TextureId: the table holds the 2D side's own textures (sprite sheets, movie frames) for one frame.
+/// A texture a frame's 2D draws sample, by its place in the frame's texture table (FrameDescription::textureOf()). Not
+/// an AssetStore's TextureId, which the 3D draws name: the table holds the 2D side's own textures (sprite sheets,
+/// movie frames) for one frame.
 using FrameTextureId = std::uint32_t;
 /// No texture: the draw is flat colour.
 inline constexpr FrameTextureId kNoFrameTexture = 0;
@@ -112,8 +116,98 @@ struct ScreenPass {
     friend bool operator==(const ScreenPass&, const ScreenPass&) = default;
 };
 
+/// A light a 3D draw is lit by, by value: what the light manager chose for the mesh and how it is coloured this frame
+/// (the lighting lab's layers applied), in RenderWare's axes (docs/research/lighting.md#select).
+struct SceneLight {
+    LightType type = LightType::Ambient;
+    std::array<float, 3> colour{};                     ///< Red, green and blue in RenderWare's 0-1, which may pass 1.
+    std::array<float, 3> position{};                   ///< Point and spot lights.
+    std::array<float, 3> direction{0.0F, -1.0F, 0.0F}; ///< Spot and directional lights: the way the light travels.
+    float radius = 0.0F;                               ///< Point and spot lights.
+    float coneAngle = 0.0F;                            ///< Spot lights.
+
+    friend bool operator==(const SceneLight&, const SceneLight&) = default;
+};
+
+/// Which faces a 3D draw drops.
+enum class CullFaces : std::uint8_t {
+    None,
+    Back,
+    Front,
+};
+
+/// Which fragments a 3D draw's alpha test keeps, against the reference (RenderWare's ALPHATESTFUNC).
+enum class AlphaTest : std::uint8_t {
+    Always,       ///< every one
+    GreaterEqual, ///< alpha at or above the reference: a first pass (docs/research/rendering.md#shared-state)
+    Less,         ///< alpha below it
+};
+
+/// The fixed states a 3D draw is drawn in. The world pass's: depth tested and written, back faces dropped, fogged in
+/// the fog's colour, blended by source alpha (docs/research/world.md#a-frame).
+struct SceneStates {
+    bool depthTest = true;
+    bool depthWrite = true;
+    CullFaces cull = CullFaces::Back;
+    bool fog = true;
+    Rgba fogColour;
+    bool alphaBlend = true; ///< blended by source alpha over what is below, else replacing it
+    AlphaTest alphaTest = AlphaTest::Always;
+
+    friend bool operator==(const SceneStates&, const SceneStates&) = default;
+};
+
+/// What a 3D draw changes about its mesh's own materials this frame.
+struct Material3d {
+    /// The alpha of every material colour: a streamed sector's fade-in (World_RenderSectorAtomic,
+    /// docs/research/world.md#a-frame), 255 once faded in.
+    std::uint8_t fade = 255;
+    /// Texture levels picked by the distance to the camera, as the original draws the streamed sectors alone
+    /// (docs/research/rendering.md#world); level 0 otherwise.
+    bool distanceLevels = false;
+
+    friend bool operator==(const Material3d&, const Material3d&) = default;
+};
+
+/// Where a mesh is drawn: its axes and position in the world, RenderWare's axes (a frame's matrix).
+struct Transform3d {
+    std::array<float, 3> right{1.0F, 0.0F, 0.0F};
+    std::array<float, 3> up{0.0F, 1.0F, 0.0F};
+    std::array<float, 3> at{0.0F, 0.0F, 1.0F};
+    std::array<float, 3> position{};
+
+    friend bool operator==(const Transform3d&, const Transform3d&) = default;
+};
+
+/// One draw of a scene pass: a mesh of the asset store by id, where it is, what it changes of its materials, its
+/// states and its lights; then, when it has one, its dual layer (docs/research/rendering.md#dual), a second mesh on
+/// the same frame drawn right after it at the same fade with no alpha test. The textures of each mesh's materials, in
+/// the order of MeshData::materials, and the lights are ranges of the frame's arrays (FrameDescription::texturesOf(),
+/// dualTexturesOf(), lightsOf()), set when the draw is added.
+struct Draw3d {
+    MeshId mesh;
+    MeshId dualLayer; ///< invalid (0) for none
+    Transform3d transform;
+    Material3d material;
+    SceneStates states;
+    std::uint32_t firstLight = 0;
+    std::uint32_t lightCount = 0;
+    std::uint32_t firstTexture = 0;
+    std::uint32_t textureCount = 0;
+    std::uint32_t firstDualTexture = 0;
+    std::uint32_t dualTextureCount = 0;
+
+    friend bool operator==(const Draw3d&, const Draw3d&) = default;
+};
+
+/// A pass of 3D draws through the frame's camera, in their order: the streamed world's sectors (item 7 of
+/// docs/engine/renderer.md#order); objects, cars, humans and effects join it with items 8 to 10.
+struct ScenePass {
+    std::vector<Draw3d> draws;
+};
+
 /// One pass of a frame.
-using FramePass = std::variant<Overlay2dPass, ScreenPass>;
+using FramePass = std::variant<Overlay2dPass, ScreenPass, ScenePass>;
 
 /// How a frame starts: the colour it is cleared to, and over what.
 struct FrameStart {
@@ -131,10 +225,12 @@ struct FrameStart {
 /// far). Textures are held by id, so a description names no graphics API: the GL3 renderer draws it through librw
 /// (platform/gl3_renderer.h) and the SDL3 GPU renderer will draw the same description.
 ///
-/// It holds the 2D side and the screen passes. The 3D scene still goes to librw directly between them (items 7 to 10
-/// of docs/engine/renderer.md#order move it here), so the GL3 renderer draws each part as it is added rather than
-/// the whole frame at its end. Draws are given in logical pixels with the window rectangle they are mapped onto, or
-/// in window pixels, and are kept in window pixels.
+/// It holds the 2D side, the screen passes and the streamed world's sectors (scene passes of 3D draws, each a mesh
+/// and its textures by AssetStore id). The rest of the 3D scene (the camera, the level's background, objects, cars,
+/// humans and effects) still goes to librw directly between them (items 8 to 10 of docs/engine/renderer.md#order move
+/// it here), so the GL3 renderer draws each part as it is added rather than the whole frame at its end. Draws are given
+/// in logical pixels with the window rectangle they are mapped onto, or in window pixels, and are kept in window
+/// pixels.
 class FrameDescription {
   public:
     /// Forgets the last frame's passes, textures and primitives and starts a new frame as `start` says.
@@ -160,6 +256,11 @@ class FrameDescription {
     void addTriangles(const Material2d& material, std::span<const LogicalVertex> vertices, const ScreenRect& onto);
     /// Adds a screen pass after everything added so far; the next 2D draw starts a new overlay pass.
     void addScreenPass(const ScreenPass& pass);
+    /// Adds the 3D draw `draw` lit by `lights`, its mesh's material `textures` and its dual layer's `dualTextures` (the
+    /// ranges in `draw` are set here) to the scene pass the last pass is, or to a new one; the next 2D draw starts a
+    /// new overlay pass.
+    void addSceneDraw(Draw3d draw, std::span<const SceneLight> lights, std::span<const TextureId> textures,
+                      std::span<const TextureId> dualTextures);
 
     /// The passes, in the order they draw.
     [[nodiscard]] std::span<const FramePass> passes() const { return m_passes; }
@@ -171,16 +272,27 @@ class FrameDescription {
     [[nodiscard]] std::span<const LogicalQuad> quadsOf(const Draw2d& draw) const;
     /// The corners of `draw`, a Triangles draw of this frame.
     [[nodiscard]] std::span<const ScreenVertex> verticesOf(const Draw2d& draw) const;
+    /// The lights of `draw`, a 3D draw of this frame.
+    [[nodiscard]] std::span<const SceneLight> lightsOf(const Draw3d& draw) const;
+    /// The textures of `draw`'s mesh's materials, in their order (invalid where a material has none, or its texture
+    /// is not in the store).
+    [[nodiscard]] std::span<const TextureId> texturesOf(const Draw3d& draw) const;
+    /// The textures of `draw`'s dual layer's materials, as texturesOf().
+    [[nodiscard]] std::span<const TextureId> dualTexturesOf(const Draw3d& draw) const;
 
   private:
     // The overlay pass the next draw joins: the last pass when it is one, else a new one.
     Overlay2dPass& overlay();
+    // The scene pass the next 3D draw joins, as overlay() for 2D draws.
+    ScenePass& scene();
 
     FrameStart m_start;
     std::vector<FramePass> m_passes;
     std::vector<const Texture*> m_textures; // id - 1 is the place
     std::vector<LogicalQuad> m_quads;
     std::vector<ScreenVertex> m_vertices;
+    std::vector<SceneLight> m_lights;
+    std::vector<TextureId> m_sceneTextures; // the 3D draws' textures, then each one's dual layer's
 };
 
 } // namespace coney::graphics

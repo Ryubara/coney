@@ -13,6 +13,7 @@
 #include "platform/draw_calls.h"
 #include "platform/movie_screen.h"
 #include "platform/sprite_sheets.h"
+#include "platform/texture_lod.h"
 
 namespace coney::platform {
 
@@ -52,6 +53,56 @@ rw::Texture::Addressing rwAddress(graphics::TextureAddress address) {
     return rw::Texture::CLAMP;
 }
 
+// Sets render state `state` to `value` only when it differs from the one in force: a 3D draw's states are those the
+// world pass set before it, so nothing is set again and the draw stream sees what it saw before
+// (docs/engine/renderer.md#comparing).
+void setIfChanged(rw::int32 state, rw::uint32 value) {
+    if (draw::getRenderState(state) != value) {
+        draw::setRenderState(state, value);
+    }
+}
+
+// librw's cull mode for `faces`.
+rw::uint32 rwCull(graphics::CullFaces faces) {
+    switch (faces) {
+    case graphics::CullFaces::None:
+        return rw::CULLNONE;
+    case graphics::CullFaces::Back:
+        return rw::CULLBACK;
+    case graphics::CullFaces::Front:
+        return rw::CULLFRONT;
+    }
+    return rw::CULLBACK;
+}
+
+// librw's alpha test function for `test`.
+rw::uint32 rwAlphaTest(graphics::AlphaTest test) {
+    switch (test) {
+    case graphics::AlphaTest::Always:
+        return rw::ALPHAALWAYS;
+    case graphics::AlphaTest::GreaterEqual:
+        return rw::ALPHAGREATEREQUAL;
+    case graphics::AlphaTest::Less:
+        return rw::ALPHALESS;
+    }
+    return rw::ALPHAALWAYS;
+}
+
+// Sets a 3D draw's fixed states where they differ from those in force.
+void setSceneStates(const graphics::SceneStates& states) {
+    setIfChanged(rw::ZTESTENABLE, states.depthTest ? 1 : 0);
+    setIfChanged(rw::ZWRITEENABLE, states.depthWrite ? 1 : 0);
+    setIfChanged(rw::CULLMODE, rwCull(states.cull));
+    setIfChanged(rw::FOGENABLE, states.fog ? 1 : 0);
+    // librw packs the fog colour red in the low byte.
+    const graphics::Rgba fog = states.fogColour;
+    setIfChanged(rw::FOGCOLOR, static_cast<rw::uint32>(fog.r) | static_cast<rw::uint32>(fog.g) << 8U |
+                                   static_cast<rw::uint32>(fog.b) << 16U | static_cast<rw::uint32>(fog.a) << 24U);
+    setIfChanged(rw::SRCBLEND, states.alphaBlend ? rw::BLENDSRCALPHA : rw::BLENDONE);
+    setIfChanged(rw::DESTBLEND, states.alphaBlend ? rw::BLENDINVSRCALPHA : rw::BLENDZERO);
+    setIfChanged(rw::ALPHATESTFUNC, rwAlphaTest(states.alphaTest));
+}
+
 } // namespace
 
 Gl3Renderer::~Gl3Renderer() { releaseAll(); }
@@ -70,6 +121,13 @@ void Gl3Renderer::drawNew(const graphics::FrameDescription& frame, const Target&
                 drawOverlay(frame, overlay->draws[m_draw], target);
             }
             // The last pass may still grow: its next draws are drawn by the next call.
+            if (m_pass + 1 == passes.size()) {
+                return;
+            }
+        } else if (const auto* scene = std::get_if<graphics::ScenePass>(&pass); scene != nullptr) {
+            for (; m_draw < scene->draws.size(); ++m_draw) {
+                drawScene(frame, scene->draws[m_draw], target);
+            }
             if (m_pass + 1 == passes.size()) {
                 return;
             }
@@ -103,11 +161,41 @@ void Gl3Renderer::releaseViewCopies() {
 
 void Gl3Renderer::releaseAll() {
     releaseViewCopies();
+    m_lights.reset();
     // The numbers stay given out: a pass that still holds one finds its copy gone and makes it again.
     for (KeptCopy& copy : m_kept) {
         destroyRaster(copy.raster);
         copy.kept = false;
     }
+}
+
+void Gl3Renderer::drawScene(const graphics::FrameDescription& frame, const graphics::Draw3d& draw,
+                            const Target& target) {
+    if ((target.camera == nullptr && !draw::recording()) || target.assets == nullptr) {
+        return;
+    }
+    rw::Atomic* atomic = target.assets->atomic(draw.mesh);
+    if (atomic == nullptr) {
+        return;
+    }
+    setSceneStates(draw.states);
+    // Every material's alpha follows the fade, written only when it changes, as the original does.
+    rw::Geometry* geometry = atomic->geometry;
+    for (rw::int32 i = 0; i < geometry->matList.numMaterials; ++i) {
+        rw::Material* material = geometry->matList.materials[i];
+        if (material->color.alpha != draw.material.fade) {
+            material->color.alpha = draw.material.fade;
+        }
+    }
+    // The draw's lights, then the atomic and its dual layer in them, with their texture levels by distance or not
+    // (the sectors are the only geometry the original draws with mipmaps, docs/research/rendering.md#world).
+    if (!m_lights) {
+        m_lights = std::make_unique<LightRig>();
+    }
+    m_lights->use(frame.lightsOf(draw));
+    setDistanceMipmaps(draw.material.distanceLevels);
+    drawLitAtomic(atomic, target.assets->atomic(draw.dualLayer), m_lights->world(), true);
+    setDistanceMipmaps(false);
 }
 
 Gl3Renderer::KeptCopy* Gl3Renderer::keptCopy(graphics::ScreenCopyId id) {

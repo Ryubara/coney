@@ -36,6 +36,8 @@ void stopTextureLod();
 
 /// Chooses how the next atomics pick their texture levels: by distance (the streamed world) or level 0 (the rest).
 void setDistanceMipmaps(bool on);
+/// Whether the next atomics pick their texture levels by distance (setDistanceMipmaps()), for the draw layer's record.
+[[nodiscard]] bool distanceMipmaps();
 
 /// The fragment step of Coney's shaders (sampling at the chosen level, fog, the alpha test), for another pipeline
 /// that draws as the default one does (platform/character_skin.h). Its inputs are v_color, v_tex0, v_fog and v_depth.

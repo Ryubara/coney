@@ -84,8 +84,9 @@ request as attachments, uploaded with `gh --attach` ([Capturing and attaching](t
 
 `--draw-hash` records what the last frame (the one `--frames N` stops at, counted from the first frame of play with
 `--play-level`) asks librw and OpenGL to draw and prints its counts and a hash of it, rounded to a fixed grid, in a
-line `draw stream: R records: ... hash 0x...`. Two builds that print the same hash for the same frame drew the same
-thing, which is how the renderer's work proves that the *PS2* picture did not move
+line `draw stream: R records: ... hash 0x...` (its Im2D, Im3D and atomic draws counted). Two builds that print the
+same hash for the same frame drew the same thing, which is how the renderer's work proves that the *PS2* picture did
+not move
 ([How pictures are compared](../engine/renderer.md#comparing)). It runs with a window and headless; headless, only the
 2D drawing that reaches the draw layer is in it. It prints counts and the hash only, never what was drawn.
 

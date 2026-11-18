@@ -35,7 +35,7 @@ struct LodShaders {
 };
 LodShaders shaders;
 void (*librwRenderCB)(rw::Atomic*, rw::gl3::InstanceDataHeader*) = nullptr;
-bool distanceMipmaps = false;
+bool levelsByDistance = false;
 
 // A new raster has no level parameters: K 0, L 0.
 void* constructRasterLod(void* object, rw::int32 offset, rw::int32 /*size*/) {
@@ -173,10 +173,12 @@ void stopTextureLod() {
             *shader = nullptr;
         }
     }
-    distanceMipmaps = false;
+    levelsByDistance = false;
 }
 
-void setDistanceMipmaps(bool on) { distanceMipmaps = on; }
+void setDistanceMipmaps(bool on) { levelsByDistance = on; }
+
+bool distanceMipmaps() { return levelsByDistance; }
 
 const char* textureLodFragmentSource() { return kFragmentSource; }
 
@@ -185,7 +187,7 @@ void setTextureLodFor(const rw::Material* material) {
     if (material->texture != nullptr && material->texture->raster != nullptr) {
         lod = *PLUGINOFFSET(RasterLodData, material->texture->raster, rasterLodOffset);
     }
-    std::array<float, 4> values{lod.k, std::ldexp(1.0F, lod.l), distanceMipmaps ? 1.0F : 0.0F,
+    std::array<float, 4> values{lod.k, std::ldexp(1.0F, lod.l), levelsByDistance ? 1.0F : 0.0F,
                                 lod.fromPs2 ? 0.0F : 1.0F};
     rw::gl3::setUniform(lodUniform, values.data());
 }

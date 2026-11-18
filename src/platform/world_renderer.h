@@ -86,8 +86,11 @@ class WorldRenderer {
     /// when given, draws after the world with no depth test, before the frame is presented (the menus' 2D pass).
     /// `afterWorlds`, when given, draws after the `d` world in the world pass's states, before the coronas: the water
     /// and the see-through parts (steps 9-10). With
-    /// the NULL backend the frame is begun and presented and nothing is drawn.
+    /// the NULL backend the frame is begun and presented and nothing is drawn, unless recordHeadless() is on and the
+    /// draw layer records (draw::recording()): the frame is then recorded through a camera of the renderer's own.
     /// @orig 0x0040e8d8 WorldManager_Render (WorldManagerPS2.cpp)
+    /// Not ported yet (#657): the early return that draws nothing while a full-screen fade covers the view, the humans
+    /// drawn with the fog at half the draw distance, the blowing litter and the falling embers.
     void render(RenderEngine& engine, const WorldSet& set, const world::LevelObject* level, const WorldView& view,
                 float pendingDistance, std::uint64_t nowMs, const std::function<void()>& drawObjects = {},
                 const std::function<void()>& overlay = {}, const std::function<void()>& afterWorlds = {});
@@ -103,6 +106,11 @@ class WorldRenderer {
     /// to render()'s time for both.
     void freezeAnimation(std::optional<std::uint64_t> atMs) { m_animationMs = atMs; }
 
+    /// Chooses whether render() records its frame on the NULL backend while the draw layer records (off by default):
+    /// the draw-stream hashes' synthetic world scene (docs/engine/renderer.md#comparing), which has no window.
+    /// @coney-only the draw-stream hashes' synthetic scenes; the original has no headless renderer
+    void recordHeadless(bool on) { m_recordHeadless = on; }
+
     /// Atomics drawn by the last render().
     [[nodiscard]] std::uint32_t drawnAtomics() const { return m_drawn; }
 
@@ -114,15 +122,25 @@ class WorldRenderer {
     void renderBackground(rw::Camera* camera, const world::LevelObject& level, const WorldView& view,
                           graphics::Rgba fogColour, float pendingDistance, std::uint64_t nowMs) const;
 
-    /// Fades one sector's atomic in by its material colours' alpha, then draws it with the world's lights.
+    /// Fades one sector's atomic in by its material colours' alpha and lights it with the world's lights: recorded
+    /// into the frame description as a 3D draw of `mesh` (its meshes by id, docs/engine/renderer.md#frame-description)
+    /// in the world pass's `states`, which the GL3 renderer draws at once; drawn through SceneLighting as before when
+    /// the sector has no mesh id or the debug tools' mesh views are on.
     /// @orig 0x00411990 World_RenderSectorAtomic (WorldPS2.cpp)
-    void renderSectorAtomic(rw::Atomic* atomic, std::uint64_t fadeEndMs, std::uint64_t nowMs) const;
+    void renderSectorAtomic(RenderEngine& engine, rw::Atomic* atomic, const WorldSet::SectorMesh* mesh,
+                            const graphics::SceneStates& states, std::uint64_t fadeEndMs, std::uint64_t nowMs) const;
+
+    /// The camera a frame is recorded through on the NULL backend, which has none (made on first use, no buffers).
+    /// @coney-only the draw-stream hashes' synthetic scenes (docs/engine/renderer.md#comparing)
+    rw::Camera* recordingCamera();
 
     std::unique_ptr<graphics::LevelLighting> m_ownLevel; // the manager as it starts, for frames without a level's
     std::unique_ptr<SceneLighting> m_ownLighting;
     SceneLighting* m_lighting = nullptr; // a level's, when set
     std::uint32_t m_drawn = 0;
     std::optional<std::uint64_t> m_animationMs; // freezeAnimation()'s time
+    rw::Camera* m_recordingCamera = nullptr;    // owned, with its frame: recordingCamera()
+    bool m_recordHeadless = false;              // recordHeadless()
 };
 
 } // namespace coney::platform

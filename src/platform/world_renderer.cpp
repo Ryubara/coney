@@ -59,6 +59,18 @@ void replaceCamera(rw::Camera* camera, const WorldView& view, world::Vec3 positi
     rw::engine->currentWorld = lights;
 }
 
+// The frame description's alpha test for librw's ALPHATESTFUNC `value`.
+graphics::AlphaTest sceneAlphaTest(rw::uint32 value) {
+    switch (value) {
+    case rw::ALPHAGREATEREQUAL:
+        return graphics::AlphaTest::GreaterEqual;
+    case rw::ALPHALESS:
+        return graphics::AlphaTest::Less;
+    default:
+        return graphics::AlphaTest::Always;
+    }
+}
+
 // The atomic of a level object's part, or null.
 rw::Atomic* atomicOf(const chunk::LoadedObject* object) { return levelAtomic(object); }
 
@@ -115,11 +127,47 @@ WorldRenderer::WorldRenderer()
     : m_ownLevel(std::make_unique<graphics::LevelLighting>()),
       m_ownLighting(std::make_unique<SceneLighting>(*m_ownLevel, std::nullopt, std::nullopt)) {}
 
-WorldRenderer::~WorldRenderer() = default;
+// Frees the recording camera and its frame, made on first use by recordingCamera().
+WorldRenderer::~WorldRenderer() {
+    if (m_recordingCamera != nullptr) {
+        rw::Frame* frame = m_recordingCamera->getFrame();
+        m_recordingCamera->setFrame(nullptr);
+        if (frame != nullptr) {
+            frame->destroy();
+        }
+        m_recordingCamera->destroy();
+    }
+}
 
-void WorldRenderer::renderSectorAtomic(rw::Atomic* atomic, std::uint64_t fadeEndMs, std::uint64_t nowMs) const {
-    // Every material's alpha follows the fade, written only when it changes, as the original does.
+rw::Camera* WorldRenderer::recordingCamera() {
+    if (m_recordingCamera == nullptr) {
+        m_recordingCamera = rw::Camera::create();
+        m_recordingCamera->setFrame(rw::Frame::create());
+    }
+    return m_recordingCamera;
+}
+
+void WorldRenderer::renderSectorAtomic(RenderEngine& engine, rw::Atomic* atomic, const WorldSet::SectorMesh* mesh,
+                                       const graphics::SceneStates& states, std::uint64_t fadeEndMs,
+                                       std::uint64_t nowMs) const {
     const std::uint8_t alpha = world::fadeInAlpha(fadeEndMs, nowMs);
+    // The frame description's draw: the meshes by id, where the atomic is, its fade, the world pass's states and the
+    // lights the light manager selects for its sphere; the GL3 renderer writes the fade and draws it.
+    if (mesh != nullptr && mesh->mesh.valid() && !lighting().meshViewsOn()) {
+        const rw::Matrix* ltm = atomic->getFrame()->getLTM();
+        const auto axis = [](const rw::V3d& v) { return std::array<float, 3>{v.x, v.y, v.z}; };
+        graphics::Draw3d draw;
+        draw.mesh = mesh->mesh;
+        draw.dualLayer = mesh->dualLayer;
+        draw.transform = graphics::Transform3d{
+            .right = axis(ltm->right), .up = axis(ltm->up), .at = axis(ltm->at), .position = axis(ltm->pos)};
+        draw.material = graphics::Material3d{.fade = alpha, .distanceLevels = true};
+        draw.states = states;
+        const std::vector<graphics::SceneLight> lights = lighting().worldLights(atomic);
+        engine.drawScene(draw, lights);
+        return;
+    }
+    // Every material's alpha follows the fade, written only when it changes, as the original does.
     rw::Geometry* geometry = atomic->geometry;
     for (rw::int32 i = 0; i < geometry->matList.numMaterials; ++i) {
         rw::Material* material = geometry->matList.materials[i];
@@ -144,6 +192,11 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
     // a resized window gets a new camera there, which is then set up and begun again.
     engine.beginWindowFrame(fogColour);
     rw::Camera* camera = engine.camera();
+    if (camera == nullptr && m_recordHeadless && draw::recording()) {
+        // NULL backend while the draw layer records a synthetic scene (docs/engine/renderer.md#comparing): a camera of
+        // the renderer's own with no buffers, so the world's draws are recorded as a window would draw them.
+        camera = recordingCamera();
+    }
     if (camera == nullptr) {
         // NULL backend: nothing to draw but the overlay's calls, which draw nothing either.
         if (overlay) {
@@ -153,7 +206,7 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
         return;
     }
     placeCamera(camera, view);
-    camera->beginUpdate();
+    draw::beginCameraUpdate(camera);
     // The animations' time: game time, or the time freezeAnimation() holds them at.
     const std::uint64_t animationMs = m_animationMs.value_or(nowMs);
     // The light manager's viewport pass: the ambients' colours, the cull and the coronas of this frame.
@@ -161,48 +214,55 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
 
     // The render states of the streamed worlds' passes: Z test and write, back faces culled, fog in the background
     // colour, blending by alpha for the fade.
-    rw::SetRenderState(rw::ZTESTENABLE, 1);
-    rw::SetRenderState(rw::ZWRITEENABLE, 1);
-    rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
-    rw::SetRenderState(rw::FOGENABLE, 1);
+    draw::setRenderState(rw::ZTESTENABLE, 1);
+    draw::setRenderState(rw::ZWRITEENABLE, 1);
+    draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
+    draw::setRenderState(rw::FOGENABLE, 1);
     // librw packs the fog colour red in the low byte.
-    rw::SetRenderState(rw::FOGCOLOR, static_cast<rw::uint32>(fogColour.r) | static_cast<rw::uint32>(fogColour.g) << 8U |
-                                         static_cast<rw::uint32>(fogColour.b) << 16U |
-                                         static_cast<rw::uint32>(fogColour.a) << 24U);
-    rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-    rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+    draw::setRenderState(rw::FOGCOLOR,
+                         static_cast<rw::uint32>(fogColour.r) | static_cast<rw::uint32>(fogColour.g) << 8U |
+                             static_cast<rw::uint32>(fogColour.b) << 16U | static_cast<rw::uint32>(fogColour.a) << 24U);
+    draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+    draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
 
     // The level's background, before the world (LevelObject_RenderBackground, from the viewport pass).
     if (level != nullptr) {
         renderBackground(camera, *level, view, fogColour, pendingDistance, animationMs);
         // 5. The level world, the light glows: nothing culled, Z test and write and fog on.
         if (rw::Atomic* glows = atomicOf(level->levelWorld.get()); glows != nullptr) {
-            rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
+            draw::setRenderState(rw::CULLMODE, rw::CULLNONE);
             lit.drawBackgroundAtomic(glows);
             ++m_drawn;
         }
-        rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
+        draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
     }
 
-    // 6. The `s` world. 7. The objects, when there are any. 8. The `d` world, the same way as the `s` world.
+    // 6. The `s` world. 7. The objects, when there are any. 8. The `d` world, the same way as the `s` world. The
+    // sectors' draws carry the world pass's states, with the alpha test as it stands at each.
+    graphics::SceneStates states;
+    states.fogColour = fogColour;
     const std::span<world::StreamedWorld* const> worlds = set.worlds();
+    // Stand-in: the level's occluders and the PVS are not consulted, since they only save work
+    // (docs/research/world.md#visibility), and no camera is added to or taken from each world, which RenderWare needs
+    // and librw does not.
     const world::ViewFrustum frustum(view.pose, view.halfWidth, view.halfHeight, view.nearClip, view.drawDistance);
     for (std::size_t w = 0; w < worlds.size(); ++w) {
         if (w == 1 && drawObjects) {
             drawObjects();
             // Put back what the objects may have changed: the world pass's render states.
-            rw::SetRenderState(rw::ZTESTENABLE, 1);
-            rw::SetRenderState(rw::ZWRITEENABLE, 1);
-            rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
-            rw::SetRenderState(rw::FOGENABLE, 1);
-            rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-            rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+            draw::setRenderState(rw::ZTESTENABLE, 1);
+            draw::setRenderState(rw::ZWRITEENABLE, 1);
+            draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
+            draw::setRenderState(rw::FOGENABLE, 1);
+            draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+            draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
         }
         const std::vector<world::StreamedSector>& sectors = worlds[w]->sectors();
         for (const std::uint32_t sector : worlds[w]->collectSectorsIn(view.pose.position, frustum)) {
 
             if (rw::Atomic* atomic = set.atomic(w, sector); atomic != nullptr) {
-                renderSectorAtomic(atomic, sectors[sector].fadeEndMs, nowMs);
+                states.alphaTest = sceneAlphaTest(draw::getRenderState(rw::ALPHATESTFUNC));
+                renderSectorAtomic(engine, atomic, set.sectorMesh(w, sector), states, sectors[sector].fadeEndMs, nowMs);
                 ++m_drawn;
             }
         }
@@ -217,12 +277,12 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
     }
     // The coronas of the visible lights, over the world.
     lit.drawCoronas();
-    rw::SetRenderState(rw::FOGENABLE, 0);
+    draw::setRenderState(rw::FOGENABLE, 0);
     // The 2D pass over the world (the menus or the HUD): no depth test, nothing culled.
     if (overlay) {
-        rw::SetRenderState(rw::ZTESTENABLE, 0);
-        rw::SetRenderState(rw::ZWRITEENABLE, 0);
-        rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
+        draw::setRenderState(rw::ZTESTENABLE, 0);
+        draw::setRenderState(rw::ZWRITEENABLE, 0);
+        draw::setRenderState(rw::CULLMODE, rw::CULLNONE);
         overlay();
     }
     engine.present();

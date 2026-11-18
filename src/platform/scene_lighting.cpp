@@ -8,6 +8,7 @@
 #include <rw.h>
 
 #include "platform/draw_calls.h"
+#include "platform/lit_atomic.h"
 #include "platform/perf_probes.h"
 #include "platform/sprite_sheets.h"
 #include "platform/texture_lod.h"
@@ -17,45 +18,8 @@ namespace coney::platform {
 
 namespace {
 
-// The first passes' alpha test reference, 0x40 of the GS's 0x80, in librw's 0-255.
-constexpr rw::uint32 kFirstPassAlphaRef = 128;
-
 // librw's vector from ours.
 rw::V3d toRw(world::Vec3 v) { return rw::V3d{v.x, v.y, v.z}; }
-
-// The librw light type of a record's.
-rw::int32 rwTypeOf(graphics::LightType type) {
-    switch (type) {
-    case graphics::LightType::Point:
-        return rw::Light::POINT;
-    case graphics::LightType::Spot:
-        return rw::Light::SPOT;
-    case graphics::LightType::Directional:
-        return rw::Light::DIRECTIONAL;
-    case graphics::LightType::Ambient:
-        return rw::Light::AMBIENT;
-    }
-    return rw::Light::AMBIENT;
-}
-
-// A frame matrix whose `at` axis is `direction` (unit) and whose position is `position`: a directional or spot light
-// shines along `at`.
-rw::Matrix frameMatrix(world::Vec3 position, world::Vec3 direction) {
-    rw::V3d at = toRw(direction);
-    const float length = std::sqrt(at.x * at.x + at.y * at.y + at.z * at.z);
-    at = length > 0.0F ? rw::V3d{at.x / length, at.y / length, at.z / length} : rw::V3d{0.0F, -1.0F, 0.0F};
-    // Any right-handed set with `at`: up from whichever world axis is least along it.
-    const rw::V3d axis = std::fabs(at.y) < 0.9F ? rw::V3d{0.0F, 1.0F, 0.0F} : rw::V3d{1.0F, 0.0F, 0.0F};
-    const rw::V3d right = rw::normalize(rw::cross(axis, at));
-    rw::Matrix matrix;
-    matrix.setIdentity();
-    matrix.right = right;
-    matrix.up = rw::cross(at, right);
-    matrix.at = at;
-    matrix.pos = toRw(position);
-    matrix.update();
-    return matrix;
-}
 
 // The librw texture of a sheet (a SheetTexture), or null.
 rw::Texture* rwTextureOf(const std::optional<graphics::SpriteSheet>& sheet) {
@@ -179,11 +143,25 @@ void SceneLighting::beginFrame(const world::CameraPose& pose, float nearClip, fl
     }
 }
 
+graphics::SceneLight SceneLighting::sceneLightOf(std::uint16_t index) const {
+    const graphics::LightRecord& record = m_lighting.lights.record(index);
+    const graphics::LightColour colour =
+        m_switches != nullptr ? graphics::layeredColour(m_lighting.lights, index, m_switches->layers) : record.current;
+    const world::Vec3 p = record.desc.position;
+    const world::Vec3 d = record.desc.direction;
+    return graphics::SceneLight{.type = record.desc.type,
+                                .colour = {colour.r, colour.g, colour.b},
+                                .position = {p.x, p.y, p.z},
+                                .direction = {d.x, d.y, d.z},
+                                .radius = record.desc.radius,
+                                .coneAngle = record.desc.coneAngle};
+}
+
 rw::Light* SceneLighting::mirror(std::uint16_t index) {
     const graphics::LightRecord& record = m_lighting.lights.record(index);
     rw::Light*& light = m_mirrors.at(index);
     // A record reused with another type needs a light of that type.
-    if (light != nullptr && light->getType() != rwTypeOf(record.desc.type)) {
+    if (light != nullptr && light->getType() != rwLightType(record.desc.type)) {
         rw::Frame* frame = light->getFrame();
         light->destroy();
         if (frame != nullptr) {
@@ -192,19 +170,11 @@ rw::Light* SceneLighting::mirror(std::uint16_t index) {
         light = nullptr;
     }
     if (light == nullptr) {
-        light = rw::Light::create(rwTypeOf(record.desc.type));
+        light = rw::Light::create(rwLightType(record.desc.type));
         light->setFlags(rw::Light::LIGHTATOMICS);
         light->setFrame(rw::Frame::create());
     }
-    const graphics::LightColour colour =
-        m_switches != nullptr ? graphics::layeredColour(m_lighting.lights, index, m_switches->layers) : record.current;
-    light->setColor(colour.r, colour.g, colour.b);
-    light->radius = record.desc.radius;
-    if (record.desc.type == graphics::LightType::Spot) {
-        light->setAngle(record.desc.coneAngle);
-    }
-    rw::Matrix matrix = frameMatrix(record.desc.position, record.desc.direction);
-    light->getFrame()->transform(&matrix, rw::COMBINEREPLACE);
+    placeLight(*light, sceneLightOf(index));
     return light;
 }
 
@@ -266,42 +236,24 @@ void SceneLighting::renderInRig(rw::Atomic* atomic) {
     m_meshViews->draw(atomic, currentDrawKind(), atomic == m_meshLayer, [this, atomic] { renderLit(atomic); });
 }
 
-void SceneLighting::renderLit(rw::Atomic* atomic) {
-    // librw lights an atomic's point lights only when the atomic is in the current world: put it there for the draw.
-    rw::World* current = rw::engine->currentWorld;
-    rw::World* home = atomic->world;
-    rw::engine->currentWorld = m_world;
-    atomic->world = m_world;
-    // A first pass (GS context 1, docs/research/rendering.md#shared-state) tests alpha GEQUAL 0x40 of 0x80 with AFAIL
-    // FB_ONLY: a fainter pixel is still blended but writes no Z, so what lies behind it (a wall behind a decal's
-    // clear part) still draws. Passes that turn the test off (second layers, blood) are drawn as they ask.
-    const bool firstPass = draw::getRenderState(rw::ALPHATESTFUNC) == rw::ALPHAGREATEREQUAL;
-    if (firstPass) {
-        draw::setRenderState(rw::GSALPHATEST, 1);
-        draw::setRenderState(rw::GSALPHATESTREF, kFirstPassAlphaRef);
+void SceneLighting::renderLit(rw::Atomic* atomic) { drawLitAtomic(atomic, dualLayerOf(atomic), m_world, m_routed); }
+
+std::vector<graphics::SceneLight> SceneLighting::worldLights(rw::Atomic* atomic) {
+    // The selection drawWorldAtomic() makes, kept for the lighting frame's row, and the lights the lab's layers keep,
+    // by value.
+    const graphics::LightSelection selection = m_lighting.lights.select(0.0F, sphereOf(atomic), false, true, false);
+    m_pending = selection;
+    const graphics::LightSelection drawn =
+        m_switches != nullptr
+            ? graphics::layeredSelection(selection, m_lighting.lights, m_switches->layers, m_switches->view)
+            : selection;
+    std::vector<graphics::SceneLight> lights;
+    for (const std::uint16_t index : drawn.lights()) {
+        lights.push_back(sceneLightOf(index));
     }
-    atomic->render();
-    if (firstPass) {
-        draw::setRenderState(rw::GSALPHATEST, 0);
-    }
-    // A dual material's second layer right after it, on the same vertices (docs/research/rendering.md#dual): blended
-    // by its texture's alpha with no alpha test, writing Z, at the base's fade.
-    if (rw::Atomic* layer = dualLayerOf(atomic); layer != nullptr) {
-        const rw::Geometry* base = atomic->geometry;
-        const rw::uint8 fade = base->matList.numMaterials > 0 ? base->matList.materials[0]->color.alpha : 255;
-        rw::Geometry* second = layer->geometry;
-        for (rw::int32 i = 0; i < second->matList.numMaterials; ++i) {
-            second->matList.materials[i]->color.alpha = fade;
-        }
-        const rw::uint32 testFunc = draw::getRenderState(rw::ALPHATESTFUNC);
-        draw::setRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);
-        layer->world = m_world;
-        layer->render();
-        layer->world = nullptr;
-        draw::setRenderState(rw::ALPHATESTFUNC, testFunc);
-    }
-    atomic->world = home;
-    rw::engine->currentWorld = current;
+    ++m_atomicsDrawn;
+    recordSelection(atomic);
+    return lights;
 }
 
 void SceneLighting::drawWorldAtomic(rw::Atomic* atomic) {
@@ -309,7 +261,9 @@ void SceneLighting::drawWorldAtomic(rw::Atomic* atomic) {
     // The sectors are the only geometry the original draws with mipmaps, levels picked by distance
     // (docs/research/rendering.md#world).
     setDistanceMipmaps(true);
+    m_routed = true;
     renderInRig(atomic);
+    m_routed = false;
     setDistanceMipmaps(false);
 }
 
@@ -323,7 +277,9 @@ void SceneLighting::drawBackgroundAtomic(rw::Atomic* atomic) {
     const rw::uint32 flags = geometry->flags;
     geometry->flags |= rw::Geometry::LIGHT;
     m_background = true;
+    m_routed = true;
     renderInRig(atomic);
+    m_routed = false;
     m_background = false;
     geometry->flags = flags;
 }

@@ -23,6 +23,7 @@ enum class DrawRecord : std::uint8_t {
     Wireframe = 11,    ///< polygons drawn as lines or filled again (glPolygonMode)
     WindowTarget = 12, ///< drawing sent back to the window's frame buffer (glBindFramebuffer 0)
     RasterLevels = 13, ///< the mip levels a raster samples (GL_TEXTURE_MAX_LEVEL)
+    AtomicDraw = 14,   ///< rw::Atomic::render: the mesh, its place, its materials and lights, with the states
 };
 
 /// How many records of each kind a stream holds, and how many vertices its draws had, for the line a run prints.
@@ -30,7 +31,8 @@ struct DrawCounts {
     std::uint32_t records = 0; ///< every record, of any kind
     std::uint32_t im2dDraws = 0;
     std::uint32_t im3dDraws = 0;
-    std::uint32_t vertices = 0;  ///< over every Im2D and Im3D draw
+    std::uint32_t atomicDraws = 0;
+    std::uint32_t vertices = 0;  ///< over every Im2D, Im3D and atomic draw
     std::uint32_t cameraOps = 0; ///< clears, begins, ends and shows
     std::uint32_t rasterOps = 0; ///< creations, uploads and mip levels
     std::uint32_t frameOps = 0;  ///< copies, read-backs, wireframe switches and window targets

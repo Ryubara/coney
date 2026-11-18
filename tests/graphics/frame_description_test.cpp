@@ -18,22 +18,29 @@
 using Catch::Approx;
 using coney::graphics::BlurPulse;
 using coney::graphics::Draw2d;
+using coney::graphics::Draw3d;
 using coney::graphics::FrameDescription;
 using coney::graphics::FramePass;
 using coney::graphics::FrameStart;
 using coney::graphics::kNoFrameTexture;
+using coney::graphics::LightType;
 using coney::graphics::LineBlend;
 using coney::graphics::LogicalQuad;
 using coney::graphics::LogicalVertex;
 using coney::graphics::Material2d;
+using coney::graphics::Material3d;
+using coney::graphics::MeshId;
 using coney::graphics::MotionBlurOverlay;
 using coney::graphics::Overlay2dPass;
 using coney::graphics::Rgba;
+using coney::graphics::SceneLight;
+using coney::graphics::ScenePass;
 using coney::graphics::ScreenPass;
 using coney::graphics::ScreenRect;
 using coney::graphics::ScreenVertex;
 using coney::graphics::Shape2d;
 using coney::graphics::TextureAddress;
+using coney::graphics::TextureId;
 using coney::graphics::UvRect;
 
 namespace {
@@ -214,4 +221,68 @@ TEST_CASE("a screen pass splits a frame's overlay passes", "[graphics][frame-des
     CHECK(frame.passes().empty());
     CHECK(frame.quads().empty());
     CHECK(frame.start().wholeWindow);
+}
+
+TEST_CASE("a scene draw keeps its lights and textures in the frame's arrays and splits the overlay passes",
+          "[graphics][frame-description]") {
+    // Expected: docs/engine/renderer.md#frame-description; FrameDescription::addSceneDraw's contract
+    // (src/graphics/frame_description.h): the draw's ranges point at its lights, its mesh's textures and its dual
+    // layer's in the frame's arrays; draws join the scene pass the last pass is, and a 2D draw after them starts a new
+    // overlay pass.
+    FrameDescription frame;
+    frame.begin(FrameStart{});
+    const LogicalQuad quad{0.0F, 0.0F, 10.0F, 10.0F, UvRect{}, Rgba{}};
+    frame.addQuads(Material2d{}, std::span<const LogicalQuad>(&quad, 1), kPillarbox);
+    const std::array<SceneLight, 2> lights{{
+        SceneLight{.type = LightType::Ambient, .colour = {0.25F, 0.25F, 0.25F}},
+        SceneLight{
+            .type = LightType::Point, .colour = {1.0F, 0.5F, 0.0F}, .position = {3.0F, 4.0F, 5.0F}, .radius = 6.0F},
+    }};
+    const std::array<TextureId, 2> textures{{TextureId{3}, TextureId{}}};
+    const std::array<TextureId, 1> dualTextures{{TextureId{4}}};
+    Draw3d first;
+    first.mesh = MeshId{7};
+    first.dualLayer = MeshId{8};
+    first.material = Material3d{.fade = 128, .distanceLevels = true};
+    frame.addSceneDraw(first, lights, textures, dualTextures);
+    Draw3d second;
+    second.mesh = MeshId{9};
+    frame.addSceneDraw(second, std::span<const SceneLight>(lights).first(1), {}, {});
+    frame.addQuads(Material2d{}, std::span<const LogicalQuad>(&quad, 1), kPillarbox);
+
+    // Overlay, scene (two draws), overlay.
+    REQUIRE(frame.passes().size() == 3);
+    CHECK(overlayAt(frame, 0).draws.size() == 1);
+    REQUIRE(std::holds_alternative<ScenePass>(frame.passes()[1]));
+    const ScenePass& scene = std::get<ScenePass>(frame.passes()[1]);
+    REQUIRE(scene.draws.size() == 2);
+    CHECK(overlayAt(frame, 2).draws.size() == 1);
+
+    const Draw3d& drawn = scene.draws[0];
+    CHECK(drawn.mesh == MeshId{7});
+    CHECK(drawn.dualLayer == MeshId{8});
+    CHECK(drawn.material == Material3d{.fade = 128, .distanceLevels = true});
+    const std::span<const SceneLight> drawnLights = frame.lightsOf(drawn);
+    REQUIRE(drawnLights.size() == 2);
+    CHECK(drawnLights[0] == lights[0]);
+    CHECK(drawnLights[1] == lights[1]);
+    const std::span<const TextureId> drawnTextures = frame.texturesOf(drawn);
+    REQUIRE(drawnTextures.size() == 2);
+    CHECK(drawnTextures[0] == TextureId{3});
+    CHECK_FALSE(drawnTextures[1].valid());
+    const std::span<const TextureId> drawnDual = frame.dualTexturesOf(drawn);
+    REQUIRE(drawnDual.size() == 1);
+    CHECK(drawnDual[0] == TextureId{4});
+
+    const Draw3d& next = scene.draws[1];
+    CHECK(next.mesh == MeshId{9});
+    CHECK_FALSE(next.dualLayer.valid());
+    REQUIRE(frame.lightsOf(next).size() == 1);
+    CHECK(frame.lightsOf(next)[0] == lights[0]);
+    CHECK(frame.texturesOf(next).empty());
+    CHECK(frame.dualTexturesOf(next).empty());
+
+    // The next frame forgets them.
+    frame.begin(FrameStart{});
+    CHECK(frame.passes().empty());
 }

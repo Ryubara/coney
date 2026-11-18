@@ -113,7 +113,17 @@ page = "world.md#original-structure"
 role = "the world part of a viewport's frame"
 level = "confirmed-code"
 coney = "src/platform/world_renderer.h:WorldRenderer::render"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "nothing drawn under a full-screen fade, the humans' halved fog distance, the litter and the embers in this pass"
+relation = "not-ported"
+issue = 657
+
+[[function.gaps]]
+what = "the level's occluders and the PVS are not consulted, no camera is added to each world, and the throw arcs' place in the order"
+relation = "stand-in"
+issue = 657
 
 [[function]]
 address = 0x0040f8a0
@@ -176,8 +186,8 @@ name = "World_ReadPart"
 page = "world.md#original-structure"
 role = "reads one `<name>_ms<i>.sec`"
 level = "confirmed-code"
-coney = "src/platform/world_set.h:WorldSet::loadPart"
-status = "legacy"
+coney = "src/platform/world_set.h:WorldSet::readPart"
+status = "compared"
 
 [[function]]
 address = 0x004115d0
@@ -185,8 +195,8 @@ name = "World_UnloadPart"
 page = "world.md#original-structure"
 role = "destroys a part's atomics, dictionary and clump"
 level = "confirmed-code"
-coney = "src/platform/world_set.h:WorldSet::unloadPart"
-status = "legacy"
+coney = "src/platform/world_set.h:WorldSet::freePart"
+status = "compared"
 
 [[function]]
 address = 0x00411880
@@ -203,8 +213,8 @@ name = "World_RenderSectorAtomic"
 page = "world.md#original-structure"
 role = "fade-in, lights, default atomic render"
 level = "confirmed-code"
-coney = "src/platform/scene_lighting.h:SceneLighting::drawWorldAtomic"
-status = "legacy"
+coney = "src/platform/world_renderer.h:WorldRenderer::renderSectorAtomic"
+status = "compared"
 
 [[function]]
 address = 0x00411b20
