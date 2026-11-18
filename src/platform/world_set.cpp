@@ -7,6 +7,7 @@
 #include <rw.h>
 
 #include "core/assert.h"
+#include "core/log.h"
 #include "world/world_manifest.h"
 #include "world/world_streams.h"
 
@@ -298,12 +299,52 @@ std::expected<void, Error> WorldSet::loadPart(std::size_t world, std::uint32_t p
     // atomics and dual layers are made.
     Held& held = m_held[world];
     held.parts[part - 1] = std::exchange(m_readTextures, {});
+    std::size_t borrowed = 0;
     for (const std::uint32_t sector : m_worlds[world]->state.part(part).sectors) {
         if (rw::Atomic* atomic = m_worlds[world]->bySector[sector]; atomic != nullptr) {
             held.meshes[sector] = addMeshes(atomic);
+            borrowed += countBorrowed(atomic, world, part) + countBorrowed(dualLayerOf(atomic), world, part);
         }
     }
+    // Guard: the disc has no such material (renderer.md#texture-lifetime), so SceneAssets notes texture ids once; one
+    // that does appear (a modded file) is counted and reported, as its id goes stale when the other part unloads.
+    if (borrowed > 0) {
+        m_borrowedTextures += borrowed;
+        logging::warn(logging::Category::World,
+                      std::format("{} part {}: {} material(s) take their texture from another part's dictionary; the "
+                                  "GPU renderer would draw them untextured once that part unloads",
+                                  m_worlds[world]->state.name(), part, borrowed));
+    }
     return read;
+}
+
+std::size_t WorldSet::countBorrowed(const rw::Atomic* atomic, std::size_t world, std::uint32_t part) const {
+    if (atomic == nullptr || atomic->geometry == nullptr) {
+        return 0;
+    }
+    // Whether `dictionary` is a loaded part's other than this one: the worlds' own dictionaries stay as long as the
+    // set, so a texture from one of them cannot go stale under a part.
+    const auto otherPart = [&](const rw::TexDictionary* dictionary) {
+        for (std::size_t w = 0; w < m_worlds.size(); ++w) {
+            const std::vector<Part>& parts = m_worlds[w]->parts;
+            for (std::size_t p = 0; p < parts.size(); ++p) {
+                const bool self = w == world && p + 1 == part;
+                if (!self && parts[p].dictionary && parts[p].dictionary->rwDictionary() == dictionary) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+    std::size_t count = 0;
+    const rw::Geometry& geometry = *atomic->geometry;
+    for (rw::int32 m = 0; m < geometry.matList.numMaterials; ++m) {
+        const rw::Texture* texture = geometry.matList.materials[m]->texture;
+        if (texture != nullptr && texture->dict != nullptr && otherPart(texture->dict)) {
+            ++count;
+        }
+    }
+    return count;
 }
 
 void WorldSet::unloadPart(std::size_t world, std::uint32_t part) {

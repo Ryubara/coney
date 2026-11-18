@@ -44,6 +44,9 @@ class SceneAssets {
     /// Converts `atomic`'s plain geometry (graphics::MeshData) into the store, notes the id of each of its materials'
     /// textures (materialTextures(), invalid for a material with no texture or one not held) and keeps `atomic` for
     /// the GL3 renderer (atomic()). Fails as platform::meshFromRw() or AssetStore::addMesh() does, holding nothing.
+    /// The ids are noted once: one whose texture is dropped first goes stale. A streamed part's materials take theirs
+    /// from its own dictionary or a world's on the disc, never another part's (WorldSet::borrowedTextures() guards it:
+    /// docs/engine/renderer.md#texture-lifetime).
     [[nodiscard]] std::expected<graphics::MeshId, Error> addAtomic(rw::Atomic& atomic);
     /// Drops the mesh `id` names and forgets its atomic; nothing when it names none.
     void removeMesh(graphics::MeshId id);

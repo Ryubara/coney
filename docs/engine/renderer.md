@@ -279,6 +279,28 @@ frame's arrays holding its lights by value (`SceneLight`) and each material's `T
   glows: the level file's models), the debug tools' own sector draws, and every sector while the mesh views are on. The
   GL3 renderer draws the atomic at its own frame, so only the GPU renderer (item 13) will read the transform.
 
+#### Texture lifetime {#texture-lifetime}
+
+`SceneAssets::addAtomic` notes each material's `TextureId` once, when a part loads, and `WorldSet` drops a part's
+dictionary's textures when the part unloads. Because materials find their textures by name through every loaded
+dictionary ([Finding textures by name](../research/graphics.md#texture-lookup); a part's dictionary is made current
+and then none before its atomics are read, confirmed (code) at `0x004110c0`), a part's material could take its texture
+from another loaded part's dictionary; its id would then go stale when that part unloads. GL3 would still draw it
+through librw (the material holds a reference on the librw texture), but the GPU renderer (item 13) would draw it
+untextured.
+
+**The disc has none** (NTSC-U PS2, 2026-11-18, counts only): the disc check *no part's material takes its texture from
+another part's dictionary* (`disc_world_streaming_test.cpp`) loads every part of each of the 80 levels, then loads each
+of the 1,564 parts again with every other part loaded, so the lookup could reach any other part's dictionary before the
+worlds' (parts are newer). Of 88,406 textured materials (19 have no texture), **0** take their texture from another
+part; each comes from its own part's dictionary or a world's, and the worlds' stay loaded as long as the `WorldSet`.
+
+So the ids stay noted once, and a guard stands in for a fix: `WorldSet::loadPart` counts such materials
+(`WorldSet::borrowedTextures()`) and logs a `World` warning naming the part, so a modded file that does it is not
+missed. A synthetic test (`world_set_test.cpp`) has part 2 use a texture only part 1 holds and checks the count. If one
+ever matters, the fix is to keep a texture alive while a mesh uses it (a use count in `SceneAssets` beside the
+dictionary's hold): resolving the id at draw time alone would not help, as the texture is gone from the store by then.
+
 ### Testing while it grows {#migration-testing}
 
 The GPU renderer grows on `main`, never on a long-lived branch: from item 3 on it is in every build, chosen at start by
