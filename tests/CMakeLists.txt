@@ -26,6 +26,8 @@ add_executable(coney_tests
     core/sha1_test.cpp
     core/sha256_test.cpp
     core/story_graph_test.cpp
+    core/story_manifest_test.cpp
+    core/story_merge_test.cpp
     core/mesh_view_option_test.cpp
     core/world_edit_option_test.cpp
     core/draw_hash_option_test.cpp

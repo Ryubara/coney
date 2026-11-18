@@ -245,6 +245,12 @@ against the rows above and walks the story from an empty profile; `repo:tests/pl
 the disc's own `runNextMission` and `findLastMission` against the graph for each prefix of the story complete, and for
 `level64` alone, and prints only how many of the 21 cases agree.
 
+The merge of the story mods' missions into that chain is built too: `story::mergeStory`
+(`repo:src/core/story_merge.h`) places the missions of each mod's `[story]` section
+(`repo:src/core/story_manifest.h`) by their anchors and refuses the rest with messages, as
+[Merging and refusals](../guides/studio/mission-mods.md#graph-merge) describes; without a story mod its graph is the
+original's, with the same hash. Nothing calls it yet, since Coney does not start mods yet.
+
 ## Open questions {#open-questions}
 
 - **What unlocks a flashback's trophy.** `flashback.Setup` needs a record of type 7 or 9 for the trophy's level; which

@@ -33,6 +33,9 @@ StoryLoad loadOf(const StoryStep& step) { return {.level = step.level, .checkpoi
 } // namespace
 
 std::string StoryStep::id() const {
+    if (!modId.empty()) {
+        return modId;
+    }
     return kind == Kind::HubChapter ? std::format("hub:{}", chapter) : std::format("level{}", level);
 }
 
