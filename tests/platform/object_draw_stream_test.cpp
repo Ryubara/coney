@@ -302,3 +302,24 @@ TEST_CASE("an object's and a car's meshes and textures are held by id while they
     CHECK(engine->sceneAssets().store().meshCount() == 0);
     CHECK(engine->sceneAssets().store().textureCount() == 0);
 }
+
+TEST_CASE("a car part's lights are selected at squared distance 0 and a world object's at its own",
+          "[platform][objects][frame-description]") {
+    // Expected: docs/research/lighting.md#select, confirmed (code): CarInstance_Render clears f12 at 0x00172cc8 and
+    // selects the objects' lights with squared distance 0, so a car keeps the nearest cap however far it is; a world
+    // object (ObjectRender_Draw, 0x0017fd78) selects with its squared distance to the camera.
+    drawObjectScene(ObjectScene{}, [](const RenderEngine&, const coney::world_objects::Cars&,
+                                      const coney::platform::SceneLighting& lighting) {
+        const auto& rows = lighting.lightingFrame().selections;
+        REQUIRE(rows.size() == 28);
+        for (std::size_t i = 0; i < rows.size(); ++i) {
+            const bool crate = i == 20 || i == 21; // the 20 opaque parts, the two crates, then the 6 glass parts
+            if (crate) {
+                CHECK(rows[i].distSq > 300.0F); // the camera is about 20 m away
+            } else {
+                CHECK(rows[i].distSq == 0.0F);
+                CHECK(rows[i].cap == coney::graphics::selectionCap(0.0F, true, false));
+            }
+        }
+    });
+}
