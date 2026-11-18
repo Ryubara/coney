@@ -205,7 +205,7 @@ std::vector<std::string> Console::complete(std::string_view line) const {
     if (index >= spec.args.size()) {
         return completions;
     }
-    const std::span<const std::string> earlier(split.words.begin() + 1, split.words.begin() + 1 + index);
+    const std::span<const std::string> earlier(split.words.data() + 1, index);
     const std::string prefix = split.trailingSpace ? std::string() : split.words.back();
     const ValueSource source = [this](ArgType type, std::span<const std::string> before) {
         return values(type, before);

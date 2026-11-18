@@ -160,6 +160,7 @@ TEST_CASE("a mod command's name is at most 32 characters, and a mod registers at
     Registry full;
     std::vector<std::string> names;
     for (std::size_t i = 0; i < kModCommandsMax; ++i) {
+        // NOLINTNEXTLINE(performance-inefficient-vector-operation): a 64-name list in a test; reserving gains nothing
         names.push_back("c" + std::to_string(i));
     }
     for (const std::string& name : names) {

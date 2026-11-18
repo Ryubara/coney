@@ -60,7 +60,7 @@ enum class ArgType : std::uint8_t {
 struct ArgSpec {
     std::string_view name; ///< Shown in the usage line: `<mission>`, `[checkpoint]`.
     ArgType type = ArgType::Text;
-    std::string_view help;                       ///< One line saying what to give.
+    std::string_view help{};                     ///< One line saying what to give.
     bool optional = false;                       ///< May be left out (always, when it has a default).
     std::string_view defaultValue{};             ///< What a left-out argument holds; empty when it has none.
     std::span<const std::string_view> choices{}; ///< A Choice argument's values.
@@ -69,8 +69,8 @@ struct ArgSpec {
 /// One built-in command, as `coney-tools console render-cpp` writes it from `src/console/commands.toml` into the
 /// generated table (commands_table.cpp). The handler is bound by name when it is registered (catalog.h).
 struct CommandSpec {
-    std::string_view name;  ///< Lower case, words joined by `-` or `_`.
-    std::string_view group; ///< The heading `help` and the reference list it under.
+    std::string_view name;    ///< Lower case, words joined by `-` or `_`.
+    std::string_view group{}; ///< The heading `help` and the reference list it under.
     Access access = Access::Player;
     Scope scope = Scope::Local;
     /// A local command that changes something (quitting, a setting) waits for the step boundary as a session command

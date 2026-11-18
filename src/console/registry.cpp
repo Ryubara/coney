@@ -159,6 +159,7 @@ std::expected<CommandId, Error> Registry::resolve(std::string_view name) const {
         return mods.front()->id;
     } else if (mods.size() > 1) {
         std::vector<std::string> both;
+        both.reserve(mods.size());
         for (const Command* each : mods) {
             both.push_back(std::format("{}:{}", each->mod, name));
         }

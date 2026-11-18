@@ -183,8 +183,9 @@ std::string parseArguments(std::span<const std::string_view> args, InputEvent& e
         if (args.empty()) {
             return "console needs a line to type";
         }
-        event.text = std::string(args.front().data(), static_cast<std::size_t>(args.back().data() + args.back().size() -
-                                                                               args.front().data()));
+        event.text = std::string(
+            std::string_view(args.front().data(),
+                             static_cast<std::size_t>(args.back().data() + args.back().size() - args.front().data())));
         return {};
     }
     return "unknown action";
