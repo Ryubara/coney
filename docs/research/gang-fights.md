@@ -256,7 +256,7 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
    fled): it needs `GangEnableAttackStrategies` (gang `+0xd9`, **0 after a reset**, `Gang_Reset` `0x001649c0`), a
    leader who is not busy and at least two living members. It counts `E`, the living members of the one enemy gang
    `Gangs_FindWithinRadius` returns with `Gang_CanJoinFightAgainst` within the leader's sight range (the first by id,
-   not the nearest; re-read 2026-11-18, [Unit 3](ai-reimpl.md#start-sub-tactic)),
+   not the nearest; [Unit 3](ai-reimpl.md#start-sub-tactic)),
    and `L`, his own living members, then draws one of seven orders by the weights of the gang type's strategy table
    (`CfgGang`'s sixth argument, bytes `+0x73`-`+0x79`, `GangConfig_GetStrategyEntry` `0x00164610`):
 
@@ -275,7 +275,7 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
    StratFuries 12, 0, 10, 0, 20, 0, 0; StratHurricanes 40, 0, 10, 0, 0, 0, 0; StratBoppers 0, 20, 20, 5, 10, 10, 0;
    StratHiHats 5, 5, 40, 10, 10, 5, 0; StratHuns 0, 10, 15, 0, 20, 0, 0. When the order ends, its End restores what it
    changed and, for a guard order (kind 1, draws 1 and 2; `AttackTactic_OnStrategyEnd` `0x00308150`), the members get
-   Melee again (confirmed (code), re-read 2026-11-18).
+   Melee again (confirmed (code)).
 
 ### The player's presence {#player}
 

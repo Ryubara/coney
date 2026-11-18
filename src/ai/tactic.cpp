@@ -22,6 +22,8 @@ int Tactic::process(Gang& gang) {
         // The alert state from the vtable `+0x3c` flag, always set: a gang tactic (type below 0x12) puts the gang in
         // the fighting state, any other calms it (docs/research/ai-reimpl.md#alert-state).
         gang.setAlertState(alertsGang() ? kGangFighting : kGangCalm);
+        // Stand-in: types 0x16-0x18 and 0x21 also clear gang +0xd1 and arm +0xd2, the flags of the spot line, which
+        // Coney does not build (TacticAttack's spot-line stand-in), so nothing would read them.
         for (Brain* member : gang.members()) {
             if (member->type() != BrainType::Player) {
                 member->markGoalBase();

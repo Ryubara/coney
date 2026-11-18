@@ -314,6 +314,7 @@ using GangFilter = bool (*)(const Gang& self, const Gang& other);
 class Gangs {
   public:
     /// No gangs in use; a tactic's rolls are drawn from a generator seeded with `seed`.
+    /// @coney-only the level owns its gangs; the original's gang array is a static the subsystems clear
     explicit Gangs(std::uint32_t seed = 1);
     Gangs(const Gangs&) = delete;
     Gangs& operator=(const Gangs&) = delete;

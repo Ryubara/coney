@@ -228,6 +228,7 @@ int FightTracer::idOf(const human::Human* human) {
     return found->second;
 }
 
+// @coney-only the trace's rows; the original's trace prints them from its hook logs
 std::string FightTracer::rows(std::uint64_t step, const Brains& brains) {
     std::string text;
     for (std::size_t slot = 0; slot < brains.size(); ++slot) {
