@@ -241,6 +241,9 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
     graphics::SceneStates states;
     states.fogColour = fogColour;
     const std::span<world::StreamedWorld* const> worlds = set.worlds();
+    // Stand-in: the level's occluders and the PVS are not consulted, since they only save work
+    // (docs/research/world.md#visibility), and no camera is added to or taken from each world, which RenderWare needs
+    // and librw does not.
     const world::ViewFrustum frustum(view.pose, view.halfWidth, view.halfHeight, view.nearClip, view.drawDistance);
     for (std::size_t w = 0; w < worlds.size(); ++w) {
         if (w == 1 && drawObjects) {
