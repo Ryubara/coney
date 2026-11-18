@@ -269,7 +269,8 @@ frame's arrays holding its lights by value (`SceneLight`) and each material's `T
 - **By id.** `SceneAssets` ([scene_assets.h](repo:src/platform/scene_assets.h), `RenderEngine::sceneAssets()`) holds
   an [asset store](asset-formats.md) with the librw atomic of each mesh. `WorldSet` converts a dictionary's textures as
   it reads it (before the GL3 path converts the rasters) and a part's sectors and dual layers as it loads, and drops
-  them as parts and worlds go; a debug-tool cut converts the sector again (`WorldSet::refreshMesh`).
+  them as parts and worlds go; a debug-tool cut converts the sector again (`WorldSet::refreshMesh`). Only a renderer
+  that reads the data converts: [GL3 does not](gpu-renderer.md#scene-assets), with its cost.
 - **Recorded and drawn.** `WorldRenderer::renderSectorAtomic` (`World_RenderSectorAtomic`, `0x00411990`) adds each
   sector through `RenderEngine::drawScene` with its fade and lights (`SceneLighting::worldLights`), and `Gl3Renderer`
   draws it at once: its states where they differ from those in force, the fade into the atomic's materials, the lights

@@ -43,7 +43,10 @@ build/playtest/src/platform/coney --disc /path/to/warriors.iso --play-level leve
 
 It prints one line (`bench: 100 fighters, 600 frames: frame 27.10 ms mean, ...`) and the report holds the frame time's
 mean, median, 95th and 99th percentile and maximum, the same for every [zone](#zones) and [counter](#counters), and
-what was run: the level, the build type, headless or not, vsync and the OpenGL renderer. A bench is a test-mode run:
+what was run: the level, the build type, headless or not, vsync and the OpenGL renderer, and the `scene_assets_*`
+fields: the textures and meshes the world converted into Coney's own formats, the bytes of them held at the end and at
+most, and the milliseconds it took (all 0 under GL3, which converts none:
+[what it costs](../engine/gpu-renderer.md#scene-assets)). A bench is a test-mode run:
 lockstep, one step and one render a frame, no frame cap, so two builds measured with the same command did the same
 work and only the times differ. Run it windowed with `--vsync off` (a frame then takes as long as the work, not the
 display's refresh) to see the whole cost, or `--headless` (librw's NULL renderer, so nothing is drawn or skinned) to see

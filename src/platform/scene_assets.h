@@ -35,10 +35,10 @@ class SceneAssets {
     /// Whether the assets convert what they are given. With `convert` false (the GL3 renderer, which draws the librw
     /// atomics and reads none of the converted data) a mesh still gets an id that names its atomic, but no mesh or
     /// texture is converted or held: addTexture() returns no id, and the store stays empty.
-    explicit SceneAssets(bool convert = true) { static_cast<void>(convert); } // stub: converts always
+    explicit SceneAssets(bool convert = true) : m_convert(convert) {}
 
     /// Whether the assets convert (the constructor's `convert`).
-    [[nodiscard]] bool converting() const { return true; } // stub
+    [[nodiscard]] bool converting() const { return m_convert; }
 
     /// What the conversion has cost so far (#1422, docs/engine/renderer.md#frame-description): everything converted
     /// since the assets were made, and the bytes of converted data the store holds now and at most. The `--bench`
@@ -52,7 +52,7 @@ class SceneAssets {
         std::uint64_t nanoseconds = 0;  ///< The time spent converting, while the profiler measures (core/perf.h).
     };
     /// The totals.
-    [[nodiscard]] const Totals& totals() const { return m_totals; } // stub: never counts
+    [[nodiscard]] const Totals& totals() const { return m_totals; }
 
     /// Converts `texture` (graphics::TextureData, every level its raster has) into the store and returns its id; the
     /// same id when the texture is already held, and an invalid id, converting nothing, when the assets do not convert.
