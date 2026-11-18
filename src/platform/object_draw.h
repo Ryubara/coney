@@ -34,10 +34,14 @@ struct ObjectDraw {
     rw::Atomic* atomic = nullptr;
     ObjectMesh mesh;
     graphics::Material3d material;
+    /// A car part: its lights are selected at squared distance 0, as CarInstance_Render selects them
+    /// (SceneLighting::drawCarAtomic()); a world object's for its squared distance to the camera.
+    bool carPart = false;
 };
 
-/// Draws `draw` with the objects' lights for its squared distance to the camera and the point lights its sphere
-/// overlaps (SceneLighting::drawObjectAtomic()'s selection), in the states in force (sceneStatesInForce()): onto the
+/// Draws `draw` with the objects' lights for its squared distance to the camera, or at squared distance 0 for a car
+/// part, and the point lights its sphere overlaps (SceneLighting::drawObjectAtomic()'s or drawCarAtomic()'s
+/// selection), in the states in force (sceneStatesInForce()): onto the
 /// frame description (RenderEngine::drawScene(), docs/engine/renderer.md#frame-description), or, while the debug
 /// tools' mesh views are on or its mesh is not held, through `lighting`'s rig with its materials changed for the draw.
 /// The world objects and the parked cars both draw this way (item 8 of docs/engine/renderer.md#order).

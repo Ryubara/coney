@@ -658,8 +658,8 @@ first 26 atomics of each car, each at its frame and given the dictionary's first
 
 Coney's stand-ins, where this page is silent:
 
-- Cars take the objects' lights, chosen per atomic rather than once for the car; the environment map (the car's
-  second texture resource) and the first second's fade-in are not drawn.
+- Cars take the objects' lights at squared distance 0, as the original does, but chosen per atomic rather than once
+  for the car; the environment map (the car's second texture resource) and the first second's fade-in are not drawn.
 - Every type uses the sedan's zone tables and box ([Type tables](#type-tables) now has them all); the car pass's
   candidate joins the object targets, nearest first, rather than coming before them.
 - Only the square's object attack hits a car; these are not ported: the gang lock (`+0x12d8`), the exploding car, a player

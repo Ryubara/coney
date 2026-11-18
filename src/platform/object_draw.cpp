@@ -38,7 +38,11 @@ void drawObject(RenderEngine& engine, SceneLighting& lighting, const ObjectDraw&
     // through the lighting rig as before, the materials changed for the draw.
     if (!draw.mesh.mesh.valid() || lighting.meshViewsOn()) {
         const MaterialChange colours(*draw.atomic, draw.material);
-        lighting.drawObjectAtomic(draw.atomic);
+        if (draw.carPart) {
+            lighting.drawCarAtomic(draw.atomic);
+        } else {
+            lighting.drawObjectAtomic(draw.atomic);
+        }
         return;
     }
     // The frame description's draw: the meshes by id, where the atomic is placed, its colours, the states the pass
@@ -52,7 +56,8 @@ void drawObject(RenderEngine& engine, SceneLighting& lighting, const ObjectDraw&
         .right = axis(ltm->right), .up = axis(ltm->up), .at = axis(ltm->at), .position = axis(ltm->pos)};
     scene.material = draw.material;
     scene.states = sceneStatesInForce();
-    const std::vector<graphics::SceneLight> lights = lighting.objectLights(draw.atomic);
+    const std::vector<graphics::SceneLight> lights =
+        draw.carPart ? lighting.carLights(draw.atomic) : lighting.objectLights(draw.atomic);
     engine.drawScene(scene, lights);
 }
 

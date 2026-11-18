@@ -162,9 +162,9 @@ enum class MaterialColour : std::uint8_t {
     /// Every material's alpha set to Material3d::fade and kept, written only where it differs: a streamed sector's
     /// fade-in (World_RenderSectorAtomic, docs/research/world.md#a-frame).
     Fade,
-    /// Each material's colour multiplied by Material3d::tint for this draw alone (each channel `(c × t + 127) / 255`),
-    /// the mesh modulated by its material colour while the tint is not opaque white: a world object's tint and alpha
-    /// (docs/research/objects.md#tint).
+    /// The first material's colour replaced by Material3d::tint for this draw alone, the other materials left as
+    /// they are, and the mesh modulated by its material colours while the tint is not opaque white: a world object's
+    /// tint and alpha, as ObjectRender_Draw writes them (docs/research/objects.md#tint).
     Tint,
     /// Every material's colour set to Material3d::tint and kept: a car part's paint, or white
     /// (docs/research/graphics.md#car-draw).
@@ -178,7 +178,7 @@ struct Material3d {
     /// The alpha of every material colour under MaterialColour::Fade: a streamed sector's fade-in
     /// (World_RenderSectorAtomic, docs/research/world.md#a-frame), 255 once faded in.
     std::uint8_t fade = 255;
-    /// The colour MaterialColour::Tint multiplies by and MaterialColour::Paint sets.
+    /// The colour MaterialColour::Tint gives the first material and MaterialColour::Paint gives every one.
     Rgba tint = kWhite;
     /// Texture levels picked by the distance to the camera, as the original draws the streamed sectors alone
     /// (docs/research/rendering.md#world); level 0 otherwise.

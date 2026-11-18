@@ -71,6 +71,11 @@ class SceneLighting {
     /// world, with the lighting lab's layers applied: for the frame description's draw of it (drawObject()). Counts the
     /// atomic as drawn and adds the lighting frame's row of its selection, as drawObjectAtomic() does.
     [[nodiscard]] std::vector<graphics::SceneLight> objectLights(rw::Atomic* atomic);
+    /// The lights a car part's atomic is drawn with (the objects' lights at squared distance 0 and the point lights its
+    /// sphere overlaps), by value, as drawCarAtomic() would put them in librw's world, with the lighting lab's layers
+    /// applied: for the frame description's draw of it (drawObject()). Counts the atomic as drawn and adds the lighting
+    /// frame's row of its selection, as drawCarAtomic() does.
+    [[nodiscard]] std::vector<graphics::SceneLight> carLights(rw::Atomic* atomic);
     /// Whether the debug tools' mesh views are set (setMeshViews()): they decide per atomic what is drawn, so the world
     /// renderer then draws its sectors through drawWorldAtomic().
     /// @coney-only the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views); the original has none
@@ -89,8 +94,17 @@ class SceneLighting {
     void drawBlobShadows(std::span<const graphics::BlobShadow> shadows) const;
     /// Draws a world object's atomic with the objects' lights for its squared distance to the camera and the point
     /// lights its sphere overlaps, as a human's (docs/research/objects.md#models: the lights are chosen per object).
+    /// The tag covers ObjectRender_Draw's light selection alone (its call of LightManager_SelectLights, 0x0017de10);
+    /// the rest of the function (the fades, the tint, the states) is PlacedObjects::draw's. The selection's stand-ins,
+    /// point lights looked for even for a small object and never the pulse, are commented at PlacedObjects::draw.
     /// @orig 0x0017fd78 ObjectRender_Draw (unknown)
     void drawObjectAtomic(rw::Atomic* atomic);
+    /// Draws a car part's atomic with the objects' lights at squared distance 0 and the point lights its sphere
+    /// overlaps (docs/research/lighting.md#select). The tag covers CarInstance_Render's light selection alone; the rest
+    /// of it is ParkedCars::draw's. Its one stand-in, each part lit for its own sphere rather than once for the
+    /// clump's, is commented at the play mode's draw of the cars.
+    /// @orig 0x00172c70 CarInstance_Render (unknown)
+    void drawCarAtomic(rw::Atomic* atomic);
     /// Draws the glass panes (game axes) from `part_page1`, each a quad of its rectangle in its colour: alpha blended,
     /// Z tested, no Z write, no culling, no fog.
     /// @orig 0x001831c0 Instance_DrawOneSpriteIm3D (unknown)
@@ -145,6 +159,10 @@ class SceneLighting {
     [[nodiscard]] const graphics::WorldFog& fog() const { return m_lighting.fog; }
 
   private:
+    // The light manager's selection for `sphere` at squared camera distance `distSq`, the distance kept for the
+    // lighting frame's row of it (recordSelection()), since the cars select at 0 whatever their distance.
+    [[nodiscard]] graphics::LightSelection selectFor(float distSq, const graphics::LightSphere& sphere, bool objects,
+                                                     bool pointLights, bool pulse);
     // Puts the lights of `selection` that the lab's layers keep into the rig's world, mirrored from the manager's
     // records, and keeps `selection` for the frame's row of the atomic drawn next (renderInRig()).
     void useLights(const graphics::LightSelection& selection);
@@ -182,6 +200,7 @@ class SceneLighting {
     std::optional<graphics::LightView> m_gameView;          // setGameView()
     graphics::LightingHold m_hold;                          // Hold lighting's moment
     std::optional<graphics::LightSelection> m_pending;      // useLights()'s selection, until its atomic is drawn
+    float m_pendingDistSq = 0.0F;                           // the squared distance m_pending was selected at
     bool m_background = false;                              // the atomic drawn next is the background's
     bool m_hiddenHuman = false;                             // noteHiddenHuman()
     bool m_routed = false;                                  // the atomic drawn next goes through the draw layer

@@ -168,8 +168,8 @@ int PlacedObjects::alphaOf(const Placed& object, rw::Atomic* atomic, const DrawO
 
 void PlacedObjects::drawOne(const Placed& object, rw::Atomic* atomic, const ObjectMesh& mesh, int alpha,
                             const DrawOptions& options) const {
-    // The tint multiplies each material's colour, its alpha the material's (the materials are shared by every object
-    // of the type, so the change lasts for the draw alone).
+    // The tint, its alpha faded, becomes the first material's colour (the materials are shared by every object of the
+    // type, so the change lasts for the draw alone).
     const std::uint32_t tint = object.look.tint;
     const ObjectDraw draw{
         .atomic = atomic,

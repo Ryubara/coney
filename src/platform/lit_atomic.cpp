@@ -80,11 +80,6 @@ rw::uint32 rwAlphaTest(graphics::AlphaTest test) {
     return rw::ALPHAALWAYS;
 }
 
-// One channel of a material colour multiplied by a tint's, rounded as PlacedObjects always has.
-rw::uint8 tinted(rw::uint8 base, std::uint8_t tint) {
-    return static_cast<rw::uint8>((static_cast<std::uint32_t>(base) * tint + 127U) / 255U);
-}
-
 } // namespace
 
 std::int32_t rwLightType(graphics::LightType type) {
@@ -260,13 +255,15 @@ MaterialChange::MaterialChange(rw::Atomic& atomic, const graphics::Material3d& m
         }
         break;
     case graphics::MaterialColour::Tint: {
-        // The materials are shared by every object of a type, so their own colours are kept to put back.
+        // The tint becomes the first material's colour, replacing it, and the others stay as they are, as
+        // ObjectRender_Draw writes it (docs/research/objects.md#tint). The materials are shared by every object of a
+        // type, so the first one's own colour is kept to put back (the original leaves it: every object's draw writes
+        // it again, so nothing else sees it).
         const graphics::Rgba tint = material.tint;
-        for (rw::int32 i = 0; i < geometry->matList.numMaterials; ++i) {
-            rw::RGBA& colour = geometry->matList.materials[i]->color;
+        if (geometry->matList.numMaterials > 0) {
+            rw::RGBA& colour = geometry->matList.materials[0]->color;
             m_own.push_back({colour.red, colour.green, colour.blue, colour.alpha});
-            colour = rw::RGBA{tinted(colour.red, tint.r), tinted(colour.green, tint.g), tinted(colour.blue, tint.b),
-                              tinted(colour.alpha, tint.a)};
+            colour = rw::RGBA{tint.r, tint.g, tint.b, tint.a};
         }
         // librw multiplies by the material's colour only for a geometry that modulates: set for the draw when the
         // colour changes anything.
@@ -287,7 +284,7 @@ MaterialChange::MaterialChange(rw::Atomic& atomic, const graphics::Material3d& m
     }
 }
 
-// Puts back what a tint changed: the geometry's flags and each material's own colour.
+// Puts back what a tint changed: the geometry's flags and the first material's own colour.
 MaterialChange::~MaterialChange() {
     if (!m_restore) {
         return;

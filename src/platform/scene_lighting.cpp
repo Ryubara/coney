@@ -204,7 +204,7 @@ void SceneLighting::recordSelection(rw::Atomic* atomic) {
     }
     // The caller from the draw kind the play mode names (cars are drawn among the objects), and the inputs each draw
     // function passes the selection: the world's lists with point lights (none for the background), the objects'
-    // with the squared distance to the camera and point lights unless a human is hidden.
+    // with point lights unless a human is hidden, and the squared distance the selection was made at (selectFor()).
     const graphics::LightSphere sphere = sphereOf(atomic);
     const DrawKind kind = currentDrawKind();
     graphics::SelectionCaller caller = graphics::SelectionCaller::Sector;
@@ -218,8 +218,7 @@ void SceneLighting::recordSelection(rw::Atomic* atomic) {
     const bool human = caller == graphics::SelectionCaller::Human;
     const bool objects = human || caller == graphics::SelectionCaller::Object;
     const bool pointLights = caller != graphics::SelectionCaller::Background && !(human && m_hiddenHuman);
-    const float distSq = objects ? distanceSq(sphere.centre, m_pose.position) : 0.0F;
-    m_frame.selections.push_back(graphics::frameSelectionOf(m_lighting.lights, caller, distSq, sphere, objects,
+    m_frame.selections.push_back(graphics::frameSelectionOf(m_lighting.lights, caller, m_pendingDistSq, sphere, objects,
                                                             pointLights, false, human, *m_pending));
     m_pending.reset();
 }
@@ -240,14 +239,18 @@ void SceneLighting::renderLit(rw::Atomic* atomic) { drawLitAtomic(atomic, dualLa
 
 std::vector<graphics::SceneLight> SceneLighting::worldLights(rw::Atomic* atomic) {
     // The selection drawWorldAtomic() makes.
-    return lightsOf(m_lighting.lights.select(0.0F, sphereOf(atomic), false, true, false), atomic);
+    return lightsOf(selectFor(0.0F, sphereOf(atomic), false, true, false), atomic);
 }
 
 std::vector<graphics::SceneLight> SceneLighting::objectLights(rw::Atomic* atomic) {
     // The selection drawObjectAtomic() makes.
     const graphics::LightSphere sphere = sphereOf(atomic);
-    return lightsOf(m_lighting.lights.select(distanceSq(sphere.centre, m_pose.position), sphere, true, true, false),
-                    atomic);
+    return lightsOf(selectFor(distanceSq(sphere.centre, m_pose.position), sphere, true, true, false), atomic);
+}
+
+std::vector<graphics::SceneLight> SceneLighting::carLights(rw::Atomic* atomic) {
+    // The selection drawCarAtomic() makes.
+    return lightsOf(selectFor(0.0F, sphereOf(atomic), true, true, false), atomic);
 }
 
 std::vector<graphics::SceneLight> SceneLighting::lightsOf(const graphics::LightSelection& selection,
@@ -268,7 +271,7 @@ std::vector<graphics::SceneLight> SceneLighting::lightsOf(const graphics::LightS
 }
 
 void SceneLighting::drawWorldAtomic(rw::Atomic* atomic) {
-    useLights(m_lighting.lights.select(0.0F, sphereOf(atomic), false, true, false));
+    useLights(selectFor(0.0F, sphereOf(atomic), false, true, false));
     // The sectors are the only geometry the original draws with mipmaps, levels picked by distance
     // (docs/research/rendering.md#world).
     setDistanceMipmaps(true);
@@ -279,7 +282,7 @@ void SceneLighting::drawWorldAtomic(rw::Atomic* atomic) {
 }
 
 void SceneLighting::drawBackgroundAtomic(rw::Atomic* atomic) {
-    useLights(m_lighting.lights.select(0.0F, sphereOf(atomic), false, false, false));
+    useLights(selectFor(0.0F, sphereOf(atomic), false, false, false));
     // The background's models carry no light flag (nor normals), so librw would draw them by their prelighting
     // alone; the original adds the world's ambient to them all the same (level99's sky box: prelight 60 + 0.227
     // reaches the GS as 59 of 128; docs/research/lighting.md#coneys-implementation). Lit for the draw: with no normals
@@ -297,17 +300,31 @@ void SceneLighting::drawBackgroundAtomic(rw::Atomic* atomic) {
 
 void SceneLighting::drawHumanAtomic(rw::Atomic* atomic, bool hidden) {
     const graphics::LightSphere sphere = sphereOf(atomic);
-    useLights(m_lighting.lights.select(distanceSq(sphere.centre, m_pose.position), sphere, true, !hidden, false));
+    useLights(selectFor(distanceSq(sphere.centre, m_pose.position), sphere, true, !hidden, false));
     renderInRig(atomic);
 }
 
 void SceneLighting::drawObjectAtomic(rw::Atomic* atomic) {
     const graphics::LightSphere sphere = sphereOf(atomic);
-    useLights(m_lighting.lights.select(distanceSq(sphere.centre, m_pose.position), sphere, true, true, false));
+    useLights(selectFor(distanceSq(sphere.centre, m_pose.position), sphere, true, true, false));
     // Through the draw layer, as the world's atomics (item 8 of docs/engine/renderer.md#order): the cars draw here too.
     m_routed = true;
     renderInRig(atomic);
     m_routed = false;
+}
+
+void SceneLighting::drawCarAtomic(rw::Atomic* atomic) {
+    // Squared distance 0, as CarInstance_Render clears it (0x00172cc8): a car keeps the nearest cap however far it is.
+    useLights(selectFor(0.0F, sphereOf(atomic), true, true, false));
+    m_routed = true;
+    renderInRig(atomic);
+    m_routed = false;
+}
+
+graphics::LightSelection SceneLighting::selectFor(float distSq, const graphics::LightSphere& sphere, bool objects,
+                                                  bool pointLights, bool pulse) {
+    m_pendingDistSq = distSq;
+    return m_lighting.lights.select(distSq, sphere, objects, pointLights, pulse);
 }
 
 void SceneLighting::drawGroundRings(std::span<const hud::GroundRing> rings,

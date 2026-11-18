@@ -631,8 +631,8 @@ void PlayLevelMode::render(const RenderTime& time) {
     if (m_overlay != nullptr) {
         m_engine.addFrameOverlay([overlay = *m_overlay](RenderEngine& engine) { overlay(engine); });
     }
-    // The cars take the objects' lights, each atomic for its own sphere (**Coney's choice**: the original selects
-    // them once for the clump's sphere).
+    // The cars take the objects' lights at squared distance 0, each atomic for its own sphere (**Coney's stand-in**,
+    // #657: the original selects them once for the clump's sphere, CarInstance_Render 0x00172c70).
     const auto drawCars = [this](graphics::CarPass pass) {
         if (m_levelEffects) {
             m_levelEffects->drawCars([this](const ObjectDraw& draw) { drawObject(m_engine, m_lights->scene(), draw); },

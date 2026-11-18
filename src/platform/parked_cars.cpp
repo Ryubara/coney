@@ -173,10 +173,11 @@ void ParkedCars::draw(const std::function<void(const ObjectDraw&)>& render, grap
                                               ? graphics::Rgba{paint.r, paint.g, paint.b, 255}
                                               : graphics::kWhite;
             place(atomic, anim::multiply(pose, toMat34(parts[a].frame)));
-            render(ObjectDraw{.atomic = atomic,
-                              .mesh = a < typeModel->meshes.size() ? typeModel->meshes[a] : ObjectMesh{},
-                              .material =
-                                  graphics::Material3d{.colour = graphics::MaterialColour::Paint, .tint = colour}});
+            render(
+                ObjectDraw{.atomic = atomic,
+                           .mesh = a < typeModel->meshes.size() ? typeModel->meshes[a] : ObjectMesh{},
+                           .material = graphics::Material3d{.colour = graphics::MaterialColour::Paint, .tint = colour},
+                           .carPart = true});
         }
         // Coney's choice: nothing is returned and the frame the car was last drawn is not kept (nothing reads either
         // yet); the opaque pass counts the cars drawn.

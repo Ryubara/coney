@@ -287,16 +287,18 @@ frame's arrays holding its lights by value (`SceneLight`) and each material's `T
   texture before the rasters are converted (`loadObjectModel`'s `assets`), then each atomic and its dual layer once
   its materials have that texture, all dropped as they go.
 - **Colours.** `Material3d` says how a draw changes its materials' colours (`MaterialColour`): a sector's fade
-  (`Fade`, kept), an object's tint and alpha (`Tint`, each channel multiplied, the mesh modulated by it while the tint
-  is not opaque white, put back after the draw: [The tint](../research/objects.md#tint)) or a car part's paint or white
+  (`Fade`, kept), an object's tint and alpha (`Tint`, the first material's colour replaced and the others left, the
+  mesh modulated while the tint is not opaque white, put back after the draw: [The tint](../research/objects.md#tint))
+  or a car part's paint or white
   (`Paint`, kept: [Drawing a car](../research/graphics.md#car-draw)). `MaterialChange`
   ([lit_atomic.h](repo:src/platform/lit_atomic.h)) makes the change, for the GL3 renderer and for the draws outside
   the description alike.
-- **Recorded and drawn.** Each draw carries the objects' lights for its sphere (`SceneLighting::objectLights`) and the
+- **Recorded and drawn.** Each draw carries the objects' lights for its sphere (`SceneLighting::objectLights`, or
+  `carLights` at squared distance 0 for a car part: [Selecting lights](../research/lighting.md#select)) and the
   states its pass set as it went (`sceneStatesInForce`: both sides for the cars, Z written by the opaque passes), and
   `Gl3Renderer` draws it as a sector, so the object scene's hash and the disc frames' did not move between item 8's
   commits. While the mesh views are on, or a mesh did not convert, the atomic goes through the lighting rig as before
-  (`SceneLighting::drawObjectAtomic`) with the same colours.
+  (`SceneLighting::drawObjectAtomic` or `drawCarAtomic`) with the same colours.
 
 #### Texture lifetime {#texture-lifetime}
 

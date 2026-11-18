@@ -970,8 +970,9 @@ Cars are drawn twice in the world pass ([The streamed world](world.md#a-frame)):
 | Glass | after the water and the type-`0x20` objects | 0 | culling off, **Z write off**, Z test and fog on | from the end of the list |
 
 Each pass stores `opaque` at the instance's `+0x41`, selects the objects' lights for the clump's bounding sphere
-(flags 1, no glow) and runs `CarPart_RenderCallback` (`0x00172940`) on every atomic. The glass pass then clears the
-26 "seen" bits `+0x11fc` that the visibility callback (`0x00172d60`) sets. Per atomic `a` (part `p = a`, or
+(flags 1, no glow) at squared distance 0 (`f12` cleared at `0x00172cc8`, so a far car keeps the nearest cap) and runs
+`CarPart_RenderCallback` (`0x00172940`) on every atomic. The glass pass then clears the 26 "seen" bits `+0x11fc` that
+the visibility callback (`0x00172d60`) sets. Per atomic `a` (part `p = a`, or
 `a − 25` for the damaged form), confirmed (code):
 
 1. Skip it unless bit `p` of `+0x11fc` is set. Skip it in the opaque pass when `p` is in the **glass mask**

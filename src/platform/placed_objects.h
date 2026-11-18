@@ -36,10 +36,10 @@ namespace coney::platform {
 /// of that type. A model that does not load is reported once through `print`, and its objects are not drawn.
 ///
 /// Coney's stand-in for the original's object instances and `ObjectRender_Draw` (docs/research/objects.md#models,
-/// docs/research/objects.md#tint): each object's tint multiplies its model's colours and its alpha the model's
-/// opacity; given the camera, the size cull and the `ObjShow` distance fade it; an alpha under 10 is not drawn. The
-/// front end draws without a camera (its Wonder Wheel types are exempt from the size cull) and with the world
-/// renderer's ambient; play draws through the level's object lights.
+/// docs/research/objects.md#tint): each object's tint, its alpha faded, becomes the colour of its model's first
+/// material for the draw; given the camera, the size cull and the `ObjShow` distance fade it; an alpha under 10 is not
+/// drawn. The front end draws without a camera (its Wonder Wheel types are exempt from the size cull) and with the
+/// world renderer's ambient; play draws through the level's object lights.
 class PlacedObjects {
   public:
     /// How an object looks beyond its model and pose.
@@ -118,7 +118,7 @@ class PlacedObjects {
 
     // The model of `modelHash`, loading it on first use; null when it did not load.
     const ObjectModel* model(std::uint32_t modelHash);
-    // Draws one placed object with its alpha `alpha`, its materials tinted for the draw
+    // Draws one placed object with its alpha `alpha`, its tint its first material's colour for the draw
     // (graphics::MaterialColour::Tint).
     void drawOne(const Placed& object, rw::Atomic* atomic, const ObjectMesh& mesh, int alpha,
                  const DrawOptions& options) const;
