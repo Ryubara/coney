@@ -93,3 +93,13 @@ TEST_CASE("quoteWord quotes only what needs it, and tokenize reads it back") {
     CHECK(quoteWord("say \"hi\"") == quoted);
     CHECK(tokenize(quoteWord(R"(say "hi" now)")).value() == Words{R"(say "hi" now)"});
 }
+
+TEST_CASE("quoteWord keeps a trailing backslash outside the closing quote, so the word reads back whole") {
+    // Expected: Coney's own rule, docs/guides/studio/console.md#terminal (a backslash escapes only a quote)
+    for (const std::string_view word : {R"(a b\)", R"(a b\\)", R"(a "b" c\)", R"(a\ b)", R"(a b\"c\)"}) {
+        const std::string quoted = quoteWord(word);
+        const auto words = tokenize(quoted);
+        REQUIRE(words.has_value());
+        CHECK(*words == Words{std::string(word)});
+    }
+}

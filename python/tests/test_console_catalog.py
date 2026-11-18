@@ -89,6 +89,47 @@ def test_parse_refuses_mistakes(change: tuple[str, str], problem: str) -> None:
     assert any(problem in line for line in catalog.problems), catalog.problems
 
 
+@pytest.mark.parametrize(
+    ("kind", "default", "fits"),
+    [
+        ("int", "-5", True),
+        ("int", "9223372036854775807", True),
+        ("int", "-9223372036854775808", True),
+        ("int", "9223372036854775808", False),
+        ("int", "+1", False),
+        ("int", "1_0", False),
+        ("int", " 1", False),
+        ("int", "\u0662\u0662", False),
+        ("number", "-1.25", True),
+        ("number", "2e-3", True),
+        ("number", "3", True),
+        ("number", "+1", False),
+        ("number", " 1 ", False),
+        ("number", "1_0", False),
+        ("number", "\u0662", False),
+        ("number", "0x10", False),
+        ("number", "nan", False),
+        ("number", "1e999", False),
+        ("mission", "3", True),
+        ("mission", "0", False),
+        ("mission", "-1", False),
+        ("mission", "+1", False),
+        ("mission", "\u0662", False),
+        ("checkpoint", "99999999999999999999", False),
+        ("level", "docks_1", True),
+        ("level", "d\u00f6cks", False),
+    ],
+)
+def test_a_default_fits_exactly_what_the_registry_takes(kind: str, default: str, fits: bool) -> None:
+    # The C++ check (arg_types.cpp isWholeNumber, parseDecimal, isName) refuses a default the generator let through,
+    # and registerBuiltins stops there; so the two must agree.
+    text = GOOD.replace(
+        '{ name = "count", type = "int", help', f'{{ name = "count", type = "{kind}", default = "{default}", help'
+    )
+    problems = [p for p in _parse(text).problems if "is not a value of type" in p]
+    assert (problems == []) is fits, problems
+
+
 def test_parse_refuses_a_command_without_an_example() -> None:
     text = GOOD.replace('examples = [{ line = "status", output = [] }]', "")
     assert any("at least one example" in p for p in _parse(text).problems)

@@ -253,6 +253,29 @@ TEST_CASE("a queued command whose registration changed its arguments does not ru
     CHECK_THAT(lastLine(console), ContainsSubstring("changed"));
 }
 
+TEST_CASE("a queued command with an optional argument left out and no default still runs") {
+    // Expected: Coney's own rule, docs/guides/studio/console.md#terminal (the left-out value is the empty string)
+    constexpr std::array<ArgSpec, 1> portArgs{
+        ArgSpec{.name = "port", .type = ArgType::Int, .help = "Its port", .optional = true}};
+    Console console({}, {});
+    Strings seen;
+    REQUIRE(console.registry().addBuiltin(
+        CommandSpec{.name = "host", .group = "T", .scope = Scope::Session, .summary = "Hosts.", .args = portArgs},
+        [&seen](CommandContext& context) -> std::expected<void, std::string> {
+            const auto values = context.args.values();
+            seen.assign(values.begin(), values.end());
+            return {};
+        }));
+    CHECK(console.submit("host", LineSource::Typed) == Outcome::Queued);
+    CHECK(console.runQueued() == 1);
+    CHECK(seen == Strings{""});
+    // A given value still runs, and a bad one is refused when entered.
+    CHECK(console.submit("host 7777", LineSource::Typed) == Outcome::Queued);
+    CHECK(console.runQueued() == 1);
+    CHECK(seen == Strings{"7777"});
+    CHECK(console.submit("host many", LineSource::Typed) == Outcome::Refused);
+}
+
 TEST_CASE("a mod command's output carries the mod's name, and a handler's error is shown") {
     // Expected: Coney's own rule, docs/guides/studio/console.md#mod-commands
     Console console({}, {});
