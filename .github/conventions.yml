@@ -231,7 +231,8 @@ pull_requests:
   # the second (UTC) the rule begins, set no earlier than the rule's own pull request merges (a later start is
   # harmless, an earlier one would refuse open pull requests): a pull request opened before it is not asked for clips
   # (CI's `body` job passes `--opened`; the audit and `pr health --rerun` read `createdAt`), so open pull requests are
-  # not refused at their next push. Clip lines one writes anyway are still checked.
+  # not refused at their next push. Clip lines one writes anyway are still checked. `uploads` are the address prefixes
+  # of an uploaded clip (what `gh --attach` and a browser upload give): any other address on a clip line is no clip.
   clips:
     section: Screenshots
     before: "Before:"
@@ -242,6 +243,7 @@ pull_requests:
     areas: [gameplay, graphics, audio]
     paths: [src/studio/]
     extensions: [gif, mp4]
+    uploads: ["https://github.com/user-attachments/"]
     since: "2026-11-20T00:00:00Z"
   ai_use:
     section: "AI use"

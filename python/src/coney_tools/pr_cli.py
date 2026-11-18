@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from coney_tools import pr_proof, pr_text
+from coney_tools import pr_proof, pr_publish, pr_text
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import load_conventions_leniently
 from coney_tools.pr_proof import ProofResult, Refusal, Subject
@@ -130,7 +130,7 @@ def run_verify(args: argparse.Namespace) -> int:
     subject, _task, _keys, text_path = _load(args)
     unreadable: Refusal | None = None
     try:
-        hashes: pr_proof.TextHashes | None = pr_text.hashes_of(text_path)
+        hashes: pr_proof.TextHashes | None = pr_text.hashes_of(text_path, subject.unit.dir)
     except ConfigError as error:
         # Review covered the title, paragraph and pictures: with no readable text they cannot hold, so it is refused.
         hashes = None
@@ -143,7 +143,9 @@ def run_verify(args: argparse.Namespace) -> int:
     if unreadable is not None:
         result.refusals.append(unreadable)
     # The before and after clips a visible change needs (pull_requests.clips), as CI's body job will ask for them.
-    result.refusals += pr_text.clip_refusals(subject, text_path)
+    # A pull request already open is asked only what a rule that started before it asks (CI passes `--opened`).
+    opened = pr_publish.opened_of(subject.unit.dir, pr_publish.real_gh)
+    result.refusals += pr_text.clip_refusals(subject, text_path, opened)
     if args.json:
         print(
             json.dumps(
@@ -178,7 +180,8 @@ def run_text(args: argparse.Namespace) -> int:
     subject, task_file, keys, text_path = _load(args)
     text = pr_text.read_engineer_file(text_path, subject.conventions)
     models = branch_trailer_models(subject.root, subject.base, subject.conventions.commits.trailers)
-    generated = pr_text.generate(subject, task_file, text, keys=keys, trailer_models=models)
+    opened = pr_publish.opened_of(subject.unit.dir, pr_publish.real_gh)
+    generated = pr_text.generate(subject, task_file, text, keys=keys, trailer_models=models, opened=opened)
     folder = text_path.parent
     written: list[Path] = []
     if generated.ok and not args.dry_run:

@@ -26,6 +26,7 @@ import subprocess
 import sys
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -368,14 +369,15 @@ def _screenshots(
     return images, none, clips, clips_none
 
 
-def hashes_of(path: Path) -> TextHashes:
+def hashes_of(path: Path, task_folder: Path | None = None) -> TextHashes:
     """What a review covers of the engineer's file at `path`: the title, the paragraph and the pictures.
 
     They come from `pr_text_file`, the one reader that `task review` also uses to bind a review, so the two cannot
     differ: a normalised text (BOM, line endings and trailing spaces ignored) and, for the pictures, the hash of the
-    sorted list of their files' hashes. ConfigError when the file cannot be read or has no title or summary.
+    sorted list of their files' hashes. `task_folder` holds `pr open`'s record of the uploaded clips (default: the
+    file's folder). ConfigError when the file cannot be read or has no title or summary.
     """
-    file = pr_text_file.read(path)
+    file = pr_text_file.read(path, task_folder)
     return TextHashes(file.title_sha256, file.paragraph_sha256, file.images_sha256)
 
 
@@ -829,13 +831,16 @@ def generate(
     *,
     keys: dict[str, Any] | None = None,
     trailer_models: Sequence[str] = (),
+    opened: datetime | None = None,
 ) -> Generated:
     """The title and description for `subject`, with every check run on them.
 
     The sections come from `pull_requests.sections`, in the template's order. The five standard ones are built from
     the engineer's file, `TASK.md` and the stamps; any other section is the engineer's text, the Issues affected
     suggestion (`issues_affected`), or a TODO that the checks refuse, so adding a section to the template is a change
-    to the conventions and, if anything generates it, a branch here.
+    to the conventions and, if anything generates it, a branch here. `opened` is when the task's pull request was
+    opened, for an update of one (`pr_publish.opened_of`): a rule that starts later, such as the clips', does not ask
+    it; None for a pull request not yet opened.
     """
     rules = subject.conventions.pull_requests
     ctx = _Context(subject, task, text, keys or {}, models_of(subject, trailer_models), facts_block(subject))
@@ -868,21 +873,29 @@ def generate(
     if ctx.models and text.ai_use is not None:
         extra.append(f'text: PR.md: "## {rules.ai_use.section}" is generated from the log and the commits; remove it')
     refusals = tuple(Refusal("text", p, "engineer") for p in (*text.problems, *extra)) + tuple(
-        check(subject, text, ctx.models, body)
+        check(subject, text, ctx.models, body, opened)
     )
-    return Generated(text.title, body, ctx.facts, _hashes_or_empty(text.file), _sha(ctx.facts), refusals)
+    hashes = _hashes_or_empty(text.file, subject.unit.dir)
+    return Generated(text.title, body, ctx.facts, hashes, _sha(ctx.facts), refusals)
 
 
 # --- the checks ----------------------------------------------------------------------------------------------------
 
 
-def check(subject: pr_proof.Subject, text: EngineerText, models: Sequence[str], body: str) -> list[Refusal]:
+def check(
+    subject: pr_proof.Subject,
+    text: EngineerText,
+    models: Sequence[str],
+    body: str,
+    opened: datetime | None = None,
+) -> list[Refusal]:
     """The checks CI runs on the title and body (`check_title`, `check_body` with a local picture accepted, as the old
-    description gate ran them, and the change's paths, as CI's `body` job gives them), the `Docs:` rule, a section
-    still left as a TODO, the pictures and the clips."""
+    description gate ran them, and the change's paths and when its pull request was `opened`, as CI's `body` job
+    gives them), the `Docs:` rule, a section still left as a TODO, the pictures and the clips."""
     conventions = subject.conventions
     found: list[Refusal] = []
-    for problem in description_problems(f"{text.title}\n{body}", conventions, models, list(subject.paths)):
+    description = f"{text.title}\n{body}"
+    for problem in description_problems(description, conventions, models, list(subject.paths), opened):
         found.append(Refusal("text", problem, "engineer"))
     for problem in check_docs(list(subject.paths), body, conventions.paths, conventions.pull_requests.docs_none):
         found.append(Refusal("text", f"docs: {problem}", "engineer"))
@@ -890,14 +903,14 @@ def check(subject: pr_proof.Subject, text: EngineerText, models: Sequence[str], 
         if content.lstrip().startswith(TODO):
             found.append(Refusal("text", f"body: '## {name}' is not filled in ({content.strip()[:60]})", "engineer"))
     found += [Refusal("text", p, "engineer") for p in image_problems(text, conventions)]
-    found += [Refusal("text", p, "engineer") for p in clip_problems(text, conventions)]
+    found += [Refusal("text", p, "engineer") for p in clip_problems(text, conventions, subject.unit.dir)]
     return found
 
 
-def _hashes_or_empty(path: Path) -> TextHashes:
+def _hashes_or_empty(path: Path, task_folder: Path) -> TextHashes:
     """`hashes_of`, or the hashes of nothing when the file has no summary (the refusals say so)."""
     try:
-        return hashes_of(path)
+        return hashes_of(path, task_folder)
     except ConfigError:
         empty = _sha("")
         return TextHashes(empty, empty, empty)
@@ -951,11 +964,11 @@ def image_problems(text: EngineerText, conventions: Conventions) -> list[str]:
     return found
 
 
-def clip_refusals(subject: pr_proof.Subject, path: Path) -> list[Refusal]:
+def clip_refusals(subject: pr_proof.Subject, path: Path, opened: datetime | None = None) -> list[Refusal]:
     """The `clips` stage of `pr verify`: the engineer's file at `path` shows the before and after clips the change
-    needs (`clips_problems`, given its title and the change's paths, as CI's `body` job checks the description), or
-    says why not, and each clip passes `clip_problems`. A file that cannot be read gives nothing here: the `reviewed`
-    stage already refuses it."""
+    needs (`clips_problems`, given its title, the change's paths and when its pull request was `opened`, as CI's
+    `body` job checks the description), or says why not, and each clip passes `clip_problems`. A file that cannot be
+    read gives nothing here: the `reviewed` stage already refuses it."""
     conventions = subject.conventions
     rule = conventions.pull_requests.clips
     if rule is None:
@@ -967,22 +980,24 @@ def clip_refusals(subject: pr_proof.Subject, path: Path) -> list[Refusal]:
         return []
     body = raw.removeprefix("﻿").replace("\r\n", "\n").replace("\r", "\n").partition("\n")[2]
     section = "\n".join(_find(_sections(body.split("\n")), rule.section) or [])
-    problems = [f"clips: {p}" for p in clips_problems(section, conventions.pull_requests, text.title, subject.paths)]
-    problems += clip_problems(text, conventions)
+    rules = conventions.pull_requests
+    problems = [f"clips: {p}" for p in clips_problems(section, rules, text.title, subject.paths, opened)]
+    problems += clip_problems(text, conventions, subject.unit.dir)
     return [Refusal("clips", problem, "engineer") for problem in problems]
 
 
-def clip_problems(text: EngineerText, conventions: Conventions) -> list[str]:
+def clip_problems(text: EngineerText, conventions: Conventions, task_folder: Path | None = None) -> list[str]:
     """What is wrong with the clips: what `clips check` refuses in each (`clips.described_clip_problems`), too big for
     an upload, two byte-identical (a before and after that do not differ mean a capture went wrong), or missing. A clip
-    an earlier `pr open` uploaded from this folder is gone on purpose (it deletes each once uploaded): its upload
-    stands, so it is not checked again. One message each, with the `clips:` prefix."""
+    an earlier `pr open` uploaded is gone on purpose (it deletes each once uploaded, and records the upload in the
+    task's folder, `task_folder`, by default the file's): its upload stands, so it is not checked again. One message
+    each, with the `clips:` prefix."""
     limit = conventions.pull_requests.images.max_bytes
     found: list[str] = []
     seen: dict[str, str] = {}
     for clip in text.clips:
         label = clip.ref.removeprefix("./")
-        if not clip.path.exists() and pr_publish.uploaded_clip(text.folder, clip.ref) is not None:
+        if not clip.path.exists() and pr_publish.uploaded_clip(task_folder or text.folder, clip.ref) is not None:
             continue
         problems = clips.described_clip_problems(clip.ref, clip.path, conventions.workspace.clips)
         found += problems

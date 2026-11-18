@@ -183,7 +183,7 @@ def test_an_existing_open_pull_request_is_edited_and_unchanged_pictures_are_not_
     assert edit[edit.index("--attach") :] == ["--attach", "./shots/before.png"]
     assert edit[edit.index("--body-file") + 1] == "PR-BODY-upload.md"
     body = opened.gh.prs[812]["body"]
-    assert body.count("https://example.test/assets/") == 2 and "./shots/" not in body
+    assert body.count("https://github.com/user-attachments/assets/") == 2 and "./shots/" not in body
     assert len(json.loads((built.unit.dir / pr_publish.PUBLISHED_FILE).read_text(encoding="utf-8"))["images"]) == 2
     assert opened.said[-1].startswith("updated #812")
 
@@ -485,6 +485,29 @@ def test_a_description_that_stays_wrong_after_the_repair_exits_4_with_the_pull_r
 # --- clips in the description ----------------------------------------------------------------------------------------
 
 
+@pytest.mark.parametrize(("created", "passes"), [("2026-11-19T23:59:59Z", True), ("2026-11-20T00:00:00Z", False)])
+def test_an_update_of_a_pull_request_opened_before_the_clip_rule_is_not_asked_for_clips(
+    tmp_path: Path, created: str, passes: bool
+) -> None:
+    """A fix round of a gameplay pull request opened before `clips.since` is held to the rules CI holds it to (its
+    `createdAt`), so it is not refused for having no clips; one opened since is."""
+    opened = make_open(make(tmp_path))
+    built = opened.built
+    assert opened.run() == 0, opened.text()
+    path = built.unit.dir / "PR.md"
+    path.write_text(path.read_text(encoding="utf-8").replace("Clips: none (no visible change)\n", ""), "utf-8")
+    built.review()
+    opened.gh.prs[812]["created"] = created
+    code = opened.run()
+    record = json.loads((built.unit.dir / pr_publish.PUBLISHED_FILE).read_text(encoding="utf-8"))
+    if passes:
+        assert code == 0, opened.text()
+        # recorded, so that `pr text` and `pr verify` of the next round see the same moment
+        assert record["opened"] == created
+    else:
+        assert code != 0 and "needs a 'Before:' and an 'After:' clip" in opened.text()
+
+
 @pytest.fixture
 def clean_clips(monkeypatch: pytest.MonkeyPatch) -> None:
     """ffprobe replaced: every clip is a clean 5-second one."""
@@ -514,7 +537,7 @@ def screenshots_of(body: str) -> str:
     return body.split("## Screenshots\n\n", 1)[1].split("\n\n## ", 1)[0]
 
 
-PLACED = "**Before:**\n\nhttps://example.test/assets/1\n\n**After:**\n\n![after](https://example.test/assets/2)"
+PLACED = "**Before:**\n\nhttps://github.com/user-attachments/assets/1\n\n**After:**\n\n![after](https://github.com/user-attachments/assets/2)"
 
 
 @pytest.mark.parametrize("form", ["image", "link", "bare"])
@@ -532,8 +555,8 @@ def test_clips_are_uploaded_placed_read_back_and_then_deleted(tmp_path: Path, cl
     assert not before.exists() and not after.exists()
     assert "uploaded 2 clip(s) into the description and deleted them" in opened.text()
     record = json.loads((opened.built.unit.dir / pr_publish.PUBLISHED_FILE).read_text(encoding="utf-8"))["clips"]
-    assert record["./clips/before.mp4"]["url"] == "https://example.test/assets/1"
-    assert record["./clips/after.gif"]["url"] == "https://example.test/assets/2"
+    assert record["./clips/before.mp4"]["url"] == "https://github.com/user-attachments/assets/1"
+    assert record["./clips/after.gif"]["url"] == "https://github.com/user-attachments/assets/2"
 
 
 def test_a_clip_upload_appended_elsewhere_is_repaired_and_never_deleted_unplaced(

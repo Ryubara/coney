@@ -105,6 +105,9 @@ class Run:
     keys: dict[str, Any] = field(default_factory=dict)
     text_path: Path = Path()
     repo: str = ""
+    #: When the branch's pull request was opened (GitHub's `createdAt`), None while it has none: an update is held only
+    #: to the rules that began before it (`pull_requests.clips.since`). Set where the pull request is found.
+    opened: datetime | None = None
     log: list[str] = field(default_factory=list)
     result: dict[str, Any] = field(default_factory=dict)
 

@@ -332,7 +332,7 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
     function_problems, pairs_set = _function_problems(env, functions, report, tip)
     diff = env.change_hash(worktree, base, tip)
     try:
-        text = pr_text_file.read(env.text_file)
+        text = pr_text_file.read(env.text_file, env.unit.dir)
     except ConfigError as error:
         problems.append(str(error))
         text = pr_text_file.TextFile(env.text_file, "", "", (), ())

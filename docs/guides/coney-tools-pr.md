@@ -182,7 +182,9 @@ The checks CI's `title`, `docs` and `body` jobs run on a pull request, against t
   is written must show one clip, once ([Clips in the description](testing.md#clips-in-the-description)). Given
   `--opened` (the `body` job passes the pull request's `created_at`), a pull request opened before the rule began
   (`pull_requests.clips.since`) is not asked for the pair; without it the rule applies, as to a description not yet
-  opened. The audit's `pr.body` and `pr health --rerun` judge an open pull request by its `createdAt` the same way.
+  opened. The audit's `pr.body` and `pr health --rerun` judge an open pull request by its `createdAt` and its changed
+  files the same way, and `pr text`, `pr verify` and `pr open` an update of one by the moment `pr open` recorded. A
+  clip line's address counts only under `pull_requests.clips.uploads` (GitHub's attachments).
   The **Issues affected** section must hold one `- #N: how it is affected` item for each open issue the change affects,
   or the single line `None (<reason>)` with any short reason (`None (one-line fix)`); an empty section, a `None` with
   no reason, an item with no line on how, a number listed twice and prose are refused, and the message says what to

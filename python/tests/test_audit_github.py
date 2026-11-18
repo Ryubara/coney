@@ -547,6 +547,33 @@ def test_an_open_pull_request_is_asked_for_clips_only_when_opened_since_the_rule
     assert problem.item == "#2" and "Clips: none" in problem.message
 
 
+def test_an_open_pull_request_that_changes_coney_studio_is_asked_for_clips_as_ci_asks() -> None:
+    """The audit passes the changed paths, as CI's `body` job does: a Coney Studio path alone asks for the pair."""
+    rule = CONVENTIONS.pull_requests.clips
+    assert rule is not None
+    moment = rule.since.strftime("%Y-%m-%dT%H:%M:%SZ")
+    studio = pull(1, title="core: Fix the inspector", created=moment, files=["src/studio/inspector.cpp"])
+    plain = pull(2, title="core: Fix the inspector", created=moment, files=["src/core/a.cpp"])
+    (problem,) = found(gh.pr_body, context(pulls=[studio, plain]))
+    assert problem.item == "#1" and "Coney Studio" in problem.message
+
+
+def test_fetch_reads_the_files_of_the_open_pull_requests_only() -> None:
+    def run(arguments: list[str]) -> str:
+        if arguments[:2] == ["repo", "view"]:
+            return json.dumps({"nameWithOwner": "a/b", "defaultBranchRef": {"name": "main"}})
+        if arguments[:2] == ["pr", "list"] and "open" in arguments:
+            assert arguments[arguments.index("--json") + 1] == "number,files"
+            return json.dumps([{"number": 2, "files": [{"path": "src/studio/a.cpp"}]}])
+        if arguments[:2] == ["pr", "list"]:
+            return json.dumps([pull(2), pull(3, state="MERGED")])
+        return "[]"
+
+    snapshot = gh.parse_snapshot(gh.fetch_raw(run))
+    files = {p.number: p.files for p in snapshot.pulls_in("open")} | {p.number: p.files for p in snapshot.pulls}
+    assert files == {2: ("src/studio/a.cpp",), 3: None}
+
+
 def test_a_stacked_pull_request_names_its_base_and_has_no_auto_merge() -> None:
     depends = PR_BODY.replace("Adds a check.", "Depends on #10\n\nAdds a check.")
     ctx = context(

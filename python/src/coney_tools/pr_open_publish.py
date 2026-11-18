@@ -21,7 +21,7 @@ from pathlib import Path
 
 from coney_tools import pr_publish
 from coney_tools.config import ConfigError
-from coney_tools.conventions import ClipPair, PullRequests
+from coney_tools.conventions import ClipRule, PullRequests
 from coney_tools.pr_open_run import (
     EXIT_FAILED,
     EXIT_REFUSED,
@@ -49,7 +49,7 @@ def placed_clip(clip: Clip, url: str) -> str:
     return url if clip.video else f"![{clip.alt}]({url})"
 
 
-def _clip_lines(body: str, rule: ClipPair) -> dict[str, int]:
+def _clip_lines(body: str, rule: ClipRule) -> dict[str, int]:
     """The index of the line after each bare clip label line of the clips' section (the line its clip stands on, blank
     lines skipped), by label."""
     lines = body.split("\n")
@@ -71,7 +71,7 @@ def _clip_lines(body: str, rule: ClipPair) -> dict[str, int]:
     return found
 
 
-def clip_addresses(body: str, clips: Sequence[Clip], rule: ClipPair) -> dict[str, str]:
+def clip_addresses(body: str, clips: Sequence[Clip], rule: ClipRule) -> dict[str, str]:
     """The upload address on each clip's line of `body`, by the clip's reference; a clip still shown by its local path
     (not uploaded, or the upload appended elsewhere) has none."""
     lines = body.split("\n")
@@ -85,7 +85,7 @@ def clip_addresses(body: str, clips: Sequence[Clip], rule: ClipPair) -> dict[str
     return found
 
 
-def place_clips(body: str, clips: Sequence[Clip], rule: ClipPair) -> str:
+def place_clips(body: str, clips: Sequence[Clip], rule: ClipRule) -> str:
     """`body` with each uploaded clip's line in its placed form (`placed_clip`), whatever form `gh` left it in."""
     lines = body.split("\n")
     where = _clip_lines(body, rule)
@@ -96,7 +96,7 @@ def place_clips(body: str, clips: Sequence[Clip], rule: ClipPair) -> str:
     return "\n".join(lines)
 
 
-def clip_placement_problems(body: str, clips: Sequence[Clip], rule: ClipPair) -> list[str]:
+def clip_placement_problems(body: str, clips: Sequence[Clip], rule: ClipRule) -> list[str]:
     """What is wrong with the clips in a read-back `body`: a clip whose line holds no upload, or not in its placed
     form."""
     lines = body.split("\n")
@@ -325,7 +325,9 @@ def _readback_problems(
     if view.title != proof.generated.title:
         fixable.append("the title differs")
     paths = list(proof.subject.paths)
-    fixable += [f"body: {text}" for text in check_body(view.body, rules, proof.models, view.title, paths)]
+    # When it was opened, as CI's `body` job passes it: a rule that began later does not ask it.
+    checked = check_body(view.body, rules, proof.models, view.title, paths, view.opened)
+    fixable += [f"body: {text}" for text in checked]
     for marker in (rules.markers.summary, rules.markers.facts):
         if f"<!-- {marker} -->" not in view.body or f"<!-- /{marker} -->" not in view.body:
             fixable.append(f"the {marker} block is damaged")

@@ -3,7 +3,8 @@
 
 import dataclasses
 import re
-from datetime import UTC, datetime
+from collections.abc import Sequence
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -11,7 +12,7 @@ from conventions_support import changed
 from pr_support import PARAGRAPH, SOURCE_FILE, Built, make
 from test_orig_compare import TWO_FUNCTIONS
 
-from coney_tools import clips, pr_proof, pr_publish, pr_text, stamps
+from coney_tools import clips, pr_proof, pr_publish, pr_ready, pr_text, pr_text_file, stamps
 from coney_tools.config import ConfigError
 from coney_tools.conventions import parse_conventions
 from coney_tools.issue_claim_remote import IssueView
@@ -26,11 +27,17 @@ from coney_tools.task_leads import LeadsResult
 TESTING_REFUSAL = 'text: PR.md: "## Testing" holds only the "Runtime:" and "Pictures:" lines; the facts are generated'
 
 
-def generate(built: Built, text: str | None = None, trailers: tuple[str, ...] = (), **more: object) -> Generated:
-    """Generate the description of the unit as it is now, from `text` (default: the PR.md the unit has)."""
+def generate(
+    built: Built,
+    text: str | None = None,
+    trailers: tuple[str, ...] = (),
+    conventions: object = None,
+    opened: datetime | None = None,
+) -> Generated:
+    """Generate the description of the unit as it is now, from `text` (default: the PR.md the unit has), for a pull
+    request `opened` then (None: not yet opened)."""
     if text is not None:
         (built.unit.dir / "PR.md").write_text(text, encoding="utf-8")
-    conventions = more.pop("conventions", None)
     subject = built.subject(**({"conventions": conventions} if conventions else {}))
     task_text = (built.unit.dir / "TASK.md").read_text(encoding="utf-8")
     task = parse_task_file(task_text, subject.conventions.tasks)
@@ -41,7 +48,7 @@ def generate(built: Built, text: str | None = None, trailers: tuple[str, ...] = 
         engineer,
         keys=pr_text.optional_task_keys(task_text),
         trailer_models=trailers,
-        **more,
+        opened=opened,
     )
 
 
@@ -755,6 +762,70 @@ def test_verify_refuses_a_visible_change_without_clips(tmp_path: Path) -> None:
     path = built.unit.dir / "PR.md"
     path.write_text(path.read_text(encoding="utf-8") + "\n" + NO_CLIPS + "\n", encoding="utf-8")
     assert pr_text.clip_refusals(built.subject(), path) == []
+
+
+def test_an_update_of_a_pull_request_opened_before_the_rule_is_not_asked_for_clips(tmp_path: Path) -> None:
+    """A fix round of a pull request opened before `clips.since` (#1415, #1435) passes `pr text` and `pr verify` as
+    it passes CI's `--opened` check; one not yet opened, or opened since, is asked."""
+    built = make(tmp_path)
+    with_clips(built, "")
+    rule = built.conventions.pull_requests.clips
+    assert rule is not None
+    earlier = rule.since - timedelta(days=1)
+    assert problems(generate(built, opened=earlier)) == []
+    assert pr_text.clip_refusals(built.subject(), built.unit.dir / "PR.md", earlier) == []
+    for opened in (None, rule.since):
+        assert any("needs a 'Before:' and an 'After:' clip" in p for p in problems(generate(built, opened=opened)))
+        assert pr_text.clip_refusals(built.subject(), built.unit.dir / "PR.md", opened) != []
+
+
+def test_the_opened_moment_pr_open_recorded_holds_a_later_proof_to_the_same_rules(tmp_path: Path) -> None:
+    """`pr_ready.prove` without `opened` reads what the last `pr open` recorded in the task's folder."""
+    built = make(tmp_path)
+    with_clips(built, "")
+    rule = built.conventions.pull_requests.clips
+    assert rule is not None
+    earlier = (rule.since - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    pr_publish.write_published(built.unit.dir, pr_publish.Published(number=812, url="u", tip="t", opened=earlier))
+    assert pr_publish.opened_of(built.unit.dir) == rule.since - timedelta(days=1)
+    task_text = (built.unit.dir / "TASK.md").read_text(encoding="utf-8")
+    proof = pr_ready.prove(
+        built.root, built.unit, built.unit.task, parse_task_file(task_text, built.conventions.tasks),
+        pr_text.optional_task_keys(task_text), built.unit.dir / "PR.md", subject=built.subject(),
+    )  # fmt: skip
+    assert not any("clip" in r.text for r in proof.refusals), proof.refusals
+
+
+def test_opened_of_asks_github_only_for_a_pull_request_recorded_without_it(tmp_path: Path) -> None:
+    asked: list[list[str]] = []
+
+    def gh(args: Sequence[str], folder: Path | None) -> str:
+        asked.append(list(args))
+        return '{"createdAt": "2026-11-12T08:00:00Z"}'
+
+    assert pr_publish.opened_of(tmp_path, gh) is None and asked == []  # no pull request yet
+    pr_publish.write_published(tmp_path, pr_publish.Published(number=1415, url="https://github.com/a/b/pull/1415"))
+    assert pr_publish.opened_of(tmp_path, gh) == datetime(2026, 11, 12, 8, tzinfo=UTC)
+    assert asked == [["pr", "view", "https://github.com/a/b/pull/1415", "--json", "createdAt"]]
+    assert pr_publish.opened_of(tmp_path) is None  # without gh nothing is asked
+
+    def failing(args: Sequence[str], folder: Path | None) -> str:
+        raise pr_publish.GhError("offline")
+
+    assert pr_publish.opened_of(tmp_path, failing) is None  # the rule then applies
+
+
+def test_a_clip_uploaded_from_the_task_folder_counts_when_the_text_is_elsewhere(tmp_path: Path) -> None:
+    """`pr open` keeps `pr-published.json` in the task's folder whatever `--text` names."""
+    task_folder, elsewhere = tmp_path / "task", tmp_path / "text"
+    elsewhere.mkdir()
+    text = elsewhere / "PR.md"
+    text.write_text(f"tools: Fix it\n\n## Summary\n\n{PARAGRAPH}\n\n- After: ![a](./clips/after.mp4)\n", "utf-8")
+    record = {"./clips/after.mp4": {"sha256": "ab" * 32, "url": "https://github.com/user-attachments/assets/2"}}
+    pr_publish.write_published(task_folder, pr_publish.Published(number=812, url="u", tip="t", clips=record))
+    assert pr_text_file.read(text).missing == ("./clips/after.mp4",)
+    found = pr_text_file.read(text, task_folder)
+    assert found.missing == () and len(found.images) == 1
 
 
 def test_no_clip_rule_in_the_conventions_asks_for_no_clips(tmp_path: Path) -> None:

@@ -12,7 +12,7 @@ from pathlib import Path
 
 from coney_tools.audit_text import LIST_MARKER, NUMBER_REFERENCE, OPEN_ITEM
 from coney_tools.config import ConfigError
-from coney_tools.conventions import ClipPair, DocsNone, Paths, PointerFiles, PullRequests, TitleRules, Trailers
+from coney_tools.conventions import ClipRule, DocsNone, Paths, PointerFiles, PullRequests, TitleRules, Trailers
 
 # Every rule these checks apply is a key of .github/conventions.yml (coney_tools/conventions.py reads it); nothing
 # below hard-codes an area, a limit, a section name or a path class.
@@ -521,7 +521,7 @@ def runtime_problems(section: str, title: str, rules: PullRequests) -> list[str]
 _TWICE = "<given twice>"
 
 
-def clip_label(line: str, rule: ClipPair) -> tuple[str, str] | None:
+def clip_label(line: str, rule: ClipRule) -> tuple[str, str] | None:
     """The clip label that starts `line` (a list marker and bold are ignored) and the rest of the line, or None."""
     content = LIST_MARKER.sub("", line.replace("**", "").strip()).strip()
     for label in rule.labels:
@@ -540,7 +540,7 @@ def none_reason(line: str, none_line: str) -> str | None:
     return (found.group("reason") or "").strip()
 
 
-def clip_segments(section: str, rule: ClipPair) -> tuple[dict[str, str], list[str]]:
+def clip_segments(section: str, rule: ClipRule) -> tuple[dict[str, str], list[str]]:
     """The text under each clip label of `section` (from the label to the next label or `none` line, the rest of the
     label's own line included), by label, and the reasons of its `none` lines in order. A label given twice keeps
     both texts joined, so `clips_problems` can say so."""
@@ -567,12 +567,13 @@ def clip_segments(section: str, rule: ClipPair) -> tuple[dict[str, str], list[st
     return segments, reasons
 
 
-def _holds_clip(text: str, rule: ClipPair, placeholders: Sequence[str]) -> bool:
-    """Whether a label's text shows a clip: an uploaded address (any http(s) URL, as an image, a link or alone on its
-    line, the way GitHub draws a video) or an image that points at a local clip file `gh --attach` will upload."""
+def _holds_clip(text: str, rule: ClipRule, placeholders: Sequence[str]) -> bool:
+    """Whether a label's text shows a clip: an uploaded address (one under `rule.uploads`, GitHub's attachments, as an
+    image, a link or alone on its line, the way GitHub draws a video) or an image that points at a local clip file
+    `gh --attach` will upload. Any other address (a page, another host) is not a clip."""
     if text.strip() in placeholders:
         return False
-    if _URL.search(text):
+    if any(url.lower().startswith(tuple(p.lower() for p in rule.uploads)) for url in _URL.findall(text)):
         return True
     return any(target.rsplit(".", 1)[-1].lower() in rule.extensions for target in image_targets(text))
 
@@ -587,7 +588,7 @@ def clips_problems(
     """Check the before and after clips of the Screenshots section against `pull_requests.clips`.
 
     A pull request whose title area a player sees, or that changes a path a player sees in Coney Studio
-    (`ClipPair.required_by`), shows a clip on a `Before:` and an `After:` line, or holds a line `Clips: none
+    (`ClipRule.required_by`), shows a clip on a `Before:` and an `After:` line, or holds a line `Clips: none
     (<reason>)`, unless it was `opened` before the rule began (`clips.since`). A label that is written must show its
     clip (an uploaded address, or a local `.gif` or `.mp4` image while the description is a draft), once; `Original:`
     is optional. Whether the clips show what the text claims is

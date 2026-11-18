@@ -290,7 +290,7 @@ class RuntimeEvidence:
 
 
 @dataclass(frozen=True)
-class ClipPair:
+class ClipRule:
     """Before and after clips (maintainer's request, 2026-11-18): a pull request whose result a player sees shows a clip
     of Coney before the change and one after it, on labelled lines of its Screenshots section, or says why not."""
 
@@ -310,6 +310,9 @@ class ClipPair:
     paths: tuple[str, ...]
     #: The file endings of a clip, lower case, without the dot.
     extensions: tuple[str, ...]
+    #: The address prefixes an uploaded clip has (`gh --attach` and the browser upload to GitHub's attachments): an
+    #: address elsewhere on a clip line is not a clip.
+    uploads: tuple[str, ...]
     #: When the rule began (the second its pull request merged, UTC): a pull request opened earlier needs no pair.
     since: datetime
 
@@ -467,7 +470,7 @@ class PullRequests:
     #: maintainer (auto-merge left off) and `pr list-stuck` does not count that as stuck.
     auto_merge_manual_paths: bool
     #: The before and after clips a visible change shows; None when the file has no `clips` key (asks for none).
-    clips: ClipPair | None = None
+    clips: ClipRule | None = None
 
 
 @dataclass(frozen=True)
@@ -2182,13 +2185,25 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
         auto_merge_manual_paths=_flag(
             table.get("auto_merge_manual_paths", True), _at(where, "auto_merge_manual_paths")
         ),
-        clips=_read_clip_pair(table["clips"], _at(where, "clips"), sections) if "clips" in table else None,
+        clips=_read_clip_rule(table["clips"], _at(where, "clips"), sections) if "clips" in table else None,
     )
 
 
-def _read_clip_pair(data: object, where: str, sections: tuple[str, ...]) -> ClipPair:
+def _read_clip_rule(data: object, where: str, sections: tuple[str, ...]) -> ClipRule:
     """The `pull_requests.clips` table; its section must be one of the description's, its labels distinct."""
-    fields = ("section", "before", "after", "original", "none", "reason", "areas", "paths", "extensions", "since")
+    fields = (
+        "section",
+        "before",
+        "after",
+        "original",
+        "none",
+        "reason",
+        "areas",
+        "paths",
+        "extensions",
+        "uploads",
+        "since",
+    )
     table = _table(data, where, fields)
     section = _text(table["section"], _at(where, "section"))
     _names_in((section,), sections, _at(where, "section"), "one of the sections")
@@ -2198,7 +2213,10 @@ def _read_clip_pair(data: object, where: str, sections: tuple[str, ...]) -> Clip
     extensions = _texts(table["extensions"], _at(where, "extensions"))
     if any(ext != ext.lower() or ext.startswith(".") for ext in extensions):
         raise _fail(_at(where, "extensions"), "write each in lower case without the dot")
-    return ClipPair(
+    uploads = _texts(table["uploads"], _at(where, "uploads"))
+    if any(not prefix.startswith("https://") for prefix in uploads):
+        raise _fail(_at(where, "uploads"), "each is an https:// address prefix")
+    return ClipRule(
         section=section,
         before=labels[0],
         after=labels[1],
@@ -2208,6 +2226,7 @@ def _read_clip_pair(data: object, where: str, sections: tuple[str, ...]) -> Clip
         areas=_texts(table["areas"], _at(where, "areas")),
         paths=_texts(table["paths"], _at(where, "paths"), empty_ok=True),
         extensions=extensions,
+        uploads=uploads,
         since=_moment(table["since"], _at(where, "since")),
     )
 

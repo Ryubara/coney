@@ -994,6 +994,9 @@ def test_without_a_title_or_changed_paths_no_clips_are_asked_for() -> None:
         (f"Before: ![b](./shots/before.png)\n\nAfter: ![a]({UPLOAD})", "the 'Before:' line shows no clip"),
         (f"Before: ![b]({UPLOAD})\nAfter: ![a]({UPLOAD_2})\nAfter: ![a]({UPLOAD})", "'After:' is given twice"),
         (f"Before: ![b]({UPLOAD})\nAfter: ![a]({UPLOAD_2})\n\n{NO_CLIPS}", "not both"),
+        # An address that is not an upload (another host, a page) is no clip: `uploads` names where clips live.
+        (f"Before: https://example.com/before.mp4\n\nAfter: ![a]({UPLOAD})", "the 'Before:' line shows no clip"),
+        (f"Before: ![b]({UPLOAD})\n\nAfter: [the run](https://github.com/acme/widgets/pull/1)", "'After:' line shows"),
     ],
 )
 def test_a_broken_clip_line_is_refused(screenshots: str, expected: str) -> None:

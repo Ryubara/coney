@@ -83,7 +83,7 @@ class FakeGh:
                 ref = args[index + 1]
                 assert (cwd / ref).is_file(), "an attached picture must exist under the working directory"
                 self.uploads += 1
-                address = f"https://example.test/assets/{self.uploads}"
+                address = f"https://github.com/user-attachments/assets/{self.uploads}"
                 form = self.video_form if ref.endswith(".mp4") else "image"
                 if form == "appended":
                     text += f"\n{address}\n"
@@ -128,6 +128,8 @@ class FakeGh:
                 "merged": False,
                 "auto": False,
                 "url": f"https://github.com/acme/widgets/pull/{number}",
+                # After the clip rule began, unless a test says otherwise (`createdAt`).
+                "created": "2026-12-01T00:00:00Z",
             }
             if self.create_then_fail:
                 self.create_then_fail = False
@@ -156,6 +158,7 @@ class FakeGh:
                     "body": pr["body"],
                     "headRefOid": self._tip(pr["head"]),
                     "autoMergeRequest": {"enabledBy": {"login": OPENER}} if pr["auto"] else None,
+                    "createdAt": pr.get("created"),
                 }
             )
         raise AssertionError(f"the fake gh has no answer for {args}")
@@ -168,6 +171,7 @@ def _listing(number: int, pr: dict[str, Any]) -> dict[str, Any]:
         "state": "MERGED" if pr["merged"] else pr["state"],
         "url": pr["url"],
         "mergedAt": "2026-10-24T00:00:00Z" if pr["merged"] else None,
+        "createdAt": pr.get("created"),
     }
 
 

@@ -100,10 +100,12 @@ def pull(
     updated: float = 1.0,
     merged: str | None = None,
     created: str | None = None,
+    files: list[str] | None = None,
 ) -> dict[str, Any]:
     """A pull request as `gh pr list --json` returns it; the defaults describe a clean open one (`created` defaults to
-    `updated`)."""
+    `updated`; `files`, the changed paths the audit reads for an open one, are left out unless given)."""
     return {
+        **({"files": files} if files is not None else {}),
         "number": number,
         "title": title,
         "body": PR_BODY if body is None else body,

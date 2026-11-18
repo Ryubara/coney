@@ -503,9 +503,11 @@ AI, the camera, effects and sound do not show in a still. So a pull request whos
 shows a clip of Coney before the change and one after it, from the same run, or says why it cannot. The rule is
 `pull_requests.clips` in [.github/conventions.yml](repo:.github/conventions.yml) (the generated list in [What a pull
 request shows](#pr-evidence) has it), and a brief names the pair as part of "done" ([Briefing](agents.md#briefs)).
-The rule has a start, its `since`, set no earlier than its own pull request merged. A pull request opened before then was
-written before the rule and is not asked for clips, so open pull requests are not refused at their next push; clip
-lines it writes anyway are still checked. One not yet opened (`pr text`, `pr verify`, `pr open`) is always asked.
+The rule has a start, its `since`, set no earlier than its own pull request merged. A pull request opened before then
+was written before the rule and is not asked for clips, at its next push or in a fix round: CI's `body` job passes its
+`created_at`, `pr open` its `createdAt` (and records it in `pr-published.json`), and `pr text` and `pr verify` read that
+record (or ask GitHub, for a pull request an older `pr open` recorded without it). Clip lines it writes anyway are still
+checked. A pull request not yet opened, or opened since, is always asked.
 
 The engineer writes the clips into the Screenshots section of `PR.md`, one per labelled line, each a local image under
 `./clips/` (the task's clips folder, beside `PR.md`), with the names [`clips pair`](coney-tools-clips.md#clips-pair)
@@ -533,11 +535,11 @@ What checks it, at each step:
 
 | Step | What it checks |
 | --- | --- |
-| `pr text` (and `pr open`'s proof) | Each clip line holds one image under `./clips/`, a `.gif` or `.mp4`, at most one per label; each file passes `clips check` (a clips folder outside every checkout, a plain name, the length cap, no metadata), is under the 10 MB upload limit, and the before and after are not byte-identical; the pair, or the `none` line, is there when the title or a changed path asks for it |
+| `pr text` (and `pr open`'s proof) | Each clip line holds one image under `./clips/`, a `.gif` or `.mp4`, at most one per label; each file passes `clips check` (a clips folder outside every checkout, a plain name, the length cap, no metadata), is under the 10 MB upload limit, and the before and after are not byte-identical; the pair, or the `none` line, is there when the title or a changed path asks for it and the pull request, if already open, was opened since the rule began |
 | `pr verify` | The same, as its `clips` stage, so an engineer sees it before Review |
 | `task review` | Lists each clip with its file for the reviewer, who plays it and judges whether it shows what the description claims, the before and the after of the same run ([Description](review/text.md)); a `Clips: none` reason is judged too |
 | `pr open` | Uploads each clip with one `--attach` (run from `PR.md`'s folder, so `./clips/x.mp4` is the path `gh` matches), reads the description back, puts each clip's line in its form (an MP4's bare address alone on its line, a GIF as an image) and sends it once more without `--attach`, checks each clip stands uploaded on its line, and only then deletes the files. It records each upload in `pr-published.json`, so a later release shows the clip from there and uploads nothing again ([pr open](pr.md#open)) |
-| CI's `body` job | `pr check-body --title ... --changed ... --opened ...`: the pair, as uploaded addresses, or the `none` line; it reads the pull request's files from the API for the Coney Studio paths, and passes when the pull request was opened, so one opened before the rule's `since` is not asked |
+| CI's `body` job | `pr check-body --title ... --changed ... --opened ...`: the pair, as uploaded addresses (under `pull_requests.clips.uploads`, GitHub's attachments; any other address on a clip line is no clip), or the `none` line; it reads the pull request's files from the API for the Coney Studio paths, and passes when the pull request was opened, so one opened before the rule's `since` is not asked |
 
 `gh --attach` swaps a reference for the upload in place only when the reference names the same file as the `--attach`
 path, read from the folder `gh` runs in; otherwise it appends the upload at the end of the body and the reference

@@ -334,11 +334,11 @@ commit: what is pushed is exactly what Check and Review saw. Its options and exi
    stops with exit 4 before pushing anything.
 10. **Record.** `/progress pr-opened` is posted once on each issue (the claim Action then shows `PR #N open`),
     `pr-published.json` is written (number, address, pushed tip, picture hashes to addresses, each clip's hash and
-    address, the engineer, the time), and each clip the read-back found in place is deleted, after its record is on
-    disk (a clip whose upload was not found is kept, as `clips publish` keeps one gh failed to upload), and one line is
-    printed: `opened #812 <url> (task ..., engineer ..., auto-merge on)`. `--json` prints the
-    same as one object: `ok`, `exit`, `task`, `dry_run`, `message`, `refusals`, `log`, `pr`, `tip`, `stamp`,
-    `auto_merge`.
+    address, when the pull request was opened, the engineer, the time), and each clip the read-back found in place is
+    deleted, after its record is on disk (a clip whose upload was not found is kept, as `clips publish` keeps one gh
+    failed to upload), and one line is printed: `opened #812 <url> (task ..., engineer ..., auto-merge on)`.
+    `--json` prints the same as one object: `ok`, `exit`, `task`, `dry_run`, `message`, `refusals`, `log`, `pr`, `tip`,
+    `stamp`, `auto_merge`.
 
 `--dry-run` does steps 1 to 5 in a throwaway `git worktree add --detach` and says what 6 to 10 would do (open or
 update the pull request that exists, with or without auto-merge): nothing in the unit's folder, the log, git or GitHub

@@ -24,7 +24,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from coney_tools import pr_proof, pr_text, stamps
+from coney_tools import pr_proof, pr_publish, pr_text, stamps
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
 from coney_tools.pr_proof import Refusal
@@ -69,17 +69,21 @@ def prove(
     remote: str = "origin",
     now: datetime | None = None,
     subject: pr_proof.Subject | None = None,
+    opened: datetime | None = None,
 ) -> Proof:
     """Steps 1-5 of a release on the worktree `root`: the stages of `pr verify`, then the title and description `pr
     text` generates from the engineer's file at `text_path`, with the checks CI runs on them.
 
     `owner` is the task whose log and branch the unit is (a fix task's parent). Every refusal is returned, none is
     raised; a ConfigError means the unit could not be read at all (an unknown ref, unreadable rules). `subject` is
-    the unit already read, with the functions of its change (`pr_proof.scanned`), when the caller has it."""
+    the unit already read, with the functions of its change (`pr_proof.scanned`), when the caller has it. `opened` is
+    when the task's pull request was opened (`pr open` passes GitHub's `createdAt`); without it, what the last `pr
+    open` recorded in the task's folder, so an update of a pull request opened before a rule began is not held to it.
+    """
     if subject is None:
         subject = pr_proof.load_subject(root, unit, owner, task_file.kind, remote=remote, now=now)
     try:
-        hashes: pr_proof.TextHashes | None = pr_text.hashes_of(text_path)
+        hashes: pr_proof.TextHashes | None = pr_text.hashes_of(text_path, unit.dir)
     except ConfigError:
         hashes = None  # the text check below says what is wrong with the file
     result = pr_proof.verify(subject, hashes)
@@ -92,7 +96,9 @@ def prove(
         form = pr_text.read_engineer_file(text_path, subject.conventions)
         models = branch_trailer_models(root, subject.base, subject.conventions.commits.trailers)
         shown = dataclasses.replace(subject, report=without_opened(subject.report))
-        generated = pr_text.generate(shown, task_file, form, keys=keys, trailer_models=models)
+        if opened is None:
+            opened = pr_publish.opened_of(unit.dir)
+        generated = pr_text.generate(shown, task_file, form, keys=keys, trailer_models=models, opened=opened)
         refusals += generated.refusals
         pictures = [
             (image.ref, image.path, hashlib.sha256(image.path.read_bytes()).hexdigest())

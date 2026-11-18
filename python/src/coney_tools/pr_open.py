@@ -104,7 +104,16 @@ def _prove(run: Run, root: Path) -> Proof:
     """Run steps 1-5 on the worktree `root` (the unit's, or a throwaway one): `pr_ready.prove`, which Conclave's
     `unit-ready` asks too."""
     assert run.unit is not None and run.task_file is not None
-    return pr_ready.prove(root, run.unit, run.owner, run.task_file, run.keys, run.text_path, remote=run.request.remote)
+    return pr_ready.prove(
+        root,
+        run.unit,
+        run.owner,
+        run.task_file,
+        run.keys,
+        run.text_path,
+        remote=run.request.remote,
+        opened=run.opened,
+    )
 
 
 def _refuse(run: Run, proof: Proof, tip: str) -> Stop:
@@ -321,6 +330,9 @@ def _release_steps(run: Run, upstream: str, first: Proof, existing: PullRequest 
         pr_publish.write_published(folder, published)
         want_auto = pr_open_publish.auto_merge(run, pr.number, want_auto)
         view = pr_open_publish.read_back(run, proof, pr, tip, want_auto, published)
+        if view.opened is not None:
+            # Kept so that `pr text` and `pr verify` of a later fix round hold the update to the same rules as CI.
+            published.opened = view.opened.strftime("%Y-%m-%dT%H:%M:%SZ")
     finally:
         # What is known is kept even when a step fails, so a rerun finds the pull request and its uploads.
         pr_publish.write_published(folder, published)
@@ -383,6 +395,7 @@ def _run(run: Run) -> None:
         try:
             run.repo = pr_publish.resolve_repo(run.env.gh, run.env.git, run.root, run.request.remote, run.request.repo)
             existing = pr_open_publish.find(run)
+            run.opened = existing.opened if existing is not None else None
         except GhError as error:
             raise Stop(EXIT_UNABLE, f"gh: {error}") from error
         pr_open_publish.check_existing(run, existing)

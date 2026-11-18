@@ -21,6 +21,7 @@ import re
 import subprocess
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -116,6 +117,19 @@ class PullRequest:
     #: `OPEN`, `CLOSED` or `MERGED`.
     state: str
     url: str
+    #: When it was opened (`createdAt`), or None when gh did not say.
+    opened: datetime | None = None
+
+
+def moment(value: object) -> datetime | None:
+    """An ISO 8601 moment as GitHub writes one (`2026-11-18T17:00:00Z`), in UTC; None when it is not one."""
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        found = datetime.fromisoformat(value)
+    except ValueError:
+        return None
+    return found.replace(tzinfo=UTC) if found.tzinfo is None else found
 
 
 def _number_of(url: str) -> int:
@@ -128,14 +142,19 @@ def _number_of(url: str) -> int:
 
 def find_pr(gh: Gh, repo: str, branch: str) -> PullRequest | None:
     """The pull request whose head is `branch` (the open one when several), or None."""
-    fields = "number,state,url,mergedAt"
+    fields = "number,state,url,mergedAt,createdAt"
     listing = gh(["pr", "list", "--repo", repo, "--head", branch, "--state", "all", "--json", fields], None)
     try:
         items = json.loads(listing or "[]")
     except ValueError as error:
         raise GhError(f"gh pr list printed no JSON ({error})") from error
     found = [
-        PullRequest(int(item["number"]), "MERGED" if item.get("mergedAt") else str(item["state"]).upper(), item["url"])
+        PullRequest(
+            int(item["number"]),
+            "MERGED" if item.get("mergedAt") else str(item["state"]).upper(),
+            item["url"],
+            moment(item.get("createdAt")),
+        )
         for item in items
     ]
     found.sort(key=lambda pr: (pr.state != "OPEN", -pr.number))
@@ -191,11 +210,13 @@ class View:
     body: str
     head: str
     auto_merge: bool
+    #: When the pull request was opened (`createdAt`), or None when gh did not say.
+    opened: datetime | None = None
 
 
 def view_pr(gh: Gh, repo: str, number: int) -> View:
     """Read the pull request back."""
-    fields = "body,title,headRefOid,autoMergeRequest"
+    fields = "body,title,headRefOid,autoMergeRequest,createdAt"
     try:
         data = json.loads(gh(["pr", "view", str(number), "--repo", repo, "--json", fields], None))
         return View(
@@ -203,6 +224,7 @@ def view_pr(gh: Gh, repo: str, number: int) -> View:
             str(data["body"]).replace("\r\n", "\n"),
             str(data["headRefOid"]),
             data.get("autoMergeRequest") is not None,
+            moment(data.get("createdAt")),
         )
     except (ValueError, KeyError, TypeError) as error:
         raise GhError(f"gh pr view printed no pull request ({error})") from error
@@ -331,6 +353,9 @@ class Published:
     #: Each clip uploaded, by its reference in the text (`./clips/after.mp4`): its file's `sha256` and the `url` of its
     #: upload. The file is deleted once uploaded, so a later run shows it from here (`uploaded_clip`).
     clips: dict[str, dict[str, str]] = field(default_factory=dict)
+    #: When the pull request was opened (GitHub's `createdAt`, ISO 8601): a rule with a start, such as the clips'
+    #: `since`, does not ask an update of a pull request opened before it.
+    opened: str = ""
 
 
 def uploaded_clip(folder: Path, ref: str) -> dict[str, str] | None:
@@ -354,9 +379,26 @@ def read_published(folder: Path) -> Published:
                 str(ref): {"sha256": str(entry["sha256"]), "url": str(entry["url"])}
                 for ref, entry in dict(data.get("clips", {})).items()
             },
+            opened=str(data.get("opened", "")),
         )
     except (OSError, ValueError, KeyError, TypeError):
         return Published()
+
+
+def opened_of(folder: Path, gh: Gh | None = None) -> datetime | None:
+    """When the task's pull request was opened, for the rules that start at a moment (`pull_requests.clips.since`):
+    what `pr open` recorded in `folder`, else, for a pull request an older `pr open` recorded without it, GitHub's
+    `createdAt` asked by its address through `gh` (when one is given). None when the task has no pull request yet, or
+    GitHub cannot say: the rule then applies, as to a description not yet opened."""
+    published = read_published(folder)
+    recorded = moment(published.opened)
+    if recorded is not None or gh is None or not published.url:
+        return recorded
+    try:
+        data = json.loads(gh(["pr", "view", published.url, "--json", "createdAt"], None))
+    except (GhError, ValueError):
+        return None
+    return moment(data.get("createdAt")) if isinstance(data, dict) else None
 
 
 def write_published(folder: Path, published: Published) -> None:
@@ -370,6 +412,7 @@ def write_published(folder: Path, published: Published) -> None:
         "time": published.time,
         "progress_posted": published.progress_posted,
         "clips": published.clips,
+        "opened": published.opened,
     }
     folder.mkdir(parents=True, exist_ok=True)
     temporary = folder / (PUBLISHED_FILE + ".tmp")
