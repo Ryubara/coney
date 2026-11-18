@@ -638,7 +638,7 @@ first 26 atomics of each car, each at its frame and given the dictionary's first
   one (placed by the part's damaged atomic and a row of its frame, which the platform resolves), the bonnet's steam,
   the lights' glass. The explosion sends none. The hit point is the square's aim point (**Coney's reading**: the
   strike shapes do not test cars yet). It is the hook the effects and the glass sound are drawn and played from.
-- **Explosion** (`CarExplode`, `repo:src/scripting/mission4_bindings.h`, `Cars::explode()`): a car not yet exploded
+- **Explosion** (`CarExplode`, `repo:src/scripting/mission4_bindings.h`, `Cars::explode()`): a car that has not exploded
   takes instant damage on every part (so a boot item is lost) and is marked exploded; without `quiet` its message
   `0x19` goes to its own handler and then to the cars' general one (`SetGeneralCarMsgHandler`,
   `MessageHandlers::setGeneralCar()`), with the car as self: `(car, NilHandle, -1, 1)`.
@@ -662,7 +662,7 @@ Coney's stand-ins, where this page is silent:
   second texture resource) and the first second's fade-in are not drawn.
 - Every type uses the sedan's zone tables and box ([Type tables](#type-tables) now has them all); the car pass's
   candidate joins the object targets, nearest first, rather than coming before them.
-- Only the square's object attack hits a car, and not yet: the gang lock (`+0x12d8`), the exploding car, a player
+- Only the square's object attack hits a car; these are not ported: the gang lock (`+0x12d8`), the exploding car, a player
   above the car taking the cabin table, the charge's, weapons' and thrown objects' contact-point hits, a molotov's
   fire (its `-1, 0` message), the rock, the dent and squeak sounds and the statistic
   ([The fix](#coney-fix)).

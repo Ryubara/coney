@@ -59,6 +59,7 @@ ParkedCars::ParkedCars(const io::Wad& wad, const world_objects::Cars& cars, bool
     m_table.setHandlers(world::kPreinstanceObjectChunk, chunk::ChunkHandlers{{}, readPreinstanceObjectChunk});
 }
 
+// Lets go of what the models hold in the scene assets and of their textures.
 ParkedCars::~ParkedCars() {
     // The scene assets let go of the models' meshes and textures first, then the materials of their textures before
     // the dictionaries that own them go.

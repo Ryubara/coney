@@ -1158,9 +1158,6 @@ comment = 3
 ["src/platform/imgui_ui_scale.h"]
 comment = 3
 
-["src/platform/parked_cars.cpp"]
-comment = 1
-
 ["src/platform/placed_objects.cpp"]
 comment = 2
 

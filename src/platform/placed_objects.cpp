@@ -45,6 +45,7 @@ PlacedObjects::PlacedObjects(const io::Wad& wad, const world_objects::ObjectList
     m_table.setHandlers(world::kPreinstanceObjectChunk, chunk::ChunkHandlers{{}, readPreinstanceObjectChunk});
 }
 
+// Lets go of what the models hold in the scene assets and of their textures.
 PlacedObjects::~PlacedObjects() {
     // The scene assets let go of the models' meshes and textures first, then the materials of their textures before
     // the dictionaries that own them go.
