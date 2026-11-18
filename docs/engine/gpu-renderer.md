@@ -57,8 +57,8 @@ present.
 
 The GPU backend opens librw exactly as the NULL backend does, so texture dictionaries, streams and PS2 rasters load and
 the game runs; `drawsPixels()` is false, so nothing converts textures for librw's GL3 device, and the 3D scene, which
-still draws through librw, is not drawn (items 13, 14 and 20 of [Order](renderer.md#order)). `drawsOverlays()` is true
-for both windowed backends: what draws the 2D layers, such as the movie player, runs on either.
+still draws through librw, is not drawn (items 13, 14 and 20 of [Order](renderer.md#order)). What draws the 2D layers
+runs on either windowed backend; the movie player picks its screen with `makeMovieScreen()` by backend.
 
 ## Drawing the 2D passes {#drawing}
 

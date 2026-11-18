@@ -92,9 +92,6 @@ class RenderEngine final : public graphics::RenderDevice {
     /// Whether librw's GL3 device draws the picture: true for OpenGL only. Textures can be converted for librw's
     /// drawing only then, and the 3D scene, which still draws through librw, is drawn only then.
     [[nodiscard]] bool drawsPixels() const { return m_backend == RenderBackend::OpenGl; }
-    /// Whether the frame description's 2D passes are drawn (the front end, the movies, the HUD): OpenGL and GPU, the
-    /// backends with a window.
-    [[nodiscard]] bool drawsOverlays() const { return m_backend != RenderBackend::Null; }
     /// Whether librw runs its NULL device, reading RenderWare data and drawing nothing: the NULL and GPU backends.
     [[nodiscard]] bool librwDataOnly() const { return m_backend != RenderBackend::OpenGl; }
     /// The GPU backend's SDL driver (`vulkan`, `direct3d12`, `metal`); empty for the others.

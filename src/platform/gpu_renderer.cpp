@@ -391,6 +391,7 @@ const GpuRenderer::OwnedTexture* GpuRenderer::textureFor(const graphics::Texture
         entry->value.linear = linear;
     }
     upload.texture = entry->value.texture;
+    upload.serial = texture->serial();
     uploads.push_back(std::move(upload));
     return &entry->value;
 }
@@ -430,41 +431,53 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
                            !ensureBuffer(m_indices, m_indexCapacity, indexBytes, SDL_GPU_BUFFERUSAGE_INDEX))) {
         return nullptr;
     }
-    if (total > 0 && ensureUploadBuffer(total)) {
+    if (total > 0) {
         // Cycled: a buffer the GPU still reads for the last frame is not written over.
-        auto* bytes = static_cast<std::uint8_t*>(SDL_MapGPUTransferBuffer(m_device, m_upload, true));
-        if (bytes != nullptr) {
-            if (vertexBytes > 0) {
-                std::memcpy(bytes, batch.vertices.data(), vertexBytes);
+        auto* bytes = ensureUploadBuffer(total)
+                          ? static_cast<std::uint8_t*>(SDL_MapGPUTransferBuffer(m_device, m_upload, true))
+                          : nullptr;
+        if (bytes == nullptr) {
+            // Nothing reached the GPU: forget what this frame meant to upload, so the next frame uploads it again
+            // rather than drawing it from pixels it never got, and draw nothing from the last frame's buffers.
+            for (const PendingUpload& upload : uploads) {
+                if (upload.texture == m_white.texture) {
+                    m_whiteUploaded = false;
+                } else {
+                    m_textures.forget(upload.serial);
+                }
             }
-            if (indexBytes > 0) {
-                std::memcpy(bytes + vertexBytes, batch.indices.data(), indexBytes);
-            }
-            for (std::size_t i = 0; i < uploads.size(); ++i) {
-                std::memcpy(bytes + uploadOffsets[i], uploads[i].pixels.data(), uploads[i].pixels.size());
-            }
-            SDL_UnmapGPUTransferBuffer(m_device, m_upload);
-            SDL_GPUCopyPass* copy = SDL_BeginGPUCopyPass(commands);
-            if (drawsSomething) {
-                const SDL_GPUTransferBufferLocation vertexFrom{m_upload, 0};
-                const SDL_GPUBufferRegion vertexTo{m_vertices, 0, vertexBytes};
-                SDL_UploadToGPUBuffer(copy, &vertexFrom, &vertexTo, true);
-                const SDL_GPUTransferBufferLocation indexFrom{m_upload, vertexBytes};
-                const SDL_GPUBufferRegion indexTo{m_indices, 0, indexBytes};
-                SDL_UploadToGPUBuffer(copy, &indexFrom, &indexTo, true);
-            }
-            for (std::size_t i = 0; i < uploads.size(); ++i) {
-                const SDL_GPUTextureTransferInfo from{m_upload, uploadOffsets[i], static_cast<Uint32>(uploads[i].width),
-                                                      static_cast<Uint32>(uploads[i].height)};
-                SDL_GPUTextureRegion to{};
-                to.texture = uploads[i].texture;
-                to.w = static_cast<Uint32>(uploads[i].width);
-                to.h = static_cast<Uint32>(uploads[i].height);
-                to.d = 1;
-                SDL_UploadToGPUTexture(copy, &from, &to, true);
-            }
-            SDL_EndGPUCopyPass(copy);
+            return nullptr;
         }
+        if (vertexBytes > 0) {
+            std::memcpy(bytes, batch.vertices.data(), vertexBytes);
+        }
+        if (indexBytes > 0) {
+            std::memcpy(bytes + vertexBytes, batch.indices.data(), indexBytes);
+        }
+        for (std::size_t i = 0; i < uploads.size(); ++i) {
+            std::memcpy(bytes + uploadOffsets[i], uploads[i].pixels.data(), uploads[i].pixels.size());
+        }
+        SDL_UnmapGPUTransferBuffer(m_device, m_upload);
+        SDL_GPUCopyPass* copy = SDL_BeginGPUCopyPass(commands);
+        if (drawsSomething) {
+            const SDL_GPUTransferBufferLocation vertexFrom{m_upload, 0};
+            const SDL_GPUBufferRegion vertexTo{m_vertices, 0, vertexBytes};
+            SDL_UploadToGPUBuffer(copy, &vertexFrom, &vertexTo, true);
+            const SDL_GPUTransferBufferLocation indexFrom{m_upload, vertexBytes};
+            const SDL_GPUBufferRegion indexTo{m_indices, 0, indexBytes};
+            SDL_UploadToGPUBuffer(copy, &indexFrom, &indexTo, true);
+        }
+        for (std::size_t i = 0; i < uploads.size(); ++i) {
+            const SDL_GPUTextureTransferInfo from{m_upload, uploadOffsets[i], static_cast<Uint32>(uploads[i].width),
+                                                  static_cast<Uint32>(uploads[i].height)};
+            SDL_GPUTextureRegion to{};
+            to.texture = uploads[i].texture;
+            to.w = static_cast<Uint32>(uploads[i].width);
+            to.h = static_cast<Uint32>(uploads[i].height);
+            to.d = 1;
+            SDL_UploadToGPUTexture(copy, &from, &to, true);
+        }
+        SDL_EndGPUCopyPass(copy);
     }
 
     // 3. One render pass: the window cleared as the frame starts, then every draw in order.

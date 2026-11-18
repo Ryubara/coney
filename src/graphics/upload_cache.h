@@ -48,7 +48,7 @@ template <typename Value> class UploadCache {
     }
 
     /// Drops the entry of `serial`, as when its pixels never reached the GPU; returns whether it kept one.
-    bool forget(std::uint64_t serial) { return false; }
+    bool forget(std::uint64_t serial) { return m_entries.erase(serial) > 0; }
 
     /// How many entries it keeps.
     [[nodiscard]] std::size_t size() const { return m_entries.size(); }

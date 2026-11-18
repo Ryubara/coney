@@ -293,10 +293,11 @@ jobs:
           save: "false"
 
   # The software pictures (docs/guides/testing.md#software-pictures): Coney's synthetic scenes, which need no game
-  # data, drawn through Mesa's llvmpipe under a virtual display in a container image pinned by its digest, with Mesa at
-  # a fixed package version (.github/software-pictures/Dockerfile), and compared with the reference pictures kept in
-  # tests/pictures/reference/ by a per-channel tolerance and a share of pixels allowed over it
-  # (`coney-tools picture scenes`). The runner image's own Mesa moves with the image, which is why the driver is not
+  # data, drawn through Mesa's llvmpipe (GL3) and lavapipe (the GPU renderer on Vulkan) under a virtual display in a
+  # container image pinned by its digest, with Mesa at a fixed package version (.github/software-pictures/Dockerfile).
+  # A scene drawn on GL3 only is compared with its reference picture in tests/pictures/reference/; a scene drawn on
+  # both renderers (the test cards) has no reference, and the GPU renderer's picture is compared with GL3's. Both use
+  # a per-channel tolerance and a share of pixels allowed over it (`coney-tools picture scenes`, scenes.toml). The runner image's own Mesa moves with the image, which is why the driver is not
   # the runner's. The engine is built here, on the runner (the same gcc-13 `ci` build as the build job, so it reads
   # that job's cache); only the drawing runs in the container, on the same Ubuntu release. The drawn pictures are
   # uploaded whatever the result, so a new reference (or a failure) can be looked at. A required check
@@ -355,8 +356,9 @@ jobs:
       # Each scene is drawn twice: the second draw is compared with the first, which shows whether the pinned Mesa
       # gives the same pixels on every run (docs/engine/renderer.md#comparing). The container runs as the runner's
       # user, and sees the checkout and the output folder at the same paths, so Coney's arguments mean the same in it.
-      # A scene without its own reference fails the job: a new scene's reference is made from the picture this job
-      # uploads, in the pull request that adds the scene.
+      # A GL3-only scene without its own reference fails the job: a new scene's reference is made from the picture
+      # this job uploads, in the pull request that adds the scene. A scene drawn on both renderers needs none; its
+      # counts across renderers are printed on the `across renderers:` line.
       # `--init` puts docker's init before xvfb-run: xvfb-run waits for Xvfb's ready signal, and Xvfb sends it only to
       # a parent whose pid is above 1, so as the container's first process xvfb-run waited for ever (#1354, #1392).
       # Coney's output of every run is kept beside its picture (NAME.log) and uploaded with it; a run that has not
