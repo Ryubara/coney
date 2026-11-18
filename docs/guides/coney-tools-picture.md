@@ -34,14 +34,17 @@ the pixels over in magenta, so a reader sees where they are.
 ```sh
 uv run --project python coney-tools picture scenes --out DIR [--coney EXE] [--launcher COMMAND] [--scenes FILE]
     [--references DIR] [--repeat N] [--update] [--allow-no-references] [--channel-tolerance N] [--max-share PERCENT]
-    [--timeout SECONDS]
+    [--timeout SECONDS] [--only NAME]...
 ```
 
 Draws the synthetic scenes of `tests/pictures/scenes.toml` and compares each with the reference of the same name in
-`tests/pictures/reference/`. A scene is one `coney` command line that needs no game data: today the sandbox's layouts
-(Coney's own worlds, drawn with CC0 grid textures) at a pinned view, three frames at 320x224. The list holds the
-tolerance (`channel_tolerance`, `max_share_percent`) and each scene's `name`, `args`, `frames` and `render_size`; the
-command adds `--frames`, `--render-size` and `--screenshot` itself. The drawn pictures go to `--out`, which stays outside
+`tests/pictures/reference/`. A scene is one `coney` command line that needs no game data: the sandbox's layouts
+(Coney's own worlds, drawn with CC0 grid textures) at a pinned view, and the 2D [test
+cards](running-viewers.md#test-cards), three frames at 320x224. The list holds the tolerance (`channel_tolerance`,
+`max_share_percent`), the looser one across renderers (`cross_channel_tolerance`, `cross_max_share_percent`, the
+first two when unset) and each scene's `name`, `args`, `frames`, `render_size` and, for a scene drawn by more than one
+renderer, `renderers` (two or more of `gl3` and `gpu`); the command adds `--frames`, `--render-size`, `--screenshot`
+and `--renderer` itself. The drawn pictures go to `--out`, which stays outside
 the repository. `--coney` defaults to `build/dev/src/platform/coney`; `--launcher` puts a command before it, which is how
 CI runs Coney under a virtual display in a container (`xvfb-run`, `docker run`). Coney runs in the repository root, so a
 path in a scene's `args` and a relative `--coney` mean the same from any folder of the checkout; `--out` is read from
@@ -63,6 +66,12 @@ the folder you start the command in.
 * **`--timeout SECONDS`** (default 180) is how long one run of Coney may take before it counts as hung: the run is
   stopped, and the command ends with exit code 2, naming the scene and showing the last lines Coney printed (all of
   them in its `NAME.log`). A few frames of a sandbox take seconds, so CI passes 60.
+* **A scene with `renderers`** is drawn once by each (`--renderer`), as `NAME.gl3.png` and `NAME.gpu.png`, and each
+  picture after the first is compared with the first by the cross-renderer tolerance (`NAME: gpu against gl3: ...`,
+  totalled on an `across renderers:` line); it has no reference, and `--update` leaves it alone. A run asked for `gpu`
+  whose output does not say `renderer: gpu on` (Coney fell back to GL3) ends the command with exit code 2.
+* **`--only NAME`** (repeatable) draws only the scenes it names, such as the test cards on a real GPU; a name the list
+  does not hold ends the command with exit code 2.
 * A scene whose reference is missing fails (`no reference`), and a run of Coney that fails or draws nothing ends the
   command with exit code 2, its log's path and the last lines of its output.
 
@@ -98,6 +107,7 @@ Draw the synthetic scenes with coney and compare them with their reference pictu
 ```text
 coney-tools picture scenes [--coney CONEY] [--launcher COMMAND] [--scenes SCENES] [--references REFERENCES] --out OUT
     [--repeat N] [--update] [--allow-no-references] [--channel-tolerance N] [--max-share PERCENT] [--timeout SECONDS]
+    [--only NAME]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -113,4 +123,5 @@ coney-tools picture scenes [--coney CONEY] [--launcher COMMAND] [--scenes SCENES
 | `--channel-tolerance N` | integer | none | override the scene list's tolerance |
 | `--max-share PERCENT` | number | none | override the scene list's share |
 | `--timeout SECONDS` | number | `180` | how long one run of coney may take before it counts as hung (default 180) |
+| `--only NAME` | text | none | draw only this scene (repeatable; default all) |
 <!-- command-reference:end -->

@@ -10,6 +10,13 @@
 channel_tolerance = 2
 max_share_percent = 0.1
 
+# The tolerance across renderers, for the scenes drawn by GL3 and by the GPU renderer and compared with each other
+# (`renderers` below): the Across renderers row of docs/engine/renderer.md#comparing, where the first comparisons'
+# counts are recorded (a real GPU: 0 pixels over, largest difference 0); twice the room of one renderer's, for the
+# software drivers' first run.
+cross_channel_tolerance = 4
+cross_max_share_percent = 0.2
+
 # What every scene draws with unless it says otherwise: three frames at half the original's frame size.
 frames = 3
 render_size = "320x224"
@@ -31,3 +38,22 @@ args = ["--sandbox", "combat"]
 [[scene]]
 name = "sandbox-parkour-start"
 args = ["--sandbox", "parkour"]
+
+# Coney's 2D test cards (`--test-card`, src/platform/test_card_mode.h), drawn by both renderers, GL3 (llvmpipe in CI)
+# and the GPU renderer (lavapipe), and the GPU renderer's picture compared with GL3's by the cross-renderer tolerance.
+# They have no reference picture: GL3's draw is the GPU renderer's reference until the switch, and GL3's own 2D drawing
+# is held by the draw-stream hashes (docs/engine/renderer.md#comparing).
+[[scene]]
+name = "test-card-shapes"
+args = ["--test-card", "shapes"]
+renderers = ["gl3", "gpu"]
+
+[[scene]]
+name = "test-card-textures"
+args = ["--test-card", "textures"]
+renderers = ["gl3", "gpu"]
+
+[[scene]]
+name = "test-card-triangles"
+args = ["--test-card", "triangles"]
+renderers = ["gl3", "gpu"]

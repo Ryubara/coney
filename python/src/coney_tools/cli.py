@@ -1130,6 +1130,9 @@ def _add_picture_commands(groups: Any) -> None:
         metavar="SECONDS",
         help="how long one run of coney may take before it counts as hung (default 180)",
     )
+    scenes.add_argument(
+        "--only", action="append", default=[], metavar="NAME", help="draw only this scene (repeatable; default all)"
+    )
 
 
 def _run_picture(args: argparse.Namespace) -> int:
@@ -1150,6 +1153,7 @@ def _run_picture(args: argparse.Namespace) -> int:
         args.channel_tolerance,
         args.max_share,
         args.timeout,
+        args.only,
     )
 
 

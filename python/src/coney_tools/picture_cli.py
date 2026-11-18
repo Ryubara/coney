@@ -50,6 +50,7 @@ def run_scenes(
     channel_tolerance: int | None,
     max_share_percent: float | None,
     timeout: float = picture_scenes.RUN_TIMEOUT_SECONDS,
+    only: list[str] | None = None,
 ) -> int:
     """`picture scenes`: draw the scenes with `launcher coney` and compare them with the references.
 
@@ -72,6 +73,7 @@ def run_scenes(
         channel_tolerance=channel_tolerance,
         max_share_percent=max_share_percent,
         timeout=timeout,
+        only=only or [],
     )
 
 

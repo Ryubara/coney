@@ -36,6 +36,14 @@ def test_mesa_is_installed_at_a_fixed_version_that_the_build_checks() -> None:
     assert "GALLIUM_DRIVER=llvmpipe" in DOCKERFILE
 
 
+def test_lavapipe_comes_from_the_same_pinned_mesa_for_the_gpu_renderer() -> None:
+    # Expected: engine/renderer.md#migration-testing, the software pictures draw `gpu` through lavapipe (Mesa's Vulkan)
+    assert '"mesa-vulkan-drivers=$MESA"' in DOCKERFILE
+    assert "dpkg-query -W -f='${Version}' mesa-vulkan-drivers" in DOCKERFILE
+    assert "libvulkan1" in DOCKERFILE
+    assert "SDL_GPU_DRIVER=vulkan" in DOCKERFILE
+
+
 def test_the_job_caches_the_image_by_the_dockerfiles_hash_and_keeps_the_drawn_pictures() -> None:
     job = WORKFLOW[WORKFLOW.index("  software-pictures:") :].split("\n  cache-prune:")[0]
     assert "hashFiles('.github/software-pictures/Dockerfile')" in job

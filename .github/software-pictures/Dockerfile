@@ -35,20 +35,24 @@ RUN printf 'Types: deb\nURIs: https://snapshot.ubuntu.com/ubuntu/%s\nSuites: nob
       > /etc/apt/sources.list.d/ubuntu.sources \
     && rm -f /etc/apt/sources.list
 
-# Mesa's GLX and EGL, its software driver and LLVM at the pinned versions; Xvfb (the virtual display) and the X11
-# and xkb libraries SDL3 loads when it opens a window; the rest is whatever they depend on.
+# Mesa's GLX and EGL, its software drivers and LLVM at the pinned versions: llvmpipe for OpenGL (the GL3 renderer) and
+# lavapipe for Vulkan (the GPU renderer, `--renderer gpu`, with the Vulkan loader); Xvfb (the virtual display) and the
+# X11 and xkb libraries SDL3 loads when it opens a window; the rest is whatever they depend on.
 RUN apt-get -o Acquire::Check-Valid-Until=false update \
     && apt-get install -y --no-install-recommends \
          "libgl1-mesa-dri=$MESA" "libglx-mesa0=$MESA" "libegl-mesa0=$MESA" "libgbm1=$MESA" "mesa-libgallium=$MESA" \
-         "libglapi-mesa=$GLAPI" "libllvm20=$LLVM" \
-         libgl1 libegl1 libx11-6 libxext6 libxcursor1 libxfixes3 libxi6 libxrandr2 libxss1 libxtst6 libxkbcommon0 \
-         xvfb xauth \
+         "mesa-vulkan-drivers=$MESA" "libglapi-mesa=$GLAPI" "libllvm20=$LLVM" \
+         libgl1 libegl1 libvulkan1 libx11-6 libxext6 libxcursor1 libxfixes3 libxi6 libxrandr2 libxss1 libxtst6 \
+         libxkbcommon0 xvfb xauth \
     && rm -rf /var/lib/apt/lists/* \
     && test "$(dpkg-query -W -f='${Version}' libgl1-mesa-dri)" = "$MESA" \
     && test "$(dpkg-query -W -f='${Version}' mesa-libgallium)" = "$MESA" \
+    && test "$(dpkg-query -W -f='${Version}' mesa-vulkan-drivers)" = "$MESA" \
     && test "$(dpkg-query -W -f='${Version}' libllvm20)" = "$LLVM"
 
-# Mesa's software rasteriser for OpenGL, whatever the (virtual) display offers; SDL's silent audio driver.
+# Mesa's software rasteriser for OpenGL, whatever the (virtual) display offers; SDL's GPU API on Vulkan, whose only
+# driver here is lavapipe; SDL's silent audio driver.
 ENV LIBGL_ALWAYS_SOFTWARE=1 \
     GALLIUM_DRIVER=llvmpipe \
+    SDL_GPU_DRIVER=vulkan \
     SDL_AUDIODRIVER=dummy
