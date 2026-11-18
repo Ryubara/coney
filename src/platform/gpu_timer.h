@@ -49,7 +49,7 @@ class GpuTimer {
     GpuTimer& operator=(GpuTimer&&) = delete;
 
     /// Whether the driver has timer queries.
-    [[nodiscard]] bool available() const { return true; }
+    [[nodiscard]] bool available() const { return m_api.complete(); }
 
     /// Starts timing a frame, unless every query is in flight or one is already open (then the frame is not measured).
     void begin();

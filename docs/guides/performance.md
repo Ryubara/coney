@@ -103,6 +103,7 @@ the clip recorder that the `no-real-clock` check allows to), and with measuring 
 | `present` | the 2D layers (HUD, effects, menus), the debug overlays and the buffer swap |
 | `present.debug_overlays` | the pad menu and the developer overlay |
 | `present.swap` | the buffer swap: the time the driver makes the CPU wait for the GPU shows here |
+| `gpu.frame` | the GPU's own time for a frame, from OpenGL timer queries ([GPU time](#gpu-time)); not a stretch of CPU code, and absent without them |
 
 ## Counters {#counters}
 
@@ -126,6 +127,63 @@ passes are draws too and count with the model's kind.
 The OpenGL counters wrap the functions librw's loader fills in (`glad_glDrawElements` and the rest), so librw itself is
 unchanged. The allocation counter replaces the global `operator new` in the executable and the tests; librw's and SDL's
 own allocations use `malloc` and are not counted.
+
+## GPU time {#gpu-time}
+
+The zones above are CPU time. `gpu.frame` is the time the GPU spent on a frame, so a report shows whether a frame is
+bound by the CPU (the steps and librw) or the GPU. The OpenGL renderer wraps the frame's drawing, from the camera's
+begin to just before the buffer swap, in a timer query (`GL_TIME_ELAPSED`, OpenGL 3.3;
+`src/platform/gpu_timer.h`), only while the profiler measures, so play without `--bench` or the Performance page's
+*Measure* pays nothing.
+
+- **The result comes later.** A query's result is ready a frame or more after the CPU drew it, and reading it early
+  would stall the pipeline. A ring of four queries holds the frames in flight, and each frame adds the times of the
+  queries that have finished by then to the zone, oldest first. So one frame's figure is an earlier frame's, and the
+  zone's mean over a run is what to read (a bench compares means). A frame that finds all four queries still in flight
+  (the GPU more than four frames behind) is not measured rather than waited for.
+- **It can be absent.** A headless run draws nothing and a driver without timer queries (older than OpenGL 3.3) has
+  none: the report then has no `gpu.frame` zone, and the tables print `none`. Neither fails a run, so test mode stays
+  possible with no GPU; the ring is tested against a fake driver in `tests/platform/gpu_timer_test.cpp`.
+- **Only the OpenGL renderer.** The SDL3 GPU renderer ([The renderer](../engine/renderer.md#performance)) takes
+  its timestamp queries with its own drawing, when it draws.
+
+## Scenes {#scenes}
+
+`coney-tools perf bench --scene NAME[,NAME]` (or `--scene all`) measures named scenes in place of the fighter counts.
+A scene is a row of a table in the tool (`python/src/coney_tools/perf_scenes.py`): the level and checkpoint, the pinned
+camera and where the player stands, the fighters, the frames measured, the render size, and whether it is headless. It
+names levels and checkpoints only. Every scene is a lockstep run with the bench's fixed seed, so a scene is the same
+work on every run and every build, and the renderer work reports each change against these:
+
+| Scene | Level | Fighters | Size | What it is |
+| --- | --- | --- | --- | --- |
+| `hub` | `level95`, checkpoint 1 | 0 | window, 960 × 720 | the hub's street, the view pinned on it from 18 m up |
+| `hub-crowd` | the same | 50, the player invincible | window | the same view with a brawl |
+| `street` | `level99`, checkpoint 1 | 0 | window | a view down the street ([Matched views](running-play-level.md#matched-views)) |
+| `hub-640`, `hub-2560` | the hub | 0 | `--render-size` 640 × 448, 2560 × 1920 | whether the frame's pixels matter |
+| `hub-headless`, `hub-crowd-headless` | the hub | 0, 50 | none | the simulation's cost alone |
+
+Each scene runs three times (`RUNS`), the scenes interleaved (run 1 of every scene, then run 2, so one busy minute does
+not fall on one scene), 600 frames after 60 of warm-up, from the `playtest` build. A report is written for each run as
+`scene-NAME-runN.json` with its log, in `--out`, and the table gives each figure as the median of the three runs' means
+with the fastest and slowest in brackets. The report's `meta` has `render_size` (what `--render-size` asked, else
+`none`) and `window` (the size drawn in, `none` headless) beside the level.
+
+```sh
+uv run --project python coney-tools perf bench --scene hub,hub-crowd,street --out ../../scratch/perf
+uv run --project python coney-tools perf bench --scene all --out ../../scratch/perf-baseline   # record a baseline
+uv run --project python coney-tools perf bench --scene all --compare ../../scratch/perf-baseline --out ../../scratch/perf
+```
+
+**The comparison.** `--compare FOLDER` reads the baseline's `scene-*-run*.json` reports and prints each scene's median
+frame time beside the baseline's, the change in percent, the slowest the budget allows and a verdict
+([Budget](../engine/renderer.md#budget)): a scene is `over` when its median is slower than the baseline's by more than
+the larger of 5 % and the baseline's own spread (its slowest run over its fastest); a scene the baseline lacks is
+`no baseline`, never a failure. It exits 1 when a scene is over **and the machine is quiet**: no other build holds a
+build slot ([`build status`](coney-tools-build.md#build)) before the runs or after them. On a busy machine it prints
+who holds a slot, still prints the comparison, and exits 0, since a busy machine spreads one scene's runs by more than
+the budget. A run that fails exits 1 whatever the machine does. `--display-preset` and `--renderer` are passed to Coney
+for the scene runs (`--preset` stays the build's CMake preset).
 
 ## GPU skinning {#gpu-skinning}
 

@@ -6,11 +6,14 @@
 #include <chrono>
 #include <cstdlib>
 #include <new>
+#include <optional>
 #include <string>
+#include <utility>
 
 #include <rw.h>
 
 #include "core/perf.h"
+#include "platform/gpu_timer.h"
 
 namespace coney::platform {
 
@@ -45,6 +48,11 @@ std::uint64_t g_textureBinds = 0;
 // The scene counters: each kind's totals, and the kind the draws count as now.
 std::array<DrawTotals, kDrawKinds> g_kinds{};
 DrawKind g_kind = DrawKind::Other;
+
+// The GPU timer, made on the first frame measured; g_gpuTimerTried stops a driver without timer queries being asked
+// again every frame.
+std::optional<GpuTimer> g_gpuTimer;
+bool g_gpuTimerTried = false;
 
 // The functions the wrappers forward to; null while they are not installed.
 PFNGLDRAWELEMENTSPROC g_drawElements = nullptr;
@@ -191,7 +199,39 @@ std::string glRendererName() {
     return std::string(renderer) + ", OpenGL " + version;
 }
 
+void beginGpuFrame() {
+    if (!perf::enabled()) {
+        return;
+    }
+    if (!g_gpuTimerTried) {
+        g_gpuTimerTried = true;
+        if (GpuTimerApi api = openGlTimerApi(); api.complete()) {
+            g_gpuTimer.emplace(std::move(api));
+        }
+    }
+    if (g_gpuTimer) {
+        g_gpuTimer->begin();
+    }
+}
+
+void endGpuFrame() {
+    if (!g_gpuTimer) {
+        return;
+    }
+    g_gpuTimer->end();
+    // Registered on first use, so a run without timer queries has no `gpu.frame` zone in its report at all.
+    static const perf::ZoneSite site{"gpu.frame"};
+    while (const std::optional<std::uint64_t> nanoseconds = g_gpuTimer->takeResult()) {
+        if (perf::enabled()) {
+            perf::addZoneTime(site.index(), *nanoseconds);
+        }
+    }
+}
+
 void removeGlCounters() {
+    // The timer's queries belong to the context that is going; a later start makes a new timer.
+    g_gpuTimer.reset();
+    g_gpuTimerTried = false;
     if (g_drawElements == nullptr) {
         return;
     }

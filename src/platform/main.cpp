@@ -1355,14 +1355,22 @@ int main(int argc, char** argv) {
         logText(pacer->summary());
     }
     if (bench) {
-        auto line = bench->finish({{"level", commandLineLevel.value_or(std::string{})},
-                                   {"checkpoint", std::to_string(options->checkpoint.value_or(1))},
-                                   {"frames", std::to_string(options->frameLimit.value_or(0))},
-                                   {"headless", options->headless ? "yes" : "no"},
-                                   {"vsync", options->vsync ? "on" : "off"},
-                                   {"build", CONEY_BUILD_TYPE},
-                                   {"renderer", coney::platform::glRendererName()},
-                                   {"skinning", coney::platform::characterSkinOn() ? "gpu" : "cpu"}});
+        auto line =
+            bench->finish({{"level", commandLineLevel.value_or(std::string{})},
+                           {"checkpoint", std::to_string(options->checkpoint.value_or(1))},
+                           {"frames", std::to_string(options->frameLimit.value_or(0))},
+                           {"headless", options->headless ? "yes" : "no"},
+                           {"vsync", options->vsync ? "on" : "off"},
+                           // What `--render-size` asked for and the window the run drew in (docs/engine/
+                           // renderer.md#benchmark); a headless run has no window.
+                           {"render_size", options->renderSize ? std::format("{}x{}", options->renderSize->width,
+                                                                             options->renderSize->height)
+                                                               : std::string("none")},
+                           {"window", options->headless ? std::string("none")
+                                                        : std::format("{}x{}", windowDesc.width, windowDesc.height)},
+                           {"build", CONEY_BUILD_TYPE},
+                           {"renderer", coney::platform::glRendererName()},
+                           {"skinning", coney::platform::characterSkinOn() ? "gpu" : "cpu"}});
         if (!line) {
             std::fprintf(stderr, "coney: %s\n", line.error().message.c_str());
             return 1;

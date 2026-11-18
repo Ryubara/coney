@@ -34,8 +34,18 @@ void addAllocationCounters();
 /// OpenGL context with librw's loader run (RenderEngine::start); idempotent.
 void installGlCounters();
 
-/// Puts the original OpenGL functions back (before the context goes).
+/// Puts the original OpenGL functions back (before the context goes), and gives the GPU timer's queries back.
 void removeGlCounters();
+
+/// Starts timing the GPU's work for a frame with an OpenGL timer query, while the profiler measures
+/// (perf::enabled()); the renderer calls it as a frame's camera begins. The first call makes the timer; a driver
+/// without timer queries has none, and then this and endGpuFrame() do nothing. Needs the context current.
+void beginGpuFrame();
+
+/// Ends the frame beginGpuFrame() started, and adds every finished query's time to the profiler's `gpu.frame` zone
+/// (the GPU's milliseconds for a frame, a few frames after the CPU drew it, so a frame's own figure is an earlier
+/// frame's; the mean over a run is what to read). A frame the GPU was too far behind to time is left out.
+void endGpuFrame();
 
 /// What a draw call draws, for the scene counters: the frame's draws split by the kind of thing drawn.
 enum class DrawKind : std::uint8_t {
