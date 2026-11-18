@@ -1456,6 +1456,16 @@ class CiDiscSuite:
 
 
 @dataclass(frozen=True)
+class CiPullRequestTarget:
+    """The workflows that run on `pull_request_target`, which GitHub blocks in a public repository unless the
+    repository's Actions event policy allows them (docs/guides/repo-conventions.md#pull-request-target)."""
+
+    #: The workflow file names under .github/workflows/ the maintainer allows in the policy; a test refuses any other
+    #: workflow on the event and holds each of these to the safety rules.
+    workflows: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class CiPlace:
     """One check of the project and where it runs."""
 
@@ -1476,6 +1486,7 @@ class Ci:
     tidy: CiTidy
     failure: CiFailure
     disc_suite: CiDiscSuite
+    pull_request_target: CiPullRequestTarget
     places: tuple[CiPlace, ...]
 
     def jobs(self) -> tuple[str, ...]:
@@ -2826,7 +2837,7 @@ def _read_ci(
     job_ids: Callable[[Iterable[str]], tuple[str, ...]],
 ) -> Ci:
     """The `ci` section: the CI jobs' settings and the places of the checks; every required check has a place."""
-    table = _table(data, where, ("dependencies", "tidy", "failure", "disc_suite", "places"))
+    table = _table(data, where, ("dependencies", "tidy", "failure", "disc_suite", "pull_request_target", "places"))
     dep_where = _at(where, "dependencies")
     dependencies = _table(table["dependencies"], dep_where, ("workflow", "rerun_limit"))
     workflow = _text(dependencies["workflow"], _at(dep_where, "workflow"))
@@ -2878,6 +2889,14 @@ def _read_ci(
     disc_marker = _text(disc["marker"], _at(disc_where, "marker"))
     if not re.fullmatch(r"[a-z][a-z0-9-]*", disc_marker):
         raise _fail(_at(disc_where, "marker"), "lower case letters, digits and dashes")
+    target_where = _at(where, "pull_request_target")
+    target = _table(table["pull_request_target"], target_where, ("workflows",))
+    target_workflows = _texts(target["workflows"], _at(target_where, "workflows"))
+    for name in target_workflows:
+        if not re.fullmatch(r"[A-Za-z0-9_-]+[.]yml", name):
+            raise _fail(_at(target_where, "workflows"), f"'{name}' must be a file name under .github/workflows/")
+    if len(set(target_workflows)) != len(target_workflows):
+        raise _fail(_at(target_where, "workflows"), "a workflow is listed twice")
     places = _each(table["places"], _at(where, "places"), _read_ci_place)
     ids = [place.id for place in places]
     if len(set(ids)) != len(ids):
@@ -2920,6 +2939,7 @@ def _read_ci(
             marker=disc_marker,
             summary_lines=_count(disc["summary_lines"], _at(disc_where, "summary_lines")),
         ),
+        pull_request_target=CiPullRequestTarget(workflows=target_workflows),
         places=places,
     )
 

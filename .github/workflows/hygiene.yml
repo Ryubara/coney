@@ -28,7 +28,9 @@
 # request, an issue or a comment says is expanded into a script's text: the item number and the event name reach the
 # script through environment variables, and the findings are quoted into comments by `neutralize` in
 # hygiene_comments.py. It uses no third-party action beyond the pinned checkout and uv. Actions are pinned to a full
-# commit SHA; the tag is in the comment beside it.
+# commit SHA; the tag is in the comment beside it. The repository's Actions event policy must allow this file on
+# `pull_request_target` (ci.pull_request_target of the conventions; the review is
+# docs/guides/repo-conventions.md#pull-request-target).
 name: hygiene
 
 on:
@@ -64,9 +66,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      # No `with:`: the default is the default branch for an issue, a schedule or a dispatch, and the base branch for
-      # pull_request_target, which is the point.
+      # No `ref` and no `repository`: the default is the default branch for an issue, a push, a schedule or a dispatch,
+      # and the base branch for pull_request_target, which is the point. The token that writes issues and pull requests
+      # is not left in .git/config: the commands call the API with GH_TOKEN and never run an authenticated git command.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       - name: Update the comments and the pull request labels
         env:

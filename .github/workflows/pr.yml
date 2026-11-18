@@ -21,7 +21,9 @@
 # The workflow that runs is the one on the base branch, so a pull request that edits this file is checked by the
 # version already merged; the edit takes effect when it merges. A pull request that changes the trigger itself (the one
 # that moved this file from `pull_request` to `pull_request_target`) is run by neither version: see
-# docs/guides/repo-conventions.md#pr-workflow.
+# docs/guides/repo-conventions.md#pr-workflow. The repository's Actions event policy must allow this file on
+# `pull_request_target`, or from 2026-12-02 GitHub runs none of these required checks (ci.pull_request_target of the
+# conventions; the review is docs/guides/repo-conventions.md#pull-request-target).
 name: pr
 
 on:

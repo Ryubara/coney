@@ -18,7 +18,9 @@
 # stranger's comment are served; for that reason it checks out the default branch only (no `ref`, no `repository`:
 # never a pull request's own code). A dispatch started on any other branch is skipped only while that branch carries
 # this file unchanged: a branch runs its own copy of the workflow, so one that edits this file also edits the skip.
-# Events caused by this token start no workflow, so it cannot trigger itself.
+# Events caused by this token start no workflow, so it cannot trigger itself. The repository's Actions event policy must
+# allow this file on `pull_request_target` (ci.pull_request_target of the conventions; the review is
+# docs/guides/repo-conventions.md#pull-request-target).
 # Actions are pinned to a full commit SHA; the tag is in the comment beside it.
 name: claim
 
@@ -72,10 +74,13 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      # No `with:`: an issue, a comment and a schedule check out the default branch, pull_request_target the base
-      # branch (never the pull request's head), and a dispatch the branch it was started on, which the job's `if:`
-      # allows only for the default branch.
+      # No `ref` and no `repository`: an issue, a comment and a schedule check out the default branch,
+      # pull_request_target the base branch (never the pull request's head), and a dispatch the branch it was started
+      # on, which the job's `if:` allows only for the default branch. The token that writes issues is not left in
+      # .git/config: the script calls the API with GH_TOKEN and never runs an authenticated git command.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       - name: Handle the event
         env:

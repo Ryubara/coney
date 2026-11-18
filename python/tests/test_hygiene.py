@@ -516,7 +516,8 @@ def test_no_expression_reaches_a_script_and_the_checkout_takes_no_other_ref() ->
     for step in job["steps"]:
         assert "${{" not in step.get("run", ""), step
         if str(step.get("uses", "")).startswith("actions/checkout"):
-            assert "with" not in step
+            # No `ref` and no `repository` (the base branch), and the writing token is not left in .git/config.
+            assert step["with"] == {"persist-credentials": False}
     assert all(re.search(r"@[0-9a-f]{40}", step["uses"]) for step in job["steps"] if "uses" in step)
 
 
