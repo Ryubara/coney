@@ -696,6 +696,8 @@ def test_the_clip_rule_is_optional_so_an_older_default_branch_asks_for_no_clips(
         (("pull_requests.clips.after", "Before:"), r"pull_requests\.clips\.after"),
         (("pull_requests.clips.extensions", [".mp4"]), r"pull_requests\.clips\.extensions"),
         (("pull_requests.clips.reason", "optional"), r"pull_requests\.clips\.reason"),
+        (("pull_requests.clips.since", "soon"), r"pull_requests\.clips\.since"),
+        (("pull_requests.clips.since", REMOVE), r"pull_requests\.clips"),
     ],
 )
 def test_a_wrong_clip_rule_is_refused(change: tuple[str, object], where: str) -> None:

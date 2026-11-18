@@ -3,6 +3,7 @@
 
 import dataclasses
 import re
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -949,6 +950,33 @@ def test_a_change_a_player_sees_in_coney_studio_needs_the_pair_whatever_the_titl
     assert "src/studio/inspector.cpp" in problem and "Coney Studio" in problem
     assert clip_problems_of(NO_SHOTS, title="core: Fix the reader", changed=["src/fileio/wad.cpp"]) == []
     assert clip_problems_of(NO_SHOTS + "\n\n" + NO_CLIPS, "core: Fix it", ["src/studio/theme.cpp"]) == []
+
+
+def test_a_pull_request_opened_before_the_rule_began_is_not_asked_for_clips() -> None:
+    """Open pull requests are not refused at their next push: only those opened since `clips.since` need the pair."""
+    rule = BODY_RULES.clips
+    assert rule is not None and rule.since.utcoffset() == timedelta(0)
+    text = body(testing="- " + EVIDENCE, screenshots=NO_SHOTS)
+
+    def clips_for(opened: datetime | None) -> list[str]:
+        return [p for p in check_body(text, BODY_RULES, title=PLAYER, opened=opened) if "Clips" in p or "clip" in p]
+
+    assert clips_for(rule.since - timedelta(seconds=1)) == []
+    assert len(clips_for(rule.since)) == 1 and len(clips_for(rule.since + timedelta(days=1))) == 1
+    # Not yet opened (pr text, pr verify, pr open's own checks): the rule applies.
+    assert len(clips_for(None)) == 1
+    studio = check_body(text, BODY_RULES, title="core: Fix it", changed=["src/studio/a.cpp"], opened=rule.since)
+    assert any("Coney Studio" in p for p in studio)
+    assert check_body(text, BODY_RULES, title="core: Fix it", changed=["src/studio/a.cpp"],
+                      opened=rule.since - timedelta(hours=1)) == []  # fmt: skip
+
+
+def test_clip_lines_an_older_pull_request_writes_are_still_checked() -> None:
+    rule = BODY_RULES.clips
+    assert rule is not None
+    text = body(testing="- " + EVIDENCE, screenshots=f"Before: ![b]({UPLOAD})")
+    problems = check_body(text, BODY_RULES, title=PLAYER, opened=rule.since - timedelta(days=1))
+    assert any("needs its 'After:' line too" in p for p in problems)
 
 
 def test_without_a_title_or_changed_paths_no_clips_are_asked_for() -> None:

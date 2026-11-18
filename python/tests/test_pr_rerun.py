@@ -3,6 +3,7 @@
 
 import argparse
 import json
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
@@ -134,6 +135,21 @@ def test_a_body_failure_is_stale_when_the_current_description_passes_and_real_wh
     bad = with_failed(failed("body"))
     bad["body"] = "## Summary\n\nNothing else.\n"
     assert plan([bad], RerunGh()) == []
+
+
+def test_a_body_failure_judges_the_clips_by_when_the_pull_request_was_opened() -> None:
+    """A gameplay pull request opened before the clip rule began passes without clips, as CI's body job judges it."""
+    rule = CONVENTIONS.pull_requests.clips
+    assert rule is not None
+    player = GOOD_BODY.replace("- 12 passed, 0 failed.", "- 12 passed, 0 failed.\n- Runtime: none (no disc scenario)")
+    changes = {"title": "gameplay: Fix a thing", "body": player}
+    older = with_failed(failed("body"), createdAt=(rule.since - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ"))
+    newer = with_failed(failed("body"), createdAt=rule.since.strftime("%Y-%m-%dT%H:%M:%SZ"))
+    older.update(changes)
+    newer.update(changes)
+    assert summary(plan([older], RerunGh())) == [(10, ("body",), "new-event")]
+    assert plan([newer], RerunGh()) == []
+    assert "createdAt" in pr_health.RERUN_FIELDS.split(",")
 
 
 def test_the_text_checks_are_named_in_the_conventions() -> None:

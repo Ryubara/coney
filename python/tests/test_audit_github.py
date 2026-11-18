@@ -3,7 +3,7 @@
 
 import json
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pytest
@@ -532,6 +532,19 @@ def test_an_open_pull_request_with_an_unticked_item_breaks_the_template_rules() 
     ctx = context(pulls=[pull(1, state="OPEN", body=UNFINISHED), pull(2, state="OPEN")])
     (problem,) = found(gh.pr_body, ctx)
     assert problem.item == "#1" and "the second unit" in problem.message and "not ticked" in problem.message
+
+
+def test_an_open_pull_request_is_asked_for_clips_only_when_opened_since_the_rule() -> None:
+    rule = CONVENTIONS.pull_requests.clips
+    assert rule is not None
+    player = PR_BODY.replace("- 3 tests passed", "- 3 tests passed\n- Runtime: none (no disc scenario reaches it)")
+    title = "gameplay: Fix the grab"
+    moment = rule.since.strftime("%Y-%m-%dT%H:%M:%SZ")
+    older = (rule.since - timedelta(minutes=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    ctx = context(pulls=[pull(1, title=title, body=player, created=older), pull(2, title=title, body=player,
+                                                                                   created=moment)])  # fmt: skip
+    (problem,) = found(gh.pr_body, ctx)
+    assert problem.item == "#2" and "Clips: none" in problem.message
 
 
 def test_a_stacked_pull_request_names_its_base_and_has_no_auto_merge() -> None:

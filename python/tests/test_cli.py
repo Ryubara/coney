@@ -434,6 +434,27 @@ def test_check_body_asks_a_studio_change_for_clips_given_the_changed_files(
     assert main([*args, "--changed", "missing.txt"]) == 2
 
 
+def test_the_ci_body_job_passes_when_the_pull_request_was_opened(tmp_path: Path) -> None:
+    workflow = (Path(__file__).resolve().parents[2] / ".github" / "workflows" / "pr.yml").read_text(encoding="utf-8")
+    body_job = workflow.split("\n  body:\n", 1)[1].split("\n  claim:\n", 1)[0]
+    assert "PR_OPENED: ${{ github.event.pull_request.created_at }}" in body_job
+    assert '--opened "$PR_OPENED"' in body_job
+
+
+def test_check_body_asks_no_clips_of_a_pull_request_opened_before_the_rule(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(runtime_checkout(tmp_path))
+    (tmp_path / "body.md").write_text(RUNTIME_BODY, encoding="utf-8")
+    (tmp_path / "changed.txt").write_text("src/studio/inspector.cpp\n", encoding="utf-8")
+    args = ["pr", "check-body", "--body", "body.md", "--title", "core: Fix it", "--changed", "changed.txt"]
+    assert main([*args, "--opened", "2026-01-01T00:00:00Z"]) == 0
+    assert main([*args, "--opened", "2999-01-01T00:00:00Z"]) == 1
+    assert "Coney Studio" in capsys.readouterr().out
+    assert main([*args, "--opened", "yesterday"]) == 2
+    assert "--opened" in capsys.readouterr().err
+
+
 def test_check_body_with_local_images_checks_each_local_clip_like_clips_check(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
