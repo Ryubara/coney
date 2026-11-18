@@ -37,6 +37,8 @@ constexpr float kThirdHitPower = 0.6F;
 // A rise played this far or more is not cut by a mount (`Human_CanBeGrabbed`: held 0x48000 and the top clip's
 // progress).
 constexpr float kRiseMountableShare = 0.5F;
+// The death chain's loop (docs/research/combat-reactions.md#knockout-timing).
+constexpr std::uint32_t kDeathLoopClip = 349;
 
 } // namespace
 
@@ -49,6 +51,33 @@ VictimFrame Fighter::frame(const FighterInput& input) const {
                        .flag200 = hasFlag(flag::kReducedReact),
                        .flag80 = hasFlag(flag::kUngroundable),
                        .unstunnable = hasFlag(flag::kUnstunnable)};
+}
+
+DyingState Fighter::dyingState(const FighterInput& input) const {
+    std::uint64_t state = 0;
+    const auto set = [&state](bool on, std::uint64_t bits) { state |= on ? bits : 0; };
+    // Its script's states and the ground.
+    set(input.cuffed, human_state::kCuffed);
+    set(input.wounded, human_state::kWounded);
+    set(input.knockedOut, human_state::kKnockedOut);
+    set(m_victim.grounded(), human_state::kKnockedDown);
+    // Holding a victim in a grab or a tackle.
+    const combat::CombatMode mode = m_combat.mode();
+    if (m_held != nullptr && mode == combat::CombatMode::Grabbing) {
+        set(true, m_rear ? human_state::kGrabbingRear : human_state::kGrabbingFront);
+    }
+    set(m_held != nullptr && mode == combat::CombatMode::Tackling, human_state::kTackling);
+    // Held: in a grab it plays from its grabber's set, or in a hold its grabber drives. **Coney's reading**: mounted in
+    // a hold counts as tackled, Coney not telling a tackle's mount from a grab's.
+    if (m_grabbed.has_value()) {
+        set(true, m_grabbed->fromRear ? human_state::kGrabbedRear : human_state::kGrabbedFront);
+    }
+    if (m_holdState == TargetState::Held) {
+        set(true, m_rearHeld ? human_state::kGrabbedRear : human_state::kGrabbedFront);
+    }
+    set(m_holdState == TargetState::Mounted, human_state::kTackled);
+    // **Stand-in**: Coney keeps no burning (0x4000) and no state 0x8000000, so neither is ever set.
+    return DyingState{.state = state, .woundable = hasFlag(flag::kWoundable)};
 }
 
 bool Fighter::helpless(const HumanAnimator& animator) const {
@@ -208,7 +237,9 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
 }
 
 void Fighter::dieNow(const IncomingHit& hit, const FighterInput& input, HumanAnimator& animator) {
-    // Out of health: whatever it held goes, a hold on it or a tandem it plays ends, and the dying reaction plays.
+    // Out of health: whatever it held goes, a hold on it or a tandem it plays ends, and the death chain plays for the
+    // state it was in before they ended (the original ends only a mugging, a 0x8000000 pair and a tackle's hold first).
+    const DyingState dying = dyingState(input);
     if (m_held != nullptr) {
         releaseHold(animator, false);
     }
@@ -221,7 +252,11 @@ void Fighter::dieNow(const IncomingHit& hit, const FighterInput& input, HumanAni
     m_tandemRole = TandemRole::None;
     m_tandemRequest.reset();
     m_deathPending.reset();
-    m_victim.die(hit, frame(input), animator);
+    // Already in the chain's loop, it plays nothing more (`Human_PlayLethalReaction` 0x00267e48 tests the clip 349).
+    if (animator.animId() == kDeathLoopClip) {
+        return;
+    }
+    m_victim.die(hit, frame(input), dying, animator);
     m_reacting = true;
     const std::string_view attacker = hit.attackerName.empty() ? std::string_view("no one") : hit.attackerName;
     logging::info(logging::Category::Combat, std::format("death: {} by {}", logName(), attacker));

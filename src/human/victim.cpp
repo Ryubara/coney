@@ -3,6 +3,9 @@
 
 #include <algorithm>
 #include <array>
+#include <optional>
+#include <utility>
+#include <vector>
 
 #include "animation/anim_clip.h"
 #include "combat/attacks.h"
@@ -20,6 +23,39 @@ constexpr std::uint16_t kKnockdownEvent = 7;
 // The rise holds 0x8000 on the record +0x08 (`Human_PlayRise`), which its recovery event (0x48, frame 14 on the disc)
 // replaces with 0x40000: from then on the rise's counter is refused (docs/research/combat-reactions.md#ground-escape).
 constexpr HeldFlags kRiseHolds{.held = combat::kPhaseRise, .set = combat::kPhaseRise};
+
+// The death chain's clips (docs/research/combat-reactions.md#knockout-timing): its loops (349, 200 after 205, 323
+// cuffed), 205, the falls (308 for a dying clip with no knockdown event, 198 for one whose event's value is 0) and the
+// dying clip of a woundable human knocked down.
+constexpr std::uint32_t kDeathLoop = 349;
+constexpr std::uint32_t kDeathLoopWoundable = 200;
+constexpr std::uint32_t kDeathLoopCuffed = 323;
+constexpr std::uint32_t kWoundedDown = 205;
+constexpr std::uint32_t kFallUnmarked = 308;
+constexpr std::uint32_t kFallMarked = 198;
+constexpr std::uint32_t kDyingKnockedDown = 195;
+// The blends out of the dying clip and out of the fall into the loop, seconds.
+constexpr float kDyingBlend = 0.2F;
+constexpr float kFallBlend = 0.1F;
+// The held flag the chain keeps until its loop (Human_PlayGangDeathReaction passes 0x2000).
+constexpr HeldFlags kDyingHolds{.held = 0x2000, .set = 0x2000};
+// A state bit and the dying clip it picks.
+struct StateClip {
+    std::uint64_t bits;
+    std::uint32_t clip;
+};
+// The special dying clips tested before the knocked-down woundable human's 195, in the original's order.
+constexpr std::array<StateClip, 9> kHeldDying{{{human_state::kCuffed, 322},
+                                               {human_state::kState8000000, 264},
+                                               {human_state::kWounded, 204},
+                                               {human_state::kGrabbingFront, 146},
+                                               {human_state::kGrabbingRear, 132},
+                                               {human_state::kGrabbedFront, 139},
+                                               {human_state::kGrabbedRear, 127},
+                                               {human_state::kTackled, 208},
+                                               {human_state::kTackling, 211}}};
+// The special dying clips tested after it.
+constexpr std::array<StateClip, 2> kDownDying{{{human_state::kDown, 348}, {human_state::kOnFire, 319}}};
 
 // The one clip `clip` as an array.
 std::array<std::uint32_t, 1> one(std::uint32_t clip) { return {clip}; }
@@ -90,10 +126,82 @@ ReactionKind Victim::react(const IncomingHit& hit, const VictimFrame& frame, Hum
     return ReactionKind::Plain;
 }
 
-void Victim::die(const IncomingHit& hit, const VictimFrame& frame, HumanAnimator& animator) {
-    const int dying = combat::deathReaction(reactionInput(hit, frame), m_random.coin());
-    animator.playCombat(one(static_cast<std::uint32_t>(dying)), kGroundedIdle, AnimState::Hold);
-    m_lastReaction = dying;
+void Victim::die(const IncomingHit& hit, const VictimFrame& frame, const DyingState& dying, HumanAnimator& animator) {
+    const auto has = [&dying](std::uint64_t bits) { return (dying.state & bits) != 0; };
+    const bool cuffed = has(human_state::kCuffed);
+    const bool wounded = has(human_state::kWounded);
+    // 1. The loop it ends in: a woundable human not yet wounded passes through 205 into 200; a cuffed one loops 323.
+    std::uint32_t loop = kDeathLoop;
+    bool woundedDown = false;
+    if (cuffed) {
+        loop = kDeathLoopCuffed;
+    } else if (dying.woundable && !wounded) {
+        loop = kDeathLoopWoundable;
+        woundedDown = true;
+    }
+    // 2. The dying clip: the first of the special states that holds, in the original's order, else the hit's own (the
+    // coin is drawn only then, as Hit_PickDyingReaction draws it). A stand-in for callers that name their own clip:
+    // the lethal path names none.
+    const std::uint32_t dyingClip = [&] {
+        for (const StateClip& special : kHeldDying) {
+            if (has(special.bits)) {
+                return special.clip;
+            }
+        }
+        if (dying.woundable && !wounded && has(human_state::kKnockedDown)) {
+            return kDyingKnockedDown;
+        }
+        for (const StateClip& special : kDownDying) {
+            if (has(special.bits)) {
+                return special.clip;
+            }
+        }
+        return static_cast<std::uint32_t>(combat::deathReaction(reactionInput(hit, frame), m_random.coin()));
+    }();
+    // 3. The fall, by the dying clip's first knockdown event (type 7): none found, 308 unless it is down (cuffed,
+    // knocked out or down); found with a value of 0 (the u32 at +4), 198; else none. A stand-in for callers that name
+    // another human's set: the lethal path names this human's own.
+    std::optional<std::uint32_t> fall;
+    const anim::AnimClip* clip = animator.clip(dyingClip);
+    const anim::ClipEvent* knockdown = nullptr;
+    if (clip != nullptr) {
+        const auto found = std::ranges::find_if(
+            clip->events, [](const anim::ClipEvent& event) { return event.type == kKnockdownEvent; });
+        knockdown = found != clip->events.end() ? &*found : nullptr;
+    }
+    if (knockdown == nullptr) {
+        if (!has(human_state::kDown)) {
+            fall = kFallUnmarked;
+        }
+    } else if (knockdown->value == 0 && knockdown->word == 0) {
+        fall = kFallMarked;
+    }
+    // 4. Each clip's blend into the next: the dying clip's 0.2 unless a fall without 205 follows it, the fall's 0.1
+    // into the loop, none into or out of 205.
+    std::vector<DeathStep> steps{{.clip = dyingClip, .blend = woundedDown || !fall ? kDyingBlend : 0.0F}};
+    if (fall) {
+        steps.push_back({.clip = *fall, .blend = woundedDown ? 0.0F : kFallBlend});
+    }
+    if (woundedDown) {
+        steps.push_back({.clip = kWoundedDown, .blend = 0.0F});
+    }
+    // 5. Played as one chain after Human_PlayGangDeathReaction's 0.1 s blend-out (kCombatFade), holding 0x2000 until
+    // the loop; the owner knocks it out once no chained clip plays (Fighter::update), where the original's last clip
+    // before the loop ends in Human_OnHealthOut.
+    std::vector<std::uint32_t> clips;
+    for (const DeathStep& step : steps) {
+        clips.push_back(step.clip);
+    }
+    // stand-in: the original sets 0x2000 as it builds the chain and gives it to the clip before the loop alone; every
+    // clip here holds and sets it, which keeps it set over the same updates. The blends between the clips are kept in
+    // m_deathChain, not built (Coney's chained clips hand over at once).
+    animator.playCombat(clips, loop, AnimState::Hold, kCombatFade, kDyingHolds);
+    m_deathChain = DeathChain{.steps = std::move(steps), .loop = loop};
+    // 6. The hit waiting is dropped (the pending damage +0x118).
+    m_hasPending = false;
+    m_lastReaction = static_cast<int>(dyingClip);
+    // stand-in: the ground and the fighter's spent health stand for the dying state 0x80000000, and the animator's
+    // held state for the record's +0x18 = 0.
     m_grounded = true;
     m_stunUntilMs = 0;
     m_stunTimeOver = false;

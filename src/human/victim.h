@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "animation/anim_math.h"
 #include "combat/power_class.h"
@@ -49,6 +50,44 @@ struct VictimFrame {
     bool unstunnable = false; ///< Human flag `0x100` (`HuSetUnstunnable`): never stunned.
 };
 
+/// The bits of a human's state word that the death chain reads (`Human_PlayDeathReaction`'s tests, each a
+/// `Human_HasStateFlag` call: docs/research/combat-reactions.md#knockout-timing).
+namespace human_state {
+inline constexpr std::uint64_t kGrabbedFront = 0x10;   ///< `Human_IsGrabbedFromFront`.
+inline constexpr std::uint64_t kGrabbedRear = 0x20;    ///< `Human_IsGrabbedFromRear`.
+inline constexpr std::uint64_t kGrabbingFront = 0x40;  ///< `Human_IsGrabbingFront`.
+inline constexpr std::uint64_t kGrabbingRear = 0x80;   ///< `Human_IsGrabbingRear`.
+inline constexpr std::uint64_t kTackling = 0x400;      ///< `Human_IsTackling`.
+inline constexpr std::uint64_t kTackled = 0x800;       ///< `Human_IsTackled`.
+inline constexpr std::uint64_t kOnFire = 0x4000;       ///< `Human_IsOnFire`.
+inline constexpr std::uint64_t kWounded = 0x10000;     ///< `Human_IsWounded`.
+inline constexpr std::uint64_t kCuffed = 0x20000;      ///< `Human_IsCuffed`.
+inline constexpr std::uint64_t kKnockedOut = 0x40000;  ///< `Human_IsKnockedOut`.
+inline constexpr std::uint64_t kKnockedDown = 0x80000; ///< `Human_IsKnockedDown`.
+/// Cuffed, knocked out or knocked down (`Human_HasStateE0000`).
+inline constexpr std::uint64_t kDown = kCuffed | kKnockedOut | kKnockedDown;
+inline constexpr std::uint64_t kState8000000 = 0x8000000; ///< `Human_HasState8000000`.
+} // namespace human_state
+
+/// What a human is as it dies: the state bits (human_state) and the flag the death chain picks its clips by.
+struct DyingState {
+    std::uint64_t state = 0; ///< Its state word's bits, of human_state.
+    bool woundable = false;  ///< Human flag `0x8` (flag::kWoundable).
+};
+
+/// One clip of the death chain before its loop, and the blend it hands over to the next clip with.
+struct DeathStep {
+    std::uint32_t clip = 0;
+    float blend = 0.0F; ///< Seconds.
+};
+
+/// The death chain Victim::die() played: its clips in play order (the dying reaction, the fall, 205), the last of which
+/// ends in the knock-out, then the loop.
+struct DeathChain {
+    std::vector<DeathStep> steps;
+    std::uint32_t loop = 0;
+};
+
 /// What a reaction on its feet turned out to be.
 enum class ReactionKind : std::uint8_t {
     Plain,     ///< The reaction, then the idle.
@@ -84,12 +123,16 @@ class Victim {
     /// @orig 0x0022f100 Human_KnockDown (unknown)
     ReactionKind react(const IncomingHit& hit, const VictimFrame& frame, HumanAnimator& animator, std::uint32_t idle,
                        std::uint64_t nowMs);
-    /// Plays the dying reaction for `hit` (the `DIE` set half the time, else 292) and the ground for good. Only the
-    /// chain's first clip: the special cases' clips (cuffed, burning, held, tackling, wounded), the fall, 205, the
-    /// loop, health 1 and state `0x80000000` are not ported (#1345).
-    /// Research: docs/research/combat-reactions.md#knockout-timing
+    /// Plays the death chain for `hit` on a human that is `dying` (docs/research/combat-reactions.md#knockout-timing)
+    /// and lies on the ground for good: the dying clip of its special state (else the hit's own: the `DIE` set half the
+    /// time, else 292), then a fall (308 when the clip has no knockdown event and the human is not down, 198 when its
+    /// event's value is 0), then 205 for a woundable human not yet wounded, then the loop (200 after 205, 323 cuffed,
+    /// else 349), each clip holding `0x2000`. Its owner knocks it out as the last clip before the loop ends. The hit
+    /// waiting is dropped. deathChain() keeps the clips and their blends.
     /// @orig 0x00267a00 Human_PlayDeathReaction (unknown)
-    void die(const IncomingHit& hit, const VictimFrame& frame, HumanAnimator& animator);
+    void die(const IncomingHit& hit, const VictimFrame& frame, const DyingState& dying, HumanAnimator& animator);
+    /// The chain the last die() played.
+    [[nodiscard]] const DeathChain& deathChain() const { return m_deathChain; }
 
     /// The ground starts (a knockdown, a throw's landing) at `nowMs`; with `stunned` the stun lasts until the rise +
     /// the stun time (`Human_SetDownTimers`' end, which the rise's end replaces: step()). The doublings by the attack's
@@ -181,6 +224,7 @@ class Victim {
     int m_stuns = 0;
     int m_knockdowns = 0;
     int m_lastReaction = -1;
+    DeathChain m_deathChain;
 };
 
 } // namespace coney::human

@@ -933,9 +933,19 @@ coney = "src/human/victim.h:Victim::die"
 status = "compared"
 
 [[function.gaps]]
-what = "the special cases' dying clips, the fall, 205, the loop, the held flag, push weight, blends, health 1 and the record resets"
+what = "the blends between the chain's clips are recorded, not built (the end blend of a chained clip)"
+relation = "stand-in"
+issue = 936
+
+[[function.gaps]]
+what = "the record's +0x18 is not kept; burning and state 0x8000000 are never set"
+relation = "stand-in"
+question = "combat-reactions.md#q-death-chain-states"
+
+[[function.gaps]]
+what = "the health is left at 0, not set to 1"
 relation = "not-ported"
-issue = 1345
+issue = 592
 
 [[function]]
 address = 0x00268430

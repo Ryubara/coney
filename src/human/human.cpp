@@ -797,9 +797,13 @@ bool Human::linkedWith(const Human& other) const {
 
 // @orig 0x00221260 Human_GetAttribute (unknown)
 float Human::pushWeight() const {
-    // Every link sets both humans' weight to 1e9, and so does an arrest.
+    // Every link sets both humans' weight to 1e9, and so does an arrest, and so does the death chain once the health
+    // has run out (`Human_PlayDeathReaction` 0x00267a00, its vtable +0xe4 call; `Human_KnockOut` after it).
     constexpr float kImmovable = 1e9F;
-    return m_fighter.inPair() || m_script.arrested || m_uncuffing != nullptr ? kImmovable : 1.0F;
+    const bool out = m_fighter.health().depleted();
+    // stand-in: only attribute 7 is asked for (attribute 1's 82.0 is not), and it is derived from the states that set
+    // it rather than kept at +0x27c.
+    return m_fighter.inPair() || m_script.arrested || m_uncuffing != nullptr || out ? kImmovable : 1.0F;
 }
 
 anim::Vec3 Human::meetHumans(anim::Vec3 from, anim::Vec3 move) {
@@ -1129,6 +1133,9 @@ void Human::fight(std::span<Combatant* const> targets, const raycast::CollisionM
                                   .sprinting = m_sprinting,
                                   .padControlled = m_record.padDriven,
                                   .throwAiming = m_script.throwAiming,
+                                  .cuffed = m_script.arrested,
+                                  .wounded = m_script.wounded,
+                                  .knockedOut = m_script.knockedOut,
                                   .self = this},
                      m_animator, m_heading);
     // An attack, a grab, a tackle, a miss or a tandem entered the stance: `Player_EnterStance` (`0x00280068`) ends the

@@ -910,8 +910,8 @@ class Human final : public Holdable {
     /// the other from his cuffs (`Uncuff_BeginMash`). **Coney stand-in**: the scenes' shared group is not set.
     /// @orig 0x0022c730 Grab_Link (unknown)
     [[nodiscard]] bool linkedWith(const Human& other) const;
-    /// Its push weight (attribute 7, `+0x27c`): 1e9 while it must not move (linked in a pair, arrested, or freeing a
-    /// cuffed human), else 1.
+    /// Its push weight (attribute 7, `+0x27c`): 1e9 while it must not move (linked in a pair, arrested, freeing a
+    /// cuffed human, or out of health: dying, then knocked out), else 1.
     /// @coney-only a read of the weight the links and the arrest give (the original keeps it at attribute 7)
     [[nodiscard]] float pushWeight() const;
     /// Whether another human's walk pushes it: not when a script made it unpushable (`HuSetPushable(false)`, body flag
