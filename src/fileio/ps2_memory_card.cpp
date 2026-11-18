@@ -140,11 +140,11 @@ std::expected<std::uint32_t, Error> Ps2MemoryCard::fatEntry(std::uint32_t cluste
     if (!indirect) {
         return std::unexpected(indirect.error());
     }
-    const auto fat = readCluster(wordAt(*indirect, (fatIndex % perCluster) * 4));
+    const auto fat = readCluster(wordAt(*indirect, std::size_t{fatIndex % perCluster} * 4));
     if (!fat) {
         return std::unexpected(fat.error());
     }
-    return wordAt(*fat, (cluster % perCluster) * 4);
+    return wordAt(*fat, std::size_t{cluster % perCluster} * 4);
 }
 
 std::expected<std::vector<std::byte>, Error> Ps2MemoryCard::readChain(std::uint32_t first, std::size_t length) const {
@@ -302,7 +302,10 @@ std::expected<Ps2SaveFolder, Error> readPsuExport(std::span<const std::byte> byt
         folder.files.push_back({entryName(*entry), std::vector<std::byte>(data->begin(), data->end())});
         // The last file's padding may be left out by some tools.
         if (const std::size_t skip = std::min(padded - length, reader.remaining()); skip > 0) {
-            (void)reader.readBytes(skip);
+            // Never fires (skip is within what remains), but a failed read is not dropped.
+            if (!reader.readBytes(skip)) {
+                return fail(ErrorCode::Truncated, std::format("the PSU export ends inside {}", entryName(*entry)));
+            }
         }
     }
     return folder;

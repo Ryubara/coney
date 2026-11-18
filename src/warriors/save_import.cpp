@@ -49,10 +49,10 @@ std::expected<std::vector<std::byte>, Error> readFile(const std::filesystem::pat
 // @coney-only the importer's wording
 bool looksErased(std::span<const std::byte> bytes) {
     constexpr std::size_t kPage = 512;
-    constexpr std::size_t kMegabyte = 1024 * 1024;
+    constexpr std::size_t kMegabyte = std::size_t{1024} * 1024;
     // 8 MB of pages with or without their 16-byte spares, or any whole number of such cards' worth.
     const bool cardSize =
-        bytes.size() >= kMegabyte && (bytes.size() % kMegabyte == 0 || bytes.size() % (528 * 2048) == 0);
+        bytes.size() >= kMegabyte && (bytes.size() % kMegabyte == 0 || bytes.size() % (std::size_t{528} * 2048) == 0);
     return cardSize && std::ranges::all_of(bytes.first(kPage), [](std::byte b) { return b == std::byte{0xff}; });
 }
 

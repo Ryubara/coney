@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "gui/profile_management_gui/pm_import.h"
 
+#include <filesystem>
 #include <format>
+#include <optional>
 #include <utility>
 
 #include "gui/text_layout.h"
@@ -10,10 +12,14 @@ namespace coney::gui {
 
 bool PmImport::offered(const PmShared& shared) {
     const ProfileStore* store = shared.profiles;
-    if (store == nullptr || !store->importFolder() || store->count() == ProfileStore::kSlots || !store->hasRoom()) {
+    if (store == nullptr) {
         return false;
     }
-    const ImportScan scan = scanImportFolder(*store->importFolder());
+    const std::optional<std::filesystem::path> folder = store->importFolder();
+    if (!folder || store->count() == ProfileStore::kSlots || !store->hasRoom()) {
+        return false;
+    }
+    const ImportScan scan = scanImportFolder(*folder);
     return !scan.saves.empty() || !scan.problems.empty();
 }
 
@@ -22,8 +28,10 @@ void PmImport::setUp() {
     m_scan = {};
     m_listed.clear();
     m_sources.clear();
-    if (m_shared.profiles != nullptr && m_shared.profiles->importFolder()) {
-        m_scan = scanImportFolder(*m_shared.profiles->importFolder());
+    if (m_shared.profiles != nullptr) {
+        if (const std::optional<std::filesystem::path> folder = m_shared.profiles->importFolder()) {
+            m_scan = scanImportFolder(*folder);
+        }
     }
     // Every profile of every save, in the folder's order, up to the grid's six.
     std::vector<PmChoices::Item> items;
