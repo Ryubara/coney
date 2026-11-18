@@ -221,6 +221,7 @@ add_library(coney_core STATIC
     warriors/game_over.cpp
     warriors/inventory.cpp
     warriors/level_table.cpp
+    warriors/mod_story_progress.cpp
     warriors/player_stats.cpp
     warriors/profile_record.cpp
     warriors/profile_store.cpp

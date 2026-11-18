@@ -218,6 +218,41 @@ TEST_CASE("the revive upgrade, once unlocked, lets a player carry four", "[playe
     CHECK(h.first("UM_IsTypeDirty", {Value(6.0)}).isNil());
 }
 
+TEST_CASE("UM_Unlock and UM_IsLevelComplete on a mod level's number keep its mission's story entry",
+          "[player_bindings]") {
+    // Expected: mission-mods.md#graph-progress, unverified (Coney's design): a mod level's number goes to the story
+    // section by id; original levels keep their records (player-state.md#unlockables, confirmed (code))
+    Harness h;
+    h.first("UM_SetNumUnlockables", {Value(2.0)});
+    h.first("UM_SetUnlockable", {Value(0.0), Value(80.0), Value(0.0), Value(0.0), Value(0.0), Value(0.0), Value(80.0)});
+    h.state.modStory.assign(4, "yard-brawl.alley");
+    const coney::SavedProgress before = h.state.saved;
+
+    CHECK(h.first("UM_IsLevelComplete", {Value(4.0)}).isNil());
+    // MissionCompleteUnlocks for the mod's level: the completion, then ranks 2 and 1.
+    h.first("UM_Unlock", {Value(4.0), Value(0.0), Value(0.0)});
+    h.first("UM_Unlock", {Value(4.0), Value(0.0), Value(2.0)});
+    h.first("UM_Unlock", {Value(4.0), Value(0.0), Value(1.0)});
+    CHECK(h.first("UM_IsLevelComplete", {Value(4.0)}).number() == 1.0);
+    REQUIRE(h.state.modStory.find("yard-brawl.alley") != nullptr);
+    CHECK(h.state.modStory.find("yard-brawl.alley")->complete);
+    CHECK(h.state.modStory.find("yard-brawl.alley")->ranks == 0b11U);
+    // The 640 unlock bits, their new marks and the 30 best records are untouched.
+    CHECK(h.state.saved.lockedBits == before.lockedBits);
+    CHECK(h.state.saved.newBits == before.newBits);
+    CHECK(std::ranges::equal(h.state.saved.missionBests, before.missionBests, [](const auto& a, const auto& b) {
+        return a.bestScore == b.bestScore && a.total == b.total && a.grade == b.grade && a.percent == b.percent &&
+               a.rest == b.rest;
+    }));
+
+    // An original level keeps its record in the bits.
+    CHECK(h.first("UM_IsLevelComplete", {Value(80.0)}).isNil());
+    h.first("UM_Unlock", {Value(80.0), Value(0.0), Value(0.0)});
+    CHECK(h.first("UM_IsLevelComplete", {Value(80.0)}).number() == 1.0);
+    CHECK_FALSE(h.state.saved.isLocked(0));
+    CHECK(h.state.modStory.entries().size() == 1);
+}
+
 TEST_CASE("statistics by a player's human; other handles do nothing", "[player_bindings]") {
     // Expected: player-state.md#statistics, confirmed (code)
     Harness h;
