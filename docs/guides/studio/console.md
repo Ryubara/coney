@@ -6,13 +6,15 @@ runtime profilers and the log viewer, whose panels are [a page of their own](con
 gamepad, where the code lives, how the release checks prove the split, and the tests, and it ends with the build issues
 it proposes, in order. The parent issue is [#1054](issue:1054); this page is [#1064](issue:1064).
 
-**Status: design.** Nothing on this page is built. It is a design in the sense of
-[Page kinds](../writing-docs.md#page-kinds): what is built moves into a guide. It builds on the debug tools' split
-([The debug tools and the game](../building.md#debug-tools)), the [debug menus](../debug-menu.md), the
-[run log](../run-log.md), the [profiler](../performance.md#zones) and the [Lua SDK](lua-sdk.md), and does not repeat
-them. What the mods' own commands do to mods (start, stop, enable, disable, all for the running session only) belongs
-to [Mods: Console commands](mods.md#console), and what a mod's command may reach to
-[Script security: The console and mods](security.md#console); this page owns the console those commands run in.
+**Status: design, build issue 1 built.** The console's core, its catalog and generators, the input script's `console`
+action and test mode's rules are built and described in the guide [The Coney console](../console.md), with every command
+in the generated [console commands reference](../console-commands.md); the rest of this page is not built yet. It is a
+design in the sense of [Page kinds](../writing-docs.md#page-kinds): what is built moves into a guide. It builds on the
+debug tools' split ([The debug tools and the game](../building.md#debug-tools)), the [debug menus](../debug-menu.md),
+the [run log](../run-log.md), the [profiler](../performance.md#zones) and the [Lua SDK](lua-sdk.md), and does not repeat
+them. What the mods' own commands do to mods (start, stop, enable, disable, all for the running session only) belongs to
+[Mods: Console commands](mods.md#console), and what a mod's command may reach to [Script security: The console and
+mods](security.md#console); this page owns the console those commands run in.
 
 The console is how players and modders turn scripts (projects, FiveM's resources) on and off and give commands at the
 game level and at the script level, quitting the game among them (a maintainer decision, [Maintainer

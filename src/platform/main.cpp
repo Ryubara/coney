@@ -35,6 +35,7 @@
 #include "ai/ai_config.h"
 #include "audio/object_sounds.h"
 #include "characters/character_types.h"
+#include "console/command_spec.h"
 #include "core/chunk_system.h"
 #include "core/clip_recording.h"
 #include "core/deferred_input.h"
@@ -76,6 +77,7 @@
 #include "platform/debug_menus.h"
 #include "platform/error_dialogs.h"
 #include "platform/frame_pacer.h"
+#include "platform/game_console.h"
 #include "platform/game_run.h"
 #include "platform/game_session.h"
 #include "platform/game_session_debug.h"
@@ -684,6 +686,7 @@ int main(int argc, char** argv) {
     std::unique_ptr<coney::InputSource> input;
     // The SDL input, when it is the source: the developer overlay mutes its keyboard.
     coney::platform::SdlInput* devices = nullptr;
+    coney::ScriptedInput* script = nullptr; // the input script, whose `console` lines the console takes
     if (const std::optional<std::string> scriptPath = options->inputScript; scriptPath) {
         auto events = coney::loadInputScript(*scriptPath);
         if (!events) {
@@ -691,6 +694,7 @@ int main(int argc, char** argv) {
             return 1;
         }
         auto scripted = std::make_unique<coney::ScriptedInput>(std::move(*events));
+        script = scripted.get();
         // `steer` lines read player 1 and his camera from the level in play (a sandbox's or a story level's).
         scripted->setSteerSource([&playLevel, &sessionPlayMode](std::size_t port) -> std::optional<coney::SteerView> {
             const coney::platform::PlayLevelMode* mode = playLevel ? playLevel.get() : sessionPlayMode();
@@ -761,6 +765,12 @@ int main(int argc, char** argv) {
     debugServices.net = [&netControls]() -> coney::debug::NetControls* { return &netControls; };
     if (!coney::platform::startNetPlay(netPlay, *options)) {
         return 1;
+    }
+    // The console (docs/guides/console.md), taking the developer set as well; no front end yet, so its lines come from
+    // the input script.
+    coney::platform::GameConsole gameConsole(*options, netPlay, coney::console::Access::Developer);
+    if (script != nullptr) {
+        gameConsole.listenTo(*script);
     }
     // The Time page's bug report: the run log's ring into the log file.
     if (runLog) {
@@ -1262,6 +1272,8 @@ int main(int argc, char** argv) {
     }
     // Network play receives before each step and sends after it.
     coney::platform::addNetPlayHooks(hooks, netPlay, pacer.has_value());
+    // The console's queued commands run before each step, after network play's receive.
+    gameConsole.addHooks(hooks);
     // `--bench-spawn-step` counts the steps of play.
     if (bench) {
         hooks.afterStep = [inner = std::move(hooks.afterStep), &bench, &playOrigin] {

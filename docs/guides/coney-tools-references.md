@@ -1,8 +1,9 @@
 # The coney-tools reference commands
 
 The commands that keep Coney's generated reference material current: [`progress`](#progress), the progress
-tables of the README and the docs; [`bindings`](#bindings), the script-binding masterlist; [`refs`](#refs), the game
-reference lists; and [`missions`](#missions), the mission status pages. Run them from inside the checkout, as
+tables of the README and the docs; [`bindings`](#bindings), the script-binding masterlist; [`console`](#console), the
+Coney console's command catalog; [`refs`](#refs), the game reference lists; and [`missions`](#missions), the mission
+status pages. Run them from inside the checkout, as
 [the overview](coney-tools.md#running) says; the groups that read the disc take it as
 [the disc commands](coney-tools-disc.md#naming-the-disc) do.
 
@@ -401,6 +402,61 @@ coney-tools bindings scan-helpers [DISC] [--chunks CHUNKS] [--check]
 | `[DISC]` | text | none | a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml |
 | `--chunks CHUNKS` | path | none | a folder of compiled chunks (`wad extract` output) instead of the disc |
 | `--check` | flag | off | change nothing; exit 1 when a count is stale |
+<!-- command-reference:end -->
+
+## console {#console}
+
+The [Coney console](console.md)'s built-in commands are kept as data in `src/console/commands.toml`
+([The command catalog](console.md#catalog) has its keys), from which two files are generated.
+
+```sh
+uv run --project python coney-tools console render-cpp [--check]
+```
+
+Checks the catalog and writes `src/console/commands_table.cpp`, the game library's table of the player commands'
+specifications (name, group, access level, scope, whether it changes something, summary, needs, the feature it waits
+for and its arguments with their types, defaults and choices), which `coney::console::playerCatalog()` returns. Run it
+after editing the catalog and commit the file with the change; with `--check` it writes nothing and exits with 1 when
+the file is stale, as CI runs it.
+
+```sh
+uv run --project python coney-tools console render [--check]
+```
+
+Writes the [console commands reference](console-commands.md): a table of every command, then an entry per command with
+its syntax, arguments, access level, scope, needs and examples. With `--check` it writes nothing and exits with 1 when
+the page is stale, as CI runs it. Both commands refuse a catalog with a problem, naming each: a developer entry in the
+player file, a name in both catalogs (once `src/debug/console_commands.toml` exists), an unknown key or type, a
+required argument after an optional one, and a command without an example.
+
+<!-- command-reference:begin console -->
+## Parameters of `console` {#console-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `console render-cpp` {#console-render-cpp-usage}
+
+Write the game library's table of player commands, src/console/commands_table.cpp.
+
+```text
+coney-tools console render-cpp [--check]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--check` | flag | off | change nothing; exit 1 when the table is stale |
+
+### `console render` {#console-render-usage}
+
+Write the console commands reference, docs/guides/console-commands.md.
+
+```text
+coney-tools console render [--check]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--check` | flag | off | change nothing; exit 1 when the page is stale or a command has no example |
 <!-- command-reference:end -->
 
 ## refs {#refs}

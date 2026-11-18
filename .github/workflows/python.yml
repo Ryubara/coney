@@ -114,6 +114,13 @@ jobs:
       # The PCSX2 recipes pages (docs/guides/pcsx2-recipes.md and its folder) must match research/pcsx2-recipes.toml, which must be valid.
       - if: runner.os == 'Linux'
         run: uv run --project python coney-tools pcsx2 recipes render --check
+      # The console's generated table (src/console/commands_table.cpp) and its commands reference
+      # (docs/guides/console-commands.md) must match src/console/commands.toml, which must be valid: every command has
+      # an example.
+      - if: runner.os == 'Linux'
+        run: uv run --project python coney-tools console render-cpp --check
+      - if: runner.os == 'Linux'
+        run: uv run --project python coney-tools console render --check
 
   # The one required check for python: the matrix's OSes vary by change and a skipped matrix job reports its name
   # unexpanded, so "python (macos-15)" cannot be required. Passes when python passed or was skipped on purpose, fails

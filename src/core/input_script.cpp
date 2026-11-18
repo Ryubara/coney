@@ -143,7 +143,8 @@ std::string parseSteer(std::span<const std::string_view> args, InputEvent& event
 }
 
 // Parses the arguments of one line after its action word into `event`; returns what is wrong, or an empty string.
-std::string parseArguments(std::span<const std::string_view> args, InputEvent& event) {
+// `line` is the whole line the words are views of.
+std::string parseArguments(std::string_view line, std::span<const std::string_view> args, InputEvent& event) {
     switch (event.action) {
     case InputEvent::Action::Press:
     case InputEvent::Action::Release:
@@ -178,12 +179,24 @@ std::string parseArguments(std::span<const std::string_view> args, InputEvent& e
     case InputEvent::Action::Connect:
     case InputEvent::Action::Disconnect:
         return args.empty() ? std::string() : "takes no arguments";
+    case InputEvent::Action::Console:
+        // The words are views of `line`, so the text runs from the start of the first to the end of the last, as
+        // written. The offsets come from pointer differences and the text is a substring of the line, so no bare
+        // data() pointer is handed to a callee without its size.
+        if (args.empty()) {
+            return "console needs a line to type";
+        }
+        const auto first = static_cast<std::size_t>(args.front().data() - line.data());
+        const auto end = static_cast<std::size_t>(args.back().data() - line.data()) + args.back().size();
+        event.text = std::string(line.substr(first, end - first));
+        return {};
     }
     return "unknown action";
 }
 
 // Parses one non-empty line's words into an event; returns what is wrong, or an empty string.
-std::string parseLine(std::span<const std::string_view> words, InputEvent& event) {
+// `line` is the whole line the words are views of.
+std::string parseLine(std::string_view line, std::span<const std::string_view> words, InputEvent& event) {
     const std::optional<std::uint64_t> frame = parseNumber<std::uint64_t>(words[0]);
     if (!frame) {
         return std::format("\"{}\" is not a frame number", words[0]);
@@ -213,10 +226,12 @@ std::string parseLine(std::span<const std::string_view> words, InputEvent& event
         event.action = InputEvent::Action::Connect;
     } else if (action == "disconnect") {
         event.action = InputEvent::Action::Disconnect;
+    } else if (action == "console") {
+        event.action = InputEvent::Action::Console;
     } else {
         return std::format("unknown action \"{}\"", action);
     }
-    return parseArguments(words.subspan(at), event);
+    return parseArguments(line, words.subspan(at), event);
 }
 
 } // namespace
@@ -236,7 +251,7 @@ std::expected<std::vector<InputEvent>, Error> parseInputScript(std::string_view 
             continue;
         }
         InputEvent event;
-        if (std::string problem = parseLine(words, event); !problem.empty()) {
+        if (std::string problem = parseLine(line, words, event); !problem.empty()) {
             return fail(ErrorCode::Invalid, std::format("input script line {}: {}", lineNumber, problem));
         }
         // Frames in order keep a script readable as a timeline, and let the player apply it in one pass.
@@ -328,6 +343,11 @@ void ScriptedInput::apply(const InputEvent& event) {
         break;
     case InputEvent::Action::Disconnect:
         port.connected = false;
+        break;
+    case InputEvent::Action::Console:
+        if (m_consoleSink) {
+            m_consoleSink(event.port, event.text);
+        }
         break;
     }
 }

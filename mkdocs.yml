@@ -350,6 +350,8 @@ nav:
           - Coordination and setup commands: guides/coney-tools-setup.md
       - Conclave, the Claude Code mod: guides/conclave.md
       - The debug menus: guides/debug-menu.md
+      - The Coney console: guides/console.md
+      - Console commands: guides/console-commands.md
       - Performance: guides/performance.md
       - The run log: guides/run-log.md
       - Enhancements plan: guides/enhancements.md
@@ -381,7 +383,7 @@ nav:
           - A Human's properties: guides/studio/human-properties.md
           - Script security and the sandbox: guides/studio/security.md
           - Mods, packages and loading: guides/studio/mods.md
-          - The Coney console: guides/studio/console.md
+          - "The Coney console: design": guides/studio/console.md
           - "The Coney console's F8 bar": guides/studio/console-bar.md
       - Coney Studio prototype: guides/studio/prototype.md
       - Coney Director design:

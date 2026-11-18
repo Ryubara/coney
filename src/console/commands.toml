@@ -1,0 +1,286 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The Coney console's player set: the built-in commands every build has, the release build included
+# (docs/guides/console.md#catalog). One source for two generated files:
+#
+#   coney-tools console render-cpp   writes src/console/commands_table.cpp, the game library's table of specifications
+#   coney-tools console render       writes docs/guides/console-commands.md, the console commands reference
+#
+# CI runs both with --check. A command here has a handler bound by its name (src/console/catalog.h); until it has one
+# it stays out of the registry, unknown when typed. The developer set will be src/debug/console_commands.toml.
+#
+# Keys of a [[command]]:
+#   name       lower case, words joined by - or _; a name is in one catalog only
+#   group      the heading help and the reference list it under
+#   access     player here (developer only in the developer file)
+#   scope      local (this machine's view) or session (the game everyone plays; only the host may run it online)
+#   changes    true when a local command changes something, so it waits for the step boundary (default false)
+#   summary    one line: what it does
+#   doubles    the way in the player already has that it doubles ("none: a reading" for a reading)
+#   needs      what must exist: game, profile, level, disc (default none)
+#   available  the Coney feature it waits for; absent from the game while that feature is not built
+#   args       { name, type, help, optional, default, choices }; type is int, number, bool, text, choice, mission,
+#              checkpoint, level, mod, setting or command
+#   examples   at least one { line, output }: a line typed and the lines it prints (render --check refuses a command
+#              without one)
+#
+# The set is the design's proposal (docs/guides/studio/console.md#release-set); a maintainer confirms it and any
+# command added later.
+
+[[command]]
+name = "help"
+group = "The terminal"
+access = "player"
+scope = "local"
+summary = "Lists the commands this build and the running mods offer, by group, or one command's arguments and help."
+doubles = "none: a reading"
+args = [
+  { name = "command", type = "command", optional = true, help = "A command to describe" },
+]
+examples = [
+  { line = "help where", output = [
+    "where",
+    "  The level, the checkpoint, the step and the play time, as the run log stamps them.",
+  ] },
+]
+
+[[command]]
+name = "clear"
+group = "The terminal"
+access = "player"
+scope = "local"
+summary = "Empties the terminal's output."
+doubles = "none"
+examples = [
+  { line = "clear", output = [] },
+]
+
+[[command]]
+name = "version"
+group = "The terminal"
+access = "player"
+scope = "local"
+summary = "Coney's version and build, the SDK level, the disc's region and the renderer."
+doubles = "none: a reading"
+examples = [
+  { line = "version", output = [
+    "Coney 0.1.0 (release build)",
+    "disc: NTSC-U; renderer: gl3",
+  ] },
+]
+
+[[command]]
+name = "quit"
+group = "The game"
+access = "player"
+scope = "local"
+changes = true
+summary = "Ends the game through its normal exit, as closing the window does."
+doubles = "Closing the window, the menus"
+examples = [
+  { line = "quit", output = ["quitting"] },
+]
+
+[[command]]
+name = "where"
+group = "The game"
+access = "player"
+scope = "local"
+summary = "The level, the checkpoint, the step and the play time, as the run log stamps them."
+doubles = "none: a reading; the PCSX2 recipe of the same name reads the same in the original"
+needs = ["game"]
+examples = [
+  { line = "where", output = ["level 87, checkpoint 2, step 5400 (03:00.0)"] },
+]
+
+[[command]]
+name = "bugreport"
+group = "The game"
+access = "player"
+scope = "local"
+summary = "Writes the last 30 s of the run log, every level, into the log file and says where."
+doubles = "The debug menus' Time page, which the release build lacks"
+examples = [
+  { line = "bugreport", output = ["bug report: 412 lines written to coney.log"] },
+]
+
+[[command]]
+name = "settings"
+group = "Settings"
+access = "player"
+scope = "local"
+summary = "Lists the settings with their values."
+doubles = "The options and the player's command line"
+examples = [
+  { line = "settings", output = [
+    "fps_cap   60",
+    "show_fps  off",
+    "vsync     on",
+  ] },
+]
+
+[[command]]
+name = "get"
+group = "Settings"
+access = "player"
+scope = "local"
+summary = "Reads a setting."
+doubles = "The options"
+args = [
+  { name = "setting", type = "setting", help = "A setting's name: settings lists them" },
+]
+examples = [
+  { line = "get vsync", output = ["vsync on"] },
+]
+
+[[command]]
+name = "set"
+group = "Settings"
+access = "player"
+scope = "local"
+changes = true
+summary = "Changes a setting for this session only; nothing is written to a file."
+doubles = "The options and --fps-cap, --vsync, --show-fps and the other player options"
+args = [
+  { name = "setting", type = "setting", help = "A setting's name: settings lists them" },
+  { name = "value", type = "text", help = "Its new value, as the setting takes it" },
+]
+examples = [
+  { line = "set fps_cap 60", output = ["fps_cap 60 (for this session)"] },
+]
+
+[[command]]
+name = "missions"
+group = "Levels and missions"
+access = "player"
+scope = "local"
+summary = "The missions the active profile has completed, with their checkpoints."
+doubles = "The original's mission select"
+needs = ["profile"]
+available = "mission-select"
+examples = [
+  { line = "missions", output = [
+    "1  checkpoints 1-3",
+    "2  checkpoints 1-2",
+  ] },
+]
+
+[[command]]
+name = "mission"
+group = "Levels and missions"
+access = "player"
+scope = "session"
+summary = "Starts a mission you have completed, at one of its checkpoints, as the mission select does."
+doubles = "The mission select"
+needs = ["game", "profile"]
+available = "mission-select"
+args = [
+  { name = "mission", type = "mission", help = "A completed mission's number in the story" },
+  { name = "checkpoint", type = "checkpoint", default = "1", help = "One of that mission's checkpoints" },
+]
+examples = [
+  { line = "mission 3 2", output = ["starting mission 3 at checkpoint 2"] },
+]
+
+[[command]]
+name = "log"
+group = "Panels and profiling"
+access = "player"
+scope = "local"
+summary = "Opens the Log panel, filtered when given a filter."
+doubles = "none: a reading"
+args = [
+  { name = "filter", type = "text", optional = true, help = "A level, a category, a mod or text to keep" },
+]
+examples = [
+  { line = "log error", output = ["Log panel open, filtered: error"] },
+]
+
+[[command]]
+name = "resmon"
+group = "Panels and profiling"
+access = "player"
+scope = "local"
+summary = "Opens the Resources panel: one row per running mod."
+doubles = "none: a reading"
+examples = [
+  { line = "resmon", output = ["Resources panel open"] },
+]
+
+[[command]]
+name = "perf"
+group = "Panels and profiling"
+access = "player"
+scope = "local"
+summary = "Opens the Performance panel: the frame, the steps and the profiler's zones."
+doubles = "none: a reading"
+examples = [
+  { line = "perf", output = ["Performance panel open"] },
+]
+
+[[command]]
+name = "net"
+group = "Panels and profiling"
+access = "player"
+scope = "local"
+summary = "Opens the Network panel: the session's link and its figures."
+doubles = "none: a reading"
+examples = [
+  { line = "net", output = ["Network panel open"] },
+]
+
+[[command]]
+name = "profiler"
+group = "Panels and profiling"
+access = "player"
+scope = "local"
+summary = "Records a profiler capture of some frames, says how far it got, or writes it to the captures folder."
+doubles = "none: a reading"
+args = [
+  { name = "action", type = "choice", choices = ["record", "status", "save"], help = "What to do with the capture" },
+  { name = "frames", type = "int", optional = true, help = "How many frames record takes" },
+]
+examples = [
+  { line = "profiler record 120", output = ["recording 120 frames"] },
+  { line = "profiler save", output = ["capture written: captures/capture-1.json"] },
+]
+
+[[command]]
+name = "host"
+group = "Network play"
+access = "player"
+scope = "session"
+summary = "Hosts a network game."
+doubles = "--host, the player's command line"
+args = [
+  { name = "port", type = "int", optional = true, help = "The port to listen on (the default port when left out)" },
+]
+examples = [
+  { line = "host 27615", output = ["hosting on port 27615"] },
+]
+
+[[command]]
+name = "connect"
+group = "Network play"
+access = "player"
+scope = "session"
+summary = "Joins a network game."
+doubles = "--join, the player's command line"
+args = [
+  { name = "address", type = "text", help = "The host's address, with :port when it is not the default" },
+]
+examples = [
+  { line = "connect 192.168.1.20", output = ["connecting to 192.168.1.20"] },
+]
+
+[[command]]
+name = "disconnect"
+group = "Network play"
+access = "player"
+scope = "local"
+changes = true
+summary = "Leaves the network session: on a guest as the Player 2 quit, on the host by ending the session."
+doubles = "The pause menu's Player 2 quit, closing the window"
+examples = [
+  { line = "disconnect", output = ["left the network session"] },
+]

@@ -218,6 +218,7 @@ TEST_CASE("a steering port follows its route and centres the stick at the end", 
 }
 
 TEST_CASE("a steering port centres without a view and stops at a left stick line", "[input_script]") {
+    // Expected: Coney's own format, docs/guides/running-input.md#input-scripts
     ScriptedInput input(parsed("0 steer 0,10\n2 stick left 30 0\n"));
     CHECK(input.sample(0)[0].sticks[3] == pad::kStickCentre);
     input.setSteerSource([](std::size_t) -> std::optional<coney::SteerView> { return coney::SteerView{}; });
@@ -226,4 +227,39 @@ TEST_CASE("a steering port centres without a view and stops at a left stick line
     CHECK(samples[0].sticks[2] == coney::stickByteFromPercent(30));
     CHECK(samples[0].sticks[3] == pad::kStickCentre);
     CHECK(input.sample(3)[0].sticks[2] == coney::stickByteFromPercent(30));
+}
+
+TEST_CASE("a console line keeps the rest of the line as written, quotes and spacing included", "[input_script]") {
+    // Expected: Coney's own format, docs/guides/console.md#input-script
+    const std::vector<InputEvent> events = parsed("10 console set fps_cap 60\n"
+                                                  "12 p2 console log  \"level load\"   # a comment\n");
+    REQUIRE(events.size() == 2);
+    CHECK(events[0].action == InputEvent::Action::Console);
+    CHECK(events[0].text == "set fps_cap 60");
+    CHECK(events[1].port == 1);
+    CHECK(events[1].text == "log  \"level load\"");
+    CHECK_THAT(refusal("10 console\n"), Catch::Matchers::ContainsSubstring("console needs a line"));
+}
+
+TEST_CASE("a console line reaches the console sink on its frame, with its port", "[input_script]") {
+    // Expected: Coney's own format, docs/guides/console.md#input-script
+    ScriptedInput input(parsed("0 console where\n2 p2 console help\n"));
+    std::vector<std::string> typed;
+    input.setConsoleSink([&typed](std::size_t port, std::string_view line) {
+        typed.push_back(std::to_string(port) + ":" + std::string(line));
+    });
+    (void)input.sample(0);
+    CHECK(typed == std::vector<std::string>{"0:where"});
+    (void)input.sample(1);
+    CHECK(typed.size() == 1);
+    (void)input.sample(2);
+    CHECK(typed == std::vector<std::string>{"0:where", "1:help"});
+}
+
+TEST_CASE("console lines without a sink are dropped and leave the pads alone", "[input_script]") {
+    // Expected: Coney's own format, docs/guides/console.md#input-script
+    ScriptedInput input(parsed("0 console quit\n"));
+    const coney::PortSamples samples = input.sample(0);
+    CHECK(samples[0].buttons == 0);
+    CHECK(samples[0].connected);
 }

@@ -22,6 +22,7 @@ from coney_tools import (
     clips,
     commit_message,
     conclave_cli,
+    console_cli,
     coord_cli,
     cpak_cli,
     docs_cli,
@@ -409,6 +410,7 @@ def _build_parser() -> argparse.ArgumentParser:
     stamp_cli.add_parser(groups)
     lua_cli.add_parser(groups)
     _add_bindings_commands(groups)
+    console_cli.add_commands(groups)
     _add_refs_commands(groups)
     _add_missions_commands(groups)
     research_cli.add_parser(groups)
@@ -1291,6 +1293,8 @@ def _run(args: argparse.Namespace) -> int:
         return stamp_cli.run(args)
     if args.group == "lua":
         return lua_cli.run(args)
+    if args.group == "console":
+        return console_cli.run(args)
     if args.group == "bindings":
         if args.command == "render":
             return natives_cli.run_render(args.check)

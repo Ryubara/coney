@@ -191,3 +191,42 @@ def test_the_release_build_compiles_no_test_of_the_debug_tools() -> None:
         name for name in sources if _TEST_DEBUG_INCLUDE.search((ROOT / "tests" / name).read_text(encoding="utf-8"))
     )
     assert offenders == [], "list these in the if(CONEY_DEBUG_TOOLS) block of tests/CMakeLists.txt"
+
+
+#: What a file of the console's core may include: itself, the engine's plumbing and the standard library
+#: (docs/guides/studio/console.md#release). The console names nothing of the debug tools, the scripting runtime, the
+#: entities or the game modes; it reaches the game only through the host interfaces it declares.
+_CONSOLE_ALLOWED = re.compile(r"^(?:console|core)/")
+_QUOTED_INCLUDE = re.compile(r'^#include "([^"]+)"', re.MULTILINE)
+
+
+def _console_includes(text: str) -> list[str]:
+    """The project headers a file includes that the console's core may not."""
+    return [header for header in _QUOTED_INCLUDE.findall(text) if not _CONSOLE_ALLOWED.match(header)]
+
+
+def test_the_console_core_includes_only_console_and_core() -> None:
+    folder = ROOT / "src" / "console"
+    files = sorted([*folder.glob("*.h"), *folder.glob("*.cpp")])
+    assert files, "src/console/ holds the console's core"
+    offenders = [
+        f"{path.relative_to(ROOT).as_posix()}: {header}"
+        for path in files
+        for header in _console_includes(path.read_text(encoding="utf-8"))
+    ]
+    assert offenders == [], "the console reaches the game through console/hosts.h, never by including it"
+
+
+def test_the_console_core_is_in_the_game_library() -> None:
+    sources, _ = _targets()
+    folder = ROOT / "src" / "console"
+    expected = sorted(f"console/{path.name}" for path in folder.glob("*.cpp"))
+    assert sorted(s for s in sources["coney_core"] if s.startswith("console/")) == expected
+
+
+def test_the_console_include_rule() -> None:
+    assert _console_includes('#include "console/registry.h"\n#include "core/log.h"\n#include <vector>\n') == []
+    assert _console_includes('#include "debug/menu_model.h"\n#include "scripting/lua_state.h"\n') == [
+        "debug/menu_model.h",
+        "scripting/lua_state.h",
+    ]

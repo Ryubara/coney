@@ -22,6 +22,7 @@
 #include <SDL3/SDL_main.h>
 
 #include "audio/object_sounds.h"
+#include "console/command_spec.h"
 #include "core/chunk_system.h"
 #include "core/display_preset.h"
 #include "core/error.h"
@@ -38,6 +39,7 @@
 #include "platform/enet_transport.h"
 #include "platform/error_dialogs.h"
 #include "platform/frame_pacer.h"
+#include "platform/game_console.h"
 #include "platform/game_run.h"
 #include "platform/game_session.h"
 #include "platform/install_command.h"
@@ -169,13 +171,16 @@ int main(int argc, char** argv) {
     // Pad input (docs/research/frontend.md#input): a script in test mode, otherwise SDL's gamepads and keyboard when
     // there is a window. Declared after the renderer, so it is destroyed before SDL stops.
     std::unique_ptr<coney::InputSource> input;
+    coney::ScriptedInput* script = nullptr; // the input script, whose `console` lines the console takes
     if (const std::optional<std::string> scriptPath = options->inputScript; scriptPath) {
         auto events = coney::loadInputScript(*scriptPath);
         if (!events) {
             logError(events.error().message);
             return 1;
         }
-        input = std::make_unique<coney::ScriptedInput>(std::move(*events));
+        auto scripted = std::make_unique<coney::ScriptedInput>(std::move(*events));
+        script = scripted.get();
+        input = std::move(scripted);
     } else if (renderer.window()) {
         auto started = coney::platform::SdlInput::start();
         if (started) {
@@ -195,6 +200,12 @@ int main(int argc, char** argv) {
     // the guest's pad (docs/guides/multiplayer.md#player-two).
     coney::platform::NetInput netInput(input.get(), netPlay);
     modes.setInput(&netInput);
+    // The console (docs/guides/console.md): the player commands only, as the release build holds no developer set.
+    // No front end yet, so its lines come from the input script.
+    coney::platform::GameConsole gameConsole(*options, netPlay, coney::console::Access::Player);
+    if (script != nullptr) {
+        gameConsole.listenTo(*script);
+    }
 
     // The pacing (docs/guides/conventions.md#update-and-render): test mode runs in lockstep with no clock; otherwise
     // the frame pacer measures real time and the frame clock turns it into fixed steps, a cap of 30 being the
@@ -250,6 +261,7 @@ int main(int argc, char** argv) {
         hooks.endFrame = [&audio](std::uint32_t steps) { audio->endFrame(steps); };
     }
     coney::platform::addNetPlayHooks(hooks, netPlay, pacer.has_value());
+    gameConsole.addHooks(hooks);
     modes.runUntilEmpty(timer, clock, hooks, frameLimit);
     if (pacer && options->showFps) {
         logText(pacer->summary());
