@@ -4,7 +4,9 @@
 // use the names the original's hub reads (docs/research/story-progress.md#hub), compiled by Coney's own compiler.
 #include "scripting/hub_chapter.h"
 
+#include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <map>
 #include <optional>
@@ -58,10 +60,11 @@ function Main() checkpoint = GetCheckPoint(); preLoadFile("level95_chapter" .. c
 Main()
 )";
 
-// A chapter: the crew and radio, then actions configured once (a red circle at the giver with a story event, a scene
-// with its cast, the load), and scene and side-mission configuration that note themselves.
+// A chapter: the crew and radio, its scenes' extras, then actions configured once (a red circle at the giver with a
+// story event, a scene with its cast, the load), and scene and side-mission configuration that note themselves.
 constexpr std::string_view kChapter = R"(
 NumWarriors, RadioTrack, MissionAction = 7, 3, {}
+SceneExtrasTable = {"extra_a", "extra_b"}
 function CfgMissionActions()
     local giver = fRunMission[checkpoint].flag
     MissionAction = {{actionType = MA_REDCIRCLE, flag = giver, event = 1},
@@ -81,6 +84,16 @@ function CfgMissionActions()
 end
 )";
 
+// A mod's chapter script that fails part-way: it has replaced the actions with a scene of its own, then indexes nil.
+constexpr std::string_view kBrokenModChapter = R"(
+function CfgMissionActions()
+    MissionAction = {{actionType = MA_CUTSCENE, sceneTable = {}}}
+    globals().CfgMissionActions = nil
+end
+local missing = nil
+missing.field = 1
+)";
+
 // `source` compiled into a chunk in the game's layout.
 std::vector<std::byte> chunkOf(std::string_view source) {
     auto compiled = coney::script::compileLua(source, "=test");
@@ -89,10 +102,11 @@ std::vector<std::byte> chunkOf(std::string_view source) {
 }
 
 // A script system over the synthetic hub at `checkpoint`, with `Note(...)` recording its calls, `preLoadFile` and
-// `GetCheckPoint`.
+// `GetCheckPoint`, and its log kept.
 struct Hub {
     std::map<std::string, std::vector<std::byte>, std::less<>> files;
     std::vector<std::string> notes;
+    std::vector<std::string> log;
     int checkpoint = 6;
     ScriptSystem scripts;
 
@@ -128,20 +142,22 @@ struct Hub {
                           return std::vector<Value>{};
                       });
               },
-              {}) {
+              [this](std::string_view line) { log.emplace_back(line); }) {
         files["level95.lua"] = chunkOf(kHub);
         files["level95_chapter6"] = chunkOf(kChapter);
         files["level95_chapter11"] = chunkOf(kChapter);
         files["hub/docks-return.lua"] = chunkOf(kModChapter);
+        files["hub/broken.lua"] = chunkOf(kBrokenModChapter);
     }
 
-    // Loads the hub: its main chunk, then `plan` applied, then the chapter that Main asked for and its RunLevel.
-    void load(const HubChapterPlan& plan) {
+    // Loads the hub: its main chunk, then `plan` applied, then the chapter that Main asked for and its RunLevel; the
+    // run expects `errors` script errors.
+    void load(const HubChapterPlan& plan, std::uint64_t errors = 0) {
         scripts.create();
         REQUIRE(scripts.runFile("level95.lua"));
         applyHubChapter(scripts, plan);
         scripts.servicePreloads(true);
-        CHECK(scripts.errors() == 0);
+        CHECK(scripts.errors() == errors);
     }
 
     // fRunMission[row].level; nothing when nil.
@@ -223,4 +239,31 @@ TEST_CASE("hub chapter scripts: a mod's chapter script runs over the default, in
     hub.load(planOf("hub:6.yard-brawl.docks", 6, false, StoryStep::mission(86), "hub/docks-return.lua"));
     CHECK(hub.notes == std::vector<std::string>{"1,2,0", "2,9,0", "crew,7,3"});
     CHECK(hub.runMissionLevel(6) == 86.0);
+}
+
+TEST_CASE("hub chapter scripts: Coney's default chapter drops chapter n's scene extras", "[hub_chapter]") {
+    // Expected: ../guides/studio/hub-chapters.md#default-chapter (the cast is dropped), Coney's own design; the extras
+    // are the scene-extra humans clubhouse.Setup makes from SceneExtrasTable, story-progress.md#hub, confirmed (code)
+    Hub original;
+    original.load(planOf("hub:6", 6, true, StoryStep::mission(86)));
+    CHECK_FALSE(original.scripts.vm().global("SceneExtrasTable").isNil());
+
+    Hub hub;
+    hub.load(planOf("hub:6.yard-brawl.docks", 6, false, StoryStep::mission(86)));
+    CHECK(hub.scripts.vm().global("SceneExtrasTable").isNil());
+}
+
+TEST_CASE("hub chapter scripts: a failing mod chapter script leaves the default chapter and is reported",
+          "[hub_chapter]") {
+    // Expected: ../guides/studio/hub-chapters.md#chapter-script, Coney's own design (no counterpart in the original)
+    Hub hub;
+    hub.load(planOf("hub:6.yard-brawl.docks", 6, false, StoryStep::mission(86), "hub/broken.lua"), 1);
+    // The default chapter's actions, not the half-made ones of the broken script.
+    CHECK(hub.notes == std::vector<std::string>{"1,1,606", "2,9,0", "crew,7,3"});
+    // The script's error, then the line that says the default chapter stays.
+    const auto reported = std::ranges::count_if(hub.log, [](const std::string& line) {
+        return line.contains("hub:6.yard-brawl.docks") && line.contains("hub/broken.lua") &&
+               line.contains("default chapter");
+    });
+    CHECK(reported == 1);
 }
