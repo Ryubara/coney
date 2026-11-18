@@ -43,7 +43,7 @@ and `labels.yml`) are gone, and so are the constants that repeated their values 
 | `research` | The kinds of research page, the sections each keeps, their length limits, the old section names, the data files an address is checked against and the legacy file ([Research pages](writing-docs.md#research-pages)) | `docs check` and `docs legacy`; `repo render` (the `research-pages` block) |
 | `standards` | What a touched file is held to: the legacy file of source and test files, whether a touched file below the standard fails (`enforce`, true since the cutover), the cutover day (2026-10-25; from it nothing new is marked legacy), the folders and endings of the code and the tests, the test macros and the form of an `// Expected:` citation ([the standards](coney-tools-standards.md#standards)) | `standards scan`, `init`, `prune`, `mark` and `check`; `docs check` |
 | `runs` | Run records: the id's shape (their folder is `research.files.runs`), the largest record, the most values and the kinds of run ([Run records](research-evidence.md#run-records)) | `pcsx2 record-run`, `pcsx2 recipes run --record`, `trace original --run-record`, `research claims` |
-| `ci` | The settings of the CI jobs that read them (`dependencies`: the workflow whose runs are restarted; `tidy`: the folders and extensions the per-pull-request clang-tidy checks, and the build-setup files whose change sends it through every file; `failure`: the workflows watched, the events, the labels and the size of the report of a failed run on `main`; `disc_suite`: the worktree, the labels and the report of the whole suite with the disc on `main`) and `places`: where each check runs, local or in CI, with its jobs | `ci dependencies`, `ci rerun-dependencies`, `ci tidy-plan`, `ci tidy-run`, `ci report-failure`, `ci disc-suite`; `repo render` (the `check-places` block); `repo audit --files` (`files.ci-places`) |
+| `ci` | The settings of the CI jobs that read them (`dependencies`: the workflow whose runs are restarted; `tidy`: the folders and extensions the per-pull-request clang-tidy checks, and the build-setup files whose change sends it through every file; `failure`: the workflows watched, the events, the labels and the size of the report of a failed run on `main`; `disc_suite`: the worktree, the labels and the report of the whole suite with the disc on `main`; `pull_request_target`: the workflows the Actions event policy allows on that event, [below](#pull-request-target)) and `places`: where each check runs, local or in CI, with its jobs | `ci dependencies`, `ci rerun-dependencies`, `ci tidy-plan`, `ci tidy-run`, `ci report-failure`, `ci disc-suite`; `repo render` (the `check-places` block); `repo audit --files` (`files.ci-places`) |
 
 The commented file is the reference for each key: open `.github/conventions.yml` and read the comment above it.
 
@@ -340,6 +340,60 @@ them, while a local `ci pr` uses the new ones. The concurrency group names the p
 `pull_request_target` `github.ref` is the base branch and would have made every pull request cancel the others. The
 `build`, `python` and `docs` workflows stay on `pull_request`: they build and run the contributor's code, which is what
 the maintainer's approval of a first-time contributor is for.
+
+### The pull_request_target workflows and the event policy {#pull-request-target}
+
+From 2026-12-02 GitHub Actions blocks `pull_request_target` in a public repository unless the repository's Actions
+event policy (repository settings, Actions, workflow execution protections) explicitly allows it, and asks that it be
+allowed only for workflows that never run a pull request's code
+([Securely using pull_request_target](https://docs.github.com/en/actions/reference/security/securely-using-pull_request_target)).
+Coney is public and three workflows use the event, so **the maintainer allows `pull_request_target` for exactly these
+files, by workflow file, and no other**:
+
+- `.github/workflows/pr.yml`
+- `.github/workflows/claim.yml`
+- `.github/workflows/hygiene.yml`
+
+The list is `ci.pull_request_target.workflows` in `.github/conventions.yml`, which mirrors that setting (a
+maintainer's). `python/tests/test_pull_request_target.py` refuses the event in any workflow not on the list and holds
+each listed one to GitHub's rules: every checkout is the base branch (no `ref`, no `repository`, no
+`allow-unsafe-pr-checkout`) with `persist-credentials: false`; nothing names, fetches or restores the pull request's
+code (no head ref or SHA, `refs/pull/`, `git fetch`, `gh pr checkout`, artifact download or cache action); no
+`${{ }}` expression appears in a `run:` line, so a title, body, branch name or comment reaches a script only through
+`env`; the only actions are the pinned checkout and uv; no secret is read; and a token writes nothing but `issues` and
+`pull-requests`. Without the setting, from 2026-12-02 none of the three runs on a pull request: the required `title`,
+`docs` and `body` checks never report and no pull request can merge.
+
+The review, 2026-11-18, of each workflow on `pull_request_target`:
+
+| Workflow | Checks out | Runs | Pull request text | Token writes | Decision |
+| --- | --- | --- | --- | --- | --- |
+| `pr.yml` (required `title`, `docs`, `body`, and `claim`) | the base branch, no credentials kept | the base branch's `coney-tools pr check-title`, `check-docs`, `check-body`, `claim check-pr`; the changed files come from the API | title and body through `env` (and a file made from it); the claim job reads the event file | nothing (`contents: read`, and `pull-requests` or `issues` read in two jobs) | keep |
+| `claim.yml` | the base branch; credentials no longer kept (this change) | the base branch's `coney-tools claim run` with the event file | only in the event file and in `if:` expressions, never in a shell | `issues` (assignees, labels, its comments) | keep |
+| `hygiene.yml` | the base branch; credentials no longer kept (this change) | the base branch's `coney-tools repo post-findings` (and `pr list-stuck` on a push or the sweep) | the item number through `env`, checked to be digits; findings quoted into comments only after `neutralize` | `issues` and `pull-requests` (comments and the `S-conflict`/`S-failing` labels) | keep |
+
+Why each keeps the event rather than moving to `pull_request` and a `workflow_run` for the writes:
+
+- `pr.yml` writes nothing, so the reason is not the token. On `pull_request` a pull request runs its own copy of
+  the workflow and of `coney-tools`, so it could rewrite the required checks that judge it (an edited checker passes
+  itself); on `pull_request_target` the base branch's version judges every pull request. And a first-time
+  contributor's `pull_request` runs wait for a maintainer's approval, which is what [the move](#pr-workflow) ended. A
+  `workflow_run` could not report the required checks on the pull request's commit without a status-writing token.
+- `claim.yml` and `hygiene.yml` write issues and pull requests on a fork's pull request, which a `pull_request` token
+  cannot. A `workflow_run` split would read the pull request's number and text from an artifact the untrusted run
+  uploaded, which is more to get wrong (artifact poisoning) for the same API calls, and their checkout would then be
+  the same base branch as now.
+
+What this change fixed: the checkouts of `claim.yml` and `hygiene.yml` left their writing token in `.git/config` for
+the rest of the job. No step runs the pull request's code, so nothing could read it, but GitHub's guidance is to keep
+no credential a later step does not need; both now pass `persist-credentials: false` (the commands use `GH_TOKEN`
+with the API and run no authenticated git command), as `pr.yml` already did. The rest already held: the checkouts use
+`actions/checkout` v7, which itself refuses a fork's head or merge ref on this event, and `setup-uv`'s cache on this
+event can only restore what the default branch's own runs saved (GitHub makes the cache read-only there).
+
+After the maintainer sets the policy, a test pull request from a fork shows the `title`, `docs` and `body` checks
+running (the issue's last step). A new workflow on `pull_request_target` needs the same: the maintainer allows its
+file first, then the list and this table change in the pull request that adds it.
 
 ## The /repo-hygiene skill {#hygiene-skill}
 

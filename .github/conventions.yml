@@ -1327,6 +1327,12 @@ ci:
     area: A-tools                                # the form's Area answer
     marker: coney-disc-suite                     # <!-- coney-disc-suite --> in the body finds the open issue again
     summary_lines: 12                            # the lines of the run's summary quoted in the issue (the failed tests among them)
+  # The workflows that run on `pull_request_target`. From 2026-12-02 GitHub blocks that event in a public repository
+  # unless the repository's Actions event policy allows it; this list mirrors that policy, which only a maintainer sets
+  # (allowed by workflow file, these and no other). python/tests/test_pull_request_target.py refuses the event in any
+  # other workflow and holds each of these to the rules of docs/guides/repo-conventions.md#pull-request-target.
+  pull_request_target:
+    workflows: [pr.yml, claim.yml, hygiene.yml]
   # One place per check: where each check of the project runs. `local` is `task check` (which writes the `checked`
   # stamp, running the checks of `proof.profiles`), a stamp command (`orig study`, `compare`, `fails-first`) or a
   # git hook; the CI words are `ci` (every pull request), `main` (a push to main), `release` (a push to a `release/`
