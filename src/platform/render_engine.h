@@ -56,6 +56,15 @@ struct CapturedFrame {
 /// hints). RenderEngine::start sets it from WindowDesc::activate before librw makes its window; it needs no display.
 void setWindowActivation(bool activate);
 
+/// Whether SDL's Windows video, when it starts, scans the machine's keyboards and mice on a thread of its own (its
+/// SDL_WINDOWS_DETECT_DEVICE_HOTPLUG hint, on by default; the hint is read as the video starts). That thread asks every
+/// HID device for its name, and SDL's video quit waits for it to finish, so each start and stop of the renderer waits
+/// for the slowest device on the machine: a few seconds when many runs start at once, and for as long as a device takes
+/// to answer when one does not (#1365). RenderEngine::start turns the scan off for a hidden window, which no keyboard
+/// reaches; code that starts SDL's video itself for a count of displays does the same. Off: `scan` false. On: `scan`
+/// true, which gives back SDL's own setting (the environment's, else on). It needs no display.
+void setDeviceHotplugScan(bool scan);
+
 /// librw's engine and, with the OpenGL backend, the window it draws into, started and stopped in the order librw
 /// requires (init, open, start; then stop, close, term).
 ///

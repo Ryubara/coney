@@ -16,6 +16,12 @@
 //  - A renderer that cannot start reports it as an error and leaves the process able to start another. A video driver
 //    with no OpenGL (SDL's "dummy" one) stands in for a machine that cannot make the window or the context.
 //
+// A third thing is checked, about the time the run takes: SDL's Windows video scans the machine's keyboards and mice on
+// a thread of its own, asking each HID device for its name, and every quit of the video waits for that thread. This
+// test starts and stops the video about eight times, so with many runs starting at once (a full local check) it waited
+// tens of seconds on the devices, and for as long as a device took to answer when one did not (#1365). A hidden
+// window's renderer and the display count turn the scan off, and the check below sees the hint.
+//
 // The window checks need a display and an OpenGL 3.3 context; without them the test exits with 77, which ctest reports
 // as skipped.
 
@@ -199,12 +205,16 @@ bool checkStartFailureIsReported() {
 
 // The number of displays SDL lists; 0 when its video cannot start (no display).
 int displayCount() {
+    // No window is made, so no keyboard needs the scan, which the quit below would wait for.
+    coney::platform::setDeviceHotplugScan(false);
     if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
+        coney::platform::setDeviceHotplugScan(true);
         return 0;
     }
     int count = 0;
     SDL_free(SDL_GetDisplays(&count));
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
+    coney::platform::setDeviceHotplugScan(true);
     return count;
 }
 
@@ -215,6 +225,9 @@ int displayCount() {
 // CONEY_WINDOW_DISPLAY is cleared first: the check chooses its displays itself, whatever the person or agent running
 // it has set.
 int main() {
+    // Unbuffered, so that a run killed by a timeout has printed the checks it finished: the output is a pipe under
+    // ctest, which holds it back until the process ends, and a hang left the log with none of it.
+    std::setvbuf(stdout, nullptr, _IONBF, 0);
     SDL_UnsetEnvironmentVariable(SDL_GetEnvironment(), "CONEY_WINDOW_DISPLAY");
     // First, so that every window check after it also shows the renderer can start again after a start that failed.
     bool ok = checkStartFailureIsReported();

@@ -309,6 +309,9 @@ void setWindowActivation(bool activate) {
     SDL_SetHint(SDL_HINT_WINDOW_ACTIVATE_WHEN_RAISED, value);
 }
 
+// A stand-in until the change: the scan setting is not made (#1365).
+void setDeviceHotplugScan(bool /*scan*/) {}
+
 std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBackend backend, const WindowDesc& desc) {
     // The constructor is private, so make_unique cannot reach it.
     std::unique_ptr<RenderEngine> engine(new RenderEngine(backend, desc));
