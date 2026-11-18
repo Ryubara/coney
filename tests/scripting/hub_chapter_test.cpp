@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The hub chapters that mod missions open, in the hub's scripts (docs/guides/studio/mission-mods.md#hub-chapters):
+// The hub chapters that mod missions open, in the hub's scripts (docs/guides/studio/hub-chapters.md):
 // Coney's own, with no counterpart in the original. The hub and its chapter here are synthetic scripts of our own that
 // use the names the original's hub reads (docs/research/story-progress.md#hub), compiled by Coney's own compiler.
 #include "scripting/hub_chapter.h"

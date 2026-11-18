@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The hub chapters that mod missions open (docs/guides/studio/mission-mods.md#hub-chapters): Coney's own, with no
+// The hub chapters that mod missions open (docs/guides/studio/hub-chapters.md): Coney's own, with no
 // counterpart in the original. Every mod here is synthetic.
 #include "core/story_chapter.h"
 #include "core/story_graph.h"

@@ -11,7 +11,7 @@
 // How the hub plays a hub chapter of the merged story: chapter n itself, or a new chapter that a mod's mission after
 // `hub:<n>` opened. Coney's own, with no counterpart in the original, which has no mods.
 //
-// Research: docs/guides/studio/mission-mods.md#hub-chapters, docs/research/story-progress.md#hub
+// Research: docs/guides/studio/hub-chapters.md, docs/research/story-progress.md#hub
 
 namespace coney::story {
 
@@ -36,7 +36,7 @@ struct HubChapterPlan {
 /// The plan for the hub entered at `checkpoint` with `lastMissionId` the latest story mission complete (nothing: none):
 /// the chapter StoryGraph::hubChapterAt() picks in `merge.graph`, its offer, and for a new chapter its mod and that
 /// mission's `chapter` script from `merge.placed`. Nothing when the graph has no chapter at that checkpoint.
-/// @coney-only the hub chapters that mod missions open (docs/guides/studio/mission-mods.md#hub-chapters)
+/// @coney-only the hub chapters that mod missions open (docs/guides/studio/hub-chapters.md)
 [[nodiscard]] std::optional<HubChapterPlan> planHubChapter(const StoryMerge& merge, int checkpoint,
                                                            std::optional<std::string_view> lastMissionId);
 

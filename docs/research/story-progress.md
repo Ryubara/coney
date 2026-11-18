@@ -84,6 +84,7 @@ mission).
 | Unlock a finished level's records | `MissionCompleteUnlocks` (`global.lua:f60`) | [The four functions](#global-functions) |
 | End a mission: unlocks, bank, next level | `UnlockAndLoad` (`global.lua:f59`); called by mode 0xb's `Enter` (`0x0015cf70`) | [Who calls them](#callers) |
 | A hub chapter and its next mission | `Main`, `story.RunMissionAction`, `story.LoadLevel` (`level95.lua:f229`, `f42`, `f55`) | [The hub](#hub) |
+| A chapter's configuration: actions, cast, scenes, extras | `clubhouse.Setup` (`level95.lua:f220`), `story.SetupSubmission` (`level95.lua:f54`) | [The hub](#hub) |
 | Flashback trophies | `flashback.Setup`, `flashback.PlayMission` (`level95.lua:f73`, `f76`) | [The hub's other doors](#hub-doors) |
 | The mission menu's list | `MissionSelect_BuildAreas` (`0x001bcc48`), `MissionSelect_IsMissionListed` (`0x001bc100`) | [The mission menu](#replay) |
 | Every reader of the order | | [Every reader](#readers) |
@@ -152,6 +153,17 @@ Confirmed (code) at the cited script functions unless a line says otherwise.
   | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
   | Next mission | 34 | 2 | 3 | 5 | 81 | 86 | 31 | 14 | 9 | 51 | none | none |
 
+- **The chapter's configuration.** The chapter file sets its crew, radio, chatter and idle animations as globals
+  when it runs, and leaves the rest to functions and tables that the hub reads later, from `RunLevel`:
+  `clubhouse.Setup` (`level95.lua:f220`) makes scene-extra humans from the chapter's `SceneExtrasTable` when it is
+  set (`AddSceneExtras`), then calls `CfgMissionActions` (the chapter's actions), `CfgMissionHumans` (its scenes'
+  cast) and `CfgSceneTables` (its scenes), each only when the chapter defines it. `CfgSceneTables` is called at once
+  in a release build and scheduled 100 ms later otherwise. `story.SetupSubmission` (`level95.lua:f54`) calls
+  `CfgMissionTable`, when it is set, and only chapter 3 defines one: its side mission. `SceneExtrasTable` is set by
+  chapters 2, 5, 6 and 9.
+- **Chapter 11's actions** (`level95_chapter11.lua:f0`) are only two: a red circle at `fRunMission[checkpoint].flag`
+  and the mission load, which loads nothing there since chapter 11's row has no level. Coney's default chapter for
+  mods copies that shape ([Hub chapters](../guides/studio/hub-chapters.md)).
 - **The "new" camera.** `dirty.Setup` (`level95.lua:f225`), when the profile has new type-0 unlocks and the checkpoint
   is below 11, points a camera at the giver's flag from the same row.
 - **The chapter number as story time.** `RunLevel` and `StartLevel` (`level95.lua:f230`, `f231`), the crew's chatter
@@ -268,9 +280,11 @@ missing mod in the run log. Nothing gives mod missions numbers in the game yet: 
 
 A mission after hub chapter *n* opens a new chapter at *n*'s checkpoint, which the hub tells from chapter *n* by the
 story's progress, not the checkpoint:
-[Hub chapters that mod missions open](../guides/studio/mission-mods.md#hub-chapters) gives the rule, the hub scripts
-it rests on (`Main` and `clubhouse.Setup`, `level95.lua:f229` and `f220`; chapter 11's actions) and what is built.
-The graph answers by step for it, and `fRunMission`'s view keeps the original chapters' 12 rows.
+[Hub chapters that mod missions open](../guides/studio/hub-chapters.md) gives the rule and what is built, resting on
+the chapter's file and its configuration as [The hub](#hub) describes them (`Main` and `clubhouse.Setup`,
+`level95.lua:f229` and `f220`; chapter 11's actions).
+The graph answers by step for it, with the latest mission complete from `latestMission` above
+([#1300](issue:1300) passes its id to `planHubChapter`), and `fRunMission`'s view keeps the original chapters' 12 rows.
 
 ## Open questions {#open-questions}
 

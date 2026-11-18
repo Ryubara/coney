@@ -380,6 +380,8 @@ nav:
           - UI and menus: guides/studio/ui.md
           - Script editor: guides/studio/script-editor.md
           - Mission mods: guides/studio/mission-mods.md
+          - "Mission mods: Lua 5.4, the translator": guides/studio/lua54-translator.md
+          - "Mission mods: hub chapters": guides/studio/hub-chapters.md
           - Entities and the Inspector: guides/studio/entities.md
           - A Human's properties: guides/studio/human-properties.md
           - Script security and the sandbox: guides/studio/security.md

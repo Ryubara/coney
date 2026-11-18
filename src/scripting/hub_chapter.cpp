@@ -3,6 +3,7 @@
 
 #include <array>
 #include <expected>
+#include <format>
 #include <memory>
 #include <span>
 #include <string>
@@ -20,10 +21,11 @@ namespace coney::script {
 
 namespace {
 
-// Chapter n's configuration a new chapter drops: its scenes' cast, its scenes and its side mission. Its actions are
-// replaced rather than dropped (defaultActions()).
-constexpr std::array<std::string_view, 3> kDroppedConfiguration{"CfgMissionHumans", "CfgSceneTables",
-                                                                "CfgMissionTable"};
+// Chapter n's configuration a new chapter drops: its scenes' cast, its scenes, its side mission and its scene extras
+// (the humans clubhouse.Setup makes from SceneExtrasTable). Its actions are replaced rather than dropped
+// (defaultActions()).
+constexpr std::array<std::string_view, 4> kDroppedConfiguration{"CfgMissionHumans", "CfgSceneTables", "CfgMissionTable",
+                                                                "SceneExtrasTable"};
 
 // Sets `table[key]` to `value`; a string key and a value read from the scripts can always be set.
 // @coney-only the hub chapters that mod missions open
@@ -66,6 +68,16 @@ NativeFunction defaultActions(LuaVm& vm, int checkpoint) {
     };
 }
 
+// Puts Coney's default chapter in place of chapter n's configuration: drops kDroppedConfiguration and installs
+// defaultActions().
+// @coney-only the hub chapters that mod missions open
+void installDefaultChapter(LuaVm& vm, int checkpoint) {
+    for (const std::string_view name : kDroppedConfiguration) {
+        vm.setGlobal(name, Value());
+    }
+    vm.registerFunction("CfgMissionActions", defaultActions(vm, checkpoint));
+}
+
 } // namespace
 
 void applyHubChapter(ScriptSystem& scripts, const story::HubChapterPlan& plan) {
@@ -95,13 +107,14 @@ void applyHubChapter(ScriptSystem& scripts, const story::HubChapterPlan& plan) {
         "RunLevel",
         [&scripts, chapterRunLevel, plan](std::span<const Value> args) -> std::expected<std::vector<Value>, Error> {
             LuaVm& machine = scripts.vm();
-            for (const std::string_view name : kDroppedConfiguration) {
-                machine.setGlobal(name, Value());
-            }
-            machine.registerFunction("CfgMissionActions", defaultActions(machine, plan.checkpoint));
-            // The mod's chapter script runs over the default and may set any of the four itself.
-            if (!plan.script.empty()) {
-                scripts.runFile(plan.script);
+            installDefaultChapter(machine, plan.checkpoint);
+            // The mod's chapter script runs over the default and may set any of it itself. A script that fails
+            // (runFile() logs and counts its error) may have replaced part of the default before it stopped, so the
+            // default's own functions and tables go back in place (other globals it set stay), and the log says so.
+            if (!plan.script.empty() && !scripts.runFile(plan.script)) {
+                installDefaultChapter(machine, plan.checkpoint);
+                scripts.log(std::format("hub chapter {}: its chapter script {} failed; Coney's default chapter stays",
+                                        plan.id, plan.script));
             }
             machine.setGlobal("RunLevel", chapterRunLevel);
             scripts.call("RunLevel", args);
