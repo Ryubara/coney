@@ -84,11 +84,13 @@ members:
 5. A gang with flag `+0xd3` and no living members calls the handler at `+0x158` with its id and is freed
    (`0x0016a1e8`).
 
-## Events and GangSetMsgHandler {#gang-events}
+### Events and GangSetMsgHandler {#gang-events}
+
+Confirmed (code) at the cited addresses.
 
 `Human_OnEvent` (`0x0021d4e8`) offers an event, until one consumes it, to the human's own script handlers
 (`0x00384c38`), then **`Gang_OnEvent`** (`0x00164c20`, the brain's gang `+0x20c`), then `Brain_OnEvent`
-([Events](ai/index.md#events)). Confirmed (code).
+([Events](ai/index.md#events)).
 
 - `GangSetMsgHandler(gang, msg, name)` (`0x0016ab38` → `0x00164bb8`) stores the interned name at `+0xe4 + msg × 4`.
 - `Gang_OnEvent` calls that handler only while scripting runs (`0x00512b28` = 1), through script-system `+0x8c` with

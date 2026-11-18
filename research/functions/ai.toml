@@ -5319,10 +5319,10 @@ status = "legacy"
 address = 0x00306690
 name = "Tactic_Start"
 page = "ai-gangs.md#tactics"
-role = "[tactics](ai-gangs.md#tactics)"
+role = "the tactic's start on its first process: the limit made absolute, the alert state, the spot-line flags, every AI member's goal base marked and target dropped, the class's Start"
 level = "confirmed-code"
 coney = "src/ai/tactic.h:Tactic::process"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x003067d8
