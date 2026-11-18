@@ -292,17 +292,17 @@ jobs:
         with:
           save: "false"
 
-  # The software pictures (docs/guides/testing.md#software-pictures): Coney's synthetic scenes, which need no game
-  # data, drawn through Mesa's llvmpipe (GL3) and lavapipe (the GPU renderer on Vulkan) under a virtual display in a
-  # container image pinned by its digest, with Mesa at a fixed package version (.github/software-pictures/Dockerfile).
-  # A scene drawn on GL3 only is compared with its reference picture in tests/pictures/reference/; a scene drawn on
-  # both renderers (the test cards) has no reference, and the GPU renderer's picture is compared with GL3's. Both use
-  # a per-channel tolerance and a share of pixels allowed over it (`coney-tools picture scenes`, scenes.toml). The runner image's own Mesa moves with the image, which is why the driver is not
-  # the runner's. The engine is built here, on the runner (the same gcc-13 `ci` build as the build job, so it reads
-  # that job's cache); only the drawing runs in the container, on the same Ubuntu release. The drawn pictures are
-  # uploaded whatever the result, so a new reference (or a failure) can be looked at. A required check
-  # (`software-pictures` in merge.required_checks); a change that touches no engine file skips it like the build, and a
-  # skipped required job passes.
+  # The software pictures (docs/guides/testing.md#software-pictures): Coney's synthetic scenes, which need no game data,
+  # drawn through Mesa's llvmpipe (GL3) and lavapipe (the GPU renderer on Vulkan) under a virtual display in a container
+  # image pinned by its digest, with Mesa at a fixed package version (.github/software-pictures/Dockerfile). A scene
+  # drawn on GL3 only is compared with its reference picture in tests/pictures/reference/; a scene drawn on both
+  # renderers (the test cards) has no reference, and the GPU renderer's picture is compared with GL3's. Both use a
+  # per-channel tolerance and a share of pixels allowed over it (`coney-tools picture scenes`, scenes.toml). The runner
+  # image's own Mesa moves with the image, which is why the driver is not the runner's. The engine is built here, on the
+  # runner (the same gcc-13 `ci` build as the build job, so it reads that job's cache); only the drawing runs in the
+  # container, on the same Ubuntu release. The drawn pictures are uploaded whatever the result, so a new reference (or a
+  # failure) can be looked at. A required check (`software-pictures` in merge.required_checks); a change that touches no
+  # engine file skips it like the build, and a skipped required job passes.
   software-pictures:
     needs: changes
     if: needs.changes.outputs.build == 'true'

@@ -24,7 +24,7 @@ recorder, and the reference renders are GL3's offscreen. It takes `--screenshot`
 The GPU renderer draws the 2D layers, the pad's debug menus among them, but not yet the developer overlay
 ([#1204](issue:1204)) or the 3D scene, so the Tunables page that sets `Display/Renderer` may not be reachable. A saved
 `Display/Renderer = 1` therefore never starts it: the run draws with GL3 and the run log says `the overrides file saves
-Display/Renderer = 1, but the GPU renderer draws no menus yet, so this run draws with GL3; ...` (`kGpuRendererDrawsMenus`
+Display/Renderer = 1, but the GPU renderer draws no developer overlay yet, so this run draws with GL3; ...` (`kGpuRendererDrawsMenus`
 and `chooseRenderer()`, `src/core/renderer_choice.h`). Only `--renderer gpu`, asked for by name, starts it, and closing
 that window ends the run.
 
@@ -99,7 +99,9 @@ renderer cannot draw part of misses that part; it never fails.
 A frame's textures are uploaded the first time a frame draws them and kept by `Texture::serial()`, a number no other
 texture of the run has had, never by address, which a later texture may reuse (`graphics::UploadCache`,
 `src/graphics/upload_cache.h`). A texture no frame has drawn for 600 frames (`GpuRenderer::kTextureKeepFrames`) is let
-go. Two kinds are drawn:
+go. A frame whose upload buffer, vertex buffer or index buffer cannot be made or mapped forgets the textures it meant
+to upload (`GpuRenderer::forgetUploads()`, `UploadCache::forget()`), so none stays marked as holding pixels it never
+received and the next frame uploads it again. Two kinds are drawn:
 
 - **Sprite sheets** (`SheetTexture`): their RGBA pixels from librw's raster once (`SheetTexture::toImage()`, rows top
   first, the PS2 alpha scaled to 0-255), with the filter of the dictionary's texture.

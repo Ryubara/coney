@@ -187,8 +187,8 @@ TEST_CASE("the upload cache finds, replaces and drops textures by serial and use
 
 TEST_CASE("the upload cache forgets a texture whose upload failed, so the next frame uploads it again",
           "[graphics][gpu-renderer]") {
-    // Expected: docs/engine/gpu-renderer.md#textures; a frame whose upload buffer cannot be made or mapped forgets
-    // the textures it meant to upload, so none stays marked as holding pixels it never received.
+    // Expected: docs/engine/gpu-renderer.md#textures; a frame whose upload, vertex or index buffer cannot be made
+    // or mapped forgets the textures it meant to upload, so none stays marked as holding pixels it never received.
     UploadCache<std::unique_ptr<int>> cache;
     cache.put(7, 3, 1, std::make_unique<int>(70));
     cache.put(8, 0, 1, std::make_unique<int>(80));
