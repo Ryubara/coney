@@ -1,11 +1,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tests for `coney-tools clips pair`, `clips encode` and `clips scenarios`: the named scenarios, Coney's command line
 and its record line, the base checkout kept by commit, the side-by-side compare and the encodes that fit GitHub (the
-size ladders, the GIF budget, `--slow` and the cut message). Every program is a fake: no Coney, FFmpeg, PCSX2 or game
-data is needed, and the only frames are a synthetic label drawn here."""
+size ladders, the GIF budget, `--slow` and the cut message) and the busy marker. Every program is a fake, except FFmpeg
+in the tests of a real compare (skipped without it); no Coney, PCSX2 or game data is needed, and the only frames are
+synthetic ones drawn here."""
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import os
 import subprocess
@@ -294,6 +296,93 @@ def test_a_gif_over_its_budget_at_every_width_is_kept_with_a_warning(
     assert "warning:" in capsys.readouterr().out
 
 
+def test_a_slowed_gif_says_how_many_frames_it_keeps() -> None:
+    # A GIF's delays are whole hundredths of a second, so at --slow 2 (15 frames a second) it plays at 10 and keeps
+    # two frames of three; at --slow 3 (10 a second) it keeps them all; an unslowed GIF is never said to drop any.
+    kept, total, line = clips_pair.gif_frames(5.0, 2.0, 10)
+    assert (kept, total) == (100, 150)
+    assert line is not None and "100 of 150" in line and "MP4" in line
+    assert clips_pair.gif_frames(3.0, 3.0, 10)[2] is None
+    assert clips_pair.gif_frames(5.0, 1.0, 10)[2] is None
+
+
+def test_a_slowed_gif_encode_prints_the_frames_it_drops(tmp_path: Path) -> None:
+    said: list[str] = []
+    panels = _panels(tmp_path / "in")
+    clips_pair.encode_fitting(
+        Path("ffmpeg"), panels, tmp_path / "compare.gif", RULES, 5.0, 2.0, FakeFfmpeg([1000]), said.append
+    )
+    assert any("100 of 150" in line for line in said)
+    said.clear()
+    clips_pair.encode_fitting(
+        Path("ffmpeg"), panels, tmp_path / "compare.mp4", RULES, 5.0, 2.0, FakeFfmpeg([1000]), said.append
+    )
+    assert not any("of 150" in line for line in said)  # an MP4 keeps every frame
+
+
+def _real_tool(name: str) -> Path:
+    """FFmpeg or ffprobe as the tools find them; the test is skipped on a machine without them."""
+    try:
+        return clips.find_tool(name, REPO)
+    except clips.ClipError:
+        pytest.skip(f"no {name} on this machine")
+
+
+def _synthetic_clip(ffmpeg: Path, folder: Path, name: str, colour: tuple[int, int, int]) -> Path:
+    """A 1 s, 30 frames a second, 64 x 48 clip of a white square moving across `colour`: frames drawn with PIL into
+    files and encoded straight with FFmpeg (no lavfi source, which run_ffmpeg refuses)."""
+    from PIL import Image, ImageDraw
+
+    frames = folder / f"{name}-frames"
+    frames.mkdir(parents=True)
+    for index in range(30):
+        image = Image.new("RGB", (64, 48), colour)
+        ImageDraw.Draw(image).rectangle((index * 2, 16, index * 2 + 10, 26), fill=(255, 255, 255))
+        image.save(frames / f"{index:03d}.png")
+    out = folder / f"{name}.mp4"
+    command = [str(ffmpeg), "-hide_banner", "-loglevel", "error", "-nostdin", "-y", "-framerate", "30"]
+    command += ["-i", str(frames / "%03d.png"), "-pix_fmt", "yuv420p", str(out)]
+    subprocess.run(command, check=True)
+    return out
+
+
+def _frame_count(ffprobe: Path, clip: Path) -> int:
+    """How many frames the clip really holds (ffprobe decodes them all)."""
+    command = [str(ffprobe), "-v", "error", "-count_frames", "-select_streams", "v:0"]
+    command += ["-show_entries", "stream=nb_read_frames", "-of", "csv=p=0", str(clip)]
+    return int(subprocess.run(command, check=True, capture_output=True, text=True).stdout.strip())
+
+
+@pytest.mark.parametrize(("suffix", "slow"), [(".mp4", 1.0), (".mp4", 2.0), (".gif", 1.0), (".gif", 2.0)])
+def test_a_real_compare_of_three_labelled_panels_is_a_valid_clip(tmp_path: Path, suffix: str, slow: float) -> None:
+    # FFmpeg itself checks the filter graph here: the fakes above only read its text.
+    ffmpeg, ffprobe = _real_tool("ffmpeg"), _real_tool("ffprobe")
+    small = dataclasses.replace(PAIR, mp4_heights=(96,), gif_widths=(240,))
+    rules = dataclasses.replace(RULES, pair=small)
+    panels = [
+        clips_pair.Panel(
+            _synthetic_clip(ffmpeg, tmp_path, label.lower(), colour),
+            clips_pair.label_image(label, 96, tmp_path / f"{label.lower()}.png"),
+        )
+        for label, colour in (("Original", (40, 40, 160)), ("Before", (160, 40, 40)), ("After", (40, 160, 40)))
+    ]
+    out = tmp_path / f"compare{suffix}"
+    clips_pair.encode_fitting(ffmpeg, panels, out, rules, 1.0, slow, clips._run, lambda line: None)
+    info = clips.probe(out, ffprobe)
+    assert clips.clip_problems(info, rules) == []
+    assert info.seconds == pytest.approx(slow, abs=0.15)
+    assert not info.audio
+    if suffix == ".mp4":
+        assert (info.width, info.height) == (3 * 128, 96)  # three 4:3 panels side by side
+        # 30 frames a second throughout: slowed, each source frame is shown `slow` times, none dropped (the -t cut
+        # may take the last one)
+        assert _frame_count(ffprobe, out) == pytest.approx(30 * slow, abs=1)
+    else:
+        assert info.width <= 240
+        kept, _, _ = clips_pair.gif_frames(1.0, slow, small.gif_fps)
+        assert _frame_count(ffprobe, out) == pytest.approx(kept, abs=1)
+
+
 def test_an_encodes_bare_out_name_goes_beside_the_clip_and_a_path_stays_as_given(tmp_path: Path) -> None:
     clip = tmp_path / "task" / "clips" / "after.mp4"
     assert clips_pair.encode_target(clip, Path("compare.gif")) == tmp_path / "task" / "clips" / "compare.gif"
@@ -337,6 +426,33 @@ def test_the_busy_marker_is_removed_only_when_it_is_ours(tmp_path: Path) -> None
     with clips_pair.busy(tmp_path, "me", ".coney-busy"):
         pass
     assert (tmp_path / ".coney-busy").read_text(encoding="utf-8") == "someone\n"
+
+
+def test_the_busy_marker_names_its_process_and_goes_when_the_block_raises(tmp_path: Path) -> None:
+    # The pid lets `workspace clean` tell a marker whose process was killed from one in use (workspace_clean.py).
+    with pytest.raises(RuntimeError), clips_pair.busy(tmp_path, "me", ".coney-busy"):
+        assert f"pid={os.getpid()}" in (tmp_path / ".coney-busy").read_text(encoding="utf-8")
+        raise RuntimeError("the build broke")
+    assert not (tmp_path / ".coney-busy").exists()
+
+
+def test_using_a_base_checkout_counts_as_activity(tmp_path: Path) -> None:
+    # A no-op build and a run that writes to scratch touch nothing `workspace clean` reads, so a base used every day
+    # would look idle and be rebuilt every `build_hours` without this.
+    main = tmp_path / "repos" / "coney"
+    main.mkdir(parents=True)
+    _git(main, "init", "-q", "-b", "main")
+    (main / "a.txt").write_text("a\n", encoding="utf-8")
+    _git(main, "add", "-A")
+    _git(main, "commit", "-q", "-m", "first")
+    commit = _git(main, "rev-parse", "HEAD")
+    path = tmp_path / "worktrees" / f"clips-base-{commit[:12]}"
+    clips_pair.ensure_base_checkout(main, path, commit, clips_pair.run_git)
+    head = Path(_git(path, "rev-parse", "--absolute-git-dir")) / "HEAD"
+    os.utime(head, (1_000_000, 1_000_000))
+    clips_pair.mark_used(path)
+    assert head.stat().st_mtime > 1_000_000
+    clips_pair.mark_used(tmp_path / "not-a-worktree")  # nothing to mark: no error
 
 
 # --- the whole pair --------------------------------------------------------------------------------------------------
@@ -484,6 +600,50 @@ def test_a_failed_build_stops_the_pair_with_its_exit_code(space: dict[str, Path]
     machine = FakeMachine("c" * 40, {"before": "0x01", "after": "0x02"})
     machine.build = lambda checkout, agent, preset: 75  # type: ignore[method-assign]
     assert _pair(space, machine) == 75
+
+
+def _base(space: dict[str, Path]) -> Path:
+    """The base checkout the fakes' pair uses."""
+    return space["task"].parent / f"clips-base-{'c' * 12}"
+
+
+def test_the_busy_marker_is_gone_after_a_failed_base_build(space: dict[str, Path]) -> None:
+    machine = FakeMachine("c" * 40, {"before": "0x01", "after": "0x02"})
+    task_build = machine.build
+    machine.build = lambda checkout, agent, preset: (  # type: ignore[method-assign]
+        2 if checkout.name.startswith("clips-base-") else task_build(checkout, agent, preset)
+    )
+    assert _pair(space, machine) == 2
+    assert _base(space).is_dir() and not (_base(space) / ".coney-busy").exists()
+
+
+def test_the_busy_marker_is_gone_after_coney_fails_on_the_base(space: dict[str, Path]) -> None:
+    machine = FakeMachine("c" * 40, {"before": "0x01", "after": "0x02"})
+    machine.coney = lambda args, cwd, env: _done(args, code=3, err="crashed")  # type: ignore[method-assign]
+    with pytest.raises(clips.ClipError, match="before: Coney failed"):
+        _pair(space, machine)
+    assert not (_base(space) / ".coney-busy").exists()
+
+
+def test_the_busy_marker_is_gone_after_runs_that_differ(space: dict[str, Path]) -> None:
+    machine = FakeMachine("c" * 40, {"before": "0x01", "after": "0x02"}, frames={"before": 300, "after": 280})
+    with pytest.raises(clips.ClipError):
+        _pair(space, machine)
+    assert not (_base(space) / ".coney-busy").exists()
+
+
+def test_a_rerun_clears_the_last_pairs_clips_first(space: dict[str, Path]) -> None:
+    # A rerun whose frames are equal makes no compare: the last pair's compare must not stay to be published.
+    folder = space["scratch"] / "my-task" / "clips"
+    folder.mkdir(parents=True)
+    for name in ("compare.mp4", "compare.gif", "original.mp4", "pair.json", "walk-compare.mp4"):
+        (folder / name).write_bytes(b"old")
+    machine = FakeMachine("c" * 40, {"before": "0x01", "after": "0x01"})
+    assert _pair(space, machine) == 1
+    names = {path.name for path in folder.iterdir()}
+    assert not names & {"compare.mp4", "compare.gif", "original.mp4"}
+    assert "walk-compare.mp4" in names  # another prefix's pair is left alone
+    assert json.loads((folder / "pair.json").read_text(encoding="utf-8"))["same"] is True
 
 
 def test_clip_names_may_be_gifs() -> None:

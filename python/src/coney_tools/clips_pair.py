@@ -20,9 +20,10 @@ third panel of the original from PCSX2 (`clips record`) first when asked. `--gif
 The encodes port the ideas of GD Studio's `gds capture clip`: an MP4 is encoded at the first size of a ladder and
 again at the next while it is over GitHub's limit; a GIF has a budget per second of it (it plays while it downloads,
 so the budget is a rate), a 128-colour palette, a width under GitHub's description column and a frame rate whose delay
-is a whole number of hundredths; `--slow N` keeps every frame and the slowed clip counts against the cap, with a line
-saying what was cut; and a failed encode never replaces the file that was there. The sizes are
-`workspace.clips.pair` in `.github/conventions.yml`. Every FFmpeg command goes through `clips.run_ffmpeg`.
+is a whole number of hundredths; `--slow N` keeps every frame of an MP4 (a GIF says how many it keeps) and the slowed
+clip counts against the cap, with a line saying what was cut; and a failed encode never replaces the file that was
+there. The sizes are `workspace.clips.pair` in `.github/conventions.yml`. Every FFmpeg command goes through
+`clips.run_ffmpeg`.
 """
 
 from __future__ import annotations
@@ -254,6 +255,22 @@ def gif_rate(rate: Fraction, preferred: int) -> Fraction:
     return Fraction(next((choice for choice in GIF_RATES if choice <= ceiling), 1))
 
 
+def gif_frames(seconds: float, slow: float, preferred: int) -> tuple[int, int, str | None]:
+    """How many frames a GIF of `seconds` of source slowed `slow` times keeps, of how many, and the line to print when a
+    slowed GIF drops some (its delays are whole hundredths, so --slow 2 plays at 10 frames a second, not 15). An
+    unslowed GIF plays at its preferred rate by design and gets no line; an MP4 always keeps every frame."""
+    total = round(seconds * FPS)
+    rate = gif_rate(Fraction(FPS) / Fraction(str(slow)).limit_denominator(1000), preferred)
+    kept = min(total, round(seconds * slow * rate))
+    if slow == 1 or kept >= total:
+        return kept, total, None
+    line = (
+        f"the GIF keeps {kept} of {total} frames at --slow {slow:g} (it plays at {_rate_text(rate)} a second); "
+        "the MP4 keeps every frame: use it when a single frame matters"
+    )
+    return kept, total, line
+
+
 def gif_budget(seconds: float, rules: Clips) -> int:
     """The most bytes a GIF of `seconds` should take: `gif_kb_per_second` for each second, counted for at least
     `gif_min_seconds` and at most `max_seconds`."""
@@ -379,6 +396,8 @@ def encode_fitting(
     sizes = rules.pair.gif_widths if gif else rules.pair.mp4_heights
     part = out.with_name(f"{out.stem}.part{out.suffix}")
     size = 0
+    if gif and (dropped := gif_frames(seconds, slow, rules.pair.gif_fps)[2]):
+        say(dropped)
     try:
         for step in sizes:
             options: dict[str, Any] = {"gif": (step, rules.pair.gif_fps)} if gif else {"height": step}
@@ -442,9 +461,10 @@ def ensure_base_checkout(main: Path, path: Path, commit: str, git: Callable[[Pat
 @contextlib.contextmanager
 def busy(checkout: Path, agent: str, marker: str) -> Iterator[None]:
     """Hold `checkout`'s busy marker while the block runs, so `workspace clean` leaves the base build alone; a marker
-    another run wrote is left as it is, and only ours is removed."""
+    another run wrote is left as it is, and only ours is removed. It names this process (`pid=N`): a run killed hard
+    leaves it behind, and `workspace clean` then sees the process gone and no longer counts it."""
     path = checkout / marker
-    mine = f"{agent} clips pair {os.getpid()}\n"
+    mine = f"{agent} clips pair pid={os.getpid()}\n"
     made = False
     try:
         with path.open("x", encoding="utf-8") as written:
@@ -458,6 +478,17 @@ def busy(checkout: Path, agent: str, marker: str) -> Iterator[None]:
         with contextlib.suppress(OSError):
             if made and path.read_text(encoding="utf-8") == mine:
                 path.unlink()
+
+
+def mark_used(checkout: Path) -> None:
+    """Count a use of the base checkout as activity: touch the HEAD of git's folder for it, which `workspace clean`
+    reads (`last_activity`). A no-op build and a run that writes to scratch touch nothing it reads, so a base used
+    every day would otherwise look idle and be removed and rebuilt every `build_hours`. Nothing when it is not a
+    worktree."""
+    with contextlib.suppress(OSError, ValueError):
+        link = (checkout / ".git").read_text(encoding="utf-8").strip()
+        if link.startswith("gitdir:"):
+            os.utime(Path(link.removeprefix("gitdir:").strip()) / "HEAD")
 
 
 # --- the whole pair --------------------------------------------------------------------------------------------------
@@ -562,6 +593,10 @@ def run_pair(
     paths = {side: folder / f"{named}{side}.mp4" for side in ("before", "after", "original", "compare")}
     for path in paths.values():
         clips.check_clip_path(path, settings.scratch, rules)
+    # The last pair's clips with this prefix go first: a rerun that fails, or finds the frames equal, must not leave
+    # an older compare behind to be published as this one.
+    for path in [*paths.values(), paths["compare"].with_suffix(".gif"), folder / f"{named}pair.json"]:
+        path.unlink(missing_ok=True)
     preset = rules.pair.preset
 
     # The after first: the task's own build is the one most likely to fail, and it is needed anyway.
@@ -583,6 +618,7 @@ def run_pair(
         before = _record(
             "before", coney_executable(base, preset), base, disc, run, paths["before"], settings.ffmpeg, env
         )
+        mark_used(base)
     after = _record(
         "after", coney_executable(checkout, preset), checkout, disc, run, paths["after"], settings.ffmpeg, env
     )

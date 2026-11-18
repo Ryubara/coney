@@ -935,7 +935,9 @@ def _add_clips_pair_commands(commands: Any) -> None:
     pair.add_argument("--ai-seed", type=int, help="without a scenario: the AI's seed")
     pair.add_argument("--original", type=Path, metavar="STATE", help="a .p2s state: add the original's panel first")
     pair.add_argument("--gif", action="store_true", help="also write compare.gif, sized for a description")
-    pair.add_argument("--slow", type=float, default=1.0, help="play the compare N times slower, every frame kept")
+    pair.add_argument(
+        "--slow", type=float, default=1.0, help="play the compare N times slower (an MP4 keeps every frame)"
+    )
     pair.add_argument("--prefix", default="", help="name the files PREFIX-before.mp4 and so on (several pairs)")
     pair.add_argument("--disc", help="the disc for Coney; default: game_dir of coney.local.toml")
     pair.add_argument("--base", help="the branch whose merge base is the before (default origin/main)")
@@ -949,7 +951,7 @@ def _add_clips_pair_commands(commands: Any) -> None:
     )
     encode.add_argument("--start-frame", type=int, default=0, help="the clip's frame to start at (30 a second)")
     encode.add_argument("--seconds", type=float, help="how many seconds of the clip (default: the rest of it)")
-    encode.add_argument("--slow", type=float, default=1.0, help="play it N times slower, every frame kept")
+    encode.add_argument("--slow", type=float, default=1.0, help="play it N times slower (an MP4 keeps every frame)")
     encode.add_argument("--label", help="a label in the top left corner")
     commands.add_parser("scenarios", help="list the named scenarios clips pair records")
 

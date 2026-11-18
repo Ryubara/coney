@@ -13,8 +13,9 @@ died, and test runs whose caller is gone (stale_processes.py).
 
 * touch the main checkout, the folder it is run from, a worktree that holds or waits for a build slot, or a worktree
   that holds a `.coney-busy` file (an agent creates that file while it works and deletes it when it is done). An
-  empty marker older than the idle threshold no longer counts: its agent is long gone. A marker with something in
-  it (an agent id) always counts;
+  empty marker older than the idle threshold no longer counts: its agent is long gone. A marker that names its
+  process (`pid=N`) counts while that process runs. Any other marker with something in it (an agent id) always
+  counts;
 * remove a worktree with uncommitted changes (untracked files count) or with commits that are not merged. A branch
   is merged when `origin/main` contains it, or when GitHub says a pull request from it was merged at that very
   commit or a later one (a squash merge leaves the branch's commits out of `main`, so `git branch --merged` alone
@@ -66,7 +67,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
-from coney_tools import build_claims, build_root, stale_processes, watched_drives, workspace_clean_fixes
+from coney_tools import build_claims, build_root, pcsx2_proc, stale_processes, watched_drives, workspace_clean_fixes
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Workspace, load_conventions
 from coney_tools.unit import scratch_folder
@@ -358,6 +359,8 @@ class Settings:
     busy_file: str = BUSY_FILE
     #: Hours after which an empty busy file no longer protects its worktree (its agent died without deleting it).
     marker_hours: float = DEFAULT_BUILD_HOURS
+    #: Whether a process id is running: a busy file that names its process (`pid=N`) protects only while it is.
+    alive: Callable[[int], bool] = pcsx2_proc.pid_alive
     #: The names of the worktrees that hold a build slot, wait for one or run a check, read from the build queue each
     #: time it is called (never kept): see `build_claims.live_worktrees`.
     live: Callable[[], set[str]] = lambda: set()
@@ -378,11 +381,26 @@ class Settings:
     base_prefix: str = ""
 
 
+def marker_pid(marker: Path) -> int | None:
+    """The process a busy file names (a `pid=N` word in it), or None when it names none or cannot be read."""
+    try:
+        words = marker.read_text(encoding="utf-8", errors="replace").split()
+    except OSError:
+        return None
+    for word in words:
+        key, _, value = word.partition("=")
+        if key == "pid" and value.isdigit():
+            return int(value)
+    return None
+
+
 def busy_reason(path: Path, settings: Settings) -> str:
     """Why the worktree at `path` is in use, or "" when it is not: its busy file, or a build slot or queue place.
 
     An empty busy file older than `marker_hours` is ignored (an agent that dies leaves one behind, and it would
-    protect its worktree for ever); a busy file with something in it always protects.
+    protect its worktree for ever); one that names its process (`pid=N`, as `clips pair` writes) is ignored once that
+    process is gone, whatever its age (a hard kill leaves it behind); any other busy file with something in it (an
+    agent id) always protects.
     """
     try:
         marker = os.lstat(path / settings.busy_file)
@@ -390,6 +408,9 @@ def busy_reason(path: Path, settings: Settings) -> str:
         marker = None
     if marker is not None:
         forgotten = marker.st_size == 0 and (settings.now - marker.st_mtime) / 3600.0 > settings.marker_hours
+        pid = marker_pid(path / settings.busy_file) if marker.st_size else None
+        if pid is not None and not settings.alive(pid):
+            forgotten = True
         if not forgotten:
             return f"busy ({settings.busy_file})"
     running = settings.running().get(path.name)
@@ -458,6 +479,11 @@ def assess(tree: GitWorktree, settings: Settings) -> Entry:
         entry.why = "uncommitted changes"
     else:
         ahead = _unmerged_commits(path, settings.base)
+        # A clips pair base checkout is a cached build of a commit: of main, or of a branch given to `--base` that main
+        # may never get. When a branch holds the commit, nothing is lost by removing the checkout once idle.
+        cached = bool(settings.base_prefix) and tree.branch is None and path.name.startswith(settings.base_prefix)
+        if cached and ahead and _on_a_branch(path):
+            ahead = 0
         if ahead is None:
             entry.why = f"cannot compare with {settings.base}"
         elif ahead > 0:
@@ -473,8 +499,7 @@ def assess(tree: GitWorktree, settings: Settings) -> Entry:
         else:
             entry.why = f"merged into {settings.base}"
         entry.merged = entry.why.startswith(("merged into", "pull request merged"))
-        # A clips pair base checkout is a cached build of a commit of main: it lives as long as a build folder.
-        cached = bool(settings.base_prefix) and tree.branch is None and path.name.startswith(settings.base_prefix)
+        # A clips pair base checkout lives as long as a build folder.
         if entry.merged and cached:
             entry.why = "a clips pair base build"
         if entry.merged:
@@ -485,6 +510,12 @@ def assess(tree: GitWorktree, settings: Settings) -> Entry:
                 entry.delete_build = False
                 entry.reclaim = build_size + (dir_size(path, frozenset({"build", ".git"})) if settings.measure else 0)
     return entry
+
+
+def _on_a_branch(worktree: Path) -> bool:
+    """Whether a local or remote branch holds the worktree's HEAD (a commit on none would be lost with it)."""
+    held = _git(worktree, "for-each-ref", "--contains", "HEAD", "--count", "1", "refs/heads", "refs/remotes")
+    return held.returncode == 0 and bool(held.stdout.strip())
 
 
 def plan(settings: Settings) -> tuple[list[Entry], list[GitWorktree]]:

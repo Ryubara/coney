@@ -67,18 +67,22 @@ uv run --project python coney-tools clips scenarios
 ```
 
 `clips pair` records one run of Coney twice with the same arguments and puts the two side by side, so a pull request
-shows motion, timing, AI, the camera or an effect before and after its change. Run it from the task's worktree. In
-order, it:
+shows motion, timing, AI, the camera or an effect before and after its change. Run it from the task's worktree. It
+first removes the last pair's clips with the same `--prefix` (an older compare must never be published as this one),
+then, in order, it:
 
 1. builds the task's worktree as it stands (`coney-tools build --target coney`, preset `workspace.clips.pair.preset`,
    under the build slots: a build that gives up waiting ends the pair with its exit code, 75);
 2. finds the branch's **merge base** with `origin/main` (`--base` for another branch; never `origin/main` itself, which
    carries other pull requests' changes the branch does not have; a fetch is yours to run first) and builds it in its
-   own detached worktree, `worktrees/coney/clips-base-<commit>`, holding its busy marker meanwhile. The next pair from
-   the same base, any task's, finds it built, and [`workspace clean`](workspace.md#cleanup) removes it once it has
-   been idle as long as a build folder may be. It counts toward the [cap on build folders](agents.md#build-cap) like
-   any build, with no exemption: a pair from a base without a build folder needs one free build place, or the base
-   build is refused and the pair ends with its exit code;
+   own detached worktree, `worktrees/coney/clips-base-<commit>`, holding its busy marker meanwhile (it names the
+   pair's process, so a pair killed hard does not protect the base for ever). The next pair from the same base, any
+   task's, finds it built, and each pair that uses it counts as activity. [`workspace clean`](workspace.md#cleanup)
+   removes it once it has been idle as long as a build folder may be, a base from `--base` that `main` never gets
+   too (a branch holds its commit). It counts toward the [cap on build folders](agents.md#build-cap) like any build,
+   with no exemption: a pair from a base without a build folder needs one free build place, or the base build is
+   refused and the pair ends with its exit code. The worktree made before the refusal stays, small and without a
+   build: the next pair builds in it, and `workspace clean` removes it once idle;
 3. records the run on the base (`before.mp4`) and on the task (`after.mp4`) with `coney --record`
    ([Recording a clip](running-options.md#record)): test mode, the task's own input script on both sides, each run
    from its build's checkout, FFmpeg from `CONEY_FFMPEG` or the one the tools find;
@@ -117,8 +121,10 @@ in the current folder (usually the checkout, where clips may not be written); a 
   while it is over. Still over at the last, it is kept with a `warning:` line naming the MP4 (and fails over 10 MB).
   Its frame rate is 10 (`gif_fps`), since a GIF's delays are whole hundredths of a second and 30 frames a second
   cannot be; a slowed clip whose rate is already whole keeps every frame (`--slow 3` plays all 30 a second at 10).
-* **`--slow N`** plays the clip N times slower with every frame kept (a fast pose change, a one-frame flash), and the
-  slowed clip counts against the 10-second cap: what does not fit is cut, with a line such as `clip cut at 10 s: 75
+* **`--slow N`** plays the clip N times slower. An MP4 keeps every frame (a fast pose change, a one-frame flash); a
+  GIF keeps every frame only when the slowed rate is whole hundredths of a second, and otherwise prints how many it
+  keeps (`the GIF keeps 100 of 150 frames at --slow 2`), so use the MP4 when one frame matters. The slowed clip
+  counts against the 10-second cap: what does not fit is cut, with a line such as `clip cut at 10 s: 75
   frames (2.50 s) of 150 left out at --slow 4`. Read it before using the clip; the moment meant may be in the cut.
 * **Every encoding prints its size**, and goes to a part file first, so a failed encode leaves the file that was there.
 
@@ -236,7 +242,7 @@ coney-tools clips pair [SCENARIO] --agent AGENT [--level LEVEL] [--input-script 
 | `--ai-seed AI_SEED` | integer | none | without a scenario: the AI's seed |
 | `--original STATE` | path | none | a .p2s state: add the original's panel first |
 | `--gif` | flag | off | also write compare.gif, sized for a description |
-| `--slow SLOW` | number | `1.0` | play the compare N times slower, every frame kept |
+| `--slow SLOW` | number | `1.0` | play the compare N times slower (an MP4 keeps every frame) |
 | `--prefix PREFIX` | text | none | name the files PREFIX-before.mp4 and so on (several pairs) |
 | `--disc DISC` | text | none | the disc for Coney; default: game_dir of coney.local.toml |
 | `--base BASE` | text | none | the branch whose merge base is the before (default origin/main) |
@@ -256,7 +262,7 @@ coney-tools clips encode CLIP --out OUT [--start-frame START_FRAME] [--seconds S
 | `--out OUT` | path | required | the new file, NAME.gif or NAME.mp4: a bare name goes beside the clip |
 | `--start-frame START_FRAME` | integer | `0` | the clip's frame to start at (30 a second) |
 | `--seconds SECONDS` | number | none | how many seconds of the clip (default: the rest of it) |
-| `--slow SLOW` | number | `1.0` | play it N times slower, every frame kept |
+| `--slow SLOW` | number | `1.0` | play it N times slower (an MP4 keeps every frame) |
 | `--label LABEL` | text | none | a label in the top left corner |
 
 ### `clips scenarios` {#clips-scenarios-usage}

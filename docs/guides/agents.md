@@ -650,8 +650,9 @@ its folder until somebody removes it. A rule written in a brief is not enough, s
   question that cannot wait for your report goes in `QUESTION.md` in your scratch folder, which
   [Conclave](conclave.md#questions) tells the coordinator about).
 - **The busy marker** is how a worktree says "leave me alone". Write your agent id into it
-  (`echo <id> > .coney-busy`): a marker with something in it always protects, while an empty one older than a day
-  is taken for a dead agent's and ignored, so a crashed agent no longer protects its worktree for ever.
+  (`echo <id> > .coney-busy`): a marker with something in it always protects (one naming a process, `pid=N`, only
+  while that process runs), while an empty one older than a day is taken for a dead agent's and ignored, so a
+  crashed agent no longer protects its worktree for ever.
 
 ## Build waits {#build-waits}
 
