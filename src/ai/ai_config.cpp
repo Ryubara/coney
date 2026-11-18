@@ -130,6 +130,7 @@ GangStrategyTable gangStrategiesFrom(const script::RecordedCalls& recorded) {
     GangStrategyTable table{};
     for (const std::vector<script::Value>& call : recorded.calls("CfgGang")) {
         const std::optional<double> kind = numberAt(call, 0);
+        // Coney's choice: a kind outside the table, or a strategy that is not a table, is skipped.
         if (!kind || *kind < 0.0 || *kind >= static_cast<double>(kGangKinds) || call.size() <= kStrategyArgument ||
             call[kStrategyArgument].table() == nullptr) {
             continue;

@@ -617,6 +617,7 @@ bool canJoinFightAgainst(const Gang& self, const Gang& other) {
 }
 
 int Gangs::strategyWeight(int kind, std::size_t order) const {
+    // Coney's choice: outside the table reads 0, where the original would read past the records.
     if (kind < 0 || kind >= static_cast<int>(m_strategies.size()) || order >= kStrategyOrders) {
         return 0;
     }
