@@ -260,8 +260,18 @@ chooses, circle goes back and, on the commands, closes the console. A command wi
 argument's row, left and right step through the values its type completes to (a mission's from the session host's
 list, `on` and `off`, a choice's), or change a number by one; a required argument starts at its first value, one with
 a default at the default, and changing one puts the arguments after it back to their defaults. Cross on the last row
-runs the line, which the terminal shows as typed. A `text` argument cannot be typed with the pad yet: the debug
-menus' pad typing has not moved into the console's model, and the platform's on-screen keyboard is not used yet.
+runs the line, which the terminal shows as typed. A `text` argument cannot be typed with the pad yet
+([#1437](issue:1437)): the debug menus' pad typing has not moved into the console's model, and the platform's
+on-screen keyboard is not used yet.
+
+**Events while it is closed.** A closed bar shows Dear ImGui no event: Dear ImGui drains its input queue only in a frame
+it begins, which a closed bar does not, so events shown to it then would pile up and replay into the line when F8
+opens it. Closed, the bar looks only for F8 (`routeConsoleEvent`, which the tests reach with no window), and each
+opening starts with no key held.
+
+**Whose line it is.** The bar runs every line as player slot 0, the host's, as the input script's lines do for port 0:
+a guest's bar does not know its own slot yet. Nothing reads the slot until mod commands, which are build issue 7 of
+[the console design](studio/console.md#build-issues), and it must take the local player's slot from the session then.
 
 **Where it lives.** The model (the line, the picker, the gate) is in `src/console/` in `coney_core`; the bar is
 `coney_console_ui` in `src/platform/` (`ConsoleView` draws it in a frame someone else begins, so its tests run on a
@@ -278,7 +288,10 @@ A test-mode run (`--headless`, `--frames`, `--input-script`, `--screenshot`) rea
 input script (a typed line is ignored) and neither reads nor writes `console-history.txt`. The console's unit tests
 prove both on the model (`tests/console/console_test.cpp`). The bar keeps to it too: F8 is not caught, the pad gate is
 left out of the input chain (so a scripted SELECT and R3 reach the game as on a PS2), and `coney-console.ini` is
-neither read nor written, so no pinned terminal from an earlier run appears. `--console-open N` opens the bar for the
+neither read nor written, so no pinned terminal from an earlier run appears (a test-mode run does not even ask SDL
+for the preference folder, which would create it; `consoleUiSettings`, tested in `tests/platform/console_view_test.cpp`,
+with F8 not caught). `--console-open N` opens the bar for the
 first N frames, the one way a test-mode run draws it ([The console](running-options.md#console)), and
-`coney.console_bar_leaves_frame` checks that the last frame after it closes is byte-identical to a run without it.
+`coney.console_bar_leaves_frame` checks that the last frame after it closes is byte-identical to a run without it (a
+check of the debug tools' `coney` only, which reports itself skipped on a machine with no display).
 `--capture-dir` comes with the captures ([Off in test mode](studio/console.md#test-mode)).

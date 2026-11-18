@@ -166,6 +166,8 @@ void ConsoleView::drawLine() {
                                            ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory;
     if (ImGui::InputText("##line", &m_buffer, kFlags, &ConsoleView::lineCallback, this)) {
         m_editor.setText(m_buffer);
+        // @coney-only slot 0, the host's, until the session tells the bar its own player's slot: nothing reads the slot
+        // before mod commands (build issue 7 of docs/guides/studio/console.md#build-issues), which need it.
         (void)m_editor.submit();
         m_buffer.clear();
         // Enter leaves the text box; the line keeps the keyboard for the next command.

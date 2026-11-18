@@ -1165,9 +1165,8 @@ int main(int argc, char** argv) {
     // The console's F8 bar (docs/guides/console.md#front-end), only with a window, in a Dear ImGui context of its own.
     std::unique_ptr<coney::platform::ConsoleUi> consoleUi;
     if (windowed) {
-        auto started = coney::platform::ConsoleUi::start(
-            renderer, gameConsole.console(), consolePad,
-            {.testMode = testMode, .iniPath = coney::platform::consoleSettingsPath().value_or("")});
+        auto started = coney::platform::ConsoleUi::start(renderer, gameConsole.console(), consolePad,
+                                                         coney::platform::consoleUiSettings(testMode));
         if (started) {
             consoleUi = std::move(*started);
             if (const std::optional<int> openFor = options->consoleOpenFrames; openFor) {

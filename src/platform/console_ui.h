@@ -112,6 +112,7 @@ class ConsoleUi {
     ImGuiContext* m_context = nullptr;
     bool m_sdlStarted = false;     // the SDL3 backend is up and must be shut down
     bool m_glStarted = false;      // the OpenGL 3 backend is up and must be shut down
+    bool m_wasOpen = false;        // whether the last draw() found it open
     std::uint64_t m_hideAfter = 0; // draws left before showForFrames() closes it; 0: no limit
 };
 

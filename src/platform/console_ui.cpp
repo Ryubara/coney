@@ -59,13 +59,39 @@ std::optional<std::string> consoleSettingsPath() {
     return path + kSettingsFile;
 }
 
-// STUB for the test commit: the real routing comes with the fix.
-ConsoleEventRoute routeConsoleEvent(const void* /*event*/, bool /*open*/, bool /*testMode*/) {
-    return ConsoleEventRoute{.forward = true};
+ConsoleEventRoute routeConsoleEvent(const void* event, bool open, bool testMode) {
+    const auto& sdlEvent = *static_cast<const SDL_Event*>(event);
+    ConsoleEventRoute route;
+    if (sdlEvent.type == SDL_EVENT_KEY_DOWN && !sdlEvent.key.repeat) {
+        // F8 opens and closes it, except in test mode, which reads no device.
+        if (sdlEvent.key.key == SDLK_F8 && !testMode) {
+            route.action = ConsoleEventRoute::Action::Toggle;
+            return route;
+        }
+        // Escape closes it, and does not quit the game while it is open.
+        if (sdlEvent.key.key == SDLK_ESCAPE && open) {
+            route.action = ConsoleEventRoute::Action::Close;
+            return route;
+        }
+    }
+    // A closed bar never begins a Dear ImGui frame, the only place its input queue drains: show it nothing, or the
+    // queue grows for as long as the game runs and replays into the line when F8 opens it.
+    if (!open) {
+        return route;
+    }
+    route.forward = true;
+    route.takesKeyboard = isKeyboardEvent(sdlEvent);
+    route.mouse = isMouseEvent(sdlEvent);
+    return route;
 }
 
-// STUB for the test commit: the real settings come with the fix.
-ConsoleUiSettings consoleUiSettings(bool testMode) { return {.testMode = testMode, .iniPath = "stub"}; }
+ConsoleUiSettings consoleUiSettings(bool testMode) {
+    // Asking SDL for the preference folder creates it, so a test-mode run never asks.
+    if (testMode) {
+        return {.testMode = true, .iniPath = {}};
+    }
+    return {.testMode = false, .iniPath = consoleSettingsPath().value_or("")};
+}
 
 ConsoleUi::ConsoleUi(console::Console& console, console::ConsolePad& pad, ConsoleUiSettings settings)
     : m_pad(pad), m_settings(std::move(settings)), m_view(console, pad), m_scale(m_scaleChoice, m_scaleApplied) {}
@@ -126,26 +152,24 @@ ConsoleUi::~ConsoleUi() {
 }
 
 bool ConsoleUi::handleEvent(const void* event) {
-    const auto& sdlEvent = *static_cast<const SDL_Event*>(event);
-    const ContextScope scope(m_context);
-    if (sdlEvent.type == SDL_EVENT_KEY_DOWN && !sdlEvent.key.repeat) {
-        // F8 opens and closes it, except in test mode, which reads no device.
-        if (sdlEvent.key.key == SDLK_F8 && !m_settings.testMode) {
-            setOpen(!m_pad.open());
-            return true;
-        }
-        // Escape closes it, and does not quit the game while it is open.
-        if (sdlEvent.key.key == SDLK_ESCAPE && m_pad.open()) {
-            setOpen(false);
-            return true;
-        }
+    const ConsoleEventRoute route = routeConsoleEvent(event, m_pad.open(), m_settings.testMode);
+    switch (route.action) {
+    case ConsoleEventRoute::Action::Toggle:
+        setOpen(!m_pad.open());
+        return true;
+    case ConsoleEventRoute::Action::Close:
+        setOpen(false);
+        return true;
+    case ConsoleEventRoute::Action::None:
+        break;
     }
-    // Dear ImGui sees every event, open or not, so its idea of held keys and the mouse stays right.
-    ImGui_ImplSDL3_ProcessEvent(&sdlEvent);
-    if (!m_pad.open()) {
+    if (!route.forward) {
         return false;
     }
-    return isKeyboardEvent(sdlEvent) || (isMouseEvent(sdlEvent) && ImGui::GetIO().WantCaptureMouse);
+    // Open: Dear ImGui sees the event, and every frame drawn drains it.
+    const ContextScope scope(m_context);
+    ImGui_ImplSDL3_ProcessEvent(static_cast<const SDL_Event*>(event));
+    return route.takesKeyboard || (route.mouse && ImGui::GetIO().WantCaptureMouse);
 }
 
 void ConsoleUi::setOpen(bool open) {
@@ -162,10 +186,17 @@ void ConsoleUi::showForFrames(std::uint64_t frames) {
 }
 
 void ConsoleUi::draw() {
+    const bool justOpened = m_pad.open() && !m_wasOpen;
+    m_wasOpen = m_pad.open();
     if (!m_pad.open() && !m_view.pinned()) {
         return; // nothing to draw: the frame stays as the game left it
     }
     const ContextScope scope(m_context);
+    // Keys Dear ImGui saw go down while it was open and up while it was closed (closed it sees nothing) would stay held
+    // and repeat into the line, so it starts each opening with none held.
+    if (justOpened) {
+        ImGui::GetIO().ClearInputKeys();
+    }
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     // Sized for the display now that the backend has read the window (docs/guides/debug-menu.md#ui-scale).

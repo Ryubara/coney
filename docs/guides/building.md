@@ -339,8 +339,7 @@ build's list that includes a debug tools' header. CI builds the release build an
 ([What CI runs](#what-ci-runs)). `python/tests/test_debug_tools_split.py` reads the CMake files and the game's sources
 and fails when a game library lists a debug source, includes a `debug/` or `sandbox/` header or links a debug library,
 or anything but `coney_devtools` and `coney_console_ui` links `imgui`, or the bar includes more than the console's
-model,
-`core/`, the platform's window and Dear ImGui.
+model, `core/`, the platform's window and Dear ImGui.
 
 **What it saves.** Measured with MSVC on Windows (2026-10-21): the `release` preset's `coney.exe` is 8.4 MB
 (Release, no tools); the `dev` preset's `coney.exe` is 33.0 MB and its `coney_release.exe`, the same Debug build

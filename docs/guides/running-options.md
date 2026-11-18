@@ -196,7 +196,8 @@ Every build, the release build included, has the Coney console: F8 (or SELECT an
 the game in a window ([The F8 bar](console.md#front-end)). One option is for tests, in every build: `--console-open N`
 opens the bar for the first N frames (1 to 1000000) and then closes it, the one way a test-mode run draws it. The last
 frame of `--frames 60 --console-open 30 --screenshot a.png` is byte-identical to the same run without
-`--console-open`, which `coney.console_bar_leaves_frame` checks. Headless, it does nothing.
+`--console-open`, which `coney.console_bar_leaves_frame` checks (in a build with the debug tools, and skipped on a
+machine with no display). Headless, it does nothing.
 
 ```sh
 build/dev/src/platform/coney --frames 60 --console-open 30 --screenshot ../../scratch/console-closed.png

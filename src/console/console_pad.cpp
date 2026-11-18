@@ -59,6 +59,8 @@ PortSamples ConsolePad::sample(std::uint64_t frame) {
         // The picker takes the presses new this frame; circle on its commands closes the console.
         const auto pressed = static_cast<std::uint16_t>(navigation & ~m_navigation);
         for (const auto& [button, input] : kPickerButtons) {
+            // @coney-only the picker runs lines as slot 0, the host's, until the session gives the gate its own
+            // player's slot, which mod commands need (build issue 7 of docs/guides/studio/console.md#build-issues).
             if ((pressed & button) != 0 && m_open && !m_picker.apply(input)) {
                 setOpen(false, OpenedBy::Pad);
             }
