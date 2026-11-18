@@ -555,6 +555,16 @@ void Gangs::update(std::uint64_t nowMs) {
     m_retired.clear();
 }
 
+void Gang::updateBounds() {}
+
+bool Gang::noneAbleToHelp(const Brain* /*except*/) const { return false; }
+
+bool canJoinFightAgainst(const Gang& /*self*/, const Gang& /*other*/) { return false; }
+
+int Gangs::strategyWeight(int /*kind*/, std::size_t /*order*/) const { return 0; }
+
+Gang* Gangs::findWithinRadius(float /*radius*/, const Gang& /*from*/, GangFilter /*filter*/) { return nullptr; }
+
 std::size_t Gang::turfCount() const {
     return static_cast<std::size_t>(std::ranges::count_if(m_orders.turf, [](double box) { return box != 0.0; }));
 }

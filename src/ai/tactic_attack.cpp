@@ -306,6 +306,12 @@ void TacticAttack::checkFlee(Gang& gang) {
     }
 }
 
+int drawTeamUp(const GangStrategy& /*weights*/, GameRandom& /*random*/) { return 0; }
+
+void TacticAttack::startSubTactic(Gang& /*gang*/) {}
+
+void TacticAttack::strategyEnded(Gang& /*gang*/, const SubTactic& /*order*/) {}
+
 void tacticAttack(Gangs& gangs, int gang, std::string callback) {
     if (gangs.find(gang) == nullptr) {
         return;

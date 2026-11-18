@@ -440,6 +440,7 @@ target_sources(coney_core PRIVATE
     ai/tactic.cpp
     ai/targeting.cpp
     ai/threats.cpp
+    ai/sub_tactics.cpp
     ai/tactic_attack.cpp
     ai/taunt_action.cpp
     ai/tactic_confront.cpp

@@ -124,4 +124,6 @@ AiConfig aiConfigFrom(const script::RecordedCalls& recorded, int type, int power
     return config;
 }
 
+GangStrategyTable gangStrategiesFrom(const script::RecordedCalls& /*recorded*/) { return {}; }
+
 } // namespace coney::ai

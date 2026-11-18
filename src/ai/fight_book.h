@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 
 #include "ai/attack_places.h"
 #include "ai/fight_checks.h"
@@ -35,6 +36,13 @@ using GangFightTable = std::array<GangFightValues, kGangKinds>;
 
 /// The table from the scripts' recorded `CfgGang` calls (the last for each kind); kinds with none keep 0s.
 [[nodiscard]] GangFightTable gangFightTableFrom(const script::RecordedCalls& recorded);
+
+/// How many orders a gang kind's team-up strategy weighs (`CfgGang`'s sixth argument, bytes `+0x73`-`+0x79`).
+inline constexpr std::size_t kStrategyOrders = 7;
+/// A gang kind's strategy: the weight of each team-up draw, 0 to 6 (docs/research/ai-reimpl.md#start-sub-tactic).
+using GangStrategy = std::array<std::uint8_t, kStrategyOrders>;
+/// The strategies by gang kind.
+using GangStrategyTable = std::array<GangStrategy, kGangKinds>;
 
 /// A brain's fight books.
 struct FightBook {

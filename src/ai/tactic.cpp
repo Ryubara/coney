@@ -57,4 +57,10 @@ void Tactic::fireCallback(Gang& gang, int code) {
     scripts->call(m_callback, args);
 }
 
+void Tactic::setStrategy(Gang& /*gang*/, std::optional<std::size_t> /*order*/) {}
+
+void Tactic::updateStrategy(Gang& /*gang*/) {}
+
+void Tactic::endStrategy(Gang& /*gang*/) {}
+
 } // namespace coney::ai

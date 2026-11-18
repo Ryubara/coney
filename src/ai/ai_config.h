@@ -61,4 +61,12 @@ struct AiConfig {
 [[nodiscard]] AiConfig aiConfigFrom(const script::RecordedCalls& recorded, int type = kFighterType,
                                     int powerClass = kFighterPowerClass);
 
+/// The gang kinds' team-up strategies from the scripts' recorded `CfgGang(kind, v2, v3, v4, v5, strategy, ...)` calls:
+/// each of the strategy table's seven entries (keys 1 to 7) stored as a byte, as `GangConfig_SetStrategy` keeps the low
+/// byte of each; the later call of a kind wins, a kind outside the table is skipped and a missing entry is 0. **Coney
+/// choice**: a call whose sixth argument is not a table leaves its kind's strategy as it was.
+/// Research: docs/research/ai-reimpl.md#gangconfig_setstrategy--gangconfig_getstrategyentry-0x001645d0-0x00164610
+/// @orig 0x001645d0 GangConfig_SetStrategy (unknown)
+[[nodiscard]] GangStrategyTable gangStrategiesFrom(const script::RecordedCalls& recorded);
+
 } // namespace coney::ai
