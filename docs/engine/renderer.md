@@ -598,7 +598,12 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
   Testing section, and two runs of one build must agree. They need the window: headless, play draws only its 2D layer.
   Item 1's hashes, twice each on Windows: `level99-street` 23 records, `0xe923080c2453d3a4`; `level95-hub` 16 records,
   `0x4ba9bf8c9bdc48ed`. A PS2 texture's digest is of its texel and palette blocks alone: librw's data block also holds a
-  heap pointer and gaps, which made two runs differ.
+  heap pointer and gaps, which made two runs differ. Item 7's, twice each on Windows, the same after its first commit
+  (the world's renders routed) and its second (the sectors drawn from the frame description): `level99-street` 48
+  records with 23 atomic draws, `0xe25af3f2c222b401`; `level95-hub` 47 records with 29 atomic draws,
+  `0x996fcc94058f3360` (on its base, which records no atomic draw: 24 records, `0x554a87a1926f16d3`, and 17,
+  `0xa049f83d5c42813c`). The screenshots of both frames were the same pixel for pixel on the base, after the first
+  commit and after the second.
 - **The grid across systems** is the open question this item leaves to CI: the expected hashes were recorded on
   Windows, and the first CI run on Linux and macOS shows whether they hold. If one differs, the fallback grid is 1/256
   of a unit for positions and texture coordinates (`kDrawGridSteps`) with colours kept at 8 bits, and the expected
