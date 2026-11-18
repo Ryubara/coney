@@ -71,7 +71,7 @@ from coney_tools import (
 )
 from coney_tools.audit_cli import add_audit_parser, run_audit
 from coney_tools.config import PATH_KEYS, ConfigError, find_repo_root, load_config
-from coney_tools.conventions import Conventions, load_conventions
+from coney_tools.conventions import Clips, Conventions, load_conventions
 from coney_tools.conventions_render import run_render
 from coney_tools.hygiene_cli import add_hygiene_parser, run_hygiene
 from coney_tools.pr_health import add_pr_health_parser, run_pr_health
@@ -257,7 +257,7 @@ def _repo_check_body(
     return 0
 
 
-def _local_clip_problems(body: str, extensions: Sequence[str], rules: clips.Clips) -> list[str]:
+def _local_clip_problems(body: str, extensions: Sequence[str], rules: Clips) -> list[str]:
     """What `clips check` refuses in each local clip the description shows (an image in a clips folder whose file ends
     in one of `extensions`; a GIF under `./shots/` is a picture), each read from the current folder, as `gh --attach`
     reads it."""
