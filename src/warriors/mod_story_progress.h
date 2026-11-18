@@ -46,16 +46,20 @@ class ModStoryProgress {
     /// Replaces the story entries with a loaded profile's (none for a new profile). The numbers stay.
     void setEntries(std::vector<MissionProgress> entries) { m_entries = std::move(entries); }
     /// The entry of mission `id`; null when it has none.
+    /// @coney-only a mod mission's entry by id (mission-mods.md#graph-progress)
     [[nodiscard]] const MissionProgress* find(std::string_view id) const;
     /// Whether mission `id` is complete; false when it has no entry.
+    /// @coney-only a mod mission's completion by id (mission-mods.md#graph-progress)
     [[nodiscard]] bool isComplete(std::string_view id) const;
 
     /// Gives mod mission `id` the session's level number `level` (a pool number, #1300), replacing what the number
     /// named before.
+    /// @coney-only the session's numbers of mod missions (mission-mods.md#graph-progress)
     void assign(std::uint8_t level, std::string id);
     /// Forgets every number: no level is a mod's.
     void clearNumbers() { m_numbers.clear(); }
     /// The mission whose number `level` is; null when it is no mod mission's.
+    /// @coney-only the session's numbers of mod missions (mission-mods.md#graph-progress)
     [[nodiscard]] const std::string* missionAt(std::uint8_t level) const;
 
     /// `UM_Unlock(level, group, item)` on a mod level's number: `(level, 0, 0)` completes its mission and
@@ -75,6 +79,7 @@ class ModStoryProgress {
 
   private:
     // The entry of mission `id`, made (incomplete, no ranks, no best) when it has none.
+    // @coney-only a mod mission's entry by id (mission-mods.md#graph-progress)
     MissionProgress& entry(const std::string& id);
 
     std::vector<MissionProgress> m_entries;

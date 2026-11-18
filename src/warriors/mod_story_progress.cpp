@@ -14,9 +14,11 @@ namespace coney {
 namespace {
 
 // The mod a mission id names: the part before its first '.' (`yard-brawl.alley` is `yard-brawl`'s).
+// @coney-only mod ids (mission-mods.md#graph-progress)
 std::string_view modOf(std::string_view id) { return id.substr(0, id.find('.')); }
 
 // Whether `graph` holds a mod mission `id`.
+// @coney-only the story graph's mod missions (mission-mods.md#graph-progress)
 bool chainHas(const story::StoryGraph& graph, std::string_view id) {
     return std::ranges::any_of(graph.steps(), [id](const story::StoryStep& step) {
         return step.kind == story::StoryStep::Kind::Mission && step.modId == id;

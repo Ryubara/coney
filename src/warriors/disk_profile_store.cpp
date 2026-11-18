@@ -188,6 +188,8 @@ bool DiskProfileStore::create(std::size_t slot, const Profile& profile) {
 }
 
 bool DiskProfileStore::load(std::size_t slot) {
+    // Coney's choice: the slot's file was read with the others (readSlots), so an empty or damaged slot fails here
+    // where the original reads its image anyway.
     const ProfileRecord* held = record(slot);
     if (held == nullptr) {
         return false;

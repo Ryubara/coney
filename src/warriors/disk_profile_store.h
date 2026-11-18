@@ -52,6 +52,7 @@ class DiskProfileStore final : public ProfileStore {
     bool create(std::size_t slot, const Profile& profile) override;
     /// Puts the profile in `slot` into the game state (save-system `+0xcc`), its story entries included
     /// (GameState::modStory). Fails for an empty or damaged slot.
+    /// @orig 0x00422358 SaveSystem_LoadSlot (W_SaveSystem.cpp)
     bool load(std::size_t slot) override;
     /// Deletes the profile's file and empties the slot; a deleted profile cannot be brought back.
     /// @orig 0x00421f98 Profile_Delete (W_SaveSystem.cpp)

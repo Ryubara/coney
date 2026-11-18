@@ -318,7 +318,8 @@ void addUnlockBindings(LuaVm& vm, GameState& state) {
                                                     unsignedArg(args, 1), booleanArg(args, 2, true)));
     });
     // `UM_GetUnlockablesByType(type, out)`: out[1..32] become the indices of the records of the type, in table order,
-    // then 65535. **Coney choice**: past 32 matches the rest are dropped (the original overruns its buffer).
+    // then 65535. Coney's choice: past 32 matches the rest are dropped (the original overruns its buffer), and with no
+    // records the 32 slots are still set (the original then writes nothing; what its caller passes on is unstudied).
     // @orig 0x004237a8 UM_GetUnlockablesByType (unknown)
     // @orig 0x00423eb0 Unlockables_ListByType (unknown)
     add(vm, "UM_GetUnlockablesByType", [&unlocks](std::span<const Value> args) -> binding::Results {
@@ -329,6 +330,7 @@ void addUnlockBindings(LuaVm& vm, GameState& state) {
         }
         const auto type = static_cast<std::uint8_t>(unsignedArg(args, 0) & 0xffU);
         std::vector<double> indices;
+        // Coney's choice (above): at most 32 matches, and an empty table still sets the 32 slots.
         for (std::size_t index = 0; index < unlocks.records().size() && indices.size() < kSlots; ++index) {
             if (unlocks.records()[index].type == type) {
                 indices.push_back(static_cast<double>(index));
