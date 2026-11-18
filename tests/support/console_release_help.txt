@@ -1,0 +1,3 @@
+# A synthetic input script for the release build's console smoke tests: `help` lists the player commands.
+# Format: docs/guides/running-input.md#input-scripts
+2 console help

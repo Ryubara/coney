@@ -40,6 +40,7 @@
 #include "platform/error_dialogs.h"
 #include "platform/frame_pacer.h"
 #include "platform/game_console.h"
+#include "platform/game_console_links.h"
 #include "platform/game_run.h"
 #include "platform/game_session.h"
 #include "platform/install_command.h"
@@ -136,9 +137,10 @@ int main(int argc, char** argv) {
 
     // The renderer: OpenGL in a window, the GPU renderer with `--renderer gpu` (docs/engine/renderer.md#migration;
     // the release build keeps no overrides file), or the headless NULL renderer.
-    auto engine = coney::platform::startRenderer(
-        coney::chooseRenderer(options->renderer, coney::RendererKind::Gl3, coney::isTestMode(*options)).kind,
-        options->headless, coney::platform::gameWindow(*options));
+    const coney::RendererKind rendererKind =
+        coney::chooseRenderer(options->renderer, coney::RendererKind::Gl3, coney::isTestMode(*options)).kind;
+    auto engine =
+        coney::platform::startRenderer(rendererKind, options->headless, coney::platform::gameWindow(*options));
     if (!engine) {
         logError(engine.error().message);
         return 1;
@@ -231,6 +233,17 @@ int main(int argc, char** argv) {
         session->attachAudio(audio.get());
         session->startStory();
     }
+    // What the console's commands reach in the running game: the session, the pacing, the sound, the log's bug report.
+    gameConsole.setLinks(coney::platform::makeGameConsoleLinks(coney::platform::GameConsoleSources{
+        .debugTools = false,
+        .rendererKind = rendererKind,
+        .renderer = &renderer,
+        .session = [&session]() -> coney::platform::GameSession* { return session ? &*session : nullptr; },
+        .pacer = pacer ? &*pacer : nullptr,
+        .clock = &clock,
+        .audio = audio.get(),
+        .writeBugReport = [&runLog] { return runLog->writeBugReport(); },
+    }));
 
     // The main loop, paced as set up above.
     std::optional<coney::platform::Window> window = renderer.window();

@@ -6,9 +6,10 @@ runtime profilers and the log viewer, whose panels are [a page of their own](con
 gamepad, where the code lives, how the release checks prove the split, and the tests, and it ends with the build issues
 it proposes, in order. The parent issue is [#1054](issue:1054); this page is [#1064](issue:1064).
 
-**Status: design, build issue 1 built.** The console's core, its catalog and generators, the input script's `console`
-action and test mode's rules are built and described in the guide [The Coney console](../console.md), with every command
-in the generated [console commands reference](../console-commands.md); the rest of this page is not built yet. It is a
+**Status: design, build issues 1 and 2 built.** The console's core, its catalog and generators, the input script's
+`console` action and test mode's rules, and the release set's handlers over the game session's and network play's hosts
+are built and described in the guide [The Coney console](../console.md), with every command in the generated [console
+commands reference](../console-commands.md); the rest of this page is not built yet. It is a
 design in the sense of [Page kinds](../writing-docs.md#page-kinds): what is built moves into a guide. It builds on the
 debug tools' split ([The debug tools and the game](../building.md#debug-tools)), the [debug menus](../debug-menu.md),
 the [run log](../run-log.md), the [profiler](../performance.md#zones) and the [Lua SDK](lua-sdk.md), and does not repeat
@@ -655,13 +656,15 @@ Decided, and built into this page:
    ([Mods: Console commands](mods.md#console)).
 5. **No budgets for now**, as FiveM: a mod command's handler has no instruction budget, memory cap or watchdog
    ([Lua SDK: Maintainer decisions](lua-sdk.md#decisions)).
+6. **The release set is the one in [The release set](#release-set)** (2026-10-29): `help`, `clear`, `quit`, `version`,
+   `where`, `settings`, `get`, `set`, `bugreport`, `missions`, `mission` (limited to completed missions, as the mission
+   select), `host`, `connect`, `disconnect`, the panels' `log`, `resmon`, `perf` and `net`, and `profiler`, each doubling
+   a way in the player already has or only reading. It is built as build issue 2 (the handlers of all but the panels'
+   and the profiler's, which come with issues 4 and 5), and a maintainer confirms any command added to it later.
 
-Still the maintainer's: **the exact release set** ([The release set](#release-set)). The decisions above name
-quitting and toggling scripts; the rest of the list (`mission` limited to completed missions as the mission select,
-the session's settings, `host`, `connect` and `disconnect`, `bugreport`, the profilers and the log) is this page's
-proposal, each doubling a way in the player already has or only reading, and a maintainer confirms it and any command
-added to it later. What the network page leaves to a maintainer (Coney's rule set for three and four players, a
-guest's co-op record) this page does not decide ([Who may run what in co-op](#coop)).
+Still the maintainer's: any command added to the release set. What the network page leaves to a maintainer (Coney's
+rule set for three and four players, a guest's co-op record) this page does not decide ([Who may run what in
+co-op](#coop)).
 
 ## Open questions {#open-questions}
 
@@ -694,7 +697,7 @@ page's issue 1.
    and test mode's rules ([Off in test mode](#test-mode)). The split test's include rules for `src/console/`. No front
    end yet: lines come from input scripts. Tests: the tokenizer, the types, the registry's rules, the queue's order
    between steps, a guest's session command refused, the generated table current, no history written in test mode.
-2. **core: Add the player commands to the console.** The release set's handlers over the game session's host: `help`,
+2. **core: Add the player commands to the console** (built). The release set's handlers over the game session's host: `help`,
    `clear`, `quit`, `version`, `where`, `settings`, `get`, `set`, `bugreport`, `host`, `connect`, `disconnect`, and
    `missions` and `mission` behind `available = "mission-select"` until Coney's mission select is built. The
    `coney.release.has_player_console` check and the release smoke lines (`help` lists the available player set, `noclip`

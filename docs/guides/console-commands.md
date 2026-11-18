@@ -24,7 +24,7 @@ which the command is absent. Each example shows a line as typed (after `>`) and 
 | [`quit`](#quit) | The game | player | local | Ends the game through its normal exit, as closing the window does. |
 | [`where`](#where) | The game | player | local | The level, the checkpoint, the step and the play time, as the run log stamps them. |
 | [`bugreport`](#bugreport) | The game | player | local | Writes the last 30 s of the run log, every level, into the log file and says where. |
-| [`settings`](#settings) | Settings | player | local | Lists the settings with their values. |
+| [`settings`](#settings) | Settings | player | local | Lists the settings with their values: the frame cap, vsync, the volume and the display preset. |
 | [`get`](#get) | Settings | player | local | Reads a setting. |
 | [`set`](#set) | Settings | player | local | Changes a setting for this session only; nothing is written to a file. |
 | [`missions`](#missions) | Levels and missions | player | local | The missions the active profile has completed, with their checkpoints. |
@@ -123,7 +123,7 @@ The level, the checkpoint, the step and the play time, as the run log stamps the
 
 ```text
 > where
-level 87, checkpoint 2, step 5400 (03:00.0)
+level level99, checkpoint 2, step 5400 (03:00.0)
 ```
 
 ## bugreport {#bugreport}
@@ -139,7 +139,7 @@ Writes the last 30 s of the run log, every level, into the log file and says whe
 
 ```text
 > bugreport
-bug report: 412 lines written to coney.log
+bug report: the last 412 events written to /home/you/.local/share/Coney/Coney/coney.log
 ```
 
 ## settings {#settings}
@@ -148,16 +148,17 @@ bug report: 412 lines written to coney.log
 settings
 ```
 
-Lists the settings with their values.
+Lists the settings with their values: the frame cap, vsync, the volume and the display preset.
 
 - **Access:** player; **scope:** local, runs at once
 - **Doubles:** The options and the player's command line
 
 ```text
 > settings
-fps_cap   60
-show_fps  off
-vsync     on
+fps_cap         60
+vsync           on
+volume          1
+display_preset  ps2
 ```
 
 ## get {#get}
@@ -256,6 +257,7 @@ Opens the Log panel, filtered when given a filter.
 | 1 | `filter` | text | none (optional) | A level, a category, a mod or text to keep |
 
 - **Access:** player; **scope:** local, runs at once
+- **Waits for:** the Coney feature `log-panel`; absent until it is built
 - **Doubles:** none: a reading
 
 ```text
@@ -272,6 +274,7 @@ resmon
 Opens the Resources panel: one row per running mod.
 
 - **Access:** player; **scope:** local, runs at once
+- **Waits for:** the Coney feature `resources-panel`; absent until it is built
 - **Doubles:** none: a reading
 
 ```text
@@ -288,6 +291,7 @@ perf
 Opens the Performance panel: the frame, the steps and the profiler's zones.
 
 - **Access:** player; **scope:** local, runs at once
+- **Waits for:** the Coney feature `performance-panel`; absent until it is built
 - **Doubles:** none: a reading
 
 ```text
@@ -304,6 +308,7 @@ net
 Opens the Network panel: the session's link and its figures.
 
 - **Access:** player; **scope:** local, runs at once
+- **Waits for:** the Coney feature `network-panel`; absent until it is built
 - **Doubles:** none: a reading
 
 ```text
@@ -325,6 +330,7 @@ Records a profiler capture of some frames, says how far it got, or writes it to 
 | 2 | `frames` | int | none (optional) | How many frames record takes |
 
 - **Access:** player; **scope:** local, runs at once
+- **Waits for:** the Coney feature `profiler`; absent until it is built
 - **Doubles:** none: a reading
 
 ```text

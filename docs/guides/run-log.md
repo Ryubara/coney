@@ -84,7 +84,10 @@ file left out included. Without a log file (a test-mode run without `--log-file`
 **Players.** Right after the bug, open the [debug menus](debug-menu.md), choose **Time**, then **Write bug report
 log**; a notice says how many events were written and where. Attach `coney.log` to the [bug report](issues.md#report)
 (the form's *Log* box). After a crash, attach `coney.prev.log` if Coney was started again since. With the step and
-checkpoint in the report's steps (from the log's last lines) a developer can find the moment at once.
+checkpoint in the report's steps (from the log's last lines) a developer can find the moment at once. The release
+build has no Time page, so there the way to write one is the [console](console.md)'s `bugreport` (the same dump, into
+the same file, saying where), which waits for the F8 front end: until it is built, a line reaches the console from an
+input script only.
 
 **Agents investigating a bug.** Start from the reporter's log: the last lines before the dump say where the run was
 (level, checkpoint, step), and the dump shows what led up to it at every level. To reproduce, run the same start with
