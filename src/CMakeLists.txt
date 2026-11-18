@@ -57,6 +57,7 @@ add_library(coney_core STATIC
     core/story_manifest.cpp
     core/story_merge.cpp
     core/story_view.cpp
+    core/ui_scale.cpp
     core/sha256.cpp
     fileio/disc.cpp
     fileio/executable.cpp
@@ -597,7 +598,6 @@ if(CONEY_DEBUG_TOOLS)
         debug/time_control.cpp
         debug/time_series.cpp
         debug/tunables.cpp
-        debug/ui_scale.cpp
         debug/world_edits.cpp
         debug/world_split.cpp
         gamemodes/sheet_viewer_mode.cpp

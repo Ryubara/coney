@@ -90,7 +90,6 @@ if(CONEY_DEBUG_TOOLS)
         game_session_debug.cpp
         imgui_model_view.cpp
         imgui_overlay.cpp
-        imgui_ui_scale.cpp
         mesh_views.cpp
         perf_bench.cpp
         play_level_anim.cpp
@@ -105,6 +104,7 @@ if(CONEY_DEBUG_TOOLS)
         sandbox_viewer_mode.cpp
         test_card_mode.cpp
         texture_viewer_mode.cpp
+        ui_scale.cpp
         world_edit.cpp)
     coney_target_defaults(coney_devtools)
     target_link_libraries(coney_devtools PUBLIC coney_platform coney_debug imgui)

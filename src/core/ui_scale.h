@@ -5,7 +5,9 @@
 #include <string>
 #include <vector>
 
-namespace coney::debug {
+// @coney-only the size rule of Coney's own Dear ImGui interfaces (docs/guides/debug-menu.md#ui-scale).
+
+namespace coney {
 
 /// The display height, in the developer overlay's units, at which its widgets have their designed size (scale 1): a
 /// 1080p screen. A taller window scales them up in proportion.
@@ -36,4 +38,4 @@ inline constexpr float kUiScaleStep = 0.125F;
 /// `scale` as the menus show it: `1x`, `1.5x`, `1.375x` (no trailing zeros).
 [[nodiscard]] std::string uiScaleText(float scale);
 
-} // namespace coney::debug
+} // namespace coney

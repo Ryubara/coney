@@ -9,8 +9,8 @@
 #include "core/error.h"
 #include "debug/debug_session.h"
 #include "platform/imgui_model_view.h"
-#include "platform/imgui_ui_scale.h"
 #include "platform/render_engine.h"
+#include "platform/ui_scale.h"
 
 struct ImGuiContext;
 struct ImGuiIO;

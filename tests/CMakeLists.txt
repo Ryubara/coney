@@ -40,6 +40,7 @@ add_executable(coney_tests
     core/story_manifest_test.cpp
     core/story_merge_test.cpp
     core/story_view_test.cpp
+    core/ui_scale_test.cpp
     core/mesh_view_option_test.cpp
     core/world_edit_option_test.cpp
     core/draw_hash_option_test.cpp
@@ -584,7 +585,6 @@ if(CONEY_DEBUG_TOOLS)
         debug/time_scale_test.cpp
         debug/display_tunables_test.cpp
         debug/tunables_test.cpp
-        debug/ui_scale_test.cpp
         debug/world_split_test.cpp
         gamemodes/play_level_step_test.cpp
         gamemodes/sheet_viewer_mode_test.cpp
@@ -625,8 +625,12 @@ if(CONEY_DEBUG_TOOLS)
         platform/disc_tandem_test.cpp
         platform/gpu_timer_test.cpp
         platform/imgui_model_view_test.cpp
+<<<<<<< HEAD
         platform/imgui_overlay_test.cpp
         platform/imgui_ui_scale_test.cpp
+=======
+        platform/ui_scale_test.cpp
+>>>>>>> 02f587b5b (core: Move the UI scale rule out of the debug tools)
         platform/lighting_rows_test.cpp
         platform/mesh_views_test.cpp
         platform/test_card_test.cpp
