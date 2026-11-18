@@ -8,6 +8,7 @@
 #include <numbers>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "gui/text_layout.h"
 
@@ -24,10 +25,8 @@ constexpr int kObjectiveSetMarked = 3;
 constexpr int kAnnounceCustom = 5;
 // The stopwatch's seconds form, in the Armies of the Night levels (`0x0050eb34`, `0x0050eb38`).
 constexpr GuiPoint kArmiesStopWatchPlace{0.49F, 0.10F};
-// The player's arrow: the widget colour (`0x005fd310`, (178, 178, 178, 255) at run time), 0.03 overlay units wide
-// (`0x001c5210`).
+// The player's arrow: the widget colour (`0x005fd310`, (178, 178, 178, 255) at run time).
 constexpr graphics::Rgba kPlayerBlipColour{178, 178, 178, 255};
-constexpr float kPlayerBlipSize = 0.03F;
 
 // Whether the action prompt's base y `base` takes the raise: ActionPrompt_Update adds it only to the bases 0.86, 0.78,
 // 1.0 and 0.8 (docs/research/hud-messages.md#action-prompts); the clubhouse's 0.125 takes none.
@@ -119,11 +118,13 @@ void Hud::levelShutDown() {
 }
 
 void Hud::hideAll() {
-    // The Armies of the Night exception (game state +0x14c) does not arise in Coney's levels yet.
+    // **Coney stand-in** (#662): the Armies of the Night exception (game state +0x14c, not ported) is not checked.
     for (PlayerPanel& panel : m_panels) {
         panel.hide();
     }
-    // The radars keep their "on" flags; render() draws none of them while the HUD is hidden.
+    // The radars keep their "on" flags; render() draws none of them while the HUD is hidden. Radar 0's dots are
+    // hidden until a RestoreHud or a radar turned on shows them again (Radar_HideAllBlips).
+    hideAllRadarDots(m_radar);
     m_visible = false;
 }
 
@@ -132,6 +133,8 @@ void Hud::showAll() {
     for (PlayerPanel& panel : m_panels) {
         panel.show();
     }
+    // Radar_Show: radar 0's dots, when it is on.
+    showRadarDots(m_radar);
     m_visible = true;
 }
 
@@ -286,16 +289,30 @@ void Hud::radarOn(int player) {
             m_radar.on.at(i) = true;
         }
     }
+    // HUD_RadarEnable also marks the automatic return as done (+0x177b0), so the next step turns no other radar on.
+    m_radarsAutoOn = true;
+    // HUD_RadarEnable's Radar_Show, after the on flag: radar 0's dots.
+    if (which.at(0)) {
+        showRadarDots(m_radar);
+        m_radarDotsOn = true;
+    }
     m_radar.scriptOn = true;
 }
 
 void Hud::radarOff(int player) {
     const std::array<bool, kPlayers> which = radarsOf(player);
+    // HUD_RadarDisable's Radar_Hide, before the on flag goes: radar 0's dots.
+    if (which.at(0)) {
+        hideRadarDots(m_radar, m_radar.on.at(0));
+        m_radarDotsOn = false;
+    }
     for (std::size_t i = 0; i < kPlayers; ++i) {
         if (which.at(i)) {
             m_radar.on.at(i) = false;
         }
     }
+    // HUD_RadarDisable clears the automatic return's mark (+0x177b0).
+    m_radarsAutoOn = false;
     m_radar.scriptOn = false;
 }
 
@@ -478,14 +495,21 @@ void Hud::update(const HudFrame& frame) {
     }
 }
 
+void Hud::markRadarBlip(double handle) {
+    const auto found = m_radar.blips.find(handle);
+    if (found != m_radar.blips.end()) {
+        hud::markRadarBlip(found->second);
+    }
+}
+
 void Hud::setRadarRange(float near, float far) {
     m_radar.rest = near;
     m_radar.fast = far;
     m_radar.zoom = near;
 }
 
-// The radar's step: Radar_Update's copy of the player's place and the camera, and the objective blips' flash count;
-// Radar_Render's easing of the zoom, which Coney steps here with the rest of the update.
+// The radar's step: Radar_Update's copy of the player's place and the camera and, while radar 0 is on, its blip loop
+// with the police hint it may give; Radar_Render's easing of the zoom, which Coney steps here with the rest.
 // @orig 0x001c5210 Radar_Update (RadarHUD.cpp)
 // @orig 0x001c60b0 Radar_Render (RadarHUD.cpp)
 void Hud::updateRadar(const HudFrame& frame) {
@@ -497,12 +521,39 @@ void Hud::updateRadar(const HudFrame& frame) {
         m_radar.view = frame.radar;
         m_radar.zoom = radarZoomStep(m_radar, frame.radar.speed, static_cast<std::uint32_t>(elapsed));
     }
-    // A new objective's blinking counts down by the update.
-    ++m_radar.updates;
-    for (auto& [handle, blip] : m_radar.blips) {
-        if (blip.flashCountdown > 0) {
-            --blip.flashCountdown;
+    // HUD_Update's own switching of the radars (HUD_RadarDisable under a fade or the bars, HUD_RadarEnable after
+    // them) hides and shows radar 0's dots as well. **Coney's placement**: Hud::update changes only the on flags, so
+    // the dots follow here, at the radar's next step; under the bars there is none, so the first step after them
+    // (the restore just stamped) does the hide the bars did.
+    if (m_letterboxRestore == LetterboxRestore::Stamped && m_radarDotsOn) {
+        hideRadarDots(m_radar, true);
+        m_radarDotsOn = false;
+    }
+    if (m_radar.on.at(0) != m_radarDotsOn) {
+        if (m_radar.on.at(0)) {
+            showRadarDots(m_radar);
+        } else {
+            hideRadarDots(m_radar, true);
         }
+        m_radarDotsOn = m_radar.on.at(0);
+    }
+    // Coney's blinking clock (radarBlipShown()).
+    ++m_radar.updates;
+    // Radar_Update's blips, only while the radar is on.
+    if (!m_radar.on.at(0) || !m_radar.view.known) {
+        return;
+    }
+    RadarStepContext context;
+    context.locate = m_locate;
+    context.brainType = m_brainOf;
+    // The police hint's own conditions: the game's hints on, not an Armies of the Night level, not given yet (flag
+    // 0x200), not levels 80 and 99. Not ported (#662): Tutorial_IsHintUnlocked(8), as for hint 0x15.
+    context.policeHintAllowed = m_gameTutorialText && !isArmiesLevel(m_levelNumber) && !m_policeHintGiven &&
+                                m_levelNumber != kRadarNoPoliceHintLevels[0] &&
+                                m_levelNumber != kRadarNoPoliceHintLevels[1];
+    if (stepRadarBlips(m_radar, context)) {
+        m_policeHintGiven = true;
+        m_hints.queue(read(m_services.tutorialString, kRadarPoliceHint), kGameHintPriority);
     }
 }
 
@@ -533,58 +584,63 @@ void Hud::renderCrimePanel(const HudCanvas& canvas) const {
     }
 }
 
-// Radar_Update's blips: each blip follows its object, is placed on the disc and shows or not by its kind; Coney
-// draws the dots here, where the original moves its dot widgets for the sprite pass.
+// Radar_Update's blips as the step left them: each shown dot at its place on the disc, the batches in depth order
+// (the top batch of icons 25 and 26 last); Coney draws the dots here, where the original moves its dot widgets for
+// the sprite pass.
 // @orig 0x001c5210 Radar_Update (RadarHUD.cpp)
 void Hud::renderBlips(const HudCanvas& canvas, graphics::OverlayPoint centre) const {
-    if (canvas.parts == nullptr || !m_locate) {
+    if (canvas.parts == nullptr) {
         return;
     }
     const graphics::SpriteSheet& sheet = canvas.parts->sheet();
-    // Not ported (#1018): an objective blip within 20 m but over 1 m above or below the player re-colours and re-sizes
-    // icons 27, 28 and 22; fixed-point blips; type-12 blips re-coloured; icons 25 and 26 moved to their own batch; an
-    // enemy dot's mark timer. Hint 22 for such a blip (#332) and the two players' arrow icons (#549) neither.
+    // Each shown blip with its place copied out, so the draw loop reads no optional.
+    struct ShownBlip {
+        const RadarBlip* blip;
+        anim::Vec3 place;
+    };
+    std::vector<ShownBlip> shown;
     for (const auto& [handle, blip] : m_radar.blips) {
-        // **Coney's choice** (#1018): a blip whose object cannot be found is skipped, not freed (the original frees the
-        // slot of a dead handle; Coney cannot yet locate every kind of object).
-        const std::optional<anim::Vec3> at = m_locate(handle);
-        // Stand-in (#1018): every shown blip draws while the radar is on; the original shows the dots inside and
-        // beyond the zoom by the radar's shown, hidden and `+0x18` flags, enemy and police dots only while marked.
-        if (!at || !radarBlipShown(blip, m_radar.updates) || blip.icon < 0 ||
-            static_cast<std::size_t>(blip.icon) >= sheet.page.rects.size()) {
-            continue;
+        if (blip.place.has_value() && blip.dotShown && radarBlipShown(blip, m_radar.updates) && blip.icon >= 0 &&
+            static_cast<std::size_t>(blip.icon) < sheet.page.rects.size()) {
+            shown.push_back(ShownBlip{&blip, *blip.place});
         }
-        const RadarOffset offset = radarBlipOffset(m_radar.view, m_radar.zoom, *at);
-        const graphics::UvRect uv = sheet.page.rect(static_cast<std::size_t>(blip.icon));
+    }
+    // A deeper batch draws over a shallower one; within a batch, in Coney's blip order.
+    std::ranges::stable_sort(shown, {}, [](const ShownBlip& entry) { return entry.blip->depth; });
+    for (const auto& [blip, place] : shown) {
+        const RadarOffset offset = radarBlipOffset(m_radar.view, m_radar.zoom, place);
+        const graphics::UvRect uv = sheet.page.rect(static_cast<std::size_t>(blip->icon));
         const float texWidth = sheet.texture ? static_cast<float>(sheet.texture->width()) : 0.0F;
         const float texHeight = sheet.texture ? static_cast<float>(sheet.texture->height()) : 0.0F;
-        const std::array<float, 2> size = radarDotSize(uv, texWidth, texHeight, blip.scale);
+        const std::array<float, 2> size = radarDotSize(uv, texWidth, texHeight, blip->scale);
         canvas.parts->addSprite(
             graphics::Sprite{graphics::OverlayPoint{centre.x + offset.x, centre.y + offset.y, centre.z}, size[0],
-                             size[1], uv, blip.colour});
+                             size[1], uv, blip->colour});
     }
 }
 
 // Radar_Update's player arrow (the type-9 blip): at the disc's centre, 0.03 wide, turned by the player's heading
-// minus the camera's.
+// minus the camera's (icons 25 and 26 0.035 and upright, radarPlayerArrowLook()).
 // @orig 0x001c5210 Radar_Update (RadarHUD.cpp)
 void Hud::renderPlayerArrow(const HudCanvas& canvas, graphics::OverlayPoint centre) const {
-    if (canvas.parts == nullptr || kRadarPlayerIcon >= canvas.parts->sheet().page.rects.size()) {
+    const auto icon = static_cast<std::size_t>(std::max(0, m_radar.playerIcon));
+    if (canvas.parts == nullptr || icon >= canvas.parts->sheet().page.rects.size()) {
         return;
     }
+    const RadarArrowLook look = radarPlayerArrowLook(m_radar.playerIcon);
     // The widget, 0.03 overlay units wide and as tall as its rectangle's texels make it (inferred: the size set is the
     // width), at the overlay's depth 1.
     const graphics::SpriteSheet& sheet = canvas.parts->sheet();
-    const graphics::UvRect uv = sheet.page.rect(kRadarPlayerIcon);
+    const graphics::UvRect uv = sheet.page.rect(icon);
     const float texWidth = sheet.texture ? static_cast<float>(sheet.texture->width()) : 1.0F;
     const float texHeight = sheet.texture ? static_cast<float>(sheet.texture->height()) : 1.0F;
     const float texelsWide = std::abs(uv.u1 - uv.u0) * texWidth;
-    const float halfWidth = kPlayerBlipSize / 2.0F;
+    const float halfWidth = look.size / 2.0F;
     const float halfHeight =
         texelsWide > 0.0F ? halfWidth * std::abs(uv.v1 - uv.v0) * texHeight / texelsWide : halfWidth;
     // Turned by the player's heading minus the camera's (a turn to the left turns it counter-clockwise on screen),
     // drawn as two triangles: the rotated sprite format is not built.
-    const float angle = m_radar.view.heading - m_radar.view.cameraHeading;
+    const float angle = look.turned ? m_radar.view.heading - m_radar.view.cameraHeading : 0.0F;
     const float c = std::cos(angle);
     const float s = std::sin(angle);
     const auto corner = [&](float x, float y, float u, float v) {

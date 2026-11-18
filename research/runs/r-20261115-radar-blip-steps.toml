@@ -1,0 +1,44 @@
+version = 1
+id = "r-20261115-radar-blip-steps"
+date = "2026-11-15"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "d087558d3926da74e96983653709326f05de78ba0a4471d08173dafc1599fafc"
+
+[who]
+agent = "a929be1a8d2815f58"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = []
+
+[run]
+name = ""
+method = "Mission 1 yard start. Read radar 0 (HUD + 0x15d0) flags +0x14, +0x18; radar on by writing +0x04, +0x08 = 1, +0x0c = 0. Crew slots (on the roof) rewritten to type 6 unmarked: dots shown with +0x18 = 1, hidden after +0x18 = 0. Slot 2 marked (+0x2e = 300, +0x30 = 1): shown, timer 235 after 2 s, then 0 with +0x30 = 0 and hidden. With +0x18 = 1, slot 3 as type 10 icon 27 (over 1 m above, within 20 m) read icon 75, colour 0xb00000ff, a red arrow; slot 2 as type 12 read colour 0x808080f0."
+
+[values]
+radar_flag14 = 0
+radar_flag18 = 1
+unmarked_enemy_dots_shown_flag18_set = 3
+unmarked_enemy_dots_shown_flag18_clear = 0
+mark_timer_start = 300
+mark_timer_after_2s = 235
+mark_timer_end = 0
+marked_after_expiry = 0
+objective_icon_before = 27
+objective_icon_after = 75
+objective_colour_after = 2952790271
+type12_colour = 2155905264
+
+[addresses]
+radar0 = 0x00601e10
+slots = 0x00602730
+Radar_Update = 0x001c5210
+Radar_MarkBlip = 0x001c4be0

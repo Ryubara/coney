@@ -121,6 +121,7 @@ add_executable(coney_tests
     gui/rumble_mode_gui/rumble_menu_test.cpp
     gui/rumble_mode_gui/rumble_match_screens_test.cpp
     gui/screen_flow_controller_test.cpp
+    gui/scrolling_window_test.cpp
     gui/text_layout_test.cpp
     gui/widgets_test.cpp
     gui/bar_test.cpp
@@ -130,6 +131,7 @@ add_executable(coney_tests
     hud/hud_test.cpp
     hud/mash_meter_test.cpp
     hud/radar_test.cpp
+    hud/radar_blips_test.cpp
     hud/player_panel_test.cpp
     hud/scripted_bars_test.cpp
     hud/stereo_hud_test.cpp

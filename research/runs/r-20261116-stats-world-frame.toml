@@ -1,0 +1,31 @@
+version = 1
+id = "r-20261116-stats-world-frame"
+date = "2026-11-16"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "8513ce060320d7e43350c9870d88a148b5f3cb87b1d8595fc2361c49633ece9a"
+
+[who]
+agent = "a7f893685960dbd8a"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "level99 street with the statistics screen open (mode 0x13 on top, ShowGameStatsInterface): the lua recipe's chunk, which runs only from the call-brains hook in Brains_Update (0x00293b28), ran and returned 0, so the AI's update keeps running under the screen"
+
+[values]
+brains_ran_under_stats = 1
+
+[addresses]
+brains_update = 0x00293b28
+mode_update = 0x001596d0

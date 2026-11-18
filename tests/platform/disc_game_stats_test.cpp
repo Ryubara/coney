@@ -4,10 +4,13 @@
 // `ShowGameStatsInterface` called through the script system as the hub calls it; mode 0x13 comes up with its sheets
 // loaded, the disc's level table gives 23 story missions, and a fresh profile shows the two entries that are always
 // listed (the hub and the Rumble arenas); the d-pad moves down the list and triangle closes it, the mode leaving
-// after its fade out and calling `onClose`. It
+// after its fade out and calling `onClose`. A second case counts the listed missions' circled numbers, none longer
+// than the two characters a header has room for (docs/research/circled-text.md#third). It
 // runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only
 // (LEGAL.md).
-// Each new case here failed first on the unit's stubbed source (coney-tools original fails-first).
+// The first case failed first on the unit's stubbed source (coney-tools original fails-first); the second reads the
+// disc's data and keeps (orig fails-first --keeps).
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -19,10 +22,13 @@
 
 #include "fileio/wad.h"
 #include "gamemodes/game_stats_mode.h"
+#include "gui/circled_text.h"
+#include "gui/game_stats.h"
 #include "platform/game_session.h"
 #include "scripting/lua_value.h"
 #include "support/disc_play_fixtures.h"
 #include "support/disc_session.h"
+#include "warriors/level_table.h"
 
 namespace {
 
@@ -93,4 +99,35 @@ TEST_CASE("the disc's statistics screen: shown by the binding in the hub, moved 
     CHECK(fading);
     CHECK(gone);
     CHECK(closedCalls == 1);
+}
+
+TEST_CASE("the disc's statistics headers: no listed mission circles more than the two characters a header has room for",
+          "[disc][game_stats]") {
+    // Expected: circled-text.md#third, confirmed (code) at 0x001d1008 and 0x002155a8 (the number before the
+    // title's ':' is circled, one circle per character, in room for two)
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    coney::test::DiscSession run(*wad, "");
+    run.session().startAtLevel("level95", 1);
+    REQUIRE(run.runUntilPlay());
+    const coney::LevelTable& levels = run.session().flow().state().levels;
+    std::size_t listed = 0;
+    std::size_t longest = 0;
+    for (std::size_t index = 0; index < levels.count(); ++index) {
+        const coney::LevelRecord* record = levels.at(index);
+        if (record == nullptr || !coney::gui::isGameStatsListed(*record)) {
+            continue;
+        }
+        ++listed;
+        const std::size_t colon = record->secondName.find(':');
+        if (colon != std::string::npos) {
+            longest = std::max(longest, colon);
+        }
+    }
+    std::printf("  game stats headers: %zu listed records, the longest circled number %zu characters\n", listed,
+                longest);
+    CHECK(listed == 26);
+    CHECK(longest <= coney::gui::CircledText::kCircles);
 }

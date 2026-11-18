@@ -66,7 +66,7 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
           [this] { return m_rumbleMenu.fromFrontEnd(); }, log),
       m_gameStats(
           device, loadSheet, [this](std::uint32_t record) { return loadRecord(record); }, strings, m_services, m_fade,
-          m_state, m_scripts, stack, log),
+          m_state, m_scripts, stack, legal.europe, log),
       m_memoryCard(device, stack, m_levelFlow, loadSheet, strings, cardCheckingMs, log),
       m_legal(device, loadSheet, legal, log, &m_scripts) {
     m_state.language = legal.language;

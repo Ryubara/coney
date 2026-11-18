@@ -7,6 +7,7 @@
 
 #include <cstddef>
 #include <limits>
+#include <vector>
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -264,4 +265,71 @@ TEST_CASE("circled text: the characters take the focused colour when drawn unles
     header.setup(CircledTextSetup{.x = 0.9F});
     header.update(GuiFrame{0, nullptr});
     CHECK(header.circle(0).setupValues().x == Approx(0.2F + (0.065F / 3.0F)));
+}
+
+TEST_CASE("circled text: the reveal cuts the back's and the circles' rectangles and every glyph to their top share",
+          "[circled_text]") {
+    // Expected: circled-text.md#ct-layout, confirmed (code) at 0x001d1250 and 0x00179c30, confirmed (runtime)
+    HeaderCanvas fixture;
+    CircledText header;
+    setUpStatsHeader(header, fixture);
+    const coney::graphics::UvRect whole = fixture.sprites.sheet().page.rect(2);
+    const coney::graphics::FontMetrics metrics = coney::graphics::fontMetrics(1.7F);
+
+    // Whole: the rectangles and the glyphs as they are.
+    header.update(GuiFrame{0, nullptr});
+    header.render(fixture.canvas);
+    REQUIRE(fixture.sprites.sprites().size() == 3); // the back and two circles
+    for (const coney::graphics::Sprite& sprite : fixture.sprites.sprites()) {
+        CHECK(sprite.uv == whole);
+    }
+    REQUIRE_FALSE(fixture.text.sprites().empty());
+    std::vector<float> tops;
+    for (const coney::graphics::Sprite& sprite : fixture.text.sprites()) {
+        CHECK(sprite.height == Approx(metrics.height));
+        tops.push_back(sprite.position.y + (sprite.height / 2.0F));
+    }
+
+    // Half shown: each rectangle's v1 moves to the middle of it; each glyph keeps its top and half its height, its
+    // rectangle cut the same way.
+    fixture.sprites.clear();
+    fixture.text.clear();
+    header.setReveal(0.5F);
+    header.update(GuiFrame{0, nullptr});
+    CHECK(header.back().setupValues().rectShare == 0.5F);
+    CHECK(header.circle(0).setupValues().rectShare == 0.5F);
+    header.render(fixture.canvas);
+    REQUIRE(fixture.sprites.sprites().size() == 3);
+    for (const coney::graphics::Sprite& sprite : fixture.sprites.sprites()) {
+        CHECK(sprite.uv.v0 == Approx(whole.v0));
+        CHECK(sprite.uv.v1 == Approx(whole.v0 + ((whole.v1 - whole.v0) * 0.5F)));
+        CHECK(sprite.uv.u1 == Approx(whole.u1));
+    }
+    REQUIRE(fixture.text.sprites().size() == tops.size());
+    for (std::size_t i = 0; i < tops.size(); ++i) {
+        const coney::graphics::Sprite& sprite = fixture.text.sprites().at(i);
+        CHECK(sprite.height == Approx(metrics.height * 0.5F));
+        CHECK(sprite.position.y + (sprite.height / 2.0F) == Approx(tops.at(i)));
+        CHECK(sprite.uv.v1 - sprite.uv.v0 == Approx(16.0F / 128.0F * 0.5F));
+    }
+}
+
+TEST_CASE("circled text: with the device's flag 0x02 the circles step half their width", "[circled_text]") {
+    // Expected: circled-text.md#ct-setup, confirmed (code) at 0x001d0d18
+    HeaderCanvas fixture;
+    CircledText header;
+    header.setCircleSprite(&fixture.sprites, 2);
+    header.setup(CircledTextSetup{.x = 0.2F,
+                                  .y = 0.5F,
+                                  .width = 0.6F,
+                                  .height = 0.09F,
+                                  .circleWidth = 0.05F,
+                                  .circleHeight = 0.077F,
+                                  .stepDivisor = CircledText::kStepDivisor02});
+    header.setText("Coney");
+    header.setCircled("12");
+    header.update(GuiFrame{0, nullptr});
+    CHECK(header.circle(0).setupValues().x == Approx(0.2F + 0.025F));
+    CHECK(header.circle(1).setupValues().x == Approx(0.2F + 0.075F));
+    CHECK(header.text().style().x == Approx(0.2F + 0.075F + 0.025F));
 }
