@@ -576,14 +576,13 @@ CI has no GPU, so the `software-pictures` job draws Coney's synthetic scenes (`t
 layouts and CC0 textures, no game data) through Mesa's software OpenGL driver, llvmpipe, under a virtual display
 (`xvfb-run`), and compares each picture with its reference in `tests/pictures/reference/` using the
 [tolerance](coney-tools-picture.md#picture) (`coney-tools picture scenes`). It runs on Linux in the build workflow with
-the engine jobs. It is **not a required check yet**: `tests/pictures/reference/` is empty until the references are made
-from the pictures the job's first run uploads, so until then the job draws the scenes, passes with a warning that
-nothing was compared (`--allow-no-references`, so that a red job never opens a P-critical issue on `main`) and keeps the
-pictures. The follow-up task that adds the references also adds `software-pictures` to `merge.required_checks` of
-[.github/conventions.yml](repo:.github/conventions.yml) (the maintainer adds the context to the ruleset) and drops the
-allowance, after which a scene without its reference fails the job. Each scene is drawn twice, and the second draw is
-compared with the first: a pinned Mesa that gives the same pixels on every run shows 0 pixels over in the log, and the
-tolerance exists for the rest.
+the engine jobs. It is a **required check** (`software-pictures` in `merge.required_checks` of
+[.github/conventions.yml](repo:.github/conventions.yml)): a scene whose picture is over the tolerance, or that has no
+reference, fails it. The references are the four scenes' pictures as the job drew them on `main` (the
+`software-pictures-drawn` artifact of one run, looked at first: each is Coney's own sandbox layout, never a game
+picture); a pull request that changes no engine file skips the job, and a skipped required job passes. Each scene is
+drawn twice, and the second draw is compared with the first: a pinned Mesa that gives the same pixels on every run
+shows 0 pixels over in the log, and the tolerance exists for the rest.
 
 The runner image's own Mesa moves with the image, so the drawing runs in a container image of its own
 (`.github/software-pictures/Dockerfile`): the base image is pinned by its **digest**, the package archive by a
