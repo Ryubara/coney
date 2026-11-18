@@ -292,7 +292,8 @@ TEST_CASE("a hit during 199 leaves the victim down: its reaction, 199 again, the
     }
     REQUIRE(riseUpdates == 4);
     REQUIRE(fight.human().fighter().victim().stunned());
-    // The civilian's S1 (14) from in front: 272, a stun since he is stunned. He is down again while it plays.
+    // The civilian's S1 (14) from in front: 272, a stun by Coney's rule (he is stunned; the original restarts no stun
+    // here, as Human_IsStunnedStanding is false during 199, and no outcome differs). He is down again while it plays.
     fight.human().takeHit(hitOf(12, 14, 0x0a, 0x800));
     fight.run("", 1);
     CHECK(fight.human().animator().animId() == 272U);

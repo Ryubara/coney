@@ -380,13 +380,16 @@ other level is given.
   player stood 7 updates in 356 after 199, then 357 ([Being hit at runtime](#being-hit-runtime)).
 - **A hit during the rise leaves the human down, and he rises again.** While 199 holds `0x8000` a hit plays a
   standing reaction: `Human_ApplyPendingDamage` (`0x00265f70`) sends a human in `0xe0000` that holds any of
-  `0xc48000` to `Hit_PlayReaction`, not to the ground's 195. `Human_PlayReaction` (`0x0026a6d0`) restarts a stunned
-  human's stun time (`Human_Stun`, `0x0022f658`) and cuts the stack's top, 199's task, whose cut-off drops its end
-  callback ([When a clip ends](formats/animation.md#clip-end)): `Human_EndDownState` and `Human_GetUp` never run, so
-  the human keeps state `0x80000` with his ground time past. Once the reaction ends, `Human_UpdateDown` (no held flag,
-  knocked down) plays 199 again at once, and that rise's end restarts the stun as above. A second hit during the
-  reaction (held `0x400`, not in `0xc48000`) gets the ground's 195. Confirmed (code); not seen at runtime. In the first
-  0.1 s of 199 the stack's top is the rise's blend-out task instead, whose cut-off is not read.
+  `0xc48000` to `Hit_PlayReaction`, not to the ground's 195. `Human_PlayReaction` (`0x0026a6d0`) calls
+  `Human_Stun` (`0x0022f658`) only for an attack whose range flags hold `0x400`, when its caller asks for a stun, or
+  for a human `Human_IsStunnedStanding` (`0x00223bc0`) finds stunned and standing, which is false during 199 (he holds
+  `0x80000`): a hit that does not stun leaves the stun's time alone. It cuts the stack's top, 199's task, whose
+  cut-off drops its end callback ([When a clip ends](formats/animation.md#clip-end)): `Human_EndDownState` and
+  `Human_GetUp` never run, so the human keeps state `0x80000` with his ground time past. Once the reaction ends,
+  `Human_UpdateDown` (no held flag, knocked down) plays 199 again at once, and that rise's end restarts the stun as
+  above. A second hit during the reaction (held `0x400`, not in `0xc48000`) gets the ground's 195. Confirmed (code); not
+  seen at runtime. In the first 0.1 s of 199 the stack's top is the rise's blend-out task instead, whose cut-off is
+  not read.
 - **A clip that ends while still stunned returns to 355.** `Human_BuildIdleTasks` plays 355 `STUNNED_ENTER`
   (`0x163`) whenever state `0x100000` is set, and 356 `STUNNED_IDLE` follows it; `Human_PlayStanceIdleState`
   (`0x0025fa48`) does the same for the fight stance's idle.
