@@ -615,7 +615,8 @@ halved fog distance (step 7), and the litter and the embers in step 10.
 **The part read and free** are `WorldSet::readPart` and `freePart` ([Part file](#part-file)). Their stand-ins: no
 `Sectors<i>` clump or pool heap (librw allocates; the budget takes the manifest's part size rather than measuring
 the pool), the dictionary stays in the texture lookup while the part is loaded, the atomics keep librw's render
-callback (nothing calls it) and get no material texture check, and a part always frees (no sector is left in another
+callback (nothing calls it) and `0x00198190` is not run over their materials (a texture check that also sets the
+environment map's frame on environment-mapped MatFX materials), and a part always frees (no sector is left in another
 state than 4), so the free returns nothing.
 
 **Reading and decoding** (2026-10-04, unchanged):

@@ -89,6 +89,8 @@ class WorldRenderer {
     /// the NULL backend the frame is begun and presented and nothing is drawn, unless recordHeadless() is on and the
     /// draw layer records (draw::recording()): the frame is then recorded through a camera of the renderer's own.
     /// @orig 0x0040e8d8 WorldManager_Render (WorldManagerPS2.cpp)
+    /// Not ported yet (#657): the early return that draws nothing while a full-screen fade covers the view, the humans
+    /// drawn with the fog at half the draw distance, the blowing litter and the falling embers.
     void render(RenderEngine& engine, const WorldSet& set, const world::LevelObject* level, const WorldView& view,
                 float pendingDistance, std::uint64_t nowMs, const std::function<void()>& drawObjects = {},
                 const std::function<void()>& overlay = {}, const std::function<void()>& afterWorlds = {});

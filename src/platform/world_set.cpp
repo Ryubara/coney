@@ -366,7 +366,8 @@ std::expected<void, Error> WorldSet::readPart(std::size_t world, std::uint32_t p
         // Modulate by the material colour, whose alpha fades the atomic in (World_ReadPart sets flag 0x40).
         atomic->atomic()->geometry->flags |= rw::Geometry::MODULATE;
         // Stand-in: the atomic keeps librw's render callback, which nothing calls (WorldRenderer draws it), where the
-        // original swaps in a do-nothing one; and its materials' texture check (0x00198190) is not made.
+        // original swaps in a do-nothing one; and 0x00198190 is not run over its materials (it checks their textures
+        // and sets the environment map's frame on each environment-mapped MatFX material: no visible effect yet).
         record.atomics.push_back(std::move(*atomic));
         placed.push_back(entry.streamedIndex);
     }
