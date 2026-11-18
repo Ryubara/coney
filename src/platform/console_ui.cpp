@@ -59,6 +59,14 @@ std::optional<std::string> consoleSettingsPath() {
     return path + kSettingsFile;
 }
 
+// STUB for the test commit: the real routing comes with the fix.
+ConsoleEventRoute routeConsoleEvent(const void* /*event*/, bool /*open*/, bool /*testMode*/) {
+    return ConsoleEventRoute{.forward = true};
+}
+
+// STUB for the test commit: the real settings come with the fix.
+ConsoleUiSettings consoleUiSettings(bool testMode) { return {.testMode = testMode, .iniPath = "stub"}; }
+
 ConsoleUi::ConsoleUi(console::Console& console, console::ConsolePad& pad, ConsoleUiSettings settings)
     : m_pad(pad), m_settings(std::move(settings)), m_view(console, pad), m_scale(m_scaleChoice, m_scaleApplied) {}
 

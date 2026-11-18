@@ -8,6 +8,7 @@
 #include <string>
 #include <string_view>
 
+#include <SDL3/SDL.h>
 #include <catch2/catch_test_macros.hpp>
 #include <imgui.h>
 #include <imgui_internal.h> // FindWindowByName
@@ -16,13 +17,18 @@
 #include "console/console.h"
 #include "console/console_pad.h"
 #include "console/registry.h"
+#include "platform/console_ui.h"
 
 using coney::console::CommandContext;
 using coney::console::CommandSpec;
 using coney::console::Console;
 using coney::console::ConsolePad;
 using coney::console::OpenedBy;
+using coney::platform::ConsoleEventRoute;
+using coney::platform::consoleUiSettings;
 using coney::platform::ConsoleView;
+using coney::platform::routeConsoleEvent;
+using Action = coney::platform::ConsoleEventRoute::Action;
 
 namespace {
 
@@ -91,6 +97,21 @@ ImGuiWindow* drawn(const char* name) {
     return window != nullptr && window->Active ? window : nullptr;
 }
 
+// A key press of `key`, a repeat of a held one when `repeat`.
+SDL_Event keyDown(SDL_Keycode key, bool repeat = false) {
+    SDL_Event event{};
+    event.type = SDL_EVENT_KEY_DOWN;
+    event.key.key = key;
+    event.key.repeat = repeat;
+    return event;
+}
+
+// An event of `type` with nothing else set.
+SDL_Event plain(SDL_EventType type) {
+    SDL_Event event{};
+    event.type = type;
+    return event;
+}
 } // namespace
 
 TEST_CASE("closed and with nothing pinned, the bar draws nothing", "[platform][console][front-end]") {
@@ -173,4 +194,78 @@ TEST_CASE("the pinned terminal is kept in the settings", "[platform][console][fr
     CHECK_FALSE(again.view.pinned());
     ImGui::LoadIniSettingsFromMemory(saved.c_str(), saved.size());
     CHECK(again.view.pinned());
+}
+
+// The bar's event routing and settings, decided apart from Dear ImGui and the window (ConsoleUi uses them).
+TEST_CASE("F8 toggles the bar outside test mode, and a test-mode run does not catch it",
+          "[platform][console][front-end]") {
+    // Expected: Coney's own rule, docs/guides/studio/console.md#test-mode
+    const SDL_Event f8 = keyDown(SDLK_F8);
+    const ConsoleEventRoute closed = routeConsoleEvent(&f8, false, false);
+    CHECK(closed.action == Action::Toggle);
+    CHECK_FALSE(closed.forward);
+    CHECK(routeConsoleEvent(&f8, true, false).action == Action::Toggle);
+    // Test mode reads no device: F8 is the game's, and a closed bar shows Dear ImGui nothing.
+    const ConsoleEventRoute test = routeConsoleEvent(&f8, false, true);
+    CHECK(test.action == Action::None);
+    CHECK_FALSE(test.forward);
+    CHECK_FALSE(test.takesKeyboard);
+    // A held F8 repeating is no second press.
+    const SDL_Event repeat = keyDown(SDLK_F8, true);
+    CHECK(routeConsoleEvent(&repeat, false, false).action == Action::None);
+}
+
+TEST_CASE("Escape closes the open bar and is left alone when it is closed", "[platform][console][front-end]") {
+    // Expected: Coney's own rule, docs/guides/console.md#front-end
+    const SDL_Event escape = keyDown(SDLK_ESCAPE);
+    const ConsoleEventRoute open = routeConsoleEvent(&escape, true, false);
+    CHECK(open.action == Action::Close);
+    CHECK_FALSE(open.forward);
+    const ConsoleEventRoute closed = routeConsoleEvent(&escape, false, false);
+    CHECK(closed.action == Action::None);
+    CHECK_FALSE(closed.forward);
+    CHECK_FALSE(closed.takesKeyboard);
+}
+
+TEST_CASE("a closed bar shows Dear ImGui no event, so its queue cannot fill", "[platform][console][front-end]") {
+    // Expected: Coney's own rule, docs/guides/console.md#front-end
+    const SDL_Event events[] = {keyDown(SDLK_A),
+                                keyDown(SDLK_UP),
+                                plain(SDL_EVENT_KEY_UP),
+                                plain(SDL_EVENT_TEXT_INPUT),
+                                plain(SDL_EVENT_MOUSE_MOTION),
+                                plain(SDL_EVENT_MOUSE_BUTTON_DOWN),
+                                plain(SDL_EVENT_WINDOW_FOCUS_LOST)};
+    for (const SDL_Event& event : events) {
+        const ConsoleEventRoute route = routeConsoleEvent(&event, false, false);
+        CHECK_FALSE(route.forward);
+        CHECK_FALSE(route.takesKeyboard);
+        CHECK(route.action == Action::None);
+    }
+}
+
+TEST_CASE("an open bar shows Dear ImGui every event, takes the keyboard, and the mouse when over its windows",
+          "[platform][console][front-end]") {
+    // Expected: Coney's own rule, docs/guides/console.md#front-end
+    const SDL_Event key = keyDown(SDLK_A);
+    const ConsoleEventRoute typed = routeConsoleEvent(&key, true, false);
+    CHECK(typed.forward);
+    CHECK(typed.takesKeyboard);
+    CHECK_FALSE(typed.mouse);
+    const SDL_Event text = plain(SDL_EVENT_TEXT_INPUT);
+    CHECK(routeConsoleEvent(&text, true, false).takesKeyboard);
+    const SDL_Event motion = plain(SDL_EVENT_MOUSE_MOTION);
+    const ConsoleEventRoute moved = routeConsoleEvent(&motion, true, false);
+    CHECK(moved.forward);
+    CHECK(moved.mouse);
+    CHECK_FALSE(moved.takesKeyboard);
+    // --console-open in a test-mode run opens it without F8; its keys are the bar's all the same.
+    CHECK(routeConsoleEvent(&key, true, true).takesKeyboard);
+}
+
+TEST_CASE("a test-mode run asks for no settings file, so no user folder is made", "[platform][console][front-end]") {
+    // Expected: Coney's own rule, docs/guides/studio/console.md#test-mode
+    const coney::platform::ConsoleUiSettings test = consoleUiSettings(true);
+    CHECK(test.testMode);
+    CHECK(test.iniPath.empty());
 }

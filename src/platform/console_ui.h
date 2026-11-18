@@ -30,6 +30,33 @@ struct ConsoleUiSettings {
     std::string iniPath;
 };
 
+/// What the bar does with one OS event, decided apart from Dear ImGui and the window so a test reaches it
+/// (docs/guides/console.md#front-end).
+struct ConsoleEventRoute {
+    /// What the event does to whether the bar is open.
+    enum class Action : std::uint8_t {
+        None,   // nothing
+        Toggle, // F8: open it when closed, close it when open
+        Close,  // Escape while open
+    };
+    Action action = Action::None;
+    /// Whether Dear ImGui is to see it. Only while the bar is open: Dear ImGui drains its input queue in NewFrame,
+    /// which a closed bar never calls, so events shown to it then would pile up and replay into the line on F8.
+    bool forward = false;
+    /// Whether the bar takes it from the game for being a keyboard event while open.
+    bool takesKeyboard = false;
+    /// Whether it is a mouse event, which the bar takes only while the mouse is over its windows.
+    bool mouse = false;
+};
+
+/// Decides what the bar does with `event` (a `const SDL_Event*`) while `open`: F8 toggles it except in `testMode`,
+/// which reads no device, and Escape closes it while open; a key repeat is neither.
+[[nodiscard]] ConsoleEventRoute routeConsoleEvent(const void* event, bool open, bool testMode);
+
+/// The settings for a run: `testMode` as given, and where the bar keeps its file (consoleSettingsPath()) outside test
+/// mode only, so a test-mode run asks SDL for no user folder (docs/guides/studio/console.md#test-mode).
+[[nodiscard]] ConsoleUiSettings consoleUiSettings(bool testMode);
+
 /// The player console's front end in a window (docs/guides/console.md#front-end): the F8 bar (ConsoleView) drawn with
 /// Dear ImGui over the game, in its own Dear ImGui context, so it shares nothing with the debug tools' overlay in a
 /// build that has both. F8 opens and closes it, Escape closes it; while it is open the keyboard is the console's and
