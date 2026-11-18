@@ -506,7 +506,9 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // The AI fighters.
     std::unique_ptr<ai::AiHumans> m_ai;
     // The character each AI human plays and the model he was made as (empty: the scene's character), by human: the
-    // simulation's half of what the platform's meshes draw.
+    // simulation's half of what the platform's meshes draw. Keyed by the human, as m_wearers and m_carriers are,
+    // because humans have no stable id yet; the pointer is safe while AiHumans erases no human before teardown.
+    // Replication will rekey all three by a human id (network-architecture.md#checklist, ids not pointers).
     struct Played {
         const human::PlayerCharacter* character = nullptr;
         std::string model;
