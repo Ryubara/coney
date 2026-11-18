@@ -22,11 +22,11 @@ namespace coney {
 namespace {
 
 // The options of OptionSet::Player (playerOptions()).
-constexpr std::array<std::string_view, 24> kPlayerOptions{
+constexpr std::array<std::string_view, 25> kPlayerOptions{
     "--install",     "--data",        "--verify",         "--disc",         "--language", "--profiles",
     "--import-save", "--fps-cap",     "--vsync",          "--line-blend",   "--show-fps", "--no-audio",
     "--skip-movies", "--no-activate", "--window-display", "--host",         "--join",     "--net-name",
-    "--help",        "--headless",    "--frames",         "--input-script", "--renderer", "--preset"};
+    "--help",        "--headless",    "--frames",         "--input-script", "--renderer", "--preset",   "--console-open"};
 
 // The synopsis of usageText(OptionSet::Player), before its options' lines.
 constexpr std::string_view kPlayerSynopsis =
@@ -38,7 +38,7 @@ constexpr std::string_view kPlayerSynopsis =
     "             [--renderer gl3|gpu] [--preset ps2|xbox|enhanced|high]\n"
     "             [--no-activate] [--window-display DISPLAY] [--no-audio] [--skip-movies]\n"
     "             [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]\n"
-    "             [--headless] [--frames N] [--input-script FILE] [--help]\n"
+    "             [--headless] [--frames N] [--input-script FILE] [--console-open N] [--help]\n"
     "\n";
 
 // The text usageText() returns (see its doc comment in options.h).
@@ -64,7 +64,7 @@ constexpr std::string_view kUsage =
     "                           [--bench-spawn-step N] [--bench-measure N]\n"
     "                           [--bench-place X,Y,Z,H] [--bench-neutrals N] [--bench-fps]]\n"
     "             [--log-file FILE] [--log-verbose CATEGORIES]\n"
-    "             [--dev-overlay N] [--mesh-view SPEC] [--world-edit FILE]\n"
+    "             [--dev-overlay N] [--console-open N] [--mesh-view SPEC] [--world-edit FILE]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
     "             [--fps-cap N|vrr] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
     "             [--renderer gl3|gpu] [--preset ps2|xbox|enhanced|high]\n"
@@ -243,6 +243,7 @@ constexpr std::string_view kUsage =
     "                     PCSX2 card file or folder card, a card dump, a .psu export, the save's\n"
     "                     folder BASLUS-21215 or its data file; the save itself is only read\n"
     "  --dev-overlay N    show the developer overlay (F1) for the first N frames, then hide it; a test aid\n"
+    "  --console-open N   open the console's bar (F8) for the first N frames, then close it; a test aid\n"
     "  --mesh-view SPEC   the Debug draw page's mesh views from the first frame of play: items separated by\n"
     "                     commas, wire=selection|humans|all, view=wire|material|draw|lod,\n"
     "                     scope=selection|humans|all, normals, bones, select=nearest|player, frames=N\n"
@@ -1019,6 +1020,19 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return std::unexpected(std::move(frames.error()));
             }
             options.devOverlayFrames = *frames;
+        } else if (arg == "--console-open") {
+            if (options.consoleOpenFrames.has_value()) {
+                return invalidArgument("--console-open given twice");
+            }
+            if (i + 1 == args.size()) {
+                return invalidArgument(std::format("--console-open needs a whole number from 1 to {}", kMaxFrameLimit));
+            }
+            ++i;
+            auto frames = parseFrameLimit(args[i], "--console-open");
+            if (!frames) {
+                return std::unexpected(std::move(frames.error()));
+            }
+            options.consoleOpenFrames = *frames;
         } else if (arg == "--disc") {
             if (options.discPath.has_value()) {
                 return invalidArgument("--disc given twice");

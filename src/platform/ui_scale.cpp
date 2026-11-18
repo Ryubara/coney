@@ -103,10 +103,12 @@ void ImGuiUiScale::scaleSavedWindows() {
     m_savedScale = m_applied;
 }
 
+// The settings file's `[ConeyUi][Scale]` entry is this scaler.
 void* ImGuiUiScale::openSettings(ImGuiContext* /*context*/, ImGuiSettingsHandler* handler, const char* name) {
     return std::string_view(name) == "Scale" ? handler->UserData : nullptr;
 }
 
+// Reads one line of that entry: the scale the windows were saved at, and the choice.
 void ImGuiUiScale::readSettingsLine(ImGuiContext* /*context*/, ImGuiSettingsHandler* /*handler*/, void* entry,
                                     const char* line) {
     auto* self = static_cast<ImGuiUiScale*>(entry);
@@ -126,6 +128,7 @@ void ImGuiUiScale::readSettingsLine(ImGuiContext* /*context*/, ImGuiSettingsHand
     }
 }
 
+// After the settings are read: the saved windows are to be scaled to the scale applied.
 void ImGuiUiScale::applySettings(ImGuiContext* /*context*/, ImGuiSettingsHandler* handler) {
     auto* self = static_cast<ImGuiUiScale*>(handler->UserData);
     self->m_savedWindowsPending = true;
@@ -135,6 +138,7 @@ void ImGuiUiScale::applySettings(ImGuiContext* /*context*/, ImGuiSettingsHandler
     }
 }
 
+// Writes the entry: the scale applied and the choice.
 void ImGuiUiScale::writeSettings(ImGuiContext* /*context*/, ImGuiSettingsHandler* handler, ImGuiTextBuffer* out) {
     const auto* self = static_cast<const ImGuiUiScale*>(handler->UserData);
     out->append("[ConeyUi][Scale]\n");

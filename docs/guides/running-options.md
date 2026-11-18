@@ -190,6 +190,18 @@ build/dev/src/platform/coney --headless --frames 300 --input-script tests/suppor
     --net-replay session.txt --digest replay.txt
 ```
 
+## The console {#console}
+
+Every build, the release build included, has the Coney console: F8 (or SELECT and R3 on a gamepad) opens its bar over
+the game in a window ([The F8 bar](console.md#front-end)). One option is for tests, in every build: `--console-open N`
+opens the bar for the first N frames (1 to 1000000) and then closes it, the one way a test-mode run draws it. The last
+frame of `--frames 60 --console-open 30 --screenshot a.png` is byte-identical to the same run without
+`--console-open`, which `coney.console_bar_leaves_frame` checks. Headless, it does nothing.
+
+```sh
+build/dev/src/platform/coney --frames 60 --console-open 30 --screenshot ../../scratch/console-closed.png
+```
+
 ## The debug menus {#the-debug-menus}
 
 Every run has Coney's debug menu and, in a window, the developer overlay; [The debug menus](debug-menu.md) has the

@@ -6,10 +6,13 @@ runtime profilers and the log viewer, whose panels are [a page of their own](con
 gamepad, where the code lives, how the release checks prove the split, and the tests, and it ends with the build issues
 it proposes, in order. The parent issue is [#1054](issue:1054); this page is [#1064](issue:1064).
 
-**Status: design, build issues 1 and 2 built.** The console's core, its catalog and generators, the input script's
-`console` action and test mode's rules, and the release set's handlers over the game session's and network play's hosts
-are built and described in the guide [The Coney console](../console.md), with every command in the generated [console
-commands reference](../console-commands.md); the rest of this page is not built yet. It is a
+**Status: design, build issues 1, 2 and 3 built.** The console's core, its catalog and generators, the input script's
+`console` action and test mode's rules, the release set's handlers over the game session's and network play's hosts, and
+the F8 bar (its terminal, the gamepad's command picker, the pad gate, the pinned terminal and `--console-open`) are
+built and described in the guide [The Coney console](../console.md), with every command in the generated [console
+commands reference](../console-commands.md); the rest of this page is not built yet. Of issue 3, the debug menus' pad
+typing has not moved into the console's model, so the picker cannot type a `text` argument yet ([The F8
+bar](../console.md#front-end)). It is a
 design in the sense of [Page kinds](../writing-docs.md#page-kinds): what is built moves into a guide. It builds on the
 debug tools' split ([The debug tools and the game](../building.md#debug-tools)), the [debug menus](../debug-menu.md),
 the [run log](../run-log.md), the [profiler](../performance.md#zones) and the [Lua SDK](lua-sdk.md), and does not repeat

@@ -76,7 +76,7 @@ endif()
 # console's model (src/console/), drawn with Dear ImGui. Apart from the debug tools by target; the one target besides
 # coney_devtools that links Dear ImGui (docs/guides/building.md#debug-tools). The size rule's Dear ImGui side
 # (ui_scale.cpp) is here, outside the debug tools, as their overlay and the bar both use it.
-add_library(coney_console_ui STATIC console_view.cpp ui_scale.cpp)
+add_library(coney_console_ui STATIC console_ui.cpp console_view.cpp ui_scale.cpp)
 coney_target_defaults(coney_console_ui)
 target_link_libraries(coney_console_ui PUBLIC coney_platform imgui)
 

@@ -126,8 +126,8 @@ windows were saved at, so a window saved at 1x opens at the right size and place
 
 The Display page's *Debug UI scale* overrides the choice: *Auto* (the rule above), or a fixed 1x, 1.25x, 1.5x, 2x,
 2.5x, 3x or 4x, kept in the settings file; *Debug UI scale now* shows the scale in use. The pad menu is not affected
-(it is drawn in the game's own screen space). The rule is `src/debug/ui_scale.h`, the Dear ImGui side
-`src/platform/imgui_ui_scale.h`; both have tests that need no window.
+(it is drawn in the game's own screen space). The rule is `src/core/ui_scale.h`, the Dear ImGui side
+`src/platform/ui_scale.h`, outside the debug tools as the [console's bar](console.md#front-end) uses them (at Auto).
 
 ## The pages {#pages}
 

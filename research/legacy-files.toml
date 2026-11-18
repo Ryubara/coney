@@ -1152,11 +1152,8 @@ comment = 1
 ["src/platform/hud_layer.h"]
 comment = 1
 
-["src/platform/imgui_ui_scale.cpp"]
-comment = 3
-
-["src/platform/imgui_ui_scale.h"]
-comment = 3
+["src/platform/parked_cars.cpp"]
+comment = 1
 
 ["src/platform/placed_objects.cpp"]
 comment = 2
@@ -1801,9 +1798,6 @@ citation = 2
 ["tests/core/perf_test.cpp"]
 citation = 8
 
-["tests/core/player_options_test.cpp"]
-citation = 6
-
 ["tests/core/ps2_float_test.cpp"]
 citation = 2
 
@@ -1844,9 +1838,6 @@ citation = 3
 citation = 4
 
 ["tests/debug/time_scale_test.cpp"]
-citation = 6
-
-["tests/debug/ui_scale_test.cpp"]
 citation = 6
 
 ["tests/effects/blur_pulse_test.cpp"]
@@ -2400,9 +2391,6 @@ citation = 1
 
 ["tests/platform/front_end_scene_test.cpp"]
 citation = 2
-
-["tests/platform/imgui_ui_scale_test.cpp"]
-citation = 8
 
 ["tests/platform/log_output_test.cpp"]
 citation = 4

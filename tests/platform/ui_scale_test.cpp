@@ -62,6 +62,7 @@ class BareScaler {
 } // namespace
 
 TEST_CASE("the scaler sets the font and the style sizes for the display's height", "[platform][ui-scale]") {
+    // Expected: Coney's own rule, docs/guides/debug-menu.md#ui-scale
     BareScaler bare;
     const ImGuiStyle base = ImGui::GetStyle();
     ImGuiIO& io = ImGui::GetIO();
@@ -93,6 +94,7 @@ TEST_CASE("the scaler sets the font and the style sizes for the display's height
 }
 
 TEST_CASE("the text a frame draws is the scaled size", "[platform][ui-scale]") {
+    // Expected: Coney's own rule, docs/guides/debug-menu.md#ui-scale
     BareScaler bare;
     bare.scaler.update(2160.0F);
     ImGui::NewFrame();
@@ -101,6 +103,7 @@ TEST_CASE("the text a frame draws is the scaled size", "[platform][ui-scale]") {
 }
 
 TEST_CASE("an override from the Display page beats the display's height", "[platform][ui-scale]") {
+    // Expected: Coney's own rule, docs/guides/debug-menu.md#ui-scale
     BareScaler bare;
     bare.display.uiScaleChoice = 4; // 2x
     bare.scaler.update(1080.0F);
@@ -112,6 +115,7 @@ TEST_CASE("an override from the Display page beats the display's height", "[plat
 }
 
 TEST_CASE("a change of scale resizes the open windows by the same ratio", "[platform][ui-scale]") {
+    // Expected: Coney's own rule, docs/guides/debug-menu.md#ui-scale
     BareScaler bare;
     bare.scaler.update(1080.0F);
     BareScaler::frameWithWindow("Page", ImVec2(400.0F, 300.0F));
@@ -134,6 +138,7 @@ TEST_CASE("a change of scale resizes the open windows by the same ratio", "[plat
 
 TEST_CASE("the saved choice and the scale the sizes were saved at come back from the settings",
           "[platform][ui-scale]") {
+    // Expected: Coney's own rule, docs/guides/debug-menu.md#ui-scale
     // A window saved at 1x, and a choice of 2x.
     const char* ini = "[Window][Page]\nPos=10,10\nSize=300,200\n\n[ConeyUi][Scale]\nApplied=1\nChoice=4\n\n";
     BareScaler bare;
@@ -156,6 +161,7 @@ TEST_CASE("the saved choice and the scale the sizes were saved at come back from
 }
 
 TEST_CASE("a window saved at the scale now applied keeps its size", "[platform][ui-scale]") {
+    // Expected: Coney's own rule, docs/guides/debug-menu.md#ui-scale
     const char* ini = "[Window][Page]\nPos=10,10\nSize=300,200\n\n[ConeyUi][Scale]\nApplied=2\nChoice=4\n\n";
     BareScaler bare;
     ImGui::LoadIniSettingsFromMemory(ini);
@@ -170,6 +176,7 @@ TEST_CASE("a window saved at the scale now applied keeps its size", "[platform][
 }
 
 TEST_CASE("the settings file gets the applied scale and the choice", "[platform][ui-scale]") {
+    // Expected: Coney's own rule, docs/guides/debug-menu.md#ui-scale
     BareScaler bare;
     bare.display.uiScaleChoice = 3; // 1.5x
     bare.scaler.update(1080.0F);
@@ -180,6 +187,7 @@ TEST_CASE("the settings file gets the applied scale and the choice", "[platform]
 }
 
 TEST_CASE("a bad choice or scale in the settings is ignored", "[platform][ui-scale]") {
+    // Expected: Coney's own rule, docs/guides/debug-menu.md#ui-scale
     BareScaler bare;
     ImGui::LoadIniSettingsFromMemory("[ConeyUi][Scale]\nApplied=99\nChoice=77\n\n");
     CHECK(bare.display.uiScaleChoice == 0);
