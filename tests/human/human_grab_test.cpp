@@ -403,8 +403,11 @@ TEST_CASE("a strong grapple's mount and pick-up score the strong grapple again a
     REQUIRE(picked);
     REQUIRE(rageInPickUp.has_value());
     REQUIRE(rageAfter.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access): the REQUIREs above end the test when empty, which clang-tidy
+    // does not know; heldAfter is set together with rageAfter.
     CHECK(*heldAfter);
     CHECK(*rageAfter > *rageInPickUp);
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 TEST_CASE("the power strike ends the grab with the victim down, unless square in its window extends it to 59",
