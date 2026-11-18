@@ -4,7 +4,8 @@
 The format and its rules are Coney's own (`src/core/input_script.cpp`, docs/guides/running-input.md#input-scripts): one
 line per command, `FRAME [p1|p2] ACTION ARGS`, `#` comments, frames that never go down; `press`, `release` and `tap`
 take button names, `stick left|right X Y` takes whole percentages from -100 to 100 (y up), `connect` and `disconnect`
-take nothing. A frame is one fixed step of 1/30 s, so on the original it is one character update.
+take nothing, and `console LINE` types a line into Coney's console (the original has none, so the pad plays nothing).
+A frame is one fixed step of 1/30 s, so on the original it is one character update.
 
 ScriptedPad plays a script frame by frame as Coney's ScriptedInput does (taps last one frame) and gives the raw pad
 bytes the original's patched pad read takes: active-low buttons and the four stick bytes, made from a percentage
@@ -16,6 +17,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 #: The bit of each button name, as Coney's pad::k* constants (the PS2 pad's own order, L2 in bit 0).
 BUTTONS: dict[str, int] = {
@@ -42,7 +44,7 @@ STICK_DEAD_LOW = 95
 STICK_DEAD_HIGH = 160
 STICK_SPAN = 95
 
-ACTIONS = ("press", "release", "tap", "stick", "connect", "disconnect")
+ACTIONS = ("press", "release", "tap", "stick", "connect", "disconnect", "console")
 
 
 class InputScriptError(Exception):
@@ -60,6 +62,7 @@ class InputEvent:
     stick: int = 0  # 0 the left stick, 1 the right
     x: int = 0
     y: int = 0
+    line: str = ""  # the console action's line, its words joined by single spaces
 
 
 def stick_byte(value: int) -> int:
@@ -79,7 +82,7 @@ def _parse_int(word: str) -> int | None:
     return int(word) if digits.isascii() and digits.isdigit() else None
 
 
-def _parse_arguments(action: str, args: list[str]) -> tuple[dict[str, int], str]:
+def _parse_arguments(action: str, args: list[str]) -> tuple[dict[str, Any], str]:
     """The fields of an event from its arguments, and what is wrong ("" when nothing is)."""
     if action in ("press", "release", "tap"):
         if not args:
@@ -97,6 +100,8 @@ def _parse_arguments(action: str, args: list[str]) -> tuple[dict[str, int], str]
         if x is None or y is None or not -100 <= x <= 100 or not -100 <= y <= 100:
             return {}, "stick X and Y must be whole numbers from -100 to 100"
         return {"stick": 0 if args[0] == "left" else 1, "x": x, "y": y}, ""
+    if action == "console":
+        return ({"line": " ".join(args)}, "") if args else ({}, "needs a line to type")
     return {}, "" if not args else "takes no arguments"
 
 
@@ -206,7 +211,8 @@ class ScriptedPad:
             first = 2 if event.stick == 0 else 0
             port.sticks[first] = stick_byte(event.x)
             port.sticks[first + 1] = stick_byte(-event.y)
-        # connect and disconnect have no meaning for the original's port 1, which is always plugged in.
+        # connect and disconnect have no meaning for the original's port 1, which is always plugged in, and a console
+        # line none for the original at all: it has no console.
 
     def last_frame(self) -> int:
         """The frame of the script's last line (-1 for an empty script)."""

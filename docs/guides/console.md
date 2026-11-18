@@ -225,6 +225,9 @@ still starts a comment, so a console line cannot hold one.
 45 p2 console log "level load"
 ```
 
+The trace tools' reader of input scripts (`coney_tools.input_script`) takes the line too, so a script with console lines
+still drives the original, whose pad ignores them: it has no console.
+
 ## Off in test mode {#test-mode}
 
 A test-mode run (`--headless`, `--frames`, `--input-script`, `--screenshot`) reads no device and touches no user folder
