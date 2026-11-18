@@ -1982,8 +1982,8 @@ just beyond the clips' distance the press may be swallowed; farther but within 5
 **bat drops** (the original does this too); beyond 5.5 m, at a run, he **jumps with the bat**. Empty-handed, the last
 two cases do nothing and jump.
 
-**Coney fixes** (item 2; today `PlayLevelMode`'s context action returns `TriangleResult::Drop` at try 2, before the
-jump, `src/platform/play_level_objects.cpp`):
+**Coney fixes** (item 2; today `PlayLevelSimulation`'s context action returns `TriangleResult::Drop` at try 2, before the
+jump, `src/gamemodes/play_level_objects.cpp`):
 
 1. Remove the drop from the context action for the player: with nothing to take it returns "nothing" (an AI keeps
    the drop there). With an object to take and something in hand, drop and remember the swap (`+0x5b8`); the
