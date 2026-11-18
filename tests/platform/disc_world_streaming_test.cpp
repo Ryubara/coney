@@ -7,7 +7,8 @@
 // was not its world's last part and was more than the margin farther than the sector wanted. It runs twice: with the
 // default budget on every level, and with a tight one (the worlds plus 2 MB) on the largest levels, which forces
 // evictions. It runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints
-// counts only, never data (LEGAL.md). docs/research/world.md has the results.
+// counts only, never data (LEGAL.md). docs/research/world.md has the results. A third check counts the part
+// materials whose texture comes from another part's dictionary (docs/engine/renderer.md#texture-lifetime).
 
 #include <algorithm>
 #include <array>
@@ -22,6 +23,7 @@
 
 #include <SDL3/SDL_stdinc.h>
 #include <catch2/catch_test_macros.hpp>
+#include <rw.h>
 
 #include "camera/camera_lens.h"
 #include "core/game_timer.h"
@@ -291,4 +293,102 @@ TEST_CASE("the playable levels are the level names with a streamed world", "[dis
     for (const std::string& name : names) {
         CHECK(coney::platform::worldNamesFor(*wad, name).has_value());
     }
+}
+
+// Whether any part's material takes its texture from another part's dictionary (docs/engine/renderer.md,
+// #texture-lifetime): with every other part of the level loaded, each part is loaded again last, so the lookup can
+// find any name in any other part's dictionary before the worlds' (parts are newer). WorldSet counts the materials
+// whose texture comes from another part (WorldSet::borrowedTextures()); counts only.
+TEST_CASE("no part's material takes its texture from another part's dictionary", "[disc][world_streaming]") {
+    const char* discPath = SDL_getenv("CONEY_DISC");
+    if (discPath == nullptr || *discPath == '\0') {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    auto disc = coney::io::Disc::open(discPath);
+    REQUIRE(disc.has_value());
+    auto wad = coney::io::Wad::open(std::move(*disc));
+    REQUIRE(wad.has_value());
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+
+    std::vector<std::string> levels{"objarena"};
+    for (int level = 0; level < 200; ++level) {
+        levels.push_back(std::format("level{}", level));
+    }
+    std::uint64_t levelCount = 0;
+    std::uint64_t parts = 0;
+    std::uint64_t textured = 0; // materials with a texture, over every part as loaded last
+    std::uint64_t untextured = 0;
+    std::uint64_t failures = 0;
+    std::uint64_t borrowed = 0;
+    for (const std::string& level : levels) {
+        auto names = coney::platform::worldNamesFor(*wad, level);
+        if (!names) {
+            continue;
+        }
+        ++levelCount;
+        // No limit: every part of the level is loaded at once.
+        coney::world::SectorBudget budget(std::numeric_limits<std::uint64_t>::max() / 2);
+        auto set = coney::platform::WorldSet::load(*wad, *names, budget, false, (*engine)->sceneAssets());
+        if (!set) {
+            ++failures;
+            continue;
+        }
+        const auto worlds = (*set)->worlds();
+        // Loads part `part` of world `w`, charging its heap and recording it as the streamer does.
+        const auto load = [&](std::size_t w, std::uint32_t part) {
+            const std::uint64_t heap = worlds[w]->part(part).sizes.heapSize;
+            if (!budget.reserve(heap)) {
+                ++failures;
+                return false;
+            }
+            if (!(*set)->loadPart(w, part)) {
+                budget.release(heap);
+                ++failures;
+                return false;
+            }
+            worlds[w]->markPartLoaded(part, 0);
+            return true;
+        };
+        for (std::size_t w = 0; w < worlds.size(); ++w) {
+            for (std::uint32_t part = 1; part <= worlds[w]->partCount(); ++part) {
+                load(w, part);
+            }
+        }
+        // Each part again, now that every other part is loaded; its materials as they come out of it.
+        const std::size_t before = (*set)->borrowedTextures();
+        for (std::size_t w = 0; w < worlds.size(); ++w) {
+            for (std::uint32_t part = 1; part <= worlds[w]->partCount(); ++part) {
+                ++parts;
+                if (worlds[w]->part(part).state == coney::world::PartState::Loaded) {
+                    (*set)->unloadPart(w, part);
+                    worlds[w]->markPartUnloaded(part);
+                    budget.release(worlds[w]->part(part).sizes.heapSize);
+                }
+                if (!load(w, part)) {
+                    continue;
+                }
+                for (const std::uint32_t sector : worlds[w]->part(part).sectors) {
+                    const rw::Atomic* atomic = (*set)->atomic(w, sector);
+                    if (atomic == nullptr || atomic->geometry == nullptr) {
+                        continue;
+                    }
+                    const rw::Geometry& geometry = *atomic->geometry;
+                    for (rw::int32 m = 0; m < geometry.matList.numMaterials; ++m) {
+                        ++(geometry.matList.materials[m]->texture != nullptr ? textured : untextured);
+                    }
+                }
+            }
+        }
+        borrowed += (*set)->borrowedTextures() - before;
+    }
+    std::printf("cross-part textures: %llu levels, %llu parts, %llu textured materials, %llu untextured, %llu taking "
+                "their texture from another part, %llu failures\n",
+                static_cast<unsigned long long>(levelCount), static_cast<unsigned long long>(parts),
+                static_cast<unsigned long long>(textured), static_cast<unsigned long long>(untextured),
+                static_cast<unsigned long long>(borrowed), static_cast<unsigned long long>(failures));
+    CHECK(levelCount == 80);
+    CHECK(failures == 0);
+    CHECK(textured > 0);
+    CHECK(borrowed == 0);
 }
