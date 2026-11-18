@@ -31,9 +31,9 @@ target_sources(coney_platform PRIVATE frame_pacer.cpp)
 # The GPU renderer's start on SDL3's GPU API: its window, device, swapchain and present modes
 # (docs/engine/renderer.md#migration).
 target_sources(coney_platform PRIVATE gpu_presenter.cpp present_mode.cpp)
-# The profiler's clock, OpenGL counters and allocation counter (docs/guides/performance.md); `--bench` drives the debug
-# tools' fighter spawner, so it is coney_devtools' below.
-target_sources(coney_platform PRIVATE perf_probes.cpp)
+# The profiler's clock, OpenGL counters and allocation counter, and the GPU's frame time from timer queries
+# (docs/guides/performance.md); `--bench` drives the debug tools' fighter spawner, so it is coney_devtools' below.
+target_sources(coney_platform PRIVATE gpu_timer.cpp perf_probes.cpp)
 # In-game clips for issues and pull requests (`--record`, docs/guides/testing.md#clips): FFmpeg run as a program.
 target_sources(coney_platform PRIVATE clip_recorder.cpp)
 # Sound output: the SDL3 audio device over the mixer, or the offline pull of test mode (docs/research/sound.md).
