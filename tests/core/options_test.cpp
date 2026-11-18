@@ -879,6 +879,41 @@ TEST_CASE("bad network flags are refused", "[options]") {
     refused(std::array<std::string_view, 1>{"--net-name"});
 }
 
+TEST_CASE("the network test files: the state digest, the snapshot digests and a session's record and replay",
+          "[options]") {
+    // Expected: unverified, #558 (Coney's own options, docs/guides/multiplayer.md#digest)
+    const auto host = parse(std::array<std::string_view, 9>{"--headless", "--host", "127.0.0.1:0", "--digest", "d.txt",
+                                                            "--digest-net", "n.txt", "--net-record", "r.txt"});
+    REQUIRE(host.has_value());
+    CHECK(host->digestFile == std::optional<std::string>("d.txt"));
+    CHECK(host->netDigestFile == std::optional<std::string>("n.txt"));
+    CHECK(host->netRecordFile == std::optional<std::string>("r.txt"));
+    CHECK_FALSE(host->netReplayFile.has_value());
+
+    const auto join =
+        parse(std::array<std::string_view, 5>{"--headless", "--join", "127.0.0.1:1", "--digest-net", "n"});
+    REQUIRE(join.has_value());
+    CHECK(join->netDigestFile == std::optional<std::string>("n"));
+
+    // The digest alone works offline: the offline run is what a session must not change.
+    const auto offline = parse(std::array<std::string_view, 5>{"--headless", "--digest", "d.txt", "--net-replay", "r"});
+    REQUIRE(offline.has_value());
+    CHECK(offline->netReplayFile == std::optional<std::string>("r"));
+    // The digest makes a run test mode, as its lines are by step.
+    CHECK(coney::isTestMode(*parse(std::array<std::string_view, 2>{"--digest", "d.txt"})));
+
+    const auto refused = [](auto args, std::string_view why) {
+        const auto result = parse(args);
+        REQUIRE_FALSE(result.has_value());
+        CHECK(result.error().code == ErrorCode::InvalidArgument);
+        CHECK(result.error().message.find(why) != std::string::npos);
+    };
+    refused(std::array<std::string_view, 2>{"--digest-net", "n"}, "--digest-net needs --host or --join");
+    refused(std::array<std::string_view, 4>{"--join", "server", "--net-record", "r"}, "--net-record needs --host");
+    refused(std::array<std::string_view, 4>{"--host", "0", "--net-replay", "r"}, "--net-replay cannot be combined");
+    refused(std::array<std::string_view, 1>{"--digest"}, "--digest");
+}
+
 TEST_CASE("the bench options measure a played level with fighters spawned", "[options]") {
     auto bench =
         parse(std::array<std::string_view, 12>{"--disc", "x", "--play-level", "level99", "--frames", "300", "--bench",

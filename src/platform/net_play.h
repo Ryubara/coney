@@ -6,6 +6,7 @@
 #include <deque>
 #include <functional>
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -15,6 +16,8 @@
 #include "net/net_client.h"
 #include "net/net_server.h"
 #include "net/net_status.h"
+#include "net/snapshot.h"
+#include "net/state_digest.h"
 #include "net/transport.h"
 
 namespace coney::platform {
@@ -74,6 +77,12 @@ class NetPlay final {
     /// (net::NetClient::clockSpeedPercent()), a little fast or slow so its input commands reach the host as early as
     /// the host wants them; else 100. The main loop multiplies the debug menus' time scale by it.
     [[nodiscard]] std::uint32_t clockSpeedPercent() const;
+    /// Hosting: the humans of the host's game this step, which afterStep() sends each joined player as a snapshot.
+    void setGameHumans(std::span<const net::SnapshotHuman> humans);
+    /// Where each snapshot's digest goes (`--digest-net`). Empty for none.
+    void setSnapshotDigests(std::function<void(const net::DigestLine&)> sink) { m_snapshotDigests = std::move(sink); }
+    /// The steps run so far (afterStep() calls).
+    [[nodiscard]] std::uint32_t steps() const { return m_steps; }
     /// One line for the end of a run: the role, port and players, or the client's state.
     [[nodiscard]] std::string summary() const;
 
@@ -146,6 +155,9 @@ class NetPlay final {
     std::unique_ptr<net::NetServer> m_server;
     std::unique_ptr<net::NetClient> m_client;
     std::string m_lastClientState; // the client's describe() last logged
+
+    std::function<void(const net::DigestLine&)> m_snapshotDigests; // setSnapshotDigests()
+    std::uint32_t m_steps = 0;                                     // afterStep() calls
 };
 
 /// The game's pad input through network play: what `inner` (null: no pads) gives, passed through NetPlay::pads().

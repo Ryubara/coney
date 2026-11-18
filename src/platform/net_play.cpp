@@ -255,6 +255,8 @@ void NetPlay::afterStep() {
     }
 }
 
+void NetPlay::setGameHumans(std::span<const net::SnapshotHuman> /*humans*/) {}
+
 PortSamples NetPlay::pads(const PortSamples& local) {
     PortSamples samples = local;
     if (m_server) {

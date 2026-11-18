@@ -274,6 +274,18 @@ struct Options {
     /// `--net-name NAME`: the player name sent when joining or hosting (the Network page's Player name); main checks
     /// it is a valid one (1 to 32 printable ASCII characters).
     std::optional<std::string> netName;
+    /// `--digest FILE`: write the state digest of every step to FILE: the game's humans as the host's snapshots take
+    /// them and the pads the step played (docs/guides/multiplayer.md#digest). Makes the run test mode.
+    std::optional<std::string> digestFile;
+    /// `--digest-net FILE`: write a digest line for each snapshot: a host's, what each one sent leaves the guest
+    /// holding; a guest's, each one decoded. Requires netHost or netJoin.
+    std::optional<std::string> netDigestFile;
+    /// `--net-record FILE`: record the session for a replay: the pad each step played on the remote player's port, and
+    /// the session's events (docs/guides/multiplayer.md#replays). Requires netHost.
+    std::optional<std::string> netRecordFile;
+    /// `--net-replay FILE`: play a `--net-record` file's pads on port 2, with no session, so the run gives the recorded
+    /// host's digests again. Makes the run test mode; cannot be combined with netHost or netJoin.
+    std::optional<std::string> netReplayFile;
     // 4-byte-aligned: ints and structs of floats or ints.
     /// Stop after this many frames; unset means run until the window closes. Tests and CI use it. A frame here is
     /// one fixed 1/30 s step and one render: `--frames` puts Coney in test mode (isTestMode()).

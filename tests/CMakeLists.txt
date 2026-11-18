@@ -518,11 +518,13 @@ target_sources(coney_tests PRIVATE audio/adpcm_test.cpp audio/disc_sound_test.cp
 # (docs/guides/multiplayer.md).
 target_sources(coney_tests PRIVATE net/bit_stream_test.cpp net/input_buffer_test.cpp net/link_conditioner_test.cpp
                                    net/link_quality_test.cpp net/loopback_transport_test.cpp net/net_id_test.cpp net/protocol_test.cpp net/replicated_fields_test.cpp net/snapshot_test.cpp
-                                   net/jitter_buffer_test.cpp net/client_world_test.cpp
+                                   net/jitter_buffer_test.cpp net/client_world_test.cpp net/state_digest_test.cpp net/game_humans_test.cpp net/session_record_test.cpp
                                    net/sessions_test.cpp platform/enet_transport_test.cpp platform/net_play_test.cpp
                                    platform/game_console_test.cpp platform/game_settings_test.cpp)
 # What the console takes from the running game, apart from the list above so that its tests' registration stays theirs.
 target_sources(coney_tests PRIVATE platform/game_console_links_test.cpp)
+# Network play's proof files in one run: NetGame's replay, record and refusals (docs/guides/multiplayer.md#digest).
+target_sources(coney_tests PRIVATE platform/net_game_test.cpp)
 # The helper that registers one test case per item, so that ctest runs a long disc test's items in parallel
 # (docs/guides/testing.md#one-test-per-item).
 target_sources(coney_tests PRIVATE support/each_case_test.cpp)
@@ -678,6 +680,47 @@ if(MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
              COMMAND ${CMAKE_COMMAND} -DCHECK_EXE=$<TARGET_FILE:error_dialogs_check>
                      -DHANG_GUARD=${CONEY_TEST_HANG_GUARD} -P
                      "${CMAKE_CURRENT_SOURCE_DIR}/support/error_dialogs_check.cmake")
+endif()
+
+# Network play proved without a person (support/net_pair_check.cpp, docs/guides/multiplayer.md#two-processes): two
+# coney processes over ENet on 127.0.0.1 compare the digests of the snapshots sent and decoded, a replay of the host's
+# session record gives its digests again, and offline play is the same with a session nobody joins. Without the disc
+# the games have no humans, so the digests cover the pads and the snapshots' plumbing; the disc-backed pair in
+# src/platform/CMakeLists.txt plays level99 with its humans. Each run's frames are paced at 30 a second while a session
+# is open, so the host's 300 frames take ten seconds.
+# The digest's options are the debug build's (main.cpp), so the release-only build has none of these.
+if(CONEY_DEBUG_TOOLS)
+    add_executable(net_pair_check support/net_pair_check.cpp)
+    coney_target_defaults(net_pair_check)
+    target_link_libraries(net_pair_check PRIVATE coney_platform)
+    set(_net_host_script ${CMAKE_CURRENT_SOURCE_DIR}/support/net_host.txt)
+    set(_net_guest_script ${CMAKE_CURRENT_SOURCE_DIR}/support/net_guest.txt)
+    add_test(NAME coney.net.two_processes
+             COMMAND net_pair_check pair --coney $<TARGET_FILE:coney> --work ${CMAKE_CURRENT_BINARY_DIR}/net_pair
+                     --host-script ${_net_host_script} --guest-script ${_net_guest_script} --frames 300
+                     --guest-frames 200)
+    add_test(NAME coney.net.offline_unchanged
+             COMMAND net_pair_check offline --coney $<TARGET_FILE:coney> --work ${CMAKE_CURRENT_BINARY_DIR}/net_offline
+                     --host-script ${_net_host_script} --frames 300)
+    set_tests_properties(coney.net.two_processes coney.net.offline_unchanged PROPERTIES TIMEOUT
+                                                                                    ${CONEY_TEST_HANG_GUARD})
+    # The same with the disc: the host plays level99, whose crew and gang are humans the snapshots carry. The guest
+    # starts once the host's intro movie is skipped, the level's first frame of play: the load before it can take longer
+    # than the guest's whole run. Counts and hashes only.
+    if(DEFINED ENV{CONEY_DISC} AND NOT "$ENV{CONEY_DISC}" STREQUAL "")
+        set(_net_level --disc "$ENV{CONEY_DISC}" --play-level level99 --skip-movies)
+        add_test(NAME coney.net.two_processes_level99
+                 COMMAND net_pair_check pair --coney $<TARGET_FILE:coney> --work
+                         ${CMAKE_CURRENT_BINARY_DIR}/net_pair_level99 --host-script ${_net_host_script} --guest-script
+                         ${_net_guest_script} --frames 300 --guest-frames 200 --guest-after "L99_IN skipped" --
+                         ${_net_level})
+        add_test(NAME coney.net.offline_unchanged_level99
+                 COMMAND net_pair_check offline --coney $<TARGET_FILE:coney> --work
+                         ${CMAKE_CURRENT_BINARY_DIR}/net_offline_level99 --host-script ${_net_host_script} --frames
+                         300 -- ${_net_level})
+        set_tests_properties(coney.net.two_processes_level99 coney.net.offline_unchanged_level99
+                             PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD} LABELS disc)
+    endif()
 endif()
 
 # Coney's Lua 4.0 compiler behind luac's command line, for the decompiler's round trip (support/coney_luac.cpp,
