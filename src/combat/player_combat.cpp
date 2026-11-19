@@ -484,12 +484,7 @@ bool PlayerCombat::armedSpecial(const CombatInput& input, const CombatTuning& tu
                              .fightStance = input.fightStance};
     // An object of sets 4-6 with a type is thrown as square and cross throw it, with no 2.0 m test.
     if (input.holdingObject && throwSet(input.animSet)) {
-        const int animId = throwAttack(attack);
-        if (animId == anim_id::kNone) {
-            return false;
-        }
-        startAttack(animId, tuning, out);
-        return true;
+        return false;
     }
     // A melee weapon, unless the human may not throw it or the target the fighter picked (the counter search's, else
     // the throw's own) stands within 2.0 m; any other set throws nothing.

@@ -261,7 +261,7 @@ TEST_CASE("the disc's level99: with a bat and nobody near, cross + square throws
 TEST_CASE("the disc's level99: the combat lesson's no-throw flag keeps the bat in hand: cross + square throws nothing "
           "and the cross's release swings 36",
           "[disc][story][combat]") {
-    // Expected: combat-throws.md#armed-special, confirmed (code)
+    // Expected: combat-throws.md#armed-special, inferred
     // level99_combat.lua's SetupCombat sets HuSetNoThrowWeapon on the player (its Cleanup clears it); the armed
     // special then refuses the throw, Player_Special refuses a player holding an object, and the release swings.
     std::optional<coney::io::Wad> wad = coney::test::openDisc();

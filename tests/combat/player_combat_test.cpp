@@ -637,10 +637,11 @@ TEST_CASE("a melee weapon's throw goes by the gait, and a free sprint, the no-th
     CHECK(thrown([](CombatInput& input) { input.phase = kPhaseWindUp; }) == anim_id::kNone);
 }
 
-TEST_CASE("with a set 5 object, cross + square throws it as square and cross do, even at a target within 2 m",
+TEST_CASE("with a set 5 object, cross + square throws it as square and cross do, whatever the melee throw's 2 m test",
           "[combat]") {
     // Expected: combat-throws.md#armed-special, confirmed (code)
-    // The armed special sends a set 5 object to Player_CrossWithWeapon, which has no 2.0 m test.
+    // The armed special sends a set 5 object to Player_CrossWithWeapon, which has no 2.0 m test. (That function's smash
+    // of a human in reach, 473 / 475, is not built in Coney; this checks only that the melee throw's test is skipped.)
     Runner runner(nullptr);
     const auto frames =
         runner.run("10 press cross\n11 tap square\n13 release cross\n", 20, [](std::uint64_t, CombatInput& input) {
