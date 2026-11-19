@@ -658,6 +658,11 @@ class Fighter {
     /// runs that as the end callback of the death chain's last clip, not at the hit
     /// (docs/research/combat-reactions.md#knockout-timing). A heal ends it.
     [[nodiscard]] bool healthOut() const { return m_healthOut && m_health.depleted(); }
+    /// Whether `Human_OnHealthOut` ran since the last call: true once on the update healthOut() begins (the death
+    /// chain's last clip ended), so the play mode makes the human's drop then (human::dropCarried()). A heal before it
+    /// is taken forgets it.
+    /// @orig 0x002674c0 Human_OnHealthOut (unknown)
+    [[nodiscard]] bool takeHealthOut() { return std::exchange(m_healthOutBegan, false); }
     /// The player's reactions, stun and ground timers.
     [[nodiscard]] const Victim& victim() const { return m_victim; }
     /// The game time, ms, until which a hit keeps an AI busy (record `+0x108`, set to the time + the power class's
@@ -1200,6 +1205,7 @@ class Fighter {
     std::optional<int> m_tandemRequest;        // the victim's: the set its grabber has not joined yet
     std::optional<IncomingHit> m_deathPending; // a defeating hit taken while a paired move holds the death back
     bool m_healthOut = false;                  // healthOut(): the dying reaction ended with the health out
+    bool m_healthOutBegan = false;             // takeHealthOut(): healthOut() began and nobody has taken it
     Combatant* m_target = nullptr;             // the target kept (human +0xc8)
     Combatant* m_throwTarget = nullptr;        // the armed special's target for this update's cross + square
     Combatant* m_snapTarget = nullptr;         // what the snap's search found for this update's square (not the target)

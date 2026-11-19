@@ -508,3 +508,60 @@ TEST_CASE("the wreck's smash search skips an object in flight", "[level_pickups]
     REQUIRE(targets.size() == 1);
     CHECK(targets[0].handle == 6.0);
 }
+
+TEST_CASE("a knocked-out soldier's $5 becomes a money pickup half a metre above his feet that a player takes",
+          "[level_pickups]") {
+    // Expected: crimes.md#down-drop, confirmed (code) at 0x00232c60; confirmed (runtime), run
+    // r-20261119-down-drop-money (the yard AI's $5 made a dyn_money of 5 at his feet + 0.5 m and left him $0); the
+    // walk-over of player-state.md#walk-over gives item 2 x its value.
+    Harness h;
+    wo::ObjectType cash;
+    cash.name = "dyn_money";
+    cash.className = "powerup_item";
+    cash.objectKind = wo::kObjectKindMoney;
+    h.types.add(cash);
+    double next = 100.0;
+    h.scripts.setObjectHandles([&next] { return next++; });
+    coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types);
+    coney::human::DropInput soldier;
+    soldier.brainType = 2;
+    soldier.money = 5;
+    soldier.carried = "none";
+    const auto noneBlocked = [](int /*k*/) { return false; };
+    const auto nowhere = [](int /*k*/) { return Vec3{}; };
+    const coney::human::CarriedDrop drop = pickups.dropCarried(soldier, Vec3{10.0F, 11.0F, 1.0F}, noneBlocked, nowhere);
+    CHECK(drop.money == 0);
+    const wo::SpawnRecord* money = h.records.find(100.0);
+    REQUIRE(money != nullptr);
+    CHECK(money->typeName == "dyn_money");
+    CHECK(money->money == 5);
+    CHECK(money->position[0] == Catch::Approx(10.0F));
+    CHECK(money->position[1] == Catch::Approx(11.0F));
+    CHECK(money->position[2] == Catch::Approx(1.5F));
+    const std::vector<coney::LevelPickups::WalkedOver> taken = pickups.walkOver(0, Vec3{10.0F, 11.0F, 1.0F}, false);
+    REQUIRE(taken.size() == 1);
+    CHECK(taken[0].amount == 5);
+    CHECK(h.state.player.inventory.count(0, item::kMoney) == 5);
+}
+
+TEST_CASE("a pocket's item drops as its inventory object", "[level_pickups]") {
+    // Expected: crimes.md#down-drop, confirmed (code) at 0x00232c60 (the pocket item's inventory entry names the
+    // object, InventoryBlock_GetEntry 0x0041e3c0).
+    Harness h;
+    double next = 200.0;
+    h.scripts.setObjectHandles([&next] { return next++; });
+    h.state.player.inventory.configure(item::kSprayPaint, "dyn_spraycan", 0, "none", 0);
+    coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types);
+    coney::human::DropInput seller;
+    seller.brainType = 2;
+    seller.pocketItem = item::kSprayPaint;
+    seller.pocketCount = 1;
+    seller.carried = "none";
+    const auto noneBlocked = [](int /*k*/) { return false; };
+    const auto nowhere = [](int /*k*/) { return Vec3{}; };
+    static_cast<void>(pickups.dropCarried(seller, Vec3{0.0F, 0.0F, 0.0F}, noneBlocked, nowhere));
+    const wo::SpawnRecord* can = h.records.find(200.0);
+    REQUIRE(can != nullptr);
+    CHECK(can->typeName == "dyn_spraycan");
+    CHECK(can->position[2] == Catch::Approx(0.5F));
+}

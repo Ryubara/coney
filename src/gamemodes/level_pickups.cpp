@@ -312,6 +312,12 @@ std::optional<anim::Vec3> LevelPickups::promptPosition(double object) const {
     return m_locate ? m_locate(object) : std::nullopt;
 }
 
+human::CarriedDrop LevelPickups::dropCarried(human::DropInput input, anim::Vec3 /*feet*/,
+                                             const human::SectorBlocked& blocked, const SectorPoint& /*sectorPoint*/,
+                                             int /*player*/) {
+    return human::dropCarried(input, m_state.random, blocked);
+}
+
 void LevelPickups::stereoStolen(int player, double human, double car) {
     script::addInventoryItem(m_scripts, m_state, player, item::kMoney, kStereoMoney, true);
     script::addInventoryItem(m_scripts, m_state, player, item::kCarStereo, 1, true);
