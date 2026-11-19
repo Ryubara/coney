@@ -284,6 +284,7 @@ TEST_CASE("event channel: every kind raised on the server arrives once on the cl
     CHECK(pair.client->takeEvents(raisedAt - 1).empty());
     const std::vector<ArrivedEvent> arrived = pair.client->takeEvents(raisedAt);
     const std::vector<NetEvent> sent = toNetEvents(everyKind(), idOf);
+    REQUIRE(sent.size() == 16);
     REQUIRE(arrived.size() == sent.size());
     for (std::size_t i = 0; i < sent.size(); ++i) {
         CHECK(arrived[i].step == raisedAt);
