@@ -194,7 +194,8 @@ bool Fighter::startPairedMove(Holdable& victim, std::uint32_t clip, const Paired
     if (!victim.takePairedMove(sent)) {
         return false;
     }
-    // This human's clip, then the fight idle (state 0xb).
+    // This human's clip, then the fight idle (state 0xb). **Coney's choice**: the push sphere the original turns off
+    // for the pair is not modelled (Coney's pair never pushes itself apart).
     animator.playCombat(clips::one(clip), kAnimFightIdle, AnimState::Attack, clips::kPairFade, kPairedAttackerHeld);
     m_target = &victim;
     ++m_hitsLanded;
@@ -218,7 +219,10 @@ bool Fighter::takePairedMove(const PairedMove& move, const FighterInput& input, 
                           .attackerIsPlayer = move.attackerIsPlayer};
     // A defeating damage takes all its health and plays the death chain with its side as the dying clip
     // (`Human_PlayDeathReaction` with the attacker's set). **Coney's choice**: the foe it sets and the speech it
-    // stops (`Human_SetFoe`, `Human_StopSpeech`) are the brain's, which hears of the hit through its health.
+    // stops (`Human_SetFoe`, `Human_StopSpeech`) are the brain's, which hears of the hit through its health; the
+    // push sphere it turns off is not modelled; and a side with no knockdown event, which the original pairs with a
+    // random dying clip of the victim's own (308-311), is taken as the dying clip all the same
+    // (docs/research/stealth.md#q-stealth-side).
     const bool defeats = combat::damageDefeats(combat::DefeatTest{.health = m_health.value(),
                                                                   .damage = move.damage,
                                                                   .cuffed = input.cuffed,
