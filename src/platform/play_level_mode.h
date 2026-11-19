@@ -109,12 +109,6 @@ struct PlayerSetup {
     ai::AiConfig ai;
 };
 
-/// What a play run has done so far: counts and the player's state, for the summary line.
-struct PlayStats {
-    std::uint64_t frames = 0;
-    float travelled = 0.0F; ///< Metres the player's feet moved across the ground.
-};
-
 class PlayLevelMode;
 
 /// A line PlayLevelMode draws into the scene (PlayLevelMode::setSceneLines()): its ends in the game's axes and its
@@ -136,8 +130,9 @@ using SceneLines = std::function<std::vector<SceneLine>(const PlayLevelMode& mod
 /// viewer loads them and streamed around the follow camera, or a sandbox layout (`--play-level sandbox:NAME`,
 /// docs/guides/sandbox.md): the same player and camera code on the sandbox's collision mesh.
 ///
-/// Every step (update()): the player's update (human::Player: the human, then the camera), then the scenery's step
-/// (for a level: one streaming decision, the draw distance, and the visibility pass the next step's streaming reads).
+/// Every step (PlayLevelSimulation::update()): the player's update (human::Player: the human, then the camera), then
+/// the scenery's step this class makes through the step's hooks (for a level: one streaming decision, the draw
+/// distance, and the visibility pass the next step's streaming reads).
 /// Every real frame (render()): the drawing, from the player's snapshots of the last two steps blended by the frame's
 /// alpha (human::interpolate()) and the draw distance blended the same way: the character skinned and drawn with the
 /// scenery, where the original draws its objects (docs/guides/conventions.md#update-and-render). Game time only, so
@@ -158,8 +153,9 @@ using SceneLines = std::function<std::vector<SceneLine>(const PlayLevelMode& mod
 /// What it simulates (the cast and the fighters, the objects, the hats, the carried props, the throw aim, the HUD's
 /// state) is its base, PlayLevelSimulation (src/gamemodes/play_level_simulation.h), which needs neither librw nor SDL;
 /// this class adds the drawing (the meshes per human, the textures, the lights, the world objects' models, the HUD's
-/// sprites, the throw arc), the scenery's streaming and the scenes' stage, and runs the step, calling the simulation's
-/// steps in the original's order (docs/guides/network-architecture.md#sub-missions).
+/// sprites, the throw arc), the scenery's streaming and the scenes' stage. The step is the simulation's; this class
+/// makes the parts of it the simulation leaves to a presentation through its hooks (stepScenery(), stepGlints(),
+/// hudStepped(), stepRings() and the rest; docs/guides/network-architecture.md#sub-presentation).
 ///
 /// It also has Coney's own capabilities, which the original has nothing like (docs/guides/conventions.md#coney-only):
 /// teleporting, freezing and flying the player, the free camera, spawning fighters and objects, changing his character.
@@ -198,8 +194,6 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
     [[nodiscard]] std::uint32_t id() const override { return kId; }
     /// Preloads the scenery around the camera.
     void enter() override;
-    /// One step, as the class comment says. Draws nothing.
-    ModeResult update(GameModeStack& stack, const FrameTime& frame) override;
     /// Draws a frame between the last two steps and presents it.
     void render(const RenderTime& time) override;
     /// render() with `overlay` drawn over the HUD before the present: the pause menu over the paused level, the Rumble
@@ -211,11 +205,6 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
                                 const std::function<void(graphics::RenderDevice&)>& overlay) override;
     /// One line: frames, the player's position, heading, speed, gait, clip and state, then the scenery's counts.
     [[nodiscard]] std::string summary() const;
-
-    /// The sandbox's targets (none in a level).
-    [[nodiscard]] std::span<human::TargetHuman* const> targets() const { return m_targetPointers; }
-    /// Player 1's statistics as the play mode counts them.
-    [[nodiscard]] const PlayStats& stats() const { return m_stats; }
 
     /// Writes the trace (human::traceHeader(), then human::traceLine() after every step) to the file at `path`,
     /// replacing it: `--trace`. Fails with ErrorCode::Io when the file cannot be opened.
@@ -416,22 +405,29 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
     // A step of the frozen world: the scenery's streaming and visibility round the camera and the world objects
     // brought in there, nothing advanced.
     void stepFrozen(const FrameTime& frame);
+
+    // The presentation's hooks (PlayLevelSimulation): the frozen world's step; the traces; the scenery's streaming
+    // round the step's camera, the lights' step and the visibility pass; the HUD's sprites and the spinning icons'
+    // poses; the step's end (`--freeze-world` freezes here); and the scenes' three until they move to the core.
+    bool stepFrozenWorld(const FrameTime& frame) override;
+    void traceStep() override;
+    StepView stepScenery(const FrameTime& frame) override;
+    void hudStepped() override;
+    void stepEnded(const FrameTime& frame) override;
+    [[nodiscard]] bool sceneHolds(double human) const override;
+    [[nodiscard]] bool letterboxShown(std::uint64_t nowMs) const override;
     // Makes the scene stage (play_level_scene.cpp).
     void makeStage();
     // One step of the scenes at `nowMs` with pad 1's and 2's buttons (a released human is placed as it is let go,
     // by placeReleased).
-    void stepScenes(std::uint64_t nowMs, std::uint16_t buttons);
+    void stepScenes(std::uint64_t nowMs, std::uint16_t buttons) override;
     // Places a human the scene has let go, where the scene left it.
     void placeReleased(const SceneStage::Release& release);
-    // Whether a scene holds player 1 now: his pad does nothing and he is drawn as the scene poses him.
-    [[nodiscard]] bool sceneHoldsPlayer() const;
     // The ground a placement of `human` drops onto (human::Human::place()): the level's collision, or null while a
     // scene holds the human.
     [[nodiscard]] const raycast::CollisionMesh* placeGround(double human) const override;
     // The brain's part of a placement of `human` (ai::Brain::placed(): its front move popped), when it has a brain.
     void brainPlaced(const human::Human& human);
-    // Makes the layout's targets, dropped onto the ground, with a mesh each.
-    void makeTargets(rw::Texture* texture);
     // A character to draw and animate a human as, and its texture.
     struct CastLook {
         const human::PlayerCharacter* character = nullptr;
@@ -461,17 +457,15 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
 
     // Loads the Object List the world objects' models come by (only when the engine draws).
     void makeWorldObjects(const ScriptedCast& cast);
-    // The world objects' step round the camera at `eye` (RenderWare's axes), after the scripts and scenes, then the
-    // glints of the pickups and lock-pickable doors among them, seen through `view`.
-    void stepWorldObjects(world::Vec3 eye, const WorldView& view, std::uint32_t elapsedMs);
     // The glints' step (docs/research/particles.md#glints): a triglint for each `pickup_item` lying in the world and
-    // each lock-pickable door, then `ticks` 60 Hz ticks of their blink, a point seen when it is inside `view`'s window
-    // within the triglint's distance.
-    void stepGlints(const WorldView& view, int ticks);
-    // The health rings' step: player 1 and his target, the triggers from `pad`, the camera's heading from `view`.
-    void stepRings(const Pad& pad, const WorldView& view, std::uint64_t nowMs);
+    // each lock-pickable door, then `ticks` 60 Hz ticks of their blink, a point seen when it is inside the step's view
+    // window (m_stepView) within the triglint's distance.
+    void stepGlints(int ticks) override;
+    // The health rings' step: player 1 and his target, the triggers from `pad`, the camera's heading from the step's
+    // view (m_stepView).
+    void stepRings(const Pad& pad, std::uint64_t nowMs) override;
     // Records where this step's world objects and doors are, for render() to blend from (after stepWorldObjects()).
-    void recordDrawnPoses();
+    void recordDrawnPoses() override;
     // One spinning icon drawn this step: the human wearing it, its model's name and its pose.
     struct IconDraw {
         const human::Human* human = nullptr;
@@ -511,9 +505,6 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
     // The view from a camera pose (RenderWare's axes) through the player camera's lens, with `drawDistance`.
     [[nodiscard]] WorldView viewFrom(const world::CameraPose& pose, float drawDistance,
                                      const camera::CameraLens& lens = camera::kPlayerCameraLens) const;
-    // Gives each human in the step the clip replacements its script state names (`HuUseAnim`, `HuUseAnyAnim`), when
-    // they changed: the idle's through Human::setIdleClip(), the others' through Human::setOverrideClip().
-    void applyAnimOverrides();
     // The free camera `camera` between its last two steps, `alpha` of the way.
     [[nodiscard]] static world::DebugCamera blendedFreeCamera(const Interpolated<world::DebugCamera>& camera,
                                                               float alpha);
@@ -533,29 +524,17 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
     // After a change of character, the textures of the player's own character (PlayLevelSimulation::m_playerCharacter).
     std::vector<TextureDictionary> m_playerDictionaries;
     std::unique_ptr<CharacterMesh> m_mesh;
-    std::unique_ptr<PlayLighting> m_lights; // the level's lights (the cast's), or a stand-in
-    Interpolated<float> m_drawDistance;     // at the last two steps
-    PlayStats m_stats;
-    std::uint32_t m_lastAnimId = 0;
-    SceneLines m_sceneLines;                                        // setSceneLines()
-    std::shared_ptr<MeshViewHook> m_meshViews;                      // setMeshViews()
+    std::unique_ptr<PlayLighting> m_lights;    // the level's lights (the cast's), or a stand-in
+    Interpolated<float> m_drawDistance;        // at the last two steps
+    WorldView m_stepView;                      // the newest step's view, which its glints and rings are seen through
+    SceneLines m_sceneLines;                   // setSceneLines()
+    std::shared_ptr<MeshViewHook> m_meshViews; // setMeshViews()
     const graphics::LightingSwitches* m_lightingSwitches = nullptr; // setLightingSwitches()
-    bool m_frozen = false;
-    std::optional<CameraPin> m_pinnedCamera;                      // `--camera`
-    bool m_freezeWorld = false;                                   // `--freeze-world`
-    std::optional<std::uint64_t> m_frozenSince;                   // the game ticks of the step the world froze after
-    std::optional<Interpolated<world::DebugCamera>> m_freeCamera; // at the last two steps, while it is on
-    // The sandbox's targets, each drawn with its own copy of the character's mesh.
-    struct Target {
-        std::unique_ptr<human::TargetHuman> human;
-        std::unique_ptr<CharacterMesh> mesh;
-        bool frozen = false;                               // the Entity inspector's freeze: its step is skipped
-        const human::PlayerCharacter* character = nullptr; // the character it is skinned as; null: the scene's
-        std::string model;                                 // the model it is drawn as; empty: the scene's
-    };
-    std::vector<Target> m_targets;
-    std::vector<human::TargetHuman*> m_targetPointers;
-    std::vector<human::Combatant*> m_combatants; // the targets, as the player's step takes them
+    std::optional<CameraPin> m_pinnedCamera;                        // `--camera`
+    bool m_freezeWorld = false;                                     // `--freeze-world`
+    std::optional<std::uint64_t> m_frozenSince;                     // the game ticks of the step the world froze after
+    // The sandbox's targets' meshes (PlayLevelSimulation::m_targets), each its own copy of the character's, by target.
+    std::map<const human::TargetHuman*, std::unique_ptr<CharacterMesh>> m_targetMeshes;
     // The textures of the characters the scripts' humans and the fighters are drawn as, by model (the characters
     // themselves are the simulation's: PlayLevelSimulation::m_castCharacters); none for a model that did not load.
     std::map<std::string, std::vector<TextureDictionary>, std::less<>> m_castDictionaries;

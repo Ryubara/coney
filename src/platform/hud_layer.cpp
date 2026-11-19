@@ -165,8 +165,7 @@ graphics::SpriteBatch* HudLayer::radarMapBatch() {
     return m_radarMap.get();
 }
 
-void HudLayer::step(const hud::HudFrame& frame) {
-    m_owner.hud().update(frame);
+void HudLayer::render() {
     m_pass.empty();
     // The canvas: fonts by slot (slot 6 big_font, every other slot part_page0) and their batches.
     hud::HudCanvas canvas;

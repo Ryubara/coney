@@ -92,6 +92,7 @@ add_library(coney_core STATIC
     gamemodes/play_level_objects.cpp
     gamemodes/play_level_props.cpp
     gamemodes/play_level_simulation.cpp
+    gamemodes/play_level_step.cpp
     gamemodes/play_level_throw_aim.cpp
     gamemodes/hud_feed.cpp
     gamemodes/player_frame.cpp

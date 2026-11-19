@@ -29,6 +29,7 @@
 #include "combat/stick.h"
 #include "combat/throw_aim.h"
 #include "core/error.h"
+#include "core/interpolation.h"
 #include "core/options.h"
 #include "core/pad.h"
 #include "fileio/wad.h"
@@ -40,8 +41,10 @@
 #include "hud/hud_owner.h"
 #include "human/player.h"
 #include "human/strike_shapes.h"
+#include "human/target_human.h"
 #include "warriors/created_humans.h"
 #include "warriors/game_over.h"
+#include "world/debug_camera.h"
 #include "world/level_ground.h"
 #include "world/view_frustum.h"
 #include "world_objects/cars.h"
@@ -77,9 +80,10 @@ struct PlayStats {
 /// step, from the pads and the scripts, and nothing here reads the window, the picture or the frame rate. What the
 /// platform draws it hears of through the hooks below: a human made (humanMade()), player 1's model changed
 /// (changePlayerModel()), a character's files loaded (loadCastCharacter()); and it asks the platform whether a scene
-/// holds a human (placeGround()). **Coney's choice**: the platform's mode still runs the step itself (its update()
-/// calls the steps below in the original's order) until the presentation the step interleaves (the streaming, the
-/// lights, the glints, the rings, the HUD's sprites) is behind hooks as well.
+/// holds a human (placeGround()). The step itself is the simulation's (update()); the presentation it interleaves (the
+/// scenery's streaming round the camera, the lights, the glints, the rings, the HUD's sprites) is the presentation's
+/// hooks, which do nothing by default, so the simulation steps alone where nothing is presented. The scenes are still
+/// the platform's, reached through three hooks of their own until they move to the core (#1449).
 ///
 /// The parts follow docs/research/objects.md, docs/research/characters.md#hats,
 /// docs/research/combat-grabs.md#power-move-props, docs/research/crimes.md and docs/research/ai-scripting.md#dealer;
@@ -167,9 +171,12 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     /// state and the game-over check in the original's order, with the presentation's hooks below called where its
     /// parts of the step fall (the scenery streamed round the step's camera, the glints, the HUD's sprites, the rings).
     /// Draws nothing.
+    /// @coney-only Coney's order of the level's parts in a step; each part carries its own @orig
     ModeResult update(GameModeStack& stack, const FrameTime& frame) override;
     /// Player 1's statistics as the play mode counts them.
     [[nodiscard]] const PlayStats& stats() const { return m_stats; }
+    /// The sandbox's targets (none in a level).
+    [[nodiscard]] std::span<human::TargetHuman* const> targets() const { return m_targetPointers; }
 
     /// How many doors and barriers within `radius` of `at` would be drawn now (the doors' draw list, hidden and removed
     /// ones left out): a disc test's way to ask whether a broken fence is still on screen.
@@ -236,6 +243,24 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     [[nodiscard]] virtual bool sceneHolds(double /*human*/) const { return false; }
     virtual void stepScenes(std::uint64_t /*nowMs*/, std::uint16_t /*buttons*/) {}
     [[nodiscard]] virtual bool letterboxShown(std::uint64_t /*nowMs*/) const { return false; }
+
+    // Whether a scene holds player 1 now (sceneHolds()): his pad does nothing and he is drawn as the scene poses him.
+    // @coney-only Coney's question to the scenes about player 1
+    [[nodiscard]] bool sceneHoldsPlayer() const;
+
+    // --- play_level_step.cpp: the parts of the step that are not another file's.
+
+    // The world objects' step round the step's camera `view` (the scripts' spawn records brought in within its draw
+    // distance), `elapsedMs` of game time, then the glints' (stepGlints()).
+    // @coney-only Coney's wiring of the world objects' step to the step's camera
+    void stepWorldObjects(const StepView& view, std::uint32_t elapsedMs);
+    // Gives each human in the step the clip replacements its script state names (`HuUseAnim`, `HuUseAnyAnim`), when
+    // they changed: the idle's through Human::setIdleClip(), the others' through Human::setOverrideClip().
+    // @coney-only Coney's application of the scripts' recorded clip replacements, once a step
+    void applyAnimOverrides();
+    // Makes the ground's targets (a sandbox layout's `target` lines), dropped onto the ground.
+    // @coney-only the sandbox's passive targets; the original has none
+    void makeTargets();
 
     // The character the player plays: his own after a change of character, else the scene's.
     [[nodiscard]] const human::PlayerCharacter& playerCharacter() const {
@@ -626,6 +651,20 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // The HUD the steps drive: the simulation's own, or the game's after useHud().
     std::unique_ptr<hud::HudOwner> m_hud = std::make_unique<hud::HudOwner>();
     PlayStats m_stats;
+    std::uint32_t m_lastAnimId = 0; // player 1's clip at the last step, for the run log's clip lines
+    bool m_frozen = false;          // player 1 frozen (he ignores the pad)
+    // The free camera at the last two steps, while it is on (it takes pad 1 and player 1 stands still).
+    std::optional<Interpolated<world::DebugCamera>> m_freeCamera;
+    // The sandbox's targets, stepped after the player; what draws them is the platform's.
+    struct Target {
+        std::unique_ptr<human::TargetHuman> human;
+        bool frozen = false;                               // the Entity inspector's freeze: its step is skipped
+        const human::PlayerCharacter* character = nullptr; // the character it is skinned as; null: the scene's
+        std::string model;                                 // the model it is drawn as; empty: the scene's
+    };
+    std::vector<Target> m_targets;
+    std::vector<human::TargetHuman*> m_targetPointers;
+    std::vector<human::Combatant*> m_combatants; // the targets, as the player's step takes them
 };
 
 } // namespace coney
