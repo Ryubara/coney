@@ -400,6 +400,9 @@ ParticleSystem* ParticleSystems::spawnSparks(anim::Vec3 at, anim::Vec3 direction
     return spawn("spark", at, rotationTowards(direction));
 }
 
+// A breaking pane's shard drawn as a particle. The original's shard is a `glasstest` object of its own
+// (GlassTest_Init 0x003e44e0, docs/research/objects.md#shatter), which Coney draws through the particles.
+// @coney-only a pane's shard as a particle; the original makes a glasstest object
 ParticleSystem* ParticleSystems::spawnShard(anim::Vec3 at, float size, std::uint32_t colour) {
     ParticleSystem* shard = spawn("glasstest", at, {}, 0, 0, colour);
     if (shard == nullptr || m_particles >= kParticleBudget) {
