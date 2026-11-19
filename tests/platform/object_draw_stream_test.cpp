@@ -211,8 +211,8 @@ TEST_CASE("the object scene's draw stream has its expected hash", "[platform][dr
 
 TEST_CASE("the object scene hashes the same twice and sees a tint and a paint", "[platform][draw-stream][objects]") {
     // Expected: docs/engine/renderer.md#comparing: a recording depends on the scene alone, and an atomic draw holds
-    // its materials' colours, which an object's tint multiplies (docs/research/objects.md#tint) and a car's paint sets
-    // on its painted parts (docs/research/graphics.md#car-draw).
+    // its materials' colours: an object's tint replaces the first material's colour (docs/research/objects.md#tint) and
+    // a car's paint sets its painted parts' (docs/research/graphics.md#car-draw).
     const std::uint64_t base = drawObjectScene(ObjectScene{}).hash();
     CHECK(drawObjectScene(ObjectScene{}).hash() == base);
     CHECK(drawObjectScene(ObjectScene{.tint = 0xFFFFFFFFU}).hash() != base);
