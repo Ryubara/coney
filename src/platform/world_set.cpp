@@ -97,7 +97,7 @@ std::expected<TextureDictionary, Error> WorldSet::readDictionary(std::span<const
     // one that cannot be converted is left out, and the materials naming it get no texture id.
     rw::TexDictionary* rwDictionary = dictionary->rwDictionary();
     FORLIST(link, rwDictionary->textures) {
-        if (auto id = m_assets.addTexture(*rw::Texture::fromDict(link)); id) {
+        if (auto id = m_assets.addTexture(*rw::Texture::fromDict(link)); id && id->valid()) {
             m_readTextures.push_back(*id);
         }
     }

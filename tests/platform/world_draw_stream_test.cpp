@@ -290,3 +290,96 @@ TEST_CASE("the world scene's sectors are drawn from the frame description", "[pl
         CHECK_FALSE(frame.lightsOf(draw).empty());
     }
 }
+
+TEST_CASE("the scene assets count what they converted and hold", "[platform][world][scene-assets]") {
+    // Expected: docs/engine/gpu-renderer.md#scene-assets: the conversion's cost is the textures and meshes converted,
+    // the bytes the store holds of them (the CPU copy beside librw's) and the most it held at once. The scene's part 1
+    // is one 2 x 2 RGBA texture (16 bytes at level 0, so at least that) and one four-vertex mesh; part 2 the same
+    // again.
+    auto engine = startHeadless();
+    const SceneDisc disc;
+    coney::world::SectorBudget budget(10'000);
+    const std::vector<std::string> names{"scene"};
+    const SceneAssets& assets = engine->sceneAssets();
+    auto set = WorldSet::load(*disc.wad, names, budget, false, engine->sceneAssets());
+    REQUIRE(set.has_value());
+    coney::world::StreamedWorld& world = *(*set)->worlds()[0];
+    for (const std::uint32_t part : {1U, 2U}) {
+        auto requested = coney::world::requestPart(world, 0, part, budget, **set, 100);
+        REQUIRE(requested.has_value());
+        REQUIRE(*requested);
+    }
+    const SceneAssets::Totals loaded = assets.totals();
+    CHECK(loaded.textures == 2);
+    CHECK(loaded.meshes == 2);
+    // The floors are computed in the byte counters' own 64-bit type, so no int product is widened.
+    constexpr std::uint64_t parts = 2;
+    constexpr std::uint64_t textureFloor = parts * std::uint64_t{16};
+    constexpr std::uint64_t meshFloor = parts * std::uint64_t{4} * sizeof(coney::graphics::MeshVertex);
+    CHECK(loaded.textureBytes >= textureFloor);
+    CHECK(loaded.meshBytes >= meshFloor);
+    CHECK(loaded.peakBytes == loaded.textureBytes + loaded.meshBytes);
+
+    // One part goes: what is held falls by what it held, the counts of what was converted and the peak stay.
+    (*set)->unloadPart(0, 1);
+    world.markPartUnloaded(1);
+    budget.release(300);
+    const SceneAssets::Totals unloaded = assets.totals();
+    CHECK(unloaded.textures == 2);
+    CHECK(unloaded.meshes == 2);
+    CHECK(unloaded.textureBytes < loaded.textureBytes);
+    CHECK(unloaded.meshBytes < loaded.meshBytes);
+    CHECK(unloaded.peakBytes == loaded.peakBytes);
+}
+
+TEST_CASE("scene assets that do not convert hand out mesh ids for the atomics and hold no data",
+          "[platform][world][scene-assets]") {
+    // Expected: docs/engine/gpu-renderer.md#scene-assets: the GL3 renderer draws the librw atomic a mesh id names and
+    // reads none of the converted data, so with no conversion a sector still has its mesh id and atomic, and nothing of
+    // it is converted or held (no second CPU copy of the textures and vertices).
+    auto engine = startHeadless();
+    const SceneDisc disc;
+    coney::world::SectorBudget budget(10'000);
+    const std::vector<std::string> names{"scene"};
+    SceneAssets plain(false);
+    CHECK_FALSE(plain.converting());
+    auto set = WorldSet::load(*disc.wad, names, budget, false, plain);
+    REQUIRE(set.has_value());
+    coney::world::StreamedWorld& world = *(*set)->worlds()[0];
+    for (const std::uint32_t part : {1U, 2U}) {
+        auto requested = coney::world::requestPart(world, 0, part, budget, **set, 100);
+        REQUIRE(requested.has_value());
+        REQUIRE(*requested);
+    }
+    const WorldSet::SectorMesh* first = (*set)->sectorMesh(0, 0);
+    const WorldSet::SectorMesh* second = (*set)->sectorMesh(0, 1);
+    REQUIRE(first != nullptr);
+    REQUIRE(second != nullptr);
+    CHECK(first->mesh.valid());
+    CHECK(first->mesh != second->mesh);
+    CHECK(plain.atomic(first->mesh) == (*set)->atomic(0, 0));
+    CHECK(plain.atomic(second->mesh) == (*set)->atomic(0, 1));
+    CHECK(plain.store().meshCount() == 0);
+    CHECK(plain.store().textureCount() == 0);
+    const SceneAssets::Totals totals = plain.totals();
+    CHECK(totals.textures == 0);
+    CHECK(totals.meshes == 0);
+    CHECK(totals.peakBytes == 0);
+
+    // The part goes, and the mesh id's atomic with it.
+    const coney::graphics::MeshId gone = first->mesh;
+    (*set)->unloadPart(0, 1);
+    world.markPartUnloaded(1);
+    budget.release(300);
+    CHECK(plain.atomic(gone) == nullptr);
+}
+
+TEST_CASE("only GL3 does not convert the scene assets", "[platform][scene-assets]") {
+    // Expected: docs/engine/gpu-renderer.md#scene-assets: nothing reads the converted data under GL3, which draws the
+    // librw atomics; the NULL backend's tests and the GPU renderer read it.
+    CHECK_FALSE(RenderEngine::convertsSceneAssets(RenderBackend::OpenGl));
+    CHECK(RenderEngine::convertsSceneAssets(RenderBackend::Null));
+    CHECK(RenderEngine::convertsSceneAssets(RenderBackend::Gpu));
+    auto engine = startHeadless();
+    CHECK(engine->sceneAssets().converting());
+}

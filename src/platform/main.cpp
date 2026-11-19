@@ -99,6 +99,7 @@
 #include "platform/render_engine.h"
 #include "platform/sandbox_play_scenery.h"
 #include "platform/sandbox_viewer_mode.h"
+#include "platform/scene_assets.h"
 #include "platform/script_patch_command.h"
 #include "platform/sdl_input.h"
 #include "platform/sprite_sheets.h"
@@ -1403,6 +1404,8 @@ int main(int argc, char** argv) {
         const std::string renderSizeText = renderSizeAsked
                                                ? std::format("{}x{}", renderSizeAsked->width, renderSizeAsked->height)
                                                : std::string("none");
+        const coney::platform::SceneAssets::Totals sceneTotals = renderer.sceneAssets().totals();
+        const double sceneMilliseconds = static_cast<double>(sceneTotals.nanoseconds) / 1.0e6;
         auto line =
             bench->finish({{"level", commandLineLevel.value_or(std::string{})},
                            {"checkpoint", std::to_string(options->checkpoint.value_or(1))},
@@ -1416,7 +1419,16 @@ int main(int argc, char** argv) {
                                                         : std::format("{}x{}", windowDesc.width, windowDesc.height)},
                            {"build", CONEY_BUILD_TYPE},
                            {"renderer", coney::platform::glRendererName()},
-                           {"skinning", coney::platform::characterSkinOn() ? "gpu" : "cpu"}});
+                           {"skinning", coney::platform::characterSkinOn() ? "gpu" : "cpu"},
+                           // What converting the world's textures and meshes into Coney's formats cost this run
+                           // (docs/engine/renderer.md#frame-description): none of it under GL3.
+                           {"scene_assets", renderer.sceneAssets().converting() ? "converting" : "not converting"},
+                           {"scene_assets_textures", std::to_string(sceneTotals.textures)},
+                           {"scene_assets_meshes", std::to_string(sceneTotals.meshes)},
+                           {"scene_assets_texture_bytes", std::to_string(sceneTotals.textureBytes)},
+                           {"scene_assets_mesh_bytes", std::to_string(sceneTotals.meshBytes)},
+                           {"scene_assets_peak_bytes", std::to_string(sceneTotals.peakBytes)},
+                           {"scene_assets_convert_ms", std::format("{:.2f}", sceneMilliseconds)}});
         if (!line) {
             std::fprintf(stderr, "coney: %s\n", line.error().message.c_str());
             return 1;

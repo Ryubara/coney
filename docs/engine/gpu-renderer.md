@@ -119,6 +119,28 @@ whether or not the window showed it. A build without the shaders (`-DCONEY_SHADE
 build](../guides/shaders.md)) cannot draw: its GPU renderer clears each frame to the frame's colour and presents, and a
 capture fails saying so.
 
+## What the scene assets cost {#scene-assets}
+
+`WorldSet` converts every texture of a dictionary and every sector's mesh into Coney's own formats as the world and its
+parts load ([the frame description](renderer.md#frame-description)), and only a renderer that reads the converted data
+needs that: GL3 draws the librw atomic a mesh id names and reads none of it. Measured on the `playtest` build (the
+bench's `scene_assets_*` fields, 120 frames of `--play-level` from a loading screen, the whole level's parts loaded by
+the end, two runs each with identical counts, and the time of the world's reads and parts with and without the
+conversion), confirmed (runtime):
+
+| Level | Textures, meshes | Held at most | Conversion | The world's load, without and with it |
+| --- | --- | --- | --- | --- |
+| `level95` (the hub), 49 parts | 621, 198 | 25.7 MB (9.8 texels, 16.0 meshes) | 22.2-22.5 ms | 153-176 ms, 178-182 ms |
+| `level99` (the street), 31 parts | 510, 118 | 18.3 MB (8.3 texels, 10.1 meshes) | 18.3-18.5 ms | 104-109 ms, 125-129 ms |
+
+So the conversion's own time was 12 to 17 per cent of the world's load (22 ms of 178-182 ms, 18 ms of 125-129 ms) and
+it held a second CPU copy of 18 to 26 MB, for nothing under GL3. The load column is one-off wall clock from a timer
+that was not kept: the hub's ranges overlap, so the difference between them is within noise, and only the counts, bytes
+and conversion times are reproduced by the bench report. It is therefore done only when
+`RenderEngine::convertsSceneAssets()` says so: with GL3 (`RenderBackend::OpenGl`) the scene assets hand a mesh an id for
+its atomic and convert nothing ([#1422](issue:1422)); the NULL backend, whose tests read the data, and the GPU renderer
+convert as before.
+
 ## The fallback {#fallback}
 
 When no GPU device opens, the run log says so with SDL's reason (`could not start the GPU renderer: no GPU device opened

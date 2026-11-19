@@ -262,6 +262,11 @@ class RenderEngine final : public graphics::RenderDevice {
     /// passes (docs/engine/renderer.md#frame-description). Built with all three backends, so headless tests read it.
     [[nodiscard]] const graphics::FrameDescription& frame() const { return m_frame; }
 
+    /// Whether the scene assets of a `backend` convert librw's meshes and textures into Coney's formats: not for GL3,
+    /// which draws the librw atomics and reads none of the converted data (#1422); the NULL backend's tests and the GPU
+    /// renderer read it.
+    [[nodiscard]] static bool convertsSceneAssets(RenderBackend backend) { return backend != RenderBackend::OpenGl; }
+
     /// The meshes and textures the frame description's 3D draws name by id, with the librw atomics the GL3 renderer
     /// draws for them: WorldSet fills it with the streamed world's sectors. Whoever adds to it removes again before the
     /// engine stops.
