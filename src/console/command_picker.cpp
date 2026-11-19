@@ -6,8 +6,10 @@
 #include <cstddef>
 #include <format>
 #include <string_view>
+#include <system_error>
 
 #include "console/tokenizer.h"
+#include "core/parse_number.h"
 
 namespace coney::console {
 
@@ -31,15 +33,20 @@ std::string lineName(const Command& command) {
 
 } // namespace
 
-// `value` moved by `step`, as a whole or a decimal number; an empty or unreadable value counts as 0.
+// `value` moved by `step`, as a whole or a decimal number; an empty value, or one that does not read in full (a word,
+// or a number with text after it), counts as 0.
 std::string steppedNumber(std::string_view value, int step, bool whole) {
     if (whole) {
+        // Read in full, as parseDecimal does: `12x` is no number, not 12.
         long long number = 0;
-        (void)std::from_chars(value.data(), value.data() + value.size(), number);
+        const char* const end = value.data() + value.size();
+        if (const auto read = std::from_chars(value.data(), end, number); read.ec != std::errc{} || read.ptr != end) {
+            number = 0;
+        }
         return std::to_string(number + step);
     }
-    double number = 0.0;
-    (void)std::from_chars(value.data(), value.data() + value.size(), number);
+    // Through parseDecimal: Apple's libc++ has no floating-point std::from_chars.
+    const double number = parseDecimal(value).value_or(0.0);
     return std::format("{}", number + step);
 }
 
