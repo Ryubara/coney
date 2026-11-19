@@ -143,6 +143,7 @@ add_library(coney_core STATIC
     gui/circled_text_header.cpp
     gui/game_stats.cpp
     gui/mission_select.cpp
+    gui/mission_select_areas.cpp
     gui/global_strings.cpp
     gui/markup.cpp
     gui/message_paging.cpp

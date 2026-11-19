@@ -1251,8 +1251,8 @@ confirmed (code) at `0x001bc5a8` and `0x001bd838`.
 | `0x0050e894` | alternative sheet | 0 | 1 | 1 | 0 | 1 | confirmed (code) at `0x001bcdd8` |
 
 `0x0050e87c` (1.05 by default, 1.2 with 16:9, 0.82 with `0x02`, 0.88 with `0x02` + `0x04`) is the map's second size
-(`BaseWidget_SetSize(bg, 0x0050e87c)` each update) and `0x0050e884` (1.4286, 2.0 with `0x02`) the logo's width factor,
-both read by `MissionSelect_UpdateWidget` (`0x001be198`; confirmed (code)). The tile's back-strip factor
+(`BaseWidget_SetSize(bg, 0x0050e87c)` each update) and `0x0050e884` (10/7, 1.4285714, 2.0 with `0x02`) the logo's width
+factor, both read by `MissionSelect_UpdateWidget` (`0x001be198`; confirmed (code)). The tile's back-strip factor
 `0x0050ecd4` is 0.745, 0.755 with 16:9, 0.77 with `0x02`, 0.69 with `0x02` + `0x04` (`0x001d31e8`; progressive mode
 leaves the static value).
 
@@ -1287,7 +1287,7 @@ a new area is shown (`0x001be198`).
 tables of 23 rows (mission bytes 1-23) × 5 columns × (x, y) floats, at `0x005148e0` (the markers) and `0x00514c78` (the
 logos); the column is 3 (4 with 16:9) under flag `0x02`, else 2 progressive, else 1 with 16:9, else 0. Row 1 column 0 is
 (0.36, 0.947) and (0.36, 0.744). Bytes 1, 2, 8, 9, 18 and 20 share one point. Coney keeps both tables
-(`repo:src/gui/mission_select.cpp`).
+(`repo:src/gui/mission_select_areas.cpp`).
 
 **The marker's pulse** (`0x001be198`; confirmed (code)): when a new area is shown its pulse starts shrinking; each
 400 ms (`+0x698`) the way turns. Its size is `0x0050e888` × f, f going from 2 to 1 or from 1 to 2 over the 400 ms
@@ -1311,14 +1311,15 @@ bank unless current, sets the task manager's phase 0 and runs `MissionSelect_Ini
 (`MissionSelect_IsDone` `0x0015d5b0`: cancelled or chosen) it queues a 1 s fade out after a cancel, or stops the music
 and queues 1.5 s after a choice, and the mode leaves when the fade is over. `MissionSelect_Exit` (`0x0015d728`) shuts
 the screen and, when cancelled with an `onCancel`, loads the `sound` bank and calls `onCancel()`; otherwise, when chosen
-with an `onChoose`, calls `onChoose(level, checkpoint)`. The original called `onChoose(3, 2)` after the second area's
-mission (level 3) was started at letter B; confirmed (runtime), run r-20261119-mission-select.
+with an `onChoose`, calls `onChoose(level, checkpoint)`. The original called `onChoose(3, 2)` after up moved the cursor
+two areas on (to area 2, the third: Soho, level 3) and that mission was started at letter B; confirmed (runtime), run
+r-20261119-mission-select.
 
-**In Coney.** `coney::gui::MissionSelectScreen` and `buildMissionSelectAreas` (`repo:src/gui/mission_select.h`) and
-`coney::MissionSelectMode` (`repo:src/gamemodes/mission_select_mode.h`), which `HUDShowMissionSelect` pushes through the
-start-up flow. Stand-ins: the selected mission's tile (`MS_Mission`, below) shows only its letter until the tile is
-ported; no world frame runs under the screen; the entries are stacked an item gap apart without the list's scroll
-animation.
+**In Coney.** `coney::gui::MissionSelectScreen` (`repo:src/gui/mission_select.h`), `buildMissionSelectAreas`
+(`repo:src/gui/mission_select_areas.h`) and `coney::MissionSelectMode` (`repo:src/gamemodes/mission_select_mode.h`),
+which `HUDShowMissionSelect` pushes through the start-up flow. Stand-ins: the selected mission's tile (`MS_Mission`,
+below) shows only its letter until the tile is ported; no world frame runs under the screen; the entries are stacked an
+item gap apart without the list's scroll animation.
 
 **The tiles' lines** (`MSMission_Setup`, `0x001d31e8`): line 1 is string `0x6d` and the mission's best score, red
 (134, 26, 26) once it reaches the level's score target, gold (128, 100, 0) below it; line 2 is string `0x64` and the
@@ -2122,7 +2123,7 @@ statistics, flags, configuration workers) that belong to this page, by address.
 | `0x0041f298` / `0x0041f340` | `LevelRecord_GetAreaColour` / `LevelRecord_GetAreaColour2` | two colours (RGB, alpha 255) chosen by the record's area byte `+0x7c` (1-4); used by the mission-select screen and the end-of-mission list | confirmed (code) |
 | `0x0041f3e8` / `0x0041f428` | `LevelRecord_GetAreaName` / `LevelRecord_GetLabel` | in the record's second name (`+0x24`, `<label>:<area>`): a pointer to the text after its first `:` (null when none; this row read it as a length before) / the text before the `:`, at most 3 characters; the area name groups the mission select's missions by its CRC-32 and titles the area, the label is circled by the mission select, the end-of-mission list and the Rumble soldier screen | confirmed (code) |
 | `0x0041f4d0` | `LevelTable_FindPacked(n)` | the index of the n-th record whose `+0x10` is 1, 0 when there is none | confirmed (code) |
-| `0x0041f540` / `0x0041f5f8` | `LevelRecord_GetMapPos` / `LevelRecord_GetMapPos2` | a pair of floats for the record's byte `+0x0c` (1-based) from the tables `0x005148e0` / `0x00514c78`, 5 columns chosen by the video mode flags (`*0x0050cdb4` bits 2, 4, `0x20`); `(0, 0)` when the byte is 0 | confirmed (code); that they are screen positions inferred |
+| `0x0041f540` / `0x0041f5f8` | `LevelRecord_GetMapPos` / `LevelRecord_GetMapPos2` | a pair of floats for the record's byte `+0x0c` (1-based) from the tables `0x005148e0` / `0x00514c78`, 5 columns chosen by the video mode flags (`*0x0050cdb4` bits 2, 4, `0x20`); when the byte is 0 the static result is returned unchanged (the last call's point; Coney gives (0, 0)) | confirmed (code); that they are screen positions inferred |
 | `0x00424298` | `Unlockables_GetLevelTargets` | counts a level's targets for the mission screens: the highest item of its group-0 records × 1000 (the score target), type-4 and type-2 records (total and unlocked) and group-1 distinct items (total and unlocked); level 60 stands for all Armies levels 60-64 and 101 for 101-137 | confirmed (code) |
 
 ## Coney's implementation

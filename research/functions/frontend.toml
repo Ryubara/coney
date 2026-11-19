@@ -400,7 +400,7 @@ address = 0x001bc100
 name = "MissionSelect_IsMissionListed"
 page = "frontend.md#fn-missionselecthud"
 level = "confirmed-code"
-coney = "src/gui/mission_select.h:isMissionSelectListed"
+coney = "src/gui/mission_select_areas.h:isMissionSelectListed"
 status = "compared"
 
 [[function]]
@@ -416,7 +416,7 @@ address = 0x001bc930
 name = "MissionSelect_AddMission"
 page = "frontend.md#fn-missionselecthud"
 level = "confirmed-code"
-coney = "src/gui/mission_select.h:buildMissionSelectAreas"
+coney = "src/gui/mission_select_areas.h:buildMissionSelectAreas"
 status = "compared"
 
 [[function]]
@@ -424,7 +424,7 @@ address = 0x001bca30
 name = "MissionSelect_FindArea"
 page = "frontend.md#fn-missionselecthud"
 level = "confirmed-code"
-coney = "src/gui/mission_select.h:buildMissionSelectAreas"
+coney = "src/gui/mission_select_areas.h:buildMissionSelectAreas"
 status = "compared"
 
 [[function]]
@@ -432,7 +432,7 @@ address = 0x001bca70
 name = "MissionSelect_AddArea"
 page = "frontend.md#fn-missionselecthud"
 level = "confirmed-code"
-coney = "src/gui/mission_select.h:buildMissionSelectAreas"
+coney = "src/gui/mission_select_areas.h:buildMissionSelectAreas"
 status = "compared"
 
 [[function]]
@@ -440,7 +440,7 @@ address = 0x001bcc48
 name = "MissionSelect_BuildAreas"
 page = "frontend.md#fn-missionselecthud"
 level = "confirmed-code"
-coney = "src/gui/mission_select.h:buildMissionSelectAreas"
+coney = "src/gui/mission_select_areas.h:buildMissionSelectAreas"
 status = "compared"
 
 [[function]]
@@ -1471,7 +1471,7 @@ address = 0x0041f340
 name = "LevelRecord_GetAreaColour2"
 page = "frontend.md#warriors-functions"
 level = "confirmed-code"
-coney = "src/gui/mission_select.h:areaHaloColour"
+coney = "src/gui/mission_select_areas.h:areaHaloColour"
 status = "compared"
 
 [[function]]
@@ -1479,7 +1479,7 @@ address = 0x0041f3e8
 name = "LevelRecord_GetAreaName"
 page = "frontend.md#warriors-functions"
 level = "confirmed-code"
-coney = "src/gui/mission_select.h:missionAreaName"
+coney = "src/gui/mission_select_areas.h:missionAreaName"
 status = "compared"
 
 [[function]]
@@ -1487,7 +1487,7 @@ address = 0x0041f428
 name = "LevelRecord_GetLabel"
 page = "frontend.md#warriors-functions"
 level = "confirmed-code"
-coney = "src/gui/mission_select.h:missionLabel"
+coney = "src/gui/mission_select_areas.h:missionLabel"
 status = "compared"
 
 [[function]]
@@ -1495,7 +1495,7 @@ address = 0x0041f540
 name = "LevelRecord_GetMapPos"
 page = "frontend.md#warriors-functions"
 level = "confirmed-code"
-coney = "src/gui/mission_select.h:missionMapPoint"
+coney = "src/gui/mission_select_areas.h:missionMapPoint"
 status = "compared"
 
 [[function]]
@@ -1503,7 +1503,7 @@ address = 0x0041f5f8
 name = "LevelRecord_GetMapPos2"
 page = "frontend.md#warriors-functions"
 level = "confirmed-code"
-coney = "src/gui/mission_select.h:missionLogoPoint"
+coney = "src/gui/mission_select_areas.h:missionLogoPoint"
 status = "compared"
 
 [[function]]
