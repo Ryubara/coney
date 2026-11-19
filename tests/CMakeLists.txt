@@ -135,6 +135,7 @@ add_executable(coney_tests
     gui/mod_ui/ui_flow_screen_test.cpp
     gui/mod_ui/ui_input_mask_test.cpp
     gui/mod_ui/ui_model_test.cpp
+    gui/mod_ui/ui_screen_test.cpp
     gui/mod_ui/ui_view_test.cpp
     gui/message_paging_test.cpp
     gui/circled_text_header_test.cpp

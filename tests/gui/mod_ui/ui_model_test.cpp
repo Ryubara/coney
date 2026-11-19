@@ -159,7 +159,7 @@ TEST_CASE("Navigation reaches every focusable widget of a mod screen by the four
     CHECK(s.focused() == grid);
     CHECK(d.cues.back() == 0xe);
 
-    // Every move played the move cue: 4 for the grid, the list and each focus move.
+    // Each of the four moves between widgets queued a Focus event.
     const std::vector<UiEventKind> events = kinds(d.model);
     CHECK(std::count(events.begin(), events.end(), UiEventKind::Focus) == 4);
 }
@@ -273,6 +273,32 @@ TEST_CASE("A focus move blocks the d-pad for 20 ms and forgets the last command"
     d.tap(pad::kDown, 2); // a move in b: the gap was forgotten with the focus move
     CHECK(d.model.screen(screen)->focused() == b);
     CHECK(d.model.screen(screen)->widget(b)->list->selected() == 1);
+}
+
+TEST_CASE("A focus change on a covered screen leaves the top screen's input alone") {
+    // Expected: Coney's own rule, docs/guides/mod-ui.md#widgets
+    // Only the top screen's focus moves block its d-pad; the covered screen takes its focus afresh when it comes back.
+    Driver d;
+    const UiScreenId under = menuScreen(d.model);
+    const UiWidgetId a = widget(d.model, under, UiWidgetKind::List, "a");
+    fill(d.model, a, 2);
+    const UiWidgetId b = widget(d.model, under, UiWidgetKind::List, "b");
+    fill(d.model, b, 2);
+    const UiScreenId over = d.model.createScreen(kProject, UiScreenDef{}).value();
+    const UiWidgetId top = widget(d.model, over, UiWidgetKind::List, "top");
+    fill(d.model, top, 3);
+    REQUIRE(d.model.openScreen(kProject, under, 0, msOf(0)).has_value());
+    REQUIRE(d.model.openScreen(kProject, over, 0, msOf(0)).has_value());
+    for (int i = 0; i < 10; ++i) {
+        d.step(0);
+    }
+
+    // The covered screen's focus moves and a widget there is hidden; the tap in the same frame still moves the top.
+    REQUIRE(d.model.focus(kProject, b, msOf(d.frame)).has_value());
+    REQUIRE(d.model.setVisible(kProject, b, false, msOf(d.frame)).has_value());
+    CHECK(d.model.screen(under)->focused() == a);
+    d.tap(pad::kDown);
+    CHECK(d.model.screen(over)->widget(top)->list->selected() == 1);
 }
 
 TEST_CASE("Back always closes a mod screen and returns to the one under it") {
