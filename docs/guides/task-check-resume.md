@@ -42,10 +42,11 @@ record** they name must still read as one clean run of the preset on this tip wi
 record](stamps.md#build-record)), else the build runs again, as it does after failed tests.
 
 **The stamp stays honest.** The `checked` stamp, pass or fail, lists every check in `detail.checks` with the same
-`checks_sha256` as a full run, and `detail.resumed` names the checks taken from earlier runs, the times of those runs and
-the hash of the key: `{"checks": ["docs-check"], "from": ["2026-11-19T09:02:11Z"], "key_sha256": "..."}`. A resumed build
-keeps its record, which the stamp covers by `build_record_sha256` as always, and the facts of a pull request description
-say `resumed from an earlier run: ...`. `pr verify` reads the stamp as before.
+`checks_sha256` as a full run, and `detail.resumed` names the checks taken from earlier runs, the times of those runs
+and the hash of the key: `{"checks": ["docs-check"], "from": ["2026-11-19T09:02:11Z"], "key_sha256": "..."}`. A resumed
+build keeps its record, which the stamp covers by `build_record_sha256` as always, and the facts of a pull request
+description say `resumed from an earlier run: ...`. `pr verify` reads the stamp as before and prints a note naming the
+resumed checks, as `pr open` does ([pr verify](pr.md#verify)).
 
 ## What the key cannot see {#blind}
 

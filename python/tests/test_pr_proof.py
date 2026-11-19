@@ -120,6 +120,27 @@ def test_the_stamp_log_alone_refuses_a_missing_or_failed_check_and_review(tmp_pa
     ]
 
 
+def test_a_resumed_check_is_a_note_naming_the_checks_it_took_from_an_earlier_run(tmp_path: Path) -> None:
+    built = make(tmp_path, shape="tooling")
+    assert not any("resumed" in note for note in built.verify().notes)
+    built.check(
+        "tooling", resumed={"checks": ["docs-check", "ruff"], "from": ["2026-11-19T09:02:11Z"], "key_sha256": "k"}
+    )
+    result = built.verify()
+    assert texts(result) == [] and result.ok
+    assert result.notes == [
+        "Check resumed: docs-check, ruff taken from an earlier run (2026-11-19T09:02:11Z), not run again"
+    ]
+
+
+def test_a_check_with_no_resumed_detail_or_a_malformed_one_makes_no_note(tmp_path: Path) -> None:
+    built = make(tmp_path, shape="tooling")
+    malformed: list[object] = ["docs-check", {"checks": []}, {"checks": [3, ""]}, {}]
+    for resumed in malformed:
+        built.check("tooling", resumed=resumed)
+        assert not any("earlier run" in note for note in built.verify().notes), resumed
+
+
 def test_a_unit_whose_stamps_all_pass_is_not_unsettled(tmp_path: Path) -> None:
     assert pr_proof.unsettled(make(tmp_path, shape="tooling").subject().report) == []
 
@@ -598,6 +619,32 @@ def test_a_function_moved_to_a_renamed_class_needs_no_new_study_or_compare(tmp_p
     assert [u.coney for u in result.subject.changed] == ["Widget::update"]
     assert [(m.unit.coney, m.was.coney) for m in result.subject.moved] == [("Fresh::thing", "Old::thing")]
     assert any("Fresh::thing" in n and "Old::thing" in n and "compare" in n for n in result.notes), result.notes
+
+
+def test_a_tagged_function_whose_parameters_changed_is_reported_as_changed_not_removed(tmp_path: Path) -> None:
+    """The unit's key holds the parameters, so the old key is gone; the tag is still there and compared."""
+    built = make(tmp_path)
+    with_old_thing_on_main(built)
+    built.edit("src/ai/old.cpp", OLD_THING.replace("(int a)", "(int a, int b)"))
+    result = built.verify()
+    assert result.subject.moved == ()
+    assert [u.key for u in result.subject.changed if u.coney == "Old::thing"] == ["Old::thing(int,int)"]
+    assert not any("no longer in the code" in note for note in result.notes), result.notes
+    assert any(
+        "Old::thing" in note and "0x00509999" in note and "(int)" in note and "(int,int)" in note
+        for note in result.notes
+    ), result.notes
+    refused = texts(result, "compared")
+    assert any("Old::thing" in t and "never studied" in t for t in refused), refused
+
+
+def test_a_function_removed_while_another_overload_is_added_is_still_removed(tmp_path: Path) -> None:
+    """Only the same name, file and original address make a changed signature; another address is a new function."""
+    built = make(tmp_path)
+    with_old_thing_on_main(built)
+    built.edit("src/ai/old.cpp", OLD_THING.replace("(int a)", "(int a, int b)").replace("0x00509999", "0x0050999a"))
+    notes = built.verify().notes
+    assert any("Old::thing" in note and "no longer in the code" in note for note in notes), notes
 
 
 @pytest.mark.parametrize(

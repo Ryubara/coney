@@ -379,6 +379,7 @@ def verify(
     if not intact:
         return result
     result.refusals += check_checked(subject)
+    result.notes += resumed_notes(subject)
     compared, notes = check_compared(subject, copy_check)
     result.refusals += compared
     result.notes += notes
@@ -546,6 +547,21 @@ def check_checked(subject: Subject) -> list[Refusal]:
     return found
 
 
+def resumed_notes(subject: Subject) -> list[str]:
+    """The note of a Check that took checks from an earlier run (`detail.resumed`, written by `task check` when it
+    resumes: the checks, and the times of the runs they come from), so `pr verify` and `pr open` never show a resumed
+    pass as one run; none for a Check that ran everything or whose `resumed` detail is not in that form."""
+    stamp = subject.report.latest("checked")
+    resumed = stamp.detail.get("resumed") if stamp is not None and stamp.result == "pass" else None
+    names = resumed.get("checks") if isinstance(resumed, dict) else None
+    if not isinstance(names, list) or not all(isinstance(n, str) and n for n in names) or not names:
+        return []
+    assert isinstance(resumed, dict)
+    runs = resumed.get("from")
+    when = f" ({', '.join(str(t) for t in runs)})" if isinstance(runs, list) and runs else ""
+    return [f"Check resumed: {', '.join(names)} taken from an earlier run{when}, not run again"]
+
+
 def _pytest_scope(subject: Subject, stamp: stamps.Stamp) -> list[Refusal]:
     """The Python tests the Check ran (`detail.pytest_scope`; none recorded is the whole suite, as before the scope
     was) hold every test the change needs (`proof_profiles.pytest_scope` of its paths, the base's rules)."""
@@ -618,9 +634,18 @@ def check_compared(
     every address it carries, and is clean of decompiler fingerprints. Returns the refusals and the notes (functions
     the branch removed, and those it moved, which keep their compare)."""
     found: list[Refusal] = []
+    reshaped = orig_review.signature_changes(subject.changed, subject.removed)
+    gone = {old.key for _, old in reshaped}
     notes = [
         f"{u.coney} ({', '.join(_addresses(u))}) is no longer in the code: removed or untagged by this change"
         for u in subject.removed
+        if u.key not in gone
+    ]
+    # A changed parameter list is a change of the function, not its removal: it is compared as changed (below).
+    notes += [
+        f"{now.coney} ({', '.join(_addresses(now))}) changed its parameters from {old.params} to {now.params}: "
+        "it is a changed function and is studied and compared as one"
+        for now, old in reshaped
     ]
     notes += [
         f"{m.unit.coney} ({', '.join(_addresses(m.unit))}) moved from {m.was.coney} ({m.was.where}) with its code and "

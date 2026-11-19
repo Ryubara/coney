@@ -325,6 +325,22 @@ def test_a_dry_run_changes_nothing(tmp_path: Path) -> None:
     assert not [p for p in git(opened.built.root, "worktree", "list").splitlines() if "coney-pr-open" in p]
 
 
+def test_pr_open_says_which_checks_a_resumed_check_took_from_an_earlier_run(tmp_path: Path) -> None:
+    built = make(tmp_path, "tooling")
+    built.check(
+        "tooling", resumed={"checks": ["docs-check", "ruff"], "from": ["2026-11-19T09:02:11Z"], "key_sha256": "k"}
+    )
+    opened = make_open(built)
+    assert opened.run(dry_run=True) == 0, opened.text()
+    assert "  note: Check resumed: docs-check, ruff taken from an earlier run" in opened.text()
+    opened.said.clear()
+    assert opened.run() == 0, opened.text()
+    assert "  note: Check resumed: docs-check, ruff taken from an earlier run" in opened.text()
+    # the note is the proof's, not the unit's: a unit whose Check ran everything says nothing of it
+    quiet = docs_unit(tmp_path / "quiet")
+    assert quiet.run(dry_run=True) == 0 and "earlier run" not in quiet.text()
+
+
 def test_a_dry_run_reports_a_conflict_and_a_refusal_as_a_real_run_would(tmp_path: Path) -> None:
     opened = docs_unit(tmp_path)
     opened.advance_main("docs/guides/widget.md", "# Theirs\n")

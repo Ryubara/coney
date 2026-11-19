@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 from conventions_support import changed
-from pr_support import PARAGRAPH, SOURCE_FILE, Built, make
+from pr_support import PARAGRAPH, SOURCE_FILE, TEST_FILE, TEST_NAME, Built, make
 from test_orig_compare import TWO_FUNCTIONS
 
 from coney_tools import clips, pr_proof, pr_publish, pr_ready, pr_text, pr_text_file, stamps
@@ -486,8 +486,16 @@ def test_names_from_stamps_and_pairs_are_code_spans_with_backticks_and_mentions_
     assert "`" not in built_name[1:-1] and "@team" not in built_name
 
 
+def declare_tests(built: Built, *names: str) -> None:
+    """The branch's test file declares these tests too, as it does for a test the engineer stamped."""
+    text = (built.root / TEST_FILE).read_text(encoding="utf-8")
+    declared = "".join(f'TEST_CASE("{name}") {{}}' + chr(10) for name in names)
+    built.edit(TEST_FILE, text + declared, "tests: more")
+
+
 def test_a_test_name_with_a_mention_is_neutralised_in_the_facts(tmp_path: Path) -> None:
     built = make(tmp_path)
+    declare_tests(built, "Ping @maintainers `now`")
     built.fails_first("Ping @maintainers `now`")
     facts = pr_text.facts_block(built.subject())
     assert "@maintainers" not in facts and "@​maintainers 'now'" in facts
@@ -495,6 +503,7 @@ def test_a_test_name_with_a_mention_is_neutralised_in_the_facts(tmp_path: Path) 
 
 def test_a_keeps_test_is_named_in_the_facts_apart_from_the_tests_that_failed_first(tmp_path: Path) -> None:
     built = make(tmp_path)
+    declare_tests(built, "Widget same lookup")
     stamp = built.fails_first("Widget same lookup", result="keeps")
     facts = pr_text.facts_block(built.subject())
     assert (
@@ -505,8 +514,59 @@ def test_a_keeps_test_is_named_in_the_facts_apart_from_the_tests_that_failed_fir
     assert "Failed first: `Widget same lookup`" not in facts
 
 
+def test_a_renamed_test_is_named_as_it_is_at_the_tip_and_its_old_name_shows_as_gone(tmp_path: Path) -> None:
+    """The stamp of a test whose name is no longer in its file is not a test of the tip (#1443)."""
+    built = make(tmp_path)
+    old = built.fails_first()
+    text = (built.root / TEST_FILE).read_text(encoding="utf-8")
+    built.edit(TEST_FILE, text.replace(TEST_NAME, "Widget ready tick"), "tests: rename")
+    new = built.fails_first("Widget ready tick")
+    facts = pr_text.facts_block(built.subject())
+    assert f"- Failed first: `Widget ready tick` failed before the fix, passes after (stamp `{new.hash[:12]}`)" in facts
+    assert "- Failed first: `Widget ready frame`" not in facts
+    assert (
+        f"- Not at the tip: `Widget ready frame` was stamped as failed first (stamp `{old.hash[:12]}`), "
+        "renamed or removed since" in facts
+    )
+
+
+def test_a_kept_test_that_was_renamed_shows_as_gone_not_kept(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    declare_tests(built, "Widget same lookup")
+    stamp = built.fails_first("Widget same lookup", result="keeps")
+    text = (built.root / TEST_FILE).read_text(encoding="utf-8")
+    built.edit(TEST_FILE, text.replace("Widget same lookup", "Widget same find"), "tests: rename")
+    facts = pr_text.facts_block(built.subject())
+    assert "Kept behaviour: `Widget same lookup`" not in facts
+    assert (
+        f"- Not at the tip: `Widget same lookup` was stamped as kept behaviour (stamp `{stamp.hash[:12]}`), "
+        "renamed or removed since" in facts
+    )
+
+
+def test_the_short_facts_count_only_the_tests_at_the_tip_and_those_gone(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    built = make(tmp_path)
+    built.fails_first()
+    text = (built.root / TEST_FILE).read_text(encoding="utf-8")
+    built.edit(TEST_FILE, text.replace(TEST_NAME, "Widget ready tick"), "tests: rename")
+    built.fails_first("Widget ready tick")
+    monkeypatch.setattr(pr_text, "FACTS_LIMIT", len(pr_text.facts_block(built.subject())) - 1)
+    short = pr_text.facts_block(built.subject())
+    assert "- Failed first: 1 tests" in short and "- Not at the tip: 1 stamped test" in short
+
+
+def test_a_stamp_that_names_no_test_files_is_not_called_gone(tmp_path: Path) -> None:
+    """A stamp from before `test_files` was recorded cannot be looked up, so it stays as it was."""
+    built = make(tmp_path)
+    built.fails_first("Widget old record", test_files=[])
+    assert "Not at the tip" not in pr_text.facts_block(built.subject())
+
+
 def test_the_short_facts_count_the_keeps_tests(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     built = make(tmp_path)
+    declare_tests(built, "Widget same lookup", "Widget same scan")
     built.fails_first("Widget same lookup", result="keeps")
     built.fails_first("Widget same scan", result="keeps")
     monkeypatch.setattr(pr_text, "FACTS_LIMIT", len(pr_text.facts_block(built.subject())) - 1)

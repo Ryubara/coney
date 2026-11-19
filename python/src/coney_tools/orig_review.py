@@ -100,6 +100,16 @@ class Unit:
         return f"{self.path}:{self.line}"
 
     @property
+    def params(self) -> str:
+        """The parameter list the key holds, as `(int,int)`: what tells an overload, and a changed signature, apart."""
+        start = self.key.find(f"{self.coney}(")
+        if start < 0:
+            return ""
+        # A key of a declaration ends in `;` and a repeated name in `'` (`_standings`): neither is a parameter.
+        text = self.key[start + len(self.coney) :].rstrip("';")
+        return text if text.endswith(")") else ""
+
+    @property
     def cited(self) -> tuple[tuple[int, ...], tuple[int, ...]]:
         """The PS2 and the Xbox addresses: a change of either is a change of the unit."""
         return (self.addresses, self.xbox)
@@ -428,6 +438,27 @@ def _same_tags(was: Unit, now: Unit) -> bool:
     """Whether two units cite the same original functions under the same tags (the addresses of both builds and the
     original's names)."""
     return was.cited == now.cited and sorted(was.names) == sorted(now.names)
+
+
+def signature_changes(changed: Iterable[Unit], removed: Iterable[Unit]) -> list[tuple[Unit, Unit]]:
+    """The (now, was) pairs among `changed` and `removed` that are one function whose parameter list changed: the same
+    file and qualified name and an original address in common (the key holds the parameters, so such a function is a
+    new key and a gone one, though its tags are still there and it is compared as changed). Each gone unit pairs
+    once."""
+    free = list(removed)
+    found: list[tuple[Unit, Unit]] = []
+    for unit in changed:
+        for old in free:
+            if (
+                old.path == unit.path
+                and old.coney == unit.coney
+                and old.key != unit.key
+                and (set(old.addresses) & set(unit.addresses) or set(old.xbox) & set(unit.xbox))
+            ):
+                free.remove(old)
+                found.append((unit, old))
+                break
+    return found
 
 
 def moves(before: Iterable[Unit], after: Iterable[Unit]) -> Changes:

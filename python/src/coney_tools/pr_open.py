@@ -401,6 +401,8 @@ def _run(run: Run) -> None:
         pr_open_publish.check_existing(run, existing)
         pr_open_publish.check_adopt(run, existing)
         first = _prove(run, run.root)
+        for note in first.notes:
+            run.say(f"  note: {note}")
         if first.refusals:
             raise _refuse(run, first, first.subject.tip)
         if run.request.dry_run:

@@ -131,8 +131,18 @@ change rests on the reviewer ([Keeps](stamps.md#keeps)). Python tests are not st
 rule rests on the reviewer and on pytest in its `checked` stamp. And a function that carries several `@orig`
 addresses needs every address compared against that one Coney body.
 
-A function the branch removes is printed as a note, not a refusal. A change that touches no C++ file under `src/`
-adds, changes and removes no `@orig` function, so the run does not read the source at all.
+A function the branch removes is printed as a note, not a refusal. A function whose parameter list changed is not a
+removal: its key holds the parameters, but it keeps its file, its qualified name and an original address, so it is a
+changed function, studied and compared like any other, and the note says so (`changed its parameters from (int) to
+(int,int)`).
+
+A Check that resumed (`task check` took some checks from an earlier run for the same change, `detail.resumed` of its
+stamp) is also a note: `Check resumed: docs-check, ruff taken from an earlier run (2026-11-19T09:02:11Z), not run
+again`. It is no refusal, because the checks it took passed for this change, but a reader of `pr verify` or `pr open`
+sees that this invocation did not run them. `pr text` says the same in the facts.
+
+A change that touches no C++ file under `src/` adds, changes and removes no `@orig` function, so the run does not read
+the source at all.
 
 ### What counts as a research page {#research-page}
 
@@ -228,16 +238,18 @@ The marker names (`pull_requests.markers`) let a later pass find the two generat
 
 The facts say which stages passed, with their hashes cut to 12 digits, from the local log alone: the log's task and
 chain head, the change and the `<remote>/<default branch>` commit it is on, then one line each for the functions studied
-and compared (pairs counted by relation), the tests that failed first, the tests that keep behaviour (passing before
-the change and after it, named apart: [Keeps](stamps.md#keeps)), Check (profile, preset, the build's counts,
+and compared (pairs counted by relation), the tests that failed first, the tests that keep behaviour (passing before the
+change and after it, named apart: [Keeps](stamps.md#keeps)), the stamped tests no longer at the tip (a test renamed or
+removed after its stamp is `Not at the tip`, never a test that failed first or keeps behaviour; its new name has a stamp
+and a line of its own, and a stamp that lists no test files stays as it is), Check (profile, preset, the build's counts,
 pytest's counts and which tests it ran, build record; a profile with no build says `no build` and names the checks it
 ran, with pytest reading `of the whole suite` or `of the tests reading <classes>` before its counts) and Review
-(verdict, model, functions by class), and the stand-in and not-ported pieces of the pairs. A stage with no stamp
-reads `Check: not run` or `Review: not reviewed`, and a Check or Review made for another change reads `stale (made for
-change <12 digits>)` instead of its verdict, as `pr verify` refuses it. Every name from a stamp or a pairs file is a
-code span with backticks and `@` neutralised, because those strings are not trusted text. The block is at most 8,000
-characters; past that the per-stage lines become counts, and it is cut at a whole line, never inside a code span. It is
-a record for the reader, not proof: nothing in CI reads it, and the local log stays the source.
+(verdict, model, functions by class), and the stand-in and not-ported pieces of the pairs. A stage with no stamp reads
+`Check: not run` or `Review: not reviewed`, and a Check or Review made for another change reads `stale (made for change
+<12 digits>)` instead of its verdict, as `pr verify` refuses it. Every name from a stamp or a pairs file is a code span
+with backticks and `@` neutralised, because those strings are not trusted text. The block is at most 8,000 characters;
+past that the per-stage lines become counts, and it is cut at a whole line, never inside a code span. It is a record for
+the reader, not proof: nothing in CI reads it, and the local log stays the source.
 
 ### The checks {#checks}
 
@@ -294,7 +306,9 @@ commit: what is pushed is exactly what Check and Review saw. Its options and exi
 4. **The proof (exit 1).** [`pr verify`](#verify) and [`pr text`](#text) run on the unit as it is (`pr_ready.prove`,
    which Conclave's [`unit-ready` wake](conclave.md#ready) asks too), so a doomed run costs seconds and leaves the
    branch alone. Every problem is listed under the stage to redo; the unit goes back to its
-   engineer, never to the coordinator's hands.
+   engineer, never to the coordinator's hands. The proof's notes are printed as `note:` lines before any
+   refusal (and in `--json`'s `log`), including which checks a resumed `task check` took from an
+   earlier run, so a release never passes a partly resumed Check unseen.
 5. **Rebase.** `git rebase <remote>/<default>`, linear. Up to date: nothing happens. A conflict is aborted, so the
    worktree is as it was; the paths are written to `REBASE.md` in the task's folder and the exit is 3. The engineer
    resolves, and the hashes say which stamps that made stale. The rebase is linear whatever the machine's git
