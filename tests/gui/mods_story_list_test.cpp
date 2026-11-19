@@ -335,3 +335,21 @@ TEST_CASE("mods story list: a file with a broken story choice is not written ove
     CHECK(textOf(file) == before);
     CHECK(list.message().contains("enabled.toml"));
 }
+
+TEST_CASE("mods story list: a file broken while the list is open is not written over either", "[mods_story_list]") {
+    // Expected: ../guides/studio/mission-mods.md#graph-mods-screen, Coney's own design (no counterpart in the original)
+    const coney::test::TempDir dir;
+    const fs::path file = dir.path() / "enabled.toml";
+    std::ofstream(file, std::ios::binary) << "[[mod]]\nname = \"aaa\"\n";
+    ScriptedPad pad;
+    ModsStoryList list(StoryGraph::original(), sharedAnchor(), file);
+    CHECK(list.message().empty());
+    // The player edits the file in an editor while the screen is open, and leaves a story choice broken.
+    const std::string edited = "[[mod]]\nname = \"aaa\"\n\n[[story.choice]]\nkind = \"sideways\"\n";
+    std::ofstream(file, std::ios::binary | std::ios::trunc) << edited;
+    goTo(pad, list, "aaa.x");
+    CHECK(press(pad, list, coney::pad::kCross) == Result::Swapped);
+    CHECK(chain(list, "level80", "hub:1") == std::vector<std::string>{"level80", "bbb.y", "aaa.x", "level87"});
+    CHECK(textOf(file) == edited);
+    CHECK(list.message().contains("Mods screen"));
+}
