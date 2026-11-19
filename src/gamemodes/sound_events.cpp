@@ -313,21 +313,41 @@ void SoundEvents::setListener(int listener) {
     }
 }
 
-// @coney-only passes the call on to the game's sound (network play's seam)
+// @coney-only plays the line, then raises it as a game event when it plays (network play)
 bool SoundEvents::speak(const script::SpeechCall& call, std::string_view callback, std::optional<double> callbackArg) {
-    return m_inner != nullptr ? m_inner->speak(call, callback, callbackArg) : false;
+    // Raised only when a line plays: one that does not (he is speaking, no such sound) is nothing a player hears. The
+    // callback is the server's own script's business.
+    const bool plays = m_inner != nullptr && m_inner->speak(call, callback, callbackArg);
+    if (plays) {
+        raise(GameEvent{.kind = GameEventKind::Speech,
+                        .subject = call.human,
+                        .value = call.interrupt ? 1U : 0U,
+                        .text = call.line});
+    }
+    return plays;
 }
 
-// @coney-only passes the call on to the game's sound (network play's seam)
+// @coney-only raises the call as a game event, then stops the line (network play)
 void SoundEvents::shutUp(double human, bool force) {
+    raise(GameEvent{.kind = GameEventKind::SpeechStop, .subject = human, .value = force ? 1U : 0U});
     if (m_inner != nullptr) {
         m_inner->shutUp(human, force);
     }
 }
 
-// @coney-only passes the call on to the game's sound (network play's seam)
+// @coney-only plays the command, then raises it as a game event when it plays (network play)
 std::optional<double> SoundEvents::sayCommand(const script::CommandCall& call, std::string_view callback) {
-    return m_inner != nullptr ? m_inner->sayCommand(call, callback) : std::nullopt;
+    std::optional<double> line = m_inner != nullptr ? m_inner->sayCommand(call, callback) : std::nullopt;
+    if (line.has_value()) {
+        // The command and the voice set, not the line: which of the set's lines says it is each machine's sound's
+        // choice, made outside the simulation.
+        raise(GameEvent{.kind = GameEventKind::Command,
+                        .subject = call.human,
+                        .id = call.command,
+                        .value = static_cast<std::uint32_t>(call.voiceSet >= 0 ? call.voiceSet + 1 : 0),
+                        .extra = (call.interrupt ? 1U : 0U) | (call.cutting ? 2U : 0U)});
+    }
+    return line;
 }
 
 // @coney-only passes the call on to the game's sound (network play's seam)
@@ -358,6 +378,12 @@ void SoundEvents::gameplayLeft() {
     }
 }
 
-void playHudCue(const hud::HudSound& sound, GameEvents* /*events*/, int cue, double /*human*/) { sound.playCue(cue); }
+void playHudCue(const hud::HudSound& sound, GameEvents* events, int cue, double human) {
+    raiseGameEvent(events, GameEvent{.kind = GameEventKind::Cue,
+                                     .subject = human,
+                                     .id = static_cast<std::uint32_t>(cue >= 0 ? cue : 0),
+                                     .value = 0});
+    sound.playCue(cue);
+}
 
 } // namespace coney

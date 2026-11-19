@@ -17,9 +17,11 @@ namespace coney {
 /// The game's sound with its events: every call goes on to `inner` (the game's sound, audio::GameSound) unchanged,
 /// and the calls a player hears are raised as game events as well (GameEvents::raise()): a 2D or a positional sound,
 /// a human's animation sound, the held sound's stop and rage's start, a hit's impact sound, the music's starts and
-/// stop, and the ambient track's start and stop. It sits where the game's scripts and gameplay reach the sound (the
-/// binding context's `sound`), so the simulation's every sound passes through this one place
-/// (docs/guides/network-architecture.md#checklist, item 8; docs/guides/multiplayer.md#events).
+/// stop, the ambient track's start and stop, and a line or command said (when it plays) or stopped. It sits where the
+/// game's scripts and gameplay reach the sound (the binding context's `sound`). The world objects' sounds pass
+/// LevelObjectServices and gameplay's HUD cues playHudCue() instead, each raising its own; a scene's and a movie's
+/// sounds travel as their start (docs/guides/network-architecture.md#checklist, item 8;
+/// docs/guides/multiplayer.md#events, which lists what raises none).
 ///
 /// What a call returns is the inner sound's (a handle, whether a line plays), so the game's behaviour is unchanged
 /// whether events are recorded or not. Without an inner sound every call does nothing and returns the defaults.
@@ -87,9 +89,12 @@ class SoundEvents final : public script::SoundHost {
     void stopMusic() override;
     void setMusicVolume(float volume) override;
     void setListener(int listener) override;
+    /// Plays the line, then raises a Speech when it plays.
     bool speak(const script::SpeechCall& call, std::string_view callback, std::optional<double> callbackArg) override;
+    /// Raises a SpeechStop, then stops the line.
     void shutUp(double human, bool force) override;
     [[nodiscard]] bool humanSpeaking(double human) const override;
+    /// Plays the command, then raises a Command when it plays.
     std::optional<double> sayCommand(const script::CommandCall& call, std::string_view callback) override;
     void gameplayEntered() override;
     void levelLoadStarted(int levelNumber) override;

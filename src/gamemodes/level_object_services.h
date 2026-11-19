@@ -87,8 +87,11 @@ class LevelObjectServices final : public world_objects::ObjectServices {
         }
     }
 
+    /// Raises a Sound3D (setEvents()), then plays the sound.
     void playSound(std::uint32_t nameHash, anim::Vec3 at) override;
+    /// Raises a Cue at `at`, then plays it.
     void playCueAt(int cue, anim::Vec3 at) override;
+    /// Raises a MaterialPair, then plays it.
     void playMaterialPair(std::uint8_t a, std::uint8_t b, anim::Vec3 at, float volume = 1.0F) override;
     void lockPickClick(double human) override;
     /// Calls the script function `function` with the human's and the door's handles; nothing for an empty name.
@@ -136,6 +139,9 @@ class LevelObjectServices final : public world_objects::ObjectServices {
   private:
     script::ScriptSystem& m_scripts;
     world_objects::WorldFlags& m_flags;
+    // Raises `event` on the events setEvents() points at, when there are any.
+    void raise(GameEvent event) const;
+
     world_objects::ObjectServices* m_sounds;
     GameEvents* const* m_events = nullptr; // setEvents()
     effects::ParticleSystems* m_particles = nullptr;

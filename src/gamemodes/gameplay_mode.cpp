@@ -230,6 +230,8 @@ GameplayMode::GameplayMode(graphics::RenderDevice& device, script::ScriptSystem&
       m_recorded(recorded), m_loader(std::move(loader)), m_log(std::move(log)),
       m_objectServices(scripts, flags, nullptr) {
     m_objectServices.setPlayers(&state, &humans);
+    // Network play: the objects' sounds are raised on the binding context's events, which the session sets later.
+    m_objectServices.setEvents(&context.events);
     // A broken prop's piece becomes a spawn record of the level.
     m_objectServices.setSpawnRecords(context.spawnRecords);
     // Damage a human does reaches the volume boxes he stands in as their message 6, (human, box, object).

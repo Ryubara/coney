@@ -27,6 +27,7 @@ bool unusedFieldsClear(const NetEvent& event) {
     return ((fields & kEventSubject) != 0 || !event.subject.valid()) && ((fields & kEventId) != 0 || event.id == 0) &&
            ((fields & kEventValue) != 0 || event.value == 0) && ((fields & kEventExtra) != 0 || event.extra == 0) &&
            ((fields & kEventPosition) != 0 || event.position == std::array<float, 3>{}) &&
+           ((fields & kEventRotation) != 0 || event.rotation == std::array<float, 4>{0.0F, 0.0F, 0.0F, 1.0F}) &&
            ((fields & kEventText) != 0 || event.text.empty());
 }
 
@@ -52,6 +53,11 @@ void writeEvent(BitWriter& out, const NetEvent& event) {
     if ((fields & kEventPosition) != 0) {
         for (const float coordinate : event.position) {
             out.writeF32(coordinate);
+        }
+    }
+    if ((fields & kEventRotation) != 0) {
+        for (const float component : event.rotation) {
+            out.writeF32(component);
         }
     }
     if ((fields & kEventText) != 0) {
@@ -105,6 +111,15 @@ std::expected<NetEvent, Error> readEvent(BitReader& in) {
                 return std::unexpected(value.error());
             }
             coordinate = *value;
+        }
+    }
+    if ((fields & kEventRotation) != 0) {
+        for (float& component : event.rotation) {
+            auto value = in.readF32();
+            if (!value) {
+                return std::unexpected(value.error());
+            }
+            component = *value;
         }
     }
     if ((fields & kEventText) != 0) {

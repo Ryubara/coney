@@ -16,6 +16,7 @@
 #include "combat/commands.h"
 #include "combat/revive.h"
 #include "gamemodes/gameplay_mode.h"
+#include "gamemodes/sound_events.h"
 #include "hud/hud.h"
 #include "human/human.h"
 #include "human/human_contacts.h"
@@ -165,7 +166,7 @@ void GameplayMode::finishRevive(ai::Brain& reviver, ai::Brain& revived) {
     }
     // Interface cue 23, the flash's sound; the revived says 75 `revive_thank`.
     if (m_context.hud != nullptr) {
-        m_context.hud->services().sound.playCue(combat::kReviveSoundCue);
+        playHudCue(m_context.hud->services().sound, m_context.events, combat::kReviveSoundCue, revived.handle());
     }
     if (m_context.sound != nullptr) {
         static_cast<void>(m_context.sound->sayCommand(

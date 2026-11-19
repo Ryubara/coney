@@ -35,7 +35,7 @@ std::uint8_t gameEventFields(GameEventKind kind) {
     case GameEventKind::LoopStop:
         return 0;
     case GameEventKind::ParticleStart:
-        return kEventSubject | kEventPosition | kEventText;
+        return kEventSubject | kEventId | kEventValue | kEventPosition | kEventText | kEventRotation;
     case GameEventKind::ObjectBreak:
         return kEventSubject | kEventId | kEventPosition;
     case GameEventKind::HudMessage:
@@ -45,6 +45,18 @@ std::uint8_t gameEventFields(GameEventKind kind) {
     case GameEventKind::MovieStart:
     case GameEventKind::MovieEnd:
         return kEventValue | kEventText;
+    case GameEventKind::Speech:
+        return kEventSubject | kEventValue | kEventText;
+    case GameEventKind::Command:
+        return kEventSubject | kEventId | kEventValue | kEventExtra;
+    case GameEventKind::SpeechStop:
+        return kEventSubject | kEventValue;
+    case GameEventKind::MaterialPair:
+        return kEventId | kEventValue | kEventExtra | kEventPosition;
+    case GameEventKind::Cue:
+        return kEventSubject | kEventId | kEventValue | kEventPosition;
+    case GameEventKind::Hint:
+        return kEventId | kEventValue | kEventText;
     }
     return 0;
 }
@@ -58,6 +70,8 @@ bool reliableGameEvent(GameEventKind kind) {
     case GameEventKind::Hit:
     case GameEventKind::ParticleStart:
     case GameEventKind::ObjectBreak:
+    case GameEventKind::MaterialPair:
+    case GameEventKind::Cue:
         return false;
     // What lasts or must be read: a lost music change or message would stay wrong until the next one.
     case GameEventKind::MusicStart:
@@ -70,6 +84,11 @@ bool reliableGameEvent(GameEventKind kind) {
     case GameEventKind::SceneEnd:
     case GameEventKind::MovieStart:
     case GameEventKind::MovieEnd:
+    // A line is long and heard as words: a lost one, or a lost stop, would leave a guest's speaker wrong.
+    case GameEventKind::Speech:
+    case GameEventKind::Command:
+    case GameEventKind::SpeechStop:
+    case GameEventKind::Hint:
         return true;
     }
     return true;
@@ -109,6 +128,18 @@ std::string_view describe(GameEventKind kind) {
         return "movie_start";
     case GameEventKind::MovieEnd:
         return "movie_end";
+    case GameEventKind::Speech:
+        return "speech";
+    case GameEventKind::Command:
+        return "command";
+    case GameEventKind::SpeechStop:
+        return "speech_stop";
+    case GameEventKind::MaterialPair:
+        return "material_pair";
+    case GameEventKind::Cue:
+        return "cue";
+    case GameEventKind::Hint:
+        return "hint";
     }
     return "unknown";
 }
@@ -130,6 +161,10 @@ std::string describe(const GameEvent& event) {
     }
     if ((fields & kEventPosition) != 0) {
         line += std::format(" at={:.3f},{:.3f},{:.3f}", event.position[0], event.position[1], event.position[2]);
+    }
+    if ((fields & kEventRotation) != 0) {
+        line += std::format(" rot={:.3f},{:.3f},{:.3f},{:.3f}", event.rotation[0], event.rotation[1], event.rotation[2],
+                            event.rotation[3]);
     }
     if ((fields & kEventText) != 0) {
         line += std::format(" text=\"{}\"", event.text);

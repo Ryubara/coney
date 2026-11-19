@@ -207,7 +207,8 @@ struct NetEvent {
 /// The packet: reliable (1 bit), the sequence (a varint, 32 bits at most), the server's step (a varint, 32 bits at
 /// most), the number of events less one (8 bits), then each event: its kind (8 bits), its ordinal (a varint, 16 bits
 /// at most) and the fields its kind carries in this order: subject (kNetIdBits), id, value, extra (varints, 32 bits at
-/// most), position (three exact 32-bit floats), text (a string of at most kMaxGameEventText bytes).
+/// most), position (three exact 32-bit floats), rotation (four exact 32-bit floats), text (a string of at most
+/// kMaxGameEventText bytes).
 struct EventBatch {
     bool reliable = false;
     std::uint32_t sequence = 1;     ///< 1 for a delivery's first batch to a client, one more for each after

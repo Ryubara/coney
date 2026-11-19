@@ -255,10 +255,15 @@ ParticleSystem* ParticleSystems::spawn(std::string_view typeName, anim::Vec3 pos
     // Network play (Coney's own): the start a caller asked for goes out as an event; what it makes in turn below does
     // not, as a guest's own start makes it again.
     if (!m_spawning) {
+        // Its colour and rectangle as resolved (the creator's or the type's) and its turn, so a guest's system faces
+        // and looks the same.
         raiseGameEvent(m_events, GameEvent{.kind = GameEventKind::ParticleStart,
                                            .subject = parent,
+                                           .id = system.colour,
+                                           .value = system.rect,
                                            .position = {position.x, position.y, position.z},
-                                           .text = std::string(typeName)});
+                                           .text = std::string(typeName),
+                                           .rotation = {rotation.x, rotation.y, rotation.z, rotation.w}});
     }
     const bool outermost = !std::exchange(m_spawning, true);
     // The muzzle flash makes a puff of smoke where it fires (its Spawns link, docs/references/particles.md).

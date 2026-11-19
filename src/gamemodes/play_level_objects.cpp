@@ -29,6 +29,7 @@
 #include "combat/throw_velocity.h"
 #include "core/game_events.h"
 #include "gamemodes/play_level_simulation.h"
+#include "gamemodes/sound_events.h"
 #include "hud/hud.h"
 #include "human/fighter.h"
 #include "human/fighter_clips.h"
@@ -634,7 +635,7 @@ void PlayLevelSimulation::useFlash(human::Human& human) {
         return;
     }
     m_pickups->spendItem(0, item::kRevive);
-    m_hud->hud().services().sound.playCue(kFlashSoundCue);
+    playHudCue(m_hud->hud().services().sound, gameEvents(), kFlashSoundCue, playerHandle());
     combat::Health& health = human.fighter().health();
     human.setWounded(false);
     // The heal by the difficulty in force (normal without the game state's); useFlash serves player 1 alone
@@ -881,14 +882,14 @@ void PlayLevelSimulation::stepStereoPanel(const human::Human& human) {
     }
     const combat::GameResult result = human.fighter().last().game;
     if (theft->stage() > m_theftStage || result == combat::GameResult::Succeeded) {
-        hud.services().sound.playCue(kStageCue);
+        playHudCue(hud.services().sound, gameEvents(), kStageCue, playerHandle());
     }
     m_theftStage = theft->stage();
     panel.setProgress(theft->turned(), theft->stage());
     // The success (with cue 0x23 for the fourth stage) or failure clip starts: the panel goes at once.
     if (result != combat::GameResult::Running) {
         if (result == combat::GameResult::Succeeded) {
-            hud.services().sound.playCue(kLastStageCue);
+            playHudCue(hud.services().sound, gameEvents(), kLastStageCue, playerHandle());
         }
         panel.end();
     }
@@ -1330,7 +1331,8 @@ void PlayLevelSimulation::stepObjects() {
     // A broken prop goes for good at its update: its handlers hear message 2 and its record is never spawned again.
     for (const double removed : m_objects->props.takeRemoved()) {
         m_print(std::format("objects: prop {:.0f} removed\n", removed));
-        // Network play: the break, at the prop's place (its pieces and sound travel as their own events).
+        // Network play: the break, at the prop's place. Its dust travels as particle starts and its sounds as
+        // material pairs (LevelObjectServices); its pieces are world objects of their own.
         const world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(removed) : nullptr;
         const anim::Vec3 at = record != nullptr ? recordPose(*record).position : anim::Vec3{};
         raiseGameEvent(

@@ -188,21 +188,35 @@ void addMessageBindings(LuaVm& vm, const BindingContext& context) {
     // `HUDSetTutorialText(text, priority)`: nil clears the showing hint (the game is never paused under a script in
     // Coney).
     // @orig 0x0036f380 HUDSetTutorialText (unknown)
-    vm.registerFunction("HUDSetTutorialText", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
+    vm.registerFunction("HUDSetTutorialText",
+                        hudCall(context, [events = &context.events](hud::Hud& hud, std::span<const Value> args) {
                             if (absent(args, 0)) {
                                 hud.hints().clearShowing();
+                                // Network play: the hint cleared, for the guests' HUD (Coney's own).
+                                raiseGameEvent(*events, GameEvent{.kind = GameEventKind::Hint, .id = kHintCleared});
                                 return;
                             }
                             // A stand-in reading of the priority: nil gives 1 and a negative number wraps, where the
                             // original gives 0 and passes a byte (docs/research/script-arguments.md#q-nil-defaults).
-                            hud.hints().queue(binding::string(args, 0), static_cast<int>(unsignedArg(args, 1, 1)));
+                            const std::string text = binding::string(args, 0);
+                            const auto priority = static_cast<int>(unsignedArg(args, 1, 1));
+                            hud.hints().queue(text, priority);
+                            // Network play: the hint, for the guests' HUD (Coney's own).
+                            raiseGameEvent(*events, GameEvent{.kind = GameEventKind::Hint,
+                                                              .id = kHintQueued,
+                                                              .value = static_cast<std::uint32_t>(priority),
+                                                              .text = text});
                         }));
     // @orig 0x0036f430 HUDFlushTutorialText (unknown)
-    vm.registerFunction("HUDFlushTutorialText", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
-                            // The priority is passed on as a byte, as the original's is; nil reads 0.
-                            hud.hints().flush(
-                                static_cast<std::uint8_t>(binding::unsignedArg(args, 0, hud::kHintFlushAll)));
-                        }));
+    vm.registerFunction(
+        "HUDFlushTutorialText",
+        hudCall(context, [events = &context.events](hud::Hud& hud, std::span<const Value> args) {
+            // The priority is passed on as a byte, as the original's is; nil reads 0.
+            const auto priority = static_cast<std::uint8_t>(binding::unsignedArg(args, 0, hud::kHintFlushAll));
+            hud.hints().flush(priority);
+            // Network play: the flush, for the guests' HUD (Coney's own).
+            raiseGameEvent(*events, GameEvent{.kind = GameEventKind::Hint, .id = kHintFlushed, .value = priority});
+        }));
     // `HUDCheckTutorialText(text)`: 1 when showing or queued, else nil.
     // @orig 0x0036f3e8 HUDCheckTutorialText (unknown)
     vm.registerFunction("HUDCheckTutorialText", [hud = context.hud](std::span<const Value> args) {
@@ -214,9 +228,15 @@ void addMessageBindings(LuaVm& vm, const BindingContext& context) {
                         }));
     // @orig 0x001b5ff0 GameState_SetTutorialText (unknown)
     // @orig 0x0036eec8 HUDEnableGameTutorialText (unknown)
-    vm.registerFunction("HUDEnableGameTutorialText", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
+    vm.registerFunction("HUDEnableGameTutorialText",
+                        hudCall(context, [events = &context.events](hud::Hud& hud, std::span<const Value> args) {
                             // stand-in: a string that is not a number reads true, where the original reads false.
-                            hud.setGameTutorialText(boolArg(args, 0));
+                            const bool on = boolArg(args, 0);
+                            hud.setGameTutorialText(on);
+                            // Network play: whether the HUD gives its own hints, for the guests' HUD (Coney's own).
+                            raiseGameEvent(
+                                *events,
+                                GameEvent{.kind = GameEventKind::Hint, .id = kHintsSwitched, .value = on ? 1U : 0U});
                         }));
     // @orig 0x0036e858 HUDSetAnnounceMsg (unknown)
     vm.registerFunction("HUDSetAnnounceMsg",

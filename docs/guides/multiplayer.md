@@ -470,10 +470,11 @@ recorded twice is refused, naming the line) and ignores the events.
 
 ## Game events {#events}
 
-What the simulation makes a player see or hear, beyond the state snapshots carry, travels as **game events**: a sound,
-a hit, a particle start, an object breaking, a HUD message, an objective, the music, the ambient loop, a scene or a
-movie starting or ending ([The networking checklist](network-architecture.md#checklist), item 8). Before them these
-were direct calls from the simulation, which a guest could neither see nor hear.
+What the simulation makes a player see or hear, beyond the state snapshots carry, travels as **game events**: a sound, a
+hit, a world object's sound, a line a human says, a particle start, an object breaking, a HUD message, an objective, a
+tutorial hint, an interface cue, the music, the ambient loop, a scene or a movie starting or ending ([The networking
+checklist](network-architecture.md#checklist), item 8). Before them these were direct calls from the simulation, which a
+guest could neither see nor hear.
 
 **The one call.** The simulation raises each through `coney::GameEvents::raise()` (`src/core/game_events.h`). It keeps
 an event only while `NetPlay` hosts (`GameEvents::recording()`); offline, joined, or with no session, it drops it, so a
@@ -483,16 +484,25 @@ simulation's effects pass:
 
 | Where | Raises | How |
 | --- | --- | --- |
-| `coney::SoundEvents` (`src/gamemodes/sound_events.h`), the binding context's sound | Sound2D, Sound3D, HumanSound (an animation sound, the held sound's stop, rage's start), Hit (an impact's materials), MusicStart, MusicStop, LoopStart, LoopStop | it wraps the game's sound: every call goes on unchanged, with what it returns, and the ones a player hears are raised first |
-| `effects::ParticleSystems::spawn()` | ParticleStart (type, place, parent) | only the start asked for, not the systems that start makes in turn (a flash's puff, an explosion's parts), which a guest's own start makes again |
-| The bindings `HUDSetObjective` and `HUDSetAnnounceMsg` | Objective, HudMessage | after the HUD has it |
-| `PlayLevelSimulation::stepObjects()` | ObjectBreak: a prop that breaks (id 0), a car's glass (its hit effect's kind plus 1) | the break's pieces and sound are their own events |
+| `coney::SoundEvents` (`src/gamemodes/sound_events.h`), the binding context's sound | Sound2D, Sound3D, HumanSound (an animation sound, the held sound's stop, rage's start), Hit (an impact's materials), MusicStart, MusicStop, LoopStart, LoopStop, Speech, Command, SpeechStop | it wraps the game's sound: every call goes on unchanged, with what it returns, and the ones a player hears are raised first; a line or command only when it plays |
+| `coney::LevelObjectServices` (`src/gamemodes/level_object_services.h`), the world objects' sounds | Sound3D (a door's or a hit's sound), Cue (an object's cue, at its place), MaterialPair (a pane's, a prop's or a thrown object's impact and break) | before it passes the sound on to the audio's `ObjectSounds` |
+| `coney::playHudCue()`, the cues gameplay plays on the HUD | Cue (for the player whose HUD it is) | a revive's and a flash's sound, a theft's stages |
+| `effects::ParticleSystems::spawn()` | ParticleStart (type, place, turn, parent, colour, rectangle) | only the start asked for, not the systems that start makes in turn (a flash's puff, an explosion's parts), which a guest's own start makes again |
+| The bindings `HUDSetObjective`, `HUDSetAnnounceMsg`, `HUDSetTutorialText`, `HUDFlushTutorialText` and `HUDEnableGameTutorialText` | Objective, HudMessage, Hint | after the HUD has it |
+| `PlayLevelSimulation::stepObjects()` | ObjectBreak: a prop that breaks (id 0), a car's glass (its hit effect's kind plus 1) | a prop's dust (particle starts) and sounds (material pairs) are their own events and its pieces are world objects of their own; a car's glass carries its kind, from which a guest makes its shatter and sound (no machine draws or plays them yet: `carHitEffects()` is the hook) |
 | `PlayLevelMode::stepScenes()` | SceneStart, SceneEnd | the scenes playing (`SceneSystem::playingScenes()`) compared with the step before (`raiseSceneChanges()`) |
 | `movies::MovieMode` | MovieStart (name, skippable), MovieEnd (name, skipped) | the debug menu's movies raise none |
 
-**Delivery.** One-shots (the sounds, hits, particle starts and breaks) go **Unreliable**: a lost one is a sound
-nobody misses, and one resent late would play out of time. The music, the loop, the messages, the objectives, the
-scenes and the movies go **ReliableOrdered** (`reliableGameEvent()`). After each step `NetPlay` takes the step's events
+**What raises none, and why.** The HUD's own cues (a message's, a hint's, the money count's) and the hints the HUD
+gives itself follow from the HUD's state, which a guest's HUD is given (the messages, objectives and hints here, each
+player's HUD state in the snapshot: #1447), so its own HUD plays them. A scene's sounds and a movie's sound play from
+the scene or the movie, which travel as their start and end. The lock pick's click plays nothing yet (it is counted).
+A sound's later stop or move (`stopSound()`, `moveSound()` on a handle: a radio's track) sends nothing yet.
+
+**Delivery.** One-shots (the sounds, hits, material pairs, cues, particle starts and breaks) go **Unreliable**: a lost
+one is a sound nobody misses, and one resent late would play out of time. The music, the loop, the messages, the
+objectives, the hints, the lines and commands said and stopped, the scenes and the movies go **ReliableOrdered**
+(`reliableGameEvent()`). After each step `NetPlay` takes the step's events
 and the server sends each joined player that step's batches (`NetServer::sendEvents()`, before the step's flush),
 numbered by the host's step counted from 0 (`NetPlay::steps()`). A player who joins later gets none of the events
 before. Each event's subject travels as the network id `NetPlay::setEventSubjectIds()` maps its handle to; until the
@@ -513,10 +523,11 @@ at=1.500,-2.000,0.250`), the form a session record writes beside its `event STEP
 `EventBatch` (message 12): reliable (1 bit), the sequence (a varint, from 1 per delivery and player), the server's step
 (a varint), the number of events less one (8 bits, so 1 to 256), then each event: its kind (8 bits), its ordinal (a
 varint, 16 bits at most), then only the fields its kind carries (`gameEventFields()`), in this order: the subject's
-network id (22 bits), the id, value and extra (varints), the position (three exact 32-bit floats), the text (at most
-255 bytes). A sound is about 7 bytes. `EventSender` starts a new batch past 256 events or 1,200 bytes. Decoding is
-strict: an unknown kind, an event of the other delivery, ordinals that do not rise, sequence 0 or trailing bytes are
-refused, and a batch that repeats a held step and ordinal under another sequence is a protocol error.
+network id (22 bits), the id, value and extra (varints), the position (three exact 32-bit floats), the rotation (four
+exact 32-bit floats, a quaternion), the text (at most 255 bytes). A sound is about 7 bytes. `EventSender` starts a new
+batch past 256 events or 1,200 bytes. Decoding is strict: an unknown kind, an event of the other delivery, ordinals that
+do not rise, sequence 0 or trailing bytes are refused, and a batch that repeats a held step and ordinal under another
+sequence is a protocol error.
 
 | Kind | Id | Fields |
 | --- | --- | --- |
@@ -528,15 +539,21 @@ refused, and a batch that repeats a held step and ordinal under another sequence
 | MusicStop | 6 | none |
 | LoopStart | 7 | id (the ambient track) |
 | LoopStop | 8 | none |
-| ParticleStart | 9 | subject (parent), position, text (type) |
+| ParticleStart | 9 | subject (parent), id (colour `0xRRGGBBAA`), value (rectangle), position, rotation, text (type) |
 | ObjectBreak | 10 | subject, id (how), position |
 | HudMessage | 11 | id (kind), value (flag), text |
 | Objective | 12 | id (slot), value (mode shifted left by 1, bit 0 silent), extra (milliseconds), text |
 | SceneStart, SceneEnd | 13, 14 | id (the scene) |
 | MovieStart, MovieEnd | 15, 16 | value (skippable; skipped), text (name) |
+| Speech | 17 | subject (speaker), value (1 cuts off his line), text (the line's sound name) |
+| Command | 18 | subject (speaker), id (command), value (voice set plus 1, 0 unknown), extra (bit 0 interrupting, bit 1 cutting) |
+| SpeechStop | 19 | subject, value (1 forced) |
+| MaterialPair | 20 | id (material), value (the other), extra (volume in thousandths), position |
+| Cue | 21 | subject (whose HUD, none for an object's), id (cue), value (1 at the position), position |
+| Hint | 22 | id (0 queued, 1 the showing one cleared, 2 flushed, 3 the game's hints on or off), value (priority; on), text |
 
-Speech lines, the HUD's own cues and the glass panes' and doors' sounds (which play through the object sounds, not the
-binding context's sound) raise no event yet.
+A command travels as its id and voice set: which of the set's lines says it is the guest's own sound's choice, as the
+host's sound chooses it outside the simulation.
 
 ## Testing {#testing}
 

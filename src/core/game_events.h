@@ -9,11 +9,12 @@
 #include <utility>
 #include <vector>
 
-// What the simulation makes a player see or hear, as events a network session can send: a sound, a particle burst,
-// a HUD message, a scene or a movie starting (docs/guides/network-architecture.md#checklist, item 8). The simulation
-// raises each one through one call, GameEvents::raise(), which keeps it only while a session is open; offline it
-// costs one test of a flag and changes nothing the game does. The network layer turns the kept events into packets
-// (docs/guides/multiplayer.md#events). Coney's own: the original has no network play.
+// What the simulation makes a player see or hear, as events a network session can send: a sound, a line said, a
+// particle burst, a HUD message or hint, an interface cue, a scene or a movie starting
+// (docs/guides/network-architecture.md#checklist, item 8). The simulation raises each one through one call,
+// GameEvents::raise(), which keeps it only while a session is open; offline it costs one test of a flag and changes
+// nothing the game does. The network layer turns the kept events into packets (docs/guides/multiplayer.md#events).
+// Coney's own: the original has no network play.
 
 namespace coney {
 
@@ -60,7 +61,15 @@ enum class GameEventKind : std::uint8_t {
 
 /// The first and last GameEventKind, for loops and range checks.
 inline constexpr GameEventKind kFirstGameEventKind = GameEventKind::Sound2D;
-inline constexpr GameEventKind kLastGameEventKind = GameEventKind::MovieEnd;
+inline constexpr GameEventKind kLastGameEventKind = GameEventKind::Hint;
+
+/// What a Hint event did: its `id`.
+enum HintAction : std::uint8_t {
+    kHintQueued = 0,    ///< `text` queued at priority `value`.
+    kHintCleared = 1,   ///< The showing hint cleared.
+    kHintFlushed = 2,   ///< The hints of priority `value` flushed.
+    kHintsSwitched = 3, ///< The game's own hints on (`value` 1) or off.
+};
 
 /// The longest `text` an event carries, in bytes: a HUD message's text with its markup fits.
 inline constexpr std::size_t kMaxGameEventText = 255;
@@ -101,7 +110,8 @@ struct GameEvent {
 /// The kind's short name, for logs and record lines: `sound2d`, `hit`, `scene_start`, ...
 [[nodiscard]] std::string_view describe(GameEventKind kind);
 /// One line of text for an event: its kind's name, then each field it carries as `name=value` (`id` and `extra` in hex,
-/// `subject` and `value` in decimal, the position to the millimetre, the text quoted). For logs and session records.
+/// `subject` and `value` in decimal, the position to the millimetre, the rotation to three places, the text quoted).
+/// For logs and session records.
 [[nodiscard]] std::string describe(const GameEvent& event);
 
 /// The one call through which the simulation reports what a player sees or hears (the checklist's item 8). It keeps

@@ -55,6 +55,9 @@ std::vector<NetEvent> toNetEvents(std::span<const GameEvent> events, const Event
         if ((fields & kEventPosition) != 0) {
             net.position = event.position;
         }
+        if ((fields & kEventRotation) != 0) {
+            net.rotation = event.rotation;
+        }
         if ((fields & kEventText) != 0) {
             net.text = event.text.substr(0, kMaxGameEventText);
         }
