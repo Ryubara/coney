@@ -206,7 +206,7 @@ Pictures and traces of the game stay in the scratch folder; only Coney-made synt
 | Test | What it checks | Where | Result reported |
 | --- | --- | --- | --- |
 | Selection rules | Synthetic scenes built for each case of the rule: the caps at 40, 56.6 and 69.3 m, list C's cap, a full list keeping the first lights plus the deepest overlap (the first of equal scores), a copied list already over the cap, the glow added over the cap, a corona-only light inside and outside an atomic's sphere, no point light kept | Unit tests, CI | pass or fail per case |
-| Replay of the original | A trace of the original (below) gives each call's inputs: the atomic's sphere, the squared distance, the flags and the manager's lists with each light's position, radius and kind. Coney's `LightManager::select` runs on the same inputs and must give the same lights in the same order, every call | Local, with a trace from PCSX2 (`[trace]`, `CONEY_LIGHT_TRACE` the trace's selections file; skipped without one) | calls replayed, calls equal, glow calls; each call that differs with both lists and the first slot that differs (built, `src/debug/light_trace.h`: 300 of 300 equal for run r-20261119-light-selection, no glow call in it) |
+| Replay of the original | A trace of the original (below) gives each call's inputs: the atomic's sphere, the squared distance, the flags and the manager's lists with each light's position, radius and kind. Coney's `LightManager::select` runs on the same inputs and must give the same lights in the same order, every call | Local, with a trace from PCSX2 (`[trace]`, `CONEY_LIGHT_TRACE` the trace's selections file; skipped without one) | calls replayed, calls equal, glow calls; each call that differs with both lists and the first slot that differs (built, `src/debug/light_trace.h`: 300 of 300 equal for run r-20261119-light-selection, no glow call in it, and 300 of 300 for run r-20261119-light-selection-glow, with 6 glow calls and every list over its cap) |
 | Same place, both games | Coney at the trace's place (`--play-level`, `--camera`, `--freeze-world`) dumps its frame; `trace diff` matches atomics by caller and sphere centre (5 cm) and compares each list by kind, position (1 cm), radius and colour (1/255, flickering lights by base colour) | Local, with the disc and a trace | atomics matched, lists equal, the first difference |
 
 **The trace of the original** is the method of run r-20261030-light-selection made into a tool, built
@@ -221,8 +221,10 @@ is run r-20261119-light-selection, `level99` checkpoint 2 from `pedestrian-grab`
 300 (run r-20261119-light-selection-replay), and Coney's `LightManager::select` replayed on the same trace gives the
 same 300 ([#1252](issue:1252)): each call's lists are set in a fresh manager with `setViewportLists`, a call that adds
 the glow takes its place and colour from the light chosen after the copied list, and the lights chosen are compared
-by kind, position, radius and colour. A trace with a glow call has not been recorded yet, so the glow path is covered
-only by its synthetic test.
+by kind, position, radius and colour. The second trace, run r-20261119-light-selection-glow, holds what the first
+lacks: the same state with four more lights for objects (list B of 7, over every cap) and a glowing player, set up
+before the trace ([Selection](../research/lighting.md#select) says how). Since [#1253](issue:1253) Coney copies the
+list whole and adds the glow over the cap, and gives the same 300 of 300 on it.
 
 ### Faithful comparison: the colour of a vertex {#test-vertex-colour}
 

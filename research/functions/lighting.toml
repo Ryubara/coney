@@ -108,7 +108,17 @@ page = "lighting.md#original-structure"
 role = "the lights for one atomic or sphere"
 level = "confirmed-code"
 coney = "src/graphics/light_manager.h:LightManager::select"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "a ninth light (a list of 9, or the glow after 8 lights) is dropped where the original writes over a count"
+relation = "stand-in"
+question = "lighting.md#q-ninth-light"
+
+[[function.gaps]]
+what = "the glow's place comes from the caller, not the human's bone and scale"
+relation = "stand-in"
+question = "lighting.md#q-glow-colour"
 
 [[function]]
 address = 0x0017e810
