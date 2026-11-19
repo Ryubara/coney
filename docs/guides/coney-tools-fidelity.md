@@ -110,6 +110,46 @@ and the exit code is 1 when there is one. `ci run` runs it in its `orig` step, a
 with `--base HEAD^1`. On 2026-10-21 `--all` found none in `src/`. The check cannot see a transcription's shape; the
 reviewer agent judges that.
 
+### The functions that moved in untagged {#moved-backlog}
+
+A pure move keeps the standing a function had, so code that needed no tag in a Coney-only folder (`src/platform/`)
+can enter a gameplay folder (`src/gamemodes/`) with neither `@orig` nor `@coney-only`, and some of it ports original
+behaviour. `--backlog` lists those functions instead of checking a change:
+
+```sh
+uv run --project python coney-tools orig check-tags --backlog [--since REF] [--out FILE]
+```
+
+It is no gate and exits 0. Nothing is listed by hand: the command follows each untagged, non-exempt function of the
+gameplay folders back through the commits that changed its file, by the move rules of
+[Any function](orig-body-hash.md#any-function). A commit where it is a move from a file outside the gameplay folders
+is where it arrived (`orig check-tags` found the same function a move, not new work); a move between gameplay folders
+only sends the search further back, and a function that is new in a commit, or moved there with its code changed, is
+not listed, since `orig check-tags` refused it as new work. A function already marked with the older "Coney's own"
+wording counts as marked. Each line names the function's file and line now, its length, the file and line it moved
+from and the commit and its title; the end gives the count per commit. `--since REF` looks only at the commits after
+`REF`, and `--out FILE` also writes the list as a TSV (`where`, `function`, `lines`, `moved_from`, `commit`, `title`)
+for the audit to read. It walks the first-parent history, which is `main`'s own, and takes about two minutes
+on all of it.
+
+**A limit:** the search follows a function by its key (its file, qualified name and parameter types). A function whose
+key was already in its file before a commit counts as having stood there, so a body replaced under the same key is
+credited to the earlier move, and the list may name the commit that brought in the first body. A function deleted and
+written again stops the search, since its key is then absent. A function renamed in place (its class renamed in its own
+file) counts as having stood there under its new key, so the key being followed goes stale, the commit that brought it
+in is not matched and the function is dropped from the list.
+
+**Where the list is:** it is this command's output, rerun when needed and never a file in the repository; a function
+leaves it when it gets a tag or marker. On 2026-11-19 it found 37 functions, all moved from `src/platform/` into
+`src/gamemodes/` by #1426 (task 1273); the issue's 54 also counted 17
+exempt ones that need no tag (16 one-statement accessors in `play_level_simulation.h` and an empty constructor in its
+`.cpp`), and at #1426 itself the same 37 were untagged, so nothing has been tagged since.
+
+**Who works it:** there is no separate audit team ([Legacy fidelity](how-we-work.md#fidelity-audit)). A task that
+touches one of these functions tags it in the same pull request: `@orig` with its study and compare when it ports
+original behaviour, `@coney-only <reason>` when it does not. The coordinator files the rest as ordinary issues from
+`--out`, grouped by commit, and each is claimed like any task.
+
 ```sh
 uv run --project python coney-tools orig review-stamp (--branch B | --worktree WT) [--base origin/main] [--ledger F]
 uv run --project python coney-tools orig review-stamp (--folder src/x/ | --address 0x...)... [--ref HEAD] [--every]
@@ -181,12 +221,15 @@ coney-tools orig index --out OUT [--ghidra GHIDRA] [--url URL]
 Refuse a new gameplay function with neither @orig nor @coney-only (ci run and CI run it).
 
 ```text
-coney-tools orig check-tags [--base BASE]
+coney-tools orig check-tags [--base BASE] [--backlog] [--since SINCE] [--out OUT]
 ```
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `--base BASE` | text | `origin/main` | what the change is measured from (default: origin/main) |
+| `--backlog` | flag | off | list instead the untagged gameplay functions that arrived by a move, with the commit (no gate) |
+| `--since SINCE` | text | none | with --backlog: only the commits after this ref (default: all the history) |
+| `--out OUT` | path | none | with --backlog: also write the list as a TSV to this file |
 
 ### `orig check-copy` {#orig-check-copy-usage}
 

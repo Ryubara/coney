@@ -140,10 +140,14 @@ def resolve(root: Path, ref: str) -> str:
     return _git(root, "rev-parse", "--verify", f"{ref}^{{commit}}").decode().strip()
 
 
-def files_at(root: Path, commit: str) -> dict[str, str]:
-    """Every C++ file under `src/` at `commit` -> its text."""
+def files_at(root: Path, commit: str, only: Collection[str] | None = None) -> dict[str, str]:
+    """Every C++ file under `src/` at `commit` -> its text; with `only`, just those of its paths that exist then."""
     listing = _git(root, "ls-tree", "-r", "-z", "--name-only", commit, "--", SOURCE_DIR.as_posix()).decode()
-    paths = [p for p in listing.split("\0") if p and PurePosixPath(p).suffix in SOURCE_SUFFIXES]
+    paths = [
+        p
+        for p in listing.split("\0")
+        if p and PurePosixPath(p).suffix in SOURCE_SUFFIXES and (only is None or p in only)
+    ]
     if not paths:
         return {}
     out = _git(root, "cat-file", "--batch", stdin="".join(f"{commit}:{p}\n" for p in paths).encode())
@@ -465,13 +469,13 @@ def moves(before: Iterable[Unit], after: Iterable[Unit]) -> Changes:
     )
 
 
-#: What a function's standing is read from besides its tags, kept in the names of `_standings`: its marker state
+#: What a function's standing is read from besides its tags, kept in the names of `standings`: its marker state
 #: (`TagCoverage.lookup`) and whether a comment stands above it. A move keeps both, so a function that loses its
 #: `@coney-only` marker or its doc comment on the way is not a move.
 _STANDING = "\x00standing:{state}:{comment}"
 
 
-def _standings(texts: Mapping[str, str]) -> dict[str, Unit]:
+def standings(texts: Mapping[str, str]) -> dict[str, Unit]:
     """Every function of these files, a definition or a separate declaration, tagged or not, as a unit that `moves`
     can read: its key names its file (so moving it to another file is a new key) and, for a declaration, ends in `;`;
     its names are its tags' names, or its own name when it has none (an untagged function is a move only under its
@@ -520,7 +524,7 @@ def function_moves(before: Mapping[str, str], after: Mapping[str, str]) -> dict[
     of `moves`, which `orig review-stamp` reads for the `@orig` units; an untagged function also keeps its name. `orig
     check-tags` and the touch-it rule of `standards check` read it, so a function a change only moved keeps the
     standing it had (docs/guides/orig-body-hash.md#moved)."""
-    found = moves(_standings(before).values(), _standings(after).values()).moved
+    found = moves(standings(before).values(), standings(after).values()).moved
     return {(move.unit.path, move.unit.line): move.was for move in found}
 
 

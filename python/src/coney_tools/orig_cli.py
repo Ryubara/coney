@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from coney_tools import (
+    orig_backlog,
     orig_check,
     orig_copy,
     orig_ghidra,
@@ -53,10 +54,19 @@ def add_parser(groups: Any) -> None:
             "Fails when a function defined in a paths.gameplay folder of .github/conventions.yml since HEAD left "
             "BASE has no @orig tag and no @coney-only marker and is not exempt (a one-statement member defined in "
             "its class, an empty constructor or destructor), or when a folder of src/ is in neither paths.gameplay "
-            "nor paths.coney_only. Functions that were already untagged at BASE are the audit's backlog and pass."
+            "nor paths.coney_only. Functions that were already untagged at BASE are the audit's backlog and pass. "
+            "With --backlog it lists instead the untagged functions that arrived in a gameplay folder by a move, "
+            "with the commit that moved them (docs/guides/coney-tools-fidelity.md#moved-backlog)."
         ),
     )
     check.add_argument("--base", default="origin/main", help="what the change is measured from (default: %(default)s)")
+    check.add_argument(
+        "--backlog",
+        action="store_true",
+        help="list instead the untagged gameplay functions that arrived by a move, with the commit (no gate)",
+    )
+    check.add_argument("--since", help="with --backlog: only the commits after this ref (default: all the history)")
+    check.add_argument("--out", type=Path, help="with --backlog: also write the list as a TSV to this file")
     copy = commands.add_parser(
         "check-copy",
         help="refuse decompiler fingerprints (iVar1, param_1, undefined4, *(T *)(x + 0x10), goto) in changed C++ lines",
@@ -260,6 +270,10 @@ def run(args: argparse.Namespace, fetch: orig_ghidra.Fetch | None = None) -> int
     if args.command in original_cli.COMMANDS:
         return original_cli.run(args)
     if args.command == "check-tags":
+        if args.backlog:
+            return orig_backlog.run(args.since, args.out)
+        if args.since or args.out:
+            raise SystemExit("orig check-tags: --since and --out need --backlog")
         return orig_check.run(args.base)
     if args.command == "check-copy":
         return orig_copy.run(args.base, args.all)
