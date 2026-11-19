@@ -378,7 +378,10 @@ unlockable is unlocked ([Unlockables](player-state.md#unlockables)): punch damag
 #### Coney's implementation {#stats-coney}
 
 Coney reads the four tables from the configuration calls the scripts make (`characters::CharacterTypes`,
-`ai::aiConfigFrom()`), on the one difficulty it runs: the boot set, which is normal's. A human gets its type's stats
+`ai::aiConfigFrom()`). Since `SetDifficulty` became real each level's start runs the difficulty script of the
+profile's difficulty after the boot set (normal's); whether every reader takes that script's values over the boot's is
+not checked yet ([The difficulty: q-difficulty-configuration](difficulty.md#q-difficulty-configuration), issue
+[#1486](issue:1486)). A human gets its type's stats
 when it is made (`ai::AiHumans::spawn()`, from the cast of a level's scripts) and a player when he is made or changes
 type (`human::playerClassOf()`, `human::playerProfileOf()`):
 
