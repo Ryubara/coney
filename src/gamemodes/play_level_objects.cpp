@@ -642,10 +642,10 @@ void PlayLevelSimulation::useFlash(human::Human& human) {
     // (stepFlash()), so the human is always a player.
     const std::uint8_t inForce = m_difficulty != nullptr ? *m_difficulty : difficulty::kNormal;
     health.set(difficulty::flashHealth(health.value(), health.maximum(), true, inForce));
-    // Not ported (#91): Flash_Use also resets the player's screen look (look 0).
     // `Flash_Use` heals (`Human_Heal`): a new body, so he blocks other humans' walks again.
     human.heal();
     m_flashRingRequest = true;
+    // Not ported (#91): here Flash_Use also resets the player's screen look (look 0).
     m_print(std::format("flash: used, health {}\n", health.value()));
 }
 
