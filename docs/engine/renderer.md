@@ -313,7 +313,7 @@ untextured.
 The objects and cars of item 8 note only their dictionary's first texture (taken before its raster is converted); an
 object's materials after the first find their texture by name when the model is read, which can be a streamed part's
 texture whose id goes stale when that part unloads. GL3 is unaffected, as above; the GPU renderer would draw such a
-material untextured, a case the guard below does not cover: follow-up #1452.
+material untextured, a case the guard below does not cover: follow-up [#1452](issue:1452).
 
 **The disc has none** (NTSC-U PS2, counts only): the disc check *no part's material takes its texture from
 another part's dictionary* (`disc_world_streaming_test.cpp`) loads every part of each of the 80 levels, then loads each
