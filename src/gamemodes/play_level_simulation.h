@@ -461,6 +461,15 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // does (Human_ReleaseThrow runs for any human on event 10); his anim set follows his empty hand.
     // @orig 0x002586d8 Human_ReleaseThrow (unknown)
     void stepAiThrows();
+    // The drops of the humans whose health ran out this step (Human::fighter()'s takeHealthOut()): player 1's, then
+    // the AI humans' (docs/research/crimes.md#down-drop).
+    // @orig 0x002674c0 Human_OnHealthOut (unknown)
+    void stepDownDrops();
+    // `human`'s drop, when his health ran out this step: nothing with flag 0x4 or already wounded; otherwise what
+    // he, his brain and his class hold goes to LevelPickups::dropCarried(), and his money and carried object follow
+    // it. `player` is his player (0 for player 1), -1 for an AI human.
+    // @orig 0x002674c0 Human_OnHealthOut (unknown)
+    void dropOnHealthOut(human::Human& human, int player);
     // A take from `object` when it is a weapon pile (world_objects::Props::takeFromPile()): the object made for the
     // hand, kNoObject when none was made; nothing when `object` is no pile, or a pile taken itself.
     [[nodiscard]] std::optional<double> takeFromPile(double object);

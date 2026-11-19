@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <numbers>
 #include <string>
 #include <utility>
@@ -312,10 +313,49 @@ std::optional<anim::Vec3> LevelPickups::promptPosition(double object) const {
     return m_locate ? m_locate(object) : std::nullopt;
 }
 
-human::CarriedDrop LevelPickups::dropCarried(human::DropInput input, anim::Vec3 /*feet*/,
-                                             const human::SectorBlocked& blocked, const SectorPoint& /*sectorPoint*/,
-                                             int /*player*/) {
-    return human::dropCarried(input, m_state.random, blocked);
+human::CarriedDrop LevelPickups::dropCarried(human::DropInput input, anim::Vec3 feet,
+                                             const human::SectorBlocked& blocked, const SectorPoint& sectorPoint,
+                                             int player) {
+    // Upgrade unlocks (type 6): 14 lets power cuffs drop outside the game mode, 13 a cop's key.
+    constexpr std::uint8_t kUpgradeType = 6;
+    constexpr std::uint32_t kCuffsUnlock = 14;
+    constexpr std::uint32_t kKeysUnlock = 13;
+    // Every dropped object is made this far above the point it drops at.
+    constexpr float kDropRise = 0.5F;
+    // The game's part: the pocket item's object (its inventory entry), the game mode, the unlocks and a player's price.
+    if (const InventoryItem* pocket = m_state.player.inventory.slot(0, input.pocketItem); pocket != nullptr) {
+        input.pocketObject = pocket->objectName;
+    }
+    input.gameMode = m_state.gameMode.mode != 0;
+    input.cuffsUnlocked = m_state.player.unlocks.isDataUnlocked(m_state.saved, kUpgradeType, kCuffsUnlock);
+    input.keysUnlocked = m_state.player.unlocks.isDataUnlocked(m_state.saved, kUpgradeType, kKeysUnlock);
+    input.moneyScale = kLootMoneyFactor;
+    if (player >= 0) {
+        input.playerMoney = carried(player, item::kMoney);
+        if (const world_objects::ObjectType* type = m_types.find(input.carried); type != nullptr) {
+            input.carriedPrice = static_cast<std::int8_t>(type->value);
+        }
+    }
+    human::CarriedDrop drop = human::dropCarried(input, m_state.random, blocked);
+    // Each object a spawn record, from the world objects' handle counter, at its point 0.5 m up.
+    for (const human::DroppedObject& object : drop.objects) {
+        const double handle = m_scripts.nextObjectHandle();
+        if (handle == world_objects::kNoObject) {
+            continue;
+        }
+        const anim::Vec3 at = object.sector.has_value() ? sectorPoint(*object.sector) : feet;
+        world_objects::SpawnRecord record;
+        record.handle = handle;
+        record.typeName = object.type;
+        record.position = {at.x, at.y, at.z + kDropRise};
+        record.money = object.money;
+        static_cast<void>(m_records.add(std::move(record)));
+    }
+    // A player's loss leaves his inventory, notifying.
+    if (player >= 0 && drop.playerMoneyTaken != 0) {
+        script::addInventoryItem(m_scripts, m_state, player, item::kMoney, -drop.playerMoneyTaken, true);
+    }
+    return drop;
 }
 
 void LevelPickups::stereoStolen(int player, double human, double car) {

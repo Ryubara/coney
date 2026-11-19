@@ -1,0 +1,37 @@
+version = 1
+id = "r-20261119-down-drop-money"
+date = "2026-11-19"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "801439ce788cd4a47f05d02cc9a325efb41ef8f1d49a9aa17e1d2a4b341ea2e6"
+
+[who]
+agent = "a490cb63c07a30822"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = []
+
+[run]
+name = ""
+method = "level99 yard, a copy of a yard save state holding the call-brains hook, through the pcsx2 MCP server: AI Generic1 (human 0x00645770; brain type 2 and ped type 0 read from Human_DropCarried's stack frame; flags +0xe0 = 1; pocket 0; carried none) given +0x370 = 5, then the game made to call Human_OnHealthOut(Generic1) through the call block; a breakpoint at 0x00233474 (the store of the money pickup's +0x124) read s1 = 5; after it his +0x370 read 0, the new object's +0x124 read 5, its +0x120 removal time was set, and its z was his feet's + 0.5 m"
+
+[values]
+pickup_money = 5
+money_after = 0
+brain_type = 2
+money_before = 5
+pickup_z = 4.217
+feet_z = 3.716
+
+[addresses]
+drop_carried = 0x00232c60
+on_health_out = 0x002674c0
+money_store = 0x00233474

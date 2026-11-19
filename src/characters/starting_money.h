@@ -14,11 +14,12 @@
 
 namespace coney::characters {
 
-/// One `CfgCharClassAttribs` record (game state + category × 16): the money range, the no-object and bonus chances
-/// (percent) and the bonus multiplier.
+/// One `CfgCharClassAttribs` record (game state + category × 16): the money range, the dropped share, the no-object and
+/// bonus chances (percent) and the bonus multiplier.
 struct ClassMoney {
     int min = 0;         ///< Byte `+0x08`, dollars.
     int max = 0;         ///< Byte `+0x09`, dollars.
+    float share = 0.0F;  ///< Float `+0x0c`: the share of his money a downed civilian drops (human::dropCarried()).
     int noObject = 0;    ///< Byte `+0x10`: a first roll at or below it carries no object.
     int bonusChance = 0; ///< Byte `+0x11`: a second roll at or below it multiplies the money.
     float bonus = 1.0F;  ///< Float `+0x14`.

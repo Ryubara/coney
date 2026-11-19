@@ -114,6 +114,20 @@ coney = "src/ai/scripted_humans.h:ScriptedHumans::setArrested"
 status = "legacy"
 
 [[function]]
+address = 0x00232c60
+name = "Human_DropCarried"
+page = "crimes.md#down-drop"
+role = "what a human whose health ran out drops: the pocket's items, power cuffs, the carried object, a cop's key or a dyn_money of his money ([Dropped when down](crimes.md#down-drop))"
+level = "confirmed-code"
+coney = "src/human/carried_drop.h:dropCarried"
+status = "compared"
+
+[[function.gaps]]
+what = "the dropped objects' removal times (WorldObject_SetRespawnTimer with each item's inventory duration) are not applied, so a dropped object stays until taken"
+relation = "stand-in"
+question = "crimes.md#q-drop-removal"
+
+[[function]]
 address = 0x00236508
 name = "Cfg_SetStereoTheftHandler"
 page = "crimes.md#code-crimes"

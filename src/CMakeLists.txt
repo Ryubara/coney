@@ -109,6 +109,7 @@ add_library(coney_core STATIC
     gamemodes/play_level_hats.cpp
     gamemodes/play_level_held.cpp
     gamemodes/play_level_objects.cpp
+    gamemodes/play_level_drops.cpp
     gamemodes/play_level_props.cpp
     gamemodes/play_level_simulation.cpp
     gamemodes/play_level_step.cpp
