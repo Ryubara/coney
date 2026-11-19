@@ -742,13 +742,12 @@ runtime, the loader and the first Coney natives, [Proposed build issues](lua-sdk
    through the same table `SdlInput` maps the keyboard with, factored out so both use it; the controls table and the
    input scripts section of [Controls and input scripts](../running-input.md) updated. Tests: a script's keys give the
    same pad samples as the matching buttons; the front-end walk to PM_Mode passes by keys alone.
-2. **core: Add the UI widget model for mods** (built: [The UI widget model for mods](../mod-ui.md)). The retained tree
-   in the game mode's state: screens and widgets by id over the existing classes (text, sprite, grid, list, item, bar,
-   header, usage line, message box, keyboard); screens hosted on the profile manager's flow or as a Coney game mode over
-   play; focus, the game's commands and cues, neighbours and order; the input mask for a screen over play; the trusted
-   layer and the frame label; back always closes; the limits. C++ only, no Lua. Tests: navigation reaches every
-   focusable widget with the original's timings; the input mask; a model screen cannot open over a trusted one; the
-   frame label is drawn above every widget.
+2. **core: Add the UI widget model for mods** (built). The retained tree in the game mode's state: screens and widgets
+   by id over the existing classes (text, sprite, grid, list, item, bar, header, usage line, message box, keyboard);
+   screens hosted on the profile manager's flow or as a Coney game mode over play; focus, the game's commands and cues,
+   neighbours and order; the input mask for a screen over play; the trusted layer and the frame label; back always
+   closes; the limits. C++ only, no Lua. Tests: navigation reaches every focusable widget with the original's timings;
+   the input mask; a model screen cannot open over a trusted one; the frame label is drawn above every widget.
 3. **core: Add the MODS entry and the Mods screen.** MODS on PM_Mode when the mods folder holds a mod (rows {2, 2}, code
    9, the separator), the trusted Mods screen listing installed mods with their details and their entries, switching
    on and off through the loader's state. Tests: with no mod the main menu is the original's (items, layout, the disc
