@@ -214,7 +214,9 @@ class Merger {
 
 } // namespace
 
-StoryMerge mergeStory(const StoryGraph& seed, std::span<const StoryMod> storyMods) {
+std::vector<StoryGroup> storyGroups(std::span<const StoryMod>, std::span<const StoryChoice>) { return {}; }
+
+StoryMerge mergeStory(const StoryGraph& seed, std::span<const StoryMod> storyMods, std::span<const StoryChoice>) {
     // 1. Every mission in turn order: mods in load order, each mod's missions in manifest order.
     std::vector<Pending> waiting;
     for (const StoryMod& mod : storyMods) {
