@@ -1,10 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tests for coney_tools.light_trace (`trace lights`): the original's light selection traced through the PCSX2-MCP
-fork's debug server, against a fake debug server that plays a made-up game. Every address below `0x00700000` that is
-not the selection's own or a caller's, every light and every number is made up; no PCSX2 and no game data."""
+fork's debug server, against a fake debug server that plays a made-up game, and the run record it writes. Every
+address other than the selection's, its callers' and its lists' (docs/research/lighting.md#select), every light and
+every number is made up; no PCSX2 and no game data."""
 
 from __future__ import annotations
 
+import hashlib
 import json
 import socket
 import struct
@@ -15,11 +17,17 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from coney_tools.light_trace import Light, LightTraceError
+import test_run_records_cli as record_tests
+from pine_support import fake_pcsx2
 
-from coney_tools import light_trace
+from coney_tools import light_trace, light_trace_cli, run_records, run_records_cli
+from coney_tools.cli import main
 from coney_tools.config import ConfigError
 from coney_tools.debug_server import DebugClient
+from coney_tools.light_trace import Light, LightTraceError
+
+#: The made-up checkout of the run-record tests, a fixture.
+checkout = record_tests.checkout
 
 # The selection and its callers' return addresses: docs/research/lighting.md#select.
 ENTRY = 0x0017DE10
@@ -360,6 +368,7 @@ def test_the_inputs_files_list_each_calls_lists_and_glow(serve: Any) -> None:
 def test_numbers_are_the_shortest_text_of_the_float() -> None:
     assert [light_trace.number(v) for v in (0.0, 1.0, 0.9, 1600.0, -2.5)] == ["0", "1", "0.9", "1600", "-2.5"]
     assert light_trace.number(struct.unpack("<f", _f32(0.227))[0]) == "0.227"
+    assert [light_trace.number(v) for v in (1e20, 1e-05, 123456.0)] == ["1e+20", "1e-05", "123456"]
 
 
 def test_the_facts_count_calls_by_caller_and_lights_by_kind(serve: Any) -> None:
@@ -390,3 +399,52 @@ def test_the_files_go_beside_the_selections_and_their_hashes_are_kept(tmp_path: 
     assert sorted(p.name for p in tmp_path.iterdir()) == ["lights.calls.csv", "lights.csv", "lights.lists.csv"]
     assert set(hashes) == {"selections_csv", "calls_csv", "lists_csv"}
     assert all(len(h) == 64 for h in hashes.values())
+
+
+# --- the command and its run record -----------------------------------------------------------------------------------
+
+
+@pytest.mark.reads("docs_only")
+def test_a_traced_run_writes_its_files_and_a_record_of_counts_and_hashes(
+    checkout: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], serve: Any
+) -> None:
+    _, client = serve(two_calls())
+    monkeypatch.setattr(light_trace_cli, "debug_client", lambda agent, copy: client)
+    out = tmp_path / "scratch" / "lights.csv"
+    with fake_pcsx2() as port:
+        record_tests.hold_copy(tmp_path, monkeypatch, port)
+        request = run_records_cli.RecordRequest(state="unknown", name=None)
+        status = light_trace_cli.run_lights(out, "tooling-1", "pcsx2-z", (2, 5.0), request)
+    assert status == 0
+    record = run_records.load(checkout, "r-20261023-light-selection")
+    assert (record.kind, record.name, record.tool, record.copy) == (
+        "trace",
+        "light-selection",
+        "trace lights",
+        "pcsx2-z",
+    )
+    assert record.values["calls"] == 2 and record.values["calls_human"] == 1
+    assert record.addresses["LightManager_SelectLights"] == ENTRY
+    assert record.hashes["selections_csv"] == hashlib.sha256(out.read_bytes()).hexdigest()
+    assert "2 calls" in capsys.readouterr().out
+
+
+@pytest.mark.reads("docs_only")
+def test_a_run_with_no_call_writes_no_record(
+    checkout: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, serve: Any
+) -> None:
+    _, client = serve([])
+    monkeypatch.setattr(light_trace_cli, "debug_client", lambda agent, copy: client)
+    with fake_pcsx2() as port:
+        record_tests.hold_copy(tmp_path, monkeypatch, port)
+        request = run_records_cli.RecordRequest(state="unknown", name=None)
+        status = light_trace_cli.run_lights(tmp_path / "lights.csv", "tooling-1", "pcsx2-z", (5, 0.1), request)
+    assert status == 1
+    assert not (checkout / "research" / "runs").exists()
+
+
+def test_the_record_flags_go_together(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["trace", "lights", "--out", "x.csv", "--agent", "a", "--library-state", "unknown"]) != 0
+    assert "--library-state and --run-name belong to --run-record" in capsys.readouterr().err
+    assert main(["trace", "lights", "--out", "x.csv", "--agent", "a", "--run-record"]) != 0
+    assert "--run-record needs --library-state" in capsys.readouterr().err

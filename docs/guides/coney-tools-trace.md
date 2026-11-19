@@ -2,9 +2,10 @@
 
 The commands that record per-update traces and event logs and compare the original's with Coney's: [`trace`](#trace)
 plays a scenario on the original in PCSX2 (`trace original`, under a [`pcsx2`](coney-tools-pcsx2.md#pcsx2) claim) or on
-Coney headless (`trace coney`), compares two traces step by step, reports a gang fight, and records and compares event
-logs (`trace events`, `trace events-diff`). Pictures are compared by [`picture`](coney-tools-picture.md#picture). The
-other groups are listed in [the command line overview](coney-tools.md#groups).
+Coney headless (`trace coney`), compares two traces step by step, reports a gang fight, records and compares event
+logs (`trace events`, `trace events-diff`), and traces the original's light selection per call (`trace lights`).
+Pictures are compared by [`picture`](coney-tools-picture.md#picture). The other groups are listed in [the command line
+overview](coney-tools.md#groups).
 
 ## trace {#trace}
 
@@ -161,6 +162,37 @@ different points of a mission; `--labels` names hashed texts by a JSON object of
 from your disc, kept in scratch). It exits with 0 when Coney has every compared event in order, 1 when not.
 [Differential playthroughs](research-traces.md#differential-playthroughs) explains the method.
 
+### trace lights {#trace-lights}
+
+```sh
+uv run --project python coney-tools trace lights --out CSV --agent ID [--copy COPY] [--calls N] [--wait SECONDS]
+    [--run-record --library-state ID|unknown [--run-name NAME]]
+```
+
+Traces the original's light selection, `LightManager_SelectLights` (`0x0017de10`), one row per call, in the PCSX2
+copy you hold a claim on. Start that copy on a state first (`coney-tools pcsx2 states hand-out ID --copy COPY --agent
+ID --launch`): the command drives the copy's debug server, not PINE, and starts nothing itself. Breakpoints on the
+selection's entry and on its five callers' return addresses ([Selection](../research/lighting.md#select)) stop the game
+twice per call: at the entry it reads the arguments, lists A, B and C and the manager's point lights, at the return the
+lights chosen; the game runs on in between, and the breakpoints are removed at the end, whatever happens. A caller the
+page does not name gets a breakpoint on its return address when first seen, and counts as `other`. It stops after
+`--calls` calls (300 by default) or when `--wait` seconds (10) pass without one, and prints the calls by caller.
+
+It writes three files, each light as values (RenderWare type, radius, colour, its frame's position), never a pointer:
+
+| File | Rows |
+| --- | --- |
+| `CSV` | One per call, in the columns of the lighting lab's *Dump this frame* (`lighting-<n>-selections.csv`, [What is built](realtime-lighting.md#lab-built)): the caller's return address, `dist_sq`, the sphere, `flags`, `point_lights`, `pulse`, `human`, `count`, then the 8 slots |
+| `<stem>.calls.csv` | One per call (`call` is the row of `CSV`, counting from 0): the game's tick (`0x005104f4`), the caller, the human's glow byte (`+0x647`, empty with no human) and the length of each list |
+| `<stem>.lists.csv` | One per light of each list of each call: `call`, the list (`a`, `b`, `c`, `objects` for the manager's `+0x20`, `world` for `+0x30`), its slot and the light |
+
+The two inputs files are what a replay of Coney's selection needs ([#1252](issue:1252)). The files measure the game:
+they are refused inside the repository. `--run-record` also writes the run's [record](research-evidence.md#run-records)
+(`r-<date>-light-selection`, or `--run-name`): the calls by caller, the frames, the lights chosen by kind, the calls
+with a glow, the largest count, the addresses read and the SHA-256 of each file. The game is stopped while each call is
+read (two messages to the debug server per light), so it runs slowly while it is traced: a trace is of the calls, not
+of the game's timing.
+
 <!-- command-reference:begin trace -->
 ## Parameters of `trace` {#trace-parameters}
 
@@ -192,6 +224,26 @@ coney-tools trace original SCENARIO --out OUT [--state STATE] [--attach] [--keep
 | `--pcsx2-dir PCSX2_DIR` | path | none | the portable PCSX2 folder; default: pcsx2_dir |
 | `--iso ISO` | path | none | the disc image (or a folder with one); default: game_dir |
 | `--scratch SCRATCH` | path | none | where state copies and the disc link go; default: scratch_dir |
+
+### `trace lights` {#trace-lights-usage}
+
+Trace the original's light selection per call in a claimed PCSX2 (inputs and lights chosen).
+
+```text
+coney-tools trace lights --out OUT --agent AGENT [--copy COPY] [--calls CALLS] [--wait WAIT] [--run-record]
+    [--library-state LIBRARY_STATE] [--run-name RUN_NAME]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--out OUT` | path | required | the selections CSV (outside the repository) |
+| `--agent AGENT` | text | required | your id: the trace runs on the PCSX2 copy you have claimed |
+| `--copy COPY` | text | none | the claimed copy, when you hold more than one |
+| `--calls CALLS` | integer | `300` | the calls to trace (default 300) |
+| `--wait WAIT` | number | `10.0` | seconds without a call after which the trace ends (default 10) |
+| `--run-record` | flag | off | also write research/runs/\<id\>.toml (counts and the CSVs' hashes) for a claim to cite |
+| `--library-state LIBRARY_STATE` | text | none | with --run-record: the state library id the run started from, or unknown |
+| `--run-name RUN_NAME` | text | none | with --run-record: the run's name in its id (default: light-selection) |
 
 ### `trace coney` {#trace-coney-usage}
 

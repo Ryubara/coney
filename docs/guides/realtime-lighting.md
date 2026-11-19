@@ -163,8 +163,8 @@ scripted pad through the input gate and draw it in both front ends (`repo:tests/
   `lighting-<n>-selections.csv`, one row per call in the trace's columns of [Selection](../research/lighting.md#select)
   (the caller's return address, `dist_sq`, the sphere, `flags`, `point_lights`, `pulse`, `human`, `count`, then each of
   the 8 slots' RenderWare type, radius, colour and position, RenderWare's axes), and `lighting-<n>-lights.csv`, the
-  frame's lights with a bit mask of the lists that hold them. Numbers only. The trace from PCSX2 ([#1251](issue:1251))
-  is to write the same columns.
+  frame's lights with a bit mask of the lists that hold them. Numbers only. The trace from PCSX2 (`coney-tools trace
+  lights`, [below](#test-selection)) writes the same columns.
 - **Counts, Lights, Selection** as the table says. A light's source is *built in (A, B, glow)*, *Coney's stand-in*
   (a scenery without a level's scripts) or *script or light task*: tagging a light with the script and function that
   made it, or as a light task, would change ported functions (`Light_SetFromScript`, `LightTask_SetParams`), so it
@@ -202,11 +202,15 @@ Pictures and traces of the game stay in the scratch folder; only Coney-made synt
 | Replay of the original | A trace of the original (below) gives each call's inputs: the atomic's sphere, the squared distance, the flags and the manager's lists with each light's position, radius and kind. Coney's `LightManager::select` runs on the same inputs and must give the same lights in the same order, every call | Local, with a trace from PCSX2 (`[trace]`, skipped without one) | calls replayed, calls equal (the run behind the page: 360 of 360 for the script that replayed the rule) |
 | Same place, both games | Coney at the trace's place (`--play-level`, `--camera`, `--freeze-world`) dumps its frame; `trace diff` matches atomics by caller and sphere centre (5 cm) and compares each list by kind, position (1 cm), radius and colour (1/255, flickering lights by base colour) | Local, with the disc and a trace | atomics matched, lists equal, the first difference |
 
-**The trace of the original** is the method of run r-20261030-light-selection made into a tool: breakpoints on the
-selection's entry and its callers' return addresses, the inputs read at the entry and the upload list at the return,
-one CSV row per call with the caller, the inputs and the chosen lights as values (positions, radii, kinds, colours,
-never pointers). It runs from a state of the [state library](pcsx2-states.md) and writes a [run
-record](research-evidence.md#run-records); the CSV stays in scratch and the record holds its hash.
+**The trace of the original** is the method of run r-20261030-light-selection made into a tool, built
+([#1251](issue:1251)): `coney-tools trace lights` ([trace lights](coney-tools-trace.md#trace-lights)) sets breakpoints
+on the selection's entry and its callers' return addresses through the PCSX2 copy's debug server, reads the inputs at
+the entry and the upload list at the return, and writes one CSV row per call in the columns of the lab's dump, with the
+caller, the inputs and the chosen lights as values (positions, radii, kinds, colours, never pointers), and beside it
+each call's lists for the replay. It runs from a state of the [state library](pcsx2-states.md) and writes a [run
+record](research-evidence.md#run-records); the CSVs stay in scratch and the record holds their hashes. The first trace
+is run r-20261119-light-selection, `level99` checkpoint 2 from `pedestrian-grab`: 300 calls, and the rule of
+[Selection](../research/lighting.md#select) applied to its inputs by a script gave the lights it recorded in all 300.
 
 ### Faithful comparison: the colour of a vertex {#test-vertex-colour}
 

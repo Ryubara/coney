@@ -109,13 +109,16 @@ rests on. A record holds:
 | `run` | The recipe or scenario and its arguments, or the method in words |
 | `values`, `addresses`, `hashes` | What was read: numbers by name, the addresses of the original the run names, and the SHA-256 of a file the run made (a trace's CSV, which stays in scratch) |
 
-Four commands write one ([`pcsx2`](coney-tools-pcsx2.md#pcsx2) and [`xemu`](coney-tools-xemu.md#xemu) in coney-tools):
+Five commands write one ([`pcsx2`](coney-tools-pcsx2.md#pcsx2) and [`xemu`](coney-tools-xemu.md#xemu) in coney-tools):
 
 - `coney-tools pcsx2 recipes run NAME --record --state ID ...` after a good [recipe](pcsx2-recipes.md) run: the numbers
   the recipe showed and its arguments.
 - `coney-tools trace original SCENARIO --run-record --library-state ID ...` with a
   [trace](research-traces.md#recording-a-trace): the scenario, patches, the counts of updates and missed updates, and
   the CSV's hash.
+- `coney-tools trace lights --run-record --library-state ID ...` with a trace of the light selection
+  ([trace lights](coney-tools-trace.md#trace-lights)): the calls by caller, the lights chosen by kind, the addresses
+  read and the hashes of its three CSVs.
 - `coney-tools pcsx2 record-run --method "..." --value NAME=NUMBER ...` for an observation made by hand through the
   `pcsx2` MCP server (a watch, a read, a frame count): the method in words, and the numbers and addresses read.
 - `coney-tools xemu record-run --method "..." --value NAME=NUMBER ...` for the same on the Xbox build in xemu
@@ -127,19 +130,18 @@ xemu backs a claim about the Xbox (a block, grading line or page that names one 
 [.github/conventions.yml](repo:.github/conventions.yml), or a page named `xbox-*.md`) and nothing else: `research
 claims` refuses it on any other claim, and the PS2 behaviour it suggests is checked in PCSX2.
 
-`recipes run --record` and the two `record-run` commands refuse a copy you do not hold a claim on or whose emulator
-does not answer; `trace original` takes its claim and starts PCSX2 itself. Each fills in the date, who, version and
-copy itself, checks every rule of the record it will write before the run (only what the run measures is filled in
-afterwards), and writes a record only for a run that went well. A record holds names, numbers and addresses as
+`recipes run --record`, `trace lights` and the two `record-run` commands refuse a copy you do not hold a claim on or
+whose emulator does not answer; `trace original` takes its claim and starts PCSX2 itself. Each fills in the date, who,
+version and copy itself, checks every rule of the record it will write before the run (only what the run measures is
+filled in afterwards), and writes a record only for a run that went well. A record holds names, numbers and addresses as
 printable ASCII, within the limits of `runs` in [.github/conventions.yml](repo:.github/conventions.yml), and a key the
 schema does not know is refused. Those limits cap how much a record holds; they do not keep game data out, since the
-game's text is English and numbers can carry bytes. So the reviewer reads the method, the arguments and the value
-names, and refuses anything that is not our own words or a measurement ([LEGAL.md](repo:LEGAL.md#no-game-data)). A
-record is never overwritten: a second run of the same name on the same day takes another name. It carries a digest of
-its fields, so a hand edit of a value or the who shows when it is read; that catches an edit, not someone who writes a
-whole record with its digest, which is why the reviewer reads the values against the claim. A run is not a stamp: the
-record in the pull request is the proof, with no `observed` step in [the stamp log](stamps.md) (maintainer decision,
-2026-10-23).
+game's text is English and numbers can carry bytes. So the reviewer reads the method, the arguments and the value names,
+and refuses anything that is not our own words or a measurement ([LEGAL.md](repo:LEGAL.md#no-game-data)). A record is
+never overwritten: a second run of the same name on the same day takes another name. It carries a digest of its fields,
+so a hand edit of a value or the who shows when it is read; that catches an edit, not someone who writes a whole record
+with its digest, which is why the reviewer reads the values against the claim. A run is not a stamp: the record in the
+pull request is the proof, with no `observed` step in [the stamp log](stamps.md) (maintainer decision, 2026-10-23).
 
 Commit the record with the page that cites it. `coney-tools research claims`
 ([research](coney-tools-fidelity.md#research)) lists every graded block a branch changed and fails on a runtime claim
