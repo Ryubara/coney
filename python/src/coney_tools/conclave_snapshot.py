@@ -10,7 +10,9 @@ the pull requests, and `claim list` for the claim cards.
 
 Each section is an object with `error` (None when it was read); a section that could not be read holds only its
 `error` and the others stand, so a failure is never taken for "nothing there". The GitHub sections (`claims`, `prs`,
-`issues`, `events`) are None without `github`. `SCHEMA` rises when a section changes shape; the mod refuses a newer one.
+`issues`, `events`) are None without `github`; `holds` (the running `pr hold` records, which are local files) is read
+every time, so the mod's stop guard can leave out a hold's problems when a GitHub read fails. `SCHEMA` rises when a
+section changes shape; the mod refuses a newer one.
 
 Nothing here knows about a session's health (its context window, its prompt cache, its clearing): that stays with
 Tether, and the snapshot carries none of it.
@@ -29,6 +31,7 @@ from coney_tools.build_claims import CHECK_LANE
 from coney_tools.conclave_github import add_github
 from coney_tools.conclave_sources import Sources, default_sources, iso_utc, section, strings
 from coney_tools.issue_claim_model import iso_time, scopes_overlap
+from coney_tools.pr_hold import covers_conflict, holds_folder, read_active
 from coney_tools.task_file import TaskFile, TaskFileError, parse_task_file
 
 __all__ = ["SCHEMA", "Sources", "collect", "default_sources", "format_text"]
@@ -303,6 +306,29 @@ def _machine(src: Sources) -> dict[str, Any]:
     }
 
 
+# --- holds ----------------------------------------------------------------------------------------------------------
+
+
+def _holds(src: Sources, now: datetime) -> dict[str, Any]:
+    """The `pr hold` records that still run, as the stop guard reads them when a GitHub read fails: who, the cause
+    (None: every cause), until when, the head commit and whether the hold may cover a conflict (the conventions decide
+    that, so the mod does not know them). Files that cannot be read are `problems`."""
+    rules = src.conventions.conclave.watch
+    found = read_active(holds_folder(src.coord.scratch, rules), now)
+    rows = [
+        {
+            "pr": held.pr,
+            "who": held.who,
+            "cause": held.cause,
+            "until": iso_utc(held.until),
+            "head": held.head,
+            "covers_conflict": covers_conflict(held, rules),
+        }
+        for held in found.holds
+    ]
+    return {"holds": rows, "problems": found.problems}
+
+
 # --- the whole snapshot ---------------------------------------------------------------------------------------------
 
 
@@ -320,6 +346,7 @@ def collect(src: Sources, github: bool, unit: str | None = None) -> dict[str, An
     lanes = report["builds"].get("lanes") or {}
     report["units"] = section(lambda: _units(src, lanes, now))
     report["machine"] = section(lambda: _machine(src))
+    report["holds"] = section(lambda: _holds(src, now))
     report["claims"] = report["prs"] = report["issues"] = report["events"] = None
     if github:
         add_github(src, report)
@@ -344,6 +371,7 @@ def format_text(report: dict[str, Any]) -> list[str]:
     line("units", lambda s: f"{len(s['units'])} units")
     line("builds", lambda s: f"{len(s['lanes'])} lanes")
     line("machine", lambda s: f"{s['free_gb']} GB free on {s['drive']}")
+    line("holds", lambda s: f"{len(s['holds'])} running")
     line("claims", lambda s: f"{len(s['claims'])} held, signed in as {s['account'] or 'unknown'}")
     line("prs", lambda s: f"{len(s['prs'])} open, {len(s.get('merged', []))} merged recently")
     line("issues", lambda s: f"{len(s['issues'])} listed")

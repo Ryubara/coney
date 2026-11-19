@@ -198,6 +198,24 @@ export type EventRow = {
   handled_by: string | null
 }
 
+/**
+ * One running `pr hold` record (docs/guides/pr.md#hold): who fixes or waits on a pull request, for which cause, until
+ * when and on which head commit. They are local files, so a local read has them too.
+ */
+export type HoldRow = {
+  pr: number
+  /** The agent working on the problem, or `waived`. */
+  who: string
+  /** The one `pr list-stuck` cause covered; null covers every cause of the pull request. */
+  cause: string | null
+  /** When the hold ends, as ISO 8601 UTC. */
+  until: string
+  /** The first seven digits of the head commit the hold was made on; null covers any head. */
+  head: string | null
+  /** Whether the hold may cover a conflict (a waiver may only when its note names a maintainer decision). */
+  covers_conflict: boolean
+}
+
 /** One watched drive: what Coney keeps on it, its free space and the limits it is judged by. */
 export type DriveRow = { name: string; holds: string[]; free_gb: number; min_free_gb: number; warn_free_gb: number }
 
@@ -221,6 +239,8 @@ export type Snapshot = {
     drives: DriveRow[]
     problems: string[]
   }>
+  /** The running holds, read from local files on every read, `github` or not. */
+  holds: Read<{ holds: HoldRow[]; problems: string[] }>
   claims: Read<{
     account: string | null
     rules: { warn_hours: number; deadline_hours: number; enforced: boolean }

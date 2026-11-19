@@ -420,7 +420,7 @@ the coordinator) has the commit that turned it on. What each release need takes 
 
 ```sh
 uv run --project python coney-tools pr hold PR [--who NAME] [--hours N] [--cause CAUSE] [--note TEXT]
-uv run --project python coney-tools pr hold PR --release
+uv run --project python coney-tools pr hold PR --release [--cause CAUSE]
 uv run --project python coney-tools pr hold --list [--json]
 ```
 
@@ -439,20 +439,29 @@ holds. `pr hold` records that somebody holds the problem, so it is neither told 
   anything else needs `--who`. What the snapshot does with a conflict, a waiver and the retelling:
   [Conclave](conclave.md#conflicts).
 - `--cause checks-failed` (or `conflict`, `ci-stuck`, `auto-merge-off`) covers that cause only; without it the hold
-  covers every cause of the pull request.
+  covers every cause of the pull request, and counts as a hold for each cause everywhere a cause is checked (the
+  snapshot's events and the stop guard alike).
+- **A pull request keeps one hold for each cause.** A new hold replaces only the earlier hold of the same cause (or
+  the earlier hold on every cause, when it names none), so a conflict that waits on the maintainer and auto-merge off
+  on a fork can both be held: `pr hold 812 --note "auto-merge is off on a fork"` and `pr hold 812 --who engineer-2
+  --cause conflict` leave two holds, and neither takes the other's place. (Before 2026-11-18 a pull request kept one
+  hold, and a hold for one cause replaced a hold for every cause without saying so.)
 - `--hours N` sets how long it lasts: `conclave.watch.hold_default_hours` (4) when left out, and no more than
   `hold_max_hours` (24). **A hold ends by itself**: the problem is then open again and told again, so a fix that stalls
   cannot hide. A hold also covers only the head commit it was made on (the command reads it from the pull request
   and stores its first seven digits): a new push is a new problem, so it is not held either, and the coordinator is
   told again of what the new head still fails. A pull request whose head the command cannot read is not held (exit 2).
-- `--release` ends the pull request's hold now. `--list` prints the holds that run (`--json`: with their times).
+- `--release` ends all of the pull request's holds now; with `--cause` only the hold on that cause (`--cause` alone
+  names a hold on that cause, not the one on every cause: release those with the plain form). `--list` prints the holds
+  that run, one for each cause (`--json`: with their times, and for each whether it may cover a conflict).
 
-A hold is one small JSON file per pull request in the scratch directory (`conclave.watch.holds_dir`, `pr-holds`),
-written whole and replaced by the next hold of the same pull request; `conclave snapshot` reads them and marks the
-event `handled`. A file that cannot be read is reported (`holds_problems`) and holds nothing. Only the coordinator
-holds: `hooks.toml` refuses the command to the other roles. Exit codes: 0 done, 1 nothing to release, 2 a refused
-request (no pull request, a waiver with no note or, on a conflict, with no maintainer decision in it, hours out of
-range, `--list` with another option).
+A hold is one small JSON file per pull request and cause in the scratch directory (`conclave.watch.holds_dir`,
+`pr-holds`: `812.all.json`, `812.conflict.json`), written whole and replaced by the next hold of the same pull request
+and cause; `conclave snapshot` reads them and marks the event `handled`. A file of the older form (`812.json`, one
+hold of any cause) is still read, and replaced by the next hold of its cause. A file that cannot be read is reported
+(`holds_problems`) and holds nothing. Only the coordinator holds: `hooks.toml` refuses the command to the other
+roles. Exit codes: 0 done, 1 nothing to release, 2 a refused request (no pull request, a waiver with no note or, on a
+conflict, with no maintainer decision in it, hours out of range, `--list` with another option).
 
 ## What this does not do {#limits}
 

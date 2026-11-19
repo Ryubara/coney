@@ -6,7 +6,7 @@
 // The rule that keeps the coordinator's wakes honest: an event is told once, until its state changes. It is told when the
 // watchers first see it open; it is forgotten when it is handled or gone, so the same event opening again is told again,
 // and a handled or vanished event never is.
-import type { EventRow, Held, SeenEvent, Snapshot, StopState, WatchConfig, Watched } from '../types'
+import type { EventRow, Held, HoldRow, SeenEvent, Snapshot, StopState, WatchConfig, Watched } from '../types'
 
 export const EMPTY_WATCHED: Watched = { seen: [], lastWakeAt: 0, retryAt: 0 }
 
@@ -135,6 +135,46 @@ export function guardEvents(snapshot: Snapshot | null): EventRow[] {
   return (eventsOf(snapshot)?.events ?? []).filter(one => one.guard && one.state === 'open')
 }
 
+/** The pull request, cause and head an event of a pull request problem is about, from its id; null for any other event. */
+function problemOf(event: EventRow): { pr: number; cause: string; head: string } | null {
+  // `pr:<n>:<cause>:<head>[:...]` for a check, a stuck pull request or a conflict; `conflict-fix:<n>:<head>:<state>`.
+  const stuck = /^pr:(\d+):([a-z-]+):([0-9a-f]+|unknown)(?::|$)/.exec(event.id)
+  if (stuck !== null) return { pr: Number(stuck[1]), cause: stuck[2] ?? '', head: stuck[3] ?? '' }
+  const fix = /^conflict-fix:(\d+):([0-9a-f]+|unknown)(?::|$)/.exec(event.id)
+  if (fix !== null) return { pr: Number(fix[1]), cause: 'conflict', head: fix[2] ?? '' }
+  return null
+}
+
+/**
+ * Whether a hold that runs at `nowMs` covers the problem an event tells, as `pr hold` and the snapshot's own events
+ * decide it: the same pull request and head (a hold made before heads were kept covers any), a hold for every cause
+ * (`cause` null) covers each cause and one for a cause only that, and a conflict only by a hold that may cover one.
+ */
+export function isHeld(event: EventRow, holds: HoldRow[], nowMs: number): boolean {
+  const found = problemOf(event)
+  if (found === null) return false
+  return holds.some(
+    one =>
+      one.pr === found.pr &&
+      Date.parse(one.until) > nowMs &&
+      (one.cause === null || one.cause === found.cause) &&
+      (one.head === null || (found.head !== 'unknown' && found.head.startsWith(one.head))) &&
+      (found.cause !== 'conflict' || one.covers_conflict),
+  )
+}
+
+/** The events a running hold does not cover: what is left of a list that could not be read again, minus what was held since. */
+export function unheld(events: EventRow[], holds: HoldRow[], nowMs: number): EventRow[] {
+  return events.filter(one => !isHeld(one, holds, nowMs))
+}
+
+/** The holds a snapshot carries, or null when it carries none to trust (an older one, or a read that failed). */
+export function holdsOf(snapshot: Snapshot | null): HoldRow[] | null {
+  const section = snapshot?.holds as Snapshot['holds'] | undefined
+  if (section === undefined || section.error !== null) return null
+  return section.holds
+}
+
 /** The stop guard's reason: its preamble from the conventions, then a line for each problem and what to do about it. */
 export function stopReason(preamble: string, events: EventRow[]): string {
   return wakeText(preamble, events)
@@ -148,7 +188,7 @@ export function stopReason(preamble: string, events: EventRow[]): string {
 export function withRefresh(reason: string, error: string | null): string {
   if (error === null) return reason
   return `${reason}
-(could not refresh: ${error}; the list above is the last one read, so a hold recorded since may not show in it)`
+(could not refresh: ${error}; the list above is the last one read from GitHub, less what a hold running on this machine covers)`
 }
 
 /**

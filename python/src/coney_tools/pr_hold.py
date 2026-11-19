@@ -7,9 +7,13 @@ is fixing the problem (`--who`) or that waiting is right (a waiver: no `--who`, 
 hours, optionally for one cause. A hold that runs out raises the problem again, so a fix that stalls cannot hide,
 and a hold covers the head commit it was made on: a new push is a new problem, so the hold does not follow it.
 
-The store is one JSON file per pull request in the scratch directory (`conclave.watch.holds_dir`), written atomically,
-so two commands never write one file and the snapshot (`conclave snapshot`) reads them without a lock. Only the
-coordinator runs this command (`.claude/hooks/hooks.toml` refuses it to the other roles).
+The store is one JSON file per pull request and cause in the scratch directory (`conclave.watch.holds_dir`:
+`<pr>.<cause>.json`, or `<pr>.all.json` for a hold on every cause), written atomically, so two commands never write one
+file and the snapshot (`conclave snapshot`) reads them without a lock. A pull request can be held for several causes at
+once (a conflict that waits on the maintainer, auto-merge off on a fork): a hold replaces only the earlier hold of the
+same cause, so a narrower one never silently takes the place of a hold on every cause. Files of the older form, one
+`<pr>.json` whatever its cause, are still read. Only the coordinator runs this command (`.claude/hooks/hooks.toml`
+refuses it to the other roles).
 
 A waiver may cover a conflict only when its note names a maintainer decision (`conclave.watch.conflict_waiver`): a
 conflict is work for the fix track (docs/guides/conclave.md#conflicts), and parking one with a bare waiver is how stale
@@ -38,8 +42,11 @@ from coney_tools.conventions import PR_HEALTH_CAUSES, ConclaveWatch, load_conven
 WAIVED = "waived"
 #: How many digits of a head commit a hold keeps (the snapshot's event ids keep as many).
 HEAD_DIGITS = 7
-#: The files of the store: `<pull request>.json`.
-HOLD_FILE = re.compile(r"^(\d+)\.json$")
+#: The files of the store: `<pull request>.<cause>.json`, `<pull request>.all.json` and, from before a pull request
+#: could hold several, `<pull request>.json`.
+HOLD_FILE = re.compile(r"^(\d+)(?:\.[a-z-]+)?\.json$")
+#: The part of a file's name that stands for a hold on every cause.
+ALL_CAUSES = "all"
 
 
 @dataclass(frozen=True)
@@ -147,6 +154,11 @@ def _from_file(path: Path, number: int) -> Hold:
     )
 
 
+def _file_name(held: Hold) -> str:
+    """The name of the file a hold is kept in: its pull request and its cause (`all` for every cause)."""
+    return f"{held.pr}.{held.cause or ALL_CAUSES}.json"
+
+
 def _files(folder: Path) -> list[tuple[int, Path]]:
     """The store's files by pull request number; none for a folder that is not there."""
     if not folder.is_dir():
@@ -169,8 +181,22 @@ def read_active(folder: Path, now: datetime) -> HoldsRead:
     return result
 
 
+def _holds_of(folder: Path, pr: int) -> list[tuple[Path, Hold | None]]:
+    """The files of one pull request's holds with what each holds (None for a file that cannot be read)."""
+    found: list[tuple[Path, Hold | None]] = []
+    for number, path in _files(folder):
+        if number != pr:
+            continue
+        try:
+            found.append((path, _from_file(path, number)))
+        except (OSError, ValueError, KeyError, TypeError):
+            found.append((path, None))
+    return found
+
+
 def write(folder: Path, held: Hold, now: datetime | None = None) -> Path:
-    """Record `held` (replacing the pull request's earlier hold) and, with `now`, remove the holds that have run out."""
+    """Record `held` (replacing the pull request's earlier hold of the same cause only) and, with `now`, remove the
+    holds that have run out."""
     folder.mkdir(parents=True, exist_ok=True)
     if now is not None:
         for number, path in _files(folder):
@@ -180,20 +206,28 @@ def write(folder: Path, held: Hold, now: datetime | None = None) -> Path:
                 continue
             if expired:
                 path.unlink(missing_ok=True)
-    target = folder / f"{held.pr}.json"
+    # The same cause is replaced wherever it is kept (a file of the older form `<pr>.json` included); other causes stay.
+    for path, earlier in _holds_of(folder, held.pr):
+        if earlier is not None and earlier.cause == held.cause:
+            path.unlink(missing_ok=True)
+    target = folder / _file_name(held)
     temporary = folder / f".{held.pr}.{os.getpid()}.tmp"
     temporary.write_text(json.dumps(held.as_json(), indent=1) + "\n", encoding="utf-8")
     temporary.replace(target)
     return target
 
 
-def release(folder: Path, pr: int) -> bool:
-    """Remove the pull request's hold; whether there was one."""
-    path = folder / f"{pr}.json"
-    if not path.is_file():
-        return False
-    path.unlink()
-    return True
+def release(folder: Path, pr: int, cause: str | None = None, only_cause: bool = False) -> bool:
+    """Remove the pull request's holds, or with `only_cause` just the one on `cause` (None: the one on every cause);
+    whether there was one. A file that cannot be read goes with the pull request's holds, and stays when one cause is
+    asked for."""
+    removed = False
+    for path, held in _holds_of(folder, pr):
+        if only_cause and (held is None or held.cause != cause):
+            continue
+        path.unlink(missing_ok=True)
+        removed = True
+    return removed
 
 
 def add_parser(commands: Any) -> None:
@@ -206,13 +240,18 @@ def add_parser(commands: Any) -> None:
     sub.add_argument("pr", nargs="?", type=int, metavar="PR", help="the pull request's number")
     sub.add_argument("--who", help="the agent or track fixing it; leave out for a waiver (--note then says why)")
     sub.add_argument("--hours", type=float, help="how long the hold lasts (default and most: conclave.watch)")
-    sub.add_argument("--cause", choices=PR_HEALTH_CAUSES, help="hold only this cause (default: every cause)")
+    sub.add_argument(
+        "--cause",
+        choices=PR_HEALTH_CAUSES,
+        help="hold only this cause (default: every cause); a pull request keeps one hold for each cause, and with "
+        "--release only that cause's hold ends",
+    )
     sub.add_argument(
         "--note",
         default="",
         help="what is being done, or why waiting is right (a waiver on a conflict must name a maintainer decision)",
     )
-    sub.add_argument("--release", action="store_true", help="end the pull request's hold now")
+    sub.add_argument("--release", action="store_true", help="end the pull request's holds now (with --cause, that one)")
     sub.add_argument("--list", action="store_true", help="print the holds that run")
     sub.add_argument("--json", action="store_true", help="print the result as JSON (with --list)")
 
@@ -272,7 +311,8 @@ def run_hold(
         for problem in found.problems:
             err(f"pr hold: {problem}")
         if args.json:
-            out(json.dumps({"holds": [held.as_json() for held in found.holds], "problems": found.problems}, indent=1))
+            rows = [{**held.as_json(), "covers_conflict": covers_conflict(held, rules)} for held in found.holds]
+            out(json.dumps({"holds": rows, "problems": found.problems}, indent=1))
         elif not found.holds:
             out("no holds")
         else:
@@ -283,9 +323,15 @@ def run_hold(
         err("pr hold: give the pull request's number (or --list)")
         return 2
     if args.release:
-        if args.who is not None or args.hours is not None or args.cause is not None:
-            err("pr hold: --release takes only the pull request's number")
+        if args.who is not None or args.hours is not None or args.note:
+            err("pr hold: --release takes only the pull request's number and, to end one hold, --cause")
             return 2
+        if args.cause is not None:
+            if release(folder, args.pr, args.cause, only_cause=True):
+                out(f"#{args.pr} released ({args.cause})")
+                return 0
+            err(f"pr hold: no hold on #{args.pr} for {args.cause}")
+            return 1
         if release(folder, args.pr):
             out(f"#{args.pr} released")
             return 0

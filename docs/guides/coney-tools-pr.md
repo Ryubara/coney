@@ -104,16 +104,16 @@ Exit codes:
 
 ```sh
 uv run --project python coney-tools pr hold PR [--who NAME] [--hours N] [--cause CAUSE] [--note TEXT]
-uv run --project python coney-tools pr hold PR --release
+uv run --project python coney-tools pr hold PR --release [--cause CAUSE]
 uv run --project python coney-tools pr hold --list [--json]
 ```
 
 The coordinator's record that somebody holds a pull request's problems (an agent fixing them, or a waiver with a note):
 the problem is neither told by [Conclave's watchers](conclave.md#watchers) nor guarded while the hold runs on the head
 commit it was made on, and is open again when it ends or the pull request gets a new push. It writes one file of the
-scratch directory and nothing on GitHub. A waiver (no `--who`) on a conflict is refused unless its note names a
-maintainer decision ([Conflicts](conclave.md#conflicts)). What each form does, the limits and the exit codes: [pr
-hold](pr.md#hold).
+scratch directory (one for each pull request and cause) and nothing on GitHub. A waiver (no `--who`) on a conflict is
+refused unless its note names a maintainer decision ([Conflicts](conclave.md#conflicts)). What each form does, the
+limits and the exit codes: [pr hold](pr.md#hold).
 
 ### pr check-commit {#pr-check-commit}
 
@@ -432,9 +432,9 @@ coney-tools pr hold [PR] [--who WHO] [--hours HOURS] [--cause CAUSE] [--note NOT
 | `[PR]` | integer | none | the pull request's number |
 | `--who WHO` | text | none | the agent or track fixing it; leave out for a waiver (--note then says why) |
 | `--hours HOURS` | number | none | how long the hold lasts (default and most: conclave.watch) |
-| `--cause CAUSE` | choice | none | hold only this cause (default: every cause). One of `checks-failed`, `conflict`, `ci-stuck`, `auto-merge-off`. |
+| `--cause CAUSE` | choice | none | hold only this cause (default: every cause); a pull request keeps one hold for each cause, and with --release only that cause's hold ends. One of `checks-failed`, `conflict`, `ci-stuck`, `auto-merge-off`. |
 | `--note NOTE` | text | none | what is being done, or why waiting is right (a waiver on a conflict must name a maintainer decision) |
-| `--release` | flag | off | end the pull request's hold now |
+| `--release` | flag | off | end the pull request's holds now (with --cause, that one) |
 | `--list` | flag | off | print the holds that run |
 | `--json` | flag | off | print the result as JSON (with --list) |
 

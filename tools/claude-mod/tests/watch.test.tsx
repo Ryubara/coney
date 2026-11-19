@@ -4,9 +4,9 @@
 import { expect, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 
-import type { EventRow, Snapshot } from '../types'
+import type { EventRow, HoldRow, Snapshot } from '../types'
 import { engine, fails, prints, SESSION, snapshot } from './support'
-import type { World } from './support'
+import type { Answer, World } from './support'
 
 // --- the watchers (docs/guides/conclave.md#watchers) ----------------------------------------------------------------
 
@@ -300,6 +300,138 @@ test('a refresh that keeps failing does not keep the turn from ending: the count
     expect((await $.classic.Stop({ stop_hook_active: blocks > 0 })).block).toContain('could not refresh: error')
   }
   expect((await $.classic.Stop({ stop_hook_active: true })).block).toBeUndefined()
+})
+
+// --- the stop guard and the holds (docs/guides/conclave.md#watchers) --------------------------------------------------
+
+/** What a GitHub read that ran out of time leaves: the command killed after its limit. */
+const timedOut: Answer = { exitCode: 1, stdout: '', stderr: 'process still running after 60000ms\n' }
+
+/** A running hold on #812 (the fixture's failed check is on head `bbbbbbb`), four hours from the fixture's moment. */
+const hold = (changes: Partial<HoldRow> = {}): HoldRow => ({
+  pr: 812,
+  who: 'engineer-2',
+  cause: null,
+  until: '2026-10-23T18:00:00Z',
+  head: 'bbbbbbb',
+  covers_conflict: true,
+  ...changes,
+})
+
+/** The fixture with these holds, and its events replaced when `events` is given. */
+function withHolds(holds: HoldRow[], events?: EventRow[]): Snapshot {
+  return snapshot(copy => {
+    copy.holds = { error: null, holds, problems: [] }
+    if (events !== undefined && copy.events !== null && copy.events.error === null) copy.events.events = events
+  })
+}
+
+/** A pull request problem as the watchers raise it: `id` names the cause and the head it is on. */
+function problem(id: string, kind: EventRow['kind'] = 'pr-stuck'): EventRow {
+  return {
+    id,
+    kind,
+    state: 'open',
+    ref: { pr: Number(id.split(':').at(-3) ?? 812), task: null, branch: 'fix-frame-812' },
+    since: null,
+    text: `${id} is stuck`,
+    do: 'fix it',
+    guard: true,
+    handled_by: null,
+  }
+}
+
+/**
+ * The coordinator's session with `first` read from GitHub, then a world where GitHub cannot be read any more (it ran out
+ * of time) and a local read prints `local`: what a hold recorded since looks like.
+ */
+async function afterTimeout($: Engine, on: Parameters<typeof engine>[0], first: Snapshot, local: Snapshot): Promise<World> {
+  const world = engine(on, prints(first))
+  await startAs($, world, 'coordinator')
+  world.answer = prints(local)
+  world.answerRun = argv => (argv.includes('--github') ? timedOut : undefined)
+  return world
+}
+
+test('the stop guard does not block on a problem a live hold covers when GitHub could not be read in time', async ($, on) => {
+  const world = await afterTimeout($, on, snapshot(), withHolds([hold()]))
+  const done = await $.classic.Stop({ stop_hook_active: false })
+  expect(done.block).toBeUndefined()
+  // it tried GitHub, then read the holds from this machine (a local read: no --github)
+  expect(world.runs.at(-2)).toContain('--github')
+  expect(world.runs.at(-1)).not.toContain('--github')
+})
+
+test('the stop guard blocks on the problems no hold covers, and says the refresh failed', async ($, on) => {
+  const events = [problem('pr:812:auto-merge-off:bbbbbbb'), problem('pr:813:conflict:ccccccc:waived-1')]
+  await afterTimeout($, on, withHolds([], events), withHolds([hold()], events))
+  const done = await $.classic.Stop({ stop_hook_active: false })
+  expect(done.block).toContain('pr:813:conflict')
+  expect(done.block).not.toContain('pr:812:auto-merge-off')
+  expect(done.block).toContain('could not refresh: process still running after 60000ms')
+})
+
+/** The problems of #812, one for each cause a hold names. */
+const CAUSES = ['checks-failed', 'ci-stuck', 'auto-merge-off', 'conflict']
+
+/**
+ * Each case is a test of its own (a test makes one world). `holds` run on the machine when the coordinator's turn ends
+ * and GitHub could not be read in time; `blocked` are the problems that must still hold the turn end, by cause.
+ */
+const CASES: { name: string; holds: HoldRow[]; blocked: string[] }[] = [
+  { name: 'a hold for every cause counts for each cause', holds: [hold()], blocked: [] },
+  {
+    name: 'a hold for every cause stays one when a hold for a cause is made beside it',
+    holds: [hold({ cause: 'conflict' }), hold({ cause: null, who: 'waived' })],
+    blocked: [],
+  },
+  {
+    name: 'a hold for one cause covers that cause only',
+    holds: [hold({ cause: 'auto-merge-off', who: 'waived' })],
+    blocked: ['checks-failed', 'ci-stuck', 'conflict'],
+  },
+  { name: 'a hold that has run out covers nothing', holds: [hold({ until: '2026-10-23T14:00:00Z' })], blocked: CAUSES },
+  { name: 'a hold on another pull request covers nothing', holds: [hold({ pr: 813 })], blocked: CAUSES },
+  { name: 'a hold made on another head covers nothing', holds: [hold({ head: 'ddddddd' })], blocked: CAUSES },
+  { name: 'a hold made before heads were kept covers whatever head', holds: [hold({ head: null })], blocked: [] },
+]
+
+for (const { name, holds, blocked } of CASES) {
+  test(`the stop guard, GitHub out of time: ${name}`, async ($, on) => {
+    const events = CAUSES.map(cause => problem(`pr:812:${cause}:bbbbbbb`))
+    await afterTimeout($, on, withHolds([], events), withHolds(holds, events))
+    const reason = (await $.classic.Stop({ stop_hook_active: false })).block
+    if (blocked.length === 0) {
+      expect(reason).toBeUndefined()
+    } else {
+      const lines = (reason ?? '').split('\n').filter(line => line.startsWith('- '))
+      expect(lines.map(line => line.split(':')[2])).toEqual(blocked)
+    }
+  })
+}
+
+test('a conflict is covered only by a hold that may cover one', async ($, on) => {
+  const events = [problem('pr:812:conflict:bbbbbbb:waived-1'), problem('conflict-fix:812:bbbbbbb:go', 'conflict-fix')]
+  const world = await afterTimeout($, on, withHolds([], events), withHolds([hold({ who: 'waived', covers_conflict: false })], events))
+  expect((await $.classic.Stop({ stop_hook_active: false })).block).toContain('conflict-fix:812')
+  world.answer = prints(withHolds([hold({ who: 'waived', covers_conflict: true })], events))
+  expect((await $.classic.Stop({ stop_hook_active: true })).block).toBeUndefined()
+})
+
+test('when the holds cannot be read fresh either, the guard uses the holds of the last good read', async ($, on) => {
+  const world = engine(on, prints(withHolds([hold()])))
+  await startAs($, world, 'coordinator')
+  world.answer = fails
+  expect((await $.classic.Stop({ stop_hook_active: false })).block).toBeUndefined()
+})
+
+test('a hold of the last good read that has ended by now does not cover the problem', async ($, on) => {
+  const world = engine(on, prints(withHolds([hold({ until: '2026-10-23T14:01:00Z' })])))
+  await startAs($, world, 'coordinator')
+  world.answer = fails
+  // still inside the three watch intervals of the last GitHub read, so the list stands, but the hold has ended
+  await world.clock.advance(90_000)
+  expect((await $.classic.Stop({ stop_hook_active: false })).block).toContain('#812')
 })
 
 test('a refresh that works says nothing of a failure', async ($, on) => {

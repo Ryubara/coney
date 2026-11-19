@@ -151,6 +151,37 @@ def test_a_hold_on_another_cause_does_not_handle_the_event(layout: Layout) -> No
     assert events(read(layout), "check-failed")[0]["state"] == "handled"
 
 
+@pytest.mark.parametrize("cause", ["checks-failed", "ci-stuck", "auto-merge-off"])
+def test_a_hold_for_every_cause_handles_each_cause(layout: Layout, cause: str) -> None:
+    hold_on(layout)
+    src = sources(layout, FakeGh(github_answers()))
+    src.coord.health = lambda pulls, required, now: {
+        "stuck": [{"number": 812, "branch": "fix-frame-812", "cause": cause, "detail": "into main"}],
+        "other": [],
+        "notices": [],
+    }
+    [event] = events(collect(src, github=True), "check-failed", "pr-stuck")
+    assert event["state"] == "handled" and event["handled_by"].startswith("engineer-2")
+
+
+def test_holds_for_two_causes_each_handle_their_own_event(layout: Layout) -> None:
+    # a conflict held by an agent and auto-merge off waived: the second hold must not have replaced the first
+    hold_on(layout, cause="conflict", who="engineer-2")
+    hold_on(layout, who="waived", note="auto-merge is off on a fork")
+    src = sources(layout, FakeGh(github_answers()))
+    src.coord.health = lambda pulls, required, now: {
+        "stuck": [
+            {"number": 812, "branch": "fix-frame-812", "cause": "auto-merge-off", "detail": "into main"},
+            {"number": 812, "branch": "fix-frame-812", "cause": "ci-stuck", "detail": "an hour"},
+        ],
+        "other": [],
+        "notices": [],
+    }
+    found = events(collect(src, github=True), "pr-stuck")
+    assert [event["state"] for event in found] == ["handled", "handled"]
+    assert pr_hold.read_active(pr_hold.holds_folder(layout.scratch, RULES), NOW).holds[0].pr == 812
+
+
 def test_a_hold_on_another_pull_request_does_not_handle_the_event(layout: Layout) -> None:
     hold_on(layout, pr=813)
     assert events(read(layout), "check-failed")[0]["state"] == "open"

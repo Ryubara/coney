@@ -70,11 +70,11 @@ def test_a_hold_is_written_and_read_back(tmp_path: Path) -> None:
     assert found.problems == [] and found.holds == [hold()]
 
 
-def test_one_file_per_pull_request_and_a_later_hold_replaces_the_earlier(tmp_path: Path) -> None:
+def test_one_file_per_pull_request_and_cause_and_a_later_hold_replaces_the_earlier(tmp_path: Path) -> None:
     pr_hold.write(tmp_path, hold(812))
     pr_hold.write(tmp_path, hold(813))
     pr_hold.write(tmp_path, hold(812, who="engineer-9"))
-    assert sorted(path.name for path in tmp_path.iterdir()) == ["812.json", "813.json"]
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["812.all.json", "813.all.json"]
     assert [(h.pr, h.who) for h in pr_hold.read_active(tmp_path, NOW).holds] == [
         (812, "engineer-9"),
         (813, "engineer-2"),
@@ -122,7 +122,7 @@ def test_a_hold_covers_only_the_head_it_was_made_on() -> None:
 def test_the_head_is_written_and_read_back(tmp_path: Path) -> None:
     pr_hold.write(tmp_path, hold(head="a1b2c3d"))
     assert pr_hold.read_active(tmp_path, NOW).holds[0].head == "a1b2c3d"
-    assert json.loads((tmp_path / "812.json").read_text(encoding="utf-8"))["head"] == "a1b2c3d"
+    assert json.loads((tmp_path / "812.all.json").read_text(encoding="utf-8"))["head"] == "a1b2c3d"
 
 
 def test_a_waiver_is_a_hold_by_nobody(tmp_path: Path) -> None:
@@ -140,7 +140,33 @@ def test_release_removes_the_file_and_says_whether_there_was_one(tmp_path: Path)
 def test_writing_a_hold_removes_the_expired_ones(tmp_path: Path) -> None:
     pr_hold.write(tmp_path, hold(700, hours=-5))
     pr_hold.write(tmp_path, hold(812), now=NOW)
-    assert sorted(path.name for path in tmp_path.iterdir()) == ["812.json"]
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["812.all.json"]
+
+
+def test_a_hold_for_one_cause_keeps_the_hold_for_every_cause_and_the_other_causes(tmp_path: Path) -> None:
+    pr_hold.write(tmp_path, hold(who=WAIVED, note="waits for the maintainer"))
+    pr_hold.write(tmp_path, hold(cause="conflict", note="rebasing"))
+    pr_hold.write(tmp_path, hold(cause="auto-merge-off", note="fork"))
+    found = pr_hold.read_active(tmp_path, NOW).holds
+    assert sorted(held.cause or "" for held in found) == ["", "auto-merge-off", "conflict"]
+    # a later hold for the same cause replaces that one only
+    pr_hold.write(tmp_path, hold(cause="conflict", who="engineer-9"))
+    found = pr_hold.read_active(tmp_path, NOW).holds
+    assert len(found) == 3 and {held.who for held in found if held.cause == "conflict"} == {"engineer-9"}
+    assert {held.who for held in found if held.cause is None} == {WAIVED}
+
+
+def test_a_hold_in_the_old_one_file_form_is_read_and_replaced_by_the_same_cause(tmp_path: Path) -> None:
+    # before the store kept one hold per cause, a pull request's one hold was `<pr>.json`, whatever its cause
+    old = hold(cause="conflict").as_json()
+    (tmp_path / "812.json").write_text(json.dumps(old), encoding="utf-8")
+    assert [held.cause for held in pr_hold.read_active(tmp_path, NOW).holds] == ["conflict"]
+    pr_hold.write(tmp_path, hold())
+    assert sorted(held.cause or "" for held in pr_hold.read_active(tmp_path, NOW).holds) == ["", "conflict"]
+    pr_hold.write(tmp_path, hold(cause="conflict", who="engineer-9"))
+    found = pr_hold.read_active(tmp_path, NOW).holds
+    assert sorted(held.cause or "" for held in found) == ["", "conflict"]
+    assert not (tmp_path / "812.json").exists()
 
 
 # --- the command ----------------------------------------------------------------------------------------------------
@@ -175,6 +201,31 @@ def test_a_hold_can_name_one_cause_a_time_and_a_note(tmp_path: Path) -> None:
     assert Out().run(tmp_path, "812", "--who", "e", "--hours", "2", "--cause", "conflict", "--note", "rebasing") == 0
     [held] = pr_hold.read_active(tmp_path, NOW).holds
     assert (held.cause, held.note, held.until) == ("conflict", "rebasing", NOW + timedelta(hours=2))
+
+
+def test_a_hold_for_one_cause_does_not_replace_the_hold_for_every_cause(tmp_path: Path) -> None:
+    # the coordinator's case: a conflict waits on the maintainer while auto-merge is off on a fork
+    run = Out()
+    assert run.run(tmp_path, "812", "--note", "auto-merge is off on a fork, the maintainer merges it") == 0
+    assert run.run(tmp_path, "812", "--who", "engineer-2", "--cause", "conflict") == 0
+    found = pr_hold.read_active(tmp_path, NOW).holds
+    assert [(held.cause, held.who) for held in sorted(found, key=lambda held: held.cause or "")] == [
+        (None, WAIVED),
+        ("conflict", "engineer-2"),
+    ]
+    assert all(any(held.covers(cause, NOW, "a1b2c3d") for held in found) for cause in ("auto-merge-off", "conflict"))
+
+
+def test_a_second_hold_for_the_same_cause_replaces_the_first(tmp_path: Path) -> None:
+    run = Out()
+    assert run.run(tmp_path, "812", "--who", "engineer-2", "--cause", "conflict") == 0
+    assert run.run(tmp_path, "812", "--who", "engineer-3", "--cause", "conflict") == 0
+    assert run.run(tmp_path, "812", "--who", "engineer-4") == 0
+    assert run.run(tmp_path, "812", "--who", "engineer-5") == 0
+    assert sorted((held.cause or "", held.who) for held in pr_hold.read_active(tmp_path, NOW).holds) == [
+        ("", "engineer-5"),
+        ("conflict", "engineer-3"),
+    ]
 
 
 def test_a_waiver_needs_a_reason(tmp_path: Path) -> None:
@@ -222,6 +273,32 @@ def test_release_removes_the_hold_and_a_second_release_says_there_was_none(tmp_p
     assert run.run(tmp_path, "812", "--release") == 0 and "released" in run.out[0]
     run = Out()
     assert run.run(tmp_path, "812", "--release") == 1 and "no hold" in run.err[0]
+
+
+def test_list_prints_each_cause_and_says_whether_the_hold_may_cover_a_conflict(tmp_path: Path) -> None:
+    pr_hold.write(tmp_path, hold(who=WAIVED, note="the runner pool is down"))
+    pr_hold.write(tmp_path, hold(cause="conflict", who=WAIVED, note="waits for the maintainer's answer on #1130"))
+    pr_hold.write(tmp_path, hold(cause="checks-failed"))
+    run = Out()
+    assert run.run(tmp_path, "--list") == 0 and len(run.out) == 3
+    run = Out()
+    assert run.run(tmp_path, "--list", "--json") == 0
+    rows = {row["cause"]: row for row in json.loads(run.out[0])["holds"]}
+    assert set(rows) == {None, "conflict", "checks-failed"}
+    # the Stop hook of the Conclave mod trusts this flag instead of knowing the conventions' decision pattern
+    assert [rows[cause]["covers_conflict"] for cause in (None, "conflict", "checks-failed")] == [False, True, True]
+
+
+def test_release_ends_every_hold_of_the_pull_request_or_the_one_cause(tmp_path: Path) -> None:
+    pr_hold.write(tmp_path, hold())
+    pr_hold.write(tmp_path, hold(cause="conflict"))
+    pr_hold.write(tmp_path, hold(813))
+    run = Out()
+    assert run.run(tmp_path, "812", "--release", "--cause", "conflict") == 0 and "conflict" in run.out[0]
+    assert [(held.pr, held.cause) for held in pr_hold.read_active(tmp_path, NOW).holds] == [(812, None), (813, None)]
+    assert run.run(tmp_path, "812", "--release", "--cause", "conflict") == 1
+    assert Out().run(tmp_path, "812", "--release") == 0
+    assert [held.pr for held in pr_hold.read_active(tmp_path, NOW).holds] == [813]
 
 
 def test_the_command_needs_a_pull_request_unless_it_lists(tmp_path: Path) -> None:

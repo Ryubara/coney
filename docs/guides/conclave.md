@@ -139,10 +139,16 @@ nobody holds: it blocks with the `watch.stop_preamble` and a line for each probl
 again (about 7 seconds, only when the last read had such a problem), so a hold recorded a moment ago, or a problem that
 fixed itself, counts. It blocks at most `stop_max_blocks` (3) turn ends in a row for one reason, counts again from one
 after `stop_reset_minutes` (30) without a block, never blocks on a list it could not make current, and lets the turn
-end when it fails itself. When that read fails but the last one is still recent, the guard blocks on the list it holds
-and ends the reason with `could not refresh: <first line of the error>`, so a list that cannot catch up with a hold is
-seen to be old and the cause is named; the count is kept by the problems, so an error that changes its words does not
-start it again. Tether's own Stop guard for stopped agents is untouched: Conclave's block rides on the
+end when it fails itself. When that read fails or runs out of time (the 60 seconds of a `--github` read can pass under
+build load) but the last one is still recent, the guard judges the list it holds by the holds, which are local files and
+need no GitHub: it reads the snapshot without `--github` (the `holds` section, [below](#snapshot)) or, when that fails
+too, takes the holds of the last good read, and leaves out every problem a running hold covers. A hold covers the
+problems of its pull request on the head it was made on, a hold on every cause counts for each cause, and a conflict
+only when the hold may cover one (an agent's hold always may, a waiver only when its note names a maintainer decision:
+the snapshot says so for each hold, the mod does not know the pattern). What is left blocks, and its reason ends with
+`could not refresh: <first line of the error>`, so a list that cannot catch up is seen to be old and the cause is named;
+a hold already recorded is never asked for again. The count is kept by the problems, so an error that changes its words
+does not start it again. Tether's own Stop guard for stopped agents is untouched: Conclave's block rides on the
 answer beneath it, and a block already set there is kept whole, with Conclave neither reading GitHub nor counting a
 block for that turn end ([boundary](#boundary)).
 
@@ -175,8 +181,9 @@ that engineer-2 is fixing #812 for `hold_default_hours` (4; at most `hold_max_ho
 waiver, a known wait, and `--note` says why. A hold covers every cause of the pull request or the one `--cause` names
 (except that a waiver covers a conflict only when its note names a maintainer decision, [below](#conflicts)),
 and the head commit it was made on: a new push is a new problem, so the hold does not follow it and the problem is
-open and told again. A hold is one file of the scratch directory (`conclave.watch.holds_dir`, one file per pull
-request, written whole), and ends by itself: when it runs out the problem is open again and is told again, so a fix
+open and told again. A pull request keeps one hold for each cause, so a hold for one cause never replaces a hold on
+every cause. A hold is one file of the scratch directory (`conclave.watch.holds_dir`, one file for each pull request
+and cause, written whole), and ends by itself: when it runs out the problem is open again and is told again, so a fix
 that stalls cannot hide. Only the coordinator holds: `hooks.toml` refuses `pr hold` to the other roles, though the
 hold is only a file, so a role that writes it by hand is not stopped by that rule (the file is the coordinator's by
 convention, [Enforcement](enforcement.md)). This replaces Tether's `pr_owner` tool and owner record, and the
@@ -432,6 +439,7 @@ read keeps the pull requests, claim overlaps and events of the last GitHub read.
 | `config` | The roles and helpers of the hook settings, the intervals and limits | `.claude/hooks/hooks.toml`, the `conclave` keys |
 | `units` | Each unit: task file, stage from the stamp log, build, check, worktree, overlaps, pull request | `scratch/<task>/TASK.md`, the stamp log, `coord status` (builds and checks) |
 | `builds`, `machine` | Build slots and queues; the free disk of the [watched drives](workspace.md#watched-drives): the one with the least room above its floor (`drive`, `free_gb` and its two limits, what the band shows), every drive in `drives` and any that could not be read in `problems` | `build status`, the watched drives |
+| `holds` | The running `pr hold` records, one for each pull request and cause: `pr`, `who`, `cause` (null: every cause), `until`, `head` and `covers_conflict`; files that cannot be read in `problems`. Read on every read, local ones included, so the stop guard can use them when a GitHub read fails | the holds folder of the scratch directory ([Holds](#holds)) |
 | `claims`, `prs`, `issues` | Held claims with deadlines and titles; open and merged pull requests; the issues the pane names (`--github` only) | the claim cards, `pr list-stuck`, `gh` |
 | `events` | The [watchers' events](#watchers), each with an id and a state, the kinds that could not be read (`unread`) and any hold file that could not (`holds_problems`) (`--github` only) | `pr list-stuck`, the release queue with the proof of [each unit in it](#ready), the [trial rebase](#conflicts) of each conflict, the holds (`pr hold`, `HOLD.md`), the question files of the unit folders, the snapshot's own `machine` section (`disk-low`) |
 
