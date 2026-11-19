@@ -488,6 +488,7 @@ TEST_CASE("an AI's take of loot removes it with nothing given, and a weapon goes
 }
 
 TEST_CASE("the wreck's smash search skips an object in flight", "[level_pickups][wreck]") {
+    // Expected: objects.md#pickable, confirmed (code) (the search refuses an object with flag 0x4000000).
     // Ai_FindObject 0x0029d5f0 skips an object whose flags (vtable +0x54) have bit 26, the airborne flag 0x4000000.
     Harness h;
     wo::ObjectType bottle;

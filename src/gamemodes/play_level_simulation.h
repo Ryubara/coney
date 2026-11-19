@@ -427,7 +427,9 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // running humans met last step take their strike (Human_OnContact, docs/research/objects.md#trash-props).
     // @orig 0x00391d48 Obj_CreatePhysicsBody (unknown)
     void stepObjectBodies();
-    // Player 1's pick-up that reached its clip's event this step: the object is taken.
+    // Player 1's pick-up that reached its clip's event this step: the object is taken. The downed humans' drops come
+    // first (stepDownDrops()).
+    // @coney-only the play mode's per-step glue of the pick-up, the throw, the mugging and the drops
     void stepPickups();
     // The drops of the humans whose health ran out this step (Human::fighter()'s takeHealthOut()): player 1's, then
     // the AI humans' (docs/research/crimes.md#down-drop).

@@ -913,8 +913,18 @@ name = "Human_OnHealthOut"
 page = "combat-reactions.md#defeat"
 role = "health gone: wounded, knocked out or dead ([Defeat](combat-reactions.md#defeat))"
 level = "confirmed-code"
-coney = "src/human/human.h:Human::blocksHumans"
-status = "legacy"
+coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::dropOnHealthOut"
+status = "compared"
+
+[[function.gaps]]
+what = "Coney's health out never wounds a woundable human (Human_StartWounded); only a script's HuSetWounded stops the drop at the knock-out"
+relation = "stand-in"
+issue = 685
+
+[[function.gaps]]
+what = "the state clears, the action, the wake times (its own and its gang's players'), the radar and icon removal, the wounded bit, the dead state for a kind-29 hit, the defeat credit, the cuffed idle 323, the prop detach, body flag 0x80000000, the hat and the physics body of a dead human"
+relation = "not-ported"
+issue = 685
 
 [[function]]
 address = 0x002678c8

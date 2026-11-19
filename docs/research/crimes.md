@@ -523,7 +523,7 @@ is no sign of which branch ran.
 So the $0 sellers and the $0 soldier seen in Coney's `level87` run (issue #354) match the original, and Coney needs no
 fix for them ([Coney's implementation](#coneys-implementation), the starting money).
 
-#### Dropped when down {#down-drop}
+### Dropped when down {#down-drop}
 
 A human whose health runs out drops what he carries: `Human_OnHealthOut` (`0x002674c0`, [Defeat](combat-reactions.md#defeat))
 calls `Human_DropCarried(human, 1, 1)` (`0x00232c60`) when he is wounded, or when he is knocked out and was not wounded
@@ -534,8 +534,8 @@ steps, every draw from the gameplay generator (`0x006eb880`), `rand(a, b)` `a` t
 
 1. No brain: nothing.
 2. **The pocket** (`+0x250`, an item): pickups of that item's object (its inventory entry's name,
-   `InventoryBlock_GetEntry` `0x0041e3c0`), at his feet 0.5 m up, `+0x254` of them (a signed byte), with no removal
-   time. A **dealer** (brain type 5) drops one instead (the call's second argument), 1 m out into the first
+   `InventoryBlock_GetEntry` `0x0041e3c0`, confirmed (code)), at his feet 0.5 m up, `+0x254` of them (a signed byte),
+   with no removal time. A **dealer** (brain type 5) drops one instead (the call's second argument), 1 m out into the first
    neighbour sector that is not blocked (`Sectors_IsBlocked`, `Sectors_GetPoint` at 1 m; all eight blocked: sector 0;
    [AI: neighbour sectors](ai-moving.md#neighbour-sectors)). Unless he is a dealer or his ped type (`+0x26c`) is 5,
    nothing more is dropped.
@@ -562,12 +562,12 @@ type 2 given $5, made to run `Human_OnHealthOut`, stored 5 in the new object's `
 $0, and the object stood at his feet's height + 0.5 m with its removal time set.
 
 The removal time (`WorldObject_SetRespawnTimer`, [Objects](objects.md)) is now + the item's inventory duration
-(`InventoryBlock_GetDuration` `0x0041e348`): once it passes the object can no longer be taken and vanishes.
+(`InventoryBlock_GetDuration` `0x0041e348`), confirmed (code); once it passes the object can no longer be taken and vanishes.
 
 So `level87` chapter 3's early Destroyers, given $5 each by their constructor (`EDConstructor`, `HuSetMoney`), leave
 $5 each when beaten: the price of one can of paint ([GoalDealer](ai-scripting.md#dealer)).
 
-**Coney** (issue #355): the update a human's dying reaction hands over to its loop (`Fighter::takeHealthOut()`, the
+**Coney**: the update a human's dying reaction hands over to its loop (`Fighter::takeHealthOut()`, the
 moment `Human_OnHealthOut` runs), the play mode runs the drop for player 1 and every AI human
 (`PlayLevelSimulation::dropOnHealthOut()`, `repo:src/gamemodes/play_level_drops.cpp`): the decision is
 `human::dropCarried()` (`repo:src/human/carried_drop.h`), the objects become spawn records through
@@ -577,7 +577,7 @@ stand-ins**: the removal times are not applied, so a dropped object stays until 
 wounds a human, so only a script's `HuSetWounded` stops the drop at the knock-out; an empty carried name counts as
 `none`; a pocket count of 0 or less drops nothing.
 
-#### Interrogation {#interrogation}
+### Interrogation {#interrogation}
 
 `+0x5a0` holds a reference to a Lua function, confirmed (code). Its only writers: `HuSetInterrogation` (`0x00239f20`:
 clears the four lines and `+0x5a0`, then stores the lines and the callback; a nil callback leaves 0), `Human_Init`

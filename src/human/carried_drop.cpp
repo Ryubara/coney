@@ -30,9 +30,11 @@ constexpr int kOtherItem = 10;
 
 // Whether `object` names nothing: `none`, or the empty name a Coney human starts with (Coney's choice: the original's
 // `+0x257` always holds a name).
+// @orig 0x00232c60 Human_DropCarried (unknown)
 bool nothing(std::string_view object) { return object.empty() || object == kNoObject; }
 
 // The item whose duration times a dropped carried object: a flash, a key or cuffs by name, else 10.
+// @orig 0x00232c60 Human_DropCarried (unknown)
 int carriedRemovalItem(std::string_view object) {
     if (object == "dyn_revival") {
         return kReviveItem;
@@ -48,6 +50,7 @@ int carriedRemovalItem(std::string_view object) {
 
 // The pocket's items: `count` objects at his feet, or for a dealer (round = true) each in the next sector round him
 // that is not blocked, the search going on from the last one taken and starting again at 0 when all eight are.
+// @orig 0x00232c60 Human_DropCarried (unknown)
 void dropPocket(const DropInput& input, int count, bool round, const SectorBlocked& blocked, CarriedDrop& drop) {
     int sector = 0;
     for (int made = 0; made < count; ++made) {
@@ -68,6 +71,7 @@ void dropPocket(const DropInput& input, int count, bool round, const SectorBlock
 
 // The money he drops: a civilian his class's share (at least 1), another AI all of it, a player a draw of his class's
 // range, at most what his inventory holds, taken from it.
+// @orig 0x00232c60 Human_DropCarried (unknown)
 int moneyDropped(const DropInput& input, GameRandom& random, CarriedDrop& drop) {
     if (*input.brainType == kCivilianBrain) {
         if (input.money <= 0) {

@@ -2080,12 +2080,11 @@ Fixes, in the order to take them (each one implementer unit):
    "$0 is not faithful" is not established. The original's sellers (428, 431) hold $0 and a type 197 soldier $5 in
    21 of 101 rolls and $0 otherwise, as Coney's roll gives
    ([level87's sellers and soldiers](crimes.md#starting-money)), so Coney needs no fix here.
-4. **A downed human drops no money** (issue #355). Done: Coney now runs `Human_DropCarried` (`0x00232c60`) when a
-   human's health runs out, so a knocked-out or wounded human leaves a `dyn_money` pickup of his money and drops what
-   he carries ([Dropped when down](crimes.md#down-drop)). Chapter 3's two early Destroyers get $5 each
-   (`EDConstructor`, `HuSetMoney`), the price of a can ([GoalDealer](ai-scripting.md#dealer)), so beating them is the
-   chapter's first paint (inferred from the script); the disc test `repo:tests/platform/disc_level87_drop_test.cpp`
-   beats both from a checkpoint 3 start, walks over their money and buys a can.
+4. **A downed human drops no money.** The original's `Human_OnHealthOut` calls `Human_DropCarried` (`0x00232c60`)
+   when a human is knocked out or wounded, which leaves a `dyn_money` pickup of his money ([Dropped when
+   down](crimes.md#down-drop)). Chapter 3's two early Destroyers get $5 each (`EDConstructor`, `HuSetMoney`), the
+   price of a can ([GoalDealer](ai-scripting.md#dealer)), so beating them is the chapter's first paint (inferred from the
+   script); Coney drops nothing. Fix and test on [Crimes](crimes.md#down-drop).
 5. **A hidden player enters the fight stance.** The original's stance starts only when the state word lacks
    `0x200000`, the hidden state ([Fight stance](combat-targets.md#fight-stance), step 3, `0x0027ce90`), and L1 while hidden
    picks a target without the lock ([The stealth kill](stealth.md#stealth-kill)). Coney's stance ignores the hidden
