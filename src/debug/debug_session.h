@@ -15,6 +15,7 @@
 #include "debug/audio_controls.h"
 #include "debug/entity_edit.h"
 #include "debug/input_gate.h"
+#include "debug/light_trace.h"
 #include "debug/lighting_lab.h"
 #include "debug/lua_console.h"
 #include "debug/menu_model.h"
@@ -106,6 +107,11 @@ struct DebugServices {
     /// The run log's folder, where the Lighting page's *Dump this frame* writes (docs/guides/run-log.md#outputs); empty
     /// in a run with no log file, which then cannot dump.
     std::filesystem::path runLogFolder;
+    /// The original's light-selection trace given with `--light-trace` (light_trace.h), which the Lighting page sets
+    /// beside Coney's lights (docs/guides/realtime-lighting.md#lab-built); empty: none loaded.
+    std::vector<TraceCall> lightTrace;
+    /// The trace's file name, for the page; empty with no trace.
+    std::string lightTraceName;
 };
 
 /// One debug session: the menu model with every page, the state its pages share (the time controls, the log, the Lua

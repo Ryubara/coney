@@ -563,6 +563,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/fighter_spawn_test.cpp
         debug/human_shapes_test.cpp
         debug/input_gate_test.cpp
+        debug/light_trace_test.cpp
         debug/lighting_page_test.cpp
         debug/lua_console_test.cpp
         debug/menu_navigator_test.cpp

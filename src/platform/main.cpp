@@ -51,6 +51,7 @@
 #include "debug/combat_tunables.h"
 #include "debug/debug_session.h"
 #include "debug/game_tunables.h"
+#include "debug/light_trace.h"
 #include "debug/tunables.h"
 #include "fileio/executable.h"
 #include "fileio/wad.h"
@@ -815,6 +816,17 @@ int main(int argc, char** argv) {
         if (logFile.has_value()) {
             debugServices.runLogFolder = logFile->parent_path();
         }
+    }
+    // `--light-trace`: the original's light selections for the Lighting page; a trace that cannot be read ends the
+    // run, as a bad input script does.
+    if (const std::optional<std::string> tracePath = options->lightTrace; tracePath) {
+        auto trace = coney::debug::readLightTrace(*tracePath);
+        if (!trace) {
+            logError(trace.error().message);
+            return 1;
+        }
+        debugServices.lightTrace = std::move(*trace);
+        debugServices.lightTraceName = std::filesystem::path(*tracePath).filename().string();
     }
     // The main loop's pacing (docs/guides/conventions.md#update-and-render). Test mode runs in lockstep with no clock:
     // one step and one render per frame. Otherwise the frame pacer measures real time and the frame clock turns it

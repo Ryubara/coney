@@ -558,6 +558,23 @@ TEST_CASE("the freeze option freezes a played level's world", "[options]") {
     CHECK(coney::usageText().find("--freeze-world") != std::string_view::npos);
 }
 
+TEST_CASE("the light-trace option gives a played level's lighting lab the original's trace", "[options]") {
+    // Expected: unverified, #1252 (Coney's own option: docs/guides/realtime-lighting.md#lab-built)
+    auto traced =
+        parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level99", "--light-trace", "lights.csv"});
+    REQUIRE(traced.has_value());
+    CHECK(traced->lightTrace == std::optional<std::string>("lights.csv"));
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--disc", "x", "--play-level", "level99"})->lightTrace);
+    CHECK_FALSE(parse(std::array<std::string_view, 8>{"--disc", "x", "--play-level", "level99", "--light-trace",
+                                                      "a.csv", "--light-trace", "b.csv"})
+                    .has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--disc", "x", "--light-trace", "a.csv"}).has_value());
+    CHECK_FALSE(
+        parse(std::array<std::string_view, 5>{"--disc", "x", "--play-level", "level99", "--light-trace"}).has_value());
+    CHECK(coney::usageText().find("--light-trace FILE") != std::string_view::npos);
+    CHECK_FALSE(coney::isPlayerOption("--light-trace"));
+}
+
 TEST_CASE("the render size option sizes the frames for a window", "[options]") {
     auto sized =
         parse(std::array<std::string_view, 6>{"--frames", "3", "--screenshot", "a.png", "--render-size", "640x448"});

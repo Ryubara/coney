@@ -146,6 +146,16 @@ struct LightSelection {
     [[nodiscard]] std::span<const std::uint16_t> lights() const { return {records.data(), count}; }
 };
 
+/// The lists LightManager::select() reads, as record indices: A (ambient and directional lights of the world), B and C
+/// (of objects; C with the pulse), the visible point lights and those of them that light the world.
+struct ViewportLists {
+    std::vector<std::uint16_t> world;
+    std::vector<std::uint16_t> objects;
+    std::vector<std::uint16_t> pulse;
+    std::vector<std::uint16_t> points;
+    std::vector<std::uint16_t> worldPoints;
+};
+
 /// A point in the game's axes (z up) in RenderWare's (y up): (x, z, -y), as `SetLight` stores positions and directions.
 [[nodiscard]] constexpr world::Vec3 gameToRenderWare(float x, float y, float z) { return world::Vec3{x, z, -y}; }
 
@@ -239,6 +249,12 @@ class LightManager {
     /// @orig 0x0017ea60 LightManager_BeginViewport (LightManager.cpp)
     /// @orig 0x0017d880 LightManager_CullForViewport (LightManager.cpp)
     void beginViewport(const LightView& view, std::uint64_t nowMs);
+
+    /// Sets this viewport's lists to `lists` in place of beginViewport()'s cull, each index a record in use: for
+    /// replaying the original's selection on the lists a trace of it read (docs/guides/realtime-lighting.md
+    /// #test-selection). Leaves the colours and the coronas as they are.
+    /// @coney-only the replay of the original's light-selection trace; the original's lists come only from its cull
+    void setViewportLists(const ViewportLists& lists);
 
     /// The lights of one atomic: the world's (`objects` false, up to 8) or the objects' (`objects` true, 6 to 3 by
     /// `distSq`, the squared distance to the camera, from list B, or list C with `pulse`), then with `pointLights` the
