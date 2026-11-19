@@ -114,6 +114,8 @@ std::filesystem::path writeContainer(const TempDir& dir, SaveSourceKind kind) {
         return dir.write("BASLUS-21215", data);
     case SaveSourceKind::Ps2Psu:
         return dir.write("BASLUS-21215.psu", coney::test::buildPsu(saveFolder(data)));
+    default: // the Xbox's containers are xbox_save_test.cpp's
+        break;
     }
     return {};
 }
