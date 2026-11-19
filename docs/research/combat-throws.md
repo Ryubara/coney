@@ -1286,6 +1286,13 @@ Coney's weapons never break, since what sends a weapon its message 1 is open ([O
 - **Why `Tackle_StartHold` deals a zero-damage hit**{#q-hold-zero-hit} ([The cuffing hold](#cuffing-hold)): the hit's
   side effects (events, statistics, the brain's reaction) may matter to the AI. Found by following `Human_DealDamage`
   with a damage of 0.
+- **The throw's searches and what Coney stands in for**{#q-throw-searches} ([Cross + square with a weapon in
+  hand](#armed-special)): the filters of `Player_FindCounterTarget` (`0x0027ac30`: `0x00279410`, `0x00279568`,
+  `0x002797b0`) and of the throw's object pass (`TargetFilter_ThrowObject`, `0x0027a1e8`) are not traced, so Coney's
+  throw takes the nearest enemy within 2 m (else the target) and the attack's object filter; its distances are across
+  the ground. What the weapon's state 1 (message 4) changes, and whether the throw's turn ends before the
+  release on a target that moves, are open too. Found by decompiling the three filters and the melee weapon's update,
+  and at runtime by throwing at a walking target 5 m off.
 
 ## How this was checked
 
