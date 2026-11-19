@@ -22,6 +22,7 @@ from conclave_support import (
     github_answers,
     iso,
     make_layout,
+    make_task,
     sources,
     stamp_steps,
 )
@@ -254,6 +255,22 @@ def test_a_branch_with_no_unit_record_is_listed_with_the_way_to_adopt_it(layout:
     assert "coney-tools task start fix-frame-812 --adopt" in event["do"] and event["ref"]["task"] is None
 
 
+def test_a_branch_name_that_is_no_task_id_is_made_one_for_the_adopt_commands(layout: Layout) -> None:
+    # `task create --name` refuses a `/` or a capital; the task is named from the branch and `--adopt-branch` names the
+    # branch it works on
+    (layout.scratch / "fix-frame-812" / "unit.json").unlink()
+    src = conflicting(layout)
+    src.coord.health = lambda pulls, required, now: {
+        "stuck": [{"number": 812, "branch": "Ryubara/Fix-Frame", "cause": "conflict", "detail": "", "checks": []}],
+        "other": [],
+        "notices": [],
+    }
+    src.coord.worktrees = lambda: [(layout.trees / "fix-frame-812", "Ryubara/Fix-Frame")]
+    [event] = events(read(src), "conflict-fix")
+    assert "task create <issue> --name ryubara-fix-frame;" in event["do"]
+    assert "task start ryubara-fix-frame --adopt-branch Ryubara/Fix-Frame" in event["do"]
+
+
 def test_a_branch_with_no_task_file_asks_for_the_issue(layout: Layout) -> None:
     for name in ("unit.json", "TASK.md"):
         (layout.scratch / "fix-frame-812" / name).unlink()
@@ -278,6 +295,21 @@ def test_a_ready_unit_main_moved_past_whose_rebase_conflicts_is_a_fix_for_its_ow
     assert event["ref"] == {"pr": None, "task": "fix-new", "branch": "fix-new"} and event["guard"] is False
     assert event["id"] == f"conflict-fix:unit-fix-new:{TIP[:7]}:go"
     assert "unit's own task fix-new" in event["do"] and "pr open fix-new" in event["do"]
+
+
+def test_the_fix_task_made_for_a_unit_with_no_pull_request_is_named_and_not_made_again(layout: Layout) -> None:
+    # a ready unit main moved past has no pull request to hold: its line names the fix that exists and says only that
+    # the unit's engineer works the branch (there is no `pr hold` to record)
+    (layout.scratch / "fix-new" / "PR.md").write_text("x\n", encoding="utf-8")
+    task = layout.scratch / "fix-new" / "TASK.md"
+    task.write_text(task.read_text(encoding="utf-8").replace("803", "741"), encoding="utf-8")
+    make_task(layout.scratch, "741-fix-frame", (741,))
+    src = sources(layout, FakeGh(github_answers()), trial=answering())
+    src.coord.health = lambda pulls, required, now: {"stuck": [], "other": [], "notices": []}
+    [event] = events(read(src), "conflict-fix")
+    assert event["id"] == f"conflict-fix:unit-fix-new:{TIP[:7]}:fixing"
+    assert event["ref"]["pr"] is None and event["guard"] is False
+    assert event["do"] == "the fix task 741-fix-frame exists, do not create another; its engineer works the branch"
 
 
 def test_a_ready_unit_whose_rebase_is_clean_stays_ready(layout: Layout) -> None:

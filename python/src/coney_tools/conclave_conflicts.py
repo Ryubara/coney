@@ -34,6 +34,7 @@ from coney_tools.config import ConfigError
 from coney_tools.conflict_work import Ledger, Trial
 from coney_tools.conventions import ConclaveWatch
 from coney_tools.pr_hold import Hold, HoldsRead, covers_conflict
+from coney_tools.task_file import task_id_of
 from coney_tools.unit import Unit
 
 #: The cause of a pull request that conflicts with its base (`pr list-stuck`).
@@ -142,9 +143,13 @@ def _command(item: Item, src: Sources) -> str:
     if item.route == FIX and issue is not None:
         return f"coney-tools task create --fix-of {issue}"
     if item.route == ADOPT:
+        # `task create --name` takes a task id, which a branch name (`user/Fix_It`) need not be; the task is named from
+        # the branch and `--adopt-branch` says which branch the unit is made on
+        task = task_id_of(item.branch) or "<task>"
+        adopt = "--adopt" if task == item.branch else f"--adopt-branch {item.branch}"
         return (
-            f"coney-tools task create {issue if issue is not None else '<issue>'} --name {item.branch}; the engineer "
-            f"then runs coney-tools task start {item.branch} --adopt (the branch predates units)"
+            f"coney-tools task create {issue if issue is not None else '<issue>'} --name {task}; the engineer "
+            f"then runs coney-tools task start {task} {adopt} (the branch predates units)"
         )
     return f"start the engineer of the unit's own task {item.task} (coney-tools task start {item.task} resumes it)"
 

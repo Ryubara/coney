@@ -222,7 +222,7 @@ contributor's branch has none and stays a `pr-stuck` for the coordinator):
    | --- | --- |
    | A unit that was released (its log has a passing `pr-opened`) | `coney-tools task create --fix-of <issue>`: a fix task in the fix track, working in the unit |
    | A unit that was never released | the unit's own task: its engineer rebases and goes on |
-   | A branch with no `unit.json` (made before `task start`) | `coney-tools task create <issue> --name <branch>`, then the engineer runs `coney-tools task start <branch> --adopt` ([Adopting a branch](issues.md#adopting)) |
+   | A branch with no `unit.json` (made before `task start`) | `coney-tools task create <issue> --name <task>`, then the engineer runs `coney-tools task start <task> --adopt` ([Adopting a branch](issues.md#adopting)); `<task>` is the branch name when that is a task id, else the name made from it (`user/Fix_It` is `user-fix-it`) and the start says `--adopt-branch <branch>` |
 
    **Oldest first.** The conflicts are ordered by when each was first seen on its head (the ledger below), and the fix
    track has one place (`tasks.start.slots.tracks.fix.max`). The first goes (`...:go`); each other says "waits behind
