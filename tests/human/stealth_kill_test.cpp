@@ -4,6 +4,7 @@
 // with a knife, 641 with a baton or club) and the victim's side, the next id, from the killer's set; the victim takes
 // 3000 and is knocked out. Synthetic clips; the player's buttons come from an input script through the street's command
 // tables. Issue #242.
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <memory>
@@ -259,4 +260,26 @@ TEST_CASE("the stealth kill's end clears the hiding and leaves the killer in the
     CHECK(hiddenDuringKill);
     CHECK(clipAfter == coney::human::kAnimFightIdle);
     CHECK_FALSE(hiddenAfter);
+}
+
+TEST_CASE("the killer's power meter does not refill while the stealth kill plays", "[human][combat][stealth]") {
+    // Expected: combat-moves.md#stealth, confirmed (runtime) (moves_stealth: power 300 from the kill's first update to
+    // its last, 52 updates, refilling once the fight idle 358 plays); a paired move's attacker holds the meter
+    // (slow-motion.md#power-move).
+    Fight fight(character(), 1.0F, 0.0F, 0.0F);
+    fight.human().enterHiding();
+    int lowest = 1000;
+    int highest = -1;
+    int killUpdates = 0;
+    fight.run(kSquareWithL1, 80, [&](std::uint64_t) {
+        if (fight.human().animator().animId() == kKill) {
+            ++killUpdates;
+            const int power = fight.human().fighter().combat().power().value();
+            lowest = std::min(lowest, power);
+            highest = std::max(highest, power);
+        }
+    });
+    REQUIRE(killUpdates > 10);
+    CHECK(lowest == 300);
+    CHECK(highest == 300);
 }
