@@ -1,4 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// The mission select's areas from the level records: the map tables, the area names and labels, the halo colours,
+// which missions are listed and how they are grouped and sorted.
+//
+// Research: docs/research/frontend.md#fn-missionselecthud
 #include "gui/mission_select_areas.h"
 
 #include <algorithm>

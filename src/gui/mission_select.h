@@ -39,7 +39,7 @@ struct MissionSelectLayout {
     float background = 1.12F;       ///< `0x0050e878`: the map's width.
     float backgroundHeight = 1.05F; ///< `0x0050e87c`: the map's height.
     float logo = 0.8F;              ///< `0x0050e880`: the logo's size.
-    float logoWidth = 1.4285714F;   ///< `0x0050e884`: the logo's width factor (10/7).
+    float logoWidth = 10.0F / 7.0F; ///< `0x0050e884`: the logo's width factor (10/7).
     float marker = 0.0147F;         ///< `0x0050e888`: a marker's size (the halo's base).
     float usageX = 0.0F;            ///< `0x0050e88c`.
     float usageY = 0.81F;           ///< `0x0050e890`.

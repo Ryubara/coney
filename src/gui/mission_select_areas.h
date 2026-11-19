@@ -2,6 +2,8 @@
 // The mission select's areas: what the level records say about each mission (its area, label, map and logo points,
 // halo colour), which missions the screen lists, and how they group into sorted areas. The screen itself is in
 // gui/mission_select.h.
+//
+// Research: docs/research/frontend.md#fn-missionselecthud
 #pragma once
 
 #include <cstddef>
