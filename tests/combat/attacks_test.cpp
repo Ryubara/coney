@@ -354,6 +354,7 @@ TEST_CASE("in a fight stance neither unarmed moving attack plays; the armed run 
 
 TEST_CASE("an object to throw in hand: the set's throw from a run at gait 3-5, from a walk at 2, else standing",
           "[combat]") {
+    // Expected: combat-throws.md#armed-moves, confirmed (code)
     struct Throws {
         int set;
         int standing;

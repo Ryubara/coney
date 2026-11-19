@@ -234,6 +234,7 @@ class PlayerCombat {
     /// @orig 0x00284920 Player_GrabOrTackle (unknown)
     void grabOrTackle(const CombatInput& input, CombatOutput& out);
     // The commands of a free player.
+    // @coney-only Coney's split of the dispatcher: the commands part of `Player_UpdateActions`, which update() ports
     void updateCommands(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
 
     const AnimRangeList* m_ranges;

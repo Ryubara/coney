@@ -100,6 +100,7 @@ anim::Quat headingRotation(float heading) {
 
 // Whether `animId` is one of the held-object throws, whose release event lets go of what is held: the set 4-6 objects
 // and the melee weapons' (491, 502; docs/research/combat-throws.md#armed-special).
+// @coney-only Coney's list of the throw clips, standing for the release handler's held-flag test (`0x1000010`)
 bool throwClip(std::uint32_t animId) {
     constexpr std::array<int, 11> kThrows{
         combat::anim_id::kOneHandedThrow,        combat::anim_id::kOneHandedThrowFromWalk,

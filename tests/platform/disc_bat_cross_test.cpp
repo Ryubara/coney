@@ -125,6 +125,7 @@ std::vector<std::vector<int>> playTrials(const coney::io::Wad& wad, const std::v
 
 TEST_CASE("the disc's level99: with a bat, cross swings again only from k37 after a square and k35 after a cross",
           "[disc][story][combat]") {
+    // Expected: combat-throws.md#bat-cross, confirmed (runtime)
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");

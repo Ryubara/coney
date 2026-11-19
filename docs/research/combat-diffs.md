@@ -152,7 +152,7 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 - **Sets 4-6** (barrels, bottles, the ghetto blaster): square and cross play the unarmed moves; the original throws
   (505-507, 467-472, 551-553) or smashes (473 / 475) ([Weapons](combat-throws.md#weapons)).
 - **Knife and bottle kills** (484-496) are not built.
-- **Throwing a melee weapon with cross + square** (`0x22`, 502 / 491, 471 / 472 on the move): built for issue #309 as
+- **Throwing a melee weapon with cross + square** (`0x22`, 502 / 491, 471 / 472 on the move): built as
   the original's armed special ([Cross + square with a weapon in hand](combat-throws.md#armed-special)), with
   stand-ins in its target search (the counter search, distances across the ground, the object filter). When it is
   refused (a target within 2.0 m) the special is refused for a player holding an object and the cross's release
