@@ -113,3 +113,55 @@ TEST_CASE("the developer overlay opens and closes on the GPU renderer in a scrip
     // GPU renderer's frame, so the frame holds it (a capture reads it back) while it is open and not once it is closed.
     runOverlayOn(RenderBackend::Gpu);
 }
+
+TEST_CASE("two overlays on the GPU renderer each draw, and one going away leaves the other drawing",
+          "[render][renderer][window][debug]") {
+    // Expected: ../engine/gpu-renderer.md#overlay, Coney's own: the renderer's overlay drawing is not one slot, so a
+    // second Dear ImGui overlay (the console bar beside F1) neither replaces the first nor, going away, takes it down.
+    WindowDesc desc;
+    desc.activate = false;
+    desc.hidden = true;
+    desc.width = 640;
+    desc.height = 480;
+    auto started = RenderEngine::start(RenderBackend::Gpu, desc);
+    if (!started) {
+        SKIP("this renderer does not start here: " << started.error().message);
+    }
+    RenderEngine& engine = **started;
+    TunableRegistry tunables;
+    DebugSession session(tunables, DebugServices{}, nullptr);
+    auto first = ImGuiOverlay::start(engine, session, std::string());
+    REQUIRE(first.has_value());
+    // The second starts hidden and draws nothing: the first must still draw with it present.
+    auto second = ImGuiOverlay::start(engine, session, std::string());
+    REQUIRE(second.has_value());
+    engine.setPresentOverlay([&first, &second](coney::graphics::RenderDevice&) {
+        if (*first) {
+            (*first)->draw();
+        }
+        if (*second) {
+            (*second)->draw();
+        }
+    });
+    const std::string path = (std::filesystem::temp_directory_path() / "coney-overlay-two-capture.png").string();
+
+    CHECK(presentCaptured(engine, path).notBackground == 0);
+    (*first)->setVisible(true);
+    CHECK(presentCaptured(engine, path).notBackground > 0);
+
+    // The second going away (its context was the last one made) leaves the first drawing.
+    second->reset();
+    CHECK(presentCaptured(engine, path).notBackground > 0);
+
+    // Another second, and now the first goes away: the second draws on its own.
+    second = ImGuiOverlay::start(engine, session, std::string());
+    REQUIRE(second.has_value());
+    (*second)->setVisible(true);
+    first->reset();
+    CHECK(presentCaptured(engine, path).notBackground > 0);
+
+    engine.setPresentOverlay({});
+    second->reset();
+    std::error_code ignored;
+    std::filesystem::remove(path, ignored);
+}
