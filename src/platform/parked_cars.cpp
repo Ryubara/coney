@@ -120,7 +120,7 @@ ParkedCars::TypeModel* ParkedCars::model(std::uint8_t type) {
         }
         return nullptr;
     }
-    auto typeModel = std::make_unique<TypeModel>(TypeModel{std::move(*loaded)});
+    auto typeModel = std::make_unique<TypeModel>(TypeModel{.model = std::move(*loaded), .meshes = {}});
     const LevelClumpObject& clump = *clumpOf(typeModel->model);
     // Every atomic, damaged forms included, draws with the dictionary's first texture, as the model's untextured
     // materials are linked.
