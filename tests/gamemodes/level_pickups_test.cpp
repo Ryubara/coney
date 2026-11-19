@@ -566,3 +566,59 @@ TEST_CASE("a pocket's item drops as its inventory object", "[level_pickups]") {
     CHECK(can->typeName == "dyn_spraycan");
     CHECK(can->position[2] == Catch::Approx(0.5F));
 }
+
+TEST_CASE("a downed human's dropped objects stack half a metre above each other", "[level_pickups]") {
+    // Expected: crimes.md#down-drop, confirmed (code) at 0x00232c60 (each pocket object 0.5 m above the last,
+    // 0x00232dc0-0x00232dc8; a ped-type-5 non-dealer's next object above the last of them; only a dealer's drop goes
+    // back to his feet, 0x00232e64).
+    Harness h;
+    double next = 300.0;
+    h.scripts.setObjectHandles([&next] { return next++; });
+    h.state.player.inventory.configure(item::kSprayPaint, "dyn_spraycan", 0, "none", 0);
+    coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types);
+    coney::human::DropInput seller;
+    seller.brainType = 2;
+    seller.pedType = 5;
+    seller.pocketItem = item::kSprayPaint;
+    seller.pocketCount = 2;
+    seller.money = 5;
+    seller.carried = "none";
+    const auto noneBlocked = [](int /*k*/) { return false; };
+    const auto nowhere = [](int /*k*/) { return Vec3{}; };
+    static_cast<void>(pickups.dropCarried(seller, Vec3{0.0F, 0.0F, 1.0F}, noneBlocked, nowhere));
+    const std::vector<double> handles{300.0, 301.0, 302.0};
+    const std::vector<float> heights{1.5F, 2.0F, 2.5F};
+    for (std::size_t i = 0; i < handles.size(); ++i) {
+        const wo::SpawnRecord* record = h.records.find(handles[i]);
+        REQUIRE(record != nullptr);
+        CHECK(record->position[2] == Catch::Approx(heights[i]));
+    }
+    CHECK(h.records.find(302.0)->typeName == "dyn_money");
+}
+
+TEST_CASE("a dealer's drop after his pocket starts again at his feet", "[level_pickups]") {
+    // Expected: crimes.md#down-drop, confirmed (code) at 0x00232c60 (a dealer's pocket object goes 1 m out into a
+    // free sector, 0.5 m up; his next object starts again from his feet, 0x00232e64).
+    Harness h;
+    double next = 400.0;
+    h.scripts.setObjectHandles([&next] { return next++; });
+    h.state.player.inventory.configure(item::kSprayPaint, "dyn_spraycan", 0, "none", 0);
+    coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types);
+    coney::human::DropInput dealer;
+    dealer.brainType = 5;
+    dealer.pocketItem = item::kSprayPaint;
+    dealer.pocketCount = 1;
+    dealer.money = 7;
+    dealer.carried = "none";
+    const auto noneBlocked = [](int /*k*/) { return false; };
+    const auto sector = [](int /*k*/) { return Vec3{1.0F, 0.0F, 3.0F}; };
+    static_cast<void>(pickups.dropCarried(dealer, Vec3{0.0F, 0.0F, 1.0F}, noneBlocked, sector));
+    const wo::SpawnRecord* can = h.records.find(400.0);
+    const wo::SpawnRecord* money = h.records.find(401.0);
+    REQUIRE(can != nullptr);
+    REQUIRE(money != nullptr);
+    CHECK(can->position[0] == Catch::Approx(1.0F));
+    CHECK(can->position[2] == Catch::Approx(3.5F));
+    CHECK(money->position[0] == Catch::Approx(0.0F));
+    CHECK(money->position[2] == Catch::Approx(1.5F));
+}
