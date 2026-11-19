@@ -374,6 +374,8 @@ std::unique_ptr<anim::AnimTask> HumanAnimator::chainLoop(std::uint32_t loop) con
     return idleLoop();
 }
 
+// Combat's chain of clips into a loop.
+// @coney-only Coney's task chain behind playCombat() and playPaired()
 void HumanAnimator::playChain(std::span<const std::uint32_t> clips, const characters::AnimSet* from, std::uint32_t loop,
                               AnimState state, float fade, HeldFlags held) {
     // The loop last (this human's own), then each clip handing over to what follows it, built from the end.
