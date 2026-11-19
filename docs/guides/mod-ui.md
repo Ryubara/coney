@@ -49,7 +49,9 @@ The widget kinds are the game's classes, each holding what it already holds in t
 | Keyboard | `NameKeyboard`, PM_Create's keyboard, taking at most 32 characters | yes |
 
 A hidden widget (`setVisible`) is not drawn and cannot hold the focus: hiding the focused one passes the focus to the
-first widget left that can take it, and with none the screen has no focus and its commands go nowhere.
+first widget left that can take it, and with none the screen has no focus and its commands go nowhere until a widget is
+shown again, which then takes the focus (the first that can, unless a dialog is open). A focus change on a screen that
+is covered on its flow, or on no flow, leaves the slot's input alone: only the top screen's focus moves block its d-pad.
 
 A choice dialog (`askChoice`) is the message box's choice: one or two choices in a one-row `OptionGrid` at the box's
 place, the default selected.
@@ -100,9 +102,10 @@ screens read the ports as the device gave them (`rawPad`).
 ## The trusted layer and the frame label {#trusted}
 
 - **The trusted layer.** While Coney's code has a trusted screen open (`openTrusted`, nesting counted), no mod screen
-  opens, menu or HUD, and no slot's pad reaches a mod screen; the mod screens already open stay where they were, and
-  take their focus afresh when the last trusted screen closes. Trusted screens are not in the model at all, so no call
-  of a project can name, read or press anything on one.
+  opens, menu or HUD, and no slot's pad reaches a mod screen; the mod screens already open stay open, and take their
+  focus afresh when the last trusted screen closes. The model does not draw trusted screens: build issue 3's Mods screen
+  must be queued above the mods' widgets, which share the game's menu depths with Coney's own menu screens. Trusted
+  screens are not in the model at all, so no call of a project can name, read or press anything on one.
 - **The frame label.** Every mod screen shown, menu or HUD, carries its project's registered title
   ([Safety](studio/ui.md#no-spoofing)): the renderer draws each such project's title once, small and right-aligned at
   the top right of the safe area, one line under another (slot 1's top screen, slot 2's, then the HUD screens). The
@@ -129,4 +132,7 @@ Where neither the original nor the design decides, each called Coney's choice in
 
 Not built yet, and where it comes: the refused markup tags and a handler's errors closing its screen (the natives, build
 issue 4); screen files (issue 5); wiring the model into the game session (the input mask, and pushing `UiScreenMode`
-when a screen that pauses play opens), which waits for the first screen a project can open.
+when a screen that pauses play opens), which waits for the first screen a project can open; the HUD layer, where a HUD
+screen draws in the HUD's render for its slot's view and hides with `HideHud` and the fades ([HUD
+elements](studio/ui.md#hud)): `UiView` draws HUD screens in the menu batches over the whole screen, and never reads
+their slot.

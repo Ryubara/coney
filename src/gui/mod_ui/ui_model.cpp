@@ -345,7 +345,7 @@ void UiModel::popTo(std::size_t slot, UiScreenId screen, std::uint64_t nowMs) {
 
 MenuInput& UiModel::inputOf(UiScreenId screen) {
     const std::optional<std::size_t> slot = slotOf(screen);
-    return slot ? m_inputs.at(*slot) : m_offFlowInput;
+    return slot && top(*slot) == screen ? m_inputs.at(*slot) : m_unreadInput;
 }
 
 bool UiModel::pausesPlay(std::size_t slot) const {

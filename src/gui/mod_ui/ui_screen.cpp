@@ -164,6 +164,9 @@ bool UiScreen::setVisible(UiWidgetId id, bool visible, std::uint64_t nowMs, Menu
         }
         m_focus.reset();
         takeFocus(nowMs, input);
+    } else if (visible && !m_focus && !m_dialog) {
+        // A screen left with no focus would hear no command: the first widget that can take it now does.
+        takeFocus(nowMs, input);
     }
     return true;
 }

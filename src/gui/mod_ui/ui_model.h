@@ -39,8 +39,8 @@ namespace coney::gui {
 ///   its flow, whatever the project does with the event; the screen under it takes the focus again. A dialog takes back
 ///   first.
 /// - **The trusted layer**: while a trusted screen of Coney's is open (openTrusted()), no mod screen opens and no
-/// slot's
-///   pad reaches a mod screen; mod screens stay where they were, drawn under it.
+///   slot's pad reaches a mod screen; the mod screens already open stay open. Drawing the trusted screen above them is
+///   its renderer's.
 ///
 /// Presentation state, each machine's own: owned by the game mode or session that hosts the screens, never global;
 /// screens are kept in id order, so every iteration is stable.
@@ -90,7 +90,7 @@ class UiModel {
     /// @coney-only the UI widget model for mods
     [[nodiscard]] std::expected<void, UiRefusal> setText(std::string_view project, UiWidgetId widget, std::string text);
     /// Shows or hides `widget` at `nowMs`; a hidden widget cannot have the focus, which passes to the first focusable
-    /// widget left.
+    /// widget left, and a widget shown on a screen with no focus takes it.
     /// @coney-only the UI widget model for mods
     [[nodiscard]] std::expected<void, UiRefusal> setVisible(std::string_view project, UiWidgetId widget, bool visible,
                                                             std::uint64_t nowMs);
@@ -173,8 +173,9 @@ class UiModel {
     [[nodiscard]] std::optional<std::size_t> slotOf(UiScreenId screen) const;
     // Pops `slot`'s flow down to below `screen`, queueing Closed for each, and focuses the new top.
     void popTo(std::size_t slot, UiScreenId screen, std::uint64_t nowMs);
-    // The input of the slot whose flow holds `screen`; a screen on no flow gets one of its own, which no slot reads,
-    // so a change to it leaves every slot's timings alone (the screen takes the focus afresh when it opens).
+    // The input of the slot whose flow has `screen` on top; a screen on no flow or covered on its flow gets one no slot
+    // reads, so a change to it leaves every slot's timings alone (the screen takes the focus afresh when it opens or
+    // comes back on top).
     [[nodiscard]] MenuInput& inputOf(UiScreenId screen);
     // Plays `cue`, if the model has a way to.
     void playCue(int cue) const;
@@ -185,7 +186,7 @@ class UiModel {
     std::map<UiWidgetId, UiScreenId> m_widgetScreens;
     std::array<std::vector<UiScreenId>, kUiSlots> m_flows;
     std::array<MenuInput, kUiSlots> m_inputs;
-    MenuInput m_offFlowInput; // for the screens on no flow
+    MenuInput m_unreadInput; // for the screens on no flow or covered on theirs
     std::vector<std::pair<UiScreenId, std::size_t>> m_hud;
     std::vector<UiEvent> m_events;
     UiScreen::KeyboardStrings m_keys;

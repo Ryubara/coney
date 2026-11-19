@@ -109,8 +109,9 @@ class UiScreen {
     /// @coney-only the UI widget model for mods
     bool removeWidget(UiWidgetId id, std::uint64_t nowMs, MenuInput& input);
 
-    /// Shows or hides widget `id`; hiding the focused widget passes the focus to the first focusable widget left. False
-    /// when it is not here.
+    /// Shows or hides widget `id`; hiding the focused widget passes the focus to the first focusable widget left, and
+    /// showing one on a screen with no focus and no dialog gives the focus to the first that can take it. False when it
+    /// is not here.
     /// @coney-only the UI widget model for mods
     bool setVisible(UiWidgetId id, bool visible, std::uint64_t nowMs, MenuInput& input);
     /// Gives `id` the focus at `nowMs` through `input`.
