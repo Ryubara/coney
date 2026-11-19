@@ -205,6 +205,7 @@ std::vector<TraceCall> parsed(std::span<const FixtureCall> fixture) {
 } // namespace
 
 TEST_CASE("a light trace's three files read back as calls with their inputs and chosen lights", "[debug][lighting]") {
+    // Expected: lighting.md#select, confirmed (code): the inputs per call and the lists the trace reads at the entry
     const std::vector<FixtureCall> fixture = ruleCalls();
     const std::vector<TraceCall> calls = parsed(fixture);
     REQUIRE(calls.size() == 5);
@@ -238,6 +239,7 @@ TEST_CASE("a light trace's three files read back as calls with their inputs and 
 }
 
 TEST_CASE("a light trace whose files disagree is refused", "[debug][lighting]") {
+    // Expected: lighting.md#select, confirmed (code): each call has one row per file, each list its recorded length
     const std::vector<FixtureCall> fixture = ruleCalls();
     const std::string selections = selectionsText(fixture);
     const std::string calls = callsText(fixture);
@@ -260,6 +262,7 @@ TEST_CASE("a light trace whose files disagree is refused", "[debug][lighting]") 
 }
 
 TEST_CASE("a light trace is read from its selections file and the two inputs files beside it", "[debug][lighting]") {
+    // Expected: unverified, #1252 (Coney's own reader: the file names trace lights writes beside its CSV)
     const std::vector<FixtureCall> fixture = ruleCalls();
     const coney::test::TempDir dir;
     const auto write = [&dir](std::string_view name, const std::string& text) {
@@ -276,6 +279,7 @@ TEST_CASE("a light trace is read from its selections file and the two inputs fil
 }
 
 TEST_CASE("replaying a trace whose lights follow the original's rule finds every call equal", "[debug][lighting]") {
+    // Expected: lighting.md#select, confirmed (code): the fixture's chosen lights follow the rule's four steps
     const std::vector<FixtureCall> fixture = ruleCalls();
     const std::vector<TraceCall> calls = parsed(fixture);
 
@@ -295,6 +299,7 @@ TEST_CASE("replaying a trace whose lights follow the original's rule finds every
 }
 
 TEST_CASE("every call whose recorded lights differ from Coney's is reported with both lists", "[debug][lighting]") {
+    // Expected: lighting.md#select, confirmed (code): a full list keeps the deepest overlap, not the first lamps
     std::vector<FixtureCall> fixture = ruleCalls();
     // Call 1 as if the full list kept the first lamps; call 3 with a light the background's call cannot choose.
     fixture[1].chosen[3] = lamp(1, 0, 0, 3);
@@ -326,6 +331,7 @@ TEST_CASE("every call whose recorded lights differ from Coney's is reported with
 
 TEST_CASE("a glow call is compared after the glow, which is taken from the original's chosen lights",
           "[debug][lighting]") {
+    // Expected: lighting.md#glow, confirmed (code): the glow comes after the copied list, for a glow byte above 10
     std::vector<FixtureCall> fixture = ruleCalls();
     // The lamp beside the human recorded at another place: the glow still matches, the lamp after it does not.
     fixture[4].chosen[4] = lamp(12, 0, 10, 3);
@@ -344,6 +350,7 @@ TEST_CASE("a glow call is compared after the glow, which is taken from the origi
 }
 
 TEST_CASE("the original's light trace replays through Coney's selection with no call different", "[trace]") {
+    // Expected: lighting.md#select, confirmed (runtime): run r-20261119-light-selection, 300 of 300 by the rule
     const char* path = SDL_getenv("CONEY_LIGHT_TRACE");
     if (path == nullptr || *path == '\0') {
         SKIP("CONEY_LIGHT_TRACE is not set");
