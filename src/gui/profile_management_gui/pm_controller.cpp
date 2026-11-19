@@ -12,7 +12,9 @@ namespace coney::gui {
 PmController::PmController(PmShared& shared)
     : m_shared(shared), m_greet(shared), m_mode(shared), m_extras(shared), m_numPlayers(shared), m_profile(shared),
       m_create(shared), m_load(shared), m_continue(shared), m_delete(shared), m_difficulty(shared), m_light(shared),
-      m_subtitles(shared) {
+      m_subtitles(shared), m_import(shared) {
+    // Coney's choice: the game mode below the top, which the original keeps at +0x60, is not kept, as nothing is
+    // known to read it (docs/research/frontend.md#q-pm-controller). The Xbox screens below are stand-ins.
     for (std::size_t i = 0; i < kPlaceholderNames.size(); ++i) {
         m_placeholders.at(i) = std::make_unique<PmPlaceholder>(kPlaceholderNames.at(i), shared);
     }
@@ -51,12 +53,15 @@ PmController::PmController(PmShared& shared)
         Transition{"PM_Delete", 2, "PM_Greet"},
         Transition{"PM_Difficulty", 0, "PM_Light"},
         Transition{"PM_Light", 0, "PM_Subtitles"},
+        // Coney's import screen (docs/research/frontend.md#pm-import).
+        Transition{"PM_Profile", 5, "PM_Import"},
+        Transition{"PM_Import", 0, "PM_Profile"},
     };
     // A screen by its name: a written one, else a stand-in.
     const auto screen = [this](std::string_view name) -> ScreenFlowState& {
-        for (ScreenFlowState* written :
-             std::initializer_list<ScreenFlowState*>{&m_greet, &m_mode, &m_numPlayers, &m_profile, &m_create, &m_load,
-                                                     &m_continue, &m_delete, &m_difficulty, &m_light, &m_subtitles}) {
+        for (ScreenFlowState* written : std::initializer_list<ScreenFlowState*>{
+                 &m_greet, &m_mode, &m_numPlayers, &m_profile, &m_create, &m_load, &m_continue, &m_delete,
+                 &m_difficulty, &m_light, &m_subtitles, &m_import}) {
             if (name == written->name()) {
                 return *written;
             }

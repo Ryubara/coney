@@ -7,6 +7,8 @@ owns:
     - "0x0015baa0"
     - "0x0015be00"
     - "0x0015c2c0"
+    - "0x0041fcc8"
+    - "0x004215d8"
     - "0x00421638"
     - "0x00421708"
     - "0x004219d0"
@@ -52,6 +54,7 @@ machine), `Device/ps2/memorycard/mcbase.cpp` (the card library wrapper, [below](
 | `0x00421e68` | `Profile_Create(ss, slot, name)` (slot `+0x4c`) | a new profile from the template | confirmed (code) |
 | `0x00421f98` / `0x00422028` | `Profile_Delete` (slot `+0x54`) / `Profile_UndoDeletes` (slot `+0x5c`) | | confirmed (code) |
 | `0x00421d98` | `SaveSystem_WriteCurrent` | all six headers, then the current slot's record | confirmed (code) |
+| `0x0041fcc8` | `PS2Save_CheckFileSizes` | the three save files' sizes, before a load | confirmed (code) |
 | `0x0041ff68` | `PS2Save_Service` (slot `+0x1c`) | one step of the card state machine | confirmed (code) |
 | `0x00420060` / `0x00420570` / `0x004206a0` | `PS2Save_CreateStep` / `_LoadStep` / `_SaveStep` | states 4, 5, 6 | confirmed (code) |
 | `0x00155308` | `Autosave_Request` | pushes mode 6 in save mode | confirmed (code) |
@@ -126,6 +129,49 @@ The save system holds six 0x2c-byte slot records at `ss + 0x00` (cleared by `0x0
 Other calls: `+0x9c` the number of used slots, `+0xa4` the first free slot (0 when all six are used), `+0xb4` sets
 `+0x28` of the current slot when saving is enabled, the difficulty is 2 and every story level (mission bytes 1-23) is
 unlocked (`0x00424540`), `+0xcc` loads a slot into the game state (`Profile_Read`). Confirmed (code).
+
+### The containers players have {#import-containers}
+
+None of this is the game's code, which reaches the card through Sony's `libmc` ([The card library](#card-library)). The
+layout below is inferred from the formats as the open-source card tools (mymc, uLaunchELF) and PCSX2 read and write
+them. The numbers the run recorded are confirmed (runtime), run r-20261118-ps2-card-save, on a card
+the game formatted and saved to in PCSX2 and that a separate script read back: a card file of 8,650,752 bytes, 512-byte
+pages, two to a cluster, 8,192 clusters, the allocation offset 41, the root directory at cluster 0 with 3 entries, the
+indirect FAT cluster 8, and the save folder's 5 entries with the data file (7,704 bytes), the icon (79,128) and
+`icon.sys` (964). The other values (the erase block, the backup blocks, the end of allocation, the bad block list, the
+card type and flags, the entry modes, times and attributes) are inferred from those tools. A player's save of the game
+is the folder `BASLUS-21215` with its data file of the same name, in one of these containers:
+
+| Container | What it is | How it is told apart |
+| --- | --- | --- |
+| PCSX2 card file (`Mcd001.ps2`) | the whole card, page by page: 512 bytes of data and 16 of error-correction spare each, 8,650,752 bytes for 8 MB | starts with the 28 bytes `Sony PS2 Memory Card Format` and a space; size = pages × 528 |
+| Card dump (MemCard PRO, SD2PSX, card tools; `.mc2`, `.bin`, `.ps2`) | the same pages without the spares, 8,388,608 bytes for 8 MB | the same magic; size = pages × 512 |
+| PCSX2 folder card | a folder per card: `_pcsx2_superblock`, PCSX2's index files, and one plain folder per save holding its files | a folder with `_pcsx2_superblock` |
+| A copied save folder | `BASLUS-21215/` copied off a card (uLaunchELF to USB), alone or in a copy of the card's root | a folder holding the data file, or `BASLUS-21215/` with it |
+| PSU export (`.psu`: EMS, uLaunchELF, mymc) | one save: the folder's directory entry, its `.` and `..` entries, then per file its entry and bytes padded to 1,024 | 512-byte entries, the first a folder's, the second `.` |
+| The data file alone | `BASLUS-21215`, 7,704 bytes | its size |
+
+**The card file system.** Little-endian. The superblock is page 0: the magic (28 bytes), a version string (12), the page
+size `+0x28` (u16, 512), pages per cluster `+0x2a` (2, so 1,024-byte clusters), pages per erase block `+0x2c` (16),
+clusters on the card `+0x30` (u32, 8,192 for 8 MB), the allocation offset `+0x34` (the first allocatable cluster, 41 on
+the card of the run), the end of allocation `+0x38`, the root directory's first cluster `+0x3c` (counted from the
+allocation offset), the two backup blocks `+0x40`, `+0x44`, the indirect FAT cluster list `+0x50` (32 words, cluster
+numbers counted from the card's start, 0 after the last) and the bad block list `+0xd0`; the card type `+0x150` (2) and
+flags `+0x151`. The FAT is reached in two steps: for allocatable cluster *c*, word *c* / 256 / 256 of the list names an
+indirect cluster, its word (*c* / 256) % 256 names a FAT cluster, and that cluster's word *c* % 256 is the entry. An
+entry with bit 31 set is in use and its low 31 bits name the next cluster, all ones for the end of the chain; one
+without it is free. A directory is a chain of 512-byte entries: mode `+0x00` (u16: `0x8000` exists, `0x0020` folder,
+`0x0010` file, `0x0001`-`0x0004` read, write, run), length `+0x04` (a file's bytes, a folder's entries), creation time
+`+0x08` (8 bytes), first cluster `+0x10`, the entry's place in its parent `+0x14`, modification time `+0x18`, attributes
+`+0x20`, the name `+0x40` (32 bytes, zero-terminated). The root's first entry, `.`, holds the root's entry count; a
+folder's own `.` entry holds 0, so its count is read from its entry in the root. On the card of the run the root held
+`.`, `..` and `BASLUS-21215` (5 entries: `.`, `..` and the three files of [The save file on the card](#card-files)) and
+the indirect FAT list named cluster 8.
+
+**What Coney does not read**: CodeBreaker (`.cbs`, compressed and enciphered), Action Replay MAX (`.max`, LZARI
+compressed), SharkPort and X-Port (`.sps`, `.xps`) and the PS3's `.psv` exports; a player converts one to a PSU with a
+card tool first. Whether the PAL and Japanese builds' saves (another folder name) hold the same record is not known
+([Open questions](#open-questions)).
 
 ## Behaviour
 
@@ -224,9 +270,18 @@ files with these sizes, every slot header was version `0x11`, slot 0 held the ty
 and the defaults above, slots 1-5 were empty records. A string `BASLUS-21215/bugstar.dat` (`0x0041f8b0`,
 `0x0041f960`) is a 20-byte debug file the shipped game does not write on this path (it was absent).
 
-**Integrity**: no checksum or CRC. Loading checks the three files' sizes (`0x0041fcc8`: `WARR.ICO` 79,128,
-`icon.sys` 964, the data file the image length; any other size is "corrupt") and each header's version (`0x11`; another
-sets `ss + 0x11c`). **Space**: a new save needs `round_up_5(ceil(7,704 / 1024) + 83)` = **95 KB** free (`0x0041fb78`);
+**Integrity**: no checksum or CRC. Loading checks the three files' sizes (`PS2Save_CheckFileSizes`, `0x0041fcc8`:
+`WARR.ICO` 79,128, `icon.sys` 964, the data file the image length; any other size is "corrupt"; with no card present it
+reports nothing wrong) and each header's version (`0x11`; another sets `ss + 0x11c`).
+
+**Which slots hold a profile.** After the load step has read the whole image (a short read leaves the save system idle
+with no profiles, `0x00420570`), `SaveSystem_ReadHeaders` (`0x004215d8`) runs `ProfileHeader_Read` (`0x004219d0`) for
+slots 0-5 in turn. For a slot not already marked not loadable (`+0x24`) it reads the version word at the slot's offset
+(slot × record length); with `0x11` it copies the 8-byte name into the slot record, terminates it, marks the slot
+**used when the name's first byte is not zero**, and reads the next word into `+0x28` (the fourth-difficulty unlock).
+Another version leaves the slot unused and sets the "bad version" flag. So an empty slot is any record whose name starts
+with a zero byte, which a new card's zeroed data file and the template's empty name both give. Confirmed (code) at
+`0x004219d0` and `0x004215d8`. **Space**: a new save needs `round_up_5(ceil(7,704 / 1024) + 83)` = **95 KB** free (`0x0041fb78`);
 the check is made only when the directory is absent. Confirmed (code).
 
 **The card state machine** (`ss + 0x184`, one step per frame from `PS2Save_Service`): 1 idle; 2 detect (after slot
@@ -397,7 +452,8 @@ earlier Coney builds wrote (the bare 1,284-byte record) still load.
   versions in `save_game.cpp`, the current version's section codecs in `save_sections.cpp`); a file it cannot read
   (damaged, or made by a newer Coney) is listed as a damaged ("not loadable") profile under the name it holds.
   [`ProfileRecord`](repo:src/warriors/profile_record.h) stays the codec of the original's record, field by field: the
-  migration from version 0 reads Coney's older files with it, and the memory-card importer will read real saves with it.
+  migration from version 0 reads Coney's older files with it, and the importer reads the players' PS2 saves with it
+  ([Importing a PS2 save](#import)).
   `SavedProgress` holds the fields with no other home in Coney's game state (`GameState::saved`), with the money bank's
   add and the unlock and script-flag bits.
 - [`DiskProfileStore`](repo:src/warriors/disk_profile_store.h) is the save system: six slots, `profile-1.sav` to
@@ -519,12 +575,50 @@ still has it); a file with the magic whose frame cannot be read (cut short, byte
 outside the rules) has no name, and only a file without the magic is listed under a record header's name
 (`SaveGame::nameOf`). Deleting it is the player's choice, as on the PS2.
 
+### Importing a PS2 save {#import}
+
+A player brings a profile over from a PS2 save once: the importer reads the save, never writes it, and makes each
+profile a new Coney save in a free slot. The Xbox build's save is [#1421](issue:1421).
+
+- **Reading.** [`readOriginalSave`](repo:src/warriors/save_import.h) takes a path (a file or a folder) and tells the
+  [container](#import-containers) apart by its content; [`Ps2MemoryCard`](repo:src/fileio/ps2_memory_card.h) reads a
+  card image of any size its superblock describes, with or without the spares (not checking the error-correction
+  bytes), and `readPsuExport` a PSU, whose last file may lack its padding. Every chain is followed through the FAT,
+  and one that loops, leaves the card or meets a free cluster before the file's length is refused as a damaged card.
+  **Coney's limit**: no file larger than a 64 MB card with its spares (69,206,016 bytes; PCSX2 makes cards of 8, 16,
+  32 and 64 MB) is read at all, as the profile screen scans the import folder each time it opens.
+- **The data file** is read as the game loads it ([Which slots hold a profile](#card-files)), in `readPs2DataFile`:
+  refused unless it is 7,704 bytes (`PS2Save_CheckFileSizes`); a slot whose name starts with a zero byte is empty; a slot
+  of another version is left out and named. `ProfileRecord::parse` reads each used record. **Coney's choice**: the
+  icons (`WARR.ICO`, `icon.sys`) are not needed and their sizes are not checked, so a data file copied on its own
+  imports.
+- **Writing.** `importProfile` puts the record into the store's first free slot as a Coney save with no story entries
+  and no mod sections, what the [version-0 migration](#save-versions) makes of a record, without loading it. A name a
+  slot already holds is refused, as PM_Create refuses it (`strcmp`, case-sensitive), so two profiles never share one;
+  so is a store with all six slots used.
+- **Refusals** name the problem: not a save Coney knows (none of the containers), a card or export with no
+  `BASLUS-21215` (naming the saves it holds), a damaged card, a data file of the wrong size, a save with no loadable
+  profile (naming why each slot was left out).
+- **Where.** `coney --import-save PATH [--profiles DIR]` imports every profile of one save
+  ([Importing a PS2 save](../guides/running.md#import-save)); in the front end, PM_Profile offers IMPORT PROFILE when
+  the `import` folder beside the profiles holds something ([PM_Import](frontend.md#pm-import)).
+
 ## Open questions
 
+- The PAL and Japanese builds' save folders, and whether their records match the NTSC-U one: the importer reads
+  `BASLUS-21215` only.
 - The option block's `+0x00` and `+0x10` and the record's `W_GameState + 0x00` word: what they hold.
 - The second 640-bit unlockables set (`0x006fe948`): that it marks new unlocks is inferred.
 - The bit order of the unlockable and script-flag sets in the record (byte *i* / 8, bit *i* % 8 is inferred).
 - Which message a slot-1 card change shows (`0xa1`-`0xa4`) in each case, not traced.
+
+### Where the importer reads more loosely than the game {#q-import-choices}
+
+The importer ([Importing a PS2 save](#import)) differs from the game's load on purpose in two places: it does not
+check the icon files' sizes (`PS2Save_CheckFileSizes`, `0x0041fcc8`), so a data file copied on its own imports, and it
+names a slot of another version in a message instead of raising the "bad version" flag (`ProfileHeader_Read`,
+`0x004219d0`). Whether a save with wrong icon sizes should be refused as the game would refuse it is open; no player
+save with such icons has been seen.
 
 ### The two unreachable profile screens {#q-xbox-profile-screens}
 
@@ -546,6 +640,10 @@ caller then hands the script, and whether any script lists more than 32 records 
 (speculative). Coney sets all 32 slots of the script's table in both cases and drops matches past 32: stand-ins.
 
 ## How this was checked
+
+The importer was checked against a real card as well as the synthetic ones its tests build: the card of run
+r-20261118-ps2-card-save (copied to scratch, never committed) read with `coney --import-save` gave its one profile, with
+the bank word the run wrote (1,234) and script flag 5 set.
 
 The runtime observations were made in PCSX2 2.9.94 (2026-10-06) from a fresh boot with a new, unformatted 8 MB card in
 slot 1 (no other card), driving the pad over PINE (the `scripted-pad` patch, written before the pad code first ran)

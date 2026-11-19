@@ -77,7 +77,9 @@ class PmScreen : public ScreenFlowState {
   public:
     /// Takes the input focus and calls open().
     void enter(ScreenFlowController& flow) final;
-    /// One frame: poll(), then the menu command into handle(), then draw(). Returns the first result that is not kStay.
+    /// One frame: poll(), then the menu command into handle() unless inputPaused(), then draw(). Returns the first
+    /// result that is not kStay.
+    /// @coney-only the frame the PM screens share; each screen's own update and handler carry their @orig
     int update() final;
     /// Calls close().
     void exit() final { close(); }
@@ -100,6 +102,10 @@ class PmScreen : public ScreenFlowState {
 
     /// Whether input waits for the screen fade (running, or its level not 0).
     [[nodiscard]] bool faded() const;
+    /// Whether menu commands wait this frame; PM_Profile overrides it with its handler's test. The default, faded(),
+    /// is Coney's one test for the rest: some handlers test less (PM_Difficulty's, 0x00206d88, none at all), see
+    /// docs/research/frontend.md#q-pm-fade-gate.
+    [[nodiscard]] virtual bool inputPaused() const { return faded(); }
     /// Plays front-end sound cue `cue`, if the profile manager has a way to.
     void playSound(int cue) const;
     /// Calls the Lua function `function` with `args`, if the profile manager has a way to.

@@ -1960,7 +1960,7 @@ listener at `+0x6c`) and `0x0053e6b8` (flow state at `+0x70`); the file inferred
 | `0x0020bc80`, `0x0020bd88` | `PM_Profile_Construct`, `PM_Profile_Destroy` | constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`) | confirmed (code) |
 | `0x0020be68` | `PM_Profile_Init` | builds the widgets once (`+0x0c` created): title `0x7b` and the use / create / delete / reload items present for the profile count | confirmed (code) |
 | `0x0020c460`, `0x0020c510` | `PM_Profile_Shutdown`, `PM_Profile_IsActive` | slot `+0x68`: release the child widgets, clear created (`+0x0c`); slot `+0x88`: created and every child active | confirmed (code) |
-| `0x0020c588` | `PM_Profile_OnCommand` | clears delete mode; item 0 result 0 (`PM_Load`), 1 result 1 (`PM_Create`), 2 delete mode and result 2, 3 Lua Menu.reloadProfiles; ignored while a fade runs | confirmed (code) |
+| `0x0020c588` | `PM_Profile_OnCommand` | clears delete mode; item 0 result 0 (`PM_Load`), 1 result 1 (`PM_Create`), 2 delete mode and result 2, 3 Lua Menu.reloadProfiles; ignored while the fade level (`+0x1d8`) is not 0 (a fade still at level 0 does not stop it) | confirmed (code) |
 | `0x0020c6c8`, `0x0020c6f8` | `PM_Profile_Enter`, `PM_Profile_Exit` | flow-state slots: `Enter(flow)` stores the flow (`+0x70`) and runs Init; `Exit` runs Shutdown; `StateUpdate` sets the result `+0x74` to -0x100, runs Update and Render and returns the result | confirmed (code) |
 | `0x0020c720` | `PM_Profile_StateUpdate` | when `0x0050f59c` is set (by `Gm_MemoryCard_Exit`) clears it and returns 4 (`PM_Profile` again, so Init rebuilds the list after the card mode; inferred); else stay, Update, Render | confirmed (code) |
 | `0x0020c798` | `PM_Profile_Update` | when active and the profile manager is not done (`0x0050f5b0`), updates the child widgets | confirmed (code) |
@@ -2445,6 +2445,26 @@ and its gap; a line's height is one line of its text size; the flag `0x0063083c`
 `repo:tests/platform/disc_credits_test.cpp`, which runs the disc's `credits.lua` in `level99` started as
 `--play-level` starts it and scrolls it to its `CreditEnd`.
 
+### Coney's import screen {#pm-import}
+
+The original has no import; this is Coney's own screen ([Importing a PS2 save](save.md#import)), added where the
+original's profile items are so a player finds it beside CREATE NEW PROFILE and RELOAD PROFILES, and shown only when
+there is something to import, so a player without a save to bring over sees the original's PM_Profile exactly.
+
+- **PM_Profile** gets a last item, `IMPORT PROFILE` (code 5, result 5), after reload, while the save system's import
+  folder (`import` beside the profiles) holds a file or folder and a slot is free (the rule that shows CREATE). With
+  a profile, a free slot and a save to import that makes five items, one more than the original's places allow: the
+  title and grid go one row pitch (0.0505) above the four-row places, to 0.5495 and 0.6065, so the last row ends at
+  0.8085, where a four-row grid's does, above the usage line.
+- **PM_Import** is laid out as PM_Load: the title `IMPORT PROFILE`, then one item per profile found in the folder's
+  saves (its name), two a row, at most six, in the folder's name order and each save's slot order. A line in the text
+  font, size 0.85, at y 0.58 (above a three-row grid's title) says where the selected profile comes from (grey: the file
+  or folder and the card slot), or why nothing can be imported (red: the first unreadable file and its problem).
+- **Accept** imports the profile into the first free slot and returns 0, back to PM_Profile, which then offers it
+  under USE EXISTING PROFILE; the profile is not loaded. A refused import (the name is taken, no slot is free) plays cue
+  `0xe` after the accept's 9, shows the reason in red and stays. **Back** pops, cue `0xf`.
+- The text is Coney's, in English for every language: the game's string tables have nothing for it.
+
 ## Open questions
 
 - **The end credits' layout** ([`GUI/Credits.cpp`](#fn-credits)): which text a centred line (styles 0, 2 and 3)
@@ -2515,3 +2535,20 @@ and its gap; a line's height is one line of its text size; the flag `0x0063083c`
   [Sound](sound.md)).
 - **PM_Light's colour** (answered): the light manager's brightness, added to every ambient and directional light
   ([Lighting](lighting.md#brightness)); 40 is also the constructor's default.
+
+### What Coney's `PM_Controller` leaves out {#q-pm-controller}
+
+The constructor (`0x002040f0`) stores at `+0x60` a value of the game mode below the top (`0x0015e790`), confirmed
+(code). No reader has been found: the controller's start, update, stop and shutdown (`0x00204a78`, `0x00204ba0`,
+`0x00204c20`, `0x00204d18`) and the screen flow's update do not read it (confirmed (code) at those addresses), so
+Coney does not keep it. It also builds the Xbox screens `PM_NoSpace` and `PM_TooManyProfiles` as stand-ins that show
+their name, since the PS2 never reaches them (inferred from PM_Greet's results, [The screens](#pm-screens)). Open:
+whether anything reads `+0x60` through the controller, and whether the Xbox build reaches the two screens.
+
+### The PM screens' fade test {#q-pm-fade-gate}
+
+Coney's PM screens take no menu command while a fade runs or its level is not 0 (`PmScreen::faded`), one test for
+every screen but PM_Profile, whose handler (`0x0020c588`) tests the fade level (`+0x1d8`) alone, confirmed (code), and
+which Coney follows. The original's handlers differ: PM_Greet's tests a running fade ([The screens](#pm-screens)), and
+PM_Difficulty's (`0x00206d88`) has no fade test at all, confirmed (code), so during a fade the original takes a press
+there that Coney ignores. Open: the test each other screen's handler makes.

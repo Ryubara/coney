@@ -24,6 +24,10 @@ class PmListScreen : public PmScreen {
     [[nodiscard]] const PmChoices& choices() const { return m_choices; }
     /// The title's text (empty for none).
     [[nodiscard]] const std::string& title() const { return m_title; }
+    /// The y the title was placed at on this entry.
+    [[nodiscard]] float placedTitleY() const { return m_placedTitleY; }
+    /// The y the grid's top row was placed at on this entry.
+    [[nodiscard]] float placedGridY() const { return m_placedGridY; }
 
   protected:
     using PmScreen::PmScreen;
@@ -39,6 +43,8 @@ class PmListScreen : public PmScreen {
     /// Releases a screen's own widgets.
     virtual void closeExtras() {}
 
+    /// Builds the screen for this entry: setUp(), then the title, grid and usage line at their places.
+    /// @coney-only the list screens' shared Init steps; each screen's own Init is cited at its setUp()
     void open() final;
     void close() final;
     void draw() final;
@@ -52,6 +58,8 @@ class PmListScreen : public PmScreen {
     TextWidget m_titleText;
     TextWidget m_usage;
     PmGridView m_grid;
+    float m_placedTitleY = 0.0F;
+    float m_placedGridY = 0.0F;
 };
 
 } // namespace coney::gui

@@ -22,15 +22,16 @@ namespace coney {
 namespace {
 
 // The options of OptionSet::Player (playerOptions()).
-constexpr std::array<std::string_view, 23> kPlayerOptions{
-    "--install",     "--data",           "--verify",       "--disc",     "--language", "--profiles",
-    "--fps-cap",     "--vsync",          "--line-blend",   "--show-fps", "--no-audio", "--skip-movies",
-    "--no-activate", "--window-display", "--host",         "--join",     "--net-name", "--help",
-    "--headless",    "--frames",         "--input-script", "--renderer", "--preset"};
+constexpr std::array<std::string_view, 24> kPlayerOptions{
+    "--install",     "--data",        "--verify",         "--disc",         "--language", "--profiles",
+    "--import-save", "--fps-cap",     "--vsync",          "--line-blend",   "--show-fps", "--no-audio",
+    "--skip-movies", "--no-activate", "--window-display", "--host",         "--join",     "--net-name",
+    "--help",        "--headless",    "--frames",         "--input-script", "--renderer", "--preset"};
 
 // The synopsis of usageText(OptionSet::Player), before its options' lines.
 constexpr std::string_view kPlayerSynopsis =
     "Usage: coney --install DISC --data DIR [--verify]\n"
+    "       coney --import-save PATH [--profiles DIR]\n"
     "       coney --script-patch make|apply ...   (coney --script-patch for its usage)\n"
     "       coney [--disc PATH | --data DIR] [--language CODE] [--profiles DIR]\n"
     "             [--fps-cap N|vrr] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
@@ -43,6 +44,7 @@ constexpr std::string_view kPlayerSynopsis =
 // The text usageText() returns (see its doc comment in options.h).
 constexpr std::string_view kUsage =
     "Usage: coney --install DISC --data DIR [--verify]\n"
+    "       coney --import-save PATH [--profiles DIR]\n"
     "       coney --script-patch make|apply ...   (coney --script-patch for its usage)\n"
     "       coney [--disc PATH | --data DIR] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET]\n"
     "             [--frames N] [--screenshot PATH] [--draw-hash] [--headless] [--help]\n"
@@ -229,6 +231,9 @@ constexpr std::string_view kUsage =
     "                     in your config folder)\n"
     "  --profiles DIR     the folder of saved player profiles (default: profiles in your data folder;\n"
     "                     none in test mode, where profiles last the run)\n"
+    "  --import-save PATH import the profiles of a PS2 save into the profiles folder, then exit: a\n"
+    "                     PCSX2 card file or folder card, a card dump, a .psu export, the save's\n"
+    "                     folder BASLUS-21215 or its data file; the save itself is only read\n"
     "  --dev-overlay N    show the developer overlay (F1) for the first N frames, then hide it; a test aid\n"
     "  --mesh-view SPEC   the Debug draw page's mesh views from the first frame of play: items separated by\n"
     "                     commas, wire=selection|humans|all, view=wire|material|draw|lod,\n"
@@ -553,10 +558,29 @@ std::expected<void, Error> checkWorldEdit(const Options& options) {
     return {};
 }
 
+// Refuses `--import-save` with anything but `--profiles`: part of checkCombinations(). An import runs on its own and
+// exits, like an install.
+std::expected<void, Error> checkImport(const Options& options) {
+    if (!options.importSave.has_value()) {
+        return {};
+    }
+    if (options.installFrom || options.dataPath || options.discPath || !options.loads.empty() || options.playLevel ||
+        options.sandbox || options.viewTxd || options.viewSheet || options.viewText || options.viewWorld ||
+        options.viewCharacter || options.renderReferences || options.inputScript || options.frameLimit ||
+        options.headless || options.screenshotPath || options.recordPath || options.netHost || options.netJoin ||
+        options.audioTest || options.rumble) {
+        return invalidArgument("--import-save runs on its own and exits: only --profiles goes with it");
+    }
+    return {};
+}
+
 // Refuses options that cannot work together, once the whole command line is read.
 std::expected<void, Error> checkCombinations(const Options& options) {
     if (auto installing = checkInstall(options); !installing) {
         return installing;
+    }
+    if (auto importing = checkImport(options); !importing) {
+        return importing;
     }
     if (auto edits = checkWorldEdit(options); !edits) {
         return edits;
@@ -1145,6 +1169,10 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             options.recordDebugDraw = true;
         } else if (arg == "--mesh-view") {
             if (auto value = takeValue(args, i, options.meshView, "--mesh-view", "a list of views"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--import-save") {
+            if (auto value = takeValue(args, i, options.importSave, "--import-save", "a save's path"); !value) {
                 return std::unexpected(std::move(value.error()));
             }
         } else if (arg == "--profiles") {

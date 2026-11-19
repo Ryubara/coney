@@ -3,7 +3,9 @@
 // (docs/research/frontend.md#profile-manager), with a synthetic font and sheet and hand-made pad samples.
 #include "gui/profile_management_gui/pm_controller.h"
 
+#include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <memory>
 #include <span>
 #include <string>
@@ -19,13 +21,19 @@
 #include "gui/colour_table.h"
 #include "gui/global_strings.h"
 #include "gui/profile_management_gui/pm_greet.h"
+#include "gui/profile_management_gui/pm_import.h"
 #include "gui/profile_management_gui/pm_mode.h"
 #include "gui/profile_management_gui/pm_new_game_screens.h"
 #include "gui/profile_management_gui/pm_profile_screens.h"
 #include "gui/profile_management_gui/pm_widgets.h"
+#include "support/fixtures.h"
 #include "support/font_fixtures.h"
+#include "support/optional_value.h"
+#include "support/ps2_card_fixtures.h"
 #include "support/recording_device.h"
+#include "warriors/disk_profile_store.h"
 #include "warriors/game_state.h"
+#include "warriors/profile_record.h"
 #include "warriors/profile_store.h"
 
 using coney::Pad;
@@ -390,6 +398,8 @@ TEST_CASE("PM_Mode: story leads to PM_Profile, quick rumble calls the first call
 
 TEST_CASE("PM_Mode: input waits while the screen is faded; story with two pads asks for the players",
           "[profile_manager]") {
+    // Expected: frontend.md#pm-screens (PM_Mode's handler 0x0020a268: input is ignored while a fade runs; STORY
+    // leads to PM_NumPlayers with two or more pads, frontend.md#fn-pm-mode)
     Harness h;
     h.start();
     h.step(coney::pad::kStart);
@@ -426,6 +436,17 @@ void press(Harness& h, std::uint16_t button) {
 // The list screen on top of `h`'s flow; null when the top is not one.
 const coney::gui::PmListScreen* listOnTop(const Harness& h) {
     return dynamic_cast<const coney::gui::PmListScreen*>(h.controller->current());
+}
+
+// A synthetic PCSX2 card whose save holds the named profiles in slots 0, 1, ...
+std::vector<std::byte> cardWith(const std::vector<std::string>& names) {
+    coney::test::Bytes data;
+    for (std::size_t slot = 0; slot < coney::ProfileStore::kSlots; ++slot) {
+        coney::ProfileRecord record;
+        record.name = slot < names.size() ? names[slot] : "";
+        data.append(record.serialise());
+    }
+    return coney::test::buildPs2Card({{"BASLUS-21215", {{"BASLUS-21215", data.data()}}}});
 }
 
 } // namespace
@@ -648,6 +669,8 @@ TEST_CASE("profile manager: every screen of the table exists; stop empties the f
 }
 
 TEST_CASE("PM_Extras: TRAILER at (0, 0.81); cross plays Menu.playMovie(1) and stays", "[profile_manager]") {
+    // Expected: frontend.md#pm-screens (PM_Extras: the grid at (x, 0.81), x 0 by default; accept calls
+    // Menu.playMovie(1), cue 9, and stays)
     Harness g;
     g.start();
     g.step(coney::pad::kStart);
@@ -667,4 +690,158 @@ TEST_CASE("PM_Extras: TRAILER at (0, 0.81); cross plays Menu.playMovie(1) and st
     CHECK(g.scripts[0].first == "Menu.playMovie");
     CHECK(g.scripts[0].second == std::vector<double>{1.0});
     CHECK(g.cues.back() == coney::gui::pm::kAcceptCue);
+}
+
+TEST_CASE("PM_Profile: no IMPORT PROFILE when the import folder holds nothing", "[profile_manager]") {
+    // Expected: frontend.md#pm-import (Coney's item shows only with something to import)
+    coney::test::TempDir dir;
+    Harness h;
+    coney::DiskProfileStore disk(dir.path(), h.state);
+    h.shared.profiles = &disk;
+    std::filesystem::create_directories(dir.path() / "import");
+    toStory(h);
+    REQUIRE(h.controller->currentName() == "PM_Profile");
+    const coney::gui::PmListScreen* profile = listOnTop(h);
+    REQUIRE(profile != nullptr);
+    REQUIRE(profile->choices().items().size() == 2);
+    CHECK(profile->choices().items()[1].code == coney::gui::PmProfile::kReload);
+}
+
+TEST_CASE("PM_Import: a card in the import folder is offered, its profile imported, a taken name refused",
+          "[profile_manager]") {
+    // Expected: frontend.md#pm-import; save.md#import
+    coney::test::TempDir dir;
+    dir.write("import/Mcd001.ps2", cardWith({"SNAKE", "AJAX"}));
+    Harness h;
+    coney::DiskProfileStore disk(dir.path(), h.state);
+    h.shared.profiles = &disk;
+    toStory(h);
+    REQUIRE(h.controller->currentName() == "PM_Profile");
+    const coney::gui::PmListScreen* profile = listOnTop(h);
+    REQUIRE(profile != nullptr);
+    REQUIRE(profile->choices().items().size() == 3); // create, reload, import
+    CHECK(profile->choices().items()[2].code == coney::gui::PmProfile::kImport);
+    CHECK(profile->choices().items()[2].text == "IMPORT PROFILE");
+
+    press(h, coney::pad::kDown);
+    press(h, coney::pad::kDown);
+    press(h, coney::pad::kCross);
+    REQUIRE(h.controller->currentName() == "PM_Import");
+    const auto* import = dynamic_cast<const coney::gui::PmImport*>(h.controller->current());
+    REQUIRE(import != nullptr);
+    CHECK(import->title() == "IMPORT PROFILE");
+    REQUIRE(import->choices().items().size() == 2);
+    CHECK(import->choices().items()[0].text == "SNAKE");
+    CHECK(import->choices().rows() == std::vector<std::size_t>{2});
+    CHECK(import->line() == "From Mcd001.ps2, card slot 1");
+    press(h, coney::pad::kRight);
+    CHECK(import->line() == "From Mcd001.ps2, card slot 2");
+
+    // Cross imports AJAX into the first slot and goes back to PM_Profile, which now offers it.
+    press(h, coney::pad::kCross);
+    REQUIRE(h.controller->currentName() == "PM_Profile");
+    REQUIRE(disk.profile(0) != nullptr);
+    CHECK(disk.profile(0)->name == "AJAX");
+    CHECK_FALSE(disk.loaded().has_value());
+    profile = listOnTop(h);
+    REQUIRE(profile != nullptr);
+    CHECK(profile->choices().items()[0].code == coney::gui::PmProfile::kUse);
+    CHECK(profile->choices().items().back().code == coney::gui::PmProfile::kImport);
+
+    // AJAX again: refused with the reason, and the screen stays.
+    const std::size_t importItem = profile->choices().items().size() - 1;
+    for (std::size_t i = 0; i < importItem; ++i) {
+        press(h, coney::pad::kDown);
+    }
+    press(h, coney::pad::kCross);
+    REQUIRE(h.controller->currentName() == "PM_Import");
+    import = dynamic_cast<const coney::gui::PmImport*>(h.controller->current());
+    REQUIRE(import != nullptr);
+    press(h, coney::pad::kRight);
+    h.cues.clear();
+    press(h, coney::pad::kCross);
+    CHECK(h.controller->currentName() == "PM_Import");
+    CHECK(import->line() == "a profile named AJAX exists already");
+    REQUIRE(h.cues.size() >= 2);
+    CHECK(h.cues[0] == 9);
+    CHECK(h.cues[1] == 0xe);
+    CHECK(disk.count() == 1);
+}
+
+TEST_CASE("PM_Import: a file in the import folder that is not a save shows why", "[profile_manager]") {
+    // Expected: frontend.md#pm-import; save.md#import
+    coney::test::TempDir dir;
+    dir.write("import/notes.txt", std::vector<std::byte>(30, std::byte{'n'}));
+    Harness h;
+    coney::DiskProfileStore disk(dir.path(), h.state);
+    h.shared.profiles = &disk;
+    toStory(h);
+    const coney::gui::PmListScreen* profile = listOnTop(h);
+    REQUIRE(profile != nullptr);
+    REQUIRE(profile->choices().items().size() == 3);
+    press(h, coney::pad::kDown);
+    press(h, coney::pad::kDown);
+    press(h, coney::pad::kCross);
+    REQUIRE(h.controller->currentName() == "PM_Import");
+    const auto* import = dynamic_cast<const coney::gui::PmImport*>(h.controller->current());
+    REQUIRE(import != nullptr);
+    CHECK(import->choices().items().empty());
+    CHECK(import->line().starts_with("notes.txt: not a PS2 save"));
+    // Back returns to PM_Profile.
+    press(h, coney::pad::kTriangle);
+    CHECK(h.controller->currentName() == "PM_Profile");
+}
+
+TEST_CASE("PM_Profile: with profiles and a save to import, five rows end where four do, above the usage line",
+          "[profile_manager]") {
+    // Expected: frontend.md#pm-import (Coney's fifth row: the four-row title and grid moved up one row pitch, so the
+    // last row ends where a four-row grid's does); frontend.md#pm-layout for the four-row values and the pitch
+    coney::test::TempDir dir;
+    dir.write("import/Mcd001.ps2", cardWith({"SNAKE"}));
+    Harness h;
+    coney::DiskProfileStore disk(dir.path(), h.state);
+    for (const char* name : {"CLEON", "AJAX", "VERMIN"}) {
+        coney::ProfileRecord record;
+        record.name = name;
+        const auto slot = disk.freeSlot();
+        REQUIRE(disk.importRecord(coney::test::got(slot), record));
+    }
+    h.shared.profiles = &disk;
+    toStory(h);
+    REQUIRE(h.controller->currentName() == "PM_Profile");
+    const coney::gui::PmListScreen* profile = listOnTop(h);
+    REQUIRE(profile != nullptr);
+    REQUIRE(profile->choices().items().size() == 5); // use, create, delete, reload, import
+    CHECK(profile->choices().items()[4].code == coney::gui::PmProfile::kImport);
+    namespace look = coney::gui::pm_look;
+    CHECK(profile->placedTitleY() == Catch::Approx(look::titleY(4) - look::kRowPitch));
+    CHECK(profile->placedGridY() == Catch::Approx(look::gridY(4) - look::kRowPitch));
+    const float lastRow = profile->placedGridY() + 4 * look::kRowPitch;
+    CHECK(lastRow == Catch::Approx(look::gridY(4) + 3 * look::kRowPitch));
+    CHECK(lastRow < look::kUsageY);
+}
+
+TEST_CASE("PM_Profile: a press counts while a fade out is still at level 0, not once the level rises",
+          "[profile_manager]") {
+    // Expected: frontend.md#pm-screens (PM_Profile's handler 0x0020c588 tests the fade level, +0x1d8, alone)
+    Harness h;
+    toStory(h);
+    REQUIRE(h.controller->currentName() == "PM_Profile");
+    SECTION("level 0: released on the frame that only marks the fade running") {
+        // A button counts on its release (frontend.md#input), so cross is held, the fade asked for, then cross let go.
+        h.step(coney::pad::kCross);
+        h.fade.queue(coney::graphics::ScreenFade::kFadeOut, 1.0, Harness::msOf(h.frame));
+        h.step();
+        REQUIRE(h.fade.running());
+        REQUIRE(h.fade.level() == 0.0F);
+        CHECK(h.controller->currentName() == "PM_Create");
+    }
+    SECTION("the level above 0") {
+        h.fade.queue(coney::graphics::ScreenFade::kFadeOut, 1.0, Harness::msOf(h.frame));
+        h.step();
+        h.step();
+        REQUIRE(h.fade.level() > 0.0F);
+        h.tap(coney::pad::kCross);
+        CHECK(h.controller->currentName() == "PM_Profile");
+    }
 }

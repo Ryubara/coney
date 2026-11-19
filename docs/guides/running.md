@@ -51,6 +51,7 @@ refuses any other with a message that names the debug tools; `coney --help` list
 
 ```text
 coney --install DISC --data DIR [--verify]
+coney --import-save PATH [--profiles DIR]
 coney [--disc PATH | --data DIR] [--language CODE] [--profiles DIR]
       [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]
       [--renderer gl3|gpu] [--preset ps2|xbox|enhanced|high]
@@ -94,7 +95,8 @@ not move
 The STORY profiles are saved as one file each (`profile-1.sav` to `profile-6.sav`) in `profiles` in your data folder
 (`%APPDATA%\Coney\Coney\` on Windows, `~/.local/share/Coney/Coney/` on Linux, `~/Library/Application
 Support/Coney/Coney/` on macOS); `--profiles DIR` names another folder. A test-mode run without `--profiles` keeps
-its profiles in memory, so tests never touch yours ([Profiles and saving](../research/save.md#coney)).
+its profiles in memory, so tests never touch yours ([Profiles and saving](../research/save.md#coney)). A profile from
+a PS2 save comes in with `--import-save` or from the `import` folder beside them ([below](#import-save)).
 
 ## Installing from your disc {#install}
 
@@ -155,6 +157,26 @@ entries replaced: a modded session`; `--disc` ignores the folder. The folder nev
 replace one of the game's scripts, or that is a compiled Lua chunk, is refused with a warning, and the disc's script
 runs. An edited game script is a patch ([Script patches](#script-patches)). The naming rules and warnings:
 [Replacing a WAD entry](asset-and-script-architecture.md#file-overrides).
+
+## Importing a PS2 save {#import-save}
+
+`--import-save PATH` brings the profiles of your PS2 save of the game into Coney, then exits. `PATH` is any of the
+forms a PS2 save comes in ([The containers](../research/save.md#import-containers)): a PCSX2 card file (`Mcd001.ps2`)
+or folder card, a dump of a real card (MemCard PRO, SD2PSX, a card tool), a `.psu` export (uLaunchELF, mymc), the
+save's folder `BASLUS-21215` or its data file. The save is only read, never changed.
+
+```sh
+build/dev/src/platform/coney --import-save PCSX2/memcards/Mcd001.ps2
+build/dev/src/platform/coney --import-save usb/BASLUS-21215 --profiles ../../profiles
+```
+
+Each profile on the card becomes a new Coney profile in the first free slot of the profiles folder (`--profiles DIR`,
+else your own, [Starting Coney](#run-coney)), with its unlocks, mission records, money and options as the PS2 kept
+them. A profile whose name is already used is left out (two profiles never share a name), and so is any once all six
+slots are used. Coney prints one line per profile and a count, and exits 0 when it imported at least one and 1 when it
+imported none, with the reason: a file that is not a save it knows, a card with no save of the game (naming the saves
+it holds), a damaged card, or a save file of the wrong size. In the game, put the same files in the `import` folder
+beside your profiles and choose IMPORT PROFILE on the profile screen ([PM_Import](../research/frontend.md#pm-import)).
 
 ## Script patches {#script-patches}
 

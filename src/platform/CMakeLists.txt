@@ -45,7 +45,7 @@ target_sources(coney_platform PRIVATE error_dialogs.cpp user_folders.cpp)
 # The one game set-up over a disc that every way into a level shares (docs/guides/testing.md#test-through-the-players-path).
 target_sources(coney_platform PRIVATE game_session.cpp)
 # `coney --install`: the player's disc into a portable install folder (docs/guides/running.md#install).
-target_sources(coney_platform PRIVATE install_command.cpp install_folder_fs.cpp)
+target_sources(coney_platform PRIVATE import_command.cpp install_command.cpp install_folder_fs.cpp)
 # `coney --script-patch make|apply`: script patches on files, for modders who edit in another editor
 # (docs/guides/script-patches.md#command-line).
 target_sources(coney_platform PRIVATE script_patch_command.cpp)

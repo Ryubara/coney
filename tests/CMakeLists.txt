@@ -65,6 +65,7 @@ add_executable(coney_tests
     effects/blur_pulse_test.cpp
     fileio/disc_test.cpp
     fileio/executable_test.cpp
+    fileio/ps2_memory_card_test.cpp
     fileio/reader_test.cpp
     fileio/stream_test.cpp
     fileio/wad_index_test.cpp
@@ -157,6 +158,7 @@ add_executable(coney_tests
     hud/mug_meter_test.cpp
     hud/war_command_display_test.cpp
     platform/disc_install_test.cpp
+    platform/import_command_test.cpp
     platform/install_command_test.cpp
     platform/script_patch_command_test.cpp
     platform/install_folder_fs_test.cpp
@@ -299,6 +301,7 @@ add_executable(coney_tests
     warriors/player_state_test.cpp
     warriors/profile_record_test.cpp
     warriors/save_game_test.cpp
+    warriors/save_import_test.cpp
     warriors/tag_game_test.cpp
     warriors/unlock_counts_test.cpp
     world/debug_camera_test.cpp

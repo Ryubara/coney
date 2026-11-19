@@ -702,7 +702,17 @@ page = "frontend.md#fn-pm-controller"
 role = "`ScreenFlowController_Construct`, `+0x60` = a value of the top game mode (`0x0015e790`), the 14 screens (allocator tags = class names) (`+0x64``-+0x98`) and their transitions"
 level = "confirmed-code"
 coney = "src/gui/profile_management_gui/pm_controller.h:PmController::PmController"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the game mode below the top (`+0x60`) is not kept, as no reader is known"
+relation = "stand-in"
+question = "frontend.md#q-pm-controller"
+
+[[function.gaps]]
+what = "the Xbox screens PM_NoSpace and PM_TooManyProfiles are stand-ins that show their name"
+relation = "stand-in"
+question = "frontend.md#q-pm-controller"
 
 [[function]]
 address = 0x00204a78
@@ -1017,16 +1027,16 @@ page = "frontend.md#fn-pm-profile"
 role = "builds the widgets once (`+0x0c` created): title `0x7b` and the use / create / delete / reload items present for the profile count"
 level = "confirmed-code"
 coney = "src/gui/profile_management_gui/pm_profile_screens.h:PmProfile::setUp"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0020c588
 name = "PM_Profile_OnCommand"
 page = "frontend.md#fn-pm-profile"
-role = "clears delete mode; item 0 result 0 (`PM_Load`), 1 result 1 (`PM_Create`), 2 delete mode and result 2, 3 Lua Menu.reloadProfiles; ignored while a fade runs"
+role = "clears delete mode; item 0 result 0 (`PM_Load`), 1 result 1 (`PM_Create`), 2 delete mode and result 2, 3 Lua Menu.reloadProfiles; ignored while the fade level (`+0x1d8`) is not 0 (a fade still at level 0 does not stop it)"
 level = "confirmed-code"
 coney = "src/gui/profile_management_gui/pm_profile_screens.h:PmProfile::accept"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0020c8d0

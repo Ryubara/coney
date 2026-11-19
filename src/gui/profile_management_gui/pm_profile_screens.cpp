@@ -7,6 +7,7 @@
 
 #include "core/pad.h"
 #include "gui/profile_management_gui/pm_greet.h"
+#include "gui/profile_management_gui/pm_import.h"
 #include "gui/text_layout.h"
 
 namespace coney::gui {
@@ -106,7 +107,19 @@ void PmProfile::setUp() {
         items.push_back({std::string(m_shared.string(kDeleteString)), kDelete});
     }
     items.push_back({std::string(m_shared.string(kReloadString)), kReload});
+    addImport(items);
     m_choices.set(std::move(items));
+}
+
+void PmProfile::addImport(std::vector<PmChoices::Item>& items) {
+    if (PmImport::offered(m_shared)) {
+        items.push_back({std::string(PmImport::kImportText), kImport});
+    }
+    // The original's places stop at four rows; a fifth goes one row pitch higher.
+    if (items.size() > 4) {
+        m_titleY = pm_look::titleY(4) - pm_look::kRowPitch;
+        m_gridY = pm_look::gridY(4) - pm_look::kRowPitch;
+    }
 }
 
 int PmProfile::accept(int code) {
@@ -119,11 +132,19 @@ int PmProfile::accept(int code) {
     case kDelete:
         m_shared.session.deleteMode = true;
         return 2;
-    default:
+    case kReload:
         callScript("Menu.reloadProfiles");
+        return kStay;
+    case kImport:
+        // Coney's item: the import screen (docs/research/frontend.md#pm-import).
+        return kImport;
+    default:
+        // Any other code does nothing, as in the original.
         return kStay;
     }
 }
+
+bool PmProfile::inputPaused() const { return m_shared.fade != nullptr && m_shared.fade->level() != 0.0F; }
 
 // PM_Load
 

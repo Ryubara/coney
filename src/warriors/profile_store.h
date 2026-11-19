@@ -3,9 +3,12 @@
 
 #include <array>
 #include <cstddef>
+#include <filesystem>
 #include <optional>
 #include <string>
 #include <string_view>
+
+#include "warriors/profile_record.h"
 
 namespace coney {
 
@@ -74,6 +77,14 @@ class ProfileStore {
     /// Reads the medium again, forgetting the loaded profile: the load kind of the memory-card mode (6), at boot and
     /// for RELOAD PROFILES (`SSMC_StartLoadSequence`). The session store has nothing to read.
     virtual void reload() {}
+    /// Puts a profile imported from an original save (warriors/save_import.h) into the empty `slot` as it is, without
+    /// loading it. Returns false when the slot is out of range or used, or the medium refuses it.
+    /// @coney-only the importer's way into the save system (docs/research/save.md#import)
+    virtual bool importRecord(std::size_t slot, const ProfileRecord& record) = 0;
+    /// The folder the player puts original saves in for the profile manager to offer them (PM_Import), or nothing:
+    /// no import is offered.
+    /// @coney-only the front end's import folder (docs/research/save.md#import)
+    [[nodiscard]] virtual std::optional<std::filesystem::path> importFolder() const { return std::nullopt; }
 };
 
 /// **Coney's stand-in** for the save system: profiles live in memory for the session only. There is no memory card in
@@ -92,6 +103,9 @@ class SessionProfileStore final : public ProfileStore {
     [[nodiscard]] bool fourthDifficultyUnlocked() const override { return false; }
     /// Nothing to write: the profiles live in memory.
     bool save() override { return true; }
+    /// Keeps the imported profile's name and screen choices for the run.
+    /// @coney-only the importer's way into the save system (docs/research/save.md#import)
+    bool importRecord(std::size_t slot, const ProfileRecord& record) override;
 
   private:
     std::array<std::optional<Profile>, kSlots> m_slots;
