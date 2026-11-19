@@ -29,6 +29,7 @@
 #include "combat/stick.h"
 #include "combat/throw_aim.h"
 #include "core/error.h"
+#include "core/game_events.h"
 #include "core/interpolation.h"
 #include "core/options.h"
 #include "core/pad.h"
@@ -183,9 +184,15 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     /// @coney-only a disc test's count of the doors drawn
     [[nodiscard]] std::size_t doorsDrawnNear(anim::Vec3 at, float radius) const;
 
+    /// Raises what the level makes its players see or hear that passes no other seam (its objects' breaks, its scenes'
+    /// starts and ends) on `events` from now on (null: none; it must outlive the level), for network play
+    /// (docs/guides/multiplayer.md#events).
+    /// @coney-only network play; the original has none
+    void setGameEvents(GameEvents* events) { m_events = events; }
+
   protected:
-    /// Where the level raises what its players see or hear for network play (ScriptedCast::events); null for none.
-    [[nodiscard]] GameEvents* gameEvents() const { return m_cast.events; }
+    /// Where the level raises its events (setGameEvents()); null for none.
+    [[nodiscard]] GameEvents* gameEvents() const { return m_events; }
 
     /// The simulation on `ground` (owned from now on) with player 1 playing `character` (the scene's character, which
     /// the sandbox's targets and fighters play too) as model `model`, at the ground's start (dropped onto it when
@@ -591,6 +598,7 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // they outlive the humans playing them.
     std::map<std::string, std::unique_ptr<human::PlayerCharacter>, std::less<>> m_castCharacters;
     ScriptedCast m_cast;            // the level's scripts' humans and brains; all null without them
+    GameEvents* m_events = nullptr; // setGameEvents()
     bool m_castPlayerBound = false; // whether player 1's creation is bound to the player
     // The level's route planner (null without path data), before the AI so it outlives the brains that use it.
     std::unique_ptr<ai::RoutePlanner> m_planner;

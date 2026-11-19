@@ -18,7 +18,6 @@
 #include "ai/scripted_brains.h"
 #include "camera/cameras.h"
 #include "core/error.h"
-#include "core/game_events.h"
 #include "core/pads.h"
 #include "effects/level_effects.h"
 #include "gamemodes/game_mode.h"
@@ -145,9 +144,6 @@ struct ScriptedCast {
     const bool* forceReticules = nullptr;
     /// The game's sound, for the humans' speech commands the level says itself (a dealer's lines); null for none.
     script::SoundHost* sound = nullptr;
-    /// Where the level raises what its players see or hear that passes no other seam (its objects' breaks, its
-    /// scenes' starts and ends), for network play (docs/guides/multiplayer.md#events); null for none.
-    GameEvents* events = nullptr;
     /// The world objects' handle counter (script::ScriptSystem::nextObjectHandle()), for the objects the level makes
     /// itself (a human's hat); empty for none.
     std::function<double()> objectHandles;

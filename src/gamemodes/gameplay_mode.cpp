@@ -571,8 +571,6 @@ void GameplayMode::enter() {
         }
         return anim::Vec3{placement->position[0], placement->position[1], placement->position[2]};
     });
-    // Network play: the systems started go out as events.
-    m_effects->particles.setEvents(m_context.events);
     m_context.effects = m_effects.get();
     // The level's parked cars; the police car's lights are particles.
     m_cars = std::make_unique<world_objects::Cars>();
@@ -723,7 +721,6 @@ void GameplayMode::loadLevel() {
                                              .types = m_context.objectTypes,
                                              .forceReticules = &m_state.forceReticules,
                                              .sound = m_context.sound,
-                                             .events = m_context.events,
                                              .objectHandles = [this] { return m_scripts.nextObjectHandle(); },
                                              .gameOver = &m_state.gameOver,
                                              .padOptions = &m_state.saved.pads,
