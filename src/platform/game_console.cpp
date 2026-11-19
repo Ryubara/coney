@@ -35,6 +35,7 @@ class GameConsole::Session final : public console::SessionHost {
         switch (type) {
         case console::ArgType::Setting: {
             std::vector<std::string> names;
+            names.reserve(m_links.settings.size());
             for (const GameSetting& setting : m_links.settings) {
                 names.push_back(setting.name);
             }
@@ -91,6 +92,7 @@ class GameConsole::Session final : public console::SessionHost {
 
     [[nodiscard]] std::vector<console::SettingInfo> settings() const override {
         std::vector<console::SettingInfo> all;
+        all.reserve(m_links.settings.size());
         for (const GameSetting& setting : m_links.settings) {
             all.push_back({setting.name, setting.get(), setting.help});
         }

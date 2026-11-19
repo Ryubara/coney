@@ -52,6 +52,7 @@ GameSetting* find(std::vector<GameSetting>& settings, std::string_view name) {
 // The names of `settings`, in order.
 std::vector<std::string> namesOf(const std::vector<GameSetting>& settings) {
     std::vector<std::string> names;
+    names.reserve(settings.size());
     for (const GameSetting& setting : settings) {
         names.push_back(setting.name);
     }
