@@ -572,6 +572,16 @@ class Fighter {
     /// (takeTandemRequest()); and arms the damage its intro's end deals (`cuffed`, `knockedOut`: its state, for
     /// combat::damageDefeats()). Refused (false) unless it is held from the rear and in no tandem.
     bool startTandemVictim(const TandemStart& start, HumanAnimator& animator, bool cuffed, bool knockedOut);
+    /// The victim's side of a paired move started on it while it stands (Holdable::takePairedMove(), the stealth kill,
+    /// docs/research/stealth.md#stealth-kill): its flag `0x8` cleared when the move asks; a damage that defeats it
+    /// (combat::damageDefeats(), with `input`'s cuffed and knocked-out states) takes all its health and plays the death
+    /// chain with its side, the attacker's next id from the attacker's set, as the dying clip; any other takes the
+    /// damage and plays its side, then the ground. `input` gives its place, the time and its script's states. False
+    /// when it is already out of health or the move names no set.
+    /// @orig 0x00262ac8 Attack_StartPaired (unknown)
+    bool takePairedMove(const PairedMove& move, const FighterInput& input, HumanAnimator& animator);
+    /// Whether its stealth kill's clip plays (startStealthKill()), for the tests and the debug overlay.
+    [[nodiscard]] bool stealthKilling() const { return m_stealthKillClip.has_value(); }
     /// The tandem its grabber joins, once (Holdable::takeTandemRequest()).
     [[nodiscard]] std::optional<int> takeTandemRequest() { return std::exchange(m_tandemRequest, std::nullopt); }
     /// Placed by its grabber each update (Holdable::setAttached()); only while held.
@@ -954,10 +964,38 @@ class Fighter {
     // @orig 0x0026f780 Tandem_OnVictimIntroEnd (unknown)
     void tandemVictimIntroEnd(const FighterInput& input);
     // Out of health: whatever it held goes, a hold on it ends, and the death chain for `hit` plays (nothing while its
-    // loop 349 already plays, as `Human_PlayLethalReaction` 0x00267e48 tests).
+    // loop 349 already plays, as `Human_PlayLethalReaction` 0x00267e48 tests), with `named` as its dying clip when
+    // given (Victim::die()).
     // @coney-only Coney's end of a lethal hit for its fighter's pair state; Human_PlayLethalReaction is not ported
     // whole
-    void dieNow(const IncomingHit& hit, const FighterInput& input, HumanAnimator& animator);
+    void dieNow(const IncomingHit& hit, const FighterInput& input, HumanAnimator& animator,
+                const NamedDying* named = nullptr);
+
+    // --- fighter_stealth.cpp: the stealth kill (docs/research/stealth.md#stealth-kill).
+
+    // A hidden player's square, cross or circle (the hidden branch's buttons): with L1's bit set and no weapon of set
+    // 4-6, a pad player runs only the kill test (a target, the player in its rear quarter and it in his front one, one
+    // he may grab, the way clear) and starts the kill when it passes; the press is used either way (true). Any other
+    // press, or one without L1's bit, goes on to the dispatcher's strike, kick, grab and the weapon's own cross
+    // (false).
+    // @orig 0x0027e040 Player_UpdateActionsHidden (unknown)
+    bool tryStealthKill(const FighterInput& input, HumanAnimator& animator, float& heading);
+    // Whether `target` may be grabbed by this human now (`Human_CanBeGrabbedBy`): a human it can hold, standing with
+    // health left, within kGrabbableHeight above or below, its clip holding none of kGrabRefusedHeld.
+    [[nodiscard]] static Holdable* grabbableNow(Combatant& target, const FighterInput& input);
+    // The kill itself: the clip by the weapon held (637 bare-handed, 639 set 1, 641 set 2 or 3), and for a pad player
+    // still in the target's rear quarter the paired move, the victim's flag 0x8 cleared and its side holding 0x400000.
+    // @orig 0x00264738 Player_StartStealthKill (unknown)
+    void startStealthKill(Holdable& victim, const FighterInput& input, HumanAnimator& animator, float& heading);
+    // A paired move of `clip` on `victim` standing free (`Attack_StartPaired`'s branch for a victim not held): the
+    // pair aligned (refused beyond the clip's far range), the power endurance needed and spent when the move deals
+    // damage, the victim's side (Holdable::takePairedMove()) and this human's clip, then the fight idle. Returns
+    // whether it started.
+    // @orig 0x00262ac8 Attack_StartPaired (unknown)
+    bool startPairedMove(Holdable& victim, std::uint32_t clip, const PairedMove& move, const FighterInput& input,
+                         HumanAnimator& animator, float& heading);
+    // The kill's clip is over: the pair's end ends the hiding, and the killer stands in the fight stance.
+    void followStealthKill(const HumanAnimator& animator);
 
     // --- fighter_victim.cpp: the player hit, warned and grabbed.
 
@@ -1157,6 +1195,7 @@ class Fighter {
     int m_hitsShrugged = 0;
     int m_holdUnkept = 0;              // own updates held since the grabber last kept the hold (keepHold())
     std::uint64_t m_l1WindowEndMs = 0; // record +0xf4: L1's release window's end
+    std::optional<std::uint32_t> m_stealthKillClip; // the stealth kill's clip while it plays (startStealthKill())
     // The flags, together so the class packs.
     bool m_player = true;              // FighterProfile::player
     bool m_bossClass = false;          // FighterProfile::bossClass

@@ -693,7 +693,8 @@ target lock; its release sets `0x20000000`), square, cross or circle starts `Pla
 
 - the player is **behind** the target (side 2) and the target faces away;
 - the target can be grabbed by him (`Human_CanBeGrabbedBy`) and the way is clear;
-- the power meter is above 0.25 of its maximum; the kill spends 0.25.
+- the power meter is above 0.25 of its maximum; the kill spends 0.25 (the test is `Attack_StartPaired`'s,
+  `0x00262ac8`, for any move with damage, not the kill's own).
 
 The clip is 637 bare-handed, 639 with a knife, 641 with a baton or club (all `player_stealthkill_weak` in
 Rembrandt's set); the victim's flag `0x8` is cleared and the pair starts through `Attack_StartPaired`. It deals

@@ -125,7 +125,7 @@ const std::string& Fighter::logName() const {
 
 bool Fighter::holdsMovement(const HumanAnimator& animator) const {
     return m_combat.blocking() || m_combat.mode() != combat::CombatMode::Free || grabbed() || m_holdState.has_value() ||
-           m_tandemRole != TandemRole::None || helpless(animator);
+           m_tandemRole != TandemRole::None || m_stealthKillClip.has_value() || helpless(animator);
 }
 
 anim::Vec3 Fighter::takeSlide() {
@@ -742,9 +742,10 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
         return;
     }
 
-    // 3. A grab's alignment turns, then its pair's moments as the grabber's clips change.
+    // 3. A grab's alignment turns, then its pair's moments as the grabber's clips change; a stealth kill's end.
     stepAlignment(heading);
     followPairClips(input, animator, heading);
+    followStealthKill(animator);
 
     // 4. A player's stance and target, then the L1 handlers, before his commands (`Player_UpdateActions` `0x0027c120`
     // runs `Player_UpdateStanceOrIdle` just ahead of them); the duck's counter takes a square or cross in its window;
@@ -763,6 +764,15 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     }
     combat::CombatInput in = combatInput(input, animator, false);
     if (riseCountered || duckCounter(humansOnly(input), animator)) {
+        in.command = combat::command::kNone;
+    }
+    // Hidden, L1's bit makes square, cross and circle the stealth kill's test (Player_UpdateActionsHidden 0x0027e040),
+    // which uses the press whether or not the kill starts. **Coney's choice**: while the kill's clip plays the killer
+    // takes no command, as for the tandem's clips.
+    if (m_player && !powerMove && tryStealthKill(input, animator, heading)) {
+        in.command = combat::command::kNone;
+    }
+    if (m_stealthKillClip.has_value()) {
         in.command = combat::command::kNone;
     }
 

@@ -707,6 +707,18 @@ class Human final : public Holdable {
         return m_fighter.startTandemVictim(start, m_animator, m_script.arrested, m_script.knockedOut);
     }
     [[nodiscard]] std::optional<int> takeTandemRequest() override { return m_fighter.takeTandemRequest(); }
+    /// A paired move's victim side (Fighter::takePairedMove()), from where it stands now and with its script's states
+    /// (arrested, wounded, knocked out), which the death chain reads.
+    bool takePairedMove(const PairedMove& move) override {
+        return m_fighter.takePairedMove(move,
+                                        FighterInput{.position = position(),
+                                                     .heading = heading(),
+                                                     .nowMs = nowMs(),
+                                                     .cuffed = m_script.arrested,
+                                                     .wounded = m_script.wounded,
+                                                     .knockedOut = m_script.knockedOut},
+                                        m_animator);
+    }
     /// Lying where a circle may mount it (Fighter::mountableOnGround()).
     [[nodiscard]] bool mountableOnGround() const override { return m_fighter.mountableOnGround(m_animator); }
     /// Its reversal of the mount on it (Fighter::reverseMount()): it mounts `mounter`.

@@ -263,12 +263,24 @@ The approach and the takedown, confirmed (code) at `0x0027e040`, `0x0027da10`, `
    a failed test the press does nothing. Without L1 the buttons do the normal strike, kick and grab.
 4. **The test**: a target; the player in the target's **back quadrant** (`Human_GetSideOf(target, player)` = 2, the
    rear 90°) and the target in the player's **front quadrant** (side 0, within 45° of his facing);
-   `Human_CanBeGrabbedBy(target, player)`; a clear way (`Human_IsWayClearTo`). Being unaware is not tested as such:
-   the target need only face away. The power cost is on [Combat moves](combat-moves.md#stealth).
+   `Human_CanBeGrabbedBy(target, player)` (`0x00225520`: no flag `0x40`, not down or dead, not in a scene, within
+   0.25 m in height, none of the held bits `0x8fc57a60`); a clear way (`Human_IsWayClearTo`). Being unaware is not
+   tested as such: the target need only face away. The buttons only reach the test for a pad player (record `+0x1b`)
+   with no weapon of set 4, 5 or 6 (those go to the weapon's own cross, `0x002880d8`); without state `0x8` they are
+   the normal `Player_Cross`, `Player_Square` and `Player_GrabOrTackle`. Confirmed (code) at `0x0027e040`.
 5. **The kill** (`Player_StartStealthKill`): clip 637 bare-handed, 639 with a set-1 weapon (knife), 641 with set 2 or
    3; any other held set is dropped first (637). The victim's human flag `0x8` is cleared (knocked out, not wounded)
    and `Attack_StartPaired(player, target, clip, 1, 0x400000)` plays the pair (victim 638 / 640 / 642). Deals 3000:
    the guard is knocked out, and his gang's message 18 (`0x12`, died or knocked out) reaches the script.
+   `Attack_StartPaired` (`0x00262ac8`) for a victim nobody holds: `Pair_AlignForMove` (`0x00277b20`) refuses a
+   victim beyond the clip's far range, turns the killer toward him and the victim away (front: to face him) over
+   1/60 s and slides the killer to the victim less the clip's pair point; the damage is the clip's (scaled by the
+   killer's class record with a weapon held, doubled by flag `0x4000`); a move with damage needs a power fraction
+   above `CfgPowerEndurance` (`0x00510278`, 0.25) and spends it, else nothing plays. A defeating damage
+   (`Human_IsDamageDefeating`) plays `Human_PlayDeathReaction(victim, killer, 638, 1, 0x2000)`: the death chain with
+   638 from the killer's set as its dying clip, then the fall its knockdown event gives, then the loop, 349 as the
+   victim is no longer woundable. Any other damage is dealt at once and 638 plays as a paired task. The killer plays
+   his clip chained into the fight idle (state `0xb`), holding 7 and then 1. Confirmed (code).
 6. **After**: the pair's end (`Human_BreakPair`) clears the hidden state; the next ground snap hides the player again
    if he still stands in shadow and nobody hunts him. A guard more than 3 m away does not hear it in the hangout
    (`GangSetHearRange`, [Seen or not](#seen)); one who sees it gets the scan's new enemy and fights
@@ -365,6 +377,12 @@ Chapter 5 of `level87` (`level87_chap5_club.lua`) is the stealth tutorial. What 
   blending over 500 ms.
 - **Seen or not** (`repo:src/ai/enemy_scan.h`, [AI: the enemy scan](ai-fights.md#enemy-scan)): `Human_CanSeeHuman` and
   the scan see a hidden human only within 2 m.
+- **The stealth kill** (`repo:src/human/fighter_stealth.cpp`): hidden with L1's bit set, square, cross or circle runs
+  only the kill test (behind a target who faces away, grabbable, the way clear) and starts 637, 639 or 641 by the
+  weapon; the victim takes the clip's damage, its flag `0x8` cleared, and plays the next id from the killer's set as
+  the dying clip of its death chain (the loop 349); the kill needs and spends a quarter of the power meter; its end
+  ends the hiding and leaves the killer in the fight stance. The set-5 cross's kill, the creep's ready clips (635,
+  636) and the class record's weapon scale are not built.
 - **Scouts and the call** (`repo:src/ai/tactic_scout.h`, [AI: Coney](ai/index.md#in-coney)): TacticScout's guards keep their
   posts and scan every 500 ms; one who spots, is hit by or is warned of an enemy fights him, and when the level allows
   it runs to the farthest phone flag in range and, 1.5 s later, starts the enemy gang's second wanted timer
@@ -372,10 +390,15 @@ Chapter 5 of `level87` (`level87_chap5_club.lua`) is the stealth tutorial. What 
 
 Not yet: the other players' Warriors hiding and their hide order, the camera's raised look-at, the half-volume
 footsteps, the scouts' clips, glances, roaming and radar blips, the help call, the investigation of an unseen hit, the
-caller's lines and clips, the responders the call brings (only logged), the stealth kill, distractions and level87's
-checkpoint 5 as a whole.
+caller's lines and clips, the responders the call brings (only logged), the stealth creep's ready clips,
+distractions and level87's checkpoint 5 as a whole.
 
 ## Open questions
+
+- <span id="q-stealth-set5"></span>The set-5 weapon's cross (`0x002880d8`) starts the stealth kill while hidden; its
+  own conditions (the page's "drops it and does 637 when within 1.5 m") are not ported, nor the move style `0xf` the
+  kill pops, nor the class record's weapon scale on its damage. Coney's hidden buttons pass a set 4-6 press to the
+  dispatcher, and its chain press and armed special run after the kill test rather than before it.
 
 - Who plays the prepared hidden line (`0x57`-`0x59`) and when.
 - A runtime check of the hide rules (blue radar, a guard 1.9 m away on normal ground not seeing a hidden player).

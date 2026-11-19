@@ -54,6 +54,21 @@ struct TandemStart {
     bool attackerIsPlayer = false;                      ///< A player's tandem.
 };
 
+/// A paired move an attacker starts on a standing human, as the stealth kill does (`Attack_StartPaired` `0x00262ac8`
+/// on a free victim, Holdable::takePairedMove(), docs/research/stealth.md#stealth-kill).
+struct PairedMove {
+    int attackAnim = -1;                                ///< The attacker's clip; the victim plays the next id.
+    const characters::AnimSet* attackerAnims = nullptr; ///< The victim plays its side from the attacker's set.
+    int damage = 0;                                     ///< Taken at once; a defeat plays the death chain.
+    anim::Vec3 attacker;                                ///< Where the attacker's feet are.
+    bool attackerIsPlayer = false;                      ///< A player's move.
+    /// The victim's flag `0x8` (woundable) is cleared first, so a defeat knocks it out and never leaves it wounded
+    /// (`Player_StartStealthKill` `0x00264738`).
+    bool notWoundable = false;
+    /// The record `+0x08` bits its side holds and sets when it lives through it (`0x400000` for the stealth kill).
+    std::uint32_t victimHeld = 0;
+};
+
 /// A combatant a grab or a tackle can hold.
 class Holdable : public Combatant {
   public:
@@ -106,6 +121,10 @@ class Holdable : public Combatant {
     /// set, takes the damage when its intro ends, and keeps the set's id for its grabber (takeTandemRequest()). False
     /// when it cannot (the default: a passive target plays no tandem).
     virtual bool startTandem(const TandemStart& /*start*/) { return false; }
+    /// A paired move starts on it while it stands (PairedMove): it takes the damage at once and plays its side from
+    /// the attacker's set, as the dying clip of its death chain when the damage defeats it, else then the ground. False
+    /// when it cannot (the default).
+    virtual bool takePairedMove(const PairedMove& /*move*/) { return false; }
     /// The tandem its grabber joins, once: the set's first id. Its grabber reads it on each of its updates while it
     /// holds it, so the grabber's clips start on the grabber's next update (the same step when the grabber acts after
     /// the attacker). Nothing by default.

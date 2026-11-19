@@ -346,15 +346,34 @@ void HumanAnimator::playPaired(std::span<const std::uint32_t> clips, const chara
     playChain(clips, &attacker, loop, state, fade, held);
 }
 
+void HumanAnimator::playPairedThenOwn(std::uint32_t paired, const characters::AnimSet& attacker,
+                                      std::span<const std::uint32_t> clips, std::uint32_t loop, AnimState state,
+                                      float fade, HeldFlags held) {
+    // Built from the end: the loop, this human's clips, then the other human's clip first.
+    std::unique_ptr<anim::AnimTask> chain = chainLoop(loop);
+    for (auto it = clips.rbegin(); it != clips.rend(); ++it) {
+        if (clip(*it) != nullptr) {
+            chain = clipThen(*it, std::move(chain), nullptr, held);
+        }
+    }
+    if (attacker.clip(paired) != nullptr) {
+        chain = clipThen(paired, std::move(chain), &attacker, held);
+    }
+    m_tasks.change(std::move(chain), fade);
+    m_state = state;
+}
+
+std::unique_ptr<anim::AnimTask> HumanAnimator::chainLoop(std::uint32_t loop) const {
+    if (const anim::AnimClip* own = clip(loop); own != nullptr) {
+        return std::make_unique<anim::LoopTask>(*own, loop, m_anims->rate(loop), 0U);
+    }
+    return idleLoop();
+}
+
 void HumanAnimator::playChain(std::span<const std::uint32_t> clips, const characters::AnimSet* from, std::uint32_t loop,
                               AnimState state, float fade, HeldFlags held) {
     // The loop last (this human's own), then each clip handing over to what follows it, built from the end.
-    std::unique_ptr<anim::AnimTask> chain;
-    if (const anim::AnimClip* own = clip(loop); own != nullptr) {
-        chain = std::make_unique<anim::LoopTask>(*own, loop, m_anims->rate(loop), 0U);
-    } else {
-        chain = idleLoop();
-    }
+    std::unique_ptr<anim::AnimTask> chain = chainLoop(loop);
     for (auto it = clips.rbegin(); it != clips.rend(); ++it) {
         if ((from != nullptr ? from->clip(*it) : clip(*it)) != nullptr) {
             chain = clipThen(*it, std::move(chain), from, *it == kAnimNormalFromFight ? kNormalFromFightHeld : held);
