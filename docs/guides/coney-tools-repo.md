@@ -447,7 +447,9 @@ with exit 2 before any check, a build or a stamp: `only 1.5 GB of memory is avai
 programs: lua-language-server.exe 19.9 GB, ...`. Stop the program it names (for the language server, close the editor
 that started it) and run again. It is a fault of the machine, not a verdict about the change, so nothing is stamped; a
 machine that cannot say how much is free starts the run, and `--dry-run` reads no memory. Like the rest of `proof`,
-the floor is read from the base branch, so a branch cannot lower it. The Studio's own language server is capped at its
+the floor is read from the base branch, so a branch cannot lower it; a machine that is too small for it sets its own in
+`coney.local.toml` (`min_available_memory_gb`, `-1` keeps the repository's, `0` never refuses; [Local
+config](workspace.md#local-config)), which only its owner can edit. The Studio's own language server is capped at its
 source ([A cap on the language server's memory](studio/lua-tools.md#stubs), a design: the editor is not built yet).
 
 **It never syncs the shared environment.** `uv run --project python <tool>` syncs `python/.venv` before it starts the
@@ -457,6 +459,8 @@ ruff, mypy and pytest commands of `task check` and `ci run` run as `uv run --no-
 environment is built (a `pyvenv.cfg` in `python/.venv`, or in the folder `UV_PROJECT_ENVIRONMENT` names), and the gate
 passes with the tools executable locked. The session that runs the gate was started from that environment, so it is
 built; a checkout that has none is left to `uv` to build on the first run (`uv sync --project python` does it by hand).
+`--no-sync` also means the gate runs against the environment as it is built: after a change to
+`python/pyproject.toml` or `python/uv.lock` run `uv sync --project python` once, or the checks use the old dependencies.
 The hooks that start `coney-tools` do the same ([the hooks that start
 `coney-tools`](enforcement.md#hooks)); the one source for the checks is
 [`uv_environment.py`](repo:python/src/coney_tools/uv_environment.py).

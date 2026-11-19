@@ -8,6 +8,7 @@ import dataclasses
 import hashlib
 import json
 import shutil
+import subprocess
 from collections.abc import Callable, Mapping
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -1283,3 +1284,39 @@ def test_run_keeps_and_does_not_rebuild_an_environment_the_caller_has(
     assert task_review.run(rig.env(), "full", claude="claude", prepare_environment=build) == 0
     assert claude.environments[0] is not None and claude.environments[0]["UV_PROJECT_ENVIRONMENT"] == str(mine)
     assert (mine / "pyvenv.cfg").is_file()
+
+
+def test_an_environment_a_crashed_review_left_is_removed_before_the_next_one(
+    rig: Rig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(pr_review, "launch_claude", Claude(rig))
+    monkeypatch.delenv("UV_PROJECT_ENVIRONMENT", raising=False)
+    left = rig.env().folder / "review-venv"
+    left.mkdir(parents=True)
+    (left / "pyvenv.cfg").write_text("home = another tip", encoding="utf-8")
+    (left / "stale.txt").write_text("x", encoding="utf-8")
+    built: list[bool] = []
+
+    def build(worktree: Path, environment: Mapping[str, str]) -> None:
+        built.append(not (left / "stale.txt").exists())  # the old one is gone when the new one is made
+
+    assert task_review.run(rig.env(), "full", claude="claude", prepare_environment=build) == 0
+    assert built == [True] and not left.exists()
+
+
+def test_the_reviewers_environment_is_synced_frozen_so_the_lock_never_changes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen: list[list[str]] = []
+
+    class Done:
+        returncode = 0
+        stderr = ""
+
+    def fake(command: list[str], **_: object) -> Done:
+        seen.append(command)
+        return Done()
+
+    monkeypatch.setattr(subprocess, "run", fake)
+    task_review.build_environment(tmp_path, {"UV_PROJECT_ENVIRONMENT": str(tmp_path / "venv")})
+    assert seen[0][:3] == ["uv", "sync", "--frozen"] and str(tmp_path / "python") in seen[0]

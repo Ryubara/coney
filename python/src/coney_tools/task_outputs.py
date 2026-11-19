@@ -63,7 +63,9 @@ def _walk(folder: Path) -> tuple[int, int, float]:
             continue
         for entry in entries:
             try:
-                info = entry.stat(follow_symlinks=False)
+                # A fresh stat, not the entry's own: on NTFS the listing's times lag for a file a process holds open and
+                # keeps writing, which is what a running task's output is.
+                info = Path(entry.path).stat(follow_symlinks=False)
             except OSError:
                 continue
             newest = max(newest, info.st_mtime)

@@ -80,6 +80,8 @@ class World:
         #: The GB of memory the machine says is available (None: it cannot say) and its biggest programs.
         self.memory: float | None = 64.0
         self.heavy = ""
+        #: This machine's own floor (-1: the repository's).
+        self.machine_floor = -1
 
     def step(self, name: str) -> Callable[[task_check_steps.StepContext], StepResult]:
         def run(context: task_check_steps.StepContext) -> StepResult:
@@ -152,6 +154,7 @@ class World:
             workers=lambda root: 3,
             memory=lambda: self.memory,
             heaviest=lambda: self.heavy,
+            memory_floor=lambda root: self.machine_floor,
         )
 
     def request(self, **more: Any) -> task_check.Request:
@@ -983,3 +986,25 @@ def test_the_floor_is_off_at_zero_and_a_base_without_the_key_has_none(tmp_path: 
     assert off.proof.memory.min_available_gb == 0
     older = parse_conventions(changed(("proof.memory", REMOVE)))
     assert older.proof.memory.min_available_gb == 0
+
+
+def test_a_machine_sets_its_own_memory_floor_in_coney_local_toml(world: World) -> None:
+    world.edit("docs/guides/widget.md", "# Widget" + chr(10) + chr(10) + "Two." + chr(10))
+    world.memory = 3.0  # under the repository's 6 GB
+    world.machine_floor = 2  # this machine's own floor
+    assert world.check() == 0
+    world.machine_floor = 4
+    assert world.check() == 2 and any("needs 4 GB" in line for line in world.said)
+    world.machine_floor = 0  # never refuse on this machine
+    world.memory = 0.1
+    assert world.check() == 0
+
+
+def test_the_machines_floor_is_read_from_the_local_config(tmp_path: Path) -> None:
+    from coney_tools.config import INT_KEYS
+
+    assert INT_KEYS["min_available_memory_gb"] == -1
+    (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
+    assert task_check._memory_floor_of_machine(tmp_path) == -1
+    (tmp_path / "coney.local.toml").write_text("min_available_memory_gb = 3" + chr(10), encoding="utf-8")
+    assert task_check._memory_floor_of_machine(tmp_path) == 3

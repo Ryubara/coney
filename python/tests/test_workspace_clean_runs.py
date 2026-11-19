@@ -18,7 +18,6 @@ from test_workspace_clean_pressure import claims
 
 from coney_tools import (
     build_claims,
-    build_cli,
     check_cli,
     live_runs,
     pcsx2_proc,
@@ -61,13 +60,15 @@ def progress_file(folder: Path, state: str, pid: int | None = None, age: float =
     (folder / "check-progress.json").write_text(json.dumps({**record, "updated": moment}), encoding="utf-8")
 
 
-def result_file(folder: Path, name: str, state: str, pid: int | None = None) -> None:
-    """The result file `name` (`build-result.json`, ...) of a detached run in `state`."""
+def result_file(folder: Path, name: str, state: str, pid: int | None = None, started_apart: float = 0.0) -> None:
+    """The result file `name` (`build-result.json`, ...) of a detached run in `state`; `started_apart` seconds is how
+    far the process the record names started from when the record says."""
     pid = os.getpid() if pid is None else pid
+    actual = process_lifetime.process_started(pid)
     record = {
         "state": state,
         "pid": pid,
-        "process_started": process_lifetime.process_started(pid),
+        "process_started": None if actual is None else actual - started_apart,
         "started": time.time(),
     }
     (folder / name).write_text(json.dumps(record), encoding="utf-8")
@@ -143,6 +144,11 @@ def test_a_fix_tasks_run_protects_its_parents_worktree(space: Space) -> None:
         pytest.param(
             lambda folder: result_file(folder, "check-result.json", "running", pid=DEAD_PID), id="a killed check"
         ),
+        pytest.param(
+            # the pid lives, but it is another program's: Windows hands a dead process's pid to a later one
+            lambda folder: result_file(folder, "build-result.json", "running", started_apart=3600.0),
+            id="a reused pid that started at another time",
+        ),
     ],
 )
 def test_a_run_that_is_over_protects_nothing(space: Space, write: object) -> None:
@@ -203,7 +209,6 @@ def test_a_scratch_folder_with_broken_files_names_nobody(space: Space) -> None:
     (folder / "unit.json").write_text("{}", encoding="utf-8")
     assert live_runs.running(folder.parent, time.time()) == {}
     assert live_runs.running(folder.parent / "nowhere", time.time()) == {}
-    assert build_cli  # the record readers are build_cli's
 
 
 def test_the_dry_run_names_the_run_that_keeps_the_build(space: Space, capsys: pytest.CaptureFixture[str]) -> None:

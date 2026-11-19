@@ -842,7 +842,8 @@ class Workspace:
     #: Scratch folders that belong to the workspace, not to a branch (the emulator's, the save states', the downloads').
     shared_scratch: tuple[str, ...]
     clips: Clips
-    task_outputs: TaskOutputs
+    #: Absent from a file older than the key: the defaults (`TaskOutputs`).
+    task_outputs: TaskOutputs = TaskOutputs(stale_hours=72, warn_gb=2)
 
 
 @dataclass(frozen=True)
@@ -3339,11 +3340,11 @@ def _read_workspace(data: object, where: str) -> Workspace:
         "scratch_skip_folders",
         "shared_scratch",
         "clips",
-        "task_outputs",
     )
-    table = _table(data, where, keys)
+    table = _table(data, where, keys, ("task_outputs",))
     outputs_where = _at(where, "task_outputs")
-    outputs = _table(table["task_outputs"], outputs_where, ("stale_hours", "warn_gb"))
+    outputs_data = table.get("task_outputs")
+    outputs = _table(outputs_data, outputs_where, ("stale_hours", "warn_gb")) if outputs_data is not None else None
     clips_where = _at(where, "clips")
     clips = _table(table["clips"], clips_where, ("folder", "max_seconds", "warn_mb", "keep_hours", "pair"))
     return Workspace(
@@ -3362,7 +3363,9 @@ def _read_workspace(data: object, where: str) -> Workspace:
         task_outputs=TaskOutputs(
             stale_hours=_count(outputs["stale_hours"], _at(outputs_where, "stale_hours")),
             warn_gb=_count(outputs["warn_gb"], _at(outputs_where, "warn_gb")),
-        ),
+        )
+        if outputs is not None
+        else TaskOutputs(stale_hours=72, warn_gb=2),
         clips=Clips(
             folder=_text(clips["folder"], _at(clips_where, "folder")),
             max_seconds=_count(clips["max_seconds"], _at(clips_where, "max_seconds")),

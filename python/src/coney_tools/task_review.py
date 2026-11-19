@@ -645,7 +645,7 @@ def build_environment(worktree: Path, environment: Mapping[str, str]) -> None:
     said; the reviewer's own `uv run` then tries again."""
     try:
         done = subprocess.run(
-            ["uv", "sync", "--quiet", "--project", str(worktree / "python")],
+            ["uv", "sync", "--frozen", "--quiet", "--project", str(worktree / "python")],
             env=environment,
             capture_output=True,
             encoding="utf-8",
@@ -691,9 +691,12 @@ def run(
     environment = reviewer_environment(env.folder, os.environ)
     made = Path(environment["UV_PROJECT_ENVIRONMENT"])
     # An environment the run builds in the review's folder goes with it; one the caller named is theirs and stays.
-    made_here = not (made / "pyvenv.cfg").is_file() and made == env.folder / REVIEW_ENVIRONMENT
+    made_here = made == env.folder / REVIEW_ENVIRONMENT
+    if made_here:
+        # One a crashed or timed-out review left is not trusted: it may hold another tip's code.
+        shutil.rmtree(made, ignore_errors=True)
     try:
-        if not (made / "pyvenv.cfg").is_file():
+        if not (made / "pyvenv.cfg").is_file():  # a caller's own environment is built, and is used as it is
             prepare_environment(env.worktree, environment)
         status = (launch or (lambda c, cwd: pr_review.launch_claude(c, cwd, timeout_minutes, environment)))(
             command, env.worktree

@@ -4,6 +4,7 @@
 
 import os
 import shutil
+import tempfile
 import time
 from collections import namedtuple
 from pathlib import Path
@@ -128,3 +129,34 @@ def test_check_space_tells_what_the_stale_outputs_hold(
     monkeypatch.setattr(shutil, "disk_usage", lambda path: Usage(1000 * 1024**3, 0, 500 * 1024**3))
     assert run_disk(space.checkout, space.root, claude_temp=temp / "claude") == 0
     assert "stale background task output" in capsys.readouterr().out
+
+
+def test_the_real_claude_temp_is_never_read_under_test(
+    space: Space, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """conftest points the default root at an empty folder, so a `clean --apply` that names no `claude_temp` (as six
+    tests do) never surveys or removes the machine's real background task outputs."""
+    real = Path(tempfile.gettempdir()) / "claude"
+    assert task_outputs.default_root() != real and not task_outputs.default_root().is_relative_to(real)
+    surveyed: list[Path] = []
+    original = task_outputs.survey
+
+    def watching(root: Path, now: float, hours: float) -> list[task_outputs.Session]:
+        surveyed.append(root)
+        return original(root, now, hours)
+
+    monkeypatch.setattr(task_outputs, "survey", watching)
+    assert run_clean(space.checkout, space.root, True, merged_heads=lambda b: None) == 0
+    assert surveyed == [task_outputs.default_root()]
+    assert "Background task outputs" not in capsys.readouterr().out
+
+
+def test_a_conventions_file_without_task_outputs_gets_the_defaults() -> None:
+    from conventions_support import REMOVE, changed
+
+    from coney_tools.conventions import parse_conventions
+
+    older = parse_conventions(changed(("workspace.task_outputs", REMOVE)))
+    assert (older.workspace.task_outputs.stale_hours, older.workspace.task_outputs.warn_gb) == (72, 2)
+    set_here = parse_conventions(changed(("workspace.task_outputs.stale_hours", 5)))
+    assert set_here.workspace.task_outputs.stale_hours == 5

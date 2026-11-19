@@ -205,6 +205,7 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `build_fast_lane_steps` | `50` | a number: a build with fewer steps out of date by themselves (`ninja -n -d explain` causes, [`build`](coney-tools-build.md#build)) uses the fast lane; `0` turns the lane off |
 | `build_fast_lane_tests` | `20` | a number: a `-R` or `-L` test run that selects at most this many tests uses the fast lane; `0` turns it off |
 | `build_fast_lane_test_seconds` | `300` | a number: such a run takes a check slot anyway when its tests' recorded times add up to more seconds than this ([`build`](coney-tools-build.md#build)); `0` turns that off |
+| `min_available_memory_gb` | `-1` | a number: the memory in GB `task check` needs available to start; `-1` keeps the repository's floor (`proof.memory.min_available_gb`, 6), `0` never refuses; lower it on a small machine ([the memory floor](coney-tools-repo.md#task-check-memory)) |
 | `test_jobs` | `0` | a number: the tests `coney-tools build --test` runs in parallel (`ctest -j`); `0` is half the cores, or the compile's share of them when that is more; `build -j N` beats it ([`build`](coney-tools-build.md#build)) |
 | `ccache_dir` | `cache/ccache` in the main checkout's `../..` (`<clone>-workspace/cache/ccache` in a plain clone) | the [compiler cache](building.md#compiler-cache) every checkout's `coney-tools build` shares |
 | `ccache_program` | the copy `workspace init --fetch ccache` put in `../../tools/ccache-4.14.1`, else `ccache` on `PATH` | the ccache executable |
