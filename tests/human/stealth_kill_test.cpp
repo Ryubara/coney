@@ -185,6 +185,20 @@ TEST_CASE("the stealth kill needs more than a quarter of the power meter", "[hum
     CHECK(fight.target().health().value() == fight.target().health().maximum());
 }
 
+TEST_CASE("a stealth kill refused for a low meter still leaves its target not woundable", "[human][combat][stealth]") {
+    // Expected: stealth.md#stealth-kill, confirmed (code). Player_StartStealthKill 0x00264738 clears the target's
+    // human flag 0x8 before it calls Attack_StartPaired 0x00262ac8, which then gives up on the low meter: nothing
+    // plays, but a later defeat knocks the target out instead of wounding it.
+    StealthFight fight;
+    fight.player().fighter().combat().power().set(0);
+    fight.player().enterHiding();
+    bool killed = false;
+    fight.run(kSquareWithL1, 30, [&] { killed = killed || fight.player().animator().animId() == kKill; });
+    CHECK_FALSE(killed);
+    CHECK(fight.enemy().fighter().health().value() == fight.enemy().fighter().health().maximum());
+    CHECK_FALSE(fight.enemy().hasFlag(coney::human::flag::kWoundable));
+}
+
 TEST_CASE("the stealth kill's clip follows the weapon held", "[human][combat][stealth]") {
     // Expected: stealth.md#stealth-kill, confirmed (code). Player_StartStealthKill 0x00264738: 639 with a set-1
     // weapon (the knife), 641 with set 2 or 3; the victim plays the next id.
