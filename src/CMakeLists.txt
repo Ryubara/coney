@@ -78,6 +78,7 @@ add_library(coney_core STATIC
     gamemodes/gameplay_war_commands.cpp
     gamemodes/sound_events.cpp
     gamemodes/system_music.cpp
+    gamemodes/ui_screen_mode.cpp
     gamemodes/legal_screen_mode.cpp
     gamemodes/level_crime_services.cpp
     gamemodes/loading_screen.cpp
@@ -157,6 +158,11 @@ add_library(coney_core STATIC
     gui/menu_input.cpp
     gui/mods_story_list.cpp
     gui/message_box.cpp
+    gui/mod_ui/ui_flow_screen.cpp
+    gui/mod_ui/ui_input_mask.cpp
+    gui/mod_ui/ui_model.cpp
+    gui/mod_ui/ui_screen.cpp
+    gui/mod_ui/ui_view.cpp
     gui/option_grid.cpp
     gui/pause_menu/armies_game_over_menu.cpp
     gui/pause_menu/mission_failed_menu.cpp

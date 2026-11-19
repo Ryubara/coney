@@ -83,6 +83,7 @@ add_executable(coney_tests
     gamemodes/disc_front_end_test.cpp
     gamemodes/disc_lighting_test.cpp
     gamemodes/frame_rate_test.cpp
+    gamemodes/ui_screen_mode_test.cpp
     gamemodes/gameplay_objects_test.cpp
     gamemodes/gameplay_sound_call_test.cpp
     gamemodes/play_level_simulation_test.cpp
@@ -131,6 +132,10 @@ add_executable(coney_tests
     gui/markup_test.cpp
     gui/menu_input_test.cpp
     gui/mods_story_list_test.cpp
+    gui/mod_ui/ui_flow_screen_test.cpp
+    gui/mod_ui/ui_input_mask_test.cpp
+    gui/mod_ui/ui_model_test.cpp
+    gui/mod_ui/ui_view_test.cpp
     gui/message_paging_test.cpp
     gui/circled_text_header_test.cpp
     gui/game_stats_test.cpp
