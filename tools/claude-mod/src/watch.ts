@@ -6,11 +6,12 @@
 // Never an idle wake, and nothing about the session's health: those stay with Tether (docs/guides/conclave.md#boundary).
 import type { EngineInterface } from 'claude-code'
 
-import type { Held, Watched } from '../types'
+import type { Held, HoldRow, Watched } from '../types'
 import {
   EMPTY_WATCHED,
   eventsOf,
   guardEvents,
+  holdsOf,
   isFresh,
   isWatched,
   markWoken,
@@ -20,6 +21,7 @@ import {
   stopReason,
   stopVerdict,
   toastTexts,
+  unheld,
   wakeHeld,
   wakeText,
   watcherSession,
@@ -86,9 +88,25 @@ async function takeWake($: EngineInterface, wake: string): Promise<string | null
 }
 
 /**
+ * The holds to judge a list by when GitHub could not be read: those of a local read made now (the holds are files on this
+ * machine, so it does not wait for GitHub), or, when that fails too, those of the last good read.
+ */
+async function currentHolds($: EngineInterface, state: Held): Promise<HoldRow[] | null> {
+  const local = await runSnapshot($, false)
+  if (local.ok && local.snapshot.schema <= SCHEMA) {
+    const at = await $.clock.now()
+    await changeHeld($, held => merged(held, local, false, at))
+    return holdsOf(local.snapshot)
+  }
+  return holdsOf(state.snapshot)
+}
+
+/**
  * The stop guard's reason for a turn that is about to end, or null to let it end. It looks again at GitHub first when
  * the last read had a pull request problem nobody holds (a hold recorded since, or a problem that fixed itself, counts),
  * blocks at most `stop_max_blocks` times in a row for one reason, and never blocks on a list it could not make current.
+ * When the look at GitHub fails or runs out of time and the last list is still recent, the list is judged by the holds
+ * on this machine: a problem a running hold covers is left out, so a hold that already exists is not asked for again.
  * A guard that fails lets the turn end: it must never keep a session from stopping by its own fault.
  */
 export async function guardReason($: EngineInterface): Promise<string | null> {
@@ -108,9 +126,11 @@ export async function guardReason($: EngineInterface): Promise<string | null> {
       } else if (!isFresh(state, at, watch)) {
         events = []
       } else {
-        // The list stands (it is recent), and the reason says it could not be made newer: a problem a hold has covered
-        // since would otherwise look like a guard that repeats itself for nothing.
+        // The list stands (it is recent) and the reason says it could not be made newer, but a hold recorded since is a
+        // local file: what it covers is left out, so the guard never asks for a hold that is already there.
         failure = result.error
+        const holds = await currentHolds($, state)
+        if (holds !== null) events = unheld(events, holds, await $.clock.now())
       }
     }
     const reason = events.length === 0 ? null : stopReason(watch.stop_preamble, events)

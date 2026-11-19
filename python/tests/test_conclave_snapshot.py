@@ -29,13 +29,14 @@ from conclave_support import (
     write_check,
 )
 
-from coney_tools import conclave_cli, coord_cli
+from coney_tools import conclave_cli, coord_cli, pr_hold
 from coney_tools.check_progress import Fraction
 from coney_tools.conclave_snapshot import SCHEMA, collect
 from coney_tools.config import ConfigError
 from coney_tools.issue_claim_cli import held_cards
 from coney_tools.issue_claim_model import Card
 from coney_tools.issue_claim_remote import GhRemote
+from coney_tools.pr_hold import Hold
 from coney_tools.watched_drives import Watch
 
 
@@ -245,6 +246,33 @@ def test_the_snapshot_reads_builds_and_the_machine(layout: Layout) -> None:
     assert machine["min_free_gb"] == CONVENTIONS.workspace.disk_min_free_gb
     assert machine["warn_free_gb"] == CONVENTIONS.workspace.disk_min_free_gb + CONVENTIONS.workspace.disk_margin_gb
     assert [row["name"] for row in machine["drives"]] == ["C:"] and machine["problems"] == []
+
+
+def test_the_holds_are_read_locally_beside_the_other_sections(layout: Layout) -> None:
+    # the stop guard of the mod reads them when a GitHub read fails, so a local snapshot has them too
+    assert collect(sources(layout), github=False)["holds"] == {"error": None, "holds": [], "problems": []}
+    folder = pr_hold.holds_folder(layout.scratch, CONVENTIONS.conclave.watch)
+    pr_hold.write(folder, Hold(812, "engineer-2", None, NOW + timedelta(hours=4), "fixing it", NOW, "bbbbbbb"))
+    waiver = Hold(812, pr_hold.WAIVED, "conflict", NOW + timedelta(hours=4), "no decision", NOW, "bbbbbbb")
+    pr_hold.write(folder, waiver)
+    pr_hold.write(folder, Hold(813, "engineer-2", None, NOW - timedelta(hours=1), "ran out", NOW - timedelta(hours=5)))
+    (folder / "814.json").write_text("{", encoding="utf-8")
+    gh = FakeGh({})
+    report = collect(sources(layout, gh), github=False)
+    assert gh.calls == []
+    rows = {(row["pr"], row["cause"]): row for row in report["holds"]["holds"]}
+    assert set(rows) == {(812, None), (812, "conflict")}
+    assert rows[(812, None)] == {
+        "pr": 812,
+        "who": "engineer-2",
+        "cause": None,
+        "until": iso(NOW + timedelta(hours=4)),
+        "head": "bbbbbbb",
+        "covers_conflict": True,
+    }
+    # a waiver on a conflict with no maintainer decision in its note does not cover the conflict
+    assert rows[(812, "conflict")]["covers_conflict"] is False
+    assert len(report["holds"]["problems"]) == 1 and "814.json" in report["holds"]["problems"][0]
 
 
 def test_the_machine_shows_the_drive_with_the_least_room_and_lists_them_all(layout: Layout) -> None:

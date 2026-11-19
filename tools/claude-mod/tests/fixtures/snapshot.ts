@@ -479,6 +479,11 @@ export default {
   ],
   "problems": []
  },
+ "holds": {
+  "error": null,
+  "holds": [],
+  "problems": []
+ },
  "claims": {
   "error": null,
   "account": "example-maintainer-who-owns-the-project",
