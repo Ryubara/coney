@@ -138,6 +138,10 @@ int throwAttack(const SquareInput& input) {
     }
 }
 
+bool heldIsThrowable(int /*set*/, int /*type*/, bool /*player*/, bool /*anyHuman*/) { return false; }
+
+int meleeThrowAttack(const SquareInput& /*input*/, bool /*aiming*/) { return anim_id::kNone; }
+
 int armedAttack(const SquareInput& input, bool cross) {
     const AnimSetClips clips = animSetClips(input.heldSet);
     // The run attack first, then the target's state, then the slot's swing.

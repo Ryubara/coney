@@ -159,6 +159,25 @@ inline constexpr int kStartTandem = -2;
 /// @orig 0x002880d8 Player_CrossWithWeapon (unknown)
 [[nodiscard]] int throwAttack(const SquareInput& input);
 
+/// The object type of a throwing knife (object type `+0x86`), which a human of any kind may throw from anim set 1.
+inline constexpr int kKnifeObjectType = 11;
+
+/// Whether a human may throw what it holds, an object of anim set `set` and object type `type` (both 0 with nothing in
+/// hand): set 5 (bricks, bottles) always; a knife (type kKnifeObjectType) of set 1 always; another of set 1, 2 or 3 (a
+/// knife, a baton, a bat) only for a `player`'s human or with `anyHuman`; nothing else. The armed special asks it with
+/// `anyHuman`, so for it the answer is sets 1, 2, 3 and 5 (docs/research/combat-throws.md#armed-special).
+/// @orig 0x00223ea0 Human_HeldIsThrowable (unknown)
+[[nodiscard]] bool heldIsThrowable(int set, int type, bool player, bool anyHuman);
+
+/// The throw of a melee weapon (a knife, a baton or a bat: SquareInput::heldSet 1-3) that the armed special starts
+/// (docs/research/combat-throws.md#armed-special), by the gait: refused (anim_id::kNone) while `aiming` (the throw's
+/// aiming state) and at a sprint with the record's `+0x08` clear; 472 at a run with `+0x08` clear or at a jog; 471 at a
+/// walk outside a fight stance; otherwise the standing throw, 491 `KNIFE_THROW` for a knife or a baton, 502
+/// `SWINGABLE_OBJECT_THROW` for a bat. A run or sprint with any `+0x08` bit held takes the standing throw. The target
+/// and the turn to it are the fighter's (human::Fighter::playMeleeThrow()).
+/// @orig 0x00288698 Player_ThrowMeleeWeapon (unknown)
+[[nodiscard]] int meleeThrowAttack(const SquareInput& input, bool aiming);
+
 /// The clips an anim set puts in the slots the armed square and cross read (docs/research/combat-throws.md#bat): `S1`,
 /// `X1`, the grounded strike and the mounting strike. Set 0 is the defaults.
 struct AnimSetClips {

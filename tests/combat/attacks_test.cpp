@@ -384,3 +384,56 @@ TEST_CASE("an object to throw in hand: the set's throw from a run at gait 3-5, f
         CHECK(throwAttack(SquareInput{.stick = {}, .heldSet = set}) == anim_id::kNone);
     }
 }
+
+TEST_CASE("the armed special throws what a human holds of sets 1, 2, 3 and 5, a knife always, a melee weapon only for "
+          "a player or when any human may",
+          "[combat]") {
+    // Expected: combat-throws.md#armed-special, confirmed (code)
+    for (const bool player : {false, true}) {
+        for (const bool anyHuman : {false, true}) {
+            INFO("player " << player << ", any human " << anyHuman);
+            // Set 5 and a throwing knife of set 1 whoever holds them.
+            CHECK(heldIsThrowable(5, 0, player, anyHuman));
+            CHECK(heldIsThrowable(1, kKnifeObjectType, player, anyHuman));
+            // The melee sets for a player, or when asked for any human (the armed special asks so).
+            for (const int set : {1, 2, 3}) {
+                CHECK(heldIsThrowable(set, 0, player, anyHuman) == (player || anyHuman));
+            }
+            // Nothing else: no object, the overhead set 4, the ghetto blaster 6.
+            for (const int set : {0, 4, 6, 7}) {
+                CHECK_FALSE(heldIsThrowable(set, 0, player, anyHuman));
+            }
+        }
+    }
+}
+
+TEST_CASE("a melee weapon's throw: 491 for a knife or a baton and 502 for a bat standing, 471 at a walk, 472 at a jog "
+          "or a free run, none at a free sprint or while aiming",
+          "[combat]") {
+    // Expected: combat-throws.md#armed-special, confirmed (code)
+    const auto at = [](int set, Gait gait, std::uint32_t phase = 0, bool stance = false, bool aiming = false) {
+        return meleeThrowAttack(
+            SquareInput{.stick = {}, .gait = gait, .phaseFlags = phase, .heldSet = set, .fightStance = stance}, aiming);
+    };
+    for (const int set : {1, 2, 3}) {
+        INFO("set " << set);
+        const int standing = set == 3 ? anim_id::kSwingableThrow : anim_id::kKnifeThrow;
+        CHECK(at(set, Gait::Standing) == standing);
+        CHECK(at(set, Gait::Sneak) == standing);
+        CHECK(at(set, Gait::Walk) == anim_id::kOneHandedThrowFromWalk);
+        CHECK(at(set, Gait::Jog) == anim_id::kOneHandedThrowFromRun);
+        CHECK(at(set, Gait::Run) == anim_id::kOneHandedThrowFromRun);
+        // A free sprint refuses the throw.
+        CHECK(at(set, Gait::Sprint) == anim_id::kNone);
+        // A run or a sprint with a held bit is not free: the standing throw.
+        CHECK(at(set, Gait::Run, 0x40000000) == standing);
+        CHECK(at(set, Gait::Sprint, 0x40000000) == standing);
+        // A jog throws from the run whatever is held; a fight stance turns the walk's throw into the standing one.
+        CHECK(at(set, Gait::Jog, 0x40000000) == anim_id::kOneHandedThrowFromRun);
+        CHECK(at(set, Gait::Walk, 0, true) == standing);
+        // The aiming state refuses it.
+        CHECK(at(set, Gait::Standing, 0, false, true) == anim_id::kNone);
+    }
+    CHECK(anim_id::kKnifeThrow == 491);
+    CHECK(anim_id::kSwingableThrow == 502);
+}

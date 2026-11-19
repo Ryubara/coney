@@ -460,6 +460,10 @@ void PlayerCombat::special(const CombatInput& input, const CombatTuning& tuning,
     }
 }
 
+bool PlayerCombat::armedSpecial(const CombatInput& /*input*/, const CombatTuning& /*tuning*/, CombatOutput& /*out*/) {
+    return false;
+}
+
 void PlayerCombat::strongGrapple(const CombatInput& input, CombatOutput& out) {
     // **Coney's choice**: the original first pops the grounded move style 15 when the human is not knocked down; Coney
     // keeps no move-style stack, and the two go together: Human_KnockDown pushes 15 with state 0x80000 and Human_GetUp
