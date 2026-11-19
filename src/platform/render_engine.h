@@ -200,6 +200,8 @@ class RenderEngine final : public graphics::RenderDevice {
     /// Tells the renderer the frame pacer's cap (`--fps-cap`, 0 for none), which with vsync chooses the GPU backend's
     /// present mode (choosePresentMode()); OpenGL has only its swap interval and ignores it.
     void setFpsCap(std::uint32_t cap) { m_fpsCap = cap; }
+    /// The cap setFpsCap() last told it (0 for none).
+    [[nodiscard]] std::uint32_t fpsCap() const { return m_fpsCap; }
     /// Chooses whether present() softens the frame as the PS2's video output does (off by default): each line becomes
     /// the mean of itself and the line one of the original's 448 below it, after the modes' 2D layers and before the
     /// debug menus (docs/research/rendering.md#output). Off shows the frame as drawn, sharper than the original.

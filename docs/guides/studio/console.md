@@ -6,9 +6,10 @@ runtime profilers and the log viewer, whose panels are [a page of their own](con
 gamepad, where the code lives, how the release checks prove the split, and the tests, and it ends with the build issues
 it proposes, in order. The parent issue is [#1054](issue:1054); this page is [#1064](issue:1064).
 
-**Status: design, build issue 1 built.** The console's core, its catalog and generators, the input script's `console`
-action and test mode's rules are built and described in the guide [The Coney console](../console.md), with every command
-in the generated [console commands reference](../console-commands.md); the rest of this page is not built yet. It is a
+**Status: design, build issues 1 and 2 built.** The console's core, its catalog and generators, the input script's
+`console` action and test mode's rules, and the release set's handlers over the game session's and network play's hosts
+are built and described in the guide [The Coney console](../console.md), with every command in the generated [console
+commands reference](../console-commands.md); the rest of this page is not built yet. It is a
 design in the sense of [Page kinds](../writing-docs.md#page-kinds): what is built moves into a guide. It builds on the
 debug tools' split ([The debug tools and the game](../building.md#debug-tools)), the [debug menus](../debug-menu.md),
 the [run log](../run-log.md), the [profiler](../performance.md#zones) and the [Lua SDK](lua-sdk.md), and does not repeat
@@ -65,7 +66,7 @@ decisions](#decisions)). Four rules shape every section:
 | **Scope** | What a command touches: **local** (this machine's view: the log, a panel, quitting) or **session** (the game everyone in the session plays) |
 | **The bar** | The menu bar across the top of the screen while the console is open, with its panels ([The F8 bar](console-bar.md#bar)) |
 | **Panel** | A window of the bar: the terminal, Resources, Performance, Log, Network. A panel can be **pinned** to stay on screen with the console closed |
-| **Setting** | A player option the console can read and change for the session: `fps_cap`, `vsync`, `show_fps`. The console's convars, in FiveM's word; the developer's **tunables** are the debug menus' ([Tunables](../debug-menu.md#tunables)) |
+| **Setting** | A player option the console can read and change for the session: `fps_cap`, `vsync`, `volume`, `display_preset`. The console's convars, in FiveM's word; the developer's **tunables** are the debug menus' ([Tunables](../debug-menu.md#tunables)) |
 
 The other words are the SDK's: **mod**, **project**, **native**, the **game state** and a **project state**
 ([Terms](lua-sdk.md#terms)), and **level** for a game level or one a user builds.
@@ -238,10 +239,10 @@ Every build has these. Each is a second way to something the player can already 
 | `help [command]` | local | Lists the commands this build and the running mods offer, by group, or one command's arguments and help | none: a reading |
 | `clear` | local | Empties the terminal's output | none |
 | `quit` | local | Ends the game through its normal exit, as closing the window does | Closing the window, the menus |
-| `version` | local | Coney's version and build, the SDK level, the disc's region, the renderer | none: a reading |
+| `version` | local | Coney's version and build, the disc's region, the renderer (the SDK level joins them once there is an SDK to name) | none: a reading |
 | `where` | local | The level, the checkpoint, the step and the play time, as the run log stamps them ([Reading a line](../run-log.md#reading)) | none: a reading; the name of the recipe that reads the same in the original |
 | `settings` | local | Lists the settings with their values | The options and the player's command line |
-| `get <setting>`, `set <setting> <value>` | local | Reads or changes a setting for this session: `fps_cap`, `vsync`, `show_fps`, the volumes, the PS2 look; never written to a file | The options and `--fps-cap`, `--vsync`, `--show-fps` and the other player options ([The debug tools and the game](../building.md#debug-tools)) |
+| `get <setting>`, `set <setting> <value>` | local | Reads or changes a setting for this session: the game links `fps_cap`, `vsync`, `volume` (the master volume) and `display_preset`, and more (`show_fps`, the bus volumes) come when what they change can be changed live; never written to a file | The options and `--fps-cap`, `--vsync` and the other player options ([The debug tools and the game](../building.md#debug-tools)) |
 | `bugreport` | local | Writes the last 30 s of the run log, every level, into the log file and says where, as the Time page's *Write bug report log* does in a developer build ([Bug reports](../run-log.md#bug-reports)) | The debug menus' Time page, which the release build lacks: today a player has no way to write one |
 | `missions` | local | The missions the active profile has completed, with their checkpoints | The original's mission select, which lists the completed missions per area with their checkpoints ([Front end: mission select](../../research/frontend.md#fn-missionselecthud)) |
 | `mission <n> [checkpoint]` | session | Starts a completed mission at a checkpoint, as the mission select starts it | The same screen; available once Coney's mission select is built |
@@ -389,7 +390,7 @@ the host what player 1 has.
 | `get`, `set` (settings for this session) | yes | yes, the host's own display and sound | yes, the guest's own display and sound; no setting changes the shared game |
 | `quit` | ends the game | ends the game, and with it the session for the guest, as the network page's session ends with the host ([Saves](../network-architecture.md#saves)) | leaves the host's game as the pause menu's Player 2 quit does, then ends the guest's program |
 | `host`, `connect`, `disconnect` | `host`, `connect` | `disconnect` ends the session; the guest is dropped as by the Player 2 quit | `disconnect` is the Player 2 quit |
-| `missions`, `mission` | yes | yes: the host's profile and the host's mission select ([Saves](../network-architecture.md#saves)) | `missions` lists the host's, read-only; `mission` refused |
+| `missions`, `mission` | yes | yes: the host's profile and the host's mission select ([Saves](../network-architecture.md#saves)) | `missions` lists the host's, read-only; `mission` refused (**stand-in:** built, a guest's `missions` lists the guest's own profile, as the host's profile is not sent to a guest yet) |
 | Toggling scripts (`start`, `stop`, `enable`, ...) | yes | yes ([Mods: Console commands](mods.md#console)) | refused: a guest's console lists the session's mods and nothing more |
 | A project's commands | yes | yes | a server script's unrestricted command as a request with the guest's slot; a `restricted` one refused ([Mod commands](#mod-commands)) |
 | Developer set (developer builds only) | yes | yes, except the time controls in a session ([Debug tools](../network-architecture.md#sub-debug)) | refused |
@@ -655,13 +656,15 @@ Decided, and built into this page:
    ([Mods: Console commands](mods.md#console)).
 5. **No budgets for now**, as FiveM: a mod command's handler has no instruction budget, memory cap or watchdog
    ([Lua SDK: Maintainer decisions](lua-sdk.md#decisions)).
+6. **The release set is the one in [The release set](#release-set)** (2026-10-29): `help`, `clear`, `quit`, `version`,
+   `where`, `settings`, `get`, `set`, `bugreport`, `missions`, `mission` (limited to completed missions, as the mission
+   select), `host`, `connect`, `disconnect`, the panels' `log`, `resmon`, `perf` and `net`, and `profiler`, each doubling
+   a way in the player already has or only reading. It is built as build issue 2 (the handlers of all but the panels'
+   and the profiler's, which come with issues 4 and 5), and a maintainer confirms any command added to it later.
 
-Still the maintainer's: **the exact release set** ([The release set](#release-set)). The decisions above name
-quitting and toggling scripts; the rest of the list (`mission` limited to completed missions as the mission select,
-the session's settings, `host`, `connect` and `disconnect`, `bugreport`, the profilers and the log) is this page's
-proposal, each doubling a way in the player already has or only reading, and a maintainer confirms it and any command
-added to it later. What the network page leaves to a maintainer (Coney's rule set for three and four players, a
-guest's co-op record) this page does not decide ([Who may run what in co-op](#coop)).
+Still the maintainer's: any command added to the release set. What the network page leaves to a maintainer (Coney's
+rule set for three and four players, a guest's co-op record) this page does not decide ([Who may run what in
+co-op](#coop)).
 
 ## Open questions {#open-questions}
 
@@ -694,7 +697,7 @@ page's issue 1.
    and test mode's rules ([Off in test mode](#test-mode)). The split test's include rules for `src/console/`. No front
    end yet: lines come from input scripts. Tests: the tokenizer, the types, the registry's rules, the queue's order
    between steps, a guest's session command refused, the generated table current, no history written in test mode.
-2. **core: Add the player commands to the console.** The release set's handlers over the game session's host: `help`,
+2. **core: Add the player commands to the console** (built). The release set's handlers over the game session's host: `help`,
    `clear`, `quit`, `version`, `where`, `settings`, `get`, `set`, `bugreport`, `host`, `connect`, `disconnect`, and
    `missions` and `mission` behind `available = "mission-select"` until Coney's mission select is built. The
    `coney.release.has_player_console` check and the release smoke lines (`help` lists the available player set, `noclip`

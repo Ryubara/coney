@@ -45,9 +45,9 @@ struct ConsoleSettings {
 /// play), and the console then acts as if nothing it would ask for exists: no need is met, no list is known, and the
 /// game is offline.
 struct ConsoleHosts {
-    const SessionHost* session = nullptr;
+    SessionHost* session = nullptr;
     const ModsHost* mods = nullptr;
-    const NetworkHost* network = nullptr;
+    NetworkHost* network = nullptr;
     HistoryStore* history = nullptr;
 };
 
@@ -62,6 +62,8 @@ class Console {
     /// Where the built-ins and the mods' commands are registered.
     [[nodiscard]] Registry& registry() { return m_registry; }
     [[nodiscard]] const Registry& registry() const { return m_registry; }
+    /// The hosts the console reaches the game through, for the handlers of its commands.
+    [[nodiscard]] const ConsoleHosts& hosts() const { return m_hosts; }
     /// The output and the history.
     [[nodiscard]] Terminal& terminal() { return m_terminal; }
     [[nodiscard]] const Terminal& terminal() const { return m_terminal; }

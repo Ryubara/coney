@@ -1,0 +1,5 @@
+# A synthetic input script for the release build's console smoke tests: `quit` ends the run with exit code 0, and the
+# `help` after it, ten frames in, never runs, as the run is over by then.
+# Format: docs/guides/running-input.md#input-scripts
+2 console quit
+10 console help

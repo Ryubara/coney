@@ -282,8 +282,9 @@ them by mistake.
 **The one console in the release build** (a maintainer decision, 2026-10-29) is the **player console** ([The Coney
 console](studio/console.md)): the F8 console drawn with Dear ImGui, limited to what a player can already do or only
 read. It is kept apart from the debug tools by target (`coney_console_ui`, over a core in `coney_core` that includes
-nothing of the debug tools) and by model (its catalog holds the player's commands alone). It is a design until built;
-until then the release build holds no console, and the rest of this section describes the build as it is.
+nothing of the debug tools) and by model (its catalog holds the player's commands alone). Built so far: the core and
+the player commands ([The Coney console](console.md)), which the release build runs from an input script; the F8 front
+end and `coney_console_ui` are not built yet, and the rest of this section describes the build as it is.
 
 The split is made by target, not by `#ifdef`. The game is `coney_core`, `coney_audio`, `coney_movies`, `coney_net`
 and `coney_platform`; the debug tools are two libraries of their own:
@@ -320,7 +321,11 @@ counts) is `platform/game_run.h`, so a player's game is set up as the tested one
 
 **What proves it.** Besides the Python test below, ctest runs the release entry point's smoke tests (`coney.release.*`:
 it starts headless, prints a player's options, refuses `--play-level`, plays an input script, hosts and joins,
-`--install` refuses a missing disc and `--data` an unfinished install) in every build, and
+`--install` refuses a missing disc and `--data` an unfinished install; `coney.release.has_player_console` finds the
+console's banner, `Coney console`, in the executable, and the `console_*` ones type `help`, a developer command and
+`quit` into the console from an input script and read what it answers: `help` must list exactly the commands
+`src/console/commands.toml` has available (`cmake/console_help_matches_catalog.cmake`), and a `help` scripted after the
+`quit` must never print) in every build, and
 `coney.release.has_no_debug_tools` looks for strings only the debug tools put in an executable (the debug pages' titles
 and items, the developer overlay's settings file; `cmake/debug_tools_markers.cmake`) and fails when it finds one.
 `imgui.ini`, Dear ImGui's default settings file, is no marker: the player console links it ([the release

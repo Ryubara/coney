@@ -46,9 +46,23 @@ def test_scripts_parse_as_coney_parses_them() -> None:
     assert (events[1].stick, events[1].x, events[1].y) == (1, -50, 100)
 
 
+def test_console_lines_parse_and_the_pad_plays_nothing_for_them() -> None:
+    # As tests/core/input_script_test.cpp: `console LINE` types the rest of the line, a `#` still starting a comment.
+    events = parse_input_script("5 console set fps_cap 60  # a note\n6 p2 console help where\n7 tap cross\n")
+    assert [(e.frame, e.port, e.action, e.line) for e in events] == [
+        (5, 0, "console", "set fps_cap 60"),
+        (6, 1, "console", "help where"),
+        (7, 0, "tap", ""),
+    ]
+    pad = ScriptedPad(events)
+    assert pad.advance(6).buttons == 0
+    assert pad.advance(7).buttons == BUTTONS["cross"]
+
+
 @pytest.mark.parametrize(
     ("text", "message"),
     [
+        ("5 console", "needs a line to type"),
         ("x tap cross", "not a frame number"),
         ("-1 tap cross", "not a frame number"),
         ("10", "needs an action"),

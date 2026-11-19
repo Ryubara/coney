@@ -1,0 +1,4 @@
+# A synthetic input script for the release build's console smoke tests: the developer commands are unknown there.
+# Format: docs/guides/running-input.md#input-scripts
+2 console noclip
+3 console lua print(1)

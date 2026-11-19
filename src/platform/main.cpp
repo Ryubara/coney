@@ -78,6 +78,7 @@
 #include "platform/error_dialogs.h"
 #include "platform/frame_pacer.h"
 #include "platform/game_console.h"
+#include "platform/game_console_links.h"
 #include "platform/game_run.h"
 #include "platform/game_session.h"
 #include "platform/game_session_debug.h"
@@ -909,6 +910,19 @@ int main(int argc, char** argv) {
             session->startStory();
         }
     }
+    // What the console's commands reach in the running game: the session (which a jump may start later), the pacing,
+    // the sound and the log's bug report.
+    gameConsole.setLinks(coney::platform::makeGameConsoleLinks(coney::platform::GameConsoleSources{
+        .debugTools = true,
+        .rendererKind = rendererKind,
+        .renderer = &renderer,
+        .session = [&session] { return coney::platform::sessionFacts(session ? &*session : nullptr); },
+        .pacer = pacer ? &*pacer : nullptr,
+        .clock = &clock,
+        .audio = audio.get(),
+        .writeBugReport = runLog ? std::function<std::string()>([&runLog] { return runLog->writeBugReport(); })
+                                 : std::function<std::string()>(),
+    }));
     // The debug menus' level jumps (the Levels and Missions pages), carried out at the start of the next frame, outside
     // any step: by the game session (the level flow's jump, from the front end or a level in play), or, before a
     // session runs (a viewer or a sandbox), by a new session started directly at that level.

@@ -8,9 +8,11 @@ Every command is listed in the generated [console commands reference](console-co
 ## What is built {#built}
 
 The console's core, build issue 1 of [the design](studio/console.md#build-issues): the model in `src/console/` with no
-user interface, its catalog and generators, the input script's `console` action and test mode's rules. Not built yet:
-the commands' handlers (issue 2, so every catalog entry is still unknown when typed), the F8 front end (issue 3), the
-panels (issues 4 and 5), the developer set (issue 6) and mod commands through the SDK (issue 7). Until the front end
+user interface, its catalog and generators, the input script's `console` action and test mode's rules; and the player
+commands, build issue 2: the handlers of the release set, over the game session's and network play's hosts
+([Player commands](#player-commands)). Not built yet: the F8 front end (issue 3), the panels and the commands that open
+them (`log`, `resmon`, `perf`, `net` and `profiler`, issues 4 and 5: they wait in the catalog for their feature and
+are unknown when typed), the developer set (issue 6) and mod commands through the SDK (issue 7). Until the front end
 exists, lines reach the console only from an input script.
 
 | Part | Where | What it does |
@@ -20,11 +22,12 @@ exists, lines reach the console only from an input script.
 | Argument types | `src/console/arg_types.h` | Each type's check and completion ([Argument types](#argument-types)) |
 | The registry | `src/console/registry.h` | The built-ins and the mods' commands, by id ([The registry](#registry)) |
 | The catalog | `src/console/commands.toml`, `catalog.h` | The player set as data, and its generated table ([The command catalog](#catalog)) |
+| The player commands | `src/console/player_commands.h` | The release set's handlers, bound to the catalog by name ([Player commands](#player-commands)) |
 | The terminal | `src/console/terminal.h` | The output (2,000 lines) and the history (200 lines) ([The terminal](#terminal)) |
 | The queue | `src/console/command_queue.h` | Commands waiting for the step boundary ([When a command runs](#queue)) |
 | The hosts | `src/console/hosts.h` | The interfaces the game implements ([Hosts](#hosts)) |
 | The console | `src/console/console.h` | A line in: checked, then run now or queued; its output in the terminal and the run log |
-| The game's console | `src/platform/game_console.h` | Both entry points' set-up ([In the game](#in-the-game)) |
+| The game's console | `src/platform/game_console.h`, `game_console_links.h`, `game_settings.h` | Both entry points' set-up: the session host, network play's host and the settings ([In the game](#in-the-game)) |
 
 The core is in `coney_core`, so the release build has it. Its files include only `console/`, `core/` and the standard
 library, which the split test checks (`python/tests/test_debug_tools_split.py`,
@@ -76,7 +79,9 @@ kind, and the console itself names no command:
   function `Coney.RegisterCommand` is build issue 7.
 - **`available`.** A command whose `available` names a Coney feature that is not built is absent: not listed, not
   completed, unknown when typed. No feature is marked built yet, so `missions` and `mission` (waiting for
-  `mission-select`) stay absent.
+  `mission-select`) stay absent, and so do the panel commands (`log-panel`, `resources-panel`, `performance-panel`,
+  `network-panel` and `profiler`), whose handlers come with their build issues. A test holds that every entry that is
+  present has its handler.
 
 An unknown name is answered with the closest present one, within two edits:
 `unknown command "noclp"; did you mean "noclip"? help lists the commands`. In the release build a developer command is
@@ -109,8 +114,9 @@ naming each, a command without an example among them ([`console`](coney-tools-re
 checks what the game library compiled: player commands only, each name once and well spelled.
 
 To add a player command: add its entry with an example to `commands.toml`, run both generators, write its handler
-and bind it by name in `registerBuiltins`' list, and test it against fake hosts. The set itself is a maintainer's to
-confirm ([Maintainer decisions](studio/console.md#decisions)).
+and bind it by name in `playerHandlers()` (`src/console/player_commands.cpp`), and test it against fake hosts. The
+release set was confirmed by a maintainer on 2026-10-29, and any command added to it is a maintainer's to confirm
+([Maintainer decisions](studio/console.md#decisions)).
 
 ## When a command runs {#queue}
 
@@ -151,20 +157,59 @@ absent; the console then acts as if nothing it would ask for exists.
 
 | Host | Gives | Implemented by |
 | --- | --- | --- |
-| `SessionHost` | Whether a need is met; the lists of missions, checkpoints, levels and settings | Nothing yet (issue 2) |
+| `SessionHost` | Whether a need is met; the lists of missions, checkpoints and settings; the version and build, the level in play, the settings and their change, the bug report, the quit and the completed missions with their start | `platform::GameConsole`, over what the entry points link ([In the game](#in-the-game)) |
 | `ModsHost` | The installed mods' names | Nothing yet (the mods loader) |
-| `NetworkHost` | This machine's role: offline, host or guest | `platform::GameConsole`, over network play |
+| `NetworkHost` | This machine's role: offline, host or guest; hosting, joining and leaving | `platform::GameConsole`, over network play |
 | `HistoryStore` | The kept history | `platform::GameConsole`, `console-history.txt` |
 
-Each grows with the commands that need it: the player commands give the session host its calls.
+Each grows with the commands that need it. The calls the player commands added to the session host and to network
+play's have a default that says the game gives nothing, so a fake that needs none of them leaves them out, and the
+command that needs one says so when it runs.
+
+## Player commands {#player-commands}
+
+The release set's handlers, `src/console/player_commands.cpp`, are bound to the catalog's entries by name
+(`registerPlayerCommands()` over `playerCatalog()`), and each reaches the game only through the console's hosts when it
+runs. Every one is in the [console commands reference](console-commands.md) with its syntax and examples; what each
+does, and where it reaches, is there and not repeated here.
+
+A few things are not obvious from the reference:
+
+- `quit` asks for the end of the run first (the exit closing the window takes, at the next frame), then a guest leaves
+  the host's game as the pause menu's Player 2 quit does and a host's session ends with the game. A run that cannot be
+  ended from the console leaves its session alone.
+- `set`, `quit` and `disconnect` change something and so wait for the step boundary (the catalog's `changes`); the
+  rest read at once.
+- Two stand-ins, counted until Coney replaces them: the disc region `version` prints is `NTSC-U` whenever a game
+  session exists, as it is the only disc Coney knows (`makeGameConsoleLinks()`), and on a guest `missions` lists the
+  guest's own profile where the design has the host's, read-only ([Who may run what in
+  co-op](studio/console.md#coop)); both wait on features not built (a second disc, a profile sent to the guest).
+
+`mission` and `missions` are registered with their handlers and wait in the registry for the feature `mission-select`,
+which the game marks built when Coney has a mission select; the game gives no profile yet, so until then they stay
+out. A host that is absent answers with a line saying so (`network play is not available in this run`), never silence.
+
+## Settings {#settings}
+
+`set` and `get` reach the settings the entry points link (`playerSettings()` in `src/platform/game_console_links.h`),
+each a name, a one-line help, the value now and a check-and-apply: `fps_cap` (a whole number 0 to 1000; with a frame
+pacer, so not in test mode), `vsync` (`on` or `off`; in a window), `volume` (0 to 1, the master volume; with sound)
+and `display_preset` (`ps2`, `xbox`, `enhanced`, `high`). A setting is applied at once and written nowhere: it lasts
+for the session, as a command-line option does, and a test checks that a `set` leaves no file behind. A test-mode run
+draws the pinned preset whatever `display_preset` says. More settings (`show_fps` among them) come when what they
+change can be changed live.
 
 ## In the game {#in-the-game}
 
 Both entry points set the console up the same way with `platform::GameConsole` (`src/platform/game_console.h`): the
 release build's `coney` takes player commands only, the debug tools' `coney` developer commands as well. It registers
-the player catalog's entries that have a handler (none yet), gives the console network play's role and, outside test
-mode, the history file, hands it the input script's `console` lines, and runs the queue in the step hook, after network
-play's receive.
+the player catalog's entries that have a handler, gives the console the game's session host (the quit flag and what the
+entry points link), network play's host (its role, hosting, joining and leaving) and, outside test mode, the history
+file, hands it the input script's `console` lines, and runs the queue in the step hook, after network play's receive.
+The entry points call `setLinks()` once the game, the renderer and the sound exist (`makeGameConsoleLinks()` in
+`src/platform/game_console_links.h`): the needs (a game and a disc when there is a session, a level in play), the
+version and build, the level in play, the settings and the bug report. `quit` makes the frame hook's `beginFrame` say
+the run is over at the next frame.
 
 ## The input script's console action {#input-script}
 
@@ -177,6 +222,9 @@ still starts a comment, so a console line cannot hold one.
 30 console set fps_cap 60
 45 p2 console log "level load"
 ```
+
+The trace tools' reader of input scripts (`coney_tools.input_script`) takes the line too, so a script with console lines
+still drives the original, whose pad ignores them: it has no console.
 
 ## Off in test mode {#test-mode}
 

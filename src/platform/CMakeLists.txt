@@ -55,7 +55,7 @@ target_sources(coney_platform PRIVATE profile_folder.cpp)
 target_sources(coney_platform PRIVATE game_run.cpp)
 # The game's console: its model set up with network play's role, the history file and the input script's lines
 # (docs/guides/console.md#in-the-game).
-target_sources(coney_platform PRIVATE game_console.cpp)
+target_sources(coney_platform PRIVATE game_console.cpp game_console_links.cpp game_settings.cpp)
 # Network play over UDP with ENet, and the game's side of it (host, join, the Network page's figures); the sessions
 # themselves are coney_net (docs/guides/multiplayer.md).
 target_sources(coney_platform PRIVATE enet_transport.cpp net_play.cpp)
@@ -212,6 +212,35 @@ set_tests_properties(coney.release.data_refuses_unfinished_install PROPERTIES PA
 add_test(NAME coney.release.has_no_debug_tools
          COMMAND "${CMAKE_COMMAND}" -DEXE=$<TARGET_FILE:${_coney_release_exe}> -DEXPECT=absent -P
                  "${PROJECT_SOURCE_DIR}/cmake/debug_tools_markers.cmake")
+# The release build holds the player console (docs/guides/studio/console.md#release): its banner is in the executable,
+# as the debug tools' markers are not, so the build is proved to carry the one console it should.
+add_test(NAME coney.release.has_player_console
+         COMMAND "${CMAKE_COMMAND}" -DEXE=$<TARGET_FILE:${_coney_release_exe}> "-DTEXT=Coney console" -P
+                 "${PROJECT_SOURCE_DIR}/cmake/executable_has_string.cmake")
+# The console's lines from input scripts, on the release executable: `help` lists exactly the commands the catalog has
+# available (the script reads them from src/console/commands.toml, so the two cannot drift, and a developer's command or
+# a missing one fails it), a developer command is unknown there, and `quit` ends the run with exit code 0 well before
+# its frames are over.
+add_test(NAME coney.release.console_help
+         COMMAND "${CMAKE_COMMAND}" -DEXE=$<TARGET_FILE:${_coney_release_exe}>
+                 "-DCATALOG=${PROJECT_SOURCE_DIR}/src/console/commands.toml"
+                 "-DINPUT=${PROJECT_SOURCE_DIR}/tests/support/console_release_help.txt" -P
+                 "${PROJECT_SOURCE_DIR}/cmake/console_help_matches_catalog.cmake")
+set_tests_properties(coney.release.console_help PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD})
+add_test(NAME coney.release.console_refuses_developer_commands
+         COMMAND ${_coney_release_exe} --headless --frames 5 --input-script
+                 "${PROJECT_SOURCE_DIR}/tests/support/console_release_unknown.txt")
+set_tests_properties(coney.release.console_refuses_developer_commands PROPERTIES
+                     TIMEOUT ${CONEY_TEST_HANG_GUARD}
+                     PASS_REGULAR_EXPRESSION "unknown command \"noclip\"; help lists the commands.*unknown command \"lua\"")
+add_test(NAME coney.release.console_quit
+         COMMAND ${_coney_release_exe} --headless --frames 600 --input-script
+                 "${PROJECT_SOURCE_DIR}/tests/support/console_release_quit.txt")
+# The script's `help`, ten frames in, is after the quit: a run the quit did not end (its hook not wired in) prints it.
+set_tests_properties(coney.release.console_quit PROPERTIES
+                     TIMEOUT ${CONEY_TEST_HANG_GUARD}
+                     PASS_REGULAR_EXPRESSION "console:   quitting"
+                     FAIL_REGULAR_EXPRESSION "Coney console: the commands this build has")
 if(CONEY_DEBUG_TOOLS)
     # The same check on the debug tools' `coney` finds the markers, so the check above cannot pass by finding nothing.
     add_test(NAME coney.debug_tools_markers_found

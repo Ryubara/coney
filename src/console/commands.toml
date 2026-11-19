@@ -6,8 +6,10 @@
 #   coney-tools console render-cpp   writes src/console/commands_table.cpp, the game library's table of specifications
 #   coney-tools console render       writes docs/guides/console-commands.md, the console commands reference
 #
-# CI runs both with --check. A command here has a handler bound by its name (src/console/catalog.h); until it has one
-# it stays out of the registry, unknown when typed. The developer set will be src/debug/console_commands.toml.
+# CI runs both with --check. A command here has a handler bound by its name (src/console/catalog.h; the player
+# commands' are in src/console/player_commands.cpp); a command that waits for a Coney feature names it in `available`
+# and stays out of the registry, unknown when typed, until the feature is built, so a test can say every present entry
+# has its handler. The developer set will be src/debug/console_commands.toml.
 #
 # Keys of a [[command]]:
 #   name       lower case, words joined by - or _; a name is in one catalog only
@@ -24,8 +26,8 @@
 #   examples   at least one { line, output }: a line typed and the lines it prints (render --check refuses a command
 #              without one)
 #
-# The set is the design's proposal (docs/guides/studio/console.md#release-set); a maintainer confirms it and any
-# command added later.
+# The release set was confirmed by the maintainer on 2026-10-29 (docs/guides/studio/console.md#decisions); a maintainer
+# confirms any command added to it later.
 
 [[command]]
 name = "help"
@@ -60,7 +62,7 @@ name = "version"
 group = "The terminal"
 access = "player"
 scope = "local"
-summary = "Coney's version and build, the SDK level, the disc's region and the renderer."
+summary = "Coney's version and build, the disc's region and the renderer."
 doubles = "none: a reading"
 examples = [
   { line = "version", output = [
@@ -90,7 +92,7 @@ summary = "The level, the checkpoint, the step and the play time, as the run log
 doubles = "none: a reading; the PCSX2 recipe of the same name reads the same in the original"
 needs = ["game"]
 examples = [
-  { line = "where", output = ["level 87, checkpoint 2, step 5400 (03:00.0)"] },
+  { line = "where", output = ["level level99, checkpoint 2, step 5400 (03:00.0)"] },
 ]
 
 [[command]]
@@ -101,7 +103,7 @@ scope = "local"
 summary = "Writes the last 30 s of the run log, every level, into the log file and says where."
 doubles = "The debug menus' Time page, which the release build lacks"
 examples = [
-  { line = "bugreport", output = ["bug report: 412 lines written to coney.log"] },
+  { line = "bugreport", output = ["bug report: the last 412 events written to <your data folder>/coney.log"] },
 ]
 
 [[command]]
@@ -109,13 +111,14 @@ name = "settings"
 group = "Settings"
 access = "player"
 scope = "local"
-summary = "Lists the settings with their values."
+summary = "Lists the settings with their values: the frame cap, vsync, the volume and the display preset."
 doubles = "The options and the player's command line"
 examples = [
   { line = "settings", output = [
-    "fps_cap   60",
-    "show_fps  off",
-    "vsync     on",
+    "fps_cap         60",
+    "vsync           on",
+    "volume          1",
+    "display_preset  ps2",
   ] },
 ]
 
@@ -188,6 +191,7 @@ group = "Panels and profiling"
 access = "player"
 scope = "local"
 summary = "Opens the Log panel, filtered when given a filter."
+available = "log-panel"
 doubles = "none: a reading"
 args = [
   { name = "filter", type = "text", optional = true, help = "A level, a category, a mod or text to keep" },
@@ -202,6 +206,7 @@ group = "Panels and profiling"
 access = "player"
 scope = "local"
 summary = "Opens the Resources panel: one row per running mod."
+available = "resources-panel"
 doubles = "none: a reading"
 examples = [
   { line = "resmon", output = ["Resources panel open"] },
@@ -213,6 +218,7 @@ group = "Panels and profiling"
 access = "player"
 scope = "local"
 summary = "Opens the Performance panel: the frame, the steps and the profiler's zones."
+available = "performance-panel"
 doubles = "none: a reading"
 examples = [
   { line = "perf", output = ["Performance panel open"] },
@@ -224,6 +230,7 @@ group = "Panels and profiling"
 access = "player"
 scope = "local"
 summary = "Opens the Network panel: the session's link and its figures."
+available = "network-panel"
 doubles = "none: a reading"
 examples = [
   { line = "net", output = ["Network panel open"] },
@@ -235,6 +242,7 @@ group = "Panels and profiling"
 access = "player"
 scope = "local"
 summary = "Records a profiler capture of some frames, says how far it got, or writes it to the captures folder."
+available = "profiler"
 doubles = "none: a reading"
 args = [
   { name = "action", type = "choice", choices = ["record", "status", "save"], help = "What to do with the capture" },
