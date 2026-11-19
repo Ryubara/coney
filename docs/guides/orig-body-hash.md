@@ -82,12 +82,12 @@ unreviewed.
 The same rule decides that any function only moved, for the two checks that judge a change by what it adds: [`orig
 check-tags`](coney-tools-fidelity.md#orig) and the touch-it rule of [the standards](coney-tools-standards.md#standards)
 (which `docs check` runs). `orig_review.function_moves` reads every definition and every separate declaration at the
-base and now, tagged or not, and calls one whose file, qualified name and parameter types are new a move of one that is
-gone under its own when `moves` would: the same body hash or moved hash, the same tags, each gone function taken over
-once. Two more things must be as they were, since a function without a tag has no address to be told by: its
-**standing** (its marker state, `@orig`, `@coney-only`, the older wording or none, from its own comment, its
-declaration's or its file's, and whether a comment stands above it) and, for an untagged function, its own name. So a
-function moved with `git mv`, into another class or to another file or folder keeps the standing it had:
+base and now, tagged or not (the [cost](#cost) is below), and calls one whose file, qualified name and parameter types
+are new a move of one that is gone under its own when `moves` would: the same body hash or moved hash, the same tags,
+each gone function taken over once. Two more things must be as they were, since a function without a tag has no address
+to be told by: its **standing** (its marker state, `@orig`, `@coney-only`, the older wording or none, from its own
+comment, its declaration's or its file's, and whether a comment stands above it) and, for an untagged function, its own
+name. So a function moved with `git mv`, into another class or to another file or folder keeps the standing it had:
 
 * `orig check-tags` counts it as known, as it does a function of a renamed file: it was in the fidelity audit's backlog,
   or needed no marker in a Coney-only folder (`src/platform/` to `src/gamemodes/`, the class renamed). It joins the
@@ -105,3 +105,24 @@ function moved with `git mv`, into another class or to another file or folder ke
 A function whose body, declaration, tags or marker changed on the way, one renamed without a tag, and a copy whose old
 function is still there are new work as before. A class that is new, or renamed, is a touched type: its own comment is
 owed.
+
+### What the move map costs {#cost}
+
+Reading every function of both trees took about 20 s on the whole of `src/` (1300 files), on every `docs check` that
+touched `src/` and on `orig check-tags` when a function was new. `function_moves` now reads only what a move can
+depend on, and gives the map that reading everything gives (a test checks that against the whole-tree rule on seeded
+edits):
+
+* a function's key holds its file, so only a file whose text differs between the base and now has a new or a gone key,
+  and a move needs one of each. A change that adds or removes no function (the usual edit) therefore reads only the files
+  it changed, and a tree that did not change reads nothing;
+* otherwise the units of the new and gone functions need what a tag or a marker says of them from elsewhere: a
+  declaration or definition of the same name (a file that does not write the name cannot hold one) and the header or
+  source beside a changed file under its stem (its marker and its header comment). Those files are read too, and no
+  other;
+* the base's files come from `orig_review.files_at(root, since, known)`: the text of a file the base holds byte for byte
+  as the disk does (by git's blob id) is taken from the disk, and only the files that differ are asked of git.
+
+On this repository a `docs check` of a change touching `src/` spent about 21 s in the move map and spends under 1 s now
+(a body edit: 0.4 s, in `texts_now` and `files_at`; a function moved to a new file: 0.6 s). A change that moves functions
+with a common name (`update`, `init`) reads every file that says it, up to the old cost.
