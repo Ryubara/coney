@@ -632,7 +632,7 @@ tag = 1
 tag = 6
 
 ["src/gamemodes/level_object_services.cpp"]
-tag = 21
+tag = 18
 
 ["src/gamemodes/level_object_services.h"]
 tag = 3
@@ -1093,7 +1093,7 @@ tag = 3
 tag = 4
 
 ["src/movies/movie_mode.cpp"]
-tag = 11
+tag = 9
 
 ["src/net/bit_stream.cpp"]
 comment = 3
@@ -2221,9 +2221,6 @@ citation = 2
 ["tests/platform/disc_front_end_wheel_test.cpp"]
 citation = 1
 
-["tests/platform/disc_game_session_test.cpp"]
-citation = 1
-
 ["tests/platform/disc_given_weapon_test.cpp"]
 citation = 1
 
@@ -2375,7 +2372,7 @@ citation = 2
 citation = 1
 
 ["tests/platform/disc_story_missions_test.cpp"]
-citation = 7
+citation = 4
 
 ["tests/platform/disc_story_start_test.cpp"]
 citation = 6
@@ -2411,7 +2408,7 @@ citation = 8
 citation = 4
 
 ["tests/platform/net_play_test.cpp"]
-citation = 12
+citation = 11
 
 ["tests/platform/pad_pipe_test.cpp"]
 citation = 2

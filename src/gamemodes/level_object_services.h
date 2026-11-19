@@ -88,10 +88,13 @@ class LevelObjectServices final : public world_objects::ObjectServices {
     }
 
     /// Raises a Sound3D (setEvents()), then plays the sound.
+    /// @coney-only network play's event before the original's sound; the original raises none
     void playSound(std::uint32_t nameHash, anim::Vec3 at) override;
     /// Raises a Cue at `at`, then plays it.
+    /// @coney-only network play's event before the original's sound; the original raises none
     void playCueAt(int cue, anim::Vec3 at) override;
     /// Raises a MaterialPair, then plays it.
+    /// @coney-only network play's event before the original's sound; the original raises none
     void playMaterialPair(std::uint8_t a, std::uint8_t b, anim::Vec3 at, float volume = 1.0F) override;
     void lockPickClick(double human) override;
     /// Calls the script function `function` with the human's and the door's handles; nothing for an empty name.
@@ -140,6 +143,7 @@ class LevelObjectServices final : public world_objects::ObjectServices {
     script::ScriptSystem& m_scripts;
     world_objects::WorldFlags& m_flags;
     // Raises `event` on the events setEvents() points at, when there are any.
+    // @coney-only network play; the original has none
     void raise(GameEvent event) const;
 
     world_objects::ObjectServices* m_sounds;

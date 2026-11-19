@@ -385,6 +385,7 @@ TEST_CASE("the disc's level34 checkpoint 3 keeps its spawned humans under SetSpa
 }
 
 TEST_CASE("the disc's level34 crate stack breaks on the first square and goes", "[disc][story]") {
+    // Expected: objects.md#breakable-props, confirmed (code)
     // docs/research/objects.md#breakable-props: a dyn_masks crate stack breaks on the first blow of any kind, sends
     // message 6 once (F.Vandalize) and is removed at its next update. Player 1 starts 1.2 m north of the first crate
     // stack checkpoint 2 meets, facing it, and presses square four times, from his first updates: by update 60 the
@@ -463,6 +464,7 @@ coney::StartPlace placeAt(float x, float y, float heading) {
 } // namespace
 
 TEST_CASE("the disc's level34 radio objective: three car stereos stolen with the stick", "[disc][story]") {
+    // Expected: scripting.md#level34, inferred
     // docs/research/scripting.md#level34: the riot's radio objective counts three dyn_carstereo pick-ups (item 11)
     // from the three cars CarSpawnRadio gave a radio. From checkpoint 2, player 1 is placed beside each car in turn
     // (Coney's --start test aid stands for the walk) and steals its stereo with the pad; the third car stands past
@@ -599,6 +601,7 @@ const coney::human::Human* nearestVictim(const coney::platform::PlayLevelMode& p
 } // namespace
 
 TEST_CASE("the disc's level34 muggings bonus counts a mugging done with the stick", "[disc][story]") {
+    // Expected: scripting.md#level34, inferred
     // docs/research/scripting.md#level34: the bonus counts the players' successful muggings (HuSetMugCallback, here
     // F.PedMugged). From checkpoint 2, player 1 is placed in front of the nearest pedestrian (Coney's --start test
     // aid stands for the walk), grabs him with circle, starts the mugging with triangle and holds the stick, 80 %

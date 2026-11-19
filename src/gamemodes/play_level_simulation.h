@@ -476,6 +476,8 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     void stepMugging(human::Human& human);
     // The stereo-theft panel follows player 1's theft: shown from the press, its progress each update with cue 0x22 per
     // stage (and 0x23 for the last), gone as the end clip starts (docs/research/hud-functions-panels.md#stereo-layout).
+    // @coney-only the level's glue between player 1's theft and its panel: the original's HUD_StereoTheftStart, Set
+    // and End calls from StereoTheft_Start, Theft_UpdateStereo and StereoTheft_End, in one step
     void stepStereoPanel(const human::Human& human);
     // The mug meter follows player 1's mugging: shown while it runs, with the raw left stick, whether it is on target
     // and both bars' fills (docs/research/hud-functions-panels.md#mug-meter-layout).

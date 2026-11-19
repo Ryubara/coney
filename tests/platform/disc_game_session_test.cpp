@@ -78,6 +78,7 @@ SetUp playAndRead(coney::test::DiscSession& run) {
 
 TEST_CASE("the disc's level99 checkpoint 2 is set up the same started directly and jumped to from the story",
           "[disc][story][session]") {
+    // Expected: pause.md#leaving, confirmed (code)
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
