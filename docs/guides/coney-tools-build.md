@@ -244,7 +244,11 @@ command again, or start it with `--detach`, write `STATUS.md` and stop ([Build w
 run that gave up keeps its place**: the same agent's run of the same worktree and preset (or check name) that joins the
 lane's queue again within an hour stands where its first ticket stood, ahead of the builds that came after it, instead
 of at the back (`kept-<queue>/` in the claims directory, used once; a place whose first ticket is six hours old is not
-kept). The same holds for a wait that the time budget ended, and for the folder lock's queue.
+kept). **A kept place lasts one hour**, or until its first ticket is six hours old (half the twelve a ticket lives),
+whichever comes first; after that nothing uses it, and it is removed: by the next build that joins any queue of the
+claims directory, and by [`workspace clean`](coney-tools-setup.md#workspace), which lists the expired ones and with
+`--apply` removes them (never one still inside its time), so the `kept-<queue>/` folders never grow for ever. The
+same holds for a wait that the time budget ended, and for the folder lock's queue.
 
 **The time budget.** `--max-wait` caps one wait; `--budget` (minutes, default and most 45) caps the whole call,
 waits and steps together, so an agent's wait plus its build stays inside the hour its prompt cache lasts. A larger
