@@ -70,7 +70,7 @@ std::string joined(const std::vector<std::string>& names) {
 // @coney-only the importer's container step
 std::expected<OriginalSave, Error> fromDataFile(std::span<const std::byte> data, SaveSourceKind kind,
                                                 std::string source) {
-    OriginalSave save{kind, std::move(source), {}, {}};
+    OriginalSave save{kind, std::move(source), {}, {}, {}};
     auto profiles = readPs2DataFile(data, save.skipped);
     if (!profiles) {
         return fail(profiles.error().code, std::format("{}: {}", save.source, profiles.error().message));
@@ -167,8 +167,23 @@ std::string_view describe(SaveSourceKind kind) {
         return "PS2 save file";
     case SaveSourceKind::Ps2Psu:
         return "PSU export";
+    case SaveSourceKind::XboxSaveFolder:
+        return "Xbox save folder";
+    case SaveSourceKind::XboxDataFile:
+        return "Xbox save file";
+    case SaveSourceKind::XboxQcow2Image:
+        return "xemu hard-disk image";
+    case SaveSourceKind::XboxHddImage:
+        return "Xbox hard-disk image";
+    case SaveSourceKind::XboxFatxImage:
+        return "FATX volume image";
     }
     return "save";
+}
+
+std::string placeOf(const OriginalSave& /*save*/, const ImportCandidate& candidate) {
+    // Stub until the Xbox importer lands: the card slot.
+    return std::format("card slot {}", candidate.slot + 1);
 }
 
 std::expected<std::vector<ImportCandidate>, Error> readPs2DataFile(std::span<const std::byte> bytes,
