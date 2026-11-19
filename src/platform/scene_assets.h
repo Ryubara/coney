@@ -56,8 +56,8 @@ class SceneAssets {
 
     /// Converts `texture` (graphics::TextureData, every level its raster has) into the store and returns its id; the
     /// same id when the texture is already held, and an invalid id, converting nothing, when the assets do not convert.
-    /// Before the texture's raster is converted for drawing: a PS2 raster is
-    /// read as loaded. Fails as platform::textureFromRw() or AssetStore::addTexture() does, holding nothing.
+    /// Before the texture's raster is converted for drawing: a PS2 raster is read as loaded. Fails as
+    /// platform::textureFromRw() or AssetStore::addTexture() does, holding nothing.
     [[nodiscard]] std::expected<graphics::TextureId, Error> addTexture(rw::Texture& texture);
     /// Drops the texture `id` names; nothing when it names none.
     void removeTexture(graphics::TextureId id);
