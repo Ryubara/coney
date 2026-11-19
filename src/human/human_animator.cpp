@@ -346,6 +346,8 @@ void HumanAnimator::playPaired(std::span<const std::uint32_t> clips, const chara
     playChain(clips, &attacker, loop, state, fade, held);
 }
 
+// A death chain that starts with another human's clip (Victim::die()'s named dying clip).
+// @coney-only Coney's task chain; the original builds its tasks in Human_PlayDeathReaction itself
 void HumanAnimator::playPairedThenOwn(std::uint32_t paired, const characters::AnimSet& attacker,
                                       std::span<const std::uint32_t> clips, std::uint32_t loop, AnimState state,
                                       float fade, HeldFlags held) {
@@ -363,6 +365,8 @@ void HumanAnimator::playPairedThenOwn(std::uint32_t paired, const characters::An
     m_state = state;
 }
 
+// The loop a combat chain ends in.
+// @coney-only the loop task Coney's chains end in
 std::unique_ptr<anim::AnimTask> HumanAnimator::chainLoop(std::uint32_t loop) const {
     if (const anim::AnimClip* own = clip(loop); own != nullptr) {
         return std::make_unique<anim::LoopTask>(*own, loop, m_anims->rate(loop), 0U);
