@@ -618,9 +618,18 @@ def check_compared(
     every address it carries, and is clean of decompiler fingerprints. Returns the refusals and the notes (functions
     the branch removed, and those it moved, which keep their compare)."""
     found: list[Refusal] = []
+    reshaped = orig_review.signature_changes(subject.changed, subject.removed)
+    gone = {old.key for _, old in reshaped}
     notes = [
         f"{u.coney} ({', '.join(_addresses(u))}) is no longer in the code: removed or untagged by this change"
         for u in subject.removed
+        if u.key not in gone
+    ]
+    # A changed parameter list is a change of the function, not its removal: it is compared as changed (below).
+    notes += [
+        f"{now.coney} ({', '.join(_addresses(now))}) changed its parameters from {old.params} to {now.params}: "
+        "it is a changed function and is studied and compared as one"
+        for now, old in reshaped
     ]
     notes += [
         f"{m.unit.coney} ({', '.join(_addresses(m.unit))}) moved from {m.was.coney} ({m.was.where}) with its code and "
