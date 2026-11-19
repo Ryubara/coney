@@ -29,7 +29,7 @@ import re
 import secrets
 import time
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 #: The variable the hook puts in front of the command.
@@ -54,6 +54,8 @@ class Identity:
     #: The Claude Code session the caller runs in (empty when the hook did not record one). Every main session has the
     #: id `main`, so only the session tells two of them apart; a subagent's id is unique on its own.
     session: str = ""
+    #: When the file this was read from expires (None: not read from a file, or not known).
+    expires: float | None = field(default=None, compare=False)
 
     def agent(self) -> dict[str, str]:
         """The fields as a stamp's `who.agent` holds them: id, type, model, and the session when it is known."""
@@ -105,7 +107,9 @@ def load(env: Mapping[str, str] | None = None, folder: Path | None = None, now: 
     if agent_id == MAIN and not _text(data.get("session")):
         # Every main session is `main`: without a session it names no one, so it is not vouched for.
         return Identity()
-    return Identity(agent_id, agent_type, model, verified=True, session=_text(data.get("session")) or "")
+    return Identity(
+        agent_id, agent_type, model, verified=True, session=_text(data.get("session")) or "", expires=float(expires)
+    )
 
 
 #: The id every main session has: it names no one, so it never identifies a person on its own.
@@ -139,7 +143,9 @@ def hand_on(found: Identity, folder: Path | None = None, now: float | None = Non
     A detached run's child (`build_cli.spawn_detached`) starts after the hook has removed the caller's file, because
     the hook does so as soon as the caller's command returns, so the caller's own token finds nothing (issue 1370: its
     `checked` stamp was unverified). The caller hands on only what the hook vouched for to it, in a file of the hook's
-    format under a fresh token; the file expires like the hook's and the hook's sweep removes it."""
+    format under a fresh token. The file expires like the hook's (`HAND_ON_SECONDS`) but never after the caller's own
+    file would have (`Identity.expires`), so a handed-on grant does not outlive the one it came from; the hook's sweep
+    removes it then (the hook's release of the caller's file cannot, which is why the cap matters)."""
     if not found.verified:
         return None
     where = default_folder() if folder is None else folder
@@ -155,7 +161,7 @@ def hand_on(found: Identity, folder: Path | None = None, now: float | None = Non
         "tool_use_id": "",
         "handed_on": True,
         "issued": moment,
-        "expires": moment + HAND_ON_SECONDS,
+        "expires": moment + HAND_ON_SECONDS if found.expires is None else min(moment + HAND_ON_SECONDS, found.expires),
     }
     final = where / file_name(token)
     temporary = final.with_suffix(".tmp")

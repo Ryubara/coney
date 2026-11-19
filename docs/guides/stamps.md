@@ -84,7 +84,8 @@ that typed variables or a token of its own). Recording never refuses a command: 
 `source` to be `hook` on the stamps it relies on when `stamps.require_hook_source` is on. A detached run
 (`--detach` of `build`, `ci run` and `task check`) starts its child after the caller's command has returned and the
 hook has removed its file, so the caller hands on what the hook vouched for to it: a file of the same format under a
-fresh token, in the child's environment only, with the same 10-minute life (`identity.hand_on`); an unverified caller
+fresh token, in the child's environment only, with the same 10-minute life but never past the caller's own file's
+expiry (`identity.hand_on`; the hook's release cannot remove it, so the cap ends it); an unverified caller
 hands on nothing, so its child is unverified too. A [run
 record](research-evidence.md#run-records) takes its `who` the same way and marks its source the same way; a run itself
 is not stamped.
@@ -451,7 +452,9 @@ runs is refused.
 **The stamps keep the caller's identity.** The hook removes the caller's identity file when its command returns
 ([Who](#who)), which is before the detached process reads it. So `--detach` hands on what the hook vouched for
 (`identity.hand_on`): a file of the same format under a fresh token, in the child's environment only, with the same
-10-minute life. The stamps then say `source: hook` and the agent that started the run; a caller the hook did not vouch
+10-minute life, capped at the expiry of the caller's own file (the hook cannot release the handed-on one, and the
+child's own subprocesses read it too, so it is not removed at the child's first read). The stamps then say
+`source: hook` and the agent that started the run; a caller the hook did not vouch
 for hands on nothing and its stamps are `unverified`, as its own would be (issue 1370: a detached `task check` stamped
 `unverified`, agent `unknown`, for want of it).
 

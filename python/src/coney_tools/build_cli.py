@@ -72,6 +72,9 @@ RESULT_FILE = "build-result.json"
 #: Seconds a build process may have started before its record says (a record without `process_started`).
 LEGACY_START_SLACK = 120.0
 DETACHED_OUTPUT = "build-detached.out"
+#: How long a record with no pid counts as running (seconds): its starter notes the child's pid within moments of
+#: writing it, so one older than this was left by a starter that died in between.
+NOT_STARTED_SECONDS = 300.0
 #: Windows process creation flags of the detached child (beside process_lifetime.CREATE_NO_WINDOW), spelt out so they
 #: exist on every platform.
 CREATE_NEW_PROCESS_GROUP = 0x00000200
@@ -713,6 +716,28 @@ def spawn_detached(command: list[str], cwd: Path, output: Path) -> int:
             return subprocess.Popen(command, creationflags=flags, **common).pid
 
 
+def spawn_recorded(result: Path, record: dict[str, Any], spawn: Callable[[], int]) -> int:
+    """Write `record` (a running run with no pid yet) to `result`, start the child with `spawn` and return its pid,
+    noted in the record with when that process started. Written before the spawn so a second --detach racing this one
+    finds it; the pid is noted after, so a child that dies before its own first write leaves a record `_alive` judges
+    by that process, which is gone. A spawn that fails puts back the record it replaced (none: no file), so it leaves
+    nothing that counts as running. A child's own record is never overwritten: it is noted only into this one."""
+    previous = _read_record(result)
+    _write_record(result, record)
+    try:
+        pid = spawn()
+    except BaseException:
+        if previous is None:
+            result.unlink(missing_ok=True)
+        else:
+            _write_record(result, previous)
+        raise
+    current = _read_record(result)
+    if current is not None and current.get("pid") is None and current.get("started") == record.get("started"):
+        _write_record(result, {**current, "pid": pid, "process_started": process_lifetime.process_started(pid)})
+    return pid
+
+
 def _start_detached(args: argparse.Namespace, root: Path, max_wait: float, budget: float) -> int:
     """--detach: record the run as started, start its child and return at once with where to look later. Refuses a
     second detached run in a worktree whose last one still runs (they would share one result file)."""
@@ -724,9 +749,10 @@ def _start_detached(args: argparse.Namespace, root: Path, max_wait: float, budge
             "`coney-tools build result` shows how it ends"
         )
     log = _new_log(root, args.preset, args.build_dir.name if args.build_dir else None, args.agent)
-    _write_record(result, _record(args, None, log))
     command = _child_command(args, root, (max_wait, budget), log, result)
-    pid = spawn_detached(command, root, result.parent / DETACHED_OUTPUT)
+    pid = spawn_recorded(
+        result, _record(args, None, log), lambda: spawn_detached(command, root, result.parent / DETACHED_OUTPUT)
+    )
     print(f"log: {log}")
     print(f"detached: pid {pid}, result in {result}")
     print(
@@ -810,14 +836,16 @@ def _read_record(path: Path) -> dict[str, Any] | None:
 
 
 def _alive(record: dict[str, Any]) -> bool:
-    """Whether the process a record names still runs (None as pid: the child has not started yet, which counts as
-    running). A live pid is not enough: the system hands a dead process's pid to a later one, and a stale record then
-    looked like a running build for ever. So the process must have started when the record says (`process_started`);
-    a record from before that was kept counts the process as a stranger when it began long after the record was made
-    (the build began just before its child wrote the record). A start time that cannot be read counts as running."""
+    """Whether the process a record names still runs. No pid yet means the starter has not noted the child's: that
+    counts as running for `NOT_STARTED_SECONDS`, after which its starter is taken to have died first. A live pid is
+    not enough: the system hands a dead process's pid to a later one, and a stale record then looked like a running
+    build for ever. So the process must have started when the record says (`process_started`); a record from before
+    that was kept counts the process as a stranger when it began long after the record was made (the build began just
+    before its child wrote the record). A start time that cannot be read counts as running."""
     pid = record.get("pid")
     if pid is None:
-        return True
+        started = record.get("started")
+        return not isinstance(started, int | float) or time.time() - started <= NOT_STARTED_SECONDS
     if not isinstance(pid, int) or not pcsx2_proc.pid_alive(pid):
         return False
     actual = process_lifetime.process_started(pid)

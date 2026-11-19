@@ -167,6 +167,25 @@ def test_a_verified_identity_is_handed_on_to_a_process_started_later(tmp_path: P
     assert not identity.load({"CONEY_AGENT_TOKEN": token}, folder=tmp_path, now=NOW + identity.HAND_ON_SECONDS).verified
 
 
+def test_a_handed_on_identity_never_outlives_the_callers_own_file(tmp_path: Path) -> None:
+    # The hook releases the caller's file when its command returns but cannot remove the handed-on one, so the
+    # handed-on one ends when the caller's would have (issue 1390), not 10 minutes after the hand-on.
+    write(tmp_path, id="a1", expires=NOW + 90)
+    caller = identity.load({"CONEY_AGENT_TOKEN": TOKEN}, folder=tmp_path, now=NOW)
+    assert caller.verified and caller.expires == NOW + 90
+    token = identity.hand_on(caller, folder=tmp_path, now=NOW + 30)
+    assert identity.load({"CONEY_AGENT_TOKEN": token or ""}, folder=tmp_path, now=NOW + 89).verified
+    assert not identity.load({"CONEY_AGENT_TOKEN": token or ""}, folder=tmp_path, now=NOW + 90).verified
+
+
+def test_a_handed_on_identity_of_a_long_lived_caller_keeps_the_ten_minute_life(tmp_path: Path) -> None:
+    write(tmp_path, id="a1", expires=NOW + 3600)
+    caller = identity.load({"CONEY_AGENT_TOKEN": TOKEN}, folder=tmp_path, now=NOW)
+    token = identity.hand_on(caller, folder=tmp_path, now=NOW) or ""
+    assert identity.load({"CONEY_AGENT_TOKEN": token}, folder=tmp_path, now=NOW + identity.HAND_ON_SECONDS - 1).verified
+    assert not identity.load({"CONEY_AGENT_TOKEN": token}, folder=tmp_path, now=NOW + identity.HAND_ON_SECONDS).verified
+
+
 def test_an_unverified_identity_is_never_handed_on(tmp_path: Path) -> None:
     assert identity.hand_on(identity.Identity(), folder=tmp_path, now=NOW) is None
     assert not list(tmp_path.glob("*"))

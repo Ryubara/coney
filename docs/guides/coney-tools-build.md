@@ -217,8 +217,9 @@ by one only lets it start the next, so nothing the command starts may outlive it
 | `test_jobs` (key of [`coney.local.toml`](workspace.md#local-config)) | `0` | a whole number: the parallel tests of `build --test`, in place of the tests' default; `0` keeps that default. Raise it on a machine with cores and memory to spare (each disc test holds a level in memory), lower it when others share the machine |
 
 Use the tests' share with care on a busy machine: every test run starts that many tests, a filtered `-R` or `-L` run in
-the fast lane included, so `build_slots` runs in the main lane and one in the fast lane at once start up to
-(`build_slots` + 1) × N processes. Lower `test_jobs` when others share the machine.
+the fast lane included. A test run holds a check slot or the fast lane's slot, never a main one ([Check
+slots](#check-slots)), so test processes are bounded by (`check_slots` + 1) × N at once; the compiles in the main
+lane add their own `-j` jobs beside them. Lower `test_jobs` when others share the machine.
 
 **The slots.** Each run holds a claim: a folder `slot-N.claim/` with `owner.json` (agent, worktree, preset, the step it
 is at, pid, start time) in the claims directory, built whole in a private folder and renamed into place, so exactly one
@@ -277,7 +278,11 @@ itself. "Still running" means the recorded pid lives **and** that process starte
 hands a dead process's pid to a later one, and a stale record once kept a worktree "busy" for good because another
 program had been given the pid. A pid whose process began at another time is gone (an older record without the start
 time is judged by the record's own time: a process that began long after it is a stranger), and a start time that
-cannot be read counts as running.
+cannot be read counts as running. The command that starts the run writes the record before the spawn (no pid yet) and
+notes the child's pid and start time in it right after, so a child that dies before its own first write leaves a
+record whose process is gone (a later `--detach` is accepted), and a spawn that fails puts the previous record back
+(none: no file); a record that still has no pid after five minutes (its starter died between the two writes) no longer
+counts as running. The same holds for `ci run --detach`, `task check --detach` and `orig fails-first --detach`.
 
 A process of ours that runs `build` for a detached run of its own (`orig fails-first --detach`, [Fails first](stamps.md#fails-first-detach))
 hands it the internal `--unattended` flag: the build has a detached run's limits (a wait of up to 240 minutes, no budget)

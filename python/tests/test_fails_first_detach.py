@@ -16,7 +16,7 @@ from conventions_support import write_checkout
 from git_support import git
 from test_fails_first import ONE, build_output, write_log
 
-from coney_tools import build_claims, build_cli, build_run, fails_first, identity, process_lifetime, stamps
+from coney_tools import build_claims, build_cli, build_run, fails_first, identity, pcsx2_proc, process_lifetime, stamps
 from coney_tools.cli import _build_parser, main
 from coney_tools.conventions import load_conventions
 from coney_tools.fails_first import BuildOutcome
@@ -169,8 +169,14 @@ def test_detach_needs_an_agent_id_for_the_build_slots(
 
 
 def test_a_second_detach_is_refused_while_the_first_runs(
-    checkout: Checkout, spawned: list[tuple[list[str], Path]], capsys: pytest.CaptureFixture[str]
+    checkout: Checkout,
+    spawned: list[tuple[list[str], Path]],
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # The starter noted the first child's pid (4242): it is alive, and its start time cannot be read.
+    monkeypatch.setattr(pcsx2_proc, "pid_alive", lambda pid: pid == 4242)
+    monkeypatch.setattr(process_lifetime, "process_started", lambda pid: None)
     assert main(checkout.arguments("--detach")) == 0
     capsys.readouterr()
     # The first run is under way: the worktree is detached at a commit and its marker is there, which a plain
