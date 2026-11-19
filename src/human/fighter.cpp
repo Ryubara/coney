@@ -506,6 +506,7 @@ TargetPick Fighter::pickThrowTarget(const FighterInput& input, float nearest, fl
 }
 
 bool Fighter::armedSpecialTargetNear(const FighterInput& input, std::uint32_t heldFlags) {
+    m_throwTarget = nullptr;
     // Only for a player whose cross + square reaches the melee throw's target test: not in an attack's phases, a melee
     // weapon in hand, the throw not forbidden.
     if (!m_player || input.command != combat::command::kCrossSquare ||
@@ -529,7 +530,7 @@ bool Fighter::armedSpecialTargetNear(const FighterInput& input, std::uint32_t he
     Combatant* target = counter != nullptr && !down
                             ? counter
                             : pickThrowTarget(input, kThrowNearest, kThrowRange, true, heldFlags, m_target).human;
-    m_target = target;
+    m_throwTarget = target;
     // **Coney stand-in** (#1396): the distance across the ground, where `Object_Distance` measures in 3D.
     return target != nullptr && flatDistance(input.position, target->position()) <= kThrowNearest;
 }
@@ -1127,6 +1128,10 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
         ++m_sprays;
     }
     bool consumed = false;
+    // The armed special reached its target step: the target it chose becomes the target, thrown at or not.
+    if (out.throwTargetTaken) {
+        m_target = m_throwTarget;
+    }
     if (out.rageStarted) {
         enterRage(animator);
         consumed = true;

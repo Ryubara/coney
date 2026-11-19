@@ -687,8 +687,10 @@ class Fighter {
     void playAttack(int animId, const FighterInput& input, HumanAnimator& animator, float& heading, bool chainStep);
     // The armed special's target, for a player whose cross + square may throw a melee weapon (heldFlags clear of the
     // attack phases, a melee weapon in hand, no no-throw flag): the counter search's human when he is not down,
-    // else pickThrowTarget() of the humans; it becomes the target. Returns whether it stands within kThrowNearest,
-    // which refuses the throw (combat::CombatInput::throwTargetNear). **Coney stand-in** for `Player_FindCounterTarget`
+    // else pickThrowTarget() of the humans, kept aside (m_throwTarget) until the dispatcher reaches the armed special,
+    // which alone makes it the target (combat::CombatOutput::throwTargetTaken): the dispatcher's busy gate and its
+    // routes return before it. Returns whether it stands within kThrowNearest, which refuses the throw
+    // (combat::CombatInput::throwTargetNear). **Coney stand-in** for `Player_FindCounterTarget`
     // (`0x0027ac30`): the nearest enemy within kThrowNearest inside kPickConeDegrees (at any angle with no target),
     // else the current target; down is grounded or out of health (docs/research/combat-throws.md#armed-special).
     // @orig 0x00288838 Player_ArmedSpecial (unknown)
@@ -1095,6 +1097,7 @@ class Fighter {
     std::optional<IncomingHit> m_deathPending; // a defeating hit taken while a paired move holds the death back
     bool m_healthOut = false;                  // healthOut(): the dying reaction ended with the health out
     Combatant* m_target = nullptr;             // the target kept (human +0xc8)
+    Combatant* m_throwTarget = nullptr;        // the armed special's target for this update's cross + square
     Combatant* m_snapTarget = nullptr;         // what the snap's search found for this update's square (not the target)
     int m_connect = 72;            // the grab's front connecting clip: 72, or the strong grapple's 657 (649 in rage)
     int m_grabBase = 72;           // the grab's base id (record +0xb4): 72, the tackle's 5 or a strong grapple's id

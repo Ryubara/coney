@@ -106,6 +106,9 @@ struct CombatOutput {
     /// startAnim is the armed special's throw of a melee weapon (491, 502, or 471 / 472 on the move): the fighter turns
     /// to the throw's target and plays it as `Human_StartMeleeThrow` does (human::Fighter::playMeleeThrow()).
     bool meleeThrow = false;
+    /// The armed special took its target (the fighter's CombatInput::throwTargetNear search) as the target, whether it
+    /// then threw or refused at a target within 2.0 m: the fighter makes it its target.
+    bool throwTargetTaken = false;
 };
 
 /// The player's combat state and its per-update decisions.

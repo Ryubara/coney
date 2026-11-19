@@ -493,7 +493,11 @@ bool PlayerCombat::armedSpecial(const CombatInput& input, const CombatTuning& tu
     }
     // A melee weapon, unless the human may not throw it or the target the fighter picked (the counter search's, else
     // the throw's own) stands within 2.0 m; any other set throws nothing.
-    if (input.animSet < 1 || input.animSet > 3 || input.noThrowWeapon || input.throwTargetNear) {
+    if (input.animSet < 1 || input.animSet > 3 || input.noThrowWeapon) {
+        return false;
+    }
+    out.throwTargetTaken = true;
+    if (input.throwTargetNear) {
         return false;
     }
     const int animId = meleeThrowAttack(attack, input.throwAiming);

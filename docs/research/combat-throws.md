@@ -499,9 +499,10 @@ ghetto blaster (set 6) go straight to `Player_Special` and are refused.
    attack's phases, the grab bit, the duck, the run attack: the same mask as square and cross), or no object's set.
 2. The chain's buffer is emptied: record `+0xbc` (the combo count) and `+0xb8` (the stored press) set to 0, even when
    the throw is then refused.
-3. An object with a type (`+0x86` not 0) of set 4, 5 or 6, in practice set 5 (step 1 of the dispatcher lets no 4 or 6
-   through), goes to `Player_CrossWithWeapon` (`0x002880d8`): the throw (or the bottle's smash) that square and cross
-   start ([Weapons](#weapons)), with no 2.0 m test.
+3. A set 5 object with a type (`+0x86` not 0, `Human_GetHeldObjectKind` `0x00231a38`), or a set 4 or 6 object
+   whatever its type (which the dispatcher's test above never lets through), goes to `Player_CrossWithWeapon`
+   (`0x002880d8`): the throw (or the bottle's smash) that square and cross start ([Weapons](#weapons)), with no 2.0 m
+   test.
 4. A melee weapon (set 3, 2 or 1; any other set is refused) is refused with human flag `0x4000000000`
    (`HuSetNoThrowWeapon`).
 5. **Its target**, for a player's human: the counter search's (`Player_FindCounterTarget(2.0, h)`, `0x0027ac30`: an
@@ -1169,7 +1170,8 @@ issue #228 ([the rule](#bat-cross)):
   `combat::heldIsThrowable` lets him throw what he holds (sets 1, 2, 3 and 5); a set 5 object goes to the throw
   square and cross start (`combat::throwAttack`), a melee weapon to `combat::meleeThrowAttack` (491 for a knife or a
   baton, 502 for a bat, 471 / 472 on the move), refused with the no-throw flag, at a free sprint or at a target within
-  2.0 m. The target is the fighter's (`Fighter::armedSpecialTargetNear`, then `Fighter::playMeleeThrow` picks again
+  2.0 m. The target is the fighter's (`Fighter::armedSpecialTargetNear`, taken as the target only when the dispatcher
+  reaches the armed special, never in a move's recovery or a hold; then `Fighter::playMeleeThrow` picks again
   with `Fighter::pickThrowTarget` and turns the player to face it by the clip's first event), and the clip's type-10
   event lets go of the weapon (`throwClip` in `repo:src/gamemodes/play_level_objects.cpp`). The disc test
   (`repo:tests/platform/disc_bat_cross_test.cpp`, level99, a bat in hand, nobody near) finds 502 started on the `0x22`
