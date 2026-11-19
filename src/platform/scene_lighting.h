@@ -159,10 +159,6 @@ class SceneLighting {
     [[nodiscard]] const graphics::WorldFog& fog() const { return m_lighting.fog; }
 
   private:
-    // The light manager's selection for `sphere` at squared camera distance `distSq`, the distance kept for the
-    // lighting frame's row of it (recordSelection()), since the cars select at 0 whatever their distance.
-    [[nodiscard]] graphics::LightSelection selectFor(float distSq, const graphics::LightSphere& sphere, bool objects,
-                                                     bool pointLights, bool pulse);
     // Puts the lights of `selection` that the lab's layers keep into the rig's world, mirrored from the manager's
     // records, and keeps `selection` for the frame's row of the atomic drawn next (renderInRig()).
     void useLights(const graphics::LightSelection& selection);
@@ -200,10 +196,10 @@ class SceneLighting {
     std::optional<graphics::LightView> m_gameView;          // setGameView()
     graphics::LightingHold m_hold;                          // Hold lighting's moment
     std::optional<graphics::LightSelection> m_pending;      // useLights()'s selection, until its atomic is drawn
-    float m_pendingDistSq = 0.0F;                           // the squared distance m_pending was selected at
-    bool m_background = false;                              // the atomic drawn next is the background's
-    bool m_hiddenHuman = false;                             // noteHiddenHuman()
-    bool m_routed = false;                                  // the atomic drawn next goes through the draw layer
+    bool m_carPart = false;     // the atomic drawn next is a car part's, its selection at squared distance 0
+    bool m_background = false;  // the atomic drawn next is the background's
+    bool m_hiddenHuman = false; // noteHiddenHuman()
+    bool m_routed = false;      // the atomic drawn next goes through the draw layer
 };
 
 } // namespace coney::platform
