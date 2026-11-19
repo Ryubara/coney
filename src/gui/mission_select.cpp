@@ -368,10 +368,9 @@ void MissionSelectScreen::open(std::vector<MissionSelectArea> areas, std::uint64
                                    .stepDivisor = m_layout.stepDivisor});
     // Coney's choice: the title has no circled characters (the slot +0x94 call after its set-up is not traced).
     m_title.setCircled({});
-    // Coney's choice: a text widget in the text font draws the usage line (the original's UsageInfo).
-    m_usage.setup(
-        TextWidgetSetup{.x = m_layout.usageX, .y = m_layout.usageY, .colour = kMenuGrey, .fontSlot = kTextFontSlot});
-    m_usage.setText(m_strings != nullptr ? m_strings->get(kUsageString) : std::string_view{});
+    // The usage line, left-aligned at the layout's point, showing global string 0x20.
+    m_usage.place(m_layout.usageX, m_layout.usageY, true);
+    m_usage.setLegend(m_strings != nullptr ? m_strings->get(kUsageString) : std::string_view{});
     m_letter.setup(TextWidgetSetup{.colour = colourAt(0x005fd328), .fontSlot = CircledText::kFontSlot});
     // The first area shown, then the area menu takes the focus.
     showArea();

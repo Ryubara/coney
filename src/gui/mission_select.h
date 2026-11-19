@@ -18,6 +18,7 @@
 #include "gui/menu_input.h"
 #include "gui/scrolling_menu.h"
 #include "gui/text_widget.h"
+#include "gui/usage_info.h"
 #include "gui/widget.h"
 #include "warriors/level_table.h"
 #include "warriors/profile_record.h"
@@ -163,9 +164,8 @@ struct MissionSelectBatches {
 ///   the chosen flag. The start itself stamps no time: only `MissionSelect_Init` writes the stamp, a 0, so in play (the
 ///   clock long past 2.3 s) the choice comes on the next frame. The original's clock is the real-time clock since the
 ///   machine started; Coney's is the game time the screen is given (Coney's stand-in).
-/// - **The marker** of the area shown pulses between 1 and 2 times kMarker in size, one way each kPulseMs, with its
-/// halo
-///   1.55 times as big in the area's halo colour × the map's grey.
+/// - **The marker** of the area shown pulses between 1 and 2 times the layout's marker size, one way each kPulseMs,
+///   with its halo 1.55 times as big in the area's halo colour × the map's grey.
 ///
 /// Coney's stand-in: the mission tile (`MS_Mission`, the selected entry's description: its picture, the best score and
 /// unlockables lines and its reveal) is drawn only as its letter (#1451).
@@ -317,7 +317,7 @@ class MissionSelectScreen : public Widget {
     BaseWidget m_logo{nullptr, 0};
     BaseWidget m_halo{nullptr, 2};
     CircledText m_title;
-    TextWidget m_usage;
+    UsageInfo m_usage;
     TextWidget m_letter; // the open mission's letter: the tile's stand-in (#1451)
     ScrollingMenu m_list;
     MenuInput m_input;

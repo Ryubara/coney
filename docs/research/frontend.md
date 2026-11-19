@@ -1333,7 +1333,7 @@ level has none (both from `Unlockables_GetLevelTargets`, [the counts](player-sta
 | `0x001bc328`, `0x001bc3b8` | `MissionSelect_CreateFrameBatch`, `_CreateMapBatch` | batches over sheet-table record 20 (21 when `0x0050e894` is set: 16:9 or progressive): 40 sprites at depth 8,700 (`+0x8c`), 50 at 8,000 (`+0x90`) | confirmed (code) |
 | `0x001bc440` | `MissionSelect_CreateLogoBatch` | 2 sprites of record 25 (`gang_logos`) at depth 8,500 (`+0x94`) | confirmed (code) |
 | `0x001bc4b8`, `0x001bc530` | `MissionSelect_CreateIconBatchA`, `_B` | 12 sprites of record 22 (`+0x98`) and of record 23 (`+0x9c`), depth 8,500 | confirmed (code) |
-| `0x001bc5a8` | `MissionSelect_Build` | the batches, the background (rectangle 0, grey 144), the gang logo (`gang_logos` rectangle 11, white, with a shadow), a frame (rectangle 2, or 3 in the other set, grey 128), the area title (`CircledTextHeader`, `0x600` bytes, `+0x80`), the usage line (string `0x20`), placed from `0x0050e850`-`0x0050e890` | confirmed (code) |
+| `0x001bc5a8` | `MissionSelect_Build` | the batches, the background (rectangle 0, grey 144), the gang logo (`gang_logos` rectangle 11, white, with a shadow), the halo (rectangle 2, or 3 in the other set, grey 128), the area title (`CircledTextHeader`, `0x600` bytes, `+0x80`), the usage line (string `0x20`), placed from `0x0050e850`-`0x0050e890` | confirmed (code) |
 | `0x001bc930` | `MissionSelect_AddMission` | appends an `MS_Mission` to its area (found by the CRC-32 of the mission's area name) | confirmed (code) |
 | `0x001bca30` | `MissionSelect_FindArea` | the area with that name hash | confirmed (code) |
 | `0x001bca70` | `MissionSelect_AddArea` | a new `MS_Area` for a new area: its marker (record 20 rectangle 5, (170, 170, 170)) at the area's map point | confirmed (code) |
@@ -1350,7 +1350,7 @@ level has none (both from `Unlockables_GetLevelTargets`, [the counts](player-sta
 | `0x001be130` | `MissionSelect_OnCommand` | the input handler: one of the two above | confirmed (code) |
 | `0x001be198` | `MissionSelect_UpdateWidget` | slot `+0x30`: the d-pad (auto-repeat mask `0xf000`, or the plain query after a refusal) and buttons; a new area updates the title; the chosen area's marker pulses between 1× and 2× its size every 400 ms with a halo 1.55× its size in the area's colour; after a start, `MissionSelect_OnAccept` once the clock is past 2,300 ms (in play the next frame) | confirmed (code) |
 | `0x001bdd38` | `MissionSelect_OnAccept` | cue 8; the next level is the mission's (`0x0015d540`), the checkpoint the chosen one + 1 (`0x0015d560`), the start flag set (`0x0015d5a0`); from checkpoint 2 on it also resets the inventory (W_GameState `+0x480`, `0x0041e040`) and the players' stats | confirmed (code) |
-| `0x001be848` | `MissionSelect_Render` | background, map, halo, every marker, the title, the area menu, the usage line | confirmed (code) |
+| `0x001be848` | `MissionSelect_Render` | the map (`+0xa0`), the gang logo (`+0x1b0`), the halo (`+0x590`), every marker, the title, the area menu, the usage line | confirmed (code) |
 
 ### After `GUI/RadarHUD.cpp` (no path string): the message box {#fn-after-radarhud}
 
