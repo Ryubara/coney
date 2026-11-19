@@ -21,6 +21,7 @@
 #include "gamemodes/memory_card_mode.h"
 #include "gamemodes/mission_complete_mode.h"
 #include "gamemodes/mission_failed_mode.h"
+#include "gamemodes/mission_select_mode.h"
 #include "gamemodes/pause_mode.h"
 #include "gamemodes/profile_manager_mode.h"
 #include "gamemodes/rumble_intro_layer.h"
@@ -142,6 +143,8 @@ class StartUpFlow final : public script::BindingHost {
     [[nodiscard]] RumbleResultMode& rumbleResult() { return m_rumbleResult; }
     /// Mode 0x13.
     [[nodiscard]] GameStatsMode& gameStats() { return m_gameStats; }
+    /// Mode 0x10.
+    [[nodiscard]] MissionSelectMode& missionSelect() { return m_missionSelect; }
     /// The humans the level scripts created.
     [[nodiscard]] const CreatedHumans& humans() const { return m_humans; }
     /// The level's world flags.
@@ -213,6 +216,9 @@ class StartUpFlow final : public script::BindingHost {
     /// `ShowGameStatsInterface(onClose)`: the statistics screen (mode 0x13).
     /// @coney-only the binding's route to its mode in Coney's start-up flow (the binding is ported in scripting)
     void showGameStats(std::string_view onClose) override;
+    /// `HUDShowMissionSelect(onCancel, onChoose)`: the mission select (mode 0x10).
+    /// @coney-only the binding's route to its mode in Coney's start-up flow (the binding is ported in scripting)
+    void showMissionSelect(std::string_view onCancel, std::string_view onChoose) override;
 
   private:
     // The sheet of sprite-sheet table record `record`, through the loader set, or an error without one.
@@ -252,6 +258,7 @@ class StartUpFlow final : public script::BindingHost {
     RumbleIntroLayer m_rumbleIntro;
     RumbleResultMode m_rumbleResult;
     GameStatsMode m_gameStats;
+    MissionSelectMode m_missionSelect;
     MemoryCardMode m_memoryCard;
     LegalScreenMode m_legal;
 };

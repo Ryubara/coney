@@ -126,6 +126,7 @@ add_executable(coney_tests
     gui/message_paging_test.cpp
     gui/circled_text_header_test.cpp
     gui/game_stats_test.cpp
+    gui/mission_select_test.cpp
     gui/control_menu_test.cpp
     gui/option_menu_test.cpp
     gui/pause_menu_test.cpp
@@ -198,6 +199,7 @@ add_executable(coney_tests
     platform/disc_pause_options_test.cpp
     platform/disc_pause_stats_test.cpp
     platform/disc_game_stats_test.cpp
+    platform/disc_mission_select_test.cpp
     platform/disc_level99_class_steps_test.cpp
     platform/disc_level99_player2_test.cpp
     platform/disc_hub_workout_test.cpp

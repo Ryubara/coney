@@ -100,6 +100,7 @@ add_library(coney_core STATIC
     gamemodes/rumble_intro_layer.cpp
     gamemodes/rumble_menu_mode.cpp
     gamemodes/game_stats_mode.cpp
+    gamemodes/mission_select_mode.cpp
     gamemodes/rumble_result_mode.cpp
     gamemodes/start_up_flow.cpp
     graphics/asset_store.cpp
@@ -141,6 +142,7 @@ add_library(coney_core STATIC
     gui/circled_text.cpp
     gui/circled_text_header.cpp
     gui/game_stats.cpp
+    gui/mission_select.cpp
     gui/global_strings.cpp
     gui/markup.cpp
     gui/message_paging.cpp
