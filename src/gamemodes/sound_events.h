@@ -27,10 +27,10 @@ namespace coney {
 class SoundEvents final : public script::SoundHost {
   public:
     /// The game's sound `inner` (null: none) with its events raised on `events` (null: none); both must outlive it.
-    SoundEvents(script::SoundHost* /*inner*/, GameEvents* events) : m_inner(nullptr), m_events(events) {}
+    SoundEvents(script::SoundHost* inner, GameEvents* events) : m_inner(inner), m_events(events) {}
 
     /// Sends the calls to `inner` from now on (null: none).
-    void setInner(script::SoundHost* /*inner*/) {}
+    void setInner(script::SoundHost* inner) { m_inner = inner; }
     /// Raises the events on `events` from now on (null: none).
     void setEvents(GameEvents* events) { m_events = events; }
 
