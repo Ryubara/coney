@@ -79,6 +79,12 @@ def test_a_pull_requests_table_without_auto_merge_manual_paths_means_on() -> Non
     assert conventions_with(("pull_requests.auto_merge_manual_paths", REMOVE)).pull_requests.auto_merge_manual_paths
 
 
+def test_a_review_table_without_reference_paths_has_no_reference_list() -> None:
+    # Optional, so a tool that has the key reads the default branch's rules before the branch that adds it is merged.
+    review = conventions_with(("tasks.review.reference_paths", REMOVE)).tasks.review
+    assert review.reference_paths == () and review.is_research_work("research/legacy-files.toml")
+
+
 def test_the_real_review_gate() -> None:
     review = load_conventions(REPO).pull_requests.review
     # The legacy gate runs the one merged reviewer (docs/guides/review/index.md), like `task review`.

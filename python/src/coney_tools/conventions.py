@@ -2563,12 +2563,14 @@ def _read_task_review(data: object, where: str) -> TaskReview:
             "verdict_file",
             "report_file",
             "research_paths",
-            "reference_paths",
             "docs_suffixes",
             "pages_min_addresses",
             "reverse_engineering_kinds",
             "reverse_engineering_models",
         ),
+        # Optional, so a tool that has the key reads the default branch's rules before the branch that adds it is
+        # merged (`load_release_rules_at` never falls back to the branch's own); absent, no file is a reference list.
+        ("reference_paths",),
     )
     agent = _text(table["agent"], _at(where, "agent"))
     # The agent is a file name under .claude/agents/, so it holds no path separator.
@@ -2597,7 +2599,7 @@ def _read_task_review(data: object, where: str) -> TaskReview:
         verdict_file=names["verdict_file"],
         report_file=names["report_file"],
         research_paths=_texts(table["research_paths"], _at(where, "research_paths")),
-        reference_paths=_texts(table["reference_paths"], _at(where, "reference_paths")),
+        reference_paths=_texts(table.get("reference_paths", []), _at(where, "reference_paths"), empty_ok=True),
         docs_suffixes=_texts(table["docs_suffixes"], _at(where, "docs_suffixes")),
         pages_min_addresses=_count(table["pages_min_addresses"], _at(where, "pages_min_addresses")),
         reverse_engineering_kinds=kinds,
