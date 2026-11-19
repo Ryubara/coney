@@ -22,6 +22,7 @@
 
 #include "core/pad.h"
 #include "debug/debug_session.h"
+#include "debug/light_trace.h"
 #include "debug/lighting_lab.h"
 #include "debug/menu_model.h"
 #include "debug/play_controls.h"
@@ -221,7 +222,7 @@ TEST_CASE("the Lighting page has the lab's groups and says what waits on other w
         CHECK(itemOn(*page, group).kind == ItemKind::Submenu);
     }
     CHECK(coney::debug::valueText(itemOn(*page, "Shadows")).find("not built yet") != std::string::npos);
-    CHECK(coney::debug::valueText(itemOn(*page, "Original's trace")).find("not built yet") != std::string::npos);
+    CHECK(coney::debug::valueText(itemOn(*page, "Original's trace")) == "none loaded (--light-trace FILE)");
 
     // Counts: the records in use (the built-in three and the level's four), the visible point lights, the coronas,
     // the atomics lit and the humans by their lights.
@@ -262,6 +263,50 @@ TEST_CASE("the Lighting page has the lab's groups and says what waits on other w
     DebugSession bare(tunables, DebugServices{}, nullptr);
     const auto none = open(*bare.model().openPage("Lighting"), "Counts");
     CHECK(none->find("No level") != nullptr);
+}
+
+TEST_CASE("a loaded light trace puts the original's lights beside Coney's for the selected atomic",
+          "[debug][lighting_lab]") {
+    // Expected: unverified, #1252 (Coney's own lab: --light-trace in docs/guides/realtime-lighting.md#lab-built)
+    TunableRegistry tunables;
+    Level level;
+    FakePlay play(level);
+    // The trace: the player's call as Coney chose it but with its last light 2 m off, and a sector far away.
+    const coney::graphics::FrameSelection& human = level.frame.selections[0];
+    coney::debug::TraceCall call;
+    call.caller = coney::debug::selectionCallerAddress(SelectionCaller::Human);
+    call.sphere = human.sphere;
+    call.tick = 77;
+    call.chosen = coney::debug::traceLightsOf(human);
+    REQUIRE(call.chosen.size() == 3);
+    call.chosen[2].position.x += 2.0F;
+    coney::debug::TraceCall sector;
+    sector.caller = coney::debug::selectionCallerAddress(SelectionCaller::Sector);
+    sector.sphere.centre = {500.0F, 0.0F, 0.0F};
+    DebugServices services;
+    services.play = [&play]() -> coney::debug::PlayControls* { return &play; };
+    services.lightTrace = {call, sector};
+    services.lightTraceName = "lights.csv";
+    DebugSession session(tunables, services, nullptr);
+    const auto page = session.model().openPage("Lighting");
+    REQUIRE(page != nullptr);
+    CHECK(coney::debug::valueText(itemOn(*page, "Original's trace")) == "2 calls from lights.csv");
+
+    // The player's atomic matches the trace's first call: its lights in order, the third differing from Coney's.
+    const auto selection = open(*page, "Selection");
+    const std::vector<std::string> lines = itemOn(*selection, "Original's lights").lines();
+    REQUIRE(lines.size() == 4);
+    CHECK(lines[0] == "trace call 0 (tick 77): 3 lights, differs from Coney's at slot 2");
+    CHECK(lines[1] == "#0 ambient");
+    CHECK(lines[3].starts_with("#2 point (2, 1, 10) r 3; Coney's: point (0, 1, 10) r 3"));
+
+    // Without a trace the item says how to load one, and the Selection group has no original's lights.
+    DebugServices bare;
+    bare.play = services.play;
+    DebugSession none(tunables, bare, nullptr);
+    const auto plain = none.model().openPage("Lighting");
+    CHECK(coney::debug::valueText(itemOn(*plain, "Original's trace")) == "none loaded (--light-trace FILE)");
+    CHECK(open(*plain, "Selection")->find("Original's lights") == nullptr);
 }
 
 TEST_CASE("a scripted pad holds the lighting, lights from the view camera, edits a light and dumps the frame",

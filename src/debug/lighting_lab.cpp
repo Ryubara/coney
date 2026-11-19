@@ -333,6 +333,15 @@ std::vector<std::string> selectionColumns() {
     return columns;
 }
 
+// Stub: none.
+std::vector<TraceLight> traceLightsOf(const graphics::FrameSelection& /*selection*/) { return {}; }
+
+// Stub: none.
+std::vector<std::string> originalSelectionLines(std::span<const TraceCall> /*trace*/,
+                                                const graphics::FrameSelection& /*selection*/) {
+    return {};
+}
+
 std::string selectionsCsv(const graphics::LightingFrame& frame) {
     std::string text;
     const std::vector<std::string> columns = selectionColumns();

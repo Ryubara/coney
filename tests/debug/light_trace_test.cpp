@@ -349,6 +349,27 @@ TEST_CASE("a glow call is compared after the glow, which is taken from the origi
     CHECK(coney::debug::lightReplayReport(replay).find("first difference at slot 4") != std::string::npos);
 }
 
+TEST_CASE("a trace's call is found for an atomic by its caller and the nearest sphere centre within 5 cm",
+          "[debug][lighting]") {
+    // Expected: unverified, #1252 (Coney's own match, the one trace diff makes: docs/guides/realtime-lighting.md
+    // #test-selection)
+    std::vector<FixtureCall> fixture = ruleCalls();
+    // A second object 4 cm from the first: the nearer one is found.
+    FixtureCall twin = fixture[1];
+    twin.sphere = {0.0F, 0.04F, 0.0F, 1.0F};
+    fixture.push_back(twin);
+    const std::vector<TraceCall> calls = parsed(fixture);
+    const auto* found = coney::debug::traceCallNear(calls, kObject, coney::world::Vec3{0.0F, 0.03F, 0.0F});
+    REQUIRE(found != nullptr);
+    CHECK(found == &calls[5]);
+    CHECK(coney::debug::traceCallNear(calls, kObject, coney::world::Vec3{0.0F, -0.04F, 0.0F}) == &calls[1]);
+    // Another caller at the same place, or the same caller 6 cm away, finds nothing.
+    CHECK(coney::debug::traceCallNear(calls, kHuman, coney::world::Vec3{0.0F, 0.0F, 0.0F}) == nullptr);
+    CHECK(coney::debug::traceCallNear(calls, kSector, coney::world::Vec3{0.06F, 0.0F, 0.0F}) == nullptr);
+    CHECK(coney::debug::traceLightText(calls[0].chosen[1]) == "point (3, 1, 0) r 3");
+    CHECK(coney::debug::traceLightText(calls[0].chosen[0]) == "ambient");
+}
+
 TEST_CASE("the original's light trace replays through Coney's selection with no call different", "[trace]") {
     // Expected: lighting.md#select, confirmed (runtime): run r-20261119-light-selection, 300 of 300 by the rule
     const char* path = SDL_getenv("CONEY_LIGHT_TRACE");

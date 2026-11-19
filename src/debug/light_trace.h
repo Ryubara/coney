@@ -74,6 +74,17 @@ parseLightTrace(std::string_view selections, std::string_view calls, std::string
 /// The name the trace gives the caller at `address` (`human`, `sector`, `object`, `car`, `background`), or `other`.
 [[nodiscard]] std::string_view traceCallerName(std::uint32_t address);
 
+/// How far apart an atomic's sphere centre and a trace call's may be and still be one atomic, metres.
+inline constexpr float kTraceMatchDistance = 0.05F;
+
+/// The call of `calls` from `caller` whose sphere centre is nearest `centre`, within kTraceMatchDistance; null for
+/// none. Stub: finds nothing.
+[[nodiscard]] const TraceCall* traceCallNear(std::span<const TraceCall> calls, std::uint32_t caller,
+                                             world::Vec3 centre);
+
+/// A light as the lab shows it. Stub: empty.
+[[nodiscard]] std::string traceLightText(const TraceLight& light);
+
 /// The lights Coney's selection chooses for `call`: a light manager holding each distinct light of the call's lists,
 /// with the call's lists as its viewport's, asked LightManager::select() with the call's arguments. In a glow call the
 /// glow is placed and coloured as the original's chosen light after the copied list (the trace holds the glow in no

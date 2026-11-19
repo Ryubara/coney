@@ -391,6 +391,14 @@ std::string_view traceCallerName(std::uint32_t address) {
     }
 }
 
+// Stub: finds nothing.
+const TraceCall* traceCallNear(std::span<const TraceCall> /*calls*/, std::uint32_t /*caller*/, world::Vec3 /*centre*/) {
+    return nullptr;
+}
+
+// Stub: empty.
+std::string traceLightText(const TraceLight& /*light*/) { return {}; }
+
 std::vector<TraceLight> replayCall(const TraceCall& call) {
     // 1. One record per distinct light of the call's lists, the same light in two lists (B and C share theirs) once.
     graphics::LightManager manager;

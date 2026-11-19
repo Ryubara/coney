@@ -372,6 +372,8 @@ struct Options {
     /// animation, the scripts), so every frame shows the same picture; the scenery still streams round the camera and
     /// the fixed step still runs. Requires playLevel.
     bool freezeWorld = false;
+    /// `--light-trace FILE`. Stub: not parsed yet.
+    std::optional<std::string> lightTrace;
     /// `--pad-pipe`: take player 1's pad from standard input, one line per frame, after writing what the frame before
     /// left on screen to standard output (docs/guides/running-play-level.md#pad-pipe), so a driver program can play the
     /// game by what it sees. Test mode; cannot be combined with `--input-script`.
