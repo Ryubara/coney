@@ -26,7 +26,7 @@ tag = 7
 tag = 8
 
 ["src/ai/attack_views.cpp"]
-tag = 19
+tag = 18
 
 ["src/ai/block_goal.cpp"]
 tag = 9
@@ -484,7 +484,7 @@ comment = 10
 tag = 1
 
 ["src/combat/player_combat.cpp"]
-tag = 12
+tag = 11
 
 ["src/combat/player_combat.h"]
 comment = 10
@@ -795,7 +795,7 @@ tag = 1
 tag = 2
 
 ["src/gui/profile_management_gui/pm_list_screen.cpp"]
-tag = 4
+tag = 3
 
 ["src/gui/profile_management_gui/pm_look.cpp"]
 tag = 8
@@ -816,7 +816,7 @@ tag = 2
 tag = 8
 
 ["src/gui/profile_management_gui/pm_screen.cpp"]
-tag = 12
+tag = 11
 
 ["src/gui/profile_management_gui/pm_shared.h"]
 tag = 3
@@ -860,7 +860,7 @@ comment = 1
 tag = 14
 
 ["src/gui/text_widget.cpp"]
-tag = 5
+tag = 4
 
 ["src/gui/widget.cpp"]
 tag = 2
@@ -942,7 +942,7 @@ tag = 6
 
 ["src/hud/radar.cpp"]
 comment = 1
-tag = 3
+tag = 2
 
 ["src/hud/scripted_bars.cpp"]
 tag = 6
@@ -989,13 +989,13 @@ tag = 6
 tag = 1
 
 ["src/human/fighter_grab.cpp"]
-tag = 20
+tag = 15
 
 ["src/human/fighter_tandem.cpp"]
 tag = 5
 
 ["src/human/fighter_victim.cpp"]
-tag = 10
+tag = 8
 
 ["src/human/holdable.h"]
 comment = 1
@@ -1036,7 +1036,7 @@ tag = 1
 tag = 5
 
 ["src/human/player.cpp"]
-tag = 20
+tag = 19
 
 ["src/human/player.h"]
 comment = 6
@@ -1060,7 +1060,7 @@ comment = 4
 tag = 2
 
 ["src/human/target_human.cpp"]
-tag = 14
+tag = 13
 
 ["src/human/target_human.h"]
 comment = 9
@@ -1072,7 +1072,7 @@ tag = 3
 comment = 3
 
 ["src/human/victim.cpp"]
-tag = 7
+tag = 5
 
 ["src/human/victim.h"]
 comment = 4
@@ -1147,7 +1147,7 @@ comment = 1
 comment = 1
 
 ["src/platform/hud_layer.cpp"]
-comment = 2
+comment = 1
 
 ["src/platform/hud_layer.h"]
 comment = 1
@@ -1321,7 +1321,7 @@ comment = 1
 tag = 1
 
 ["src/warriors/disk_profile_store.cpp"]
-tag = 13
+tag = 10
 
 ["src/warriors/game_over.cpp"]
 tag = 2
@@ -1502,7 +1502,7 @@ tag = 10
 comment = 2
 
 ["tests/ai/attack_choice_test.cpp"]
-citation = 7
+citation = 6
 
 ["tests/ai/attack_reach_test.cpp"]
 citation = 4
@@ -1523,7 +1523,7 @@ citation = 1
 citation = 3
 
 ["tests/ai/fidget_action_test.cpp"]
-citation = 5
+citation = 4
 
 ["tests/ai/fight_goal_test.cpp"]
 citation = 10
@@ -1718,7 +1718,7 @@ citation = 3
 citation = 3
 
 ["tests/combat/attacks_test.cpp"]
-citation = 17
+citation = 16
 
 ["tests/combat/being_hit_test.cpp"]
 citation = 5
@@ -1784,7 +1784,7 @@ citation = 3
 citation = 3
 
 ["tests/core/input_script_test.cpp"]
-citation = 13
+citation = 12
 
 ["tests/core/interpolation_test.cpp"]
 citation = 4
@@ -2015,7 +2015,7 @@ citation = 5
 citation = 8
 
 ["tests/gui/profile_management_gui/pm_controller_test.cpp"]
-citation = 19
+citation = 17
 
 ["tests/gui/rumble_mode_gui/rumble_match_screens_test.cpp"]
 citation = 9
@@ -2030,7 +2030,7 @@ citation = 7
 citation = 11
 
 ["tests/gui/widgets_test.cpp"]
-citation = 22
+citation = 21
 
 ["tests/hud/credits_test.cpp"]
 citation = 9
@@ -2060,7 +2060,7 @@ citation = 2
 citation = 13
 
 ["tests/hud/radar_test.cpp"]
-citation = 8
+citation = 7
 
 ["tests/hud/scripted_bars_test.cpp"]
 citation = 4
@@ -2120,7 +2120,7 @@ citation = 2
 citation = 2
 
 ["tests/human/locomotion_test.cpp"]
-citation = 18
+citation = 17
 
 ["tests/human/moving_attacks_test.cpp"]
 citation = 11
@@ -2138,7 +2138,7 @@ citation = 1
 citation = 7
 
 ["tests/human/script_state_test.cpp"]
-citation = 17
+citation = 16
 
 ["tests/human/stamina_test.cpp"]
 citation = 6
@@ -2203,9 +2203,6 @@ citation = 4
 ["tests/platform/disc_anim_player_test.cpp"]
 citation = 2
 
-["tests/platform/disc_bat_cross_test.cpp"]
-citation = 2
-
 ["tests/platform/disc_change_character_test.cpp"]
 citation = 1
 
@@ -2246,7 +2243,7 @@ citation = 1
 citation = 1
 
 ["tests/platform/disc_hub_workout_test.cpp"]
-citation = 2
+citation = 1
 
 ["tests/platform/disc_inspector_freeze_test.cpp"]
 citation = 3
@@ -2270,7 +2267,7 @@ citation = 1
 citation = 1
 
 ["tests/platform/disc_level80_test.cpp"]
-citation = 7
+citation = 5
 
 ["tests/platform/disc_level93_molotov_test.cpp"]
 citation = 1
@@ -2582,7 +2579,7 @@ citation = 1
 citation = 1
 
 ["tests/warriors/disk_profile_store_test.cpp"]
-citation = 6
+citation = 4
 
 ["tests/warriors/game_over_test.cpp"]
 citation = 5
