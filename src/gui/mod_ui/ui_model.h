@@ -75,7 +75,7 @@ class UiModel {
     /// @coney-only the UI widget model for mods
     [[nodiscard]] std::expected<void, UiRefusal> destroyScreen(std::string_view project, UiScreenId screen,
                                                                std::uint64_t nowMs);
-    /// Adds a widget to `screen`.
+    /// Adds a widget to `screen`; on an open screen with no focus, a focusable one takes it at the slot's next step().
     /// @coney-only the UI widget model for mods
     [[nodiscard]] std::expected<UiWidgetId, UiRefusal> addWidget(std::string_view project, UiScreenId screen,
                                                                  UiWidgetDef def);

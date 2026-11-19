@@ -238,11 +238,17 @@ void UiModel::step(std::size_t slot, const Pad& pad, std::uint64_t nowMs) {
         return;
     }
     MenuInput& input = m_inputs.at(slot);
+    UiScreen& s = *m_screens.at(*screen);
+    // A screen with no focus but a widget that can take it (one added since it opened) gives it the focus here, so it
+    // never stays deaf. Checked once a step rather than in addWidget, which would need the game time on every call.
+    if (!s.focused() && s.dialog() == nullptr &&
+        std::ranges::any_of(s.widgets(), [](const std::unique_ptr<UiWidget>& w) { return w->focusable(); })) {
+        s.takeFocus(nowMs, input);
+    }
     const std::optional<MenuCommand> command = input.dispatch(pad, nowMs);
     if (!command) {
         return;
     }
-    UiScreen& s = *m_screens.at(*screen);
     if (*command != MenuCommand::Back) {
         s.handle(*command, nowMs, input, m_events);
         return;

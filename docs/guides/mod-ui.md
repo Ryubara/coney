@@ -50,8 +50,9 @@ The widget kinds are the game's classes, each holding what it already holds in t
 
 A hidden widget (`setVisible`) is not drawn and cannot hold the focus: hiding the focused one passes the focus to the
 first widget left that can take it, and with none the screen has no focus and its commands go nowhere until a widget is
-shown again, which then takes the focus (the first that can, unless a dialog is open). A focus change on a screen that
-is covered on its flow, or on no flow, leaves the slot's input alone: only the top screen's focus moves block its d-pad.
+shown again, which then takes the focus (the first that can, unless a dialog is open). A focusable widget added to an
+open screen with no focus takes it on the slot's next step. A focus change on a screen that is covered on its flow, or
+on no flow, leaves the slot's input alone: only the top screen's focus moves block its d-pad.
 
 A choice dialog (`askChoice`) is the message box's choice: one or two choices in a one-row `OptionGrid` at the box's
 place, the default selected.
