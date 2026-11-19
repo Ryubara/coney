@@ -747,13 +747,17 @@ makes each profile a new Coney save in a free slot, with `importProfile` and the
   folder, `UDATA` or a copy of `E:` above it), a disk image through `readXboxImage`, read on demand whatever its size
   ([`Qcow2Image`](repo:src/fileio/qcow2_image.h) for xemu's, [`FatxVolume`](repo:src/fileio/fatx_volume.h) for the
   file system), and `profile.dat` alone by its size and version. Every chain is followed through the FAT, and one that
-  loops, leaves the volume or meets a free cluster before the file's size is refused as a damaged volume; a qcow2 image
+  loops, leaves the volume or meets a free cluster before the file's size is refused as a damaged volume, and so is a
+  folder whose chain runs past 256 KB (4,096 entries, **Coney's choice**: it bounds what a crafted FAT can cost); a
+  qcow2 image whose header or L1 table the file cuts short is refused before anything is allocated for it; a qcow2 image
   with a backing file, encryption, an external data file, extended L2 entries or the corrupt mark is refused, and a
   compressed cluster fails the read that reaches it (xemu writes none).
 - **The save folders** are read in name order, one profile each, as the game's load reads them
   (`readXboxSaveFolders`): a save whose `profile.dat` is missing or not 1,230 bytes, whose record is of another version,
   or whose profile has no name is left out and named, by its `SaveMeta.xbx` name when it has one. **Coney's choice**:
-  every save folder is read, where the game's load takes the first six the drive lists.
+  every save folder is read, where the game's load takes the first six the drive lists; and a record of another
+  version is left out, where the game's header read (Xbox `0x0033bc60`) raises its "bad version" flag (`+0xc8`) and
+  keeps the slot listed under the save's name, confirmed (code) there.
 - **The record** (`parseXboxRecord`) becomes the PS2's [record](#record) field for field: the bytes of the options
   become its flags, the Rumble store's gangs move to the PS2 store's places (`0x30` to `0x34` bytes each), and the
   Video setting, which the Xbox does not save, is Normal (**Coney's choice**). What is written is then the same Coney

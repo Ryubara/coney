@@ -382,6 +382,8 @@ std::optional<std::string> xboxSaveName(std::span<const std::byte> saveMeta) {
 std::vector<ImportCandidate> readXboxSaveFolders(const std::vector<XboxSaveFiles>& folders,
                                                  std::vector<std::string>& skipped) {
     std::vector<ImportCandidate> profiles;
+    // Coney's choice: every save folder is read, where the game's load (Xbox 0x0033efe0) stops after six, so a
+    // player with more saves than the game lists can still bring each over.
     for (std::size_t index = 0; index < folders.size(); ++index) {
         const XboxSaveFiles& folder = folders[index];
         // The save is named by its dashboard name when it has one, so a player sees which save was left out.
@@ -402,6 +404,9 @@ std::vector<ImportCandidate> readXboxSaveFolders(const std::vector<XboxSaveFiles
                                           std::max<std::uint64_t>(folder.dataBytes, folder.data->size())));
             continue;
         }
+        // Coney's choice: a record of another version is left out and named. The game's header read (Xbox
+        // 0x0033bc60) instead raises its "bad version" flag (+0xc8) and keeps the slot listed under the save's name;
+        // the importer has no such slot to show, and nothing it could import from a record it cannot read.
         auto record = parseXboxRecord(std::span(*folder.data).first(kXboxRecordSize));
         if (!record) {
             skipped.push_back(std::format("{}: {}", label, record.error().message));

@@ -102,8 +102,13 @@ std::expected<Qcow2Image, Error> Qcow2Image::open(Stream& file) {
     if (l1Entries > kMaxL1Entries || l1Entries < std::min(needed, kMaxL1Entries)) {
         return fail(ErrorCode::Invalid, std::format("not a qcow2 image: an L1 table of {} entries", l1Entries));
     }
+    // The table must lie inside the file before it is allocated, so a bad header costs no memory.
+    const std::uint64_t l1Offset = be(header, 40, 8);
+    if (l1Offset > file.size() || file.size() - l1Offset < l1Entries * 8) {
+        return fail(ErrorCode::Truncated, "the qcow2 image ends inside its L1 table");
+    }
     std::vector<std::byte> l1(static_cast<std::size_t>(l1Entries * 8));
-    if (auto read = readAt(file, be(header, 40, 8), l1); !read) {
+    if (auto read = readAt(file, l1Offset, l1); !read) {
         return std::unexpected(read.error());
     }
     image.m_l1.resize(static_cast<std::size_t>(l1Entries));

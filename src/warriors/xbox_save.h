@@ -58,10 +58,12 @@ struct XboxSaveFiles {
 };
 
 /// The profiles of the game's save folders, one profile per folder, in the order given, each with its folder's index
-/// as its slot. A folder whose data file is
-/// missing, not kXboxDataFileSize bytes, of another version or of a profile with no name is left out and named in
-/// `skipped`, as the game's load leaves such a save out (its slot not loadable, or unused). The signature is not
-/// checked: Coney has no key for it (a stand-in, docs/research/save.md#xbox-import).
+/// as its slot. A folder whose data file is missing or not kXboxDataFileSize bytes, or whose profile has no name, is
+/// left out and named in `skipped`, as the game's load leaves such a save out (its slot not loadable, or unused). A
+/// record of another version is left out and named too, where the game keeps its slot listed under the save's name and
+/// raises its "bad version" flag (Coney's choice). Every folder is read, where the game's load stops after six
+/// (Coney's choice). The signature is not checked: Coney has no key for it (a stand-in,
+/// docs/research/save.md#xbox-import).
 /// @orig xbox 0x0033efe0 XboxSave_LoadAll (unknown)
 /// @orig xbox 0x0033eda0 XboxSave_ReadSigned (unknown)
 [[nodiscard]] std::vector<ImportCandidate> readXboxSaveFolders(const std::vector<XboxSaveFiles>& folders,

@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -68,8 +69,8 @@ class FatxVolume {
 
     // The FAT entry of `cluster`: the next cluster of its chain, or an end or free mark.
     [[nodiscard]] std::expected<std::uint32_t, Error> next(std::uint32_t cluster) const;
-    // The clusters of the chain that starts at `first`, enough for `bytes` (every cluster to its end when `bytes` is
-    // 0 and `toEnd` is set). Refuses a chain that loops, leaves the volume or ends early.
+    // The clusters of the chain that starts at `first`: enough for `bytes`, or with `toEnd` every cluster to its end
+    // within `bytes` (a longer chain is refused). Refuses a chain that loops, leaves the volume or ends early.
     [[nodiscard]] std::expected<std::vector<std::uint32_t>, Error> chain(std::uint32_t first, std::uint64_t bytes,
                                                                          bool toEnd) const;
     // Reads `bytes` bytes of cluster `cluster` from its start into `out`.

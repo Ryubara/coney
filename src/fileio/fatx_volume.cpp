@@ -28,6 +28,9 @@ constexpr std::uint32_t kEnd16 = 0xfff0;
 constexpr std::uint32_t kEnd32 = 0xfffffff0;
 // The cluster count from which the FAT's entries are 32-bit.
 constexpr std::uint64_t kWideFatClusters = 0xfff0;
+// The longest folder read: 4,096 entries. Coney's choice: a longer chain is taken for damage, so a crafted FAT cannot
+// make one folder cost memory without bound (the console's save folders hold a handful of entries).
+constexpr std::uint64_t kFolderMaxBytes = 4096 * kEntryBytes;
 
 // A little-endian word of `bytes` at `offset`.
 std::uint32_t le32(std::span<const std::byte> bytes, std::size_t offset) {
@@ -103,6 +106,12 @@ std::expected<std::vector<std::uint32_t>, Error> FatxVolume::chain(std::uint32_t
     std::unordered_set<std::uint32_t> seen;
     std::uint32_t cluster = first;
     while (toEnd || clusters.size() < needed) {
+        // A chain followed to its end (a folder's) is bounded by `bytes`, the longest it may be.
+        if (toEnd && clusters.size() * std::uint64_t{m_clusterBytes} >= bytes) {
+            return fail(ErrorCode::Invalid,
+                        std::format("the FATX volume is damaged: the folder at cluster {} is longer than {} bytes",
+                                    first, bytes));
+        }
         if (cluster == 0 || cluster >= m_clusterCount) {
             return fail(ErrorCode::Invalid,
                         std::format("the FATX volume is damaged: a chain reaches cluster {}, outside "
@@ -128,7 +137,8 @@ std::expected<std::vector<std::uint32_t>, Error> FatxVolume::chain(std::uint32_t
         }
         cluster = *link;
     }
-    if (clusters.size() < needed) {
+    // A file's chain must reach its size; a folder's (`toEnd`) ends where its end mark is.
+    if (!toEnd && clusters.size() < needed) {
         return fail(ErrorCode::Invalid,
                     std::format("the FATX volume is damaged: the chain from cluster {} ends after {} of {} clusters",
                                 first, clusters.size(), needed));
@@ -141,7 +151,7 @@ std::expected<void, Error> FatxVolume::readCluster(std::uint32_t cluster, std::s
 }
 
 std::expected<std::vector<FatxEntry>, Error> FatxVolume::readFolder(std::uint32_t first) const {
-    const auto clusters = chain(first, 0, true);
+    const auto clusters = chain(first, std::max<std::uint64_t>(kFolderMaxBytes, m_clusterBytes), true);
     if (!clusters) {
         return std::unexpected(clusters.error());
     }
