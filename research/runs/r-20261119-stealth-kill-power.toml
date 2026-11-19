@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261119-stealth-kill-power"
+date = "2026-11-19"
+kind = "trace"
+tool = "trace original"
+digest = "5051e87c23971ff068ee95f560c4bb162f6c926e030650fdea7a8ae9fabb0327"
+
+[who]
+agent = "ae07fd5a24f5dfb86"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["puppet", "right-stick", "scripted-pad", "strike-contact", "strike-shape"]
+
+[run]
+name = "moves_stealth"
+method = ""
+
+[values]
+updates = 111
+missed_updates = 0
+columns = 40
+
+[hashes]
+trace_csv = "6d51024123e947f6dca5528f44a1b63741012cba6e91d93a2a72d1b3478b7b48"

@@ -283,8 +283,8 @@ The approach and the takedown, confirmed (code) at `0x0027e040`, `0x0027da10`, `
    his clip chained into the fight idle (state `0xb`), holding 7 and then 1. Confirmed (code).
    `Grab_BreakOnHit` (`0x0022b960`) gives the killer the paired attacker's state `0x1000`, so `Human_UpdateDown`
    (`0x00256a60`) does not refill his power meter while the kill plays and moves the refill's time stamp to now:
-   confirmed (code), and confirmed (runtime) by `moves_stealth` (power 400 to 300 at the kill, 300 for its 52
-   updates, refilling once the fight idle 358 plays).
+   confirmed (code); and confirmed (runtime), run r-20261119-stealth-kill-power (scenario `moves_stealth`: power 400
+   to 300 at the kill, 300 for its 52 updates, refilling by about 2 an update once the fight idle 358 plays).
 6. **After**: the pair's end (`Human_BreakPair`) clears the hidden state; the next ground snap hides the player again
    if he still stands in shadow and nobody hunts him. A guard more than 3 m away does not hear it in the hangout
    (`GangSetHearRange`, [Seen or not](#seen)); one who sees it gets the scan's new enemy and fights

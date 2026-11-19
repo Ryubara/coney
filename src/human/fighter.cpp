@@ -776,7 +776,8 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
         in.command = combat::command::kNone;
         // The killer is a paired move's attacker (state 0x1000, set by Grab_BreakOnHit 0x0022b960 from
         // Attack_StartPaired 0x00262ac8), so Human_UpdateDown 0x00256a60 neither refills his power meter nor counts
-        // the kill's time toward the next refill (stealth.md#stealth-kill; runtime moves_stealth: 300 for 52 updates).
+        // the kill's time toward the next refill (stealth.md#stealth-kill; run r-20261119-stealth-kill-power: 300 for
+        // the kill's 52 updates).
         m_combat.power().hold(input.nowMs);
     }
 
