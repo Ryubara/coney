@@ -32,6 +32,7 @@ namespace coney {
 namespace {
 
 // Game time in milliseconds from GameTimer ticks.
+// @coney-only Coney's game clock in milliseconds
 std::uint64_t millisecondsOf(std::uint64_t ticks) { return ticks / (GameTimer::kTicksPerSecond / 1000); }
 
 // The player slot this mode's player plays in: player 1, the only player a level has in Coney yet. Stand-in for the
@@ -45,6 +46,7 @@ constexpr std::size_t kPlayerSlot = 0;
 constexpr float kTargetDrop = 2.0F;
 
 // A point in the game's axes in RenderWare's: the game's (x, y, z) is RenderWare's (x, z, -y).
+// @coney-only Coney's change of axes for the step's camera
 world::Vec3 renderWareOf(anim::Vec3 game) { return world::Vec3{game.x, game.z, -game.y}; }
 
 } // namespace

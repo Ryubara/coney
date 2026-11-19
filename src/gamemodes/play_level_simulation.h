@@ -226,6 +226,7 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // The scenery's step round the step's camera (its streaming and draw distance), the lights' step and the
     // visibility pass the next step's streaming reads; returns that camera. The default: player 1's camera with its
     // far clip as the draw distance, nothing streamed.
+    // @coney-only Coney's presentation hook; the original streams round its camera inside its level update
     virtual StepView stepScenery(const FrameTime& frame);
     // The glints' step, `ticks` 60 Hz ticks of their blink, after the world objects' step
     // (docs/research/particles.md#glints).
