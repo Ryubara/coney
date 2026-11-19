@@ -51,9 +51,11 @@ add_library(coney_core STATIC
     core/script_patch_reader.cpp
     core/sequence_diff.cpp
     core/story_chapter.cpp
+    core/story_choices.cpp
     core/story_graph.cpp
     core/story_manifest.cpp
     core/story_merge.cpp
+    core/story_view.cpp
     core/sha256.cpp
     fileio/disc.cpp
     fileio/executable.cpp
@@ -149,6 +151,7 @@ add_library(coney_core STATIC
     gui/markup.cpp
     gui/message_paging.cpp
     gui/menu_input.cpp
+    gui/mods_story_list.cpp
     gui/message_box.cpp
     gui/option_grid.cpp
     gui/pause_menu/armies_game_over_menu.cpp

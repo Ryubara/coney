@@ -34,9 +34,11 @@ add_executable(coney_tests
     core/sha1_test.cpp
     core/sha256_test.cpp
     core/story_chapter_test.cpp
+    core/story_choices_test.cpp
     core/story_graph_test.cpp
     core/story_manifest_test.cpp
     core/story_merge_test.cpp
+    core/story_view_test.cpp
     core/mesh_view_option_test.cpp
     core/world_edit_option_test.cpp
     core/draw_hash_option_test.cpp
@@ -124,6 +126,7 @@ add_executable(coney_tests
     gui/disc_text_test.cpp
     gui/markup_test.cpp
     gui/menu_input_test.cpp
+    gui/mods_story_list_test.cpp
     gui/message_paging_test.cpp
     gui/circled_text_header_test.cpp
     gui/game_stats_test.cpp
