@@ -105,6 +105,7 @@ class Unit:
         start = self.key.find(f"{self.coney}(")
         if start < 0:
             return ""
+        # A key of a declaration ends in `;` and a repeated name in `'` (`_standings`): neither is a parameter.
         text = self.key[start + len(self.coney) :].rstrip("';")
         return text if text.endswith(")") else ""
 
