@@ -79,6 +79,12 @@ def test_a_pull_requests_table_without_auto_merge_manual_paths_means_on() -> Non
     assert conventions_with(("pull_requests.auto_merge_manual_paths", REMOVE)).pull_requests.auto_merge_manual_paths
 
 
+def test_a_review_table_without_reference_paths_has_no_reference_list() -> None:
+    # Optional, so a tool that has the key reads the default branch's rules before the branch that adds it is merged.
+    review = conventions_with(("tasks.review.reference_paths", REMOVE)).tasks.review
+    assert review.reference_paths == () and review.is_research_work("research/legacy-files.toml")
+
+
 def test_the_real_review_gate() -> None:
     review = load_conventions(REPO).pull_requests.review
     # The legacy gate runs the one merged reviewer (docs/guides/review/index.md), like `task review`.
@@ -877,6 +883,7 @@ def test_the_real_task_review_rules() -> None:
     assert (review.folder, review.packet_file) == ("review", "PACKET.json")
     assert (review.verdict_file, review.report_file) == ("REVIEW.json", "REVIEW.md")
     assert review.research_paths == ("docs/research/", "research/") and review.docs_suffixes == (".md",)
+    assert review.reference_paths == ("research/legacy-files.toml", "research/legacy.toml")
     assert review.pages_min_addresses == 2
     # Reverse-engineering review runs on Opus (AGENTS.md), so research and `@orig` reviews need that model.
     assert review.reverse_engineering_kinds == ("research", "orig") and review.reverse_engineering_models == ("opus",)

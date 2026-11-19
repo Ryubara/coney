@@ -279,19 +279,94 @@ def test_a_function_that_only_moved_needs_no_compare_but_is_still_reviewed(rig: 
     assert {m["coney"]: m["was"] for m in packet["moved"]} == {"Mind::think": "Brain::think(int)"}
 
 
-def test_a_research_data_file_is_research_work_but_no_page(rig: Rig) -> None:
+def commit_file(rig: Rig, branch: str, path: str, text: str) -> None:
+    """Branch from the base and commit one file."""
+    git(rig.root, "checkout", "-q", "-b", branch, "origin/main")
+    (rig.root / path).parent.mkdir(parents=True, exist_ok=True)
+    (rig.root / path).write_text(text, encoding="utf-8")
+    git(rig.root, "add", "-A")
+    git(rig.root, "commit", "-q", "-m", branch)
+
+
+def test_a_research_data_file_is_no_page(rig: Rig) -> None:
     rules = rig.conventions.tasks.review
     assert rules.is_research_page("docs/research/ai/brain.md") and rules.is_research_page("research/notes.md")
     assert not rules.is_research_page("research/legacy-files.toml")
     assert not rules.is_research_page("research/missions.yaml")
     assert not rules.is_research_page("docs/guides/pr.md")
-    git(rig.root, "checkout", "-q", "-b", "datafile", "origin/main")
+    commit_file(rig, "datafile", "research/missions.yaml", "missions: []\n")
+    packet, problems = rig.prepare()
+    assert problems == [] and packet["pages"] == [] and "research" in packet["kinds"]
+
+
+def test_a_reference_list_is_not_research_work(rig: Rig) -> None:
+    """Dropping entries from the legacy lists claims nothing about the original: no research checklist, no Opus."""
+    rules = rig.conventions.tasks.review
+    for path in ("research/legacy-files.toml", "research/legacy.toml"):
+        assert not rules.is_research_work(path)
+    for path in ("docs/research/ai/brain.md", "research/functions/ai.toml", "research/missions.yaml"):
+        assert rules.is_research_work(path)
+    commit_file(rig, "prune", "research/legacy-files.toml", 'files = ["a"]\n')
+    packet, problems = rig.prepare()
+    assert problems == [] and packet["pages"] == []
+    assert packet["kinds"] == ["code", "text", "commits"]
+
+
+def test_a_function_database_claim_is_research_work(rig: Rig) -> None:
+    commit_file(rig, "claim", "research/functions/ai.toml", 'name = "x"\n')
+    assert "research" in rig.prepare()[0]["kinds"]
+
+
+def test_a_reference_list_beside_a_research_page_is_still_research(rig: Rig) -> None:
     (rig.root / "research").mkdir()
     (rig.root / "research/legacy-files.toml").write_text('files = ["a"]\n', encoding="utf-8")
     git(rig.root, "add", "-A")
-    git(rig.root, "commit", "-q", "-m", "prune")
-    packet, problems = rig.prepare()
-    assert problems == [] and packet["pages"] == [] and "research" in packet["kinds"]
+    git(rig.root, "commit", "-q", "-m", "prune too")
+    assert "research" in rig.prepare()[0]["kinds"]
+
+
+def test_a_sonnet_reviewer_may_record_a_review_of_a_reference_list(rig: Rig) -> None:
+    commit_file(rig, "prune", "research/legacy-files.toml", 'files = ["a"]\n')
+    rig.write_verdict()
+    sonnet = identity.Identity("r1", "reviewer", "claude-sonnet-5-5", verified=True)
+    assert task_review.record(rig.env(identity=sonnet), "full") == 0
+
+
+def test_the_models_a_packet_needs_are_the_rules_for_its_kinds(rig: Rig) -> None:
+    rules = rig.conventions.tasks.review
+    assert task_review.required_models(["code", "text", "commits"], rules) == ()
+    assert task_review.required_models(["code", "research", "orig"], rules) == ("opus",)
+
+
+# --- the dry run ----------------------------------------------------------------------------------------------------
+
+
+def test_a_dry_run_says_the_kinds_and_the_model_and_writes_nothing(
+    rig: Rig, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert task_review.dry_run(rig.env(), "full") == 0
+    out = capsys.readouterr().out
+    assert "kinds: code, research, orig, text, commits" in out
+    assert "reverse-engineering review (orig, research): the reviewer must run on opus" in out
+    assert not (rig.unit.dir / "review").exists()
+
+
+def test_a_dry_run_of_a_change_with_no_reverse_engineering_allows_any_model(
+    rig: Rig, capsys: pytest.CaptureFixture[str]
+) -> None:
+    commit_file(rig, "prune", "research/legacy-files.toml", 'files = ["a"]\n')
+    assert task_review.dry_run(rig.env(), "full") == 0
+    out = capsys.readouterr().out
+    assert "kinds: code, text, commits" in out and "no reverse-engineering review: any model" in out
+
+
+def test_a_dry_run_names_the_problems_the_review_would_be_refused_for(
+    rig: Rig, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (rig.root / "stray.txt").write_text("x", encoding="utf-8")
+    assert task_review.dry_run(rig.env(), "full") == 1
+    out = capsys.readouterr().out
+    assert "uncommitted changes" in out and "kinds: code, research, orig, text, commits" in out
 
 
 def test_a_docs_change_needs_the_docs_checklist_and_a_code_change_the_code_one(rig: Rig) -> None:
@@ -945,12 +1020,21 @@ def test_the_command_line_selects_prepare_record_run_and_the_text_mode(
     monkeypatch.setattr(task_review, "prepare", stub("prepare"))
     monkeypatch.setattr(task_review, "record", stub("record"))
     monkeypatch.setattr(task_review, "run", stub("run"))
+    monkeypatch.setattr(task_review, "dry_run", stub("dry_run"))
     assert main(["task", "review", "t1"]) == 0
     assert main(["task", "review", "t1", "--text"]) == 0
     assert main(["task", "review", "t1", "--record"]) == 0
     assert main(["task", "review", "t1", "--record", "--text"]) == 0
     assert main(["task", "review", "t1", "--run", "--model", "opus", "--effort", "high"]) == 0
-    assert calls == [("prepare", "full"), ("prepare", "text"), ("record", "full"), ("record", "text"), ("run", "full")]
+    assert main(["task", "review", "t1", "--dry-run"]) == 0
+    assert calls == [
+        ("prepare", "full"),
+        ("prepare", "text"),
+        ("record", "full"),
+        ("record", "text"),
+        ("run", "full"),
+        ("dry_run", "full"),
+    ]
 
 
 def test_record_and_run_cannot_be_asked_together() -> None:
@@ -958,6 +1042,9 @@ def test_record_and_run_cannot_be_asked_together() -> None:
 
     with pytest.raises(SystemExit) as stopped:
         main(["task", "review", "t1", "--record", "--run"])
+    assert stopped.value.code == 2
+    with pytest.raises(SystemExit) as stopped:
+        main(["task", "review", "t1", "--dry-run", "--run"])
     assert stopped.value.code == 2
 
 
@@ -1213,8 +1300,8 @@ def test_a_review_shows_the_pending_work_that_changed_but_a_record_does_not(
         "report_stage",
         lambda root, task, conventions, say, write: shown.append((task, write)),
     )
-    assert task_review.run_review_command(arguments(text=False, record=False, run=False)) == 0
-    assert task_review.run_review_command(arguments(text=False, record=True, run=False)) == 0
+    assert task_review.run_review_command(arguments(text=False, record=False, run=False, dry_run=False)) == 0
+    assert task_review.run_review_command(arguments(text=False, record=True, run=False, dry_run=False)) == 0
     assert shown == [(rig.env().unit.task, True)]
 
 

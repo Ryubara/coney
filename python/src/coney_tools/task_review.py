@@ -39,7 +39,7 @@ import re
 import shutil
 import subprocess
 import sys
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -63,7 +63,7 @@ from coney_tools import (
     unit,
 )
 from coney_tools.config import ConfigError, find_repo_root
-from coney_tools.conventions import REVIEW_KINDS, Conventions, load_conventions_leniently
+from coney_tools.conventions import REVIEW_KINDS, Conventions, TaskReview, load_conventions_leniently
 from coney_tools.repo_checks import check_docs, check_title
 from coney_tools.unit_record import UnitRecordError, log_task_of, read_record
 
@@ -176,11 +176,10 @@ def _kinds(
     if mode == "text":
         return ["text"]
     rules = env.conventions.tasks.review
-    research = tuple(rules.research_paths)
     suffixes = tuple(rules.docs_suffixes)
     needed = {"text", "commits"}
     for name in files:
-        if name.startswith(research):
+        if rules.is_research_work(name):
             needed.add("research")
         elif name.endswith(suffixes):
             needed.add("docs")
@@ -401,6 +400,31 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
     return packet, problems
 
 
+# --- dry run ---------------------------------------------------------------------------------------------------------
+
+
+def dry_run(env: ReviewEnv, mode: str) -> int:
+    """Say which checklists the change needs and which model the reviewer must run on, and what would refuse the
+    review, without writing anything: the coordinator reads it to pick the reviewer's model before starting it.
+
+    0 when the tool part passes (the review could start), 1 when it would refuse.
+    """
+    packet, problems = build_packet(env, mode)
+    rules = env.conventions.tasks.review
+    kinds = reverse_engineering_kinds(packet["kinds"], rules)
+    models = required_models(packet["kinds"], rules)
+    print(f"task review {env.unit.task}: dry run, {mode} review of {packet['tip'][:12]} (nothing is written)")
+    print(f"  kinds: {', '.join(packet['kinds'])}")
+    if models:
+        print(f"  reverse-engineering review ({', '.join(kinds)}): the reviewer must run on {' or '.join(models)}")
+    else:
+        print("  no reverse-engineering review: any model")
+    if problems:
+        return _refuse(env.unit.task, "would be refused (no reviewer should start)", problems)
+    print("  the tool part passed")
+    return 0
+
+
 # --- prepare ---------------------------------------------------------------------------------------------------------
 
 
@@ -462,6 +486,16 @@ def prepare(env: ReviewEnv, mode: str) -> int:
 # --- record ----------------------------------------------------------------------------------------------------------
 
 
+def reverse_engineering_kinds(kinds: Sequence[str], rules: TaskReview) -> list[str]:
+    """The kinds among `kinds` that make a review reverse-engineering work (`reverse_engineering_kinds`)."""
+    return sorted(set(kinds) & set(rules.reverse_engineering_kinds))
+
+
+def required_models(kinds: Sequence[str], rules: TaskReview) -> tuple[str, ...]:
+    """The models (words in the model's name) a review of these kinds may run on; empty: any model."""
+    return rules.reverse_engineering_models if reverse_engineering_kinds(kinds, rules) else ()
+
+
 def _reviewer_problems(env: ReviewEnv, packet: Mapping[str, Any], report: stamps.Report) -> list[str]:
     """Why the caller may not record a review: it must be a reviewer who did not work on the task, on a model that the
     kind of review allows. A caller the hooks do not vouch for is let through and recorded as unverified."""
@@ -484,7 +518,7 @@ def _reviewer_problems(env: ReviewEnv, packet: Mapping[str, Any], report: stamps
         for stamp in report.stamps
     ):
         problems.append(f"reviewer {who.id} also worked on this task: a review is by someone who did not do the work")
-    kinds = sorted(set(packet["kinds"]) & set(rules.reverse_engineering_kinds))
+    kinds = reverse_engineering_kinds(packet["kinds"], rules)
     if kinds and not any(word.lower() in who.model.lower() for word in rules.reverse_engineering_models):
         problems.append(
             f"a reverse-engineering review ({', '.join(kinds)}) runs on "
@@ -751,6 +785,11 @@ def add_review_parser(commands: Any) -> None:
     which = review.add_mutually_exclusive_group()
     which.add_argument("--record", action="store_true", help="record the reviewer's verdict as a `reviewed` stamp")
     which.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="say the kinds and the model the reviewer needs, and what would refuse the review; write nothing",
+    )
+    which.add_argument(
         "--run", action="store_true", help="prepare, run a headless reviewer and report what it recorded"
     )
     review.add_argument(
@@ -844,6 +883,8 @@ def run_review_command(args: argparse.Namespace) -> int:
         mode = "text" if args.text else "full"
         if args.record:
             return record(env, mode)
+        if args.dry_run:
+            return dry_run(env, mode)
         # Work that appeared since the start is shown before the review (docs/guides/pending-work.md).
         task_overlap.report_stage(env.root, env.unit.task, env.conventions, _say, True)
         if args.run:

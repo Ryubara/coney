@@ -142,8 +142,12 @@ one definition: `task review` lists exactly these in its packet's `pages`, and
 `pr verify` demands that the `reviewed` stamp graded a page only when the change touches one of them. A data file under
 `research/` (`legacy-files.toml`, which `standards prune` rewrites, or a YAML table) is not a page: no reviewer can
 grade it, so a change whose only research paths are data files passes with a review whose `pages` list is empty. It is
-still research work: any change under the research paths gets the research checklist and, for a verified reviewer,
-the reverse-engineering model rule (`tasks.review.reverse_engineering_kinds`).
+still research work when it holds claims (the function database, `research/functions/`): any change under the research
+paths gets the research checklist and, for a verified reviewer, the reverse-engineering model rule
+(`tasks.review.reverse_engineering_kinds`). The exception is a reference list, a file named in
+`tasks.review.reference_paths` (`research/legacy-files.toml` and `research/legacy.toml`, our own standards bookkeeping
+with no claim about the original): a change to only those is `code`, reviewed on any model.
+`TaskReview.is_research_work` is the one definition, for `task review` and `pr verify`.
 
 ## pr text {#text}
 

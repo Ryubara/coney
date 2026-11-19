@@ -34,7 +34,7 @@ redoes the description alone.
 
 ```sh
 uv run --project python coney-tools task review [TASK] [--worktree DIR] [--base REF] [--pr-file FILE] [--text] \
-    [--record | --run] [--claude CMD] [--model M] [--effort E] [--timeout-minutes N]
+    [--record | --run | --dry-run] [--claude CMD] [--model M] [--effort E] [--timeout-minutes N]
 ```
 
 | Argument or option | Default | What it does |
@@ -46,6 +46,7 @@ uv run --project python coney-tools task review [TASK] [--worktree DIR] [--base 
 | `--text` | off | Review the description alone. Needs a passing full review of the same change and pairs; the packet's `kinds` is `text`. So it never follows a failed full review, even one that failed only on the description: `--record` of a failed review prints a `next:` line naming the full `task review` to run |
 | `--record` | off | Step 3: record the verdict in the review folder as a `reviewed` stamp |
 | `--run` | off | All three steps with a headless reviewer; not together with `--record` |
+| `--dry-run` | off | Before the reviewer starts: say which [checklists](#kinds) apply and which model the reviewer must run on, and list what the tool part would refuse the review for. Writes nothing (no packet, no stamp); exit 0 when the review could start, 1 when it would be refused; not together with `--record` or `--run` |
 | `--claude CMD` | `claude` | The Claude Code executable, for `--run` |
 | `--model M` | the agent file's (`opus`) | The model, for `--run` |
 | `--effort E` | the agent's | `low`, `medium`, `high`, `xhigh` or `max`, for `--run` |
@@ -161,13 +162,15 @@ hashed, because it is regenerated from the stamps, among them this review's own.
 | --- | --- | --- |
 | `code` | A changed file that is neither documentation nor research | [Code](code.md) |
 | `docs` | Changed Markdown outside the research paths | [Docs](docs.md) |
-| `research` | A change under the research paths (`tasks.review.research_paths`); only a `.md` file there is a graded [page](../pr.md#research-page) | [Research](research.md) |
+| `research` | A change under the research paths (`tasks.review.research_paths`) other than a reference list (`tasks.review.reference_paths`: the legacy lists, which hold our own standards bookkeeping and no claim about the original); only a `.md` file there is a graded [page](../pr.md#research-page) | [Research](research.md) |
 | `orig` | A changed function carries `@orig` | [Orig review](orig.md) |
 | `text` | Always | [Description](text.md) |
 | `commits` | Always, except for `--text` | [Commits](commits.md) |
 
 A change of several kinds applies each checklist to the files it covers. Review of `research` and `orig` is
-reverse-engineering work and needs a reviewer on Opus ([Who may record](#who)).
+reverse-engineering work and needs a reviewer on Opus ([Who may record](#who)). A change that only edits a reference
+list, such as dropping entries from `research/legacy-files.toml`, is `code`: no research checklist and any model. The
+coordinator reads the kinds and the model before starting the reviewer with `task review <task> --dry-run`.
 
 ## The verdict {#verdict}
 

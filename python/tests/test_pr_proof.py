@@ -953,6 +953,22 @@ def test_a_change_to_a_research_data_file_needs_no_page_graded(tmp_path: Path) -
     ]
 
 
+def test_a_reference_list_change_may_be_reviewed_on_a_smaller_model(tmp_path: Path) -> None:
+    # The model rule is the one `task review --record` applies: dropping legacy entries is no reverse-engineering.
+    built = make(tmp_path, shape="docs", skip=frozenset({"reviewed"}))
+    built.edit("research/legacy-files.toml", 'files = ["a"]\n')
+    built.check("docs")
+    built.review(functions={}, reviewer={"id": "reviewer-2", "type": "reviewer", "model": "claude-sonnet-5-5"})
+    strict = with_rules(built, ("stamps.require_hook_source", True))
+    assert texts(built.verify(conventions=strict), "reviewed") == []
+    built = make(tmp_path / "b", shape="docs", skip=frozenset({"reviewed", "checked"}))
+    built.edit("research/functions/ai.toml", 'name = "x"\n')
+    built.check("docs")
+    built.review(functions={}, reviewer={"id": "reviewer-2", "type": "reviewer", "model": "claude-sonnet-5-5"})
+    refused = texts(built.verify(conventions=strict), "reviewed")
+    assert any("a review of research work must run on opus" in t for t in refused), refused
+
+
 # --- the whole -------------------------------------------------------------------------------------------------------
 
 
