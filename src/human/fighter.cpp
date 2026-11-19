@@ -452,6 +452,7 @@ TargetPick Fighter::pickThrowTarget(const FighterInput& input, float nearest, fl
                 std::fabs(target->position().z - input.position.z) > height) {
                 continue;
             }
+            // **Coney stand-in** (#1396): across the ground, where the original measures in 3D.
             const anim::Vec3 to = anim::subtract(target->position(), input.position);
             const float distance = std::hypot(to.x, to.y);
             const float off = std::fabs(wrapAngle(headingOf(to) - along));
@@ -477,6 +478,7 @@ TargetPick Fighter::pickThrowTarget(const FighterInput& input, float nearest, fl
         const bool moving =
             input.gait == Gait::Jog || ((input.gait == Gait::Run || input.gait == Gait::Sprint) && free);
         const float reach = range * kThrowWideScale;
+        // **Coney stand-in**: the attack's object filter for `TargetFilter_ThrowObject` (not traced).
         const auto objectIn = [&input, along](const ObjectTarget& object) {
             return objectTargetable(object, input.position, along, kThrowObjectConeDegrees);
         };
@@ -511,7 +513,8 @@ bool Fighter::armedSpecialTargetNear(const FighterInput& input, std::uint32_t he
         hasFlag(flag::kNoThrowWeapon)) {
         return false;
     }
-    // The counter search: an enemy within reach inside the cone, at any angle with no target, else the target.
+    // The counter search (**Coney stand-in** for `Player_FindCounterTarget`): an enemy within reach inside the cone, at
+    // any angle with no target, else the target.
     const float along = aimHeading(input, 0.0F);
     Combatant* counter = nearestFightable(input, along, kThrowNearest, kPickConeDegrees);
     if (counter == nullptr && m_target == nullptr) {
@@ -520,7 +523,8 @@ bool Fighter::armedSpecialTargetNear(const FighterInput& input, std::uint32_t he
     if (counter == nullptr) {
         counter = keptTarget(input, m_target, std::numeric_limits<float>::max());
     }
-    // One down or out takes the throw's own pick of the humans instead; the one chosen becomes the target.
+    // One down or out (**Coney stand-in**: grounded or out of health) takes the throw's own pick of the humans instead;
+    // the one chosen becomes the target. The distance is across the ground (Coney stand-in, #1396).
     const bool down = counter != nullptr && (counter->state() == TargetState::Grounded || counter->health().depleted());
     Combatant* target = counter != nullptr && !down
                             ? counter
@@ -552,15 +556,21 @@ void Fighter::playMeleeThrow(int animId, const FighterInput& input, HumanAnimato
             m_steer.turnToOver(heading, headingOf(to), timeToEvent(animId, animator));
         }
     }
-    // **Coney stand-ins**: the weapon's message 4 (its state 1) has no counterpart, as Coney keeps no melee weapon
-    // state; the held object's anim set is not taken off here but follows the hand, which the release empties (the
-    // play mode sets it each step); and no aiming move style is ever on here, as the aim takes only a set 5 object.
+    // **Coney stand-in**: the weapon's message 4 (its state 1) has no counterpart, as Coney keeps no melee weapon
+    // state.
+    // **Coney stand-in**: no aiming move style is ever on here, as the aim takes only a set 5 object.
+    // **Coney stand-in**: the held object's anim set is not taken off here but follows the hand, which the release
+    // empties (the play mode sets it each step).
     const auto clip = clips::one(clips::clipOf(animId));
+    // **Coney stand-in**: the walking and running throws of sets 4 and 6 (506 / 552, 507 / 553) never come here; they
+    // are Player_CrossWithWeapon's, which Coney plays as attacks (playAttack()).
     if (animId == id::kOneHandedThrowFromWalk || animId == id::kOneHandedThrowFromRun) {
         // On the move: at once, holding the run attack's bit, back to the human's own movement after it.
         animator.playCombat(clip, clips::kIdle, AnimState::Attack, kAttackFade, clips::kMovingAttackHolds);
     } else if (m_target != nullptr) {
-        // Standing: blended in, holding 0x10, then the fight idle (record +0x18 = 0xb).
+        // Standing: blended in, holding 0x10, then the fight idle (record +0x18 = 0xb). **Coney stand-in**: the
+        // animator's own blend stands for the 1/30 s blend-out task (0.1 s in a shadow) and the push sphere left on,
+        // and 467's chain from 466 is set 5's, which never comes here.
         animator.playCombat(clip, kAnimFightIdle, AnimState::Attack, kMeleeThrowFade, clips::kMeleeThrowHolds);
     } else {
         // With nobody to face, the fight idle gives way to 389 and the idle, as at runtime.
