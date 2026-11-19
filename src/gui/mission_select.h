@@ -120,6 +120,7 @@ struct MissionSelectLayout {
     float textX = 0.44F;            ///< `0x0050e858`: the text's offset (the title's width).
     float textY = 0.074F;           ///< `0x0050e85c`: the title's height; the list starts this far below it.
     float listGap = 0.01F;          ///< `0x0050e860`: the list's item gap and its extra drop.
+    float circleOffset = 0.008F;    ///< `0x0050e864`: where the circles start, from the left edge.
     float tile = 0.35F;             ///< `0x0050e86c`: a mission tile's height.
     float circleW = 0.045F;         ///< `0x0050e870`.
     float circleH = 0.07F;          ///< `0x0050e874`.
@@ -157,8 +158,11 @@ struct MissionSelectBatches {
 ///   accept opens the selected one; then up and down step its checkpoint letter down and up within its section count
 ///   (cue 4, or `0xe` and the refused flag at either end), a second accept starts it (cue 8), and back closes it, or,
 ///   with none open, gives the focus back to the area menu (cue `0xf` either way).
-/// - **The start** (`MissionSelect_UpdateWidget`): kStartDelayMs after a start, the choice is made
-///   (`MissionSelect_OnAccept`): cue 8, the mission's level and its letter + 1 as the checkpoint, and the chosen flag.
+/// - **The start** (`MissionSelect_UpdateWidget`): once the clock is more than kStartDelayMs past the start stamp, the
+///   choice is made (`MissionSelect_OnAccept`): cue 8, the mission's level and its letter + 1 as the checkpoint, and
+///   the chosen flag. The start itself stamps no time: only `MissionSelect_Init` writes the stamp, a 0, so in play (the
+///   clock long past 2.3 s) the choice comes on the next frame. The original's clock is the real-time clock since the
+///   machine started; Coney's is the game time the screen is given (Coney's stand-in).
 /// - **The marker** of the area shown pulses between 1 and 2 times kMarker in size, one way each kPulseMs, with its
 /// halo
 ///   1.55 times as big in the area's halo colour × the map's grey.
@@ -169,7 +173,7 @@ struct MissionSelectBatches {
 /// Research: docs/research/frontend.md#fn-missionselecthud
 class MissionSelectScreen : public Widget {
   public:
-    /// The time a start waits before the choice is made, in milliseconds (`0x8fc`: more than this).
+    /// How far past the start stamp the clock must be for the choice, in milliseconds (`0x8fc`: more than this).
     static constexpr std::uint64_t kStartDelayMs = 2300;
     /// The marker's pulse: one way, in milliseconds (`+0x698`).
     static constexpr std::uint64_t kPulseMs = 400;
@@ -194,9 +198,8 @@ class MissionSelectScreen : public Widget {
     static constexpr graphics::Rgba kMapGrey{144, 144, 144, 255};
     /// The entries' colour when the label reads as 0.
     static constexpr graphics::Rgba kPurple{106, 65, 131, 255};
-    /// The title's circles' size, the circles' offset from the left edge (`0x0050e864`) and the two font sizes.
+    /// The title's circles' size and the two font sizes.
     static constexpr float kTitleCircle = 0.055F;
-    static constexpr float kCircleOffset = 0.008F;
     static constexpr float kTitleSize = 1.25F;
     static constexpr float kEntrySize = 0.92F;
 
@@ -223,7 +226,7 @@ class MissionSelectScreen : public Widget {
     /// @orig 0x001be130 MissionSelect_OnCommand (MissionSelectHUD.cpp)
     void handle(MenuCommand command, std::uint64_t nowMs);
     /// The frame: until a choice or a cancel, the pad's command, the title of a newly shown area, the markers, the
-    /// pulse and the halo; while a start waits, the choice once kStartDelayMs have passed.
+    /// pulse and the halo; while a start waits, the choice once the clock is past kStartDelayMs.
     /// @orig 0x001be198 MissionSelect_UpdateWidget (MissionSelectHUD.cpp)
     void update(const GuiFrame& frame) override;
     /// The map, the logo, the halo, every marker, the title, the area's list and the usage line.
@@ -265,7 +268,7 @@ class MissionSelectScreen : public Widget {
     /// The entry of mission `index` of the area at the cursor.
     [[nodiscard]] const CircledText& entry(std::size_t index) const { return *m_entries.at(index); }
     /// The marker of area `index`.
-    [[nodiscard]] const BaseWidget& marker(std::size_t index) const { return m_markers.at(index); }
+    [[nodiscard]] const BaseWidget& marker(std::size_t index) const { return *m_markers.at(index); }
     /// The halo.
     [[nodiscard]] const BaseWidget& halo() const { return m_halo; }
     /// The gang logo.
@@ -308,7 +311,7 @@ class MissionSelectScreen : public Widget {
     MissionSelectBatches m_batches;
     MissionSelectLayout m_layout;
     std::vector<MissionSelectArea> m_areas;
-    std::vector<BaseWidget> m_markers;
+    std::vector<std::unique_ptr<BaseWidget>> m_markers;  // widgets are not movable
     std::vector<std::unique_ptr<CircledText>> m_entries; // the entries of the area at the cursor
     BaseWidget m_map{nullptr, kMapRect};
     BaseWidget m_logo{nullptr, 0};
@@ -324,7 +327,7 @@ class MissionSelectScreen : public Widget {
     bool m_missionOpen = false;       // `+0x6a4`
     bool m_refused = false;           // `+0x6a8`
     Start m_start = Start::None;      // `+0x69c`
-    std::uint64_t m_startMs = 0;      // `+0x6a0`
+    std::uint64_t m_startMs = 0;      // `+0x6a0`: the start stamp, only open() writes it (0)
     bool m_pulseUp = false;           // `+0x690`: 0 shrinks from 2 to 1, 1 grows from 1 to 2
     std::uint64_t m_pulseStartMs = 0; // `+0x694`
     float m_pulse = 1.0F;
