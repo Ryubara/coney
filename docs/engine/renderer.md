@@ -604,7 +604,8 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
 - **Live and headless.** Live, each call is forwarded and also recorded while a recording runs. Under `--headless` no
   call reaches librw or OpenGL, the layer keeps the render states itself, a raster is made with librw's `DONTALLOCATE`
   and a lock gets a buffer of the layer's; `RenderEngine`'s 2D drawing, which draws nothing headless, runs while a
-  recording does, with librw's default near plane in place of a camera's.
+  recording does, with librw's default near plane in place of a camera's. A null camera, which no caller passes
+  today, is recorded as "no camera" by both camera begin and end and reaches librw in neither, forwarding or not.
 - **Synthetic scenes** in [draw_calls_test.cpp](repo:tests/platform/draw_calls_test.cpp), drawn headless: a 2D scene
   through `RenderEngine` (the fill, quads, alpha-tested triangles, a view wash, a window rectangle), a textured Im3D
   mesh under a placed camera with a Coney-made checkerboard, the throw arc's ribbon drawn by `ThrowArcRenderer`, and

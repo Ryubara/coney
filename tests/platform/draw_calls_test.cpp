@@ -343,9 +343,9 @@ TEST_CASE("headless the draw layer records without reaching librw or OpenGL", "[
 }
 
 TEST_CASE("a null camera is recorded and never forwarded, in begin and in end alike", "[platform][draw-stream]") {
-    // Expected: the layer's own rule (draw_calls.cpp), not the original's: beginCameraUpdate and endCameraUpdate treat
-    // a null camera the same way, a record without a camera and no call into librw, forwarding or not. Before the fix
-    // endCameraUpdate called through the null camera when forwarding, which crashed.
+    // Expected: docs/engine/renderer.md#comparing ("Live and headless"): beginCameraUpdate and endCameraUpdate treat a
+    // null camera the same way, a record without a camera and no call into librw, forwarding or not. Coney's own rule,
+    // the original has no such layer. Before the fix endCameraUpdate called through it when forwarding and crashed.
     auto engine = startHeadless();
     for (const bool forward : {false, true}) {
         draw::setForwarding(forward);
