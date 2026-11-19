@@ -435,7 +435,8 @@ holds. `pr hold` records that somebody holds the problem, so it is neither told 
   it. A waiver needs the note.
 - **A conflict is never parked with a bare waiver.** A conflict is work for the fix track, so `pr hold` refuses a
   waiver on the `conflict` cause (`--cause conflict`, or no `--cause` on a pull request GitHub says conflicts now, or
-  one whose state it cannot read) unless the note names a maintainer decision (`conclave.watch.conflict_waiver`);
+  one whose state it cannot read, which includes `UNKNOWN`, GitHub's answer while it is still working mergeability out:
+  try again shortly, or name the cause) unless the note names a maintainer decision (`conclave.watch.conflict_waiver`);
   anything else needs `--who`. What the snapshot does with a conflict, a waiver and the retelling:
   [Conclave](conclave.md#conflicts).
 - `--cause checks-failed` (or `conflict`, `ci-stuck`, `auto-merge-off`) covers that cause only; without it the hold
