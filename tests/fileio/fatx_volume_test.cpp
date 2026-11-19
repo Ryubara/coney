@@ -44,6 +44,8 @@ FatxEntry named(const std::vector<FatxEntry>& entries, const std::string& name) 
 
 } // namespace
 
+// NOLINTBEGIN(bugprone-implicit-widening-of-multiplication-result): the volumes are 1 MB, written 1024 * 1024 in the
+// tests' own words; the product is a constant far below int's range, so nothing widens wrongly.
 TEST_CASE("a FATX volume lists its folders and reads a file across clusters", "[fatx]") {
     // Expected: save.md#xbox-containers, confirmed (runtime), run r-20261119-xbox-hdd-fatx-layout (the superblock, the
     // FAT after it rounded to 4 KB, clusters from 1, 64-byte entries)
@@ -171,3 +173,4 @@ TEST_CASE("a FATX folder whose chain is longer than any folder is refused", "[fa
         CHECK(root.error().code == ErrorCode::Invalid);
     }
 }
+// NOLINTEND(bugprone-implicit-widening-of-multiplication-result)

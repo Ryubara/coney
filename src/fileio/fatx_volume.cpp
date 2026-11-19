@@ -19,7 +19,9 @@ constexpr std::uint64_t kFatAlign = 4096;
 // A directory entry's size, its name's longest length, and the marks of its first byte.
 constexpr std::size_t kEntryBytes = 64;
 constexpr std::size_t kNameMax = 42;
+// A deleted entry's first byte (0xe5) is above kNameMax, so the length test alone skips it.
 constexpr std::uint8_t kDeleted = 0xe5;
+static_assert(kDeleted > kNameMax);
 constexpr std::uint8_t kEndMarkFf = 0xff;
 constexpr std::uint8_t kEndMarkZero = 0x00;
 constexpr std::uint8_t kDirectoryAttribute = 0x10;
@@ -166,7 +168,8 @@ std::expected<std::vector<FatxEntry>, Error> FatxVolume::readFolder(std::uint32_
             if (length == kEndMarkFf || length == kEndMarkZero) {
                 return entries;
             }
-            if (length == kDeleted || length > kNameMax) {
+            // A deleted entry (first byte kDeleted) is above kNameMax too, so one test skips both.
+            if (length > kNameMax) {
                 continue;
             }
             FatxEntry entry;

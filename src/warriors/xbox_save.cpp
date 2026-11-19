@@ -192,6 +192,7 @@ std::vector<XboxSaveFiles> saveFoldersOnDisk(const std::filesystem::path& title)
     }
     std::ranges::sort(folders);
     std::vector<XboxSaveFiles> saves;
+    saves.reserve(folders.size()); // the size is known, so the loop below never regrows the vector
     for (const std::filesystem::path& folder : folders) {
         saves.push_back(filesOnDisk(folder));
     }
@@ -233,6 +234,7 @@ std::expected<OriginalSave, Error> fromVolume(io::Stream& stream, std::uint64_t 
     const auto title = entryNamed(titles, kXboxTitleFolder);
     if (!title || !title->directory) {
         std::vector<std::string> names;
+        names.reserve(titles.size()); // one name a title, known before the loop
         for (const io::FatxEntry& entry : titles) {
             names.push_back(entry.name);
         }
