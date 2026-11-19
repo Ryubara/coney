@@ -415,6 +415,15 @@ void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& 
         grabOrTackle(input, out);
         break;
     case command::kCrossSquare:
+        // A player's cross + square with an object he may throw goes to the armed special first; only when it starts
+        // nothing does the special get its turn (docs/research/combat-throws.md#armed-special). The held object's type
+        // is read only for a human no player controls who is not let throw (heldIsThrowable()'s `anyHuman`), which
+        // this call never is, so 0 stands for it.
+        if (input.player && heldIsThrowable(input.animSet, 0, input.player, true) && armedSpecial(input, tuning, out)) {
+            break;
+        }
+        special(input, tuning, out);
+        break;
     case command::kCircleCross:
     case command::kCircleTriangle:
         special(input, tuning, out);
@@ -426,8 +435,8 @@ void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& 
 
 void PlayerCombat::special(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out) {
     // Nothing in an attack's or another move's phases, and nothing for a player with a world object in hand, whatever
-    // its anim set; a human no player controls is not refused for what it holds. With a melee weapon the throw (502 /
-    // 491, not built) is the armed command's, and when it is refused too the cross's own release swings
+    // its anim set; a human no player controls is not refused for what it holds. With a weapon the throw (502 / 491)
+    // is armedSpecial()'s, and when it is refused too the cross's own release swings
     // (docs/research/combat-throws.md#bat-cross).
     if ((phaseFlags(input) & kSpecialRefusingPhases) != 0 || (input.player && input.holdingObject)) {
         return;
@@ -460,8 +469,41 @@ void PlayerCombat::special(const CombatInput& input, const CombatTuning& tuning,
     }
 }
 
-bool PlayerCombat::armedSpecial(const CombatInput& /*input*/, const CombatTuning& /*tuning*/, CombatOutput& /*out*/) {
-    return false;
+bool PlayerCombat::armedSpecial(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out) {
+    // Not in an attack's or another move's phases, and not with nothing in hand. **Coney stand-in**: the states
+    // 0x7bf9e9f4300 it also refuses are a helpless or held human's, whom update() has already sent elsewhere.
+    if ((phaseFlags(input) & kAttackRefusingPhases) != 0 || input.animSet == 0) {
+        return false;
+    }
+    // The chain's count and stored press are emptied, even when the throw is then refused.
+    m_chain.cancel();
+    const SquareInput attack{.stick = input.stick,
+                             .gait = input.gait,
+                             .phaseFlags = phaseFlags(input),
+                             .heldSet = input.animSet,
+                             .fightStance = input.fightStance};
+    // An object of sets 4-6 with a type is thrown as square and cross throw it, with no 2.0 m test.
+    if (input.holdingObject && throwSet(input.animSet)) {
+        const int animId = throwAttack(attack);
+        if (animId == anim_id::kNone) {
+            return false;
+        }
+        startAttack(animId, tuning, out);
+        return true;
+    }
+    // A melee weapon, unless the human may not throw it or the target the fighter picked (the counter search's, else
+    // the throw's own) stands within 2.0 m; any other set throws nothing.
+    if (input.animSet < 1 || input.animSet > 3 || input.noThrowWeapon || input.throwTargetNear) {
+        return false;
+    }
+    const int animId = meleeThrowAttack(attack, input.throwAiming);
+    if (animId == anim_id::kNone) {
+        return false;
+    }
+    // No attack of the chain's: the throw's hit is the weapon's, once it has left the hand.
+    out.startAnim = animId;
+    out.meleeThrow = true;
+    return true;
 }
 
 void PlayerCombat::strongGrapple(const CombatInput& input, CombatOutput& out) {

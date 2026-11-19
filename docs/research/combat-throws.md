@@ -2,7 +2,8 @@
 kind: topic
 system: combat
 owns:
-  functions: ["0x0025e5a8", "0x0026dd08", "0x002854b0", "0x002855f8", "0x002856b8", "0x002880d8"]
+  functions: ["0x00223ea0", "0x0025e5a8", "0x0026dd08", "0x002854b0", "0x002855f8", "0x002856b8", "0x002880d8",
+    "0x00288698", "0x00288838"]
 ---
 # Combat: throws, weapons in hand and mugging
 
@@ -42,7 +43,10 @@ in the player's combat code after `cns/cnsplayertag.cpp`; the melee weapon's han
 | `0x002880d8` | `Player_CrossWithWeapon` | square and cross with a set 4-6 object: smash or throw ([Weapons](#weapons)) | confirmed (code) |
 | `0x00392b88` | `ThrownObject_HitHuman` | a held or thrown object's hit on a human: its `CfgObj` damage, not the clip's ([A bat's hit](#bat-knockdown)) | confirmed (code) |
 | `0x00257e38` / `0x00257d70` / `0x00257ce8` | `Human_EndThrowAimIfHurt` / `Human_EndThrowAimDropHeavy` / `Human_EndThrowAim` | the three drop helpers ([Dropping what is held](#keep-weapon)) | confirmed (code) |
-| `0x00288838` | `Player_ArmedSpecial` | commands `0x22` / `0x39` with a melee weapon: throw it (`Player_ThrowMeleeWeapon`, `0x00288698`; [Weapons](#weapons)) | confirmed (code) |
+| `0x00288838` | `Player_ArmedSpecial` | commands `0x22` / `0x39` with a melee weapon: throw it (`Player_ThrowMeleeWeapon`, `0x00288698`; [Cross + square with a weapon in hand](#armed-special)) | confirmed (code) |
+| `0x00223ea0` | `Human_HeldIsThrowable` | whether what is held may be thrown: the armed special's gate ([Cross + square with a weapon in hand](#armed-special)) | confirmed (code) |
+| `0x0027ad80` | `Player_PickThrowTarget` | a throw's target, 2-20 m along the aim ([Cross + square with a weapon in hand](#armed-special)) | confirmed (code) |
+| `0x00261e78` | `Human_StartMeleeThrow` | plays a held object's throw clip ([Cross + square with a weapon in hand](#armed-special)) | confirmed (code) |
 | `0x002856b8` | `Player_UpdateMugging` | the mugger's stick game, mode 0 ([Mugging](#mugging)) | confirmed (code) |
 | `0x002855f8` | `Mug_MoveTargetAngle` | a new target angle for a stick game | confirmed (code) |
 | `0x002854b0` | `Brain_SetInterrogateOverride` | the script binding `SetInterrogateParam`: the override of the mugging's record | confirmed (code) |
@@ -451,8 +455,9 @@ hand](#armed-moves); what else a weapon changes:
 - **Throwing a melee weapon**: commands `0x22` and `0x39` with a knife or baton play 491 `KNIFE_THROW`, with a bat
   502 `SWINGABLE_OBJECT_THROW`, and 471 / 472 when moving (`Player_ArmedSpecial`, `0x00288838`, then
   `Player_ThrowMeleeWeapon`, `0x00288698`). So cross + square with a weapon throws it instead of the special. The
-  throw is refused when the target (the counter target, else the nearest within 20 m, `0x0027ad80`) is within
-  **2.0 m**, and with human flag `0x4000000000`; the command then does nothing.
+  throw is refused when its target is within **2.0 m**, and with human flag `0x4000000000`; the special is then
+  refused too, and the cross's own release swings. The rules in full: [Cross + square with a weapon in
+  hand](#armed-special).
 - **Blocks against weapons** (`Human_BlockHit`, `0x00269f30`): the bat's 26-34 range (its first swing 34 included)
   is never blocked; an unarmed blocker never blocks an armed hit; a set 3 (bat) blocker blocks armed hits, and the
   bat's cross 36 against a set 3 front block makes the attacker play 629 `BAT_BLOCK_REACT`; other armed blockers
@@ -469,6 +474,88 @@ which takes the human's **handle**, called on the game's thread; PoizoCiv facing
 | `moves_bottle_cross` | `dyn_beerbottle`, 0.7 m | cross | **475** at once (the smash, from behind by the side test) with the victim in 476: **155** damage and power 400 → 300 on its first update; the bottle was swapped for another object (the broken bottle) at k23 |
 | `moves_bottle_kill` | the broken bottle the smash left, the same victim once up | circle, then square in the front hold (82) | square in the hold played **494** on the next update with the victim in 495, power −100, **51** damage on its second update (not lethal at 445), 43 updates. Square outside a hold with the broken bottle played the knife's swing 45 |
 | `moves_bottle_throw` | `dyn_beerbottle`, 4.0 m | cross | 466 `ONE_HANDED_OBJECT_THROW_START` for 7 updates, then **467**; the bottle left the hand at k7 of 467 and hit 2 updates later for **60**, reaction 280 |
+
+### Cross + square with a weapon in hand {#armed-special}
+
+Read in Ghidra: confirmed (code) at the addresses named where no other level is given; the runtime rows say confirmed
+(runtime).
+
+The dispatcher (`Player_UpdateActions`, `0x0027c120`) gives cross + square (`0x22`) to the **armed special** before
+the special: when the human may throw what he holds (`Human_HeldIsThrowable(h, 1)`, `0x00223ea0`) and the command is
+`0x22` from a player's human (`+0x1b0` not −1) or `0x39` from anyone, it calls `Player_ArmedSpecial` (`0x00288838`);
+only when that starts nothing does the command go on to `Player_Special` (`0x00287730`), which refuses a pad player
+holding an object ([Cross with a bat in hand](#bat-cross)). Command `0x39` is not made by the street's tables
+(inferred, [Combat](combat/index.md#dispatch)).
+
+**Which objects** (`Human_HeldIsThrowable`, `0x00223ea0`, by the held object's anim set `+0x87` and type `+0x86`):
+set 5 always; a set 1 object of type 11 (a throwing knife) always; another object of set 1, 2 or 3 only for a
+player's human or when the caller's second argument is not 0; nothing else (no object, set 0, 4, 6 and up). The
+dispatcher passes 1, so for cross + square the answer is **sets 1, 2, 3 and 5**: the overhead objects (set 4) and the
+ghetto blaster (set 6) go straight to `Player_Special` and are refused.
+
+**The armed special** (`Player_ArmedSpecial`, `0x00288838`), in order:
+
+1. Refused (nothing, the special's turn) with any of the states `0x7bf9e9f4300`, any held flag of `0x100101f` (an
+   attack's phases, the grab bit, the duck, the run attack: the same mask as square and cross), or no object's set.
+2. The chain's buffer is emptied: record `+0xbc` (the combo count) and `+0xb8` (the stored press) set to 0, even when
+   the throw is then refused.
+3. An object with a type (`+0x86` not 0) of set 4, 5 or 6, in practice set 5 (step 1 of the dispatcher lets no 4 or 6
+   through), goes to `Player_CrossWithWeapon` (`0x002880d8`): the throw (or the bottle's smash) that square and cross
+   start ([Weapons](#weapons)), with no 2.0 m test.
+4. A melee weapon (set 3, 2 or 1; any other set is refused) is refused with human flag `0x4000000000`
+   (`HuSetNoThrowWeapon`).
+5. **Its target**, for a player's human: the counter search's (`Player_FindCounterTarget(2.0, h)`, `0x0027ac30`: an
+   enemy within 2.0 m, else the current target) when it gives one that is not down or dead (`Human_IsDownOrDead`),
+   else `Player_PickThrowTarget(2.0, 20.0, h, 1)` (below). It becomes the human's target (`Human_SetTarget`).
+6. The throw is **refused when that target is within 2.0 m** (`Object_Distance`, 3D). Otherwise
+   `Player_ThrowMeleeWeapon` starts it, and the armed special reports what it reported.
+
+**The throw** (`Player_ThrowMeleeWeapon`, `0x00288698`):
+
+1. Refused in the throw's aiming state (`+0x1be` −1 and the move function `Human_MoveThrowAim`) and at a sprint with no
+   held flag (`Human_IsSprintingFree`: gait 5, `+0x08` 0).
+2. The clip by the gait (human `+0x1a8`): 472 `ONE_HANDED_OBJECT_THROW_FROM_RUN` at a run with no held flag
+   (`Human_IsRunningFree`) or at a jog (gait 3, whatever is held); 471 `…_FROM_WALK` at a walk (gait 2) outside a
+   fight stance (state bits `0x3`); otherwise the standing throw, **491 `KNIFE_THROW`** for set 1 or 2 and **502
+   `SWINGABLE_OBJECT_THROW`** for any other (the bat, set 3). A run or a sprint with a held flag takes the standing
+   throw.
+3. For a player (brain `+0x4`, its type, 0) the target is picked again, `Player_PickThrowTarget(2.0, 20.0, h, 0)`,
+   which may also take an object or a pane, and stored as the target (`Human_SetTargetObject`); a human whose brain
+   is not a player's keeps the target he has.
+4. With a target, the human turns to face it over the time to the clip's first event (`Anim_TimeToFirstEvent`,
+   `Human_TurnToFaceObject`): a turn, no slide.
+5. The held weapon gets message 4, which sets its state (data `+0x10`) to 1 (`MeleeWeapon_OnMessage`, `0x003fead0`).
+6. `Human_StartMeleeThrow` (`0x00261e78`) plays the clip: it pops the aiming move style (`0x13`) if on, removes the
+   held object's anim set from the human's stack, and then, for 471 and 472, plays the clip as a moving task holding
+   `0x1000000`; for 491 and 502 (and every standing throw), plays it with a 0.2 s blend, followed by the fight idle
+   (slot `0xb`, record `+0x18` = `0xb`) and a blend-out of 1/30 s (0.1 s hidden in a shadow), holding `0x10`. (The
+   walking and running throws of sets 4 and 6, 506 / 552 and 507 / 553, which only `Player_CrossWithWeapon` starts,
+   blend with the gait instead.) Last, it warns the target when it is a human (`Human_WarnOfAttack`).
+
+**The target search** (`Player_PickThrowTarget(near, range, h, humansOnly)`, `0x0027ad80`): the aim is
+`Player_GetAimHeading` (the stick's heading, else the facing), and everything nearer than `near` (record `+0xd8`) is
+skipped, so the throw never picks what is within 2.0 m.
+
+1. The standing enemies (`TargetFilter_EnemyStanding`, `0x00279568`) within `range` (20 m) inside **27°** of the aim and
+   2 m in height; with none, within 0.75 × `range` (15 m) inside **54°** and 6 m in height.
+2. Without `humansOnly`, with no human found: the world objects (`TargetFilter_ThrowObject`, `0x0027a1e8`) within
+   0.75 × `range` inside 18°, then the panes within it inside 54° (27° at a jog, a free run or a free sprint), 2 m in
+   height.
+3. The nearest found wins. With none, the current target is kept, at any distance, when it has a body and, with
+   `humansOnly`, is a human (task type bit `0x40`, as `Object_AsHuman` tests).
+
+So the throw goes at an enemy between 2 and 20 m, nearly along the stick; the 2.0 m refusal comes from the counter
+search, which finds an enemy within 2.0 m, or from a current target who is that near.
+
+**Where a script forbids it.** `level99`'s combat lesson sets the no-throw flag on both players
+(`level99_combat.lua`, `SetupCombat`, `HuSetNoThrowWeapon` on each) and clears it in its `Cleanup`, so in the lesson
+cross + square with a weapon throws nothing and the cross's release swings. Inferred from the script and the flag test
+above (step 4).
+
+**The release** is the clip's type-10 event, at frame 18 of 491 and frame 15 of 502 (k24 and k20 at the clips' rate,
+0.75), through `Human_ReleaseThrow` (`0x002586d8`) as for every held-object throw ([World objects:
+throws](objects.md#throws)). Confirmed (runtime): the bat's 502 let go of it at k20 and lasted 35 updates; the knife's
+491 at k24 ([below](#bat-cross), [Weapons](#weapons)).
 
 ### Cross with a bat in hand {#bat-cross}
 
@@ -499,7 +586,7 @@ k counts updates from the move's first; "free" is the first k a `0x10` starts 36
 | square, square (the chain) | as 34: the second square is stored as 2 and never played | | | **37** | 389 |
 | triangle (with nothing to take) | no clip: the bat is dropped at once ([Losing it](#bat)) | | | **next update** | cross now plays the unarmed `X1` 11 |
 | cross + square (`0x22`), nobody near | 502 `SWINGABLE_OBJECT_THROW`, holding `0x10` for 35 updates; the bat leaves the hand at k20 | | | 35, unarmed | 389 |
-| cross + square, a target within 2.0 m | nothing (the throw is refused: `Player_Special` `0x00287730` refuses a pad player holding an object, confirmed (code)) | | | **at once** | the cross's own release (`0x10`) plays 36 |
+| cross + square, a target within 2.0 m | nothing (`Player_ArmedSpecial` `0x00288838` refuses the throw at a target within 2.0 m, then `Player_Special` `0x00287730` refuses a pad player holding an object, confirmed (code), [Cross + square with a weapon in hand](#armed-special)) | | | **at once** | the cross's own release (`0x10`) plays 36 |
 
 The 34 lasted 37 updates at runtime (k0-36), one fewer than the 38 the [frame data](combat-moves.md#frame-data) rounds
 from its frame count; 36 lasted 35 (confirmed (runtime)). 35 `BAT_COMBO_SS2` never played from the pad, so its phases
@@ -1077,16 +1164,27 @@ issue #228 ([the rule](#bat-cross)):
   16 for 69 and 26 for 19, all as measured. Coney's clip tasks end when the time reaches the duration (ceil(*f* /
   *r*)), one update late on 50 of the 174 clips of [the frame data](combat-moves.md#frame-data) (19, 34 and the dive 1
   among them).
-- **Cross + square (`0x22`) and circle + cross (`0x23`) with an object in hand** do nothing in Coney, as in the
+- **Cross + square (`0x22`) with a weapon in hand throws it** (issue #309, [the rules](#armed-special)):
+  `PlayerCombat::armedSpecial` (`repo:src/combat/player_combat.cpp`) takes a player's `0x22` first when
+  `combat::heldIsThrowable` lets him throw what he holds (sets 1, 2, 3 and 5); a set 5 object goes to the throw
+  square and cross start (`combat::throwAttack`), a melee weapon to `combat::meleeThrowAttack` (491 for a knife or a
+  baton, 502 for a bat, 471 / 472 on the move), refused with the no-throw flag, at a free sprint or at a target within
+  2.0 m. The target is the fighter's (`Fighter::armedSpecialTargetNear`, then `Fighter::playMeleeThrow` picks again
+  with `Fighter::pickThrowTarget` and turns the player to face it by the clip's first event), and the clip's type-10
+  event lets go of the weapon (`throwClip` in `repo:src/gamemodes/play_level_objects.cpp`). The disc test
+  (`repo:tests/platform/disc_bat_cross_test.cpp`, level99, a bat in hand, nobody near) finds 502 started on the `0x22`
+  update, the bat out of the hand at **k20** and **35** updates of 502, as at runtime ([the table](#bat-cross)).
+  Stand-ins: the counter search is the nearest enemy within 2.0 m (else the target), the distances are across the
+  ground (#1396), the world objects pass the attack's object filter, and the weapon's state (message 4) is not kept.
+  What happens to a thrown weapon after the release (its hit on a human) is the object throws' ([World objects:
+  throws](objects.md#throws)).
+- **When the throw is refused, and with circle + cross (`0x23`)**, the command does nothing in Coney, as in the
   original's `Player_Special`, which refuses a pad player holding an object: `PlayerCombat::special` returns for a
   player holding any object (`CombatInput::holdingObject`, whatever its anim set; until issue #860 it read the anim set
   instead, so a human no player controls was refused too, [The spray](combat/index.md#run-attacks)). Before, `0x22`
-  played the special 653
-  (spending a quarter of the power), whose phases refused the cross's own `0x10`, and `0x23` started a grab: the player
-  saw a push, not a bat swing, and that was the likely cause of "cross sometimes does not start an attack". Now
-  the cross's release plays 36 (47, 41 for a knife, a baton) on the next update. **Not built**: the original's
-  throw of the melee weapon (502 / 491) for the `0x22` that has a free target ([Combat
-  differences](combat-diffs.md#weapons)), so with nobody near Coney swings where the original throws.
+  played the special 653 (spending a quarter of the power), whose phases refused the cross's own `0x10`, and `0x23`
+  started a grab: the player saw a push, not a bat swing, and that was the likely cause of "cross sometimes does not
+  start an attack". Now the cross's release plays 36 (47, 41 for a knife, a baton) on the next update.
 
 ### A bat's hit {#bat-knockdown-coney}
 

@@ -98,14 +98,16 @@ anim::Quat headingRotation(float heading) {
     return anim::Quat{.x = 0.0F, .y = 0.0F, .z = std::sin(heading / 2.0F), .w = std::cos(heading / 2.0F)};
 }
 
-// Whether `animId` is one of the held-object throws, whose release event lets go of what is held.
+// Whether `animId` is one of the held-object throws, whose release event lets go of what is held: the set 4-6 objects
+// and the melee weapons' (491, 502; docs/research/combat-throws.md#armed-special).
 bool throwClip(std::uint32_t animId) {
-    constexpr std::array<int, 9> kThrows{
+    constexpr std::array<int, 11> kThrows{
         combat::anim_id::kOneHandedThrow,        combat::anim_id::kOneHandedThrowFromWalk,
         combat::anim_id::kOneHandedThrowFromRun, combat::anim_id::kBarrelThrow,
         combat::anim_id::kBarrelThrowFromWalk,   combat::anim_id::kBarrelThrowFromRun,
         combat::anim_id::kGhettoThrow,           combat::anim_id::kGhettoThrowFromWalk,
-        combat::anim_id::kGhettoThrowFromRun};
+        combat::anim_id::kGhettoThrowFromRun,    combat::anim_id::kKnifeThrow,
+        combat::anim_id::kSwingableThrow};
     return std::ranges::find(kThrows, static_cast<int>(animId)) != kThrows.end();
 }
 // A car stereo's context record (kind 3) reaches this far in the ground plane (`CfgActionDistance`'s default).

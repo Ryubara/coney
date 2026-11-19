@@ -138,9 +138,34 @@ int throwAttack(const SquareInput& input) {
     }
 }
 
-bool heldIsThrowable(int /*set*/, int /*type*/, bool /*player*/, bool /*anyHuman*/) { return false; }
+bool heldIsThrowable(int set, int type, bool player, bool anyHuman) {
+    // A one-handed throwing object (bricks, bottles) goes whoever holds it, and so does a throwing knife.
+    if (set == 5 || (set == 1 && type == kKnifeObjectType)) {
+        return true;
+    }
+    // Another melee weapon only for a player, or when the caller lets any human throw it.
+    if (!player && !anyHuman) {
+        return false;
+    }
+    return meleeSet(set);
+}
 
-int meleeThrowAttack(const SquareInput& /*input*/, bool /*aiming*/) { return anim_id::kNone; }
+int meleeThrowAttack(const SquareInput& input, bool aiming) {
+    // No throw from the aiming state or a free sprint ("free": nothing held on the record's +0x08).
+    const bool free = input.phaseFlags == 0;
+    if (aiming || (input.gait == human::Gait::Sprint && free)) {
+        return anim_id::kNone;
+    }
+    // On the move: from a free run or a jog the run's throw, from a walk outside a stance the walk's.
+    if ((input.gait == human::Gait::Run && free) || input.gait == human::Gait::Jog) {
+        return anim_id::kOneHandedThrowFromRun;
+    }
+    if (!input.fightStance && input.gait == human::Gait::Walk) {
+        return anim_id::kOneHandedThrowFromWalk;
+    }
+    // Standing: the knife's throw for a knife or a baton, the swingable object's for anything else (the bat).
+    return input.heldSet == 1 || input.heldSet == 2 ? anim_id::kKnifeThrow : anim_id::kSwingableThrow;
+}
 
 int armedAttack(const SquareInput& input, bool cross) {
     const AnimSetClips clips = animSetClips(input.heldSet);
