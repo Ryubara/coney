@@ -173,6 +173,8 @@ class UiModel {
     [[nodiscard]] std::optional<std::size_t> slotOf(UiScreenId screen) const;
     // Pops `slot`'s flow down to below `screen`, queueing Closed for each, and focuses the new top.
     void popTo(std::size_t slot, UiScreenId screen, std::uint64_t nowMs);
+    // Closes `screen`, already checked to be the caller's, off its flow or the HUD list; one not open is left as it is.
+    void closeOwned(UiScreenId screen, std::uint64_t nowMs);
     // The input of the slot whose flow has `screen` on top; a screen on no flow or covered on its flow gets one no slot
     // reads, so a change to it leaves every slot's timings alone (the screen takes the focus afresh when it opens or
     // comes back on top).

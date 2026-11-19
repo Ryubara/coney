@@ -41,9 +41,7 @@ std::expected<void, UiRefusal> UiModel::destroyScreen(std::string_view project, 
         return std::unexpected(UiRefusal::UnknownScreen);
     }
     // Closed first, so the flow and the HUD list let it go and queue Closed; then its widgets and itself.
-    if (slotOf(screen) || std::ranges::any_of(m_hud, [&](const auto& shown) { return shown.first == screen; })) {
-        (void)closeScreen(project, screen, nowMs);
-    }
+    closeOwned(screen, nowMs);
     for (const std::unique_ptr<UiWidget>& w : s->widgets()) {
         m_widgetScreens.erase(w->id);
     }
@@ -199,9 +197,16 @@ std::expected<void, UiRefusal> UiModel::closeScreen(std::string_view project, Ui
     if (owned(project, screen) == nullptr) {
         return std::unexpected(UiRefusal::UnknownScreen);
     }
+    closeOwned(screen, nowMs);
+    return {};
+}
+
+// Closing a screen already known to be the caller's: off its flow or the HUD list, queueing Closed; a closed one is
+// left.
+void UiModel::closeOwned(UiScreenId screen, std::uint64_t nowMs) {
     if (const std::optional<std::size_t> slot = slotOf(screen)) {
         popTo(*slot, screen, nowMs);
-        return {};
+        return;
     }
     const auto shown = std::ranges::find_if(m_hud, [&](const auto& entry) { return entry.first == screen; });
     if (shown != m_hud.end()) {
@@ -209,7 +214,6 @@ std::expected<void, UiRefusal> UiModel::closeScreen(std::string_view project, Ui
         m_events.push_back(UiEvent{
             .kind = UiEventKind::Closed, .screen = screen, .widget = std::nullopt, .item = std::nullopt, .text = {}});
     }
-    return {};
 }
 
 void UiModel::openTrusted() { ++m_trusted; }

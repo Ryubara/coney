@@ -444,7 +444,7 @@ void UiScreen::widgetCommand(UiWidget& w, MenuCommand command, std::uint64_t now
         const std::size_t before = w.list->selected();
         if (const std::optional<std::size_t> chosen = w.list->handle(command, nowMs)) {
             playCue(ui_cue::kAccept);
-            event(UiEventKind::Accept, *chosen);
+            event(UiEventKind::Accept, chosen);
         } else if (w.list->selected() != before) {
             event(UiEventKind::Move, w.list->selected());
         }
