@@ -123,6 +123,9 @@ const std::string& Fighter::logName() const {
     return m_player ? kPlayer : kHuman;
 }
 
+// A stand-in for Human_IsBusy's state word and the "out" state: Coney's combat states, the stealth kill's clip
+// standing for the killer's +0x08 bit 1 (Attack_StartPaired 0x00262ac8). The airborne and +0x08 tests are the
+// locomotion gate's (stickBusy); the pad lock (+0x1e) is not ported (#1011).
 bool Fighter::holdsMovement(const HumanAnimator& animator) const {
     return m_combat.blocking() || m_combat.mode() != combat::CombatMode::Free || grabbed() || m_holdState.has_value() ||
            m_tandemRole != TandemRole::None || m_stealthKillClip.has_value() || helpless(animator);
