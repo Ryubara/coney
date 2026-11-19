@@ -1047,6 +1047,13 @@ workspace:
   build_idle_hours: 24                           # a build/ folder unused this long is deleted (cheap to rebuild)
   busy_marker: ".coney-busy"                     # a worktree holding it is never cleaned; an empty one older than build_idle_hours does not count
   remove_worktree_when_merged: true
+  # Claude Code keeps the output of every background command in `<temp>/claude/<hash>/<session>/tasks/` and never
+  # removes it (5 GB per output, 20 GB in one session): `workspace clean` and `check-space` report them
+  # (docs/guides/workspace.md#task-outputs). A session whose folder nothing wrote to for `stale_hours` is stale and
+  # `clean --apply` removes its outputs, never a live session's; a live one over `warn_gb` is only reported.
+  task_outputs:
+    stale_hours: 72
+    warn_gb: 2
   # File types taken from the original (PCSX2 save states, traces, memory dumps): `repo audit --local` finds them in the
   # scratch folder of a branch that is merged or gone, where they have no use left. Screenshots are not on this list.
   game_capture_suffixes: [".p2s", ".trace", ".dump", ".ps2", ".raw", ".bin"]

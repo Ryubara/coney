@@ -422,6 +422,21 @@ killed hard leaves nothing protected. An **empty** file older than
 `--build-hours` (24 by default) is taken for a dead agent's and ignored, so a marker made with a bare `touch` still
 protects for a day. The file's name is `workspace.busy_marker` of the conventions file.
 
+**Background task outputs** {#task-outputs}. Claude Code writes the output of every background command to
+`<temp>/claude/<hash>/<session>/tasks/<id>.output` (`%TEMP%\claude` on Windows) and never removes it: outputs of one
+test run grew to 5 GB each, 20 GB in one session, and nothing capped or cleaned them. `clean` lists the biggest
+sessions with the size of their outputs and, with `--apply`, removes the outputs of the **stale** ones; `check-space`
+prints one line with what the stale outputs hold. The rule is
+[`workspace.task_outputs`](repo:.github/conventions.yml) and [`task_outputs.py`](repo:python/src/coney_tools/task_outputs.py):
+
+* A session is **live** when anything in its folder, an output or its scratchpad, was written within `stale_hours`
+  (72), and **stale** when nothing was. Only a stale session's `tasks/` outputs are removed, never a live one's: its
+  running task is still writing and the session may read an older output back. Each is judged again just before it is
+  removed, so a session that wrote since the listing is left. Its scratchpad is never touched.
+* A live session whose outputs hold more than `warn_gb` (2) is only reported, with the advice to stop the task or delete
+  the output of one that ended: nothing tells a spent output of a live session from one still read.
+* A file that cannot be removed (open on Windows) is told as `FAILED` and makes the exit code 1.
+
 **`workspace check-space`** prints the free space of every [watched drive](#watched-drives) (the workspace's, the
 build root's when it is on another drive, and the folders of `watch_paths`), and exits 1 when any is below its floor
 (default: 30, the `workspace.disk_min_free_gb` key of [.github/conventions.yml](repo:.github/conventions.yml), or the

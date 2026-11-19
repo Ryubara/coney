@@ -810,6 +810,16 @@ class Clips:
 
 
 @dataclass(frozen=True)
+class TaskOutputs:
+    """Claude Code's background task outputs (`workspace.task_outputs`; docs/guides/workspace.md#task-outputs)."""
+
+    #: A session folder nothing wrote to for this many hours is stale: `workspace clean --apply` removes its outputs.
+    stale_hours: int
+    #: A live session whose outputs hold more than this many GB is reported (never removed).
+    warn_gb: int
+
+
+@dataclass(frozen=True)
 class Workspace:
     """The local workspace rules (`workspace clean|disk`); hosted checks ignore them."""
 
@@ -832,6 +842,7 @@ class Workspace:
     #: Scratch folders that belong to the workspace, not to a branch (the emulator's, the save states', the downloads').
     shared_scratch: tuple[str, ...]
     clips: Clips
+    task_outputs: TaskOutputs
 
 
 @dataclass(frozen=True)
@@ -3316,8 +3327,11 @@ def _read_workspace(data: object, where: str) -> Workspace:
         "scratch_skip_folders",
         "shared_scratch",
         "clips",
+        "task_outputs",
     )
     table = _table(data, where, keys)
+    outputs_where = _at(where, "task_outputs")
+    outputs = _table(table["task_outputs"], outputs_where, ("stale_hours", "warn_gb"))
     clips_where = _at(where, "clips")
     clips = _table(table["clips"], clips_where, ("folder", "max_seconds", "warn_mb", "keep_hours", "pair"))
     return Workspace(
@@ -3333,6 +3347,10 @@ def _read_workspace(data: object, where: str) -> Workspace:
         game_capture_suffixes=_texts(table["game_capture_suffixes"], _at(where, "game_capture_suffixes")),
         scratch_skip_folders=_texts(table["scratch_skip_folders"], _at(where, "scratch_skip_folders")),
         shared_scratch=_texts(table["shared_scratch"], _at(where, "shared_scratch")),
+        task_outputs=TaskOutputs(
+            stale_hours=_count(outputs["stale_hours"], _at(outputs_where, "stale_hours")),
+            warn_gb=_count(outputs["warn_gb"], _at(outputs_where, "warn_gb")),
+        ),
         clips=Clips(
             folder=_text(clips["folder"], _at(clips_where, "folder")),
             max_seconds=_count(clips["max_seconds"], _at(clips_where, "max_seconds")),

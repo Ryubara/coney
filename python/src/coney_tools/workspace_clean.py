@@ -75,6 +75,7 @@ from coney_tools import (
     live_runs,
     pcsx2_proc,
     stale_processes,
+    task_outputs,
     watched_drives,
     workspace_clean_fixes,
 )
@@ -86,6 +87,10 @@ from coney_tools.workspace import find_layout
 #: The file an agent creates in its worktree while it works and deletes when it is done.
 BUSY_FILE = ".coney-busy"
 
+#: The hours a Claude Code session may be idle before its background task outputs are stale, and the size in GB over
+#: which a live session's are reported (`workspace.task_outputs`, used when the conventions cannot be read).
+DEFAULT_OUTPUT_STALE_HOURS = 72.0
+DEFAULT_OUTPUT_WARN_GB = 2
 #: Default idle hours before a `build/` folder is deleted (it is only a rebuild; `workspace.build_idle_hours`).
 DEFAULT_BUILD_HOURS = 24.0
 
@@ -602,10 +607,12 @@ def run_clean(
     merged_heads: MergedHeads | None = None,
     shell_hours: float = stale_processes.DEFAULT_SHELL_HOURS,
     idle_hours: float = stale_processes.DEFAULT_IDLE_HOURS,
+    claude_temp: Path | None = None,
 ) -> int:
     """Run `workspace clean`; 1 when any removal or stop failed, else 0. Prints the report: the worktrees and build
     folders, the disk-pressure deletions when the drive is under its floor, then the stale processes
-    (stale_processes.py).
+    (stale_processes.py) and the background task outputs of Claude Code sessions (`task_outputs.py`; `claude_temp` is
+    its folder, `claude` in the temp folder by default).
 
     `build_hours`, `min_gb` (the floor) and `margin_gb` default to `workspace.build_idle_hours`,
     `workspace.disk_min_free_gb` and `workspace.disk_margin_gb` of the conventions file, and to the built-in values
@@ -749,6 +756,9 @@ def run_clean(
     if root is not None:
         _report_root(root, trees)
     failures += stale_processes.run(apply, shell_hours, idle_hours)
+    reclaimed_outputs, output_failures = _clean_task_outputs(known, claude_temp, settings.now, apply)
+    failures += output_failures
+    reclaimed += reclaimed_outputs
 
     verb = "Reclaimed" if apply else "Would reclaim"
     print(
@@ -761,6 +771,34 @@ def run_clean(
         if separate and root is not None:
             print(f"Free space on the build root ({root}): {_gb(root_before)} -> {_gb(free_space(root))}")
     return 1 if failures else 0
+
+
+def _output_limits(known: Workspace | None) -> tuple[float, int]:
+    """The hours a session may be idle before its outputs are stale and the bytes over which a live one is reported
+    (`workspace.task_outputs`; 72 hours and 2 GB when the conventions cannot be read)."""
+    if known is None:
+        return DEFAULT_OUTPUT_STALE_HOURS, DEFAULT_OUTPUT_WARN_GB * task_outputs.GIB
+    return float(known.task_outputs.stale_hours), known.task_outputs.warn_gb * task_outputs.GIB
+
+
+def _clean_task_outputs(known: Workspace | None, folder: Path | None, now: float, apply: bool) -> tuple[int, int]:
+    """Print the background task outputs of Claude Code sessions and, with `apply`, remove the stale sessions' (never a
+    live one's); returns the bytes freed and the number of failures."""
+    root = folder or task_outputs.default_root()
+    stale_hours, warn = _output_limits(known)
+    sessions = task_outputs.survey(root, now, stale_hours)
+    report = task_outputs.lines(sessions, apply, warn)
+    if not report:
+        return 0, 0
+    print(f"Background task outputs of Claude Code sessions ({root}):")
+    for line in report:
+        print(line)
+    if not apply:
+        return sum(session.bytes for session in sessions if session.stale), 0
+    freed, problems = task_outputs.remove_stale(sessions, now, stale_hours)
+    for problem in problems:
+        print(f"    FAILED: {problem}")
+    return freed, len(problems)
 
 
 def free_space(folder: Path) -> int:
@@ -987,7 +1025,7 @@ def _conventions_workspace(checkout: Path) -> Workspace | None:
         return None
 
 
-def run_disk(cwd: Path, workspace: Path | None, min_gb: float | None = None) -> int:
+def run_disk(cwd: Path, workspace: Path | None, min_gb: float | None = None, claude_temp: Path | None = None) -> int:
     """Run `workspace check-space`: print the free space of every watched drive (watched_drives.py: the workspace's,
     the build root's and the folders of `watch_paths`); 1 when any is below its floor.
 
@@ -1010,4 +1048,10 @@ def run_disk(cwd: Path, workspace: Path | None, min_gb: float | None = None) -> 
             f"Free space on {drive.phrase()}: {_gb(drive.free_bytes)} "
             f"({drive.name}, minimum {drive.min_free_gb:g} GB){advice}"
         )
+    stale_hours, warn = _output_limits(_conventions_workspace(layout.checkout))
+    note = task_outputs.summary(
+        task_outputs.survey(claude_temp or task_outputs.default_root(), time.time(), stale_hours), warn
+    )
+    if note:
+        print(f"Claude Code: {note}")
     return 1 if any(drive.low for drive in watch.drives) else 0
