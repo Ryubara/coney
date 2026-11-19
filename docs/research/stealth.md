@@ -281,6 +281,10 @@ The approach and the takedown, confirmed (code) at `0x0027e040`, `0x0027da10`, `
    638 from the killer's set as its dying clip, then the fall its knockdown event gives, then the loop, 349 as the
    victim is no longer woundable. Any other damage is dealt at once and 638 plays as a paired task. The killer plays
    his clip chained into the fight idle (state `0xb`), holding 7 and then 1. Confirmed (code).
+   `Grab_BreakOnHit` (`0x0022b960`) gives the killer the paired attacker's state `0x1000`, so `Human_UpdateDown`
+   (`0x00256a60`) does not refill his power meter while the kill plays and moves the refill's time stamp to now:
+   confirmed (code), and confirmed (runtime) by `moves_stealth` (power 400 to 300 at the kill, 300 for its 52
+   updates, refilling once the fight idle 358 plays).
 6. **After**: the pair's end (`Human_BreakPair`) clears the hidden state; the next ground snap hides the player again
    if he still stands in shadow and nobody hunts him. A guard more than 3 m away does not hear it in the hangout
    (`GangSetHearRange`, [Seen or not](#seen)); one who sees it gets the scan's new enemy and fights
@@ -380,9 +384,9 @@ Chapter 5 of `level87` (`level87_chap5_club.lua`) is the stealth tutorial. What 
 - **The stealth kill** (`repo:src/human/fighter_stealth.cpp`): hidden with L1's bit set, square, cross or circle runs
   only the kill test (behind a target who faces away, grabbable, the way clear) and starts 637, 639 or 641 by the
   weapon; the victim takes the clip's damage, its flag `0x8` cleared, and plays the next id from the killer's set as
-  the dying clip of its death chain (the loop 349); the kill needs and spends a quarter of the power meter; its end
-  ends the hiding and leaves the killer in the fight stance. The set-5 cross's kill, the creep's ready clips (635,
-  636) and the class record's weapon scale are not built.
+  the dying clip of its death chain (the loop 349); the kill needs and spends a quarter of the power meter, which
+  then holds (no refill) while the clip plays; its end ends the hiding and leaves the killer in the fight stance. The
+  set-5 cross's kill, the creep's ready clips (635, 636) and the class record's weapon scale are not built.
 - **Scouts and the call** (`repo:src/ai/tactic_scout.h`, [AI: Coney](ai/index.md#in-coney)): TacticScout's guards keep their
   posts and scan every 500 ms; one who spots, is hit by or is warned of an enemy fights him, and when the level allows
   it runs to the farthest phone flag in range and, 1.5 s later, starts the enemy gang's second wanted timer
