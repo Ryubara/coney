@@ -540,8 +540,9 @@ NAME [--test NAME ...] --test-commit SHA [--fix-commit SHA] --agent ID` records 
 * The stamp holds the test, not the helpers around it: a shared helper or fixture the change edits is not seen by the
   hash, so for a `keeps` test the reviewer also reads what the change edits under `tests/`.
 * The review packet lists each test with its stamp result, `pr text` names each as `Kept behaviour` apart from the
-  tests that failed first, and the reviewer decides whether the change really keeps that behaviour and whether `PR.md`
-  says so ([Tests that keep behaviour](review/task.md#keeps)).
+  tests that failed first (a test renamed or removed since its stamp is named `Not at the tip` instead), and the
+  reviewer decides whether the change really keeps that behaviour and whether `PR.md` says so ([Tests that keep
+  behaviour](review/task.md#keeps)).
 
 ## For the commands that write more stamps {#api}
 

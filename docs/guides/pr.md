@@ -131,7 +131,10 @@ change rests on the reviewer ([Keeps](stamps.md#keeps)). Python tests are not st
 rule rests on the reviewer and on pytest in its `checked` stamp. And a function that carries several `@orig`
 addresses needs every address compared against that one Coney body.
 
-A function the branch removes is printed as a note, not a refusal. A change that touches no C++ file under `src/`
+A function the branch removes is printed as a note, not a refusal. A function whose parameter list changed is not a
+removal: its key holds the parameters, but it keeps its file, its qualified name and an original address, so it is a
+changed function, studied and compared like any other, and the note says so (`changed its parameters from (int) to
+(int,int)`). A change that touches no C++ file under `src/`
 adds, changes and removes no `@orig` function, so the run does not read the source at all.
 
 ### What counts as a research page {#research-page}
@@ -224,16 +227,18 @@ The marker names (`pull_requests.markers`) let a later pass find the two generat
 
 The facts say which stages passed, with their hashes cut to 12 digits, from the local log alone: the log's task and
 chain head, the change and the `<remote>/<default branch>` commit it is on, then one line each for the functions studied
-and compared (pairs counted by relation), the tests that failed first, the tests that keep behaviour (passing before
-the change and after it, named apart: [Keeps](stamps.md#keeps)), Check (profile, preset, the build's counts,
+and compared (pairs counted by relation), the tests that failed first, the tests that keep behaviour (passing before the
+change and after it, named apart: [Keeps](stamps.md#keeps)), the stamped tests no longer at the tip (a test renamed or
+removed after its stamp is `Not at the tip`, never a test that failed first or keeps behaviour; its new name has a stamp
+and a line of its own, and a stamp that lists no test files stays as it is), Check (profile, preset, the build's counts,
 pytest's counts and which tests it ran, build record; a profile with no build says `no build` and names the checks it
 ran, with pytest reading `of the whole suite` or `of the tests reading <classes>` before its counts) and Review
-(verdict, model, functions by class), and the stand-in and not-ported pieces of the pairs. A stage with no stamp
-reads `Check: not run` or `Review: not reviewed`, and a Check or Review made for another change reads `stale (made for
-change <12 digits>)` instead of its verdict, as `pr verify` refuses it. Every name from a stamp or a pairs file is a
-code span with backticks and `@` neutralised, because those strings are not trusted text. The block is at most 8,000
-characters; past that the per-stage lines become counts, and it is cut at a whole line, never inside a code span. It is
-a record for the reader, not proof: nothing in CI reads it, and the local log stays the source.
+(verdict, model, functions by class), and the stand-in and not-ported pieces of the pairs. A stage with no stamp reads
+`Check: not run` or `Review: not reviewed`, and a Check or Review made for another change reads `stale (made for change
+<12 digits>)` instead of its verdict, as `pr verify` refuses it. Every name from a stamp or a pairs file is a code span
+with backticks and `@` neutralised, because those strings are not trusted text. The block is at most 8,000 characters;
+past that the per-stage lines become counts, and it is cut at a whole line, never inside a code span. It is a record for
+the reader, not proof: nothing in CI reads it, and the local log stays the source.
 
 ### The checks {#checks}
 
