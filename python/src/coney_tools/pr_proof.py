@@ -379,6 +379,7 @@ def verify(
     if not intact:
         return result
     result.refusals += check_checked(subject)
+    result.notes += resumed_notes(subject)
     compared, notes = check_compared(subject, copy_check)
     result.refusals += compared
     result.notes += notes
@@ -544,6 +545,21 @@ def check_checked(subject: Subject) -> list[Refusal]:
     if set(subject.checks) & set(proof.build.checks):
         found += _build_record(subject, stamp)
     return found
+
+
+def resumed_notes(subject: Subject) -> list[str]:
+    """The note of a Check that took checks from an earlier run (`detail.resumed`, written by `task check` when it
+    resumes: the checks, and the times of the runs they come from), so `pr verify` and `pr open` never show a resumed
+    pass as one run; none for a Check that ran everything or whose `resumed` detail is not in that form."""
+    stamp = subject.report.latest("checked")
+    resumed = stamp.detail.get("resumed") if stamp is not None and stamp.result == "pass" else None
+    names = resumed.get("checks") if isinstance(resumed, dict) else None
+    if not isinstance(names, list) or not all(isinstance(n, str) and n for n in names) or not names:
+        return []
+    assert isinstance(resumed, dict)
+    runs = resumed.get("from")
+    when = f" ({', '.join(str(t) for t in runs)})" if isinstance(runs, list) and runs else ""
+    return [f"Check resumed: {', '.join(names)} taken from an earlier run{when}, not run again"]
 
 
 def _pytest_scope(subject: Subject, stamp: stamps.Stamp) -> list[Refusal]:

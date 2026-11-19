@@ -28,6 +28,20 @@ def test_verify_says_ok_for_a_complete_unit(
     assert "ok: the log, Check, the compared functions and Review all hold for this change" in out
 
 
+def test_verify_prints_the_checks_a_resumed_check_took_from_an_earlier_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    built = make(tmp_path, shape="tooling")
+    built.check(
+        "tooling", resumed={"checks": ["docs-check", "ruff"], "from": ["2026-11-19T09:02:11Z"], "key_sha256": "k"}
+    )
+    assert run(built, monkeypatch, "verify") == 0
+    out = capsys.readouterr().out
+    assert "  note: Check resumed: docs-check, ruff taken from an earlier run" in out
+    assert run(built, monkeypatch, "verify", "--json") == 0
+    assert any("docs-check, ruff" in note for note in json.loads(capsys.readouterr().out)["notes"])
+
+
 def test_verify_refuses_a_visible_change_with_no_clips_and_no_reason(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

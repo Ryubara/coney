@@ -120,6 +120,27 @@ def test_the_stamp_log_alone_refuses_a_missing_or_failed_check_and_review(tmp_pa
     ]
 
 
+def test_a_resumed_check_is_a_note_naming_the_checks_it_took_from_an_earlier_run(tmp_path: Path) -> None:
+    built = make(tmp_path, shape="tooling")
+    assert not any("resumed" in note for note in built.verify().notes)
+    built.check(
+        "tooling", resumed={"checks": ["docs-check", "ruff"], "from": ["2026-11-19T09:02:11Z"], "key_sha256": "k"}
+    )
+    result = built.verify()
+    assert texts(result) == [] and result.ok
+    assert result.notes == [
+        "Check resumed: docs-check, ruff taken from an earlier run (2026-11-19T09:02:11Z), not run again"
+    ]
+
+
+def test_a_check_with_no_resumed_detail_or_a_malformed_one_makes_no_note(tmp_path: Path) -> None:
+    built = make(tmp_path, shape="tooling")
+    malformed: list[object] = ["docs-check", {"checks": []}, {"checks": [3, ""]}, {}]
+    for resumed in malformed:
+        built.check("tooling", resumed=resumed)
+        assert not any("earlier run" in note for note in built.verify().notes), resumed
+
+
 def test_a_unit_whose_stamps_all_pass_is_not_unsettled(tmp_path: Path) -> None:
     assert pr_proof.unsettled(make(tmp_path, shape="tooling").subject().report) == []
 

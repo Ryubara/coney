@@ -134,8 +134,13 @@ addresses needs every address compared against that one Coney body.
 A function the branch removes is printed as a note, not a refusal. A function whose parameter list changed is not a
 removal: its key holds the parameters, but it keeps its file, its qualified name and an original address, so it is a
 changed function, studied and compared like any other, and the note says so (`changed its parameters from (int) to
-(int,int)`). A change that touches no C++ file under `src/`
-adds, changes and removes no `@orig` function, so the run does not read the source at all.
+(int,int)`).
+
+A Check that resumed (`task check` took some checks from an earlier run for the same change, `detail.resumed` of its
+stamp) is also a note: `Check resumed: docs-check, ruff taken from an earlier run (2026-11-19T09:02:11Z), not run
+again`. It is no refusal, because the checks it took passed for this change, but a reader of `pr verify` or `pr open`
+sees that this invocation did not run them. `pr text` says the same in the facts. A change that touches no C++ file
+under `src/` adds, changes and removes no `@orig` function, so the run does not read the source at all.
 
 ### What counts as a research page {#research-page}
 
@@ -295,7 +300,9 @@ commit: what is pushed is exactly what Check and Review saw. Its options and exi
 4. **The proof (exit 1).** [`pr verify`](#verify) and [`pr text`](#text) run on the unit as it is (`pr_ready.prove`,
    which Conclave's [`unit-ready` wake](conclave.md#ready) asks too), so a doomed run costs seconds and leaves the
    branch alone. Every problem is listed under the stage to redo; the unit goes back to its
-   engineer, never to the coordinator's hands.
+   engineer, never to the coordinator's hands. The proof's notes are printed as `note:` lines before any
+   refusal (and in `--json`'s `log`), including which checks a resumed `task check` took from an
+   earlier run, so a release never passes a partly resumed Check unseen.
 5. **Rebase.** `git rebase <remote>/<default>`, linear. Up to date: nothing happens. A conflict is aborted, so the
    worktree is as it was; the paths are written to `REBASE.md` in the task's folder and the exit is 3. The engineer
    resolves, and the hashes say which stamps that made stale. The rebase is linear whatever the machine's git
