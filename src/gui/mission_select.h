@@ -50,7 +50,7 @@ struct MapPoint {
 [[nodiscard]] std::string missionLabel(const LevelRecord& record);
 
 /// A label read as a base-10 number as `strtol` reads it (leading spaces, a sign, the digits; 0 when none).
-/// @orig 0x00433a68 Str_ToInt (unknown)
+/// @coney-only the C library's strtol (`0x00433a68`), middleware rather than game code
 [[nodiscard]] int labelNumber(std::string_view label);
 
 /// A mission's marker on the map: the record's mission byte (`+0x0c`, 1-23) row of the table at `0x005148e0`, column

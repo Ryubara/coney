@@ -135,6 +135,30 @@ coney = "src/gamemodes/level_flow_mode.h:LevelFlowMode::update"
 status = "legacy"
 
 [[function]]
+address = 0x0015d648
+name = "MissionSelect_Enter"
+page = "frontend.md#fn-missionselecthud"
+level = "confirmed-code"
+coney = "src/gamemodes/mission_select_mode.h:MissionSelectMode::enter"
+status = "compared"
+
+[[function]]
+address = 0x0015d728
+name = "MissionSelect_Exit"
+page = "frontend.md#fn-missionselecthud"
+level = "confirmed-code"
+coney = "src/gamemodes/mission_select_mode.h:MissionSelectMode::exit"
+status = "compared"
+
+[[function]]
+address = 0x0015d890
+name = "MissionSelect_Update"
+page = "frontend.md#fn-missionselecthud"
+level = "confirmed-code"
+coney = "src/gamemodes/mission_select_mode.h:MissionSelectMode::update"
+status = "compared"
+
+[[function]]
 address = 0x0015e048
 name = "Gm_Mode12_Enter"
 page = "frontend.md#original-structure"
@@ -370,6 +394,150 @@ role = "slot `+0x38`: each visible widget whose top is above `+0x174` drawn in `
 level = "confirmed-code"
 coney = "src/hud/credits.h:Credits::render"
 status = "legacy"
+
+[[function]]
+address = 0x001bc100
+name = "MissionSelect_IsMissionListed"
+page = "frontend.md#fn-missionselecthud"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:isMissionSelectListed"
+status = "compared"
+
+[[function]]
+address = 0x001bc5a8
+name = "MissionSelect_Build"
+page = "frontend.md#fn-missionselecthud"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:MissionSelectScreen::open"
+status = "compared"
+
+[[function]]
+address = 0x001bc930
+name = "MissionSelect_AddMission"
+page = "frontend.md#fn-missionselecthud"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:buildMissionSelectAreas"
+status = "compared"
+
+[[function]]
+address = 0x001bca30
+name = "MissionSelect_FindArea"
+page = "frontend.md#fn-missionselecthud"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:buildMissionSelectAreas"
+status = "compared"
+
+[[function]]
+address = 0x001bca70
+name = "MissionSelect_AddArea"
+page = "frontend.md#fn-missionselecthud"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:buildMissionSelectAreas"
+status = "compared"
+
+[[function]]
+address = 0x001bcc48
+name = "MissionSelect_BuildAreas"
+page = "frontend.md#fn-missionselecthud"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:buildMissionSelectAreas"
+status = "compared"
+
+[[function]]
+address = 0x001bcdd8
+name = "MissionSelect_Init"
+page = "frontend.md#fn-missionselecthud"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:MissionSelectScreen::open"
+status = "compared"
+
+[[function]]
+address = 0x001bd428
+name = "MissionSelect_Shutdown"
+page = "frontend.md#fn-missionselecthud"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:MissionSelectScreen::close"
+status = "compared"
+
+[[function]]
+address = 0x001bd838
+name = "MissionSelect_FillArea"
+page = "frontend.md#fn-missionselecthud"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:MissionSelectScreen::fillArea"
+status = "compared"
+
+[[function]]
+address = 0x001bdc10
+name = "MissionSelect_ShowArea"
+page = "frontend.md#fn-missionselecthud"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:MissionSelectScreen::showArea"
+status = "compared"
+
+[[function]]
+address = 0x001bdc48
+name = "MissionSelect_NextArea"
+page = "frontend.md#fn-missionselecthud"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:MissionSelectScreen::nextArea"
+status = "compared"
+
+[[function]]
+address = 0x001bdcd0
+name = "MissionSelect_PrevArea"
+page = "frontend.md#fn-missionselecthud"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:MissionSelectScreen::prevArea"
+status = "compared"
+
+[[function]]
+address = 0x001bdd38
+name = "MissionSelect_OnAccept"
+page = "frontend.md#fn-missionselecthud"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:MissionSelectScreen::onAccept"
+status = "compared"
+
+[[function]]
+address = 0x001bde18
+name = "MissionSelect_OnListCommand"
+page = "frontend.md#fn-missionselecthud"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:MissionSelectScreen::onListCommand"
+status = "compared"
+
+[[function]]
+address = 0x001be070
+name = "MissionSelect_OnMenuCommand"
+page = "frontend.md#fn-missionselecthud"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:MissionSelectScreen::onMenuCommand"
+status = "compared"
+
+[[function]]
+address = 0x001be130
+name = "MissionSelect_OnCommand"
+page = "frontend.md#fn-missionselecthud"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:MissionSelectScreen::handle"
+status = "compared"
+
+[[function]]
+address = 0x001be198
+name = "MissionSelect_UpdateWidget"
+page = "frontend.md#fn-missionselecthud"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:MissionSelectScreen::update"
+status = "compared"
+
+[[function]]
+address = 0x001be848
+name = "MissionSelect_Render"
+page = "frontend.md#fn-missionselecthud"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:MissionSelectScreen::render"
+status = "compared"
 
 [[function]]
 address = 0x001c6a20
@@ -1296,6 +1464,46 @@ page = "game-stats.md#list"
 role = "the circles' colour for the record's area byte `+0x7c`, alpha 255: 1 (132, 78, 37), 2 (62, 98, 41), 3 (42, 71, 141), 4 (74, 49, 29); any other byte leaves the colour unwritten; used by the mission-select screen and the statistics list"
 level = "confirmed-code"
 coney = "src/gui/game_stats.h:areaColour"
+status = "compared"
+
+[[function]]
+address = 0x0041f340
+name = "LevelRecord_GetAreaColour2"
+page = "frontend.md#warriors-functions"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:areaHaloColour"
+status = "compared"
+
+[[function]]
+address = 0x0041f3e8
+name = "LevelRecord_GetAreaName"
+page = "frontend.md#warriors-functions"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:missionAreaName"
+status = "compared"
+
+[[function]]
+address = 0x0041f428
+name = "LevelRecord_GetLabel"
+page = "frontend.md#warriors-functions"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:missionLabel"
+status = "compared"
+
+[[function]]
+address = 0x0041f540
+name = "LevelRecord_GetMapPos"
+page = "frontend.md#warriors-functions"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:missionMapPoint"
+status = "compared"
+
+[[function]]
+address = 0x0041f5f8
+name = "LevelRecord_GetMapPos2"
+page = "frontend.md#warriors-functions"
+level = "confirmed-code"
+coney = "src/gui/mission_select.h:missionLogoPoint"
 status = "compared"
 
 [[function]]
