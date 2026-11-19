@@ -215,9 +215,9 @@ draw without librw's GL3 device as early as possible:
 6. **The GPU renderer reaches parity** (items 11 to 14 and 20), each usable alone: the 2D layers (front end, legal
    screens, movies, HUD); Dear ImGui (its `sdlgpu3` backend is in the pinned Dear ImGui); the world (prelit colour,
    dual layer, fog), objects and cars; humans, skinned on the GPU; particles, coronas and the screen passes. Then
-   each scene of the [benchmark](#benchmark) and the named `--play-level` frames are drawn by both renderers on the
-   same machine and compared as [How pictures are compared](#comparing) says, with the cross-renderer tolerance;
-   differences are listed. librw's GL3 output stays the reference until the switch.
+   each scene of the [benchmark](renderer-performance.md#benchmark) and the named `--play-level` frames are drawn by
+   both renderers on the same machine and compared as [How pictures are compared](#comparing) says, with the
+   cross-renderer tolerance; differences are listed. librw's GL3 output stays the reference until the switch.
 7. **The switch** (item 21). When parity holds for every scene, `gpu` becomes the default and `gl3` the fallback for
    machines with no Vulkan, D3D12 or Metal. When the GL3 renderer retires, and with it librw's GL3 platform (librw
    would then be built for its NULL platform, data only), is a maintainer question ([Questions](#questions)).
@@ -349,12 +349,12 @@ merges small, and a part the GPU renderer does not draw yet is simply missing fr
 
 ### Expected gains {#migration-gains}
 
-Estimates from the [Baseline](#baseline), not results; each is measured by `perf bench --compare` against the
-baseline that item 16 records, on a quiet machine. Humans are already skinned on the GPU through GL3 (which took the
-hub with 100 fighters from 37.4 to 7.8 ms a frame: [Performance: findings](../guides/performance.md#findings)), so
-today's frame is bound by the CPU in two places: the simulation's step (1.85 ms of the hub's 3.14, 3.69 of the crowd's
-7.02) and the drawing work around librw (the crowd's render is 3.18 ms, of which 1.76 ms is posing the humans' bones).
-The GPU is nearly idle: 17 times the pixels cost no more, and a frame makes 410-690 draws.
+Estimates from the [Baseline](renderer-performance.md#baseline), not results; each is measured by `perf bench --compare`
+against the baseline that item 16 records, on a quiet machine. Humans are already skinned on the GPU through GL3 (which
+took the hub with 100 fighters from 37.4 to 7.8 ms a frame: [Performance: findings](../guides/performance.md#findings)),
+so today's frame is bound by the CPU in two places: the simulation's step (1.85 ms of the hub's 3.14, 3.69 of the
+crowd's 7.02) and the drawing work around librw (the crowd's render is 3.18 ms, of which 1.76 ms is posing the humans'
+bones). The GPU is nearly idle: 17 times the pixels cost no more, and a frame makes 410-690 draws.
 
 | Step | What it gains (estimate) | Measured by |
 | --- | --- | --- |
@@ -362,7 +362,7 @@ The GPU is nearly idle: 17 times the pixels cost no more, and a frame makes 410-
 | Skinned humans on the GPU renderer (item 14) | none beyond GL3's: the skinning is already on the GPU, and the posing (about 25-30 µs a human) stays on the CPU. The item keeps the gain; it does not add one | `--scene hub,hub-crowd --renderer gpu --compare`, `render.skin` and `gpu.frame` side by side |
 | The simulation thread (items 37 to 42) | the largest now: the step leaves the frames that carry one, so a frame is drawing only (1.4 ms in the hub, 3.6 with 50 fighters); the p99 frame and the frames over the display's period fall ([What it gains](render-threads.md#threads-gain)), and an uncapped rate rises by the steps' share of the second, about 6 % in the hub and 11 % in the crowd | item 42's real-time runs at a 240 cap, with and without the thread |
 
-The [Budget](#budget) turns these into the gates each item is held to.
+The [Budget](renderer-performance.md#budget) turns these into the gates each item is held to.
 
 ### Spike {#spike}
 
@@ -625,8 +625,10 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
   | `level99-street` | `coney --play-level level99 --frames 90 --freeze-world --render-size 640x448 --draw-hash --skip-movies` |
   | `level95-hub` | `coney --play-level level95 --frames 90 --freeze-world --render-size 640x448 --draw-hash` |
 
-  Each is run twice on the branch and on its base; a pull request that changes drawing reports the four hashes in its
-  Testing section, and two runs of one build must agree. They need the window: headless, play draws only its 2D layer.
+  The hashes are taken from the GL3 renderer (`--renderer gl3`, the default): `--renderer gpu` records the headless
+  stream until the GPU renderer draws, so its hash is not one of these frames'. Each is run twice on the branch and on
+  its base; a pull request that changes drawing reports the four hashes in its Testing section, and two runs of one
+  build must agree. They need the window: headless, play draws only its 2D layer.
   Item 1's hashes, twice each on Windows: `level99-street` 23 records, `0xe923080c2453d3a4`; `level95-hub` 16 records,
   `0x4ba9bf8c9bdc48ed`. A PS2 texture's digest is of its texel and palette blocks alone: librw's data block also holds a
   heap pointer and gaps, which made two runs differ. Item 7's, the same after both its commits: `level99-street` 48
@@ -658,94 +660,11 @@ above; the tolerance is here and in `tests/pictures/scenes.toml`.
 
 ## Performance {#performance}
 
-### Benchmark {#benchmark}
-
-`coney-tools perf bench` and `coney --bench` ([Performance](../guides/performance.md#bench)) are the benchmark, with
-named scenes, GPU time and a comparison (built, [Scenes](../guides/performance.md#scenes)):
-
-```sh
-uv run --project python coney-tools perf bench --scene hub,hub-crowd,street --out ../../scratch/perf
-uv run --project python coney-tools perf bench --scene all --compare ../../scratch/perf-baseline --out ../../scratch/perf
-```
-
-- **Scenes** are a table in the tool (name, level, checkpoint, camera, fighters, frames, render size), so a scene is
-  the same work on every run: a lockstep test-mode run with a pinned camera and a fixed seed. Each scene runs three
-  times, and the report's `meta` records the render size and the window beside the level.
-- **`--compare FOLDER`** prints each scene's median frame time beside the baseline's and the change in percent, and
-  exits 1 when a scene is slower than the budget allows, on a quiet machine only ([Budget](#budget)).
-- **GPU time.** A `gpu.frame` measure from GPU timestamp queries (OpenGL timer queries, built; the new renderer's
-  waits for it, [GPU time](../guides/performance.md#gpu-time)), so a report shows whether a frame is bound by the CPU
-  or the GPU.
-- **`--display-preset` and `--renderer`** are passed through to Coney, so every display preset and renderer is
-  measured the same way (`--preset` stays the build's CMake preset).
-
-### Baseline {#baseline}
-
-Measured with `coney --bench` (lockstep, 600 frames after 60 of warm-up, `--vsync off`, the window 960 × 720 unless
-a render size is named) from a `playtest` build (optimised, with the debug tools that `--play-level` needs) of `main`
-at `b749a7dca`, with humans skinned on the GPU, on the agents' Windows machine: an AMD Ryzen 7 9800X3D, an RTX 5080,
-OpenGL 3.3 through the NVIDIA driver. Each scene ran three times, the scenes interleaved, and every run is counted: a
-cell is the median of the three runs' means, with the slowest and fastest run in brackets. Times are milliseconds a
-frame; Posing is `render.skin`, the bones posed on the CPU for the GPU's skinning. Draws and triangles are a frame's
-mean, the same in every run of a scene. Other agents' builds held the machine's CPU at 67-100 % during most runs, so
-some brackets are wide.
-
-| Scene | Fighters | Render size | Frame | p95 | Step | Render | of which posing | Present | Draws | Triangles |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Hub (`level95`) | 0 | 960 × 720 | 3.14 (2.73-3.21) | 3.50 (3.26-4.04) | 1.85 (1.70-1.91) | 1.17 (0.97-1.23) | 0.35 (0.32-0.36) | 0.19 (0.15-0.21) | 411 | 72,756 |
-| Hub, crowd | 50 | 960 × 720 | 7.02 (6.66-8.95) | 9.48 (8.68-17.20) | 3.69 (3.49-4.70) | 3.18 (3.02-4.07) | 1.76 (1.75-2.08) | 0.38 (0.26-0.81) | 540 | 128,796 |
-| Street (`level99`, checkpoint 1) | 0 | 960 × 720 | 1.86 (1.82-4.34) | 2.34 (2.26-16.04) | 0.24 (0.24-0.57) | 1.52 (1.49-2.97) | 0.33 (0.32-0.47) | 0.22 (0.21-1.07) | 693 | 77,582 |
-| Hub | 0 | 640 × 448 | 3.36 (3.19-6.38) | 4.14 (3.74-20.17) | 1.99 (1.90-2.93) | 1.29 (1.21-3.25) | 0.36 (0.35-0.49) | 0.24 (0.21-1.51) | 411 | 72,756 |
-| Hub | 0 | 2560 × 1920 | 3.22 (2.98-4.87) | 3.78 (3.49-6.00) | 1.88 (1.79-2.36) | 1.21 (1.13-2.41) | 0.35 (0.34-0.39) | 0.20 (0.18-1.31) | 411 | 72,756 |
-| Hub, headless | 0 | none | 1.86 (1.80-2.02) | 2.18 (2.02-2.74) | 1.80 (1.74-1.96) | none | none | none | none | none |
-| Hub, crowd, headless | 50 | none | 3.15 (3.04-3.25) | 3.68 (3.48-3.85) | 3.04 (2.91-3.11) | none | none | none | none | none |
-
-The reports, one JSON and one log per run with the command line (render size included) and the processor's load at
-the log's top, and the script that made the table, are kept in the scratch folder of this design's task.
-
-What it says:
-
-- **The frame is bound by the CPU, in the step and around librw.** With GPU skinning on GL3, the hub's frame is 3.1
-  ms, of which the step is 1.85 ms (nearly all the AI's brains,
-  [Performance: findings](../guides/performance.md#findings)) and the render 1.17 ms. With 50 fighters the step is
-  3.7 ms and the render 3.2 ms, of which 1.8 ms is posing the humans' bones.
-- **The simulation costs 1.8-3 ms** in the hub (the headless runs) and 0.24 ms in the street, and does not grow with
-  the frame rate, since steps are fixed. It is now the largest share of the frame, which the simulation thread
-  ([Simulation and drawing threads](#threads)) takes off the frames that draw.
-- **The GPU is barely used.** In the hub, 640 × 448 and 2560 × 1920 (17 times the pixels) have the same median frame,
-  3.36 and 3.22 ms, within each other's brackets. There is room for per-pixel lighting, shadow maps and AA.
-- **About 410-690 draw calls** a frame through librw's one-atomic-at-a-time pipelines; instancing and fewer state
-  changes on the new renderer bring that down, but at this count draws are not the limit.
-
-[Order](#order) item 16 records this again on the scene table with GPU time, on a quiet machine, and that record
-becomes the baseline `--compare` reads; the figures above are the starting point it replaces. The scene table, the
-GPU time and the comparison are built ([Scenes](../guides/performance.md#scenes)); the recording is not yet
-([#1383](issue:1383)), since it needs a machine no other build is using: `coney-tools perf bench --scene all --out
-../../scratch/perf-baseline` on a quiet one, the table pasted here and the folder kept for `--compare`. Until then
-`--compare` has no folder to read and refuses. The items that draw through GL3 (1 to 10 and 15 to 19) must keep these
-numbers (the *PS2* budget below); the GPU renderer's items are measured against them.
-
-### Budget {#budget}
-
-Frame-time budgets on this machine, each scene's median of three runs, checked by `perf bench --compare` (built; it
-reads the baseline item 16 records). They are targets for the work in [Order](#order), not results:
-
-| Preset and renderer | Scene | Budget | Why |
-| --- | --- | --- | --- |
-| *PS2*, GL3 | every scene | no slower than the baseline's median by more than the larger of 5 % and the baseline's own spread (its slowest run over its fastest) | the reference must not get slower while the seam is built; the spread term keeps the gate wider than run-to-run noise |
-| *PS2*, SDL3 GPU | Hub, crowd (50) | 6.9 ms (144 frames a second) | the step's 3.0 ms (the headless runs, which the busy machine disturbed least) leaves 3.9 ms to draw, against today's 3.6 ms of render and present on GL3 |
-| *PS2*, SDL3 GPU | Hub | 4.2 ms (240 frames a second, this display's rate) | the step's 1.85 ms leaves 2.35 ms, against today's 1.17 ms of render and 0.19 ms of present |
-| *PS2*, SDL3 GPU | Street | 2.1 ms (about 480 frames a second) | Street's step is 0.24 ms; today's render is 1.52 ms and present 0.22 ms, so 1.85 ms to draw keeps a margin and does not let the draw grow into the hub's budget |
-| *Enhanced*, SDL3 GPU, 2560 × 1440 | Hub, crowd (50) | 6.9 ms | shadow maps, per-pixel lights and SMAA fit in the GPU time the baseline leaves idle |
-| *High*, SDL3 GPU, 3840 × 2160 | Hub, crowd (50) | 8.3 ms (120 frames a second) | the most expensive preset at the largest common size |
-
-**The gate's condition.** `--compare` fails a pull request only on a quiet machine: no other build holding a build
-slot while it runs, which the tool checks and prints. On a busy machine it reports the comparison and does not fail,
-because the runs above show a busy machine spreading one scene's runs by more than 130 %.
-
-A low-end target (an integrated GPU, such as this machine's own AMD Radeon graphics) is measured once the new renderer
-draws: *Enhanced* holds 60 frames a second there or becomes opt-in, as the
-[Realtime lighting design](../guides/realtime-lighting.md#risks) says.
+The benchmark, the baseline and the frame-time budgets are on their own page,
+[Renderer performance](renderer-performance.md): the [benchmark](renderer-performance.md#benchmark) (`coney-tools perf
+bench` and `coney --bench`, with named scenes, GPU time and a comparison), the
+[baseline](renderer-performance.md#baseline) measured on GL3 with GPU skinning, and the
+[budget](renderer-performance.md#budget) each item of [Order](#order) is held to.
 
 ## Licences {#licences}
 

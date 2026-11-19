@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tests for `coney-tools perf bench --scene` and `--compare`: the scene table, the runs, the comparison with a saved
-baseline, the quiet check and the exit code (docs/engine/renderer.md#benchmark)."""
+baseline, the quiet check and the exit code (docs/engine/renderer-performance.md#benchmark)."""
 
 from __future__ import annotations
 

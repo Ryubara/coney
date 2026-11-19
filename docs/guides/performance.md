@@ -147,7 +147,7 @@ begin to just before the buffer swap, in a timer query (`GL_TIME_ELAPSED`, OpenG
 - **It can be absent.** A headless run draws nothing and a driver without timer queries (older than OpenGL 3.3) has
   none: the report then has no `gpu.frame` zone, and the tables print `none`. Neither fails a run, so test mode stays
   possible with no GPU; the ring is tested against a fake driver in `tests/platform/gpu_timer_test.cpp`.
-- **Only the OpenGL renderer.** The SDL3 GPU renderer ([The renderer](../engine/renderer.md#performance)) takes
+- **Only the OpenGL renderer.** The SDL3 GPU renderer ([Renderer performance](../engine/renderer-performance.md)) takes
   its timestamp queries with its own drawing, when it draws.
 
 ## Scenes {#scenes}
@@ -180,13 +180,13 @@ uv run --project python coney-tools perf bench --scene all --compare ../../scrat
 
 **The comparison.** `--compare FOLDER` reads the baseline's `scene-*-run*.json` reports and prints each scene's median
 frame time beside the baseline's, the change in percent, the slowest the budget allows and a verdict
-([Budget](../engine/renderer.md#budget)): a scene is `over` when its median is slower than the baseline's by more than
-the larger of 5 % and the baseline's own spread (its slowest run over its fastest); a scene the baseline lacks is
-`no baseline`, never a failure. It exits 1 when a scene is over **and the machine is quiet**: no other build holds a
-build slot ([`build status`](coney-tools-build.md#build)) before the runs or after them. On a busy machine it prints
-who holds a slot, still prints the comparison, and exits 0, since a busy machine spreads one scene's runs by more than
-the budget. A run that fails exits 1 whatever the machine does. `--display-preset` and `--renderer` are passed to Coney
-for the scene runs (`--preset` stays the build's CMake preset).
+([Budget](../engine/renderer-performance.md#budget)): a scene is `over` when its median is slower than the baseline's by
+more than the larger of 5 % and the baseline's own spread (its slowest run over its fastest); a scene the baseline lacks
+is `no baseline`, never a failure. It exits 1 when a scene is over **and the machine is quiet**: no other build holds a
+build slot ([`build status`](coney-tools-build.md#build)) before the runs or after them. On a busy machine it prints who
+holds a slot, still prints the comparison, and exits 0, since a busy machine spreads one scene's runs by more than the
+budget. A run that fails exits 1 whatever the machine does. `--display-preset` and `--renderer` are passed to Coney for
+the scene runs (`--preset` stays the build's CMake preset).
 
 ## GPU skinning {#gpu-skinning}
 
