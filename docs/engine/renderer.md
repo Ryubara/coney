@@ -617,7 +617,7 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
 
   | Name | Command |
   | --- | --- |
-  | `level99-street` | `coney --play-level level99 --frames 90 --freeze-world --render-size 640x448 --draw-hash` |
+  | `level99-street` | `coney --play-level level99 --frames 90 --freeze-world --render-size 640x448 --draw-hash --skip-movies` |
   | `level95-hub` | `coney --play-level level95 --frames 90 --freeze-world --render-size 640x448 --draw-hash` |
 
   Each is run twice on the branch and on its base; a pull request that changes drawing reports the four hashes in its
@@ -629,7 +629,10 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
   matched the base's pixel for pixel. `level95-hub`'s screenshot is black in every build (base included), so only its
   draw-stream hash covers that frame. Item 8's, the same after both its commits, the objects' and cars' draws now
   recorded: `level99-street` 132 records (107 atomic draws), `0x3f33251f6811e9d6`; `level95-hub` 60 (42),
-  `0x87ef01e331e744cb`; their screenshots again matched the base's pixel for pixel.
+  `0x87ef01e331e744cb`; their screenshots again matched the base's pixel for pixel. `level99` now plays its intro movie
+  before its first frame of play, so `level99-street` is run with `--skip-movies`: `0x31226d29c17742e4` (132 records,
+  107 atomic draws), the same before and after item 8's two fixes (a car's lights at squared distance 0, an object's
+  tint on its first material), with the screenshot unchanged.
 - **The grid across systems** is the open question this item leaves to CI: the expected hashes were recorded on
   Windows, and the first CI run on Linux and macOS shows whether they hold. If one differs, the fallback grid is 1/256
   of a unit for positions and texture coordinates (`kDrawGridSteps`) with colours kept at 8 bits, and the expected
