@@ -58,7 +58,7 @@ low byte is kept; it returns no result. `lua_GetDifficulty` (`0x0036c3d8`) pushe
 The byte is not saved: the profile record keeps the profile's difficulty (`W_GameState + 0x43c`, record `+0x4ec`,
 [the record](save.md#record)) and nothing else writes `+0x154`. The search behind "nothing else" read every byte and
 halfword load and store with offset `0x154` in the executable, delay-slot forms included: the only ones on the game
-state are the four functions of this page's Map (`GameState_Construct`, the two accessors, `Flash_Use` at
+state are the five functions of this page's Map (`GameState_Construct`, the two accessors, `Flash_Use` at
 `0x002842d8` and `PauseStats_Setup` at `0x001e5e3c`); inferred from that search, which a word access or an address
 taken with `addiu` would escape.
 
@@ -105,8 +105,8 @@ Confirmed (code) in the scripts named; what each choice means for play is on the
 ## In Coney
 
 - The difficulty in force is `GameState::difficulty` (`src/warriors/game_state.h`), a byte owned by the game state of
-  the session, so each session of a co-op game keeps its own and copies it with the rest of the state. The levels'
-  constants are in `src/warriors/difficulty.h`.
+  the session, beside the profile's own difficulty (`GameState::profileDifficulty`); no network code reads or sends it
+  yet. The levels' constants are in `src/warriors/difficulty.h`.
 - `SetDifficulty` and `GetDifficulty` are real bindings (`src/scripting/script_bindings.cpp`), so `global.lua`'s
   difficulty script sets it at each level's start and the level scripts above read it as the original's do.
 - The flash: `difficulty::flashHealth()` (`src/warriors/difficulty.h`), which `PlayLevelSimulation::useFlash()`
