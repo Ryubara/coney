@@ -131,3 +131,43 @@ TEST_CASE("a FATX volume with a damaged chain or no magic is refused", "[fatx]")
     REQUIRE_FALSE(refused.has_value());
     CHECK(refused.error().code == ErrorCode::Invalid);
 }
+
+TEST_CASE("a FATX volume that ends inside its FAT is refused", "[fatx]") {
+    // Expected: save.md#xbox-containers, inferred (the FAT follows the 4 KB superblock, 2 bytes a cluster rounded up to
+    // 4 KB, so a 1 MB volume of 16 KB clusters has its data from 0x2000)
+    auto image = flatten(buildFatx(1024 * 1024, {{"f", pattern(100, 1)}}), 1024 * 1024);
+    image.resize(0x1000 + 10);
+    MemoryStream stream(image);
+    const auto volume = FatxVolume::open(stream, 0, 1024 * 1024);
+    REQUIRE_FALSE(volume.has_value());
+    CHECK(volume.error().code == ErrorCode::Truncated);
+}
+
+TEST_CASE("a FATX folder whose chain is longer than any folder is refused", "[fatx]") {
+    // Expected: save.md#xbox-containers, Coney's choice (a folder is read to at most 256 KB, 4,096 entries; a longer
+    // chain is damage, and following it would cost memory without bound)
+    auto image = flatten(buildFatx(1024 * 1024, {}), 1024 * 1024);
+    // Links the root folder (cluster 1) through `clusters` clusters of 16 KB: FAT entry c is the FAT's bytes 2c-2c+1.
+    const auto link = [&image](std::uint32_t clusters) {
+        for (std::uint32_t c = 1; c <= clusters; ++c) {
+            const std::uint32_t next = c == clusters ? 0xffffU : c + 1;
+            image[0x1000 + std::size_t{c} * 2] = static_cast<std::byte>(next & 0xffU);
+            image[0x1000 + std::size_t{c} * 2 + 1] = static_cast<std::byte>(next >> 8U);
+        }
+    };
+    MemoryStream stream(image);
+    SECTION("16 clusters, 256 KB, is a folder") {
+        link(16);
+        auto volume = FatxVolume::open(stream, 0, image.size());
+        REQUIRE(volume.has_value());
+        CHECK(volume->root().has_value());
+    }
+    SECTION("17 clusters is not") {
+        link(17);
+        auto volume = FatxVolume::open(stream, 0, image.size());
+        REQUIRE(volume.has_value());
+        const auto root = volume->root();
+        REQUIRE_FALSE(root.has_value());
+        CHECK(root.error().code == ErrorCode::Invalid);
+    }
+}

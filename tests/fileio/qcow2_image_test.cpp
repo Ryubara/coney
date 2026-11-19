@@ -106,3 +106,26 @@ TEST_CASE("a qcow2 image Coney cannot read is refused, and a compressed cluster 
     MemoryStream none(other);
     CHECK_FALSE(Qcow2Image::looksLikeQcow2(none));
 }
+
+TEST_CASE("a qcow2 image cut short in its header or its L1 table, or with too large an L1 table, is refused",
+          "[qcow2]") {
+    // Expected: save.md#xbox-containers, inferred (the header is 72 bytes in version 2 and 104 in version 3; the L1
+    // table's entry count is the header's word at 36 and its offset the word at 40, big-endian; Coney reads at most
+    // 2^22 entries)
+    auto image = buildQcow2(kGigabyte, {{0, pattern(16, 1)}});
+    // Writes `value` big-endian into `width` bytes at `offset` of the header.
+    const auto put = [&image](std::size_t offset, std::size_t width, std::uint64_t value) {
+        for (std::size_t i = 0; i < width; ++i) {
+            image[offset + i] = static_cast<std::byte>((value >> (8 * (width - 1 - i))) & 0xffU);
+        }
+    };
+    SECTION("shorter than a version 2 header") { image.resize(50); }
+    SECTION("a version 3 image shorter than its header") { image.resize(80); }
+    SECTION("an L1 table past the end of the file") { put(40, 8, image.size()); }
+    SECTION("an L1 table running past the end of the file") { put(40, 8, image.size() - 4); }
+    SECTION("more L1 entries than Coney reads") { put(36, 4, (std::uint64_t{1} << 22U) + 1); }
+    MemoryStream file(image);
+    const auto disk = Qcow2Image::open(file);
+    REQUIRE_FALSE(disk.has_value());
+    CHECK((disk.error().code == ErrorCode::Truncated || disk.error().code == ErrorCode::Invalid));
+}
