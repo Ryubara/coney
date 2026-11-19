@@ -31,6 +31,7 @@ add_executable(coney_tests
     core/sequence_diff_test.cpp
     core/sha1_test.cpp
     core/sha256_test.cpp
+    core/story_chapter_test.cpp
     core/story_graph_test.cpp
     core/story_manifest_test.cpp
     core/story_merge_test.cpp
@@ -257,6 +258,7 @@ add_executable(coney_tests
     scripting/config_strings_test.cpp
     scripting/disc_script_system_test.cpp
     scripting/hub_bindings_test.cpp
+    scripting/hub_chapter_test.cpp
     scripting/mission4_bindings_test.cpp
     scripting/mission7_bindings_test.cpp
     scripting/hud_bindings_test.cpp

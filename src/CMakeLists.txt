@@ -48,6 +48,7 @@ add_library(coney_core STATIC
     core/script_patch_merge.cpp
     core/script_patch_reader.cpp
     core/sequence_diff.cpp
+    core/story_chapter.cpp
     core/story_graph.cpp
     core/story_manifest.cpp
     core/story_merge.cpp
@@ -208,6 +209,7 @@ add_library(coney_core STATIC
     scripting/sound_bindings.cpp
     scripting/spawn_bindings.cpp
     scripting/hub_bindings.cpp
+    scripting/hub_chapter.cpp
     scripting/hub_world_bindings.cpp
     scripting/mission4_bindings.cpp
     scripting/mission7_bindings.cpp

@@ -172,3 +172,80 @@ TEST_CASE("story graph: the hash is fixed for the original's chain and changes w
     steps.pop_back();
     CHECK(StoryGraph(steps).hash() != graph.hash());
 }
+
+TEST_CASE("story graph: the step queries find a step, the step after a mission and each chapter's offer",
+          "[story_graph]") {
+    // Expected: story-progress.md#global-functions and story-progress.md#hub, confirmed (code); asked by step id, as
+    // the design's progress has it (../guides/studio/mission-mods.md#graph-progress)
+    const StoryGraph graph = StoryGraph::original();
+    CHECK(graph.find("level99") == std::optional<std::size_t>{0});
+    CHECK(graph.find("hub:12") == std::optional<std::size_t>{30});
+    CHECK_FALSE(graph.find("level70").has_value());
+
+    // runNextMission by step: none complete enters the first step; a mission enters the step after it.
+    CHECK(graph.nextStep(std::nullopt) == StoryStep::mission(99));
+    CHECK(graph.nextStep("level87") == StoryStep::hubChapter(1));
+    CHECK(graph.nextStep("level86") == StoryStep::mission(93));
+    CHECK(graph.nextStep("level64") == StoryStep::hubChapter(12));
+    // A hub chapter is not completed, an unknown id has no row.
+    CHECK_FALSE(graph.nextStep("hub:3").has_value());
+    CHECK_FALSE(graph.nextStep("level70").has_value());
+
+    // Each chapter's offer: chapter 6 offers level86; chapters 11 and 12 offer nothing (level64 is a side step).
+    CHECK(graph.offerOf("hub:6") == StoryStep::mission(86));
+    CHECK_FALSE(graph.offerOf("hub:11").has_value());
+    CHECK_FALSE(graph.offerOf("hub:12").has_value());
+    CHECK_FALSE(graph.offerOf("level80").has_value());
+
+    // The hub entered at a checkpoint plays the chapter the story is at; a jump elsewhere plays the original chapter.
+    CHECK(graph.hubChapterAt(6, "level81") == StoryStep::hubChapter(6));
+    CHECK(graph.hubChapterAt(3, "level81") == StoryStep::hubChapter(3));
+    CHECK(graph.hubChapterAt(1, std::nullopt) == StoryStep::hubChapter(1));
+    CHECK_FALSE(graph.hubChapterAt(13, "level81").has_value());
+    CHECK_FALSE(graph.hubChapterAt(0, std::nullopt).has_value());
+}
+
+TEST_CASE("story graph: a new hub chapter is the hub at chapter n's checkpoint and offers chapter n's mission",
+          "[story_graph]") {
+    // Expected: ../guides/studio/mission-mods.md#anchors, Coney's own design (no counterpart in the original); the
+    // checkpoint is story-progress.md#hub, confirmed (code)
+    const StoryGraph original = StoryGraph::original();
+    std::vector<StoryStep> steps(original.steps().begin(), original.steps().end());
+    const auto hub6 = std::ranges::find(steps, StoryStep::hubChapter(6));
+    REQUIRE(hub6 != steps.end());
+    // hub:6, the mod's mission, its new chapter, then level86 as before (the merge's placing, story_merge_test.cpp).
+    steps.insert(hub6 + 1,
+                 {StoryStep::modMission("yard-brawl.docks"), StoryStep::modHubChapter(6, "hub:6.yard-brawl.docks")});
+    const StoryGraph graph(steps);
+
+    // Chapter 6 offers the mod's mission; its completion enters the new chapter, at checkpoint 6.
+    CHECK(graph.offerOf("hub:6") == StoryStep::modMission("yard-brawl.docks"));
+    const std::optional<StoryStep> next = graph.nextStep("yard-brawl.docks");
+    REQUIRE(next.has_value());
+    if (next) {
+        CHECK(next->id() == "hub:6.yard-brawl.docks");
+        CHECK(next->level == kHubLevel);
+        CHECK(next->checkpoint() == 6);
+    }
+    // The new chapter offers what chapter 6 offered, and the walk goes on from there.
+    CHECK(graph.offerOf("hub:6.yard-brawl.docks") == StoryStep::mission(86));
+    CHECK(graph.nextStep("level86") == StoryStep::mission(93));
+
+    // The hub at checkpoint 6 plays the new chapter once the mod's mission is the latest complete, chapter 6 before.
+    const std::optional<StoryStep> after = graph.hubChapterAt(6, "yard-brawl.docks");
+    REQUIRE(after.has_value());
+    if (after) {
+        CHECK(after->id() == "hub:6.yard-brawl.docks");
+    }
+    CHECK(graph.hubChapterAt(6, "level81") == StoryStep::hubChapter(6));
+    // level86 complete: the story is past both; a jump to checkpoint 6 plays chapter 6 itself.
+    CHECK(graph.hubChapterAt(6, "level86") == StoryStep::hubChapter(6));
+
+    // fRunMission keeps its 12 rows, one per original chapter; the new chapter is no row of its own.
+    const std::vector<HubOffer> offers = graph.hubOffers();
+    REQUIRE(offers.size() == 12);
+    for (std::size_t index = 0; index < offers.size(); ++index) {
+        CHECK(offers[index].chapter == static_cast<int>(index) + 1);
+    }
+    CHECK(graph.offer(7) == 31);
+}

@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <optional>
 #include <span>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -122,8 +124,9 @@ class StoryGraph {
     [[nodiscard]] std::vector<NextMissionRow> runNextMissionRows() const;
     /// `findLastMission`'s list: the missions' levels, latest first.
     [[nodiscard]] std::vector<int> findLastMissionLevels() const;
-    /// The hub's `fRunMission`: each hub chapter in chapter order with the mission after it, none when the step after
-    /// it is not a mission, is a side step or does not exist.
+    /// The hub's `fRunMission`: each original hub chapter in chapter order with the mission after it, none when the
+    /// step after it is not a mission, is a side step or does not exist. A new chapter a mod's mission opened is no
+    /// row: it shares chapter n's checkpoint, and its offer is offerOf()'s.
     [[nodiscard]] std::vector<HubOffer> hubOffers() const;
 
     /// `findLastMission()`: the latest mission in the chain that `isComplete` says is complete, else 0.
@@ -131,9 +134,24 @@ class StoryGraph {
     /// `runNextMission`'s row for `lastLevel` (0: none complete): what loads next, or nothing when the level has no
     /// row (the original's missing row, after which nothing loads).
     [[nodiscard]] std::optional<StoryLoad> nextLoad(int lastLevel) const;
-    /// `fRunMission[chapter].level`: the mission hub chapter `chapter` offers; nothing when it offers none or the chain
-    /// has no such chapter.
+    /// `fRunMission[chapter].level`: the mission original hub chapter `chapter` offers; nothing when it offers none or
+    /// the chain has no such chapter.
     [[nodiscard]] std::optional<int> offer(int chapter) const;
+
+    /// The index of the step whose id is `id`; nothing when the chain has none.
+    [[nodiscard]] std::optional<std::size_t> find(std::string_view id) const;
+    /// What `runNextMission` enters after mission `lastMissionId` (nothing: none complete, which enters the first
+    /// step): the step after it. Nothing when the id is not a mission of the chain or no step follows it.
+    [[nodiscard]] std::optional<StoryStep> nextStep(std::optional<std::string_view> lastMissionId) const;
+    /// The mission the hub chapter step `chapterId` offers (its last action loads it): the step after it when that is
+    /// a mission and not a side step; nothing otherwise, or when `chapterId` is not a hub chapter of the chain.
+    [[nodiscard]] std::optional<StoryStep> offerOf(std::string_view chapterId) const;
+    /// The hub chapter the hub plays when it is entered at `checkpoint` with `lastMissionId` the latest mission
+    /// complete: the step nextStep() gives when that is a hub chapter at this checkpoint (a new chapter a mod's mission
+    /// opened, or the original one), else the original chapter `hub:<checkpoint>` (a jump to the hub that is not the
+    /// story's place). Nothing when the chain has no original chapter at that checkpoint.
+    [[nodiscard]] std::optional<StoryStep> hubChapterAt(int checkpoint,
+                                                        std::optional<std::string_view> lastMissionId) const;
 
     /// SHA-256 of the chain in a fixed text form (a version line, then one line per step: its id, level, checkpoint
     /// and side-step mark), the same on every machine and build; what a co-op session compares.
