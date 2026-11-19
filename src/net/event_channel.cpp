@@ -34,8 +34,34 @@ std::size_t batchHeaderBits(std::uint32_t sequence, std::uint32_t step) {
 
 } // namespace
 
-// Stub for the strengthened test's first run; the next commit restores it.
-std::vector<NetEvent> toNetEvents(std::span<const GameEvent> /*events*/, const EventSubjectIds& /*ids*/) { return {}; }
+std::vector<NetEvent> toNetEvents(std::span<const GameEvent> events, const EventSubjectIds& ids) {
+    std::vector<NetEvent> out;
+    constexpr std::size_t kMaxOrdinals = std::size_t{std::numeric_limits<std::uint16_t>::max()} + 1;
+    const std::size_t count = std::min(events.size(), kMaxOrdinals);
+    out.reserve(count);
+    for (std::size_t i = 0; i < count; ++i) {
+        const GameEvent& event = events[i];
+        const std::uint8_t fields = gameEventFields(event.kind);
+        NetEvent net;
+        net.kind = event.kind;
+        net.ordinal = static_cast<std::uint16_t>(i);
+        // Only the fields the kind carries travel; a caller's stray value in another is not sent.
+        if ((fields & kEventSubject) != 0 && event.subject != 0.0 && ids) {
+            net.subject = ids(event.subject);
+        }
+        net.id = (fields & kEventId) != 0 ? event.id : 0;
+        net.value = (fields & kEventValue) != 0 ? event.value : 0;
+        net.extra = (fields & kEventExtra) != 0 ? event.extra : 0;
+        if ((fields & kEventPosition) != 0) {
+            net.position = event.position;
+        }
+        if ((fields & kEventText) != 0) {
+            net.text = event.text.substr(0, kMaxGameEventText);
+        }
+        out.push_back(std::move(net));
+    }
+    return out;
+}
 
 std::vector<EventBatch> EventSender::build(std::uint32_t step, std::span<const NetEvent> events) {
     std::vector<EventBatch> batches;
