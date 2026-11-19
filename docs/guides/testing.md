@@ -585,7 +585,7 @@ uv run --project python coney-tools task check <task>
 ```
 
 A rerun for the same committed tip goes on from the first check that did not pass
-([Resuming a run](coney-tools-repo.md#task-check-resume); `--no-resume` starts over): after a kill, a wait for a slot
+([Resuming a run](task-check-resume.md#resume); `--no-resume` starts over): after a kill, a wait for a slot
 that gave up or a flaky failure the hour is not lost. Any edit, rebase or amend of the branch runs everything again.
 
 While working, one command checks what CI would fail on for the files you touched; it is an aid, not the gate, and

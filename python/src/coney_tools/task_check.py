@@ -457,6 +457,7 @@ def _execute(
                 return results
             step_results, record, tests = results
             if record is not None and len(step_results) == len(builds) and all(r.ok for r in step_results):
+                _unchanged(context.root, context.base, change)  # a pass is kept only for the tree it ran on
                 resume.keep_build(builds, [r.detail for r in step_results], record.stem, tests, env.clock())
         else:
             earlier = resume.taken(name)
@@ -479,6 +480,7 @@ def _execute(
                 env.say(f"task check: {check_slots.queued_message(timeout, name)}; run task check again")
                 return EXIT_QUEUED
             if step_results[0].ok:
+                _unchanged(context.root, context.base, change)  # a pass is kept only for the tree it ran on
                 resume.keep(name, step_results[0].detail, dict(step_results[0].counts), env.clock())
         for result in step_results:
             ran.append(result.name)

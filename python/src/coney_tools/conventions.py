@@ -940,7 +940,7 @@ class ProofCtest:
 @dataclass(frozen=True)
 class ProofResume:
     """When `task check` goes on from the checks an earlier run passed (`proof.resume`,
-    docs/guides/coney-tools-repo.md#task-check-resume). Without the key (a base older than it) the default holds."""
+    docs/guides/task-check-resume.md#resume). Without the key (a base older than it) the default holds."""
 
     #: A check that passed longer ago than this is run again: a tool upgraded since is not in what a resume compares.
     max_age_hours: int = 24

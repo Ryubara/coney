@@ -6,11 +6,14 @@ of test_task_check.py."""
 
 import json
 import shutil
+from collections.abc import Callable
+from dataclasses import replace
 from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
 import pytest
+import yaml
 from conventions_support import REMOVE, changed, conventions_with
 from git_support import git
 from test_task_check import TASK, TESTS, World, make_world, start_fix
@@ -18,7 +21,7 @@ from test_task_check import TASK, TESTS, World, make_world, start_fix
 from coney_tools import check_resume, task_check, unit
 from coney_tools.build_claims import SlotTimeout
 from coney_tools.cli import main
-from coney_tools.conventions import ConventionsError, load_conventions, parse_conventions
+from coney_tools.conventions import Conventions, ConventionsError, load_conventions, parse_conventions
 
 
 @pytest.fixture
@@ -201,12 +204,122 @@ def test_the_rules_the_checks_read_are_part_of_the_key(world: World) -> None:
     conventions = load_conventions(world.root)
     same = check_resume.rules_fingerprint(conventions)
     assert same == check_resume.rules_fingerprint(load_conventions(world.root))
-    from dataclasses import replace
-
     wider = replace(conventions, proof=replace(conventions.proof, pytest=replace(conventions.proof.pytest, scoped=())))
     assert check_resume.rules_fingerprint(wider) != same
     docs_gone = replace(conventions, paths=replace(conventions.paths, docs_only=()))
     assert check_resume.rules_fingerprint(docs_gone) != same
+
+
+def rules(world: World, monkeypatch: pytest.MonkeyPatch, change: Callable[[Conventions], Conventions]) -> None:
+    """Make the next runs read the rules `change` makes of the base's, leaving the base commit as it is."""
+    original = task_check._rules
+
+    def read(root: Path, base: str, own: Conventions, say: Callable[[str], None]) -> tuple[Conventions, str]:
+        found, which = original(root, base, own, say)
+        return change(found), which
+
+    monkeypatch.setattr(task_check, "_rules", read)
+
+
+def fail_with_rules_then_change(
+    world: World, monkeypatch: pytest.MonkeyPatch, change: Callable[[Conventions], Conventions]
+) -> None:
+    """A run of the docs profile that fails at mkdocs, then the rules the checks read change, the base commit not."""
+    fail_then_fix(world)
+    rules(world, monkeypatch, change)
+
+
+def test_proof_rules_that_change_on_the_same_base_run_everything(world: World, monkeypatch: pytest.MonkeyPatch) -> None:
+    def wider(c: Conventions) -> Conventions:
+        return replace(c, proof=replace(c.proof, ctest=replace(c.proof.ctest, max_files=7)))
+
+    fail_with_rules_then_change(world, monkeypatch, wider)
+    assert world.check() == 0
+    assert world.calls == FULL_DOC and any("another rules" in line for line in world.said)
+
+
+def test_path_classes_that_change_on_the_same_base_run_everything(
+    world: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def more(c: Conventions) -> Conventions:
+        return replace(c, paths=replace(c.paths, tools_only=(*c.paths.tools_only, "zzz/**")))
+
+    fail_with_rules_then_change(world, monkeypatch, more)
+    assert world.check() == 0
+    assert world.calls == FULL_DOC
+
+
+def test_a_profile_whose_checks_list_changed_runs_everything(world: World, monkeypatch: pytest.MonkeyPatch) -> None:
+    def fewer(c: Conventions) -> Conventions:
+        profiles = tuple(
+            replace(p, checks=tuple(x for x in p.checks if x != "pre-commit")) if p.name == "docs" else p
+            for p in c.proof.profiles
+        )
+        return replace(c, proof=replace(c.proof, profiles=profiles))
+
+    fail_with_rules_then_change(world, monkeypatch, fewer)
+    assert world.check() == 0
+    assert world.calls == ["docs-check", "mkdocs", "pytest"]  # all of them, minus the check the rules dropped
+    assert any("another" in line and "checks" in line for line in world.said)
+
+
+def test_proof_rules_that_change_on_the_base_run_everything(world: World) -> None:
+    fail_then_fix(world)
+    git(world.root, "checkout", "-q", "main")
+    path = world.root / ".github" / "conventions.yml"
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    data["proof"]["pytest"]["whole_when"].append("docs/")
+    path.write_text(yaml.safe_dump(data), encoding="utf-8", newline="")
+    git(world.root, "commit", "-qam", "main moves on")
+    git(world.root, "checkout", "-q", "work")
+    git(world.root, "rebase", "-q", "main")
+    assert world.check() == 0
+    assert world.calls == FULL_DOC
+
+
+def writes(path: Path) -> Callable[[], None]:
+    """A step's side effect: a file a check leaves in the worktree."""
+
+    def write() -> None:
+        path.write_text("made by a check", encoding="utf-8")
+
+    return write
+
+
+def test_a_worktree_that_changed_while_a_check_ran_leaves_no_pass_for_a_later_run_to_take(world: World) -> None:
+    world.edit("docs/guides/widget.md", DOC)
+    stray = world.root / "stray.txt"
+    world.on_step["mkdocs"] = writes(stray)
+    assert world.check() == 2
+    assert any("worktree changed while the checks ran" in line for line in world.said)
+    stray.unlink()
+    world.on_step.clear()
+    world.calls.clear()
+    assert world.check() == 0
+    assert world.calls == ["mkdocs", "pre-commit", "pytest"]  # docs-check ran on the clean tree; mkdocs did not count
+    assert world.stamp.detail["resumed"]["checks"] == ["docs-check"]
+
+
+def test_a_change_made_by_the_last_check_leaves_nothing_to_resume(world: World) -> None:
+    world.edit("docs/guides/widget.md", DOC)
+    stray = world.root / "stray.txt"
+    world.on_step["pytest"] = writes(stray)
+    assert world.check() == 2
+    stray.unlink()
+    world.on_step.clear()
+    world.calls.clear()
+    assert world.check() == 0
+    assert world.calls == ["pytest"]
+
+
+def test_an_entry_dated_after_the_run_began_is_not_used(world: World) -> None:
+    fail_then_fix(world)
+    data = json.loads(ledger_file(world).read_text(encoding="utf-8"))
+    for entry in data["entries"].values():
+        entry["at"] = "2099-01-01T00:00:00Z"
+    ledger_file(world).write_text(json.dumps(data), encoding="utf-8")
+    assert world.check() == 0
+    assert world.calls == FULL_DOC and any("after this run began" in line for line in world.said)
 
 
 def test_no_resume_runs_everything_and_the_next_run_can_resume_from_it(world: World) -> None:

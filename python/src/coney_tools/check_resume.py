@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The resume of `coney-tools task check`: what passed in an earlier run for the same change, kept so a rerun goes on
-from the first check that did not pass (docs/guides/coney-tools-repo.md#task-check-resume).
+from the first check that did not pass (docs/guides/task-check-resume.md#resume).
 
 A run keeps a **ledger**, `<scratch>/<task>/check-resume/ledger.json`, written after every check that passes (so a
 run that was killed, gave up waiting for a slot or hit a missing program keeps what it had done). The ledger holds a
@@ -174,6 +174,9 @@ class Ledger:
         limit = timedelta(hours=max_age_hours)
         for name, entry in kept.items():
             ended = _parse(entry.at)
+            if ended is not None and ended > run:  # a clock set back, or a ledger made by hand
+                say(f"  resume: {name} is dated {entry.at}, after this run began: it runs again")
+                continue
             if ended is None or run - ended > limit:
                 say(f"  resume: {name} passed at {entry.at}, older than the {max_age_hours} hours a resume trusts")
                 continue
