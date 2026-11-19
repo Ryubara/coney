@@ -172,4 +172,12 @@ TEST_CASE("a fetched entry is written in pieces and refused when its bytes are n
     Writer shorter(16);
     REQUIRE(shorter.add("big", data.size() + 1, digest, inPieces).has_value());
     CHECK_FALSE(shorter.toBytes().has_value());
+
+    // A source that hands over more than it said: refused as soon as a piece passes the added size.
+    Writer longer(16);
+    REQUIRE(longer.add("big", data.size() - 2, digest, inPieces).has_value());
+    const auto overlong = longer.toBytes();
+    REQUIRE_FALSE(overlong.has_value());
+    CHECK(overlong.error().code == ErrorCode::Invalid);
+    CHECK(overlong.error().message.find("longer than") != std::string::npos);
 }

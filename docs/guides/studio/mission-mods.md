@@ -616,7 +616,7 @@ When this design is accepted:
   and its parser serves the translator. [The runtime](lua-sdk.md#runtime-choice): the game state may be a 5.4 state for
   a level a mod translated, if the maintainer chooses 5.4.
 - [Asset and script architecture: Three parts](../asset-and-script-architecture.md#script-parts): the *mod* provider of
-  the script catalog is a patched script (and, with 5.4, a translated one), not a file from `overrides/scripts/`.
+  the script catalog is a patched script (and, with 5.4, a translated one), not a loose file or a pack.
 - [Mods: Load order](mods.md#load-order) (done there): two mods' patches of one script merge, and the
   player chooses only on a real overlap ([Two mods](#two-mods)), instead of being refused.
 - [Script security](security.md#build-issues) (done there): its build issue 12 keeps only the safety rules around this

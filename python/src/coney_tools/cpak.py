@@ -69,7 +69,12 @@ def compression_name(value: int) -> str:
 
 def check_name(name: str) -> None:
     """Raise CpakError unless `name` keeps the format's name rules (docs/guides/cpak-format.md#names)."""
-    raw = name.encode("utf-8", errors="surrogatepass")
+    # Strict encoding: a lone surrogate has no UTF-8 form, and the engine refuses its bytes, so refuse it here with
+    # the same error rather than let the encoder's own exception out of write().
+    try:
+        raw = name.encode("utf-8")
+    except UnicodeEncodeError as error:
+        raise CpakError("a name is not well-formed UTF-8") from error
     if not 1 <= len(raw) <= MAX_NAME_BYTES:
         raise CpakError(f"a name must be 1 to {MAX_NAME_BYTES} bytes long")
     if any(byte < 0x20 or byte == 0x7F for byte in raw) or "\\" in name or ":" in name:

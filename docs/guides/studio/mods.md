@@ -30,7 +30,7 @@ data. What mods add to it:
   mods/                         the one mods folder: one .cmod file per mod, read where it lies
     yard-brawl-0.3.0.cmod       a package: the project folder zipped, its manifest listing every file
     enabled.toml                which mods are on, their order, and what the player approved for each
-  overrides/                    the architecture page's loose replacements (texture packs): data, never scripts
+  packs/                        the architecture page's texture packs: data, never scripts
   cache/servers/<server key>/   files a server or co-op host sent, one folder per server, by content hash
   cache/mods/                   what Coney remembers about each package it verified (hashes checked, by size and time)
 <per-user save location>/       save data only
@@ -39,15 +39,15 @@ data. What mods add to it:
   mod-data/<project>/           each project's store (Coney.SaveData), with its quota
 ```
 
-- **`mods/` holds packages; `overrides/` holds data.** Scripts load only from a package in `mods/`, from Studio's open
+- **`mods/` holds packages; `packs/` holds data.** Scripts load only from a package in `mods/`, from Studio's open
   project, from a folder named on the command line (`coney --project <folder>`, for modders who use another editor and
   for tests), or, while connected, from what a server sent (`cache/servers/<key>/`, its client scripts only); nothing in
-  `overrides/` is ever run as a script. A change to one of the game's own scripts is a patch, as [Mission
+  `packs/` is ever run as a script. A change to one of the game's own scripts is a patch, as [Mission
   mods](mission-mods.md#patches) designs, under the `game-scripts` permission of a project: only the differences, pinned
   to the disc script's hash, which each player's Coney applies to the script from their own disc and compiles. No game
-  script ships in a mod, not even as Lua 4.0 source, and none is ever a file dropped into `overrides/files/` ([Attack
-  surface](security.md#surface)). A folder found in `mods/` is not loaded; the mods menu says so and points at
-  `--project` and Studio's Export.
+  script ships in a mod, not even as Lua 4.0 source, and none is ever a file dropped into `overrides/files/` (today's
+  interim copy; [Attack surface](security.md#surface)). A folder found in `mods/` is not loaded; the mods menu says so
+  and points at `--project` and Studio's Export.
 - **A project's store** lives with the saves, because it is save data (the install-folder decision keeps only save data
   in the per-user location); it is named by the project's name and, for a signed project, its signer, so a project of
   the same name by someone else does not read it.
@@ -304,7 +304,7 @@ package.*
 - **Joining is the consent.** Before downloading, the guest sees the host's or server's projects with their sizes ("This
   game is modded: Yard Brawl 0.3.0, 2.1 MB") and chooses to join. Client scripts need no permission: a client state has
   only client natives, the same sandbox and no store beyond a small one per server and project.
-- **The client's own mods are off while connected**, except the presentation packs in `overrides/` (textures, sounds),
+- **The client's own mods are off while connected**, except the presentation packs in `packs/` (textures, sounds),
   which change only what that player sees. A server may allow players' own client-only projects (Garry's Mod's
   `sv_allowcslua`); they still have client natives only.
 - **Nothing a server sent is installed.** Its scripts run only while connected to it, from the cache; leaving ends
