@@ -5,7 +5,8 @@ The fork (docs/guides/research-tools.md#driving-pcsx2) builds a JSON server into
 (`[EmuCore]` `EnableDebugServer`, `DebugServerPort`). The protocol is newline-delimited JSON over TCP: a request is one
 object `{"cmd": NAME, ...}` and a line, the answer one object and a line with `"ok"` true, or false and an `"error"`.
 Unlike PINE it serves several clients at once (a thread each), so `trace original` can use it beside an agent's MCP
-server. Only the commands Coney's tools need are wrapped here: `status`, `emulation` and `input_recording`.
+server. Only the commands Coney's tools need are wrapped here: `status`, `emulation` and `input_recording`, and for
+`trace lights` (coney_tools.light_trace) the debugger's `read_registers`, `read_memory`, breakpoints and `resume`.
 
 `input_recording` drives PCSX2's own input recording, as its "Input Recording" menu does: `play` loads the recording's
 start savestate (`<file>_SaveState.p2s` beside it) or resets the game, then replays every frame's pad state; at its last
@@ -167,6 +168,53 @@ class DebugClient:
         answer = self.request({"cmd": "emulation", "action": action})
         _check(answer, "emulation")
         return str(answer.get("state", ""))
+
+    def cpu_status(self) -> tuple[bool, int]:
+        """Whether the EE is stopped in the debugger (at a breakpoint, or paused by `pause`) and its pc."""
+        answer = self.request({"cmd": "status"})
+        _check(answer, "status")
+        try:
+            data = answer["data"]
+            return bool(data["paused"]), int(str(data["pc"]), 16)
+        except (KeyError, TypeError, ValueError) as error:
+            raise DebugServerError(f"status: malformed answer {answer!r}") from error
+
+    def registers(self, category: int) -> list[int]:
+        """The EE's registers of one category (0 the GPRs, then pc, hi and lo; 2 the FPRs), each as a 128-bit
+        integer in the debugger's order: a GPR's index is its number (a0 is 4, ra 31), an FPR's low 32 bits are
+        its float."""
+        answer = self.request({"cmd": "read_registers", "category": category})
+        _check(answer, "read_registers")
+        try:
+            # The answer holds the category's table by its name ("GPR", "FPR") beside the pc, hi and lo.
+            groups = [value for value in answer["data"].values() if isinstance(value, dict) and "regs" in value]
+            return [int(str(reg["value"]), 16) for reg in groups[0]["regs"]]
+        except (AttributeError, IndexError, KeyError, TypeError, ValueError) as error:
+            raise DebugServerError(f"read_registers: malformed answer {str(answer)[:200]}") from error
+
+    def read_memory(self, address: int, length: int) -> bytes:
+        """`length` bytes of EE memory from `address` (at most 65536; an unmapped byte reads as 0)."""
+        answer = self.request({"cmd": "read_memory", "address": address, "length": length})
+        _check(answer, "read_memory")
+        try:
+            data = bytes.fromhex(str(answer["hex"]))
+        except (KeyError, ValueError) as error:
+            raise DebugServerError(f"read_memory: malformed answer {str(answer)[:200]}") from error
+        if len(data) != length:
+            raise DebugServerError(f"read_memory: asked for {length} bytes at 0x{address:08x}, got {len(data)}")
+        return data
+
+    def set_breakpoint(self, address: int) -> None:
+        """Stop the EE whenever it reaches `address`."""
+        _check(self.request({"cmd": "set_breakpoint", "address": address}), "set_breakpoint")
+
+    def remove_breakpoint(self, address: int) -> None:
+        """Remove the breakpoint at `address`."""
+        _check(self.request({"cmd": "remove_breakpoint", "address": address}), "remove_breakpoint")
+
+    def resume(self) -> None:
+        """Let the EE run on from where the debugger stopped it, past a breakpoint it sits on."""
+        _check(self.request({"cmd": "resume"}), "resume")
 
     def input_recording(self, action: str, path: str | None = None) -> InputRecordingStatus:
         """Run `input_recording` `action` (play, stop or status; play needs `path`, relative to PCSX2's data

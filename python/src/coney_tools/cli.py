@@ -33,6 +33,7 @@ from coney_tools import (
     identity,
     issue_claim_cli,
     issue_cli,
+    light_trace_cli,
     lua_cli,
     mcp_serve,
     mission_cli,
@@ -1164,6 +1165,7 @@ def _add_trace_commands(groups: Any) -> None:
     )
     commands = group.add_subparsers(dest="command", required=True)
     _add_trace_original(commands)
+    light_trace_cli.add_command(commands)
     coney = commands.add_parser("coney", help="play a scenario on Coney headless and write its --trace")
     coney.add_argument("scenario", type=Path, help="a scenario TOML (research/traces/scenarios/)")
     coney.add_argument("--out", type=Path, required=True, help="the trace CSV (outside the repository)")
@@ -1478,6 +1480,8 @@ def _run(args: argparse.Namespace) -> int:
             )
         if args.command == "original":
             return _run_trace_original(args)
+        if args.command == "lights":
+            return light_trace_cli.run(args)
         if args.command == "events":
             if args.side == "coney":
                 return mission_cli.run_mission_coney(

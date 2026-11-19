@@ -1,15 +1,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Run records: what a research page's `confirmed (runtime)` claim cites (docs/guides/research-evidence.md#run-records).
 
-A record is `research/runs/<id>.toml`, written by the tools that drive PCSX2 (`pcsx2 recipes run --record`,
-`trace original --run-record`, `pcsx2 record-run`) or xemu (`xemu record-run`) and by nothing else, so the method cannot
-be paraphrased away. It holds who ran it, the emulator's version and copy (a `[pcsx2]` table for the PS2 game, an
-`[xemu]` table in its place for the Xbox build), the state and patches it started from, the recipe, the trace or the
-method in words, and the values read: names, numbers and addresses only, never memory or game text (LEGAL.md). The
-rules (the id, the sizes, the kinds) are `runs` in `.github/conventions.yml`, and the folder is `research.files.runs`
-there. Those limits cap how much a record can hold; they do not tell game data from our own (English game text is
-printable ASCII too, and numbers can carry bytes), so the reviewer reads the method, the args and the value names
-(docs/guides/research-evidence.md#run-records).
+A record is `research/runs/<id>.toml`, written by the tools that drive PCSX2 (`pcsx2 recipes run --record`, `trace
+original --run-record`, `trace lights --run-record`, `pcsx2 record-run`) or xemu (`xemu record-run`) and by nothing
+else, so the method cannot be paraphrased away. It holds who ran it, the emulator's version and copy (a `[pcsx2]` table
+for the PS2 game, an `[xemu]` table in its place for the Xbox build), the state and patches it started from, the recipe,
+the trace or the method in words, and the values read: names, numbers and addresses only, never memory or game text
+(LEGAL.md). The rules (the id, the sizes, the kinds) are `runs` in `.github/conventions.yml`, and the folder is
+`research.files.runs` there. Those limits cap how much a record can hold; they do not tell game data from our own
+(English game text is printable ASCII too, and numbers can carry bytes), so the reviewer reads the method, the args and
+the value names (docs/guides/research-evidence.md#run-records).
 
 ```toml
 version = 1
