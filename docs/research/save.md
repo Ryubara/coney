@@ -823,6 +823,12 @@ save made by calling the game's own save step through xemu's debugger stub, then
 read-only script (runs r-20261119-xbox-profile-save-signature and r-20261119-xbox-hdd-fatx-layout). No key, save or disk
 image left the scratch folder.
 
+The Xbox importer read that same save on the copy's own disk image: `coney --import-save xbox_hdd.qcow2` found its one
+save folder through the qcow2 and FATX readers, named it by its `SaveMeta.xbx` (`CONEY`), and left it out because its
+record's name is empty (the save step wrote the blank template record; only the save's name had been set), as the
+Xbox's `ProfileHeader_Read` (Xbox `0x0033bc60`) marks a slot with no name unused, confirmed (code) there. A copy of the
+folder in scratch with `CONEY` written into the record's name imported as profile 1.
+
 The importer was checked against a real card as well as the synthetic ones its tests build: the card of run
 r-20261118-ps2-card-save (copied to scratch, never committed) read with `coney --import-save` gave its one profile, with
 the bank word the run wrote (1,234) and script flag 5 set.
