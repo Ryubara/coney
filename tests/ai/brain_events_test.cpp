@@ -132,10 +132,10 @@ TEST_CASE("a knocked-out attacker lets go of his target's slot and place and his
 }
 
 TEST_CASE("a knocked-out soldier whose death chain holds no flag takes no side in violence he sees", "[ai][events]") {
-    // Expected: Brain_OnViolenceSeen (0x00291960) answers only while HumanRecord_AreActionsBlocked (0x00228228) is
-    // false, and its mask holds the knocked-out and dying states: a human lying in the loop 349, which holds no flag
-    // (docs/research/combat-reactions.md#knockout-timing), still takes no side. Synthetic scene: neither human plays a
-    // clip, so neither holds a flag.
+    // Expected: ai-brain-types.md#think-gang, confirmed (code): Brain_OnViolenceSeen (0x00291960) answers only while
+    // HumanRecord_AreActionsBlocked (0x00228228) is false, and its mask holds the knocked-out and dying states: a human
+    // lying in the loop 349, which holds no flag (docs/research/combat-reactions.md#knockout-timing), still takes no
+    // side. Synthetic scene: neither human plays a clip, so neither holds a flag.
     AiScene scene;
     Brain& victim = member(scene, 19, "Punks", {44.0F, 40.0F, 0.0F});
     Brain& standing = scene.add({46.0F, 40.0F, 0.0F}, 0.0F);
