@@ -1022,6 +1022,27 @@ def test_ai_use_names_the_models_of_the_trailers_or_the_log_and_adds_no_trailer(
     assert "- **Model:** Claude Sonnet 5.5\n" in body and "Opus" not in body.split("## AI use")[1]
 
 
+def test_a_tooling_agents_model_in_the_log_names_the_model_when_no_trailer_is_at_hand(tmp_path: Path) -> None:
+    """A unit run by a tooling agent (`tasks.start.slots.agent_types`, as an engineer is) has no `engineer` in its log;
+    `pr text` run where the branch's commits are not (the main checkout) still names the model, not an empty line."""
+    built = make(tmp_path)
+    subject = built.subject()
+    agent_types = subject.conventions.tasks.start.slots.agent_types
+    assert "tooling" in agent_types and "reviewer" not in agent_types
+
+    def as_agent(kind: str) -> list[stamps.Stamp]:
+        found = []
+        for stamp in subject.report.stamps:
+            agent = {**stamp.who["agent"], "type": kind, "model": "claude-sonnet-5-5"}
+            found.append(stamps.Stamp({**stamp.data, "who": {**stamp.who, "agent": agent}}))
+        return found
+
+    tooling = dataclasses.replace(subject, report=stamps.Report(stamps=as_agent("tooling"), problems=[]))
+    assert pr_text.models_of(tooling, ()) == ["Claude Sonnet 5.5"]
+    reviewers = dataclasses.replace(subject, report=stamps.Report(stamps=as_agent("reviewer"), problems=[]))
+    assert pr_text.models_of(reviewers, ()) == []
+
+
 def test_a_persons_own_pull_request_takes_the_files_ai_use_lines(tmp_path: Path) -> None:
     built = make(tmp_path)
     subject = dataclasses.replace(built.subject(), report=stamps.Report())

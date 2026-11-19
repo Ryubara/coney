@@ -759,9 +759,9 @@ def issues_affected(ctx: _Context, run: ImpactRunner | None = None) -> str:
     except ConfigError as error:
         return f"{ask} `coney-tools issue impact` could not run ({error})."
     lines = [ask]
-    # A task that does not finish its issue (`finishes: false`) has no Fixes line, so the issue stays open and stays a
-    # candidate: the same test as the Summary's Fixes line.
-    finishes = ctx.keys.get("finishes", True) is not False
+    # A task that does not finish its issue (`finishes: false`) has a Refs line, not a Fixes line, so the issue stays
+    # open and stays a candidate: the same test as the Summary's closing line.
+    finishes = finishes_issues(ctx.keys)
     for item in report.get("issues", []):
         if finishes and item.get("number") in ctx.task.issues:
             continue
@@ -858,13 +858,19 @@ def generated_sections(conventions: Conventions) -> list[tuple[str, str]]:
 
 def models_of(subject: pr_proof.Subject, trailer_models: Sequence[str]) -> list[str]:
     """The models that wrote the work: the ones the branch's `Co-Authored-By` trailers name, else the models of the
-    engineers in the log (an id like `claude-opus-5-5` written as a person writes it). Empty for a person's own work."""
+    agents that write work in the log (`tasks.start.slots.agent_types`: an engineer or a tooling engineer; an id like
+    `claude-opus-5-5` written as a person writes it). Empty for a person's own work."""
     if trailer_models:
         return list(trailer_models)
+    writers = {name.casefold() for name in subject.conventions.tasks.start.slots.agent_types}
     found: dict[str, str] = {}
     for stamp in subject.report.stamps:
         agent = stamp.who.get("agent")
-        if isinstance(agent, dict) and agent.get("type") == "engineer" and agent.get("model") not in (None, "unknown"):
+        if (
+            isinstance(agent, dict)
+            and str(agent.get("type", "")).casefold() in writers
+            and agent.get("model") not in (None, "unknown")
+        ):
             name = human_model(str(agent["model"]))
             found.setdefault(name.casefold(), name)
     return list(found.values())
