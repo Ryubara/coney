@@ -40,6 +40,7 @@ using coney::ai::GoalType;
 using coney::ai::OrderArgs;
 using coney::ai::OrderKind;
 using coney::ai::StandInOrder;
+using coney::ai::SubTactic;
 using coney::ai::TacticAttack;
 using coney::anim::Vec3;
 using coney::test::AiScene;
@@ -131,6 +132,16 @@ class StubGoal final : public coney::ai::Goal {
   public:
     explicit StubGoal(GoalType type) : Goal(type) {}
     [[nodiscard]] coney::ai::GoalStatus process(Brain& /*brain*/) override { return coney::ai::GoalStatus::Stop; }
+};
+
+// A guard order that is not the stand-in, done at its first process: the kind whose end gives the Melee again.
+class GuardOrder final : public SubTactic {
+  public:
+    explicit GuardOrder(int gang) : SubTactic(gang, -1) {}
+    [[nodiscard]] OrderKind kind() const override { return OrderKind::Guard; }
+
+  protected:
+    [[nodiscard]] bool onProcess(Gang& /*gang*/) override { return true; }
 };
 
 // The goal type on top of `brain`'s stack; nothing when it is empty.
@@ -327,11 +338,13 @@ TEST_CASE("while an order runs the timer stays off and a hit gives no Melee", "[
 
 TEST_CASE("a guard order's end gives the members the Melee again; a charge's end does not", "[ai][tactics][teamup]") {
     // Expected: ai-reimpl.md#the-strategy-slot-0x00306b50-0x00306b88-0x00306bd0, confirmed (code)
-    TeamUpScene guard(3, 1, 1);
-    guard.runToDraw();
-    REQUIRE(guard.order() != nullptr);
+    TeamUpScene guard(3, 0, -1); // no enemy gang: the timer draws nothing, the guard is set by hand
+    guard.gangs().update(16);
+    Gang& riffs = *guard.gangs().find(guard.gang);
+    guard.tactic().setStrategy(riffs, guard.gangs().subTactics().allocate(std::make_unique<GuardOrder>(guard.gang)));
+    REQUIRE(guard.tactic().strategy().has_value());
     guard.ours[1]->pushGoal(std::make_unique<StubGoal>(GoalType::Fight));
-    guard.gangs().update(7017 + 15001); // past the guard's deadline
+    guard.gangs().update(100); // the guard is done on its first process
     CHECK_FALSE(guard.tactic().strategy().has_value());
     CHECK(top(*guard.ours[1]) == GoalType::Melee);
 
@@ -343,6 +356,18 @@ TEST_CASE("a guard order's end gives the members the Melee again; a charge's end
     charge.gangs().update(7100 + 10001); // past the charge's limit
     CHECK_FALSE(charge.tactic().strategy().has_value());
     CHECK(top(*charge.ours[1]) == GoalType::Fight);
+}
+
+TEST_CASE("a stand-in guard order's end leaves the members' fights alone", "[ai][tactics][teamup]") {
+    // Expected: ai-reimpl.md#unit-3 (Coney status: the stand-in orders), Coney's own stand-in rule
+    TeamUpScene guard(3, 1, 1);
+    guard.runToDraw();
+    REQUIRE(guard.order() != nullptr);
+    REQUIRE(guard.order()->kind() == OrderKind::Guard);
+    guard.ours[1]->pushGoal(std::make_unique<StubGoal>(GoalType::Fight));
+    guard.gangs().update(7017 + 15001); // past the guard's deadline
+    CHECK_FALSE(guard.tactic().strategy().has_value());
+    CHECK(top(*guard.ours[1]) == GoalType::Fight);
 }
 
 TEST_CASE("a gang's bounds: the box round its members not cuffed or knocked out, the radius its larger x or y half",
