@@ -877,6 +877,7 @@ def test_the_real_task_review_rules() -> None:
     assert (review.folder, review.packet_file) == ("review", "PACKET.json")
     assert (review.verdict_file, review.report_file) == ("REVIEW.json", "REVIEW.md")
     assert review.research_paths == ("docs/research/", "research/") and review.docs_suffixes == (".md",)
+    assert review.reference_paths == ("research/legacy-files.toml", "research/legacy.toml")
     assert review.pages_min_addresses == 2
     # Reverse-engineering review runs on Opus (AGENTS.md), so research and `@orig` reviews need that model.
     assert review.reverse_engineering_kinds == ("research", "orig") and review.reverse_engineering_models == ("opus",)

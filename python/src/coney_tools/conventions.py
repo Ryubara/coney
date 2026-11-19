@@ -1157,6 +1157,9 @@ class TaskReview:
     report_file: str
     #: A change under one of these (repository-relative prefixes) is research work: it gets the research checklist.
     research_paths: tuple[str, ...]
+    #: Files under `research_paths` that are lists of our own standards (the legacy lists) and make no claim about the
+    #: original: a change to only these is no research work, so it needs no research checklist and no Opus.
+    reference_paths: tuple[str, ...]
     #: Other changed files with one of these endings are documentation: they get the docs checklist.
     docs_suffixes: tuple[str, ...]
     #: How many addresses of each touched research page the reviewer spot-checks in Ghidra.
@@ -1173,6 +1176,12 @@ class TaskReview:
         graded) share. A data file under `research/` (the legacy list, a YAML table) is no page: there is nothing to
         grade in it, though a change to it is still research work (docs/guides/pr.md#research-page)."""
         return path.startswith(self.research_paths) and path.endswith(self.docs_suffixes)
+
+    def is_research_work(self, path: str) -> bool:
+        """Whether a changed path is research work, which gets the research checklist and a reverse-engineering
+        reviewer: under `research_paths` and not one of the `reference_paths`. The one definition `task review` (the
+        packet's kinds) and `pr verify` (the reviewer's model) share."""
+        return path.startswith(self.research_paths) and path not in self.reference_paths
 
 
 @dataclass(frozen=True)
@@ -2554,6 +2563,7 @@ def _read_task_review(data: object, where: str) -> TaskReview:
             "verdict_file",
             "report_file",
             "research_paths",
+            "reference_paths",
             "docs_suffixes",
             "pages_min_addresses",
             "reverse_engineering_kinds",
@@ -2587,6 +2597,7 @@ def _read_task_review(data: object, where: str) -> TaskReview:
         verdict_file=names["verdict_file"],
         report_file=names["report_file"],
         research_paths=_texts(table["research_paths"], _at(where, "research_paths")),
+        reference_paths=_texts(table["reference_paths"], _at(where, "reference_paths")),
         docs_suffixes=_texts(table["docs_suffixes"], _at(where, "docs_suffixes")),
         pages_min_addresses=_count(table["pages_min_addresses"], _at(where, "pages_min_addresses")),
         reverse_engineering_kinds=kinds,

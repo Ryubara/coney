@@ -605,6 +605,9 @@ tasks:
     # anything else is code; a changed `@orig` function adds the orig review, and the
     # description and the commits are always reviewed.
     research_paths: [docs/research/, research/]
+    # Lists under research/ that hold our own standards bookkeeping and no claim about the original: a change to only
+    # these is code, not research work (no research checklist, no reverse-engineering model).
+    reference_paths: [research/legacy-files.toml, research/legacy.toml]
     docs_suffixes: [.md]
     pages_min_addresses: 2                        # addresses of each touched research page the reviewer checks in Ghidra
     # Reverse-engineering review runs on Opus (AGENTS.md): a verified reviewer whose model name has none of these
