@@ -205,6 +205,7 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `build_fast_lane_steps` | `50` | a number: a build with fewer steps out of date by themselves (`ninja -n -d explain` causes, [`build`](coney-tools-build.md#build)) uses the fast lane; `0` turns the lane off |
 | `build_fast_lane_tests` | `20` | a number: a `-R` or `-L` test run that selects at most this many tests uses the fast lane; `0` turns it off |
 | `build_fast_lane_test_seconds` | `300` | a number: such a run takes a check slot anyway when its tests' recorded times add up to more seconds than this ([`build`](coney-tools-build.md#build)); `0` turns that off |
+| `min_available_memory_gb` | `-1` | a number: the memory in GB `task check` needs available to start; `-1` keeps the repository's floor (`proof.memory.min_available_gb`, 6), `0` never refuses; lower it on a small machine ([the memory floor](coney-tools-repo.md#task-check-memory)) |
 | `test_jobs` | `0` | a number: the tests `coney-tools build --test` runs in parallel (`ctest -j`); `0` is half the cores, or the compile's share of them when that is more; `build -j N` beats it ([`build`](coney-tools-build.md#build)) |
 | `ccache_dir` | `cache/ccache` in the main checkout's `../..` (`<clone>-workspace/cache/ccache` in a plain clone) | the [compiler cache](building.md#compiler-cache) every checkout's `coney-tools build` shares |
 | `ccache_program` | the copy `workspace init --fetch ccache` put in `../../tools/ccache-4.14.1`, else `ccache` on `PATH` | the ccache executable |
@@ -349,7 +350,7 @@ free space before and after.
   holds that commit; a commit made in the checkout itself is on no branch and keeps it.
 * **Deletes `build/`** (generated, ignored by git), and the worktree's folder in the [build root](#build-root) when
   `build_root` is set, from every worktree that is not busy (no live busy file, no build slot held or waited for, no
-  check running) and has not been touched for
+  check, fails-first or detached run going on) and has not been touched for
   `--build-hours` (default `workspace.build_idle_hours`, 24; it is only a rebuild): the newest modification time of
   its tracked and untracked files, of git's `HEAD` for it and of the build folder and the entries one and two levels
   in (a running build writes there). Sources are never touched this way, so it also applies to a worktree with
@@ -399,6 +400,19 @@ made earlier, and reads it again just before each deletion: a stale listing once
 running builds. The same reading tells `coney-tools build` which worktrees hold a build folder, to enforce [the cap
 on them](agents.md#build-cap).
 
+**A second reading, from the unit's own folder.** The queue's record of a run can be missing (a queue folder that could
+not be written, a run started before it recorded itself), and a run keeps no file of the worktree busy for hours: the
+compile has ended and the tests read the build. So `clean` also reads what each unit's scratch folder
+(`scratch/<worktree>/`; a fix task's folder, which works in its parent's worktree, names it in its `unit.json`) says
+about itself ([`live_runs.py`](repo:python/src/coney_tools/live_runs.py)): a `check-progress.json` in the state
+`waiting` or `running` whose process lives and that was written within five minutes (a `task check`), and any
+`*-result.json` (`build-result.json`, `check-result.json`, `fails-first-result.json`) in the state `running` whose
+process started when the record says. A worktree with one is busy exactly as one with an activity is: its build and the
+worktree stay, in every mode, and the dry run names the run (`task check runs in it`). A record of a dead process, of a
+finished run or older than a day protects nothing. `ci run` records itself in the queue too, as `task check` and `orig
+fails-first` do. Tests: `python/tests/test_workspace_clean_runs.py`, one for each of a check's progress file, each kind
+of result file, the busy file and a build folder's lock.
+
 **The busy file.** An agent writes its id into `.coney-busy` in its worktree root as it starts and deletes the file
 when it is done (`echo <id> > .coney-busy`; it is in `.gitignore`). While it exists, `clean` leaves that worktree and
 its `build/` entirely alone, however old its files look: use it for any stretch where files may not change for hours
@@ -408,6 +422,21 @@ word, as [`clips pair`](coney-tools-clips.md#clips-pair) writes) protects only w
 killed hard leaves nothing protected. An **empty** file older than
 `--build-hours` (24 by default) is taken for a dead agent's and ignored, so a marker made with a bare `touch` still
 protects for a day. The file's name is `workspace.busy_marker` of the conventions file.
+
+**Background task outputs** {#task-outputs}. Claude Code writes the output of every background command to
+`<temp>/claude/<hash>/<session>/tasks/<id>.output` (`%TEMP%\claude` on Windows) and never removes it: outputs of one
+test run grew to 5 GB each, 20 GB in one session, and nothing capped or cleaned them. `clean` lists the biggest
+sessions with the size of their outputs and, with `--apply`, removes the outputs of the **stale** ones; `check-space`
+prints one line with what the stale outputs hold. The rule is
+[`workspace.task_outputs`](repo:.github/conventions.yml) and [`task_outputs.py`](repo:python/src/coney_tools/task_outputs.py):
+
+* A session is **live** when anything in its folder, an output or its scratchpad, was written within `stale_hours`
+  (72), and **stale** when nothing was. Only a stale session's `tasks/` outputs are removed, never a live one's: its
+  running task is still writing and the session may read an older output back. Each is judged again just before it is
+  removed, so a session that wrote since the listing is left. Its scratchpad is never touched.
+* A live session whose outputs hold more than `warn_gb` (2) is only reported, with the advice to stop the task or delete
+  the output of one that ended: nothing tells a spent output of a live session from one still read.
+* A file that cannot be removed (open on Windows) is told as `FAILED` and makes the exit code 1.
 
 **`workspace check-space`** prints the free space of every [watched drive](#watched-drives) (the workspace's, the
 build root's when it is on another drive, and the folders of `watch_paths`), and exits 1 when any is below its floor

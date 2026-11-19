@@ -44,7 +44,8 @@ PATH_KEYS: tuple[str, ...] = (
 #: turning that off; `check_slots`: how many full suites (the whole pytest run, the engine's whole ctest run) may run at
 #: once, 0 meaning one per four cores (build_claims.py, `check_slot_count`); `test_jobs`: the tests `coney-tools build
 #: --test` runs in parallel (`ctest -j`), 0 meaning half the cores or a build slot's share when that is more
-#: (build_run.py, `parallel_tests_for`);
+#: (build_run.py, `parallel_tests_for`); `min_available_memory_gb`: the memory `task check` needs to start on this
+#: machine, -1 keeping the conventions' `proof.memory.min_available_gb` and 0 turning the refusal off (task_check.py);
 #: `pcsx2_copies`: how many PCSX2 copies `pcsx2 setup-copies` makes; `pcsx2_pine_base` and `pcsx2_debug_base`: the
 #: PINE and debug server ports of the first copy, each next copy taking the next port; `ccache_size_gb`: the cap of the
 #: shared compiler cache, 0 turning it off, compiler_cache.py; `xemu_copies`, `xemu_gdb_base` and `xemu_monitor_base`:
@@ -56,6 +57,7 @@ INT_KEYS: dict[str, int] = {
     "build_fast_lane_tests": 20,
     "build_fast_lane_test_seconds": 300,
     "check_slots": 0,
+    "min_available_memory_gb": -1,
     "test_jobs": 0,
     "ccache_size_gb": 25,
     "pcsx2_copies": 5,
@@ -70,6 +72,7 @@ INT_KEYS: dict[str, int] = {
 #: port is above the privileged range.
 INT_MINIMUM: dict[str, int] = {
     "build_slots": 1,
+    "min_available_memory_gb": -1,
     "pcsx2_copies": 1,
     "pcsx2_pine_base": 1024,
     "pcsx2_debug_base": 1024,

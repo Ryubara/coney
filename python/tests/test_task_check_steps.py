@@ -9,9 +9,16 @@ from pathlib import Path
 import pytest
 from conventions_support import REPO
 
-from coney_tools import check_cli, docs_check, docs_cli, task_check_steps
+from coney_tools import check_cli, docs_check, docs_cli, task_check_steps, uv_environment
 from coney_tools.conventions import load_conventions
 from coney_tools.task_check_steps import CheckUnavailable, StepContext
+
+
+@pytest.fixture(autouse=True)
+def unbuilt_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The checks name an environment that is not built, so the commands are CI's words (`--no-sync` is for a built one,
+    tested below), whatever this checkout has."""
+    monkeypatch.setenv("UV_PROJECT_ENVIRONMENT", ".venv-never-built")
 
 
 class Commands:
@@ -186,3 +193,54 @@ def test_no_check_runs_clang_tidy() -> None:
     assert "clang-tidy" not in task_check_steps.IMPLEMENTED
     source = Path(task_check_steps.__file__).read_text(encoding="utf-8")
     assert "run-clang-tidy" not in source and "clang-tidy-" not in source
+
+
+def built_root(tmp_path: Path) -> Path:
+    """A checkout whose environment `python/.venv` is built (it holds a `pyvenv.cfg`)."""
+    (tmp_path / "python" / ".venv").mkdir(parents=True)
+    (tmp_path / "python" / ".venv" / "pyvenv.cfg").write_text("home = x", encoding="utf-8")
+    return tmp_path
+
+
+def test_no_check_syncs_the_shared_environment_once_it_is_built(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`uv run` syncs before it starts the tool, which fails while another session has `coney-tools.exe` open."""
+    monkeypatch.delenv("UV_PROJECT_ENVIRONMENT")
+    root = built_root(tmp_path)
+    for step in (task_check_steps.ruff_step, task_check_steps.mypy_step, task_check_steps.pytest_step):
+        runner = Commands()
+        assert step(context(runner, root=root)).ok
+        assert runner.commands, step
+        for command in runner.commands:
+            assert command[:3] == ["uv", "run", "--no-sync"], command
+            assert command[3:5] == ["--project", "python"]
+
+
+def test_a_check_leaves_an_environment_that_is_not_built_to_uv(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("UV_PROJECT_ENVIRONMENT")
+    runner = Commands()
+    assert task_check_steps.ruff_step(context(runner, root=tmp_path)).ok
+    assert runner.commands == [list(c) for c in check_cli.RUFF_COMMANDS]
+
+
+def test_the_environment_is_the_one_uv_run_uses(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("UV_PROJECT_ENVIRONMENT")
+    assert uv_environment.project_environment(tmp_path) == tmp_path / "python" / ".venv"
+    monkeypatch.setenv("UV_PROJECT_ENVIRONMENT", "elsewhere")
+    assert uv_environment.project_environment(tmp_path) == tmp_path / "python" / "elsewhere"
+    absolute = tmp_path / "abs"
+    monkeypatch.setenv("UV_PROJECT_ENVIRONMENT", str(absolute))
+    assert uv_environment.project_environment(tmp_path) == absolute
+
+
+def test_only_a_uv_run_in_a_built_environment_gets_no_sync(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("UV_PROJECT_ENVIRONMENT")
+    command = ["uv", "run", "--project", "python", "ruff", "check"]
+    assert uv_environment.no_sync(command, tmp_path) == command
+    root = built_root(tmp_path)
+    assert uv_environment.no_sync(command, root) == ["uv", "run", "--no-sync", "--project", "python", "ruff", "check"]
+    once = uv_environment.no_sync(command, root)
+    assert uv_environment.no_sync(once, root) == once
+    for other in (["uvx", "pre-commit", "run"], ["uv", "sync"], ["python", "-m", "mkdocs"]):
+        assert uv_environment.no_sync(other, root) == other

@@ -53,6 +53,7 @@ from coney_tools import (
     ctest_scope,
     detached_runs,
     live_progress,
+    machine_memory,
     pr_diff,
     proof_profiles,
     stamps,
@@ -60,7 +61,7 @@ from coney_tools import (
     unit,
 )
 from coney_tools.build_claims import SlotTimeout
-from coney_tools.config import ConfigError, find_repo_root
+from coney_tools.config import INT_KEYS, ConfigError, find_repo_root, load_config, local_config_file
 from coney_tools.conventions import Conventions, load_conventions, load_proof_rules_at
 from coney_tools.local_gate import StepResult, run_command
 from coney_tools.task_check_steps import IMPLEMENTED, Runner, Step, StepContext, pytest_workers
@@ -120,6 +121,13 @@ class Env:
     #: `(checkout, task, conventions, say, write)`: prints the pending work that overlaps the unit again when it differs
     #: from the task file's record of it, and records it (`task_overlap.report_stage`); the default reads nothing.
     overlap: Callable[[Path, str, Conventions, Callable[[str], None], bool], None] = task_overlap.skip_stage
+    #: The GB of memory the machine has available (None: it cannot say, so the run starts), and the biggest processes
+    #: in words for a refusal (`proof.memory`, machine_memory.py); the default knows nothing.
+    memory: Callable[[], float | None] = lambda: None
+    heaviest: Callable[[], str] = lambda: ""
+    #: This machine's own floor in GB (`min_available_memory_gb` of coney.local.toml): -1 keeps the conventions' floor,
+    #: 0 turns the refusal off. The default keeps the conventions'.
+    memory_floor: Callable[[Path], int] = lambda root: -1
 
 
 def no_disc_reason(root: Path) -> str | None:
@@ -172,6 +180,9 @@ def default_env(max_wait: float = build_cli.DETACHED_MAX_WAIT) -> Env:
         workers=_workers,
         progress=progress,
         overlap=task_overlap.report_stage,
+        memory=machine_memory.available_gb,
+        memory_floor=_memory_floor_of_machine,
+        heaviest=lambda: machine_memory.describe(machine_memory.heaviest()),
     )
 
 
@@ -244,6 +255,7 @@ def _run(request: Request, env: Env) -> int:
     if request.dry_run:
         env.say("  dry run: nothing was run and no stamp was written")
         return 0
+    _memory_floor(conventions, env, root)
     if builds:
         why_not = env.disc(root)
         if why_not:
@@ -303,6 +315,30 @@ def _run(request: Request, env: Env) -> int:
     except BaseException:
         progress.abandon()
         raise
+
+
+def _memory_floor_of_machine(root: Path) -> int:
+    """`min_available_memory_gb` of the checkout's coney.local.toml (-1 when it sets none)."""
+    numbers = load_config(root).numbers if local_config_file(root) else INT_KEYS
+    return numbers["min_available_memory_gb"]
+
+
+def _memory_floor(conventions: Conventions, env: Env, root: Path) -> None:
+    """Refuse to start while the machine has less memory available than `proof.memory.min_available_gb`, naming the
+    biggest processes: a run starved of memory dies or crawls for an hour with no verdict, and a language server that
+    grew to 19.9 GB did that twice. A machine that cannot say how much is free starts the run."""
+    own = env.memory_floor(root)
+    floor = conventions.proof.memory.min_available_gb if own < 0 else own
+    free = env.memory() if floor else None
+    if free is None or free >= floor:
+        return
+    heavy = env.heaviest()
+    raise ConfigError(
+        f"only {free:.1f} GB of memory is available and a run needs {floor} GB (proof.memory.min_available_gb, or "
+        "min_available_memory_gb in coney.local.toml)"
+        + (f"; the biggest programs: {heavy}" if heavy else "")
+        + "; stop the one that grew (a lua-language-server that grew is stopped by closing its editor) and run again"
+    )
 
 
 def _ctest_scope(root: Path, conventions: Conventions, change: pr_diff.Change) -> ctest_scope.CtestScope:

@@ -386,7 +386,9 @@ free space before and after; a build root on another drive is measured and relie
 the folders it did not make are listed, never deleted. Any other [watched drive](workspace.md#watched-drives) is only
 printed, and told as one to free by hand when it is under its floor. It also lists, and with `--apply` stops, the
 **stale processes**: shells older than `--stale-wait-hours` (default 3) waiting in a sleep loop on files unchanged for `--log-idle-hours`
-(default 1), and orphaned `ctest` or `coney_tests` runs whose parent is gone. `check-space` prints the free space of
+(default 1), and orphaned `ctest` or `coney_tests` runs whose parent is gone. It reports the **background task
+outputs** of Claude Code sessions in the temp folder and, with `--apply`, removes those of stale sessions, never a live
+one's ([Background task outputs](workspace.md#task-outputs)). `check-space` prints the free space of
 every [watched drive](workspace.md#watched-drives) (the workspace's, the build root's and the `watch_paths`) and exits 1
 when one is below `--min-gb` (default: its own floor, `workspace.disk_min_free_gb` of
 [.github/conventions.yml](repo:.github/conventions.yml), 30, unless `watch_paths` gives that drive another). It also

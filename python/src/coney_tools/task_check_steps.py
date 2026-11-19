@@ -20,7 +20,7 @@ from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
 from pathlib import Path
 
-from coney_tools import docs_check, docs_cli, proof_profiles
+from coney_tools import docs_check, docs_cli, proof_profiles, uv_environment
 from coney_tools.check_cli import MYPY_COMMAND, RUFF_COMMANDS
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
@@ -109,7 +109,8 @@ def _commands(
     found = ""
     counted: tuple[tuple[str, int], ...] = ()
     for command in commands:
-        code, output = context.run(list(command), context.root)
+        # Never sync the shared environment: another session may hold its executables open (uv_environment.py).
+        code, output = context.run(uv_environment.no_sync(command, context.root), context.root)
         if code != 0:
             problems.append(f"{' '.join(command[:6])}: exit {code}")
             problems.extend(f"  {line}" for line in _tail(output))

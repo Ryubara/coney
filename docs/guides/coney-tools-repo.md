@@ -438,6 +438,33 @@ gate](testing.md#local-gate) says which gate runs the rest). The ruff and mypy
 commands are the ones of `ci run`; there is no clang-tidy here: clang-tidy is CI's alone, on the changed lines of every
 pull request and on the whole codebase nightly ([building](clang-tidy.md)).
 
+**It refuses to start on a machine short of memory** {#task-check-memory}. A language server that grew to 19.9 GB
+(lua-language-server, twice) starved a full suite of memory for an hour, and the run ended with no
+verdict. `task check` now reads the memory the machine has available (Windows `GlobalMemoryStatusEx`, Linux
+`MemAvailable`, macOS `vm_stat`: [`machine_memory.py`](repo:python/src/coney_tools/machine_memory.py)) and, below
+`proof.memory.min_available_gb` of [.github/conventions.yml](repo:.github/conventions.yml) (6; 0 turns it off), stops
+with exit 2 before any check, a build or a stamp: `only 1.5 GB of memory is available and a run needs 6 GB; the biggest
+programs: lua-language-server.exe 19.9 GB, ...`. Stop the program it names (for the language server, close the editor
+that started it) and run again. It is a fault of the machine, not a verdict about the change, so nothing is stamped; a
+machine that cannot say how much is free starts the run, and `--dry-run` reads no memory. Like the rest of `proof`,
+the floor is read from the base branch, so a branch cannot lower it; a machine that is too small for it sets its own in
+`coney.local.toml` (`min_available_memory_gb`, `-1` keeps the repository's, `0` never refuses; [Local
+config](workspace.md#local-config)), which only its owner can edit. The Studio's own language server is capped at its
+source ([A cap on the language server's memory](studio/lua-tools.md#stubs), a design: the editor is not built yet).
+
+**It never syncs the shared environment.** `uv run --project python <tool>` syncs `python/.venv` before it starts the
+tool, and on Windows that fails ("Access is denied") while another session has `coney-tools.exe` or `coney-agent.exe`
+open from it, which every agent session does; agents worked around it with `UV_NO_SYNC=1` (issues 1059, 1118). So the
+ruff, mypy and pytest commands of `task check` and `ci run` run as `uv run --no-sync --project python ...` once the
+environment is built (a `pyvenv.cfg` in `python/.venv`, or in the folder `UV_PROJECT_ENVIRONMENT` names), and the gate
+passes with the tools executable locked. The session that runs the gate was started from that environment, so it is
+built; a checkout that has none is left to `uv` to build on the first run (`uv sync --project python` does it by hand).
+`--no-sync` also means the gate runs against the environment as it is built: after a change to
+`python/pyproject.toml` or `python/uv.lock` run `uv sync --project python` once, or the checks use the old dependencies.
+The hooks that start `coney-tools` do the same ([the hooks that start
+`coney-tools`](enforcement.md#hooks)); the one source for the checks is
+[`uv_environment.py`](repo:python/src/coney_tools/uv_environment.py).
+
 * A fault of the machine is not a verdict about the change: a program that is missing, no disc for a `full` run
   (including a `CONEY_DISC` that names nothing), a worktree that changed during the run, a build that got no slot.
   These write no stamp.

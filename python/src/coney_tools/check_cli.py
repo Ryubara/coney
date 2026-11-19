@@ -22,6 +22,7 @@ from contextlib import AbstractContextManager
 from pathlib import Path
 
 from coney_tools import (
+    build_claims,
     build_cli,
     check_slots,
     detached_runs,
@@ -33,6 +34,7 @@ from coney_tools import (
     orig_copy,
     process_lifetime,
     standards_check,
+    uv_environment,
 )
 from coney_tools.audit import Report, run_checks, specs_in
 from coney_tools.audit_files import FilesContext
@@ -292,6 +294,7 @@ def _step_python(
         ("pytest", ["uv", "run", "--project", "python", "pytest", "python/tests", "-q", "-x", "--no-header"]),
         ("mypy", list(MYPY_COMMAND)),
     ):
+        command = uv_environment.no_sync(command, root)  # never sync the shared environment (uv_environment.py)
         if label == "pytest":
             with hold(root):
                 code, output = run(command, root)
@@ -372,7 +375,15 @@ def run_check(args: argparse.Namespace) -> int:
     if args.detach:
         return _start_detached(args)
     process_lifetime.bind_children()  # an interrupted gate leaves none of its programs behind
-    return run_changed(args.base, args.only, args.skip)
+    return _recorded(args, lambda: run_changed(args.base, args.only, args.skip))
+
+
+def _recorded(args: argparse.Namespace, run: Callable[[], int]) -> int:
+    """Run the gate with the worktree recorded as in use for the whole run, so `workspace clean` never takes its build
+    for idle between the gate's builds (build_claims.activity)."""
+    root = find_repo_root(Path.cwd())
+    with build_claims.unit_activity(root, default_agent(root, os.environ), "ci run"):
+        return run()
 
 
 def _scratch_folder(root: Path) -> Path:
@@ -401,7 +412,9 @@ def _start_detached(args: argparse.Namespace) -> int:
 def _detached_child(args: argparse.Namespace) -> int:
     """The child of a --detach run: the gate itself, its exit code recorded in --result-file however it ends."""
     agent = default_agent(find_repo_root(Path.cwd()), os.environ)
-    return detached_runs.child(DETACHED, args.result_file, agent, lambda: run_changed(args.base, args.only, args.skip))
+    return detached_runs.child(
+        DETACHED, args.result_file, agent, lambda: _recorded(args, lambda: run_changed(args.base, args.only, args.skip))
+    )
 
 
 def run_result(directory: Path) -> int:

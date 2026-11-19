@@ -28,7 +28,7 @@ import json
 import re
 import subprocess
 import sys
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -339,11 +339,17 @@ def review_prompt(pr_file: Path, worktree: Path, base: str, rules: Review) -> st
     )
 
 
-def launch_claude(command: list[str], cwd: Path, timeout_minutes: float = DEFAULT_TIMEOUT_MINUTES) -> int:
-    """Run `command` in `cwd`, its output going to ours, and return its exit code (124 when it timed out)."""
+def launch_claude(
+    command: list[str],
+    cwd: Path,
+    timeout_minutes: float = DEFAULT_TIMEOUT_MINUTES,
+    env: Mapping[str, str] | None = None,
+) -> int:
+    """Run `command` in `cwd` (with the environment `env`, ours when None), its output going to ours, and return its
+    exit code (124 when it timed out)."""
     try:
         return subprocess.run(
-            command, cwd=cwd, stdin=subprocess.DEVNULL, check=False, timeout=timeout_minutes * 60
+            command, cwd=cwd, env=env, stdin=subprocess.DEVNULL, check=False, timeout=timeout_minutes * 60
         ).returncode
     except FileNotFoundError as error:
         raise ReviewError(f"{command[0]}: not found; install Claude Code or pass --claude") from error

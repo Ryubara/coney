@@ -40,9 +40,11 @@ slot is skipped.
 Who holds a slot is read from the build queue's own claim and ticket files each time (`build_claims.live_worktrees`,
 with the queue's liveness rules), never from a listing kept earlier, and read again just before each deletion: a
 stale listing once deleted the build folders of two running builds. A `task check` or `orig fails-first` that runs
-holds an activity there for its whole run (`build_claims.activity`), so the steps between its builds count as use
-too: the idle test alone once let `--apply` delete the builds of three units whose checks were running. The same
-functions tell `coney-tools build` which worktrees hold a build folder (build_cap.py).
+holds an activity there for its whole run (`build_claims.activity`), so the steps between its builds count as use too:
+the idle test alone once let `--apply` delete the builds of three units whose checks were running. A run the unit's own
+scratch folder records as going on (a progress file, a result file in the state running: `live_runs`) protects its
+worktree in the same way, whether or not the queue names it. The same functions tell `coney-tools build` which worktrees
+hold a build folder (build_cap.py).
 
 **A build root.** With `build_root` set in coney.local.toml a worktree's build tree is `<build_root>/<id>/`
 (build_root.py) rather than its `build/`; `clean` judges, deletes and measures both, and the drive the root is on
@@ -67,7 +69,16 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
-from coney_tools import build_claims, build_root, pcsx2_proc, stale_processes, watched_drives, workspace_clean_fixes
+from coney_tools import (
+    build_claims,
+    build_root,
+    live_runs,
+    pcsx2_proc,
+    stale_processes,
+    task_outputs,
+    watched_drives,
+    workspace_clean_fixes,
+)
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Workspace, load_conventions
 from coney_tools.unit import scratch_folder
@@ -76,6 +87,10 @@ from coney_tools.workspace import find_layout
 #: The file an agent creates in its worktree while it works and deletes when it is done.
 BUSY_FILE = ".coney-busy"
 
+#: The hours a Claude Code session may be idle before its background task outputs are stale, and the size in GB over
+#: which a live session's are reported (`workspace.task_outputs`, used when the conventions cannot be read).
+DEFAULT_OUTPUT_STALE_HOURS = 72.0
+DEFAULT_OUTPUT_WARN_GB = 2
 #: Default idle hours before a `build/` folder is deleted (it is only a rebuild; `workspace.build_idle_hours`).
 DEFAULT_BUILD_HOURS = 24.0
 
@@ -592,10 +607,12 @@ def run_clean(
     merged_heads: MergedHeads | None = None,
     shell_hours: float = stale_processes.DEFAULT_SHELL_HOURS,
     idle_hours: float = stale_processes.DEFAULT_IDLE_HOURS,
+    claude_temp: Path | None = None,
 ) -> int:
     """Run `workspace clean`; 1 when any removal or stop failed, else 0. Prints the report: the worktrees and build
     folders, the disk-pressure deletions when the drive is under its floor, then the stale processes
-    (stale_processes.py).
+    (stale_processes.py) and the background task outputs of Claude Code sessions (`task_outputs.py`; `claude_temp` is
+    its folder, `claude` in the temp folder by default).
 
     `build_hours`, `min_gb` (the floor) and `margin_gb` default to `workspace.build_idle_hours`,
     `workspace.disk_min_free_gb` and `workspace.disk_margin_gb` of the conventions file, and to the built-in values
@@ -739,6 +756,9 @@ def run_clean(
     if root is not None:
         _report_root(root, trees)
     failures += stale_processes.run(apply, shell_hours, idle_hours)
+    reclaimed_outputs, output_failures = _clean_task_outputs(known, claude_temp, settings.now, apply)
+    failures += output_failures
+    reclaimed += reclaimed_outputs
 
     verb = "Reclaimed" if apply else "Would reclaim"
     print(
@@ -751,6 +771,34 @@ def run_clean(
         if separate and root is not None:
             print(f"Free space on the build root ({root}): {_gb(root_before)} -> {_gb(free_space(root))}")
     return 1 if failures else 0
+
+
+def _output_limits(known: Workspace | None) -> tuple[float, int]:
+    """The hours a session may be idle before its outputs are stale and the bytes over which a live one is reported
+    (`workspace.task_outputs`; 72 hours and 2 GB when the conventions cannot be read)."""
+    if known is None:
+        return DEFAULT_OUTPUT_STALE_HOURS, DEFAULT_OUTPUT_WARN_GB * task_outputs.GIB
+    return float(known.task_outputs.stale_hours), known.task_outputs.warn_gb * task_outputs.GIB
+
+
+def _clean_task_outputs(known: Workspace | None, folder: Path | None, now: float, apply: bool) -> tuple[int, int]:
+    """Print the background task outputs of Claude Code sessions and, with `apply`, remove the stale sessions' (never a
+    live one's); returns the bytes freed and the number of failures."""
+    root = folder or task_outputs.default_root()
+    stale_hours, warn = _output_limits(known)
+    sessions = task_outputs.survey(root, now, stale_hours)
+    report = task_outputs.lines(sessions, apply, warn)
+    if not report:
+        return 0, 0
+    print(f"Background task outputs of Claude Code sessions ({root}):")
+    for line in report:
+        print(line)
+    if not apply:
+        return sum(session.bytes for session in sessions if session.stale), 0
+    freed, problems = task_outputs.remove_stale(sessions, now, stale_hours)
+    for problem in problems:
+        print(f"    FAILED: {problem}")
+    return freed, len(problems)
 
 
 def free_space(folder: Path) -> int:
@@ -799,17 +847,38 @@ def _claims_dir(workspace: Path, checkout: Path) -> Path:
         return workspace / "scratch" / BUILD_CLAIMS_DIR
 
 
-def live_slots(workspace: Path, checkout: Path) -> Callable[[], set[str]]:
-    """A function that reads, each time it is called, the names of the worktrees in use from the build queue of
-    `checkout`: holding or waiting for a build slot, a check slot or a build folder's lock, or running a `task check`
-    or `orig fails-first` (`build_claims.activity`), whose steps between builds hold no slot."""
-    return lambda: build_claims.live_worktrees(_claims_dir(workspace, checkout))
+def _scratch_of(workspace: Path, checkout: Path) -> Path:
+    """The scratch folder of `checkout` (its `scratch_dir`, else `scratch/` of `workspace`), where each unit's runs
+    record themselves (live_runs.py)."""
+    try:
+        return scratch_folder(checkout)
+    except ConfigError:
+        return workspace / "scratch"
 
 
 def running_checks(workspace: Path, checkout: Path) -> Callable[[], dict[str, list[str]]]:
-    """A function that reads, each time it is called, the checks running in each worktree (`build_claims.activities`)
-    from the build queue of `checkout`."""
-    return lambda: build_claims.activities(_claims_dir(workspace, checkout))
+    """A function that reads, each time it is called, what runs in each worktree: the checks and fails-first runs the
+    build queue names (`build_claims.activities`) and the runs the units' own scratch folders record, a `task check`'s
+    progress file and a detached run's result file (`live_runs.running`), so one lost activity file protects nothing
+    less."""
+
+    def read() -> dict[str, list[str]]:
+        found = build_claims.activities(_claims_dir(workspace, checkout))
+        for name, what in live_runs.running(_scratch_of(workspace, checkout), time.time()).items():
+            known = found.setdefault(name, [])
+            known.extend(item for item in what if item not in known)
+        return found
+
+    return read
+
+
+def live_slots(workspace: Path, checkout: Path) -> Callable[[], set[str]]:
+    """A function that reads, each time it is called, the names of the worktrees in use: holding or waiting for a build
+    slot, a check slot or a build folder's lock, or running a `task check` or `orig fails-first`
+    (`build_claims.live_worktrees`, whose steps between builds hold no slot), or recorded as running by the unit's own
+    scratch folder (`running_checks`)."""
+    running = running_checks(workspace, checkout)
+    return lambda: build_claims.live_worktrees(_claims_dir(workspace, checkout)) | set(running())
 
 
 def default_settings(
@@ -956,7 +1025,7 @@ def _conventions_workspace(checkout: Path) -> Workspace | None:
         return None
 
 
-def run_disk(cwd: Path, workspace: Path | None, min_gb: float | None = None) -> int:
+def run_disk(cwd: Path, workspace: Path | None, min_gb: float | None = None, claude_temp: Path | None = None) -> int:
     """Run `workspace check-space`: print the free space of every watched drive (watched_drives.py: the workspace's,
     the build root's and the folders of `watch_paths`); 1 when any is below its floor.
 
@@ -979,4 +1048,10 @@ def run_disk(cwd: Path, workspace: Path | None, min_gb: float | None = None) -> 
             f"Free space on {drive.phrase()}: {_gb(drive.free_bytes)} "
             f"({drive.name}, minimum {drive.min_free_gb:g} GB){advice}"
         )
+    stale_hours, warn = _output_limits(_conventions_workspace(layout.checkout))
+    note = task_outputs.summary(
+        task_outputs.survey(claude_temp or task_outputs.default_root(), time.time(), stale_hours), warn
+    )
+    if note:
+        print(f"Claude Code: {note}")
     return 1 if any(drive.low for drive in watch.drives) else 0

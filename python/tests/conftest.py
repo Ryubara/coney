@@ -12,7 +12,7 @@ import pytest
 import repo_reads
 from ambient_env import CLEARED
 
-from coney_tools import identity
+from coney_tools import identity, task_outputs
 
 
 @pytest.fixture(autouse=True)
@@ -26,6 +26,17 @@ def clean_environment(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     identity.reset()
     yield
     identity.reset()
+
+
+@pytest.fixture(autouse=True)
+def private_claude_temp(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.TempPathFactory) -> Path:
+    r"""Point the folder `workspace clean` reads the background task outputs of Claude Code sessions from at an empty
+    one, so a test that runs `clean --apply` never surveys, and never removes, the real `%TEMP%\claude` of the machine
+    running the suite (`task_outputs.default_root`). A test that wants outputs makes them there or passes its own
+    `claude_temp`."""
+    root = tmp_path_factory.mktemp("claude-temp") / "claude"
+    monkeypatch.setattr(task_outputs, "default_root", lambda: root)
+    return root
 
 
 # --- the reads of each test (repo_reads.py) --------------------------------------------------------------------------

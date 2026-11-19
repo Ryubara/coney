@@ -61,6 +61,15 @@ checkout the command runs in, as before. A record that cannot be read, or whose 
 `--worktree DIR` as the way out, because reviewing some other checkout instead would review the wrong branch. When the
 branch under review has nothing beyond the base, the refusal names the branch and the folder it looked at.
 
+**`--run` leaves the worktree as it found it.** The reviewer's last step is `uv run --project python coney-tools task
+review <task> --record` in the worktree, and `uv run` builds `python/.venv` there when the shell names no environment:
+a folder that every linter and the docs build then scan, which engineers deleted by hand before each `task check`
+(issue 1094). So `--run` starts the reviewer with `UV_PROJECT_ENVIRONMENT` naming `<scratch>/<task>/review/review-venv`
+(the worktree's own project, so the code that records the review is the code under review), builds it with `uv sync`
+before the reviewer starts, and removes it after the run. A caller that has named an environment of its own
+(`UV_PROJECT_ENVIRONMENT`, [Sharing one machine](../how-we-work.md#shared-machine)) keeps it: it is used as it is, never
+rebuilt or removed. Nothing is written to `python/.venv` of the worktree.
+
 The review folder is `<scratch>/<task>/review/` (`tasks.review` in [.github/conventions.yml](repo:.github/conventions.yml)
 names the folder, the three files and the agent). It holds `PACKET.json` (the tool's), `REVIEW.json` and `REVIEW.md` (the
 reviewer's) and `recorded-<seq>.json`, a copy of each verdict that was recorded. The newest is also

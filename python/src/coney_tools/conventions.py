@@ -810,6 +810,16 @@ class Clips:
 
 
 @dataclass(frozen=True)
+class TaskOutputs:
+    """Claude Code's background task outputs (`workspace.task_outputs`; docs/guides/workspace.md#task-outputs)."""
+
+    #: A session folder nothing wrote to for this many hours is stale: `workspace clean --apply` removes its outputs.
+    stale_hours: int
+    #: A live session whose outputs hold more than this many GB is reported (never removed).
+    warn_gb: int
+
+
+@dataclass(frozen=True)
 class Workspace:
     """The local workspace rules (`workspace clean|disk`); hosted checks ignore them."""
 
@@ -832,6 +842,8 @@ class Workspace:
     #: Scratch folders that belong to the workspace, not to a branch (the emulator's, the save states', the downloads').
     shared_scratch: tuple[str, ...]
     clips: Clips
+    #: Absent from a file older than the key: the defaults (`TaskOutputs`).
+    task_outputs: TaskOutputs = TaskOutputs(stale_hours=72, warn_gb=2)
 
 
 @dataclass(frozen=True)
@@ -894,6 +906,17 @@ class ProofPytest:
 
 
 @dataclass(frozen=True)
+class ProofMemory:
+    """The memory `task check` needs (`proof.memory`): it refuses to start while less than `min_available_gb` of the
+    machine's memory is free, because a runaway program (a language server grew to 19.9 GB, twice) starved the run for
+    an hour with no verdict. 0 turns the refusal off; a base older than the key has none
+    (docs/guides/coney-tools-repo.md#task-check)."""
+
+    #: The GB the machine must have available for a run to start; 0 is off.
+    min_available_gb: int = 0
+
+
+@dataclass(frozen=True)
 class ProofCtest:
     """Which C++ tests the build check runs (`proof.ctest`): the tests of the test files whose `#include`s reach the
     changed C++ files, or the whole suite (docs/guides/coney-tools-repo.md#task-check). Without the key (a base older
@@ -925,6 +948,7 @@ class Proof:
     build: ProofBuild
     pytest: ProofPytest = ProofPytest()
     ctest: ProofCtest = ProofCtest()
+    memory: ProofMemory = ProofMemory()
 
 
 @dataclass(frozen=True)
@@ -3317,7 +3341,10 @@ def _read_workspace(data: object, where: str) -> Workspace:
         "shared_scratch",
         "clips",
     )
-    table = _table(data, where, keys)
+    table = _table(data, where, keys, ("task_outputs",))
+    outputs_where = _at(where, "task_outputs")
+    outputs_data = table.get("task_outputs")
+    outputs = _table(outputs_data, outputs_where, ("stale_hours", "warn_gb")) if outputs_data is not None else None
     clips_where = _at(where, "clips")
     clips = _table(table["clips"], clips_where, ("folder", "max_seconds", "warn_mb", "keep_hours", "pair"))
     return Workspace(
@@ -3333,6 +3360,12 @@ def _read_workspace(data: object, where: str) -> Workspace:
         game_capture_suffixes=_texts(table["game_capture_suffixes"], _at(where, "game_capture_suffixes")),
         scratch_skip_folders=_texts(table["scratch_skip_folders"], _at(where, "scratch_skip_folders")),
         shared_scratch=_texts(table["shared_scratch"], _at(where, "shared_scratch")),
+        task_outputs=TaskOutputs(
+            stale_hours=_count(outputs["stale_hours"], _at(outputs_where, "stale_hours")),
+            warn_gb=_count(outputs["warn_gb"], _at(outputs_where, "warn_gb")),
+        )
+        if outputs is not None
+        else TaskOutputs(stale_hours=72, warn_gb=2),
         clips=Clips(
             folder=_text(clips["folder"], _at(clips_where, "folder")),
             max_seconds=_count(clips["max_seconds"], _at(clips_where, "max_seconds")),
@@ -3408,7 +3441,7 @@ CI_CLASSES = ("docs_only", "tools_only", "engine", "unknown")
 
 def _read_proof(data: object, where: str) -> Proof:
     """The `proof` section: the profiles of checks, the conditional checks and the build behind them."""
-    table = _table(data, where, ("profiles", "only_when", "build"), ("pytest", "ctest"))
+    table = _table(data, where, ("profiles", "only_when", "build"), ("pytest", "ctest", "memory"))
     profiles_where = _at(where, "profiles")
 
     def read_profile(value: object, here: str) -> ProofProfile:
@@ -3447,7 +3480,16 @@ def _read_proof(data: object, where: str) -> Proof:
         ),
         pytest=_read_proof_pytest(table.get("pytest"), _at(where, "pytest")),
         ctest=_read_proof_ctest(table.get("ctest"), _at(where, "ctest")),
+        memory=_read_proof_memory(table.get("memory"), _at(where, "memory")),
     )
+
+
+def _read_proof_memory(data: object, where: str) -> ProofMemory:
+    """`proof.memory`: the memory `task check` needs to start. Absent: no floor."""
+    if data is None:
+        return ProofMemory()
+    table = _table(data, where, ("min_available_gb",))
+    return ProofMemory(min_available_gb=_count(table["min_available_gb"], _at(where, "min_available_gb"), minimum=0))
 
 
 def _read_proof_pytest(data: object, where: str) -> ProofPytest:
@@ -3753,7 +3795,9 @@ def load_proof_rules_at(root: Path, ref: str, own: Conventions) -> tuple[Convent
     if "proof" not in data:
         return own, "branch"
     try:
-        proof = _read_proof(_keep(data["proof"], ("profiles", "only_when", "build", "pytest", "ctest")), "proof")
+        proof = _read_proof(
+            _keep(data["proof"], ("profiles", "only_when", "build", "pytest", "ctest", "memory")), "proof"
+        )
         scopes = _keep(data.get("paths"), ("docs_only", "tools_only", "engine"))
         table = _table(scopes, "paths", ("docs_only", "tools_only", "engine"))
         paths = replace(

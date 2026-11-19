@@ -8,7 +8,8 @@ import dataclasses
 import hashlib
 import json
 import shutil
-from collections.abc import Callable
+import subprocess
+from collections.abc import Callable, Mapping
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -19,7 +20,17 @@ from conventions_support import REMOVE, changed, write_checkout
 from git_support import git
 from review_support import make_verdict
 
-from coney_tools import fails_first, identity, orig_pairs, pr_proof, review_verdict, stamps, task_overlap, task_review
+from coney_tools import (
+    fails_first,
+    identity,
+    orig_pairs,
+    pr_proof,
+    pr_review,
+    review_verdict,
+    stamps,
+    task_overlap,
+    task_review,
+)
 from coney_tools.config import ConfigError
 from coney_tools.conventions import ConventionsError, load_conventions
 from coney_tools.review_verdict import problems as verdict_problems
@@ -1205,3 +1216,107 @@ def test_a_review_shows_the_pending_work_that_changed_but_a_record_does_not(
     assert task_review.run_review_command(arguments(text=False, record=False, run=False)) == 0
     assert task_review.run_review_command(arguments(text=False, record=True, run=False)) == 0
     assert shown == [(rig.env().unit.task, True)]
+
+
+# --- the headless reviewer's Python environment ----------------------------------------------------------------------
+
+
+class Claude:
+    """A fake `pr_review.launch_claude` that records the environment it was given and, as a reviewer's first `uv run`
+    would, builds the environment named there."""
+
+    def __init__(self, rig: Rig) -> None:
+        self.rig = rig
+        self.environments: list[Mapping[str, str] | None] = []
+
+    def __call__(
+        self, command: list[str], cwd: Path, timeout_minutes: float = 1.0, env: Mapping[str, str] | None = None
+    ) -> int:
+        self.environments.append(env)
+        self.rig.write_verdict()
+        task_review.record(self.rig.env(), "full")
+        return 0
+
+
+def test_the_reviewer_environment_is_outside_the_worktree_unless_the_caller_names_one(tmp_path: Path) -> None:
+    folder = tmp_path / "review"
+    own = task_review.reviewer_environment(folder, {"PATH": "x"})
+    assert own["UV_PROJECT_ENVIRONMENT"] == str(folder / "review-venv") and own["PATH"] == "x"
+    named = task_review.reviewer_environment(folder, {"UV_PROJECT_ENVIRONMENT": "C:/mine/venv"})
+    assert named["UV_PROJECT_ENVIRONMENT"] == "C:/mine/venv"
+
+
+def test_run_leaves_the_worktree_without_a_python_environment_and_removes_the_one_it_made(
+    rig: Rig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    claude = Claude(rig)
+    monkeypatch.setattr(pr_review, "launch_claude", claude)
+    monkeypatch.delenv("UV_PROJECT_ENVIRONMENT", raising=False)
+    built: list[Path] = []
+
+    def build(worktree: Path, environment: Mapping[str, str]) -> None:
+        folder = Path(environment["UV_PROJECT_ENVIRONMENT"])
+        folder.mkdir(parents=True)
+        (folder / "pyvenv.cfg").write_text("home = x", encoding="utf-8")
+        built.append(folder)
+
+    assert task_review.run(rig.env(), "full", claude="claude", prepare_environment=build) == 0
+    [environment] = claude.environments
+    assert environment is not None and Path(environment["UV_PROJECT_ENVIRONMENT"]) == built[0]
+    assert built[0].is_relative_to(rig.unit.dir)  # in the task's scratch folder, never in the worktree
+    assert not built[0].exists(), "the environment this run made is removed after it"
+    assert not (rig.root / "python" / ".venv").exists()
+
+
+def test_run_keeps_and_does_not_rebuild_an_environment_the_caller_has(
+    rig: Rig, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    claude = Claude(rig)
+    monkeypatch.setattr(pr_review, "launch_claude", claude)
+    mine = tmp_path / "my-venv"
+    mine.mkdir()
+    (mine / "pyvenv.cfg").write_text("home = x", encoding="utf-8")
+    monkeypatch.setenv("UV_PROJECT_ENVIRONMENT", str(mine))
+
+    def build(worktree: Path, environment: Mapping[str, str]) -> None:
+        raise AssertionError("a built environment is not synced again")
+
+    assert task_review.run(rig.env(), "full", claude="claude", prepare_environment=build) == 0
+    assert claude.environments[0] is not None and claude.environments[0]["UV_PROJECT_ENVIRONMENT"] == str(mine)
+    assert (mine / "pyvenv.cfg").is_file()
+
+
+def test_an_environment_a_crashed_review_left_is_removed_before_the_next_one(
+    rig: Rig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(pr_review, "launch_claude", Claude(rig))
+    monkeypatch.delenv("UV_PROJECT_ENVIRONMENT", raising=False)
+    left = rig.env().folder / "review-venv"
+    left.mkdir(parents=True)
+    (left / "pyvenv.cfg").write_text("home = another tip", encoding="utf-8")
+    (left / "stale.txt").write_text("x", encoding="utf-8")
+    built: list[bool] = []
+
+    def build(worktree: Path, environment: Mapping[str, str]) -> None:
+        built.append(not (left / "stale.txt").exists())  # the old one is gone when the new one is made
+
+    assert task_review.run(rig.env(), "full", claude="claude", prepare_environment=build) == 0
+    assert built == [True] and not left.exists()
+
+
+def test_the_reviewers_environment_is_synced_frozen_so_the_lock_never_changes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen: list[list[str]] = []
+
+    class Done:
+        returncode = 0
+        stderr = ""
+
+    def fake(command: list[str], **_: object) -> Done:
+        seen.append(command)
+        return Done()
+
+    monkeypatch.setattr(subprocess, "run", fake)
+    task_review.build_environment(tmp_path, {"UV_PROJECT_ENVIRONMENT": str(tmp_path / "venv")})
+    assert seen[0][:3] == ["uv", "sync", "--frozen"] and str(tmp_path / "python") in seen[0]

@@ -34,7 +34,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
+import shutil
 import subprocess
 import sys
 from collections.abc import Callable, Mapping
@@ -67,6 +69,10 @@ from coney_tools.unit_record import UnitRecordError, log_task_of, read_record
 
 #: The agent definition handed to `claude --agents` for a run, written in the review's folder and removed after.
 AGENTS_FILE = ".reviewer-agents.json"
+#: The reviewer's Python environment, in the review's folder, when the caller names none (`reviewer_environment`).
+REVIEW_ENVIRONMENT = "review-venv"
+#: Builds the Python environment a headless reviewer's `uv run` uses: the worktree and the reviewer's environment.
+EnvironmentBuilder = Callable[[Path, Mapping[str, str]], None]
 #: How long a headless review may take before it is stopped.
 DEFAULT_TIMEOUT_MINUTES = 60
 #: Runs a command in a folder and returns its exit code (the real one starts `claude`).
@@ -622,11 +628,42 @@ def review_prompt(env: ReviewEnv, mode: str) -> str:
     )
 
 
+def reviewer_environment(folder: Path, environ: Mapping[str, str]) -> dict[str, str]:
+    """The environment the headless reviewer runs in: `environ`, with `UV_PROJECT_ENVIRONMENT` naming a Python
+    environment in the review's `folder` unless the caller names one. Without it the reviewer's own `uv run --project
+    python coney-tools task review --record` builds `python/.venv` inside the worktree, which every linter and the
+    docs build then scan and which engineers deleted by hand before each check (issue 1094). The environment is the
+    worktree's own project, so the code that records the review is the code under review."""
+    environment = dict(environ)
+    environment.setdefault("UV_PROJECT_ENVIRONMENT", str(folder / REVIEW_ENVIRONMENT))
+    return environment
+
+
+def build_environment(worktree: Path, environment: Mapping[str, str]) -> None:
+    """`uv sync` of the worktree's project into the environment `environment` names, before the reviewer starts: its
+    hooks and its commands all use it, and two of them building one environment at once would collide. A failure is only
+    said; the reviewer's own `uv run` then tries again."""
+    try:
+        done = subprocess.run(
+            ["uv", "sync", "--frozen", "--quiet", "--project", str(worktree / "python")],
+            env=environment,
+            capture_output=True,
+            encoding="utf-8",
+            check=False,
+        )
+    except OSError as error:
+        print(f"task review: cannot prepare the reviewer's Python environment ({error})")
+        return
+    if done.returncode != 0:
+        print(f"task review: preparing the reviewer's Python environment failed: {done.stderr.strip()[-300:]}")
+
+
 def run(
     env: ReviewEnv,
     mode: str,
     *,
     launch: Launcher | None = None,
+    prepare_environment: EnvironmentBuilder = build_environment,
     claude: str = "claude",
     model: str | None = None,
     effort: str | None = None,
@@ -651,10 +688,23 @@ def run(
         review_prompt(env, mode),
         effort,
     )
+    environment = reviewer_environment(env.folder, os.environ)
+    made = Path(environment["UV_PROJECT_ENVIRONMENT"])
+    # An environment the run builds in the review's folder goes with it; one the caller named is theirs and stays.
+    made_here = made == env.folder / REVIEW_ENVIRONMENT
+    if made_here:
+        # One a crashed or timed-out review left is not trusted: it may hold another tip's code.
+        shutil.rmtree(made, ignore_errors=True)
     try:
-        status = (launch or (lambda c, cwd: pr_review.launch_claude(c, cwd, timeout_minutes)))(command, env.worktree)
+        if not (made / "pyvenv.cfg").is_file():  # a caller's own environment is built, and is used as it is
+            prepare_environment(env.worktree, environment)
+        status = (launch or (lambda c, cwd: pr_review.launch_claude(c, cwd, timeout_minutes, environment)))(
+            command, env.worktree
+        )
     finally:
         agents_file.unlink(missing_ok=True)
+        if made_here:
+            shutil.rmtree(made, ignore_errors=True)
     if status != 0:
         print(f"task review {task}: {claude} exited with {status}")
         return 1

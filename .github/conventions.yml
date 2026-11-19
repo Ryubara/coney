@@ -1047,6 +1047,13 @@ workspace:
   build_idle_hours: 24                           # a build/ folder unused this long is deleted (cheap to rebuild)
   busy_marker: ".coney-busy"                     # a worktree holding it is never cleaned; an empty one older than build_idle_hours does not count
   remove_worktree_when_merged: true
+  # Claude Code keeps the output of every background command in `<temp>/claude/<hash>/<session>/tasks/` and never
+  # removes it (5 GB per output, 20 GB in one session): `workspace clean` and `check-space` report them
+  # (docs/guides/workspace.md#task-outputs). A session whose folder nothing wrote to for `stale_hours` is stale and
+  # `clean --apply` removes its outputs, never a live session's; a live one over `warn_gb` is only reported.
+  task_outputs:
+    stale_hours: 72
+    warn_gb: 2
   # File types taken from the original (PCSX2 save states, traces, memory dumps): `repo audit --local` finds them in the
   # scratch folder of a branch that is merged or gone, where they have no use left. Screenshots are not on this list.
   game_capture_suffixes: [".p2s", ".trace", ".dump", ".ps2", ".raw", ".bin"]
@@ -1128,6 +1135,11 @@ proof:
   pytest:
     scoped: [docs_only, engine]
     whole_when: ["python/", ".claude/", ".github/"]   # the package, its hooks and the rules, workflows and scripts
+  # The memory a run needs (docs/guides/coney-tools-repo.md#task-check): `task check` refuses to start while less than
+  # this many GB of the machine's memory is available, naming the biggest processes (a language server grew to 19.9 GB
+  # twice and starved a full suite for an hour with no verdict). 0 turns it off.
+  memory:
+    min_available_gb: 6
   # Which C++ tests the `ctest-full-disc` check runs, with the disc (docs/guides/coney-tools-repo.md#task-check). Each
   # changed C++ file (`ci.tidy`: its folders, sources and headers) selects the test files (`test_suffix`) whose
   # `#include`s reach it, through the headers they include and the sources that implement those headers (a source of
