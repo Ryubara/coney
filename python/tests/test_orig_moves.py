@@ -355,3 +355,12 @@ def test_moves_since_gives_the_whole_tree_map_for_a_working_tree_move(repo: Path
     moved = orig_review.moves_since(repo, since)
     assert moved == whole_tree(orig_review.files_at(repo, since), orig_review.texts_now(repo))
     assert len(moved) == 1
+
+
+def test_the_known_text_does_not_limit_the_paths_the_base_is_read_for(repo: Path) -> None:
+    (repo / "src/ai/other.cpp").unlink()
+    # `known` is the disk's text, not a list of the files wanted: a file the disk lacks is still read from the commit.
+    assert "src/ai/other.cpp" in orig_review.files_at(repo, "HEAD", known=orig_review.texts_now(repo))
+    assert list(orig_review.files_at(repo, "HEAD", {"src/ai/other.cpp"}, orig_review.texts_now(repo))) == [
+        "src/ai/other.cpp"
+    ]

@@ -648,7 +648,7 @@ def _words(function: Function) -> list[str]:
 def moves_since(root: Path, since: str) -> dict[tuple[str, int], Unit]:
     """`function_moves` from the commit `since` to the files of `src/` as they are on disk."""
     now = texts_now(root)
-    return function_moves(files_at(root, since, now), now)
+    return function_moves(files_at(root, since, known=now), now)
 
 
 def pr_stamp(root: Path, tip_ref: str, base_ref: str) -> dict[str, Any]:

@@ -50,7 +50,7 @@ def changed_lines(
     if not any(name.startswith(f"{SOURCE_DIR.as_posix()}/") for name in diffs):
         return lines
     now = orig_review.texts_now(root)
-    before = orig_review.files_at(root, since, now)
+    before = orig_review.files_at(root, since, known=now)
     moved = orig_review.function_moves(before, now)
     if not moved:
         return lines

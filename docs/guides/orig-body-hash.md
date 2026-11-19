@@ -120,8 +120,8 @@ edits):
   declaration or definition of the same name (a file that does not write the name cannot hold one) and the header or
   source beside a changed file under its stem (its marker and its header comment). Those files are read too, and no
   other;
-* the base's files come from `orig_review.files_at(root, since, known)`: the text of a file the base holds byte for byte
-  as the disk does (by git's blob id) is taken from the disk, and only the files that differ are asked of git.
+* the base's files come from `orig_review.files_at(root, since, known=...)`: the text of a file the base holds byte for
+  byte as the disk does (by git's blob id) is taken from the disk, and only the files that differ are asked of git.
 
 On this repository a `docs check` of a change touching `src/` spent about 21 s in the move map and spends under 1 s now
 (a body edit: 0.4 s, in `texts_now` and `files_at`; a function moved to a new file: 0.6 s). A change that moves functions
