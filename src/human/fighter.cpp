@@ -524,12 +524,13 @@ bool Fighter::armedSpecialTargetNear(const FighterInput& input, std::uint32_t he
         counter = keptTarget(input, m_target, std::numeric_limits<float>::max());
     }
     // One down or out (**Coney stand-in**: grounded or out of health) takes the throw's own pick of the humans instead;
-    // the one chosen becomes the target. The distance is across the ground (Coney stand-in, #1396).
+    // the one chosen becomes the target.
     const bool down = counter != nullptr && (counter->state() == TargetState::Grounded || counter->health().depleted());
     Combatant* target = counter != nullptr && !down
                             ? counter
                             : pickThrowTarget(input, kThrowNearest, kThrowRange, true, heldFlags, m_target).human;
     m_target = target;
+    // **Coney stand-in** (#1396): the distance across the ground, where `Object_Distance` measures in 3D.
     return target != nullptr && flatDistance(input.position, target->position()) <= kThrowNearest;
 }
 
