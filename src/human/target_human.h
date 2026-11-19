@@ -127,7 +127,8 @@ class TargetHuman final : public Holdable {
   private:
     // Game time in whole milliseconds.
     [[nodiscard]] std::uint64_t nowMs() const;
-    // Reacts to the update's hit: a dying clip, a reaction with its stun or knockdown.
+    // Reacts to the update's hit: the death chain, a reaction with its stun or knockdown.
+    // @coney-only the sandbox's test dummy, which the original does not have
     void react(const TargetHit& hit);
     // Takes `targetState`: the ground time starts, a hold's end detaches, a stun ends.
     void enter(TargetState targetState);

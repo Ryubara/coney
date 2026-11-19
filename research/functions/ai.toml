@@ -1678,7 +1678,17 @@ kind = "helper"
 role = "no goal `0x9a`: a free AI with threat response sides in a fight it sees (`Brain_PickSideInFight`); a busy Warrior near it looks on and may taunt (10 %); else fights and calls help; with goal `0x9a` pushes a watch goal (`0x002d84e0`)"
 level = "confirmed-code"
 coney = "src/ai/brain_events.h:onViolenceSeen"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the Mark goal (0x9a) branch, a Warrior's look and taunt at a busy side, and the top goals GetItem and 0x3f keeping him out are not built"
+relation = "not-ported"
+issue = 636
+
+[[function.gaps]]
+what = "no trains, so the train test is not made; a queued action also keeps him out"
+relation = "stand-in"
+issue = 636
 
 [[function]]
 address = 0x00291d48

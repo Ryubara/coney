@@ -376,6 +376,7 @@ target_sources(coney_tests PRIVATE
     human/class_flags_test.cpp
     human/human_edit_test.cpp
     human/human_test.cpp
+    human/death_chain_test.cpp
     human/knockout_test.cpp
     human/workout_test.cpp
     human/human_revive_test.cpp

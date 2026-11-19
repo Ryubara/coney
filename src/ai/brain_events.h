@@ -57,9 +57,11 @@ void broadcastHelpCall(Brain& caller, float range, Brain* aggressor, int value =
 Brain* pickSideInFight(Brain& hearer, const BrainEvent& event);
 
 /// Violence seen by a gang soldier or a Warrior (`Brain_OnViolenceSeen`): with a threat response, no target, nothing
-/// held, free actions and a top goal other than EngageEnemy, he takes a side, fights him (or takes him as the target
+/// held, actions his state does not block (actionsBlocked(): not knocked out, which a dying human already is, arrested
+/// or wounded) and a top goal other than EngageEnemy, he takes a side, fights him (or takes him as the target
 /// when already fighting) and, with no HelpRespond goal above his base, walks over to help. **Coney stand-ins**: the
-/// Mark goal's noise reaction and a Warrior's look at a busy side are not built; no trains.
+/// Mark goal's noise reaction, a Warrior's look at a busy side and the top goals GetItem and `0x3f` keeping him out
+/// are not built (#636); no trains; a queued action also keeps him out.
 /// @orig 0x00291960 Brain_OnViolenceSeen (unknown)
 void onViolenceSeen(Brain& brain, const BrainEvent& event);
 

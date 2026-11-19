@@ -163,6 +163,9 @@ struct FighterInput {
     bool sprinting = false;    ///< L2 held with stamina left: the sprint state (`0x1000000`), which drops the target.
     bool padControlled = true; ///< The per-player record's `+0x1b` (HumanRecord::padDriven).
     bool throwAiming = false;  ///< In a throw aim (`Human_MoveThrowAim` drives it), where L1 held does nothing.
+    bool cuffed = false;       ///< Arrested (state `0x20000`): the death chain's cuffed clips.
+    bool wounded = false;      ///< Wounded (state `0x10000`): the death chain's wounded clip.
+    bool knockedOut = false;   ///< Knocked out by a script (state `0x40000`).
     /// The human this fighter is, as another's grab or mount holds it: a mount's reversal hands the mounter over to
     /// the human that reversed it (Holdable::takeReversedMount()). Null when none (then nothing can reverse it).
     Holdable* self = nullptr;
@@ -903,7 +906,10 @@ class Fighter {
     // it defeats him; a defeated victim's death waits for his end clip (takePending()).
     // @orig 0x0026f780 Tandem_OnVictimIntroEnd (unknown)
     void tandemVictimIntroEnd(const FighterInput& input);
-    // Out of health: whatever it held goes, a hold on it ends, and the dying reaction for `hit` plays.
+    // Out of health: whatever it held goes, a hold on it ends, and the death chain for `hit` plays (nothing while its
+    // loop 349 already plays, as `Human_PlayLethalReaction` 0x00267e48 tests).
+    // @coney-only Coney's end of a lethal hit for its fighter's pair state; Human_PlayLethalReaction is not ported
+    // whole
     void dieNow(const IncomingHit& hit, const FighterInput& input, HumanAnimator& animator);
 
     // --- fighter_victim.cpp: the player hit, warned and grabbed.
@@ -933,6 +939,9 @@ class Fighter {
     void playCounter(const FighterInput& input, HumanAnimator& animator, anim::Vec3 target);
     // The reaction's frame of the player now.
     [[nodiscard]] VictimFrame frame(const FighterInput& input) const;
+    // Its state as the death chain reads it (Victim::die()): the original's state bits from what Coney keeps.
+    // @coney-only Coney's view of its script, ground and pair states as the original's state word
+    [[nodiscard]] DyingState dyingState(const FighterInput& input) const;
     // The timers of a reaction (the stun's end, the rise) and the mash while down; returns whether the player is
     // still helpless. Reads the command for the mash (the head of `Human_UpdateDown`, whose rest is Victim::step).
     // @orig 0x00256a60 Human_UpdateDown (unknown)

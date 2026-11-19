@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261118-knockout-timing-chain"
+date = "2026-11-18"
+kind = "trace"
+tool = "trace original"
+digest = "43f245459b649157d519a03915c3307e08cfef3745b68aa0d5d217c67b070538"
+
+[who]
+agent = "a071842c78b06f844"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["anim-dispatch", "puppet", "right-stick", "scripted-pad", "strike-contact"]
+
+[run]
+name = "knockout_timing"
+method = ""
+
+[values]
+updates = 151
+missed_updates = 0
+columns = 19
+
+[hashes]
+trace_csv = "98149dda516f16c7933744944135187e1959d32f076a590d85e1450e4188a618"

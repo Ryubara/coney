@@ -707,6 +707,22 @@ the death chain's last clip** before its loop:
   sits on 205 when there is one, else on the fall, else on the dying reaction: always the clip that hands over to the
   loop (confirmed (code)). As it ends it sets the dying state `0x80000000` and writes **1 to the health** (record
   `+0x144`), so a human knocked out this way keeps 1 health (confirmed (code)).
+- The details of `Human_PlayDeathReaction`, all confirmed (code) at `0x00267a00` unless marked:
+    - **The dying clip's tests**, in order, each a state bit (`Human_HasStateFlag`): cuffed `0x20000` 322, `0x8000000`
+      264, wounded `0x10000` 204, grabbing from the front `0x40` 146 or the rear `0x80` 132, grabbed from the front
+      `0x10` 139 or the rear `0x20` 127, tackled `0x800` 208, tackling `0x400` 211, knocked down `0x80000` with flag
+      `0x8` and not wounded 195, any of `0xe0000` (cuffed, knocked out `0x40000`, knocked down) 348, burning `0x4000`
+      319. They run only when the caller passes no clip (-1), as `Human_PlayGangDeathReaction` does for a lethal hit.
+    - **The fall** reads the dying clip in the anim set of the human the caller names: the victim himself on the
+      lethal path (its fourth argument 0). `Anim_GetKnockdownValue` (`0x00101a60`) finds the clip's first event of type
+      7 and returns the u32 at the event's `+4`; no clip or no such event counts as none found (confirmed (code)).
+    - **The blends** each clip hands over to the next with (the first argument of `AnimTaskChained_Construct` and
+      `PairedTask_Init`): 205's is 0; the fall's 0.1 when the loop follows it, else 0; the dying clip's 0.2 when the
+      loop or 205 is the next clip built after it (no fall, or 205 built), else 0. The loop task gets no blend.
+    - **The rest of it:** `Human_SetHeldFlag` with the held flag before anything is built (`0x2000` from
+      `Human_PlayGangDeathReaction`, which also pushes a 0.1 s blend-out over the old clip); the human's vtable `+0xe4`
+      with 1e9 and 7, the push weight (inferred: `Human_SetAttribute`, `0x002212b0`, sets attribute 7 `+0x27c`, and
+      its plate names it the vtable `+0xe0` slot); the pending damage `+0x118` and the record's `+0x18` set to 0.
 - The cuffed branch of `Human_PlayLethalReaction` (a cuffed human with flag `0x4`) does the same by hand: fall 322
   with `Human_OnHealthOut` at its end (`AnimTaskChained_Construct` at `0x00268370`), then the loop 323 (confirmed
   (code)).
@@ -731,6 +747,15 @@ His health read 1 throughout: the scenario starts him at 1, so the run cannot sh
 write of 1, which the civilian of [the lethal run](#lethal-runtime) and the Rumble brawls' fighters (below) show. The
 Rumble brawls show the same order for 51 fighters: dying from the lethal hit, knocked out from the first update of
 349.
+
+The same scenario again (confirmed (runtime), run r-20261118-knockout-timing-chain, PCSX2 v2.9.129, hooks
+`anim-dispatch` and `strike-contact`): the punch landed at update 13, and the hook logged the loop 349 (the loop task's
+dispatch) and the dying clip 295 (the `DIE` set's, through `PairedTask_Init`) on that update and **no fall**: neither
+308 nor 198 was dispatched, so the disc's 295, like 292 in the first run, carries a knockdown event whose value is not
+0. `PoizoCiv` held `0x2000` with state `0x80000001` from 13 to 56, and at 57 349 played with state `0x40000` and held
+0. Coney's chain over the disc's clips (Rembrandt's set, the hit's own clip 292) is the same: 292, no fall, then 349,
+handing over after 46 updates where the original's took 45 (Coney's clips end one update late: [When a clip
+ends](formats/animation.md#clip-end)).
 
 #### Who sets and clears the knocked-out bit {#knocked-out-bit}
 
@@ -1167,19 +1192,36 @@ Read 2026-10-11, the rise counter 2026-10-13 (`src/combat`, `src/human`, `src/ai
 (`Fighter::healthOut()`), or one a script knocked out (`HuSetConscious(false)`), as [When the knock-out
 comes](#knockout-timing) reads the original: `Fighter::update` marks the health out on the first update the dying
 clip no longer plays (a lethal hit held back plays its paired clip first), the update the ground's loop takes over, and
-a heal clears it. Coney's chain is the dying reaction and the loop 196, so its clip end stands for the end of the
-original's last clip (the fall 308 or 198 and the 205 of a woundable human are not played). The play mode gives it to
+a heal clears it. `Victim::die()` (`repo:src/human/victim.cpp`) builds the original's chain: the dying clip of the
+human's state, the fall, 205 and the loop (349, 200 or 323), with the held flag `0x2000` until the loop. Its clips
+play as one chain, so "the dying clip no longer plays" is the end of its last clip before the loop, where the original
+runs `Human_OnHealthOut`. `Fighter::dyingState()` gives it the state bits Coney keeps: cuffed, wounded and knocked out
+(the human's script states), knocked down (the ground), grabbing, grabbed and tackling (its pair), and tackled for a
+human mounted in a hold (**Coney's reading**: Coney does not tell a tackle's mount from a grab's). A human whose health
+ran out weighs 1e9 against pushes (`Human::pushWeight()`), as the chain's vtable `+0xe4` call and `Human_KnockOut` make
+it. The play mode gives it to
 the HUD frame through `feedHumanToHud()` (`repo:src/gamemodes/hud_feed.h`), which the tests
 `repo:tests/gamemodes/hud_feed_test.cpp` hold: a player beaten to 0 health drops his Armies panel with no script mark.
 Tests: `repo:tests/human/knockout_test.cpp` (not knocked out through the whole dying clip, knocked out the update it
-ends) and `repo:tests/hud/armies_hud_test.cpp` (the panel stays while the clip plays).
+ends), `repo:tests/human/death_chain_test.cpp` (each case's chain, its blends, the held flag, the knock-out as 205
+ends, the push weight) and `repo:tests/hud/armies_hud_test.cpp` (the panel stays while the clip plays).
 
-**Stand-ins:** a knocked-out human's health reads 0 where the original's death chain leaves 1 (#592); every human out
-of health is knocked out (the original's wounded humans with flag `0x8` and the dead of a kind-29 object's hit are
-not; [Open questions](#open-questions), when a player is dead). Still counted **from the hit**, where the original
-waits for the same clip end: the brain's knock-out and the player's slow motion going off (`ai::Brains::reportDowns`),
-`BLOCKHUMANS` lost (`Human::updateState`) and the mission-failing check's knocked-out players and helpers
-(`PlayLevelSimulation::stepGameOver`).
+**Stand-ins:** the blends between the chain's clips are recorded (`Victim::deathChain()`) but not built: a clip hands
+over to the next at once, as every chained clip in Coney does (the end blend, `kAttackFade` in
+`repo:src/human/human_animator.h`). Burning (`0x4000`) and state `0x8000000` are never set, Coney having neither. The
+record's `+0x18` is not kept: the animator's held state stands for it. A knocked-out human's health reads 0 where the
+original's death chain leaves 1 (#592); every human out of health is knocked out (the original's wounded humans with
+flag `0x8` and the dead of a kind-29 object's hit are not; [Open questions](#open-questions), when a player is dead).
+Still counted **from the hit**, where the original waits for the same clip end: the brain's knock-out and the player's
+slow motion going off (`ai::Brains::reportDowns`), `BLOCKHUMANS` lost (`Human::updateState`) and the mission-failing
+check's knocked-out players and helpers (`PlayLevelSimulation::stepGameOver`).
+
+**Not ported** (#685): only the loop 349 stops a second chain (`Fighter`'s check of `Human_PlayLethalReaction`
+`0x00267e48`), so a woundable human looping 200 replays the chain when hit again. In the original,
+`Human_OnHealthOut` (`0x002674c0`) clears state `0x80000000` at the chain's end, so a later hit gets an ordinary
+reaction: confirmed (code), `0x002674c0`. `HuRevive` (`Human_Revive` `0x002377f8`) only heals and sets state
+`0x20000000`, leaving the chain playing to its end: confirmed (code), `0x002377f8`. Coney's revive stops the chain
+for the idle instead (#685).
 
 ### The revive {#revive-coney}
 
@@ -1268,6 +1310,10 @@ fade and the `dyn_cross` icon are not built.
 - **The stun end's slow flag**{#q-endstun-speed}: what writes the word at `0x0051021c` that makes `Human_EndStun` set
   the speed multiplier to 0.65 ([The stun's end](#stun-end)); Ghidra shows only the read. Coney keeps the speed (a
   stand-in). A PCSX2 write watchpoint on the word through a level, or a search for pointers to it, would tell.
+- **The death chain's missing states**{#q-death-chain-states}: what the record's `+0x18` is that `Human_PlayDeathReaction`
+  zeroes (inferred: the idle's slot, 11 after a standing reaction), and which humans carry burning (`0x4000`) and
+  state `0x8000000`, which Coney does not keep, so its death chain never picks 319 or 264 ([When the knock-out
+  comes](#knockout-timing)). A watch on `+0x18` and the state word through a burning human's death would tell.
 - **A knocked-out tackled victim**{#q-tackle-knockout}: whether a tackled victim is ever knocked out when
   `Tackle_OnVictimRiseEnd` fires ([Who sets and clears the knocked-out bit](#knocked-out-bit)). A breakpoint on the
   hook with the state word read would tell.

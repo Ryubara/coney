@@ -90,7 +90,7 @@ void TargetHuman::react(const TargetHit& hit) {
     // Out of health: a dying clip on its feet (the DIE set half the time), then the ground for good.
     if (m_health.depleted()) {
         if (m_state == TargetState::Standing || m_state == TargetState::Held) {
-            m_victim.die(hit, frame, m_animator);
+            m_victim.die(hit, frame, DyingState{}, m_animator);
             m_attached = false;
             m_state = TargetState::Grounded;
         } else if (m_state != TargetState::Grounded) {

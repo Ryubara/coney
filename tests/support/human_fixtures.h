@@ -25,13 +25,14 @@ namespace coney::test {
 /// One clip of the synthetic locomotion set.
 struct LocomotionClip {
     std::uint32_t id = 0;
-    float speed = 0.0F;           ///< Root displacement along +y over one second of clip.
-    float duration = 1.0F;        ///< Seconds.
-    float rootVelocity = 0.0F;    ///< Section A's constant y velocity, m/s; 0 for no section A.
-    std::uint16_t rangeFlags = 0; ///< The Anim Range List's rate flags.
-    float reach = 0.0F;           ///< A type-8 event's vector along +y (a climb clip's reach); 0 for no event.
-    bool knockdown = false;       ///< A type-7 event (a reaction that knocks the victim down).
-    float pairX = 0.0F;           ///< The type-8 event's x (with `reach` as its y: a pair event's offset).
+    float speed = 0.0F;               ///< Root displacement along +y over one second of clip.
+    float duration = 1.0F;            ///< Seconds.
+    float rootVelocity = 0.0F;        ///< Section A's constant y velocity, m/s; 0 for no section A.
+    std::uint16_t rangeFlags = 0;     ///< The Anim Range List's rate flags.
+    float reach = 0.0F;               ///< A type-8 event's vector along +y (a climb clip's reach); 0 for no event.
+    bool knockdown = false;           ///< A type-7 event (a reaction that knocks the victim down).
+    std::uint32_t knockdownValue = 0; ///< The type-7 event's u32 at +4 (`Anim_GetKnockdownValue`'s value).
+    float pairX = 0.0F;               ///< The type-8 event's x (with `reach` as its y: a pair event's offset).
     std::vector<std::array<std::uint16_t, 2>> markers{}; ///< More events with no vector: (frame, type) each.
     std::uint32_t flags = 0;                             ///< The descriptor's clip flags (anim::AnimClip::flags).
     /// The jaw's (pose bone 8, or `jawBone`) stored rotation x (sin(angle / 2) × 32767, a turn about x held for the
@@ -217,6 +218,13 @@ inline std::vector<LocomotionClip> combatClips() {
             clips.back().markers.push_back({12, 0x2d});
         }
     }
+    // The death chain's falls, 205 and its loops (docs/research/combat-reactions.md#knockout-timing).
+    for (const std::uint32_t id : {198U, 205U, 308U}) {
+        still(id, 0.4F);
+    }
+    for (const std::uint32_t id : {200U, 323U, 349U}) {
+        still(id, 1.0F, true);
+    }
     for (const std::uint32_t id :
          {78U,  79U,  80U,  81U,  94U,  95U,  2U,   4U,   5U,   6U,   195U, 199U, 212U, 357U, 389U, 118U, 119U,
           219U, 220U, 221U, 222U, 223U, 224U, 225U, 226U, 244U, 245U, 248U, 249U, 106U, 107U, 138U, 145U, 193U}) {
@@ -275,8 +283,8 @@ inline Bytes locomotionResource(const std::vector<LocomotionClip>& clips) {
         // A knockdown: one type-7 event at frame 0.
         if (clip.knockdown) {
             Bytes event;
-            event.u16(0).u16(7);
-            event.fill(20, 0);
+            event.u16(0).u16(7).u32(clip.knockdownValue);
+            event.fill(16, 0);
             keys.append(event.span());
         }
         ClipFields fields;
