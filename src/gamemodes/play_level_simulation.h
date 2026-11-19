@@ -262,6 +262,14 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // The level's scripts' humans as AI humans: the AI on the scripts' brains, then the scripts' hold released with
     // castHuman() as its spawner, which makes the humans created so far and replays the calls on them.
     void makeCast(const ScriptedCast& cast, const ai::AiConfig& fighters);
+    // The level's route planner on the ground's path data (none without), with the ground's collision as its probe:
+    // the brains plan their moves on it.
+    // @coney-only Coney's wiring of the route planner to the ground
+    void makePlanner();
+    // The AI fighters of a level without the scripts' cast: the ground's `fighter` places (a sandbox layout's) as
+    // `fighters` configures them, planning on the route planner (makePlanner() first).
+    // @coney-only the sandbox's fighters; a level's are its scripts' cast (makeCast())
+    void makeLayoutFighters(const ai::AiConfig& fighters);
     // One human the scripts created, made: player 1's first creation is the player (his brain bound to it); any other
     // with a position an AI human of its type's class, drawn as its model, snapped as `HuCreate` snaps. Returns its
     // brain; null for a creation with no position. The script's half (name, slot, handle) is makeHuCreate's.

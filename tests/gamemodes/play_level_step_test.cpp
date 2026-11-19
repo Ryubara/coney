@@ -93,7 +93,11 @@ class Headless final : public PlayLevelSimulation {
         : PlayLevelSimulation(
               wad, yardGround(), syntheticCharacter(), [](std::string_view) {}, "synthetic", {},
               coney::human::kPlayerType, true),
-          m_frozen(frozen) {}
+          m_frozen(frozen) {
+        // The AI as the platform's mode makes it for a level without scripts: the layout's fighters (none here).
+        makePlanner();
+        makeLayoutFighters({});
+    }
 
     // A mode id from Coney's own range.
     [[nodiscard]] std::uint32_t id() const override { return 0x1feU; }

@@ -57,6 +57,10 @@ ModeResult PlayLevelSimulation::update(GameModeStack& /*stack*/, const FrameTime
 
 PlayLevelSimulation::StepView PlayLevelSimulation::stepScenery(const FrameTime& /*frame*/) { return {}; }
 
+void PlayLevelSimulation::makePlanner() {}
+
+void PlayLevelSimulation::makeLayoutFighters(const ai::AiConfig& /*fighters*/) {}
+
 void PlayLevelSimulation::useHud(hud::Hud& shared) {
     m_hud->useHud(shared);
     shared.attachPlayer(0, m_type);
