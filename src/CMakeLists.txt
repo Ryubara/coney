@@ -32,6 +32,7 @@ add_library(coney_core STATIC
     core/clip_recording.cpp
     core/cpak_archive.cpp
     core/cpak_index.cpp
+    core/cpak_lookup.cpp
     core/cpak_writer.cpp
     core/window_display.cpp
     core/options.cpp
