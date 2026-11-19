@@ -139,8 +139,10 @@ changed function, studied and compared like any other, and the note says so (`ch
 A Check that resumed (`task check` took some checks from an earlier run for the same change, `detail.resumed` of its
 stamp) is also a note: `Check resumed: docs-check, ruff taken from an earlier run (2026-11-19T09:02:11Z), not run
 again`. It is no refusal, because the checks it took passed for this change, but a reader of `pr verify` or `pr open`
-sees that this invocation did not run them. `pr text` says the same in the facts. A change that touches no C++ file
-under `src/` adds, changes and removes no `@orig` function, so the run does not read the source at all.
+sees that this invocation did not run them. `pr text` says the same in the facts.
+
+A change that touches no C++ file under `src/` adds, changes and removes no `@orig` function, so the run does not read
+the source at all.
 
 ### What counts as a research page {#research-page}
 
