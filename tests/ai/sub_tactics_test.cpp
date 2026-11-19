@@ -68,7 +68,9 @@ class FakeTactic final : public Tactic {
   public:
     explicit FakeTactic(Log& log) : Tactic(0x30, ""), m_log(&log) {}
     void strategyEnded(Gang& gang, const SubTactic& order) override {
-        const bool held = strategy().has_value() && gang.owner().subTactics().at(*strategy()) == &order;
+        // Read the slot once into a local, so the check and the use are of the same value.
+        const std::optional<std::size_t> slot = strategy();
+        const bool held = slot.has_value() && gang.owner().subTactics().at(*slot) == &order;
         m_log->events.push_back(held ? "heard, record held" : "heard, record gone");
     }
 

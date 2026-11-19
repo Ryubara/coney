@@ -74,6 +74,7 @@ int makeGang(AiScene& scene, int kind, const std::string& name, const std::vecto
 // `count` places in a row along x from (44, 40), a metre apart.
 std::vector<Vec3> row(int count, float x = 44.0F, float y = 40.0F) {
     std::vector<Vec3> places;
+    places.reserve(static_cast<std::size_t>(count));
     for (int i = 0; i < count; ++i) {
         places.push_back({x + static_cast<float>(i), y, 0.0F});
     }
