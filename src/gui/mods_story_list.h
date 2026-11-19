@@ -30,9 +30,10 @@ namespace coney::gui {
 /// A direction moves the cursor over the rows it can stop on, accept does the row's action
 /// (story::StoryViewRow::Action) and back closes the list. An action changes the merge at once (the chain is rebuilt
 /// and the rows with it, the cursor staying on the same mission) and writes the file; a file that cannot be written
-/// leaves the choice in force for the session and says so in message(). A file whose choices could not be read is never
-/// written over (that would delete the tables the player wrote, the valid ones too): the choice holds for the session
-/// only, and message() says the file was left as it is.
+/// leaves the choice in force until the screen is opened again and says so in message(). A file whose choices cannot be
+/// read, at the opening or by an edit made since, is never written over (that would delete the tables the player
+/// wrote, the valid ones too): the choice holds until the screen is opened again, and message() says the file was left
+/// as it is.
 ///
 /// **Ownership (networking checklist):** menu state of the front end, not simulation state. What it decides is the
 /// order of the merge, which the session builds once when the mods start; the choices are part of the mod list a
@@ -80,7 +81,7 @@ class ModsStoryList {
     bool move(bool down);
     // Puts `order` as the choice for `group` (dropping the choice when it is the default order), rebuilds and writes.
     void choose(const story::StoryGroup& group, const std::vector<std::string>& order, std::string_view keep);
-    // Writes the choices to the file, unless its choices could not be read; the message says when it was not written.
+    // Writes the choices to the file, unless its choices do not read; the message says when it was not written.
     void save();
 
     story::StoryGraph m_seed;
@@ -91,7 +92,6 @@ class ModsStoryList {
     std::vector<story::StoryViewRow> m_rows;
     std::optional<std::size_t> m_cursor;
     std::string m_message;
-    bool m_unreadable = false; // the file's choices did not read: it is left as it is
 };
 
 } // namespace coney::gui

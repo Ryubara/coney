@@ -292,6 +292,12 @@ std::expected<void, Error> saveStoryChoices(const std::filesystem::path& enabled
             return fail(ErrorCode::Io, std::format("could not read {}", enabledFile.string()));
         }
         current = *text;
+        // A file whose story choices do not read is left as the player wrote it: writing would delete every table of
+        // it, the valid ones too.
+        if (const auto read = parseStoryChoices(current); !read) {
+            return fail(read.error().code, std::format("{} was left as it is, its story choices cannot be read ({})",
+                                                       enabledFile.string(), read.error().message));
+        }
     } else if (choices.empty()) {
         return {}; // no file and nothing to say: nothing to make
     }
@@ -305,9 +311,11 @@ std::expected<void, Error> saveStoryChoices(const std::filesystem::path& enabled
     {
         std::ofstream out(temporary, std::ios::binary | std::ios::trunc);
         out.write(text.data(), static_cast<std::streamsize>(text.size()));
-        if (!out.good()) {
+        // Closed before it is tested: a flush that fails (a full disk, a quota) shows only then, and the rename would
+        // put a cut-short file over the player's.
+        out.close();
+        if (!out) {
             // No partial file is left beside the player's.
-            out.close();
             std::filesystem::remove(temporary, error);
             return fail(ErrorCode::Io, std::format("could not write {}", temporary.string()));
         }

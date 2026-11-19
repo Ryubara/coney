@@ -65,7 +65,9 @@ struct StoryChoice {
 
 /// Writes `choices` into the file `enabledFile` as withStoryChoices() does, making the file (and its folder) when it is
 /// not there and replacing it in one step, so a crash leaves the old file or the new one (a failed write leaves no
-/// partial file beside it). Fails with ErrorCode::Io.
+/// partial file beside it, and one cut short by a failed flush never replaces it). A file that exists and whose story
+/// choices do not read (parseStoryChoices() fails on its text now, an edit made since it was loaded included) is left
+/// as it is: the call fails with that error, naming the file. Fails with ErrorCode::Io otherwise.
 [[nodiscard]] std::expected<void, Error> saveStoryChoices(const std::filesystem::path& enabledFile,
                                                           std::span<const StoryChoice> choices);
 

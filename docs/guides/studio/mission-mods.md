@@ -523,10 +523,13 @@ game's colours (an original step), the mod's (a mission) and the warning colour 
   load order and the merge marks it `StoryGroup::stale` in `merge().groups` (the story rows do not carry it; the screen
   reads it there to say the choice no longer holds); the old table stays in the file until the player chooses for that
   group. A choice that puts the group back in load order is dropped from the file.
-- **A file that cannot be written** leaves the choice in force for the session and shows the message. One that cannot
-  be read, or holds a broken `[[story.choice]]` table, gives the load order and the message, and is never written over:
-  a swap or a choice holds for the session only and the message says the file was left as it is, so the tables the
-  player wrote (the valid ones too) are not lost until they fix the file.
+- **A file that cannot be written** leaves the choice in force until the Mods screen is opened again and shows the
+  message. One that cannot be read, or holds a broken `[[story.choice]]` table, gives the load order and the message,
+  and is never written over: `saveStoryChoices` reads the file's text again on every save, so a file broken at the
+  opening and one edited while the screen is open are both left as the player wrote them, the valid tables too. The
+  swap or choice holds until the screen is opened again (it reads the file anew) and the message says the file was left
+  as it is. A write that fails on the way (a full disk) never replaces the file: the temporary file is closed and
+  checked before the rename and removed on failure.
 
 ### Progress, records and saves {#graph-progress}
 

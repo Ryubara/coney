@@ -44,7 +44,6 @@ ModsStoryList::ModsStoryList(story::StoryGraph seed, std::vector<story::StoryMod
             m_choices = std::move(*loaded);
         } else {
             m_message = loaded.error().message;
-            m_unreadable = true;
         }
     }
     // 2. The merge with them, and the rows.
@@ -175,16 +174,13 @@ void ModsStoryList::save() {
     if (m_file.empty()) {
         return;
     }
-    // A file whose choices did not read is kept as the player left it: writing would delete every table of it.
-    if (m_unreadable) {
-        m_message =
-            std::format("{} was left as it is (its story choices could not be read); the choice holds until the "
-                        "game closes",
-                        m_file.string());
-        return;
-    }
+    // The save reads the file again: one whose choices do not read (broken from the start or edited while the list is
+    // open) is not written over, and the choice then holds for this list only, until the screen is opened again and
+    // reads the file's own.
     const auto saved = story::saveStoryChoices(m_file, m_choices);
-    m_message = saved ? std::string{} : saved.error().message;
+    m_message = saved
+                    ? std::string{}
+                    : std::format("{}; the choice holds until the Mods screen is opened again", saved.error().message);
 }
 
 } // namespace coney::gui
