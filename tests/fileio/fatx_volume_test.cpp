@@ -38,7 +38,7 @@ FatxEntry named(const std::vector<FatxEntry>& entries, const std::string& name) 
             return entry;
         }
     }
-    FAIL("no entry " << name);
+    FAIL_CHECK("no entry " << name); // FAIL_CHECK goes on, so the return below is reachable (C4702 under /WX)
     return {};
 }
 

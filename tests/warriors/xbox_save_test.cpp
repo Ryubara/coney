@@ -121,7 +121,7 @@ std::filesystem::path writeContainer(const TempDir& dir, SaveSourceKind kind) {
     default:
         break;
     }
-    FAIL("no such container in this test");
+    FAIL_CHECK("no such container in this test"); // goes on to the return, which FAIL would make unreachable
     return {};
 }
 
