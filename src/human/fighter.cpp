@@ -553,7 +553,10 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     // lethal hit held back plays its paired clip first. With health back, it is over (healthOut()).
     if (!m_health.depleted()) {
         m_healthOut = false;
+        m_healthOutBegan = false;
     } else if (!m_deathPending.has_value() && !animator.drivingClipPlaying()) {
+        // `Human_OnHealthOut` runs once, on the update the health out begins (takeHealthOut()).
+        m_healthOutBegan = m_healthOutBegan || !m_healthOut;
         m_healthOut = true;
     }
     bool reacting = stepVictim(input, animator);

@@ -368,6 +368,7 @@ characters::ClassMoney recordedClassMoney(const RecordedCalls* recorded, int cat
         const auto whole = [args](std::size_t i) { return static_cast<int>(std::trunc(binding::number(args, i))); };
         money = characters::ClassMoney{.min = whole(1),
                                        .max = whole(2),
+                                       .share = static_cast<float>(binding::number(args, 3)),
                                        .noObject = whole(4),
                                        .bonusChance = whole(5),
                                        .bonus = static_cast<float>(binding::number(args, 6))};
@@ -1482,6 +1483,14 @@ NativeFunction makeStub(const BindingInfo& info, const BindingContext& context,
 }
 
 } // namespace
+
+human::DropClass recordedDropClass(const RecordedCalls* recorded, int characterClass) {
+    const characters::CarryConfig carry = recordedCarryConfig(recorded, characterClass);
+    // The drop reads the record of the class's own category byte, without the starting money's remap of category 4.
+    const characters::ClassMoney money = recordedClassMoney(recorded, carry.category);
+    return human::DropClass{
+        .moneyMin = money.min, .moneyMax = money.max, .moneyShare = money.share, .carriedChance = carry.dropChance};
+}
 
 // @coney-only Coney's binding table, for the tests and the debug tools
 std::span<const BindingInfo> bindingTable() { return kBindings; }

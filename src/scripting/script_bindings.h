@@ -11,6 +11,7 @@
 
 #include "gui/global_strings.h"
 #include "gui/rumble_mode_gui/rumble_data.h"
+#include "human/carried_drop.h"
 #include "scripting/lua_value.h"
 #include "scripting/lua_vm.h"
 #include "scripting/natives.h"
@@ -221,5 +222,13 @@ struct BindingContext {
 /// the stubs returning their defaults. Use it as (part of) the ScriptSystem's BindingInstaller.
 /// @orig 0x0037d420 RegisterBindings (unknown)
 void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context);
+
+/// The class record a downed human's drop reads (human::DropClass, docs/research/crimes.md#down-drop) for character
+/// class `characterClass` (characters::characterClassOf()): its last recorded `CfgChar` `+0xb4` and its category's last
+/// recorded `CfgCharClassAttribs` money range and share; zeros (and a chance of -1) for a class or category no call
+/// set, as the game state starts.
+/// @coney-only a lookup in Coney's record of the CfgChar and CfgCharClassAttribs stub calls; the original reads its
+/// class table (`CharClass_Get`)
+[[nodiscard]] human::DropClass recordedDropClass(const RecordedCalls* recorded, int characterClass);
 
 } // namespace coney::script
