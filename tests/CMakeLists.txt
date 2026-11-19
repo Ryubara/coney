@@ -80,6 +80,7 @@ add_executable(coney_tests
     gamemodes/gameplay_objects_test.cpp
     gamemodes/gameplay_sound_call_test.cpp
     gamemodes/play_level_simulation_test.cpp
+    gamemodes/play_level_step_test.cpp
     gamemodes/gameplay_tag_test.cpp
     gamemodes/tag_lines_test.cpp
     gamemodes/game_mode_stack_test.cpp

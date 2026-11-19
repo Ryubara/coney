@@ -51,6 +51,12 @@ PlayLevelSimulation::PlayLevelSimulation(const io::Wad& wad, std::unique_ptr<wor
 // (platform::PlayLevelMode::~PlayLevelMode()); what is left goes in reverse order of its declaration.
 PlayLevelSimulation::~PlayLevelSimulation() = default;
 
+ModeResult PlayLevelSimulation::update(GameModeStack& /*stack*/, const FrameTime& /*frame*/) {
+    return ModeResult::Stay;
+}
+
+PlayLevelSimulation::StepView PlayLevelSimulation::stepScenery(const FrameTime& /*frame*/) { return {}; }
+
 void PlayLevelSimulation::useHud(hud::Hud& shared) {
     m_hud->useHud(shared);
     shared.attachPlayer(0, m_type);

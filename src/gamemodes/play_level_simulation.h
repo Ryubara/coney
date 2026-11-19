@@ -43,6 +43,7 @@
 #include "warriors/created_humans.h"
 #include "warriors/game_over.h"
 #include "world/level_ground.h"
+#include "world/view_frustum.h"
 #include "world_objects/cars.h"
 #include "world_objects/hats.h"
 #include "world_objects/level_objects.h"
@@ -57,6 +58,12 @@ class SoundHost;
 } // namespace coney::script
 
 namespace coney {
+
+/// What a play run has done so far: counts and the player's state, for the summary line.
+struct PlayStats {
+    std::uint64_t frames = 0;
+    float travelled = 0.0F; ///< Metres the player's feet moved across the ground.
+};
 
 /// The level's simulation in play: player 1 on a ground (world::LevelGround: a level's or a sandbox's), the AI humans
 /// (a level's scripts' cast, or a sandbox's fighters), the level's glass panes, doors, world objects, loose objects and
@@ -156,6 +163,14 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     /// whether the boards a broken fence threw are still standing, whatever the renderer.
     /// @coney-only a disc test's count of standing objects
     [[nodiscard]] std::size_t standingObjectsOf(std::string_view typeName) const;
+    /// One step of the level (docs/guides/network-architecture.md#sub-presentation): the humans, the objects, the HUD's
+    /// state and the game-over check in the original's order, with the presentation's hooks below called where its
+    /// parts of the step fall (the scenery streamed round the step's camera, the glints, the HUD's sprites, the rings).
+    /// Draws nothing.
+    ModeResult update(GameModeStack& stack, const FrameTime& frame) override;
+    /// Player 1's statistics as the play mode counts them.
+    [[nodiscard]] const PlayStats& stats() const { return m_stats; }
+
     /// How many doors and barriers within `radius` of `at` would be drawn now (the doors' draw list, hidden and removed
     /// ones left out): a disc test's way to ask whether a broken fence is still on screen.
     /// @coney-only a disc test's count of the doors drawn
@@ -185,6 +200,42 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // Player 1 is drawn as `model` from now on (HuChangePlayerGang's hand-over to a human of another model): the
     // platform loads it and swaps his character, or keeps his own with a line when it does not load.
     virtual void changePlayerModel(const std::string& model) = 0;
+
+    // --- The presentation's hooks: the parts of the step a presentation makes (the platform's streaming, lights,
+    // glints, rings and HUD sprites; docs/guides/network-architecture.md#sub-presentation). Each does nothing by
+    // default, so the simulation steps alone where nothing is presented (a test, a server).
+
+    /// The step's camera as the presentation streamed the scenery round it: its pose (RenderWare's axes) and the
+    /// scenery's draw distance, within which the world objects are brought in.
+    struct StepView {
+        world::CameraPose pose;
+        float drawDistance = 0.0F;
+    };
+    // `--freeze-world` once frozen: the presentation's whole step (the scenery and the world objects round the camera),
+    // returning true; false (the default) when the world advances.
+    virtual bool stepFrozenWorld(const FrameTime& /*frame*/) { return false; }
+    // After the humans' step and before the scenes': the step's traces (`--trace`, `--trace-humans`).
+    virtual void traceStep() {}
+    // The scenery's step round the step's camera (its streaming and draw distance), the lights' step and the
+    // visibility pass the next step's streaming reads; returns that camera. The default: player 1's camera with its
+    // far clip as the draw distance, nothing streamed.
+    virtual StepView stepScenery(const FrameTime& frame);
+    // The glints' step, `ticks` 60 Hz ticks of their blink, after the world objects' step
+    // (docs/research/particles.md#glints).
+    virtual void stepGlints(int /*ticks*/) {}
+    // Where this step's world objects and doors are, for the frames to blend from (after the world objects' step).
+    virtual void recordDrawnPoses() {}
+    // The HUD's update ran: its sprites for the step and the spinning icons' poses.
+    virtual void hudStepped() {}
+    // The health rings' step after the HUD's, with player 1's pad (docs/research/hud-radar.md#the-health-rings).
+    virtual void stepRings(const Pad& /*pad*/, std::uint64_t /*nowMs*/) {}
+    // The step's end (`--freeze-world` freezes the world here).
+    virtual void stepEnded(const FrameTime& /*frame*/) {}
+    // The scenes, the platform's until they move to the core (#1449): whether a scene holds `human` (a script handle),
+    // one step of them at `nowMs` with the pads' `buttons`, and whether a scene's letterbox is in or moving at `nowMs`.
+    [[nodiscard]] virtual bool sceneHolds(double /*human*/) const { return false; }
+    virtual void stepScenes(std::uint64_t /*nowMs*/, std::uint16_t /*buttons*/) {}
+    [[nodiscard]] virtual bool letterboxShown(std::uint64_t /*nowMs*/) const { return false; }
 
     // The character the player plays: his own after a change of character, else the scene's.
     [[nodiscard]] const human::PlayerCharacter& playerCharacter() const {
@@ -566,6 +617,7 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     std::set<double> m_carriedProps;
     // The HUD the steps drive: the simulation's own, or the game's after useHud().
     std::unique_ptr<hud::HudOwner> m_hud = std::make_unique<hud::HudOwner>();
+    PlayStats m_stats;
 };
 
 } // namespace coney
