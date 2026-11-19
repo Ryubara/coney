@@ -32,7 +32,7 @@ from typing import Any
 
 import yaml
 
-from coney_tools import clips, orig_pairs, pr_proof, pr_publish, pr_text_file, proof_profiles, stamps
+from coney_tools import clips, fails_first, orig_pairs, pr_proof, pr_publish, pr_text_file, proof_profiles, stamps
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
 from coney_tools.pr_proof import Refusal, TextHashes
@@ -476,6 +476,27 @@ def _stand_ins(subject: pr_proof.Subject) -> list[str]:
     return lines
 
 
+def _gone_tests(subject: pr_proof.Subject, firsts: list[stamps.Stamp]) -> dict[str, stamps.Stamp]:
+    """The passing `fails-first` stamps whose test is no longer declared at the tip, by test name: it was renamed or
+    removed after the stamp, so the facts must not name it as a test of the tip (the renamed one has a stamp of its own
+    under its new name). A stamp that lists no test files (one from before they were recorded) cannot be looked up and
+    stays as it is."""
+    declared: dict[str, set[str]] = {}
+    found: dict[str, stamps.Stamp] = {}
+    for stamp in firsts:
+        files = stamp.detail.get("test_files")
+        if stamp.result not in fails_first.PROVEN or not isinstance(files, list) or not files:
+            continue
+        here: set[str] = set()
+        for path in map(str, files):
+            if path not in declared:
+                declared[path] = fails_first.declared_in(subject.root, subject.tip, path)
+            here |= declared[path]
+        if stamp.subject not in here:
+            found[stamp.subject] = stamp
+    return found
+
+
 def _stage_lines(subject: pr_proof.Subject, short: bool) -> list[str]:
     """The per-stage lines of the facts; with `short` each stage is one count (the long form is over the limit)."""
     lines: list[str] = []
@@ -517,8 +538,9 @@ def _stage_lines(subject: pr_proof.Subject, short: bool) -> list[str]:
             pairs_hash = str(stamp.covers.get("pairs_sha256", ""))[:12]
             lines.append(f"- Compared {code(address)}{of}: {counts} (stamp `{_h(stamp)}`, pairs `{pairs_hash}`)")
     firsts = {s.subject: s for s in subject.report.stamps if s.step == "fails-first"}
-    passed = [s for s in firsts.values() if s.result == "pass"]
-    kept = [s for s in firsts.values() if s.result == "keeps"]
+    gone = _gone_tests(subject, list(firsts.values()))
+    passed = [s for s in firsts.values() if s.result == "pass" and s.subject not in gone]
+    kept = [s for s in firsts.values() if s.result == "keeps" and s.subject not in gone]
     nones = [s for s in firsts.values() if s.result == "none"]
     if short and passed:
         lines.append(f"- Failed first: {len(passed)} tests")
@@ -534,6 +556,15 @@ def _stage_lines(subject: pr_proof.Subject, short: bool) -> list[str]:
             lines.append(
                 f"- Kept behaviour: {code(stamp.subject)} passes before the change and after it, not failed first "
                 f"(stamp `{_h(stamp)}`)"
+            )
+    if short and gone:
+        lines.append(f"- Not at the tip: {len(gone)} stamped test{'s' if len(gone) != 1 else ''} (renamed or removed)")
+    elif not short:
+        for stamp in gone.values():
+            what = "kept behaviour" if stamp.result == "keeps" else "failed first"
+            lines.append(
+                f"- Not at the tip: {code(stamp.subject)} was stamped as {what} (stamp `{_h(stamp)}`), "
+                "renamed or removed since"
             )
     for stamp in nones:
         lines.append(f"- No tests that failed first ({subject.kind}): {code(stamp.detail.get('reason', ''))}")
