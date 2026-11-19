@@ -438,6 +438,17 @@ gate](testing.md#local-gate) says which gate runs the rest). The ruff and mypy
 commands are the ones of `ci run`; there is no clang-tidy here: clang-tidy is CI's alone, on the changed lines of every
 pull request and on the whole codebase nightly ([building](clang-tidy.md)).
 
+**It never syncs the shared environment.** `uv run --project python <tool>` syncs `python/.venv` before it starts the
+tool, and on Windows that fails ("Access is denied") while another session has `coney-tools.exe` or `coney-agent.exe`
+open from it, which every agent session does; agents worked around it with `UV_NO_SYNC=1` (issues 1059, 1118). So the
+ruff, mypy and pytest commands of `task check` and `ci run` run as `uv run --no-sync --project python ...` once the
+environment is built (a `pyvenv.cfg` in `python/.venv`, or in the folder `UV_PROJECT_ENVIRONMENT` names), and the gate
+passes with the tools executable locked. The session that runs the gate was started from that environment, so it is
+built; a checkout that has none is left to `uv` to build on the first run (`uv sync --project python` does it by hand).
+The hooks that start `coney-tools` do the same ([the hooks that start
+`coney-tools`](enforcement.md#hooks)); the one source for the checks is
+[`uv_environment.py`](repo:python/src/coney_tools/uv_environment.py).
+
 * A fault of the machine is not a verdict about the change: a program that is missing, no disc for a `full` run
   (including a `CONEY_DISC` that names nothing), a worktree that changed during the run, a build that got no slot.
   These write no stamp.

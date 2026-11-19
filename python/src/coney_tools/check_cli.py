@@ -34,6 +34,7 @@ from coney_tools import (
     orig_copy,
     process_lifetime,
     standards_check,
+    uv_environment,
 )
 from coney_tools.audit import Report, run_checks, specs_in
 from coney_tools.audit_files import FilesContext
@@ -293,6 +294,7 @@ def _step_python(
         ("pytest", ["uv", "run", "--project", "python", "pytest", "python/tests", "-q", "-x", "--no-header"]),
         ("mypy", list(MYPY_COMMAND)),
     ):
+        command = uv_environment.no_sync(command, root)  # never sync the shared environment (uv_environment.py)
         if label == "pytest":
             with hold(root):
                 code, output = run(command, root)
