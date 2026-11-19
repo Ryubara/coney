@@ -565,6 +565,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/human_shapes.cpp
         debug/human_watch.cpp
         debug/input_gate.cpp
+        debug/light_trace.cpp
         debug/lighting_lab.cpp
         debug/lua_console.cpp
         debug/menu_model.cpp
