@@ -110,8 +110,8 @@ class SoundEvents final : public script::SoundHost {
 };
 
 /// Plays interface cue `cue` through the HUD's `sound`, raising it first on `events` (null: none) as a Cue for
-/// `human`'s HUD (0: none): the cues gameplay itself plays (a revive's flash, a theft's stages), as the HUD's own cues
-/// follow from the state a guest's HUD is given (docs/guides/multiplayer.md#events).
+/// `human`'s HUD (0: every player's): the cues gameplay itself plays (a revive's flash, a theft's stages), as the HUD's
+/// own cues follow from the state a guest's HUD is given (docs/guides/multiplayer.md#events).
 /// @coney-only network play's seam on the HUD's cues; the original has no network play
 void playHudCue(const hud::HudSound& sound, GameEvents* events, int cue, double human);
 

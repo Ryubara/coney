@@ -51,8 +51,8 @@ enum class GameEventKind : std::uint8_t {
     SpeechStop = 19,   ///< A human's line is stopped (`HuShutUp`): `subject` him, `value` 1 when forced.
     MaterialPair = 20, ///< A world object's material pair sound from the sound matrix: `id` its material, `value` the
                        ///< other, `extra` the volume in thousandths, at `position`.
-    Cue = 21,          ///< An interface cue: `id` the cue, `subject` the human whose HUD plays it (0 none), `value` 1
-                       ///< when it plays at `position` (a world object's), 0 as a 2D sound.
+    Cue = 21,          ///< An interface cue: `id` the cue, `subject` the human whose HUD plays it (0 every
+                       ///< player's), `value` 1 when it plays at `position` (a world object's), 0 as a 2D sound.
     Hint = 22,         ///< A tutorial hint (`HUDSetTutorialText`, `HUDFlushTutorialText`,
                        ///< `HUDEnableGameTutorialText`): `id` 0 queued (`text` it, `value` its priority), 1 the
                        ///< showing hint cleared, 2 flushed (`value` the priority), 3 the game's own hints on or off
@@ -104,8 +104,9 @@ struct GameEvent {
 [[nodiscard]] bool validGameEventKind(std::uint8_t kind);
 /// The fields `kind` carries (GameEventField bits).
 [[nodiscard]] std::uint8_t gameEventFields(GameEventKind kind);
-/// Whether events of `kind` must arrive (music, loops, messages, objectives, scenes, movies) rather than being
-/// one-shots a lost packet may drop (sounds, hits, particles, breaks).
+/// Whether events of `kind` must arrive (music, loops, messages, objectives, hints, scenes, movies, and a line or
+/// command said or stopped) rather than being one-shots a lost packet may drop (sounds, hits, material pairs, cues,
+/// particles, breaks).
 [[nodiscard]] bool reliableGameEvent(GameEventKind kind);
 /// The kind's short name, for logs and record lines: `sound2d`, `hit`, `scene_start`, ...
 [[nodiscard]] std::string_view describe(GameEventKind kind);

@@ -183,8 +183,14 @@ void addMessageBindings(LuaVm& vm, const BindingContext& context) {
                                               .text = text});
         }));
     // @orig 0x0036f360 HUDRemoveAllGoalText (unknown)
-    vm.registerFunction("HUDRemoveAllGoalText",
-                        hudCall(context, [](hud::Hud& hud, std::span<const Value>) { hud.removeGoalText(); }));
+    vm.registerFunction(
+        "HUDRemoveAllGoalText", hudCall(context, [events = &context.events](hud::Hud& hud, std::span<const Value>) {
+            hud.removeGoalText();
+            // Network play: slot 0 cleared, for the guests' HUD (Coney's own), as the objective
+            // HUDSetObjective(0, "", 1) raises silently: a guest applies both the same way.
+            constexpr std::uint32_t kClear = 1;
+            raiseGameEvent(*events, GameEvent{.kind = GameEventKind::Objective, .id = 0, .value = (kClear << 1U) | 1U});
+        }));
     // `HUDSetTutorialText(text, priority)`: nil clears the showing hint (the game is never paused under a script in
     // Coney).
     // @orig 0x0036f380 HUDSetTutorialText (unknown)

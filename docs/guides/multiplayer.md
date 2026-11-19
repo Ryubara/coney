@@ -486,9 +486,9 @@ simulation's effects pass:
 | --- | --- | --- |
 | `coney::SoundEvents` (`src/gamemodes/sound_events.h`), the binding context's sound | Sound2D, Sound3D, HumanSound (an animation sound, the held sound's stop, rage's start), Hit (an impact's materials), MusicStart, MusicStop, LoopStart, LoopStop, Speech, Command, SpeechStop | it wraps the game's sound: every call goes on unchanged, with what it returns, and the ones a player hears are raised first; a line or command only when it plays |
 | `coney::LevelObjectServices` (`src/gamemodes/level_object_services.h`), the world objects' sounds | Sound3D (a door's or a hit's sound), Cue (an object's cue, at its place), MaterialPair (a pane's, a prop's or a thrown object's impact and break) | before it passes the sound on to the audio's `ObjectSounds` |
-| `coney::playHudCue()`, the cues gameplay plays on the HUD | Cue (for the player whose HUD it is) | a revive's and a flash's sound, a theft's stages |
-| `effects::ParticleSystems::spawn()` | ParticleStart (type, place, turn, parent, colour, rectangle) | only the start asked for, not the systems that start makes in turn (a flash's puff, an explosion's parts), which a guest's own start makes again |
-| The bindings `HUDSetObjective`, `HUDSetAnnounceMsg`, `HUDSetTutorialText`, `HUDFlushTutorialText` and `HUDEnableGameTutorialText` | Objective, HudMessage, Hint | after the HUD has it |
+| `coney::playHudCue()`, the cues gameplay plays on the HUD | Cue (for the player whose HUD it is; a revive's for every player) | a revive's and a flash's sound, a theft's stages |
+| `effects::ParticleSystems::spawn()` | ParticleStart (type, place, turn, parent, colour, rectangle) | only the start asked for, not the systems that start makes in turn (a flash's puff, an explosion's parts), which a guest's own start makes again; a pane's shards (`spawnShard()`) raise one start each, up to 158 for a pane, without the size the pane gives each, so a guest's shards take the type's size |
+| The bindings `HUDSetObjective`, `HUDRemoveAllGoalText` (slot 0 cleared: the objective `HUDSetObjective(0, "", 1)` raises, silent), `HUDSetAnnounceMsg`, `HUDSetTutorialText`, `HUDFlushTutorialText` and `HUDEnableGameTutorialText` | Objective, HudMessage, Hint | after the HUD has it |
 | `PlayLevelSimulation::stepObjects()` | ObjectBreak: a prop that breaks (id 0), a car's glass (its hit effect's kind plus 1) | a prop's dust (particle starts) and sounds (material pairs) are their own events and its pieces are world objects of their own; a car's glass carries its kind, from which a guest makes its shatter and sound (no machine draws or plays them yet: `carHitEffects()` is the hook) |
 | `PlayLevelMode::stepScenes()` | SceneStart, SceneEnd | the scenes playing (`SceneSystem::playingScenes()`) compared with the step before (`raiseSceneChanges()`) |
 | `movies::MovieMode` | MovieStart (name, skippable), MovieEnd (name, skipped) | the debug menu's movies raise none |
@@ -498,6 +498,11 @@ gives itself follow from the HUD's state, which a guest's HUD is given (the mess
 player's HUD state in the snapshot: #1447), so its own HUD plays them. A scene's sounds and a movie's sound play from
 the scene or the movie, which travel as their start and end. The lock pick's click plays nothing yet (it is counted).
 A sound's later stop or move (`stopSound()`, `moveSound()` on a handle: a radio's track) sends nothing yet: #1473.
+The sound's settings (`enableAmbientEmitter()`, `setAmbientEmitterVolume()`, `setAmbientTrackVolume()`,
+`setMusicVolume()`, and a script's `SoundPauseSound`) are lasting state, not a sound played: as events a guest who
+joined later would never get them, so they belong with the state a guest is given, which carries none of the sound's
+yet. The pause menu's and the mission-failed screen's `pauseSound()` pause this machine's sound under a menu each
+player has his own of.
 
 **Delivery.** One-shots (the sounds, hits, material pairs, cues, particle starts and breaks) go **Unreliable**: a lost
 one is a sound nobody misses, and one resent late would play out of time. The music, the loop, the messages, the
@@ -549,7 +554,7 @@ sequence is a protocol error.
 | Command | 18 | subject (speaker), id (command), value (voice set plus 1, 0 unknown), extra (bit 0 interrupting, bit 1 cutting) |
 | SpeechStop | 19 | subject, value (1 forced) |
 | MaterialPair | 20 | id (material), value (the other), extra (volume in thousandths), position |
-| Cue | 21 | subject (whose HUD, none for an object's), id (cue), value (1 at the position), position |
+| Cue | 21 | subject (whose HUD; none for an object's, or for a cue every player hears), id (cue), value (1 at the position), position |
 | Hint | 22 | id (0 queued, 1 the showing one cleared, 2 flushed, 3 the game's hints on or off), value (priority; on), text |
 
 A command travels as its id and voice set: which of the set's lines says it is the guest's own sound's choice, as the

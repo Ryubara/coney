@@ -164,9 +164,10 @@ void GameplayMode::finishRevive(ai::Brain& reviver, ai::Brain& revived) {
     if (combat::reviveFlashFrom(false) == combat::ReviveFlashFrom::Reviver) {
         m_state.player.inventory.give(kPlayerOnePanel, item::kRevive, -1);
     }
-    // Interface cue 23, the flash's sound; the revived says 75 `revive_thank`.
+    // Interface cue 23, the flash's sound; the revived says 75 `revive_thank`. The cue is an interface sound every
+    // player hears (subject 0), as the original plays it: the revived is often a crewman with no HUD of his own.
     if (m_context.hud != nullptr) {
-        playHudCue(m_context.hud->services().sound, m_context.events, combat::kReviveSoundCue, revived.handle());
+        playHudCue(m_context.hud->services().sound, m_context.events, combat::kReviveSoundCue, 0.0);
     }
     if (m_context.sound != nullptr) {
         static_cast<void>(m_context.sound->sayCommand(

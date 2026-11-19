@@ -405,7 +405,8 @@ ParticleSystem* ParticleSystems::spawnShard(anim::Vec3 at, float size, std::uint
     if (shard == nullptr || m_particles >= kParticleBudget) {
         return shard;
     }
-    // The shard is made at once, at the size the pane gives it.
+    // The shard is made at once, at the size the pane gives it. Network play: its start (raised in spawn(), one per
+    // shard) carries no size, so a guest's shard takes the type's (docs/guides/multiplayer.md#events).
     Particle particle = makeParticle(*shard);
     particle.size = size;
     shard->particles.push_back(particle);
