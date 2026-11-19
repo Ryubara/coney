@@ -30,8 +30,9 @@ scenes::ScenePose blend(const scenes::ScenePose& a, const scenes::ScenePose& b, 
                              .rotation = anim::slerp(a.rotation, b.rotation, alpha)};
 }
 
-// How a spawned object looks: its spawn's tint (`ObjSpawn`'s seventh argument), which multiplies its model's colours
-// (docs/research/objects.md#tint): the carts' 0x888888FF and the wheel's 0x474542FF darken them to the original's.
+// How a spawned object looks: its spawn's tint (`ObjSpawn`'s seventh argument), which replaces its model's first
+// material's colour (docs/research/objects.md#tint): the carts' 0x888888FF and the wheel's 0x474542FF darken them to
+// the original's.
 PlacedObjects::Look lookOf(const world_objects::SpawnRecord& record) {
     return PlacedObjects::Look{.tint = record.tint};
 }

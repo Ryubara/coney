@@ -314,7 +314,8 @@ void SceneLighting::drawHumanAtomic(rw::Atomic* atomic, bool hidden) {
 void SceneLighting::drawObjectAtomic(rw::Atomic* atomic) {
     const graphics::LightSphere sphere = sphereOf(atomic);
     useLights(m_lighting.lights.select(distanceSq(sphere.centre, m_pose.position), sphere, true, true, false));
-    // Through the draw layer, as the world's atomics (item 8 of docs/engine/renderer.md#order): the cars draw here too.
+    // Through the draw layer, as the world's atomics (item 8 of docs/engine/renderer.md#order); a car's parts draw in
+    // drawCarAtomic() instead, which selects at squared distance 0.
     m_routed = true;
     renderInRig(atomic);
     m_routed = false;
