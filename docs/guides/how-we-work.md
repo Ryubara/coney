@@ -451,8 +451,9 @@ something:
   drive](workspace.md#watched-drives) (the workspace's, the build root's and the `watch_paths` of `coney.local.toml`)
   it cleans first ([Cleanup](workspace.md#cleanup)).
 - **Heavy builds take a slot, from a tool.** A full engine build uses every core, so only two run at once and the
-  rest queue: every build and test run goes through `coney-tools build`, which claims a build slot like a PCSX2 copy (a
-  fast lane for small jobs, a fair queue, priority for builds someone waits on; [`build`](coney-tools-build.md#build)),
+  rest queue: every build and test run goes through `coney-tools build`, which claims a slot like a PCSX2 copy (a build
+  slot for a compile, a fast lane for small jobs, a check slot for a test run too big for it, never a build slot; a fair
+  queue, priority for builds someone waits on; [`build`](coney-tools-build.md#build)),
   and a hook refuses raw `cmake --build`, `ctest` and `ninja`. The machine's number of build slots is `build_slots` in
   `coney.local.toml` ([Local workspace](workspace.md#local-config)). Tasks that only read, write docs or drive the
   emulator need no build slot. Beyond the build slots, at most `build_worktree_cap` worktrees (7) hold a build folder at

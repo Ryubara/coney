@@ -12,9 +12,11 @@ result says the run's own exit code once it ended, 75 while it runs, and 1 with 
 process is gone without writing one (killed).
 
 The record's reading and writing are `build_cli`'s, so the three kinds of detached run judge "still running" the same
-way (a live pid that started when the record says). The child stamps as the caller: `spawn_detached` hands the
-caller's verified identity on to it (`identity.hand_on`), since the hook removes the caller's own identity file once
-the caller returns.
+way (a live pid that started when the record says). The starter writes the record before the spawn and notes the
+child's pid and start time in it right after (`build_cli.spawn_recorded`), so a child that dies before its own first
+write leaves a record whose process is gone, not one that counts as running; a spawn that fails leaves none. The child
+stamps as the caller: `spawn_detached` hands the caller's verified identity on to it (`identity.hand_on`, ending when
+the caller's own file would), since the hook removes the caller's own identity file once the caller returns.
 """
 
 from __future__ import annotations
@@ -61,8 +63,7 @@ def start(kind: Kind, folder: Path, command: list[str], cwd: Path, agent: str) -
         )
     folder.mkdir(parents=True, exist_ok=True)
     record = {"state": "running", "agent": agent, "pid": None, "log": str(output), "started": time.time()}
-    build_cli._write_record(result, record)
-    pid = build_cli.spawn_detached(command, cwd, output)
+    pid = build_cli.spawn_recorded(result, record, lambda: build_cli.spawn_detached(command, cwd, output))
     print(f"detached: pid {pid}, output in {output}")
     print(
         f"write STATUS.md and stop, or do other work: `{kind.result_command}` shows the outcome (exit 75 while it runs)"

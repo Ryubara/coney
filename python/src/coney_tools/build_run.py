@@ -650,8 +650,8 @@ class Context:
     #: Each test's recorded time, read for the test lane and updated after a test run (test_costs.py); None: the lane
     #: goes by the count alone.
     test_costs: TestCosts | None = None
-    #: A filtered test run whose selected tests' recorded times add up to more seconds than this takes a main slot
-    #: (0: the count alone decides).
+    #: A filtered test run whose selected tests' recorded times add up to more seconds than this takes a check slot
+    #: (a main slot when there are none) instead of the fast lane (0: the count alone decides).
     fast_test_seconds: float = 0.0
     #: The check slots (build_claims.CHECK_LANE): a test run too big for the fast lane (the whole ctest suite, or a
     #: filter that selects many tests or long ones) holds one for the run instead of a build slot, so a machine runs
