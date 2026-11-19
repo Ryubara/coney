@@ -126,10 +126,26 @@ NativeFunction makeGetLevelId(const Factory& factory) {
     };
 }
 
-// `GetDifficulty()`.
-// @orig 0x0041d800 GetDifficulty (unknown)
+// `GetDifficulty()`: the difficulty in force, the game state's byte as an unsigned number
+// (docs/research/difficulty.md#setting).
+// @orig 0x0036c3d8 lua_GetDifficulty (unknown)
+// @orig 0x0041d800 GameState_GetDifficulty (unknown)
 NativeFunction makeGetDifficulty(const Factory& factory) {
-    return [state = factory.context->state](std::span<const Value>) { return binding::number(state->difficulty); };
+    return [state = factory.context->state](std::span<const Value>) {
+        return binding::number(static_cast<double>(state->difficulty));
+    };
+}
+
+// `SetDifficulty(n)`: the difficulty in force; the difficulty scripts call it with 0-4
+// (docs/research/difficulty.md#setting).
+// @orig 0x0036c440 lua_SetDifficulty (unknown)
+// @orig 0x0041d810 GameState_SetDifficulty (unknown)
+NativeFunction makeSetDifficulty(const Factory& factory) {
+    return [state = factory.context->state](std::span<const Value> args) {
+        // tolua's number (0 when left out) as an unsigned integer, of which the game state keeps the low byte.
+        state->difficulty = static_cast<std::uint8_t>(binding::unsignedArg(args, 0) & 0xffU);
+        return binding::none();
+    };
 }
 
 // `GetProfileDifficulty()`.
@@ -673,6 +689,7 @@ constexpr std::array kMakers{
     Maker{"ScheduleFuncArg1", makeScheduleFuncArg1},
     Maker{"ScreenQueueEffect", makeScreenQueueEffect},
     Maker{"SetCheckPoint", makeSetCheckPoint},
+    Maker{"SetDifficulty", makeSetDifficulty},
     Maker{"ShowProfileManager", makeShowProfileManager},
     Maker{"ShowRumbleModeInterface", makeShowRumbleModeInterface},
     Maker{"ToInt", makeToInt},
@@ -730,6 +747,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("GetLevelId"),
     real("GetDifficulty"),
     real("GetProfileDifficulty"),
+    real("SetDifficulty"),
     real("GetCheckPoint"),
     real("SetCheckPoint"),
     real("ToInt"),
@@ -1434,7 +1452,6 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     stub("SetCheatCallback"),
     stub("SetCopGuardArrestedRange"),
     stub("SetDeathTimer"),
-    stub("SetDifficulty"),
     stub("SetGlobalPedRules"),
     // The level's lights and fog (scripting/lighting_bindings.h).
     real("SetFogColor"),

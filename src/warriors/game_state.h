@@ -74,9 +74,12 @@ struct GameState {
     static constexpr std::size_t kLuaSaveFloats = 8;
 
     Language language = Language::English; ///< `+0x120`: 0 on the NTSC-U disc.
-    double difficulty = 1;                 ///< `+0x154` (`GetDifficulty`): 1 at the front end.
-    double profileDifficulty = 1;          ///< `+0x43c` (`GetProfileDifficulty`): 1 at the front end; PM_Difficulty.
-    bool subtitles = false;                ///< `+0x438`: subtitles on, PM_Subtitles' choice.
+    /// `+0x154`: the difficulty in force (difficulty::kEasy to difficulty::kRumble), a byte `SetDifficulty` sets from
+    /// each level's difficulty script and `GetDifficulty`, the flash and the Stats screen read; normal from the
+    /// constructor. Not saved: the profile keeps profileDifficulty (docs/research/difficulty.md).
+    std::uint8_t difficulty = 1;
+    double profileDifficulty = 1; ///< `+0x43c` (`GetProfileDifficulty`): 1 at the front end; PM_Difficulty.
+    bool subtitles = false;       ///< `+0x438`: subtitles on, PM_Subtitles' choice.
     /// `+0x57a4`: the brightness `Gamma_Set` keeps, 0-100; PM_Light changes it. Coney's start value is PM_Light's 40.
     int brightness = 40;
     /// Two players: what PM_NumPlayers passes to `0x00419ac0` (the field it sets is not on the page).

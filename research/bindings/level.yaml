@@ -205,6 +205,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 6, calls: 6, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: GetLanguage
   wrapper: 0x0036c478

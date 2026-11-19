@@ -323,7 +323,8 @@ Confirmed (code); the frames from the disc.
 0x17)`: entry 23 of the audio manager's interface cue table at `+0x1e0`, which `SoundCfgInterfaceSound(23, …)` fills
 with `vags/misc/flash`, [Sound and music](../references/sound.md#interface-sound)), played 2D with flags `0x12`;
 `Human_Heal` (`0x0022eb40`) with "full" unless the human is a player and the **difficulty in force** (`W_GameState +
-0x154`, `SetDifficulty`: 0 easy, 1 normal, 2 hard, 3 fury, 4 rumble) is above 2; the HUD's per-panel request byte for
+0x154`, `SetDifficulty`: 0 easy, 1 normal, 2 hard, 3 fury, 4 rumble; [The difficulty](difficulty.md#flash)) is above
+2; the HUD's per-panel request byte for
 the player (`0x001b28a0`, [HUD](hud.md)); and the player's screen effect at `0x005fdeb8[player]` is reset
 (`0x0018b7d0(…, 0)`). `Human_Heal` clears `+0x3be`, ends wounded (`Human_EndWounded`), wakes a knocked-out human
 (`Human_WakeUp`), clears state `0x4000000000`, then sets health to the maximum, or on fury and rumble adds half the
@@ -504,7 +505,8 @@ strike-backs read the grabber's flag through `combat::GrabberState::scoresRage`.
 
 The table of [The flash during a move](#flash-mid-move) answers issue #234 (the flash heals with no clip and no
 sound): mid-move, the original heals at once with no clip and no animation sound too, and only interface cue 23
-tells it apart.
+tells it apart. The heal follows the difficulty in force (`difficulty::flashHealth()`, [The difficulty: the
+flash](difficulty.md#flash)): half the maximum on fury and in the Rumble, in full otherwise.
 
 ### Rage {#rage-coney}
 

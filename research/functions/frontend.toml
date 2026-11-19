@@ -1416,11 +1416,20 @@ status = "legacy"
 [[function]]
 address = 0x0041d800
 name = "GameState_GetDifficulty"
-page = "frontend.md#warriors-functions"
-role = "`GetDifficulty` / `SetDifficulty` (byte `+0x154`) and `GetProfileDifficulty` (byte `+0x43c`)"
+page = "difficulty.md#setting"
+role = "the difficulty in force, the game state's byte `+0x154`"
 level = "confirmed-code"
 coney = "src/scripting/script_bindings.cpp:makeGetDifficulty"
-status = "legacy"
+status = "compared"
+
+[[function]]
+address = 0x0041d810
+name = "GameState_SetDifficulty"
+page = "difficulty.md#setting"
+role = "stores the difficulty in force, the game state's byte `+0x154`"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeSetDifficulty"
+status = "compared"
 
 [[function]]
 address = 0x0041d820

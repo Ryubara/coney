@@ -724,6 +724,7 @@ void GameplayMode::loadLevel() {
                                              .objectHandles = [this] { return m_scripts.nextObjectHandle(); },
                                              .gameOver = &m_state.gameOver,
                                              .padOptions = &m_state.saved.pads,
+                                             .difficulty = &m_state.difficulty,
                                              .missionFailed =
                                                  [this](std::string_view title) {
                                                      if (m_context.host != nullptr) {

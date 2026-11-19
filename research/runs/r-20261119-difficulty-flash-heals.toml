@@ -1,0 +1,37 @@
+version = 1
+id = "r-20261119-difficulty-flash-heals"
+date = "2026-11-19"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "cc587b26ac4376353c7496e79ec143bef7e4ae88b4f314edfc32ad782bf3abfb"
+
+[who]
+agent = "unknown"
+type = "unknown"
+model = "unknown"
+source = "unverified"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "level99 street, Rembrandt (human 0x00641a20, health max 900): for each case the lua recipe ran SetDifficulty(n), set-health set the health, give-item gave one flash (item 1) and the call recipe called Flash_Use(human) on the game's thread; the health recipe then read the health. Difficulty 3 from 200, difficulty 2 from 200, difficulty 4 from 600"
+
+[values]
+fury_before = 200
+fury_after = 650
+hard_before = 200
+hard_after = 900
+rumble_before = 600
+rumble_after = 900
+health_max = 900
+
+[addresses]
+Flash_Use = 0x00284280
+Human_Heal = 0x0022eb40
