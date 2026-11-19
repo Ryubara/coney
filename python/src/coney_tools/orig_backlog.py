@@ -14,7 +14,9 @@ as it is, was not moved in from outside.
 
 The search follows a function by its key (file, qualified name and parameter types), so it has one limit: a function
 whose key was already in its file before a commit counts as having stood there, and a body replaced under the same key
-is credited to the earlier move. A function deleted and written again stops the search, its key being absent.
+is credited to the earlier move. A function deleted and written again stops the search, its key being absent. A
+function renamed in place (its class renamed in its own file) counts as having stood there under its new key, so the
+key being followed goes stale, the commit that brought it in is not matched and the function is dropped.
 """
 
 from __future__ import annotations
@@ -127,13 +129,22 @@ def _mentions(text: str, name: str) -> bool:
 def _verdict(track: _Track, added: dict[str, str], removed: dict[str, str]) -> str:
     """What a commit's lines say of a followed function, cheaply: `skip` (its name is not added to its file, or is also
     removed from it: it stood there as it is, perhaps edited), `read` (its name is added to its file and removed from
-    another: it may have moved in, so both sides are read) or `new` (added there and removed nowhere: written there)."""
+    another: it may have moved in, so both sides are read) or `added` (its name is added to its file and removed
+    nowhere: a new definition, or only a call, a comment or an overload naming it; `_is_new_here` reads the parent's
+    file to tell)."""
     name = _name_of(track)
     if not _mentions(added.get(track.path, ""), name):
         return "skip"
     if any(_mentions(text, name) for path, text in removed.items() if path != track.path):
         return "read"
-    return "skip" if _mentions(removed.get(track.path, ""), name) else "new"
+    return "skip" if _mentions(removed.get(track.path, ""), name) else "added"
+
+
+def _is_new_here(root: Path, commit: _Commit, track: _Track) -> bool:
+    """Whether the followed function's key is absent from its file at the commit's parent, so the commit wrote it
+    there (a line that only calls, names or overloads it leaves its key in the parent's file)."""
+    before = orig_review.files_at(root, commit.parent, {track.path})
+    return track.key not in orig_review.standings(before)
 
 
 def _tracked(root: Path, gameplay: tuple[str, ...]) -> list[_Track]:
@@ -162,15 +173,17 @@ def find(root: Path, since: str | None = None) -> list[MovedFunction]:
         if not any(t.path in commit.paths for t in following.values()):
             continue
         # The commit's lines say cheaply which followed functions need both sides read (`_verdict`): the rest stood
-        # there as they are, or were written there and are not followed further.
+        # there as they are, or only had their name added to the file (`_is_new_here` reads the parent's file and ends
+        # the search when the commit wrote the function).
         diff = _diff_text(root, commit) if commit.parent else None
         here: dict[str, _Track] = {}
         for where, track in list(following.items()):
             verdict = "read" if diff is None else _verdict(track, *diff)
             if track.path not in commit.paths or verdict == "skip":
                 continue
-            if verdict == "new":
-                del following[where]
+            if verdict == "added":
+                if _is_new_here(root, commit, track):
+                    del following[where]  # written in the gameplay folders: not followed further
             else:
                 here[where] = track
         if not here:

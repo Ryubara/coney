@@ -187,6 +187,39 @@ def test_a_function_deleted_and_written_again_is_not_credited_to_the_old_move(re
     assert orig_backlog.find(repo) == []
 
 
+def _edit_hats_after_the_move(repo: Path, old: str, new: str, title: str) -> str:
+    """Move the hats into gamemodes, then change the moved file in a later commit; the move's commit id."""
+    move(repo, "src/platform/hats.cpp", "src/gamemodes/hats.cpp")
+    moved = commit(repo, "core: Move the hats")
+    path = repo / "src/gamemodes/hats.cpp"
+    path.write_text(path.read_text(encoding="utf-8").replace(old, new), encoding="utf-8")
+    commit(repo, title)
+    return moved
+
+
+def test_a_later_call_to_a_moved_function_does_not_drop_it(repo: Path) -> None:
+    moved = _edit_hats_after_the_move(
+        repo,
+        "PlayLevelMode::print(i);",
+        "PlayLevelMode::print(i);\n        PlayLevelMode::stepHats(1);",
+        "core: Call it",
+    )
+    assert [f.commit for f in orig_backlog.find(repo)] == [moved]
+
+
+def test_a_later_comment_naming_a_moved_function_does_not_drop_it(repo: Path) -> None:
+    moved = _edit_hats_after_the_move(repo, "// Each hat.", "// Each hat.\n// See stepHats.", "core: Say so")
+    assert [f.commit for f in orig_backlog.find(repo)] == [moved]
+
+
+def test_a_later_overload_of_a_moved_function_does_not_drop_it(repo: Path) -> None:
+    overload = "void PlayLevelMode::stepHats(double scale) {\n    kick(scale);\n    kick(scale);\n}\n"
+    end = "} // namespace coney"
+    moved = _edit_hats_after_the_move(repo, end, overload + end, "core: Overload it")
+    found = orig_backlog.find(repo)
+    assert [(f.coney, f.commit) for f in found] == [("PlayLevelMode::stepHats", moved)]
+
+
 def test_a_moved_function_tagged_later_leaves_the_list(repo: Path) -> None:
     move(repo, "src/platform/hats.cpp", "src/gamemodes/hats.cpp")
     commit(repo, "core: Move the hats")

@@ -135,7 +135,9 @@ on all of it.
 **A limit:** the search follows a function by its key (its file, qualified name and parameter types). A function whose
 key was already in its file before a commit counts as having stood there, so a body replaced under the same key is
 credited to the earlier move, and the list may name the commit that brought in the first body. A function deleted and
-written again stops the search, since its key is then absent.
+written again stops the search, since its key is then absent. A function renamed in place (its class renamed in its own
+file) counts as having stood there under its new key, so the key being followed goes stale, the commit that brought it
+in is not matched and the function is dropped from the list.
 
 **Where the list is:** it is this command's output, rerun when needed and never a file in the repository; a function
 leaves it when it gets a tag or marker. On 2026-11-19 it found 37 functions, all moved from `src/platform/` into
