@@ -23,10 +23,10 @@ namespace {
 
 // The options of OptionSet::Player (playerOptions()).
 constexpr std::array<std::string_view, 25> kPlayerOptions{
-    "--install",     "--data",        "--verify",         "--disc",         "--language", "--profiles",
-    "--import-save", "--fps-cap",     "--vsync",          "--line-blend",   "--show-fps", "--no-audio",
-    "--skip-movies", "--no-activate", "--window-display", "--host",         "--join",     "--net-name",
-    "--help",        "--headless",    "--frames",         "--input-script", "--renderer", "--preset",   "--console-open"};
+    "--install",        "--data",     "--verify",     "--disc",        "--language", "--profiles",    "--import-save",
+    "--fps-cap",        "--vsync",    "--line-blend", "--show-fps",    "--no-audio", "--skip-movies", "--no-activate",
+    "--window-display", "--host",     "--join",       "--net-name",    "--help",     "--headless",    "--frames",
+    "--input-script",   "--renderer", "--preset",     "--console-open"};
 
 // The synopsis of usageText(OptionSet::Player), before its options' lines.
 constexpr std::string_view kPlayerSynopsis =
