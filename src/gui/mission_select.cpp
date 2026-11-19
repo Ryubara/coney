@@ -77,6 +77,8 @@ constexpr std::array<std::array<MapPoint, kMapColumns>, kMapRows> kLogoPoints{{
 }};
 
 // The row of `record`'s mission byte (`+0x0c`, 1-based), or nothing for none or one past the tables.
+// @orig 0x0041f540 LevelRecord_GetMapPos (unknown)
+// @orig 0x0041f5f8 LevelRecord_GetMapPos2 (unknown)
 std::optional<std::size_t> mapRow(const LevelRecord& record) {
     const double mission = record.values.at(LevelRecord::kMissionValue);
     if (mission < 1.0 || mission > static_cast<double>(kMapRows)) {
@@ -86,6 +88,8 @@ std::optional<std::size_t> mapRow(const LevelRecord& record) {
 }
 
 // A table's point for `record` and `column`; (0, 0) without a row (Coney's stand-in).
+// @orig 0x0041f540 LevelRecord_GetMapPos (unknown)
+// @orig 0x0041f5f8 LevelRecord_GetMapPos2 (unknown)
 MapPoint tablePoint(const std::array<std::array<MapPoint, kMapColumns>, kMapRows>& table, const LevelRecord& record,
                     std::size_t column) {
     const std::optional<std::size_t> row = mapRow(record);
@@ -93,14 +97,6 @@ MapPoint tablePoint(const std::array<std::array<MapPoint, kMapColumns>, kMapRows
         return MapPoint{};
     }
     return table.at(*row).at(column);
-}
-
-// The rectangle of a sprite word: its low half.
-std::size_t rectOf(std::uint32_t word) { return word & 0xffffU; }
-
-// A channel of `colour` × `grey` / 255, the fraction dropped (`Float_ToUInt`).
-std::uint8_t tint(std::uint8_t colour, std::uint8_t grey) {
-    return static_cast<std::uint8_t>(static_cast<float>(colour) * 0.003921569F * static_cast<float>(grey));
 }
 
 } // namespace
@@ -324,8 +320,6 @@ void MissionSelectScreen::playCue(int cue) const {
 }
 
 MissionSelectMission& MissionSelectScreen::current() { return m_areas.at(m_cursor).missions.at(m_list.selected()); }
-
-std::size_t MissionSelectScreen::selectedMission() const { return m_list.selected(); }
 
 void MissionSelectScreen::open(std::vector<MissionSelectArea> areas, std::uint64_t nowMs) {
     m_areas = std::move(areas);
@@ -599,10 +593,12 @@ void MissionSelectScreen::update(const GuiFrame& frame) {
                                 .width = graphics::OverlayCamera::guiWidthToOverlay(m_layout.background),
                                 .colour = kMapGrey});
     // The area's gang logo at its point, sized by its texture rectangle × the logo's size (× the width factor).
-    m_logo.setRect(rectOf(area.logoWord));
+    // The sprite word's rectangle: its low half.
+    const std::size_t logoRect = area.logoWord & 0xffffU;
+    m_logo.setRect(logoRect);
     graphics::UvRect uv{};
-    if (m_batches.logos != nullptr && rectOf(area.logoWord) < m_batches.logos->sheet().page.rects.size()) {
-        uv = m_batches.logos->sheet().page.rect(rectOf(area.logoWord));
+    if (m_batches.logos != nullptr && logoRect < m_batches.logos->sheet().page.rects.size()) {
+        uv = m_batches.logos->sheet().page.rect(logoRect);
     }
     m_logo.setup(BaseWidgetSetup{.x = area.logo.x,
                                  .y = area.logo.y,
@@ -628,6 +624,10 @@ void MissionSelectScreen::update(const GuiFrame& frame) {
                                                .height = m_layout.marker * (shown ? m_pulse : 1.0F),
                                                .colour = kMenuGrey});
     }
+    // A channel of the halo colour × the map's grey / 255, the fraction dropped (`Float_ToUInt`).
+    const auto tint = [](std::uint8_t colour, std::uint8_t grey) {
+        return static_cast<std::uint8_t>(static_cast<float>(colour) * 0.003921569F * static_cast<float>(grey));
+    };
     m_halo.setup(BaseWidgetSetup{.x = area.marker.x,
                                  .y = area.marker.y,
                                  .height = m_layout.marker * m_pulse * kHaloScale,

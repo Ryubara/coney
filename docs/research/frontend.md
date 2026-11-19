@@ -1208,23 +1208,24 @@ Confirmed (code) at the addresses below.
 ### `GUI/MissionSelectHUD.cpp` {#fn-missionselecthud}
 
 The mission select screen of `HUDShowMissionSelect` (`MissionSelect_Show`, mode functions `MissionSelect_Enter` /
-`_Update` / `_Exit` at `0x0015d648` / `0x0015d890` / `0x0015d728`): a map with one marker per area, and per area a
-list of the missions already completed, each with its checkpoints. The object (vtable `0x0053a408`, input interface
+`_Update` / `_Exit` at `0x0015d648` / `0x0015d890` / `0x0015d728`): a map with one marker per area, and per area a list
+of the missions already completed, each with its checkpoints. The object (vtable `0x0053a408`, input interface
 `0x0053a3e0` at `+0x6c`) is built by `0x0015d4f8`. Areas are `MS_Area` records (`0x230` bytes), missions `MS_Mission`
 (`0x8c0` bytes), both allocated with those class strings. The mission records are the story table at W_GameState
 `+0x14d4` (`0x84` bytes each, count `+0x56d4`; level `+0x04`, checkpoint count `+0x08`, name `+0x49`, icon sprite
-`+0x78`, `+0x80` passed to the entry). The rest of the file is HUD code ([HUD](hud-functions-panels.md#fn-missionselecthud-hud)).
+`+0x78`, `+0x80` passed to the entry); confirmed (code) at `0x0015d4f8`, `0x001bc930` and `0x001bca70`. The rest of the
+file is HUD code ([HUD](hud-functions-panels.md#fn-missionselecthud-hud)).
 
 **Layout** (`MissionSelect_Init` `0x001bcdd8` writes the globals per video mode, `MissionSelect_Build` `0x001bc5a8` and
 `MissionSelect_FillArea` `0x001bd838` use them; GUI coordinates; confirmed (code)):
 
-- background (the subway map): centred at (0.5, 0.5), size **bg**, grey 144, sheet-table record 20 rectangle 0; the
-  gang logo over it, white, with a shadow (`MissionSelect_Build` sets it up as `gang_logos` rectangle 11);
-  `MissionSelect_UpdateWidget` then moves it to the shown area's logo point (`LevelRecord_GetMapPos2`) and gives it
-  the sprite word at `+0x78` of the area's first mission (the Warriors' logo over Coney, the Hi-Hats' over Soho), sized
-  by its texture rectangle × **logo** (× `0x0050e884` across); the widget this page called the frame, size **frame**,
-  grey 128, is the **halo** around the shown area's marker. Confirmed (code) at `0x001bc5a8` and `0x001be198`; the
-  logo per area confirmed (runtime), run r-20261119-mission-select;
+- background (the subway map): centred at (0.5, 0.5), size **bg**, grey 144, sheet-table record 20 rectangle 0; the gang
+  logo over it, white, with a shadow (`MissionSelect_Build` sets it up as `gang_logos` rectangle 11);
+  `MissionSelect_UpdateWidget` then moves it to the shown area's logo point (`LevelRecord_GetMapPos2`) and gives it the
+  sprite word at `+0x78` of the area's first mission (the Warriors' logo over Coney, the Hi-Hats' over Soho), sized by
+  its texture rectangle × **logo** (× `0x0050e884` across); the widget this page called the frame, sized from
+  **marker**, grey 128, is the **halo** around the shown area's marker. Confirmed (code) at `0x001bc5a8` and
+  `0x001be198`; the logo per area confirmed (runtime), run r-20261119-mission-select;
 - the area title: a [`CircledText`](gui.md#fn-circledtext) at (**x**, **y**), text offset (**tx**, **ty**), circle
   offset 0.008, circles 0.055 × 0.055, `Font_Size(1.25)`, back sprite record 20 rectangle 1, circles rectangle 3;
 - the area's mission list: a `ScrollingMenu` at (**x**, **y** + **ty** + 0.01), item gap 0.01; each entry a
@@ -1234,19 +1235,20 @@ list of the missions already completed, each with its checkpoints. The object (v
   back black; its description is the mission's `MS_Mission` tile, set up with **cw** × **ch** and the height **tile**;
 - the usage line (string `0x20`) left-aligned at (**ux**, **uy**).
 
-With the alternative sheet (record 21, `0x0050e894` = 1) the title and entries use rectangles 1 and 2 and the frame 3.
+With the alternative sheet (record 21, `0x0050e894` = 1) the title and entries use rectangles 1 and 2 and the halo 3;
+confirmed (code) at `0x001bc5a8` and `0x001bd838`.
 
-| Global | Meaning | Default | 16:9 (`0x04`) | Progressive (`0x20`, static values) | `0x02` | `0x02` + `0x04` |
-| --- | --- | --- | --- | --- | --- | --- |
-| `0x0050e850` / `0x0050e854` | **x**, **y** | 0.8, 0.083 | 0.852, 0.022 | 0.78, 0.077 | 0.785, 0.173 | 0.843, 0.153 |
-| `0x0050e858` / `0x0050e85c` | **tx**, **ty** | 0.44, 0.074 | 0.52, 0.083 | 0.415, 0.065 | 0.43, 0.057 | 0.508, 0.067 |
-| `0x0050e86c` | **tile** | 0.35 | 0.423 | 0.415 | 0.27 | 0.25 |
-| `0x0050e870` / `0x0050e874` | **cw**, **ch** | 0.045, 0.07 | 0.057, 0.08 | 0.05, 0.07 | 0.04, 0.056 | 0.04, 0.056 |
-| `0x0050e878` | **bg** | 1.12 | 1.64 | 1.05 | 1.05 | 1.6 |
-| `0x0050e880` | **logo** | 0.8 | 0.8 | 0.8 | 0.6 | 0.6 |
-| `0x0050e888` | **frame** | 0.0147 | 0.0147 | 0.0147 | 0.01 | 0.012 |
-| `0x0050e88c` / `0x0050e890` | **ux**, **uy** | 0, 0.81 | −0.1, 0.85 | 0.03, 0.83 | 0.045, 0.75 | −0.08, 0.76 |
-| `0x0050e894` | alternative sheet | 0 | 1 | 1 | 0 | 1 |
+| Global | Meaning | Default | 16:9 (`0x04`) | Progressive (`0x20`, static values) | `0x02` | `0x02` + `0x04` | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `0x0050e850` / `0x0050e854` | **x**, **y** | 0.8, 0.083 | 0.852, 0.022 | 0.78, 0.077 | 0.785, 0.173 | 0.843, 0.153 | confirmed (code) at `0x001bcdd8` |
+| `0x0050e858` / `0x0050e85c` | **tx**, **ty** | 0.44, 0.074 | 0.52, 0.083 | 0.415, 0.065 | 0.43, 0.057 | 0.508, 0.067 | confirmed (code) at `0x001bcdd8` |
+| `0x0050e86c` | **tile** | 0.35 | 0.423 | 0.415 | 0.27 | 0.25 | confirmed (code) at `0x001bcdd8` |
+| `0x0050e870` / `0x0050e874` | **cw**, **ch** | 0.045, 0.07 | 0.057, 0.08 | 0.05, 0.07 | 0.04, 0.056 | 0.04, 0.056 | confirmed (code) at `0x001bcdd8` |
+| `0x0050e878` | **bg** | 1.12 | 1.64 | 1.05 | 1.05 | 1.6 | confirmed (code) at `0x001bcdd8` |
+| `0x0050e880` | **logo** | 0.8 | 0.8 | 0.8 | 0.6 | 0.6 | confirmed (code) at `0x001bcdd8` |
+| `0x0050e888` | **marker** (the halo's base) | 0.0147 | 0.0147 | 0.0147 | 0.01 | 0.012 | confirmed (code) at `0x001bcdd8` |
+| `0x0050e88c` / `0x0050e890` | **ux**, **uy** | 0, 0.81 | −0.1, 0.85 | 0.03, 0.83 | 0.045, 0.75 | −0.08, 0.76 | confirmed (code) at `0x001bcdd8` |
+| `0x0050e894` | alternative sheet | 0 | 1 | 1 | 0 | 1 | confirmed (code) at `0x001bcdd8` |
 
 `0x0050e87c` (1.05 by default, 1.2 with 16:9, 0.82 with `0x02`, 0.88 with `0x02` + `0x04`) is the map's second size
 (`BaseWidget_SetSize(bg, 0x0050e87c)` each update) and `0x0050e884` (1.4286, 2.0 with `0x02`) the logo's width factor,
@@ -1313,9 +1315,10 @@ with an `onChoose`, calls `onChoose(level, checkpoint)`. The original called `on
 mission (level 3) was started at letter B; confirmed (runtime), run r-20261119-mission-select.
 
 **In Coney.** `coney::gui::MissionSelectScreen` and `buildMissionSelectAreas` (`repo:src/gui/mission_select.h`) and
-`coney::MissionSelectMode` (`repo:src/gamemodes/mission_select_mode.h`), which `HUDShowMissionSelect` pushes through
-the start-up flow. Stand-ins: the selected mission's tile (`MS_Mission`, below) shows only its letter until #1451; no
-world frame runs under the screen; the entries are stacked an item gap apart without the list's scroll animation.
+`coney::MissionSelectMode` (`repo:src/gamemodes/mission_select_mode.h`), which `HUDShowMissionSelect` pushes through the
+start-up flow. Stand-ins: the selected mission's tile (`MS_Mission`, below) shows only its letter until the tile is
+ported; no world frame runs under the screen; the entries are stacked an item gap apart without the list's scroll
+animation.
 
 **The tiles' lines** (`MSMission_Setup`, `0x001d31e8`): line 1 is string `0x6d` and the mission's best score, red
 (134, 26, 26) once it reaches the level's score target, gold (128, 100, 0) below it; line 2 is string `0x64` and the
@@ -2101,8 +2104,8 @@ the file's first path-string function sit after the player panel's static initia
 
 ### Game-state functions {#warriors-functions}
 
-Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
-workers) that belong to this page, by address.
+Functions of the game-state module (`0x00417af0`-`0x00424e50`, inferred from the addresses listed below: inventory,
+statistics, flags, configuration workers) that belong to this page, by address.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |

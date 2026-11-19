@@ -248,7 +248,7 @@ class MissionSelectScreen : public Widget {
     /// The refused flag (`+0x6a8`): the d-pad does not repeat.
     [[nodiscard]] bool refused() const { return m_refused; }
     /// The selected mission of the area at the cursor.
-    [[nodiscard]] std::size_t selectedMission() const;
+    [[nodiscard]] std::size_t selectedMission() const { return m_list.selected(); }
     /// Whether a start is waiting for its delay (`+0x69c` = 1).
     [[nodiscard]] bool starting() const { return m_start == Start::Waiting; }
     /// Whether back cancelled the screen.
