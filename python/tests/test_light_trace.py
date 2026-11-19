@@ -257,7 +257,8 @@ def test_a_light_is_read_as_values_never_pointers(serve: Any) -> None:
     _, client = serve([])
     with client:
         light = light_trace.read_light(light_trace.DebugMemory(client), LAMP.address)
-    assert light == Light(0x80, 10.0, (1.0, pytest.approx(0.9), pytest.approx(0.8), 1.0), (5.0, 6.0, 7.0))
+    assert (light.type, light.radius, light.position) == (0x80, 10.0, (5.0, 6.0, 7.0))
+    assert light.colour == pytest.approx((1.0, 0.9, 0.8, 1.0))
 
 
 def test_a_point_list_longer_than_the_cap_is_refused(serve: Any) -> None:

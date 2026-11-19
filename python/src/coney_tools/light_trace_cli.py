@@ -14,6 +14,7 @@ from coney_tools import light_trace, run_records_cli
 from coney_tools.config import find_repo_root
 from coney_tools.debug_server import DebugClient
 from coney_tools.pine import PineClient, PineError
+from coney_tools.run_records import UNKNOWN
 from coney_tools.wad import refuse_inside_repo
 
 #: The record's scenario name, and its id's name unless `--run-name` gives another.
@@ -127,7 +128,7 @@ def run_lights(
     shown = ", ".join(f"{facts[f'calls_{c}']} {c}" for c in light_trace.CALLERS.values() if facts[f"calls_{c}"])
     print(f"{out}: {len(calls)} calls ({shown}), the inputs beside it (.calls.csv, .lists.csv)")
     if pending is not None and root is not None and held.port is not None:
-        version = run_records_cli.UNKNOWN
+        version = UNKNOWN
         try:
             with PineClient(held.port) as pine:
                 version = run_records_cli.pcsx2_version(pine)
