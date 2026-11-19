@@ -239,6 +239,7 @@ TEST_CASE("the front-end bindings reach the host", "[script_bindings]") {
 
 TEST_CASE("stubs return their defaults; recording stubs keep their arguments; strings reach the table",
           "[script_bindings]") {
+    // Expected: scripting.md#coneys-implementation, Coney's own behaviour (the stubs' documented defaults)
     Harness h;
     const double firstHandle = h.first("ObjSpawn", {str("object")}).number().value_or(-1.0);
     CHECK(firstHandle >= 1.0);
