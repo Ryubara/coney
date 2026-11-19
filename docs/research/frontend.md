@@ -1289,11 +1289,13 @@ logos); the column is 3 (4 with 16:9) under flag `0x02`, else 2 progressive, els
 (0.36, 0.947) and (0.36, 0.744). Bytes 1, 2, 8, 9, 18 and 20 share one point. Coney keeps both tables
 (`repo:src/gui/mission_select_areas.cpp`).
 
-**The marker's pulse** (`0x001be198`; confirmed (code)): when a new area is shown its pulse starts shrinking; each
-400 ms (`+0x698`) the way turns. Its size is `0x0050e888` × f, f going from 2 to 1 or from 1 to 2 over the 400 ms
+**The marker's pulse** (`0x001be198`; confirmed (code)): when a new area is shown its pulse starts shrinking; each 400
+ms (`+0x698`) the way turns. Its size is `0x0050e888` × f, f going from 2 to 1 or from 1 to 2 over the 400 ms
 (`Math_MapRange`); the halo is 1.55 × that, at the same place, in `LevelRecord_GetAreaColour2` of the area's first
 mission (1 (186, 139, 53), 2 (48, 137, 81), 3 (64, 95, 142), 4 (76, 53, 44)) × the map's grey / 255. The other markers
-keep `0x0050e888`.
+keep `0x0050e888`. The area drawn is the shown one (`+0x580`), which the update takes before its pad pass: the logo, the
+pulsing marker, the halo and the list (`MissionSelect_Render` `0x001be848` draws the menu of `+0x580` too), so an area
+the pad moves to is drawn, and its pulse started, from the next frame (confirmed (code) at both addresses).
 
 **The start and the mode** (confirmed (code) at the cited addresses): the second accept in an open mission sets `+0x69c`
 = 1 and nothing else: the start stamp `+0x6a0` is written only by `MissionSelect_Init`, a 0 (`0x001bd394`, the only

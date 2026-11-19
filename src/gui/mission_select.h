@@ -137,7 +137,8 @@ class MissionSelectScreen : public Widget {
     /// @orig 0x001be130 MissionSelect_OnCommand (MissionSelectHUD.cpp)
     void handle(MenuCommand command, std::uint64_t nowMs);
     /// The frame: until a choice or a cancel, the pad's command, the title of a newly shown area, the markers, the
-    /// pulse and the halo; while a start waits, the choice once the clock is past kStartDelayMs.
+    /// pulse and the halo; while a start waits, the choice once the clock is past kStartDelayMs. It draws the area
+    /// shown before the pad's command, so an area the pad moves to shows from the next frame.
     /// @orig 0x001be198 MissionSelect_UpdateWidget (MissionSelectHUD.cpp)
     void update(const GuiFrame& frame) override;
     /// The map, the logo, the halo, every marker, the title, the area's list and the usage line.
@@ -177,9 +178,11 @@ class MissionSelectScreen : public Widget {
     /// The title.
     [[nodiscard]] const CircledText& title() const { return m_title; }
     /// The entry of mission `index` of the area at the cursor.
-    [[nodiscard]] const CircledText& entry(std::size_t index) const { return *m_entries.at(index); }
-    /// How many entries the list draws.
-    [[nodiscard]] std::size_t drawnEntryCount() const { return m_entries.size(); }
+    [[nodiscard]] const CircledText& entry(std::size_t index) const { return *m_areaEntries.at(m_cursor).at(index); }
+    /// How many entries the list draws: the shown area's.
+    [[nodiscard]] std::size_t drawnEntryCount() const {
+        return m_shown && *m_shown < m_areaEntries.size() ? m_areaEntries.at(*m_shown).size() : 0;
+    }
     /// The marker of area `index`.
     [[nodiscard]] const BaseWidget& marker(std::size_t index) const { return *m_markers.at(index); }
     /// The halo.
@@ -224,8 +227,10 @@ class MissionSelectScreen : public Widget {
     MissionSelectBatches m_batches;
     MissionSelectLayout m_layout;
     std::vector<MissionSelectArea> m_areas;
-    std::vector<std::unique_ptr<BaseWidget>> m_markers;  // widgets are not movable
-    std::vector<std::unique_ptr<CircledText>> m_entries; // the entries of the area at the cursor
+    std::vector<std::unique_ptr<BaseWidget>> m_markers; // widgets are not movable
+    // Each area's entries, as the original keeps a menu per area: the cursor's area is filled when it changes, the
+    // shown area's are drawn.
+    std::vector<std::vector<std::unique_ptr<CircledText>>> m_areaEntries;
     BaseWidget m_map{nullptr, kMapRect};
     BaseWidget m_logo{nullptr, 0};
     BaseWidget m_halo{nullptr, 2};

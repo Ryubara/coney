@@ -111,6 +111,8 @@ void MissionSelectScreen::open(std::vector<MissionSelectArea> areas, std::uint64
     m_missionOpen = false;
     m_refused = false;
     m_cursor = 0;
+    m_areaEntries.clear();
+    m_areaEntries.resize(m_areas.size());
     // The map (grey 144), the gang logo (white, with a shadow) and the halo (rectangle 2, 3 in the other sheet), all
     // placed by each update.
     m_map.setBatch(m_batches.frame);
@@ -152,7 +154,7 @@ void MissionSelectScreen::open(std::vector<MissionSelectArea> areas, std::uint64
 
 void MissionSelectScreen::close() {
     m_open = false;
-    m_entries.clear();
+    m_areaEntries.clear();
     m_markers.clear();
     m_areas.clear();
 }
@@ -163,12 +165,13 @@ void MissionSelectScreen::showArea() {
 }
 
 void MissionSelectScreen::fillArea() {
-    m_entries.clear();
     if (m_cursor >= m_areas.size()) {
         m_list.setup(ScrollingMenuSetup{.visible = 0, .moveCue = kMoveCue, .playCue = m_playCue}, 0);
         return;
     }
     const MissionSelectArea& area = m_areas.at(m_cursor);
+    std::vector<std::unique_ptr<CircledText>>& entries = m_areaEntries.at(m_cursor);
+    entries.clear();
     // An entry per mission: its name after its circled label, the circles in its colour, on a black back (rectangle
     // 1, circles 3, or 2 in the other sheet), Font_Size(0.92), stacked down from below the title by each update.
     for (const MissionSelectMission& mission : area.missions) {
@@ -188,7 +191,7 @@ void MissionSelectScreen::fillArea() {
         entry->setCircled(mission.label);
         entry->setBackColour(graphics::kBlack);
         entry->setCircleColour(mission.circleColour);
-        m_entries.push_back(std::move(entry));
+        entries.push_back(std::move(entry));
     }
     // The area's list keeps its selection (the original keeps a menu per area); every mission shows.
     m_list.setup(ScrollingMenuSetup{.visible = area.missions.size(), .moveCue = kMoveCue, .playCue = m_playCue},
@@ -353,6 +356,9 @@ void MissionSelectScreen::update(const GuiFrame& frame) {
         m_pulseStartMs = frame.timeMs;
         m_title.setText(m_areas.at(m_cursor).name);
     }
+    // The area drawn this frame is the one shown before the pad pass (`+0x580`): an area the pad moves to is drawn,
+    // and its pulse started, from the next frame.
+    const std::size_t shown = m_cursor;
     // The pad: the area menu's d-pad repeats unless the last move was refused.
     if (frame.pad != nullptr) {
         if (m_menuFocused) {
@@ -362,7 +368,7 @@ void MissionSelectScreen::update(const GuiFrame& frame) {
             handle(*command, frame.timeMs);
         }
     }
-    const MissionSelectArea& area = m_areas.at(m_cursor);
+    const MissionSelectArea& area = m_areas.at(shown);
     // The map: its width a GUI width (Coney's reading, as the statistics screen's background) by its height.
     m_map.setup(BaseWidgetSetup{.x = 0.5F,
                                 .y = 0.5F,
@@ -395,10 +401,10 @@ void MissionSelectScreen::update(const GuiFrame& frame) {
     // Every marker at its area's point in the menus' grey; the shown one pulsing, with the halo around it in the
     // area's halo colour × the map's grey.
     for (std::size_t i = 0; i < m_markers.size(); ++i) {
-        const bool shown = i == m_cursor;
+        const bool pulsing = i == shown;
         m_markers.at(i)->setup(BaseWidgetSetup{.x = m_areas.at(i).marker.x,
                                                .y = m_areas.at(i).marker.y,
-                                               .height = m_layout.marker * (shown ? m_pulse : 1.0F),
+                                               .height = m_layout.marker * (pulsing ? m_pulse : 1.0F),
                                                .colour = kMenuGrey});
     }
     // A channel of the halo colour × the map's grey / 255, the fraction dropped (`Float_ToUInt`).
@@ -415,10 +421,12 @@ void MissionSelectScreen::update(const GuiFrame& frame) {
     // entry (the tile's stand-in, #1451).
     float y = m_layout.y + m_layout.textY + m_layout.listGap;
     m_letter.setVisible(false);
-    for (std::size_t i = 0; i < m_entries.size(); ++i) {
-        CircledText& entry = *m_entries.at(i);
+    // The list's focus is the cursor's area's; the shown area differs only on the frame the area menu moved.
+    const std::vector<std::unique_ptr<CircledText>>& entries = m_areaEntries.at(shown);
+    for (std::size_t i = 0; i < entries.size(); ++i) {
+        CircledText& entry = *entries.at(i);
         entry.moveTo(y);
-        entry.setFocused(!m_menuFocused && i == m_list.selected());
+        entry.setFocused(!m_menuFocused && shown == m_cursor && i == m_list.selected());
         entry.update(frame);
         const MissionSelectMission& mission = area.missions.at(i);
         if (mission.open) {
@@ -446,7 +454,7 @@ void MissionSelectScreen::render(const GuiCanvas& canvas) const {
     }
     // The title and the area's list. Coney's stand-in for the open mission's tile is its letter (#1451).
     m_title.render(canvas);
-    for (const std::unique_ptr<CircledText>& entry : m_entries) {
+    for (const std::unique_ptr<CircledText>& entry : m_areaEntries.at(*m_shown)) {
         entry->render(canvas);
     }
     if (m_letter.visible()) {
