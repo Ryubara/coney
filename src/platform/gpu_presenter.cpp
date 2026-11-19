@@ -6,6 +6,8 @@
 
 #include <SDL3/SDL.h>
 
+#include "platform/gpu_renderer.h"
+
 namespace coney::platform {
 
 namespace {
@@ -44,6 +46,8 @@ std::unexpected<Error> failure(std::string what) {
 
 } // namespace
 
+GpuPresenter::GpuPresenter() = default;
+
 std::expected<std::unique_ptr<GpuPresenter>, Error> GpuPresenter::start(const Desc& desc) {
     // The constructor is private, so make_unique cannot reach it. From here on the destructor undoes whatever was made.
     std::unique_ptr<GpuPresenter> presenter(new GpuPresenter());
@@ -72,11 +76,19 @@ std::expected<std::unique_ptr<GpuPresenter>, Error> GpuPresenter::start(const De
     presenter->m_offered.immediate =
         SDL_WindowSupportsGPUPresentMode(presenter->m_device, presenter->m_window, SDL_GPU_PRESENTMODE_IMMEDIATE);
     presenter->choosePresentMode(desc.vsync, desc.fpsCap);
+    // The 2D drawing: without it the window is still shown and cleared, as before the drawing existed.
+    if (auto renderer = GpuRenderer::create(presenter->m_device); renderer) {
+        presenter->m_renderer = std::move(*renderer);
+    } else {
+        presenter->m_drawingProblem = renderer.error().message;
+    }
     return presenter;
 }
 
-// The reverse of start(): the GPU finishes with the swapchain before the window leaves the device.
+// The reverse of start(): the drawing first, then the GPU finishes with the swapchain before the window leaves the
+// device.
 GpuPresenter::~GpuPresenter() {
+    m_renderer.reset();
     if (m_device != nullptr) {
         SDL_WaitForGPUIdle(m_device);
         if (m_claimed) {
@@ -100,6 +112,81 @@ void GpuPresenter::choosePresentMode(bool vsync, std::uint32_t fpsCap) {
     }
 }
 
+GpuPresenter::Presented GpuPresenter::present(const graphics::FrameDescription& frame, graphics::Extent size,
+                                              bool capture) {
+    Presented presented;
+    if (!m_renderer) {
+        presented.shown = clearAndPresent(frame.start().clear);
+        if (capture) {
+            presented.capture = std::unexpected(Error{ErrorCode::PlatformFailure, m_drawingProblem});
+        }
+        return presented;
+    }
+    SDL_GPUCommandBuffer* commands = SDL_AcquireGPUCommandBuffer(m_device);
+    if (commands == nullptr) {
+        if (capture) {
+            presented.capture = failure("acquiring a GPU command buffer");
+        }
+        return presented;
+    }
+    // 1. The frame, drawn into the renderer's own target.
+    SDL_GPUTexture* drawn = m_renderer->record(commands, frame, size);
+    // 2. Onto the window: waits as the present mode says for an image; none comes back while the window cannot show
+    // one, and the frame is drawn all the same, so it can still be read back.
+    SDL_GPUTexture* image = nullptr;
+    Uint32 imageWidth = 0;
+    Uint32 imageHeight = 0;
+    if (SDL_WaitAndAcquireGPUSwapchainTexture(commands, m_window, &image, &imageWidth, &imageHeight) &&
+        image != nullptr) {
+        presented.shown = true;
+        if (drawn != nullptr) {
+            SDL_GPUBlitInfo blit{};
+            blit.source.texture = drawn;
+            blit.source.w = static_cast<Uint32>(size.width);
+            blit.source.h = static_cast<Uint32>(size.height);
+            blit.destination.texture = image;
+            blit.destination.w = imageWidth;
+            blit.destination.h = imageHeight;
+            blit.load_op = SDL_GPU_LOADOP_DONT_CARE;
+            blit.filter = SDL_GPU_FILTER_NEAREST; // the same size, but for a window resized since the frame began
+            SDL_BlitGPUTexture(commands, &blit);
+        } else {
+            // Nothing drawn (an empty frame size): the window black.
+            SDL_GPUColorTargetInfo target{};
+            target.texture = image;
+            target.clear_color = SDL_FColor{0.0F, 0.0F, 0.0F, 1.0F};
+            target.load_op = SDL_GPU_LOADOP_CLEAR;
+            target.store_op = SDL_GPU_STOREOP_STORE;
+            if (SDL_GPURenderPass* pass = SDL_BeginGPURenderPass(commands, &target, 1, nullptr); pass != nullptr) {
+                SDL_EndGPURenderPass(pass);
+            }
+        }
+    }
+    // 3. The read-back: the commands submitted with a fence and waited for, so the copy can be read.
+    if (capture && drawn != nullptr && m_renderer->recordReadBack(commands)) {
+        SDL_GPUFence* fence = SDL_SubmitGPUCommandBufferAndAcquireFence(commands);
+        if (fence == nullptr) {
+            presented.capture = failure("submitting the frame to read it back");
+            return presented;
+        }
+        SDL_WaitForGPUFences(m_device, true, &fence, 1);
+        SDL_ReleaseGPUFence(m_device, fence);
+        std::vector<std::uint8_t> rgba = m_renderer->readBack();
+        if (rgba.empty()) {
+            presented.capture = failure("reading the frame back");
+        } else {
+            presented.capture = std::move(rgba);
+        }
+        return presented;
+    }
+    if (capture) {
+        presented.capture =
+            std::unexpected(Error{ErrorCode::PlatformFailure, "the GPU renderer drew no frame to read"});
+    }
+    SDL_SubmitGPUCommandBuffer(commands);
+    return presented;
+}
+
 bool GpuPresenter::clearAndPresent(graphics::Rgba colour) {
     SDL_GPUCommandBuffer* commands = SDL_AcquireGPUCommandBuffer(m_device);
     if (commands == nullptr) {
@@ -112,7 +199,7 @@ bool GpuPresenter::clearAndPresent(graphics::Rgba colour) {
         SDL_SubmitGPUCommandBuffer(commands);
         return false;
     }
-    // One render pass that only clears: drawing comes with the shaders (renderer.md#order, items 4 and 11).
+    // One render pass that only clears: the stand-in where the 2D drawing could not be made (gpu-renderer.md#capture).
     SDL_GPUColorTargetInfo target{};
     target.texture = image;
     target.clear_color = SDL_FColor{static_cast<float>(colour.r) / 255.0F, static_cast<float>(colour.g) / 255.0F,

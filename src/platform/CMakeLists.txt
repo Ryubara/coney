@@ -30,7 +30,7 @@ target_sources(coney_platform PRIVATE motion_blur_pass.cpp parked_cars.cpp parti
 target_sources(coney_platform PRIVATE frame_pacer.cpp)
 # The GPU renderer's start on SDL3's GPU API: its window, device, swapchain and present modes
 # (docs/engine/renderer.md#migration).
-target_sources(coney_platform PRIVATE gpu_presenter.cpp present_mode.cpp)
+target_sources(coney_platform PRIVATE gpu_presenter.cpp gpu_renderer.cpp present_mode.cpp)
 # The profiler's clock, OpenGL counters and allocation counter, and the GPU's frame time from timer queries
 # (docs/guides/performance.md); `--bench` drives the debug tools' fighter spawner, so it is coney_devtools' below.
 target_sources(coney_platform PRIVATE gpu_timer.cpp perf_probes.cpp)
@@ -39,7 +39,7 @@ target_sources(coney_platform PRIVATE clip_recorder.cpp)
 # Sound output: the SDL3 audio device over the mixer, or the offline pull of test mode (docs/research/sound.md).
 target_sources(coney_platform PRIVATE audio_output.cpp sdl_audio_device.cpp)
 # The trimmed FFmpeg that decodes the Bink movies (docs/guides/building.md#ffmpeg); only src/platform/ sees it.
-target_sources(coney_platform PRIVATE ffmpeg_info.cpp ffmpeg_movie_decoder.cpp movie_screen.cpp)
+target_sources(coney_platform PRIVATE ffmpeg_info.cpp ffmpeg_movie_decoder.cpp movie_screen.cpp pixel_texture.cpp)
 # Failures end the process on stderr, never in a dialog waiting for a click (test runs, CI, agents).
 target_sources(coney_platform PRIVATE error_dialogs.cpp user_folders.cpp)
 # The one game set-up over a disc that every way into a level shares (docs/guides/testing.md#test-through-the-players-path).
@@ -65,6 +65,12 @@ coney_target_defaults(coney_platform)
 target_link_libraries(coney_platform PUBLIC coney_core coney_audio coney_install coney_movies coney_net SDL3::SDL3-static
                                             librw::librw)
 target_link_libraries(coney_platform PRIVATE ffmpeg_bink enet)
+# The GPU renderer's shaders (docs/guides/shaders.md), when the build compiles them: without them it only clears its
+# frames (docs/engine/gpu-renderer.md#capture).
+if(TARGET coney_shaders)
+    target_link_libraries(coney_platform PRIVATE coney_shaders)
+    target_compile_definitions(coney_platform PRIVATE CONEY_GPU_SHADERS=1)
+endif()
 
 # The executables (docs/guides/building.md#debug-tools). With the debug tools, `coney` is main.cpp over them, and
 # `coney_release` is the release build's entry point built beside it, so every build with the tools also links the
@@ -97,6 +103,7 @@ if(CONEY_DEBUG_TOOLS)
         sandbox_play_scenery.cpp
         sandbox_renderer.cpp
         sandbox_viewer_mode.cpp
+        test_card_mode.cpp
         texture_viewer_mode.cpp
         world_edit.cpp)
     coney_target_defaults(coney_devtools)

@@ -9,10 +9,11 @@ system and how it is tested. The building of the rest of the engine is [Building
 ## The shaders {#shaders}
 
 Every `*.hlsl` file in `src/platform/shaders/` is a shader, named `<name>.<stage>.hlsl` with the stage `vert`, `frag` or
-`comp`; its entry point is `main`. `fullscreen.vert.hlsl` and `blit.frag.hlsl` (a full-screen triangle and a texture
-copy) prove the build until the renderer's own shaders come. SDL's GPU API fixes where a shader's resources go, the same
-on every backend: a vertex shader's samplers in `space0` and uniform buffers in `space1`, a fragment shader's in `space2`
-and `space3` (`blit.frag.hlsl` shows it).
+`comp`; its entry point is `main`. `overlay2d.vert.hlsl` and `overlay2d.frag.hlsl` draw the 2D passes
+([Drawing the 2D passes](../engine/gpu-renderer.md#drawing)); `fullscreen.vert.hlsl` and `blit.frag.hlsl` (a
+full-screen triangle and a texture copy) proved the build first and wait for the full-screen passes. SDL's GPU API
+fixes where a shader's resources go, the same on every backend: a vertex shader's samplers in `space0` and uniform
+buffers in `space1`, a fragment shader's in `space2` and `space3` (`blit.frag.hlsl` shows it).
 
 **To add a shader**, add the file. The folder's list is read at every configure and again when a file is added or
 removed, and the build compiles the new file for every format; the tests below check it at once.
@@ -27,10 +28,11 @@ for any one format fails the build with the compiler's own message. A last step 
 
 Its interface is `repo:src/platform/shaders/embedded_shaders.h`: `coney::shaders::allShaders()` and `findShader()`, each
 shader's code per `Format`, its stage, its resource counts and `entryPoint(Format)`, which is `main` except in MSL, where
-SPIRV-Cross renames it `main0` because `main` is not a legal Metal function name. Planned: the renderer creates
-the shader from the format its device accepts. The top `CMakeLists.txt` adds the folder and links `coney_shaders` into
-the game's executables, so every build of the game compiles the shaders; no renderer refers to them yet, so the linker
-keeps none until one does; with `-DCONEY_SHADERS=OFF` (below) there is no `coney_shaders`.
+SPIRV-Cross renames it `main0` because `main` is not a legal Metal function name. The GPU renderer
+(`src/platform/gpu_renderer.cpp`) creates each shader it uses from the first of SPIR-V, DXIL and MSL its device accepts,
+with the counts from the table. The top `CMakeLists.txt` adds the folder before `src/`, and `coney_platform` links
+`coney_shaders` and is compiled with `CONEY_GPU_SHADERS` when it exists, so every build of the game compiles the
+shaders; with `-DCONEY_SHADERS=OFF` (below) there is no `coney_shaders`, and the GPU renderer only clears and presents.
 
 ## The compiler {#compiler}
 
@@ -77,8 +79,8 @@ are longer than Windows' 260 characters; DXC and its submodules come as archives
 the cache.
 
 **To build without it**, configure with `-DCONEY_SHADERS=OFF`: no compiler is fetched or built, no shader is compiled
-and the tests below are not built. That is for a system where the compiler cannot be built; nothing in the game uses the
-shaders yet. CI builds with the shaders on, on all three systems.
+and the tests below are not built. That is for a system where the compiler cannot be built; the GPU renderer then draws
+nothing but each frame's clear colour. CI builds with the shaders on, on all three systems.
 
 ## Tests {#tests}
 

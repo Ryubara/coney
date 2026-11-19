@@ -15,7 +15,7 @@ namespace coney {
 /// NULL device whatever this says.
 enum class RendererKind : std::uint8_t {
     Gl3, ///< librw's GL3 device: a window with an OpenGL 3.3 context, the game's whole picture. The default.
-    Gpu, ///< SDL3's GPU API (Vulkan, Direct3D 12, Metal) with librw opened for data only; clears and presents so far.
+    Gpu, ///< SDL3's GPU API (Vulkan, Direct3D 12, Metal) with librw opened for data only; draws the 2D layers so far.
 };
 
 /// The renderer `name` names, as `--renderer` takes it: `gl3` or `gpu`; nothing for anything else.

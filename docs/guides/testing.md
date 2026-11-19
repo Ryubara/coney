@@ -669,6 +669,16 @@ picture); a pull request that changes no engine file skips the job, and a skippe
 drawn twice, and the second draw is compared with the first: a pinned Mesa that gives the same pixels on every run
 shows 0 pixels over in the log, and the tolerance exists for the rest.
 
+**Both renderers.** A scene that names `renderers = ["gl3", "gpu"]` is drawn by each, GL3 through llvmpipe and the GPU
+renderer (`--renderer gpu`) through lavapipe, Mesa's Vulkan of the same pinned version, as `NAME.gl3.png` and
+`NAME.gpu.png`, and the two are compared with each other by the looser cross-renderer tolerance
+(`cross_channel_tolerance` and `cross_max_share_percent`, the Across renderers row of the [renderer
+design](../engine/renderer.md#comparing)) instead of with a reference: GL3 is the GPU renderer's reference until the
+switch, and GL3's own 2D drawing is held by the draw-stream hashes. These are Coney's 2D [test
+cards](running-viewers.md#test-cards). A run asked for the GPU renderer whose log does not say `renderer: gpu on`
+(no GPU device, so Coney fell back to GL3) fails the job, so the comparison never passes by comparing GL3 with
+itself. The log line `across renderers:` totals them.
+
 The runner image's own Mesa moves with the image, so the drawing runs in a container image of its own
 (`.github/software-pictures/Dockerfile`): the base image is pinned by its **digest**, the package archive by a
 **snapshot date** (every pinned version stays installable), and Mesa and the LLVM that llvmpipe uses by **exact package
@@ -677,9 +687,11 @@ Dockerfile's hash.
 
 What the image needs, and how the job runs it:
 
-- **Its packages:** Mesa's GLX and EGL with the llvmpipe driver and the LLVM it compiles shaders with (pinned),
+- **Its packages:** Mesa's GLX and EGL with the llvmpipe driver, its Vulkan driver lavapipe (`mesa-vulkan-drivers`,
+  the same pinned version, with the Vulkan loader `libvulkan1`) and the LLVM both compile shaders with (pinned),
   `xvfb` and `xauth` for the virtual display, and the X11 and xkb libraries SDL3 opens a window with. Its environment
-  picks llvmpipe (`LIBGL_ALWAYS_SOFTWARE`, `GALLIUM_DRIVER`) and SDL's silent audio driver (`SDL_AUDIODRIVER=dummy`).
+  picks llvmpipe (`LIBGL_ALWAYS_SOFTWARE`, `GALLIUM_DRIVER`), SDL's GPU API on Vulkan (`SDL_GPU_DRIVER=vulkan`) and
+  SDL's silent audio driver (`SDL_AUDIODRIVER=dummy`).
 - **Outside the pin:** `ca-certificates`, with the `openssl` and `libssl3t64` it brings, comes from the base image's
   own source, the live archive, because the snapshot is read over https and the base image has no certificates. It
   only lets apt open the snapshot (every pinned package is checked against the archive's signing key) and plays no

@@ -319,6 +319,24 @@ how to add one are in [The sandbox](sandbox.md).
 build/dev/src/platform/coney --sandbox parkour
 ```
 
+## Test cards {#test-cards}
+
+`--test-card NAME` draws one of Coney's own 2D test cards, with no disc needed: fixed pictures of the 2D drawing every
+renderer must draw alike, made of shapes and of textures Coney generates in code (no game data). CI's
+[software pictures](testing.md#software-pictures) draw each card on both renderers, GL3 and the GPU renderer
+(`--renderer gpu`), and compare the two pictures. A debug tool, in the debug tools' build only
+(`src/platform/test_card_mode.h`).
+
+| Card | What it draws |
+| --- | --- |
+| `shapes` | eight opaque bars, three quads blended by their alpha, a quad too faint for the 2D quads' alpha test (drawn by neither renderer), a wash over the whole view and a square of 8 window pixels in each corner |
+| `textures` | a 16 x 16 checkerboard at its own size, enlarged eight times filtered linearly and to the nearest texel, repeated three times each way, its middle quarter tinted, and an alpha ramp over three coloured bars |
+| `triangles` | a fan of 24 triangles with a colour at each corner, the alpha ramp on triangles tested at a half (its left half dropped) and at 0 (all of it blended), and the checkerboard repeated on triangles |
+
+```sh
+build/dev/src/platform/coney --test-card textures --renderer gpu --frames 3 --render-size 320x224 --screenshot ../../scratch/card.png
+```
+
 ## Reference images {#reference-images}
 
 `--render-references DIR` writes the reference images [the references' images](../references/index.md#images) show

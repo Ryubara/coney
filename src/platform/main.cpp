@@ -100,6 +100,7 @@
 #include "platform/script_patch_command.h"
 #include "platform/sdl_input.h"
 #include "platform/sprite_sheets.h"
+#include "platform/test_card_mode.h"
 #include "platform/texture_dictionary.h"
 #include "platform/texture_viewer_mode.h"
 #include "platform/window.h"
@@ -398,8 +399,8 @@ int main(int argc, char** argv) {
     // --render-references draws offscreen with OpenGL, so its window stays hidden. `--renderer gpu`, or the overrides
     // file's saved Display/Renderer outside test mode, starts the GPU renderer instead of OpenGL
     // (docs/engine/renderer.md#migration); the file is the one loaded in full further down, read here for that one
-    // setting because the renderer starts first. A saved GPU renderer starts GL3 while it draws no menus, with a
-    // warning (docs/engine/gpu-renderer.md#way-back).
+    // setting because the renderer starts first. A saved GPU renderer starts GL3 while it draws no developer overlay,
+    // with a warning (docs/engine/gpu-renderer.md#way-back).
     const bool headless = options->headless || !options->loads.empty();
     const std::string savedSettings =
         options->tunablesFile.value_or(headless ? std::string{} : coney::platform::defaultTunablesPath());
@@ -506,6 +507,7 @@ int main(int argc, char** argv) {
     std::unique_ptr<coney::platform::CharacterViewerMode> characterViewer;
     std::unique_ptr<coney::platform::PlayLevelMode> playLevel;
     std::unique_ptr<coney::platform::SandboxViewerMode> sandboxViewer;
+    std::unique_ptr<coney::platform::TestCardMode> testCard;
     // The glass panes' and doors' sounds, for every level: silent until the sound output starts (below).
     coney::audio::ObjectSounds objectSounds;
     // The game over the disc (platform/game_session.h): the story from boot, the level `--play-level` names and the
@@ -668,6 +670,15 @@ int main(int argc, char** argv) {
         }
         sandboxViewer = std::move(*viewerMode);
         modes.push(*sandboxViewer);
+    } else if (const std::optional<std::string> cardName = options->testCard; cardName) {
+        // One of Coney's own 2D test cards: no disc needed (docs/guides/running-viewers.md#test-cards).
+        auto card = coney::platform::TestCardMode::create(renderer, *cardName);
+        if (!card) {
+            logError(card.error().message);
+            return 1;
+        }
+        testCard = std::move(*card);
+        modes.push(*testCard);
     } else if (wad) {
         // The game from boot (GameSession::startStory(), once the sound exists): the start-up flow as the original's
         // main pushes it (docs/research/boot.md#main).

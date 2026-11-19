@@ -6,9 +6,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <filesystem>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -16,10 +19,14 @@
 #include <catch2/catch_test_macros.hpp>
 #include <rw.h>
 
+#include "graphics/render_device.h"
+#include "graphics/texture_data.h"
+#include "platform/pixel_texture.h"
 #include "platform/present_mode.h"
 #include "platform/render_engine.h"
 #include "platform/texture_dictionary.h"
 #include "support/fixtures.h"
+#include "support/optional_value.h"
 #include "support/rw_fixtures.h"
 
 using coney::platform::RenderBackend;
@@ -181,4 +188,114 @@ TEST_CASE("the GPU renderer claims its window and presents cleared frames where 
     // of those only the bound is checked here, and CI's smoke run checks that a shown window's frames reach the screen.
     CHECK(engine.framesPresented() == 4);
     CHECK(engine.framesShown() <= engine.framesPresented());
+}
+
+namespace {
+
+// The colour of pixel (`x`, `y`) of an RGBA image `width` wide, rows top first.
+coney::graphics::Rgba pixelAt(const std::vector<std::uint8_t>& rgba, int width, int x, int y) {
+    const std::size_t at = ((static_cast<std::size_t>(y) * static_cast<std::size_t>(width)) + x) * 4;
+    return coney::graphics::Rgba{rgba[at], rgba[at + 1], rgba[at + 2], rgba[at + 3]};
+}
+
+// Whether `got` is `want` give or take `slack` in each colour channel (a GPU's blending rounds its own way).
+bool near(coney::graphics::Rgba got, coney::graphics::Rgba want, int slack) {
+    const auto close = [slack](int a, int b) { return a - b <= slack && b - a <= slack; };
+    return close(got.r, want.r) && close(got.g, want.g) && close(got.b, want.b);
+}
+
+// Reads back the PNG a capture wrote, as RGBA rows top first; empty when librw cannot read it.
+std::vector<std::uint8_t> readCapture(const std::string& path, int& width, int& height) {
+    rw::Image* image = rw::readPNG(path.c_str());
+    if (image == nullptr) {
+        return {};
+    }
+    image->convertTo32();
+    width = image->width;
+    height = image->height;
+    std::vector<std::uint8_t> rgba(static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4);
+    for (int y = 0; y < height; ++y) {
+        std::memcpy(&rgba[static_cast<std::size_t>(y) * static_cast<std::size_t>(width) * 4],
+                    image->pixels + (static_cast<std::ptrdiff_t>(y) * image->stride),
+                    static_cast<std::size_t>(width) * 4);
+    }
+    image->destroy();
+    return rgba;
+}
+
+} // namespace
+
+TEST_CASE("the GPU renderer draws a frame's 2D passes and reads the frame back", "[render][renderer][window]") {
+    // Expected: ../engine/gpu-renderer.md#drawing and #capture, Coney's own renderer, drawing what the GL3 renderer
+    // draws: the window black round the logical screen and the logical screen in the frame's colour (beginFrame()),
+    // flat and textured quads in the 2D pass's blending, the alpha test as GL3 has it (quads at least 10 of 255, a
+    // triangle's own reference: overlay_batch_test.cpp). The window's sizes are the test's own: a 400 x 224 window
+    // holds the 640 x 448 logical screen at half size from x 40 (graphics::fitLogicalScreen(), screen_test.cpp).
+    if (!videoWithADisplay(true, SDL_GPU_SHADERFORMAT_SPIRV | SDL_GPU_SHADERFORMAT_DXIL | SDL_GPU_SHADERFORMAT_MSL)) {
+        SKIP("no display or no GPU device here");
+    }
+    WindowDesc desc;
+    desc.activate = false;
+    desc.hidden = true;
+    desc.width = 400;
+    desc.height = 224;
+    auto started = RenderEngine::start(RenderBackend::Gpu, desc);
+    REQUIRE(started.has_value());
+    RenderEngine& engine = **started;
+    REQUIRE(engine.frameSize().width == 400);
+    const std::string path = (std::filesystem::temp_directory_path() / "coney-gpu-2d-capture.png").string();
+    engine.requestCapture(0, path);
+
+    using coney::graphics::LogicalQuad;
+    using coney::graphics::LogicalVertex;
+    using coney::graphics::Rgba;
+    using coney::graphics::UvRect;
+    const Rgba fill{20, 40, 60, 255};
+    engine.beginFrame(fill);
+    // A red square at the logical screen's top left.
+    const LogicalQuad red{0.0F, 0.0F, 64.0F, 64.0F, UvRect{}, Rgba{255, 0, 0, 255}};
+    engine.drawQuads(nullptr, std::span<const LogicalQuad>(&red, 1));
+    // A 2 x 2 texture enlarged with the nearest texel: red, green over blue, white.
+    coney::platform::PixelTexture texture(coney::graphics::TextureFilter::Nearest);
+    const std::vector<std::uint8_t> texels{255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255};
+    REQUIRE(texture.write(texels, 2, 2));
+    const LogicalQuad textured{320.0F, 0.0F, 128.0F, 128.0F, UvRect{}, coney::graphics::kWhite};
+    engine.drawQuads(&texture, std::span<const LogicalQuad>(&textured, 1));
+    // A white band too faint for the quads' alpha test: nothing drawn.
+    const LogicalQuad faint{0.0F, 256.0F, 640.0F, 64.0F, UvRect{}, Rgba{255, 255, 255, 5}};
+    engine.drawQuads(nullptr, std::span<const LogicalQuad>(&faint, 1));
+    // White triangles at a quarter alpha: dropped by a test at a half, blended over the fill by a test at 0.
+    const auto square = [](float left) {
+        const Rgba white{255, 255, 255, 64};
+        return std::vector<LogicalVertex>{
+            {left, 320.0F, 0.0F, 0.0F, white},          {left + 128.0F, 320.0F, 0.0F, 0.0F, white},
+            {left + 128.0F, 448.0F, 0.0F, 0.0F, white}, {left, 320.0F, 0.0F, 0.0F, white},
+            {left + 128.0F, 448.0F, 0.0F, 0.0F, white}, {left, 448.0F, 0.0F, 0.0F, white}};
+    };
+    engine.drawTriangles(nullptr, square(0.0F), coney::graphics::TriangleStates{false, 0.5F});
+    engine.drawTriangles(nullptr, square(512.0F), coney::graphics::TriangleStates{false, 0.0F});
+    engine.present();
+
+    const auto captured = coney::test::got(engine.capture());
+    REQUIRE(captured.has_value());
+    CHECK(captured->size.width == 400);
+    CHECK(captured->size.height == 224);
+    int width = 0;
+    int height = 0;
+    const std::vector<std::uint8_t> rgba = readCapture(path, width, height);
+    REQUIRE(width == 400);
+    REQUIRE(height == 224);
+    CHECK(near(pixelAt(rgba, width, 10, 100), coney::graphics::kBlack, 0)); // the border
+    CHECK(near(pixelAt(rgba, width, 120, 100), fill, 0));                   // the logical screen
+    CHECK(near(pixelAt(rgba, width, 56, 16), Rgba{255, 0, 0, 255}, 0));     // the red square, window 40 to 72
+    CHECK(near(pixelAt(rgba, width, 216, 16), Rgba{255, 0, 0, 255}, 0));    // the texture's quarters, window 200 to 264
+    CHECK(near(pixelAt(rgba, width, 248, 16), Rgba{0, 255, 0, 255}, 0));
+    CHECK(near(pixelAt(rgba, width, 216, 48), Rgba{0, 0, 255, 255}, 0));
+    CHECK(near(pixelAt(rgba, width, 248, 48), Rgba{255, 255, 255, 255}, 0));
+    CHECK(near(pixelAt(rgba, width, 150, 144), fill, 0)); // the faint band, dropped
+    CHECK(near(pixelAt(rgba, width, 72, 192), fill, 0));  // tested at a half, dropped
+    // Tested at 0: a quarter of white over the fill.
+    CHECK(near(pixelAt(rgba, width, 328, 192), Rgba{79, 94, 109, 255}, 2));
+    std::error_code ignored;
+    std::filesystem::remove(path, ignored);
 }

@@ -4,11 +4,15 @@
 #include <cstdint>
 #include <expected>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "core/error.h"
+#include "graphics/frame_description.h"
 #include "graphics/render_device.h"
+#include "graphics/texture_grid.h"
 #include "platform/present_mode.h"
 
 // SDL's types, declared rather than included, so the engine's header stays free of SDL.
@@ -17,8 +21,11 @@ struct SDL_GPUDevice;
 
 namespace coney::platform {
 
-/// SDL3's GPU device and a window claimed for it: the GPU renderer's start (docs/engine/renderer.md#migration, item 3).
-/// It clears each frame and presents it; drawing comes with the frame description and the shaders (items 4 and 11).
+class GpuRenderer;
+
+/// SDL3's GPU device and a window claimed for it: the GPU renderer's start (docs/engine/renderer.md#migration, item 3),
+/// which draws each frame's 2D passes through its GpuRenderer (gpu_renderer.h, item 11), copies them to the window and
+/// presents them (docs/engine/gpu-renderer.md#drawing).
 ///
 /// The window is Coney's own, made here through SDL3 (not by librw's GL3 device), so the device and swapchain are
 /// claimed on the thread that made it, the main thread, as SDL requires. The device is made first, before the window,
@@ -39,8 +46,10 @@ class GpuPresenter {
 
     /// Makes SDL's GPU device (any driver that takes the shader formats SDL_shadercross makes: SPIR-V, DXIL, MSL; the
     /// `SDL_GPU_DRIVER` environment variable picks one), then the window, hidden (the caller places and shows it),
-    /// claims it for the device and sets the present mode. Fails with ErrorCode::PlatformFailure, the message starting
-    /// `no GPU device` when SDL makes none, with SDL's error text; everything made is destroyed again first.
+    /// claims it for the device, sets the present mode and makes the 2D drawing (GpuRenderer); a drawing SDL refuses
+    /// is no failure: the frames are then only cleared, and drawingProblem() says why. Fails with
+    /// ErrorCode::PlatformFailure, the message starting `no GPU device` when SDL makes none, with SDL's error text;
+    /// everything made is destroyed again first.
     [[nodiscard]] static std::expected<std::unique_ptr<GpuPresenter>, Error> start(const Desc& desc);
 
     ~GpuPresenter();
@@ -62,13 +71,31 @@ class GpuPresenter {
     /// does nothing when it is the mode in use. Call it between frames.
     void choosePresentMode(bool vsync, std::uint32_t fpsCap);
 
+    /// What present() did with a frame.
+    struct Presented {
+        bool shown = false; ///< the swapchain took an image: none while the window is minimised or hidden
+        /// The frame read back, RGBA with rows top first at the frame's size, when present() was asked for it; an Error
+        /// when it could not be.
+        std::optional<std::expected<std::vector<std::uint8_t>, Error>> capture;
+    };
+
+    /// Draws `frame`'s 2D passes at `size` (GpuRenderer), copies the picture onto the window's next swapchain image and
+    /// presents it, waiting for an image to be free as the present mode says; with `capture`, also reads the picture
+    /// back, waiting for the GPU. Without the 2D drawing, the window is cleared to the frame's colour and nothing can
+    /// be read back.
+    Presented present(const graphics::FrameDescription& frame, graphics::Extent size, bool capture);
+
+    /// Why the frames are only cleared (the 2D drawing could not be made: a build without the shaders, or SDL refused
+    /// it); empty while it draws.
+    [[nodiscard]] const std::string& drawingProblem() const { return m_drawingProblem; }
+
     /// Clears the window's next swapchain image to `colour` and presents it, waiting for one to be free as the present
     /// mode says. Returns whether an image was shown: none is while the window is minimised or hidden, which is not an
     /// error.
     bool clearAndPresent(graphics::Rgba colour);
 
   private:
-    GpuPresenter() = default;
+    GpuPresenter();
 
     SDL_GPUDevice* m_device = nullptr;
     SDL_Window* m_window = nullptr;
@@ -76,6 +103,8 @@ class GpuPresenter {
     std::string m_driver;
     PresentModes m_offered;
     PresentMode m_mode = PresentMode::Vsync;
+    std::unique_ptr<GpuRenderer> m_renderer; // the 2D drawing; null when it could not be made
+    std::string m_drawingProblem;            // why m_renderer is null
 };
 
 } // namespace coney::platform

@@ -106,6 +106,10 @@ def test_a_scene_list_without_limits_uses_the_stand_ins(tmp_path: Path) -> None:
         ('[[scene]]\nname = "ok"\nargs = ["--screenshot", "x.png"]\n', "--screenshot"),
         ('[[scene]]\nname = "ok"\nargs = []\nframes = 0\n', "frames"),
         ('[[scene]]\nname = "ok"\nargs = []\nrender_size = "big"\n', "render_size"),
+        ('[[scene]]\nname = "ok"\nargs = ["--renderer", "gpu"]\n', "--renderer"),
+        ('[[scene]]\nname = "ok"\nargs = []\nrenderers = ["gpu"]\n', "renderers"),
+        ('[[scene]]\nname = "ok"\nargs = []\nrenderers = ["gl3", "metal"]\n', "renderers"),
+        ('cross_channel_tolerance = "loose"\n[[scene]]\nname = "ok"\nargs = []\n', "cross_channel_tolerance"),
         ("", "no scenes"),
     ],
 )
@@ -121,11 +125,109 @@ def test_the_shipped_scene_list_is_valid_and_has_a_reference_for_each_scene() ->
     root = find_repo_root(Path(__file__))
     scene_list = picture_scenes.load_scenes(root / picture_scenes.DEFAULT_SCENES)
     assert scene_list.scenes
-    # The job compares for real (no --allow-no-references): every scene has its reference, and no reference is left
-    # over from a scene that is gone.
+    # The job compares for real (no --allow-no-references): every scene compared with a reference has one, and no
+    # reference is left over from a scene that is gone. Scenes drawn on both renderers are compared with each other.
     reference_folder = root / picture_scenes.DEFAULT_REFERENCES
-    listed = {scene.name for scene in scene_list.scenes}
+    listed = {scene.name for scene in scene_list.scenes if not scene.renderers}
     assert {path.stem for path in reference_folder.glob("*.png")} == listed
+
+
+@pytest.mark.reads("engine")
+def test_the_shipped_scene_list_draws_the_test_cards_on_both_renderers() -> None:
+    # Expected: guides/testing.md#software-pictures, the 2D test cards drawn by GL3 and the GPU renderer and compared
+    # by the cross-renderer tolerance, which is looser than one renderer's (engine/renderer.md#comparing).
+    root = find_repo_root(Path(__file__))
+    scene_list = picture_scenes.load_scenes(root / picture_scenes.DEFAULT_SCENES)
+    cards = [scene for scene in scene_list.scenes if scene.renderers]
+    assert {scene.args[1] for scene in cards} == {"shapes", "textures", "triangles"}
+    assert all(scene.renderers == ("gl3", "gpu") and scene.args[0] == "--test-card" for scene in cards)
+    assert scene_list.cross_channel_tolerance >= scene_list.channel_tolerance
+    assert scene_list.cross_max_share_percent >= scene_list.max_share_percent
+
+
+ACROSS_TOML = """
+channel_tolerance = 2
+max_share_percent = 0.1
+cross_channel_tolerance = 8
+cross_max_share_percent = 1.0
+render_size = "20x10"
+
+[[scene]]
+name = "card"
+args = ["--test-card", "shapes"]
+renderers = ["gl3", "gpu"]
+"""
+
+
+class RendererConey(FakeConey):
+    """FakeConey that logs which renderer it started, as Coney's run log does, and draws in a colour per renderer."""
+
+    def __init__(self, gpu_colour: tuple[int, int, int, int], gpu_starts: bool = True) -> None:
+        super().__init__(colour_of=lambda name, run: gpu_colour if name.endswith(".gpu") else (100, 100, 100, 255))
+        self.gpu_starts = gpu_starts
+
+    def __call__(self, command: Sequence[str], **options: object) -> subprocess.CompletedProcess[str]:
+        done = super().__call__(command, **options)
+        asked = command[command.index("--renderer") + 1] if "--renderer" in command else "gl3"
+        started = "gpu on vulkan" if asked == "gpu" and self.gpu_starts else "gl3"
+        return subprocess.CompletedProcess(done.args, done.returncode, f"renderer: {started}\n", "")
+
+
+def test_a_scene_on_both_renderers_is_drawn_with_each_and_compared_across(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    path = tmp_path / "s.toml"
+    path.write_text(ACROSS_TOML)
+    # 5 of 255 apart: over one renderer's 2, within the 8 across renderers.
+    fake = RendererConey(gpu_colour=(105, 100, 100, 255))
+    code = picture_scenes.run_scenes(
+        path, coney=["coney"], references=tmp_path / "ref", out=tmp_path / "out", runner=fake
+    )
+    assert code == 0
+    gl3, gpu = fake.commands
+    assert gl3[gl3.index("--renderer") + 1] == "gl3"
+    assert gpu[gpu.index("--renderer") + 1] == "gpu"
+    assert (tmp_path / "out" / "card.gl3.png").is_file()
+    assert (tmp_path / "out" / "card.gpu.png").is_file()
+    out = capsys.readouterr().out
+    assert "card: gpu against gl3: 0 of 200 pixels over 8" in out
+    assert "across renderers:" in out
+
+
+def test_a_scene_past_the_cross_renderer_limit_fails(tmp_path: Path) -> None:
+    path = tmp_path / "s.toml"
+    path.write_text(ACROSS_TOML)
+    fake = RendererConey(gpu_colour=(140, 100, 100, 255))
+    code = picture_scenes.run_scenes(
+        path, coney=["coney"], references=tmp_path / "ref", out=tmp_path / "out", runner=fake
+    )
+    assert code == 1
+
+
+def test_a_gpu_run_that_fell_back_to_gl3_fails_naming_the_scene(tmp_path: Path) -> None:
+    path = tmp_path / "s.toml"
+    path.write_text(ACROSS_TOML)
+    fake = RendererConey(gpu_colour=(100, 100, 100, 255), gpu_starts=False)
+    with pytest.raises(ConfigError, match=r"card: asked for the GPU renderer"):
+        picture_scenes.run_scenes(path, coney=["coney"], references=tmp_path / "ref", out=tmp_path / "out", runner=fake)
+
+
+def test_only_draws_the_scenes_it_names(tmp_path: Path, scenes_file: Path) -> None:
+    fake = FakeConey()
+    code = picture_scenes.run_scenes(
+        scenes_file,
+        coney=["coney"],
+        references=references(tmp_path / "ref"),
+        out=tmp_path / "out",
+        runner=fake,
+        only=["second"],
+    )
+    assert code == 0
+    assert len(fake.commands) == 1
+    with pytest.raises(ConfigError, match="no scene named nope"):
+        picture_scenes.run_scenes(
+            scenes_file, coney=["coney"], references=tmp_path / "ref", out=tmp_path / "out", runner=fake, only=["nope"]
+        )
 
 
 def test_every_scene_is_drawn_with_its_arguments_and_compared(

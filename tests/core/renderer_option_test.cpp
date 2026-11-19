@@ -50,12 +50,11 @@ TEST_CASE("the renderer option takes gl3 or gpu and refuses anything else", "[op
     CHECK(coney::usageText().find("--renderer gl3|gpu") != std::string_view::npos);
 }
 
-TEST_CASE("the GPU renderer needs a window and reads no frame back", "[options][renderer]") {
+TEST_CASE("the GPU renderer needs a window and records no clip or reference render", "[options][renderer]") {
     // Expected: ../engine/gpu-renderer.md#choice, Coney's own option
-    // It opens a window of its own, so not headless; it only clears and presents so far, so nothing reads its frames.
+    // It opens a window of its own, so not headless; it hands no frame to the clip recorder and draws no reference
+    // renders, which are GL3's offscreen.
     CHECK_FALSE(parse(std::array<std::string_view, 3>{"--renderer", "gpu", "--headless"}).has_value());
-    CHECK_FALSE(parse(std::array<std::string_view, 6>{"--renderer", "gpu", "--frames", "1", "--screenshot", "a.png"})
-                    .has_value());
     CHECK_FALSE(parse(std::array<std::string_view, 4>{"--renderer", "gpu", "--record", "scratch/task/clips/a.mp4"})
                     .has_value());
     CHECK_FALSE(parse(std::array<std::string_view, 6>{"--renderer", "gpu", "--disc", "x", "--render-references", "out"})
@@ -65,6 +64,32 @@ TEST_CASE("the GPU renderer needs a window and reads no frame back", "[options][
     auto refused = parse(std::array<std::string_view, 3>{"--renderer", "gpu", "--headless"});
     REQUIRE_FALSE(refused.has_value());
     CHECK(refused.error().message.find("--renderer gpu") != std::string::npos);
+}
+
+TEST_CASE("the GPU renderer takes a screenshot of the last frame", "[options][renderer]") {
+    // Expected: ../engine/gpu-renderer.md#capture, Coney's own option: it reads its frames back since it draws the 2D
+    // layers, so the software pictures draw the test cards on both renderers.
+    auto shot = parse(std::array<std::string_view, 6>{"--renderer", "gpu", "--frames", "3", "--screenshot", "a.png"});
+    REQUIRE(shot.has_value());
+    CHECK(shot->renderer == std::optional<coney::RendererKind>(coney::RendererKind::Gpu));
+    CHECK(shot->screenshotPath == std::optional<std::string>("a.png"));
+}
+
+TEST_CASE("the test card option takes a card's name and needs no disc", "[options][renderer][test-card]") {
+    // Expected: ../guides/running-viewers.md#test-cards, Coney's own option: the cards are Coney's own drawing.
+    auto card = parse(std::array<std::string_view, 6>{"--test-card", "shapes", "--frames", "3", "--renderer", "gpu"});
+    REQUIRE(card.has_value());
+    CHECK(card->testCard == std::optional<std::string>("shapes"));
+    CHECK_FALSE(parse(std::array<std::string_view, 1>{"--test-card"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--test-card", "shapes", "--test-card", "textures"}).has_value());
+    // One picture at a time: not with another mode.
+    CHECK_FALSE(parse(std::array<std::string_view, 3>{"--test-card", "shapes", "--sandbox"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 6>{"--test-card", "shapes", "--disc", "x", "--play-level", "level1"})
+                    .has_value());
+    // A debug tool: not in a player's build.
+    const std::array<std::string_view, 2> args{"--test-card", "shapes"};
+    CHECK_FALSE(parseOptions(std::span<const std::string_view>(args), OptionSet::Player).has_value());
+    CHECK(coney::usageText().find("--test-card NAME") != std::string_view::npos);
 }
 
 TEST_CASE("the release build takes the renderer option", "[options][renderer]") {

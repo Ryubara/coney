@@ -36,8 +36,9 @@ RendererChoice chooseRenderer(std::optional<RendererKind> option, RendererKind s
 }
 
 std::string_view savedGpuRefusedWarning() {
-    return "the overrides file saves Display/Renderer = 1, but the GPU renderer draws no menus yet, so this run draws "
-           "with GL3; start it with --renderer gpu, or set Display/Renderer back to 0 "
+    return "the overrides file saves Display/Renderer = 1, but the GPU renderer draws no developer overlay yet, so "
+           "this "
+           "run draws with GL3; start it with --renderer gpu, or set Display/Renderer back to 0 "
            "(docs/engine/gpu-renderer.md#way-back)";
 }
 

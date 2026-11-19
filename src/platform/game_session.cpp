@@ -133,16 +133,15 @@ GameSession::GameSession(RenderEngine& renderer, GameModeStack& stack, const io:
     m_flow->levelFlow().setScenes([this] { return makeScenes(); }, &m_flow->context());
 
     // The movie player (docs/research/movies.md#coneys-implementation): every movie the flow asks for, drawn when the
-    // renderer draws pixels, its sound on the mixer once the sound is attached.
-    if (renderer.drawsPixels()) {
-        m_movieScreen.emplace();
-    }
+    // renderer draws the 2D layers (a librw raster for GL3, pixels for the GPU renderer), its sound on the mixer once
+    // the sound is attached.
+    m_movieScreen = makeMovieScreen(renderer.backend());
     movies::MovieSettings movieSettings;
-    movieSettings.present = renderer.drawsPixels();
+    movieSettings.present = m_movieScreen != nullptr;
     movieSettings.skipAll = settings.skipMovies;
     movieSettings.subtitlesOn = [this] { return m_flow->state().subtitles; };
-    m_movieMode.emplace(stack, renderer, discMovieOpener(wad.disc()), m_movieScreen ? &*m_movieScreen : nullptr,
-                        nullptr, std::move(movieSettings), m_log);
+    m_movieMode.emplace(stack, renderer, discMovieOpener(wad.disc()), m_movieScreen.get(), nullptr,
+                        std::move(movieSettings), m_log);
     m_movieMode->setCaptionSource(movies::wadCaptionSource(wad, [this] { return m_flow->state().language; }));
     if (auto font = loadSheet(gui::kBigFontSheet).and_then(graphics::Font::fromSheet); font) {
         m_captionFont.emplace(std::move(*font));

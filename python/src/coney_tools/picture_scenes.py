@@ -10,6 +10,12 @@ Mesa's llvmpipe as the OpenGL driver under a virtual display (`--launcher` puts 
 same command compares against the references or, with `--update`, replaces them. `--repeat` draws each scene again
 and compares the repeats with the first, which is how the tolerance is measured from repeated captures of one build.
 
+A scene that names `renderers` (Coney's 2D test cards: `["gl3", "gpu"]`) is drawn once with each (`--renderer`), as
+NAME.gl3.png and NAME.gpu.png, and the pictures are compared with each other by the list's looser cross-renderer
+tolerance instead of with a reference: the GPU renderer against GL3, its reference until the switch. A run that was
+asked for the GPU renderer and drew with GL3 (no GPU device: Coney falls back and says so) fails, so a comparison never
+passes by comparing GL3 with itself.
+
 The scene list's format and the whole check: docs/guides/coney-tools-picture.md#picture.
 
 Research: docs/engine/renderer.md#comparing
@@ -41,28 +47,38 @@ RUN_TIMEOUT_SECONDS = 180
 _NAME = re.compile(r"[a-z0-9][a-z0-9_-]*")
 _SIZE = re.compile(r"[1-9][0-9]*x[1-9][0-9]*")
 #: Options the list sets itself, so a scene's `args` may not.
-_OWN_OPTIONS = ("--screenshot", "--frames", "--render-size")
+_OWN_OPTIONS = ("--screenshot", "--frames", "--render-size", "--renderer")
+#: The renderers a scene may name, as `coney --renderer` takes them.
+RENDERERS = ("gl3", "gpu")
+#: What Coney's run log says when the GPU renderer started (platform/game_run.cpp, startRenderer()).
+_GPU_STARTED = re.compile(r"renderer: gpu on \S+")
 
 Runner = Callable[..., "subprocess.CompletedProcess[str]"]
 
 
 @dataclass(frozen=True)
 class Scene:
-    """One scene: a name (the picture's file name), Coney's arguments, the frames to run and the picture's size."""
+    """One scene: a name (the picture's file name), Coney's arguments, the frames to run and the picture's size.
+
+    `renderers` is empty for a scene compared with its reference, drawn with the renderer Coney chooses; otherwise the
+    renderers it is drawn with, the first the one the others are compared with."""
 
     name: str
     args: tuple[str, ...]
     frames: int
     render_size: str
+    renderers: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
 class SceneList:
-    """The scenes of a list and the tolerance they are compared with."""
+    """The scenes of a list, the tolerance they are compared with, and the looser one across renderers."""
 
     scenes: tuple[Scene, ...]
     channel_tolerance: int
     max_share_percent: float
+    cross_channel_tolerance: int = picture_compare.DEFAULT_CHANNEL_TOLERANCE
+    cross_max_share_percent: float = picture_compare.DEFAULT_MAX_SHARE_PERCENT
 
 
 def load_scenes(path: Path) -> SceneList:
@@ -78,6 +94,11 @@ def load_scenes(path: Path) -> SceneList:
     if not isinstance(tolerance, int) or isinstance(tolerance, bool):
         raise ConfigError(f"{path}: channel_tolerance must be a whole number")
     picture_compare.check_limits(tolerance, share)
+    cross_tolerance = data.get("cross_channel_tolerance", tolerance)
+    cross_share = float(data.get("cross_max_share_percent", share))
+    if not isinstance(cross_tolerance, int) or isinstance(cross_tolerance, bool):
+        raise ConfigError(f"{path}: cross_channel_tolerance must be a whole number")
+    picture_compare.check_limits(cross_tolerance, cross_share)
     default_frames = data.get("frames", DEFAULT_FRAMES)
     default_size = data.get("render_size", DEFAULT_RENDER_SIZE)
     scenes: list[Scene] = []
@@ -89,7 +110,7 @@ def load_scenes(path: Path) -> SceneList:
             raise ConfigError(f"{path}: scene {name} is listed twice")
     if not scenes:
         raise ConfigError(f"{path}: no scenes ([[scene]] tables)")
-    return SceneList(tuple(scenes), tolerance, share)
+    return SceneList(tuple(scenes), tolerance, share, cross_tolerance, cross_share)
 
 
 def _scene(path: Path, index: int, entry: object, default_frames: object, default_size: object) -> Scene:
@@ -112,7 +133,15 @@ def _scene(path: Path, index: int, entry: object, default_frames: object, defaul
     size = entry.get("render_size", default_size)
     if not isinstance(size, str) or not _SIZE.fullmatch(size):
         raise ConfigError(f"{where} ({name}): render_size must look like 320x224")
-    return Scene(name, tuple(args), frames, size)
+    renderers = entry.get("renderers", [])
+    if (
+        not isinstance(renderers, list)
+        or not all(isinstance(item, str) and item in RENDERERS for item in renderers)
+        or len(set(renderers)) != len(renderers)
+        or len(renderers) == 1
+    ):
+        raise ConfigError(f"{where} ({name}): renderers must be two or more of {', '.join(RENDERERS)}, each once")
+    return Scene(name, tuple(args), frames, size, tuple(renderers))
 
 
 def _text(output: str | bytes | None) -> str:
@@ -127,11 +156,21 @@ def _tail(output: str) -> str:
     return "".join(f"\n    {line}" for line in output.strip().splitlines()[-5:])
 
 
-def _draw(scene: Scene, coney: Sequence[str], target: Path, runner: Runner, cwd: Path | None, timeout: float) -> None:
+def _draw(
+    scene: Scene,
+    coney: Sequence[str],
+    target: Path,
+    runner: Runner,
+    cwd: Path | None,
+    timeout: float,
+    renderer: str | None = None,
+) -> None:
     """Run Coney on one scene so that it writes `target`; ConfigError when it fails, hangs or draws nothing.
 
-    Coney's output (standard output, then standard error) is kept beside the picture as NAME.log, whatever the run's
-    end, so the job's artifact holds the log of a scene that failed or hung as well as of one that drew."""
+    With `renderer` the run asks for it (`--renderer`), and a run asked for the GPU renderer whose log does not say it
+    started fails. Coney's output (standard output, then standard error) is kept beside the picture as NAME.log,
+    whatever the run's end, so the job's artifact holds the log of a scene that failed or hung as well as of one that
+    drew."""
     target.parent.mkdir(parents=True, exist_ok=True)
     target.unlink(missing_ok=True)
     log = target.with_suffix(".log")
@@ -144,6 +183,7 @@ def _draw(scene: Scene, coney: Sequence[str], target: Path, runner: Runner, cwd:
         scene.render_size,
         "--screenshot",
         str(target),
+        *(["--renderer", renderer] if renderer else []),
     ]
     try:
         done = runner(command, capture_output=True, text=True, timeout=timeout, check=False, cwd=cwd)
@@ -170,6 +210,11 @@ def _draw(scene: Scene, coney: Sequence[str], target: Path, runner: Runner, cwd:
         raise ConfigError(
             f"scene {scene.name}: coney ended well but wrote no picture at {target}; its output is in {log}"
         )
+    if renderer == "gpu" and not _GPU_STARTED.search(output):
+        raise ConfigError(
+            f"scene {scene.name}: asked for the GPU renderer, but coney's log does not say it started (no GPU device, "
+            f"so it drew with GL3?); its output is in {log}" + _tail(output)
+        )
 
 
 def run_scenes(
@@ -185,13 +230,16 @@ def run_scenes(
     channel_tolerance: int | None = None,
     max_share_percent: float | None = None,
     timeout: float = RUN_TIMEOUT_SECONDS,
+    only: Sequence[str] = (),
 ) -> int:
     """Draw every scene, compare it with its reference and print the counts; 0 when all pass, 1 when one does not.
 
     `coney` is the command that starts Coney, with any launcher before it. The drawn pictures are left in `out`.
     With `repeat` above 1 each scene is drawn that many times and every repeat is compared with the first draw. With
     `update` the references are replaced by what was drawn, after the counts against the old ones are printed (the
-    pull request that moves the Mesa pin reports them), and a missing reference is made.
+    pull request that moves the Mesa pin reports them), and a missing reference is made. A scene that names
+    `renderers` is drawn with each and its pictures compared with each other by the cross-renderer tolerance; it has no
+    reference, so `update` leaves it alone. `only` draws just the scenes it names (all when empty).
 
     `cwd` is the folder Coney runs in: the repository root, so the scene list's relative paths mean the same from
     anywhere. With `allow_no_references` a references folder with no picture at all is the bootstrap, before the first
@@ -207,16 +255,54 @@ def run_scenes(
         raise ConfigError("--repeat must be at least 1")
     if timeout <= 0:
         raise ConfigError("--timeout must be more than 0 seconds")
+    unknown = sorted(set(only) - {scene.name for scene in scene_list.scenes})
+    if unknown:
+        raise ConfigError(f"no scene named {', '.join(unknown)} in {scenes_path}")
+    chosen = [scene for scene in scene_list.scenes if not only or scene.name in only]
     run = runner if runner is not None else subprocess.run
     # Coney runs in `cwd`, so the picture's path must not depend on it.
     out = out.resolve()
     bootstrap = allow_no_references and not update and not any(references.glob("*.png"))
     results: list[picture_compare.PictureResult] = []
     repeats: list[picture_compare.PictureResult] = []
+    across: list[picture_compare.PictureResult] = []
+    referenced = 0
     updated = 0
-    for scene in scene_list.scenes:
-        drawn = out / f"{scene.name}.png"
-        _draw(scene, coney, drawn, run, cwd, timeout)
+    for scene in chosen:
+        # The pictures this scene draws: its own, or one per renderer.
+        pictures: list[tuple[str, str | None]] = [
+            (f"{scene.name}.{renderer}.png", renderer) for renderer in scene.renderers
+        ] or [(f"{scene.name}.png", None)]
+        for file_name, renderer in pictures:
+            drawn = out / file_name
+            _draw(scene, coney, drawn, run, cwd, timeout, renderer)
+            for again in range(2, repeat + 1):
+                repeated = out / "repeats" / str(again) / file_name
+                _draw(scene, coney, repeated, run, cwd, timeout, renderer)
+                same = picture_compare.compare_arrays(
+                    f"repeat {again} of {drawn.name}",
+                    picture_compare.load_picture(drawn),
+                    picture_compare.load_picture(repeated),
+                    tolerance,
+                )
+                results.append(same)
+                repeats.append(same)
+                print(same.line(tolerance, share))
+        if scene.renderers:
+            # Each renderer against the first, by the looser tolerance across renderers.
+            first_name = pictures[0][0]
+            for file_name, renderer in pictures[1:]:
+                cross = picture_compare.compare_arrays(
+                    f"{scene.name}: {renderer} against {scene.renderers[0]}",
+                    picture_compare.load_picture(out / first_name),
+                    picture_compare.load_picture(out / file_name),
+                    scene_list.cross_channel_tolerance,
+                )
+                across.append(cross)
+                print(cross.line(scene_list.cross_channel_tolerance, scene_list.cross_max_share_percent))
+            continue
+        referenced += 1
+        drawn = out / pictures[0][0]
         reference = references / f"{scene.name}.png"
         if reference.is_file():
             result = picture_compare.compare_arrays(
@@ -231,31 +317,27 @@ def run_scenes(
         else:
             results.append(picture_compare.PictureResult(drawn.name, problem="no reference"))
             print(results[-1].line(tolerance, share))
-        for again in range(2, repeat + 1):
-            repeated = out / "repeats" / str(again) / f"{scene.name}.png"
-            _draw(scene, coney, repeated, run, cwd, timeout)
-            same = picture_compare.compare_arrays(
-                f"repeat {again} of {drawn.name}",
-                picture_compare.load_picture(drawn),
-                picture_compare.load_picture(repeated),
-                tolerance,
-            )
-            results.append(same)
-            repeats.append(same)
-            print(same.line(tolerance, share))
         if update:
             references.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(drawn, reference)
             updated += 1
     if bootstrap:
         print(
-            f"no references yet: {len(scene_list.scenes)} pictures drawn in {out}, nothing was compared with a "
+            f"no references yet: {referenced} pictures drawn in {out}, nothing was compared with a "
             f"reference; make them from these ({DEFAULT_REFERENCES}, docs/guides/testing.md#software-pictures)"
         )
     if results:
         print(picture_compare.summary_line(results, tolerance, share))
+    if across:
+        print(
+            "across renderers: "
+            + picture_compare.summary_line(
+                across, scene_list.cross_channel_tolerance, scene_list.cross_max_share_percent
+            )
+        )
+    across_ok = all(result.within(scene_list.cross_max_share_percent) for result in across)
     if update:
         # The counts against the old references are a report, not a check; only the repeats of one build can fail.
         print(f"updated {updated} references in {references}")
-        return 0 if all(result.within(share) for result in repeats) else 1
-    return 0 if all(result.within(share) for result in results) else 1
+        return 0 if all(result.within(share) for result in repeats) and across_ok else 1
+    return 0 if all(result.within(share) for result in results) and across_ok else 1
