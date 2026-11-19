@@ -16,6 +16,11 @@
 //  - A renderer that cannot start reports it as an error and leaves the process able to start another. A video driver
 //    with no OpenGL (SDL's "dummy" one) stands in for a machine that cannot make the window or the context.
 //
+// It is slow, never stuck, when the machine is overloaded: it makes about eight windows and OpenGL contexts, and the
+// video driver spins in `SwitchToThread` while it picks a pixel format, which a crowded machine hands out in slices.
+// Its 1.9 s became 40 s on average, and 60 s for one run in twenty, with 24 busy loops and 8 copies of it at once; that
+// is what timed it out at the old 60 s limit (#1365, docs/guides/testing.md#window-test-load).
+//
 // The window checks need a display and an OpenGL 3.3 context; without them the test exits with 77, which ctest reports
 // as skipped.
 
@@ -215,6 +220,9 @@ int displayCount() {
 // CONEY_WINDOW_DISPLAY is cleared first: the check chooses its displays itself, whatever the person or agent running
 // it has set.
 int main() {
+    // Unbuffered, so that a run killed by a timeout has printed the checks it finished: the output is a pipe under
+    // ctest, which holds it back until the process ends, and a stalled run left its log with none of it (#1365).
+    std::setvbuf(stdout, nullptr, _IONBF, 0);
     SDL_UnsetEnvironmentVariable(SDL_GetEnvironment(), "CONEY_WINDOW_DISPLAY");
     // First, so that every window check after it also shows the renderer can start again after a start that failed.
     bool ok = checkStartFailureIsReported();
