@@ -107,9 +107,10 @@ struct DebugServices {
     /// The run log's folder, where the Lighting page's *Dump this frame* writes (docs/guides/run-log.md#outputs); empty
     /// in a run with no log file, which then cannot dump.
     std::filesystem::path runLogFolder;
-    /// The original's light-selection trace given with `--light-trace`. Stub: never read.
+    /// The original's light-selection trace given with `--light-trace` (light_trace.h), which the Lighting page sets
+    /// beside Coney's lights (docs/guides/realtime-lighting.md#lab-built); empty: none loaded.
     std::vector<TraceCall> lightTrace;
-    /// The trace's file name. Stub: never read.
+    /// The trace's file name, for the page; empty with no trace.
     std::string lightTraceName;
 };
 

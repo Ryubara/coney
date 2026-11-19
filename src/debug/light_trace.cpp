@@ -391,13 +391,32 @@ std::string_view traceCallerName(std::uint32_t address) {
     }
 }
 
-// Stub: finds nothing.
-const TraceCall* traceCallNear(std::span<const TraceCall> /*calls*/, std::uint32_t /*caller*/, world::Vec3 /*centre*/) {
-    return nullptr;
+const TraceCall* traceCallNear(std::span<const TraceCall> calls, std::uint32_t caller, world::Vec3 centre) {
+    const TraceCall* best = nullptr;
+    float bestSq = kTraceMatchDistance * kTraceMatchDistance;
+    for (const TraceCall& call : calls) {
+        if (call.caller != caller) {
+            continue;
+        }
+        const float dx = call.sphere.centre.x - centre.x;
+        const float dy = call.sphere.centre.y - centre.y;
+        const float dz = call.sphere.centre.z - centre.z;
+        const float distSq = (dx * dx) + (dy * dy) + (dz * dz);
+        if (distSq <= bestSq && (best == nullptr || distSq < bestSq)) {
+            best = &call;
+            bestSq = distSq;
+        }
+    }
+    return best;
 }
 
-// Stub: empty.
-std::string traceLightText(const TraceLight& /*light*/) { return {}; }
+std::string traceLightText(const TraceLight& light) {
+    if (light.type < 0x80) {
+        return kindName(light.type);
+    }
+    return std::format("{} ({}, {}, {}) r {}", kindName(light.type), light.position.x, light.position.y,
+                       light.position.z, light.radius);
+}
 
 std::vector<TraceLight> replayCall(const TraceCall& call) {
     // 1. One record per distinct light of the call's lists, the same light in two lists (B and C share theirs) once.

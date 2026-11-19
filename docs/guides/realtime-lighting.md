@@ -172,6 +172,13 @@ scripted pad through the input gate and draw it in both front ends (`repo:tests/
   its kind by the sphere's centre (Coney's choice, as the comparison matches atomics). Its lines name where each light
   came from and a point light's score, then the overlapping point lights that were dropped; whether a kept light
   replaced another is not recorded.
+- **The original's trace.** `--light-trace FILE` (with `--play-level`) loads a trace of `coney-tools trace lights`
+  (the selections file, its two inputs files beside it; a trace that cannot be read ends the run) and the item
+  *Original's trace* says how many calls it holds. The Selection group then adds *Original's lights*: the trace's call
+  of the same caller whose sphere centre is nearest the atomic's, within 5 cm (the match of `trace diff`), with its
+  row and tick and whether its lights are Coney's, then each slot's light with Coney's beside it where they differ
+  (kind, position and radius; the same tolerances as the replay). Run Coney at the trace's place
+  (`--camera`, `--freeze-world`) for the atomics to line up.
 - **Layers**: light A, the other ambient and directional lights, point lights, flicker (base colours), the brightness
   and offset, coronas and blob shadows. **Views**: final and prelight only.
 - **Debug draw**: point lights as spheres, corona-only lights as crosses, directional lights as arrows from the light
@@ -184,8 +191,8 @@ scripted pad through the input gate and draw it in both front ends (`repo:tests/
 **Not built yet**, each shown as such on the page: the prelighting layer and the runtime-only, runtime-share,
 saturation and lights-per-atomic views (librw bakes the prelight into the instanced vertex colours, so they wait for
 Coney's shaders, renderer item 22); the sun layer ([#1257](issue:1257)); the Shadows group ([#1259](issue:1259)); the
-original's list beside Coney's and `--light-trace` ([#1252](issue:1252)); the sector under the view's centre; moving
-the view camera to a chosen light (the free camera has no place to set from the menu).
+sector under the view's centre; moving the view camera to a chosen light (the free camera has no place to set from the
+menu).
 
 ## Testing {#testing}
 

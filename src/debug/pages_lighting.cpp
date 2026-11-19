@@ -219,6 +219,14 @@ std::shared_ptr<MenuPage> selectionPage(DebugSession& session) {
         return frame != nullptr && selection != nullptr ? selectionLines(*selection, *frame)
                                                         : std::vector<std::string>{};
     }));
+    // With --light-trace, the original's lights for the same atomic, matched as trace diff matches them.
+    if (!session.services().lightTrace.empty()) {
+        page->add(logItem("Original's lights", [&session] {
+            const graphics::FrameSelection* selection = selectedOf(session);
+            return selection != nullptr ? originalSelectionLines(session.services().lightTrace, *selection)
+                                        : std::vector<std::string>{};
+        }));
+    }
     page->add(watchItem("Sector under the view", [] { return std::string("not built yet"); }));
     return page;
 }
@@ -296,9 +304,17 @@ void addLightingPage(DebugSession& session) {
             page.add(watchItem("Shadows", [] {
                 return std::string("not built yet: the shadow maps (renderer items 28 and 30, #1259)");
             }));
-            page.add(watchItem("Original's trace", [] {
-                return std::string("not built yet: --light-trace and the trace's lists beside Coney's (#1252)");
-            }));
+            page.add(watchItem("Original's trace",
+                               [&session] {
+                                   const DebugServices& services = session.services();
+                                   if (services.lightTrace.empty()) {
+                                       return std::string("none loaded (--light-trace FILE)");
+                                   }
+                                   return std::format("{} calls from {}", services.lightTrace.size(),
+                                                      services.lightTraceName);
+                               }))
+                .withHelp("The original's light selections from coney-tools trace lights; the Selection group shows "
+                          "the original's lights for its atomic");
         },
         "The lighting lab: how a frame is lit (docs/guides/realtime-lighting.md#lab).");
 }

@@ -317,6 +317,9 @@ Three options make a frame that can be laid beside a screenshot of the original 
 - `--freeze-world` (with `--play-level`) stops the world after the first step of play: the scripts, people, cars,
   particles and animation stand still, while the fixed step runs on and the scenery still streams in (and fades in)
   round the camera, so every later frame shows the same picture.
+- `--light-trace FILE` (with `--play-level`) loads the original's light-selection trace (`coney-tools trace lights`)
+  for the Lighting page, which sets the original's lights beside Coney's for the selected atomic
+  ([What is built](realtime-lighting.md#lab-built)).
 
 ```sh
 build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 --checkpoint 1 --skip-movies --freeze-world --camera 75.2,41.1,1.8,0,0,0.7071068,0.7071068,65 --render-size 640x448 --frames 300 --screenshot ../../scratch/l99_view.png

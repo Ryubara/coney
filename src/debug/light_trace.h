@@ -74,15 +74,17 @@ parseLightTrace(std::string_view selections, std::string_view calls, std::string
 /// The name the trace gives the caller at `address` (`human`, `sector`, `object`, `car`, `background`), or `other`.
 [[nodiscard]] std::string_view traceCallerName(std::uint32_t address);
 
-/// How far apart an atomic's sphere centre and a trace call's may be and still be one atomic, metres.
+/// How far apart an atomic's sphere centre and a trace call's may be and still be one atomic, metres: the match of
+/// `trace diff` and the lab's *Original's lights* (docs/guides/realtime-lighting.md#test-selection).
 inline constexpr float kTraceMatchDistance = 0.05F;
 
-/// The call of `calls` from `caller` whose sphere centre is nearest `centre`, within kTraceMatchDistance; null for
-/// none. Stub: finds nothing.
+/// The call of `calls` from `caller` whose sphere centre is nearest `centre` (RenderWare's axes), within
+/// kTraceMatchDistance; null for none. A trace spans several frames, so the first of equally near calls is taken.
 [[nodiscard]] const TraceCall* traceCallNear(std::span<const TraceCall> calls, std::uint32_t caller,
                                              world::Vec3 centre);
 
-/// A light as the lab shows it. Stub: empty.
+/// A light as the lab shows it: its kind, and for a point or spot light its position and radius
+/// (`point (3, 1, 0) r 3`).
 [[nodiscard]] std::string traceLightText(const TraceLight& light);
 
 /// The lights Coney's selection chooses for `call`: a light manager holding each distinct light of the call's lists,

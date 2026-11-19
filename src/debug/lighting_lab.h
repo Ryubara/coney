@@ -83,9 +83,13 @@ struct LightingCounts {
 [[nodiscard]] std::vector<std::string> selectionLines(const graphics::FrameSelection& selection,
                                                       const graphics::LightingFrame& frame);
 
-/// The lights `selection` chose as the original's trace writes them. Stub: none.
+/// The lights `selection` chose as the original's trace writes them (RenderWare's type, radius, colour, position), to
+/// compare with a trace's call.
 [[nodiscard]] std::vector<TraceLight> traceLightsOf(const graphics::FrameSelection& selection);
-/// The *Selection* group's *Original's lights* for `selection`. Stub: none.
+/// The *Selection* group's *Original's lights* for `selection`, from the `--light-trace` calls `trace`: a line naming
+/// the call matched to it (traceCallNear(): the same caller, the nearest sphere centre within 5 cm) and whether its
+/// lights are Coney's, then one line per slot with the original's light and, where it differs, Coney's. One line saying
+/// none matched when no call does.
 [[nodiscard]] std::vector<std::string> originalSelectionLines(std::span<const TraceCall> trace,
                                                               const graphics::FrameSelection& selection);
 
