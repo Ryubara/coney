@@ -13,6 +13,9 @@
 #include "platform/render_engine.h"
 
 struct ImGuiIO;
+struct SDL_GPUCommandBuffer;
+struct SDL_GPUDevice;
+struct SDL_GPUTexture;
 
 namespace coney::platform {
 
@@ -21,10 +24,12 @@ namespace coney::platform {
 /// input, so frames are exactly those of a run without it.
 ///
 /// While a widget has the keyboard or the mouse is over a window, those events stay with the overlay: the window's
-/// Escape does not quit, and the caller turns the keyboard pad off (wantsKeyboard()). Its drawing saves and restores
-/// the OpenGL state librw relies on (Dear ImGui's OpenGL 3 backend does both), so librw's own state cache stays right.
+/// Escape does not quit, and the caller turns the keyboard pad off (wantsKeyboard()). On GL3 its drawing saves and
+/// restores the OpenGL state librw relies on (Dear ImGui's OpenGL 3 backend does both), so librw's own state cache
+/// stays right; on the GPU renderer Dear ImGui's SDL GPU backend draws it into the renderer's frame
+/// (docs/engine/gpu-renderer.md#overlay).
 ///
-/// Only with a window: a headless run has none (the NULL renderer has no OpenGL context). Guide:
+/// Only with a window: a headless run has none (the NULL renderer has no window and no OpenGL context). Guide:
 /// docs/guides/debug-menu.md#the-developer-overlay.
 class ImGuiOverlay {
   public:
@@ -33,9 +38,11 @@ class ImGuiOverlay {
     /// the settings file). Apart from `start`, so the tests set a bare context up the same way.
     static void configureIo(ImGuiIO& io);
 
-    /// Starts Dear ImGui on `renderer`'s window and OpenGL context, over `session`'s model; both must outlive the
-    /// overlay, which must be destroyed before the renderer stops. Fails with ErrorCode::PlatformFailure when the
-    /// renderer has no window or a backend refuses. `iniPath` is where ImGui keeps window places (empty: nowhere).
+    /// Starts Dear ImGui on `renderer`'s window, over `session`'s model, with the backend its renderer takes (OpenGL 3
+    /// on its context for GL3, SDL GPU on its device for the GPU renderer); both must outlive the overlay, which must
+    /// be destroyed before the renderer stops. Fails with ErrorCode::PlatformFailure when the renderer has no window
+    /// (or, for the GPU renderer, no 2D drawing to draw over) or a backend refuses. `iniPath` is where ImGui keeps
+    /// window places (empty: nowhere).
     [[nodiscard]] static std::expected<std::unique_ptr<ImGuiOverlay>, Error>
     start(RenderEngine& renderer, debug::DebugSession& session, std::string iniPath);
 
@@ -49,7 +56,9 @@ class ImGuiOverlay {
     /// true when the overlay took the event: F1, or a key or mouse event while it wants that device.
     bool handleEvent(const void* event);
 
-    /// Draws the overlay over the frame, when shown: for the renderer's present overlay, inside the frame.
+    /// Draws the overlay over the frame, when shown: for the renderer's present overlay, inside the frame. On the GPU
+    /// renderer it only builds Dear ImGui's draw data; the renderer then calls back to record them into its frame
+    /// (RenderEngine::setGpuOverlay()), still before the frame is presented.
     void draw();
 
     /// Whether it is shown.
@@ -67,13 +76,21 @@ class ImGuiOverlay {
   private:
     ImGuiOverlay(debug::DebugSession& session, std::string iniPath);
 
+    /// Records the draw data draw() built into `commands`, in a render pass over `target` that keeps what is there:
+    /// the GPU renderer's callback.
+    void recordGpu(SDL_GPUCommandBuffer* commands, SDL_GPUTexture* target);
+
     ImGuiModelView m_view;
     ImGuiUiScale m_scale;
     std::string m_iniPath; // kept alive for ImGui, which holds only the pointer
     bool m_visible = false;
-    bool m_sdlStarted = false;     // the SDL3 backend is up and must be shut down
-    bool m_glStarted = false;      // the OpenGL 3 backend is up and must be shut down
-    std::uint64_t m_hideAfter = 0; // draws left before showForFrames() hides it; 0: no limit
+    bool m_sdlStarted = false;            // the SDL3 backend is up and must be shut down
+    bool m_glStarted = false;             // the OpenGL 3 backend is up and must be shut down
+    bool m_gpuStarted = false;            // the SDL GPU backend is up and must be shut down
+    bool m_gpuPending = false;            // draw() built draw data the GPU renderer has not recorded yet
+    RenderEngine* m_renderer = nullptr;   // the GPU renderer's engine, whose callback is cleared at destruction
+    SDL_GPUDevice* m_gpuDevice = nullptr; // the GPU backend's device, waited on before the backend stops
+    std::uint64_t m_hideAfter = 0;        // draws left before showForFrames() hides it; 0: no limit
 };
 
 } // namespace coney::platform

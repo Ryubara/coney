@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
     // The renderer: OpenGL in a window, the GPU renderer with `--renderer gpu` (docs/engine/renderer.md#migration;
     // the release build keeps no overrides file), or the headless NULL renderer.
     const coney::RendererKind rendererKind =
-        coney::chooseRenderer(options->renderer, coney::RendererKind::Gl3, coney::isTestMode(*options)).kind;
+        coney::chooseRenderer(options->renderer, coney::RendererKind::Gl3, coney::isTestMode(*options));
     auto engine =
         coney::platform::startRenderer(rendererKind, options->headless, coney::platform::gameWindow(*options));
     if (!engine) {

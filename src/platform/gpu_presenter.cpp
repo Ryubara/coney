@@ -101,6 +101,13 @@ GpuPresenter::~GpuPresenter() {
     }
 }
 
+std::optional<GpuOverlayTarget> GpuPresenter::overlayTarget() const {
+    if (!m_renderer) {
+        return std::nullopt;
+    }
+    return GpuOverlayTarget{m_device, GpuRenderer::targetFormat()};
+}
+
 void GpuPresenter::choosePresentMode(bool vsync, std::uint32_t fpsCap) {
     const PresentMode wanted = platform::choosePresentMode(vsync, fpsCap, m_offered);
     if (wanted == m_mode) {
@@ -129,8 +136,12 @@ GpuPresenter::Presented GpuPresenter::present(const graphics::FrameDescription& 
         }
         return presented;
     }
-    // 1. The frame, drawn into the renderer's own target.
+    // 1. The frame, drawn into the renderer's own target, then whatever draws over the picture (the developer overlay)
+    // into the same target, so the window and a capture both hold it.
     SDL_GPUTexture* drawn = m_renderer->record(commands, frame, size);
+    if (drawn != nullptr && m_overlay) {
+        m_overlay(commands, drawn, size);
+    }
     // 2. Onto the window: waits as the present mode says for an image; none comes back while the window cannot show
     // one, and the frame is drawn all the same, so it can still be read back.
     SDL_GPUTexture* image = nullptr;

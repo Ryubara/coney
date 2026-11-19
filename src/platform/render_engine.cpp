@@ -521,6 +521,16 @@ std::optional<Window> RenderEngine::window() const {
     return Window(m_sdlWindow);
 }
 
+std::optional<GpuOverlayTarget> RenderEngine::gpuOverlayTarget() const {
+    return m_gpu ? m_gpu->overlayTarget() : std::nullopt;
+}
+
+void RenderEngine::setGpuOverlay(GpuOverlayDraw overlay) {
+    if (m_gpu) {
+        m_gpu->setOverlay(std::move(overlay));
+    }
+}
+
 std::pair<void*, void*> RenderEngine::sdlWindowAndContext() const {
     if (m_sdlWindow == nullptr) {
         return {nullptr, nullptr};

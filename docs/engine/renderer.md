@@ -30,7 +30,7 @@ and their shadow source, the performance budget and the order.
 | 3D | librw atomics drawn through librw's default GL3 pipelines and shaders, with Coney's own plugins and render callbacks round them (the world's dual layer and MatFX reader in `world_atomic.cpp`; per-atomic lights in `scene_lighting.cpp`); humans skinned on the GPU by Coney's own librw GL3 pipeline (`character_skin.cpp`: each character's vertices uploaded once, a bone palette set each frame), with CPU skinning kept as a fallback and behind `--cpu-skinning` ([Performance: GPU skinning](../guides/performance.md#gpu-skinning)) | `src/platform/` |
 | 2D | `graphics::RenderDevice` (`src/graphics/render_device.h`), Coney's own interface for quads and triangles in logical pixels; `RenderEngine` implements it by recording each draw into the [frame description](#frame-description), which `Gl3Renderer` draws with librw's Im2D and `GpuRenderer` with SDL3's GPU API | `src/graphics/`, `render_engine.cpp`, `gl3_renderer.cpp`, `gpu_renderer.cpp` |
 | Screen passes | the motion-blur stand-in (`motion_blur_pass.cpp`), the blur pulse and the optional line blend (`RenderEngine::blurScreen`, `setLineBlend`), recorded into the [frame description](#frame-description) and drawn by `Gl3Renderer` by copying the back buffer into a texture | `src/platform/` |
-| Debug overlay | Dear ImGui through its SDL3 and OpenGL 3 backends | `src/platform/imgui_*` |
+| Debug overlay | Dear ImGui through its SDL3 backend and its OpenGL 3 (GL3) or SDL GPU (`gpu`) backend | `src/platform/imgui_*` |
 | Timing | a fixed 1/30 s step; drawing apart from it and blended between the last two steps | [Update and render](../guides/conventions.md#update-and-render) |
 | Measuring | `--bench` and `coney-tools perf bench`, with zones and OpenGL counters | [Performance](../guides/performance.md) |
 
@@ -192,11 +192,11 @@ draw without librw's GL3 device as early as possible:
 1. **The proof** (items 1 and 2). The draw-stream hashes and the picture comparison, so every later step shows that
    the *PS2* picture did not move.
 2. **A start without librw's GL3 device** (item 3, built). `--renderer gl3|gpu` (and `Display/Renderer` in the overrides
-   file, applied at the next start once it draws its own menus; until then a saved 1 starts GL3, see [The way back to
-   GL3](gpu-renderer.md#way-back)): Coney makes the window through SDL3 itself, claims SDL's GPU device and swapchain
-   with the present modes, and opens librw with its NULL device, as headless runs already do, so streams and rasters
-   load and the game runs while the GPU renderer only clears and presents (until item 11 drew the 2D passes). From
-   here on, librw's GL3 device is used only by the GL3 renderer. [The GPU renderer](gpu-renderer.md) says how it is built.
+   file, applied at the next start: [The way back to GL3](gpu-renderer.md#way-back)): Coney makes the window through
+   SDL3 itself, claims SDL's GPU device and swapchain with the present modes, and opens librw with its NULL device, as
+   headless runs already do, so streams and rasters load and the game runs while the GPU renderer only clears and
+   presents (until item 11 drew the 2D passes). From here on, librw's GL3 device is used only by the GL3 renderer.
+   [The GPU renderer](gpu-renderer.md) says how it is built.
 3. **The shader toolchain** (item 4). HLSL sources in `src/platform/shaders/`, compiled at build time by
    SDL_shadercross (zlib; with DXC and SPIRV-Cross, which the build fetches itself, see [Licences](#licences)) into
    SPIR-V, DXIL and MSL, embedded in the executable. A test compiles every shader for every target.
@@ -258,7 +258,8 @@ neither frame draws. Because the camera, the level's background and the humans s
 layers, the world's sectors, the objects and the cars, `Gl3Renderer` draws each part as it is added rather than the
 whole frame at `present()`; once items 9 and 10 move them onto the description too, a frame can be drawn whole, and by
 the SDL3 GPU renderer (item 11). Not in it yet: the texture viewer's `RenderEngine::drawTexture`, which draws a librw
-texture of a texture dictionary and waits for Coney's own texture ids (item 6), and Dear ImGui (item 12).
+texture of a texture dictionary and waits for Coney's own texture ids (item 6). Dear ImGui's `sdlgpu3` backend (item 12)
+draws the developer overlay over the GPU renderer's frame ([The developer overlay](gpu-renderer.md#overlay)).
 
 **Built for the streamed world's sectors (item 7).** A *scene pass* (`ScenePass`) lists 3D draws (`Draw3d`): the mesh
 and its [dual layer](../research/rendering.md#dual) by the asset store's `MeshId`, the frame's matrix, the fade and
@@ -536,8 +537,7 @@ is its `presetValues()`, tested column by column in
   maps [#1222](issue:1222), the gamma ramp [#1216](issue:1216), SMAA [#1219](issue:1219), MSAA
   [#1218](issue:1218) and TAA [#1224](issue:1224); the reflections are filed from the [Realtime lighting
   design](../guides/realtime-lighting.md#reflections). Choosing a preset other than *PS2* sets `Display/Renderer` to
-  1, which the next start refuses with a warning while the GPU renderer draws no developer overlay
-  ([The way back to GL3](gpu-renderer.md#way-back)).
+  1, which the next start takes ([The way back to GL3](gpu-renderer.md#way-back)).
 - **Test mode.** `--headless`, `--load`, `--frames`, `--input-script`, `--screenshot`, `--record`,
   `--render-references` and the disc tests (`coney::test::DiscSession`) pin what drawing reads to *PS2*'s values,
   whatever a player saved (`pinnedDisplayPreset()` in [options.h](repo:src/core/options.h), `DisplaySettings::pin()`).

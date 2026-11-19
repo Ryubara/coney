@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "platform/imgui_overlay.h"
 
+#include <format>
+#include <optional>
+#include <string_view>
 #include <utility>
 
 #include <SDL3/SDL.h>
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl3.h>
+#include <imgui_impl_sdlgpu3.h>
 
 namespace coney::platform {
 
@@ -43,8 +47,16 @@ ImGuiOverlay::ImGuiOverlay(debug::DebugSession& session, std::string iniPath)
 std::expected<std::unique_ptr<ImGuiOverlay>, Error>
 ImGuiOverlay::start(RenderEngine& renderer, debug::DebugSession& session, std::string iniPath) {
     const auto [window, context] = renderer.sdlWindowAndContext();
-    if (window == nullptr || context == nullptr) {
+    const bool gpu = renderer.backend() == RenderBackend::Gpu;
+    if (window == nullptr || (!gpu && context == nullptr)) {
         return fail(ErrorCode::PlatformFailure, "the developer overlay needs a window with an OpenGL context");
+    }
+    // The GPU renderer's overlay draws into its frame, so it needs the 2D drawing that makes one.
+    const std::optional<GpuOverlayTarget> target = gpu ? renderer.gpuOverlayTarget() : std::nullopt;
+    if (gpu && !target) {
+        return fail(ErrorCode::PlatformFailure,
+                    std::format("the developer overlay needs the GPU renderer's 2D drawing ({})",
+                                renderer.gpuDrawingProblem()));
     }
     // The constructor is private, so make_unique cannot reach it.
     std::unique_ptr<ImGuiOverlay> overlay(new ImGuiOverlay(session, std::move(iniPath)));
@@ -56,14 +68,35 @@ ImGuiOverlay::start(RenderEngine& renderer, debug::DebugSession& session, std::s
     overlay->m_view.keepOpenPagesInSettings();
     overlay->m_scale.setup();
     // From here on the destructor undoes whatever started, so an early return cleans up.
-    overlay->m_sdlStarted = ImGui_ImplSDL3_InitForOpenGL(static_cast<SDL_Window*>(window), context);
+    auto* sdlWindow = static_cast<SDL_Window*>(window);
+    overlay->m_sdlStarted =
+        gpu ? ImGui_ImplSDL3_InitForSDLGPU(sdlWindow) : ImGui_ImplSDL3_InitForOpenGL(sdlWindow, context);
     if (!overlay->m_sdlStarted) {
         return fail(ErrorCode::PlatformFailure, "Dear ImGui's SDL3 backend did not start");
     }
-    // Its default GLSL version (130, 150 on macOS) suits librw's OpenGL 3.3 core context.
-    overlay->m_glStarted = ImGui_ImplOpenGL3_Init(nullptr);
-    if (!overlay->m_glStarted) {
-        return fail(ErrorCode::PlatformFailure, "Dear ImGui's OpenGL 3 backend did not start");
+    if (gpu) {
+        // Drawn into the renderer's own target, whose format and device it names (not the swapchain's).
+        ImGui_ImplSDLGPU3_InitInfo info;
+        info.Device = target->device;
+        info.ColorTargetFormat = static_cast<SDL_GPUTextureFormat>(target->colourFormat);
+        info.MSAASamples = SDL_GPU_SAMPLECOUNT_1;
+        overlay->m_gpuStarted = ImGui_ImplSDLGPU3_Init(&info);
+        if (!overlay->m_gpuStarted) {
+            return fail(ErrorCode::PlatformFailure, "Dear ImGui's SDL GPU backend did not start");
+        }
+        overlay->m_gpuDevice = target->device;
+        // The renderer calls back inside present(), after the frame's 2D passes.
+        overlay->m_renderer = &renderer;
+        ImGuiOverlay* raw = overlay.get();
+        renderer.setGpuOverlay([raw](SDL_GPUCommandBuffer* commands, SDL_GPUTexture* drawn, graphics::Extent) {
+            raw->recordGpu(commands, drawn);
+        });
+    } else {
+        // Its default GLSL version (130, 150 on macOS) suits librw's OpenGL 3.3 core context.
+        overlay->m_glStarted = ImGui_ImplOpenGL3_Init(nullptr);
+        if (!overlay->m_glStarted) {
+            return fail(ErrorCode::PlatformFailure, "Dear ImGui's OpenGL 3 backend did not start");
+        }
     }
     // The settings are read now, not at the first frame, so the saved scale choice is known before the first frame is
     // sized (Dear ImGui does not read them again).
@@ -75,6 +108,14 @@ ImGuiOverlay::start(RenderEngine& renderer, debug::DebugSession& session, std::s
 
 // Undoes whatever start() got as far as, in reverse order, so an early failure leaves nothing running.
 ImGuiOverlay::~ImGuiOverlay() {
+    if (m_renderer != nullptr) {
+        m_renderer->setGpuOverlay({});
+    }
+    if (m_gpuStarted) {
+        // The GPU may still be drawing the last frame's overlay from the backend's buffers.
+        SDL_WaitForGPUIdle(m_gpuDevice);
+        ImGui_ImplSDLGPU3_Shutdown();
+    }
     if (m_glStarted) {
         ImGui_ImplOpenGL3_Shutdown();
     }
@@ -113,7 +154,11 @@ void ImGuiOverlay::draw() {
     if (!m_visible) {
         return;
     }
-    ImGui_ImplOpenGL3_NewFrame();
+    if (m_gpuStarted) {
+        ImGui_ImplSDLGPU3_NewFrame();
+    } else {
+        ImGui_ImplOpenGL3_NewFrame();
+    }
     ImGui_ImplSDL3_NewFrame();
     // The display's size is known now (the backend just read the window): size the widgets and the font for it, so a
     // resized window or a new display is followed from the next frame on.
@@ -122,11 +167,37 @@ void ImGuiOverlay::draw() {
     ImGui::NewFrame();
     m_view.draw(kHideLabel);
     ImGui::Render();
-    // The OpenGL 3 backend saves the GL state it changes and restores it afterwards.
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    if (m_gpuStarted) {
+        // Recorded by the renderer's callback, into the frame it is still putting together.
+        m_gpuPending = true;
+    } else {
+        // The OpenGL 3 backend saves the GL state it changes and restores it afterwards.
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    }
     if (m_hideAfter > 0) {
         --m_hideAfter;
         m_visible = m_hideAfter > 0;
+    }
+}
+
+void ImGuiOverlay::recordGpu(SDL_GPUCommandBuffer* commands, SDL_GPUTexture* target) {
+    if (!m_gpuPending) {
+        return;
+    }
+    m_gpuPending = false;
+    ImDrawData* data = ImGui::GetDrawData();
+    if (data == nullptr || data->TotalVtxCount == 0) {
+        return;
+    }
+    // The backend's buffers and textures are uploaded in a copy pass, which cannot be inside the render pass.
+    ImGui_ImplSDLGPU3_PrepareDrawData(data, commands);
+    SDL_GPUColorTargetInfo colour{};
+    colour.texture = target;
+    colour.load_op = SDL_GPU_LOADOP_LOAD; // over the 2D passes
+    colour.store_op = SDL_GPU_STOREOP_STORE;
+    if (SDL_GPURenderPass* pass = SDL_BeginGPURenderPass(commands, &colour, 1, nullptr); pass != nullptr) {
+        ImGui_ImplSDLGPU3_RenderDrawData(data, commands, pass);
+        SDL_EndGPURenderPass(pass);
     }
 }
 

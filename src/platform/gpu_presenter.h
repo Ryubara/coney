@@ -7,12 +7,14 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "core/error.h"
 #include "graphics/frame_description.h"
 #include "graphics/render_device.h"
 #include "graphics/texture_grid.h"
+#include "platform/gpu_overlay.h"
 #include "platform/present_mode.h"
 
 // SDL's types, declared rather than included, so the engine's header stays free of SDL.
@@ -71,6 +73,14 @@ class GpuPresenter {
     /// does nothing when it is the mode in use. Call it between frames.
     void choosePresentMode(bool vsync, std::uint32_t fpsCap);
 
+    /// Where something that draws over the frame (the developer overlay) gets the device and the target's format;
+    /// nothing when the 2D drawing could not be made, since there is then no frame to draw over (drawingProblem()).
+    [[nodiscard]] std::optional<GpuOverlayTarget> overlayTarget() const;
+
+    /// Sets the drawing present() runs over each frame's picture after its 2D passes, before the copy to the window;
+    /// empty for none. The caller clears it before it goes away.
+    void setOverlay(GpuOverlayDraw overlay) { m_overlay = std::move(overlay); }
+
     /// What present() did with a frame.
     struct Presented {
         bool shown = false; ///< the swapchain took an image: none while the window is minimised or hidden
@@ -105,6 +115,7 @@ class GpuPresenter {
     PresentMode m_mode = PresentMode::Vsync;
     std::unique_ptr<GpuRenderer> m_renderer; // the 2D drawing; null when it could not be made
     std::string m_drawingProblem;            // why m_renderer is null
+    GpuOverlayDraw m_overlay;                // drawn over each frame's picture (setOverlay())
 };
 
 } // namespace coney::platform
