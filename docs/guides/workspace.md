@@ -349,7 +349,7 @@ free space before and after.
   holds that commit; a commit made in the checkout itself is on no branch and keeps it.
 * **Deletes `build/`** (generated, ignored by git), and the worktree's folder in the [build root](#build-root) when
   `build_root` is set, from every worktree that is not busy (no live busy file, no build slot held or waited for, no
-  check running) and has not been touched for
+  check, fails-first or detached run going on) and has not been touched for
   `--build-hours` (default `workspace.build_idle_hours`, 24; it is only a rebuild): the newest modification time of
   its tracked and untracked files, of git's `HEAD` for it and of the build folder and the entries one and two levels
   in (a running build writes there). Sources are never touched this way, so it also applies to a worktree with
@@ -398,6 +398,19 @@ with the queue's rules for a dead claim (its process is gone, or it is over four
 made earlier, and reads it again just before each deletion: a stale listing once deleted the build folders of two
 running builds. The same reading tells `coney-tools build` which worktrees hold a build folder, to enforce [the cap
 on them](agents.md#build-cap).
+
+**A second reading, from the unit's own folder.** The queue's record of a run can be missing (a queue folder that could
+not be written, a run started before it recorded itself), and a run keeps no file of the worktree busy for hours: the
+compile has ended and the tests read the build. So `clean` also reads what each unit's scratch folder
+(`scratch/<worktree>/`; a fix task's folder, which works in its parent's worktree, names it in its `unit.json`) says
+about itself ([`live_runs.py`](repo:python/src/coney_tools/live_runs.py)): a `check-progress.json` in the state
+`waiting` or `running` whose process lives and that was written within five minutes (a `task check`), and any
+`*-result.json` (`build-result.json`, `check-result.json`, `fails-first-result.json`) in the state `running` whose
+process started when the record says. A worktree with one is busy exactly as one with an activity is: its build and the
+worktree stay, in every mode, and the dry run names the run (`task check runs in it`). A record of a dead process, of a
+finished run or older than a day protects nothing. `ci run` records itself in the queue too, as `task check` and `orig
+fails-first` do. Tests: `python/tests/test_workspace_clean_runs.py`, one for each of a check's progress file, each kind
+of result file, the busy file and a build folder's lock.
 
 **The busy file.** An agent writes its id into `.coney-busy` in its worktree root as it starts and deletes the file
 when it is done (`echo <id> > .coney-busy`; it is in `.gitignore`). While it exists, `clean` leaves that worktree and

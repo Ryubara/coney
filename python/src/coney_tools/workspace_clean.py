@@ -40,9 +40,11 @@ slot is skipped.
 Who holds a slot is read from the build queue's own claim and ticket files each time (`build_claims.live_worktrees`,
 with the queue's liveness rules), never from a listing kept earlier, and read again just before each deletion: a
 stale listing once deleted the build folders of two running builds. A `task check` or `orig fails-first` that runs
-holds an activity there for its whole run (`build_claims.activity`), so the steps between its builds count as use
-too: the idle test alone once let `--apply` delete the builds of three units whose checks were running. The same
-functions tell `coney-tools build` which worktrees hold a build folder (build_cap.py).
+holds an activity there for its whole run (`build_claims.activity`), so the steps between its builds count as use too:
+the idle test alone once let `--apply` delete the builds of three units whose checks were running. A run the unit's own
+scratch folder records as going on (a progress file, a result file in the state running: `live_runs`) protects its
+worktree in the same way, whether or not the queue names it. The same functions tell `coney-tools build` which worktrees
+hold a build folder (build_cap.py).
 
 **A build root.** With `build_root` set in coney.local.toml a worktree's build tree is `<build_root>/<id>/`
 (build_root.py) rather than its `build/`; `clean` judges, deletes and measures both, and the drive the root is on
@@ -67,7 +69,15 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
-from coney_tools import build_claims, build_root, pcsx2_proc, stale_processes, watched_drives, workspace_clean_fixes
+from coney_tools import (
+    build_claims,
+    build_root,
+    live_runs,
+    pcsx2_proc,
+    stale_processes,
+    watched_drives,
+    workspace_clean_fixes,
+)
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Workspace, load_conventions
 from coney_tools.unit import scratch_folder
@@ -799,17 +809,38 @@ def _claims_dir(workspace: Path, checkout: Path) -> Path:
         return workspace / "scratch" / BUILD_CLAIMS_DIR
 
 
-def live_slots(workspace: Path, checkout: Path) -> Callable[[], set[str]]:
-    """A function that reads, each time it is called, the names of the worktrees in use from the build queue of
-    `checkout`: holding or waiting for a build slot, a check slot or a build folder's lock, or running a `task check`
-    or `orig fails-first` (`build_claims.activity`), whose steps between builds hold no slot."""
-    return lambda: build_claims.live_worktrees(_claims_dir(workspace, checkout))
+def _scratch_of(workspace: Path, checkout: Path) -> Path:
+    """The scratch folder of `checkout` (its `scratch_dir`, else `scratch/` of `workspace`), where each unit's runs
+    record themselves (live_runs.py)."""
+    try:
+        return scratch_folder(checkout)
+    except ConfigError:
+        return workspace / "scratch"
 
 
 def running_checks(workspace: Path, checkout: Path) -> Callable[[], dict[str, list[str]]]:
-    """A function that reads, each time it is called, the checks running in each worktree (`build_claims.activities`)
-    from the build queue of `checkout`."""
-    return lambda: build_claims.activities(_claims_dir(workspace, checkout))
+    """A function that reads, each time it is called, what runs in each worktree: the checks and fails-first runs the
+    build queue names (`build_claims.activities`) and the runs the units' own scratch folders record, a `task check`'s
+    progress file and a detached run's result file (`live_runs.running`), so one lost activity file protects nothing
+    less."""
+
+    def read() -> dict[str, list[str]]:
+        found = build_claims.activities(_claims_dir(workspace, checkout))
+        for name, what in live_runs.running(_scratch_of(workspace, checkout), time.time()).items():
+            known = found.setdefault(name, [])
+            known.extend(item for item in what if item not in known)
+        return found
+
+    return read
+
+
+def live_slots(workspace: Path, checkout: Path) -> Callable[[], set[str]]:
+    """A function that reads, each time it is called, the names of the worktrees in use: holding or waiting for a build
+    slot, a check slot or a build folder's lock, or running a `task check` or `orig fails-first`
+    (`build_claims.live_worktrees`, whose steps between builds hold no slot), or recorded as running by the unit's own
+    scratch folder (`running_checks`)."""
+    running = running_checks(workspace, checkout)
+    return lambda: build_claims.live_worktrees(_claims_dir(workspace, checkout)) | set(running())
 
 
 def default_settings(
