@@ -86,6 +86,7 @@ DeathChain chainOf(const DyingState& dying, const ChainCharacter& character = Ch
 // The clips of `chain` before its loop.
 std::vector<std::uint32_t> clipsOf(const DeathChain& chain) {
     std::vector<std::uint32_t> clips;
+    clips.reserve(chain.steps.size());
     for (const coney::human::DeathStep& step : chain.steps) {
         clips.push_back(step.clip);
     }

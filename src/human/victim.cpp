@@ -189,6 +189,7 @@ void Victim::die(const IncomingHit& hit, const VictimFrame& frame, const DyingSt
     // the loop; the owner knocks it out once no chained clip plays (Fighter::update), where the original's last clip
     // before the loop ends in Human_OnHealthOut.
     std::vector<std::uint32_t> clips;
+    clips.reserve(steps.size());
     for (const DeathStep& step : steps) {
         clips.push_back(step.clip);
     }
