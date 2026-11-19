@@ -69,8 +69,9 @@ original function where its logic lives.
 
 Confirmed (code) at the cited addresses.
 
-`Gangs_Update` (`0x0016d170`, step 4 of [`Humans_Update`](tasks.md#humans-update)), for each gang in use that has
-members:
+`Gangs_Update` (`0x0016d170`, step 4 of [`Humans_Update`](tasks.md#humans-update)), for each gang in use (an exiting
+gang with no one living is skipped); only the tactic's process (step 2, inside step 1's `0x00166708`) also needs
+members and player 1:
 
 1. `0x00166708(gang, 1)`: the player's position and heading cached (1 s) and the time checks.
 2. With a tactic: **`Tactic_Process`** (`0x003067d8`); a non-zero result fires the tactic's Lua callback (vtable

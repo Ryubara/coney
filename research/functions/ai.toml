@@ -5324,6 +5324,11 @@ level = "confirmed-code"
 coney = "src/ai/tactic.h:Tactic::process"
 status = "compared"
 
+[[function.gaps]]
+what = "types 0x16-0x18 and 0x21 do not clear gang +0xd1 and arm +0xd2: Coney builds no spot line to read them"
+relation = "not-ported"
+issue = 648
+
 [[function]]
 address = 0x003067d8
 name = "Tactic_Process"
@@ -5342,11 +5347,6 @@ role = "ends the strategy (`0x00306bd0`), pops every non-player member (`+0x1b0`
 level = "confirmed-code"
 coney = "src/ai/tactic.h:Tactic::finish"
 status = "compared"
-
-[[function.gaps]]
-what = "the strategy is not ended first (Tactic_EndStrategy): no tactic owns one yet"
-relation = "not-ported"
-issue = 337
 
 [[function]]
 address = 0x003068f8
@@ -5499,6 +5499,11 @@ role = "a guard order (kind 1) ending gives the members Melee again"
 level = "confirmed-code"
 coney = "src/ai/tactic_attack.h:TacticAttack::strategyEnded"
 status = "compared"
+
+[[function.gaps]]
+what = "a stand-in guard order's end gives no Melee: it ordered nobody into formation, and the Melee's pop would cut its members' fights"
+relation = "not-ported"
+issue = 339
 
 [[function]]
 address = 0x003081a8

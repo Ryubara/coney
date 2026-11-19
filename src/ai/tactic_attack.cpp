@@ -229,7 +229,7 @@ bool TacticAttack::event(Gang& gang, Brain& member, const BrainEvent& event) {
     switch (event.id) {
     case kEventDamaged:
     case kEventEnemyAdded:
-        // An own member with no fight goal melees, unless an order runs (it has the members' goals).
+        // Melee unless an order runs. Stand-in: a StandInOrder gives no goals, so its members get neither (<= 20 s).
         if (member.gang() == &gang && !member.hasFightGoal() && !strategy()) {
             pushMelee(member);
         }

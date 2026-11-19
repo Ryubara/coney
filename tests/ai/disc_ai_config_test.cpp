@@ -59,7 +59,7 @@ TEST_CASE("level99's scripts configure the sparring Warriors as the runtime read
 
 TEST_CASE("level99's CfgGang calls give the team-up strategies the running original holds", "[ai][disc][teamup]") {
     // Expected: ai-reimpl.md#gang-strategy, confirmed (code)
-    // The bytes of kinds 0 to 8 read in PCSX2 at the config record (+0x73) on 2026-11-18 equal these.
+    // The bytes of kinds 0, 3, 5, 6 and 8 read in PCSX2 at the config record (+0x73) on 2026-11-18 equal these.
     const std::optional<coney::io::Wad> wad = openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set");
