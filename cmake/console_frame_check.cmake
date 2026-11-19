@@ -6,8 +6,11 @@
 #   cmake -DEXE=<coney> -DWORK_DIR=<folder> -P console_frame_check.cmake
 #
 # The runs need a display and OpenGL 3.3: when the run without the bar cannot make its picture, or makes a different one
-# each time (a window nobody sees can leave the frame buffer's pixels undefined, as on a macOS runner with no screen),
-# the check prints `console frame check skipped` (the test's SKIP_REGULAR_EXPRESSION) instead of failing.
+# each time, the check prints `console frame check skipped` (the test's SKIP_REGULAR_EXPRESSION) instead of failing;
+# ctest shows nothing of a skipped test's output in its summary, so the reason (with both hashes) is in the build
+# tree's Testing/Temporary/LastTest.log, or on screen with `ctest -V`. Why a baseline might not repeat is a guess (a
+# window nobody sees leaving the frame buffer's pixels undefined, as maybe on a macOS runner with no screen); the skip
+# is a hypothesis, and a failure with a repeatable baseline is a real difference.
 if(NOT DEFINED EXE OR NOT DEFINED WORK_DIR)
     message(FATAL_ERROR "usage: cmake -DEXE=<coney> -DWORK_DIR=<folder> -P console_frame_check.cmake")
 endif()

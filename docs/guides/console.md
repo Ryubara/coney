@@ -293,5 +293,6 @@ for the preference folder, which would create it; `consoleUiSettings`, tested in
 with F8 not caught). `--console-open N` opens the bar for the
 first N frames, the one way a test-mode run draws it ([The console](running-options.md#console)), and
 `coney.console_bar_leaves_frame` checks that the last frame after it closes is byte-identical to a run without it (a
-check of the debug tools' `coney` only, which reports itself skipped on a machine with no display).
+check of the debug tools' `coney` only, which reports itself skipped on a machine with no display, or where two runs
+without the bar already differ).
 `--capture-dir` comes with the captures ([Off in test mode](studio/console.md#test-mode)).

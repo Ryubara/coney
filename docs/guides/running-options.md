@@ -197,7 +197,7 @@ the game in a window ([The F8 bar](console.md#front-end)). One option is for tes
 opens the bar for the first N frames (1 to 1000000) and then closes it, the one way a test-mode run draws it. The last
 frame of `--frames 60 --console-open 30 --screenshot a.png` is byte-identical to the same run without
 `--console-open`, which `coney.console_bar_leaves_frame` checks (in a build with the debug tools, and skipped on a
-machine with no display). Headless, it does nothing.
+machine with no display, and where two runs without the bar already differ). Headless, it does nothing.
 
 ```sh
 build/dev/src/platform/coney --frames 60 --console-open 30 --screenshot ../../scratch/console-closed.png

@@ -28,7 +28,8 @@ class ConsoleView {
     /// The terminal's window name, and the picker's.
     static constexpr const char* kTerminalWindow = "Terminal###coney-console-terminal";
     static constexpr const char* kPickerWindow = "Commands###coney-console-picker";
-    /// The bar's title, and the console's mark in the release executable (`coney.release.has_console_bar`).
+    /// The bar's title. (The release check `coney.release.has_console_bar` keys on `kTerminalWindow`'s id,
+    /// `coney-console-terminal`: renaming it means changing `cmake/console_bar_marker.cmake`.)
     static constexpr const char* kTitle = "Coney console";
     /// How many candidates show above the line at most.
     static constexpr std::size_t kCandidatesShown = 8;
