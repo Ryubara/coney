@@ -40,6 +40,7 @@ static_assert(kPs2RumbleTail + 12 == SavedProgress::kRumbleBytes);
 constexpr std::uint32_t kSaveMetaLimit = 64 * 1024;
 
 // Writes `value` as a little-endian word at `offset` of the PS2 store.
+// @coney-only the importer writes the Xbox fields into the PS2 store Coney keeps
 void putWord(std::span<std::uint8_t> store, std::size_t offset, std::uint32_t value) {
     for (std::size_t i = 0; i < 4; ++i) {
         store[offset + i] = static_cast<std::uint8_t>((value >> (8 * i)) & 0xFFU);
@@ -77,6 +78,7 @@ std::array<std::uint8_t, SavedProgress::kRumbleBytes> ps2RumbleStore(std::span<c
 }
 
 // The name in a record's eight name bytes: up to the first zero byte.
+// @coney-only the importer's copy of the record's name
 std::string nameOf(std::span<const std::byte> bytes) {
     std::string name;
     for (const std::byte b : bytes) {
@@ -89,6 +91,7 @@ std::string nameOf(std::span<const std::byte> bytes) {
 }
 
 // Whether two names are the same ignoring case, as FATX and the console's folders compare them.
+// @coney-only the importer's name match; the console's file system does it for the game
 bool sameName(std::string_view a, std::string_view b) {
     return std::ranges::equal(a, b, [](char x, char y) {
         return std::tolower(static_cast<unsigned char>(x)) == std::tolower(static_cast<unsigned char>(y));
@@ -96,6 +99,7 @@ bool sameName(std::string_view a, std::string_view b) {
 }
 
 // The names of a list, comma-separated, for a message.
+// @coney-only the importer's wording
 std::string joined(const std::vector<std::string>& names) {
     std::string text;
     for (const std::string& name : names) {
@@ -105,6 +109,7 @@ std::string joined(const std::vector<std::string>& names) {
 }
 
 // The OriginalSave of the save folders found in a container: their profiles, or why there are none.
+// @coney-only the importer's Xbox containers
 std::expected<OriginalSave, Error> fromFolders(const std::vector<XboxSaveFiles>& folders, SaveSourceKind kind,
                                                std::string source) {
     OriginalSave save{kind, std::move(source), {}, {}, {}};
@@ -124,6 +129,7 @@ std::expected<OriginalSave, Error> fromFolders(const std::vector<XboxSaveFiles>&
 }
 
 // Reads a file of at most `limit` bytes from disk, or nothing when it cannot be read.
+// @coney-only the importer's file read
 std::optional<std::vector<std::byte>> readSmallFile(const std::filesystem::path& path, std::uint64_t limit) {
     std::error_code ec;
     const std::uintmax_t size = std::filesystem::file_size(path, ec);
@@ -141,7 +147,8 @@ std::optional<std::vector<std::byte>> readSmallFile(const std::filesystem::path&
     return bytes;
 }
 
-// The entry of `entries` called `name` ignoring case, or none.
+// The entry of `folder` on disk called `name` ignoring case, or none.
+// @coney-only the importer's Xbox containers
 std::optional<std::filesystem::path> childNamed(const std::filesystem::path& folder, std::string_view name) {
     std::error_code ec;
     for (const auto& entry : std::filesystem::directory_iterator(folder, ec)) {
@@ -153,7 +160,8 @@ std::optional<std::filesystem::path> childNamed(const std::filesystem::path& fol
 }
 
 // The files of one save folder on disk (its data file and SaveMeta.xbx, either or both possibly missing). A data file
-// larger than the game's is read only far enough to say so.
+// larger than the game's is not read: a buffer of the wrong size stands for it, so the folder is named as skipped.
+// @coney-only the importer's Xbox containers
 XboxSaveFiles filesOnDisk(const std::filesystem::path& folder) {
     XboxSaveFiles files{folder.filename().string(), std::nullopt, std::nullopt, 0};
     if (const auto data = childNamed(folder, kXboxDataFileName)) {
@@ -172,6 +180,7 @@ XboxSaveFiles filesOnDisk(const std::filesystem::path& folder) {
 
 // The save folders of the title folder `title` on disk, in name order: each sub-folder holding a data file or
 // SaveMeta.xbx.
+// @coney-only the importer's Xbox containers
 std::vector<XboxSaveFiles> saveFoldersOnDisk(const std::filesystem::path& title) {
     std::vector<std::filesystem::path> folders;
     std::error_code ec;
@@ -190,6 +199,7 @@ std::vector<XboxSaveFiles> saveFoldersOnDisk(const std::filesystem::path& title)
 }
 
 // The entry called `name` of `entries` ignoring case, or none.
+// @coney-only the importer's Xbox containers
 std::optional<io::FatxEntry> entryNamed(const std::vector<io::FatxEntry>& entries, std::string_view name) {
     for (const io::FatxEntry& entry : entries) {
         if (sameName(entry.name, name)) {
@@ -200,6 +210,7 @@ std::optional<io::FatxEntry> entryNamed(const std::vector<io::FatxEntry>& entrie
 }
 
 // The game's saves on a FATX volume (the data partition or a memory unit): `UDATA/5454009b/<save>/` at its root.
+// @coney-only the importer's Xbox containers
 std::expected<OriginalSave, Error> fromVolume(io::Stream& stream, std::uint64_t offset, std::uint64_t size,
                                               SaveSourceKind kind, std::string source) {
     const auto volume = io::FatxVolume::open(stream, offset, size);
