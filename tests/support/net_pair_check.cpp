@@ -118,6 +118,7 @@ class Run {
         all.insert(all.end(), args.begin(), args.end());
         say(std::format("{}: starting with {} arguments", m_tag, args.size()));
         std::vector<const char*> pointers;
+        pointers.reserve(all.size() + 1);
         for (const std::string& arg : all) {
             pointers.push_back(arg.c_str());
         }

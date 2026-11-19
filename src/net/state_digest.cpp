@@ -170,7 +170,7 @@ std::expected<DigestLine, Error> parseDigestLine(std::string_view text) {
         if (!pads) {
             return invalid();
         }
-        line.pads = *pads;
+        line.pads = pads;
     }
     return line;
 }
