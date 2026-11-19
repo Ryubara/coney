@@ -714,6 +714,8 @@ def run_clean(
     if apply and stale:
         _git(checkout, "worktree", "prune")
 
+    kept_places, kept_failures = _clean_kept_places(_claims_dir(layout.workspace, checkout), settings.now, apply)
+    failures += kept_failures
     archived, archive_failures = _archive_dead_fixes(checkout, settings, apply)
     failures += archive_failures
 
@@ -763,7 +765,8 @@ def run_clean(
     verb = "Reclaimed" if apply else "Would reclaim"
     print(
         f"{verb} {_gb(reclaimed)}: {removed} worktree(s) removed, {builds} build folder(s) deleted"
-        + (f", {archived} fix task(s) archived." if archived else ".")
+        + (f", {archived} fix task(s) archived" if archived else "")
+        + (f", {kept_places} stale kept build place(s) removed." if kept_places else ".")
     )
     if apply:
         free_after = shutil.disk_usage(layout.workspace).free
@@ -854,6 +857,27 @@ def _scratch_of(workspace: Path, checkout: Path) -> Path:
         return scratch_folder(checkout)
     except ConfigError:
         return workspace / "scratch"
+
+
+def _clean_kept_places(claims_dir: Path, now: float, apply: bool) -> tuple[int, int]:
+    """Report, and with `apply` remove, the kept build places nothing can reuse any more (`build_claims.kept_places`:
+    the entry of a build that gave up waiting and never came back). A place a build may still return to is never
+    listed. Returns how many were removed (or would be) and how many could not be."""
+    expired = [place for place in build_claims.kept_places(claims_dir, now) if place.expired]
+    if not expired:
+        return 0, 0
+    failures = 0
+    verb = "remove" if apply else "would remove"
+    for place in expired:
+        name = f"{place.file.parent.name}/{place.file.name}"
+        print(f"  {verb:<13}kept build place {name}: not reusable, {place.age / 3600:.1f} h old")
+        if apply:
+            try:
+                place.file.unlink(missing_ok=True)
+            except OSError as error:
+                failures += 1
+                print(f"    FAILED: {error}")
+    return len(expired) - failures, failures
 
 
 def running_checks(workspace: Path, checkout: Path) -> Callable[[], dict[str, list[str]]]:

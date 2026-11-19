@@ -19,6 +19,7 @@ from coney_tools.build_claims import (
     Ticket,
     Waiting,
     estimate_wait,
+    kept_places,
 )
 
 NOW = 1_800_000_000.0
@@ -695,3 +696,63 @@ def test_a_waiting_build_drops_a_dead_holder_beyond_the_slot_count(tmp_path: Pat
     with pytest.raises(SlotTimeout):
         narrow.acquire("dave", "wt-dave", "dev", False, 12004, poll=10, timeout=30)
     assert [row.number for row in narrow.status().slots] == [1, 2]  # slot 3's dead entry is gone
+
+
+def kept_after_a_give_up(slots: Slots, world: World, agent: str = "alice") -> Path:
+    """Make `agent`'s build give up waiting behind a holder, and return the file of the place it kept."""
+    assert take(slots, world, "holder", 2301) is not None
+    with pytest.raises(SlotTimeout):
+        slots.acquire(agent, f"wt-{agent}", "dev", False, 12302, poll=10, timeout=60)
+    files = list((slots.claims_dir / "kept-queue").glob("*.json"))
+    assert len(files) == 1
+    return files[0]
+
+
+def test_a_kept_place_nobody_asks_for_is_removed_by_the_next_build_to_join(tmp_path: Path, world: World) -> None:
+    # Issue 1379: only the build that kept a place removed it, so one that never came back left it for ever.
+    from coney_tools.build_claims import KEEP_PLACE_SECONDS
+
+    slots = make(tmp_path, world, slots=1)
+    kept = kept_after_a_give_up(slots, world)
+    world.now += KEEP_PLACE_SECONDS - 1
+    ticket(slots, world, "bob", 2303)
+    assert kept.exists()  # still within its time: alice may come back to it
+    world.now += 2
+    ticket(slots, world, "carol", 2304)
+    assert not kept.exists()
+
+
+def test_kept_places_lists_the_expired_and_never_a_usable_one(tmp_path: Path, world: World) -> None:
+    from coney_tools.build_claims import KEEP_PLACE_SECONDS, TICKET_MAX_AGE
+
+    slots = make(tmp_path, world, slots=1, max_age=TICKET_MAX_AGE * 2)
+    kept = kept_after_a_give_up(slots, world)
+    assert [(place.file, place.expired) for place in kept_places(slots.claims_dir, world.now)] == [(kept, False)]
+    world.now += KEEP_PLACE_SECONDS + 1
+    assert [(place.file, place.expired) for place in kept_places(slots.claims_dir, world.now)] == [(kept, True)]
+
+
+def test_a_kept_place_older_than_the_limit_of_a_first_ticket_is_expired_whatever_it_says(
+    tmp_path: Path, world: World
+) -> None:
+    from coney_tools.build_claims import TICKET_MAX_AGE
+
+    folder = tmp_path / "claims" / "kept-queue"
+    folder.mkdir(parents=True)
+    # Kept a moment ago, but its first ticket is already half the ticket age old: nothing would ever reuse it.
+    (folder / "aaaa.json").write_text(
+        json.dumps({"time": world.now - TICKET_MAX_AGE / 2 - 1, "kept": world.now - 1}), encoding="utf-8"
+    )
+    (folder / "bbbb.json").write_text("not json", encoding="utf-8")  # damaged and old
+    os.utime(folder / "bbbb.json", (world.now - TICKET_MAX_AGE - 1,) * 2)
+    (folder / "cccc.json").write_text("not json", encoding="utf-8")  # damaged but just written: maybe in the making
+    os.utime(folder / "cccc.json", (world.now,) * 2)
+    expired = {place.file.name: place.expired for place in kept_places(tmp_path / "claims", world.now)}
+    assert expired == {"aaaa.json": True, "bbbb.json": True, "cccc.json": False}
+
+
+def test_the_folder_locks_queues_have_their_kept_places_listed_too(tmp_path: Path, world: World) -> None:
+    folder = tmp_path / "claims" / "folders" / "abcd" / "kept-queue"
+    folder.mkdir(parents=True)
+    (folder / "aaaa.json").write_text(json.dumps({"time": 1.0, "kept": 2.0}), encoding="utf-8")
+    assert [place.expired for place in kept_places(tmp_path / "claims", world.now)] == [True]

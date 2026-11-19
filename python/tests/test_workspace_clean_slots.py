@@ -2,6 +2,7 @@
 """Tests for what `workspace clean` leaves alone because a build needs it: the live slots, read from the build queue
 itself each time, and the busy marker that goes stale (coney_tools.workspace_clean, build_claims.live_worktrees)."""
 
+import json
 import os
 import shutil
 import time
@@ -15,7 +16,7 @@ from test_workspace_clean import OLD, Space
 from test_workspace_clean_pressure import claim_slot, claims, queue_ticket
 
 from coney_tools import pcsx2_proc, stale_processes, workspace_clean
-from coney_tools.build_claims import FAST_LANE, Slots, live_worktrees
+from coney_tools.build_claims import FAST_LANE, KEEP_PLACE_SECONDS, Slots, live_worktrees
 from coney_tools.conventions import load_conventions
 from coney_tools.workspace_clean import BUSY_FILE, DEFAULT_BUILD_HOURS, run_clean
 
@@ -174,3 +175,33 @@ def test_clean_is_a_dry_run_and_says_why_it_keeps_a_busy_one(
     assert "would remove" in out
     assert "building: holds or waits for a build slot" in out
     assert removable.is_dir()
+
+
+def kept_place(space: Space, name: str, kept_ago: float, lane: str = "kept-queue") -> Path:
+    """The entry of a build that gave up waiting `kept_ago` seconds ago, as `Slots.keep_place` writes it."""
+    folder = claims(space) / lane
+    folder.mkdir(parents=True, exist_ok=True)
+    now = time.time()
+    file = folder / f"{name}.json"
+    file.write_text(json.dumps({"time": now - kept_ago, "kept": now - kept_ago}), encoding="utf-8")
+    return file
+
+
+def test_clean_removes_a_kept_build_place_nobody_came_back_for_and_never_a_live_one(
+    space: Space, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(workspace_clean, "gh_merged_heads", lambda checkout: lambda branch: None)
+    old = kept_place(space, "aaaa", KEEP_PLACE_SECONDS + 600)
+    old_fast = kept_place(space, "bbbb", KEEP_PLACE_SECONDS * 3, lane="kept-queue-fast")
+    live = kept_place(space, "cccc", 60)
+    assert run_clean(space.checkout, None, False) == 0
+    out = capsys.readouterr().out
+    assert "would remove kept build place kept-queue/aaaa.json" in out
+    assert "kept-queue-fast/bbbb.json" in out
+    assert "cccc" not in out
+    assert old.exists() and old_fast.exists()  # a dry run changes nothing
+    assert run_clean(space.checkout, None, True) == 0
+    out = capsys.readouterr().out
+    assert "2 stale kept build place(s) removed" in out
+    assert not old.exists() and not old_fast.exists()
+    assert live.exists()

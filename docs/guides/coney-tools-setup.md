@@ -393,8 +393,11 @@ every [watched drive](workspace.md#watched-drives) (the workspace's, the build r
 when one is below `--min-gb` (default: its own floor, `workspace.disk_min_free_gb` of
 [.github/conventions.yml](repo:.github/conventions.yml), 30, unless `watch_paths` gives that drive another). It also
 **archives the fix tasks whose parent's pull request merged**: their scratch folders move to `archive/<task>` in the
-scratch folder, which `task slots` and the slot-fill check never read ([Cleanup](workspace.md#cleanup)). Rules and the
-busy file: [Cleanup](workspace.md#cleanup).
+scratch folder, which `task slots` and the slot-fill check never read ([Cleanup](workspace.md#cleanup)), and lists, and
+with `--apply` removes, the **stale kept build places** in the build queue's claims folder: the `kept-<queue>/` entries
+of builds that gave up waiting and never came back, which expire after an hour
+([build](coney-tools-build.md#build); a place still inside its time is never listed). Rules and the busy file:
+[Cleanup](workspace.md#cleanup).
 
 <!-- command-reference:begin workspace -->
 ## Parameters of `workspace` {#workspace-parameters}

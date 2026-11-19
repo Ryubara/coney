@@ -31,7 +31,9 @@ machinery again, so it queues, goes stale and is released like a build slot.
 A build that gives up waiting (`SlotTimeout`: its `--max-wait` or its time budget ran out, exit 75) **keeps its place**:
 `kept-<queue>/<digest>.json` remembers when its ticket joined, for its agent, worktree and preset, and the same build
 run again within `KEEP_PLACE_SECONDS` joins with that time, so it stands where it stood instead of at the back (issue
-1370: two builds lost 20 to 40 minutes each to the rejoin). The place is used once and lapses unused.
+1370: two builds lost 20 to 40 minutes each to the rejoin). The place is used once and lapses unused: past
+`KEEP_PLACE_SECONDS` (or a first ticket half as old as `TICKET_MAX_AGE`) nothing reuses it, and every `join` and
+`workspace clean` removes such entries (`drop_expired_kept`, `kept_places`; issue 1379).
 
 A waiting build reads the lane's slot count again at every look (`recount`: `build_slots` or `check_slots` of
 coney.local.toml), so a count raised while it waits is used at once, and it drops the stale claims of slots above the
@@ -242,6 +244,72 @@ def _recount(root: Path, lane: str) -> Callable[[], int]:
         return config.numbers["build_slots"] if config else DEFAULT_SLOTS
 
     return count
+
+
+@dataclass(frozen=True)
+class KeptPlace:
+    """One entry of a `kept-<queue>/` folder: the place a build that gave up waiting keeps for its next run."""
+
+    #: The entry's file.
+    file: Path
+    #: Whether nothing could reuse it any more (`place_expired`): it is only waiting to be removed.
+    expired: bool
+    #: How old it is, in seconds, by the time it was kept (by the file, when that cannot be read).
+    age: float
+
+
+def place_expired(joined: float, kept: float, now: float) -> bool:
+    """Whether a kept place can no longer be reused: kept more than `KEEP_PLACE_SECONDS` ago, its first ticket half as
+    old as `TICKET_MAX_AGE` (a ticket that joined with it would soon be judged stale), or dated in the future (a clock
+    set back). The one rule of the waiter that reads a place and of the sweeps that remove the unread ones."""
+    return now - kept > KEEP_PLACE_SECONDS or now - joined > TICKET_MAX_AGE / 2 or joined > now
+
+
+def kept_places(claims_dir: Path, now: float) -> list[KeptPlace]:
+    """Every entry of the kept-place folders under `claims_dir` (each lane's, and each folder lock's under
+    `folders/`), with whether it expired. A damaged entry, or a leftover temporary file, is expired once its file is
+    older than `TICKET_MAX_AGE`: it may be one being written."""
+    roots = [claims_dir]
+    folders = claims_dir / "folders"
+    if folders.is_dir():
+        roots.extend(sorted(child for child in folders.iterdir() if child.is_dir()))
+    found: list[KeptPlace] = []
+    for root in roots:
+        for kept_folder in sorted(root.glob(f"{_KEPT_PREFIX}*")):
+            if not kept_folder.is_dir():
+                continue
+            for file in sorted(kept_folder.iterdir()):
+                if file.is_file():
+                    found.append(_look_at_kept(file, now))
+    return found
+
+
+def _look_at_kept(file: Path, now: float) -> KeptPlace:
+    """The state of one entry of a kept-place folder."""
+    try:
+        data = json.loads(file.read_text(encoding="utf-8"))
+        joined, kept = float(data["time"]), float(data["kept"])
+    except (OSError, ValueError, KeyError, TypeError):
+        try:
+            age = now - file.stat().st_mtime
+        except OSError:
+            return KeptPlace(file, False, 0.0)  # removed meanwhile
+        return KeptPlace(file, age > TICKET_MAX_AGE, age)
+    return KeptPlace(file, place_expired(joined, kept, now), now - kept)
+
+
+def drop_expired_kept(claims_dir: Path, now: float) -> list[KeptPlace]:
+    """Remove the kept places nothing can reuse any more, so a build that never came back does not leave its entry
+    for ever (issue 1379); returns what was removed. An entry that cannot be removed stays for the next sweep."""
+    dropped: list[KeptPlace] = []
+    for place in kept_places(claims_dir, now):
+        if place.expired:
+            try:
+                place.file.unlink(missing_ok=True)
+            except OSError:
+                continue
+            dropped.append(place)
+    return dropped
 
 
 def live_worktrees(claims_dir: Path) -> set[str]:
@@ -480,10 +548,12 @@ class Slots:
     def join(self, agent: str, worktree: str, preset: str, priority: bool, pid: int) -> Ticket:
         """Take a place in the queue. The ticket file appears complete (written privately, then renamed). A build that
         gave up waiting a short while ago (`keep_place`) joins with the time of its first ticket, so it stands where
-        it stood; the kept place is used up."""
+        it stood; the kept place is used up. Every join also removes the kept places that expired unread
+        (`drop_expired_kept`), so the folders never grow for ever."""
         if not AGENT_NAME.match(agent):
             raise BuildClaimError(f"agent id {agent!r}: use letters, digits, '.', '_' and '-' (at most 64)")
         now = self.clock()
+        drop_expired_kept(self.claims_dir, now)  # the places no build came back for
         kept = self._kept_place(agent, worktree, preset, now)
         when = now if kept is None else kept
         name = f"{int(when * 1000):015d}-{pid}-{uuid.uuid4().hex[:6]}.json"
@@ -520,7 +590,7 @@ class Slots:
         except (OSError, ValueError, KeyError, TypeError):
             return None
         file.unlink(missing_ok=True)
-        if now - kept > KEEP_PLACE_SECONDS or now - joined > TICKET_MAX_AGE / 2 or joined > now:
+        if place_expired(joined, kept, now):
             return None
         return joined
 
