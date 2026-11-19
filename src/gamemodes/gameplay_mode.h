@@ -459,7 +459,8 @@ class GameplayMode final : public GameMode {
     // @orig 0x003035d8 PlayerBrain_Update (unknown)
     void stepCrew(std::uint64_t nowMs);
     // Gives the hub's host (ai::ScriptedHub) what it reads beyond the brains: the configuration's categories and flee
-    // percentages, the workout's tuning, the volume boxes and the flags inside them, the crimes and the crime scene.
+    // percentages, the workout's tuning, the volume boxes and the flags inside them, the crimes and the crime scene;
+    // and gives the gangs the game's random numbers and the gang kinds' team-up strategies.
     void wireHub();
     // Where a trigger sphere's object is: a human the scripts made, a flag or a spawn record; nothing when gone.
     [[nodiscard]] std::optional<std::array<float, 3>> objectPosition(double handle) const;

@@ -349,6 +349,8 @@ the team-ups. Confirmed (code) at each address.
 
 ### The strategy slot (`0x00306b50`, `0x00306b88`, `0x00306bd0`)
 
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
 - `Tactic_SetStrategy(t, order)`: `Tactic_EndStrategy(t)`, then `+0x10` = *order* (which may be null when the pool
   was full).
 - `Tactic_UpdateStrategy(t)`, from every tactic's `Tactic_Process`: when `+0x10` is set and `SubTactic_Process`
@@ -356,11 +358,18 @@ the team-ups. Confirmed (code) at each address.
 - `Tactic_EndStrategy(t)`: when `+0x10` is set: the order's End (`SubTactic_End`), then the tactic's slot `+0x1c`
   (for TacticAttack `AttackTactic_OnStrategyEnd`, called while `+0x10` still points at the order), then the record
   is freed (`SubTactic_Free`) and `+0x10` = 0.
+- Where they are called: `Tactic_Process` (`0x003067d8`) calls
+  `Tactic_UpdateStrategy` after the time-limit test and **before** the class's Process, so an order the draw makes in
+  an update starts on the next one; `Tactic_End` (`0x00306850`) calls `Tactic_EndStrategy` first, before the members
+  are popped to their goal bases; and `AttackTactic_OnEvent` (`0x00308478`) gives an own member Melee on events 1 and
+  `0xb` only while `+0x10` is 0.
 - `AttackTactic_OnStrategyEnd` (`0x00308150`): when the order's kind (its vtable slot `+0x2c`) is **1**, i.e. one
   of the two guard orders, `AttackTactic_GiveMelee`. The other orders end without giving Melee. This corrects "when
   it says so".
 
 ### The order record and pool (`0x00321828`-`0x00321ab8`)
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 8 records of `0x30` bytes at `0x006eb6f0`, a bit mask at `0x006eb6e0`.
 
@@ -380,20 +389,24 @@ the team-ups. Confirmed (code) at each address.
 | `0x003219a0` | `SubTactic_Start` | when `+0x04` ≠ −1, `+0x04` += *now*; the class's Start; `+0x08` = 1 |
 | `0x00321a00` | `SubTactic_Process` | starts it when `+0x08` is 0; returns 1 (done) when *now* > `+0x04`, else the class's Process (1 done, 0 not) |
 | `0x00321a70` | `SubTactic_End` | the class's End |
-| `0x00321a98` / `0x00321ab8` | `SubTactic_Reset` / `SubTactic_ResetAll` | clear the mask on a full reset (arguments 1, `0xffff`) |
+| `0x00321a98` / `0x00321ab8` | `SubTactic_Reset` / `SubTactic_ResetAll` | clear the mask on a full reset (arguments 1, `0xffff`); `ResetAll` has no caller in the code: it is the translation unit's static-initialiser stub ([Source map](source-map.md#position), item 6), so the mask starts at 0 at power-on; `SubTactic_PoolClear`'s one caller is `Game_InitializeSubsystems` (`0x00160df8`) |
 | `0x003218d8` | `SubTactic_LeaderGesture(order, leader, clip, arg)` | returns 0 when there is no leader, when clearing his actions fails (`Brain_ClearActions` pops every queued action and returns 0 if one refuses), he has a held flag in `0x2fefefff` or a state flag in `0x7bf9e9f7ff0`; else allocates an action (may fail) and initialises a gesture (`GenToIdleAnimAction_Init(action, brain, clip, arg, 0)`), and returns 1 |
 
 The kinds (vtable slot `+0x2c`, read from the five vtables `0x00544220`, `0x00544290`, `0x005442c8`, `0x00544300`,
-`0x00544338`): Grab 6, Charge 0, Guard 1, Leader 4, Throw 5. The Starts of Grab (`0x00321c48`), Charge
-(`0x00322040`) and Guard (`0x00322440`) and Charge's End (`0x00322048`) are empty.
+`0x00544338`): Grab 6, Charge 0, Guard 1, Leader 4, Throw 5. The Start slots of Grab, Charge and Guard and
+Charge's End slot point at empty functions.
 
-### `GangConfig_SetStrategy` / `GangConfig_GetStrategyEntry` (`0x001645d0`, `0x00164610`)
+### `GangConfig_SetStrategy` / `GangConfig_GetStrategyEntry` (`0x001645d0`, `0x00164610`) {#gang-strategy}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 The seven weights of a gang kind's strategy (`CfgGang`'s sixth argument) are bytes `+0x73`-`+0x79` of its
 configuration record (28 records of `0x7a` at `0x0050caa8`); the getter returns byte *i*. The weight table per
-strategy is in the gang-fight research (#273) and [Gangs](../references/gangs.md).
+strategy is in [Gang fights](gang-fights.md#gang) and [Gangs](../references/gangs.md).
 
 ### `AttackTactic_StartSubTactic` (`0x00307a10`, 812 bytes) {#start-sub-tactic}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 1. Nothing unless team-ups are enabled (*gang* `+0xd9`), there is a leader, he is not busy (`Human_IsBusy`) and
    `L` = `Gang_CountLiving(gang, 0)` is at least 2.
@@ -419,11 +432,46 @@ strategy is in the gang-fight research (#273) and [Gangs](../references/gangs.md
 | 4 | Leader | count `L` − 1, limit 15000 ms |
 | 6 | Grab | no limit |
 
+**The enemy gang's bounds** (`Gang_UpdateBounds` `0x00166b60`): the box of the
+positions of the members that resolve and are neither cuffed (`0x00223b70`) nor knocked out (`0x00227dd8`), from an
+empty box (corners 1e9 and −1e9); the centre `+0x00` is its middle (x, y and z), the radius `+0x14` the larger of its
+x and y half-widths. A gang with no such member gets the centre (0, 0, 0) and the radius −1e9, which passes the radius
+test of the search. `Gangs_Update` (`0x0016d170`) moves the counter `0x0050cbec` on (0 to 4) once per update, then,
+per gang in id order, runs the gang's tactic (inside `Gang_CachePlayerInfo` `0x00166708`) and then, for a gang whose id
+modulo 5 is the counter, its bounds; the counter's initial value in the executable is 5, so the first update takes
+ids 0, 5, 10 and so on.
+
+**The leader's sight range** is `Brain_GetSightRange` (`0x0028bf00`): the brain's own, at least 30 m while his gang
+is fighting, which an attacking gang is.
+
 **Tests (synthetic):** a fake order class through the pool: the ninth allocation fails and the tactic stores null;
 start once, the limit passed → done → the tactic's slot `+0x1c` hears it before the record is freed; the draw over
 a scripted random stream: weights (20, 20, 20, 20, 20, 20, 0) with `r` = 0, 19, 20, 119 and 120 (orders 0, 0, 1,
 5, 5), weights all 0 (order 5); no draw without `+0xd9`, with a busy leader, one living member, or no enemy gang in
 range; `E` from the lowest-id qualifying gang, not the nearest.
+
+**Coney status (implemented).** The pool and an order's record are `repo:src/ai/sub_tactics.h` (`SubTacticPool`, owned
+by the level's `Gangs`, which name a record by its slot; `SubTactic` with its start, limit and end). The strategy slot
+is `Tactic::strategy()` with `setStrategy`, `updateStrategy` and `endStrategy`, called from `Tactic::process` and
+`Tactic::finish` as above (`repo:src/ai/tactic.h`). The draw is `TacticAttack::startSubTactic` and `ai::drawTeamUp`,
+the guard order's end `TacticAttack::strategyEnded`, and the 7 s timer in `TacticAttack::update`
+(`repo:src/ai/tactic_attack.h`). The gang bounds, the search, the filter and `Gang_NoneAbleToHelp` are in
+`repo:src/ai/gangs.h`; the strategies come from the recorded `CfgGang` calls (`ai::gangStrategiesFrom`,
+`repo:src/ai/ai_config.h`), and the draw takes the game state's random numbers on the tactics stream. Tests:
+`repo:tests/ai/sub_tactics_test.cpp` and `repo:tests/ai/team_up_test.cpp`. Stand-ins left:
+
+- **The orders.** The draw makes a `StandInOrder` with the real kind and arguments that orders nobody: Charge,
+  Leader and Throw last their limit, Guard is done at its deadline, Grab is done on its first process (as the real
+  one is with nothing to grab). [Unit 4](#unit-4) (Charge, Leader, Grab), [Unit 5](#unit-5) (Guard) and
+  [Unit 6](#unit-6) (Throw) replace them. `SubTactic_LeaderGesture` is not ported; only the orders call it, and it
+  needs `GenToIdleAnimAction` ([Unit 4](#unit-4)).
+- **The stand-in guard's end** gives no Melee: `AttackTactic_GiveMelee` pops each member to his goal base, which
+  after a real guard undoes the formation but after the stand-in, which took nobody out of the fight, would cut the
+  fights the members are in (level5's bar fight then outlasts its playthrough test). A guard order that is not the
+  stand-in gives the Melee as the original's does.
+- **The leader's busy test** is Coney's `ai::humanBusy()` ([open question](#q-teamup-busy)).
+- **The pursue tactic's `+0x4c`** in the filter reads as 0 ([open question](#q-pursue-flag)).
+- **The bounds counter** starts at 5 with each level's gangs; the original's keeps its place from the last level.
 
 ## Unit 4: the Charge, Get-their-leader and Grab orders {#unit-4}
 
@@ -947,5 +995,18 @@ kept by the track (`UNITS.md`); the "Spec" column links the sections that descri
 
 ## Open questions {#open-questions}
 
-- None open here: what fills game state `+0x280` and `+0x284`, what sends event `0x15` and whether Rumble enables
-  the team-ups are answered on [Gang fights](gang-fights.md) (issue #298).
+- What fills game state `+0x280` and `+0x284`, what sends event `0x15` and whether Rumble enables the team-ups are
+  answered on [Gang fights](gang-fights.md).
+
+### The team-up's busy leader {#q-teamup-busy}
+
+`AttackTactic_StartSubTactic` asks `Human_IsBusy` (`0x00228258`): a state flag of `0x1f80974000`, or record `+0x108`
+(set after a hit lands on an AI human) still ahead of the game time (confirmed (code)). Coney keeps neither, so its
+port asks `ai::humanBusy()` (the record bits and the reaction states Coney models), the reading Coney's other callers
+of `Human_IsBusy` use. Open: which of the mask's states Coney's fighter can be in, and the hit timer.
+
+### The pursue tactic's `+0x4c` {#q-pursue-flag}
+
+`Gang_CanJoinFightAgainst` lets a calm gang be joined when it runs a pursue tactic (type `0x14`) whose s16 `+0x4c` is
+0 (confirmed (code)); what sets `+0x4c` is not read (the fields listed in [TacticPursue](ai-code.md#t2-pursue) stop
+at `+0x48`). Coney's pursue tactic keeps no such field, so the port reads it as 0.

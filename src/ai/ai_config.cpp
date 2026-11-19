@@ -124,4 +124,26 @@ AiConfig aiConfigFrom(const script::RecordedCalls& recorded, int type, int power
     return config;
 }
 
+GangStrategyTable gangStrategiesFrom(const script::RecordedCalls& recorded) {
+    constexpr std::size_t kStrategyArgument = 5; // CfgGang's sixth argument
+    constexpr int kByte = 0xff;
+    GangStrategyTable table{};
+    for (const std::vector<script::Value>& call : recorded.calls("CfgGang")) {
+        const std::optional<double> kind = numberAt(call, 0);
+        // Coney's choice: a kind outside the table, or a strategy that is not a table, is skipped.
+        if (!kind || *kind < 0.0 || *kind >= static_cast<double>(kGangKinds) || call.size() <= kStrategyArgument ||
+            call[kStrategyArgument].table() == nullptr) {
+            continue;
+        }
+        const script::Table& weights = *call[kStrategyArgument].table();
+        GangStrategy& strategy = table[static_cast<std::size_t>(*kind)];
+        // Entries 1 to 7, each kept as its low byte; a missing one is 0.
+        for (std::size_t order = 0; order < kStrategyOrders; ++order) {
+            const std::optional<double> weight = weights.get(script::Value(static_cast<double>(order + 1))).number();
+            strategy[order] = static_cast<std::uint8_t>(static_cast<int>(weight.value_or(0.0)) & kByte);
+        }
+    }
+    return table;
+}
+
 } // namespace coney::ai
