@@ -26,6 +26,8 @@
 #include "graphics/asset_store.h"
 #include "graphics/car_draw.h"
 #include "graphics/frame_description.h"
+#include "graphics/level_lighting.h"
+#include "graphics/light_manager.h"
 #include "graphics/lighting_frame.h"
 #include "graphics/render_device.h"
 #include "graphics/texture_data.h"
@@ -94,11 +96,14 @@ std::vector<ObjectModelFixture> sceneModels() {
                                .texture = "coupe"}};
 }
 
-// What the scene varies: the second crate's tint (0xRRGGBBAA; its alpha under 255 draws it in the translucent pass)
-// and whether the car is painted.
+// What the scene varies: the second crate's tint (0xRRGGBBAA; its alpha under 255 draws it in the translucent pass),
+// whether the car is painted, where the car stands along x (metres) and how many point lights, each reaching every
+// object, the scene holds (none by default, which is the hash's scene).
 struct ObjectScene {
     std::uint32_t tint = 0x80C0FF80U;
     bool painted = true;
+    float carX = 6.0F;
+    int pointLights = 0;
 };
 
 // The camera the scene is drawn through: in front of the objects, looking along RenderWare's z.
@@ -140,7 +145,7 @@ DrawStream drawObjectScene(const ObjectScene& scene, const SceneInspection& insp
     auto set = WorldSet::load(*archive.wad, {}, budget, false, engine->sceneAssets());
     REQUIRE(set.has_value());
     coney::world_objects::Cars cars;
-    REQUIRE(cars.spawn(sceneModels()[1].name, Vec3{6.0F, 0.0F, 0.0F}, Quat{}, kCar) != nullptr);
+    REQUIRE(cars.spawn(sceneModels()[1].name, Vec3{scene.carX, 0.0F, 0.0F}, Quat{}, kCar) != nullptr);
     if (scene.painted) {
         cars.setColour(kCar, {0.25F, 0.5F, 0.75F, 1.0F});
     }
@@ -152,8 +157,22 @@ DrawStream drawObjectScene(const ObjectScene& scene, const SceneInspection& insp
         const std::uint32_t crate = coney::crc32("dyn_crate");
         objects.place(10.0, crate, Vec3{0.0F, 0.0F, 0.0F}, Quat{});
         objects.place(11.0, crate, Vec3{3.0F, 0.0F, 0.0F}, Quat{}, PlacedObjects::Look{.tint = scene.tint});
+        // The scene's own lights, when it has any: point lights in front of the camera, big enough to reach every
+        // object, which light the objects (kLightsObjects) and so fill the cap a draw's selection keeps.
+        coney::graphics::LevelLighting level;
+        coney::platform::SceneLighting lighting(level, std::nullopt, std::nullopt);
+        for (int i = 0; i < scene.pointLights; ++i) {
+            level.lights.addLight(coney::graphics::LightDescriptor{.type = coney::graphics::LightType::Point,
+                                                                   .position = {2.0F, 2.0F, 10.0F},
+                                                                   .colour = {0.5F, 0.5F, 0.5F, 1.0F},
+                                                                   .radius = 300.0F,
+                                                                   .lights = coney::graphics::kLightsObjects});
+        }
         WorldRenderer renderer;
         renderer.recordHeadless(true);
+        if (scene.pointLights > 0) {
+            renderer.setLighting(&lighting);
+        }
         const auto render = [&engine, &renderer](const ObjectDraw& draw) {
             coney::platform::drawObject(*engine, renderer.lighting(), draw);
         };
@@ -322,4 +341,24 @@ TEST_CASE("a car part's lights are selected at squared distance 0 and a world ob
             }
         }
     });
+}
+
+TEST_CASE("a car far from the camera keeps the nearest cap of lights", "[platform][objects][frame-description]") {
+    // Expected: docs/research/lighting.md#select, confirmed (code): CarInstance_Render clears f12 at 0x00172cc8 before
+    // its selection call, so a car part gets the nearest cap of 6 lights (the objects' cap falls to 3 only past
+    // 69 m) however far the car stands; ObjectRender_Draw passes a world object's squared distance to the camera.
+    // The car is about 80 m from the camera, where a selection made at its distance would keep 3 of the 8 lights.
+    drawObjectScene(
+        ObjectScene{.carX = 80.0F, .pointLights = 8},
+        [](const RenderEngine&, const coney::world_objects::Cars&, const coney::platform::SceneLighting& lighting) {
+            const auto& rows = lighting.lightingFrame().selections;
+            REQUIRE(rows.size() == 28);
+            for (std::size_t i = 0; i < rows.size(); ++i) {
+                const bool crate = i == 20 || i == 21; // the 20 opaque parts, the two crates, the glass
+                CHECK(rows[i].count == 6);             // the crates, about 20 m away, keep 6 as well
+                if (!crate) {
+                    CHECK(rows[i].distSq == 0.0F);
+                }
+            }
+        });
 }
