@@ -201,6 +201,22 @@ def test_no_one_writes_a_build_record_by_hand(agent_type: str, tmp_path: Path) -
         assert protect.refusal(bash(command, agent_type)), command
 
 
+@pytest.mark.parametrize("agent_type", EVERYONE)
+def test_no_one_writes_the_check_ledger_by_hand(agent_type: str, tmp_path: Path) -> None:
+    ledger = tmp_path / "scratch" / "task-1" / "check-resume" / "ledger.json"
+    for tool, field in (("Write", "file_path"), ("Edit", "file_path"), ("NotebookEdit", "notebook_path")):
+        reason = protect.refusal(call(tool, {field: str(ledger)}, agent_type))
+        assert reason is not None and "stage commands" in reason, tool
+    for command in (
+        "echo '{}' > scratch/t/check-resume/ledger.json",
+        "rm scratch/t/check-resume/ledger.json",
+        "sed -i s/a/b/ scratch/t/check-resume/ledger.json",
+        "Set-Content scratch\\t\\check-resume\\ledger.json 'x'",
+    ):
+        assert protect.refusal(bash(command, agent_type)), command
+    assert protect.refusal(bash("cat scratch/t/check-resume/ledger.json")) is None
+
+
 def test_reading_a_build_record_is_allowed(tmp_path: Path) -> None:
     record = str(tmp_path / "scratch" / "t" / "build-runs" / "abc.json")
     assert protect.refusal(call("Read", {"file_path": record}, "engineer")) is None
