@@ -383,6 +383,8 @@ void LightManager::setViewportLists(const ViewportLists& lists) {
 
 LightSelection LightManager::select(float distSq, const LightSphere& sphere, bool objects, bool pointLights, bool pulse,
                                     const std::optional<GlowRequest>& glow) {
+    // Stand-in: the original selects nothing while the global 0x005e5374 is 0; it is set to 1 at start-up and never
+    // written again, so Coney has no such switch.
     LightSelection selection;
     // Ambient and directional lights: the world's list, or the objects' with a cap that falls with distance.
     std::size_t cap = kMaxSelectedLights;
@@ -410,6 +412,8 @@ LightSelection LightManager::select(float distSq, const LightSphere& sphere, boo
     // none.
     if (glow && glow->rgba[3] > kGlowMinAlpha && selection.count < kMaxSelectedLights) {
         LightRecord& record = m_records[kGlow];
+        // Stand-in: the original works out the place here, the human's bone +0x92 raised by half his scale; Coney
+        // takes it from the caller (docs/research/lighting.md#glow).
         record.desc.position = glow->position;
         record.current =
             LightColour{static_cast<float>(glow->rgba[0]) / 255.0F, static_cast<float>(glow->rgba[1]) / 255.0F,
