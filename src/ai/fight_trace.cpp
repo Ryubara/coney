@@ -2,9 +2,11 @@
 #include "ai/fight_trace.h"
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <format>
 #include <numbers>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -159,10 +161,15 @@ std::uint32_t tacticValue(const Tactic* tactic) {
 // @coney-only the trace's column; the original's trace computes it in its field formula
 int orderDraw(const Gang* gang) {
     const auto* attack = gang != nullptr ? dynamic_cast<const TacticAttack*>(gang->tactic()) : nullptr;
-    if (attack == nullptr || !attack->strategy()) {
+    if (attack == nullptr) {
         return -1;
     }
-    const auto* order = dynamic_cast<const StandInOrder*>(gang->owner().subTactics().at(*attack->strategy()));
+    // Read the slot once into a local, so the check and the use are of the same value.
+    const std::optional<std::size_t> slot = attack->strategy();
+    if (!slot.has_value()) {
+        return -1;
+    }
+    const auto* order = dynamic_cast<const StandInOrder*>(gang->owner().subTactics().at(*slot));
     if (order == nullptr) {
         return -1;
     }
