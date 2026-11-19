@@ -11,10 +11,15 @@ followed back through the commits that changed its file. A commit where it is a 
 under another file, folder or class name) from a file outside the gameplay folders is where it arrived; a move from
 another gameplay folder only changes where to look next; a function that is new in a commit, or was already in its file
 as it is, was not moved in from outside.
+
+The search follows a function by its key (file, qualified name and parameter types), so it has one limit: a function
+whose key was already in its file before a commit counts as having stood there, and a body replaced under the same key
+is credited to the earlier move. A function deleted and written again stops the search, its key being absent.
 """
 
 from __future__ import annotations
 
+import re
 import subprocess
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -90,9 +95,9 @@ def _name_of(track: _Track) -> str:
 
 
 def _diff_text(root: Path, commit: _Commit) -> tuple[dict[str, str], dict[str, str]]:
-    """The lines the commit added to and removed from each of its C++ files (against its first parent), per path, each
-    joined by newlines."""
-    args = ["diff", "--no-renames", "-U0", commit.parent, commit.sha, "--", *sorted(commit.paths)]
+    """The lines the commit added to and removed from each file under `src/` (against its first parent), per path, each
+    joined by newlines (one pathspec, so a commit that touches thousands of files stays within a command line)."""
+    args = ["diff", "--no-renames", "-U0", commit.parent, commit.sha, "--", SOURCE_DIR.as_posix()]
     done = subprocess.run(["git", "-C", str(root), *args], capture_output=True, check=False)
     if done.returncode != 0:
         raise ConfigError(f"git diff: {done.stderr.decode('utf-8', 'replace').strip() or 'failed'}")
@@ -114,13 +119,21 @@ def _diff_text(root: Path, commit: _Commit) -> tuple[dict[str, str], dict[str, s
     )
 
 
-def _could_have_moved_in(track: _Track, added: dict[str, str], removed: dict[str, str]) -> bool:
-    """Whether the commit's lines allow the function to have moved into its file: its name is on a line added to the
-    file and on a line removed from another file. (A cheap test that spares reading both sides of most commits.)"""
+def _mentions(text: str, name: str) -> bool:
+    """Whether `name` stands in `text` as a whole word."""
+    return re.search(rf"(?<!\w){re.escape(name)}(?!\w)", text) is not None
+
+
+def _verdict(track: _Track, added: dict[str, str], removed: dict[str, str]) -> str:
+    """What a commit's lines say of a followed function, cheaply: `skip` (its name is not added to its file, or is also
+    removed from it: it stood there as it is, perhaps edited), `read` (its name is added to its file and removed from
+    another: it may have moved in, so both sides are read) or `new` (added there and removed nowhere: written there)."""
     name = _name_of(track)
-    return name in added.get(track.path, "") and any(
-        name in text for path, text in removed.items() if path != track.path
-    )
+    if not _mentions(added.get(track.path, ""), name):
+        return "skip"
+    if any(_mentions(text, name) for path, text in removed.items() if path != track.path):
+        return "read"
+    return "skip" if _mentions(removed.get(track.path, ""), name) else "new"
 
 
 def _tracked(root: Path, gameplay: tuple[str, ...]) -> list[_Track]:
@@ -146,14 +159,20 @@ def find(root: Path, since: str | None = None) -> list[MovedFunction]:
     for commit in _history(root, since):
         if not following:
             break
-        # Only a function whose name was added to its file and removed from another can have moved in here: the rest
-        # stood there as they are or are new, so the (slow) reading of both sides is skipped when none can have.
+        if not any(t.path in commit.paths for t in following.values()):
+            continue
+        # The commit's lines say cheaply which followed functions need both sides read (`_verdict`): the rest stood
+        # there as they are, or were written there and are not followed further.
         diff = _diff_text(root, commit) if commit.parent else None
-        here = {
-            w: t
-            for w, t in following.items()
-            if t.path in commit.paths and (diff is None or _could_have_moved_in(t, *diff))
-        }
+        here: dict[str, _Track] = {}
+        for where, track in list(following.items()):
+            verdict = "read" if diff is None else _verdict(track, *diff)
+            if track.path not in commit.paths or verdict == "skip":
+                continue
+            if verdict == "new":
+                del following[where]
+            else:
+                here[where] = track
         if not here:
             continue
         before = orig_review.files_at(root, commit.parent, commit.paths) if commit.parent else {}

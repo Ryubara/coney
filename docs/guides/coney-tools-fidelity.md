@@ -89,37 +89,6 @@ The older wording ("Coney's own", "(no @orig)") marks only functions that had it
 `untagged.tsv`. Each finding names the file, line and function and what to add; exit code 1 when there is one.
 `ci run` runs it as its `orig` step and CI's `python` job runs it with `--base HEAD^1`.
 
-### The functions that moved in untagged {#moved-backlog}
-
-A pure move keeps the standing a function had, so code that needed no tag in a Coney-only folder (`src/platform/`)
-can enter a gameplay folder (`src/gamemodes/`) with neither `@orig` nor `@coney-only`, and some of it ports original
-behaviour. `--backlog` lists those functions instead of checking a change:
-
-```sh
-uv run --project python coney-tools orig check-tags --backlog [--since REF] [--out FILE]
-```
-
-It is no gate and exits 0. Nothing is listed by hand: the command follows each untagged, non-exempt function of the
-gameplay folders back through the commits that changed its file, by the move rules of
-[Any function](orig-body-hash.md#any-function). A commit where it is a move from a file outside the gameplay folders
-is where it arrived (`orig check-tags` found the same function a move, not new work); a move between gameplay folders
-only sends the search further back, and a function that is new in a commit, or moved there with its code changed, is
-not listed, since `orig check-tags` refused it as new work. A function already marked with the older "Coney's own"
-wording counts as marked. Each line names the function's file and line now, its length, the file and line it moved
-from and the commit and its title; the end gives the count per commit. `--since REF` looks only at the commits after
-`REF`, and `--out FILE` also writes the list as a TSV (`where`, `function`, `lines`, `moved_from`, `commit`, `title`)
-for the audit to read. It walks the first-parent history, which is `main`'s own, and takes about two and a half minutes
-on all of it.
-
-**Where the list is:** it is this command's output, rerun when needed and never a file in the repository; a function
-leaves it when it gets a tag or marker. On 2026-11-19 it found 37 functions, all moved from `src/platform/` into
-`src/gamemodes/` by #1426 (task 1273); the issue counted 54 on 2026-11-01, before later changes tagged or marked some.
-
-**Who works it:** there is no separate audit team ([Legacy fidelity](how-we-work.md#fidelity-audit)). A task that
-touches one of these functions tags it in the same pull request: `@orig` with its study and compare when it ports
-original behaviour, `@coney-only <reason>` when it does not. The coordinator files the rest as ordinary issues from
-`--out`, grouped by commit, and each is claimed like any task.
-
 ```sh
 uv run --project python coney-tools orig check-copy [--base origin/main] [--all]
 ```
@@ -140,6 +109,44 @@ A line with `// copy-check: allow <reason>` passes. Each finding names the file,
 and the exit code is 1 when there is one. `ci run` runs it in its `orig` step, and CI's `python` job runs it
 with `--base HEAD^1`. On 2026-10-21 `--all` found none in `src/`. The check cannot see a transcription's shape; the
 reviewer agent judges that.
+
+### The functions that moved in untagged {#moved-backlog}
+
+A pure move keeps the standing a function had, so code that needed no tag in a Coney-only folder (`src/platform/`)
+can enter a gameplay folder (`src/gamemodes/`) with neither `@orig` nor `@coney-only`, and some of it ports original
+behaviour. `--backlog` lists those functions instead of checking a change:
+
+```sh
+uv run --project python coney-tools orig check-tags --backlog [--since REF] [--out FILE]
+```
+
+It is no gate and exits 0. Nothing is listed by hand: the command follows each untagged, non-exempt function of the
+gameplay folders back through the commits that changed its file, by the move rules of
+[Any function](orig-body-hash.md#any-function). A commit where it is a move from a file outside the gameplay folders
+is where it arrived (`orig check-tags` found the same function a move, not new work); a move between gameplay folders
+only sends the search further back, and a function that is new in a commit, or moved there with its code changed, is
+not listed, since `orig check-tags` refused it as new work. A function already marked with the older "Coney's own"
+wording counts as marked. Each line names the function's file and line now, its length, the file and line it moved
+from and the commit and its title; the end gives the count per commit. `--since REF` looks only at the commits after
+`REF`, and `--out FILE` also writes the list as a TSV (`where`, `function`, `lines`, `moved_from`, `commit`, `title`)
+for the audit to read. It walks the first-parent history, which is `main`'s own, and takes about two minutes
+on all of it.
+
+**A limit:** the search follows a function by its key (its file, qualified name and parameter types). A function whose
+key was already in its file before a commit counts as having stood there, so a body replaced under the same key is
+credited to the earlier move, and the list may name the commit that brought in the first body. A function deleted and
+written again stops the search, since its key is then absent.
+
+**Where the list is:** it is this command's output, rerun when needed and never a file in the repository; a function
+leaves it when it gets a tag or marker. On 2026-11-19 it found 37 functions, all moved from `src/platform/` into
+`src/gamemodes/` by #1426 (task 1273); the issue's 54 also counted 17
+exempt ones that need no tag (16 one-statement accessors in `play_level_simulation.h` and an empty constructor in its
+`.cpp`), and at #1426 itself the same 37 were untagged, so nothing has been tagged since.
+
+**Who works it:** there is no separate audit team ([Legacy fidelity](how-we-work.md#fidelity-audit)). A task that
+touches one of these functions tags it in the same pull request: `@orig` with its study and compare when it ports
+original behaviour, `@coney-only <reason>` when it does not. The coordinator files the rest as ordinary issues from
+`--out`, grouped by commit, and each is claimed like any task.
 
 ```sh
 uv run --project python coney-tools orig review-stamp (--branch B | --worktree WT) [--base origin/main] [--ledger F]

@@ -165,6 +165,28 @@ def test_a_function_moved_and_changed_in_one_commit_is_new_work_not_a_move(repo:
     assert orig_backlog.find(repo) == []
 
 
+def test_a_body_replaced_later_under_the_same_key_is_credited_to_the_earlier_move(repo: Path) -> None:
+    # The documented limit: the search follows the key, so the later rewrite does not end it.
+    move(repo, "src/platform/hats.cpp", "src/gamemodes/hats.cpp")
+    moved = commit(repo, "core: Move the hats")
+    path = repo / "src/gamemodes/hats.cpp"
+    path.write_text(path.read_text(encoding="utf-8").replace("kick(i);", "spin(i); spin(i);"), encoding="utf-8")
+    commit(repo, "core: Rewrite the hats")
+    assert [f.commit for f in orig_backlog.find(repo)] == [moved]
+
+
+def test_a_function_deleted_and_written_again_is_not_credited_to_the_old_move(repo: Path) -> None:
+    move(repo, "src/platform/hats.cpp", "src/gamemodes/hats.cpp")
+    commit(repo, "core: Move the hats")
+    path = repo / "src/gamemodes/hats.cpp"
+    text = path.read_text(encoding="utf-8")
+    path.write_text(text.replace("void PlayLevelMode::stepHats", "void PlayLevelMode::stepHatsGone"), encoding="utf-8")
+    commit(repo, "core: Drop the hats")
+    path.write_text(text, encoding="utf-8")
+    commit(repo, "core: Write the hats again")
+    assert orig_backlog.find(repo) == []
+
+
 def test_a_moved_function_tagged_later_leaves_the_list(repo: Path) -> None:
     move(repo, "src/platform/hats.cpp", "src/gamemodes/hats.cpp")
     commit(repo, "core: Move the hats")
