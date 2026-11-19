@@ -980,8 +980,9 @@ class Fighter {
     // (false).
     // @orig 0x0027e040 Player_UpdateActionsHidden (unknown)
     bool tryStealthKill(const FighterInput& input, HumanAnimator& animator, float& heading);
-    // Whether `target` may be grabbed by this human now (`Human_CanBeGrabbedBy`): a human it can hold, standing with
-    // health left, within kGrabbableHeight above or below, its clip holding none of kGrabRefusedHeld.
+    // Whether `target` may be grabbed by this human now: a human it can hold, standing with health left, within
+    // kGrabbableHeight above or below, its clip holding none of kGrabRefusedHeld; its hold view, or null.
+    // @orig 0x00225520 Human_CanBeGrabbedBy (unknown)
     [[nodiscard]] static Holdable* grabbableNow(Combatant& target, const FighterInput& input);
     // The kill itself: the clip by the weapon held (637 bare-handed, 639 set 1, 641 set 2 or 3), and for a pad player
     // still in the target's rear quarter the paired move, the victim's flag 0x8 cleared and its side holding 0x400000.
@@ -995,6 +996,8 @@ class Fighter {
     bool startPairedMove(Holdable& victim, std::uint32_t clip, const PairedMove& move, const FighterInput& input,
                          HumanAnimator& animator, float& heading);
     // The kill's clip is over: the pair's end ends the hiding, and the killer stands in the fight stance.
+    // @coney-only Coney's watch for the kill clip's end; the original's pair-end callback (Human_BreakPair) is not
+    // ported whole
     void followStealthKill(const HumanAnimator& animator);
 
     // --- fighter_victim.cpp: the player hit, warned and grabbed.

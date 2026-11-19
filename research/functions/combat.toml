@@ -756,9 +756,19 @@ name = "Attack_StartPaired"
 page = "combat-grabs.md#grabbing"
 role = "a grab move on the victim: power check and spend, damage"
 level = "confirmed-code"
-note = "confirmed (code), runtime"
-coney = "src/human/fighter.h:Fighter::answerCounter"
-status = "legacy"
+note = "confirmed (code), runtime. `Fighter::takePairedMove` ports its victim side; `Fighter::answerCounter`'s use of it for the AI's counter is not compared yet"
+coney = "src/human/fighter.h:Fighter::startPairedMove"
+status = "compared"
+
+[[function.gaps]]
+what = "the throwing branch, the class record's weapon scale on the damage, the push spheres, and the victim's loop after a side that does not defeat it are not built"
+relation = "stand-in"
+question = "stealth.md#q-stealth-set5"
+
+[[function.gaps]]
+what = "a side with no knockdown event is taken as the dying clip, not paired with a random dying chain"
+relation = "stand-in"
+question = "stealth.md#q-stealth-side"
 
 [[function]]
 address = 0x00263380

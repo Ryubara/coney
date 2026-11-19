@@ -388,22 +388,22 @@ Chapter 5 of `level87` (`level87_chap5_club.lua`) is the stealth tutorial. What 
   it runs to the farthest phone flag in range and, 1.5 s later, starts the enemy gang's second wanted timer
   ([Crimes](crimes.md#coneys-implementation)), which `GangIsWanted(gang, false)` reads.
 
-Not yet: the other players' Warriors hiding and their hide order, the camera's raised look-at, the half-volume
-footsteps, the scouts' clips, glances, roaming and radar blips, the help call, the investigation of an unseen hit, the
-caller's lines and clips, the responders the call brings (only logged), the stealth creep's ready clips,
-distractions and level87's checkpoint 5 as a whole.
+Coney does not build the other players' Warriors hiding and their hide order, the camera's raised look-at, the
+half-volume footsteps, the scouts' clips, glances, roaming and radar blips, the help call, the investigation of an
+unseen hit, the caller's lines and clips, the responders the call brings (only logged), the stealth creep's ready
+clips, distractions and level87's checkpoint 5 as a whole.
 
 ## Open questions
 
-- <span id="q-stealth-set5"></span>The set-5 weapon's cross (`0x002880d8`) starts the stealth kill while hidden; its
-  own conditions (the page's "drops it and does 637 when within 1.5 m") are not ported, nor the move style `0xf` the
-  kill pops, nor the class record's weapon scale on its damage. Coney's hidden buttons pass a set 4-6 press to the
-  dispatcher, and its chain press and armed special run after the kill test rather than before it.
-
-- <span id="q-stealth-side"></span>Whether the victim's sides (638, 640, 642) carry a knockdown event: with none,
-  `Attack_StartPaired` (`0x00262ac8`) pairs the side with a random dying chain of the victim's own (308-311) instead
-  of taking the side as the dying clip. Coney takes the side as the dying clip; a disc read of the clips' events
-  settles it.
+- **The stealth kill's set-5 path**{#q-stealth-set5}: the set-5 weapon's cross (`0x002880d8`) starts the
+  stealth kill while hidden; its own conditions (the page's "drops it and does 637 when within 1.5 m") are not
+  ported, nor the move style `0xf` the kill pops, nor the class record's weapon scale on its damage. Coney's hidden
+  buttons pass a set 4-6 press to the dispatcher, and its chain press and armed special run after the kill test
+  rather than before it.
+- **The kill victim's side**{#q-stealth-side}: whether the victim's sides (638, 640, 642) carry a knockdown
+  event: with none, `Attack_StartPaired` (`0x00262ac8`) pairs the side with a random dying chain of the victim's own
+  (308-311) instead of taking the side as the dying clip. Coney takes the side as the dying clip; a disc read of the
+  clips' events settles it.
 - Who plays the prepared hidden line (`0x57`-`0x59`) and when.
 - A runtime check of the hide rules (blue radar, a guard 1.9 m away on normal ground not seeing a hidden player).
 - Where exactly an Investigate for a noise ends up: `GangBrain_OnCrimeSeen` snaps the noise point to the nav mesh along

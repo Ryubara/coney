@@ -470,6 +470,20 @@ coney = "src/human/human.h:Human::idleUnderControl"
 status = "legacy"
 
 [[function]]
+address = 0x00225520
+name = "Human_CanBeGrabbedBy"
+page = "stealth.md#stealth-kill"
+role = "Whether another human may grab this one now: no flag 0x40, not down, dead or in a scene, within 0.25 m of height, none of the blocking state or held bits; a knocked-down one only past half its rise."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::grabbableNow"
+status = "compared"
+
+[[function.gaps]]
+what = "the scene state and the state word's mask are read as standing with health left; the knocked-down branch cannot pass"
+relation = "stand-in"
+question = "stealth.md#q-stealth-set5"
+
+[[function]]
 address = 0x002256a0
 name = "Human_CanBeGrabbed"
 page = "characters.md#code-core"

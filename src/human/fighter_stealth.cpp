@@ -48,16 +48,6 @@ constexpr float kPairedAlignSeconds = 1.0F / 60.0F;
 // m, docs/research/combat-moves.md#stealth).
 constexpr anim::Vec3 kStealthFallbackPoint{0.0F, 0.74F, 0.0F};
 
-// Whether the command is one of the hidden buttons' presses: square pressed (0xf), cross (0x10), circle held (0xe)
-// or circle tapped (0xd).
-bool hiddenPress(combat::CommandId command) {
-    return command == combat::command::kSquarePressed || command == combat::command::kCrossLongHold ||
-           command == combat::command::kCircleHeld || command == combat::command::kCircleTapped;
-}
-
-// The horizontal distance between two points.
-float flatDistance(anim::Vec3 a, anim::Vec3 b) { return std::hypot(b.x - a.x, b.y - a.y); }
-
 } // namespace
 
 bool Fighter::tryStealthKill(const FighterInput& input, HumanAnimator& animator, float& heading) {
@@ -65,8 +55,13 @@ bool Fighter::tryStealthKill(const FighterInput& input, HumanAnimator& animator,
     // handlers' (updateL1()), which the original runs on the same branch first: the block, the dispatcher's busy
     // phases and a hold. **Coney's choice**: Player_BufferChain's chain press and the armed special of a throwable
     // held object (Player_ArmedSpecial) come before the buttons in the original; Coney's dispatcher takes both after.
-    if (!m_player || !m_lockBlocked || blocking() || (animator.flags() & kStanceGate) != 0 || m_held != nullptr ||
-        !hiddenPress(input.command)) {
+    if (!m_player || !m_lockBlocked || blocking() || (animator.flags() & kStanceGate) != 0 || m_held != nullptr) {
+        return false;
+    }
+    // Square pressed (0xf), cross (0x10), circle held (0xe) or circle tapped (0xd); any other press goes on.
+    const combat::CommandId command = input.command;
+    if (command != combat::command::kSquarePressed && command != combat::command::kCrossLongHold &&
+        command != combat::command::kCircleHeld && command != combat::command::kCircleTapped) {
         return false;
     }
     // A weapon of set 4, 5 or 6 takes the press to its own cross (0x002880d8), which the dispatcher plays; without

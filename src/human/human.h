@@ -709,6 +709,7 @@ class Human final : public Holdable {
     [[nodiscard]] std::optional<int> takeTandemRequest() override { return m_fighter.takeTandemRequest(); }
     /// A paired move's victim side (Fighter::takePairedMove()), from where it stands now and with its script's states
     /// (arrested, wounded, knocked out), which the death chain reads.
+    /// @coney-only the hand-over of a paired move's victim side from the attacker's update to this human's fighter
     bool takePairedMove(const PairedMove& move) override {
         return m_fighter.takePairedMove(move,
                                         FighterInput{.position = position(),
