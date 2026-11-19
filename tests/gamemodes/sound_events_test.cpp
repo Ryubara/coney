@@ -16,6 +16,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/game_events.h"
+#include "hud/hud_audio.h"
 #include "human/human_sounds.h"
 #include "scripting/sound_bindings.h"
 
@@ -28,6 +29,7 @@ namespace {
 class RecordingSound final : public coney::script::SoundHost {
   public:
     std::vector<std::string> calls;
+    bool speaks = true; ///< whether a line or command asked for plays
 
     void configureMusicTrack(std::uint32_t /*track*/, float /*barMs*/, float /*volume*/) override {}
     void setInterfaceSound(int /*cue*/, std::uint32_t /*sound*/) override {}
@@ -64,14 +66,15 @@ class RecordingSound final : public coney::script::SoundHost {
     void stopMusic() override { calls.emplace_back("music stop"); }
     void setMusicVolume(float /*volume*/) override {}
     void setListener(int /*listener*/) override {}
-    bool speak(const coney::script::SpeechCall& /*call*/, std::string_view /*callback*/,
+    bool speak(const coney::script::SpeechCall& call, std::string_view /*callback*/,
                std::optional<double> /*callbackArg*/) override {
-        return true;
+        calls.push_back(std::format("speak {}", call.line));
+        return speaks;
     }
-    void shutUp(double /*human*/, bool /*force*/) override {}
-    std::optional<double> sayCommand(const coney::script::CommandCall& /*call*/,
-                                     std::string_view /*callback*/) override {
-        return 4.0;
+    void shutUp(double human, bool force) override { calls.push_back(std::format("shut up {} {}", human, force)); }
+    std::optional<double> sayCommand(const coney::script::CommandCall& call, std::string_view /*callback*/) override {
+        calls.push_back(std::format("command {}", call.command));
+        return speaks ? std::optional<double>(4.0) : std::nullopt;
     }
     [[nodiscard]] bool soundPlaying(double handle) const override { return handle == 11.0; }
     void gameplayEntered() override {}
@@ -112,17 +115,26 @@ TEST_CASE("sound events: the calls a player hears are raised and played, the res
     seam.humanSound(humanCall(coney::human::HumanSound::Kind::Anim));
     seam.humanSound(humanCall(coney::human::HumanSound::Kind::Impact));
     seam.humanSound(humanCall(coney::human::HumanSound::Kind::RageStart));
+    // Speech: a line by name, a command and a line stopped, each raised when it plays.
+    CHECK(seam.speak(coney::script::SpeechCall{.human = 6, .line = "l99_hi", .interrupt = true, .lookAt = 0}, {}, {}));
+    CHECK(seam.sayCommand(coney::script::CommandCall{.human = 6, .voiceSet = 2, .command = 75, .cutting = true}, {}) ==
+          4.0);
+    seam.shutUp(6, true);
+    // A line or a command that does not play raises nothing.
+    sound.speaks = false;
+    CHECK_FALSE(seam.speak(coney::script::SpeechCall{.human = 6, .line = "l99_no"}, {}, {}));
+    CHECK_FALSE(seam.sayCommand(coney::script::CommandCall{.human = 6, .command = 76}, {}).has_value());
     // Not heard by a player: passed on, nothing raised.
     seam.loadSoundBank("level99");
     CHECK(seam.addAmbientEmitter({}) == 3.0);
-    CHECK(seam.sayCommand({}, {}) == 4.0);
     CHECK(seam.soundPlaying(11.0));
 
     CHECK(sound.calls == std::vector<std::string>{"2d 0x10", "3d 0x20", "ambient 0x30", "ambient stop",
                                                   "music 0x40 false OnEnd", "system 0x41 2", "music stop", "human 5",
-                                                  "human 5", "human 5", "bank level99"});
+                                                  "human 5", "human 5", "speak l99_hi", "command 75", "shut up 6 true",
+                                                  "speak l99_no", "command 76", "bank level99"});
     const std::vector<GameEvent> raised = events.take();
-    REQUIRE(raised.size() == 10);
+    REQUIRE(raised.size() == 13);
     CHECK(raised[0] == GameEvent{.kind = GameEventKind::Sound2D, .id = 0x10});
     CHECK(raised[1] == GameEvent{.kind = GameEventKind::Sound3D, .id = 0x20, .position = {1.0F, 2.0F, 3.0F}});
     CHECK(raised[2] == GameEvent{.kind = GameEventKind::LoopStart, .id = 0x30});
@@ -138,6 +150,10 @@ TEST_CASE("sound events: the calls a player hears are raised and played, the res
     CHECK(raised[9] ==
           GameEvent{
               .kind = GameEventKind::HumanSound, .subject = 5, .id = 0, .value = 2, .position = {1.0F, 2.0F, 0.0F}});
+    CHECK(raised[10] == GameEvent{.kind = GameEventKind::Speech, .subject = 6, .value = 1, .text = "l99_hi"});
+    // Voice set 2 travels as 3; bit 0 interrupting (the default), bit 1 cutting.
+    CHECK(raised[11] == GameEvent{.kind = GameEventKind::Command, .subject = 6, .id = 75, .value = 3, .extra = 3});
+    CHECK(raised[12] == GameEvent{.kind = GameEventKind::SpeechStop, .subject = 6, .value = 1});
 }
 
 // Expected: unverified, #547 (Coney's own network play; the original has none)
@@ -172,4 +188,26 @@ TEST_CASE("scene changes: ends then starts, compared a step apart", "[gamemodes]
     CHECK(raised[2] == GameEvent{.kind = GameEventKind::SceneEnd, .id = 3});
     CHECK(raised[3] == GameEvent{.kind = GameEventKind::SceneStart, .id = 9});
     CHECK(playing == std::vector<std::uint32_t>{7, 9});
+}
+
+// Expected: unverified, #547 (Coney's own network play; the original has none)
+TEST_CASE("a cue gameplay plays on the HUD is raised for that player's HUD, then played", "[gamemodes][events]") {
+    std::vector<std::string> played;
+    coney::hud::HudSound sound;
+    sound.play = [&played](std::string_view name) {
+        played.emplace_back(name);
+        return coney::hud::HudSoundHandle{1};
+    };
+    sound.cueName = [](int cue) { return cue == 23 ? std::string("flash") : std::string(); };
+    coney::GameEvents events;
+    // Offline it plays the same and nothing is kept.
+    coney::playHudCue(sound, &events, 23, 4);
+    CHECK(events.size() == 0);
+    events.setRecording(true);
+    coney::playHudCue(sound, &events, 23, 4);
+    coney::playHudCue(sound, nullptr, 23, 4);
+    CHECK(played == std::vector<std::string>{"flash", "flash", "flash"});
+    const std::vector<GameEvent> raised = events.take();
+    REQUIRE(raised.size() == 1);
+    CHECK(raised[0] == GameEvent{.kind = GameEventKind::Cue, .subject = 4, .id = 23, .value = 0});
 }

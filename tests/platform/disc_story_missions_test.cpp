@@ -37,6 +37,7 @@
 #include "animation/anim_math.h"
 #include "characters/character_types.h"
 #include "core/error.h"
+#include "core/game_events.h"
 #include "core/game_random.h"
 #include "core/game_timer.h"
 #include "core/input_script.h"
@@ -63,6 +64,7 @@
 #include "support/live_pad.h"
 #include "warriors/created_humans.h"
 #include "world/sector_budget.h"
+#include "world_objects/cars.h"
 
 namespace {
 
@@ -126,14 +128,15 @@ std::vector<std::uint32_t> randomTable(const coney::io::Wad& wad) {
 }
 
 // The level loader `--play-level` gives gameplay: the play mode at the scripts' player start, with the scripts' AI and
-// character configuration.
+// character configuration, raising its events on `events` (null: none) as GameSession::loadLevel() has it raise them.
 coney::GameplayMode::LevelLoader playLoader(coney::platform::RenderEngine& renderer, const coney::io::Wad& wad,
                                             coney::world::SectorBudget& budget, coney::LevelScripts& scripts,
                                             const std::function<void(std::string_view)>& print,
-                                            std::optional<coney::StartPlace> place = std::nullopt) {
-    return [&renderer, &wad, &budget, &scripts, print,
-            place](const coney::LevelStart& start,
-                   const coney::ScriptedCast& cast) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
+                                            std::optional<coney::StartPlace> place = std::nullopt,
+                                            coney::GameEvents* events = nullptr) {
+    return [&renderer, &wad, &budget, &scripts, print, place,
+            events](const coney::LevelStart& start,
+                    const coney::ScriptedCast& cast) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
         std::optional<coney::human::PlayerStart> playerStart;
         coney::platform::PlayerSetup setup;
         setup.ai = coney::ai::aiConfigFrom(scripts.recorded());
@@ -158,6 +161,7 @@ coney::GameplayMode::LevelLoader playLoader(coney::platform::RenderEngine& rende
         if (place) {
             (*mode)->startAt(*place);
         }
+        (*mode)->setGameEvents(events);
         return std::unique_ptr<coney::GameMode>(std::move(*mode));
     };
 }
@@ -188,8 +192,10 @@ constexpr std::string_view kDefaultWalk = "540 stick left 0 70\n600 stick left 7
 // with the scripts' AI and character configuration) for 20 s, the stick pushed forward for the last 2 s; or, with
 // `script`, that input script from `place` (as `--start` gives it). When the default walk is blocked (a wall, a ledge
 // or a crewman in the way), the stick then goes right, back and left for 2 s each, and the run keeps the longest walk.
+// The level raises its events on `events` (null: none).
 MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int checkpoint,
-                       std::string_view script = kDefaultWalk, std::optional<coney::StartPlace> place = std::nullopt) {
+                       std::string_view script = kDefaultWalk, std::optional<coney::StartPlace> place = std::nullopt,
+                       coney::GameEvents* events = nullptr) {
     MissionRun run;
     auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
     REQUIRE(engine.has_value());
@@ -210,7 +216,7 @@ MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int ch
     coney::LevelScripts scripts(coney::script::wadScriptSource(wad), level, checkpoint, print, options);
     coney::GameplayMode gameplay(renderer, scripts.scripts(), scripts.context(), scripts.state(), scripts.humans(),
                                  scripts.flags(), scripts.recorded(),
-                                 playLoader(renderer, wad, budget, scripts, print, place), print);
+                                 playLoader(renderer, wad, budget, scripts, print, place, events), print);
     gameplay.setLevel(std::string(level));
 
     // By default 18 s with the pad at rest, then the stick 70 % forward for 2 s (the other directions follow, used only
@@ -391,8 +397,11 @@ TEST_CASE("the disc's level34 crate stack breaks on the first square and goes", 
     place.x = -26.4F;
     place.y = -75.8F;
     place.headingDegrees = 180.0F;
+    // Network play: the level's events are recorded, as a host records them.
+    coney::GameEvents events;
+    events.setRecording(true);
     const MissionRun run =
-        playMission(*wad, "level34", 2, "5 tap square\n45 tap square\n85 tap square\n125 tap square\n", place);
+        playMission(*wad, "level34", 2, "5 tap square\n45 tap square\n85 tap square\n125 tap square\n", place, &events);
     REQUIRE(run.loaded);
     CHECK(run.scriptErrors == 0);
     const auto count = [&run](std::string_view text) {
@@ -409,6 +418,13 @@ TEST_CASE("the disc's level34 crate stack breaks on the first square and goes", 
     const std::string handle = crate->substr(crate->find(' ', std::string_view("objects: dyn_crate_stack").size()) + 1);
     const std::string removed = std::format("objects: prop {} removed", handle.substr(0, handle.find(' ')));
     CHECK(count(removed) == 1);
+    // Its removal raised one ObjectBreak of a prop (id 0) for it (docs/guides/multiplayer.md#events).
+    const std::vector<coney::GameEvent> raised = events.take();
+    const auto crateBreaks = std::ranges::count_if(raised, [&handle](const coney::GameEvent& event) {
+        return event.kind == coney::GameEventKind::ObjectBreak && event.id == 0 &&
+               std::format("{:.0f}", event.subject) == handle.substr(0, handle.find(' '));
+    });
+    CHECK(crateBreaks == 1);
     for (const std::string& line : run.log) {
         if (line.find("hit, broke") != std::string::npos) {
             std::printf("  level34 checkpoint 2: %s", line.c_str());
@@ -473,9 +489,13 @@ TEST_CASE("the disc's level34 radio objective: three car stereos stolen with the
     coney::LevelScripts scripts(coney::script::wadScriptSource(*wad), "level34", 2, print, options);
     std::vector<std::string> trace;
     scripts.scripts().traceCalls([&trace](std::string_view line) { trace.emplace_back(line); });
+    // Network play: the level's events are recorded, as a host records them.
+    coney::GameEvents events;
+    events.setRecording(true);
     coney::GameplayMode gameplay(
         **engine, scripts.scripts(), scripts.context(), scripts.state(), scripts.humans(), scripts.flags(),
-        scripts.recorded(), playLoader(**engine, *wad, budget, scripts, print, placeAt(-82.4F, -156.8F, 90.0F)), print);
+        scripts.recorded(),
+        playLoader(**engine, *wad, budget, scripts, print, placeAt(-82.4F, -156.8F, 90.0F), &events), print);
     gameplay.setLevel("level34");
     auto sceneList = coney::scenes::loadSceneList(*wad);
     REQUIRE(sceneList.has_value());
@@ -530,8 +550,24 @@ TEST_CASE("the disc's level34 radio objective: three car stereos stolen with the
     CHECK(count(trace, "> F.InventoryPickup(11)") == 3);
     // The third completes the objective: the scripts save it as done (Lua save float 3 = its target, 3).
     CHECK(count(trace, "SetLUASaveDataFloat(3, 3)") == 1);
-    std::printf("  level34 radios: %td stereos stolen, %td item-11 pick-ups heard\n",
-                count(log, "theft: stole the stereo of car"), count(trace, "> F.InventoryPickup(11)"));
+    // Each car whose window broke raised an ObjectBreak of car glass (its hit effect kind plus 1, never 0); sparks,
+    // steam and smoke raised none (docs/guides/multiplayer.md#events).
+    using Kind = coney::world_objects::CarHitEffectKind;
+    const auto isBreak = [](const coney::GameEvent& event, Kind kind) {
+        return event.kind == coney::GameEventKind::ObjectBreak && event.id == static_cast<std::uint32_t>(kind) + 1U;
+    };
+    std::set<double> glassCars;
+    for (const coney::GameEvent& event : events.take()) {
+        if (isBreak(event, Kind::SmallShatter) || isBreak(event, Kind::LargeShatter) ||
+            isBreak(event, Kind::HeadlightGlass) || isBreak(event, Kind::RearLightGlass)) {
+            glassCars.insert(event.subject);
+        }
+        CHECK_FALSE((isBreak(event, Kind::Sparks) || isBreak(event, Kind::Steam) || isBreak(event, Kind::HoodSmoke)));
+    }
+    CHECK(glassCars.size() >= 3);
+    std::printf("  level34 radios: %td stereos stolen, %td item-11 pick-ups heard, glass broken on %zu cars\n",
+                count(log, "theft: stole the stereo of car"), count(trace, "> F.InventoryPickup(11)"),
+                glassCars.size());
 }
 
 namespace {
@@ -587,6 +623,9 @@ TEST_CASE("the disc's level34 muggings bonus counts a mugging done with the stic
     coney::LevelScripts scripts(coney::script::wadScriptSource(*wad), "level34", 2, print, options);
     std::vector<std::string> trace;
     scripts.scripts().traceCalls([&trace](std::string_view line) { trace.emplace_back(line); });
+    // Network play: the level's events are recorded, as a host records them.
+    coney::GameEvents events;
+    events.setRecording(true);
     coney::GameplayMode gameplay(**engine, scripts.scripts(), scripts.context(), scripts.state(), scripts.humans(),
                                  scripts.flags(), scripts.recorded(),
                                  playLoader(**engine, *wad, budget, scripts, print), print);

@@ -7,17 +7,22 @@
 // docs/research/pause.md); the debug menus' Lua console and Cheats page call into the level's own scripts. It runs
 // only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "animation/anim_math.h"
+#include "core/game_events.h"
 #include "debug/debug_session.h"
 #include "debug/tunables.h"
+#include "effects/level_effects.h"
 #include "fileio/wad.h"
 #include "gamemodes/pause_mode.h"
 #include "platform/game_session.h"
@@ -122,4 +127,36 @@ TEST_CASE("the disc's level99 checkpoint 2 is set up the same started directly a
     CHECK(jumped.servicesBank == started.servicesBank);
     CHECK(jumped.debugUsesGame == started.debugUsesGame);
     CHECK(jumped.debugSeesLevel == started.debugSeesLevel);
+}
+
+// Expected: unverified, #547 (the events are Coney's own network play; the original has none)
+TEST_CASE("the disc's level99 raises its scene and particle starts on the session's game events",
+          "[disc][session][events]") {
+    // GameSession::setGameEvents() reaches the level GameSession::loadLevel() makes: its street scene's start
+    // (PlayLevelMode::stepScenes()) and a particle system its particles start (docs/guides/multiplayer.md#events).
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    coney::GameEvents events;
+    events.setRecording(true);
+    coney::test::DiscSession run(*wad, "");
+    run.session().setGameEvents(&events);
+    run.session().startAtLevel("level99", 2);
+    REQUIRE(run.runUntilPlay());
+    REQUIRE(run.runToPlayFrame(kAfterPause));
+    const std::vector<coney::GameEvent> raised = events.take();
+    const auto sceneStarts = std::ranges::count_if(
+        raised, [](const coney::GameEvent& event) { return event.kind == coney::GameEventKind::SceneStart; });
+    std::printf("  level99 cp2 events: %zu in all, %td scene starts\n", raised.size(), sceneStarts);
+    CHECK(sceneStarts >= 1);
+    // The level's particles raise what they start.
+    coney::effects::LevelEffects* effects = run.session().gameplay().effects();
+    REQUIRE(effects != nullptr);
+    REQUIRE(effects->particles.spawn("spark", coney::anim::Vec3{1.0F, 2.0F, 3.0F}) != nullptr);
+    const std::vector<coney::GameEvent> spark = events.take();
+    REQUIRE(spark.size() == 1);
+    CHECK(spark[0].kind == coney::GameEventKind::ParticleStart);
+    CHECK(spark[0].text == "spark");
+    run.session().setGameEvents(nullptr);
 }

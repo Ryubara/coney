@@ -31,7 +31,9 @@ enum class GameEventKind : std::uint8_t {
     MusicStop = 6,     ///< The music stops.
     LoopStart = 7,     ///< The ambient track (a loop): `id` its hash.
     LoopStop = 8,      ///< The ambient track stops.
-    ParticleStart = 9, ///< A particle system: `text` its type, at `position`, following `subject` (none: 0).
+    ParticleStart = 9, ///< A particle system: `text` its type, at `position` turned by `rotation`, following
+                       ///< `subject` (none: 0), `id` its colour and `value` its rectangle (the type's unless its
+                       ///< creator gave others).
     ObjectBreak = 10,  ///< A world object breaks: `subject` it, `id` how (a car's hit effect kind plus 1, 0 a prop),
                        ///< at `position`.
     HudMessage = 11,   ///< An announcement: `id` its kind, `value` its flag, `text` it.
@@ -41,6 +43,19 @@ enum class GameEventKind : std::uint8_t {
     SceneEnd = 14,     ///< A scene ends: `id` the scene.
     MovieStart = 15,   ///< A movie starts: `text` its name, `value` 1 when skippable.
     MovieEnd = 16,     ///< A movie ends: `text` its name, `value` 1 when a button skipped it.
+    Speech = 17,       ///< A line a human says by name (`HuSpeak`): `subject` him, `text` the line, `value` 1 when it
+                       ///< cuts off the line he was saying (`HuSpeakNI`).
+    Command = 18,      ///< A speech command a human says: `subject` him, `id` the command, `value` his voice set plus
+                       ///< 1 (0 unknown), `extra` bit 0 interrupting, bit 1 cutting.
+    SpeechStop = 19,   ///< A human's line is stopped (`HuShutUp`): `subject` him, `value` 1 when forced.
+    MaterialPair = 20, ///< A world object's material pair sound from the sound matrix: `id` its material, `value` the
+                       ///< other, `extra` the volume in thousandths, at `position`.
+    Cue = 21,          ///< An interface cue: `id` the cue, `subject` the human whose HUD plays it (0 none), `value` 1
+                       ///< when it plays at `position` (a world object's), 0 as a 2D sound.
+    Hint = 22,         ///< A tutorial hint (`HUDSetTutorialText`, `HUDFlushTutorialText`,
+                       ///< `HUDEnableGameTutorialText`): `id` 0 queued (`text` it, `value` its priority), 1 the
+                       ///< showing hint cleared, 2 flushed (`value` the priority), 3 the game's own hints on or off
+                       ///< (`value` 1 on).
 };
 
 /// The first and last GameEventKind, for loops and range checks.
@@ -58,18 +73,20 @@ enum GameEventField : std::uint8_t {
     kEventExtra = 1U << 3U,
     kEventPosition = 1U << 4U,
     kEventText = 1U << 5U,
+    kEventRotation = 1U << 6U,
 };
 
 /// One event as the simulation raises it. Whom it names is a script handle (a human's or a world object's), never a
 /// pointer: the network layer maps it to that thing's network id.
 struct GameEvent {
     GameEventKind kind = GameEventKind::Sound2D;
-    double subject = 0.0;            ///< The human or object it belongs to; 0 for none.
-    std::uint32_t id = 0;            ///< What: a sound's hash, a scene, a slot (by kind).
-    std::uint32_t value = 0;         ///< A small number or flags (by kind).
-    std::uint32_t extra = 0;         ///< A second number (by kind).
-    std::array<float, 3> position{}; ///< Where, game axes, metres.
-    std::string text{};              ///< A name or a message, at most kMaxGameEventText bytes.
+    double subject = 0.0;                                  ///< The human or object it belongs to; 0 for none.
+    std::uint32_t id = 0;                                  ///< What: a sound's hash, a scene, a slot (by kind).
+    std::uint32_t value = 0;                               ///< A small number or flags (by kind).
+    std::uint32_t extra = 0;                               ///< A second number (by kind).
+    std::array<float, 3> position{};                       ///< Where, game axes, metres.
+    std::string text{};                                    ///< A name or a message, at most kMaxGameEventText bytes.
+    std::array<float, 4> rotation{0.0F, 0.0F, 0.0F, 1.0F}; ///< Which way it faces: a quaternion (x, y, z, w).
 
     friend bool operator==(const GameEvent&, const GameEvent&) = default;
 };

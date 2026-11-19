@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "core/game_events.h"
+#include "hud/hud_audio.h"
 #include "scripting/sound_bindings.h"
 
 namespace coney {
@@ -102,5 +103,11 @@ class SoundEvents final : public script::SoundHost {
     script::SoundHost* m_inner;
     GameEvents* m_events;
 };
+
+/// Plays interface cue `cue` through the HUD's `sound`, raising it first on `events` (null: none) as a Cue for
+/// `human`'s HUD (0: none): the cues gameplay itself plays (a revive's flash, a theft's stages), as the HUD's own cues
+/// follow from the state a guest's HUD is given (docs/guides/multiplayer.md#events).
+/// @coney-only network play's seam on the HUD's cues; the original has no network play
+void playHudCue(const hud::HudSound& sound, GameEvents* events, int cue, double human);
 
 } // namespace coney

@@ -56,7 +56,13 @@ std::vector<GameEvent> everyKind() {
         GameEvent{.kind = MusicStop},
         GameEvent{.kind = LoopStart, .id = 0x55},
         GameEvent{.kind = LoopStop},
-        GameEvent{.kind = ParticleStart, .subject = 9, .position = {0.0F, 1.0F, 2.0F}, .text = "spark"},
+        GameEvent{.kind = ParticleStart,
+                  .subject = 9,
+                  .id = 0xff00ff80,
+                  .value = 42,
+                  .position = {0.0F, 1.0F, 2.0F},
+                  .text = "spark",
+                  .rotation = {0.0F, 0.0F, 0.5F, 0.866F}},
         GameEvent{.kind = ObjectBreak, .subject = 10, .id = 2, .position = {5.0F, 5.0F, 0.0F}},
         GameEvent{.kind = HudMessage, .id = 5, .value = 1, .text = "<DISPLAYTIME 4000>Go"},
         GameEvent{.kind = Objective, .id = 1, .value = 3, .extra = 8000, .text = "Find the Warriors"},
@@ -64,6 +70,12 @@ std::vector<GameEvent> everyKind() {
         GameEvent{.kind = SceneEnd, .id = 42},
         GameEvent{.kind = MovieStart, .value = 1, .text = "INTRO"},
         GameEvent{.kind = MovieEnd, .value = 1, .text = "INTRO"},
+        GameEvent{.kind = Speech, .subject = 11, .value = 1, .text = "vags/speeches/l99/hi"},
+        GameEvent{.kind = Command, .subject = 12, .id = 75, .value = 3, .extra = 2},
+        GameEvent{.kind = SpeechStop, .subject = 11, .value = 1},
+        GameEvent{.kind = MaterialPair, .id = 2, .value = 5, .extra = 250, .position = {1.0F, 1.0F, 0.5F}},
+        GameEvent{.kind = Cue, .subject = 13, .id = 23, .value = 1, .position = {2.0F, 0.0F, 1.0F}},
+        GameEvent{.kind = Hint, .id = 0, .value = 3, .text = "Press <X>"},
     };
 }
 
@@ -147,7 +159,7 @@ TEST_CASE("event batches: one sound's bytes are pinned", "[net][events]") {
 // Expected: unverified, #547 (Coney's own network play; the original has none)
 TEST_CASE("event batches: every kind round-trips with the fields it carries", "[net][events]") {
     const std::vector<NetEvent> events = toNetEvents(everyKind(), idOf);
-    REQUIRE(events.size() == 16);
+    REQUIRE(events.size() == 22);
     for (const bool reliable : {true, false}) {
         EventBatch batch{.reliable = reliable, .sequence = 9, .step = 300, .events = {}};
         for (const NetEvent& event : events) {
@@ -170,8 +182,8 @@ TEST_CASE("event batches: a broken one is refused", "[net][events]") {
     REQUIRE(decode(good).has_value());
     // Sequence 0.
     CHECK_FALSE(decode(bytes({0x0c, 0x00, 0x04, 0x00, 0x02, 0x00, 0x0a, 0x00})).has_value());
-    // Kind 17, unknown.
-    CHECK_FALSE(decode(bytes({0x0c, 0x02, 0x04, 0x00, 0x22, 0x00, 0x0a, 0x00})).has_value());
+    // Kind 23, unknown.
+    CHECK_FALSE(decode(bytes({0x0c, 0x02, 0x04, 0x00, 0x2e, 0x00, 0x0a, 0x00})).has_value());
     // Reliable set with a one-shot in it.
     CHECK_FALSE(decode(bytes({0x0c, 0x03, 0x04, 0x00, 0x02, 0x00, 0x0a, 0x00})).has_value());
     // Short, and with a trailing byte.
@@ -200,10 +212,10 @@ TEST_CASE("event sender: batches by delivery, numbered apart, split at the budge
     REQUIRE(first.size() == 2);
     CHECK(first[0].reliable);
     CHECK(first[0].sequence == 1);
-    CHECK(first[0].events.size() == 10);
+    CHECK(first[0].events.size() == 14);
     CHECK_FALSE(first[1].reliable);
     CHECK(first[1].sequence == 1);
-    CHECK(first[1].events.size() == 6);
+    CHECK(first[1].events.size() == 8);
     CHECK(first[1].step == 4);
     // The next step's one-shots take the next one-shot number; no reliable batch is made for none.
     const std::vector<EventBatch> second = sender.build(5, std::span(events).first(1));
@@ -284,7 +296,7 @@ TEST_CASE("event channel: every kind raised on the server arrives once on the cl
     CHECK(pair.client->takeEvents(raisedAt - 1).empty());
     const std::vector<ArrivedEvent> arrived = pair.client->takeEvents(raisedAt);
     const std::vector<NetEvent> sent = toNetEvents(everyKind(), idOf);
-    REQUIRE(sent.size() == 16);
+    REQUIRE(sent.size() == 22);
     REQUIRE(arrived.size() == sent.size());
     for (std::size_t i = 0; i < sent.size(); ++i) {
         CHECK(arrived[i].step == raisedAt);
@@ -330,8 +342,8 @@ TEST_CASE("event channel: over loss, repeats and reordering, reliable events arr
     for (const auto& [key, count] : seen) {
         CHECK(count == 1);
     }
-    CHECK(reliable == 40 * 10);
-    CHECK(oneShots <= 40 * 6);
+    CHECK(reliable == 40 * 14);
+    CHECK(oneShots <= 40 * 8);
     CHECK(oneShots > 0);
     CHECK(pair.client->state() == ClientState::Connected);
 }

@@ -195,6 +195,7 @@ struct NetEvent {
     std::uint32_t extra = 0;         ///< GameEvent::extra
     std::array<float, 3> position{}; ///< GameEvent::position
     std::string text{};              ///< GameEvent::text, at most kMaxGameEventText bytes
+    std::array<float, 4> rotation{0.0F, 0.0F, 0.0F, 1.0F}; ///< GameEvent::rotation
 
     friend bool operator==(const NetEvent&, const NetEvent&) = default;
 };

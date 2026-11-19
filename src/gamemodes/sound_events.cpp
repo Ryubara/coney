@@ -358,4 +358,6 @@ void SoundEvents::gameplayLeft() {
     }
 }
 
+void playHudCue(const hud::HudSound& sound, GameEvents* /*events*/, int cue, double /*human*/) { sound.playCue(cue); }
+
 } // namespace coney

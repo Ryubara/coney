@@ -3,8 +3,10 @@
 // streams that last, attached systems, hiding and killing, a pane's shards, and the same run from the same seed.
 #include "effects/particles.h"
 
+#include <array>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <vector>
 
@@ -49,7 +51,8 @@ TEST_CASE("the type table is sorted and finds its names exactly", "[particles]")
 }
 
 // Expected: unverified, #547 (the event is Coney's own network play; the original has none)
-TEST_CASE("a spawn raises one particle start while recording, not for the systems it makes in turn",
+TEST_CASE("a spawn raises one particle start while recording, with its turn, colour and rectangle, not for the "
+          "systems it makes in turn",
           "[particles][events]") {
     ParticleSystems systems;
     coney::GameEvents events;
@@ -58,16 +61,28 @@ TEST_CASE("a spawn raises one particle start while recording, not for the system
     REQUIRE(systems.spawn("spark", Vec3{1, 2, 3}) != nullptr);
     CHECK(events.size() == 0);
     events.setRecording(true);
-    REQUIRE(systems.spawn("part_fire", Vec3{1, 2, 3}, {}, 7, 40) != nullptr);
-    // A gun flash makes a puff of smoke itself: one start, the flash's.
-    REQUIRE(systems.spawn("part_gun_flash", Vec3{4, 5, 6}) != nullptr);
+    // A creator's turn, colour and rectangle travel, so a guest's system faces and looks the same.
+    REQUIRE(systems.spawn("part_fire", Vec3{1, 2, 3}, coney::anim::Quat{0.0F, 0.0F, 0.5F, 0.866F}, 7, 40, 0xff00ff80U,
+                          std::uint16_t{42}) != nullptr);
+    // A gun flash makes a puff of smoke itself: one start, the flash's, with its type's colour and rectangle.
+    const ParticleSystem* flash = systems.spawn("part_gun_flash", Vec3{4, 5, 6});
+    REQUIRE(flash != nullptr);
+    const std::uint32_t flashColour = flash->colour;
+    const std::uint16_t flashRect = flash->rect;
     const std::vector<coney::GameEvent> raised = events.take();
     REQUIRE(raised.size() == 2);
-    CHECK(raised[0] ==
-          coney::GameEvent{
-              .kind = coney::GameEventKind::ParticleStart, .subject = 7, .position = {1, 2, 3}, .text = "part_fire"});
+    CHECK(raised[0] == coney::GameEvent{.kind = coney::GameEventKind::ParticleStart,
+                                        .subject = 7,
+                                        .id = 0xff00ff80U,
+                                        .value = 42,
+                                        .position = {1, 2, 3},
+                                        .text = "part_fire",
+                                        .rotation = {0.0F, 0.0F, 0.5F, 0.866F}});
     CHECK(raised[1].text == "part_gun_flash");
     CHECK(raised[1].subject == 0);
+    CHECK(raised[1].id == flashColour);
+    CHECK(raised[1].value == flashRect);
+    CHECK(raised[1].rotation == std::array<float, 4>{0.0F, 0.0F, 0.0F, 1.0F});
 }
 
 TEST_CASE("a spawned system keeps its handle, place and type; an unknown name is inert", "[particles]") {
