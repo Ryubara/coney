@@ -454,8 +454,9 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // running humans met last step take their strike (Human_OnContact, docs/research/objects.md#trash-props).
     // @orig 0x00391d48 Obj_CreatePhysicsBody (unknown)
     void stepObjectBodies();
-    // Player 1's pick-up that reached its clip's event this step: the object is taken.
-    // @coney-only the play step's hand-off of player 1's pick-ups, throws and drops to the level's objects
+    // Player 1's pick-up that reached its clip's event this step: the object is taken. The downed humans' drops come
+    // first (stepDownDrops()).
+    // @coney-only the play step's hand-off of player 1's pick-ups, throws, drops and the downed humans' drops
     void stepPickups();
     // Each AI human's throw whose release event passed this step lets go of his held object, thrown, as player 1's
     // does (Human_ReleaseThrow runs for any human on event 10); his anim set follows his empty hand.
