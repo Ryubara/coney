@@ -275,6 +275,24 @@ TEST_CASE("A focus move blocks the d-pad for 20 ms and forgets the last command"
     CHECK(d.model.screen(screen)->widget(b)->list->selected() == 1);
 }
 
+TEST_CASE("A widget added to an open screen with no focus takes the focus") {
+    // Expected: Coney's own rule, docs/guides/mod-ui.md#widgets
+    Driver d;
+    const UiScreenId screen = menuScreen(d.model);
+    widget(d.model, screen, UiWidgetKind::Text, "title");
+    REQUIRE(d.model.openScreen(kProject, screen, 0, msOf(0)).has_value());
+    d.step(0);
+    REQUIRE(d.model.screen(screen)->focused() == std::nullopt);
+
+    // The list added once the screen is open takes the focus on the next step, and Down moves it.
+    const UiWidgetId list = widget(d.model, screen, UiWidgetKind::List, "list");
+    fill(d.model, list, 3);
+    d.step(0);
+    CHECK(d.model.screen(screen)->focused() == list);
+    d.tap(pad::kDown);
+    CHECK(d.model.screen(screen)->widget(list)->list->selected() == 1);
+}
+
 TEST_CASE("A focus change on a covered screen leaves the top screen's input alone") {
     // Expected: Coney's own rule, docs/guides/mod-ui.md#widgets
     // Only the top screen's focus moves block its d-pad; the covered screen takes its focus afresh when it comes back.
