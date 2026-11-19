@@ -167,8 +167,8 @@ build/dev/src/platform/coney --join 192.168.1.20 --net-name Swan # another machi
 build/dev/src/platform/coney --headless --frames 3 --host 127.0.0.1:0
 ```
 
-A test-mode run with `--host` or `--join` still makes each frame wait for a real 1/30 s while it runs, one step a
-frame: the other game is another process, and without the wait one would end its run before the other joined.
+A test-mode run with `--host` or `--join` still makes each frame wait for a real 1/30 s, one step a frame; why, and
+how the two-process tests rely on it, is in [Two processes](multiplayer.md#two-processes).
 
 Four options write the files that prove network play without a person
 ([The state digest](multiplayer.md#digest), [Replays](multiplayer.md#replays)); each takes a path, which it replaces:

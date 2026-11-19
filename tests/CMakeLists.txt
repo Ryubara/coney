@@ -686,8 +686,9 @@ endif()
 # coney processes over ENet on 127.0.0.1 compare the digests of the snapshots sent and decoded, a replay of the host's
 # session record gives its digests again, and offline play is the same with a session nobody joins. Without the disc
 # the games have no humans, so the digests cover the pads and the snapshots' plumbing; the disc-backed pair below
-# plays level99 with its humans. Each run's frames are paced at 30 a second while a session is open, so the host's 600
-# frames take twenty seconds, ample for a guest started under load to join and play its script.
+# plays level99 with its humans. Each run's frames are paced at 30 a second for the whole run when --host or --join
+# is given, so the host's 600 frames take twenty seconds, ample for a guest started under load to join and play its
+# script.
 # The digest's options are the debug build's (main.cpp), so the release-only build has none of these.
 if(CONEY_DEBUG_TOOLS)
     add_executable(net_pair_check support/net_pair_check.cpp)
