@@ -270,7 +270,8 @@ The approach and the takedown, confirmed (code) at `0x0027e040`, `0x0027da10`, `
    the normal `Player_Cross`, `Player_Square` and `Player_GrabOrTackle`. Confirmed (code) at `0x0027e040`.
 5. **The kill** (`Player_StartStealthKill`): clip 637 bare-handed, 639 with a set-1 weapon (knife), 641 with set 2 or
    3; any other held set is dropped first (637). The victim's human flag `0x8` is cleared (knocked out, not wounded)
-   and `Attack_StartPaired(player, target, clip, 1, 0x400000)` plays the pair (victim 638 / 640 / 642). Deals 3000:
+   before `Attack_StartPaired(player, target, clip, 1, 0x400000)` plays the pair, so it stays cleared when that call
+   gives up (victim 638 / 640 / 642). Deals 3000:
    the guard is knocked out, and his gang's message 18 (`0x12`, died or knocked out) reaches the script.
    `Attack_StartPaired` (`0x00262ac8`) for a victim nobody holds: `Pair_AlignForMove` (`0x00277b20`) refuses a
    victim beyond the clip's far range, turns the killer toward him and the victim away (front: to face him) over
@@ -383,10 +384,15 @@ Chapter 5 of `level87` (`level87_chap5_club.lua`) is the stealth tutorial. What 
   the scan see a hidden human only within 2 m.
 - **The stealth kill** (`repo:src/human/fighter_stealth.cpp`): hidden with L1's bit set, square, cross or circle runs
   only the kill test (behind a target who faces away, grabbable, the way clear) and starts 637, 639 or 641 by the
-  weapon; the victim takes the clip's damage, its flag `0x8` cleared, and plays the next id from the killer's set as
+  weapon; the victim's flag `0x8` is cleared as the pair is tried, so it stays cleared when the pair then gives up
+  (low power, out of range), and the victim takes the clip's damage and plays the next id from the killer's set as
   the dying clip of its death chain (the loop 349); the kill needs and spends a quarter of the power meter, which
-  then holds (no refill) while the clip plays; its end ends the hiding and leaves the killer in the fight stance. The
-  set-5 cross's kill, the creep's ready clips (635, 636) and the class record's weapon scale are not built.
+  then holds (no refill) while the clip plays; its end ends the hiding and leaves the killer in the fight stance.
+  Not built: the set-5 weapon's cross (`0x002880d8`) starting the kill while hidden, with the drop of a held object
+  of another set and the move style `0xf` the kill pops (#990); the class record's weapon scale on the damage and the
+  knocked-down branch of the grabbable test (#684); the chain press and a throwable object's armed special, which
+  the original takes before the hidden buttons and Coney's dispatcher after them (#1011); the creep's ready clips
+  (635, 636).
 - **Scouts and the call** (`repo:src/ai/tactic_scout.h`, [AI: Coney](ai/index.md#in-coney)): TacticScout's guards keep their
   posts and scan every 500 ms; one who spots, is hit by or is warned of an enemy fights him, and when the level allows
   it runs to the farthest phone flag in range and, 1.5 s later, starts the enemy gang's second wanted timer
@@ -399,11 +405,6 @@ clips, distractions and level87's checkpoint 5 as a whole.
 
 ## Open questions
 
-- **The stealth kill's set-5 path**{#q-stealth-set5}: the set-5 weapon's cross (`0x002880d8`) starts the
-  stealth kill while hidden; its own conditions (the page's "drops it and does 637 when within 1.5 m") are not
-  ported, nor the move style `0xf` the kill pops, nor the class record's weapon scale on its damage. Coney's hidden
-  buttons pass a set 4-6 press to the dispatcher, and its chain press and armed special run after the kill test
-  rather than before it.
 - **The kill victim's side**{#q-stealth-side}: whether the victim's sides (638, 640, 642) carry a knockdown
   event: with none, `Attack_StartPaired` (`0x00262ac8`) pairs the side with a random dying chain of the victim's own
   (308-311) instead of taking the side as the dying clip. Coney takes the side as the dying clip; a disc read of the

@@ -62,9 +62,6 @@ struct PairedMove {
     int damage = 0;                                     ///< Taken at once; a defeat plays the death chain.
     anim::Vec3 attacker;                                ///< Where the attacker's feet are.
     bool attackerIsPlayer = false;                      ///< A player's move.
-    /// The victim's flag `0x8` (woundable) is cleared first, so a defeat knocks it out and never leaves it wounded
-    /// (`Player_StartStealthKill` `0x00264738`).
-    bool notWoundable = false;
     /// The record `+0x08` bits its side holds and sets when it lives through it (`0x400000` for the stealth kill).
     std::uint32_t victimHeld = 0;
 };
@@ -125,6 +122,10 @@ class Holdable : public Combatant {
     /// the attacker's set, as the dying clip of its death chain when the damage defeats it, else then the ground. False
     /// when it cannot (the default).
     virtual bool takePairedMove(const PairedMove& /*move*/) { return false; }
+    /// Its human flag `0x8` (woundable) is cleared, so a later defeat knocks it out and never leaves it wounded: the
+    /// stealth kill does so before it tries the pair (`Player_StartStealthKill` `0x00264738`,
+    /// docs/research/stealth.md#stealth-kill). Nothing for one with no such flag (the default).
+    virtual void loseWoundable() {}
     /// The tandem its grabber joins, once: the set's first id. Its grabber reads it on each of its updates while it
     /// holds it, so the grabber's clips start on the grabber's next update (the same step when the grabber acts after
     /// the attacker). Nothing by default.

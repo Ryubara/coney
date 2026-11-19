@@ -40,6 +40,11 @@ constexpr std::uint32_t kStealthVictimHeld = 0x400000;
 // The attacker's chained clip holds 7 and the record then takes 1 (`Attack_StartPaired`'s last argument 1, which the
 // chained task turns into 7).
 constexpr HeldFlags kPairedAttackerHeld{.held = 0x7, .set = 0x1};
+// A hidden player whose clip holds any of these bits does nothing with his buttons (`Player_UpdateActionsHidden`
+// `0x0027e040`'s first test): the dispatcher's kStanceGate without `0x1000`, which the hidden branch lets through.
+// **Coney stand-in**: only the kill test reads it; a hidden press that is not the kill still meets the dispatcher's
+// kStanceGate, so a clip holding `0x1000` refuses it in Coney alone.
+constexpr std::uint32_t kHiddenGate = 0x5c7eee0;
 // A target whose clip holds any of these bits may not be grabbed (`Human_CanBeGrabbedBy` `0x00225520`'s held test).
 constexpr std::uint32_t kGrabRefusedHeld = 0x8fc57a60;
 // The pair's alignment turns both bodies over 1/60 s (`Pair_AlignForMove` `0x00277b20`).
@@ -55,7 +60,7 @@ bool Fighter::tryStealthKill(const FighterInput& input, HumanAnimator& animator,
     // handlers' (updateL1()), which the original runs on the same branch first: the block, the dispatcher's busy
     // phases and a hold. **Coney's choice**: Player_BufferChain's chain press and the armed special of a throwable
     // held object (Player_ArmedSpecial) come before the buttons in the original; Coney's dispatcher takes both after.
-    if (!m_player || !m_lockBlocked || blocking() || (animator.flags() & kStanceGate) != 0 || m_held != nullptr) {
+    if (!m_player || !m_lockBlocked || blocking() || (animator.flags() & kHiddenGate) != 0 || m_held != nullptr) {
         return false;
     }
     // Square pressed (0xf), cross (0x10), circle held (0xe) or circle tapped (0xd); any other press goes on.
@@ -120,17 +125,17 @@ void Fighter::startStealthKill(Holdable& victim, const FighterInput& input, Huma
         clip = kStealthBatonKill;
     }
     // A pad player, still in the target's rear quarter, with a paired clip: the victim's flag 0x8 is cleared (knocked
-    // out, not wounded) and the pair starts. **Coney's choice**: the original pops move style 0xf first; Coney's
-    // player keeps no move style stack.
+    // out, not wounded) before the pair is tried, so it stays cleared when the pair then gives up (low power, out of
+    // range). **Coney's choice**: the original pops move style 0xf first; Coney's player keeps no move style stack.
     const bool behind = combat::victimSide(victim.position(), victim.heading(), input.position) == combat::Side::Rear;
     if (!input.padControlled || !behind || animator.clip(clip) == nullptr) {
         return;
     }
+    victim.loseWoundable();
     const PairedMove move{.attackAnim = static_cast<int>(clip),
                           .attackerAnims = &animator.anims(),
                           .attacker = input.position,
                           .attackerIsPlayer = m_player,
-                          .notWoundable = true,
                           .victimHeld = kStealthVictimHeld};
     if (startPairedMove(victim, clip, move, input, animator, heading)) {
         m_stealthKillClip = clip;
@@ -201,9 +206,6 @@ bool Fighter::startPairedMove(Holdable& victim, std::uint32_t clip, const Paired
 bool Fighter::takePairedMove(const PairedMove& move, const FighterInput& input, HumanAnimator& animator) {
     if (m_health.depleted() || move.attackerAnims == nullptr) {
         return false;
-    }
-    if (move.notWoundable) {
-        setFlag(flag::kWoundable, false);
     }
     const auto side = static_cast<std::uint32_t>(move.attackAnim + 1);
     const IncomingHit hit{.damage = move.damage,

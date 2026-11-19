@@ -707,6 +707,8 @@ class Human final : public Holdable {
         return m_fighter.startTandemVictim(start, m_animator, m_script.arrested, m_script.knockedOut);
     }
     [[nodiscard]] std::optional<int> takeTandemRequest() override { return m_fighter.takeTandemRequest(); }
+    /// Clears its fighter's woundable flag (flag::kWoundable).
+    void loseWoundable() override { setFlag(flag::kWoundable, false); }
     /// A paired move's victim side (Fighter::takePairedMove()), from where it stands now and with its script's states
     /// (arrested, wounded, knocked out), which the death chain reads.
     /// @coney-only the hand-over of a paired move's victim side from the attacker's update to this human's fighter

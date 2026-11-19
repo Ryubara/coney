@@ -481,7 +481,7 @@ status = "compared"
 [[function.gaps]]
 what = "the scene state and the state word's mask are read as standing with health left; the knocked-down branch cannot pass"
 relation = "stand-in"
-question = "stealth.md#q-stealth-set5"
+issue = 684
 
 [[function]]
 address = 0x002256a0
