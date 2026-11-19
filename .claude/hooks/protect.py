@@ -4,9 +4,9 @@
 * **`~/.coney`**: it holds the identity files the hooks write for `coney-tools` (`identity.py`). The files are named by
   a hash of the token, so a listing does not give a token away, but nobody has a reason to look.
 * **`~/.ssh`**: the person's private keys. A public key (`.pub`), `config` and `known_hosts` may be read.
-* **Stamp logs and build records**: Edit and Write may not change a file under a `stamps`, `stamps.legacy-*` (an old
-  log moved aside) or `build-runs` folder, and a shell write into one is refused (written by the stage commands only,
-  docs/guides/stamps.md).
+* **Stamp logs, build records and the check ledger**: Edit and Write may not change a file under a `stamps`,
+  `stamps.legacy-*` (an old log moved aside), `build-runs` or `check-resume` (what `task check` may resume from)
+  folder, and a shell write into one is refused (written by the stage commands only, docs/guides/stamps.md).
 * **The SSH agent's keys**: `ssh-add -d` and `-D` delete the person's keys; listing them (`-l`) is fine.
 * **Other processes**: the readers of other processes' command lines and environments (`/proc/<pid>/environ`,
   `wmic process`, `Win32_Process`), which would show another agent's token.
@@ -42,8 +42,9 @@ PRIVATE_FOLDERS = (".coney",)
 KEY_FOLDERS = (".ssh",)
 KEY_ALLOWED_NAMES = ("config", "known_hosts", "known_hosts.old")
 KEY_ALLOWED_SUFFIXES = (".pub",)
-#: A folder with one of these names holds a stamp log or the build records a stamp covers.
-STAMP_FOLDERS = ("stamps", "build-runs")
+#: A folder with one of these names holds a stamp log, the build records a stamp covers or the ledger `task check`
+#: resumes from.
+STAMP_FOLDERS = ("stamps", "build-runs", "check-resume")
 #: A folder named so is an old stamp log that `task start --adopt` or `--adopt-branch` moved aside; kept as it was.
 STAMP_ARCHIVE_PREFIX = "stamps.legacy-"
 #: Shell commands that are not for agents: (pattern over the command, what to do instead).
@@ -55,8 +56,9 @@ COMMANDS = (
     ),
     (
         r"(?:>>?|\btee\b|\bcp\b|\bmv\b|\brm\b|\bsed\s+-i|\btruncate\b|\bdd\b|\bSet-Content\b|\bAdd-Content\b|\bOut-File\b)"
-        r"[^\n;&|]*[/\\](?:stamps(?:\.legacy-[^\s/\\;&|]*)?|build-runs)[/\\]",
-        "Only the stage commands write a stamp log or a build record; there is deliberately no way to do it by hand.",
+        r"[^\n;&|]*[/\\](?:stamps(?:\.legacy-[^\s/\\;&|]*)?|build-runs|check-resume)[/\\]",
+        "Only the stage commands write a stamp log, a build record or a check ledger; there is deliberately no way to "
+        "do it by hand.",
     ),
     (
         r"/proc/[^\s/]*/(?:environ|cmdline)|\bwmic\b[^\n;&|]*\bprocess\b|\bWin32_Process\b",

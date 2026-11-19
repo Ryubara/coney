@@ -49,6 +49,7 @@ from coney_tools import (
     build_record,
     build_run,
     check_progress,
+    check_resume,
     check_slots,
     ctest_scope,
     detached_runs,
@@ -94,6 +95,8 @@ class Request:
     keep_going: bool = False
     dry_run: bool = False
     max_wait: float = build_cli.DETACHED_MAX_WAIT
+    #: Go on from the checks an earlier run passed for the same change (check_resume.py); False runs every check.
+    resume: bool = True
 
 
 @dataclass
@@ -128,6 +131,8 @@ class Env:
     #: This machine's own floor in GB (`min_available_memory_gb` of coney.local.toml): -1 keeps the conventions' floor,
     #: 0 turns the refusal off. The default keeps the conventions'.
     memory_floor: Callable[[Path], int] = lambda root: -1
+    #: Where the tests' disc comes from, as a line: part of what a resume compares (check_resume.Key.disc).
+    disc_key: Callable[[Path], str] = lambda root: ""
 
 
 def no_disc_reason(root: Path) -> str | None:
@@ -139,6 +144,16 @@ def no_disc_reason(root: Path) -> str | None:
     if given and not Path(given).exists():
         return f"CONEY_DISC is set to {given}, which does not exist"
     return None
+
+
+def disc_setting(root: Path) -> str:
+    """The disc setting a resume compares: where the disc came from and its path (the ISO itself is not hashed, as the
+    build record does not). A configuration that cannot be read says so, which differs from any readable one."""
+    try:
+        environment, disc = build_cli.disc_environment(dict(os.environ), root)
+    except ConfigError:
+        return "unreadable"
+    return f"{disc.source or 'none'}: {build_run.env_get(environment, 'CONEY_DISC') or ''}"
 
 
 def _say(line: str) -> None:
@@ -183,6 +198,7 @@ def default_env(max_wait: float = build_cli.DETACHED_MAX_WAIT) -> Env:
         memory=machine_memory.available_gb,
         memory_floor=_memory_floor_of_machine,
         heaviest=lambda: machine_memory.describe(machine_memory.heaviest()),
+        disc_key=disc_setting,
     )
 
 
@@ -252,7 +268,29 @@ def _run(request: Request, env: Env) -> int:
     if tests is not None:
         env.say(f"  ctest: {tests.text}")
     env.overlap(root, named, conventions, env.say, not request.dry_run)
+    folder = unit.Unit.of(root, task).dir
+    key = check_resume.Key(
+        change.sha256,
+        change.tip,
+        change.base,
+        profile,
+        tuple(checks),
+        check_resume.rules_fingerprint(conventions),
+        env.disc_key(root),
+    )
+    started = env.clock()
+    resume = check_resume.Ledger.open(
+        folder / check_resume.FOLDER,
+        key,
+        run=started,
+        max_age_hours=conventions.proof.resume.max_age_hours,
+        use=request.resume,
+        say=env.say,
+    )
     if request.dry_run:
+        skipped = [name for name in checks if resume.taken(name)]
+        if skipped:
+            env.say(f"  dry run: would skip {', '.join(skipped)} (passed in an earlier run for this change)")
         env.say("  dry run: nothing was run and no stamp was written")
         return 0
     _memory_floor(conventions, env, root)
@@ -260,11 +298,9 @@ def _run(request: Request, env: Env) -> int:
         why_not = env.disc(root)
         if why_not:
             raise ConfigError(f"the full suite needs the disc: {why_not}")
-    started = env.clock()
     # Only a build and a full suite take a slot, so only a run that has one needs an id for it.
     holds = bool(builds) or (scope is not None and scope.whole)
     agent = agent_for(request.agent, who, _person) if holds else ""
-    folder = unit.Unit.of(root, task).dir
     run = env.stream(folder / "check-logs") if env.stream is not None else env.run
 
     def hold(what: str) -> AbstractContextManager[None]:
@@ -279,7 +315,7 @@ def _run(request: Request, env: Env) -> int:
     progress.plan(len(checks))
     try:
         with live_progress.Heartbeat(live_progress.HEARTBEAT_SECONDS, progress.beat):
-            outcome = _execute(request, env, context, checks, builds, task, agent, change, tests)
+            outcome = _execute(request, env, context, checks, builds, task, agent, change, tests, resume)
             if isinstance(outcome, int):
                 progress.abandon()
                 return outcome
@@ -295,7 +331,7 @@ def _run(request: Request, env: Env) -> int:
                 if tests.narrowed:  # narrowed by reach: CI and the after-merge disc suite run the rest
                     detail_more["ctest_narrowed"] = tests.narrowed
             progress.finish(not failed)
-            return _stamp(
+            code = _stamp(
                 env,
                 root,
                 conventions,
@@ -311,7 +347,11 @@ def _run(request: Request, env: Env) -> int:
                 started,
                 rules_from,
                 detail_more,
+                resume,
             )
+            if code == 0:
+                resume.clear()  # the stamp is the record now; a run after a pass starts from the beginning
+            return code
     except BaseException:
         progress.abandon()
         raise
@@ -388,11 +428,13 @@ def _execute(
     agent: str,
     change: pr_diff.Change,
     cpp: ctest_scope.CtestScope | None,
+    resume: check_resume.Ledger,
 ) -> int | tuple[list[str], list[str], Path | None, dict[str, int] | None, dict[str, dict[str, int]]]:
     """Run the checks in order, stopping at the first failure unless asked not to; the build runs the C++ tests of
-    `cpp` (None, as with no test check: all of them). Returns the exit code when the run cannot go on (the build had
-    no slot), else the checks that ran, those that failed, the build record's path, the build's test counts and what
-    the other checks counted (pytest's), by check."""
+    `cpp` (None, as with no test check: all of them). A check that passed in an earlier run for the same key (`resume`)
+    is taken from it, not run; every pass of this run is kept in `resume` as it happens. Returns the exit code when the
+    run cannot go on (the build had no slot), else the checks that ran (taken ones included, in order), those that
+    failed, the build record's path, the build's test counts and what the other checks counted (pytest's), by check."""
     ran: list[str] = []
     failed: list[str] = []
     record: Path | None = None
@@ -403,13 +445,28 @@ def _execute(
         name = queue.pop(0)
         if name in builds:
             queue = [other for other in queue if other not in builds]
+            kept = _kept_build(env, context, task, change, builds, cpp.label if cpp else None, resume)
+            if kept is not None:
+                ran.extend(builds)
+                record, tests = kept
+                continue
             env.say(f"  [{_at()}] start {' and '.join(builds)} (one build run)")
             env.progress.start(" and ".join(builds), "build", checks.index(builds[0]) + 1)
             results = _build_results(env, context, task, agent, change, builds, cpp.label if cpp else None)
             if isinstance(results, int):
                 return results
             step_results, record, tests = results
+            if record is not None and len(step_results) == len(builds) and all(r.ok for r in step_results):
+                resume.keep_build(builds, [r.detail for r in step_results], record.stem, tests, env.clock())
         else:
+            earlier = resume.taken(name)
+            if earlier is not None:
+                resume.take(name)
+                ran.append(name)
+                if earlier.counts:
+                    counted[name] = dict(earlier.counts)
+                env.say(f"  [{_at()}] skip {name}: passed in the run of {earlier.run}: {earlier.detail}")
+                continue
             step = env.steps.get(name)
             if step is None:
                 raise ConfigError(f"check {name!r} is in .github/conventions.yml but this tool does not know it")
@@ -421,6 +478,8 @@ def _execute(
             except SlotTimeout as timeout:
                 env.say(f"task check: {check_slots.queued_message(timeout, name)}; run task check again")
                 return EXIT_QUEUED
+            if step_results[0].ok:
+                resume.keep(name, step_results[0].detail, dict(step_results[0].counts), env.clock())
         for result in step_results:
             ran.append(result.name)
             if result.ok and result.counts:
@@ -433,6 +492,41 @@ def _execute(
         if failed and not request.keep_going:
             break
     return ran, failed, record, tests, counted
+
+
+def _kept_build(
+    env: Env,
+    context: StepContext,
+    task: str,
+    change: pr_diff.Change,
+    builds: list[str],
+    label: str | None,
+    resume: check_resume.Ledger,
+) -> tuple[Path, dict[str, int] | None] | None:
+    """The build record and test counts of a build run that passed in an earlier run for this key, when every one of its
+    checks is in the ledger and the record still reads as one clean run of the preset on this tip (the rule `task check`
+    and `pr verify` apply); else None, and the build runs again. A record that no longer holds takes its passes too."""
+    if not all(resume.taken(name) for name in builds) or resume.build is None:
+        return None
+    folder = unit.Unit.of(context.root, task).dir / build_record.FOLDER
+    name = str(resume.build["record"])
+    try:
+        record = build_record.read(folder, name)
+    except ConfigError as error:
+        env.say(f"  resume: {error}: the build runs again")
+        resume.forget(builds)
+        return None
+    preset = context.conventions.proof.build.preset
+    problems = build_record.problems(record, tip=change.tip, preset=preset, label=label)
+    if problems:
+        env.say(f"  resume: the earlier build record no longer holds ({problems[0]}): the build runs again")
+        resume.forget(builds)
+        return None
+    for check in builds:
+        earlier = resume.take(check)
+        env.say(f"  [{_at()}] skip {check}: passed in the run of {earlier.run}: {earlier.detail}")
+    tests = record.get("tests")
+    return folder / f"{name}.json", dict(tests) if isinstance(tests, dict) else None
 
 
 def _at() -> str:
@@ -525,10 +619,11 @@ def _stamp(
     started: datetime,
     rules_from: str,
     detail_more: Mapping[str, Any],
+    resume: check_resume.Ledger,
 ) -> int:
     """Append the `checked` stamp and say so; 0 for a pass, 1 for a fail. The build's counts go in `tests`, which
     `pr verify` matches against the build record; a check's own counts (pytest's) go under its name, for the facts;
-    `detail_more` is added as it is."""
+    `detail_more` is added as it is; the checks taken from an earlier run (`resume`) are named in `resumed`."""
     passed = not failed
     covers = {
         stamps.CHANGE: change.sha256,
@@ -549,6 +644,8 @@ def _stamp(
         detail["tests"] = dict(tests)
     for name, counts in counted.items():
         detail[name] = counts
+    if (resumed := resume.summary()) is not None:
+        detail["resumed"] = resumed  # honest: this invocation did not run these checks
     detail.update(detail_more)  # which Python tests ran (`pytest_scope`), which `pr verify` holds to the paths
     stamp = stamps.append(
         unit.Unit.of(root, task).stamps,
@@ -589,6 +686,11 @@ def add_parser(commands: Any) -> None:
     check.add_argument("--keep-going", action="store_true", help="run every check even after one fails")
     check.add_argument("--dry-run", action="store_true", help="print the profile and the checks; run nothing")
     check.add_argument(
+        "--no-resume",
+        action="store_true",
+        help="run every check even when an earlier run passed some for this change (the default goes on from them)",
+    )
+    check.add_argument(
         "--max-wait",
         type=float,
         default=build_cli.DETACHED_MAX_WAIT,
@@ -622,6 +724,7 @@ def child_command(args: argparse.Namespace, root: Path, result: Path) -> list[st
     for flag, value in (("--base", args.base), ("--agent", args.agent), ("--profile", args.profile)):
         command += [flag, value] if value else []
     command += ["--keep-going"] if args.keep_going else []
+    command += ["--no-resume"] if args.no_resume else []
     return [*command, "--result-file", str(result)]
 
 
@@ -653,6 +756,7 @@ def _run_here(args: argparse.Namespace) -> int:
         keep_going=args.keep_going,
         dry_run=args.dry_run,
         max_wait=args.max_wait,
+        resume=not args.no_resume,
     )
     if args.dry_run:
         return run_check(request, default_env(args.max_wait))
