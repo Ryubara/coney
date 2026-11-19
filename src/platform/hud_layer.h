@@ -29,8 +29,8 @@ namespace coney::platform {
 
 /// The HUD on screen: the sprite sheets and batches the HUD draws with, loaded from the disc, and the 2D pass that
 /// draws them over the play mode's frame. It drives the hud::Hud its owner gives (hud::HudOwner, the simulation's: its
-/// own HUD, or the one the game shares with the scripts' bindings): step() is the HUD's step and lists its sprites,
-/// draw() draws the newest step's sprites, as often as frames ask.
+/// own HUD, or the one the game shares with the scripts' bindings): render() lists the sprites of the HUD's newest
+/// step, which the simulation made, and draw() draws them, as often as frames ask.
 ///
 /// The sheets: `part_page0` (text font slot 2 and the HUD's icons), `big_font` (font slot 6, and Coney's stand-in for
 /// the radar disc), `hud_minigames` (the arrow), and each banner's sheet by its sheet-table record. A sheet that does
@@ -48,10 +48,11 @@ class HudLayer {
     /// The HUD stepped and drawn: the one the owner gives now.
     [[nodiscard]] hud::Hud& hud() { return m_owner.hud(); }
 
-    /// The HUD's step with `frame`, then its sprites for the step: the pass emptied, the HUD rendered into the batches,
-    /// the batches queued. Loads a banner's sheet the first time a panel shows it.
-    void step(const hud::HudFrame& frame);
-    /// Draws the newest step's sprites through the overlay camera; changes nothing step() reads.
+    /// The sprites of the HUD's newest step (its update is the simulation's, PlayLevelSimulation::update()): the pass
+    /// emptied, the HUD rendered into the batches, the batches queued. Loads a banner's sheet the first time a panel
+    /// shows it.
+    void render();
+    /// Draws the newest step's sprites through the overlay camera; changes nothing the HUD's step reads.
     void draw(graphics::RenderDevice& device);
     /// How many sprites the newest step queued (0 while the HUD is hidden or letterboxed), for the tests and the log.
     [[nodiscard]] std::size_t spritesQueued() const { return m_spritesQueued; }

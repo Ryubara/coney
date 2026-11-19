@@ -145,6 +145,13 @@ PlayerCharacter::load(const io::Wad& wad, const chunk::ChunkHandlerTable& table,
     return character;
 }
 
+std::unique_ptr<PlayerCharacter> PlayerCharacter::fromParts(characters::CharacterAssets assets,
+                                                            characters::CharacterData generic,
+                                                            combat::AnimRangeList ranges) {
+    return std::unique_ptr<PlayerCharacter>(
+        new PlayerCharacter(std::move(assets), std::move(generic), std::move(ranges)));
+}
+
 PlayerCharacter::PlayerCharacter(characters::CharacterAssets assets, characters::CharacterData generic,
                                  combat::AnimRangeList ranges)
     : m_assets(std::move(assets)), m_generic(std::move(generic)), m_anims(m_assets.data, &m_generic),

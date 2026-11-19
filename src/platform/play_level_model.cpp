@@ -118,7 +118,8 @@ std::expected<void, Error> PlayLevelControls::swapModel(debug::EntityId id, cons
             return std::unexpected(std::move(look.error()));
         }
         PlayLevelMode::Target& target = mode.m_targets[*index];
-        target.mesh = std::make_unique<CharacterMesh>(look->character->assets().model, look->texture, Skinning::Gpu);
+        mode.m_targetMeshes[target.human.get()] =
+            std::make_unique<CharacterMesh>(look->character->assets().model, look->texture, Skinning::Gpu);
         target.character = look->character == mode.m_character.get() ? nullptr : look->character;
         target.model = model;
         return {};

@@ -70,26 +70,7 @@ void PlayLevelMode::makeWorldObjects(const ScriptedCast& cast) {
     m_placed = std::make_unique<PlacedObjects>(m_wad, *m_objectList, m_print, true);
 }
 
-void PlayLevelMode::stepWorldObjects(world::Vec3 eye, const WorldView& worldView, std::uint32_t elapsedMs) {
-    if (m_records == nullptr || m_objectTypes == nullptr) {
-        return;
-    }
-    // RenderWare's axes back into the game's: (x, y, z) is the game's (x, -z, y).
-    world_objects::ObjectTasks::StepView view;
-    view.camera = anim::Vec3{eye.x, -eye.z, eye.y};
-    view.drawDistance = m_drawDistance.current();
-    view.elapsedMs = elapsedMs;
-    // An object in a hand, a hat on a head or a carried prop is drawn by its holder.
-    view.inHand = [this](double handle) {
-        return m_wornHats.contains(handle) || m_carriedProps.contains(handle) ||
-               (m_pickups != nullptr && m_pickups->inHand(handle));
-    };
-    m_objectTasks.step(*m_records, *m_objectTypes, view);
-    // The glints, at 60 ticks a second of the step's game time.
-    stepGlints(worldView, static_cast<int>(std::lround(static_cast<double>(elapsedMs) * 60.0 / 1000.0)));
-}
-
-void PlayLevelMode::stepGlints(const WorldView& worldView, int ticks) {
+void PlayLevelMode::stepGlints(int ticks) {
     // The owners: each `pickup_item` lying in the world (in this step's draws, so not in a hand and not hidden), and
     // each door whose lock-pick glint is up.
     std::vector<effects::GlintOwner> owners;
@@ -110,7 +91,7 @@ void PlayLevelMode::stepGlints(const WorldView& worldView, int ticks) {
     }
     m_glints.sync(owners);
     // Seen: in front of the camera, inside its view window, within the distance asked (game axes into RenderWare's).
-    const auto visible = [&worldView](anim::Vec3 point, float distance) {
+    const auto visible = [&worldView = m_stepView](anim::Vec3 point, float distance) {
         const world::Vec3 at = toRenderWare(point);
         const world::Vec3& eye = worldView.pose.position;
         const world::Vec3 d{at.x - eye.x, at.y - eye.y, at.z - eye.z};
@@ -126,7 +107,7 @@ void PlayLevelMode::stepGlints(const WorldView& worldView, int ticks) {
     m_glints.tick(ticks, visible);
 }
 
-void PlayLevelMode::stepRings(const Pad& pad, const WorldView& view, std::uint64_t nowMs) {
+void PlayLevelMode::stepRings(const Pad& pad, std::uint64_t nowMs) {
     const human::Human& player = m_player->human();
     const human::Fighter& fighter = player.fighter();
     // A human's part of the update; its hit pulse's target is the health it lost since the last step (**Coney's
@@ -158,7 +139,7 @@ void PlayLevelMode::stepRings(const Pad& pad, const WorldView& view, std::uint64
     frame.hudShown = m_hud->hud().visible();
     frame.forceAll = m_cast.forceReticules != nullptr && *m_cast.forceReticules;
     // The heading of the camera's forward in the game's axes (RenderWare's (x, y, z) is the game's (x, -z, y)).
-    frame.cameraHeading = std::atan2(view.pose.forward.x, -view.pose.forward.z);
+    frame.cameraHeading = std::atan2(m_stepView.pose.forward.x, -m_stepView.pose.forward.z);
     frame.rumble = m_levelNumber >= hud::kArcadeLevelStart;
     hud::RingPlayer ringPlayer;
     ringPlayer.human = ringHuman(player, true);

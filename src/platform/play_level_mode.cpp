@@ -27,8 +27,6 @@
 #include "core/game_timer.h"
 #include "core/perf.h"
 #include "fileio/executable.h"
-#include "gamemodes/game_mode_stack.h"
-#include "gamemodes/hud_feed.h"
 #include "graphics/human_blood.h"
 #include "human/human_animator.h"
 #include "human/player_trace.h"
@@ -38,7 +36,6 @@
 #include "raycast/collision_mesh.h"
 #include "scenes/scene_list.h"
 #include "scenes/scene_player.h"
-#include "warriors/inventory.h"
 
 namespace coney::platform {
 
@@ -53,11 +50,6 @@ constexpr float kTeleportDrop = 2.0F;
 constexpr float kFreeCameraSpeed = 8.0F;
 // How far debug lines are lifted off what they lie on, in metres.
 constexpr float kLineLift = 0.02F;
-// The player slot this mode's player plays in: player 1, the only player a level has in Coney yet. Stand-in for the
-// player's own slot (networking checklist item 3): the mode holds one player and nothing in it carries a slot yet,
-// so its pad, camera and options all mean player 1; giving the mode a player per slot is wider than the Options
-// screen and comes with the second player.
-constexpr std::size_t kPlayerSlot = 0;
 
 // A coloured line list for librw's 3D immediate mode, in RenderWare's axes.
 class LineList {
@@ -199,7 +191,12 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
                                               m_playScenery.lightDirection(), m_print);
     m_playScenery.setLighting(&m_lights->scene());
     m_print(m_lights->summary());
-    makeTargets(m_texture);
+    // The layout's targets, each drawn with its own copy of the character's mesh.
+    makeTargets();
+    for (const Target& target : m_targets) {
+        m_targetMeshes.emplace(target.human.get(),
+                               std::make_unique<CharacterMesh>(m_character->assets().model, m_texture, Skinning::Gpu));
+    }
     // The glints' blink draws from the game's random table when the disc's executable has the NTSC-U one.
     if (auto table = io::readExecutableWords(wad.disc(), GameRandom::kExecutableName, GameRandom::kTableAddress,
                                              GameRandom::kTableSize)) {
@@ -207,10 +204,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
         m_player->humans().setRandomTable(*table);
     }
     // The brains plan their moves on the level's routes, when it has path data.
-    if (const world::PathMap* paths = m_scenery->pathMap(); paths != nullptr) {
-        m_planner = std::make_unique<ai::RoutePlanner>(*paths);
-        m_planner->setGroundProbe(ai::groundProbe(m_scenery->collision()));
-    }
+    makePlanner();
     if (cast != nullptr) {
         bindObjects(cast->objects, cast->recorded);
         m_cars = cast->cars;
@@ -225,16 +219,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
     if (cast != nullptr && cast->brains != nullptr && cast->scripted != nullptr) {
         makeCast(*cast, setup.ai);
     } else {
-        m_ai = std::make_unique<ai::AiHumans>(*m_player, *m_character, setup.ai);
-        m_ai->brains().setPlanner(m_planner.get());
-        m_ai->brains().setCollision(&m_scenery->collision());
-        for (const human::Place& point : m_scenery->fighters()) {
-            addFighter(point.feet, point.headingDegrees);
-        }
-        if (m_ai->count() > 0) {
-            m_print(std::format("fighters: {} from the layout ({} configuration calls read)\n", m_ai->count(),
-                                m_ai->config().callsRead));
-        }
+        makeLayoutFighters(setup.ai);
     }
     // The HUD, with the player on panel 0 (docs/research/hud.md#the-player-panel).
     m_hudLayer = HudLayer::create(*m_hud, wad, engine.drawsPixels(), m_print);
@@ -280,38 +265,13 @@ PlayLevelMode::~PlayLevelMode() {
     m_lights.reset();
     m_ai.reset(); // out of the player's step before he goes
     m_fighterMeshes.clear();
-    m_targets.clear(); // their meshes too hold the texture
-    m_mesh.reset();    // before the dictionaries, whose texture it holds
+    m_targetMeshes.clear(); // they too hold the texture
+    m_mesh.reset();         // before the dictionaries, whose texture it holds
     // The level's objects outlive the mode (they are gameplay's), its collision mesh and path data do not.
     if (m_objects != nullptr) {
         m_objects->world.bindCollision(nullptr);
         m_objects->world.paths = nullptr;
         m_objects->world.knock = nullptr;
-    }
-}
-
-void PlayLevelMode::makeTargets(rw::Texture* texture) {
-    const raycast::CollisionMesh& mesh = m_scenery->collision();
-    std::uint32_t seed = 1;
-    for (const world::SceneTarget& point : m_scenery->targets()) {
-        // Dropped onto the ground below its spot, as a teleport is.
-        raycast::Vec3 feet{point.feet.x, point.feet.y, point.feet.z + kTeleportDrop};
-        if (!raycast::dropToGround(mesh, kTeleportDrop * 2.0F, feet)) {
-            feet.z = point.feet.z;
-        }
-        // **Coney's choice**: a target looks like the player (the one character Coney loads); its own model waits
-        // for the character classes.
-        Target target;
-        target.human = std::make_unique<human::TargetHuman>(
-            m_character->anims(), human::AnimSlots::player(), anim::referenceRotations(), point.health,
-            anim::Vec3{feet.x, feet.y, feet.z}, point.headingDegrees * std::numbers::pi_v<float> / 180.0F, seed++);
-        target.mesh = std::make_unique<CharacterMesh>(m_character->assets().model, texture, Skinning::Gpu);
-        m_targetPointers.push_back(target.human.get());
-        m_combatants.push_back(target.human.get());
-        m_targets.push_back(std::move(target));
-    }
-    if (!m_targets.empty()) {
-        m_print(std::format("targets: {} from the layout\n", m_targets.size()));
     }
 }
 
@@ -431,9 +391,9 @@ void PlayLevelMode::stepFrozen(const FrameTime& frame) {
     // Only what keeps the picture whole as the camera's surroundings stream in: the scenery and the world objects
     // round the camera, with no time passing for them.
     m_drawDistance.commit();
-    const WorldView stepView = stepSceneryView(frame);
-    m_playScenery.findVisible(stepView);
-    stepWorldObjects(stepView.pose.position, stepView, 0);
+    m_stepView = stepSceneryView(frame);
+    m_playScenery.findVisible(m_stepView);
+    stepWorldObjects(StepView{.pose = m_stepView.pose, .drawDistance = m_drawDistance.current()}, 0);
     recordDrawnPoses();
     ++m_stats.frames;
 }
@@ -487,7 +447,7 @@ void PlayLevelMode::drawCharacter() const {
     draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
     drawHumanPasses(*m_mesh, true, bloodTextureFor(m_player->human().health()));
     for (const Target& target : m_targets) {
-        drawHumanPasses(*target.mesh, false, bloodTextureFor(target.human->health()));
+        drawHumanPasses(*m_targetMeshes.at(target.human.get()), false, bloodTextureFor(target.human->health()));
     }
     for (const ai::AiHuman& fighter : m_ai->humans()) {
         const auto mesh = m_fighterMeshes.find(fighter.human.get());
@@ -518,74 +478,16 @@ rw::Texture* PlayLevelMode::bloodTextureFor(const combat::Health& health) const 
     return layer.shows ? m_blood->texture(layer.texture) : nullptr;
 }
 
-ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
+bool PlayLevelMode::stepFrozenWorld(const FrameTime& frame) {
     // `--freeze-world`, once its first step is done: nothing advances.
-    if (worldFrozen()) {
-        stepFrozen(frame);
-        return ModeResult::Stay;
+    if (!worldFrozen()) {
+        return false;
     }
-    // The draw distance render() blends moves on a step.
-    m_drawDistance.commit();
+    stepFrozen(frame);
+    return true;
+}
 
-    // The free camera, when on, takes pad 1 and the player stands still, as a frozen one does.
-    const Pad& pad = stack.pads().port(0);
-    if (m_freeCamera) {
-        m_freeCamera->commit();
-        m_freeCamera->current().update(pad, static_cast<float>(frame.seconds));
-    }
-    static const Pad kStill;
-    // In the noclip the pad flies him (human::Player::update()) and works nothing else: no lock pick, throw aim or
-    // mugging.
-    const bool noclip = m_player->noclip();
-    // While the debug menus' Animation player plays a clip on him, he stands still for it as a frozen player does.
-    const bool held = m_frozen || m_player->human().animator().debugClipPlaying();
-    const bool picking = !noclip && !held && !m_freeCamera && !sceneHoldsPlayer() && stepLockPick(pad);
-    const Pad& playerPad = held || m_freeCamera || sceneHoldsPlayer() || picking ? kStill : pad;
-    const Pad& actionPad = noclip ? kStill : playerPad;
-
-    // The characters' update, then the cameras' (human::Player keeps that order).
-    CONEY_PERF_ZONE("play.update");
-    {
-        CONEY_PERF_ZONE("play.anim_overrides");
-        applyAnimOverrides();
-    }
-    const anim::Vec3 before = m_player->human().position();
-    // The player's camera follows by its own pad's Auto Adjust option, which the Options screen may have changed
-    // (Cam_Follow_AutoFollow reads the byte of the camera's pad each update, docs/research/pause.md#options).
-    if (m_padOptions != nullptr) {
-        m_player->camera().setAutoAdjust(m_padOptions->at(kPlayerSlot).autoAdjustCamera);
-    }
-    giveObjectTargets();
-    stepObjectBodies();
-    {
-        CONEY_PERF_ZONE("play.humans");
-        // The pads' sticks turned by the player's camera as the last update left it, then the characters' step.
-        camera::PlayerStickCameras stickCameras = m_player->stickCameras();
-        stack.turnSticks(stickCameras);
-        m_player->update(playerPad, &m_scenery->collision(), m_combatants);
-        for (Target& target : m_targets) {
-            if (!target.frozen) {
-                target.human->step();
-            }
-        }
-    }
-    {
-        CONEY_PERF_ZONE("play.ai_capture");
-        m_ai->capture();
-    }
-    stepPickups();
-    stepThrowAim(actionPad);
-    stepMugMeter(m_player->human(), actionPad);
-    stepLockPickDial();
-    stepLooseObjects();
-    stepFlash();
-    stepDealerPairs();
-    stepGameOver(pad);
-    stepObjects();
-    stepHats();
-    stepCarriedProps();
-    const anim::Vec3 after = m_player->human().position();
-    m_stats.travelled += std::hypot(after.x - before.x, after.y - before.y);
+void PlayLevelMode::traceStep() {
     if (m_trace) {
         *m_trace << human::traceLine(++m_traceSteps, *m_player);
     }
@@ -593,116 +495,32 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     if (m_humansTrace) {
         m_humansTrace->write(m_ai->brains());
     }
-    if (const std::uint32_t id = m_player->human().animator().animId(); id != m_lastAnimId) {
-        m_print(std::format("frame {}: clip {}\n", frame.index, id));
-        m_lastAnimId = id;
-    }
-    // The scenes, with any player's skip buttons.
-    {
-        CONEY_PERF_ZONE("play.scenes");
-        stepScenes(millisecondsOf(frame.gameTicks),
-                   static_cast<std::uint16_t>(pad.buttons() | stack.pads().port(1).buttons()));
-    }
+}
 
-    // The scenery's step around the camera, then its visibility pass from the newest step's camera. The pinned
-    // camera, a scene camera while one is current, or the free camera while it is on, takes the follow camera's
-    // place.
-    CONEY_PERF_ZONE("play.world");
-    const WorldView stepView = stepSceneryView(frame);
-    const world::Vec3 eye = stepView.pose.position;
+PlayLevelSimulation::StepView PlayLevelMode::stepScenery(const FrameTime& frame) {
+    // The draw distance render() blends moves on a step. The scenery's step around the camera, then its visibility pass
+    // from the newest step's camera. The pinned camera, a scene camera while one is current, or the free camera while
+    // it is on, takes the follow camera's place.
+    m_drawDistance.commit();
+    m_stepView = stepSceneryView(frame);
     // The lights' flicker and the player's shadow dimming, stepped with the simulation.
-    m_lights->step(stepView, m_scenery->collision(), m_player->human().position(),
+    m_lights->step(m_stepView, m_scenery->collision(), m_player->human().position(),
                    static_cast<std::uint32_t>(std::lround(frame.seconds * 1000.0)));
-    m_playScenery.findVisible(stepView);
-    // The world objects round the camera, after the scripts and the scenes moved them.
-    stepWorldObjects(eye, stepView, static_cast<std::uint32_t>(std::lround(frame.seconds * 1000.0)));
-    recordDrawnPoses();
-    // The HUD's step (docs/research/hud.md#the-huds-frame), with the player's rage on panel 0.
-    hud::HudFrame hudFrame;
-    hudFrame.nowMs = millisecondsOf(frame.gameTicks);
-    hudFrame.pads.at(0) = &actionPad;
-    // The fixed-camera icon: a locked camera (type 1) or switch 0 off ignores the right stick. Coney has no fixed (0),
-    // transition (5) or rail (9) camera.
-    if (const camera::Cameras* cameras = m_cast.cameras; cameras != nullptr) {
-        hudFrame.cameraIgnoresStick.at(0) =
-            cameras->current().kind == camera::CameraKind::Locked || !cameras->enabled(camera::Cameras::kSwitchStick);
-    }
-    hudFrame.levelNumber = m_levelNumber;
-    // The gang-count indicators' counts: the standing members, `Gang_CountLiving(gang, 1)`
-    // (docs/research/hud-functions-lua.md#gang-count-what).
-    if (m_ai) {
-        hudFrame.gangLiving = ai::hudGangCount(m_ai->brains().gangs());
-    }
-    // A scene's letterbox in or moving hides the HUD.
-    hudFrame.letterbox = m_stage->barHeight(hudFrame.nowMs) > 0.0F;
-    // Player 1's rage meter and whether he is knocked out (`Human_IsKnockedOut`), which drops his Armies panel.
-    feedHumanToHud(hudFrame, 0, m_player->human());
-    // Player 1's radar: his feet, facing and speed, and the camera's facing in the humans' convention (0 faces +y,
-    // positive to the left); RenderWare's (x, y, z) is the game's (x, -z, y).
-    hudFrame.radar.known = true;
-    hudFrame.radar.position = m_player->human().position();
-    hudFrame.radar.heading = m_player->human().heading();
-    hudFrame.radar.speed = m_player->human().speed();
-    hudFrame.radar.cameraHeading = std::atan2(-stepView.pose.forward.x, -stepView.pose.forward.z);
-    // The score, the money and the four item counters, which the original's panel reads from the stats object and the
-    // inventory itself (docs/research/hud.md#item-counters).
-    if (m_pickups != nullptr) {
-        hud::PanelValues& values = hudFrame.players.at(0);
-        values.score = m_pickups->score(0);
-        values.money = m_pickups->carried(0, item::kMoney);
-        // **Coney's stand-in** for the handcuff counter's `Human_GetCuffCount` (not traced): inventory item 5.
-        values.items = {m_pickups->carried(0, item::kRevive), m_pickups->carried(0, item::kSprayPaint),
-                        m_pickups->carried(0, item::kHandcuffs), m_pickups->carried(0, item::kHandcuffKey)};
-    }
-    m_hudLayer->step(hudFrame);
+    m_playScenery.findVisible(m_stepView);
+    return StepView{.pose = m_stepView.pose, .drawDistance = m_drawDistance.current()};
+}
+
+void PlayLevelMode::hudStepped() {
+    m_hudLayer->render();
     recordIconPoses();
-    // The health rings, after the HUD's step: hidden with it.
-    stepRings(playerPad, stepView, hudFrame.nowMs);
-    ++m_stats.frames;
+}
+
+void PlayLevelMode::stepEnded(const FrameTime& frame) {
     // `--freeze-world`: the world stops here, its animations held at this step's time.
     if (m_freezeWorld && !m_frozenSince) {
         m_frozenSince = frame.gameTicks;
         m_playScenery.freezeAnimation(millisecondsOf(frame.gameTicks));
         m_print(std::format("world: frozen after frame {}\n", frame.index));
-    }
-    return ModeResult::Stay;
-}
-
-void PlayLevelMode::applyAnimOverrides() {
-    for (human::Human* human : m_player->humans().humans()) {
-        const human::ScriptState& script = human->script();
-        // The idle's replacement (HuUseAnim slot 0).
-        const std::string wanted(script.animOverride(human::kUseAnimIds.front()));
-        if (wanted != human->idleClipName()) {
-            const anim::AnimClip* clip = m_dynamicClips.find(wanted);
-            if (!wanted.empty()) {
-                m_print(clip != nullptr ? std::format("anim: {} replaces a human's idle\n", wanted)
-                                        : std::format("anim: {} not loaded; the idle plays\n", wanted));
-            }
-            human->setIdleClip(wanted, clip);
-        }
-        // Every other id's: each slot's clip put in when it changed, each one no longer in a slot taken out.
-        for (const human::AnimOverride& slot : script.animOverrides) {
-            if (slot.clip.empty() || slot.animId == human::kUseAnimIds.front()) {
-                continue;
-            }
-            const auto applied = human->overrideClipNames().find(slot.animId);
-            if (applied == human->overrideClipNames().end() || applied->second != slot.clip) {
-                const anim::AnimClip* clip = m_dynamicClips.find(slot.clip);
-                m_print(clip != nullptr ? std::format("anim: {} replaces a human's anim {}\n", slot.clip, slot.animId)
-                                        : std::format("anim: {} not loaded; anim {} plays\n", slot.clip, slot.animId));
-                human->setOverrideClip(slot.animId, slot.clip, clip);
-            }
-        }
-        std::vector<std::uint32_t> gone;
-        for (const auto& [id, name] : human->overrideClipNames()) {
-            if (script.animOverride(id).empty()) {
-                gone.push_back(id);
-            }
-        }
-        for (const std::uint32_t id : gone) {
-            human->setOverrideClip(id, {}, nullptr);
-        }
     }
 }
 
@@ -750,7 +568,7 @@ void PlayLevelMode::render(const RenderTime& time) {
                 human::interpolate(target.human->previous(), target.human->current(), alpha);
             // As the scene's character, or the one the Entity inspector's Model edit gave it.
             skin(target.character != nullptr ? *target.character : *m_character, pose.pose, pose.feet, pose.heading,
-                 0.0F, *target.mesh);
+                 0.0F, *m_targetMeshes.at(target.human.get()));
             m_lights->addShadow(ground, pose.feet);
             ringFeet[ringKey(target.human.get())] = pose.feet;
         }

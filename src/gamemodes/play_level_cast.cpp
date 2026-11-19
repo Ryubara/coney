@@ -17,6 +17,7 @@
 #include "ai/ai_humans.h"
 #include "ai/brain.h"
 #include "ai/brains.h"
+#include "ai/route_planner.h"
 #include "ai/scripted_brains.h"
 #include "characters/character_choice.h"
 #include "characters/character_types.h"
@@ -36,6 +37,26 @@ namespace {
 constexpr float kFighterDrop = 2.0F;
 
 } // namespace
+
+void PlayLevelSimulation::makePlanner() {
+    if (const world::PathMap* paths = m_scenery->pathMap(); paths != nullptr) {
+        m_planner = std::make_unique<ai::RoutePlanner>(*paths);
+        m_planner->setGroundProbe(ai::groundProbe(m_scenery->collision()));
+    }
+}
+
+void PlayLevelSimulation::makeLayoutFighters(const ai::AiConfig& fighters) {
+    m_ai = std::make_unique<ai::AiHumans>(*m_player, *m_character, fighters);
+    m_ai->brains().setPlanner(m_planner.get());
+    m_ai->brains().setCollision(&m_scenery->collision());
+    for (const human::Place& point : m_scenery->fighters()) {
+        addFighter(point.feet, point.headingDegrees);
+    }
+    if (m_ai->count() > 0) {
+        m_print(std::format("fighters: {} from the layout ({} configuration calls read)\n", m_ai->count(),
+                            m_ai->config().callsRead));
+    }
+}
 
 void PlayLevelSimulation::makeCast(const ScriptedCast& cast, const ai::AiConfig& fighters) {
     m_cast = cast;

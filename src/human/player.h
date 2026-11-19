@@ -65,6 +65,13 @@ class PlayerCharacter {
     /// ErrorCode::NotFound when a clip the locomotion plays is missing.
     [[nodiscard]] static std::expected<std::unique_ptr<PlayerCharacter>, Error>
     load(const io::Wad& wad, const chunk::ChunkHandlerTable& table, std::string_view name);
+    /// A character from resources already decoded: `assets` (its model and character data), the generic character data
+    /// `generic` and its Anim Range List `ranges`; load() without the disc, for the core simulation built where no disc
+    /// is (the tests of PlayLevelSimulation's step). Checks nothing load() would not: a clip missing from the
+    /// locomotion plays as none.
+    /// @coney-only Coney's way to build a character from decoded parts; the original loads its characters only
+    [[nodiscard]] static std::unique_ptr<PlayerCharacter>
+    fromParts(characters::CharacterAssets assets, characters::CharacterData generic, combat::AnimRangeList ranges);
 
     PlayerCharacter(const PlayerCharacter&) = delete;
     PlayerCharacter& operator=(const PlayerCharacter&) = delete;

@@ -160,7 +160,9 @@ void PlayLevelMode::attachScenes(scenes::SceneSystem* scenes, double playerHandl
     }
 }
 
-bool PlayLevelMode::sceneHoldsPlayer() const { return m_scenes != nullptr && m_stage->holds(m_playerHandle); }
+bool PlayLevelMode::sceneHolds(double human) const { return m_scenes != nullptr && m_stage->holds(human); }
+
+bool PlayLevelMode::letterboxShown(std::uint64_t nowMs) const { return m_stage->barHeight(nowMs) > 0.0F; }
 
 void PlayLevelMode::stepScenes(std::uint64_t nowMs, std::uint16_t buttons) {
     if (m_scenes == nullptr) {
