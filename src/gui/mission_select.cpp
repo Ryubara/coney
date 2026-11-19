@@ -353,8 +353,8 @@ void MissionSelectScreen::open(std::vector<MissionSelectArea> areas, std::uint64
         m_markers.push_back(std::make_unique<BaseWidget>(m_batches.frame, kMarkerRect));
     }
     // The title: the text's offset as its size, circles 0.055 square, the back rectangle 1 and circles 3 (2 in the
-    // other sheet), Font_Size(1.25), no circled characters. Coney's CircledText takes the left edge, the original's
-    // the centre.
+    // other sheet), Font_Size(1.25), no circled characters.
+    // Coney's choice: x is the left edge, as Coney's CircledText takes it (the original's takes the centre).
     m_title.setBack(m_batches.frame, 1);
     m_title.setCircleSprite(m_batches.frame, m_layout.alternative ? 2 : 3);
     m_title.setup(CircledTextSetup{.x = m_layout.x - (m_layout.textX / 2.0F),
@@ -667,6 +667,7 @@ void MissionSelectScreen::render(const GuiCanvas& canvas) const {
     for (const std::unique_ptr<BaseWidget>& marker : m_markers) {
         marker->render(canvas);
     }
+    // The title and the area's list. Coney's stand-in for the open mission's tile is its letter (#1451).
     m_title.render(canvas);
     for (const std::unique_ptr<CircledText>& entry : m_entries) {
         entry->render(canvas);
