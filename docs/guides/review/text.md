@@ -1,15 +1,16 @@
 # Description review checklist
 
 For a reviewer of one pull request description, the way a careful maintainer would read it on GitHub. A description is
-two files ([the generated sections](task.md#generated)): the engineer's `PR.md` (the title on line 1, then the summary
-paragraph, the `Runtime:` and `Pictures:` lines, Issues affected and the pictures), and `PR-BODY.md` beside it, which
-`coney-tools pr text` generates from `PR.md`, `TASK.md` and the stamps: the `Fixes` lines, the Checklist, the facts of
-Testing and AI use. The packet's `text.generated_sections` lists the generated ones and `text.generated_body` the file.
-`coney-tools pr check-body` and the [tool part of `task review`](task.md#tool-part) have already checked the structure;
-the reviewer checks that the description is **true**: every picture shows what the text says, and every claim is backed
-by the diff or a log. Report findings in the [format on the index page](index.md#finding-format) and never edit. The
-rules are in [What a pull request shows](../testing.md#pr-evidence), the [Runtime line](../testing.md#runtime-line) and
-the `pull_requests` section of [.github/conventions.yml](repo:.github/conventions.yml).
+two files ([the generated sections](task.md#generated)): the engineer's `PR.md` (the title on line 1, then the summary's
+short paragraphs, the `Runtime:` and `Pictures:` lines, Issues affected and the pictures), and `PR-BODY.md` beside it,
+which `coney-tools pr text` generates from `PR.md`, `TASK.md` and the stamps: the `Fixes` or `Refs` lines, the
+Checklist, the facts of Testing and AI use. The packet's `text.generated_sections` lists the generated ones and
+`text.generated_body` the file. `coney-tools pr check-body` and the [tool part of `task review`](task.md#tool-part) have
+already checked the structure; the reviewer checks that the description is **true**: every picture shows what the text
+says, and every claim is backed by the diff or a log. Report findings in the [format on the index
+page](index.md#finding-format) and never edit. The rules are in [What a pull request shows](../testing.md#pr-evidence),
+the [Runtime line](../testing.md#runtime-line) and the `pull_requests` section of
+[.github/conventions.yml](repo:.github/conventions.yml).
 
 The reviewer reads only: `git diff`, `git log`, `git show` and the logs in the scratch folder (their ends, or with
 grep); it changes no worktree, commits nothing and does not touch GitHub.
@@ -21,11 +22,15 @@ grep); it changes no worktree, commits nothing and does not touch GitHub.
   every file a claim is about.
 - [ ] **Judge each part in the file that has it.** `pr open` refuses the generated sections in `PR.md`, so never fail
   `PR.md` for lacking the Checklist, the Testing facts, AI use or the `Fixes` lines (that was wrong on #1057, #1058,
-  #1062 and #1063). Judge them in `PR-BODY.md` instead: each Checklist item is finished by the diff, the `Fixes` lines
-  name issues the change finishes, and AI use names the models of the commits' trailers. Its stage lines are the
-  stamps' as of the last `pr text` (`Review: not reviewed` before this review is no finding). When `PR-BODY.md` is not
-  there yet (`exists` is false), judge `PR.md` alone, say in the report that the generated sections were not read, and
-  ask for `pr text`.
+  #1062 and #1063). Judge them in `PR-BODY.md` instead: each ticked Checklist item is finished by the diff, the `Fixes`
+  lines name issues the change finishes, and AI use names the models of the commits' trailers. Read the Checklist
+  against the task's Done section in `TASK.md` ([Done items](../pr.md#done-items)): a Done item the diff does not finish
+  and `TASK.md` does not mark `(left for #N)` is Important (the Checklist ticks it, so the description claims work that
+  is not there), and so is a left item that is no follow-up (its issue or task does not exist, or is this one) or one
+  the pull request quietly drops; the `Left for a follow-up` list names each with its issue or task. The body's stage
+  lines are the stamps' as of the last `pr text` (`Review: not reviewed` before this review is no finding). When
+  `PR-BODY.md` is not there yet (`exists` is false), judge `PR.md` alone, say in the report that the generated sections
+  were not read, and ask for `pr text`.
 - [ ] **Open every picture.** Use the Read tool on each image the description shows (paths are relative to `PR.md`'s
   folder), every one, before judging it; for a video, open the stills, or say it could not be checked (a blocker when
   the video is the only evidence). For each, record what it shows and check that:
@@ -45,6 +50,10 @@ grep); it changes no worktree, commits nothing and does not touch GitHub.
   real reason (nothing visible changes, no disc scenario reaches it yet); convenience is Important, as for the
   `Runtime:` line ([Clips in the description](../testing.md#clips-in-the-description)). A clip already uploaded by an
   earlier `pr open` is deleted locally: judge it on the pull request.
+- [ ] **The Summary is easy to read.** It is a few short paragraphs, not a wall of text (a program counts them,
+  `pull_requests.summary`; you judge whether it is clear): the first says what changed and why in a sentence or two, the
+  next say what a reader would otherwise miss, and none repeats the diff or the Testing section. A paragraph that lists
+  every file or every test is Minor; one that no reader could follow is Important.
 - [ ] **Each claim in Summary and Testing is backed** by the diff or a log the description cites: test names exist in
   the diff or the tree, counts ("412 passed") appear in a log, a stated behaviour is in the code, a command named
   would run. A claim with nothing behind it is Important.
@@ -77,13 +86,15 @@ grep); it changes no worktree, commits nothing and does not touch GitHub.
   picture is one the job drew, looked at, never a hardware GPU's or a game's.
 - [ ] **The rules a program cannot check:**
     - `Fixes #N` and `Refs #N` (in `PR-BODY.md`) fit the change (`gh issue view N` is read only and allowed); a `Fixes`
-      line for work the change does not finish is Important;
+      line for work the change does not finish is Important, and so is a `Refs` line for an issue the change finishes;
     - **Issues affected** is believable: for a change that is more than a one-line fix, a `None (<reason>)` whose
       reason is only "none" or "n/a" is a Minor finding, and when the diff plainly touches what an open issue cites
       (run `coney-tools issue impact --base origin/main --head HEAD`, read the top matches, `gh issue view N` read
       only) and the section omits it, that is Important; a one-line fix by hand with `None (one-line fix)` passes;
-    - nothing is left for later: no "Left for later", "Remaining", "TODO", "follow-up" or "next step" in the body (a
-      pull request merges only when every task in it is finished, [Issues](../how-we-work.md#issues));
+    - nothing is left for later except what the Checklist lists: no "Left for later", "Remaining", "TODO", "follow-up"
+      or "next step" in the body outside the generated `Left for a follow-up (not part of this pull request):` list,
+      whose every item names the issue or task that holds it ([Done items](../pr.md#done-items); a pull request merges
+      only when every task in it is finished, [Issues](../how-we-work.md#issues));
     - `Docs: none` only when the change touches no behaviour, command or finding a doc describes;
     - AI use (in `PR-BODY.md`) is filled and names the model that wrote the commits (their `Co-Authored-By` trailers);
     - no game data, decompiler output or local path in the text, and "user", never "owner", for the person.
@@ -93,7 +104,7 @@ grep); it changes no worktree, commits nothing and does not touch GitHub.
 - **Critical:** game data or decompiler output in the description or a picture it shows.
 - **Important:** a picture that shows a loading screen where the text says gameplay; a count that appears in no log; a
   `Runtime:` line with no evidence behind it, or a convenience reason when the original was available; a `Fixes` line
-  for unfinished work; "left for later" in the body; a missing or wrong model in AI use.
+  for unfinished work; "left for later" in the body outside the Checklist's left list; a missing or wrong model in AI use.
 - **Minor:** wording ("owner"); a caption that could say more; a local path in a log excerpt.
 
 ## The release check that predates `task review` {#legacy-verdict}

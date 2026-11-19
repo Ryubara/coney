@@ -153,9 +153,13 @@ created with `gh pr create --body-file`, and reruns when you edit it. These rule
   `<reason>`) counts as empty.
 - Docs: a change under `src/`, `python/src/` needs a change under `docs/`, `research/` or the line `Docs: none` in the
   description.
-- Closing: a line `Fixes #N` in Summary for each issue the pull request finishes, one per line; merging closes it.
+- Summary: a few short paragraphs, at most 4 of at most 1000 characters each (the closing lines and `Docs: none` do not
+  count); a wall of text is refused.
+- Closing: a line `Fixes #N` in Summary for each issue the pull request finishes, one per line; merging closes it. A
+  task that leaves part of its Done section to a follow-up writes `Refs #N` instead, which closes nothing.
 - Checklist: every item is ticked (`- [x]`): a pull request lists only the work it finishes, and a task it does not
-  finish is left out and lives in its own issue.
+  finish is left out and lives in its own issue; the one exception is a Done item the task marks `(left for #N)`, which
+  `pr text` lists apart, as a plain bullet with its note and never a checkbox.
 - Issues affected: one line `- #N: how it is affected` for each open issue the pull request partly fixes, changes the
   behaviour of or makes out of date, or the single line `None (<reason>)` with any short reason, for example
   `None (one-line fix)`. `coney-tools issue impact` suggests the list; running it is optional.

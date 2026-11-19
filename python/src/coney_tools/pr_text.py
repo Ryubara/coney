@@ -2,14 +2,14 @@
 """Step 5 of a release: the pull request's title and description, generated from the engineer's file, the task and the
 stamps, and checked with the checks CI runs (docs/guides/pr.md#text).
 
-The engineer writes one small file, `PR.md` in the task's scratch folder: line 1 the title, a `## Summary` with one
-paragraph (and perhaps a `Docs: none` line), a `## Testing` holding only the `Runtime:` and `Pictures:` lines and a
-`## Screenshots` holding image references or `Screenshots: none (reason)`, and the clips on its `Before:`, `After:` and
-`Original:` lines or `Clips: none (reason)` (`pull_requests.clips`). Everything else is generated: the `Fixes`
-lines and the Checklist from `TASK.md`, the facts block from the stamp log, the AI use section from the commits and the
-log, and every other section the template has. The generated description therefore cannot disagree with the stamps, and
-the sections it has are the template's: they are read from `pull_requests.sections` in `.github/conventions.yml`, never
-listed here.
+The engineer writes one small file, `PR.md` in the task's scratch folder: line 1 the title, a `## Summary` with a few
+short paragraphs (`pull_requests.summary`; and perhaps a `Docs: none` line), a `## Testing` holding only the `Runtime:`
+and `Pictures:` lines and a `## Screenshots` holding image references or `Screenshots: none (reason)`, and the clips on
+its `Before:`, `After:` and `Original:` lines or `Clips: none (reason)` (`pull_requests.clips`). Everything else is
+generated: the `Fixes` (or `Refs`) lines and the Checklist from `TASK.md` (its Done items, `pr_done`), the facts block
+from the stamp log, the AI use section from the commits and the log, and every other section the template has. The
+generated description therefore cannot disagree with the stamps, and the sections it has are the template's: they are
+read from `pull_requests.sections` in `.github/conventions.yml`, never listed here.
 
 `generate` writes no file and reads none but the pictures, the clips (through ffprobe, `clips.probe_file`) and the
 record of clips an earlier release uploaded (`pr-published.json`), with one exception: a section only a person can fill
@@ -32,7 +32,17 @@ from typing import Any
 
 import yaml
 
-from coney_tools import clips, fails_first, orig_pairs, pr_proof, pr_publish, pr_text_file, proof_profiles, stamps
+from coney_tools import (
+    clips,
+    fails_first,
+    orig_pairs,
+    pr_done,
+    pr_proof,
+    pr_publish,
+    pr_text_file,
+    proof_profiles,
+    stamps,
+)
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
 from coney_tools.pr_proof import Refusal, TextHashes
@@ -77,7 +87,8 @@ class EngineerText:
     file: Path
     folder: Path
     title: str
-    #: The one paragraph, whitespace made single spaces (a wrapped line is the same paragraph).
+    #: The summary's paragraphs, each with its whitespace made single spaces (a wrapped line is the same paragraph),
+    #: joined by a blank line. How many and how long is `pull_requests.summary`, which the body check holds it to.
     paragraph: str
     docs_none: bool
     #: The `Runtime:` line's text without a list marker, or None.
@@ -225,19 +236,22 @@ def _find(sections: dict[str, list[str]], name: str) -> list[str] | None:
 
 
 def _summary(lines: list[str] | None, rules: Any, name: str, problems: list[str]) -> tuple[str, bool]:
-    """The paragraph and whether a `Docs: none` line is there; anything else in the section is refused."""
+    """The paragraphs and whether a `Docs: none` line is there; anything else in the section is refused. How many
+    paragraphs and how long is not checked here: it is `pull_requests.summary`, which the body check runs on the
+    generated description (the same check CI runs)."""
     if lines is None:
         problems.append(f'text: {name}: "## {rules.closing.section}" is missing')
         return "", False
     docs_none = False
-    closing = re.compile(rf"^\s*{re.escape(rules.closing.keyword)}\b", re.IGNORECASE)
+    words = "|".join(re.escape(word) for word in (rules.closing.keyword, rules.closing.refs))
+    closing = re.compile(rf"^\s*(?P<word>{words})\b", re.IGNORECASE)
     paragraphs: list[list[str]] = [[]]
     for line in lines:
         stripped = line.strip()
         if re.match(rf"^{re.escape(rules.docs_none.line)}\s*$", stripped, re.IGNORECASE):
             docs_none = True
-        elif closing.match(line):
-            problems.append(f'text: {name}: "{rules.closing.keyword}" lines are generated from TASK.md; remove them')
+        elif (generated := closing.match(line)) is not None:
+            problems.append(f'text: {name}: "{generated.group("word")}" lines are generated from TASK.md; remove them')
         elif stripped.startswith("<!--"):
             problems.append(f"text: {name}: the markers are generated; remove them")
         elif stripped:
@@ -248,9 +262,7 @@ def _summary(lines: list[str] | None, rules: Any, name: str, problems: list[str]
     if not paragraphs:
         problems.append(f'text: {name}: "## {rules.closing.section}" has no paragraph')
         return "", docs_none
-    if len(paragraphs) > 1:
-        problems.append(f'text: {name}: "## {rules.closing.section}" is one paragraph; found {len(paragraphs)}')
-    return _squash(" ".join(paragraphs[0])), docs_none
+    return "\n\n".join(_squash(" ".join(p)) for p in paragraphs), docs_none
 
 
 def _testing_lines(
@@ -399,35 +411,22 @@ def optional_task_keys(task_file_text: str) -> dict[str, Any]:
     return {"finishes": front["finishes"]} if "finishes" in front else {}
 
 
-#: The Done section `task create` writes when the issue has none: it names no criterion.
-_DONE_PLACEHOLDER = re.compile(r"^See issue #\d+\.$")
+def done_items(task: TaskFile) -> list[pr_done.DoneItem]:
+    """The items of the task's Done section (D7), one Checklist entry each (`pr_done.read`)."""
+    return pr_done.read(task.sections.get("Done", ""))
 
 
-def done_criteria(task: TaskFile) -> list[str]:
-    """The criteria of the task's Done section (D7), one Checklist item each.
+def finishes_issues(keys: dict[str, Any]) -> bool:
+    """Whether the task closes its issues (`finishes` in its front block, true when absent)."""
+    return keys.get("finishes", True) is not False
 
-    `task create` quotes the issue's text line by line (`> `), so the quote marks are read past first. Each bullet is
-    an item, whole: the lines that wrap it (up to a blank line or the next bullet) are part of it, so a criterion is
-    never ticked with half of it cut off. A section of prose with no bullet gives one item per paragraph. The
-    placeholder `task create` writes for an issue with no Done section (`See issue #N.`) gives none, and `generate`
-    refuses a Checklist with no item.
-    """
-    lines = [re.sub(r"^\s*>\s?", "", line) for line in task.sections.get("Done", "").splitlines()]
-    bullets: list[list[str]] = []
-    reading = False  # a bullet is open: the lines after it that are not a bullet or blank wrap it
-    for line in lines:
-        bullet = re.match(r"^\s*[-*+]\s+(?:\[[ xX]\]\s+)?(?P<text>\S.*)$", line)
-        if bullet:
-            bullets.append([bullet.group("text")])
-            reading = True
-        elif reading and line.strip():
-            bullets[-1].append(line.strip())
-        else:
-            reading = False
-    items = [_squash(" ".join(parts)) for parts in bullets]
-    if not items:
-        items = [_squash(paragraph) for paragraph in re.split(r"\n\s*\n", "\n".join(lines)) if paragraph.strip()]
-    return [item for item in items if not _DONE_PLACEHOLDER.match(item)]
+
+def done_refusals(task: TaskFile, keys: dict[str, Any]) -> list[Refusal]:
+    """The Done items that contradict the task's `finishes`, or are marked wrongly (`pr_done.problems`): the `done`
+    stage of `pr verify`. The same messages `pr text` refuses with, under its own prefix."""
+    return [
+        Refusal("done", f"done: {p}", "engineer") for p in pr_done.problems(done_items(task), finishes_issues(keys))
+    ]
 
 
 # --- the facts ------------------------------------------------------------------------------------------------------
@@ -786,14 +785,15 @@ def _summary_section(ctx: _Context) -> str:
     parts = [_marked(rules.markers.summary, ctx.text.paragraph)]
     if ctx.text.docs_none:
         parts.append(rules.docs_none.line)
-    if ctx.keys.get("finishes", True) is not False:
-        parts.append("\n".join(f"{rules.closing.keyword} #{issue}" for issue in ctx.task.issues))
+    # A task that closes its issues says `Fixes`; one that leaves part of its Done to a follow-up (`finishes: false`)
+    # only refers to them.
+    keyword = rules.closing.keyword if finishes_issues(ctx.keys) else rules.closing.refs
+    parts.append("\n".join(f"{keyword} #{issue}" for issue in ctx.task.issues))
     return "\n\n".join(parts)
 
 
 def _checklist_section(ctx: _Context) -> str:
-    items = done_criteria(ctx.task)
-    return "Done:\n\n" + "\n".join(f"- [x] {item}" for item in items) if items else ""
+    return pr_done.checklist(done_items(ctx.task))
 
 
 def _testing_section(ctx: _Context) -> str:
@@ -839,10 +839,14 @@ def generated_sections(conventions: Conventions) -> list[tuple[str, str]]:
     rules = conventions.pull_requests
     written = {
         rules.closing.section: (
-            f"the `{rules.closing.form}` lines, one per issue of the task, from TASK.md; the engineer writes only the "
-            f"summary paragraph and a `{rules.docs_none.line}` line"
+            f"the `{rules.closing.form}` lines, one per issue of the task, from TASK.md (`{rules.closing.refs} #N` for "
+            f"a task whose front block says `finishes: false`); the engineer writes only the summary's short "
+            f"paragraphs and a `{rules.docs_none.line}` line"
         ),
-        rules.checklist.section: "one ticked item per criterion of the Done section of TASK.md",
+        rules.checklist.section: (
+            "one ticked item per Done criterion of TASK.md that the pull request finishes, and under "
+            f"`{pr_done.LEFT_LABEL}` each one the task marked `(left for #N)`, listed with its note, not as a checkbox"
+        ),
         rules.runtime.section: (
             f"the facts block from the stamp log; the engineer writes only the `{rules.runtime.line}` and "
             f"`{rules.runtime.pictures}` lines"
@@ -907,11 +911,13 @@ def generate(
         blocks.append(f"## {name}\n\n{content}".rstrip())
     body = "\n\n".join(blocks) + "\n"
     extra = []
-    if not done_criteria(task):
+    done = done_items(task)
+    if not done:
         extra.append(
             f"text: TASK.md: the Done section gives no item for the {rules.checklist.section}; write what done means "
             "there (a bullet per criterion)"
         )
+    extra += [f"text: TASK.md: {problem}" for problem in pr_done.problems(done, finishes_issues(ctx.keys))]
     if ctx.models and text.ai_use is not None:
         extra.append(f'text: PR.md: "## {rules.ai_use.section}" is generated from the log and the commits; remove it')
     refusals = tuple(Refusal("text", p, "engineer") for p in (*text.problems, *extra)) + tuple(

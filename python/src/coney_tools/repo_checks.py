@@ -363,6 +363,47 @@ def legacy_remaining_items(body: str, rules: PullRequests) -> list[str]:
     return [text for text in items if text not in rules.placeholders]
 
 
+def summary_paragraphs(text: str, rules: PullRequests) -> list[str]:
+    """The paragraphs of a Summary's text (comments already removed): the blank-line separated blocks, each with its
+    lines joined, less the closing lines (`Fixes #N`, `Refs #N`) and the `Docs: none` line, which are not prose."""
+    closing = "|".join(re.escape(word) for word in (rules.closing.keyword, rules.closing.refs))
+    ignored = re.compile(rf"^\s*(?:(?:{closing})\b.*|{re.escape(rules.docs_none.line)}\s*)$", re.IGNORECASE)
+    paragraphs: list[list[str]] = [[]]
+    for line in text.splitlines():
+        if ignored.match(line):
+            continue
+        if line.strip():
+            paragraphs[-1].append(line.strip())
+        elif paragraphs[-1]:
+            paragraphs.append([])
+    return [" ".join(parts) for parts in paragraphs if parts]
+
+
+def summary_problems(text: str, rules: PullRequests, opened: datetime | None = None) -> list[str]:
+    """What is wrong with the length of the Summary's `text` (comments removed): more paragraphs than
+    `summary.max_paragraphs`, or a paragraph over `summary.max_paragraph_characters`; a wall of text is hard to read.
+    Nothing when the rules have no `summary`, or the pull request was `opened` before `summary.since` (a description
+    written under the older one-paragraph rule); one not yet opened is held to it."""
+    rule = rules.summary
+    if rule is None or (opened is not None and opened < rule.since):
+        return []
+    section = rules.closing.section
+    paragraphs = summary_paragraphs(text, rules)
+    problems: list[str] = []
+    if len(paragraphs) > rule.max_paragraphs:
+        problems.append(
+            f"'## {section}' has {len(paragraphs)} paragraphs; at most {rule.max_paragraphs} (a few short ones, "
+            "not a wall of text: say less, and leave the detail to the code and docs)"
+        )
+    for number, paragraph in enumerate(paragraphs, 1):
+        if len(paragraph) > rule.max_paragraph_characters:
+            problems.append(
+                f"'## {section}': paragraph {number} has {len(paragraph)} characters; at most "
+                f"{rule.max_paragraph_characters} (split it into short paragraphs)"
+            )
+    return problems
+
+
 def _check_checklist(section: str, rules: PullRequests) -> list[str]:
     """Refuse every unchecked item of the Checklist section (see `unfinished_items`)."""
     problems: list[str] = []
@@ -746,7 +787,8 @@ def check_body(
     own, the Screenshots section must hold an image that is an uploaded URL (not a local path) or a
     `Screenshots: none (<reason>)` line, no text may name a path on the author's machine, and the AI use
     section must say who wrote the commits (one of the choices) and, unless a person did, name the model, and no
-    Checklist item may be left unticked (`- [ ]`), and the Issues affected section must list the issues the change
+    Checklist item may be left unticked (`- [ ]`), and the Summary may hold at most a few short paragraphs
+    (`summary_problems`), and the Issues affected section must list the issues the change
     affects or say `None (<reason>)` (`issues_affected_problems`). With `branch_models` (the models the branch's
     commits credit in `Co-Authored-By` trailers, see `branch_trailer_models`) the Model line must also name each of
     them, whoever wrote the commits; a description alone has no branch, so CI passes none. With the pull request's
@@ -770,6 +812,8 @@ def check_body(
             problems.extend(issues_affected_problems(text, rules))
         elif name in rules.filled and _is_blank(text, rules):
             problems.append(f"'## {name}' is empty (a comment or the template's placeholder does not count)")
+        if name == rules.closing.section and text is not None:
+            problems.extend(summary_problems(text, rules, opened))
     testing = sections.get(rules.runtime.section.casefold())
     if title is not None and testing is not None:
         problems.extend(runtime_problems(testing, title, rules))

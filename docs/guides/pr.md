@@ -2,7 +2,7 @@
 
 Before a unit of work becomes a pull request, two read-only commands say whether it is ready: `coney-tools pr verify`
 checks that the proof the unit carries holds for the change on the branch, and `coney-tools pr text` writes the pull
-request's title and description from the engineer's one paragraph, the task and the stamps. Neither pushes, opens or
+request's title and description from the engineer's short summary, the task and the stamps. Neither pushes, opens or
 edits anything on GitHub, so an engineer runs them whenever it wants to know where the unit stands. They are the code
 that [`pr open`](#open) runs before it pushes, so what they accept is what a release will accept. The commands'
 options and exit codes are in [the pull request commands](coney-tools-pr.md#pr); this page is what they check and what
@@ -62,11 +62,13 @@ the stamp come from one run).
 uv run --project python coney-tools pr verify [TASK]
 ```
 
-Runs steps 1 to 4 on the unit, and the `clips` check of the engineer's file (the before and after clips a visible change
-needs, [Clips in the description](testing.md#clips-in-the-description)), and prints one block per refusal: the message,
-then what to redo. Exit 0 when everything holds, 1 when something is refused, 2 when it cannot run (no `TASK.md`, an
-unknown base, `origin/HEAD` unset, unreadable rules). It changes nothing: no stamp, no file, no git state. It does not
-fetch; the base is `<remote>/<default branch>` as it was last fetched, so run `git fetch` first when main has moved.
+Runs steps 1 to 4 on the unit, the `clips` check of the engineer's file (the before and after clips a visible change
+needs, [Clips in the description](testing.md#clips-in-the-description)) and the `done` check of `TASK.md` (a Done item
+left to a follow-up in a task that still closes its issue, [Done items](#done-items)), and prints one block per refusal:
+the message, then what to redo. Exit 0 when everything holds, 1 when something is refused, 2 when it cannot run (no
+`TASK.md`, an unknown base, `origin/HEAD` unset, unreadable rules). It changes nothing: no stamp, no file, no git state.
+It does not fetch; the base is `<remote>/<default branch>` as it was last fetched, so run `git fetch` first when main
+has moved.
 
 A worktree with uncommitted changes is refused first (`worktree:`), because the stamps are bound to what is committed
 and the checks read the files. A log that is not intact stops the run after step 1: nothing else in it can be trusted,
@@ -117,6 +119,8 @@ What it refuses, exactly (`<...>` is filled in):
 | `reviewed` | `reviewed: reviewer engineer-1 also worked on this task` (the reviewer wrote any stamp of the unit other than a `reviewed` one, whatever its agent type: the rule `task review --record` applies); `reviewed: the Review stamp names no reviewer` | `task review` (another reviewer) |
 | `reviewed` | `reviewed: the reviewer's type is engineer, not reviewer`; `reviewed: a review of orig work must run on opus; this review ran on <model>` (the agent and the model words of `tasks.review`, the rule `task review --record` applies; only with `stamps.require_hook_source`) | `task review` |
 | `clips` | `clips: '## Screenshots' needs a 'Before:' and an 'After:' clip (...) or a line 'Clips: none (<reason>)' (...), because the title area 'gameplay' is one a player sees` (or `because it changes src/studio/...`); `clips: ... a clip pair needs its 'After:' line too`; `clips: 'Clips: none' needs its reason in parentheses` (`pull_requests.clips`) | the engineer |
+| `done` | `done: Done item 'Reference pictures' is left for #1500 but the task still finishes its issue (the description would say Fixes and close it with work left); write finishes: false in TASK.md's front block, so the Summary says Refs, or finish the item` (a Done item marked `(left for ...)` while the front block does not say `finishes: false`) | the engineer |
+| `done` | `done: Done item 'The required check' is unticked and names no follow-up: ...`; `done: Done item '...' is ticked and also left for #1500: it is either met or left`; `done: every Done item is left for a follow-up, so this pull request finishes nothing` | the engineer |
 | `clips` | every refusal of `clips check` for a clip the file shows: `clips: clips/after.mp4 does not exist`; `clips: clips/before.mp4: 12.00 s long, more than 10 s`; `clips: clips/after.mp4: metadata ...`; also `clips: clips/after.gif is identical to clips/before.mp4; a capture went wrong` and one over the upload limit. A clip an earlier `pr open` uploaded and deleted is not looked for | the engineer |
 
 `pr verify` recomputes the change hash itself, against the merge base with the remote default branch, so a `checked`
@@ -178,7 +182,7 @@ gameplay: Fix the widget ready frame
 
 ## Summary
 
-One paragraph: what changed and why.
+What changed and why, in a few short paragraphs.
 
 Docs: none
 
@@ -195,22 +199,24 @@ Docs: none
 - After: ![after](./clips/after.mp4)
 ```
 
-Line 1 is the title (`area: Verb the rest`). The Summary is one paragraph and, if the change needs no documentation,
-a `Docs: none` line. Testing holds only the `Runtime:` line and, for a change to drawing, the `Pictures:` line (its own
-bullet, as in the example; [picture counts](testing.md#picture-counts)), and the facts are generated; which title areas
-need the `Runtime:` line is in [the `Runtime:` line](testing.md#runtime-line). `pr text` keeps both lines in that
-order and refuses any other line in Testing. Issues affected holds
-one `- #N: how it is affected` line per open issue the change affects, or
-`None (<reason>)` (`pull_requests.issues_affected`; [Issues a pull request changes](issues.md#affected)). Screenshots
-holds image references under `./shots/`, or `Screenshots: none (<reason>)`, and the clips: one image under `./clips/`
-(a `.mp4` or `.gif`) on each of its `Before:`, `After:` and `Original:` lines, or `Clips: none (<reason>)`; a title area
-a player sees and a change a player sees in Coney Studio need the pair or that line
-([Clips in the description](testing.md#clips-in-the-description)). Anything else is refused: `Fixes` lines,
-the markers and the Checklist are generated, so a hand-typed claim cannot disagree with the stamps. A heading that is
-not one of `pull_requests.sections` is refused ("is not a section of a pull request description"); a section of that
-list that only a person can fill (Issues affected, or one added later) goes in the file under its own heading and is
-kept as written. A person's own pull request, with no AI identity in the log and no model in the commits' trailers,
-also writes the `## AI use` section itself.
+Line 1 is the title (`area: Verb the rest`). The Summary is a few short paragraphs (what changed, and why; a second or
+third for what a reader would otherwise miss) and, if the change needs no documentation, a `Docs: none` line. How many
+and how long is `pull_requests.summary` (at most 4 paragraphs of 1,000 characters each, at the time of writing: [the
+checks](#checks)); a wall of text is refused, and so is a Summary of no paragraph. Testing holds only the `Runtime:`
+line and, for a change to drawing, the `Pictures:` line (its own bullet, as in the example; [picture
+counts](testing.md#picture-counts)), and the facts are generated; which title areas need the `Runtime:` line is in [the
+`Runtime:` line](testing.md#runtime-line). `pr text` keeps both lines in that order and refuses any other line in
+Testing. Issues affected holds one `- #N: how it is affected` line per open issue the change affects, or `None
+(<reason>)` (`pull_requests.issues_affected`; [Issues a pull request changes](issues.md#affected)). Screenshots holds
+image references under `./shots/`, or `Screenshots: none (<reason>)`, and the clips: one image under `./clips/` (a
+`.mp4` or `.gif`) on each of its `Before:`, `After:` and `Original:` lines, or `Clips: none (<reason>)`; a title area a
+player sees and a change a player sees in Coney Studio need the pair or that line ([Clips in the
+description](testing.md#clips-in-the-description)). Anything else is refused: `Fixes` lines, the markers and the
+Checklist are generated, so a hand-typed claim cannot disagree with the stamps. A heading that is not one of
+`pull_requests.sections` is refused ("is not a section of a pull request description"); a section of that list that only
+a person can fill (Issues affected, or one added later) goes in the file under its own heading and is kept as written. A
+person's own pull request, with no AI identity in the log and no model in the commits' trailers, also writes the `## AI
+use` section itself.
 
 ### What is generated {#generated}
 
@@ -220,8 +226,8 @@ line and refused by the checks until it is.
 
 | Section | Generated from |
 | --- | --- |
-| Summary | The paragraph between `<!-- coney:summary -->` markers, the `Docs: none` line, and one `Fixes #N` line per issue of `TASK.md` (none for a task whose front block says `finishes: false`) |
-| Checklist | One ticked item per bullet of the task's Done section, read past the quote marks (`>`) `task create` writes; a bullet that wraps onto more lines is one whole item (its lines are joined, up to a blank line or the next bullet); a Done section of prose gives one item per paragraph. A Done section with no criterion (the `See issue #N.` placeholder) is refused |
+| Summary | The paragraphs between `<!-- coney:summary -->` markers, the `Docs: none` line, and one `Fixes #N` line per issue of `TASK.md`, or a `Refs #N` line for a task whose front block says `finishes: false` ([Done items](#done-items)) |
+| Checklist | One ticked item per bullet of the task's Done section that the pull request finishes, read past the quote marks (`>`) `task create` writes; a bullet that wraps onto more lines is one whole item (its lines are joined, up to a blank line or the next bullet); a Done section of prose gives one item per paragraph. A bullet the task marks `(left for #N)` is not ticked: it is listed after them under `Left for a follow-up (not part of this pull request):` with its note ([Done items](#done-items)). A Done section with no criterion (the `See issue #N.` placeholder) is refused |
 | Testing | The [facts block](#facts) between `<!-- coney:facts -->` markers, then the engineer's `Runtime:` and `Pictures:` lines |
 | Screenshots | The engineer's pictures and `Screenshots: none` line, then each clip as a bold label line (`**Before:**`) with its `./clips/` image alone on the line below (where `pr open` can leave an MP4 as its bare upload address), then the `Clips: none` line |
 | AI use | `Commits written by: an AI` and the models the branch's `Co-Authored-By` trailers name, else the models of the engineers in the log. No trailer lines are added to the description: GitHub copies the branch commits' trailers into the squash commit |
@@ -229,6 +235,27 @@ line and refused by the checks until it is.
 | Any other section added to `pull_requests.sections` that only a person can fill | The engineer's section of `PR.md`, as written. Without it, a bare `TODO:`, which is refused |
 
 The marker names (`pull_requests.markers`) let a later pass find the two generated blocks again.
+
+### Done items {#done-items}
+
+The Checklist lists what the pull request finishes, and CI refuses an unticked `- [ ]` item
+(`pull_requests.checklist`). A task that deliberately leaves part of its Done section to a follow-up (reference
+pictures, a required check, work another task owns) must not claim it, so the engineer marks each Done bullet in
+`TASK.md`, which the generator reads and the reviewer does not edit:
+
+| In `TASK.md`'s Done section | Meaning | In the description |
+| --- | --- | --- |
+| `- The widget waits.` or `- [x] The widget waits.` | Met by this pull request | `- [x] The widget waits.` |
+| `- Reference pictures (left for #1500).` or `- [ ] Reference pictures (left for task 1501-add-the-pictures)` | Left: the note names the issue or the task that holds the item | listed under `Left for a follow-up (not part of this pull request):` as a plain bullet with its note, never a checkbox, so CI's rule of ticked items holds |
+| `- [ ] The required check` | Neither met nor left: refused (`names no follow-up`) | none |
+
+A bullet has the note only at its end, in parentheses: `(left for #N)` or `(left for task <task id>)` (`left to` also
+reads). An item with no mark at all is met, as every `TASK.md` `task create` writes is. A task that leaves any item
+must say `finishes: false` in its front block ([Starting a task](issues.md#starting)): its Summary then has a `Refs #N`
+line for each issue instead of `Fixes #N`, so merging closes nothing and the issue stays open for the follow-up. A task
+that leaves an item and does not say it is refused by `pr text` (`text: TASK.md: ...`) and by `pr verify` (`done: ...`):
+the description would close an issue with work left. A task that leaves every item finishes nothing and is refused.
+The reader is `repo:python/src/coney_tools/pr_done.py`, the only definition of the marks.
 
 `PR.md` therefore lacks the Checklist, the facts of Testing, AI use and the `Fixes` lines on purpose; they are in
 `PR-BODY.md`. A reviewer judges them there and never fails `PR.md` for lacking them: the review packet lists them
@@ -255,7 +282,8 @@ the reader, not proof: nothing in CI reads it, and the local log stays the sourc
 
 On the generated text it runs `check-title` and `check-body` as the old description gate ran them (a local picture or
 clip is accepted where CI wants an uploaded one, because `gh --attach` uploads it; the change's paths are given, as
-CI's `body` job gives the pull request's files, so a Coney Studio path asks for the clips), `check-docs` with the
+CI's `body` job gives the pull request's files, so a Coney Studio path asks for the clips; and the Summary is held to
+`pull_requests.summary`, the limits CI holds it to), `check-docs` with the
 changed paths (so `Docs: none` is honoured), the `TODO:` rule, and the pictures: each reference must be a relative path
 under `./shots/` (an absolute path, a drive or `..` is refused, as it would put a folder of the author's machine into
 the description), the file under `shots/` next to PR.md, outside any git checkout, one of
