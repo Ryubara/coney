@@ -17,6 +17,8 @@
 #include "core/log.h"
 #include "core/perf.h"
 #include "debug/menu_model.h"
+#include "scripting/lua_value.h"
+#include "scripting/lua_vm.h"
 
 using coney::debug::DebugServices;
 using coney::debug::DebugSession;
@@ -128,6 +130,40 @@ TEST_CASE("the console page runs a line and the cheats page reports a missing ca
     console->find("Run line")->setText("DbgEnterCheat = ToInt");
     cheats->find("12 Complete the mission")->run();
     CHECK(session.log().lines().back() == "= 12");
+}
+
+TEST_CASE("the console page's Log shows what print writes, a loop's lines in order", "[debug]") {
+    // Expected: issue #1165 and docs/guides/debug-menu.md#lua-console: print in a console line writes to the Log.
+    TunableRegistry tunables;
+    DebugSession session(tunables, DebugServices{}, nullptr);
+    const auto console = session.model().openPage("Lua console");
+    console->find("Run line")->setText("print(\"testing\")");
+    console->find("Run line")->setText("for i = 1, 3 do print(i) end");
+    // Several arguments are one line, joined by tabs, as Lua 4.0's print joins them.
+    console->find("Run line")->setText("print('a', 2, nil)");
+    const std::vector<std::string> expected{
+        "> print(\"testing\")", "testing",  "> for i = 1, 3 do print(i) end", "1", "2", "3",
+        "> print('a', 2, nil)", "a\t2\tnil"};
+    CHECK(session.log().last(expected.size()) == expected);
+}
+
+TEST_CASE("print in a console line reaches the Log before a later error, and print is put back after", "[debug]") {
+    // Expected: issue #1165; the statements before a runtime error have run (debug-menu.md#lua-console).
+    TunableRegistry tunables;
+    DebugSession session(tunables, DebugServices{}, nullptr);
+    const auto console = session.model().openPage("Lua console");
+    const coney::script::Value before = session.vm().global("print");
+    console->find("Run line")->setText("print('first') local n = 5 n()");
+    const std::vector<std::string> lines = session.log().last(3);
+    REQUIRE(lines.size() == 3);
+    CHECK(lines[0] == "> print('first') local n = 5 n()");
+    CHECK(lines[1] == "first");
+    CHECK(lines[2].starts_with("! "));
+    // Outside a console line, print is the state's own again (its script log).
+    CHECK(session.vm().global("print") == before);
+    // A line that sets print keeps what it set.
+    console->find("Run line")->setText("print = ToInt");
+    CHECK(session.vm().global("print") == session.vm().global("ToInt"));
 }
 
 TEST_CASE("tunables appear by category and change between steps", "[debug]") {
