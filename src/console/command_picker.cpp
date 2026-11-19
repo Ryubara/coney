@@ -29,6 +29,8 @@ std::string lineName(const Command& command) {
     return std::string(command.spec().name);
 }
 
+} // namespace
+
 // `value` moved by `step`, as a whole or a decimal number; an empty or unreadable value counts as 0.
 std::string steppedNumber(std::string_view value, int step, bool whole) {
     if (whole) {
@@ -40,8 +42,6 @@ std::string steppedNumber(std::string_view value, int step, bool whole) {
     (void)std::from_chars(value.data(), value.data() + value.size(), number);
     return std::format("{}", number + step);
 }
-
-} // namespace
 
 void CommandPicker::reset() {
     m_page = PickerPage::Commands;

@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "console/console.h"
@@ -36,6 +37,11 @@ struct PickerRow {
     std::string value; ///< A command's group, or the argument's value (empty when it has none yet).
     std::string help;  ///< A command's summary, or the argument's help.
 };
+
+/// `value` moved by `step`, as a whole number (`whole`) or a decimal one, the way the picker steps a number argument. A
+/// value that does not read in full as a number of that kind (empty, a word, or a number with text after it such as
+/// `1.5x`, or `12x` for a whole one) counts as 0.
+[[nodiscard]] std::string steppedNumber(std::string_view value, int step, bool whole);
 
 /// The gamepad's way to build and run a line without typing (docs/guides/studio/console.md#input): the commands by
 /// group, then one row per argument, each a list filled by its type's completion or a number changed with left and

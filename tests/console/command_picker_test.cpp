@@ -30,6 +30,7 @@ using coney::console::PickerInput;
 using coney::console::PickerPage;
 using coney::console::PickerRow;
 using coney::console::SessionHost;
+using coney::console::steppedNumber;
 using Strings = std::vector<std::string>;
 
 namespace {
@@ -55,6 +56,9 @@ class FakeSession final : public SessionHost {
 constexpr std::array<ArgSpec, 2> kMissionArgs{
     ArgSpec{.name = "mission", .type = ArgType::Mission, .help = "A completed mission"},
     ArgSpec{.name = "checkpoint", .type = ArgType::Checkpoint, .help = "Its checkpoint", .optional = true},
+};
+constexpr std::array<ArgSpec, 1> kScaleArgs{
+    ArgSpec{.name = "scale", .type = ArgType::Number, .help = "A decimal", .optional = true, .defaultValue = "0.5"},
 };
 constexpr std::array<ArgSpec, 2> kSetArgs{
     ArgSpec{.name = "setting", .type = ArgType::Setting, .help = "A setting"},
@@ -189,6 +193,45 @@ TEST_CASE("a number with no list changes by one with left and right, from its de
     press(picker, PickerInput::Down);
     press(picker, PickerInput::Accept);
     CHECK(fixture.lastLine() == "set fps_cap 32 ran");
+}
+
+TEST_CASE("a decimal changes by one with left and right", "[console][picker]") {
+    // Expected: Coney's own rule, docs/guides/studio/console.md#input
+    PickerConsole fixture;
+    // Settings' second command, after `set`, so it is the sixth row.
+    REQUIRE(fixture.console.registry().addBuiltin(
+        CommandSpec{.name = "scale", .group = "Settings", .summary = "Takes a decimal.", .args = kScaleArgs},
+        [](CommandContext& context) -> std::expected<void, std::string> {
+            context.print("scale " + context.args.values().front() + " ran");
+            return {};
+        }));
+    CommandPicker picker(fixture.console);
+    press(picker, PickerInput::Down, 5);
+    press(picker, PickerInput::Accept);
+    REQUIRE(picker.page() == PickerPage::Arguments);
+    CHECK(picker.line() == "scale 0.5");
+    press(picker, PickerInput::Right, 2);
+    CHECK(picker.line() == "scale 2.5");
+    press(picker, PickerInput::Left, 4);
+    CHECK(picker.line() == "scale -1.5");
+}
+
+TEST_CASE("a number that does not read in full counts as 0 when it is stepped", "[console][picker]") {
+    // Expected: Coney's own rule, docs/guides/studio/console.md#input
+    // Whole numbers: read in full, then moved.
+    CHECK(steppedNumber("30", 1, true) == "31");
+    CHECK(steppedNumber("-4", 1, true) == "-3");
+    CHECK(steppedNumber("", 1, true) == "1");
+    CHECK(steppedNumber("abc", -1, true) == "-1");
+    // Text after the number, or a decimal point, is no whole number: it counts as 0, it is not read up to there.
+    CHECK(steppedNumber("12x", 1, true) == "1");
+    CHECK(steppedNumber("1.5", 1, true) == "1");
+    // Decimals: the same.
+    CHECK(steppedNumber("0.5", 2, false) == "2.5");
+    CHECK(steppedNumber("", 1, false) == "1");
+    CHECK(steppedNumber("abc", 1, false) == "1");
+    CHECK(steppedNumber("1.5x", 1, false) == "1");
+    CHECK(steppedNumber("1.5x", -1, false) == "-1");
 }
 
 TEST_CASE("circle goes back to the commands, and on the commands asks to close", "[console][picker]") {
