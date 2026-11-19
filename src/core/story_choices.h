@@ -49,12 +49,14 @@ struct StoryChoice {
 /// `"replace"`), `anchor`, `missions` and `packages` (two arrays of strings of one length, at least two). Every other
 /// table and key is skipped, so the rest of the file is read by its own reader; text with no choice gives none. Fails
 /// with ErrorCode::Invalid on a broken line (`line N: ...`) and on a choice without its keys, with arrays of different
-/// lengths or fewer than two missions, or with an unknown kind.
+/// lengths or fewer than two missions, a mission named twice, or with an unknown kind.
 [[nodiscard]] std::expected<std::vector<StoryChoice>, Error> parseStoryChoices(std::string_view enabledText);
 
 /// `enabledText` with its story choices replaced by `choices`: every `[[story.choice]]` table is dropped and one is
 /// written for each choice at the end, and everything else (the mods, their order, their approvals, comments) is left
-/// as it was. parseStoryChoices() reads the result back to `choices`.
+/// as it was. The tables are regenerated, so a comment or a key of its own inside a choice table is not kept, and the
+/// new tables use the file's line endings (CRLF when the file has any). parseStoryChoices() reads the result back to
+/// `choices`.
 [[nodiscard]] std::string withStoryChoices(std::string_view enabledText, std::span<const StoryChoice> choices);
 
 /// The story choices in the file `enabledFile`. A file that does not exist holds none. Fails with ErrorCode::Io when it
@@ -62,7 +64,8 @@ struct StoryChoice {
 [[nodiscard]] std::expected<std::vector<StoryChoice>, Error> loadStoryChoices(const std::filesystem::path& enabledFile);
 
 /// Writes `choices` into the file `enabledFile` as withStoryChoices() does, making the file (and its folder) when it is
-/// not there and replacing it in one step, so a crash leaves the old file or the new one. Fails with ErrorCode::Io.
+/// not there and replacing it in one step, so a crash leaves the old file or the new one (a failed write leaves no
+/// partial file beside it). Fails with ErrorCode::Io.
 [[nodiscard]] std::expected<void, Error> saveStoryChoices(const std::filesystem::path& enabledFile,
                                                           std::span<const StoryChoice> choices);
 

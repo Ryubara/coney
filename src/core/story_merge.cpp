@@ -245,11 +245,15 @@ std::vector<StoryGroup> storyGroups(std::span<const StoryMod> storyMods, std::sp
         if (named == choices.end()) {
             continue;
         }
-        const bool sameMissions = named->members.size() == group.defaultOrder.size() &&
-                                  std::ranges::all_of(named->members, [&](const StoryChoiceMember& member) {
-                                      return std::ranges::count(group.defaultOrder, member.mission) == 1 &&
-                                             hashOf.at(member.mission) == member.packageHash;
-                                  });
+        const bool sameMissions =
+            named->members.size() == group.defaultOrder.size() &&
+            std::ranges::all_of(named->members, [&](const StoryChoiceMember& member) {
+                // Each mission once in the group and once in the choice: a repeat would
+                // place one twice and lose another.
+                return std::ranges::count(group.defaultOrder, member.mission) == 1 &&
+                       std::ranges::count(named->members, member.mission, &StoryChoiceMember::mission) == 1 &&
+                       hashOf.at(member.mission) == member.packageHash;
+            });
         if (!sameMissions) {
             group.stale = true;
             continue;

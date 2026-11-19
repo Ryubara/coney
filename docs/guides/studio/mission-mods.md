@@ -512,15 +512,21 @@ game's colours (an original step), the mod's (a mission) and the warning colour 
   ```
 
   `story::loadStoryChoices` and `saveStoryChoices` (`repo:src/core/story_choices.h`) read and write only these tables and
-  leave the rest of the file as the player and the mods menu keep it. `mergeStory` takes the choices as its third
-  argument: the missions of each group they apply to keep their slots in the turn order and take them in the chosen
-  order, so the chain, the placed missions and the refusals all follow from the one rule above.
+  leave the rest of the file as the player and the mods menu keep it; the choice tables themselves are regenerated on
+  every save (a comment or a key of the player's own inside one is not kept) and take the file's line endings.
+  `mergeStory` takes the choices as its third argument: the missions of each group they apply to keep their slots in
+  the turn order and take them in the chosen order, so the chain, the placed missions and the refusals all follow from
+  the one rule above.
 - **When a choice stops holding.** A choice applies only while its group is the same missions and every mod it names has
-  the package hash it records, as a [script merge choice](#two-mods) does. A group that changed, or a mod that was
-  updated, falls back to the load order (`StoryGroup::stale`) and the screen asks again; the old table stays in the file
-  until the player chooses for that group. A choice that puts the group back in load order is dropped from the file.
-- **A file that cannot be written** leaves the choice in force for the session and shows the message; one that cannot be
-  read, or holds a broken `[[story.choice]]` table, gives the load order and the message.
+  the package hash it records, as a [script merge choice](#two-mods) does, and names each of the group's missions once
+  (a hand-edited table that repeats one is refused). A group that changed, or a mod that was updated, falls back to the
+  load order and the merge marks it `StoryGroup::stale` in `merge().groups` (the story rows do not carry it; the screen
+  reads it there to say the choice no longer holds); the old table stays in the file until the player chooses for that
+  group. A choice that puts the group back in load order is dropped from the file.
+- **A file that cannot be written** leaves the choice in force for the session and shows the message. One that cannot
+  be read, or holds a broken `[[story.choice]]` table, gives the load order and the message, and is never written over:
+  a swap or a choice holds for the session only and the message says the file was left as it is, so the tables the
+  player wrote (the valid ones too) are not lost until they fix the file.
 
 ### Progress, records and saves {#graph-progress}
 

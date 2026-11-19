@@ -2,6 +2,7 @@
 // @coney-only the player's story merge choices in enabled.toml; the original has no mods.
 #include "core/story_choices.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <expected>
 #include <filesystem>
@@ -116,6 +117,11 @@ struct ChoiceBuilder {
             return toml::lineError(line, "story choice: missions and packages must be arrays of one length");
         }
         for (std::size_t i = 0; i < missions->size(); ++i) {
+            // A mission twice would be placed twice and another left out of the order.
+            if (std::ranges::count(*missions, (*missions)[i]) != 1) {
+                return toml::lineError(
+                    line, std::format("story choice: mission \"{}\" is named more than once", (*missions)[i]));
+            }
             made.members.push_back({.mission = (*missions)[i], .packageHash = (*packages)[i]});
         }
         return made;
@@ -133,6 +139,18 @@ std::string tableOf(const StoryChoice& choice) {
     return std::format("\n{}\nkind = {}\nanchor = {}\nmissions = [{}]\npackages = [{}]\n", kChoiceTable,
                        choice.kind == GroupKind::Anchor ? "\"after\"" : "\"replace\"", toml::quoted(choice.anchor),
                        missions, packages);
+}
+
+// `text` (written with LF) with every line ending as CRLF.
+std::string withCrlf(std::string_view text) {
+    std::string out;
+    for (const char c : text) {
+        if (c == '\n') {
+            out += '\r';
+        }
+        out += c;
+    }
+    return out;
 }
 
 // The text of the file `file`; nothing when it cannot be read.
@@ -227,16 +245,22 @@ std::string withStoryChoices(std::string_view enabledText, std::span<const Story
         }
         i = end - 1;
     }
-    // 2. What is kept, then each choice's table after a blank line.
+    // 2. What is kept, then each choice's table after a blank line, with the file's own line endings (a file that
+    // uses CRLF anywhere gets CRLF in the new tables).
+    const bool crlf = enabledText.contains("\r\n");
     std::string out;
     for (const std::string_view line : kept) {
         out += line;
         out += '\n';
     }
     for (const StoryChoice& choice : choices) {
-        const bool blank = out.empty() || out.ends_with("\n\n");
-        const std::string table = tableOf(choice);
-        out += blank ? std::string_view(table).substr(1) : std::string_view(table);
+        const bool blank = out.empty() || out.ends_with("\n\n") || out.ends_with("\n\r\n");
+        std::string table = tableOf(choice);
+        if (crlf) {
+            table = withCrlf(table);
+        }
+        // The table starts with the blank line that sets it apart; skipped when one is already there.
+        out += blank ? std::string_view(table).substr(crlf ? 2 : 1) : std::string_view(table);
     }
     return out;
 }
@@ -282,6 +306,9 @@ std::expected<void, Error> saveStoryChoices(const std::filesystem::path& enabled
         std::ofstream out(temporary, std::ios::binary | std::ios::trunc);
         out.write(text.data(), static_cast<std::streamsize>(text.size()));
         if (!out.good()) {
+            // No partial file is left beside the player's.
+            out.close();
+            std::filesystem::remove(temporary, error);
             return fail(ErrorCode::Io, std::format("could not write {}", temporary.string()));
         }
     }
