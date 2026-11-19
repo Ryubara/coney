@@ -222,3 +222,33 @@ def test_main_is_fetched_once_for_all_the_trials_of_a_read(tmp_path: Path) -> No
             built.root, built.unit, text, built.conventions, NOW, real_ready, ledger, key, built.tip, git=counting
         )
     assert fetches == ["main"]
+
+
+def test_a_fetch_that_fails_is_not_tried_again_for_the_next_trial_of_the_read(tmp_path: Path) -> None:
+    built = make(tmp_path / "unit", shape="tooling")
+    git(built.root, "remote", "set-url", "origin", str(tmp_path / "nowhere.git"))
+    ledger = Ledger(tmp_path / "pr-conflicts")
+    fetches: list[str] = []
+
+    def counting(folder: Path, args: Sequence[str]) -> subprocess.CompletedProcess[str]:
+        if args[0] == "fetch":
+            fetches.append(args[-1])
+        return conflict_work.real_git(folder, args)
+
+    answers = [
+        conflict_work.trial_of(
+            built.root,
+            built.unit,
+            built.unit.dir / "PR.md",
+            built.conventions,
+            NOW,
+            real_ready,
+            ledger,
+            key,
+            built.tip,
+            git=counting,
+        )
+        for key in ("812", "813")
+    ]
+    assert [a.status for a in answers] == [conflict_work.UNKNOWN] * 2 and all("fetch" in a.reason for a in answers)
+    assert fetches == ["main"]
