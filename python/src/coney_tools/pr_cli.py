@@ -127,7 +127,7 @@ def _reason(error: ConfigError, path: Path) -> str:
 
 def run_verify(args: argparse.Namespace) -> int:
     """`pr verify`: print every stage that does not hold; 0 when all hold."""
-    subject, _task, _keys, text_path = _load(args)
+    subject, task_file, keys, text_path = _load(args)
     unreadable: Refusal | None = None
     try:
         hashes: pr_proof.TextHashes | None = pr_text.hashes_of(text_path, subject.unit.dir)
@@ -142,6 +142,9 @@ def run_verify(args: argparse.Namespace) -> int:
     result: ProofResult = pr_proof.verify(subject, hashes)
     if unreadable is not None:
         result.refusals.append(unreadable)
+    # A Done item left to a follow-up (or marked wrongly) in a task that still closes its issue: the description would
+    # say Fixes with work left (docs/guides/pr.md#done-items).
+    result.refusals += pr_text.done_refusals(task_file, keys)
     # The before and after clips a visible change needs (pull_requests.clips), as CI's body job will ask for them.
     # A pull request already open is asked only what a rule that started before it asks (CI passes `--opened`).
     opened = pr_publish.opened_of(subject.unit.dir, pr_publish.lookup_gh)

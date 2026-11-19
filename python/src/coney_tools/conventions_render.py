@@ -162,13 +162,22 @@ def _pr_rules(conventions: Conventions) -> list[str]:
         f"Docs: a change under {_codes(needs)} needs a change under {_codes(satisfies)} or the line "
         f"`{docs_none.line}` in the description."
     )
+    summary = rules.summary
+    if summary is not None:
+        lines += _bullet(
+            f"{rules.closing.section}: a few short paragraphs, at most {summary.max_paragraphs} of at most "
+            f"{summary.max_paragraph_characters} characters each (the closing lines and `{docs_none.line}` do not "
+            "count); a wall of text is refused."
+        )
     lines += _bullet(
         f"Closing: a line `{rules.closing.form}` in {rules.closing.section} for each issue the pull request finishes"
-        f"{', one per line' if rules.closing.one_per_line else ''}; merging closes it."
+        f"{', one per line' if rules.closing.one_per_line else ''}; merging closes it. A task that leaves part of its "
+        f"Done section to a follow-up writes `{rules.closing.refs} #N` instead, which closes nothing."
     )
     lines += _bullet(
         f"{rules.checklist.section}: every item is ticked (`- [x]`): a pull request lists only the work it finishes, "
-        "and a task it does not finish is left out and lives in its own issue."
+        "and a task it does not finish is left out and lives in its own issue; the one exception is a Done item the "
+        "task marks `(left for #N)`, which `pr text` lists apart, as a plain bullet with its note and never a checkbox."
     )
     affected = rules.issues_affected
     lines += _bullet(

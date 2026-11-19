@@ -23,8 +23,9 @@ uv run --project python coney-tools pr verify [TASK] [--worktree DIR] [--remote 
 Steps 1 to 4 of a release, read only: the stamp log is intact, Check ran a big enough profile on this change, every
 `@orig` function the branch changes was studied and compared at its current body, every test it adds failed first or
 is stamped `keeps`, and Review passed for this change, these pairs and this text; and the engineer's file shows the
-before and after clips a visible change needs, or says why not (the `clips` refusals). Prints one block per refusal
-(the message, then what to redo), or `ok`. It changes no stamp, file or git state and does not fetch.
+before and after clips a visible change needs, or says why not (the `clips` refusals), and no Done item of `TASK.md` is
+left to a follow-up in a task that still closes its issue (the `done` refusals, [Done items](pr.md#done-items)). Prints
+one block per refusal (the message, then what to redo), or `ok`. It changes no stamp, file or git state and does not fetch.
 
 | Argument or option | Default | What it does |
 | --- | --- | --- |
@@ -174,7 +175,10 @@ The checks CI's `title`, `docs` and `body` jobs run on a pull request, against t
   credits: see [the Model line](#pr-model-line). Given `--title` (the `body` job passes the pull request's title), a
   title area a player sees (`pull_requests.runtime.areas`: `gameplay`, `graphics`, `audio`) must have a line starting
   `Runtime:` in the Testing section: the evidence of a comparison with the original running, with numbers, or `Runtime:
-  none (<reason>)` ([the Runtime line](testing.md#runtime-line)). Without `--title` that rule is not checked and the
+  none (<reason>)` ([the Runtime line](testing.md#runtime-line)). The **Summary** is a few short paragraphs, at most
+  `pull_requests.summary.max_paragraphs` of at most `max_paragraph_characters` each (the `Fixes`, `Refs` and `Docs: none`
+  lines and comments do not count); a pull request opened before `pull_requests.summary.since` is not held to it, and
+  `pr text` runs this same check. Without `--title` that rule is not checked and the
   output says so; `legacy check-pr-review` always has the title (line 1 of `PR.md`).
   The same title, or a path under `pull_requests.clips.paths` (`src/studio/`) in the file `--changed` names (one path
   a line; the `body` job writes the pull request's files there from the API), asks for the **before and after clips**:

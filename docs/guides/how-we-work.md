@@ -358,7 +358,7 @@ Several tasks run at once, each owning the scope its claim names:
      check for it. Rename it together with them in the cutover cleanup. -->
 ## Opening the pull request {#release-queue}
 
-Agents work locally and never wait on CI. An engineer commits on its task's branch, runs Check, writes the one paragraph
+Agents work locally and never wait on CI. An engineer commits on its task's branch, runs Check, writes the short summary
 of `PR.md` that the tools do not generate ([The engineer's file](pr.md#file)) and ends at a passing Review; the
 coordinator then opens the pull request.
 
@@ -497,16 +497,16 @@ labelled `workflow` (a unit that builds the workflow itself) is outside the open
 ([Claiming an issue](issues.md#claiming)).
 
 **A pull request merges only when every task in it is finished.** Its Checklist lists what it finishes, all ticked, and
-CI refuses an unticked item; there is no "Remaining" list. Work an agent finds that is not part of its task goes in its
-report to the coordinator (title, area, research page, what "done" means) and the coordinator files it as an issue of
-its own; a pull request that finishes an issue says `Fixes #N`
-([Work found along the way](issues.md#follow-up-work)). The issue states its problem first, links pages by relative links
-and names the source pull request's status truthfully ([Writing an issue a newcomer can read](issues.md#writing)).
-The `hygiene` workflow comments on an issue or pull request that breaks the repository's rules and keeps that one
-comment current; fix what it lists, and the comment says so when it is done
-([Workflows](repo-conventions.md#workflows)).
-The state file (`HANDOFF.md`) keeps only the live state and issue numbers, never a list of work to do: the work list
-is the open issues.
+CI refuses an unticked item; there is no "Remaining" list (a Done item the task leaves to a named follow-up is the one
+exception, listed apart and never as a checkbox: [Done items](pr.md#done-items)). Work an agent finds that is not part
+of its task goes in its report to the coordinator (title, area, research page, what "done" means) and the coordinator
+files it as an issue of its own; a pull request that finishes an issue says `Fixes #N` ([Work found along the
+way](issues.md#follow-up-work)). The issue states its problem first, links pages by relative links and names the source
+pull request's status truthfully ([Writing an issue a newcomer can read](issues.md#writing)). The `hygiene` workflow
+comments on an issue or pull request that breaks the repository's rules and keeps that one comment current; fix what it
+lists, and the comment says so when it is done ([Workflows](repo-conventions.md#workflows)). The state file
+(`HANDOFF.md`) keeps only the live state and issue numbers, never a list of work to do: the work list is the open
+issues.
 
 ## Testing {#testing}
 
