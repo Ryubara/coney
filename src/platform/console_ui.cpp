@@ -12,7 +12,7 @@ namespace coney::platform {
 
 namespace {
 
-// The bar's settings file's name, which coney.release.has_console_bar finds in the release executable.
+// The bar's settings file's name.
 constexpr const char* kSettingsFile = "coney-console.ini";
 
 // Whether `event` comes from the keyboard.

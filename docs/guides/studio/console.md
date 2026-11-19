@@ -595,7 +595,9 @@ Every check runs without a person, as [Testing](../testing.md) asks:
   draws every row of its model; a pinned panel draws with the console closed and takes no input.
 - **Closed means untouched** (on the debug tools' `coney`, which takes `--screenshot`): the last frame of a windowed run
   that opens and closes the console in its first frames (`--console-open N`) is byte-identical to the same run without
-  it, as `--dev-overlay` is checked ([The developer overlay](../debug-menu.md#the-developer-overlay)).
+  it, as `--dev-overlay` is checked ([The developer overlay](../debug-menu.md#the-developer-overlay)). The check runs
+  the run without the bar twice first and skips itself when the two pictures differ (a window nobody sees can leave
+  the frame buffer undefined), since a picture that is not repeatable says nothing about the bar.
 - **The panels' numbers**: a synthetic mod with a known loop shows its exact instruction count, memory and native calls
   in its Resources row, the same in two runs; the times are only checked to be present and not negative.
 - **The log viewer**: the filters by level, category, mod and text; a line kept off the file copies with its length

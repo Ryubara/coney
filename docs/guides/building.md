@@ -329,8 +329,8 @@ console's banner, `Coney console`, in the executable, and the `console_*` ones t
 `coney.release.has_no_debug_tools` looks for strings only the debug tools put in an executable (the debug pages' titles
 and items, the developer overlay's settings file; `cmake/debug_tools_markers.cmake`) and fails when it finds one.
 `imgui.ini`, Dear ImGui's default settings file, is no marker: the player console links it ([the release
-checks](studio/console.md#release)); `coney.release.has_console_bar` finds the bar's `coney-console.ini` in the release
-build.
+checks](studio/console.md#release)); `coney.release.has_console_bar` finds the bar's window name
+(`coney-console-terminal`) in the release build.
 On the debug tools' `coney` the same script must find them (`coney.debug_tools_markers_found`), so the check cannot pass
 by finding nothing. The release build also builds and runs every unit test of the game; the tests of the
 debug tools (the menus, the overlay, the sandbox, the viewers and the disc tests that drive the game through them) are

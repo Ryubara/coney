@@ -39,8 +39,9 @@ std::string steppedNumber(std::string_view value, int step, bool whole) {
     if (whole) {
         // Read in full, as parseDecimal does: `12x` is no number, not 12.
         long long number = 0;
-        const char* const end = value.data() + value.size();
-        if (const auto read = std::from_chars(value.data(), end, number); read.ec != std::errc{} || read.ptr != end) {
+        // (The pointer and its end are written in the call, which clang-tidy's string_view data() check accepts.)
+        const auto read = std::from_chars(value.data(), value.data() + value.size(), number);
+        if (read.ec != std::errc{} || read.ptr != value.data() + value.size()) {
             number = 0;
         }
         return std::to_string(number + step);

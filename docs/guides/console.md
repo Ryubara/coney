@@ -278,8 +278,8 @@ a guest's bar does not know its own slot yet. Nothing reads the slot until mod c
 bare Dear ImGui context; `ConsoleUi` gives it the window, the backends and the events). Both entry points start it
 when there is a window with an OpenGL context; a headless run and the GPU renderer run without it. Dear ImGui is
 fetched in every build for it, and `coney_console_ui` and `coney_devtools` are the only targets that link it
-([The debug tools and the game](building.md#debug-tools)). `coney.release.has_console_bar` finds the bar's settings
-file name in the release executable, so the release build is proved to carry it.
+([The debug tools and the game](building.md#debug-tools)). `coney.release.has_console_bar` finds the bar's window name
+in the release executable, so the release build is proved to carry it.
 
 ## Off in test mode {#test-mode}
 
