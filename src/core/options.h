@@ -274,6 +274,18 @@ struct Options {
     /// `--net-name NAME`: the player name sent when joining or hosting (the Network page's Player name); main checks
     /// it is a valid one (1 to 32 printable ASCII characters).
     std::optional<std::string> netName;
+    /// `--digest FILE`: write the state digest of every step to FILE: the game's humans as the host's snapshots take
+    /// them and the pads the step played (docs/guides/multiplayer.md#digest). Makes the run test mode.
+    std::optional<std::string> digestFile;
+    /// `--digest-net FILE`: write a digest line for each snapshot: a host's, what each one sent leaves the guest
+    /// holding; a guest's, each one decoded. Requires netHost or netJoin.
+    std::optional<std::string> netDigestFile;
+    /// `--net-record FILE`: record the session for a replay: the pad each step played on the remote player's port, and
+    /// the session's events (docs/guides/multiplayer.md#replays). Requires netHost.
+    std::optional<std::string> netRecordFile;
+    /// `--net-replay FILE`: play a `--net-record` file's pads on port 2, with no session, so the run gives the recorded
+    /// host's digests again. Makes the run test mode; cannot be combined with netHost or netJoin.
+    std::optional<std::string> netReplayFile;
     // 4-byte-aligned: ints and structs of floats or ints.
     /// Stop after this many frames; unset means run until the window closes. Tests and CI use it. A frame here is
     /// one fixed 1/30 s step and one render: `--frames` puts Coney in test mode (isTestMode()).
@@ -419,9 +431,12 @@ inline constexpr int kMaxBenchFighters = 1000;
 /// The frames a bench leaves unmeasured after the first frame of play unless `--bench-warmup` says otherwise.
 inline constexpr int kDefaultBenchWarmup = 60;
 
-/// Whether `options` ask for test mode: `--headless`, `--load`, `--frames`, `--input-script`, `--screenshot` or
-/// `--record`. Test mode runs the main loop in lockstep, one fixed step and one render per frame, and never reads a
-/// real clock, so a run gives the same result every time on any machine (docs/guides/conventions.md#platform-code).
+/// Whether `options` ask for test mode: `--headless`, `--load`, `--frames`, `--input-script`, `--screenshot`,
+/// `--record`, `--digest` or `--net-replay`. Test mode runs the main loop in lockstep, one fixed step and one render
+/// per frame, and never reads a real clock, so a run gives the same result every time on any machine
+/// (docs/guides/conventions.md#platform-code). The one exception: with `--host` or `--join` each frame waits for a real
+/// 1/30 s, so two games stepping on their own can meet; the steps stay fixed, `--frames` still bounds the run, and the
+/// simulation never sees the time (docs/guides/multiplayer.md#two-processes).
 [[nodiscard]] bool isTestMode(const Options& options);
 
 /// Whether the window may take the keyboard focus when it opens: only in a run a person plays, so not with

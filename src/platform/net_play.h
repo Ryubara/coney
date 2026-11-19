@@ -6,6 +6,7 @@
 #include <deque>
 #include <functional>
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -15,6 +16,8 @@
 #include "net/net_client.h"
 #include "net/net_server.h"
 #include "net/net_status.h"
+#include "net/snapshot.h"
+#include "net/state_digest.h"
 #include "net/transport.h"
 
 namespace coney::platform {
@@ -74,6 +77,16 @@ class NetPlay final {
     /// (net::NetClient::clockSpeedPercent()), a little fast or slow so its input commands reach the host as early as
     /// the host wants them; else 100. The main loop multiplies the debug menus' time scale by it.
     [[nodiscard]] std::uint32_t clockSpeedPercent() const;
+    /// Hosting: the humans of the host's game this step (net::GameHumans::humans()), which afterStep() sends each
+    /// joined player as a snapshot. The game hands them over once a step, before afterStep(); the last ones given are
+    /// sent while no new ones come (the game paused, or between levels with none).
+    void setGameHumans(std::span<const net::SnapshotHuman> humans);
+    /// Where each snapshot's digest goes (`--digest-net`, docs/guides/multiplayer.md#digest): hosting, a line for each
+    /// snapshot afterStep() sends player 2, with what it leaves them holding (net::SnapshotSender::holding()); joined,
+    /// a line for each snapshot the session decoded, by the host's step it shows. Empty for none.
+    void setSnapshotDigests(std::function<void(const net::DigestLine&)> sink) { m_snapshotDigests = std::move(sink); }
+    /// The steps run so far (afterStep() calls): a host's snapshots name the step they are from, counted from 0.
+    [[nodiscard]] std::uint32_t steps() const { return m_steps; }
     /// One line for the end of a run: the role, port and players, or the client's state.
     [[nodiscard]] std::string summary() const;
 
@@ -100,6 +113,8 @@ class NetPlay final {
     bool join();
     /// Leaves the session: says Bye to the server, or to every player when hosting.
     void disconnect();
+    /// Whether a session is open: hosting, or joining or joined (not a join that has ended).
+    [[nodiscard]] bool inSession() const;
     /// The simulated network.
     [[nodiscard]] net::NetSimulation simulation() const { return m_simulation; }
     /// Changes the simulated network, live, on the current session and the next.
@@ -117,6 +132,11 @@ class NetPlay final {
     // Gives the closing transports `elapsedNs` and one service: their events are read and dropped, what is queued is
     // sent, and the ones that have closed, or (with `countStep`) have used up their steps, are destroyed.
     void serviceClosing(std::uint64_t elapsedNs, bool countStep);
+    // Hosting: sends each joined player a snapshot of the game's humans at `step`, and writes the digest of what it
+    // leaves them holding.
+    void sendSnapshots(std::uint32_t step);
+    // Joined: writes the digest of each snapshot the session decoded since the last call.
+    void noteDecoded();
 
     // A left session's transport and the conditioner in front of it, kept until its connections have closed: ENet
     // throws away a peer's undelivered packets when that peer's close arrives, so a transport destroyed right behind
@@ -146,6 +166,11 @@ class NetPlay final {
     std::unique_ptr<net::NetServer> m_server;
     std::unique_ptr<net::NetClient> m_client;
     std::string m_lastClientState; // the client's describe() last logged
+
+    std::vector<net::SnapshotHuman> m_gameHumans;                  // setGameHumans()
+    std::function<void(const net::DigestLine&)> m_snapshotDigests; // setSnapshotDigests()
+    std::uint32_t m_steps = 0;                                     // afterStep() calls
+    std::uint32_t m_lastDecoded = 0;                               // the newest snapshot a digest was written for
 };
 
 /// The game's pad input through network play: what `inner` (null: no pads) gives, passed through NetPlay::pads().

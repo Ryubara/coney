@@ -237,6 +237,17 @@ void GaitBlendTask::setValue(float value) {
     m_target = m_value;
 }
 
+const AnimTask& AnimTaskStack::layerTask(std::size_t index) const {
+    CONEY_ASSERT(index < m_layers.size());
+    return *m_layers[index].task;
+}
+
+float AnimTaskStack::layerIncoming(std::size_t index) const {
+    CONEY_ASSERT(index < m_layers.size());
+    const Layer& layer = m_layers[index];
+    return 1.0F - outgoingWeight(layer.elapsed, layer.fade);
+}
+
 float AnimTaskStack::outgoingWeight(float elapsed, float duration) {
     if (duration <= 0.0F || elapsed >= duration) {
         return 0.0F;

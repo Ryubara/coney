@@ -5,6 +5,7 @@
 #include "platform/net_play.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -13,19 +14,29 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/options.h"
 #include "core/pad.h"
 #include "core/pads.h"
 #include "net/loopback_transport.h"
+#include "net/net_id.h"
 #include "net/net_status.h"
+#include "net/snapshot.h"
+#include "net/state_digest.h"
 #include "net/transport.h"
+#include "platform/net_game.h"
 
 using coney::InputSource;
 using coney::PadSample;
 using coney::PortSamples;
+using coney::net::DigestLine;
+using coney::net::DigestMatch;
 using coney::net::LoopbackNetwork;
 using coney::net::LoopbackTransport;
+using coney::net::NetId;
 using coney::net::NetRole;
 using coney::net::NetSimulation;
+using coney::net::SnapshotHuman;
+using coney::net::SnapshotHumans;
 using coney::platform::NetInput;
 using coney::platform::NetPlay;
 
@@ -309,6 +320,7 @@ TEST_CASE("a guest with no pad plugged in leaves the host's port 2 unplugged", "
 }
 
 TEST_CASE("a host takes one remote player, as the console has two pad ports", "[net][net_play]") {
+    // Expected: docs/guides/multiplayer.md#player-two (one remote player, on pad port 2)
     TwoGames games;
     games.connect();
     NetPlay third(loopback(games.network, "third"), {});
@@ -323,4 +335,82 @@ TEST_CASE("a host takes one remote player, as the console has two pad ports", "[
     CHECK(third.status().role == NetRole::Offline);
     CHECK(third.status().state == "refused: server full");
     CHECK(games.host.status().players.size() == 1);
+}
+
+TEST_CASE("a host sends its game's humans, and the guest's digests match what each snapshot left it holding",
+          "[net][net_play]") {
+    // Expected: unverified, #558 (Coney's own digest; docs/guides/multiplayer.md#digest)
+    TwoGames games;
+    std::vector<DigestLine> sent;
+    std::vector<DigestLine> decoded;
+    games.host.setSnapshotDigests([&sent](const DigestLine& line) { sent.push_back(line); });
+    games.guest.setSnapshotDigests([&decoded](const DigestLine& line) { decoded.push_back(line); });
+    games.connect();
+
+    // Two humans, one walking along x a little each step: the host's game hands them over before each send.
+    SnapshotHuman still{.id = NetId{.slot = 0, .generation = 1}, .words = {}, .priority = 1};
+    SnapshotHuman walker{.id = NetId{.slot = 1, .generation = 1}, .words = {}, .priority = 1};
+    for (int i = 0; i < 30; ++i) {
+        walker.words.at(0) = 1000 + static_cast<std::uint32_t>(i);
+        const std::array humans{still, walker};
+        games.host.setGameHumans(humans);
+        games.run(1);
+    }
+
+    // Every step after the join sent a snapshot; the guest decoded them, a step behind, each with the host's digest.
+    CHECK(sent.size() >= 30);
+    REQUIRE(decoded.size() >= 25);
+    const DigestMatch match = coney::net::matchDigests(sent, decoded);
+    CHECK(match.matched == decoded.size());
+    CHECK_FALSE(match.firstMismatch.has_value());
+    CHECK_FALSE(match.firstUnknown.has_value());
+    CHECK(decoded.back().humanCount == 2);
+    const std::array last{still, walker};
+    SnapshotHumans holding;
+    for (const SnapshotHuman& human : last) {
+        holding.emplace(human.id, human.words);
+    }
+    CHECK(sent.back().humans == coney::net::humansDigest(holding));
+    // Steps count from the host's first step, so a snapshot names the step its humans are from.
+    CHECK(sent.back().step == games.host.steps() - 1);
+}
+
+TEST_CASE("a host with nobody joined sends nothing and writes no snapshot digest", "[net][net_play]") {
+    // Expected: unverified, #558 (Coney's own digest)
+    TwoGames games;
+    std::vector<DigestLine> sent;
+    games.host.setSnapshotDigests([&sent](const DigestLine& line) { sent.push_back(line); });
+    games.host.setPort(0);
+    REQUIRE(games.host.host());
+    games.run(5);
+    CHECK(sent.empty());
+    CHECK(games.host.steps() == 5);
+}
+
+TEST_CASE("the game's humans are captured only while a session or a proof needs them", "[net][net_play]") {
+    // Expected: unverified, #558 (Coney's own: offline play keeps no network ids)
+    TwoGames games;
+    auto opened = coney::platform::NetGame::open(coney::Options{});
+    REQUIRE(opened.has_value());
+    coney::platform::NetGame& game = **opened;
+    CHECK_FALSE(game.humans().capturing());
+    game.afterStep(games.host);
+    CHECK_FALSE(game.humans().capturing());
+    // Hosting: from the next step on, the host's snapshots need them.
+    games.host.setPort(0);
+    REQUIRE(games.host.host());
+    game.afterStep(games.host);
+    CHECK(game.humans().capturing());
+    // The session over, nobody can name them any more.
+    games.host.disconnect();
+    games.run(NetPlay::kCloseSteps + 1);
+    game.afterStep(games.host);
+    CHECK_FALSE(game.humans().capturing());
+
+    // A run that hosts from the start captures from its first step.
+    coney::Options hosting;
+    hosting.netHost = coney::NetEndpoint{};
+    auto hostOpened = coney::platform::NetGame::open(hosting);
+    REQUIRE(hostOpened.has_value());
+    CHECK((**hostOpened).humans().capturing());
 }

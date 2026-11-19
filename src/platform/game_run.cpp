@@ -220,7 +220,7 @@ bool startNetPlay(NetPlay& net, const Options& options) {
     return true;
 }
 
-void addNetPlayHooks(FrameHooks& hooks, NetPlay& net, bool realTime) {
+void addNetPlayHooks(FrameHooks& hooks, NetPlay& net, NetGame& game, bool realTime, bool session) {
     // The game's fixed step: 30 a second (docs/guides/conventions.md#update-and-render).
     constexpr std::uint64_t kStepNs = FrameClock::kNanosecondsPerSecond / 30;
     hooks.beforeStep = [&net, realTime] {
@@ -229,7 +229,15 @@ void addNetPlayHooks(FrameHooks& hooks, NetPlay& net, bool realTime) {
         }
         net.beforeStep();
     };
-    hooks.afterStep = [&net] { net.afterStep(); };
+    hooks.afterStep = [&net, &game] {
+        game.afterStep(net);
+        net.afterStep();
+    };
+    // Test mode's lockstep ignores the time a frame reports, so the wait only keeps the two processes side by side.
+    if (!realTime && session && !hooks.waitForFrame) {
+        auto pacer = std::make_shared<FramePacer>(30);
+        hooks.waitForFrame = [pacer] { return pacer->waitForFrame(); };
+    }
 }
 
 void finishNetPlay(NetPlay& net, const Options& options) {

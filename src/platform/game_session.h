@@ -102,6 +102,9 @@ class GameSession {
     /// The all-humans trace (`--trace-humans`) every level loaded writes its rows to, one file for the whole run; null:
     /// none.
     void setHumansTrace(std::shared_ptr<HumansTrace> trace) { m_humansTrace = std::move(trace); }
+    /// Network play's view of the humans (net::GameHumans) every level loaded captures into after each step, for the
+    /// host's snapshots and the state digest; null: none. It outlives the session.
+    void setNetHumans(net::GameHumans* humans) { m_netHumans = humans; }
 
     /// The game from boot: the start-up movies, the legal screen, the memory-card check and the menus.
     void startStory();
@@ -160,6 +163,7 @@ class GameSession {
     AudioOutput* m_audio = nullptr;
     LevelSetup m_firstLevelSetup;
     std::shared_ptr<HumansTrace> m_humansTrace;
+    net::GameHumans* m_netHumans = nullptr; // setNetHumans()
     std::optional<std::string> m_pendingLevel;
     int m_pendingCheckpoint = 1;
     std::optional<std::pair<std::string, bool>> m_pendingMovie; // playDebugMovie(): the name and the captions switch

@@ -300,6 +300,14 @@ class AnimTaskStack {
     [[nodiscard]] std::size_t taskCount() const { return m_layers.empty() ? 0 : m_layers.size() * 2 - 1; }
     /// Layers held, newest first.
     [[nodiscard]] std::size_t layerCount() const { return m_layers.size(); }
+    /// Layer `index`'s task (below layerCount(), newest first; CONEY_ASSERT), for network play's snapshots of a human's
+    /// layers (docs/guides/snapshots.md#human-state).
+    /// @coney-only network play reads the layers; the original has none
+    [[nodiscard]] const AnimTask& layerTask(std::size_t index) const;
+    /// How far layer `index` (below layerCount(); CONEY_ASSERT) has faded in over the older layers, 0 to 1: the
+    /// incoming weight `1 - outgoingWeight()` of its fade, 1 when the fade has run or has no length.
+    /// @coney-only network play reads the layers; the original has none
+    [[nodiscard]] float layerIncoming(std::size_t index) const;
     /// Called with the anim id whenever a task starts playing (change(), a clip handing over to its next) and when a
     /// gait blend moves to another clip: where the original resolves an id to a clip and runs the animation
     /// callbacks (`CharacterInstance_GetAnim`, docs/research/characters.md#anim-callbacks). Empty for none.

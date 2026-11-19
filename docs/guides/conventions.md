@@ -592,8 +592,10 @@ code keeps to these rules:
   `tests/`.
 - **Test mode is lockstep.** `--headless`, `--frames`, `--input-script` and `--screenshot` run one step and one render
   at alpha 1 per frame, with no clock, so a run gives the same steps, state and pixels every time. `--frames N`
-  counts steps. Its window never takes the keyboard focus (`activatesWindow()` in `src/core/options.h`): a run
-  nobody plays must not interrupt someone typing.
+  counts steps. The one exception is a run with `--host` or `--join`: each frame waits for a real 1/30 s, so two games
+  stepping on their own can meet. It is still one fixed step a frame, bounded by `--frames`, and the simulation never
+  sees the time ([Two processes](multiplayer.md#two-processes)). Its window never takes the keyboard focus
+  (`activatesWindow()` in `src/core/options.h`): a run nobody plays must not interrupt someone typing.
 
 The rules' tests: `tests/core/frame_clock_test.cpp` (30 steps a simulated second at any rate, no drift over an hour, the
 catch-up cap) and `tests/gamemodes/frame_rate_test.cpp` (the same simulation, bit for bit, at 30, 60, 144, 240 and 1000
