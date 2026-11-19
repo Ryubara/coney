@@ -309,16 +309,6 @@ void setWindowActivation(bool activate) {
     SDL_SetHint(SDL_HINT_WINDOW_ACTIVATE_WHEN_RAISED, value);
 }
 
-void setDeviceHotplugScan(bool scan) {
-    // SDL reads this hint as its Windows video starts and has no named constant for it; other platforms ignore it.
-    constexpr const char* kHint = "SDL_WINDOWS_DETECT_DEVICE_HOTPLUG";
-    if (scan) {
-        SDL_ResetHint(kHint);
-    } else {
-        SDL_SetHint(kHint, "0");
-    }
-}
-
 std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBackend backend, const WindowDesc& desc) {
     // The constructor is private, so make_unique cannot reach it.
     std::unique_ptr<RenderEngine> engine(new RenderEngine(backend, desc));
@@ -334,9 +324,6 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
         // it never takes it either, on this show or a later one.
         const bool placed = parseWindowDisplay(displaySetting(desc.display).value).has_value();
         setWindowActivation(desc.activate && !desc.hidden && !placed);
-        // A hidden window is for a run nobody plays, so no keyboard or mouse reaches it, and the scan would only make
-        // the video's start and stop wait for the machine's HID devices (setDeviceHotplugScan in render_engine.h).
-        setDeviceHotplugScan(!desc.hidden);
         if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
             return startFailure("SDL_InitSubSystem(SDL_INIT_VIDEO)", true);
         }

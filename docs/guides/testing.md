@@ -112,19 +112,27 @@ Before that, `coney.plays_level` decoded the whole 95-second level99 intro movie
 walked through the intro scene with the player held. It took about 10 seconds on a quiet machine and over its
 60-second timeout when several builds ran at once.
 
-### A window test does not wait for the machine's input devices {#device-scan}
+### A window test is slow, not stuck, on a busy machine {#window-test-load}
 
-On Windows, SDL's video starts a thread that asks every keyboard and mouse HID device for its name, and the video's quit
-waits for that thread. A test that starts and stops the renderer several times (`coney.frame_copies_upright` does so
-about eight times) therefore waits for the machine's slowest device at each quit: measured with 16 busy-loop processes
-running, 40 starts and stops of the video took 17 s with the scan and 2.4 s without it, and a device that never answers
-holds the quit as long as it takes to answer. Stack samples of a slow run show the main thread in the video's quit,
-waiting for that thread, which is inside `HidD_GetProductString`; this is the best-supported cause of
-`coney.frame_copies_upright` timing out at its old 60 s limit in a full local check (#1365). `RenderEngine::start`
-turns the scan off for a hidden window (`WindowDesc::hidden`, which the window tests that draw offscreen set), and test
-code that starts SDL's video itself calls `setDeviceHotplugScan(false)` first and `true` after
-(`src/platform/render_engine.h`); `device_hotplug_scan_test.cpp` and `frame_copy_check.cpp` check it. A window a person
-plays keeps the scan.
+`coney.frame_copies_upright` takes 1.9 s on a quiet machine and was killed at its old 60 s limit six times in local
+checks (#1365), and the logs held no output from it, as ctest keeps a pipe's output until the process ends. Nothing in
+it hangs. About 2,000 runs on 2026-11-18, some started like ctest starts a test (no input, output on pipes), with up to
+24 busy-loop processes and 8 other window tests beside them, never stalled, and stack samples of a slow run show the
+main thread inside the video driver, in `SwitchToThread` under `wglChoosePixelFormat`, a spin that yields the processor
+and is therefore as slow as the run queue is long. With 24 busy loops and 8 copies of the test at once the 60 runs took
+14 s to 62 s (median 42 s, one in twenty over 57 s): the old limit's timeouts, which ended at 60 to 75 s. The 600 s
+hang guard ([No wall-clock limits](#no-wall-clock-limits)) is the fix for them. The test now prints unbuffered, so a run
+that does hang leaves the checks it finished in its log.
+
+Two things a person who sees such a test stall will want, measured in the same runs:
+
+- A stalled run is read with a stack dump of its threads. A Windows process's threads can be walked from Python with
+  `ctypes` and `dbghelp` (`SymInitialize`, `StackWalk64`, `SymFromAddr`); the dev build has the symbols.
+- SDL's Windows video also starts a thread that asks every keyboard and mouse HID device for its name, and the video's
+  quit waits for it (`WIN_QuitDeviceNotification`). Started and stopped 40 times with 16 busy loops running, it took
+  17 s, against 2.4 s with the hint `SDL_WINDOWS_DETECT_DEVICE_HOTPLUG=0`. It is a small part of this test (about eight
+  quits, and its runs were the same with and without the hint), so it is left alone; a test that restarts the renderer
+  hundreds of times could set the hint before the video starts.
 
 ### Python tests do not depend on the shell {#python-environment}
 

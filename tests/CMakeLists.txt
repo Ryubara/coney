@@ -233,7 +233,6 @@ add_executable(coney_tests
     platform/user_folders_test.cpp
     platform/pad_pipe_test.cpp
     platform/sdl_input_test.cpp
-    platform/device_hotplug_scan_test.cpp
     platform/window_activation_test.cpp
     platform/sprite_sheets_test.cpp
     platform/texture_dictionary_test.cpp
