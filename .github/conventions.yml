@@ -1157,6 +1157,10 @@ proof:
     test_suffix: _test.cpp
     tests: tests/                                 # a source here that is no test file has no label: whole suite
     max_files: 100                               # more test files reached: the narrow set runs instead
+  # When `task check` goes on from the checks an earlier run passed for the same change, base, profile, rules and disc
+  # (docs/guides/task-check-resume.md#resume): a check that passed longer ago than this runs again.
+  resume:
+    max_age_hours: 24
   # The CMake preset of the build and the test run behind the two checks of `checks` (MSVC with /WX), the first
   # answering whether it built and the second whether the suite ran whole with the disc, from the build record a
   # run of `coney-tools build` leaves (docs/guides/stamps.md#build-record).

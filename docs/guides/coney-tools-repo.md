@@ -304,7 +304,7 @@ uv run --project python coney-tools task leads --terms TERM ... [--issue N] [--r
 uv run --project python coney-tools task index [--no-gh]
 uv run --project python coney-tools task overlap [TASK] [--write]
 uv run --project python coney-tools task check [TASK] [--worktree DIR] [--base REF] [--agent ID] [--profile P]
-    [--keep-going] [--dry-run] [--max-wait MIN]
+    [--keep-going] [--no-resume] [--dry-run] [--max-wait MIN]
 uv run --project python coney-tools task review [TASK] [--text] [--record | --run] [--worktree DIR] [--base REF]
     [--pr-file FILE] [--claude CMD] [--model M] [--effort E] [--timeout-minutes N]
 ```
@@ -483,9 +483,9 @@ The hooks that start `coney-tools` do the same ([the hooks that start
   `task-check-detached.out` in the worktree's scratch folder, and `task check --result` prints that output and the
   run's exit code once it ended, `75` while it runs and `1` with `ended without a result` when its process was killed;
   a second `--detach` while one runs is refused. The run has no budget cap and waits for a slot up to `--max-wait`.
-  A run in the foreground flushes every line as it is printed, so a redirected output file shows it grow. A rerun
-  starts from the beginning (only the build itself is incremental); resuming from the checks already passed for the
-  same change is not built.
+  A run in the foreground flushes every line as it is printed, so a redirected output file shows it grow. A rerun for
+  an unchanged change goes on from the checks that passed ([Resuming a run](task-check-resume.md#resume)); a changed
+  tree starts from the beginning (only the build itself is incremental).
 * **It is live.** Each check prints `[14:03:09] start <check>` when it begins and `[14:41:20] ok   <check>: ...` when it
   ends; the build is one stage (`start msvc-ci-build and ctest-full-disc`) that prints its own waiting and `still
   running` lines. A long check streams its output to `check-logs/<program>.log` in the task's scratch folder and says it
@@ -744,7 +744,7 @@ disc) and stamp the result, bound to the change.
 
 ```text
 coney-tools task check [TASK] [--worktree WORKTREE] [--base BASE] [--agent AGENT] [--profile PROFILE] [--keep-going]
-    [--dry-run] [--max-wait MIN] [--detach] [--result]
+    [--dry-run] [--no-resume] [--max-wait MIN] [--detach] [--result]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -756,6 +756,7 @@ coney-tools task check [TASK] [--worktree WORKTREE] [--base BASE] [--agent AGENT
 | `--profile PROFILE` | text | none | run a bigger profile than the change needs (docs, tooling or full) |
 | `--keep-going` | flag | off | run every check even after one fails |
 | `--dry-run` | flag | off | print the profile and the checks; run nothing |
+| `--no-resume` | flag | off | run every check even when an earlier run passed some for this change (the default goes on from them) |
 | `--max-wait MIN` | number | `240.0` | minutes the build may wait for a slot before giving up with exit 75 (default 240.0) |
 | `--detach` | flag | off | run apart from this shell (a killed caller does not end it), return at once; --result shows the outcome |
 | `--result` | flag | off | print the output and outcome of the worktree's last --detach run (exit 75 while it runs) |

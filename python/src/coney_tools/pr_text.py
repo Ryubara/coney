@@ -548,6 +548,7 @@ def _stage_lines(subject: pr_proof.Subject, short: bool) -> list[str]:
         names = [str(name) for name in d.get("checks", ())] if isinstance(d.get("checks"), list) else []
         pytest = d.get("pytest") if isinstance(d.get("pytest"), dict) else None
         ran_pytest = f"; pytest {_pytest_scope_words(d.get('pytest_scope'))}{_counted(pytest)}" if pytest else ""
+        ran_pytest += resumed_words(d)
         if tests is None:
             # A profile with no build (`tooling`, `docs`) has no build counts: say which checks ran and pytest's own
             # counts, as "0 passed, 0 failed" would read as an empty run and "no test run" is false once pytest ran.
@@ -582,6 +583,16 @@ def _stage_lines(subject: pr_proof.Subject, short: bool) -> list[str]:
         verdict = _stale(subject, reviewed) or "pass, "
         lines.append(f"- Review: {verdict}{model}, {counted} (stamp `{_h(reviewed)}`)")
     return lines
+
+
+def resumed_words(detail: dict[str, Any]) -> str:
+    """`; resumed from an earlier run: a, b` for a Check that took checks from an earlier run for the same change
+    (`detail.resumed`, task_check.py), so the facts never show a resumed pass as one full run; empty otherwise."""
+    resumed = detail.get("resumed")
+    names = resumed.get("checks") if isinstance(resumed, dict) else None
+    if not isinstance(names, list) or not names:
+        return ""
+    return "; resumed from an earlier run: " + ", ".join(code(str(name)) for name in names)
 
 
 def _counted(counts: dict[str, Any]) -> str:

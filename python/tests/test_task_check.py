@@ -186,8 +186,8 @@ class World:
         return pr_diff.change_of(self.root, "main", "HEAD")
 
 
-@pytest.fixture
-def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> World:
+def make_world(tmp_path: Path) -> World:
+    """A repository on branch `work` with one commit on `main`, and the fakes `task check` is given."""
     root = tmp_path / "repos" / "coney"
     root.mkdir(parents=True)
     write_checkout(root)
@@ -200,6 +200,11 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> World:
     git(root, "commit", "-q", "-m", "base")
     git(root, "checkout", "-q", "-b", "work")
     return World(root)
+
+
+@pytest.fixture
+def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> World:
+    return make_world(tmp_path)
 
 
 # --- what runs -----------------------------------------------------------------------------------------------------

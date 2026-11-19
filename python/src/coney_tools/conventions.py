@@ -938,6 +938,15 @@ class ProofCtest:
 
 
 @dataclass(frozen=True)
+class ProofResume:
+    """When `task check` goes on from the checks an earlier run passed (`proof.resume`,
+    docs/guides/task-check-resume.md#resume). Without the key (a base older than it) the default holds."""
+
+    #: A check that passed longer ago than this is run again: a tool upgraded since is not in what a resume compares.
+    max_age_hours: int = 24
+
+
+@dataclass(frozen=True)
 class Proof:
     """What a change must pass before it is opened as a pull request (docs/guides/coney-tools-repo.md#task-check)."""
 
@@ -949,6 +958,7 @@ class Proof:
     pytest: ProofPytest = ProofPytest()
     ctest: ProofCtest = ProofCtest()
     memory: ProofMemory = ProofMemory()
+    resume: ProofResume = ProofResume()
 
 
 @dataclass(frozen=True)
@@ -3441,7 +3451,7 @@ CI_CLASSES = ("docs_only", "tools_only", "engine", "unknown")
 
 def _read_proof(data: object, where: str) -> Proof:
     """The `proof` section: the profiles of checks, the conditional checks and the build behind them."""
-    table = _table(data, where, ("profiles", "only_when", "build"), ("pytest", "ctest", "memory"))
+    table = _table(data, where, ("profiles", "only_when", "build"), ("pytest", "ctest", "memory", "resume"))
     profiles_where = _at(where, "profiles")
 
     def read_profile(value: object, here: str) -> ProofProfile:
@@ -3481,6 +3491,7 @@ def _read_proof(data: object, where: str) -> Proof:
         pytest=_read_proof_pytest(table.get("pytest"), _at(where, "pytest")),
         ctest=_read_proof_ctest(table.get("ctest"), _at(where, "ctest")),
         memory=_read_proof_memory(table.get("memory"), _at(where, "memory")),
+        resume=_read_proof_resume(table.get("resume"), _at(where, "resume")),
     )
 
 
@@ -3490,6 +3501,14 @@ def _read_proof_memory(data: object, where: str) -> ProofMemory:
         return ProofMemory()
     table = _table(data, where, ("min_available_gb",))
     return ProofMemory(min_available_gb=_count(table["min_available_gb"], _at(where, "min_available_gb"), minimum=0))
+
+
+def _read_proof_resume(data: object, where: str) -> ProofResume:
+    """`proof.resume`: how old a passed check may be and still be taken from an earlier run. Absent: the default."""
+    if data is None:
+        return ProofResume()
+    table = _table(data, where, ("max_age_hours",))
+    return ProofResume(max_age_hours=_count(table["max_age_hours"], _at(where, "max_age_hours")))
 
 
 def _read_proof_pytest(data: object, where: str) -> ProofPytest:
@@ -3795,9 +3814,8 @@ def load_proof_rules_at(root: Path, ref: str, own: Conventions) -> tuple[Convent
     if "proof" not in data:
         return own, "branch"
     try:
-        proof = _read_proof(
-            _keep(data["proof"], ("profiles", "only_when", "build", "pytest", "ctest", "memory")), "proof"
-        )
+        kept = _keep(data["proof"], ("profiles", "only_when", "build", "pytest", "ctest", "memory", "resume"))
+        proof = _read_proof(kept, "proof")
         scopes = _keep(data.get("paths"), ("docs_only", "tools_only", "engine"))
         table = _table(scopes, "paths", ("docs_only", "tools_only", "engine"))
         paths = replace(

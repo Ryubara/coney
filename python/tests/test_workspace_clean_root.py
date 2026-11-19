@@ -345,6 +345,7 @@ def test_task_check_holds_the_activity_while_it_runs(space: Space, monkeypatch: 
         agent="a",
         profile=None,
         keep_going=False,
+        no_resume=False,
         dry_run=False,
         max_wait=1.0,
         result=False,

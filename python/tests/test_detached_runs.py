@@ -194,6 +194,7 @@ def check_args(**changes: object) -> argparse.Namespace:
         "profile": None,
         "keep_going": False,
         "dry_run": False,
+        "no_resume": False,
         "max_wait": 240.0,
         "detach": False,
         "result": False,
