@@ -28,8 +28,8 @@ constexpr int kCuffsItem = 5;
 constexpr int kKeyItem = 6;
 constexpr int kOtherItem = 10;
 
-// Whether `object` names nothing: `none`, or the empty name a Coney human starts with (Coney's reading: the
-// original's `+0x257` always holds a name).
+// Whether `object` names nothing: `none`, or the empty name a Coney human starts with (Coney's choice: the original's
+// `+0x257` always holds a name).
 bool nothing(std::string_view object) { return object.empty() || object == kNoObject; }
 
 // The item whose duration times a dropped carried object: a flash, a key or cuffs by name, else 10.
@@ -136,7 +136,9 @@ CarriedDrop dropCarried(const DropInput& input, GameRandom& random, const Sector
             .type = std::string(kKeyObject), .money = 0, .removalItem = kKeyItem, .sector = std::nullopt});
         return drop;
     }
-    // 6. Otherwise his money: $1 or more makes a dyn_money holding it, and he has none left.
+    // 6. Otherwise his money: $1 or more makes a dyn_money holding it, and he has none left. Each object's removalItem
+    // names the inventory duration of its removal time, which the play mode does not apply yet (a stand-in,
+    // LevelPickups::dropCarried()).
     const int amount = moneyDropped(input, random, drop);
     if (amount < 1) {
         return drop;

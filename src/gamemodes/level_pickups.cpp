@@ -325,7 +325,9 @@ human::CarriedDrop LevelPickups::dropCarried(human::DropInput input, anim::Vec3 
         }
     }
     human::CarriedDrop drop = human::dropCarried(input, m_state.random, blocked);
-    // Each object a spawn record, from the world objects' handle counter, at its point 0.5 m up.
+    // Each object a spawn record, from the world objects' handle counter, at its point 0.5 m up. Coney's stand-in: no
+    // removal time is set (the original's WorldObject_SetRespawnTimer with the item's duration), so it stays until
+    // taken (docs/research/crimes.md#q-drop-removal).
     for (const human::DroppedObject& object : drop.objects) {
         const double handle = m_scripts.nextObjectHandle();
         if (handle == world_objects::kNoObject) {
