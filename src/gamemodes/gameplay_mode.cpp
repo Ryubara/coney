@@ -336,9 +336,6 @@ void GameplayMode::enter() {
         m_context.sound->gameplayEntered();
     }
     m_brains = std::make_unique<ai::Brains>(m_aiVariation);
-    // The gangs' team-ups draw from the game's random numbers, by the gang kinds' `CfgGang` strategies.
-    m_brains->gangs().setGameRandom(&m_state.random);
-    m_brains->gangs().setStrategies(ai::gangStrategiesFrom(m_recorded));
     // What the scripts' handles name: a human, else a live world object (IsInsideBox on a thrown bottle, a flag on an
     // object), at its spawn record's place and heading.
     m_scripted = std::make_unique<ai::ScriptedBrains>(
@@ -1315,6 +1312,9 @@ void GameplayMode::wireHub() {
         return at ? std::optional<anim::Vec3>(anim::Vec3{(*at)[0], (*at)[1], (*at)[2]}) : std::nullopt;
     };
     m_scripted->hubHost().setLookups(std::move(lookups));
+    // The gangs' team-ups draw from the game's random numbers, by the gang kinds' `CfgGang` strategies.
+    m_brains->gangs().setGameRandom(&m_state.random);
+    m_brains->gangs().setStrategies(ai::gangStrategiesFrom(m_recorded));
 }
 
 // @coney-only Coney's handle lookup (a human, a flag or a spawn record)
