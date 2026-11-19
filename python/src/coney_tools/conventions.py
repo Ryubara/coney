@@ -905,6 +905,17 @@ class ProofPytest:
 
 
 @dataclass(frozen=True)
+class ProofMemory:
+    """The memory `task check` needs (`proof.memory`): it refuses to start while less than `min_available_gb` of the
+    machine's memory is free, because a runaway program (a language server grew to 19.9 GB, twice) starved the run for
+    an hour with no verdict. 0 turns the refusal off; a base older than the key has none
+    (docs/guides/coney-tools-repo.md#task-check)."""
+
+    #: The GB the machine must have available for a run to start; 0 is off.
+    min_available_gb: int = 0
+
+
+@dataclass(frozen=True)
 class ProofCtest:
     """Which C++ tests the build check runs (`proof.ctest`): the tests of the test files whose `#include`s reach the
     changed C++ files, or the whole suite (docs/guides/coney-tools-repo.md#task-check). Without the key (a base older
@@ -936,6 +947,7 @@ class Proof:
     build: ProofBuild
     pytest: ProofPytest = ProofPytest()
     ctest: ProofCtest = ProofCtest()
+    memory: ProofMemory = ProofMemory()
 
 
 @dataclass(frozen=True)
@@ -3426,7 +3438,7 @@ CI_CLASSES = ("docs_only", "tools_only", "engine", "unknown")
 
 def _read_proof(data: object, where: str) -> Proof:
     """The `proof` section: the profiles of checks, the conditional checks and the build behind them."""
-    table = _table(data, where, ("profiles", "only_when", "build"), ("pytest", "ctest"))
+    table = _table(data, where, ("profiles", "only_when", "build"), ("pytest", "ctest", "memory"))
     profiles_where = _at(where, "profiles")
 
     def read_profile(value: object, here: str) -> ProofProfile:
@@ -3465,7 +3477,16 @@ def _read_proof(data: object, where: str) -> Proof:
         ),
         pytest=_read_proof_pytest(table.get("pytest"), _at(where, "pytest")),
         ctest=_read_proof_ctest(table.get("ctest"), _at(where, "ctest")),
+        memory=_read_proof_memory(table.get("memory"), _at(where, "memory")),
     )
+
+
+def _read_proof_memory(data: object, where: str) -> ProofMemory:
+    """`proof.memory`: the memory `task check` needs to start. Absent: no floor."""
+    if data is None:
+        return ProofMemory()
+    table = _table(data, where, ("min_available_gb",))
+    return ProofMemory(min_available_gb=_count(table["min_available_gb"], _at(where, "min_available_gb"), minimum=0))
 
 
 def _read_proof_pytest(data: object, where: str) -> ProofPytest:
@@ -3771,7 +3792,9 @@ def load_proof_rules_at(root: Path, ref: str, own: Conventions) -> tuple[Convent
     if "proof" not in data:
         return own, "branch"
     try:
-        proof = _read_proof(_keep(data["proof"], ("profiles", "only_when", "build", "pytest", "ctest")), "proof")
+        proof = _read_proof(
+            _keep(data["proof"], ("profiles", "only_when", "build", "pytest", "ctest", "memory")), "proof"
+        )
         scopes = _keep(data.get("paths"), ("docs_only", "tools_only", "engine"))
         table = _table(scopes, "paths", ("docs_only", "tools_only", "engine"))
         paths = replace(

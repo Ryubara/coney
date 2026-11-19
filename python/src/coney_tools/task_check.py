@@ -53,6 +53,7 @@ from coney_tools import (
     ctest_scope,
     detached_runs,
     live_progress,
+    machine_memory,
     pr_diff,
     proof_profiles,
     stamps,
@@ -120,6 +121,10 @@ class Env:
     #: `(checkout, task, conventions, say, write)`: prints the pending work that overlaps the unit again when it differs
     #: from the task file's record of it, and records it (`task_overlap.report_stage`); the default reads nothing.
     overlap: Callable[[Path, str, Conventions, Callable[[str], None], bool], None] = task_overlap.skip_stage
+    #: The GB of memory the machine has available (None: it cannot say, so the run starts), and the biggest processes
+    #: in words for a refusal (`proof.memory`, machine_memory.py); the default knows nothing.
+    memory: Callable[[], float | None] = lambda: None
+    heaviest: Callable[[], str] = lambda: ""
 
 
 def no_disc_reason(root: Path) -> str | None:
@@ -172,6 +177,8 @@ def default_env(max_wait: float = build_cli.DETACHED_MAX_WAIT) -> Env:
         workers=_workers,
         progress=progress,
         overlap=task_overlap.report_stage,
+        memory=machine_memory.available_gb,
+        heaviest=lambda: machine_memory.describe(machine_memory.heaviest()),
     )
 
 
@@ -244,6 +251,7 @@ def _run(request: Request, env: Env) -> int:
     if request.dry_run:
         env.say("  dry run: nothing was run and no stamp was written")
         return 0
+    _memory_floor(conventions, env)
     if builds:
         why_not = env.disc(root)
         if why_not:
@@ -303,6 +311,22 @@ def _run(request: Request, env: Env) -> int:
     except BaseException:
         progress.abandon()
         raise
+
+
+def _memory_floor(conventions: Conventions, env: Env) -> None:
+    """Refuse to start while the machine has less memory available than `proof.memory.min_available_gb`, naming the
+    biggest processes: a run starved of memory dies or crawls for an hour with no verdict, and a language server that
+    grew to 19.9 GB did that twice. A machine that cannot say how much is free starts the run."""
+    floor = conventions.proof.memory.min_available_gb
+    free = env.memory() if floor else None
+    if free is None or free >= floor:
+        return
+    heavy = env.heaviest()
+    raise ConfigError(
+        f"only {free:.1f} GB of memory is available and a run needs {floor} GB (proof.memory.min_available_gb)"
+        + (f"; the biggest programs: {heavy}" if heavy else "")
+        + "; stop the one that grew (a lua-language-server that grew is stopped by closing its editor) and run again"
+    )
 
 
 def _ctest_scope(root: Path, conventions: Conventions, change: pr_diff.Change) -> ctest_scope.CtestScope:

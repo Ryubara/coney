@@ -1135,6 +1135,11 @@ proof:
   pytest:
     scoped: [docs_only, engine]
     whole_when: ["python/", ".claude/", ".github/"]   # the package, its hooks and the rules, workflows and scripts
+  # The memory a run needs (docs/guides/coney-tools-repo.md#task-check): `task check` refuses to start while less than
+  # this many GB of the machine's memory is available, naming the biggest processes (a language server grew to 19.9 GB
+  # twice and starved a full suite for an hour with no verdict). 0 turns it off.
+  memory:
+    min_available_gb: 6
   # Which C++ tests the `ctest-full-disc` check runs, with the disc (docs/guides/coney-tools-repo.md#task-check). Each
   # changed C++ file (`ci.tidy`: its folders, sources and headers) selects the test files (`test_suffix`) whose
   # `#include`s reach it, through the headers they include and the sources that implement those headers (a source of

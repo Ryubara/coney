@@ -77,6 +77,9 @@ class World:
         self.hold_timeout: SlotTimeout | None = None
         self.contexts: list[task_check_steps.StepContext] = []
         self.streamed_into: list[Path] = []
+        #: The GB of memory the machine says is available (None: it cannot say) and its biggest programs.
+        self.memory: float | None = 64.0
+        self.heavy = ""
 
     def step(self, name: str) -> Callable[[task_check_steps.StepContext], StepResult]:
         def run(context: task_check_steps.StepContext) -> StepResult:
@@ -147,6 +150,8 @@ class World:
             stream=self.stream,
             hold=self.hold,
             workers=lambda root: 3,
+            memory=lambda: self.memory,
+            heaviest=lambda: self.heavy,
         )
 
     def request(self, **more: Any) -> task_check.Request:
@@ -939,3 +944,42 @@ def test_the_real_environment_gives_its_one_writer_to_everything_it_runs(tmp_pat
     env.stream(tmp_path / "logs")([sys.executable, "-c", "print('.' * 4 + ' [ 33%]')"], tmp_path)
     env.progress.beat()
     assert json.loads(file.read_text(encoding="utf-8"))["done"]["done"] == 33
+
+
+# --- the memory floor -------------------------------------------------------------------------------------------------
+
+
+def test_a_machine_short_of_memory_is_refused_before_any_check_and_names_the_program(world: World) -> None:
+    world.edit("docs/guides/widget.md", "# Widget\n\nTwo.\n")
+    world.memory, world.heavy = 1.5, "lua-language-server.exe 19.9 GB, Code.exe 2.1 GB"
+    assert world.check() == 2
+    assert world.calls == [] and world.builds == [] and not world.log.stamps
+    said = " ".join(world.said)
+    assert "only 1.5 GB" in said and "needs 6 GB" in said and "lua-language-server.exe 19.9 GB" in said
+
+
+def test_memory_at_the_floor_or_unreadable_starts_the_run(world: World) -> None:
+    world.edit("docs/guides/widget.md", "# Widget\n\nTwo.\n")
+    floor = load_conventions(world.root).proof.memory.min_available_gb
+    assert floor > 0
+    world.memory = float(floor)
+    assert world.check() == 0
+    world.memory = None  # a machine that cannot say is not a reason to refuse the work
+    assert world.check() == 0
+
+
+def test_a_dry_run_reads_no_memory(world: World) -> None:
+    world.edit("docs/guides/widget.md", "# Widget\n\nTwo.\n")
+    world.memory = 0.1
+    assert world.check(dry_run=True) == 0
+
+
+def test_the_floor_is_off_at_zero_and_a_base_without_the_key_has_none(tmp_path: Path) -> None:
+    from conventions_support import REMOVE, changed
+
+    from coney_tools.conventions import parse_conventions
+
+    off = parse_conventions(changed(("proof.memory.min_available_gb", 0)))
+    assert off.proof.memory.min_available_gb == 0
+    older = parse_conventions(changed(("proof.memory", REMOVE)))
+    assert older.proof.memory.min_available_gb == 0
