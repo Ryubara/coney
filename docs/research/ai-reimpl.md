@@ -461,10 +461,14 @@ the guard order's end `TacticAttack::strategyEnded`, and the 7 s timer in `Tacti
 `repo:tests/ai/sub_tactics_test.cpp` and `repo:tests/ai/team_up_test.cpp`. Stand-ins left:
 
 - **The orders.** The draw makes a `StandInOrder` with the real kind and arguments that orders nobody: Charge,
-  Leader and Throw last their limit, Guard is done at its deadline (so its end gives Melee as the real one's does),
-  Grab is done on its first process (as the real one is with nothing to grab). [Unit 4](#unit-4) (Charge, Leader,
-  Grab), [Unit 5](#unit-5) (Guard) and [Unit 6](#unit-6) (Throw) replace them. `SubTactic_LeaderGesture` is not
-  ported; only the orders call it, and it needs `GenToIdleAnimAction` ([Unit 4](#unit-4)).
+  Leader and Throw last their limit, Guard is done at its deadline, Grab is done on its first process (as the real
+  one is with nothing to grab). [Unit 4](#unit-4) (Charge, Leader, Grab), [Unit 5](#unit-5) (Guard) and
+  [Unit 6](#unit-6) (Throw) replace them. `SubTactic_LeaderGesture` is not ported; only the orders call it, and it
+  needs `GenToIdleAnimAction` ([Unit 4](#unit-4)).
+- **The stand-in guard's end** gives no Melee: `AttackTactic_GiveMelee` pops each member to his goal base, which
+  after a real guard undoes the formation but after the stand-in, which took nobody out of the fight, would cut the
+  fights the members are in (level5's bar fight then outlasts its playthrough test). A guard order that is not the
+  stand-in gives the Melee as the original's does.
 - **The leader's busy test** is Coney's `ai::humanBusy()` ([open question](#q-teamup-busy)).
 - **The pursue tactic's `+0x4c`** in the filter reads as 0 ([open question](#q-pursue-flag)).
 - **The bounds counter** starts at 5 with each level's gangs; the original's keeps its place from the last level.

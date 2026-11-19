@@ -119,7 +119,8 @@ class TacticAttack final : public Tactic {
     /// @orig 0x00307a10 AttackTactic_StartSubTactic (unknown)
     void startSubTactic(Gang& gang);
     /// An order ended (`AttackTactic_OnStrategyEnd`): a guard order (kind 1) gives every standing member the Melee
-    /// again (giveMelee()); the others end without it.
+    /// again (giveMelee()); the others end without it. **Coney stand-in**: a StandInOrder guard, which took nobody
+    /// out of the fight, gives nothing, so the Melee's pop does not cut the members' fights.
     /// @orig 0x00308150 AttackTactic_OnStrategyEnd (unknown)
     void strategyEnded(Gang& gang, const SubTactic& order) override;
     /// The game time the team-up timer draws after (`+0x28`); 0 while it is not armed.

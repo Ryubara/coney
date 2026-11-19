@@ -411,8 +411,10 @@ void TacticAttack::startSubTactic(Gang& gang) {
 }
 
 void TacticAttack::strategyEnded(Gang& gang, const SubTactic& order) {
-    // A guard order leaves the members in formation: they melee again. The others end without it.
-    if (order.kind() == OrderKind::Guard) {
+    // A guard order leaves the members in formation: they melee again. The others end without it. Coney stand-in: a
+    // StandInOrder guard took nobody out of the fight, and the Melee's pop to the goal base would cut the fights the
+    // members are in, so its end gives nothing (until #339 ports the guard).
+    if (order.kind() == OrderKind::Guard && dynamic_cast<const StandInOrder*>(&order) == nullptr) {
         giveMelee(gang);
     }
 }
