@@ -31,6 +31,7 @@
 #include "human/human_animator.h"
 #include "human/player_trace.h"
 #include "platform/draw_calls.h"
+#include "platform/object_draw.h"
 #include "platform/perf_probes.h"
 #include "platform/play_level_effects.h"
 #include "raycast/collision_mesh.h"
@@ -630,11 +631,12 @@ void PlayLevelMode::render(const RenderTime& time) {
     if (m_overlay != nullptr) {
         m_engine.addFrameOverlay([overlay = *m_overlay](RenderEngine& engine) { overlay(engine); });
     }
-    // The cars take the objects' lights, each atomic for its own sphere (**Coney's choice**: the original selects
-    // them once for the clump's sphere).
+    // The cars take the objects' lights at squared distance 0, each atomic for its own sphere (**Coney's stand-in**,
+    // #657: the original selects them once for the clump's sphere, CarInstance_Render 0x00172c70).
     const auto drawCars = [this](graphics::CarPass pass) {
         if (m_levelEffects) {
-            m_levelEffects->drawCars([this](rw::Atomic* atomic) { m_lights->drawObject(atomic); }, pass);
+            m_levelEffects->drawCars([this](const ObjectDraw& draw) { drawObject(m_engine, m_lights->scene(), draw); },
+                                     pass);
         }
     };
     // Between the `s` and the `d` world (step 7): the humans, the cars' opaque parts, the world objects.

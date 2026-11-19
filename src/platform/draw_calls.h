@@ -24,12 +24,12 @@ struct RGBA;
 /// DrawStream, whose hash proves that a change to the renderer left the *PS2* picture alone.
 ///
 /// Routed here: the render states, Im2D, Im3D, the camera's clear, begin, end and show, raster creation, locks and
-/// uploads, the named operations, and the world's atomic renders (the streamed sectors with their dual layers and the
-/// level's background, item 7). Not yet: the other atomic, clump and human renders, whose pipelines call OpenGL
-/// themselves (items 8 to 10 of docs/engine/renderer.md#order). The render states set around them are routed, except
-/// in the three functions items 8 and 9 route with their renders (ParkedCars::draw, PlacedObjects::draw,
-/// PlayLighting::drawHumanPasses), which set them on librw directly: a live record's states can be stale after those
-/// (docs/engine/renderer.md#comparing).
+/// uploads, the named operations, the world's atomic renders (the streamed sectors with their dual layers and the
+/// level's background, item 7) and the world objects' and parked cars' (item 8, with the render states ParkedCars::draw
+/// and PlacedObjects::draw set). Not yet: the humans' renders, whose pipelines call OpenGL themselves (items 9 and 10
+/// of docs/engine/renderer.md#order). The render states set around them are routed, except in
+/// PlayLighting::drawHumanPasses, which item 9 routes with its renders and which sets them on librw directly: a live
+/// record's states can be stale after it (docs/engine/renderer.md#comparing).
 ///
 /// What a record holds:
 ///

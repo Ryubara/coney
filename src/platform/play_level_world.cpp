@@ -24,6 +24,7 @@
 #include "human/fighter.h"
 #include "human/human.h"
 #include "human/target_human.h"
+#include "platform/object_draw.h"
 #include "platform/play_level_mode.h"
 #include "platform/play_lighting.h"
 #include "world_objects/cars.h"
@@ -67,7 +68,7 @@ void PlayLevelMode::makeWorldObjects(const ScriptedCast& cast) {
         return;
     }
     m_objectList = std::make_unique<world_objects::ObjectList>(std::move(*list));
-    m_placed = std::make_unique<PlacedObjects>(m_wad, *m_objectList, m_print, true);
+    m_placed = std::make_unique<PlacedObjects>(m_wad, *m_objectList, m_print, true, &m_engine.sceneAssets());
 }
 
 void PlayLevelMode::stepGlints(int ticks) {
@@ -264,7 +265,7 @@ void PlayLevelMode::drawWorldObjects(float alpha) {
     PlacedObjects::DrawOptions options;
     const world::Vec3 eye = m_lights->scene().pose().position;
     options.camera = anim::Vec3{eye.x, eye.y, eye.z};
-    options.render = [this](rw::Atomic* atomic) { m_lights->drawObject(atomic); };
+    options.render = [this](const ObjectDraw& draw) { drawObject(m_engine, m_lights->scene(), draw); };
     m_placed->draw(options);
 }
 

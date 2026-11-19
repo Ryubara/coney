@@ -70,8 +70,6 @@ class PlayLighting {
     void addShadow(const raycast::CollisionMesh& mesh, anim::Vec3 feet);
     /// Draws and forgets this frame's blob shadows.
     void drawShadows();
-    /// Draws a world object's atomic with the objects' lights (SceneLighting::drawObjectAtomic()).
-    void drawObject(rw::Atomic* atomic) { m_scene->drawObjectAtomic(atomic); }
     /// Draws the glass panes (SceneLighting::drawGlass()).
     void drawGlass(std::span<const world_objects::GlassQuad> panes) const { m_scene->drawGlass(panes); }
     /// Draws the health rings and L1 markers, after the shadows (SceneLighting::drawGroundRings()).

@@ -12,6 +12,7 @@
 #include "core/chunk_system.h"
 #include "fileio/wad.h"
 #include "graphics/car_draw.h"
+#include "platform/object_draw.h"
 #include "platform/object_models.h"
 #include "world_objects/cars.h"
 #include "world_objects/object_list.h"
@@ -37,9 +38,11 @@ namespace coney::platform {
 class ParkedCars {
   public:
     /// Draws `cars` (which must outlive this) with models from `wad`, their textures converted for drawing when
-    /// `forDrawing`. Needs a running RenderEngine started with the world plugins; must be destroyed before it stops.
+    /// `forDrawing`, each model's part meshes and texture held in `assets` (the RenderEngine's,
+    /// RenderEngine::sceneAssets(); null: none, and every draw goes to librw). Needs a running RenderEngine started
+    /// with the world plugins; must be destroyed before it stops.
     ParkedCars(const io::Wad& wad, const world_objects::Cars& cars, bool forDrawing,
-               std::function<void(std::string_view)> print);
+               std::function<void(std::string_view)> print, SceneAssets* assets = nullptr);
     ParkedCars(const ParkedCars&) = delete;
     ParkedCars& operator=(const ParkedCars&) = delete;
     ParkedCars(ParkedCars&&) = delete;
@@ -47,11 +50,12 @@ class ParkedCars {
     ~ParkedCars();
 
     /// Draws `pass` of every car whose model loaded, through the current camera: each atomic graphics::carAtomicDraws()
-    /// picks (by part, damage and pass) placed, coloured by the paint mask and handed to `render` (which lights and
-    /// draws it). Both sides of every triangle are drawn; the opaque pass writes Z and goes through the cars in order,
-    /// the glass pass does not write Z and goes from the last car. Leaves Z write on and back faces culled.
+    /// picks (by part, damage and pass) placed and handed to `render` (which lights and draws it: drawObject()) with
+    /// its colour by the paint mask (graphics::MaterialColour::Paint). Both sides of every triangle are drawn; the
+    /// opaque pass writes Z and goes through the cars in order, the glass pass does not write Z and goes from the last
+    /// car. Leaves Z write on and back faces culled.
     /// @orig 0x00172c70 CarInstance_Render (unknown)
-    void draw(const std::function<void(rw::Atomic*)>& render, graphics::CarPass pass);
+    void draw(const std::function<void(const ObjectDraw&)>& render, graphics::CarPass pass);
 
     /// Cars drawn by the last draw().
     [[nodiscard]] std::size_t drawn() const { return m_drawn; }
@@ -60,6 +64,7 @@ class ParkedCars {
     // A type's model.
     struct TypeModel {
         ObjectModel model;
+        std::vector<ObjectMesh> meshes; // each part atomic's, in the clump's order, in m_assets; empty: none
     };
 
     // The model of car type `type`, loading it on first use; null when it does not load.
@@ -69,6 +74,7 @@ class ParkedCars {
     const world_objects::Cars& m_cars;
     bool m_forDrawing;
     std::function<void(std::string_view)> m_print;
+    SceneAssets* m_assets; // null: none
     chunk::ChunkHandlerTable m_table;
     std::optional<world_objects::ObjectList> m_list; // loaded with the first model
     bool m_listTried = false;
