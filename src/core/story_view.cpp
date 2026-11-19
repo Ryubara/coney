@@ -20,6 +20,7 @@ namespace {
 // What the view needs to know about the mods and the merge, looked up by story id.
 class Lookup {
   public:
+    // Indexes the mods' missions and the merge's placed missions by story id; both outlive the lookup.
     Lookup(const StoryMerge& merge, std::span<const StoryMod> mods) : m_merge(merge), m_mods(mods) {
         for (const StoryMod& mod : mods) {
             for (const StoryMission& mission : mod.story.missions) {
