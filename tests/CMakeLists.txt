@@ -193,6 +193,7 @@ add_executable(coney_tests
     platform/disc_bat_cross_test.cpp
     platform/disc_spray_paint_test.cpp
     platform/disc_spawner_money_test.cpp
+    platform/disc_level87_drop_test.cpp
     platform/disc_credits_test.cpp
     platform/disc_pause_controls_test.cpp
     platform/disc_pause_options_test.cpp
@@ -382,6 +383,7 @@ target_sources(coney_tests PRIVATE
     human/human_test.cpp
     human/death_chain_test.cpp
     human/knockout_test.cpp
+    human/carried_drop_test.cpp
     human/workout_test.cpp
     human/human_revive_test.cpp
     human/human_uncuff_test.cpp

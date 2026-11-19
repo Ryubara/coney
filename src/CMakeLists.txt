@@ -333,6 +333,7 @@ target_sources(coney_core PRIVATE
     camera/failed_camera.cpp
     characters/anim_set.cpp
     human/body.cpp
+    human/carried_drop.cpp
     human/climb.cpp
     human/human.cpp
     human/human_contacts.cpp
