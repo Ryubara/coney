@@ -402,6 +402,7 @@ target_sources(coney_tests PRIVATE
     camera/stick_turn_cameras_test.cpp
     human/disc_player_placement_test.cpp
     human/disc_player_test.cpp
+    human/disc_stealth_kill_test.cpp
     human/class_flags_test.cpp
     human/human_edit_test.cpp
     human/human_test.cpp
@@ -425,6 +426,7 @@ target_sources(coney_tests PRIVATE
     human/moving_attacks_test.cpp
     human/attack_turn_test.cpp
     human/player_stance_test.cpp
+    human/stealth_kill_test.cpp
     human/player_targeting_test.cpp
     human/target_passes_test.cpp
     human/being_hit_test.cpp
