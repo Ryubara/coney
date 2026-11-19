@@ -60,7 +60,9 @@ ImGuiOverlay::start(RenderEngine& renderer, debug::DebugSession& session, std::s
     }
     // The constructor is private, so make_unique cannot reach it.
     std::unique_ptr<ImGuiOverlay> overlay(new ImGuiOverlay(session, std::move(iniPath)));
-    ImGui::CreateContext();
+    overlay->m_context = ImGui::CreateContext();
+    // With another context already current, CreateContext() hands that one back as current: set up this one.
+    ImGui::SetCurrentContext(overlay->m_context);
     ImGuiIO& io = ImGui::GetIO();
     io.IniFilename = overlay->m_iniPath.empty() ? nullptr : overlay->m_iniPath.c_str();
     configureIo(io);
@@ -88,9 +90,8 @@ ImGuiOverlay::start(RenderEngine& renderer, debug::DebugSession& session, std::s
         // The renderer calls back inside present(), after the frame's 2D passes.
         overlay->m_renderer = &renderer;
         ImGuiOverlay* raw = overlay.get();
-        renderer.setGpuOverlay([raw](SDL_GPUCommandBuffer* commands, SDL_GPUTexture* drawn, graphics::Extent) {
-            raw->recordGpu(commands, drawn);
-        });
+        overlay->m_gpuHandle = renderer.addGpuOverlay([raw](SDL_GPUCommandBuffer* commands, SDL_GPUTexture* drawn,
+                                                            graphics::Extent) { raw->recordGpu(commands, drawn); });
     } else {
         // Its default GLSL version (130, 150 on macOS) suits librw's OpenGL 3.3 core context.
         overlay->m_glStarted = ImGui_ImplOpenGL3_Init(nullptr);
@@ -108,8 +109,10 @@ ImGuiOverlay::start(RenderEngine& renderer, debug::DebugSession& session, std::s
 
 // Undoes whatever start() got as far as, in reverse order, so an early failure leaves nothing running.
 ImGuiOverlay::~ImGuiOverlay() {
+    // Whichever overlay's context was current last, the backends shut down and the context destroyed are this one's.
+    ImGui::SetCurrentContext(m_context);
     if (m_renderer != nullptr) {
-        m_renderer->setGpuOverlay({});
+        m_renderer->removeGpuOverlay(m_gpuHandle);
     }
     if (m_gpuStarted) {
         // The GPU may still be drawing the last frame's overlay from the backend's buffers.
@@ -122,7 +125,7 @@ ImGuiOverlay::~ImGuiOverlay() {
     if (m_sdlStarted) {
         ImGui_ImplSDL3_Shutdown();
     }
-    ImGui::DestroyContext();
+    ImGui::DestroyContext(m_context);
 }
 
 bool ImGuiOverlay::handleEvent(const void* event) {
@@ -132,6 +135,7 @@ bool ImGuiOverlay::handleEvent(const void* event) {
         return true;
     }
     // ImGui sees every event, shown or not, so its idea of held keys and the mouse stays right.
+    ImGui::SetCurrentContext(m_context);
     ImGui_ImplSDL3_ProcessEvent(&sdlEvent);
     return (isKeyboardEvent(sdlEvent) && wantsKeyboard()) || (isMouseEvent(sdlEvent) && wantsMouse());
 }
@@ -146,14 +150,24 @@ void ImGuiOverlay::showForFrames(std::uint64_t frames) {
     m_hideAfter = frames;
 }
 
-bool ImGuiOverlay::wantsKeyboard() const { return m_visible && ImGui::GetIO().WantCaptureKeyboard; }
+bool ImGuiOverlay::wantsKeyboard() const {
+    ImGui::SetCurrentContext(m_context);
+    return m_visible && ImGui::GetIO().WantCaptureKeyboard;
+}
 
-bool ImGuiOverlay::wantsMouse() const { return m_visible && ImGui::GetIO().WantCaptureMouse; }
+bool ImGuiOverlay::wantsMouse() const {
+    ImGui::SetCurrentContext(m_context);
+    return m_visible && ImGui::GetIO().WantCaptureMouse;
+}
 
 void ImGuiOverlay::draw() {
     if (!m_visible) {
+        // Draw data a skipped hook never recorded must not be drawn once it is shown again.
+        m_gpuPending = false;
         return;
     }
+    // Another overlay may have its context current: the frame is built in this one's own.
+    ImGui::SetCurrentContext(m_context);
     if (m_gpuStarted) {
         ImGui_ImplSDLGPU3_NewFrame();
     } else {
@@ -185,6 +199,8 @@ void ImGuiOverlay::recordGpu(SDL_GPUCommandBuffer* commands, SDL_GPUTexture* tar
         return;
     }
     m_gpuPending = false;
+    // Another overlay's context may be the current one by now: draw this one's own data.
+    ImGui::SetCurrentContext(m_context);
     ImDrawData* data = ImGui::GetDrawData();
     if (data == nullptr || data->TotalVtxCount == 0) {
         return;

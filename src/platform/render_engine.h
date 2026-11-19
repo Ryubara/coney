@@ -122,9 +122,12 @@ class RenderEngine final : public graphics::RenderDevice {
     /// backend; nothing for the other backends, and with the GPU backend when its 2D drawing could not be made
     /// (gpuDrawingProblem()).
     [[nodiscard]] std::optional<GpuOverlayTarget> gpuOverlayTarget() const;
-    /// Sets the drawing the GPU backend runs over every frame's picture after its 2D passes (GpuOverlayDraw), inside
-    /// present(); empty for none. Does nothing with the other backends. Clear it before whatever it calls goes away.
-    void setGpuOverlay(GpuOverlayDraw overlay);
+    /// Adds a drawing the GPU backend runs over every frame's picture after its 2D passes (GpuOverlayDraw), inside
+    /// present(), after those added before it, and returns the handle to remove it by; 0 (and nothing added) with the
+    /// other backends. Remove it before whatever it calls goes away.
+    GpuOverlayHandle addGpuOverlay(GpuOverlayDraw overlay);
+    /// Removes the drawing `handle` named, leaving the others; does nothing for 0 or a handle already removed.
+    void removeGpuOverlay(GpuOverlayHandle handle);
     /// The size of the area frames are drawn into, in pixels: the window's client area, or the requested size for
     /// the NULL backend.
     [[nodiscard]] graphics::Extent frameSize() const { return m_frameSize; }

@@ -116,13 +116,16 @@ overlay needs none of Coney's.
 The overlay is drawn *into the frame*, after the 2D passes and before the copy to the window: the pad menu draws over
 every frame through the frame description, and `ImGuiOverlay::draw()` (called from the present overlay, still inside the
 frame) only builds Dear ImGui's draw data. `GpuPresenter::present()` then hands the command buffer and the renderer's
-target to the hook `RenderEngine::setGpuOverlay()` set, and the overlay uploads the draw data and draws it in a second
-render pass over the target (load, not clear). Because the target is also what `--screenshot` reads back, a capture holds
-the overlay on both renderers, and a frame with it hidden is byte-identical to one without it (`--dev-overlay N` with
-`--screenshot`). The overlay is sized by the window, so the target and window must be the same size, as they are.
+target to each drawing added with `RenderEngine::addGpuOverlay()`, in the order they were added; the overlay makes its
+own Dear ImGui context current, uploads the draw data and draws it in a second render pass over the target (load, not
+clear). Any number of drawings may be added (the F8 console bar has its own context beside F1's), each removed by the
+handle `addGpuOverlay()` gave, and removing one leaves the others drawing. Because the target is also what
+`--screenshot` reads back, a capture holds the overlay on both renderers, and a frame with it hidden is byte-identical
+to one without it (`--dev-overlay N` with `--screenshot`). The overlay is sized by the window, so the target and window
+must be the same size, as they are.
 
 It needs the 2D drawing: where that could not be made (`gpuDrawingProblem()`), `start()` fails and the run log says so.
-It stops before the renderer does (the overlay waits for the GPU, shuts the backends down, and clears the hook).
+It stops before the renderer does (the overlay waits for the GPU, shuts the backends down, and removes its drawing).
 
 ## The capture {#capture}
 

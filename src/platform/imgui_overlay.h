@@ -12,6 +12,7 @@
 #include "platform/imgui_ui_scale.h"
 #include "platform/render_engine.h"
 
+struct ImGuiContext;
 struct ImGuiIO;
 struct SDL_GPUCommandBuffer;
 struct SDL_GPUDevice;
@@ -58,7 +59,7 @@ class ImGuiOverlay {
 
     /// Draws the overlay over the frame, when shown: for the renderer's present overlay, inside the frame. On the GPU
     /// renderer it only builds Dear ImGui's draw data; the renderer then calls back to record them into its frame
-    /// (RenderEngine::setGpuOverlay()), still before the frame is presented.
+    /// (RenderEngine::addGpuOverlay()), still before the frame is presented.
     void draw();
 
     /// Whether it is shown.
@@ -88,7 +89,9 @@ class ImGuiOverlay {
     bool m_glStarted = false;             // the OpenGL 3 backend is up and must be shut down
     bool m_gpuStarted = false;            // the SDL GPU backend is up and must be shut down
     bool m_gpuPending = false;            // draw() built draw data the GPU renderer has not recorded yet
-    RenderEngine* m_renderer = nullptr;   // the GPU renderer's engine, whose callback is cleared at destruction
+    RenderEngine* m_renderer = nullptr;   // the GPU renderer's engine, whose drawing is removed at destruction
+    GpuOverlayHandle m_gpuHandle = 0;     // the drawing added to m_renderer
+    ImGuiContext* m_context = nullptr;    // this overlay's Dear ImGui context, made current before it draws
     SDL_GPUDevice* m_gpuDevice = nullptr; // the GPU backend's device, waited on before the backend stops
     std::uint64_t m_hideAfter = 0;        // draws left before showForFrames() hides it; 0: no limit
 };

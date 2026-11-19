@@ -77,9 +77,12 @@ class GpuPresenter {
     /// nothing when the 2D drawing could not be made, since there is then no frame to draw over (drawingProblem()).
     [[nodiscard]] std::optional<GpuOverlayTarget> overlayTarget() const;
 
-    /// Sets the drawing present() runs over each frame's picture after its 2D passes, before the copy to the window;
-    /// empty for none. The caller clears it before it goes away.
-    void setOverlay(GpuOverlayDraw overlay) { m_overlay = std::move(overlay); }
+    /// Adds a drawing present() runs over each frame's picture after its 2D passes, before the copy to the window,
+    /// after the ones added before it; returns the handle to remove it by (0, and nothing added, for an empty one). The
+    /// caller removes it before whatever it calls goes away.
+    GpuOverlayHandle addOverlay(GpuOverlayDraw overlay);
+    /// Removes the drawing `handle` named; the others stay. Does nothing for a handle already removed or 0.
+    void removeOverlay(GpuOverlayHandle handle);
 
     /// What present() did with a frame.
     struct Presented {
@@ -115,7 +118,8 @@ class GpuPresenter {
     PresentMode m_mode = PresentMode::Vsync;
     std::unique_ptr<GpuRenderer> m_renderer; // the 2D drawing; null when it could not be made
     std::string m_drawingProblem;            // why m_renderer is null
-    GpuOverlayDraw m_overlay;                // drawn over each frame's picture (setOverlay())
+    std::vector<std::pair<GpuOverlayHandle, GpuOverlayDraw>> m_overlays; // drawn over each frame's picture, in order
+    GpuOverlayHandle m_lastOverlay = 0;                                  // the last handle given
 };
 
 } // namespace coney::platform

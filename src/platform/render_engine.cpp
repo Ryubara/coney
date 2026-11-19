@@ -525,9 +525,13 @@ std::optional<GpuOverlayTarget> RenderEngine::gpuOverlayTarget() const {
     return m_gpu ? m_gpu->overlayTarget() : std::nullopt;
 }
 
-void RenderEngine::setGpuOverlay(GpuOverlayDraw overlay) {
+GpuOverlayHandle RenderEngine::addGpuOverlay(GpuOverlayDraw overlay) {
+    return m_gpu ? m_gpu->addOverlay(std::move(overlay)) : 0;
+}
+
+void RenderEngine::removeGpuOverlay(GpuOverlayHandle handle) {
     if (m_gpu) {
-        m_gpu->setOverlay(std::move(overlay));
+        m_gpu->removeOverlay(handle);
     }
 }
 

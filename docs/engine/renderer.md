@@ -537,7 +537,7 @@ is its `presetValues()`, tested column by column in
   maps [#1222](issue:1222), the gamma ramp [#1216](issue:1216), SMAA [#1219](issue:1219), MSAA
   [#1218](issue:1218) and TAA [#1224](issue:1224); the reflections are filed from the [Realtime lighting
   design](../guides/realtime-lighting.md#reflections). Choosing a preset other than *PS2* sets `Display/Renderer` to
-  1, which the next start takes ([The way back to GL3](gpu-renderer.md#way-back)).
+  1, which the next start takes: a renderer with no 3D world yet ([The way back to GL3](gpu-renderer.md#way-back)).
 - **Test mode.** `--headless`, `--load`, `--frames`, `--input-script`, `--screenshot`, `--record`,
   `--render-references` and the disc tests (`coney::test::DiscSession`) pin what drawing reads to *PS2*'s values,
   whatever a player saved (`pinnedDisplayPreset()` in [options.h](repo:src/core/options.h), `DisplaySettings::pin()`).

@@ -101,6 +101,18 @@ GpuPresenter::~GpuPresenter() {
     }
 }
 
+GpuOverlayHandle GpuPresenter::addOverlay(GpuOverlayDraw overlay) {
+    if (!overlay) {
+        return 0;
+    }
+    m_overlays.emplace_back(++m_lastOverlay, std::move(overlay));
+    return m_lastOverlay;
+}
+
+void GpuPresenter::removeOverlay(GpuOverlayHandle handle) {
+    std::erase_if(m_overlays, [handle](const auto& entry) { return entry.first == handle; });
+}
+
 std::optional<GpuOverlayTarget> GpuPresenter::overlayTarget() const {
     if (!m_renderer) {
         return std::nullopt;
@@ -139,8 +151,10 @@ GpuPresenter::Presented GpuPresenter::present(const graphics::FrameDescription& 
     // 1. The frame, drawn into the renderer's own target, then whatever draws over the picture (the developer overlay)
     // into the same target, so the window and a capture both hold it.
     SDL_GPUTexture* drawn = m_renderer->record(commands, frame, size);
-    if (drawn != nullptr && m_overlay) {
-        m_overlay(commands, drawn, size);
+    if (drawn != nullptr) {
+        for (const auto& [handle, overlay] : m_overlays) {
+            overlay(commands, drawn, size);
+        }
     }
     // 2. Onto the window: waits as the present mode says for an image; none comes back while the window cannot show
     // one, and the frame is drawn all the same, so it can still be read back.
