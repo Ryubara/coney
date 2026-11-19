@@ -39,7 +39,7 @@ void PlayLevelSimulation::dropOnHealthOut(human::Human& human, int player) {
         return;
     }
     // Human_OnHealthOut drops nothing for a human with flag 0x4 (the players and the crew), and nothing at the
-    // knock-out of one who was wounded already (he dropped at the wound). **Coney's reading**: Coney's health out
+    // knock-out of one who was wounded already (he dropped at the wound). Coney's stand-in: Coney's health out
     // never wounds, so his wound is the scripts' HuSetWounded alone.
     if (human.hasFlag(human::flag::kRevivable) || human.script().wounded) {
         return;
