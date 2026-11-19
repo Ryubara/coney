@@ -122,22 +122,32 @@ def _mid_operation(git: pr_publish.Git, root: Path) -> bool:
     return False
 
 
+def fetch_default(
+    root: Path, conventions: Conventions, *, remote: str = "origin", git: pr_publish.Git = real_git
+) -> Trial | None:
+    """Fetch the remote's default branch: None when it worked, else the `unknown` trial that says why not."""
+    default = conventions.repo.default_branch
+    try:
+        fetched = git(root, ["fetch", "-q", remote, default])
+    except ConfigError as error:
+        return Trial(UNKNOWN, str(error))
+    if fetched.returncode != 0:
+        return Trial(UNKNOWN, f"git fetch {remote} {default} failed: {fetched.stderr.strip() or 'no output'}")
+    return None
+
+
 def prepare(
     root: Path, conventions: Conventions, *, remote: str = "origin", git: pr_publish.Git = real_git, fetch: bool = True
 ) -> Trial | None:
     """Get a trial ready: None when it may go on, else the `unknown` trial that says why not (somebody is in the
     middle of a rebase or merge in the worktree, or the fetch of the remote's default branch failed). `fetch` false
     skips the fetch, for a read that fetched for an earlier branch: the remote is the repository's, not the branch's."""
-    default = conventions.repo.default_branch
     try:
         if _mid_operation(git, root):
             return Trial(UNKNOWN, "a rebase or merge is in progress in the worktree")
-        fetched = git(root, ["fetch", "-q", remote, default]) if fetch else None
     except ConfigError as error:
         return Trial(UNKNOWN, str(error))
-    if fetched is not None and fetched.returncode != 0:
-        return Trial(UNKNOWN, f"git fetch {remote} {default} failed: {fetched.stderr.strip() or 'no output'}")
-    return None
+    return fetch_default(root, conventions, remote=remote, git=git) if fetch else None
 
 
 def run_trial(
@@ -222,8 +232,10 @@ class Ledger:
 
     def __init__(self, folder: Path) -> None:
         self.folder = folder
-        #: Whether `main` was fetched for an earlier trial of this read (one fetch serves every branch).
+        #: Whether `main` was fetched for an earlier trial of this read (one fetch serves every branch), and the
+        #: `unknown` trial that fetch gave when it failed (every later trial of the read gets it, not another fetch).
         self.fetched = False
+        self.fetch_refused: Trial | None = None
 
     def _path(self, key: str) -> Path:
         """The file of one pull request or branch (a `/` in a branch name becomes `-`)."""
@@ -307,10 +319,14 @@ def trial_of(
     """Fetch (`prepare`), then `run_trial`, reusing the ledger's answer while nothing it depends on has moved: the
     branch's tip, `main`'s tip, the stamp log and the description."""
     default = conventions.repo.default_branch
-    refused = prepare(root, conventions, remote=remote, git=git, fetch=not ledger.fetched)
+    refused = prepare(root, conventions, remote=remote, git=git, fetch=False)
     if refused is not None:
         return refused
-    ledger.fetched = True
+    if not ledger.fetched:
+        ledger.fetched = True
+        ledger.fetch_refused = fetch_default(root, conventions, remote=remote, git=git)
+    if ledger.fetch_refused is not None:
+        return ledger.fetch_refused
     print_ = fingerprint(git, root, unit, text, remote, default)
     cached = ledger.cached(key, head, print_)
     if cached is not None:

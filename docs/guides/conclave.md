@@ -212,7 +212,8 @@ contributor's branch has none and stays a `pr-stuck` for the coordinator):
    pushed. **Clean, with the stamps still covering the rebased change**, the event is `unit-ready` for the pull
    request: `coney-tools pr open <task>` rebases, pushes and updates the pull request, and no engineer is needed. A
    branch in the middle of a rebase here, or a fetch or git that fails, makes no trial (the conflict stays a
-   `pr-stuck`).
+   `pr-stuck`). `main` is fetched once for a whole read, however many branches are tried; a fetch that fails is not
+   tried again for the next branch of that read, which gets the same answer.
 2. **Make the fix task.** A real conflict, or a clean rebase that leaves a stamp stale (the review no longer covers
    the change), is one `conflict-fix` event. Its line carries the ready command and a brief, so the coordinator starts
    the engineer at once and records it with `pr hold <n> --who <agent> --cause conflict`:
@@ -221,7 +222,7 @@ contributor's branch has none and stays a `pr-stuck` for the coordinator):
    | --- | --- |
    | A unit that was released (its log has a passing `pr-opened`) | `coney-tools task create --fix-of <issue>`: a fix task in the fix track, working in the unit |
    | A unit that was never released | the unit's own task: its engineer rebases and goes on |
-   | A branch with no `unit.json` (made before `task start`) | `coney-tools task create <issue> --name <branch>`, then the engineer runs `coney-tools task start <branch> --adopt` ([Adopting a branch](issues.md#adopting)) |
+   | A branch with no `unit.json` (made before `task start`) | `coney-tools task create <issue> --name <task>`, then the engineer runs `coney-tools task start <task> --adopt` ([Adopting a branch](issues.md#adopting)); `<task>` is the branch name when that is a task id, else the name made from it (`user/Fix_It` is `user-fix-it`) and the start says `--adopt-branch <branch>` |
 
    **Oldest first.** The conflicts are ordered by when each was first seen on its head (the ledger below), and the fix
    track has one place (`tasks.start.slots.tracks.fix.max`). The first goes (`...:go`); each other says "waits behind

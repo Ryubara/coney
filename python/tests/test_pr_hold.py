@@ -356,6 +356,29 @@ def test_a_waiver_for_every_cause_is_refused_when_the_conflict_cannot_be_read(tm
     assert "gh is down" in out.err[0] and pr_hold.read_active(tmp_path, NOW).holds == []
 
 
+@pytest.mark.parametrize(("answer", "conflicts"), [("CONFLICTING\n", True), ("MERGEABLE\n", False)])
+def test_github_says_a_pull_request_conflicts_or_does_not(
+    monkeypatch: pytest.MonkeyPatch, answer: str, conflicts: bool
+) -> None:
+    monkeypatch.setattr(pr_hold, "run_gh", lambda args: answer)
+    assert pr_hold.conflicting_now(812) is conflicts
+
+
+@pytest.mark.parametrize("answer", ["UNKNOWN\n", "\n"])
+def test_a_waiver_for_every_cause_is_refused_while_github_has_not_worked_out_mergeability(
+    monkeypatch: pytest.MonkeyPatch, answer: str, tmp_path: Path
+) -> None:
+    # GitHub computes mergeability lazily: UNKNOWN is not "no conflict", so the waiver would slip through
+    monkeypatch.setattr(pr_hold, "run_gh", lambda args: answer)
+    out = Out()
+    assert out.run(tmp_path, "812", "--note", "runner pool down", conflicting=pr_hold.conflicting_now) == 2
+    assert "--cause" in out.err[0] and pr_hold.read_active(tmp_path, NOW).holds == []
+    # a waiver for a cause other than the conflict never asks
+    assert (
+        out.run(tmp_path, "812", "--cause", "ci-stuck", "--note", "pool down", conflicting=pr_hold.conflicting_now) == 0
+    )
+
+
 def test_the_decision_rule_is_the_conventions_pattern() -> None:
     assert pr_hold.names_decision("waits for the maintainer on #1130", RULES)
     assert pr_hold.names_decision("#1130 asks the maintainer whether to drop it", RULES)

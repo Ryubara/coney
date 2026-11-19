@@ -381,12 +381,19 @@ def _head_of(number: int) -> str:
     return answer
 
 
-def _conflicting(number: int) -> bool:
-    """Whether GitHub says the pull request conflicts with its base now; OSError when it cannot be read."""
-    answer = run_gh(["pr", "view", str(number), "--json", "mergeable", "--jq", ".mergeable"]).strip()
+def conflicting_now(number: int) -> bool:
+    """Whether GitHub says the pull request conflicts with its base now; OSError when it cannot be read or GitHub has
+    not worked it out yet (`UNKNOWN`)."""
+    answer = run_gh(["pr", "view", str(number), "--json", "mergeable", "--jq", ".mergeable"]).strip().upper()
     if not answer:
         raise OSError(f"gh pr view gave no mergeability for #{number}")
-    return answer.upper() == "CONFLICTING"
+    # GitHub works mergeability out lazily: UNKNOWN is neither answer, and taking it for "no conflict" would let a
+    # waiver for every cause past the rule for a conflict
+    if answer not in ("CONFLICTING", "MERGEABLE"):
+        raise OSError(
+            f"GitHub has not worked out whether #{number} conflicts yet ({answer.lower()}); try again shortly"
+        )
+    return answer == "CONFLICTING"
 
 
 def run(args: argparse.Namespace) -> int:
@@ -398,4 +405,4 @@ def run(args: argparse.Namespace) -> int:
     except ConfigError as error:
         _stderr(f"pr hold: {error}")
         return 2
-    return run_hold(args, folder, rules, datetime.now(UTC), print, _stderr, _head_of, _conflicting)
+    return run_hold(args, folder, rules, datetime.now(UTC), print, _stderr, _head_of, conflicting_now)

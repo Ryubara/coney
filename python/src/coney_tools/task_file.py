@@ -138,6 +138,13 @@ def quote_block(text: str) -> str:
     return "\n".join(f"> {line}".rstrip() for line in text.replace("\r\n", "\n").split("\n"))
 
 
+def task_id_of(branch: str) -> str:
+    """A task id for a branch name that is not one (`Ryubara/Fix_Frame` is `ryubara-fix-frame`): lower case, runs of
+    anything but letters and digits made one hyphen, 60 characters at most. Empty when the name has no letter or digit.
+    A name that is a task id already comes back as it is."""
+    return re.sub(r"[^a-z0-9]+", "-", branch.lower()).strip("-")[:60].strip("-")
+
+
 def slug(title: str) -> str:
     """A task id's words from an issue title: `gameplay: Fix the fight goal` is `fix-the-fight-goal`, 40 characters
     at most, cut at a word."""

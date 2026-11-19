@@ -115,3 +115,18 @@ def test_sections_out_of_order_are_refused() -> None:
 def test_the_task_id_words_come_from_the_title(title: str, words: str) -> None:
     assert task_file.slug(title) == words
     assert len(task_file.slug(title)) <= 40
+
+
+@pytest.mark.parametrize(
+    ("branch", "task"),
+    [
+        ("fix-frame-812", "fix-frame-812"),
+        ("feature/Fix_Frame", "feature-fix-frame"),
+        ("Ryubara//Fix  the.Frame/", "ryubara-fix-the-frame"),
+        ("x" * 80, "x" * 60),
+        ("/-/", ""),
+    ],
+)
+def test_a_branch_name_becomes_a_task_id(branch: str, task: str) -> None:
+    assert task_file.task_id_of(branch) == task
+    assert task == "" or task_file.TASK_ID.match(task_file.task_id_of(branch))
