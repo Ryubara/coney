@@ -419,7 +419,8 @@ TEST_CASE("the disc's level34 crate stack breaks on the first square and goes", 
     const std::string handle = crate->substr(crate->find(' ', std::string_view("objects: dyn_crate_stack").size()) + 1);
     const std::string removed = std::format("objects: prop {} removed", handle.substr(0, handle.find(' ')));
     CHECK(count(removed) == 1);
-    // Its removal raised one ObjectBreak of a prop (id 0) for it (docs/guides/multiplayer.md#events).
+    // Its removal raised one ObjectBreak of a prop (id 0) for it (docs/guides/multiplayer.md#events): new in the
+    // events change, so it fails against a level that raises no break.
     const std::vector<coney::GameEvent> raised = events.take();
     const auto crateBreaks = std::ranges::count_if(raised, [&handle](const coney::GameEvent& event) {
         return event.kind == coney::GameEventKind::ObjectBreak && event.id == 0 &&
@@ -552,6 +553,7 @@ TEST_CASE("the disc's level34 radio objective: three car stereos stolen with the
     CHECK(count(trace, "> F.InventoryPickup(11)") == 3);
     // The third completes the objective: the scripts save it as done (Lua save float 3 = its target, 3).
     CHECK(count(trace, "SetLUASaveDataFloat(3, 3)") == 1);
+    // New in the events change, failing against a level that raises no break.
     // Each car whose window broke raised an ObjectBreak of car glass (its hit effect kind plus 1, never 0); sparks,
     // steam and smoke raised none (docs/guides/multiplayer.md#events).
     using Kind = coney::world_objects::CarHitEffectKind;

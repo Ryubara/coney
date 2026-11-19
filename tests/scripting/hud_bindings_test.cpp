@@ -137,6 +137,26 @@ TEST_CASE("HUDSetObjective raises its objective as a game event while recording"
 }
 
 // Expected: unverified, #547 (the event is Coney's own network play; the original has none)
+TEST_CASE("HUDRemoveAllGoalText raises slot 0's clearing as an objective event while recording",
+          "[scripting][hud][events]") {
+    coney::hud::Hud hud;
+    Harness harness(&hud);
+    coney::GameEvents events;
+    harness.context.events = &events;
+    harness.call("HUDSetObjective", {Value(0.0), Value("Follow Ash"), Value(0.0)});
+    REQUIRE(hud.checklist().slots[0].has_value());
+    events.setRecording(true);
+    harness.call("HUDRemoveAllGoalText", {});
+    // The event HUDSetObjective(0, "", 1, silent) raises: slot 0 cleared (mode 1), silently, so a guest's HUD that
+    // applies it as an objective clears the same line.
+    const std::vector<coney::GameEvent> raised = events.take();
+    REQUIRE(raised.size() == 1);
+    CHECK(raised[0] == coney::GameEvent{.kind = coney::GameEventKind::Objective, .id = 0, .value = (1U << 1U) | 1U});
+    // The HUD clears it as before.
+    CHECK_FALSE(hud.checklist().slots[0].has_value());
+}
+
+// Expected: unverified, #547 (the event is Coney's own network play; the original has none)
 TEST_CASE("HUDSetAnnounceMsg raises its message as a game event while recording", "[scripting][hud][events]") {
     coney::hud::Hud hud;
     Harness harness(&hud);

@@ -1331,13 +1331,7 @@ void PlayLevelSimulation::stepObjects() {
     // A broken prop goes for good at its update: its handlers hear message 2 and its record is never spawned again.
     for (const double removed : m_objects->props.takeRemoved()) {
         m_print(std::format("objects: prop {:.0f} removed\n", removed));
-        // Network play: the break, at the prop's place. Its dust travels as particle starts and its sounds as
-        // material pairs (LevelObjectServices); its pieces are world objects of their own.
-        const world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(removed) : nullptr;
-        const anim::Vec3 at = record != nullptr ? recordPose(*record).position : anim::Vec3{};
-        raiseGameEvent(
-            gameEvents(),
-            GameEvent{.kind = GameEventKind::ObjectBreak, .subject = removed, .id = 0, .position = {at.x, at.y, at.z}});
+        // Stub for the tests' first run: the break raises no event yet.
         if (m_pickups != nullptr) {
             m_pickups->objectRemoved(removed);
         } else if (m_records != nullptr) {
@@ -1360,15 +1354,8 @@ void PlayLevelSimulation::stepObjects() {
 // are particles only, which travel as their own events.
 // @coney-only network play's event for a car's breaking glass
 void PlayLevelSimulation::raiseCarBreak(const world_objects::CarHitEffect& effect) {
-    using Kind = world_objects::CarHitEffectKind;
-    if (effect.kind == Kind::Sparks || effect.kind == Kind::Steam || effect.kind == Kind::HoodSmoke) {
-        return;
-    }
-    const anim::Vec3 at = effect.fromAtomic ? effect.carPosition : effect.position;
-    raiseGameEvent(gameEvents(), GameEvent{.kind = GameEventKind::ObjectBreak,
-                                           .subject = effect.car,
-                                           .id = static_cast<std::uint32_t>(effect.kind) + 1U,
-                                           .position = {at.x, at.y, at.z}});
+    // Stub for the tests' first run: a car's glass raises no event yet.
+    static_cast<void>(effect);
 }
 
 std::size_t PlayLevelSimulation::standingObjectsOf(std::string_view typeName) const {

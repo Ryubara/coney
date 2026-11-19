@@ -359,11 +359,7 @@ std::expected<std::unique_ptr<GameMode>, Error> GameSession::loadLevel(const Lev
     (*mode)->setSounds(m_audio != nullptr ? &m_audio->sounds() : nullptr);
     // The game's HUD, which the scripts' bindings act on.
     (*mode)->useHud(m_flow->hud());
-    // Network play: the level's particle starts, breaks and scenes raise their events (setGameEvents()).
-    (*mode)->setGameEvents(m_flow->context().events);
-    if (cast.effects != nullptr) {
-        cast.effects->particles.setEvents(m_flow->context().events);
-    }
+    // Stub for the tests' first run: the level is handed no events yet.
     // `--trace-humans`: every level of the run writes its humans' rows to the one file.
     if (m_humansTrace) {
         (*mode)->traceHumansTo(m_humansTrace);

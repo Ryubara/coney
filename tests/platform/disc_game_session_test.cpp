@@ -130,7 +130,8 @@ TEST_CASE("the disc's level99 checkpoint 2 is set up the same started directly a
     CHECK(jumped.debugSeesLevel == started.debugSeesLevel);
 }
 
-// Expected: unverified, #547 (the events are Coney's own network play; the original has none)
+// Expected: unverified, #547 (the events are Coney's own network play; the original has none). It fails
+// against a session that hands the level no events.
 TEST_CASE("the disc's level99 raises its scene and particle starts on the session's game events",
           "[disc][session][events]") {
     // GameSession::setGameEvents() reaches the level GameSession::loadLevel() makes: its street scene's start
