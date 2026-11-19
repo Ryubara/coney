@@ -39,8 +39,12 @@ FrameStats presentCaptured(RenderEngine& engine, const std::string& path) {
     engine.beginWindowFrame(kBackground);
     engine.present();
     const auto& captured = engine.capture();
-    REQUIRE(captured.has_value());
-    REQUIRE(captured->has_value());
+    // Checked by an `if` rather than REQUIRE, which clang-tidy's optional-access check does not read as a guard; the
+    // failed check names the missing capture and the empty stats fail the test's comparisons after it.
+    if (!captured.has_value() || !captured->has_value()) {
+        FAIL_CHECK("the frame was not captured");
+        return {};
+    }
     return (*captured)->stats;
 }
 
