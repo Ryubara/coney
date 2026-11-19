@@ -2515,7 +2515,8 @@ and its gap; a line's height is one line of its text size; the flag `0x0063083c`
 
 ### Coney's import screen {#pm-import}
 
-The original has no import; this is Coney's own screen ([Importing a PS2 save](save.md#import)), added where the
+The original has no import; this is Coney's own screen ([Importing a PS2 save](save.md#import), [an Xbox
+save](save.md#xbox-import)), added where the
 original's profile items are so a player finds it beside CREATE NEW PROFILE and RELOAD PROFILES, and shown only when
 there is something to import, so a player without a save to bring over sees the original's PM_Profile exactly.
 
@@ -2527,7 +2528,8 @@ there is something to import, so a player without a save to bring over sees the 
 - **PM_Import** is laid out as PM_Load: the title `IMPORT PROFILE`, then one item per profile found in the folder's
   saves (its name), two a row, at most six, in the folder's name order and each save's slot order. A line in the text
   font, size 0.85, at y 0.58 (above a three-row grid's title) says where the selected profile comes from (grey: the file
-  or folder and the card slot), or why nothing can be imported (red: the first unreadable file and its problem).
+  or folder and the card slot, or the Xbox save folder), or why nothing can be imported (red: the first unreadable file
+  and its problem).
 - **Accept** imports the profile into the first free slot and returns 0, back to PM_Profile, which then offers it
   under USE EXISTING PROFILE; the profile is not loaded. A refused import (the name is taken, no slot is free) plays cue
   `0xe` after the accept's 9, shows the reason in red and stays. **Back** pops, cue `0xf`.

@@ -1,0 +1,39 @@
+version = 1
+id = "r-20261119-xbox-profile-save-signature"
+date = "2026-11-19"
+kind = "method"
+tool = "xemu record-run"
+digest = "aca4ad185470969ec138c97f85750a41c2866ce6c1063d718a6f5f8d46bedd4a"
+
+[who]
+agent = "a522723df779a2b42"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[xemu]
+version = "v0.8.139"
+copy = "xemu"
+
+[start]
+state = "unknown"
+patches = []
+
+[run]
+name = ""
+method = "At the intro, wrote the name CONEY into save slot 0 (Xbox 0x005ba518 + 5), stopped at D3DDevice_Swap's entry (Xbox 0x00366050) and called the slot save (Xbox 0x0033f510, slot 0) through the GDB stub, back to that entry with every register restored; the success flag (+0xd5) read 1. A read-only script then read the copy's disk image: the new folder under UDATA/5454009b, its SaveMeta.xbx and profile.dat, and compared profile.dat's last 20 bytes with HMAC-SHA1 of the bytes before them keyed by the kernel XboxSignatureKey (Xbox 0x8003b118; never printed, deleted after)"
+
+[values]
+save_ok = 1
+save_folder_name_chars = 12
+savemeta_bytes = 26
+profile_bytes = 1230
+record_bytes = 1210
+signature_bytes = 20
+hmac_matches = 1
+record_version = 17
+
+[addresses]
+save_slot = 0x0033f510
+hijack = 0x00366050
+kernel_key = 0x8003b118

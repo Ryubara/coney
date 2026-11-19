@@ -45,13 +45,13 @@ int runImportCommand(const Options& options, std::FILE* out) {
     for (const ImportCandidate& candidate : save->profiles) {
         const auto slot = importProfile(candidate.record, store);
         if (!slot) {
-            say(out, std::format("{} (card slot {}) not imported: {}", candidate.record.name, candidate.slot + 1,
+            say(out, std::format("{} ({}) not imported: {}", candidate.record.name, placeOf(*save, candidate),
                                  slot.error().message));
             continue;
         }
         ++imported;
-        say(out, std::format("imported {} (card slot {}) as profile {} in {}", candidate.record.name,
-                             candidate.slot + 1, *slot + 1, folder->string()));
+        say(out, std::format("imported {} ({}) as profile {} in {}", candidate.record.name, placeOf(*save, candidate),
+                             *slot + 1, folder->string()));
     }
     say(out, std::format("{} of {} profile(s) imported", imported, save->profiles.size()));
     return imported > 0 ? 0 : 1;
