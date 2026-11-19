@@ -78,7 +78,10 @@ void setRenderStatePtr(std::int32_t state, void* value);
 /// rw::GetRenderState: librw's own while forwarding, else the layer's.
 [[nodiscard]] std::uint32_t getRenderState(std::int32_t state);
 
-/// rw::im2d::GetNearZ: the device's near depth for 2D vertices.
+/// rw::im2d::GetNearZ: the device's near depth for 2D vertices. The one librw call here that reaches librw whether or
+/// not calls are forwarded, and the one that is not recorded: it is a read of the installed device's constant (-1 on
+/// the GL3 device, 0 on the NULL device, and the NULL device is installed headless too), not a drawing call, so there
+/// is nothing to forward or to put in the stream; the vertices built from it are what the stream records.
 [[nodiscard]] float im2dNearZ();
 /// rw::im2d::RenderPrimitive over rw::gl3::Im2DVertex `vertices`.
 void im2dRenderPrimitive(int type, void* vertices, std::int32_t numVertices);

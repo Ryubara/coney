@@ -132,6 +132,9 @@ FetchContent_Declare(SDL3 GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
 # Windows and macOS. A librw build has exactly one platform, fixed at compile time; Coney's headless mode installs
 # librw's NULL device at run time instead (src/platform/render_engine.cpp), so no second build is needed.
 # The library target is librw::librw (an alias of librw).
+# Coney relies on librw's internal layout at this pin: src/platform/draw_calls.cpp (ps2Texels) reads a PS2 raster's data
+# block through rw::ps2::Ps2Raster (src/ps2/rwps2.h, readNativeTexture in src/ps2/ps2raster.cpp) to hash only the
+# texels and palette from the disc. Check that function against the new source whenever this pin moves.
 set(LIBRW_PLATFORM "GL3" CACHE STRING "" FORCE)
 set(LIBRW_GL3_GFXLIB "SDL3" CACHE STRING "" FORCE)
 set(LIBRW_TOOLS OFF CACHE BOOL "" FORCE)

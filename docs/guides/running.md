@@ -90,7 +90,9 @@ line `draw stream: R records: ... hash 0x...` (its Im2D, Im3D and atomic draws c
 same hash for the same frame drew the same thing, which is how the renderer's work proves that the *PS2* picture did
 not move
 ([How pictures are compared](../engine/renderer.md#comparing)). It runs with a window and headless; headless, only the
-2D drawing that reaches the draw layer is in it. It prints counts and the hash only, never what was drawn.
+2D drawing that reaches the draw layer is in it. The named frames' hashes are taken from the GL3 renderer (the default,
+`--renderer gl3`): `--renderer gpu` records the same headless stream until the GPU renderer draws, so a hash it prints
+is not yet a picture's. It prints counts and the hash only, never what was drawn.
 
 The STORY profiles are saved as one file each (`profile-1.sav` to `profile-6.sav`) in `profiles` in your data folder
 (`%APPDATA%\Coney\Coney\` on Windows, `~/.local/share/Coney/Coney/` on Linux, `~/Library/Application

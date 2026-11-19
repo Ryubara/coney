@@ -1413,7 +1413,7 @@ int main(int argc, char** argv) {
                            {"headless", options->headless ? "yes" : "no"},
                            {"vsync", options->vsync ? "on" : "off"},
                            // What `--render-size` asked for and the window the run drew in (docs/engine/
-                           // renderer.md#benchmark); a headless run has no window.
+                           // renderer-performance.md#benchmark); a headless run has no window.
                            {"render_size", renderSizeText},
                            {"window", options->headless ? std::string("none")
                                                         : std::format("{}x{}", windowDesc.width, windowDesc.height)},

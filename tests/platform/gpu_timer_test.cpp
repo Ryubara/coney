@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The GPU timer behind the bench's `gpu.frame` measure (docs/guides/performance.md#gpu-time): a ring of timer queries,
-// tested against a fake driver so it runs headless with no GPU (docs/engine/renderer.md#benchmark).
+// tested against a fake driver so it runs headless with no GPU (docs/engine/renderer-performance.md#benchmark).
 #include <catch2/catch_test_macros.hpp>
 
 #include <cstdint>
