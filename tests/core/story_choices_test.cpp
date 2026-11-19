@@ -5,6 +5,7 @@
 #include "core/story_choices.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -207,6 +208,9 @@ TEST_CASE("story choices: a broken choice is refused with its line", "[story_cho
     CHECK_FALSE(refusal(head + "kind = \"after\"\n" + pair).empty());
     CHECK(refusal("\n" + head + "kind after\n").starts_with("line 3:"));
     CHECK_FALSE(refusal(head + "kind = \"after\n" + anchor + pair).empty());
+    // A mission named twice leaves another out of the order: refused, with the mission.
+    CHECK(refusal(head + "kind = \"after\"\n" + anchor + "missions = [\"a.x\", \"a.x\"]\npackages = [\"h\", \"h\"]\n")
+              .contains("a.x"));
 }
 
 TEST_CASE("story choices: they are saved to the file and read back, the mods in it untouched", "[story_choices]") {
@@ -378,4 +382,45 @@ TEST_CASE("story merge: a chosen replacement takes the place and the other is re
     CHECK(merge.refusals[0].message == "aaa.p: 'level86' is already replaced by 'bbb.q'");
     CHECK(merge.placed.size() == 1);
     CHECK(merge.placed[0].id == "bbb.q");
+}
+
+TEST_CASE("story choices: a file with CRLF line endings keeps them in the tables written", "[story_choices]") {
+    // Expected: ../guides/studio/mods.md#installed (the player edits enabled.toml in any editor), Coney's own design
+    // (no counterpart in the original)
+    const std::vector<StoryChoice> choices{
+        choice(GroupKind::Anchor, "level80", {{"bbb.y", "hash-b"}, {"aaa.x", "hash-a"}})};
+    const std::string crlf = "[[mod]]\r\nname = \"aaa\"\r\n";
+    const std::string written = withStoryChoices(crlf, choices);
+    CHECK(written.starts_with(crlf));
+    // Every line ends in CRLF: no lone LF anywhere.
+    for (std::size_t i = 0; i < written.size(); ++i) {
+        if (written[i] == '\n') {
+            REQUIRE(i > 0);
+            CHECK(written[i - 1] == '\r');
+        }
+    }
+    CHECK(*parseStoryChoices(written) == choices);
+    // Writing them again changes nothing, and writing none gives the file back.
+    CHECK(withStoryChoices(written, choices) == written);
+    CHECK(withStoryChoices(written, {}) == crlf);
+    // A file with LF endings still gets LF.
+    CHECK_FALSE(withStoryChoices("[[mod]]\nname = \"aaa\"\n", choices).contains('\r'));
+}
+
+TEST_CASE("story groups: a choice that names one mission twice is ignored and the other mission is not lost",
+          "[story_choices]") {
+    // Expected: ../guides/studio/mission-mods.md#graph-merge (a choice names exactly the group's missions), Coney's
+    // own design (no counterpart in the original)
+    const std::vector<StoryMod> mods = twoOnOneAnchor();
+    const std::vector<StoryChoice> repeated{
+        choice(GroupKind::Anchor, "level80", {{"aaa.x", "hash-a"}, {"aaa.x", "hash-a"}})};
+    const auto groups = storyGroups(mods, repeated);
+    REQUIRE(groups.size() == 1);
+    CHECK_FALSE(groups[0].chosen);
+    CHECK(groups[0].stale);
+    CHECK(groups[0].order == groups[0].defaultOrder);
+    const StoryMerge merged = mergeStory(StoryGraph::original(), mods, repeated);
+    CHECK(idsBetween(merged.graph, "level80", "hub:1") ==
+          std::vector<std::string>{"level80", "aaa.x", "bbb.y", "level87"});
+    CHECK(merged.refusals.empty());
 }

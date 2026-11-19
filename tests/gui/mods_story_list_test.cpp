@@ -315,3 +315,23 @@ TEST_CASE("mods story list: a file with a broken story choice leaves the load or
     CHECK(chain(list, "level80", "hub:1") == std::vector<std::string>{"level80", "aaa.x", "bbb.y", "level87"});
     CHECK(list.message().contains("enabled.toml"));
 }
+
+TEST_CASE("mods story list: a file with a broken story choice is not written over, and the swap holds for the session",
+          "[mods_story_list]") {
+    // Expected: ../guides/studio/mission-mods.md#graph-mods-screen, Coney's own design (no counterpart in the original)
+    const coney::test::TempDir dir;
+    const fs::path file = dir.path() / "enabled.toml";
+    // A valid choice the player kept for another anchor, and a table that is broken.
+    const std::string before =
+        "[[mod]]\nname = \"aaa\"\n\n[[story.choice]]\nkind = \"after\"\nanchor = \"level70\"\n"
+        "missions = [\"q.a\", \"r.b\"]\npackages = [\"h\", \"i\"]\n\n[[story.choice]]\nkind = \"sideways\"\n";
+    std::ofstream(file, std::ios::binary) << before;
+    ScriptedPad pad;
+    ModsStoryList list(StoryGraph::original(), sharedAnchor(), file);
+    goTo(pad, list, "aaa.x");
+    CHECK(press(pad, list, coney::pad::kCross) == Result::Swapped);
+    // The session has the swap, the file is as the player left it, and the list says why.
+    CHECK(chain(list, "level80", "hub:1") == std::vector<std::string>{"level80", "bbb.y", "aaa.x", "level87"});
+    CHECK(textOf(file) == before);
+    CHECK(list.message().contains("enabled.toml"));
+}
