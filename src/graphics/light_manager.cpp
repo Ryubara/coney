@@ -392,8 +392,11 @@ LightSelection LightManager::select(float distSq, const LightSphere& sphere, boo
         cap = static_cast<std::size_t>(6 - std::min(steps, pulse ? 2 : 3));
         lights = pulse ? std::span<const std::uint16_t>(m_listC) : std::span<const std::uint16_t>(m_listB);
     }
+    // The list is copied whole, whatever the cap: the cap limits only the point lights after it.
+    // Stand-in: the original's lists and upload list hold 8 with no check, and a ninth light writes over the list's
+    // count; Coney stops at 8 (docs/research/lighting.md#coneys-implementation).
     for (const std::uint16_t index : lights) {
-        if (selection.count >= cap) {
+        if (selection.count >= kMaxSelectedLights) {
             break;
         }
         selection.records.at(selection.count++) = index;
@@ -402,8 +405,10 @@ LightSelection LightManager::select(float distSq, const LightSphere& sphere, boo
         return selection;
     }
 
-    // The glow first, for a human whose glow alpha is above 10, placed at him with its colour.
-    if (glow && glow->rgba[3] > kGlowMinAlpha && selection.count < cap) {
+    // The glow first, for a human whose glow alpha is above 10, placed at him with its colour, with no check against
+    // the cap. Stand-in: with 8 lights copied the original writes the glow over the upload list's count; Coney adds
+    // none.
+    if (glow && glow->rgba[3] > kGlowMinAlpha && selection.count < kMaxSelectedLights) {
         LightRecord& record = m_records[kGlow];
         record.desc.position = glow->position;
         record.current =
