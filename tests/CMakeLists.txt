@@ -12,6 +12,7 @@ add_executable(coney_tests
     core/clip_recording_test.cpp
     core/cpak_archive_test.cpp
     core/cpak_index_test.cpp
+    core/cpak_lookup_test.cpp
     core/cpak_writer_test.cpp
     core/deferred_input_test.cpp
     core/event_log_test.cpp
