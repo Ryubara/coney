@@ -178,6 +178,8 @@ class MissionSelectScreen : public Widget {
     [[nodiscard]] const CircledText& title() const { return m_title; }
     /// The entry of mission `index` of the area at the cursor.
     [[nodiscard]] const CircledText& entry(std::size_t index) const { return *m_entries.at(index); }
+    /// How many entries the list draws.
+    [[nodiscard]] std::size_t drawnEntryCount() const { return m_entries.size(); }
     /// The marker of area `index`.
     [[nodiscard]] const BaseWidget& marker(std::size_t index) const { return *m_markers.at(index); }
     /// The halo.

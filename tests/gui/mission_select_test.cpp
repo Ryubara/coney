@@ -13,6 +13,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/name_hash.h"
+#include "core/pad.h"
 #include "gui/menu_input.h"
 #include "gui/mission_select.h"
 #include "warriors/level_table.h"
@@ -22,6 +23,8 @@
 using Catch::Approx;
 using coney::LevelRecord;
 using coney::LevelTable;
+using coney::Pad;
+using coney::PadSample;
 using coney::SavedProgress;
 using coney::UnlockRecord;
 using coney::UnlockRecords;
@@ -80,6 +83,14 @@ LevelTable table() {
 
 // The levels of table() that are complete.
 Completion tableCompletion() { return complete({99, 80, 3, 31, 9, 95, 60, 101}); }
+
+// A connected pad sample holding `buttons`.
+PadSample sample(std::uint16_t buttons) {
+    PadSample out;
+    out.connected = true;
+    out.buttons = buttons;
+    return out;
+}
 
 // A screen opened at time 0 over table()'s areas, its cues recorded.
 struct Screen {
@@ -345,4 +356,43 @@ TEST_CASE("the mission select's marker pulses between 2 and 1 times its size eac
     CHECK(s.screen.pulse() == Approx(2.0F));
     CHECK(s.screen.marker(0).setupValues().height == Approx(marker));
     CHECK(s.screen.marker(1).setupValues().height == Approx(marker * 2.0F));
+}
+
+TEST_CASE("the mission select shows an area the pad moves to from the next frame, its pulse starting then",
+          "[mission_select]") {
+    // Expected: frontend.md#fn-missionselecthud, confirmed (code) at 0x001be198 (the shown area, +0x580, is taken
+    // before the pad pass and draws the logo, the pulsing marker, the halo and the list) and 0x001be848 (the shown
+    // area's list is drawn)
+    Screen s;
+    const float marker = s.screen.layout().marker;
+    const std::vector<gui::MissionSelectArea>& areas = s.screen.areas();
+    REQUIRE(areas.size() == 3);
+    REQUIRE(areas.at(0).missions.size() != areas.at(1).missions.size());
+    s.at(200);
+    // The frame the pad moves the cursor on: the first area is still drawn, its pulse going on.
+    Pad pad;
+    pad.update(sample(coney::pad::kUp));
+    s.screen.update(gui::GuiFrame{300, &pad});
+    REQUIRE(s.screen.cursor() == 1);
+    CHECK(s.screen.shownArea() == 0u);
+    CHECK(s.screen.pulse() == Approx(1.25F));
+    CHECK(s.screen.marker(0).setupValues().height == Approx(marker * 1.25F));
+    CHECK(s.screen.marker(1).setupValues().height == Approx(marker));
+    CHECK(s.screen.halo().setupValues().x == Approx(areas.at(0).marker.x));
+    CHECK(s.screen.halo().setupValues().y == Approx(areas.at(0).marker.y));
+    CHECK(s.screen.logo().setupValues().x == Approx(areas.at(0).logo.x));
+    CHECK(s.screen.logo().setupValues().y == Approx(areas.at(0).logo.y));
+    CHECK(s.screen.drawnEntryCount() == areas.at(0).missions.size());
+    // The next frame: the new area, its pulse from 2.
+    pad.update(sample(0));
+    s.screen.update(gui::GuiFrame{333, &pad});
+    CHECK(s.screen.shownArea() == 1u);
+    CHECK(s.screen.pulse() == Approx(2.0F));
+    CHECK(s.screen.marker(0).setupValues().height == Approx(marker));
+    CHECK(s.screen.marker(1).setupValues().height == Approx(marker * 2.0F));
+    CHECK(s.screen.halo().setupValues().x == Approx(areas.at(1).marker.x));
+    CHECK(s.screen.halo().setupValues().y == Approx(areas.at(1).marker.y));
+    CHECK(s.screen.logo().setupValues().x == Approx(areas.at(1).logo.x));
+    CHECK(s.screen.logo().setupValues().y == Approx(areas.at(1).logo.y));
+    CHECK(s.screen.drawnEntryCount() == areas.at(1).missions.size());
 }
