@@ -460,7 +460,8 @@ load order ([Load order](mods.md#load-order)) and each mod's missions in manifes
 - **A cycle** (`a` after `b`, `b` after `a`) refuses every mission in it, with one message naming the cycle ("story
   cycle: aaa.x, bbb.y, aaa.x"), as a dependency cycle does ([Dependencies](mods.md#dependencies)).
 - **Two replacements of one mission**: the first in load order takes the place and the other is refused ("bbb.y:
-  'level86' is already replaced by 'aaa.x'"), until the player chooses on the Mods screen ([#1304](issue:1304)).
+  'level86' is already replaced by 'aaa.x'"), until the player chooses on the Mods screen ([#1304](issue:1304), built:
+  [the story view](#graph-mods-screen)).
 - **A mission whose level or script is missing** from the package is refused at the mod's check, before the merge.
 
 Without story mods the merge is the seed and nothing else: no question is asked and nothing is written, and the
@@ -483,6 +484,43 @@ chain in order, original steps in the game's colours and each mod's missions und
 - **Shared anchor**: two or more missions placed at one anchor, with *Swap* to change their order.
 - **Replaced**: an original mission another mission stands in for, and, for two replacements, the choice between them.
 - **Refused**: each refused mission with its message, so a player sees why a mission is missing without a log.
+
+**Built** ([#1304](issue:1304)): the list's model, with the Mods screen itself still to come (build issue 3 of
+[UI and menus](ui.md#build-issues): the MODS entry and the screen that draws it). `gui::ModsStoryList`
+(`repo:src/gui/mods_story_list.h`) takes the seed, the enabled story mods in load order and the path of `enabled.toml`,
+and is driven by the menu's own commands (`gui::MenuCommand`, the pad through `MenuInput`): a direction moves over the
+rows the cursor can stop on (the mod titles and the *Refused* heading are not among them), accept does the row's action
+and back closes it. Its rows are `story::buildStoryView`'s (`repo:src/core/story_view.h`): each step of the chain, a
+title row before each run of one mod's missions, the new hub chapter a mission opens under its mission, and, after the
+chain, the heading and one row for each refused mission with the merge's message. The screen draws the kinds in the
+game's colours (an original step), the mod's (a mission) and the warning colour (a refusal).
+
+- **Swap.** On a mission placed on a shared anchor, accept swaps it with the next mission placed there (the last swaps
+  with the one before it). With three on one anchor, repeated swaps reach every order.
+- **Choose.** On a refused replacement that lost to another, accept makes it the one that takes the place, and the one
+  that had it is refused in turn.
+- **Kept.** Both are one *choice*: the order of the group's missions, for the group of one anchor (`kind = "after"`) or
+  of one replaced mission (`kind = "replace"`). It goes into `mods/enabled.toml` at once, with the package hash of each
+  mission's mod:
+
+  ```toml
+  [[story.choice]]
+  kind = "after"
+  anchor = "level80"
+  missions = ["bbb.y", "aaa.x"]      # the order the player chose, the first nearest the anchor
+  packages = ["<hash of bbb>", "<hash of aaa>"]
+  ```
+
+  `story::loadStoryChoices` and `saveStoryChoices` (`repo:src/core/story_choices.h`) read and write only these tables and
+  leave the rest of the file as the player and the mods menu keep it. `mergeStory` takes the choices as its third
+  argument: the missions of each group they apply to keep their slots in the turn order and take them in the chosen
+  order, so the chain, the placed missions and the refusals all follow from the one rule above.
+- **When a choice stops holding.** A choice applies only while its group is the same missions and every mod it names has
+  the package hash it records, as a [script merge choice](#two-mods) does. A group that changed, or a mod that was
+  updated, falls back to the load order (`StoryGroup::stale`) and the screen asks again; the old table stays in the file
+  until the player chooses for that group. A choice that puts the group back in load order is dropped from the file.
+- **A file that cannot be written** leaves the choice in force for the session and shows the message; one that cannot be
+  read, or holds a broken `[[story.choice]]` table, gives the load order and the message.
 
 ### Progress, records and saves {#graph-progress}
 
@@ -687,8 +725,9 @@ Under [#1054](issue:1054), in order; the save format is [#1179](issue:1179)'s.
    script or Coney's default chapter; called at the hub load with #1300.
 5. **core: Add story progress by mission id to the save** ([#1303](issue:1303)): mod missions' completion, ranks and
    best records in the story section, after #1179.
-6. **gameplay: Add the story view to the Mods screen** ([#1304](issue:1304)): shared anchors with *Swap*, replacements,
-   refusals.
+6. **gameplay: Add the story view to the Mods screen** ([#1304](issue:1304), built:
+   [The Mods screen's story view](#graph-mods-screen)): shared anchors with *Swap*, replacements, refusals; the model
+   and the choices kept in `enabled.toml`, drawn once the Mods screen exists.
 
 ## How the numbers were found {#how-checked}
 

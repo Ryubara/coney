@@ -214,9 +214,57 @@ class Merger {
 
 } // namespace
 
-std::vector<StoryGroup> storyGroups(std::span<const StoryMod>, std::span<const StoryChoice>) { return {}; }
+std::vector<StoryGroup> storyGroups(std::span<const StoryMod> storyMods, std::span<const StoryChoice> choices) {
+    // 1. Every mission under its kind and anchor, in turn order, and the package hash of its mod.
+    std::vector<StoryGroup> groups;
+    std::map<std::string, std::string> hashOf;
+    for (const StoryMod& mod : storyMods) {
+        for (const StoryMission& mission : mod.story.missions) {
+            const std::string id = std::format("{}.{}", mod.name, mission.id);
+            hashOf.emplace(id, mod.packageHash);
+            const GroupKind kind = mission.replace.empty() ? GroupKind::Anchor : GroupKind::Replacement;
+            const std::string& anchor = mission.replace.empty() ? mission.after : mission.replace;
+            const auto group = std::ranges::find_if(
+                groups, [&](const StoryGroup& known) { return known.kind == kind && known.anchor == anchor; });
+            if (group == groups.end()) {
+                groups.push_back({.kind = kind, .anchor = anchor, .defaultOrder = {id}});
+            } else {
+                group->defaultOrder.push_back(id);
+            }
+        }
+    }
+    // 2. A single mission is no group.
+    std::erase_if(groups, [](const StoryGroup& group) { return group.defaultOrder.size() < 2; });
+    // 3. The player's choice for each group, when it still holds: the group's own missions, in the packages the
+    // choice was made between. One that names the group but no longer holds leaves it stale.
+    for (StoryGroup& group : groups) {
+        group.order = group.defaultOrder;
+        const auto named = std::ranges::find_if(choices, [&](const StoryChoice& choice) {
+            return choice.kind == group.kind && choice.anchor == group.anchor;
+        });
+        if (named == choices.end()) {
+            continue;
+        }
+        const bool sameMissions = named->members.size() == group.defaultOrder.size() &&
+                                  std::ranges::all_of(named->members, [&](const StoryChoiceMember& member) {
+                                      return std::ranges::count(group.defaultOrder, member.mission) == 1 &&
+                                             hashOf.at(member.mission) == member.packageHash;
+                                  });
+        if (!sameMissions) {
+            group.stale = true;
+            continue;
+        }
+        group.order.clear();
+        for (const StoryChoiceMember& member : named->members) {
+            group.order.push_back(member.mission);
+        }
+        group.chosen = true;
+    }
+    return groups;
+}
 
-StoryMerge mergeStory(const StoryGraph& seed, std::span<const StoryMod> storyMods, std::span<const StoryChoice>) {
+StoryMerge mergeStory(const StoryGraph& seed, std::span<const StoryMod> storyMods,
+                      std::span<const StoryChoice> choices) {
     // 1. Every mission in turn order: mods in load order, each mod's missions in manifest order.
     std::vector<Pending> waiting;
     for (const StoryMod& mod : storyMods) {
@@ -224,7 +272,26 @@ StoryMerge mergeStory(const StoryGraph& seed, std::span<const StoryMod> storyMod
             waiting.push_back({.id = std::format("{}.{}", mod.name, mission.id), .mod = mod.name, .mission = &mission});
         }
     }
-    // 2. Turns until none places or refuses anything: after each one that does, the earliest waiting mission goes
+    // 2. The player's choices: the missions of a group keep their slots in the turn order and take them in the chosen
+    // order, so the first of two on one anchor is placed nearest it and the first of two replacements takes the place.
+    std::vector<StoryGroup> groups = storyGroups(storyMods, choices);
+    for (const StoryGroup& group : groups) {
+        if (!group.chosen) {
+            continue;
+        }
+        std::vector<std::size_t> slots;
+        std::map<std::string, Pending> members;
+        for (std::size_t slot = 0; slot < waiting.size(); ++slot) {
+            if (std::ranges::find(group.order, waiting[slot].id) != group.order.end()) {
+                slots.push_back(slot);
+                members.emplace(waiting[slot].id, waiting[slot]);
+            }
+        }
+        for (std::size_t i = 0; i < slots.size() && i < group.order.size(); ++i) {
+            waiting[slots[i]] = members.at(group.order[i]);
+        }
+    }
+    // 3. Turns until none places or refuses anything: after each one that does, the earliest waiting mission goes
     // again first, so a mission waiting for a later mod's anchor is placed as soon as the anchor is.
     Merger merger(seed);
     for (bool moved = true; moved;) {
@@ -237,9 +304,11 @@ StoryMerge mergeStory(const StoryGraph& seed, std::span<const StoryMod> storyMod
             }
         }
     }
-    // 3. What still waits is refused: cycles, missing anchors and anchors on refused missions.
+    // 4. What still waits is refused: cycles, missing anchors and anchors on refused missions.
     merger.refuseWaiting(waiting);
-    return std::move(merger).finish(!storyMods.empty());
+    StoryMerge merged = std::move(merger).finish(!storyMods.empty());
+    merged.groups = std::move(groups);
+    return merged;
 }
 
 } // namespace coney::story
