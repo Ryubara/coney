@@ -497,7 +497,7 @@ simulation's effects pass:
 gives itself follow from the HUD's state, which a guest's HUD is given (the messages, objectives and hints here, each
 player's HUD state in the snapshot: #1447), so its own HUD plays them. A scene's sounds and a movie's sound play from
 the scene or the movie, which travel as their start and end. The lock pick's click plays nothing yet (it is counted).
-A sound's later stop or move (`stopSound()`, `moveSound()` on a handle: a radio's track) sends nothing yet.
+A sound's later stop or move (`stopSound()`, `moveSound()` on a handle: a radio's track) sends nothing yet: #1473.
 
 **Delivery.** One-shots (the sounds, hits, material pairs, cues, particle starts and breaks) go **Unreliable**: a lost
 one is a sound nobody misses, and one resent late would play out of time. The music, the loop, the messages, the
