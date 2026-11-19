@@ -209,8 +209,9 @@ the entry and the upload list at the return, and writes one CSV row per call in 
 caller, the inputs and the chosen lights as values (positions, radii, kinds, colours, never pointers), and beside it
 each call's lists for the replay. It runs from a state of the [state library](pcsx2-states.md) and writes a [run
 record](research-evidence.md#run-records); the CSVs stay in scratch and the record holds their hashes. The first trace
-is run r-20261119-light-selection, `level99` checkpoint 2 from `pedestrian-grab`: 300 calls, and the rule of
-[Selection](../research/lighting.md#select) applied to its inputs by a script gave the lights it recorded in all 300.
+is run r-20261119-light-selection, `level99` checkpoint 2 from `pedestrian-grab`: 300 calls. The rule of
+[Selection](../research/lighting.md#select) applied to its inputs by a script gave the lights it recorded in 300 of
+300 (run r-20261119-light-selection-replay).
 
 ### Faithful comparison: the colour of a vertex {#test-vertex-colour}
 

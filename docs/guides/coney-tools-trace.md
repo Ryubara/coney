@@ -186,7 +186,11 @@ It writes three files, each light as values (RenderWare type, radius, colour, it
 | `<stem>.calls.csv` | One per call (`call` is the row of `CSV`, counting from 0): the game's tick (`0x005104f4`), the caller, the human's glow byte (`+0x647`, empty with no human) and the length of each list |
 | `<stem>.lists.csv` | One per light of each list of each call: `call`, the list (`a`, `b`, `c`, `objects` for the manager's `+0x20`, `world` for `+0x30`), its slot and the light |
 
-The two inputs files are what a replay of Coney's selection needs ([#1252](issue:1252)). The files measure the game:
+The two inputs files are what a replay of Coney's selection needs ([#1252](issue:1252)), except in a call that adds
+the [glow](../research/lighting.md#glow): the glow light is the manager's light at `+0x84`, placed and coloured per
+call (through `0x0017c840`) before it is appended, and is in no list, so it shows only among the lights chosen. A glow
+call is not covered: the human's glow byte in `.calls.csv` says which calls they are, and a replay compares the lights
+after the glow ([#1253](issue:1253)). The files measure the game:
 they are refused inside the repository. `--run-record` also writes the run's [record](research-evidence.md#run-records)
 (`r-<date>-light-selection`, or `--run-name`): the calls by caller, the frames, the lights chosen by kind, the calls
 with a glow, the largest count, the addresses read and the SHA-256 of each file. The game is stopped while each call is

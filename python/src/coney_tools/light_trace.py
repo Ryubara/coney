@@ -29,7 +29,7 @@ import hashlib
 import struct
 import time
 from collections import Counter
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
@@ -255,12 +255,18 @@ def trace(client: DebugClient, calls: int, wait: float) -> list[Call]:
     no entry before it (the trace began during a call) is skipped."""
     memory = DebugMemory(client)
     placed: list[int] = []
+    unsure: set[int] = set()
     out: list[Call] = []
     pending: _Pending | None = None
 
+    # Note the address before the set: a set that timed out may still have taken effect, so it is removed too.
     def place(address: int) -> None:
-        client.set_breakpoint(address)
         placed.append(address)
+        try:
+            client.set_breakpoint(address)
+        except DebugServerError:
+            unsure.add(address)
+            raise
 
     try:
         for address in (ENTRY, *CALLERS):
@@ -282,20 +288,29 @@ def trace(client: DebugClient, calls: int, wait: float) -> list[Call]:
                 raise LightTraceError(f"the game stopped at 0x{pc:08x}, where the trace set no breakpoint")
             client.resume()
     finally:
-        _clean_up(client, placed)
+        _clean_up(client, placed, unsure)
     return out
 
 
-def _clean_up(client: DebugClient, placed: Sequence[int]) -> None:
-    """Remove the trace's breakpoints and let the game run on if one of them holds it."""
-    try:
-        for address in placed:
+def _clean_up(client: DebugClient, placed: Sequence[int], unsure: Collection[int] = ()) -> None:
+    """Remove the trace's breakpoints and let the game run on if one of them holds it. Each removal is tried on its
+    own, so one refused or timed out leaves the others to go; `unsure` are the addresses whose set failed, which may
+    never have been set, so a refused removal of one is not reported."""
+    left: list[str] = []
+    for address in placed:
+        try:
             client.remove_breakpoint(address)
+        except DebugServerError as error:
+            if address not in unsure:
+                left.append(f"0x{address:08x} ({error})")
+    if left:
+        print(f"warning: the trace's breakpoints may still be set: {', '.join(left)}")
+    try:
         stopped, pc = client.cpu_status()
         if stopped and pc in placed:
             client.resume()
     except DebugServerError as error:
-        print(f"warning: the trace's breakpoints may still be set: {error}")
+        print(f"warning: the game may still be stopped at one of the trace's breakpoints: {error}")
 
 
 # --- the files --------------------------------------------------------------------------------------------------------

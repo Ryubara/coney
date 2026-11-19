@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261119-light-selection-replay"
+date = "2026-11-19"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "815e640af70ebf3ea02581160a4b9b0a9dd813bc65b5f39f7e0ed436f108c30e"
+
+[who]
+agent = "a5e93f9912f7c392e"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = []
+
+[run]
+name = ""
+method = "Replay of the three CSVs of run r-20261119-light-selection (the hashes kept in that record, checked before the replay): a script applied the four steps of the selection rule (docs/research/lighting.md, Selection) to each call's arguments and lists A, B, C and point lights and compared the lights it chose, in order, with the lights the trace recorded for that call. The copy ran the same state the trace started from."
+
+[values]
+calls = 300
+replayed = 300
+matched = 300
+
+[addresses]
+LightManager_SelectLights = 0x0017de10

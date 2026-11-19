@@ -279,9 +279,12 @@ the call; each chosen RpLight gives its type (byte `+0x01`), radius (`+0x14`), c
 beside it ([trace lights](../guides/coney-tools-trace.md#trace-lights)). Confirmed (runtime), run
 r-20261119-light-selection, `level99` checkpoint 2 from the `pedestrian-grab` state: 300 calls over 6 frames, 205
 objects, 78 sectors, 12 humans and 5 of the background, no car and no other caller; the lights chosen were 300 ambient,
-434 directional and 100 point lights, no spot light, at most 5 in a call and no glow. Applying the four steps above to
-the trace's inputs (a script kept in scratch, not part of the record) gave the recorded lights in the same order in
-all 300 calls, as in run r-20261030-light-selection: the trace's inputs are enough to replay the selection.
+434 directional and 100 point lights, no spot light, at most 5 in a call and no glow. **The trace's inputs are enough
+to replay the selection**, except in a glow call: the [glow](#glow) light, the manager's `+0x84`, is placed and
+coloured during the call (through `0x0017c840`) and is in no list. Confirmed (runtime), run
+r-20261119-light-selection-replay: the four steps above applied to the inputs in the three CSVs of that trace (their
+hashes checked against its record) gave the recorded lights in the same order in 300 of 300 calls, as in run
+r-20261030-light-selection.
 
 `LightManager_UploadSelected` (`0x0017e810`) then queues each chosen light with `RwPS2_QueueLightForVU1`
 (`0x00476cc8`): a block header with two scales of 1.0, then per light its colour (RpLight `+0x18`) and type, plus the

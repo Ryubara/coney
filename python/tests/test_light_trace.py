@@ -23,7 +23,7 @@ from pine_support import fake_pcsx2
 from coney_tools import light_trace, light_trace_cli, run_records, run_records_cli
 from coney_tools.cli import main
 from coney_tools.config import ConfigError
-from coney_tools.debug_server import DebugClient
+from coney_tools.debug_server import DebugClient, DebugServerError
 from coney_tools.light_trace import Light, LightTraceError
 
 #: The made-up checkout of the run-record tests, a fixture.
@@ -313,6 +313,73 @@ def test_a_caller_the_page_does_not_name_is_followed_to_its_return(serve: Any) -
     assert stray in game.ever_set
     assert calls[0].caller == stray
     assert calls[0].chosen == (Light(2, 0.0, (0.25, 0.25, 0.25, 1.0), (0.0, 0.0, 0.0)),)
+
+
+class FlakyClient(DebugClient):
+    """A client whose commands fail as a real link can: `late` names commands (cmd, and address or None for any)
+    that reach the game but whose answer never comes back (a timeout after the server acted), `refused` ones the
+    server refuses without acting."""
+
+    def __init__(self, port: int, late: set[tuple[str, int | None]], refused: set[tuple[str, int | None]]) -> None:
+        super().__init__(port)
+        self.late = late
+        self.refused = refused
+
+    # Whether `command` is one of `faults`, by name and address or by name alone.
+    def _matches(self, faults: set[tuple[str, int | None]], command: dict[str, Any]) -> bool:
+        return (command["cmd"], command.get("address")) in faults or (command["cmd"], None) in faults
+
+    def request(self, command: dict[str, Any], timeout: float = 5.0) -> dict[str, Any]:
+        """Answer as the server does, or fail the way `late` and `refused` say."""
+        if self._matches(self.refused, command):
+            return {"ok": False, "error": "refused"}
+        answer = super().request(command, timeout)
+        if self._matches(self.late, command):
+            raise DebugServerError(f"{command['cmd']}: timed out")
+        return answer
+
+
+def flaky(serve: Any, stops: list[Stop], **faults: set[tuple[str, int | None]]) -> tuple[MadeUpGame, FlakyClient]:
+    """A made-up game behind a FlakyClient with these faults."""
+    game, plain = serve(stops)
+    plain.close()
+    return game, FlakyClient(plain.port, faults.get("late", set()), faults.get("refused", set()))
+
+
+def test_a_breakpoint_whose_set_timed_out_but_took_effect_is_removed(serve: Any) -> None:
+    game, client = flaky(serve, two_calls(), late={("set_breakpoint", HUMAN_RETURN)})
+    with client, pytest.raises(DebugServerError):
+        light_trace.trace(client, calls=2, wait=5.0)
+    assert HUMAN_RETURN in game.ever_set
+    assert game.breakpoints == set()
+
+
+def test_breakpoints_are_removed_after_an_error_mid_trace(serve: Any) -> None:
+    game, client = flaky(serve, two_calls(), late={("read_memory", None)})
+    with client, pytest.raises(DebugServerError):
+        light_trace.trace(client, calls=2, wait=5.0)
+    assert game.breakpoints == set()
+
+
+def test_one_refused_removal_does_not_keep_the_others(serve: Any, capsys: pytest.CaptureFixture[str]) -> None:
+    game, client = flaky(
+        serve,
+        two_calls(),
+        refused={("remove_breakpoint", ENTRY)},
+        late={("remove_breakpoint", OBJECT_RETURN)},
+    )
+    with client:
+        light_trace.trace(client, calls=2, wait=5.0)
+    assert game.breakpoints == {ENTRY}
+    warning = capsys.readouterr().out
+    assert "0x0017de10" in warning and "0x001803a4" in warning
+
+
+def test_breakpoints_are_removed_after_a_trace_that_timed_out(serve: Any) -> None:
+    game, client = serve(two_calls()[:3])
+    with client:
+        light_trace.trace(client, calls=10, wait=0.2)
+    assert game.breakpoints == set()
 
 
 # --- the files --------------------------------------------------------------------------------------------------------
