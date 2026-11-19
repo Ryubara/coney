@@ -184,6 +184,9 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     [[nodiscard]] std::size_t doorsDrawnNear(anim::Vec3 at, float radius) const;
 
   protected:
+    /// Where the level raises what its players see or hear for network play (ScriptedCast::events); null for none.
+    [[nodiscard]] GameEvents* gameEvents() const { return m_cast.events; }
+
     /// The simulation on `ground` (owned from now on) with player 1 playing `character` (the scene's character, which
     /// the sandbox's targets and fighters play too) as model `model`, at the ground's start (dropped onto it when
     /// `snapToGround`), made as character type `type` of `types` (human::playerClassOf()). `wad` (which must outlive
@@ -336,6 +339,8 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     bool stepLockPick(const Pad& pad);
     // After the player's step: his object attack's hit sent to its object, then the objects' two 60 Hz ticks.
     void stepObjects();
+    // Raises a car's breaking glass as an object break, for network play.
+    void raiseCarBreak(const world_objects::CarHitEffect& effect);
     // Player 1's object attack under way (Player_ObjectAttack's clip, 661 or 662, with its object): whether its hit
     // lands on the object this step. It lands when the clip's strike shapes come on (a car or other object) or strike
     // it (a pane or door, through strikeObjects()), not at the attack's start

@@ -164,6 +164,10 @@ class SceneSystem {
     [[nodiscard]] bool inScene(double human) const;
     /// Whether any scene task is starting or playing.
     [[nodiscard]] bool playing() const;
+    /// The ids of the scenes whose tasks are starting or playing, each once, in rising order: what a network session
+    /// compares step by step for its scenes' starts and ends (docs/guides/multiplayer.md#events).
+    /// @coney-only network play's view of the scenes; the original keeps no such list
+    [[nodiscard]] std::vector<std::uint32_t> playingScenes() const;
     /// Whether a playing cinematic holds the scene state (`0x0051489c + 0x410`): the scene camera governs.
     [[nodiscard]] bool cinematicActive() const;
     /// Whether a scene holds an intro card before its camera (event 73), which sets `0x00512c44`: the room smoke is

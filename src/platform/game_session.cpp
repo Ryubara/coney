@@ -267,9 +267,18 @@ void GameSession::attachAudio(AudioOutput* audio) {
         [audio](hud::HudSoundHandle sound) { return audio->sounds().isPlaying(audio::VoiceHandle{sound}); });
     // The front end's banks, music and cues, and the scripts' sound bindings, go to the game's sound.
     audio::GameSound& game = audio->game();
-    m_flow->context().sound = &game;
+    // Through SoundEvents, so a network session hears what the scripts and gameplay play.
+    m_soundEvents.setInner(&game);
+    m_flow->context().sound = &m_soundEvents;
     game.connect(&m_flow->scripts(), &m_flow->context());
     m_flow->services().attachAudio(&game);
+}
+
+void GameSession::setGameEvents(GameEvents* events) {
+    m_soundEvents.setEvents(events);
+    m_flow->context().events = events;
+    CONEY_ASSERT(m_movieMode.has_value()); // made with the session
+    m_movieMode->setEvents(events);
 }
 
 void GameSession::startStory() { m_flow->start(); }

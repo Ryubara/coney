@@ -167,11 +167,21 @@ void addMessageBindings(LuaVm& vm, const BindingContext& context) {
     // `HUDSetObjective(slot, text, mode, silent, ms)`: ms 8000 when left out, 0 for an explicit nil
     // (docs/research/script-arguments.md).
     // @orig 0x0036f280 HUDSetObjective (unknown)
-    vm.registerFunction("HUDSetObjective", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
-                            hud.setObjective(binding::signedArg(args, 0), binding::string(args, 1),
-                                             binding::signedArg(args, 2), binding::booleanArg(args, 3),
-                                             binding::unsignedArg(args, 4, hud::kObjectiveMessageMs));
-                        }));
+    vm.registerFunction(
+        "HUDSetObjective", hudCall(context, [events = &context.events](hud::Hud& hud, std::span<const Value> args) {
+            const int slot = binding::signedArg(args, 0);
+            const std::string text = binding::string(args, 1);
+            const int mode = binding::signedArg(args, 2);
+            const bool silent = binding::booleanArg(args, 3);
+            const std::uint32_t ms = binding::unsignedArg(args, 4, hud::kObjectiveMessageMs);
+            hud.setObjective(slot, text, mode, silent, ms);
+            // Network play: the objective, for the guests' HUD (Coney's own).
+            raiseGameEvent(*events, GameEvent{.kind = GameEventKind::Objective,
+                                              .id = static_cast<std::uint32_t>(slot),
+                                              .value = (static_cast<std::uint32_t>(mode) << 1U) | (silent ? 1U : 0U),
+                                              .extra = ms,
+                                              .text = text});
+        }));
     // @orig 0x0036f360 HUDRemoveAllGoalText (unknown)
     vm.registerFunction("HUDRemoveAllGoalText",
                         hudCall(context, [](hud::Hud& hud, std::span<const Value>) { hud.removeGoalText(); }));
@@ -209,10 +219,18 @@ void addMessageBindings(LuaVm& vm, const BindingContext& context) {
                             hud.setGameTutorialText(boolArg(args, 0));
                         }));
     // @orig 0x0036e858 HUDSetAnnounceMsg (unknown)
-    vm.registerFunction("HUDSetAnnounceMsg", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
+    vm.registerFunction("HUDSetAnnounceMsg",
+                        hudCall(context, [events = &context.events](hud::Hud& hud, std::span<const Value> args) {
                             // stand-in: a negative number wraps (the original gives 0), a non-number string is true.
-                            hud.setAnnouncement(static_cast<int>(unsignedArg(args, 0)), binding::string(args, 1),
-                                                boolArg(args, 2));
+                            const auto kind = static_cast<int>(unsignedArg(args, 0));
+                            const std::string text = binding::string(args, 1);
+                            const bool flag = boolArg(args, 2);
+                            hud.setAnnouncement(kind, text, flag);
+                            // Network play: the message, for the guests' HUD (Coney's own).
+                            raiseGameEvent(*events, GameEvent{.kind = GameEventKind::HudMessage,
+                                                              .id = static_cast<std::uint32_t>(kind),
+                                                              .value = flag ? 1U : 0U,
+                                                              .text = text});
                         }));
     // `HUDShowMissionSummaryText(text, n)` does nothing in this build (0x001b3878 returns at once).
     // @orig 0x0036f0d0 HUDShowMissionSummaryText (unknown)

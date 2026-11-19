@@ -16,6 +16,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/error.h"
+#include "core/game_events.h"
 #include "gui/global_strings.h"
 #include "hud/hud.h"
 #include "scripting/lua_value.h"
@@ -112,6 +113,42 @@ TEST_CASE("HUDSetObjective reads slot, text, mode, silent and ms, 8000 by defaul
     REQUIRE(hud.checklist().slots[1].has_value());
     harness.call("HUDRemoveAllGoalText", {});
     CHECK_FALSE(hud.checklist().slots[0].has_value());
+}
+
+// Expected: unverified, #547 (the event is Coney's own network play; the original has none)
+TEST_CASE("HUDSetObjective raises its objective as a game event while recording", "[scripting][hud][events]") {
+    coney::hud::Hud hud;
+    Harness harness(&hud);
+    coney::GameEvents events;
+    harness.context.events = &events;
+    // Offline nothing is kept.
+    harness.call("HUDSetObjective", {Value(0.0), Value("Follow Ash"), Value(0.0)});
+    CHECK(events.size() == 0);
+    events.setRecording(true);
+    harness.call("HUDSetObjective", {Value(1.0), Value("Win"), Value(2.0), Value(1.0), Value(3000.0)});
+    const std::vector<coney::GameEvent> raised = events.take();
+    REQUIRE(raised.size() == 1);
+    CHECK(
+        raised[0] ==
+        coney::GameEvent{
+            .kind = coney::GameEventKind::Objective, .id = 1, .value = (2U << 1U) | 1U, .extra = 3000, .text = "Win"});
+    // The HUD shows it as before.
+    REQUIRE(hud.checklist().slots[1].has_value());
+}
+
+// Expected: unverified, #547 (the event is Coney's own network play; the original has none)
+TEST_CASE("HUDSetAnnounceMsg raises its message as a game event while recording", "[scripting][hud][events]") {
+    coney::hud::Hud hud;
+    Harness harness(&hud);
+    coney::GameEvents events;
+    events.setRecording(true);
+    harness.context.events = &events;
+    harness.call("HUDSetAnnounceMsg", {Value(5.0), Value("<DISPLAYTIME 4000>Go"), Value(1.0)});
+    const std::vector<coney::GameEvent> raised = events.take();
+    REQUIRE(raised.size() == 1);
+    CHECK(raised[0] ==
+          coney::GameEvent{
+              .kind = coney::GameEventKind::HudMessage, .id = 5, .value = 1, .text = "<DISPLAYTIME 4000>Go"});
 }
 
 TEST_CASE("the objective header takes the HUD string and the CfgHUDColor recording", "[scripting][hud]") {

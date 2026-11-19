@@ -6,10 +6,12 @@
 #include <cmath>
 #include <cstddef>
 #include <optional>
+#include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
+#include "core/game_events.h"
 #include "effects/particle_types.h"
 
 using coney::anim::Vec3;
@@ -44,6 +46,28 @@ TEST_CASE("the type table is sorted and finds its names exactly", "[particles]")
     CHECK(coney::effects::findParticleType("part_ominoussmoke") == nullptr);
     CHECK(coney::effects::findParticleType("PART_GUN_FLASH") == nullptr);
     CHECK(coney::effects::sheetName(ParticleSheet::PartPage1) == "part_page1");
+}
+
+// Expected: unverified, #547 (the event is Coney's own network play; the original has none)
+TEST_CASE("a spawn raises one particle start while recording, not for the systems it makes in turn",
+          "[particles][events]") {
+    ParticleSystems systems;
+    coney::GameEvents events;
+    systems.setEvents(&events);
+    // Offline nothing is kept.
+    REQUIRE(systems.spawn("spark", Vec3{1, 2, 3}) != nullptr);
+    CHECK(events.size() == 0);
+    events.setRecording(true);
+    REQUIRE(systems.spawn("part_fire", Vec3{1, 2, 3}, {}, 7, 40) != nullptr);
+    // A gun flash makes a puff of smoke itself: one start, the flash's.
+    REQUIRE(systems.spawn("part_gun_flash", Vec3{4, 5, 6}) != nullptr);
+    const std::vector<coney::GameEvent> raised = events.take();
+    REQUIRE(raised.size() == 2);
+    CHECK(raised[0] ==
+          coney::GameEvent{
+              .kind = coney::GameEventKind::ParticleStart, .subject = 7, .position = {1, 2, 3}, .text = "part_fire"});
+    CHECK(raised[1].text == "part_gun_flash");
+    CHECK(raised[1].subject == 0);
 }
 
 TEST_CASE("a spawned system keeps its handle, place and type; an unknown name is inert", "[particles]") {

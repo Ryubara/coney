@@ -7,9 +7,11 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "core/error.h"
 #include "core/pad.h"
+#include "net/event_channel.h"
 #include "net/link_quality.h"
 #include "net/protocol.h"
 #include "net/snapshot.h"
@@ -110,6 +112,11 @@ class NetClient {
     /// The snapshots decoded from the server this session: the newest's humans, and the history the next ones are
     /// decoded against. Empty until the first.
     [[nodiscard]] const SnapshotReceiver& snapshots() const { return m_snapshots; }
+    /// The server's game events this session, held until takeEvents() reaches their step.
+    [[nodiscard]] const EventReceiver& events() const { return m_events; }
+    /// The server's game events whose step is at most `step` (the server's step the client now shows), each once, in
+    /// order (EventReceiver::take()).
+    [[nodiscard]] std::vector<ArrivedEvent> takeEvents(std::uint32_t step) { return m_events.take(step); }
     /// The round trip and loss to the server.
     [[nodiscard]] const LinkQuality& quality() const { return m_quality; }
     /// One line for the Network page and the log: the state, and for an ended session why.
@@ -143,6 +150,7 @@ class NetClient {
     // The pads of the latest steps sent, by step % kMaxInputCommands, for the next InputCommands to repeat.
     std::array<PadSample, kMaxInputCommands> m_sent{};
     SnapshotReceiver m_snapshots;
+    EventReceiver m_events;
     std::uint32_t m_ackDue = 0; // the newest snapshot decoded since the last send(), to acknowledge; 0 for none
 };
 

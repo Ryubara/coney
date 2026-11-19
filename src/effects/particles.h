@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "animation/anim_math.h"
+#include "core/game_events.h"
 #include "effects/light_tasks.h"
 #include "effects/particle_types.h"
 
@@ -159,6 +160,11 @@ class ParticleSystems {
 
     /// Finds attached systems' parents through `locator` (empty: attached systems stay where they were spawned).
     void setLocator(Locator locator) { m_locator = std::move(locator); }
+    /// Raises each system spawn() starts on `events` (null: none; it must outlive the systems) as a ParticleStart,
+    /// for network play (docs/guides/multiplayer.md#events): only the start a caller asked for, not the systems that
+    /// start makes in turn (a flash's puff, an explosion's parts), which a guest's own start makes again.
+    /// @coney-only network play; the original has none
+    void setEvents(GameEvents* events) { m_events = events; }
 
     /// `Particle_Spawn`: a system of type `typeName` at `position` turned by `rotation`, following `parent` (0 for
     /// none), named by `handle` (0 for an engine effect). `colour` and `rect` are what a creator passes the types
@@ -279,7 +285,9 @@ class ParticleSystems {
     static bool stepStages(Particle& particle, float seconds);
 
     std::uint32_t m_random;
-    std::uint32_t m_serial = 0; // the last spawn's number
+    std::uint32_t m_serial = 0;     // the last spawn's number
+    GameEvents* m_events = nullptr; // setEvents()
+    bool m_spawning = false;        // spawn() is making a system's own systems, which raise no event
     Locator m_locator;
     std::optional<anim::Vec3> m_viewer;
     ViewTest m_viewTest;

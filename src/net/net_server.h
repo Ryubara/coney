@@ -11,6 +11,7 @@
 
 #include "core/error.h"
 #include "core/pad.h"
+#include "net/event_channel.h"
 #include "net/input_buffer.h"
 #include "net/link_quality.h"
 #include "net/protocol.h"
@@ -47,6 +48,7 @@ struct ServerClient {
     LinkQuality quality;
     InputBuffer input;        ///< their input commands; current() is this step's pad
     SnapshotSender snapshots; ///< the snapshots sent to them, and the newest they have acknowledged
+    EventSender events;       ///< the game events sent to them: each delivery's batches numbered from 1
 };
 
 /// Something the game should know happened, from takeEvents().
@@ -97,6 +99,10 @@ class NetServer {
     /// newest they have acknowledged (SnapshotSender::build()). Called once a step, after the simulation step and
     /// before send(), which flushes it.
     void sendSnapshots(std::uint32_t step, std::span<const SnapshotHuman> humans);
+    /// Sends each joined player the game events of the server's `step` (ordinals rising, toNetEvents()) in batches
+    /// (EventSender::build()): the reliable ones ReliableOrdered, the one-shots Unreliable. Called once a step, after
+    /// the simulation step and before send(), which flushes them. A player who joins later gets none of these.
+    void sendEvents(std::uint32_t step, std::span<const NetEvent> events);
     /// One step's sending: the Pings that are due, each joined player's InputTiming with theirs, then a flush.
     void send();
 

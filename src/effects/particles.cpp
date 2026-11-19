@@ -2,10 +2,12 @@
 #include "effects/particles.h"
 
 #include "core/assert.h"
+#include "core/game_events.h"
 
 #include <algorithm>
 #include <cmath>
 #include <numbers>
+#include <string>
 #include <utility>
 
 namespace coney::effects {
@@ -250,6 +252,15 @@ ParticleSystem* ParticleSystems::spawn(std::string_view typeName, anim::Vec3 pos
             system.offset = anim::subtract(position, *at);
         }
     }
+    // Network play (Coney's own): the start a caller asked for goes out as an event; what it makes in turn below does
+    // not, as a guest's own start makes it again.
+    if (!m_spawning) {
+        raiseGameEvent(m_events, GameEvent{.kind = GameEventKind::ParticleStart,
+                                           .subject = parent,
+                                           .position = {position.x, position.y, position.z},
+                                           .text = std::string(typeName)});
+    }
+    const bool outermost = !std::exchange(m_spawning, true);
     // The muzzle flash makes a puff of smoke where it fires (its Spawns link, docs/references/particles.md).
     const std::size_t index = m_systems.size() - 1;
     if (system.type->name == "part_gun_flash") {
@@ -261,6 +272,9 @@ ParticleSystem* ParticleSystems::spawn(std::string_view typeName, anim::Vec3 pos
         } else {
             spawnExplosionParts(position, rotation);
         }
+    }
+    if (outermost) {
+        m_spawning = false;
     }
     return &m_systems[index];
 }

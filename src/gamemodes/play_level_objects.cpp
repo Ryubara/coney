@@ -27,6 +27,7 @@
 #include "combat/player_combat.h"
 #include "combat/stick_games.h"
 #include "combat/throw_velocity.h"
+#include "core/game_events.h"
 #include "gamemodes/play_level_simulation.h"
 #include "hud/hud.h"
 #include "human/fighter.h"
@@ -1256,6 +1257,7 @@ bool PlayLevelSimulation::stepLockPick(const Pad& pad) {
     return true;
 }
 
+// @coney-only the level's glue: its world objects' step in the original's order, and their events
 void PlayLevelSimulation::stepObjects() {
     if (m_objects == nullptr) {
         return;
@@ -1328,6 +1330,12 @@ void PlayLevelSimulation::stepObjects() {
     // A broken prop goes for good at its update: its handlers hear message 2 and its record is never spawned again.
     for (const double removed : m_objects->props.takeRemoved()) {
         m_print(std::format("objects: prop {:.0f} removed\n", removed));
+        // Network play: the break, at the prop's place (its pieces and sound travel as their own events).
+        const world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(removed) : nullptr;
+        const anim::Vec3 at = record != nullptr ? recordPose(*record).position : anim::Vec3{};
+        raiseGameEvent(
+            gameEvents(),
+            GameEvent{.kind = GameEventKind::ObjectBreak, .subject = removed, .id = 0, .position = {at.x, at.y, at.z}});
         if (m_pickups != nullptr) {
             m_pickups->objectRemoved(removed);
         } else if (m_records != nullptr) {
@@ -1341,8 +1349,24 @@ void PlayLevelSimulation::stepObjects() {
         for (const world_objects::CarHitEffect& effect : m_carHitEffects) {
             m_print(std::format("objects: car {:.0f} part {} effect {}\n", effect.car, effect.part,
                                 static_cast<int>(effect.kind)));
+            raiseCarBreak(effect);
         }
     }
+}
+
+// Network play: a car's glass that breaks is an object break (its kind plus 1 as its id); its sparks, steam and smoke
+// are particles only, which travel as their own events.
+// @coney-only network play's event for a car's breaking glass
+void PlayLevelSimulation::raiseCarBreak(const world_objects::CarHitEffect& effect) {
+    using Kind = world_objects::CarHitEffectKind;
+    if (effect.kind == Kind::Sparks || effect.kind == Kind::Steam || effect.kind == Kind::HoodSmoke) {
+        return;
+    }
+    const anim::Vec3 at = effect.fromAtomic ? effect.carPosition : effect.position;
+    raiseGameEvent(gameEvents(), GameEvent{.kind = GameEventKind::ObjectBreak,
+                                           .subject = effect.car,
+                                           .id = static_cast<std::uint32_t>(effect.kind) + 1U,
+                                           .position = {at.x, at.y, at.z}});
 }
 
 std::size_t PlayLevelSimulation::standingObjectsOf(std::string_view typeName) const {

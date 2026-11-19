@@ -558,6 +558,7 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
     // handle in them.
     std::unique_ptr<SceneStage> m_stage;
     scenes::SceneSystem* m_scenes = nullptr;
+    std::vector<std::uint32_t> m_scenesPlaying; // the scenes playing at the last stepScenes(), for their events
     std::unique_ptr<scenes::SceneList> m_ownSceneList;
     std::unique_ptr<scenes::SceneSystem> m_ownScenes;
     // The --trace file (closed when unset) and the steps traced.

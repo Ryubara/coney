@@ -16,6 +16,7 @@ add_executable(coney_tests
     core/cpak_writer_test.cpp
     core/deferred_input_test.cpp
     core/event_log_test.cpp
+    core/game_events_test.cpp
     core/log_test.cpp
     core/frame_clock_test.cpp
     core/frame_rate_meter_test.cpp
@@ -99,6 +100,7 @@ add_executable(coney_tests
     gamemodes/movie_player_test.cpp
     movies/captions_test.cpp
     movies/movie_mode_test.cpp
+    gamemodes/sound_events_test.cpp
     gamemodes/start_up_flow_test.cpp
     gamemodes/rumble_start_test.cpp
     gamemodes/story_start_test.cpp
@@ -524,7 +526,7 @@ target_sources(coney_tests PRIVATE audio/adpcm_test.cpp audio/disc_sound_test.cp
 # (docs/guides/multiplayer.md).
 target_sources(coney_tests PRIVATE net/bit_stream_test.cpp net/input_buffer_test.cpp net/link_conditioner_test.cpp
                                    net/link_quality_test.cpp net/loopback_transport_test.cpp net/net_id_test.cpp net/protocol_test.cpp net/replicated_fields_test.cpp net/snapshot_test.cpp
-                                   net/jitter_buffer_test.cpp net/client_world_test.cpp net/state_digest_test.cpp net/game_humans_test.cpp net/session_record_test.cpp
+                                   net/jitter_buffer_test.cpp net/client_world_test.cpp net/event_channel_test.cpp net/state_digest_test.cpp net/game_humans_test.cpp net/session_record_test.cpp
                                    net/sessions_test.cpp platform/enet_transport_test.cpp platform/net_play_test.cpp
                                    platform/game_console_test.cpp platform/game_settings_test.cpp)
 # What the console takes from the running game, apart from the list above so that its tests' registration stays theirs.

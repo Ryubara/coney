@@ -278,7 +278,7 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
 | Pads sampled once per step through one `InputSource` and the pad record; the AI writes the same `PlayerRecord` | **Simulation inside `src/platform/`**: the level's simulation and its step are core now (`PlayLevelSimulation`, [Missions](#sub-missions)), the streaming, the lights, the glints, the rings and the HUD's sprites behind its presentation hooks, but the scenes' binding is still the platform's (#1449), and the character and level loaders need librw |
 | Script handles from one deterministic counter, and ordered `std::map<double, ...>` almost everywhere | **No copy or restore** of simulation state; `Human`, `Brain` and `Player` are not copyable, and humans link to each other by raw pointer |
 | Per-human and per-brain `CombatRandom` streams; cosmetic effects on their own streams | **`GameRandom`** is drawn by presentation-adjacent code too (system music, radios, effects), each on its own stream as the original's ([Maths](../research/maths.md#random)), so those draws no longer move the gameplay stream, but they still run in the simulation |
-| A headless mode that runs the whole simulation, and input scripts | **Sounds, particles and HUD changes** are direct calls from the simulation, with no event that could be sent |
+| A headless mode that runs the whole simulation, and input scripts | **Each player's HUD state** is not in the snapshot yet (#1447); the sounds, particles, messages, scenes and movies go through the [game events](multiplayer.md#events) |
 | `PlayerSnapshot` and `TargetSnapshot`, ready-made per-human presentation state | **Tuning singletons** the debug menus change live, and debug tools that change the game out of band |
 
 ### Loop, time and input {#sub-loop}
@@ -378,8 +378,7 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
   started particle system *n* at a place) start them on the client.
 - **Today:** particles, glints, fog, litter, smoke and light tasks each have their own fixed-seed stream; nothing in
   `human/`, `ai/` or `combat/` includes `effects/`. Ready.
-- **In the way:** particle starts are calls from simulation code, not events; they need the one call the
-  [checklist](#checklist) asks for.
+- **Built:** particle starts are game events (`ParticleSystems::spawn()`, [Game events](multiplayer.md#events)).
 
 ### Scripts (`scripting/`) {#sub-scripts}
 
@@ -437,8 +436,9 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
   reliable for music and loops.
 - **Today:** the simulation calls `GameSound` and the sound engine directly; the listener is player 1; system music
   draws from `GameRandom`, and the sound engine's randomisation calls back into it.
-- **In the way:** no sound event can be recorded today; the music's draws must stay on the server, with the client
-  playing what the server picked.
+- **Built:** the sounds, hits, music and the ambient loop the simulation plays are game events through
+  `SoundEvents` ([Game events](multiplayer.md#events)); speech lines and the object sounds are not yet. The music's
+  draws stay on the server, and the client plays what the server picked.
 
 ### Movies and scenes (`movies/`, `scenes/`) {#sub-movies}
 
@@ -446,7 +446,7 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
   **Owner:** server. **How:** reliable events ([Story](#story)).
 - **Today:** `SceneSystem` steps inside the simulation and holds the player; `MovieMode` stops the game clock and any
   pad's button skips it.
-- **In the way:** nothing beyond the events and the barrier.
+- **In the way:** the barrier; the starts and ends are game events ([Game events](multiplayer.md#events)).
 
 ### Debug tools (`debug/`) {#sub-debug}
 

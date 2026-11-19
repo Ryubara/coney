@@ -250,6 +250,7 @@ int main(int argc, char** argv) {
         coney::platform::startGameSound(*options, wad ? &*wad : nullptr);
     if (session) {
         session->attachAudio(audio.get());
+        session->setGameEvents(&netPlay.gameEvents());
         session->startStory();
     }
     // What the console's commands reach in the running game: the session, the pacing, the sound, the log's bug report.

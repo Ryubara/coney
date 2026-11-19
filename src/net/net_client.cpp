@@ -47,6 +47,7 @@ std::expected<void, Error> NetClient::connect(std::string_view address, std::uin
     m_stepsSinceHeard = 0;
     m_steps = 0;
     m_snapshots = SnapshotReceiver{};
+    m_events = EventReceiver{};
     m_ackDue = 0;
     return {};
 }
@@ -169,6 +170,14 @@ void NetClient::handle(const Message& message) {
         }
         if (*applied == SnapshotApplied::Applied) {
             m_ackDue = m_snapshots.newest();
+        }
+    } else if (const auto* batch = std::get_if<EventBatch>(&message); batch != nullptr) {
+        // A one-shots' batch is unreliable and may overtake Welcome: taken only once joined, as a snapshot.
+        if (m_state != ClientState::Connected) {
+            return;
+        }
+        if (!m_events.apply(*batch)) {
+            finish(ClientEnd::ProtocolError, true, ByeReason::ProtocolError);
         }
     } else {
         // A Hello, an InputCommands or a SnapshotAck only ever goes from a client to a server.

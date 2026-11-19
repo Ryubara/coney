@@ -16,9 +16,11 @@ game's side: hosting and joining from the debug menus' Network page or the comma
 and the guest's pad as the host's pad port 2 ([Player two](#player-two)); the network ids and the replicated-field
 tables ([Network ids](#net-ids)); and [snapshots](snapshots.md) of humans, delta-compressed against acknowledged
 baselines within a 1,200-byte budget; and [the client's world](client-world.md), the jitter buffer and the blends that
-draw a client's humans from them; the host's game's humans in those snapshots, sent to the guest every step; and
-the proof of it without a person: the [state digest](#digest), [two processes](#two-processes) over ENet in CI and
-[replays](#replays). The guest does not see the host's game yet: no client game mode draws the snapshots it decodes.
+draw a client's humans from them; the host's game's humans in those snapshots, sent to the guest every step;
+[game events](#events), what the host's game makes its players see or hear (a sound, a particle start, a HUD message,
+a scene or a movie) sent to the guest at its step; and the proof of it without a person: the [state digest](#digest),
+[two processes](#two-processes) over ENet in CI and [replays](#replays). The guest does not see the host's game yet:
+no client game mode draws the snapshots it decodes or plays the events.
 **Next:** the layers under [The plan](#plan).
 
 ## The model {#model}
@@ -61,6 +63,7 @@ the proof of it without a person: the [state digest](#digest), [two processes](#
 | The game's humans | `src/net/game_humans.h` | the server's humans as snapshots take them: their state read from the game, their ids |
 | State digest | `src/net/state_digest.h` | a hash of the replicated state at a step; the first difference; the digest files |
 | Session record | `src/net/session_record.h` | a host's record of port 2's pad and the session's events, and its replay |
+| Game events | `src/core/game_events.h`, `src/net/event_channel.h` | the one call the game raises what its players see or hear through, and those events' way to a client ([Game events](#events)) |
 | ENet | `src/platform/enet_transport.h` | the transport over UDP |
 
 `coney_net` is platform-neutral: no socket, no ENet and no operating-system code, the same rule as the rest of
@@ -122,7 +125,7 @@ the loopback; the Network page will put it in front of ENet.
 
 ## Protocol {#protocol}
 
-Each message is one packet: a message id byte, its fields, zero padding to a whole byte. `kProtocolVersion` (now 4)
+Each message is one packet: a message id byte, its fields, zero padding to a whole byte. `kProtocolVersion` (now 5)
 changes with any change to a layout or a meaning; a test pins the encoding byte for byte so a change cannot slip in
 unnoticed.
 
@@ -139,6 +142,7 @@ unnoticed.
 | 9 | InputTiming | server to client | the client's lead (zigzag varint, 32 bits at most), the target lead (8); since version 3 | unreliable |
 | 10 | Snapshot | server to client | the humans as a delta against an acknowledged snapshot ([The packet](snapshots.md#packet)); since version 4 | unreliable, sequenced |
 | 11 | SnapshotAck | client to server | the newest snapshot decoded (varint); since version 4 | unreliable |
+| 12 | EventBatch | server to client | a step's game events of one delivery ([The batch](#event-batch)); since version 5 | reliable, or unreliable for one-shots |
 
 **A pad** is connected (1 bit) and, only when connected, the button word (16 bits, the PS2 layout of `core/pad.h`),
 the four raw stick bytes (right x, right y, left x, left y) and, for each of the 12 pressure bytes, a bit saying
@@ -464,6 +468,76 @@ recorded port 2 over the run's own pads with no session, with the host's input s
 `--digest` lines again, step for step. `net::SessionReplay` reads a record strictly (a malformed line or a step
 recorded twice is refused, naming the line) and ignores the events.
 
+## Game events {#events}
+
+What the simulation makes a player see or hear, beyond the state snapshots carry, travels as **game events**: a sound,
+a hit, a particle start, an object breaking, a HUD message, an objective, the music, the ambient loop, a scene or a
+movie starting or ending ([The networking checklist](network-architecture.md#checklist), item 8). Before them these
+were direct calls from the simulation, which a guest could neither see nor hear.
+
+**The one call.** The simulation raises each through `coney::GameEvents::raise()` (`src/core/game_events.h`). It keeps
+an event only while `NetPlay` hosts (`GameEvents::recording()`); offline, joined, or with no session, it drops it, so a
+one-player game is unchanged and pays one test of a flag. An event names its human or object by script handle, never
+by pointer. `NetPlay` owns the one `GameEvents` of a run, and `GameSession::setGameEvents()` hands it to the places the
+simulation's effects pass:
+
+| Where | Raises | How |
+| --- | --- | --- |
+| `coney::SoundEvents` (`src/gamemodes/sound_events.h`), the binding context's sound | Sound2D, Sound3D, HumanSound (an animation sound, the held sound's stop, rage's start), Hit (an impact's materials), MusicStart, MusicStop, LoopStart, LoopStop | it wraps the game's sound: every call goes on unchanged, with what it returns, and the ones a player hears are raised first |
+| `effects::ParticleSystems::spawn()` | ParticleStart (type, place, parent) | only the start asked for, not the systems that start makes in turn (a flash's puff, an explosion's parts), which a guest's own start makes again |
+| The bindings `HUDSetObjective` and `HUDSetAnnounceMsg` | Objective, HudMessage | after the HUD has it |
+| `PlayLevelSimulation::stepObjects()` | ObjectBreak: a prop that breaks (id 0), a car's glass (its hit effect's kind plus 1) | the break's pieces and sound are their own events |
+| `PlayLevelMode::stepScenes()` | SceneStart, SceneEnd | the scenes playing (`SceneSystem::playingScenes()`) compared with the step before (`raiseSceneChanges()`) |
+| `movies::MovieMode` | MovieStart (name, skippable), MovieEnd (name, skipped) | the debug menu's movies raise none |
+
+**Delivery.** One-shots (the sounds, hits, particle starts and breaks) go **Unreliable**: a lost one is a sound
+nobody misses, and one resent late would play out of time. The music, the loop, the messages, the objectives, the
+scenes and the movies go **ReliableOrdered** (`reliableGameEvent()`). After each step `NetPlay` takes the step's events
+and the server sends each joined player that step's batches (`NetServer::sendEvents()`, before the step's flush),
+numbered by the host's step counted from 0 (`NetPlay::steps()`). A player who joins later gets none of the events
+before. Each event's subject travels as the network id `NetPlay::setEventSubjectIds()` maps its handle to; until the
+game's humans and objects carry ids in a session, none is set and every subject travels as no id.
+
+**On the client.** `net::EventReceiver` (in `NetClient`) holds each decoded event until its step is asked for
+(`NetClient::takeEvents(step)`, `NetPlay::takeArrivedEvents(step)`), then hands it over once, in step order and
+within a step in the order it was raised (its ordinal), whichever delivery brought it. A repeated batch is dropped by
+its sequence (one-shots remember the last 64); a one-shot whose step was already handed over is dropped as late; a
+reliable event is handed over at the next take however late it comes. Nothing plays the events on a guest yet: the
+client game mode that draws the snapshots will, and each player's HUD state in the snapshot is #1447.
+
+**For the session record.** `coney::describe(const GameEvent&)` gives an event's one-line text (`sound3d id=0x22
+at=1.500,-2.000,0.250`), the form a session record writes beside its `event STEP TEXT` lines.
+
+### The batch {#event-batch}
+
+`EventBatch` (message 12): reliable (1 bit), the sequence (a varint, from 1 per delivery and player), the server's step
+(a varint), the number of events less one (8 bits, so 1 to 256), then each event: its kind (8 bits), its ordinal (a
+varint, 16 bits at most), then only the fields its kind carries (`gameEventFields()`), in this order: the subject's
+network id (22 bits), the id, value and extra (varints), the position (three exact 32-bit floats), the text (at most
+255 bytes). A sound is about 7 bytes. `EventSender` starts a new batch past 256 events or 1,200 bytes. Decoding is
+strict: an unknown kind, an event of the other delivery, ordinals that do not rise, sequence 0 or trailing bytes are
+refused, and a batch that repeats a held step and ordinal under another sequence is a protocol error.
+
+| Kind | Id | Fields |
+| --- | --- | --- |
+| Sound2D | 1 | id: the sound's hash |
+| Sound3D | 2 | id, position |
+| HumanSound | 3 | subject, id (the `SA` id), value (0 animation sound, 1 the held sound's stop, 2 rage's start), position |
+| Hit | 4 | subject, id (striking material), value (struck material), position |
+| MusicStart | 5 | id (track), value (bit 0 looping, bit 1 system music), extra (fade in bars) |
+| MusicStop | 6 | none |
+| LoopStart | 7 | id (the ambient track) |
+| LoopStop | 8 | none |
+| ParticleStart | 9 | subject (parent), position, text (type) |
+| ObjectBreak | 10 | subject, id (how), position |
+| HudMessage | 11 | id (kind), value (flag), text |
+| Objective | 12 | id (slot), value (mode shifted left by 1, bit 0 silent), extra (milliseconds), text |
+| SceneStart, SceneEnd | 13, 14 | id (the scene) |
+| MovieStart, MovieEnd | 15, 16 | value (skippable; skipped), text (name) |
+
+Speech lines, the HUD's own cues and the glass panes' and doors' sounds (which play through the object sounds, not the
+binding context's sound) raise no event yet.
+
 ## Testing {#testing}
 
 Everything above `EnetTransport` is tested on the loopback, frame by frame with no real time, in `tests/net/`: the
@@ -491,8 +565,12 @@ InputCommands' and InputTiming's bytes; `tests/net/state_digest_test.cpp` covers
 moved by any change), the first difference, the digest lines and their comparison; `tests/net/game_humans_test.cpp`
 reads synthetic humans' state and ids from their brains; `tests/net/session_record_test.cpp` covers the record's lines
 and the replay; `tests/platform/net_game_test.cpp` covers `NetGame`'s refusals, its replay of port 2, its record
-lines and its notes; `net_play_test.cpp` also checks the host's snapshots of its game's humans against the guest's digests;
-the [two-process checks](#two-processes) run `coney` itself;
+lines and its notes; `net_play_test.cpp` also checks the host's snapshots of its game's humans against the guest's digests,
+and sends a host's events to its guest; `tests/net/event_channel_test.cpp` pins a batch's bytes, refuses broken ones,
+covers the sender's batches and the receiver's repeats, late one-shots and order, and over the loopback hands every
+kind of event raised on the server over once on the client at its step, with a clean link and with loss, repeats and
+reordering; `tests/core/game_events_test.cpp`, `tests/gamemodes/sound_events_test.cpp` and the particle, HUD binding
+and movie tests cover the one call and the places that raise; the [two-process checks](#two-processes) run `coney` itself;
 `tests/gamemodes/game_mode_stack_test.cpp` checks that `beforeStep` comes before the pads are read;
 `tests/debug/net_page_test.cpp` drives the Network page over a fake
 `NetControls`; and the `coney.hosts_headless` smoke test runs `coney --headless --frames 3 --host 127.0.0.1:0`.
@@ -512,5 +590,6 @@ Each step is a pull request that builds and is tested on its own.
    and interpolation (built: [The client's world](client-world.md)), the game's humans in them (built: [The game's
    humans](#game-humans)), a client game mode that draws them, and its own follow camera. The state digest,
    two-process tests and replays (built: [Proof without a person](#proof)).
-6. **AI humans, events, mission state:** the rest of what a client must see and hear, events reliable.
+6. **AI humans, events, mission state:** the rest of what a client must see and hear: the game events (built: [Game
+   events](#events)), each player's HUD state in the snapshot (#1447), the AI humans and the mission state.
 7. **Prediction:** the local player predicted and corrected from the server's snapshots.

@@ -6,6 +6,7 @@
 #include <format>
 #include <utility>
 
+#include "core/game_events.h"
 #include "core/pads.h"
 #include "gamemodes/game_mode_stack.h"
 #include "graphics/screen.h"
@@ -105,6 +106,7 @@ const CaptionRecord* MovieMode::caption() const {
     return captions.captions.visible(subtitles);
 }
 
+// @coney-only opens the next queued movie for the mode (the original's Movie_Play opens it in place)
 bool MovieMode::start(std::string name, MovieRequest request) {
     auto decoder = m_open(name);
     if (!decoder) {
@@ -164,10 +166,17 @@ bool MovieMode::start(std::string name, MovieRequest request) {
     ++m_counts.movies;
     m_log(std::format("movie: {} playing ({} frames at {:.2f} a second{})\n", playing->name, playing->info.frameCount,
                       playing->info.frameRate(), playing->info.hasAudio ? ", with sound" : ""));
+    // The movie's start, for a network session's guests (a debug movie is this game's own).
+    if (!playing->request.debug) {
+        raiseGameEvent(
+            m_events,
+            GameEvent{.kind = GameEventKind::MovieStart, .value = playing->skippable ? 1U : 0U, .text = playing->name});
+    }
     m_current = std::move(playing);
     return true;
 }
 
+// @coney-only ends the movie for the mode (the original's Movie_Play closes it in place)
 void MovieMode::finish(bool skipped) {
     if (!m_current) {
         return;
@@ -188,6 +197,11 @@ void MovieMode::finish(bool skipped) {
     }
     m_log(std::format("movie: {} {} after {} frames\n", m_current->name, skipped ? "skipped" : "ended",
                       m_current->decoded));
+    // The movie's end, for a network session's guests.
+    if (!m_current->request.debug) {
+        raiseGameEvent(m_events,
+                       GameEvent{.kind = GameEventKind::MovieEnd, .value = skipped ? 1U : 0U, .text = m_current->name});
+    }
     m_current.reset();
     // Black until whoever called fades in (Movie_Play leaves both buffers black).
     m_texture = nullptr;
