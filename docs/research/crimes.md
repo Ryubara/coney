@@ -534,11 +534,14 @@ steps, every draw from the gameplay generator (`0x006eb880`), `rand(a, b)` `a` t
 
 1. No brain: nothing.
 2. **The pocket** (`+0x250`, an item): pickups of that item's object (its inventory entry's name,
-   `InventoryBlock_GetEntry` `0x0041e3c0`, confirmed (code)), at his feet 0.5 m up, `+0x254` of them (a signed byte),
-   with no removal time. A **dealer** (brain type 5) drops one instead (the call's second argument), 1 m out into the first
-   neighbour sector that is not blocked (`Sectors_IsBlocked`, `Sectors_GetPoint` at 1 m; all eight blocked: sector 0;
-   [AI: neighbour sectors](ai-moving.md#neighbour-sectors)). Unless he is a dealer or his ped type (`+0x26c`) is 5,
-   nothing more is dropped.
+   `InventoryBlock_GetEntry` `0x0041e3c0`, confirmed (code)), `+0x254` of them (a signed byte), with no removal time.
+   The drop keeps one point, his feet at first, and raises it 0.5 m before every object it makes (`0x00232dc0`), so
+   the pocket's objects stack at his feet 0.5 m, 1 m, 1.5 m ... up. A **dealer** (brain type 5) drops one instead
+   (the call's second argument), 1 m out into the first neighbour sector that is not blocked (`Sectors_IsBlocked`,
+   `Sectors_GetPoint` at 1 m; all eight blocked: sector 0; [AI: neighbour sectors](ai-moving.md#neighbour-sectors)),
+   0.5 m up there, and his next object starts again from his feet (`0x00232e64`). Unless he is a dealer or his ped
+   type (`+0x26c`) is 5, nothing more is dropped; a ped-type-5 human who is no dealer drops his next object 0.5 m above
+   the last of the pocket's.
 3. **Power cuffs**: a human with cuffs (`Human_GetCuffCount`: a cop always one, another AI `+0x378`, a player item 5)
    draws `rand(0, 100)`; below 51, with game state `+0x158` set or unlock (6, 14), he drops `dyn_powercuffs` (item 5's
    removal time) and nothing else.
@@ -554,15 +557,16 @@ steps, every draw from the gameplay generator (`0x006eb880`), `rand(a, b)` `a` t
     - any other AI human: **all** his money (`+0x370`);
     - a player: `rand(min, max)` of his category, at most what his inventory holds, taken from it (notifying).
 
-   One dollar or more makes a `dyn_money` pickup holding the amount (`+0x124`) at his feet, 0.5 m up, with item 2's
-   removal time, and his money becomes 0; less leaves his money as it was.
+   One dollar or more makes a `dyn_money` pickup holding the amount (`+0x124`), 0.5 m above the drop's point (his
+   feet when nothing came before it), with item 2's removal time, and his money becomes 0; less leaves his money as it was.
 
 Watched in the original (confirmed (runtime), run r-20261119-down-drop-money): in the `level99` yard an AI of brain
 type 2 given $5, made to run `Human_OnHealthOut`, stored 5 in the new object's `+0x124` (`0x00233474`), was left with
 $0, and the object stood at his feet's height + 0.5 m with its removal time set.
 
 The removal time (`WorldObject_SetRespawnTimer`, [Objects](objects.md)) is now + the item's inventory duration
-(`InventoryBlock_GetDuration` `0x0041e348`), confirmed (code); once it passes the object can no longer be taken and vanishes.
+(`InventoryBlock_GetDuration` `0x0041e348`), confirmed (code); once it passes the object can no longer be taken
+and vanishes.
 
 So `level87` chapter 3's early Destroyers, given $5 each by their constructor (`EDConstructor`, `HuSetMoney`), leave
 $5 each when beaten: the price of one can of paint ([GoalDealer](ai-scripting.md#dealer)).
