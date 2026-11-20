@@ -1641,7 +1641,7 @@ breaks. Confirmed (code) unless marked:
    1 the right. That leaf takes the same model again and is sent message `0x19` with it, whose handler
    (`SubSwingingDoor_OnMessage`, `0x003fb430`) sets the model and stores it in `+0xc4`. So a 0 damages the left leaf
    only and a 1 both; a leaf once damaged stays so, since nothing gives the right leaf its whole model back.
-   Confirmed (runtime) for both draws, run r-20261120-cabinet-door-leaf-models: the right leaf's word changed in one
+   Confirmed (runtime), run r-20261120-cabinet-door-leaf-models, for both draws: the right leaf's word changed in one
    run, the left's in the other, and the screenshots show one leaf bent in the second run and both in the first.
 5. **A burst** (`Particles_Burst`, `0x003c6038`, size 0.07, one particle) 1 m above the chosen leaf's hinge: the
    door's position for the left leaf, the door's position plus its rotation × (−2w, 0, 0) for the right, pushed
