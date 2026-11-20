@@ -1403,7 +1403,7 @@ int main(int argc, char** argv) {
         }
     };
     if (const std::optional<std::string>& recordPath = options->recordPath; recordPath) {
-        if (!renderer.drawsPixels()) {
+        if (!renderer.drawsFrames()) {
             std::fprintf(stderr, "coney: --record needs a window that draws\n");
             return 1;
         }

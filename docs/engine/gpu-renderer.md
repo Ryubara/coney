@@ -17,8 +17,8 @@ default; 1 the GPU renderer), and test mode and `--render-references` take GL3 w
 `src/core/renderer_choice.h`). The setting is read from the file before the renderer starts,
 ahead of the full load of the overrides, and shows on the debug menus' Tunables page under *Display*; a change there
 applies at the next start. The release build takes `--renderer` but keeps no overrides file. `--renderer gpu` is refused
-with `--headless`, `--load`, `--record` and `--render-references`: it needs a window, hands no frame to the clip
-recorder, and the reference renders are GL3's offscreen. It takes `--screenshot` ([The capture](#capture)).
+with `--headless`, `--load` and `--render-references`: it needs a window, and the reference renders are GL3's
+offscreen. It takes `--screenshot` and `--record` ([The capture](#capture)).
 
 ## The way back to GL3 {#way-back}
 
@@ -209,6 +209,14 @@ pixels are written as a PNG with alpha 255, as the GL3 renderer writes its read-
 whether or not the window showed it. A build without the shaders (`-DCONEY_SHADERS=OFF`, [The shader
 build](../guides/shaders.md)) cannot draw: its GPU renderer clears each frame to the frame's colour and presents, and a
 capture fails saying so.
+
+`--record` ([Recording a clip](../guides/running-options.md#record)) works on it too: while a frame tap is set
+(`RenderEngine::setFrameTap()`), every frame's target is also copied before the overlays draw over it (the developer
+overlay, the console bar), into a second buffer (`GpuRenderer::ReadBack::Game`, the screenshot's being `Picture`, after
+them), waited for with the same fence, and the logical screen's rectangle of it handed to the tap
+(`RenderEngine::tapGpuFrame()`), as the GL3 renderer reads that rectangle from its frame buffer before the debug menus.
+So a clip on either renderer shows the game alone, and `clips pair --renderer gpu` records the GPU renderer's picture.
+Each recorded frame waits for the GPU, which test mode's fixed step allows.
 
 ## What the scene assets cost {#scene-assets}
 

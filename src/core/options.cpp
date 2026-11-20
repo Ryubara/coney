@@ -462,16 +462,15 @@ std::expected<void, Error> checkReferenceRenderer(const Options& options) {
     return {};
 }
 
-// Refuses `--renderer gpu` where it cannot work: part of checkCombinations(). It opens a window of its own, hands no
-// frame to the clip recorder, and the reference renders are GL3's offscreen; a screenshot it takes.
+// Refuses `--renderer gpu` where it cannot work: part of checkCombinations(). It opens a window of its own, and the
+// reference renders are GL3's offscreen; a screenshot and a clip (`--record`) it takes.
 std::expected<void, Error> checkRenderer(const Options& options) {
     if (options.renderer != RendererKind::Gpu) {
         return {};
     }
-    if (options.headless || !options.loads.empty() || options.recordPath.has_value() ||
-        options.renderReferences.has_value()) {
-        return invalidArgument("--renderer gpu opens a window and records no clip or reference render, so it cannot "
-                               "be combined with --headless, --load, --record or --render-references");
+    if (options.headless || !options.loads.empty() || options.renderReferences.has_value()) {
+        return invalidArgument("--renderer gpu opens a window and draws no reference render, so it cannot be combined "
+                               "with --headless, --load or --render-references");
     }
     return {};
 }

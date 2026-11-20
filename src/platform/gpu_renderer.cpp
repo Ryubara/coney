@@ -245,8 +245,10 @@ GpuRenderer::~GpuRenderer() {
     if (m_upload != nullptr) {
         SDL_ReleaseGPUTransferBuffer(m_device, m_upload);
     }
-    if (m_download != nullptr) {
-        SDL_ReleaseGPUTransferBuffer(m_device, m_download);
+    for (const Download& download : m_downloads) {
+        if (download.buffer != nullptr) {
+            SDL_ReleaseGPUTransferBuffer(m_device, download.buffer);
+        }
     }
 }
 
@@ -562,21 +564,22 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
     return m_target.texture;
 }
 
-bool GpuRenderer::recordReadBack(SDL_GPUCommandBuffer* commands) {
+bool GpuRenderer::recordReadBack(SDL_GPUCommandBuffer* commands, ReadBack at) {
     if (m_target.texture == nullptr) {
         return false;
     }
+    Download& download = m_downloads[static_cast<std::size_t>(at)];
     const auto bytes = static_cast<std::uint32_t>(m_target.width) * static_cast<std::uint32_t>(m_target.height) * 4;
-    if (m_download == nullptr || m_downloadCapacity < bytes) {
-        if (m_download != nullptr) {
-            SDL_ReleaseGPUTransferBuffer(m_device, m_download);
+    if (download.buffer == nullptr || download.capacity < bytes) {
+        if (download.buffer != nullptr) {
+            SDL_ReleaseGPUTransferBuffer(m_device, download.buffer);
         }
         SDL_GPUTransferBufferCreateInfo info{};
         info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_DOWNLOAD;
         info.size = bytes;
-        m_download = SDL_CreateGPUTransferBuffer(m_device, &info);
-        m_downloadCapacity = m_download != nullptr ? bytes : 0;
-        if (m_download == nullptr) {
+        download.buffer = SDL_CreateGPUTransferBuffer(m_device, &info);
+        download.capacity = download.buffer != nullptr ? bytes : 0;
+        if (download.buffer == nullptr) {
             return false;
         }
     }
@@ -586,27 +589,28 @@ bool GpuRenderer::recordReadBack(SDL_GPUCommandBuffer* commands) {
     from.w = static_cast<Uint32>(m_target.width);
     from.h = static_cast<Uint32>(m_target.height);
     from.d = 1;
-    const SDL_GPUTextureTransferInfo to{m_download, 0, static_cast<Uint32>(m_target.width),
+    const SDL_GPUTextureTransferInfo to{download.buffer, 0, static_cast<Uint32>(m_target.width),
                                         static_cast<Uint32>(m_target.height)};
     SDL_DownloadFromGPUTexture(copy, &from, &to);
     SDL_EndGPUCopyPass(copy);
-    m_downloadSize = graphics::Extent{m_target.width, m_target.height};
+    download.size = graphics::Extent{m_target.width, m_target.height};
     return true;
 }
 
-std::vector<std::uint8_t> GpuRenderer::readBack() {
-    const graphics::Extent size = std::exchange(m_downloadSize, graphics::Extent{});
-    if (m_download == nullptr || size.width <= 0 || size.height <= 0) {
+std::vector<std::uint8_t> GpuRenderer::readBack(ReadBack at) {
+    Download& download = m_downloads[static_cast<std::size_t>(at)];
+    const graphics::Extent size = std::exchange(download.size, graphics::Extent{});
+    if (download.buffer == nullptr || size.width <= 0 || size.height <= 0) {
         return {};
     }
     const std::size_t bytes = static_cast<std::size_t>(size.width) * static_cast<std::size_t>(size.height) * 4;
-    const auto* mapped = static_cast<const std::uint8_t*>(SDL_MapGPUTransferBuffer(m_device, m_download, false));
+    const auto* mapped = static_cast<const std::uint8_t*>(SDL_MapGPUTransferBuffer(m_device, download.buffer, false));
     if (mapped == nullptr) {
         return {};
     }
     // SDL's textures count rows from the top on every backend, as images do.
     std::vector<std::uint8_t> rgba(mapped, mapped + bytes);
-    SDL_UnmapGPUTransferBuffer(m_device, m_download);
+    SDL_UnmapGPUTransferBuffer(m_device, download.buffer);
     return rgba;
 }
 

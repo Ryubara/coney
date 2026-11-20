@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
@@ -75,14 +76,20 @@ class GpuRenderer {
     SDL_GPUTexture* record(SDL_GPUCommandBuffer* commands, const graphics::FrameDescription& frame,
                            graphics::Extent size, const graphics::AssetStore* store = nullptr);
 
-    /// Records a copy of the target, as the last record() drew it, into memory the CPU reads: call it after record() in
-    /// the same command buffer, submit with a fence and wait for it, then take the pixels with readBack(). False when
-    /// there is no target or SDL refused the buffer.
-    bool recordReadBack(SDL_GPUCommandBuffer* commands);
+    /// Where in a frame a read-back is taken: each has its own buffer, so one frame can be read at both.
+    enum class ReadBack : std::uint8_t {
+        Picture, ///< the frame as the window shows it, the overlays included: a screenshot
+        Game,    ///< the frame before the overlays draw over it: a clip's frame
+    };
 
-    /// The pixels recordReadBack() copied, RGBA with rows top first, at the last record()'s size, once the GPU has run
-    /// the commands; empty when there were none or SDL refused to map them.
-    [[nodiscard]] std::vector<std::uint8_t> readBack();
+    /// Records a copy of the target, as the commands recorded so far leave it, into `at`'s memory the CPU reads: call
+    /// it after record() in the same command buffer, submit with a fence and wait for it, then take the pixels with
+    /// readBack(). False when there is no target or SDL refused the buffer.
+    bool recordReadBack(SDL_GPUCommandBuffer* commands, ReadBack at = ReadBack::Picture);
+
+    /// The pixels recordReadBack() copied for `at`, RGBA with rows top first, at the last record()'s size, once the GPU
+    /// has run the commands; empty when there were none or SDL refused to map them.
+    [[nodiscard]] std::vector<std::uint8_t> readBack(ReadBack at = ReadBack::Picture);
 
     /// How many textures it keeps uploaded for the 2D passes.
     [[nodiscard]] std::size_t textureCount() const { return m_textures.size(); }
@@ -153,9 +160,13 @@ class GpuRenderer {
     std::uint32_t m_indexCapacity = 0;
     SDL_GPUTransferBuffer* m_upload = nullptr;
     std::uint32_t m_uploadCapacity = 0;
-    SDL_GPUTransferBuffer* m_download = nullptr;
-    std::uint32_t m_downloadCapacity = 0;
-    graphics::Extent m_downloadSize; // the size recordReadBack() copied, while its pixels wait to be read
+    /// A buffer the CPU reads a copy of the target from.
+    struct Download {
+        SDL_GPUTransferBuffer* buffer = nullptr;
+        std::uint32_t capacity = 0;
+        graphics::Extent size; // the size recordReadBack() copied, while its pixels wait to be read
+    };
+    std::array<Download, 2> m_downloads; // one for each ReadBack
     graphics::UploadCache<OwnedTexture> m_textures;
     std::uint64_t m_frame = 0; // record()s so far: the cache's clock
 };

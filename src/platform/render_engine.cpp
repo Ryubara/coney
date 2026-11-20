@@ -782,9 +782,14 @@ void RenderEngine::present() {
         // taken here, between frames.
         m_gpu->choosePresentMode(m_vsync, m_fpsCap);
         CONEY_PERF_ZONE("present.swap");
-        GpuPresenter::Presented presented = m_gpu->present(m_frame, m_frameSize, captureThisFrame, &m_assets.store());
+        GpuPresenter::Presented presented =
+            m_gpu->present(m_frame, m_frameSize, captureThisFrame, &m_assets.store(), static_cast<bool>(m_frameTap));
         if (presented.shown) {
             ++m_shown;
+        }
+        // A clip takes the frame as read back before the debug menus drew over it, as on GL3 above.
+        if (m_frameTap && presented.game) {
+            tapGpuFrame(*presented.game);
         }
         if (captureThisFrame) {
             if (presented.capture && presented.capture->has_value()) {
@@ -840,6 +845,28 @@ void RenderEngine::tapFrame() {
     }
     for (std::size_t i = 3; i < m_tapFrame.size(); i += 4) {
         m_tapFrame[i] = 255; // the screen shows no alpha (see captureBackBuffer())
+    }
+    m_frameTap(m_tapFrame, graphics::Extent{rect.width, rect.height});
+}
+
+void RenderEngine::tapGpuFrame(std::span<const std::uint8_t> rgba) {
+    const graphics::ScreenRect rect = m_viewport;
+    const auto frameWidth = static_cast<std::size_t>(m_frameSize.width);
+    if (rect.width <= 0 || rect.height <= 0 || rect.x < 0 || rect.y < 0 || rect.x + rect.width > m_frameSize.width ||
+        rect.y + rect.height > m_frameSize.height ||
+        rgba.size() < frameWidth * static_cast<std::size_t>(m_frameSize.height) * 4) {
+        return;
+    }
+    // The logical screen's rectangle, cut out of the whole frame (rows from the top, as SDL's GPU API reads them).
+    const std::size_t rowBytes = static_cast<std::size_t>(rect.width) * 4;
+    m_tapFrame.resize(rowBytes * static_cast<std::size_t>(rect.height));
+    for (std::size_t y = 0; y < static_cast<std::size_t>(rect.height); ++y) {
+        const std::size_t from =
+            (((static_cast<std::size_t>(rect.y) + y) * frameWidth) + static_cast<std::size_t>(rect.x)) * 4;
+        std::memcpy(&m_tapFrame[y * rowBytes], &rgba[from], rowBytes);
+    }
+    for (std::size_t i = 3; i < m_tapFrame.size(); i += 4) {
+        m_tapFrame[i] = 255; // the screen shows no alpha, as tapFrame() has it
     }
     m_frameTap(m_tapFrame, graphics::Extent{rect.width, rect.height});
 }

@@ -134,7 +134,7 @@ void GpuPresenter::choosePresentMode(bool vsync, std::uint32_t fpsCap) {
 std::string GpuPresenter::sceneProblem() const { return m_renderer ? m_renderer->sceneProblem() : std::string(); }
 
 GpuPresenter::Presented GpuPresenter::present(const graphics::FrameDescription& frame, graphics::Extent size,
-                                              bool capture, const graphics::AssetStore* store) {
+                                              bool capture, const graphics::AssetStore* store, bool game) {
     Presented presented;
     if (!m_renderer) {
         presented.shown = clearAndPresent(frame.start().clear);
@@ -153,6 +153,8 @@ GpuPresenter::Presented GpuPresenter::present(const graphics::FrameDescription& 
     // 1. The frame, drawn into the renderer's own target, then whatever draws over the picture (the developer overlay)
     // into the same target, so the window and a capture both hold it.
     SDL_GPUTexture* drawn = m_renderer->record(commands, frame, size, store);
+    // A clip's frame is copied before the overlays draw over it (a clip shows the game alone).
+    const bool gameRead = game && drawn != nullptr && m_renderer->recordReadBack(commands, GpuRenderer::ReadBack::Game);
     if (drawn != nullptr) {
         for (const auto& [handle, overlay] : m_overlays) {
             overlay(commands, drawn, size);
@@ -189,22 +191,34 @@ GpuPresenter::Presented GpuPresenter::present(const graphics::FrameDescription& 
             }
         }
     }
-    // 3. The read-back: the commands submitted with a fence and waited for, so the copy can be read.
-    if (capture && drawn != nullptr && m_renderer->recordReadBack(commands)) {
+    // 3. The read-backs: the commands submitted with a fence and waited for, so the copies can be read.
+    const bool pictureRead = capture && drawn != nullptr && m_renderer->recordReadBack(commands);
+    if (pictureRead || gameRead) {
         SDL_GPUFence* fence = SDL_SubmitGPUCommandBufferAndAcquireFence(commands);
         if (fence == nullptr) {
-            presented.capture = failure("submitting the frame to read it back");
+            if (capture) {
+                presented.capture = failure("submitting the frame to read it back");
+            }
             return presented;
         }
         SDL_WaitForGPUFences(m_device, true, &fence, 1);
         SDL_ReleaseGPUFence(m_device, fence);
-        std::vector<std::uint8_t> rgba = m_renderer->readBack();
-        if (rgba.empty()) {
-            presented.capture = failure("reading the frame back");
-        } else {
-            presented.capture = std::move(rgba);
+        if (gameRead) {
+            if (std::vector<std::uint8_t> rgba = m_renderer->readBack(GpuRenderer::ReadBack::Game); !rgba.empty()) {
+                presented.game = std::move(rgba);
+            }
         }
-        return presented;
+        if (pictureRead) {
+            std::vector<std::uint8_t> rgba = m_renderer->readBack();
+            if (rgba.empty()) {
+                presented.capture = failure("reading the frame back");
+            } else {
+                presented.capture = std::move(rgba);
+            }
+        } else if (capture) {
+            presented.capture = failure("copying the frame to read it back");
+        }
+        return presented; // submitted with the fence
     }
     if (capture) {
         presented.capture =
