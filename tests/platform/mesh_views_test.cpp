@@ -25,6 +25,7 @@
 #include "debug/tunables.h"
 #include "graphics/level_lighting.h"
 #include "platform/character_mesh.h"
+#include "platform/draw_calls.h"
 #include "platform/mesh_view_hook.h"
 #include "platform/mesh_views.h"
 #include "platform/perf_probes.h"
@@ -124,6 +125,85 @@ TEST_CASE("the mesh views draw a model as the game does while off and put its ma
         views.draw(mesh.bloodAtomic(), coney::platform::DrawKind::Humans, true, shaded);
         CHECK(shadedDraws == 2);
     }
+}
+
+namespace {
+
+// How many times staleDrawElements was called.
+int staleDraws = 0;
+
+// Stands in for an OpenGL entry point an earlier renderer loaded and left behind: glad keeps its pointers after that
+// renderer's context is gone, so a NULL engine started after it still sees them set (issue #1268).
+void APIENTRY staleDrawElements(GLenum /*mode*/, GLsizei /*count*/, GLenum /*type*/, const void* /*indices*/) {
+    ++staleDraws;
+}
+
+// Puts glad's glDrawElements back however the test ends.
+struct RestoreDrawElements {
+    PFNGLDRAWELEMENTSPROC saved = glad_glDrawElements;
+    ~RestoreDrawElements() { glad_glDrawElements = saved; }
+    RestoreDrawElements() = default;
+    RestoreDrawElements(const RestoreDrawElements&) = delete;
+    RestoreDrawElements& operator=(const RestoreDrawElements&) = delete;
+    RestoreDrawElements(RestoreDrawElements&&) = delete;
+    RestoreDrawElements& operator=(RestoreDrawElements&&) = delete;
+};
+
+// Puts glad's glPolygonMode back however the test ends.
+struct RestorePolygonMode {
+    PFNGLPOLYGONMODEPROC saved = glad_glPolygonMode;
+    ~RestorePolygonMode() { glad_glPolygonMode = saved; }
+    RestorePolygonMode() = default;
+    RestorePolygonMode(const RestorePolygonMode&) = delete;
+    RestorePolygonMode& operator=(const RestorePolygonMode&) = delete;
+    RestorePolygonMode(RestorePolygonMode&&) = delete;
+    RestorePolygonMode& operator=(RestorePolygonMode&&) = delete;
+};
+
+// Stands in for a stale glPolygonMode, like staleDrawElements.
+void APIENTRY stalePolygonMode(GLenum /*face*/, GLenum /*mode*/) {}
+
+} // namespace
+
+TEST_CASE("a flat pass on the NULL backend leaves librw alone though OpenGL was loaded before", "[mesh]") {
+    // Expected: unverified, #1268 (the NULL backend draws nothing; a whole test run started OpenGL windows first)
+    const RestoreDrawElements restore;
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    const coney::characters::CharacterModel model = fixtureModel();
+    {
+        coney::platform::CharacterMesh mesh(model, nullptr);
+        coney::debug::DebugDrawOptions options;
+        options.mesh.view = coney::debug::MeshShading::Material;
+        coney::platform::MeshViews views(options);
+        const std::vector<MaterialLook> before = looksOf(mesh.atomic());
+        glad_glDrawElements = staleDrawElements;
+        staleDraws = 0;
+        views.draw(mesh.atomic(), coney::platform::DrawKind::Humans, false, [] {});
+        CHECK(staleDraws == 0);
+        CHECK(views.passDraws() == model.clump.materials.size());
+        CHECK(looksOf(mesh.atomic()) == before);
+    }
+}
+
+TEST_CASE("a wire pass on the NULL backend switches no polygon mode though OpenGL was loaded before", "[mesh]") {
+    // Expected: unverified, #1268 (the wire pass decides to draw as the flat pass does: by the renderer, not glad)
+    const RestorePolygonMode restore;
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    const coney::characters::CharacterModel model = fixtureModel();
+    coney::platform::CharacterMesh mesh(model, nullptr);
+    coney::debug::DebugDrawOptions options;
+    options.mesh.wireframe = coney::debug::MeshScope::Everything;
+    coney::platform::MeshViews views(options);
+    glad_glPolygonMode = stalePolygonMode;
+    coney::platform::draw::startRecording();
+    views.draw(mesh.atomic(), coney::platform::DrawKind::Humans, false, [] {});
+    const auto stream = coney::platform::draw::stopRecording();
+    REQUIRE(stream.has_value());
+    // The wireframe switches are the stream's frame operations; a wire pass would record two.
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty
+    CHECK(stream->counts().frameOps == 0);
 }
 
 TEST_CASE("the scene counters count each draw as the kind its scope names", "[mesh][perf]") {
