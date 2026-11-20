@@ -396,6 +396,9 @@ def _run(run: Run) -> None:
             run.repo = pr_publish.resolve_repo(run.env.gh, run.env.git, run.root, run.request.remote, run.request.repo)
             existing = pr_open_publish.find(run)
             run.opened = existing.opened if existing is not None else None
+            if existing is not None:
+                # Read back before anything is pushed, edited, reopened or merged (#1522).
+                pr_open_publish.confirm_head(run, existing, pushed=False)
         except GhError as error:
             raise Stop(EXIT_UNABLE, f"gh: {error}") from error
         pr_open_publish.check_existing(run, existing)

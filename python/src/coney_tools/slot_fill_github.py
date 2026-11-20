@@ -29,6 +29,7 @@ from coney_tools.issue_claim_model import Card, blocked_by_numbers, iso_time, pa
 from coney_tools.issue_claim_pass import latest_held, stored_cards
 from coney_tools.issue_claim_remote import Comment, GhRemote, Remote
 from coney_tools.issue_form import section_heading, section_text
+from coney_tools.pr_head import head_label
 from coney_tools.slot_fill import FailedPull, IssueInfo
 
 #: The cache file in the scratch folder.
@@ -486,7 +487,7 @@ class GhSources:
             found.append(
                 FailedPull(
                     number=int(pull["number"]),
-                    branch=str(pull.get("headRefName") or ""),
+                    branch=head_label(pull),
                     checks=failing,
                     closes=closes,
                     head=str(pull.get("headRefOid") or ""),

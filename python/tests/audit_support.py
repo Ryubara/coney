@@ -116,6 +116,7 @@ def pull(
         "mergedAt": (merged or stamp(updated)) if state == "MERGED" else None,
         "baseRefName": base,
         "headRefName": head or f"branch-{number}",
+        "isCrossRepository": False,
         "isDraft": draft,
         "autoMergeRequest": {"enabledAt": stamp()} if auto_merge else None,
         "closingIssuesReferences": [{"number": n} for n in closes],

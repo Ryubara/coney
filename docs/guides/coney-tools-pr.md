@@ -255,7 +255,9 @@ number, and changes nothing (except `--rerun --apply`, below):
 | `ci-stuck` | a required check has been queued or running longer than `hygiene.thresholds.pr_pending_hours` (default 3; `--pending-hours H` overrides it for one run) | coordinator |
 | `auto-merge-off` | the pull request is not a draft, targets `main` and has auto-merge off, unless it changes a path of `merge.manual_paths` while `pull_requests.auto_merge_manual_paths` is false (held on purpose) | coordinator |
 
-A failing check that is not required is ignored. A draft is never stuck. A stacked pull request (base other than
+A pull request from a fork shows its branch as `owner:branch` ([The head match](pr.md#head-match)), so no unit or
+worktree of the same branch name is taken for it. A failing check that is not required is ignored. A draft is never
+stuck. A stacked pull request (base other than
 `main`) is reported as `stacked` and never as lacking auto-merge; its failures and conflicts count. GitHub answers
 `UNKNOWN` for mergeability while it computes it, which means "not known yet": it is not a finding and shows only with
 `--verbose`, together with the drafts and stacked pull requests, so a rerun a minute later settles it.

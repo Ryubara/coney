@@ -114,14 +114,19 @@ class FakeGh:
             parent = {"name": "widgets", "owner": {"login": "up"}} if self.parent else None
             return json.dumps({"nameWithOwner": REPO, "parent": parent})
         if key == "pr list":
+            # As gh does: `--head` matches the branch name alone, whatever repository the head lives in.
             head = args[args.index("--head") + 1]
             return json.dumps([_listing(n, p) for n, p in self.prs.items() if p["head"] == head])
         if key == "pr create":
             number = self.next_number
             self.next_number += 1
             head = args[args.index("--head") + 1]
+            repo = args[args.index("--repo") + 1]
             self.prs[number] = {
                 "head": head,
+                # A bare `--head` names a branch of the repository the pull request is opened in.
+                "head_repo": repo,
+                "base_repo": repo,
                 "title": args[args.index("--title") + 1],
                 "body": self._body(args, cwd),
                 "state": "OPEN",
@@ -156,7 +161,8 @@ class FakeGh:
                 {
                     "title": pr["title"],
                     "body": pr["body"],
-                    "headRefOid": self._tip(pr["head"]),
+                    "headRefOid": pr.get("head_tip") or self._tip(pr["head"]),
+                    **_head_fields(pr),
                     "autoMergeRequest": {"enabledBy": {"login": OPENER}} if pr["auto"] else None,
                     "createdAt": pr.get("created"),
                 }
@@ -164,10 +170,39 @@ class FakeGh:
         raise AssertionError(f"the fake gh has no answer for {args}")
 
 
+def _head_fields(pr: dict[str, Any]) -> dict[str, Any]:
+    """Where a pull request's head lives, as `gh --json` shows it (`pr_head.HEAD_FIELDS`)."""
+    owner, name = str(pr.get("head_repo", REPO)).split("/")
+    return {
+        "headRefName": pr["head"],
+        "headRepository": {"id": f"R_{name}", "name": name},
+        "headRepositoryOwner": {"id": f"U_{owner}", "login": owner},
+        "isCrossRepository": pr.get("head_repo", REPO) != pr.get("base_repo", REPO),
+    }
+
+
+def plant_fork_pr(gh: "FakeGh", number: int, branch: str = "work", owner: str = "contributor") -> None:
+    """A contributor's open pull request from their fork, whose branch has the same name as ours (#1522)."""
+    gh.prs[number] = {
+        "head": branch,
+        "head_repo": f"{owner}/widgets",
+        "base_repo": REPO,
+        "head_tip": "f" * 40,
+        "title": "a contributor's own title",
+        "body": "a contributor's own description",
+        "state": "OPEN",
+        "merged": False,
+        "auto": False,
+        "url": f"https://github.com/acme/widgets/pull/{number}",
+        "created": "2026-11-01T00:00:00Z",
+    }
+
+
 def _listing(number: int, pr: dict[str, Any]) -> dict[str, Any]:
     """One pull request as `gh pr list --json` shows it."""
     return {
         "number": number,
+        **_head_fields(pr),
         "state": "MERGED" if pr["merged"] else pr["state"],
         "url": pr["url"],
         "mergedAt": "2026-10-24T00:00:00Z" if pr["merged"] else None,

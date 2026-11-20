@@ -81,6 +81,7 @@ from coney_tools import (
 )
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Workspace, load_conventions
+from coney_tools.pr_head import HEAD_FIELDS, head_label
 from coney_tools.unit import scratch_folder
 from coney_tools.workspace import find_layout
 
@@ -307,7 +308,8 @@ def gh_merged_heads(checkout: Path, run: GhRunner | None = None, *, limit: int =
         asked = True
         if run is None and shutil.which("gh") is None:
             return
-        command = ["gh", "pr", "list", "--state", "merged", "--limit", str(limit), "--json", "headRefName,headRefOid"]
+        fields = f"{HEAD_FIELDS},headRefOid"
+        command = ["gh", "pr", "list", "--state", "merged", "--limit", str(limit), "--json", fields]
         try:
             done = runner(command, checkout)
             if done.returncode != 0:
@@ -317,7 +319,8 @@ def gh_merged_heads(checkout: Path, run: GhRunner | None = None, *, limit: int =
                 return
             found: dict[str, list[str]] = {}
             for pull in pulls:
-                found.setdefault(str(pull["headRefName"]), []).append(str(pull["headRefOid"]))
+                # By `head_label`: a fork's merged pull request of the same branch name is no worktree's (#1522).
+                found.setdefault(head_label(pull), []).append(str(pull["headRefOid"]))
             heads, full = found, len(pulls) >= limit
         except (OSError, subprocess.SubprocessError, ValueError, KeyError, TypeError):
             heads = None

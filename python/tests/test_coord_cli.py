@@ -149,6 +149,7 @@ def github_answers() -> dict[tuple[str, ...], Any]:
             {
                 "number": 7,
                 "headRefName": "unit-b",
+                "isCrossRepository": False,
                 "baseRefName": "main",
                 "isDraft": False,
                 "mergeable": "CONFLICTING",
@@ -163,9 +164,15 @@ def github_answers() -> dict[tuple[str, ...], Any]:
             ]
         },
         ("pr", "list", "--state", "all"): [
-            {"number": 7, "headRefName": "unit-b", "state": "OPEN", "closedAt": None},
-            {"number": 5, "headRefName": "unit-a", "state": "MERGED", "closedAt": when(10)},  # older than its PR.md
-            {"number": 2, "headRefName": "gone", "state": "MERGED", "closedAt": when(1)},
+            {"number": 7, "headRefName": "unit-b", "isCrossRepository": False, "state": "OPEN", "closedAt": None},
+            {
+                "number": 5,
+                "headRefName": "unit-a",
+                "isCrossRepository": False,
+                "state": "MERGED",
+                "closedAt": when(10),
+            },  # older than its PR.md
+            {"number": 2, "headRefName": "gone", "isCrossRepository": False, "state": "MERGED", "closedAt": when(1)},
         ],
         ("run", "list", "--status", "queued"): [{"databaseId": 1}, {"databaseId": 2}],
         ("run", "list", "--status", "in_progress"): [{"databaseId": 3}],
@@ -226,11 +233,27 @@ def test_github_read_adds_issues_prs_ci_and_the_release_queue(layout: dict[str, 
 def test_a_merged_pull_request_newer_than_the_unit_file_releases_it(layout: dict[str, Path]) -> None:
     answers = github_answers()
     answers[("pr", "list", "--state", "all")] = [
-        {"number": 9, "headRefName": "unit-a", "state": "MERGED", "closedAt": when(1)}
+        {"number": 9, "headRefName": "unit-a", "isCrossRepository": False, "state": "MERGED", "closedAt": when(1)}
     ]
     report = collect(sources(layout, FakeGh(answers)), github=True)
     unit = next(u for u in report["release"]["units"] if u["branch"] == "unit-a")
     assert (unit["queued"], unit["pr"], unit["pr_state"]) == (False, 9, "MERGED")
+
+
+def test_a_forks_pull_request_with_a_units_branch_name_neither_releases_nor_claims_it(layout: dict[str, Path]) -> None:
+    # #1522: a contributor's fork had a branch named like task 285's, and its pull request was taken for the unit's.
+    answers = github_answers()
+    fork = {"headRepositoryOwner": {"login": "contributor"}, "isCrossRepository": True}
+    answers[("pr", "list", "--state", "all")] = [
+        {"number": 1415, "headRefName": "unit-a", "state": "MERGED", "closedAt": when(1), **fork},
+        {"number": 1416, "headRefName": "unit-b", "state": "OPEN", "closedAt": None, **fork},
+    ]
+    opened = dict(answers[("pr", "list", "--state", "open")][0])  # type: ignore[index]
+    answers[("pr", "list", "--state", "open")] = [{**opened, "number": 1416, **fork}]
+    report = collect(sources(layout, FakeGh(answers)), github=True)
+    queued = {(u["branch"], u["file"]): (u["queued"], u["pr"]) for u in report["release"]["units"]}
+    assert queued[("unit-a", "PR.md")] == (True, None) and queued[("unit-b", "PR.md")] == (True, None)
+    assert report["prs"]["prs"][0]["branch"] == "contributor:unit-b"
 
 
 def test_a_section_that_cannot_be_read_says_why_and_the_others_stand(layout: dict[str, Path]) -> None:

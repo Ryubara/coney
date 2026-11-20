@@ -40,6 +40,7 @@ from coney_tools import issue_impact, stamps, unit
 from coney_tools.audit_github import Runner
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions, OverlapRules
+from coney_tools.pr_head import HEAD_FIELDS, head_label
 from coney_tools.slot_fill_github import GhFailed, bounded_runner
 from coney_tools.task_file import TaskFile, parse_task_file
 from coney_tools.task_leads import identifiers_in
@@ -48,7 +49,8 @@ from coney_tools.unit_record import UnitRecord, UnitRecordError, read_record
 #: The task file section the list is kept in.
 SECTION = "Pending work that overlaps"
 #: What `gh pr list` is asked for.
-PR_FIELDS = "number,title,headRefName,isDraft,files"
+#: The head fields give a fork's pull request as `owner:branch`, so it is never skipped as the task's own (#1522).
+PR_FIELDS = f"number,title,{HEAD_FIELDS},isDraft,files"
 #: The sections of the task file that say what the unit is about: the issue's own words and the scope.
 _ABOUT = ("Issues", "Goal", "Done", "Scope")
 _ADDRESS = re.compile(r"^0x[0-9a-fA-F]{8}$")
@@ -231,7 +233,7 @@ def read_open_prs(gh: Runner, rules: OverlapRules) -> list[tuple[Pending, bool]]
                         f"#{number}",
                         f"`{item.get('title', '')}`",
                         "draft pull request" if draft else "open pull request",
-                        str(item.get("headRefName", "")),
+                        head_label(item),
                         Change(paths),
                     ),
                     draft,

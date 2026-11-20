@@ -14,6 +14,7 @@ from coney_tools import coord_cli
 from coney_tools.conclave_events import collect_events
 from coney_tools.conclave_sources import Sources, section
 from coney_tools.issue_claim_model import Card, iso_time, scopes_overlap
+from coney_tools.pr_head import HEAD_FIELDS, head_label
 
 #: How many recently merged pull requests are read.
 MERGED_LIMIT = 30
@@ -109,21 +110,20 @@ def _account(src: Sources) -> str | None:
 
 
 def _merged(src: Sources) -> list[dict[str, Any]]:
-    """The recently merged pull requests: number, branch and when."""
-    raw = json.loads(
-        src.coord.gh(
-            ["pr", "list", "--state", "merged", "--limit", str(MERGED_LIMIT), "--json", "number,headRefName,mergedAt"]
-        )
-    )
+    """The recently merged pull requests: number, branch (`head_label`: a fork's is `owner:branch`, never a unit's)
+    and when."""
+    fields = f"number,{HEAD_FIELDS},mergedAt"
+    raw = json.loads(src.coord.gh(["pr", "list", "--state", "merged", "--limit", str(MERGED_LIMIT), "--json", fields]))
     return [
-        {"number": int(pull["number"]), "branch": str(pull.get("headRefName", "")), "merged_at": pull.get("mergedAt")}
+        {"number": int(pull["number"]), "branch": head_label(pull), "merged_at": pull.get("mergedAt")}
         for pull in raw
         if isinstance(pull, dict) and pull.get("mergedAt")
     ]
 
 
 def _attach_pull_requests(units: list[dict[str, Any]], prs: dict[str, Any]) -> None:
-    """Give each unit the pull request of its branch: an open one, else a recently merged one."""
+    """Give each unit the pull request of its branch: an open one, else a recently merged one. The pull requests'
+    branches are `head_label`s, so a fork's of the same branch name is no unit's (#1522)."""
     opened = {pull["branch"]: pull for pull in prs.get("prs", [])}
     merged = {pull["branch"]: pull for pull in prs.get("merged", [])}
     for row in units:

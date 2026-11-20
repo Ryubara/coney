@@ -8,8 +8,9 @@ failing git is a return code, never an exception), and `Gh` runs `gh` in a folde
 `GhError` when it fails. The repository is never written down here: `resolve_repo` asks `gh` what the remote is (the
 parent when it is a fork).
 
-The pull request is found by its head branch, so a run that failed after creating it finds it again and edits it:
-every step here can be run twice. The push names the tip it expects the remote branch to have (`--force-with-lease=
+The pull request is found by its head branch in this repository (`pr_head`: a fork's pull request whose branch has the
+same name is never ours), so a run that failed after creating it finds it again and edits it: every step here can be
+run twice. The push names the tip it expects the remote branch to have (`--force-with-lease=
 <branch>:<expected>`), taken from what the last run recorded, so a bare lease, which a `git fetch` in between can
 defeat, is never used and neither is a force.
 """
@@ -26,6 +27,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from coney_tools import pr_head
 from coney_tools.config import ConfigError
 
 #: The oldest `gh` that uploads pictures with `--attach`.
@@ -141,14 +143,26 @@ def _number_of(url: str) -> int:
     return int(tail)
 
 
-def find_pr(gh: Gh, repo: str, branch: str) -> PullRequest | None:
-    """The pull request whose head is `branch` (the open one when several), or None."""
-    fields = "number,state,url,mergedAt,createdAt"
+def find_pr(gh: Gh, repo: str, branch: str, say: Callable[[str], None] | None = None) -> PullRequest | None:
+    """The pull request whose head is `branch` of `repo` (the open one when several), or None.
+
+    `gh pr list --head` matches the branch name alone, so a fork's pull request from a branch of the same name is listed
+    too; it is left out (`pr_head.head_problem`) and `say` is told of each one."""
+    fields = f"number,state,url,mergedAt,createdAt,{pr_head.HEAD_FIELDS}"
     listing = gh(["pr", "list", "--repo", repo, "--head", branch, "--state", "all", "--json", fields], None)
     try:
         items = json.loads(listing or "[]")
     except ValueError as error:
         raise GhError(f"gh pr list printed no JSON ({error})") from error
+    if not isinstance(items, list):
+        raise GhError("gh pr list printed no list")
+    ours = []
+    for item in items:
+        problem = pr_head.head_problem(item, branch, repo)
+        if problem is None:
+            ours.append(item)
+        elif say is not None:
+            say(f"  note: #{item.get('number')} has the branch name {branch} but {problem}; it is not this branch's")
     found = [
         PullRequest(
             int(item["number"]),
@@ -156,7 +170,7 @@ def find_pr(gh: Gh, repo: str, branch: str) -> PullRequest | None:
             item["url"],
             moment(item.get("createdAt")),
         )
-        for item in items
+        for item in ours
     ]
     found.sort(key=lambda pr: (pr.state != "OPEN", -pr.number))
     return found[0] if found else None
@@ -213,11 +227,17 @@ class View:
     auto_merge: bool
     #: When the pull request was opened (`createdAt`), or None when gh did not say.
     opened: datetime | None = None
+    #: Where the head lives: the head fields (`pr_head.HEAD_FIELDS`) as gh printed them.
+    head_fields: dict[str, Any] = field(default_factory=dict)
+
+    def head_problem(self, branch: str, repo: str) -> str | None:
+        """Why this is not the pull request of `branch` in `repo` (`pr_head.head_problem`), or None when it is."""
+        return pr_head.head_problem(self.head_fields, branch, repo)
 
 
 def view_pr(gh: Gh, repo: str, number: int) -> View:
     """Read the pull request back."""
-    fields = "body,title,headRefOid,autoMergeRequest,createdAt"
+    fields = f"body,title,headRefOid,autoMergeRequest,createdAt,{pr_head.HEAD_FIELDS}"
     try:
         data = json.loads(gh(["pr", "view", str(number), "--repo", repo, "--json", fields], None))
         return View(
@@ -226,8 +246,9 @@ def view_pr(gh: Gh, repo: str, number: int) -> View:
             str(data["headRefOid"]),
             data.get("autoMergeRequest") is not None,
             moment(data.get("createdAt")),
+            {key: data.get(key) for key in pr_head.HEAD_FIELDS.split(",")},
         )
-    except (ValueError, KeyError, TypeError) as error:
+    except (ValueError, KeyError, TypeError, AttributeError) as error:
         raise GhError(f"gh pr view printed no pull request ({error})") from error
 
 
@@ -436,13 +457,22 @@ def opened_of(folder: Path, gh: Gh | None = None, say: Callable[[str], None] = _
 
 def branch_opened(gh: Gh, folder: Path, say: Callable[[str], None] = _warn) -> datetime | None:
     """When the pull request of the branch checked out in `folder` was opened (`gh pr view`'s `createdAt`), for a
-    check run before an update (`ci pr`); None when the branch has none, or GitHub cannot say (`say` reports that)."""
+    check run before an update (`ci pr`); None when the branch has none, or GitHub cannot say (`say` reports that).
+    `gh pr view` with no argument already matches the branch with its owner; a fork's pull request it gave all the same
+    is not this branch's (`pr_head.is_own`), so it counts as none."""
     try:
-        return _created_at(gh(["pr", "view", "--json", "createdAt"], folder))
+        output = gh(["pr", "view", "--json", "createdAt,isCrossRepository"], folder)
     except GhError as error:
         if "no pull requests found" not in str(error).lower():
             say(f"note: whether this branch has a pull request is unknown ({error}); rules with a start apply")
         return None
+    try:
+        data = json.loads(output)
+    except ValueError:
+        return None
+    if not isinstance(data, dict) or not pr_head.is_own(data):
+        return None
+    return moment(data.get("createdAt"))
 
 
 def write_published(folder: Path, published: Published) -> None:

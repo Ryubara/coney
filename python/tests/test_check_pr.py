@@ -141,11 +141,11 @@ def test_ci_pr_asks_github_when_the_branch_s_pull_request_was_opened_unless_told
 
     def gh(args: Sequence[str], folder: Path | None) -> str:
         asked.append(list(args))
-        return f'{{"createdAt": "{created}"}}'
+        return f'{{"createdAt": "{created}", "isCrossRepository": false}}'
 
     args = ("main", "gameplay: Add a thing", checkout / "body.md", ["body"], None)
     assert check_pr.run_pr(*args, gh=gh) == 0
-    assert asked == [["pr", "view", "--json", "createdAt"]]
+    assert asked == [["pr", "view", "--json", "createdAt,isCrossRepository"]]
     # no pull request for the branch (the fixture's gh): not yet opened, so the pair is asked
     assert check_pr.run_pr(*args) == 1
     # --opened wins, and nothing is asked

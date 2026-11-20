@@ -41,12 +41,14 @@ diff --git a/tests/test_brain.cpp b/tests/test_brain.cpp
 """
 
 
-def pr(number: int, title: str, branch: str, *paths: str, draft: bool = False) -> dict[str, object]:
-    """One entry of `gh pr list --json`."""
+def pr(number: int, title: str, branch: str, *paths: str, draft: bool = False, fork: str = "") -> dict[str, object]:
+    """One entry of `gh pr list --json`; `fork` names the owner of the fork its head is on."""
     return {
         "number": number,
         "title": title,
         "headRefName": branch,
+        "headRepositoryOwner": {"login": fork or "acme"},
+        "isCrossRepository": bool(fork),
         "isDraft": draft,
         "files": [{"path": path, "additions": 1, "deletions": 0} for path in paths],
     }
@@ -222,6 +224,14 @@ def test_the_units_own_pull_request_is_not_pending_work(scene: Scene) -> None:
     scene.task(scope=("docs/",))
     scene.prs = [pr(1, "tools: Add", TASK, "docs/a.md"), pr(2, "tools: Add", "other", "docs/a.md")]
     assert [o.pending.key for o in scene.compute().overlaps] == ["#2"]
+
+
+def test_a_forks_pull_request_with_the_units_branch_name_is_pending_work(scene: Scene) -> None:
+    # #1522: a contributor's fork had a branch named like task 285's; its pull request is someone else's work.
+    scene.task(scope=("docs/",))
+    scene.prs = [pr(1415, "tools: Add", TASK, "docs/a.md", fork="contributor")]
+    [overlap] = scene.compute().overlaps
+    assert overlap.pending.key == "#1415" and overlap.pending.branch == f"contributor:{TASK}"
 
 
 def test_the_addresses_a_pull_request_touches_are_read_from_its_diff_only_when_the_unit_names_one(scene: Scene) -> None:

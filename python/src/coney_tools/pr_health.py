@@ -29,12 +29,14 @@ from typing import Any, NamedTuple
 from coney_tools.audit_github import Runner, run_gh
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import PR_HEALTH_CAUSES, Conventions, load_conventions
+from coney_tools.pr_head import HEAD_FIELDS, head_label
 from coney_tools.pr_labels import LabelChange, plan, unknown_numbers, write
 from coney_tools.pr_rerun import FailedCheck, PullChecks, Rerun, plan_reruns
 
-#: The JSON fields read from `gh pr list`.
+#: The JSON fields read from `gh pr list`. The head fields give each pull request's branch as `head_label` shows it:
+#: a fork's as `owner:branch`, so no tool matches it to a unit of the same branch name (#1522).
 PULL_FIELDS = (
-    "number,title,headRefName,baseRefName,isDraft,mergeable,autoMergeRequest,statusCheckRollup,labels,url,files"
+    f"number,title,{HEAD_FIELDS},baseRefName,isDraft,mergeable,autoMergeRequest,statusCheckRollup,labels,url,files"
 )
 #: The fields `--rerun` reads besides those: the head commit, the description to check against the template, and when
 #: the pull request was opened (one opened before the clip rule began is asked for no clips).
@@ -232,7 +234,7 @@ def judge(
     default = conventions.repo.default_branch
     health = Health(checked=len(pulls))
     for pull in sorted(pulls, key=lambda item: int(item["number"])):
-        number, branch, url = int(pull["number"]), str(pull.get("headRefName", "")), str(pull.get("url", ""))
+        number, branch, url = int(pull["number"]), head_label(pull), str(pull.get("url", ""))
         base = str(pull.get("baseRefName", ""))
         if pull.get("isDraft"):
             health.notes.append(Note(number, branch, "draft"))
@@ -309,7 +311,7 @@ def pull_checks(pull: dict[str, Any], required: Sequence[str]) -> PullChecks:
     )
     return PullChecks(
         number=int(pull["number"]),
-        branch=str(pull.get("headRefName", "")),
+        branch=head_label(pull),
         title=str(pull.get("title") or ""),
         body=str(pull.get("body") or ""),
         head=str(pull.get("headRefOid") or ""),
