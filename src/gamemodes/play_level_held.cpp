@@ -99,7 +99,9 @@ void PlayLevelSimulation::placeItemInHand(human::Human& human, double holder) {
         return;
     }
     // Its object at his feet with no turn (the identity at 0x00511790), recorded and pinned; his pick-up clip's take
-    // event places it in his hand from there (heldDrawOf()), and it is held as a take holds it.
+    // event places it in his hand from there (heldDrawOf()), and it is held as a take holds it. **Coney's choice**: it
+    // is made on the step after the binding's call, not in it, and its record stays pinned while held (the original
+    // unpins it once attached), as a picked-up object's does.
     world_objects::SpawnRecord record;
     record.handle = held;
     record.typeName = script.heldObjectName;
