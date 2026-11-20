@@ -284,8 +284,8 @@ frame's arrays holding its lights by value (`SceneLight`) and each material's `T
   sectors; a scene pass begun later in the frame keeps it. The GL3 renderer draws through librw's camera, placed the
   same way, and reads neither the camera nor the transform; the GPU renderer reads both
   ([Drawing the scene passes](gpu-renderer.md#scene)).
-- **Not in it yet** (drawn through the draw layer as before): the level's background (sky, clouds, skyline, glows: the
-  level file's models), the debug tools' own sector draws, and every sector while the mesh views are on.
+- **Not in it yet** (drawn through the draw layer as before): the level's background (sky, clouds, skyline, glows;
+  [#1527](issue:1527)), the debug tools' own sector draws, and every sector while the mesh views are on.
 
 **Built for the world objects and the parked cars (item 8).** They join the scene pass the same way, through one seam,
 `drawObject` ([object_draw.h](repo:src/platform/object_draw.h)), which `PlacedObjects::draw` (`ObjectRender_Draw`,
@@ -775,10 +775,6 @@ Item 1 is one of the two L items: it routes about 290 of the 460 call sites, eac
 pull request. Items 1, 2, 3, 4 and 6 depend on nothing and can run beside each other; item 3 is the first point at
 which the game runs with librw's GL3 device closed. Item 21 is the switch the groundwork leads to and waits for a
 maintainer's go-ahead; the enhancements after it need parity (item 20), not the switch, and never draw through GL3.
-
-The level's background on the GPU renderer (the sky and cloud boxes, the skyline and the level world's glows) is in no
-item above: item 13 drew the world, objects and cars and left it out, and it is filed as #1527, after item 13 and before
-item 20, whose parity needs it ([Not yet](gpu-renderer.md#scene)).
 
 Of the realtime lighting design's steps, item 19 is L0, item 22 with the GPU renderer's shaders is L1, items 28 and
 30 are L2, item 29 is L3 and item 31 is L6; L4, L5 and GTAO follow item 22 and are filed from that design. XeSS, ray
