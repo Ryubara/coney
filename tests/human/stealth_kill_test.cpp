@@ -225,6 +225,41 @@ TEST_CASE("without L1, square from hiding behind a target facing away strikes as
     CHECK(seen.killerStruck);
 }
 
+TEST_CASE("hidden, letting L1 go in a throw aim still opens the release window, which keeps a far target",
+          "[human][combat][stealth]") {
+    // Expected: stealth.md#stealth-kill, confirmed (code). On L1's release Player_UpdateActionsHidden 0x0027e040 clears
+    // state 0x8 and opens the 264 ms window (record +0xf4) first, and only then ends a throw aim (Human_ExitThrowAim);
+    // out of hiding Player_UpdateActions 0x0027c120 ends the aim instead and opens no window. L1's bit itself cannot
+    // show it: the next update with no command clears it anyway (0x0027e040's no-command branch). The window can: the
+    // stance keeps a target beyond the far distance while it runs (Player_UpdateStanceOrIdle), and drops him after.
+    Fight fight(character(), 1.0F, 0.0F, 0.0F);
+    fight.human().enterHiding();
+    REQUIRE(fight.human().hidden());
+    bool pickedBeforeAim = false;
+    bool keptInWindow = false;
+    bool droppedAfter = false;
+    // L1 waits for the hiding clip (634) to end, whose flags would hold the target too; it picks the target, the aim
+    // starts during the hold, L1 is let go in the aim, the aim ends and the target steps 5 m away (beyond the far
+    // distance, within L1's 13 m), so only the window, open until update 24, still holds him.
+    fight.run("10 press l1\n16 release l1\n", 60, [&](std::uint64_t update) {
+        const bool hasTarget = fight.human().fighter().target() != nullptr;
+        if (update == 12) {
+            pickedBeforeAim = hasTarget;
+            fight.human().script().throwAiming = true;
+        } else if (update == 17) {
+            fight.human().script().throwAiming = false;
+            fight.target().place(Vec3{40.0F, 45.0F, 0.0F}, 0.0F);
+        } else if (update == 18) {
+            keptInWindow = hasTarget;
+        } else if (update == 59) {
+            droppedAfter = !hasTarget;
+        }
+    });
+    REQUIRE(pickedBeforeAim);
+    CHECK(keptInWindow);
+    CHECK(droppedAfter);
+}
+
 TEST_CASE("a human killed from hiding is knocked out through the killer's 638 into the loop 349, never wounded",
           "[human][combat][stealth]") {
     // Expected: stealth.md#stealth-kill and combat-reactions.md#knockout-timing, confirmed (code).
