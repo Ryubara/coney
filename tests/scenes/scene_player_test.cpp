@@ -799,7 +799,7 @@ TEST_CASE("event 73 holds a character's intro card before the scene camera for i
 }
 
 TEST_CASE("an intro card is held along the camera's own view axis", "[scenes]") {
-    // docs/research/scenes.md#intro-cards: SceneTask_HoldObject (0x003a0ed8) holds the card on the view axis.
+    // Expected: scenes.md#intro-cards, confirmed (code): SceneTask_HoldObject (0x003a0ed8), on the view axis.
     // A camera turned 90° about z looks along -x (its local +y): the card is d ahead of it that way, turned with it.
     const float half = std::numbers::sqrt2_v<float> / 2.0F;
     const scenes::ScenePose camera{.position = {1.0F, 2.0F, 3.0F}, .rotation = {0.0F, 0.0F, half, half}};
