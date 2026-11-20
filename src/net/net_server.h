@@ -13,6 +13,7 @@
 #include "core/pad.h"
 #include "net/event_channel.h"
 #include "net/input_buffer.h"
+#include "net/level_barrier.h"
 #include "net/link_quality.h"
 #include "net/protocol.h"
 #include "net/snapshot.h"
@@ -35,6 +36,10 @@ struct ServerConfig {
     InputBufferConfig input;
     /// The most bytes each player's Snapshot packet takes (SnapshotSender).
     std::size_t snapshotBudgetBytes = kSnapshotBudgetBytes;
+    /// A player still loading the host's level after this many steps is dropped (LevelBarrierConfig).
+    std::uint32_t loadTimeoutSteps = LevelBarrierConfig{}.loadTimeoutSteps;
+    /// How long the host waits for the players still watching a movie after its own copy ended (LevelBarrierConfig).
+    std::uint32_t movieTimeoutSteps = LevelBarrierConfig{}.movieTimeoutSteps;
 };
 
 /// One remote player as the server sees it.
@@ -56,6 +61,7 @@ struct ServerEvent {
     enum class Kind : std::uint8_t {
         Joined, ///< a player finished the handshake
         Left,   ///< a joined player is gone (`reason` says how; ConnectionLost when the transport dropped it)
+        Loaded, ///< a joined player has loaded the host's current level (LevelBarrier::loaded())
     };
     Kind kind = Kind::Joined;
     std::uint8_t slot = 0;
@@ -107,6 +113,30 @@ class NetServer {
     /// One step's sending: the Pings that are due, each joined player's InputTiming with theirs, then a flush.
     void send();
 
+    /// The host's game starts loading `level` at `checkpoint` (LevelBarrier::load()): every joined player is told to
+    /// load it (LoadLevel) and gets no snapshots or events until they have; one who joins later is told on joining.
+    /// Returns the load's number. Works while not running too, so a host that starts later still tells its players.
+    std::uint32_t loadLevel(const std::string& level, std::uint16_t checkpoint);
+    /// The host's mission in the current level has ended: every joined player is told how (MissionEnd). Nothing
+    /// happens with no level.
+    void endMission(MissionOutcome outcome);
+    /// The current level's order; nothing before the first loadLevel().
+    [[nodiscard]] const std::optional<LoadLevel>& level() const { return m_level.current(); }
+    /// Whether the host's game may run its next step: every joined player has loaded the current level (the loading
+    /// barrier). A player who has not after ServerConfig::loadTimeoutSteps is dropped, so it never waits for ever.
+    [[nodiscard]] bool levelReady() const { return m_level.ready(); }
+    /// Whether the player in `slot` is joined and still loading the current level.
+    [[nodiscard]] bool loading(std::uint8_t slot) const { return m_level.loading(slot); }
+    /// The host's game has started a movie whose MovieStart event came in the server's `movieStep`
+    /// (LevelBarrier::startMovie()).
+    void startMovie(std::uint32_t movieStep) { m_level.startMovie(movieStep); }
+    /// The host's own copy of the movie has ended, or the host skipped it (LevelBarrier::endHostMovie()).
+    void endHostMovie() { m_level.endHostMovie(); }
+    /// Whether a player skipped the current movie, so the host should end its own copy.
+    [[nodiscard]] bool movieSkipped() const { return m_level.movieSkipped(); }
+    /// Whether the host may go on from its movie (LevelBarrier::movieMayEnd()).
+    [[nodiscard]] bool movieMayEnd() const { return m_level.movieMayEnd(); }
+
     /// Every connection, joined or not, in the order they connected.
     [[nodiscard]] const std::vector<ServerClient>& clients() const { return m_clients; }
     /// Joined players.
@@ -142,6 +172,7 @@ class NetServer {
     std::uint64_t m_steps = 0; // steps since start(), for the ping schedule
     std::vector<ServerClient> m_clients;
     std::vector<ServerEvent> m_events;
+    LevelBarrier m_level; // the host's level, who has loaded it, and the movie wait
 };
 
 } // namespace coney::net

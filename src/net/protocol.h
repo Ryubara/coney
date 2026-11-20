@@ -50,7 +50,11 @@ enum class MessageId : std::uint8_t {
     InputTiming = 9,   ///< server to client: how early the client's input commands arrive (protocol 3)
     Snapshot = 10,     ///< server to client: the humans the client needs, as a delta (protocol 4; HUDs 7)
     SnapshotAck = 11,  ///< client to server: the newest snapshot the client has decoded (protocol 4)
-    EventBatch = 12    ///< server to client: what the game made its players see or hear in one step (protocol 5)
+    EventBatch = 12,   ///< server to client: what the game made its players see or hear in one step (protocol 5)
+    LoadLevel = 13,    ///< server to client: load this level at this checkpoint (protocol 7)
+    LevelLoaded = 14,  ///< client to server: the level of a LoadLevel is loaded (protocol 7)
+    MissionEnd = 15,   ///< server to client: the host's mission has ended, and how (protocol 7)
+    MovieDone = 16 ///< client to server: this client's copy of the host's movie has ended or was skipped (protocol 7)
 };
 
 /// Why a server refused a Hello.
@@ -65,6 +69,7 @@ enum class ByeReason : std::uint8_t {
     Quit = 1,          ///< the player left, or the host stopped the server
     TimedOut = 2,      ///< nothing heard from the other side for too long
     ProtocolError = 3, ///< the other side sent a message that does not decode, or one out of turn
+    LoadTimedOut = 4,  ///< the client did not load the server's level within its time-out (protocol 7)
 };
 
 /// Asks to join. Its first two fields keep this layout in every protocol version, so a server can always read a
@@ -250,6 +255,63 @@ struct EventBatch {
     friend bool operator==(const EventBatch&, const EventBatch&) = default;
 };
 
+/// The longest level name a LoadLevel carries, in bytes. Coney's choice: the original's level record keeps the name in
+/// 16 bytes (docs/research/level-loading.md#the-level-record), and Coney's own levels may be longer.
+inline constexpr std::size_t kMaxLevelNameBytes = 32;
+
+/// Why a server orders a level load (docs/guides/multiplayer.md#levels).
+enum class LoadReason : std::uint8_t {
+    Change = 1,  ///< the host's game went on to another level
+    Restart = 2, ///< the host's game restarts the level it plays, at a checkpoint (a retry, or the next checkpoint)
+    Join = 3,    ///< the client has just joined a host already in a level
+};
+
+/// Load this level at this checkpoint: the host's game has started loading it (Change, Restart) or is in it (Join).
+/// The server sends no snapshots or events to a client loading, and holds its own steps until every joined client has
+/// answered with LevelLoaded (the loading barrier). Reliable.
+///
+/// The packet: the load (a varint, 32 bits at most), the reason (8 bits), the checkpoint (16 bits, as the original's,
+/// docs/research/characters.md#level-starts), the level name (a string of at most kMaxLevelNameBytes bytes).
+struct LoadLevel {
+    std::uint32_t load = 1;       ///< 1 for the session's first load, one more for each after
+    std::string level;            ///< the level's name, 1 to kMaxLevelNameBytes bytes
+    std::uint16_t checkpoint = 1; ///< 1 or more
+    LoadReason reason = LoadReason::Change;
+
+    friend bool operator==(const LoadLevel&, const LoadLevel&) = default;
+};
+
+/// The client has loaded the level of LoadLevel `load` and is ready for its first step. Reliable.
+///
+/// The packet: the load (a varint, 32 bits at most, not 0).
+struct LevelLoaded {
+    std::uint32_t load = 1;
+};
+
+/// How the host's mission ended.
+enum class MissionOutcome : std::uint8_t {
+    Passed = 1, ///< completed; the next level or checkpoint follows
+    Failed = 2, ///< failed; a restart or the front end follows
+    Quit = 3,   ///< the host left it through the pause menu
+};
+
+/// The host's mission in the level of LoadLevel `load` has ended. Reliable.
+///
+/// The packet: the load (a varint, 32 bits at most, not 0), the outcome (8 bits).
+struct MissionEnd {
+    std::uint32_t load = 1;
+    MissionOutcome outcome = MissionOutcome::Passed;
+};
+
+/// This client's copy of the host's movie has ended, or its player skipped it. The movie is named by the host's step
+/// its MovieStart event came in. Reliable.
+///
+/// The packet: the movie's step (a varint, 32 bits at most), skipped (1 bit).
+struct MovieDone {
+    std::uint32_t movieStep = 0;
+    bool skipped = false;
+};
+
 /// Bits `event` takes in an EventBatch's packet: what an EventSender's budget counts.
 [[nodiscard]] std::size_t eventBits(const NetEvent& event);
 
@@ -269,7 +331,7 @@ struct EventBatch {
 
 /// Any message.
 using Message = std::variant<Hello, Welcome, Reject, Bye, Ping, Pong, InputCommands, InputTiming, Snapshot, SnapshotAck,
-                             EventBatch>;
+                             EventBatch, LoadLevel, LevelLoaded, MissionEnd, MovieDone>;
 
 /// The packet for `message`. A Hello or Welcome whose name is over kMaxNameBytes, an InputCommands with no pads, more
 /// than kMaxInputCommands or one for a step below 0, a Snapshot that breaks its rules (sequence 0, a baseline not

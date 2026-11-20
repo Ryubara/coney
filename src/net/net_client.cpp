@@ -185,6 +185,10 @@ void NetClient::handle(const Message& message) {
     }
 }
 
+void NetClient::levelLoaded(std::uint32_t /*load*/) {}
+
+void NetClient::movieDone(std::uint32_t /*movieStep*/, bool /*skipped*/) {}
+
 std::uint32_t NetClient::clockSpeedPercent() const {
     if (m_state != ClientState::Connected || !m_timing) {
         return 100;

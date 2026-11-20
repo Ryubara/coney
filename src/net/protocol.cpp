@@ -124,6 +124,9 @@ void writeMessage(BitWriter& out, const Message& message) {
             } else if constexpr (std::is_same_v<T, EventBatch>) {
                 out.writeU8(static_cast<std::uint8_t>(MessageId::EventBatch));
                 writeEventBatchBody(out, m);
+            } else if constexpr (std::is_same_v<T, LoadLevel> || std::is_same_v<T, LevelLoaded> ||
+                                 std::is_same_v<T, MissionEnd> || std::is_same_v<T, MovieDone>) {
+                writeLevelMessage(out, m);
             } else if constexpr (std::is_same_v<T, InputTiming>) {
                 out.writeU8(static_cast<std::uint8_t>(MessageId::InputTiming));
                 out.writeVarInt(m.lead);
@@ -228,7 +231,7 @@ std::expected<Message, Error> readFields(BitReader& in, std::uint8_t id) {
             return std::unexpected(reason.error());
         }
         if (*reason < static_cast<std::uint8_t>(ByeReason::Quit) ||
-            *reason > static_cast<std::uint8_t>(ByeReason::ProtocolError)) {
+            *reason > static_cast<std::uint8_t>(ByeReason::LoadTimedOut)) {
             return fail(ErrorCode::Invalid, "network bye has an unknown reason");
         }
         return Bye{.reason = static_cast<ByeReason>(*reason)};
@@ -310,6 +313,14 @@ std::expected<Message, Error> readFields(BitReader& in, std::uint8_t id) {
         }
         return *batch;
     }
+    case MessageId::LoadLevel:
+        return readLoadLevelBody(in);
+    case MessageId::LevelLoaded:
+        return readLevelLoadedBody(in);
+    case MessageId::MissionEnd:
+        return readMissionEndBody(in);
+    case MessageId::MovieDone:
+        return readMovieDoneBody(in);
     case MessageId::InputTiming: {
         auto lead = in.readVarInt();
         if (!lead) {
@@ -416,6 +427,8 @@ std::string_view describe(ByeReason reason) {
         return "timed out";
     case ByeReason::ProtocolError:
         return "protocol error";
+    case ByeReason::LoadTimedOut:
+        return "did not load the level in time";
     }
     return "closed";
 }

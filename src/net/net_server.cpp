@@ -20,7 +20,18 @@
 
 namespace coney::net {
 
-NetServer::NetServer(Transport& transport, ServerConfig config) : m_transport(transport), m_config(std::move(config)) {}
+NetServer::NetServer(Transport& transport, ServerConfig config)
+    : m_transport(transport), m_config(std::move(config)),
+      m_level(LevelBarrierConfig{.loadTimeoutSteps = m_config.loadTimeoutSteps,
+                                 .movieTimeoutSteps = m_config.movieTimeoutSteps}) {}
+
+std::uint32_t NetServer::loadLevel(const std::string& level, std::uint16_t checkpoint) {
+    (void)level;
+    (void)checkpoint;
+    return 0; // stub
+}
+
+void NetServer::endMission(MissionOutcome /*outcome*/) {}
 
 // NOLINTNEXTLINE(bugprone-exception-escape): stop() can only throw on allocation, which ends the program anyway
 NetServer::~NetServer() { stop(); }

@@ -406,4 +406,16 @@ std::string NetPlay::summary() const {
     return std::format("net: {}; {} B sent, {} B received\n", now.state, now.bytesSent, now.bytesReceived);
 }
 
+void NetPlay::loadLevel(const std::string& /*level*/, std::uint16_t /*checkpoint*/) {}
+void NetPlay::endMission(net::MissionOutcome /*outcome*/) {}
+bool NetPlay::holdsStep() const { return false; }
+std::uint32_t NetPlay::startMovie() { return m_steps; }
+void NetPlay::endHostMovie() {}
+bool NetPlay::movieSkipped() const { return false; }
+bool NetPlay::movieMayEnd() const { return true; }
+std::optional<net::LoadLevel> NetPlay::takeLevelOrder() { return std::nullopt; }
+void NetPlay::levelLoaded(std::uint32_t /*load*/) {}
+std::vector<net::MissionEnd> NetPlay::takeMissionEnds() { return {}; }
+void NetPlay::movieDone(std::uint32_t /*movieStep*/, bool /*skipped*/) {}
+
 } // namespace coney::platform
