@@ -347,18 +347,20 @@ exit `75` as for a slot. Runs in other folders, other worktrees or other presets
 covers the run from its measuring on, so the manifest refresh and the dry run never overlap a build either, and
 a run that waited looks at the folder again once the lock is its own (the run before it may have configured it).
 
-**When the whole suite runs.** `--test` with no `-R` or `-L` is the whole suite, the longest job on the machine (most
-of it the disc tests), which holds a check slot for the whole run and no build slot ([Check slots](#check-slots)). An
-agent runs it **once, at the handover tip**, and `task check` does it (it calls the same code and says so), so while
-iterating an agent runs the tests it touched with `-R` or `-L`. The command keeps that rule: **a run that names its
-`--agent` and has `--test` with neither filter is refused (exit 2) unless it carries `--full`**, the flag that says
-"this is the run of the whole suite for the tip". Not refused: a filtered run; a build with no `--test`; a person at a
-terminal who leaves `--agent` out (the id then comes from the user name); CI, which builds through the presets and not
-this command; `task check`, and `ci run`'s `engine` step, which pass `--full` themselves; and `orig fails-first`, which
-always names its tests. `--full` is refused with no `--test` and beside `-R` or `-L`, where it would claim something
-untrue, and it is kept in the build record's command line. The flag is a statement, not a check that the tip is the
-handover one: use it for that run only, since every other full suite holds the slots the other agents' builds wait for
-([Check slots](#check-slots)).
+**When the whole suite runs.** `--test` with no `-R` or `-L` is the whole suite, the longest job on the machine (most of
+it the disc tests), which holds a check slot for the whole run and no build slot ([Check slots](#check-slots)). An agent
+runs it **once, at the handover tip**, and `task check` does it (it calls the same code and says so), so while iterating
+an agent runs the tests it touched with `-R` or `-L`. The command keeps that rule: **a run that names its `--agent` and
+has `--test` with neither filter is refused (exit 2) unless it carries `--full`**, the flag that says "this is the run
+of the whole suite for the tip". Not refused: a filtered run; a build with no `--test`; a person at a terminal who
+leaves `--agent` out (the id then comes from the user name); CI, which builds through the presets and not this command;
+`task check`, and `ci run`'s `engine` step, which pass `--full` themselves; and `orig fails-first`, which always names
+its tests. `task check` passes `--full` only when the change cannot be traced, and on a fix to a branch whose full Check
+passed it passes the `-L` of the test files the fix changed or reaches, however the rest of the branch was checked ([The
+fix profile](task-check-fix.md#fix)). `--full` is refused with no `--test` and beside `-R` or `-L`, where it would claim
+something untrue, and it is kept in the build record's command line. The flag is a statement, not a check that the tip
+is the handover one: use it for that run only, since every other full suite holds the slots the other agents' builds
+wait for ([Check slots](#check-slots)).
 
 **Choosing tests.** `-R REGEX` runs the tests whose names match and `-L LABEL` those with a label that matches (ctest's
 two filters; both together select the tests that satisfy both). The command lists the selection first (`ctest -N`),

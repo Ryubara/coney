@@ -595,6 +595,15 @@ A rerun for the same committed tip goes on from the first check that did not pas
 ([Resuming a run](task-check-resume.md#resume); `--no-resume` starts over): after a kill, a wait for a slot
 that gave up or a flaky failure the hour is not lost. Any edit, rebase or amend of the branch runs everything again.
 
+**A fix checks only what changed since the last full Check.** When the task's log (the parent's, for a fix task)
+holds a passing Check of an earlier change of the branch, `task check` runs the same checks and the whole build, but
+the Python and C++ tests only of the files the branch changed since that Check; a rebase alone changes none. It runs
+the full Check instead when the files changed since touch the build, presets or test fixtures, include a header that
+many files include, or are more than a few (`proof.fix` in [.github/conventions.yml](repo:.github/conventions.yml)),
+and `--no-fix` always does; `pr verify` accepts the fix's stamp on top of the earlier one ([The fix
+profile](task-check-fix.md#fix)). A one-line fix to a branch that touched a CMake file runs its own few
+test files, not the whole suite again: 1421's second Check would have taken about 5 minutes instead of 30.
+
 While working, one command checks what CI would fail on for the files you touched; it is an aid, not the gate, and
 the quickest check for a person contributing without a task:
 
