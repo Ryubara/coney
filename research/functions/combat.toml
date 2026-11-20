@@ -908,8 +908,8 @@ page = "combat-reactions.md#damage"
 role = "each update: block, damage, armour, then the reaction by state"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
-coney = "src/human/target_human.h:TargetHuman::step"
-status = "legacy"
+coney = "src/human/fighter_victim.cpp:Fighter::takePending"
+status = "compared"
 
 [[function.gaps]]
 what = "Fighter::takePending sets the AI's hit timer (+0x32) but not while falling (0x1c00000000) on a lethal hit"
