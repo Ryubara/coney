@@ -1903,11 +1903,17 @@ void Fighter::updateL1(const FighterInput& input, std::uint32_t phase) {
         m_l1Lock = false;
         return;
     }
-    // Let go (the matcher's release command): L1's bit and the lock clear (0xc) and the release window opens, and the
-    // hidden player's state 0x20000000 is set (**Coney's choice**: not kept). In a throw aim the original ends the aim
-    // instead (**Coney's choice**: a throw aim is a script's, which L1 does not end).
+    // Let go (the matcher's release command). Hidden (Player_UpdateActionsHidden 0x0027e040), L1's bit clears (0x8
+    // only, not the lock's 0x4) and the release window opens whether or not he is in a throw aim, and only then is a
+    // throw aim ended. Out of hiding (Player_UpdateActions 0x0027c120) a throw aim is ended instead of
+    // Player_OnL1Released, which clears L1's bit and the lock (0xc) and opens the window.
+    // **Coney's choice**: the hidden player's state 0x20000000, set with the clear, is not kept, and the aim is not
+    // ended in either branch: a throw aim is a script's, which L1 does not end.
     if (input.command == combat::command::kL1Released) {
-        if (!input.throwAiming) {
+        if (m_lockBlocked) {
+            m_l1Lock = false;
+            m_l1WindowEndMs = input.nowMs + kL1ReleaseWindowMs;
+        } else if (!input.throwAiming) {
             m_l1Lock = false;
             m_lockOn = false;
             m_l1WindowEndMs = input.nowMs + kL1ReleaseWindowMs;

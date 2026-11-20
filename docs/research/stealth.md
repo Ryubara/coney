@@ -251,7 +251,9 @@ The approach and the takedown, confirmed (code) at `0x0027e040`, `0x0027da10`, `
 1. **L1 while hidden** (`Player_OnL1Pressed` / `Player_OnL1Held`): picks a target as usual
    (`Player_LockOnTarget`) and sets state `0x8` (the L1 target bit), but **does not lock on** (`Player_LockOn` is
    skipped while hidden) and does not enter the fight stance, so the player keeps the stealth walk. Letting go of
-   L1 clears `0x8` (and sets `0x20000000`, the anim rebuild) and a re-lock delay (record `+0xf4` = now + 264 ms). L1
+   L1 clears `0x8` (and sets `0x20000000`, the anim rebuild) and a re-lock delay (record `+0xf4` = now + 264 ms),
+   and only then ends a throw aim (`Human_ExitThrowAim`): unlike the release out of hiding (`0x0027c120`), which in
+   a throw aim ends the aim instead of `Player_OnL1Released`, the clear and the delay are not skipped in the aim. L1
    while sprinting does nothing.
 2. **The creep**: hidden with a target (`Human_IsStalkingTarget`, states `0x8` and `0x200000`) the idle and walk mix
    in the ready clips 635 `STEALTH_READY_IDLE` / 636 `STEALTH_READY_WALK` (`Human_SetStealthReadyBlend`): weight 1
@@ -392,7 +394,8 @@ Chapter 5 of `level87` (`level87_chap5_club.lua`) is the stealth tutorial. What 
   of another set, the move style `0xf` the kill pops, the class record's weapon scale on the damage, and the chain
   press and a throwable object's armed special, which the original takes before the hidden buttons and Coney's
   dispatcher after them (#1499); the knocked-down branch of the grabbable test (#684); the creep's ready clips (635,
-  636, #1498).
+  636, #1498). Letting go of L1 while hidden clears L1's bit and opens the 264 ms window in a throw aim too
+  (`Fighter::updateL1`); the aim itself is not ended, as out of hiding (a throw aim is a script's in Coney).
 - **Scouts and the call** (`repo:src/ai/tactic_scout.h`, [AI: Coney](ai/index.md#in-coney)): TacticScout's guards keep their
   posts and scan every 500 ms; one who spots, is hit by or is warned of an enemy fights him, and when the level allows
   it runs to the farthest phone flag in range and, 1.5 s later, starts the enemy gang's second wanted timer
