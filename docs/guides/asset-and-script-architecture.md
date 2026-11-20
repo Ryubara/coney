@@ -32,7 +32,7 @@ four rows current.
 | Process-wide mutable state | 8 tuning singletons (`followTuning`, `followDefaults`, `combatTuning`, `bodyTuning`, `climbTuning`, `jumpTuning`, `locomotionTuning`, `staminaTuning`) and the tunable registry | |
 | Threads | audio only (`mixer`, `pcm_stream`, `spsc_queue`, `sdl_audio_device`) and `sdl_input` | |
 | Simulation inside `src/platform/` | `PlayLevelMode::update` steps the player, the humans, pick-ups, objects, scenes, streaming and lights (`play_level_*.cpp`, 2,105 lines) | |
-| Per-user writes (SDL pref path) | `profiles/` (`profile_folder.cpp`), and also `coney-tunables.ini` and `coney-imgui.ini` (`debug_menus.cpp`) | |
+| Per-user writes (SDL pref path) | `profiles/` (`profile_folder.cpp`), and also `coney-tunables.ini` and `coney-imgui.ini` (`debug_menus.cpp`), and the console's `console-history.txt` (`game_console.cpp`) and `coney-console.ini` (`console_ui.cpp`) | |
 
 What this means: the parsers are already clean. Bytes go in and Coney structs come out, with no WAD in sight. What is
 tied to the PS2 is *how a loader finds its bytes*. 48 signatures pass the WAD itself around, and 44 calls look things

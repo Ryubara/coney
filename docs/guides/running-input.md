@@ -27,6 +27,7 @@ sandbox](sandbox.md) read port 1.
 | L3, R3 | stick presses | F, H |
 | L3 and R3 together (the debug menu) | both stick presses | F4, or F and H together |
 | none (the developer overlay) | none | F1 |
+| SELECT and R3 together (the console) | back and the right stick's press | F8 |
 
 Gamepads can be connected and pulled out at any time. A gamepad that connects takes the first free port, port 1
 first, and the log says so (`gamepad: NAME on port 1`); one pulled out frees its port and the other port keeps its
@@ -37,9 +38,11 @@ can freeze the window for seconds. Xbox (XInput) gamepads and those SDL drives d
 more) do not need it; for an older DirectInput-only gamepad, set the environment variable
 `SDL_JOYSTICK_DIRECTINPUT=1` before starting Coney.
 
-Escape quits, unless the developer overlay has the keyboard (a text box in it is being typed in); while it has the
-keyboard, the keyboard does not play on port 1. A headless run reads no devices. The last two rows open the debug
-menu and the overlay ([Opening it and the controls](debug-menu.md#controls)).
+Escape quits, unless the console is open (Escape then closes it) or the developer overlay has the keyboard (a text box
+in it is being typed in); while either has the keyboard, the keyboard does not play on port 1. A headless run reads no
+devices. The last three rows open the debug menu, the overlay ([Opening it and the controls](debug-menu.md#controls))
+and the console, the one of them the release build has ([The F8 bar](console.md#front-end)); while the console is open
+port 1's gamepad drives its command picker and the game sees port 1 with nothing pressed.
 
 A gamepad's sticks are squared off like a DualShock 2's: a modern stick reports a circle, about 0.71 on each axis at a
 full diagonal, which the game's per-axis dead zone turns into a walk; the DualShock 2 reaches both extremes there, so

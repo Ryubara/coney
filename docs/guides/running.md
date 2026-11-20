@@ -36,7 +36,8 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--preset ps2|xbox|enhanced|high] [--tunables FILE]
       [--no-audio | --audio-test]
       [--skip-movies] [--rumble TYPE [--arena N] [--gang-size N]]
-      [--profiles DIR] [--dev-overlay N] [--mesh-view SPEC] [--no-activate] [--window-display DISPLAY] [--event-log FILE]
+      [--profiles DIR] [--dev-overlay N] [--console-open N] [--mesh-view SPEC] [--no-activate]
+      [--window-display DISPLAY] [--event-log FILE]
       [--pad-pipe] [--record FILE [--record-seconds N]]
       [--bench FILE [--bench-fighters N] [--bench-allies N] [--bench-god] [--bench-spawn-step N] [--bench-warmup N]
         [--bench-measure N] [--bench-frames FILE] [--bench-real-time] [--bench-place X,Y,Z,H]
@@ -209,6 +210,7 @@ command are in [Script patches](script-patches.md#command-line).
 * [`--host`, `--join`](running-options.md#network-play): network play; `--digest`, `--digest-net`, `--net-record` and
   `--net-replay`, its proof without a person.
 * [`--tunables`, `--dev-overlay`, `--mesh-view`](running-options.md#the-debug-menus): the debug menus' options.
+* [`--console-open`](running-options.md#console): the console bar opened for a test's first frames, in every build.
 
 ### [Loading and viewing your disc](running-viewers.md)
 

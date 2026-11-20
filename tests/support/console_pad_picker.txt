@@ -1,0 +1,15 @@
+# The console's pad chord and command picker (docs/guides/studio/console.md#input), read by
+# tests/console/console_pad_test.cpp: SELECT and R3 open the console, the d-pad walks the picker to `missions`, cross
+# runs it, and SELECT and R3 close the console again. Port 2 holds cross throughout, which always reaches the game.
+# Format: docs/guides/running-input.md#input-scripts
+2 press select
+3 press r3
+5 release select r3
+6 p2 connect
+7 p2 press cross
+8 tap down
+10 tap down
+12 tap cross
+14 press r3 select
+16 release r3 select
+20 tap cross

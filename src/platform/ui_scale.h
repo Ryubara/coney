@@ -1,32 +1,34 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
-#include <imgui.h>
+#include <cstddef>
 
-#include "debug/debug_session.h"
+#include <imgui.h>
 
 // Dear ImGui's settings-file hook, declared in its internal header.
 struct ImGuiSettingsHandler;
 
 namespace coney::platform {
 
-/// Keeps the developer overlay the same physical size at any resolution (docs/guides/debug-menu.md#ui-scale): it picks
-/// the scale (debug::uiScaleFor(): automatic from the display's height, or the Display page's override), then sets
+/// Keeps a Dear ImGui interface (the console's F8 bar, the debug tools' developer overlay) the same physical size at
+/// any resolution (docs/guides/debug-menu.md#ui-scale): it picks the scale (uiScaleFor(): automatic from the display's
+/// height, or an override such as the overlay's Display page's), then sets
 /// the style's sizes and the font size to it. The font is not stretched: at 1x it is Dear ImGui's pixel-clean 13 px
 /// font, above that its scalable font at 13 px times the scale, so Dear ImGui's dynamic atlas draws the glyphs again
 /// at the new size and the text stays sharp.
 ///
 /// A change of scale (a window resized, moved to another display, or a new override) also resizes and moves the open
 /// windows by the same ratio, so their contents still fit and the layout keeps its shape. The scale at which the
-/// windows were last saved is kept in the settings file (`[ConeyUi][Scale]`), with the Display page's choice, so
-/// windows saved at one scale open at the right size and place at another.
+/// windows were last saved is kept in the settings file (`[ConeyUi][Scale]`), with the choice, so windows saved at one
+/// scale open at the right size and place at another. In `coney_console_ui`, outside the debug tools, as the release
+/// build's console bar uses it.
 ///
 /// Needs a current ImGui context; does no drawing, so tests run it on a bare context.
 class ImGuiUiScale {
   public:
-    /// A scaler over `display` (which holds the Display page's choice, and which it tells the scale it applied); the
-    /// display must outlive it.
-    explicit ImGuiUiScale(debug::DisplayOptions& display) : m_display(display) {}
+    /// A scaler over `choice` (an index into uiScaleLabels(): the override, 0 for Auto) and `applied` (where it writes
+    /// the scale it applied, for a page to show); both must outlive it.
+    ImGuiUiScale(std::size_t& choice, float& applied) : m_choice(choice), m_reported(applied) {}
 
     /// Takes the style as it is now as the 1x style, adds the two fonts and registers the settings hook. Call once,
     /// right after the context is made and its colours chosen, before the settings are loaded and before the first
@@ -55,7 +57,8 @@ class ImGuiUiScale {
     // Resizes and moves the open windows by `ratio`.
     static void scaleOpenWindows(float ratio);
 
-    debug::DisplayOptions& m_display;
+    std::size_t& m_choice;
+    float& m_reported;
     ImGuiStyle m_baseStyle;             // the style at 1x, which every scale is made from
     ImFont* m_bitmapFont = nullptr;     // the pixel-clean font, used at exactly 1x
     ImFont* m_vectorFont = nullptr;     // the scalable font, used above 1x

@@ -995,7 +995,7 @@ tag = 15
 tag = 5
 
 ["src/human/fighter_victim.cpp"]
-tag = 9
+tag = 8
 
 ["src/human/holdable.h"]
 comment = 1
@@ -1152,14 +1152,8 @@ comment = 1
 ["src/platform/hud_layer.h"]
 comment = 1
 
-["src/platform/imgui_ui_scale.cpp"]
-comment = 3
-
-["src/platform/imgui_ui_scale.h"]
-comment = 3
-
 ["src/platform/placed_objects.cpp"]
-comment = 2
+comment = 1
 
 ["src/platform/placed_objects.h"]
 comment = 1
@@ -1801,9 +1795,6 @@ citation = 2
 ["tests/core/perf_test.cpp"]
 citation = 8
 
-["tests/core/player_options_test.cpp"]
-citation = 6
-
 ["tests/core/ps2_float_test.cpp"]
 citation = 2
 
@@ -1844,9 +1835,6 @@ citation = 3
 citation = 4
 
 ["tests/debug/time_scale_test.cpp"]
-citation = 6
-
-["tests/debug/ui_scale_test.cpp"]
 citation = 6
 
 ["tests/effects/blur_pulse_test.cpp"]
@@ -1961,7 +1949,7 @@ citation = 3
 citation = 5
 
 ["tests/graphics/light_manager_test.cpp"]
-citation = 13
+citation = 12
 
 ["tests/graphics/overlay_camera_test.cpp"]
 citation = 7
@@ -2401,9 +2389,6 @@ citation = 1
 ["tests/platform/front_end_scene_test.cpp"]
 citation = 2
 
-["tests/platform/imgui_ui_scale_test.cpp"]
-citation = 8
-
 ["tests/platform/log_output_test.cpp"]
 citation = 4
 
@@ -2552,7 +2537,7 @@ citation = 8
 citation = 7
 
 ["tests/scripting/script_bindings_test.cpp"]
-citation = 10
+citation = 9
 
 ["tests/scripting/script_system_test.cpp"]
 citation = 11

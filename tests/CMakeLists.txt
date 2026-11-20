@@ -3,8 +3,11 @@ add_executable(coney_tests
     camera/camera_lens_test.cpp
     console/arg_types_test.cpp
     console/catalog_test.cpp
+    console/command_picker_test.cpp
+    console/console_pad_test.cpp
     console/console_test.cpp
     console/player_commands_test.cpp
+    console/line_editor_test.cpp
     console/registry_test.cpp
     console/terminal_test.cpp
     console/tokenizer_test.cpp
@@ -40,6 +43,7 @@ add_executable(coney_tests
     core/story_manifest_test.cpp
     core/story_merge_test.cpp
     core/story_view_test.cpp
+    core/ui_scale_test.cpp
     core/mesh_view_option_test.cpp
     core/world_edit_option_test.cpp
     core/draw_hash_option_test.cpp
@@ -558,6 +562,10 @@ set_source_files_properties(support/test_paths.cpp PROPERTIES COMPILE_DEFINITION
 # coney_platform for librw, which the texture tests run on its NULL device (no window, no GPU); coney_launcher for the
 # launcher's library (docs/guides/launcher.md).
 target_link_libraries(coney_tests PRIVATE coney_platform coney_launcher Catch2::Catch2WithMain)
+# The player console's F8 bar over a bare Dear ImGui context (docs/guides/console.md#front-end), with the size rule's
+# Dear ImGui side it shares with the debug tools' overlay, in every build.
+target_sources(coney_tests PRIVATE platform/console_view_test.cpp platform/ui_scale_test.cpp)
+target_link_libraries(coney_tests PRIVATE coney_console_ui)
 # The tests of the debug tools (the menus, the overlay, the sandbox, the viewers, the play mode's debug controls and the
 # disc tests that drive them through those), only in a build with them (docs/guides/building.md#debug-tools); the
 # release build runs every other test, so the game is tested without them.
@@ -590,7 +598,6 @@ if(CONEY_DEBUG_TOOLS)
         debug/time_scale_test.cpp
         debug/display_tunables_test.cpp
         debug/tunables_test.cpp
-        debug/ui_scale_test.cpp
         debug/world_split_test.cpp
         gamemodes/play_level_step_test.cpp
         gamemodes/sheet_viewer_mode_test.cpp
@@ -632,7 +639,6 @@ if(CONEY_DEBUG_TOOLS)
         platform/gpu_timer_test.cpp
         platform/imgui_model_view_test.cpp
         platform/imgui_overlay_test.cpp
-        platform/imgui_ui_scale_test.cpp
         platform/lighting_rows_test.cpp
         platform/mesh_views_test.cpp
         platform/test_card_test.cpp

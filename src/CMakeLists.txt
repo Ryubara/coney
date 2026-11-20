@@ -3,10 +3,13 @@ add_library(coney_core STATIC
     camera/camera_lens.cpp
     console/arg_types.cpp
     console/catalog.cpp
+    console/command_picker.cpp
     console/command_queue.cpp
     console/command_spec.cpp
     console/commands_table.cpp
     console/console.cpp
+    console/console_pad.cpp
+    console/line_editor.cpp
     console/owned_spec.cpp
     console/player_commands.cpp
     console/registry.cpp
@@ -57,6 +60,7 @@ add_library(coney_core STATIC
     core/story_manifest.cpp
     core/story_merge.cpp
     core/story_view.cpp
+    core/ui_scale.cpp
     core/sha256.cpp
     fileio/disc.cpp
     fileio/executable.cpp
@@ -604,7 +608,6 @@ if(CONEY_DEBUG_TOOLS)
         debug/time_control.cpp
         debug/time_series.cpp
         debug/tunables.cpp
-        debug/ui_scale.cpp
         debug/world_edits.cpp
         debug/world_split.cpp
         gamemodes/sheet_viewer_mode.cpp
