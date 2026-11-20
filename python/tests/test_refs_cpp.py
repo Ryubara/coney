@@ -8,12 +8,12 @@ from pathlib import Path
 
 import pytest
 
-from coney_tools import refs_cli, refs_cpp
+from coney_tools import refs, refs_cli, refs_cpp
 from coney_tools.cli import main
-from coney_tools.refs_topics import topic
+from coney_tools.refs_topics import TOPICS, topic
 
 
-def _scenes(entries: list[dict[str, object]]) -> refs_cli.refs.RefList:
+def _scenes(entries: list[dict[str, object]]) -> refs.RefList:
     """The scenes list holding `entries`."""
     reflist = refs_cli.new_list(topic("scenes"))
     reflist.entries = entries
@@ -45,11 +45,11 @@ def test_render_writes_the_scene_casts_table_and_check_finds_it_stale(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
-    for item in refs_cli.TOPICS:
+    for item in TOPICS:
         reflist = refs_cli.new_list(item)
         if item.key == "scenes":
             reflist.entries = [{"id": "t1_c1", "kind": "scene", "name": "t1_c1", "scene": 0, "cast": ["civl_a"]}]
-        refs_cli.refs.write(tmp_path / refs_cli.REFS_DIR / f"{item.key}.yaml", reflist)
+        refs.write(tmp_path / refs_cli.REFS_DIR / f"{item.key}.yaml", reflist)
     monkeypatch.chdir(tmp_path)
     assert main(["refs", "render"]) == 0
     table = tmp_path / refs_cpp.SCENE_CASTS_FILE
