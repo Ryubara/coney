@@ -73,6 +73,8 @@ std::optional<coney::io::Wad> openDisc() {
 
 TEST_CASE("the disc's level99: the intro scene's end gives player 1's crew the follow and starts it",
           "[disc][story][scenes][crew]") {
+    // docs/research/scenes.md#gang: SceneTask_End (0x0039f450) dispatches the follow to player 1's crew once the scene
+    // ends; run r-20261120-scene-crew-follow saw it in force right after a cinematic.
     std::optional<coney::io::Wad> wad = openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
