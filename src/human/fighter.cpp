@@ -48,8 +48,8 @@ constexpr std::uint32_t kChargeFlags = 0x1400000;
 // (Player_Charge), the walk and run attacks 23 and 24 and the armed run sweep 501 (Player_StartCharge), the specials
 // 653 and 645 and their rear ids (Player_Special and Player_SpecialAttack, 0x00287730 and 0x00263c90), the spray 664,
 // rage's start 643 (Player_TryStartRage) and a held object's throws (sets 4-6, Player_CrossWithWeapon 0x002880d8) do
-// not. Nor do square's solo 22 and the armed special's throw of a melee weapon (Player_ThrowMeleeWeapon), which Coney
-// does not build (docs/research/combat-targets.md#fight-stance).
+// not. Nor do square's solo 22 and the armed special's throw of a melee weapon (Player_ThrowMeleeWeapon), which plays
+// through playMeleeThrow(), not here (docs/research/combat-targets.md#fight-stance).
 // @coney-only a list of the attack starts that call Player_EnterStance; the original makes the call in each start
 bool attackEntersStance(int animId) {
     switch (animId) {
@@ -439,6 +439,152 @@ const ObjectTarget* Fighter::objectTargetIn(const FighterInput& input) const {
     return found != input.objects.end() ? &*found : nullptr;
 }
 
+TargetPick Fighter::pickThrowTarget(const FighterInput& input, float nearest, float range, bool humansOnly,
+                                    std::uint32_t heldFlags, const Combatant* current,
+                                    const ObjectTarget* currentObject) {
+    const float along = aimHeading(input, 0.0F);
+    // The standing enemies between `nearest` and `reach` inside `cone` degrees and `height` metres up or down.
+    const auto nearestEnemy = [&input, along, nearest](float reach, float cone, float height) {
+        Combatant* found = nullptr;
+        float bestDistance = reach;
+        for (Combatant* target : input.targets) {
+            if (target->state() != TargetState::Standing || target->health().depleted() || !target->targetable() ||
+                std::fabs(target->position().z - input.position.z) > height) {
+                continue;
+            }
+            // **Coney stand-in** (#1396): across the ground, where the original measures in 3D.
+            const anim::Vec3 to = anim::subtract(target->position(), input.position);
+            const float distance = std::hypot(to.x, to.y);
+            const float off = std::fabs(wrapAngle(headingOf(to) - along));
+            if (distance >= nearest && distance <= bestDistance && off <= cone * kDegrees) {
+                found = target;
+                bestDistance = distance;
+            }
+        }
+        return found;
+    };
+    // 1. Within the range inside the narrow cone, then within three quarters of it inside the wider one and higher.
+    Combatant* found = nearestEnemy(range, kThrowConeDegrees, kPickHeight);
+    if (found == nullptr) {
+        found = nearestEnemy(range * kThrowWideScale, kPickConeDegrees, kThrowWideHeight);
+    }
+    if (found != nullptr) {
+        return TargetPick{.human = found};
+    }
+    // 2. A pick that may take objects: the world objects within three quarters of the range inside 18°, then the panes
+    // there inside 54°, or 27° on the move (a jog, or a free run or sprint).
+    if (!humansOnly) {
+        const bool free = heldFlags == 0;
+        const bool moving =
+            input.gait == Gait::Jog || ((input.gait == Gait::Run || input.gait == Gait::Sprint) && free);
+        const float reach = range * kThrowWideScale;
+        // **Coney stand-in**: the attack's object filter for `TargetFilter_ThrowObject` (not traced).
+        const auto objectIn = [&input, along](const ObjectTarget& object) {
+            return objectTargetable(object, input.position, along, kThrowObjectConeDegrees);
+        };
+        if (const ObjectTarget* object = nearestObject(input, ObjectKind::WorldObject, nearest, reach, objectIn);
+            object != nullptr) {
+            return TargetPick{.object = object};
+        }
+        const float paneCone = moving ? kThrowConeDegrees : kPickConeDegrees;
+        const auto paneIn = [&input, along, paneCone](const ObjectTarget& pane) {
+            return glassTargetable(pane, input.position, along, paneCone);
+        };
+        if (const ObjectTarget* pane = nearestObject(input, ObjectKind::Glass, nearest, reach, paneIn);
+            pane != nullptr) {
+            return TargetPick{.object = pane};
+        }
+    }
+    // 3. Nothing found: the current target kept at any distance, with a body; a pick of humans only keeps a human.
+    if (current != nullptr) {
+        return TargetPick{.human = keptTarget(input, current, std::numeric_limits<float>::max())};
+    }
+    if (humansOnly) {
+        return TargetPick{};
+    }
+    return TargetPick{.object = keptObject(input, currentObject, std::numeric_limits<float>::max())};
+}
+
+bool Fighter::armedSpecialTargetNear(const FighterInput& input, std::uint32_t heldFlags) {
+    m_throwTarget = nullptr;
+    // Only for a player whose cross + square reaches the melee throw's target test: not in an attack's phases, a melee
+    // weapon in hand, the throw not forbidden.
+    if (!m_player || input.command != combat::command::kCrossSquare ||
+        (heldFlags & combat::kAttackRefusingPhases) != 0 || m_animSet < 1 || m_animSet > 3 ||
+        hasFlag(flag::kNoThrowWeapon)) {
+        return false;
+    }
+    // The counter search (**Coney stand-in** for `Player_FindCounterTarget`): an enemy within reach inside the cone, at
+    // any angle with no target, else the target.
+    const float along = aimHeading(input, 0.0F);
+    Combatant* counter = nearestFightable(input, along, kThrowNearest, kPickConeDegrees);
+    if (counter == nullptr && m_target == nullptr) {
+        counter = nearestFightable(input, along, kThrowNearest, 0.0F);
+    }
+    if (counter == nullptr) {
+        counter = keptTarget(input, m_target, std::numeric_limits<float>::max());
+    }
+    // One down or out (**Coney stand-in**: grounded or out of health) takes the throw's own pick of the humans instead;
+    // the one chosen becomes the target.
+    const bool down = counter != nullptr && (counter->state() == TargetState::Grounded || counter->health().depleted());
+    Combatant* target = counter != nullptr && !down
+                            ? counter
+                            : pickThrowTarget(input, kThrowNearest, kThrowRange, true, heldFlags, m_target).human;
+    m_throwTarget = target;
+    // **Coney stand-in** (#1396): the distance across the ground, where `Object_Distance` measures in 3D.
+    return target != nullptr && flatDistance(input.position, target->position()) <= kThrowNearest;
+}
+
+void Fighter::playMeleeThrow(int animId, const FighterInput& input, HumanAnimator& animator, float& heading) {
+    m_steer.clear();
+    // A player picks the target again, a world object or a pane too; the pick replaces the target.
+    if (m_player) {
+        const TargetPick pick = pickThrowTarget(input, kThrowNearest, kThrowRange, false, animator.flags(), m_target,
+                                                objectTargetIn(input));
+        m_target = pick.human;
+        m_objectTarget = pick.object != nullptr ? std::optional<double>(pick.object->handle) : std::nullopt;
+    }
+    // With a target, he turns to face it by the clip's first event; no slide.
+    const ObjectTarget* object = objectTargetIn(input);
+    std::optional<anim::Vec3> at;
+    if (m_target != nullptr) {
+        at = m_target->position();
+    } else if (object != nullptr) {
+        at = object->point;
+    }
+    if (at.has_value()) {
+        const anim::Vec3 to = anim::subtract(*at, input.position);
+        if (std::hypot(to.x, to.y) > 1e-4F) {
+            m_steer.turnToOver(heading, headingOf(to), timeToEvent(animId, animator));
+        }
+    }
+    // **Coney stand-in**: the weapon's message 4 (its state 1) has no counterpart, as Coney keeps no melee weapon
+    // state.
+    // **Coney stand-in**: no aiming move style is ever on here, as the aim takes only a set 5 object.
+    // **Coney stand-in**: the held object's anim set is not taken off here but follows the hand, which the release
+    // empties (the play mode sets it each step).
+    const auto clip = clips::one(clips::clipOf(animId));
+    // **Coney stand-in**: the walking and running throws of sets 4 and 6 (506 / 552, 507 / 553) never come here; they
+    // are Player_CrossWithWeapon's, which Coney plays as attacks (playAttack()).
+    if (animId == id::kOneHandedThrowFromWalk || animId == id::kOneHandedThrowFromRun) {
+        // On the move: at once, holding the run attack's bit, back to the human's own movement after it.
+        animator.playCombat(clip, clips::kIdle, AnimState::Attack, kAttackFade, clips::kMovingAttackHolds);
+    } else if (m_target != nullptr) {
+        // Standing: blended in, holding 0x10, then the fight idle (record +0x18 = 0xb). **Coney stand-in**: the
+        // animator's own blend stands for the 1/30 s blend-out task (0.1 s in a shadow) and the push sphere left on,
+        // and 467's chain from 466 is set 5's, which never comes here.
+        animator.playCombat(clip, kAnimFightIdle, AnimState::Attack, kMeleeThrowFade, clips::kMeleeThrowHolds);
+    } else {
+        // With nobody to face, the fight idle gives way to 389 and the idle, as at runtime.
+        const std::array<std::uint32_t, 2> settle{clips::clipOf(animId), kAnimNormalFromFight};
+        animator.playCombat(settle, clips::kIdle, AnimState::Attack, kMeleeThrowFade, clips::kMeleeThrowHolds);
+    }
+    // The target, when it is a human, hears of the throw.
+    if (m_target != nullptr) {
+        m_target->announceAttack(input.position);
+    }
+}
+
 Combatant* Fighter::findAttackTarget(const FighterInput& input, int farId) const {
     // The search's aim is the stick's, else the facing turned to the id's direction; an object or a pane found is no
     // human.
@@ -725,11 +871,15 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
     in.padControlled = input.padControlled;
     in.hasSprayPaint = m_hasSprayPaint;
     in.fightStance = inFightStance();
+    in.noThrowWeapon = hasFlag(flag::kNoThrowWeapon);
+    in.throwAiming = input.throwAiming;
     m_snapTarget = nullptr;
     m_wallThrow.reset();
     if (helpless) {
         return in;
     }
+    // Cross + square with a melee weapon: the armed special's target, and whether it is too near to throw at.
+    in.throwTargetNear = armedSpecialTargetNear(input, animator.flags());
     // Circle in a grab with the stick out throws: into a wall within the side's reach, the wall throw. Circle is its
     // press, tap or hold (`PlayerCmd_IsCircleAny`): an AI's throw is the tap.
     const bool circle = input.command == combat::command::kCirclePressed ||
@@ -978,6 +1128,10 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
         ++m_sprays;
     }
     bool consumed = false;
+    // The armed special reached its target step: the target it chose becomes the target, thrown at or not.
+    if (out.throwTargetTaken) {
+        m_target = m_throwTarget;
+    }
     if (out.rageStarted) {
         enterRage(animator);
         consumed = true;
@@ -1074,6 +1228,11 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
             animator.playCombat(clips::one(clips::clipOf(out.startAnim)), clips::kIdle, AnimState::Attack, kCombatFade,
                                 clips::kAttackHolds);
         }
+        consumed = true;
+    }
+    // The armed special's throw of a melee weapon plays as `Human_StartMeleeThrow` plays it, not as an attack.
+    if (out.meleeThrow && out.startAnim != id::kNone && !consumed) {
+        playMeleeThrow(out.startAnim, input, animator, heading);
         consumed = true;
     }
     if (out.startAnim != id::kNone && !consumed) {

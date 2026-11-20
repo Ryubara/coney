@@ -484,7 +484,7 @@ comment = 10
 tag = 1
 
 ["src/combat/player_combat.cpp"]
-tag = 12
+tag = 11
 
 ["src/combat/player_combat.h"]
 comment = 10
@@ -795,7 +795,7 @@ tag = 1
 tag = 2
 
 ["src/gui/profile_management_gui/pm_list_screen.cpp"]
-tag = 4
+tag = 3
 
 ["src/gui/profile_management_gui/pm_look.cpp"]
 tag = 8
@@ -816,7 +816,7 @@ tag = 2
 tag = 8
 
 ["src/gui/profile_management_gui/pm_screen.cpp"]
-tag = 12
+tag = 11
 
 ["src/gui/profile_management_gui/pm_shared.h"]
 tag = 3
@@ -1060,7 +1060,7 @@ comment = 4
 tag = 2
 
 ["src/human/target_human.cpp"]
-tag = 14
+tag = 13
 
 ["src/human/target_human.h"]
 comment = 9
@@ -1712,7 +1712,7 @@ citation = 3
 citation = 3
 
 ["tests/combat/attacks_test.cpp"]
-citation = 17
+citation = 16
 
 ["tests/combat/being_hit_test.cpp"]
 citation = 5
@@ -2009,7 +2009,7 @@ citation = 5
 citation = 8
 
 ["tests/gui/profile_management_gui/pm_controller_test.cpp"]
-citation = 19
+citation = 17
 
 ["tests/gui/rumble_mode_gui/rumble_match_screens_test.cpp"]
 citation = 9
@@ -2132,7 +2132,7 @@ citation = 1
 citation = 7
 
 ["tests/human/script_state_test.cpp"]
-citation = 17
+citation = 16
 
 ["tests/human/stamina_test.cpp"]
 citation = 6
@@ -2195,9 +2195,6 @@ citation = 8
 citation = 4
 
 ["tests/platform/disc_anim_player_test.cpp"]
-citation = 2
-
-["tests/platform/disc_bat_cross_test.cpp"]
 citation = 2
 
 ["tests/platform/disc_change_character_test.cpp"]

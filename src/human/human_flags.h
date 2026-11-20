@@ -72,7 +72,8 @@ inline constexpr std::uint64_t kIncreasedReactOff = 0x400000;
 inline constexpr std::uint64_t kBlockTackle = 0x100000000;
 /// A handcuffed human a player may free (`HuSetUnarrestable`); what else reads it is not on the page.
 inline constexpr std::uint64_t kUnarrestable = 0x8000;
-/// Never throws the weapon it holds (`HuSetNoThrowWeapon`; inferred from the name).
+/// Never throws the melee weapon it holds (`HuSetNoThrowWeapon`): the armed special refuses the throw
+/// (`Player_ArmedSpecial` `0x00288838`, docs/research/combat-throws.md#armed-special).
 inline constexpr std::uint64_t kNoThrowWeapon = 0x4000000000;
 /// Skipped by the player's automatic target lock (`HuSetNoAutoLock`, `0x002340a8`; inferred from the name: no reader
 /// is on the page, so Coney only keeps it).

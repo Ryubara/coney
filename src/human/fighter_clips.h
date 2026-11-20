@@ -109,6 +109,9 @@ inline constexpr HeldFlags kCounterHolds{.held = combat::kPhaseCounter, .set = c
 inline constexpr HeldFlags kMovingAttackHolds{.held = combat::kPhaseRunAttack, .set = combat::kPhaseRunAttack};
 /// The dive holds 0x400000 instead, which makes the human busy (docs/research/combat/index.md#charge-aim).
 inline constexpr HeldFlags kDiveHolds{.held = combat::kPhaseDive, .set = combat::kPhaseDive};
+/// A standing throw of a melee weapon (491, 502) holds 0x10 (`Human_StartMeleeThrow` `0x00261e78`; at runtime 502
+/// held it for its 35 updates, docs/research/combat-throws.md#bat-cross).
+inline constexpr HeldFlags kMeleeThrowHolds{.held = combat::kPhaseGrabStart, .set = combat::kPhaseGrabStart};
 
 /// The moves of a hold switch both humans on the same update, with no fade (docs/research/combat-grabs.md#grab-posing).
 inline constexpr float kPairFade = 0.0F;

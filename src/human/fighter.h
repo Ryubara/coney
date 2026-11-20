@@ -98,6 +98,22 @@ inline constexpr float kPickHeight = 2.0F;
 inline constexpr float kObjectWideConeDegrees = 135.0F;
 /// That wider pass searches the world objects within the range × this (`Player_PickTarget`).
 inline constexpr float kPickObjectWideScale = 0.8F;
+/// The armed special's throw of a melee weapon (docs/research/combat-throws.md#armed-special): the target search skips
+/// what lies nearer than this (record `+0xd8`), the counter search looks this far, and a target this near refuses the
+/// throw (metres).
+inline constexpr float kThrowNearest = 2.0F;
+/// The throw's target search (`Player_PickThrowTarget`) reaches this far (metres) ...
+inline constexpr float kThrowRange = 20.0F;
+/// ... first within this many degrees of the aim and kPickHeight in height (`0x0051096c` set to 0.471 rad) ...
+inline constexpr float kThrowConeDegrees = 27.0F;
+/// ... then within the range × this, kPickConeDegrees and this height (metres, `0x00510970` set to 6) ...
+inline constexpr float kThrowWideScale = 0.75F;
+inline constexpr float kThrowWideHeight = 6.0F;
+/// ... and, for a pick that may take objects, the world objects within the range × kThrowWideScale and this many
+/// degrees (0.314 rad).
+inline constexpr float kThrowObjectConeDegrees = 18.0F;
+/// A standing throw of a melee weapon (491, 502) blends in over this long (seconds, `Human_StartMeleeThrow`).
+inline constexpr float kMeleeThrowFade = 0.2F;
 /// The strong grapple's search range without an Anim Range List (Rembrandt's, **Coney's choice**).
 inline constexpr float kStrongGrappleFallbackRange = 3.0F;
 /// Beyond the attack's far range the attacker only turns, onto the target led by his velocity; a lead faster than
@@ -311,6 +327,19 @@ class Fighter {
     /// that finds any (docs/research/combat/index.md#charge-aim).
     /// @orig 0x0027b058 Attack_FindNearestInReach (unknown)
     [[nodiscard]] static TargetPick reachSearch(const FighterInput& input, float nearest, float far);
+    /// `Player_PickThrowTarget`: a throw's target beyond `nearest` metres (kThrowNearest), aimed along the stick's
+    /// heading (the facing at rest). The standing enemies within `range` inside kThrowConeDegrees and kPickHeight, then
+    /// within `range` × kThrowWideScale inside kPickConeDegrees and kThrowWideHeight; unless `humansOnly`, then the
+    /// world objects within `range` × kThrowWideScale inside kThrowObjectConeDegrees and the panes there inside
+    /// kPickConeDegrees (kThrowConeDegrees on the move: a jog, or a run or sprint with `heldFlags` 0). The nearest of
+    /// the first pass that finds any; with none, `current` (else `currentObject` unless `humansOnly`) kept at any
+    /// distance (docs/research/combat-throws.md#armed-special). **Coney stand-ins**: the distances are across the
+    /// ground (#1396), and the world objects pass objectTargetable() in place of `TargetFilter_ThrowObject`
+    /// (`0x0027a1e8`, not traced).
+    /// @orig 0x0027ad80 Player_PickThrowTarget (unknown)
+    [[nodiscard]] static TargetPick pickThrowTarget(const FighterInput& input, float nearest, float range,
+                                                    bool humansOnly, std::uint32_t heldFlags, const Combatant* current,
+                                                    const ObjectTarget* currentObject = nullptr);
     // Circle + cross's search (combat::nearestInCone() along the stick, combat::strongGrappleRange()): makes the human
     // found the target and returns it when it may be grabbed, else null.
     // @orig 0x00263c90 Player_SpecialAttack (unknown)
@@ -656,6 +685,24 @@ class Fighter {
     // (docs/research/combat-moves.md#input).
     // @orig 0x002625a8 Attack_Start (unknown)
     void playAttack(int animId, const FighterInput& input, HumanAnimator& animator, float& heading, bool chainStep);
+    // The armed special's target, for a player whose cross + square may throw a melee weapon (heldFlags clear of the
+    // attack phases, a melee weapon in hand, no no-throw flag): the counter search's human when he is not down,
+    // else pickThrowTarget() of the humans, kept aside (m_throwTarget) until the dispatcher reaches the armed special,
+    // which alone makes it the target (combat::CombatOutput::throwTargetTaken): the dispatcher's busy gate and its
+    // routes return before it. Returns whether it stands within kThrowNearest, which refuses the throw
+    // (combat::CombatInput::throwTargetNear). **Coney stand-in** for `Player_FindCounterTarget`
+    // (`0x0027ac30`): the nearest enemy within kThrowNearest inside kPickConeDegrees (at any angle with no target),
+    // else the current target; down is grounded or out of health (docs/research/combat-throws.md#armed-special).
+    // @orig 0x00288838 Player_ArmedSpecial (unknown)
+    bool armedSpecialTargetNear(const FighterInput& input, std::uint32_t heldFlags);
+    // Plays the throw of a melee weapon the armed special started (`animId`: 491, 502, 471 or 472): a player picks its
+    // target again (pickThrowTarget(), objects too), turns to face it over the time to the clip's first event, and the
+    // clip plays: 471 and 472 at once holding the run attack's 0x1000000, 491 and 502 over kMeleeThrowFade holding
+    // 0x10, then the fight idle with a target (389 and the idle with none); the target, a human, is warned
+    // (docs/research/combat-throws.md#armed-special).
+    // @orig 0x00288698 Player_ThrowMeleeWeapon (unknown)
+    // @orig 0x00261e78 Human_StartMeleeThrow (unknown)
+    void playMeleeThrow(int animId, const FighterInput& input, HumanAnimator& animator, float& heading);
     // Turns (and within the far range slides) towards the target of attack `animId`, as Attack_Start steers: within
     // the far range through steerOnto() with the time to the clip's first event; beyond it the attack's direction
     // turns onto the led target over that time, with no slide.
@@ -1050,6 +1097,7 @@ class Fighter {
     std::optional<IncomingHit> m_deathPending; // a defeating hit taken while a paired move holds the death back
     bool m_healthOut = false;                  // healthOut(): the dying reaction ended with the health out
     Combatant* m_target = nullptr;             // the target kept (human +0xc8)
+    Combatant* m_throwTarget = nullptr;        // the armed special's target for this update's cross + square
     Combatant* m_snapTarget = nullptr;         // what the snap's search found for this update's square (not the target)
     int m_connect = 72;            // the grab's front connecting clip: 72, or the strong grapple's 657 (649 in rage)
     int m_grabBase = 72;           // the grab's base id (record +0xb4): 72, the tackle's 5 or a strong grapple's id
