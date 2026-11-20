@@ -335,7 +335,7 @@ TEST_CASE("snapshots: the packet is pinned, round-trips and refuses what breaks 
     // From bit 0: slot 2 (16 bits) = 0x02 0x00; generation 1 (6 bits), removed 0, field 0's changed bit 0 = 0x01;
     // fields 1 to 8 unchanged = 0x00; fields 9 to 16 unchanged = 0x00; fields 17 to 20 unchanged (bits 0 to 3), field
     // 21 changed and its word 1 (bits 4 and 5), field 22 unchanged = 0x30; then no HUD entries, a varint 0 from bit 7
-    // (protocol 6) = the last byte 0x00.
+    // (protocol 7) = the last byte 0x00.
     const std::vector<std::byte> expected{std::byte{0x0a}, std::byte{0x03}, std::byte{0x01}, std::byte{0x07},
                                           std::byte{0x01}, std::byte{0x02}, std::byte{0x00}, std::byte{0x01},
                                           std::byte{0x00}, std::byte{0x00}, std::byte{0x30}, std::byte{0x00}};
