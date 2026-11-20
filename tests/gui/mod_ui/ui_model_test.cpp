@@ -98,8 +98,10 @@ void fill(UiModel& model, UiWidgetId id, std::size_t count) {
 
 // The kinds of the events queued since the last call.
 std::vector<UiEventKind> kinds(UiModel& model) {
+    const std::vector<UiEvent> events = model.takeEvents();
     std::vector<UiEventKind> out;
-    for (const UiEvent& event : model.takeEvents()) {
+    out.reserve(events.size());
+    for (const UiEvent& event : events) {
         out.push_back(event.kind);
     }
     return out;
@@ -558,6 +560,7 @@ TEST_CASE("Destroying a screen frees its widgets and its place among the screens
     UiModel model;
     const UiScreenId full = menuScreen(model);
     std::vector<UiWidgetId> widgets;
+    widgets.reserve(ui_limit::kWidgets);
     for (std::size_t i = 0; i < ui_limit::kWidgets; ++i) {
         widgets.push_back(model.addWidget(kProject, full, UiWidgetDef{}).value());
     }
