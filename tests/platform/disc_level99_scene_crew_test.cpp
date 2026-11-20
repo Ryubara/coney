@@ -323,3 +323,59 @@ TEST_CASE("the disc's level99: a switch of player 1 during the intro gives his c
                     static_cast<unsigned>(crew->tacticsSet() - tacticsBefore));
     });
 }
+
+TEST_CASE("the disc's level99: a switch of player 1 after the intro starts his crew's follow in the same update",
+          "[disc][story][scenes][crew]") {
+    // Expected: scenes.md#gang, confirmed (code): Human_MakePlayer (0x00229c40) dispatches the follow forced and runs
+    // the gang update with 1 (0x00166708) right after it, so the new follow tactic has started when the call returns.
+    std::optional<coney::io::Wad> wad = openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    playIntro(*wad, [](IntroPlay& play) {
+        // The intro played to its end and 1 s more, the automatic commands off so only the switch gives a command.
+        play.scripts.state().autoSwitch = false;
+        const std::uint64_t endedBefore = play.system.stats().ended;
+        int steps = 0;
+        while (play.system.stats().ended == endedBefore && steps < 2400) {
+            play.stack.runUntilEmpty(play.timer, {}, 1);
+            ++steps;
+        }
+        REQUIRE(play.system.stats().ended == endedBefore + 1);
+        play.stack.runUntilEmpty(play.timer, {}, 30);
+        // Every command enabled, hold his last and his menu unlocked, so the switch's follow is not refused.
+        coney::CharacterRules& rules = play.scripts.state().characters;
+        rules.warriorCommands.at(0).fill(true);
+        rules.lastWarriorCommand.at(0) = 3;
+        play.scripts.state().story.menuLocked.at(0) = false;
+        // Player 1 handed to another human with a gang, one no player was made with (player 2's would answer for
+        // player 2's commands).
+        const coney::ai::ScriptedBrains* scripted = play.gameplay.scripted();
+        REQUIRE(scripted != nullptr);
+        const coney::HumanCreation* chief = play.scripts.humans().player(1);
+        REQUIRE(chief != nullptr);
+        double next = 0.0;
+        for (const coney::HumanCreation& human : play.scripts.humans().all()) {
+            if (human.handle != chief->handle && human.playerIndex == 0 && scripted->brain(human.handle) != nullptr &&
+                scripted->brain(human.handle)->gang() != nullptr) {
+                next = human.handle;
+                break;
+            }
+        }
+        REQUIRE(next != 0.0);
+        play.scripts.humans().setPlayer(1, next);
+        const coney::ai::Gang* crew = scripted->brain(next)->gang();
+        REQUIRE(crew != nullptr);
+
+        // One update: the switch's follow is his last command, and its tactic is in force and started.
+        play.stack.runUntilEmpty(play.timer, {}, 1);
+        CHECK(play.scripts.scripts().errors() == 0);
+        CHECK(rules.lastWarriorCommand.at(0) == 0);
+        const coney::ai::Tactic* tactic = crew->tactic();
+        REQUIRE(tactic != nullptr);
+        CHECK(tactic->type() == kFollowTacticType);
+        CHECK(tactic->started());
+        std::printf("  level99 after l99_c1, player 1 switched: tactic %#x started %d\n",
+                    static_cast<unsigned>(tactic->type()), tactic->started() ? 1 : 0);
+    });
+}
