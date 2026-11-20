@@ -75,10 +75,11 @@ void PlayLevelSimulation::stepPlacedHeld() {
 void PlayLevelSimulation::placeItemInHand(human::Human& human, double holder) {
     // The binding (Human_PlaceItemInHand's caller 0x00238540, ScriptedHumans::placeItemInHand) gave him the handle and
     // the type's name, and refused a human with something in hand, so there is nothing to drop here. A handle that is
-    // a record already came from a pick-up, a swap or a pile, and is made.
+    // a record already came from a pick-up, a swap or a pile, and is made; one with no type name was put there by no
+    // placement (the binding refuses an empty name), so there is nothing to make it from.
     human::ScriptState& script = human.script();
     const double held = script.heldObject;
-    if (held == world_objects::kNoObject || m_records->find(held) != nullptr) {
+    if (held == world_objects::kNoObject || script.heldObjectName.empty() || m_records->find(held) != nullptr) {
         return;
     }
     // Made by name: a type the object list lacks makes nothing, and he holds nothing.
