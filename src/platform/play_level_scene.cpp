@@ -3,7 +3,6 @@
 // over to a scene and back, and `--scene`, Coney's test aid that plays one at once (docs/research/scenes.md,
 // docs/guides/running-play-level.md#playing-a-level).
 #include <algorithm>
-#include <array>
 #include <cstdint>
 #include <format>
 #include <numbers>
@@ -41,6 +40,10 @@ constexpr std::string_view kPlayerRole = "warrrecv";
 constexpr float kSceneGroundAbove = 1.0F;
 constexpr float kSceneGroundLength = 1.5F;
 
+// **Coney stand-in**: a bound handle that is no human of the level, and not one of the preview's stand-ins (which
+// SceneStage::drawAs() casts), is drawn as the model its role's name stands for.
+using scenes::standInModelOf;
+
 } // namespace
 
 void PlayLevelMode::makeStage() {
@@ -57,13 +60,7 @@ void PlayLevelMode::makeStage() {
             if (human == m_playerHandle || castHumanOf(human) != nullptr) {
                 return {}; // the mode draws its own player and the level's cast
             }
-            // The preview's stand-ins as the scene's script casts them (playScene()); any other from its role's name.
-            std::string model;
-            if (const auto preview = m_previewModels.find(human); preview != m_previewModels.end()) {
-                model = preview->second;
-            } else {
-                model = scenes::standInModelOf(roleName);
-            }
+            std::string model = standInModelOf(roleName);
             return model.empty() ? m_model : model;
         },
         m_print);
@@ -253,7 +250,7 @@ std::expected<void, Error> PlayLevelMode::playScene(std::string_view name) {
         double human = m_playerHandle;
         if (role != static_cast<std::size_t>(playerRole)) {
             human = kStandInHandle + static_cast<double>(role);
-            m_previewModels[human] = cast[role].model; // empty: drawn as the player's model
+            m_stage->drawAs(human, cast[role].model.empty() ? m_model : cast[role].model);
         }
         system.joinHuman(human, id, role, 0);
     }

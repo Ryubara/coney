@@ -25,6 +25,8 @@ constexpr std::array<scenes::ScriptedSceneCast, 2> kTable{{
 } // namespace
 
 TEST_CASE("the scene preview casts a role from its scene's script binding before its name", "[scenes][casts]") {
+    // Expected: scenes.md#cast, confirmed (code): a role draws the human bound by index, so its character type
+    // Expected: scenes.md#coneys-implementation, Coney's own preview: `-` unbound, `?` the name, `a|b` the first
     // Bound to a character type: the type, whatever the role is called.
     scenes::CastModel cast = scenes::castModelOf(kTable, "t1_c1", 0, "warrcl");
     CHECK(cast.source == scenes::CastSource::Script);
@@ -50,6 +52,7 @@ TEST_CASE("the scene preview casts a role from its scene's script binding before
 }
 
 TEST_CASE("the scene preview binds a slot to the object type its scene's script binds", "[scenes][casts]") {
+    // Expected: scenes.md#cast, confirmed (code): a slot moves the object bound by index, so its object type
     CHECK(scenes::propTypeOf(kTable, "t1_c1", 0) == std::optional<std::string>("dyn_box"));
     CHECK(scenes::propTypeOf(kTable, "t1_c1", 3) == std::optional<std::string>("dyn_crate"));
     CHECK(scenes::propTypeOf(kTable, "t1_sub", 1) == std::optional<std::string>("dyn_car"));
@@ -61,6 +64,7 @@ TEST_CASE("the scene preview binds a slot to the object type its scene's script 
 }
 
 TEST_CASE("the scene preview casts from a role's name only for a scene no script plays", "[scenes][casts]") {
+    // Expected: scenes.md#coneys-implementation, Coney's own preview: the level99 role names' stand-ins
     // No such scene in the table, or a scene with props but no cast: the name's stand-in, empty for an unknown name.
     scenes::CastModel cast = scenes::castModelOf(kTable, "no_such", 0, "warrashcv");
     CHECK(cast.source == scenes::CastSource::Name);
@@ -74,6 +78,7 @@ TEST_CASE("the scene preview casts from a role's name only for a scene no script
 }
 
 TEST_CASE("the preview's l99_c1 and subway scenes take the cast and props read at runtime", "[scenes][casts]") {
+    // Expected: scenes.md#cast-runtime, confirmed (runtime)
     // docs/research/scenes.md#cast-runtime (confirmed at runtime, PCSX2, 2026-10-11): l99_c1's roles are the bound
     // humans' types, Ash (role 7, `warrashcv`) type 40, `warr_ty_cv`; Vermin (role 1) `warr_ve_gen`, not the name's
     // `warr_ve`; role 3 is bound to nobody.
