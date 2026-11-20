@@ -369,16 +369,13 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
                 problems.append(f'fails-first: "{name}": {stale} (run `orig fails-first`)')
     else:
         problems += _full_pass_problem(report, diff, pairs_set)
-    # A delta review judges the delta alone: its files, the functions that moved in it, the description only when it
-    # changed since the review it stacks on (docs/guides/review/task.md#delta).
+    # A delta review judges the delta alone: its files, the `@orig` functions whose comments, tag or declaration it
+    # edits, those that moved in it, and the description, read against what the delta changes
+    # (docs/guides/review/task.md#delta).
     judged = list(delta.files) if delta is not None else files
     moved_judged = [dict(f) for f in delta.moved] if delta is not None else moved
-    kinds = _kinds(
-        judged, [] if delta is not None else functions, moved_judged, env, "full" if mode != "text" else mode
-    )
-    if delta is not None and not delta.text_changed:
-        kinds = [kind for kind in kinds if kind != "text"]
-    show_images = delta is None or delta.text_changed
+    functions_judged = [dict(f) for f in delta.functions] if delta is not None else functions
+    kinds = _kinds(judged, functions_judged, moved_judged, env, "full" if mode != "text" else mode)
     packet: dict[str, Any] = {
         "v": review_verdict.VERSION,
         "task": env.unit.task,
@@ -388,7 +385,7 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
         "diff_sha256": diff,
         "kinds": kinds,
         "files": judged,
-        "functions": functions if mode == "full" else [],
+        "functions": functions_judged if mode in review_delta.CODE_SCOPES else [],
         # Functions that kept their code and tags under another class, name or file: their compare stands, but the
         # reviewer diffs the two copies and their declarations (docs/guides/review/orig.md#moved).
         "moved": moved_judged if mode in review_delta.CODE_SCOPES else [],
@@ -401,7 +398,7 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
             "title_sha256": text.title_sha256 if text.title else "",
             "paragraph": text.paragraph,
             "paragraph_sha256": text.paragraph_sha256 if text.paragraph else "",
-            "images": [{"path": image.path, "sha256": image.sha256} for image in text.images] if show_images else [],
+            "images": [{"path": image.path, "sha256": image.sha256} for image in text.images],
             "images_sha256": text.images_sha256,
             # The clips are among the images (each is judged like a picture); this says which line each is on and
             # where the file is, so the reviewer opens it and asks whether it shows what the description claims.
@@ -751,7 +748,8 @@ def next_review(task: str, mode: str) -> str:
 
 def _carry_full_review(report: stamps.Report, detail: dict[str, Any]) -> None:
     """A text review keeps what the review of the code it rests on said about the functions and the pages; `full_seq`
-    names the full review at the bottom of that stack."""
+    names the full review at the bottom of that stack and `since_seq` the review it rests on, which `pr verify` walks
+    down from."""
     for stamp in reversed(report.stamps):
         if stamp.step == "reviewed" and stamp.detail.get("scope") in review_delta.CODE_SCOPES:
             for key in ("functions", "function_count", "pages"):
@@ -760,6 +758,7 @@ def _carry_full_review(report: stamps.Report, detail: dict[str, Any]) -> None:
                 else:
                     detail.pop(key, None)
             detail["full_seq"] = review_delta.full_seq_of(stamp)
+            detail["since_seq"] = stamp.seq
             return
 
 
@@ -773,12 +772,14 @@ def _carry_delta(env: ReviewEnv, delta: Mapping[str, Any], detail: dict[str, Any
     detail["full_seq"] = delta["full_seq"]
     if since is None:
         return
+    # The stack's classes, each function the delta judged again replaced by its new class.
+    own = detail.pop("functions", {})
+    carried = review_delta.stack_functions(env.folder, report, since)
     detail.pop("function_count", None)
-    if "functions" in since.detail:
-        detail["functions"] = since.detail["functions"]
-    else:
-        detail.pop("functions", None)
+    if carried is None:
         detail["function_count"] = since.detail.get("function_count", 0)
+    else:
+        detail["functions"] = {**carried, **(own if isinstance(own, dict) else {})}
     detail["pages"] = sorted(set(since.detail.get("pages", [])) | set(detail.get("pages", [])))
     if len(json.dumps(detail, sort_keys=True, separators=(",", ":"))) > review_verdict.DETAIL_ROOM:
         # Too long beside the reviewer's identity: `pr verify` reads the list from the stack's recorded verdicts.

@@ -1263,7 +1263,7 @@ def test_a_check_whose_python_tests_do_not_cover_the_change_is_refused(tmp_path:
 # --- a delta review stacked on a full one (docs/guides/review/task.md#delta) -----------------------------------------
 
 
-def delta_on_full(tmp_path: Path, **detail: Any) -> tuple[Built, stamps.Stamp]:
+def delta_on_full(tmp_path: Path, reviewer: dict[str, Any] | None = None, **detail: Any) -> tuple[Built, stamps.Stamp]:
     """A unit whose full review passed, then a fix and a passing delta review of it stacked on the full one."""
     built = make(tmp_path)
     full = built.subject().report.latest("reviewed")
@@ -1271,7 +1271,7 @@ def delta_on_full(tmp_path: Path, **detail: Any) -> tuple[Built, stamps.Stamp]:
     built.edit("src/ai/placeholder.cpp", "// a clang-tidy fix\n")
     info: dict[str, Any] = {"scope": "delta", "kinds": ["code", "commits"], "since_seq": full.seq, "full_seq": full.seq}
     info.update(detail)
-    built.review(reviewer=agent("reviewer", 2, "claude-sonnet-5-5")["agent"], **info)
+    built.review(reviewer=reviewer or agent("reviewer", 2, "claude-sonnet-5-5")["agent"], **info)
     return built, full
 
 
@@ -1337,3 +1337,25 @@ def test_a_delta_review_that_left_its_functions_out_reads_them_from_the_full_rev
     # A verdict file the full stamp does not cover is not read.
     recorded.write_bytes(verdict.replace(b"clean", b"diff-bug"))
     assert texts(built.verify(), "reviewed") == [f"reviewed: Review did not cover {ADDRESS}"]
+
+
+def test_a_text_review_over_a_delta_walks_the_stack_below_it(tmp_path: Path) -> None:
+    built, full = delta_on_full(tmp_path)
+    delta = built.subject().report.latest("reviewed")
+    assert delta is not None
+    built.review(scope="text", kinds=["text"], since_seq=delta.seq, full_seq=full.seq)
+    assert texts(built.verify(), "reviewed") == []
+    # The delta below it is held to the reviewer rules: one by a reviewer who worked on the task is refused.
+    built, full = delta_on_full(tmp_path / "b", reviewer=ENGINEER["agent"])
+    delta = built.subject().report.latest("reviewed")
+    assert delta is not None
+    built.review(scope="text", kinds=["text"], since_seq=delta.seq, full_seq=full.seq)
+    assert texts(built.verify(), "reviewed") == ["reviewed: reviewer engineer-1 also worked on this task"]
+    # And one whose stack is broken is refused.
+    built, full = delta_on_full(tmp_path / "c")
+    built.review(scope="text", kinds=["text"], since_seq=999, full_seq=full.seq)
+    text = built.subject().report.latest("reviewed")
+    assert text is not None
+    assert texts(built.verify(), "reviewed") == [
+        f"reviewed: the text review #{text.seq} names no earlier review it stacks on"
+    ]

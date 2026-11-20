@@ -629,9 +629,10 @@ tasks:
     # code passed is reviewed only where its own change differs from the one reviewed (rebase noise left out), with the
     # checklists and the model of that delta. It is a full review instead when the delta does one of `full_when`:
     # changes an @orig function's body or addresses, or the pairs it was compared with (orig-body); adds, removes or
-    # edits a claim line of research work, one that matches a `claim_patterns` expression (research-claim); or changes,
-    # adds or removes the code of a test under `test_paths`, a C++ TEST_CASE or a Python test_ function (test-body).
-    # `pr verify` accepts a passing delta stamp stacked on a passing full one.
+    # edits a claim line of research work, one that matches a `claim_patterns` expression (research-claim); or changes
+    # the code of any file under `test_paths`, a test, helper, fixture, conftest or data file (test-body). An @orig
+    # function whose comments, tag or declaration the delta edits is judged again (orig checklist, Opus) without a full
+    # review. `pr verify` accepts a passing delta stamp stacked on a passing full one.
     delta:
       full_when: [orig-body, research-claim, test-body]
       claim_patterns: ['0x[0-9a-fA-F]{8}', '(?i)\b(confirmed|inferred|speculative)\b']

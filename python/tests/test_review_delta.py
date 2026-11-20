@@ -73,9 +73,10 @@ def test_a_code_fix_after_a_passing_review_gets_a_delta_of_its_files_alone(rig: 
     packet, problems = delta_packet(rig)
     assert problems == []
     assert packet["mode"] == "delta" and packet["files"] == ["src/ai/util.cpp"]
-    # The code's checklist and the commits'; no orig, research or description review: those did not change.
-    assert packet["kinds"] == ["code", "commits"] and packet["functions"] == [] and packet["pages"] == []
-    assert packet["text"]["images"] == []
+    # The code's checklist, the description's (read against what the delta changes) and the commits'; no orig or
+    # research review: those did not change.
+    assert packet["kinds"] == ["code", "text", "commits"] and packet["functions"] == [] and packet["pages"] == []
+    assert [image["path"] for image in packet["text"]["images"]] == ["./shots/after.png"]
     assert packet["delta"]["since_seq"] == full.seq and packet["delta"]["files"] == ["src/ai/util.cpp"]
     assert task_review.required_models(packet["kinds"], rig.conventions.tasks.review) == ()
 
@@ -112,6 +113,18 @@ def test_a_fix_the_rebase_also_touches_reads_patch_against_patch(rig: Rig) -> No
     # The rebase alone changes nothing the branch does: no delta file.
     plan = task_review.delta_plan(rig.env())
     assert plan.delta is not None and plan.delta.files == ()
+    # A fix of a line of that file outside the function is in the delta, read patch against patch.
+    source = (rig.root / "src/ai/brain.cpp").read_text(encoding="utf-8")
+    fix(rig, {"src/ai/brain.cpp": "// Brains think.\n" + source}, diff="4" * 64)
+    plan = task_review.delta_plan(rig.env())
+    assert plan.delta is not None and plan.delta.files == ("src/ai/brain.cpp",)
+    assert plan.delta.rebased == ("src/ai/brain.cpp",)
+    assert task_review.prepare(rig.env(), review_delta.DELTA) == 0
+    shown = (rig.unit.dir / "review" / "DELTA.diff").read_text(encoding="utf-8")
+    then, now = shown.split("### then")[1].split("### now")
+    assert "main changed it too" in shown
+    assert "+// Brains think." not in then and "+// Brains think." in now
+    assert "+// main's note" not in then and "+// main's note" not in now  # main's line is never the branch's
 
 
 # --- the fallback ----------------------------------------------------------------------------------------------------
@@ -131,13 +144,65 @@ def test_a_delta_that_changes_an_orig_body_falls_back_to_a_full_review(rig: Rig)
     assert any(p.startswith("delta: orig-body") and "--full" in p for p in problems), problems
 
 
-def test_a_comment_in_an_orig_function_is_no_body_change(rig: Rig) -> None:
+@pytest.mark.parametrize(
+    ("path", "old", "new"),
+    [
+        # A comment inside the body: what makes a difference deliberate (diff-deliberate-ok) or not.
+        ("src/ai/brain.cpp", "    return hunger", "    // Thresholds match.\n    return hunger"),
+        # The name part of the tag.
+        ("src/ai/brain.h", "Brain_Think (Brain.cpp)", "Brain_Ponder (Brain.cpp)"),
+        # The separate declaration's doc comment.
+        ("src/ai/brain.h", "/// Thinks.", "/// Thinks about food."),
+    ],
+)
+def test_a_comment_tag_or_declaration_edit_of_an_orig_function_opens_the_orig_checklist(
+    rig: Rig, path: str, old: str, new: str
+) -> None:
+    full_review(rig)
+    source = (rig.root / path).read_text(encoding="utf-8")
+    assert old in source
+    fix(rig, {path: source.replace(old, new)})
+    plan = task_review.delta_plan(rig.env())
+    # No full review (the body and the addresses stand) but the function is judged again, on Opus.
+    assert plan.delta is not None, plan.reasons
+    assert [f["coney"] for f in plan.delta.functions] == ["Brain::think"]
+    packet, problems = delta_packet(rig)
+    assert problems == [], problems
+    assert "orig" in packet["kinds"] and [f["coney"] for f in packet["functions"]] == ["Brain::think"]
+    assert task_review.required_models(packet["kinds"], rig.conventions.tasks.review) == ("opus",)
+    assert record_delta(rig, SONNET) == 1
+
+
+def test_a_delta_that_rejudges_a_function_keeps_its_new_class(rig: Rig) -> None:
     full_review(rig)
     source = (rig.root / "src/ai/brain.cpp").read_text(encoding="utf-8")
-    fix(rig, {"src/ai/brain.cpp": source.replace("return hunger", "// Thresholds match.\n    return hunger")})
+    fix(rig, {"src/ai/brain.cpp": source.replace("    return hunger", "    // Why the threshold.\n    return hunger")})
+    packet, _ = delta_packet(rig)
+    verdict = make_verdict(packet)
+    verdict["functions"][0]["class"] = "diff-deliberate-ok"
+    rig.verdict_path().write_text(json.dumps(verdict), encoding="utf-8")
+    assert task_review.record(rig.env(), review_delta.DELTA) == 0
+    stamp = stamps.verify(rig.unit.stamps, rig.rules).stamps[-1]
+    # The delta's own judgement replaces the one carried from the full review.
+    assert stamp.detail["functions"] == {"0x00100010": "d"}
+
+
+def test_a_comment_outside_any_orig_function_is_code_alone(rig: Rig) -> None:
+    full_review(rig)
+    source = (rig.root / "src/ai/brain.cpp").read_text(encoding="utf-8")
+    fix(rig, {"src/ai/brain.cpp": source + "// The end.\n"})
     plan = task_review.delta_plan(rig.env())
-    assert plan.delta is not None and plan.delta.files == ("src/ai/brain.cpp",)
-    assert delta_packet(rig)[0]["kinds"] == ["code", "commits"]
+    assert plan.delta is not None and plan.delta.functions == ()
+    assert delta_packet(rig)[0]["kinds"] == ["code", "text", "commits"]
+
+
+def test_pairs_compared_again_fall_back_to_a_full_review(rig: Rig) -> None:
+    full_review(rig)
+    fix(rig, {"src/ai/util.cpp": "int helper() { return 1; }\n"})
+    rig.unit.mapping("0x00100010").write_text("version = 1\n# compared again\n", encoding="utf-8")
+    plan = task_review.delta_plan(rig.env())
+    assert plan.delta is None
+    assert "orig-body: the pairs of the @orig functions changed since the earlier review" in plan.reasons
 
 
 def test_a_delta_that_changes_a_research_claim_falls_back(rig: Rig) -> None:
@@ -157,7 +222,7 @@ def test_prose_on_a_research_page_is_a_delta_that_needs_opus(rig: Rig) -> None:
     fix(rig, {"docs/research/ai/brain.md": PAGE + "\nThe brain waits between thoughts.\n"})
     packet, problems = delta_packet(rig)
     assert problems == []
-    assert packet["kinds"] == ["research", "commits"]
+    assert packet["kinds"] == ["research", "text", "commits"]
     assert [p["path"] for p in packet["pages"]] == ["docs/research/ai/brain.md"]
     assert task_review.required_models(packet["kinds"], rig.conventions.tasks.review) == ("opus",)
     # A Sonnet reviewer may not record it; an Opus one may, and need check no address of the page.
@@ -190,6 +255,35 @@ def test_a_comment_in_a_test_is_no_test_change(rig: Rig) -> None:
     plan = task_review.delta_plan(rig.env())
     assert plan.delta is not None and plan.delta.since.seq == stamp.seq
     assert plan.delta.files == ("tests/ai/brain_test.cpp",)
+
+
+@pytest.mark.parametrize(
+    ("path", "before", "after"),
+    [
+        # A C++ helper beside the tests.
+        ("tests/ai/brain_test.cpp", TEST_CPP, TEST_CPP + "static int hunger() { return 3; }\n"),
+        # A Python fixture in a conftest, and a parametrize table.
+        ("python/tests/conftest.py", "import pytest\n", "import pytest\n\n\n@pytest.fixture\ndef x():\n    return 1\n"),
+        ("python/tests/test_x.py", "CASES = [1, 2]\n", "CASES = [1, 3]\n"),
+        # A data file the tests read.
+        ("tests/data/brain.json", "{}\n", '{"hunger": 3}\n'),
+    ],
+)
+def test_a_delta_that_changes_test_helpers_fixtures_or_data_falls_back(
+    rig: Rig, path: str, before: str, after: str
+) -> None:
+    fix(rig, {path: before}, diff=rig.diff)
+    rig.stamp("fails-first", "brain thinks", detail={"stubs": []})
+    pairs = task_review.build_packet(rig.env(), "full")[0]["pairs_set_sha256"]
+    rig.stamp(
+        "reviewed",
+        covers={"diff_sha256": rig.diff, "pairs_set_sha256": pairs},
+        detail={"verdict": "pass", "scope": "full", "functions": {"0x00100010": "c"}},
+    )
+    fix(rig, {path: after})
+    plan = task_review.delta_plan(rig.env())
+    assert plan.delta is None
+    assert any(reason.startswith("test-body:") and path in reason for reason in plan.reasons), plan.reasons
 
 
 def test_python_test_bodies_ignore_comments_and_layout() -> None:
@@ -253,6 +347,44 @@ def test_a_failed_delta_is_passed_over_and_the_pass_before_it_holds(rig: Rig) ->
     assert plan.delta is not None and plan.delta.since.seq == full.seq
 
 
+def test_a_recorded_verdict_the_stamp_does_not_cover_gives_no_base(rig: Rig) -> None:
+    full = full_review(rig)
+    recorded = rig.unit.dir / "review" / f"recorded-{full.seq}.json"
+    data = json.loads(recorded.read_text(encoding="utf-8"))
+    data["base"] = full.commit  # the reviewed tip as its own base would hide every line of the change
+    recorded.write_text(json.dumps(data), encoding="utf-8")
+    fix(rig, {"src/ai/util.cpp": "int helper() { return 1; }\n"})
+    plan = task_review.delta_plan(rig.env())
+    assert plan.delta is not None
+    assert plan.delta.since_base == git(rig.root, "rev-parse", "origin/main").strip()
+    assert plan.delta.files == ("src/ai/util.cpp",)
+
+
+def test_a_function_that_moved_in_the_delta_needs_opus(rig: Rig) -> None:
+    # Main gains a second function the branch does not change; the review passes; then the fix renames it.
+    git(rig.root, "checkout", "-q", "origin/main")
+    rest = (
+        '#include "ai/brain.h"\nnamespace coney::ai {\n/// Rests.\n/// @orig 0x00100040 Brain_Rest (Brain.cpp)\n'
+        "int rest(int hours) {\n    return hours * 2;\n}\n} // namespace coney::ai\n"
+    )
+    (rig.root / "src/ai/rest.cpp").write_text(rest, encoding="utf-8")
+    git(rig.root, "add", "-A")
+    git(rig.root, "commit", "-q", "-m", "main adds rest")
+    git(rig.root, "checkout", "-q", "feature")
+    git(rig.root, "rebase", "-q", "origin/main")
+    full_review(rig)
+    (rig.root / "src/ai/rest.cpp").write_text(rest.replace("int rest(", "int doze("), encoding="utf-8")
+    git(rig.root, "commit", "-q", "-a", "-m", "rename rest")
+    rig.diff = "2" * 64
+    plan = task_review.delta_plan(rig.env())
+    assert plan.delta is not None, plan.reasons
+    assert [f["coney"] for f in plan.delta.moved] == ["doze"]
+    packet, problems = delta_packet(rig)
+    assert problems == [], problems
+    assert "orig" in packet["kinds"] and [m["coney"] for m in packet["moved"]] == ["doze"]
+    assert task_review.required_models(packet["kinds"], rig.conventions.tasks.review) == ("opus",)
+
+
 def test_an_edited_paragraph_adds_the_description_to_the_delta(rig: Rig) -> None:
     full_review(rig)
     fix(rig, {"src/ai/util.cpp": "int helper() { return 1; }\n"})
@@ -274,7 +406,7 @@ def test_a_delta_stamp_stacks_on_the_full_review_and_keeps_what_it_judged(
     assert record_delta(rig, SONNET) == 0
     stamp = stamps.verify(rig.unit.stamps, rig.rules).stamps[-1]
     assert stamp.step == "reviewed" and stamp.result == "pass" and stamp.covers["diff_sha256"] == "2" * 64
-    assert stamp.detail["scope"] == "delta" and stamp.detail["kinds"] == ["code", "commits"]
+    assert stamp.detail["scope"] == "delta" and stamp.detail["kinds"] == ["code", "text", "commits"]
     assert stamp.detail["since_seq"] == full.seq and stamp.detail["full_seq"] == full.seq
     # What the full review said of the function and the page is carried, so `pr verify` reads it from the newest stamp.
     assert stamp.detail["functions"] == {"0x00100010": "c"} and stamp.detail["pages"] == ["docs/research/ai/brain.md"]
@@ -315,4 +447,7 @@ def test_a_text_review_rests_on_a_delta_as_on_a_full_one(rig: Rig) -> None:
     assert task_review.record(rig.env(), "text") == 0
     stamp = stamps.verify(rig.unit.stamps, rig.rules).stamps[-1]
     assert stamp.detail["scope"] == "text" and stamp.detail["full_seq"] == full.seq
+    # It names the delta it rests on, so `pr verify` walks the stack down from it.
+    delta = stamps.verify(rig.unit.stamps, rig.rules).stamps[-2]
+    assert delta.detail["scope"] == "delta" and stamp.detail["since_seq"] == delta.seq
     assert stamp.detail["functions"] == {"0x00100010": "c"}

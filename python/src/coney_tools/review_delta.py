@@ -14,11 +14,13 @@ the files whose own change differs between the change that was reviewed and the 
   onto a newer main moves line numbers and context, not those lines.
 * **A full review instead**, by `tasks.review.delta.full_when` in `.github/conventions.yml`: the delta changes an
   `@orig` function's body or addresses (or the pairs it was compared with), a claim line of research work (an address
-  or an evidence level, `claim_patterns`), or the code of a test (a `TEST_CASE` or a Python `test_` function under
-  `test_paths`). Those are what a reviewer must see against the original or against what the test proves.
+  or an evidence level, `claim_patterns`), or the code of any file under `test_paths` (a test, a helper, a fixture, a
+  conftest, a data file). Those are what a reviewer must see against the original or against what the test proves.
 
-The delta's checklists and model follow from the delta alone: the orig checklist only for a function that moved in the
-delta, the research one only for a research file in it (without a claim change), so the reviewer needs Opus only then.
+The delta's checklists and model follow from the delta alone: the orig checklist for an `@orig` function whose comments,
+tag or declaration the delta edits (its body hash leaves comments out, but a comment at a difference is what makes the
+difference deliberate) and for one that moved in the delta, the research one for a research file in it (without a
+claim change), so the reviewer needs Opus only then; the description is read with every delta.
 
 The per-file comparison here reads `git diff -U0` itself; it can use the per-file hash of `pr_diff` once that exists.
 Standard library only, besides the repository's own modules.
@@ -40,13 +42,17 @@ from typing import Any
 from coney_tools import fails_first, orig_review, review_verdict, stamps
 from coney_tools.config import ConfigError
 from coney_tools.conventions import DeltaReview, TaskReview
+from coney_tools.orig_index import SOURCE_SUFFIXES
+from coney_tools.orig_scan import Function, read_source
 
 #: The scope a delta review's stamp and packet carry.
 DELTA = "delta"
 #: The scopes of a review of the code (a `text` review judges the description alone).
 CODE_SCOPES = ("full", DELTA)
-#: The endings of a C++ file that can declare a `TEST_CASE`.
-_CPP_TESTS = (".cpp", ".h", ".hpp")
+#: The endings of a C++ file under the test paths, read as code (comments and layout are no change).
+_CPP_TESTS = (".cpp", ".h", ".hpp", ".inl")
+#: How many lines a separate declaration may run over, up to its `;`.
+_DECLARATION_LINES = 8
 #: The keys of an `@orig` function that, changed in the delta, change what was compared with the original.
 _FUNCTION_IDENTITY = ("key", "body_sha256", "addresses", "xbox")
 #: The header lines of a patch that say a file's mode changed, or that it was added or deleted.
@@ -72,7 +78,11 @@ class Delta:
     rebased: tuple[str, ...]
     #: The `@orig` functions that moved in the delta (their compare stands; the reviewer diffs the copies).
     moved: tuple[dict[str, Any], ...]
-    #: Whether the description's title, paragraph or pictures changed since the earlier review.
+    #: The `@orig` functions whose body and addresses stand but whose comments, tag or declaration the delta edits:
+    #: judged again under the orig checklist, since a comment at a difference is what makes it deliberate.
+    functions: tuple[dict[str, Any], ...]
+    #: Whether the description's title, paragraph or pictures changed since the earlier review: said to the reviewer,
+    #: who reads the description with every delta.
     text_changed: bool
 
 
@@ -174,13 +184,24 @@ def full_seq_of(stamp: stamps.Stamp) -> int:
     return seq if isinstance(seq, int) else int(stamp.seq)
 
 
-def _since_base(folder: Path, stamp: stamps.Stamp) -> str | None:
-    """The base the earlier review judged, from its recorded verdict (`recorded-<seq>.json`); None when unreadable."""
+def _recorded(folder: Path, stamp: stamps.Stamp) -> dict[str, Any] | None:
+    """The verdict a review stamp recorded (`recorded-<seq>.json`), only when it is the file the stamp's
+    `review_sha256` covers; None otherwise."""
     try:
-        data = json.loads((folder / f"recorded-{stamp.seq}.json").read_text(encoding="utf-8"))
+        raw = (folder / f"recorded-{stamp.seq}.json").read_bytes()
+        data = json.loads(raw)
     except (OSError, ValueError):
         return None
-    base = data.get("base") if isinstance(data, dict) else None
+    if hashlib.sha256(raw).hexdigest() != stamp.covers.get("review_sha256") or not isinstance(data, dict):
+        return None
+    return data
+
+
+def _since_base(folder: Path, stamp: stamps.Stamp) -> str | None:
+    """The base the earlier review judged, from the verdict its stamp covers; None when there is none (the caller then
+    takes the merge base)."""
+    data = _recorded(folder, stamp)
+    base = data.get("base") if data is not None else None
     return base if isinstance(base, str) and base else None
 
 
@@ -207,6 +228,46 @@ def _orig_reasons(
     return reasons
 
 
+def _span(lines: Sequence[str], function: Function) -> str:
+    """A function's whole text as written: its comment block, then its definition through the closing brace, or its
+    declaration through the `;`; trailing space dropped, comments kept."""
+    if function.body:
+        statement = lines[function.line - 1 : function.line - 1 + function.lines]
+    else:
+        statement = []
+        for line in lines[function.line - 1 : function.line - 1 + _DECLARATION_LINES]:
+            statement.append(line)
+            if ";" in line:
+                break
+    return "\n".join([function.comment, *(line.rstrip() for line in statement)])
+
+
+def _orig_spans(worktree: Path, ref: str, files: Iterable[str], names: set[str]) -> dict[str, list[str]]:
+    """Each named function -> the texts of its definitions and declarations in `files` at `ref`."""
+    found: dict[str, list[str]] = {}
+    for path in files:
+        if not path.endswith(tuple(SOURCE_SUFFIXES)):
+            continue
+        text = _show(worktree, ref, path)
+        lines = text.splitlines()
+        for function in read_source(path, text).functions:
+            if function.qualified in names:
+                found.setdefault(function.qualified, []).append(f"{path}\n{_span(lines, function)}")
+    return {name: sorted(texts) for name, texts in found.items()}
+
+
+def touched_functions(
+    worktree: Path, files: Sequence[str], old_tip: str, tip: str, functions: Sequence[Mapping[str, Any]]
+) -> tuple[dict[str, Any], ...]:
+    """The changed `@orig` functions of the change whose text the delta edits (a comment inside, the tag, the separate
+    declaration or its doc comment), though their body hash and addresses stand."""
+    names = {str(function["coney"]) for function in functions}
+    before = _orig_spans(worktree, old_tip, files, names)
+    after = _orig_spans(worktree, tip, files, names)
+    edited = {name for name in names if before.get(name) != after.get(name)}
+    return tuple(dict(function) for function in functions if function["coney"] in edited)
+
+
 def _claims(text: str, patterns: Sequence[re.Pattern[str]]) -> Counter[str]:
     """The claim lines of a research file: each line that matches a claim pattern, with surrounding space trimmed."""
     return Counter(line.strip() for line in text.splitlines() if any(p.search(line) for p in patterns))
@@ -228,7 +289,7 @@ def _claim_reasons(
 def python_test_bodies(text: str) -> dict[str, str]:
     """Each `test_` function of a Python file (by its dotted place, a method under its class) -> its code as the
     parser reads it, so a comment or a layout change is no change; the whole text under `<file>` when it does not
-    parse."""
+    parse. Names the tests a changed file holds."""
     try:
         tree = ast.parse(text)
     except SyntaxError:
@@ -248,8 +309,23 @@ def python_test_bodies(text: str) -> dict[str, str]:
     return found
 
 
-def _test_bodies(path: str, text: str) -> Mapping[str, object]:
-    """The tests a file declares, each -> its code: C++ `TEST_CASE`s or Python `test_` functions; none otherwise."""
+def test_code(path: str, text: str) -> str:
+    """What a file under the test paths says as code: a C++ file without comments and layout
+    (`orig_review.code_text`), a Python file as the parser reads it (the whole text when it does not parse), any other
+    file (a fixture's data) as it is."""
+    if path.endswith(_CPP_TESTS):
+        return orig_review.code_text(text)
+    if path.endswith(".py"):
+        try:
+            return ast.dump(ast.parse(text))
+        except SyntaxError:
+            return text
+    return text
+
+
+def _named_tests(path: str, text: str) -> Mapping[str, object]:
+    """The tests a file declares, each -> its code, to name the ones a delta changes: C++ `TEST_CASE`s or Python
+    `test_` functions; none for another file."""
     if path.endswith(_CPP_TESTS):
         return fails_first.declared_bodies(text)
     if path.endswith(".py"):
@@ -258,15 +334,19 @@ def _test_bodies(path: str, text: str) -> Mapping[str, object]:
 
 
 def _test_reasons(worktree: Path, files: Iterable[str], old_tip: str, tip: str, rules: DeltaReview) -> list[str]:
-    """The tests whose code the delta changes, adds or removes, in the files under the test paths."""
+    """The files under the test paths whose code the delta changes: a test, a helper, a fixture, a conftest, a
+    parametrize table or a data file the tests read all change what the tests prove."""
     reasons: list[str] = []
     for path in files:
         if not path.startswith(rules.test_paths):
             continue
-        before = _test_bodies(path, _show(worktree, old_tip, path))
-        after = _test_bodies(path, _show(worktree, tip, path))
-        changed = sorted(name for name in set(before) | set(after) if before.get(name) != after.get(name))
-        reasons += [f"test-body: the delta changes the test {name} in {path}" for name in changed]
+        before, after = _show(worktree, old_tip, path), _show(worktree, tip, path)
+        if test_code(path, before) == test_code(path, after):
+            continue
+        tests, old_tests = _named_tests(path, after), _named_tests(path, before)
+        named = sorted(name for name in set(tests) | set(old_tests) if tests.get(name) != old_tests.get(name))
+        what = f"the test{'s' if len(named) > 1 else ''} {', '.join(named)}" if named else "the test code"
+        reasons.append(f"test-body: the delta changes {what} in {path}")
     return reasons
 
 
@@ -324,6 +404,7 @@ def plan(worktree: Path, report: stamps.Report, now: Now, base_ref: str, review:
         return Plan(None, tuple(reasons))
     kept = {_identity(function) for function in [*old["moved"], *old["functions"]]}
     moved = tuple(dict(function) for function in now.moved if _identity(function) not in kept)
+    touched = touched_functions(worktree, files, since_tip, now.tip, now.functions)
     return Plan(
         Delta(
             since=since,
@@ -333,6 +414,7 @@ def plan(worktree: Path, report: stamps.Report, now: Now, base_ref: str, review:
             files=files,
             rebased=tuple(path for path in files if path in main_moved),
             moved=moved,
+            functions=touched,
             text_changed=any(since.covers.get(key) != now.text.get(key) for key in TEXT_COVERS),
         )
     )
@@ -377,17 +459,11 @@ def packet_entry(delta: Delta, diff_file: Path) -> dict[str, Any]:
     }
 
 
-def _recorded_functions(folder: Path, stamp: stamps.Stamp) -> Mapping[str, Any] | None:
-    """The address -> class map of a review whose stamp left its function list to the verdict kept beside the packet
-    (`recorded-<seq>.json`), when that file is the one the stamp's `review_sha256` covers."""
-    try:
-        raw = (folder / f"recorded-{stamp.seq}.json").read_bytes()
-        data = json.loads(raw)
-    except (OSError, ValueError):
-        return None
-    if hashlib.sha256(raw).hexdigest() != stamp.covers.get("review_sha256") or not isinstance(data, dict):
-        return None
-    listed = data.get("functions")
+def _recorded_functions(folder: Path, stamp: stamps.Stamp) -> dict[str, Any] | None:
+    """The address -> class letter map of the verdict a review stamp recorded (`recorded-<seq>.json`), when that file
+    is the one the stamp's `review_sha256` covers."""
+    data = _recorded(folder, stamp)
+    listed = data.get("functions") if data is not None else None
     if not isinstance(listed, list):
         return None
     return {
@@ -406,6 +482,36 @@ def stamp_functions(folder: Path, stamp: stamps.Stamp) -> Mapping[str, Any] | No
     return _recorded_functions(folder, stamp)
 
 
+def below(report: stamps.Report, stamp: stamps.Stamp) -> stamps.Stamp | None:
+    """The review a delta or a text review rests on (`since_seq`, else `full_seq`), or None for a full review or a
+    stamp that names none."""
+    if stamp.detail.get("scope", "full") == "full":
+        return None
+    seq = stamp.detail.get("since_seq", stamp.detail.get("full_seq"))
+    if not isinstance(seq, int) or seq >= stamp.seq:
+        return None
+    return next((s for s in report.stamps if s.seq == seq and s.step == "reviewed"), None)
+
+
+def stack_functions(folder: Path, report: stamps.Report, stamp: stamps.Stamp) -> dict[str, Any] | None:
+    """The address -> class map a review's stack says: the newest stamp's own list when it has one (a delta carries
+    the list below it, updated with what it judged), else the list below it updated with each delta's own judgement,
+    read from the verdicts kept by seq. None when no list can be read."""
+    inline = stamp.detail.get("functions")
+    if isinstance(inline, dict):
+        return dict(inline)
+    under = below(report, stamp)
+    if under is None:
+        recorded = _recorded_functions(folder, stamp)
+        return None if recorded is None else dict(recorded)
+    found = stack_functions(folder, report, under)
+    if found is None:
+        return None
+    if stamp.detail.get("scope") == DELTA:
+        found.update(_recorded_functions(folder, stamp) or {})
+    return found
+
+
 __all__ = [
     "CODE_SCOPES",
     "DELTA",
@@ -413,6 +519,7 @@ __all__ = [
     "Delta",
     "Now",
     "Plan",
+    "below",
     "diff_text",
     "earlier_review",
     "file_change",
@@ -420,5 +527,8 @@ __all__ = [
     "packet_entry",
     "plan",
     "python_test_bodies",
+    "stack_functions",
     "stamp_functions",
+    "test_code",
+    "touched_functions",
 ]

@@ -187,7 +187,9 @@ resolved in a rebase. When the earlier review still holds for the rest, only the
 * **What it stacks on.** The newest passing `reviewed` stamp of the code (scope `full` or `delta`) made for another
   change than the current one. A failed full review in between means a full review again, as before; a failed delta
   review is passed over, since the pass before it still holds and the new delta includes the fix of what failed.
-  The commit that review judged must still be in the repository (a rebase keeps it in the object store).
+  The commit that review judged must still be in the repository (a rebase keeps it in the object store), and its
+  base is read from the verdict that review recorded only when that file is the one its stamp's `review_sha256`
+  covers; otherwise it is the merge base of that commit with the base.
 * **What the delta is.** A file is in it when the branch's own removed and added lines of it (`git diff -U0`, without
   hunk headers or blob ids, the change hash's reading, [stamps](../stamps.md#change)) differ between the change
   reviewed and the change now. A rebase onto a newer main moves line numbers and context, not those lines, so it
@@ -199,20 +201,26 @@ resolved in a rebase. When the earlier review still holds for the rest, only the
   `@orig` function's body or addresses (a comment or layout change is none, by [the body hash](../orig-body-hash.md)),
   or the pairs were compared again; `research-claim`, the delta adds, removes or edits a line of research work that
   holds a claim, one matching a `claim_patterns` expression (an address, an evidence level); `test-body`, the delta
-  changes, adds or removes the code of a test under `test_paths` (a C++ `TEST_CASE`, read as `fails-first` reads it,
-  or a Python `test_` function, read by the parser, so comments and layout are no change). Those are what a reviewer
-  must judge against the original or against what the test proves, with the whole change in view.
+  changes the code of any file under `test_paths`: a test, a helper, a fixture, a conftest, a parametrize table or a
+  data file the tests read, since each changes what the tests prove (a C++ file is read without comments and layout,
+  a Python file as the parser reads it, any other file as it is). Those are what a reviewer must judge against the
+  original or against what the test proves, with the whole change in view.
 * **Its checklists and model.** The [kinds](#kinds) of the delta alone: the code and docs checklists for its files,
-  `research` for a research file in it (one whose claims did not change), `orig` for an `@orig` function that moved in
-  it, `text` only when the description's title, paragraph or pictures changed since the review it stacks on, and
-  `commits` always. So the reviewer needs Opus only when the delta touches research work or moves an `@orig`
-  function; a clang-tidy fix to an `@orig` change is reviewed on any model. A research page in the delta is listed in
-  the verdict, but no address need be checked in Ghidra: its claims are the full review's.
+  `research` for a research file in it (one whose claims did not change), `orig` for an `@orig` function of the change
+  whose text the delta edits though its body and addresses stand (a comment inside it, its tag, its separate
+  declaration or that declaration's comment: a comment at a difference is what makes it
+  [diff-deliberate-ok](orig.md#classes) rather than diff-uncommented, so the function is judged again and is in the
+  packet's `functions`) and for one that moved in the delta, `text` always (the description is read against what the
+  delta changes) and `commits` always. So the reviewer needs Opus only when the delta touches research work or an
+  `@orig` function's text; a clang-tidy fix elsewhere in an `@orig` change is reviewed on any model. A research page in
+  the delta is listed in the verdict, but no address need be checked in Ghidra: its claims are the full review's.
 * **Its stamp.** `scope` is `delta`; the detail adds `since_seq` and `full_seq` and carries the `functions` (or
-  `function_count`) and `pages` of the review below it, with the pages it judged. `pr verify` accepts it when every
-  review below it, down to a full one, passed: it walks `since_seq` to the full review, holds each reviewer to the
-  [who rule](#who) and the reverse-engineering model to the kinds that review applied (the whole change's for the full
-  one), and reads a function list left out of a stamp from the full review's `recorded-<seq>.json`.
+  `function_count`) and `pages` of the reviews below it, each function it judged again under its new class, with the
+  pages it judged. `pr verify` accepts it when every review below it, down to a full one, passed: it walks `since_seq`
+  to the full review (from a text review too, which names the review of the code it rests on in `since_seq`), holds
+  each reviewer to the [who rule](#who) and the reverse-engineering model to the kinds that review applied (the whole
+  change's for the full one and for a text review), and reads a function list left out of a stamp from the verdicts
+  the stack recorded (`recorded-<seq>.json`, each only when its stamp covers it).
 
 The tool part is the same as a full review's, over the whole change: compares, copy-check, `fails-first` and the
 docs check are a program's and cost no reviewer time.
@@ -255,7 +263,8 @@ hash](../stamps.md#change)). Its `commit` is the tip reviewed.
 | `result` | `pass` or `fail`; a fail stamp is a verdict, so it is written, and a later pass replaces it |
 
 A text review keeps the `functions`, `pages` and `full_seq` of the review of the code it rests on (a full one, or a
-delta on a full one); a delta review keeps them too and adds `since_seq` ([The delta review](#delta)). Recording the
+delta on a full one) and names that review in `since_seq`; a delta review keeps them too
+([The delta review](#delta)). Recording the
 same verdict again for the same change writes no second stamp.
 
 ## Who may record {#who}

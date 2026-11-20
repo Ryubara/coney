@@ -939,11 +939,9 @@ def _review_functions(subject: Subject, stamp: stamps.Stamp) -> Mapping[str, Any
     inline = stamp.detail.get("functions")
     if isinstance(inline, dict):
         return _lower_keys(inline)
-    # A delta or text review that left the list out rests on a full review: its verdict, kept by seq, has the list.
-    full_seq = stamp.detail.get("full_seq")
-    if isinstance(full_seq, int) and full_seq != stamp.seq:
-        full = next((s for s in subject.report.stamps if s.seq == full_seq and s.step == "reviewed"), None)
-        found = None if full is None else review_delta.stamp_functions(_review_folder(subject), full)
+    # A delta or text review that left the list out rests on the reviews below it: the verdicts kept by seq have it.
+    if stamp.detail.get("scope", "full") != "full" and review_delta.below(subject.report, stamp) is not None:
+        found = review_delta.stack_functions(_review_folder(subject), subject.report, stamp)
         if found is not None:
             return _lower_keys({address: _class_name(judged) for address, judged in found.items()})
     wanted = stamp.covers.get("review_sha256")
@@ -965,25 +963,29 @@ def _review_folder(subject: Subject) -> Path:
 
 
 def _review_stack(subject: Subject, stamp: stamps.Stamp) -> tuple[list[stamps.Stamp], str | None]:
-    """The reviews of the code a passing `reviewed` stamp rests on, newest first, ending at a full review: the stamp
-    itself for a full review, each delta review down to the full one for a delta (docs/guides/review/task.md#delta),
-    or what is wrong with the stack."""
+    """The reviews a passing `reviewed` stamp rests on, newest first, ending at a full review: the stamp itself for a
+    full review; for a delta or a text review each review below it (`since_seq`, or a text review's `full_seq` from
+    before it named the review it rests on) down to the full one (docs/guides/review/task.md#delta); or what is wrong
+    with the stack."""
     by_seq = {s.seq: s for s in subject.report.stamps if s.step == "reviewed"}
     stack = [stamp]
-    while stack[-1].detail.get("scope") == review_delta.DELTA:
-        below = by_seq.get(stack[-1].detail.get("since_seq"))
-        if below is None or below.seq >= stack[-1].seq or below in stack:
-            return stack, f"the delta review #{stack[-1].seq} names no earlier review it stacks on"
+    while (scope := stack[-1].detail.get("scope", "full")) != "full":
+        top = stack[-1]
+        seq = top.detail.get("since_seq", top.detail.get("full_seq"))
+        if seq is None and scope == "text":
+            return stack, None  # a text review from before it named the review below it
+        below = by_seq.get(seq)
+        if below is None or below.seq >= top.seq or below in stack:
+            return stack, f"the {scope} review #{top.seq} names no earlier review it stacks on"
         if below.result != "pass" or below.detail.get("verdict", "pass") != "pass":
-            return stack, f"the delta review #{stack[-1].seq} stacks on #{below.seq}, which did not pass"
+            return stack, f"the {scope} review #{top.seq} stacks on #{below.seq}, which did not pass"
         if below.detail.get("scope", "full") not in review_delta.CODE_SCOPES:
-            return stack, f"the delta review #{stack[-1].seq} stacks on #{below.seq}, which is no review of the code"
+            return stack, f"the {scope} review #{top.seq} stacks on #{below.seq}, which is no review of the code"
         stack.append(below)
-    if stamp.detail.get("scope") == review_delta.DELTA and stamp.detail.get("full_seq") != stack[-1].seq:
-        return (
-            stack,
-            f"the delta review #{stamp.seq} names full review #{stamp.detail.get('full_seq')}, not #{stack[-1].seq}",
-        )
+    full_seq = stamp.detail.get("full_seq")
+    if stamp is not stack[-1] and full_seq is not None and full_seq != stack[-1].seq:
+        scope = stamp.detail.get("scope")
+        return stack, f"the {scope} review #{stamp.seq} names full review #{full_seq}, not #{stack[-1].seq}"
     return stack, None
 
 
@@ -1093,13 +1095,13 @@ def check_reviewed(subject: Subject, text: TextHashes | None) -> list[Refusal]:
         pages = stamp.detail.get("pages")
         if not (isinstance(pages, list) and pages):
             found.append(refuse("Review did not grade the research pages this change touches"))
-    # A delta review stands on the reviews below it: each is checked for who reviewed, the full one against the whole
-    # change and each delta against the kinds it judged.
+    # A delta or a text review stands on the reviews below it: each is checked for who reviewed, the full one against
+    # the whole change and each delta against the kinds it judged; one refusal said once.
     stack, broken = _review_stack(subject, stamp)
     if broken is not None:
         return [*found, refuse(broken, "task review --full")]
     for reviewed in stack:
-        found += _reviewer(subject, reviewed, refuse)
+        found += [r for r in _reviewer(subject, reviewed, refuse) if r not in found]
     return found
 
 
