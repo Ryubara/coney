@@ -875,13 +875,12 @@ letterbox goes out, and before the end function is called; confirmed (code) at `
 every view, then follow dispatched forced for player 1 (`0x0039f3f0`) without the menu unlock, the player test or
 the gang update, and the HUD shown again. Confirmed (code) at `0x0039ec60`.
 
-Ghidra's decompile of the end shows the player test the other way round (the brain's `+0x2e4` read when a player
-*was* bound); the disassembly settles it: at `0x0039ff1c` a set bound-player flag branches (`bnel`) straight to the
+The player test reads the bound-player flag first: at `0x0039ff1c` a set flag branches (`bnel`) straight to the
 menu unlock and the dispatch, and only with it clear is the brain byte read at `0x0039ff2c`, skipping all three steps
 when it is 0. Confirmed (code). The bound-player flag is gathered over every human still in a role slot as the end
 releases them (`0x0039f450`, the role loop), so a human left out of the start for being in a grab counts too.
 
-**At runtime** (PCSX2 2.9.94, state `pedestrian-grab`, level99 checkpoint 2 with Ash in Rembrandt's crew; confirmed
+**At runtime** (PCSX2 v2.9.129, state `pedestrian-grab`, level99 checkpoint 2 with Ash in Rembrandt's crew; confirmed
 (runtime), run r-20261120-scene-crew-follow): with every command enabled, the automatic commands off and hold ordered,
 `l99_c5` played as a cinematic with Rembrandt bound to role 0 kept the hold tactic in force (vtable `0x005439e0`)
 while it played; in the first read after `SceneDone` turned true the follow tactic (vtable `0x005438c0`) was in force,
@@ -1090,10 +1089,12 @@ unlocked, follow is his last command and his crew has one new tactic, the follow
   (`ai::Gang::update`), when a bound human was a player; a cinematic given up gives only the follow. They are made in
   place, as in the original, so a follow's command callback runs before the end function (which Coney calls at the end
   of the scene update). **Coney stand-in**: the chief's hit-back count (brain
-  `+0x2e4`) is never set, as `WarriorBrain_OnHitByChief` is not built (`ai::Brain::hittingBack`), so only a bound
-  player gives the end's three steps. Before this the gameplay mode's crew step gave the follow and the unlock itself
+  `+0x2e4`) is never set, as `WarriorBrain_OnHitByChief` is not built (`ai::Brain::hittingBack`, #79), so only a
+  bound player gives the end's three steps. Before this the gameplay mode's crew step gave the follow and the unlock itself
   once player 1 was out of the scene and no scene camera was current, after the end function and without the gang
-  update; it now gives the follow only when player 1 changes.
+  update. It now gives only `Human_MakePlayer`'s follow when another human becomes player 1 (`0x00229c40`):
+  forced, at once and with no unlock, so the dispatcher refuses it while a scene camera is current or his menu is
+  locked, and nothing follows after the scene's end but the end's own steps.
 - A scene with roles but none bound ends when its tracks do; an aborted scene's end function is not called. The
   abort's other steps (its fade in at once, the end function, the end poses, the HUD) are #673's.
 - A track's events fire against the scene's frame (the part's start frame plus its time), the header's and the
@@ -1145,9 +1146,6 @@ trace above.
 - Where a scene's captions come from (answered): the level's Subtitles chunk, by the scene's name
   ([Movies](movies.md#caption-text)).
 - Event 30's argument layout (colour at `+8` and cone at `+0x10` overlap as three floats).
-- **The chief's hit-back count in Coney**{#q-hit-back}: the end's gang steps also run, with no player bound, while
-  player 1's brain `+0x2e4` is set ([The player's gang](#gang)); that count is set by `WarriorBrain_OnHitByChief`
-  ([AI](ai-code.md#brain-types)), which Coney does not build, so Coney's `SceneCrew::hitBack` always answers no.
 - How a role's model is decided (answered: by the bound human's character type; the name is a label, [Cast and
   props](#cast), confirmed at runtime for `l99_c1`, [Cast at runtime](#cast-runtime)). Still open: the 204 roles
   and 41 props of scripted scenes the static walk does not resolve, and which of two or more `HuCreate` types a

@@ -153,7 +153,7 @@ coney = "src/ai/gangs.h:Gang::update"
 status = "compared"
 
 [[function.gaps]]
-what = "the player cache, the crime level, the wanted state, the leader's nearby list and the downed count are not built; the spawner step is Spawners::update"
+what = "the player cache, the gang handle at +0x614 cleared once it resolves, the crime level, the wanted state, the leader's nearby list and the downed count are not built; the spawner step is Spawners::update"
 relation = "not-ported"
 issue = 645
 

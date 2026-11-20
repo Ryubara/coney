@@ -455,8 +455,8 @@ class GameplayMode final : public GameMode {
     // Whether player 1 holds a role in a starting or playing scene (Human_IsInSceneState, as far as Coney tracks it).
     // @orig 0x00227d28 Human_IsInSceneState (unknown)
     [[nodiscard]] bool playerInScene() const;
-    // Player 1's crew this frame: the follow the game issues itself (forced) when another human is made player 1,
-    // once he is in no scene and no scene camera is current; then his automatic commands (ai::CrewOrders), and his
+    // Player 1's crew this frame: the follow the game issues itself (forced) at once when another human is made
+    // player 1, which the dispatcher refuses during a scene; then his automatic commands (ai::CrewOrders), and his
     // menu unlocked every 10 updates (docs/research/ai-gangs.md#warrior-follow, #warrior-auto-commands). The follow
     // after a scene is the scene's end's (SceneCrewHooks, docs/research/scenes.md#gang).
     // @orig 0x00229c40 Human_MakePlayer (unknown)
@@ -586,7 +586,6 @@ class GameplayMode final : public GameMode {
     std::uint32_t m_aiVariation = 0; // `--ai-seed`, which each level's brains are made with
     ai::CrewOrders m_crewOrders;     // player 1's automatic commands
     double m_crewChief = 0.0;        // player 1's handle when his crew was last given the follow
-    bool m_crewFollowDue = false;    // a follow waits for the scene camera to go
     std::uint64_t m_crewUpdates = 0;
     std::unique_ptr<camera::Cameras> m_cameras;    // player 1's; declared before the level, whose player holds them
     SceneCrewHooks m_sceneCrew{*this};             // player 1's gang as the level's cinematics change it

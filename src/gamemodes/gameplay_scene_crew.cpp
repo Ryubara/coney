@@ -55,7 +55,7 @@ bool GameplayMode::SceneCrewHooks::isPlayer(double human) {
 
 bool GameplayMode::SceneCrewHooks::hitBack() {
     // Coney stand-in: the chief's count of Warriors hitting back at him (brain +0x2e4) is never set, as the hit-back
-    // (WarriorBrain_OnHitByChief) is not built (ai::Brain::hittingBack()).
+    // (WarriorBrain_OnHitByChief) is not built (ai::Brain::hittingBack(), #79).
     return false;
 }
 

@@ -309,7 +309,7 @@ issue = 673
 [[function.gaps]]
 what = "the gang steps' other case, player 1's brain `+0x2e4` (a Warrior hitting back at him), never holds: the hit-back is not built"
 relation = "stand-in"
-question = "scenes.md#q-hit-back"
+issue = 79
 
 [[function]]
 address = 0x003a00b8

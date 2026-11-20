@@ -216,7 +216,10 @@ class SceneTask {
 
     // ---- Starting ----
 
-    // Re-entered every update until everything is ready; returns at the first thing that is not.
+    // Re-entered every update until everything is ready; returns at the first thing that is not. Not built yet
+    // (#673): the HUD and the player panels hidden in the cinematic's state 0 to 1 step beside the bums' clearing, the
+    // wait while game state +0x14c is set, the human flag 0x800000, the system music turned off, the counter at
+    // 0x00597198, and the speech stopped for a cinematic with no roles.
     // @orig 0x0039d870 SceneTask_Start (SceneTask.cpp)
     void start(std::uint64_t /*nowMs*/) {
         SceneHost& host = m_system.host();
@@ -902,7 +905,10 @@ class SceneTask {
     }
 
     // State 7: everything given back, then state 8 and the end function. A scene given up (`aborted`) does the
-    // same without the end function and without the end's changes to player 1's gang (abort()).
+    // same without the end function and without the end's changes to player 1's gang (abort()). Not built yet
+    // (#673): the +0x20ac flag, the system music turned back on, each bound human's speech and voice stopped and his
+    // scene slot cleared, every player's rumble zeroed by the camera's pop, and the `_end` preload made round the
+    // player camera (Coney preloads round the scene camera's start).
     // @orig 0x0039f450 SceneTask_End (SceneTask.cpp)
     void end(bool aborted = false) {
         SceneHost& host = m_system.host();
@@ -1007,8 +1013,9 @@ class SceneTask {
 
     // A scene that did not start within kStartTimeoutMs is given up as the end gives everything back, without the
     // end function; a cinematic's crew gets the follow. The original also calls the end function (once per type-31
-    // event of the camera track, then once more), puts the humans and objects at their end poses, fades in at once
-    // and shows the HUD; those wait for #673.
+    // event of the camera track, then once more), puts the humans and objects at their end poses, stops their speech
+    // and voices and sets their body flags, puts the kept camera back and resets the players' cameras, turns the
+    // system music back on, makes the script system's call, fades in at once and shows the HUD; those wait for #673.
     // @orig 0x0039ec60 SceneTask_Abort (SceneTask.cpp)
     void abort() {
         ++m_system.m_stats.aborted;

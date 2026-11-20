@@ -1601,17 +1601,15 @@ void GameplayMode::stepCrew(std::uint64_t nowMs) {
         return;
     }
     CharacterRules& rules = m_state.characters;
-    // A switch of player 1 gives his crew the follow (the level's start gives it as he is made, above).
+    // A switch of player 1 gives his crew the follow forced at once, with no unlock, as Human_MakePlayer does (the
+    // level's start gives it as he is made, above). The dispatcher refuses it while a scene camera is current or his
+    // menu is locked; only a cinematic's end gives one after it (SceneTask::end()).
     if (player->handle != m_crewChief) {
-        m_crewFollowDue = m_crewFollowDue || m_crewChief != 0.0;
+        const bool switched = m_crewChief != 0.0;
         m_crewChief = player->handle;
-    }
-    const bool inScene = playerInScene();
-    const bool sceneCamera = m_cameras && m_cameras->current().kind == camera::CameraKind::Scene;
-    if (m_crewFollowDue && !inScene && !sceneCamera) {
-        m_crewFollowDue = false;
-        m_state.story.menuLocked.at(0) = false;
-        script::issueWarriorCommand(m_scripts, m_context, player->handle, ai::kCrewFollow, true);
+        if (switched) {
+            script::issueWarriorCommand(m_scripts, m_context, player->handle, ai::kCrewFollow, true);
+        }
     }
     // The automatic commands, his menu unlocked every 10 updates, while they are on (game state `+0x431`,
     // `WCEnableAutomaticSwitching`; the Rumble arenas turn them off).
