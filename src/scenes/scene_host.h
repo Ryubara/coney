@@ -157,4 +157,33 @@ class SceneHost {
     virtual void log(std::string_view /*line*/) {}
 };
 
+/// What a cinematic does to player 1's gang, the Warriors (docs/research/scenes.md#gang): the game mode that owns the
+/// gangs and the Warrior commands implements it. Only player 1's gang is touched, as in the original (game state
+/// `0x0051489c + 0x228`). Every hook does nothing (or answers no) by default, and with no player 1 the game's hooks do
+/// nothing either, so a scene plays with no gang around it.
+class SceneCrew {
+  public:
+    SceneCrew() = default;
+    SceneCrew(const SceneCrew&) = delete;
+    SceneCrew& operator=(const SceneCrew&) = delete;
+    SceneCrew(SceneCrew&&) = delete;
+    SceneCrew& operator=(SceneCrew&&) = delete;
+    virtual ~SceneCrew() = default;
+
+    /// `Gang_ClearBums`: every member of player 1's gang of class 6 (a bum he took into his crew) is destroyed.
+    virtual void clearBums() {}
+    /// Whether `human` is a player (human `+0x1b0` not −1).
+    [[nodiscard]] virtual bool isPlayer(double /*human*/) { return false; }
+    /// Whether player 1's brain `+0x2e4` is set: a Warrior is hitting back at his chief.
+    [[nodiscard]] virtual bool hitBack() { return false; }
+    /// Player 1's command menu is unlocked (game state `+0x42e` + his player number = 0).
+    virtual void unlockCommandMenu() {}
+    /// Command 0, follow, dispatched forced for player 1 (`WarriorCommand_Dispatch(state, player 1, 0, 1, 0, 1)`):
+    /// silent, still refused while the commands are locked or follow is disabled.
+    virtual void followForced() {}
+    /// One update of player 1's gang without its spawners (`Gang_CachePlayerInfo(gang, 0)`), which starts the follow
+    /// tactic the dispatch made and hands out its goals.
+    virtual void updateGang() {}
+};
+
 } // namespace coney::scenes

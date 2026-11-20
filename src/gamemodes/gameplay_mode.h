@@ -262,8 +262,10 @@ class GameplayMode final : public GameMode {
     void setMoviePlayer(MoviePlayer* player) { m_moviePlayer = player; }
     /// Makes each level's scene system (over the disc's scene list); null or empty: no scenes.
     using SceneMaker = std::function<std::unique_ptr<scenes::SceneSystem>()>;
-    /// Gives the mode its scene maker.
-    void setSceneMaker(SceneMaker maker) { m_sceneMaker = std::move(maker); }
+    /// Gives the mode its scene maker; each scene system it makes gets the mode's crew hooks (scenes::SceneCrew).
+    /// @coney-only the scene system's link to the gameplay mode, made here so the level's enter keeps the original's
+    /// steps
+    void setSceneMaker(SceneMaker maker);
     /// Plays the glass panes' and doors' sounds through `sounds` (the audio's ObjectSounds; null: none), which must
     /// outlive the mode or be replaced first.
     void setObjectSounds(world_objects::ObjectServices* sounds) { m_objectServices.setSounds(sounds); }
@@ -453,13 +455,45 @@ class GameplayMode final : public GameMode {
     // Whether player 1 holds a role in a starting or playing scene (Human_IsInSceneState, as far as Coney tracks it).
     // @orig 0x00227d28 Human_IsInSceneState (unknown)
     [[nodiscard]] bool playerInScene() const;
-    // Player 1's crew this frame: the follow the game issues itself (forced) when he is made a player and when a scene
-    // that held him ends, once no scene camera is current; then his automatic commands (ai::CrewOrders), and his
-    // menu unlocked every 10 updates (docs/research/ai-gangs.md#warrior-follow, #warrior-auto-commands).
+    // Player 1's crew this frame: the follow the game issues itself (forced) at once when another human is made
+    // player 1, which the dispatcher refuses during a scene, and his gang's update right after it; then his automatic
+    // commands (ai::CrewOrders), and his menu unlocked every 10 updates (docs/research/ai-gangs.md#warrior-follow,
+    // #warrior-auto-commands). The follow after a scene is the scene's end's (SceneCrewHooks,
+    // docs/research/scenes.md#gang).
     // @orig 0x00229c40 Human_MakePlayer (unknown)
-    // @orig 0x0039f450 SceneTask_End (unknown)
     // @orig 0x003035d8 PlayerBrain_Update (unknown)
     void stepCrew(std::uint64_t nowMs);
+    // What a cinematic does to player 1's gang (scenes::SceneCrew) on this mode's brains, scripts and game state
+    // (gameplay_scene_crew.cpp, docs/research/scenes.md#gang). Each hook does nothing without a player 1.
+    class SceneCrewHooks final : public scenes::SceneCrew {
+      public:
+        // Hooks on `mode`, which must outlive them.
+        explicit SceneCrewHooks(GameplayMode& mode) : m_mode(&mode) {}
+        // `Gang_ClearBums` on player 1's gang (ai::ScriptedHub::clearBums(), the port).
+        // @coney-only glue: a scene task's step done on this mode's state; the scene task cites the original
+        void clearBums() override;
+        // Whether `human` was made a player by `HuCreate`.
+        // @coney-only glue: a scene task's step done on this mode's state; the scene task cites the original
+        [[nodiscard]] bool isPlayer(double human) override;
+        // Never: the hit-back count is not built (a stand-in, at the definition).
+        // @coney-only glue: a scene task's step done on this mode's state; the scene task cites the original
+        [[nodiscard]] bool hitBack() override;
+        // Player 1's menu unlocked (StoryState::menuLocked).
+        // @coney-only glue: a scene task's step done on this mode's state; the scene task cites the original
+        void unlockCommandMenu() override;
+        // Follow forced through the Warrior command dispatcher (script::issueWarriorCommand()).
+        // @coney-only glue: a scene task's step done on this mode's state; the scene task cites the original
+        void followForced() override;
+        // Player 1's gang's update (ai::Gang::update()).
+        // @coney-only glue: a scene task's step done on this mode's state; the scene task cites the original
+        void updateGang() override;
+
+      private:
+        // Player 1 as the scripts made him; null without one or without the level's brains.
+        // @coney-only lookup for the hooks above
+        [[nodiscard]] const HumanCreation* chief() const;
+        GameplayMode* m_mode;
+    };
     // Gives the hub's host (ai::ScriptedHub) what it reads beyond the brains: the configuration's categories and flee
     // percentages, the workout's tuning, the volume boxes and the flags inside them, the crimes and the crime scene;
     // and gives the gangs the game's random numbers and the gang kinds' team-up strategies.
@@ -553,10 +587,9 @@ class GameplayMode final : public GameMode {
     std::uint32_t m_aiVariation = 0; // `--ai-seed`, which each level's brains are made with
     ai::CrewOrders m_crewOrders;     // player 1's automatic commands
     double m_crewChief = 0.0;        // player 1's handle when his crew was last given the follow
-    bool m_crewInScene = false;      // whether a scene held player 1 last frame
-    bool m_crewFollowDue = false;    // a follow waits for the scene camera to go
     std::uint64_t m_crewUpdates = 0;
     std::unique_ptr<camera::Cameras> m_cameras;    // player 1's; declared before the level, whose player holds them
+    SceneCrewHooks m_sceneCrew{*this};             // player 1's gang as the level's cinematics change it
     std::unique_ptr<scenes::SceneSystem> m_scenes; // the level's scenes, which outlive the level that hosts them
     scenes::SceneSystem* m_scenesBefore = nullptr; // the context's scene system before the level's, put back after
     // The level's glass panes and doors and what they ask of the world, before the level, which points them at its

@@ -548,7 +548,12 @@ page = "characters.md#original-structure"
 role = "joins the player list, takes a pad and a HUD panel, brain type 0 ([Players](characters.md#players))"
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::stepCrew"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the record's slot and pad, the enemy lists cleared, the player list and HUD panel, the brain reset, the war-chief choice, the damage scale, the class flags and gear, the gang's update after the level start's follow (a switch runs it), and the body and move-style settings are not ported"
+relation = "not-ported"
+issue = 1520
 
 [[function]]
 address = 0x0022a2a8

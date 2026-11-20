@@ -216,7 +216,10 @@ class SceneTask {
 
     // ---- Starting ----
 
-    // Re-entered every update until everything is ready; returns at the first thing that is not.
+    // Re-entered every update until everything is ready; returns at the first thing that is not. Not built yet
+    // (#673): the HUD and the player panels hidden in the cinematic's state 0 to 1 step beside the bums' clearing, the
+    // wait while game state +0x14c is set, the human flag 0x800000, the system music turned off, the counter at
+    // 0x00597198, and the speech stopped for a cinematic with no roles.
     // @orig 0x0039d870 SceneTask_Start (SceneTask.cpp)
     void start(std::uint64_t /*nowMs*/) {
         SceneHost& host = m_system.host();
@@ -236,6 +239,8 @@ class SceneTask {
         // the scene camera's start.
         if (m_request.cinematic && m_system.m_sceneState < 2) {
             if (m_system.m_sceneState == 0) {
+                // With the step from 0, player 1's bums are sent away (docs/research/scenes.md#gang).
+                m_system.crew().clearBums();
                 m_system.m_sceneState = 1;
                 return;
             }
@@ -899,20 +904,27 @@ class SceneTask {
         }
     }
 
-    // State 7: everything given back, then state 8 and the end function.
+    // State 7: everything given back, then state 8 and the end function. A scene given up (`aborted`) does the
+    // same without the end function and without the end's changes to player 1's gang (abort()). Not built yet
+    // (#673): the +0x20ac flag, the system music turned back on, each bound human's speech and voice stopped and his
+    // scene slot cleared, every player's rumble zeroed by the camera's pop, and the `_end` preload made round the
+    // player camera (Coney preloads round the scene camera's start).
     // @orig 0x0039f450 SceneTask_End (SceneTask.cpp)
-    void end(bool callEndFunction = true) {
+    void end(bool aborted = false) {
         SceneHost& host = m_system.host();
         const SceneHeader& header = *m_slot.header;
         if (m_request.cinematic) {
             m_system.m_sceneState = 0;
         }
-        // The humans: a skipped scene puts them at their end poses; the join goal is popped.
+        // The humans: a skipped scene puts them at their end poses; the join goal is popped. Whether any was a player
+        // is noted for the gang's steps below.
+        bool playerBound = false;
         for (std::size_t role = 0; role < m_slot.roleHandles.size(); ++role) {
             const double human = m_slot.roleHandles[role];
             if (human == 0.0) {
                 continue;
             }
+            playerBound = m_system.crew().isPlayer(human) || playerBound;
             if (role < m_roles.size() && m_roles[role].inScene) {
                 leave(role);
             }
@@ -964,6 +976,15 @@ class SceneTask {
         if (m_request.cinematic && begun()) {
             host.screenEffect(ScreenEffect::LetterboxOut, kLetterboxSeconds);
         }
+        // A cinematic in which a player took part, or whose player 1 has a Warrior hitting back at him, gives his crew
+        // back: his menu unlocked, follow forced and one gang update, which starts the follow
+        // (docs/research/scenes.md#gang).
+        if (m_request.cinematic && !aborted && (playerBound || m_system.crew().hitBack())) {
+            SceneCrew& crew = m_system.crew();
+            crew.unlockCommandMenu();
+            crew.followForced();
+            crew.updateGang();
+        }
         if (m_request.freeze && begun()) {
             host.suspendBrains(false);
         }
@@ -975,7 +996,7 @@ class SceneTask {
         ++m_system.m_stats.ended;
         logging::info(logging::Category::World, std::format("cutscene: end {} (id {}){}", m_slot.header->name,
                                                             m_slot.id, m_skipped ? ", skipped" : ""));
-        if (callEndFunction) {
+        if (!aborted) {
             callEnd();
         }
         if (m_request.cinematic && !m_request.final && header.camera) {
@@ -990,8 +1011,11 @@ class SceneTask {
     // Whether the scene got as far as its start (its brains were suspended, its letterbox shown).
     [[nodiscard]] bool begun() const { return !m_roles.empty() || !m_tracks.empty() || m_cameraBegun; }
 
-    // A scene that did not start within kStartTimeoutMs is given up as the end gives everything back; whether the
-    // end function is called is not traced (Coney: it is not).
+    // A scene that did not start within kStartTimeoutMs is given up as the end gives everything back, without the
+    // end function; a cinematic's crew gets the follow. The original also calls the end function (once per type-31
+    // event of the camera track, then once more), puts the humans and objects at their end poses, stops their speech
+    // and voices and sets their body flags, puts the kept camera back and resets the players' cameras, turns the
+    // system music back on, makes the script system's call, fades in at once and shows the HUD; those wait for #673.
     // @orig 0x0039ec60 SceneTask_Abort (SceneTask.cpp)
     void abort() {
         ++m_system.m_stats.aborted;
@@ -1000,7 +1024,11 @@ class SceneTask {
         if (m_request.cinematic) {
             m_system.host().soundtrackStop();
         }
-        end(false);
+        end(true);
+        // A cinematic given up gives player 1's crew only the follow, forced (docs/research/scenes.md#gang).
+        if (m_request.cinematic) {
+            m_system.crew().followForced();
+        }
     }
 
     SceneSystem& m_system;

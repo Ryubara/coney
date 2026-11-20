@@ -109,6 +109,8 @@ class SceneSystem {
     void setHost(SceneHost* host);
     /// Replaces the Lua caller (a new script state).
     void setScriptCall(ScriptCall call) { m_call = std::move(call); }
+    /// Attaches player 1's gang as a cinematic changes it (null: SceneCrew's defaults). It must outlive the attachment.
+    void setCrew(SceneCrew* crew) { m_crew = crew; }
 
     // ---- The bindings' workers ----
 
@@ -192,12 +194,17 @@ class SceneSystem {
     [[nodiscard]] SceneHost& host() { return m_host != nullptr ? *m_host : m_defaultHost; }
     // Queues a Lua call for the end of the update (or makes it now outside one).
     void callLua(std::string_view function, std::span<const double> args);
+    // The crew, or the defaults. The scene tasks call it in place, as the original does: a follow's command callback
+    // runs inside the update, before the end function the update queues.
+    [[nodiscard]] SceneCrew& crew() { return m_crew != nullptr ? *m_crew : m_defaultCrew; }
     // The task playing `id`; null when none.
     [[nodiscard]] SceneTask* taskOf(std::uint32_t id) const;
     SceneCache m_cache;
     ScriptCall m_call;
     SceneHost* m_host = nullptr;
     SceneHost m_defaultHost;
+    SceneCrew* m_crew = nullptr;
+    SceneCrew m_defaultCrew;
     std::vector<std::unique_ptr<SceneTask>> m_tasks;
     std::string m_globalCallback;
     std::uint64_t m_nowMs = 0;

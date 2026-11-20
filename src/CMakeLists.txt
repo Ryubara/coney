@@ -75,6 +75,7 @@ add_library(coney_core STATIC
     gamemodes/front_end_services.cpp
     gamemodes/game_mode_stack.cpp
     gamemodes/gameplay_mode.cpp
+    gamemodes/gameplay_scene_crew.cpp
     gamemodes/gameplay_tag.cpp
     gamemodes/tag_lines.cpp
     gamemodes/gameplay_revive.cpp

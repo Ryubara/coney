@@ -11,6 +11,7 @@
 
 #include "ai/brain.h"
 #include "ai/idle_goals.h"
+#include "ai/tactic.h"
 #include "hud/hud.h"
 #include "human/human.h"
 #include "support/ai_fixtures.h"
@@ -18,6 +19,25 @@
 using coney::ai::Brain;
 using coney::ai::Gangs;
 using coney::test::AiScene;
+
+namespace {
+
+// A tactic that counts its starts and updates.
+class CountingTactic final : public coney::ai::Tactic {
+  public:
+    CountingTactic(int& starts, int& updates) : Tactic(0x30, ""), m_starts(&starts), m_updates(&updates) {}
+    void start(coney::ai::Gang& /*gang*/) override { ++*m_starts; }
+    int update(coney::ai::Gang& /*gang*/) override {
+        ++*m_updates;
+        return 0;
+    }
+
+  private:
+    int* m_starts;
+    int* m_updates;
+};
+
+} // namespace
 
 TEST_CASE("a gang takes the first free slot under a name not in use", "[ai][gangs]") {
     Gangs gangs;
@@ -383,4 +403,34 @@ TEST_CASE("a gang's capacity is the limit Gangs::addMember holds it to: 10, and 
         }
         CHECK(gangs.find(id)->members().size() == c.limit);
     }
+}
+
+TEST_CASE("the gang's update without its spawners starts and runs its tactic once, only with members", "[ai][gangs]") {
+    // Expected: ai-gangs.md#gang-update, confirmed (code): 0x00166708 processes the gang's tactic (Tactic_Process,
+    // which starts it on the first call) when the gang has a tactic and members; a scene's end calls it with 0, which
+    // skips the spawners (scenes.md#gang).
+    AiScene scene;
+    Gangs& gangs = scene.brains.gangs();
+    // A gang with a member, its tactic set after him (a member joining offers the tactic an event, which starts it).
+    const int gang = gangs.create(coney::ai::kWarriorsKind, "Warriors");
+    gangs.addMember(gang, scene.add({44.0F, 40.0F, 0.0F}, 0.0F));
+    int starts = 0;
+    int updates = 0;
+    gangs.setTactic(gang, std::make_unique<CountingTactic>(starts, updates));
+    coney::ai::Gang* warriors = gangs.find(gang);
+    REQUIRE(warriors != nullptr);
+    warriors->update();
+    CHECK(starts == 1);
+    CHECK(updates == 1);
+    warriors->update();
+    CHECK(starts == 1);
+    CHECK(updates == 2);
+    // A gang with no members: its tactic waits.
+    const int empty = gangs.create(19, "Enemy");
+    int emptyStarts = 0;
+    int emptyUpdates = 0;
+    gangs.setTactic(empty, std::make_unique<CountingTactic>(emptyStarts, emptyUpdates));
+    gangs.find(empty)->update();
+    CHECK(emptyStarts == 0);
+    CHECK(emptyUpdates == 0);
 }

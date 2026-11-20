@@ -149,8 +149,13 @@ name = "Gang_CachePlayerInfo"
 page = "ai-gangs.md#original-structure"
 role = "The players' state for the gang, and whether its spawners may run (the cap)"
 level = "confirmed-code"
-coney = "src/ai/spawners.h:Spawners::update"
-status = "legacy"
+coney = "src/ai/gangs.h:Gang::update"
+status = "compared"
+
+[[function.gaps]]
+what = "the player cache, the gang handle at +0x614 cleared once it resolves, the crime level, the wanted state, the leader's nearby list and the downed count are not built; the spawner step is Spawners::update"
+relation = "not-ported"
+issue = 645
 
 [[function]]
 address = 0x00166b60
@@ -5251,7 +5256,12 @@ kind = "type 0 update"
 role = "target upkeep, hostiles counted, the [automatic commands](ai-gangs.md#warrior-auto-commands)"
 level = "confirmed-code"
 coney = "src/ai/scripted_hub.h:ScriptedHub::update"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "a lost target dropped, the near-enemy scan every 2 s (`0x0028af88`), `WarChief_CheckCrewInRange` every 40 updates with the heading cached at brain `+0x110`, and the `TauntPlayer` ring while `+0x2e4` is set are not ported"
+relation = "not-ported"
+issue = 1520
 
 [[function]]
 address = 0x00303988
