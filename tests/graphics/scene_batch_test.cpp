@@ -13,6 +13,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <variant>
 #include <vector>
 
 #include <catch2/catch_approx.hpp>
@@ -241,6 +242,49 @@ TEST_CASE("a draw changes its mesh's material colours as the GL3 renderer does",
     REQUIRE(over.colours.size() == 1);
     CHECK(over.colours[0] == Rgba{90, 80, 70, 100});
     CHECK_FALSE(over.modulate);
+}
+
+TEST_CASE("a human's draw shades his first material as the GL3 renderer does", "[graphics][gpu-renderer][scene]") {
+    // Expected: ../engine/gpu-renderer.md#scene: platform::MaterialChange under MaterialColour::Shade (the human's
+    // colour with red, green and blue times the shade, truncated, the fade as its alpha, in place of the first
+    // material's own colour; the other materials and the mesh's own modulation untouched), as material_change_test.cpp
+    // checks it on the librw atomic.
+    const MeshData mesh =
+        litMesh({MeshMaterial{Rgba{0x96, 0x96, 0x96, 255}, ""}, MeshMaterial{Rgba{10, 20, 255, 240}, ""}});
+
+    // A white human (no HuColor) at half the dimming: 255 x 0.5 = 127.5, truncated.
+    const DrawColours dimmed =
+        coney::graphics::coloursOf(mesh, Material3d{.colour = MaterialColour::Shade, .fade = 0x60, .shade = 0.5F});
+    REQUIRE(dimmed.colours.size() == 2);
+    CHECK(dimmed.colours[0] == Rgba{127, 127, 127, 0x60});
+    CHECK(dimmed.colours[1] == Rgba{10, 20, 255, 240});
+    CHECK_FALSE(dimmed.modulate);
+
+    // A coloured human undimmed takes his colour as it is; a shade past 1 is held at 1.
+    MeshData modulated = mesh;
+    modulated.modulate = true;
+    const DrawColours coloured = coney::graphics::coloursOf(
+        modulated,
+        Material3d{.colour = MaterialColour::Shade, .fade = 0xFF, .tint = Rgba{200, 100, 50, 7}, .shade = 2.0F});
+    CHECK(coloured.colours[0] == Rgba{200, 100, 50, 0xFF});
+    CHECK(coloured.modulate);
+}
+
+TEST_CASE("a skinned draw waits for the GPU renderer's skinning", "[graphics][gpu-renderer][scene]") {
+    // Expected: ../engine/gpu-renderer.md#scene: a draw with a pose (a human, FrameDescription::bonesOf()) is left
+    // out of the GPU renderer's scene passes until it skins (#1206), never drawn in its bind pose; every other draw is
+    // drawn.
+    coney::graphics::FrameDescription frame;
+    frame.begin(coney::graphics::FrameStart{});
+    const std::array<Transform3d, 1> bones{Transform3d{.position = {1.0F, 2.0F, 3.0F}}};
+    coney::graphics::Draw3d draw;
+    draw.mesh = coney::graphics::MeshId{3};
+    frame.addSceneDraw(draw, {}, {}, {}, bones);
+    frame.addSceneDraw(draw, {}, {}, {});
+    const auto& scene = std::get<coney::graphics::ScenePass>(frame.passes()[0]);
+    REQUIRE(scene.draws.size() == 2);
+    CHECK(coney::graphics::needsSkinning(frame, scene.draws[0]));
+    CHECK_FALSE(coney::graphics::needsSkinning(frame, scene.draws[1]));
 }
 
 TEST_CASE("a sub-mesh has vertex alpha only where its prelighting is not opaque", "[graphics][gpu-renderer][scene]") {

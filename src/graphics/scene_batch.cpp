@@ -142,6 +142,13 @@ DrawLights lightsFor(std::span<const SceneLight> lights, const MeshData& mesh, c
     return out;
 }
 
+bool needsSkinning(const FrameDescription& frame, const Draw3d& draw) {
+    // Stub for the test commit: no draw is left out yet.
+    (void)frame;
+    (void)draw;
+    return false;
+}
+
 DrawColours coloursOf(const MeshData& mesh, const Material3d& material) {
     DrawColours out;
     out.modulate = mesh.modulate;

@@ -82,6 +82,10 @@ struct DrawColours {
     bool modulate = false;
 };
 
+/// Whether `draw`, a 3D draw of `frame`, has a pose (FrameDescription::bonesOf(): a human), which the GPU renderer
+/// leaves out of its scene passes until it skins meshes (#1206) rather than draw it in its bind pose.
+[[nodiscard]] bool needsSkinning(const FrameDescription& frame, const Draw3d& draw);
+
 /// The colours of `mesh` as `material` changes them (DrawColours).
 [[nodiscard]] DrawColours coloursOf(const MeshData& mesh, const Material3d& material);
 
