@@ -66,6 +66,18 @@ std::vector<NetEvent> toNetEvents(std::span<const GameEvent> events, const Event
     return out;
 }
 
+GameEvent toGameEvent(const NetEvent& event) {
+    // toNetEvents() sent only the fields the kind carries, so the others are at their defaults already.
+    return GameEvent{.kind = event.kind,
+                     .subject = 0.0,
+                     .id = event.id,
+                     .value = event.value,
+                     .extra = event.extra,
+                     .position = event.position,
+                     .text = event.text,
+                     .rotation = event.rotation};
+}
+
 std::vector<EventBatch> EventSender::build(std::uint32_t step, std::span<const NetEvent> events) {
     std::vector<EventBatch> batches;
     // Reliable first: a message and the sound it comes with arrive in the order a player would expect either way.

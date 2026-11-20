@@ -48,8 +48,8 @@ std::vector<std::byte> bytes(std::initializer_list<int> values) {
 std::vector<GameEvent> everyKind() {
     using enum GameEventKind;
     return {
-        GameEvent{.kind = Sound2D, .id = 0x11111111},
-        GameEvent{.kind = Sound3D, .id = 0x22, .position = {1.5F, -2.0F, 0.25F}},
+        GameEvent{.kind = Sound2D, .id = 0x11111111, .value = 1},
+        GameEvent{.kind = Sound3D, .id = 0x22, .value = 2, .position = {1.5F, -2.0F, 0.25F}},
         GameEvent{.kind = HumanSound, .subject = 7, .id = 0x33, .value = 1, .position = {3.0F, 4.0F, 0.0F}},
         GameEvent{.kind = Hit, .subject = 8, .id = 12, .value = 14, .position = {-1.0F, 0.5F, 1.0F}},
         GameEvent{.kind = MusicStart, .id = 0x44, .value = 3, .extra = 2},
@@ -76,6 +76,8 @@ std::vector<GameEvent> everyKind() {
         GameEvent{.kind = MaterialPair, .id = 2, .value = 5, .extra = 250, .position = {1.0F, 1.0F, 0.5F}},
         GameEvent{.kind = Cue, .subject = 13, .id = 23, .value = 1, .position = {2.0F, 0.0F, 1.0F}},
         GameEvent{.kind = Hint, .id = 0, .value = 3, .text = "Press <X>"},
+        GameEvent{.kind = SoundStop, .value = 1},
+        GameEvent{.kind = SoundMove, .value = 2, .extra = 500, .position = {1.5F, -1.0F, 0.25F}},
     };
 }
 
@@ -143,12 +145,12 @@ struct Pair {
 // Expected: unverified, #547 (Coney's own network play; the original has none)
 TEST_CASE("event batches: one sound's bytes are pinned", "[net][events]") {
     // Id 12; reliable 0; sequence 1 and step 2 as varints; count less one 0 (8 bits); kind 1 (8 bits); ordinal 0; the
-    // sound's hash 5 as a varint.
+    // sound's hash 5 and its instance 3 as varints.
     const EventBatch batch{.reliable = false,
                            .sequence = 1,
                            .step = 2,
-                           .events = {NetEvent{.kind = GameEventKind::Sound2D, .ordinal = 0, .id = 5}}};
-    CHECK(encode(batch) == bytes({0x0c, 0x02, 0x04, 0x00, 0x02, 0x00, 0x0a, 0x00}));
+                           .events = {NetEvent{.kind = GameEventKind::Sound2D, .ordinal = 0, .id = 5, .value = 3}}};
+    CHECK(encode(batch) == bytes({0x0c, 0x02, 0x04, 0x00, 0x02, 0x00, 0x0a, 0x06, 0x00}));
     CHECK(deliveryOf(batch) == Delivery::Unreliable);
     EventBatch reliable = batch;
     reliable.reliable = true;
@@ -159,7 +161,7 @@ TEST_CASE("event batches: one sound's bytes are pinned", "[net][events]") {
 // Expected: unverified, #547 (Coney's own network play; the original has none)
 TEST_CASE("event batches: every kind round-trips with the fields it carries", "[net][events]") {
     const std::vector<NetEvent> events = toNetEvents(everyKind(), idOf);
-    REQUIRE(events.size() == 22);
+    REQUIRE(events.size() == 24);
     for (const bool reliable : {true, false}) {
         EventBatch batch{.reliable = reliable, .sequence = 9, .step = 300, .events = {}};
         for (const NetEvent& event : events) {
@@ -176,19 +178,30 @@ TEST_CASE("event batches: every kind round-trips with the fields it carries", "[
     CHECK_FALSE(events[0].subject.valid());
 }
 
+// Expected: unverified, #1473 (Coney's own network play; the original has none)
+TEST_CASE("event batches: an arrived event is the event raised, but for its subject", "[net][events]") {
+    for (const GameEvent& raised : everyKind()) {
+        const std::vector<NetEvent> sent = toNetEvents(std::span(&raised, 1), idOf);
+        GameEvent expected = raised;
+        expected.subject = 0.0; // a client has no handle for the server's network id yet
+        CHECK(toGameEvent(sent.at(0)) == expected);
+    }
+}
+
 // Expected: unverified, #547 (Coney's own network play; the original has none)
 TEST_CASE("event batches: a broken one is refused", "[net][events]") {
-    const std::vector<std::byte> good = bytes({0x0c, 0x02, 0x04, 0x00, 0x02, 0x00, 0x0a, 0x00});
+    // A 2D sound, hash 5, instance 0 (the pinned batch above with its instance 0).
+    const std::vector<std::byte> good = bytes({0x0c, 0x02, 0x04, 0x00, 0x02, 0x00, 0x0a, 0x00, 0x00});
     REQUIRE(decode(good).has_value());
     // Sequence 0.
-    CHECK_FALSE(decode(bytes({0x0c, 0x00, 0x04, 0x00, 0x02, 0x00, 0x0a, 0x00})).has_value());
-    // Kind 23, unknown.
-    CHECK_FALSE(decode(bytes({0x0c, 0x02, 0x04, 0x00, 0x2e, 0x00, 0x0a, 0x00})).has_value());
+    CHECK_FALSE(decode(bytes({0x0c, 0x00, 0x04, 0x00, 0x02, 0x00, 0x0a, 0x00, 0x00})).has_value());
+    // Kind 25, unknown.
+    CHECK_FALSE(decode(bytes({0x0c, 0x02, 0x04, 0x00, 0x32, 0x00, 0x0a, 0x00, 0x00})).has_value());
     // Reliable set with a one-shot in it.
-    CHECK_FALSE(decode(bytes({0x0c, 0x03, 0x04, 0x00, 0x02, 0x00, 0x0a, 0x00})).has_value());
+    CHECK_FALSE(decode(bytes({0x0c, 0x03, 0x04, 0x00, 0x02, 0x00, 0x0a, 0x00, 0x00})).has_value());
     // Short, and with a trailing byte.
     CHECK_FALSE(decode(bytes({0x0c, 0x02, 0x04, 0x00, 0x02, 0x00})).has_value());
-    CHECK_FALSE(decode(bytes({0x0c, 0x02, 0x04, 0x00, 0x02, 0x00, 0x0a, 0x00, 0x00})).has_value());
+    CHECK_FALSE(decode(bytes({0x0c, 0x02, 0x04, 0x00, 0x02, 0x00, 0x0a, 0x00, 0x00, 0x00})).has_value());
     // Two events whose ordinals do not rise.
     const EventBatch twice{.reliable = false,
                            .sequence = 1,
@@ -197,10 +210,10 @@ TEST_CASE("event batches: a broken one is refused", "[net][events]") {
                                       NetEvent{.kind = GameEventKind::Sound2D, .ordinal = 2, .id = 2}}};
     std::vector<std::byte> packet = encode(twice);
     REQUIRE(decode(packet).has_value());
-    // The second event's ordinal is the varint at bits 57-64 after the id byte (header 25 bits, the first event 24,
+    // The second event's ordinal is the varint at bits 65-72 after the id byte (header 25 bits, the first event 32,
     // the second's kind 8): 2 there becomes 1, the first event's, so they no longer rise.
-    REQUIRE(packet.size() > 8);
-    packet[8] ^= std::byte{0x06};
+    REQUIRE(packet.size() > 9);
+    packet[9] ^= std::byte{0x06};
     CHECK_FALSE(decode(packet).has_value());
 }
 
@@ -212,7 +225,7 @@ TEST_CASE("event sender: batches by delivery, numbered apart, split at the budge
     REQUIRE(first.size() == 2);
     CHECK(first[0].reliable);
     CHECK(first[0].sequence == 1);
-    CHECK(first[0].events.size() == 14);
+    CHECK(first[0].events.size() == 16);
     CHECK_FALSE(first[1].reliable);
     CHECK(first[1].sequence == 1);
     CHECK(first[1].events.size() == 8);
@@ -296,7 +309,7 @@ TEST_CASE("event channel: every kind raised on the server arrives once on the cl
     CHECK(pair.client->takeEvents(raisedAt - 1).empty());
     const std::vector<ArrivedEvent> arrived = pair.client->takeEvents(raisedAt);
     const std::vector<NetEvent> sent = toNetEvents(everyKind(), idOf);
-    REQUIRE(sent.size() == 22);
+    REQUIRE(sent.size() == 24);
     REQUIRE(arrived.size() == sent.size());
     for (std::size_t i = 0; i < sent.size(); ++i) {
         CHECK(arrived[i].step == raisedAt);
@@ -342,7 +355,7 @@ TEST_CASE("event channel: over loss, repeats and reordering, reliable events arr
     for (const auto& [key, count] : seen) {
         CHECK(count == 1);
     }
-    CHECK(reliable == std::size_t{40} * 14);
+    CHECK(reliable == std::size_t{40} * 16);
     CHECK(oneShots <= std::size_t{40} * 8);
     CHECK(oneShots > 0);
     CHECK(pair.client->state() == ClientState::Connected);

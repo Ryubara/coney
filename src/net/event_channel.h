@@ -29,6 +29,10 @@ using EventSubjectIds = std::function<NetId(double handle)>;
 /// (empty: none is mapped, every subject travels as no id). Events past the 65,536th of one step are left out.
 [[nodiscard]] std::vector<NetEvent> toNetEvents(std::span<const GameEvent> events, const EventSubjectIds& ids);
 
+/// The event a client takes from `event`: its kind's fields as they travelled, with no subject (0), since a client
+/// has no script handle for the server's network ids yet.
+[[nodiscard]] GameEvent toGameEvent(const NetEvent& event);
+
 /// One client's outgoing events on the server: each step's events in batches, the reliable ones and the one-shots
 /// apart, each batch at most kMaxBatchEvents events and kEventBatchBudgetBytes bytes, numbered in its delivery's own
 /// sequence from 1.

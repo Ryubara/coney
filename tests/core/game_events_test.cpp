@@ -58,16 +58,21 @@ TEST_CASE("game events: one-shots go unreliably, music, loops, messages, speech,
          {Sound2D, Sound3D, HumanSound, Hit, ParticleStart, ObjectBreak, MaterialPair, Cue}) {
         CHECK_FALSE(coney::reliableGameEvent(kind));
     }
-    for (const GameEventKind kind : {MusicStart, MusicStop, LoopStart, LoopStop, HudMessage, Objective, SceneStart,
-                                     SceneEnd, MovieStart, MovieEnd, Speech, Command, SpeechStop, Hint}) {
+    for (const GameEventKind kind :
+         {MusicStart, MusicStop, LoopStart, LoopStop, HudMessage, Objective, SceneStart, SceneEnd, MovieStart, MovieEnd,
+          Speech, Command, SpeechStop, Hint, SoundStop, SoundMove}) {
         CHECK(coney::reliableGameEvent(kind));
     }
     CHECK_FALSE(coney::validGameEventKind(0));
     CHECK(coney::validGameEventKind(1));
-    CHECK(coney::validGameEventKind(22));
-    CHECK_FALSE(coney::validGameEventKind(23));
+    CHECK(coney::validGameEventKind(24));
+    CHECK_FALSE(coney::validGameEventKind(25));
     CHECK(coney::gameEventFields(MusicStop) == 0);
-    CHECK(coney::gameEventFields(Sound3D) == (coney::kEventId | coney::kEventPosition));
+    // A sound's start carries the instance its later stop and move name (#1473).
+    CHECK(coney::gameEventFields(Sound2D) == (coney::kEventId | coney::kEventValue));
+    CHECK(coney::gameEventFields(Sound3D) == (coney::kEventId | coney::kEventValue | coney::kEventPosition));
+    CHECK(coney::gameEventFields(SoundStop) == coney::kEventValue);
+    CHECK(coney::gameEventFields(SoundMove) == (coney::kEventValue | coney::kEventExtra | coney::kEventPosition));
     // A particle system carries its turn, colour and rectangle, so a guest starts it the same way.
     CHECK(coney::gameEventFields(ParticleStart) == (coney::kEventSubject | coney::kEventId | coney::kEventValue |
                                                     coney::kEventPosition | coney::kEventText | coney::kEventRotation));
@@ -75,8 +80,13 @@ TEST_CASE("game events: one-shots go unreliably, music, loops, messages, speech,
 
 // Expected: unverified, #547 (Coney's own network play; the original has none)
 TEST_CASE("game events: an event's line names its kind and the fields it carries", "[core][game_events]") {
-    CHECK(coney::describe(GameEvent{.kind = GameEventKind::Sound3D, .id = 0xabc, .position = {1.0F, -2.5F, 0.25F}}) ==
-          "sound3d id=0xabc at=1.000,-2.500,0.250");
+    CHECK(coney::describe(
+              GameEvent{.kind = GameEventKind::Sound3D, .id = 0xabc, .value = 4, .position = {1.0F, -2.5F, 0.25F}}) ==
+          "sound3d id=0xabc value=4 at=1.000,-2.500,0.250");
+    CHECK(coney::describe(GameEvent{.kind = GameEventKind::SoundStop, .value = 4}) == "sound_stop value=4");
+    CHECK(coney::describe(
+              GameEvent{.kind = GameEventKind::SoundMove, .value = 4, .extra = 500, .position = {1.0F, 0.0F, 0.0F}}) ==
+          "sound_move value=4 extra=0x1f4 at=1.000,0.000,0.000");
     CHECK(coney::describe(GameEvent{.kind = GameEventKind::MovieStart, .value = 1, .text = "intro"}) ==
           "movie_start value=1 text=\"intro\"");
     CHECK(coney::describe(GameEvent{.kind = GameEventKind::ParticleStart,

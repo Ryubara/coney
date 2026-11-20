@@ -2,7 +2,9 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
+#include <map>
 #include <optional>
 #include <span>
 #include <string_view>
@@ -14,14 +16,37 @@
 
 namespace coney {
 
+/// How many sounds a side keeps (SoundEvents, SoundEventPlayer) before it lets go of those that no longer play: a sound
+/// that ends by itself is never stopped, so without this the sounds kept would grow for as long as a session lasts.
+inline constexpr std::size_t kSoundsKeptBeforePrune = 64;
+/// A volume as a SoundMove carries it: thousandths, 0 to 1000.
+inline constexpr float kSoundVolumeScale = 1000.0F;
+
+/// Lets go of the sounds in `kept` that `sound` (null: none) says no longer play, once there are
+/// kSoundsKeptBeforePrune of them; `handleOf` gives an entry's handle on `sound`.
+/// @coney-only bounds the sounds kept for a guest's later stop and move (network play)
+template <typename Key, typename Value, typename HandleOf>
+void pruneEndedSounds(std::map<Key, Value>& kept, const script::SoundHost* sound, HandleOf handleOf) {
+    if (kept.size() < kSoundsKeptBeforePrune) {
+        return;
+    }
+    std::erase_if(kept, [&](const auto& entry) { return sound == nullptr || !sound->soundPlaying(handleOf(entry)); });
+}
+
 /// The game's sound with its events: every call goes on to `inner` (the game's sound, audio::GameSound) unchanged,
 /// and the calls a player hears are raised as game events as well (GameEvents::raise()): a 2D or a positional sound,
 /// a human's animation sound, the held sound's stop and rage's start, a hit's impact sound, the music's starts and
-/// stop, the ambient track's start and stop, and a line or command said (when it plays) or stopped. It sits where the
+/// stop, the ambient track's start and stop, a line or command said (when it plays) or stopped, and a playing sound's
+/// stop and move (the radios' tracks). It sits where the
 /// game's scripts and gameplay reach the sound (the binding context's `sound`). The world objects' sounds pass
 /// LevelObjectServices and gameplay's HUD cues playHudCue() instead, each raising its own; a scene's and a movie's
 /// sounds travel as their start (docs/guides/network-architecture.md#checklist, item 8;
 /// docs/guides/multiplayer.md#events, which lists what raises none).
+///
+/// While recording, each sound it starts (play2D(), play3D()) is given an instance, numbered from 1, that its start
+/// carries; a later stopSound() or moveSound() on the handle that start returned raises a SoundStop or a SoundMove that
+/// names it, so a guest finds the sound it started for that instance (SoundEventPlayer). A handle is local to each
+/// machine; the instance is what travels.
 ///
 /// What a call returns is the inner sound's (a handle, whether a line plays), so the game's behaviour is unchanged
 /// whether events are recorded or not. Without an inner sound every call does nothing and returns the defaults.
@@ -65,9 +90,9 @@ class SoundEvents final : public script::SoundHost {
     void setAmbientEmitterPositions(std::string_view name, std::span<const std::array<float, 3>> positions) override;
     /// Raises a LoopStart, then plays it.
     void playAmbientTrack(std::uint32_t sound) override;
-    /// Raises a Sound2D, then plays it.
+    /// Raises a Sound2D with the sound's instance, then plays it.
     double play2D(std::uint32_t sound) override;
-    /// Raises a Sound3D, then plays it.
+    /// Raises a Sound3D with the sound's instance, then plays it.
     double play3D(std::uint32_t sound, const std::array<float, 3>& position) override;
     void enableAmbientEmitter(int emitter, bool on) override;
     void setAmbientEmitterVolume(int emitter, float volume) override;
@@ -77,7 +102,10 @@ class SoundEvents final : public script::SoundHost {
     /// Raises a LoopStop, then stops it.
     void stopAmbientTrack() override;
     [[nodiscard]] bool soundPlaying(double handle) const override;
+    /// Raises a SoundStop when `handle` is a sound started while recording, then stops it.
     void stopSound(double handle) override;
+    /// Raises a SoundMove when `handle` is a sound started while recording and its place or volume (to the thousandth)
+    /// changes, then moves it: a radio follows its place every frame, which changes nothing to send.
     void moveSound(double handle, const std::array<float, 3>& position, float volume) override;
     void pauseSound(bool on) override;
     void setAmbientTrackVolume(float volume) override;
@@ -102,11 +130,26 @@ class SoundEvents final : public script::SoundHost {
     void gameplayLeft() override;
 
   private:
+    // A sound started while recording, by its inner handle: its instance and what its last event said of it.
+    struct Playing {
+        std::uint32_t instance = 0;
+        std::array<float, 3> position{};
+        std::uint32_t volume = 0; // thousandths
+    };
+
     // Raises `event` when there is somewhere to raise it.
     void raise(GameEvent event) { raiseGameEvent(m_events, std::move(event)); }
+    // Whether events are kept now.
+    [[nodiscard]] bool recording() const { return m_events != nullptr && m_events->recording(); }
+    // The instance for a sound about to start: the next while recording, else 0 (and the sounds kept are let go).
+    [[nodiscard]] std::uint32_t nextInstance();
+    // Keeps the sound `handle` started as `instance` at `position`, at full volume; nothing for a handle or instance 0.
+    void keep(double handle, std::uint32_t instance, const std::array<float, 3>& position);
 
     script::SoundHost* m_inner;
     GameEvents* m_events;
+    std::map<double, Playing> m_playing; // the sounds started while recording, by inner handle
+    std::uint32_t m_lastInstance = 0;    // the instance the last sound started was given
 };
 
 /// Plays interface cue `cue` through the HUD's `sound`, raising it first on `events` (null: none) as a Cue for

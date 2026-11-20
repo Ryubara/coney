@@ -438,7 +438,8 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
   draws from `GameRandom`, and the sound engine's randomisation calls back into it.
 - **Built:** the sounds, hits, music, the ambient loop and the lines said the simulation plays are game events through
   `SoundEvents`, the world objects' sounds through `LevelObjectServices` and gameplay's HUD cues through `playHudCue()`
-  ([Game events](multiplayer.md#events)); a sound's later stop or move on its handle is not yet (#1473). The music's
+  ([Game events](multiplayer.md#events)); a sound's later stop or move on its handle travels as a SoundStop or
+  SoundMove that names the instance its start carried ([A playing sound](multiplayer.md#sound-instances)). The music's
   draws stay on the server, and the client plays what the server picked.
 
 ### Movies and scenes (`movies/`, `scenes/`) {#sub-movies}

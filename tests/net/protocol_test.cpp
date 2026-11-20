@@ -133,8 +133,9 @@ TEST_CASE("the encoding is pinned: a change to it must bump kProtocolVersion", "
           bytes({0x08, 0x05, 0x09, 0x80, 0x00, 0x08, 0x08, 0x08, 0x08, 0x00, 0x01}));
     // InputTiming: id 9, the lead as a zigzag varint (2 is 4), the target (8 bits).
     CHECK(encode(InputTiming{.lead = 2, .target = 1}) == bytes({0x09, 0x04, 0x01}));
-    // Version 5 added EventBatch (its bytes are pinned in event_channel_test.cpp).
-    CHECK(kProtocolVersion == 5);
+    // Version 5 added EventBatch (its bytes are pinned in event_channel_test.cpp); version 6 a sound's instance on
+    // its start, and its stop and move (#1473).
+    CHECK(kProtocolVersion == 6);
 }
 
 // Expected: unverified, #547 (Coney's own protocol; the original has no network play)

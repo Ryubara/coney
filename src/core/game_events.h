@@ -20,8 +20,8 @@ namespace coney {
 
 /// What happened. Values travel on the wire (docs/guides/multiplayer.md#events) and are never reused.
 enum class GameEventKind : std::uint8_t {
-    Sound2D = 1,       ///< A 2D sound: `id` its name hash.
-    Sound3D = 2,       ///< A positional sound: `id` its name hash, at `position`.
+    Sound2D = 1,       ///< A 2D sound: `id` its name hash, `value` its instance (0 none: one nothing stops).
+    Sound3D = 2,       ///< A positional sound: `id` its name hash, `value` its instance (0 none), at `position`.
     HumanSound = 3,    ///< A human's sound: `subject` him, `value` what (0 his animation sound, `id` its `SA` id; 1 the
                        ///< held sound's stop, clip event `0x45`; 2 rage's start, the game's rage sound), at
                        ///< `position` (his feet).
@@ -57,11 +57,14 @@ enum class GameEventKind : std::uint8_t {
                        ///< `HUDEnableGameTutorialText`): `id` 0 queued (`text` it, `value` its priority), 1 the
                        ///< showing hint cleared, 2 flushed (`value` the priority), 3 the game's own hints on or off
                        ///< (`value` 1 on).
+    SoundStop = 23,    ///< A playing sound stops: `value` the instance its Sound2D or Sound3D gave it.
+    SoundMove = 24,    ///< A playing sound moves or changes volume: `value` its instance, at `position`, `extra` its
+                       ///< volume in thousandths (1000 full).
 };
 
 /// The first and last GameEventKind, for loops and range checks.
 inline constexpr GameEventKind kFirstGameEventKind = GameEventKind::Sound2D;
-inline constexpr GameEventKind kLastGameEventKind = GameEventKind::Hint;
+inline constexpr GameEventKind kLastGameEventKind = GameEventKind::SoundMove;
 
 /// What a Hint event did: its `id`.
 enum HintAction : std::uint8_t {
@@ -104,9 +107,9 @@ struct GameEvent {
 [[nodiscard]] bool validGameEventKind(std::uint8_t kind);
 /// The fields `kind` carries (GameEventField bits).
 [[nodiscard]] std::uint8_t gameEventFields(GameEventKind kind);
-/// Whether events of `kind` must arrive (music, loops, messages, objectives, hints, scenes, movies, and a line or
-/// command said or stopped) rather than being one-shots a lost packet may drop (sounds, hits, material pairs, cues,
-/// particles, breaks).
+/// Whether events of `kind` must arrive (music, loops, messages, objectives, hints, scenes, movies, a line or command
+/// said or stopped, and a playing sound's stop and move) rather than being one-shots a lost packet may drop (sounds,
+/// hits, material pairs, cues, particles, breaks).
 [[nodiscard]] bool reliableGameEvent(GameEventKind kind);
 /// The kind's short name, for logs and record lines: `sound2d`, `hit`, `scene_start`, ...
 [[nodiscard]] std::string_view describe(GameEventKind kind);
