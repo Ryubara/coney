@@ -70,3 +70,16 @@ TEST_CASE("A widget shown again on a screen with no focus takes the focus") {
     screen.setVisible(a, true, 1100, input);
     CHECK(screen.focused() == b);
 }
+
+TEST_CASE("A widget shown on a HUD screen leaves it with no focus") {
+    // Expected: Coney's own rule, docs/guides/studio/ui.md#hud
+    UiScreen screen(UiScreenId{1}, "yard-brawl", UiScreenDef{.layer = UiLayer::Hud, .title = ""}, {});
+    const UiWidgetId a{1};
+    addList(screen, a, "a", 3);
+    MenuInput input;
+
+    // A HUD screen never takes its player's pad, so showing a focusable widget gives it no selection to draw.
+    screen.setVisible(a, false, 100, input);
+    screen.setVisible(a, true, 200, input);
+    CHECK(screen.focused() == std::nullopt);
+}

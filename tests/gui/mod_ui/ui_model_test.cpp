@@ -488,3 +488,123 @@ TEST_CASE("The UI model refuses a long text, a long list and a fifth HUD screen"
         model.createScreen(kProject, UiScreenDef{.layer = UiLayer::Hud, .title = "", .pause = false}).value();
     CHECK(model.openScreen(kProject, fifth, 0, 0).error() == UiRefusal::TooManyHud);
 }
+
+TEST_CASE("Destroying an open menu screen closes it and gives the screen under it the focus") {
+    // Expected: Coney's own rule, docs/guides/studio/ui.md#screens
+    Driver d;
+    const UiScreenId under = menuScreen(d.model);
+    const UiWidgetId underList = widget(d.model, under, UiWidgetKind::List, "list");
+    fill(d.model, underList, 3);
+    const UiScreenId over = d.model.createScreen(kProject, UiScreenDef{}).value();
+    const UiWidgetId overList = widget(d.model, over, UiWidgetKind::List, "list");
+    fill(d.model, overList, 3);
+    REQUIRE(d.model.openScreen(kProject, under, 0, msOf(0)).has_value());
+    REQUIRE(d.model.openScreen(kProject, over, 0, msOf(0)).has_value());
+    d.step(0);
+    d.model.takeEvents();
+    REQUIRE(d.model.top(0) == over);
+
+    REQUIRE(d.model.destroyScreen(kProject, over, msOf(d.frame)).has_value());
+
+    // It is gone with its widgets, the flow is the screen under it, which has its widget focused, and Closed is queued.
+    CHECK(d.model.screen(over) == nullptr);
+    CHECK_FALSE(d.model.screenOf(overList).has_value());
+    CHECK(d.model.flow(0) == std::vector<UiScreenId>{under});
+    CHECK(d.model.top(0) == under);
+    CHECK(d.model.screen(under)->focused() == underList);
+    const std::vector<UiEvent> events = d.model.takeEvents();
+    REQUIRE(events.size() == 1);
+    CHECK(events.front().kind == UiEventKind::Closed);
+    CHECK(events.front().screen == over);
+}
+
+TEST_CASE("Destroying a HUD screen takes it off the shown ones and a screen never opened queues nothing") {
+    // Expected: Coney's own rule, docs/guides/studio/ui.md#screens
+    UiModel model;
+    model.registerProject(kProject, "Yard Brawl");
+    const UiScreenId hud =
+        model.createScreen(kProject, UiScreenDef{.layer = UiLayer::Hud, .title = "", .pause = false}).value();
+    const UiScreenId idle = model.createScreen(kProject, UiScreenDef{}).value();
+    REQUIRE(model.openScreen(kProject, hud, 0, 0).has_value());
+    REQUIRE(model.hud().size() == 1);
+
+    REQUIRE(model.destroyScreen(kProject, hud, 0).has_value());
+    CHECK(model.hud().empty());
+    CHECK(model.screen(hud) == nullptr);
+    CHECK(kinds(model) == std::vector<UiEventKind>{UiEventKind::Closed});
+
+    REQUIRE(model.destroyScreen(kProject, idle, 0).has_value());
+    CHECK(model.screen(idle) == nullptr);
+    CHECK(model.takeEvents().empty());
+}
+
+TEST_CASE("A project cannot destroy another project's screen or one that is not there") {
+    // Expected: Coney's own rule, docs/guides/mod-ui.md#widgets
+    UiModel model;
+    const UiScreenId mine = menuScreen(model);
+    model.registerProject(kOther, "Other");
+    REQUIRE(model.openScreen(kProject, mine, 0, 0).has_value());
+    model.takeEvents();
+
+    CHECK(model.destroyScreen(kOther, mine, 0).error() == UiRefusal::UnknownScreen);
+    CHECK(model.destroyScreen(kProject, UiScreenId{999}, 0).error() == UiRefusal::UnknownScreen);
+    CHECK(model.screen(mine) != nullptr);
+    CHECK(model.top(0) == mine);
+    CHECK(model.takeEvents().empty());
+}
+
+TEST_CASE("Destroying a screen frees its widgets and its place among the screens") {
+    // Expected: Coney's own rule, docs/guides/studio/ui.md#limits
+    UiModel model;
+    const UiScreenId full = menuScreen(model);
+    std::vector<UiWidgetId> widgets;
+    for (std::size_t i = 0; i < ui_limit::kWidgets; ++i) {
+        widgets.push_back(model.addWidget(kProject, full, UiWidgetDef{}).value());
+    }
+    for (std::size_t i = 1; i < ui_limit::kScreens; ++i) {
+        REQUIRE(model.createScreen(kProject, UiScreenDef{}).has_value());
+    }
+    REQUIRE(model.createScreen(kProject, UiScreenDef{}).error() == UiRefusal::TooManyScreens);
+    const UiScreenId spare = model.screens().rbegin()->first;
+    REQUIRE(model.addWidget(kProject, spare, UiWidgetDef{}).error() == UiRefusal::TooManyWidgets);
+
+    REQUIRE(model.destroyScreen(kProject, full, 0).has_value());
+
+    // Its widgets no longer name a screen, a screen and the widgets can be made again.
+    CHECK_FALSE(model.screenOf(widgets.front()).has_value());
+    CHECK_FALSE(model.screenOf(widgets.back()).has_value());
+    CHECK(model.setText(kProject, widgets.front(), "x").error() == UiRefusal::UnknownWidget);
+    const UiScreenId again = model.createScreen(kProject, UiScreenDef{}).value();
+    for (std::size_t i = 0; i < ui_limit::kWidgets; ++i) {
+        REQUIRE(model.addWidget(kProject, again, UiWidgetDef{}).has_value());
+    }
+    CHECK(model.addWidget(kProject, again, UiWidgetDef{}).error() == UiRefusal::TooManyWidgets);
+}
+
+TEST_CASE("A widget's position and a bar's fill are set, the fill clamped to 0 to 1 and refused on another kind") {
+    // Expected: Coney's own rule, docs/guides/studio/ui.md#widgets
+    UiModel model;
+    const UiScreenId screen = menuScreen(model);
+    const UiWidgetId bar = widget(model, screen, UiWidgetKind::Bar, "bar");
+    const UiWidgetId text = widget(model, screen, UiWidgetKind::Text, "text");
+    const UiWidgetId unknown{9999};
+
+    REQUIRE(model.setPosition(kProject, bar, 0.25F, 0.75F).has_value());
+    CHECK(model.screen(screen)->widget(bar)->def.x == 0.25F);
+    CHECK(model.screen(screen)->widget(bar)->def.y == 0.75F);
+    CHECK(model.setPosition(kProject, unknown, 0.0F, 0.0F).error() == UiRefusal::UnknownWidget);
+    CHECK(model.setPosition(kOther, bar, 0.0F, 0.0F).error() == UiRefusal::UnknownWidget);
+
+    REQUIRE(model.setFill(kProject, bar, 0.5F).has_value());
+    CHECK(model.screen(screen)->widget(bar)->fill == 0.5F);
+    REQUIRE(model.setFill(kProject, bar, 1.5F).has_value());
+    CHECK(model.screen(screen)->widget(bar)->fill == 1.0F);
+    REQUIRE(model.setFill(kProject, bar, -0.5F).has_value());
+    CHECK(model.screen(screen)->widget(bar)->fill == 0.0F);
+    CHECK(model.setFill(kProject, text, 0.5F).error() == UiRefusal::WrongKind);
+    CHECK(model.setFill(kProject, unknown, 0.5F).error() == UiRefusal::UnknownWidget);
+
+    CHECK(model.screenOf(bar) == screen);
+    CHECK(model.screenOf(text) == screen);
+    CHECK_FALSE(model.screenOf(unknown).has_value());
+}
