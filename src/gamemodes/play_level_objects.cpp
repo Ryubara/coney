@@ -182,8 +182,7 @@ void PlayLevelSimulation::bindObjects(world_objects::LevelObjects* objects, cons
             m_objectList = std::make_unique<world_objects::ObjectList>(std::move(*list));
         } else if (m_print) {
             // Say why: without the list the objects are not drawn and a cabin door's leaves keep their models.
-            m_print(std::format("objects: no Object List, no world objects drawn: {}
-", list.error().message));
+            m_print(std::format("objects: no Object List, no world objects drawn: {}\n", list.error().message));
         }
     }
     if (m_objects == nullptr) {
