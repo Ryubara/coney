@@ -48,8 +48,9 @@ std::expected<std::shared_ptr<const script::LuaProto>, Error> compileLine(std::s
     return script::loadLuaSource(line, kConsoleChunk);
 }
 
-// Points the global `print` at a console's sink for one run and puts the state's own back after it, unless the run
-// set `print` itself (a line such as `print = ToInt` keeps what it set).
+// Points the global `print` at a console's sink for one run and puts the state's own back with restore() after it,
+// unless the run set `print` itself (a line such as `print = ToInt` keeps what it set). The put-back is a call, not
+// a destructor: it allocates, and a destructor must not throw.
 // @coney-only the debug console's output: the original has no console, and its print goes nowhere a player sees
 class PrintRedirect {
   public:
@@ -73,7 +74,7 @@ class PrintRedirect {
         vm.setGlobal("print", m_redirect);
     }
     // Puts the state's `print` back if the run left the console's in place.
-    ~PrintRedirect() {
+    void restore() {
         if (!m_redirect.isNil() && m_vm.global("print") == m_redirect) {
             m_vm.setGlobal("print", m_saved);
         }
@@ -92,8 +93,9 @@ class PrintRedirect {
 // Runs `chunk` in `vm`, with `print` going to `print` when given, and returns the line its results print.
 std::expected<std::vector<std::string>, Error>
 runChunk(script::LuaVm& vm, std::shared_ptr<const script::LuaProto> chunk, const LuaConsole::PrintSink& print) {
-    const PrintRedirect redirect(vm, print);
+    PrintRedirect redirect(vm, print);
     auto results = vm.run(std::move(chunk));
+    redirect.restore();
     if (!results) {
         return std::unexpected(std::move(results.error()));
     }
