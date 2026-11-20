@@ -1636,7 +1636,7 @@ breaks. Confirmed (code) unless marked:
    chosen leaf reads the CRC-32 of `dyn_dr_cabin_aa` after the second hit, and the leaf is drawn skewed).
 3. **The left leaf always takes it.** The step first sets the left leaf (data `+0x14`) to its type's model and then
    to that model's next one (`Obj_SetModel` twice, `0x003a44c8`), whichever leaf the draw picks: the instance it draws
-   changes, but its model word `+0xc4` does not.
+   changes, but its model word `+0xc4` does not. Confirmed (code).
 4. **A draw** (`Random_Int(1)` on the effects stream `0x006eb8b8`, 0 or 1) picks the leaf the step is for: 0 the left,
    1 the right. That leaf takes the same model again and is sent message `0x19` with it, whose handler
    (`SubSwingingDoor_OnMessage`, `0x003fb430`) sets the model and stores it in `+0xc4`. So a 0 damages the left leaf
@@ -1645,7 +1645,7 @@ breaks. Confirmed (code) unless marked:
    run, the left's in the other, and the screenshots show one leaf bent in the second run and both in the first.
 5. **A burst** (`Particles_Burst`, `0x003c6038`, size 0.07, one particle) 1 m above the chosen leaf's hinge: the
    door's position for the left leaf, the door's position plus its rotation × (−2w, 0, 0) for the right, pushed
-   along the door's turned +y.
+   along the door's turned +y. Confirmed (code).
 
 `Obj_SetModel` with a hash the Object List does not hold gives the object no instance and answers 0, and with 0 it
 takes the type's own model, so a leaf model without a next model keeps its own; one whose next model has no record

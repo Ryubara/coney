@@ -24,6 +24,7 @@ Bytes twoRecords() {
 } // namespace
 
 TEST_CASE("the Object List's 36-byte records are read and found by name in any case", "[object_list]") {
+    // Expected: formats/wad-contents.md#object-list, confirmed (code)
     auto list = ObjectList::parse(twoRecords().span());
     REQUIRE(list.has_value());
     REQUIRE(list->records().size() == 2);
@@ -43,6 +44,7 @@ TEST_CASE("the Object List's 36-byte records are read and found by name in any c
 }
 
 TEST_CASE("an Object List shorter than its count is refused", "[object_list]") {
+    // Expected: formats/wad-contents.md#object-list, confirmed (code)
     const Bytes chunk = twoRecords();
     auto cut = ObjectList::parse(chunk.span().first(chunk.size() - 4));
     REQUIRE_FALSE(cut.has_value());
