@@ -30,6 +30,7 @@ from typing import Any
 
 from coney_tools import (
     build_record,
+    check_fix,
     ctest_scope,
     fails_first,
     identity,
@@ -539,12 +540,81 @@ def check_checked(subject: Subject) -> list[Refusal]:
     for check in subject.checks:
         if check not in done:
             found.append(Refusal("checked", f"checked: Check did not run: {check}", "task check"))
+    builds = bool(set(subject.checks) & set(proof.build.checks))
+    tested: Sequence[str] = subject.paths
+    needed_cpp: ctest_scope.CtestScope | None = None
+    if check_fix.DETAIL in stamp.detail:  # a fix: its tests are those of the files changed since the Check it stands on
+        plan, not_fix = _fix_scope(subject, stamp, builds)
+        if plan is None:
+            return found + not_fix
+        tested, needed_cpp = plan.paths, plan.ctest
     if "pytest" in subject.checks:
-        found += _pytest_scope(subject, stamp)
+        found += _pytest_scope(subject, stamp, tested)
     # A profile with the build checks has a build record behind them (`proof.build`), as `task check` writes it.
-    if set(subject.checks) & set(proof.build.checks):
-        found += _build_record(subject, stamp)
+    if builds:
+        found += _build_record(subject, stamp, needed_cpp)
     return found
+
+
+def _fix_scope(subject: Subject, stamp: stamps.Stamp, builds: bool) -> tuple[check_fix.FixPlan | None, list[Refusal]]:
+    """A fix Check (`detail.fix`, check_fix.py): the plan `task check` would make again, when the Check it stands on is
+    in the log as recorded and could be stood on (a passing Check of an earlier change, no fix itself, of a big enough
+    profile, its own build record sound), the base's rules still allow a fix for what changed since, and those files
+    are the ones the fix recorded; else None and the refusal."""
+
+    def refuse(text: str) -> tuple[None, list[Refusal]]:
+        return None, [Refusal("checked", f"checked: {text}", "task check")]
+
+    detail = stamp.detail.get(check_fix.DETAIL)
+    if not subject.conventions.proof.fix.enabled:
+        return refuse("Check ran as a fix, but the base's rules have no proof.fix; run task check --no-fix")
+    try:
+        anchor = check_fix.anchor_of(subject.report, detail)
+    except ConventionsError as error:
+        return refuse(str(error))
+    why = check_fix.can_anchor(anchor, subject.conventions, subject.profile, subject.diff_sha256)
+    if why:
+        return refuse(f"Check ran as a fix, but {why}; run task check --no-fix")
+    if builds:
+        broken = _anchor_record(subject, anchor)
+        if broken:
+            return refuse(f"Check ran as a fix on Check #{anchor.seq}, whose {broken}; run task check --no-fix")
+    tidy = subject.conventions.ci.tidy
+    tree = ctest_scope.tree_at(subject.root, subject.tip, tidy.folders, (*tidy.sources, *tidy.headers))
+    change = pr_diff.Change(subject.base, subject.tip, subject.paths, subject.diff_sha256)
+    plan = check_fix.assess(
+        subject.root, subject.conventions, subject.remote_ref, change, anchor, tree, needs_cpp=builds
+    )
+    if not plan.used:
+        return refuse(f"Check ran as a fix on Check #{anchor.seq}, but {plan.why_full}; run task check --no-fix")
+    if not isinstance(detail, dict) or not check_fix.matches(plan, detail):
+        return refuse(f"the files changed since Check #{anchor.seq} are not those the fix ran for; run task check")
+    return plan, []
+
+
+def _anchor_record(subject: Subject, anchor: stamps.Stamp) -> str:
+    """What is wrong with the build record of the Check a fix stands on ("" when it is sound): it must read, hash to
+    what the stamp covers and be one clean run of the preset at its commit for the tests it recorded, with its
+    counts."""
+    wanted = str(anchor.covers.get("build_record_sha256", ""))
+    try:
+        ran = ctest_scope.scope_from_record(anchor.detail.get("ctest_scope"), subject.unit.dir / ctest_scope.FOLDER)
+        record = build_record.read(subject.unit.dir / build_record.FOLDER, wanted)
+    except (ConventionsError, build_record.BuildRecordError) as error:
+        return f"build record cannot be read: {error}"
+    preset = subject.conventions.proof.build.preset
+    problems = build_record.problems(record, tip=anchor.commit, preset=preset, label=ran.label)
+    if problems:
+        return f"build record does not hold: {problems[0]}"
+    counts, counted = record.get("tests"), anchor.detail.get("tests")
+    keys = ("total", "passed", "failed", "skipped", "skipped_disc")
+    if (
+        not isinstance(counts, dict)
+        or not isinstance(counted, dict)
+        or any(counts.get(k) != counted.get(k) for k in keys)
+    ):
+        return "build record's test counts differ from its stamp's"
+    return ""
 
 
 def resumed_notes(subject: Subject) -> list[str]:
@@ -562,10 +632,11 @@ def resumed_notes(subject: Subject) -> list[str]:
     return [f"Check resumed: {', '.join(names)} taken from an earlier run{when}, not run again"]
 
 
-def _pytest_scope(subject: Subject, stamp: stamps.Stamp) -> list[Refusal]:
+def _pytest_scope(subject: Subject, stamp: stamps.Stamp, paths: Sequence[str]) -> list[Refusal]:
     """The Python tests the Check ran (`detail.pytest_scope`; none recorded is the whole suite, as before the scope
-    was) hold every test the change needs (`proof_profiles.pytest_scope` of its paths, the base's rules)."""
-    needed = proof_profiles.pytest_scope(subject.conventions, subject.paths)
+    was) hold every test the change needs (`proof_profiles.pytest_scope` of `paths`, the base's rules): the change's
+    paths, or a fix's files changed since the Check it stands on."""
+    needed = proof_profiles.pytest_scope(subject.conventions, paths)
     try:
         ran = proof_profiles.scope_from_record(stamp.detail.get("pytest_scope"))
     except ConventionsError as error:
@@ -586,9 +657,12 @@ def _checked_unsettled(stamp: stamps.Stamp | None) -> Refusal | None:
     return None
 
 
-def _build_record(subject: Subject, stamp: stamps.Stamp) -> list[Refusal]:
+def _build_record(
+    subject: Subject, stamp: stamps.Stamp, needed_cpp: ctest_scope.CtestScope | None = None
+) -> list[Refusal]:
     """The `full` Check's build record: the C++ tests the stamp says ran (`detail.ctest_scope`; none recorded is the
-    whole suite) hold every test the change needs (ctest_scope.py, from its C++ files at the tip), the record exists
+    whole suite) hold every test the change needs (ctest_scope.py, from its C++ files at the tip; a fix's are
+    `needed_cpp`, those of the files changed since the Check it stands on), the record exists
     and hashes to what the stamp covers, `build_record.problems` (the rule `task check` applies) finds nothing wrong
     with it at the commit the stamp names for that scope, and its test counts are the stamp's."""
     wanted = str(stamp.covers.get("build_record_sha256", ""))
@@ -601,9 +675,11 @@ def _build_record(subject: Subject, stamp: stamps.Stamp) -> list[Refusal]:
     except ConventionsError as error:
         return refuse(str(error))
     if not ran.whole:
-        tidy = subject.conventions.ci.tidy
-        tree = ctest_scope.tree_at(subject.root, subject.tip, tidy.folders, (*tidy.sources, *tidy.headers))
-        needed = ctest_scope.ctest_scope(subject.conventions, subject.paths, tree)
+        needed = needed_cpp
+        if needed is None:
+            tidy = subject.conventions.ci.tidy
+            tree = ctest_scope.tree_at(subject.root, subject.tip, tidy.folders, (*tidy.sources, *tidy.headers))
+            needed = ctest_scope.ctest_scope(subject.conventions, subject.paths, tree)
         if not ctest_scope.covers(ran, needed):
             return refuse(f"Check ran {ran.text}; this change needs {needed.text}")
 

@@ -30,6 +30,7 @@ import hashlib
 import os
 import subprocess
 import tempfile
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -165,8 +166,32 @@ class _Entry:
     new_sha: str
 
 
+def file_hashes(root: Path, target: str, tip: str) -> dict[str, str]:
+    """Each path the change of `tip` (on its merge base with `target`) touches, and the SHA-256 of that file's part of
+    the canonical text (its path, status, modes and removed and added lines, or its binary image). Two changes of a
+    branch with the same hash for a path make the same change to it, whatever main did around it, so the paths whose
+    hashes differ are what the branch changed in between (`changed_between`, check_fix.py)."""
+    tip_hash = resolve(root, tip)
+    base = merge_base(root, resolve(root, target), tip_hash)
+    return {path: hashlib.sha256(block).hexdigest() for path, block in _blocks(root, base, tip_hash)}
+
+
+def changed_between(before: Mapping[str, str], after: Mapping[str, str]) -> tuple[str, ...]:
+    """The paths whose own change differs between two `file_hashes` of a branch, sorted: those both changes touch with
+    other hashes, and those only one of them touches (a file the later change no longer touches was changed back)."""
+    return tuple(sorted(path for path in before.keys() | after.keys() if before.get(path) != after.get(path)))
+
+
 def _canonical(root: Path, base: str, tip: str) -> tuple[tuple[str, ...], bytes]:
-    """The changed paths and the canonical text that is hashed."""
+    """The changed paths and the canonical text that is hashed: FORMAT, then each file's block in git's path order
+    (`_blocks`)."""
+    blocks = _blocks(root, base, tip)
+    return tuple(path for path, _ in blocks), FORMAT + b"".join(block for _, block in blocks)
+
+
+def _blocks(root: Path, base: str, tip: str) -> list[tuple[str, bytes]]:
+    """Each changed path, in git's path order, with its block of the canonical text: its path, status and modes, then
+    its removed and added lines, or the image of a binary file."""
     with tempfile.TemporaryDirectory(prefix="coney-order-") as folder:
         order = Path(folder) / "empty"
         order.write_bytes(b"")  # an empty order file: git's own path order, whatever the user's diff.orderFile says
@@ -185,17 +210,18 @@ def _canonical(root: Path, base: str, tip: str) -> tuple[tuple[str, ...], bytes]
         per_entry.append([line for section in sections[taken : taken + count] for line in section])
         taken += count
     blobs = _blobs(root, [e.new_sha if e.status != "D" else e.old_sha for e in entries if e.new_mode != "160000"])
-    out = [FORMAT]
+    out: list[tuple[str, bytes]] = []
     for entry, lines in zip(entries, per_entry, strict=True):
-        out.append(b"file " + entry.path + b"\n")
-        out.append(f"status {entry.status}\nmode {entry.old_mode} {entry.new_mode}\n".encode("ascii"))
+        block = [b"file " + entry.path + b"\n"]
+        block.append(f"status {entry.status}\nmode {entry.old_mode} {entry.new_mode}\n".encode("ascii"))
         data = blobs.get(entry.new_sha if entry.status != "D" else entry.old_sha, b"")
         if b"\0" in data[:BINARY_PROBE]:
             image = b"deleted" if entry.status == "D" else hashlib.sha256(data).hexdigest().encode("ascii")
-            out.append(b"binary " + image + b"\n")
+            block.append(b"binary " + image + b"\n")
         else:
-            out.extend(lines)
-    return tuple(e.path.decode("utf-8", "surrogateescape") for e in entries), b"".join(out)
+            block.extend(lines)
+        out.append((entry.path.decode("utf-8", "surrogateescape"), b"".join(block)))
+    return out
 
 
 def _raw_entries(raw: bytes) -> list[_Entry]:

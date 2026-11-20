@@ -444,3 +444,39 @@ def test_a_known_change_has_a_pinned_hash(tmp_path: Path) -> None:
     repo = pinned_repo(tmp_path)
     assert pr_diff.FORMAT == b"coney-change 1\n"
     assert change(repo) == PINNED_HASH
+
+
+# --- the hash of each file, for the paths a branch changed between two Checks (check_fix.py) --------------------------
+
+
+def test_the_change_hash_is_unchanged_by_the_split_into_file_blocks(tmp_path: Path) -> None:
+    # The fix profile reads each file's block; the hash of the whole change is the one stamps are bound to, and must
+    # stay byte for byte what it was (stamps made before the split stay current, and the delta review reads it too).
+    repo = pinned_repo(tmp_path)
+    assert change(repo) == PINNED_HASH
+    blocks = pr_diff.file_hashes(repo, "main", "HEAD")
+    assert sorted(blocks) == ["assets/pic.bin", "docs/new.md", "src/other.cpp", "src/widget.cpp", "tools/run.sh"]
+    assert all(len(value) == 64 for value in blocks.values())
+
+
+def test_a_rebase_keeps_every_file_hash_and_an_edit_changes_only_its_file(repo: Path) -> None:
+    commit(repo, "src/widget.cpp", NINE.replace("line 8", "LINE 8"))
+    commit(repo, "docs/page.md", "page\n")
+    before = pr_diff.file_hashes(repo, "main", "HEAD")
+    git(repo, "checkout", "-q", "main")
+    commit(repo, "src/widget.cpp", "new first line\n" + NINE, "main moves")
+    git(repo, "checkout", "-q", "work")
+    rebase(repo)
+    rebased = pr_diff.file_hashes(repo, "main", "HEAD")
+    assert pr_diff.changed_between(before, rebased) == ()  # main's line around the branch's is not the branch's
+    commit(repo, "src/widget.cpp", "new first line\n" + NINE.replace("line 8", "LINE 8").replace("line 2", "LINE 2"))
+    assert pr_diff.changed_between(before, pr_diff.file_hashes(repo, "main", "HEAD")) == ("src/widget.cpp",)
+
+
+def test_a_file_changed_back_or_newly_touched_is_changed_between(repo: Path) -> None:
+    commit(repo, "src/widget.cpp", NINE.replace("line 8", "LINE 8"))
+    before = pr_diff.file_hashes(repo, "main", "HEAD")
+    commit(repo, "src/widget.cpp", NINE)  # back to main's
+    commit(repo, "src/new.cpp", "new\n")
+    after = pr_diff.file_hashes(repo, "main", "HEAD")
+    assert pr_diff.changed_between(before, after) == ("src/new.cpp", "src/widget.cpp")

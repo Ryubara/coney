@@ -304,7 +304,7 @@ uv run --project python coney-tools task leads --terms TERM ... [--issue N] [--r
 uv run --project python coney-tools task index [--no-gh]
 uv run --project python coney-tools task overlap [TASK] [--write]
 uv run --project python coney-tools task check [TASK] [--worktree DIR] [--base REF] [--agent ID] [--profile P]
-    [--keep-going] [--no-resume] [--dry-run] [--max-wait MIN]
+    [--keep-going] [--no-resume] [--no-fix] [--dry-run] [--max-wait MIN]
 uv run --project python coney-tools task review [TASK] [--text] [--record | --run | --dry-run] [--worktree DIR] [--base REF]
     [--pr-file FILE] [--claude CMD] [--model M] [--effort E] [--timeout-minutes N]
 ```
@@ -500,6 +500,10 @@ The hooks that start `coney-tools` do the same ([the hooks that start
   says so ([A fix task](issues.md#starting)). A fix task with no unit record (made by hand, or before the records) is
   checked in the parent its task file names, the same way, so `check`, `review`, `orig` and `pr open` all use the
   parent's log.
+* **A fix checks only what changed since.** When that log holds a passing Check of an earlier change of the branch,
+  the run is a fix: the same checks and the whole build, but the tests only of the files changed since that Check,
+  unless they are too many or touch the build, the fixtures or a widely included header ([The fix
+  profile](task-check-fix.md#fix)). `--no-fix` runs the full Check.
 
 Exit 0 every check passed and the stamp is written; 1 a check failed (a `fail` stamp is written); 2 it cannot run or
 cannot stamp (nothing is written); 75 the build or the pytest run gave up waiting for a slot (nothing is written; run
@@ -744,7 +748,7 @@ disc) and stamp the result, bound to the change.
 
 ```text
 coney-tools task check [TASK] [--worktree WORKTREE] [--base BASE] [--agent AGENT] [--profile PROFILE] [--keep-going]
-    [--dry-run] [--no-resume] [--max-wait MIN] [--detach] [--result]
+    [--dry-run] [--no-fix] [--no-resume] [--max-wait MIN] [--detach] [--result]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -756,6 +760,7 @@ coney-tools task check [TASK] [--worktree WORKTREE] [--base BASE] [--agent AGENT
 | `--profile PROFILE` | text | none | run a bigger profile than the change needs (docs, tooling or full) |
 | `--keep-going` | flag | off | run every check even after one fails |
 | `--dry-run` | flag | off | print the profile and the checks; run nothing |
+| `--no-fix` | flag | off | run the full check even when an earlier passing Check of the task lets this one be a fix (the default) |
 | `--no-resume` | flag | off | run every check even when an earlier run passed some for this change (the default goes on from them) |
 | `--max-wait MIN` | number | `240.0` | minutes the build may wait for a slot before giving up with exit 75 (default 240.0) |
 | `--detach` | flag | off | run apart from this shell (a killed caller does not end it), return at once; --result shows the outcome |
