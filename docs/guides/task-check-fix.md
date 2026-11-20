@@ -1,25 +1,25 @@
 # Fix checks
 
 How `coney-tools task check` ([the command](coney-tools-repo.md#task-check)) checks a fix to a change whose Check
-already passed: [when it applies](#fix), [when the full Check runs instead](#fallback), [what the stamp holds and
-`pr verify` accepts](#stamp), [what it leaves out](#blind) and [what it saves](#measured).
+already passed: [when it applies](#fix), [when the full Check runs instead](#fallback), [what the stamp holds and `pr
+verify` accepts](#stamp), [what it leaves out](#blind) and [what it saves](#measured).
 
 ## A fix runs the tests of what changed {#fix}
 
-A fix unit changes a line or two of a pull request whose full Check already passed, and checking the whole change
-again repeats the earlier run: 1421 (Xbox save import) touched `src/CMakeLists.txt`, so each of its fixes ran the whole
-suite again, 4099 to 4159 tests with the disc and 16 to 25 minutes of them, for fixes that one to three test files
-reach. So
+A fix unit changes a line or two of a pull request whose full Check already passed, and checking the whole change again
+repeats the earlier run: 1421 (Xbox save import) touched `src/CMakeLists.txt`, so each of its fixes ran the whole suite
+again, 4099 to 4159 tests with the disc and 16 to 25 minutes of them, for fixes that one to three test files reach. So
 `task check` checks a change as a **fix** when the task's log (the parent's, for a fix task) holds an earlier passing
 Check it can stand on, the *anchor*: the newest `checked` stamp that passed, is of another change, is not a fix itself,
 and ran a profile at least as big as the one the change needs now. A fix runs the same checks as the profile the change
-needs, the build included, but the Python and C++ tests are scoped to **the files changed since the anchor**, not to
-the whole branch: the paths whose own part of the change hash differs between the two changes
-(`pr_diff.file_hashes`), so a rebase that leaves the branch's own lines as they were changes no file, and a resolved
-conflict does. Which tests that is follows the usual rules ([Which Python tests
-run](coney-tools-repo.md#task-check-pytest), [Which C++ tests run](coney-tools-repo.md#task-check-ctest)) applied to
-those files; a fix that changed no C++ file runs the C++ tests of the branch's own test files, so the build is still
-run against the tests it wrote.
+needs, the build included, but the Python and C++ tests are scoped to **the files changed since the anchor**, not to the
+whole branch: the paths whose own part of the change hash differs between the two changes (`pr_diff.file_hashes`), so a
+rebase that leaves the branch's own lines as they were changes no file, and a resolved conflict does. Which tests that
+is follows the usual rules ([Which Python tests run](coney-tools-repo.md#task-check-pytest), [Which C++ tests
+run](coney-tools-repo.md#task-check-ctest)) applied to those files, so an engine file the tests cannot be traced from (a
+scene list, a reference picture, a shader, the console's command list) runs the whole suite, as it would in any Check.
+Only a fix whose every changed file is of a class no C++ test reads (`proof.ctest.skip`: documentation and tools) runs
+the C++ tests of the branch's own test files, so the build is still run against the tests it wrote.
 
 ## When the full Check runs instead {#fallback}
 
@@ -33,32 +33,32 @@ The rule is `proof.fix` in [.github/conventions.yml](repo:.github/conventions.ym
   The engine's core includes itself in one large cycle, so half of the 750 headers have more than 94 includers; 400
   picks out the 60 most shared (`core/error.h` with 1534, `core/pad.h`, `graphics/render_device.h`, ...) at the time
   of writing;
-* the C++ tests of what changed come out as the whole suite anyway (a deleted file, a path the tests cannot be traced
-  from);
+* the C++ tests of what changed come out as the whole suite anyway: a deleted or moved C++ file, or an engine file
+  that is no C++ file the tests can be traced from (`tests/pictures/scenes.toml`, a reference picture,
+  `src/console/commands.toml`, a shader, `tests/lsan.supp`, an asset);
 * or the anchor's commit cannot be read, or no longer gives the change its stamp covers.
 
 The output says which on its `fix:` line (`fix: on Check #35 (change 1369909b79df): 4 files changed since
 (src/fileio/fatx_volume.cpp, ...); the tests are theirs`, or `fix: not used: src/CMakeLists.txt changed
 (proof.fix.full_when: */CMakeLists.txt); the full check runs ...`). `--no-fix` and `--profile` always run the full
-Check. A resume ([Resuming a run](task-check-resume.md#resume)) never mixes the two: the fix's profile in the resume
-key names its anchor.
+Check. A resume ([Resuming a run](task-check-resume.md#resume)) never mixes the two: the fix's profile in the resume key
+names its anchor.
 
 ## The stamp and pr verify {#stamp}
 
 The stamp is an ordinary `checked` stamp of the profile the change needs, with `detail.fix`: the anchor's sequence
 number (`on`), the hash of its stamp (`on_stamp`) and of its change (`on_change`), and the count and hash of the files
-changed since (`files`, `sha256`). A fix after a fix stands on the same anchor, with every file changed since it.
-`pr verify` accepts the fix's stamp on top of the anchor: it finds the anchor in the log by `on` and `on_stamp`,
-requires that it could be stood on and that its build record still holds, recomputes the files changed since and the
-fallback rules from the base's `proof.fix`, refuses a fix those rules no longer allow or whose files differ, and holds
-the stamp's `pytest_scope` and `ctest_scope` to the tests of those files ([pr verify](pr.md#verify)).
+changed since (`files`, `sha256`). A fix after a fix stands on the same anchor, with every file changed since it. `pr
+verify` accepts the fix's stamp on top of the anchor: it finds the anchor in the log by `on` and `on_stamp`, requires
+that it could be stood on and that its build record still holds, recomputes the files changed since and the fallback
+rules from the base's `proof.fix`, refuses a fix those rules no longer allow or whose files differ, and holds the
+stamp's `pytest_scope` and `ctest_scope` to the tests of those files ([pr verify](pr.md#verify)).
 
 ## What a fix does not run again {#blind}
 
-By the maintainer's decision of 2026-11-20: the tests of the rest of the branch,
-which the anchor ran, and the tests that main's commits since could affect after a rebase, which CI runs on the pull
-request and `ci disc-suite` after the merge. The build itself is always whole, so a rebase that breaks the compile is
-caught.
+By the maintainer's decision of 2026-11-20: the tests of the rest of the branch, which the anchor ran, and the tests
+that main's commits since could affect after a rebase, which CI runs on the pull request and `ci disc-suite` after the
+merge. The build itself is always whole, so a rebase that breaks the compile is caught.
 
 ## What it saves {#measured}
 

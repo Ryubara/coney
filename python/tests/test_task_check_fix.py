@@ -128,6 +128,21 @@ def test_a_fix_that_touches_no_cpp_file_runs_the_branchs_own_test_files(world: W
     assert verify(world) == []
 
 
+@pytest.mark.parametrize("name", ["tests/pictures/scenes.toml", "src/console/commands.toml", "assets/ui/font.txt"])
+def test_a_fix_to_a_non_cpp_engine_file_runs_the_full_check(world: World, name: str) -> None:
+    # Such a file feeds tests the include graph cannot trace: the normal scope runs the whole suite for it, so a fix
+    # must not narrow it to the branch's own test files.
+    world.edit("tests/ai/brain_test.cpp", '#include "ai/brain.h"\nint more;\n')
+    world.edit("src/CMakeLists.txt", "add_library(ai)\nadd_library(more)\n")
+    assert check(world) == 0
+    world.edit(name, "x = 1\n", "the fix")
+    assert check(world) == 0
+    assert "fix" not in world.stamp.detail and world.labels[-1] is None
+    said = next(line for line in world.said if line.startswith("  fix: "))
+    assert said.startswith("  fix: not used: the C++ tests of what changed are the whole suite") and name in said
+    assert verify(world) == []
+
+
 def test_a_fix_task_named_by_its_id_stands_on_its_parents_check(world: World) -> None:
     full_then_edit(world)
     start_fix(world.root, "757-fix", TASK)

@@ -180,16 +180,18 @@ def includers(tree: Mapping[str, str], folders: tuple[str, ...], headers: Iterab
 def fix_ctest_scope(
     conventions: Conventions, since: Iterable[str], paths: Iterable[str], tree: Mapping[str, str]
 ) -> ctest_scope.CtestScope:
-    """The C++ tests of a fix: those the files changed since reach (`ctest_scope`); when none of them is a C++ file,
-    the branch's own test files (`paths`, the whole change), so the build is still run against the tests it wrote."""
-    tidy = conventions.ci.tidy
+    """The C++ tests of a fix: those the files changed since need (`ctest_scope` of them, the whole suite for a file it
+    cannot trace, such as a scene list, a reference picture or a shader); only when every one of them is of a class no
+    C++ test reads (`proof.ctest.skip`: docs, tools), the branch's own test files (`paths`, the whole change), so the
+    build is still run against the tests it wrote."""
     changed = list(since)
-    if any(path.startswith(tidy.folders) and path.endswith((*tidy.sources, *tidy.headers)) for path in changed):
+    skip = conventions.proof.ctest.skip
+    if not all(conventions.paths.ci_class(path) in skip for path in changed):
         return ctest_scope.ctest_scope(conventions, changed, tree)
     suffix = conventions.proof.ctest.test_suffix
     own = [path for path in paths if path.endswith(suffix) and path in tree]
     if not own:
-        return ctest_scope.CtestScope(True, culprit="nothing changed since is C++ and the branch has no test file")
+        return ctest_scope.CtestScope(True, culprit="no C++ test reads what changed and the branch has no test file")
     return ctest_scope.ctest_scope(conventions, own, tree)
 
 
