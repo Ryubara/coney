@@ -35,6 +35,7 @@ std::optional<coney::io::Wad> openDisc() {
 } // namespace
 
 TEST_CASE("level99's scripts configure the sparring Warriors as the runtime read them", "[ai][disc]") {
+    // Expected: ai/index.md#level99, confirmed (code)
     const std::optional<coney::io::Wad> wad = openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set");
@@ -54,4 +55,26 @@ TEST_CASE("level99's scripts configure the sparring Warriors as the runtime read
     CHECK(config.powerClass.counterChance == 0.08F);
     CHECK(config.settings.baseBlockChance == 60);
     CHECK(config.settings.attackDelaysMs == coney::ai::referenceAttackDelays());
+}
+
+TEST_CASE("level99's CfgGang calls give the team-up strategies the running original holds", "[ai][disc][teamup]") {
+    // Expected: ai-reimpl.md#gang-strategy, confirmed (code)
+    // The bytes of kinds 0, 3, 5, 6 and 8 read in PCSX2 at the config record (+0x73) on 2026-11-18 equal these.
+    const std::optional<coney::io::Wad> wad = openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set");
+    }
+    const coney::LevelScriptRun run =
+        coney::runLevelScriptAlone(coney::script::wadScriptSource(*wad), "level99", 1, {});
+    const coney::ai::GangStrategyTable strategies = coney::ai::gangStrategiesFrom(run.recorded);
+    int weighted = 0;
+    for (const coney::ai::GangStrategy& strategy : strategies) {
+        weighted += strategy == coney::ai::GangStrategy{} ? 0 : 1;
+    }
+    std::printf("  level99: %d of %zu gang kinds have team-up weights\n", weighted, strategies.size());
+    CHECK(strategies[0] == coney::ai::GangStrategy{20, 20, 20, 20, 20, 20, 0}); // StratNormal
+    CHECK(strategies[3] == coney::ai::GangStrategy{0, 0, 0, 5, 0, 5, 0});       // StratOrphans
+    CHECK(strategies[5] == coney::ai::GangStrategy{0, 20, 20, 0, 0, 0, 0});     // StratLizzies
+    CHECK(strategies[6] == coney::ai::GangStrategy{0, 0, 0, 0, 0, 0, 20});      // StratPunks
+    CHECK(strategies[8] == coney::ai::GangStrategy{12, 0, 10, 0, 20, 0, 0});    // StratFuries
 }

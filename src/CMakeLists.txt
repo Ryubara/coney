@@ -32,6 +32,7 @@ add_library(coney_core STATIC
     core/clip_recording.cpp
     core/cpak_archive.cpp
     core/cpak_index.cpp
+    core/cpak_lookup.cpp
     core/cpak_writer.cpp
     core/window_display.cpp
     core/options.cpp
@@ -50,9 +51,11 @@ add_library(coney_core STATIC
     core/script_patch_reader.cpp
     core/sequence_diff.cpp
     core/story_chapter.cpp
+    core/story_choices.cpp
     core/story_graph.cpp
     core/story_manifest.cpp
     core/story_merge.cpp
+    core/story_view.cpp
     core/sha256.cpp
     fileio/disc.cpp
     fileio/executable.cpp
@@ -101,6 +104,7 @@ add_library(coney_core STATIC
     gamemodes/rumble_intro_layer.cpp
     gamemodes/rumble_menu_mode.cpp
     gamemodes/game_stats_mode.cpp
+    gamemodes/mission_select_mode.cpp
     gamemodes/rumble_result_mode.cpp
     gamemodes/start_up_flow.cpp
     graphics/asset_store.cpp
@@ -142,10 +146,13 @@ add_library(coney_core STATIC
     gui/circled_text.cpp
     gui/circled_text_header.cpp
     gui/game_stats.cpp
+    gui/mission_select.cpp
+    gui/mission_select_areas.cpp
     gui/global_strings.cpp
     gui/markup.cpp
     gui/message_paging.cpp
     gui/menu_input.cpp
+    gui/mods_story_list.cpp
     gui/message_box.cpp
     gui/option_grid.cpp
     gui/pause_menu/armies_game_over_menu.cpp
@@ -435,6 +442,7 @@ target_sources(coney_core PRIVATE
     ai/tactic.cpp
     ai/targeting.cpp
     ai/threats.cpp
+    ai/sub_tactics.cpp
     ai/tactic_attack.cpp
     ai/taunt_action.cpp
     ai/tactic_confront.cpp
@@ -538,7 +546,7 @@ target_link_libraries(coney_movies PUBLIC coney_core coney_audio)
 # (docs/guides/multiplayer.md).
 add_library(coney_net STATIC net/bit_stream.cpp net/input_buffer.cpp net/link_conditioner.cpp net/link_quality.cpp net/net_id.cpp net/replicated_fields.cpp net/snapshot.cpp
                              net/loopback_transport.cpp net/net_client.cpp net/net_server.cpp net/protocol.cpp net/snapshot_wire.cpp
-                             net/jitter_buffer.cpp net/client_world.cpp)
+                             net/jitter_buffer.cpp net/client_world.cpp net/state_digest.cpp net/game_humans.cpp net/session_record.cpp)
 coney_target_defaults(coney_net)
 target_link_libraries(coney_net PUBLIC coney_core)
 if(CONEY_DEBUG_TOOLS)
@@ -559,6 +567,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/human_shapes.cpp
         debug/human_watch.cpp
         debug/input_gate.cpp
+        debug/light_trace.cpp
         debug/lighting_lab.cpp
         debug/lua_console.cpp
         debug/menu_model.cpp

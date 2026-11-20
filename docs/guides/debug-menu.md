@@ -102,10 +102,10 @@ windows that are not docked. Multi-viewport (windows torn out of the game window
 `ImGuiConfigFlags_DockingEnable`, set in `ImGuiOverlay::configureIo`, and the reason Dear ImGui is pinned at its docking
 release.
 
-Hidden, the overlay draws nothing and takes no input. Shown, it draws last in the frame, through Dear ImGui's OpenGL 3
-backend, which saves the OpenGL state it changes and restores it afterwards, so librw's own idea of the state stays
-right. `--dev-overlay N` shows it for the first N frames and then hides it, to check that: the last frame of
-`--frames 150 --dev-overlay 100 --screenshot a.png` is byte-identical to the same run without `--dev-overlay`.
+Hidden, the overlay draws nothing and takes no input. Shown, it draws last in the frame: on GL3 through Dear ImGui's
+OpenGL 3 backend, on `gpu` through its SDL GPU backend ([how](../engine/gpu-renderer.md#overlay)). `--dev-overlay N`
+shows it for the first N frames, then hides it, to check that: the last frame of `--frames 150 --dev-overlay 100
+--screenshot a.png` is byte-identical to a run without it, on either renderer.
 
 Dear ImGui (MIT licence), its docking release, is pinned in `cmake/deps.cmake` and used only in `src/platform/`
 ([LEGAL.md](repo:LEGAL.md#licences)).

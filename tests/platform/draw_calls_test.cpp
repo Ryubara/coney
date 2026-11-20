@@ -342,6 +342,24 @@ TEST_CASE("headless the draw layer records without reaching librw or OpenGL", "[
     // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
+TEST_CASE("a null camera is recorded and never forwarded, in begin and in end alike", "[platform][draw-stream]") {
+    // Expected: docs/engine/renderer.md#comparing ("Live and headless"): beginCameraUpdate and endCameraUpdate treat a
+    // null camera the same way, a record without a camera and no call into librw, forwarding or not. Coney's own rule,
+    // the original has no such layer. Before the fix endCameraUpdate called through it when forwarding and crashed.
+    auto engine = startHeadless();
+    for (const bool forward : {false, true}) {
+        draw::setForwarding(forward);
+        draw::startRecording();
+        draw::beginCameraUpdate(nullptr);
+        draw::endCameraUpdate(nullptr);
+        const std::optional<DrawStream> stream = draw::stopRecording();
+        REQUIRE(stream.has_value());
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty
+        CHECK(stream->counts().records == 2); // the begin and the end, each without a camera
+    }
+    draw::setForwarding(false);
+}
+
 TEST_CASE("a PS2 raster is known by its texels and palette, not by where librw keeps them", "[platform][draw-stream]") {
     // Expected: docs/engine/renderer.md#comparing: a raster's digest is of the pixels Coney uploads, so two runs of one
     // frame hash the same. A new-style PS2 raster's data block starts with a pointer to its own texels (ps2raster.cpp,

@@ -15,16 +15,19 @@
 #include <vector>
 
 #include "ai/brain.h"
+#include "ai/fight_book.h"
 #include "ai/scan_schedule.h"
+#include "ai/sub_tactics.h"
 #include "ai/tactic.h"
 #include "combat/stick.h"
+#include "core/game_random.h"
 
 // The gangs: 32 records that group humans, say which gangs are enemies or friends of which, hold a tactic, the
 // scripts' message handlers, and a suspended flag that stops the members' brains. A human's events reach its gang
 // before its brain (Gang_OnEvent before Brain_OnEvent); the level scripts end their fights on a gang's event 18,
-// which passes how many members are still standing.
+// which passes how many members are still standing. The gangs also own the pool of team-up orders their tactics run.
 // Research: docs/research/ai-gangs.md#gang-record, docs/research/ai-gangs.md#gang-events,
-// docs/research/ai-gangs.md#gang-update
+// docs/research/ai-gangs.md#gang-update, docs/research/ai-reimpl.md#unit-3
 
 namespace coney::ai {
 
@@ -107,7 +110,8 @@ struct GangOrders {
     double leader = 0;                     ///< `+0x44`: the leader's handle (`GangSetLeader`); 0 for none.
     std::array<double, kTurfBoxes> turf{}; ///< `+0x15c`: the turf's volume boxes; 0 for an empty slot.
     int respondPercent = 0;                ///< `+0xd7`: members that may help at once, percent.
-    /// `+0xd9`: the team-ups (not built in Coney; the attack tactic's cower clips and flight read it).
+    /// `+0xd9`: the team-ups: the attack tactic's draw of an order (TacticAttack::startSubTactic()), its cower clips
+    /// and its flight read it.
     bool attackStrategies = false;
     /// `GangExitWorld`: the members are leaving; the callback runs once the last has gone, and the gang is then
     /// deleted unless `keepWhenEmpty`.
@@ -174,6 +178,24 @@ class Gang {
     [[nodiscard]] const GangOrders& orders() const { return m_orders; }
     /// The turf boxes in use (`+0x17c`).
     [[nodiscard]] std::size_t turfCount() const;
+    /// The centre of the box round its members (`+0x00`), as the last updateBounds() left it.
+    [[nodiscard]] anim::Vec3 centre() const { return m_centre; }
+    /// Its radius (`+0x14`): the larger half-extent of that box across x and y; negative while no member counted.
+    [[nodiscard]] float radius() const { return m_radius; }
+    /// The bounds (`Gang_UpdateBounds`, one gang in five per Gangs::update()): the box round the members who are not
+    /// cuffed and not knocked out; its centre, and the larger of its half-widths in x and y as the radius. With none
+    /// counted the box is empty (from 1e9 to -1e9), so the centre is the origin and the radius -1e9. **Coney's
+    /// reading**: cuffed is the script's arrested state, knocked out human::Human::knockedOut().
+    /// Research: docs/research/ai-gangs.md#gang-record
+    /// @orig 0x00166b60 Gang_UpdateBounds (unknown)
+    void updateBounds();
+    /// Whether no member but `except` (null for none) is free to help (`Gang_NoneAbleToHelp`): false for a gang with
+    /// no members; else true unless a member other than `except` is not cuffed, not knocked out and not wounded.
+    /// **Coney's reading**: cuffed is the script's arrested state.
+    /// Research: docs/research/combat-reactions.md#defeat-helpers
+    /// @orig 0x00169dd8 Gang_NoneAbleToHelp (unknown)
+    [[nodiscard]] bool noneAbleToHelp(const Brain* except) const;
+
     /// The gang's leader (`0x00165678`): the leader set while it is a member, alive, not a player and not down; else
     /// the first member that is. Null when none is. **Coney choice**: "down" is Coney's grounded state.
     /// @orig 0x00165678 Gang_GetLeader (unknown)
@@ -264,6 +286,8 @@ class Gang {
     bool m_invincible = false;
     bool m_alwaysSeen = false;
     std::vector<Brain*> m_members;
+    anim::Vec3 m_centre{}; // +0x00
+    float m_radius = 0.0F; // +0x14
     Brain* m_chosenTarget = nullptr;
     std::unique_ptr<Tactic> m_tactic;
     std::uint32_t m_tacticsSet = 0; // tactics set so far
@@ -275,10 +299,22 @@ class Gang {
     bool m_canFlee = true;                                     // +0xdf
 };
 
+/// Whether gang `self` may join a fight against `other` (`Gang_CanJoinFightAgainst`, the team-up's filter): `other`
+/// treats `self` as an enemy (Gangs::enemies(other, self)), is fighting (alert state kGangFighting) or runs a pursue
+/// tactic (type `0x14`) whose `+0x4c` is 0, has living members and not all of them are unable to help
+/// (Gang::noneAbleToHelp()). **Coney stand-in**: the pursue tactic's `+0x4c` is not modelled and reads as 0.
+/// Research: docs/research/ai-reimpl.md#start-sub-tactic
+/// @orig 0x0016bfc8 Gang_CanJoinFightAgainst (unknown)
+[[nodiscard]] bool canJoinFightAgainst(const Gang& self, const Gang& other);
+
+/// A test of another gang for Gangs::findWithinRadius(): (the gang searching, the candidate).
+using GangFilter = bool (*)(const Gang& self, const Gang& other);
+
 /// The gangs of a level, by id.
 class Gangs {
   public:
     /// No gangs in use; a tactic's rolls are drawn from a generator seeded with `seed`.
+    /// @coney-only the level owns its gangs; the original's gang array is a static the subsystems clear
     explicit Gangs(std::uint32_t seed = 1);
     Gangs(const Gangs&) = delete;
     Gangs& operator=(const Gangs&) = delete;
@@ -399,10 +435,13 @@ class Gangs {
     /// @orig 0x00165640 Gang_SetTactic (unknown)
     void setTactic(int id, std::unique_ptr<Tactic> tactic);
 
-    /// One step of the gangs at game time `nowMs` (`Gangs_Update`'s tactic part): each gang in use with members runs
-    /// its tactic (Tactic::process()), whose non-zero result fires its callback with that result. **Coney choices**:
-    /// the bounds, the return to calm, the neutral rule, the spawners and the alert state's anim substitutions are not
-    /// built; what the callback is given besides the gang is not traced.
+    /// One step of the gangs at game time `nowMs` (`Gangs_Update`'s tactic part): the turn counter moves on (0 to 4);
+    /// then, gang by gang in id order, each gang in use with members runs its tactic (Tactic::process(), from the
+    /// original's `Gang_CachePlayerInfo`), whose non-zero result fires its callback with that result, and a gang in use
+    /// whose id modulo 5 is the turn has its bounds updated (Gang::updateBounds()). **Coney choices**: the return to
+    /// calm, the neutral rule, the spawners and the alert state's anim substitutions are not built; what the callback
+    /// is given besides the gang is not traced; the turn starts at 5 with each level's gangs, where the original's
+    /// counter keeps its place from the last level.
     /// @orig 0x0016d170 Gangs_Update (unknown)
     void update(std::uint64_t nowMs);
 
@@ -410,6 +449,27 @@ class Gangs {
     [[nodiscard]] std::uint64_t nowMs() const { return m_nowMs; }
     /// The generator the tactics roll with.
     [[nodiscard]] combat::CombatRandom& random() { return m_random; }
+    /// The game's random numbers the team-up draw takes from (its tactics stream): the one setGameRandom() gave, else
+    /// the gangs' own (Coney's stand-in generator, as in a test).
+    [[nodiscard]] GameRandom& gameRandom() { return *m_gameRandom; }
+    /// Draws from `random` (the game state's, which must outlive the gangs) from now on; null goes back to the gangs'
+    /// own.
+    void setGameRandom(GameRandom* random) { m_gameRandom = random != nullptr ? random : &m_ownRandom; }
+    /// The pool of team-up orders the tactics' strategy slots name.
+    [[nodiscard]] SubTacticPool& subTactics() { return m_subTactics; }
+
+    /// The gang kinds' team-up strategies (ai::gangStrategiesFrom()); all weights 0 until set.
+    void setStrategies(const GangStrategyTable& strategies) { m_strategies = strategies; }
+    /// The weight of draw `order` (0 to kStrategyOrders - 1) in gang kind `kind`'s strategy; 0 for a kind or order
+    /// outside the table.
+    /// @orig 0x00164610 GangConfig_GetStrategyEntry (unknown)
+    [[nodiscard]] int strategyWeight(int kind, std::size_t order) const;
+    /// The first gang by id (`Gangs_FindWithinRadius`) that is in use, is not `from`, has its centre within `radius` of
+    /// `from`'s (3-D, the squared distances compared), its own radius no larger than `radius`, and passes `filter`
+    /// (none: any); null when none does. The original takes a buffer of 32 but never writes more than this one.
+    /// Research: docs/research/ai-reimpl.md#start-sub-tactic
+    /// @orig 0x0016ca50 Gangs_FindWithinRadius (unknown)
+    [[nodiscard]] Gang* findWithinRadius(float radius, const Gang& from, GangFilter filter);
     /// The scene's enemy-scan schedule, whose tokens each update() refills; every brain's update asks it.
     [[nodiscard]] ScanSchedule& scans() { return m_scans; }
 
@@ -422,6 +482,11 @@ class Gangs {
     combat::CombatRandom m_random;
     ScanSchedule m_scans;
     std::uint64_t m_truceEndMs = 0; // 0x0050cb7c
+    int m_boundsTurn = 5;           // 0x0050cbec: which fifth of the gangs updates its bounds; 5 at start-up
+    GameRandom m_ownRandom;
+    GameRandom* m_gameRandom = &m_ownRandom;
+    SubTacticPool m_subTactics;
+    GangStrategyTable m_strategies{};
 };
 
 /// The source of the HUD's gang counts (hud::HudFrame::gangLiving), for the shared indicator and the players 0 and 1

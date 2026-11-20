@@ -101,6 +101,9 @@ MSVC debug builds. In tests, check a container's size (`REQUIRE(!starts.empty())
 
 A test's result never depends on how busy the machine is, so a check is never run again just in case. Test mode is
 lockstep (the fixed step, scripted input, game time only), so only a timeout can make a run's result depend on time.
+The one exception is network play between two processes: a run with `--host` or `--join` paces its frames at a real
+1/30 s, bounded by `--frames` and kept out of the simulation, so two games stepping on their own can meet
+([Two processes](multiplayer.md#two-processes)).
 Every test's `TIMEOUT`, and every timeout a test's CMake script gives the process it runs, is therefore
 `CONEY_TEST_HANG_GUARD` (ten minutes, set in the root `CMakeLists.txt`): a guard against a hang, never a speed limit.
 `python/tests/test_test_timeouts.py` refuses any other value. A test that must measure speed reports it (the bench)
@@ -334,9 +337,13 @@ description that leaves either empty (`coney-tools pr check-body`). All of what 
   `<reason>`) counts as empty.
 - Docs: a change under `src/`, `python/src/` needs a change under `docs/`, `research/` or the line `Docs: none` in the
   description.
-- Closing: a line `Fixes #N` in Summary for each issue the pull request finishes, one per line; merging closes it.
+- Summary: a few short paragraphs, at most 4 of at most 1000 characters each (the closing lines and `Docs: none` do not
+  count); a wall of text is refused.
+- Closing: a line `Fixes #N` in Summary for each issue the pull request finishes, one per line; merging closes it. A
+  task that leaves part of its Done section to a follow-up writes `Refs #N` instead, which closes nothing.
 - Checklist: every item is ticked (`- [x]`): a pull request lists only the work it finishes, and a task it does not
-  finish is left out and lives in its own issue.
+  finish is left out and lives in its own issue; the one exception is a Done item the task marks `(left for #N)`, which
+  `pr text` lists apart, as a plain bullet with its note and never a checkbox.
 - Issues affected: one line `- #N: how it is affected` for each open issue the pull request partly fixes, changes the
   behaviour of or makes out of date, or the single line `None (<reason>)` with any short reason, for example
   `None (one-line fix)`. `coney-tools issue impact` suggests the list; running it is optional.

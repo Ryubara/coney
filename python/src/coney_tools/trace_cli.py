@@ -4,7 +4,8 @@
 `trace coney` plays a scenario's input script on Coney headless (`--play-level`, `--input-script`, `--trace`), so the
 same file drives both games. `trace diff` compares the original's trace with Coney's (coney_tools.trace_diff) and
 exits with 1 when a column is outside its tolerance, so a parity check can gate a change
-(docs/guides/research-traces.md#comparing-with-coney). `trace fight-report` computes the behaviour statistics of
+(docs/guides/research-traces.md#comparing-with-coney); given two light-selection files it compares their lights atomic
+by atomic (coney_tools.light_diff). `trace fight-report` computes the behaviour statistics of
 an all-humans trace and compares the original's runs with Coney's (coney_tools.fight_report).
 """
 
@@ -14,7 +15,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from coney_tools import build_root, fight_report
+from coney_tools import build_root, fight_report, light_diff
 from coney_tools.config import ConfigError, disc_for_coney, find_repo_root, load_config
 from coney_tools.scenario import Scenario, ScenarioError, load_scenario
 from coney_tools.trace_diff import TraceError, compare, load_trace, report, to_start_frame
@@ -49,7 +50,16 @@ def run_diff(
     tolerance_items: list[str],
     options: tuple[int | None, int | None, int | None, bool, int],
 ) -> int:
-    """`trace diff`: print the comparison; 0 when every column is within tolerance, 1 otherwise."""
+    """`trace diff`: print the comparison; 0 when every column is within tolerance, 1 otherwise. Two light-selection
+    files (`trace lights` and the lighting lab's dump) are compared atomic by atomic instead (coney_tools.light_diff),
+    and the step options do not apply to them."""
+    try:
+        if light_diff.is_selections(original_path) and light_diff.is_selections(coney_path):
+            lights = light_diff.compare(light_diff.load(original_path), light_diff.load(coney_path))
+            print(light_diff.report(lights))
+            return 0 if lights.ok else 1
+    except light_diff.LightDiffError as error:
+        raise ConfigError(str(error)) from error
     start, end, shift, start_frame, context = options
     tolerances: dict[str, float] = {}
     if scenario_path is not None:

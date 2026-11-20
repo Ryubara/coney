@@ -284,7 +284,8 @@ to replay the selection**, except in a glow call: the [glow](#glow) light, the m
 coloured during the call (through `0x0017c840`) and is in no list. Confirmed (runtime), run
 r-20261119-light-selection-replay: the four steps above applied to the inputs in the three CSVs of that trace (their
 hashes checked against its record) gave the recorded lights in the same order in 300 of 300 calls, as in run
-r-20261030-light-selection.
+r-20261030-light-selection. Coney's own selection, replayed on the same trace by the `[trace]` test of
+[the faithful comparison](../guides/realtime-lighting.md#test-selection), gives the same 300 of 300.
 
 `LightManager_UploadSelected` (`0x0017e810`) then queues each chosen light with `RwPS2_QueueLightForVU1`
 (`0x00476cc8`): a block header with two scales of 1.0, then per light its colour (RpLight `+0x18`) and type, plus the

@@ -24,6 +24,13 @@ std::uint32_t bitOf(int id) { return std::uint32_t{1} << static_cast<unsigned>(i
 // Whether `kind` counts as police for friendship.
 bool policeLike(int kind) { return kind == kPoliceKind || kind == kPoliceLikeKind; }
 
+// The pursue tactic's type, which a calm gang may run and still be joined in a fight (Gang_CanJoinFightAgainst).
+constexpr int kPursueTactic = 0x14;
+// How many turns the gangs' bounds take: one gang in five each update.
+constexpr int kBoundsTurns = 5;
+// The empty box's corners (1e9 and -1e9), from which the members' positions narrow it.
+constexpr float kNoBounds = 1.0e9F;
+
 // The handle of `brain`, or the null handle (0) for none.
 double handleOf(const Brain* brain) { return brain != nullptr ? brain->handle() : 0.0; }
 
@@ -234,6 +241,8 @@ Gangs::Gangs(std::uint32_t seed) : m_random(seed) {
         m_gangs[slot].m_owner = this;
         m_gangs[slot].m_id = static_cast<int>(slot);
     }
+    // A level's gangs start with every order record free, as the game's subsystems do when made.
+    m_subTactics.clear();
 }
 
 int Gangs::create(int kind, std::string_view name) {
@@ -542,17 +551,104 @@ void Gangs::setTactic(int id, std::unique_ptr<Tactic> tactic) {
 }
 
 void Gangs::update(std::uint64_t nowMs) {
+    // Coney stand-in: the debug build's check that player 1 stands on the path data, with its warning text, is left
+    // out.
     m_nowMs = nowMs;
     // A new update: the brains that follow may scan again.
     m_scans.beginUpdate();
+    // The turn moves on: this update's fifth of the gangs updates its bounds.
+    m_boundsTurn = m_boundsTurn + 1 >= kBoundsTurns ? 0 : m_boundsTurn + 1;
     for (Gang& gang : m_gangs) {
-        if (!gang.m_inUse || gang.m_members.empty() || gang.m_tactic == nullptr) {
+        // Coney stand-in: an exiting gang with no living member is freed by ScriptedStory (its exit callback), not
+        // here.
+        if (!gang.m_inUse) {
             continue;
         }
-        gang.processTactic();
+        // Each gang's tactic, then its bounds when its turn has come. Coney stand-in: of Gang_CachePlayerInfo only the
+        // tactic's update is built (the player cache, crime level, wanted state and spawners are not; #645).
+        if (!gang.m_members.empty() && gang.m_tactic != nullptr) {
+            gang.processTactic();
+        }
+        if (gang.m_id % kBoundsTurns == m_boundsTurn) {
+            gang.updateBounds();
+            // Not built here: the return to calm, the neutral rule and the idle flag of this step (#1442).
+        }
     }
-    // The tactics replaced since the last update are freed (`0x00306630`).
+    // Coney's choice: the tactics replaced since the last update are freed once after the loop, where the original
+    // calls the same freeing (`0x00306630`) at each gang. The truce ends when read past its end (Gangs::truce()).
     m_retired.clear();
+}
+
+void Gang::updateBounds() {
+    // The box round the members who are neither cuffed nor knocked out, from an empty one.
+    anim::Vec3 low{kNoBounds, kNoBounds, kNoBounds};
+    anim::Vec3 high{-kNoBounds, -kNoBounds, -kNoBounds};
+    for (const Brain* member : m_members) {
+        const human::Human& body = member->human();
+        if (body.script().arrested || body.knockedOut()) {
+            continue;
+        }
+        const anim::Vec3 at = body.position();
+        low = {std::min(low.x, at.x), std::min(low.y, at.y), std::min(low.z, at.z)};
+        high = {std::max(high.x, at.x), std::max(high.y, at.y), std::max(high.z, at.z)};
+    }
+    // Its centre, and the larger half-width across the ground (x or y) as the radius; height is left out.
+    const anim::Vec3 half{(high.x - low.x) * 0.5F, (high.y - low.y) * 0.5F, (high.z - low.z) * 0.5F};
+    m_centre = {low.x + half.x, low.y + half.y, low.z + half.z};
+    m_radius = std::max(half.x, half.y);
+}
+
+bool Gang::noneAbleToHelp(const Brain* except) const {
+    if (m_members.empty()) {
+        return false;
+    }
+    // Free: not cuffed, not knocked out and not wounded.
+    return std::ranges::none_of(m_members, [except](const Brain* member) {
+        const human::Human& body = member->human();
+        return member != except && !body.script().arrested && !body.knockedOut() && !body.script().wounded;
+    });
+}
+
+bool canJoinFightAgainst(const Gang& self, const Gang& other) {
+    if (!Gangs::enemies(&other, &self)) {
+        return false;
+    }
+    // Not fighting: only a pursuit counts. Coney stand-in: the pursue tactic's +0x4c is not modelled and reads as 0.
+    if (other.alertState() != kGangFighting) {
+        const Tactic* tactic = other.tactic();
+        if (tactic == nullptr || tactic->type() != kPursueTactic) {
+            return false;
+        }
+    }
+    return other.living() != 0 && !other.noneAbleToHelp(nullptr);
+}
+
+int Gangs::strategyWeight(int kind, std::size_t order) const {
+    // Coney's choice: outside the table reads 0, where the original would read past the records.
+    if (kind < 0 || kind >= static_cast<int>(m_strategies.size()) || order >= kStrategyOrders) {
+        return 0;
+    }
+    return m_strategies[static_cast<std::size_t>(kind)][order];
+}
+
+Gang* Gangs::findWithinRadius(float radius, const Gang& from, GangFilter filter) {
+    const float reach = radius * radius;
+    // By id: the first that qualifies, not the nearest.
+    for (Gang& other : m_gangs) {
+        if (!other.m_inUse || &other == &from) {
+            continue;
+        }
+        const float dx = other.m_centre.x - from.m_centre.x;
+        const float dy = other.m_centre.y - from.m_centre.y;
+        const float dz = other.m_centre.z - from.m_centre.z;
+        if ((dx * dx) + (dy * dy) + (dz * dz) > reach || other.m_radius > radius) {
+            continue;
+        }
+        if (filter == nullptr || filter(from, other)) {
+            return &other;
+        }
+    }
+    return nullptr;
 }
 
 std::size_t Gang::turfCount() const {

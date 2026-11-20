@@ -33,7 +33,8 @@ namespace coney::platform {
 /// texture sampled with its own filter, clamped or repeated as the draw says.
 ///
 /// Not yet: the screen passes (the blur pulse, the line blend, the motion blur) and the 3D scene, which come with items
-/// 13, 14 and 20 of docs/engine/renderer.md#order; the developer overlay (item 12).
+/// 13, 14 and 20 of docs/engine/renderer.md#order. The developer overlay (item 12) draws over the target afterwards,
+/// through GpuPresenter (GpuOverlayDraw).
 ///
 /// Textures are uploaded the first time a frame draws them and kept by Texture::serial(): a sprite sheet's pixels once
 /// (SheetTexture::toImage()), a PixelTexture's again at each new revision (a movie's frame), and a texture no frame has
@@ -49,6 +50,10 @@ class GpuRenderer {
     /// colour. ErrorCode::PlatformFailure naming what SDL refused, or saying the build has no shaders
     /// (`-DCONEY_SHADERS=OFF`, docs/guides/shaders.md).
     [[nodiscard]] static std::expected<std::unique_ptr<GpuRenderer>, Error> create(SDL_GPUDevice* device);
+
+    /// The format of the target record() draws into (an `SDL_GPUTextureFormat`): what a drawing over the frame
+    /// (GpuOverlayDraw) makes its pipeline for.
+    [[nodiscard]] static std::uint32_t targetFormat();
 
     /// Releases everything it made, after the GPU has finished with it.
     ~GpuRenderer();

@@ -408,6 +408,8 @@ void GpuRenderer::forgetUploads(const std::vector<PendingUpload>& uploads) {
     }
 }
 
+std::uint32_t GpuRenderer::targetFormat() { return static_cast<std::uint32_t>(kTargetFormat); }
+
 SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphics::FrameDescription& frame,
                                     graphics::Extent size) {
     ++m_frame;

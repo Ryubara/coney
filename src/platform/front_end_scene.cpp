@@ -10,6 +10,7 @@
 #include "camera/camera_lens.h"
 #include "core/assert.h"
 #include "core/game_timer.h"
+#include "platform/object_draw.h"
 #include "platform/play_scenery.h"
 #include "platform/world_viewer_mode.h"
 #include "world/view_frustum.h"
@@ -29,8 +30,9 @@ scenes::ScenePose blend(const scenes::ScenePose& a, const scenes::ScenePose& b, 
                              .rotation = anim::slerp(a.rotation, b.rotation, alpha)};
 }
 
-// How a spawned object looks: its spawn's tint (`ObjSpawn`'s seventh argument), which multiplies its model's colours
-// (docs/research/objects.md#tint): the carts' 0x888888FF and the wheel's 0x474542FF darken them to the original's.
+// How a spawned object looks: its spawn's tint (`ObjSpawn`'s seventh argument), which replaces its model's first
+// material's colour (docs/research/objects.md#tint): the carts' 0x888888FF and the wheel's 0x474542FF darken them to
+// the original's.
 PlacedObjects::Look lookOf(const world_objects::SpawnRecord& record) {
     return PlacedObjects::Look{.tint = record.tint};
 }
@@ -70,7 +72,8 @@ FrontEndWorldScene::create(RenderEngine& engine, const io::Wad& wad, std::string
     if (objects.records != nullptr && objects.types != nullptr) {
         if (auto list = world_objects::loadObjectList(wad); list) {
             scene->m_objectList = std::make_unique<world_objects::ObjectList>(std::move(*list));
-            scene->m_objects = std::make_unique<PlacedObjects>(wad, *scene->m_objectList, print, engine.drawsPixels());
+            scene->m_objects = std::make_unique<PlacedObjects>(wad, *scene->m_objectList, print, engine.drawsPixels(),
+                                                               &engine.sceneAssets());
         } else {
             print(std::format("front end: no dynamic objects: {}\n", list.error().message));
         }
@@ -275,9 +278,10 @@ void FrontEndWorldScene::render(const RenderTime& time, const std::function<void
     // (object flag 0x80) and the small-radius exception are not applied; the wheel's parts are not small.
     const std::function<void()> drawObjects = [this] {
         if (m_objects != nullptr) {
-            m_objects->draw(PlacedObjects::DrawOptions{.camera = std::nullopt, .render = [this](rw::Atomic* atomic) {
-                                                           m_sceneLighting.drawObjectAtomic(atomic);
-                                                       }});
+            m_objects->draw(
+                PlacedObjects::DrawOptions{.camera = std::nullopt, .render = [this](const ObjectDraw& draw) {
+                                               drawObject(m_engine, m_sceneLighting, draw);
+                                           }});
         }
     };
     m_renderer.render(m_engine, *m_set, m_level.get(), viewAt(time.alpha), m_pendingDistance, nowMs, drawObjects,

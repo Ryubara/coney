@@ -1,0 +1,11 @@
+# The host's pad for the network checks (tests/support/net_pair_check.cpp, docs/guides/multiplayer.md#two-processes):
+# port 1 walks and presses, at partial deflections, through the run. Format: docs/guides/running-input.md#input-scripts
+10 stick left 0 40
+40 stick left 30 70
+70 tap cross
+90 stick left -60 20
+120 stick left 0 0
+150 press square
+160 release square
+200 stick right 50 0
+230 stick right 0 0

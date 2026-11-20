@@ -264,6 +264,9 @@ list, the usage line):
    option rows. On and off here or at the console; a permission only here, never by a console command.
 2. **Mod content**: the `mods` point, every enabled project's entries grouped under its title, and each content mod that
    starts by hand (its level, [Starting and stopping](mods.md#starting)).
+3. **Story**, when an enabled mod has a `[story]` section: the merged story chain with each mod's missions under its
+   title, *Swap* on a shared anchor, the choice between two replacements and the refused missions with their messages
+   ([The Mods screen's story view](mission-mods.md#graph-mods-screen)).
 
 The Mods screen is Coney's: a project adds to it only through entries, which Coney draws, and can never change, hide or
 cover it ([Safety](#no-spoofing)). MODS is the one item Coney adds to the main menu, and only on a modded install: a mod

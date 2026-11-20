@@ -54,7 +54,8 @@ constexpr std::string_view kUsage =
     "             [--play-level NAME [--spawn NAME | --checkpoint N] [--start X,Y,Z,H[,D,YAW]]\n"
     "             [--give ITEM,COUNT]...\n"
     "             [--trace FILE] [--script-trace FILE] [--scene NAME] [--camera X,Y,Z,QX,QY,QZ,QW[,FOV]]\n"
-    "             [--freeze-world]] [--sandbox [NAME]] [--test-card NAME]\n"
+    "             [--freeze-world] [--light-trace FILE]]\n"
+    "             [--sandbox [NAME]] [--test-card NAME]\n"
     "             [--assets DIR]\n"
     "             [--event-log FILE] [--pad-pipe] [--trace-humans FILE]\n"
     "             [--ai-player] [--ai-seed N]\n"
@@ -71,6 +72,7 @@ constexpr std::string_view kUsage =
     "             [--no-audio | --audio-test] [--skip-movies] [--cpu-skinning]\n"
     "             [--record FILE [--record-seconds N] [--record-debug-draw]]\n"
     "             [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]\n"
+    "             [--digest FILE] [--digest-net FILE] [--net-record FILE | --net-replay FILE]\n"
     "\n"
     "  --install DISC     install the PS2 disc (a mounted disc, a folder of its files or an ISO image)\n"
     "                     into the folder --data names: its files copied as they are and checked,\n"
@@ -154,6 +156,8 @@ constexpr std::string_view kUsage =
     "                     (degrees, default 60); a test aid for matching the original's frames\n"
     "  --freeze-world     with --play-level: after the first step nothing in the world moves\n"
     "                     (people, cars, particles, animation, scripts), so every frame is the same\n"
+    "  --light-trace FILE with --play-level: load the original's light-selection trace (coney-tools\n"
+    "                     trace lights) for the Lighting page, beside Coney's lights\n"
     "  --scene NAME       with --play-level levelN: play the in-engine scene NAME (such as l99_c1) at\n"
     "                     once, with stand-ins in its roles and the player in his; a test aid\n"
     "  --sandbox [NAME]   fly round a sandbox test world: default (the default), parkour, or a\n"
@@ -204,6 +208,10 @@ constexpr std::string_view kUsage =
     "  --join ADDR[:PORT] join the network game at ADDR (a host name or IPv4 address), port 27615 unless\n"
     "                     given\n"
     "  --net-name NAME    the player name a network game shows (1 to 32 printable ASCII characters)\n"
+    "  --digest FILE      write each step's state digest (the humans and the pads played) to FILE\n"
+    "  --digest-net FILE  with --host or --join: write the digest of each snapshot sent or decoded\n"
+    "  --net-record FILE  with --host: record each step's pad on port 2 and the session's events\n"
+    "  --net-replay FILE  play a --net-record file's pads on port 2, with no session\n"
     "  --skip-movies      skip every movie at once, as if it had ended (by default they play, in\n"
     "                     test mode too; any pad button skips one, as in the game)\n"
     "  --cpu-skinning     skin the humans on the CPU instead of the GPU, to compare the two\n"
@@ -404,6 +412,9 @@ std::expected<void, Error> checkSandbox(const Options& options) {
     if (options.freezeWorld && !options.playLevel.has_value()) {
         return invalidArgument("--freeze-world needs --play-level: it freezes the level's world");
     }
+    if (options.lightTrace.has_value() && !options.playLevel.has_value()) {
+        return invalidArgument("--light-trace needs --play-level: the Lighting page compares a level's lights");
+    }
     if (!options.sandbox.has_value()) {
         return {};
     }
@@ -482,6 +493,21 @@ std::expected<void, Error> checkPacing(const Options& options) {
     if ((options.fpsCap.has_value() || options.vrrPacing || options.showFps || !options.vsync) &&
         options.renderReferences.has_value()) {
         return invalidArgument("--fps-cap, --vsync and --show-fps cannot be combined with --render-references");
+    }
+    return {};
+}
+
+// Refuses the network test files where they cannot work: part of checkCombinations().
+std::expected<void, Error> checkNetFiles(const Options& options) {
+    if (options.netDigestFile && !options.netHost && !options.netJoin) {
+        return invalidArgument("--digest-net needs --host or --join: it writes the digest of each snapshot");
+    }
+    if (options.netRecordFile && !options.netHost) {
+        return invalidArgument("--net-record needs --host: it records the remote player's pad the host played");
+    }
+    if (options.netReplayFile && (options.netHost || options.netJoin)) {
+        return invalidArgument("--net-replay cannot be combined with --host or --join: it plays a session's pads with "
+                               "no session");
     }
     return {};
 }
@@ -587,6 +613,9 @@ std::expected<void, Error> checkCombinations(const Options& options) {
     }
     if (auto renderer = checkRenderer(options); !renderer) {
         return renderer;
+    }
+    if (auto net = checkNetFiles(options); !net) {
+        return net;
     }
     if (auto record = checkRecord(options); !record) {
         return record;
@@ -907,7 +936,7 @@ std::expected<RenderSize, Error> parseRenderSize(std::string_view text) {
 bool isTestMode(const Options& options) {
     return options.headless || !options.loads.empty() || options.frameLimit.has_value() ||
            options.inputScript.has_value() || options.padPipe || options.screenshotPath.has_value() ||
-           options.recordPath.has_value();
+           options.recordPath.has_value() || options.digestFile.has_value() || options.netReplayFile.has_value();
 }
 
 bool activatesWindow(const Options& options) {
@@ -1283,6 +1312,25 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             if (auto value = takeValue(args, i, options.netName, "--net-name", "a player name"); !value) {
                 return std::unexpected(std::move(value.error()));
             }
+        } else if (arg == "--digest") {
+            if (auto value = takeValue(args, i, options.digestFile, "--digest", "the path of a text file"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--digest-net") {
+            if (auto value = takeValue(args, i, options.netDigestFile, "--digest-net", "the path of a text file");
+                !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--net-record") {
+            if (auto value = takeValue(args, i, options.netRecordFile, "--net-record", "the path of a text file");
+                !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--net-replay") {
+            if (auto value = takeValue(args, i, options.netReplayFile, "--net-replay", "the path of a text file");
+                !value) {
+                return std::unexpected(std::move(value.error()));
+            }
         } else if (arg == "--no-audio") {
             options.noAudio = true;
         } else if (arg == "--skip-movies") {
@@ -1466,6 +1514,11 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return invalidArgument("--freeze-world given twice");
             }
             options.freezeWorld = true;
+        } else if (arg == "--light-trace") {
+            if (auto value = takeValue(args, i, options.lightTrace, "--light-trace", "the path of a trace lights CSV");
+                !value) {
+                return std::unexpected(std::move(value.error()));
+            }
         } else if (arg == "--record") {
             if (auto value = takeValue(args, i, options.recordPath, "--record", "the path of an MP4 file"); !value) {
                 return std::unexpected(std::move(value.error()));

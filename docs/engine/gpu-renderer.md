@@ -4,7 +4,8 @@ Coney's renderer on SDL3's GPU API (Vulkan, Direct3D 12, Metal), which the [rend
 to replace librw's GL3 device as it grows ([Migration](renderer.md#migration)). This page says how what is built so far
 works: the start of [Order](renderer.md#order) item 3, which opens the window, the GPU device and the swapchain and opens
 librw for data only, and item 11, which draws the frame description's 2D passes (the front end, the legal screens, the
-movies, the HUD) with Coney's own shaders and reads the frame back for `--screenshot`. It is Coney's own code with no
+movies, the HUD) with Coney's own shaders and reads the frame back for `--screenshot`, and item 12, which draws Dear
+ImGui's developer overlay over it. It is Coney's own code with no
 counterpart in the original, which drew through the PS2's GS. GL3 stays the default.
 
 ## The choice {#choice}
@@ -12,8 +13,7 @@ counterpart in the original, which drew through the PS2's GS. GL3 stays the defa
 `--renderer gpu` or `gl3` wins; without it a windowed run takes the overrides file's `Display/Renderer` (0 GL3, the
 default; 1 the GPU renderer), and test mode and `--render-references` take GL3 whatever is saved
 (`takesSavedRenderer()`), so a test run never depends on a player's file (`chooseRenderer()`,
-`src/core/renderer_choice.h`). While the GPU renderer draws no developer overlay, a saved 1 is refused: the run draws
-with GL3 and warns ([The way back to GL3](#way-back)). The setting is read from the file before the renderer starts,
+`src/core/renderer_choice.h`). The setting is read from the file before the renderer starts,
 ahead of the full load of the overrides, and shows on the debug menus' Tunables page under *Display*; a change there
 applies at the next start. The release build takes `--renderer` but keeps no overrides file. `--renderer gpu` is refused
 with `--headless`, `--load`, `--record` and `--render-references`: it needs a window, hands no frame to the clip
@@ -21,20 +21,15 @@ recorder, and the reference renders are GL3's offscreen. It takes `--screenshot`
 
 ## The way back to GL3 {#way-back}
 
-The GPU renderer draws the 2D layers, the pad's debug menus among them, but not yet the developer overlay
-([#1204](issue:1204)) or the 3D scene, so the Tunables page that sets `Display/Renderer` may not be reachable. A saved
-`Display/Renderer = 1` therefore never starts it: the run draws with GL3 and the run log says `the overrides file saves
-Display/Renderer = 1, but the GPU renderer draws no developer overlay yet, so this run draws with GL3; ...` (`kGpuRendererDrawsMenus`
-and `chooseRenderer()`, `src/core/renderer_choice.h`). Only `--renderer gpu`, asked for by name, starts it, and closing
-that window ends the run.
+The GPU renderer draws the 2D layers, the pad's debug menus among them, and the developer overlay ([below](#overlay)),
+so the Tunables page that sets `Display/Renderer` is reachable on it and a saved 1 starts it at the next start (a
+guard that started GL3 instead, while it could not, is gone). It draws no 3D scene yet, so a level's world is missing
+from its picture until items 13 and 14 of [Order](renderer.md#order). The release build has no overlay and no
+overrides file, so there `--renderer gpu` is the only way to it.
 
 To go back to GL3 for good, set *Display / Renderer* to 0 on the Tunables page and *Save overrides*, or delete the
 `Display/Renderer = 1` line from the overrides file (`coney-tunables.ini` in your config folder, or the file
 `--tunables FILE` names); `--renderer gl3` takes GL3 for one run whatever is saved.
-
-When [#1204](issue:1204) lands, `kGpuRendererDrawsMenus` turns true, the test case `renderer: a saved GPU renderer
-starts GL3 with a warning while it draws no menus` (`tests/core/renderer_choice_test.cpp`) stops compiling, since it
-checks the constant with `STATIC_REQUIRE_FALSE`, and it is removed with the guard and this section's first paragraph.
 
 ## The device and the window {#device}
 
@@ -90,9 +85,9 @@ the 2D quads is not known). Each texture is sampled with its own filter, nearest
 `MIPNEAREST`, linear for the rest, clamped or repeated as the draw says. No mip levels are uploaded (stand-in: GL3 would
 sample a sheet's own levels for a mip filter; 2D draws are near their textures' sizes, where level 0 is the one taken).
 
-**Not yet:** the screen passes and `--line-blend` (item 20), the 3D scene (items 13 and 14), the developer overlay
-(item 12), and the texture viewer's `RenderEngine::drawTexture`, which is not in the description. A frame the GPU
-renderer cannot draw part of misses that part; it never fails.
+**Not yet:** the screen passes and `--line-blend` (item 20), the 3D scene (items 13 and 14), and the texture
+viewer's `RenderEngine::drawTexture`, which is not in the description. A frame the GPU renderer cannot draw part of
+misses that part; it never fails.
 
 ## Textures {#textures}
 
@@ -109,6 +104,28 @@ received and the next frame uploads it again. Two kinds are drawn:
   revision. The movie player draws its frames into one on the GPU renderer (`PixelMovieScreen`; `makeMovieScreen()`
   gives each backend its screen, a librw raster for GL3), and the [test cards](../guides/running-viewers.md#test-cards)
   make theirs with it.
+
+## The developer overlay {#overlay}
+
+The overlay (F1, [the debug menu guide](../guides/debug-menu.md#the-developer-overlay)) draws through Dear ImGui's
+`imgui_impl_sdlgpu3` backend on this renderer and through `imgui_impl_opengl3` on GL3 (`ImGuiOverlay::start()` chooses
+by `RenderEngine::backend()`); both sit under the same `imgui_impl_sdl3` platform backend, which reads the window's
+events and size. Dear ImGui's own shaders (embedded in the backend, for SPIR-V, DXBC and MSL) do the drawing, so the
+overlay needs none of Coney's.
+
+The overlay is drawn *into the frame*, after the 2D passes and before the copy to the window: the pad menu draws over
+every frame through the frame description, and `ImGuiOverlay::draw()` (called from the present overlay, still inside the
+frame) only builds Dear ImGui's draw data. `GpuPresenter::present()` then hands the command buffer and the renderer's
+target to each drawing added with `RenderEngine::addGpuOverlay()`, in the order they were added; the overlay makes its
+own Dear ImGui context current, uploads the draw data and draws it in a second render pass over the target (load, not
+clear). Any number of drawings may be added (the F8 console bar has its own context beside F1's), each removed by the
+handle `addGpuOverlay()` gave, and removing one leaves the others drawing. Because the target is also what
+`--screenshot` reads back, a capture holds the overlay on both renderers, and a frame with it hidden is byte-identical
+to one without it (`--dev-overlay N` with `--screenshot`). The overlay is sized by the window, so the target and window
+must be the same size, as they are.
+
+It needs the 2D drawing: where that could not be made (`gpuDrawingProblem()`), `start()` fails and the run log says so.
+It stops before the renderer does (the overlay waits for the GPU, shuts the backends down, and removes its drawing).
 
 ## The capture {#capture}
 
@@ -152,7 +169,10 @@ run log says so and the GPU renderer only clears and presents.
 `tests/platform/gpu_renderer_test.cpp` reads a synthetic clump and decodes a synthetic PS2 raster with librw opened this
 way, headless; checks that a start with no GPU device fails with that message and leaves SDL's video stopped; and, where
 a GPU device opens, starts the GPU renderer in a hidden window, presents, and draws a frame of flat and textured quads
-and alpha-tested triangles whose capture it reads back pixel by pixel. `tests/graphics/overlay_batch_test.cpp` checks
+and alpha-tested triangles whose capture it reads back pixel by pixel.
+`tests/platform/imgui_overlay_test.cpp` runs the developer overlay on each renderer in a hidden window, stepping every
+frame itself: closed, its frame is the background; opened, a capture shows it; closed again, the frame is byte-identical
+to the first. `tests/graphics/overlay_batch_test.cpp` checks
 the batch, the alpha ranges, the window's clear and the upload cache headless. On CI, every build job builds it, and the
 Linux GCC job starts `coney --renderer gpu --frames 10` under lavapipe (Mesa's software Vulkan) on a virtual X display
 and checks the run log's `renderer: gpu on vulkan` and `renderer: N of 10 frames shown` lines ([What CI

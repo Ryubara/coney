@@ -221,7 +221,8 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // `--freeze-world` once frozen: the presentation's whole step (the scenery and the world objects round the camera),
     // returning true; false (the default) when the world advances.
     virtual bool stepFrozenWorld(const FrameTime& /*frame*/) { return false; }
-    // After the humans' step and before the scenes': the step's traces (`--trace`, `--trace-humans`).
+    // After the humans' step and before the scenes': the step's traces (`--trace`, `--trace-humans`) and network
+    // play's capture of the humans.
     virtual void traceStep() {}
     // The scenery's step round the step's camera (its streaming and draw distance), the lights' step and the
     // visibility pass the next step's streaming reads; returns that camera. The default: player 1's camera with its

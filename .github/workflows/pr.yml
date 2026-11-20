@@ -96,7 +96,8 @@ jobs:
   # Testing section with text, who wrote the commits (one of the template's choices) and, when an AI took part, the
   # model, and for a title area a player sees (gameplay, graphics, audio) the Testing section's `Runtime:` line, which
   # needs the title too, and the before and after clips (pull_requests.clips), which the title or a changed path a
-  # player sees in Coney Studio asks for, unless the pull request was opened before that rule began (its `since`). The
+  # player sees in Coney Studio asks for, unless the pull request was opened before that rule began (its `since`), and
+  # a Summary of at most a few short paragraphs (pull_requests.summary, with its own `since`). The
   # rules are pull_requests in .github/conventions.yml. Editing the title or the description re-runs the check.
   body:
     runs-on: ubuntu-24.04

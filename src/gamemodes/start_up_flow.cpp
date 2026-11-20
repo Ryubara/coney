@@ -67,6 +67,9 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
       m_gameStats(
           device, loadSheet, [this](std::uint32_t record) { return loadRecord(record); }, strings, m_services, m_fade,
           m_state, m_scripts, stack, legal.europe, log),
+      m_missionSelect(
+          device, loadSheet, [this](std::uint32_t record) { return loadRecord(record); }, strings, m_services, m_fade,
+          m_state, m_scripts, stack, legal.europe, log),
       m_memoryCard(device, stack, m_levelFlow, loadSheet, strings, cardCheckingMs, log),
       m_legal(device, loadSheet, legal, log, &m_scripts) {
     m_state.language = legal.language;
@@ -208,6 +211,9 @@ void StartUpFlow::launchMissionFailed(std::string_view reason) { m_missionFailed
 
 void StartUpFlow::launchArmiesGameOver() { m_armiesGameOver.launch(); }
 void StartUpFlow::showGameStats(std::string_view onClose) { m_gameStats.launch(onClose); }
+void StartUpFlow::showMissionSelect(std::string_view onCancel, std::string_view onChoose) {
+    m_missionSelect.launch(onCancel, onChoose);
+}
 
 void StartUpFlow::showRumbleModeIntro(std::string_view onDone, std::span<const std::string> names) {
     m_rumbleIntro.show(onDone, names);

@@ -51,6 +51,7 @@
 #include "debug/combat_tunables.h"
 #include "debug/debug_session.h"
 #include "debug/game_tunables.h"
+#include "debug/light_trace.h"
 #include "debug/tunables.h"
 #include "fileio/executable.h"
 #include "fileio/wad.h"
@@ -88,6 +89,7 @@
 #include "platform/install_command.h"
 #include "platform/log_output.h"
 #include "platform/mesh_views.h"
+#include "platform/net_game.h"
 #include "platform/net_play.h"
 #include "platform/net_play_controls.h"
 #include "platform/pad_pipe.h"
@@ -407,19 +409,14 @@ int main(int argc, char** argv) {
     // --render-references draws offscreen with OpenGL, so its window stays hidden. `--renderer gpu`, or the overrides
     // file's saved Display/Renderer outside test mode, starts the GPU renderer instead of OpenGL
     // (docs/engine/renderer.md#migration); the file is the one loaded in full further down, read here for that one
-    // setting because the renderer starts first. A saved GPU renderer starts GL3 while it draws no developer overlay,
-    // with a warning (docs/engine/gpu-renderer.md#way-back).
+    // setting because the renderer starts first (docs/engine/gpu-renderer.md#way-back).
     const bool headless = options->headless || !options->loads.empty();
     const std::string savedSettings =
         options->tunablesFile.value_or(headless ? std::string{} : coney::platform::defaultTunablesPath());
-    const coney::RendererChoice rendererChoice = coney::chooseRenderer(
+    const coney::RendererKind rendererKind = coney::chooseRenderer(
         options->renderer,
         savedSettings.empty() ? coney::RendererKind::Gl3 : coney::debug::savedRenderer(savedSettings),
         !coney::takesSavedRenderer(*options));
-    if (rendererChoice.savedGpuRefused) {
-        logWarning(coney::savedGpuRefusedWarning());
-    }
-    const coney::RendererKind rendererKind = rendererChoice.kind;
     coney::platform::WindowDesc windowDesc = coney::platform::gameWindow(*options);
     windowDesc.hidden = options->renderReferences.has_value();
     // `--render-size`: frames of that size holding exactly the logical screen, as the original's frame buffer does.
@@ -511,6 +508,15 @@ int main(int argc, char** argv) {
         }
         worldEdits = std::move(*loaded);
     }
+    // Network play's view of the game, and the files that prove it (`--digest`, `--digest-net`, `--net-record`,
+    // `--net-replay`; docs/guides/multiplayer.md#digest), opened before the first level loads, and before
+    // the play modes and the session that share its humans, so that it outlives them.
+    auto netGameOpened = coney::platform::NetGame::open(*options);
+    if (!netGameOpened) {
+        logError(netGameOpened.error().message);
+        return 1;
+    }
+    coney::platform::NetGame& netGame = **netGameOpened;
     std::unique_ptr<coney::platform::WorldViewerMode> worldViewer;
     std::unique_ptr<coney::platform::CharacterViewerMode> characterViewer;
     std::unique_ptr<coney::platform::PlayLevelMode> playLevel;
@@ -656,6 +662,7 @@ int main(int argc, char** argv) {
             if (humansTrace) {
                 playLevel->traceHumansTo(humansTrace);
             }
+            playLevel->shareHumansWith(&netGame.humans());
             modes.push(*playLevel);
         } else {
             // The level as the story reaches it, started directly in the game session (GameSession::startAtLevel(),
@@ -779,7 +786,12 @@ int main(int argc, char** argv) {
     coney::debug::DebugServices debugServices;
     // Network play (docs/guides/multiplayer.md): hosted or joined from the Network page, or from the start with
     // `--host` or `--join`; a port that cannot be opened ends the run, as any bad argument does.
-    coney::platform::NetPlay netPlay(coney::platform::makeEnetTransport, printText);
+    // Its log goes to the session record too (`--net-record`).
+    coney::platform::NetPlay netPlay(coney::platform::makeEnetTransport, [&netGame](std::string_view line) {
+        printText(line);
+        netGame.note(line);
+    });
+    netGame.attach(netPlay);
     coney::platform::NetPlayControls netControls(netPlay); // the Network page's view of network play
     debugServices.net = [&netControls]() -> coney::debug::NetControls* { return &netControls; };
     if (!coney::platform::startNetPlay(netPlay, *options)) {
@@ -799,6 +811,17 @@ int main(int argc, char** argv) {
         if (logFile.has_value()) {
             debugServices.runLogFolder = logFile->parent_path();
         }
+    }
+    // `--light-trace`: the original's light selections for the Lighting page; a trace that cannot be read ends the
+    // run, as a bad input script does.
+    if (const std::optional<std::string> tracePath = options->lightTrace; tracePath) {
+        auto trace = coney::debug::readLightTrace(*tracePath);
+        if (!trace) {
+            logError(trace.error().message);
+            return 1;
+        }
+        debugServices.lightTrace = std::move(*trace);
+        debugServices.lightTraceName = std::filesystem::path(*tracePath).filename().string();
     }
     // The main loop's pacing (docs/guides/conventions.md#update-and-render). Test mode runs in lockstep with no clock:
     // one step and one render per frame. Otherwise the frame pacer measures real time and the frame clock turns it
@@ -858,6 +881,7 @@ int main(int argc, char** argv) {
     if (session) {
         session->attachAudio(audio.get());
         session->setHumansTrace(humansTrace);
+        session->setNetHumans(&netGame.humans());
         if (commandLineLevel) {
             session->setFirstLevelSetup(
                 [&options, &worldEdits](coney::platform::PlayLevelMode& mode) -> std::expected<void, coney::Error> {
@@ -998,8 +1022,10 @@ int main(int argc, char** argv) {
     debugSession.gate().addBetweenSteps([&display] { display.settle(); });
     // The game reads its pads through network play, after the gate: a guest sends what their game reads, and a host's
     // pad port 2 is the guest's pad (docs/guides/multiplayer.md#player-two).
+    // `--net-replay` plays a recorded session's port 2 over it, and `--net-record` records what port 2 played.
     coney::platform::NetInput netInput(&debugSession.gate(), netPlay);
-    modes.setInput(&netInput);
+    netGame.setInner(&netInput);
+    modes.setInput(&netGame);
     std::optional<coney::graphics::Font> debugFont;
     if (wad) {
         if (auto sheet = loadSheet(coney::gui::kTextFontSheet); sheet) {
@@ -1303,7 +1329,7 @@ int main(int argc, char** argv) {
         };
     }
     // Network play receives before each step and sends after it.
-    coney::platform::addNetPlayHooks(hooks, netPlay, pacer.has_value());
+    coney::platform::addNetPlayHooks(hooks, netPlay, netGame, pacer.has_value(), options->netHost || options->netJoin);
     // The console's queued commands run before each step, after network play's receive.
     gameConsole.addHooks(hooks);
     // `--bench-spawn-step` counts the steps of play.
@@ -1413,7 +1439,7 @@ int main(int argc, char** argv) {
                            {"headless", options->headless ? "yes" : "no"},
                            {"vsync", options->vsync ? "on" : "off"},
                            // What `--render-size` asked for and the window the run drew in (docs/engine/
-                           // renderer.md#benchmark); a headless run has no window.
+                           // renderer-performance.md#benchmark); a headless run has no window.
                            {"render_size", renderSizeText},
                            {"window", options->headless ? std::string("none")
                                                         : std::format("{}x{}", windowDesc.width, windowDesc.height)},

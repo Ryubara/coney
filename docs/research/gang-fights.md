@@ -254,8 +254,9 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
 4. **Team-ups** (TacticAttack's coordinated sub-tactics, [AI code: attack sub-tactics](ai-code.md#t2-sub-tactics)).
    `AttackTactic_StartSubTactic` (`0x00307a10`) runs 7 s after the tactic is free (no sub-tactic running, gang not
    fled): it needs `GangEnableAttackStrategies` (gang `+0xd9`, **0 after a reset**, `Gang_Reset` `0x001649c0`), a
-   leader who is not busy and at least two living members. It counts `E`, the living members of the (at most two)
-   nearest enemy gangs within the leader's sight range (`Gangs_FindWithinRadius` with `Gang_CanJoinFightAgainst`),
+   leader who is not busy and at least two living members. It counts `E`, the living members of the one enemy gang
+   `Gangs_FindWithinRadius` returns with `Gang_CanJoinFightAgainst` within the leader's sight range (the first by id,
+   not the nearest; [Unit 3](ai-reimpl.md#start-sub-tactic)),
    and `L`, his own living members, then draws one of seven orders by the weights of the gang type's strategy table
    (`CfgGang`'s sixth argument, bytes `+0x73`-`+0x79`, `GangConfig_GetStrategyEntry` `0x00164610`):
 
@@ -266,14 +267,15 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
    | 2 | **Guard, leader backs off** (15 s) | the rest | as 1, but the leader says `follow` and backs off (FightBackOff) and the members keep their own weights |
    | 3 | **Throw from a pile** (20 s) | max(L / 2, L − E) | the leader says `throw`; members fetch from `dyn_pile` objects within 30 m |
    | 4 | **Get their leader** (15 s) | L − 1 | the leader says `attack`; members with an enemy leader in their list run at him; for its length the gang type's standing cap (v2) is **4** and the enemy-leader score term is **18** for every scorer (the global `0x00510b54`, read as an integer at `0x0029d054`) |
-   | 5 | **Throw objects** (20 s) | every living member | the leader says `throw`; members fetch throwable objects (kinds 4, 5) within 30 m |
+   | 5 | **Throw objects** (20 s) | max(L / 2, L − E) | the leader says `throw`; members fetch throwable objects (kinds 4, 5) within 30 m |
    | 6 | **Grab** (no limit) | the leader | the leader grabs the first living class-221 human (GrabTarget) |
 
    Weights by strategy (draws 0-6): StratNormal 20, 20, 20, 20, 20, 20, 0; StratOrphans 0, 0, 0, 5, 0, 5, 0;
    StratLizzies 0, 20, 20, 0, 0, 0, 0; StratPunks 0, 0, 0, 0, 0, 0, 20; StratTurnbulls 20, 0, 0, 20, 20, 20, 0;
    StratFuries 12, 0, 10, 0, 20, 0, 0; StratHurricanes 40, 0, 10, 0, 0, 0, 0; StratBoppers 0, 20, 20, 5, 10, 10, 0;
    StratHiHats 5, 5, 40, 10, 10, 5, 0; StratHuns 0, 10, 15, 0, 20, 0, 0. When the order ends, its End restores what it
-   changed and, when it says so (`AttackTactic_OnStrategyEnd` `0x00308150`), the members get Melee again.
+   changed and, for a guard order (kind 1, draws 1 and 2; `AttackTactic_OnStrategyEnd` `0x00308150`), the members get
+   Melee again (confirmed (code)).
 
 ### The player's presence {#player}
 
@@ -356,9 +358,11 @@ Coney's state from reading `repo:src/ai/` (2026-10-12); each item names the rule
 2. **TacticAttack's members choose by the score**: built ([Unit 2](ai-reimpl.md#unit-2)); they run the real Melee
    goal, which picks with `Brain_PickBestEnemy`.
 3. **The 3 s idle check sends the idle to the farthest busy mate** (HelpRespond after Melee): built (Unit 2).
-4. **The team-ups** ([The gang as a whole](#gang) rule 4): not built (`repo:src/ai/tactic_attack.h`); with
-   `GangEnableAttackStrategies`, the seven orders, their weights, counts, lines, gestures and the leader order's two
-   temporary changes.
+4. **The team-ups** ([The gang as a whole](#gang) rule 4): the framework is built ([Unit 3](ai-reimpl.md#unit-3),
+   2026-11-18: `GangEnableAttackStrategies`, the 7 s timer, the draw over the `CfgGang` weights, the counts, the pool
+   and the strategy slot; the trace's `g_order` column reports the running draw). The orders are stand-ins that order
+   nobody until Units 4 to 6 (#338, #339, #340): their lines, gestures, goals and the leader order's two temporary
+   changes are not built.
 5. **The shared target**: the field exists (`Gang::chosenTarget`) but nothing sets it; the unforced attack command
    sets it from the chief's lock-on target, else from the crime reporter or the gang caller ([targets](#targets) rule
    4), and adds it to every AI member's list.

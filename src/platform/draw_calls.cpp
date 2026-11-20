@@ -536,6 +536,8 @@ void clearCamera(rw::Camera* camera, rw::RGBA* colour, rw::uint32 mode) {
     }
 }
 
+// A null camera is tolerated, in begin and end alike (no caller passes one today): the record says "no camera" and
+// nothing reaches librw, so neither call can crash on it. The same guard stands in endCameraUpdate.
 void beginCameraUpdate(rw::Camera* camera) {
     if (DrawStream* out = stream(); out != nullptr) {
         out->begin(DrawRecord::CameraBegin);
@@ -565,7 +567,7 @@ void beginCameraUpdate(rw::Camera* camera) {
 
 void endCameraUpdate(rw::Camera* camera) {
     recordWords(DrawRecord::CameraEnd, {});
-    if (forwarding()) {
+    if (forwarding() && camera != nullptr) {
         camera->endUpdate();
     }
 }

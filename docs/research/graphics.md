@@ -970,8 +970,9 @@ Cars are drawn twice in the world pass ([The streamed world](world.md#a-frame)):
 | Glass | after the water and the type-`0x20` objects | 0 | culling off, **Z write off**, Z test and fog on | from the end of the list |
 
 Each pass stores `opaque` at the instance's `+0x41`, selects the objects' lights for the clump's bounding sphere
-(flags 1, no glow) and runs `CarPart_RenderCallback` (`0x00172940`) on every atomic. The glass pass then clears the
-26 "seen" bits `+0x11fc` that the visibility callback (`0x00172d60`) sets. Per atomic `a` (part `p = a`, or
+(flags 1, no glow) at squared distance 0 (`f12` cleared at `0x00172cc8`, so a far car keeps the nearest cap) and runs
+`CarPart_RenderCallback` (`0x00172940`) on every atomic. The glass pass then clears the 26 "seen" bits `+0x11fc` that
+the visibility callback (`0x00172d60`) sets. Per atomic `a` (part `p = a`, or
 `a − 25` for the damaged form), confirmed (code):
 
 1. Skip it unless bit `p` of `+0x11fc` is set. Skip it in the opaque pass when `p` is in the **glass mask**
@@ -981,11 +982,13 @@ Each pass stores `opaque` at the instance's `+0x41`, selects the objects' lights
 3. Upload the selected lights; give the first material the texture at `+0x10` of the car's first texture resource.
 4. **Colour**: the car's tint (`+0x24`) for the parts in the **paint mask** `0x157c31` (parts 0, 4, 5, 10-14, 16,
    18, 20), else the white at `0x005fd268`. Alpha × `(now − start) / 1000` during the first second after `+0x2c`.
+   Confirmed (code).
 5. **MatFX** (`0x004653d8` reads the material's effect): an **environment map** (2) gets the texture at `+0x10` of
    the car's second texture resource and the frame at `*(0x0070ad18) + 4` (`0x00465538`, `0x004655e0`); a
    **dual** material (4) gets that second texture as its dual texture (`0x00465810`). That `0x0070ad18` is
    RenderWare's current camera, so that the reflection follows the view, is inferred.
-6. Draw it with the saved render callback (`0x005fd030`), then set the material's texture back to none.
+6. Draw it with the saved render callback (`0x005fd030`), then set the material's texture back to none. Confirmed
+   (code).
 
 ### The throw-aim arc {#throw-arc}
 

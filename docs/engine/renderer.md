@@ -30,7 +30,7 @@ and their shadow source, the performance budget and the order.
 | 3D | librw atomics drawn through librw's default GL3 pipelines and shaders, with Coney's own plugins and render callbacks round them (the world's dual layer and MatFX reader in `world_atomic.cpp`; per-atomic lights in `scene_lighting.cpp`); humans skinned on the GPU by Coney's own librw GL3 pipeline (`character_skin.cpp`: each character's vertices uploaded once, a bone palette set each frame), with CPU skinning kept as a fallback and behind `--cpu-skinning` ([Performance: GPU skinning](../guides/performance.md#gpu-skinning)) | `src/platform/` |
 | 2D | `graphics::RenderDevice` (`src/graphics/render_device.h`), Coney's own interface for quads and triangles in logical pixels; `RenderEngine` implements it by recording each draw into the [frame description](#frame-description), which `Gl3Renderer` draws with librw's Im2D and `GpuRenderer` with SDL3's GPU API | `src/graphics/`, `render_engine.cpp`, `gl3_renderer.cpp`, `gpu_renderer.cpp` |
 | Screen passes | the motion-blur stand-in (`motion_blur_pass.cpp`), the blur pulse and the optional line blend (`RenderEngine::blurScreen`, `setLineBlend`), recorded into the [frame description](#frame-description) and drawn by `Gl3Renderer` by copying the back buffer into a texture | `src/platform/` |
-| Debug overlay | Dear ImGui through its SDL3 and OpenGL 3 backends | `src/platform/imgui_*` |
+| Debug overlay | Dear ImGui through its SDL3 backend and its OpenGL 3 (GL3) or SDL GPU (`gpu`) backend | `src/platform/imgui_*` |
 | Timing | a fixed 1/30 s step; drawing apart from it and blended between the last two steps | [Update and render](../guides/conventions.md#update-and-render) |
 | Measuring | `--bench` and `coney-tools perf bench`, with zones and OpenGL counters | [Performance](../guides/performance.md) |
 
@@ -192,11 +192,11 @@ draw without librw's GL3 device as early as possible:
 1. **The proof** (items 1 and 2). The draw-stream hashes and the picture comparison, so every later step shows that
    the *PS2* picture did not move.
 2. **A start without librw's GL3 device** (item 3, built). `--renderer gl3|gpu` (and `Display/Renderer` in the overrides
-   file, applied at the next start once it draws its own menus; until then a saved 1 starts GL3, see [The way back to
-   GL3](gpu-renderer.md#way-back)): Coney makes the window through SDL3 itself, claims SDL's GPU device and swapchain
-   with the present modes, and opens librw with its NULL device, as headless runs already do, so streams and rasters
-   load and the game runs while the GPU renderer only clears and presents (until item 11 drew the 2D passes). From
-   here on, librw's GL3 device is used only by the GL3 renderer. [The GPU renderer](gpu-renderer.md) says how it is built.
+   file, applied at the next start: [The way back to GL3](gpu-renderer.md#way-back)): Coney makes the window through
+   SDL3 itself, claims SDL's GPU device and swapchain with the present modes, and opens librw with its NULL device, as
+   headless runs already do, so streams and rasters load and the game runs while the GPU renderer only clears and
+   presents (until item 11 drew the 2D passes). From here on, librw's GL3 device is used only by the GL3 renderer.
+   [The GPU renderer](gpu-renderer.md) says how it is built.
 3. **The shader toolchain** (item 4). HLSL sources in `src/platform/shaders/`, compiled at build time by
    SDL_shadercross (zlib; with DXC and SPIRV-Cross, which the build fetches itself, see [Licences](#licences)) into
    SPIR-V, DXIL and MSL, embedded in the executable. A test compiles every shader for every target.
@@ -215,9 +215,9 @@ draw without librw's GL3 device as early as possible:
 6. **The GPU renderer reaches parity** (items 11 to 14 and 20), each usable alone: the 2D layers (front end, legal
    screens, movies, HUD); Dear ImGui (its `sdlgpu3` backend is in the pinned Dear ImGui); the world (prelit colour,
    dual layer, fog), objects and cars; humans, skinned on the GPU; particles, coronas and the screen passes. Then
-   each scene of the [benchmark](#benchmark) and the named `--play-level` frames are drawn by both renderers on the
-   same machine and compared as [How pictures are compared](#comparing) says, with the cross-renderer tolerance;
-   differences are listed. librw's GL3 output stays the reference until the switch.
+   each scene of the [benchmark](renderer-performance.md#benchmark) and the named `--play-level` frames are drawn by
+   both renderers on the same machine and compared as [How pictures are compared](#comparing) says, with the
+   cross-renderer tolerance; differences are listed. librw's GL3 output stays the reference until the switch.
 7. **The switch** (item 21). When parity holds for every scene, `gpu` becomes the default and `gl3` the fallback for
    machines with no Vulkan, D3D12 or Metal. When the GL3 renderer retires, and with it librw's GL3 platform (librw
    would then be built for its NULL platform, data only), is a maintainer question ([Questions](#questions)).
@@ -254,12 +254,12 @@ screen passes made before, so the draw-stream hashes did not move. It owns the s
 including the motion blur's kept frame, which `MotionBlurPass` now only names; that frame is now a bare raster, with no
 librw texture around it (the draw binds the raster and sets the filter as render states, so the picture is the same).
 The named disc frames' hashes cover the line blend (`--line-blend on`) but not the blur pulse or the motion blur, which
-neither frame draws. Because the camera, the level's background, objects, cars and
-humans still draw through librw between the 2D layers and the world's sectors, `Gl3Renderer` draws each part as it is
-added rather than the whole frame at `present()`; once items 8 to 10 move them onto the description too, a frame can be
-drawn whole, and by the SDL3 GPU renderer (item 11). Not in it yet: the texture viewer's `RenderEngine::drawTexture`,
-which draws a librw texture of a texture dictionary and waits for Coney's own texture ids (item 6), and Dear ImGui
-(item 12).
+neither frame draws. Because the camera, the level's background and the humans still draw through librw between the 2D
+layers, the world's sectors, the objects and the cars, `Gl3Renderer` draws each part as it is added rather than the
+whole frame at `present()`; once items 9 and 10 move them onto the description too, a frame can be drawn whole, and by
+the SDL3 GPU renderer (item 11). Not in it yet: the texture viewer's `RenderEngine::drawTexture`, which draws a librw
+texture of a texture dictionary and waits for Coney's own texture ids (item 6). Dear ImGui's `sdlgpu3` backend (item 12)
+draws the developer overlay over the GPU renderer's frame ([The developer overlay](gpu-renderer.md#overlay)).
 
 **Built for the streamed world's sectors (item 7).** A *scene pass* (`ScenePass`) lists 3D draws (`Draw3d`): the mesh
 and its [dual layer](../research/rendering.md#dual) by the asset store's `MeshId`, the frame's matrix, the fade and
@@ -275,10 +275,31 @@ frame's arrays holding its lights by value (`SceneLight`) and each material's `T
   sector through `RenderEngine::drawScene` with its fade and lights (`SceneLighting::worldLights`), and `Gl3Renderer`
   draws it at once: its states where they differ from those in force, the fade into the atomic's materials, the lights
   in a librw world of its own (`LightRig`), then `drawLitAtomic` ([lit_atomic.h](repo:src/platform/lit_atomic.h)), which
-  `SceneLighting` still draws objects and humans through. The draw-stream hashes did not move between item 7's commits.
+  `SceneLighting` still draws the humans through. The draw-stream hashes did not move between item 7's commits.
 - **Not in it yet** (drawn through the draw layer as before): the camera, the level's background (sky, clouds, skyline,
   glows: the level file's models), the debug tools' own sector draws, and every sector while the mesh views are on. The
   GL3 renderer draws the atomic at its own frame, so only the GPU renderer (item 13) will read the transform.
+
+**Built for the world objects and the parked cars (item 8).** They join the scene pass the same way, through one seam,
+`drawObject` ([object_draw.h](repo:src/platform/object_draw.h)), which `PlacedObjects::draw` (`ObjectRender_Draw`,
+`0x0017fd78`) and `ParkedCars::draw` (`CarInstance_Render`, `0x00172c70`) hand each placed atomic to.
+
+- **By id.** `PlacedObjects` and `ParkedCars` hold each model they load in the scene assets: its dictionary's first
+  texture before the rasters are converted (`loadObjectModel`'s `assets`), then each atomic and its dual layer once
+  its materials have that texture, all dropped as they go.
+- **Colours.** `Material3d` says how a draw changes its materials' colours (`MaterialColour`): a sector's fade
+  (`Fade`, kept), an object's tint and alpha (`Tint`, the first material's colour replaced and the others left, the
+  mesh modulated while the tint is not opaque white, put back after the draw: [The tint](../research/objects.md#tint))
+  or a car part's paint or white
+  (`Paint`, kept: [Drawing a car](../research/graphics.md#car-draw)). `MaterialChange`
+  ([lit_atomic.h](repo:src/platform/lit_atomic.h)) makes the change, for the GL3 renderer and for the draws outside
+  the description alike.
+- **Recorded and drawn.** Each draw carries the objects' lights for its sphere (`SceneLighting::objectLights`, or
+  `carLights` at squared distance 0 for a car part: [Selecting lights](../research/lighting.md#select)) and the
+  states its pass set as it went (`sceneStatesInForce`: both sides for the cars, Z written by the opaque passes), and
+  `Gl3Renderer` draws it as a sector, so the object scene's hash and the disc frames' did not move between item 8's
+  commits. While the mesh views are on, or a mesh did not convert, the atomic goes through the lighting rig as before
+  (`SceneLighting::drawObjectAtomic` or `drawCarAtomic`) with the same colours.
 
 #### Texture lifetime {#texture-lifetime}
 
@@ -302,6 +323,11 @@ missed. A synthetic test (`world_set_test.cpp`) has part 2 use a texture only pa
 ever matters, the fix is to keep a texture alive while a mesh uses it (a use count in `SceneAssets` beside the
 dictionary's hold): resolving the id at draw time alone would not help, as the texture is gone from the store by then.
 
+The objects and cars of item 8 note only their dictionary's first texture (taken before its raster is converted); an
+object's materials after the first find their texture by name when the model is read, which can be a streamed part's
+texture whose id goes stale when that part unloads. GL3 is unaffected, as above; the GPU renderer would draw such a
+material untextured, a case the guard above does not cover: follow-up [#1452](issue:1452).
+
 ### Testing while it grows {#migration-testing}
 
 The GPU renderer grows on `main`, never on a long-lived branch: from item 3 on it is in every build, chosen at start by
@@ -324,12 +350,12 @@ merges small, and a part the GPU renderer does not draw yet is simply missing fr
 
 ### Expected gains {#migration-gains}
 
-Estimates from the [Baseline](#baseline), not results; each is measured by `perf bench --compare` against the
-baseline that item 16 records, on a quiet machine. Humans are already skinned on the GPU through GL3 (which took the
-hub with 100 fighters from 37.4 to 7.8 ms a frame: [Performance: findings](../guides/performance.md#findings)), so
-today's frame is bound by the CPU in two places: the simulation's step (1.85 ms of the hub's 3.14, 3.69 of the crowd's
-7.02) and the drawing work around librw (the crowd's render is 3.18 ms, of which 1.76 ms is posing the humans' bones).
-The GPU is nearly idle: 17 times the pixels cost no more, and a frame makes 410-690 draws.
+Estimates from the [Baseline](renderer-performance.md#baseline), not results; each is measured by `perf bench --compare`
+against the baseline that item 16 records, on a quiet machine. Humans are already skinned on the GPU through GL3 (which
+took the hub with 100 fighters from 37.4 to 7.8 ms a frame: [Performance: findings](../guides/performance.md#findings)),
+so today's frame is bound by the CPU in two places: the simulation's step (1.85 ms of the hub's 3.14, 3.69 of the
+crowd's 7.02) and the drawing work around librw (the crowd's render is 3.18 ms, of which 1.76 ms is posing the humans'
+bones). The GPU is nearly idle: 17 times the pixels cost no more, and a frame makes 410-690 draws.
 
 | Step | What it gains (estimate) | Measured by |
 | --- | --- | --- |
@@ -337,7 +363,7 @@ The GPU is nearly idle: 17 times the pixels cost no more, and a frame makes 410-
 | Skinned humans on the GPU renderer (item 14) | none beyond GL3's: the skinning is already on the GPU, and the posing (about 25-30 µs a human) stays on the CPU. The item keeps the gain; it does not add one | `--scene hub,hub-crowd --renderer gpu --compare`, `render.skin` and `gpu.frame` side by side |
 | The simulation thread (items 37 to 42) | the largest now: the step leaves the frames that carry one, so a frame is drawing only (1.4 ms in the hub, 3.6 with 50 fighters); the p99 frame and the frames over the display's period fall ([What it gains](render-threads.md#threads-gain)), and an uncapped rate rises by the steps' share of the second, about 6 % in the hub and 11 % in the crowd | item 42's real-time runs at a 240 cap, with and without the thread |
 
-The [Budget](#budget) turns these into the gates each item is held to.
+The [Budget](renderer-performance.md#budget) turns these into the gates each item is held to.
 
 ### Spike {#spike}
 
@@ -511,8 +537,7 @@ is its `presetValues()`, tested column by column in
   maps [#1222](issue:1222), the gamma ramp [#1216](issue:1216), SMAA [#1219](issue:1219), MSAA
   [#1218](issue:1218) and TAA [#1224](issue:1224); the reflections are filed from the [Realtime lighting
   design](../guides/realtime-lighting.md#reflections). Choosing a preset other than *PS2* sets `Display/Renderer` to
-  1, which the next start refuses with a warning while the GPU renderer draws no developer overlay
-  ([The way back to GL3](gpu-renderer.md#way-back)).
+  1, which the next start takes: a renderer with no 3D world yet ([The way back to GL3](gpu-renderer.md#way-back)).
 - **Test mode.** `--headless`, `--load`, `--frames`, `--input-script`, `--screenshot`, `--record`,
   `--render-references` and the disc tests (`coney::test::DiscSession`) pin what drawing reads to *PS2*'s values,
   whatever a player saved (`pinnedDisplayPreset()` in [options.h](repo:src/core/options.h), `DisplaySettings::pin()`).
@@ -564,10 +589,12 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
   than the estimate of about 290 because the `rw::gl3::` vertex types are not calls and the renders below wait. Routed
   with item 7 ([#1199](issue:1199)): `WorldRenderer::render`'s render states and camera begin, and the world's atomic
   renders (`draw::renderAtomic`): each streamed sector, its dual layer, and the level's sky, clouds, skyline and light
-  glows, each one record (the states, distance levels, frame, geometry, materials and lights: draw_calls.h). With items
-  8 and 9: `ParkedCars::draw` and `PlacedObjects::draw` ([#1200](issue:1200)), `PlayLighting::drawHumanPasses`
-  ([#1201](issue:1201)), their renders and what runs inside their pipelines (the `VERTEXALPHA` state in
-  `texture_lod.cpp` and `character_skin.cpp`, the skinning buffers). Never: the start-up and the profiler's queries.
+  glows, each one record (the states, distance levels, frame, geometry, materials and lights: draw_calls.h). Routed
+  with item 8 ([#1200](issue:1200)): `ParkedCars::draw`'s and `PlacedObjects::draw`'s render states and their atomic
+  renders, each car part and world object one record (`SceneLighting::drawObjectAtomic` and an object drawn with no
+  lights of its own). With item 9: `PlayLighting::drawHumanPasses` ([#1201](issue:1201)), its renders and what runs
+  inside their pipelines (the `VERTEXALPHA` state in `texture_lod.cpp` and `character_skin.cpp`, the skinning
+  buffers). Never: the start-up and the profiler's queries.
 - **What a record holds.** A draw holds its primitive, every render state set so far with its value as it stands at
   the draw (a raster as its place in the recording's order of first use, its size and format, and a digest of the
   pixels Coney uploaded to it), the vertices and the indices; Im3D also its normals, world matrix and flags. A camera's
@@ -577,7 +604,8 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
 - **Live and headless.** Live, each call is forwarded and also recorded while a recording runs. Under `--headless` no
   call reaches librw or OpenGL, the layer keeps the render states itself, a raster is made with librw's `DONTALLOCATE`
   and a lock gets a buffer of the layer's; `RenderEngine`'s 2D drawing, which draws nothing headless, runs while a
-  recording does, with librw's default near plane in place of a camera's.
+  recording does, with librw's default near plane in place of a camera's. A null camera, which no caller passes
+  today, is recorded as "no camera" by both camera begin and end and reaches librw in neither, forwarding or not.
 - **Synthetic scenes** in [draw_calls_test.cpp](repo:tests/platform/draw_calls_test.cpp), drawn headless: a 2D scene
   through `RenderEngine` (the fill, quads, alpha-tested triangles, a view wash, a window rectangle), a textured Im3D
   mesh under a placed camera with a Coney-made checkerboard, the throw arc's ribbon drawn by `ThrowArcRenderer`, and
@@ -586,22 +614,33 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
   [draw_stream_test.cpp](repo:tests/platform/draw_stream_test.cpp). The world scene
   ([world_draw_stream_test.cpp](repo:tests/platform/world_draw_stream_test.cpp), item 7): two Coney-made textured
   sectors drawn headless by `WorldRenderer` through a camera of its own, with its hash and a check that a fade moves it.
+  The object scene ([object_draw_stream_test.cpp](repo:tests/platform/object_draw_stream_test.cpp), item 8): two
+  Coney-made crates (one tinted and translucent) and a painted car of 26 parts, loaded from a synthetic archive by
+  `PlacedObjects` and `ParkedCars` and drawn headless by `WorldRenderer` among the objects and after the worlds, with
+  its hash and checks that a tint and a paint move it.
 - **Disc frames.** `--draw-hash` prints the last frame's counts and hash ([Running Coney](../guides/running.md)). The
   named frames are run with a window, the world frozen and a fixed size, from the level's first frame of play:
 
   | Name | Command |
   | --- | --- |
-  | `level99-street` | `coney --play-level level99 --frames 90 --freeze-world --render-size 640x448 --draw-hash` |
+  | `level99-street` | `coney --play-level level99 --frames 90 --freeze-world --render-size 640x448 --draw-hash --skip-movies` |
   | `level95-hub` | `coney --play-level level95 --frames 90 --freeze-world --render-size 640x448 --draw-hash` |
 
-  Each is run twice on the branch and on its base; a pull request that changes drawing reports the four hashes in its
-  Testing section, and two runs of one build must agree. They need the window: headless, play draws only its 2D layer.
+  The hashes are taken from the GL3 renderer (`--renderer gl3`, the default): `--renderer gpu` records the headless
+  stream until the GPU renderer draws, so its hash is not one of these frames'. Each is run twice on the branch and on
+  its base; a pull request that changes drawing reports the four hashes in its Testing section, and two runs of one
+  build must agree. They need the window: headless, play draws only its 2D layer.
   Item 1's hashes, twice each on Windows: `level99-street` 23 records, `0xe923080c2453d3a4`; `level95-hub` 16 records,
   `0x4ba9bf8c9bdc48ed`. A PS2 texture's digest is of its texel and palette blocks alone: librw's data block also holds a
   heap pointer and gaps, which made two runs differ. Item 7's, the same after both its commits: `level99-street` 48
   records (23 atomic draws), `0xe25af3f2c222b401`; `level95-hub` 47 (29), `0x996fcc94058f3360`; their screenshots
   matched the base's pixel for pixel. `level95-hub`'s screenshot is black in every build (base included), so only its
-  draw-stream hash covers that frame.
+  draw-stream hash covers that frame. Item 8's, the same after both its commits, the objects' and cars' draws now
+  recorded: `level99-street` 132 records (107 atomic draws), `0x3f33251f6811e9d6`; `level95-hub` 60 (42),
+  `0x87ef01e331e744cb`; their screenshots again matched the base's pixel for pixel. `level99` now plays its intro movie
+  before its first frame of play, so `level99-street` is run with `--skip-movies`: `0x31226d29c17742e4` (132 records,
+  107 atomic draws), the same before and after item 8's two fixes (a car's lights at squared distance 0, an object's
+  tint on its first material), with the screenshot unchanged.
 - **The grid across systems** is the open question this item leaves to CI: the expected hashes were recorded on
   Windows, and the first CI run on Linux and macOS shows whether they hold. If one differs, the fallback grid is 1/256
   of a unit for positions and texture coordinates (`kDrawGridSteps`) with colours kept at 8 bits, and the expected
@@ -622,94 +661,11 @@ above; the tolerance is here and in `tests/pictures/scenes.toml`.
 
 ## Performance {#performance}
 
-### Benchmark {#benchmark}
-
-`coney-tools perf bench` and `coney --bench` ([Performance](../guides/performance.md#bench)) are the benchmark, with
-named scenes, GPU time and a comparison (built, [Scenes](../guides/performance.md#scenes)):
-
-```sh
-uv run --project python coney-tools perf bench --scene hub,hub-crowd,street --out ../../scratch/perf
-uv run --project python coney-tools perf bench --scene all --compare ../../scratch/perf-baseline --out ../../scratch/perf
-```
-
-- **Scenes** are a table in the tool (name, level, checkpoint, camera, fighters, frames, render size), so a scene is
-  the same work on every run: a lockstep test-mode run with a pinned camera and a fixed seed. Each scene runs three
-  times, and the report's `meta` records the render size and the window beside the level.
-- **`--compare FOLDER`** prints each scene's median frame time beside the baseline's and the change in percent, and
-  exits 1 when a scene is slower than the budget allows, on a quiet machine only ([Budget](#budget)).
-- **GPU time.** A `gpu.frame` measure from GPU timestamp queries (OpenGL timer queries, built; the new renderer's
-  waits for it, [GPU time](../guides/performance.md#gpu-time)), so a report shows whether a frame is bound by the CPU
-  or the GPU.
-- **`--display-preset` and `--renderer`** are passed through to Coney, so every display preset and renderer is
-  measured the same way (`--preset` stays the build's CMake preset).
-
-### Baseline {#baseline}
-
-Measured with `coney --bench` (lockstep, 600 frames after 60 of warm-up, `--vsync off`, the window 960 × 720 unless
-a render size is named) from a `playtest` build (optimised, with the debug tools that `--play-level` needs) of `main`
-at `b749a7dca`, with humans skinned on the GPU, on the agents' Windows machine: an AMD Ryzen 7 9800X3D, an RTX 5080,
-OpenGL 3.3 through the NVIDIA driver. Each scene ran three times, the scenes interleaved, and every run is counted: a
-cell is the median of the three runs' means, with the slowest and fastest run in brackets. Times are milliseconds a
-frame; Posing is `render.skin`, the bones posed on the CPU for the GPU's skinning. Draws and triangles are a frame's
-mean, the same in every run of a scene. Other agents' builds held the machine's CPU at 67-100 % during most runs, so
-some brackets are wide.
-
-| Scene | Fighters | Render size | Frame | p95 | Step | Render | of which posing | Present | Draws | Triangles |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Hub (`level95`) | 0 | 960 × 720 | 3.14 (2.73-3.21) | 3.50 (3.26-4.04) | 1.85 (1.70-1.91) | 1.17 (0.97-1.23) | 0.35 (0.32-0.36) | 0.19 (0.15-0.21) | 411 | 72,756 |
-| Hub, crowd | 50 | 960 × 720 | 7.02 (6.66-8.95) | 9.48 (8.68-17.20) | 3.69 (3.49-4.70) | 3.18 (3.02-4.07) | 1.76 (1.75-2.08) | 0.38 (0.26-0.81) | 540 | 128,796 |
-| Street (`level99`, checkpoint 1) | 0 | 960 × 720 | 1.86 (1.82-4.34) | 2.34 (2.26-16.04) | 0.24 (0.24-0.57) | 1.52 (1.49-2.97) | 0.33 (0.32-0.47) | 0.22 (0.21-1.07) | 693 | 77,582 |
-| Hub | 0 | 640 × 448 | 3.36 (3.19-6.38) | 4.14 (3.74-20.17) | 1.99 (1.90-2.93) | 1.29 (1.21-3.25) | 0.36 (0.35-0.49) | 0.24 (0.21-1.51) | 411 | 72,756 |
-| Hub | 0 | 2560 × 1920 | 3.22 (2.98-4.87) | 3.78 (3.49-6.00) | 1.88 (1.79-2.36) | 1.21 (1.13-2.41) | 0.35 (0.34-0.39) | 0.20 (0.18-1.31) | 411 | 72,756 |
-| Hub, headless | 0 | none | 1.86 (1.80-2.02) | 2.18 (2.02-2.74) | 1.80 (1.74-1.96) | none | none | none | none | none |
-| Hub, crowd, headless | 50 | none | 3.15 (3.04-3.25) | 3.68 (3.48-3.85) | 3.04 (2.91-3.11) | none | none | none | none | none |
-
-The reports, one JSON and one log per run with the command line (render size included) and the processor's load at
-the log's top, and the script that made the table, are kept in the scratch folder of this design's task.
-
-What it says:
-
-- **The frame is bound by the CPU, in the step and around librw.** With GPU skinning on GL3, the hub's frame is 3.1
-  ms, of which the step is 1.85 ms (nearly all the AI's brains,
-  [Performance: findings](../guides/performance.md#findings)) and the render 1.17 ms. With 50 fighters the step is
-  3.7 ms and the render 3.2 ms, of which 1.8 ms is posing the humans' bones.
-- **The simulation costs 1.8-3 ms** in the hub (the headless runs) and 0.24 ms in the street, and does not grow with
-  the frame rate, since steps are fixed. It is now the largest share of the frame, which the simulation thread
-  ([Simulation and drawing threads](#threads)) takes off the frames that draw.
-- **The GPU is barely used.** In the hub, 640 × 448 and 2560 × 1920 (17 times the pixels) have the same median frame,
-  3.36 and 3.22 ms, within each other's brackets. There is room for per-pixel lighting, shadow maps and AA.
-- **About 410-690 draw calls** a frame through librw's one-atomic-at-a-time pipelines; instancing and fewer state
-  changes on the new renderer bring that down, but at this count draws are not the limit.
-
-[Order](#order) item 16 records this again on the scene table with GPU time, on a quiet machine, and that record
-becomes the baseline `--compare` reads; the figures above are the starting point it replaces. The scene table, the
-GPU time and the comparison are built ([Scenes](../guides/performance.md#scenes)); the recording is not yet
-([#1383](issue:1383)), since it needs a machine no other build is using: `coney-tools perf bench --scene all --out
-../../scratch/perf-baseline` on a quiet one, the table pasted here and the folder kept for `--compare`. Until then
-`--compare` has no folder to read and refuses. The items that draw through GL3 (1 to 10 and 15 to 19) must keep these
-numbers (the *PS2* budget below); the GPU renderer's items are measured against them.
-
-### Budget {#budget}
-
-Frame-time budgets on this machine, each scene's median of three runs, checked by `perf bench --compare` (built; it
-reads the baseline item 16 records). They are targets for the work in [Order](#order), not results:
-
-| Preset and renderer | Scene | Budget | Why |
-| --- | --- | --- | --- |
-| *PS2*, GL3 | every scene | no slower than the baseline's median by more than the larger of 5 % and the baseline's own spread (its slowest run over its fastest) | the reference must not get slower while the seam is built; the spread term keeps the gate wider than run-to-run noise |
-| *PS2*, SDL3 GPU | Hub, crowd (50) | 6.9 ms (144 frames a second) | the step's 3.0 ms (the headless runs, which the busy machine disturbed least) leaves 3.9 ms to draw, against today's 3.6 ms of render and present on GL3 |
-| *PS2*, SDL3 GPU | Hub | 4.2 ms (240 frames a second, this display's rate) | the step's 1.85 ms leaves 2.35 ms, against today's 1.17 ms of render and 0.19 ms of present |
-| *PS2*, SDL3 GPU | Street | 2.1 ms (about 480 frames a second) | Street's step is 0.24 ms; today's render is 1.52 ms and present 0.22 ms, so 1.85 ms to draw keeps a margin and does not let the draw grow into the hub's budget |
-| *Enhanced*, SDL3 GPU, 2560 × 1440 | Hub, crowd (50) | 6.9 ms | shadow maps, per-pixel lights and SMAA fit in the GPU time the baseline leaves idle |
-| *High*, SDL3 GPU, 3840 × 2160 | Hub, crowd (50) | 8.3 ms (120 frames a second) | the most expensive preset at the largest common size |
-
-**The gate's condition.** `--compare` fails a pull request only on a quiet machine: no other build holding a build
-slot while it runs, which the tool checks and prints. On a busy machine it reports the comparison and does not fail,
-because the runs above show a busy machine spreading one scene's runs by more than 130 %.
-
-A low-end target (an integrated GPU, such as this machine's own AMD Radeon graphics) is measured once the new renderer
-draws: *Enhanced* holds 60 frames a second there or becomes opt-in, as the
-[Realtime lighting design](../guides/realtime-lighting.md#risks) says.
+The benchmark, the baseline and the frame-time budgets are on their own page,
+[Renderer performance](renderer-performance.md): the [benchmark](renderer-performance.md#benchmark) (`coney-tools perf
+bench` and `coney --bench`, with named scenes, GPU time and a comparison), the
+[baseline](renderer-performance.md#baseline) measured on GL3 with GPU skinning, and the
+[budget](renderer-performance.md#budget) each item of [Order](#order) is held to.
 
 ## Licences {#licences}
 

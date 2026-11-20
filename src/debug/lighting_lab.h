@@ -16,6 +16,7 @@
 #include "core/error.h"
 #include "debug/debug_lines.h"
 #include "debug/entity_inspect.h"
+#include "debug/light_trace.h"
 #include "graphics/light_manager.h"
 #include "graphics/lighting_frame.h"
 
@@ -81,6 +82,16 @@ struct LightingCounts {
 /// read that overlapped its sphere and were dropped.
 [[nodiscard]] std::vector<std::string> selectionLines(const graphics::FrameSelection& selection,
                                                       const graphics::LightingFrame& frame);
+
+/// The lights `selection` chose as the original's trace writes them (RenderWare's type, radius, colour, position), to
+/// compare with a trace's call.
+[[nodiscard]] std::vector<TraceLight> traceLightsOf(const graphics::FrameSelection& selection);
+/// The *Selection* group's *Original's lights* for `selection`, from the `--light-trace` calls `trace`: a line naming
+/// the call matched to it (traceCallNear(): the same caller, the nearest sphere centre within 5 cm) and whether its
+/// lights are Coney's, then one line per slot with the original's light and, where it differs, Coney's. One line saying
+/// none matched when no call does.
+[[nodiscard]] std::vector<std::string> originalSelectionLines(std::span<const TraceCall> trace,
+                                                              const graphics::FrameSelection& selection);
 
 /// The selection of `frame` drawn for an atomic nearest `at` (game axes) among `caller`'s: the one the Selection group
 /// shows for a human or an object. Coney's choice, as the design's comparison matches atomics: by caller and by the

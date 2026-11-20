@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The comparison of `coney-tools perf bench --compare` (docs/engine/renderer.md#budget).
+"""The comparison of `coney-tools perf bench --compare` (docs/engine/renderer-performance.md#budget).
 
 Each scene runs three times; its figure is the median of the runs' mean frame times. A scene is over the budget when
 that median is slower than the baseline's by more than the larger of 5 % and the baseline's own spread (its slowest run

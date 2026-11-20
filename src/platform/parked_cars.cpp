@@ -9,7 +9,9 @@
 
 #include "animation/anim_math.h"
 #include "graphics/car_draw.h"
+#include "platform/draw_calls.h"
 #include "platform/level_file.h"
+#include "platform/scene_assets.h"
 #include "platform/texture_dictionary.h"
 #include "world/level_object.h"
 
@@ -49,16 +51,29 @@ const LevelClumpObject* clumpOf(const ObjectModel& model) {
 } // namespace
 
 ParkedCars::ParkedCars(const io::Wad& wad, const world_objects::Cars& cars, bool forDrawing,
-                       std::function<void(std::string_view)> print)
-    : m_wad(wad), m_cars(cars), m_forDrawing(forDrawing), m_print(std::move(print)),
+                       std::function<void(std::string_view)> print, SceneAssets* assets)
+    : m_wad(wad), m_cars(cars), m_forDrawing(forDrawing), m_print(std::move(print)), m_assets(assets),
       m_table(chunk::ChunkHandlerTable::withDefaults()) {
     // The readers an Object List model needs: its texture dictionary and the level file's 0x47 model.
     addTextureDictionaryHandlers(m_table);
     m_table.setHandlers(world::kPreinstanceObjectChunk, chunk::ChunkHandlers{{}, readPreinstanceObjectChunk});
 }
 
+// Lets go of what the models hold in the scene assets and of their textures.
 ParkedCars::~ParkedCars() {
-    // The materials let go of their textures before the dictionaries that own them go.
+    // The scene assets let go of the models' meshes and textures first, then the materials of their textures before
+    // the dictionaries that own them go.
+    if (m_assets != nullptr) {
+        for (const auto& [type, model] : m_models) {
+            if (model == nullptr) {
+                continue;
+            }
+            for (const ObjectMesh& mesh : model->meshes) {
+                removeObjectMesh(*m_assets, mesh);
+            }
+            m_assets->removeTexture(model->model.texture.id);
+        }
+    }
     for (auto& [type, model] : m_models) {
         const LevelClumpObject* clump = model != nullptr ? clumpOf(model->model) : nullptr;
         if (clump == nullptr) {
@@ -94,15 +109,18 @@ ParkedCars::TypeModel* ParkedCars::model(std::uint8_t type) {
         }
         return nullptr;
     }
-    auto loaded = loadObjectModel(m_wad, *record, m_table, m_forDrawing);
+    auto loaded = loadObjectModel(m_wad, *record, m_table, m_forDrawing, m_assets);
     if (!loaded || clumpOf(*loaded) == nullptr) {
+        if (loaded && m_assets != nullptr) {
+            m_assets->removeTexture(loaded->texture.id);
+        }
         if (m_print) {
             m_print(std::format("cars: model of {} not loaded: {}\n", name,
                                 loaded ? std::string("not a car's clump") : loaded.error().error.message));
         }
         return nullptr;
     }
-    auto typeModel = std::make_unique<TypeModel>(TypeModel{std::move(*loaded)});
+    auto typeModel = std::make_unique<TypeModel>(TypeModel{.model = std::move(*loaded), .meshes = {}});
     const LevelClumpObject& clump = *clumpOf(typeModel->model);
     // Every atomic, damaged forms included, draws with the dictionary's first texture, as the model's untextured
     // materials are linked.
@@ -112,20 +130,24 @@ ParkedCars::TypeModel* ParkedCars::model(std::uint8_t type) {
         for (rw::int32 m = 0; m < geometry->matList.numMaterials; ++m) {
             geometry->matList.materials[m]->setTexture(typeModel->model.texture.texture);
         }
+        // Its meshes into the scene assets once its materials have the texture, so they name the texture's id.
+        if (m_assets != nullptr) {
+            typeModel->meshes.push_back(addObjectMesh(*m_assets, *part.atomic.atomic()));
+        }
     }
     slot = std::move(typeModel);
     return slot.get();
 }
 
-void ParkedCars::draw(const std::function<void(rw::Atomic*)>& render, graphics::CarPass pass) {
+void ParkedCars::draw(const std::function<void(const ObjectDraw&)>& render, graphics::CarPass pass) {
     const bool glass = pass == graphics::CarPass::Glass;
     if (!glass) {
         m_drawn = 0;
     }
     // Both passes draw both sides; only the opaque one writes Z, so the glass blends over what is behind it.
-    rw::SetRenderState(rw::ZTESTENABLE, 1);
-    rw::SetRenderState(rw::ZWRITEENABLE, glass ? 0 : 1);
-    rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
+    draw::setRenderState(rw::ZTESTENABLE, 1);
+    draw::setRenderState(rw::ZWRITEENABLE, glass ? 0 : 1);
+    draw::setRenderState(rw::CULLMODE, rw::CULLNONE);
     const std::vector<world_objects::Car>& cars = m_cars.all();
     for (std::size_t i = 0; i < cars.size(); ++i) {
         // The glass pass goes from the end of the list.
@@ -147,21 +169,24 @@ void ParkedCars::draw(const std::function<void(rw::Atomic*)>& render, graphics::
             }
             rw::Atomic* atomic = parts[a].atomic.atomic();
             // The paint on the painted parts, white elsewhere so the texture shows as it is (chrome, lights, glass).
-            const rw::RGBA colour = graphics::carPartPainted(graphics::carPartOf(a))
-                                        ? rw::RGBA{paint.r, paint.g, paint.b, 255}
-                                        : rw::RGBA{255, 255, 255, 255};
-            for (rw::int32 m = 0; m < atomic->geometry->matList.numMaterials; ++m) {
-                atomic->geometry->matList.materials[m]->color = colour;
-            }
+            const graphics::Rgba colour = graphics::carPartPainted(graphics::carPartOf(a))
+                                              ? graphics::Rgba{paint.r, paint.g, paint.b, 255}
+                                              : graphics::kWhite;
             place(atomic, anim::multiply(pose, toMat34(parts[a].frame)));
-            render(atomic);
+            render(
+                ObjectDraw{.atomic = atomic,
+                           .mesh = a < typeModel->meshes.size() ? typeModel->meshes[a] : ObjectMesh{},
+                           .material = graphics::Material3d{.colour = graphics::MaterialColour::Paint, .tint = colour},
+                           .carPart = true});
         }
+        // Coney's choice: nothing is returned and the frame the car was last drawn is not kept (nothing reads either
+        // yet); the opaque pass counts the cars drawn.
         if (!glass) {
             ++m_drawn;
         }
     }
-    rw::SetRenderState(rw::ZWRITEENABLE, 1);
-    rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
+    draw::setRenderState(rw::ZWRITEENABLE, 1);
+    draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
 }
 
 } // namespace coney::platform

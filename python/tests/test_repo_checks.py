@@ -183,6 +183,65 @@ def test_an_empty_summary_is_reported(summary: str) -> None:
     assert any("'## Summary' is empty" in problem for problem in problems), problems
 
 
+# --- the summary's length ---------------------------------------------------------------------------------------------
+
+
+def summary_problems_of(summary: str, opened: datetime | None = None) -> list[str]:
+    """The problems about the Summary's length alone."""
+    return [p for p in check_body(body(summary=summary), BODY_RULES, opened=opened) if "Summary" in p]
+
+
+def paragraphs_of(count: int) -> str:
+    """`count` short paragraphs."""
+    return "\n\n".join(f"Paragraph {number} says one short thing." for number in range(count))
+
+
+def test_the_summary_rule_is_read_from_the_conventions() -> None:
+    rule = BODY_RULES.summary
+    assert rule is not None and rule.max_paragraphs >= 2
+    assert summary_problems_of(paragraphs_of(rule.max_paragraphs)) == []
+
+
+def test_a_summary_of_more_paragraphs_than_the_limit_is_refused_with_the_limit() -> None:
+    rule = BODY_RULES.summary
+    assert rule is not None
+    (problem,) = summary_problems_of(paragraphs_of(rule.max_paragraphs + 1))
+    assert f"{rule.max_paragraphs + 1} paragraphs" in problem and f"at most {rule.max_paragraphs}" in problem
+
+
+def test_a_summary_paragraph_over_the_limit_is_refused_as_a_wall_of_text() -> None:
+    rule = BODY_RULES.summary
+    assert rule is not None
+    words = rule.max_paragraph_characters // 5
+    (problem,) = summary_problems_of(" ".join(["word"] * (words + 1)))
+    assert "characters" in problem and f"at most {rule.max_paragraph_characters}" in problem
+    assert summary_problems_of(" ".join(["word"] * words)) == []
+
+
+def test_closing_refs_and_docs_lines_and_comments_are_not_paragraphs() -> None:
+    rule = BODY_RULES.summary
+    assert rule is not None
+    lines = "Fixes #12\nFixes #13\n\nRefs #14\n\nDocs: none\n\n<!-- a comment\n\nacross paragraphs -->"
+    assert summary_problems_of(paragraphs_of(rule.max_paragraphs) + "\n\n" + lines) == []
+
+
+def test_a_wrapped_paragraph_is_one_paragraph() -> None:
+    assert summary_problems_of("First line\nsecond line\nthird line.") == []
+
+
+def test_a_pull_request_opened_before_the_summary_rule_is_not_held_to_it() -> None:
+    rule = BODY_RULES.summary
+    assert rule is not None
+    many = paragraphs_of(rule.max_paragraphs + 3)
+    assert summary_problems_of(many, opened=rule.since - timedelta(seconds=1)) == []
+    assert len(summary_problems_of(many, opened=rule.since)) == 1 and len(summary_problems_of(many)) == 1
+
+
+def test_no_summary_rule_in_the_conventions_asks_for_no_limit() -> None:
+    rules = dataclasses.replace(BODY_RULES, summary=None)
+    assert check_body(body(summary=paragraphs_of(30)), rules) == []
+
+
 def test_an_empty_checklist_is_not_refused() -> None:
     assert check_body(body().replace(CHECKLIST, ""), BODY_RULES) == []
 

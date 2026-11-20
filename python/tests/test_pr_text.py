@@ -266,26 +266,49 @@ Screenshots: none (no visible change)
     assert 'text: PR.md: "## AI use" is generated from the log and the commits; remove it' in refused
 
 
-def test_a_summary_of_two_paragraphs_or_none_is_refused(tmp_path: Path) -> None:
+def summary_text(*paragraphs: str) -> str:
+    """A docs-title PR.md whose Summary is these paragraphs."""
+    tail = "## Issues affected\n\nNone (no open issue is affected)\n\n"
+    tail += "## Screenshots\n\nScreenshots: none (no visible change)\n"
+    return "docs: Document the widget\n\n## Summary\n\n" + "\n\n".join(paragraphs) + "\n\nDocs: none\n\n" + tail
+
+
+def test_a_summary_of_a_few_short_paragraphs_is_kept_whole_between_the_markers(tmp_path: Path) -> None:
     built = make(tmp_path)
-    tail = "## Screenshots" + chr(10) * 2 + "Screenshots: none (no visible change)" + chr(10)
-    two = (
-        "docs: Document the widget"
-        + chr(10) * 2
-        + "## Summary"
-        + chr(10) * 2
-        + PARAGRAPH
-        + chr(10) * 2
-        + "A second one."
-        + chr(10) * 2
-        + tail
-    )
-    assert 'text: PR.md: "## Summary" is one paragraph; found 2' in problems(generate(built, two))
+    second = "It also says why: the original does the same."
+    generated = generate(built, summary_text(PARAGRAPH, second))
+    assert problems(generated) == []
+    assert f"<!-- coney:summary -->\n{PARAGRAPH}\n\n{second}\n<!-- /coney:summary -->" in generated.body
+    assert problems(generate(built, summary_text(PARAGRAPH))) == []
+
+
+def test_a_wrapped_paragraph_is_still_one_paragraph_and_squashed(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    generated = generate(built, summary_text("The widget\nwaits  for\nits frame.", "Second\nparagraph."))
+    assert "<!-- coney:summary -->\nThe widget waits for its frame.\n\nSecond paragraph.\n<!-- /" in generated.body
+
+
+def test_a_summary_beyond_the_conventions_limits_is_refused_by_the_body_check_ci_runs(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    rule = built.conventions.pull_requests.summary
+    assert rule is not None
+    many = [f"Paragraph {number} is short." for number in range(rule.max_paragraphs + 1)]
+    refused = problems(generate(built, summary_text(*many)))
+    assert any(f"{rule.max_paragraphs + 1} paragraphs" in p and "Summary" in p for p in refused), refused
+    wall = " ".join(["word"] * (rule.max_paragraph_characters // 5 + 1))
+    assert any("Summary" in p and "characters" in p for p in problems(generate(built, summary_text(wall))))
+    assert not any("is one paragraph" in p for p in refused)
+
+
+def test_a_summary_with_no_paragraph_is_refused(tmp_path: Path) -> None:
+    built = make(tmp_path)
     none = "docs: Document the widget\n\n## Summary\n\n## Screenshots\n\nScreenshots: none (no visible change)\n"
     assert 'text: PR.md: "## Summary" has no paragraph' in problems(generate(built, none))
 
 
-def test_the_fixes_lines_come_from_the_task_file_one_per_issue_and_none_when_it_does_not_finish(tmp_path: Path) -> None:
+def test_the_fixes_lines_come_from_the_task_file_one_per_issue_and_refs_lines_when_it_does_not_finish(
+    tmp_path: Path,
+) -> None:
     built = make(tmp_path)
     path = built.unit.dir / "TASK.md"
     task = path.read_text(encoding="utf-8")
@@ -296,7 +319,8 @@ def test_the_fixes_lines_come_from_the_task_file_one_per_issue_and_none_when_it_
         task.replace("issues: [757]", "issues: [757, 758]").replace("kind: feature", "kind: feature\nfinishes: false"),
         encoding="utf-8",
     )
-    assert "Fixes" not in generate(built).body
+    body = generate(built).body
+    assert "Fixes" not in body and "\nRefs #757\nRefs #758\n" in body
 
 
 def test_the_checklist_has_one_ticked_item_per_done_criterion(tmp_path: Path) -> None:
@@ -364,6 +388,78 @@ def test_a_checked_bullet_that_wraps_keeps_its_whole_text(tmp_path: Path) -> Non
     built = make(tmp_path)
     created_task(built, "- [x] The widget waits\n  for its ready frame.")
     assert checklist(generate(built).body).startswith("Done:\n\n- [x] The widget waits for its ready frame.")
+
+
+def not_finishing(built: Built) -> None:
+    """The task's front block says `finishes: false`, as a task that leaves a Done item to a follow-up must."""
+    path = built.unit.dir / "TASK.md"
+    text = path.read_text(encoding="utf-8").replace("kind: feature", "kind: feature\nfinishes: false")
+    path.write_text(text, encoding="utf-8")
+
+
+LEFT_DONE = "- The widget waits for its ready frame.\n- Reference pictures of the widget (left for #1500)."
+
+
+def test_a_done_item_left_to_a_follow_up_is_listed_with_its_note_and_not_as_a_checkbox(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    created_task(built, LEFT_DONE)
+    not_finishing(built)
+    generated = generate(built)
+    assert problems(generated) == []
+    assert checklist(generated.body).startswith(
+        "Done:\n\n- [x] The widget waits for its ready frame.\n\n"
+        "Left for a follow-up (not part of this pull request):\n\n"
+        "- Reference pictures of the widget (left for #1500)"
+    )
+    assert "- [ ]" not in generated.body  # CI refuses an unticked box: the item is listed, not boxed
+
+
+def test_a_left_item_may_name_a_task_as_well_as_an_issue(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    created_task(built, "- Done thing.\n- Pictures (left for task 1501-add-the-pictures).")
+    not_finishing(built)
+    generated = generate(built)
+    assert problems(generated) == [] and "- Pictures (left for task 1501-add-the-pictures)" in generated.body
+
+
+def test_with_nothing_left_the_checklist_has_no_left_list(tmp_path: Path) -> None:
+    assert "Left for" not in generate(make(tmp_path)).body
+
+
+def test_a_task_that_leaves_an_item_and_still_finishes_its_issue_is_refused(tmp_path: Path) -> None:
+    """The Fixes line would close the issue with work left: the task must say `finishes: false`."""
+    built = make(tmp_path)
+    created_task(built, LEFT_DONE)
+    refused = problems(generate(built))
+    assert any("Reference pictures" in p and "finishes: false" in p and p.startswith("text: TASK.md:") for p in refused)
+
+
+def test_a_task_that_does_not_finish_its_issue_refers_to_it_instead_of_fixing_it(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    created_task(built, LEFT_DONE)
+    not_finishing(built)
+    body = generate(built).body
+    assert "\nRefs #757\n" in body and "Fixes" not in body
+    assert "\nFixes #757\n" in generate(make(tmp_path / "other")).body
+
+
+def test_an_unmarked_unticked_item_and_a_task_with_everything_left_are_refused(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    created_task(built, "- [ ] The widget waits.\n- Pictures (left for #1500).")
+    not_finishing(built)
+    assert any("names no follow-up" in p for p in problems(generate(built)))
+    created_task(built, "- Pictures (left for #1500).")
+    not_finishing(built)
+    assert any("finishes nothing" in p for p in problems(generate(built)))
+
+
+def test_the_marks_on_the_done_items_do_not_change_the_hashes_a_review_binds_to(tmp_path: Path) -> None:
+    """The Done section is TASK.md's, not the description file's: marking an item left needs no new review."""
+    built = make(tmp_path)
+    before = built.text_hashes()
+    created_task(built, LEFT_DONE)
+    not_finishing(built)
+    assert generate(built).text_hashes == before
 
 
 def test_a_title_area_no_player_sees_may_leave_out_or_keep_the_runtime_line(tmp_path: Path) -> None:
@@ -924,6 +1020,27 @@ def test_ai_use_names_the_models_of_the_trailers_or_the_log_and_adds_no_trailer(
     assert "Co-Authored-By" not in body
     body = generate(built, trailers=("Claude Sonnet 5.5",)).body
     assert "- **Model:** Claude Sonnet 5.5\n" in body and "Opus" not in body.split("## AI use")[1]
+
+
+def test_a_tooling_agents_model_in_the_log_names_the_model_when_no_trailer_is_at_hand(tmp_path: Path) -> None:
+    """A unit run by a tooling agent (`tasks.start.slots.agent_types`, as an engineer is) has no `engineer` in its log;
+    `pr text` run where the branch's commits are not (the main checkout) still names the model, not an empty line."""
+    built = make(tmp_path)
+    subject = built.subject()
+    agent_types = subject.conventions.tasks.start.slots.agent_types
+    assert "tooling" in agent_types and "reviewer" not in agent_types
+
+    def as_agent(kind: str) -> list[stamps.Stamp]:
+        found = []
+        for stamp in subject.report.stamps:
+            agent = {**stamp.who["agent"], "type": kind, "model": "claude-sonnet-5-5"}
+            found.append(stamps.Stamp({**stamp.data, "who": {**stamp.who, "agent": agent}}))
+        return found
+
+    tooling = dataclasses.replace(subject, report=stamps.Report(stamps=as_agent("tooling"), problems=[]))
+    assert pr_text.models_of(tooling, ()) == ["Claude Sonnet 5.5"]
+    reviewers = dataclasses.replace(subject, report=stamps.Report(stamps=as_agent("reviewer"), problems=[]))
+    assert pr_text.models_of(reviewers, ()) == []
 
 
 def test_a_persons_own_pull_request_takes_the_files_ai_use_lines(tmp_path: Path) -> None:

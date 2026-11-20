@@ -24,12 +24,12 @@ struct RGBA;
 /// DrawStream, whose hash proves that a change to the renderer left the *PS2* picture alone.
 ///
 /// Routed here: the render states, Im2D, Im3D, the camera's clear, begin, end and show, raster creation, locks and
-/// uploads, the named operations, and the world's atomic renders (the streamed sectors with their dual layers and the
-/// level's background, item 7). Not yet: the other atomic, clump and human renders, whose pipelines call OpenGL
-/// themselves (items 8 to 10 of docs/engine/renderer.md#order). The render states set around them are routed, except
-/// in the three functions items 8 and 9 route with their renders (ParkedCars::draw, PlacedObjects::draw,
-/// PlayLighting::drawHumanPasses), which set them on librw directly: a live record's states can be stale after those
-/// (docs/engine/renderer.md#comparing).
+/// uploads, the named operations, the world's atomic renders (the streamed sectors with their dual layers and the
+/// level's background, item 7) and the world objects' and parked cars' (item 8, with the render states ParkedCars::draw
+/// and PlacedObjects::draw set). Not yet: the humans' renders, whose pipelines call OpenGL themselves (items 9 and 10
+/// of docs/engine/renderer.md#order). The render states set around them are routed, except in
+/// PlayLighting::drawHumanPasses, which item 9 routes with its renders and which sets them on librw directly: a live
+/// record's states can be stale after it (docs/engine/renderer.md#comparing).
 ///
 /// What a record holds:
 ///
@@ -78,7 +78,10 @@ void setRenderStatePtr(std::int32_t state, void* value);
 /// rw::GetRenderState: librw's own while forwarding, else the layer's.
 [[nodiscard]] std::uint32_t getRenderState(std::int32_t state);
 
-/// rw::im2d::GetNearZ: the device's near depth for 2D vertices.
+/// rw::im2d::GetNearZ: the device's near depth for 2D vertices. The one librw call here that reaches librw whether or
+/// not calls are forwarded, and the one that is not recorded: it is a read of the installed device's constant (-1 on
+/// the GL3 device, 0 on the NULL device, and the NULL device is installed headless too), not a drawing call, so there
+/// is nothing to forward or to put in the stream; the vertices built from it are what the stream records.
 [[nodiscard]] float im2dNearZ();
 /// rw::im2d::RenderPrimitive over rw::gl3::Im2DVertex `vertices`.
 void im2dRenderPrimitive(int type, void* vertices, std::int32_t numVertices);

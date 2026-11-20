@@ -53,56 +53,6 @@ rw::Texture::Addressing rwAddress(graphics::TextureAddress address) {
     return rw::Texture::CLAMP;
 }
 
-// Sets render state `state` to `value` only when it differs from the one in force: a 3D draw's states are those the
-// world pass set before it, so nothing is set again and the draw stream sees what it saw before
-// (docs/engine/renderer.md#comparing).
-void setIfChanged(rw::int32 state, rw::uint32 value) {
-    if (draw::getRenderState(state) != value) {
-        draw::setRenderState(state, value);
-    }
-}
-
-// librw's cull mode for `faces`.
-rw::uint32 rwCull(graphics::CullFaces faces) {
-    switch (faces) {
-    case graphics::CullFaces::None:
-        return rw::CULLNONE;
-    case graphics::CullFaces::Back:
-        return rw::CULLBACK;
-    case graphics::CullFaces::Front:
-        return rw::CULLFRONT;
-    }
-    return rw::CULLBACK;
-}
-
-// librw's alpha test function for `test`.
-rw::uint32 rwAlphaTest(graphics::AlphaTest test) {
-    switch (test) {
-    case graphics::AlphaTest::Always:
-        return rw::ALPHAALWAYS;
-    case graphics::AlphaTest::GreaterEqual:
-        return rw::ALPHAGREATEREQUAL;
-    case graphics::AlphaTest::Less:
-        return rw::ALPHALESS;
-    }
-    return rw::ALPHAALWAYS;
-}
-
-// Sets a 3D draw's fixed states where they differ from those in force.
-void setSceneStates(const graphics::SceneStates& states) {
-    setIfChanged(rw::ZTESTENABLE, states.depthTest ? 1 : 0);
-    setIfChanged(rw::ZWRITEENABLE, states.depthWrite ? 1 : 0);
-    setIfChanged(rw::CULLMODE, rwCull(states.cull));
-    setIfChanged(rw::FOGENABLE, states.fog ? 1 : 0);
-    // librw packs the fog colour red in the low byte.
-    const graphics::Rgba fog = states.fogColour;
-    setIfChanged(rw::FOGCOLOR, static_cast<rw::uint32>(fog.r) | static_cast<rw::uint32>(fog.g) << 8U |
-                                   static_cast<rw::uint32>(fog.b) << 16U | static_cast<rw::uint32>(fog.a) << 24U);
-    setIfChanged(rw::SRCBLEND, states.alphaBlend ? rw::BLENDSRCALPHA : rw::BLENDONE);
-    setIfChanged(rw::DESTBLEND, states.alphaBlend ? rw::BLENDINVSRCALPHA : rw::BLENDZERO);
-    setIfChanged(rw::ALPHATESTFUNC, rwAlphaTest(states.alphaTest));
-}
-
 } // namespace
 
 Gl3Renderer::~Gl3Renderer() { releaseAll(); }
@@ -178,15 +128,10 @@ void Gl3Renderer::drawScene(const graphics::FrameDescription& frame, const graph
     if (atomic == nullptr) {
         return;
     }
-    setSceneStates(draw.states);
-    // Every material's alpha follows the fade, written only when it changes, as the original does.
-    rw::Geometry* geometry = atomic->geometry;
-    for (rw::int32 i = 0; i < geometry->matList.numMaterials; ++i) {
-        rw::Material* material = geometry->matList.materials[i];
-        if (material->color.alpha != draw.material.fade) {
-            material->color.alpha = draw.material.fade;
-        }
-    }
+    applySceneStates(draw.states);
+    // The materials' colours as the draw changes them: a sector's fade kept, an object's tint put back after it, a car
+    // part's paint kept.
+    const MaterialChange colours(*atomic, draw.material);
     // The draw's lights, then the atomic and its dual layer in them, with their texture levels by distance or not
     // (the sectors are the only geometry the original draws with mipmaps, docs/research/rendering.md#world).
     if (!m_lights) {

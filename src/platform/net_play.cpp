@@ -23,6 +23,8 @@
 #include "net/net_server.h"
 #include "net/net_status.h"
 #include "net/protocol.h"
+#include "net/snapshot.h"
+#include "net/state_digest.h"
 #include "net/transport.h"
 #include "platform/enet_transport.h"
 
@@ -147,6 +149,7 @@ bool NetPlay::join() {
         return false;
     }
     m_lastClientState = m_client->describe();
+    m_lastDecoded = 0; // a new session's snapshots count from 1 again
     note(std::format("joining {}:{} as {}", host, port, m_playerName));
     return true;
 }
@@ -167,6 +170,14 @@ void NetPlay::disconnect() {
         }
     }
     teardown();
+}
+
+bool NetPlay::inSession() const {
+    if (m_server) {
+        return true;
+    }
+    return m_client && m_client->state() != net::ClientState::Idle &&
+           m_client->state() != net::ClientState::Disconnected;
 }
 
 void NetPlay::teardown() {
@@ -234,7 +245,9 @@ void NetPlay::afterStep() {
         serviceClosing(m_closingElapsedNs, true);
     }
     m_closingElapsedNs = 0;
+    const std::uint32_t step = m_steps++;
     if (m_server) {
+        sendSnapshots(step);
         m_server->send();
         for (const net::ServerEvent& event : m_server->takeEvents()) {
             if (event.kind == net::ServerEvent::Kind::Joined) {
@@ -246,6 +259,7 @@ void NetPlay::afterStep() {
             }
         }
     } else if (m_client) {
+        noteDecoded();
         m_client->send();
         // The client's state changes, once each.
         if (std::string state = m_client->describe(); state != m_lastClientState) {
@@ -253,6 +267,53 @@ void NetPlay::afterStep() {
             note(state);
         }
     }
+}
+
+void NetPlay::setGameHumans(std::span<const net::SnapshotHuman> humans) {
+    m_gameHumans.assign(humans.begin(), humans.end());
+}
+
+void NetPlay::sendSnapshots(std::uint32_t step) {
+    m_server->sendSnapshots(step, m_gameHumans);
+    if (!m_snapshotDigests) {
+        return;
+    }
+    // What each snapshot just built leaves its player holding: the line the player's decoded digest must equal.
+    for (const net::ServerClient& client : m_server->clients()) {
+        if (!client.joined) {
+            continue;
+        }
+        if (const net::SnapshotHumans* holding = client.snapshots.holding(client.snapshots.sequence()); holding) {
+            m_snapshotDigests(net::DigestLine{.step = step,
+                                              .humans = net::humansDigest(*holding),
+                                              .humanCount = static_cast<std::uint32_t>(holding->size()),
+                                              .pads = std::nullopt});
+        }
+    }
+}
+
+void NetPlay::noteDecoded() {
+    const net::SnapshotReceiver& snapshots = m_client->snapshots();
+    if (!m_snapshotDigests || snapshots.newest() == m_lastDecoded) {
+        return;
+    }
+    // Every snapshot decoded since the last step, oldest first: two may arrive in one step. One older than those kept
+    // is gone; a lost or stale one was never decoded.
+    const std::uint32_t newest = snapshots.newest();
+    const std::uint32_t oldestKept = newest >= net::kSnapshotHistory ? newest - net::kSnapshotHistory + 1 : 1;
+    const std::uint32_t oldest = std::max(m_lastDecoded + 1, oldestKept);
+    for (std::uint32_t sequence = oldest; sequence <= newest; ++sequence) {
+        const net::SnapshotHumans* holding = snapshots.holding(sequence);
+        const std::optional<std::uint32_t> step = snapshots.heldStep(sequence);
+        if (holding == nullptr || !step) {
+            continue;
+        }
+        m_snapshotDigests(net::DigestLine{.step = *step,
+                                          .humans = net::humansDigest(*holding),
+                                          .humanCount = static_cast<std::uint32_t>(holding->size()),
+                                          .pads = std::nullopt});
+    }
+    m_lastDecoded = newest;
 }
 
 PortSamples NetPlay::pads(const PortSamples& local) {

@@ -48,8 +48,8 @@ class FightTracer {
     /// `g_alert` (-1: Coney does not model the gang's alert state), `g_tactic` (its gang's tactic as the original's
     /// vtable: 0x00543740 TacticConfront, 0x00543320 TacticAttack, 0x00544160 the attack command's; 1 for another
     /// tactic, a stand-in; 0 for none), `g_leader` and `g_chosen` (the numbers of its gang's leader and chosen
-    /// target, -1 for none), `g_teamups` (`GangEnableAttackStrategies`), `g_order` (the team-up order running: always
-    /// -1, as Coney builds none) and `brain_off` (1 while its brain is dead, `BrDead`).
+    /// target, -1 for none), `g_teamups` (`GangEnableAttackStrategies`), `g_order` (the team-up order running, as its
+    /// draw number 0 to 6; -1 for none) and `brain_off` (1 while its brain is dead, `BrDead`).
     ///
     /// Coney's own columns: `target_dist` (metres to the target, -1 for none), `action_kind` (the front action: none,
     /// attack, move, move_to_human, play_anim, set_command, turn, take_step or other), `attack_kind` (the attack kind

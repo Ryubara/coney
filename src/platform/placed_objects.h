@@ -12,6 +12,7 @@
 #include "animation/anim_math.h"
 #include "core/chunk_system.h"
 #include "fileio/wad.h"
+#include "platform/object_draw.h"
 #include "platform/object_models.h"
 #include "world_objects/object_list.h"
 
@@ -35,10 +36,10 @@ namespace coney::platform {
 /// of that type. A model that does not load is reported once through `print`, and its objects are not drawn.
 ///
 /// Coney's stand-in for the original's object instances and `ObjectRender_Draw` (docs/research/objects.md#models,
-/// docs/research/objects.md#tint): each object's tint multiplies its model's colours and its alpha the model's
-/// opacity; given the camera, the size cull and the `ObjShow` distance fade it; an alpha under 10 is not drawn. The
-/// front end draws without a camera (its Wonder Wheel types are exempt from the size cull) and with the world
-/// renderer's ambient; play draws through the level's object lights.
+/// docs/research/objects.md#tint): each object's tint, its alpha faded, becomes the colour of its model's first
+/// material for the draw; given the camera, the size cull and the `ObjShow` distance fade it; an alpha under 10 is not
+/// drawn. The front end draws without a camera (its Wonder Wheel types are exempt from the size cull) and with the
+/// world renderer's ambient; play draws through the level's object lights.
 class PlacedObjects {
   public:
     /// How an object looks beyond its model and pose.
@@ -55,15 +56,17 @@ class PlacedObjects {
     struct DrawOptions {
         /// The camera in RenderWare's axes: with it, the size cull and the `ObjShow` distance apply.
         std::optional<anim::Vec3> camera;
-        /// Draws one placed atomic (its lights); null: the atomic's own render with the current lights.
-        std::function<void(rw::Atomic*)> render;
+        /// Draws one placed atomic with its tint (its lights: drawObject()); null: the atomic's own render with the
+        /// current lights, its materials tinted for it.
+        std::function<void(const ObjectDraw&)> render;
     };
 
     /// Loads models from `wad` by `list`'s records, their textures converted for drawing when `forDrawing` (an engine
-    /// that draws pixels). Needs a running RenderEngine started with the world plugins; must be destroyed before it
-    /// stops. `list` must outlive this.
+    /// that draws pixels), and holds each model's mesh and texture in `assets` (the RenderEngine's,
+    /// RenderEngine::sceneAssets(); null: none, and every draw goes to librw). Needs a running RenderEngine started
+    /// with the world plugins; must be destroyed before it stops. `list` must outlive this.
     PlacedObjects(const io::Wad& wad, const world_objects::ObjectList& list,
-                  std::function<void(std::string_view)> print, bool forDrawing);
+                  std::function<void(std::string_view)> print, bool forDrawing, SceneAssets* assets = nullptr);
     PlacedObjects(const PlacedObjects&) = delete;
     PlacedObjects& operator=(const PlacedObjects&) = delete;
     PlacedObjects(PlacedObjects&&) = delete;
@@ -115,8 +118,10 @@ class PlacedObjects {
 
     // The model of `modelHash`, loading it on first use; null when it did not load.
     const ObjectModel* model(std::uint32_t modelHash);
-    // Places and draws one object with its alpha `alpha`, its materials tinted for the draw and put back after.
-    void drawOne(const Placed& object, rw::Atomic* atomic, int alpha, const DrawOptions& options) const;
+    // Draws one placed object with its alpha `alpha`, its tint its first material's colour for the draw
+    // (graphics::MaterialColour::Tint).
+    void drawOne(const Placed& object, rw::Atomic* atomic, const ObjectMesh& mesh, int alpha,
+                 const DrawOptions& options) const;
     // The alpha `object` is drawn at (its tint's, the size cull's and the `ObjShow` distance's), placing its atomic.
     int alphaOf(const Placed& object, rw::Atomic* atomic, const DrawOptions& options) const;
 
@@ -125,7 +130,9 @@ class PlacedObjects {
     std::function<void(std::string_view)> m_print;
     chunk::ChunkHandlerTable m_table;
     bool m_forDrawing;
+    SceneAssets* m_assets;                                          // null: none
     std::map<std::uint32_t, std::unique_ptr<ObjectModel>> m_models; // null: tried and failed
+    std::map<std::uint32_t, ObjectMesh> m_meshes;                   // each loaded model's, in m_assets
     std::map<double, Placed> m_objects;
     std::size_t m_drawn = 0;
 };

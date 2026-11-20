@@ -1,11 +1,12 @@
 <!-- markdownlint-disable-file MD041 -- a pull request body starts at the second heading level -->
 ## Summary
 
-<!-- One short paragraph: what this changes and why.
+<!-- A few short paragraphs (at most `pull_requests.summary` in .github/conventions.yml): what this changes and why.
      Call whoever tested or filed it "the user" and whoever decides "the maintainer", never "the owner".
      If the change needs no documentation, add a line `Docs: none`
      (CI refuses a change under src/ or python/src/ without a docs change, unless this line is here).
-     If this finishes an issue, add a line `Fixes #<number>` (one per issue): merging then closes it. -->
+     If this finishes an issue, add a line `Fixes #<number>` (one per issue): merging then closes it. When the task
+     leaves part of its work to a follow-up, `Refs #<number>` names the issue without closing it. -->
 
 ## Issues affected
 

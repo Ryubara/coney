@@ -204,7 +204,8 @@ void SceneLighting::recordSelection(rw::Atomic* atomic) {
     }
     // The caller from the draw kind the play mode names (cars are drawn among the objects), and the inputs each draw
     // function passes the selection: the world's lists with point lights (none for the background), the objects'
-    // with the squared distance to the camera and point lights unless a human is hidden.
+    // with the squared distance to the camera (0 for a car part, as CarInstance_Render passes) and point lights unless
+    // a human is hidden.
     const graphics::LightSphere sphere = sphereOf(atomic);
     const DrawKind kind = currentDrawKind();
     graphics::SelectionCaller caller = graphics::SelectionCaller::Sector;
@@ -218,7 +219,7 @@ void SceneLighting::recordSelection(rw::Atomic* atomic) {
     const bool human = caller == graphics::SelectionCaller::Human;
     const bool objects = human || caller == graphics::SelectionCaller::Object;
     const bool pointLights = caller != graphics::SelectionCaller::Background && !(human && m_hiddenHuman);
-    const float distSq = objects ? distanceSq(sphere.centre, m_pose.position) : 0.0F;
+    const float distSq = objects && !m_carPart ? distanceSq(sphere.centre, m_pose.position) : 0.0F;
     m_frame.selections.push_back(graphics::frameSelectionOf(m_lighting.lights, caller, distSq, sphere, objects,
                                                             pointLights, false, human, *m_pending));
     m_pending.reset();
@@ -239,9 +240,29 @@ void SceneLighting::renderInRig(rw::Atomic* atomic) {
 void SceneLighting::renderLit(rw::Atomic* atomic) { drawLitAtomic(atomic, dualLayerOf(atomic), m_world, m_routed); }
 
 std::vector<graphics::SceneLight> SceneLighting::worldLights(rw::Atomic* atomic) {
-    // The selection drawWorldAtomic() makes, kept for the lighting frame's row, and the lights the lab's layers keep,
-    // by value.
-    const graphics::LightSelection selection = m_lighting.lights.select(0.0F, sphereOf(atomic), false, true, false);
+    // The selection drawWorldAtomic() makes.
+    return lightsOf(m_lighting.lights.select(0.0F, sphereOf(atomic), false, true, false), atomic);
+}
+
+std::vector<graphics::SceneLight> SceneLighting::objectLights(rw::Atomic* atomic) {
+    // The selection drawObjectAtomic() makes.
+    const graphics::LightSphere sphere = sphereOf(atomic);
+    return lightsOf(m_lighting.lights.select(distanceSq(sphere.centre, m_pose.position), sphere, true, true, false),
+                    atomic);
+}
+
+std::vector<graphics::SceneLight> SceneLighting::carLights(rw::Atomic* atomic) {
+    // The selection drawCarAtomic() makes, its row recorded at squared distance 0 too.
+    m_carPart = true;
+    std::vector<graphics::SceneLight> lights =
+        lightsOf(m_lighting.lights.select(0.0F, sphereOf(atomic), true, true, false), atomic);
+    m_carPart = false;
+    return lights;
+}
+
+std::vector<graphics::SceneLight> SceneLighting::lightsOf(const graphics::LightSelection& selection,
+                                                          rw::Atomic* atomic) {
+    // The selection kept for the lighting frame's row, and the lights the lab's layers keep, by value.
     m_pending = selection;
     const graphics::LightSelection drawn =
         m_switches != nullptr
@@ -293,7 +314,21 @@ void SceneLighting::drawHumanAtomic(rw::Atomic* atomic, bool hidden) {
 void SceneLighting::drawObjectAtomic(rw::Atomic* atomic) {
     const graphics::LightSphere sphere = sphereOf(atomic);
     useLights(m_lighting.lights.select(distanceSq(sphere.centre, m_pose.position), sphere, true, true, false));
+    // Through the draw layer, as the world's atomics (item 8 of docs/engine/renderer.md#order); a car's parts draw in
+    // drawCarAtomic() instead, which selects at squared distance 0.
+    m_routed = true;
     renderInRig(atomic);
+    m_routed = false;
+}
+
+void SceneLighting::drawCarAtomic(rw::Atomic* atomic) {
+    // Squared distance 0, as CarInstance_Render clears it (0x00172cc8): a car keeps the nearest cap however far it is.
+    useLights(m_lighting.lights.select(0.0F, sphereOf(atomic), true, true, false));
+    m_routed = true;
+    m_carPart = true;
+    renderInRig(atomic);
+    m_carPart = false;
+    m_routed = false;
 }
 
 void SceneLighting::drawGroundRings(std::span<const hud::GroundRing> rings,

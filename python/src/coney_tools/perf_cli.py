@@ -9,7 +9,7 @@ depend on the machine, which is why the table says which build and renderer each
 
 `perf bench --scene` runs named scenes instead (perf_scenes.py): each scene three times, the scenes interleaved, a table
 of the medians, and with `--compare FOLDER` the comparison with a saved baseline that fails past the budget on a quiet
-machine (perf_compare.py, docs/engine/renderer.md#benchmark).
+machine (perf_compare.py, docs/engine/renderer-performance.md#benchmark).
 """
 
 from __future__ import annotations

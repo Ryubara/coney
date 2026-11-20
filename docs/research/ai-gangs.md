@@ -65,11 +65,33 @@ How a gang shares out a big fight, team-ups and Rumble's CPU sides: [Gang fights
 The sections from here to [Formations and follow slots](#formations) describe what a gang does, each naming the
 original function where its logic lives.
 
-## Events and GangSetMsgHandler {#gang-events}
+### The gang update {#gang-update}
+
+Confirmed (code) at the cited addresses.
+
+`Gangs_Update` (`0x0016d170`, step 4 of [`Humans_Update`](tasks.md#humans-update)), for each gang in use (an exiting
+gang with no one living is skipped); only the tactic's process (step 2, inside step 1's `0x00166708`) also needs
+members and player 1:
+
+1. `0x00166708(gang, 1)`: the player's position and heading cached (1 s) and the time checks.
+2. With a tactic: **`Tactic_Process`** (`0x003067d8`); a non-zero result fires the tactic's Lua callback (vtable
+   `+0x54`).
+3. One gang in five per update (a counter `0x0050cbec`, 0-4, moved on before the loop and 5 in the executable, so
+   the first update takes ids 0, 5, 10, ...; step 2 runs inside step 1's `0x00166708`, so a gang's tactic comes before
+   its bounds): the bounds (`Gang_UpdateBounds` `0x00166b60`, [Unit 3](ai-reimpl.md#unit-3)), the return to calm,
+   and the neutral rule (`0x00169d30`: a gang of kind `0x17` / `0x18` whose members all have threat response 0 is
+   made neutral with the kind-0 gangs).
+4. `0x00306630` frees the tactics queued for freeing (up to 32, `0x006eb290`).
+5. A gang with flag `+0xd3` and no living members calls the handler at `+0x158` with its id and is freed
+   (`0x0016a1e8`).
+
+### Events and GangSetMsgHandler {#gang-events}
+
+Confirmed (code) at the cited addresses.
 
 `Human_OnEvent` (`0x0021d4e8`) offers an event, until one consumes it, to the human's own script handlers
 (`0x00384c38`), then **`Gang_OnEvent`** (`0x00164c20`, the brain's gang `+0x20c`), then `Brain_OnEvent`
-([Events](ai/index.md#events)). Confirmed (code).
+([Events](ai/index.md#events)).
 
 - `GangSetMsgHandler(gang, msg, name)` (`0x0016ab38` → `0x00164bb8`) stores the interned name at `+0xe4 + msg × 4`.
 - `Gang_OnEvent` calls that handler only while scripting runs (`0x00512b28` = 1), through script-system `+0x8c` with
@@ -85,21 +107,6 @@ original function where its logic lives.
   and adds members in the same step, the start's goals are given before the event's: the follow tactic's 22 with 1
   then pops them to the base (`WarriorFollowTactic_GiveGoals` calls `Brain_PopToGoalBase` and `Brain_MarkGoalBase`)
   and gives them once again, not twice. Confirmed (code).
-
-## The gang update {#gang-update}
-
-`Gangs_Update` (`0x0016d170`, step 4 of [`Humans_Update`](tasks.md#humans-update)), for each gang in use that has
-members, confirmed (code):
-
-1. `0x00166708(gang, 1)`: the player's position and heading cached (1 s) and the time checks.
-2. With a tactic: **`Tactic_Process`** (`0x003067d8`); a non-zero result fires the tactic's Lua callback (vtable
-   `+0x54`).
-3. One gang in five per update (a counter `0x0050cbec`, 0-4): the bounds, the return to calm, and the neutral rule
-   (`0x00169d30`: a gang of kind `0x17` / `0x18` whose members all have threat response 0 is made neutral with the
-   kind-0 gangs).
-4. `0x00306630` frees the tactics queued for freeing (up to 32, `0x006eb290`).
-5. A gang with flag `+0xd3` and no living members calls the handler at `+0x158` with its id and is freed
-   (`0x0016a1e8`).
 
 ## Deleting a gang {#gang-delete}
 

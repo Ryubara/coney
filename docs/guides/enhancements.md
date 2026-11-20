@@ -73,8 +73,7 @@ the game's options screens.
   cutscenes as in the original; only the bars are not drawn. Set it on the Tunables page's *Display* category in
   the pad menus or the developer overlay, then *Save overrides*; or put `Display/Cutscene letterbox = 0` in the
   overrides file (`coney-tunables.ini` in your config folder, or the file `--tunables FILE` names).
-  `Display/Renderer` (0, GL3, by default): 1 will start SDL3's GPU renderer at the next start, as `--renderer gpu`
-  does, once it draws its own menus; until then a saved 1 starts GL3 with a warning
+  `Display/Renderer` (0, GL3, by default): 1 starts SDL3's GPU renderer at the next start, as `--renderer gpu` does
   ([The way back to GL3](../engine/gpu-renderer.md#way-back)); test mode ignores it. `Display/Preset` (0, *PS2*, by
   default) chooses one of the four [presets](../engine/renderer.md#presets) and writes its values at once (lights,
   shadows, blob shadow, per-pixel fog, gamma ramp, reflections, anti-aliasing and the renderer); changing one of them

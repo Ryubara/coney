@@ -853,9 +853,10 @@ each phase adds:
 | **Prediction** | a client's predicted Warrior equals the server's after corrections, with and without loss | P2 |
 | **Fuzzing** | random and mutated packets into every decoder and session: no crash, no hang, only clean refusals | P2, nightly |
 
-The **state digest** is the key tool: a hash of the replicated state at each step, printed by the headless server and
-the client, compared by the tests and shown on the Network page. When two digests differ, a debug dump names the
-first entity and field that differ.
+The **state digest** is the key tool: a hash of the replicated state at each step, written by the headless server and
+the client, compared by the tests and, later, shown on the Network page. When two digests differ, a debug dump names
+the first entity and field that differ. Built with the two-process, offline and replay tests:
+[Proof without a person](multiplayer.md#proof).
 
 ## The networking checklist {#checklist}
 
@@ -908,7 +909,7 @@ The work in order; each row is about one pull request. Each is an issue, a sub-i
 | 10 | The client's world: jitter buffer, interpolation through `Interpolated<T>` and `DrawnPoses`, a client game mode with no simulation | P1 | 9 | #555 |
 | 11 | Events: sounds, particles, HUD messages, scenes, movies | P1 | 9 | #556 |
 | 12 | Level loads, checkpoints and the loading barrier | P1 | 11 | #557 |
-| 13 | The state digest, two-process tests in CI, replays | P1 | 9 | #558 |
+| 13 | The state digest, two-process tests in CI, replays (built: [Proof](multiplayer.md#proof)) | P1 | 9 | #558 |
 | 13a | Measure press to screen at 30 and 60 Hz ([Tick rate](#sixty-measure)) | P2 | 10, 14 | #568 |
 | 14 | Prediction of the client's own Warrior | P2 | 10 | #559 |
 | 15 | Lag compensation for strikes | P2 | 14 | #560 |
