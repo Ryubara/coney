@@ -52,7 +52,6 @@ class RecordingServices final : public world_objects::ObjectServices {
     std::vector<std::string> spawned;
     std::vector<anim::Vec3> spawnedAt; // where each spawned object was made
     std::vector<double> destroyed;
-    std::vector<double> nextModels;
     std::vector<std::pair<double, std::uint32_t>> models;
     std::vector<std::pair<double, std::uint32_t>> values; // setValue()
     std::vector<std::pair<double, anim::Vec3>> moves;     // moveObject()
@@ -60,6 +59,7 @@ class RecordingServices final : public world_objects::ObjectServices {
     int splinterCount = 0;
     std::vector<anim::Vec3> splintersAt; ///< Where each splinters() call made its splinters.
     int bursts = 0;
+    std::vector<anim::Vec3> burstsAt; ///< Where each burst() was made.
     std::vector<double> stopped;
     std::vector<Script> scripts;
     std::vector<std::pair<int, int>> scores;
@@ -93,7 +93,6 @@ class RecordingServices final : public world_objects::ObjectServices {
         return 1000.0 + static_cast<double>(spawned.size());
     }
     void destroyObject(double object) override { destroyed.push_back(object); }
-    void nextModel(double object) override { nextModels.push_back(object); }
     void setModel(double object, std::uint32_t modelHash) override { models.emplace_back(object, modelHash); }
     void setValue(double object, std::uint32_t value) override { values.emplace_back(object, value); }
     void moveObject(double object, anim::Vec3 at) override { moves.emplace_back(object, at); }
@@ -102,7 +101,10 @@ class RecordingServices final : public world_objects::ObjectServices {
         splinterCount += count;
         splintersAt.push_back(at);
     }
-    void burst(anim::Vec3 /*at*/) override { ++bursts; }
+    void burst(anim::Vec3 at) override {
+        ++bursts;
+        burstsAt.push_back(at);
+    }
     void stopHumansTargeting(double object) override { stopped.push_back(object); }
     void callScript(std::string_view function, double human, double door) override {
         scripts.push_back({std::string(function), human, door});

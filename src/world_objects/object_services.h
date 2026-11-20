@@ -28,6 +28,8 @@ class PathMap;
 
 namespace coney::world_objects {
 
+class ObjectList;
+
 /// The `MATERIAL_*` ids the panes and doors name (docs/references/enums.md).
 namespace material {
 inline constexpr std::uint8_t kGlass = 2;       ///< `GLASS`: a pane's triangles, the large shatter's sound.
@@ -199,6 +201,8 @@ struct ObjectWorld {
     /// Knocks an object loose (message `0x30`): it flies from where its record stands at `velocity` (m/s), spinning at
     /// `spin` (rad/s); empty: nothing moves it.
     std::function<void(double object, anim::Vec3 velocity, anim::Vec3 spin)> knock;
+    /// The Object List, which names a damaged object's next model (ObjectList::nextModelOf); null: no next models.
+    const ObjectList* models = nullptr;
     /// Every triangle write the objects have made, by triangle index (markTriangles, setTrianglesEnabled).
     std::map<std::uint32_t, TriangleWrite> triangleWrites{};
     /// Every box switch the scripts have made (setTrianglesEnabledInBox), in order.

@@ -30,7 +30,7 @@ std::expected<ObjectList, Error> ObjectList::parse(std::span<const std::byte> ch
         // The size check above covers every read in this loop.
         ObjectRecord record;
         record.nameHash = reader.readU32Le().value();
-        record.variantOf = reader.readU32Le().value();
+        record.nextModel = reader.readU32Le().value();
         record.modelHash = reader.readU32Le().value();
         record.texturesHash = reader.readU32Le().value();
         record.fourthHash = reader.readU32Le().value();
@@ -54,6 +54,8 @@ const ObjectRecord* ObjectList::findByHash(std::uint32_t nameHash) const {
     const auto found = std::ranges::find(m_records, nameHash, &ObjectRecord::nameHash);
     return found == m_records.end() ? nullptr : &*found;
 }
+
+std::uint32_t ObjectList::nextModelOf(std::uint32_t /*nameHash*/) const { return 0; }
 
 std::expected<ObjectList, Error> loadObjectList(const io::Wad& wad) {
     auto entry = wad.lookup("warriors.glr");
