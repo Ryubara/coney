@@ -383,6 +383,8 @@ void LightManager::setViewportLists(const ViewportLists& lists) {
 
 LightSelection LightManager::select(float distSq, const LightSphere& sphere, bool objects, bool pointLights, bool pulse,
                                     const std::optional<GlowRequest>& glow) {
+    // Stand-in: the original selects nothing while the global 0x005e5374 is 0; it is set to 1 at start-up and never
+    // written again, so Coney has no such switch.
     LightSelection selection;
     // Ambient and directional lights: the world's list, or the objects' with a cap that falls with distance.
     std::size_t cap = kMaxSelectedLights;
@@ -392,8 +394,11 @@ LightSelection LightManager::select(float distSq, const LightSphere& sphere, boo
         cap = static_cast<std::size_t>(6 - std::min(steps, pulse ? 2 : 3));
         lights = pulse ? std::span<const std::uint16_t>(m_listC) : std::span<const std::uint16_t>(m_listB);
     }
+    // The list is copied whole, whatever the cap: the cap limits only the point lights after it.
+    // Stand-in: the original's lists and upload list hold 8 with no check, and a ninth light writes over the list's
+    // count; Coney stops at 8 (docs/research/lighting.md#coneys-implementation).
     for (const std::uint16_t index : lights) {
-        if (selection.count >= cap) {
+        if (selection.count >= kMaxSelectedLights) {
             break;
         }
         selection.records.at(selection.count++) = index;
@@ -402,9 +407,13 @@ LightSelection LightManager::select(float distSq, const LightSphere& sphere, boo
         return selection;
     }
 
-    // The glow first, for a human whose glow alpha is above 10, placed at him with its colour.
-    if (glow && glow->rgba[3] > kGlowMinAlpha && selection.count < cap) {
+    // The glow first, for a human whose glow alpha is above 10, placed at him with its colour, with no check against
+    // the cap. Stand-in: with 8 lights copied the original writes the glow over the upload list's count; Coney adds
+    // none.
+    if (glow && glow->rgba[3] > kGlowMinAlpha && selection.count < kMaxSelectedLights) {
         LightRecord& record = m_records[kGlow];
+        // Stand-in: the original works out the place here, the human's bone +0x92 raised by half his scale; Coney
+        // takes it from the caller (docs/research/lighting.md#glow).
         record.desc.position = glow->position;
         record.current =
             LightColour{static_cast<float>(glow->rgba[0]) / 255.0F, static_cast<float>(glow->rgba[1]) / 255.0F,

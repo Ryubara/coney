@@ -256,9 +256,11 @@ class LightManager {
     /// @coney-only the replay of the original's light-selection trace; the original's lists come only from its cull
     void setViewportLists(const ViewportLists& lists);
 
-    /// The lights of one atomic: the world's (`objects` false, up to 8) or the objects' (`objects` true, 6 to 3 by
-    /// `distSq`, the squared distance to the camera, from list B, or list C with `pulse`), then with `pointLights` the
-    /// glow (when `glow` is given with an alpha above kGlowMinAlpha) and the point lights whose sphere meets `sphere`.
+    /// The lights of one atomic: the whole of the world's list (`objects` false, cap 8) or of the objects' (`objects`
+    /// true, list B, or list C with `pulse`, cap 6 to 3 by `distSq`, the squared distance to the camera), then with
+    /// `pointLights` the glow (when `glow` is given with an alpha above kGlowMinAlpha), and while below the cap the
+    /// point lights whose sphere meets `sphere`. The cap limits only the point lights
+    /// (docs/research/lighting.md#select).
     /// @orig 0x0017de10 LightManager_SelectLights (LightManager.cpp)
     [[nodiscard]] LightSelection select(float distSq, const LightSphere& sphere, bool objects, bool pointLights,
                                         bool pulse, const std::optional<GlowRequest>& glow = std::nullopt);

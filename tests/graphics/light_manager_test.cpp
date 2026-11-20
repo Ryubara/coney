@@ -126,19 +126,50 @@ TEST_CASE("The cull sorts lights into the world's, the objects' and the pulse's 
 }
 
 TEST_CASE("Objects get 6 lights within 40 m, 3 beyond 69.3 m; the world 8") {
+    // Expected: lighting.md#select, confirmed (code) at 0x0017de10: the cap is 6 - min(int(distSq / 1600), 3), list
+    // C's 6 - min(..., 2), the world's 8; it limits the point lights that follow the copied list.
     LightManager manager;
-    for (int i = 0; i < 9; ++i) {
+    manager.addLight(global(LightType::Ambient, LightColour{0.05F, 0.05F, 0.05F, 1.0F},
+                            coney::graphics::kLightsObjects | coney::graphics::kLightsWorld));
+    // Ten lamps around the atomic, all overlapping it, lighting objects and the world.
+    for (int i = 0; i < 10; ++i) {
+        manager.addLight(lamp({0, 0, 20.0F + static_cast<float>(i) * 0.1F}, 3.0F,
+                              coney::graphics::kLightsObjects | coney::graphics::kLightsWorld));
+    }
+    manager.beginViewport(camera(), 0);
+    const coney::graphics::LightSphere sphere{{0, 0, 20}, 1.0F};
+    // List B holds the ambient; list C the pulse too; list A light A too.
+    CHECK(manager.select(0.0F, sphere, true, true, false).count == 6);
+    CHECK(manager.select(1600.0F, sphere, true, true, false).count == 5);
+    CHECK(manager.select(3300.0F, sphere, true, true, false).count == 4);
+    CHECK(manager.select(4900.0F, sphere, true, true, false).count == 3);
+    CHECK(manager.select(9000.0F, sphere, true, true, true).count == 4); // list C keeps 4
+    CHECK(manager.select(0.0F, sphere, false, true, false).count == 8);
+}
+
+TEST_CASE("A copied list over the cap is kept whole, and no point light follows it") {
+    // Expected: lighting.md#select, confirmed (code) at 0x0017de10: the list is copied whole (8 words and a count),
+    // whatever the cap; the point lights are not looked at when the count is already at the cap or over it.
+    LightManager manager;
+    for (int i = 0; i < 5; ++i) {
         manager.addLight(global(LightType::Directional, LightColour{0.01F, 0.01F, 0.01F, 1.0F},
                                 coney::graphics::kLightsObjects | coney::graphics::kLightsWorld));
     }
+    manager.addLight(lamp({0, 0, 20}, 3.0F));
     manager.beginViewport(camera(), 0);
-    const coney::graphics::LightSphere sphere{{0, 0, 5}, 1.0F};
-    CHECK(manager.select(0.0F, sphere, true, false, false).count == 6);
-    CHECK(manager.select(1600.0F, sphere, true, false, false).count == 5);
-    CHECK(manager.select(3300.0F, sphere, true, false, false).count == 4);
-    CHECK(manager.select(4900.0F, sphere, true, false, false).count == 3);
-    CHECK(manager.select(9000.0F, sphere, true, false, true).count == 4); // list C keeps 4
-    CHECK(manager.select(0.0F, sphere, false, false, false).count == 8);
+    const coney::graphics::LightSphere sphere{{0, 0, 20}, 1.0F};
+    REQUIRE(manager.objectList().size() == 5);
+
+    // Beyond 69.3 m the cap is 3: all five directional lights, in the list's order, and not the lamp.
+    const coney::graphics::LightSelection far = manager.select(4900.0F, sphere, true, true, false);
+    REQUIRE(far.count == 5);
+    for (std::size_t i = 0; i < far.count; ++i) {
+        CHECK(far.records.at(i) == manager.objectList()[i]);
+    }
+    // List C (the pulse and the five) keeps 4 that far: all six.
+    CHECK(manager.select(4900.0F, sphere, true, true, true).count == 6);
+    // Within 40 m (cap 6) the lamp still fits after the five.
+    CHECK(manager.select(0.0F, sphere, true, true, false).count == 6);
 }
 
 TEST_CASE("Point lights are chosen by sphere overlap; a full list keeps the first plus the deepest overlap") {
@@ -177,6 +208,48 @@ TEST_CASE("A glowing human gets the glow first, at him and in his colour") {
     // An alpha of 10 or less does not glow.
     const coney::graphics::GlowRequest faint{.position = {1, 2, 3}, .rgba = {255, 0, 0, 10}};
     CHECK(manager.select(0.0F, {{1, 2, 3}, 1.0F}, true, true, false, faint).count == 0);
+}
+
+TEST_CASE("The glow is added over the cap, and no point light follows it") {
+    // Expected: lighting.md#select and #glow, confirmed (code) at 0x0017de10: the glow is appended after the copied
+    // list with no check against the cap, and a count at the cap or over it skips the point lights.
+    LightManager manager;
+    for (int i = 0; i < 3; ++i) {
+        manager.addLight(
+            global(LightType::Directional, LightColour{0.01F, 0.01F, 0.01F, 1.0F}, coney::graphics::kLightsObjects));
+    }
+    manager.addLight(lamp({0, 0, 20}, 3.0F));
+    manager.beginViewport(camera(), 0);
+    const coney::graphics::LightSphere sphere{{0, 0, 20}, 1.0F};
+    const coney::graphics::GlowRequest glow{.position = {0, 0, 20}, .rgba = {0, 255, 0, 200}};
+
+    // A human beyond 69.3 m (cap 3) with three lights in list B: the three, then the glow, and not the lamp.
+    const coney::graphics::LightSelection far = manager.select(4900.0F, sphere, true, true, false, glow);
+    REQUIRE(far.count == 4);
+    CHECK(far.records.at(3) == LightManager::kGlow);
+    CHECK(manager.record(LightManager::kGlow).current.g == Approx(1.0F));
+    // Within 40 m (cap 6): the three, the glow, then the lamp.
+    const coney::graphics::LightSelection close = manager.select(0.0F, sphere, true, true, false, glow);
+    REQUIRE(close.count == 5);
+    CHECK(close.records.at(3) == LightManager::kGlow);
+    CHECK(close.records.at(4) != LightManager::kGlow);
+}
+
+TEST_CASE("A full upload list takes no glow (Coney's stand-in for the original's overflow)") {
+    // Expected: unverified, Coney's stand-in (lighting.md#coneys-implementation): with 8 lights copied the original
+    // writes the glow over its own count (0x00715320); Coney keeps the 8.
+    LightManager manager;
+    for (int i = 0; i < 8; ++i) {
+        manager.addLight(
+            global(LightType::Directional, LightColour{0.01F, 0.01F, 0.01F, 1.0F}, coney::graphics::kLightsObjects));
+    }
+    manager.beginViewport(camera(), 0);
+    const coney::graphics::GlowRequest glow{.position = {0, 0, 20}, .rgba = {0, 255, 0, 200}};
+    const coney::graphics::LightSelection full = manager.select(0.0F, {{0, 0, 20}, 1.0F}, true, true, false, glow);
+    CHECK(full.count == 8);
+    for (std::size_t i = 0; i < full.count; ++i) {
+        CHECK(full.records.at(i) != LightManager::kGlow);
+    }
 }
 
 TEST_CASE("Coronas sit raised and pulled towards the camera, fading within 8 m") {
