@@ -1893,17 +1893,19 @@ void Fighter::updateStance(const FighterInput& input, std::uint32_t phase) {
 void Fighter::updateL1(const FighterInput& input, std::uint32_t phase) {
     // Player_UpdateActions reaches the L1 handlers only out of the block (R1 held), the busy gate and a hold; the
     // stance update's own returns do not skip them. With no command it clears L1's bit (0x8008). **Coney's choice**:
-    // its Human_IsBusy (0x00228258) state test, which also clears the bit, is not made: Coney's player keeps no such
-    // state word.
+    // its Human_IsBusy (0x00228258) state test, which also clears the bit, and the hidden branch's clearing of state
+    // 0x8000 first are not made: Coney's player keeps no such state word.
     if (blocking() || (phase & kStanceGate) != 0 || m_held != nullptr) {
         return;
     }
+    // **Coney's choice**: the hidden player's state 0x20000000, set with the clear, is not kept either.
     if (input.command == combat::command::kNone) {
         m_l1Lock = false;
         return;
     }
-    // Let go (the matcher's release command; in a throw aim it ends the aim instead): L1's bit and the lock clear
-    // (0xc) and the release window opens.
+    // Let go (the matcher's release command): L1's bit and the lock clear (0xc) and the release window opens, and the
+    // hidden player's state 0x20000000 is set (**Coney's choice**: not kept). In a throw aim the original ends the aim
+    // instead (**Coney's choice**: a throw aim is a script's, which L1 does not end).
     if (input.command == combat::command::kL1Released) {
         if (!input.throwAiming) {
             m_l1Lock = false;
