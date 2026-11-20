@@ -190,6 +190,14 @@ TEST_CASE("level messages that break their rules are refused", "[net][level]") {
     CHECK(decode(bytes({0x0d, 0x01, 0x04, 0x01, 0x00, 0x02, 'l', '2'})).error().code == ErrorCode::Invalid);
     CHECK(decode(bytes({0x0d, 0x00, 0x01, 0x01, 0x00, 0x02, 'l', '2'})).error().code == ErrorCode::Invalid);
     CHECK(decode(bytes({0x0e, 0x00})).error().code == ErrorCode::Invalid);
+    // A level name with a character no level name has: a slash, a dot (so no ".."), a space, a NUL or a control byte.
+    CHECK(decode(bytes({0x0d, 0x01, 0x01, 0x01, 0x00, 0x04, 'a', '/', 'l', '2'})).error().code == ErrorCode::Invalid);
+    CHECK(decode(bytes({0x0d, 0x01, 0x01, 0x01, 0x00, 0x02, '.', '.'})).error().code == ErrorCode::Invalid);
+    CHECK(decode(bytes({0x0d, 0x01, 0x01, 0x01, 0x00, 0x02, 'l', ' '})).error().code == ErrorCode::Invalid);
+    CHECK(decode(bytes({0x0d, 0x01, 0x01, 0x01, 0x00, 0x02, 'l', 0x00})).error().code == ErrorCode::Invalid);
+    CHECK(decode(bytes({0x0d, 0x01, 0x01, 0x01, 0x00, 0x02, 'l', 0x0a})).error().code == ErrorCode::Invalid);
+    // Letters, digits, '_' and '-' are a level name's characters.
+    CHECK(std::get<LoadLevel>(roundTrip(LoadLevel{.level = "Level_1-x"})).level == "Level_1-x");
     // A mission end of no load, or an unknown outcome.
     CHECK(decode(bytes({0x0f, 0x00, 0x01})).error().code == ErrorCode::Invalid);
     CHECK(decode(bytes({0x0f, 0x01, 0x04})).error().code == ErrorCode::Invalid);
