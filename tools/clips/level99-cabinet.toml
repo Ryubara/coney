@@ -1,0 +1,10 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): the level99 store's glass display cabinet,
+# punched twice. The input script breaks the store's window, walks in and stands at the cabinet by frame 730; the clip
+# starts there (`--record-from-frame`) and shows the two punches and the leaf the second one bends. For a change to a
+# breakable door or cabinet, a hit's effects or the objects' models.
+description = "level99 store: two punches at the display cabinet bend its door leaf"
+level = "level99"
+input = "tools/clips/level99-cabinet.txt"
+checkpoint = 2
+start_frame = 740
+seconds = 6
