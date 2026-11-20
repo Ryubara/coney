@@ -92,8 +92,9 @@ void FrameDescription::addTriangles(const Material2d& material, std::span<const 
 }
 
 ScenePass& FrameDescription::scene() {
+    // A new scene pass keeps the camera set last this frame.
     if (m_passes.empty() || !std::holds_alternative<ScenePass>(m_passes.back())) {
-        m_passes.emplace_back(ScenePass{});
+        m_passes.emplace_back(ScenePass{m_camera, {}});
     }
     return std::get<ScenePass>(m_passes.back());
 }
@@ -101,8 +102,15 @@ ScenePass& FrameDescription::scene() {
 void FrameDescription::addScreenPass(const ScreenPass& pass) { m_passes.emplace_back(pass); }
 
 void FrameDescription::setSceneCamera(const SceneCamera& camera) {
-    // Stub for the test commit: the camera is not kept yet.
-    (void)camera;
+    m_camera = camera;
+    // A scene pass with no draw yet takes it; else the draws after it start a new pass.
+    if (!m_passes.empty()) {
+        if (auto* last = std::get_if<ScenePass>(&m_passes.back()); last != nullptr && last->draws.empty()) {
+            last->camera = camera;
+            return;
+        }
+    }
+    m_passes.emplace_back(ScenePass{camera, {}});
 }
 
 void FrameDescription::addSceneDraw(Draw3d draw, std::span<const SceneLight> lights,

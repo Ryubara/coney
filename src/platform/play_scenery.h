@@ -69,6 +69,9 @@ class PlayScenery : public world::LevelGround {
     /// Holds the scenery's own animations (clouds, light flicker) at game time `atMs` from now on, whatever draw() is
     /// given, while what streams in still fades in: `--freeze-world`. A scenery without animations ignores it.
     virtual void freezeAnimation(std::uint64_t atMs) { (void)atMs; }
+    /// Leaves out of draw() what the GPU renderer does not draw yet (a level's background and coronas): `--scene-only`.
+    /// A scenery without them ignores it.
+    virtual void sceneOnly() {}
     /// The direction the character's directional light travels, in the game's axes: the stand-in lighting of a scenery
     /// without a level's lights.
     [[nodiscard]] virtual anim::Vec3 lightDirection() const = 0;
@@ -115,6 +118,7 @@ class LevelPlayScenery final : public PlayScenery {
     [[nodiscard]] anim::Vec3 lightDirection() const override;
     void setLighting(SceneLighting* lighting) override { m_renderer.setLighting(lighting); }
     void freezeAnimation(std::uint64_t atMs) override { m_renderer.freezeAnimation(atMs); }
+    void sceneOnly() override { m_renderer.sceneOnly(true); }
     [[nodiscard]] std::string summary() const override;
     [[nodiscard]] std::string name() const override { return m_name; }
     [[nodiscard]] const world::PathMap* pathMap() const override { return m_paths ? &*m_paths : nullptr; }

@@ -25,6 +25,30 @@ namespace {
 // The render states librw has, TEXTURERASTER (0) to GSALPHATESTREF.
 constexpr std::size_t kStateCount = static_cast<std::size_t>(rw::GSALPHATESTREF) + 1;
 
+// The states as librw's GL3 device starts them (resetRenderState in gl3device.cpp), which the layer reads back for a
+// state nobody has set while it does not forward: so the GPU renderer, which reads them here, draws in the states GL3
+// would (above all the alpha test, GEQUAL 10: docs/engine/gpu-renderer.md#scene). Every other state starts at 0.
+std::array<rw::uint32, kStateCount> gl3StartStates() {
+    std::array<rw::uint32, kStateCount> states{};
+    const auto set = [&states](rw::int32 state, rw::uint32 value) { states[static_cast<std::size_t>(state)] = value; };
+    set(rw::ALPHATESTFUNC, rw::ALPHAGREATEREQUAL);
+    set(rw::ALPHATESTREF, 10);
+    set(rw::GSALPHATESTREF, 128);
+    set(rw::SRCBLEND, rw::BLENDSRCALPHA);
+    set(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+    set(rw::ZWRITEENABLE, 1);
+    set(rw::ZTESTENABLE, 1);
+    set(rw::CULLMODE, rw::CULLNONE);
+    set(rw::FOGCOLOR, 0xFFFFFFFFU);
+    set(rw::STENCILFAIL, rw::STENCILKEEP);
+    set(rw::STENCILZFAIL, rw::STENCILKEEP);
+    set(rw::STENCILPASS, rw::STENCILKEEP);
+    set(rw::STENCILFUNCTION, rw::STENCILALWAYS);
+    set(rw::STENCILFUNCTIONMASK, 0xFFFFFFFFU);
+    set(rw::STENCILFUNCTIONWRITEMASK, 0xFFFFFFFFU);
+    return states;
+}
+
 // What is known of a raster Coney made: the digest of its pixels, from its uploads while rasters were tracked.
 struct RasterFacts {
     std::uint64_t digest = 0;
@@ -35,7 +59,7 @@ struct RasterFacts {
 struct Layer {
     bool forwarding = true;
     bool trackRasters = false;
-    std::array<rw::uint32, kStateCount> states{};
+    std::array<rw::uint32, kStateCount> states = gl3StartStates(); // the values; a recording holds only those set
     std::array<bool, kStateCount> stateSet{};
     void* textureRaster = nullptr; // TEXTURERASTER, which is a pointer
     std::optional<DrawStream> stream;

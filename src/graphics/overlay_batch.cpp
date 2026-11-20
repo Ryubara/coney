@@ -53,6 +53,7 @@ AlphaRange alphaRangeOf(const Material2d& material) {
 OverlayBatch batchOverlays(const FrameDescription& frame) {
     OverlayBatch batch;
     for (const FramePass& pass : frame.passes()) {
+        batch.passDraws.push_back(static_cast<std::uint32_t>(batch.draws.size()));
         const auto* overlay = std::get_if<Overlay2dPass>(&pass);
         if (overlay == nullptr) {
             ++batch.skippedPasses; // a screen pass, or any pass that is not 2D
@@ -73,6 +74,7 @@ OverlayBatch batchOverlays(const FrameDescription& frame) {
                                               firstIndex, indexCount});
         }
     }
+    batch.passDraws.push_back(static_cast<std::uint32_t>(batch.draws.size()));
     return batch;
 }
 

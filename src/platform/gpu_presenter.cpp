@@ -131,8 +131,10 @@ void GpuPresenter::choosePresentMode(bool vsync, std::uint32_t fpsCap) {
     }
 }
 
+std::string GpuPresenter::sceneProblem() const { return m_renderer ? m_renderer->sceneProblem() : std::string(); }
+
 GpuPresenter::Presented GpuPresenter::present(const graphics::FrameDescription& frame, graphics::Extent size,
-                                              bool capture) {
+                                              bool capture, const graphics::AssetStore* store) {
     Presented presented;
     if (!m_renderer) {
         presented.shown = clearAndPresent(frame.start().clear);
@@ -150,7 +152,7 @@ GpuPresenter::Presented GpuPresenter::present(const graphics::FrameDescription& 
     }
     // 1. The frame, drawn into the renderer's own target, then whatever draws over the picture (the developer overlay)
     // into the same target, so the window and a capture both hold it.
-    SDL_GPUTexture* drawn = m_renderer->record(commands, frame, size);
+    SDL_GPUTexture* drawn = m_renderer->record(commands, frame, size, store);
     if (drawn != nullptr) {
         for (const auto& [handle, overlay] : m_overlays) {
             overlay(commands, drawn, size);

@@ -91,8 +91,9 @@ class WorldRenderer {
     /// when given, draws after the world with no depth test, before the frame is presented (the menus' 2D pass).
     /// `afterWorlds`, when given, draws after the `d` world in the world pass's states, before the coronas: the water
     /// and the see-through parts (steps 9-10). With
-    /// the NULL backend the frame is begun and presented and nothing is drawn, unless recordHeadless() is on and the
-    /// draw layer records (draw::recording()): the frame is then recorded through a camera of the renderer's own.
+    /// the NULL backend the frame is begun and presented and nothing is drawn, unless recordHeadless() is on: the frame
+    /// is then added to the frame description, and recorded while the draw layer records (draw::recording()), through
+    /// a camera of the renderer's own. The GPU backend, which has no librw camera either, always takes that camera.
     /// @orig 0x0040e8d8 WorldManager_Render (WorldManagerPS2.cpp)
     /// Not ported yet (#657): the early return that draws nothing while a full-screen fade covers the view, the humans
     /// drawn with the fog at half the draw distance, the blowing litter and the falling embers.
@@ -111,10 +112,15 @@ class WorldRenderer {
     /// to render()'s time for both.
     void freezeAnimation(std::optional<std::uint64_t> atMs) { m_animationMs = atMs; }
 
-    /// Chooses whether render() records its frame on the NULL backend while the draw layer records (off by default):
-    /// the draw-stream hashes' synthetic world scene (docs/engine/renderer.md#comparing), which has no window.
+    /// Chooses whether render() draws its frame on the NULL backend (off by default): into the frame description, and
+    /// into the draw stream while the draw layer records; the draw-stream hashes' synthetic world scene
+    /// (docs/engine/renderer.md#comparing), which has no window.
     /// @coney-only the draw-stream hashes' synthetic scenes; the original has no headless renderer
     void recordHeadless(bool on) { m_recordHeadless = on; }
+    /// Chooses whether render() leaves out the level's background (sky, clouds, skyline, light glows) and the coronas,
+    /// which the GPU renderer does not draw yet: `--scene-only` (docs/engine/renderer.md#comparing).
+    /// @coney-only a developer's test aid; the original has none
+    void sceneOnly(bool on) { m_sceneOnly = on; }
 
     /// Atomics drawn by the last render().
     [[nodiscard]] std::uint32_t drawnAtomics() const { return m_drawn; }
@@ -146,6 +152,7 @@ class WorldRenderer {
     std::optional<std::uint64_t> m_animationMs; // freezeAnimation()'s time
     rw::Camera* m_recordingCamera = nullptr;    // owned, with its frame: recordingCamera()
     bool m_recordHeadless = false;              // recordHeadless()
+    bool m_sceneOnly = false;                   // sceneOnly()
 };
 
 } // namespace coney::platform

@@ -29,7 +29,7 @@ PlayLevelEffects::PlayLevelEffects(RenderEngine& engine, const io::Wad& wad, con
 }
 
 void PlayLevelEffects::drawCars(const std::function<void(const ObjectDraw&)>& render, graphics::CarPass pass) {
-    if (m_cars && m_engine.drawsPixels()) {
+    if (m_cars && m_engine.drawsScene()) {
         m_cars->draw(render, pass);
     }
 }

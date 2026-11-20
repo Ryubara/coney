@@ -15,11 +15,12 @@
 namespace coney::platform {
 
 class RenderEngine;
+class TestCardScene;
 
 /// The test cards `--test-card` draws, by name.
-inline constexpr std::array<std::string_view, 3> kTestCardNames{"shapes", "textures", "triangles"};
+inline constexpr std::array<std::string_view, 4> kTestCardNames{"shapes", "textures", "triangles", "scene"};
 
-/// Coney's own 2D test cards (`--test-card NAME`, docs/guides/running-viewers.md#test-cards): fixed pictures of the
+/// Coney's own test cards (`--test-card NAME`, docs/guides/running-viewers.md#test-cards): fixed pictures of the
 /// 2D drawing every renderer must draw alike, made of Coney's own shapes and textures generated in code (no game data),
 /// so CI's software pictures draw them on both renderers and compare them (docs/guides/testing.md#software-pictures).
 /// Each card is one frame, drawn the same every frame:
@@ -29,7 +30,8 @@ inline constexpr std::array<std::string_view, 3> kTestCardNames{"shapes", "textu
 /// - `textures`: a texture at its own size and enlarged, filtered linearly and to the nearest texel, repeated, tinted,
 ///   and one with an alpha gradient over coloured bars;
 /// - `triangles`: a fan of triangles with a colour at each corner, and textured triangles alpha tested at 0 (every
-///   fragment) and at a half, clamped and repeated.
+///   fragment) and at a half, clamped and repeated;
+/// - `scene`: a small 3D scene through the frame description's scene pass (TestCardScene, test_card_scene.h).
 ///
 /// A debug tool, in the debug tools' build only; Coney's own, with no counterpart in the original.
 class TestCardMode final : public GameMode {
@@ -58,7 +60,7 @@ class TestCardMode final : public GameMode {
 
   private:
     /// Which card.
-    enum class Card : std::uint8_t { Shapes, Textures, Triangles };
+    enum class Card : std::uint8_t { Shapes, Textures, Triangles, Scene };
 
     TestCardMode(RenderEngine& engine, Card card);
 
@@ -73,6 +75,8 @@ class TestCardMode final : public GameMode {
     Card m_card;
     // The cards' textures, made for the engine's renderer (a librw raster for OpenGL, pixels for the GPU renderer).
     std::vector<std::unique_ptr<graphics::Texture>> m_textures;
+    // The scene card's meshes and textures, made for it alone.
+    std::unique_ptr<TestCardScene> m_scene;
 };
 
 } // namespace coney::platform

@@ -169,7 +169,7 @@ struct Options {
     /// a `.layout` file; kDefaultSandbox when given without one. Needs no disc; cannot be combined with `--load`, the
     /// viewers or `--play-level`.
     std::optional<std::string> sandbox;
-    /// `--test-card`: one of Coney's own 2D test cards to draw (`shapes`, `textures`, `triangles`;
+    /// `--test-card`: one of Coney's own test cards to draw (`shapes`, `textures`, `triangles`, `scene`;
     /// platform/test_card_mode.h), for the software pictures. Needs no disc; cannot be combined with `--load`, the
     /// viewers, `--play-level`, `--sandbox` or `--render-references`.
     std::optional<std::string> testCard;
@@ -380,7 +380,11 @@ struct Options {
     /// animation, the scripts), so every frame shows the same picture; the scenery still streams round the camera and
     /// the fixed step still runs. Requires playLevel.
     bool freezeWorld = false;
-    /// `--scene-only`: play draws only the 3D the GPU renderer draws. Stub: never parsed yet.
+    /// `--scene-only`: play's 3D is only what the GPU renderer draws of it today, the world, objects and cars of the
+    /// scene passes, with no level background, humans, effects, see-through panes or coronas (the 2D is drawn as
+    /// ever), so that the GL3 and GPU renderers' frames can be compared on their shared part
+    /// (docs/engine/renderer.md#comparing). Requires playLevel.
+    /// @coney-only a developer's test aid; the original has none
     bool sceneOnly = false;
     /// `--light-trace FILE`: the original's light-selection trace (`coney-tools trace lights`: this selections file and
     /// its two inputs files beside it), which the Lighting page sets beside Coney's lights

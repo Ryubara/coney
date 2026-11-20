@@ -58,7 +58,7 @@ void PlayLevelMode::makeWorldObjects(const ScriptedCast& cast) {
     m_cast.forceReticules = cast.forceReticules;
     m_records = cast.records;
     m_objectTypes = cast.types;
-    if (m_records == nullptr || m_objectTypes == nullptr || !m_engine.drawsPixels()) {
+    if (m_records == nullptr || m_objectTypes == nullptr || !m_engine.drawsScene()) {
         return;
     }
     // The models come by the Object List, which bindObjects() loaded (and printed why when it could not); without it
@@ -66,7 +66,10 @@ void PlayLevelMode::makeWorldObjects(const ScriptedCast& cast) {
     if (m_objectList == nullptr) {
         return;
     }
-    m_placed = std::make_unique<PlacedObjects>(m_wad, *m_objectList, m_print, true, &m_engine.sceneAssets());
+    // On the GPU backend the textures stay as read: its librw cannot convert them, and the GPU renderer draws the
+    // converted copies the scene assets hold.
+    m_placed =
+        std::make_unique<PlacedObjects>(m_wad, *m_objectList, m_print, m_engine.drawsPixels(), &m_engine.sceneAssets());
 }
 
 void PlayLevelMode::stepGlints(int ticks) {

@@ -5,13 +5,16 @@
 #include <cstdint>
 #include <expected>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "core/error.h"
+#include "graphics/asset_store.h"
 #include "graphics/frame_description.h"
 #include "graphics/overlay_batch.h"
 #include "graphics/texture_grid.h"
 #include "graphics/upload_cache.h"
+#include "platform/gpu_scene.h"
 
 // SDL's types, declared rather than included, so the engine's header stays free of SDL.
 struct SDL_GPUDevice;
@@ -32,9 +35,11 @@ namespace coney::platform {
 /// source alpha with no depth test, culling or fog, the alpha test as GL3 has it (graphics::alphaRangeOf()), and each
 /// texture sampled with its own filter, clamped or repeated as the draw says.
 ///
-/// Not yet: the screen passes (the blur pulse, the line blend, the motion blur) and the 3D scene, which come with items
-/// 13, 14 and 20 of docs/engine/renderer.md#order. The developer overlay (item 12) draws over the target afterwards,
-/// through GpuPresenter (GpuOverlayDraw).
+/// Its scene passes (the streamed world's sectors, the world objects and the parked cars: item 13 of
+/// docs/engine/renderer.md#order) are drawn between the 2D passes in their order by GpuScene (gpu_scene.h), from the
+/// asset store's meshes and textures, with a depth buffer the target's size. Not yet: the screen passes (the blur
+/// pulse, the line blend, the motion blur) and the humans, which come with items 14 and 20. The developer overlay (item
+/// 12) draws over the target afterwards, through GpuPresenter (GpuOverlayDraw).
 ///
 /// Textures are uploaded the first time a frame draws them and kept by Texture::serial(): a sprite sheet's pixels once
 /// (SheetTexture::toImage()), a PixelTexture's again at each new revision (a movie's frame), and a texture no frame has
@@ -46,9 +51,10 @@ class GpuRenderer {
     /// How many frames a texture no frame draws is kept: about ten seconds of frames at 60 a second.
     static constexpr std::uint64_t kTextureKeepFrames = 600;
 
-    /// Makes the shaders (in the format `device` takes), the 2D pipeline, its samplers and the white texture of flat
-    /// colour. ErrorCode::PlatformFailure naming what SDL refused, or saying the build has no shaders
-    /// (`-DCONEY_SHADERS=OFF`, docs/guides/shaders.md).
+    /// Makes the shaders (in the format `device` takes), the 2D pipeline, its samplers, the white texture of flat
+    /// colour and the scene drawing (GpuScene). ErrorCode::PlatformFailure naming what SDL refused for the 2D drawing,
+    /// or saying the build has no shaders (`-DCONEY_SHADERS=OFF`, docs/guides/shaders.md); a scene drawing SDL refuses
+    /// leaves the 2D drawing working and says why in sceneProblem().
     [[nodiscard]] static std::expected<std::unique_ptr<GpuRenderer>, Error> create(SDL_GPUDevice* device);
 
     /// The format of the target record() draws into (an `SDL_GPUTextureFormat`): what a drawing over the frame
@@ -62,11 +68,12 @@ class GpuRenderer {
     GpuRenderer(GpuRenderer&&) = delete;
     GpuRenderer& operator=(GpuRenderer&&) = delete;
 
-    /// Records the drawing of `frame` at `size` into `commands`: the textures and vertices uploaded, then one render
-    /// pass into the target. Returns the target, which holds the frame once the commands have run and stays valid until
-    /// the next record(); null when `size` is empty or SDL refused to make the target at that size.
+    /// Records the drawing of `frame` at `size` into `commands`: the textures, vertices and the scene passes' new
+    /// meshes and textures (from `store`; null draws no scene pass) uploaded, then one render pass into the target.
+    /// Returns the target, which holds the frame once the commands have run and stays valid until the next record();
+    /// null when `size` is empty or SDL refused to make the target at that size.
     SDL_GPUTexture* record(SDL_GPUCommandBuffer* commands, const graphics::FrameDescription& frame,
-                           graphics::Extent size);
+                           graphics::Extent size, const graphics::AssetStore* store = nullptr);
 
     /// Records a copy of the target, as the last record() drew it, into memory the CPU reads: call it after record() in
     /// the same command buffer, submit with a fence and wait for it, then take the pixels with readBack(). False when
@@ -77,8 +84,11 @@ class GpuRenderer {
     /// the commands; empty when there were none or SDL refused to map them.
     [[nodiscard]] std::vector<std::uint8_t> readBack();
 
-    /// How many textures it keeps uploaded.
+    /// How many textures it keeps uploaded for the 2D passes.
     [[nodiscard]] std::size_t textureCount() const { return m_textures.size(); }
+
+    /// Why the scene passes are not drawn (SDL refused their shaders or pipeline); empty when they are.
+    [[nodiscard]] const std::string& sceneProblem() const { return m_sceneProblem; }
 
   private:
     /// A texture the renderer made, released through the device when it goes.
@@ -110,7 +120,7 @@ class GpuRenderer {
 
     explicit GpuRenderer(SDL_GPUDevice* device) : m_device(device) {}
 
-    /// Makes (or keeps) the target at `size`; false when SDL refuses it.
+    /// Makes (or keeps) the target and its depth buffer at `size`; false when SDL refuses them.
     bool ensureTarget(graphics::Extent size);
     /// Makes `buffer` at least `bytes` large for `usage` (SDL_GPUBufferUsageFlags), growing by doubling; false when SDL
     /// refuses it.
@@ -132,7 +142,11 @@ class GpuRenderer {
     SDL_GPUSampler* m_samplers[4] = {}; // nearest clamp, nearest repeat, linear clamp, linear repeat
     OwnedTexture m_white;               // one white texel: flat colour
     bool m_whiteUploaded = false;
-    OwnedTexture m_target; // what record() draws into
+    OwnedTexture m_target;             // what record() draws into
+    OwnedTexture m_depth;              // its depth buffer, the same size
+    std::uint32_t m_depthFormat = 0;   // an SDL_GPUTextureFormat: 24-bit where the device has it, else 32-bit float
+    std::unique_ptr<GpuScene> m_scene; // the scene passes' drawing; null when SDL refused it
+    std::string m_sceneProblem;        // why, then
     SDL_GPUBuffer* m_vertices = nullptr;
     std::uint32_t m_vertexCapacity = 0;
     SDL_GPUBuffer* m_indices = nullptr;

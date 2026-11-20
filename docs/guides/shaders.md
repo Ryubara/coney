@@ -10,7 +10,9 @@ system and how it is tested. The building of the rest of the engine is [Building
 
 Every `*.hlsl` file in `src/platform/shaders/` is a shader, named `<name>.<stage>.hlsl` with the stage `vert`, `frag` or
 `comp`; its entry point is `main`. `overlay2d.vert.hlsl` and `overlay2d.frag.hlsl` draw the 2D passes
-([Drawing the 2D passes](../engine/gpu-renderer.md#drawing)); `fullscreen.vert.hlsl` and `blit.frag.hlsl` (a
+([Drawing the 2D passes](../engine/gpu-renderer.md#drawing)); `scene3d.vert.hlsl` and `scene3d.frag.hlsl` draw the
+scene passes' meshes, lit, fogged and textured as librw's GL3 device draws them ([Drawing the scene
+passes](../engine/gpu-renderer.md#scene)); `fullscreen.vert.hlsl` and `blit.frag.hlsl` (a
 full-screen triangle and a texture copy) proved the build first and wait for the full-screen passes. SDL's GPU API
 fixes where a shader's resources go, the same on every backend: a vertex shader's samplers in `space0` and uniform
 buffers in `space1`, a fragment shader's in `space2` and `space3` (`blit.frag.hlsl` shows it).

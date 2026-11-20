@@ -506,6 +506,8 @@ std::string_view RenderEngine::gpuDriver() const {
     return m_gpu ? std::string_view(m_gpu->driver()) : std::string_view();
 }
 
+std::string RenderEngine::gpuSceneProblem() const { return m_gpu ? m_gpu->sceneProblem() : std::string(); }
+
 std::string_view RenderEngine::gpuDrawingProblem() const {
     return m_gpu ? std::string_view(m_gpu->drawingProblem()) : std::string_view();
 }
@@ -780,7 +782,7 @@ void RenderEngine::present() {
         // taken here, between frames.
         m_gpu->choosePresentMode(m_vsync, m_fpsCap);
         CONEY_PERF_ZONE("present.swap");
-        GpuPresenter::Presented presented = m_gpu->present(m_frame, m_frameSize, captureThisFrame);
+        GpuPresenter::Presented presented = m_gpu->present(m_frame, m_frameSize, captureThisFrame, &m_assets.store());
         if (presented.shown) {
             ++m_shown;
         }

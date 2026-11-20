@@ -232,6 +232,11 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
     /// in the world objects there, and every frame is drawn from that step with the scenery's animations held, so each
     /// frame shows the same picture: `--freeze-world`.
     void freezeWorld() { m_freezeWorld = true; }
+    /// Draws from now on only the 3D the GPU renderer draws today, the world, objects and cars, leaving out the level's
+    /// background, the humans, the effects, the see-through panes and the coronas, so that the two renderers' frames
+    /// compare on their shared part: `--scene-only` (docs/engine/renderer.md#comparing).
+    /// @coney-only a developer's test aid; the original has none
+    void sceneOnly();
     /// Whether the world is frozen now (freezeWorld() and its first step done).
     [[nodiscard]] bool worldFrozen() const { return m_freezeWorld && m_frozenSince.has_value(); }
 
@@ -539,6 +544,7 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
     const graphics::LightingSwitches* m_lightingSwitches = nullptr; // setLightingSwitches()
     std::optional<CameraPin> m_pinnedCamera;                        // `--camera`
     bool m_freezeWorld = false;                                     // `--freeze-world`
+    bool m_sceneOnly = false;                                       // `--scene-only`
     std::optional<std::uint64_t> m_frozenSince;                     // the game ticks of the step the world froze after
     // The sandbox's targets' meshes (PlayLevelSimulation::m_targets), each its own copy of the character's, by target.
     std::map<const human::TargetHuman*, std::unique_ptr<CharacterMesh>> m_targetMeshes;

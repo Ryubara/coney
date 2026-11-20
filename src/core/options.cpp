@@ -54,7 +54,7 @@ constexpr std::string_view kUsage =
     "             [--play-level NAME [--spawn NAME | --checkpoint N] [--start X,Y,Z,H[,D,YAW]]\n"
     "             [--give ITEM,COUNT]...\n"
     "             [--trace FILE] [--script-trace FILE] [--scene NAME] [--camera X,Y,Z,QX,QY,QZ,QW[,FOV]]\n"
-    "             [--freeze-world] [--light-trace FILE]]\n"
+    "             [--freeze-world] [--scene-only] [--light-trace FILE]]\n"
     "             [--sandbox [NAME]] [--test-card NAME]\n"
     "             [--assets DIR]\n"
     "             [--event-log FILE] [--pad-pipe] [--trace-humans FILE]\n"
@@ -156,14 +156,16 @@ constexpr std::string_view kUsage =
     "                     (degrees, default 60); a test aid for matching the original's frames\n"
     "  --freeze-world     with --play-level: after the first step nothing in the world moves\n"
     "                     (people, cars, particles, animation, scripts), so every frame is the same\n"
+    "  --scene-only       with --play-level: draw only the world, objects and cars in 3D (no sky,\n"
+    "                     humans, effects, panes or coronas), to compare the GL3 and GPU renderers\n"
     "  --light-trace FILE with --play-level: load the original's light-selection trace (coney-tools\n"
     "                     trace lights) for the Lighting page, beside Coney's lights\n"
     "  --scene NAME       with --play-level levelN: play the in-engine scene NAME (such as l99_c1) at\n"
     "                     once, with stand-ins in its roles and the player in his; a test aid\n"
     "  --sandbox [NAME]   fly round a sandbox test world: default (the default), parkour, or a\n"
     "                     .layout file; needs no disc\n"
-    "  --test-card NAME   draw one of Coney's own 2D test cards: shapes, textures or triangles; needs\n"
-    "                     no disc (the software pictures draw them on both renderers)\n"
+    "  --test-card NAME   draw one of Coney's own test cards: shapes, textures or triangles (2D) or\n"
+    "                     scene (3D); needs no disc (the software pictures draw them on both renderers)\n"
     "  --assets DIR       the folder of Coney's own assets (sandbox layouts and textures), in place\n"
     "                     of the assets folder beside the executable\n"
     "  --render-references DIR\n"
@@ -416,6 +418,9 @@ std::expected<void, Error> checkSandbox(const Options& options) {
     }
     if (options.freezeWorld && !options.playLevel.has_value()) {
         return invalidArgument("--freeze-world needs --play-level: it freezes the level's world");
+    }
+    if (options.sceneOnly && !options.playLevel.has_value()) {
+        return invalidArgument("--scene-only needs --play-level: it limits what the level draws");
     }
     if (options.lightTrace.has_value() && !options.playLevel.has_value()) {
         return invalidArgument("--light-trace needs --play-level: the Lighting page compares a level's lights");
@@ -1552,6 +1557,11 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return invalidArgument("--draw-hash given twice");
             }
             options.drawHash = true;
+        } else if (arg == "--scene-only") {
+            if (options.sceneOnly) {
+                return invalidArgument("--scene-only given twice");
+            }
+            options.sceneOnly = true;
         } else if (arg == "--freeze-world") {
             if (options.freezeWorld) {
                 return invalidArgument("--freeze-world given twice");
