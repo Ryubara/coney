@@ -203,7 +203,7 @@ milliseconds each, so the whole disc takes minutes to an hour; on a CPU it takes
 
 ### Texture packs {#packs}
 
-Coney imports any pack placed in `overrides/`, keyed by the original texture's hash. An entry
+Coney imports any pack placed in `packs/`, keyed by the original texture's hash. An entry
 whose hash matches no texture on the player's disc is ignored. `coney-tools` makes and exports packs as a folder
 with a manifest. There are three kinds:
 
@@ -238,7 +238,7 @@ Maintainer decisions (2026-10-07):
   and its groundwork comes first ([Renderer: Backend](../engine/renderer.md#backend)). The GPU renderer's MSAA
   replaces any on the GL3 path.
 - **Sharing texture packs**: Coney helps players share packs, in the model under [Packs](#packs). It imports from
-  `overrides/` by texture hash and exports with `coney-tools`; recipe packs are the default; pre-made upscales can
+  `packs/` by texture hash and exports with `coney-tools`; recipe packs are the default; pre-made upscales can
   be imported but are never hosted or linked by the project.
 
 ## Questions for the maintainer

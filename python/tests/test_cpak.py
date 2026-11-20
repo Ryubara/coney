@@ -120,6 +120,16 @@ def test_bad_names_are_refused(name: str) -> None:
         cpak.write([(name, b"")])
 
 
+@pytest.mark.parametrize("name", ["a\ud800b", "\udfff", "dir/\udc80"])
+def test_a_lone_surrogate_in_a_name_is_refused(name: str) -> None:
+    # The engine refuses the bytes a surrogate would encode to (ED A0..BF): UTF-8 has no such name, so write() must
+    # raise CpakError, not leak UnicodeEncodeError from encoding it.
+    with pytest.raises(cpak.CpakError, match="UTF-8"):
+        cpak.check_name(name)
+    with pytest.raises(cpak.CpakError, match="UTF-8"):
+        cpak.write([(name, b"")])
+
+
 def rehashed(data: bytearray) -> bytes:
     """`data` with its index hash written again over its header's first 32 bytes and its index, as the page says."""
     index_size = struct.unpack_from("<I", data, 0x10)[0]

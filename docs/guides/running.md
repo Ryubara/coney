@@ -106,7 +106,8 @@ a PS2 or Xbox save comes in with `--import-save` or from the `import` folder bes
 `--install DISC --data DIR` copies your PS2 disc into an install folder, so the game runs from it with no disc or
 image afterwards, then exits. `DISC` is a mounted disc, a folder of its files or an ISO image, read directly on every
 system (no mounting); `DIR` is the folder you pick, made if needed. The layout is the one on
-[The install folder](asset-and-script-architecture.md#install-folder):
+[The install folder](asset-and-script-architecture.md#install-folder) (the interim layout: the disc's files as they
+are, and `overrides/`, until the cpak install replaces them):
 
 ```sh
 build/dev/src/platform/coney --install /path/to/warriors.iso --data ../../Coney

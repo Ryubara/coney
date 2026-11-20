@@ -60,7 +60,7 @@ script use, as Godot's `res://` paths and Unity's `Resources` paths are.
 | `mod:/` | A file of another mod the project depends on, by the mod's name and the file's path in it ([Dependencies and exports](mods.md#dependencies)) | `mod:/crate-pack/models/crate.glb` | That mod's import table, read-only |
 | `game:/` | An asset on the player's disc, by the names `coney-tools extract` writes ([extract](../coney-tools-disc.md#extract)) | `game:/textures/warr_re_cv/warr_re_cv` | The asset store, by the original's id |
 
-**The `game:/` names** are the extract tool's, so a modder sees one set of names in Studio, in the `open/` modding kit
+**The `game:/` names** are the extract tool's, so a modder sees one set of names in Studio, in an export
 and in overrides ([Risks: two naming schemes](../asset-and-script-architecture.md#risks)). Where the extract tool
 writes a hash in hex because the name is not recovered, so does the path.
 
@@ -141,9 +141,9 @@ flowchart LR
   are what a project keeps.
 - **Imports are deterministic**: the same source and settings give the same engine form byte for byte, so a test can
   hash it and two users get the same result.
-- **Provenance.** A file imported from the player's own export of a disc asset (a repainted texture from `open/`, a
+- **Provenance.** A file imported from the player's own export of a disc asset (a repainted texture from an export, a
   character exported to glTF and reshaped) is still the game's data
-  ([legal](../asset-and-script-architecture.md#legal)). Studio recognises an export it made (its record in `open/`,
+  ([legal](../asset-and-script-architecture.md#legal)). Studio recognises an export it made (its record beside it,
   [Export](#export)) and writes `derived=game:/...` in the sidecar. A derived file is usable on the player's machine
   like any other; a package or share step leaves it out and says so, and the project's Problems list names it.
 
@@ -607,12 +607,12 @@ formats](project-formats.md).
 
 Export writes a disc asset, or a project's own, in an open format: glTF for models, worlds, collision, path maps and
 clips, PNG for textures, WAV for sounds, the same files and names `coney-tools extract` writes
-([extract](../coney-tools-disc.md#extract)), from the same parsers. A disc asset exports to the install's modding kit
-folder, `<install>/open/` ([The install folder](../asset-and-script-architecture.md#install-folder)), **never into the
-project**: the File system panel shows only the project and `game:/`, and an export is game data on the player's
-machine. Editing an export and importing it back makes a derived file ([The import step](#import)). A project's own
-models and levels export anywhere the user picks, through the system's save dialog, as the Import button reads through
-its open dialog.
+([extract](../coney-tools-disc.md#extract)), from the same parsers. A disc asset exports to a folder the user
+picks, through the system's save dialog (the install has no `open/` folder:
+[The install folder](../cpak-format.md#layout)), **never into the project**: the File system panel shows only the
+project and `game:/`, and an export is game data on the player's machine. Editing an export and importing it back makes
+a derived file ([The import step](#import)). A project's own models and levels export the same way, as the Import
+button reads through its open dialog.
 
 ## What Studio needs from Coney {#engine-needs}
 
@@ -741,7 +741,7 @@ The buildings and collision of a disc level have six of their own, after issues 
    slot. Tests: an imported clip's sampled pose equals its source's at each key; an overridden walk plays and the
    character's speed is unchanged.
 11. **tools: Add export of disc and project assets.** glTF, PNG, WAV and JSON exports with the extract tool's names, to
-    `<install>/open/` for disc assets and to a picked folder for a project's own; the record that marks a later import
+    a picked folder, for disc assets and a project's own alike; the record that marks a later import
     as derived. Tests: an exported synthetic model reimports to the same `.cmodel`; a disc export never lands inside
     the project folder.
 12. **tools: Add project missions with checkpoints.** The `.mission` file, starting a project mission at a checkpoint,
