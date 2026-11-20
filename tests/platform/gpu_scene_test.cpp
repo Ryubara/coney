@@ -66,9 +66,15 @@ struct QuadSpec {
 // it and its frame.
 rw::Atomic* makeQuad(const QuadSpec& spec) {
     rw::uint32 flags = rw::Geometry::POSITIONS | rw::Geometry::NORMALS | rw::Geometry::TEXTURED;
-    flags |= spec.lit ? rw::Geometry::LIGHT : 0U;
-    flags |= spec.modulate ? rw::Geometry::MODULATE : 0U;
-    flags |= spec.prelit ? rw::Geometry::PRELIT : 0U;
+    if (spec.lit) {
+        flags |= rw::Geometry::LIGHT;
+    }
+    if (spec.modulate) {
+        flags |= rw::Geometry::MODULATE;
+    }
+    if (spec.prelit) {
+        flags |= rw::Geometry::PRELIT;
+    }
     rw::Geometry* geometry = rw::Geometry::create(4, 2, flags);
     rw::MorphTarget& target = geometry->morphTargets[0];
     const std::array<std::array<float, 3>, 4> corners{spec.topLeft, spec.topRight, spec.bottomLeft, spec.bottomRight};
