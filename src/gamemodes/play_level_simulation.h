@@ -144,6 +144,12 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     /// @coney-only Coney's hand-over of the game's HUD to the level
     void useHud(hud::Hud& shared);
 
+    /// Each player slot's HUD state of the newest step, slot i at index i: what the HUD's step was given for panel i
+    /// (docs/guides/network-architecture.md#sub-hud). Slot 0 is player 1's; slot 1 stays empty until a second player
+    /// plays in a level, and drives panel 1 as it is.
+    /// @coney-only network play's per-slot HUD state; the original's panels read their players themselves
+    [[nodiscard]] std::span<const hud::PlayerHudState> playerHuds() const { return m_playerHuds; }
+
     /// The level's world objects (the scripts' spawn records brought in round the camera, the objective markers):
     /// what the newest step draws (play_level_world.cpp).
     [[nodiscard]] const world_objects::ObjectTasks& worldObjects() const { return m_objectTasks; }
@@ -677,6 +683,8 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     std::set<double> m_carriedProps;
     // The HUD the steps drive: the simulation's own, or the game's after useHud().
     std::unique_ptr<hud::HudOwner> m_hud = std::make_unique<hud::HudOwner>();
+    // Each player slot's HUD state, which builds every step's HUD frame (playerHuds()).
+    std::array<hud::PlayerHudState, hud::kPlayers> m_playerHuds{};
     PlayStats m_stats;
     std::uint32_t m_lastAnimId = 0; // player 1's clip at the last step, for the run log's clip lines
     bool m_frozen = false;          // player 1 frozen (he ignores the pad)

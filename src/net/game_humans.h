@@ -4,6 +4,7 @@
 #include <span>
 #include <vector>
 
+#include "hud/hud.h"
 #include "net/client_world.h"
 #include "net/net_id.h"
 #include "net/net_id_table.h"
@@ -45,26 +46,33 @@ class GameHumans {
     /// This step's humans: every brain's human of `brains`, in slot order, with its id and its words.
     void capture(const ai::Brains& brains);
 
-    /// No humans: the level has gone. Their ids are retired as the next capture() would.
+    /// This step's HUD state of each player slot (slot i at index i, at most kMaxPlayerSlots), as the play mode's HUD
+    /// step was given it: what the snapshots carry for each player's panel. Nothing while capture is off.
+    void captureHuds(std::span<const hud::PlayerHudState> slots);
+
+    /// No humans and no HUDs: the level has gone. The humans' ids are retired as the next capture() would.
     void clear();
     /// Frees every retired id, for use again in its next generation: call it only when no peer can still name them
     /// (no session, or every client has acknowledged the removals).
     void releaseRetired();
     /// Whether capture() takes the humans (on at first).
     [[nodiscard]] bool capturing() const { return m_capturing; }
-    /// Turns capture() on or off. Turning it off clears the humans and releases every id, so call it with false only
-    /// when no peer can still name them; while off, capture() takes nothing.
+    /// Turns capture() and captureHuds() on or off. Turning it off clears the humans and the HUDs and releases every
+    /// id, so call it with false only when no peer can still name them; while off, the captures take nothing.
     void setCapturing(bool on);
 
     /// The humans captured, in brain order, each with priority 1.
     [[nodiscard]] std::span<const SnapshotHuman> humans() const { return m_humans; }
     /// The humans captured by id: what a snapshot that sent them all would leave a client holding.
     [[nodiscard]] SnapshotHumans holding() const;
+    /// The players' HUDs captured, in slot order.
+    [[nodiscard]] std::span<const SnapshotHud> huds() const { return m_huds; }
 
   private:
     NetIdAllocator m_ids;
     NetIdTable<const human::Human*> m_table;
     std::vector<SnapshotHuman> m_humans;
+    std::vector<SnapshotHud> m_huds;
     std::vector<NetId> m_retired; // retired ids waiting for releaseRetired()
     bool m_capturing = true;
 };

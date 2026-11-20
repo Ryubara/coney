@@ -22,12 +22,19 @@ namespace coney::net {
 
 namespace {
 
-// The most bits a Snapshot's header takes: the id byte and four varints of 32 bits at most (5 bytes each).
-constexpr std::size_t kMostHeaderBits = 8 + (4 * 5 * 8);
+// The most bits a Snapshot's header takes: the id byte and four varints of 32 bits at most (5 bytes each), and the
+// HUD entries' count (one byte: at most kMaxPlayerSlots).
+constexpr std::size_t kMostHeaderBits = 8 + (4 * 5 * 8) + 8;
 
 // What no snapshot holds: the baseline of a full snapshot, and the humans before the first is decoded.
 const SnapshotHumans& noHumans() {
     static const SnapshotHumans none;
+    return none;
+}
+
+// What no snapshot holds of the players' HUDs.
+const SnapshotHuds& noHuds() {
+    static const SnapshotHuds none;
     return none;
 }
 
@@ -59,13 +66,36 @@ std::array<FieldValue, kHumanFieldCount> humanValues(const HumanWords& words) {
     return values;
 }
 
-SnapshotSender::SnapshotSender(std::size_t budgetBytes) : m_budgetBytes(budgetBytes) {
-    // Room for the header and one human in full, or a new human might never fit.
-    const std::size_t fullHuman = kNetIdBits + 1 + kHumanFieldCount + fieldsBits(fieldTable(ReplicatedKind::Human));
-    CONEY_ASSERT(budgetBytes * 8 >= kMostHeaderBits + fullHuman);
+HudWords hudWords(std::span<const FieldValue, kHudFieldCount> values) {
+    const auto fields = fieldTable(ReplicatedKind::PlayerHud);
+    HudWords words{};
+    for (std::size_t field = 0; field < kHudFieldCount; ++field) {
+        words.at(field) = fieldWord(fields[field], values[field]);
+    }
+    return words;
 }
 
-Snapshot SnapshotSender::build(std::uint32_t step, std::span<const SnapshotHuman> humans) {
+std::array<FieldValue, kHudFieldCount> hudValues(const HudWords& words) {
+    const auto fields = fieldTable(ReplicatedKind::PlayerHud);
+    std::array<FieldValue, kHudFieldCount> values{};
+    for (std::size_t field = 0; field < kHudFieldCount; ++field) {
+        const auto value = fieldValue(fields[field], words.at(field));
+        CONEY_ASSERT(value.has_value());
+        values.at(field) = *value;
+    }
+    return values;
+}
+
+SnapshotSender::SnapshotSender(std::size_t budgetBytes) : m_budgetBytes(budgetBytes) {
+    // Room for the header, every player slot's HUD and one human in full, or a new HUD or human might never fit.
+    const std::size_t fullHuman = kNetIdBits + 1 + kHumanFieldCount + fieldsBits(fieldTable(ReplicatedKind::Human));
+    const std::size_t fullHud =
+        kPlayerSlotBits + 1 + kHudFieldCount + fieldsBits(fieldTable(ReplicatedKind::PlayerHud));
+    CONEY_ASSERT(budgetBytes * 8 >= kMostHeaderBits + (kMaxPlayerSlots * fullHud) + fullHuman);
+}
+
+Snapshot SnapshotSender::build(std::uint32_t step, std::span<const SnapshotHuman> humans,
+                               std::span<const SnapshotHud> huds) {
     CONEY_ASSERT(m_sequence < 0xffffffffU); // four and a half years of snapshots at 30 a second
     Snapshot snapshot;
     snapshot.sequence = ++m_sequence;
@@ -78,6 +108,7 @@ Snapshot SnapshotSender::build(std::uint32_t step, std::span<const SnapshotHuman
                       m_sequence - m_acknowledged <= kSnapshotHistory;
     snapshot.baseline = kept ? m_acknowledged : 0;
     SnapshotHumans holding = kept ? acknowledged.holding : noHumans();
+    SnapshotHuds hudsHeld = kept ? acknowledged.huds : noHuds();
 
     // This step's humans by id, so they are walked in id order whatever order the game gave them in.
     std::map<NetId, const SnapshotHuman*> now;
@@ -85,6 +116,33 @@ Snapshot SnapshotSender::build(std::uint32_t step, std::span<const SnapshotHuman
         CONEY_ASSERT(human.id.valid());
         const bool added = now.emplace(human.id, &human).second;
         CONEY_ASSERT(added); // one entry a human
+    }
+
+    // The players' HUDs by slot: a removal for a slot the baseline holds that is not here, else the fields changed.
+    std::map<std::uint8_t, const SnapshotHud*> hudsNow;
+    for (const SnapshotHud& hud : huds) {
+        CONEY_ASSERT(hud.slot < kMaxPlayerSlots);
+        const bool added = hudsNow.emplace(hud.slot, &hud).second;
+        CONEY_ASSERT(added); // one entry a slot
+    }
+    std::vector<SnapshotHudEntry> hudChanges;
+    for (const auto& [slot, words] : hudsHeld) {
+        if (!hudsNow.contains(slot)) {
+            hudChanges.push_back(SnapshotHudEntry{.slot = slot, .removed = true, .changed = 0, .words = {}});
+        }
+    }
+    for (const auto& [slot, hud] : hudsNow) {
+        SnapshotHudEntry entry{.slot = slot, .removed = false, .changed = 0, .words = {}};
+        const auto held = hudsHeld.find(slot);
+        for (std::size_t field = 0; field < kHudFieldCount; ++field) {
+            if (held == hudsHeld.end() || held->second.at(field) != hud->words.at(field)) {
+                entry.changed |= 1U << field;
+                entry.words.at(field) = hud->words.at(field);
+            }
+        }
+        if (entry.changed != 0) {
+            hudChanges.push_back(entry);
+        }
     }
 
     // Removals: a human the baseline holds that is not here any more.
@@ -120,10 +178,27 @@ Snapshot SnapshotSender::build(std::uint32_t step, std::span<const SnapshotHuman
     // The highest priority first; equal ones in id order, so the order is the same on every machine.
     std::ranges::stable_sort(changes, [](const Candidate& a, const Candidate& b) { return a.priority > b.priority; });
 
-    // Fill the budget: removals first (each a few bytes, and a client must not keep a human that has gone), then the
-    // changes by priority; one that does not fit waits, and a smaller one after it may still go.
+    // Fill the budget: the HUDs first (a handful of small entries, and the constructor keeps room for all of them),
+    // then removals (each a few bytes, and a client must not keep a human that has gone), then the changes by
+    // priority; one that does not fit waits, and a smaller one after it may still go.
     const std::size_t budgetBits = m_budgetBytes * 8;
-    std::size_t usedBits = snapshotHeaderBits(snapshot, removals.size() + changes.size());
+    std::size_t usedBits = snapshotHeaderBits(snapshot, removals.size() + changes.size(), hudChanges.size());
+    std::vector<SnapshotHudEntry> hudsTaken;
+    for (const SnapshotHudEntry& entry : hudChanges) {
+        const std::size_t bits = snapshotHudEntryBits(entry);
+        if (usedBits + bits > budgetBits) {
+            continue;
+        }
+        usedBits += bits;
+        hudsTaken.push_back(entry);
+        if (entry.removed) {
+            hudsHeld.erase(entry.slot);
+        } else {
+            hudsHeld.insert_or_assign(entry.slot, hudsNow.at(entry.slot)->words);
+        }
+    }
+    std::ranges::sort(hudsTaken, [](const SnapshotHudEntry& a, const SnapshotHudEntry& b) { return a.slot < b.slot; });
+    snapshot.huds = std::move(hudsTaken);
     std::vector<SnapshotEntry> taken;
     const auto offer = [&](const Candidate& candidate) {
         const std::size_t bits = snapshotEntryBits(candidate.entry);
@@ -146,7 +221,7 @@ Snapshot SnapshotSender::build(std::uint32_t step, std::span<const SnapshotHuman
     snapshot.humans = std::move(taken);
     m_priority = std::move(priorities);
     m_sent.at(snapshot.sequence % kSnapshotHistory) =
-        Sent{.sequence = snapshot.sequence, .holding = std::move(holding)};
+        Sent{.sequence = snapshot.sequence, .holding = std::move(holding), .huds = std::move(hudsHeld)};
     return snapshot;
 }
 
@@ -166,6 +241,11 @@ const SnapshotHumans* SnapshotSender::holding(std::uint32_t sequence) const {
     return sequence != 0 && sent.sequence == sequence ? &sent.holding : nullptr;
 }
 
+const SnapshotHuds* SnapshotSender::holdingHuds(std::uint32_t sequence) const {
+    const Sent& sent = m_sent.at(sequence % kSnapshotHistory);
+    return sequence != 0 && sent.sequence == sequence ? &sent.huds : nullptr;
+}
+
 std::uint64_t SnapshotSender::priority(NetId id) const {
     const auto found = m_priority.find(id);
     return found == m_priority.end() ? 0 : found->second;
@@ -179,8 +259,11 @@ std::expected<SnapshotApplied, Error> SnapshotReceiver::apply(const Snapshot& sn
     if (baseline == nullptr) {
         return SnapshotApplied::NoBaseline;
     }
+    const SnapshotHuds* hudsBaseline = snapshot.baseline == 0 ? &noHuds() : holdingHuds(snapshot.baseline);
+    CONEY_ASSERT(hudsBaseline != nullptr); // kept with the humans
     // Copied before this snapshot takes the place of the one kSnapshotHistory back, which may be the baseline.
     SnapshotHumans humans = *baseline;
+    SnapshotHuds huds = *hudsBaseline;
     for (const SnapshotEntry& entry : snapshot.humans) {
         if (entry.removed) {
             if (humans.erase(entry.id) == 0) {
@@ -207,8 +290,34 @@ std::expected<SnapshotApplied, Error> SnapshotReceiver::apply(const Snapshot& sn
             held->second.at(field) = entry.words.at(field);
         }
     }
-    m_received.at(snapshot.sequence % kSnapshotHistory) =
-        Received{.sequence = snapshot.sequence, .step = snapshot.step, .holding = std::move(humans)};
+    // The players' HUDs, by the same rules as the humans.
+    for (const SnapshotHudEntry& entry : snapshot.huds) {
+        if (entry.removed) {
+            if (huds.erase(entry.slot) == 0) {
+                return fail(ErrorCode::Invalid, "network snapshot removes a HUD its baseline does not hold");
+            }
+            continue;
+        }
+        const auto held = huds.find(entry.slot);
+        if (held == huds.end()) {
+            if (entry.changed != kAllHudFields) {
+                return fail(ErrorCode::Invalid, "network snapshot adds a HUD with fields left out");
+            }
+            huds.emplace(entry.slot, entry.words);
+            continue;
+        }
+        for (std::size_t field = 0; field < kHudFieldCount; ++field) {
+            if ((entry.changed & (1U << field)) == 0) {
+                continue;
+            }
+            if (held->second.at(field) == entry.words.at(field)) {
+                return fail(ErrorCode::Invalid, "network snapshot changes a HUD field to the value it has");
+            }
+            held->second.at(field) = entry.words.at(field);
+        }
+    }
+    m_received.at(snapshot.sequence % kSnapshotHistory) = Received{
+        .sequence = snapshot.sequence, .step = snapshot.step, .holding = std::move(humans), .huds = std::move(huds)};
     m_newest = snapshot.sequence;
     m_newestStep = snapshot.step;
     return SnapshotApplied::Applied;
@@ -217,6 +326,16 @@ std::expected<SnapshotApplied, Error> SnapshotReceiver::apply(const Snapshot& sn
 const SnapshotHumans& SnapshotReceiver::humans() const {
     const SnapshotHumans* newest = holding(m_newest);
     return newest == nullptr ? noHumans() : *newest;
+}
+
+const SnapshotHuds& SnapshotReceiver::huds() const {
+    const SnapshotHuds* newest = holdingHuds(m_newest);
+    return newest == nullptr ? noHuds() : *newest;
+}
+
+const SnapshotHuds* SnapshotReceiver::holdingHuds(std::uint32_t sequence) const {
+    const Received& received = m_received.at(sequence % kSnapshotHistory);
+    return sequence != 0 && received.sequence == sequence ? &received.huds : nullptr;
 }
 
 const SnapshotHumans* SnapshotReceiver::holding(std::uint32_t sequence) const {

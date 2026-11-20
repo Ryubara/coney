@@ -95,10 +95,11 @@ class NetServer {
     /// One step's receiving: every waiting transport event and message, the step's timeouts, then each joined
     /// player's pad for the step (InputBuffer::take()).
     void receive();
-    /// Sends each joined player a Snapshot of `humans` (the humans at the server's `step`) as a delta against the
-    /// newest they have acknowledged (SnapshotSender::build()). Called once a step, after the simulation step and
-    /// before send(), which flushes it.
-    void sendSnapshots(std::uint32_t step, std::span<const SnapshotHuman> humans);
+    /// Sends each joined player a Snapshot of `humans` (the humans at the server's `step`) and `huds` (each player
+    /// slot's HUD) as a delta against the newest they have acknowledged (SnapshotSender::build()). Called once a step,
+    /// after the simulation step and before send(), which flushes it.
+    void sendSnapshots(std::uint32_t step, std::span<const SnapshotHuman> humans,
+                       std::span<const SnapshotHud> huds = {});
     /// Sends each joined player the game events of the server's `step` (ordinals rising, toNetEvents()) in batches
     /// (EventSender::build()): the reliable ones ReliableOrdered, the one-shots Unreliable. Called once a step, after
     /// the simulation step and before send(), which flushes them. A player who joins later gets none of these.

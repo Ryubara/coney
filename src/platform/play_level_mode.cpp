@@ -522,6 +522,10 @@ PlayLevelSimulation::StepView PlayLevelMode::stepScenery(const FrameTime& frame)
 }
 
 void PlayLevelMode::hudStepped() {
+    // Network play's view of each player's HUD, as this step's HUD was given it.
+    if (m_netHumans != nullptr) {
+        m_netHumans->captureHuds(playerHuds());
+    }
     m_hudLayer->render();
     recordIconPoses();
 }

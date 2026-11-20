@@ -24,10 +24,12 @@
 #include "core/pads.h"
 #include "gamemodes/sound_event_player.h"
 #include "gamemodes/sound_events.h"
+#include "hud/hud.h"
 #include "net/event_channel.h"
 #include "net/loopback_transport.h"
 #include "net/net_id.h"
 #include "net/net_status.h"
+#include "net/player_huds.h"
 #include "net/snapshot.h"
 #include "net/state_digest.h"
 #include "net/transport.h"
@@ -437,6 +439,30 @@ TEST_CASE("a host sends its game's humans, and the guest's digests match what ea
     CHECK(sent.back().humans == coney::net::humansDigest(holding));
     // Steps count from the host's first step, so a snapshot names the step its humans are from.
     CHECK(sent.back().step == games.host.steps() - 1);
+}
+
+TEST_CASE("a host sends its players' HUDs with its snapshots, and the guest holds each slot's as the host had it",
+          "[net][net_play][hud]") {
+    // Expected: unverified, #1447 (Coney's own snapshots; docs/guides/snapshots.md#hud-state)
+    TwoGames games;
+    CHECK(games.guest.arrivedHuds().empty()); // not joined
+    games.connect();
+    // Two players' HUDs, the second's money rising each step: the host's game hands them over before each send.
+    std::array<coney::hud::PlayerHudState, 2> slots{};
+    slots[0].panel.rage = 20;
+    slots[1].panel.rage = 50;
+    for (int i = 0; i < 20; ++i) {
+        slots[1].panel.money = 10 + i;
+        games.host.setGameHuds(coney::net::snapshotHuds(slots));
+        games.run(1);
+    }
+    // The guest decodes each step's snapshot at the start of the next: it holds the step before last's HUDs.
+    const coney::net::SnapshotHuds held = games.guest.arrivedHuds();
+    REQUIRE(held.size() == 2);
+    CHECK(coney::net::playerHudState(held.at(0)) == slots[0]);
+    slots[1].panel.money = 10 + 18;
+    CHECK(coney::net::playerHudState(held.at(1)) == slots[1]);
+    CHECK(games.host.arrivedHuds().empty()); // a host draws its own
 }
 
 TEST_CASE("a host with nobody joined sends nothing and writes no snapshot digest", "[net][net_play]") {

@@ -60,6 +60,25 @@ struct HudFrame {
     std::function<int(int gang)> gangLiving;
 };
 
+/// One player slot's standing HUD state: what the HUD's step is given for that player, read from his human, the stats
+/// object and the inventory (docs/research/hud.md#the-player-panel). The game mode owns one per player slot as
+/// simulation state and builds each step's HudFrame from them (applyPlayerHud()), so panel 1 is driven from slot 1's
+/// state as panel 0 is from slot 0's; network play carries each slot's in the session's snapshots
+/// (docs/guides/snapshots.md#hud-state). Plain data: copied and compared.
+/// @coney-only Coney's split of the HUD's per-player inputs by player slot, for network play
+struct PlayerHudState {
+    PanelValues panel;               ///< What his panel shows; `promptWakes` is the HUD's own (Hud::update()).
+    bool knockedOut = false;         ///< HudFrame::knockedOut.
+    bool cameraIgnoresStick = false; ///< HudFrame::cameraIgnoresStick.
+
+    friend bool operator==(const PlayerHudState&, const PlayerHudState&) = default;
+};
+
+/// Puts slot `slot`'s (0 or 1) state in `frame`: his panel's values, whether he is knocked out and whether his camera
+/// ignores the right stick. The pads, the radar and the rest of the frame are left as they are.
+/// @coney-only Coney's split of the HUD's per-player inputs by player slot, for network play
+void applyPlayerHud(HudFrame& frame, std::size_t slot, const PlayerHudState& state);
+
 /// Values the debug menus put in place of a player's own (Coney's tool, not the original's): each set field replaces
 /// the value the step is given.
 struct PanelOverrides {

@@ -283,8 +283,17 @@ void NetPlay::setGameHumans(std::span<const net::SnapshotHuman> humans) {
     m_gameHumans.assign(humans.begin(), humans.end());
 }
 
+void NetPlay::setGameHuds(std::span<const net::SnapshotHud> huds) { m_gameHuds.assign(huds.begin(), huds.end()); }
+
+net::SnapshotHuds NetPlay::arrivedHuds() const {
+    if (!m_client) {
+        return {};
+    }
+    return m_client->snapshots().huds();
+}
+
 void NetPlay::sendSnapshots(std::uint32_t step) {
-    m_server->sendSnapshots(step, m_gameHumans);
+    m_server->sendSnapshots(step, m_gameHumans, m_gameHuds);
     if (!m_snapshotDigests) {
         return;
     }
