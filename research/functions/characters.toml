@@ -507,6 +507,20 @@ coney = "src/ai/fidget_action.h:freeToFidget"
 status = "legacy"
 
 [[function]]
+address = 0x00228258
+name = "Human_IsBusy"
+page = "characters.md#power-class-bytes"
+role = "Busy: a state flag of 0x1f80974000, or the hit timer (record +0x108, set by Human_ApplyPendingDamage to the game time + the class's +0x32) still ahead of the game time; about 40 AI routines skip a busy human."
+level = "confirmed-code"
+coney = "src/ai/reaction_goals.h:humanBusy"
+status = "compared"
+
+[[function.gaps]]
+what = "the state mask 0x1f80974000 is read as Coney's busy bits, the air and its reaction states"
+relation = "stand-in"
+question = "ai-reimpl.md#q-teamup-busy"
+
+[[function]]
 address = 0x00228448
 name = "Human_HasHeld20080000"
 page = "characters.md#code-core"

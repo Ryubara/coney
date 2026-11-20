@@ -5462,7 +5462,7 @@ coney = "src/ai/tactic_attack.h:TacticAttack::startSubTactic"
 status = "compared"
 
 [[function.gaps]]
-what = "the leader's busy test is ai::humanBusy(), not the state mask and hit timer"
+what = "the leader's busy test is ai::humanBusy(): Coney's states for the state mask, the hit timer kept"
 relation = "stand-in"
 question = "ai-reimpl.md#q-teamup-busy"
 

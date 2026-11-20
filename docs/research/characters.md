@@ -200,26 +200,28 @@ The three airborne bits (`0x1c00000000`) are cleared on landing.
 ### Power classes {#power-classes}
 
 `CfgPowerClass` fills records of 0x44 bytes at `0x006619a0 + class × 0x44`. A human's class is byte `+0x1b9` for a
-player and `+0x1b8` otherwise (`0x00222b78`). Confirmed (code) for the reads at the cited addresses; Rembrandt's
-values confirmed (runtime). A street civilian (class 2) had a 0.35 hurt threshold, stun 750 ms, ground time 2000 ms,
-power 200, byte `+0x36` 4 (confirmed (runtime)). The AI's fields `+0x08` (block chance), `+0x0c` (block chance while
-hurt), `+0x24` (counter chance) and `+0x37` (the pattern-reading threshold) are on [AI](ai-fights.md#block); `+0x32` and
-the bytes after `+0x37` are [below the table](#power-class-bytes). The sparring Warriors' class 40 is on
-[AI](ai/index.md#level99):
+player and `+0x1b8` otherwise (`0x00222b78`). Confirmed (code) for the reads at the cited addresses. Rembrandt's
+values below are class 64's, and a street civilian's (class 2) a 0.35 hurt threshold, stun 750 ms, ground time 2000 ms,
+power 200 and byte `+0x36` 4: each as normal's difficulty script sets it (confirmed (code) at `0x002288c0`, the
+binding that fills the record; the values: [Power classes](../references/power-classes.md#normal)). The AI's fields
+`+0x08` (block chance), `+0x0c` (block chance while hurt), `+0x24` (counter chance) and `+0x37` (the pattern-reading
+threshold) are on [AI](ai-fights.md#block); `+0x32` and the bytes after `+0x37` are [below the table](#power-class-bytes).
+The sparring Warriors' class 40 is on [AI](ai/index.md#level99):
 
 | Field | Rembrandt (class 64) | Use |
 | --- | --- | --- |
-| `+0x00` | 1.3 | as the attacker, scales the victim's stun for weapon hits of 20-49 damage (`0x0022f658`) |
-| `+0x04` | 0.3 | the **hurt** threshold: below this fraction of maximum health the human is hurt (`0x00222ff8`) |
+| `+0x00` | 1.3 | as the attacker, scales the victim's stun for weapon hits of 20-49 damage (`0x0022f658`); confirmed (code) |
+| `+0x04` | 0.3 | the **hurt** threshold: below this fraction of maximum health the human is hurt (`0x00222ff8`); confirmed (code) |
 | `+0x10` / `+0x14` | 1.0 / 1.0 | the stun time's / the ground time's factor while hurt ([Combat](combat-reactions.md#reactions)) |
-| `+0x1c` / `+0x20` | 3.0 / 3.0 | AI only: the factor on `CfgAttackDelay`, the second when the target is down (`0x00223800`) |
+| `+0x1c` / `+0x20` | 3.0 / 3.0 | AI only: the factor on `CfgAttackDelay`, the second when the target is down (`0x00223800`); confirmed (code) |
 | `+0x28` | 400 | the **power meter's maximum** ([Combat](combat-rage.md#power-meter)) |
 | `+0x2a` | 60 | the power meter's refill per second |
 | `+0x2c` | 135 | **stamina maximum** |
 | `+0x2e` | 40 | **stamina refill per second** |
-| `+0x30` | 200 | a **stun**'s length, ms (`0x0022f658`) |
-| `+0x34` | 2750 | the time a knocked-down human stays **down**, ms (`0x0022f100`) |
-| `+0x36` | 3 | in a grab struggle, the grabbed human's strike costs the grabber 1 / this of its power (`0x0027fd68`) |
+| `+0x30` | 200 | a **stun**'s length, ms (`0x0022f658`); confirmed (code) |
+| `+0x32` | 300 | how long a hit keeps an AI busy, ms ([below](#power-class-bytes)); confirmed (code) |
+| `+0x34` | 2750 | the time a knocked-down human stays **down**, ms (`0x0022f100`); confirmed (code) |
+| `+0x36` | 3 | in a grab struggle, the grabbed human's strike costs the grabber 1 / this of its power (`0x0027fd68`); confirmed (code) |
 
 #### The remaining power class fields {#power-class-bytes}
 
@@ -228,11 +230,11 @@ Each confirmed (code) at the reader named (the class is the one
 
 | Field | Reader | What it does |
 | --- | --- | --- |
-| s16 `+0x32` | `Human_ApplyPendingDamage` (`0x00265f70`) | after a hit lands on an **AI** human (brain kind not 0), its record `+0x108` = game time + `+0x32` ms; until then `Human_IsBusy` (`0x00228258`) says busy, which about 40 AI routines test (spotting, reporting a crime, joining a fight, grabbing). A player is never marked. The write comes after the block test and the damage: a hit with no pending damage, or one a block takes, sets nothing, nor does a lethal hit unless the human is in the falling states `0x1c00000000`; a friend's hit whose damage was zeroed still sets it |
-| s8 `+0x38` | `Human_GetClassReactFlag` (`0x002233c8`) in `Human_PlayReaction` (`0x0026a6d0`) | the most ground strikes a downed human reacts to: while a reaction clip plays (`Human_IsInReactionClip` `0x00228488`: held `0x8000`, a clip with flag `0x80`, or 199) and his record `+0xbe` is at least this, a new reaction is skipped. `+0xbe` counts the ground-strike reactions 195 played (`Human_PlayReaction`, `Hit_PlayBegReaction` `0x00269b80`) and is cleared when he gets up (`Human_EndDownState` `0x0025e250`) |
-| bytes `+0x3a`-`+0x3f` | `Human_ApplyClassFlags` (`0x00222c98`), from `Human_Init`, `Human_MakePlayer` and `Human_ReleasePlayer` | switches copied into the human flags `+0xe0` ([Combat: human flags](combat/index.md#human-flags)): `+0x3a` = 1 sets `0x80` (reaction strength at most 1), else clears it; `+0x3b` `0x1000000000` (hard to stun, below); `+0x3c` `0x2000000000` (never escapes when the grabber's power runs out); `+0x3d` `0x800000000` (reader not traced; `HuSetBlockFromReact` sets the same bit); `+0x3e` = 1 sets `0x200000` and clears `0x400000`, −1 sets `0x400000` and clears `0x200000`, 0 clears both; `+0x3f` = 1 sets `0x400` and clears `0x200`, −1 sets `0x200` and clears `0x400`, 0 clears both |
-| byte `+0x41` | `Human_ClassCanFlee` (`0x00224ea0`) in `Brain_Think` (`0x0028f6c0`) | an AI with a fight goal and **nothing in hand** draws a weapon: when free, it clears its actions and plays 477 `ANIM_ONE_HANDED_OBJECT_DRAW` (`GenToIdleAnimAction`). A cop (brain kind 1) does so in or out of a fight, unless his type's weapon (`CfgChar` `+0x18c`) is `none`. The clip's object event named `random` (`Anim_FireFrameEvents` `0x00101dd8`) calls `Brain_GiveHandObject` (`0x0028c780`), which puts the type's weapon in his hand, or `dyn_swhbld` (a switchblade) when it is `none`. The name "can flee" is an old guess: the byte is "draws a weapon" |
-| byte `+0x42` | `Human_ShouldFleeHurt` (`0x00224ec8`) in `Brain_Think` | an AI with a fight goal whose health is under 30 % plays 665 `ANIM_SPECIAL_FLASH` (blend 0.1 s in and out) when free, after clearing its actions: an AI's flash. The name is likewise a guess the code does not bear out |
+| s16 `+0x32` | `Human_ApplyPendingDamage` (`0x00265f70`) | after a hit lands on an **AI** human (brain kind not 0), its record `+0x108` = game time + `+0x32` ms; until then `Human_IsBusy` (`0x00228258`) says busy, which about 40 AI routines test (spotting, reporting a crime, joining a fight, grabbing). A player is never marked. The write comes after the block test and the damage: a hit with no pending damage, or one a block takes, sets nothing, nor does a lethal hit unless the human is in the falling states `0x1c00000000`; a friend's hit whose damage was zeroed still sets it; confirmed (code) |
+| s8 `+0x38` | `Human_GetClassReactFlag` (`0x002233c8`) in `Human_PlayReaction` (`0x0026a6d0`) | the most ground strikes a downed human reacts to: while a reaction clip plays (`Human_IsInReactionClip` `0x00228488`: held `0x8000`, a clip with flag `0x80`, or 199) and his record `+0xbe` is at least this, a new reaction is skipped. `+0xbe` counts the ground-strike reactions 195 played (`Human_PlayReaction`, `Hit_PlayBegReaction` `0x00269b80`) and is cleared when he gets up (`Human_EndDownState` `0x0025e250`); confirmed (code) |
+| bytes `+0x3a`-`+0x3f` | `Human_ApplyClassFlags` (`0x00222c98`), from `Human_Init`, `Human_MakePlayer` and `Human_ReleasePlayer` | switches copied into the human flags `+0xe0` ([Combat: human flags](combat/index.md#human-flags)): `+0x3a` = 1 sets `0x80` (reaction strength at most 1), else clears it; `+0x3b` `0x1000000000` (hard to stun, below); `+0x3c` `0x2000000000` (never escapes when the grabber's power runs out); `+0x3d` `0x800000000` (reader not traced; `HuSetBlockFromReact` sets the same bit); `+0x3e` = 1 sets `0x200000` and clears `0x400000`, −1 sets `0x400000` and clears `0x200000`, 0 clears both; `+0x3f` = 1 sets `0x400` and clears `0x200`, −1 sets `0x200` and clears `0x400`, 0 clears both; confirmed (code) |
+| byte `+0x41` | `Human_ClassCanFlee` (`0x00224ea0`) in `Brain_Think` (`0x0028f6c0`) | an AI with a fight goal and **nothing in hand** draws a weapon: when free, it clears its actions and plays 477 `ANIM_ONE_HANDED_OBJECT_DRAW` (`GenToIdleAnimAction`). A cop (brain kind 1) does so in or out of a fight, unless his type's weapon (`CfgChar` `+0x18c`) is `none`. The clip's object event named `random` (`Anim_FireFrameEvents` `0x00101dd8`) calls `Brain_GiveHandObject` (`0x0028c780`), which puts the type's weapon in his hand, or `dyn_swhbld` (a switchblade) when it is `none`. The name "can flee" is an old guess: the byte is "draws a weapon"; confirmed (code) |
+| byte `+0x42` | `Human_ShouldFleeHurt` (`0x00224ec8`) in `Brain_Think` | an AI with a fight goal whose health is under 30 % plays 665 `ANIM_SPECIAL_FLASH` (blend 0.1 s in and out) when free, after clearing its actions: an AI's flash. The name is likewise a guess the code does not bear out; confirmed (code) |
 
 Human flag `0x1000000000` (power class `+0x3b`, or `HuSetHardToStun`) changes the stun rule of `Human_PlayReaction`:
 without it a hit stuns when its Anim Range List flag `0x400` is set or the caller asks; with it neither counts, and

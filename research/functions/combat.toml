@@ -911,6 +911,15 @@ note = "confirmed (code), runtime"
 coney = "src/human/target_human.h:TargetHuman::step"
 status = "legacy"
 
+[[function.gaps]]
+what = "Fighter::takePending sets the AI's hit timer (+0x32) but not while falling (0x1c00000000) on a lethal hit"
+relation = "stand-in"
+
+[[function.gaps]]
+what = "the rest of Fighter::takePending is a legacy port, compared piece by piece in its own issue"
+relation = "not-ported"
+issue = 1413
+
 [[function]]
 address = 0x00266b50
 name = "Hit_IsReactionWeakened"
