@@ -230,6 +230,9 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
     m_hudLayer = HudLayer::create(*m_hud, wad, engine.drawsPixels(), m_print);
     m_hud->hud().attachPlayer(0, m_type);
     makeStage();
+    // The puppets are drawn from the frame description, their meshes held by id
+    // (docs/engine/renderer.md#frame-description).
+    m_stage->setSceneAssets(&m_engine.sceneAssets());
     // Whose face clips show (Human_UsesQueuedPose, docs/research/face.md): nobody a scene holds; an AI
     // Warrior always; anyone else within 17.5 m of the camera. The original measures to the nearest camera
     // (Human_UpdateLod's +0x334); Coney has player 1's alone.

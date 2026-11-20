@@ -81,7 +81,6 @@ void PlayLevelMode::makeStage() {
             return model.empty() ? m_model : model;
         },
         m_print);
-    m_stage->setSceneAssets(&m_engine.sceneAssets());
     // Player 1 or a cast human in a grab or a mount is left out of the scene's start (scenes.md#humans).
     m_stage->setFreeTest([this](double human) {
         if (human == m_playerHandle) {
