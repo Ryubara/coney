@@ -1579,8 +1579,15 @@ void Human::step(const HumanInput& input, const raycast::CollisionMesh* mesh) {
     updateActions(input.targets, mesh);
 }
 
-// Stub: no pull, as before the change.
-void Human::addGravityPull(float /*gravity*/) {}
+void Human::addGravityPull(float gravity) {
+    // The cases where the update's own gravity ran (updateState()'s step 5): airborne from the second airborne update,
+    // and none of the early ends before it.
+    if (gravity == kGravity || !m_airborne || m_airborneUpdates < 2 || m_flight || m_outOfWorld ||
+        m_fighter.holdAttached()) {
+        return;
+    }
+    m_velocity.z = std::clamp(m_velocity.z - ((gravity - kGravity) * m_stepSeconds), -kMaxFallSpeed, kMaxSpeed);
+}
 
 // **Coney stand-in** for Human_StepAnimation's two tests: every Coney human has its animator (the original steps only
 // one with an instance, +0xd8), and Coney poses on demand, so there is no bone cache to mark stale.

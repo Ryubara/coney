@@ -239,9 +239,10 @@ MenuItem layerToggle(DebugSession& session, std::string label, bool graphics::Li
         [&layers, field](bool on) { layers.*field = on; });
 }
 
-// The Layers group: the drawing-side switches and the view.
-std::shared_ptr<MenuPage> layersPage(DebugSession& session) {
-    auto page = std::make_shared<MenuPage>("Layers");
+} // namespace
+
+std::shared_ptr<MenuPage> lightingLayersPage(DebugSession& session, std::string title) {
+    auto page = std::make_shared<MenuPage>(std::move(title));
     page->add(layerToggle(session, "World ambient (A)", &graphics::LightingLayers::worldAmbient));
     page->add(layerToggle(session, "Ambient and directional", &graphics::LightingLayers::objectLights))
         .withHelp("The ambient and directional lights other than light A");
@@ -261,6 +262,8 @@ std::shared_ptr<MenuPage> layersPage(DebugSession& session) {
     }));
     return page;
 }
+
+namespace {
 
 // The Debug draw group: the lab's lines in the scene.
 std::shared_ptr<MenuPage> drawPage(DebugSession& session) {
@@ -298,7 +301,7 @@ void addLightingPage(DebugSession& session) {
                 .withHelp("Every light record with its source");
             page.add(submenuItem("Selection", [&session] { return selectionPage(session); }))
                 .withHelp("An atomic's lights this frame, in order");
-            page.add(submenuItem("Layers", [&session] { return layersPage(session); }))
+            page.add(submenuItem("Layers", [&session] { return lightingLayersPage(session, "Layers"); }))
                 .withHelp("Switches on the drawing side, and the view");
             page.add(submenuItem("Debug draw", [&session] { return drawPage(session); }));
             page.add(watchItem("Shadows", [] {

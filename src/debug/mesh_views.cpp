@@ -100,11 +100,22 @@ bool inMeshScope(MeshScope scope, MeshKind kind, bool selected) {
     return false;
 }
 
-// Stub: nothing hidden, as before the change.
-bool meshHidden(const graphics::WorldParts& /*parts*/, MeshKind /*kind*/) { return false; }
+bool meshHidden(const graphics::WorldParts& parts, MeshKind kind) {
+    switch (kind) {
+    case MeshKind::Scenery:
+        return !parts.scenery;
+    case MeshKind::Human:
+        return !parts.humans;
+    case MeshKind::Object:
+        return !parts.objects;
+    }
+    return false;
+}
 
-// Stub: nothing hidden, as before the change.
-bool hidesMeshes(const graphics::WorldParts& /*parts*/) { return false; }
+bool hidesMeshes(const graphics::WorldParts& parts) {
+    return meshHidden(parts, MeshKind::Scenery) || meshHidden(parts, MeshKind::Human) ||
+           meshHidden(parts, MeshKind::Object);
+}
 
 MeshDrawPlan meshPlanFor(const MeshViewOptions& options, MeshKind kind, bool selected) {
     MeshDrawPlan plan;

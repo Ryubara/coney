@@ -89,8 +89,8 @@ struct LightingSwitches {
     /// the camera aside).
     /// @coney-only the lighting lab's and the World page's switches
     [[nodiscard]] bool faithfulPicture() const {
-        // Stub: the lab's switches only, as before the change.
-        return layers == LightingLayers{} && view == LightingView::Final;
+        return layers == LightingLayers{} && view == LightingView::Final && fog == FogSwitches{} &&
+               parts == WorldParts{};
     }
 };
 

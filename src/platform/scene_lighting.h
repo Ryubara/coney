@@ -165,8 +165,15 @@ class SceneLighting {
     [[nodiscard]] const graphics::LightingFrame& lightingFrame() const { return m_frame; }
     /// The light manager, for the summary.
     [[nodiscard]] const graphics::LightManager& lights() const { return m_lighting.lights; }
-    /// The level's fog, which the world pass clears to and fogs with.
-    [[nodiscard]] const graphics::WorldFog& fog() const { return m_lighting.fog; }
+    /// The fog the world pass clears to and fogs with: the level's, or with the World page's colour and start in place
+    /// of its own (graphics::shownFog()) while the switches set them.
+    [[nodiscard]] graphics::WorldFog fog() const {
+        return m_switches != nullptr ? graphics::shownFog(m_lighting.fog, m_switches->fog) : m_lighting.fog;
+    }
+    /// Whether the level's background (the sky, the clouds, the skyline and the light glows) is drawn: off only under
+    /// the World page's part.
+    /// @coney-only the World page's parts (docs/guides/debug-menu.md#world)
+    [[nodiscard]] bool drawsBackground() const { return m_switches == nullptr || m_switches->parts.background; }
 
   private:
     // Puts the lights of `selection` that the lab's layers keep into the rig's world, mirrored from the manager's

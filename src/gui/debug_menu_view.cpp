@@ -104,7 +104,7 @@ void DebugMenuView::drawItem(const debug::MenuNavigator& navigator, const debug:
     } else {
         value = debug::valueText(item);
     }
-    const float valueRoom = (right - left) * 0.55F;
+    const float valueRoom = (right - left) * kValueShare;
     value = fitText(painter, std::move(value), valueRoom);
     const float valueWidth = painter.measure(value);
     const float labelRoom = right - left - valueWidth - 8.0F;

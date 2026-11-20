@@ -17,6 +17,7 @@ namespace coney::debug {
 /// - **Body** (src/human/body.h, docs/research/characters.md#walls): the walking sphere and the 0.25 m step rule;
 /// - **Sprint**, **Jump** and **Climb** (src/human/stamina.h, jump.h, climb.h, docs/research/characters.md#sprint,
 ///   #jump, #climb): stamina's maximum, drain and refill; the jump's speeds and checks; the climbs' probes and windows;
+/// - **World** (src/human/humans.h, docs/guides/debug-menu.md#world): the humans' gravity, the original's 15.68 m/s²;
 /// - **Follow camera** (src/camera/follow_camera.h, docs/research/camera.md): the position lag, the collision margins,
 ///   and the leash band, the pitch and the look-at height a new camera starts with;
 /// - **Display** (src/scenes/letterbox.h, docs/guides/enhancements.md#where-the-settings-live): Coney's render-side

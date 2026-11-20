@@ -119,8 +119,8 @@ struct DebugServices {
 /// its InputGate to the mode stack, and gives the model to the front ends, which only render it.
 ///
 /// The pages (src/debug/debug_pages.h): Favourites, Time, Tunables, Natives, Lua console, Cheats, Levels, Missions,
-/// Movies, Player, Camera, Spawner, AI fighters, HUD, Debug draw, Entity inspector, Lighting, Display, Audio, Network,
-/// Input.
+/// Movies, Player, Camera, Spawner, AI fighters, HUD, Debug draw, Entity inspector, World, Lighting, Display, Audio,
+/// Network, Input.
 /// Adding a feature is adding a page or items here, once (docs/guides/debug-menu.md#adding-a-feature).
 class DebugSession {
   public:
@@ -153,8 +153,8 @@ class DebugSession {
     /// What the Debug draw page switches, for the play mode to draw.
     [[nodiscard]] DebugDrawOptions& debugDraw() { return m_debugDraw; }
     [[nodiscard]] const DebugDrawOptions& debugDraw() const { return m_debugDraw; }
-    /// What the Lighting page switches on the drawing side (docs/guides/realtime-lighting.md#lab), for the play mode's
-    /// lighting rig to read.
+    /// What the Lighting and World pages switch on the drawing side (docs/guides/realtime-lighting.md#lab,
+    /// docs/guides/debug-menu.md#world), for the play mode's drawing and its lighting rig to read.
     [[nodiscard]] graphics::LightingSwitches& lighting() { return m_lighting; }
     [[nodiscard]] const graphics::LightingSwitches& lighting() const { return m_lighting; }
     /// The Lighting page's light edits, applied between two steps to the play mode's light manager.

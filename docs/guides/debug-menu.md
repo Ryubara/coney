@@ -150,6 +150,7 @@ The Display page's *Debug UI scale* overrides the choice: *Auto* (the rule above
 | HUD | the [in-game HUD](../research/hud.md)'s parts on and off, player 1's rage, score, money and items set (-1 gives the value back), an objective, a hint and an announcement fired |
 | Debug draw | lines in the scene: collision near the player (plain or by wall class), the player's heading and velocity, the camera, places, every human's collision shapes, strike shapes and contacts; the [mesh views](#mesh-views): the models' own wireframe, a wireframe-only view, flat views by material, draw call or LOD, the selection's normals and bone axes |
 | Entity inspector | the one entity panel: pick a human or object once (nearest, next, looked at, from a list), mark it in the scene, watch everything Coney knows of it in groups, a human's [mesh](#mesh-group) included, and edit it in the same groups: move, turn, drop, meters, scale, speed, animation rate, freeze, kill, delete and [another model](#model-swap); each edit queued, applied between steps and written to the run log ([below](#entity-inspector)) |
+| World | the [world's look, live](#world): the lighting's layers and the display preset, the fog, the shadows, the humans' gravity and the scene's parts on and off, each with a reset, and which values are the original's |
 | Lighting | the [lighting lab](realtime-lighting.md#lab): Hold lighting, Light from, Dump this frame, the counts, every light with its source and edits, an atomic's selection, layers and views, lines in the scene |
 | Display | the frame-stats line, the FPS counter, the frame cap and vsync (live), the player's coordinates, the GUI safe area, the logical screen, the [overlay's size](#ui-scale) |
 | Audio | the output device, the master and bus volumes, a looping test tone, the voices playing (plotted) |
@@ -660,6 +661,49 @@ entry point, which nothing of the original's calls. Disc test: `tests/platform/d
 in `level99` through the page and checks it ran its full length and that his idle came back, and in the sandbox lists
 every set and plays a loop and clips of the generic set and of another character.
 
+### World {#world}
+
+The World page changes how the world looks and falls while the game runs: its lighting, look, fog and shadows, the
+humans' gravity, and which parts of the scene are drawn. It is Coney's own debug tool (the original has none), in the
+debug tools alone, and it changes nothing until a value is changed: every item starts at the value the game has, and
+each group has a reset. Everything but the gravity is a switch on the **drawing side** (`graphics::LightingSwitches`,
+`repo:src/graphics/lighting_switches.h`, the switches the [lighting lab](realtime-lighting.md#lab) also sets), so the
+simulation never reads it and a run plays the same with any of it changed; test mode never changes it.
+
+| Group | Items | Whose values |
+| --- | --- | --- |
+| Lighting | the Lighting page's *Layers*: the world ambient, the other ambient and directional lights, point lights, flicker, brightness and offset, coronas, blob shadows, the view; *Reset lighting* | The lights are the original's ([Lighting](../research/lighting.md)); each switch off is Coney's |
+| Look | the display preset: *PS2*, *Xbox*, *Enhanced*, *High* (*Custom* is shown, not chosen); the Tunables page's `Display/Preset`, queued like any tunable | *PS2* is the original's picture, the only one drawn yet; the others are the [presets](../engine/renderer.md#presets) of the Xbox's look and Coney's |
+| Fog | *Level's fog* (the colour and the start the level's scripts set); *Red*, *Green*, *Blue* and *Start*, each starting at the level's value; *Reset fog* | The level's are the original's: `SetFogColor`, also the background, and `SetFogDistance`, a fraction of the far clip ([Fog](../research/world.md#fog)). A value of the page's is Coney's, drawn in the level's place; set back to the level's value (triangle does), it is the level's again. *Start* stops at 0.99, short of the far clip |
+| Shadows | *Blob shadows*; *Shadow colour* and *Shadow offset* (the shadow light's, the offset in game axes); *Shadows off* (the objects a script took the shadow from); *Shadow maps*; *Reset shadows* | The blob is the PS2's shadow; the shadow light and `EnableShadow` are the original's script values, empty on the PS2 and the Xbox's shadow map source ([The shadow light](../research/xbox-lighting.md#shadow-light)). The shadow maps (the Xbox's, and Coney's [realtime shadows](realtime-lighting.md)) are not drawn yet ([#1259](issue:1259), [#1220](issue:1220)), which the item says with `Display/Shadows` |
+| Gravity | what pulls an airborne human down, m/s², the `World/Gravity` tunable (triangle resets it) | 15.68 m/s² (1.6 g), the original's (`Human_StateUpdate` `0x0023fea8`, [characters](../research/characters.md)); any other value is Coney's |
+| Parts | *Streamed world* (off also hides the background), *Background* (the sky and cloud boxes, the skyline, the light glows), *Humans* (with what they wear and hold), *Objects* (world objects, doors, cars), *Glass*, *Water*, *Effects* (particles, glints, the throw-aim arc), *Health rings* (and the L1 markers), *Coronas*, *Blob shadows*; *All on* | Every part on is the original's picture; each off is Coney's |
+| Reset world | the lighting's layers and view, the fog, the shadows, the gravity and the parts back as the game has them (the look stays: choose *PS2*) | |
+
+**How the parts are left out.** The play mode reads the parts as it draws a frame, around the original's draw order
+and never inside a ported function: the humans, the objects, the glass, the water, the effects and the rings are
+simply not drawn; the background is left out of the world renderer's frame as the world edits leave it out
+(`LevelPlayScenery::draw`); and the streamed world's sectors, which the ported `WorldManager_Render` draws itself, are
+handed to the [mesh views](#mesh-views)' hook, which draws no pass of a model whose kind is hidden. The hook sees the
+sectors and the background as one kind (scenery), so *Streamed world* off hides both. The coronas and the blob shadows
+are the lighting layers' own switches, shown here too. **The fog** in place of the level's is `graphics::shownFog()`:
+the world pass clears to its colour and fogs from its start, as it does with the level's.
+
+**The gravity** is simulation, not drawing: the tunable lands between two steps like any other (so a run with the same
+overrides file is the same run), and only the humans feel it; a flying object, a hat and the particles keep their own.
+The ported update (`Human::updateState()`, `Human_StateUpdate`) is left as the original's, pulling by 15.68; after the
+humans' update, `Humans::pullByGravity()` adds the difference to every human that update pulled (airborne from its
+second airborne update, not flying, held or out of the world), capped at the fastest fall
+(`Human::addGravityPull()`). The pull so lands one update after the update's own move, which only a value other than
+the original's ever shows. At 15.68 nothing is added at all.
+
+**Not here:** a time of day (the game has none: a level's lights are set by its scripts and stay), the HUD's parts
+(the HUD page) and the gravity of objects and particles. The tests drive the page with a scripted pad through the input
+gate, draw it in both front ends and check every group's reset (`repo:tests/debug/world_page_test.cpp`); the fog rule,
+the parts' rule for the mesh views and the gravity's pull have their own
+(`repo:tests/graphics/lighting_switches_test.cpp`, `repo:tests/debug/mesh_views_test.cpp`,
+`repo:tests/platform/mesh_views_test.cpp`, `repo:tests/human/human_test.cpp`).
+
 ## Tunables {#tunables}
 
 A tunable is a named, typed value a subsystem lets the menus edit while the game runs. The subsystem keeps the variable;
@@ -675,6 +719,7 @@ The first tunables are the player's and the camera's researched values (`src/deb
 | Sprint | drain (20/s); the stamina maximum and refill are each human's power class's ([Stats](../research/characters.md#stats)) |
 | Jump | minimum speed (3.3 m/s), up speed (5.5 m/s), climbable check (5.5 m), air turn (4° an update, Coney's choice) |
 | Climb | low and high probe (0.69 m, 1.7 m), reach and running reach (1.5 m, 4.5 m), probe behind (0.4 m), fence top limit (0.25 m), fence ceiling (2.5 m), wall window (1.7-2.91 m), short wall window (0.7-1.7 m) |
+| World | gravity (15.68 m/s², the humans' alone; the [World page](#world)'s) |
 | Follow camera | position lag (0.22), collision margin (0.2 m), closest after collision (0.5 m), auto-centre (on; off is the default rule), one player camera `0x0050b19c` (on), leash near and far (4.8 m, 5.3 m), pitch (13°), look-at height (1.4 m) |
 | Combat | history hold (7 samples), snaps need a target (`CfgSnap`, on), `S1`'s timing (hit 2, window 6 to 15, recovery 17, end 20 updates; the other attacks keep their measured timing), grab search scale (1.25), power endurance (0.25), grab strike cost (0.2, halved for the player), power drain (15/s), rage points cap (25) and factors (1.0, 0.1), rage hold (5000 ms) (the rage's drain and decay are the player's Warrior class's), the button mash, the mugging and the stereo theft ([Combat](../research/combat/index.md#coneys-implementation), `src/debug/combat_tunables.cpp`) |
 | Display | cutscene letterbox (on: the black bars over cutscenes, as the original draws them; off plays cutscenes full screen); renderer (0: GL3, the default; 1: the GPU renderer, [Renderer](../engine/gpu-renderer.md); applies at the next start, `--renderer` overrides it and test mode ignores it); preset (0: *PS2*, the default; 1 *Xbox*, 2 *Enhanced*, 3 *High*; 4 *Custom*, shown once a value differs from every preset's) and the values a preset sets: lights, shadows, blob shadow, per-pixel fog, gamma ramp, reflections and anti-aliasing (all off or 0, the blob on), which nothing draws yet ([Presets](../engine/renderer.md#presets-built)) |

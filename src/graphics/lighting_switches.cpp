@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "graphics/lighting_switches.h"
 
+#include <algorithm>
+
 namespace coney::graphics {
 
 namespace {
@@ -45,8 +47,17 @@ LightColour layeredColour(const LightManager& manager, std::uint16_t index, cons
                        record.current.a};
 }
 
-// Stub: the level's fog, as before the change.
-WorldFog shownFog(const WorldFog& level, const FogSwitches& /*switches*/) { return level; }
+WorldFog shownFog(const WorldFog& level, const FogSwitches& switches) {
+    WorldFog fog = level;
+    if (switches.colour) {
+        fog.colour = *switches.colour;
+    }
+    // The page's own start is held short of the far clip; the level's is drawn as its scripts set it.
+    if (switches.start) {
+        fog.start = std::clamp(*switches.start, 0.0F, kMaxFogStart);
+    }
+    return fog;
+}
 
 // The held moment while held and no step ran since it was chosen; else the one asked for, which is then held.
 // @coney-only the lighting lab's Hold lighting

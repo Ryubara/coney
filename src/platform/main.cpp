@@ -1058,7 +1058,8 @@ int main(int argc, char** argv) {
     };
     // The Debug draw page's mesh views, which every play mode draws its models through (one for the run: they keep
     // only the options and their own librw light, destroyed with the last mode before the renderer stops).
-    const auto meshViews = std::make_shared<coney::platform::MeshViews>(debugSession.debugDraw());
+    const auto meshViews =
+        std::make_shared<coney::platform::MeshViews>(debugSession.debugDraw(), &debugSession.lighting());
     if (playLevel) {
         playLevel->setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
         playLevel->setMeshViews(meshViews);
