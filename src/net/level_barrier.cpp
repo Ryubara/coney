@@ -89,7 +89,9 @@ std::vector<std::uint8_t> LevelBarrier::step() {
 }
 
 void LevelBarrier::startMovie(std::uint32_t movieStep) {
-    Movie movie{.step = movieStep};
+    // Not a designated initialiser: `watching` has no default, and GCC and Clang warn on a skipped member.
+    Movie movie;
+    movie.step = movieStep;
     // A player still loading is not in the level, so not watching the level's movie.
     for (const auto& [slot, steps] : m_joined) {
         if (!m_loading.contains(slot)) {
