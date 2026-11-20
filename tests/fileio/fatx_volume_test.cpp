@@ -44,15 +44,15 @@ FatxEntry named(const std::vector<FatxEntry>& entries, const std::string& name) 
 
 } // namespace
 
-// NOLINTBEGIN(bugprone-implicit-widening-of-multiplication-result): the volumes are 1 MB, written 1024 * 1024 in the
-// tests' own words; the product is a constant far below int's range, so nothing widens wrongly.
 TEST_CASE("a FATX volume lists its folders and reads a file across clusters", "[fatx]") {
     // Expected: save.md#xbox-containers, confirmed (runtime), run r-20261119-xbox-hdd-fatx-layout (the superblock, the
     // FAT after it rounded to 4 KB, clusters from 1, 64-byte entries)
     const auto big = pattern(40000, 7); // three 16 KB clusters
+    // NOLINTNEXTLINE(bugprone-implicit-widening-of-multiplication-result): 1 MB constant
     const auto image = flatten(buildFatx(1024 * 1024, {{"UDATA/5454009b/AB/profile.dat", big},
                                                        {"UDATA/5454009b/TitleMeta.xbx", pattern(50, 1)},
                                                        {"TDATA/x", pattern(3, 9)}}),
+                               // NOLINTNEXTLINE(bugprone-implicit-widening-of-multiplication-result): 1 MB constant
                                1024 * 1024);
     MemoryStream stream(image);
     CHECK(FatxVolume::looksLikeFatx(stream, 0));
@@ -103,6 +103,7 @@ TEST_CASE("a FATX volume of 0xfff0 clusters or more has 32-bit FAT entries", "[f
 TEST_CASE("a FATX volume with a damaged chain or no magic is refused", "[fatx]") {
     // Expected: save.md#xbox-containers, inferred (a chain that loops, meets a free cluster or leaves the volume is
     // damaged)
+    // NOLINTNEXTLINE(bugprone-implicit-widening-of-multiplication-result): 1 MB constant
     auto image = flatten(buildFatx(1024 * 1024, {{"f", pattern(40000, 1)}}), 1024 * 1024);
     SECTION("a free cluster in the middle of the file") {
         // f starts at cluster 2 (the root takes 1); its entry for cluster 3 is the FAT's bytes 6-7.
@@ -137,9 +138,11 @@ TEST_CASE("a FATX volume with a damaged chain or no magic is refused", "[fatx]")
 TEST_CASE("a FATX volume that ends inside its FAT is refused", "[fatx]") {
     // Expected: save.md#xbox-containers, inferred (the FAT follows the 4 KB superblock, 2 bytes a cluster rounded up to
     // 4 KB, so a 1 MB volume of 16 KB clusters has its data from 0x2000)
+    // NOLINTNEXTLINE(bugprone-implicit-widening-of-multiplication-result): 1 MB constant
     auto image = flatten(buildFatx(1024 * 1024, {{"f", pattern(100, 1)}}), 1024 * 1024);
     image.resize(0x1000 + 10);
     MemoryStream stream(image);
+    // NOLINTNEXTLINE(bugprone-implicit-widening-of-multiplication-result): 1 MB constant
     const auto volume = FatxVolume::open(stream, 0, 1024 * 1024);
     REQUIRE_FALSE(volume.has_value());
     CHECK(volume.error().code == ErrorCode::Truncated);
@@ -148,6 +151,7 @@ TEST_CASE("a FATX volume that ends inside its FAT is refused", "[fatx]") {
 TEST_CASE("a FATX folder whose chain is longer than any folder is refused", "[fatx]") {
     // Expected: save.md#xbox-containers, Coney's choice (a folder is read to at most 256 KB, 4,096 entries; a longer
     // chain is damage, and following it would cost memory without bound)
+    // NOLINTNEXTLINE(bugprone-implicit-widening-of-multiplication-result): 1 MB constant
     auto image = flatten(buildFatx(1024 * 1024, {}), 1024 * 1024);
     // Links the root folder (cluster 1) through `clusters` clusters of 16 KB: FAT entry c is the FAT's bytes 2c-2c+1.
     const auto link = [&image](std::uint32_t clusters) {
@@ -173,4 +177,3 @@ TEST_CASE("a FATX folder whose chain is longer than any folder is refused", "[fa
         CHECK(root.error().code == ErrorCode::Invalid);
     }
 }
-// NOLINTEND(bugprone-implicit-widening-of-multiplication-result)

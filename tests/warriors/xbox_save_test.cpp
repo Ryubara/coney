@@ -306,9 +306,9 @@ TEST_CASE("an image of a whole Xbox hard disk is read at its data partition", "[
     coney::test::SparseStream disk(coney::test::shifted(volume, coney::io::kXboxDataPartitionOffset), kDiskBytes);
     const auto save = coney::readXboxImage(disk, "hdd.img");
     REQUIRE(save.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access): the REQUIREs end the test when empty, which clang-tidy does not
+    // know.
     REQUIRE(save->has_value());
-    // NOLINTBEGIN(bugprone-unchecked-optional-access): the REQUIREs above end the test when empty, which clang-tidy
-    // does not know.
     CHECK((*save)->kind == SaveSourceKind::XboxHddImage);
     CHECK((*save)->profiles.size() == 2);
     // NOLINTEND(bugprone-unchecked-optional-access)
