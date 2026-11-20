@@ -531,7 +531,7 @@ ended (`endHostMovie()`) and every player watching has ended theirs, or `ServerC
 `holdsStep()`, the guest's game does not jump to the ordered level (`GameSession::jumpToLevel()`) or report it loaded,
 and `MovieMode` neither waits for `movieMayEnd()` nor reports its end. A guest still runs its own whole game until the
 client game mode that draws the snapshots is built, and a held host step reuses its step's number, which the digest
-lines and the session record must allow for first.
+lines and the session record must allow for first. That wiring is #1530.
 
 ## Game events {#events}
 
@@ -709,5 +709,5 @@ Each step is a pull request that builds and is tested on its own.
 6. **AI humans, events, mission state:** the rest of what a client must see and hear: the game events (built: [Game
    events](#events)), each player's panel state in the snapshot (built: [HUD state](snapshots.md#hud-state)), the
    AI humans and the mission state; level loads, checkpoints and the loading barrier (the session's side built:
-   [Levels](#levels); the game's main loop to call it).
+   [Levels](#levels); the game's main loop to call it: #1530).
 7. **Prediction:** the local player predicted and corrected from the server's snapshots.

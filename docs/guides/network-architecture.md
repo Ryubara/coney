@@ -416,7 +416,7 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
   `--freeze-world`. The scenes are reached through three interim hooks until their binding moves to the core (#1449).
 - **In the way:** the two-player game state paths are unbuilt; the load barrier's session side is built
   ([Levels](multiplayer.md#levels)), but the game's level starts, restarts and mission ends do not call it yet
-  ([Story](#story)).
+  (#1530, [Story](#story)).
 
 ### HUD, menus and pause (`hud/`, `gui/`, `gamemodes/`) {#sub-hud}
 
