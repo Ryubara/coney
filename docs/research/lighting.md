@@ -295,7 +295,7 @@ object's cap of 6 at most; and the player's glow bytes `+0x644`-`+0x647` written
 calls (204 objects, 78 sectors, 12 humans, 6 background) every object got all 7 lights of list B and no point light,
 and in 6 human calls (the player) the glow followed the 7, 8 lights against a cap of 6; at most 8 in a call. Coney's
 selection replayed on that trace by the same `[trace]` test gives the recorded lights in 300 of 300, the 6 glow calls
-compared after the glow ([#1253](issue:1253)).
+compared after the glow.
 
 `LightManager_UploadSelected` (`0x0017e810`) then queues each chosen light with `RwPS2_QueueLightForVU1`
 (`0x00476cc8`): a block header with two scales of 1.0, then per light its colour (RpLight `+0x18`) and type, plus the
