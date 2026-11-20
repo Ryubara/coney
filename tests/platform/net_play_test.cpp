@@ -596,6 +596,7 @@ TEST_CASE("a host's level reaches the guest, and the host holds its steps until 
     games.run(2);
     const std::optional<coney::net::LoadLevel> order = games.guest.takeLevelOrder();
     REQUIRE(order.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty, unseen by clang-tidy
     CHECK(order->level == "level2");
     CHECK(order->checkpoint == 3);
     CHECK_FALSE(games.guest.holdsStep()); // a guest holds nothing: it is not the server
@@ -603,6 +604,7 @@ TEST_CASE("a host's level reaches the guest, and the host holds its steps until 
     CHECK(games.host.holdsStep());
 
     games.guest.levelLoaded(order->load);
+    // NOLINTEND(bugprone-unchecked-optional-access)
     games.run(2);
     CHECK_FALSE(games.host.holdsStep());
     const std::vector<std::string> log = games.host.log();
@@ -619,9 +621,11 @@ TEST_CASE("a guest who joins a host already in a level is told the level on join
     CHECK(games.host.holdsStep());
     const std::optional<coney::net::LoadLevel> order = games.guest.takeLevelOrder();
     REQUIRE(order.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty, unseen by clang-tidy
     CHECK(order->level == "level99");
     CHECK(order->reason == coney::net::LoadReason::Join);
     games.guest.levelLoaded(order->load);
+    // NOLINTEND(bugprone-unchecked-optional-access)
     games.run(2);
     CHECK_FALSE(games.host.holdsStep());
 
@@ -638,7 +642,9 @@ TEST_CASE("a host's movie waits for the guest's end, and the guest's skip ends i
     TwoGames games;
     games.host.loadLevel("level1", 1);
     games.connect();
+    // NOLINTBEGIN(bugprone-unchecked-optional-access): an empty order throws, which fails the test
     games.guest.levelLoaded(games.guest.takeLevelOrder().value().load);
+    // NOLINTEND(bugprone-unchecked-optional-access)
     games.run(2);
 
     const std::uint32_t movie = games.host.startMovie();

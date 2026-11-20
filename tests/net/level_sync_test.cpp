@@ -215,10 +215,12 @@ TEST_CASE("a level change: the client loads the host's level and the server wait
     session.run(2);
     const std::optional<LoadLevel> order = client.takeLevelOrder();
     REQUIRE(order.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty, unseen by clang-tidy
     CHECK(order->load == 1);
     CHECK(order->level == "level2");
     CHECK(order->checkpoint == 1);
     CHECK(order->reason == LoadReason::Change);
+    // NOLINTEND(bugprone-unchecked-optional-access)
     CHECK_FALSE(client.takeLevelOrder().has_value()); // handed over once
     REQUIRE(client.loadingLevel().has_value());
 
@@ -262,10 +264,12 @@ TEST_CASE("a checkpoint restart reloads the client, and a reply to the older loa
     CHECK(ends[0].outcome == MissionOutcome::Failed);
     const std::optional<LoadLevel> order = client.takeLevelOrder();
     REQUIRE(order.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty, unseen by clang-tidy
     CHECK(order->load == restart);
     CHECK(order->level == "level3");
     CHECK(order->checkpoint == 4);
     CHECK(order->reason == LoadReason::Restart);
+    // NOLINTEND(bugprone-unchecked-optional-access)
 
     // A reply to the first load, late, leaves the server waiting for the restart.
     client.levelLoaded(first);
@@ -276,7 +280,9 @@ TEST_CASE("a checkpoint restart reloads the client, and a reply to the older loa
     session.run(2);
     CHECK(session.server.levelReady());
     REQUIRE(session.server.level().has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty, unseen by clang-tidy
     CHECK(session.server.level()->checkpoint == 4);
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 // Expected: unverified, #557 (Coney's own; network-architecture.md#authority: a player drops in mid-level)
@@ -296,10 +302,12 @@ TEST_CASE("a client joining mid-level is told the level and gets a full snapshot
     CHECK_FALSE(session.server.levelReady()); // the newcomer has the level to load
     const std::optional<LoadLevel> order = late.takeLevelOrder();
     REQUIRE(order.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty, unseen by clang-tidy
     CHECK(order->load == load);
     CHECK(order->level == "level5");
     CHECK(order->checkpoint == 2);
     CHECK(order->reason == LoadReason::Join);
+    // NOLINTEND(bugprone-unchecked-optional-access)
     session.run(5);
     CHECK(late.snapshots().newest() == 0);                     // nothing while loading
     CHECK(first.snapshots().newestStep() + 2 == session.step); // the others play on
