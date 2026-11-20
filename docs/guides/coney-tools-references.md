@@ -505,7 +505,7 @@ Written by `coney-tools docs render` from the command line's own definitions; ne
 
 ### `refs render` {#refs-render-usage}
 
-Check the lists and write the pages of docs/references/.
+Check the lists and write the pages of docs/references/ and the C++ tables made from them.
 
 ```text
 coney-tools refs render [--check]
@@ -513,7 +513,7 @@ coney-tools refs render [--check]
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `--check` | flag | off | change nothing; exit 1 when a page is stale |
+| `--check` | flag | off | change nothing; exit 1 when a page or a table is stale |
 
 ### `refs refresh` {#refs-refresh-usage}
 
