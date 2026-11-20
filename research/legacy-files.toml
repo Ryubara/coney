@@ -575,7 +575,7 @@ tag = 1
 tag = 3
 
 ["src/effects/particles.cpp"]
-tag = 28
+tag = 27
 
 ["src/effects/room_smoke.cpp"]
 tag = 3
@@ -2636,9 +2636,6 @@ citation = 5
 citation = 3
 
 ["tests/world_objects/object_breaks_test.cpp"]
-citation = 2
-
-["tests/world_objects/object_list_test.cpp"]
 citation = 2
 
 ["tests/world_objects/object_tasks_test.cpp"]
