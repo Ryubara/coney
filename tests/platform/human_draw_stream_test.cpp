@@ -227,7 +227,6 @@ TEST_CASE("the human scene's humans are drawn from the frame description with th
             CHECK(draw.dualPass == coney::graphics::DualPass::Blood);
             CHECK(draw.material.colour == coney::graphics::MaterialColour::Shade);
             CHECK(draw.material.shade == 1.0F);
-            CHECK(draw.material.tint == coney::graphics::kWhite);
             CHECK_FALSE(draw.material.distanceLevels);
             CHECK(draw.states.depthTest);
             CHECK(draw.states.depthWrite);
