@@ -386,7 +386,8 @@ def test_a_build_that_passed_is_not_built_again_and_its_record_is_the_one_the_st
     [record] = (unit.Unit.of(world.root, TASK).dir / "build-runs").glob("*.json")
     assert stamp.covers["build_record_sha256"] == record.stem and stamp.detail["tests"] == TESTS
     assert stamp.detail["ctest_scope"] == "whole" and stamp.detail["preset"] == "ci"
-    assert stamp.detail["resumed"]["checks"][-2:] == ["msvc-ci-build", "ctest-full-disc"]
+    # the clang-tidy check after the build passed in the first run too, so it is taken as well
+    assert stamp.detail["resumed"]["checks"][-3:] == ["msvc-ci-build", "ctest-full-disc", "clang-tidy"]
 
 
 def test_a_build_whose_tests_failed_is_built_again_with_the_checks_before_it_resumed(world: World) -> None:
@@ -396,7 +397,8 @@ def test_a_build_whose_tests_failed_is_built_again_with_the_checks_before_it_res
     world.build_tests = dict(TESTS)
     world.calls.clear()
     assert world.check() == 0
-    assert world.calls == [] and len(world.builds) == 2  # the build and its tests run as one, so both again
+    # the build and its tests run as one, so both again; the clang-tidy check after them had not run yet
+    assert world.calls == ["clang-tidy"] and len(world.builds) == 2
     assert world.stamp.detail["resumed"]["checks"] == [
         "docs-check",
         "mkdocs",
@@ -415,7 +417,15 @@ def test_a_build_record_that_is_gone_is_built_again(world: World) -> None:
     world.failing.clear()
     assert world.check() == 0
     assert len(world.builds) == 2
-    assert world.stamp.detail["resumed"]["checks"] == ["docs-check", "mkdocs", "pre-commit", "ruff", "mypy"]
+    # the clang-tidy check after the build passed in the first run and does not hang on the build record
+    assert world.stamp.detail["resumed"]["checks"] == [
+        "docs-check",
+        "mkdocs",
+        "pre-commit",
+        "ruff",
+        "mypy",
+        "clang-tidy",
+    ]
 
 
 def test_a_build_that_gave_up_waiting_leaves_the_checks_before_it_resumable(world: World) -> None:
@@ -425,7 +435,7 @@ def test_a_build_that_gave_up_waiting_leaves_the_checks_before_it_resumable(worl
     world.build_exit = 0
     world.calls.clear()
     assert world.check() == 0
-    assert world.calls == [] and len(world.builds) == 2
+    assert world.calls == ["clang-tidy"] and len(world.builds) == 2
 
 
 # --- around it ----------------------------------------------------------------------------------------------------

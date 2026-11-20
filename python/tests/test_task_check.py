@@ -287,7 +287,7 @@ def test_an_engine_change_builds_with_the_ci_preset_once_and_covers_the_build_re
     assert world.builds == [("lane-a", "ci", TASK)]
     stamp = world.stamp
     assert stamp.detail["profile"] == "full" and stamp.detail["preset"] == "ci"
-    assert stamp.detail["checks"][-2:] == ["msvc-ci-build", "ctest-full-disc"]
+    assert stamp.detail["checks"][-3:] == ["msvc-ci-build", "ctest-full-disc", "clang-tidy"]
     assert stamp.detail["tests"] == TESTS
     # no test file reaches brain.cpp here, so the whole suite ran, holding nothing back
     assert world.labels == [None] and stamp.detail["ctest_scope"] == "whole"
@@ -935,10 +935,8 @@ def test_the_build_run_is_one_entry_at_the_place_of_its_first_check(world: World
     assert world.check() == 0
     names = load_conventions(world.root).proof.build.checks
     assert seen[0]["check"] == " and ".join(names) and seen[0]["kind"] == "build"
-    assert (seen[0]["index"], seen[0]["total"]) == (
-        7,
-        8,
-    )  # the seventh of eight: the eighth is answered by the same run
+    # the seventh of nine: the eighth is answered by the same run, the ninth is the clang-tidy check after it
+    assert (seen[0]["index"], seen[0]["total"]) == (7, 9)
     assert progress_now(world)["state"] == "passed"
 
 
